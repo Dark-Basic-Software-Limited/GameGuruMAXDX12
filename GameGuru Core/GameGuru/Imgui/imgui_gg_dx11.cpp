@@ -41,6 +41,7 @@
 
 #include "M-RPG.h"
 #include "M-Workshop.h"
+#include <deque>
 
 char launchLoadOnStartup[260] = "\0";
 
@@ -177,6 +178,8 @@ bool bForceRenderEverywhere = false;
 
 #ifdef WICKEDENGINE
 std::vector<ID3D11ShaderResourceView*> lpBadTexture;
+std::deque<std::vector<ID3D11ShaderResourceView*>> badTextureFrames;
+const size_t MAX_FRAMES_TO_KEEP = 3;
 #endif
 
 void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
@@ -284,6 +287,8 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 	// Setup desired DX state
 	ImGui_ImplDX11_SetupRenderState(draw_data, ctx);
 
+	badTextureFrames.push_back(std::move(lpBadTexture));
+
 	// Render command lists
 	// (Because we merged all buffers into a single one, we maintain our own offset into them)
 	int global_idx_offset = 0;
@@ -296,6 +301,26 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 		{
 			const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
 			
+			if (!pcmd->TextureId)
+				continue;
+
+			bool bBadTextureAll = false;
+			for (const auto& frameTextures : badTextureFrames)
+			{
+				//PE: Check all frames for bad texture_srv.
+				for (int i = 0; i < frameTextures.size(); i++)
+				{
+					ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
+					if (texture_srv == frameTextures[i])
+					{
+						bBadTextureAll = true;
+						break;
+					}
+				}
+			}
+			if (bBadTextureAll)
+				continue;
+
 			if (pcmd->UserCallback == (ImDrawCallback)10)
 			{
 				bForceRenderEverywhere = true;
@@ -389,6 +414,10 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 
 	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
+
+	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
+		badTextureFrames.pop_front();
+	}
 	#endif
 
 }
@@ -553,6 +582,8 @@ void ImGuiHook_RenderCall(void* ctxptr)
 
 	ImGuiContext& g = *GImGui;
 
+	badTextureFrames.push_back(std::move(lpBadTexture));
+
     // Render command lists
     // (Because we merged all buffers into a single one, we maintain our own offset into them)
     int global_idx_offset = 0;
@@ -564,6 +595,27 @@ void ImGuiHook_RenderCall(void* ctxptr)
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
         {
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+
+			if (!pcmd->TextureId)
+				continue;
+
+			bool bBadTextureAll = false;
+			for (const auto& frameTextures : badTextureFrames)
+			{
+				//PE: Check all frames for bad texture_srv.
+				for (int i = 0; i < frameTextures.size(); i++)
+				{
+					ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
+					if (texture_srv == frameTextures[i])
+					{
+						bBadTextureAll = true;
+						break;
+					}
+				}
+			}
+			if (bBadTextureAll)
+				continue;
+
 			if (pcmd->UserCallback == (ImDrawCallback)10)
 			{
 				bForceRenderEverywhere = true;
@@ -779,6 +831,10 @@ void ImGuiHook_RenderCall(void* ctxptr)
 
 	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
+	
+	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
+		badTextureFrames.pop_front();
+	}
 	#endif
 
 }
@@ -997,6 +1053,8 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
     // Setup desired DX state
     ImGui_ImplDX11_SetupRenderState(draw_data, ctx);
 
+	badTextureFrames.push_back(std::move(lpBadTexture));
+
     // Render command lists
     // (Because we merged all buffers into a single one, we maintain our own offset into them)
     int global_idx_offset = 0;
@@ -1008,6 +1066,27 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
         {
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+
+			if (!pcmd->TextureId)
+				continue;
+
+			bool bBadTextureAll = false;
+			for (const auto& frameTextures : badTextureFrames)
+			{
+				//PE: Check all frames for bad texture_srv.
+				for (int i = 0; i < frameTextures.size(); i++)
+				{
+					ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
+					if (texture_srv == frameTextures[i])
+					{
+						bBadTextureAll = true;
+						break;
+					}
+				}
+			}
+			if (bBadTextureAll)
+				continue;
+
 			if (pcmd->UserCallback == (ImDrawCallback)10)
 			{
 				bForceRenderEverywhere = true;
@@ -1102,6 +1181,11 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
 
 	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
+
+	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
+		badTextureFrames.pop_front();
+	}
+
 	#endif
     // Restore modified DX state
     ctx->RSSetScissorRects(old.ScissorRectsCount, old.ScissorRects);
