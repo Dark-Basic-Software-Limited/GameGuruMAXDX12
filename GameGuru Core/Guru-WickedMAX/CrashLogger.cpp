@@ -4,10 +4,14 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <filesystem>
+
 #pragma comment(lib, "dbghelp.lib")
 
+#define MAX_PATH 1024
+
 // global we can populate with the current running version to match EXE/PDB pairs
-char g_pCrashVersionINIValue[256];
+char g_pCrashVersionINIValue[256] = "Very Early";
 
 // What time is it
 std::string GetTimestamp()
@@ -20,6 +24,7 @@ std::string GetTimestamp()
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &localTime);
     return std::string(buffer);
 }
+
 
 // Crash handler
 LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
@@ -34,6 +39,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     // Get path to the EXE folder
     char exeFile[MAX_PATH];
     GetModuleFileNameA(NULL, exeFile, MAX_PATH);
+
     char exePath[MAX_PATH];
     strcpy_s(exePath, MAX_PATH, exeFile);
     char* lastSlash = strrchr(exePath, '\\');
@@ -46,8 +52,11 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
 
     // Initialize symbol handler
     HANDLE process = GetCurrentProcess();
-    if (!SymInitialize(process, NULL, FALSE)) {
-        std::cerr << "Failed to initialize symbols." << std::endl;
+    
+    //if (!SymInitialize(process, NULL, FALSE)) {
+    if (!SymInitialize(process, NULL, TRUE))
+    {
+        MessageBoxA(NULL, "Failed to initialize symbols.", "GameGuru MAX Crash", MB_OK | MB_ICONERROR);
         return 1;
     }
 
@@ -58,7 +67,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
         NULL,
         exeFile,
         NULL,
-        0,
+        (DWORD64)GetModuleHandle(NULL),
         0,
         NULL,
         0
@@ -75,7 +84,10 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     IMAGEHLP_LINE64 lineData = { 0 };
     DWORD displacement = 0;
     lineData.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-    if (SymGetLineFromAddr64(process, lookupAddress, &displacement, &lineData))
+
+    //if (SymGetLineFromAddr64(process, lookupAddress, &displacement, &lineData))
+    //PE: Use ExceptionAddress directly.
+    if (SymGetLineFromAddr64(process, (DWORD64)pExceptionInfo->ExceptionRecord->ExceptionAddress, &displacement, &lineData))
     {
         std::ostringstream l;
         l << lineData.FileName << ":" << lineData.LineNumber;
@@ -108,6 +120,32 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
         FlushFileBuffers(hFile);
         CloseHandle(hFile);
     }
+
+    //PE: Also create dump that we can load in visual studio later to debug.
+    strcpy_s(logPath, exePath);
+    strcat_s(logPath, "crashdump.dmp");
+
+    hFile = CreateFileA(logPath, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+    exceptionInfo.ThreadId = GetCurrentThreadId();
+    exceptionInfo.ExceptionPointers = pExceptionInfo;
+    exceptionInfo.ClientPointers = TRUE;
+
+    BOOL success = MiniDumpWriteDump(
+        GetCurrentProcess(),
+        GetCurrentProcessId(),
+        hFile,
+        MiniDumpNormal, //MiniDumpWithFullMemory,
+        &exceptionInfo,
+        nullptr,
+        nullptr
+    );
+    CloseHandle(hFile);
 
     Sleep(100);
     return EXCEPTION_EXECUTE_HANDLER;
