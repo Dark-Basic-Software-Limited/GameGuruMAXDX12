@@ -3466,6 +3466,8 @@ DARKSDK bool GrabImageCore(int iID, int iX1, int iY1, int iX2, int iY2, int iTex
 	{
 		return false;
 	}
+	if (!m_pD3D)
+		return false;
 
 	// Size of grab
 	GGFORMAT backFormat;
@@ -3541,14 +3543,22 @@ DARKSDK bool GrabImageCore(int iID, int iX1, int iY1, int iX2, int iY2, int iTex
 			else
 			{
 				pNewCorrectBBTexture = ConvertBackBufferToNewFormat(pBackBuffer, g_DefaultGGFORMAT);
-				D3D11_BOX rc = { iX1, iY1, 0, (LONG)(iX1 + iImageWidth), (LONG)(iY1 + iImageHeight), 1 };
-				pNewCroppedTexture = CreateCroppedTexture(pNewCorrectBBTexture, rc);
-				// free corrected backbuffer we created to do the copy
-				SAFE_RELEASE(pNewCorrectBBTexture);
+				if (pNewCorrectBBTexture)
+				{
+					D3D11_BOX rc = { iX1, iY1, 0, (LONG)(iX1 + iImageWidth), (LONG)(iY1 + iImageHeight), 1 };
+					pNewCroppedTexture = CreateCroppedTexture(pNewCorrectBBTexture, rc);
+					// free corrected backbuffer we created to do the copy
+					SAFE_RELEASE(pNewCorrectBBTexture);
+				}
 
 			}
+			if (!pNewCroppedTexture)
+			{
+				return(false);
+			}
 			// create image to store cropped texture
-			if (m_imgptr == NULL) {
+			if (m_imgptr == NULL)
+			{
 				MakeFormat(iID, iImageWidth, iImageHeight, g_DefaultGGFORMAT, 0);
 			}
 			if (UpdatePtrImage(iID))
@@ -3563,7 +3573,11 @@ DARKSDK bool GrabImageCore(int iID, int iX1, int iY1, int iX2, int iY2, int iTex
 
 				m_imgptr->lpTextureView = NULL;
 				CreateShaderResourceViewFor(m_imgptr, 0, g_DefaultGGFORMAT);
-
+				if (!m_imgptr->lpTextureView || !m_imgptr->lpTexture)
+				{
+					RemoveImage(iID);
+					return false;
+				}
 				
 				// get desc of image
 				GGSURFACE_DESC srcddsd;
