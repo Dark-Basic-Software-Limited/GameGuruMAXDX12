@@ -532,6 +532,10 @@ extern std::vector<std::function<void()>> readoutCallbacks;
 extern int g_iAbortedAsEntityIsGroupFileModeStubOnly;
 extern int g_iAbortedAsEntityIsGroupCreate;
 
+extern bool bPreviewWPE;
+extern uint32_t PreviewWPERoot;
+
+
 bool bDigAHoleToHWND = false;
 bool g_bSelectedMapImageTypeSpecialHelp = false;
 bool bSortProjects = true;
@@ -25401,6 +25405,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 		if (fpe_current_loaded_script != item_current_type_selection)
 		{
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+				bPreviewWPE = false;
+			}
+
 			//Load in lua and check for custom properties.
 			cstr script_name_append = "";
 			if (item_current_type_selection < g_scriptpeople_item_count - 1)
@@ -27118,6 +27132,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			speech_ids[speech_loop] = -1;
 		if (fpe_current_loaded_script != fpe_current_selected_script)
 		{
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+				bPreviewWPE = false;
+			}
+
 			//Load in lua and check for custom properties.
 			cstr script_name = "";
 			//if (strnicmp(edit_grideleprof->aimain_s.Get(), "projectbank", 11) != NULL) 
@@ -27513,6 +27537,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 			if (fpe_current_loaded_script != item_current_type_selection)
 			{
+				if (PreviewWPERoot != 0)
+				{
+					//PE: Delete effects.
+					WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+					void DeleteEmitterEffects(uint32_t root);
+					DeleteEmitterEffects(PreviewWPERoot);
+					PreviewWPERoot = 0;
+					bPreviewWPE = false;
+				}
+
 				//Load in lua and check for custom properties.
 				cstr script_name_appendage = "";
 				if (item_current_type_selection < g_scriptobjects_item_count - 1) //PE: Need to check for custom
@@ -27726,6 +27760,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 					speech_ids[speech_loop] = -1;
 				if (fpe_current_loaded_script != fpe_current_selected_script) 
 				{
+					if (PreviewWPERoot != 0)
+					{
+						//PE: Delete effects.
+						WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+						void DeleteEmitterEffects(uint32_t root);
+						DeleteEmitterEffects(PreviewWPERoot);
+						PreviewWPERoot = 0;
+						bPreviewWPE = false;
+					}
+
 					//Load in lua and check for custom properties.
 					cstr script_name = "";
 					//if (strnicmp(edit_grideleprof->aimain_s.Get(), "projectbank", 11) != NULL) 
@@ -54754,5 +54798,38 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::Indent(-10);
 	}
 	return bVisualUpdated;
+}
+
+void RenderPreviewEmitter(void)
+{
+	static bool bInit = true;
+	if (PreviewWPERoot > 0)
+	{
+		float posx, posy, posz, posxa, posya, posza;
+		int GetActiveEditorEntityPos(float* x, float* y, float* z, float* xa, float* ya, float* za);
+		int iEntityIndex = GetActiveEditorEntityPos(&posx, &posy, &posz, &posxa, &posya, &posza);
+		static int iEntityIndexCurrent = -1;
+		if (!bInit && iEntityIndexCurrent != iEntityIndex && PreviewWPERoot != 0)
+		{
+			iEntityIndexCurrent = iEntityIndex;
+			//PE: Delete effects.
+			WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+			void DeleteEmitterEffects(uint32_t root);
+			DeleteEmitterEffects(PreviewWPERoot);
+			PreviewWPERoot = 0;
+			bPreviewWPE = false;
+		}
+		if (bInit)
+		{
+			iEntityIndexCurrent = iEntityIndex;
+			bInit = false;
+		}
+		if (iEntityIndex > 0 && PreviewWPERoot > 0)
+		{
+			extern float fPreviewYOffset;
+			bool WickedCall_ParticleEffectPositionRotation(uint32_t root, float fX, float fY, float fZ, float fXa, float fYa, float fZa);
+			WickedCall_ParticleEffectPositionRotation(PreviewWPERoot, posx, posy + fPreviewYOffset, posz, 0, posya, 0);
+		}
+	}
 }
 

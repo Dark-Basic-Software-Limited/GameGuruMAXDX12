@@ -1604,6 +1604,9 @@ bool commonexecutable_loop_for_game(void)
 		wiScene::GetCamera().SetDirty(true);
 	}
 
+	void RenderPreviewEmitter(void);
+	RenderPreviewEmitter();
+
 	if (iLaunchAfterSync == 201)
 	{
 		//As we set 201 launch testgame after we have a imgui frame, we need to set Scissors here.
@@ -1667,6 +1670,15 @@ bool commonexecutable_loop_for_game(void)
 		int iGridObj = g.ebeobjectbankoffset + 1000;
 		if (ObjectExist(iGridObj))
 			DeleteObject(iGridObj);
+		extern uint32_t PreviewWPERoot;
+		if (PreviewWPERoot != 0)
+		{
+			//PE: Delete effects.
+			void DeleteEmitterEffects(uint32_t root);
+			DeleteEmitterEffects(PreviewWPERoot);
+			PreviewWPERoot = 0;
+		}
+
 		bImGuiInTestGame = true;
 		g_bDisableQuitFlag = true;
 		extern bool	g_bDrawSpritesFirst;
@@ -2440,6 +2452,14 @@ void mapeditorexecutable_loop(void)
 				int iGridObj = g.ebeobjectbankoffset + 1000;
 				if (ObjectExist(iGridObj))
 					DeleteObject(iGridObj);
+				extern uint32_t PreviewWPERoot;
+				if (PreviewWPERoot != 0)
+				{
+					//PE: Delete effects.
+					void DeleteEmitterEffects(uint32_t root);
+					DeleteEmitterEffects(PreviewWPERoot);
+					PreviewWPERoot = 0;
+				}
 
 				bImGuiInTestGame = true;
 				bool bTestInVRMode = false;
@@ -2492,6 +2512,14 @@ void mapeditorexecutable_loop(void)
 
 		case 21: //Social VR.
 		{
+			extern uint32_t PreviewWPERoot;
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+			}
 			bImGuiInTestGame = true;
 			RunCode(0); //switch to backbuffer
 			editor_multiplayermode();
@@ -31908,6 +31936,50 @@ int GetActiveEditorObject( void )
 		}
 	}
 	return(iActiveObj);
+}
+int GetActiveEditorEntityPos(float *x, float *y, float *z, float* xa, float* ya, float* za)
+{
+	int iActiveObj = t.widget.activeObject;
+	int iEntityIndex = 0;
+	if (t.gridentityextractedindex > 0)
+	{
+		iEntityIndex = t.gridentityextractedindex;
+	}
+	else
+	{
+		iEntityIndex = t.widget.pickedEntityIndex;
+	}
+	if (iEntityIndex > 0 && iEntityIndex < t.entityelement.size())
+	{
+		if (x)
+		{
+			*x = t.entityelement[iEntityIndex].x;
+			*y = t.entityelement[iEntityIndex].y;
+			*z = t.entityelement[iEntityIndex].z;
+		}
+		if (xa)
+		{
+			*xa = t.entityelement[iEntityIndex].rx;
+			*ya = t.entityelement[iEntityIndex].ry;
+			*za = t.entityelement[iEntityIndex].rz;
+		}
+	}
+	return(iEntityIndex);
+}
+
+int GetActiveEditorEntity(void)
+{
+	int iActiveObj = t.widget.activeObject;
+	int iEntityIndex = 0;
+	if (t.gridentityextractedindex > 0)
+	{
+		iEntityIndex = t.gridentityextractedindex;
+	}
+	else
+	{
+		iEntityIndex = t.widget.pickedEntityIndex;
+	}
+	return(iEntityIndex);
 }
 
 void EmptyMessages(void)

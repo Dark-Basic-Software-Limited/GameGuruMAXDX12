@@ -67,6 +67,10 @@ bool bBlockImGuiUntilFurtherNotice = false;
 bool bImGuiInitDone = false;
 int ImGuiStatusBar_Size = 0;
 
+bool bPreviewWPE = false;
+uint32_t PreviewWPERoot = 0;
+float fPreviewYOffset = 0;
+
 preferences pref;
 bool g_bEnableAutoFlattenSystem = true;
 
@@ -7888,6 +7892,9 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 	extern int speech_ids[5];
 
 	int imageindexi = 0; // can have eight images indexed this way
+	bool bwpefile = false;
+	bool bwpeyoffet = false;
+
 	for (int i = 0; i < tmpeleprof->PropertiesVariable.iVariables; i++) 
 	{
 		bool speech = false;
@@ -8065,6 +8072,14 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 					}
 					else 
 					{
+						if (pestrcasestr(tmpeleprof->PropertiesVariable.Variable[i], "wpefile"))
+						{
+							if (FileExist(tmpeleprof->PropertiesVariable.VariableValue[i]))
+							{
+								//PE: Possible to preview.
+								bwpefile = true;
+							}
+						}
 						cstr tmpvalue = tmpeleprof->PropertiesVariable.VariableValue[i];
 						tmpvalue = imgui_setpropertyfile2(1, tmpvalue.Get(), "", "Select File", "..\\files\\");
 						if (tmpvalue != tmpeleprof->PropertiesVariable.VariableValue[i]) 
@@ -8091,6 +8106,51 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 								strcpy(tmpeleprof->PropertiesVariable.VariableValue[i], tmpvalue.Get());
 							}
 							bUpdateMainString = true;
+							if (PreviewWPERoot != 0 && bPreviewWPE)
+							{
+								//PE: Delete effect and reload.
+								WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+								void DeleteEmitterEffects(uint32_t root);
+								DeleteEmitterEffects(PreviewWPERoot);
+								PreviewWPERoot = 0;
+								PreviewWPERoot = WickedCall_LoadWPE(tmpeleprof->PropertiesVariable.VariableValue[i]);
+								void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
+								WickedCall_PerformEmitterAction(1, PreviewWPERoot);
+								WickedCall_PerformEmitterAction(4, PreviewWPERoot);
+								WickedCall_PerformEmitterAction(5, PreviewWPERoot);
+							}
+						}
+						if (bwpefile)
+						{
+							ImGui::Separator();
+							if (ImGui::Checkbox("Preview", &bPreviewWPE))
+							{
+								if (PreviewWPERoot == 0 && bPreviewWPE)
+								{
+									//PE: Load effect.
+									//PE: Delete this preview before test game. and set bPreviewWPE = false
+									PreviewWPERoot = WickedCall_LoadWPE(tmpeleprof->PropertiesVariable.VariableValue[i]);
+									//iAction = 1 Burst all. 2 = Pause. - 3 = Resume. - 4 = Restart - 5 - visible - 6 = not visible. - 7 = pause emit - 8 = resume emit
+									void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
+									WickedCall_PerformEmitterAction(1, PreviewWPERoot);
+									WickedCall_PerformEmitterAction(4, PreviewWPERoot);
+									WickedCall_PerformEmitterAction(5, PreviewWPERoot);
+								}
+								if (PreviewWPERoot != 0 && !bPreviewWPE)
+								{
+									//PE: Delete effects.
+									WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+									void DeleteEmitterEffects(uint32_t root);
+									DeleteEmitterEffects(PreviewWPERoot);
+									PreviewWPERoot = 0;
+								}
+							}
+							ImGui::SameLine();
+							if (ImGui::Button("Burst##Burst", ImVec2(60, 0)))
+							{
+								WickedCall_PerformEmitterAction(1, PreviewWPERoot);
+							}
+							ImGui::Separator();
 						}
 					}
 				}
@@ -8633,11 +8693,23 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 						bUpdateMainString = true;
 					}
 				}
+				if (bwpefile)
+				{
+					if (pestrcasestr(tmpeleprof->PropertiesVariable.Variable[i], "offsety"))
+					{
+						bwpeyoffet = true;
+						fPreviewYOffset = tmpint;
+					}
+				}
+
 			}
 			ImGui::PopItemWidth();
 			ImGui::PopID();
 		}
 	}
+	
+	if(!bwpeyoffet)
+		fPreviewYOffset = 0;
 
 	//Update soundset4_s when we have changes.
 	if (bUpdateMainString) 
