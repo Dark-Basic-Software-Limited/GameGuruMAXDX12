@@ -4290,6 +4290,13 @@ void mapeditorexecutable_loop(void)
 
 			if (ImGui::BeginMenu("Tools"))
 			{
+				if (ImGui::MenuItem("Quest Editor"))
+				{
+					CloseAllOpenTools();
+					extern bool bQuestEditor_Window;
+					bQuestEditor_Window = true;
+				}
+
 				if (ImGui::MenuItem("Character Creator"))
 				{
 					CloseAllOpenTools();
@@ -7962,6 +7969,8 @@ void mapeditorexecutable_loop(void)
 									}
 								}
 
+								//PE: Quest setting not need anymore.
+								/*
 								// detect if this object is a quest holder
 								for (int n = 0; n < t.entityelement[iEntityIndex].eleprof.PropertiesVariable.iVariables; n++)
 								{
@@ -7976,6 +7985,7 @@ void mapeditorexecutable_loop(void)
 										break;
 									}
 								}
+								*/
 
 								// special color change when object is a collectable
 								bool bObjectIsACollectableAndReadOnlyName = false;
@@ -9543,6 +9553,7 @@ void mapeditorexecutable_loop(void)
 											if (stricmp(pLabel, "status") == NULL) iKnownLabel = 60;
 											if (stricmp(pLabel, "activate") == NULL) iKnownLabel = 61;
 											if (stricmp(pLabel, "quantity") == NULL) iKnownLabel = 62;
+											if (stricmp(pLabel, "endmap") == NULL) iKnownLabel = 63;
 										}
 										if (iKnownLabel >= 0)
 										{
@@ -9575,6 +9586,7 @@ void mapeditorexecutable_loop(void)
 												if (iKnownLabel == 60) pShowTop = "Enter the initial status of this quest when the game starts";
 												if (iKnownLabel == 61) pShowTop = "Enter the object to activate when this quest is completed";
 												if (iKnownLabel == 62) pShowTop = "Enter a quantity associated with this quest";
+												if (iKnownLabel == 63) pShowTop = "Enter the level name that this quest is active on";
 											}
 
 											// Attrib Label
@@ -11078,6 +11090,9 @@ void mapeditorexecutable_loop(void)
 
 			}
 		}
+
+		void ProcessQuestEditor(void);
+		ProcessQuestEditor();
 
 		#endif
 

@@ -8485,6 +8485,22 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 									bFoundMatch = true;
 								}
 							}
+
+							if (ImGui::StyleButton("Quest Editor", ImVec2(but_gadget_size, 0)))
+							{
+								void CloseAllOpenTools(bool bTerrainTools = true);
+								CloseAllOpenTools();
+								extern std::vector<collectionQuestType> g_collectionQuestList_backup;
+								g_collectionQuestList_backup.clear();
+								extern bool bQuestEditor_Window;
+								bQuestEditor_Window = true;
+							}
+							if (ImGui::IsItemHovered())
+							{
+								ImGui::SetTooltip("Open Quest Editor");
+							}
+							//PE: Now use "Quest Editor"
+							/*
 							LPSTR pCreateButtonLabel = "Create New Quest";
 							if (ImGui::StyleButton(pCreateButtonLabel, ImVec2(but_gadget_size, 0)))
 							{
@@ -8524,6 +8540,7 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 								else
 									ImGui::SetTooltip("Use the name of this object to add a new quest to the main quest list");
 							}
+							*/
 						}
 						else
 						{
