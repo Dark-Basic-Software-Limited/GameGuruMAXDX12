@@ -1520,7 +1520,7 @@ int back_iLastResolutionWidth = 0;
 int back_iLastResolutionHeight = 0;
 bool bFakeStandaloneTest = false;
 int iTriggerGrassTreeUpdate = 0;
-
+int iMaxZeroHeight = 0;
 bool commonexecutable_loop_for_game(void)
 {
 #ifdef OPTICK_ENABLE
@@ -1545,10 +1545,25 @@ bool commonexecutable_loop_for_game(void)
 		if (iTriggerGrassTreeUpdate == 5)
 		{
 			float height = 0;
-			if (!GGTerrain_GetHeight(CameraPositionX(), CameraPositionZ(), &height, 0, 0))
+			if (t.visuals.bEnableEmptyLevelMode)
 			{
-				//Height not available in this are ?.
-				iTriggerGrassTreeUpdate++;
+				//PE: Just give it 5 frame on empty levels.
+				if (iMaxZeroHeight++ < 6)
+				{
+					iTriggerGrassTreeUpdate++;
+				}
+				else
+				{
+					iMaxZeroHeight = 0;
+				}
+			}
+			else
+			{
+				if (!GGTerrain_GetHeight(CameraPositionX(), CameraPositionZ(), &height, 0, 0))
+				{
+					//Height not available in this are ?.
+					iTriggerGrassTreeUpdate++;
+				}
 			}
 		}
 		if (iTriggerGrassTreeUpdate == 1)
