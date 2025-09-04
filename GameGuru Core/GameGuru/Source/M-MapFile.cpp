@@ -2235,6 +2235,7 @@ void mapfile_collectfoldersandfiles (cstr levelpathfolder)
 
 	// we will much improve this with the new project system!!
 	addfoldertocollection("gamecore\\hands\\Animations");
+	addallinfoldertocollection("gamecore\\guns\\interactive", "gamecore\\guns\\interactive");
 
 	//  Stage 1B - Style dependent files
 	titles_getstyle ();
@@ -2276,6 +2277,23 @@ void mapfile_collectfoldersandfiles (cstr levelpathfolder)
 	addtocollection(t.visuals.sAmbientMusicTrack.Get());
 	addtocollection(t.visuals.sCombatMusicTrack.Get());
 	t.levelindex = 1;
+
+	//PE: Need adding images from g_collectionQuestList
+	for (int n = 0; n < g_collectionQuestList.size(); n++)
+	{
+		if (g_collectionQuestList[n].collectionFields.size() > 2)
+		{
+			LPSTR pImageFile = g_collectionQuestList[n].collectionFields[2].Get();
+			if (strlen(pImageFile) > 0)
+			{
+				if (stricmp(pImageFile, "default") != NULL && stricmp(pImageFile, "image") != NULL)
+				{
+					addtocollection(pImageFile);
+				}
+			}
+
+		}
+	}
 
 	// Add images from collection list (can be stored in thumbbank)
 	for (int n = 0; n < g_collectionList.size(); n++)
