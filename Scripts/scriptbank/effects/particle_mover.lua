@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Particle Mover v10 by Necrym59
+-- Particle Mover v11 by Necrym59
 -- DESCRIPTION: Allows a particle to be attached to a moving object.
 -- DESCRIPTION: Attach to an object. Set Always Active ON.
 -- DESCRIPTION: [PARTICLE_NAME$=""] particle name
@@ -13,14 +13,14 @@ local U = require "scriptbank\\utillib"
 local lower = string.lower
 local rad = math.rad
 local partmover = {}
-local particle_name = {}	
+local particle_name = {}
 local object_name = {}
 local adjust_x_offset = {}
 local adjust_y_offset = {}
 local adjust_z_offset = {}
 local hide_object = {}
 
-local particle_number = {}	
+local particle_number = {}
 local object_number = {}
 
 local status = {}
@@ -72,33 +72,33 @@ function particle_mover_main(e)
 				if a ~= nil and g_Entity[a] ~= nil then
 					if string.lower(GetEntityName(a)) == partmover[e].object_name then
 						partmover[e].object_number = a
-						attachTo[e] = partmover[e].object_number					
+						attachTo[e] = partmover[e].object_number
 						if partmover[e].hide_object == 1 then Hide(a) end
 						break
 					end
 				end
 			end
 		end
-		if partmover[e].particle_name > "" and partmover[e].particle_number == 0then
+		if partmover[e].particle_name > "" and partmover[e].particle_number == 0 then
 			for p = 1, g_EntityElementMax do
 				if p ~= nil and g_Entity[p] ~= nil then
 					if string.lower(GetEntityName(p)) == partmover[e].particle_name then
-						partmover[e].particle_number = p					
-						tpositionx[e], tpositiony[e], tpositionz[e] = GetEntityPosAng(partmover[e].particle_number)					
-						partattached[e] = 1	
+						partmover[e].particle_number = p
+						tpositionx[e], tpositiony[e], tpositionz[e] = GetEntityPosAng(partmover[e].particle_number)
+						partattached[e] = 1
 						break
 					end
 				end
-			end		
+			end
 		end
 		SetActivated(partmover[e].object_number,1)
 		if attachTo[e] == -1 then return end
 		status[e] = "endinit"
 	end
-	
+
 	if partattached[e] == 1 and g_Entity[partmover[e].object_number]['activated'] == 1 then
 		local x,y,z,Ax,Ay,Az = GetEntityPosAng(partmover[e].object_number)
-		local ox,oy,oz = U.Rotate3D(x,y,z,rad(Ax),rad(Ay),rad(Az))	
+		local ox,oy,oz = U.Rotate3D(x,y,z,rad(Ax),rad(Ay),rad(Az))
 		--Set Particle Position
 		ResetPosition(partmover[e].particle_number, x+offsetx[e]+partmover[e].adjust_x_offset, y+offsety[e]+partmover[e].adjust_y_offset, z+offsetz[e]+partmover[e].adjust_z_offset)
 		ResetRotation(partmover[e].particle_number,Ax,Ay+oy,Az)
@@ -108,7 +108,7 @@ function particle_mover_main(e)
 	else
 		Hide(partmover[e].particle_number)
 	end
-	
+
 	if g_Entity[attachTo[e]]['health'] <= 0 then
 		EffectStop(partmover[e].particle_number)
 		Hide(partmover[e].particle_number)
