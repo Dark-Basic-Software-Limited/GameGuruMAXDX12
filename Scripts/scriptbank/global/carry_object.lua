@@ -1,4 +1,4 @@
--- Carry Object V41 by Necrym59 and Lee
+-- Carry Object V42 by Necrym59 and Lee
 -- DESCRIPTION: A global behaviour for object handling.
 -- DESCRIPTION: Weight: Must be between 1-99. 0=No Pickup.
 -- DESCRIPTION: [PICKUP_TEXT$="E or LMB to carry, RMB to carry/throw"]
@@ -135,9 +135,6 @@ function carry_object_init(e)
 	last_gun[e] = g_PlayerGunName
 	colobj[e] = 0
 	surface[e] = 0
-	terrain[e] = 0
-	terraincheck[e] = 0
-	surfacecheck[e] = 0
 	weightcheck[e] = 0
 	objlookedat[e] = 0
 	checktimer[e] = math.huge
