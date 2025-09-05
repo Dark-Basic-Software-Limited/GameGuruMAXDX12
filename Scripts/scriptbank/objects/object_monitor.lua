@@ -38,7 +38,6 @@ function object_monitor_properties(e, object_name, destroyed_action, entity_name
 	object_monitor[e].object_name = lower(object_name) or ""
 	object_monitor[e].destroyed_action = destroyed_action
 	object_monitor[e].entity_name = lower(entity_name) or ""
-	object_monitor[e].display_health = display_health
 	object_monitor[e].monitor_active = monitor_active or 1
 	object_monitor[e].action_delay = action_delay or 0	
 	object_monitor[e].user_global = user_global
@@ -51,7 +50,6 @@ function object_monitor_init(e)
 	object_monitor[e].object_name = ""
 	object_monitor[e].destroyed_action = 1
 	object_monitor[e].entity_name = ""	
-	object_monitor[e].display_health = 2
 	object_monitor[e].monitor_active = 1
 	object_monitor[e].action_delay = 3		
 	object_monitor[e].user_global = ""
