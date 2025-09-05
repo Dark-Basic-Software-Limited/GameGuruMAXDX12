@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Turret v6 by Necrym59
+-- Turret v7 by Necrym59
 -- DESCRIPTION: Allows the use of gun-turret mode using a designated weapon.
 -- DESCRIPTION: Attach to an object used as the gun turret placeholder.
 -- DESCRIPTION: [USE_RANGE=80(1,100)]
@@ -61,7 +61,7 @@ end
 
 function turret_init(e)
 	turret[e] = {}
-	turret[e].use_range = use_range
+	turret[e].use_range = 80
 	turret[e].prompt_text = "E to Use, Q to Release"
 	turret[e].prompt_display = 1
 	turret[e].horizontal_view_limit = 45
