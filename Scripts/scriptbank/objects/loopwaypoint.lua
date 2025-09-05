@@ -1,3 +1,4 @@
+-- Loopwaypoint v2
 -- DESCRIPTION: Makes the object loop around the nearest waypoint path and loops <Sound0>. The volume is based on the player’s maximum distance [RANGE=1000(100,3000)] to the object, between [MinVolume=0(0,99)] and [MaxVolume=100(1,100)].
 
 g_follow_waypoint_mode = {}
@@ -41,7 +42,7 @@ function loopwaypoint_main(e)
  end
  LoopNon3DSound(e,0)
  if SndVol < nminvol then 
-		SndVol = nminv
+		SndVol = nminvol
 	elseif SndVol > nmaxvol then 
 		SndVol = nmaxvol
 	end		
