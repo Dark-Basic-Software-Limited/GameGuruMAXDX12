@@ -1,7 +1,7 @@
--- Quest Poster v18 by Necrym59 and Lee
+-- Quest Poster v19 by Necrym59 and Lee
 -- DESCRIPTION: When player is within [RANGE=100] distance, show [QUEST_PROMPT$="Press E to view this quest"] and 
 -- DESCRIPTION: when E is pressed, player will be shown the [@@QUEST_SCREEN$="HUD Screen 8"(0=hudscreenlist)].
--- DESCRIPTION: Select the [@QuestChoice=1(0=QuestList)]
+-- DESCRIPTION: Select the [@@QuestChoice=1(0=QuestList)]
 -- DESCRIPTION: [@SPAWN_QUEST_OBJECT=1(1=On,2=Off)] when quest accepted.
 -- DESCRIPTION: [@PROMPT_DISPLAY=1(1=Local,2=Screen)]
 -- DESCRIPTION: [@ITEM_HIGHLIGHT=0(0=None,1=Shape,2=Outline,3=Icon)]
@@ -103,28 +103,28 @@ function quest_poster_main(e)
 	if g_quest_poster[e]['questtitle'] == "" then
 		local totalquests = GetCollectionQuestQuantity()
 		if totalquests ~= nil then
-			local i = tonumber(g_quest_poster[e]['questchoice'])-1
-			if i ~= nil then
-				if i > 0 and i <= totalquests then
-					g_quest_poster[e]['questtitle'] = GetCollectionQuestAttribute(i,"title")
-					g_quest_poster[e]['questtype'] = GetCollectionQuestAttribute(i,"type")
-					g_quest_poster[e]['questobject'] = GetCollectionQuestAttribute(i,"object")
-					g_quest_poster[e]['questreceiver'] = GetCollectionQuestAttribute(i,"receiver")
-					g_quest_poster[e]['questlevel'] = GetCollectionQuestAttribute(i,"level")
-					g_quest_poster[e]['questpoints'] = GetCollectionQuestAttribute(i,"points")
-					g_quest_poster[e]['questvalue'] = GetCollectionQuestAttribute(i,"value")
-					g_quest_poster[e]['questactivate'] = GetCollectionQuestAttribute(i,"activate")
-					g_quest_poster[e]['questquantity'] = tonumber(GetCollectionQuestAttribute(i,"quantity"))
+			for i = 1, totalquests do
+				if i > 0 and i <= totalquests then					
+					if GetCollectionQuestAttribute(i,"title") == g_quest_poster[e]['questchoice'] then
+						g_quest_poster[e]['questtitle'] = GetCollectionQuestAttribute(i,"title")
+						g_quest_poster[e]['questtype'] = GetCollectionQuestAttribute(i,"type")
+						g_quest_poster[e]['questobject'] = GetCollectionQuestAttribute(i,"object")
+						g_quest_poster[e]['questreceiver'] = GetCollectionQuestAttribute(i,"receiver")
+						g_quest_poster[e]['questlevel'] = GetCollectionQuestAttribute(i,"level")
+						g_quest_poster[e]['questpoints'] = GetCollectionQuestAttribute(i,"points")
+						g_quest_poster[e]['questvalue'] = GetCollectionQuestAttribute(i,"value")
+						g_quest_poster[e]['questactivate'] = GetCollectionQuestAttribute(i,"activate")
+						g_quest_poster[e]['questquantity'] = tonumber(GetCollectionQuestAttribute(i,"quantity"))
+					end
 				end
-			else
-				PromptDuration(g_quest_poster[e]['questchoice'],5000)
 			end
-		end
+		end	
 	end
 	if g_UserGlobalQuestTitleActive == nil then g_UserGlobalQuestTitleActive = "" end
 	if g_UserGlobalQuestTitleActive ~= nil then
 		if g_quest_poster[e]['queststarted'] == 0 then
 			Show(e)
+			CollisionOn(e)
 			for tquestindex = 1, hud0_quest_qty, 1 do
 				if GetCollectionQuestAttribute(tquestindex,"title") == g_quest_poster[e]['questtitle'] then
 					if hud0_quest_status[tquestindex] == "active" then
@@ -158,6 +158,7 @@ function quest_poster_main(e)
 			end
 		else
 			Hide(e)
+			CollisionOff(e)
 			for tquestindex = 1, hud0_quest_qty, 1 do
 				if GetCollectionQuestAttribute(tquestindex,"title") == g_quest_poster[e]['questtitle'] then
 					if hud0_quest_status[tquestindex] == "inactive" then
