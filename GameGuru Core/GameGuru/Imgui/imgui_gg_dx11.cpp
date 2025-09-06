@@ -8449,7 +8449,31 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 					}
 					if (bIsAQuestList == true)
 					{
-						iQuestIndex = atoi(tmpeleprof->PropertiesVariable.VariableValue[i]);
+						if (bAsString)
+						{
+							//PE: Locate index.
+							for (int v = 0; v < g_collectionQuestList.size(); v++)
+							{
+								if (stricmp(g_collectionQuestList[v].collectionFields[0].Get(), tmpeleprof->PropertiesVariable.VariableValue[i]) == 0)
+								{
+									iQuestIndex = v + 2;
+									break;
+								}
+							}
+							if (iQuestIndex == 0)
+							{
+								//PE: Default to "none"
+								if (pestrcasestr(tmpeleprof->aimain_s.Get(), "quest_poster") ||
+									pestrcasestr(tmpeleprof->aimain_s.Get(), "quest_giver"))
+								{
+									iQuestIndex = 1;
+								}
+							}
+						}
+						else
+						{
+							iQuestIndex = atoi(tmpeleprof->PropertiesVariable.VariableValue[i]);
+						}
 						if (bUpdateMainString == true)
 						{
 							if (iQuestIndex == 1)
@@ -8544,21 +8568,46 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 						}
 						else
 						{
+							if (ImGui::StyleButton("Quest Editor", ImVec2(but_gadget_size, 0)))
+							{
+								extern int current_quest_selection; //iQuestIndex - 1
+								int iIndex = iQuestIndex - 2;
+								if (iIndex >= 0 && iIndex < g_collectionQuestList.size())
+									current_quest_selection = iIndex;
+
+								void CloseAllOpenTools(bool bTerrainTools = true);
+								CloseAllOpenTools();
+								extern std::vector<collectionQuestType> g_collectionQuestList_backup;
+								g_collectionQuestList_backup.clear();
+								extern bool bQuestEditor_Window;
+								bQuestEditor_Window = true;
+							}
+							if (ImGui::IsItemHovered())
+							{
+								ImGui::SetTooltip("Open Quest Editor");
+							}
+
+							ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+
 							LPSTR pCreateButtonLabel = "Delete Quest";
 							if (ImGui::StyleButton(pCreateButtonLabel, ImVec2(but_gadget_size, 0)))
 							{
-								// create new quest list without the one deleted
-								std::vector<collectionQuestType> newCollectionQuestList;
-								for (int q = 0; q < g_collectionQuestList.size(); q++)
+								int iAction = askBoxCancel("This will delete the current selected quest. Are you sure ?", "Quest Confirmation"); //1==Yes 2=Cancel 0=No
+								if (iAction == 1)
 								{
-									if (q != iQuestIndex-2)
+									// create new quest list without the one deleted
+									std::vector<collectionQuestType> newCollectionQuestList;
+									for (int q = 0; q < g_collectionQuestList.size(); q++)
 									{
-										newCollectionQuestList.push_back(g_collectionQuestList[q]);
+										if (q != iQuestIndex - 2)
+										{
+											newCollectionQuestList.push_back(g_collectionQuestList[q]);
+										}
 									}
+									g_collectionQuestList = newCollectionQuestList;
+									sprintf(tmpeleprof->PropertiesVariable.VariableValue[i], "%d", 1);
+									bDoARefresh = true;
 								}
-								g_collectionQuestList = newCollectionQuestList;
-								sprintf(tmpeleprof->PropertiesVariable.VariableValue[i], "%d", 1);
-								bDoARefresh = true;
 							}
 							if (ImGui::IsItemHovered()) ImGui::SetTooltip("Delete this quest from the main quest list of the game project");
 						}

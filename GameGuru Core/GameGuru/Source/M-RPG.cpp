@@ -1084,10 +1084,34 @@ int getNextUniqueQuestNumber()
 }
 
 bool bLastQuestEditor_Window = false;
+bool bDelayedQuestEditor_Window = false;
+
 void ProcessQuestEditor(void)
 {
 	if (bLastQuestEditor_Window != bQuestEditor_Window)
 	{
+		if (bGotQuestChanges)
+		{
+			if (current_quest_selection > 0 && current_quest_selection < g_collectionQuestList_backup.size())
+			{
+				int iAction = askBoxCancel("You have unsaved changes, save now ?", "Quest Editor Confirmation"); //1==Yes 2=Cancel 0=No
+				if (iAction == 1)
+				{
+					int iCollectionItemIndex = current_quest_selection;
+
+					g_collectionQuestList[iCollectionItemIndex] = g_collectionQuestList_backup[iCollectionItemIndex];
+					save_rpg_system_quests(Storyboard.gamename);
+					extern int iTriggerMessageFrames;
+					extern char cSmallTriggerMessage[MAX_PATH];
+					extern bool bTriggerSmallMessage;
+					sprintf(cSmallTriggerMessage, "Quest has been saved!");
+					iTriggerMessageFrames = 120;
+					bTriggerSmallMessage = true;
+					bGotQuestChanges = false;
+				}
+			}
+		}
+
 		//PE: Update DLUA quest settings when closing window.
 		extern int fpe_current_loaded_script;
 		fpe_current_loaded_script = -1;
@@ -1253,6 +1277,27 @@ void ProcessQuestEditor(void)
 			ImGui::PopStyleColor();
 			if (bret > 0)
 			{
+				if (bGotQuestChanges)
+				{
+					if (current_quest_selection > 0 && current_quest_selection < g_collectionQuestList_backup.size())
+					{
+						int iAction = askBoxCancel("You have unsaved changes, save now ?", "Quest Editor Confirmation"); //1==Yes 2=Cancel 0=No
+						if (iAction == 1)
+						{
+							int iCollectionItemIndex = current_quest_selection;
+
+							g_collectionQuestList[iCollectionItemIndex] = g_collectionQuestList_backup[iCollectionItemIndex];
+							save_rpg_system_quests(Storyboard.gamename);
+							extern int iTriggerMessageFrames;
+							extern char cSmallTriggerMessage[MAX_PATH];
+							extern bool bTriggerSmallMessage;
+							sprintf(cSmallTriggerMessage, "Quest has been saved!");
+							iTriggerMessageFrames = 120;
+							bTriggerSmallMessage = true;
+							bGotQuestChanges = false;
+						}
+					}
+				}
 				current_quest_selection = n;
 				g_collectionQuestList_backup = g_collectionQuestList; //PE: Copy everything so we work on a backup.
 				bGotQuestChanges = false;
