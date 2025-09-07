@@ -147,7 +147,7 @@ function code_switch_main(e)
 		if PlayerDist < g_codeswitch[e]['use_range'] and tEnt[e] == e and GetEntityVisibility(e) == 1 then		
 			if g_codeswitch[e]['switch_status'] == 1 and codepad[e] == "inactive" then  --Locked
 				if g_codeswitch[e]['prompt_display'] == 1 then PromptLocal(e,g_codeswitch[e]['prompt_text']) end
-				if g_codeswitch[e]['prompt_display'] == 2 then Prompt(g_codeswitch[e]['prompt_text'],3) end					
+				if g_codeswitch[e]['prompt_display'] == 2 then Prompt(g_codeswitch[e]['prompt_text']) end					
 				if g_KeyPressE == 1 then 
 					codepad[e] = "active"
 					PlaySound(e,0)
