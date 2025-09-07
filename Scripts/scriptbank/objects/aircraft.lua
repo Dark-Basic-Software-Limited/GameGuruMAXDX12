@@ -1,4 +1,4 @@
--- Aircraft v41 by Necrym59
+-- Aircraft v42 by Necrym59
 -- DESCRIPTION: Creates a controllable aircraft from an object.
 -- DESCRIPTION: Attach to an object. Set Physics On, Polygon Collision.
 -- DESCRIPTION: [@VEHICLE_TYPE=1(1=Plane,2=Helicopter,3=VTOL-Vehicle)]
@@ -349,7 +349,7 @@ function aircraft_main(e)
 						if deathfall[e] == 0 then fposy = fposy+25 end
 						fposz=fposz+200
 						SetFreezePosition(fposx,fposy,fposz)
-						TransportToFreezePositionOnly(fposx,fposy,fposz)
+						TransportToFreezePositionOnly()
 						SetCameraOverride(0)
 						DeactivateMouse()
 						RemovePlayerWeapon(9)
