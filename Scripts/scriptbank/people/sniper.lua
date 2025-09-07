@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Sniper v6 by Necrym59
+-- Sniper v9 by Necrym59
 -- DESCRIPTION: Creates a sniper character that will attack player when within range
 -- DESCRIPTION: Attach to a character.
 -- DESCRIPTION: [SNIPER_RANGE=2000(0,2000)]
@@ -46,7 +46,6 @@
 
 function sniper_properties(e, sniper_range, sniper_delay, hit_damage, hit_chance, idle_animation, aim_animation, shoot_animation, flinch_animation)
 	sniper[e] = g_Entity[e]
-	sniper[e].sniper_mode = sniper_mode
 	sniper[e].sniper_range = sniper_range
 	sniper[e].sniper_delay = sniper_delay
 	sniper[e].hit_damage = hit_damage
