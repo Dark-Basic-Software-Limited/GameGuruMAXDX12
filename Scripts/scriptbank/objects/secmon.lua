@@ -279,11 +279,11 @@ function secmon_main(e)
 		if secmon.camera_target_no > 0 then
 			local dims = P.GetObjectDimensions(g_Entity[secmon.camera_target_no]['obj'])
 			local midpoint = dims.h/2
-			if secmon.monitor_mode == 1 then PointCamera(0, GetEntityPositionX(secmon.camera_target_no), GetEntityPositionY(secmon.camera_target_no)+dims.h/2, GetEntityPositionZ(secmon.camera_target_no)) end
+			if secmon.monitor_mode == 1 then PointCamera(0, GetEntityPositionX(secmon.camera_target_no), GetEntityPositionY(secmon.camera_target_no)+midpoint, GetEntityPositionZ(secmon.camera_target_no)) end
 			if secmon.monitor_mode == 2 then 
 				local x,y,z,Ax,Ay,Az = GetEntityPosAng(secmon.camera_number)
 				SetCameraPosition(0,x,y + secmon.camera_feed_y,z+secmon.camera_target_z)
-				PointCamera(0, GetEntityPositionX(secmon.camera_target_no), GetEntityPositionY(secmon.camera_target_no)+dims.h/2, GetEntityPositionZ(secmon.camera_target_no))
+				PointCamera(0, GetEntityPositionX(secmon.camera_target_no), GetEntityPositionY(secmon.camera_target_no)+midpoint, GetEntityPositionZ(secmon.camera_target_no))
 			end
 			Prompt("Observing Target  - " .. secmon.useage_text)
 		end
