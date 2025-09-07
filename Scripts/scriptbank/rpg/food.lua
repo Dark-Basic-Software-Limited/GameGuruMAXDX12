@@ -1,5 +1,5 @@
--- Food v16
--- DESCRIPTION: The object will give the player a food health boost or deduction if consumed.
+-- Food v17
+-- DESCRIPTION: The object will give the player a food health boost or deduction if consumed and can activate logic linked or IfUsed entities.
 -- DESCRIPTION: [PROMPT_TEXT$="E to consume"]
 -- DESCRIPTION: [PROMPT_IF_COLLECTABLE$="E to collect"]
 -- DESCRIPTION: [USEAGE_TEXT$="Food consumed"]
@@ -140,6 +140,7 @@ function food_main(e)
 	if use_item_now[e] == 1 then
 		PlaySound(e,0)
 		PerformLogicConnections(e)
+		ActivateIfUsed(e)
 		if food[e].effect == 1 then addquantity = 1 end
 		if food[e].effect == 2 then addquantity = 2 end
 		Destroy(e) -- can only destroy resources that are qty zero
