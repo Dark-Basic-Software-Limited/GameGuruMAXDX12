@@ -8005,11 +8005,14 @@ void mapeditorexecutable_loop(void)
 								// special color change when object is a collectable
 								bool bObjectIsACollectableAndReadOnlyName = false;
 								LPSTR pDescTooltip = t.strarr_s[204].Get();
-								if (t.entityelement[iEntityIndex].eleprof.iscollectable != 0 || iCollectionQuestIndex > 0 )
+								bool isProjectGlobal = t.entityelement[iEntityIndex].eleprof.isProjectGlobal;
+								if (t.entityelement[iEntityIndex].eleprof.iscollectable != 0 || iCollectionQuestIndex > 0 || isProjectGlobal)
 								{
 									bObjectIsACollectableAndReadOnlyName = true;
 									ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
-									if(iCollectionQuestIndex>0)
+									if (isProjectGlobal)
+										pDescTooltip = "This object has been set as a project global object";
+									else if(iCollectionQuestIndex>0)
 										pDescTooltip = "This object has been set as a quest giver";
 									else
 										pDescTooltip = "This object has been set as an item collectable";
@@ -13978,6 +13981,8 @@ void mapeditorexecutable_loop(void)
 											t.entid = t.gridentity;
 											entity_fillgrideleproffromprofile();
 											t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+											t.grideleprof.isProjectGlobal = false;
+
 											t.inputsys.dragoffsetx_f = 0;
 											t.inputsys.dragoffsety_f = 0;
 											fHitPointX = 0;
@@ -14073,6 +14078,8 @@ void mapeditorexecutable_loop(void)
 												t.entid = t.gridentity;
 												entity_fillgrideleproffromprofile();
 												t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+												t.grideleprof.isProjectGlobal = false;
+
 												t.inputsys.dragoffsetx_f = 0;
 												t.inputsys.dragoffsety_f = 0;
 												fHitPointX = 0;
@@ -14328,6 +14335,8 @@ void mapeditorexecutable_loop(void)
 					//Make sure we use a fresh t.grideleprof
 					entity_fillgrideleproffromprofile();
 					t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+					t.grideleprof.isProjectGlobal = false;
+
 					editor_refresheditmarkers();
 
 					// Show elements when placing a new one down, prevents half being hidden and half not.
@@ -23178,6 +23187,8 @@ void editor_constructionselection ( void )
 					t.sentid = t.entid; t.entid = t.gridentity;
 					entity_fillgrideleproffromprofile();
 					t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+					t.grideleprof.isProjectGlobal = false;
+
 					t.entid = t.sentid;
 				}
 				t.grideleproflastname_s=t.grideleprof.name_s;

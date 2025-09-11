@@ -28715,6 +28715,108 @@ void DisplayFPEGeneral(bool readonly, int entid, entityeleproftype *edit_gridele
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("If set the collectable is a resource and can be merged with similar objects");
 			ImGui::Indent(-10);
 		}
+
+
+		if(elementID > 0 && entid > 0 && entid < t.entityprofile.size() && elementID < t.entityelement.size() && t.entityprofile[entid].isweapon_s.Len() <= 0 && strlen(pref.cLastUsedStoryboardProject) > 0)
+		{
+			int iEntityIndex = elementID;
+			int iMasterID = entid;
+			int iCollectionItemIndex = -1;
+			bool bHaveProjectGlobalObject = false;
+			for (int n = 0; n < g_collectionList.size(); n++)
+			{
+				if (g_collectionList[n].collectionFields.size() > 0)
+				{
+					//t.entityelement[e].eleprof.name_s.Get()
+					if (g_collectionList[n].collectionFields[0] == t.entityelement[elementID].eleprof.name_s)
+					{
+						iCollectionItemIndex = n;
+						bHaveProjectGlobalObject = true;
+						break;
+					}
+				}
+			}
+
+			bool g_bChangedGameCollectionList = false;
+			ImGui::Indent(10);
+			bool bProjectWide = edit_grideleprof->isProjectGlobal;
+			if (ImGui::Checkbox("Is Project Global?", &bProjectWide))
+			{
+				if (bProjectWide == true)
+				{
+					edit_grideleprof->isProjectGlobal = 1;
+					{
+						// create an item entry
+						collectionItemType item;
+						fill_rpg_item_defaults(&item, iMasterID, iEntityIndex);
+
+						//PE: Check if already added.
+						bool bNewItemIsUnqiue = true;
+						for (int n = 0; n < g_collectionList.size(); n++)
+						{
+							if (item.collectionFields.size() > 0)
+							{
+								if (g_collectionList[n].collectionFields.size() > 0)
+								{
+									//t.entityelement[e].eleprof.name_s.Get()
+									if (g_collectionList[n].collectionFields[0] == item.collectionFields[0])
+									{
+										bNewItemIsUnqiue = false;
+										break;
+									}
+								}
+							}
+						}
+						if (bNewItemIsUnqiue == true)
+						{
+							g_collectionList.push_back(item);
+							g_bChangedGameCollectionList = true;
+						}
+
+					}
+				}
+				else
+				{
+					edit_grideleprof->isProjectGlobal = 0;
+				}
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("If set this object will be available on all levels, but must be controlled by Lua");
+
+			if (bHaveProjectGlobalObject && iCollectionItemIndex >= 0)
+			{
+				//PE: Delete Project Global Object
+				float but_gadget_size = ImGui::GetFontSize() * 12.0;
+				float w = ImGui::GetWindowContentRegionWidth() - 10.0;
+				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+				LPSTR pCreateButtonLabel = "Delete Project Global Object";
+				if (ImGui::StyleButton(pCreateButtonLabel, ImVec2(but_gadget_size, 0)))
+				{
+					std::vector<collectionItemType> newCollectionList;
+					for (int ci = 0; ci < g_collectionList.size(); ci++)
+					{
+						if (ci != iCollectionItemIndex)
+						{
+							newCollectionList.push_back(g_collectionList[ci]);
+						}
+					}
+					g_collectionList = newCollectionList;
+					g_bChangedGameCollectionList = true;
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Delete this project global object item from the main collection list of the game project");
+			}
+			// save any changes to game collection list 
+			if (g_bChangedGameCollectionList == true)
+			{
+				// go through all object parents to ensure
+				refresh_rpg_parents_of_items();
+
+				// save collection item list out
+				save_rpg_system(pref.cLastUsedStoryboardProject, true);
+				g_bChangedGameCollectionList = false;
+			}
+
+			ImGui::Indent(-10);
+		}
 	}
 	else
 	{
