@@ -32038,8 +32038,10 @@ void MouseLeftDragXZPanning(void)
 		static ImVec2 vStartPos = { 0,0 };
 		static bool bRestoreMouseAfterXZPan = false;
 		bool bOkayToGo = false;
+		static bool bOverLockedObject = false;
 		if (bPanningActive == true) bOkayToGo = true;
 		if (t.onedrag == 0 && bPanningActive == false && pref.iDragCameraMovement && t.ebe.on == 0 && t.inputsys.xmouse != 500000 && t.grideditselect == 5 && t.gridentity == 0 && t.widget.activeObject == 0 && t.inputsys.keyshift == 0 && t.inputsys.keycontrol == 0 && bDotObjectDragging==false ) bOkayToGo = true;
+		if(bOverLockedObject) bOkayToGo = false;
 		if (ImGui::IsMouseDown(0) && bOkayToGo == true)
 		{
 			//PE: Give priority to object selection
@@ -32057,48 +32059,60 @@ void MouseLeftDragXZPanning(void)
 			static float fTerrainLastHitX = 0.0f;
 			static float fTerrainLastHitZ = 0.0f;
 			float fTerrainHitX, fTerrainHitY, fTerrainHitZ;
+			//PE: Bug fix , if locked object is under cursor terrain pan is activated.
+			bool bLockedObject = false;
 			if (WickedCall_GetPick(&fTerrainHitX, &fTerrainHitY, &fTerrainHitZ, NULL, NULL, NULL, NULL, GGRENDERLAYERS_NORMAL | GGRENDERLAYERS_TERRAIN) == true)
 			{
-				if (bPanningActive==false)
+				if (g_hovered_pobject != NULL)
 				{
-					bPanningActive = true;
-					bDragCameraActive = true;
-					fTerrainLastHitX = fTerrainHitX;
-					fTerrainLastHitZ = fTerrainHitZ;
-					if (bRestoreMouseAfterXZPan == false && ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow)
-					{
-						bRestoreMouseAfterXZPan = true;
-						ImGui::SetMouseCursor(ImGuiMouseCursor_Pan);
-					}
+					bLockedObject = true;
+					bOverLockedObject = true;
+					bRestoreMouseAfterXZPan = false;
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 				}
-				float fDifferenceX = fTerrainHitX - fTerrainLastHitX;
-				float fDifferenceZ = fTerrainHitZ - fTerrainLastHitZ;
-				//LB: prevent moving TOO fast such as grabbing terrain in extreme distance and shifting
-				if (fabs(fDifferenceX) + fabs(fDifferenceZ) > 100.0f)
+				if (!bLockedObject)
 				{
-					float fDist = sqrt((fabs(fDifferenceX)*fabs(fDifferenceX)) + (fabs(fDifferenceZ)*fabs(fDifferenceZ)));
-					fDifferenceX = (fDifferenceX / fabs(fDist)) * 100.0f;
-					fDifferenceZ = (fDifferenceZ / fabs(fDist)) * 100.0f;
-				}
-				fDifferenceX *= 1.8; //Move a bit faster.
-				fDifferenceZ *= 1.8; //Move a bit faster.
-
-				//PE: If we move in-out of water we can get some huge differences.
-				if (fabs(fDifferenceX) + fabs(fDifferenceZ) < 6000.0f)
-				{
-					if (fabs(fDifferenceX) + fabs(fDifferenceZ) != 0.0f)
+					if (bPanningActive == false)
 					{
-						bPanningActive = false;
-						// LB: also need to close this down or we end up locked in constant drag
-						bDragCameraActive = false;
-						if (bRestoreMouseAfterXZPan == true)
+						bPanningActive = true;
+						bDragCameraActive = true;
+						fTerrainLastHitX = fTerrainHitX;
+						fTerrainLastHitZ = fTerrainHitZ;
+						if (bRestoreMouseAfterXZPan == false && ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow)
 						{
-							bRestoreMouseAfterXZPan = false;
-							ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+							bRestoreMouseAfterXZPan = true;
+							ImGui::SetMouseCursor(ImGuiMouseCursor_Pan);
 						}
 					}
-					t.cx_f = t.editorfreeflight.c.x_f = (t.editorfreeflight.c.x_f - fDifferenceX);
-					t.cy_f = t.editorfreeflight.c.z_f = (t.editorfreeflight.c.z_f - fDifferenceZ);
+					float fDifferenceX = fTerrainHitX - fTerrainLastHitX;
+					float fDifferenceZ = fTerrainHitZ - fTerrainLastHitZ;
+					//LB: prevent moving TOO fast such as grabbing terrain in extreme distance and shifting
+					if (fabs(fDifferenceX) + fabs(fDifferenceZ) > 100.0f)
+					{
+						float fDist = sqrt((fabs(fDifferenceX) * fabs(fDifferenceX)) + (fabs(fDifferenceZ) * fabs(fDifferenceZ)));
+						fDifferenceX = (fDifferenceX / fabs(fDist)) * 100.0f;
+						fDifferenceZ = (fDifferenceZ / fabs(fDist)) * 100.0f;
+					}
+					fDifferenceX *= 1.8; //Move a bit faster.
+					fDifferenceZ *= 1.8; //Move a bit faster.
+
+					//PE: If we move in-out of water we can get some huge differences.
+					if (fabs(fDifferenceX) + fabs(fDifferenceZ) < 6000.0f)
+					{
+						if (fabs(fDifferenceX) + fabs(fDifferenceZ) != 0.0f)
+						{
+							bPanningActive = false;
+							// LB: also need to close this down or we end up locked in constant drag
+							bDragCameraActive = false;
+							if (bRestoreMouseAfterXZPan == true)
+							{
+								bRestoreMouseAfterXZPan = false;
+								ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+							}
+						}
+						t.cx_f = t.editorfreeflight.c.x_f = (t.editorfreeflight.c.x_f - fDifferenceX);
+						t.cy_f = t.editorfreeflight.c.z_f = (t.editorfreeflight.c.z_f - fDifferenceZ);
+					}
 				}
 			}
 			fTerrainLastHitX = fTerrainHitX;
@@ -32117,6 +32131,8 @@ void MouseLeftDragXZPanning(void)
 				}
 			}
 			iActivateCount = 0;
+			if (!ImGui::IsMouseDown(0))
+				bOverLockedObject = false;
 		}
 	}
 	else
