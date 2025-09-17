@@ -2907,8 +2907,9 @@ DARKSDK bool SaveImageCoreAsTexSurface(char* szFilename, LPGGSURFACE* pTexSurfac
 
 		// if not DDS saving, and format a BC3/DXT, change to DXGI_FORMAT_R8G8B8A8_UNORM
 #ifdef WICKEDENGINE
-// need to select allowable conversions
-		if (DestFormat != D3DX11_IFF_DDS && srcddsd.Format >= DXGI_FORMAT_BC1_TYPELESS && srcddsd.Format <= DXGI_FORMAT_BC5_SNORM)
+		// need to select allowable conversions
+		//PE: Support saving BC7 as png, ccp had some BC7
+		if (DestFormat != D3DX11_IFF_DDS && ((srcddsd.Format >= DXGI_FORMAT_BC1_TYPELESS && srcddsd.Format <= DXGI_FORMAT_BC5_SNORM) || srcddsd.Format == DXGI_FORMAT_BC7_UNORM))
 		{
 			// filenames to WCHAR
 			wchar_t wFilenamePlate[512];
