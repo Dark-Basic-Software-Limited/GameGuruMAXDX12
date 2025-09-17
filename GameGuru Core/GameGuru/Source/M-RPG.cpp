@@ -600,8 +600,11 @@ bool fill_rpg_item_defaults_passedin(collectionItemType* pItem, int entid, int e
 	{
 		if (t.entityelement[e].eleprof.iscollectable != 0) iAddThisItem = 2;
 		if (t.entityelement[e].eleprof.isProjectGlobal != 0) iAddThisItem = 2;
-		if (t.entityprofile[entid].isweapon > 0) iAddThisItem = 1;
-		if (t.entityprofile[entid].hasweapon > 0) iAddThisItem = 4;
+		if (t.entityelement[e].eleprof.isProjectGlobal == 0)
+		{
+			if (t.entityprofile[entid].isweapon > 0) iAddThisItem = 1;
+			if (t.entityprofile[entid].hasweapon > 0) iAddThisItem = 4;
+		}
 	}
 	else
 	{

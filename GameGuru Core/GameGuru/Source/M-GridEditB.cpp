@@ -37696,16 +37696,44 @@ void SetIconSetCheck(bool bInstant)
 			LoadImage("editors\\uiv3\\entity_triggerzone.png", ENTITY_TRIGGERZONE);
 			LoadImage("editors\\uiv3\\entity_behavior.png", ENTITY_BEHAVIOR);
 			
-
-			LoadImage("editors\\uiv3\\ccp-hat.png", CCP_HAT);
-			LoadImage("editors\\uiv3\\ccp-feet.png", CCP_FEET);
-			LoadImage("editors\\uiv3\\ccp-legs.png", CCP_LEGS);
-			LoadImage("editors\\uiv3\\ccp-body.png", CCP_BODY);
-			LoadImage("editors\\uiv3\\ccp-glasses.png", CCP_GLASSES);
-			LoadImage("editors\\uiv3\\ccp-beard.png", CCP_BEARD);
-			LoadImage("editors\\uiv3\\ccp-hair.png", CCP_HAIR);
-			LoadImage("editors\\uiv3\\ccp-head.png", CCP_HEAD);
-			LoadImage("editors\\uiv3\\ccp-tattoo.png", CCP_TATTOO);
+			if (FileExist("editors\\uiv3\\ccp2-hat.png"))
+				LoadImage("editors\\uiv3\\ccp2-hat.png", CCP_HAT);
+			else
+				LoadImage("editors\\uiv3\\ccp-hat.png", CCP_HAT);
+			if (FileExist("editors\\uiv3\\ccp2-feet.png"))
+				LoadImage("editors\\uiv3\\ccp2-feet.png", CCP_FEET);
+			else
+				LoadImage("editors\\uiv3\\ccp-feet.png", CCP_FEET);
+			if (FileExist("editors\\uiv3\\ccp2-legs.png"))
+				LoadImage("editors\\uiv3\\ccp2-legs.png", CCP_LEGS);
+			else
+				LoadImage("editors\\uiv3\\ccp-legs.png", CCP_LEGS);
+			if (FileExist("editors\\uiv3\\ccp2-body.png"))
+				LoadImage("editors\\uiv3\\ccp2-body.png", CCP_BODY);
+			else
+				LoadImage("editors\\uiv3\\ccp-body.png", CCP_BODY);
+			if (FileExist("editors\\uiv3\\ccp2-glasses.png"))
+				LoadImage("editors\\uiv3\\ccp2-glasses.png", CCP_GLASSES);
+			else
+				LoadImage("editors\\uiv3\\ccp-glasses.png", CCP_GLASSES);
+			if (FileExist("editors\\uiv3\\ccp2-beard.png"))
+				LoadImage("editors\\uiv3\\ccp2-beard.png", CCP_BEARD);
+			else
+				LoadImage("editors\\uiv3\\ccp-beard.png", CCP_BEARD);
+			if (FileExist("editors\\uiv3\\ccp2-hair.png"))
+				LoadImage("editors\\uiv3\\ccp2-hair.png", CCP_HAIR);
+			else
+				LoadImage("editors\\uiv3\\ccp-hair.png", CCP_HAIR);
+			if (FileExist("editors\\uiv3\\ccp2-head.png"))
+				LoadImage("editors\\uiv3\\ccp2-head.png", CCP_HEAD);
+			else
+				LoadImage("editors\\uiv3\\ccp-head.png", CCP_HEAD);
+			if (FileExist("editors\\uiv3\\ccp2-tattoo.png"))
+				LoadImage("editors\\uiv3\\ccp2-tattoo.png", CCP_TATTOO);
+			else
+				LoadImage("editors\\uiv3\\ccp-tattoo.png", CCP_TATTOO);
+			LoadImage("editors\\uiv3\\ccp2-accessory_one.png", CCP_ACCESSORY1);
+			LoadImage("editors\\uiv3\\ccp2-accessory_two.png", CCP_ACCESSORY2);
 
 			LoadImage("editors\\uiv3\\filetype-script.png", FILETYPE_SCRIPT);
 
@@ -37734,15 +37762,44 @@ void SetIconSetCheck(bool bInstant)
 			LoadImage("editors\\uiv3\\entity_triggerzone2.png", ENTITY_TRIGGERZONE);
 			LoadImage("editors\\uiv3\\entity_behavior2.png", ENTITY_BEHAVIOR);
 
-			LoadImage("editors\\uiv3\\ccp-hat2.png", CCP_HAT);
-			LoadImage("editors\\uiv3\\ccp-feet2.png", CCP_FEET);
-			LoadImage("editors\\uiv3\\ccp-legs2.png", CCP_LEGS);
-			LoadImage("editors\\uiv3\\ccp-body2.png", CCP_BODY);
-			LoadImage("editors\\uiv3\\ccp-glasses2.png", CCP_GLASSES);
-			LoadImage("editors\\uiv3\\ccp-beard2.png", CCP_BEARD);
-			LoadImage("editors\\uiv3\\ccp-hair2.png", CCP_HAIR);
-			LoadImage("editors\\uiv3\\ccp-head2.png", CCP_HEAD);
-			LoadImage("editors\\uiv3\\ccp-tattoo2.png", CCP_TATTOO);
+			if (FileExist("editors\\uiv3\\ccp2-hat2.png"))
+				LoadImage("editors\\uiv3\\ccp2-hat2.png", CCP_HAT);
+			else
+				LoadImage("editors\\uiv3\\ccp-hat2.png", CCP_HAT);
+			if (FileExist("editors\\uiv3\\ccp2-feet2.png"))
+				LoadImage("editors\\uiv3\\ccp2-feet2.png", CCP_FEET);
+			else
+				LoadImage("editors\\uiv3\\ccp-feet2.png", CCP_FEET);
+			if (FileExist("editors\\uiv3\\ccp2-legs2.png"))
+				LoadImage("editors\\uiv3\\ccp2-legs2.png", CCP_LEGS);
+			else
+				LoadImage("editors\\uiv3\\ccp-legs2.png", CCP_LEGS);
+			if (FileExist("editors\\uiv3\\ccp2-body2.png"))
+				LoadImage("editors\\uiv3\\ccp2-body2.png", CCP_BODY);
+			else
+				LoadImage("editors\\uiv3\\ccp-body2.png", CCP_BODY);
+			if (FileExist("editors\\uiv3\\ccp2-glasses2.png"))
+				LoadImage("editors\\uiv3\\ccp2-glasses2.png", CCP_GLASSES);
+			else
+				LoadImage("editors\\uiv3\\ccp-glasses2.png", CCP_GLASSES);
+			if (FileExist("editors\\uiv3\\ccp2-beard2.png"))
+				LoadImage("editors\\uiv3\\ccp2-beard2.png", CCP_BEARD);
+			else
+				LoadImage("editors\\uiv3\\ccp-beard2.png", CCP_BEARD);
+			if (FileExist("editors\\uiv3\\ccp2-hair2.png"))
+				LoadImage("editors\\uiv3\\ccp2-hair2.png", CCP_HAIR);
+			else
+				LoadImage("editors\\uiv3\\ccp-hair2.png", CCP_HAIR);
+			if (FileExist("editors\\uiv3\\ccp2-head2.png"))
+				LoadImage("editors\\uiv3\\ccp2-head2.png", CCP_HEAD);
+			else
+				LoadImage("editors\\uiv3\\ccp-head2.png", CCP_HEAD);
+			if (FileExist("editors\\uiv3\\ccp2-tattoo2.png"))
+				LoadImage("editors\\uiv3\\ccp2-tattoo2.png", CCP_TATTOO);
+			else
+				LoadImage("editors\\uiv3\\ccp-tattoo2.png", CCP_TATTOO);
+			LoadImage("editors\\uiv3\\ccp2-accessory_one2.png", CCP_ACCESSORY1);
+			LoadImage("editors\\uiv3\\ccp2-accessory_two2.png", CCP_ACCESSORY2);
 
 			LoadImage("editors\\uiv3\\filetype-script2.png", FILETYPE_SCRIPT);
 
