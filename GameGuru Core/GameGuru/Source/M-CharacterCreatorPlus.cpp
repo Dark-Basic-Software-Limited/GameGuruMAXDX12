@@ -4097,14 +4097,18 @@ void charactercreatorplus_imgui_v3(void)
 					static float fCWidth = 0.0;
 					float partsheight;
 
-					int rows = CharacterCreatorCurrent_s.size() / 4;
+					int rows = CharacterCreatorCurrent_s.size() / 5;
 					if (rows * 4 != CharacterCreatorCurrent_s.size())
 						rows += 1;
 					if (rows > 3) rows = 3;
 
 					partsheight = 60.0f * rows;
-					partsheight = ImGui::GetContentRegionAvail().y / 11 * rows;
-					
+					//partsheight = ImGui::GetContentRegionAvail().y / 11 * rows;
+					if(rows == 1)
+						partsheight = ImGui::GetContentRegionAvail().y / 9.5f * rows;
+					else
+						partsheight = ImGui::GetContentRegionAvail().y / 10.5f * rows;
+
 					ImGui::BeginChild("##CCP-Parts-Child", ImVec2(ImGui::GetContentRegionAvail().x, partsheight), false, iGenralWindowsFlags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
 					ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 
