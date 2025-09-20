@@ -755,8 +755,15 @@ function npc_control_main(e)
 				end				
 				animonce[e] = 0
 			end
+			
+			if npc_control[e].npc_can_shoot == 1 or npc_control[e].npc_can_shoot == 3 then
+				if ishit[e] == 1 and GetPlayerDistance(e) > 100 and GetPlayerDistance(e) < npc_control[e].attack_range then
+					ishit[e] = 2
+					attack_delay[e] = GetTimer(e) + 1000
+				end	
+			end
 
-			if ishit[e] == 1 and GetPlayerDistance(e) < 100 then
+			if ishit[e] == 1 and GetPlayerDistance(e) < npc_control[e].attack_range then
 				StopSound(e,0)
 				PlaySound(e,1)
 				svolume_last[e] = 1
@@ -769,11 +776,7 @@ function npc_control_main(e)
 				GamePlayerControlSetShakePeriod(100.0)
 				ishit[e] = 0
 				attack_delay[e] = GetTimer(e) + 1000
-			end	
-			if ishit[e] == 1 and GetPlayerDistance(e) > 100 and GetPlayerDistance(e) < npc_control[e].attack_range then
-				ishit[e] = 2
-				attack_delay[e] = GetTimer(e) + 1000
-			end			
+			end		
 		end
 		if GetPlayerDistance(e) < npc_control[e].attack_range and g_Entity[e]['plrvisible'] == 0 then
 			state[e] = "pursue"
