@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- NPC Control v84 by Necrym 59 and Preben
+-- NPC Control v85 by Necrym 59 and Preben
 -- DESCRIPTION: The attached NPC will be controlled by this behavior.
 -- DESCRIPTION: [SENSE_TEXT$="Who's that ..an intruder??"]
 -- DESCRIPTION: [SENSE_RANGE=500(0,2000)]
@@ -157,8 +157,8 @@ local redirect = {}
 local chanceflee = {}
 local ishit = {}
 local setframes = {}
-local shooterrange = {}
 local dist = {}
+local tmphit = {}
 g_GibsEnabled = 0
 
 function npc_control_properties(e, sense_text, sense_range, npc_can_flee, idle_time, attack_range, attack_damage, random_damage, npc_can_roam, roam_range, npc_anim_speed, npc_move_speed, npc_run_speed, npc_turn_speed, npc_can_shoot, idle1_animation,  idle2_animation, walk_animation, run_animation, threat_animation, attack1_animation, attack1_hitframe, attack2_animation, attack2_hitframe, attack3_animation, attack3_hitframe, shoot_animation, hurt_animation, death1_animation, death2_animation, lastflag_animation, lastflag_time, lastflag_loop, force_move, npc_tilting, diagnostics)
@@ -306,6 +306,7 @@ function npc_control_init_name(e,name)
 	ishit[e] = 0
 	setframes[e] = 0
 	dist[e] = 0
+	tmphit[e] = 0
 	math.randomseed(os.time())
 end
 
@@ -313,7 +314,6 @@ function npc_control_main(e)
 
 	CollisionOn(e)	
 	if status[e] == "init" then
-		shooterrange[e] = npc_control[e].attack_range
 		allegiance[e] = GetEntityAllegiance(e) -- (0-enemy, 1-ally, 2-neutral)		
 		SetAnimationSpeed(e,npc_control[e].npc_anim_speed)
 		SetEntityMoveSpeed(e,npc_control[e].npc_move_speed)
@@ -494,7 +494,7 @@ function npc_control_main(e)
 			issensed[e] = 1
 			RotateToPlayerSlowly(e,GetEntityTurnSpeed(e)/2)
 			if senseonce[e] == 0 then
-				if npc_control[e].npc_can_roam == 1 or  npc_control[e].npc_can_roam == 2 then
+				if npc_control[e].npc_can_roam == 1 or npc_control[e].npc_can_roam == 2 then
 					SetAnimationName(e,npc_control[e].threat_animation)
 					ModulateSpeed(e,npc_control[e].npc_anim_speed)
 					PlayAnimation(e)
@@ -679,7 +679,7 @@ function npc_control_main(e)
 					StopSound(e,0)
 					PlaySound(e,1)
 					svolume_last[e] = 1
-					anim_var[e] = 0
+					anim_var[e] = 0					
 				end
 				if npc_control[e].npc_can_shoot == 1 or npc_control[e].npc_can_shoot == 3 then --can Shoot
 					SetAnimationName(e,npc_control[e].shoot_animation)
@@ -694,7 +694,7 @@ function npc_control_main(e)
 					anim_var[e] = 5
 				end				
 				attkonce[e] = 1				
-			end
+			end  
 			if GetTimer(e) >= attack_delay[e] then
 				if anim_var[e] == 1 then  -- Attack1
 					SetAnimationName(e,npc_control[e].attack1_animation)
@@ -723,7 +723,7 @@ function npc_control_main(e)
 					svolume_last[e] = 2
 					anim_var[e] = 0
 				end
-				if anim_var[e] == 5 then
+				if anim_var[e] == 5 then  -- Shoot
 					SetAnimationName(e,npc_control[e].shoot_animation)
 					ModulateSpeed(e,npc_control[e].npc_anim_speed)
 					PlayAnimation(e)
@@ -741,20 +741,22 @@ function npc_control_main(e)
 					if npc_control[e].npc_can_shoot == 1 or npc_control[e].npc_can_shoot == 3 then attack_delay[e] = (GetTimer(e) + 50)+(npc_control[e].attack1_hitframe*2) end
 					if npc_control[e].npc_can_shoot == 2 then attack_delay[e] = GetTimer(e) + 10000 end
 				end
-				anim_var[e] = math.random(1,3) -- Attack random animation variation
-				if npc_control[e].npc_can_shoot == 1 or npc_control[e].npc_can_shoot == 3 then
+				if npc_control[e].npc_can_shoot == 2 then anim_var[e] = math.random(1,3) end -- Attack random animation variation
+				if npc_control[e].npc_can_shoot == 1 or npc_control[e].npc_can_shoot == 3 then					
 					anim_var[e] = 5
 					shooting[e] = 1
-					if npc_control[e].npc_can_shoot == 1 then 
-						if GetPlayerDistance(e) < 100 then
-							anim_var[e] = math.random(2,3)
-							ishit[e] = 0
-						end
-					end	
+					if GetPlayerDistance(e) < 100 then
+						anim_var[e] = math.random(2,3)
+						ishit[e] = 0
+					end
+					if GetPlayerDistance(e) > 100 and GetPlayerDistance(e) < npc_control[e].attack_range then
+						ishit[e] = 2
+					end
 				end				
-				animonce[e] = 0				
+				animonce[e] = 0
 			end
-			if ishit[e] == 1 then
+
+			if ishit[e] == 1 and GetPlayerDistance(e) < 100 then
 				StopSound(e,0)
 				PlaySound(e,1)
 				svolume_last[e] = 1
@@ -766,6 +768,10 @@ function npc_control_main(e)
 				GamePlayerControlSetShakeTrauma(2.4)
 				GamePlayerControlSetShakePeriod(100.0)
 				ishit[e] = 0
+				attack_delay[e] = GetTimer(e) + 1000
+			end	
+			if ishit[e] == 1 and GetPlayerDistance(e) > 100 and GetPlayerDistance(e) < npc_control[e].attack_range then
+				ishit[e] = 2
 				attack_delay[e] = GetTimer(e) + 1000
 			end			
 		end
