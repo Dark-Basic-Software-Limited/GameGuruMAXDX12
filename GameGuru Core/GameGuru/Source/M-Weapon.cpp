@@ -1943,6 +1943,8 @@ void weapon_projectileresult_make (int customdecal )
 				PositionSound(t.entityelement[t.tSourceEntity].soundset6, t.tx_f, t.ty_f, t.tz_f);
 				SetSoundSpeed(t.entityelement[t.tSourceEntity].soundset6, 38000 + Rnd(8000));
 				PlaySound(t.entityelement[t.tSourceEntity].soundset6);
+				extern int i_LastExplosionSoundID;
+				i_LastExplosionSoundID = t.entityelement[t.tSourceEntity].soundset6;
 			}
 			else if (t.tSoundID > 0 && SoundExist(t.tSoundID) == 1)
 			{
