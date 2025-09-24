@@ -2058,7 +2058,7 @@ void animsystem_processallmannequins (void)
 	strcat(pMannequinPath, "\\Files\\charactercreatorplus\\");
 
 	// scan all folders in "charactercreatorplus\animations"
-	LPSTR pOldDir = GetDir();
+	cstr pOldDir = GetDir();
 	SetDir (g.fpscrootdir_s.Get());
 	UnDim (t.filelist_s);
 	buildfilelist("Files\\charactercreatorplus\\animations", "");
@@ -2080,10 +2080,10 @@ void animsystem_processallmannequins (void)
 						if (ObjectExist(g.tempobjectoffset) == 1) DeleteObject(g.tempobjectoffset);
 
 						// for each DBO found, load in mannequin.dbo
-						LPSTR pThisDir = GetDir();
+						cstr pThisDir = GetDir();
 						SetDir (pMannequinPath);
 						LoadObject("mannequin.dbo", g.tempobjectoffset);
-						SetDir (pThisDir);
+						SetDir (pThisDir.Get());
 
 						// append the found DBO animation file
 						char pSrcFilePath[MAX_PATH];
@@ -2159,7 +2159,7 @@ void animsystem_processallmannequins (void)
 	if (ObjectExist(g.tempobjectoffset) == 1) DeleteObject(g.tempobjectoffset);
 
 	// restore path
-	SetDir (pOldDir);
+	SetDir (pOldDir.Get());
 }
 
 void animsystem_loadanimtextfile (sObject* pObject, cstr pAbsPathToAnim, char* cFileSelected)
@@ -7450,7 +7450,7 @@ void importer_load_fpe ( void )
 	if (LimbExist(t.importer.objectnumber, 1) == 1)
 	{
 		LPSTR sTmp = LimbTextureName(t.importer.objectnumber, 1);
-		t.importer.objectFPE.textured = LimbTextureName(t.importer.objectnumber, 1);
+		t.importer.objectFPE.textured = sTmp; //PE: Never freed LimbTextureName(t.importer.objectnumber, 1);
 		if (sTmp) delete[] sTmp;
 	}
 	t.importer.objectFPE.effect = "effectbank\\reloaded\\entity_basic.fx";

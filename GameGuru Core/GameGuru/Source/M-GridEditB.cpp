@@ -532,6 +532,10 @@ extern std::vector<std::function<void()>> readoutCallbacks;
 extern int g_iAbortedAsEntityIsGroupFileModeStubOnly;
 extern int g_iAbortedAsEntityIsGroupCreate;
 
+extern bool bPreviewWPE;
+extern uint32_t PreviewWPERoot;
+
+
 bool bDigAHoleToHWND = false;
 bool g_bSelectedMapImageTypeSpecialHelp = false;
 bool bSortProjects = true;
@@ -6398,6 +6402,9 @@ void gridedit_setsky(int iSkyMode)
 	}
 }
 
+
+cStr sWindowName = "Environment Effects##VisualsToolsWindow";
+
 void tab_tab_visuals(int iPage, int iMode)
 {
 	//iMode = 0 , editor.
@@ -6408,7 +6415,6 @@ void tab_tab_visuals(int iPage, int iMode)
 	//iPage = 2? , behavior editor. (developer mode)
 
 	//Try to match visuals.ini
-	cStr sWindowName = "Environment Effects##VisualsToolsWindow";
 	bNeedImGuiInput = false;
 
 	if (iMode == 1 && !bRenderTabTab && !bImGuiFrameState) // lee added !bImGuiFrameState to prevent double newframes
@@ -6505,6 +6511,7 @@ void tab_tab_visuals(int iPage, int iMode)
 				iLastOpenHeader = 1;
 			}
 			imgui_Customize_Sky_V2(0);
+			imgui_Customize_Weather_V2(1);
 		}
 
 		if (bRenderTabTab)
@@ -7007,1234 +7014,33 @@ void tab_tab_visuals(int iPage, int iMode)
 			ImGui::Indent(-10);
 		}
 
-		if (pref.iEnableAdvancedPostProcessing)
+		if (pref.iEnableAdvancedPostProcessing && iMode != 0) //PE: Now only in tab tab (iMode != 0))
 		{
-			static bool bOCDebug = false;
-			static bool bBoxDebug = false;
-			static int iHiddenObjects = 0;
-			static int iObjects = 0;
-			static int iFrustumCulled = 0;
-			int iSpot = 0 , iPoint = 0;
-			int occ = 0;
-			if (bOCDebug && g_iDevToolsOpen >= 1)
-			{
-				int DrawOccludedObjects(bool bDebug, bool bBox = false, int * bHiddenObjects = nullptr, int* spot = nullptr, int* point = nullptr);
-				occ = DrawOccludedObjects(bOCDebug, bBoxDebug, &iHiddenObjects,&iSpot,&iPoint);
-			}
-
-#ifdef ADVANCEDCOLORS
-			ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram]);
-#endif
-
-			if (pref.bAutoClosePropertySections && iLastOpenHeader != 16)
-				ImGui::SetNextItemOpen(false, ImGuiCond_Always);
-
-			//PE: Optimizing
-			if (ImGui::StyleCollapsingHeader("Graphics and Performance", wflags))
-			{
-				ImGui::Indent(10);
-				iLastOpenHeader = 16;
-
-				// graphics options mode
-				ImGui::PushItemWidth(-10);
-				char* current_gfx_mode = "";
-				int iGFXMode = iGFXMode = t.visuals.shaderlevels.entities - 1;
-				const char* gfx_mode_combo[] = { "Highest (best for quality)", "Custom (tailored)" , "Low (best for performance)" };
-				if (iGFXMode == 0) current_gfx_mode = (char*)gfx_mode_combo[0];
-				if (iGFXMode == 1) current_gfx_mode = (char*)gfx_mode_combo[1];
-				if (iGFXMode == 2) current_gfx_mode = (char*)gfx_mode_combo[2];
-				if (ImGui::Combo("##ComboGFX_mode_combo", &iGFXMode, gfx_mode_combo, IM_ARRAYSIZE(gfx_mode_combo)))
-				{
-					if (iGFXMode == 0) visuals_shaderlevels_setlevel(1, true);
-					if (iGFXMode == 1) visuals_shaderlevels_setlevel(3, true);
-					if (iGFXMode == 2) visuals_shaderlevels_setlevel(4, true);
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Choose the ideal graphics mode for this level, or set custom settings");
-				ImGui::PopItemWidth();
-
-				// optimizations
-				extern bool bEnable30FpsAnimations;
-				extern bool g_bDelayedShadows;
-				extern bool g_bDelayedShadowsLaptop;
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Lower Animation & LUA Speed##Animationsculling", &bEnable30FpsAnimations))
-				{
-					t.gamevisuals.bEnable30FpsAnimations = t.visuals.bEnable30FpsAnimations = bEnable30FpsAnimations;
-					g.projectmodified = 1;
-
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Lower Animation Speed will lower the updating of animation & LUA to 30 FPS for increased speed when using many animations.");
-				ImGui::PopItemWidth();
-
-				extern bool bEnableDelayPointShadow;
-				extern float pointShadowScaler;
-
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Delayed Shadows##Animationsculling", &g_bDelayedShadows))
-				{
-					t.gamevisuals.g_bDelayedShadows = t.visuals.g_bDelayedShadows = g_bDelayedShadows;
-					g.projectmodified = 1;
-					if (g_bDelayedShadows && g_bDelayedShadowsLaptop)
-					{
-						bEnableDelayPointShadow = true;
-						pointShadowScaler = 0.6f;
-					}
-					else if (g_bDelayedShadows)
-					{
-						bEnableDelayPointShadow = true;
-						pointShadowScaler = 1.0f;
-					}
-					else
-					{
-						bEnableDelayPointShadow = false;
-						pointShadowScaler = 1.0f;
-					}
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Delayed Shadows will make fewer cascade shadow updates and increase your FPS.");
-				if (g_bDelayedShadows)
-				{
-					ImGui::SameLine();
-					if (ImGui::Checkbox("Laptop##Animationsculling", &g_bDelayedShadowsLaptop))
-					{
-						t.gamevisuals.g_bDelayedShadowsLaptop = t.visuals.g_bDelayedShadowsLaptop = g_bDelayedShadowsLaptop;
-						g.projectmodified = 1;
-						if (g_bDelayedShadows && g_bDelayedShadowsLaptop)
-						{
-							bEnableDelayPointShadow = true;
-							pointShadowScaler = 0.6f;
-						}
-						else if (g_bDelayedShadows)
-						{
-							bEnableDelayPointShadow = true;
-							pointShadowScaler = 1.0f;
-						}
-						else
-						{
-							bEnableDelayPointShadow = false;
-							pointShadowScaler = 1.0f;
-						}
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Delayed Shadows (Laptop) will make even fever cascade shadow updates and increase your FPS.");
-				}
-				ImGui::PopItemWidth();
-
-				//extern bool bEnableDelayPointShadow;
-				//extern float pointShadowScaler;
-				//if (ImGui::Checkbox("Delay Point Shadows", &bEnableDelayPointShadow))
-				//{
-				//}
-				//if (ImGui::SliderFloat("pointShadowScaler", &pointShadowScaler, 0.1f, 4.0f, "%.2f", 1.0f))
-				//{
-				//}
-				//ImGui::Text("Max 2 sec = %ld", LastMaxInTimer);
-
-
-				extern bool bEnableObjectCulling;
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Occlusion Culling##bOcclusionCulling", &t.visuals.bOcclusionCulling))
-				{
-					t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling;
-					g.projectmodified = 1;
-					if (t.visuals.bOcclusionCulling)
-					{
-						bEnableObjectCulling = true;
-						t.gamevisuals.bEnableObjectCulling = t.visuals.bEnableObjectCulling = bEnableObjectCulling;
-					}
-				}
-				if (wiRenderer::GetOcclusionCullingEnabled() != t.visuals.bOcclusionCulling)
-				{
-					wiRenderer::SetOcclusionCullingEnabled(t.visuals.bOcclusionCulling);
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Occlusion Culling will cull objects behind other object for less drawcalls");
-				ImGui::PopItemWidth();
-
-				if (g_iDevToolsOpen >= 1)
-				{
-					ImGui::SameLine();
-					ImGui::Checkbox("Debug", &bOCDebug);
-					ImGui::Checkbox("Debug Bounding Box", &bBoxDebug);
-				}
-				if (t.visuals.bOcclusionCulling)
-				{
-					extern uint32_t iCulledPointShadows;
-					extern uint32_t iCulledSpotShadows;
-					extern uint32_t iCulledAnimations;
-					extern bool bEnableTerrainChunkCulling;
-					extern bool bEnablePointShadowCulling;
-					extern bool bEnableSpotShadowCulling;
-					extern bool bEnableAnimationCulling;
-
-					if (ImGui::Checkbox("Terrain Chunk Culling", &bEnableTerrainChunkCulling))
-					{
-						t.gamevisuals.bEnableTerrainChunkCulling = t.visuals.bEnableTerrainChunkCulling = bEnableTerrainChunkCulling;
-						g.projectmodified = 1;
-						if (bEnableTerrainChunkCulling && !t.visuals.bOcclusionCulling)
-						{
-							t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
-						}
-					}
-					//if (bEnableTerrainChunkCulling)
-					//{
-					//	extern int OCCLODSTART;
-					//	ImGui::PushItemWidth(-10);
-					//	ImGui::SliderInt("Terrain LOD Culling Start", &OCCLODSTART, 0, 8);
-					//	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Terrain Chunk Culling Start LOD Level. For less occlusion check make value higher.");
-					//	ImGui::PopItemWidth();
-					//}
-					if (ImGui::Checkbox("Point Shadow Culling", &bEnablePointShadowCulling))
-					{
-						t.gamevisuals.bEnablePointShadowCulling = t.visuals.bEnablePointShadowCulling = bEnablePointShadowCulling;
-						g.projectmodified = 1;
-						if (bEnablePointShadowCulling && !t.visuals.bOcclusionCulling)
-						{
-							t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
-						}
-					}
-
-					if (ImGui::Checkbox("Spot Shadow Culling", &bEnableSpotShadowCulling))
-					{
-						t.gamevisuals.bEnableSpotShadowCulling = t.visuals.bEnableSpotShadowCulling = bEnableSpotShadowCulling;
-						g.projectmodified = 1;
-						if (bEnableSpotShadowCulling && !t.visuals.bOcclusionCulling)
-						{
-							t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
-						}
-					}
-
-					if (ImGui::Checkbox("Object Culling", &bEnableObjectCulling))
-					{
-						t.gamevisuals.bEnableObjectCulling = t.visuals.bEnableObjectCulling = bEnableObjectCulling;
-						g.projectmodified = 1;
-						if (bEnableObjectCulling && !t.visuals.bOcclusionCulling)
-						{
-							t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
-						}
-					}
-
-					if (ImGui::Checkbox("Animation Culling", &bEnableAnimationCulling))
-					{
-						t.gamevisuals.bEnableAnimationCulling = t.visuals.bEnableAnimationCulling = bEnableAnimationCulling;
-						g.projectmodified = 1;
-						if (bEnableAnimationCulling && !t.visuals.bOcclusionCulling)
-						{
-							t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
-						}
-					}
-
-					wiScene::Scene* pScene = &wiScene::GetScene();
-					if (pScene)
-					{
-						iObjects = pScene->objects.GetCount();
-						iFrustumCulled = wiProfiler::GetFrustumCulled();
-					}
-					if (bOCDebug)
-						ImGui::Text("Total Objects: %d Hidden: %d", iObjects, iHiddenObjects);
-					else
-						ImGui::Text("Total Objects: %d", iObjects);
-					ImGui::Text("Frustum/Apparent Culled: %d", iFrustumCulled);
-					if (bOCDebug)
-						ImGui::Text("Occluded Objects: %d", occ);
-
-					extern uint32_t iOccludedTerrainChunks;
-					if (bOCDebug)
-						ImGui::Text("Occluded Terrain chunks: %d", iOccludedTerrainChunks);
-
-					extern uint32_t iRenderedPointShadows;
-					extern uint32_t iRenderedSpotShadows;
-
-					if (bOCDebug)
-						ImGui::Text("Occluded Point Shadows: (%d) %d r(%d)", iPoint, iCulledPointShadows, iRenderedPointShadows);
-					else
-						ImGui::Text("Occluded Point Shadows: %d r(%d)", iCulledPointShadows, iRenderedPointShadows);
-					if (bOCDebug)
-						ImGui::Text("Occluded Spot Shadows: (%d) %d r(%d)", iSpot, iCulledSpotShadows, iRenderedSpotShadows);
-					else
-						ImGui::Text("Occluded Spot Shadows: %d r(%d)", iCulledSpotShadows, iRenderedSpotShadows);
-					
-					if (bOCDebug)
-						ImGui::Text("Culled Animations: %d", iCulledAnimations);
-				}
-
-				extern float maxApparentSize;
-				ImGui::PushItemWidth(-10);
-				float fASize = t.visuals.ApparentSize * 10000.0f;
-				tab_tab_Column_text("Apparent Size", fTabColumnWidth);
-				if (ImGui::SliderFloat("##maxApparentSize", &fASize, 0.02f, 2.0f, "%.2f", 1.0f))
-				{
-					maxApparentSize = fASize / 10000.0f;
-					t.gamevisuals.ApparentSize = t.visuals.ApparentSize = maxApparentSize;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Max Object Apparent Size will cull objects when they get smaller on screen");
-				ImGui::PopItemWidth();
-
-
-				extern float fLODMultiplier;
-				//ImGui::Text("LOD Multiplier");
-				tab_tab_Column_text("LOD Multiplier", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::SliderFloat("##fLODMultiplier", &fLODMultiplier, 0.0f, 15.0f, "%.2f", 1.0f))
-				{
-					if (fLODMultiplier < 0)
-						fLODMultiplier = 0;
-					t.gamevisuals.fLODMultiplier = t.visuals.fLODMultiplier = fLODMultiplier;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Change LOD distance before switching from normal object to LOD");
-				ImGui::PopItemWidth();
-
-				extern int g_iUseLODObjects;
-				extern bool bDisableLODLoad;
-				ImGui::Checkbox("Disable LOD Load", &bDisableLODLoad);
-
-				if (g_iUseLODObjects > 0 && !bDisableLODLoad)
-				{
-					extern bool bShadowsLowestLOD;
-					ImGui::PushItemWidth(-10);
-					if (ImGui::Checkbox("Shadows Use Fastest LOD##Animationsculling", &bShadowsLowestLOD))
-					{
-						t.gamevisuals.bShadowsLowestLOD = t.visuals.bShadowsLowestLOD = bShadowsLowestLOD;
-						g.projectmodified = 1;
-
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("All shadows will use fastest LOD available to render.");
-					ImGui::PopItemWidth();
-
-					extern bool bProbesLowestLOD;
-					ImGui::PushItemWidth(-10);
-					if (ImGui::Checkbox("Probes Use Fastest LOD##Animationsculling", &bProbesLowestLOD))
-					{
-						t.gamevisuals.bProbesLowestLOD = t.visuals.bProbesLowestLOD = bProbesLowestLOD;
-						g.projectmodified = 1;
-
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("All probes will use fastest LOD available to render.");
-					ImGui::PopItemWidth();
-
-					extern bool bRaycastLowestLOD;
-					ImGui::PushItemWidth(-10);
-					if (ImGui::Checkbox("Raycast Use Fastest LOD##Animationsculling", &bRaycastLowestLOD))
-					{
-						t.gamevisuals.bRaycastLowestLOD = t.visuals.bRaycastLowestLOD = bRaycastLowestLOD;
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("All raycast will use fastest LOD available for intersect checks.");
-					ImGui::PopItemWidth();
-
-
-					extern bool bPhysicsLowestLOD;
-					ImGui::PushItemWidth(-10);
-					if (ImGui::Checkbox("Physics Use Fastest LOD##Animationsculling", &bPhysicsLowestLOD))
-					{
-						t.gamevisuals.bPhysicsLowestLOD = t.visuals.bPhysicsLowestLOD = bPhysicsLowestLOD;
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("All physics objects is created using fastest LOD.");
-					ImGui::PopItemWidth();
-
-					extern bool bReflectionsLowestLOD;
-					ImGui::PushItemWidth(-10);
-					if (ImGui::Checkbox("Reflections Use Fastest LOD##Animationsculling", &bReflectionsLowestLOD))
-					{
-						t.gamevisuals.bReflectionsLowestLOD = t.visuals.bReflectionsLowestLOD = bReflectionsLowestLOD;
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("All reflection rendering is using fastest LOD.");
-					ImGui::PopItemWidth();
-				}
-
-				// FSR Mode (FidelityFX Super Resolution)
-				const char* fsr_items_align[] = { "None", "Ultra Quality","Quality", "Balanced", "Performance" };
-				int fsr_current_type_selection = t.visuals.iFSRMode;
-				tab_tab_Column_text("FSR", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Combo("##setiFSRMode", &fsr_current_type_selection, fsr_items_align, IM_ARRAYSIZE(fsr_items_align)))
-				{
-					t.visuals.iFSRMode = fsr_current_type_selection;
-					t.gamevisuals.iFSRMode = t.visuals.iFSRMode;
-					if (t.visuals.iFSRMode == 1)
-					{
-						master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-						master.masterrenderer.SetFSRScale(1.3f);
-						master.masterrenderer.setFSREnabled(true);
-						master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
-						master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
-						t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled = true; //PE: need FXAA or FSR dont work.
-						if (master_renderer)
-							master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
-					}
-					else if (t.visuals.iFSRMode == 2)
-					{
-						master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-						master.masterrenderer.SetFSRScale(1.5f);
-						master.masterrenderer.setFSREnabled(true);
-						master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
-						master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
-						t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled = true; //PE: need FXAA or FSR dont work.
-						if (master_renderer)
-							master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
-					}
-					else if (t.visuals.iFSRMode == 3)
-					{
-						master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-						master.masterrenderer.SetFSRScale(1.7f);
-						master.masterrenderer.setFSREnabled(true);
-						master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
-						master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
-						t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled = true; //PE: need FXAA or FSR dont work.
-						if (master_renderer)
-							master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
-					}
-					else if (t.visuals.iFSRMode == 4)
-					{
-						master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-						master.masterrenderer.SetFSRScale(2.0f);
-						master.masterrenderer.setFSREnabled(true);
-						master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
-						master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
-						t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled = true; //PE: need FXAA or FSR dont work.
-						if (master_renderer)
-							master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
-					}
-					else
-					{
-						//PE: Disable FSR
-						master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-						master.masterrenderer.SetFSRScale(1.0f);
-						master.masterrenderer.setFSREnabled(false);
-						master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
-					}
-
-					//PE: change.
-					g.projectmodified = 1;
-				}
-
-				ImGui::PopItemWidth();
-	
-				if (master.masterrenderer.getFSREnabled())
-				{
-					ImGui::Text("FSR Sharpness");
-					ImGui::PushItemWidth(-10);
-					if (ImGui::SliderFloat("##fFSRSharpness", &t.visuals.fFSRSharpness, 0.0f, 2.0f, "%.2f", 1.0f))
-					{
-						if (t.visuals.fFSRSharpness < 0)
-							t.visuals.fFSRSharpness = 0;
-						t.gamevisuals.fFSRSharpness = t.visuals.fFSRSharpness;
-						master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Change FSR Sharpness");
-					ImGui::PopItemWidth();
-				}
-
-				// end performance
-				ImGui::Indent(-10);
-			}
-
-			if (pref.bAutoClosePropertySections && iLastOpenHeader != 8)
-				ImGui::SetNextItemOpen(false, ImGuiCond_Always);
-
-			if (ImGui::StyleCollapsingHeader("Post Processing", wflags))
-			{
-				ImGui::Indent(10);
-				iLastOpenHeader = 8;
-
-				// only show option if not disabled VSYNC in SETUP.INI
-				if (g.gvsync != 0)
-				{
-					ImGui::PushItemWidth(-10);
-					if (ImGui::Checkbox("VSync##setVSyncEnabled", &t.visuals.bLevelVSyncEnabled))
-					{
-						t.gamevisuals.bLevelVSyncEnabled = t.visuals.bLevelVSyncEnabled;
-						gridedit_setvsync(t.visuals.bLevelVSyncEnabled);
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Vertical Sync will prevent screen tearing and cap FPS in game to your monitors refresh rate");
-					ImGui::PopItemWidth();
-				}
-
-				//Bloom
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Bloom Enabled##setBloomEnabled", &t.visuals.bBloomEnabled)) 
-				{
-					t.gamevisuals.bBloomEnabled = t.visuals.bBloomEnabled;
-					if (master_renderer)
-						master_renderer->setBloomEnabled(t.visuals.bBloomEnabled);
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Setting Bloom enabled will cause bright objects or locations to appear to emit more light");
-
-				ImGui::PopItemWidth();
-				if (master_renderer && master_renderer->getBloomEnabled())
-				{
-					ImGui::PushItemWidth(-10);
-					if (ImGui::SliderFloat("##WickedsetBloomThreshold", &t.visuals.fsetBloomThreshold, 0.1f, 10.0f, "%.2f", 2.0f))
-					{
-						t.gamevisuals.fsetBloomThreshold = t.visuals.fsetBloomThreshold;
-						if (master_renderer) {
-							master_renderer->setBloomThreshold(t.visuals.fsetBloomThreshold);
-						}
-						//bVisualUpdated = true;
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Threshold is a measure of how bright an object or area must be before the bloom effect is applied");
-
-					if (ImGui::SliderFloat("##WickedsetBloomStrength", &t.visuals.fsetBloomStrength, 0.1f, 3.0f, "%.2f", 1.0f))
-					{
-						t.gamevisuals.fsetBloomStrength = t.visuals.fsetBloomStrength;
-						if (master_renderer) {
-							master_renderer->setBloomStrength(t.visuals.fsetBloomStrength);
-						}
-						//bVisualUpdated = true;
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Strength is a measure of how strongly the bloom is applied to the scene");
-
-					ImGui::PopItemWidth();
-				}
-
-				//tab_tab_Column_text("SSR", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("SSR##setSSREnabled", &t.visuals.bSSREnabled)) {
-					t.gamevisuals.bSSREnabled = t.visuals.bSSREnabled;
-					if (master_renderer)
-						master_renderer->setSSREnabled(t.visuals.bSSREnabled);
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Screen Space Reflections use data from lights and objects shown on-screen to produce reflections");
-
-				ImGui::PopItemWidth();
-
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Reflections##setReflectionsEnabled", &t.visuals.bReflectionsEnabled)) {
-					t.gamevisuals.bReflectionsEnabled = t.visuals.bReflectionsEnabled;
-					if (master_renderer)
-						master_renderer->setReflectionsEnabled(t.visuals.bReflectionsEnabled);
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Reflections are calculated by taking data from lights in the scene and determining how they react with the sky and terrain");
-
-				ImGui::PopItemWidth();
-
-				//tab_tab_Column_text("FXAA", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("FXAA##setFXAAEnabled", &t.visuals.bFXAAEnabled)) {
-					t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled;
-					if (master_renderer)
-						master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("FXAA can smooth out edges on-screen that look pixelated, at the cost of a slight blur");
-				ImGui::PopItemWidth();
-
-				/*
-				//tab_tab_Column_text("Tessellation", fTabColumnWidth);
-				//PE: Tessellation dont work, it deform some objects , so cant be used for now. it need to be controlled per mesh.
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Tessellation##setTessellationEnabled", &t.visuals.bTessellation)) {
-					t.gamevisuals.bTessellation = t.visuals.bTessellation;
-					if (master_renderer)
-					{
-						wiRenderer::SetTessellationEnabled(t.visuals.bTessellation);
-					}
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Increases polygon counts for some objects based on how close they are to the camera");
-				ImGui::PopItemWidth();
-				*/
-
-				if (!bSetSimpleSky)
-				{
-					//tab_tab_Column_text("Light Shafts", fTabColumnWidth);
-					ImGui::PushItemWidth(-10);
-					if (ImGui::Checkbox("Light Shafts##setLightShaftsEnabled", &t.visuals.bLightShafts)) {
-						t.gamevisuals.bLightShafts = t.visuals.bLightShafts;
-						if (master_renderer)
-							master_renderer->setLightShaftsEnabled(t.visuals.bLightShafts);
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enables light rays to cast from the sun");
-					ImGui::PopItemWidth();
-				}
-
-				// LB: aded lens flare
-				//tab_tab_Column_text("Lens Flare", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Lens Flare##setLensFlareEnabled", &t.visuals.bLensFlare)) 
-				{
-					t.gamevisuals.bLensFlare = t.visuals.bLensFlare;
-					if (master_renderer)
-						master_renderer->setLensFlareEnabled(t.visuals.bLensFlare);
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enables lens flare from light cast from the sun");
-				ImGui::PopItemWidth();
-
-				// LB: added auto-exposure toggle
-				//tab_tab_Column_text("Auto Exposure", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Auto Exposure##setAutoExposureEnabled", &t.visuals.bAutoExposure))
-				{
-					t.gamevisuals.bAutoExposure = t.visuals.bAutoExposure;
-					if (master_renderer)
-						master_renderer->setEyeAdaptionEnabled(t.visuals.bAutoExposure);
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Automatically adjusts the appearance of the light intensity when the brightness of an area changes");
-				ImGui::PopItemWidth();
-
-				if (t.visuals.bAutoExposure)
-				{
-					tab_tab_Column_text("Auto Exp Rate", fTabColumnWidth);
-					ImGui::PushItemWidth(-10);
-					if (ImGui::SliderFloat("##fAutoExpRate:", &t.visuals.fAutoExposureRate, 0.01, 4.0)) {
-						t.gamevisuals.fAutoExposureRate = t.visuals.fAutoExposureRate;
-						master_renderer->setEyeAdaptionRate(t.visuals.fAutoExposureRate);
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Sets how fast the brightness is adjusted");
-
-					tab_tab_Column_text("Auto Exp Level", fTabColumnWidth);
-					ImGui::PushItemWidth(-10);
-					if (ImGui::SliderFloat("##fAutoExpKey:", &t.visuals.fAutoExposureKey, 0.01, 0.5)) {
-						t.gamevisuals.fAutoExposureKey = t.visuals.fAutoExposureKey;
-						master_renderer->setEyeAdaptionKey(t.visuals.fAutoExposureKey);
-						g.projectmodified = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Auto Exposure Level - lower values are darker, higher values are lighter");
-				}
-
-				//PE: Added DOF.
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Depth Of Field (DOF)##DOF", &t.visuals.bDOF)) {
-					t.gamevisuals.bDOF = t.visuals.bDOF;
-					if (master_renderer)
-					{
-						if (t.visuals.bDOF)
-						{
-							wiScene::Scene& scene = wiScene::GetScene();
-							wiScene::CameraComponent& camera = wiScene::GetCamera();
-							camera.aperture_size = t.visuals.fDOFApertureSize;
-							camera.focal_length = t.visuals.fDOFFocalLength;
-							master_renderer->setDepthOfFieldStrength(t.visuals.fDOFStrength);
-						}
-						master_renderer->setDepthOfFieldEnabled(t.visuals.bDOF);
-					}
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Depth Of Field (DOF): Is the area of acceptable sharpness in front of and behind the subject which the camera lens is focused.");
-				ImGui::PopItemWidth();
-
-				if (t.visuals.bDOF)
-				{
-					tab_tab_Column_text("DOF Strength", fTabColumnWidth);
-					ImGui::PushItemWidth(-10);
-					if (ImGui::SliderFloat("##DOF Strength", &t.visuals.fDOFStrength, 1.0f, 20.0f))
-					{
-						t.gamevisuals.fDOFStrength = t.visuals.fDOFStrength;
-						if (master_renderer)
-							master_renderer->setDepthOfFieldStrength(t.visuals.fDOFStrength);
-					}
-					ImGui::PopItemWidth();
-
-					tab_tab_Column_text("DOF ApertureSize", fTabColumnWidth);
-					ImGui::PushItemWidth(-10);
-					if (ImGui::SliderFloat("##DOF fDOFApertureSize", &t.visuals.fDOFApertureSize, 0.0f, 1.0f))
-					{
-						t.gamevisuals.fDOFApertureSize = t.visuals.fDOFApertureSize;
-						if (master_renderer)
-						{
-							wiScene::Scene& scene = wiScene::GetScene();
-							wiScene::CameraComponent& camera = wiScene::GetCamera();
-							camera.aperture_size = t.visuals.fDOFApertureSize;
-							camera.UpdateCamera();
-							camera.SetDirty();
-						}
-					}
-					ImGui::PopItemWidth();
-
-					tab_tab_Column_text("DOF Focal Length", fTabColumnWidth);
-					ImGui::PushItemWidth(-10);
-					if (ImGui::SliderFloat("##DOF focal_length", &t.visuals.fDOFFocalLength, 0.001f, 800.0f))
-					{
-						t.gamevisuals.fDOFFocalLength = t.visuals.fDOFFocalLength;
-						if (master_renderer)
-						{
-							wiScene::Scene& scene = wiScene::GetScene();
-							wiScene::CameraComponent& camera = wiScene::GetCamera();
-							camera.focal_length = t.visuals.fDOFFocalLength;
-							camera.UpdateCamera();
-							camera.SetDirty();
-						}
-					}
-					ImGui::PopItemWidth();
-				}
-
-				tab_tab_Column_text("Gamma", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::SliderFloat("##fGamma:", &t.visuals.fGamma, 0.1, 10.0))
-				{
-					t.gamevisuals.fGamma = t.visuals.fGamma;
-					wiRenderer::SetGamma(t.visuals.fGamma);
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Gamma Correction alters how bright colors are perceived");
-
-				tab_tab_Column_text("De Saturate", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::SliderFloat("##fDeSaturate:", &t.visuals.fDeSaturate, 0.0, 1.0))
-				{
-					t.gamevisuals.fDeSaturate = t.visuals.fDeSaturate;
-					wiRenderer::SetDeSaturate(t.visuals.fDeSaturate);
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("De Saturate colors");
-
-				ImGui::PopItemWidth();
-
-				const char* msaa_items_align[] = { "1 (disabled)", "2", "4", "8" };
-				int msaa_current_type_selection = 0;
-				if (t.visuals.iMSAASampleCount == 1) msaa_current_type_selection = 0;
-				else if (t.visuals.iMSAASampleCount == 2) msaa_current_type_selection = 1;
-				else if (t.visuals.iMSAASampleCount == 4) msaa_current_type_selection = 2;
-				else msaa_current_type_selection = 3;
-				tab_tab_Column_text("MSAA", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Combo("##setMSAASampleCount", &msaa_current_type_selection, msaa_items_align, IM_ARRAYSIZE(msaa_items_align)))
-				{
-					if (msaa_current_type_selection == 0) t.visuals.iMSAASampleCount = 1;
-					else if (msaa_current_type_selection == 1) t.visuals.iMSAASampleCount = 2;
-					else if (msaa_current_type_selection == 2) t.visuals.iMSAASampleCount = 4;
-					else t.visuals.iMSAASampleCount = 8;
-					t.gamevisuals.iMSAASampleCount = t.visuals.iMSAASampleCount;
-
-					if (master_renderer)
-					{
-						master_renderer->setMSAASampleCount(t.visuals.iMSAASampleCount);
-						old_iMSAASampleCount = t.visuals.iMSAASampleCount;
-					}
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("MSAA can smooth out edges detected on objects. The higher the number of samples the greater the performance cost");
-
-				ImGui::PopItemWidth();
-
-				// SSAO
-				//const char* ao_options[] = { "Disabled", "SSAO", "HBAO", "MSAO", "RTAO" };
-				const char* ao_options[] = { "Disabled", "Enabled" };
-				tab_tab_Column_text("SSAO", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Combo("##setAmbientOcclusion", &t.visuals.iMSAO, ao_options, IM_ARRAYSIZE(ao_options)))
-				{
-					t.gamevisuals.iMSAO = master.iAOSetting = t.visuals.iMSAO;
-					//master.masterrenderer.setAO( (RenderPath3D::AO) master.iAOSetting );
-					if ( master.iAOSetting > 0 ) master.masterrenderer.setAO( RenderPath3D::AO_MSAO );
-					else master.masterrenderer.setAO( RenderPath3D::AO_DISABLED );
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Ambient Occlusion makes objects in corners or holes receive less ambient light");
-				ImGui::PopItemWidth();
-
-				if (t.visuals.iMSAO > 0 )
-				{
-					tab_tab_Column_text("AO Power", fTabColumnWidth);
-					ImGui::PushItemWidth(-10);
-					if ( ImGui::SliderFloat("##setAmbientOcclusionPower", &t.visuals.fMSAOPower, 0.01f, 8.0f, "%.2f", 2.0f) )
-					{
-						t.gamevisuals.fMSAOPower = master.fAOPower = t.visuals.fMSAOPower;
-						master.masterrenderer.setAOPower( master.fAOPower );
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Ambient Occlusion power (default=1.0)");
-					ImGui::PopItemWidth();
-				}
-
-				// end post processing
-				ImGui::Indent(-10);
-			}
-			#ifdef ADVANCEDCOLORS
-			ImGui::PopStyleColor();
-			#endif
+			bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated);
+			bVisualUpdated = Graphics_Performance_Settings(fTabColumnWidth, bVisualUpdated);
+
+			bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated);
+			bVisualUpdated = PostProcess_Settings(fTabColumnWidth, bVisualUpdated);
 		}
 
-		if (pref.iEnableAdvancedShadows)
+		if (pref.iEnableAdvancedShadows && iMode != 0) //PE: Now only in tab tab (iMode != 0)
 		{
-			if (pref.bAutoClosePropertySections && iLastOpenHeader != 9)
-				ImGui::SetNextItemOpen(false, ImGuiCond_Always);
-
-			if (ImGui::StyleCollapsingHeader("Shadows", wflags))
-			{
-				ImGui::Indent(10);
-
-				iLastOpenHeader = 9;
-
-				ImGui::TextCenter( "Shadow Resolution" );
-				//PE: Change from 1024 to 4096, adds around 2 gb additional gpu mem ?.
-				//PE: See comment about point light below.
-				const char* shadow_spot_items_align[] = { "Off", "128", "256", "512", "1024", "2048" }; //, "4096" };
-				int shadow_cascade_current_type_selection = 0;
-				if (t.visuals.iShadowSpotCascadeResolution == 0) shadow_cascade_current_type_selection = 0;
-				else if (t.visuals.iShadowSpotCascadeResolution == 128) shadow_cascade_current_type_selection = 1;
-				else if (t.visuals.iShadowSpotCascadeResolution == 256) shadow_cascade_current_type_selection = 2;
-				else if (t.visuals.iShadowSpotCascadeResolution == 512) shadow_cascade_current_type_selection = 3;
-				else if (t.visuals.iShadowSpotCascadeResolution == 1024) shadow_cascade_current_type_selection = 4;
-				else if (t.visuals.iShadowSpotCascadeResolution == 2048) shadow_cascade_current_type_selection = 5;
-				else shadow_cascade_current_type_selection = 5; //6;
-				tab_tab_Column_text("Sun ", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Combo("##setshadow_spotresolution", &shadow_cascade_current_type_selection, shadow_spot_items_align, IM_ARRAYSIZE(shadow_spot_items_align)))
-				{
-					if (shadow_cascade_current_type_selection == 0) t.visuals.iShadowSpotCascadeResolution = 0;
-					else if (shadow_cascade_current_type_selection == 1) t.visuals.iShadowSpotCascadeResolution = 128;
-					else if (shadow_cascade_current_type_selection == 2) t.visuals.iShadowSpotCascadeResolution = 256;
-					else if (shadow_cascade_current_type_selection == 3) t.visuals.iShadowSpotCascadeResolution = 512;
-					else if (shadow_cascade_current_type_selection == 4) t.visuals.iShadowSpotCascadeResolution = 1024;
-					else if (shadow_cascade_current_type_selection == 5) t.visuals.iShadowSpotCascadeResolution = 2048;
-					else t.visuals.iShadowSpotCascadeResolution = 2048;
-					t.gamevisuals.iShadowSpotCascadeResolution = t.visuals.iShadowSpotCascadeResolution;
-					bVisualUpdated = true;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose a shadow quality for sun shadows");
-				ImGui::PopItemWidth();
-
-
-				//SPOT
-				//const char* shadow_spot_items_align[] = { "Off", "128", "256", "512", "1024", "2048" }; //, "4096" };
-				int shadow_spot_current_type_selection = 0;
-				if (t.visuals.iShadowSpotResolution == 0) shadow_spot_current_type_selection = 0;
-				else if (t.visuals.iShadowSpotResolution == 128) shadow_spot_current_type_selection = 1;
-				else if (t.visuals.iShadowSpotResolution == 256) shadow_spot_current_type_selection = 2;
-				else if (t.visuals.iShadowSpotResolution == 512) shadow_spot_current_type_selection = 3;
-				else if (t.visuals.iShadowSpotResolution == 1024) shadow_spot_current_type_selection = 4;
-				else if (t.visuals.iShadowSpotResolution == 2048) shadow_spot_current_type_selection = 5;
-				else shadow_spot_current_type_selection = 5; //6;
-				tab_tab_Column_text("Spot Lights ", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Combo("##setshadow_spotspotresolution", &shadow_spot_current_type_selection, shadow_spot_items_align, IM_ARRAYSIZE(shadow_spot_items_align)))
-				{
-					if (shadow_spot_current_type_selection == 0) t.visuals.iShadowSpotResolution = 0;
-					else if (shadow_spot_current_type_selection == 1) t.visuals.iShadowSpotResolution = 128;
-					else if (shadow_spot_current_type_selection == 2) t.visuals.iShadowSpotResolution = 256;
-					else if (shadow_spot_current_type_selection == 3) t.visuals.iShadowSpotResolution = 512;
-					else if (shadow_spot_current_type_selection == 4) t.visuals.iShadowSpotResolution = 1024;
-					else if (shadow_spot_current_type_selection == 5) t.visuals.iShadowSpotResolution = 2048;
-					else t.visuals.iShadowSpotResolution = 2048;
-					t.gamevisuals.iShadowSpotResolution = t.visuals.iShadowSpotResolution;
-					bVisualUpdated = true;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose a shadow quality spot lights");
-				ImGui::PopItemWidth();
-
-
-				//PE: This drain memory and make everything very slow, limit to max 2048 for now.
-				//PE: 1 point light have 6 * 4096x4096 textures. (BIND_DEPTH_STENCIL) DXGI_FORMAT_R16_TYPELESS (2 bytes per pixel).
-				//PE: AND 6 * 4096x4096 textures (BIND_RENDER_TARGET) FORMAT_R16G16B16A16_FLOAT (8 bytes per pixel).
-				//PE: So 32mb + 128mb. = 160 mb. per texture = 6 * 160mb = 960 mb. PER point light :(
-				//PE: Each point light have 12 4096x4096 textures.
-				//PE: On my system with 5 point light, it use around 4gb additional mem, when i set 4096 ?
-				//PE: This gets allocated as shared GPU mem, and sure tons of swapping is going on.
-				//PE: Latest REPO changed from:	desc.Format = FORMAT_R11G11B10_FLOAT; to: desc.Format = FORMAT_R16G16B16A16_FLOAT; (32bit to 64 bit.)
-				//PE: https://github.com/turanszkij/WickedEngine/commit/d27ede94cc76a91ac1a1c9e4393db6460262d120#
-				//PE: Perhaps limit to 1024 ? - 2048 = 240 mb. per point light , and 1024 = 60mb.
-
-				const char* shadow_point_items_align[] = { "Off" , "128", "256", "512", "1024", "2048" }; //, "4096" };
-				int shadow_point_current_type_selection = 0;
-				if (t.visuals.iShadowPointResolution == 0) shadow_point_current_type_selection = 0;
-				else if (t.visuals.iShadowPointResolution == 128) shadow_point_current_type_selection = 1;
-				else if (t.visuals.iShadowPointResolution == 256) shadow_point_current_type_selection = 2;
-				else if (t.visuals.iShadowPointResolution == 512) shadow_point_current_type_selection = 3;
-				else if (t.visuals.iShadowPointResolution == 1024) shadow_point_current_type_selection = 4;
-				else if (t.visuals.iShadowPointResolution == 2048) shadow_point_current_type_selection = 5;
-				else shadow_point_current_type_selection = 5; //6;
-				tab_tab_Column_text("Point Lights ", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Combo("##setshadow_pointresolution", &shadow_point_current_type_selection, shadow_point_items_align, IM_ARRAYSIZE(shadow_point_items_align)))
-				{
-					if (shadow_point_current_type_selection == 0) t.visuals.iShadowPointResolution = 0;
-					else if (shadow_point_current_type_selection == 1) t.visuals.iShadowPointResolution = 128;
-					else if (shadow_point_current_type_selection == 2) t.visuals.iShadowPointResolution = 256;
-					else if (shadow_point_current_type_selection == 3) t.visuals.iShadowPointResolution = 512;
-					else if (shadow_point_current_type_selection == 4) t.visuals.iShadowPointResolution = 1024;
-					else if (shadow_point_current_type_selection == 5) t.visuals.iShadowPointResolution = 2048;
-					else t.visuals.iShadowPointResolution = 2048;
-					if (t.visuals.iShadowPointResolution > 2048) t.visuals.iShadowPointResolution = 2048;
-					t.gamevisuals.iShadowPointResolution = t.visuals.iShadowPointResolution;
-					bVisualUpdated = true;
-				}
-
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose a shadow quality for point lights");
-				ImGui::PopItemWidth();
-
-				ImGui::TextCenter( "Shadow Quantity" );
-				const char* shadow_spot_max_align[] = { "0", "4", "8", "12", "16" };
-				int shadow_cascade_max_current_type_selection = 0;
-				if (t.visuals.iShadowSpotMax == 0) shadow_cascade_max_current_type_selection = 0;
-				else if (t.visuals.iShadowSpotMax == 4) shadow_cascade_max_current_type_selection = 1;
-				else if (t.visuals.iShadowSpotMax == 8) shadow_cascade_max_current_type_selection = 2;
-				else if (t.visuals.iShadowSpotMax == 12) shadow_cascade_max_current_type_selection = 3;
-				else if (t.visuals.iShadowSpotMax == 16) shadow_cascade_max_current_type_selection = 4;
-				tab_tab_Column_text("Spot Lights ", fTabColumnWidth);
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Combo("##setshadow_iShadowSpotMax", &shadow_cascade_max_current_type_selection, shadow_spot_max_align, IM_ARRAYSIZE(shadow_spot_max_align)))
-				{
-					if (shadow_cascade_max_current_type_selection == 0) t.visuals.iShadowSpotMax = 0;
-					else if (shadow_cascade_max_current_type_selection == 1) t.visuals.iShadowSpotMax = 4;
-					else if (shadow_cascade_max_current_type_selection == 2) t.visuals.iShadowSpotMax = 8;
-					else if (shadow_cascade_max_current_type_selection == 3) t.visuals.iShadowSpotMax = 12;
-					else if (shadow_cascade_max_current_type_selection == 4) t.visuals.iShadowSpotMax = 16;
-					t.gamevisuals.iShadowSpotMax = t.visuals.iShadowSpotMax;
-					bForceRefreshLightCount = true;
-					bVisualUpdated = true;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose max shadow casters for spot lights");
-				ImGui::PopItemWidth();
-
-				int shadow_cascade_point_current_type_selection = 0;
-				if (t.visuals.iShadowPointMax == 0) shadow_cascade_point_current_type_selection = 0;
-				else if (t.visuals.iShadowPointMax == 4) shadow_cascade_point_current_type_selection = 1;
-				else if (t.visuals.iShadowPointMax == 8) shadow_cascade_point_current_type_selection = 2;
-				else if (t.visuals.iShadowPointMax == 12) shadow_cascade_point_current_type_selection = 3;
-				else if (t.visuals.iShadowPointMax == 16) shadow_cascade_point_current_type_selection = 4;
-				tab_tab_Column_text("Point Lights ", fTabColumnWidth);
-
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Combo("##setshadow_iShadowPointMax", &shadow_cascade_point_current_type_selection, shadow_spot_max_align, IM_ARRAYSIZE(shadow_spot_max_align)))
-				{
-					if (shadow_cascade_point_current_type_selection == 0) t.visuals.iShadowPointMax = 0;
-					else if (shadow_cascade_point_current_type_selection == 1) t.visuals.iShadowPointMax = 4;
-					else if (shadow_cascade_point_current_type_selection == 2) t.visuals.iShadowPointMax = 8;
-					else if (shadow_cascade_point_current_type_selection == 3) t.visuals.iShadowPointMax = 12;
-					else if (shadow_cascade_point_current_type_selection == 4) t.visuals.iShadowPointMax = 16;
-					t.gamevisuals.iShadowPointMax = t.visuals.iShadowPointMax;
-					bForceRefreshLightCount = true;
-					bVisualUpdated = true;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose max shadow casters for point lights.");
-				ImGui::PopItemWidth();
-
-				if (ImGui::Checkbox("Transparent shadows", &t.visuals.bTransparentShadows))
-				{
-					t.gamevisuals.bTransparentShadows = t.visuals.bTransparentShadows;
-					bForceRefreshLightCount = true;
-					bVisualUpdated = true;
-				}
-				//ImGui::PopItemWidth(); //PE: This looks wrong, try removing it.
-
-				extern bool bShadowsInFrontTakesPriority;
-				ImGui::Checkbox("Front Shadows Priority", &bShadowsInFrontTakesPriority);
-
-				ImGui::Indent(-10);
-			}
+			bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated);
+			bVisualUpdated = Shadows_Settings(fTabColumnWidth, bVisualUpdated);
 		}
-		if (iMode == 0)
-		{
-			if (ImGui::StyleCollapsingHeader("Global Behaviors", wflags))
-			{
-				static int iSelectecElement = -1;
 
-				ImGui::Indent(10);
-				float buttonwide = ImGui::GetContentRegionAvail().x * 0.5 - 10.0f;
-				static std::string myscript = "";
-				ImGuiWindow* window = ImGui::GetCurrentWindow();
-				if (iSelectedLibraryStingReturnID == window->GetID("ScriptSelector##+"))
-				{
-					//Update Script.
-					if (sSelectedLibrarySting != "")
-					{
-						myscript = sSelectedLibrarySting.Get();
-						sSelectedLibrarySting = "";
-						iSelectedLibraryStingReturnID = -1; //disable.
-						fpe_current_loaded_script = -1; //Reload image and DLUA.
-						CloseDownEditorProperties();
-						t.inputsys.constructselection = 0;
-						iLastEntityOnCursor = 0;
+		//PE: Moved to login window.
+		//if (iMode == 0)
+		//{
+		//	bool Global_Behaviors_Settings(float fTabColumnWidth, bool bVisualUpdated);
+		//	bVisualUpdated = Global_Behaviors_Settings(fTabColumnWidth, bVisualUpdated);
+		//}
 
-						t.addentityfile_s = "_markers\\BehaviorHidden.fpe";
-						if (t.addentityfile_s != "")
-						{
-							entity_adduniqueentity(false);
-							t.tasset = t.entid;
-							if (t.talreadyloaded == 0)
-							{
-								editor_filllibrary();
-								iRestoreEntidMaster = -1;
-							}
-						}
-						t.tentid = t.entid;
-						t.sourceobj = g.entitybankoffset + t.tentid;
-
-						t.gridentity = t.entid;
-
-						//PE: all t.gridentity... need to be set for this to work correctly.
-						t.gridentitystaticmode = t.entityprofile[t.entid].defaultstatic;
-						t.gridentityposx_f = 0;
-						t.gridentityposy_f = -999999;
-						t.gridentityposz_f = 0;
-						t.gridentityrotatex_f = 0;
-						t.gridentityrotatey_f = 0;
-						t.gridentityrotatez_f = 0;
-						t.gridentityrotatequatmode = 0;
-						t.gridentityrotatequatx_f = 0;
-						t.gridentityrotatequaty_f = 0;
-						t.gridentityrotatequatz_f = 0;
-						t.gridentityrotatequatw_f = 1;
-						t.gridentityscalex_f = 10;
-						t.gridentityscaley_f = 10;
-						t.gridentityscalez_f = 10;
-						entity_fillgrideleproffromprofile();
-
-						//PE: InstanceObject - Cursor,Object Tools - objects must always be real clones.
-						extern bool bNextObjectMustBeClone;
-						bNextObjectMustBeClone = true;
-						t.e = 0;
-						gridedit_addentitytomap(); //Add it to map set t.e
-						bNextObjectMustBeClone = false;
-
-						t.entityelement[t.e].eleprof.aimain_s = myscript.c_str();
-						t.entityelement[t.e].eleprof.thumb_aimain_s = "";
-
-						PositionObject(t.entityelement[t.e].obj, t.entityelement[t.e].x, t.entityelement[t.e].y, t.entityelement[t.e].z);
-						RotateObject(t.entityelement[t.e].obj, t.entityelement[t.e].rx, t.entityelement[t.e].ry, t.entityelement[t.e].rz);
-						HideObject(t.entityelement[t.e].obj);
-
-						// Show elements when placing a new one down, prevents half being hidden and half not.
-						t.showeditorelements = 1;
-						editor_toggle_element_vis(t.showeditorelements);
-
-						editor_refresheditmarkers();
-
-						t.refreshgrideditcursor = 1;
-						current_selected_group = -1;
-						t.gridentity = 0;
-						t.gridentityposoffground = 0;
-						t.gridentityusingsoftauto = 0;
-						t.gridentityautofind = 0;
-						t.gridentityobj = 0;
-						editor_refreshentitycursor();
-						t.widget.pickedObject = 0;
-						t.gridentityextractedindex = 0;
-
-						t.widget.pickedObject = 0; widget_updatewidgetobject();
-						iSelectecElement = t.e - 1;
-					}
-				}
-
-				if (ImGui::StyleButton("Add", ImVec2(buttonwide, 0)))
-				{
-					//Select script.
-					sStartLibrarySearchString = "global";
-					iLastDisplayLibraryType = -1;
-					bExternal_Entities_Window = true;
-					iDisplayLibraryType = 4;
-					iLibraryStingReturnToID = window->GetID("ScriptSelector##+");
-				}
-				ImGui::SameLine();
-				int iDeleteIfFound = 0;
-				if (ImGui::StyleButton("Delete", ImVec2(buttonwide, 0)))
-				{
-					if (iSelectecElement >= 0)
-					{
-						//PE: Delete.
-						int iAction = askBoxCancel("This will delete all your visual changes, are you sure?", "Confirmation"); //1==Yes 2=Cancel 0=No
-						if (iAction == 1)
-						{
-							iDeleteIfFound = iSelectecElement;
-						}
-					}
-				}
-
-				uint32_t uniqueId = 4000;
-				uniqueId += 28000; //PE: from lib uniqueId += 24000;
-
-				int iDefaultTexture = FILETYPE_SCRIPT;
-				float w = ImGui::GetContentRegionAvailWidth();
-				ImGui::Columns(2, "GlobalBehaviors2elements", false);  //false no border
-				ImGui::SetColumnWidth(0, w * 0.5f);
-				ImGui::SetColumnWidth(1, w * 0.5f);
-				bool bFoundSelected = false;
-				for (t.e = 1; t.e <= g.entityelementlist; t.e++)
-				{
-					t.entid = t.entityelement[t.e].bankindex;
-					if (t.entid > 0 && t.entityprofile[t.entid].ismarker == 12)
-					{
-						int image = FILETYPE_SCRIPT;
-						if (t.entityelement[t.e].eleprof.aimain_s.Len() > 0)
-						{
-							//PE: check if we need to update icons.
-							if (t.entityelement[t.e].eleprof.aimain_s != t.entityelement[t.e].eleprof.thumb_aimain_s ||
-								t.entityelement[t.e].eleprof.thumb_id != uniqueId)
-							{
-								//PE: Load image.
-								std::string sFile = Left(t.entityelement[t.e].eleprof.aimain_s.Get(), Len(t.entityelement[t.e].eleprof.aimain_s.Get()) - 4);
-								std::string sImgName = "scriptbank\\" + sFile;
-								if (pref.current_style == 25 || pref.current_style == 3)
-									sImgName += ".png";
-								else
-									sImgName += "2.png";
-
-								if (ImageExist(uniqueId) == 1) DeleteImage(uniqueId);
-								image_setlegacyimageloading(true);
-								LoadImage((char*)sImgName.c_str(), uniqueId);
-								image_setlegacyimageloading(false);
-								t.entityelement[t.e].eleprof.thumb_aimain_s = t.entityelement[t.e].eleprof.aimain_s;
-								t.entityelement[t.e].eleprof.thumb_id = uniqueId;
-							}
-							if (ImageExist(uniqueId))
-							{
-								image = uniqueId;
-							}
-							uniqueId++;
-						}
-
-
-						int iTextureID = image;
-
-						ImVec2 ImageSize = ImVec2(buttonwide, ImGui::GetFontSize());
-						if (!(ImGui::GetColumnIndex() % 2))
-							ImageSize.x -= 2;
-
-						ID3D11ShaderResourceView* lpTexture = GetImagePointerView(iTextureID);
-						if (lpTexture)
-						{
-							float img_w = ImageWidth(iTextureID);
-							float img_h = ImageHeight(iTextureID);
-							ImageSize.y = img_h * (ImageSize.x / img_w);
-						}
-						ImVec2 vImagePos = ImGui::GetCursorPos();
-						ImGui::Dummy(ImageSize);
-						ImVec4 color = ImVec4(1.0, 1.0, 1.0, 1.0);
-						ImVec4 back_color = ImVec4(0.2, 0.2, 0.2, 0.75);
-
-						if (ImGui::IsItemHovered())
-						{
-							color.w = 0.75;
-							if (ImGui::IsMouseReleased(0))
-							{
-								iSelectecElement = t.e;
-								fpe_current_loaded_script = -1; //Reload image and DLUA.
-
-							}
-						}
-
-						ImVec2 img_pos = ImGui::GetWindowPos() + vImagePos;
-						img_pos.x -= 3; //PE: Fit under buttons.
-						if ((ImGui::GetColumnIndex() % 2))
-							img_pos.x -= 3;
-						img_pos.y -= ImGui::GetScrollY();
-						window->DrawList->AddRectFilled(img_pos, img_pos + ImageSize, ImGui::GetColorU32(back_color));
-						if (lpTexture)
-						{
-							window->DrawList->AddImage((ImTextureID)lpTexture, img_pos, img_pos + ImageSize, ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(color));
-						}
-						if (iSelectecElement == t.e)
-						{
-							bFoundSelected = true;
-							ImVec4 bg_col = ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram]; // { 0.0, 0.0, 0.0, 1.0 };
-							window->DrawList->AddRect(img_pos, img_pos + ImageSize - ImVec2(0, 0), ImGui::GetColorU32(bg_col), 0, 15, 3.0f);
-						}
-
-						std::string name = t.entityelement[t.e].eleprof.aimain_s.Get();
-						std::size_t slash = name.find_last_of("/\\");
-						if (slash > 0)
-						{
-							name = name.substr(slash + 1);
-						}
-						ImGui::TextCenter(" %s", name.c_str());
-
-						ImGui::NextColumn();
-
-					}
-				}
-				ImGui::Columns(1);
-
-				ImGui::Separator();
-				if (bFoundSelected && iSelectecElement >= 0)
-				{
-					int iEntityIndex = iSelectecElement;
-					int iMasterID = t.entityelement[iEntityIndex].bankindex;
-					if (iMasterID > 0)
-					{
-						DisplayFPEBehavior(false, iMasterID, &t.entityelement[iEntityIndex].eleprof, iEntityIndex, true);
-						ImGui::Separator();
-						bool btmp = t.entityelement[iEntityIndex].eleprof.systemwide_lua;
-
-						float fPropertiesColoumWidth = ImGui::GetCursorPosX() + 110.0f;
-						ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-						ImGui::Text("Active All Levels");
-						ImGui::SameLine();
-						ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
-						ImGui::SetCursorPos(ImVec2(fPropertiesColoumWidth, ImGui::GetCursorPosY()));
-						if (ImGui::Checkbox("##Active All Levels", &btmp))
-						{
-							t.entityelement[iEntityIndex].eleprof.systemwide_lua = btmp;
-						}
-					}
-				}
-
-				if (bFoundSelected && iDeleteIfFound > 0)
-				{
-					t.obj = t.entityelement[iDeleteIfFound].obj;
-					if (t.obj > 0)
-					{
-						if (ObjectExist(t.obj) == 1)
-						{
-							DeleteObject(t.obj);
-						}
-					}
-					t.entityelement[iDeleteIfFound].obj = 0;
-					t.entityelement[iDeleteIfFound].maintype = 0;
-					t.entityelement[iDeleteIfFound].bankindex = 0;
-					fpe_current_loaded_script = -1; //Reload image and DLUA.
-					iSelectecElement = -1;
-				}
-
-				ImGui::Indent(-10);
-			}
-		}
 		// Control all in-game debugging options 
-		if (pref.iEnableDeveloperProperties)
+		if (pref.iEnableDeveloperProperties && iMode != 0) //PE: Now only in tab tab (iMode != 0))
 		{
-			if (pref.bAutoClosePropertySections && iLastOpenHeader != 12)
-				ImGui::SetNextItemOpen(false, ImGuiCond_Always); 
-
-			if (ImGui::StyleCollapsingHeader("AI Management", wflags))
-			{
-				iLastOpenHeader = 12;
-				ImGui::Indent(10);
-				ImGui::PushItemWidth(-10);
-				extern bool g_bShowRecastDetourDebugVisuals;
-				if (ImGui::Checkbox("Show Navigation Debug Visuals", &g_bShowRecastDetourDebugVisuals))
-				{
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle whether the navigation system debug visuals should be shown");
-				ImGui::PopItemWidth();
-
-				ImGui::PushItemWidth(-10);
-
-				extern bool g_bResetHasForLevelGeneration;
-				if (ImGui::Checkbox("Disable Navmesh Generation", &t.visuals.bEnableZeroNavMeshMode))
-				{
-					t.gamevisuals.bEnableZeroNavMeshMode = t.visuals.bEnableZeroNavMeshMode;
-					t.editorvisuals.bEnableZeroNavMeshMode = t.visuals.bEnableZeroNavMeshMode;
-					g_bResetHasForLevelGeneration = true;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle navmesh generation (enables system to detecting walkable areas) (needs to rebuild level)");
-				ImGui::PopItemWidth();
-
-				float but_gadget_size = ImGui::GetFontSize()*10.0;
-				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (but_gadget_size*0.5), 0.0f));
-				if (ImGui::StyleButton("Edit Behaviors##TabTabEditBehaviors", ImVec2(but_gadget_size, 0)))
-				{
-					extern bool g_bBehaviorEditorActive;
-					g_bBehaviorEditorActive = true;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Open the Behavior Editor to debug and edit logic live");
-
-				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
-				if (ImGui::StyleButton("View Slowest Logic##TabTabEditBehaviors", ImVec2(but_gadget_size, 0)))
-				{
-					extern int g_iViewPerformanceTimers;
-					g_iViewPerformanceTimers = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Run a live snapshot of the ten slowest behaviours currently running");
-
-				ImGui::Indent(-10);
-			}
+			bool AI_Management_Settings(float fTabColumnWidth, bool bVisualUpdated);
+			bVisualUpdated = AI_Management_Settings(fTabColumnWidth, bVisualUpdated);
 		}
 
 		if (!bRenderTabTab && !pref.bHideTutorials)
@@ -8265,6 +7071,8 @@ void tab_tab_visuals(int iPage, int iMode)
 			#endif
 		}
 
+		//PE: Moved to Game Settings.
+		/*
 		//Reset
 		ImGui::Separator();
 		float but_gadget_size = ImGui::GetFontSize()*10.0;
@@ -8281,8 +7089,9 @@ void tab_tab_visuals(int iPage, int iMode)
 			}
 		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Reset Visuals to Default Values");
+		*/
 
-		ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (but_gadget_size*0.5), 0.0f));
+		//ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (but_gadget_size*0.5), 0.0f));
 
 		if (ImGui::GetCurrentWindow()->ScrollbarSizes.x > 0)
 		{
@@ -19186,7 +17995,16 @@ void process_entity_library_v2(void)
 						}
 
 						if (dir_name.length() == 0)
-							__debugbreak();
+						{
+							static uint32_t maxerrors = 5;
+							void timestampactivity(int i, char* desc_s);
+							if (maxerrors > 0)
+							{
+								maxerrors--;
+								timestampactivity(0, "DEBUG: dir_name.length() == 0");
+							}
+							//__debugbreak();
+						}
 
 						int is = root_folders.size();
 						if (mem_list_count < 5000 && dir_name.length() < 256 && dir_name.length() > 0 )
@@ -26587,6 +25405,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 		if (fpe_current_loaded_script != item_current_type_selection)
 		{
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+				bPreviewWPE = false;
+			}
+
 			//Load in lua and check for custom properties.
 			cstr script_name_append = "";
 			if (item_current_type_selection < g_scriptpeople_item_count - 1)
@@ -26913,6 +25741,15 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			}
 			ImGui::PopItemWidth();
 
+			//PE: min 0.001 , 0 is used to reset to 1.0f.
+			ImGui::TextCenter("Probe Brightness");
+			ImGui::PushItemWidth(-10);
+			if (ImGui::MaxSliderInputFloat("##fLightfProbeBrightness", &edit_grideleprof->light.fProbeBrightness, 0.01f, 10.0f, "Specify the brightness of the environment probe"))
+			{
+				g_bLightProbeScaleChanged = true;
+				bLightChanged = true;
+			}
+			ImGui::PopItemWidth();
 			// and done
 			return;
 		}
@@ -28295,6 +27132,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			speech_ids[speech_loop] = -1;
 		if (fpe_current_loaded_script != fpe_current_selected_script)
 		{
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+				bPreviewWPE = false;
+			}
+
 			//Load in lua and check for custom properties.
 			cstr script_name = "";
 			//if (strnicmp(edit_grideleprof->aimain_s.Get(), "projectbank", 11) != NULL) 
@@ -28690,6 +27537,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 			if (fpe_current_loaded_script != item_current_type_selection)
 			{
+				if (PreviewWPERoot != 0)
+				{
+					//PE: Delete effects.
+					WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+					void DeleteEmitterEffects(uint32_t root);
+					DeleteEmitterEffects(PreviewWPERoot);
+					PreviewWPERoot = 0;
+					bPreviewWPE = false;
+				}
+
 				//Load in lua and check for custom properties.
 				cstr script_name_appendage = "";
 				if (item_current_type_selection < g_scriptobjects_item_count - 1) //PE: Need to check for custom
@@ -28903,6 +27760,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 					speech_ids[speech_loop] = -1;
 				if (fpe_current_loaded_script != fpe_current_selected_script) 
 				{
+					if (PreviewWPERoot != 0)
+					{
+						//PE: Delete effects.
+						WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+						void DeleteEmitterEffects(uint32_t root);
+						DeleteEmitterEffects(PreviewWPERoot);
+						PreviewWPERoot = 0;
+						bPreviewWPE = false;
+					}
+
 					//Load in lua and check for custom properties.
 					cstr script_name = "";
 					//if (strnicmp(edit_grideleprof->aimain_s.Get(), "projectbank", 11) != NULL) 
@@ -29846,6 +28713,108 @@ void DisplayFPEGeneral(bool readonly, int entid, entityeleproftype *edit_gridele
 					edit_grideleprof->iscollectable = 1;
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("If set the collectable is a resource and can be merged with similar objects");
+			ImGui::Indent(-10);
+		}
+
+
+		if(elementID > 0 && entid > 0 && entid < t.entityprofile.size() && elementID < t.entityelement.size() && t.entityprofile[entid].isweapon_s.Len() <= 0 && strlen(pref.cLastUsedStoryboardProject) > 0)
+		{
+			int iEntityIndex = elementID;
+			int iMasterID = entid;
+			int iCollectionItemIndex = -1;
+			bool bHaveProjectGlobalObject = false;
+			for (int n = 0; n < g_collectionList.size(); n++)
+			{
+				if (g_collectionList[n].collectionFields.size() > 0)
+				{
+					//t.entityelement[e].eleprof.name_s.Get()
+					if (g_collectionList[n].collectionFields[0] == t.entityelement[elementID].eleprof.name_s)
+					{
+						iCollectionItemIndex = n;
+						bHaveProjectGlobalObject = true;
+						break;
+					}
+				}
+			}
+
+			bool g_bChangedGameCollectionList = false;
+			ImGui::Indent(10);
+			bool bProjectWide = edit_grideleprof->isProjectGlobal;
+			if (ImGui::Checkbox("Is Project Global?", &bProjectWide))
+			{
+				if (bProjectWide == true)
+				{
+					edit_grideleprof->isProjectGlobal = 1;
+					{
+						// create an item entry
+						collectionItemType item;
+						fill_rpg_item_defaults(&item, iMasterID, iEntityIndex);
+
+						//PE: Check if already added.
+						bool bNewItemIsUnqiue = true;
+						for (int n = 0; n < g_collectionList.size(); n++)
+						{
+							if (item.collectionFields.size() > 0)
+							{
+								if (g_collectionList[n].collectionFields.size() > 0)
+								{
+									//t.entityelement[e].eleprof.name_s.Get()
+									if (g_collectionList[n].collectionFields[0] == item.collectionFields[0])
+									{
+										bNewItemIsUnqiue = false;
+										break;
+									}
+								}
+							}
+						}
+						if (bNewItemIsUnqiue == true)
+						{
+							g_collectionList.push_back(item);
+							g_bChangedGameCollectionList = true;
+						}
+
+					}
+				}
+				else
+				{
+					edit_grideleprof->isProjectGlobal = 0;
+				}
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("If set this object will be available on all levels, but must be controlled by Lua");
+
+			if (bHaveProjectGlobalObject && iCollectionItemIndex >= 0)
+			{
+				//PE: Delete Project Global Object
+				float but_gadget_size = ImGui::GetFontSize() * 12.0;
+				float w = ImGui::GetWindowContentRegionWidth() - 10.0;
+				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+				LPSTR pCreateButtonLabel = "Delete Project Global Object";
+				if (ImGui::StyleButton(pCreateButtonLabel, ImVec2(but_gadget_size, 0)))
+				{
+					std::vector<collectionItemType> newCollectionList;
+					for (int ci = 0; ci < g_collectionList.size(); ci++)
+					{
+						if (ci != iCollectionItemIndex)
+						{
+							newCollectionList.push_back(g_collectionList[ci]);
+						}
+					}
+					g_collectionList = newCollectionList;
+					g_bChangedGameCollectionList = true;
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Delete this project global object item from the main collection list of the game project");
+			}
+			// save any changes to game collection list 
+			if (g_bChangedGameCollectionList == true)
+			{
+				// go through all object parents to ensure
+				refresh_rpg_parents_of_items();
+
+				// save collection item list out
+				save_rpg_system(pref.cLastUsedStoryboardProject, true);
+				g_bChangedGameCollectionList = false;
+			}
+
 			ImGui::Indent(-10);
 		}
 	}
@@ -32121,12 +31090,12 @@ void ProcessBugReporting(void)
 							CopyFileA(pDXDiagSrc.Get(), pDXDiagSystemScan.Get(), FALSE);
 
 							// get system specs from users machine
-							LPSTR pOldDir = GetDir();
+							cstr pOldDir = GetDir();
 							SetCurrentDirectoryA(g.mydocumentsdir_s.Get());
 							SetCurrentDirectoryA("GameGuruApps");
 							SetCurrentDirectoryA("GameGuruMAX");
 							int iStatusValue = ExecuteFile("dxdiagsystemspecs.bat", "", "", 1, 1);
-							SetDir(pOldDir);
+							SetDir(pOldDir.Get());
 
 							// load in new report
 							if (FileExist(pDXDiagReport.Get()))
@@ -33069,8 +32038,10 @@ void MouseLeftDragXZPanning(void)
 		static ImVec2 vStartPos = { 0,0 };
 		static bool bRestoreMouseAfterXZPan = false;
 		bool bOkayToGo = false;
+		static bool bOverLockedObject = false;
 		if (bPanningActive == true) bOkayToGo = true;
 		if (t.onedrag == 0 && bPanningActive == false && pref.iDragCameraMovement && t.ebe.on == 0 && t.inputsys.xmouse != 500000 && t.grideditselect == 5 && t.gridentity == 0 && t.widget.activeObject == 0 && t.inputsys.keyshift == 0 && t.inputsys.keycontrol == 0 && bDotObjectDragging==false ) bOkayToGo = true;
+		if(bOverLockedObject) bOkayToGo = false;
 		if (ImGui::IsMouseDown(0) && bOkayToGo == true)
 		{
 			//PE: Give priority to object selection
@@ -33088,48 +32059,60 @@ void MouseLeftDragXZPanning(void)
 			static float fTerrainLastHitX = 0.0f;
 			static float fTerrainLastHitZ = 0.0f;
 			float fTerrainHitX, fTerrainHitY, fTerrainHitZ;
+			//PE: Bug fix , if locked object is under cursor terrain pan is activated.
+			bool bLockedObject = false;
 			if (WickedCall_GetPick(&fTerrainHitX, &fTerrainHitY, &fTerrainHitZ, NULL, NULL, NULL, NULL, GGRENDERLAYERS_NORMAL | GGRENDERLAYERS_TERRAIN) == true)
 			{
-				if (bPanningActive==false)
+				if (g_hovered_pobject != NULL)
 				{
-					bPanningActive = true;
-					bDragCameraActive = true;
-					fTerrainLastHitX = fTerrainHitX;
-					fTerrainLastHitZ = fTerrainHitZ;
-					if (bRestoreMouseAfterXZPan == false && ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow)
-					{
-						bRestoreMouseAfterXZPan = true;
-						ImGui::SetMouseCursor(ImGuiMouseCursor_Pan);
-					}
+					bLockedObject = true;
+					bOverLockedObject = true;
+					bRestoreMouseAfterXZPan = false;
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 				}
-				float fDifferenceX = fTerrainHitX - fTerrainLastHitX;
-				float fDifferenceZ = fTerrainHitZ - fTerrainLastHitZ;
-				//LB: prevent moving TOO fast such as grabbing terrain in extreme distance and shifting
-				if (fabs(fDifferenceX) + fabs(fDifferenceZ) > 100.0f)
+				if (!bLockedObject)
 				{
-					float fDist = sqrt((fabs(fDifferenceX)*fabs(fDifferenceX)) + (fabs(fDifferenceZ)*fabs(fDifferenceZ)));
-					fDifferenceX = (fDifferenceX / fabs(fDist)) * 100.0f;
-					fDifferenceZ = (fDifferenceZ / fabs(fDist)) * 100.0f;
-				}
-				fDifferenceX *= 1.8; //Move a bit faster.
-				fDifferenceZ *= 1.8; //Move a bit faster.
-
-				//PE: If we move in-out of water we can get some huge differences.
-				if (fabs(fDifferenceX) + fabs(fDifferenceZ) < 6000.0f)
-				{
-					if (fabs(fDifferenceX) + fabs(fDifferenceZ) != 0.0f)
+					if (bPanningActive == false)
 					{
-						bPanningActive = false;
-						// LB: also need to close this down or we end up locked in constant drag
-						bDragCameraActive = false;
-						if (bRestoreMouseAfterXZPan == true)
+						bPanningActive = true;
+						bDragCameraActive = true;
+						fTerrainLastHitX = fTerrainHitX;
+						fTerrainLastHitZ = fTerrainHitZ;
+						if (bRestoreMouseAfterXZPan == false && ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow)
 						{
-							bRestoreMouseAfterXZPan = false;
-							ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+							bRestoreMouseAfterXZPan = true;
+							ImGui::SetMouseCursor(ImGuiMouseCursor_Pan);
 						}
 					}
-					t.cx_f = t.editorfreeflight.c.x_f = (t.editorfreeflight.c.x_f - fDifferenceX);
-					t.cy_f = t.editorfreeflight.c.z_f = (t.editorfreeflight.c.z_f - fDifferenceZ);
+					float fDifferenceX = fTerrainHitX - fTerrainLastHitX;
+					float fDifferenceZ = fTerrainHitZ - fTerrainLastHitZ;
+					//LB: prevent moving TOO fast such as grabbing terrain in extreme distance and shifting
+					if (fabs(fDifferenceX) + fabs(fDifferenceZ) > 100.0f)
+					{
+						float fDist = sqrt((fabs(fDifferenceX) * fabs(fDifferenceX)) + (fabs(fDifferenceZ) * fabs(fDifferenceZ)));
+						fDifferenceX = (fDifferenceX / fabs(fDist)) * 100.0f;
+						fDifferenceZ = (fDifferenceZ / fabs(fDist)) * 100.0f;
+					}
+					fDifferenceX *= 1.8; //Move a bit faster.
+					fDifferenceZ *= 1.8; //Move a bit faster.
+
+					//PE: If we move in-out of water we can get some huge differences.
+					if (fabs(fDifferenceX) + fabs(fDifferenceZ) < 6000.0f)
+					{
+						if (fabs(fDifferenceX) + fabs(fDifferenceZ) != 0.0f)
+						{
+							bPanningActive = false;
+							// LB: also need to close this down or we end up locked in constant drag
+							bDragCameraActive = false;
+							if (bRestoreMouseAfterXZPan == true)
+							{
+								bRestoreMouseAfterXZPan = false;
+								ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+							}
+						}
+						t.cx_f = t.editorfreeflight.c.x_f = (t.editorfreeflight.c.x_f - fDifferenceX);
+						t.cy_f = t.editorfreeflight.c.z_f = (t.editorfreeflight.c.z_f - fDifferenceZ);
+					}
 				}
 			}
 			fTerrainLastHitX = fTerrainHitX;
@@ -33148,6 +32131,8 @@ void MouseLeftDragXZPanning(void)
 				}
 			}
 			iActivateCount = 0;
+			if (!ImGui::IsMouseDown(0))
+				bOverLockedObject = false;
 		}
 	}
 	else
@@ -33226,10 +32211,10 @@ void GetFilesListForLibrary(char *path, bool bCreateThumbs, int win, int iThumbW
 			}
 		}
 		g_LibraryFileList.clear();
-		LPSTR pOldDir = GetDir();
+		cstr pOldDir = GetDir();
 		SetDir(path);
 		ChecklistForFiles();
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 		for (int c = 0; c < ChecklistQuantity(); c++)
 		{
 			cStr cFile = cStr(ChecklistString(1 + c));
@@ -33337,7 +32322,7 @@ void GetFilesListForLibrary(char *path, bool bCreateThumbs, int win, int iThumbW
 
 		if (bCreateThumbs)
 		{
-			SetDir(pOldDir);
+			SetDir(pOldDir.Get());
 			for (int n = 0; n < g_LibraryFileList.size(); n++)
 			{
 				//PE: Skip cached thumbs for now.
@@ -33384,7 +32369,7 @@ void GetFilesListForLibrary(char *path, bool bCreateThumbs, int win, int iThumbW
 				BackBufferCacheName = "";
 			}
 		}
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 		if (SortType == 1) SortFilesListForLibraryType();
 	}
 }
@@ -34225,7 +33210,7 @@ bool CompareFileNames(const ProjectSortData& file0, const ProjectSortData& file1
 // Fill in Project Sort Data so it can be sorted by write time later.
 void GetProjectSortData (std::vector<ProjectSortData>& output)
 {
-	LPSTR pOldDir = GetDir();
+	cstr pOldDir = GetDir();
 
 	char destination[MAX_PATH];
 	strcpy(destination, "projectbank\\");
@@ -34233,7 +33218,7 @@ void GetProjectSortData (std::vector<ProjectSortData>& output)
 
 	SetDir(destination);
 	ChecklistForFiles();
-	SetDir(pOldDir);
+	SetDir(pOldDir.Get());
 	for (int c = 1; c <= ChecklistQuantity(); c++)
 	{
 		if (ChecklistValueA(c) != 0)
@@ -34331,7 +33316,7 @@ void GetProjectSortData (std::vector<ProjectSortData>& output)
 			}
 		}
 	}
-	SetDir(pOldDir);
+	SetDir(pOldDir.Get());
 }
 
 void SortProjects(int iProjectSortMode)
@@ -37617,9 +36602,9 @@ void About_Screen(void)
 		ImGui::TextCenter("");
 
 		ImGui::SetWindowFontScale(1.25);
-		ImGui::TextCenter("(c) Copyright 2020-2025 The Game Creators Ltd. All Rights Reserved");
+		ImGui::TextCenter("(c) Copyright 2020-2025 Dark Basic Software Limited. All Rights Reserved");
 		ImGui::SetWindowFontScale(1.0);
-		ImGui::TextCenter("GameGuru MAX and the respective logos are trademarks or registred trademarks of The Game Creators Ltd.");
+		ImGui::TextCenter("GameGuru MAX and the respective logos are trademarks or registred trademarks of Dark Basic Software Limited.");
 		
 		ImGui::Text("");
 		ImGui::Text("");
@@ -38396,7 +37381,7 @@ void SetupDecalObject(int obj, int elementID)
 		}
 		
 
-		//if(!t.entityelement[elementID].eleprof.bCustomWickedMaterialActive) // ZJ: Only reset this if not using custom materials for this decal.
+		if(bUseFPE) //!t.entityelement[elementID].eleprof.bCustomWickedMaterialActive) // ZJ: Only reset this if not using custom materials for this decal.
 		{
 			//PE: Use unlit shader.
 			for (int iMesh = 0; iMesh < pObject->iMeshCount; iMesh++)
@@ -38471,7 +37456,7 @@ void loadMarketplaceData(int* ggMaxDlc, cstr* ggMaxLink, int* sketchfabDlc, cstr
 		std::string fullImageDir = "";
 
 		//Have to convert strings to chars for LoadImage() to take it in
-		char converter[254];
+		char converter[1024];
 
 		for (int i = 0; i < numOfPromoItems; i++)
 		{
@@ -38711,19 +37696,49 @@ void SetIconSetCheck(bool bInstant)
 			LoadImage("editors\\uiv3\\entity_triggerzone.png", ENTITY_TRIGGERZONE);
 			LoadImage("editors\\uiv3\\entity_behavior.png", ENTITY_BEHAVIOR);
 			
-
-			LoadImage("editors\\uiv3\\ccp-hat.png", CCP_HAT);
-			LoadImage("editors\\uiv3\\ccp-feet.png", CCP_FEET);
-			LoadImage("editors\\uiv3\\ccp-legs.png", CCP_LEGS);
-			LoadImage("editors\\uiv3\\ccp-body.png", CCP_BODY);
-			LoadImage("editors\\uiv3\\ccp-glasses.png", CCP_GLASSES);
-			LoadImage("editors\\uiv3\\ccp-beard.png", CCP_BEARD);
-			LoadImage("editors\\uiv3\\ccp-hair.png", CCP_HAIR);
-			LoadImage("editors\\uiv3\\ccp-head.png", CCP_HEAD);
-			LoadImage("editors\\uiv3\\ccp-tattoo.png", CCP_TATTOO);
+			if (FileExist("editors\\uiv3\\ccp2-hat.png"))
+				LoadImage("editors\\uiv3\\ccp2-hat.png", CCP_HAT);
+			else
+				LoadImage("editors\\uiv3\\ccp-hat.png", CCP_HAT);
+			if (FileExist("editors\\uiv3\\ccp2-feet.png"))
+				LoadImage("editors\\uiv3\\ccp2-feet.png", CCP_FEET);
+			else
+				LoadImage("editors\\uiv3\\ccp-feet.png", CCP_FEET);
+			if (FileExist("editors\\uiv3\\ccp2-legs.png"))
+				LoadImage("editors\\uiv3\\ccp2-legs.png", CCP_LEGS);
+			else
+				LoadImage("editors\\uiv3\\ccp-legs.png", CCP_LEGS);
+			if (FileExist("editors\\uiv3\\ccp2-body.png"))
+				LoadImage("editors\\uiv3\\ccp2-body.png", CCP_BODY);
+			else
+				LoadImage("editors\\uiv3\\ccp-body.png", CCP_BODY);
+			if (FileExist("editors\\uiv3\\ccp2-glasses.png"))
+				LoadImage("editors\\uiv3\\ccp2-glasses.png", CCP_GLASSES);
+			else
+				LoadImage("editors\\uiv3\\ccp-glasses.png", CCP_GLASSES);
+			if (FileExist("editors\\uiv3\\ccp2-beard.png"))
+				LoadImage("editors\\uiv3\\ccp2-beard.png", CCP_BEARD);
+			else
+				LoadImage("editors\\uiv3\\ccp-beard.png", CCP_BEARD);
+			if (FileExist("editors\\uiv3\\ccp2-hair.png"))
+				LoadImage("editors\\uiv3\\ccp2-hair.png", CCP_HAIR);
+			else
+				LoadImage("editors\\uiv3\\ccp-hair.png", CCP_HAIR);
+			if (FileExist("editors\\uiv3\\ccp2-head.png"))
+				LoadImage("editors\\uiv3\\ccp2-head.png", CCP_HEAD);
+			else
+				LoadImage("editors\\uiv3\\ccp-head.png", CCP_HEAD);
+			if (FileExist("editors\\uiv3\\ccp2-tattoo.png"))
+				LoadImage("editors\\uiv3\\ccp2-tattoo.png", CCP_TATTOO);
+			else
+				LoadImage("editors\\uiv3\\ccp-tattoo.png", CCP_TATTOO);
+			LoadImage("editors\\uiv3\\ccp2-accessory_one.png", CCP_ACCESSORY1);
+			LoadImage("editors\\uiv3\\ccp2-accessory_two.png", CCP_ACCESSORY2);
 
 			LoadImage("editors\\uiv3\\filetype-script.png", FILETYPE_SCRIPT);
 
+			LoadImage("editors\\uiv3\\blue-eye-on.png", ENTITY_EYE_ON);
+			LoadImage("editors\\uiv3\\blue-eye-off.png", ENTITY_EYE_OFF);
 		}
 		else
 		{
@@ -38747,17 +37762,49 @@ void SetIconSetCheck(bool bInstant)
 			LoadImage("editors\\uiv3\\entity_triggerzone2.png", ENTITY_TRIGGERZONE);
 			LoadImage("editors\\uiv3\\entity_behavior2.png", ENTITY_BEHAVIOR);
 
-			LoadImage("editors\\uiv3\\ccp-hat2.png", CCP_HAT);
-			LoadImage("editors\\uiv3\\ccp-feet2.png", CCP_FEET);
-			LoadImage("editors\\uiv3\\ccp-legs2.png", CCP_LEGS);
-			LoadImage("editors\\uiv3\\ccp-body2.png", CCP_BODY);
-			LoadImage("editors\\uiv3\\ccp-glasses2.png", CCP_GLASSES);
-			LoadImage("editors\\uiv3\\ccp-beard2.png", CCP_BEARD);
-			LoadImage("editors\\uiv3\\ccp-hair2.png", CCP_HAIR);
-			LoadImage("editors\\uiv3\\ccp-head2.png", CCP_HEAD);
-			LoadImage("editors\\uiv3\\ccp-tattoo2.png", CCP_TATTOO);
+			if (FileExist("editors\\uiv3\\ccp2-hat2.png"))
+				LoadImage("editors\\uiv3\\ccp2-hat2.png", CCP_HAT);
+			else
+				LoadImage("editors\\uiv3\\ccp-hat2.png", CCP_HAT);
+			if (FileExist("editors\\uiv3\\ccp2-feet2.png"))
+				LoadImage("editors\\uiv3\\ccp2-feet2.png", CCP_FEET);
+			else
+				LoadImage("editors\\uiv3\\ccp-feet2.png", CCP_FEET);
+			if (FileExist("editors\\uiv3\\ccp2-legs2.png"))
+				LoadImage("editors\\uiv3\\ccp2-legs2.png", CCP_LEGS);
+			else
+				LoadImage("editors\\uiv3\\ccp-legs2.png", CCP_LEGS);
+			if (FileExist("editors\\uiv3\\ccp2-body2.png"))
+				LoadImage("editors\\uiv3\\ccp2-body2.png", CCP_BODY);
+			else
+				LoadImage("editors\\uiv3\\ccp-body2.png", CCP_BODY);
+			if (FileExist("editors\\uiv3\\ccp2-glasses2.png"))
+				LoadImage("editors\\uiv3\\ccp2-glasses2.png", CCP_GLASSES);
+			else
+				LoadImage("editors\\uiv3\\ccp-glasses2.png", CCP_GLASSES);
+			if (FileExist("editors\\uiv3\\ccp2-beard2.png"))
+				LoadImage("editors\\uiv3\\ccp2-beard2.png", CCP_BEARD);
+			else
+				LoadImage("editors\\uiv3\\ccp-beard2.png", CCP_BEARD);
+			if (FileExist("editors\\uiv3\\ccp2-hair2.png"))
+				LoadImage("editors\\uiv3\\ccp2-hair2.png", CCP_HAIR);
+			else
+				LoadImage("editors\\uiv3\\ccp-hair2.png", CCP_HAIR);
+			if (FileExist("editors\\uiv3\\ccp2-head2.png"))
+				LoadImage("editors\\uiv3\\ccp2-head2.png", CCP_HEAD);
+			else
+				LoadImage("editors\\uiv3\\ccp-head2.png", CCP_HEAD);
+			if (FileExist("editors\\uiv3\\ccp2-tattoo2.png"))
+				LoadImage("editors\\uiv3\\ccp2-tattoo2.png", CCP_TATTOO);
+			else
+				LoadImage("editors\\uiv3\\ccp-tattoo2.png", CCP_TATTOO);
+			LoadImage("editors\\uiv3\\ccp2-accessory_one2.png", CCP_ACCESSORY1);
+			LoadImage("editors\\uiv3\\ccp2-accessory_two2.png", CCP_ACCESSORY2);
 
 			LoadImage("editors\\uiv3\\filetype-script2.png", FILETYPE_SCRIPT);
+
+			LoadImage("editors\\uiv3\\gray-eye-on.png", ENTITY_EYE_ON);
+			LoadImage("editors\\uiv3\\gray-eye-off.png", ENTITY_EYE_OFF);
 
 		}
 		current_icon_set = pref.current_style;
@@ -42816,7 +41863,7 @@ void process_storeboard(bool bInitOnly)
 					}
 
 					// save this change out to relevant file (Files\editors\keymap\custom.ini)
-					LPSTR pOldDir = GetDir();
+					cstr pOldDir = GetDir();
 					char pWritableKeyMapFile[MAX_PATH];
 					strcpy(pWritableKeyMapFile, "editors\\keymap\\custom.ini");
 					GG_GetRealPath(pWritableKeyMapFile, 1);
@@ -44795,7 +43842,7 @@ void process_storeboard(bool bInitOnly)
 										{
 											char pGameCoreFolder[MAX_PATH];
 											strcpy(pGameCoreFolder, pGameCoreAsset);
-											LPSTR pOldDir = GetDir();
+											cstr pOldDir = GetDir();
 											char pSrcFolder[MAX_PATH];
 											strcpy(pSrcFolder, pReconstructGameGuruRootFiles);
 											strcat(pSrcFolder, "gamecore\\guns\\");
@@ -44804,7 +43851,7 @@ void process_storeboard(bool bInitOnly)
 											{
 												SetDir(pSrcFolder);
 												ChecklistForFiles();
-												SetDir(pOldDir);
+												SetDir(pOldDir.Get());
 												strcat(pGameCoreFolder, "\\");
 												strcat(pSrcFolder, "\\");
 												for (int c = 1; c <= ChecklistQuantity(); c++)
@@ -48329,7 +47376,7 @@ void GetProjectList(char *path, bool bGetThumbs)
 		projectbank_active.clear();
 
 		cLastProjectList = path;
-		LPSTR pOldDir = GetDir();
+		cstr pOldDir = GetDir();
 
 		char destination[MAX_PATH];
 		strcpy(destination, path);
@@ -48337,7 +47384,7 @@ void GetProjectList(char *path, bool bGetThumbs)
 
 		SetDir(destination);
 		ChecklistForFiles();
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 		for (int c = 1; c <= ChecklistQuantity(); c++)
 		{
 			if (ChecklistValueA(c) != 0)
@@ -48391,7 +47438,7 @@ void GetProjectList(char *path, bool bGetThumbs)
 				}
 			}
 		}
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 
 		//PE: No need to read it here, as we need to do that after sorting.
 		
@@ -48821,7 +47868,7 @@ float WidgetSelectUsedFont(int nodeid, int index)
 	for (int i = 0; i < StoryboardFonts.size(); i++)
 	{
 		bool bIsSelected = false;
-		if (strcmp(cstr((char*)StoryboardFonts[i].second.c_str()).Lower().Get(), cstr(Storyboard.Nodes[nodeid].widget_font[index]).Lower().Get()) == NULL)
+		if (stricmp(StoryboardFonts[i].second.c_str(), Storyboard.Nodes[nodeid].widget_font[index]) == NULL)
 		{
 			ImGui::PushFont(StoryboardFonts[i].first);  //storyboard special fonts.
 			return 2.0; //2.0=60,2.5=48
@@ -49167,11 +48214,11 @@ void* GetReadoutAddress(char* readoutTitle)
 	{
 		return (void*)&t.slidersmenuvalue[1][2].value;
 	}
-	else if (strcmp(readoutTitle, "Ammo Panel") == 0 )// && t.gunid > 0 && t.gun[t.gunid].weapontype != 51) may want to see weapon panel for melee
+	else if (strcmp(readoutTitle, "Ammo Panel") == 0 && t.gunid > 0 )// && t.gunid > 0 && t.gun[t.gunid].weapontype != 51) may want to see weapon panel for melee
 	{
 		return (void*)&t.iTmpImgID;
 	}
-	else if (strcmp(readoutTitle, "Weapon Held") == 0 ) // may want to see weapon symbol panel for melee && t.gun[t.gunid].weapontype != 51)
+	else if (strcmp(readoutTitle, "Weapon Held") == 0 && t.gunid > 0 ) // may want to see weapon symbol panel for melee && t.gun[t.gunid].weapontype != 51)
 	{
 		return (void*)&g.firemodes[t.gunid][g.firemode].iconimg;
 	}
@@ -51873,7 +50920,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 							if (ImGui::BeginCombo("##TextFontStoryboard", FontSelected)) // The second parameter is the label previewed before opening the combo.
 							{
 								bool bIsSelected = false;
-								if (strcmp(FontSelected, "Default Font") == NULL) bIsSelected = true;
+								if (stricmp(FontSelected, "Default Font") == NULL) bIsSelected = true;
 								ImGui::PushFont(customfontlarge);  //defaultfont
 								if (ImGui::Selectable("Default Font", bIsSelected))
 								{
@@ -51883,7 +50930,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 								for (int i = 0; i < StoryboardFonts.size(); i++)
 								{
 									bool bIsSelected = false;
-									if (strcmp(StoryboardFonts[i].second.c_str(), FontSelected) == NULL) bIsSelected = true;
+									if (stricmp(StoryboardFonts[i].second.c_str(), FontSelected) == NULL) bIsSelected = true;
 
 									ImGui::PushFont(StoryboardFonts[i].first);  //defaultfont
 									if (ImGui::Selectable(StoryboardFonts[i].second.c_str(), bIsSelected))
@@ -54667,3 +53714,1297 @@ void storyboard_openproject(float preview_size_x, float fNodeWidth, float fNodeH
 		}
 	}
 }
+
+bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
+{
+	bool bSetSimpleSky = false;
+	int wflags = ImGuiTreeNodeFlags_None;
+
+	if (pref.bAutoClosePropertySections && iLastOpenHeader != 8)
+		ImGui::SetNextItemOpen(false, ImGuiCond_Always);
+
+	if (ImGui::StyleCollapsingHeader("Post Processing", wflags))
+	{
+		ImGui::Indent(10);
+		iLastOpenHeader = 8;
+
+
+		//setVolumeLightsEnabled(true)
+		//PE: Do not work ?
+		//PE: Need to set SetVolumetricsEnabled(true) on the lights.
+		//PE: Better to use on spot lights ?
+		//static bool bVolumeLight = false;
+		//if (ImGui::Checkbox("bVolumeLight", &bVolumeLight))
+		//{
+		//	WickedCall_SunSetVolumetricsEnabled(bVolumeLight);
+		//	if (master_renderer)
+		//		master_renderer->setVolumeLightsEnabled(bVolumeLight);
+		//}
+
+		// only show option if not disabled VSYNC in SETUP.INI
+		if (g.gvsync != 0)
+		{
+			ImGui::PushItemWidth(-10);
+			if (ImGui::Checkbox("VSync##setVSyncEnabled", &t.visuals.bLevelVSyncEnabled))
+			{
+				t.gamevisuals.bLevelVSyncEnabled = t.visuals.bLevelVSyncEnabled;
+				gridedit_setvsync(t.visuals.bLevelVSyncEnabled);
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Vertical Sync will prevent screen tearing and cap FPS in game to your monitors refresh rate");
+			ImGui::PopItemWidth();
+		}
+
+		//Bloom
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Bloom Enabled##setBloomEnabled", &t.visuals.bBloomEnabled))
+		{
+			t.gamevisuals.bBloomEnabled = t.visuals.bBloomEnabled;
+			if (master_renderer)
+				master_renderer->setBloomEnabled(t.visuals.bBloomEnabled);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Setting Bloom enabled will cause bright objects or locations to appear to emit more light");
+
+		ImGui::PopItemWidth();
+		if (master_renderer && master_renderer->getBloomEnabled())
+		{
+			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##WickedsetBloomThreshold", &t.visuals.fsetBloomThreshold, 0.1f, 10.0f, "%.2f", 2.0f))
+			{
+				t.gamevisuals.fsetBloomThreshold = t.visuals.fsetBloomThreshold;
+				if (master_renderer) {
+					master_renderer->setBloomThreshold(t.visuals.fsetBloomThreshold);
+				}
+				//bVisualUpdated = true;
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Threshold is a measure of how bright an object or area must be before the bloom effect is applied");
+
+			if (ImGui::SliderFloat("##WickedsetBloomStrength", &t.visuals.fsetBloomStrength, 0.1f, 3.0f, "%.2f", 1.0f))
+			{
+				t.gamevisuals.fsetBloomStrength = t.visuals.fsetBloomStrength;
+				if (master_renderer) {
+					master_renderer->setBloomStrength(t.visuals.fsetBloomStrength);
+				}
+				//bVisualUpdated = true;
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Strength is a measure of how strongly the bloom is applied to the scene");
+
+			ImGui::PopItemWidth();
+		}
+
+		//tab_tab_Column_text("SSR", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("SSR##setSSREnabled", &t.visuals.bSSREnabled)) {
+			t.gamevisuals.bSSREnabled = t.visuals.bSSREnabled;
+			if (master_renderer)
+				master_renderer->setSSREnabled(t.visuals.bSSREnabled);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Screen Space Reflections use data from lights and objects shown on-screen to produce reflections");
+
+		ImGui::PopItemWidth();
+
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Reflections##setReflectionsEnabled", &t.visuals.bReflectionsEnabled)) {
+			t.gamevisuals.bReflectionsEnabled = t.visuals.bReflectionsEnabled;
+			if (master_renderer)
+				master_renderer->setReflectionsEnabled(t.visuals.bReflectionsEnabled);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Reflections are calculated by taking data from lights in the scene and determining how they react with the sky and terrain");
+
+		ImGui::PopItemWidth();
+
+		//tab_tab_Column_text("FXAA", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("FXAA##setFXAAEnabled", &t.visuals.bFXAAEnabled)) {
+			t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled;
+			if (master_renderer)
+				master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("FXAA can smooth out edges on-screen that look pixelated, at the cost of a slight blur");
+		ImGui::PopItemWidth();
+
+		/*
+		//tab_tab_Column_text("Tessellation", fTabColumnWidth);
+		//PE: Tessellation dont work, it deform some objects , so cant be used for now. it need to be controlled per mesh.
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Tessellation##setTessellationEnabled", &t.visuals.bTessellation)) {
+			t.gamevisuals.bTessellation = t.visuals.bTessellation;
+			if (master_renderer)
+			{
+				wiRenderer::SetTessellationEnabled(t.visuals.bTessellation);
+			}
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Increases polygon counts for some objects based on how close they are to the camera");
+		ImGui::PopItemWidth();
+		*/
+
+		//tab_tab_Column_text("Light Shafts", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Light Shafts##setLightShaftsEnabled", &t.visuals.bLightShafts)) {
+			t.gamevisuals.bLightShafts = t.visuals.bLightShafts;
+			if (master_renderer)
+				master_renderer->setLightShaftsEnabled(t.visuals.bLightShafts);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enables light rays to cast from the sun");
+		ImGui::PopItemWidth();
+
+		// LB: aded lens flare
+		//tab_tab_Column_text("Lens Flare", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Lens Flare##setLensFlareEnabled", &t.visuals.bLensFlare))
+		{
+			t.gamevisuals.bLensFlare = t.visuals.bLensFlare;
+			if (master_renderer)
+				master_renderer->setLensFlareEnabled(t.visuals.bLensFlare);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enables lens flare from light cast from the sun");
+		ImGui::PopItemWidth();
+
+		// LB: added auto-exposure toggle
+		//tab_tab_Column_text("Auto Exposure", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Auto Exposure##setAutoExposureEnabled", &t.visuals.bAutoExposure))
+		{
+			t.gamevisuals.bAutoExposure = t.visuals.bAutoExposure;
+			if (master_renderer)
+				master_renderer->setEyeAdaptionEnabled(t.visuals.bAutoExposure);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Automatically adjusts the appearance of the light intensity when the brightness of an area changes");
+		ImGui::PopItemWidth();
+
+		if (t.visuals.bAutoExposure)
+		{
+			tab_tab_Column_text("Auto Exp Rate", fTabColumnWidth);
+			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##fAutoExpRate:", &t.visuals.fAutoExposureRate, 0.01, 4.0)) {
+				t.gamevisuals.fAutoExposureRate = t.visuals.fAutoExposureRate;
+				master_renderer->setEyeAdaptionRate(t.visuals.fAutoExposureRate);
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Sets how fast the brightness is adjusted");
+
+			tab_tab_Column_text("Auto Exp Level", fTabColumnWidth);
+			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##fAutoExpKey:", &t.visuals.fAutoExposureKey, 0.01, 0.5)) {
+				t.gamevisuals.fAutoExposureKey = t.visuals.fAutoExposureKey;
+				master_renderer->setEyeAdaptionKey(t.visuals.fAutoExposureKey);
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Auto Exposure Level - lower values are darker, higher values are lighter");
+		}
+
+		//PE: Added DOF.
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Depth Of Field (DOF)##DOF", &t.visuals.bDOF)) {
+			t.gamevisuals.bDOF = t.visuals.bDOF;
+			if (master_renderer)
+			{
+				if (t.visuals.bDOF)
+				{
+					wiScene::Scene& scene = wiScene::GetScene();
+					wiScene::CameraComponent& camera = wiScene::GetCamera();
+					camera.aperture_size = t.visuals.fDOFApertureSize;
+					camera.focal_length = t.visuals.fDOFFocalLength;
+					master_renderer->setDepthOfFieldStrength(t.visuals.fDOFStrength);
+				}
+				master_renderer->setDepthOfFieldEnabled(t.visuals.bDOF);
+			}
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Depth Of Field (DOF): Is the area of acceptable sharpness in front of and behind the subject which the camera lens is focused.");
+		ImGui::PopItemWidth();
+
+		if (t.visuals.bDOF)
+		{
+			tab_tab_Column_text("DOF Strength", fTabColumnWidth);
+			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##DOF Strength", &t.visuals.fDOFStrength, 1.0f, 20.0f))
+			{
+				t.gamevisuals.fDOFStrength = t.visuals.fDOFStrength;
+				if (master_renderer)
+					master_renderer->setDepthOfFieldStrength(t.visuals.fDOFStrength);
+			}
+			ImGui::PopItemWidth();
+
+			tab_tab_Column_text("DOF ApertureSize", fTabColumnWidth);
+			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##DOF fDOFApertureSize", &t.visuals.fDOFApertureSize, 0.0f, 1.0f))
+			{
+				t.gamevisuals.fDOFApertureSize = t.visuals.fDOFApertureSize;
+				if (master_renderer)
+				{
+					wiScene::Scene& scene = wiScene::GetScene();
+					wiScene::CameraComponent& camera = wiScene::GetCamera();
+					camera.aperture_size = t.visuals.fDOFApertureSize;
+					camera.UpdateCamera();
+					camera.SetDirty();
+				}
+			}
+			ImGui::PopItemWidth();
+
+			tab_tab_Column_text("DOF Focal Length", fTabColumnWidth);
+			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##DOF focal_length", &t.visuals.fDOFFocalLength, 0.001f, 800.0f))
+			{
+				t.gamevisuals.fDOFFocalLength = t.visuals.fDOFFocalLength;
+				if (master_renderer)
+				{
+					wiScene::Scene& scene = wiScene::GetScene();
+					wiScene::CameraComponent& camera = wiScene::GetCamera();
+					camera.focal_length = t.visuals.fDOFFocalLength;
+					camera.UpdateCamera();
+					camera.SetDirty();
+				}
+			}
+			ImGui::PopItemWidth();
+		}
+
+		tab_tab_Column_text("Gamma", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::SliderFloat("##fGamma:", &t.visuals.fGamma, 0.1, 10.0))
+		{
+			t.gamevisuals.fGamma = t.visuals.fGamma;
+			wiRenderer::SetGamma(t.visuals.fGamma);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Gamma Correction alters how bright colors are perceived");
+
+		tab_tab_Column_text("De Saturate", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::SliderFloat("##fDeSaturate:", &t.visuals.fDeSaturate, 0.0, 1.0))
+		{
+			t.gamevisuals.fDeSaturate = t.visuals.fDeSaturate;
+			wiRenderer::SetDeSaturate(t.visuals.fDeSaturate);
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("De Saturate colors");
+
+		ImGui::PopItemWidth();
+
+		const char* msaa_items_align[] = { "1 (disabled)", "2", "4", "8" };
+		int msaa_current_type_selection = 0;
+		if (t.visuals.iMSAASampleCount == 1) msaa_current_type_selection = 0;
+		else if (t.visuals.iMSAASampleCount == 2) msaa_current_type_selection = 1;
+		else if (t.visuals.iMSAASampleCount == 4) msaa_current_type_selection = 2;
+		else msaa_current_type_selection = 3;
+		tab_tab_Column_text("MSAA", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Combo("##setMSAASampleCount", &msaa_current_type_selection, msaa_items_align, IM_ARRAYSIZE(msaa_items_align)))
+		{
+			if (msaa_current_type_selection == 0) t.visuals.iMSAASampleCount = 1;
+			else if (msaa_current_type_selection == 1) t.visuals.iMSAASampleCount = 2;
+			else if (msaa_current_type_selection == 2) t.visuals.iMSAASampleCount = 4;
+			else t.visuals.iMSAASampleCount = 8;
+			t.gamevisuals.iMSAASampleCount = t.visuals.iMSAASampleCount;
+
+			if (master_renderer)
+			{
+				master_renderer->setMSAASampleCount(t.visuals.iMSAASampleCount);
+				old_iMSAASampleCount = t.visuals.iMSAASampleCount;
+			}
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("MSAA can smooth out edges detected on objects. The higher the number of samples the greater the performance cost");
+
+		ImGui::PopItemWidth();
+
+		// SSAO
+		//const char* ao_options[] = { "Disabled", "SSAO", "HBAO", "MSAO", "RTAO" };
+		const char* ao_options[] = { "Disabled", "Enabled" };
+		tab_tab_Column_text("SSAO", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Combo("##setAmbientOcclusion", &t.visuals.iMSAO, ao_options, IM_ARRAYSIZE(ao_options)))
+		{
+			t.gamevisuals.iMSAO = master.iAOSetting = t.visuals.iMSAO;
+			//master.masterrenderer.setAO( (RenderPath3D::AO) master.iAOSetting );
+			if (master.iAOSetting > 0) master.masterrenderer.setAO(RenderPath3D::AO_MSAO);
+			else master.masterrenderer.setAO(RenderPath3D::AO_DISABLED);
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Ambient Occlusion makes objects in corners or holes receive less ambient light");
+		ImGui::PopItemWidth();
+
+		if (t.visuals.iMSAO > 0)
+		{
+			tab_tab_Column_text("AO Power", fTabColumnWidth);
+			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##setAmbientOcclusionPower", &t.visuals.fMSAOPower, 0.01f, 8.0f, "%.2f", 2.0f))
+			{
+				t.gamevisuals.fMSAOPower = master.fAOPower = t.visuals.fMSAOPower;
+				master.masterrenderer.setAOPower(master.fAOPower);
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Ambient Occlusion power (default=1.0)");
+			ImGui::PopItemWidth();
+		}
+
+		// end post processing
+		ImGui::Indent(-10);
+	}
+	return(bVisualUpdated);
+}
+
+bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
+{
+	int wflags = ImGuiTreeNodeFlags_None;
+	static bool bOCDebug = false;
+	static bool bBoxDebug = false;
+	static int iHiddenObjects = 0;
+	static int iObjects = 0;
+	static int iFrustumCulled = 0;
+	int iSpot = 0, iPoint = 0;
+	int occ = 0;
+	if (bOCDebug && g_iDevToolsOpen >= 1)
+	{
+		int DrawOccludedObjects(bool bDebug, bool bBox = false, int* bHiddenObjects = nullptr, int* spot = nullptr, int* point = nullptr);
+		occ = DrawOccludedObjects(bOCDebug, bBoxDebug, &iHiddenObjects, &iSpot, &iPoint);
+	}
+
+	if (pref.bAutoClosePropertySections && iLastOpenHeader != 16)
+		ImGui::SetNextItemOpen(false, ImGuiCond_Always);
+
+	//PE: Optimizing
+	if (ImGui::StyleCollapsingHeader("Graphics and Performance", wflags))
+	{
+		ImGui::Indent(10);
+		iLastOpenHeader = 16;
+
+		// graphics options mode
+		ImGui::PushItemWidth(-10);
+		char* current_gfx_mode = "";
+		int iGFXMode = iGFXMode = t.visuals.shaderlevels.entities - 1;
+		const char* gfx_mode_combo[] = { "Highest (best for quality)", "Custom (tailored)" , "Low (best for performance)" };
+		if (iGFXMode == 0) current_gfx_mode = (char*)gfx_mode_combo[0];
+		if (iGFXMode == 1) current_gfx_mode = (char*)gfx_mode_combo[1];
+		if (iGFXMode == 2) current_gfx_mode = (char*)gfx_mode_combo[2];
+		if (ImGui::Combo("##ComboGFX_mode_combo", &iGFXMode, gfx_mode_combo, IM_ARRAYSIZE(gfx_mode_combo)))
+		{
+			if (iGFXMode == 0) visuals_shaderlevels_setlevel(1, true);
+			if (iGFXMode == 1) visuals_shaderlevels_setlevel(3, true);
+			if (iGFXMode == 2) visuals_shaderlevels_setlevel(4, true);
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Choose the ideal graphics mode for this level, or set custom settings");
+		ImGui::PopItemWidth();
+
+		// optimizations
+		extern bool bEnable30FpsAnimations;
+		extern bool g_bDelayedShadows;
+		extern bool g_bDelayedShadowsLaptop;
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Lower Animation & LUA Speed##Animationsculling", &bEnable30FpsAnimations))
+		{
+			t.gamevisuals.bEnable30FpsAnimations = t.visuals.bEnable30FpsAnimations = bEnable30FpsAnimations;
+			g.projectmodified = 1;
+
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Lower Animation Speed will lower the updating of animation & LUA to 30 FPS for increased speed when using many animations.");
+		ImGui::PopItemWidth();
+
+		extern bool bEnableDelayPointShadow;
+		extern float pointShadowScaler;
+
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Delayed Shadows##Animationsculling", &g_bDelayedShadows))
+		{
+			t.gamevisuals.g_bDelayedShadows = t.visuals.g_bDelayedShadows = g_bDelayedShadows;
+			g.projectmodified = 1;
+			if (g_bDelayedShadows && g_bDelayedShadowsLaptop)
+			{
+				bEnableDelayPointShadow = true;
+				pointShadowScaler = 0.6f;
+			}
+			else if (g_bDelayedShadows)
+			{
+				bEnableDelayPointShadow = true;
+				pointShadowScaler = 1.0f;
+			}
+			else
+			{
+				bEnableDelayPointShadow = false;
+				pointShadowScaler = 1.0f;
+			}
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Delayed Shadows will make fewer cascade shadow updates and increase your FPS.");
+		if (g_bDelayedShadows)
+		{
+			ImGui::SameLine();
+			if (ImGui::Checkbox("Laptop##Animationsculling", &g_bDelayedShadowsLaptop))
+			{
+				t.gamevisuals.g_bDelayedShadowsLaptop = t.visuals.g_bDelayedShadowsLaptop = g_bDelayedShadowsLaptop;
+				g.projectmodified = 1;
+				if (g_bDelayedShadows && g_bDelayedShadowsLaptop)
+				{
+					bEnableDelayPointShadow = true;
+					pointShadowScaler = 0.6f;
+				}
+				else if (g_bDelayedShadows)
+				{
+					bEnableDelayPointShadow = true;
+					pointShadowScaler = 1.0f;
+				}
+				else
+				{
+					bEnableDelayPointShadow = false;
+					pointShadowScaler = 1.0f;
+				}
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Delayed Shadows (Laptop) will make even fever cascade shadow updates and increase your FPS.");
+		}
+		ImGui::PopItemWidth();
+
+		//extern bool bEnableDelayPointShadow;
+		//extern float pointShadowScaler;
+		//if (ImGui::Checkbox("Delay Point Shadows", &bEnableDelayPointShadow))
+		//{
+		//}
+		//if (ImGui::SliderFloat("pointShadowScaler", &pointShadowScaler, 0.1f, 4.0f, "%.2f", 1.0f))
+		//{
+		//}
+		//ImGui::Text("Max 2 sec = %ld", LastMaxInTimer);
+
+
+		extern bool bEnableObjectCulling;
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Occlusion Culling##bOcclusionCulling", &t.visuals.bOcclusionCulling))
+		{
+			t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling;
+			g.projectmodified = 1;
+			if (t.visuals.bOcclusionCulling)
+			{
+				bEnableObjectCulling = true;
+				t.gamevisuals.bEnableObjectCulling = t.visuals.bEnableObjectCulling = bEnableObjectCulling;
+			}
+		}
+		if (wiRenderer::GetOcclusionCullingEnabled() != t.visuals.bOcclusionCulling)
+		{
+			wiRenderer::SetOcclusionCullingEnabled(t.visuals.bOcclusionCulling);
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Occlusion Culling will cull objects behind other object for less drawcalls");
+		ImGui::PopItemWidth();
+
+		if (g_iDevToolsOpen >= 1)
+		{
+			ImGui::SameLine();
+			ImGui::Checkbox("Debug", &bOCDebug);
+			ImGui::Checkbox("Debug Bounding Box", &bBoxDebug);
+		}
+		if (t.visuals.bOcclusionCulling)
+		{
+			extern uint32_t iCulledPointShadows;
+			extern uint32_t iCulledSpotShadows;
+			extern uint32_t iCulledAnimations;
+			extern bool bEnableTerrainChunkCulling;
+			extern bool bEnablePointShadowCulling;
+			extern bool bEnableSpotShadowCulling;
+			extern bool bEnableAnimationCulling;
+
+			if (ImGui::Checkbox("Terrain Chunk Culling", &bEnableTerrainChunkCulling))
+			{
+				t.gamevisuals.bEnableTerrainChunkCulling = t.visuals.bEnableTerrainChunkCulling = bEnableTerrainChunkCulling;
+				g.projectmodified = 1;
+				if (bEnableTerrainChunkCulling && !t.visuals.bOcclusionCulling)
+				{
+					t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
+				}
+			}
+			//if (bEnableTerrainChunkCulling)
+			//{
+			//	extern int OCCLODSTART;
+			//	ImGui::PushItemWidth(-10);
+			//	ImGui::SliderInt("Terrain LOD Culling Start", &OCCLODSTART, 0, 8);
+			//	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Terrain Chunk Culling Start LOD Level. For less occlusion check make value higher.");
+			//	ImGui::PopItemWidth();
+			//}
+			if (ImGui::Checkbox("Point Shadow Culling", &bEnablePointShadowCulling))
+			{
+				t.gamevisuals.bEnablePointShadowCulling = t.visuals.bEnablePointShadowCulling = bEnablePointShadowCulling;
+				g.projectmodified = 1;
+				if (bEnablePointShadowCulling && !t.visuals.bOcclusionCulling)
+				{
+					t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
+				}
+			}
+
+			if (ImGui::Checkbox("Spot Shadow Culling", &bEnableSpotShadowCulling))
+			{
+				t.gamevisuals.bEnableSpotShadowCulling = t.visuals.bEnableSpotShadowCulling = bEnableSpotShadowCulling;
+				g.projectmodified = 1;
+				if (bEnableSpotShadowCulling && !t.visuals.bOcclusionCulling)
+				{
+					t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
+				}
+			}
+
+			if (ImGui::Checkbox("Object Culling", &bEnableObjectCulling))
+			{
+				t.gamevisuals.bEnableObjectCulling = t.visuals.bEnableObjectCulling = bEnableObjectCulling;
+				g.projectmodified = 1;
+				if (bEnableObjectCulling && !t.visuals.bOcclusionCulling)
+				{
+					t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
+				}
+			}
+
+			if (ImGui::Checkbox("Animation Culling", &bEnableAnimationCulling))
+			{
+				t.gamevisuals.bEnableAnimationCulling = t.visuals.bEnableAnimationCulling = bEnableAnimationCulling;
+				g.projectmodified = 1;
+				if (bEnableAnimationCulling && !t.visuals.bOcclusionCulling)
+				{
+					t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
+				}
+			}
+
+			wiScene::Scene* pScene = &wiScene::GetScene();
+			if (pScene)
+			{
+				iObjects = pScene->objects.GetCount();
+				iFrustumCulled = wiProfiler::GetFrustumCulled();
+			}
+			if (bOCDebug)
+				ImGui::Text("Total Objects: %d Hidden: %d", iObjects, iHiddenObjects);
+			else
+				ImGui::Text("Total Objects: %d", iObjects);
+			ImGui::Text("Frustum/Apparent Culled: %d", iFrustumCulled);
+			if (bOCDebug)
+				ImGui::Text("Occluded Objects: %d", occ);
+
+			extern uint32_t iOccludedTerrainChunks;
+			if (bOCDebug)
+				ImGui::Text("Occluded Terrain chunks: %d", iOccludedTerrainChunks);
+
+			extern uint32_t iRenderedPointShadows;
+			extern uint32_t iRenderedSpotShadows;
+
+			if (bOCDebug)
+				ImGui::Text("Occluded Point Shadows: (%d) %d r(%d)", iPoint, iCulledPointShadows, iRenderedPointShadows);
+			else
+				ImGui::Text("Occluded Point Shadows: %d r(%d)", iCulledPointShadows, iRenderedPointShadows);
+			if (bOCDebug)
+				ImGui::Text("Occluded Spot Shadows: (%d) %d r(%d)", iSpot, iCulledSpotShadows, iRenderedSpotShadows);
+			else
+				ImGui::Text("Occluded Spot Shadows: %d r(%d)", iCulledSpotShadows, iRenderedSpotShadows);
+
+			if (bOCDebug)
+				ImGui::Text("Culled Animations: %d", iCulledAnimations);
+		}
+
+		extern float maxApparentSize;
+		ImGui::PushItemWidth(-10);
+		float fASize = t.visuals.ApparentSize * 10000.0f;
+		tab_tab_Column_text("Apparent Size", fTabColumnWidth);
+		if (ImGui::SliderFloat("##maxApparentSize", &fASize, 0.02f, 2.0f, "%.2f", 1.0f))
+		{
+			maxApparentSize = fASize / 10000.0f;
+			t.gamevisuals.ApparentSize = t.visuals.ApparentSize = maxApparentSize;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Max Object Apparent Size will cull objects when they get smaller on screen");
+		ImGui::PopItemWidth();
+
+
+		extern float fLODMultiplier;
+		//ImGui::Text("LOD Multiplier");
+		tab_tab_Column_text("LOD Multiplier", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::SliderFloat("##fLODMultiplier", &fLODMultiplier, 0.0f, 15.0f, "%.2f", 1.0f))
+		{
+			if (fLODMultiplier < 0)
+				fLODMultiplier = 0;
+			t.gamevisuals.fLODMultiplier = t.visuals.fLODMultiplier = fLODMultiplier;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Change LOD distance before switching from normal object to LOD");
+		ImGui::PopItemWidth();
+
+		extern int g_iUseLODObjects;
+		extern bool bDisableLODLoad;
+		ImGui::Checkbox("Disable LOD Load", &bDisableLODLoad);
+
+		if (g_iUseLODObjects > 0 && !bDisableLODLoad)
+		{
+			extern bool bShadowsLowestLOD;
+			ImGui::PushItemWidth(-10);
+			if (ImGui::Checkbox("Shadows Use Fastest LOD##Animationsculling", &bShadowsLowestLOD))
+			{
+				t.gamevisuals.bShadowsLowestLOD = t.visuals.bShadowsLowestLOD = bShadowsLowestLOD;
+				g.projectmodified = 1;
+
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("All shadows will use fastest LOD available to render.");
+			ImGui::PopItemWidth();
+
+			extern bool bProbesLowestLOD;
+			ImGui::PushItemWidth(-10);
+			if (ImGui::Checkbox("Probes Use Fastest LOD##Animationsculling", &bProbesLowestLOD))
+			{
+				t.gamevisuals.bProbesLowestLOD = t.visuals.bProbesLowestLOD = bProbesLowestLOD;
+				g.projectmodified = 1;
+
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("All probes will use fastest LOD available to render.");
+			ImGui::PopItemWidth();
+
+			extern bool bRaycastLowestLOD;
+			ImGui::PushItemWidth(-10);
+			if (ImGui::Checkbox("Raycast Use Fastest LOD##Animationsculling", &bRaycastLowestLOD))
+			{
+				t.gamevisuals.bRaycastLowestLOD = t.visuals.bRaycastLowestLOD = bRaycastLowestLOD;
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("All raycast will use fastest LOD available for intersect checks.");
+			ImGui::PopItemWidth();
+
+
+			extern bool bPhysicsLowestLOD;
+			ImGui::PushItemWidth(-10);
+			if (ImGui::Checkbox("Physics Use Fastest LOD##Animationsculling", &bPhysicsLowestLOD))
+			{
+				t.gamevisuals.bPhysicsLowestLOD = t.visuals.bPhysicsLowestLOD = bPhysicsLowestLOD;
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("All physics objects is created using fastest LOD.");
+			ImGui::PopItemWidth();
+
+			extern bool bReflectionsLowestLOD;
+			ImGui::PushItemWidth(-10);
+			if (ImGui::Checkbox("Reflections Use Fastest LOD##Animationsculling", &bReflectionsLowestLOD))
+			{
+				t.gamevisuals.bReflectionsLowestLOD = t.visuals.bReflectionsLowestLOD = bReflectionsLowestLOD;
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("All reflection rendering is using fastest LOD.");
+			ImGui::PopItemWidth();
+		}
+
+		// FSR Mode (FidelityFX Super Resolution)
+		const char* fsr_items_align[] = { "None", "Ultra Quality","Quality", "Balanced", "Performance" };
+		int fsr_current_type_selection = t.visuals.iFSRMode;
+		tab_tab_Column_text("FSR", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Combo("##setiFSRMode", &fsr_current_type_selection, fsr_items_align, IM_ARRAYSIZE(fsr_items_align)))
+		{
+			t.visuals.iFSRMode = fsr_current_type_selection;
+			t.gamevisuals.iFSRMode = t.visuals.iFSRMode;
+			if (t.visuals.iFSRMode == 1)
+			{
+				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				master.masterrenderer.SetFSRScale(1.3f);
+				master.masterrenderer.setFSREnabled(true);
+				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
+				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
+				t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled = true; //PE: need FXAA or FSR dont work.
+				if (master_renderer)
+					master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
+			}
+			else if (t.visuals.iFSRMode == 2)
+			{
+				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				master.masterrenderer.SetFSRScale(1.5f);
+				master.masterrenderer.setFSREnabled(true);
+				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
+				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
+				t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled = true; //PE: need FXAA or FSR dont work.
+				if (master_renderer)
+					master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
+			}
+			else if (t.visuals.iFSRMode == 3)
+			{
+				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				master.masterrenderer.SetFSRScale(1.7f);
+				master.masterrenderer.setFSREnabled(true);
+				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
+				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
+				t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled = true; //PE: need FXAA or FSR dont work.
+				if (master_renderer)
+					master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
+			}
+			else if (t.visuals.iFSRMode == 4)
+			{
+				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				master.masterrenderer.SetFSRScale(2.0f);
+				master.masterrenderer.setFSREnabled(true);
+				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
+				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
+				t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled = true; //PE: need FXAA or FSR dont work.
+				if (master_renderer)
+					master_renderer->setFXAAEnabled(t.visuals.bFXAAEnabled);
+			}
+			else
+			{
+				//PE: Disable FSR
+				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				master.masterrenderer.SetFSRScale(1.0f);
+				master.masterrenderer.setFSREnabled(false);
+				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
+			}
+
+			//PE: change.
+			g.projectmodified = 1;
+		}
+
+		ImGui::PopItemWidth();
+
+		if (master.masterrenderer.getFSREnabled())
+		{
+			ImGui::Text("FSR Sharpness");
+			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##fFSRSharpness", &t.visuals.fFSRSharpness, 0.0f, 2.0f, "%.2f", 1.0f))
+			{
+				if (t.visuals.fFSRSharpness < 0)
+					t.visuals.fFSRSharpness = 0;
+				t.gamevisuals.fFSRSharpness = t.visuals.fFSRSharpness;
+				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Change FSR Sharpness");
+			ImGui::PopItemWidth();
+		}
+
+		// end performance
+		ImGui::Indent(-10);
+	}
+	return(bVisualUpdated);
+}
+
+bool AI_Management_Settings(float fTabColumnWidth, bool bVisualUpdated)
+{
+	int wflags = ImGuiTreeNodeFlags_None;
+	float w = ImGui::GetWindowContentRegionWidth();
+
+	if (pref.bAutoClosePropertySections && iLastOpenHeader != 12)
+		ImGui::SetNextItemOpen(false, ImGuiCond_Always);
+
+	if (ImGui::StyleCollapsingHeader("AI Management", wflags))
+	{
+		iLastOpenHeader = 12;
+		ImGui::Indent(10);
+		ImGui::PushItemWidth(-10);
+		extern bool g_bShowRecastDetourDebugVisuals;
+		if (ImGui::Checkbox("Show Navigation Debug Visuals", &g_bShowRecastDetourDebugVisuals))
+		{
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle whether the navigation system debug visuals should be shown");
+		ImGui::PopItemWidth();
+
+		ImGui::PushItemWidth(-10);
+
+		extern bool g_bResetHasForLevelGeneration;
+		if (ImGui::Checkbox("Disable Navmesh Generation", &t.visuals.bEnableZeroNavMeshMode))
+		{
+			t.gamevisuals.bEnableZeroNavMeshMode = t.visuals.bEnableZeroNavMeshMode;
+			t.editorvisuals.bEnableZeroNavMeshMode = t.visuals.bEnableZeroNavMeshMode;
+			g_bResetHasForLevelGeneration = true;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle navmesh generation (enables system to detecting walkable areas) (needs to rebuild level)");
+		ImGui::PopItemWidth();
+
+		//PE: Buttons can only be used in test game Tab Tab.
+		if (bRenderTabTab)
+		{
+			float but_gadget_size = ImGui::GetFontSize() * 10.0;
+			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+			if (ImGui::StyleButton("Edit Behaviors##TabTabEditBehaviors", ImVec2(but_gadget_size, 0)))
+			{
+				extern bool g_bBehaviorEditorActive;
+				g_bBehaviorEditorActive = true;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Open the Behavior Editor to debug and edit logic live");
+
+			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+			if (ImGui::StyleButton("View Slowest Logic##TabTabEditBehaviors", ImVec2(but_gadget_size, 0)))
+			{
+				extern int g_iViewPerformanceTimers;
+				g_iViewPerformanceTimers = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Run a live snapshot of the ten slowest behaviours currently running");
+		}
+
+		ImGui::Indent(-10);
+	}
+
+	return(bVisualUpdated);
+}
+bool Global_Behaviors_Settings(float fTabColumnWidth, bool bVisualUpdated)
+{
+	int wflags = ImGuiTreeNodeFlags_None;
+
+	if (pref.bAutoClosePropertySections && iLastOpenHeader != 35)
+		ImGui::SetNextItemOpen(false, ImGuiCond_Always);
+
+	if (ImGui::StyleCollapsingHeader("Global Behaviors", wflags))
+	{
+		static int iSelectecElement = -1;
+		iLastOpenHeader = 35;
+
+		ImGui::Indent(10);
+		float buttonwide = ImGui::GetContentRegionAvail().x * 0.5 - 10.0f;
+		static std::string myscript = "";
+		ImGuiWindow* window = ImGui::GetCurrentWindow();
+		if (iSelectedLibraryStingReturnID == window->GetID("ScriptSelector##+"))
+		{
+			//Update Script.
+			if (sSelectedLibrarySting != "")
+			{
+				myscript = sSelectedLibrarySting.Get();
+				sSelectedLibrarySting = "";
+				iSelectedLibraryStingReturnID = -1; //disable.
+				fpe_current_loaded_script = -1; //Reload image and DLUA.
+				CloseDownEditorProperties();
+				t.inputsys.constructselection = 0;
+				iLastEntityOnCursor = 0;
+
+				t.addentityfile_s = "_markers\\BehaviorHidden.fpe";
+				if (t.addentityfile_s != "")
+				{
+					entity_adduniqueentity(false);
+					t.tasset = t.entid;
+					if (t.talreadyloaded == 0)
+					{
+						editor_filllibrary();
+						iRestoreEntidMaster = -1;
+					}
+				}
+				t.tentid = t.entid;
+				t.sourceobj = g.entitybankoffset + t.tentid;
+
+				t.gridentity = t.entid;
+
+				//PE: all t.gridentity... need to be set for this to work correctly.
+				t.gridentitystaticmode = t.entityprofile[t.entid].defaultstatic;
+				t.gridentityposx_f = 0;
+				t.gridentityposy_f = -999999;
+				t.gridentityposz_f = 0;
+				t.gridentityrotatex_f = 0;
+				t.gridentityrotatey_f = 0;
+				t.gridentityrotatez_f = 0;
+				t.gridentityrotatequatmode = 0;
+				t.gridentityrotatequatx_f = 0;
+				t.gridentityrotatequaty_f = 0;
+				t.gridentityrotatequatz_f = 0;
+				t.gridentityrotatequatw_f = 1;
+				t.gridentityscalex_f = 10;
+				t.gridentityscaley_f = 10;
+				t.gridentityscalez_f = 10;
+				entity_fillgrideleproffromprofile();
+
+				//PE: InstanceObject - Cursor,Object Tools - objects must always be real clones.
+				extern bool bNextObjectMustBeClone;
+				bNextObjectMustBeClone = true;
+				t.e = 0;
+				gridedit_addentitytomap(); //Add it to map set t.e
+				bNextObjectMustBeClone = false;
+
+				t.entityelement[t.e].eleprof.aimain_s = myscript.c_str();
+				t.entityelement[t.e].eleprof.thumb_aimain_s = "";
+
+				PositionObject(t.entityelement[t.e].obj, t.entityelement[t.e].x, t.entityelement[t.e].y, t.entityelement[t.e].z);
+				RotateObject(t.entityelement[t.e].obj, t.entityelement[t.e].rx, t.entityelement[t.e].ry, t.entityelement[t.e].rz);
+				HideObject(t.entityelement[t.e].obj);
+
+				// Show elements when placing a new one down, prevents half being hidden and half not.
+				t.showeditorelements = 1;
+				editor_toggle_element_vis(t.showeditorelements);
+
+				editor_refresheditmarkers();
+
+				t.refreshgrideditcursor = 1;
+				current_selected_group = -1;
+				t.gridentity = 0;
+				t.gridentityposoffground = 0;
+				t.gridentityusingsoftauto = 0;
+				t.gridentityautofind = 0;
+				t.gridentityobj = 0;
+				editor_refreshentitycursor();
+				t.widget.pickedObject = 0;
+				t.gridentityextractedindex = 0;
+
+				t.widget.pickedObject = 0; widget_updatewidgetobject();
+				iSelectecElement = t.e - 1;
+			}
+		}
+
+		if (ImGui::StyleButton("Add", ImVec2(buttonwide, 0)))
+		{
+			//Select script.
+			sStartLibrarySearchString = "global";
+			iLastDisplayLibraryType = -1;
+			bExternal_Entities_Window = true;
+			iDisplayLibraryType = 4;
+			iLibraryStingReturnToID = window->GetID("ScriptSelector##+");
+		}
+		ImGui::SameLine();
+		int iDeleteIfFound = 0;
+		if (ImGui::StyleButton("Delete", ImVec2(buttonwide, 0)))
+		{
+			if (iSelectecElement >= 0)
+			{
+				//PE: Delete.
+				int iAction = askBoxCancel("This will delete all your visual changes, are you sure?", "Confirmation"); //1==Yes 2=Cancel 0=No
+				if (iAction == 1)
+				{
+					iDeleteIfFound = iSelectecElement;
+				}
+			}
+		}
+
+		uint32_t uniqueId = 4000;
+		uniqueId += 28000; //PE: from lib uniqueId += 24000;
+
+		int iDefaultTexture = FILETYPE_SCRIPT;
+		float w = ImGui::GetContentRegionAvailWidth();
+		ImGui::Columns(2, "GlobalBehaviors2elements", false);  //false no border
+		ImGui::SetColumnWidth(0, w * 0.5f);
+		ImGui::SetColumnWidth(1, w * 0.5f);
+		bool bFoundSelected = false;
+		for (t.e = 1; t.e <= g.entityelementlist; t.e++)
+		{
+			t.entid = t.entityelement[t.e].bankindex;
+			if (t.entid > 0 && t.entityprofile[t.entid].ismarker == 12)
+			{
+				int image = FILETYPE_SCRIPT;
+				if (t.entityelement[t.e].eleprof.aimain_s.Len() > 0)
+				{
+					//PE: check if we need to update icons.
+					if (t.entityelement[t.e].eleprof.aimain_s != t.entityelement[t.e].eleprof.thumb_aimain_s ||
+						t.entityelement[t.e].eleprof.thumb_id != uniqueId)
+					{
+						//PE: Load image.
+						std::string sFile = Left(t.entityelement[t.e].eleprof.aimain_s.Get(), Len(t.entityelement[t.e].eleprof.aimain_s.Get()) - 4);
+						std::string sImgName = "scriptbank\\" + sFile;
+						if (pref.current_style == 25 || pref.current_style == 3)
+							sImgName += ".png";
+						else
+							sImgName += "2.png";
+
+						if (ImageExist(uniqueId) == 1) DeleteImage(uniqueId);
+						image_setlegacyimageloading(true);
+						LoadImage((char*)sImgName.c_str(), uniqueId);
+						image_setlegacyimageloading(false);
+						t.entityelement[t.e].eleprof.thumb_aimain_s = t.entityelement[t.e].eleprof.aimain_s;
+						t.entityelement[t.e].eleprof.thumb_id = uniqueId;
+					}
+					if (ImageExist(uniqueId))
+					{
+						image = uniqueId;
+					}
+					uniqueId++;
+				}
+
+
+				int iTextureID = image;
+
+				ImVec2 ImageSize = ImVec2(buttonwide, ImGui::GetFontSize());
+				if (!(ImGui::GetColumnIndex() % 2))
+					ImageSize.x -= 2;
+
+				ID3D11ShaderResourceView* lpTexture = GetImagePointerView(iTextureID);
+				if (lpTexture)
+				{
+					float img_w = ImageWidth(iTextureID);
+					float img_h = ImageHeight(iTextureID);
+					ImageSize.y = img_h * (ImageSize.x / img_w);
+				}
+				ImVec2 vImagePos = ImGui::GetCursorPos();
+				ImGui::Dummy(ImageSize);
+				ImVec4 color = ImVec4(1.0, 1.0, 1.0, 1.0);
+				ImVec4 back_color = ImVec4(0.2, 0.2, 0.2, 0.75);
+
+				if (ImGui::IsItemHovered())
+				{
+					color.w = 0.75;
+					if (ImGui::IsMouseReleased(0))
+					{
+						iSelectecElement = t.e;
+						fpe_current_loaded_script = -1; //Reload image and DLUA.
+
+					}
+				}
+
+				ImVec2 img_pos = ImGui::GetWindowPos() + vImagePos;
+				img_pos.x -= 3; //PE: Fit under buttons.
+				if ((ImGui::GetColumnIndex() % 2))
+					img_pos.x -= 3;
+				img_pos.y -= ImGui::GetScrollY();
+				window->DrawList->AddRectFilled(img_pos, img_pos + ImageSize, ImGui::GetColorU32(back_color));
+				if (lpTexture)
+				{
+					window->DrawList->AddImage((ImTextureID)lpTexture, img_pos, img_pos + ImageSize, ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(color));
+				}
+				if (iSelectecElement == t.e)
+				{
+					bFoundSelected = true;
+					ImVec4 bg_col = ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram]; // { 0.0, 0.0, 0.0, 1.0 };
+					window->DrawList->AddRect(img_pos, img_pos + ImageSize - ImVec2(0, 0), ImGui::GetColorU32(bg_col), 0, 15, 3.0f);
+				}
+
+				std::string name = t.entityelement[t.e].eleprof.aimain_s.Get();
+				std::size_t slash = name.find_last_of("/\\");
+				if (slash > 0)
+				{
+					name = name.substr(slash + 1);
+				}
+				ImGui::TextCenter(" %s", name.c_str());
+
+				ImGui::NextColumn();
+
+			}
+		}
+		ImGui::Columns(1);
+
+		ImGui::Separator();
+		if (bFoundSelected && iSelectecElement >= 0)
+		{
+			int iEntityIndex = iSelectecElement;
+			int iMasterID = t.entityelement[iEntityIndex].bankindex;
+			if (iMasterID > 0)
+			{
+				DisplayFPEBehavior(false, iMasterID, &t.entityelement[iEntityIndex].eleprof, iEntityIndex, true);
+				ImGui::Separator();
+				bool btmp = t.entityelement[iEntityIndex].eleprof.systemwide_lua;
+
+				float fPropertiesColoumWidth = ImGui::GetCursorPosX() + 110.0f;
+				ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
+				ImGui::Text("Active All Levels");
+				ImGui::SameLine();
+				ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
+				ImGui::SetCursorPos(ImVec2(fPropertiesColoumWidth, ImGui::GetCursorPosY()));
+				if (ImGui::Checkbox("##Active All Levels", &btmp))
+				{
+					t.entityelement[iEntityIndex].eleprof.systemwide_lua = btmp;
+				}
+			}
+		}
+
+		if (bFoundSelected && iDeleteIfFound > 0)
+		{
+			t.obj = t.entityelement[iDeleteIfFound].obj;
+			if (t.obj > 0)
+			{
+				if (ObjectExist(t.obj) == 1)
+				{
+					DeleteObject(t.obj);
+				}
+			}
+			t.entityelement[iDeleteIfFound].obj = 0;
+			t.entityelement[iDeleteIfFound].maintype = 0;
+			t.entityelement[iDeleteIfFound].bankindex = 0;
+			fpe_current_loaded_script = -1; //Reload image and DLUA.
+			iSelectecElement = -1;
+		}
+
+		ImGui::Indent(-10);
+	}
+	return(bVisualUpdated);
+}
+
+bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
+{
+	int wflags = ImGuiTreeNodeFlags_None;
+	if (pref.bAutoClosePropertySections && iLastOpenHeader != 9)
+		ImGui::SetNextItemOpen(false, ImGuiCond_Always);
+
+	if (ImGui::StyleCollapsingHeader("Shadows", wflags))
+	{
+		ImGui::Indent(10);
+
+		iLastOpenHeader = 9;
+
+		ImGui::TextCenter("Shadow Resolution");
+		//PE: Change from 1024 to 4096, adds around 2 gb additional gpu mem ?.
+		//PE: See comment about point light below.
+		const char* shadow_spot_items_align[] = { "Off", "128", "256", "512", "1024", "2048" }; //, "4096" };
+		int shadow_cascade_current_type_selection = 0;
+		if (t.visuals.iShadowSpotCascadeResolution == 0) shadow_cascade_current_type_selection = 0;
+		else if (t.visuals.iShadowSpotCascadeResolution == 128) shadow_cascade_current_type_selection = 1;
+		else if (t.visuals.iShadowSpotCascadeResolution == 256) shadow_cascade_current_type_selection = 2;
+		else if (t.visuals.iShadowSpotCascadeResolution == 512) shadow_cascade_current_type_selection = 3;
+		else if (t.visuals.iShadowSpotCascadeResolution == 1024) shadow_cascade_current_type_selection = 4;
+		else if (t.visuals.iShadowSpotCascadeResolution == 2048) shadow_cascade_current_type_selection = 5;
+		else shadow_cascade_current_type_selection = 5; //6;
+		tab_tab_Column_text("Sun ", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Combo("##setshadow_spotresolution", &shadow_cascade_current_type_selection, shadow_spot_items_align, IM_ARRAYSIZE(shadow_spot_items_align)))
+		{
+			if (shadow_cascade_current_type_selection == 0) t.visuals.iShadowSpotCascadeResolution = 0;
+			else if (shadow_cascade_current_type_selection == 1) t.visuals.iShadowSpotCascadeResolution = 128;
+			else if (shadow_cascade_current_type_selection == 2) t.visuals.iShadowSpotCascadeResolution = 256;
+			else if (shadow_cascade_current_type_selection == 3) t.visuals.iShadowSpotCascadeResolution = 512;
+			else if (shadow_cascade_current_type_selection == 4) t.visuals.iShadowSpotCascadeResolution = 1024;
+			else if (shadow_cascade_current_type_selection == 5) t.visuals.iShadowSpotCascadeResolution = 2048;
+			else t.visuals.iShadowSpotCascadeResolution = 2048;
+			t.gamevisuals.iShadowSpotCascadeResolution = t.visuals.iShadowSpotCascadeResolution;
+			bVisualUpdated = true;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose a shadow quality for sun shadows");
+		ImGui::PopItemWidth();
+
+
+		//SPOT
+		//const char* shadow_spot_items_align[] = { "Off", "128", "256", "512", "1024", "2048" }; //, "4096" };
+		int shadow_spot_current_type_selection = 0;
+		if (t.visuals.iShadowSpotResolution == 0) shadow_spot_current_type_selection = 0;
+		else if (t.visuals.iShadowSpotResolution == 128) shadow_spot_current_type_selection = 1;
+		else if (t.visuals.iShadowSpotResolution == 256) shadow_spot_current_type_selection = 2;
+		else if (t.visuals.iShadowSpotResolution == 512) shadow_spot_current_type_selection = 3;
+		else if (t.visuals.iShadowSpotResolution == 1024) shadow_spot_current_type_selection = 4;
+		else if (t.visuals.iShadowSpotResolution == 2048) shadow_spot_current_type_selection = 5;
+		else shadow_spot_current_type_selection = 5; //6;
+		tab_tab_Column_text("Spot Lights ", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Combo("##setshadow_spotspotresolution", &shadow_spot_current_type_selection, shadow_spot_items_align, IM_ARRAYSIZE(shadow_spot_items_align)))
+		{
+			if (shadow_spot_current_type_selection == 0) t.visuals.iShadowSpotResolution = 0;
+			else if (shadow_spot_current_type_selection == 1) t.visuals.iShadowSpotResolution = 128;
+			else if (shadow_spot_current_type_selection == 2) t.visuals.iShadowSpotResolution = 256;
+			else if (shadow_spot_current_type_selection == 3) t.visuals.iShadowSpotResolution = 512;
+			else if (shadow_spot_current_type_selection == 4) t.visuals.iShadowSpotResolution = 1024;
+			else if (shadow_spot_current_type_selection == 5) t.visuals.iShadowSpotResolution = 2048;
+			else t.visuals.iShadowSpotResolution = 2048;
+			t.gamevisuals.iShadowSpotResolution = t.visuals.iShadowSpotResolution;
+			bVisualUpdated = true;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose a shadow quality spot lights");
+		ImGui::PopItemWidth();
+
+
+		//PE: This drain memory and make everything very slow, limit to max 2048 for now.
+		//PE: 1 point light have 6 * 4096x4096 textures. (BIND_DEPTH_STENCIL) DXGI_FORMAT_R16_TYPELESS (2 bytes per pixel).
+		//PE: AND 6 * 4096x4096 textures (BIND_RENDER_TARGET) FORMAT_R16G16B16A16_FLOAT (8 bytes per pixel).
+		//PE: So 32mb + 128mb. = 160 mb. per texture = 6 * 160mb = 960 mb. PER point light :(
+		//PE: Each point light have 12 4096x4096 textures.
+		//PE: On my system with 5 point light, it use around 4gb additional mem, when i set 4096 ?
+		//PE: This gets allocated as shared GPU mem, and sure tons of swapping is going on.
+		//PE: Latest REPO changed from:	desc.Format = FORMAT_R11G11B10_FLOAT; to: desc.Format = FORMAT_R16G16B16A16_FLOAT; (32bit to 64 bit.)
+		//PE: https://github.com/turanszkij/WickedEngine/commit/d27ede94cc76a91ac1a1c9e4393db6460262d120#
+		//PE: Perhaps limit to 1024 ? - 2048 = 240 mb. per point light , and 1024 = 60mb.
+
+		const char* shadow_point_items_align[] = { "Off" , "128", "256", "512", "1024", "2048" }; //, "4096" };
+		int shadow_point_current_type_selection = 0;
+		if (t.visuals.iShadowPointResolution == 0) shadow_point_current_type_selection = 0;
+		else if (t.visuals.iShadowPointResolution == 128) shadow_point_current_type_selection = 1;
+		else if (t.visuals.iShadowPointResolution == 256) shadow_point_current_type_selection = 2;
+		else if (t.visuals.iShadowPointResolution == 512) shadow_point_current_type_selection = 3;
+		else if (t.visuals.iShadowPointResolution == 1024) shadow_point_current_type_selection = 4;
+		else if (t.visuals.iShadowPointResolution == 2048) shadow_point_current_type_selection = 5;
+		else shadow_point_current_type_selection = 5; //6;
+		tab_tab_Column_text("Point Lights ", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Combo("##setshadow_pointresolution", &shadow_point_current_type_selection, shadow_point_items_align, IM_ARRAYSIZE(shadow_point_items_align)))
+		{
+			if (shadow_point_current_type_selection == 0) t.visuals.iShadowPointResolution = 0;
+			else if (shadow_point_current_type_selection == 1) t.visuals.iShadowPointResolution = 128;
+			else if (shadow_point_current_type_selection == 2) t.visuals.iShadowPointResolution = 256;
+			else if (shadow_point_current_type_selection == 3) t.visuals.iShadowPointResolution = 512;
+			else if (shadow_point_current_type_selection == 4) t.visuals.iShadowPointResolution = 1024;
+			else if (shadow_point_current_type_selection == 5) t.visuals.iShadowPointResolution = 2048;
+			else t.visuals.iShadowPointResolution = 2048;
+			if (t.visuals.iShadowPointResolution > 2048) t.visuals.iShadowPointResolution = 2048;
+			t.gamevisuals.iShadowPointResolution = t.visuals.iShadowPointResolution;
+			bVisualUpdated = true;
+		}
+
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose a shadow quality for point lights");
+		ImGui::PopItemWidth();
+
+		ImGui::TextCenter("Shadow Quantity");
+		const char* shadow_spot_max_align[] = { "0", "4", "8", "12", "16" };
+		int shadow_cascade_max_current_type_selection = 0;
+		if (t.visuals.iShadowSpotMax == 0) shadow_cascade_max_current_type_selection = 0;
+		else if (t.visuals.iShadowSpotMax == 4) shadow_cascade_max_current_type_selection = 1;
+		else if (t.visuals.iShadowSpotMax == 8) shadow_cascade_max_current_type_selection = 2;
+		else if (t.visuals.iShadowSpotMax == 12) shadow_cascade_max_current_type_selection = 3;
+		else if (t.visuals.iShadowSpotMax == 16) shadow_cascade_max_current_type_selection = 4;
+		tab_tab_Column_text("Spot Lights ", fTabColumnWidth);
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Combo("##setshadow_iShadowSpotMax", &shadow_cascade_max_current_type_selection, shadow_spot_max_align, IM_ARRAYSIZE(shadow_spot_max_align)))
+		{
+			if (shadow_cascade_max_current_type_selection == 0) t.visuals.iShadowSpotMax = 0;
+			else if (shadow_cascade_max_current_type_selection == 1) t.visuals.iShadowSpotMax = 4;
+			else if (shadow_cascade_max_current_type_selection == 2) t.visuals.iShadowSpotMax = 8;
+			else if (shadow_cascade_max_current_type_selection == 3) t.visuals.iShadowSpotMax = 12;
+			else if (shadow_cascade_max_current_type_selection == 4) t.visuals.iShadowSpotMax = 16;
+			t.gamevisuals.iShadowSpotMax = t.visuals.iShadowSpotMax;
+			bForceRefreshLightCount = true;
+			bVisualUpdated = true;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose max shadow casters for spot lights");
+		ImGui::PopItemWidth();
+
+		int shadow_cascade_point_current_type_selection = 0;
+		if (t.visuals.iShadowPointMax == 0) shadow_cascade_point_current_type_selection = 0;
+		else if (t.visuals.iShadowPointMax == 4) shadow_cascade_point_current_type_selection = 1;
+		else if (t.visuals.iShadowPointMax == 8) shadow_cascade_point_current_type_selection = 2;
+		else if (t.visuals.iShadowPointMax == 12) shadow_cascade_point_current_type_selection = 3;
+		else if (t.visuals.iShadowPointMax == 16) shadow_cascade_point_current_type_selection = 4;
+		tab_tab_Column_text("Point Lights ", fTabColumnWidth);
+
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Combo("##setshadow_iShadowPointMax", &shadow_cascade_point_current_type_selection, shadow_spot_max_align, IM_ARRAYSIZE(shadow_spot_max_align)))
+		{
+			if (shadow_cascade_point_current_type_selection == 0) t.visuals.iShadowPointMax = 0;
+			else if (shadow_cascade_point_current_type_selection == 1) t.visuals.iShadowPointMax = 4;
+			else if (shadow_cascade_point_current_type_selection == 2) t.visuals.iShadowPointMax = 8;
+			else if (shadow_cascade_point_current_type_selection == 3) t.visuals.iShadowPointMax = 12;
+			else if (shadow_cascade_point_current_type_selection == 4) t.visuals.iShadowPointMax = 16;
+			t.gamevisuals.iShadowPointMax = t.visuals.iShadowPointMax;
+			bForceRefreshLightCount = true;
+			bVisualUpdated = true;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose max shadow casters for point lights.");
+		ImGui::PopItemWidth();
+
+		if (ImGui::Checkbox("Transparent shadows", &t.visuals.bTransparentShadows))
+		{
+			t.gamevisuals.bTransparentShadows = t.visuals.bTransparentShadows;
+			bForceRefreshLightCount = true;
+			bVisualUpdated = true;
+		}
+		//ImGui::PopItemWidth(); //PE: This looks wrong, try removing it.
+
+		extern bool bShadowsInFrontTakesPriority;
+		ImGui::Checkbox("Front Shadows Priority", &bShadowsInFrontTakesPriority);
+
+		ImGui::Indent(-10);
+	}
+	return bVisualUpdated;
+}
+
+void RenderPreviewEmitter(void)
+{
+	static bool bInit = true;
+	if (PreviewWPERoot > 0)
+	{
+		float posx, posy, posz, posxa, posya, posza;
+		int GetActiveEditorEntityPos(float* x, float* y, float* z, float* xa, float* ya, float* za);
+		int iEntityIndex = GetActiveEditorEntityPos(&posx, &posy, &posz, &posxa, &posya, &posza);
+		static int iEntityIndexCurrent = -1;
+		if (!bInit && iEntityIndexCurrent != iEntityIndex && PreviewWPERoot != 0)
+		{
+			iEntityIndexCurrent = iEntityIndex;
+			//PE: Delete effects.
+			WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+			void DeleteEmitterEffects(uint32_t root);
+			DeleteEmitterEffects(PreviewWPERoot);
+			PreviewWPERoot = 0;
+			bPreviewWPE = false;
+		}
+		if (bInit)
+		{
+			iEntityIndexCurrent = iEntityIndex;
+			bInit = false;
+		}
+		if (iEntityIndex > 0 && PreviewWPERoot > 0)
+		{
+			extern float fPreviewYOffset;
+			bool WickedCall_ParticleEffectPositionRotation(uint32_t root, float fX, float fY, float fZ, float fXa, float fYa, float fZa);
+			WickedCall_ParticleEffectPositionRotation(PreviewWPERoot, posx, posy + fPreviewYOffset, posz, 0, posya, 0);
+		}
+	}
+}
+

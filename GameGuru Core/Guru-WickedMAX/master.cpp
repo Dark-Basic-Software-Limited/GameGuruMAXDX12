@@ -700,8 +700,8 @@ void Master::Update(float dt)
 			{
 				// check if we are non-Steam and have the auto-updater
 				timestampactivity(0, "authentication check");
-				LPSTR pOldDir = GetDir();
-				timestampactivity(0, pOldDir);
+				cstr pOldDir = GetDir();
+				timestampactivity(0, pOldDir.Get());
 
 				// check if have the Particle Editor installed
 				timestampactivity(0, "particle editor exist check");
@@ -721,26 +721,26 @@ void Master::Update(float dt)
 
 					// also create writeable folder to place exports (so object library can be pick them up right away on first use)
 					char pRealWritableArea[MAX_PATH];
-					strcpy(pRealWritableArea, pOldDir);
+					strcpy(pRealWritableArea, pOldDir.Get());
 					strcat(pRealWritableArea, "\\Files\\entitybank\\User\\");
 					GG_GetRealPath(pRealWritableArea, 1);
 					SetDir(pRealWritableArea);
 					MakeDirectory("buildingeditor");
-					SetDir(pOldDir);
+					SetDir(pOldDir.Get());
 				}		
 
 				// are we non-steam
 				SetDir("..");
-				LPSTR pCurrentDirChecking = GetDir();
+				cstr pCurrentDirChecking = GetDir();
 
 				// restore current in Max folder
-				SetDir(pOldDir);
+				SetDir(pOldDir.Get());
 
 				//force non-Steam version (some installations are NOT detecting 'GameGuru MAX Updater.exe')
 				//#define FORCENONSTEAMAUTHENTICATION
 				#ifdef FORCENONSTEAMAUTHENTICATION
 				timestampactivity(0, "forcing non-Steam authentication");
-				timestampactivity(0, pCurrentDirChecking);
+				timestampactivity(0, pCurrentDirChecking.Get());
 				g_bUpdateAppAvailable = true;
 				#endif
 
@@ -753,10 +753,10 @@ void Master::Update(float dt)
 					#ifndef GGMAXEDU
 					// Steam Purchased (Owned)
 					char pInstallSteamTrialFile[MAX_PATH];
-					strcpy(pInstallSteamTrialFile, pOldDir);
+					strcpy(pInstallSteamTrialFile, pOldDir.Get());
 					strcat(pInstallSteamTrialFile, "\\installsteamtrial.dat");
 					char pInstallSteamFile[MAX_PATH];
-					strcpy(pInstallSteamFile, pOldDir);
+					strcpy(pInstallSteamFile, pOldDir.Get());
 					strcat(pInstallSteamFile,"\\installsteam.dat");
 					GG_GetRealPath(pInstallSteamFile, 0);
 					timestampactivity(0, "GameGuru Steam version check");
@@ -796,7 +796,7 @@ void Master::Update(float dt)
 								bEnsureIntroVideoIsNotRun = true;
 
 								// construct a list of all objects the free trial makes available (all rest are greyed out)
-								LPSTR pCurrentDir = GetDir();
+								cstr pCurrentDir = GetDir();
 								char pAbsolutePathAndFile[MAX_PATH];
 								extern std::vector<std::string> files_availableinfreetrial;
 								files_availableinfreetrial.clear();
@@ -820,7 +820,7 @@ void Master::Update(float dt)
 											{
 												if (strnicmp (pThisFile, "entitybank\\_markers\\", 20) != NULL)
 												{
-													strcpy(pAbsolutePathAndFile, pCurrentDir);
+													strcpy(pAbsolutePathAndFile, pCurrentDir.Get());
 													strcat(pAbsolutePathAndFile, "\\Files\\");
 													strcat(pAbsolutePathAndFile, pThisFile);
 													files_availableinfreetrial.push_back(pAbsolutePathAndFile);
@@ -865,7 +865,7 @@ void Master::Update(float dt)
 						if (g_bFreeTrialVersion == true)
 						{
 							char pTestForDemo[MAX_PATH];
-							strcpy(pTestForDemo, pOldDir);
+							strcpy(pTestForDemo, pOldDir.Get());
 							strcat(pTestForDemo, "\\demowasnice.dat");
 							GG_GetRealPath(pTestForDemo, 0);
 							if (FileExist(pTestForDemo) == 1) DeleteFileA(pTestForDemo);

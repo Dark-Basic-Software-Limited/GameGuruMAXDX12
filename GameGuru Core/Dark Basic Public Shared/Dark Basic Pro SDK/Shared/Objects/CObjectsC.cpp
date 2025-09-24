@@ -7669,7 +7669,16 @@ DARKSDK_DLL int IntersectAllEx ( int iPrimaryStart, int iPrimaryEnd, float fX, f
 			}
 			float fDistanceOfRay = GGVec3Length(&vecDir);
 			DWORD dwObjectNumberHit = 0;
-			if (WickedCall_SentRay4 (vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true) == true)
+			bool bRes = false;
+			#ifdef PICKBVHTHREADED
+			if (bThreadSafe)
+				bRes = WickedCall_SentRay4_ThreadSafe(vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true);
+			else
+				bRes = WickedCall_SentRay4(vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true);
+			#else
+			bRes = WickedCall_SentRay4(vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true);
+			#endif
+			if(bRes == true)
 			{
 				// only objects within given range (to exclude weapon HUDs)
 				if (dwObjectNumberHit >= iPrimaryStart && dwObjectNumberHit <= iPrimaryEnd)
@@ -7686,7 +7695,16 @@ DARKSDK_DLL int IntersectAllEx ( int iPrimaryStart, int iPrimaryEnd, float fX, f
 							vecFrom += vecDiff * 10.0f;
 							vecDir -= vecDiff * 10.0f;
 							dwObjectNumberHit = 0;
-							if (WickedCall_SentRay4 (vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true) == true)
+							bool bResesult = false;
+							#ifdef PICKBVHTHREADED
+							if (bThreadSafe)
+								bResesult = WickedCall_SentRay4_ThreadSafe(vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true);
+							else
+								bResesult = WickedCall_SentRay4(vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true);
+							#else
+								bResesult = WickedCall_SentRay4(vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true);
+							#endif
+							if (bResesult == true)
 							{
 								// did we hit an object
 								if (dwObjectNumberHit >= iPrimaryStart && dwObjectNumberHit <= iPrimaryEnd)
@@ -10588,7 +10606,39 @@ DARKSDK_DLL LPSTR LimbTextureName ( int iID, int iLimbID )
 	//#endif
 }
 
-DARKSDK_DLL LPSTR LimbName ( int iID, int iLimbID )
+//PE: Mem never freed.
+char cLimbName[1024];
+
+DARKSDK_DLL LPSTR LimbName(int iID, int iLimbID)
+{
+	// check the object exists
+	if (!ConfirmObjectAndLimb(iID, iLimbID))
+		return NULL;
+
+	// get name of frame
+	sObject* pObject = g_ObjectList[iID];
+	LPSTR pLimbName = pObject->ppFrameList[iLimbID]->szName;
+
+	// Allocate new size
+	LPSTR pString = NULL;
+	DWORD dwSize = strlen(pLimbName);
+	if (dwSize < 1024)
+	{
+		strcpy(cLimbName, pLimbName);
+		pString = &cLimbName[0];
+	}
+	else
+	{
+		g_pGlob->CreateDeleteString((char**)&pString, dwSize + 1);
+		ZeroMemory(pString, dwSize + 1);
+		memcpy(pString, pLimbName, dwSize);
+	}
+
+	// Return String
+	return pString;
+}
+
+DARKSDK_DLL LPSTR LimbNameOLD ( int iID, int iLimbID )
 {
 	// check the object exists
 	if ( !ConfirmObjectAndLimb ( iID, iLimbID ) )

@@ -2157,6 +2157,7 @@ void entity_loaddata ( void )
 
 		t.entityprofile[t.entid].blendmode = 0;
 
+		t.entityprofile[t.entid].light.fProbeBrightness = 1.0f;
 		#endif
 
 		//  temp variable to hold which physics object we are on from the importer
@@ -5544,7 +5545,65 @@ float c_ReadFloat(int f)
 
 char c_filerror[2] = "";
 
+//PE: We use cstr t.a_s = c_ReadString ( 1 ) , so mem is never freed.
+char c_ReadStringRing[20][1024];
+int c_ReadStringCount = 0;
 LPSTR c_ReadString(int f)
+{
+	if (!c_data) return 0;
+
+	c_ReadStringCount = c_ReadStringCount + 1;
+	if (c_ReadStringCount > 19)
+		c_ReadStringCount = 0;
+	
+	LPSTR pReturnString = 0;
+
+	unsigned char c = 0;
+	DWORD bytes;
+	std::vector<char> WorkString;
+
+	bool eof = false;
+	do
+	{
+		if (c_ReadFile(c_hFile, &c, 1, &bytes, NULL) == 0)
+		{
+			//RunTimeWarning(RUNTIMEERROR_CANNOTREADFROMFILE);
+			return(&c_filerror[0]);
+		}
+		if (bytes == 0)
+		{
+			eof = true;
+		}
+		else if (c >= 32 || c == 9)
+		{
+			WorkString.push_back(c);
+		}
+	} while ((c >= 32 || c == 9) && !eof);
+
+	WorkString.push_back(0);
+
+	if (c == 13)
+	{
+		if (c_ReadFile(c_hFile, &c, 1, &bytes, NULL) == 0)
+		{
+			//RunTimeWarning(RUNTIMEERROR_CANNOTREADFROMFILE);
+			return(&c_filerror[0]);
+		}
+	}
+
+	// Create and return string
+	if (WorkString.size() < 1024)
+	{
+		strcpy(&c_ReadStringRing[c_ReadStringCount][0], &WorkString[0]);
+		pReturnString = &c_ReadStringRing[c_ReadStringCount][0];
+	}
+	else
+		pReturnString = GetReturnStringFromWorkString(&WorkString[0]);
+
+	return pReturnString;
+}
+
+LPSTR c_ReadStringOLD(int f)
 {
 	if (!c_data) return 0;
 
@@ -5591,6 +5650,60 @@ LPSTR c_ReadString(int f)
 
 //PE: We can have 0x0a in soundset4 (entered text) so always use 13 to stop.
 LPSTR c_ReadStringIncl0xA(int f)
+{
+	if (!c_data) return 0;
+
+	c_ReadStringCount = c_ReadStringCount + 1;
+	if (c_ReadStringCount > 19)
+		c_ReadStringCount = 0;
+
+	LPSTR pReturnString = 0;
+
+	unsigned char c = 0;
+	DWORD bytes;
+	std::vector<char> WorkString;
+
+	bool eof = false;
+	do
+	{
+		if (c_ReadFile(c_hFile, &c, 1, &bytes, NULL) == 0)
+		{
+			//RunTimeWarning(RUNTIMEERROR_CANNOTREADFROMFILE);
+			return(&c_filerror[0]);
+		}
+		if (bytes == 0)
+		{
+			eof = true;
+		}
+		else if (c >= 32 || c == 9 || c == 10)
+		{
+			WorkString.push_back(c);
+		}
+	} while ((c >= 32 || c == 9 || c == 10) && !eof);
+
+	WorkString.push_back(0);
+
+	if (c == 13)
+	{
+		if (c_ReadFile(c_hFile, &c, 1, &bytes, NULL) == 0)
+		{
+			//RunTimeWarning(RUNTIMEERROR_CANNOTREADFROMFILE);
+			return(&c_filerror[0]);
+		}
+	}
+
+	// Create and return string
+	if (WorkString.size() < 1024)
+	{
+		strcpy(&c_ReadStringRing[c_ReadStringCount][0], &WorkString[0]);
+		pReturnString = &c_ReadStringRing[c_ReadStringCount][0];
+	}
+	else
+		pReturnString = GetReturnStringFromWorkString(&WorkString[0]);
+	return pReturnString;
+}
+
+LPSTR c_ReadStringIncl0xAOLD(int f)
 {
 	if (!c_data) return 0;
 
@@ -6366,7 +6479,9 @@ void c_entity_loadelementsdata ( void )
 						float fFiller;
 						int iFiller;
 						cstr sFiller;
-						t.a = t.a_f = c_ReadFloat(1); fFiller = t.a_f;
+						
+						t.a = t.a_f = c_ReadFloat(1); t.entityelement[t.e].eleprof.light.fProbeBrightness = t.a_f;
+
 						t.a = t.a_f = c_ReadFloat(1); fFiller = t.a_f;
 						t.a = t.a_f = c_ReadFloat(1); fFiller = t.a_f;
 						t.a = t.a_f = c_ReadFloat(1); fFiller = t.a_f;
@@ -6376,7 +6491,7 @@ void c_entity_loadelementsdata ( void )
 						if (t.entityelement[t.e].eleprof.systemwide_lua > 1)
 							t.entityelement[t.e].eleprof.systemwide_lua = 0;
 						t.a = c_ReadLong(1); t.entityelement[t.e].eleprof.isobjective_alwaysactive = t.a;
-						t.a = c_ReadLong(1); iFiller = t.a;
+						t.a = c_ReadLong(1); t.entityelement[t.e].eleprof.isProjectGlobal = t.a;
 						t.a_s = c_ReadString(1); sFiller = t.a_s;
 						t.a_s = c_ReadString(1); sFiller = t.a_s;
 						t.a_s = c_ReadString(1); sFiller = t.a_s;
@@ -6426,6 +6541,9 @@ void c_entity_loadelementsdata ( void )
 							continue;
 						}
 					}
+
+					if (t.entityelement[t.e].eleprof.light.fProbeBrightness == 0)
+						t.entityelement[t.e].eleprof.light.fProbeBrightness = 1.0f;
 
 					// fill in the blanks if load older version
 					if (  t.versionnumberload<103 ) 
@@ -8018,14 +8136,15 @@ void entity_saveelementsdata (bool bForCollectionELE)
 				{
 					writer.WriteString(t.entityelement[ent].eleprof.WEMaterial.WPEffect.Get());
 					//PE: Fillers.
-					writer.WriteFloat(0.0f);
+
+					writer.WriteFloat(t.entityelement[ent].eleprof.light.fProbeBrightness);
 					writer.WriteFloat(0.0f);
 					writer.WriteFloat(0.0f);
 					writer.WriteFloat(0.0f);
 					writer.WriteFloat(0.0f);
 					writer.WriteLong(t.entityelement[ent].eleprof.systemwide_lua);
 					writer.WriteLong(t.entityelement[ent].eleprof.isobjective_alwaysactive);
-					writer.WriteLong(0);
+					writer.WriteLong(t.entityelement[ent].eleprof.isProjectGlobal);
 					writer.WriteString("");
 					writer.WriteString("");
 					writer.WriteString("");
@@ -8851,7 +8970,7 @@ void entity_addentitytomap_core ( void )
 
 	//PE: Always false by default.
 	t.entityelement[t.e].eleprof.systemwide_lua = false;
-
+	
 	// auto flatten system
 	t.entityelement[t.e].eleprof.iFlattenID = -1; // cannot carry this ID over
 	if (!g_bEnableAutoFlattenSystem) //PE: If disabled always disable autoflatten.
@@ -9036,9 +9155,10 @@ void entity_addentitytomap ( void )
 		g_bUpdateCollectionList = true;
 	}
 }
-
+bool bUpdateObjectList = false;
 void entity_deleteentityfrommap ( void )
 {
+	bUpdateObjectList = true;
 	//  Entity Type To Delete
 	t.entitymaintype=1;
 
@@ -9698,7 +9818,7 @@ void delete_notused_decal_particles( void )
 
 #ifdef WICKEDPARTICLESYSTEM
 uint32_t WickedCall_LoadWiSceneDirect(Scene& scene2, char* filename, bool attached, char* changename, char* changenameto);
-void preload_wicked_particle_effect(newparticletype* pParticle, int decal_id)
+bool preload_wicked_particle_effect(newparticletype* pParticle, int decal_id)
 {
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
@@ -9708,7 +9828,7 @@ void preload_wicked_particle_effect(newparticletype* pParticle, int decal_id)
 	extern int g_iDisableWParticleSystem;
 	if (g_iDisableWParticleSystem == 1)
 	{
-		return;
+		return false;
 	}
 
 	//PE: Preload effects so there is no delays.
@@ -9799,12 +9919,43 @@ void preload_wicked_particle_effect(newparticletype* pParticle, int decal_id)
 							iParticleEmitter = pParticle->emitterid = root;
 						}
 						if (master_root == 0)
+						{
 							master_root = root;
+							//PE: Validate that decal is a burst only emitter.
+							for (int b = 0; b < scene.emitters.GetCount(); b++)
+							{
+								Entity emitter = scene.emitters.GetEntity(b);
+								HierarchyComponent* hier = scene.hierarchy.GetComponent(emitter);
+								if (hier)
+								{
+									if (hier->parentID == master_root)
+									{
+										wiEmittedParticle* ec = scene.emitters.GetComponent(emitter);
+										if (ec->count > 0.1f)
+										{
+											//PE: This is not a burst emitter reject it.
+											iParticleEmitter = pParticle->emitterid = -1;
+											ready_decals[decal_id][i] = 0;
+
+											WickedCall_PerformEmitterAction(2, root); //PE: Pause
+											WickedCall_PerformEmitterAction(6, root); //PE: Not Visible
+											void DeleteEmitterEffects(uint32_t root);
+											DeleteEmitterEffects(master_root);
+											return false;
+										}
+									}
+								}
+							}
+						}
+
+						WickedCall_PerformEmitterAction(2, root); //PE: Pause
+						WickedCall_PerformEmitterAction(6, root); //PE: Not Visible
 					}
 				}
 			}
 		}
 	}
+	return true;
 }
 #endif
 
@@ -9924,6 +10075,7 @@ void newparticle_updateparticleemitter ( newparticletype* pParticle, float fScal
 					}
 					WickedCall_PerformEmitterAction(3, iParticleEmitter); //PE: Resume
 					WickedCall_PerformEmitterAction(4, iParticleEmitter); //PE: Restart
+					WickedCall_PerformEmitterAction(5, iParticleEmitter); //PE: Visible
 					WickedCall_PerformEmitterAction(1, iParticleEmitter); //PE: Burst All
 					pParticle->bParticle_Fire = false;
 				}

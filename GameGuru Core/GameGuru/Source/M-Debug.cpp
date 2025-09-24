@@ -56,7 +56,8 @@ void timestampactivity ( int i, char* desc_s )
 	int mem = 0;
 	if (g.gproducelogfiles > 0 || !bTimestampactivityReady)
 	{
-		Dim(t.timestampactivity_s, 1);
+		static cstr ttimestampactivity_s[2] = { "" };
+		//Dim(t.timestampactivity_s, 1);
 		file_s = g.fpscrootdir_s + "\\" + g.trueappname_s + ".log";
 		if (bTimestampactivityReady)
 		{
@@ -97,12 +98,13 @@ void timestampactivity ( int i, char* desc_s )
 		tpart1_s = Str(Timer()); tpart1_s = tpart1_s + " : " + desc_s + " ";
 		tpart2_s = "S:"; tpart2_s = tpart2_s + memdesc_s;
 		tpart3_s = "V:"; tpart3_s = tpart3_s + videomemsofardesc_s;
-		if (Len(tpart1_s.Get())<64)  tpart1_s = tpart1_s + Spaces(64 - Len(tpart1_s.Get()));
-		if (Len(tpart2_s.Get())<8)  tpart2_s = tpart2_s + Spaces(8 - Len(tpart2_s.Get()));
-		if (Len(tpart3_s.Get())<16)  tpart3_s = tpart3_s + Spaces(16 - Len(tpart3_s.Get()));
-		t.timestampactivity_s[0] = tpart1_s;
-		t.timestampactivity_s[0] += tpart2_s;
-		t.timestampactivity_s[0] += tpart3_s;
+		//if (Len(tpart1_s.Get())<64)  tpart1_s = tpart1_s + Spaces2(64 - Len(tpart1_s.Get()));
+		if (Len(tpart1_s.Get()) < 94)  tpart1_s = tpart1_s + Spaces2(94 - Len(tpart1_s.Get())); //PE: More easy to read.
+		if (Len(tpart2_s.Get())<8)  tpart2_s = tpart2_s + Spaces2(8 - Len(tpart2_s.Get()));
+		if (Len(tpart3_s.Get())<16)  tpart3_s = tpart3_s + Spaces2(16 - Len(tpart3_s.Get()));
+		ttimestampactivity_s[0] = tpart1_s;
+		ttimestampactivity_s[0] += tpart2_s;
+		ttimestampactivity_s[0] += tpart3_s;
 		if (bTimestampactivityReady)
 		{
 			FILE * pFile;
@@ -124,7 +126,7 @@ void timestampactivity ( int i, char* desc_s )
 					}
 					early_debug_list.clear();
 				}
-				fputs(t.timestampactivity_s[0].Get(), pFile);
+				fputs(ttimestampactivity_s[0].Get(), pFile);
 				fputs("\n", pFile);
 				fclose(pFile);
 			}
@@ -136,7 +138,7 @@ void timestampactivity ( int i, char* desc_s )
 		}
 		else
 		{
-			early_debug_list.push_back(t.timestampactivity_s[0].Get());
+			early_debug_list.push_back(ttimestampactivity_s[0].Get());
 		}
 		if (bTimestampactivityReady)
 		{

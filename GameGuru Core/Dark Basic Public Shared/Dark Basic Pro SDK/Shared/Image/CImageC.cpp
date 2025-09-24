@@ -2907,8 +2907,9 @@ DARKSDK bool SaveImageCoreAsTexSurface(char* szFilename, LPGGSURFACE* pTexSurfac
 
 		// if not DDS saving, and format a BC3/DXT, change to DXGI_FORMAT_R8G8B8A8_UNORM
 #ifdef WICKEDENGINE
-// need to select allowable conversions
-		if (DestFormat != D3DX11_IFF_DDS && srcddsd.Format >= DXGI_FORMAT_BC1_TYPELESS && srcddsd.Format <= DXGI_FORMAT_BC5_SNORM)
+		// need to select allowable conversions
+		//PE: Support saving BC7 as png, ccp had some BC7
+		if (DestFormat != D3DX11_IFF_DDS && ((srcddsd.Format >= DXGI_FORMAT_BC1_TYPELESS && srcddsd.Format <= DXGI_FORMAT_BC5_SNORM) || srcddsd.Format == DXGI_FORMAT_BC7_UNORM))
 		{
 			// filenames to WCHAR
 			wchar_t wFilenamePlate[512];
@@ -3466,6 +3467,8 @@ DARKSDK bool GrabImageCore(int iID, int iX1, int iY1, int iX2, int iY2, int iTex
 	{
 		return false;
 	}
+	if (!m_pD3D)
+		return false;
 
 	// Size of grab
 	GGFORMAT backFormat;
@@ -3541,14 +3544,22 @@ DARKSDK bool GrabImageCore(int iID, int iX1, int iY1, int iX2, int iY2, int iTex
 			else
 			{
 				pNewCorrectBBTexture = ConvertBackBufferToNewFormat(pBackBuffer, g_DefaultGGFORMAT);
-				D3D11_BOX rc = { iX1, iY1, 0, (LONG)(iX1 + iImageWidth), (LONG)(iY1 + iImageHeight), 1 };
-				pNewCroppedTexture = CreateCroppedTexture(pNewCorrectBBTexture, rc);
-				// free corrected backbuffer we created to do the copy
-				SAFE_RELEASE(pNewCorrectBBTexture);
+				if (pNewCorrectBBTexture)
+				{
+					D3D11_BOX rc = { iX1, iY1, 0, (LONG)(iX1 + iImageWidth), (LONG)(iY1 + iImageHeight), 1 };
+					pNewCroppedTexture = CreateCroppedTexture(pNewCorrectBBTexture, rc);
+					// free corrected backbuffer we created to do the copy
+					SAFE_RELEASE(pNewCorrectBBTexture);
+				}
 
 			}
+			if (!pNewCroppedTexture)
+			{
+				return(false);
+			}
 			// create image to store cropped texture
-			if (m_imgptr == NULL) {
+			if (m_imgptr == NULL)
+			{
 				MakeFormat(iID, iImageWidth, iImageHeight, g_DefaultGGFORMAT, 0);
 			}
 			if (UpdatePtrImage(iID))
@@ -3563,7 +3574,11 @@ DARKSDK bool GrabImageCore(int iID, int iX1, int iY1, int iX2, int iY2, int iTex
 
 				m_imgptr->lpTextureView = NULL;
 				CreateShaderResourceViewFor(m_imgptr, 0, g_DefaultGGFORMAT);
-
+				if (!m_imgptr->lpTextureView || !m_imgptr->lpTexture)
+				{
+					RemoveImage(iID);
+					return false;
+				}
 				
 				// get desc of image
 				GGSURFACE_DESC srcddsd;
@@ -4338,8 +4353,20 @@ DARKSDK void LoadImage ( LPSTR szFilename, int iID, int iTextureFlag, int iDivid
 		if ( iSilentError==0 )
 		{
 			char pCWD[256]; _getcwd ( pCWD, 256 );
-			char pErr[256]; sprintf ( pErr, "CWD:%s\nLOAD IMAGE %s,%d,%d,%d", pCWD, szFilename, iID, iTextureFlag, iDivideTextureSize);
-			#ifndef NOSTEAMORVIDEO
+			extern char g_pStartingDirectory[260];
+			char checkhome[MAX_PATH];
+			strcpy(checkhome, g_pStartingDirectory);
+			strcat(checkhome, "\\Files");
+			char pErr[512];
+			if (stricmp(checkhome, pCWD) == NULL)
+			{
+				//PE: No need to report CWD if already correct root.
+				sprintf(pErr, "IMG: %s,%d,%d,%d", szFilename, iID, iTextureFlag, iDivideTextureSize);
+			}
+			else
+				sprintf(pErr, "CWD:%s - IMG %s,%d,%d,%d", pCWD, szFilename, iID, iTextureFlag, iDivideTextureSize);
+			//char pErr[256]; sprintf ( pErr, "CWD:%s\nLOAD IMAGE %s,%d,%d,%d", pCWD, szFilename, iID, iTextureFlag, iDivideTextureSize);
+#ifndef NOSTEAMORVIDEO
 			timestampactivity(0, pErr);
 			#endif
 		}

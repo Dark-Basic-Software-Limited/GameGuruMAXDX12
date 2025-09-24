@@ -59,8 +59,16 @@ bool g_bLostFocus = false;
 //char g_pGraphicsCardLog[10240];
 char g_pStartingDirectory[260];
 
+uint32_t FrameCounter = 0;
+
 // Encapsulates all other classes for Wicked Engine control
 Master master;
+
+//void causeCrash() {
+//	int* badPtr = nullptr;
+//	*badPtr = 123; // This will cause an access violation (crash)
+//}
+
 
 // Functions
 
@@ -83,6 +91,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Keep an eye for Unhandled Exceptions!
 	//SetUnhandledExceptionFilter(CrashHandler);
 	InitCrashHandler();
+
+	//causeCrash();
 
 	// Command line store
 	std::wstring your_wchar_in_ws(lpCmdLine);
@@ -323,6 +333,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			{
 				// full tilt
 				master.RunCustom();
+				FrameCounter++;
 			}
 			else
 			{
@@ -336,6 +347,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				{
 					g_bActiveApp = true;
 					master.RunCustom();
+					FrameCounter++;
 				}
 				Sleep(1);
 			}
@@ -619,6 +631,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (g_bDisableQuitFlag == false)
 			{
 				int iRet = 0;
+				void timestampactivity(int i, char* desc_s);
+				timestampactivity(0, "WM_CLOSE");
+
 				//PE: Save storyboard if changed.
 				int autosave_storyboard_project(void);
 				iRet = autosave_storyboard_project();

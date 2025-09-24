@@ -502,6 +502,7 @@ void WickedCall_DeleteImage(std::string pFilenameToDelete)
 bool bNoHierarchySorting = false;
 bool bUseInstancing = false;
 int iUseMasterObjectID = 0;
+int iCurrentObjectID = 0;
 bool bNextObjectMustBeClone = false;
 void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoaderState& state)
 {
@@ -540,7 +541,6 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 
 		// store object entity ID reference in frame (for later use by texture function amongst others)
 		pFrame->wickedobjindex = entity;
-
 		state.entityMeshMap[pFrame->iID] = entity;
 		// assign layer to object
 		wiScene::LayerComponent& layer = *scene.layers.GetComponent(entity);
@@ -769,7 +769,124 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 					mesh.indices.push_back(pDBOMesh->pIndicesLOD3[i + 1]);
 				}
 			}
-			
+
+			#ifdef PICKBVHTHREADED
+			#define MAX_SUBAABB 16
+			bool bCanUseBVH = true;
+			if(pDBOMesh->dwBoneCount > 0)
+				bCanUseBVH = false;
+			if(mesh.indices.size() < 16)
+				bCanUseBVH = false;
+
+
+			/*
+			extern int g_iWickedEntityId; // = -1;
+			extern int g_iWickedElementId; // = 0;
+			if (g_iWickedEntityId > 0)
+			{
+				if (t.entityprofile[g_iWickedEntityId].ischaracter == 1)
+				{
+					//PE: Locate heads.
+					if (pDBOMesh && pDBOMesh->pFrameAttachedTo && pDBOMesh->pFrameAttachedTo->szName)
+					{
+						if (pestrcasestr(pDBOMesh->pFrameAttachedTo->szName, "head"))
+						{
+							//PE: Make sure we are ccp.
+							if (pestrcasestr(pDBOMesh->pFrameAttachedTo->szName, "adult_") || pestrcasestr(pDBOMesh->pFrameAttachedTo->szName, "zombie_"))
+							{
+								//PE: This takes head and headgear, that are kind of round so we can use BVH.
+								bCanUseBVH = false;
+							}
+						}
+					}
+				}
+			}
+			*/
+
+			//PE: Instanced object use master mesh so also need 50000
+			if (MAX_SUBAABB > 0 && bCanUseBVH && iCurrentObjectID > 50000 && iCurrentObjectID < 90000) //70000
+			{
+				//PE: Add BVH subAABBs too all subsets including lods.
+				for (auto& subset : mesh.subsets)
+				{
+					subset.subAABBactive = true;
+					subset.usedAABB = MAX_SUBAABB;
+
+					const size_t totalIndexCount = subset.indexCount;
+
+					const size_t totalTriangleCount = totalIndexCount / 3;
+					const size_t trianglesPerAABB = totalTriangleCount / MAX_SUBAABB;
+					const size_t remainderTriangles = totalTriangleCount % MAX_SUBAABB;
+
+					size_t currentOffset = subset.indexOffset;
+
+					for (size_t i = 0; i < MAX_SUBAABB; ++i)
+					{
+						size_t currentTriangleCount = trianglesPerAABB;
+
+						if (i == MAX_SUBAABB - 1)
+						{
+							currentTriangleCount += remainderTriangles;
+						}
+
+						subset.subAABB_index_offset[i] = currentOffset;
+						subset.subAABB_index_count[i] = currentTriangleCount * 3;
+
+						//if (subset.subAABB_index_offset[i] + subset.subAABB_index_count[i] > mesh.indices.size())
+						//{
+						//	printf("tmp");
+						//}
+
+						if (subset.subAABB_index_count[i] > 0)
+						{
+							AABB currentAABB;
+
+							for (size_t j = 0; j < subset.subAABB_index_count[i]; j += 3)
+							{
+								const uint32_t i0 = mesh.indices[currentOffset + j];
+								const uint32_t i1 = mesh.indices[currentOffset + j + 1];
+								const uint32_t i2 = mesh.indices[currentOffset + j + 2];
+
+								const XMFLOAT3& p0 = mesh.vertex_positions[i0];
+								const XMFLOAT3& p1 = mesh.vertex_positions[i1];
+								const XMFLOAT3& p2 = mesh.vertex_positions[i2];
+
+								const XMFLOAT3 minPos = {
+									min(p0.x, min(p1.x, p2.x)),
+									min(p0.y, min(p1.y, p2.y)),
+									min(p0.z, min(p1.z, p2.z))
+								};
+								const XMFLOAT3 maxPos = {
+									max(p0.x, max(p1.x, p2.x)),
+									max(p0.y, max(p1.y, p2.y)),
+									max(p0.z, max(p1.z, p2.z))
+								};
+								const AABB triangleAABB(minPos, maxPos);
+
+								currentAABB = currentAABB.Merge(currentAABB,triangleAABB);
+							}
+							subset.subAABB[i] = currentAABB;
+						}
+						currentOffset += subset.subAABB_index_count[i];
+					}
+				}
+			}
+			else
+			#endif
+			{
+				for (auto& subset : mesh.subsets)
+				{
+					subset.subAABBactive = false;
+					subset.usedAABB = 0;
+
+					for (size_t i = 0; i < MAX_SUBAABB; ++i)
+					{
+						subset.subAABB_index_offset[i] = 0;
+						subset.subAABB_index_count[i] = 0;
+					}
+				}
+			}
+
 			//PE: Test Tessellation
 			//mesh.tessellationFactor = 50.0; //PE: Many objects dont work with this and deform, disable for now
 			
@@ -5288,7 +5405,9 @@ bool Convert2Dto3D(long x , long y, float* pOutX, float* pOutY, float* pOutZ, fl
 
 float fLastTerrainHitX = 0, fLastTerrainHitY = 0, fLastTerrainHitZ = 0;
 
-bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
+#ifdef PICKBVHTHREADED
+//PE: To compare only.
+bool WickedCall_GetPick2_BVH(float fMouseX, float fMouseY, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
 {
 	// Use wicked mouse pointer to determine intersection with solid geometry (for terrain and entity detection)
 	// PE: We got hits from hidden objects like "widgets" , now ignore hidden objects in WICKEDREPO.
@@ -5306,6 +5425,8 @@ bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOut
 
 	//PE: Wicked Mouse is relative to windows pos. ImGui is relative to screen.
 	RAY pickRay = wiRenderer::GetPickRay((long)fMouseX, (long)fMouseY, master.masterrenderer);
+
+	pickRay.bIgnoreNearestTriangle = true; //PE: We do not care about the closest triangle so perform early exit.
 
 	// check scene first if flagged, then terrain which is naturally underneath
 	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
@@ -5391,7 +5512,7 @@ bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOut
 			float fDX = *pOutX - CameraPositionX(0);
 			float fDY = *pOutY - CameraPositionY(0);
 			float fDZ = *pOutZ - CameraPositionZ(0);
-			fDistToObjectHit = sqrt(fabs(fDX*fDX) + fabs(fDY*fDY) + fabs(fDZ*fDZ));
+			fDistToObjectHit = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
 		}
 		float pTerrOutX, pTerrOutY, pTerrOutZ, pTerrNormX, pTerrNormY, pTerrNormZ;
 		if (GGTerrain::GGTerrain_RayCast(pickRay, &pTerrOutX, &pTerrOutY, &pTerrOutZ, &pTerrNormX, &pTerrNormY, &pTerrNormZ, 0))
@@ -5401,7 +5522,7 @@ bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOut
 			float fDX = pTerrOutX - CameraPositionX(0);
 			float fDY = pTerrOutY - CameraPositionY(0);
 			float fDZ = pTerrOutZ - CameraPositionZ(0);
-			float fDist = sqrt(fabs(fDX*fDX) + fabs(fDY*fDY) + fabs(fDZ*fDZ));
+			float fDist = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
 			if (fDist < fDistToObjectHit || fDistToObjectHit == -1)
 			{
 				// if terrain closer than object hit, we register a terrain detection instead
@@ -5425,7 +5546,159 @@ bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOut
 	}
 
 	// no entity hovering over, but still want to move the cursor line in visual logic system
-	if (g_hovered_entity == 0 )
+	if (g_hovered_entity == 0)
+	{
+		if (iLayerMask & GGRENDERLAYERS_NORMAL)
+		{
+			fLastHitPosition[0] = *pOutX;
+			fLastHitPosition[1] = *pOutY;
+			fLastHitPosition[2] = *pOutZ;
+		}
+	}
+	// return success flag
+	return bHitSuccess;
+}
+
+bool WickedCall_GetPick2_Thread(float fMouseX, float fMouseY, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
+{
+	// Use wicked mouse pointer to determine intersection with solid geometry (for terrain and entity detection)
+	// PE: We got hits from hidden objects like "widgets" , now ignore hidden objects in WICKEDREPO.
+	bool bHitSuccess = false;
+
+	//PE: Do not do anything if mouse is not over level editor.
+	//if (bImGuiGotFocus) return bHitSuccess;
+
+	// do not wipe out hover object detection when widget plane pass happens
+	if (iLayerMask & GGRENDERLAYERS_NORMAL)
+	{
+		g_hovered_pobject = NULL;
+		g_hovered_entity = 0;
+	}
+
+	//PE: Wicked Mouse is relative to windows pos. ImGui is relative to screen.
+	RAY pickRay = wiRenderer::GetPickRay((long)fMouseX, (long)fMouseY, master.masterrenderer);
+
+	pickRay.bIgnoreNearestTriangle = true; //PE: We do not care about the closest triangle so perform early exit.
+
+	// check scene first if flagged, then terrain which is naturally underneath
+	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
+	{
+		wiScene::PickResult hovered = wiScene::PickThread(pickRay, RENDERTYPE_ALL, iLayerMask);
+		if (hovered.entity > 0)
+		{
+			if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0)
+			{
+				sObject* pHitObject = m_ObjectManager.FindObjectFromWickedObjectEntityID(hovered.entity);
+				if (pHitObject)
+				{
+					bool ObjectIsEntity(void* pTestObject);
+
+					//PE: Only highlight if this is a gg entity.
+					bool bIsEntity = ObjectIsEntity(pHitObject);
+					if (bIsEntity)
+					{
+						if (iLayerMask & GGRENDERLAYERS_NORMAL)
+						{
+							g_hovered_pobject = pHitObject;
+							g_hovered_entity = hovered.entity;
+							g_hovered_dot_pobject = NULL;
+							g_hovered_dot_entity = 0;
+						}
+					}
+					else
+					{
+						//#define DOTARCSOBJECTID 70001+40000+21001
+						if (pHitObject->dwObjectNumber > 110000 && pHitObject->dwObjectNumber < 131002)
+						{
+							if (iLayerMask & GGRENDERLAYERS_NORMAL)
+							{
+								g_hovered_dot_pobject = pHitObject;
+								g_hovered_dot_entity = hovered.entity;
+								g_bhovered_dot = true;
+							}
+						}
+					}
+				}
+				else
+				{
+					if (iLayerMask & GGRENDERLAYERS_NORMAL)
+					{
+						g_hovered_dot_pobject = NULL;
+						g_hovered_dot_entity = 0;
+					}
+				}
+			}
+
+			// return hit position
+			*pOutX = hovered.position.x;
+			*pOutY = hovered.position.y;
+			*pOutZ = hovered.position.z;
+
+			if (iLayerMask & GGRENDERLAYERS_NORMAL)
+			{
+				fLastHitPosition[0] = hovered.position.x;
+				fLastHitPosition[1] = hovered.position.y;
+				fLastHitPosition[2] = hovered.position.z;
+			}
+
+			// if normals needed
+			if (pNormX)
+			{
+				*pNormX = hovered.normal.x;
+				*pNormY = hovered.normal.y;
+				*pNormZ = hovered.normal.z;
+			}
+
+			// optionally return actual object the cursor hovered over
+			if (pHitEntity) *pHitEntity = hovered.entity;
+
+			// report a hit
+			bHitSuccess = true;
+		}
+	}
+	if ((iLayerMask & GGRENDERLAYERS_TERRAIN) != 0)
+	{
+		float fDistToObjectHit = -1;
+		if (bHitSuccess == true)
+		{
+			float fDX = *pOutX - CameraPositionX(0);
+			float fDY = *pOutY - CameraPositionY(0);
+			float fDZ = *pOutZ - CameraPositionZ(0);
+			fDistToObjectHit = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
+		}
+		float pTerrOutX, pTerrOutY, pTerrOutZ, pTerrNormX, pTerrNormY, pTerrNormZ;
+		if (GGTerrain::GGTerrain_RayCast(pickRay, &pTerrOutX, &pTerrOutY, &pTerrOutZ, &pTerrNormX, &pTerrNormY, &pTerrNormZ, 0))
+		{
+			fLastTerrainHitX = pTerrOutX, fLastTerrainHitY = pTerrOutY, fLastTerrainHitZ = pTerrOutZ;
+
+			float fDX = pTerrOutX - CameraPositionX(0);
+			float fDY = pTerrOutY - CameraPositionY(0);
+			float fDZ = pTerrOutZ - CameraPositionZ(0);
+			float fDist = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
+			if (fDist < fDistToObjectHit || fDistToObjectHit == -1)
+			{
+				// if terrain closer than object hit, we register a terrain detection instead
+				if (pHitEntity) *pHitEntity = 0;
+				*pOutX = pTerrOutX;
+				*pOutY = pTerrOutY;
+				*pOutZ = pTerrOutZ;
+				if (pNormX)
+				{
+					*pNormX = pTerrNormX;
+					*pNormY = pTerrNormY;
+					*pNormZ = pTerrNormZ;
+				}
+				bHitSuccess = true;
+			}
+		}
+		else
+		{
+			fLastTerrainHitX = 0, fLastTerrainHitY = 0, fLastTerrainHitZ = 0;
+		}
+	}
+
+	// no entity hovering over, but still want to move the cursor line in visual logic system
+	if (g_hovered_entity == 0)
 	{
 		if (iLayerMask & GGRENDERLAYERS_NORMAL)
 		{
@@ -5438,11 +5711,323 @@ bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOut
 	// return success flag
 	return bHitSuccess;
 }
+#endif
+
+bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
+{
+	// Use wicked mouse pointer to determine intersection with solid geometry (for terrain and entity detection)
+	// PE: We got hits from hidden objects like "widgets" , now ignore hidden objects in WICKEDREPO.
+	bool bHitSuccess = false;
+
+	//PE: Do not do anything if mouse is not over level editor.
+	if (bImGuiGotFocus) return bHitSuccess;
+
+	// do not wipe out hover object detection when widget plane pass happens
+	if (iLayerMask & GGRENDERLAYERS_NORMAL)
+	{
+		g_hovered_pobject = NULL;
+		g_hovered_entity = 0;
+	}
+
+	//PE: Wicked Mouse is relative to windows pos. ImGui is relative to screen.
+	RAY pickRay = wiRenderer::GetPickRay((long)fMouseX, (long)fMouseY, master.masterrenderer);
+
+	pickRay.bIgnoreNearestTriangle = true; //PE: We do not care about the closest triangle so perform early exit.
+	
+	// check scene first if flagged, then terrain which is naturally underneath
+	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
+	{
+#ifdef PICKBVHTHREADED
+		wiScene::PickResult hovered;
+			hovered = wiScene::PickThread(pickRay, RENDERTYPE_ALL, iLayerMask);
+#else
+		wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
+#endif
+		if (hovered.entity > 0)
+		{
+			if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0)
+			{
+				sObject* pHitObject = m_ObjectManager.FindObjectFromWickedObjectEntityID(hovered.entity);
+				if (pHitObject)
+				{
+					bool ObjectIsEntity(void* pTestObject);
+
+					//PE: Only highlight if this is a gg entity.
+					bool bIsEntity = ObjectIsEntity(pHitObject);
+					if (bIsEntity)
+					{
+						if (iLayerMask & GGRENDERLAYERS_NORMAL)
+						{
+							g_hovered_pobject = pHitObject;
+							g_hovered_entity = hovered.entity;
+							g_hovered_dot_pobject = NULL;
+							g_hovered_dot_entity = 0;
+						}
+					}
+					else
+					{
+						//#define DOTARCSOBJECTID 70001+40000+21001
+						if (pHitObject->dwObjectNumber > 110000 && pHitObject->dwObjectNumber < 131002)
+						{
+							if (iLayerMask & GGRENDERLAYERS_NORMAL)
+							{
+								g_hovered_dot_pobject = pHitObject;
+								g_hovered_dot_entity = hovered.entity;
+								g_bhovered_dot = true;
+							}
+						}
+					}
+				}
+				else
+				{
+					if (iLayerMask & GGRENDERLAYERS_NORMAL)
+					{
+						g_hovered_dot_pobject = NULL;
+						g_hovered_dot_entity = 0;
+					}
+				}
+			}
+
+			// return hit position
+			*pOutX = hovered.position.x;
+			*pOutY = hovered.position.y;
+			*pOutZ = hovered.position.z;
+
+			if (iLayerMask & GGRENDERLAYERS_NORMAL)
+			{
+				fLastHitPosition[0] = hovered.position.x;
+				fLastHitPosition[1] = hovered.position.y;
+				fLastHitPosition[2] = hovered.position.z;
+			}
+
+			// if normals needed
+			if (pNormX)
+			{
+				*pNormX = hovered.normal.x;
+				*pNormY = hovered.normal.y;
+				*pNormZ = hovered.normal.z;
+			}
+
+			// optionally return actual object the cursor hovered over
+			if (pHitEntity) *pHitEntity = hovered.entity;
+
+			// report a hit
+			bHitSuccess = true;
+		}
+	}
+	if ((iLayerMask & GGRENDERLAYERS_TERRAIN) != 0)
+	{
+		float fDistToObjectHit = -1;
+		if (bHitSuccess == true)
+		{
+			float fDX = *pOutX - CameraPositionX(0);
+			float fDY = *pOutY - CameraPositionY(0);
+			float fDZ = *pOutZ - CameraPositionZ(0);
+			fDistToObjectHit = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
+		}
+		float pTerrOutX, pTerrOutY, pTerrOutZ, pTerrNormX, pTerrNormY, pTerrNormZ;
+		if (GGTerrain::GGTerrain_RayCast(pickRay, &pTerrOutX, &pTerrOutY, &pTerrOutZ, &pTerrNormX, &pTerrNormY, &pTerrNormZ, 0))
+		{
+			fLastTerrainHitX = pTerrOutX, fLastTerrainHitY = pTerrOutY, fLastTerrainHitZ = pTerrOutZ;
+
+			float fDX = pTerrOutX - CameraPositionX(0);
+			float fDY = pTerrOutY - CameraPositionY(0);
+			float fDZ = pTerrOutZ - CameraPositionZ(0);
+			float fDist = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
+			if (fDist < fDistToObjectHit || fDistToObjectHit == -1)
+			{
+				// if terrain closer than object hit, we register a terrain detection instead
+				if (pHitEntity) *pHitEntity = 0;
+				*pOutX = pTerrOutX;
+				*pOutY = pTerrOutY;
+				*pOutZ = pTerrOutZ;
+				if (pNormX)
+				{
+					*pNormX = pTerrNormX;
+					*pNormY = pTerrNormY;
+					*pNormZ = pTerrNormZ;
+				}
+				bHitSuccess = true;
+			}
+		}
+		else
+		{
+			fLastTerrainHitX = 0, fLastTerrainHitY = 0, fLastTerrainHitZ = 0;
+		}
+	}
+
+	// no entity hovering over, but still want to move the cursor line in visual logic system
+	if (g_hovered_entity == 0)
+	{
+		if (iLayerMask & GGRENDERLAYERS_NORMAL)
+		{
+			fLastHitPosition[0] = *pOutX;
+			fLastHitPosition[1] = *pOutY;
+			fLastHitPosition[2] = *pOutZ;
+		}
+	}
+	// return success flag
+	return bHitSuccess;
+}
+
+#ifdef PICKBVHTHREADED
+bool WickedCall_GetPick2_OLD(float fMouseX, float fMouseY, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
+{
+	// Use wicked mouse pointer to determine intersection with solid geometry (for terrain and entity detection)
+	// PE: We got hits from hidden objects like "widgets" , now ignore hidden objects in WICKEDREPO.
+	bool bHitSuccess = false;
+
+	//PE: Do not do anything if mouse is not over level editor.
+	//if (bImGuiGotFocus) return bHitSuccess;
+
+	// do not wipe out hover object detection when widget plane pass happens
+	if (iLayerMask & GGRENDERLAYERS_NORMAL)
+	{
+		g_hovered_pobject = NULL;
+		g_hovered_entity = 0;
+	}
+
+	//PE: Wicked Mouse is relative to windows pos. ImGui is relative to screen.
+	RAY pickRay = wiRenderer::GetPickRay((long)fMouseX, (long)fMouseY, master.masterrenderer);
+
+	// check scene first if flagged, then terrain which is naturally underneath
+	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
+	{
+		wiScene::PickResult hovered = wiScene::Pick_OLD(pickRay, RENDERTYPE_ALL, iLayerMask);
+		if (hovered.entity > 0)
+		{
+			if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0)
+			{
+				sObject* pHitObject = m_ObjectManager.FindObjectFromWickedObjectEntityID(hovered.entity);
+				if (pHitObject)
+				{
+					bool ObjectIsEntity(void* pTestObject);
+
+					//PE: Only highlight if this is a gg entity.
+					bool bIsEntity = ObjectIsEntity(pHitObject);
+					if (bIsEntity)
+					{
+						if (iLayerMask & GGRENDERLAYERS_NORMAL)
+						{
+							g_hovered_pobject = pHitObject;
+							g_hovered_entity = hovered.entity;
+							g_hovered_dot_pobject = NULL;
+							g_hovered_dot_entity = 0;
+						}
+					}
+					else
+					{
+						//#define DOTARCSOBJECTID 70001+40000+21001
+						if (pHitObject->dwObjectNumber > 110000 && pHitObject->dwObjectNumber < 131002)
+						{
+							if (iLayerMask & GGRENDERLAYERS_NORMAL)
+							{
+								g_hovered_dot_pobject = pHitObject;
+								g_hovered_dot_entity = hovered.entity;
+								g_bhovered_dot = true;
+							}
+						}
+					}
+				}
+				else
+				{
+					if (iLayerMask & GGRENDERLAYERS_NORMAL)
+					{
+						g_hovered_dot_pobject = NULL;
+						g_hovered_dot_entity = 0;
+					}
+				}
+			}
+
+			// return hit position
+			*pOutX = hovered.position.x;
+			*pOutY = hovered.position.y;
+			*pOutZ = hovered.position.z;
+
+			if (iLayerMask & GGRENDERLAYERS_NORMAL)
+			{
+				fLastHitPosition[0] = hovered.position.x;
+				fLastHitPosition[1] = hovered.position.y;
+				fLastHitPosition[2] = hovered.position.z;
+			}
+
+			// if normals needed
+			if (pNormX)
+			{
+				*pNormX = hovered.normal.x;
+				*pNormY = hovered.normal.y;
+				*pNormZ = hovered.normal.z;
+			}
+
+			// optionally return actual object the cursor hovered over
+			if (pHitEntity) *pHitEntity = hovered.entity;
+
+			// report a hit
+			bHitSuccess = true;
+		}
+	}
+	if ((iLayerMask & GGRENDERLAYERS_TERRAIN) != 0)
+	{
+		float fDistToObjectHit = -1;
+		if (bHitSuccess == true)
+		{
+			float fDX = *pOutX - CameraPositionX(0);
+			float fDY = *pOutY - CameraPositionY(0);
+			float fDZ = *pOutZ - CameraPositionZ(0);
+			fDistToObjectHit = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
+		}
+		float pTerrOutX, pTerrOutY, pTerrOutZ, pTerrNormX, pTerrNormY, pTerrNormZ;
+		if (GGTerrain::GGTerrain_RayCast(pickRay, &pTerrOutX, &pTerrOutY, &pTerrOutZ, &pTerrNormX, &pTerrNormY, &pTerrNormZ, 0))
+		{
+			fLastTerrainHitX = pTerrOutX, fLastTerrainHitY = pTerrOutY, fLastTerrainHitZ = pTerrOutZ;
+
+			float fDX = pTerrOutX - CameraPositionX(0);
+			float fDY = pTerrOutY - CameraPositionY(0);
+			float fDZ = pTerrOutZ - CameraPositionZ(0);
+			float fDist = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
+			if (fDist < fDistToObjectHit || fDistToObjectHit == -1)
+			{
+				// if terrain closer than object hit, we register a terrain detection instead
+				if (pHitEntity) *pHitEntity = 0;
+				*pOutX = pTerrOutX;
+				*pOutY = pTerrOutY;
+				*pOutZ = pTerrOutZ;
+				if (pNormX)
+				{
+					*pNormX = pTerrNormX;
+					*pNormY = pTerrNormY;
+					*pNormZ = pTerrNormZ;
+				}
+				bHitSuccess = true;
+			}
+		}
+		else
+		{
+			fLastTerrainHitX = 0, fLastTerrainHitY = 0, fLastTerrainHitZ = 0;
+		}
+	}
+
+	// no entity hovering over, but still want to move the cursor line in visual logic system
+	if (g_hovered_entity == 0)
+	{
+		if (iLayerMask & GGRENDERLAYERS_NORMAL)
+		{
+			fLastHitPosition[0] = *pOutX;
+			fLastHitPosition[1] = *pOutY;
+			fLastHitPosition[2] = *pOutZ;
+		}
+	}
+
+	// return success flag
+	return bHitSuccess;
+}
+#endif
 
 bool WickedCall_GetPick(float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
 {
 	XMFLOAT4 currentMouse = wiInput::GetPointer();
-	return WickedCall_GetPick2(currentMouse.x, currentMouse.y, pOutX, pOutY, pOutZ, pNormX, pNormY, pNormZ, pHitEntity, iLayerMask);
+	bool res = WickedCall_GetPick2(currentMouse.x, currentMouse.y, pOutX, pOutY, pOutZ, pNormX, pNormY, pNormZ, pHitEntity, iLayerMask);;
+	return res;
 }
 
 bool WickedCall_SentRay(float originx, float originy, float originz, float directionx, float directiony, float directionz,float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
@@ -5459,8 +6044,11 @@ bool WickedCall_SentRay(float originx, float originy, float originz, float direc
 	pickRay.direction.z = directionz;
 	XMStoreFloat3(&direction_inverse, XMVectorDivide(XMVectorReplicate(1.0f), XMVectorSet(directionx, directiony, directionz,1.0f)));
 	pickRay.direction_inverse = direction_inverse;
+#ifdef PICKBVHTHREADED
+	wiScene::PickResult hovered = wiScene::PickThread(pickRay, RENDERTYPE_ALL, iLayerMask);
+#else
 	wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
-
+#endif
 	if (hovered.entity > 0)
 	{
 		sObject* pHitObject = m_ObjectManager.FindObjectFromWickedObjectEntityID(hovered.entity);
@@ -5532,7 +6120,11 @@ bool WickedCall_SentRay2(float originx, float originy, float originz, float dire
 	// check scene first if flagged, then terrain which is naturally underneath
 	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
 	{
+#ifdef PICKBVHTHREADED
+		wiScene::PickResult hovered = wiScene::PickThread(pickRay, RENDERTYPE_ALL, iLayerMask);
+#else
 		wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
+#endif
 		if (hovered.entity > 0)
 		{
 			if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0)
@@ -5636,7 +6228,11 @@ bool WickedCall_SentRay4(float originx, float originy, float originz, float dire
 	uint32_t checkType = RENDERTYPE_ALL;
 	//PE: @Lee we have no checks on transparent objects, we cant shoot glass, no impact effects , no killing pradator ...
 	if (bOpaqueOnly == true) checkType = RENDERTYPE_OPAQUE | RENDERTYPE_TRANSPARENT;
+#ifdef PICKBVHTHREADED
+	wiScene::PickResult hit = wiScene::PickThread(pickRay, checkType, GGRENDERLAYERS_NORMAL);
+#else
 	wiScene::PickResult hit = wiScene::Pick(pickRay, checkType, GGRENDERLAYERS_NORMAL);
+#endif
 	if (hit.entity > 0)
 	{
 		float fDX = hit.position.x - originx;
@@ -5661,6 +6257,50 @@ bool WickedCall_SentRay4(float originx, float originy, float originz, float dire
 	}
 	return false;
 }
+
+#ifdef PICKBVHTHREADED
+bool WickedCall_SentRay4_ThreadSafe(float originx, float originy, float originz, float directionx, float directiony, float directionz, float fDistanceOfRay, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, DWORD* pdwObjectNumberHit, bool bOpaqueOnly)
+{
+	// ray cast specifically used by game loop to find accurate position of animating objects (performant?)
+	RAY pickRay;
+	XMFLOAT3 direction_inverse;
+	pickRay.origin.x = originx;
+	pickRay.origin.y = originy;
+	pickRay.origin.z = originz;
+	pickRay.direction.x = directionx;
+	pickRay.direction.y = directiony;
+	pickRay.direction.z = directionz;
+	XMStoreFloat3(&direction_inverse, XMVectorDivide(XMVectorReplicate(1.0f), XMVectorSet(directionx, directiony, directionz, 1.0f)));
+	pickRay.direction_inverse = direction_inverse;
+	uint32_t checkType = RENDERTYPE_ALL;
+	//PE: @Lee we have no checks on transparent objects, we cant shoot glass, no impact effects , no killing pradator ...
+	if (bOpaqueOnly == true) checkType = RENDERTYPE_OPAQUE | RENDERTYPE_TRANSPARENT;
+	wiScene::PickResult hit = wiScene::Pick(pickRay, checkType, GGRENDERLAYERS_NORMAL);
+	if (hit.entity > 0)
+	{
+		float fDX = hit.position.x - originx;
+		float fDY = hit.position.y - originy;
+		float fDZ = hit.position.z - originz;
+		float fDistOfHit = sqrt(fabs(fDX * fDX) + fabs(fDY * fDY) + fabs(fDZ * fDZ));
+		if (fDistOfHit <= fDistanceOfRay)
+		{
+			sObject* pHitObject = m_ObjectManager.FindObjectFromWickedObjectEntityID(hit.entity);
+			if (pHitObject) *pdwObjectNumberHit = pHitObject->dwObjectNumber;
+			*pOutX = hit.position.x;
+			*pOutY = hit.position.y;
+			*pOutZ = hit.position.z;
+			if (pNormX)
+			{
+				*pNormX = hit.normal.x;
+				*pNormY = hit.normal.y;
+				*pNormZ = hit.normal.z;
+			}
+			return true;
+		}
+	}
+	return false;
+}
+#endif
 
 bool WickedCall_SentRay3(float originx, float originy, float originz, float directionx, float directiony, float directionz, float fDistanceOfRay, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, DWORD* pdwObjectNumberHit)
 {
@@ -7189,9 +7829,7 @@ uint32_t WickedCall_LoadWiSceneDirect(Scene& scene2,char* filename, bool attache
 		scene2.objects.Serialize(archive, seri);
 		scene2.aabb_objects.Serialize(archive, seri);
 		scene2.rigidbodies.Serialize(archive, seri);
-
 		scene2.softbodies.Serialize(archive, seri);
-
 		scene2.armatures.Serialize(archive, seri);
 		scene2.lights.Serialize(archive, seri);
 		scene2.aabb_lights.Serialize(archive, seri);
@@ -7401,7 +8039,27 @@ void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root)
 			}
 		}
 	}
+}
 
+bool WickedCall_ParticleEffectPositionRotation(uint32_t root, float fX, float fY, float fZ, float fXa, float fYa, float fZa)
+{
+	Scene& scene = wiScene::GetScene();
+	TransformComponent* root_tranform = scene.transforms.GetComponent(root);
+	if (root_tranform)
+	{
+		root_tranform->ClearTransform();
+
+		float rotationRadiansX = fXa * (XM_PI / 180.0f);
+		float rotationRadiansY = fYa * (XM_PI / 180.0f);
+		float rotationRadiansZ = fZa * (XM_PI / 180.0f);
+		XMFLOAT3 rot = { rotationRadiansX ,rotationRadiansY ,rotationRadiansZ }; //PE: 0 - XM_2PI
+		root_tranform->RotateRollPitchYaw(rot);
+
+		root_tranform->Translate(XMFLOAT3(fX, fY, fZ));
+		root_tranform->UpdateTransform();
+		return true;
+	}
+	return false;
 }
 
 bool WickedCall_ParticleEffectPosition(uint32_t root, float fX, float fY, float fZ)

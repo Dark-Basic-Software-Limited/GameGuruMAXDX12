@@ -22,6 +22,9 @@ char*			m_pTEXTWorkString = NULL;
 char			g_szReturnStringPool[RETURNSTRONGPOOLMAX][1024];
 int				g_iReturnStringPoolCount = 0;
 
+int currentringbuffer = 0;
+char ReturnString[20][1024];
+
 // Module Utility Functions
 
 //PE: Missing constructor.
@@ -318,20 +321,63 @@ char* StrDoubleInt ( char* pDestStr, long long lValue )
 	return pReturnString;
 }
 
+//PE: Never freed.
+
 char* SetupString ( char* szInput )
 {
 	char* pReturn = NULL;
+
+	currentringbuffer = currentringbuffer + 1;
+	if (currentringbuffer > 19)
+		currentringbuffer = 0;
+
 	unsigned int dwSize  = strlen ( szInput );
-	g_pGlob->CreateDeleteString((char**) &pReturn, dwSize + 1 );
+	if(dwSize < 1024)
+		pReturn = &ReturnString[currentringbuffer][0];
+	else
+		g_pGlob->CreateDeleteString((char**) &pReturn, dwSize + 1 );
 	if ( !pReturn ) RunTimeError ( RUNTIMEERROR_NOTENOUGHMEMORY );	
 	memcpy ( pReturn, szInput, dwSize );
 	pReturn [ dwSize ] = 0;
 	return pReturn;
 }
 
+char* SetupStringOLD(char* szInput)
+{
+	char* pReturn = NULL;
+	unsigned int dwSize = strlen(szInput);
+	g_pGlob->CreateDeleteString((char**)&pReturn, dwSize + 1);
+	if (!pReturn) RunTimeError(RUNTIMEERROR_NOTENOUGHMEMORY);
+	memcpy(pReturn, szInput, dwSize);
+	pReturn[dwSize] = 0;
+	return pReturn;
+}
+
 void Reverse ( char* dwA )
 {
 	strrev ( dwA );
+}
+
+//PE: Spaces never free the mem. so new function.
+char* Spaces2(int iSpaces)
+{
+	if (!g_pGlob->CreateDeleteString) return(" ");
+	if(iSpaces > 255) return(" ");
+	currentringbuffer = currentringbuffer + 1;
+	if (currentringbuffer > 19)
+		currentringbuffer = 0;
+	if (iSpaces < 0)
+	{
+		char* pReturnString = &ReturnString[currentringbuffer][0];
+		pReturnString[0] = 0;
+		return pReturnString;
+	}
+
+	// Create and return string
+	char* pReturnString = &ReturnString[currentringbuffer][0];
+	memset((char*)pReturnString, 32, iSpaces);
+	pReturnString[iSpaces] = 0;
+	return pReturnString;
 }
 
 char* Spaces ( int iSpaces )

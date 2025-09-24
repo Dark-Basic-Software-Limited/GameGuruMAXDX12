@@ -37,6 +37,9 @@ bool noDeleteCSTR = false;
 #define STRMINSIZE 128
 #endif
 
+#define CONSTRUCTERSIZE 2
+#define MAXSIZEVALUE 64
+
 //PE: ZTEMP just use double mem, no need, use a ringbuffer instead. And we have very many of these in entityelements.
 #define DISABLEZTEMP
 
@@ -52,6 +55,215 @@ int m_iCurrentBuffer = 0;
 int CheckPreSize[5000];
 int CheckReSize[5000];
 #endif
+
+
+//m_capacity
+
+#define USECAPACITY
+
+#if defined(DISABLEZTEMP) && defined(USECAPACITY)
+
+cStr::cStr(const cStr& cString)
+{
+	m_size = (int)strlen(cString.m_pString);
+
+	//PE: Should be >= if size was exactly STRMINSIZE we would get a heap error.
+	if (m_size >= m_capacity)
+	{
+		m_capacity = m_size + 1;
+		m_pString = new char[m_capacity];
+		memset(m_pString, 0, m_capacity);
+	}
+//	else
+//	{
+//		m_capacity = STRMINSIZE;
+//		m_pString = new char[m_capacity];
+//	}
+
+	//memset(m_pString, 0, m_capacity);
+	strcpy(m_pString, cString.m_pString);
+}
+
+cStr::cStr(char* szString)
+{
+	m_size = (int)strlen(szString);
+
+	if (m_size >= m_capacity)
+	{
+		m_capacity = m_size + 1;
+		m_pString = new char[m_capacity];
+		memset(m_pString, 0, m_capacity);
+	}
+//	else
+//	{
+//		m_capacity = STRMINSIZE;
+//		m_pString = new char[m_capacity];
+//	}
+
+	//memset(m_pString, 0, m_capacity);
+	strcpy(m_pString, szString);
+}
+
+cStr::cStr(int iValue)
+{
+	m_capacity = MAXSIZEVALUE;
+	m_pString = new char[m_capacity];
+	memset(m_pString, 0, m_capacity);
+	sprintf(m_pString, "%i", iValue);
+	m_size = (int)strlen(m_pString);
+}
+
+cStr::cStr(float fValue)
+{
+	m_capacity = MAXSIZEVALUE;
+	m_pString = new char[m_capacity];
+	memset(m_pString, 0, m_capacity);
+	sprintf(m_pString, "%.2f", fValue);
+	m_size = (int)strlen(m_pString);
+}
+
+cStr::cStr(double dValue)
+{
+	m_capacity = MAXSIZEVALUE;
+	m_pString = new char[m_capacity];
+	memset(m_pString, 0, m_capacity);
+	sprintf(m_pString, "%.2f", (float)dValue);
+	m_size = (int)strlen(m_pString);
+}
+
+uint32_t activecstr = 0;
+cStr::cStr()
+{
+	m_capacity = CONSTRUCTERSIZE;
+	m_pString = new char[m_capacity];
+	if (CONSTRUCTERSIZE == 2)
+	{
+		m_pString[0] = 0;
+		m_pString[1] = 0;
+	}
+	else
+	{
+		memset(m_pString, 0, m_capacity);
+		strcpy(m_pString, "");
+	}
+	m_size = 0;
+	activecstr++;
+}
+
+cStr::~cStr()
+{
+	if (!noDeleteCSTR)
+	{
+		if (m_pString)
+			delete[] m_pString;
+	}
+	activecstr--;
+}
+
+cStr cStr::operator + (const cStr& other)
+{
+
+	m_size = (int)strlen(other.m_pString) + (int)strlen(m_pString);
+
+	//PE: Use a ringbuffer.
+	m_iCurrentBuffer++;
+	if (m_iCurrentBuffer >= 29)
+		m_iCurrentBuffer = 0;
+
+	if (m_iLen[m_iCurrentBuffer] <= (m_size + 50) || !m_sTemp[m_iCurrentBuffer])
+	{
+		if (m_sTemp[m_iCurrentBuffer])
+			delete[] m_sTemp[m_iCurrentBuffer];
+		m_sTemp[m_iCurrentBuffer] = new char[sizeof(char) * ((m_size)+51)];
+		m_iLen[m_iCurrentBuffer] = (m_size + 50);
+	}
+
+	if (m_sTemp[m_iCurrentBuffer])
+	{
+		if (m_pString)
+			strcpy(m_sTemp[m_iCurrentBuffer], m_pString);
+		else
+			m_sTemp[m_iCurrentBuffer][0] = 0;
+
+		if (other.m_pString)
+			strcat(m_sTemp[m_iCurrentBuffer], other.m_pString);
+
+		return cStr(m_sTemp[m_iCurrentBuffer]);
+	}
+	else
+		return(cStr("m_sTemp[m_iCurrentBuffer] alloc failed.")); //PE: Debug only should never happen.
+}
+
+cStr& cStr::operator += (const cStr& other)
+{
+	int new_size = (int)strlen(m_pString) + (int)strlen(other.m_pString);
+
+	if (new_size >= m_capacity)
+	{
+		// Need to reallocate! Let's grow the capacity.
+		int new_capacity = new_size + 1;
+		char* newstring = new char[new_capacity];
+		strcpy(newstring, m_pString);
+		delete[] m_pString;
+		m_pString = newstring;
+		m_capacity = new_capacity;
+	}
+
+	// The capacity is now guaranteed to be large enough.
+	strcat(m_pString, other.m_pString);
+	m_size = new_size;
+
+	return *this;
+}
+
+cStr cStr::operator = (const cStr& other)
+{
+	m_size = (int)strlen(other.m_pString);
+
+	if (m_size >= m_capacity)
+	{
+		// New string is too big, reallocate.
+		int new_capacity = m_size + 1;
+		char* newstring = new char[new_capacity];
+		delete[] m_pString;
+		m_pString = newstring;
+		m_capacity = new_capacity;
+	}
+	// No reallocation needed, just copy.
+
+	strcpy(m_pString, other.m_pString);
+
+	return cStr(other.m_pString);
+}
+
+cstr global_string_error = "Error in cStr ? "; //PE: Remove warning.
+
+cStr& cStr::operator = (const char* other)
+{
+	if (!m_pString || !other)
+	{
+		return(global_string_error);
+	}
+
+	m_size = (int)strlen(other);
+
+	if (m_size >= m_capacity)
+	{
+		// New string is too big, reallocate.
+		int new_capacity = m_size + 1;
+		char* newstring = new char[new_capacity];
+		delete[] m_pString;
+		m_pString = newstring;
+		m_capacity = new_capacity;
+	}
+
+	strcpy(m_pString, other);
+
+	return *this;
+}
+#else
+
+//-------------------------------------------------------------------------------------
 
 cStr::cStr ( const cStr& cString )
 {
@@ -317,6 +529,10 @@ cStr& cStr::operator = ( const char* other )
 
 	return *this;
 }
+//-------------------------------------------------------------------------------------
+
+#endif
+
 
 bool cStr::operator == ( const cStr& s )
 {
@@ -444,253 +660,6 @@ cStr cStr::Mid ( int iPoint )
 	return cStr ( szTemp );
 }
 
-#ifdef bent
-char cStr::work[2048] = "";
-
-char* cStr::Get ( void )
-{
-	if ( !pString )
-	{
-		pString = new char [ sizeof ( char ) * 1024 ];
-		strcpy ( pString , "" );
-		iSize = 0;
-	}
-	return pString;
-}
-
-cStr::cStr ( )
-{
-	pString = new char [ sizeof ( char ) * 1024 ];
-	strcpy ( pString , "" );
-	iSize = 0;
-}
-
-cStr::cStr ( char* szSet )
-{
-
-	if ( strlen ( szSet ) < 1024 )
-		pString = new char [ sizeof ( char ) * 1024 ];
-	else
-		pString = new char [ sizeof ( char ) * strlen ( szSet ) + 1 ];
-
-	strcpy ( pString, szSet );
-
-	iSize = strlen ( szSet );
-}
-
-cStr::cStr ( int iSet )
-{
-	sprintf ( work , "%i" , iSet );
-	if ( strlen ( work ) < 1024 )
-		pString = new char [ sizeof ( char ) * 1024 ];
-	else
-		pString = new char [ sizeof ( char ) * strlen ( work ) + 1 ];
-	strcpy ( pString, work );
-
-	iSize = strlen ( work );
-}
-
-cStr::cStr ( float fSet )
-{
-	sprintf ( work , "%.3f" , fSet );
-	if ( strlen ( work ) < 1024 )
-		pString = new char [ sizeof ( char ) * 1024 ];
-	else
-		pString = new char [ sizeof ( char ) * strlen ( work ) + 1 ];
-
-	strcpy ( pString, work );
-
-	iSize = strlen ( work );
-}
-
-cStr::~cStr ( )
-{
-	/*if ( pString ) 
-	{
-		delete[] pString;
-		pString = NULL;
-	}*/
-}
-
-/*const cStr &cStr::operator = ( const cstr& Equal )
-{
-	if ( pString ) delete[] pString;
-
-	if ( strlen ( Equal.pString ) < 1024 )
-		pString = new char [ sizeof ( char ) * 1024 ];
-	else
-		pString = new char [ sizeof ( char ) * (strlen ( Equal.pString ) + 1) ];
-
-	strcpy ( pString, Equal.pString );
-
-	iSize = strlen ( pString );
-
-	return *this;
-}*/
-
-const cStr &cStr::operator = ( const char* szEqual )
-{
-	if ( pString ) delete[] pString;
-
-	if ( strlen ( szEqual ) < 1024 )
-		pString = new char [ sizeof ( char ) * 1024 ];
-	else
-		pString = new char [ sizeof ( char ) * (strlen ( szEqual ) + 1) ];
-
-	strcpy ( pString, szEqual );
-
-	iSize = strlen ( pString );
-
-	return *this;
-}
-
-const cStr &cStr::operator = ( const unsigned long pDWEqual )
-{
-	char* szEqual = (char*)pDWEqual;
-
-	if ( pString ) delete[] pString;
-
-	if ( strlen ( szEqual ) < 1024 )
-		pString = new char [ sizeof ( char ) * 1024 ];
-	else
-		pString = new char [ sizeof ( char ) * (strlen ( szEqual ) + 1) ];
-
-	strcpy ( pString, szEqual );
-
-	iSize = strlen ( pString );
-
-	delete [] szEqual;
-
-	return *this;
-}
-
-cStr &cStr::operator + ( const cStr &add )
-{
-	char* ret = "";
-
-	if ( pString && add.pString )
-	{
-
-		if ( strlen ( pString ) + strlen ( add.pString ) < 1024 )
-			ret = new char [ sizeof ( char ) * 1024 ];
-		else
-			ret = new char[ sizeof ( char ) * ( strlen ( pString ) + strlen ( add.pString ) + 1 ) ];
-
-		strcpy ( ret, pString );
-		strcat ( ret, add.pString );
-
-		delete [] pString;
-		pString = ret;
-
-	}
-
-	iSize = strlen ( pString );
-
-	return *this;
-}
-
-cStr &cStr::operator + ( const unsigned long pDWAdd )
-{
-	char* pAdd = (char*)pDWAdd;
-	char* ret = "";
-
-	if ( pString && pAdd )
-	{
-		if ( strlen ( pString ) + strlen ( pAdd ) < 1024 )
-			ret = new char [ sizeof ( char ) * 1024 ];
-		else
-			ret = new char[ sizeof ( char ) * ( strlen ( pString ) + strlen ( pAdd ) + 1 ) ];
-
-		strcpy ( ret, pString );
-		strcat ( ret, pAdd );
-
-		delete [] pAdd;
-
-		delete [] pString;
-		pString = ret;
-	}
-
-	iSize = strlen ( pString );
-
-	return *this;
-}
-
-cStr &cStr::operator += ( const cStr &add )
-{
-
-	if ( pString )
-	{
-		char* p;
-
-		if ( strlen ( pString ) + strlen ( add.pString ) < 1024 )
-			p = new char [ sizeof ( char ) * 1024 ];
-		else
-			p = new char[ sizeof ( char ) * ( strlen ( pString ) + strlen ( add.pString ) ) + 1 ];
-
-		strcpy ( p , pString );
-		strcat ( p , add.pString );
-
-		delete [] pString;
-		pString = p;
-
-		iSize = strlen ( pString );
-
-	}
-	return *this;
-}
-
-cStr &cStr::operator += ( const unsigned long pDWAdd )
-{
-	char* pAdd = (char*)pDWAdd;
-
-	if ( pString && pAdd )
-	{
-		char* p;
-
-		if ( strlen ( pString ) + strlen ( pAdd ) < 1024 )
-			p = new char [ sizeof ( char ) * 1024 ];
-		else
-			p = new char[ sizeof ( char ) * ( strlen ( pString ) + strlen ( pAdd ) ) + 1 ];
-
-		strcpy ( p , pString );
-		strcat ( p , pAdd );
-		
-		delete pAdd;
-
-		delete [] pString;
-		pString = p;
-
-		iSize = strlen ( pString );
-
-	}
-	return *this;
-}
-
-
-bool cStr::operator == ( const cStr& s ) const
-{
-	if ( _strnicmp ( s.pString , pString , strlen(s.pString) ) == 0 ) return true;
-	return false;
-}
-
-bool cStr::operator == ( const char* s ) const
-{
-	if ( _strnicmp ( s , pString , strlen(s) ) == 0 ) return true;
-	return false;
-}
-
-bool cStr::operator != ( const cStr& s ) const
-{
-	if ( _strnicmp ( s.pString , pString , strlen(s.pString) ) != 0 ) return true;
-	return false;
-}
-
-bool cStr::operator != ( const char* s ) const
-{
-	if ( _strnicmp ( s , pString , strlen(s) ) != 0 ) return true;
-	return false;
-}
-#endif
 
 /*int ArrayCount ( std::vector<cstr> array )
 {

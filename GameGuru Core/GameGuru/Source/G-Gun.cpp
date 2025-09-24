@@ -3349,8 +3349,24 @@ void gun_control ( void )
 	}
 }
 
+bool bFakeReloadActive = false;
 void gunmode121_cancel ( void )
 {
+	gunanimtype realreload;
+	if (bFakeReloadActive)
+	{
+		realreload = t.gstartreload;
+		//PE: Perhaps also support ALT
+		t.gstartreload.s = g.firemodes[t.gunid][0].action.hide.s;
+		t.gstartreload.e = g.firemodes[t.gunid][0].action.hide.e;
+		t.gcock.e = g.firemodes[t.gunid][0].action.hide.e;
+		t.gendreload = g.firemodes[t.gunid][0].action.show;
+		t.greloadloop.s = g.firemodes[t.gunid][0].action.hide.e;
+		t.greloadloop.e = g.firemodes[t.gunid][0].action.hide.e;
+		t.gshow = t.gidle;
+		t.gshow.s = t.gidle.s;
+	}
+
 	if (  t.gunmode == 122 ) 
 	{
 		--t.guninterp;
@@ -3364,6 +3380,16 @@ void gunmode121_cancel ( void )
 			}
 			else
 			{
+				if (t.gun[t.gunid].settings.fake_reload && g.firemodes[t.gunid][0].action.hide.s > 0 && g.firemodes[t.gunid][0].action.show.s > 0)
+				{
+					//PE: Perhaps also support ALT
+					realreload = t.gstartreload;
+					t.gstartreload.s = g.firemodes[t.gunid][0].action.hide.s;
+					t.gstartreload.e = g.firemodes[t.gunid][0].action.hide.e;
+					t.gcock.e = g.firemodes[t.gunid][0].action.hide.e;
+					bFakeReloadActive = true;
+				}
+				gun_SetObjectFrame(t.currentgunobj, t.gstartreload.s);
 				t.gunmode=123;
 			}
 		}
@@ -3517,7 +3543,11 @@ void gunmode121_cancel ( void )
 	{
 		t.gunmode=124;
 		//  start reload animation
-		gun_SetObjectInterpolation (  t.currentgunobj,100 );
+		if (bFakeReloadActive)
+			gun_SetObjectInterpolation(t.currentgunobj, 50);
+		else
+			gun_SetObjectInterpolation (  t.currentgunobj,100 );
+
 		gun_PlayObject (  t.currentgunobj,t.gstartreload.s,t.gcock.e );
 #ifdef WICKEDENGINE
 		t.currentgunanimspeed_f = g.firemodes[t.gunid][g.firemode].settings.reloadspeed*t.genericgunanimspeed_f;
@@ -3569,48 +3599,132 @@ void gunmode121_cancel ( void )
 		gun_SetObjectSpeed (  t.currentgunobj,t.currentgunanimspeed_f );
 		if (  GetFrame(t.currentgunobj) >= t.gcock.e  )  t.gunmode = 126;
 	}
+
+	static int pausewhenhidden = 0;
+	static int soundtimer = 0;
+
 	if (  t.gunmode == 126 ) 
 	{
 		//  actual reload
 		g.plrreloading=0;
 		gun_actualreloadcode ( );
 		t.gun[t.gunid].settings.ismelee=0;
+
 		t.gunmode=5;
+		if (bFakeReloadActive)
+		{
+			//PE: Check sound , t.gunsound[t.gunid][2].soundid1
+			t.gunmode = 131;
+			pausewhenhidden = 10;
+			//PE: Start reload sound. Only if pointing to reload frames.
+			int usesframe = -1;
+			if (t.gunsounditem[t.gunid][0].keyframe > realreload.s && t.gunsounditem[t.gunid][0].keyframe <= realreload.e)
+				usesframe = 0;
+			else if (t.gunsounditem[t.gunid][2].keyframe > realreload.s && t.gunsounditem[t.gunid][2].keyframe <= realreload.e)
+				usesframe = 2;
+			else if (t.gunsounditem[t.gunid][1].keyframe > realreload.s && t.gunsounditem[t.gunid][1].keyframe <= realreload.e && t.gunsounditem[t.gunid][usesframe].playsound != 11)
+				usesframe = 1;
+			else if (t.gunsounditem[t.gunid][3].keyframe > realreload.s && t.gunsounditem[t.gunid][3].keyframe <= realreload.e)
+				usesframe = 3;
+			else if (t.gunsounditem[t.gunid][9].keyframe > realreload.s && t.gunsounditem[t.gunid][9].keyframe <= realreload.e)
+				usesframe = 9;
+			if (usesframe >= 0)
+			{
+				t.sndid = t.gunsound[t.gunid][t.gunsounditem[t.gunid][usesframe].playsound].soundid1;
+
+				if (t.sndid > 0)
+				{
+					if (SoundExist(t.sndid) == 1)
+					{
+						PlaySound(t.sndid);
+						posinternal3dsound(t.sndid, CameraPositionX(), CameraPositionY(), CameraPositionZ());
+						//PositionSound(t.sndid, CameraPositionX() / 10.0, CameraPositionY() / 3.0, CameraPositionZ() / 10.0);
+						soundtimer = Timer() + 600;
+						if (pestrcasestr(t.gun[t.gunid].name_s.Get(), "rpg"))
+							soundtimer = Timer() + 1700;
+					}
+				}
+			}
+		}
+		else
+		{
+			pausewhenhidden = 0;
+			bFakeReloadActive = false;
+		}
 	}
 
 	//  gun reveal
 	if (  t.gunmode == 131 ) 
 	{
-		gun_SetObjectInterpolation (  t.currentgunobj,100 );
-		gun_SetObjectFrame (  t.currentgunobj,t.gshow.s );
-		gun_PlayObject (  t.currentgunobj,t.gshow.s,t.gshow.e );
-#ifdef WICKEDENGINE
-		t.currentgunanimspeed_f = t.genericgunanimspeed_f;
-#else
-		t.currentgunanimspeed_f = g.timeelapsed_f*t.genericgunanimspeed_f;
-#endif
-		gun_SetObjectSpeed (  t.currentgunobj,t.currentgunanimspeed_f );
-		if (  t.gunsound[t.gunid][2].soundid1>0 ) 
+		if (pausewhenhidden == 0)
 		{
-			if (  SoundExist(t.gunsound[t.gunid][2].soundid1) == 1 ) 
+			if (bFakeReloadActive)
+				gun_SetObjectInterpolation(t.currentgunobj, 10); //PE: Slow to idle.
+			else
+				gun_SetObjectInterpolation(t.currentgunobj, 100);
+			gun_SetObjectFrame(t.currentgunobj, t.gshow.s);
+			gun_PlayObject(t.currentgunobj, t.gshow.s, t.gshow.e);
+#ifdef WICKEDENGINE
+			t.currentgunanimspeed_f = t.genericgunanimspeed_f;
+#else
+			t.currentgunanimspeed_f = g.timeelapsed_f * t.genericgunanimspeed_f;
+#endif
+			gun_SetObjectSpeed(t.currentgunobj, t.currentgunanimspeed_f);
+			if (t.gunsound[t.gunid][2].soundid1 > 0)
 			{
-				PositionSound (  t.gunsound[t.gunid][2].soundid1,CameraPositionX()/10.0,CameraPositionY()/3.0,CameraPositionZ()/10.0 );
+				if (SoundExist(t.gunsound[t.gunid][2].soundid1) == 1)
+				{
+					PositionSound(t.gunsound[t.gunid][2].soundid1, CameraPositionX() / 10.0, CameraPositionY() / 3.0, CameraPositionZ() / 10.0);
+				}
 			}
+			t.gunmode = 132;
 		}
-		t.gunmode=132;
+		else
+		{
+			gun_SetObjectFrame(t.currentgunobj, t.gcock.e);
+			if (soundtimer > 0)
+			{
+				if (Timer() > soundtimer)
+				{
+					if (t.gunsounditem[t.gunid][3].keyframe > realreload.s && t.gunsounditem[t.gunid][3].keyframe <= realreload.e)
+					{
+						t.sndid = t.gunsound[t.gunid][t.gunsounditem[t.gunid][3].playsound].soundid1;
+
+						if (t.sndid > 0)
+						{
+							if (SoundExist(t.sndid) == 1)
+							{
+								PlaySound(t.sndid);
+								posinternal3dsound(t.sndid, CameraPositionX(), CameraPositionY(), CameraPositionZ());
+								//PositionSound(t.sndid, CameraPositionX() / 10.0, CameraPositionY() / 3.0, CameraPositionZ() / 10.0);
+							}
+						}
+					}
+					soundtimer = 0;
+				}
+			}
+			else
+				pausewhenhidden--;
+		}
 	}
 	if (  t.gunmode == 132 ) 
 	{
-#ifdef WICKEDENGINE
 		t.currentgunanimspeed_f = t.genericgunanimspeed_f;
-#else
-		t.currentgunanimspeed_f = g.timeelapsed_f*t.genericgunanimspeed_f;
-#endif
-		gun_SetObjectSpeed (  t.currentgunobj,t.currentgunanimspeed_f );
-		if (  GetFrame(t.currentgunobj) >= t.gshow.e  )
+		gun_SetObjectSpeed(t.currentgunobj, t.currentgunanimspeed_f);
+		if (GetFrame(t.currentgunobj) >= t.gshow.e)
+		{
+			if (bFakeReloadActive)
+				gun_SetObjectInterpolation(t.currentgunobj, 100);
 			t.gunmode = 5;
-		if (  GetFrame(t.currentgunobj)<t.gshow.s  )
+			bFakeReloadActive = false;
+		}
+		if (GetFrame(t.currentgunobj) < t.gshow.s)
+		{
+			if (bFakeReloadActive)
+				gun_SetObjectInterpolation(t.currentgunobj, 100);
 			t.gunmode = 5;
+			bFakeReloadActive = false;
+		}
 	}
 }
 

@@ -283,7 +283,7 @@ ImVec4 tool_selected_col;
 void imgui_populatecustombiomes(void)
 {
 	// store current dir
-	LPSTR pOldDir = GetDir();
+	cstr pOldDir = GetDir();
 
 	// collect
 	g_sCustomBiomes.clear();
@@ -382,7 +382,7 @@ void imgui_populatecustombiomes(void)
 	}
 
 	// restore dir
-	SetDir(pOldDir);
+	SetDir(pOldDir.Get());
 }
 
 void imgui_terrain_loop_v2(void)
@@ -8513,7 +8513,7 @@ void imgui_Customize_Water_V2(int mode)
 
 			extern void ControlAdvancedSetting(int&, const char*, bool* = nullptr);
 			ControlAdvancedSetting(pref.iEnableAdvancedWater, "Advanced Water Settings");
-		
+
 			if (pref.iEnableAdvancedWater)
 			{
 				ImGui::TextCenter("Water Wave Size");
@@ -8521,7 +8521,7 @@ void imgui_Customize_Water_V2(int mode)
 				if (ImGui::MaxSliderInputFloat("##fWaterWaveAmplitude:", &t.visuals.fWaterWaveAmplitude, 0.0f, 800.0f, "Set Water Wave Size", 0, 800))
 				{
 					t.gamevisuals.fWaterWaveAmplitude = t.visuals.fWaterWaveAmplitude;
-					Wicked_Update_Visuals((void *)&t.visuals);
+					Wicked_Update_Visuals((void*)&t.visuals);
 					g.projectmodified = 1;
 				}
 				ImGui::TextCenter("Water Wind Contribution");
@@ -8531,7 +8531,7 @@ void imgui_Customize_Water_V2(int mode)
 				{
 					t.visuals.fWaterWindDependency = fTmp * 0.01f;
 					t.gamevisuals.fWaterWindDependency = t.visuals.fWaterWindDependency;
-					Wicked_Update_Visuals((void *)&t.visuals);
+					Wicked_Update_Visuals((void*)&t.visuals);
 					g.projectmodified = 1;
 				}
 				ImGui::TextCenter("Water Tiling Patch Size");
@@ -8539,7 +8539,7 @@ void imgui_Customize_Water_V2(int mode)
 				if (ImGui::MaxSliderInputFloat("##fWaterPatchLength:", &t.visuals.fWaterPatchLength, 10.0f, 300.0f, "Set Water Tile Size", 10.0f, 300.0f))
 				{
 					t.gamevisuals.fWaterPatchLength = t.visuals.fWaterPatchLength;
-					Wicked_Update_Visuals((void *)&t.visuals);
+					Wicked_Update_Visuals((void*)&t.visuals);
 					g.projectmodified = 1;
 				}
 				ImGui::TextCenter("Water Wave Choppiness");
@@ -8548,7 +8548,7 @@ void imgui_Customize_Water_V2(int mode)
 				{
 					t.visuals.fWaterChoppyScale = fTmp * 0.1f;
 					t.gamevisuals.fWaterChoppyScale = t.visuals.fWaterChoppyScale;
-					Wicked_Update_Visuals((void *)&t.visuals);
+					Wicked_Update_Visuals((void*)&t.visuals);
 					g.projectmodified = 1;
 				}
 
@@ -8558,7 +8558,7 @@ void imgui_Customize_Water_V2(int mode)
 				{
 					if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMaxDist = t.visuals.WaterFogMinDist;
 					t.gamevisuals.WaterFogMinDist = t.visuals.WaterFogMinDist;
-					Wicked_Update_Visuals((void *)&t.visuals);
+					Wicked_Update_Visuals((void*)&t.visuals);
 					g.projectmodified = 1;
 				}
 
@@ -8567,7 +8567,7 @@ void imgui_Customize_Water_V2(int mode)
 				{
 					if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMinDist = t.visuals.WaterFogMaxDist;
 					t.gamevisuals.WaterFogMaxDist = t.visuals.WaterFogMaxDist;
-					Wicked_Update_Visuals((void *)&t.visuals);
+					Wicked_Update_Visuals((void*)&t.visuals);
 					g.projectmodified = 1;
 				}
 
@@ -8575,7 +8575,7 @@ void imgui_Customize_Water_V2(int mode)
 				if (ImGui::MaxSliderInputFloat("##fWaterFogMinAmount", &t.visuals.WaterFogMinAmount, 0.0f, 1.0f, "The minimum amount of under water fog that will always be present regardless of distance"))
 				{
 					t.gamevisuals.WaterFogMinAmount = t.visuals.WaterFogMinAmount;
-					Wicked_Update_Visuals((void *)&t.visuals);
+					Wicked_Update_Visuals((void*)&t.visuals);
 					g.projectmodified = 1;
 				}
 			}
@@ -8607,6 +8607,69 @@ void imgui_Customize_Water_V2(int mode)
 	}
 }
 
+
+void imgui_Customize_Logic_Settings(int mode)
+{
+	bool bVisualUpdated = false;
+	float fTabColumnWidth = 120.0f;
+	bool Global_Behaviors_Settings(float fTabColumnWidth, bool bVisualUpdated);
+	bVisualUpdated = Global_Behaviors_Settings(fTabColumnWidth, bVisualUpdated);
+
+	// Control all in-game debugging options 
+	bool AI_Management_Settings(float fTabColumnWidth, bool bVisualUpdated);
+	bVisualUpdated = AI_Management_Settings(fTabColumnWidth, bVisualUpdated);
+
+	if (bVisualUpdated)
+	{
+		// visuals have been updated, inform wicked engine and mark level has modified
+		Wicked_Update_Visuals((void*)&t.visuals);
+		g.projectmodified = 1;
+	}
+
+}
+
+
+void imgui_Customize_Game_Settings(int mode)
+{
+	bool bVisualUpdated = false;
+	float fTabColumnWidth = 120.0f;
+	float w = ImGui::GetWindowContentRegionWidth();
+
+	bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated);
+	bVisualUpdated = Graphics_Performance_Settings(fTabColumnWidth, bVisualUpdated);
+
+	bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated);
+	bVisualUpdated = PostProcess_Settings(fTabColumnWidth, bVisualUpdated);
+
+	bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated);
+	bVisualUpdated = Shadows_Settings(fTabColumnWidth, bVisualUpdated);
+
+	//Reset
+	ImGui::Separator();
+	float but_gadget_size = ImGui::GetFontSize() * 10.0;
+	ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+	if (ImGui::StyleButton("Reset Visuals##WickedResetVisualsUniqueId", ImVec2(but_gadget_size, 0)))
+	{
+		int iAction = askBoxCancel("This will delete all your visual changes, are you sure?", "Confirmation"); //1==Yes 2=Cancel 0=No
+		if (iAction == 1)
+		{
+			//Reset
+			visuals_resetvalues(false);
+			t.gamevisuals = t.visuals;
+			bVisualUpdated = true;
+		}
+	}
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Reset Visuals to Default Values");
+
+	if (bVisualUpdated)
+	{
+		// visuals have been updated, inform wicked engine and mark level has modified
+		Wicked_Update_Visuals((void*)&t.visuals);
+		g.projectmodified = 1;
+	}
+
+
+}
 void imgui_Customize_Weather_V2(int mode)
 {
 	int wflags = ImGuiTreeNodeFlags_None;
@@ -9561,6 +9624,21 @@ void imgui_Customize_Sky_V2(int mode)
 			t.visuals.fExposure = fTmp * 0.01f;
 			t.gamevisuals.fExposure = t.visuals.fExposure;
 			Wicked_Update_Visuals((void *)&t.visuals);
+			g.projectmodified = 1;
+			// when sky type changes, refresh env probes
+			extern bool g_bLightProbeScaleChanged;
+			g_bLightProbeScaleChanged = true;
+			WickedCall_UpdateProbes();
+		}
+
+		ImGui::TextCenter("Global Probe Brightness");
+		fTmp = t.visuals.fEnvProbeBrightness;
+		//if (ImGui::SliderFloat("##HDRI Brightness", &fTmp, 0.0, 10.0, "%.2f", 1.0f))
+		if (ImGui::MaxSliderInputFloat("##HDRI Brightness", &fTmp, 0.01f, 10.0f, "Specify the brightness of the global environment probe"))
+		{
+			t.visuals.fEnvProbeBrightness = fTmp;
+			t.gamevisuals.fEnvProbeBrightness = t.visuals.fEnvProbeBrightness;
+			Wicked_Update_Visuals((void*)&t.visuals);
 			g.projectmodified = 1;
 			// when sky type changes, refresh env probes
 			extern bool g_bLightProbeScaleChanged;

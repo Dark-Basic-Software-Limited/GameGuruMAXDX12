@@ -82,6 +82,8 @@ void imgui_Customize_Weather_V2(int mode);
 void imgui_Customize_Terrain_v3(int mode);
 void imgui_Customize_Vegetation_v3(int mode);
 void imgui_Customize_Tree_v3(int mode);
+void imgui_Customize_Game_Settings(int mode);
+void imgui_Customize_Logic_Settings(int mode);
 
 void ChooseTerrainTextureFolder(char* folder = nullptr);
 void SaveTerrainTextureFolder(LPSTR pFile);

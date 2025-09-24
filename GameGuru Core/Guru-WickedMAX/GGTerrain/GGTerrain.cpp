@@ -816,7 +816,8 @@ uint8_t* pMaterialMap = 0;
 Texture texMaterialMap;
 
 // CPU copy of page table data, useful when shifting the page table
-#define GGTERRAIN_PAGE_TABLE_DEPTH 32 // must be greater than max numLODLevels + max mip levels (currently 15 + 7)
+//#define GGTERRAIN_PAGE_TABLE_DEPTH 32 // must be greater than max numLODLevels + max mip levels (currently 15 + 7)
+#define GGTERRAIN_PAGE_TABLE_DEPTH 22 //PE: We use 9+7 on lowest so reduce it to save VRAM, system only support max 15+7 anyway.
 uint16_t pageTableData[ GGTERRAIN_PAGE_TABLE_DEPTH ][ pagesX * pagesY ];
 
 Texture texPagesColorAndMetal; // R8G8B8A8
@@ -841,7 +842,9 @@ struct VertexPageGen
 	uint32_t id;
 };
 
-#define GGTERRAIN_REPLACEMENT_PAGE_MAX 256
+//PE: GGTERRAIN_REPLACEMENT_PAGE_MAX 256 changed to 128 for lower VRAM and faster processing.
+//PE: A normal rotation 180 degress normally only generates around 64 pages so should be fine.
+#define GGTERRAIN_REPLACEMENT_PAGE_MAX 128
 #define GGTERRAIN_EVICTION_PAGE_MAX 64
 #if GGTERRAIN_EVICTION_PAGE_MAX > GGTERRAIN_REPLACEMENT_PAGE_MAX
 	#error GGTERRAIN_EVICTION_PAGE_MAX must be less than or equal to GGTERRAIN_REPLACEMENT_PAGE_MAX
@@ -9012,7 +9015,7 @@ void GGTerrain_InstantEnvProbeRefresh(int iCoolDownIndex)
 	}
 }
 
-void GGTerrain_AddEnvProbeList(float x, float y, float z, float range, float quatx, float quaty, float quatz, float quatw, float sx, float sy, float sz)
+void GGTerrain_AddEnvProbeList(float x, float y, float z, float range, float quatx, float quaty, float quatz, float quatw, float sx, float sy, float sz, float brightness)
 {
 	envProbeItem item;
 	item.position = XMFLOAT3(x, y, z);
@@ -9020,6 +9023,7 @@ void GGTerrain_AddEnvProbeList(float x, float y, float z, float range, float qua
 	item.rotation = XMFLOAT4(quatx, quaty, quatz, quatw);
 	item.size = XMFLOAT3(sx, sy, sz);
 	item.distance = 0;
+	item.brightness = brightness;
 	g_envProbeList.push_back(item);
 }
 
@@ -9236,6 +9240,8 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 						{
 							g_bEnvProbeTrackingUpdate[iRealProbeIndex] = false;
 						}
+
+						probe->SetBrightness(g_envProbeList[p].brightness);
 
 						// update probe with correct scaling
 						pTransform->ClearTransform();
@@ -9465,7 +9471,10 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 		probe->position = globalEnvProbePos;
 		probe->range = globalrange;
 		probe->userdata = 255;
+		float GetEnvProbeBrightness(void);
+		probe->SetBrightness(GetEnvProbeBrightness());
 		probe->SetDirty();
+		
 		wiScene::TransformComponent* pTransform = wiScene::GetScene().transforms.GetComponent(globalEnvProbe);
 		pTransform->ClearTransform();
 		pTransform->Translate(globalEnvProbePos);
@@ -9483,9 +9492,9 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 #endif
 	if (g_iDeferTextureUpdateToNow > 0 && ggterrain_initialised)
 	{
-		cstr oldDir = GetDir();
 		if (g_iDeferTextureUpdateToNow == 1)
 		{
+			cstr oldDir = GetDir();
 #ifdef ONLYLOADWHENUSED
 			//PE: Reload textures here.
 			for (int i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES; i++)
@@ -9502,6 +9511,7 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		}
 		if (g_iDeferTextureUpdateToNow == 2)
 		{
+			cstr oldDir = GetDir();
 			// Update the textures for the terrain
 #ifdef ONLYLOADWHENUSED
 			for (int i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES; i++)

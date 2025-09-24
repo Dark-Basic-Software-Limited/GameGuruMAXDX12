@@ -3509,7 +3509,7 @@ int ebe_save ( int iEntityIndex )
 	int iHaveCreatedNewItems = 0;
 
 	// Needed locals
-	LPSTR pOldDir = GetDir();
+	cstr pOldDir = GetDir();
 	HWND hThisWnd = GetForegroundWindow();
 
 	// Check if EBE
@@ -3539,7 +3539,7 @@ int ebe_save ( int iEntityIndex )
 	tSaveFile = openFileBox("EBE Structure (.ebe)|*.ebe|All Files|*.*|", t.strwork.Get(), tSaveMessage.Get(), ".ebe", IMPORTERSAVEFILE);
 	if ( tSaveFile == "Error" )
 	{
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 		return 0;
 	}
 
@@ -3566,7 +3566,7 @@ int ebe_save ( int iEntityIndex )
 		if ( MessageBoxA ( hThisWnd, pDisplayErrorMsg, "File Already Exists", MB_YESNO | MB_TOPMOST ) != IDYES )
 		{
 			// Abort save here
-			SetDir(pOldDir);
+			SetDir(pOldDir.Get());
 			return 0;
 		}
 	}
@@ -3580,7 +3580,7 @@ int ebe_save ( int iEntityIndex )
 	}
 
 	// restore current folder
-	SetDir(pOldDir);
+	SetDir(pOldDir.Get());
 
 	// Use filename to save EBE Entity to location
 	ebe_save_ebefile ( tSaveFile, iEntID );
@@ -3659,9 +3659,9 @@ void ebe_load_ebefile ( cStr pLoadFile, int iEntID )
 void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 {
 	// Chop current directory from save file to shorten filenames (for long EBE texture name)
-	LPSTR pOldDir = GetDir();
-	if ( strnicmp ( tSaveFile.Get(), pOldDir, strlen(pOldDir) ) == NULL )
-		tSaveFile = Right ( tSaveFile.Get(), strlen(tSaveFile.Get()) - (strlen(pOldDir)+1) );
+	cstr pOldDir = GetDir();
+	if ( strnicmp ( tSaveFile.Get(), pOldDir.Get(), strlen(pOldDir.Get())) == NULL)
+		tSaveFile = Right ( tSaveFile.Get(), strlen(tSaveFile.Get()) - (strlen(pOldDir.Get())+1) );
 	
 	// Use filename (tSaveFile, i.e. ebe1.ebe) to save EBE Entity to location
 	if ( FileExist(tSaveFile.Get()) == 1 ) DeleteAFile ( tSaveFile.Get() );
@@ -4149,7 +4149,7 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 {
 	// Needed locals
-	LPSTR pOldDir = GetDir();
+	cstr pOldDir = GetDir();
 	HWND hThisWnd = GetForegroundWindow();
 
 	// must have textures image before we can customise it
@@ -4174,13 +4174,13 @@ int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 	tLoadFile = openFileBox("Diffuse File (_D.dds)|*.dds|Texture File (.dds)|*.dds|All Files|*.*|", t.strwork.Get(), tLoadMessage.Get(), ".dds", IMPORTERSAVEFILE);
 	if ( tLoadFile == "Error" )
 	{
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 		return 0;
 	}
 
 	// Use large prompt
-	t.statusbar_s = "Generating Building Editor Textures"; 
-	popup_text(t.statusbar_s.Get());
+	//t.statusbar_s = "Generating Building Editor Textures"; 
+	//popup_text(t.statusbar_s.Get());
 
 	// preferred format
 	GGFORMAT d3dFormat;
@@ -4460,7 +4460,7 @@ int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 	ebebuild.TXP.sTextureFile[iWhichTextureOver] = pNameOnly;
 
 	// restore current folder
-	SetDir(pOldDir);
+	SetDir(pOldDir.Get());
 
 	// wicked allows new textures to be created before deleting old references and loading new ones (once dir restored)
 	#ifdef WICKEDENGINE
@@ -4489,7 +4489,7 @@ int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 	#endif
 
 	// Clear status Text
-	t.statusbar_s = ""; popup_text_close();
+	//t.statusbar_s = ""; popup_text_close();
 
 	// success
 	return 1;

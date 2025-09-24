@@ -37,13 +37,17 @@ VARTYPE pageSize = 128; // size of individual pages in pixels before padding
 VARTYPE paddedPageSize = pageSize + pagePaddingLeft + pagePaddingRight;
 VARTYPEF paddingScale = pagePaddingLeft / (float) pageSize;
 
-VARTYPE physPagesX = 80; // size of the physical texture in pages
-VARTYPE physPagesY = 80;
+//VARTYPE physPagesX = 80; // size of the physical texture in pages
+//VARTYPE physPagesY = 80;
+//PE: We never move the camera so fast that 80x80 pages is needed, then better to lower VRAM usage.
+VARTYPE physPagesX = 70; // size of the physical texture in pages
+VARTYPE physPagesY = 70;
 
 VARTYPE physTexSizeX = paddedPageSize * physPagesX;
 VARTYPE physTexSizeY = paddedPageSize * physPagesY;
 
-#define GGTERRAIN_MAX_PAGE_TABLE_MIP  7   // not a full mip stack, stops at 4x4 since the lowest levels aren't very useful
+//#define GGTERRAIN_MAX_PAGE_TABLE_MIP  7   // not a full mip stack, stops at 4x4 since the lowest levels aren't very useful
+#define GGTERRAIN_MAX_PAGE_TABLE_MIP  6   //PE: stops at 8x8 since the lowest levels aren't very useful
 
 #endif
 

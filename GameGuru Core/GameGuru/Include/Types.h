@@ -132,7 +132,8 @@
   //#define RAVEY_PARTICLES_MAX 100
   //PE: 700 seams fine now, we must have done something good somewhere :)
   #define RAVEY_PARTICLES_MAX 700
-  #define RAVEY_PARTICLES_MAX_FIRST_BATCH 200
+//PE: We use these less now so lower. from 200 to 100
+  #define RAVEY_PARTICLES_MAX_FIRST_BATCH 100
 #endif
 #endif
 
@@ -4074,7 +4075,7 @@ struct visualstype
 	bool bDisableSkybox = false;
 
 	int iEnvProbeResolution = 128;
-
+	float fEnvProbeBrightness = 1.0f;
 	int newperformancepresets = 0;
 
 	cStr customTexturesFolder = "";
@@ -4082,6 +4083,7 @@ struct visualstype
 	// Constructor
 	visualstype ( )
 	{
+		 fEnvProbeBrightness = 1.0f;
 		 iEnvProbeResolution = 128;
 		 LensFlare_f = 0.5f;
 		 SAORadius_f = 0.0f;
@@ -5738,6 +5740,7 @@ struct entitylighttype
 	float fLightHasProbeX;
 	float fLightHasProbeY;
 	float fLightHasProbeZ;
+	float fProbeBrightness;
 	entitylighttype ( )
 	{
 		 offsetz = 0;
@@ -5750,6 +5753,7 @@ struct entitylighttype
 		 fLightHasProbeX = 0.0f;
 		 fLightHasProbeY = 0.0f;
 		 fLightHasProbeZ = 0.0f;
+		 fProbeBrightness = 1.0f;
 	}
 };
 
@@ -6532,6 +6536,7 @@ struct entityeleproftype
 	int thumb_id;
 	int systemwide_lua;
 	int isobjective_alwaysactive;
+	int isProjectGlobal;
 	// Constructor
 	entityeleproftype ( )
 	{
@@ -6693,6 +6698,7 @@ struct entityeleproftype
 		 thumb_id = 0;
 		 systemwide_lua = 0;
 		 isobjective_alwaysactive = 0;
+		 isProjectGlobal = 0;
 	}
 	// End of Constructor
 
@@ -7821,7 +7827,7 @@ struct gunsettingstype
 	float tracer_colorB;
 	cStr tracer_imagefile;
 	uint32_t tracer_WPEId;
-
+	bool fake_reload;
 	// Constructor
 	gunsettingstype ( )
 	{
@@ -8022,6 +8028,8 @@ struct gunsettingstype
 		 weaponpropres1 = 0;
 		 weaponpropres2 = 0;
 		 fEmissiveStrength = 1.0f;
+		 fake_reload = false;
+		 tracer_active = false;
 	}
 };
 

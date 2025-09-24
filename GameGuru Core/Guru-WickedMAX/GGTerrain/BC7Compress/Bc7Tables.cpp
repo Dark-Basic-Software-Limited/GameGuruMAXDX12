@@ -574,7 +574,14 @@ static INLINED void CutLevels(const uint8_t table[0x100][1 << 2 * bits], uint16_
 #if defined(OPTION_SELFCHECK)
 		if (e > 1)
 		{
-			__debugbreak();
+			static uint32_t maxerrors = 5;
+			void timestampactivity(int i, char* desc_s);
+			if (maxerrors > 0)
+			{
+				maxerrors--;
+				timestampactivity(0, "DEBUG: e > 1");
+			}
+			//__debugbreak();
 		}
 #endif
 	}

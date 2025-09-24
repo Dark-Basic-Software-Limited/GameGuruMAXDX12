@@ -25,6 +25,9 @@
 //PE: Increase MAXVERSION to set preference to defaults and reset imgui windows settings (for Friday builds).
 //PE: This do not reset important user features like "Write folder" ...
 #define MAXVERSION 26
+//PE: Increase this to ONLY reset windows, when adding a new docked window. all other setting is not changed.
+#define MAXWINDOWSVERSION 3
+
 
 #define ENABLEIMGUI
 #define USERENDERTARGET
@@ -149,6 +152,8 @@ IMGUI_IMPL_API bool     ImGui_ImplDX11_CreateDeviceObjects();
 #define ENV_RAIN UIV3IMAGES+87
 #define ENV_SNOW UIV3IMAGES+88
 #define ENV_WEATHER UIV3IMAGES+89
+
+#define TOOL_GAME_SETTINGS UIV3IMAGES+90
 
 //#define TOOL_RPG UIV3IMAGES+90
 //#define TOOL_PUZZLE UIV3IMAGES+91
@@ -297,6 +302,10 @@ IMGUI_IMPL_API bool     ImGui_ImplDX11_CreateDeviceObjects();
 #define CCP_EMPTY UIV3IMAGES+208
 #define CCP_NONE UIV3IMAGES+209
 #define CCP_TATTOO UIV3IMAGES+210
+//PE: 211 used above.
+#define CCP_ACCESSORY1 UIV3IMAGES+212
+#define CCP_ACCESSORY2 UIV3IMAGES+213
+
 #define KEY_Z UIV3IMAGES+215
 
 
@@ -391,6 +400,8 @@ IMGUI_IMPL_API bool     ImGui_ImplDX11_CreateDeviceObjects();
 #define TOOLBAR_HORI UIV3IMAGES+296
 #define TOOLBAR_GRIDSETTINGS UIV3IMAGES+297
 
+#define ENTITY_EYE_ON UIV3IMAGES+700
+#define ENTITY_EYE_OFF UIV3IMAGES+701
 
 //PE: 02-09-2021 moved range.
 //298,297 also used in backdrop.
@@ -452,10 +463,10 @@ namespace ImGui {
 	void RenderArrowOutLine(ImDrawList* draw_list, ImVec2 pos, ImU32 col, ImGuiDir dir, float scale);
 	bool StyleCollapsingHeader(const char* label, ImGuiTreeNodeFlags flags = 0);
 	bool IsLastSliderHovered(void);
-	bool MaxSliderInputFloat(const char* label, float* v, float v_min, float v_max, const char* tooltip, int startval=0, float maxval = 100.0f, int numericboxwidth = 30.0f);
-	bool MaxSliderInputFloat2(const char* label, float* v, float v_min, float v_max, const char* tooltip, int startval = 0, float maxval = 100.0f, int numericboxwidth = 30.0f);
-	bool MaxSliderInputFloatPower(const char* label, float* v, float v_min, float v_max, const char* tooltip, int startval = 0, float maxval = 100.0f, int numericboxwidth = 30.0f, float power = 1.0f, int precision = 0);
-	bool MaxSliderInputInt(const char* label, int* v, int v_min, int v_max, const char* tooltip, int boxWidth = 30);
+	bool MaxSliderInputFloat(const char* label, float* v, float v_min, float v_max, const char* tooltip, int startval=0, float maxval = 100.0f, int numericboxwidth = 37.0f);
+	bool MaxSliderInputFloat2(const char* label, float* v, float v_min, float v_max, const char* tooltip, int startval = 0, float maxval = 100.0f, int numericboxwidth = 37.0f);
+	bool MaxSliderInputFloatPower(const char* label, float* v, float v_min, float v_max, const char* tooltip, int startval = 0, float maxval = 100.0f, int numericboxwidth = 37.0f, float power = 1.0f, int precision = 0);
+	bool MaxSliderInputInt(const char* label, int* v, int v_min, int v_max, const char* tooltip, int boxWidth = 37);
 	bool MaxSliderInputRangeFloat(const char* label, float* v, float* v2, float v_min, float v_max, const char* tooltip);
 	bool MaxSliderInputRangeFloatDirect(const char* label, float* v, float* v2, float v_min, float v_max, const char* tooltip);
 	bool windowTabVisible(void);
@@ -662,6 +673,7 @@ struct preferences {
 	int iSmallToolbar = 0;
 	ImVec4 status_bar_color = ImVec4((1.0f / 255.0f) * 14, (1.0f / 255.0f) * 99, (1.0f / 255.0f) * 156, 1.0);
 	ImVec4 highlight_color = status_bar_color;
+	int current_version_new_windows = 0;
 };
 
 // can be moved to preferences (Lee needs to know the sequence to add to prefs properly, and the consequences) :)

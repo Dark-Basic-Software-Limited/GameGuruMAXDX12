@@ -1745,7 +1745,14 @@ static void CompressBlock(uint8_t output[16], Cell& input) noexcept
 		auto e = CompareBlocks(input, temp);
 		if ((e.Alpha != input.Error.Alpha) || (e.Total != input.Error.Total))
 		{
-			__debugbreak();
+			static uint32_t maxerrors = 5;
+			void timestampactivity(int i, char* desc_s);
+			if (maxerrors > 0)
+			{
+				maxerrors--;
+				timestampactivity(0, "DEBUG: (e.Alpha != input.Error.Alpha) || (e.Total != input.Error.Total)");
+			}
+			//__debugbreak();
 			memcpy(output, saved_output, sizeof(saved_output));
 		}
 #endif
