@@ -1,7 +1,8 @@
--- DESCRIPTION: V2 by Lee
+-- DESCRIPTION: V3 by Lee
 -- DESCRIPTION: When the target is within [RANGE=500] distance, the character will attack with <Melee Animations> the target using <Melee Weapon>, either using fists, or with a melee weapon if equipped. They will use <Sound0> and <Sound1> when attacking, and <Sound2> and <Sound3> when hurt. They can optionally [RunAway!=0] and be [InstantlyKillable!=1]. 
 -- DESCRIPTION: Optionally [!StarterAnimation=0] using [@StartAnimation=1(0=AnimSetList)].
 -- DESCRIPTION: Can also [!PatrolAtStart=0] and [!Block=1] and [!Counter=1].
+-- DESCRIPTION: Can also [!IgnorePlayer=0].
 
 master_interpreter_core = require "scriptbank\\masterinterpreter"
 
@@ -16,7 +17,7 @@ function melee_attack_init_file(e,scriptfile)
  melee_attack_properties(e,500,0,1,0,0,0)
 end
 
-function melee_attack_properties(e, range, runaway, instantlykillable, starteranimation, startanimation, patrolatstart, block, counter)
+function melee_attack_properties(e, range, runaway, instantlykillable, starteranimation, startanimation, patrolatstart, block, counter, ignoreplayer)
  g_melee_attack[e]['range'] = range
  g_melee_attack[e]['runaway'] = runaway
  g_melee_attack[e]['instantlykillable'] = instantlykillable
@@ -25,6 +26,7 @@ function melee_attack_properties(e, range, runaway, instantlykillable, starteran
  g_melee_attack[e]['patrolatstart'] = patrolatstart
  g_melee_attack[e]['block'] = block
  g_melee_attack[e]['counter'] = counter
+ g_melee_attack[e]['ignoreplayer'] = ignoreplayer
  master_interpreter_core.masterinterpreter_restart (g_melee_attack[e], g_Entity[e])
 end
 
