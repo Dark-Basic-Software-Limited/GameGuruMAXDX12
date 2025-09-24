@@ -36440,9 +36440,9 @@ void About_Screen(void)
 		ImGui::TextCenter("");
 
 		ImGui::SetWindowFontScale(1.25);
-		ImGui::TextCenter("(c) Copyright 2020-2025 The Game Creators Ltd. All Rights Reserved");
+		ImGui::TextCenter("(c) Copyright 2020-2025 Dark Basic Software Limited. All Rights Reserved");
 		ImGui::SetWindowFontScale(1.0);
-		ImGui::TextCenter("GameGuru MAX and the respective logos are trademarks or registred trademarks of The Game Creators Ltd.");
+		ImGui::TextCenter("GameGuru MAX and the respective logos are trademarks or registred trademarks of Dark Basic Software Limited.");
 		
 		ImGui::Text("");
 		ImGui::Text("");
