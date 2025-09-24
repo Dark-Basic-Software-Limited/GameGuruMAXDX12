@@ -1,4 +1,4 @@
--- Sit v11 by Necrym59
+-- Sit v12 by Necrym59
 -- DESCRIPTION: The attached object will allow the player to sit down
 -- DESCRIPTION: [USE_PROMPT$="Press E to sit/stand"]
 -- DESCRIPTION: [USE_RANGE=90(1,300)]
@@ -138,7 +138,7 @@ function sit_main(e)
 		if sit[e].use_style == 1 then
 			local PlayerDist = GetPlayerDistance(e)
 			if PlayerDist < sit[e].use_range then
-				selectobj[e]= U.ObjectPlayerLookingAt(pickuprange)
+				selectobj[e]= U.ObjectPlayerLookingAt(sit[e].use_range)
 				if g_Entity[e]['obj'] == selectobj[e] then
 					if sit[e].prompt_display == 1 then TextCenterOnX(50,54,1,sit[e].use_prompt) end
 					if sit[e].prompt_display == 2 then Prompt(sit[e].use_prompt) end
@@ -242,9 +242,9 @@ function sit_main(e)
 		local ox,oy,oz = U.Rotate3D(0,0,-sitmove[e],math.rad(g_PlayerAngX),math.rad(g_PlayerAngY),math.rad(g_PlayerAngZ))
 		local forwardposx,forwardposy,forwardposz = g_PlayerPosX+ox, g_PlayerPosY+oy, g_PlayerPosZ+oz
 		local surfacehy = GetSurfaceHeight(forwardposx,forwardposy,forwardposz)
-		SetFreezeAngle(g_PlayerAngX,g_PlayerAngY,PlayerAngZ)
+		SetFreezeAngle(g_PlayerAngX,g_PlayerAngY,g_PlayerAngZ)
 		SetFreezePosition(forwardposx,surfacehy+35,forwardposz)
-		TransportToFreezePositionOnly(forwardposx,surfacehy+35,forwardposz)	
+		TransportToFreezePositionOnly()	
 		ChangePlayerWeapon(last_gun[e])
 		SetPlayerWeapons(1)
 		CollisionOn(e)

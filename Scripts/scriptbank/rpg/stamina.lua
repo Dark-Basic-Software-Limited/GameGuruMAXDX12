@@ -21,7 +21,8 @@ g_tEnt = {}
 local stamina = {}
 local prompt_text = {}
 local prompt_if_collectable = {}
-local usage_text, quantity = {}
+local usage_text = {}
+local quantity = {}
 local pickup_range = {}
 local pickup_style = {}
 local effect = {}
@@ -49,7 +50,7 @@ function stamina_properties(e, prompt_text, prompt_if_collectable, usage_text, q
 	stamina[e].user_global_affected = user_global_affected
 	stamina[e].prompt_display = prompt_display
 	stamina[e].item_highlight = item_highlight
-	stamina[e].highlight_icon = highlight_icon_imagefile	
+	stamina[e].highlight_icon = highlight_icon_imagefile
 end
 
 function stamina_init(e)
@@ -64,7 +65,7 @@ function stamina_init(e)
 	stamina[e].user_global_affected = "MyStaminaMax"
 	stamina[e].prompt_display = 1
 	stamina[e].item_highlight = 0
-	stamina[e].highlight_icon = "imagebank\\icons\\pickup.png"	
+	stamina[e].highlight_icon = "imagebank\\icons\\pickup.png"
 
 	status[e] = "init"
 	hl_icon[e] = 0
@@ -73,7 +74,7 @@ function stamina_init(e)
 	use_item_now[e] = 0
 	tEnt[e] = 0
 	g_tEnt = 0
-	selectobj[e] = 0	
+	selectobj[e] = 0
 end
 
 function stamina_main(e)
