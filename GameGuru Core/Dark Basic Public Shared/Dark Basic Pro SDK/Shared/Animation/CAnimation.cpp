@@ -1273,6 +1273,11 @@ DARKSDK BOOL DB_FreeAnimation(int AnimIndex)
 	// Shut down the graph
 	if(Anim[AnimIndex].pMediaClip)
 	{
+		extern std::vector<ID3D11ShaderResourceView*> lpBadTexture;
+		ID3D11ShaderResourceView* lpVideoTexture = NULL;
+		lpVideoTexture = GetAnimPointerView(AnimIndex);
+		lpBadTexture.push_back(lpVideoTexture);
+
 		// Release video
 		#ifdef WMFVIDEO
 		DeleteVideo();
@@ -1937,6 +1942,12 @@ DARKSDK bool LoadAnimation( LPSTR pFilename, int animindex , int precacheframes 
 
 DARKSDK void DeleteAnimation( int animindex )
 {
+	//PE: Block this image.
+	extern std::vector<ID3D11ShaderResourceView*> lpBadTexture;
+	ID3D11ShaderResourceView* lpVideoTexture = NULL;
+	lpVideoTexture = GetAnimPointerView(animindex);
+	lpBadTexture.push_back(lpVideoTexture);
+
 	if (Anim[animindex].videodelayedload == 1 && Anim[animindex].loaded == false)
 	{
 		//PE: Not really loaded, just set as free to use.

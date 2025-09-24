@@ -1520,7 +1520,7 @@ int back_iLastResolutionWidth = 0;
 int back_iLastResolutionHeight = 0;
 bool bFakeStandaloneTest = false;
 int iTriggerGrassTreeUpdate = 0;
-
+int iMaxZeroHeight = 0;
 bool commonexecutable_loop_for_game(void)
 {
 #ifdef OPTICK_ENABLE
@@ -1545,10 +1545,25 @@ bool commonexecutable_loop_for_game(void)
 		if (iTriggerGrassTreeUpdate == 5)
 		{
 			float height = 0;
-			if (!GGTerrain_GetHeight(CameraPositionX(), CameraPositionZ(), &height, 0, 0))
+			if (t.visuals.bEnableEmptyLevelMode)
 			{
-				//Height not available in this are ?.
-				iTriggerGrassTreeUpdate++;
+				//PE: Just give it 5 frame on empty levels.
+				if (iMaxZeroHeight++ < 6)
+				{
+					iTriggerGrassTreeUpdate++;
+				}
+				else
+				{
+					iMaxZeroHeight = 0;
+				}
+			}
+			else
+			{
+				if (!GGTerrain_GetHeight(CameraPositionX(), CameraPositionZ(), &height, 0, 0))
+				{
+					//Height not available in this are ?.
+					iTriggerGrassTreeUpdate++;
+				}
 			}
 		}
 		if (iTriggerGrassTreeUpdate == 1)
@@ -1603,6 +1618,9 @@ bool commonexecutable_loop_for_game(void)
 		wiScene::GetCamera().CreatePerspective((float)master.masterrenderer.GetLogicalWidth(), (float)master.masterrenderer.GetLogicalHeight(), t.visuals.CameraNEAR_f, t.visuals.CameraFAR_f, fCameraFov);
 		wiScene::GetCamera().SetDirty(true);
 	}
+
+	void RenderPreviewEmitter(void);
+	RenderPreviewEmitter();
 
 	if (iLaunchAfterSync == 201)
 	{
@@ -1667,6 +1685,15 @@ bool commonexecutable_loop_for_game(void)
 		int iGridObj = g.ebeobjectbankoffset + 1000;
 		if (ObjectExist(iGridObj))
 			DeleteObject(iGridObj);
+		extern uint32_t PreviewWPERoot;
+		if (PreviewWPERoot != 0)
+		{
+			//PE: Delete effects.
+			void DeleteEmitterEffects(uint32_t root);
+			DeleteEmitterEffects(PreviewWPERoot);
+			PreviewWPERoot = 0;
+		}
+
 		bImGuiInTestGame = true;
 		g_bDisableQuitFlag = true;
 		extern bool	g_bDrawSpritesFirst;
@@ -2440,6 +2467,14 @@ void mapeditorexecutable_loop(void)
 				int iGridObj = g.ebeobjectbankoffset + 1000;
 				if (ObjectExist(iGridObj))
 					DeleteObject(iGridObj);
+				extern uint32_t PreviewWPERoot;
+				if (PreviewWPERoot != 0)
+				{
+					//PE: Delete effects.
+					void DeleteEmitterEffects(uint32_t root);
+					DeleteEmitterEffects(PreviewWPERoot);
+					PreviewWPERoot = 0;
+				}
 
 				bImGuiInTestGame = true;
 				bool bTestInVRMode = false;
@@ -2492,6 +2527,14 @@ void mapeditorexecutable_loop(void)
 
 		case 21: //Social VR.
 		{
+			extern uint32_t PreviewWPERoot;
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+			}
 			bImGuiInTestGame = true;
 			RunCode(0); //switch to backbuffer
 			editor_multiplayermode();
@@ -4262,6 +4305,13 @@ void mapeditorexecutable_loop(void)
 
 			if (ImGui::BeginMenu("Tools"))
 			{
+				if (ImGui::MenuItem("Quest Editor"))
+				{
+					CloseAllOpenTools();
+					extern bool bQuestEditor_Window;
+					bQuestEditor_Window = true;
+				}
+
 				if (ImGui::MenuItem("Character Creator"))
 				{
 					CloseAllOpenTools();
@@ -7934,6 +7984,8 @@ void mapeditorexecutable_loop(void)
 									}
 								}
 
+								//PE: Quest setting not need anymore.
+								/*
 								// detect if this object is a quest holder
 								for (int n = 0; n < t.entityelement[iEntityIndex].eleprof.PropertiesVariable.iVariables; n++)
 								{
@@ -7948,15 +8000,19 @@ void mapeditorexecutable_loop(void)
 										break;
 									}
 								}
+								*/
 
 								// special color change when object is a collectable
 								bool bObjectIsACollectableAndReadOnlyName = false;
 								LPSTR pDescTooltip = t.strarr_s[204].Get();
-								if (t.entityelement[iEntityIndex].eleprof.iscollectable != 0 || iCollectionQuestIndex > 0 )
+								bool isProjectGlobal = t.entityelement[iEntityIndex].eleprof.isProjectGlobal;
+								if (t.entityelement[iEntityIndex].eleprof.iscollectable != 0 || iCollectionQuestIndex > 0 || isProjectGlobal)
 								{
 									bObjectIsACollectableAndReadOnlyName = true;
 									ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
-									if(iCollectionQuestIndex>0)
+									if (isProjectGlobal)
+										pDescTooltip = "This object has been set as a project global object";
+									else if(iCollectionQuestIndex>0)
 										pDescTooltip = "This object has been set as a quest giver";
 									else
 										pDescTooltip = "This object has been set as an item collectable";
@@ -9515,6 +9571,7 @@ void mapeditorexecutable_loop(void)
 											if (stricmp(pLabel, "status") == NULL) iKnownLabel = 60;
 											if (stricmp(pLabel, "activate") == NULL) iKnownLabel = 61;
 											if (stricmp(pLabel, "quantity") == NULL) iKnownLabel = 62;
+											if (stricmp(pLabel, "endmap") == NULL) iKnownLabel = 63;
 										}
 										if (iKnownLabel >= 0)
 										{
@@ -9547,6 +9604,7 @@ void mapeditorexecutable_loop(void)
 												if (iKnownLabel == 60) pShowTop = "Enter the initial status of this quest when the game starts";
 												if (iKnownLabel == 61) pShowTop = "Enter the object to activate when this quest is completed";
 												if (iKnownLabel == 62) pShowTop = "Enter a quantity associated with this quest";
+												if (iKnownLabel == 63) pShowTop = "Enter the level name that this quest is active on";
 											}
 
 											// Attrib Label
@@ -11050,6 +11108,9 @@ void mapeditorexecutable_loop(void)
 
 			}
 		}
+
+		void ProcessQuestEditor(void);
+		ProcessQuestEditor();
 
 		#endif
 
@@ -13920,6 +13981,8 @@ void mapeditorexecutable_loop(void)
 											t.entid = t.gridentity;
 											entity_fillgrideleproffromprofile();
 											t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+											t.grideleprof.isProjectGlobal = false;
+
 											t.inputsys.dragoffsetx_f = 0;
 											t.inputsys.dragoffsety_f = 0;
 											fHitPointX = 0;
@@ -14015,6 +14078,8 @@ void mapeditorexecutable_loop(void)
 												t.entid = t.gridentity;
 												entity_fillgrideleproffromprofile();
 												t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+												t.grideleprof.isProjectGlobal = false;
+
 												t.inputsys.dragoffsetx_f = 0;
 												t.inputsys.dragoffsety_f = 0;
 												fHitPointX = 0;
@@ -14270,6 +14335,8 @@ void mapeditorexecutable_loop(void)
 					//Make sure we use a fresh t.grideleprof
 					entity_fillgrideleproffromprofile();
 					t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+					t.grideleprof.isProjectGlobal = false;
+
 					editor_refresheditmarkers();
 
 					// Show elements when placing a new one down, prevents half being hidden and half not.
@@ -23120,6 +23187,8 @@ void editor_constructionselection ( void )
 					t.sentid = t.entid; t.entid = t.gridentity;
 					entity_fillgrideleproffromprofile();
 					t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+					t.grideleprof.isProjectGlobal = false;
+
 					t.entid = t.sentid;
 				}
 				t.grideleproflastname_s=t.grideleprof.name_s;
@@ -31908,6 +31977,50 @@ int GetActiveEditorObject( void )
 		}
 	}
 	return(iActiveObj);
+}
+int GetActiveEditorEntityPos(float *x, float *y, float *z, float* xa, float* ya, float* za)
+{
+	int iActiveObj = t.widget.activeObject;
+	int iEntityIndex = 0;
+	if (t.gridentityextractedindex > 0)
+	{
+		iEntityIndex = t.gridentityextractedindex;
+	}
+	else
+	{
+		iEntityIndex = t.widget.pickedEntityIndex;
+	}
+	if (iEntityIndex > 0 && iEntityIndex < t.entityelement.size())
+	{
+		if (x)
+		{
+			*x = t.entityelement[iEntityIndex].x;
+			*y = t.entityelement[iEntityIndex].y;
+			*z = t.entityelement[iEntityIndex].z;
+		}
+		if (xa)
+		{
+			*xa = t.entityelement[iEntityIndex].rx;
+			*ya = t.entityelement[iEntityIndex].ry;
+			*za = t.entityelement[iEntityIndex].rz;
+		}
+	}
+	return(iEntityIndex);
+}
+
+int GetActiveEditorEntity(void)
+{
+	int iActiveObj = t.widget.activeObject;
+	int iEntityIndex = 0;
+	if (t.gridentityextractedindex > 0)
+	{
+		iEntityIndex = t.gridentityextractedindex;
+	}
+	else
+	{
+		iEntityIndex = t.widget.pickedEntityIndex;
+	}
+	return(iEntityIndex);
 }
 
 void EmptyMessages(void)

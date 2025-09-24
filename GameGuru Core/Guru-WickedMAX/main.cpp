@@ -64,6 +64,12 @@ uint32_t FrameCounter = 0;
 // Encapsulates all other classes for Wicked Engine control
 Master master;
 
+//void causeCrash() {
+//	int* badPtr = nullptr;
+//	*badPtr = 123; // This will cause an access violation (crash)
+//}
+
+
 // Functions
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -85,6 +91,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Keep an eye for Unhandled Exceptions!
 	//SetUnhandledExceptionFilter(CrashHandler);
 	InitCrashHandler();
+
+	//causeCrash();
 
 	// Command line store
 	std::wstring your_wchar_in_ws(lpCmdLine);

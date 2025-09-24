@@ -1613,11 +1613,60 @@ DARKSDK void PauseSound	( int iID )
 #endif
 }
 
+uint32_t GetSoundFrequency(int iID)
+{
+	if (iID < 1 || iID > MAXIMUMVALUE)
+	{
+#ifndef IGNOREALLSOUNDERRORS
+		RunTimeError(RUNTIMEERROR_SOUNDNUMBERILLEGAL);
+#endif
+		return 0;
+	}
+	if (!UpdateSoundPtr(iID))
+	{
+#ifndef IGNOREALLSOUNDERRORS
+		RunTimeError(RUNTIMEERROR_SOUNDNOTEXIST);
+#endif
+		return 0;
+	}
+
+	SoundComponent* sound = GetScene().sounds.GetComponent(m_ptr->wickedEntity);
+	if (sound != nullptr)
+	{
+		uint32_t SamplePerSec = wiAudio::GetSamplePersec(&sound->soundinstance);
+		return(SamplePerSec);
+	}
+	return(0);
+}
 DARKSDK void SetSoundSpeed ( int iID, int iFrequency )
 {
 #ifdef WICKEDAUDIO
-	//PE: Need doodler.
-	//printf("tmp");
+
+	if (iID < 1 || iID > MAXIMUMVALUE)
+	{
+#ifndef IGNOREALLSOUNDERRORS
+		RunTimeError(RUNTIMEERROR_SOUNDNUMBERILLEGAL);
+#endif
+		return;
+	}
+	if (!UpdateSoundPtr(iID))
+	{
+#ifndef IGNOREALLSOUNDERRORS
+		RunTimeError(RUNTIMEERROR_SOUNDNOTEXIST);
+#endif
+		return;
+	}
+
+	SoundComponent* sound = GetScene().sounds.GetComponent(m_ptr->wickedEntity);
+	if (sound != nullptr)
+	{
+		if (iFrequency < 100) iFrequency = 100;
+		if (iFrequency > 100000) iFrequency = 100000;
+		uint32_t SamplePerSec = wiAudio::GetSamplePersec(&sound->soundinstance);
+		float frequencyRatio = (float)iFrequency / (float) SamplePerSec;
+		wiAudio::SetFrequencyRatio(&sound->soundinstance,frequencyRatio);
+	}
+
 #else
 
 	// if no sound card, leave now

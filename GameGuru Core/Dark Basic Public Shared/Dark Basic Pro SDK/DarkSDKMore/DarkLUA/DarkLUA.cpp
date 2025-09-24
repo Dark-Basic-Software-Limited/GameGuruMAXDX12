@@ -1584,7 +1584,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].eleprof.explodable;
 	 }
@@ -1600,7 +1600,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].eleprof.isobjective;
 		 if (t.entityelement[e].eleprof.isobjective_alwaysactive)
@@ -1609,6 +1609,22 @@ luaMessage** ppLuaMessages = NULL;
 	 lua_pushinteger(L, iReturnValue);
 	 return 1;
  }
+
+ int GetEntityProjectGlobal(lua_State* L)
+ {
+	 lua = L;
+	 int n = lua_gettop(L);
+	 if (n < 1) return 0;
+	 int e = lua_tonumber(L, 1);
+	 int iReturnValue = 0;
+	 if (e > 0 && e < t.entityelement.size() )
+	 {
+		 iReturnValue = t.entityelement[e].eleprof.isProjectGlobal;
+	 }
+	 lua_pushinteger(L, iReturnValue);
+	 return 1;
+ }
+
  int GetEntityCollectable(lua_State* L)
  {
 	 lua = L;
@@ -1616,7 +1632,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].eleprof.iscollectable;
 	 }
@@ -1630,7 +1646,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].collected;
 	 }
@@ -1644,7 +1660,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].consumed;
 	 }
@@ -1671,7 +1687,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iQty = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iQty = t.entityelement[e].eleprof.quantity;
 	 }
@@ -1686,7 +1702,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].whoactivated;
 	 }
@@ -3853,7 +3869,7 @@ int SetEntityAttachmentVisibility (lua_State *L, bool bVisible)
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
-	if (e > 0)
+	if (e > 0 && e < t.entityelement.size())
 	{
 		int iGunID = t.entityelement[e].eleprof.hasweapon;
 		if (iGunID > 0)
@@ -13130,7 +13146,8 @@ void addFunctions()
 	lua_register(lua, "SetExplosionDamage", SetExplosionDamage);
 	lua_register(lua, "SetCustomExplosion", SetCustomExplosion);
 	
-
+	
+	lua_register(lua, "GetEntityProjectGlobal", GetEntityProjectGlobal);
 	lua_register(lua, "GetEntityCollectable", GetEntityCollectable);
 	lua_register(lua, "GetEntityCollected", GetEntityCollected);
 	lua_register(lua, "GetEntityUsed", GetEntityUsed);

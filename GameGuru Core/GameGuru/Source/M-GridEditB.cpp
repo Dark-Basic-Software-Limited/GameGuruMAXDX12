@@ -532,6 +532,10 @@ extern std::vector<std::function<void()>> readoutCallbacks;
 extern int g_iAbortedAsEntityIsGroupFileModeStubOnly;
 extern int g_iAbortedAsEntityIsGroupCreate;
 
+extern bool bPreviewWPE;
+extern uint32_t PreviewWPERoot;
+
+
 bool bDigAHoleToHWND = false;
 bool g_bSelectedMapImageTypeSpecialHelp = false;
 bool bSortProjects = true;
@@ -25401,6 +25405,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 		if (fpe_current_loaded_script != item_current_type_selection)
 		{
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+				bPreviewWPE = false;
+			}
+
 			//Load in lua and check for custom properties.
 			cstr script_name_append = "";
 			if (item_current_type_selection < g_scriptpeople_item_count - 1)
@@ -27118,6 +27132,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			speech_ids[speech_loop] = -1;
 		if (fpe_current_loaded_script != fpe_current_selected_script)
 		{
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+				bPreviewWPE = false;
+			}
+
 			//Load in lua and check for custom properties.
 			cstr script_name = "";
 			//if (strnicmp(edit_grideleprof->aimain_s.Get(), "projectbank", 11) != NULL) 
@@ -27513,6 +27537,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 			if (fpe_current_loaded_script != item_current_type_selection)
 			{
+				if (PreviewWPERoot != 0)
+				{
+					//PE: Delete effects.
+					WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+					void DeleteEmitterEffects(uint32_t root);
+					DeleteEmitterEffects(PreviewWPERoot);
+					PreviewWPERoot = 0;
+					bPreviewWPE = false;
+				}
+
 				//Load in lua and check for custom properties.
 				cstr script_name_appendage = "";
 				if (item_current_type_selection < g_scriptobjects_item_count - 1) //PE: Need to check for custom
@@ -27726,6 +27760,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 					speech_ids[speech_loop] = -1;
 				if (fpe_current_loaded_script != fpe_current_selected_script) 
 				{
+					if (PreviewWPERoot != 0)
+					{
+						//PE: Delete effects.
+						WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+						void DeleteEmitterEffects(uint32_t root);
+						DeleteEmitterEffects(PreviewWPERoot);
+						PreviewWPERoot = 0;
+						bPreviewWPE = false;
+					}
+
 					//Load in lua and check for custom properties.
 					cstr script_name = "";
 					//if (strnicmp(edit_grideleprof->aimain_s.Get(), "projectbank", 11) != NULL) 
@@ -28669,6 +28713,108 @@ void DisplayFPEGeneral(bool readonly, int entid, entityeleproftype *edit_gridele
 					edit_grideleprof->iscollectable = 1;
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("If set the collectable is a resource and can be merged with similar objects");
+			ImGui::Indent(-10);
+		}
+
+
+		if(elementID > 0 && entid > 0 && entid < t.entityprofile.size() && elementID < t.entityelement.size() && t.entityprofile[entid].isweapon_s.Len() <= 0 && strlen(pref.cLastUsedStoryboardProject) > 0)
+		{
+			int iEntityIndex = elementID;
+			int iMasterID = entid;
+			int iCollectionItemIndex = -1;
+			bool bHaveProjectGlobalObject = false;
+			for (int n = 0; n < g_collectionList.size(); n++)
+			{
+				if (g_collectionList[n].collectionFields.size() > 0)
+				{
+					//t.entityelement[e].eleprof.name_s.Get()
+					if (g_collectionList[n].collectionFields[0] == t.entityelement[elementID].eleprof.name_s)
+					{
+						iCollectionItemIndex = n;
+						bHaveProjectGlobalObject = true;
+						break;
+					}
+				}
+			}
+
+			bool g_bChangedGameCollectionList = false;
+			ImGui::Indent(10);
+			bool bProjectWide = edit_grideleprof->isProjectGlobal;
+			if (ImGui::Checkbox("Is Project Global?", &bProjectWide))
+			{
+				if (bProjectWide == true)
+				{
+					edit_grideleprof->isProjectGlobal = 1;
+					{
+						// create an item entry
+						collectionItemType item;
+						fill_rpg_item_defaults(&item, iMasterID, iEntityIndex);
+
+						//PE: Check if already added.
+						bool bNewItemIsUnqiue = true;
+						for (int n = 0; n < g_collectionList.size(); n++)
+						{
+							if (item.collectionFields.size() > 0)
+							{
+								if (g_collectionList[n].collectionFields.size() > 0)
+								{
+									//t.entityelement[e].eleprof.name_s.Get()
+									if (g_collectionList[n].collectionFields[0] == item.collectionFields[0])
+									{
+										bNewItemIsUnqiue = false;
+										break;
+									}
+								}
+							}
+						}
+						if (bNewItemIsUnqiue == true)
+						{
+							g_collectionList.push_back(item);
+							g_bChangedGameCollectionList = true;
+						}
+
+					}
+				}
+				else
+				{
+					edit_grideleprof->isProjectGlobal = 0;
+				}
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("If set this object will be available on all levels, but must be controlled by Lua");
+
+			if (bHaveProjectGlobalObject && iCollectionItemIndex >= 0)
+			{
+				//PE: Delete Project Global Object
+				float but_gadget_size = ImGui::GetFontSize() * 12.0;
+				float w = ImGui::GetWindowContentRegionWidth() - 10.0;
+				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+				LPSTR pCreateButtonLabel = "Delete Project Global Object";
+				if (ImGui::StyleButton(pCreateButtonLabel, ImVec2(but_gadget_size, 0)))
+				{
+					std::vector<collectionItemType> newCollectionList;
+					for (int ci = 0; ci < g_collectionList.size(); ci++)
+					{
+						if (ci != iCollectionItemIndex)
+						{
+							newCollectionList.push_back(g_collectionList[ci]);
+						}
+					}
+					g_collectionList = newCollectionList;
+					g_bChangedGameCollectionList = true;
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Delete this project global object item from the main collection list of the game project");
+			}
+			// save any changes to game collection list 
+			if (g_bChangedGameCollectionList == true)
+			{
+				// go through all object parents to ensure
+				refresh_rpg_parents_of_items();
+
+				// save collection item list out
+				save_rpg_system(pref.cLastUsedStoryboardProject, true);
+				g_bChangedGameCollectionList = false;
+			}
+
 			ImGui::Indent(-10);
 		}
 	}
@@ -31892,8 +32038,10 @@ void MouseLeftDragXZPanning(void)
 		static ImVec2 vStartPos = { 0,0 };
 		static bool bRestoreMouseAfterXZPan = false;
 		bool bOkayToGo = false;
+		static bool bOverLockedObject = false;
 		if (bPanningActive == true) bOkayToGo = true;
 		if (t.onedrag == 0 && bPanningActive == false && pref.iDragCameraMovement && t.ebe.on == 0 && t.inputsys.xmouse != 500000 && t.grideditselect == 5 && t.gridentity == 0 && t.widget.activeObject == 0 && t.inputsys.keyshift == 0 && t.inputsys.keycontrol == 0 && bDotObjectDragging==false ) bOkayToGo = true;
+		if(bOverLockedObject) bOkayToGo = false;
 		if (ImGui::IsMouseDown(0) && bOkayToGo == true)
 		{
 			//PE: Give priority to object selection
@@ -31911,48 +32059,60 @@ void MouseLeftDragXZPanning(void)
 			static float fTerrainLastHitX = 0.0f;
 			static float fTerrainLastHitZ = 0.0f;
 			float fTerrainHitX, fTerrainHitY, fTerrainHitZ;
+			//PE: Bug fix , if locked object is under cursor terrain pan is activated.
+			bool bLockedObject = false;
 			if (WickedCall_GetPick(&fTerrainHitX, &fTerrainHitY, &fTerrainHitZ, NULL, NULL, NULL, NULL, GGRENDERLAYERS_NORMAL | GGRENDERLAYERS_TERRAIN) == true)
 			{
-				if (bPanningActive==false)
+				if (g_hovered_pobject != NULL)
 				{
-					bPanningActive = true;
-					bDragCameraActive = true;
-					fTerrainLastHitX = fTerrainHitX;
-					fTerrainLastHitZ = fTerrainHitZ;
-					if (bRestoreMouseAfterXZPan == false && ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow)
-					{
-						bRestoreMouseAfterXZPan = true;
-						ImGui::SetMouseCursor(ImGuiMouseCursor_Pan);
-					}
+					bLockedObject = true;
+					bOverLockedObject = true;
+					bRestoreMouseAfterXZPan = false;
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 				}
-				float fDifferenceX = fTerrainHitX - fTerrainLastHitX;
-				float fDifferenceZ = fTerrainHitZ - fTerrainLastHitZ;
-				//LB: prevent moving TOO fast such as grabbing terrain in extreme distance and shifting
-				if (fabs(fDifferenceX) + fabs(fDifferenceZ) > 100.0f)
+				if (!bLockedObject)
 				{
-					float fDist = sqrt((fabs(fDifferenceX)*fabs(fDifferenceX)) + (fabs(fDifferenceZ)*fabs(fDifferenceZ)));
-					fDifferenceX = (fDifferenceX / fabs(fDist)) * 100.0f;
-					fDifferenceZ = (fDifferenceZ / fabs(fDist)) * 100.0f;
-				}
-				fDifferenceX *= 1.8; //Move a bit faster.
-				fDifferenceZ *= 1.8; //Move a bit faster.
-
-				//PE: If we move in-out of water we can get some huge differences.
-				if (fabs(fDifferenceX) + fabs(fDifferenceZ) < 6000.0f)
-				{
-					if (fabs(fDifferenceX) + fabs(fDifferenceZ) != 0.0f)
+					if (bPanningActive == false)
 					{
-						bPanningActive = false;
-						// LB: also need to close this down or we end up locked in constant drag
-						bDragCameraActive = false;
-						if (bRestoreMouseAfterXZPan == true)
+						bPanningActive = true;
+						bDragCameraActive = true;
+						fTerrainLastHitX = fTerrainHitX;
+						fTerrainLastHitZ = fTerrainHitZ;
+						if (bRestoreMouseAfterXZPan == false && ImGui::GetMouseCursor() == ImGuiMouseCursor_Arrow)
 						{
-							bRestoreMouseAfterXZPan = false;
-							ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+							bRestoreMouseAfterXZPan = true;
+							ImGui::SetMouseCursor(ImGuiMouseCursor_Pan);
 						}
 					}
-					t.cx_f = t.editorfreeflight.c.x_f = (t.editorfreeflight.c.x_f - fDifferenceX);
-					t.cy_f = t.editorfreeflight.c.z_f = (t.editorfreeflight.c.z_f - fDifferenceZ);
+					float fDifferenceX = fTerrainHitX - fTerrainLastHitX;
+					float fDifferenceZ = fTerrainHitZ - fTerrainLastHitZ;
+					//LB: prevent moving TOO fast such as grabbing terrain in extreme distance and shifting
+					if (fabs(fDifferenceX) + fabs(fDifferenceZ) > 100.0f)
+					{
+						float fDist = sqrt((fabs(fDifferenceX) * fabs(fDifferenceX)) + (fabs(fDifferenceZ) * fabs(fDifferenceZ)));
+						fDifferenceX = (fDifferenceX / fabs(fDist)) * 100.0f;
+						fDifferenceZ = (fDifferenceZ / fabs(fDist)) * 100.0f;
+					}
+					fDifferenceX *= 1.8; //Move a bit faster.
+					fDifferenceZ *= 1.8; //Move a bit faster.
+
+					//PE: If we move in-out of water we can get some huge differences.
+					if (fabs(fDifferenceX) + fabs(fDifferenceZ) < 6000.0f)
+					{
+						if (fabs(fDifferenceX) + fabs(fDifferenceZ) != 0.0f)
+						{
+							bPanningActive = false;
+							// LB: also need to close this down or we end up locked in constant drag
+							bDragCameraActive = false;
+							if (bRestoreMouseAfterXZPan == true)
+							{
+								bRestoreMouseAfterXZPan = false;
+								ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+							}
+						}
+						t.cx_f = t.editorfreeflight.c.x_f = (t.editorfreeflight.c.x_f - fDifferenceX);
+						t.cy_f = t.editorfreeflight.c.z_f = (t.editorfreeflight.c.z_f - fDifferenceZ);
+					}
 				}
 			}
 			fTerrainLastHitX = fTerrainHitX;
@@ -31971,6 +32131,8 @@ void MouseLeftDragXZPanning(void)
 				}
 			}
 			iActivateCount = 0;
+			if (!ImGui::IsMouseDown(0))
+				bOverLockedObject = false;
 		}
 	}
 	else
@@ -37294,7 +37456,7 @@ void loadMarketplaceData(int* ggMaxDlc, cstr* ggMaxLink, int* sketchfabDlc, cstr
 		std::string fullImageDir = "";
 
 		//Have to convert strings to chars for LoadImage() to take it in
-		char converter[254];
+		char converter[1024];
 
 		for (int i = 0; i < numOfPromoItems; i++)
 		{
@@ -37534,16 +37696,44 @@ void SetIconSetCheck(bool bInstant)
 			LoadImage("editors\\uiv3\\entity_triggerzone.png", ENTITY_TRIGGERZONE);
 			LoadImage("editors\\uiv3\\entity_behavior.png", ENTITY_BEHAVIOR);
 			
-
-			LoadImage("editors\\uiv3\\ccp-hat.png", CCP_HAT);
-			LoadImage("editors\\uiv3\\ccp-feet.png", CCP_FEET);
-			LoadImage("editors\\uiv3\\ccp-legs.png", CCP_LEGS);
-			LoadImage("editors\\uiv3\\ccp-body.png", CCP_BODY);
-			LoadImage("editors\\uiv3\\ccp-glasses.png", CCP_GLASSES);
-			LoadImage("editors\\uiv3\\ccp-beard.png", CCP_BEARD);
-			LoadImage("editors\\uiv3\\ccp-hair.png", CCP_HAIR);
-			LoadImage("editors\\uiv3\\ccp-head.png", CCP_HEAD);
-			LoadImage("editors\\uiv3\\ccp-tattoo.png", CCP_TATTOO);
+			if (FileExist("editors\\uiv3\\ccp2-hat.png"))
+				LoadImage("editors\\uiv3\\ccp2-hat.png", CCP_HAT);
+			else
+				LoadImage("editors\\uiv3\\ccp-hat.png", CCP_HAT);
+			if (FileExist("editors\\uiv3\\ccp2-feet.png"))
+				LoadImage("editors\\uiv3\\ccp2-feet.png", CCP_FEET);
+			else
+				LoadImage("editors\\uiv3\\ccp-feet.png", CCP_FEET);
+			if (FileExist("editors\\uiv3\\ccp2-legs.png"))
+				LoadImage("editors\\uiv3\\ccp2-legs.png", CCP_LEGS);
+			else
+				LoadImage("editors\\uiv3\\ccp-legs.png", CCP_LEGS);
+			if (FileExist("editors\\uiv3\\ccp2-body.png"))
+				LoadImage("editors\\uiv3\\ccp2-body.png", CCP_BODY);
+			else
+				LoadImage("editors\\uiv3\\ccp-body.png", CCP_BODY);
+			if (FileExist("editors\\uiv3\\ccp2-glasses.png"))
+				LoadImage("editors\\uiv3\\ccp2-glasses.png", CCP_GLASSES);
+			else
+				LoadImage("editors\\uiv3\\ccp-glasses.png", CCP_GLASSES);
+			if (FileExist("editors\\uiv3\\ccp2-beard.png"))
+				LoadImage("editors\\uiv3\\ccp2-beard.png", CCP_BEARD);
+			else
+				LoadImage("editors\\uiv3\\ccp-beard.png", CCP_BEARD);
+			if (FileExist("editors\\uiv3\\ccp2-hair.png"))
+				LoadImage("editors\\uiv3\\ccp2-hair.png", CCP_HAIR);
+			else
+				LoadImage("editors\\uiv3\\ccp-hair.png", CCP_HAIR);
+			if (FileExist("editors\\uiv3\\ccp2-head.png"))
+				LoadImage("editors\\uiv3\\ccp2-head.png", CCP_HEAD);
+			else
+				LoadImage("editors\\uiv3\\ccp-head.png", CCP_HEAD);
+			if (FileExist("editors\\uiv3\\ccp2-tattoo.png"))
+				LoadImage("editors\\uiv3\\ccp2-tattoo.png", CCP_TATTOO);
+			else
+				LoadImage("editors\\uiv3\\ccp-tattoo.png", CCP_TATTOO);
+			LoadImage("editors\\uiv3\\ccp2-accessory_one.png", CCP_ACCESSORY1);
+			LoadImage("editors\\uiv3\\ccp2-accessory_two.png", CCP_ACCESSORY2);
 
 			LoadImage("editors\\uiv3\\filetype-script.png", FILETYPE_SCRIPT);
 
@@ -37572,15 +37762,44 @@ void SetIconSetCheck(bool bInstant)
 			LoadImage("editors\\uiv3\\entity_triggerzone2.png", ENTITY_TRIGGERZONE);
 			LoadImage("editors\\uiv3\\entity_behavior2.png", ENTITY_BEHAVIOR);
 
-			LoadImage("editors\\uiv3\\ccp-hat2.png", CCP_HAT);
-			LoadImage("editors\\uiv3\\ccp-feet2.png", CCP_FEET);
-			LoadImage("editors\\uiv3\\ccp-legs2.png", CCP_LEGS);
-			LoadImage("editors\\uiv3\\ccp-body2.png", CCP_BODY);
-			LoadImage("editors\\uiv3\\ccp-glasses2.png", CCP_GLASSES);
-			LoadImage("editors\\uiv3\\ccp-beard2.png", CCP_BEARD);
-			LoadImage("editors\\uiv3\\ccp-hair2.png", CCP_HAIR);
-			LoadImage("editors\\uiv3\\ccp-head2.png", CCP_HEAD);
-			LoadImage("editors\\uiv3\\ccp-tattoo2.png", CCP_TATTOO);
+			if (FileExist("editors\\uiv3\\ccp2-hat2.png"))
+				LoadImage("editors\\uiv3\\ccp2-hat2.png", CCP_HAT);
+			else
+				LoadImage("editors\\uiv3\\ccp-hat2.png", CCP_HAT);
+			if (FileExist("editors\\uiv3\\ccp2-feet2.png"))
+				LoadImage("editors\\uiv3\\ccp2-feet2.png", CCP_FEET);
+			else
+				LoadImage("editors\\uiv3\\ccp-feet2.png", CCP_FEET);
+			if (FileExist("editors\\uiv3\\ccp2-legs2.png"))
+				LoadImage("editors\\uiv3\\ccp2-legs2.png", CCP_LEGS);
+			else
+				LoadImage("editors\\uiv3\\ccp-legs2.png", CCP_LEGS);
+			if (FileExist("editors\\uiv3\\ccp2-body2.png"))
+				LoadImage("editors\\uiv3\\ccp2-body2.png", CCP_BODY);
+			else
+				LoadImage("editors\\uiv3\\ccp-body2.png", CCP_BODY);
+			if (FileExist("editors\\uiv3\\ccp2-glasses2.png"))
+				LoadImage("editors\\uiv3\\ccp2-glasses2.png", CCP_GLASSES);
+			else
+				LoadImage("editors\\uiv3\\ccp-glasses2.png", CCP_GLASSES);
+			if (FileExist("editors\\uiv3\\ccp2-beard2.png"))
+				LoadImage("editors\\uiv3\\ccp2-beard2.png", CCP_BEARD);
+			else
+				LoadImage("editors\\uiv3\\ccp-beard2.png", CCP_BEARD);
+			if (FileExist("editors\\uiv3\\ccp2-hair2.png"))
+				LoadImage("editors\\uiv3\\ccp2-hair2.png", CCP_HAIR);
+			else
+				LoadImage("editors\\uiv3\\ccp-hair2.png", CCP_HAIR);
+			if (FileExist("editors\\uiv3\\ccp2-head2.png"))
+				LoadImage("editors\\uiv3\\ccp2-head2.png", CCP_HEAD);
+			else
+				LoadImage("editors\\uiv3\\ccp-head2.png", CCP_HEAD);
+			if (FileExist("editors\\uiv3\\ccp2-tattoo2.png"))
+				LoadImage("editors\\uiv3\\ccp2-tattoo2.png", CCP_TATTOO);
+			else
+				LoadImage("editors\\uiv3\\ccp-tattoo2.png", CCP_TATTOO);
+			LoadImage("editors\\uiv3\\ccp2-accessory_one2.png", CCP_ACCESSORY1);
+			LoadImage("editors\\uiv3\\ccp2-accessory_two2.png", CCP_ACCESSORY2);
 
 			LoadImage("editors\\uiv3\\filetype-script2.png", FILETYPE_SCRIPT);
 
@@ -54754,5 +54973,38 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::Indent(-10);
 	}
 	return bVisualUpdated;
+}
+
+void RenderPreviewEmitter(void)
+{
+	static bool bInit = true;
+	if (PreviewWPERoot > 0)
+	{
+		float posx, posy, posz, posxa, posya, posza;
+		int GetActiveEditorEntityPos(float* x, float* y, float* z, float* xa, float* ya, float* za);
+		int iEntityIndex = GetActiveEditorEntityPos(&posx, &posy, &posz, &posxa, &posya, &posza);
+		static int iEntityIndexCurrent = -1;
+		if (!bInit && iEntityIndexCurrent != iEntityIndex && PreviewWPERoot != 0)
+		{
+			iEntityIndexCurrent = iEntityIndex;
+			//PE: Delete effects.
+			WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+			void DeleteEmitterEffects(uint32_t root);
+			DeleteEmitterEffects(PreviewWPERoot);
+			PreviewWPERoot = 0;
+			bPreviewWPE = false;
+		}
+		if (bInit)
+		{
+			iEntityIndexCurrent = iEntityIndex;
+			bInit = false;
+		}
+		if (iEntityIndex > 0 && PreviewWPERoot > 0)
+		{
+			extern float fPreviewYOffset;
+			bool WickedCall_ParticleEffectPositionRotation(uint32_t root, float fX, float fY, float fZ, float fXa, float fYa, float fZa);
+			WickedCall_ParticleEffectPositionRotation(PreviewWPERoot, posx, posy + fPreviewYOffset, posz, 0, posya, 0);
+		}
+	}
 }
 

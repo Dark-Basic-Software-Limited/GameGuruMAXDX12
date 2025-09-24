@@ -18,6 +18,7 @@ using namespace Tracers;
 
 // Globals 
 bool g_bDormantCheckForThisCycle = true;
+int i_LastExplosionSoundID = 0;
 
 void darkai_init ( void )
 {
@@ -1941,7 +1942,14 @@ void darkai_killai (void)
 		{
 			if (SoundExist(ttsnd) == 1)
 			{
-				StopSound (ttsnd);
+				if (i_LastExplosionSoundID != ttsnd)
+				{
+					StopSound(ttsnd);
+				}
+				else
+				{
+					i_LastExplosionSoundID = 0;
+				}
 			}
 		}
 	}

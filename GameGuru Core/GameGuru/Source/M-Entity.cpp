@@ -6491,7 +6491,7 @@ void c_entity_loadelementsdata ( void )
 						if (t.entityelement[t.e].eleprof.systemwide_lua > 1)
 							t.entityelement[t.e].eleprof.systemwide_lua = 0;
 						t.a = c_ReadLong(1); t.entityelement[t.e].eleprof.isobjective_alwaysactive = t.a;
-						t.a = c_ReadLong(1); iFiller = t.a;
+						t.a = c_ReadLong(1); t.entityelement[t.e].eleprof.isProjectGlobal = t.a;
 						t.a_s = c_ReadString(1); sFiller = t.a_s;
 						t.a_s = c_ReadString(1); sFiller = t.a_s;
 						t.a_s = c_ReadString(1); sFiller = t.a_s;
@@ -8144,7 +8144,7 @@ void entity_saveelementsdata (bool bForCollectionELE)
 					writer.WriteFloat(0.0f);
 					writer.WriteLong(t.entityelement[ent].eleprof.systemwide_lua);
 					writer.WriteLong(t.entityelement[ent].eleprof.isobjective_alwaysactive);
-					writer.WriteLong(0);
+					writer.WriteLong(t.entityelement[ent].eleprof.isProjectGlobal);
 					writer.WriteString("");
 					writer.WriteString("");
 					writer.WriteString("");
@@ -8970,7 +8970,7 @@ void entity_addentitytomap_core ( void )
 
 	//PE: Always false by default.
 	t.entityelement[t.e].eleprof.systemwide_lua = false;
-
+	
 	// auto flatten system
 	t.entityelement[t.e].eleprof.iFlattenID = -1; // cannot carry this ID over
 	if (!g_bEnableAutoFlattenSystem) //PE: If disabled always disable autoflatten.

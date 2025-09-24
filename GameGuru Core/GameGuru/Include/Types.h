@@ -6536,6 +6536,7 @@ struct entityeleproftype
 	int thumb_id;
 	int systemwide_lua;
 	int isobjective_alwaysactive;
+	int isProjectGlobal;
 	// Constructor
 	entityeleproftype ( )
 	{
@@ -6697,6 +6698,7 @@ struct entityeleproftype
 		 thumb_id = 0;
 		 systemwide_lua = 0;
 		 isobjective_alwaysactive = 0;
+		 isProjectGlobal = 0;
 	}
 	// End of Constructor
 

@@ -1147,6 +1147,8 @@ void ImDrawList::AddText(const ImVec2& pos, ImU32 col, const char* text_begin, c
 
 void ImDrawList::AddImage(ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min, const ImVec2& uv_max, ImU32 col)
 {
+    if (!user_texture_id)
+        return;
     if ((col & IM_COL32_A_MASK) == 0)
         return;
 
@@ -1163,6 +1165,9 @@ void ImDrawList::AddImage(ImTextureID user_texture_id, const ImVec2& p_min, cons
 
 void ImDrawList::AddImageQuad(ImTextureID user_texture_id, const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, const ImVec2& uv1, const ImVec2& uv2, const ImVec2& uv3, const ImVec2& uv4, ImU32 col)
 {
+    if (!user_texture_id)
+        return;
+
     if ((col & IM_COL32_A_MASK) == 0)
         return;
 
@@ -1179,6 +1184,9 @@ void ImDrawList::AddImageQuad(ImTextureID user_texture_id, const ImVec2& p1, con
 
 void ImDrawList::AddImageRounded(ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min, const ImVec2& uv_max, ImU32 col, float rounding, ImDrawCornerFlags rounding_corners)
 {
+    if (!user_texture_id)
+        return;
+
     if ((col & IM_COL32_A_MASK) == 0)
         return;
 

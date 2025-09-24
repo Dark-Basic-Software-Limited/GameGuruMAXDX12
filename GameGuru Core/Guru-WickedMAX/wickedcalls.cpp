@@ -8041,6 +8041,27 @@ void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root)
 	}
 }
 
+bool WickedCall_ParticleEffectPositionRotation(uint32_t root, float fX, float fY, float fZ, float fXa, float fYa, float fZa)
+{
+	Scene& scene = wiScene::GetScene();
+	TransformComponent* root_tranform = scene.transforms.GetComponent(root);
+	if (root_tranform)
+	{
+		root_tranform->ClearTransform();
+
+		float rotationRadiansX = fXa * (XM_PI / 180.0f);
+		float rotationRadiansY = fYa * (XM_PI / 180.0f);
+		float rotationRadiansZ = fZa * (XM_PI / 180.0f);
+		XMFLOAT3 rot = { rotationRadiansX ,rotationRadiansY ,rotationRadiansZ }; //PE: 0 - XM_2PI
+		root_tranform->RotateRollPitchYaw(rot);
+
+		root_tranform->Translate(XMFLOAT3(fX, fY, fZ));
+		root_tranform->UpdateTransform();
+		return true;
+	}
+	return false;
+}
+
 bool WickedCall_ParticleEffectPosition(uint32_t root, float fX, float fY, float fZ)
 {
 	Scene& scene = wiScene::GetScene();
