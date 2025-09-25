@@ -46,6 +46,10 @@ static std::map<std::string, std::string> CharacterCreatorBody_s;
 static std::map<std::string, std::string> CharacterCreatorLegs_s;
 static std::map<std::string, std::string> CharacterCreatorFeet_s;
 
+static std::map<std::string, std::string> CharacterCreatorAccessory1_s;
+static std::map<std::string, std::string> CharacterCreatorAccessory2_s;
+
+
 // <mesh name, name shown to user>
 static std::map<std::string, std::string> g_charactercreatorplus_annotation_list;
 static std::map<std::string, std::string> CharacterCreatorAnnotatedHeadGear_s;
@@ -56,6 +60,11 @@ static std::map<std::string, std::string> CharacterCreatorAnnotatedFacialHair_s;
 static std::map<std::string, std::string> CharacterCreatorAnnotatedBody_s;
 static std::map<std::string, std::string> CharacterCreatorAnnotatedFeet_s;
 static std::map<std::string, std::string> CharacterCreatorAnnotatedLegs_s;
+static std::map<std::string, std::string> CharacterCreatorAnnotatedAccessory1_s;
+static std::map<std::string, std::string> CharacterCreatorAnnotatedAccessory2_s;
+
+
+
 
 static std::map<std::string, std::string> g_charactercreatorplus_annotationtag_list;
 static std::map<std::string, std::string> CharacterCreatorAnnotatedTagHeadGear_s;
@@ -66,6 +75,9 @@ static std::map<std::string, std::string> CharacterCreatorAnnotatedTagFacialHair
 static std::map<std::string, std::string> CharacterCreatorAnnotatedTagBody_s;
 static std::map<std::string, std::string> CharacterCreatorAnnotatedTagFeet_s;
 static std::map<std::string, std::string> CharacterCreatorAnnotatedTagLegs_s;
+static std::map<std::string, std::string> CharacterCreatorAnnotatedTagAccessory1_s;
+static std::map<std::string, std::string> CharacterCreatorAnnotatedTagAccessory2_s;
+
 
 std::vector<sCharacterType> g_CharacterType;
 char pCharacterTypeDropDownList[32][260];
@@ -77,17 +89,17 @@ char pRoomTypeDropDownList[32][260];
 std::vector<AutoSwapData*> g_headGearMandatorySwaps;
 AutoSwapData* g_previousAutoSwap = nullptr;
 #define MAXPARTICONS 100
-int g_iPartsThatNeedReloaded[8] = { 0 };
-int g_iPartsIconsIDs[32][8][MAXPARTICONS];
+int g_iPartsThatNeedReloaded[10] = { 0 };
+int g_iPartsIconsIDs[32][10][MAXPARTICONS];
 bool g_bPartIconsInit = false;
 char g_SkinTextureStorage[MAX_PATH]; // Stores the skin tone texture when the face is changed. Referenced when changing the face to fit certain headgear.
 std::vector<char*> g_restrictedParts;
 float g_fLockerRoomOffset = 2.0f;
 float g_fCCPZoom = 72.0f;
-std::array<std::string, 8> g_maleStorage;
-std::array<std::string, 8> g_femaleStorage;
-std::array<std::string, 8> g_zombieStorage;
-std::array<std::string, 8> g_genericStorage;
+std::array<std::string, 10> g_maleStorage;
+std::array<std::string, 10> g_femaleStorage;
+std::array<std::string, 10> g_zombieStorage;
+std::array<std::string, 10> g_genericStorage;
 AutoSwapData* g_pLastHeadgearAutoSwap = nullptr;
 int g_iPreviousCategorySelection = -1;
 CameraTransition* g_pCurrentTransition = nullptr;
@@ -107,7 +119,8 @@ uint32_t iLightIndex = -1;
 std::vector<const char*> g_MeshesThatNeedDoubleSided;
 
 static std::map<std::string, std::string> CharacterCreatorType_s;
-int iDressRoom = 0, iCharObj = 0, iCharObjHeadGear = 0, iCharObjHair = 0, iCharObjHead = 0, iCharObjEyeglasses = 0, iCharObjFacialHair = 0, iCharObjLegs = 0, iCharObjFeet = 0;
+int iDressRoom = 0, iCharObj = 0, iCharObjHeadGear = 0, iCharObjHair = 0, iCharObjHead = 0, iCharObjAccessory1 = 0, iCharObjAccessory2 = 0, iCharObjEyeglasses = 0, iCharObjFacialHair = 0, iCharObjLegs = 0, iCharObjFeet = 0;
+
 
 bool bCharObjVisible = false;
 char CCP_Room[260] = "lockers";
@@ -126,6 +139,9 @@ char cSelectedHeadGear[260] = "\0";
 char cSelectedHair[260] = "\0";
 char cSelectedHead[260] = "\0";
 char cSelectedEyeglasses[260] = "\0";
+char cSelectedAccessory1[260] = "\0";
+char cSelectedAccessory2[260] = "\0";
+
 char cSelectedFacialHair[260] = "\0";
 char cSelectedBody[260] = "\0";
 char cSelectedLegs[260] = "\0";
@@ -158,7 +174,7 @@ void charactercreatorplus_populatechartypes (void)
 	if (g_bCharacterCreatorTypesInit == false)
 	{
 		// store current dir
-		LPSTR pOldDir = GetDir();
+		cstr pOldDir = GetDir();
 		GG_SetWritablesToRoot(1);
 
 		// collect rooms
@@ -210,7 +226,7 @@ void charactercreatorplus_populatechartypes (void)
 			}
 		}
 		for (; n < 32; n++) strcpy(pRoomTypeDropDownList[n], "");
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 
 		// gather character creator types database
 		sCharacterType chartypeitem;
@@ -301,7 +317,7 @@ void charactercreatorplus_populatechartypes (void)
 		for (; n < 32; n++) strcpy(pCharacterTypeDropDownList[n], "");
 
 		// completed init
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 		GG_SetWritablesToRoot(0);
 		g_bCharacterCreatorTypesInit = true;
 	}
@@ -312,7 +328,7 @@ void charactercreatorplus_preloadinitialcharacter ( void )
 	return; //PE: Disabled until we can do multiply thread loads.
 }
 
-void charactercreatorplus_copyselections(std::array<std::string, 8>& storage)
+void charactercreatorplus_copyselections(std::array<std::string, 10>& storage)
 {
 	// 0: Head Gear
 	// 1: Hair
@@ -330,6 +346,8 @@ void charactercreatorplus_copyselections(std::array<std::string, 8>& storage)
 	storage[5] = std::string(cSelectedBody);
 	storage[6] = std::string(cSelectedLegs);
 	storage[7] = std::string(cSelectedFeet);
+	storage[8] = std::string(cSelectedAccessory1);
+	storage[9] = std::string(cSelectedAccessory2);
 }
 
 void charactercreatorplus_GetDefaultCharacterPartNum (int iBase, int iPart, LPSTR pPartNumStr, LPSTR pPartNumVariantStr = NULL)
@@ -439,7 +457,7 @@ void charactercreatorplus_preloadallcharacterpartchoices ( void )
 	image_preload_files_start();
 	// object_preload_files_start(); //PE: Disable until thread safe.
 	static std::map<std::string, std::string> CharacterCreatorCurrent_s;
-	for (int part_loop = 0; part_loop < 8; part_loop++) 
+	for (int part_loop = 0; part_loop < 10; part_loop++) 
 	{
 		if (part_loop == 0) CharacterCreatorCurrent_s = CharacterCreatorHeadGear_s;
 		if (part_loop == 1) CharacterCreatorCurrent_s = CharacterCreatorHair_s;
@@ -449,6 +467,9 @@ void charactercreatorplus_preloadallcharacterpartchoices ( void )
 		if (part_loop == 5) CharacterCreatorCurrent_s = CharacterCreatorBody_s;
 		if (part_loop == 6) CharacterCreatorCurrent_s = CharacterCreatorLegs_s;
 		if (part_loop == 7) CharacterCreatorCurrent_s = CharacterCreatorFeet_s;
+		if (part_loop == 8) CharacterCreatorCurrent_s = CharacterCreatorAccessory1_s;
+		if (part_loop == 9) CharacterCreatorCurrent_s = CharacterCreatorAccessory2_s;
+		
 		if (!CharacterCreatorCurrent_s.empty())
 		{
 			for (std::map<std::string, std::string>::iterator it = CharacterCreatorCurrent_s.begin(); it != CharacterCreatorCurrent_s.end(); ++it)
@@ -546,6 +567,11 @@ void charactercreatorplus_refreshskincolor(void)
 		if (partnum == 1) { iMaskTexture = iCharLegsTexture + 1; }
 		if (partnum == 2) { iMaskTexture = iCharFeetTexture + 1; }
 
+		if (!ImageExist(iAlbedoTexture))
+		{
+			printf("tmp");
+		}
+
 		// ensure mask available
 		if ( ImageExist(iMaskTexture))
 		{
@@ -583,6 +609,15 @@ void charactercreatorplus_refreshskincolor(void)
 			CreateMemblockFromImage(iMemblockMaskID, iMaskTexture);
 			CreateMemblockFromImage(iMemblockSkinID, iCharSkinTexture);
 
+			if (MemblockExist(iMemblockAlbedoID) == 0)
+			{
+				//PE: Fail.
+				int imgformat = ImageFormat(iAlbedoTexture);
+				if (!ImageExist(iAlbedoTexture))
+				{
+					printf("tmp");
+				}
+			}
 			// skin mask may have different resolution
 			int imgSkinMaskWidth = ReadMemblockDWord(iMemblockMaskID, 0);
 			int imgSkinMaskHeight = ReadMemblockDWord(iMemblockMaskID, 4);
@@ -753,6 +788,8 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	int iCharFacialHairTexture = g.charactercreatorEditorImageoffset + 51;
 	int iCharLegsTexture = g.charactercreatorEditorImageoffset + 61;
 	int iCharFeetTexture = g.charactercreatorEditorImageoffset + 71;
+	int iCharAccessory1Texture = g.charactercreatorEditorImageoffset + 81;
+	int iCharAccessory2Texture = g.charactercreatorEditorImageoffset + 91;
 
 	// skin override texture
 	int iCharSkinTexture = g.charactercreatorEditorImageoffset + 101;
@@ -788,7 +825,7 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	{
 		// Check if the part that is being changed was part of an auto-swap, or chosen specifically by the user.
 		int iUserChoseCategory = -1;
-		for (int i = 0; i < 8; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			// Find the category in the previous auto-swap data that needs updating.
 			if (part == i && g_iPartsThatNeedReloaded[i] == 0)
@@ -818,6 +855,8 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 					case 5: pPartToSwap = cSelectedBody; break;
 					case 6: pPartToSwap = cSelectedLegs; break;
 					case 7: pPartToSwap = cSelectedFeet; break;
+					case 8: pPartToSwap = cSelectedAccessory1; break;
+					case 9: pPartToSwap = cSelectedAccessory2; break;
 					}
 					g_previousAutoSwap->swappedPartNames[i] = pPartToSwap;
 					break;
@@ -861,6 +900,8 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	char cUseBody[260];
 	char cUseLegs[260];
 	char cUseFeet[260];
+	char cUseAccessory1[260];
+	char cUseAccessory2[260];
 	strcpy(cUseHeadGear, cSelectedHeadGear);
 	strcpy(cUseHair, cSelectedHair);
 	strcpy(cUseHead, cSelectedHead);
@@ -869,6 +910,9 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	strcpy(cUseBody, cSelectedBody);
 	strcpy(cUseLegs, cSelectedLegs);
 	strcpy(cUseFeet, cSelectedFeet);
+	strcpy(cUseAccessory1, cSelectedAccessory1);
+	strcpy(cUseAccessory2, cSelectedAccessory2);
+
 	char cSelectedVariantHeadGear[260];
 	char cSelectedVariantHair[260];
 	char cSelectedVariantHead[260];
@@ -877,6 +921,9 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	char cSelectedVariantBody[260];
 	char cSelectedVariantLegs[260];
 	char cSelectedVariantFeet[260];
+	char cSelectedVariantAccessory1[260];
+	char cSelectedVariantAccessory2[260];
+
 	strcpy(cSelectedVariantHeadGear, cSelectedHeadGear);
 	strcpy(cSelectedVariantHair, cSelectedHair);
 	strcpy(cSelectedVariantHead, cSelectedHead);
@@ -885,6 +932,9 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	strcpy(cSelectedVariantBody, cSelectedBody);
 	strcpy(cSelectedVariantLegs, cSelectedLegs);
 	strcpy(cSelectedVariantFeet, cSelectedFeet);
+	strcpy(cSelectedVariantAccessory1, cSelectedAccessory1);
+	strcpy(cSelectedVariantAccessory2, cSelectedAccessory2);
+
 	iEnd = strlen(cSelectedHeadGear) - 1; cLast = cSelectedHeadGear[iEnd]; if (iEnd > 3 && cLast >= 'a' && cLast <= 'z') { cUseHeadGear[iEnd] = 0; }
 	iEnd = strlen(cSelectedHair) - 1; cLast = cSelectedHair[iEnd]; if (iEnd > 3 && cLast >= 'a' && cLast <= 'z') { cUseHair[iEnd] = 0; }
 	iEnd = strlen(cSelectedHead) - 1; cLast = cSelectedHead[iEnd]; if (iEnd > 3 && cLast >= 'a' && cLast <= 'z') { cUseHead[iEnd] = 0; }
@@ -893,6 +943,8 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	iEnd = strlen(cSelectedBody) - 1; cLast = cSelectedBody[iEnd]; if (iEnd > 3 && cLast >= 'a' && cLast <= 'z') { cUseBody[iEnd] = 0; }
 	iEnd = strlen(cSelectedLegs) - 1; cLast = cSelectedLegs[iEnd]; if (iEnd > 3 && cLast >= 'a' && cLast <= 'z') { cUseLegs[iEnd] = 0; }
 	iEnd = strlen(cSelectedFeet) - 1; cLast = cSelectedFeet[iEnd]; if (iEnd > 3 && cLast >= 'a' && cLast <= 'z') { cUseFeet[iEnd] = 0; }
+	iEnd = strlen(cSelectedAccessory1) - 1; cLast = cSelectedAccessory1[iEnd]; if (iEnd > 3 && cLast >= 'a' && cLast <= 'z') { cUseAccessory1[iEnd] = 0; }
+	iEnd = strlen(cSelectedAccessory2) - 1; cLast = cSelectedAccessory2[iEnd]; if (iEnd > 3 && cLast >= 'a' && cLast <= 'z') { cUseAccessory2[iEnd] = 0; }
 
 	//Load all objects.
 	if (strnicmp(cUseHeadGear, "None", 4) != NULL)
@@ -922,6 +974,7 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	}
 	tmp = final_name + cUseHead + CCPMODELEXT;
 	LoadObject(tmp.Get(), iCharObjHead);
+
 	if (strnicmp(cUseEyeglasses, "None", 4) != NULL)
 	{
 		tmp = final_name + cUseEyeglasses + CCPMODELEXT;
@@ -931,6 +984,26 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	{
 		if (ObjectExist(iCharObjEyeglasses)) DeleteObject(iCharObjEyeglasses);
 	}
+
+	if (strnicmp(cUseAccessory1, "None", 4) != NULL)
+	{
+		tmp = final_name + cUseAccessory1 + CCPMODELEXT;
+		LoadObject(tmp.Get(), iCharObjAccessory1);
+	}
+	else
+	{
+		if (ObjectExist(iCharObjAccessory1)) DeleteObject(iCharObjAccessory1);
+	}
+	if (strnicmp(cUseAccessory2, "None", 4) != NULL)
+	{
+		tmp = final_name + cUseAccessory2 + CCPMODELEXT;
+		LoadObject(tmp.Get(), iCharObjAccessory2);
+	}
+	else
+	{
+		if (ObjectExist(iCharObjAccessory2)) DeleteObject(iCharObjAccessory2);
+	}
+
 	if (strnicmp(cUseFacialHair, "None", 4) != NULL)
 	{
 		tmp = final_name + cUseFacialHair + CCPMODELEXT;
@@ -1016,6 +1089,28 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 		cstr Path_s = final_name + cUseEyeglasses;
 		charactercreatorplus_loadccimages(VariantColorPath_s.Get(), Path_s.Get(), iCharEyeglassesTexture);
 	}
+
+	if ((part == 8 || g_iPartsThatNeedReloaded[8] == 1 || part == -1) && ObjectExist(iCharObjAccessory1) == 1)
+	{
+		// Accessory1
+		for (int a = 0; a < 5; a++) if (GetImageExistEx(iCharAccessory1Texture + a)) DeleteImage(iCharAccessory1Texture + a);
+
+		// load textures
+		cstr VariantColorPath_s = final_name + cSelectedVariantAccessory1;
+		cstr Path_s = final_name + cUseAccessory1;
+		charactercreatorplus_loadccimages(VariantColorPath_s.Get(), Path_s.Get(), iCharAccessory1Texture);
+	}
+	if ((part == 9 || g_iPartsThatNeedReloaded[9] == 1 || part == -1) && ObjectExist(iCharObjAccessory2) == 1)
+	{
+		// Accessory1
+		for (int a = 0; a < 5; a++) if (GetImageExistEx(iCharAccessory2Texture + a)) DeleteImage(iCharAccessory2Texture + a);
+
+		// load textures
+		cstr VariantColorPath_s = final_name + cSelectedVariantAccessory2;
+		cstr Path_s = final_name + cUseAccessory2;
+		charactercreatorplus_loadccimages(VariantColorPath_s.Get(), Path_s.Get(), iCharAccessory2Texture);
+	}
+
 	if ((part == 4 || g_iPartsThatNeedReloaded[4] == 1 || part == -1) && ObjectExist(iCharObjFacialHair) == 1)
 	{
 		// Facial Hair
@@ -1101,6 +1196,8 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	if (ObjectExist(iCharObjHair) == 1)	charactercreatorplus_textureccimages(iCharObjHair, iCharHairTexture);
 	charactercreatorplus_textureccimages(iCharObjHead, iCharHeadTexture);
 	if (ObjectExist(iCharObjEyeglasses) == 1) charactercreatorplus_textureccimages(iCharObjEyeglasses, iCharEyeglassesTexture);
+	if (ObjectExist(iCharObjAccessory1) == 1) charactercreatorplus_textureccimages(iCharObjAccessory1, iCharAccessory1Texture);
+	if (ObjectExist(iCharObjAccessory2) == 1) charactercreatorplus_textureccimages(iCharObjAccessory2, iCharAccessory2Texture);
 	if (ObjectExist(iCharObjFacialHair) == 1) charactercreatorplus_textureccimages(iCharObjFacialHair, iCharFacialHairTexture);
 	charactercreatorplus_textureccimages(iCharObj, iCharTexture);
 	charactercreatorplus_textureccimages(iCharObjLegs, iCharLegsTexture);
@@ -1123,6 +1220,8 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 	if (ObjectExist(iCharObjHair)) WickedCall_RemoveObject(GetObjectData(iCharObjHair));
 	if (ObjectExist(iCharObjEyeglasses)) WickedCall_RemoveObject(GetObjectData(iCharObjEyeglasses));
 	if (ObjectExist(iCharObjFacialHair)) WickedCall_RemoveObject(GetObjectData(iCharObjFacialHair));
+	if (ObjectExist(iCharObjAccessory1)) WickedCall_RemoveObject(GetObjectData(iCharObjAccessory1));
+	if (ObjectExist(iCharObjAccessory2)) WickedCall_RemoveObject(GetObjectData(iCharObjAccessory2));
 
 	// stitch model together
 	if (ObjectExist(iCharObjHeadGear) == 1)
@@ -1153,6 +1252,22 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 		StealMeshesFromObject(iCharObj, iCharObjEyeglasses);
 		DeleteObject(iCharObjEyeglasses);
 	}
+
+	if (ObjectExist(iCharObjAccessory1) == 1)
+	{
+		//SetObjectCull(iCharObjAccessory1, 0);
+		//SetObjectTransparency(iCharObjAccessory1, 2);
+		StealMeshesFromObject(iCharObj, iCharObjAccessory1);
+		DeleteObject(iCharObjAccessory1);
+	}
+	if (ObjectExist(iCharObjAccessory2) == 1)
+	{
+		//SetObjectCull(iCharObjAccessory2, 0);
+		//SetObjectTransparency(iCharObjAccessory2, 2);
+		StealMeshesFromObject(iCharObj, iCharObjAccessory2);
+		DeleteObject(iCharObjAccessory2);
+	}
+
 	if (ObjectExist(iCharObjFacialHair) == 1)
 	{
 		SetObjectTransparency(iCharObjFacialHair, 2);
@@ -1233,7 +1348,7 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 			WickedCall_SetReflectance(pObjectToRecreateInWicked->ppMeshList[iMeshIndex], 0.04f);
 	}
 
-	for (int i = 0; i < 8; i++) g_iPartsThatNeedReloaded[i] = 0;
+	for (int i = 0; i < 10; i++) g_iPartsThatNeedReloaded[i] = 0;
 
 	// position final stitched character in scene
 	float terrain_height = BT_GetGroundHeight(t.terrain.TerrainID, GGORIGIN_X, GGORIGIN_Z, 1);
@@ -1460,6 +1575,9 @@ void charactercreatorplus_refreshtype(void)
 	CharacterCreatorBody_s.clear();
 	CharacterCreatorLegs_s.clear();
 	CharacterCreatorFeet_s.clear();
+	CharacterCreatorAccessory1_s.clear();
+	CharacterCreatorAccessory2_s.clear();
+
 	CharacterCreatorAnnotatedHeadGear_s.clear();
 	CharacterCreatorAnnotatedHair_s.clear();
 	CharacterCreatorAnnotatedHead_s.clear();
@@ -1468,6 +1586,10 @@ void charactercreatorplus_refreshtype(void)
 	CharacterCreatorAnnotatedBody_s.clear();
 	CharacterCreatorAnnotatedLegs_s.clear();
 	CharacterCreatorAnnotatedFeet_s.clear();
+	CharacterCreatorAnnotatedAccessory1_s.clear();
+	CharacterCreatorAnnotatedAccessory2_s.clear();
+
+
 	CharacterCreatorAnnotatedTagHeadGear_s.clear();
 	CharacterCreatorAnnotatedTagHair_s.clear();
 	CharacterCreatorAnnotatedTagHead_s.clear();
@@ -1476,6 +1598,8 @@ void charactercreatorplus_refreshtype(void)
 	CharacterCreatorAnnotatedTagBody_s.clear();
 	CharacterCreatorAnnotatedTagLegs_s.clear();
 	CharacterCreatorAnnotatedTagFeet_s.clear();
+	CharacterCreatorAnnotatedTagAccessory1_s.clear();
+	CharacterCreatorAnnotatedTagAccessory2_s.clear();
 
 	// choose voice based on CCP type
 	pCCPVoiceSet = "";
@@ -1506,16 +1630,23 @@ void charactercreatorplus_refreshtype(void)
 	CharacterCreatorHair_s.insert(std::make_pair("None", pPartsPath));
 	CharacterCreatorEyeglasses_s.insert(std::make_pair("None", pPartsPath));
 	CharacterCreatorFacialHair_s.insert(std::make_pair("None", pPartsPath));
+	CharacterCreatorAccessory1_s.insert(std::make_pair("None", pPartsPath));
+	CharacterCreatorAccessory2_s.insert(std::make_pair("None", pPartsPath));
+
 	CharacterCreatorAnnotatedHeadGear_s.insert(std::make_pair("", "None"));
 	CharacterCreatorAnnotatedHair_s.insert(std::make_pair("", "None"));
 	CharacterCreatorAnnotatedEyeglasses_s.insert(std::make_pair("", "None"));
 	CharacterCreatorAnnotatedFacialHair_s.insert(std::make_pair("", "None"));
+	CharacterCreatorAnnotatedAccessory1_s.insert(std::make_pair("", "None"));
+	CharacterCreatorAnnotatedAccessory2_s.insert(std::make_pair("", "None"));
 
 	// ensure annotates and tags size matches
 	CharacterCreatorAnnotatedTagHeadGear_s.insert(std::make_pair("", ""));
 	CharacterCreatorAnnotatedTagHair_s.insert(std::make_pair("", ""));
 	CharacterCreatorAnnotatedTagEyeglasses_s.insert(std::make_pair("", ""));
 	CharacterCreatorAnnotatedTagFacialHair_s.insert(std::make_pair("", ""));
+	CharacterCreatorAnnotatedTagAccessory1_s.insert(std::make_pair("", ""));
+	CharacterCreatorAnnotatedTagAccessory2_s.insert(std::make_pair("", ""));
 
 	// free any old character objects
 	iCharObj = g.characterkitobjectoffset + 1;
@@ -1526,6 +1657,9 @@ void charactercreatorplus_refreshtype(void)
 	iCharObjFacialHair = g.characterkitobjectoffset + 6;
 	iCharObjLegs = g.characterkitobjectoffset + 7;
 	iCharObjFeet = g.characterkitobjectoffset + 8;
+	iCharObjAccessory1 = g.characterkitobjectoffset + 9;
+	iCharObjAccessory2 = g.characterkitobjectoffset + 10;
+
 	if (ObjectExist(iCharObj) == 1) DeleteObject(iCharObj);
 	if (ObjectExist(iCharObjHeadGear) == 1) DeleteObject(iCharObjHeadGear);
 	if (ObjectExist(iCharObjHair) == 1) DeleteObject(iCharObjHair);
@@ -1534,6 +1668,8 @@ void charactercreatorplus_refreshtype(void)
 	if (ObjectExist(iCharObjFacialHair) == 1) DeleteObject(iCharObjFacialHair);
 	if (ObjectExist(iCharObjLegs) == 1) DeleteObject(iCharObjLegs);
 	if (ObjectExist(iCharObjFeet) == 1) DeleteObject(iCharObjFeet);
+	if (ObjectExist(iCharObjAccessory1) == 1) DeleteObject(iCharObjAccessory1);
+	if (ObjectExist(iCharObjAccessory2) == 1) DeleteObject(iCharObjAccessory2);
 
 	// default body part choices
 	strcpy(cSelectedFeetFilter, "");
@@ -1546,6 +1682,8 @@ void charactercreatorplus_refreshtype(void)
 	strcpy(cSelectedBody, "");
 	strcpy(cSelectedLegs, "");
 	strcpy(cSelectedFeet, "");
+	strcpy(cSelectedAccessory1, "None");
+	strcpy(cSelectedAccessory2, "None");
 
 	// which legs part to use
 	strcpy(cSelectedLegsFilter, "");
@@ -1553,187 +1691,260 @@ void charactercreatorplus_refreshtype(void)
 
 	// scan for all character parts
 	cstr olddir_s = GetDir();
-	char pTempStr[260];
-	strcpy(pTempStr, "charactercreatorplus\\parts\\");
-	strcat(pTempStr, CCP_Type);
-	SetDir(pTempStr);
-	ChecklistForFiles();
-	charactercreatorplus_loadannotationlist();
-	
-	for (int c = 1; c <= ChecklistQuantity(); c++)
+	char pTempStr[1024];
+
+	//PE: Load parts avaiable from document folder.
+	for (int i = 0; i < 2; i++)
 	{
-		cStr tfile_s = Lower(ChecklistString(c));
-		if (tfile_s != "." && tfile_s != "..")
+		bool bActive = false;
+		if (i == 0)
 		{
-			char *find = NULL;
-			if (strcmp(Right(tfile_s.Get(), 10), "_color.dds") == 0)
+			strcpy(pTempStr, "charactercreatorplus\\parts\\");
+			strcat(pTempStr, CCP_Type);
+			SetDir(pTempStr);
+			bActive = true;
+		}
+		else
+		{
+			extern char szWriteDir[MAX_PATH];
+			extern char szBeforeChangeWriteDir[MAX_PATH];
+			//PE: WriteDir contain ducument folder and or remoteproject folder.
+			if (strlen(szWriteDir) > 0)
 			{
-				// base filename
-				char tmp[260];
-				strcpy(tmp, tfile_s.Get());
-				tmp[strlen(tmp) - 10] = 0; // remove _color.dds
-
-				// determine which list it goes into
-				if (pestrcasestr(tfile_s.Get(), " body "))
+				strcpy(pTempStr, szWriteDir);
+				strcat(pTempStr, "Files\\");
+				strcat(pTempStr, "charactercreatorplus\\parts\\");
+				strcat(pTempStr, CCP_Type);
+				if (PathExist(pTempStr))
 				{
-					CharacterCreatorBody_s.insert(std::make_pair(tmp, pPartsPath));
-					LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
-					if (pAnnotatedLabel)
-						CharacterCreatorAnnotatedBody_s.insert(std::make_pair(tmp, pAnnotatedLabel));
-					else
-						CharacterCreatorAnnotatedBody_s.insert(std::make_pair(tmp, tmp));
-					LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
-					if (pAnnotatedTagLabel)
-						CharacterCreatorAnnotatedTagBody_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
-					else
-						CharacterCreatorAnnotatedTagBody_s.insert(std::make_pair(tmp, ""));
+					SetDir(pTempStr);
+					bActive = true;
+				}
+				else
+					bActive = false;
+			}
+			//PE: szBeforeChangeWriteDir contain document folder if using remoteproject , needed ?
+			/*
+			if (strlen(szBeforeChangeWriteDir) > 0)
+			{
+				strcpy(pTempStr, szBeforeChangeWriteDir);
+				strcat(pTempStr, "Files\\");
+				strcat(pTempStr, "charactercreatorplus\\parts\\");
+				SetDir(pTempStr);
+				bActive = true;
+			}
+			*/
+		}
+		if (bActive)
+		{
+			ChecklistForFiles();
+			charactercreatorplus_loadannotationlist();
+			for (int c = 1; c <= ChecklistQuantity(); c++)
+			{
+				cStr tfile_s = Lower(ChecklistString(c));
+				if (tfile_s != "." && tfile_s != "..")
+				{
+					char* find = NULL;
+					if (strcmp(Right(tfile_s.Get(), 10), "_color.dds") == 0)
+					{
+						// base filename
+						char tmp[260];
+						strcpy(tmp, tfile_s.Get());
+						tmp[strlen(tmp) - 10] = 0; // remove _color.dds
 
-					bool bBodyFilterThisOut = false;
-					if (stricmp(CCP_Type, "zombie male") != NULL && stricmp(CCP_Type, "zombie female") != NULL)
-					{
-						if (tmp[strlen(tmp) - 1] != '1' && tmp[strlen(tmp) - 1] != 'a') bBodyFilterThisOut = true;
-					}
-					if (strlen(cSelectedBody) == 0 && bBodyFilterThisOut == false)
-					{
-						// for body, do we need no legs?
-						if (pAnnotatedTagLabel)
+						// determine which list it goes into
+						if (pestrcasestr(tfile_s.Get(), " body "))
 						{
-							if (strstr(pAnnotatedTagLabel, "No Legs") != NULL)
-							{
-								strcpy(cSelectedLegsFilter, "No Legs");
-								pOptionalLegsChoice = "01";
-							}
-						}
-						
-						// and this is the default body
-						strcpy(cSelectedBody, tmp);
-					}
-				}
-				else if (pestrcasestr(tfile_s.Get(), " feet "))
-				{
-					CharacterCreatorFeet_s.insert(std::make_pair(tmp, pPartsPath));
-					LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
-					if (pAnnotatedLabel)
-						CharacterCreatorAnnotatedFeet_s.insert(std::make_pair(tmp, pAnnotatedLabel));
-					else
-						CharacterCreatorAnnotatedFeet_s.insert(std::make_pair(tmp, tmp));
-					LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
-					if (pAnnotatedTagLabel)
-						CharacterCreatorAnnotatedTagFeet_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
-					else
-						CharacterCreatorAnnotatedTagFeet_s.insert(std::make_pair(tmp, ""));
-					if (strlen(cSelectedFeet) == 0) strcpy(cSelectedFeet, tmp);
-				}
-				else if (pestrcasestr(tfile_s.Get(), " hair "))
-				{
-					CharacterCreatorHair_s.insert(std::make_pair(tmp, pPartsPath));
-					LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
-					if (pAnnotatedLabel)
-						CharacterCreatorAnnotatedHair_s.insert(std::make_pair(tmp, pAnnotatedLabel));
-					else
-						CharacterCreatorAnnotatedHair_s.insert(std::make_pair(tmp, tmp));
-					LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
-					if (pAnnotatedTagLabel)
-						CharacterCreatorAnnotatedTagHair_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
-					else
-						CharacterCreatorAnnotatedTagHair_s.insert(std::make_pair(tmp, ""));
-					if (strlen(cSelectedHair) == 0) strcpy(cSelectedHair, tmp);
-				}
-				else if (pestrcasestr(tfile_s.Get(), " head "))
-				{
-					CharacterCreatorHead_s.insert(std::make_pair(tmp, pPartsPath));
-					LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
-					if (pAnnotatedLabel)
-						CharacterCreatorAnnotatedHead_s.insert(std::make_pair(tmp, pAnnotatedLabel));
-					else
-						CharacterCreatorAnnotatedHead_s.insert(std::make_pair(tmp, tmp));
-					LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
-					if (pAnnotatedTagLabel)
-						CharacterCreatorAnnotatedTagHead_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
-					else
-						CharacterCreatorAnnotatedTagHead_s.insert(std::make_pair(tmp, ""));
-					if (strlen(cSelectedHead) == 0) strcpy(cSelectedHead, tmp);
-				}
-				else if (pestrcasestr(tfile_s.Get(), " legs "))
-				{
-					CharacterCreatorLegs_s.insert(std::make_pair(tmp, pPartsPath));
-					LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
-					if (pAnnotatedLabel)
-						CharacterCreatorAnnotatedLegs_s.insert(std::make_pair(tmp, pAnnotatedLabel));
-					else
-						CharacterCreatorAnnotatedLegs_s.insert(std::make_pair(tmp, tmp));
-					LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
-					if (pAnnotatedTagLabel)
-						CharacterCreatorAnnotatedTagLegs_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
-					else
-						CharacterCreatorAnnotatedTagLegs_s.insert(std::make_pair(tmp, ""));
-
-					// if require no legs, always choose 01 for default
-					if (strlen(cSelectedLegs) == 0)
-					{
-						bool bLegsFilterThisOut = false;
-						if (stricmp(CCP_Type, "zombie male") != NULL && stricmp(CCP_Type, "zombie female") != NULL)
-						{
-							bLegsFilterThisOut = true;
-							if (strstr(pOptionalLegsChoice, "01") != NULL)
-							{
-								if (strlen(cSelectedLegs) == 0 && tmp[strlen(tmp) - 1] == '1') bLegsFilterThisOut = false;
-							}
+							CharacterCreatorBody_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedBody_s.insert(std::make_pair(tmp, pAnnotatedLabel));
 							else
+								CharacterCreatorAnnotatedBody_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagBody_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagBody_s.insert(std::make_pair(tmp, ""));
+
+							bool bBodyFilterThisOut = false;
+							if (stricmp(CCP_Type, "zombie male") != NULL && stricmp(CCP_Type, "zombie female") != NULL)
 							{
-								if (strlen(cSelectedLegs) == 0 && tmp[strlen(tmp) - 1] != '1') bLegsFilterThisOut = false;
+								if (tmp[strlen(tmp) - 1] != '1' && tmp[strlen(tmp) - 1] != 'a') bBodyFilterThisOut = true;
+							}
+							if (strlen(cSelectedBody) == 0 && bBodyFilterThisOut == false)
+							{
+								// for body, do we need no legs?
+								if (pAnnotatedTagLabel)
+								{
+									if (strstr(pAnnotatedTagLabel, "No Legs") != NULL)
+									{
+										strcpy(cSelectedLegsFilter, "No Legs");
+										pOptionalLegsChoice = "01";
+									}
+								}
+
+								// and this is the default body
+								strcpy(cSelectedBody, tmp);
 							}
 						}
-						if (bLegsFilterThisOut == false)
+						else if (pestrcasestr(tfile_s.Get(), " feet "))
 						{
-							strcpy(cSelectedLegs, tmp);
+							CharacterCreatorFeet_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedFeet_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedFeet_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagFeet_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagFeet_s.insert(std::make_pair(tmp, ""));
+							if (strlen(cSelectedFeet) == 0) strcpy(cSelectedFeet, tmp);
+						}
+						else if (pestrcasestr(tfile_s.Get(), " hair "))
+						{
+							CharacterCreatorHair_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedHair_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedHair_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagHair_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagHair_s.insert(std::make_pair(tmp, ""));
+							if (strlen(cSelectedHair) == 0) strcpy(cSelectedHair, tmp);
+						}
+						else if (pestrcasestr(tfile_s.Get(), " head "))
+						{
+							CharacterCreatorHead_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedHead_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedHead_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagHead_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagHead_s.insert(std::make_pair(tmp, ""));
+							if (strlen(cSelectedHead) == 0) strcpy(cSelectedHead, tmp);
+						}
+						else if (pestrcasestr(tfile_s.Get(), " legs "))
+						{
+							CharacterCreatorLegs_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedLegs_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedLegs_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagLegs_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagLegs_s.insert(std::make_pair(tmp, ""));
+
+							// if require no legs, always choose 01 for default
+							if (strlen(cSelectedLegs) == 0)
+							{
+								bool bLegsFilterThisOut = false;
+								if (stricmp(CCP_Type, "zombie male") != NULL && stricmp(CCP_Type, "zombie female") != NULL)
+								{
+									bLegsFilterThisOut = true;
+									if (strstr(pOptionalLegsChoice, "01") != NULL)
+									{
+										if (strlen(cSelectedLegs) == 0 && tmp[strlen(tmp) - 1] == '1') bLegsFilterThisOut = false;
+									}
+									else
+									{
+										if (strlen(cSelectedLegs) == 0 && tmp[strlen(tmp) - 1] != '1') bLegsFilterThisOut = false;
+									}
+								}
+								if (bLegsFilterThisOut == false)
+								{
+									strcpy(cSelectedLegs, tmp);
+								}
+							}
+						}
+						else if (pestrcasestr(tfile_s.Get(), " headgear "))
+						{
+							CharacterCreatorHeadGear_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedHeadGear_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedHeadGear_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagHeadGear_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagHeadGear_s.insert(std::make_pair(tmp, ""));
+							if (strlen(cSelectedHeadGear) == 0) strcpy(cSelectedHeadGear, tmp);
+						}
+						else if (pestrcasestr(tfile_s.Get(), " facialhair "))
+						{
+							CharacterCreatorFacialHair_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedFacialHair_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedFacialHair_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagFacialHair_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagFacialHair_s.insert(std::make_pair(tmp, ""));
+							if (strlen(cSelectedFacialHair) == 0) strcpy(cSelectedFacialHair, tmp);
+						}
+						else if (pestrcasestr(tfile_s.Get(), " eyeglasses "))
+						{
+							CharacterCreatorEyeglasses_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedEyeglasses_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedEyeglasses_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagEyeglasses_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagEyeglasses_s.insert(std::make_pair(tmp, ""));
+							if (strlen(cSelectedEyeglasses) == 0) strcpy(cSelectedEyeglasses, tmp);
+						}
+						else if (pestrcasestr(tfile_s.Get(), " accessory1 "))
+						{
+							CharacterCreatorAccessory1_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedAccessory1_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedAccessory1_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagAccessory1_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagAccessory1_s.insert(std::make_pair(tmp, ""));
+							if (strlen(cSelectedAccessory1) == 0) strcpy(cSelectedAccessory1, tmp);
+						}
+						else if (pestrcasestr(tfile_s.Get(), " accessory2 "))
+						{
+							CharacterCreatorAccessory2_s.insert(std::make_pair(tmp, pPartsPath));
+							LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
+							if (pAnnotatedLabel)
+								CharacterCreatorAnnotatedAccessory2_s.insert(std::make_pair(tmp, pAnnotatedLabel));
+							else
+								CharacterCreatorAnnotatedAccessory2_s.insert(std::make_pair(tmp, tmp));
+							LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
+							if (pAnnotatedTagLabel)
+								CharacterCreatorAnnotatedTagAccessory2_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
+							else
+								CharacterCreatorAnnotatedTagAccessory2_s.insert(std::make_pair(tmp, ""));
+							if (strlen(cSelectedAccessory2) == 0) strcpy(cSelectedAccessory2, tmp);
 						}
 					}
-				}
-				else if (pestrcasestr(tfile_s.Get(), " headgear "))
-				{
-					CharacterCreatorHeadGear_s.insert(std::make_pair(tmp, pPartsPath));
-					LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
-					if (pAnnotatedLabel)
-						CharacterCreatorAnnotatedHeadGear_s.insert(std::make_pair(tmp, pAnnotatedLabel));
-					else
-						CharacterCreatorAnnotatedHeadGear_s.insert(std::make_pair(tmp, tmp));
-					LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
-					if (pAnnotatedTagLabel)
-						CharacterCreatorAnnotatedTagHeadGear_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
-					else
-						CharacterCreatorAnnotatedTagHeadGear_s.insert(std::make_pair(tmp, ""));
-					if (strlen(cSelectedHeadGear) == 0) strcpy(cSelectedHeadGear, tmp);
-				}
-				else if (pestrcasestr(tfile_s.Get(), " facialhair "))
-				{
-					CharacterCreatorFacialHair_s.insert(std::make_pair(tmp, pPartsPath));
-					LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
-					if (pAnnotatedLabel)
-						CharacterCreatorAnnotatedFacialHair_s.insert(std::make_pair(tmp, pAnnotatedLabel));
-					else
-						CharacterCreatorAnnotatedFacialHair_s.insert(std::make_pair(tmp, tmp));
-					LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
-					if (pAnnotatedTagLabel)
-						CharacterCreatorAnnotatedTagFacialHair_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
-					else
-						CharacterCreatorAnnotatedTagFacialHair_s.insert(std::make_pair(tmp, ""));
-					if (strlen(cSelectedFacialHair) == 0) strcpy(cSelectedFacialHair, tmp);
-				}
-				else if (pestrcasestr(tfile_s.Get(), " eyeglasses "))
-				{
-					CharacterCreatorEyeglasses_s.insert(std::make_pair(tmp, pPartsPath));
-					LPSTR pAnnotatedLabel = charactercreatorplus_findannotation(tmp);
-					if (pAnnotatedLabel)
-						CharacterCreatorAnnotatedEyeglasses_s.insert(std::make_pair(tmp, pAnnotatedLabel));
-					else
-						CharacterCreatorAnnotatedEyeglasses_s.insert(std::make_pair(tmp, tmp));
-					LPSTR pAnnotatedTagLabel = charactercreatorplus_findannotationtag(tmp);
-					if (pAnnotatedTagLabel)
-						CharacterCreatorAnnotatedTagEyeglasses_s.insert(std::make_pair(tmp, pAnnotatedTagLabel));
-					else
-						CharacterCreatorAnnotatedTagEyeglasses_s.insert(std::make_pair(tmp, ""));
-					if (strlen(cSelectedEyeglasses) == 0) strcpy(cSelectedEyeglasses, tmp);
 				}
 			}
 		}
@@ -1742,7 +1953,7 @@ void charactercreatorplus_refreshtype(void)
 
 	// if have default selection, set the choices to those
 	int iBase = 0;
-	std::array<std::string, 8>* storage = nullptr;
+	std::array<std::string, 10>* storage = nullptr;
 	if (stricmp(CCP_Type, "adult male") == NULL)
 	{
 		iBase = 1;
@@ -1815,7 +2026,7 @@ void charactercreatorplus_refreshtype(void)
 		// 5: Body
 		// 6: Legs
 		// 7: Feet
-		std::array<std::string, 8>& parts = *storage;
+		std::array<std::string, 10>& parts = *storage;
 		strcpy(cSelectedHeadGear, parts[0].c_str());
 		strcpy(cSelectedHair, parts[1].c_str());
 		strcpy(cSelectedHead, parts[2].c_str());
@@ -1824,6 +2035,9 @@ void charactercreatorplus_refreshtype(void)
 		strcpy(cSelectedBody, parts[5].c_str());
 		strcpy(cSelectedLegs, parts[6].c_str());
 		strcpy(cSelectedFeet, parts[7].c_str());
+		strcpy(cSelectedAccessory1, parts[8].c_str());
+		strcpy(cSelectedAccessory2, parts[9].c_str());
+	
 	}
 
 	charactercreatorplus_initautoswaps();
@@ -1870,6 +2084,8 @@ void charactercreatorplus_refreshtype(void)
 	int iCharFacialHairTexture = g.charactercreatorEditorImageoffset + 51;
 	int iCharLegsTexture = g.charactercreatorEditorImageoffset + 61;
 	int iCharFeetTexture = g.charactercreatorEditorImageoffset + 71;
+	int iCharAccessory1Texture = g.charactercreatorEditorImageoffset + 81;
+	int iCharAccessory2Texture = g.charactercreatorEditorImageoffset + 91;
 
 	// load default skin type texture IC1a
 	std::map<std::string, std::string>::iterator it = CharacterCreatorAnnotatedTagHead_s.begin();
@@ -1912,7 +2128,12 @@ void charactercreatorplus_refreshtype(void)
 	char pDefaultGlassesVariant[32] = { 0 };
 	char pDefaultFacialHair[32] = { 0 };
 	char pDefaultFacialHairVariant[32] = { 0 };
-	
+
+	char pDefaultAccessory1[32] = { 0 };
+	char pDefaultAccessory2[32] = { 0 };
+	char pDefaultAccessory1Variant[32] = { 0 };
+	char pDefaultAccessory2Variant[32] = { 0 };
+
 	// Need to add default headgear, glasses and facial hair.
 	iBase = 0;
 	if (stricmp(CCP_Type, "adult male") == NULL) iBase = 1;
@@ -1945,7 +2166,7 @@ void charactercreatorplus_refreshtype(void)
 	else
 	{
 		// Instead of using defaults, use the users previous choice for this base type.
-		std::array<std::string, 8>& parts = *storage;
+		std::array<std::string, 10>& parts = *storage;
 		charactercreatorplus_extractpartnumberandvariation(parts[0].c_str(), pDefaultHeadgear, pDefaultHeadgearVariant);
 		charactercreatorplus_extractpartnumberandvariation(parts[1].c_str(), pDefaultHair, pDefaultHairVariant);
 		charactercreatorplus_extractpartnumberandvariation(parts[2].c_str(), pDefaultHead, pDefaultHeadVariant);
@@ -1954,10 +2175,12 @@ void charactercreatorplus_refreshtype(void)
 		charactercreatorplus_extractpartnumberandvariation(parts[5].c_str(), pDefaultBody, pDefaultBodyVariant);
 		charactercreatorplus_extractpartnumberandvariation(parts[6].c_str(), pDefaultLegs, pDefaultLegsVariant);
 		charactercreatorplus_extractpartnumberandvariation(parts[7].c_str(), pDefaultFeet, pDefaultFeetVariant);
+		charactercreatorplus_extractpartnumberandvariation(parts[8].c_str(), pDefaultAccessory1, pDefaultAccessory1Variant);
+		charactercreatorplus_extractpartnumberandvariation(parts[9].c_str(), pDefaultAccessory2, pDefaultAccessory2Variant);
 	}
 
 	// load all body parts
-	for (int iPartID = 0; iPartID < 8; iPartID++)
+	for (int iPartID = 0; iPartID < 10; iPartID++)
 	{
 		// work out which part
 		int iThisObj = 0;
@@ -2003,6 +2226,34 @@ void charactercreatorplus_refreshtype(void)
 			else
 			{
 				iThisObj = iCharObjEyeglasses; iThisTexture = iCharEyeglassesTexture; pPartName = ""; pPartNum = ""; pPartNumVariant = "";
+			}
+		}
+		if (iPartID == 8)
+		{
+			if (storage)
+			{
+				char* pAccessory = "";
+				if (strlen(pDefaultAccessory1) > 0)
+					pAccessory = "accessory1";
+				iThisObj = iCharObjAccessory1; iThisTexture = iCharAccessory1Texture; pPartName = pAccessory; pPartNum = pDefaultAccessory1; pPartNumVariant = pDefaultAccessory1Variant;
+			}
+			else
+			{
+				iThisObj = iCharObjAccessory1; iThisTexture = iCharAccessory1Texture; pPartName = ""; pPartNum = ""; pPartNumVariant = "";
+			}
+		}
+		if (iPartID == 9)
+		{
+			if (storage)
+			{
+				char* pAccessory = "";
+				if (strlen(pDefaultAccessory2) > 0)
+					pAccessory = "accessory2";
+				iThisObj = iCharObjAccessory1; iThisTexture = iCharAccessory2Texture; pPartName = pAccessory; pPartNum = pDefaultAccessory2; pPartNumVariant = pDefaultAccessory2Variant;
+			}
+			else
+			{
+				iThisObj = iCharObjAccessory2; iThisTexture = iCharAccessory2Texture; pPartName = ""; pPartNum = ""; pPartNumVariant = "";
 			}
 		}
 		if (iPartID == 5) 
@@ -2081,6 +2332,8 @@ void charactercreatorplus_refreshtype(void)
 	if ( ObjectExist(iCharObjHair) ) WickedCall_RemoveObject( GetObjectData(iCharObjHair) );
 	if ( ObjectExist(iCharObjEyeglasses) ) WickedCall_RemoveObject( GetObjectData(iCharObjEyeglasses) );
 	if ( ObjectExist(iCharObjFacialHair) ) WickedCall_RemoveObject( GetObjectData(iCharObjFacialHair) );
+	if (ObjectExist(iCharObjAccessory1)) WickedCall_RemoveObject(GetObjectData(iCharObjAccessory1));
+	if (ObjectExist(iCharObjAccessory2)) WickedCall_RemoveObject(GetObjectData(iCharObjAccessory2));
 
 	// meshes are useless once they have been stolen from (preload system allows fresh loading to be near instant however)
 	if (ObjectExist(iCharObjHeadGear) == 1)
@@ -2117,6 +2370,23 @@ void charactercreatorplus_refreshtype(void)
 		SetObjectCull(iCharObjFacialHair, 0);
 		StealMeshesFromObject(iCharObj, iCharObjFacialHair);
 		DeleteObject(iCharObjFacialHair);
+	}
+
+	if (ObjectExist(iCharObjAccessory1) == 1)
+	{
+		//SetObjectCull(iCharObjAccessory1, 0);
+		//DisableObjectZWriteEx(iCharObjAccessory1, true);
+		//SetObjectTransparency(iCharObjAccessory1, 2);
+		StealMeshesFromObject(iCharObj, iCharObjAccessory1);
+		DeleteObject(iCharObjAccessory1);
+	}
+	if (ObjectExist(iCharObjAccessory2) == 1)
+	{
+		//SetObjectCull(iCharObjAccessory2, 0);
+		//DisableObjectZWriteEx(iCharObjAccessory2, true);
+		//SetObjectTransparency(iCharObjAccessory2, 2);
+		StealMeshesFromObject(iCharObj, iCharObjAccessory2);
+		DeleteObject(iCharObjAccessory2);
 	}
 
 	// as character parts have no animations, wipe out ones they do have
@@ -2378,7 +2648,7 @@ bool charactercreatorplus_savecharacterentity ( int iCharObj, LPSTR pOptionalDBO
 		if ( cstr(Lower(Left(line_s.Get(),11))) == "ccpassembly" )
 		{
 			cstr pCCPAssemblyString = "";
-			for (int partscan = 0; partscan < 8; partscan++)
+			for (int partscan = 0; partscan < 10; partscan++)
 			{
 				char pTrunc[260];
 				if (partscan == 0) strcpy(pTrunc, cSelectedHeadGear);
@@ -2395,10 +2665,13 @@ bool charactercreatorplus_savecharacterentity ( int iCharObj, LPSTR pOptionalDBO
 				if (partscan == 5) strcpy(pTrunc, cSelectedBody);
 				if (partscan == 6) strcpy(pTrunc, cSelectedLegs);
 				if (partscan == 7) strcpy(pTrunc, cSelectedFeet);
+				if (partscan == 8) strcpy(pTrunc, cSelectedAccessory1);
+				if (partscan == 9) strcpy(pTrunc, cSelectedAccessory2);
+
 				if (stricmp(pTrunc, "none") != NULL)
 				{
 					pCCPAssemblyString += pTrunc;
-					if (partscan < 7) pCCPAssemblyString += ",";
+					if (partscan < 9) pCCPAssemblyString += ",";
 				}
 			}
 			WriteString ( 2, cstr(cstr("ccpassembly      = ") + pCCPAssemblyString).Get() );
@@ -2758,6 +3031,10 @@ void characterkitplus_makeMultiplayerCharacterCreatorAvatar ( void )
 	iCharObjFacialHair = g.characterkitobjectoffset + 6;
 	iCharObjLegs = g.characterkitobjectoffset + 7;
 	iCharObjFeet = g.characterkitobjectoffset + 8;
+	iCharObjAccessory1 = g.characterkitobjectoffset + 9;
+	iCharObjAccessory2 = g.characterkitobjectoffset + 10;
+
+
 	strcpy(cSelectedLegsFilter, "");
 	strcpy(cSelectedFeetFilter, "");
 	strcpy(cSelectedICCode, "IC1a");
@@ -2769,6 +3046,9 @@ void characterkitplus_makeMultiplayerCharacterCreatorAvatar ( void )
 	strcpy(cSelectedBody, "None");
 	strcpy(cSelectedLegs, "None");
 	strcpy(cSelectedFeet, "None");
+	strcpy(cSelectedAccessory1, "None");
+	strcpy(cSelectedAccessory2, "None");
+	
 	char pICTag[MAX_PATH];
 	strcpy(pICTag, "IC1a");
 	char pBasePath[MAX_PATH];
@@ -2824,6 +3104,8 @@ void characterkitplus_makeMultiplayerCharacterCreatorAvatar ( void )
 			if (strstr(pPartName, "body") != 0) strcpy(cSelectedBody, pPartName);
 			if (strstr(pPartName, "legs") != 0) strcpy(cSelectedLegs, pPartName);
 			if (strstr(pPartName, "feet") != 0) strcpy(cSelectedFeet, pPartName);
+			if (strstr(pPartName, "accessory1") != 0) strcpy(cSelectedAccessory1, pPartName);
+			if (strstr(pPartName, "accessory2") != 0) strcpy(cSelectedAccessory2, pPartName);
 
 			// prepare to get next one
 			if (bLastItem == false)
@@ -3084,7 +3366,7 @@ void charactercreatorplus_imgui_v3(void)
 		{
 			for (int b = 0; b < 32; b++)
 			{
-				for (int i = 0; i < 8; i++)
+				for (int i = 0; i < 10; i++)
 				{
 					for (int a = 0; a < MAXPARTICONS; a++)
 						g_iPartsIconsIDs[b][i][a] = -1;
@@ -3515,16 +3797,17 @@ void charactercreatorplus_imgui_v3(void)
 				char* combo_annotated_buffer = NULL;
 				int part_number = 0;
 
-				int ccp_part_icons = 8;
-				int ccp_part_icons_columns = 4;
+				int ccp_part_icons = 10;
+				int ccp_part_icons_columns = 5;
 				float entity_w = ImGui::GetContentRegionAvailWidth() - 10.0f;
 				float fSpacer = 0.0f;
 				//New icons.
 				float ccp_part_image_size = entity_w / (float)ccp_part_icons_columns;
 				ccp_part_image_size -= ((2.0f) * ccp_part_icons_columns) - 2.0f;
-
-				int ccp_part_images[] = { CCP_HEAD, CCP_HAIR, CCP_BEARD, CCP_HAT, CCP_GLASSES, CCP_BODY, CCP_LEGS, CCP_FEET };
-				int ccp_part_order[] =  { 2       ,1        ,4         ,0       ,3           ,5        ,6        ,7         };
+				
+				//PE: CHECK CCP_ACCESSORY1
+				int ccp_part_images[] = { CCP_HEAD, CCP_HAIR, CCP_BEARD, CCP_HAT, CCP_GLASSES, CCP_BODY, CCP_LEGS, CCP_FEET,CCP_ACCESSORY1,CCP_ACCESSORY2 };
+				int ccp_part_order[] =  { 2       ,1        ,4         ,0       ,3           ,5        ,6        ,7		,8		,9 };
 				cstr ccp_part_tooltip[] = {
 					"Head",
 					"Hair",
@@ -3533,7 +3816,10 @@ void charactercreatorplus_imgui_v3(void)
 					"Wearing",
 					"Body",
 					"Legs",
-					"Feet" };
+					"Feet",
+					"Accessory1",
+					"Accessory2"
+				};
 
 				if (ccp_part_selection < 0 || ccp_part_selection >= ccp_part_icons) ccp_part_selection = 0;
 
@@ -3635,6 +3921,32 @@ void charactercreatorplus_imgui_v3(void)
 					combo_annotated_buffer = pAnnotatedLabel;
 					part_number = part_loop;
 				}
+
+				if (part_loop == 8)
+				{
+					CharacterCreatorCurrent_s = CharacterCreatorAccessory1_s;
+					CharacterCreatorCurrentAnnotated_s = CharacterCreatorAnnotatedAccessory1_s;
+					CharacterCreatorCurrentAnnotatedTag_s = CharacterCreatorAnnotatedTagAccessory1_s;
+					field_name = "Accessory";
+					LPSTR pAnnotatedLabel = "None";
+					if (strnicmp(cSelectedAccessory1, "None", 4) != NULL) pAnnotatedLabel = charactercreatorplus_findannotation(cSelectedAccessory1);
+					combo_buffer = cSelectedAccessory1;
+					combo_annotated_buffer = pAnnotatedLabel;
+					part_number = part_loop;
+				}
+				if (part_loop == 9)
+				{
+					CharacterCreatorCurrent_s = CharacterCreatorAccessory2_s;
+					CharacterCreatorCurrentAnnotated_s = CharacterCreatorAnnotatedAccessory2_s;
+					CharacterCreatorCurrentAnnotatedTag_s = CharacterCreatorAnnotatedTagAccessory2_s;
+					field_name = "Accessory";
+					LPSTR pAnnotatedLabel = "None";
+					if (strnicmp(cSelectedAccessory2, "None", 4) != NULL) pAnnotatedLabel = charactercreatorplus_findannotation(cSelectedAccessory2);
+					combo_buffer = cSelectedAccessory2;
+					combo_annotated_buffer = pAnnotatedLabel;
+					part_number = part_loop;
+				}
+
 				if (part_loop == 4)
 				{
 					CharacterCreatorCurrent_s = CharacterCreatorFacialHair_s;
@@ -3785,14 +4097,18 @@ void charactercreatorplus_imgui_v3(void)
 					static float fCWidth = 0.0;
 					float partsheight;
 
-					int rows = CharacterCreatorCurrent_s.size() / 4;
+					int rows = CharacterCreatorCurrent_s.size() / 5;
 					if (rows * 4 != CharacterCreatorCurrent_s.size())
 						rows += 1;
 					if (rows > 3) rows = 3;
 
 					partsheight = 60.0f * rows;
-					partsheight = ImGui::GetContentRegionAvail().y / 11 * rows;
-					
+					//partsheight = ImGui::GetContentRegionAvail().y / 11 * rows;
+					if(rows == 1)
+						partsheight = ImGui::GetContentRegionAvail().y / 9.5f * rows;
+					else
+						partsheight = ImGui::GetContentRegionAvail().y / 10.5f * rows;
+
 					ImGui::BeginChild("##CCP-Parts-Child", ImVec2(ImGui::GetContentRegionAvail().x, partsheight), false, iGenralWindowsFlags | ImGuiWindowFlags_AlwaysVerticalScrollbar);
 					ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 
@@ -4539,6 +4855,10 @@ int charactercreatorplus_getcategoryindex(char* category)
 		return 6;
 	else if (strcmp(category, "Feet") == NULL)
 		return 7;
+	else if (strcmp(category, "Accessory1") == NULL)
+		return 8;
+	else if (strcmp(category, "Accessory2") == NULL)
+		return 9;
 	else return -1;
 }
 
@@ -4566,6 +4886,8 @@ void charactercreatorplus_storeautoswapdata(AutoSwapData* pData)
 		case 5: break; // None needed (yet).
 		case 6: break; // None needed (yet).
 		case 7: break; // None needed (yet).
+		case 8: break; // None needed (yet).
+		case 9: break; // None needed (yet).
 		default:break; 
 		}
 	}
@@ -4605,6 +4927,12 @@ void charactercreatorplus_performautoswap(int part)
 		break;
 	case 7: sPartToSwap = cSelectedFeet;
 		pAnnotationData = &CharacterCreatorAnnotatedLegs_s;
+		break;
+	case 8: sPartToSwap = cSelectedAccessory1;
+		pAnnotationData = &CharacterCreatorAnnotatedAccessory1_s;
+		break;
+	case 9: sPartToSwap = cSelectedAccessory2;
+		pAnnotationData = &CharacterCreatorAnnotatedAccessory2_s;
 		break;
 	}
 
@@ -4684,6 +5012,12 @@ void charactercreatorplus_performautoswap(int part)
 			break;
 		case 7: pPartToSwap = cSelectedFeet;
 			pAnnotationData = &CharacterCreatorAnnotatedLegs_s;
+			break;
+		case 8: pPartToSwap = cSelectedAccessory1;
+			pAnnotationData = &CharacterCreatorAnnotatedAccessory1_s;
+			break;
+		case 9: pPartToSwap = cSelectedAccessory2;
+			pAnnotationData = &CharacterCreatorAnnotatedAccessory2_s;
 			break;
 		}
 
@@ -4787,8 +5121,11 @@ void charactercreatorplus_restoreswappedparts()
 			break;
 		case 7: pPartToSwap = cSelectedFeet;
 			break;
+		case 8: pPartToSwap = cSelectedAccessory1;
+			break;
+		case 9: pPartToSwap = cSelectedAccessory2;
+			break;
 		}
-
 		strcpy(pPartToSwap, g_previousAutoSwap->swappedPartNames[i].c_str());
 		g_iPartsThatNeedReloaded[g_previousAutoSwap->requiredSwapCategories[i]] = 1;
 	}

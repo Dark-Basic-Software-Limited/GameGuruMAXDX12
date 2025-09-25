@@ -31,6 +31,7 @@ struct envProbeItem
 	XMFLOAT4 rotation;
 	XMFLOAT3 size;
 	int used;
+	float brightness;
 };
 
 void RandomSeed( uint32_t seed );
@@ -253,7 +254,7 @@ void GGTerrain_WindowResized();
 
 void GGTerrain_ClearEnvProbeList(void);
 void GGTerrain_InstantEnvProbeRefresh(int iCoolDownIndex);
-void GGTerrain_AddEnvProbeList(float x, float y, float z, float range, float quatx, float quaty, float quatz, float quatw, float sx, float sy, float sz);
+void GGTerrain_AddEnvProbeList(float x, float y, float z, float range, float quatx, float quaty, float quatz, float quatw, float sx, float sy, float sz, float brightness = 1.0f);
 
 void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::CommandList cmd, bool bRenderTargetFocus ); // updates chunks and virtual texture, must not be called from a render pass
 void GGTerrain_Update_EmptyLevel(float playerX, float playerY, float playerZ, wiGraphics::CommandList cmd);

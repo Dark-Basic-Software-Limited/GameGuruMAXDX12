@@ -263,8 +263,15 @@ void decal_load(void)
 			t.decal[t.decalid].newparticle.bParticle_Looping_Animation = false;
 			t.decal[t.decalid].newparticle.bWPE = true;
 			//PE: Preload some effects.
-			void preload_wicked_particle_effect(newparticletype * pParticle, int decal_id);
-			preload_wicked_particle_effect(&t.decal[t.decalid].newparticle, t.decalid);
+			bool preload_wicked_particle_effect(newparticletype * pParticle, int decal_id);
+			if (!preload_wicked_particle_effect(&t.decal[t.decalid].newparticle, t.decalid))
+			{
+				//PE: Bad emitter. continue without WPE.
+				char debug[MAX_PATH];
+				sprintf(debug, "WPE Error Non Burst Decal: - %s", pAbsPathToParticle);
+				timestampactivity(0, debug);
+				t.decal[t.decalid].newparticle.bWPE = false;
+			}
 		}
 	}
 	if (!t.decal[t.decalid].newparticle.bWPE)
@@ -306,7 +313,7 @@ void decal_load(void)
 void decal_scaninallref ( void )
 {
 	t.decalid = 1;
-	LPSTR pRootDir = GetDir();
+	cstr pRootDir = GetDir();
 	for (int iDecalsInTwoFolders = 0; iDecalsInTwoFolders < 2; iDecalsInTwoFolders++)
 	{
 		char pathToUse[MAX_PATH];
@@ -318,7 +325,7 @@ void decal_scaninallref ( void )
 		if (iDecalsInTwoFolders == 1)
 		{
 			// writable folder - switch to it
-			strcpy(pathToUse, pRootDir);
+			strcpy(pathToUse, pRootDir.Get());
 			GG_GetRealPath(pathToUse, 0);
 			SetDir(pathToUse);
 		}
@@ -361,7 +368,7 @@ void decal_scaninallref ( void )
 	}
 
 	// and restore root folder
-	SetDir(pRootDir);
+	SetDir(pRootDir.Get());
 
 	// report total number of decals
 	g.decalmax = t.decalid - 1;
@@ -375,7 +382,7 @@ void decal_scaninall_findnewlyaddedgun (void)
 	int storedecalid = t.decalid;
 
 	// Scan entire decals folder (again)
-	LPSTR pRootDir = GetDir();
+	cstr pRootDir = GetDir();
 	for (int iDecalsInTwoFolders = 0; iDecalsInTwoFolders < 2; iDecalsInTwoFolders++)
 	{
 		char pathToUse[MAX_PATH];
@@ -387,7 +394,7 @@ void decal_scaninall_findnewlyaddedgun (void)
 		if (iDecalsInTwoFolders == 1)
 		{
 			// writable folder - switch to it
-			strcpy(pathToUse, pRootDir);
+			strcpy(pathToUse, pRootDir.Get());
 			GG_GetRealPath(pathToUse, 0);
 			SetDir(pathToUse);
 		}
@@ -433,7 +440,7 @@ void decal_scaninall_findnewlyaddedgun (void)
 	}
 
 	// and restore root folder
-	SetDir(pRootDir);
+	SetDir(pRootDir.Get());
 
 	// report total number
 	t.strwork = ""; t.strwork = t.strwork + "new total decals=" + Str(g.decalmax);

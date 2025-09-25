@@ -63,7 +63,7 @@ bool bJustRederedScreenEditor = false;
 int g_iRefreshLibraryFolders = 0;
 int g_iRefreshLibraryFoldersAfterDelay = 0;
 bool g_bCommonAssetsLoadOnce = true;
-
+char statusbar[512];
 #ifdef GGMAXEPIC
 // No discounts mentioned in Epic Store listing for now
 #else
@@ -498,6 +498,8 @@ extern int g_iActiveMonitors;
 #ifdef WICKEDENGINE
 bool Visuals_Tools_Window = false;
 bool Weather_Tools_Window = false;
+bool Game_Settings_Window = false;
+bool Logic_Settings_Window = false;
 int iRestoreLastWindow = 0;
 std::vector<sRubberBandType> vEntityLockedList;
 #define MAXGROUPSLISTS 100
@@ -1119,6 +1121,7 @@ void mapeditorexecutable_init ( void )
 	LoadImage("editors\\uiv3\\weather-rain.png", ENV_RAIN);
 	LoadImage("editors\\uiv3\\weather-snow.png", ENV_SNOW);
 	LoadImage("editors\\uiv3\\weather.png", ENV_WEATHER);
+	LoadImage("editors\\uiv3\\tool-gamesettings.png", TOOL_GAME_SETTINGS);
 
 	LoadImage("editors\\uiv3\\logic.png", TOOL_LOGIC);// shooter.png", TOOL_SHOOTER);
 	
@@ -1517,7 +1520,7 @@ int back_iLastResolutionWidth = 0;
 int back_iLastResolutionHeight = 0;
 bool bFakeStandaloneTest = false;
 int iTriggerGrassTreeUpdate = 0;
-
+int iMaxZeroHeight = 0;
 bool commonexecutable_loop_for_game(void)
 {
 #ifdef OPTICK_ENABLE
@@ -1542,10 +1545,25 @@ bool commonexecutable_loop_for_game(void)
 		if (iTriggerGrassTreeUpdate == 5)
 		{
 			float height = 0;
-			if (!GGTerrain_GetHeight(CameraPositionX(), CameraPositionZ(), &height, 0, 0))
+			if (t.visuals.bEnableEmptyLevelMode)
 			{
-				//Height not available in this are ?.
-				iTriggerGrassTreeUpdate++;
+				//PE: Just give it 5 frame on empty levels.
+				if (iMaxZeroHeight++ < 6)
+				{
+					iTriggerGrassTreeUpdate++;
+				}
+				else
+				{
+					iMaxZeroHeight = 0;
+				}
+			}
+			else
+			{
+				if (!GGTerrain_GetHeight(CameraPositionX(), CameraPositionZ(), &height, 0, 0))
+				{
+					//Height not available in this are ?.
+					iTriggerGrassTreeUpdate++;
+				}
 			}
 		}
 		if (iTriggerGrassTreeUpdate == 1)
@@ -1560,6 +1578,10 @@ bool commonexecutable_loop_for_game(void)
 			{
 				ggterrain_extra_params.iUpdateGrass = 1;
 				ggterrain_extra_params.iUpdateTrees = 1;
+				//PE: Also update probe after terrain is done.
+				extern bool g_bLightProbeScaleChanged;
+				g_bLightProbeScaleChanged = true;
+
 			}
 		}
 		iTriggerGrassTreeUpdate--;
@@ -1596,6 +1618,9 @@ bool commonexecutable_loop_for_game(void)
 		wiScene::GetCamera().CreatePerspective((float)master.masterrenderer.GetLogicalWidth(), (float)master.masterrenderer.GetLogicalHeight(), t.visuals.CameraNEAR_f, t.visuals.CameraFAR_f, fCameraFov);
 		wiScene::GetCamera().SetDirty(true);
 	}
+
+	void RenderPreviewEmitter(void);
+	RenderPreviewEmitter();
 
 	if (iLaunchAfterSync == 201)
 	{
@@ -1660,6 +1685,15 @@ bool commonexecutable_loop_for_game(void)
 		int iGridObj = g.ebeobjectbankoffset + 1000;
 		if (ObjectExist(iGridObj))
 			DeleteObject(iGridObj);
+		extern uint32_t PreviewWPERoot;
+		if (PreviewWPERoot != 0)
+		{
+			//PE: Delete effects.
+			void DeleteEmitterEffects(uint32_t root);
+			DeleteEmitterEffects(PreviewWPERoot);
+			PreviewWPERoot = 0;
+		}
+
 		bImGuiInTestGame = true;
 		g_bDisableQuitFlag = true;
 		extern bool	g_bDrawSpritesFirst;
@@ -1851,7 +1885,7 @@ void mapeditorexecutable_full_folder_refresh(void)
 		bTreeViewInitInNextFrame = true;
 
 		// Go through all media folders
-		LPSTR pOld = GetDir();
+		cstr pOld = GetDir();
 		for (int iMediaFolderType = 0; iMediaFolderType <= 6; iMediaFolderType++)
 		{
 			// folders to check
@@ -1867,7 +1901,7 @@ void mapeditorexecutable_full_folder_refresh(void)
 			// use GetMainEntityList to add root, writables and project folder files
 			strcpy(cFullWritePath, pMediaFolderPattern);
 			GG_GetRealPath(cFullWritePath, 1);
-			cStr CurrentPath = cStr(pOld) + cStr("\\") + cStr(pMediaFolderPattern);
+			cStr CurrentPath = pOld + cStr("\\") + cStr(pMediaFolderPattern);
 			if (strnicmp(CurrentPath.Get(), cFullWritePath, CurrentPath.Len()) == 0)
 			{
 				// same folder means no separate writables area, i.e. GG_GetRealPath create mode failed
@@ -1889,7 +1923,7 @@ void mapeditorexecutable_full_folder_refresh(void)
 				}
 
 				// root folder
-				SetDir(pOld);
+				SetDir(pOld.Get());
 				GetMainEntityList(pMediaFolderPattern, "", pLastFolder, "", false, iMediaFolderType);
 
 				extern char szBeforeChangeWriteDir[MAX_PATH];
@@ -1904,13 +1938,13 @@ void mapeditorexecutable_full_folder_refresh(void)
 					GetMainEntityList(pMediaFolderPattern, "", pLastFolder, "", false, iMediaFolderType);
 				}
 
-				SetDir(pOld);
+				SetDir(pOld.Get());
 
 			}
 		}
 
 		//Sort folder entrys.
-		SetDir(pOld);
+		SetDir(pOld.Get());
 		cFolderItem *pNewFolder = (cFolderItem *)&MainEntityList;
 		cFolderItem *m_pfirstFolder = NULL;
 		int mc = 0;
@@ -2433,6 +2467,14 @@ void mapeditorexecutable_loop(void)
 				int iGridObj = g.ebeobjectbankoffset + 1000;
 				if (ObjectExist(iGridObj))
 					DeleteObject(iGridObj);
+				extern uint32_t PreviewWPERoot;
+				if (PreviewWPERoot != 0)
+				{
+					//PE: Delete effects.
+					void DeleteEmitterEffects(uint32_t root);
+					DeleteEmitterEffects(PreviewWPERoot);
+					PreviewWPERoot = 0;
+				}
 
 				bImGuiInTestGame = true;
 				bool bTestInVRMode = false;
@@ -2485,6 +2527,14 @@ void mapeditorexecutable_loop(void)
 
 		case 21: //Social VR.
 		{
+			extern uint32_t PreviewWPERoot;
+			if (PreviewWPERoot != 0)
+			{
+				//PE: Delete effects.
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+			}
 			bImGuiInTestGame = true;
 			RunCode(0); //switch to backbuffer
 			editor_multiplayermode();
@@ -3477,6 +3527,8 @@ void mapeditorexecutable_loop(void)
 				if (bTutorialCheckAction) TutorialNextAction();
 				if (!pref.iEnableSingleRightPanelAdvanced)
 				{
+					Logic_Settings_Window = false;
+					Game_Settings_Window = false;
 					Weather_Tools_Window = false;
 					Visuals_Tools_Window = false;
 					//LB: Shooter now a filter mode Shooter_Tools_Window = false;
@@ -3509,6 +3561,8 @@ void mapeditorexecutable_loop(void)
 #ifdef WICKEDENGINE
 			if (!pref.iEnableSingleRightPanelAdvanced)
 			{
+				Logic_Settings_Window = false;
+				Game_Settings_Window = false;
 				Weather_Tools_Window = false;
 				Visuals_Tools_Window = false;
 				//LB: Shooter now a filter mode Shooter_Tools_Window = false;
@@ -3524,14 +3578,16 @@ void mapeditorexecutable_loop(void)
 		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Object Tools (O)"); //Entity Mode
 
 		ImGui::SameLine();
+		
 		//------------------------------------------------------------------
-
 
 		// Logic Toolbar - was Shooter Start
 		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 5), ImGui::GetCursorPos().y));
 
 		//ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPos().x + 2.0f, ImGui::GetCursorPos().y));
-
+		
+		//PE: Changed to toggle icon like all the others, also has its own window now.
+		/*
 		toggle_color = drawCol_toogle;
 		if (pref.current_style == 25) drawCol_Selection = drawCol_Divider_Selected;
 		if (!Shooter_Tools_Window) 
@@ -3543,17 +3599,93 @@ void mapeditorexecutable_loop(void)
 		{
 			window->DrawList->AddRect((window->DC.CursorPos - tool_selected_padding), window->DC.CursorPos + tool_selected_padding + iToolbarIconSize, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
 		}
+		*/
+
+		toggle_color = drawCol_toogle;
+		if (pref.current_style == 25) drawCol_Selection = drawCol_Divider_Selected;
+		if (!Shooter_Tools_Window) {
+			drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+			toggle_color = drawCol_back_test;
+		}
+
+
+
 		if (ImGui::ImgBtn(TOOL_LOGIC, iToolbarIconSize, toggle_color, drawCol_normal/**drawCol_Selection*/, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant, false, false, false, bBoostIconColors))
 		{
+			if (iRestoreLastWindow == 0 && !pref.iEnableSingleRightPanelAdvanced)
+			{
+				if (bTerrain_Tools_Window)
+					iRestoreLastWindow = 1;
+				else
+					iRestoreLastWindow = 2;
+			}
+			if (Shooter_Tools_Window)
+			{
+				Shooter_Tools_Window = false;
+				if (iRestoreLastWindow >= 0 && !pref.iEnableSingleRightPanelAdvanced)
+				{
+					if (iRestoreLastWindow == 1)
+					{
+						bTerrain_Tools_Window = true;
+						t.grideditselect = 0;
+					}
+					else
+					{
+						bForceKey = true;
+						csForceKey = "o";
+						Entity_Tools_Window = true;
+					}
+					iRestoreLastWindow = 0;
+				}
+			}
+			else
+			{
+				if (bTerrain_Tools_Window)
+				{
+					//PE: Switch to object mode, so we dont make terrain changes when in logic.
+					bTerrain_Tools_Window = false;
+					t.grideditselect = 5;
+				}
+
+				if (!pref.iEnableSingleRightPanelAdvanced)
+					CloseAllOpenTools();
+
+				Shooter_Tools_Window = true;
+
+				if (!pref.iEnableSingleRightPanelAdvanced)
+				{
+					Visuals_Tools_Window = false;
+					Game_Settings_Window = false;
+					if (Weather_Tools_Window)
+						Weather_Tools_Window = false;
+					Entity_Tools_Window = false;
+				}
+			}
+			Logic_Settings_Window = Shooter_Tools_Window;
+			/* OLD
 			//LB: Shooter now a filter mode toggle only
 			if (Shooter_Tools_Window)
 				Shooter_Tools_Window = false;
 			else
 				Shooter_Tools_Window = true;
+			Logic_Settings_Window = Shooter_Tools_Window;
+			if (Logic_Settings_Window)
+			{
+				if (!pref.iEnableSingleRightPanelAdvanced)
+				{
+					Visuals_Tools_Window = false;
+					Game_Settings_Window = false;
+					if (Weather_Tools_Window)
+						Weather_Tools_Window = false;
+					Entity_Tools_Window = false;
+				}
+			}
+			*/
 		}
 		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Visual Logic Connections");
 		ImGui::SameLine();
 		//Shooter End
+
 
 		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 4), ImGui::GetCursorPos().y));
 		toggle_color = drawCol_toogle;
@@ -3598,6 +3730,8 @@ void mapeditorexecutable_loop(void)
 				Visuals_Tools_Window = true;
 				if (!pref.iEnableSingleRightPanelAdvanced)
 				{
+					Logic_Settings_Window = false;
+					Game_Settings_Window = false;
 					if (Weather_Tools_Window)
 						Weather_Tools_Window = false;
 					//LB: Shooter now a filter mode if (Shooter_Tools_Window)
@@ -3613,13 +3747,71 @@ void mapeditorexecutable_loop(void)
 		ImGui::SetCursorPos(ImVec2(rightx - right_border -(precise_icon_width*3) , ImGui::GetCursorPos().y));
 		toggle_color = drawCol_toogle;
 		if (pref.current_style == 25) drawCol_Selection = drawCol_Divider_Selected;
-		if (!Weather_Tools_Window)
+
+
+		//PE: New Game Settings icon.
+		if (!Game_Settings_Window)
 		{
 			drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 			toggle_color = drawCol_back_test;
 		}
 
-		if (ImGui::ImgBtn(ENV_WEATHER, iToolbarIconSize, toggle_color, drawCol_normal/**drawCol_Selection*/, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant,false,false,false, bBoostIconColors)) 
+		if (ImGui::ImgBtn(TOOL_GAME_SETTINGS, iToolbarIconSize, toggle_color, drawCol_normal/**drawCol_Selection*/, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant, false, false, false, bBoostIconColors))
+		{
+			//Display game seetings window.
+			if (iRestoreLastWindow == 0 && !pref.iEnableSingleRightPanelAdvanced)
+			{
+				if (bTerrain_Tools_Window)
+					iRestoreLastWindow = 1;
+				else
+					iRestoreLastWindow = 2;
+			}
+			if (!pref.iEnableSingleRightPanelAdvanced)
+				CloseAllOpenTools();
+			if (Game_Settings_Window)
+			{
+				Game_Settings_Window = false;
+				if (iRestoreLastWindow >= 0 && !pref.iEnableSingleRightPanelAdvanced)
+				{
+					if (iRestoreLastWindow == 1)
+					{
+						bTerrain_Tools_Window = true;
+						t.grideditselect = 0;
+					}
+					else
+					{
+						bForceKey = true;
+						csForceKey = "o";
+						Entity_Tools_Window = true;
+					}
+					iRestoreLastWindow = 0;
+				}
+			}
+			else
+			{
+				Game_Settings_Window = true;
+				if (!pref.iEnableSingleRightPanelAdvanced)
+				{
+					if (Visuals_Tools_Window)
+						Visuals_Tools_Window = false;
+					//LB: Shooter now a filter mode
+					//if (Shooter_Tools_Window)
+					//	Shooter_Tools_Window = false;
+					Entity_Tools_Window = false;
+				}
+			}
+		}
+		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Game Settings");
+		ImGui::SameLine();
+
+
+		/*
+		if (!Weather_Tools_Window)
+		{
+			drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+			toggle_color = drawCol_back_test;
+		}
+		if (ImGui::ImgBtn(ENV_WEATHER, iToolbarIconSize, toggle_color, drawCol_normal, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant,false,false,false, bBoostIconColors)) 
 		{
 			//Display weather window.
 			if (iRestoreLastWindow == 0 && !pref.iEnableSingleRightPanelAdvanced)
@@ -3666,7 +3858,7 @@ void mapeditorexecutable_loop(void)
 		}
 		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Weather Settings");
 		ImGui::SameLine();
-
+		*/
 
 		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 2), ImGui::GetCursorPos().y));
 		toggle_color = drawCol_toogle;
@@ -4113,6 +4305,13 @@ void mapeditorexecutable_loop(void)
 
 			if (ImGui::BeginMenu("Tools"))
 			{
+				if (ImGui::MenuItem("Quest Editor"))
+				{
+					CloseAllOpenTools();
+					extern bool bQuestEditor_Window;
+					bQuestEditor_Window = true;
+				}
+
 				if (ImGui::MenuItem("Character Creator"))
 				{
 					CloseAllOpenTools();
@@ -5156,13 +5355,14 @@ void mapeditorexecutable_loop(void)
 			else
 			{
 				//PE: Display status, grid mode ...
-				float fTextSize = ImGui::CalcTextSize(t.statusbar_s.Get()).x * 1.05;
+				//statusbar
+				float fTextSize = ImGui::CalcTextSize(statusbar).x * 1.05; // t.statusbar_s.Get()).x * 1.05;
 				#ifdef PENEWLAYOUT
 				ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - fTextSize - 10.0f, ImGui::GetCursorPos().y ));
 				#else
 				ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - fTextSize - 10.0f, ImGui::GetCursorPos().y - 3));
 				#endif
-				ImGui::Text(t.statusbar_s.Get());
+				ImGui::Text(statusbar); // t.statusbar_s.Get());
 			}
 			#endif
 			#ifdef ADDCONTROLSTOSTAUSBAR
@@ -5381,7 +5581,9 @@ void mapeditorexecutable_loop(void)
 #endif	
 #ifdef WICKEDENGINE
 			ImGui::DockBuilderDockWindow("Environment Effects##VisualsToolsWindow", dock_id_right);
-			ImGui::DockBuilderDockWindow("Weather##WeatherEffectsV2", dock_id_right);
+			//ImGui::DockBuilderDockWindow("Weather##WeatherEffectsV2", dock_id_right);
+			ImGui::DockBuilderDockWindow("Game Settings##GameSettings", dock_id_right);
+			ImGui::DockBuilderDockWindow("Logic Settings##LogicSettings", dock_id_right);
 			ImGui::DockBuilderDockWindow("Shooter Genre##GameLogicTools", dock_id_right);
 			///ImGui::DockBuilderDockWindow("Game Genre##AdditionalIconsWindow", dock_id_left_down);
 			ImGui::DockBuilderDockWindow("Current Objects##AdditionalIconsWindow", dock_id_left_down_large);
@@ -7586,11 +7788,12 @@ void mapeditorexecutable_loop(void)
 					ImGui::Begin("Object Tools##EntityToolsWindow", &Entity_Tools_Window, iGenralWindowsFlags);
 				}
 
+				//PE: Moved to new Logic window.
 				// LB: inserted shooter properties at top of Object Tools if filter mode active
-				if (Shooter_Tools_Window)
-				{
-					imgui_shooter_tools();
-				}
+				//if (Shooter_Tools_Window)
+				//{
+				//	imgui_shooter_tools();
+				//}
 
 				bool bRunExtractDuplicate = false;
 				bool bDuplicate = false;
@@ -7781,6 +7984,8 @@ void mapeditorexecutable_loop(void)
 									}
 								}
 
+								//PE: Quest setting not need anymore.
+								/*
 								// detect if this object is a quest holder
 								for (int n = 0; n < t.entityelement[iEntityIndex].eleprof.PropertiesVariable.iVariables; n++)
 								{
@@ -7795,15 +8000,19 @@ void mapeditorexecutable_loop(void)
 										break;
 									}
 								}
+								*/
 
 								// special color change when object is a collectable
 								bool bObjectIsACollectableAndReadOnlyName = false;
 								LPSTR pDescTooltip = t.strarr_s[204].Get();
-								if (t.entityelement[iEntityIndex].eleprof.iscollectable != 0 || iCollectionQuestIndex > 0 )
+								bool isProjectGlobal = t.entityelement[iEntityIndex].eleprof.isProjectGlobal;
+								if (t.entityelement[iEntityIndex].eleprof.iscollectable != 0 || iCollectionQuestIndex > 0 || isProjectGlobal)
 								{
 									bObjectIsACollectableAndReadOnlyName = true;
 									ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
-									if(iCollectionQuestIndex>0)
+									if (isProjectGlobal)
+										pDescTooltip = "This object has been set as a project global object";
+									else if(iCollectionQuestIndex>0)
 										pDescTooltip = "This object has been set as a quest giver";
 									else
 										pDescTooltip = "This object has been set as an item collectable";
@@ -9362,6 +9571,7 @@ void mapeditorexecutable_loop(void)
 											if (stricmp(pLabel, "status") == NULL) iKnownLabel = 60;
 											if (stricmp(pLabel, "activate") == NULL) iKnownLabel = 61;
 											if (stricmp(pLabel, "quantity") == NULL) iKnownLabel = 62;
+											if (stricmp(pLabel, "endmap") == NULL) iKnownLabel = 63;
 										}
 										if (iKnownLabel >= 0)
 										{
@@ -9394,6 +9604,7 @@ void mapeditorexecutable_loop(void)
 												if (iKnownLabel == 60) pShowTop = "Enter the initial status of this quest when the game starts";
 												if (iKnownLabel == 61) pShowTop = "Enter the object to activate when this quest is completed";
 												if (iKnownLabel == 62) pShowTop = "Enter a quantity associated with this quest";
+												if (iKnownLabel == 63) pShowTop = "Enter the level name that this quest is active on";
 											}
 
 											// Attrib Label
@@ -10844,13 +11055,63 @@ void mapeditorexecutable_loop(void)
 		//#### Weather Window ####
 		//########################
 
-		if (Weather_Tools_Window) 
+		//PE: Moved to Environment Effects.
+		//if (Weather_Tools_Window) 
+		//{
+		//	//PE: Need own docking window.
+		//	ImGui::Begin("Weather##WeatherEffectsV2", &Weather_Tools_Window, 0);
+		//	imgui_Customize_Weather_V2(3);
+		//	ImGui::End();
+		//}
+
+		//PE: Game Settings window.
+		if (refresh_gui_docking == 0 && !Game_Settings_Window)
 		{
-			//PE: Need own docking window.
-			ImGui::Begin("Weather##WeatherEffectsV2", &Weather_Tools_Window, 0);
-			imgui_Customize_Weather_V2(3);
+			//Make sure window is setup in docking space.
+			bool bTrue = true;
+			ImGui::Begin("Game Settings##GameSettings", &bTrue, iGenralWindowsFlags);
 			ImGui::End();
 		}
+		else
+		{
+			if (Game_Settings_Window)
+			{
+				ImGui::Begin("Game Settings##GameSettings", &Game_Settings_Window, 0);
+				imgui_Customize_Game_Settings(3);
+				ImGui::End();
+
+			}
+		}
+
+		if (refresh_gui_docking == 0 && !Logic_Settings_Window)
+		{
+			//Make sure window is setup in docking space.
+			bool bTrue = true;
+			ImGui::Begin("Logic Settings##LogicSettings", &bTrue, iGenralWindowsFlags);
+			ImGui::End();
+		}
+		else
+		{
+			if (Logic_Settings_Window)
+			{
+				ImGui::Begin("Logic Settings##LogicSettings", &Logic_Settings_Window, 0);
+
+				// LB: inserted shooter properties at top of Object Tools if filter mode active
+				if (Shooter_Tools_Window)
+				{
+					//PE: Looks like pref.iEnableRelationPopupWindow is not available anymore , but just in case :)
+					imgui_shooter_tools();
+				}
+
+				imgui_Customize_Logic_Settings(3);
+				ImGui::End();
+
+			}
+		}
+
+		void ProcessQuestEditor(void);
+		ProcessQuestEditor();
+
 		#endif
 
 		//#####################
@@ -12651,6 +12912,18 @@ void mapeditorexecutable_loop(void)
 		}
 		if (refresh_gui_docking > 0) 
 		{
+			//PE: Not sure if these should be there so ...
+			#define REMOVE_NEWEST_AND_OLDEST
+			#define SORT_LEVELITEMS 0 
+			#define SORT_PROJECTSITEMS 1
+			#define SORT_DETAILEDITEMS 2
+			#define SORT_OLDESTITEMS 7
+			#define SORT_NEWESTITEMS 6
+			#define SORT_GROUPITEMS 3
+			#define SORT_INSTANCEITEMS 4
+			#define SORT_BEHAVIORITEMS 5
+			static bool bProjectItems = false;
+
 			bool bToolTipActive = true;
 			#ifdef WICKEDENGINE
 			if (pref.iEnableDragDropEntityMode && bDraggingActive)
@@ -12675,7 +12948,7 @@ void mapeditorexecutable_loop(void)
 
 			CheckTutorialAction("+##+", 8.0f); //Tutorial: check if we are waiting for this action
 
-			if (ImGui::StyleButton("Add##+", ImVec2(ImGui::GetWindowSize().x *0.25, fsy*1.5)))
+			if (ImGui::StyleButton("Add##+", ImVec2(ImGui::GetWindowSize().x *0.19, fsy*1.5)))
 			{
 				if (bTutorialCheckAction) TutorialNextAction(); //Clicked get next tutorial action.
 				//Open Add item page.
@@ -12746,20 +13019,37 @@ void mapeditorexecutable_loop(void)
 			ImGui::PopItemWidth();
 
 			//	Display info icon to give user more information on adding objects to the level.
-			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(-6.0, 0));
-			if (ImGui::ImgBtn(ICON_INFO, ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize()), ImColor(0, 0, 0, 0), ImColor(220, 220, 220, 220), ImColor(255, 255, 255, 255),
+			//ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(-6.0, 0));
+			//if (ImGui::ImgBtn(ICON_INFO, ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize()), ImColor(0, 0, 0, 0), ImColor(220, 220, 220, 220), ImColor(255, 255, 255, 255),
+			//	ImColor(180, 180, 160, 255), -1, 0, 0, 0, false, false, false, false, false))
+			//{
+			//	bInfo_Window = true;
+			//	cInfoMessage = "By pressing the Add button, you can browse the object library to choose game objects that you would like to add to your game level. You also have the option to import your own models or even create your own character with the built in character creator.";
+			//}
+			//if (ImGui::IsItemHovered()) ImGui::SetTooltip("Click here to learn how to add objects to your level.");
+
+			//ImGui::PushItemWidth(-1);
+			//ImGui::PopItemWidth();
+			static bool bToggleThumbViews = true;
+			int iToggleIcon;
+			if (bToggleThumbViews)
+				iToggleIcon = ENTITY_EYE_ON;
+			else
+				iToggleIcon = ENTITY_EYE_OFF;
+
+			float iconoffsetx = -7.0f;
+			float iconoffsety = -4.0f;
+			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(iconoffsetx, iconoffsety));
+			if (ImGui::ImgBtn(iToggleIcon, ImVec2(23, 23), ImColor(0, 0, 0, 0), ImColor(220, 220, 220, 220), ImColor(255, 255, 255, 255),
 				ImColor(180, 180, 160, 255), -1, 0, 0, 0, false, false, false, false, false))
 			{
-				bInfo_Window = true;
-				cInfoMessage = "By pressing the Add button, you can browse the object library to choose game objects that you would like to add to your game level. You also have the option to import your own models or even create your own character with the built in character creator.";
+				bToggleThumbViews = 1 - bToggleThumbViews;
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Click here to learn how to add objects to your level.");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle on off thumbnails view.");
 
-			ImGui::PushItemWidth(-1);
 
-			ImGui::PopItemWidth();
 			ImGui::SameLine();
-			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(-6.0, 0));
+			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(iconoffsetx-1,abs(iconoffsety)));
 
 			float fDropDownWidth = 0.0f;
 			#ifdef WICKEDENGINE
@@ -12789,13 +13079,18 @@ void mapeditorexecutable_loop(void)
 			}
 			// only for object based lists, not groups/behaviors/etc
 			LPSTR pToolTipForSearch = "Cannot search this list!";
-			if (current_sort_order < 5)
+
+			bool bIsSearchAble = false;
+			if (current_sort_order == SORT_LEVELITEMS || current_sort_order == SORT_NEWESTITEMS || current_sort_order == SORT_OLDESTITEMS || current_sort_order == SORT_DETAILEDITEMS)
+				bIsSearchAble = true;
+
+			if (bIsSearchAble)
 			{
 				pToolTipForSearch = "Type here to search for an object in your level";
 			}
 			if (ImGui::InputText(" ##cSearchEntities", &cSearchEntities[0], MAX_PATH, ImGuiInputTextFlags_EnterReturnsTrue))
 			{
-				if (current_sort_order < 5)
+				if (bIsSearchAble)
 				{
 					if (strlen(cSearchEntities) > 1)
 					{
@@ -12934,14 +13229,26 @@ void mapeditorexecutable_loop(void)
 			}
 
 			ImGui::SetCursorPos(ImVec2(restore_pos.x-8.0f, restore_pos.y));
-			const char* sortby_modes[] = { "A-Z", "Z-A", "Newest", "Oldest", "Detailed Object List", "Collection Items List", "Group List", "Instance List", "Behavior List" };
+			//const char* sortby_modes[] = { "A-Z", "Z-A", "Newest", "Oldest", "Detailed Object List", "Collection Items List", "Group List", "Instance List", "Behavior List" };
 
+			#ifdef REMOVE_NEWEST_AND_OLDEST
+			const char* sortby_modes[] = { "Level Items", "Project Items", "Detailed Object List", "Group List", "Instance List", "Behavior List"};
+			#else
+			const char* sortby_modes[] = { "Level Items", "Project Items", "Detailed Object List", "Group List", "Instance List", "Behavior List", "Newest" , "Oldest" };
+			#endif
 			int isortbySize = IM_ARRAYSIZE(sortby_modes);
 			if (!pref.iEnableAdvancedEntityList)
 				isortbySize--;
 
 			int comboflags = ImGuiComboFlags_NoPreview | ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_HeightLarge;
 			ImGui::PushItemWidth(-24);
+			bool bUpdateProjectFiles = false;
+
+			if (bProjectItems && current_sort_order == SORT_LEVELITEMS)
+			{
+				current_sort_order = SORT_PROJECTSITEMS;
+			}
+
 			if (ImGui::BeginCombo("##combosortbymodesentotyleft", sortby_modes[current_sort_order], comboflags))
 			{
 				for (int n = 0; n < isortbySize; n++)
@@ -12950,6 +13257,19 @@ void mapeditorexecutable_loop(void)
 					if (ImGui::Selectable(sortby_modes[n], is_selected)) 
 					{
 						current_sort_order = n;
+						if (n == SORT_PROJECTSITEMS)
+						{
+							//PE: Use same list , just add all.
+							bProjectItems = true;
+							bUpdateProjectFiles = true;
+							current_sort_order = SORT_LEVELITEMS;
+						}
+						else if( n == SORT_LEVELITEMS)
+						{
+							bProjectItems = false;
+							bUpdateProjectFiles = true;
+						}
+						
 					}
 					if (is_selected)
 						ImGui::SetItemDefaultFocus();
@@ -12957,6 +13277,11 @@ void mapeditorexecutable_loop(void)
 				ImGui::EndCombo();
 			}
 			ImGui::EndChild();
+
+			if (bProjectItems && current_sort_order == SORT_PROJECTSITEMS)
+			{
+				current_sort_order = SORT_LEVELITEMS;
+			}
 
 			ImVec2 content_avail = ImVec2(0.0, 0.0);
 			content_avail = ImGui::GetContentRegionAvail();
@@ -13003,7 +13328,12 @@ void mapeditorexecutable_loop(void)
 				ImGui::BeginChild("##MainEntitiesLeftPanel", content_avail - ImVec2(0.0f, 205.0f), false, iGenralWindowsFlags); //, false, ImGuiWindowFlags_HorizontalScrollbar);
 			else
 				ImGui::BeginChild("##MainEntitiesLeftPanel", content_avail, false, iGenralWindowsFlags); //, false, ImGuiWindowFlags_HorizontalScrollbar);
-			ImGui::TextCenter(sortby_modes[current_sort_order]);
+			
+			if(bProjectItems && current_sort_order == SORT_LEVELITEMS)
+				ImGui::TextCenter("Project Items");
+			else
+				ImGui::TextCenter(sortby_modes[current_sort_order]);
+
 
 			static std::vector<std::pair<std::string,int>> sorted_entity_files;
 
@@ -13015,14 +13345,32 @@ void mapeditorexecutable_loop(void)
 			{
 				iMasterEntid = iRestoreEntidMaster;
 			}
+
+			if (current_sort_order == SORT_LEVELITEMS && !bProjectItems)
+			{
+				static int last_entityelementlist = 0;
+				if (last_entityelementlist != g.entityelementlist)
+				{
+					last_entityelementlist = g.entityelementlist;
+					bUpdateProjectFiles = true;
+				}
+				extern bool bUpdateObjectList;
+				if (bUpdateObjectList)
+				{
+					bUpdateObjectList = false;
+					bUpdateProjectFiles = true;
+				}
+			}
+			
+
 			static int last_sortby = -1;
-			if (last_entidmaster != iMasterEntid || last_include_icon_set != iIncludeLeftIconSet || current_sort_order != last_sortby )
+			if (bUpdateProjectFiles || last_entidmaster != iMasterEntid || last_include_icon_set != iIncludeLeftIconSet || current_sort_order != last_sortby )
 			{
 				//Sort new list.
 				sorted_entity_files.clear();
 				if (iMasterEntid >= 1)
 				{
-					if (current_sort_order == 6)
+					if (current_sort_order == SORT_GROUPITEMS)
 					{
 						// Sort group list
 						for (int gi = 0; gi < MAXGROUPSLISTS; gi++)
@@ -13036,9 +13384,9 @@ void mapeditorexecutable_loop(void)
 					}
 					else
 					{
-						if (current_sort_order == 7 || current_sort_order == 8)
+						if (current_sort_order == SORT_INSTANCEITEMS || current_sort_order == SORT_BEHAVIORITEMS)
 						{
-							if (current_sort_order == 7)
+							if (current_sort_order == SORT_INSTANCEITEMS)
 							{
 								// Sort by instance ID order
 								for (t.e = 1; t.e <= g.entityelementlist; t.e++)
@@ -13051,7 +13399,7 @@ void mapeditorexecutable_loop(void)
 									}
 								}
 							}
-							if (current_sort_order == 8)
+							if (current_sort_order == SORT_BEHAVIORITEMS)
 							{
 								// Sort by behavior list
 								for (t.e = 1; t.e <= g.entityelementlist; t.e++)
@@ -13082,7 +13430,7 @@ void mapeditorexecutable_loop(void)
 							{
 								//std::string stmp = t.entityprofile[t.entid].model_s.Get();
 								std::string stmp = Lower(t.entityprofileheader[t.entid].desc_s.Get());
-								if (current_sort_order == 2 || current_sort_order == 3)
+								if (current_sort_order == SORT_NEWESTITEMS || current_sort_order == SORT_OLDESTITEMS)
 								{
 									//Convert to sortable by string.
 									if (t.entid < 10)
@@ -13099,11 +13447,48 @@ void mapeditorexecutable_loop(void)
 								stmp += "###";
 								stmp += std::to_string(t.entid);
 								int itmp = t.entid;
-								sorted_entity_files.push_back(std::make_pair(stmp, itmp));
+
+								//####
+								//if (t.entityelement[e].x == -99999 && t.entityelement[e].y == -99999 && t.entityelement[e].z == -99999)
+								//{
+								//	treename = treename + " (Auto-Gen) ";
+								//	bAutoGenObject = true;
+								//}
+								//if (t.entityelement[e].y == -999999)
+								//{
+								//	treename = treename + " (Hidden) ";
+								//	bAutoGenObject = true;
+								//}
+								//####
+								bool bValid = true;
+								if (current_sort_order == SORT_LEVELITEMS && !bProjectItems)
+								{
+									//static int lastentityelementlist = -1;
+									bValid = false;
+									//PE: Exclude hidden and auto-gen objects.
+									for (int i = 1; i <= g.entityelementlist; i++)
+									{
+										if (t.entityelement[i].bankindex == t.entid)
+										{
+											if (!(t.entityelement[i].y == -99999 || t.entityelement[i].y == -999999))
+											{
+												bValid = true;
+												break;
+											}
+										}
+										if (t.gridentity == t.entid ) //t.widget.pickedEntityIndex == t.entid)
+										{
+											bValid = true;
+											break;
+										}
+									}
+								}
+								if(bValid)
+									sorted_entity_files.push_back(std::make_pair(stmp, itmp));
 							}
 							std::sort(sorted_entity_files.begin(), sorted_entity_files.end());
-							if (current_sort_order == 1 || current_sort_order == 2)
-								std::reverse(sorted_entity_files.begin(), sorted_entity_files.end());
+							if (current_sort_order == SORT_NEWESTITEMS)
+									std::reverse(sorted_entity_files.begin(), sorted_entity_files.end());
 						}
 					}
 				}
@@ -13144,8 +13529,14 @@ void mapeditorexecutable_loop(void)
 				iColumns_leftpanel = 1;
 
 			#ifdef ADD_DETAIL_LEFT_PANEL_ENTITY_LIST
-			if(current_sort_order == 8 || current_sort_order == 7 || current_sort_order == 4 || current_sort_order == 5 || current_sort_order == 6) //PE: Detailed display in one column.
+			if (current_sort_order == SORT_BEHAVIORITEMS || current_sort_order == SORT_INSTANCEITEMS || current_sort_order == SORT_DETAILEDITEMS || current_sort_order == SORT_PROJECTSITEMS || current_sort_order == SORT_GROUPITEMS) //PE: Detailed display in one column.
+			{
 				iColumns_leftpanel = 1;
+			}
+			if (!bToggleThumbViews && (current_sort_order == SORT_LEVELITEMS || current_sort_order == SORT_OLDESTITEMS || current_sort_order == SORT_NEWESTITEMS))
+			{
+				iColumns_leftpanel = 1;
+			}
 			#endif
 
 			if (!sorted_entity_files.empty())
@@ -13201,7 +13592,7 @@ void mapeditorexecutable_loop(void)
 						}
 						else if (it->second > 0)
 						{
-							if (iloop == 0 && current_sort_order == 5)
+							if (iloop == 0 && current_sort_order == SORT_PROJECTSITEMS)
 							{
 								// Collection Items List (5)
 								ImGui::SetWindowFontScale(1.0);
@@ -13264,7 +13655,7 @@ void mapeditorexecutable_loop(void)
 									ImGui::NextColumn();
 								}
 							}
-							else if (iloop == 0 && current_sort_order == 6)
+							else if (iloop == 0 && current_sort_order == SORT_GROUPITEMS)
 							{
 								// Group List (6)
 								ImGui::SetWindowFontScale(1.0);
@@ -13311,7 +13702,7 @@ void mapeditorexecutable_loop(void)
 									ImGui::NextColumn();
 								}
 							}
-							else if (iloop == 0 && current_sort_order == 7)
+							else if (iloop == 0 && current_sort_order == SORT_INSTANCEITEMS)
 							{
 								// Instance List (7)
 								ImGui::SetWindowFontScale(1.0);
@@ -13392,7 +13783,7 @@ void mapeditorexecutable_loop(void)
 									ImGui::NextColumn();
 								}
 							}
-							else if (iloop == 0 && current_sort_order == 8)
+							else if (iloop == 0 && current_sort_order == SORT_BEHAVIORITEMS)
 							{
 								// Behavior List (8)
 								ImGui::SetWindowFontScale(1.0);
@@ -13427,7 +13818,7 @@ void mapeditorexecutable_loop(void)
 									ImGui::NextColumn();
 								}
 							}
-							else if (iloop == 0 && current_sort_order == 4)
+							else if (iloop == 0 && (current_sort_order == SORT_DETAILEDITEMS || !bToggleThumbViews ))
 							{
 								// Detailed Object List (4)
 								ImGui::SetWindowFontScale(1.0);
@@ -13441,6 +13832,13 @@ void mapeditorexecutable_loop(void)
 									//PE: This will search the desc. and the object name.
 									if (!pestrcasestr(cName, cSearchEntities))
 										DisplayEntry = false;
+								}
+								if (current_sort_order != SORT_DETAILEDITEMS)
+								{
+									if (!bToggleThumbViews && (t.entityprofile[it->second].ismarker != 0 || t.entityprofile[it->second].ischildofgroup != 0))
+									{
+										DisplayEntry = false;
+									}
 								}
 
 								bool bUseWideThumb = false;
@@ -13583,6 +13981,8 @@ void mapeditorexecutable_loop(void)
 											t.entid = t.gridentity;
 											entity_fillgrideleproffromprofile();
 											t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+											t.grideleprof.isProjectGlobal = false;
+
 											t.inputsys.dragoffsetx_f = 0;
 											t.inputsys.dragoffsety_f = 0;
 											fHitPointX = 0;
@@ -13678,6 +14078,8 @@ void mapeditorexecutable_loop(void)
 												t.entid = t.gridentity;
 												entity_fillgrideleproffromprofile();
 												t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+												t.grideleprof.isProjectGlobal = false;
+
 												t.inputsys.dragoffsetx_f = 0;
 												t.inputsys.dragoffsety_f = 0;
 												fHitPointX = 0;
@@ -13857,7 +14259,7 @@ void mapeditorexecutable_loop(void)
 				entity_icons = 15;
 
 			int entity_images[] = { ENTITY_START, ENTITY_CHECKPOINT, ENTITY_FLAG, ENTITY_TRIGGERZONE, ENTITY_WIN, ENTITY_LIGHT,ENTITY_VIDEO,ENTITY_MUSIC,ENTITY_SOUND,ENTITY_PARTICLE,ENTITY_IMAGE, ENTITY_TEXT, ENTITY_PROBE, ENTITY_COVER, ENTITY_BEHAVIOR };
-			cstr entity_scripts[] = {
+			static cstr entity_scripts[] = {
 				"_markers\\Player Start.fpe",
 				"_markers\\Player Checkpoint.fpe",
 				"_markers\\flag.fpe" ,
@@ -13874,7 +14276,7 @@ void mapeditorexecutable_loop(void)
 				"_markers\\Cover Zone.fpe",
 				"_markers\\Behavior.fpe" //global Behaviors
 			};
-			cstr entity_tooltip[] = {
+			static cstr entity_tooltip[] = {
 				"Add Player Start Position",
 				"Add Player Checkpoint",
 				"Add Flag",
@@ -13933,6 +14335,8 @@ void mapeditorexecutable_loop(void)
 					//Make sure we use a fresh t.grideleprof
 					entity_fillgrideleproffromprofile();
 					t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+					t.grideleprof.isProjectGlobal = false;
+
 					editor_refresheditmarkers();
 
 					// Show elements when placing a new one down, prevents half being hidden and half not.
@@ -15586,6 +15990,9 @@ void mapeditorexecutable_loop(void)
 		}
 		else 
 		{
+			//PE: Make sure we switch to the correct name , this can change in test game.
+			extern cStr sWindowName;
+			sWindowName = "Environment Effects##VisualsToolsWindow";
 			tab_tab_visuals(1, 0);
 		}
 		#endif
@@ -18379,6 +18786,8 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 	t.visuals.bLevelVSyncEnabled = t.gamevisuals.bLevelVSyncEnabled;
 	t.visuals.bOcclusionCulling = t.gamevisuals.bOcclusionCulling;
 
+	t.visuals.fEnvProbeBrightness = t.gamevisuals.fEnvProbeBrightness;
+
 	t.visuals.bEnableTerrainChunkCulling = t.gamevisuals.bEnableTerrainChunkCulling;
 	t.visuals.bEnablePointShadowCulling = t.gamevisuals.bEnablePointShadowCulling;
 	t.visuals.bEnableSpotShadowCulling = t.gamevisuals.bEnableSpotShadowCulling;
@@ -19965,6 +20374,8 @@ void imgui_input_getcontrols(void)
 			#ifdef WICKEDENGINE
 			if (!pref.iEnableSingleRightPanelAdvanced)
 			{
+				Logic_Settings_Window = false;
+				Game_Settings_Window = false;
 				Weather_Tools_Window = false;
 				Visuals_Tools_Window = false;
 				//LB: shooter now a filter mode Shooter_Tools_Window = false;
@@ -19992,6 +20403,7 @@ void imgui_input_getcontrols(void)
 			#ifdef WICKEDENGINE
 			if (!pref.iEnableSingleRightPanelAdvanced)
 			{
+				Game_Settings_Window = false;
 				Weather_Tools_Window = false;
 				Visuals_Tools_Window = false;
 				//LB: shooter now a filter mode Shooter_Tools_Window = false;
@@ -20339,7 +20751,8 @@ void imgui_input_getcontrols(void)
 	{
 		#ifdef WICKEDENGINE
 		//PE: No clipping in wicked yet.
-		t.statusbar_s = "";
+		strcpy(statusbar, "");
+		//t.statusbar_s = "";
 		#else
 		//  cursor position
 		if (g.gridlayershowsingle == 1)
@@ -20355,17 +20768,19 @@ void imgui_input_getcontrols(void)
 		#endif
 		if (t.inputsys.xmouse == 500000)
 		{
-			t.strwork = ""; t.statusbar_s = t.statusbar_s + "X: 0 Z: 0";
+			//t.strwork = ""; t.statusbar_s = t.statusbar_s + "X: 0 Z: 0";
+			strcpy(statusbar, "X: 0 Z: 0 | ");
 		}
 		else {
-			t.strwork = ""; t.statusbar_s = t.statusbar_s + "X:" + Str(t.inputsys.mmx) + " " + "Z:" + Str(t.inputsys.mmy);
+			//t.strwork = ""; t.statusbar_s = t.statusbar_s + "X:" + Str(t.inputsys.mmx) + " " + "Z:" + Str(t.inputsys.mmy);
+			sprintf(statusbar, "X:%d Z:%d | ", t.inputsys.mmx, t.inputsys.mmy);
 		}
 
 		//PE: 17/08/21 reactivated.
-		t.statusbar_s = t.statusbar_s + " | ";
-		if (t.gridentitygridlock == 0)  t.statusbar_s = t.statusbar_s + "NORMAL";
-		if (t.gridentitygridlock == 1)  t.statusbar_s = t.statusbar_s + "SNAP";
-		if (t.gridentitygridlock == 2)  t.statusbar_s = t.statusbar_s + "GRID";
+		//t.statusbar_s = t.statusbar_s + " | ";
+		if (t.gridentitygridlock == 0)  strcat(statusbar, "NORMAL"); // t.statusbar_s = t.statusbar_s + "NORMAL";
+		if (t.gridentitygridlock == 1)  strcat(statusbar, "SNAP"); //t.statusbar_s = t.statusbar_s + "SNAP";
+		if (t.gridentitygridlock == 2)  strcat(statusbar, "GRID"); //t.statusbar_s = t.statusbar_s + "GRID";
 
 		//  editing mode
 
@@ -20479,7 +20894,7 @@ void imgui_input_getcontrols(void)
 		//t.laststatusbar_s = t.statusbar_s;
 	}
 
-	cstr WinTitle = "";
+	static cstr WinTitle = "";
 
 	if (strcmp(Lower(Left(g.projectfilename_s.Get(), Len(g.rootdir_s.Get()))), Lower(g.rootdir_s.Get())) == 0)
 	{
@@ -21603,7 +22018,7 @@ void editor_init ( void )
 	editor_restoreeditcamera ( );
 
 	//  Reset statu bar Text (  )
-	t.statusbar_s="" ; t.laststatusbar_s="";
+	//t.statusbar_s="" ; t.laststatusbar_s="";
 }
 
 void editor_makeundergroundobj ( void )
@@ -22150,11 +22565,11 @@ void editor_clearlibrary ( void )
 
 		// Now scan for extra PFB files not part of default set
 		int iFirstFreeSlot = 8;
-		LPSTR pOld = GetDir();
+		cstr pOld = GetDir();
 		SetDir("ebebank");
 		UnDim(t.filelist_s);
 		buildfilelist("_builder", "");
-		SetDir(pOld);
+		SetDir(pOld.Get());
 		int iExtraPFBCount = 0;
 		if (ArrayCount(t.filelist_s) > 0)
 		{
@@ -22772,6 +23187,8 @@ void editor_constructionselection ( void )
 					t.sentid = t.entid; t.entid = t.gridentity;
 					entity_fillgrideleproffromprofile();
 					t.grideleprof.bUseFPESettings = true; //PE: New added always use bUseFPESettings.
+					t.grideleprof.isProjectGlobal = false;
+
 					t.entid = t.sentid;
 				}
 				t.grideleproflastname_s=t.grideleprof.name_s;
@@ -28763,8 +29180,8 @@ void gridedit_save_map ( void )
 	}
 
 	// Use large prompt
-	t.statusbar_s=t.strarr_s[365]; 
-	popup_text(t.statusbar_s.Get());
+	//t.statusbar_s=t.strarr_s[365]; 
+	//popup_text(t.statusbar_s.Get());
 
 	// Save only to TESTMAP area (for map testing)
 	gridedit_save_test_map ( );
@@ -28785,7 +29202,7 @@ void gridedit_save_map ( void )
 		EmptyMessages();
 
 	// Clear status Text (  )
-	t.statusbar_s="" ; popup_text_close();
+	//t.statusbar_s="" ; popup_text_close();
 
 	extern std::vector<int> g_smartObjectDummyEntities;
 	for (int i = 0; i < t.entityelement.size(); i++)
@@ -29042,7 +29459,7 @@ void gridedit_new_map(void)
 
 	//  Load map data
 	editor_hideall3d();
-	t.statusbar_s = t.strarr_s[366]; gridedit_updatestatusbar();
+	//t.statusbar_s = t.strarr_s[366]; gridedit_updatestatusbar();
 
 	//  Clear all settings
 	timestampactivity(0, "NEWMAP: _gridedit_clear_settings");
@@ -29191,7 +29608,7 @@ void gridedit_new_map(void)
 	t. grideditselect = 0 ; editor_refresheditmarkers ( );
 
 	//  Clear status Text (  )
-	t.statusbar_s = "" ; gridedit_updatestatusbar ( );
+	//t.statusbar_s = "" ; gridedit_updatestatusbar ( );
 
 	//  Clear widget status
 	t.widget.pickedObject=0 ; widget_updatewidgetobject ( );
@@ -29258,7 +29675,7 @@ void gridedit_new_map_quick(void)
 	
 	//  Load map data
 	editor_hideall3d();
-	t.statusbar_s = t.strarr_s[366]; gridedit_updatestatusbar();
+	//t.statusbar_s = t.strarr_s[366]; gridedit_updatestatusbar();
 
 	//  Clear all settings
 	timestampactivity(0, "NEWMAP: _gridedit_clear_settings");
@@ -29394,7 +29811,7 @@ void gridedit_new_map_quick(void)
 	t.grideditselect = 0; editor_refresheditmarkers();
 
 	//  Clear status Text (  )
-	t.statusbar_s = ""; gridedit_updatestatusbar();
+	//t.statusbar_s = ""; gridedit_updatestatusbar();
 
 	//  Clear widget status
 	t.widget.pickedObject = 0; widget_updatewidgetobject();
@@ -29418,6 +29835,7 @@ void gridedit_new_map_quick(void)
 
 void gridedit_updatestatusbar ( void )
 {
+#ifndef WICKEDENGINE
 	//  020315 - 012 - display in the status bar if multiplayer lobbies are currently available
 	mp_checkIfLobbiesAvailable ( );
 	if (  t.statusbar_s+t.steamStatusBar_s != t.laststatusbar_s.Get() ) 
@@ -29430,6 +29848,7 @@ void gridedit_updatestatusbar ( void )
 		#endif
 		t.laststatusbar_s=t.statusbar_s+t.steamStatusBar_s;
 	}
+#endif
 }
 
 void gridedit_load_map ( void )
@@ -29459,8 +29878,8 @@ void gridedit_load_map ( void )
 		EmptyMessages();
 
 	//  Use large prompt
-	t.statusbar_s=t.strarr_s[367]; 
-	popup_text(t.statusbar_s.Get());
+	//t.statusbar_s=t.strarr_s[367]; 
+	//popup_text(t.statusbar_s.Get());
 
 	//  Reset visual settings for new map
 	if (  t.skipfpmloading == 0 ) 
@@ -29655,8 +30074,8 @@ void gridedit_load_map ( void )
 	if ( g.timestampactivityflagged == 1 ) 
 	{
 		//  message prompt
-		t.statusbar_s=t.strarr_s[368];
-		popup_text_change(t.statusbar_s.Get()) ; SleepNow (  2000 );
+		//t.statusbar_s=t.strarr_s[368];
+		//popup_text_change(t.statusbar_s.Get()) ; SleepNow (  2000 );
 		g.timestampactivityflagged=0;
 
 		//  copy time stamp log to map bank log
@@ -29683,8 +30102,8 @@ void gridedit_load_map ( void )
 		// if no missing media, is parental control system removing some?
 		if ( g_bBlackListRemovedSomeEntities == true ) 
 		{
-			t.statusbar_s = "Parental Control system has removed some content from this level";
-			popup_text_change(t.statusbar_s.Get()) ; SleepNow ( 3000 );
+			//t.statusbar_s = "Parental Control system has removed some content from this level";
+			//popup_text_change(t.statusbar_s.Get()) ; SleepNow ( 3000 );
 		}
 	}
 
@@ -29773,7 +30192,7 @@ void gridedit_load_map ( void )
 	g.missingmediacounter=0;
 
 	//  Clear status Text (  )
-	t.statusbar_s="" ; popup_text_close();
+	//t.statusbar_s="" ; popup_text_close();
 
 	//  Quick update of cursor
 	t.lastgrideditselect=-1 ; editor_refresheditmarkers ( );
@@ -30199,6 +30618,8 @@ void gridedit_saveas_map ( void )
 
 void gridedit_addentitytomap(void)
 {
+	extern bool bUpdateObjectList;
+	bUpdateObjectList = true;
 	// mark as static if it was
 	if (t.gridentitystaticmode == 1) g.projectmodifiedstatic = 1;
 	entity_addentitytomap();
@@ -31523,6 +31944,11 @@ bool GetEnableEmptyLevelMode(void)
 	return t.visuals.bEnableEmptyLevelMode;
 }
 
+float GetEnvProbeBrightness(void)
+{
+	return t.visuals.fEnvProbeBrightness;
+}
+
 void GetConvertSettings(int *maxwidth,int *active)
 {
 	*active = g.globals.ConvertToDDS;
@@ -31551,6 +31977,50 @@ int GetActiveEditorObject( void )
 		}
 	}
 	return(iActiveObj);
+}
+int GetActiveEditorEntityPos(float *x, float *y, float *z, float* xa, float* ya, float* za)
+{
+	int iActiveObj = t.widget.activeObject;
+	int iEntityIndex = 0;
+	if (t.gridentityextractedindex > 0)
+	{
+		iEntityIndex = t.gridentityextractedindex;
+	}
+	else
+	{
+		iEntityIndex = t.widget.pickedEntityIndex;
+	}
+	if (iEntityIndex > 0 && iEntityIndex < t.entityelement.size())
+	{
+		if (x)
+		{
+			*x = t.entityelement[iEntityIndex].x;
+			*y = t.entityelement[iEntityIndex].y;
+			*z = t.entityelement[iEntityIndex].z;
+		}
+		if (xa)
+		{
+			*xa = t.entityelement[iEntityIndex].rx;
+			*ya = t.entityelement[iEntityIndex].ry;
+			*za = t.entityelement[iEntityIndex].rz;
+		}
+	}
+	return(iEntityIndex);
+}
+
+int GetActiveEditorEntity(void)
+{
+	int iActiveObj = t.widget.activeObject;
+	int iEntityIndex = 0;
+	if (t.gridentityextractedindex > 0)
+	{
+		iEntityIndex = t.gridentityextractedindex;
+	}
+	else
+	{
+		iEntityIndex = t.widget.pickedEntityIndex;
+	}
+	return(iEntityIndex);
 }
 
 void EmptyMessages(void)

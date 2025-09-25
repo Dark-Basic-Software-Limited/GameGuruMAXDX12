@@ -2268,7 +2268,7 @@ void titleslua_init ( void )
 		t.r=LoadLua(t.tfile_s.Get());
 
 		// load all scripts located in titlebank theme folder
-		LPSTR pOldDir = GetDir();
+		cstr pOldDir = GetDir();
 		SetDir(cstr(cstr("titlesbank\\")+t.ttheme_s).Get());
 		struct _finddata_t filedata;
 		intptr_t hFile = _findfirst("*.lua", &filedata);
@@ -2284,7 +2284,7 @@ void titleslua_init ( void )
 			}
 			_findclose(hFile);
 		}
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 
 		// titlesbank scripts loaded
 		t.bThemeScriptsLoaded = true;

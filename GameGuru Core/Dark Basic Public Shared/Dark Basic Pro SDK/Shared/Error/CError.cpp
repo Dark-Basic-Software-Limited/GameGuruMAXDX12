@@ -11,6 +11,7 @@ CRuntimeErrorHandler* g_pErrorHandler = NULL;
 // Externals
 extern bool g_bCascadeQuitFlag;
 extern char g_strErrorClue[512];
+int g_iIgnoreAllErrors = 0;
 
 #ifndef NOSTEAMORVIDEO
 void timestampactivity(int i, char* desc_s);
@@ -31,15 +32,18 @@ void Message ( int iID, char* szMessage, char* szTitle )
 void RunTimeError ( DWORD dwErrorCode )
 {
 	//C++Conversion
-	char szErrorString[256];
+	char szErrorString[1024];
 	sprintf ( szErrorString , "Runtime Error: %i (%s)" , dwErrorCode, g_strErrorClue );
 	#ifndef NOSTEAMORVIDEO
 	timestampactivity(0, szErrorString); // PE:
 	#endif
-	MessageBox ( NULL, szErrorString, "Error", MB_OK | MB_TOPMOST );
-	//Debug trick , trigger Visual Studio breakpoint. Then use F10 to go to the place the error was generated. also comment out ExitProcess ( 0 );
-	__debugbreak();
-	ExitProcess ( 0 );
+	if (g_iIgnoreAllErrors == 0)
+	{
+		MessageBox(NULL, szErrorString, "Error", MB_OK | MB_TOPMOST);
+		//Debug trick , trigger Visual Studio breakpoint. Then use F10 to go to the place the error was generated. also comment out ExitProcess ( 0 );
+		__debugbreak();
+		ExitProcess(0);
+	}
 }
 
 void RunTimeWarning ( DWORD dwErrorCode )
@@ -54,14 +58,17 @@ void RunTimeError(DWORD dwErrorCode, LPSTR pExtraErrorString)
 {
 	if ( pExtraErrorString ) 
 	{
-		char szErrorString[256];
+		char szErrorString[1024];
 		sprintf ( szErrorString , "Runtime Error: %i : %s (%s)" , dwErrorCode, pExtraErrorString, g_strErrorClue );
 		#ifndef NOSTEAMORVIDEO
 		timestampactivity(0, szErrorString); // PE:
 		#endif
-		MessageBox ( NULL, szErrorString, "Error", MB_OK | MB_TOPMOST );
-		__debugbreak();
-		ExitProcess ( 0 );
+		if (g_iIgnoreAllErrors == 0)
+		{
+			MessageBox(NULL, szErrorString, "Error", MB_OK | MB_TOPMOST);
+			__debugbreak();
+			ExitProcess(0);
+		}
 	}
 	else
 	{
@@ -72,9 +79,13 @@ void RunTimeError(DWORD dwErrorCode, LPSTR pExtraErrorString)
 void LastSystemError()
 {
 	LPVOID lpBuffer;
-	if (!FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-					   NULL, GetLastError ( ), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					   (LPTSTR)&lpBuffer, 0, NULL)) return;
-	MessageBox ( NULL, (LPCTSTR)lpBuffer, "System Error", MB_OK );
-	LocalFree ( lpBuffer );
+	if (g_iIgnoreAllErrors == 0)
+	{
+
+		if (!FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			(LPTSTR)&lpBuffer, 0, NULL)) return;
+		MessageBox(NULL, (LPCTSTR)lpBuffer, "System Error", MB_OK);
+		LocalFree(lpBuffer);
+	}
 }

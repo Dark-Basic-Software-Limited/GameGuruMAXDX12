@@ -1099,6 +1099,8 @@ DARKSDK_DLL bool SetNewObjectFinalProperties ( int iID, float fRadius )
 		}
 	}
 
+	extern int iCurrentObjectID;
+	iCurrentObjectID = iID;
 	//PE: Mark mesh'es that need to be ignored by wicked. to reduce wicked objects count.
 	void Wicked_Ignore_Frame_Mesh(int obj);
 	Wicked_Ignore_Frame_Mesh(iID);
@@ -1106,7 +1108,7 @@ DARKSDK_DLL bool SetNewObjectFinalProperties ( int iID, float fRadius )
 	AddObjectToObjectListRef(iID);
 	m_ObjectManager.ReplaceAllFlaggedObjectsInBuffers();
 	#endif
-
+	iCurrentObjectID = 0;
 	// okay
 	return true;
 }

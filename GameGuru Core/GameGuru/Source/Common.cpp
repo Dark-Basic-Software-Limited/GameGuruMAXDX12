@@ -673,10 +673,15 @@ void common_init ( void )
 			refresh_gui_docking = 4; // dont update layout.
 		}
 #ifdef WICKEDENGINE
+		
+		if (pref.current_version_new_windows != MAXWINDOWSVERSION) {
+			pref.current_version_new_windows = MAXWINDOWSVERSION;
+			refresh_gui_docking = 0; // reset layout.
+		}
 		if (pref.current_version != MAXVERSION) {
 			pref.current_version = MAXVERSION;
 			refresh_gui_docking = 0; // reset layout.
-			if (MAXVERSION == 26) pref.iDisableObjectLibraryViewport = 1;
+			if (MAXVERSION >= 26) pref.iDisableObjectLibraryViewport = 1;
 		}
 #else
 		if (pref.current_version != V3VERSION) {
@@ -1501,7 +1506,7 @@ void common_init_globals ( void )
 	//PE: For now until we found out why wicked use all that "update" time on non visible objects.
 	//PE: REDUCEMEMUSE
 	#ifdef REDUCEMEMUSE
-	g.decalelementmax = 120; //499;
+	g.decalelementmax = 100; //PE: 120 lowered a bit as we now use particle effects more.
 	#else
 	g.decalelementmax = 199; //499;
 	#endif
@@ -1582,12 +1587,13 @@ void common_init_globals ( void )
 
 	t.editorfreeflight.mode=0;
 
-#ifdef REDUCEMEMUSE
-	g.objmetamax = 300000;
-#else
-	g.objmetamax = 500000;
-#endif
-	Dim (  t.objmeta,g.objmetamax );
+//#ifdef REDUCEMEMUSE
+//	g.objmetamax = 300000;
+//#else
+//	g.objmetamax = 500000;
+//#endif
+//	Dim (  t.objmeta,g.objmetamax );
+	Dim(t.objmeta, 1);
 
 	Dim (  t.objinterestlist, 1   );
 	Undim ( t.objinterestlist );
@@ -2106,7 +2112,8 @@ void FPSC_Full_Data_Init ( void )
 	Dim (  t.talkscriptcount,10  );
 	Dim (  t.talkscriptwho,10  );
 	//  Characters (chosen is indexed by iLocalEL, list is flaglist of used identities)
-	g.multiplayermax = 16;
+	//g.multiplayermax = 16;
+	g.multiplayermax = 1; //PE: Do not think any of these are used.
 	Dim (  t.characterchosen,g.multiplayermax  );
 	Dim (  t.characterchoiceentityindex,g.multiplayermax  );
 	Dim (  t.characterlist_s,g.multiplayermax );
@@ -2437,6 +2444,8 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 
 	if (FileExist(t.tfile_s.Get()) == 1)
 	{
+		extern int g_iIgnoreAllErrors;
+		g_iIgnoreAllErrors = 0;
 		//  Load Data from file
 		Dim (t.data_s, 999);
 		LoadArray (t.tfile_s.Get(), t.data_s);
@@ -2585,6 +2594,11 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "converttoddsmaxsize"; if (t.field_s == t.tryfield_s)
 					{
 						g.globals.ConvertToDDSMaxSize = t.value1;
+					}
+
+					t.tryfield_s = "ignoreallerrors"; if (t.field_s == t.tryfield_s)
+					{
+						g_iIgnoreAllErrors = t.value1;
 					}
 
 					// DOCDOC: editorusemediumshadows = Sets the editor to render medium level shadows while editing
@@ -3397,7 +3411,7 @@ void FPSC_LoadKEYMAP ( void )
 	// look in editors\keymap\ to find a non-default.ini to prefer
 	if (PathExist("editors\\keymap") == 1 )
 	{
-		LPSTR pOldDir = GetDir();
+		cstr pOldDir = GetDir();
 		char pWritableKeyMapFile[MAX_PATH];
 		strcpy(pWritableKeyMapFile, "editors\\keymap\\");
 		GG_GetRealPath(pWritableKeyMapFile, 0);
@@ -3417,7 +3431,7 @@ void FPSC_LoadKEYMAP ( void )
 				}
 			}
 		}
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 
 		//  editors\keymap\default.ini
 		strcpy(pWritableKeyMapFile, useRelThisKeyMapFile.Get());
@@ -6776,7 +6790,7 @@ void loadscreenpromptassets ( int iUseVRTest )
 				else
 				{
 					// could not find any matching resolution files, just pick any file in the watermark folder
-					LPSTR pOldDir = GetDir();
+					cstr pOldDir = GetDir();
 					sprintf ( t.szwork , "languagebank\\%s\\artwork\\watermark", g.language_s.Get() );
 					SetDir(t.szwork);
 					ChecklistForFiles (  );
@@ -6792,7 +6806,7 @@ void loadscreenpromptassets ( int iUseVRTest )
 							}
 						}
 					}
-					SetDir(pOldDir);
+					SetDir(pOldDir.Get());
 				}
 			}
 			if ( t.game.gameisexe == 1 ) 

@@ -1584,7 +1584,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].eleprof.explodable;
 	 }
@@ -1600,7 +1600,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].eleprof.isobjective;
 		 if (t.entityelement[e].eleprof.isobjective_alwaysactive)
@@ -1609,6 +1609,22 @@ luaMessage** ppLuaMessages = NULL;
 	 lua_pushinteger(L, iReturnValue);
 	 return 1;
  }
+
+ int GetEntityProjectGlobal(lua_State* L)
+ {
+	 lua = L;
+	 int n = lua_gettop(L);
+	 if (n < 1) return 0;
+	 int e = lua_tonumber(L, 1);
+	 int iReturnValue = 0;
+	 if (e > 0 && e < t.entityelement.size() )
+	 {
+		 iReturnValue = t.entityelement[e].eleprof.isProjectGlobal;
+	 }
+	 lua_pushinteger(L, iReturnValue);
+	 return 1;
+ }
+
  int GetEntityCollectable(lua_State* L)
  {
 	 lua = L;
@@ -1616,7 +1632,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].eleprof.iscollectable;
 	 }
@@ -1630,7 +1646,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].collected;
 	 }
@@ -1644,7 +1660,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].consumed;
 	 }
@@ -1671,7 +1687,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iQty = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iQty = t.entityelement[e].eleprof.quantity;
 	 }
@@ -1686,7 +1702,7 @@ luaMessage** ppLuaMessages = NULL;
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
-	 if (e > 0)
+	 if (e > 0 && e < t.entityelement.size())
 	 {
 		 iReturnValue = t.entityelement[e].whoactivated;
 	 }
@@ -3131,6 +3147,18 @@ luaMessage** ppLuaMessages = NULL;
 	lua_pushinteger ( L, fReturnHeight );
 	return 1;
  }
+ int GetTerrainHeightFloat(lua_State* L)
+ {
+	 lua = L;
+	 int n = lua_gettop(L);
+	 if (n < 2) return 0;
+	 float fReturnHeight = 0.0f;
+	 float fX = lua_tonumber(L, 1);
+	 float fZ = lua_tonumber(L, 2);
+	 fReturnHeight = GetLUATerrainHeightEx(fX, fZ);
+	 lua_pushnumber(L, fReturnHeight);
+	 return 1;
+ }
 
  /* Converted code. The below LUA used int and produce a bad result tangle always 0 , 22 , 44 ... try Prompt(tangle)
 			-- Determine slope angle of plr direction
@@ -3841,7 +3869,7 @@ int SetEntityAttachmentVisibility (lua_State *L, bool bVisible)
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
-	if (e > 0)
+	if (e > 0 && e < t.entityelement.size())
 	{
 		int iGunID = t.entityelement[e].eleprof.hasweapon;
 		if (iGunID > 0)
@@ -5956,6 +5984,89 @@ int IntersectCore (lua_State* L, int iMode)
 	lua_pushnumber ( L, tthitvalue );
 	return 1;
 }
+
+int IntersectGetLastHitBone(lua_State* L)
+{
+	int n = lua_gettop(L);
+	if (n < 1)
+	{
+		lua_pushstring(L, "");
+		return 1;
+	}
+	int iObjectID = lua_tonumber(L,1);
+	extern std::unordered_map<int, sFrame*> lastHitFrame;
+	if (lastHitFrame.count(iObjectID) > 0)
+	{
+
+		if (ObjectExist(iObjectID))
+		{
+			sObject* pObject = g_ObjectList[iObjectID];
+			sFrame* pFrame = lastHitFrame[iObjectID];
+			//PE: Is frame still valid ?
+			for (int iFrameIndex = 0; iFrameIndex < pObject->iFrameCount; iFrameIndex++)
+			{
+				if (pFrame == pObject->ppFrameList[iFrameIndex])
+				{
+					if (pFrame->pMesh && pFrame->pMesh->pBones)
+					{
+						if (strlen(pFrame->pMesh->pBones->szName) > 0)
+						{
+							//PE: Return name of first bone in list.
+							lua_pushstring(L, pFrame->pMesh->pBones->szName);
+							return 1;
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	lua_pushstring(L, "");
+	return 1;
+}
+
+int IntersectGetLastHitFrame(lua_State* L)
+{
+	int n = lua_gettop(L);
+	if (n < 1)
+	{
+		lua_pushstring(L, "");
+		return 1;
+	}
+	int iObjectID = lua_tonumber(L, 1);
+	extern std::unordered_map<int, sFrame*> lastHitFrame;
+	if (lastHitFrame.count(iObjectID) > 0)
+	{
+
+		if (ObjectExist(iObjectID))
+		{
+			sObject* pObject = g_ObjectList[iObjectID];
+			sFrame* pFrame = lastHitFrame[iObjectID];
+			//PE: Is frame still valid ?
+			for (int iFrameIndex = 0; iFrameIndex < pObject->iFrameCount; iFrameIndex++)
+			{
+				if (pFrame == pObject->ppFrameList[iFrameIndex])
+				{
+					if (pFrame->szName)
+					{
+						if (strlen(pFrame->szName) > 0)
+						{
+							//PE: Return bone name.
+							lua_pushstring(L, pFrame->szName);
+							return 1;
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	lua_pushstring(L, "");
+	return 1;
+}
+
 int IntersectAll ( lua_State *L )
 {
 	return IntersectCore ( L, 3 );
@@ -6062,6 +6173,25 @@ int ForceGunUnderWater(lua_State* L)
 	bForceGunUnderWater = lua_tonumber(L, 1);
 	return 0;
 }
+
+int GetGunEmissiveStrength(lua_State* L)
+{
+	int n = lua_gettop(L);
+	if (n < 1) return 0;
+	lua_pushnumber(L, t.gun[t.gunid].settings.fEmissiveStrength);
+	return 1;
+}
+int SetGunEmissiveStrength(lua_State* L)
+{
+	int n = lua_gettop(L);
+	if (n < 1) return 0;
+	float emi = lua_tonumber(L, 1);
+	sObject* pGunObject = GetObjectData(t.currentgunobj);
+	if (pGunObject)
+		WickedCall_SetObjectEmissiveStrength(pGunObject, emi);
+	return 0;
+}
+
 int GetGunAnimationFramesFromName(lua_State* L)
 {
 	int n = lua_gettop(L);
@@ -13016,7 +13146,8 @@ void addFunctions()
 	lua_register(lua, "SetExplosionDamage", SetExplosionDamage);
 	lua_register(lua, "SetCustomExplosion", SetCustomExplosion);
 	
-
+	
+	lua_register(lua, "GetEntityProjectGlobal", GetEntityProjectGlobal);
 	lua_register(lua, "GetEntityCollectable", GetEntityCollectable);
 	lua_register(lua, "GetEntityCollected", GetEntityCollected);
 	lua_register(lua, "GetEntityUsed", GetEntityUsed);
@@ -13139,6 +13270,7 @@ void addFunctions()
 	lua_register(lua, "GetTerrainHeight", GetTerrainHeight);
 	lua_register(lua, "GetSurfaceHeight", GetSurfaceHeight);
 	lua_register(lua, "SetPlayerSlopeAngle", SetPlayerSlopeAngle);
+	lua_register(lua, "GetTerrainHeightFloat", GetTerrainHeightFloat);
 
 	// DarkAI - Legacy Automatic Mode
 	lua_register(lua, "AIEntityAssignPatrolPath" , AIEntityAssignPatrolPath );
@@ -13332,6 +13464,9 @@ void addFunctions()
 	lua_register(lua, "GetIntersectCollisionNX" , GetIntersectCollisionNX );
 	lua_register(lua, "GetIntersectCollisionNY" , GetIntersectCollisionNY );
 	lua_register(lua, "GetIntersectCollisionNZ" , GetIntersectCollisionNZ );
+	lua_register(lua, "IntersectGetLastHitBone", IntersectGetLastHitBone);
+	lua_register(lua, "IntersectGetLastHitFrame", IntersectGetLastHitFrame);
+
 	lua_register(lua, "PositionCamera" , PositionCamera );
 	lua_register(lua, "PointCamera" , PointCamera );
 	lua_register(lua, "MoveCamera" , MoveCamera );
@@ -14176,7 +14311,9 @@ void addFunctions()
 	lua_register(lua, "GetGunAnimationFramesFromName", GetGunAnimationFramesFromName);
 	lua_register(lua, "SetGunAnimationSpeed", SetGunAnimationSpeed);
 	lua_register(lua, "ForceGunUnderWater", ForceGunUnderWater);
-
+	lua_register(lua, "GetGunEmissiveStrength", GetGunEmissiveStrength);
+	lua_register(lua, "SetGunEmissiveStrength", SetGunEmissiveStrength);
+	
 }
 
  /*

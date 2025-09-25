@@ -2871,6 +2871,8 @@ void game_masterroot_gameloop_afterloopcode(int iUseVRTest)
 	timestampactivity(0,"resetting LUA system");
 	titleslua_free ( );
 	LuaReset (  );
+	extern std::unordered_map<int, sFrame*> lastHitFrame;
+	lastHitFrame.clear();
 
 	//PE: restore waterline.
 	t.terrain.waterliney_f = g.gdefaultwaterheight;

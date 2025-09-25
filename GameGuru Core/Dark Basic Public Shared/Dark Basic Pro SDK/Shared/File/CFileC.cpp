@@ -2080,6 +2080,11 @@ DARKSDK float ReadFloat( int f )
 	return fResult;
 }
 
+//PE: Used a lot but GetReturnStringFromWorkString never freed.
+//PE: Most calls use cstr so pointer to free is lost.
+int ringReadString = 0;
+char cReadString[20][1025];
+
 DARKSDK LPSTR ReadString( int f )
 {
     /*
@@ -2092,7 +2097,11 @@ DARKSDK LPSTR ReadString( int f )
         optional buffer to be provided (defaults to m_pWorkString).
     */
 
-    LPSTR pReturnString=0;
+	LPSTR pReturnString = 0;
+	ringReadString = ringReadString + 1;
+	if (ringReadString > 19)
+		ringReadString = 0;
+
 
 	if(f>=1 && f<=MAX_FILES)
 	{
@@ -2134,7 +2143,16 @@ DARKSDK LPSTR ReadString( int f )
 			}
 
 	        // Create and return string
-	        pReturnString=GetReturnStringFromWorkString( &WorkString[0] );
+			if (WorkString.size() < 1024)
+			{
+				strcpy(&cReadString[ringReadString][0], &WorkString[0]);
+				pReturnString = &cReadString[ringReadString][0];
+			}
+			else
+			{
+				//PE: Just in case we have some larger string.
+				pReturnString = GetReturnStringFromWorkString(&WorkString[0]);
+			}
 		}
 		else
 			RunTimeWarning(RUNTIMEERROR_FILENOTOPEN);
@@ -2892,8 +2910,24 @@ DARKSDK void WriteMemblock( int f, int mbi )
 //		
 // Command Expression Functions
 //
+//PE: GetDir calls never free memory, we use it alot.
+//PE: We nearly newer use LPSTR pThisDir = GetDir(); , but more cstr and std::string where the pointer is lost.
+//PE: So make a small ring buffer.
 
-DARKSDK LPSTR GetDir( void )
+int currentRingDir = 0;
+char cRingDir[20][1024];
+DARKSDK LPSTR GetDir(void)
+{
+	// Create and return string
+	currentRingDir = currentRingDir + 1;
+	if (currentRingDir > 19)
+		currentRingDir = 0;
+	getcwd(cRingDir[currentRingDir], 1024);
+	LPSTR pReturnString = &cRingDir[currentRingDir][0];
+	return pReturnString;
+}
+
+DARKSDK LPSTR GetDirOLD( void )
 {
 	// Create and return string
 	getcwd(m_pWorkString, 1024);
@@ -2901,14 +2935,31 @@ DARKSDK LPSTR GetDir( void )
 	return pReturnString;
 }
 
+//PE: Mem never freed normally use cstr tmp = GetFileName();
+int ringCounter = 0;
+char FilenameRingBuffer[20][MAX_PATH];
 DARKSDK LPSTR GetFileName( void )
 {
+	ringCounter = ringCounter + 1;
+	if (ringCounter > 19)
+		ringCounter = 0;
 	if(hInternalFile)
+		strcpy(&FilenameRingBuffer[ringCounter][0], filedata.name);
+	else
+		strcpy(&FilenameRingBuffer[ringCounter][0], "");
+
+	LPSTR pReturnString = &FilenameRingBuffer[ringCounter][0];
+	return pReturnString;
+}
+
+DARKSDK LPSTR GetFileNameOLD(void)
+{
+	if (hInternalFile)
 		strcpy(m_pWorkString, filedata.name);
 	else
 		strcpy(m_pWorkString, "");
 
-	LPSTR pReturnString=GetReturnStringFromWorkString();
+	LPSTR pReturnString = GetReturnStringFromWorkString();
 	return pReturnString;
 }
 
@@ -3024,10 +3075,34 @@ DARKSDK int FileEnd( int f )
 	return 0;
 }
 
+//PE: g_pGlob->CreateDeleteString never freed, always use same string
+char cAppName[1025];
+
 DARKSDK LPSTR Appname( void )
 {
 	#ifdef PRODUCTCONVERTER
 	#else
+	extern bool bSpecialStandalone;
+	extern char cSpecialStandaloneProject[MAX_PATH];
+	if (bSpecialStandalone)
+	{
+		//PE: Emulate normal standalone name.
+		strcpy(cAppName, cSpecialStandaloneProject);
+		strcat(cAppName, ".exe");
+		LPSTR pReturnString = &cAppName[0];
+		return pReturnString;
+	}
+	#endif
+	// Create and return string
+	GetModuleFileName(g_pGlob->hInstance, cAppName, 1024);
+	LPSTR pReturnString = &cAppName[0];
+	return pReturnString;
+}
+
+DARKSDK LPSTR AppnameOLD(void)
+{
+#ifdef PRODUCTCONVERTER
+#else
 	extern bool bSpecialStandalone;
 	extern char cSpecialStandaloneProject[MAX_PATH];
 	if (bSpecialStandalone)
@@ -3038,10 +3113,10 @@ DARKSDK LPSTR Appname( void )
 		LPSTR pReturnString = GetReturnStringFromWorkString();
 		return pReturnString;
 	}
-	#endif
+#endif
 	// Create and return string
 	GetModuleFileName(g_pGlob->hInstance, m_pWorkString, 1024);
-	LPSTR pReturnString=GetReturnStringFromWorkString();
+	LPSTR pReturnString = GetReturnStringFromWorkString();
 	return pReturnString;
 }
 
@@ -3053,11 +3128,13 @@ DARKSDK char* Windir( char* pDestStr )
 	return pReturnString;
 }
 
+//PE: Never freed.
+char docdir[MAX_PATH];
 DARKSDK LPSTR Mydocdir( void )
 {
 	// lee - 040407 - return the My Documents folder in full
-	SHGetFolderPath( NULL, CSIDL_PERSONAL, NULL, 0, m_pWorkString );
-	LPSTR pReturnString=GetReturnStringFromWorkString();
+	SHGetFolderPath( NULL, CSIDL_PERSONAL, NULL, 0, docdir);
+	LPSTR pReturnString = &docdir[0];
 	return pReturnString;
 }
 

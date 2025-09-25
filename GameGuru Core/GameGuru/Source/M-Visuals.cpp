@@ -237,6 +237,7 @@ void visuals_resetvalues (bool bNewLevel)
 
 	t.visuals.g_bDelayedShadows = false;
 	t.visuals.g_bDelayedShadowsLaptop = false;
+	t.visuals.fEnvProbeBrightness = 1.0f;
 
 	t.visuals.fsetBloomThreshold = 2.0f;
 	t.visuals.ApparentSize = 0.000008f;
@@ -806,6 +807,8 @@ void visuals_save ( void )
 	t.strwork = ""; t.strwork = t.strwork + "visuals.DelayedShadowsLaptop=" + Str(t.visuals.g_bDelayedShadowsLaptop);
 	WriteString(1, t.strwork.Get());
 
+	t.strwork = ""; t.strwork = t.strwork + "visuals.EnvProbeBrightness=" + Str(t.visuals.fEnvProbeBrightness);
+	WriteString(1, t.strwork.Get());
 
 	t.strwork = ""; t.strwork = t.strwork + "visuals.BloomEnabled=" + Str(t.visuals.bBloomEnabled);
 	WriteString(1, t.strwork.Get());
@@ -1148,6 +1151,8 @@ void visuals_load ( void )
 	t.visuals.g_bDelayedShadows = false;
 	t.visuals.g_bDelayedShadowsLaptop = false;
 
+	t.visuals.fEnvProbeBrightness = 1.0f;
+
 	t.visuals.fsetBloomThreshold = 2.0f;
 	t.visuals.ApparentSize = 0.000008f;
 	t.visuals.fsetBloomStrength = 1.0f;
@@ -1468,6 +1473,7 @@ void visuals_load ( void )
 			t.try_s = "visuals.DelayedShadows"; if (t.tfield_s == t.try_s)  t.visuals.g_bDelayedShadows = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.DelayedShadowsLaptop"; if (t.tfield_s == t.try_s)  t.visuals.g_bDelayedShadowsLaptop = ValF(t.tvalue_s.Get());
 
+			t.try_s = "visuals.EnvProbeBrightness"; if (t.tfield_s == t.try_s)  t.visuals.fEnvProbeBrightness = ValF(t.tvalue_s.Get());
 
 			t.try_s = "visuals.BloomEnabled"; if (t.tfield_s == t.try_s)  t.visuals.bBloomEnabled = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.BloomThreshold"; if (t.tfield_s == t.try_s)  t.visuals.fsetBloomThreshold = ValF(t.tvalue_s.Get());

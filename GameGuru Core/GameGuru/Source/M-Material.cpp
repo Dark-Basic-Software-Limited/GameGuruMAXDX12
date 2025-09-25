@@ -202,6 +202,16 @@ void material_loadsounds ( int iInitial )
 							if (t.tbase < g.materialsoundoffsetend - 5)
 							{
 								Load3DSound (t.snd_s.Get(), t.tbase);
+								//PE: We now support SetSoundSpeed so need to correct the old 22050 to the current used.
+								if (SoundExist(t.tbase))
+								{
+									uint32_t GetSoundFrequency(int iID);
+									uint32_t fre = GetSoundFrequency(t.tbase);
+									if (fre > 0)
+									{
+										t.material[t.m].freq = fre;
+									}
+								}
 								SetSoundSpeed (t.tbase, t.material[t.m].freq + g.soundfrequencymodifier);
 								t.msoundassign = t.tbase;
 

@@ -10,6 +10,7 @@
 // instead call functions from Wicked-MAX to do all Wicked Calls!
 //#include "WickedEngine.h"
 #include "..\..\..\..\Guru-WickedMAX\wickedcalls.h"
+#include <unordered_map>
 
 // Globals from OLD OBJECT MANAGER!
 std::vector< sMesh* > g_vRefreshMeshList;
@@ -268,6 +269,8 @@ bool CObjectManager::ReplaceAllFlaggedObjectsInBuffers(void)
 	return true;
 }
 
+std::unordered_map<int, sFrame*> lastHitFrame;
+
 sObject* CObjectManager::FindObjectFromWickedObjectEntityID ( uint64_t iWickedEntityID )
 {
 	// go through ALL objects
@@ -286,6 +289,15 @@ sObject* CObjectManager::FindObjectFromWickedObjectEntityID ( uint64_t iWickedEn
 				{
 					if (pFrame->wickedobjindex == iWickedEntityID)
 					{
+						extern bool bImGuiInTestGame;
+						if (bImGuiInTestGame)
+						{
+							//PE: Keep the list small, its not really Important as normally you would read it just after a intersect call.
+							//PE: But as we also get here from threads a small list is needed.
+							if (lastHitFrame.size() > 100)
+								lastHitFrame.clear();
+							lastHitFrame[iObjectID] = pFrame;
+						}
 						return pObject;
 					}
 				}

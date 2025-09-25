@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 
+#define DISABLEZTEMP
+
 #ifndef __C_STR__
 
 #define __C_STR__
@@ -44,8 +46,11 @@ class cStr
 		
 	protected:
 		char*	m_pString;
+#ifndef DISABLEZTEMP
 		char*	m_szTemp;
+#endif
 		int		m_size;
+		int		m_capacity = 0;
 };
 
 #endif

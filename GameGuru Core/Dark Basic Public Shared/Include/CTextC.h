@@ -23,6 +23,7 @@ char* StrDoubleInt			( char* pDestStr, long long lValue );
 long long ValR				( char* dwSrcStr );
 void  Reverse				( char* dwA );
 char* Spaces				( int iSpaces );
+char* Spaces2				( int iSpaces );
 
 int   FindFirstChar			( char* dwSource, char* dwChar );
 int   FindLastChar			( char* dwSource, char* dwChar );

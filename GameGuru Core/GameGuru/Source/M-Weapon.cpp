@@ -1290,6 +1290,8 @@ void weapon_projectile_setup ( int* piSndForBaseSound, int* piSndForBaseDestroy 
 			{
 				//PE: Need clone but for now.
 				t.WeaponProjectile[t.tNew].WPE_Root = WickedCall_LoadWPE(t.WeaponProjectileBase[t.tNewProjBase].WPE_Effect.Get());
+				//iAction = 1 Burst all. 2 = Pause. - 3 = Resume. - 4 = Restart - 5 - visible - 6 = not visible. - 7 = pause emit - 8 = resume emit
+				WickedCall_PerformEmitterAction(6, t.WeaponProjectile[t.tNew].WPE_Root);
 			}
 
 			// make the tracer object
@@ -1941,6 +1943,8 @@ void weapon_projectileresult_make (int customdecal )
 				PositionSound(t.entityelement[t.tSourceEntity].soundset6, t.tx_f, t.ty_f, t.tz_f);
 				SetSoundSpeed(t.entityelement[t.tSourceEntity].soundset6, 38000 + Rnd(8000));
 				PlaySound(t.entityelement[t.tSourceEntity].soundset6);
+				extern int i_LastExplosionSoundID;
+				i_LastExplosionSoundID = t.entityelement[t.tSourceEntity].soundset6;
 			}
 			else if (t.tSoundID > 0 && SoundExist(t.tSoundID) == 1)
 			{

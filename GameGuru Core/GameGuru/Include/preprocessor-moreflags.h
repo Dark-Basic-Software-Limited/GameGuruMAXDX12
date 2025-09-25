@@ -144,6 +144,9 @@
 
 	#define PENEWLAYOUT
 
+	//PE: 2.6 times faster then the old wicked pick() function.
+	#define PICKBVHTHREADED
+
   #else
    // Flags to compile the Classic version of GameGuru
    #define FPSEXCHANGE

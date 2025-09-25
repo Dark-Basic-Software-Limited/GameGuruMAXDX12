@@ -521,7 +521,6 @@ void ImGui_RenderLast(void)
 		if ( (pref.iSmallToolbar >= 1) && !g_bCharacterCreatorPlusActivated && !bImporter_Window && !bTerrain_Tools_Window
 			&& !bWelcomeScreen_Window && !bStoryboardWindow && !bMarketplace_Window && !bScreen_Editor_Window)
 		{
-		
 			//PE: VS2022 style
 			float r = pref.highlight_color.x; // = ImVec4((1.0f / 255.0f) * 14, (1.0f / 255.0f) * 99, (1.0f / 255.0f) * 156, 1.0);
 			float g = pref.highlight_color.y; // (1.0f / 255.0f) * 99;

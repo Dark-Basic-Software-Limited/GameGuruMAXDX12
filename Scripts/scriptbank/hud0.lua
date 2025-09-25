@@ -71,6 +71,7 @@ hud0_sounds_silence = 29999
 
 hud0_quest_qty = 0
 hud0_quest_status = {}
+hud0_quest_image = {}
 
 hud0_buttonPressed = 0
 
@@ -107,6 +108,7 @@ function hud0.init()
  hud0_quest_qty = GetCollectionQuestQuantity()
  for tquestindex = 1, hud0_quest_qty, 1 do
 	hud0_quest_status[tquestindex] = GetCollectionQuestAttribute(tquestindex,"status")
+	hud0_quest_image[tquestindex] = 0
  end
  -- signal we need to load our map image in
  hud0_mapView_LevelImage = -1
@@ -889,6 +891,7 @@ function hud0.main()
 			end
 			if string.sub(elementName,1,11) == "quest:show:" then
 				ttextvalue = ""
+				showimage = 0
 				if g_UserGlobalQuestTitleShowing ~= nil then
 					if elementName == "quest:show:title" then
 						ttextvalue = g_UserGlobalQuestTitleShowing
@@ -896,7 +899,34 @@ function hud0.main()
 						for tquestindex = 1, hud0_quest_qty, 1 do
 							if GetCollectionQuestAttribute(tquestindex,"title") == g_UserGlobalQuestTitleShowing then
 								local optionalrewardseperation = 0
-								if elementName == "quest:show:completed" then
+								if elementName == "quest:show:image" then
+									showimage = 1
+									imgsrc = GetCollectionQuestAttribute(tquestindex,"image")
+									if hud0_quest_image[tquestindex] == nil then
+										hud0_quest_image[tquestindex] = 0
+									end
+									if hud0_quest_image[tquestindex] == 0 then
+										hud0_quest_image[tquestindex] = LoadImage(imgsrc)
+										if hud0_quest_image[tquestindex] == 0 then
+											hud0_quest_image[tquestindex] = -1
+										end
+									end
+									if hud0_quest_image[tquestindex] > 0 then
+										telementx,telementy,telementwidth,telementheight = GetScreenElementArea(elementID)
+										SetSpritePosition(hud0_gridSpriteID,telementx,telementy)
+										SetSpriteImage(hud0_gridSpriteID,hud0_quest_image[tquestindex])
+										SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
+										aspectratio = GetImageHeight(hud0_quest_image[tquestindex]) / GetImageWidth(hud0_quest_image[tquestindex])
+										if telementwidth*aspectratio < telementheight then
+											SetSpriteSize(hud0_gridSpriteID,telementwidth,telementwidth*aspectratio)
+										else
+											aspectratio = GetImageWidth(hud0_quest_image[tquestindex]) / GetImageHeight(hud0_quest_image[tquestindex])
+											SetSpriteSize(hud0_gridSpriteID,telementheight*aspectratio,telementheight)
+										end
+										SetSpritePriority(hud0_gridSpriteID,-1)
+										PasteSprite(hud0_gridSpriteID)
+									end
+								elseif elementName == "quest:show:completed" then
 									if hud0_quest_status[tquestindex] == "complete" then
 										ttextvalue = "Quest Completed"
 									else
@@ -930,7 +960,9 @@ function hud0.main()
 					end
 				end
 				if ttextvalue == "none" then ttextvalue = "" end
-				SetScreenElementText(elementID,ttextvalue)
+				if showimage == 0 then
+					SetScreenElementText(elementID,ttextvalue)
+				end
 			end
 		end	
 	end			
@@ -1303,6 +1335,7 @@ function hud0.main()
 												tqty = tqty - 1
 												if tqty <= 0 then
 													SetEntityCollected(entityindex,0,0)
+													SetEntityActive(entityindex,1)
 													Destroy(entityindex)
 													cycleuntilnomoretransfers = 1
 													break

@@ -41,6 +41,7 @@
 
 #include "M-RPG.h"
 #include "M-Workshop.h"
+#include <deque>
 
 char launchLoadOnStartup[260] = "\0";
 
@@ -66,6 +67,10 @@ bool bImGuiRenderWithNoCustomTextures = false;
 bool bBlockImGuiUntilFurtherNotice = false;
 bool bImGuiInitDone = false;
 int ImGuiStatusBar_Size = 0;
+
+bool bPreviewWPE = false;
+uint32_t PreviewWPERoot = 0;
+float fPreviewYOffset = 0;
 
 preferences pref;
 bool g_bEnableAutoFlattenSystem = true;
@@ -173,6 +178,8 @@ bool bForceRenderEverywhere = false;
 
 #ifdef WICKEDENGINE
 std::vector<ID3D11ShaderResourceView*> lpBadTexture;
+std::deque<std::vector<ID3D11ShaderResourceView*>> badTextureFrames;
+const size_t MAX_FRAMES_TO_KEEP = 3;
 #endif
 
 void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
@@ -280,6 +287,8 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 	// Setup desired DX state
 	ImGui_ImplDX11_SetupRenderState(draw_data, ctx);
 
+	badTextureFrames.push_back(std::move(lpBadTexture));
+
 	// Render command lists
 	// (Because we merged all buffers into a single one, we maintain our own offset into them)
 	int global_idx_offset = 0;
@@ -292,6 +301,26 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 		{
 			const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
 			
+			if (!pcmd->TextureId)
+				continue;
+
+			bool bBadTextureAll = false;
+			for (const auto& frameTextures : badTextureFrames)
+			{
+				//PE: Check all frames for bad texture_srv.
+				for (int i = 0; i < frameTextures.size(); i++)
+				{
+					ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
+					if (texture_srv == frameTextures[i])
+					{
+						bBadTextureAll = true;
+						break;
+					}
+				}
+			}
+			if (bBadTextureAll)
+				continue;
+
 			if (pcmd->UserCallback == (ImDrawCallback)10)
 			{
 				bForceRenderEverywhere = true;
@@ -385,6 +414,10 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 
 	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
+
+	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
+		badTextureFrames.pop_front();
+	}
 	#endif
 
 }
@@ -549,6 +582,8 @@ void ImGuiHook_RenderCall(void* ctxptr)
 
 	ImGuiContext& g = *GImGui;
 
+	badTextureFrames.push_back(std::move(lpBadTexture));
+
     // Render command lists
     // (Because we merged all buffers into a single one, we maintain our own offset into them)
     int global_idx_offset = 0;
@@ -560,6 +595,27 @@ void ImGuiHook_RenderCall(void* ctxptr)
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
         {
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+
+			if (!pcmd->TextureId)
+				continue;
+
+			bool bBadTextureAll = false;
+			for (const auto& frameTextures : badTextureFrames)
+			{
+				//PE: Check all frames for bad texture_srv.
+				for (int i = 0; i < frameTextures.size(); i++)
+				{
+					ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
+					if (texture_srv == frameTextures[i])
+					{
+						bBadTextureAll = true;
+						break;
+					}
+				}
+			}
+			if (bBadTextureAll)
+				continue;
+
 			if (pcmd->UserCallback == (ImDrawCallback)10)
 			{
 				bForceRenderEverywhere = true;
@@ -775,6 +831,10 @@ void ImGuiHook_RenderCall(void* ctxptr)
 
 	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
+	
+	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
+		badTextureFrames.pop_front();
+	}
 	#endif
 
 }
@@ -993,6 +1053,8 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
     // Setup desired DX state
     ImGui_ImplDX11_SetupRenderState(draw_data, ctx);
 
+	badTextureFrames.push_back(std::move(lpBadTexture));
+
     // Render command lists
     // (Because we merged all buffers into a single one, we maintain our own offset into them)
     int global_idx_offset = 0;
@@ -1004,6 +1066,27 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
         {
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+
+			if (!pcmd->TextureId)
+				continue;
+
+			bool bBadTextureAll = false;
+			for (const auto& frameTextures : badTextureFrames)
+			{
+				//PE: Check all frames for bad texture_srv.
+				for (int i = 0; i < frameTextures.size(); i++)
+				{
+					ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
+					if (texture_srv == frameTextures[i])
+					{
+						bBadTextureAll = true;
+						break;
+					}
+				}
+			}
+			if (bBadTextureAll)
+				continue;
+
 			if (pcmd->UserCallback == (ImDrawCallback)10)
 			{
 				bForceRenderEverywhere = true;
@@ -1098,6 +1181,11 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
 
 	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
+
+	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
+		badTextureFrames.pop_front();
+	}
+
 	#endif
     // Restore modified DX state
     ctx->RSSetScissorRects(old.ScissorRectsCount, old.ScissorRects);
@@ -5275,13 +5363,13 @@ void ChangeGGFont(const char *cpcustomfont, int iIDEFontSize)
 
 	extern std::vector< std::pair<ImFont*, std::string>> StoryboardFonts;
 
-	LPSTR pOldDir = GetDir();
+	cstr pOldDir = GetDir();
 
 	char destination[MAX_PATH];
 	strcpy(destination, "editors\\templates\\fonts\\");
 	SetDir(destination);
 	ChecklistForFiles();
-	SetDir(pOldDir);
+	SetDir(pOldDir.Get());
 	DARKSDK LPSTR ChecklistString(int iIndex);
 	DARKSDK int ChecklistQuantity(void);
 	for (int c = 1; c <= ChecklistQuantity(); c++)
@@ -5307,7 +5395,7 @@ void ChangeGGFont(const char *cpcustomfont, int iIDEFontSize)
 			}
 		}
 	}
-	SetDir(pOldDir);
+	SetDir(pOldDir.Get());
 	#endif
 
 
@@ -5326,7 +5414,7 @@ void AddRemoteProjectFonts(void)
 	{
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-		LPSTR pOldDir = GetDir();
+		cstr pOldDir = GetDir();
 		char destination[MAX_PATH];
 		strcpy(destination, Storyboard.customprojectfolder);
 		strcat(destination, Storyboard.gamename);
@@ -5335,7 +5423,7 @@ void AddRemoteProjectFonts(void)
 		{
 			SetDir(destination);
 			ChecklistForFiles();
-			SetDir(pOldDir);
+			SetDir(pOldDir.Get());
 			DARKSDK LPSTR ChecklistString(int iIndex);
 			DARKSDK int ChecklistQuantity(void);
 			for (int c = 1; c <= ChecklistQuantity(); c++)
@@ -5387,7 +5475,7 @@ void AddRemoteProjectFonts(void)
 				bBlockImGuiUntilNewFrame = true;
 			}
 		}
-		SetDir(pOldDir);
+		SetDir(pOldDir.Get());
 	}
 }
 
@@ -6163,7 +6251,7 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 		pNewItem = new cFolderItem();
 		pNewItem->m_sFolder = folder_s;
 
-		LPSTR pOld = GetDir();
+		cstr pOld = GetDir();
 		pNewItem->m_sFolderFullPath = pOld;
 		pNewItem->iType = foldertype;
 
@@ -7888,6 +7976,9 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 	extern int speech_ids[5];
 
 	int imageindexi = 0; // can have eight images indexed this way
+	bool bwpefile = false;
+	bool bwpeyoffet = false;
+
 	for (int i = 0; i < tmpeleprof->PropertiesVariable.iVariables; i++) 
 	{
 		bool speech = false;
@@ -8065,6 +8156,14 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 					}
 					else 
 					{
+						if (pestrcasestr(tmpeleprof->PropertiesVariable.Variable[i], "wpefile"))
+						{
+							if (FileExist(tmpeleprof->PropertiesVariable.VariableValue[i]))
+							{
+								//PE: Possible to preview.
+								bwpefile = true;
+							}
+						}
 						cstr tmpvalue = tmpeleprof->PropertiesVariable.VariableValue[i];
 						tmpvalue = imgui_setpropertyfile2(1, tmpvalue.Get(), "", "Select File", "..\\files\\");
 						if (tmpvalue != tmpeleprof->PropertiesVariable.VariableValue[i]) 
@@ -8091,6 +8190,51 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 								strcpy(tmpeleprof->PropertiesVariable.VariableValue[i], tmpvalue.Get());
 							}
 							bUpdateMainString = true;
+							if (PreviewWPERoot != 0 && bPreviewWPE)
+							{
+								//PE: Delete effect and reload.
+								WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+								void DeleteEmitterEffects(uint32_t root);
+								DeleteEmitterEffects(PreviewWPERoot);
+								PreviewWPERoot = 0;
+								PreviewWPERoot = WickedCall_LoadWPE(tmpeleprof->PropertiesVariable.VariableValue[i]);
+								void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
+								WickedCall_PerformEmitterAction(1, PreviewWPERoot);
+								WickedCall_PerformEmitterAction(4, PreviewWPERoot);
+								WickedCall_PerformEmitterAction(5, PreviewWPERoot);
+							}
+						}
+						if (bwpefile)
+						{
+							ImGui::Separator();
+							if (ImGui::Checkbox("Preview", &bPreviewWPE))
+							{
+								if (PreviewWPERoot == 0 && bPreviewWPE)
+								{
+									//PE: Load effect.
+									//PE: Delete this preview before test game. and set bPreviewWPE = false
+									PreviewWPERoot = WickedCall_LoadWPE(tmpeleprof->PropertiesVariable.VariableValue[i]);
+									//iAction = 1 Burst all. 2 = Pause. - 3 = Resume. - 4 = Restart - 5 - visible - 6 = not visible. - 7 = pause emit - 8 = resume emit
+									void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
+									WickedCall_PerformEmitterAction(1, PreviewWPERoot);
+									WickedCall_PerformEmitterAction(4, PreviewWPERoot);
+									WickedCall_PerformEmitterAction(5, PreviewWPERoot);
+								}
+								if (PreviewWPERoot != 0 && !bPreviewWPE)
+								{
+									//PE: Delete effects.
+									WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+									void DeleteEmitterEffects(uint32_t root);
+									DeleteEmitterEffects(PreviewWPERoot);
+									PreviewWPERoot = 0;
+								}
+							}
+							ImGui::SameLine();
+							if (ImGui::Button("Burst##Burst", ImVec2(60, 0)))
+							{
+								WickedCall_PerformEmitterAction(1, PreviewWPERoot);
+							}
+							ImGui::Separator();
 						}
 					}
 				}
@@ -8305,7 +8449,31 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 					}
 					if (bIsAQuestList == true)
 					{
-						iQuestIndex = atoi(tmpeleprof->PropertiesVariable.VariableValue[i]);
+						if (bAsString)
+						{
+							//PE: Locate index.
+							for (int v = 0; v < g_collectionQuestList.size(); v++)
+							{
+								if (stricmp(g_collectionQuestList[v].collectionFields[0].Get(), tmpeleprof->PropertiesVariable.VariableValue[i]) == 0)
+								{
+									iQuestIndex = v + 2;
+									break;
+								}
+							}
+							if (iQuestIndex == 0)
+							{
+								//PE: Default to "none"
+								if (pestrcasestr(tmpeleprof->aimain_s.Get(), "quest_poster") ||
+									pestrcasestr(tmpeleprof->aimain_s.Get(), "quest_giver"))
+								{
+									iQuestIndex = 1;
+								}
+							}
+						}
+						else
+						{
+							iQuestIndex = atoi(tmpeleprof->PropertiesVariable.VariableValue[i]);
+						}
 						if (bUpdateMainString == true)
 						{
 							if (iQuestIndex == 1)
@@ -8341,6 +8509,22 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 									bFoundMatch = true;
 								}
 							}
+
+							if (ImGui::StyleButton("Quest Editor", ImVec2(but_gadget_size, 0)))
+							{
+								void CloseAllOpenTools(bool bTerrainTools = true);
+								CloseAllOpenTools();
+								extern std::vector<collectionQuestType> g_collectionQuestList_backup;
+								g_collectionQuestList_backup.clear();
+								extern bool bQuestEditor_Window;
+								bQuestEditor_Window = true;
+							}
+							if (ImGui::IsItemHovered())
+							{
+								ImGui::SetTooltip("Open Quest Editor");
+							}
+							//PE: Now use "Quest Editor"
+							/*
 							LPSTR pCreateButtonLabel = "Create New Quest";
 							if (ImGui::StyleButton(pCreateButtonLabel, ImVec2(but_gadget_size, 0)))
 							{
@@ -8380,24 +8564,50 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 								else
 									ImGui::SetTooltip("Use the name of this object to add a new quest to the main quest list");
 							}
+							*/
 						}
 						else
 						{
+							if (ImGui::StyleButton("Quest Editor", ImVec2(but_gadget_size, 0)))
+							{
+								extern int current_quest_selection; //iQuestIndex - 1
+								int iIndex = iQuestIndex - 2;
+								if (iIndex >= 0 && iIndex < g_collectionQuestList.size())
+									current_quest_selection = iIndex;
+
+								void CloseAllOpenTools(bool bTerrainTools = true);
+								CloseAllOpenTools();
+								extern std::vector<collectionQuestType> g_collectionQuestList_backup;
+								g_collectionQuestList_backup.clear();
+								extern bool bQuestEditor_Window;
+								bQuestEditor_Window = true;
+							}
+							if (ImGui::IsItemHovered())
+							{
+								ImGui::SetTooltip("Open Quest Editor");
+							}
+
+							ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+
 							LPSTR pCreateButtonLabel = "Delete Quest";
 							if (ImGui::StyleButton(pCreateButtonLabel, ImVec2(but_gadget_size, 0)))
 							{
-								// create new quest list without the one deleted
-								std::vector<collectionQuestType> newCollectionQuestList;
-								for (int q = 0; q < g_collectionQuestList.size(); q++)
+								int iAction = askBoxCancel("This will delete the current selected quest. Are you sure ?", "Quest Confirmation"); //1==Yes 2=Cancel 0=No
+								if (iAction == 1)
 								{
-									if (q != iQuestIndex-2)
+									// create new quest list without the one deleted
+									std::vector<collectionQuestType> newCollectionQuestList;
+									for (int q = 0; q < g_collectionQuestList.size(); q++)
 									{
-										newCollectionQuestList.push_back(g_collectionQuestList[q]);
+										if (q != iQuestIndex - 2)
+										{
+											newCollectionQuestList.push_back(g_collectionQuestList[q]);
+										}
 									}
+									g_collectionQuestList = newCollectionQuestList;
+									sprintf(tmpeleprof->PropertiesVariable.VariableValue[i], "%d", 1);
+									bDoARefresh = true;
 								}
-								g_collectionQuestList = newCollectionQuestList;
-								sprintf(tmpeleprof->PropertiesVariable.VariableValue[i], "%d", 1);
-								bDoARefresh = true;
 							}
 							if (ImGui::IsItemHovered()) ImGui::SetTooltip("Delete this quest from the main quest list of the game project");
 						}
@@ -8633,11 +8843,23 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 						bUpdateMainString = true;
 					}
 				}
+				if (bwpefile)
+				{
+					if (pestrcasestr(tmpeleprof->PropertiesVariable.Variable[i], "offsety"))
+					{
+						bwpeyoffet = true;
+						fPreviewYOffset = tmpint;
+					}
+				}
+
 			}
 			ImGui::PopItemWidth();
 			ImGui::PopID();
 		}
 	}
+	
+	if(!bwpeyoffet)
+		fPreviewYOffset = 0;
 
 	//Update soundset4_s when we have changes.
 	if (bUpdateMainString) 
