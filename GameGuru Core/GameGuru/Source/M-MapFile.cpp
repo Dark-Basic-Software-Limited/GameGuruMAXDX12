@@ -160,6 +160,7 @@ extern char g_Storyboard_Current_fpm[256];
 extern char g_Storyboard_Current_lua[256];
 extern char g_Storyboard_Current_Loading_Page[256];
 
+void AddWPETextures(char* filename);
 // 
 //  MAP FILE FORMAT
 // 
@@ -2202,13 +2203,22 @@ void mapfile_collectfoldersandfiles (cstr levelpathfolder)
 	*/
 
 	// TODO: only copy the particles that each entity uses, rather than the whole folder
-	addallinfoldertocollection("particlesbank", "particlesbank"); // all particles so do not miss any for standalone (only 4MB for defaults)
-	addallinfoldertocollection("particlesbank\\user", "particlesbank\\user");
+
+
+	//addtocollection ( "particlesbank\advanced\birds.pe" )
+
+	//PE: Not needed anymore.
+	//addallinfoldertocollection("particlesbank", "particlesbank"); // all particles so do not miss any for standalone (only 4MB for defaults)
+	//addallinfoldertocollection("particlesbank\\user", "particlesbank\\user");
+	
+	//PE: Still need old effects. arx
+	addfoldertocollection("particlesbank");
 
 	// TODO: only copy the emitter that each entity uses, rather than the whole folder
-	addfoldertocollection("emitterbank");
-	addfoldertocollection("emitterbank\\user");
-	addfoldertocollection("emitterbank\\demo");
+	//PE: Not used anymore.
+	//addfoldertocollection("emitterbank");
+	//addfoldertocollection("emitterbank\\user");
+	//addfoldertocollection("emitterbank\\demo");
 
 	addtocollection("effectbank\\common\\noise64.png");
 	addtocollection("effectbank\\common\\dist2.png");
@@ -2843,6 +2853,19 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 	int iStoredEntID = t.entid;
 	t.entid = entid;
 
+	if (pEleProf->newparticle.emittername.Len() > 0)
+	{
+		char effectname[MAX_PATH];
+		if (pEleProf->newparticle.emittername != "particlesbank/default")
+		{
+			AddWPETextures(pEleProf->newparticle.emittername.Get());
+			//PE: Looks like some do not have .arx extension.
+			strcpy(effectname, pEleProf->newparticle.emittername.Get());
+			strcat(effectname, ".arx");
+			AddWPETextures(effectname);
+		}
+	}
+
 	// Check for custom images loaded in lua script
 	if (pEleProf->aimain_s != "")
 	{
@@ -2863,13 +2886,15 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 		for (int i = 0; i < MAXPROPERTIESVARIABLES; i++)
 		{
 			// Check the lua variable is a string.
-			if (tempeleprof.PropertiesVariable.VariableType[i] == 2)
+			//PE: We can now have variabletype == 7 that contain media.
+			if (tempeleprof.PropertiesVariable.VariableType[i] == 2 || tempeleprof.PropertiesVariable.VariableType[i] == 7)
 			{
 				// Check if the string contains a file.
 				int variableLength = strlen(tempeleprof.PropertiesVariable.VariableValue[i]);
-				if (variableLength > 4 && tempeleprof.PropertiesVariable.VariableValue[i][variableLength - 4] == '.')
+				if (variableLength > 4 && ( tempeleprof.PropertiesVariable.VariableValue[i][variableLength - 4] == '.' || tempeleprof.PropertiesVariable.VariableValue[i][variableLength - 3] == '.') )
 				{
 					// can specify a textfile, but needs to be specified as relative
+					char cRel[MAX_PATH];
 					LPSTR pStringOrFile = tempeleprof.PropertiesVariable.VariableValue[i];
 					if (pStringOrFile[1] == ':')
 					{
@@ -2886,10 +2911,35 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 							strcpy(pRelativePathAndFile, pStringOrFile + strlen(pRemoveAbsPart));
 						}
 						addtocollection(pRelativePathAndFile);
+						strcpy(cRel, pRelativePathAndFile);
+						if (pRelativePathAndFile[1] == ':')
+						{
+							//PE: If this is a projectfolder above dont work so.
+							extern char szBeforeChangeWriteDir[MAX_PATH];
+							strcpy(pRemoveAbsPart, szBeforeChangeWriteDir);
+							strcat(pRemoveAbsPart, "Files\\");
+							if (strnicmp(pRelativePathAndFile, pRemoveAbsPart, strlen(pRemoveAbsPart)) == NULL)
+							{
+								strcpy(pRelativePathAndFile, pStringOrFile + strlen(pRemoveAbsPart));
+							}
+							addtocollection(pRelativePathAndFile);
+							strcpy(cRel, pRelativePathAndFile);
+						}
 					}
 					else
 					{
 						addtocollection(pStringOrFile);
+						strcpy(cRel, pStringOrFile);
+					}
+
+					//PE: Add WPE Textures.
+					char cPE[MAX_PATH];
+					strcpy(cPE, cRel);
+					char* find = (char*)pestrcasestr(cPE, ".pe");
+					if (!find) find = (char*)pestrcasestr(cPE, ".arx");;
+					if (find)
+					{
+						AddWPETextures(cPE);
 					}
 
 					//PE: if .dds or.png also add - _normal and _emissive and _surface (behavior: Change Texture).
@@ -2942,7 +2992,9 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 				if (strstr (tTempLine, "LoadImage ")
 				|| strstr (tTempLine, "LoadImage(")
 				|| strstr (tTempLine, "LoadGlobalSound ")
-				|| strstr (tTempLine, "LoadGlobalSound("))
+				|| strstr (tTempLine, "LoadGlobalSound(")
+				|| strstr(tTempLine, "WParticleEffectLoad(")
+				|| strstr(tTempLine, "WParticleEffectLoad "))
 				{
 					char* pImageFolder = strstr (tTempLine, "\"");
 					if (pImageFolder)
@@ -2954,6 +3006,16 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 							*pImageFolderEnd = '\0';
 							cstr pFile = cstr(pImageFolder);
 							addtocollection (pFile.Get());
+
+							//PE: Resolve wpe effects textures.
+							char cPE[MAX_PATH];
+							strcpy(cPE, pFile.Get());
+							char* find = (char*)pestrcasestr(cPE, ".pe");
+							if (!find) find = (char*)pestrcasestr(cPE, ".arx");;
+							if(find)
+							{
+								AddWPETextures(cPE);
+							}
 						}
 					}
 				}
@@ -3179,6 +3241,44 @@ int mapfile_savestandalone_stage2c ( void )
 		t.entid=t.entityelement[t.e].bankindex;
 		if ( t.entid>0 ) 
 		{
+			//PE: Locate any wpe effects. DLUA
+			/*
+			{
+				//PE: Resolve wpe effects textures.
+				char cPE[MAX_PATH];
+				strcpy(cPE, pFile.Get());
+				char* find = (char*)pestrcasestr(cPE, ".pe");
+				if (find)
+				{
+					*find = '\0';
+					char finalname[MAX_PATH];
+					strcpy(finalname, cPE);
+					strcat(finalname, "0_color.png");
+					addtocollection(finalname);
+					strcpy(finalname, cPE);
+					strcat(finalname, "1_color.png");
+					addtocollection(finalname);
+					strcpy(finalname, cPE);
+					strcat(finalname, "2_color.png");
+					addtocollection(finalname);
+					strcpy(finalname, cPE);
+					strcat(finalname, "3_color.png");
+					addtocollection(finalname);
+					strcpy(finalname, cPE);
+					strcat(finalname, "4_color.png");
+					addtocollection(finalname);
+					strcpy(finalname, cPE);
+					strcat(finalname, "5_color.png");
+					addtocollection(finalname);
+					strcpy(finalname, cPE);
+					strcat(finalname, "6_color.png");
+					addtocollection(finalname);
+				}
+
+			}
+			*/
+
+
 			// most eleprof related files
 			mapfile_addallentityrelatedfiles(t.entid, &t.entityelement[t.e].eleprof);
 
@@ -3527,6 +3627,13 @@ void mapfile_savestandalone_stage4 ( void )
 		}
 	}
 
+	//PE: Make sure needed folders exists.
+	t.dest_s = t.exepath_s + t.exename_s + "\\Files\\particlesbank";
+	if (PathExist(t.dest_s.Get()) == 0) MakeDirectory(t.dest_s.Get());
+	t.dest_s = t.exepath_s + t.exename_s + "\\Files\\particlesbank\\user";
+	if (PathExist(t.dest_s.Get()) == 0) MakeDirectory(t.dest_s.Get());
+
+
 	//PE: Make sure we dont have a empty folder inside scriptbank.
 	//PE: We do have needed empty folder so cant just run it on everything like 'levelbank' ...
 	t.dest_s = t.exepath_s + t.exename_s + "\\Files\\scriptbank";
@@ -3781,6 +3888,10 @@ void mapfile_savestandalone_stage4 ( void )
 
 	t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "enableplrspeedmods=" + Str(g.globals.enableplrspeedmods); ++t.i;
 	t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "disableweaponjams=" + Str(g.globals.disableweaponjams); ++t.i;
+	//PE: Add new setup.ini functions.
+	t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "ConvertToDDS=1"; ++t.i;
+	t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "ConvertToDDSMaxsize=2048"; ++t.i;
+	t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "uselodobjects=1"; ++t.i;
 
 	t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "" ; ++t.i;
 
@@ -5830,3 +5941,57 @@ void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 
 }
 #endif
+
+void AddWPETextures(char* filename)
+{
+	char cPE[MAX_PATH];
+	strcpy(cPE, filename);
+	char* find = (char*)pestrcasestr(cPE, ".pe");
+	if (find)
+	{
+		*find = '\0';
+		char finalname[MAX_PATH];
+		strcpy(finalname, cPE);
+		strcat(finalname, "0_color.png");
+		addtocollection(finalname);
+		strcpy(finalname, cPE);
+		strcat(finalname, "1_color.png");
+		addtocollection(finalname);
+		strcpy(finalname, cPE);
+		strcat(finalname, "2_color.png");
+		addtocollection(finalname);
+		strcpy(finalname, cPE);
+		strcat(finalname, "3_color.png");
+		addtocollection(finalname);
+		strcpy(finalname, cPE);
+		strcat(finalname, "4_color.png");
+		addtocollection(finalname);
+		strcpy(finalname, cPE);
+		strcat(finalname, "5_color.png");
+		addtocollection(finalname);
+		strcpy(finalname, cPE);
+		strcat(finalname, "6_color.png");
+		addtocollection(finalname);
+	}
+	else
+	{
+		char* find = (char*)pestrcasestr(cPE, ".arx");
+		if (find)
+		{
+			*find = '\0';
+			char finalname[MAX_PATH];
+			strcpy(finalname, cPE);
+			strcat(finalname, "_g.png");
+			addtocollection(finalname);
+			strcpy(finalname, cPE);
+			strcat(finalname, "_r.png");
+			addtocollection(finalname);
+			strcpy(finalname, cPE);
+			strcat(finalname, "_s1.png");
+			addtocollection(finalname);
+			strcpy(finalname, cPE);
+			strcat(finalname, "_sx.png");
+			addtocollection(finalname);
+		}
+	}
+}
