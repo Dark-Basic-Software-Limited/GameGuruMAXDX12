@@ -1,4 +1,4 @@
--- Trapdoor v5 - thanks to Necrym59 & Lee
+-- Trapdoor v6 - thanks to Necrym59 & Lee
 -- DESCRIPTION: For use with an animated door as a trapdoor when a player stands on it,
 -- DESCRIPTION: Apply floor texture to disguise if required.
 -- DESCRIPTION: When the player is within [RANGE=60(30,100)] 
@@ -50,7 +50,7 @@ function trapdoor_main(e)
 	g_trapdoor[e] = g_Entity[e]
 	if status[e] == "init" then		
 		if g_trapdoor[e]['range'] == nil then g_trapdoor[e]['range'] = 50 end
-		if g_trapdoor[e]['visibility'] == nil then g_conveyor[e]['visibility'] = 1 end
+		if g_trapdoor[e]['visibility'] == nil then g_trapdoor[e]['visibility'] = 1 end
 		if g_trapdoor[e]['visibility'] == 1 then Show(e) end
 		if g_trapdoor[e]['visibility'] == 2 then Hide(e) end
 		status[e] = "finish"

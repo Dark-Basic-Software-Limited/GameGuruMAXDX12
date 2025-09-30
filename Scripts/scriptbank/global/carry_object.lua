@@ -1,7 +1,7 @@
--- Carry Object V41 by Necrym59 and Lee
+-- Carry Object V43 by Necrym59 and Lee
 -- DESCRIPTION: A global behaviour for object handling.
 -- DESCRIPTION: Weight: Must be between 1-99. 0=No Pickup.
--- DESCRIPTION: [PICKUP_TEXT$="E or LMB to carry, RMB to carry/throw"]
+-- DESCRIPTION: [PICKUP_TEXT$="E or LMB to pick-up, RMB to carry/throw"]
 -- DESCRIPTION: [PICKUP_RANGE=80(1,500)]
 -- DESCRIPTION: [MAX_PICKUP_WEIGHT=99(1,99)]
 -- DESCRIPTION: [MAX_PICKUP_SIZE=40(1,100)]
@@ -98,7 +98,7 @@ end
 
 function carry_object_init(e)
 	carry_object[e] = {}
-	carry_object[e].pickup_text = "E or LMB to carry, RMB to carry/throw"
+	carry_object[e].pickup_text = "E or LMB to pick-up, RMB to carry/throw"
 	carry_object[e].pickup_range = 50
 	carry_object[e].pickup_weight = 99
 	carry_object[e].pickup_size = 40
@@ -135,9 +135,6 @@ function carry_object_init(e)
 	last_gun[e] = g_PlayerGunName
 	colobj[e] = 0
 	surface[e] = 0
-	terrain[e] = 0
-	terraincheck[e] = 0
-	surfacecheck[e] = 0
 	weightcheck[e] = 0
 	objlookedat[e] = 0
 	checktimer[e] = math.huge
@@ -307,6 +304,7 @@ function carry_object_main(e)
 						SetPlayerWeapons(0)
 					end
 					PlaySound(e,0)
+					g_MouseClick = 0
 					ctrlpause[e] = g_Time + 1000
 				end
 				if g_MouseClick == 2 and g_carrying == 0 then
@@ -360,11 +358,12 @@ function carry_object_main(e)
 		colobj[tEnt[e]]=IntersectAll(px,py,pz, px+rayX, py, pz+rayZ,g_Entity[tEnt[e]]['obj']) --avoids pushing carryobj through wall!
 		--colobj[tEnt[e]]=IntersectAll(g_PlayerPosX,g_PlayerPosY,g_PlayerPosZ, px+rayX, py, pz+rayZ,g_Entity[tEnt[e]]['obj'])
 		if colobj[tEnt[e]] > 0 then
-			CollisionOn(tEnt[e])
 			ForcePlayer(g_PlayerAngY + 180,0.3)
 		end
-		PositionObject(g_Entity[tEnt[e]]['obj'],prop_x[tEnt[e]],prop_y[tEnt[e]]+objheight[tEnt[e]],prop_z[tEnt[e]])
-		RotateObject(g_Entity[tEnt[e]]['obj'],0,g_Entity[tEnt[e]]['angley'],g_PlayerAngZ)
+		if tEnt[e] > 0 and g_carrying == 1 then
+			PositionObject(g_Entity[tEnt[e]]['obj'],prop_x[tEnt[e]],prop_y[tEnt[e]]+objheight[tEnt[e]],prop_z[tEnt[e]])
+			RotateObject(g_Entity[tEnt[e]]['obj'],0,g_Entity[tEnt[e]]['angley'],g_PlayerAngZ)
+		end	
 		if g_MouseClick == 2 and g_carrying == 1 then
 			if carry_object[e].prompt_display == 1 then TextCenterOnX(50,54,1,carry_object[e].throw_text) end
 			if carry_object[e].prompt_display == 2 then Prompt(carry_object[e].throw_text) end

@@ -220,6 +220,9 @@ g_masterinterpreter_act_enablecharacter = 117 -- Enable Character (Restores the 
 g_masterinterpreter_act_claimcoverzone = 118 -- Claim Cover Zone (Registers this object as using the nearest cover zone)
 g_masterinterpreter_act_clearcoverzone = 119 -- Clear Cover Zone (Removes this object from the nearest cover zone)
 g_masterinterpreter_act_forgetcoverzones = 120 -- Forget Cover Zones (Wipe all memory of last cover zones so can search afresh)
+g_masterinterpreter_act_activate = 121 -- Activate (Sets the active state to one to be detected with isactivated)
+g_masterinterpreter_act_hide = 122 -- Hide (Hides the object and any attachments)
+g_masterinterpreter_act_show = 122 -- Show (Shows the object and any attachments)
 
 -- special callout manager to avoid insane chatter for characters
 g_calloutmanager = {}
@@ -2614,6 +2617,23 @@ function masterinterpreter_doaction ( e, output_e, actiontype, actionparam1, act
   output_e['lastcoverzoneslotii'] = -1
   output_e['lastcoverzoneblocktype'] = -1
  end
+ 
+ -- Activate
+ if actiontype == g_masterinterpreter_act_activate then
+  g_Entity[e]['activated'] = 1
+ end
+ 
+ -- Hide
+ if actiontype == g_masterinterpreter_act_hide then
+  Hide(e)
+  HideEntityAttachment(e)
+ end 
+ 
+ -- Show
+ if actiontype == g_masterinterpreter_act_show then
+  Show(e)
+  ShowEntityAttachment(e)
+ end 
  
 end
 

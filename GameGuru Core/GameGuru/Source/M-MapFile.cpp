@@ -4715,9 +4715,6 @@ void findalltexturesinmodelfile ( char* inputfile_s, char* folder_s, char* texpa
 							}
 							texfile_s = Lower(texfile_s.Get());
 
-							//LB: Some DBO texture filenames can be very corrupted, such as below. Scan for and correct!
-							//    C:\Users\leeba\Documents\GameGuruApps\GameGuruMAX\Files\entitybank\Urban Assets\entitybank\C:/Program Files (x86)/The Game Creators/FPS Creator Reloaded/Files/entitybank/Valuable Assets/Scenery/Buildings/Derelict/building10_D_surface.dds
-							//
 							LPSTR pTextFilePtr = texfile_s.Get();
 							if (strlen(pTextFilePtr) > 4)
 							{

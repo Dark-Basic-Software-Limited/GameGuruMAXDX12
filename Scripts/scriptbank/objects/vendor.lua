@@ -226,7 +226,7 @@ function vendor_main(e)
 		end
 		if vendor[e].vending_activation == 2 then
 			if dispensed[e] < vendor[e].vendored_max_quantity then
-				if g_Entity[e]['activated'] == 1 and currentvalue[e] < vendor[e].vendored_entity_cost then Prompt(e,"Insufficent Funds") end			
+				if g_Entity[e]['activated'] == 1 and currentvalue[e] < vendor[e].vendored_entity_cost then Prompt("Insufficent Funds") end			
 				if currentvalue[e] >= vendor[e].vendored_entity_cost then				
 					if g_Entity[e]['activated'] == 1 and pressed[e] == 0 then					
 						vdelay[e] = g_Time + (vendor[e].vending_delay*1000)				

@@ -1,4 +1,5 @@
--- DESCRIPTION: When the player is within view range distance of this character, move towards the player, and then within [RANGE=150(50,500)] distance, play [SPEECH1$=""].
+-- DESCRIPTION: V2 by Lee
+-- DESCRIPTION: When the player is within view range distance of this character, move towards the player, and then within [RANGE=150(50,500)] distance, play [SPEECH1$=""]. Then optionally [!FollowPathAfter=0].
 
 master_interpreter_core = require "scriptbank\\masterinterpreter"
 
@@ -13,9 +14,10 @@ function get_close_and_speak_init_file(e,scriptfile)
  get_close_and_speak_properties(e,300,"")
 end
 
-function get_close_and_speak_properties(e, range, speech1)
+function get_close_and_speak_properties(e, range, speech1, followpathafter)
  g_get_close_and_speak[e]['range'] = range
  g_get_close_and_speak[e]['speech1'] = speech1
+ g_get_close_and_speak[e]['followpathafter'] = followpathafter
  master_interpreter_core.masterinterpreter_restart (g_get_close_and_speak[e], g_Entity[e])
 end
 

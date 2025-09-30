@@ -1,4 +1,4 @@
--- Arcade_Mode v7 by Necrym59
+-- Arcade_Mode v8 by Necrym59
 -- DESCRIPTION: A global behavior to create arcade mode gameplay?
 -- DESCRIPTION: [#Z_MOVE_SPEED=5(0,200)] the players forward auto-movement speed
 -- DESCRIPTION: [#X_MOVE_RANGE=100(0,500)] the players lateral movement range
@@ -103,7 +103,7 @@ function arcade_mode_main(e)
 				SetSpriteDepth(am_crosshair,100)
 				SetSpritePosition(am_crosshair,50,50)
 				SetSpriteOffset(am_crosshair,am_imgwidth1/2.0, am_imgheight1/2.0)
-				SetSpriteColor(sp_crosshair,255,255,255,200)			
+				SetSpriteColor(am_crosshair,255,255,255,200)			
 			end
 		end
 		startposx[e] = g_PlayerPosX

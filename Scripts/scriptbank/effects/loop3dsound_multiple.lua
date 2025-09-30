@@ -1,4 +1,4 @@
--- Loop 3d Sound Multiple v3
+-- Loop 3d Sound Multiple v4
 -- DESCRIPTION: Loop all audio specified in <Sound0>, <Sound1>, <Sound2>, and <Sound3> at the volume based on the
 -- DESCRIPTION: [RANGE=1000(100,3000)] distance the player is away from the object, between
 -- DESCRIPTION: [MinVolume=0(0,99)] and [MaxVolume=100(1,100)]
@@ -55,7 +55,7 @@ function loop3dsound_multiple_main(e)
 				LoopSound(e,2) --LoopNon3DSound(e,2)
 				LoopSound(e,3) --LoopNon3DSound(e,3)
 				if SndVol < nminvol then 
-					SndVol = nminv
+					SndVol = nminvol
 				elseif SndVol > nmaxvol then 
 					SndVol = nmaxvol
 				end		

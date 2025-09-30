@@ -1,7 +1,7 @@
--- Quest Giver v14 by Necrym59 and Lee
+-- Quest Giver v15 by Necrym59 and Lee
 -- DESCRIPTION: When player is within [RANGE=100] distance, will show [QUEST_PROMPT$="Press E to Interact"] 
 -- DESCRIPTION: When E is pressed, player will be shown [@@QUEST_SCREEN$="HUD Screen 8"(0=hudscreenlist)]
--- DESCRIPTION: with [@QuestChoice=1(0=QuestList)] and play [SPEECH1$=""]
+-- DESCRIPTION: with [@@QuestChoice=1(0=QuestList)] and play [SPEECH1$=""]
 -- DESCRIPTION: and will play <Sound0> when quest is completed.
 -- DESCRIPTION: [@SPAWN_QUEST_OBJECT=1(1=On,2=Off)] when quest accepted.
 
@@ -84,23 +84,22 @@ function quest_giver_main(e)
 	if g_quest_giver[e]['questtitle'] == "" then
 		local totalquests = GetCollectionQuestQuantity()
 		if totalquests ~= nil then
-			local i = tonumber(g_quest_giver[e]['questchoice'])-1
-			if i ~= nil then
-				if i > 0 and i <= totalquests then
-					g_quest_giver[e]['questtitle'] = GetCollectionQuestAttribute(i,"title")
-					g_quest_giver[e]['questtype'] = GetCollectionQuestAttribute(i,"type")
-					g_quest_giver[e]['questobject'] = GetCollectionQuestAttribute(i,"object")
-					g_quest_giver[e]['questreceiver'] = GetCollectionQuestAttribute(i,"receiver")
-					g_quest_giver[e]['questlevel'] = GetCollectionQuestAttribute(i,"level")
-					g_quest_giver[e]['questpoints'] = GetCollectionQuestAttribute(i,"points")
-					g_quest_giver[e]['questvalue'] = GetCollectionQuestAttribute(i,"value")
-					g_quest_giver[e]['questactivate'] = GetCollectionQuestAttribute(i,"activate")
-					g_quest_giver[e]['questquantity'] = tonumber(GetCollectionQuestAttribute(i,"quantity"))
+			for i = 1, totalquests do
+				if i > 0 and i <= totalquests then					
+					if GetCollectionQuestAttribute(i,"title") == g_quest_giver[e]['questchoice'] then
+						g_quest_giver[e]['questtitle'] = GetCollectionQuestAttribute(i,"title")
+						g_quest_giver[e]['questtype'] = GetCollectionQuestAttribute(i,"type")
+						g_quest_giver[e]['questobject'] = GetCollectionQuestAttribute(i,"object")
+						g_quest_giver[e]['questreceiver'] = GetCollectionQuestAttribute(i,"receiver")
+						g_quest_giver[e]['questlevel'] = GetCollectionQuestAttribute(i,"level")
+						g_quest_giver[e]['questpoints'] = GetCollectionQuestAttribute(i,"points")
+						g_quest_giver[e]['questvalue'] = GetCollectionQuestAttribute(i,"value")
+						g_quest_giver[e]['questactivate'] = GetCollectionQuestAttribute(i,"activate")
+						g_quest_giver[e]['questquantity'] = tonumber(GetCollectionQuestAttribute(i,"quantity"))
+					end
 				end
-			else
-				PromptDuration(g_quest_giver[e]['questchoice'],5000)
 			end
-		end
+		end	
 	end
 	
 	if g_UserGlobalQuestTitleActive == nil then g_UserGlobalQuestTitleActive = "" end
@@ -119,7 +118,6 @@ function quest_giver_main(e)
 			if PlayerDist < g_quest_giver[e]['range'] then
 				LookAtPlayer(e,10)
 				PromptDuration(g_quest_giver[e]['questprompt'],1000)				
-				--PromptDuration(g_quest_giver[e]['questprompt'] ,1000)
 				if g_KeyPressE == 1 then
 					-- set game to this quest
 					-- PromptGuruMeditation("PLAY SPEECH AND ANIM WITHIN REGULAR SCRIPT")
@@ -129,7 +127,7 @@ function quest_giver_main(e)
 						PlaySound(e,1)
 						PlaySpeech(e,1)
 						play_once[e] = 1
-					end											
+					end					
 					g_UserGlobalQuestTitleShowing = g_quest_giver[e]['questtitle']
 					g_UserGlobalQuestTitleShowingObject = g_quest_giver[e]['questobject']
 					g_UserGlobalQuestTitleShowingObject2 = g_quest_giver[e]['questreceiver']
@@ -163,13 +161,14 @@ function quest_giver_main(e)
 					if g_quest_giver[e]['spawn_quest_object'] ~= 0 then
 						if GetEntitySpawnAtStart(quest_objno[e]) == 0 then
 							Spawn(quest_objno[e])
+							SetActivated(quest_objno[e],1)
 							g_quest_giver[e]['spawn_quest_object'] = 0
 						end
 					end
 				end
 
 				if g_quest_giver[e]['questtype'] == "activate" then
-					-- ACTIVATE
+					-- ACTIVATE QUEST
 					if quest_objno[e] == 0 then						
 						for a = 1, g_EntityElementMax do
 							if a ~= nil and g_Entity[a] ~= nil then
@@ -186,7 +185,7 @@ function quest_giver_main(e)
 				end				
 				
 				if g_quest_giver[e]['questtype'] == "collect" then
-					-- COLLECT
+					-- COLLECT QUEST
 					if quest_objno[e] == 0 then						
 						for a = 1, g_EntityElementMax do
 							if a ~= nil and g_Entity[a] ~= nil then
@@ -212,7 +211,7 @@ function quest_giver_main(e)
 								if GetEntityCollected(ee) == 1 then
 									if lower(GetEntityName(ee)) == lower(g_quest_giver[e]['questobject']) then
 										tqty = GetEntityQuantity(ee)
-										if GetEntityCollectable(entityindex) == 2 then
+										if GetEntityCollectable(ee) == 2 then
 											-- resources spent can be zero
 											if tqty < 0 then tqty = 0 end
 										else
@@ -235,7 +234,7 @@ function quest_giver_main(e)
 				end
 				
 				if g_quest_giver[e]['questtype'] == "destroy" then
-					-- DESTROY
+					-- DESTROY QUEST
 					if quest_objno[e] == 0 then
 						for a = 1, g_EntityElementMax do
 							if a ~= nil and g_Entity[a] ~= nil then
@@ -253,7 +252,7 @@ function quest_giver_main(e)
 					end
 				end				
 				if g_quest_giver[e]['questtype'] == "deliver" then
-					-- DELIVER
+					-- DELIVER QUEST
 					if quest_objno[e] == 0 or nil then
 						for a = 1, g_EntityElementMax do
 							if a ~= nil and g_Entity[a] ~= nil then
@@ -343,7 +342,7 @@ function quest_giver_main(e)
 					g_UserGlobalQuestTitleActiveE = 0					
 					quest_objno[e] = 0
 					quest_recno[e] = 0
-					g_ActivateQuestComplete = 0					
+					g_ActivateQuestComplete = 0
 				end				
 			end
 		end		

@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Light Control v23 by Necrym59, with thanks to synchromesh
+-- Light Control v24 by Necrym59, with thanks to synchromesh
 -- DESCRIPTION: Ramps the strength distance of a light up or down when activated by a zone, switch or by range.
 -- DESCRIPTION: Attach to a light.
 -- DESCRIPTION: [@RANGE_SENSING=1(1=Yes, 2=No, 3=None-Light On)]
@@ -37,7 +37,7 @@ local current_light_r 		= {}
 local current_light_g 		= {}
 local current_light_b 		= {}
 local minrange 				= {}
-local lightNum = GetEntityLightNumber( e )
+local lightNum 				= {}
 local status 				= {}
 local played 				= {}
 local wait 					= {}
@@ -74,7 +74,7 @@ function lightcontrol_init(e)
 	lightcontrol[e].light_object_no 		= 0
 
 	status[e] = "init"
-	lightNum = GetEntityLightNumber( e )
+	lightNum = GetEntityLightNumber(e)
 	current_level[e] = 0
 	current_light_r , current_light_g, current_light_b = GetLightRGB( lightNum )
 	wait[e] = math.huge

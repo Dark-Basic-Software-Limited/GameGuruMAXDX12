@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Break Wall v2
+-- Break Wall v3
 -- DESCRIPTION: Player can break an animated wall object when within range.
 -- DESCRIPTION: Attach to an object. Set Always Active ON
 -- DESCRIPTION: [RANGE=100(1,500)] 
@@ -45,7 +45,7 @@ function break_wall_main(e)
 		Prompt(break_wall[e].prompt)
         if g_KeyPressE == 1 then
 			SetAnimationName(e,break_wall.break_animation)
-            PlayAnimation(e,break_wall.break_animation)
+            PlayAnimation(e)
 			PlaySound(e,0)
 			GravityOn(e)
 			CollisionOff(e)			
