@@ -896,7 +896,9 @@ void game_masterroot_gameloop_initcode(int iUseVRTest)
 		sky_show();
 		titleslua_main_loopcode();
 		extern bool g_bNoSwapchainPresent;
-		g_bNoSwapchainPresent = true;
+		//PE: Why was we doing this, this will make a 10 sec blackscreen delay until loading screen is displayed ?????
+		//PE: Removed for now TODO check why it was added.
+		//g_bNoSwapchainPresent = true;
 		t.game.levelloadprogress=0  ; titles_loadingpageupdate ( );
 		g_bNoSwapchainPresent = false;
 
@@ -5342,6 +5344,11 @@ void game_end_of_level_check ( void )
 		t.game.gameloop=0;
 		t.game.levelendingcycle = 0;
 		t.postprocessings.fadeinenabled = 1;
+		//PE: Delay screen update , some frames so we only see the "Game Over Screen".
+		extern int iBlockRenderingForFrames;
+		iBlockRenderingForFrames = 10;
+		extern bool g_bNoSwapchainPresent;
+		g_bNoSwapchainPresent = true; 
 	}
 
 	// control fade out of screen
