@@ -28023,12 +28023,24 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			}
 			if (bUseKeyMentioned == true) edit_grideleprof->usekey_s = imgui_setpropertystring2_v2(t.group, edit_grideleprof->usekey_s.Get(), t.strarr_s[436].Get(), t.strarr_s[225].Get(), readonly);
 			bool readonly = false;
+			bool bMustUpdateAnimations = false;
+			extern bool g_bNowPopulateWithCorrectAnimSet;
 			if (bShootingWeaponMentioned == true || bMeleeWeaponMentioned == true)
 			{
 				//if (t.entityprofile[entid].ischaracter == 1) any behavior can show a weapon choice now!
 				//{
+					bool btmp = g_bNowPopulateWithCorrectAnimSet;
+					g_bNowPopulateWithCorrectAnimSet = false;
 					extern void animsystem_weaponproperty (int, bool, entityeleproftype*, bool, bool);
 					animsystem_weaponproperty(t.entityprofile[entid].characterbasetype, readonly, edit_grideleprof, bShootingWeaponMentioned, bMeleeWeaponMentioned);
+					//PE: We changed weapon so must update animations.
+					if (g_bNowPopulateWithCorrectAnimSet)
+					{
+						//PE: Must refresh DLUA
+						bMustUpdateAnimations = true;
+						fpe_current_loaded_script = -1;
+					}
+					g_bNowPopulateWithCorrectAnimSet = btmp;
 				//}
 			}
 			else if (bUnarmedMentioned)
@@ -28044,10 +28056,21 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 					}
 				//}
 			}
-			if (iAnimationSetMentioned > 0)
+			if (iAnimationSetMentioned > 0 || bMustUpdateAnimations )
 			{
-				extern void animsystem_animationsetproperty (int, bool, entityeleproftype*, int, int);
-				animsystem_animationsetproperty(t.entityprofile[entid].characterbasetype, readonly, edit_grideleprof, iAnimationSetMentioned, elementID);
+				extern void animsystem_animationsetproperty(int, bool, entityeleproftype*, int, int);
+				bool btmp = g_bNowPopulateWithCorrectAnimSet;
+				if (bMustUpdateAnimations)
+				{
+					g_bNowPopulateWithCorrectAnimSet = true;
+					iAnimationSetMentioned = 1; //soldier
+					animsystem_animationsetproperty(t.entityprofile[entid].characterbasetype, readonly, edit_grideleprof, iAnimationSetMentioned, elementID);
+				}
+				else
+				{
+					animsystem_animationsetproperty(t.entityprofile[entid].characterbasetype, readonly, edit_grideleprof, iAnimationSetMentioned, elementID);
+				}
+				g_bNowPopulateWithCorrectAnimSet = btmp;
 			}
 			//moved below, should not be dependent on having DLUA params, or some other attribute requirement
 			//if (t.entityprofile[entid].ischaracter == 1)
