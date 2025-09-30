@@ -3500,11 +3500,26 @@ void game_loadinentitiesdatainlevel ( void )
 	timestampactivity(0,"Load player config");
 	mapfile_loadplayerconfig ( );
 
-	// Load entity bank
-	t.screenprompt_s="LOADING ENTITY BANK";
-	if ( t.game.gameisexe == 0 ) printscreenprompt(t.screenprompt_s.Get()); else loadingpageprogress(5);
-	timestampactivity(0,t.screenprompt_s.Get());
-	entity_loadbank ( );
+	//PE: Free master on load.
+	bool bRetainMasterObjects = false;
+	if (t.game.gameisexe == 1)
+	{
+		static cstr old_level_name = "";
+		if (g.projectfilename_s == old_level_name)
+		{
+			bRetainMasterObjects = true;
+		}
+		old_level_name = g.projectfilename_s;
+	}
+
+	if (!bRetainMasterObjects)
+	{
+		// Load entity bank
+		t.screenprompt_s = "LOADING ENTITY BANK";
+		if (t.game.gameisexe == 0) printscreenprompt(t.screenprompt_s.Get()); else loadingpageprogress(5);
+		timestampactivity(0, t.screenprompt_s.Get());
+		entity_loadbank();
+	}
 
 	// Load entity elements
 	t.screenprompt_s="LOADING ENTITY ELEMENTS";
@@ -4246,13 +4261,13 @@ void game_freelevel ( void )
 		gpup_deleteAllEffects();
 
 		// only for standalone as test game needs entities for editor :)
-		entity_delete ( );
+		entity_delete();
 		//PE: Free any lightmaps, next level might not use lightmaps.
 		lm_deleteall();
 		ClearAnyLightMapInternalTextures();
 
 		//PE: Delete all entitybank textures used.
-		if( g.standalonefreememorybetweenlevels == 1 )
+		if (g.standalonefreememorybetweenlevels == 1)
 			ClearAnyEntitybankInternalTextures();
 	}
 }
