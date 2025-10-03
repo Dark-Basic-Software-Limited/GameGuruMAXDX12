@@ -9573,13 +9573,15 @@ void mapeditorexecutable_loop(void)
 											if (stricmp(pLabel, "quantity") == NULL) iKnownLabel = 62;
 											if (stricmp(pLabel, "endmap") == NULL) iKnownLabel = 63;
 										}
-										if (iKnownLabel >= 0)
+										// show the EXTRA columns entered into the collection TSV file so UI can edit them
+										//if (iKnownLabel >= 0)
+										if (iKnownLabel >= 0 || iCollectableSettingsMode == 1) // but only for COLLECTION items, not quests (iKnownLabel can be -1)
 										{
 											// Any tip
 											LPSTR pShowTop = "";
 											if (iCollectableSettingsMode == 1)
 											{
-												pShowTop = "Enter a value for this item that may appear in your HUD screens";
+												pShowTop = "Enter a value for this item";
 												if (iKnownLabel == 2) pShowTop = "Select an image that will be used to represent this object in your HUD screens";
 												if (iKnownLabel == 3) pShowTop = "Enter a description for this item that may appear in your HUD screens";
 												if (iKnownLabel == 4) pShowTop = "Enter a cost for this item that may appear in your HUD screens";
