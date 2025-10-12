@@ -84,7 +84,7 @@ function npc_flashlight_main(e)
 		status[e] = "initdone"
 	end
 	if attachTo[e] == -1 then return end
-	if flashattached[e] == 0 then
+	if flashattached[e] == 0 and attachTo[e] > 0 then
 		lightNum = GetEntityLightNumber( e )
 		local x,y,z,Ax,Ay,Az = GetEntityPosAng(attachTo[e])
 		Ax=Ax-(xv[e]*6)
@@ -98,7 +98,7 @@ function npc_flashlight_main(e)
 		SetLightRange(lightNum,g_npcflashlight[e]['flashlight_range'])
 		flashattached[e] = 1
 	end
-	if flashattached[e] == 1 then
+	if flashattached[e] == 1 and attachTo[e] > 0 then
 		lightNum = GetEntityLightNumber( e )
 		local x,y,z,Ax,Ay,Az = GetEntityPosAng(attachTo[e])
 		Ax=Ax-(xv[e]*6)
