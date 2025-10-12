@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- NPC Control v85 by Necrym 59 and Preben
+-- NPC Control v87 by Necrym 59
 -- DESCRIPTION: The attached NPC will be controlled by this behavior.
 -- DESCRIPTION: [SENSE_TEXT$="Who's that ..an intruder??"]
 -- DESCRIPTION: [SENSE_RANGE=500(0,2000)]
@@ -153,6 +153,8 @@ local finanim3 = {}
 local frameadjust1 = {}
 local frameadjust2 = {}
 local frameadjust3 = {}
+local threatanimstr = {}
+local threatanimfin = {}
 local redirect = {}
 local chanceflee = {}
 local ishit = {}
@@ -299,6 +301,8 @@ function npc_control_init_name(e,name)
 	frameadjust1[e] = 0
 	frameadjust2[e] = 0
 	frameadjust3[e] = 0
+	threatanimstr[e] = 0
+	threatanimfin[e] = 0
 	init_health[e] = 0
 	redirect[e] = 0
 	chanceflee[e] = 0
@@ -308,6 +312,7 @@ function npc_control_init_name(e,name)
 	dist[e] = 0
 	tmphit[e] = 0
 	math.randomseed(os.time())
+	math.random(); math.random(); math.random()
 end
 
 function npc_control_main(e)
@@ -490,12 +495,13 @@ function npc_control_main(e)
 	
 	---------------------------------------------------------------------------------------------------------------------------------
 	if state[e] == "sensed" then		
-		if GetPlayerDistance(e) < npc_control[e].sense_range and allegiance[e] == 0 then
+		if GetPlayerDistance(e) < npc_control[e].sense_range* and allegiance[e] == 0 then
 			issensed[e] = 1
 			RotateToPlayerSlowly(e,GetEntityTurnSpeed(e)/2)
 			if senseonce[e] == 0 then
 				if npc_control[e].npc_can_roam == 1 or npc_control[e].npc_can_roam == 2 then
 					SetAnimationName(e,npc_control[e].threat_animation)
+					threatanimstr[e],threatanimfin[e] = GetEntityAnimationStartFinish(e,npc_control[e].threat_animation) -- return the start and finish frame
 					ModulateSpeed(e,npc_control[e].npc_anim_speed)
 					PlayAnimation(e)
 					PlaySound(e,2)
@@ -503,13 +509,13 @@ function npc_control_main(e)
 					if sayonce[e] == 0 then
 						PromptDuration(npc_control[e].sense_text,1000)
 						sayonce[e] = 1
-					end	
+					end
+					senseonce[e] = 1
+					action_delay[e] = g_Time + 100
 				end
-				senseonce[e] = 1
-				action_delay[e] = g_Time + 100				
 			end
-						
-			if allegiance[e] == 0 and g_Time > action_delay[e] then
+			
+			if allegiance[e] == 0 and GetEntityAnimationNameExistAndPlaying(e,npc_control[e].threat_animation) > 0 and g_Entity[e]['frame'] == threatanimfin[e] and g_Time > action_delay[e] then
 				if npc_control[e].npc_can_flee == 1 then
 					chanceflee[e] = math.random(1,2)
 					if (g_Entity[e]['health']-1000) < 100 and redirect[e] == 0 and chanceflee[e] == 2 then
@@ -533,12 +539,13 @@ function npc_control_main(e)
 					aggro[e] = 1
 					scare[e] = 0
 					hurtonce[e] = 0
-					attkonce[e] = 0					
+					attkonce[e] = 0
+					senseonce[e] = 0
 					state[e] = "pursue"
 					pathdelay[e] = g_Time + 50					
 					pointcount[e] = 0
-				end					
-			end
+				end
+			end			
 		end
 	end
 
@@ -714,7 +721,7 @@ function npc_control_main(e)
 					PlayAnimation(e)
 					anim_var[e] = 0
 				end
-				if anim_var[e] == 4 then -- Threat
+				if anim_var[e] == 4 and npc_control[e].npc_can_roam ~= 2 then -- Threat
 					SetAnimationName(e,npc_control[e].threat_animation)
 					ModulateSpeed(e,npc_control[e].npc_anim_speed)
 					PlayAnimation(e)
@@ -1110,7 +1117,7 @@ function npc_control_main(e)
 					if allegiance[e] == 0 then
 						aggro[e] = 1
 						scare[e] = 0						
-						state[e] = "idle"						
+						state[e] ="pursue"						
 						pathdelay[e] = g_Time + 10
 						animonce[e] = 0
 					end
@@ -1148,12 +1155,14 @@ function npc_control_main(e)
 			Text(2,66,3,"Attack 1")
 			Text(2,68,3,"Hit Frame1: " ..frameadjust1[e])
 			Text(2,70,3,"Current Frame: " ..g_Entity[e]['frame'])
-		elseif GetEntityAnimationNameExistAndPlaying(e,npc_control[e].attack2_animation) > 0 then
+		end	
+		if GetEntityAnimationNameExistAndPlaying(e,npc_control[e].attack2_animation) > 0 then
 			Text(2,64,3,"---------------------------------")
 			Text(2,66,3,"Attack 2")
 			Text(2,68,3,"Hit Frame2: " ..frameadjust2[e])
 			Text(2,70,3,"Current Frame: " ..g_Entity[e]['frame'])
-		elseif GetEntityAnimationNameExistAndPlaying(e,npc_control[e].attack3_animation) > 0 then
+		end				
+		if GetEntityAnimationNameExistAndPlaying(e,npc_control[e].attack3_animation) > 0 then
 			Text(2,64,3,"---------------------------------")	
 			Text(2,66,3,"Attack 3")
 			Text(2,68,3,"Hit Frame3: " ..frameadjust3[e])
