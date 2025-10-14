@@ -2914,9 +2914,28 @@ void game_masterroot_gameloop_afterloopcode(int iUseVRTest)
 		}
 	}
 
+	bool bFreeLevelAfterLuaScreen = true;
+
 	//PE: Moved here as standalone will delete all objects, so we could not free DCO objects.
 	//  Free any level resources
-	game_freelevel();
+	if (!bFreeLevelAfterLuaScreen)
+	{
+		timestampactivity(0, "game_freelevel"); //PE: Additional debug to remove
+		game_freelevel();
+	}
+	else
+	{
+		bulletholes_free();
+		// free any HUD screen objects
+		if (ObjectExist(g.hudscreen3dobjectoffset) == 1) DeleteObject(g.hudscreen3dobjectoffset);
+		hud_free();
+		game_stopallsounds();
+		lua_freeprompt3d();
+		lua_freeallperentity3d();
+		lighting_free();
+		darkai_free();
+		BPhys_ClearDebugDrawData();
+	}
 
 	// must reset LUA here for clean end-game-screens
 	// ensure LUA is completely reset before loading new ones in
@@ -3117,6 +3136,18 @@ void game_masterroot_gameloop_afterloopcode(int iUseVRTest)
 			}
 		}
 	}
+
+	if (bFreeLevelAfterLuaScreen)
+	{
+		game_freelevel();
+		//PE: Try to avoid the screen between win/loose... and next screen (show blank map).
+		extern int iBlockRenderingForFrames;
+		extern bool g_bNoSwapchainPresent;
+		iBlockRenderingForFrames = 5;
+		g_bNoSwapchainPresent = true;
+	}
+
+
 	t.game.quitflag=0;
 
 	//  If was in multiplayer session, no level loop currently
