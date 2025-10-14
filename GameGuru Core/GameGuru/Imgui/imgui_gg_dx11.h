@@ -915,7 +915,8 @@ struct StoryboardNodesStruct
 	int widgets_available = ALLOW_TEXT | ALLOW_IMAGE | ALLOW_VIDEO;
 	int toggleKey = 0;
 	int showAtStart = 0;
-	int iFiller20[15];
+	int loop_music = 0;
+	int iFiller20[14];
 	float fFiller20[20];
 	int iFillerMaxOutputs20[20][STORYBOARD_MAXOUTPUTS];
 	char FillerCharMaxOutput20[20][STORYBOARD_MAXOUTPUTS][256];
@@ -1020,7 +1021,8 @@ struct StoryboardNodesStruct202
 	int widgets_available = ALLOW_TEXT | ALLOW_IMAGE | ALLOW_VIDEO;
 	int toggleKey = 0;
 	int showAtStart = 0;
-	int iFiller20[15];
+	int loop_music = 0;
+	int iFiller20[14];
 	float fFiller20[20];
 	int iFillerMaxOutputs20[20][STORYBOARD_MAXOUTPUTS202];
 	char FillerCharMaxOutput20[20][STORYBOARD_MAXOUTPUTS202][256];

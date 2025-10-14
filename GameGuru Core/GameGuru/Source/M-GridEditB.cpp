@@ -38054,6 +38054,7 @@ void reset_single_node(int node)
 
 	//Each filler have its own, so can count it down later.
 	Storyboard.Nodes[i].screen_backdrop_transparent = false;
+	Storyboard.Nodes[i].loop_music = 0;
 	
 	for (int l = 0; l < 19; l++) Storyboard.Nodes[i].iFiller20[l] = 0;
 	for (int l = 0; l < 20; l++) Storyboard.Nodes[i].fFiller20[l] = 0.0;
@@ -38123,6 +38124,8 @@ void duplicate_single_node (int sourceid)
 	Storyboard.Nodes[iNewNode].widgets_available = Storyboard.Nodes[sourceid].widgets_available;
 	Storyboard.Nodes[iNewNode].toggleKey = Storyboard.Nodes[sourceid].toggleKey;
 	Storyboard.Nodes[iNewNode].showAtStart = Storyboard.Nodes[sourceid].showAtStart;
+	Storyboard.Nodes[iNewNode].loop_music = Storyboard.Nodes[sourceid].loop_music;
+	
 	memcpy(Storyboard.Nodes[iNewNode].iFiller20, Storyboard.Nodes[sourceid].iFiller20, sizeof(Storyboard.Nodes[sourceid].iFiller20));
 	memcpy(Storyboard.Nodes[iNewNode].fFiller20, Storyboard.Nodes[sourceid].fFiller20, sizeof(Storyboard.Nodes[sourceid].fFiller20));
 	memcpy(Storyboard.Nodes[iNewNode].iFillerMaxOutputs20, Storyboard.Nodes[sourceid].iFillerMaxOutputs20, sizeof(Storyboard.Nodes[sourceid].iFillerMaxOutputs20));
@@ -47318,6 +47321,7 @@ bool load__storyboard_into_struct(const char *filepath, StoryboardStruct& storyb
 								storyboard.Nodes[i].widgets_available = updateproject202.Nodes[i].widgets_available;
 								storyboard.Nodes[i].toggleKey = updateproject202.Nodes[i].toggleKey;
 								storyboard.Nodes[i].showAtStart = updateproject202.Nodes[i].showAtStart;
+								storyboard.Nodes[i].loop_music = updateproject202.Nodes[i].loop_music;
 							}
 
 							storyboard.NodeRadioButtonSelected[i] = updateproject202.NodeRadioButtonSelected[i];
@@ -48764,7 +48768,12 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 					{
 						LoadSound(Storyboard.Nodes[nodeid].screen_music, iFreeSoundID, 0, 1);
 						if (SoundExist(iFreeSoundID) == 1)
-							PlaySound(iFreeSoundID);
+						{
+							if(Storyboard.Nodes[nodeid].loop_music)
+								LoopSound(iFreeSoundID);
+							else
+								PlaySound(iFreeSoundID);
+						}
 					}
 				}
 			}
@@ -50703,6 +50712,12 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 
 					if (strlen(Storyboard.Nodes[nodeid].screen_music) > 0)
 					{
+						bool bTmp = Storyboard.Nodes[nodeid].loop_music;
+						if (ImGui::Checkbox("Loop Music", &bTmp))
+						{
+							Storyboard.Nodes[nodeid].loop_music = bTmp;
+						}
+
 						ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(((ImGui::GetContentRegionAvail().x - 14.0f)*0.5) - (buttonwide*0.5), 0.0f));
 						if (ImGui::StyleButton("Remove Music", ImVec2(buttonwide, 0.0f)))
 						{
@@ -50751,7 +50766,12 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 							{
 								LoadSound(Storyboard.Nodes[nodeid].screen_music, iFreeSoundID, 0, 1);
 								if (SoundExist(iFreeSoundID) == 1)
-									PlaySound(iFreeSoundID);
+								{
+									if(Storyboard.Nodes[nodeid].loop_music)
+										LoopSound(iFreeSoundID);
+									else
+										PlaySound(iFreeSoundID);
+								}
 							}
 						}
 					}
@@ -50806,7 +50826,12 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 							{
 								LoadSound(Storyboard.Nodes[nodeid].screen_music, iFreeSoundID, 0, 1);
 								if (SoundExist(iFreeSoundID) == 1)
-									PlaySound(iFreeSoundID);
+								{
+									if (Storyboard.Nodes[nodeid].loop_music)
+										LoopSound(iFreeSoundID);
+									else
+										PlaySound(iFreeSoundID);
+								}
 							}
 						}
 					}
