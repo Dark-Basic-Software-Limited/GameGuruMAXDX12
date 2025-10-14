@@ -607,6 +607,12 @@ struct PixelInput
 	uint RTIndex : SV_RenderTargetArrayIndex;
 #endif // VPRT_EMULATION
 #endif // OBJECTSHADER_USE_RENDERTARGETARRAYINDEX
+
+#ifdef BLOODDAMAGE
+    // New float3 to pass the X-axis (and Y-axis or Z-axis in ZW components)
+	float3 local_position: TEXCOORD1; 
+#endif
+	
 };
 
 struct GBuffer
@@ -1319,6 +1325,7 @@ PixelInput main(VertexInput input)
 {
 	PixelInput Out;
 
+	float4 inputposition = input.GetPosition();
 	VertexSurface surface;
 	surface.create(GetMaterial(), input);
 
@@ -1343,7 +1350,10 @@ PixelInput main(VertexInput input)
 	mpos.y *= scaley;
     Out.pos.x += TreeWaveX(mpos.y,  input.mat0[3] + input.mat2[3] );
     Out.pos.z += TreeWaveZ(mpos.y, input.mat0[3] );
-
+#else
+#ifdef BLOODDAMAGE
+	float4 mpos = input.GetPosition();
+#endif
 #endif
 
 #ifndef OBJECTSHADER_USE_NOCAMERA
@@ -1375,6 +1385,12 @@ PixelInput main(VertexInput input)
 
 #ifdef OBJECTSHADER_USE_UVSETS
 	Out.uvsets = surface.uvsets;
+
+#ifdef BLOODDAMAGE
+	Out.local_position = input.GetPosition();
+
+#endif
+
 #endif // OBJECTSHADER_USE_UVSETS
 
 #ifdef OBJECTSHADER_USE_ATLAS

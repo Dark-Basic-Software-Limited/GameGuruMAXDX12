@@ -548,7 +548,7 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 		// leelee, find out why I cannot set this after object added to scene!
 		if ( g_iWickedLayerMaskOptionalLimb == -1 || (g_iWickedLayerMaskOptionalLimb == pFrame->iID ) )
 			layer.layerMask = g_iWickedLayerMaskPreference;
-
+		
 		// create mesh
 		wiECS::Entity meshEntity;
 		//PE: InstanceObject
@@ -2489,22 +2489,30 @@ void WickedCall_TextureMesh(sMesh* pMesh)
 							WickedCall_SetRenderOrderBias(pMesh, fRenderOrderBias);
 
 							int iCustomShaderID = WickedCustomShaderID();
-							float iCustomShaderParam1 = WickedCustomShaderParam1();
-							float iCustomShaderParam2 = WickedCustomShaderParam2();
-							float iCustomShaderParam3 = WickedCustomShaderParam3();
-							float iCustomShaderParam4 = WickedCustomShaderParam4();
-							float iCustomShaderParam5 = WickedCustomShaderParam5();
-							float iCustomShaderParam6 = WickedCustomShaderParam6();
-							float iCustomShaderParam7 = WickedCustomShaderParam7();
-							pObjectMaterial->customShaderID = iCustomShaderID;
-							pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
-							pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
-							pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
-							pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
-							pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
-							pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
-							pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
-
+							bool bValid = true;
+							if (iCustomShaderID == 5 && (bDoubleSided || pestrcasestr(pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name.c_str(), "eyeglasses") )) //|| pObjectMaterial->GetBlendMode() == BLENDMODE_ALPHA)
+							{
+								pObjectMaterial->customShaderID = -1;
+								bValid = false;
+							}
+							if (bValid)
+							{
+								float iCustomShaderParam1 = WickedCustomShaderParam1();
+								float iCustomShaderParam2 = WickedCustomShaderParam2();
+								float iCustomShaderParam3 = WickedCustomShaderParam3();
+								float iCustomShaderParam4 = WickedCustomShaderParam4();
+								float iCustomShaderParam5 = WickedCustomShaderParam5();
+								float iCustomShaderParam6 = WickedCustomShaderParam6();
+								float iCustomShaderParam7 = WickedCustomShaderParam7();
+								pObjectMaterial->customShaderID = iCustomShaderID;
+								pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
+								pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
+								pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
+								pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
+								pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
+								pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
+								pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
+							}
 							bool bPlanerReflection = WickedPlanerReflection();
 							if (bPlanerReflection)
 							{
@@ -2568,22 +2576,30 @@ void WickedCall_TextureMesh(sMesh* pMesh)
 							WickedCall_SetRenderOrderBias(pMesh, fRenderOrderBias);
 
 							int iCustomShaderID = WickedCustomShaderID();
-							float iCustomShaderParam1 = WickedCustomShaderParam1();
-							float iCustomShaderParam2 = WickedCustomShaderParam2();
-							float iCustomShaderParam3 = WickedCustomShaderParam3();
-							float iCustomShaderParam4 = WickedCustomShaderParam4();
-							float iCustomShaderParam5 = WickedCustomShaderParam5();
-							float iCustomShaderParam6 = WickedCustomShaderParam6();
-							float iCustomShaderParam7 = WickedCustomShaderParam7();
-							pObjectMaterial->customShaderID = iCustomShaderID;
-							pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
-							pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
-							pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
-							pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
-							pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
-							pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
-							pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
-
+							bool bValid = true;
+							if (iCustomShaderID == 5 && (bDoubleSided || pestrcasestr(pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name.c_str(), "eyeglasses") )) //|| pObjectMaterial->GetBlendMode() == BLENDMODE_ALPHA
+							{
+								pObjectMaterial->customShaderID = -1;
+								bValid = false;
+							}
+							if (bValid)
+							{
+								float iCustomShaderParam1 = WickedCustomShaderParam1();
+								float iCustomShaderParam2 = WickedCustomShaderParam2();
+								float iCustomShaderParam3 = WickedCustomShaderParam3();
+								float iCustomShaderParam4 = WickedCustomShaderParam4();
+								float iCustomShaderParam5 = WickedCustomShaderParam5();
+								float iCustomShaderParam6 = WickedCustomShaderParam6();
+								float iCustomShaderParam7 = WickedCustomShaderParam7();
+								pObjectMaterial->customShaderID = iCustomShaderID;
+								pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
+								pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
+								pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
+								pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
+								pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
+								pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
+								pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
+							}
 							bool bPlanerReflection = WickedPlanerReflection();
 							if (bPlanerReflection)
 							{
@@ -2647,21 +2663,30 @@ void WickedCall_TextureMesh(sMesh* pMesh)
 						WickedCall_SetRenderOrderBias(pMesh, fRenderOrderBias);
 
 						int iCustomShaderID = WickedCustomShaderID();
-						float iCustomShaderParam1 = WickedCustomShaderParam1();
-						float iCustomShaderParam2 = WickedCustomShaderParam2();
-						float iCustomShaderParam3 = WickedCustomShaderParam3();
-						float iCustomShaderParam4 = WickedCustomShaderParam4();
-						float iCustomShaderParam5 = WickedCustomShaderParam5();
-						float iCustomShaderParam6 = WickedCustomShaderParam6();
-						float iCustomShaderParam7 = WickedCustomShaderParam7();
-						pObjectMaterial->customShaderID = iCustomShaderID;
-						pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
-						pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
-						pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
-						pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
-						pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
-						pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
-						pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
+						bool bValid = true;
+						if (iCustomShaderID == 5 && (bDoubleSided || pestrcasestr(pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name.c_str(), "eyeglasses") )) //|| pObjectMaterial->GetBlendMode() == BLENDMODE_ALPHA
+						{
+							pObjectMaterial->customShaderID = -1;
+							bValid = false;
+						}
+						if (bValid)
+						{
+							float iCustomShaderParam1 = WickedCustomShaderParam1();
+							float iCustomShaderParam2 = WickedCustomShaderParam2();
+							float iCustomShaderParam3 = WickedCustomShaderParam3();
+							float iCustomShaderParam4 = WickedCustomShaderParam4();
+							float iCustomShaderParam5 = WickedCustomShaderParam5();
+							float iCustomShaderParam6 = WickedCustomShaderParam6();
+							float iCustomShaderParam7 = WickedCustomShaderParam7();
+							pObjectMaterial->customShaderID = iCustomShaderID;
+							pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
+							pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
+							pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
+							pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
+							pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
+							pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
+							pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
+						}
 
 						bool bPlanerReflection = WickedPlanerReflection();
 						if (bPlanerReflection)
@@ -8320,4 +8345,96 @@ uint32_t GetVisibleWEmitters( void )
 }
 
 #endif
+
+
+void WickedCall_SetShaderParameter(int obj, int parameter , float value)
+{
+	sObject* GetObjectData(int iID);
+	sObject* pObject = GetObjectData(obj);
+	if (pObject)
+	{
+		for (int i = 0; i < pObject->iMeshCount; i++)
+		{
+			sMesh* mesh = pObject->ppMeshList[i];
+
+			if (mesh)
+			{
+				wiScene::MeshComponent* meshComponent = wiScene::GetScene().meshes.GetComponent(mesh->wickedmeshindex);
+
+				if (meshComponent)
+				{
+					// get material settings from mesh material or WEMaterial
+					uint64_t materialEntity = meshComponent->subsets[0].materialID;
+					wiScene::MaterialComponent* pMeshMaterial = wiScene::GetScene().materials.GetComponent(materialEntity);
+					if (pMeshMaterial->customShaderID >= 0)
+					{
+						bool bChanged = false;
+						if (parameter == 1)
+						{
+							if (value != pMeshMaterial->customShaderParam1)
+							{
+								pMeshMaterial->customShaderParam1 = value;
+								bChanged = true;
+							}
+						}
+						if (parameter == 2)
+						{
+							if (value != pMeshMaterial->customShaderParam2)
+							{
+								pMeshMaterial->customShaderParam2 = value;
+								bChanged = true;
+							}
+						}
+						if (parameter == 3)
+						{
+							if (value != pMeshMaterial->customShaderParam3)
+							{
+								pMeshMaterial->customShaderParam3 = value;
+								bChanged = true;
+							}
+						}
+						if (parameter == 4)
+						{
+							if (value != pMeshMaterial->customShaderParam4)
+							{
+								pMeshMaterial->customShaderParam4 = value;
+								bChanged = true;
+							}
+						}
+						if (parameter == 5)
+						{
+							if (value != pMeshMaterial->customShaderParam5)
+							{
+								pMeshMaterial->customShaderParam5 = value;
+								bChanged = true;
+							}
+						}
+						if (parameter == 6)
+						{
+							if (value != pMeshMaterial->customShaderParam6)
+							{
+								pMeshMaterial->customShaderParam6 = value;
+								bChanged = true;
+							}
+						}
+						if (parameter == 7)
+						{
+							if (value != pMeshMaterial->customShaderParam7)
+							{
+								pMeshMaterial->customShaderParam7 = value;
+								bChanged = true;
+							}
+						}
+						if(bChanged)
+							pMeshMaterial->SetDirty();
+
+					}
+				}
+			}
+		}
+
+	}
+
+}
+
 

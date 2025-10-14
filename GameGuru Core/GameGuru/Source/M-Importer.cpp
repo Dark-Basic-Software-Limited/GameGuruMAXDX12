@@ -11814,6 +11814,16 @@ void Wicked_Change_Object_Material(void* pVObject, int mode, entityeleproftype *
 											pObjectMaterial->customShaderParam4 = 0.4f; //BASE ALPHA
 										}
 
+										if (i == 5)
+										{
+											pObjectMaterial->customShaderParam1 = 0.5; //health
+											pObjectMaterial->customShaderParam2 = 1.0; //splatter scale 1-10
+											pObjectMaterial->customShaderParam3 = 0.5f; //Wetness 0-1
+											pObjectMaterial->customShaderParam4 = 0.35f; //edgeFade
+											pObjectMaterial->customShaderParam5 = 0.5f; //maxBlood
+											pObjectMaterial->customShaderParam6 = 1.0f; //Brightness
+
+										}
 										importer_set_all_material_shader_id(pObjectMaterial->customShaderID, pObjectMaterial->customShaderParam1, pObjectMaterial->customShaderParam2, pObjectMaterial->customShaderParam3, pObjectMaterial->customShaderParam4, pObjectMaterial->customShaderParam5, pObjectMaterial->customShaderParam6, pObjectMaterial->customShaderParam7);
 										bHaveMaterialUpdate = true;
 									}
@@ -11830,6 +11840,7 @@ void Wicked_Change_Object_Material(void* pVObject, int mode, entityeleproftype *
 							ImGui::TextCenter("Custom Shaders Parameters");
 							//PE: Parameters to shaders.
 							int numpar = 0;
+							float maxRange1 = 2.0f;
 							std::string param1 = "Parameter 1";
 							std::string param2 = "Parameter 2";
 							std::string param3 = "Parameter 3";
@@ -11870,13 +11881,25 @@ void Wicked_Change_Object_Material(void* pVObject, int mode, entityeleproftype *
 								param4 = "Min Alpha";
 							}
 
+							if (pObjectMaterial->customShaderID == 5)
+							{
+								numpar = 6;
+								maxRange1 = 1.0f;
+								param1 = "Health";
+								param2 = "Splat Scale";
+								param3 = "Wetness";
+								param4 = "Edge Fade";
+								param5 = "Max Blood";
+								param6 = "Brightness";
+							}
+
 							if (numpar > 0)
 							{
 								ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 								ImGui::Text(param1.c_str());
 								ImGui::SameLine();
 								ImGui::SetCursorPos(ImVec2(help_start + 20, ImGui::GetCursorPosY() - 5));
-								if (ImGui::SliderFloat("##CuShaPa1", &pObjectMaterial->customShaderParam1, 0.0, 2.0))
+								if (ImGui::SliderFloat("##CuShaPa1", &pObjectMaterial->customShaderParam1, 0.0, maxRange1))
 								{
 									importer_set_all_material_shader_id(pObjectMaterial->customShaderID, pObjectMaterial->customShaderParam1, pObjectMaterial->customShaderParam2, pObjectMaterial->customShaderParam3, pObjectMaterial->customShaderParam4, pObjectMaterial->customShaderParam5, pObjectMaterial->customShaderParam6, pObjectMaterial->customShaderParam7);
 									pObjectMaterial->SetDirty();
@@ -12245,16 +12268,24 @@ void Wicked_Set_Material_From_grideleprof_ThisMesh(void* pVObject, int mode, ent
 			pObjectMaterial->baseColor.z = BaseColor[2];
 			pObjectMaterial->baseColor.w = BaseColor[3];
 
-
-			pObjectMaterial->customShaderID = edit_grideleprof->WEMaterial.customShaderID;
-			pObjectMaterial->customShaderParam1 = edit_grideleprof->WEMaterial.customShaderParam1;
-			pObjectMaterial->customShaderParam2 = edit_grideleprof->WEMaterial.customShaderParam2;
-			pObjectMaterial->customShaderParam3 = edit_grideleprof->WEMaterial.customShaderParam3;
-			pObjectMaterial->customShaderParam4 = edit_grideleprof->WEMaterial.customShaderParam4;
-			pObjectMaterial->customShaderParam5 = edit_grideleprof->WEMaterial.customShaderParam5;
-			pObjectMaterial->customShaderParam6 = edit_grideleprof->WEMaterial.customShaderParam6;
-			pObjectMaterial->customShaderParam7 = edit_grideleprof->WEMaterial.customShaderParam7;
-
+			bool bValid = true;
+			if (pObjectMaterial->customShaderID == 5 && (mesh->IsDoubleSided() || pestrcasestr(edit_grideleprof->WEMaterial.baseColorMapName[0].Get(), "eyeglasses") ) ) //|| pObjectMaterial->GetBlendMode() == BLENDMODE_ALPHA
+			{
+				pObjectMaterial->customShaderID = -1;
+				edit_grideleprof->WEMaterial.customShaderID = -1;
+				bValid = false;
+			}
+			if (bValid)
+			{
+				pObjectMaterial->customShaderID = edit_grideleprof->WEMaterial.customShaderID;
+				pObjectMaterial->customShaderParam1 = edit_grideleprof->WEMaterial.customShaderParam1;
+				pObjectMaterial->customShaderParam2 = edit_grideleprof->WEMaterial.customShaderParam2;
+				pObjectMaterial->customShaderParam3 = edit_grideleprof->WEMaterial.customShaderParam3;
+				pObjectMaterial->customShaderParam4 = edit_grideleprof->WEMaterial.customShaderParam4;
+				pObjectMaterial->customShaderParam5 = edit_grideleprof->WEMaterial.customShaderParam5;
+				pObjectMaterial->customShaderParam6 = edit_grideleprof->WEMaterial.customShaderParam6;
+				pObjectMaterial->customShaderParam7 = edit_grideleprof->WEMaterial.customShaderParam7;
+			}
 			// emissive color
 			if (edit_grideleprof->WEMaterial.dwEmmisiveColor[iSelectedMesh] == -1)
 			{
@@ -12467,6 +12498,7 @@ void Wicked_Copy_Material_To_Grideleprof(void* pVObject, int mode, entityeleprof
 		edit_grideleprof = &t.grideleprof;
 	}
 
+	int orgShaderID = -1;
 	// go through all meshes and update eleprof
 	for (int iMeshIndex = 0; iMeshIndex < pObject->iMeshCount; iMeshIndex++)
 	{
@@ -12480,7 +12512,10 @@ void Wicked_Copy_Material_To_Grideleprof(void* pVObject, int mode, entityeleprof
 				// get material from mesh
 				uint64_t materialEntity = mesh->subsets[0].materialID;
 				wiScene::MaterialComponent* pObjectMaterial = wiScene::GetScene().materials.GetComponent(materialEntity);
-
+				if (orgShaderID == -1 && pObjectMaterial->customShaderID >= 0)
+				{
+					orgShaderID = pObjectMaterial->customShaderID;
+				}
 				// for each mesh texture set
 				if (iMeshIndex < MAXMESHMATERIALS)
 				{
@@ -12511,15 +12546,24 @@ void Wicked_Copy_Material_To_Grideleprof(void* pVObject, int mode, entityeleprof
 					edit_grideleprof->WEMaterial.bCastShadows[iMeshIndex] = pObjectMaterial->IsCastingShadow();
 					edit_grideleprof->WEMaterial.bDoubleSided[iMeshIndex] = mesh->IsDoubleSided();
 					edit_grideleprof->WEMaterial.fRenderOrderBias[iMeshIndex] = 0.0f;
-					edit_grideleprof->WEMaterial.customShaderID = pObjectMaterial->customShaderID;
-					edit_grideleprof->WEMaterial.customShaderParam1 = pObjectMaterial->customShaderParam1;
-					edit_grideleprof->WEMaterial.customShaderParam2 = pObjectMaterial->customShaderParam2;
-					edit_grideleprof->WEMaterial.customShaderParam3 = pObjectMaterial->customShaderParam3;
-					edit_grideleprof->WEMaterial.customShaderParam4 = pObjectMaterial->customShaderParam4;
-					edit_grideleprof->WEMaterial.customShaderParam5 = pObjectMaterial->customShaderParam5;
-					edit_grideleprof->WEMaterial.customShaderParam6 = pObjectMaterial->customShaderParam6;
-					edit_grideleprof->WEMaterial.customShaderParam7 = pObjectMaterial->customShaderParam7;
-
+					bool bValid = true;
+					
+					//pObjectMaterial->customShaderID == 5
+					if (orgShaderID == 5 && (mesh->IsDoubleSided() || pestrcasestr(edit_grideleprof->WEMaterial.baseColorMapName[iMeshIndex].Get(),"eyeglasses")) ) //|| pObjectMaterial->GetBlendMode() == BLENDMODE_ALPHA)
+					{
+						bValid = false;
+					}
+					if (bValid)
+					{
+						edit_grideleprof->WEMaterial.customShaderID = pObjectMaterial->customShaderID;
+						edit_grideleprof->WEMaterial.customShaderParam1 = pObjectMaterial->customShaderParam1;
+						edit_grideleprof->WEMaterial.customShaderParam2 = pObjectMaterial->customShaderParam2;
+						edit_grideleprof->WEMaterial.customShaderParam3 = pObjectMaterial->customShaderParam3;
+						edit_grideleprof->WEMaterial.customShaderParam4 = pObjectMaterial->customShaderParam4;
+						edit_grideleprof->WEMaterial.customShaderParam5 = pObjectMaterial->customShaderParam5;
+						edit_grideleprof->WEMaterial.customShaderParam6 = pObjectMaterial->customShaderParam6;
+						edit_grideleprof->WEMaterial.customShaderParam7 = pObjectMaterial->customShaderParam7;
+					}
 					sFrame* pFrame = pMesh->pFrameAttachedTo;
 					if (pFrame)
 					{
@@ -12942,16 +12986,24 @@ void importer_set_all_material_shader_id(int shaderID,float p1, float p2, float 
 				// get material settings from mesh material or WEMaterial
 				uint64_t materialEntity = meshComponent->subsets[0].materialID;
 				wiScene::MaterialComponent* pMeshMaterial = wiScene::GetScene().materials.GetComponent(materialEntity);
-				pMeshMaterial->customShaderID = shaderID;
-				pMeshMaterial->customShaderParam1 = p1;
-				pMeshMaterial->customShaderParam2 = p2;
-				pMeshMaterial->customShaderParam3 = p3;
-				pMeshMaterial->customShaderParam4 = p4;
-				pMeshMaterial->customShaderParam5 = p5;
-				pMeshMaterial->customShaderParam6 = p6;
-				pMeshMaterial->customShaderParam7 = p7;
-
-				pMeshMaterial->SetDirty();
+				bool bValid = true;
+				if (shaderID == 5 && meshComponent->IsDoubleSided())
+				{
+					pMeshMaterial->customShaderID = -1;
+					bValid = false;
+				}
+				if (bValid)
+				{
+					pMeshMaterial->customShaderID = shaderID;
+					pMeshMaterial->customShaderParam1 = p1;
+					pMeshMaterial->customShaderParam2 = p2;
+					pMeshMaterial->customShaderParam3 = p3;
+					pMeshMaterial->customShaderParam4 = p4;
+					pMeshMaterial->customShaderParam5 = p5;
+					pMeshMaterial->customShaderParam6 = p6;
+					pMeshMaterial->customShaderParam7 = p7;
+					pMeshMaterial->SetDirty();
+				}
 			}
 		}
 	}
