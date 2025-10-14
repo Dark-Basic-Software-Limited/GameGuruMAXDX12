@@ -1528,7 +1528,32 @@ void game_masterroot_gameloop_initcode(int iUseVRTest)
 	// Load any light map objects if available
 	timestampactivity(0,"load lightmapped objects");
 	lm_loadscene ( );
-			
+	
+	//PE: Disable collision.
+	for (t.e = 1; t.e <= g.entityelementlist; t.e++)
+	{
+		int tentid = t.entityelement[t.e].bankindex;
+		int tobj = t.entityelement[t.e].obj;
+		if (tentid > 0 && tobj > 0)
+		{
+			if (t.entityprofile[tentid].ischaracter == 0)
+			{
+				int iShape = t.entityprofile[tentid].collisionmode;
+				if (t.entityelement[t.e].eleprof.iOverrideCollisionMode != -1)
+						iShape = t.entityelement[t.e].eleprof.iOverrideCollisionMode;
+				//PE: no max fpe is using canseethrough. else if (t.entityprofile[tentid].canseethrough == 1) iShape = 11;
+				if (iShape == 11)
+				{
+					sObject* pObject = g_ObjectList[tobj];
+					if (pObject)
+					{
+						WickedCall_SetDisableCollision(pObject, true);
+					}
+				}
+			}
+		}
+	}
+
 	g.merged_new_objects = 0;
 	if ( t.tlmloadsuccess == 0  ) 
 	{ 
@@ -2811,6 +2836,32 @@ void game_masterroot_gameloop_afterloopcode(int iUseVRTest)
 
 	// Rest any internal game variables
 	game_main_stop ( );
+
+	//PE: Enable collision.
+	for (t.e = 1; t.e <= g.entityelementlist; t.e++)
+	{
+		int tentid = t.entityelement[t.e].bankindex;
+		int tobj = t.entityelement[t.e].obj;
+		if (tentid > 0 && tobj > 0)
+		{
+			if (t.entityprofile[tentid].ischaracter == 0)
+			{
+				int iShape = t.entityprofile[tentid].collisionmode;
+				if (t.entityelement[t.e].eleprof.iOverrideCollisionMode != -1)
+					iShape = t.entityelement[t.e].eleprof.iOverrideCollisionMode;
+				//PE: no max fpe is using canseethrough. else if (t.entityprofile[tentid].canseethrough == 1) iShape = 11;
+				if (iShape == 11)
+				{
+					sObject* pObject = g_ObjectList[tobj];
+					if (pObject)
+					{
+						WickedCall_SetDisableCollision(pObject, false);
+					}
+				}
+			}
+		}
+	}
+
 
 	//PE: Draw call optimizer
 //	if (!g.disable_drawcall_optimizer)

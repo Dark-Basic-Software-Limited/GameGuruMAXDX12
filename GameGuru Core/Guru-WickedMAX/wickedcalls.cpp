@@ -4889,6 +4889,25 @@ void WickedCall_SetObjectPreventAnyApparentOcclusion (sObject* pObject, bool bPr
 	}
 }
 
+void WickedCall_SetDisableCollision(sObject* pObject,bool collision)
+{
+	for (int iF = 0; iF < pObject->iFrameCount; iF++)
+	{
+		sFrame* pFrame = pObject->ppFrameList[iF];
+		if (pFrame)
+		{
+			if (pFrame->wickedobjindex > 0)
+			{
+				ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
+				if (object)
+				{
+					object->SetDisableCollision(collision);
+				}
+			}
+		}
+	}
+}
+
 void WickedCall_SetObjectVisible ( sObject* pObject, bool bVisible )
 {
 	for (int iF = 0; iF < pObject->iFrameCount; iF++)
