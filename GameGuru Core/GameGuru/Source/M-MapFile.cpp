@@ -2246,6 +2246,18 @@ void mapfile_collectfoldersandfiles (cstr levelpathfolder)
 	// we will much improve this with the new project system!!
 	addfoldertocollection("gamecore\\hands\\Animations");
 	addallinfoldertocollection("gamecore\\guns\\interactive", "gamecore\\guns\\interactive");
+	//PE: We now have lua script that use this directly, so add by default for now.
+	addfoldertocollection("gamecore\\guns\\enhanced\\Gloves_Unarmed");
+	//PE: Need to read hudcustom.txt from all used guns folders, for now.
+	addfoldertocollection("gamecore\\hands\\Male Light");
+	addfoldertocollection("gamecore\\hands\\Male Dark");
+	addfoldertocollection("gamecore\\hands\\Female Light");
+	addfoldertocollection("gamecore\\hands\\Female Dark");
+	addfoldertocollection("gamecore\\hands\\Combat Gloves Light");
+	addfoldertocollection("gamecore\\hands\\Combat Gloves Dark");
+	addfoldertocollection("gamecore\\hands\\Low Poly");
+	addfoldertocollection("gamecore\\hands\\Fantasy Gauntlets");
+	addfoldertocollection("gamecore\\hands\\Fantasy Leather Gloves");
 
 	//  Stage 1B - Style dependent files
 	titles_getstyle ();

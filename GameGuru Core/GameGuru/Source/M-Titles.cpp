@@ -2393,6 +2393,18 @@ void titleslua_main_stage3_inloop(void)
 	char pRealNameOfScreen[256];
 	strcpy(pRealNameOfScreen, g_pTitleCurrentPage);
 
+
+	//PE: Make sure to show everything on first frame.
+	extern int iBlockRenderingForFrames;
+	extern bool g_bNoSwapchainPresent;
+	extern bool bBlockImGuiUntilNewFrame;
+	if (iBlockRenderingForFrames > 0 || g_bNoSwapchainPresent || bBlockImGuiUntilNewFrame)
+	{
+		iBlockRenderingForFrames = 0;
+		g_bNoSwapchainPresent = false;
+		bBlockImGuiUntilNewFrame = false;
+	}
+
 	// Machine independent speed update (makes g_TimeElapsed available)
 	game_timeelapsed();
 

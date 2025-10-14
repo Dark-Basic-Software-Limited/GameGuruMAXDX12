@@ -3438,9 +3438,11 @@ struct globalstype
 	float CurveDistanceScaler;
 	int ConvertToDDS;
 	int ConvertToDDSMaxSize;
+	int DisableMessagePump;
 	// Constructor
 	globalstype ( )
 	{
+		DisableMessagePump = 0;
 		ConvertToDDS = 0;
 		ConvertToDDSMaxSize = 2048;
 
