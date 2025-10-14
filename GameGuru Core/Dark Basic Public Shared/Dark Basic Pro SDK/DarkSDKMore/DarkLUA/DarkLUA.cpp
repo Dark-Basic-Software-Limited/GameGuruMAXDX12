@@ -6573,6 +6573,11 @@ int LuaConvert2DTo3D(lua_State* L)
 	float x = (fX * g_dwScreenWidth) / 100.0f;
 	float y = (fY * g_dwScreenHeight) / 100.0f;
 
+	//PE: Wicked GetPickRay use dpi so must add it here.
+	const float dpiscaling = (float)GetDpiForWindow(g_pGlob->hWnd) / 96.0f;
+	x /= dpiscaling;
+	y /= dpiscaling;
+
 	float fOutX = 0, fOutY = 0, fOutZ = 0;
 	float fDirX = 0, fDirY = 0, fDirZ = 0;
 	Convert2Dto3D(x, y, &fOutX, &fOutY, &fOutZ, &fDirX, &fDirY, &fDirZ);
