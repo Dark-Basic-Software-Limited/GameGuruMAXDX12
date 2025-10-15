@@ -1,23 +1,4 @@
-// damageBloodPS.hlsl - Procedural Damage Blood Shader for 3D Objects
-// ... (includes, functions: hash21, noiseMav, fbm, getStaticBloodMask, getBloodColor, TiledLighting are unchanged) ...
-
-/*
-Vertex Shader setup:
-struct VertexInput
-{
-...
-	// Data coming from input layout:
-	float4 pos : POSITION_NORMAL_WIND;
-	float4 GetPosition()
-	{
-		return float4(pos.xyz, 1);
-	}
-...
-};
-
-	Out.local_position = input.GetPosition();
-
-*/
+// damageBloodPS.hlsl - Procedural Damage Blood Shader
 
 
 #define OBJECTSHADER_LAYOUT_COMMON
@@ -32,15 +13,7 @@ struct VertexInput
 #include "brdf.hlsli"
 #include "lightingHF.hlsli"
 
-// Custom Parameters controlled by the Game/Engine:
-// customShaderParam1 = Blood Coverage (0.0 - 1.0) - Controlled by NPC Health/Damage state
-// customShaderParam2 = Splatter Scale (1.0 - 10.0) - Spatial scale of the noise (Higher = smaller, finer splatter)
-// customShaderParam3 = Wetness/Gloss (0.0 - 1.0) - Controls the roughness/shine of the blood (1.0 = glossy)
-// customShaderParam4 = Unused
-// customShaderParam5 = Unused
-// customShaderParam6 = Unused
 
-// --- Noise generation functions (UNTOUCHED) ---
 float hash21(float2 p)
 {
     p = frac(p * float2(233.34, 851.73));
@@ -78,7 +51,6 @@ float fbm(float2 p, int octaves)
     return value;
 }
 
-// --- Procedural Blood Functions (UNTOUCHED) ---
 
 // Generates a static, irregular blood splatter mask using a 2D position input.
 float getStaticBloodMask(float2 pos, float coverageAmount, float octaves)
@@ -238,7 +210,6 @@ inline void TiledLighting(inout Surface surface, inout Lighting lighting)
 // --- Main Pixel Shader Entry Point ---
 float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_TARGET
 {
-    // ... (Initial setup for depth, screen coords, surface init, etc.) ...
     const float depth = input.pos.z;
     const float lineardepth = input.pos.w;
     const float2 pixel = input.pos.xy;
@@ -310,7 +281,12 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_TARGET
         float3 ambient = GetAmbient(surface.N);
         Lighting lighting;
         lighting.create(0, 0, ambient, 0);
-        TiledLighting(surface, lighting);
+        //TiledLighting(surface, lighting);
+        //PE: envMap was missing.
+        float3 envAmbient = 0;
+        TiledLighting(surface, lighting, envAmbient);
+        lighting.indirect.diffuse += envAmbient;
+
         
         ApplyLighting(surface, lighting, color);
         ApplyFog(dist, g_xCamera_CamPos, surface.V, color);
@@ -351,8 +327,12 @@ float4 main(PixelInput input, in bool is_frontface : SV_IsFrontFace) : SV_TARGET
     Lighting lighting;
     lighting.create(0, 0, ambient, 0);
 
-    TiledLighting(surface, lighting);
-   
+    //TiledLighting(surface, lighting);
+    //PE: envMap was missing.
+    float3 envAmbient = 0;
+    TiledLighting(surface, lighting, envAmbient);
+    lighting.indirect.diffuse += envAmbient;
+
     ApplyLighting(surface, lighting, color);
     ApplyFog(dist, g_xCamera_CamPos, surface.V, color);
     
