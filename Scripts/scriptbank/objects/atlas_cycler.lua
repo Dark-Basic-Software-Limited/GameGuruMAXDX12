@@ -3,7 +3,7 @@
 -- DESCRIPTION: Cycles an atlas images onto a object. Attach to the object.
 -- DESCRIPTION: Can be activated from a trigger or switch or set to always on.
 -- DESCRIPTION: [IMAGEFILE$="imagebank\\misc\\testimages\\red.png"]
--- DESCRIPTION: [DISPLAY_SPEED=1(0,1000)]
+-- DESCRIPTION: [DISPLAY_SPEED=1(0,100)]
 -- DESCRIPTION: [ATLAS_COLUMNS=3]
 -- DESCRIPTION: [ATLAS_ROWS=3]
 -- DESCRIPTION: [#EMISSIVE_STRENGTH=300(0,1000)]
