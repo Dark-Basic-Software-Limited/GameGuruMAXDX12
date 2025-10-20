@@ -566,6 +566,8 @@ bool g_bMappingKeyWindow = false;
 int g_iMappingKeyToChange = -1;
 
 bool bIncludeDocumentFolderInRemoteProject = false;
+int CurrentMonitorResolutionX, CurrentMonitorResolutionY;
+void GetActiveMonitorResolution( void );
 
 
 
@@ -38055,13 +38057,17 @@ void reset_single_node(int node)
 	//Each filler have its own, so can count it down later.
 	Storyboard.Nodes[i].screen_backdrop_transparent = false;
 	Storyboard.Nodes[i].loop_music = 0;
-	
 	for (int l = 0; l < 19; l++) Storyboard.Nodes[i].iFiller20[l] = 0;
 	for (int l = 0; l < 20; l++) Storyboard.Nodes[i].fFiller20[l] = 0.0;
 	for (int l = 0; l < STORYBOARD_MAXOUTPUTS; l++)
 	{
-		for (int ll = 0; ll < 20; ll++) Storyboard.Nodes[i].iFillerMaxOutputs20[ll][l] = 0.0;
+		for (int ll = 0; ll < 19; ll++) Storyboard.Nodes[i].iFillerMaxOutputs20[ll][l] = 0.0;
 		for (int ll = 0; ll < 20; ll++) strcpy(Storyboard.Nodes[i].FillerCharMaxOutput20[ll][l],"");
+
+#ifdef EMULATERESOLUTION
+		Storyboard.Nodes[i].universal_resolution[l] = 0;
+#endif
+
 		strcpy(Storyboard.Nodes[i].output_action[l], "");
 		strcpy(Storyboard.Nodes[i].output_title[l], "");
 		Storyboard.Nodes[i].output_linkto[l] = 0;
@@ -38125,11 +38131,14 @@ void duplicate_single_node (int sourceid)
 	Storyboard.Nodes[iNewNode].toggleKey = Storyboard.Nodes[sourceid].toggleKey;
 	Storyboard.Nodes[iNewNode].showAtStart = Storyboard.Nodes[sourceid].showAtStart;
 	Storyboard.Nodes[iNewNode].loop_music = Storyboard.Nodes[sourceid].loop_music;
-	
 	memcpy(Storyboard.Nodes[iNewNode].iFiller20, Storyboard.Nodes[sourceid].iFiller20, sizeof(Storyboard.Nodes[sourceid].iFiller20));
 	memcpy(Storyboard.Nodes[iNewNode].fFiller20, Storyboard.Nodes[sourceid].fFiller20, sizeof(Storyboard.Nodes[sourceid].fFiller20));
 	memcpy(Storyboard.Nodes[iNewNode].iFillerMaxOutputs20, Storyboard.Nodes[sourceid].iFillerMaxOutputs20, sizeof(Storyboard.Nodes[sourceid].iFillerMaxOutputs20));
 	memcpy(Storyboard.Nodes[iNewNode].FillerCharMaxOutput20, Storyboard.Nodes[sourceid].FillerCharMaxOutput20, sizeof(Storyboard.Nodes[sourceid].FillerCharMaxOutput20));
+
+#ifdef EMULATERESOLUTION
+	memcpy(Storyboard.Nodes[iNewNode].universal_resolution, Storyboard.Nodes[sourceid].universal_resolution, sizeof(Storyboard.Nodes[sourceid].universal_resolution));
+#endif
 
 	// data chunk two
 	memcpy(Storyboard.widget_colors[iNewNode], Storyboard.widget_colors[sourceid], sizeof(Storyboard.widget_colors[sourceid]));
@@ -47312,6 +47321,9 @@ bool load__storyboard_into_struct(const char *filepath, StoryboardStruct& storyb
 									storyboard.Nodes[i].widget_read_only[b] = updateproject202.Nodes[i].widget_read_only[b];
 									storyboard.Nodes[i].widget_layer[b] = updateproject202.Nodes[i].widget_layer[b];
 									storyboard.Nodes[i].widget_initial_value[b] = updateproject202.Nodes[i].widget_initial_value[b];
+#ifdef EMULATERESOLUTION
+									storyboard.Nodes[i].universal_resolution[b] = updateproject202.Nodes[i].universal_resolution[b];
+#endif
 
 								}
 
@@ -48880,7 +48892,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 	}
 
 	static int iQuitWindowLoop = 0;
-	if ( ( bScreen_Editor_Window || standalone ) && nodeid >= 0)
+	if ((bScreen_Editor_Window || standalone) && nodeid >= 0)
 	{
 		if (standalone)
 		{
@@ -48896,7 +48908,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 			style_winback.w = 1.0f;
 			ImGui::PushStyleColor(ImGuiCol_WindowBg, style_winback);
 
-			
+
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
@@ -48907,6 +48919,39 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 			bool bopen = ImGui::Begin("##StoryboardStandaloneWindow", &bStoryboardWindow, flags); // ImGuiWindowFlags_NoScrollbar
 		}
 
+#ifdef EMULATERESOLUTION
+
+		static bool bInitResolutionCheck = true;
+		static char CurrentResolution[256] = "\0";
+
+		if (bInitResolutionCheck)
+		{
+			GetActiveMonitorResolution();
+			if (CurrentMonitorResolutionX == 0 || CurrentMonitorResolutionY == 0)
+			{
+				CurrentMonitorResolutionX = master.masterrenderer.GetLogicalWidth();
+				CurrentMonitorResolutionY = master.masterrenderer.GetLogicalHeight();
+			}
+			bInitResolutionCheck = false;
+			sprintf(CurrentResolution, "Current Resolution %dx%d", CurrentMonitorResolutionX, CurrentMonitorResolutionY);
+		}
+		static int monitor_size_x = CurrentMonitorResolutionX;
+		static int monitor_size_y = CurrentMonitorResolutionY;
+
+		int preview_size_x = ImGui::GetMainViewport()->Size.x - 270;
+		int preview_size_y = ImGui::GetMainViewport()->Size.y - 30.0;
+		if (standalone)
+		{
+			preview_size_x = ImGui::GetMainViewport()->Size.x;
+			preview_size_y = ImGui::GetMainViewport()->Size.y;
+		}
+		else if (bPreviewScreen)
+		{
+			preview_size_x = ImGui::GetMainViewport()->Size.x - 100;
+			preview_size_y = ImGui::GetMainViewport()->Size.y;
+		}
+
+#else
 		int preview_size_x = ImGui::GetMainViewport()->Size.x -270;
 		int preview_size_y = ImGui::GetMainViewport()->Size.y -30.0;
 		if (bPreviewScreen)
@@ -48914,6 +48959,8 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 			preview_size_x = ImGui::GetMainViewport()->Size.x;
 			preview_size_y = ImGui::GetMainViewport()->Size.y;
 		}
+#endif
+
 		float fStartWinPosY = ImGui::GetCursorPosY();
 
 		if (!bPreviewScreen)
@@ -49008,9 +49055,23 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 		ImVec2 vMonitorBorder = ImVec2(15, 15);/*ImVec2(20, 20);*/
 		//float fRatio = 1.777777; // Default ratio 1920x1080
 		ImVec2 vViewportSize = ImGui::GetMainViewport()->Size;
+
+		int panelWidth = 250;
+
+
+#ifdef EMULATERESOLUTION
+		float fRatio = (float) monitor_size_x / (float) monitor_size_y; // Default ratio 1920x1080
+		float fRatioInv = (float) monitor_size_y / (float) monitor_size_x;
+		if (standalone)
+		{
+			fRatio = vViewportSize.x / vViewportSize.y;
+			fRatioInv = vViewportSize.y / vViewportSize.x;
+		}
+#else
 		float fRatio = vViewportSize.x / vViewportSize.y; // Default ratio 1920x1080
 		/*float fRatioInv = 0.5625;*/
 		float fRatioInv = vViewportSize.y / vViewportSize.x;
+#endif
 		float fMaxMonitorY = preview_size_y - vHeaderEnd.y; // -ImGui::GetFontSize();
 		if (bPreviewScreen) fMaxMonitorY -= 10.0f;
 		ImVec2 vMonitorSize;
@@ -49030,6 +49091,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 		}
 		else
 		{
+#ifndef EMULATERESOLUTION
 			vMonitorSize = ImVec2(preview_size_x - 10.0 - vMonitorPos.x - (vMonitorBorder.x*2.0), fMaxMonitorY - vMonitorPos.y - (vMonitorBorder.y*2.0));
 			vMonitorSize.y = vMonitorSize.x * fRatioInv;
 			if (vMonitorSize.y > fMaxMonitorY - vMonitorPos.x - (vMonitorBorder.y*2.0))
@@ -49037,7 +49099,33 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 				vMonitorSize.y = fMaxMonitorY - vMonitorPos.y - (vMonitorBorder.y*2.0);
 				vMonitorSize.x = (vMonitorSize.y * fRatio);
 			}
+#endif
+
+#ifdef EMULATERESOLUTION
+			vMonitorSize = ImVec2(preview_size_x - 10.0 - vMonitorPos.x - (vMonitorBorder.x * 2.0), fMaxMonitorY - vMonitorPos.y - (vMonitorBorder.y * 2.0));
+			if (!standalone && !bPreviewScreen)
+			{
+				vMonitorSize.x -= panelWidth;
+			}
+			vMonitorSize.y = vMonitorSize.x * fRatioInv;
+			if (vMonitorSize.y > fMaxMonitorY - vMonitorPos.y - (vMonitorBorder.y * 2.0))
+			{
+				vMonitorSize.y = fMaxMonitorY - vMonitorPos.y - (vMonitorBorder.y * 2.0);
+				vMonitorSize.x = (vMonitorSize.y * fRatio);
+			}
+			vMonitorCenterX = preview_size_x - 10.0 - (vMonitorSize.x + vMonitorPos.x + (vMonitorBorder.x * 2.0));
+			if (!standalone && !bPreviewScreen)
+			{
+				vMonitorCenterX += panelWidth;
+			}
+			else if (!standalone && bPreviewScreen)
+			{
+				vMonitorCenterX += 120;
+			}
+#else
 			vMonitorCenterX = preview_size_x - 10.0 - (vMonitorSize.x + vMonitorPos.x + (vMonitorBorder.x*2.0));
+#endif
+
 		}
 
 		vMonitorCenterX *= 0.5;
@@ -49049,12 +49137,17 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 		ImVec2 padding = { 1.0, 1.0 };
 		
 		ImVec2 DCCursorPos = window->DC.CursorPos;
-		int panelWidth = 250;
 		ImVec2 spaceAvail;// = ImGui::GetContentRegionAvail();
 		ImVec2 vScreenEditorPanelSize;// = ImVec2(spaceAvail.x - vMonitorSize.x, spaceAvail.y);
 		ImRect leftPanelAABB;
 		ImRect currentWidgetAABB;
 		leftPanelAABB.Min = ImGui::GetCursorPos();
+#ifdef EMULATERESOLUTION
+		if (!standalone && bPreviewScreen)
+		{
+			vMonitorPos += vMonitorBorder + ImVec2(10, 0);
+		}
+#endif
 		if (!standalone && !bPreviewScreen)
 		{
 			if (ImGui::IsMouseReleased(0) && bPlacingNewWidget)
@@ -49064,8 +49157,10 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 
 			vMonitorPos += vMonitorBorder + ImVec2(10,0);
 			// Make room for panel to add/remove gadgets
+#ifndef EMULATERESOLUTION
 			vMonitorSize.x -= panelWidth;
 			vMonitorCenterX += panelWidth;
+#endif
 
 			ImVec2 spaceAvail = ImGui::GetContentRegionAvail();
 			ImVec2 vScreenEditorPanelSize = ImVec2(panelWidth, spaceAvail.y);
@@ -49217,7 +49312,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 		}
 
 		const ImRect image_bb((DCCursorPos + ImVec2(vMonitorCenterX,0) + vMonitorPos - padding), DCCursorPos + ImVec2(vMonitorCenterX, 0) + vMonitorPos + padding + vMonitorSize);
-
 		ImRect rMonitorArea;
 		rMonitorArea.Min = image_bb.Min + padding;
 		rMonitorArea.Max = image_bb.Max - padding;
@@ -49369,9 +49463,20 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 		}
 
 		extern float screen_editor_scalemod (float);
-		float fGlobalScale = screen_editor_scalemod(vViewportSize.x / 1920.0f);
+#ifdef EMULATERESOLUTION
 
+		ImVec2 fGlobalScale = ImVec2(screen_editor_scalemod(vViewportSize.x / 1920.0f), screen_editor_scalemod(vViewportSize.x / 1920.0f));
 		ImVec2 vScale = vMonitorSize / vViewportSize;
+		float fFontScale = screen_editor_scalemod(1080.0f / monitor_size_y);
+
+		ImVec2 vUniversalScale = ImVec2(vMonitorSize.x / monitor_size_x, vMonitorSize.x / monitor_size_x);
+		ImVec2 fUniversalGlobalScale = ImVec2(screen_editor_scalemod(monitor_size_y / 1080.0f), screen_editor_scalemod(monitor_size_y / 1080.0f)); //Fit by y resolution.
+
+#else
+		ImVec2 fGlobalScale = ImVec2(screen_editor_scalemod(vViewportSize.x / 1920.0f), screen_editor_scalemod(vViewportSize.x / 1920.0f));
+		ImVec2 vScale = vMonitorSize / vViewportSize;
+		float fFontScale = fGlobalScale.x;
+#endif
 		ImVec2 vMonitorStart = ImVec2(vMonitorCenterX, 0) + vHeaderEnd + vMonitorPos;
 		ImVec2 vMonitorEnd = ImVec2(vMonitorCenterX, 0) + vHeaderEnd + vMonitorPos + vMonitorSize;
 
@@ -49403,17 +49508,39 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 					ImVec2 fOnePercent = ImVec2(vMonitorSize.x / 100.0, vMonitorSize.y / 100.0);
 					ImVec2 widget_pos = Storyboard.Nodes[nodeid].widget_pos[i] * fOnePercent; //Real screen pos.
 					ImVec2 widget_size = ImVec2(500, 74); //Default widget size.
-					widget_size = widget_size * vScale;
-					widget_size = widget_size * fGlobalScale;
+
+#ifdef EMULATERESOLUTION
+					if (Storyboard.Nodes[nodeid].universal_resolution[i])
+					{
+						widget_size = widget_size * vUniversalScale;
+						widget_size = widget_size * fUniversalGlobalScale;
+					}
+					else
+#endif
+					{
+						widget_size = widget_size * vScale;
+						widget_size = widget_size * fGlobalScale;
+					}
 					float font_scale = WidgetSelectUsedFont(nodeid, i);
-					ImGui::SetWindowFontScale(font_scale * vScale.x * fGlobalScale * fabs(Storyboard.Nodes[nodeid].widget_font_size[i]));
+					ImGui::SetWindowFontScale(font_scale * vScale.x * fFontScale * fabs(Storyboard.Nodes[nodeid].widget_font_size[i]));
 					if (ImageExist(Storyboard.Nodes[nodeid].widget_normal_thumb_id[i]))
 					{
 						widget_size.x = ImageWidth(Storyboard.Nodes[nodeid].widget_normal_thumb_id[i]);
 						widget_size.y = ImageHeight(Storyboard.Nodes[nodeid].widget_normal_thumb_id[i]);
-						widget_size = widget_size * vScale; //Scale to visible screen size.
-						widget_size = widget_size * fGlobalScale;
-						widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[i];
+#ifdef EMULATERESOLUTION
+						if (Storyboard.Nodes[nodeid].universal_resolution[i])
+						{
+							widget_size = widget_size * vUniversalScale;
+							widget_size = widget_size * fUniversalGlobalScale;
+							widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[i];
+						}
+						else
+#endif
+						{
+							widget_size = widget_size * vScale; //Scale to visible screen size.
+							widget_size = widget_size * fGlobalScale;
+							widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[i];
+						}
 					}
 					else
 					{
@@ -49488,12 +49615,21 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 
 				ImVec2 widget_pos = Storyboard.Nodes[nodeid].widget_pos[index] * fOnePercent; //Real screen pos.
 				ImVec2 widget_size = ImVec2(500, 74); //Default widget size.
-				widget_size = widget_size * vScale;
-				widget_size = widget_size * fGlobalScale;
-
+#ifdef EMULATERESOLUTION
+				if (Storyboard.Nodes[nodeid].universal_resolution[index])
+				{
+					widget_size = widget_size * vUniversalScale;
+					widget_size = widget_size * fUniversalGlobalScale;
+				}
+				else
+#endif
+				{
+					widget_size = widget_size * vScale;
+					widget_size = widget_size * fGlobalScale;
+				}
 				//One widget can only use one font, so select it now and use for all functions.
 				float font_scale = WidgetSelectUsedFont(nodeid, index);
-				ImGui::SetWindowFontScale(font_scale*vScale.x* fGlobalScale* fabs(Storyboard.Nodes[nodeid].widget_font_size[index]));
+				ImGui::SetWindowFontScale(font_scale*vScale.x* fFontScale * fabs(Storyboard.Nodes[nodeid].widget_font_size[index]));
 
 				//Is a kind of progress bar?
 				bool bProgressbar = false;
@@ -49512,9 +49648,20 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 					{
 						widget_size.x = ImageWidth(Storyboard.Nodes[nodeid].widget_normal_thumb_id[index]);
 						widget_size.y = ImageHeight(Storyboard.Nodes[nodeid].widget_normal_thumb_id[index]);
-						widget_size = widget_size * vScale; //Scale to visible screen size.
-						widget_size = widget_size * fGlobalScale;
-						widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[index];
+#ifdef EMULATERESOLUTION
+						if (Storyboard.Nodes[nodeid].universal_resolution[index])
+						{
+							widget_size = widget_size * vUniversalScale;
+							widget_size = widget_size * fUniversalGlobalScale;
+							widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[index];
+						}
+						else
+#endif
+						{
+							widget_size = widget_size * vScale; //Scale to visible screen size.
+							widget_size = widget_size * fGlobalScale;
+							widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[index];
+						}
 					}
 
 					if (bUsePivotXCenter)
@@ -49907,25 +50054,39 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 					else
 					{
 						// only in HUD editor mode
-						if (ImageExist(imgID) == 0)
+						if(!(bWidgetIsVideo == true && t.game.gameisexe == 1))
 						{
-							// if no image, cannot grab widget or delete it, so use a placeholder
-							image_setlegacyimageloading(true);
-							LoadImage("imagebank\\HUD Library\\MAX\\missing.png", imgID);
-							image_setlegacyimageloading(false);
+							if (ImageExist(imgID) == 0)
+							{
+								// if no image, cannot grab widget or delete it, so use a placeholder
+								image_setlegacyimageloading(true);
+								LoadImage("imagebank\\HUD Library\\MAX\\missing.png", imgID);
+								image_setlegacyimageloading(false);
 
-							// also possible it was placed outside of screen if the missing image was large!
-							Storyboard.Nodes[nodeid].widget_pos[index].x = 50.0f;
-							Storyboard.Nodes[nodeid].widget_pos[index].y = 50.0f;
+								// also possible it was placed outside of screen if the missing image was large!
+								Storyboard.Nodes[nodeid].widget_pos[index].x = 50.0f;
+								Storyboard.Nodes[nodeid].widget_pos[index].y = 50.0f;
+							}
 						}
 					}
 					if (ImageExist(imgID))
 					{
 						widget_size.x = ImageWidth(imgID);
 						widget_size.y = ImageHeight(imgID);
-						widget_size = widget_size * vScale; //Scale to visible screen size.
-						widget_size = widget_size * fGlobalScale;
-						widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[index];
+#ifdef EMULATERESOLUTION
+						if (Storyboard.Nodes[nodeid].universal_resolution[index])
+						{
+							widget_size = widget_size * vUniversalScale;
+							widget_size = widget_size * fUniversalGlobalScale;
+							widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[index];
+						}
+						else
+#endif
+						{
+							widget_size = widget_size * vScale; //Scale to visible screen size.
+							widget_size = widget_size * fGlobalScale;
+							widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[index];
+						}
 					}
 
 					if (bUsePivotXCenter)
@@ -49987,6 +50148,27 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 										ID3D11ShaderResourceView* lpVideoTexture = GetAnimPointerView(g_iStoryboardScreenVideoID);
 										float fVideoW = GetAnimWidth(g_iStoryboardScreenVideoID);
 										float fVideoH = GetAnimHeight(g_iStoryboardScreenVideoID);
+
+										//PE: imgID do not always exists in standalone.
+										if (!ImageExist(imgID))
+										{
+											widget_size.x = fVideoW;
+											widget_size.y = fVideoH;
+#ifdef EMULATERESOLUTION
+											if (Storyboard.Nodes[nodeid].universal_resolution[index])
+											{
+												widget_size = widget_size * vUniversalScale;
+												widget_size = widget_size * fUniversalGlobalScale;
+												widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[index];
+											}
+											else
+#endif
+											{
+												widget_size = widget_size * vScale; //Scale to visible screen size.
+												widget_size = widget_size * fGlobalScale;
+												widget_size = widget_size * Storyboard.Nodes[nodeid].widget_size[index];
+											}
+										}
 										if (lpVideoTexture)
 										{
 											ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -49997,6 +50179,8 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 											ImVec2 uv0 = ImVec2(0, 0);
 											ImVec2 uv1 = ImVec2(animU, animV);
 											window->DrawList->AddImage((ImTextureID)lpVideoTexture, image_bb.Min, image_bb.Max, uv0, uv1, ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)));
+											//ImGui::SetCursorPos(vMonitorStart); //PE: Debug
+											//ImGui::Text("widget_size: %0.2f,%0.2f widget_pos: %0.2f,%0.2f", widget_size.x, widget_size.y, widget_pos.x, widget_pos.y);
 										}
 									}
 								}
@@ -50567,7 +50751,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 				if (iSkipWidgetSelectionForFrames > 0) //PE: Make sure we dont select anything after a window on top.
 					iSkipWidgetSelectionForFrames--;
 
-				ImGui::SetWindowFontScale(1.0*vScale.y * fGlobalScale);
+				ImGui::SetWindowFontScale(1.0*vScale.y * fFontScale);
 				ImGui::PopFont();
 			}
 		}
@@ -50590,9 +50774,20 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 			{
 				widgetSize = ImVec2(500, 74); //Default widget size for text
 			}
-			widgetSize = widgetSize * vScale; //Scale to visible screen size.
-			widgetSize = widgetSize * fGlobalScale;
-			widgetSize = widgetSize * Storyboard.Nodes[nodeid].widget_size[index];
+#ifdef EMULATERESOLUTION
+			if (Storyboard.Nodes[nodeid].universal_resolution[index])
+			{
+				widgetSize = widgetSize * vUniversalScale;
+				widgetSize = widgetSize * fUniversalGlobalScale;
+				widgetSize = widgetSize * Storyboard.Nodes[nodeid].widget_size[index];
+			}
+			else
+#endif
+			{
+				widgetSize = widgetSize * vScale; //Scale to visible screen size.
+				widgetSize = widgetSize * fGlobalScale;
+				widgetSize = widgetSize * Storyboard.Nodes[nodeid].widget_size[index];
+			}
 			ImVec2 fOnePercentScreen = ImVec2(vMonitorSize.x / 100.0, vMonitorSize.y / 100.0);
 			ImVec2 widgetPos = Storyboard.Nodes[nodeid].widget_pos[index] * fOnePercentScreen; //Real screen pos.
 			ImVec2 centerOffset = ImVec2(widgetSize.x / 2.0f, 0.0f);
@@ -50605,6 +50800,10 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + vMonitorCenterX + vMonitorPos.x, vHeaderEnd.y + vMonitorSize.y + vMonitorPos.y + 3.0));
 		//ImGui::Text("Below monitor");
 
+#ifdef EMULATERESOLUTION
+		//ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + vMonitorCenterX + vMonitorPos.x, vHeaderEnd.y + vMonitorPos.y + 3.0));
+		//ImGui::Text("v: %d,%d m: %d,%d vs: %0.2f,%0.2f gs: %0.2f,%0.2f", (int) vViewportSize.x, (int) vViewportSize.y, (int) vMonitorSize.x,(int) vMonitorSize.y, vScale.x, vScale.y, fGlobalScale.x, fGlobalScale.y);
+#endif
 		ImGui::SetCursorPos( ImVec2(ImGui::GetCursorPosX(), vHeaderEnd.y + fMaxMonitorY + 6.0));
 		//ImGui::Text("Way down : Status");
 
@@ -50776,6 +50975,64 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 						}
 					}
 
+#ifdef EMULATERESOLUTION
+					if (!standalone && !bPreviewScreen)
+					{
+						ImGui::TextCenter("Emulate Resolution");
+
+						const char* items[] = { &CurrentResolution[0] , "1920x1080 (16:9)",  "3440x1440 (21:9) Wide" , "5120x1440 (32x9) Ultrawide" }; //, "1600x1200 (4:3)","1080x2400 (FHD)" , "3840x1080 (FAKE)"
+						static int monitor_resolution_current_selection = 0; //Default Custom.
+						ImGui::PushItemWidth(-1);
+						if (ImGui::Combo("##CustomResolutionSelecting", &monitor_resolution_current_selection, items, IM_ARRAYSIZE(items)))
+						{
+						}
+						if (ImGui::IsItemHovered()) ImGui::SetTooltip("Select Resolution");
+						ImGui::PopItemWidth();
+
+						if (iQuitWindowLoop > 0 || monitor_resolution_current_selection == 0)
+						{
+							monitor_size_x = CurrentMonitorResolutionX;
+							monitor_size_y = CurrentMonitorResolutionY;
+						}
+						else if (monitor_resolution_current_selection == 1)
+						{
+							monitor_size_x = 1920.0f;
+							monitor_size_y = 1080.0f;
+						}
+						else if (monitor_resolution_current_selection == 3)
+						{
+							monitor_size_x = 5120.0f;
+							monitor_size_y = 1440.0f;
+						}
+						else if (monitor_resolution_current_selection == 2)
+						{
+							monitor_size_x = 3440.0f;
+							monitor_size_y = 1440.0f;
+						}
+						else if (monitor_resolution_current_selection == 4)
+						{
+							monitor_size_x = 3840.0f;
+							monitor_size_y = 1080.0f;
+							//monitor_size_x = 1600.0f;
+							//monitor_size_y = 1200.0f;
+						}
+						else if (monitor_resolution_current_selection == 5)
+						{
+							monitor_size_x = 1080.0f;
+							monitor_size_y = 2400.0f;
+						}
+						else
+						{
+							monitor_size_x = CurrentMonitorResolutionX;
+							monitor_size_y = CurrentMonitorResolutionY;
+						}
+					}
+
+#else
+					int preview_size_x = ImGui::GetMainViewport()->Size.x - 270;
+					int preview_size_y = ImGui::GetMainViewport()->Size.y - 30.0;
+#endif
+
 					ImGui::Indent(-10);
 
 				}
@@ -50835,6 +51092,60 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 							}
 						}
 					}
+
+#ifdef EMULATERESOLUTION
+					if (!standalone && !bPreviewScreen)
+					{
+						ImGui::TextCenter("Emulate Resolution");
+
+						const char* items[] = { &CurrentResolution[0] , "1920x1080 (16:9)",  "3440x1440 (21:9) Wide" , "5120x1440 (32x9) Ultrawide" }; //, "1600x1200 (4:3)","1080x2400 (FHD)" , "3840x1080 (FAKE)"
+						static int monitor_resolution_current_selection = 0; //Default Custom.
+						ImGui::PushItemWidth(-1);
+						if (ImGui::Combo("##CustomResolutionSelecting", &monitor_resolution_current_selection, items, IM_ARRAYSIZE(items)))
+						{
+						}
+						if (ImGui::IsItemHovered()) ImGui::SetTooltip("Select Resolution");
+						ImGui::PopItemWidth();
+
+						if (iQuitWindowLoop > 0 || monitor_resolution_current_selection == 0)
+						{
+							monitor_size_x = CurrentMonitorResolutionX;
+							monitor_size_y = CurrentMonitorResolutionY;
+						}
+						else if (monitor_resolution_current_selection == 1)
+						{
+							monitor_size_x = 1920.0f;
+							monitor_size_y = 1080.0f;
+						}
+						else if (monitor_resolution_current_selection == 3)
+						{
+							monitor_size_x = 5120.0f;
+							monitor_size_y = 1440.0f;
+						}
+						else if (monitor_resolution_current_selection == 2)
+						{
+							monitor_size_x = 3440.0f;
+							monitor_size_y = 1440.0f;
+						}
+						else if (monitor_resolution_current_selection == 4)
+						{
+							monitor_size_x = 3840.0f;
+							monitor_size_y = 1080.0f;
+							//monitor_size_x = 1600.0f;
+							//monitor_size_y = 1200.0f;
+						}
+						else if (monitor_resolution_current_selection == 5)
+						{
+							monitor_size_x = 1080.0f;
+							monitor_size_y = 2400.0f;
+						}
+						else
+						{
+							monitor_size_x = CurrentMonitorResolutionX;
+							monitor_size_y = CurrentMonitorResolutionY;
+						}
+					}
+#endif
 					ImGui::Indent(-10);
 				}
 			}
@@ -51391,6 +51702,14 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 						Storyboard.Nodes[nodeid].widget_size[iCurrentSelectedWidget].y = fTmp / 100.0f;
 						Storyboard.Nodes[nodeid].widget_size[iCurrentSelectedWidget].x = fTmp / 100.0f;
 					}
+#ifdef EMULATERESOLUTION
+					bool bTmp = Storyboard.Nodes[nodeid].universal_resolution[iCurrentSelectedWidget];
+					if (ImGui::Checkbox("Universal Scaling", &bTmp))
+					{
+						Storyboard.Nodes[nodeid].universal_resolution[iCurrentSelectedWidget] = bTmp;
+					}
+					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Will always display using 1:1 pixel ratio, based on screen y resolution.");
+#endif
 				}
 
 				// Display and allow editing of readouts
@@ -51670,6 +51989,16 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 							}
 						}
 					}
+					else
+					{
+						//PE: Re enable image file selecting.
+						g_bSelectedMapImageTypeSpecialHelp = false;
+					}
+				}
+				else
+				{
+					//PE: Re enable image file selecting.
+					g_bSelectedMapImageTypeSpecialHelp = false;
 				}
 				ImGui::Indent(-10);
 			}
@@ -55056,3 +55385,31 @@ void RenderPreviewEmitter(void)
 	}
 }
 
+void GetActiveMonitorResolution( void )
+{
+	//PE: Try to get the resolution of the monitor Max is currently active in.
+	HMONITOR hMonitor = MonitorFromWindow(g_pGlob->hWnd, MONITOR_DEFAULTTONEAREST);
+	CurrentMonitorResolutionX = 0;
+	CurrentMonitorResolutionY = 0;
+
+	if (hMonitor == NULL) {
+		return;
+	}
+
+	//Get the monitor's device name using MONITORINFOEX
+	MONITORINFOEX info;
+	info.cbSize = sizeof(MONITORINFOEX);
+
+	if (!GetMonitorInfo(hMonitor, &info)) {
+		return;
+	}
+
+	//Get the physical resolution using EnumDisplaySettings and the device name
+	DEVMODE devMode;
+	devMode.dmSize = sizeof(DEVMODE);
+
+	if (EnumDisplaySettings(info.szDevice, ENUM_CURRENT_SETTINGS, &devMode)) {
+		CurrentMonitorResolutionX = devMode.dmPelsWidth;
+		CurrentMonitorResolutionY = devMode.dmPelsHeight;
+	}
+}

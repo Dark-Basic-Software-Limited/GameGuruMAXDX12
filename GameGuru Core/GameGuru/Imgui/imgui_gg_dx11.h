@@ -738,6 +738,7 @@ void UniversalKeyboardShortcut(eKeyboardShortcutType KST);
 #define NODE_WIDTH_PADDING -15.0
 #define NODE_HEIGHT_PADDING 23.0
 
+#define EMULATERESOLUTION
 
 
 void storyboard_menubar(float area_width, float node_width, float node_height);
@@ -918,7 +919,9 @@ struct StoryboardNodesStruct
 	int loop_music = 0;
 	int iFiller20[14];
 	float fFiller20[20];
-	int iFillerMaxOutputs20[20][STORYBOARD_MAXOUTPUTS];
+
+	int universal_resolution[STORYBOARD_MAXOUTPUTS];
+	int iFillerMaxOutputs20[19][STORYBOARD_MAXOUTPUTS];
 	char FillerCharMaxOutput20[20][STORYBOARD_MAXOUTPUTS][256];
 };
 
@@ -1024,7 +1027,8 @@ struct StoryboardNodesStruct202
 	int loop_music = 0;
 	int iFiller20[14];
 	float fFiller20[20];
-	int iFillerMaxOutputs20[20][STORYBOARD_MAXOUTPUTS202];
+	int universal_resolution[STORYBOARD_MAXOUTPUTS202];
+	int iFillerMaxOutputs20[19][STORYBOARD_MAXOUTPUTS202];
 	char FillerCharMaxOutput20[20][STORYBOARD_MAXOUTPUTS202][256];
 };
 
