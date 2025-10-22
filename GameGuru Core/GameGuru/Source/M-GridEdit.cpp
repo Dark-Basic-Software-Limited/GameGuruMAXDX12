@@ -29174,6 +29174,10 @@ void gridedit_save_map ( void )
 	// seems save can cause IMGUI to crash out when rendering a texture that no longer exists
 	extern bool bBlockImGuiUntilNewFrame;
 	bBlockImGuiUntilNewFrame = true;
+	
+	extern bool g_bNoSwapchainPresent;
+	iBlockRenderingForFrames = 5;
+	g_bNoSwapchainPresent = true;
 
 	// Proper saving message to user
 	if (  t.recoverdonotuseany3dreferences == 0 ) 
@@ -32027,6 +32031,9 @@ int GetActiveEditorEntity(void)
 
 void EmptyMessages(void)
 {
+	if (g.globals.DisableMessagePump > 0)
+		return;
+
 	//PE: Empty messages , so windows dont think we are dead. ( perhaps remember QUIT ? )
 	MSG msg = { 0 };
 	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))

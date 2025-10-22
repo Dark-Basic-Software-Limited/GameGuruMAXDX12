@@ -937,6 +937,16 @@ void lua_loop_allentities ( void )
 			// Initial population of LUA data
 			lua_ensureentityglobalarrayisinitialised();
 
+			//t.entityprofile[thisentid].WEMaterial.customShaderID == 5
+			if (t.tobj > 0 &&  t.entityelement[t.e].eleprof.WEMaterial.customShaderID == 5)
+			{
+				//PE: Display blood damage from 0 to 200
+				float health = t.entityelement[t.e].health / 200.0f;
+				if (health < 0.0f) health = 0.0f;
+				if (health > 1.0f) health = 1.0f;
+				WickedCall_SetShaderParameter(t.tobj, 1, 1.0f - health);
+			}
+
 			// only process logic within plr freeze range
 			t.te = t.e; entity_getmaxfreezedistance ( );
 			//if (t.entityelement[t.e].plrdist < MAXFREEZEDISTANCE || t.entityelement[t.e].eleprof.phyalways != 0 || t.entityelement[t.e].lua.flagschanged == 2)

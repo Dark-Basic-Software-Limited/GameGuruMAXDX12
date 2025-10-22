@@ -1282,6 +1282,12 @@
     <FxCompile Include="GGTerrain\CustomShaders\objectPS_grid.hlsl">
       <Filter>CustomShaders</Filter>
     </FxCompile>
+    <FxCompile Include="GGTerrain\CustomShaders\damageBloodPS.hlsl">
+      <Filter>CustomShaders</Filter>
+    </FxCompile>
+    <FxCompile Include="GGTerrain\CustomShaders\damageBloodVS.hlsl">
+      <Filter>CustomShaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="GGTerrain\Shaders\PBR\brdf.hlsli">

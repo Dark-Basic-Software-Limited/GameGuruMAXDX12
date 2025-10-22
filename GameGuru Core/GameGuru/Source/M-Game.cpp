@@ -896,7 +896,9 @@ void game_masterroot_gameloop_initcode(int iUseVRTest)
 		sky_show();
 		titleslua_main_loopcode();
 		extern bool g_bNoSwapchainPresent;
-		g_bNoSwapchainPresent = true;
+		//PE: Why was we doing this, this will make a 10 sec blackscreen delay until loading screen is displayed ?????
+		//PE: Removed for now TODO check why it was added.
+		//g_bNoSwapchainPresent = true;
 		t.game.levelloadprogress=0  ; titles_loadingpageupdate ( );
 		g_bNoSwapchainPresent = false;
 
@@ -1526,7 +1528,32 @@ void game_masterroot_gameloop_initcode(int iUseVRTest)
 	// Load any light map objects if available
 	timestampactivity(0,"load lightmapped objects");
 	lm_loadscene ( );
-			
+	
+	//PE: Disable collision.
+	for (t.e = 1; t.e <= g.entityelementlist; t.e++)
+	{
+		int tentid = t.entityelement[t.e].bankindex;
+		int tobj = t.entityelement[t.e].obj;
+		if (tentid > 0 && tobj > 0)
+		{
+			if (t.entityprofile[tentid].ischaracter == 0)
+			{
+				int iShape = t.entityprofile[tentid].collisionmode;
+				if (t.entityelement[t.e].eleprof.iOverrideCollisionMode != -1)
+						iShape = t.entityelement[t.e].eleprof.iOverrideCollisionMode;
+				//PE: no max fpe is using canseethrough. else if (t.entityprofile[tentid].canseethrough == 1) iShape = 11;
+				if (iShape == 11)
+				{
+					sObject* pObject = g_ObjectList[tobj];
+					if (pObject)
+					{
+						WickedCall_SetDisableCollision(pObject, true);
+					}
+				}
+			}
+		}
+	}
+
 	g.merged_new_objects = 0;
 	if ( t.tlmloadsuccess == 0  ) 
 	{ 
@@ -2810,6 +2837,32 @@ void game_masterroot_gameloop_afterloopcode(int iUseVRTest)
 	// Rest any internal game variables
 	game_main_stop ( );
 
+	//PE: Enable collision.
+	for (t.e = 1; t.e <= g.entityelementlist; t.e++)
+	{
+		int tentid = t.entityelement[t.e].bankindex;
+		int tobj = t.entityelement[t.e].obj;
+		if (tentid > 0 && tobj > 0)
+		{
+			if (t.entityprofile[tentid].ischaracter == 0)
+			{
+				int iShape = t.entityprofile[tentid].collisionmode;
+				if (t.entityelement[t.e].eleprof.iOverrideCollisionMode != -1)
+					iShape = t.entityelement[t.e].eleprof.iOverrideCollisionMode;
+				//PE: no max fpe is using canseethrough. else if (t.entityprofile[tentid].canseethrough == 1) iShape = 11;
+				if (iShape == 11)
+				{
+					sObject* pObject = g_ObjectList[tobj];
+					if (pObject)
+					{
+						WickedCall_SetDisableCollision(pObject, false);
+					}
+				}
+			}
+		}
+	}
+
+
 	//PE: Draw call optimizer
 //	if (!g.disable_drawcall_optimizer)
 	{
@@ -2861,9 +2914,28 @@ void game_masterroot_gameloop_afterloopcode(int iUseVRTest)
 		}
 	}
 
+	bool bFreeLevelAfterLuaScreen = true;
+
 	//PE: Moved here as standalone will delete all objects, so we could not free DCO objects.
 	//  Free any level resources
-	game_freelevel();
+	if (!bFreeLevelAfterLuaScreen)
+	{
+		timestampactivity(0, "game_freelevel"); //PE: Additional debug to remove
+		game_freelevel();
+	}
+	else
+	{
+		bulletholes_free();
+		// free any HUD screen objects
+		if (ObjectExist(g.hudscreen3dobjectoffset) == 1) DeleteObject(g.hudscreen3dobjectoffset);
+		hud_free();
+		game_stopallsounds();
+		lua_freeprompt3d();
+		lua_freeallperentity3d();
+		lighting_free();
+		darkai_free();
+		BPhys_ClearDebugDrawData();
+	}
 
 	// must reset LUA here for clean end-game-screens
 	// ensure LUA is completely reset before loading new ones in
@@ -3064,6 +3136,18 @@ void game_masterroot_gameloop_afterloopcode(int iUseVRTest)
 			}
 		}
 	}
+
+	if (bFreeLevelAfterLuaScreen)
+	{
+		game_freelevel();
+		//PE: Try to avoid the screen between win/loose... and next screen (show blank map).
+		extern int iBlockRenderingForFrames;
+		extern bool g_bNoSwapchainPresent;
+		iBlockRenderingForFrames = 5;
+		g_bNoSwapchainPresent = true;
+	}
+
+
 	t.game.quitflag=0;
 
 	//  If was in multiplayer session, no level loop currently
@@ -3500,11 +3584,26 @@ void game_loadinentitiesdatainlevel ( void )
 	timestampactivity(0,"Load player config");
 	mapfile_loadplayerconfig ( );
 
-	// Load entity bank
-	t.screenprompt_s="LOADING ENTITY BANK";
-	if ( t.game.gameisexe == 0 ) printscreenprompt(t.screenprompt_s.Get()); else loadingpageprogress(5);
-	timestampactivity(0,t.screenprompt_s.Get());
-	entity_loadbank ( );
+	//PE: Free master on load.
+	bool bRetainMasterObjects = false;
+	if (t.game.gameisexe == 1)
+	{
+		static cstr old_level_name = "";
+		if (g.projectfilename_s == old_level_name)
+		{
+			bRetainMasterObjects = true;
+		}
+		old_level_name = g.projectfilename_s;
+	}
+
+	if (!bRetainMasterObjects)
+	{
+		// Load entity bank
+		t.screenprompt_s = "LOADING ENTITY BANK";
+		if (t.game.gameisexe == 0) printscreenprompt(t.screenprompt_s.Get()); else loadingpageprogress(5);
+		timestampactivity(0, t.screenprompt_s.Get());
+		entity_loadbank();
+	}
 
 	// Load entity elements
 	t.screenprompt_s="LOADING ENTITY ELEMENTS";
@@ -4246,13 +4345,13 @@ void game_freelevel ( void )
 		gpup_deleteAllEffects();
 
 		// only for standalone as test game needs entities for editor :)
-		entity_delete ( );
+		entity_delete();
 		//PE: Free any lightmaps, next level might not use lightmaps.
 		lm_deleteall();
 		ClearAnyLightMapInternalTextures();
 
 		//PE: Delete all entitybank textures used.
-		if( g.standalonefreememorybetweenlevels == 1 )
+		if (g.standalonefreememorybetweenlevels == 1)
 			ClearAnyEntitybankInternalTextures();
 	}
 }
@@ -5327,6 +5426,11 @@ void game_end_of_level_check ( void )
 		t.game.gameloop=0;
 		t.game.levelendingcycle = 0;
 		t.postprocessings.fadeinenabled = 1;
+		//PE: Delay screen update , some frames so we only see the "Game Over Screen".
+		extern int iBlockRenderingForFrames;
+		iBlockRenderingForFrames = 10;
+		extern bool g_bNoSwapchainPresent;
+		g_bNoSwapchainPresent = true; 
 	}
 
 	// control fade out of screen

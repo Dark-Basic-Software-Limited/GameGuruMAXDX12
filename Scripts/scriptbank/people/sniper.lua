@@ -86,7 +86,7 @@ function sniper_main(e)
 		local weaponid = GetEntityHasWeapon(e)
 		status[e] ="endinit"
 	end
-	
+
 	local PlayerDist = GetPlayerDistance(e)
 	GetEntityPlayerVisibility(e)
 	
@@ -116,8 +116,8 @@ function sniper_main(e)
 				px = g_PlayerPosX
 				py = g_PlayerPosY
 				pz = g_PlayerPosZ
-				shothit[e] = RayTerrain(sx,sy,sz,px,py+15,pz)
-				if shothit[e] == 1 then
+				shothit[e] = RayTerrain(sx,sy,sz,px,py+15,pz) -- PE: Hit = 1, dont shoot
+				if shothit[e] == 0 then
 					shot_fired[e] = 1
 					PlaySound(e,0)
 					shothit[e] = 0

@@ -2590,6 +2590,10 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					{
 						g.globals.ConvertToDDS = t.value1;
 					}
+					t.tryfield_s = "disablemessagepump"; if (t.field_s == t.tryfield_s)
+					{
+						g.globals.DisableMessagePump = t.value1;
+					}
 
 					t.tryfield_s = "converttoddsmaxsize"; if (t.field_s == t.tryfield_s)
 					{

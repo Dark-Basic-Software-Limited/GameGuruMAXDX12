@@ -607,6 +607,7 @@ struct PixelInput
 	uint RTIndex : SV_RenderTargetArrayIndex;
 #endif // VPRT_EMULATION
 #endif // OBJECTSHADER_USE_RENDERTARGETARRAYINDEX
+	
 };
 
 struct GBuffer
@@ -1319,6 +1320,7 @@ PixelInput main(VertexInput input)
 {
 	PixelInput Out;
 
+	float4 inputposition = input.GetPosition();
 	VertexSurface surface;
 	surface.create(GetMaterial(), input);
 
@@ -1343,7 +1345,6 @@ PixelInput main(VertexInput input)
 	mpos.y *= scaley;
     Out.pos.x += TreeWaveX(mpos.y,  input.mat0[3] + input.mat2[3] );
     Out.pos.z += TreeWaveZ(mpos.y, input.mat0[3] );
-
 #endif
 
 #ifndef OBJECTSHADER_USE_NOCAMERA

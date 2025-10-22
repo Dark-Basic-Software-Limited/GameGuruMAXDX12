@@ -107,6 +107,7 @@ void WickedCall_SetObjectPlanerReflection(sObject* pObject, bool bPlanerReflecti
 bool WickedCall_GetObjectPlanerReflection(sObject* pObject);
 void WickedCall_SetLimbVisible(sFrame* pFrame, bool bVisible);
 void WickedCall_SetObjectPreventAnyApparentOcclusion (sObject* pObject, bool bPreventAnyApparentOcclusion);
+void WickedCall_SetDisableCollision(sObject* pObject, bool collision);
 void WickedCall_SetObjectVisible ( sObject* pObject, bool bVisible );
 void WickedCall_GlueObjectToObject ( sObject* pObjectToGlue, sObject* pParentObject, int iLimb, int iObjIDToSyncAnimTo, int iWorldToLocal);
 void WickedCall_UnGlueObjectToObject ( sObject* pObjectToUnGlue);
@@ -228,4 +229,5 @@ void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
 void WickedCall_UpdateEmitters(void);
 uint32_t WickedCall_LoadWPE(char* filename);
 uint32_t WickedCall_CreateEmitter(std::string& name, float posX, float posY, float posZ, uint32_t proot);
+void WickedCall_SetShaderParameter(int obj, int parameter, float value);
 

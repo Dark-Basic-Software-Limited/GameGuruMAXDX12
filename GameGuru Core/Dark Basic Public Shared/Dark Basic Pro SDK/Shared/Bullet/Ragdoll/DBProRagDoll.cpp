@@ -105,6 +105,8 @@ void DBProRagDoll::ResetObjectParametersForCulling()
 	m_bNeedsUpdateForCulling = false;
 	sObject* pObject = GetObjectData(m_id);
 
+	if (!pObject)
+		return;
 	// all meshes in object
 	for ( int iFrame = 0; iFrame < pObject->iFrameCount; iFrame++ )
 	{

@@ -2898,7 +2898,14 @@ luaMessage** ppLuaMessages = NULL;
 	t.entid = entid; entity_fillgrideleproffromprofile();
 	//LB: an copy over material changes from the cloned entiy element
 	t.grideleprof.WEMaterial = t.entityelement[iEntityIndex].eleprof.WEMaterial;
+	
+	extern bool bNextObjectMustBeClone;
+	bNextObjectMustBeClone = true;
+	
 	entity_addentitytomap ();
+	
+	bNextObjectMustBeClone = false;
+
 	t.e = t.tupdatee;
 	t.entityelement[t.e].eleprof = t.entityelement[iEntityIndex].eleprof;
 	t.entityelement[t.e].scalex = t.entityelement[iEntityIndex].scalex;
@@ -6565,6 +6572,11 @@ int LuaConvert2DTo3D(lua_State* L)
 	
 	float x = (fX * g_dwScreenWidth) / 100.0f;
 	float y = (fY * g_dwScreenHeight) / 100.0f;
+
+	//PE: Wicked GetPickRay use dpi so must add it here.
+	const float dpiscaling = (float)GetDpiForWindow(g_pGlob->hWnd) / 96.0f;
+	x /= dpiscaling;
+	y /= dpiscaling;
 
 	float fOutX = 0, fOutY = 0, fOutZ = 0;
 	float fDirX = 0, fDirY = 0, fDirZ = 0;
