@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Parachute v7 by Necrym59 (from an idea created by cybernescence)
+-- Parachute v8 by Necrym59 (from an idea created by cybernescence)
 
 -- DESCRIPTION: Attached to the parachute backpack object. Physics Off, Collision = None, Gravity Off, Weight and Friction 0ff.
 -- DESCRIPTION: [PICKUP_TEXT$="E to collect parachute"]
@@ -151,7 +151,7 @@ function parachute_main(e)
 		end
 		
 		ResetPosition(e,g_PlayerPosX,g_PlayerPosY+100,g_PlayerPosZ)
-		ResetRotation(e,g_PlayerAngx,g_PlayerAngY,g_PlayerAngZ)		
+		ResetRotation(e,g_PlayerAngX,g_PlayerAngY,g_PlayerAngZ)		
 		CollisionOn(e)	
 		if parachute[e].test_deploy == 1 then
 			if g_PlayerPosY <= parachute[e].min_deploy_height then
@@ -207,7 +207,7 @@ function parachute_main(e)
 			SetRotation(chute_no[e],0,g_Entity[e]['angley'],0)
 		end
 		SetFreezePosition(pos_x,(g_Entity[e]['y']+parachute[e].min_deploy_height),pos_z)
-		SetFreezeAngle(g_PlayerAngx,g_PlayerAngY,g_PlayerAngZ)
+		SetFreezeAngle(g_PlayerAngX,g_PlayerAngY,g_PlayerAngZ)
 		TransportToFreezePositionOnly()
 		
 		landonobject[e]=IntersectAll(g_PlayerPosX,g_PlayerPosY,g_PlayerPosZ,g_PlayerPosX,g_PlayerPosY-10,g_PlayerPosZ,0)
@@ -291,10 +291,10 @@ function parachute_main(e)
 				have_parachute[e] = 0
 				Hide(chute_no[e])
 				if landonobject[e] > 0 then							
-					ResetPosition(e,PlayerPosX,g_PlayerPosY,g_PlayerPosZ+3)					
+					ResetPosition(e,g_PlayerPosX,g_PlayerPosY,g_PlayerPosZ+3)					
 				else					
 					GravityOn(e)
-					ResetPosition(e,PlayerPosX,g_PlayerPosY,g_PlayerPosZ+3)
+					ResetPosition(e,g_PlayerPosX,g_PlayerPosY,g_PlayerPosZ+3)
 					GravityOff(e)
 				end
 				Show(e)					

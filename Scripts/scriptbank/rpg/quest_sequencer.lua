@@ -1,4 +1,4 @@
--- Quest Sequencer v14 by Necrym59
+-- Quest Sequencer v15 by Necrym59
 -- DESCRIPTION: Will sequentially run the next Quest/Mission in order at completion of each.
 -- DESCRIPTION: If a quests Quest Status = END_SEQ then the Quest Sequencer itself is destroyed when completed.
 -- DESCRIPTION: [QUEST_START_TEXT$="Quest Sequence Activated"]
@@ -158,10 +158,10 @@ function quest_sequencer_main(e)
 				end
 				
 				if quest_objno[e] > 0 then		
-					if g_quest_poster[e]['spawn_quest_object'] ~= 0 then
+					if g_quest_sequence[e]['spawn_quest_object'] ~= 0 then
 						if GetEntitySpawnAtStart(quest_objno[e]) == 0 then
 							Spawn(quest_objno[e])
-							g_quest_poster[e]['spawn_quest_object'] = 0
+							g_quest_sequence[e]['spawn_quest_object'] = 0
 						end
 					end
 				end				

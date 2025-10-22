@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Helmet v27   by Necrym59
+-- Helmet v28   by Necrym59
 -- DESCRIPTION: The applied object will give the player a Helmet Hud? Set Always active ON.
 -- DESCRIPTION: [PICKUP_TEXT$="E to Pickup/Wear"]
 -- DESCRIPTION: [PICKUP_RANGE=80(1,100)]
@@ -13,6 +13,7 @@
 -- DESCRIPTION: [@COMPASS=2(1=On, 2=Off)]
 -- DESCRIPTION: [@COMPASS_POSITION=2(1=Top, 2=Bottom)]
 -- DESCRIPTION: [IMAGEFILE$="imagebank\\misc\\testimages\\helmethud1.png"] for the Helmet overlay image
+-- DESCRIPTION: [#HELMET_WOBBLE=1.0(0.0,5.0)]
 -- DESCRIPTION: [@@HUD_SCREEN$="In-Game HUD"(0=hudscreenlist)] eg; In-Game HUD 2
 -- DESCRIPTION: [@NIGHTVISION_CAPABILITY=0(0=Off,1=On)] If set ON will change nightvision to set rgb values.
 -- DESCRIPTION: [NIGHTVISION_AMBIENCE_R=0(0,255)]
@@ -53,6 +54,7 @@ local max_zoom = {}
 local compass = {}
 local compass_position = {}
 local screen_image = {}
+local helmet_wobble = {}
 local hud_screen = {}
 local nightvision_capability = {}
 local nightvision_ambience_r = {}
@@ -106,9 +108,11 @@ local hudonce = {}
 local hl_icon = {}
 local hl_imgwidth = {}
 local hl_imgheight = {}
+local wobblehelmet1 = {}
+local wobblehelmet2 = {}
 local last_gun = g_PlayerGunName
 
-function helmet_properties(e, pickup_text, pickup_range, usage_text, helmet_mode, min_zoom, max_zoom, zoom_speed, zoom_readout_x, zoom_readout_y, compass, compass_position, screen_image, hud_screen, nightvision_capability, nightvision_ambience_r, nightvision_ambience_g, nightvision_ambience_b, nightvision_intensity, nightvision_fog_r, nightvision_fog_g, nightvision_fog_b, nightvision_fog_nearest, nightvision_fog_distance, toxicity_protection, prompt_display, item_highlight, highlight_icon_imagefile)
+function helmet_properties(e, pickup_text, pickup_range, usage_text, helmet_mode, min_zoom, max_zoom, zoom_speed, zoom_readout_x, zoom_readout_y, compass, compass_position, screen_image, helmet_wobble, hud_screen, nightvision_capability, nightvision_ambience_r, nightvision_ambience_g, nightvision_ambience_b, nightvision_intensity, nightvision_fog_r, nightvision_fog_g, nightvision_fog_b, nightvision_fog_nearest, nightvision_fog_distance, toxicity_protection, prompt_display, item_highlight, highlight_icon_imagefile)
 	helmet[e].pickup_text = pickup_text
 	helmet[e].pickup_range = pickup_range
 	helmet[e].usage_text = usage_text
@@ -121,6 +125,7 @@ function helmet_properties(e, pickup_text, pickup_range, usage_text, helmet_mode
 	helmet[e].compass = compass or 2
 	helmet[e].compass_position = compass_position
 	helmet[e].screen_image = imagefile or screen_image
+	helmet[e].helmet_wobble = helmet_wobble	
 	helmet[e].hud_screen = hud_screen
 	helmet[e].nightvision_capability = nightvision_capability or 1
 	helmet[e].nightvision_ambience_r = nightvision_ambience_r
@@ -152,6 +157,7 @@ function helmet_init(e)
 	helmet[e].compass = 2
 	helmet[e].compass_position = 1
 	helmet[e].screen_image = "imagebank\\misc\\testimages\\helmethud1.png"
+	helmet[e].helmet_wobble = 0.0	
 	helmet[e].hud_screen = ""
 	helmet[e].nightvision_capability = nightvision_capability or 1
 	helmet[e].nightvision_ambience_r = 0
@@ -177,7 +183,6 @@ function helmet_init(e)
 	current_fov[e] = 0
 	last_gun = g_PlayerGunName
 	gunstatus[e] = 0
-	status[e] = "init"
 	init_compass()
 	nvswitch[e] = 0
 	hmswitch[e] = 0
@@ -197,9 +202,12 @@ function helmet_init(e)
 	default_FogBlue = GetFogBlue()
 	default_FogNearest = GetFogNearest()
 	default_FogDistance = GetFogDistance()
+	wobblehelmet1[e] = 0
+	wobblehelmet2[e] = 0	
 	hl_icon[e] = ""
 	hl_imgwidth[e] = 0
 	hl_imgheight[e] = 0
+	status[e] = "init"	
 end
 
 function helmet_main(e)
@@ -216,7 +224,7 @@ function helmet_main(e)
 		end
 		if helmet[e].screen_image ~= "" then	
 			helmetsp[e] = CreateSprite(LoadImage(helmet[e].screen_image))
-			SetSpriteSize(helmetsp[e],100,100)
+			SetSpriteSize(helmetsp[e],100+helmet[e].helmet_wobble,100+helmet[e].helmet_wobble)			
 			SetSpriteDepth(helmetsp[e],99)
 			SetSpritePosition(helmetsp[e],1000,1000)
 		end	
@@ -242,13 +250,13 @@ function helmet_main(e)
 		status[e] = "endinit"
 	end
 
-	PlayerDist = GetPlayerDistance(e)
+
 	if fov == nil then fov = g_PlayerFOV end
-	
+
 	if have_helmet[e] == 0 then
 		g_have_helmet = have_helmet[e]
 		if helmet[e].helmet_mode == 1 or helmet[e].helmet_mode == 2 then
-			if PlayerDist < helmet[e].pickup_range and g_PlayerHealth > 0 and have_helmet[e] == 0 then
+			if GetPlayerDistance(e) < helmet[e].pickup_range and g_PlayerHealth > 0 and have_helmet[e] == 0 then
 				--pinpoint select object--
 				module_misclib.pinpoint(e,helmet[e].pickup_range,helmet[e].item_highlight,hl_icon[e])
 				--end pinpoint select object--
@@ -269,15 +277,21 @@ function helmet_main(e)
 			end
 		end
 	end
+
 	if have_helmet[e] == 1 then
+		wobblehelmet1[e] = (math.cos(math.rad(GetGamePlayerControlWobble()))*GetGamePlayerControlWobbleHeight())*(helmet[e].helmet_wobble/10)
+		wobblehelmet2[e] = (math.sin(math.rad(GetGamePlayerControlWobble()))*GetGamePlayerControlWobbleHeight())*(helmet[e].helmet_wobble/5)
 		g_have_helmet = have_helmet[e]
 		if hmswitch[e] == 0 then
 			if helmet[e].toxicity_protection == 1 then
 				g_gasmask_on = 1
 				g_radsuit_on = 1
 			end	
-			ResetPosition(e,g_PlayerPosX,g_PlayerPosY+500,g_PlayerPosZ)
-			PasteSpritePosition(helmetsp[e],0,0)
+			ResetPosition(e,g_PlayerPosX,g_PlayerPosY+500,g_PlayerPosZ)			
+			if helmet[e].helmet_wobble == 0 then PasteSpritePosition(helmetsp[e],0,0) end
+			if helmet[e].helmet_wobble > 0 then
+				PasteSpritePosition(helmetsp[e],wobblehelmet1[e]-(helmet[e].helmet_wobble/2),wobblehelmet2[e]-(helmet[e].helmet_wobble/2))
+			end	
 			TextCenterOnXColor(50,95,2,helmet[e].usage_text,100,255,100)
 			if hudonce[e] == 0 and helmet[e].hud_screen ~= "" then
 				ScreenToggle(helmet[e].hud_screen)
