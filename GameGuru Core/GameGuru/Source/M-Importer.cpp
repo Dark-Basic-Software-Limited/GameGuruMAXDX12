@@ -1880,8 +1880,20 @@ void importer_loadmodel ( void )
 	// remove editor prompt
 	popup_text_close();
 
-	iImporterScale = 100; //Default scale.
-	t.slidersmenuvalue[t.importer.properties1Index][1].value = 100;
+	if (bRestoreData)
+	{
+		// when restoring custom settings, do NOT reset scale!
+		if (ObjectExist(t.importer.objectnumber) == 1)
+		{
+			ScaleObject(t.importer.objectnumber, iImporterScale * fImporterScaleMultiply, iImporterScale * fImporterScaleMultiply, iImporterScale * fImporterScaleMultiply);
+		}
+	}
+	else
+	{
+		iImporterScale = 100; //Default scale.
+	}
+
+	t.slidersmenuvalue[t.importer.properties1Index][1].value = iImporterScale;
 	iImporterGenerateThumb = 0;
 }
 
@@ -3667,18 +3679,21 @@ void imgui_importer_refreshbatchlist (void)
 		{
 			bool bPermittedFormat = false;
 			const char* pExtension = strrchr(pFileName, '.');
-			if (stricmp(pExtension, ".x") == NULL) bPermittedFormat = true;
-			if (g_bIgnoreDBOAsAlreadyConverted == false)
+			if (pExtension)
 			{
-				// want to avoid converting the converted (most of the time) :)
-				if (stricmp(pExtension, ".dbo") == NULL) bPermittedFormat = true;
+				if (stricmp(pExtension, ".x") == NULL) bPermittedFormat = true;
+				if (g_bIgnoreDBOAsAlreadyConverted == false)
+				{
+					// want to avoid converting the converted (most of the time) :)
+					if (stricmp(pExtension, ".dbo") == NULL) bPermittedFormat = true;
+				}
+				if (stricmp(pExtension, ".obj") == NULL) bPermittedFormat = true;
+				if (stricmp(pExtension, ".fbx") == NULL) bPermittedFormat = true;
+				if (stricmp(pExtension, ".gltf") == NULL) bPermittedFormat = true;
+				if (stricmp(pExtension, ".glb") == NULL) bPermittedFormat = true;
+				//if (stricmp(pExtension, ".dae") == NULL) bPermittedFormat = true;
+				//if (stricmp(pExtension, ".3ds") == NULL) bPermittedFormat = true;
 			}
-			if (stricmp(pExtension, ".obj") == NULL) bPermittedFormat = true;
-			if (stricmp(pExtension, ".fbx") == NULL) bPermittedFormat = true;
-			if (stricmp(pExtension, ".gltf") == NULL) bPermittedFormat = true;
-			if (stricmp(pExtension, ".glb") == NULL) bPermittedFormat = true;
-			//if (stricmp(pExtension, ".dae") == NULL) bPermittedFormat = true;
-			//if (stricmp(pExtension, ".3ds") == NULL) bPermittedFormat = true;
 			if (bPermittedFormat == true)
 			{
 				batchFileList.push_back(pFileName);
