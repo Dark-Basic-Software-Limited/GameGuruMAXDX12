@@ -3,7 +3,7 @@
 -- DESCRIPTION: The attached NPC will be controlled by this behavior.
 -- DESCRIPTION: [SENSE_TEXT$="Who's that ..an intruder??"]
 -- DESCRIPTION: [SENSE_RANGE=500(0,2000)]
--- DESCRIPTION: [@SENSE_MODE=1(1=Threaten/Attack, 2=Instant Attack, 3=Sighted/End Game, 4=Sighted/Trigger IfUsed, 5=Sighted/Trigger IfUsed + Attack)]
+-- DESCRIPTION: [@SENSE_MODE=1(1=Threaten/Attack, 2=Instant Attack, 3=Sighted/End Game, 4=Sighted/Trigger IfUsed, 5=Sighted/Trigger IfUsed + Attack, 6=Sighted/Reload Level)]
 -- DESCRIPTION: [@NPC_CAN_FLEE=2(1=Yes,2=No)]
 -- DESCRIPTION: [#IDLE_TIME=3000(0,20000)]
 -- DESCRIPTION: [#ATTACK_RANGE=100(0,1000)]
@@ -603,7 +603,7 @@ function npc_control_main(e)
 				end
 			end
 		end	
-		if npc_control[e].sense_mode == 3 or npc_control[e].sense_mode == 4 or npc_control[e].sense_mode == 5 and g_Entity[e]['plrvisible'] == 1 then
+		if npc_control[e].sense_mode == 3 or npc_control[e].sense_mode == 4 or npc_control[e].sense_mode == 5 or npc_control[e].sense_mode == 6 and g_Entity[e]['plrvisible'] == 1 then
 			if senseonce[e] == 0 then
 				RotateToPlayerSlowly(e,GetEntityTurnSpeed(e)/2)
 				SetAnimationName(e,npc_control[e].threat_animation)
@@ -620,7 +620,9 @@ function npc_control_main(e)
 				action_delay[e] = g_Time + 500
 			end	
 			if g_Entity[e]['frame'] == threatanimfin[e] or g_Time > action_delay[e] then
-				if npc_control[e].sense_mode == 3 then LoseGame() end
+				if npc_control[e].sense_mode == 3 then
+					LoseGame()
+				end
 				if npc_control[e].sense_mode == 4 then
 					SetEntityIfUsed(e,npc_control[e].ifused)
 					ActivateIfUsed(e)
@@ -629,7 +631,10 @@ function npc_control_main(e)
 					SetEntityIfUsed(e,npc_control[e].ifused)
 					ActivateIfUsed(e)
 					npc_control[e].sense_mode = 1
-				end				
+				end
+				if npc_control[e].sense_mode == 6 then
+					JumpToLevel(g_LevelFilename)				
+				end	
 				senseonce[e] = 0
 			end	
 		end
