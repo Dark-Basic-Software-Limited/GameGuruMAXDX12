@@ -633,7 +633,7 @@ function npc_control_main(e)
 					npc_control[e].sense_mode = 1
 				end
 				if npc_control[e].sense_mode == 6 then
-					JumpToLevel(g_LevelFilename)				
+					JumpToLevel("mapbank\\" ..g_LevelFilename)
 				end	
 				senseonce[e] = 0
 			end	
