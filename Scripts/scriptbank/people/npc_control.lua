@@ -1,8 +1,9 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- NPC Control v88 by Necrym 59
+-- NPC Control v91 by Necrym59
 -- DESCRIPTION: The attached NPC will be controlled by this behavior.
 -- DESCRIPTION: [SENSE_TEXT$="Who's that ..an intruder??"]
 -- DESCRIPTION: [SENSE_RANGE=500(0,2000)]
+-- DESCRIPTION: [@SENSE_MODE=1(1=Threaten/Attack, 2=Instant Attack, 3=Sighted/End Game, 4=Sighted/Trigger IfUsed, 5=Sighted/Trigger IfUsed + Attack, 6=Sighted/Reload Level)]
 -- DESCRIPTION: [@NPC_CAN_FLEE=2(1=Yes,2=No)]
 -- DESCRIPTION: [#IDLE_TIME=3000(0,20000)]
 -- DESCRIPTION: [#ATTACK_RANGE=100(0,1000)]
@@ -35,6 +36,8 @@
 -- DESCRIPTION: [@LASTFLAG_LOOP=2(1=On,2=Off)]
 -- DESCRIPTION: [@FORCE_MOVE=2(1=On,2=Off)]
 -- DESCRIPTION: [@NPC_TILTING=1(1=On,2=Off)]
+-- DESCRIPTION: [@ON_DEATH=1(1=Nothing,2=Activate IfUsed)]
+-- DESCRIPTION: [IFUSED$=""]
 -- DESCRIPTION: [DIAGNOSTICS!=0]
 -- DESCRIPTION: <Sound0> for movement sound
 -- DESCRIPTION: <Sound1> for attacking sound effect
@@ -48,6 +51,7 @@ local lower = string.lower
 local npc_control = {}
 local sense_text = {}
 local sense_range = {}
+local sense_mode = {}
 local npc_can_flee = {}
 local idle_time = {}
 local attack_range = {}
@@ -81,6 +85,8 @@ local lastflag_time = {}
 local lastflag_loop = {}
 local force_move = {}
 local npc_tilting = {}
+local on_death = {}
+local ifused = {}
 local diagnostics = {}
 
 local name1 = {}
@@ -161,11 +167,13 @@ local ishit = {}
 local setframes = {}
 local dist = {}
 local tmphit = {}
+local deathifusedno = {}
 g_GibsEnabled = 0
 
-function npc_control_properties(e, sense_text, sense_range, npc_can_flee, idle_time, attack_range, attack_damage, random_damage, npc_can_roam, roam_range, npc_anim_speed, npc_move_speed, npc_run_speed, npc_turn_speed, npc_can_shoot, idle1_animation,  idle2_animation, walk_animation, run_animation, threat_animation, attack1_animation, attack1_hitframe, attack2_animation, attack2_hitframe, attack3_animation, attack3_hitframe, shoot_animation, hurt_animation, death1_animation, death2_animation, lastflag_animation, lastflag_time, lastflag_loop, force_move, npc_tilting, diagnostics)
+function npc_control_properties(e, sense_text, sense_range, sense_mode, npc_can_flee, idle_time, attack_range, attack_damage, random_damage, npc_can_roam, roam_range, npc_anim_speed, npc_move_speed, npc_run_speed, npc_turn_speed, npc_can_shoot, idle1_animation,  idle2_animation, walk_animation, run_animation, threat_animation, attack1_animation, attack1_hitframe, attack2_animation, attack2_hitframe, attack3_animation, attack3_hitframe, shoot_animation, hurt_animation, death1_animation, death2_animation, lastflag_animation, lastflag_time, lastflag_loop, force_move, npc_tilting, on_death, ifused, diagnostics)
 	npc_control[e].sense_text = sense_text
 	npc_control[e].sense_range = sense_range
+	npc_control[e].sense_mode = sense_mode
 	npc_control[e].npc_can_flee = npc_can_flee
 	npc_control[e].idle_time = idle_time
 	npc_control[e].attack_range = attack_range
@@ -198,6 +206,8 @@ function npc_control_properties(e, sense_text, sense_range, npc_can_flee, idle_t
 	npc_control[e].lastflag_loop = lastflag_loop
 	npc_control[e].force_move = force_move or 2
 	npc_control[e].npc_tilting = npc_tilting or 1
+	npc_control[e].on_death = on_death or 1
+	npc_control[e].ifused = string.lower(ifused)
 	npc_control[e].diagnostics = diagnostics or 0
 end
 
@@ -205,6 +215,7 @@ function npc_control_init_name(e,name)
 	npc_control[e] = {}
 	npc_control[e].sense_text = ""
 	npc_control[e].sense_range = 500
+	npc_control[e].sense_mode = 1
 	npc_control[e].npc_can_flee = 2
 	npc_control[e].idle_time = 3000
 	npc_control[e].attack_range = 100
@@ -238,6 +249,8 @@ function npc_control_init_name(e,name)
 	npc_control[e].lastflag_loop = 2
 	npc_control[e].force_move = 2
 	npc_control[e].npc_tilting = 1
+	npc_control[e].on_death = 1
+	npc_control[e].ifused = ""	
 	npc_control[e].diagnostics = 0
 
 	action_delay[e] = math.huge
@@ -311,6 +324,7 @@ function npc_control_init_name(e,name)
 	setframes[e] = 0
 	dist[e] = 0
 	tmphit[e] = 0
+	deathifusedno[e] = 0
 	math.randomseed(os.time())
 	math.random(); math.random(); math.random()
 end
@@ -319,6 +333,17 @@ function npc_control_main(e)
 
 	CollisionOn(e)
 	if status[e] == "init" then
+		if npc_control[e].ifused ~= "" and deathifusedno[e] == 0 then
+			for p = 1, g_EntityElementMax do
+				if p ~= nil and g_Entity[p] ~= nil then
+					deathifusedno[e] = p
+					if string.lower(GetEntityName(p)) == npc_control[e].ifused then					
+						deathifusedno[e] = p
+						break
+					end
+				end
+			end
+		end	
 		allegiance[e] = GetEntityAllegiance(e) -- (0-enemy, 1-ally, 2-neutral)
 		SetAnimationSpeed(e,npc_control[e].npc_anim_speed)
 		SetEntityMoveSpeed(e,npc_control[e].npc_move_speed)
@@ -495,71 +520,140 @@ function npc_control_main(e)
 
 	---------------------------------------------------------------------------------------------------------------------------------
 	if state[e] == "sensed" then
-		if GetPlayerDistance(e) < npc_control[e].sense_range and allegiance[e] == 0 then
-			issensed[e] = 1
-			RotateToPlayerSlowly(e,GetEntityTurnSpeed(e)/2)
-			if senseonce[e] == 0 then
-				if npc_control[e].npc_can_roam == 1 or npc_control[e].npc_can_roam == 2 then
-					SetAnimationName(e,npc_control[e].threat_animation)
-					threatanimstr[e],threatanimfin[e] = GetEntityAnimationStartFinish(e,npc_control[e].threat_animation) -- return the start and finish frame
-					ModulateSpeed(e,npc_control[e].npc_anim_speed)
-					PlayAnimation(e)
-					PlaySound(e,2)
-					svolume_last[e] = 2
-					if sayonce[e] == 0 then
-						PromptDuration(npc_control[e].sense_text,1000)
-						sayonce[e] = 1
+		GetEntityPlayerVisibility(e)
+		if npc_control[e].sense_mode == 1 or  npc_control[e].sense_mode == 2 then
+			if GetPlayerDistance(e) < npc_control[e].sense_range and allegiance[e] == 0 then
+				issensed[e] = 1
+				RotateToPlayerSlowly(e,GetEntityTurnSpeed(e)/2)
+				if senseonce[e] == 0 then
+					if npc_control[e].npc_can_roam == 1 or npc_control[e].npc_can_roam == 2 then						
+						SetAnimationName(e,npc_control[e].threat_animation)
+						threatanimstr[e],threatanimfin[e] = GetEntityAnimationStartFinish(e,npc_control[e].threat_animation) -- return the start and finish frame
+						ModulateSpeed(e,npc_control[e].npc_anim_speed)
+						PlayAnimation(e)
+						PlaySound(e,2)
+						svolume_last[e] = 2
+						if sayonce[e] == 0 then
+							PromptDuration(npc_control[e].sense_text,1000)
+							sayonce[e] = 1
+						end
+						senseonce[e] = 1
+						action_delay[e] = g_Time + 100
 					end
-					senseonce[e] = 1
-					action_delay[e] = g_Time + 100
 				end
-			end
 
-			if allegiance[e] == 0 and GetEntityAnimationNameExistAndPlaying(e,npc_control[e].threat_animation) > 0 and g_Entity[e]['frame'] == threatanimfin[e] and g_Time > action_delay[e] then
-				if npc_control[e].npc_can_flee == 1 then
-					chanceflee[e] = math.random(1,2)
-					if (g_Entity[e]['health']-1000) < 100 and redirect[e] == 0 and chanceflee[e] == 2 then
-						aggro[e] = 0
-						scare[e] = 1
-						wandonce[e] = 0
-						state[e] = "roam"
-						redirect[e] = 1
+				if npc_control[e].sense_mode == 1 and allegiance[e] == 0 and GetEntityAnimationNameExistAndPlaying(e,npc_control[e].threat_animation) > 0 and g_Entity[e]['frame'] == threatanimfin[e] and g_Time > action_delay[e] then
+					if npc_control[e].npc_can_flee == 1 then
+						chanceflee[e] = math.random(1,2)
+						if (g_Entity[e]['health']-1000) < 100 and redirect[e] == 0 and chanceflee[e] == 2 then
+							aggro[e] = 0
+							scare[e] = 1
+							wandonce[e] = 0
+							state[e] = "roam"
+							redirect[e] = 1
+						end
+						if (g_Entity[e]['health']-1000) > 100 then
+							aggro[e] = 1
+							scare[e] = 0
+							hurtonce[e] = 0
+							attkonce[e] = 0
+							state[e] = "pursue"
+							pathdelay[e] = g_Time + 50
+							pointcount[e] = 0
+						end
 					end
-					if (g_Entity[e]['health']-1000) > 100 then
+					if npc_control[e].npc_can_flee == 2 then
 						aggro[e] = 1
 						scare[e] = 0
 						hurtonce[e] = 0
 						attkonce[e] = 0
+						senseonce[e] = 0
 						state[e] = "pursue"
 						pathdelay[e] = g_Time + 50
 						pointcount[e] = 0
 					end
 				end
-				if npc_control[e].npc_can_flee == 2 then
+				if npc_control[e].sense_mode == 2 and allegiance[e] == 0 and g_Time > action_delay[e] then
+					if npc_control[e].npc_can_flee == 1 then
+						chanceflee[e] = math.random(1,2)
+						if (g_Entity[e]['health']-1000) < 100 and redirect[e] == 0 and chanceflee[e] == 2 then
+							aggro[e] = 0
+							scare[e] = 1
+							wandonce[e] = 0
+							state[e] = "roam"
+							redirect[e] = 1
+						end
+						if (g_Entity[e]['health']-1000) > 100 then
+							aggro[e] = 1
+							scare[e] = 0
+							hurtonce[e] = 0
+							attkonce[e] = 0
+							state[e] = "pursue"
+							pathdelay[e] = g_Time + 50
+							pointcount[e] = 0
+						end
+					end
+					if npc_control[e].npc_can_flee == 2 then
+						aggro[e] = 1
+						scare[e] = 0
+						hurtonce[e] = 0
+						attkonce[e] = 0
+						senseonce[e] = 0
+						state[e] = "pursue"
+						pathdelay[e] = g_Time + 50
+						pointcount[e] = 0
+					end
+				end
+			end			
+			-- Check if player moves out of sense range after being sensed --
+			if GetPlayerDistance(e) > npc_control[e].sense_range and allegiance[e] == 0 and issensed[e] == 1 and senseonce[e] == 1 then
+				if GetEntityAnimationNameExistAndPlaying(e,npc_control[e].threat_animation) > 0 and g_Entity[e]['frame'] == threatanimfin[e] and g_Time > action_delay[e] then
 					aggro[e] = 1
 					scare[e] = 0
 					hurtonce[e] = 0
 					attkonce[e] = 0
 					senseonce[e] = 0
+					issensed[e] = 0
 					state[e] = "pursue"
 					pathdelay[e] = g_Time + 50
 					pointcount[e] = 0
 				end
 			end
-		end
-		-- Check if player moves out of sense range after being sensed --
-		if GetPlayerDistance(e) > npc_control[e].sense_range and allegiance[e] == 0 and issensed[e] == 1 and senseonce[e] == 1 then
-			if GetEntityAnimationNameExistAndPlaying(e,npc_control[e].threat_animation) > 0 and g_Entity[e]['frame'] == threatanimfin[e] and g_Time > action_delay[e] then
-				aggro[e] = 1
-				scare[e] = 0
-				hurtonce[e] = 0
-				attkonce[e] = 0
+		end	
+		if npc_control[e].sense_mode == 3 or npc_control[e].sense_mode == 4 or npc_control[e].sense_mode == 5 or npc_control[e].sense_mode == 6 and g_Entity[e]['plrvisible'] == 1 then
+			if senseonce[e] == 0 then
+				RotateToPlayerSlowly(e,GetEntityTurnSpeed(e)/2)
+				SetAnimationName(e,npc_control[e].threat_animation)
+				threatanimstr[e],threatanimfin[e] = GetEntityAnimationStartFinish(e,npc_control[e].threat_animation)
+				ModulateSpeed(e,npc_control[e].npc_anim_speed)
+				PlayAnimation(e)
+				PlaySound(e,2)
+				svolume_last[e] = 2
+				if sayonce[e] == 0 then
+					PromptDuration(npc_control[e].sense_text,1000)
+					sayonce[e] = 1
+				end
+				senseonce[e] = 1
+				action_delay[e] = g_Time + 500
+			end	
+			if g_Entity[e]['frame'] == threatanimfin[e] or g_Time > action_delay[e] then
+				if npc_control[e].sense_mode == 3 then
+					LoseGame()
+				end
+				if npc_control[e].sense_mode == 4 then
+					SetEntityIfUsed(e,npc_control[e].ifused)
+					ActivateIfUsed(e)
+				end
+				if npc_control[e].sense_mode == 5 then
+					SetEntityIfUsed(e,npc_control[e].ifused)
+					ActivateIfUsed(e)
+					npc_control[e].sense_mode = 1
+				end
+				if npc_control[e].sense_mode == 6 then
+					JumpToLevel("mapbank\\" ..g_LevelFilename)
+				end	
 				senseonce[e] = 0
-				issensed[e] = 0
-				state[e] = "pursue"
-				pathdelay[e] = g_Time + 50
-				pointcount[e] = 0
-			end
+			end	
 		end
 	end
 
@@ -1049,16 +1143,20 @@ function npc_control_main(e)
 		if g_Entity[e]['animating'] == 0 or g_Entity[e]['health'] >= 1 then
 			CollisionOff(e)
 			animonce[e] = 1
-			state[e] = "dead"
 			StopSound(e,0)
 			StopSound(e,1)
 			StopSound(e,2)
 			StopSound(e,3)
-			SetEntityHealth(e,0)
-			SetPreExitValue(e,2)
-			SwitchScript(e,"no_behavior_selected.lua")
-		end
+			if npc_control[e].on_death == 2 then SetEntityActivated(deathifusedno[e],1) end
+			state[e] = "dead"			
+		end		
 	end
+	if state[e] == "dead" then
+		SetEntityHealth(e,0)
+		SetPreExitValue(e,2)
+		SwitchScript(e,"no_behavior_selected.lua")
+	end
+
 	--- Check Health and Hurt Animation -------------------------------------
 
 	if g_Time > regen[e] and g_Entity[e]['health'] > 1000 and g_Entity[e]['health'] < init_health[e] then

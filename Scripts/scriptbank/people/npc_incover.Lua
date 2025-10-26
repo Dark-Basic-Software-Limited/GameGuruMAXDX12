@@ -1,4 +1,4 @@
-﻿-- Npc In Cover v4 by Smallg and Necrym59
+﻿-- Npc In Cover v5 by Smallg and Necrym59
 -- DESCRIPTION: Allows an NPC to pop in and out view from cover and fire at player when within range
 -- DESCRIPTION: [@COVER_STYLE=1(1=Up/Down, 2=Left, 3=Right)]
 -- DESCRIPTION: [ALERT_DISTANCE= 2000]
@@ -9,6 +9,7 @@
 -- DESCRIPTION: [@LEFT_ANIMATION=-1(0=AnimSetList)]
 -- DESCRIPTION: [@RIGHT_ANIMATION=-1(0=AnimSetList)]
 -- DESCRIPTION: [@SHOOT_ANIMATION=-1(0=AnimSetList)]
+-- DESCRIPTION: [DEATH_IFUSED$=""] Object name to trigger upon death
 
 local lower = string.lower
 local npcincover 		= {}
@@ -21,7 +22,9 @@ local duck_animation	= {}
 local left_animation	= {}
 local right_animation	= {}
 local shoot_animation	= {}
+local death_ifused		= {}
 
+local difusedno			= {}
 local firerate			= {}
 local firedelay 		= {}
 local weaponid 			= {}
@@ -30,8 +33,9 @@ local ammo 				= {}
 local standing			= {}
 local status			= {}
 local doonce			= {}
+local endonce			= {}
 
-function npc_incover_properties(e, cover_style, alert_distance, exposure_time, cover_time, stand_animation, duck_animation, left_animation, right_animation, shoot_animation)
+function npc_incover_properties(e, cover_style, alert_distance, exposure_time, cover_time, stand_animation, duck_animation, left_animation, right_animation, shoot_animation, death_ifused)
 	npcincover[e].cover_style = cover_style
 	npcincover[e].alert_distance = alert_distance
 	npcincover[e].exposure_time = exposure_time
@@ -41,6 +45,7 @@ function npc_incover_properties(e, cover_style, alert_distance, exposure_time, c
 	npcincover[e].left_animation = "=" .. tostring(left_animation)	
 	npcincover[e].right_animation = "=" .. tostring(right_animation)	
 	npcincover[e].shoot_animation = "=" .. tostring(shoot_animation)
+	npcincover[e].death_ifused = string.lower(death_ifused)
 end
 
 function npc_incover_init(e)
@@ -54,7 +59,8 @@ function npc_incover_init(e)
 	npcincover[e].left_animation = ""
 	npcincover[e].right_animation = ""
 	npcincover[e].shoot_animation = ""
-
+	npcincover[e].death_ifused = ""
+	
 	npcincover[e].firedelay = g_Time
 	npcincover[e].weaponid = GetEntityHasWeapon(e)
 	npcincover[e].reloadquantity = GetWeaponReloadQuantity(npcincover[e].weaponid,0)
@@ -67,12 +73,26 @@ function npc_incover_init(e)
 		npcincover[e].firerate = npcincover[e].firerate * 10	-- favor faster standard automatic weapons
 	end
 	doonce[e] = 0
-	status[e] = "init"
+	difusedno[e] = 0
+	endonce[e] = 0
+	status[e] = "init"		
 end
 
 function npc_incover_main(e)
 
 	if status[e] == "init" then
+		--Find named object with multi meshes--
+		if npcincover[e].death_ifused ~= "" and difusedno[e] == 0 then
+			for p = 1, g_EntityElementMax do
+				if p ~= nil and g_Entity[p] ~= nil then
+					difusedno[e] = p
+					if string.lower(GetEntityName(p)) == npcincover[e].death_ifused then					
+						difusedno[e] = p
+						break
+					end
+				end
+			end
+		end	
 		if npcincover[e].cover_style == 1 then
 			SetAnimationName(e,npcincover[e].duck_animation)
 			PlayAnimation(e)
@@ -84,7 +104,8 @@ function npc_incover_main(e)
 		if npcincover[e].cover_style == 3 then
 			SetAnimationName(e,npcincover[e].right_animation)
 			PlayAnimation(e)
-		end		
+		end	
+		SetEntityHealthSilent(e,-99999)
 		status[e] = "endinit"
 	end
 
@@ -165,13 +186,22 @@ function npc_incover_main(e)
 			doonce[e] = 1
 		end
 	end
+	if g_Entity[e]['health'] <= 2 and endonce[e] == 0 then				
+		SetEntityHealthSilent(e,0) -- switches off 'Prevent Zero', then uses regular health zero kill order		
+		SetEntityHealth(e,1)
+		if npcincover[e].death_ifused ~= "" then
+			SetEntityActivated(difusedno[e],1)
+			endonce[e] = 1			
+		end
+	end
+	if endonce[e] == 1 then
+		SetEntityHealth(e,0)
+		SwitchScript(e,"no_behavior_selected.lua")
+	end	
 end
 
-
--- Exit Function
 function npc_incover_exit(e)
-	PlaySound(e,2)
-	if standing == e then
-		standing = 0
+	if npcincover[e].standing == e then
+		npcincover[e].standing = 0
 	end
 end
