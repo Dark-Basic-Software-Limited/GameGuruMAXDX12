@@ -105,18 +105,6 @@ void waypoint_imgui_loop(void)
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Draw Waypoint Path");
 
-			//PE: Old add waypoint , removed for now.
-//			ImGui::SameLine();
-//			if (current_mode == TOOL_NEWWAYPOINTS) window->DrawList->AddRect((window->DC.CursorPos - tool_selected_padding), window->DC.CursorPos + tool_selected_padding + iToolbarIconSize, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-//			if (ImGui::ImgBtn(TOOL_NEWWAYPOINTS, iToolbarIconSize, ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false)) {
-//				bForceKey = true;
-//				csForceKey = "p";
-//				t.inputsys.domodewaypointcreate = 1;
-//				iWaypointDeleteMode = 1;
-//				bWaypointDrawmode = false;
-//			}
-//			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Create New Waypoint");
-
 			ImGui::Indent(-indent);
 			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 
@@ -160,7 +148,6 @@ void waypoint_imgui_loop(void)
 
 			ImVec2 cp = ImGui::GetCursorPos();
 
-			//ImGui::Text("Brush Size:");
 			ImGui::SetItemAllowOverlap();
 			ImGui::SameLine();
 			ImGui::SetCursorPos(ImVec2(cp.x, cp.y + (ImGui::GetFontSize() * 1.5)));
@@ -186,12 +173,7 @@ void waypoint_imgui_loop(void)
 
 			ImGui::SetItemAllowOverlap();
 			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 5));
-			#ifdef PRODUCTV3
-			 //if (ImGui::RoundButton("Spreading Interval Low", ImVec2(control_image_size, control_image_size - 8.0), 6)) {
-			 if (ImGui::ImgBtn(TOOL_DOTCIRCLE_S, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
-			#else
-			 if (ImGui::ImgBtn(TOOL_CIRCLE_S, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
-			#endif
+			if (ImGui::ImgBtn(TOOL_CIRCLE_S, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
 			{
 				iSpreadingInterval = 37;
 			}
@@ -200,12 +182,7 @@ void waypoint_imgui_loop(void)
 			ImGui::SameLine();
 
 			ImGui::SetItemAllowOverlap();
-			#ifdef PRODUCTV3
-			 //if (ImGui::RoundButton("Spreading Interval Medium", ImVec2(control_image_size, control_image_size - 8.0), 10)) 
-			 if (ImGui::ImgBtn(TOOL_DOTCIRCLE_M, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
-			#else
-			 if (ImGui::ImgBtn(TOOL_CIRCLE_M, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
-			#endif
+			if (ImGui::ImgBtn(TOOL_CIRCLE_M, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
 			{
 				iSpreadingInterval = 108;
 			}
@@ -214,12 +191,7 @@ void waypoint_imgui_loop(void)
 			ImGui::SameLine();
 
 			ImGui::SetItemAllowOverlap();
-			#ifdef PRODUCTV3
-			 //if (ImGui::RoundButton("Spreading Interval High", ImVec2(control_image_size, control_image_size - 8.0), 14)) 
-			 if (ImGui::ImgBtn(TOOL_DOTCIRCLE, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
-			#else
-			 if (ImGui::ImgBtn(TOOL_CIRCLE, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
-			#endif
+			if (ImGui::ImgBtn(TOOL_CIRCLE, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false))
 			{
 				iSpreadingInterval = 180;
 			}
@@ -230,41 +202,10 @@ void waypoint_imgui_loop(void)
 			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 		}
 
-		if (!pref.bHideTutorials)
-		{
-
-			if (ImGui::StyleCollapsingHeader("Tutorial (this feature is incomplete)", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				ImGui::Indent(10);
-				cstr cShowTutorial = "01 - Getting started";
-				void SmallTutorialVideo(char *tutorial, char* combo_items[] = NULL, int combo_entries = 0, int iVideoSection = 0, bool bAutoStart = false);
-				char* tutorial_combo_items[] = { "01 - Getting started", "02 - Creating terrain", "03 - Add character and set a path" };
-				SmallTutorialVideo(cShowTutorial.Get(), tutorial_combo_items, ARRAYSIZE(tutorial_combo_items), SECTION_WAYPOINTS);
-				float but_gadget_size = ImGui::GetFontSize()*12.0;
-				float w = ImGui::GetWindowContentRegionWidth() - 10.0;
-				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (but_gadget_size*0.5), 0.0f));
-				#ifdef INCLUDESTEPBYSTEP
-				if (ImGui::StyleButton("View Step by Step Tutorial", ImVec2(but_gadget_size, 0)))
-				{
-					// pre-select tutorial 03
-					bHelp_Window = true;
-					bHelpVideo_Window = true;
-					extern bool bSetTutorialSectionLeft;
-					bSetTutorialSectionLeft = false;
-					strcpy(cForceTutorialName, cShowTutorial.Get());
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Start Step by Step Tutorial");
-				#endif
-
-				ImGui::Indent(-10);
-			}
-		}
-
 		if (ImGui::StyleCollapsingHeader("Keyboard Shortcuts ???", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::Indent(10);
 			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0.0f, 4.0f));
-
 
 			ImGui::Checkbox("Draw to Terrain Height", &bOnlyFollowTerrain);
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Draw Waypoint to Terrain Height");
@@ -337,7 +278,6 @@ void waypoint_drawmode_loop(void)
 					g.waypointeditheight_f = fPickedYAxis;
 				}
 				#else
-				//t.terrain.terrainobjectindex
 				g.waypointeditheight_f = BT_GetGroundHeight(t.terrain.TerrainID, placeatx_f, placeatz_f);
 				#endif
 			}
@@ -455,8 +395,6 @@ void waypoint_drawmode_loop(void)
 void waypoint_savedata ( void )
 {
 	//  Save list
-	//if (  FileExist("levelbank\\testmap\\map.way") == 1  )  DeleteAFile (  "levelbank\\testmap\\map.way" );
-	//OpenToWrite (  1,"levelbank\\testmap\\map.way" );
 	cstr waypointSaveData_s = g.mysystem.levelBankTestMap_s + "map.way";
 	if ( FileExist(waypointSaveData_s.Get()) == 1  )  DeleteAFile ( waypointSaveData_s.Get() );
 	OpenToWrite ( 1, waypointSaveData_s.Get() );
@@ -1045,18 +983,7 @@ void waypoint_mousemanage ( void )
 					#ifndef PRODUCTCLASSIC
 					if (bOnlyFollowTerrain)
 					{
-						#ifdef WICKEDENGINE
 						fWaypointHeightNow = BT_GetGroundHeight(0, t.mx_f, t.mz_f) + fRiseAboveTerrainSoCanSeeZone;
-						#else
-						if (t.terrain.TerrainID > 0)
-						{
-							fWaypointHeightNow = BT_GetGroundHeight(t.terrain.TerrainID, t.mx_f, t.mz_f);
-						}
-						else
-						{
-							fWaypointHeightNow = g.gdefaultterrainheight;
-						}
-						#endif
 					}
 					#endif
 					t.waypointcoord[t.w].x = t.mx_f;

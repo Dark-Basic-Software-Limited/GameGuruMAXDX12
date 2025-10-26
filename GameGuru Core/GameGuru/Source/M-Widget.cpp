@@ -403,7 +403,6 @@ bool widget_getplanepos ( float fActivePosX, float fActivePosY, float fActivePos
 		if (t.widget.pickedSection == -98)
 		{
 			// will provide good Y up and down no matter the angle!
-			//PointObject(t.widget.widgetPlaneObj, CameraPositionX(0), CameraPositionY(0), CameraPositionZ(0)); 
 			RotateObject(t.widget.widgetPlaneObj, 0, CameraAngleY(0), 0);
 		}
 		if (t.widget.pickedSection == t.widget.widgetXObj) RotateObject(t.widget.widgetPlaneObj, -90, 0, 0);
@@ -424,14 +423,6 @@ bool widget_getplanepos ( float fActivePosX, float fActivePosY, float fActivePos
 		WickedCall_UpdateSceneForPick();
 		ShowObject(t.widget.widgetPlaneObj); //PE: Need to be visible while pick.
 		int layer = GGRENDERLAYERS_WIDGETPLANE;
-		// LB: All this commented out below messed up -99 (horiz position mode) which NEEDS
-		// the plane to be at the pPlanePosY (typically taken from the object being manipulated
-		// we cannot use the terrain as this forces the ray to pick something in the massive distance!!
-		//#if 1 // TERRAIN_RAYCAST_HACK
-		// -99 should only need terrain? widget plane is placed at wrong height and not big enough
-		// this seems to fight with WickedCall_GetPick in E-GridEdit.cpp line 19138?
-		//if (t.widget.pickedSection == -99) layer = GGRENDERLAYERS_TERRAIN; 
-		//#endif
 		bPlanePosRegistered = WickedCall_GetPick(pPlanePosX, pPlanePosY, pPlanePosZ, NULL, NULL, NULL, NULL, layer);
 		
 		//
@@ -461,12 +452,6 @@ bool widget_getplanepos ( float fActivePosX, float fActivePosY, float fActivePos
 					*pPlanePosY = fActivePosY;
 				}
 			}
-		}
-		if (t.widget.pickedSection == -98) 
-		{ 
-			// LB: keep purity of the plane click (have adjusted it to be exactly where clicked in code elsewhere)
-			//*pPlanePosX = fActivePosX;
-			//*pPlanePosZ = fActivePosZ;
 		}
 		if (t.widget.pickedSection == t.widget.widgetYZObj) { *pPlanePosX = fActivePosX; }
 	}
@@ -670,47 +655,23 @@ void widget_loop ( void )
 		{
 			//  Test for the widget selection keys X,C and V
 			t.tscancode = t.inputsys.kscancode;
-			//if ( g.fForceYRotationOfRubberBandFromKeyPress != 0.0f )
-			//{
-			//	t.toldmode = t.widget.mode; t.widget.mode = 1;
-			//	if ( t.toldmode != t.widget.mode ) widget_show_widget ( );
-			//	t.widget.mclickpress = 2;
-			//}
-			//else
+			if (  t.widget.oldScanCode !=  t.tscancode ) 
 			{
-				if (  t.widget.oldScanCode !=  t.tscancode ) 
-				{
-					t.toldmode = t.widget.mode;
-					if (  t.tscancode  ==  WIDGET_KEY_TRANSLATE  )  t.widget.mode  =  0;
-					if (  t.tscancode  ==  WIDGET_KEY_ROTATE  )  t.widget.mode  =  1;
-					if (  t.tscancode  ==  WIDGET_KEY_SCALE  )  t.widget.mode  =  2;
-					if ( t.toldmode != t.widget.mode ) widget_show_widget ( );
-				}
+				t.toldmode = t.widget.mode;
+				if (  t.tscancode  ==  WIDGET_KEY_TRANSLATE  )  t.widget.mode  =  0;
+				if (  t.tscancode  ==  WIDGET_KEY_ROTATE  )  t.widget.mode  =  1;
+				if (  t.tscancode  ==  WIDGET_KEY_SCALE  )  t.widget.mode  =  2;
+				if ( t.toldmode != t.widget.mode ) widget_show_widget ( );
 			}
 			t.widget.oldScanCode = t.tscancode;
 
-			// some setup code for picking widget section
-			#ifdef WICKEDENGINE
-			#else
-			if ( t.thighlighterobj == t.widget.widgetPRPObj ) 
-			{
-				// click and release
-				if ( t.inputsys.mclick == 1 && t.widget.oldMouseClick == 0 && t.widget.mclickpress == 0  )  t.widget.mclickpress = 1;
-				if ( t.inputsys.mclick == 0 && t.widget.mclickpress == 1  )  t.widget.mclickpress = 2;
-			}
-			else
-			#endif
-			{
-				// just click
-				if ( t.inputsys.mclick == 1 && t.widget.oldMouseClick == 0 ) t.widget.mclickpress = 2;
-			}
+			// just click
+			if ( t.inputsys.mclick == 1 && t.widget.oldMouseClick == 0 ) t.widget.mclickpress = 2;
 				
 			if (t.widget.mclickpress == 2)
 			{
 				// See if a section has been chosen
-				#ifdef WICKEDENGINE
 				t.widget.pickedSection = PickObjectUsingWicked();
-
 				if (t.widget.pickedSection > 0)
 				{
 					//Make sure to highlight all objects the object belong to.
@@ -718,9 +679,6 @@ void widget_loop ( void )
 					if (t.widget.pickedEntityIndex > 0)
 						CheckGroupListForRubberbandSelections(t.widget.pickedEntityIndex);
 				}
-				#else
-				t.widget.pickedSection = PickScreenObject(t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f, g.widgetobjectoffset+0, g.widgetobjectoffset+t.widget.widgetMAXObj);
-				#endif
 
 				//  as soon as click down, record for possible undo
 				if ( t.widget.pickedSection > 0 )
@@ -769,45 +727,6 @@ void widget_loop ( void )
 					t.toriginalTranslateClickX_f = fPlanePosX - fActivePosX;
 					t.toriginalTranslateClickY_f = fPlanePosY - fActivePosY;
 					t.toriginalTranslateClickZ_f = fPlanePosZ - fActivePosZ;
-
-					//LB: moved below now using toriginalTranslateClickDeferred system (plane not detecting on first cycle - grr)
-					/*
-					// if rotation mode, additional init stuff when first click
-					if (t.widget.mode == 1)
-					{
-						// now reorient the plane pos to account for the planes rotation (if rotating the widget)
-						widget_cancelplanerotation(&t.toriginalTranslateClickX_f, &t.toriginalTranslateClickY_f, &t.toriginalTranslateClickZ_f);
-
-						// record original angle of active object
-						t.toriginalAngleX_f = ObjectAngleX(t.widget.activeObject);
-						t.toriginalAngleY_f = ObjectAngleY(t.widget.activeObject);
-						t.toriginalAngleZ_f = ObjectAngleZ(t.widget.activeObject);
-
-						// get the quaternion of the objects rotation
-						GGQUATERNION QuatAroundX, QuatAroundY, QuatAroundZ;
-						GGQuaternionRotationAxis(&QuatAroundX, &GGVECTOR3(1, 0, 0), GGToRadian(t.toriginalAngleX_f));
-						GGQuaternionRotationAxis(&QuatAroundY, &GGVECTOR3(0, 1, 0), GGToRadian(t.toriginalAngleY_f));
-						GGQuaternionRotationAxis(&QuatAroundZ, &GGVECTOR3(0, 0, 1), GGToRadian(t.toriginalAngleZ_f));
-						t.toriginalAngle = QuatAroundX * QuatAroundY * QuatAroundZ;
-
-						// work out angle between start pos and new pos
-						t.toriginalRotationClickX_f = GGToDegree(atan2(t.toriginalTranslateClickY_f, t.toriginalTranslateClickX_f));
-						t.toriginalRotationClickY_f = GGToDegree(atan2(t.toriginalTranslateClickY_f, t.toriginalTranslateClickX_f));
-						t.toriginalRotationClickZ_f = GGToDegree(atan2(t.toriginalTranslateClickY_f, t.toriginalTranslateClickX_f));
-					}
-
-					// if scale mode, additional init stuff when first click
-					if (t.widget.mode == 2)
-					{
-						// now reorient the plane pos to account for the planes rotation (if scaling the widget)
-						widget_cancelplanerotation(&t.toriginalTranslateClickX_f, &t.toriginalTranslateClickY_f, &t.toriginalTranslateClickZ_f);
-
-						// record original scale of active object
-						t.toriginalScalingX_f = ObjectScaleX(t.widget.activeObject);
-						t.toriginalScalingY_f = ObjectScaleY(t.widget.activeObject);
-						t.toriginalScalingZ_f = ObjectScaleZ(t.widget.activeObject);
-					}
-					*/
 				}
 
 				// record entity RY for ragdoll/character rotation code lower down
@@ -828,30 +747,6 @@ void widget_loop ( void )
 				{
 					// storing offsets in g.entityrubberbandlist[i].x/y/z/quat
 					SetStartPositionsForRubberBand(t.widget.activeObject);
-
-					/* old and duplicated
-					for (int i = 0; i < (int)g.entityrubberbandlist.size(); i++)
-					{
-						int e = g.entityrubberbandlist[i].e;
-						GGVECTOR3 VecPos;
-						VecPos.x = t.entityelement[e].x - ObjectPositionX(t.widget.activeObject);
-						VecPos.y = t.entityelement[e].y - ObjectPositionY(t.widget.activeObject);
-						VecPos.z = t.entityelement[e].z - ObjectPositionZ(t.widget.activeObject);
-						// transform offset with current inversed orientation of primary object
-						int tobj = t.entityelement[e].obj;
-						if (tobj > 0)
-						{
-							float fDet = 0.0f;
-							sObject* pObject = GetObjectData(tobj);
-							GGMATRIX inverseMatrix = pObject->position.matObjectNoTran;
-							GGMatrixInverse(&inverseMatrix, &fDet, &inverseMatrix);
-							GGVec3TransformCoord(&VecPos, &VecPos, &inverseMatrix);
-							g.entityrubberbandlist[i].x = VecPos.x;
-							g.entityrubberbandlist[i].y = VecPos.y;
-							g.entityrubberbandlist[i].z = VecPos.z;
-						}
-					}
-					*/
 				}
 				#else
 				// offset+20 is the plane object
@@ -2289,9 +2184,6 @@ void widget_loop ( void )
 
 	//  restore camera range
 	editor_refreshcamerarange ( );
-
-	// 061115 - ensure the R key press is cancelled
-	//g.fForceYRotationOfRubberBandFromKeyPress = 0.0f;
 }
 
 void widget_correctwidgetpanel ( void )
@@ -2330,72 +2222,6 @@ void widget_correctwidgetpanel ( void )
 		}
 		YRotateObject ( t.widget.widgetYZObj, 180 );
 	}
-
-	// align panels better
-	#ifdef WICKEDENGINE
-	#else
-	for ( t.a = t.widget.widgetPOSObj ; t.a <= t.widget.widgetLCKObj; t.a++ )
-	{
-		SetObjectToCameraOrientation ( t.a );
-		MoveObjectRight (  t.a,5 );
-		MoveObject (  t.a,-5 );
-	}
-	#endif
-
-	// default location for widget popup is top right
-	#ifdef WICKEDENGINE
-	#else
-	t.tshiftscrx_f=0 ; t.tshiftscry_f=0;
-	t.tareawidth_f=(GetDisplayWidth()-66);
-	t.tareaheight_f=(GetDisplayHeight()-18);
-	t.tmousemodifierx_f=(GetChildWindowWidth()+0.0)/(GetWindowWidth()+0.0);
-	t.tmousemodifiery_f=(GetChildWindowHeight()+0.0)/(GetWindowHeight()+0.0);
-	t.tmaxwidthhere_f=t.tareawidth_f*t.tmousemodifierx_f;
-	t.tmaxheighthere_f=t.tareaheight_f*t.tmousemodifiery_f;
-	//  move menu when near right and top
-	t.tmenux_f=GetScreenX(t.widget.widgetPOSObj);
-	t.tmenuy_f=GetScreenY(t.widget.widgetPOSObj);
-	if (  t.tmenux_f>t.tmaxwidthhere_f*0.9 ) 
-	{
-		t.tshiftscrx_f=t.tshiftscrx_f-9;
-	}
-	if (  t.tmenuy_f<190.0*t.tmousemodifierx_f ) 
-	{
-		t.tshiftscry_f=t.tshiftscry_f-10;
-	}
-	//  apply overall shift when in lower left quadrant
-	if (  t.tmenux_f<(t.tareawidth_f/2.0) ) 
-	{
-		t.tshiftscrx_f=t.tshiftscrx_f+(((t.tareawidth_f/2.0)-t.tmenux_f)*0.007);
-	}
-	if (  t.tmenuy_f>(t.tareaheight_f/2.0) ) 
-	{
-		t.tshiftscry_f=t.tshiftscry_f+((t.tmenuy_f-(t.tareaheight_f/2.0))*0.007);
-	}
-
-	//  position final widget panel resting place
-	for ( t.a = t.widget.widgetPOSObj ; t.a<=  t.widget.widgetLCKObj; t.a++ )
-	{
-		MoveObjectRight (  t.a,t.tshiftscrx_f );
-		MoveObjectUp (  t.a,t.tshiftscry_f );
-	}
-
-	//  if widget core not in screen, hide widget menu altogether
-	if (  GetInScreen(t.widget.widgetXZObj) == 1 ) 
-	{
-		for ( t.a = t.widget.widgetPOSObj ; t.a<=  t.widget.widgetLCKObj; t.a++ )
-		{
-			ShowLimb (  t.a,0 );
-		}
-	}
-	else
-	{
-		for ( t.a = t.widget.widgetPOSObj ; t.a<=  t.widget.widgetLCKObj; t.a++ )
-		{
-			HideLimb (  t.a,0 );
-		}
-	}
-	#endif
 }
 
 void widget_updatewidgetobject ( void )
@@ -2434,7 +2260,6 @@ void widget_check_for_new_object_selection ( void )
 			t.widget.activeObject=t.widget.pickedObject;
 			t.widget.pickedSection=0;
 			t.widget.grabbed=0;
-			//t.widget.mode=0; // do not reset widget mode, retain current choice for convenience
 			widget_show_widget ( );
 		}
 	}
@@ -2600,10 +2425,6 @@ void widget_show_widget ( void )
 			ScaleObject ( g.widgetobjectoffset+6,50,100,100 );
 			ScaleObject ( g.widgetobjectoffset+7,100,50,100 );
 			ScaleObject ( g.widgetobjectoffset+8,100,100,50 );
-			//new widget rotation is global rotation!
-			//RotateObject ( g.widgetobjectoffset+6, ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject), ObjectAngleZ(t.widget.activeObject) );
-			//RotateObject ( g.widgetobjectoffset+7, ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject), ObjectAngleZ(t.widget.activeObject) );
-			//RotateObject ( g.widgetobjectoffset+8, ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject), ObjectAngleZ(t.widget.activeObject) );
 			RotateObject(g.widgetobjectoffset + 6, 0, 0, 0);
 			RotateObject(g.widgetobjectoffset + 7, 0, 0, 0);
 			RotateObject(g.widgetobjectoffset + 8, 0, 0, 0);
@@ -2633,9 +2454,6 @@ void widget_show_widget ( void )
 					HideObject (g.widgetobjectoffset + t.a);
 				}
 				PositionObject ( g.widgetobjectoffset+t.a, CameraPositionX(), CameraPositionY(), CameraPositionZ() );
-				//if (t.widget.mode == 0)
-				//	PointObject (g.widgetobjectoffset + t.a, ObjectPositionX(t.widget.activeObject) + t.widget.offsetx, ObjectPositionY(t.widget.activeObject) + t.widget.offsety, ObjectPositionZ(t.widget.activeObject) + t.widget.offsetz);
-				//else
 				PointObject ( g.widgetobjectoffset+t.a,ObjectPositionX(t.widget.activeObject)+0,ObjectPositionY(t.widget.activeObject)+0,ObjectPositionZ(t.widget.activeObject)+0 );
 				MoveObject ( g.widgetobjectoffset+t.a,40 );
 				RotateObject ( g.widgetobjectoffset+t.a,0,0,0 );
@@ -2691,7 +2509,6 @@ void widget_hide ( void )
 	{
 		if (  ObjectExist (g.widgetobjectoffset+t.a)  )  HideObject (  g.widgetobjectoffset+t.a );
 	}
-	//t.widget.mode=0; // do not reset widget mode, retain current choice for convenience
 	extern bool bTriggerVisibleWidget;
 	bTriggerVisibleWidget = false;
 }

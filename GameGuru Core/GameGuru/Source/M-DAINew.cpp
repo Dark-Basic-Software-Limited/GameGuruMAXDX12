@@ -5,7 +5,6 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-//#include "M-CharacterCreatorPlus.h"
 #include "GGRecastDetour.h"
 extern GGRecastDetour g_RecastDetour;
 
@@ -425,21 +424,6 @@ void darkai_calcplrvisible (charanimstatetype &cas)
 				if (tttokay == 1)
 				{
 					// actually move ray BACK a little in case enemy right up against something!
-
-					//PE: Below not used anymore. when not moving anyway.
-					//tttdx_f = tbrayx2_f - tbrayx1_f;
-					//float tttdy_f = tbrayy2_f - tbrayy1_f;
-					//tttdz_f = tbrayz2_f - tbrayz1_f;
-					//tttdd_f = Sqrt(abs(tttdx_f*tttdx_f) + abs(tttdy_f*tttdy_f) + abs(tttdz_f*tttdz_f));
-					//tttdx_f = tttdx_f / tttdd_f;
-					//tttdy_f = tttdy_f / tttdd_f;
-					//tttdz_f = tttdz_f / tttdd_f;
-
-					//then again no, start further forward to miss character body as vweap filter no longer works as we needed to glue the weapon
-					//LB: do not move start position, it can GO THROUGH WALLS!
-					//tbrayx1_f = tbrayx1_f + (tttdx_f*40.0);
-					//tbrayy1_f = tbrayy1_f + (tttdy_f*40.0);
-					//tbrayz1_f = tbrayz1_f + (tttdz_f*40.0);
 					int ttintersectvalue = IntersectAllEx(g.entityviewstartobj, g.entityviewendobj, tbrayx1_f, tbrayy1_f, tbrayz1_f, tbrayx2_f, tbrayy2_f, tbrayz2_f, cas.obj, 0, cas.e, 500, 1, false);
 					if (ttintersectvalue != 0)
 					{
@@ -579,9 +563,6 @@ void darkai_mouthandheadtracking (void)
 		float fRightSideLimit = fNeckLimit * 1.3f;
 		if (fDiffA < fLeftSideLimit) fDiffA = fLeftSideLimit;
 		if (fDiffA > fRightSideLimit) fDiffA = fRightSideLimit;
-		// old way - not perfectly aligned with neck of character creator body rig
-		//if (fDiffA < -fNeckLimit) fDiffA = -fNeckLimit;
-		//if (fDiffA > fNeckLimit) fDiffA = fNeckLimit;
 	}
 	float fRightAndLeft = fDiffA + t.charanimstate.neckRightAndLeftOffset;
 
@@ -808,7 +789,6 @@ bool AdjustPositionSoNoOverlap (int iEntityIndex, float* pX, float* pZ, float fO
 						*pZ = fOutsideZ;
 
 						// before use this new position, ensure it does not leave the navmesh
-						//if (1) // do not need this now - we can go anywhere - g_RecastDetour.isWithinNavMesh (*pX, t.entityelement[iEntityIndex].y, *pZ) == true) // arg - not quite, this can push entities THROUGH WALLS!!!
 						float vecNearestPt[3];
 						bool bMustBeOverPoly = true;
 						if (g_RecastDetour.isWithinNavMeshEx (*pX, t.entityelement[iEntityIndex].y, *pZ, (float*)&vecNearestPt, bMustBeOverPoly) == true) // new XYZ only valid inside nav mesh!
@@ -905,8 +885,6 @@ void darkai_handlegotomove(void)
 						{
 							// ensure to massive backward movement delta when animation Bip01 pos resets
 							// just as we deducted the length of anim time, deduct the full anim time offset (so matching the displacement)
-							//fShiftSinceLastAnimX = 0.0f;
-							//fShiftSinceLastAnimZ = 0.0f;
 							// still not perfect as I think there is time displacement between multithread anim and core thread movemement!
 							GGVECTOR3 vecFirstBip01PosOffsetFrame;
 							GetPositionFromAnimFrameLimb(&vecFirstBip01PosOffsetFrame, pFrame->pAnimRef, pObject->fAnimLoopStart);
@@ -1544,29 +1522,6 @@ void darkai_loop (void)
 		// smoothing animations for this character
 		char_loop();
 
-		#ifndef WICKEDENGINE
-		// Handle character removal
-		if (t.entityelement[t.charanimstate.e].health <= 0 && t.charanimstate.timetofadeout > 0)
-		{
-			if (Timer() > t.charanimstate.timetofadeout)
-			{
-				t.txDist_f = ObjectPositionX(t.charanimstate.obj) - CameraPositionX(0);
-				t.tzDist_f = ObjectPositionZ(t.charanimstate.obj) - CameraPositionZ(0);
-				if (t.txDist_f * t.txDist_f + t.tzDist_f * t.tzDist_f > 500000)
-				{
-					if (GetInScreen(t.charanimstate.obj) == 0)
-					{
-						// disable ability to remove character from system if ALWAYS ACTIVE has been set (allows characters to respawn)
-						if (t.entityelement[t.charanimstate.e].eleprof.phyalways == 0)
-						{
-							//darkai_character_remove ();
-						}
-					}
-				}
-			}
-		}
-		#endif
-
 		//  Store any changes
 		t.charanimstates[g.charanimindex] = t.charanimstate;
 	}
@@ -1872,16 +1827,6 @@ void darkai_killai (void)
 {
 	if (t.charanimstates[t.tcharanimindex].aiobjectexists == 1)
 	{
-		// not supporting this method in MAX - stay in the main script!!
-		// Attempt to call the _exit function for the characters script
-		//if (t.entityelement[t.charanimstates[t.tcharanimindex].e].eleprof.aimain == 1)
-		//{
-		//	t.strwork = Lower(t.entityelement[t.charanimstates[t.tcharanimindex].e].eleprof.aimainname_s.Get());
-		//	t.strwork += "_exit";
-		//	LuaSetFunction (t.strwork.Get(), 1, 0);
-		//	LuaPushInt (t.charanimstates[t.tcharanimindex].e); LuaCallSilent ();
-		//}
-
 		// free this AI from the game loop
 		t.charanimstates[t.tcharanimindex].aiobjectexists = 0;
 		if (t.entityelement[t.charanimstates[t.tcharanimindex].e].usingphysicsnow != 0)
@@ -1935,7 +1880,6 @@ void darkai_killai (void)
 		if (s == 0) ttsnd = t.entityelement[e].soundset;
 		if (s == 1) ttsnd = t.entityelement[e].soundset2;
 		if (s == 2) ttsnd = t.entityelement[e].soundset3;
-		//if (s == 3) ttsnd = t.entityelement[e].soundset5;
 		if (s == 4) ttsnd = t.entityelement[e].soundset5;
 		if (s == 5) ttsnd = t.entityelement[e].soundset6;
 		if (ttsnd > 0)
@@ -2352,13 +2296,6 @@ void darkai_shooteffect (void)
 		{
 			if (t.tattachmentobjfirespotlimb == -1)
 			{
-				//t.tattachmentobjfirespotlimb = 0;
-				//t.tx_f = t.entityelement[t.te].fFirespotOffsetX;
-				//t.ty_f = t.entityelement[t.te].fFirespotOffsetY;
-				//t.tz_f = t.entityelement[t.te].fFirespotOffsetZ;
-				// must adjust offset to angle of weaponm (throw the flame forward)
-				//t.tx_f = -NewXValue(0, t.entityelement[t.te].ry, t.tx_f) * 2;
-				//t.tz_f = -NewZValue(0, t.entityelement[t.te].ry, t.tz_f) * 2;
 				int tentityattachmentindex = t.tattachedobj - g.entityattachmentsoffset;
 				int iDebugFirespotObj = g.entityattachments2offset + tentityattachmentindex;
 				if (ObjectExist(iDebugFirespotObj) == 1)
@@ -2648,7 +2585,6 @@ void darkai_shooteffect (void)
 						XMVECTOR start = XMLoadFloat3(&tracer_from);
 						XMVECTOR end = XMLoadFloat3(&tracer_hit);
 						XMVECTOR dir = XMVectorSubtract(end, start);
-						//float length = XMVectorGetX(XMVector3Length(dir)); //Hit weapon ? *0.97;
 						dir = XMVector3Normalize(dir);
 						XMStoreFloat3(&tracer_hit, end + (dir * t.gun[t.tgunid].settings.tracer_maxlength));
 					}

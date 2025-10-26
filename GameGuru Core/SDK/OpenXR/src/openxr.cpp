@@ -307,25 +307,6 @@ int OpenXRInit( ID3D11Device* device )
     XrGraphicsRequirementsD3D11KHR graphicsRequirements = { XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR };
     xrRes = pfnGetD3D11GraphicsRequirementsKHR( xrInstance, xrSystemId, &graphicsRequirements );
 	if ( xrRes < 0 ) { AppError( "pfnGetD3D11GraphicsRequirementsKHR failed" ); }
-	/*
-	// find DX11 adapter that matches requirements
-	IDXGIFactory1 *dxgiFactory;
-    HRESULT hr = CreateDXGIFactory1( __uuidof(IDXGIFactory1), (void**) &dxgiFactory );
-	if ( FAILED(hr) ) { DXError( hr ); }
-
-    for (UINT adapterIndex = 0;; adapterIndex++) 
-	{
-        // EnumAdapters1 will fail with DXGI_ERROR_NOT_FOUND when there are no more adapters to enumerate.
-        IDXGIAdapter1* dxgiAdapter;
-        dxgiFactory->EnumAdapters1( adapterIndex, &dxgiAdapter );
-
-        DXGI_ADAPTER_DESC1 adapterDesc;
-        dxgiAdapter->GetDesc1( &adapterDesc );
-        if (memcmp( &adapterDesc.AdapterLuid, &graphicsRequirements.adapterLuid, sizeof(graphicsRequirements.adapterLuid) ) == 0) {
-            dx11Adapter = dxgiAdapter;
-			break;
-        }
-    }*/
 
 	return 0; // success
 }

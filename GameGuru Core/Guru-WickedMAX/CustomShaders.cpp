@@ -92,8 +92,6 @@ void AddCustomShaders(void)
 	PipelineState pso[RENDERPASS_COUNT];
 	for (int i = 0; i < RENDERPASS_COUNT; i++)
 	{
-		//desc,RENDERPASS_MAIN,PSTYPE_OBJECT,SHADERTYPE_PBR, , false, false, true
-		//wiRenderer::AddPipelineDesc(desc[i], i, PSTYPE_OBJECT, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_ADDITIVE, OBJECTRENDERING_DOUBLESIDED_DISABLED, false, true, false);
 		wiRenderer::AddPipelineDesc(desc[i], i, PSTYPE_OBJECT, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_OPAQUE, OBJECTRENDERING_DOUBLESIDED_ENABLED, false, true, false);
 		if (customShader.bActive)
 		{

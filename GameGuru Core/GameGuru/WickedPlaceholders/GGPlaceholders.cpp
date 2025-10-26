@@ -6,12 +6,8 @@
 #include "stdafx.h"
 #include "GGPlaceholders.h"
 
-// ones we still use
-
-
 // old BT functions
 
-void LoadFBX(char* dsadsa, int wwewda) {}
 bool g_bSkipTerrainRender = false;
 bool g_bCreateChecklistNow = false;
 unsigned long g_dwMaxStringSizeInEnum = 0;

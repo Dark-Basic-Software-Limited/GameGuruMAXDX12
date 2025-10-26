@@ -44,9 +44,6 @@ return;
 
 void character_sound_load ( void )
 {
-
-//  `rem Return if nothing
-
 	if (  t.s_s  ==  ""  )  return;
 	
 	t.tCharacterSoundName;

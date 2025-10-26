@@ -339,10 +339,6 @@ void gun_loaddata ( void )
 
 					cmpStrConst(t_field_s, "clipcapacity");
 					if (matched)  g.firemodes[t.gunid][0].settings.clipcapacity = t.value1;
-					//cmpStrConst(t_field_s, "weaponpropres1");
-					//if (matched)  g.firemodes[t.gunid][0].settings.weaponpropres1 = t.value1;
-					//cmpStrConst(t_field_s, "weaponpropres2");
-					//if (matched)  g.firemodes[t.gunid][0].settings.weaponpropres2 = t.value1;
 
 					cmpStrConst( t_field_s, "muzzleflash" );
 					if( matched )  g.firemodes[t.gunid][0].settings.muzzleflash = t.value1;
@@ -701,7 +697,6 @@ void gun_loaddata ( void )
 									if (iModifyTheLastFinishFrameWhenKnowPerc == 69) g.firemodes[t.gunid][iAltIndex].zoomaction.start2.e = t.value1 - 1; // pFieldName = "zoom start fire 2";
 									if (iModifyTheLastFinishFrameWhenKnowPerc == 70) g.firemodes[t.gunid][iAltIndex].zoomaction.start3.e = t.value1 - 1; // pFieldName = "zoom start fire 3";
 									if (iModifyTheLastFinishFrameWhenKnowPerc == 75) g.firemodes[t.gunid][iAltIndex].zoomaction.laststart.e = t.value1 - 1; // pFieldName = "zoom last start fire";
-									//if (iModifyTheLastFinishFrameWhenKnowPerc == 81) g.firemodes[t.gunid][iAltIndex].blockaction.start.e = t.value1 - 1; // pFieldName = "block start";
 									iModifyTheLastFinishFrameWhenKnowPerc = 0;
 								}
 								fLastFinishFrameFromAnimName = -1;
@@ -734,7 +729,6 @@ void gun_loaddata ( void )
 									if (animfields == 69) bPartOfStartEndSet = true; // pFieldName = "zoom start fire 2";
 									if (animfields == 70) bPartOfStartEndSet = true; // pFieldName = "zoom start fire 3";
 									if (animfields == 75) bPartOfStartEndSet = true; // pFieldName = "zoom last start fire";
-									//if (animfields == 81) bPartOfStartEndSet = true; // pFieldName = "block start";
 									if (bPartOfStartEndSet == true)
 									{
 										fLastStartFrameFromAnimName = t.value1;
@@ -1055,10 +1049,6 @@ void gun_loaddata ( void )
 
 					cmpStrConst(t_field_s, "altclipcapacity");
 					if (matched)  g.firemodes[t.gunid][1].settings.clipcapacity = t.value1;
-					//cmpStrConst(t_field_s, "altweaponpropres1");
-					//if (matched)  g.firemodes[t.gunid][1].settings.weaponpropres1 = t.value1;
-					//cmpStrConst(t_field_s, "altweaponpropres2");
-					//if (matched)  g.firemodes[t.gunid][1].settings.weaponpropres2 = t.value1;
 
 					cmpStrConst( t_field_s, "altmuzzleflash" );
 					if( matched )  g.firemodes[t.gunid][1].settings.muzzleflash = t.value1;
@@ -1683,10 +1673,6 @@ void gun_loaddata ( void )
 					if (matched) t.gun[t.gunid].settings.tracer_colorG = t.value1 / 255.0f;
 					cmpStrConst(t_field_s, "tracercolorb");
 					if (matched) t.gun[t.gunid].settings.tracer_colorB = t.value1 / 255.0f;
-
-					//t.gun[t.gunid].settings.tracer_imagefile = "tracer.dds";
-					//t.gun[t.gunid].settings.tracer_WPEId = 0;
-					
 				}
 			}
 		}
@@ -2107,7 +2093,6 @@ void gun_findweaponindexbyname_core ( void )
 	{
 		for ( t.tid = 1 ; t.tid<=g.gunmax; t.tid++ )
 		{
-			//timestampactivity(0, cstr(cstr("FindWeaponMatch: ")+t.findgun_s+cstr(" vs ")+t.gun[t.tid].name_s).Get());
 			if (  cstr(Lower(t.findgun_s.Get())) == cstr(Lower(t.gun[t.tid].name_s.Get())) ) 
 			{
 				t.foundgunid=t.tid;

@@ -1425,10 +1425,6 @@ void gun_control ( void )
 		t.sway_f=30.0 ; t.swayn_f=t.sway_f*-1;
 		if (  t.woz_f<t.swayn_f  )  t.woz_f = t.swayn_f;
 		if (  t.woz_f>t.sway_f  )  t.woz_f = t.sway_f;
-		//if (  t.wox_f<t.swayn_f  )  t.wox_f = t.swayn_f;
-		//if (  t.wox_f>t.sway_f  )  t.wox_f = t.sway_f;
-		//if (  t.woy_f<t.swayn_f  )  t.woy_f = t.swayn_f;
-		//if (  t.woy_f>t.sway_f  )  t.woy_f = t.sway_f;
 		float fSwayX = t.gunlagxmax_f;
 		float fSwayXN = -t.gunlagxmax_f;
 		float fSwayY = t.gunlagymax_f;
@@ -1891,7 +1887,6 @@ void gun_control ( void )
 	{
 		t.gidle=t.tzoomactionidle;
 		t.gmove=t.tzoomactionmove;
-		//gun_getzoomstartandfinish ( );
 		if ( t.playercontrol.usingrun == -1 ) t.gruntofrom = g.firemodes[t.gunid][g.firemode].action.runfrom;
 		if ( t.playercontrol.usingrun == 1 ) t.gruntofrom = g.firemodes[t.gunid][g.firemode].action.runto;
 		t.gautomatic=g.firemodes[t.gunid][g.firemode].zoomaction.automatic;
@@ -2060,9 +2055,6 @@ void gun_control ( void )
 		}
 		if (  t.tempmeani != 0 ) { t.tmeleeanim = t.tempmeani  ; t.tempmeani = 0; }
 	}
-
-	//block code updated for improved melee
-	//t.gblock = g.firemodes[t.gunid][g.firemode].action.block;
 
 	// Burst control
 	if (  t.gunburst <= 0 ) 
@@ -2515,8 +2507,6 @@ void gun_control ( void )
 				float fDX = t.entityelement[e].x - CameraPositionX();
 				float fDZ = t.entityelement[e].z - CameraPositionZ();
 				float fDA = atan2deg(fDX, fDZ);
-				//t.playercontrol.cy_f = WrapValue(fDA);
-				//RotateCamera (0, t.playercontrol.cx_f, t.playercontrol.cy_f, t.playercontrol.cz_f);
 
 				// and forces forward as through stepping forward
 				t.playercontrol.pushangle_f = CameraAngleY();// fDA;
@@ -3333,14 +3323,11 @@ void gun_control ( void )
 	{
 		// seems the new sync anim system is thwarted by n-core work on the anim system - it seems
 		// fallback is to match animation commands to secondary object :(
-		// StopObject(t.currentgunobj);
-		// SetObjectFrame(t.currentgunobj,100);
 		int iGunSecondaryObj = g.gunbankextraobjoffset + (t.currentgunobj - g.gunbankoffset);
 		if (ObjectExist(iGunSecondaryObj) == 1)
 		{
 			PositionObject(iGunSecondaryObj, ObjectPositionX(t.currentgunobj), ObjectPositionY(t.currentgunobj), ObjectPositionZ(t.currentgunobj));
 			SetObjectToObjectOrientation(iGunSecondaryObj, t.currentgunobj);
-			//SetObjectFrame(iGunSecondaryObj, GetFrame(t.currentgunobj)); // handled inside the glue/unglue command now (but if weap has no anim, this is the fallback)
 			if (GetVisible(t.currentgunobj) == 1)
 				ShowObject(iGunSecondaryObj);
 			else
@@ -3638,7 +3625,6 @@ void gunmode121_cancel ( void )
 					{
 						PlaySound(t.sndid);
 						posinternal3dsound(t.sndid, CameraPositionX(), CameraPositionY(), CameraPositionZ());
-						//PositionSound(t.sndid, CameraPositionX() / 10.0, CameraPositionY() / 3.0, CameraPositionZ() / 10.0);
 						soundtimer = Timer() + 600;
 						if (pestrcasestr(t.gun[t.gunid].name_s.Get(), "rpg"))
 							soundtimer = Timer() + 1700;
@@ -3696,7 +3682,6 @@ void gunmode121_cancel ( void )
 							{
 								PlaySound(t.sndid);
 								posinternal3dsound(t.sndid, CameraPositionX(), CameraPositionY(), CameraPositionZ());
-								//PositionSound(t.sndid, CameraPositionX() / 10.0, CameraPositionY() / 3.0, CameraPositionZ() / 10.0);
 							}
 						}
 					}
@@ -5284,34 +5269,6 @@ void gun_load ( void )
 					LoadObject(pTempHUDDBOFile, t.currentgunobj);
 				}
 			}
-			//else
-			//{
-				// if not recreated HUD
-				//if (bUsingLegacyArmReplacementTrick == false)
-				//{
-				//	// and not added animations from legacy replacement trick
-				//	if (ObjectExist(t.currentgunobj) == 1)
-				//	{
-				//		// used to need to append animations to the hand model for this weapon from g_pAnimSlotList (not needed now done in gun_createhud)
-				//		//sObject* pObject = GetObjectData(t.currentgunobj);
-				//		//extern void UpdateObjectWithAnimSlotList (sObject*);
-				//		//UpdateObjectWithAnimSlotList(pObject);
-				//	}
-				//}
-			//}
-			//if (t.currentgunobj != 0 && bForceRefreshWeapon == true)
-			//{
-			//	if (ObjectExist(t.currentgunobj) == 1)
-			//	{
-			//		char pTempHUDDBOFile[MAX_PATH];
-			//		strcpy(pTempHUDDBOFile, t.currentgunfile_s.Get());
-			//		GG_GetRealPath(pTempHUDDBOFile, 1);
-			//		if (FileExist(pTempHUDDBOFile) == 1) DeleteFileA(pTempHUDDBOFile);
-			//		SaveObject (pTempHUDDBOFile, t.currentgunobj);
-			//		DeleteObject(t.currentgunobj);
-			//		LoadObject(pTempHUDDBOFile, t.currentgunobj);
-			//	}
-			//}
 		}
 
 		// record choice

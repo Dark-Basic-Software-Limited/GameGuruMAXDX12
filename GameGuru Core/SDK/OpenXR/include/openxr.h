@@ -94,20 +94,9 @@ float OpenXRGetRightSqueeze();
 bool  OpenXRGetRightButtonA();
 bool  OpenXRGetRightButtonB();
 
-// Rendering functions, must be called in this order
-//   OpenXRStartFrame
-//   RenderView = OpenXRStartRender( OPENXR_RENDER_LEFT )
-//   Draw to RenderView
-//   OpenXREndRender
-//   RenderView = OpenXRStartRender( OPENXR_RENDER_RIGHT )
-//   Draw to RenderView
-//   OpenXREndRender
-//   OpenXREndFrame
-
 bool OpenXRStartFrame();
 ID3D11RenderTargetView* OpenXRStartRender( OpenXRRenderSide side, ID3D11Texture2D** renderTextureOut=0 );
 void OpenXREndRender();
 void OpenXREndFrame();
-
 
 #endif //_H_GG_OPENXR

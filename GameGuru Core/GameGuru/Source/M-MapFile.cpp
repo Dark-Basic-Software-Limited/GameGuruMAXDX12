@@ -871,7 +871,6 @@ void lm_emptylightmapandttsfilesfolder_wicked( void )
 {
 	//PE: lightmaps
 	cstr pOldDir = GetDir();
-	//LPSTR pOldDir = GetDir();
 	char pRealWritableArea[MAX_PATH];
 	strcpy(pRealWritableArea, pOldDir.Get());
 	if( pestrcasestr(pOldDir.Get(), "\\testmap"))
@@ -1020,27 +1019,6 @@ void mapfile_loadproject_fpm ( void )
 
 		SetDir ( g.mysystem.levelBankTestMapAbs_s.Get() );
 
-		/* g_bTerrainGeneratorChooseRealTerrain no longer used
-		#ifdef WICKEDENGINE
-		extern bool g_bTerrainGeneratorChooseRealTerrain;
-		if (FileExist(pTerrainPreference) == 1)
-		{
-			OpenToRead(3, pTerrainPreference);
-			LPSTR pTerrainPref = ReadString(3);
-			if (strcmp (pTerrainPref, "terrainisgrass") == NULL)
-				g_bTerrainGeneratorChooseRealTerrain = true;
-			else
-				g_bTerrainGeneratorChooseRealTerrain = false;
-			CloseFile(3);
-		}
-		else
-		{
-			// if no file exists, assume 'real terrain'
-			g_bTerrainGeneratorChooseRealTerrain = true;
-		}
-		#endif
-		*/
-
 		//  If file still not present, extraction failed
 		if (  FileExist("header.dat") == 0 ) 
 		{
@@ -1059,7 +1037,6 @@ void mapfile_loadproject_fpm ( void )
 		#ifdef WICKEDENGINE
 		// new terrain system loads its data settings
 		//PE: We are already inside "levelbank\\testmap\\" ?
-		//cstr TerrainDataFile_s = g.mysystem.levelBankTestMap_s + "ggterrain.dat";
 		//PE: In editor g.mysystem.levelBankTestMap_s have "c:" and works, in standalone we dont have that so:
 		cstr TerrainDataFile_s = "ggterrain.dat";
 		g_bNeedToConvertClassicPositionsToMAX = false;
@@ -2141,7 +2118,6 @@ void mapfile_collectfoldersandfiles (cstr levelpathfolder)
 	addfoldertocollection("lensflares");
 	addfoldertocollection("fontbank");
 	addfoldertocollection("languagebank\\neutral\\gamecore\\huds\\ammohealth");
-	//addfoldertocollection("languagebank\\neutral\\gamecore\\huds\\sliders");
 	addfoldertocollection("languagebank\\neutral\\gamecore\\huds\\panels");
 
 	addfoldertocollection("gamecore\\decals\\blood"); //PE: New particle effects.
@@ -2179,46 +2155,9 @@ void mapfile_collectfoldersandfiles (cstr levelpathfolder)
 
 	// folders related to terrain system
 	g_bUsingSomeKindOfTerrain = false;
-	/* this now deferred unless at least ONE of the used levels use terrain
-	addfoldertocollection("treebank"); // all but completely empty level (basic flat terrain)
-	addfoldertocollection("treebank\\billboards");
-	addfoldertocollection("treebank\\textures");
-	if (strlen(Storyboard.customprojectfolder) > 0)
-	{
-		// if remote project being used, it will copy its OWN terraintexture folder over
-		// so no need to include the default in case all custom textures used
-	}
-	else
-	{
-		//PE: Storyboard - Need standalone / lua menu's working.
-		addfoldertocollection("terraintextures");
-		for (int i = 0; i < 42; i++)
-		{
-			char addfolder[MAX_PATH];
-			sprintf(addfolder, "terraintextures\\mat%d", i);
-			addfoldertocollection(addfolder);
-		}
-	}
-	addfoldertocollection("grassbank");
-	*/
 
-	// TODO: only copy the particles that each entity uses, rather than the whole folder
-
-
-	//addtocollection ( "particlesbank\advanced\birds.pe" )
-
-	//PE: Not needed anymore.
-	//addallinfoldertocollection("particlesbank", "particlesbank"); // all particles so do not miss any for standalone (only 4MB for defaults)
-	//addallinfoldertocollection("particlesbank\\user", "particlesbank\\user");
-	
 	//PE: Still need old effects. arx
 	addfoldertocollection("particlesbank");
-
-	// TODO: only copy the emitter that each entity uses, rather than the whole folder
-	//PE: Not used anymore.
-	//addfoldertocollection("emitterbank");
-	//addfoldertocollection("emitterbank\\user");
-	//addfoldertocollection("emitterbank\\demo");
 
 	addtocollection("effectbank\\common\\noise64.png");
 	addtocollection("effectbank\\common\\dist2.png");
@@ -2519,12 +2458,6 @@ void mapfile_savestandalone_start ( void )
 	// this flag ensures the loadassets splash does not appear when making standalone
 	t.levelsforstandalone = 1;
 
-	// give prompts while standalone is saving
-	//popup_text("Saving Standalone Game : Collecting Files");
-
-	//  check for character creator usage
-	///characterkit_checkForCharacters ( );
-
 	// 040316 - v1.13b1 - find the nested folder structure of the level (could be in map bank\Easter\level1.fpm)
 	t.told_s=GetDir();
 	cstr mapbankpath;
@@ -2538,7 +2471,6 @@ void mapfile_savestandalone_start ( void )
 	else
 	{
 		// absolute project path
-		//mapbankpath = t.told_s + cstr("\\mapbank\\");
 		g_mapfile_mapbankpath = g.mysystem.mapbankAbs_s;
 		g_mapfile_levelpathfolder = Right ( g.projectfilename_s.Get(), strlen(g.projectfilename_s.Get()) - strlen(g_mapfile_mapbankpath.Get()) );
 	}
@@ -3253,49 +3185,10 @@ int mapfile_savestandalone_stage2c ( void )
 		t.entid=t.entityelement[t.e].bankindex;
 		if ( t.entid>0 ) 
 		{
-			//PE: Locate any wpe effects. DLUA
-			/*
-			{
-				//PE: Resolve wpe effects textures.
-				char cPE[MAX_PATH];
-				strcpy(cPE, pFile.Get());
-				char* find = (char*)pestrcasestr(cPE, ".pe");
-				if (find)
-				{
-					*find = '\0';
-					char finalname[MAX_PATH];
-					strcpy(finalname, cPE);
-					strcat(finalname, "0_color.png");
-					addtocollection(finalname);
-					strcpy(finalname, cPE);
-					strcat(finalname, "1_color.png");
-					addtocollection(finalname);
-					strcpy(finalname, cPE);
-					strcat(finalname, "2_color.png");
-					addtocollection(finalname);
-					strcpy(finalname, cPE);
-					strcat(finalname, "3_color.png");
-					addtocollection(finalname);
-					strcpy(finalname, cPE);
-					strcat(finalname, "4_color.png");
-					addtocollection(finalname);
-					strcpy(finalname, cPE);
-					strcat(finalname, "5_color.png");
-					addtocollection(finalname);
-					strcpy(finalname, cPE);
-					strcat(finalname, "6_color.png");
-					addtocollection(finalname);
-				}
-
-			}
-			*/
-
-
 			// most eleprof related files
 			mapfile_addallentityrelatedfiles(t.entid, &t.entityelement[t.e].eleprof);
 
 			// and purey entity element related files
-			//if (t.entityelement[t.e].eleprof.bCustomWickedMaterialActive)
 			if (!t.entityelement[t.e].eleprof.bUseFPESettings)
 			{
 				// Also add any custom material textures
@@ -3385,7 +3278,6 @@ int mapfile_savestandalone_stage2c ( void )
 					addtocollection((char*)finalName);
 				}
 			}
-
 			// TODO: If we ever release DLC with terrain textures stored in root dir, we would need to do an additional scan here.
 		}
 		iMoveAlong = 1;
@@ -3726,22 +3618,6 @@ void mapfile_savestandalone_stage4 ( void )
 	SetDir ( destExeRoot_s.Get() );
 	if (PathExist("shaders") == 0) MakeDirectory("shaders");
 
-	/* TT fonts not used!
-	// for wicked, copy fonts folder
-	SetDir ( g.originalrootdir_s.Get() );
-	SetDir("fonts");
-	ChecklistForFiles();
-	for ( int c = 1; c <= ChecklistQuantity(); c++ )
-	{
-		LPSTR pFontFile = ChecklistString(c);
-		if (stricmp(pFontFile, ".") != NULL && stricmp(pFontFile, "..") != NULL)
-		{
-			t.dest_s = t.exepath_s + t.exename_s + "\\fonts\\" + pFontFile;
-			if (FileExist(t.dest_s.Get()) == 1) DeleteAFile(t.dest_s.Get());
-			CopyAFile(pFontFile, t.dest_s.Get());
-		}
-	}
-	*/
 	// for wicked, copy shaders folder
 	SetDir ( g.originalrootdir_s.Get() );
 	SetDir("shaders");
@@ -3968,26 +3844,7 @@ void mapfile_savestandalone_stage4 ( void )
 			t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "xboxmag="+Str(g.gxboxmag) ; ++t.i;
 		}
 	}
-	/* own file below
-	if ( g.vrqcontrolmode != 0 )
-	{
-		// VR
-		t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "" ; ++t.i;
-		t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "[VR]" ; ++t.i;
-		extern bool g_bStandaloneVRMode;
-		if (g_bStandaloneVRMode == true)
-		{
-			t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "vrmode=3"; ++t.i;
-			t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "vrmodemag=100"; ++t.i;
-			t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "vroffsetangx="+Str(g.gvroffsetangx); ++t.i;
-			t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "vrwmroffsetangx="+Str(g.gvrwmroffsetangx); ++t.i;
-		}
-		else
-		{
-			t.setuparr_s[t.i] = ""; t.setuparr_s[t.i] = t.setuparr_s[t.i] + "vrmode=0"; ++t.i;
-		}
-	}
-	*/
+
 	if (  FileExist(t.setupfile_s.Get()) == 1  )  DeleteAFile (  t.setupfile_s.Get() );
 	SaveArray (  t.setupfile_s.Get(),t.setuparr_s );
 	UnDim (  t.setuparr_s );
@@ -4051,11 +3908,6 @@ int mapfile_savestandalone_continue ( void )
 
 		case 22: 
 		{
-			//if (!bOnceOnly)
-			//{
-			//	bOnceOnly = true;
-			//	t.e = 1;
-			//}
 			if (mapfile_savestandalone_stage2c() == 0)
 			{
 				g_mapfile_fProgress += (80.0f / g_mapfile_fProgressSpan);
@@ -4898,74 +4750,6 @@ void findalltexturesinmodelfile ( char* inputfile_s, char* folder_s, char* texpa
 void CreateItineraryFile ( void )
 {
 	g_sDefaultAssetFiles.clear();
-	#ifdef WICKEDENGINE
-	// no itintery file for now
-	#else
-	// check if we have an itinerary file
-	LPSTR pOldDir = GetDir();
-	SetDir ( g.fpscrootdir_s.Get() );
-	cstr pItineraryFile = "assetitinerary.dat";
-	if (g.globals.generateassetitinerary > 0 && FileExist ( pItineraryFile.Get() ) == 1) DeleteFileA(pItineraryFile.Get());
-	if ( FileExist ( pItineraryFile.Get() ) == 0 )
-	{
-		// Create itinerary file
-		scanallfolder ( "Files", "" );
-		SetDir ( pOldDir );
-
-		// Create binay block and dump string data to that (faster)
-		DWORD dwStringBlockSize = 0;
-		dwStringBlockSize += 4;
-		for ( int n = 0; n < g_sDefaultAssetFiles.size(); n++ )
-		{
-			DWORD dwStringSize = strlen(g_sDefaultAssetFiles[n].Get());
-			dwStringBlockSize += dwStringSize;
-			dwStringBlockSize++;
-		}
-		MakeMemblock ( 1, dwStringBlockSize );
-		int pos = 0;
-		WriteMemblockDWord ( 1, pos, dwStringBlockSize ); pos += 4;
-		for ( int n = 0; n < g_sDefaultAssetFiles.size(); n++ )
-		{
-			LPSTR pString = g_sDefaultAssetFiles[n].Get();
-			for ( int c = 0; c < strlen(pString); c++ )
-				WriteMemblockByte ( 1, pos++, (unsigned char) pString[c] ); //PE: chars like 'ö' will set -10 and generate errors.
-			WriteMemblockByte ( 1, pos++, 0 );
-		}
-		SetDir ( g.fpscrootdir_s.Get() );
-		OpenToWrite ( 1, pItineraryFile.Get() );
-		MakeFileFromMemblock ( 1, 1 );
-		CloseFile ( 1 );
-		SetDir ( pOldDir );
-		DeleteMemblock ( 1 );
-	}
-	else
-	{
-		// Load itinerary file (fast)
-		OpenToRead ( 1, pItineraryFile.Get() );
-		MakeMemblockFromFile ( 1, 1 );
-		int pos = 0;
-		char pString[2050];
-		LPSTR pStringPtr = pString;
-		DWORD dwMemblockSize = ReadMemblockDWord ( 1, pos ); pos += 4;
-		while ( pos < dwMemblockSize )
-		{
-			*pStringPtr = ReadMemblockByte ( 1, pos ); pos++;
-			if ( *pStringPtr == 0 )
-			{
-				g_sDefaultAssetFiles.push_back ( pString );
-				memset ( pString, 0, sizeof(pString) );
-				pStringPtr = pString;
-			}
-			else
-			{
-				pStringPtr++;
-			}
-		}
-		CloseFile ( 1 );
-		DeleteMemblock ( 1 );	
-	}
-	SetDir ( pOldDir );
-	#endif
 }
 
 void scanallfolder ( cstr subThisFolder_s, cstr subFolder_s )
@@ -5059,137 +4843,6 @@ bool IsFileAStockAsset ( LPSTR pCheckThisFile )
 	return false;
 }
 
-/* not used
-void ScanLevelForCustomContent ( LPSTR pFPMBeingSaved )
-{
-	// just before save an FPM, if any custom content used, add it to the FPM 
-	// in a special Files folder to be referenced by forced redirection 
-	// so it prefers FPM included files over stock assets on the local machine 
-	// (which may have been changed, unknown to the user sharing their FPM)
-	t.tmasterlevelfile_s=cstr("mapbank\\")+pFPMBeingSaved;
-	timestampactivity(0,cstr(cstr("Scanning level for custom content:")+t.tmasterlevelfile_s).Get() );
-	mapfile_collectfoldersandfiles ( "" );
-
-	// Go through all files required by level, and create custom files for those that are not in default asset itinerary
-	for ( t.fileindex = 1; t.fileindex <= g.filecollectionmax; t.fileindex++ )
-	{
-		SetDir ( cstr(g.fpscrootdir_s + "\\Files\\").Get() );
-		t.src_s = t.filecollection_s[t.fileindex];
-		// From now on, DBOs on their own are not allowed, only transport X files
-		//if ( FileExist(t.src_s.Get()) == 0 )
-		//{
-			// special case of X files not existing, but DBOs do (if saving a previously loaded custom content FPM)
-			//if ( strlen(t.src_s.Get()) > 2 )
-			//{
-			//	char pReplaceXWithDBO[2048];
-			//	strcpy ( pReplaceXWithDBO, t.src_s.Get() );
-			//	pReplaceXWithDBO[strlen(pReplaceXWithDBO)-2] = 0;
-			//	strcat ( pReplaceXWithDBO, ".dbo" );
-			//	t.src_s = pReplaceXWithDBO;
-			//}
-		//}
-		if ( FileExist(t.src_s.Get()) == 1 ) 
-		{
-			// clean up string
-			LPSTR pOldStr = t.src_s.Get();
-			LPSTR pCleanStr = new char[strlen(t.src_s.Get())+1];
-			int nn = 0;
-			for ( int n = 0; n < strlen(pOldStr); n++ )
-			{
-				if ( pOldStr[n] == '\\' && pOldStr[n+1] == '\\' ) n++; // skip duplicate backslashes
-				pCleanStr[nn++] = pOldStr[n];
-			}
-			pCleanStr[nn] = 0; 
-
-			// is this a default file
-			if ( IsFileAStockAsset ( pCleanStr ) == false )
-			{
-				// if file inside the ttsfiles folder (which is accounted for separately)?
-				int iFindLastFolder = 0;
-				bool bWeAreInTTSFilesFolder = false;
-				for ( int n = strlen(pCleanStr); n > 0; n-- )
-				{
-					if (pCleanStr[n] == '\\' || pOldStr[n + 1] == '/')
-					{
-						if (iFindLastFolder == 1)
-						{
-							LPSTR pFindTTSFilesFolder = strstr(pCleanStr + n, "ttsfiles");
-							if ( pFindTTSFilesFolder != 0 )
-								bWeAreInTTSFilesFolder = true;
-							break;
-						}
-						if (iFindLastFolder == 0) iFindLastFolder = 1;
-					}
-				}
-				if ( bWeAreInTTSFilesFolder == false )
-				{
-					// No - copy file and add to file block of FPM being saved (current calling function)
-					LPSTR pOneFiledStr = new char[10 + strlen(t.src_s.Get()) + 1];
-					strcpy(pOneFiledStr, "CUSTOM_");
-					int nnn = 7;
-					for (int n = 0; n < strlen(pOldStr); n++)
-					{
-						if (pOldStr[n] == '\\' && pOldStr[n + 1] == '\\') n++; // skip duplicate backslashes
-						if (pOldStr[n] == '\\')
-							pOneFiledStr[nnn++] = '_';
-						else
-							pOneFiledStr[nnn++] = pOldStr[n];
-					}
-					pOneFiledStr[nnn] = 0;
-
-					// copy file over and add to file block
-					cstr pCustomRefFileSource = g.fpscrootdir_s + "\\Files\\" + pCleanStr;//"\\files\\audiobank\\misc\\item.wav";
-					cstr sFileRefOneFileDest = pOneFiledStr;//"CUSTOM_Files_audiobank_misc_item.wav";
-
-					// check if the DBO is not necessary (i.e. a character creator part)
-					bool bAllowCustomFileToBeAdded = true;
-					if (g.globals.generateassetitinerary == 2) bAllowCustomFileToBeAdded = false;
-					// though we do need DBO when saving an FPM and sharing it between VRQ users
-					//if ( strnicmp ( pCustomRefFileSource.Get()+strlen(pCustomRefFileSource.Get())-4,".dbo",4) == NULL )
-					//{
-					//	// for DBO files, we either delete them (making the compat. with Player and keeping file sizes down)
-					//	char pFPEAlongside[MAX_PATH];
-					//	strcpy(pFPEAlongside, pCustomRefFileSource.Get());
-					//	pFPEAlongside[strlen(pFPEAlongside) - 4] = 0;
-					//	strcat(pFPEAlongside, ".fpe");
-					//	if (FileExist(pFPEAlongside) == 1)
-					//	{
-					//		// inspect FPE, if it contains 'ccpassembly', then its a character creator DBO 
-					//		// and we can skip including this file into the final FPM
-					//		FILE* tFPEFile = GG_fopen ( pFPEAlongside, "r" );
-					//		if (tFPEFile)
-					//		{
-					//			char tTempLine[2048];
-					//			while (!feof(tFPEFile))
-					//			{
-					//				fgets(tTempLine, 2047, tFPEFile);
-					//				if (strstr(tTempLine, "ccpassembly"))
-					//				{
-					//					bAllowCustomFileToBeAdded = false;
-					//					break;
-					//				}
-					//			}
-					//			fclose(tFPEFile);
-					//		}
-					//	}
-					//}					
-					if ( bAllowCustomFileToBeAdded == true )
-					{
-						if (FileExist(sFileRefOneFileDest.Get())) DeleteFileA(sFileRefOneFileDest.Get());
-						SetDir(g.mysystem.levelBankTestMap_s.Get());
-						CopyAFile(pCustomRefFileSource.Get(), sFileRefOneFileDest.Get());
-						AddFileToBlock(1, sFileRefOneFileDest.Get());
-					}
-				}
-			}
-		}
-	}
-
-	// when done, need to be in levelbank folder for rest of FPM saving
-	SetDir ( cstr(g.fpscrootdir_s + "\\Files\\").Get() );
-	SetDir ( g.mysystem.levelBankTestMap_s.Get() );
-}
-*/
 #endif
 
 #ifdef WICKEDENGINE
@@ -5238,13 +4891,6 @@ void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 	LPSTR pTerrainHeightFile = "m.dat";
 	if (FileExist(pTerrainHeightFile) == 1)
 	{
-		//PE: WIP - Dont match 100% yet.
-		//PE: Should be: height - 600 * 2.0 / 10000.0. ?
-		//PE: Got it, looks like it fit now, need'ed ggterrain_global_params.height = 5000.0 :)
-		//meters * 39.37f; // 1 unit = 1 inch
-		//units * 0.0254f;
-		//7,874
-
 		if (1)
 		{
 			uint32_t size1 = 4096 * 4096 * sizeof(uint8_t);
@@ -5473,13 +5119,6 @@ void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 	}
 #endif
 
-
-	// load in old terrain textures and vegmask
-	// TODO
-
-	// create new terrain node virtual texture map (highest LOD)
-	// TODO
-
 	// save grass map into terrain node files
 	t.tfileveggrass_s = "vegmaskgrass.dat";
 
@@ -5571,8 +5210,6 @@ void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 	t.tfileveggrass_s = "vegmaskgrass.dat";
 	if (FileExist(t.tfileveggrass_s.Get()) == 1) DeleteFileA(t.tfileveggrass_s.Get());
 
-
-
 	if (FileExist("vegmask.dds") == 1)
 	{
 		uint32_t terrain_paint_size = GGTerrain::GGTerrain_GetPaintDataSize();
@@ -5589,9 +5226,6 @@ void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 				CreateMemblockFromImage(t.terrain.grassmemblock, t.terrain.imagestartindex + 2);
 				if (MemblockExist(t.terrain.grassmemblock))
 				{
-					//.ptd
-					//Texture terrain.
-
 					t.tPindex = 4 + 4 + 4;
 					int mi = 0;
 					int iScale = 2;
@@ -5601,9 +5235,7 @@ void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 						{
 							float scale = 1.0;
 
-							//int blue = ReadMemblockByte(t.terrain.grassmemblock, t.tPindex + mi + 2);
 							int green = ReadMemblockByte(t.terrain.grassmemblock, t.tPindex + mi + 1);
-							//int red= ReadMemblockByte(t.terrain.grassmemblock, t.tPindex + mi + 0);
 
 							if (x > 0 && x < 2047 && z > 0 && z < 2047)
 							{
@@ -5892,7 +5524,6 @@ void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 			else
 			{
 				// multi-textured model - load in object and interogate
-				// TODO
 			}
 
 			// if gamecore asset found, copy all of it

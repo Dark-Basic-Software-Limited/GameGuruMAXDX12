@@ -11,5 +11,4 @@ void postprocess_free ( void );
 void postprocess_off ( void );
 void postprocess_on ( void );
 void postprocess_preterrain ( void );
-void postprocess_apply ( void );
 void postprocess_setscreencolor ( void );

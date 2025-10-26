@@ -11,17 +11,10 @@
 
 void obs_memorychunkinit ( void )
 {
-	//  Allocate this chunk once at very start to avoid fragmentation issues
-#ifndef WICKEDENGINE
-//PE: Not used in wicked. REDUCEMEMUSE
-	Dim2(  t.terrainmark,terrain_chunk_size, terrain_chunk_size  );
-	Dim2(  t.terraindot,terrain_chunk_size, terrain_chunk_size  );
-#endif
 }
 
 void obs_fillterraindot ( void )
 {
-
 	//  Reset obstacle builder
 	g.obsindex=0 ; g.obsmax=10;
 	Dim (  t.obs,g.obsmax );
@@ -47,34 +40,7 @@ void obs_fillterraindot ( void )
 			{
 				//  detect hill slopes too steep for AI to climb
 				//  too many strange conbinations creating dead zones and incorrect waypoint node selections!!
-//     `h#=terrainmatrix(x,z)
-
-//     `h1#=terrainmatrix(x-1,z-1)
-
-//     `h2#=terrainmatrix(x,z-1)
-
-//     `h3#=terrainmatrix(x+1,z-1)
-
-//     `h4#=terrainmatrix(x-1,z)
-
-//     `h6#=terrainmatrix(x+1,z)
-
-//     `h7#=terrainmatrix(x-1,z+1)
-
-//     `h8#=terrainmatrix(x,z+1)
-
-//     `h9#=terrainmatrix(x+1,z+1)
-
-//     `tstepval#=-20.0
-
-//     `if h#>h1#-tstepval# or h#>h2#-tstepval# or h#>h3#-tstepval# or h#>h4#-tstepval# or h#>h6#-tstepval# or h#>h7#-tstepval# or h#>h8#-tstepval# or h#>h9#-tstepval#
-
-				//terraindot(x,z)=1
-//     `else
-
-					t.terraindot[t.x][t.z]=0;
-//     `endif
-
+				t.terraindot[t.x][t.z]=0;
 			}
 		}
 	}

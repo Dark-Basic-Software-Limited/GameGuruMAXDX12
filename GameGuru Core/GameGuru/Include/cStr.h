@@ -80,7 +80,6 @@ class cStr
 // taken the place of dbpro command array count
 #define ArrayCount( name ) (int)name.size()-1
 
-//int ArrayCount ( std::vector<cstr> array );
 int ArrayCount2 ( std::vector<std::vector<cstr>> array );
 
 cstr ArrayAt ( std::vector<std::vector<cstr>>& array, int l );

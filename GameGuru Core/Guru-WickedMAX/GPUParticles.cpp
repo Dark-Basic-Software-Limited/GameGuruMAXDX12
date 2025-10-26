@@ -1,3 +1,6 @@
+//
+// GPUParticles system from AGK
+//
 
 #include <string>
 #include "GPUParticles.h"
@@ -19,10 +22,6 @@ using namespace wiScene;
 
 namespace GPUParticles
 {
-
-//void InitGPUParticlesTest();
-//void GPUParticlesDrawTest( const CameraComponent& camera, CommandList cmd );
-
 // file functions, only support one file open at a time
 FILE* gpup_file = 0;
 int GetFileExists( const char* filename ) 
@@ -2170,9 +2169,6 @@ void gpup_setLocalPosition( int ID, float x, float y, float z )
 	if ( ID < 0 || ID >= gpup_maxeffects ) return;
 
 	// coordinates already passed in as relative to the particle global position
-	//gpup_emitter[ID].emitter_local_x = (x - gpup_emitter[ID].globalx[0]) / (gpup_emitter[ID].varea * gpup_emitter[ID].globalSize * 2.0f) + 0.5f;
-	//gpup_emitter[ID].emitter_local_y = (y - gpup_emitter[ID].globaly[0]) / (gpup_emitter[ID].varea * gpup_emitter[ID].globalSize * 2.0f) + 0.5f;
-	//gpup_emitter[ID].emitter_local_z = (z - gpup_emitter[ID].globalz[0]) / (gpup_emitter[ID].varea * gpup_emitter[ID].globalSize * 2.0f) + 0.5f;
 	gpup_emitter[ID].emitter_local_x = (x) / (gpup_emitter[ID].varea * gpup_emitter[ID].globalSize * 2.0f) + 0.5f;
 	gpup_emitter[ID].emitter_local_y = (y) / (gpup_emitter[ID].varea * gpup_emitter[ID].globalSize * 2.0f) + 0.5f;
 	gpup_emitter[ID].emitter_local_z = (z) / (gpup_emitter[ID].varea * gpup_emitter[ID].globalSize * 2.0f) + 0.5f;
@@ -2470,17 +2466,6 @@ int gpup_deleteEffect( int ID )
 	GPUP_DeleteTexture( &gpup_emitter[ID].image1 );
 	GPUP_DeleteTexture( &gpup_emitter[ID].imagex );
 	GPUP_DeleteTexture( &gpup_emitter[ID].gradient_1 );
-	
-	// delete gpup_emitter[ID].renderPassSpeed[0]
-	// delete gpup_emitter[ID].renderPassSpeed[1]
-	// delete gpup_emitter[ID].renderPassPos[0]
-	// delete gpup_emitter[ID].renderPassPos[1]
-	// delete gpup_emitter[ID].renderPassNoise
-
-	// delete gpup_emitter[ID].mainVSConstantData
-	// delete gpup_emitter[ID].mainPSConstantData
-	// delete gpup_emitter[ID].posConstantData
-	// delete gpup_emitter[ID].speedConstantData
 			
 	gpup_emitter[ID].effectLoaded = 0 ;
 			
@@ -2556,22 +2541,6 @@ void gpup_setEffectAnimationSpeed(int ID,float speed)
 void gpup_setBilinear( int ID, int active )
 {
 	if ( ID < 0 || ID >= gpup_maxeffects ) return;
-
-	/*
-	if ( gpup_emitter[ID].effectLoaded == 1 )
-	{
-		if ( GetImageExists(gpup_emitter[ID].image1) )
-		{
-			SetImageMagFilter(gpup_emitter[ID].image1, active);
-			SetImageMinFilter(gpup_emitter[ID].image1, active);
-		}
-		if ( GetImageExists(gpup_emitter[ID].imagex) )
-		{
-			SetImageMagFilter(gpup_emitter[ID].imagex, active);
-			SetImageMinFilter(gpup_emitter[ID].imagex, active);
-		}
-	}
-	*/
 }
 
 float g_fSlowParticleTime = 1.0f;
@@ -2647,179 +2616,5 @@ void gpup_update( float frameTime, wiGraphics::CommandList cmd )
 
 	device->EventEnd( cmd );
 }
-
-/*
-// Test functions
-
-struct VertexPosColor
-{
-    float x,y,z;
-    float r,g,b;
-	float u,v;
-};
-
-VertexPosColor g_Vertices[8] = 
-{
-    { -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f }, // 0
-    { -1.0f,  1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f }, // 1
-    {  1.0f,  1.0f, -1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f }, // 2
-    {  1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f }, // 3
-    { -1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f }, // 4
-    { -1.0f,  1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f }, // 5
-	{  1.0f,  1.0f,  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, // 6
-    {  1.0f, -1.0f,  1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f }  // 7
-};
- 
-unsigned short g_Indicies[36] = 
-{
-    0, 2, 1, 0, 3, 2,
-    4, 5, 6, 4, 6, 7,
-    4, 1, 5, 4, 0, 1, 
-    3, 6, 2, 3, 7, 6,
-    1, 6, 5, 1, 2, 6, 
-    4, 3, 0, 4, 7, 3
-};
-
-// test variables
-Shader vertexShader;
-Shader pixelShader;
-GPUBuffer vsConstants;
-GPUBuffer indexBuffer;
-GPUBuffer vertexBuffer;
-PipelineState psoTest;
-
-void InitGPUParticlesTest()
-{
-	GraphicsDevice* device = wiRenderer::GetDevice();
-
-	// shaders
-	wiRenderer::LoadShader( VS, vertexShader, "testVS.cso" );
-	wiRenderer::LoadShader( PS, pixelShader, "testPS.cso" );
-
-	RasterizerState rasterDesc = {};
-	rasterDesc.FillMode = FILL_SOLID;
-	rasterDesc.CullMode = CULL_NONE;
-	rasterDesc.FrontCounterClockwise = true;
-	rasterDesc.DepthBias = 0;
-	rasterDesc.DepthBiasClamp = 0;
-	rasterDesc.SlopeScaledDepthBias = 0;
-	rasterDesc.DepthClipEnable = false;
-	rasterDesc.MultisampleEnable = false;
-	rasterDesc.AntialiasedLineEnable = false;
-	
-	DepthStencilState depthDesc = {};
-	depthDesc.DepthEnable = true;
-	depthDesc.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
-	depthDesc.DepthFunc = COMPARISON_GREATER_EQUAL;
-	depthDesc.StencilEnable = false;
-		
-	BlendState blendDesc = {};
-	blendDesc.RenderTarget[0].BlendEnable = false;
-	blendDesc.RenderTarget[0].SrcBlend = BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlend = BLEND_ZERO;
-	blendDesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].SrcBlendAlpha = BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlendAlpha = BLEND_ZERO;
-	blendDesc.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_ALL;
-	blendDesc.IndependentBlendEnable = false;
-		
-	// input layout
-	InputLayoutDesc layoutDesc[] =
-	{
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 0, INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR",    0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 12, INPUT_PER_VERTEX_DATA, 0 },
-		{ "UV",       0, wiGraphics::FORMAT_R32G32_FLOAT,    0, 24, INPUT_PER_VERTEX_DATA, 0 },
-	};
-	device->CreateInputLayout( layoutDesc, arraysize(layoutDesc), &vertexShader, &inputLayout );
-
-	// pipeline state objects
-	PipelineStateDesc desc = {};
-	desc.vs = &vertexShader;
-	desc.ps = &pixelShader;
-
-	desc.il = &inputLayout;
-	desc.pt = TRIANGLELIST;
-	desc.rs = &rasterDesc;
-	desc.dss = &depthDesc;
-	desc.bs = &blendDesc;
-	device->CreatePipelineState( &desc, &psoTest );
-
-	// constant buffers
-	GPUBufferDesc bd = {};
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = 3 * 16 * sizeof(float);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &vsConstants );
-	
-	// index buffer
-	SubresourceData data = {};
-	data.pSysMem = g_Indicies;
-	bd.ByteWidth = sizeof(unsigned short) * 36;
-	bd.BindFlags = BIND_INDEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &indexBuffer );
-
-	// vertex buffer
-	data.pSysMem = g_Vertices;
-	bd.ByteWidth = sizeof(VertexPosColor) * 8;
-	bd.BindFlags = BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &vertexBuffer );
-}
-
-void GPUParticlesDrawTest( const CameraComponent& camera, CommandList cmd )
-{
-	// cannot do any quad rendering in here as we are already in a render pass by this point
-	// only render final emitter objects
-
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	device->EventBegin("GPUParticles Test", cmd);
-		
-	XMFLOAT4X4 data[3];
-	data[0] = camera.Projection;
-	data[1] = camera.View;
-	data[2].m[0][0] = 5;
-	data[2].m[0][1] = 0;
-	data[2].m[0][2] = 0;
-	data[2].m[0][3] = 0;
-	data[2].m[1][0] = 0;
-	data[2].m[1][1] = 5;
-	data[2].m[1][2] = 0;
-	data[2].m[1][3] = 0;
-	data[2].m[2][0] = 0;
-	data[2].m[2][1] = 0;
-	data[2].m[2][2] = 5;
-	data[2].m[2][3] = 0;
-	data[2].m[3][0] = GGORIGIN_X;
-	data[2].m[3][1] = GGORIGIN_Y+150;
-	data[2].m[3][2] = GGORIGIN_Z;
-	data[2].m[3][3] = 1;
-
-	device->UpdateBuffer( &vsConstants, data, cmd, sizeof(XMFLOAT4X4) * 3 );
-				
-	device->BindPipelineState( &psoTest, cmd );
-		
-	int bindSlot = 0;
-	device->BindConstantBuffer( VS, &vsConstants, bindSlot, cmd );
-
-	const GPUBuffer* vbs[] = { &vertexBuffer };
-	uint32_t stride = sizeof( VertexPosColor );
-	device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-	device->BindIndexBuffer( &indexBuffer, INDEXFORMAT_16BIT, 0, cmd );
-
-	// bind texture and sampler
-	device->BindResource( PS, &gpup_emitter[0].texPos[0], 0, cmd );
-	device->BindSampler( PS, &samplerPoint, 0, cmd );
-	
-	device->DrawIndexed( 36, 0, 0, cmd );
-		
-	device->EventEnd(cmd);
-}
-*/
 
 } // namespace GPUParticles

@@ -5,25 +5,6 @@
 //
 #include "WickedEngine.h"
 
-/*
-class Editor;
-class EditorComponent : public RenderPath2D
-{
-	private:
-		std::shared_ptr<wiResource> testTex;
-	public:
-		Editor* main = nullptr;
-		void Load() override;
-		void Start() override;
-		void FixedUpdate() override;
-		void Update(float dt) override;
-		void Render() const override;
-		void Compose(wiGraphics::CommandList cmd) const override;
-		void Unload() override;
-};
-*/
-
-//class MasterRenderer : public RenderPath3D_Forward - no longer exists!
 class MasterRenderer : public RenderPath3D
 {
 	protected:

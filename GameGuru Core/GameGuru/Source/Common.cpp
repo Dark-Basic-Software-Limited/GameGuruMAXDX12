@@ -40,8 +40,6 @@
 // core externs to globals
 extern LPSTR gRefCommandLineString;
 extern bool gbAlwaysIgnoreShaderBlobFile;
-//extern bool g_VR920RenderStereoNow;
-//extern float g_fVR920Sensitivity;
 
 #ifdef VRTECH
 extern bool g_bDisableVRDetectionByUserRequest;
@@ -626,10 +624,8 @@ void common_init ( void )
 	
 	//t.saveload as saveloadtype;
 	Dim (  t.saveloadslot_s,9  );
-	//t.saveloadgameposition as saveloadgamepositiontype;
 	Dim (  t.saveloadgamepositionplayerinventory,100  );
 	Dim (  t.saveloadgamepositionplayerobjective,99 );
-	//Dim (  t.saveloadgamepositionentity,g.entityelementmax  ); //PE: Not used.
 	Dim (  t.saveloadgamepositionweaponslot,20  );
 	g.gsaveloadobjectivesloaded = 0;
 	g.mefrozentype = 0;
@@ -637,9 +633,6 @@ void common_init ( void )
 
 	Dim (  t.material,100  );
 	g.gmaterialmax = 0;
-
-	//  Debris usage on a per-game basis
-	//Dim (  t.debrisshapeindexused,8  );
 
 	#ifdef WICKEDENGINE
 
@@ -649,7 +642,6 @@ void common_init ( void )
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	//PE: Disable all imgui keyboard navigation here.
 	//PE: Disabled for this to work: https://github.com/TheGameCreators/GameGuruRepo/issues/1239
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 	io.ConfigViewportsNoTaskBarIcon = true;
@@ -813,29 +805,6 @@ void common_autoupdatecheck(void)
 
 		CheckForNewUpdateWicked();
 
-		//PE: Added to GameGuruMain to start early.
-		/*
-		int iUpdateCheckRetValue = ExecuteFile("..\\..\\GameGuru MAX Update Check.exe", "", "", 0, 1);
-		if (iUpdateCheckRetValue == 3 || iUpdateCheckRetValue == 4 )
-		{
-			// trigger welcome system to offer user the latest update
-			g_bOfferLatestUpdate = true;
-
-			// if the user is also an internal user, ensure they get TEST version experience
-			if (iUpdateCheckRetValue == 4)
-			{
-				char pSpecialIDETestFile[2048];
-				strcpy(pSpecialIDETestFile, g.fpscrootdir_s.Get());
-				strcat(pSpecialIDETestFile, "\\SHOWINTERNAL.dat");
-				if (FileExist(pSpecialIDETestFile) == 0)
-				{
-					OpenToWrite(1, pSpecialIDETestFile);
-					WriteString(1, "SHOWME");
-					CloseFile(1);
-				}
-			}
-		}
-		*/
 	}
 }
 #endif
@@ -918,24 +887,12 @@ void common_init_globals ( void )
 	g.fpscrootdir_s = GetDir();
 	g.mydocumentsdir_s = Mydocdir();
 	g.mydocumentsdir_s += "\\";
-    #ifdef WICKEDENGINE
-	 //g.myfpscfiles_s = "My Games";
-	 g.myfpscfiles_s = "";
-	 g.myownrootdir_s = g.fpscrootdir_s + "\\";// +g.myfpscfiles_s + "\\";
-	 char pConfirmDestinationCreated[MAX_PATH];
-	 strcpy(pConfirmDestinationCreated, g.myownrootdir_s.Get());
-	 GG_GetRealPath(pConfirmDestinationCreated, 1);
-	 g.myownrootdir_s = pConfirmDestinationCreated;
-    #else
-	 #ifdef VRTECH
-	  #ifdef PRODUCTV3
-	   g.myfpscfiles_s = "VR Quest Files";
-	  #endif
-	 #else
-	  g.myfpscfiles_s = "Game Guru Files";
-	 #endif
- 	 g.myownrootdir_s = g.mydocumentsdir_s+g.myfpscfiles_s+"\\";
-    #endif
+	g.myfpscfiles_s = "";
+	g.myownrootdir_s = g.fpscrootdir_s + "\\";// +g.myfpscfiles_s + "\\";
+	char pConfirmDestinationCreated[MAX_PATH];
+	strcpy(pConfirmDestinationCreated, g.myownrootdir_s.Get());
+	GG_GetRealPath(pConfirmDestinationCreated, 1);
+	g.myownrootdir_s = pConfirmDestinationCreated;
 
 	#ifdef VRTECH
 	// Store globally (for custom content loading inside SteamCheckForWorkshop)
@@ -1287,12 +1244,6 @@ void common_init_globals ( void )
 	//t.promptimage as promptimagetype;
 	t.promptimage.show=0;
 
-	//t.luaText as luatexttype;
-
-	//t.luaPanel as luapaneltype;
-
-	//t.characterkitcontrol as characterkitcontroltype;
-
 	Dim (  t.ccSamplePointX,3 );
 	Dim (  t.ccSamplePointY,3 );
 	Dim (  t.ccSampleSprite,3 );
@@ -1371,10 +1322,6 @@ void common_init_globals ( void )
 	t.conkit.objectstartnumber=g.conkitobjectbankoffset;
 	t.conkit.imagestartnumber=g.conkitimagebankoffset;
 
-	//t.lighting as lightingtype;
-
-	//t.luaglobal as luaglobaltype;
-
 	//t.widget as widgettype;
 	t.widget.imagestart=g.widgetimagebankoffset;
 	//  +1 = pos button
@@ -1420,11 +1367,9 @@ void common_init_globals ( void )
 	Dim (  t.obs , g.obsmax );
 
 	//t.terrainundo as terrainundotype;
-#ifndef WICKEDENGINE
 	//PE: Not used in wicked. REDUCEMEMUSE
 	Dim2(  t.terrainundobuffer,1024, 1024  );
 	Dim2(  t.terrainredobuffer,1024, 1024 );
-#endif
 
 	t.terrainundo.mode=0;
 
@@ -1447,9 +1392,7 @@ void common_init_globals ( void )
 	g.globals.occlusionsize = 5000;
 	t.aisystem.obstacleradius = 18;
 
-	#ifdef VRTECH
 	g.globals.generateassetitinerary = 0;
-	#endif
 	g.globals.generatehelpfromdocdoc = 0;
 
 	t.postprocessings.fadeinvalue_f=0;
@@ -1461,13 +1404,6 @@ void common_init_globals ( void )
 	Dim2(  t.titlesbar,20, 10  );
 	g.titlessavefile_s = "settings.ini";
 	
-	//  Visual settings
-	//g.cheapshadowhistorypacer_f = 0;
-
-	//t.visuals as visualstype;
-	//t.editorvisuals as visualstype;
-	//t.gamevisuals as visualstype;
-
 	//t.editor as editortype;
 	t.editor.objectstartindex=0;
 	//  objectstartindex; (1-10)
@@ -1587,12 +1523,6 @@ void common_init_globals ( void )
 
 	t.editorfreeflight.mode=0;
 
-//#ifdef REDUCEMEMUSE
-//	g.objmetamax = 300000;
-//#else
-//	g.objmetamax = 500000;
-//#endif
-//	Dim (  t.objmeta,g.objmetamax );
 	Dim(t.objmeta, 1);
 
 	Dim (  t.objinterestlist, 1   );
@@ -3987,26 +3917,6 @@ void FPSC_Setup(void)
 	g.gversion = 10000;
 	if (FileExist("versionauto.ini") == 1)
 	{
-		/* this is now done when the "AI-CompileBuildDeploy.bat" script is run (helps tie the EXE/PDB files to the build better)
-		// auto generate todays version number
-		time_t now = time(0);
-		tm* ltm = localtime(&now);
-		int iDay = ltm->tm_mday;
-		int iMonth = ltm->tm_mon + 1;
-		int iYear = ltm->tm_year - 100;
-
-		char pMAXBuildVersionString[256];
-		sprintf(pMAXBuildVersionString, "GameGuru MAX Build 20%d.%02d.%02d", iYear, iMonth, iDay);
-		char pAbsPathToRoot[MAX_PATH];
-		strcpy(pAbsPathToRoot, GetDir());
-		strcat(pAbsPathToRoot, "\\version.ini");
-		SetWriteAsRootTemp(true);
-		if (FileExist(pAbsPathToRoot) == 1) DeleteFileA(pAbsPathToRoot);
-		OpenToWrite(1, pAbsPathToRoot);
-		WriteString(1, pMAXBuildVersionString);
-		CloseFile(1);
-		SetWriteAsRootTemp(false);
-		*/
 	}
 	if (FileExist("version.ini") == 1)
 	{
@@ -4356,9 +4266,6 @@ void FPSC_Setup(void)
 			}
 		}
 
-		// transfer SETUP.INI VRMODEMAG sensitivity setting to main engine
-		//g_fVR920Sensitivity = g.gvrmodemag / 100.0f;
-	
 		//  option use use correct aspect ratio?
 		if (  g.gaspectratio == 1 ) 
 		{
@@ -5105,9 +5012,6 @@ void FPSC_Setup(void)
 		//  Main loop
 		timestampactivity(0, "Main Game Executable Loop Starts");
 
-		// after initial steroscopic fake load, switch to true stereo if used
-		//g_VR920RenderStereoNow = true;
-
 		// seems without this, HUD in VR could never Grab backbuffer image and show in screenHUD object
 		extern bool bImGuiInitDone;
 		bImGuiInitDone = true;
@@ -5203,13 +5107,6 @@ void FPSC_Setup(void)
 
 void common_justbeforeend ( void )
 {
-	// PE: Dump image usage after level.
-	// if (g.memgeneratedump == 1) 
-	// {
-	//	timestampactivity(0, "DumpImageList QUIT.");
-	//	DumpImageList(); 
-	// }
-
 	// clear TXP caches before exit
 	if ( g.gdeletetxpcachesonexit == 1 )
 	{
@@ -5294,55 +5191,6 @@ void common_loadcommonassets(int iShowScreenPrompts)
 	timestampactivity(0, "initbitmapfont");
 	loadallfonts();
 
-	/* old shader system
-	// loading shaders message more accurate
-	t.tsplashstatusprogress_s = "LOADING SHADERS";
-	timestampactivity(0, t.tsplashstatusprogress_s.Get());
-	version_splashtext_statusupdate();
-	LPSTR pEffectStatic = "effectbank\\reloaded\\entity_basic.fx";
-	LPSTR pEffectAnimated = "effectbank\\reloaded\\character_basic.fx";
-	if (g.gpbroverride == 1)
-	{
-		pEffectStatic = "effectbank\\reloaded\\apbr_basic.fx";
-		pEffectAnimated = "effectbank\\reloaded\\apbr_animwithtran.fx";
-	}
-	// load common lightmapper PBR shader
-	if (GetEffectExist(g.lightmappbreffect) == 0)
-	{
-		LPSTR pLightmapPBREffect = "effectbank\\reloaded\\apbr_lightmapped.fx";
-		LoadEffect(pLightmapPBREffect, g.lightmappbreffect, 0);
-		filleffectparamarray(g.lightmappbreffect);
-	}
-	if (GetEffectExist(g.lightmappbreffectillum) == 0)
-	{
-		LPSTR pLightmapPBREffect = "effectbank\\reloaded\\apbr_lightmapped_illum.fx";
-		LoadEffect(pLightmapPBREffect, g.lightmappbreffectillum, 0);
-		filleffectparamarray(g.lightmappbreffectillum);
-	}
-	// load common controller PBR shader
-	if (GetEffectExist(g.controllerpbreffect) == 0)
-	{
-		LPSTR pPBREffect = "effectbank\\reloaded\\apbr_basic.fx";
-		LoadEffect(pPBREffect, g.controllerpbreffect, 0);
-		filleffectparamarray(g.controllerpbreffect);
-	}
-
-	// load common third person character shader
-	if (GetEffectExist(g.thirdpersoncharactereffect) == 0)
-	{
-		LoadEffect(pEffectAnimated, g.thirdpersoncharactereffect, 0);
-		filleffectparamarray(g.thirdpersoncharactereffect);
-	}
-	if (GetEffectExist(g.thirdpersonentityeffect) == 0)
-	{
-		LoadEffect(pEffectStatic, g.thirdpersonentityeffect, 0);
-		filleffectparamarray(g.thirdpersonentityeffect);
-	}
-
-	// Also preload the entity basic shader so editor does not freeze on first object load
-	int tunusedhereid = loadinternaleffect(pEffectStatic);
-	*/
-
 	//  Setup visual settings
 	t.tsplashstatusprogress_s = "INIT VECTORS";
 	timestampactivity(0, t.tsplashstatusprogress_s.Get());
@@ -5355,12 +5203,6 @@ void common_loadcommonassets(int iShowScreenPrompts)
 
 void common_loadcommonassets_delayed(int iShowScreenPrompts)
 {
-	//see below - now done as a per project load in case of remote project assets
-	//t.tsplashstatusprogress_s = "INIT SKY ASSETS";
-	//timestampactivity(0, t.tsplashstatusprogress_s.Get());
-	//version_splashtext_statusupdate();
-	//sky_init();
-
 	t.tsplashstatusprogress_s = "INIT TERRAIN ASSETS";
 	timestampactivity(0, t.tsplashstatusprogress_s.Get());
 	version_splashtext_statusupdate();
@@ -7033,5 +6875,3 @@ void GetSetupIniEarly( void )
 		}
 	}
 }
-
-

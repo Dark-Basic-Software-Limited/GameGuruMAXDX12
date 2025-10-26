@@ -56,9 +56,7 @@ const char*			pestrcasestr(const char *arg1, const char *arg2);
 bool g_bActiveApp = true;
 bool g_bAppActiveStat = true;
 bool g_bLostFocus = false;
-//char g_pGraphicsCardLog[10240];
 char g_pStartingDirectory[260];
-
 uint32_t FrameCounter = 0;
 
 // Encapsulates all other classes for Wicked Engine control
@@ -68,7 +66,6 @@ Master master;
 //	int* badPtr = nullptr;
 //	*badPtr = 123; // This will cause an access violation (crash)
 //}
-
 
 // Functions
 
@@ -89,7 +86,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	//MessageBoxA(NULL, "WinMain", "Log", MB_OK);
 
 	// Keep an eye for Unhandled Exceptions!
-	//SetUnhandledExceptionFilter(CrashHandler);
 	InitCrashHandler();
 
 	//causeCrash();
@@ -104,10 +100,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// Launch Timer Started
 	dwLaunchTimer = timeGetTime();
-
-	// causes stuttering on some systems, so disabled
-	// for low-end systems, ensure main thread keeps to a single core
-	//SetThreadAffinityMask(GetCurrentThread(), 1);
 
 	//PE: If we dont have any command line parameters check if another copy is running.
 	//PE: We could need multiply copies running when in standalone (but will always have parameters).
@@ -154,7 +146,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			strcpy(cSpecialStandaloneProject, find);
 			bSpecialEditorFromStandalone = true;
 			bReturnToWelcome = false;
-			//MessageBoxA(NULL, "editor", "edior", 0);
 		}
 		else if (find = (char *)pestrcasestr(gRefCommandLineString, "editorfromstandalone2="))
 		{
@@ -188,103 +179,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 	#endif
 
-	/* Fixed for real - turns out more care needed when using RSSetScissorRects
-	// Get and save out the graphics card name
-	strcpy(g_pGraphicsCardLog, "Graphics Card Log: ");
-	//PE: check graphics card. Workaround for amd issues.
-	bool bUseAMDHotFIx = true;
-	if (RAW_FileExists("noamdfix.ini") == 1) bUseAMDHotFIx = false;
-	if (bUseAMDHotFIx == true)
-	{
-		strcat(g_pGraphicsCardLog, "AMD Hot Fix = true ");
-		bool bIsAMDCard = false;
-		for (int i = 0; i < 4; i++)
-		{
-			DISPLAY_DEVICE dd = { sizeof(dd), 0 };
-			BOOL f = EnumDisplayDevices(NULL, i, &dd, EDD_GET_DEVICE_INTERFACE_NAME);
-			if (!f) break;
-			char cDeviceName[MAX_PATH];
-			int length = wcstombs(cDeviceName, dd.DeviceString, MAX_PATH);
-			AMD driver bug.
-			PE: this is the card i noted had the problem, there might be more :)
-			AMD Radeon RX 6600m
-			Radeon RX 6950 XT
-			RX 6900XT
-			AMD 5600 XT
-			AMD RX 6800
-			AMD Radeon RX 7900
-			Radeon RX 6700 XT
-			AMD Radeon RX 6500 XT
-			MSI RX 5500 XT 4 GB
-			NOTE: make sure shaders\\d3d11.dll , shaders\\dxgi.dll get copied to the standalone.
-			if (length > 0)
-			{
-				strcat(g_pGraphicsCardLog, " '");
-				strcat(g_pGraphicsCardLog, cDeviceName);
-				strcat(g_pGraphicsCardLog, "' ");
-				if (pestrcasestr(cDeviceName, "MSI") || pestrcasestr(cDeviceName, "AMD") || pestrcasestr(cDeviceName, "Radeon"))
-				{
-					//PE: Take all 6900,5600,6800,6600 RX serie if amd.
-					if (pestrcasestr(cDeviceName, "RX"))
-					{
-						strcat(g_pGraphicsCardLog, "Match:RX ");
-						bIsAMDCard = true;
-						break;
-					}
-					else
-					{
-						if (pestrcasestr(cDeviceName, "5500") || pestrcasestr(cDeviceName, "5600"))
-						{
-							strcat(g_pGraphicsCardLog, "Match:5500or5600 ");
-							bIsAMDCard = true;
-							break;
-						}
-					}
-				}
-			}
-		}
-		if (bIsAMDCard)
-		{
-			bool bFirstTimeAMDFileCopy = false;
-			if (RAW_FileExists("d3d11.dll") == 0 || RAW_FileExists("dxgi.dll") == 0)
-			{
-				// we copy the files if not present
-				bFirstTimeAMDFileCopy = true;
-
-				//copy d3d11.dll ,dxgi.dll to convert DX11 -> Vulkan.
-				CopyFileA((LPSTR)"shaders\\d3d11.dll", "d3d11.dll", TRUE);
-				bool bret = CopyFileA((LPSTR)"shaders\\dxgi.dll", "dxgi.dll", TRUE);
-
-				//PE: If first time , sleep so defender can check and release it before we try to load it.
-				if (bret) Sleep(2000);
-
-				//PE: Also Include building editor.
-				CopyFileA((LPSTR)"shaders\\d3d11.dll", "Tools\\Building Editor\\d3d11.dll", TRUE);
-				CopyFileA((LPSTR)"shaders\\dxgi.dll", "Tools\\Building Editor\\dxgi.dll", TRUE);
-
-				// and prompt and exit the software as these files need to be present before the exe starts
-				MessageBoxA(NULL, "We detected that you're using an AMD graphics card, a hot fix has been applied!", "AMD Hot Fix Applied", MB_OK);
-				PostQuitMessage(0);
-			}
-		}
-	}
-	else
-	{
-		// if old AMD HOT FIX files present, and mode for this is OFF, remove them
-		strcat(g_pGraphicsCardLog, "AMD Hot Fix = false ");
-		if (RAW_FileExists("d3d11.dll") == 1 || RAW_FileExists("dxgi.dll") == 1)
-		{
-			char pMsgToRemove[MAX_PATH];
-			char pCurrentDir[MAX_PATH];
-			GetCurrentDirectoryA(MAX_PATH, pCurrentDir);
-			sprintf(pMsgToRemove, "You must manually delete the D3D11.DLL and DXGI.DLL from the '%s' root folder to remove the AMD hot fix, then relaunch GameGuru MAX", pCurrentDir);
-			MessageBoxA(NULL, pMsgToRemove, "NO AMD Hot Fix Detected", MB_OK);
-			return 0;
-		}
-	}
-	//MessageBoxA(NULL, g_pGraphicsCardLog, g_pGraphicsCardLog, MB_OK);
-	*/
-
 	// Grab for later use in EPIC platform code
 	GetCurrentDirectoryA(MAX_PATH, g_pStartingDirectory);
 
@@ -311,7 +205,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// Set resource paths to Max root folder
 	wiRenderer::SetShaderPath("shaders/");
-	//wiFont::SetFontPath("fonts/"); no longer exists
 
 	//PE: need setup.ini before any logic.
 	void GetSetupIniEarly(void);
@@ -388,42 +281,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	// Create window for app
 	HWND hWnd = CreateWindowW( szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_CAPTION | WS_SYSMENU, g_pGlob->dwWindowX, g_pGlob->dwWindowY, g_pGlob->dwWindowWidth, g_pGlob->dwWindowHeight, nullptr, nullptr, hInstance, nullptr);
-	//HWND hWnd = CreateWindowW( szWindowClass, szTitle, WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX, g_pGlob->dwWindowX, g_pGlob->dwWindowY, g_pGlob->dwWindowWidth, g_pGlob->dwWindowHeight, nullptr, nullptr, hInstance, nullptr);
-	//HWND hWnd = CreateWindowW( szWindowClass, szTitle, WS_POPUP | WS_BORDER | WS_SYSMENU, g_pGlob->dwWindowX, g_pGlob->dwWindowY, g_pGlob->dwWindowWidth, g_pGlob->dwWindowHeight, nullptr, nullptr, hInstance, nullptr);
 	if (!hWnd) return FALSE;
 
 	// Show and update window
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
-	#ifdef ENABLEIMGUI
-	#ifndef USEOLDIDE
 	//PE: Setup the window here. pos size. Docking ?
 	g_pGlob->hWnd = hWnd;
-	//SetWindowLong(g_pGlob->hWnd, GWLP_WNDPROC, (LONG)ImguiWindowProc);
-	//SetWindowSettings(5, 1, 1);
-	//SetForegroundWindow(g_pGlob->hWnd);
-	//SetWindowSize(pref.vStartResolution.x, pref.vStartResolution.y);
-	//float centerx = (g_pGlob->dwWindowWidth*0.5);// -(pref.vStartResolution.x*0.5);
-	//float centery = ((float)(g_pGlob->dwWindowHeight*0.5));// -(float)(pref.vStartResolution.y*0.5)) * 0.5f;
-	//if (centerx < 0) centerx = 0;
-	//if (centery < 0) centery = 0;
-	//SetWindowPosition(centerx, centery);
-	//ShowWindow();
-	//extern DWORD gWindowSizeAddY;
-	//extern DWORD gWindowSizeAddX;
-	//RECT clientrc;
-	//GetClientRect(g_pGlob->hWnd, &clientrc);
-	//gWindowSizeAddY = pref.vStartResolution.y - clientrc.bottom;
-	//gWindowSizeAddX = pref.vStartResolution.x - clientrc.right;
-	//if(pref.iMaximized > 0)
-	//MaximiseWindow();
-	//ShowWindow(hWnd, nCmdShow);
-	//UpdateWindow(hWnd);
-	//else
-	//	RestoreWindow();
-	#endif
-	#endif
 
 	// Give Window handle to Wicked
 	master.SetWindow(hWnd);
@@ -442,6 +307,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	#ifdef ENABLEIMGUI
 	extern bool bImGuiInTestGame;
 	extern bool bRenderTargetModalMode;
+
 	//PE: IMGUI handle messages.
 	LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -454,7 +320,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			extern bool g_bActiveApp;
 			extern bool g_bAppActiveStat;
 			g_bActiveApp = true;
-			//g_bAppActiveStat = true;
 			if (wParam == WA_INACTIVE)
 			{
 				g_bLostFocus = true;

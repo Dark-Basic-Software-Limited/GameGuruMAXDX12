@@ -183,7 +183,6 @@ void bulletholes_add (int iMaterialIndex, float fX, float fY, float fZ, float fN
 		GGVec3Normalize(&vecNormalizedDir, &vecNormalizedDir);
 		// bring actual point slightly out of surface so as not to clash with it
 		// LB: not happy with this for terrain, the physics geometry does not match the visual one, so bulletholes float, or sink under the terrain floor!
-		// vecPointInWorldSpace += vecNormalizedDir * 2.0f;
 		// every so slightly for regular things like walls, flat static objects, etc (again if the physics shape is very different, float or sink again)
 		GGVECTOR3 vecShiftedPointInWorldSpace = vecPointInWorldSpace + (vecNormalizedDir * 0.1f);
 		for (int p = 0; p < 4; p++)

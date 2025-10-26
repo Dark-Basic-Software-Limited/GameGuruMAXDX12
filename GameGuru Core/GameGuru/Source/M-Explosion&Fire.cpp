@@ -36,28 +36,6 @@ void explosion_init ( void )
 
 void explosion_cleanup ( void )
 {
-	#ifdef WICKEDENGINE
-	// no debris in wicked
-	#else
-	//  remove debris
-	for ( t.draw = 1 ; t.draw<=  g.debrismax; t.draw++ )
-	{
-		if (  t.draw <= ArrayCount(t.debris) ) 
-		{
-			if (  t.debris[t.draw].used == 1 && ObjectExist(t.debris[t.draw].obj) == 1 ) 
-			{
-				t.debris[t.draw].used=0;
-				if (  t.debris[t.draw].physicscreated == 1 ) 
-				{
-					ODEDestroyObject (  t.debris[t.draw].obj );
-					t.debris[t.draw].physicscreated=0;
-				}
-				HideObject (  t.debris[t.draw].obj );
-			}
-		}
-	}
-	#endif
-
 	//  remove particles
 	for ( t.emitter = 1 ; t.emitter<=  g.maxemit; t.emitter++ )
 	{
@@ -209,10 +187,6 @@ void draw_particles ( void )
 					//  rem point at camera
 					tobj=t.particle[emitter][draw].obj;
 					PointObject (  tobj,CameraPositionX(0),CameraPositionY(0),CameraPositionZ(0) );
-					//C++ISSUE - zbias doesnt seem to work for this, so set it to -1 for now
-					//EnableObjectZBias (  tobj,0.0f,-1.0f );
-					// this causes explosion to render in front of things when it should be behind/amongst (like grass)
-					// MoveObject ( tobj , 200 );
 					hideframe=0;
 					if (  t.particle[emitter][draw].etype == 2 && t.particle[emitter][draw].nextframe == 1  )  hideframe = 1;
 					if (  hideframe == 0  )  ShowObject (  t.particle[emitter][draw].obj );
@@ -712,80 +686,16 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 
 void Set_Object_Frame(int tempobj, int currentframe, int height_f, int width_f)
 {
-	#ifdef WICKEDENGINE
 	// adjust UV manually until GPU particles come along
 	SetObjectUVManually(tempobj, currentframe, width_f, height_f);
-	#else
-	// not sure this is right (or used anymore)
-	float U_f = 0;
-	float V_f = 0;
-	float xmove_f = 1.0f / height_f;
-	float ymove_f = 1.0f / width_f;
-	LockVertexDataForLimb(tempobj, 0);
-	SetVertexDataUV(0, U_f + xmove_f, V_f);
-	SetVertexDataUV(1, U_f, V_f);
-	SetVertexDataUV(2, U_f + xmove_f, V_f + ymove_f);
-	SetVertexDataUV(3, U_f, V_f);
-	SetVertexDataUV(4, U_f, V_f + ymove_f);
-	SetVertexDataUV(5, U_f + xmove_f, V_f + ymove_f);
-	UnlockVertexData();
-	// reset effect UV scaling
-	ScaleObjectTexture (  tempobj,0,0 );
-	#endif
 }
 
 void Set_Object_Frame_Update ( int tempobj, int currentframe, int height_f, int width_f )
 {
-	#ifdef WICKEDENGINE
 	// going to replace with new GPU particle system, so for now just write the correct UV data and
 	// update the wicked mesh to reflect the animation of this decal/plane
 	Set_Object_Frame(tempobj, currentframe, height_f, width_f);
-	#else
-	float xmove_f = 0;
-	float ymove_f = 0;
-	int across = 0;
-	float U_f = 0;
-	float V_f = 0;
-	xmove_f=1.0/height_f;
-	ymove_f=1.0/width_f;
-	if ( currentframe != 0 )
-	{
-		across=int(currentframe/height_f);
-		V_f=ymove_f*across;
-		U_f=currentframe*xmove_f;
-	}
-	else
-	{
-		U_f=0;
-		V_f=0;
-	}
-	// replace vertex data write with special feed into shader (values write to shader constant UVScaling)
-	ScaleObjectTexture (  tempobj,U_f,V_f );
-	#endif
 }
-
-#ifdef WICKEDENGINE
-// no debris in wicked
-#else
-void make_debris ( void )
-{
-	// make and intilise debris objects
-	int nextobject = 0;
-	int rand = 0;
-	int make = 0;
-	for ( make = 1 ; make <= g.debrismax; make++ )
-	{
-		nextobject=g.explosiondebrisobjectstart+make;
-		rand=g.rubbleobj+Rnd(2);
-		CloneObject ( nextobject,rand );
-		PositionObject ( nextobject,0,0,0 );
-		ScaleObject ( nextobject,Rnd(20)+15,Rnd(20)+15,Rnd(20)+15 );
-		t.debris[make].obj=nextobject;
-		t.debris[make].used=0;
-		HideObject ( nextobject );
-	}
-}
-#endif
 
 void make_particles ( void )
 {
@@ -887,27 +797,6 @@ void make_particles ( void )
 	WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
 	#endif
 }
-
-#ifdef WICKEDENGINE
-// no debris in wicked
-#else
-int find_free_debris ( void )
-{
-	int gotone = 0;
-	int find = 0;
-	gotone=0;
-	for ( find = 1 ; find<=  30; find++ )
-	{
-		if (  t.debris[find].used == 0 ) 
-		{
-			t.debris[find].used=1;
-			gotone=find;
-			find=31;
-		}
-	}
-	return gotone;
-}
-#endif
 
 int find_free_particle ( int emitter, int start, int endpart )
 {

@@ -149,7 +149,6 @@ void ravey_particles_init ( void )
 			if (ObjectExist(obj) == 1)  DeleteObject(obj);
 
 			// currently all 'particles' are a simple 100x100 Plane
-			// TBD - Add ability to specify other shapes to use as a particle?  Would we gain much from that?
 
 #ifdef WICKEDENGINE
 			if (ObjectExist(particle_copy) == 1)
@@ -484,10 +483,6 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 	this_particle->movementSpeedY = doCalc( this_emitter->movementSpeedMinY, this_emitter->movementSpeedMaxY );
 	this_particle->movementSpeedZ = doCalc( this_emitter->movementSpeedMinZ, this_emitter->movementSpeedMaxZ );
 	// rotation speed curently only z-rotation allowed
-	//t.rotX_f = abs(this_emitter->rotateSpeedMinX - this_emitter->rotateSpeedMaxX) * rand()/RAND_MAX;
-	//this_particle->rotateSpeedX = this_emitter->rotateSpeedMinX + t.rotX_f;
-	//t.rotY_f = abs(this_emitter->rotateSpeedMinY - this_emitter->rotateSpeedMaxY) * rand()/RAND_MAX;
-	//this_particle->rotateSpeedY = this_emitter->rotateSpeedMinY + t.rotY_f;
 	this_particle->rotateSpeedZ = doCalc( this_emitter->rotateSpeedMinZ, this_emitter->rotateSpeedMaxZ );
 	this_particle->rotz = 0;
 
@@ -511,7 +506,6 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 	}
 
 	PositionObject( obj, this_particle->x, this_particle->y, this_particle->z );
-	//TextureObject(  obj, 0, this_emitter->imageNumber );
 
 	//PE: TextureObject will clear animation list and trigger a new to be generated , so just texture them directly.
 	#ifdef VRTECH
@@ -596,13 +590,6 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 		LockVertexDataForLimbCore(obj, 0, 1);
 		
 		// seems underlying geometry changed, had to change how UV mapped to particle for rain and snow (VRQ)
-		//PE: @Lee yes for some reason you changed MakeMeshPlainEx to be diffrent from MakeMeshPlain (classic/oldVRQ), not sure why ?
-		//SetVertexDataUV(0, uvwh, 0);
-		//SetVertexDataUV(1, 0, 0);
-		//SetVertexDataUV(2, uvwh, uvwh);
-		//SetVertexDataUV(3, 0, 0);
-		//SetVertexDataUV(4, 0, uvwh);
-		//SetVertexDataUV(5, uvwh, uvwh);
 		SetVertexDataUV(0, 0, 0);
 		SetVertexDataUV(1, 1, 0);
 		SetVertexDataUV(2, 1, 1);
@@ -874,18 +861,6 @@ bool ravey_particles_update_particles( void )
 						float tSacleAmount_f = this_particle->scaleStart + (perc_f * (this_particle->scaleEnd - this_particle->scaleStart));
 						if (tSacleAmount_f < 0.0)  tSacleAmount_f = 0.0;
 
-						////////////////////////////////////////////////////////////////////////////
-						//  can scale particles based on power of player  - what ???
-	//					if ( t.playercontrol.thirdperson.enabled == 1 ) //PE: This has never worked, always scaled to tAmount_f, so disabled for speed.
-	//					{
-	//						t.tscaleme_f = tAmount_f*( t.player[ 1 ].powers.level / 100.0f );
-	//						ScaleObject( obj, t.tscaleme_f, t.tscaleme_f, t.tscaleme_f );
-	//					}
-
-						//ScaleObject(obj, tSacleAmount_f, tSacleAmount_f, tSacleAmount_f); //PE: Moved to own function
-						///////////////////////////////////////////////////////////////////////////
-
-
 						//  animation
 						if (this_particle->isAnimated == 1)
 						{
@@ -927,8 +902,6 @@ bool ravey_particles_update_particles( void )
 						this_particle->z += this_particle->movementSpeedZ * this_particle->fFpsTimePassed;
 						if (!this_emitter->noWind) this_particle->z += fwindVectZ * this_particle->fFpsTimePassed;
 
-						//PositionObject(obj, this_particle->x, this_particle->y, this_particle->z);
-
 						if (this_emitter->useAngle)
 						{
 							ScaleObject(obj, tSacleAmount_f, tSacleAmount_f, tSacleAmount_f);
@@ -943,7 +916,6 @@ bool ravey_particles_update_particles( void )
 								while (this_particle->rotz < 0) { this_particle->rotz = this_particle->rotz + 360; }
 								ZRotateObject(obj, this_particle->rotz);
 							}
-							//PointObject(obj, CameraPositionX(), CameraPositionY(), CameraPositionZ()); //PE: todo - This is really slow. should be done in shader.
 							ParticleUpdateObject(obj, tSacleAmount_f, this_particle->x, this_particle->y, this_particle->z, CameraPositionX(), CameraPositionY(), CameraPositionZ());
 						}
 						this_particle->fFpsTimePassed = 0.0;
@@ -966,14 +938,6 @@ bool ravey_particles_update_particles( void )
 							tAmount_f = this_particle->scaleStart + (perc_f * (this_particle->scaleEnd - this_particle->scaleStart));
 							if (tAmount_f < 0.0)  tAmount_f = 0.0;
 
-							////////////////////////////////////////////////////////////////////////////
-							//  can scale particles based on power of player  - what ???
-							//PE: Not needed here.
-							//if (t.playercontrol.thirdperson.enabled == 1)
-							//{
-							//	t.tscaleme_f = tAmount_f * (t.player[1].powers.level / 100.0f);
-							//	ScaleObject(obj, t.tscaleme_f, t.tscaleme_f, t.tscaleme_f);
-							//}
 							ScaleObject(obj, tAmount_f, tAmount_f, tAmount_f);
 						}
 

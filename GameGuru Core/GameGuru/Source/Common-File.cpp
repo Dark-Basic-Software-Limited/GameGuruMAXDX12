@@ -268,14 +268,7 @@ int isbinaryfileolderthanglobalversion ( char* binaryfilefull_s )
 		if (  cstr(Lower(tval_s.Get())) == "version" ) 
 		{
 			tversion = ReadLong (  3 );
-//    `timestampactivity(0,"tversion from BIN file="+Str(tversion))
-
-			//  if BIN created with older version, trigger delete BIN file
-//    `timestampactivity(0,"current gentityprofileversion="+Str(gentityprofileversion))
-
 			result = versionnumberislarger(g.gentityprofileversion,tversion);
-//    `timestampactivity(0,"resultislarger?="+Str(result))
-
 			if (  result == 1 ) 
 			{
 				sprintf ( t.szwork , "refreshing BIN file for:%s (from %i to %i)" , binaryfilefull_s , tversion , g.gentityprofileversion );

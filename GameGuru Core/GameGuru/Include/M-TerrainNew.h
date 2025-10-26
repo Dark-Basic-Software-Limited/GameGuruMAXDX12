@@ -61,8 +61,6 @@ void terrain_quickupdateheightmapfromheightdata ( void );
 void terrain_generatetextureselect ( void );
 void terrain_generatesupertexture ( bool bForceRecalcOfPalette );
 void terrain_generateshadows ( void );
-void generate_terrain ( int seed, int scale, int mchunk_size );
-void DiamondSquare(unsigned x1, unsigned y1, unsigned x2, unsigned y2, float range, unsigned level) ;
 void terrain_start_play ( void );
 void terrain_stop_play ( void );
 void terrain_setfog ( void );

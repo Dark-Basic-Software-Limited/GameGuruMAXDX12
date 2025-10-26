@@ -7,7 +7,6 @@
 void gameexecutable_init(void);
 void gameexecutable_loop(void);
 void gameexecutable_finish(void);
-
 void game_masterroot_gameloop_initcode(int iUseVRTest);
 bool game_masterroot_gameloop_loopcode(int iUseVRTest);
 void game_masterroot_gameloop_afterloopcode(int iUseVRTest);
@@ -47,4 +46,4 @@ void game_jump_to_level_from_lua ( int iResetStates );
 void game_finish_level_from_lua ( void );
 void game_end_of_level_check ( void );
 void game_setup_character_shader_entities ( bool bMode );
-void game_check_character_shader_entities ( void );
+

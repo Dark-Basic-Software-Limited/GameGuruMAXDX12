@@ -108,7 +108,6 @@ void entity_init ( void )
 				if (  ObjectExist(t.tobj) == 1 ) 
 				{
 					//  Create attachents for entity
-					//entity_createattachment ( ); see below
 					//  Reset AI Obstacle Center references (used later by physics placement)
 					t.entityelement[t.e].abscolx_f=-1;
 					t.entityelement[t.e].abscolz_f=-1;
@@ -120,7 +119,6 @@ void entity_init ( void )
 						if ( t.entityelement[t.e].staticflag == 1 ) bSceneStatic = true;
 
 						// leelee, sometimes want to make dynamic immobile entities AI obstacles!! (exploding crate in Escape level)
-						// if ( t.entityelement[t.e].staticflag == 0 && t.entityelement[t.e].eleprof.isimmobile == 1 ) bSceneStatic = true;
 						if ( bSceneStatic == true && t.entityprofile[t.entid].collisionmode != 11 && t.entityprofile[t.entid].collisionmode != 12 ) 
 						{
 							t.tfullheight=1;
@@ -563,11 +561,6 @@ void entity_free ( void )
 						// new ragdoll plus wipes pivot, need this restoring
 						RotateLimb(t.obj, 0, 0, 0, 0);
 						RotateObject (t.obj, t.entityelement[t.e].rx, t.entityelement[t.e].ry, t.entityelement[t.e].rz);
-
-						// pivot character to face right way
-						//ResetObjectPivot(t.obj);
-						//RotateObject(t.obj, 0, 180, 0); this inverts rotation of character when load a saved game position!!
-						//FixObjectPivot(t.obj);
 					}
 					else
 					{
@@ -666,48 +659,11 @@ void entity_reset_defaults(void)
 	t.entityelement[t.e].plrvisible = 0;
 	t.entityelement[t.e].isclone = 0;
 	t.entityelement[t.e].consumed = 0;
-	//t.entityelement[t.e].delaydestroytimer = 0;
-	//t.entityelement[t.e].delaydestroy = 0;
 	t.entityelement[t.e].distance = 0;
 	t.entityelement[t.e].soundplaying = 0;
 	t.entityelement[t.e].iCanGoUnderwater = 0;
-	//t.entityelement[t.e].objectivecurrentrange = 0;
-	//t.entityelement[t.e].objectiveradarrange = 0;
-	//t.entityelement[t.e].isanobjective = 0;
-	//t.entityelement[t.e].cullimmobile = 0;
-	//t.entityelement[t.e].positionchanged = 0;
-	//t.entityelement[t.e].camrotz = 0;
-	//t.entityelement[t.e].camroty = 0;
-	//t.entityelement[t.e].camrotx = 0;
-	//t.entityelement[t.e].offsetanglez = 0.0f;
-	//t.entityelement[t.e].offsetangley = 0.0f;
-	//t.entityelement[t.e].offsetanglex = 0.0f;
-	//t.entityelement[t.e].camoffsetz = 0;
-	//t.entityelement[t.e].camoffsety = 0;
-	//t.entityelement[t.e].camoffsetx = 0;
-	//t.entityelement[t.e].camuse = 0;
-	//t.entityelement[t.e].isimmune = 0;
-	//t.entityelement[t.e].shotbyammo_s = "";
-	//t.entityelement[t.e].shotby = 0;
-	//t.entityelement[t.e].radardistance = 0;
-	//t.entityelement[t.e].onradar = 0;
-	//t.entityelement[t.e].usefade = 0;
-	//t.entityelement[t.e].cullstate = 0;
 	t.entityelement[t.e].ishidden = 0;
 	t.entityelement[t.e].precreatedspawnedentityelementindex = 0;
-	//t.entityelement[t.e].reserved2 was entitydammult_f = 0.0f;
-	//t.entityelement[t.e].floorpositiony = 0.0f;
-	//t.entityelement[t.e].hideshadow = 0;
-	//t.entityelement[t.e].isaltammo = 0;
-	//t.entityelement[t.e].nobulletcol = 0;
-	//t.entityelement[t.e].lastdamagez_f = 0.0f;
-	//t.entityelement[t.e].lastdamagey_f = 0.0f;
-	//t.entityelement[t.e].lastdamagex_f = 0.0f;
-	//t.entityelement[t.e].reserve5 = 0;
-	//t.entityelement[t.e].reserve4 = 0;
-	//t.entityelement[t.e].reserve3 = 0;
-	//t.entityelement[t.e].reserve2 = 0;
-	//t.entityelement[t.e].reserve1 = 0;
 	t.entityelement[t.e].explodefusetime = 0;
 	t.entityelement[t.e].destroyme = 0;
 	t.entityelement[t.e].usingphysicsnow = 0;
@@ -724,35 +680,12 @@ void entity_reset_defaults(void)
 	t.entityelement[t.e].soundset2 = 0;
 	t.entityelement[t.e].soundset1 = 0;
 	t.entityelement[t.e].soundset = 0;
-	//t.entityelement[t.e].blockedtoz = 0;
-	//t.entityelement[t.e].blockedtoy = 0;
-	//t.entityelement[t.e].blockedtox = 0;
-	//t.entityelement[t.e].blockedby = 0;
-	//t.entityelement[t.e].invincibleactive = 0;
-	//t.entityelement[t.e].collisionactive = 0;
 	t.entityelement[t.e].activated = 0;
 	t.entityelement[t.e].whoactivated = 0;
 	t.entityelement[t.e].collected = 0;
-	//t.entityelement[t.e].delaydir = 0;
-	//t.entityelement[t.e].delaydamagez_f = 0.0f;
-	//t.entityelement[t.e].delaydamagey_f = 0.0f;
-	//t.entityelement[t.e].delaydamagex_f = 0.0f;
-	//t.entityelement[t.e].delayimpact = 0;
-	//t.entityelement[t.e].delaydamage = 0;
-	//t.entityelement[t.e].delaydamagesource = 0;
-	//t.entityelement[t.e].delaydamagetimer = 0.0f;
-	//t.entityelement[t.e].delaydamagecount = 0.0f;
-	//t.entityelement[t.e].shotdamagetype = 0;
-	//t.entityelement[t.e].shotdamagesource = 0;
-	//t.entityelement[t.e].shotdamage = 0;
 	t.entityelement[t.e].beenkilled = 0;
-	//t.entityelement[t.e].lifecode = 0;
 	t.entityelement[t.e].briefimmunity = 0;
 	t.entityelement[t.e].health = 0;
-	//t.entityelement[t.e].floatvalue = 0.0f;
-	//t.entityelement[t.e].floatrate = 0;
-	//t.entityelement[t.e].spinvalue = 0.0f;
-	//t.entityelement[t.e].spinrate = 0;
 	t.entityelement[t.e].animframeupdate = 0;
 	t.entityelement[t.e].destanimframe = 0.0f;
 	t.entityelement[t.e].animonce = 0;
@@ -761,23 +694,7 @@ void entity_reset_defaults(void)
 	t.entityelement[t.e].animdo = 0;
 	t.entityelement[t.e].animdir = 0;
 	t.entityelement[t.e].animset = 0;
-	//t.entityelement[t.e].decalsizey = 0.0f;
-	//t.entityelement[t.e].decalsizex = 0.0f;
-	//t.entityelement[t.e].decalslotused = 0;
-	//t.entityelement[t.e].decalloop = 0.0f;
-	//t.entityelement[t.e].decalmode = 0;
-	//t.entityelement[t.e].decalindex = 0;
 	t.entityelement[t.e].plrdist = 0.0f;
-	//t.entityelement[t.e].crouchprofile = 0;
-	//t.entityelement[t.e].nofloorlogic = 0;
-	//t.entityelement[t.e].raycastlaststate = 0;
-	//t.entityelement[t.e].raycastcount = 0;
-	//t.entityelement[t.e].priorityduration = 0;
-	//t.entityelement[t.e].priorityai = 0;
-	//t.entityelement[t.e].logictimestamp = 0;
-	//t.entityelement[t.e].logiccountburst = 0;
-	//t.entityelement[t.e].logiccount = 0.0f;
-	//t.entityelement[t.e].limbslerp = 0;
 	t.entityelement[t.e].colb = 0;
 	t.entityelement[t.e].colg = 0;
 	t.entityelement[t.e].colr = 0;
@@ -793,7 +710,6 @@ void entity_reset_defaults(void)
 	t.entityelement[t.e].dry = 0.0f;
 	t.entityelement[t.e].hoverfactoroverride = 0;
 	t.entityelement[t.e].nogravity = 0;
-	//t.entityelement[t.e].norotate = 0;
 	t.entityelement[t.e].scalez = 0.0f;
 	t.entityelement[t.e].scaley = 0.0f;
 	t.entityelement[t.e].scalex = 0.0f;
@@ -814,9 +730,7 @@ void entity_reset_defaults(void)
 	t.entityelement[t.e].customlastx = 0.0f;
 	t.entityelement[t.e].customlasty = 0.0f;
 	t.entityelement[t.e].customlastz = 0.0f;
-	//t.entityelement[t.e].attachmentblobobj = 0;
 	t.entityelement[t.e].attachmentobjfirespotlimb = 0;
-	//t.entityelement[t.e].attachmentweapontype = 0;
 	t.entityelement[t.e].attachmentbaseobj = 0;
 	t.entityelement[t.e].attachmentobj = 0;
 	t.entityelement[t.e].obj = 0;
@@ -824,28 +738,12 @@ void entity_reset_defaults(void)
 	t.entityelement[t.e].profileobj = 0;
 	t.entityelement[t.e].bankindex = 0;
 	t.entityelement[t.e].maintype = 0;
-	//t.entityelement[t.e].dormant = 0;
 	t.entityelement[t.e].active = 0;
-	//t.entityelement[t.e].fakeplrindex = 0;
-	//t.entityelement[t.e].servercontrolled = 0;
 	t.entityelement[t.e].editorfixed = 0;
-	//t.entityelement[t.e].lastdamagepaused = 0;
-	//t.entityelement[t.e].lastdamagetimer = 0;
-	//t.entityelement[t.e].etimerpaused = 0;
 	t.entityelement[t.e].etimer = 0;
 	t.entityelement[t.e].ttarget = 0;
-	//t.entityelement[t.e].aimovez = 0.0f;
-	//t.entityelement[t.e].aimovex = 0.0f;
-	//t.entityelement[t.e].aimoved = 0;
-	//t.entityelement[t.e].eyeoffset = 0;
-	//t.entityelement[t.e].spineraim = 0.0f;
-	//t.entityelement[t.e].spiner = 0.0f;
 	t.entityelement[t.e].spine = 0;
-	//t.entityelement[t.e].curvcmz = 0;
-	//t.entityelement[t.e].curvcmy = 0;
-	//t.entityelement[t.e].curvcmx = 0;
 	t.entityelement[t.e].isflak = 0;
-	//t.entityelement[t.e].enterwater = 0;
 	t.entityelement[t.e].animspeedmod = 1.0f;
 	t.entityelement[t.e].dc_obj[0] = 0;
 	t.entityelement[t.e].dc_obj[1] = 0;
@@ -894,18 +792,7 @@ void entity_delete ( void )
 				}
 			}
 
-			//  delete character creator object
-			#ifdef VRTECH
-			///t.ccobjToDelete = t.obj;
-			///characterkit_deleteEntity ( );
-			#else
-			t.ccobjToDelete = t.obj;
-			characterkit_deleteEntity ( );
-			#endif
-
 			t.entid = t.entityelement[t.e].bankindex;
-			//PE: Clear entityprofile.
-			//if (t.entityprofile[t.entid].ismarker == 0)
 
 			t.entityelement[t.e].bankindex=0;
 			t.entityelement[t.e].obj=0;
@@ -1652,11 +1539,6 @@ void entity_loop ( void )
 									}
 									PositionObject (t.tobj, t.entityelement[t.e].x, t.entityelement[t.e].y, t.entityelement[t.e].z);
 								}
-
-								// keep gun attached to hand during death anim (no longer can use the regular call)
-								//int iObjStore = t.tobj;
-								//entity_controlattachments ();
-								//t.tobj = iObjStore;
 							}
 						}
 					}
@@ -1873,7 +1755,6 @@ void entity_loop ( void )
 							t.tplrproxa_f=atan2deg(t.tplrproxx_f,t.tplrproxz_f);
 							if (  t.tplrproxd_f<t.entityprofile[t.entid].fatness ) 
 							{
-								//t.playercontrol.pushforce_f = 1.0f;
 								float fDepthOfPen = t.entityprofile[t.entid].fatness - t.tplrproxd_f;
 								if (fDepthOfPen > 1.0f)
 								{
@@ -2379,30 +2260,7 @@ void entity_loopanim ( void )
 							float offsetu = col * scaleu;
 							float offsetv = row * scalev;
 							WickedCall_SetObjectTextureUV(pObject, 1.0f, 1.0f, offsetu, offsetv);
-							//PE: HLSL code why 1.0,1.0 works.
-							//material.texMulAdd.xy = scale
-							//material.texMulAdd.zw = offset
-							//input.uvsets = float4(input.GetUV0() * material.texMulAdd.xy + material.texMulAdd.zw, input.GetUV1());
-							//const float2 UV_baseColorMap = GetMaterial().uvset_baseColorMap == 0 ? input.uvsets.xy : input.uvsets.zw;
 						}
-						//PE: old way.
-						//if (g_bUVDataChangeObjectSeqOnce == false && t.e > g_iUVDataChangeObjectSeqE)
-						//{
-						//	if (ObjectExist(t.tobj) == 1)
-						//	{
-						//		LockVertexDataForLimbCore(t.tobj, 0, 1);
-						//		SetVertexDataNormals(0, 0, 1, 0);
-						//		SetVertexDataNormals(1, 0, 1, 0);
-						//		SetVertexDataNormals(2, 0, 1, 0);
-						//		SetVertexDataNormals(3, 0, 1, 0);
-						//		SetVertexDataNormals(4, 0, 1, 0);
-						//		SetVertexDataNormals(5, 0, 1, 0);
-						//		UnlockVertexData();
-						//		SetObjectUVManually(t.tobj, t.entityelement[t.e].fDecalFrame, t.entityprofile[t.entid].iDecalRows, t.entityprofile[t.entid].iDecalColumns);
-						//	}
-						//	g_bUVDataChangeObjectSeqOnce = true;
-						//	g_iUVDataChangeObjectSeqE = t.e;
-						//}
 					}
 					else
 					{
@@ -2712,44 +2570,6 @@ void entity_updatepos ( void )
 void entity_determinedamagemultiplier ( void )
 {
 	t.tdamagemultiplier_f=1.0f;
-	/* 190316 - removed head damage hard coding, now in scripts
-	//  Check if limb is in any headlimb range (takes ttentid,bulletraylimbhit,tobj)
-	if (  t.bulletraylimbhit>0 ) 
-	{
-		if (  t.ttentid>0 ) 
-		{
-			if (  t.bulletraylimbhit >= t.entityprofile[t.ttentid].headframestart && t.bulletraylimbhit <= t.entityprofile[t.ttentid].headframefinish ) 
-			{
-				if (  t.tobj>0 ) 
-				{
-					if (  ObjectExist(t.tobj) == 1 ) 
-					{
-						if (  t.entityelement[t.ttte].health>0 ) 
-						{
-							//  work out if object has limbs
-							PerformCheckListForLimbs (  t.tobj );
-							t.tlimbmax=ChecklistQuantity()-1;
-							//  small visual indicator the headshot worked!
-							//  but not if a character creator entity
-							if (  t.entityprofile[t.ttentid].ischaractercreator  ==  0 ) 
-							{
-								for ( t.tlmb = t.entityprofile[t.ttentid].headframestart ; t.tlmb<=  t.entityprofile[t.ttentid].headframefinish; t.tlmb++ )
-								{
-									if (  t.tobj <= t.tlimbmax ) 
-									{
-										RotateLimb (  t.tobj,t.tlmb,Rnd(80)-40,Rnd(80)-40,0 );
-									}
-								}
-							}
-						}
-					}
-				}
-				t.tdamagemultiplier_f=4.0f;
-			}
-		}
-	}
-	return;
-	*/
 }
 
 void entity_determinegunforce ( void )
@@ -2848,7 +2668,6 @@ void entity_applydamage ( void )
 	if (  t.tallowanykindofdamage == 0 ) 
 	{
 		// 010216 - if 'isimmobile' was set in FPE, it cannot be reduced to zero health
-		//if (  t.entityprofile[t.ttentid].isimmobile == 1 && t.entityprofile[t.ttentid].ischaracter == 0  )  return;
 		t.ttentid=t.entityelement[t.ttte].bankindex;
 		if (  t.entityprofile[t.ttentid].isimmobile == 1 && t.entityprofile[t.ttentid].ischaracter == 0  )
 		{
@@ -2967,11 +2786,7 @@ void entity_applydamage ( void )
 						//  13032015 0XX - Team Multiplayer
 						if (  g.mp.team  ==  0 || g.mp.friendlyfireoff  ==  0 || t.mp_team[tpindex]  !=  t.mp_team[g.mp.me] ) 
 						{
-							// Ignore setentityhealth lua message if it is a player
-							//if ( t.tallowanykindofdamage == 0 )
-							//{
-								SteamApplyPlayerDamage (  tpindex,t.tdamage, t.brayx2_f-t.brayx1_f, t.brayy2_f-t.brayy1_f, t.brayz2_f-t.brayz1_f, t.tSteamForce_f, t.bulletraylimbhit );
-							//}
+							SteamApplyPlayerDamage (  tpindex,t.tdamage, t.brayx2_f-t.brayx1_f, t.brayy2_f-t.brayy1_f, t.brayz2_f-t.brayz1_f, t.tSteamForce_f, t.bulletraylimbhit );
 						}
 					}
 				}
@@ -3171,14 +2986,8 @@ void entity_applydamage ( void )
 				//  Prepare character for eventual fade out
 				if (t.entityprofile[t.ttentid].ragdoll == 1)
 				{
-					t.charanimstates[iCharacterIndexToUse].timetofadeout = Timer() + AICORPSETIME;
+					t.charanimstates[iCharacterIndexToUse].timetofadeout = Timer() + 20000; // from old AICORPSETIME
 					t.charanimstates[iCharacterIndexToUse].fadeoutvalue_f = 1.0;
-				}
-				else
-				{
-					// if not ragdoll, used own die anim, remove right away
-					// 071018 - caused legacy nonragdoll characters not to play their exit animations
-					// t.entityelement[t.ttte].destroyme = 1;
 				}
 			}
 
@@ -3235,7 +3044,6 @@ void entity_applydamage ( void )
 				}
 
 				// and ensure entity is destroyed (active to zero)
-				//t.entityelement[t.ttte].destroyme = 1; // tried this but hide the object and killed the ragdoll
 				t.entityelement[t.ttte].active = 0;
 				t.entityelement[t.ttte].health = 0;
 				t.entityelement[t.ttte].lua.flagschanged = 2;
@@ -3280,7 +3088,6 @@ void entity_applydamage ( void )
 	// apply bullet directional force if all the elements in the equation are good
 	if (bAllowRagdollForceToBeRecorded == true )
 	{
-		//if ( t.tapplyragdollforce == 1 ) 
 		{
 			t.entityelement[t.ttte].ragdollified=1;
 			t.entityelement[t.ttte].ragdollifiedforcex_f=(t.brayx2_f-t.brayx1_f)*0.8;
@@ -4374,24 +4181,6 @@ void entity_converttoclonetransparent ( void )
 
 bool entity_isuniquespecularoruv ( int ee )
 {
-	/* not used in MAX
-	bool bUnique = false; 
-	if ( ee != -1  ) 
-	{
-		// specular can be overridden per entity
-		if ( t.entityelement[ee].eleprof.specularperc != 100.0f ) 
-			bUnique = true;
-
-		// UV data scroll/scale can be overridden per entity
-		int eentid = t.entityelement[ee].bankindex;
-		if ( t.entityprofile[eentid].uvscrollu != 0.0f 
-		||   t.entityprofile[eentid].uvscrollv != 0.0f 
-		||   t.entityprofile[eentid].uvscaleu != 1.0f 
-		||   t.entityprofile[eentid].uvscalev != 1.0f )
-			bUnique = true;
-	}
-	return bUnique;
-	*/
 	return false;
 }
 
@@ -4452,11 +4241,6 @@ void entity_converttoinstance ( void )
 				entity_prepareobj ( );
 				entity_positionandscale ( );
 				if (  t.tstorevis == 0  )  HideObject (  t.tobj );
-				#ifdef VRTECH
-				///characterkit_convertCloneInstance ( );
-				#else
-				characterkit_convertCloneInstance ( );
-				#endif
 				if ( t.entityprofile[t.tentid].addhandlelimb == 0 )
 				{
 					// 301115 - override parent LOD distance with LODModifier
@@ -4519,15 +4303,12 @@ void entity_createobj ( void )
 			if (t.entityprofile[t.tentid].animmax > 0)  bUseInstancing = false;
 			if (t.entityprofile[t.tentid].bIsDecal)  bUseInstancing = false;
 
-			//if (memcmp(&t.entityprofile[t.tentid].WEMaterial,&t.entityelement[t.tupdatee].eleprof.WEMaterial,sizeof(WickedMaterial)) != 0) bUseInstancing = false;
-
 			extern int active_tools_obj;
 			extern int active_tools_entity_index;
 			extern sObject* g_selected_editor_object;
 			extern int g_selected_editor_objectID;
 
 			//PE: Cursor always real clone , if changing materials ...
-			//g_selected_editor_object == g_ObjectList[t.obj]
 			if (t.widget.pickedEntityIndex == t.tupdatee || t.obj == 70000 || t.gridentityobj == t.obj || active_tools_obj == t.obj || active_tools_entity_index == t.tupdatee || t.tentitytoselect == t.tupdatee)
 			{
 				bUseInstancing = false;
@@ -4545,7 +4326,6 @@ void entity_createobj ( void )
 						//PE: This will make that many more object is included in instancing.
 						Wicked_Copy_Material_To_Grideleprof((void*)pObject, 0, &mastereleprof);
 						WickedMaterial *Master_WEMaterial = NULL;
-						//Master_WEMaterial = &t.entityprofile[t.tentid].WEMaterial;
 						Master_WEMaterial = &mastereleprof.WEMaterial;
 						DWORD dwMeshCount = pObject->iMeshCount;
 						for (int iMesh = 0; iMesh < (int)dwMeshCount; iMesh++)
@@ -4734,16 +4514,6 @@ void entity_createobj ( void )
 
 		// prepare correct depth mode
 		entity_preparedepth(t.tentid, t.tobj);
-
-		//  check if a character creator entity
-		#ifdef VRTECH
-		#else
-		if (  t.entityprofile[t.tentid].ischaractercreator  ==  1 ) 
-		{
-			t.tccSetTentid = 1;
-			characterkit_addEntityToMap ( );
-		}
-		#endif
 
 		if (  t.tupdatee != -1  ) 
 		{
@@ -5180,12 +4950,6 @@ void entity_positionandscale ( void )
 	PositionObject (  t.tobj,t.entityelement[t.tte].x,t.entityelement[t.tte].y,t.entityelement[t.tte].z );
 	RotateObject (  t.tobj,t.entityelement[t.tte].rx,t.entityelement[t.tte].ry,t.entityelement[t.tte].rz );
 	ScaleObject (  t.tobj,100+t.entityelement[t.tte].scalex,100+t.entityelement[t.tte].scaley,100+t.entityelement[t.tte].scalez );
-	//PE: Particle scale bug fix.
-	//if (t.entityprofile[t.entityelement[t.tte].bankindex].ismarker == 10)
-	//{
-	//	float fScale = t.entityprofile[t.entityelement[t.tte].bankindex].scale;
-	//	ScaleObject (t.tobj, fScale, fScale, fScale);
-	//}
 	//LB: object is rotated AFTER being created, so ensure particle knows rotation of entity
 	if (t.entityprofile[t.entityelement[t.tte].bankindex].ismarker == 10)
 		entity_updateparticleemitter(t.tte);
@@ -5463,44 +5227,6 @@ void entity_updateentityobj ( void )
 			entity_createobj ( );
 			t.tobj=t.obj ; t.tte=t.tupdatee ; entity_positionandscale ( );
 			t.entityelement[t.tupdatee].obj=t.obj;
-
-			// also punch terrain to flatten area where entity is placed
-			if ( g.gridlayershowsingle == 0 ) 
-			{
-				#ifdef WICKEDENGINE
-				// auto flatten is dynamic
-				#else
-				// only when not in INSIDE edit mode
-				if ( t.gridedit.autoflatten == 1 && t.entityprofile[t.tentid].ismarker == 0 ) 
-				{
-					t.terrain.terrainpainteroneshot=1;
-					t.terrain.X_f=ObjectPositionX(t.obj);
-					t.terrain.Y_f=ObjectPositionZ(t.obj);
-					t.terrain.shapeA_f=ObjectAngleY(t.obj);
-					t.terrain.shapeWidth_f=ObjectSizeX(t.obj,1);
-					t.terrain.shapeLong_f=ObjectSizeZ(t.obj,1);
-					t.terrain.shapeHeight_f=ObjectPositionY(t.obj);
-				}
-				#endif
-			}
-
-			/*
-			// if entity is a light, has a probe
-			#ifdef WICKEDENGINE
-			int entid = t.entityelement[t.tupdatee].bankindex;
-			if (entid > 0)
-			{
-				if (t.entityprofile[entid].ismarker == 2)
-				{
-					float fLightProbeScale = t.entityelement[t.tupdatee].eleprof.light.fLightHasProbe;
-					if ( fLightProbeScale > 0 )
-						entity_placeprobe(t.entityelement[t.tupdatee].obj, fLightProbeScale);
-					else
-						entity_deleteprobe(t.entityelement[t.tupdatee].obj);
-				}
-			}
-			#endif
-			*/
 		}
 	}
 	if ( t.tentid == 0 ) 

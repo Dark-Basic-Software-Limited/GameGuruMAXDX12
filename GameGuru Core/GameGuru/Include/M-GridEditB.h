@@ -140,7 +140,6 @@ int isEntityInGroupListDirect(int e, int group);
 void ReplaceEntityInGroupList(int e, int eto);
 void CheckGroupListForRubberbandSelections(int entityindex);
 void AddGroupListToRubberBand(int l);
-//void DuplicateFromList(std::vector<sRubberBandType> vEntityDuplicateList);
 int DuplicateFromListToCursor(std::vector<sRubberBandType> vEntityDuplicateList, bool bRandomShiftXZ = true, int iOriginalGroupIndexForChild = -1, bool bAttachToCursor = true);
 void ListGroupContextMenu(bool bPickedOnly = false, int iEntityId = 0);
 void AddEntityToCursor(int e, bool bDuplicate = true);

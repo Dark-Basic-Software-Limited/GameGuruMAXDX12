@@ -12,15 +12,12 @@
 void physics_inittweakables ( void );
 void physics_init ( void );
 void physics_finalize ( void );
-float& getCombinedLevelProgress ( void );
 void physics_createterraincollision ( void );
-#ifdef WICKEDENGINE
 void physics_createvirtualtreecylinders (void);
 void physics_freevirtualtreecylinders (void);
 void physics_managevirtualtreecylinders (void);
 int physics_getmaterialindex(float, float);
 int physics_rayintersecttree (float fX, float fY, float fZ, float fToX, float fToY, float fToZ);
-#endif
 void physics_prepareentityforphysics ( void );
 void physics_setupplayernoreset ( void );
 void physics_setupplayer ( void );

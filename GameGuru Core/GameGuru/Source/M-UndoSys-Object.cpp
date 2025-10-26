@@ -136,23 +136,3 @@ void undosys_object_group(int index)
 	// add to undo stack
 	undosys_addevent(eUndoSys_Object, eUndoSys_Object_Group, pEvent);
 }
-
-/*
-bool undosys_object_changeposrotscl_erasefromstackifsame (int te, float x, float y, float z, float rx, float ry, float rz, float scalex, float scaley, float scalez)
-{
-	// get event data from last item on stack (special case)
-	sUndoSysEventObjectChangePosRotScl* pLastEvent = (sUndoSysEventObjectChangePosRotScl*)undosys_getlasteventdata(eUndoSys_Object, eUndoSys_Object_ChangePosRotScl);
-	if (pLastEvent)
-	{
-		if (pLastEvent->e == te && pLastEvent->posx_f == x && pLastEvent->posy_f == y && pLastEvent->posz_f == z
-			&& pLastEvent->rotatex_f == rx && pLastEvent->rotatey_f == ry && pLastEvent->rotatez_f == rz
-			&& pLastEvent->scalex_f == scalex && pLastEvent->scaley_f == scaley && pLastEvent->scalez_f == scalez)
-		{
-			// erase from stack, the move is redundant (no change)
-			undosys_eraselastevent();
-			return true;
-		}
-	}
-	return false;
-}
-*/

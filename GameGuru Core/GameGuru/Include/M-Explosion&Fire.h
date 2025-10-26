@@ -12,15 +12,6 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 void Set_Object_Frame ( int tempobj, int currentframe, int height_f, int width_f );
 void Set_Object_Frame_Update ( int tempobj, int currentframe, int height_f, int width_f );
 void make_particles ( void );
-
-#ifdef WICKEDENGINE
-// no debris in wicked
-#else
-void make_debris ( void );
-void draw_debris ( void );
-int find_free_debris ( void );
-#endif
-
 int find_free_particle ( int emitter, int start, int endpart );
 int find_free_emitter ( void );
 void make_large_fire ( int x, int y, int z );

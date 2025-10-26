@@ -42,12 +42,10 @@ char* removeedgespaces ( char* text_s )
 			cstr text = text_s;
 			for ( c = st ; c<=  en; c++ )
 			{
-				//returntext_s=returntext_s+Mid(text_s,c);
 				returntext_s=returntext_s+text.Mid(c-1);
 			}
 		}
 	}
-//endfunction returntext$
 	strcpy ( t.szwork , returntext_s.Get() );
 	return t.szwork;
 }
@@ -59,13 +57,11 @@ char* minstring ( char* text_s, int minsize )
 	sizegap=minsize-Len(text_s);
 	returntext_s = text_s;
 	returntext_s = returntext_s + Spaces(sizegap);
-//endfunction text$
 	strcpy ( t.szwork , returntext_s.Get() );
-	return t.szwork;}
-
+	return t.szwork;
+}
 
 //FUNCTIONS TO CUT-UP STRINGS
-
 
 char* getfirstdir ( char* file_s )
 {
@@ -79,7 +75,6 @@ char* getfirstdir ( char* file_s )
 			firstdir_s=Left(file_s,c) ; break;
 		}
 	}
-//endfunction firstdir$
 	strcpy ( t.szwork , firstdir_s.Get() );
 	return t.szwork;
 }
@@ -101,7 +96,6 @@ char* getseconddir ( char* file_s )
 			}
 		}
 	}
-//endfunction firstdir$
 	strcpy ( t.szwork , firstdir_s.Get() );
 	return t.szwork;
 }
@@ -118,7 +112,6 @@ char* getpath ( char* file_s )
 			path_s=Left(file_s,c) ; break;
 		}
 	}
-//endfunction path$
 	strcpy ( t.szwork , path_s.Get() );
 	return t.szwork;
 }
@@ -133,14 +126,11 @@ char* getfile ( char* file_s )
 			returntext_s=Right(file_s,Len(file_s)-c) ; break;
 		}
 	}
-//endfunction file$
 	strcpy ( t.szwork , returntext_s.Get() );
 	return t.szwork;
 }
 
-
 //File List Building
-
 
 void buildfilelist ( char* folder_s, char* rel_s )
 {
@@ -164,8 +154,6 @@ void buildfilelist ( char* folder_s, char* rel_s )
 				if (  GetFileType() == 1 ) 
 				{
 					//  folder
-					//sprintf ( t.szwork , "%s%s\\" , rel_s ,file_s.Get() );
-					//buildfilelist(file_s.Get(),t.szwork);
 					buildfilelist( file_s.Get() , cstr(cstr(rel_s)+file_s+"\\").Get() );
 					FindFirst (  );
 					if ( fin > 0 ) 
@@ -182,9 +170,6 @@ void buildfilelist ( char* folder_s, char* rel_s )
 				else
 				{
 					//  file
-					//array insert at bottom t.filelist_s[];
-					//sprintf ( t.szwork , "%s%s" , rel_s , file_s.Get() );
-					//tempcstr = t.szwork;
 					int size = ArrayCount( t.filelist_s ); if ( size < 1 ) size = 1; else size++;
 					Redim ( t.filelist_s , size );					
 					t.filelist_s[size-1] = cstr(rel_s) + file_s;
@@ -195,6 +180,4 @@ void buildfilelist ( char* folder_s, char* rel_s )
 		}
 		SetDir (  ".." );
 	}
-//endfunction
-
 }

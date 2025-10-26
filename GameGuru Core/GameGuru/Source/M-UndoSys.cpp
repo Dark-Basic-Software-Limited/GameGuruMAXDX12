@@ -36,7 +36,6 @@ void undosys_multiplevents_finish(void)
 	if (g_UndoSysMasterCollectingMultipleEvents == true)
 	{
 		//PE: This crash if g_UndoSysMasterStack[g_UndoList].size = 0;
-		//sUndoMasterStackItem lastmasteritem = g_UndoSysMasterStack[g_UndoList].top();
 		g_UndoSysMasterCollectingMultipleEvents = false;
 		g_UndoSysMasterMultipleEventsCount = 0;
 	}

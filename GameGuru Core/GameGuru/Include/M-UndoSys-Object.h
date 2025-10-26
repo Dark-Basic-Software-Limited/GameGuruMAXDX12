@@ -86,7 +86,6 @@ struct sUndoSysEventObjectChangePosRotScl
 	float scalez_f;
 };
 void undosys_object_changeposrotscl (int e, float x, float y, float z, float rx, float ry, float rz, int quatmode, float quatx, float quaty, float quatz, float quatw, float scalex, float scaley, float scalez);
-//bool undosys_object_changeposrotscl_erasefromstackifsame (int e, float x, float y, float z, float rx, float ry, float rz, float quatx, float quaty, float quatz, float quatw, float scalex, float scaley, float scalez);
 
 struct sUndoSysEventObjectDeleteWaypoint
 {
@@ -98,7 +97,6 @@ struct sUndoSysEventObjectDeleteWaypoint
 struct sUndoSysEventObjectGroup
 {
 	int groupindex;
-	/*std::vector<sRubberBandType> groupData;*/
 };
 void undosys_object_group(int index);
 

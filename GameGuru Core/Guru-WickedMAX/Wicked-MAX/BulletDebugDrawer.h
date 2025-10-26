@@ -2,10 +2,7 @@
 #define _H_BULLET_DEBUG_DRAWER
 
 // We upgraded to BYLLET3 but this header does not know about WICKEDENGINE
-//#include "../../SDK/BULLET/bullet-2.81-rev2613/src/LinearMath/btIDebugDraw.h"
-//#ifdef WICKEDENGINE
 #include "../../SDK/BULLET/bullet-3.19/src/LinearMath/btIDebugDraw.h"
-//#endif
 #include <vector>
 
 class btCollisionShape;

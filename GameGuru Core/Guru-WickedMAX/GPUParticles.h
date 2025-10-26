@@ -1,3 +1,7 @@
+//
+// GPUParticles system from AGK Header
+//
+
 #pragma once
 
 #ifndef NOTFORMAINENGINE

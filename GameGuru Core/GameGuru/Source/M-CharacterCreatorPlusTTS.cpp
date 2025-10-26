@@ -71,8 +71,6 @@ int CreateListOfVoices ( void )
 		g_voiceList_s.push_back ( pVoiceName );
 		g_voicetoken.push_back(it->second);
 	}
-    //Dont release it here , we need the token.
-	//ReleaseVoices();
 
 	// success
 	CoUninitialize();
@@ -182,38 +180,6 @@ HRESULT FileToWav(CComPtr<ISpVoice> spVoice, ISpObjectToken *voice, int iSpeakRa
         return hr;
     }
 	
-	/* not a text file, text is passed in directly
-    long fileSize = FileSize(textFile);
-    if (fileSize < 0) 
-	{
-        //printf("Failed getting file size for file %s.\n", textFile);
-        return -1;
-    }
-
-    wchar_t *fileContents = (wchar_t *)calloc(sizeof(wchar_t), fileSize + 1);
-    if (!fileContents) 
-	{
-        //printf("Failed allocating memory for file %s.\n", textFile);
-        return -1;
-    }
-
-    wchar_t *textFileW = CharToWchar(textFile);
-    FILE *in = _wfopen(textFileW, L"rt, ccs=UTF-8");
-    if (!in) 
-	{
-        //printf("Failed opening %s for input.\n", textFile);
-        SysFreeString(textFileW);
-        free(fileContents);
-        return -1;
-    }
-    SysFreeString(textFileW);
-    size_t bytes = fread(fileContents, sizeof(wchar_t), fileSize, in);
-    fclose(in);
-	*/
-	//long fileSize = strlen(textFile);
-	//wchar_t *fileContents = (wchar_t *)calloc(sizeof(wchar_t), fileSize + 1);
-    //free(fileContents);
-
 	// a range of -10 to 10
 	spVoice->SetRate ( iSpeakRate );
 
@@ -398,15 +364,6 @@ float GetWAVtoLIPProgress ( void )
 					g_hConvertWAVtoLIPProcess=NULL;
 				}
 			}
-			#ifdef WICKEDENGINE
-			#else
-			if(g_pGlob->ProcessMessageFunction()==1)
-			{
-				// Closes process if main app terminates
-				CloseHandle(g_hConvertWAVtoLIPProcess);
-				g_hConvertWAVtoLIPProcess=NULL;
-			}
-			#endif
 			if (g_hConvertWAVtoLIPProcess == NULL)
 			{
 				// we know the process has finished
@@ -475,15 +432,6 @@ float RecordWAVProgress ( void )
 					g_hRecordWAVProcess=NULL;
 				}
 			}
-			#ifdef WICKEDENGINE
-			#else
-			if(g_pGlob->ProcessMessageFunction()==1)
-			{
-				// Closes process if main app terminates
-				CloseHandle(g_hRecordWAVProcess);
-				g_hRecordWAVProcess=NULL;
-			}
-			#endif
 			if (g_hRecordWAVProcess == NULL)
 			{
 				// successfully recorded and saved direct to abs WAV path destination

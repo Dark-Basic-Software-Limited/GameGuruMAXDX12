@@ -496,7 +496,6 @@ bool save_rpg_system_quests(char* name)
 	strcpy(collectionfilename, "projectbank\\");
 	strcat(collectionfilename, name);
 	strcat(collectionfilename, "\\collection - quests.tsv");
-	//DeleteFileA(collectionfilename);
 	GG_GetRealPath(collectionfilename, 1);
 	if (FileExist(collectionfilename) == 1) DeleteFileA(collectionfilename);
 	FILE* collectionFile = GG_fopen(collectionfilename, "w");
@@ -1166,7 +1165,7 @@ void ProcessQuestEditor(void)
 	float columns_width[10];
 
 	ImGui::Columns(7, "questeditorlistview");
-	//ImGui::Separator();
+
 	static bool bInitColumns = true;
 	if (bInitColumns)
 	{
@@ -1229,7 +1228,6 @@ void ProcessQuestEditor(void)
 	for (int i = 0; i < 7; i++ )
 		ImGui::SetColumnWidth(i,columns_width[i]);
 
-	//ImGui::Separator();
 	char unique[80];
 	strcpy(unique, "##");
 	if (current_quest_selection >= g_collectionQuestList.size())

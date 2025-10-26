@@ -78,8 +78,6 @@ extern StoryboardStruct Storyboard;
 extern StoryboardStruct checkproject;
 extern StoryboardStruct202 updateproject202;
 StoryboardStruct tempProjectData;
-//PE: StoryboardStruct is now so huge that you get a stackoverflow if added to a function, so moved here.
-//StoryboardStruct templateStoryboard; //PE: Not used.
 extern std::vector< std::pair<ImFont*, std::string>> StoryboardFonts;
 extern bool bScreen_Editor_Window;
 extern int iScreen_Editor_Node;
@@ -110,7 +108,6 @@ extern int g_iOrientToSurfaceMode;
 extern sObject* g_selected_editor_object;
 extern int g_selected_editor_objectID;
 extern XMFLOAT4 g_selected_editor_color;
-//extern bool bEditorGridFitObjectSize;
 extern int iEditorGridSizeX;
 extern int iEditorGridSizeZ;
 extern bool bRenderTabTab;
@@ -276,7 +273,6 @@ extern bool bInvulnerableMode;
 extern bool bStartInvulnerableMode;
 extern int iWelcomeHeaderType;
 extern int iAboutLogoType;
-//#endif //WICKEDENGINE
 extern bool bTrashcanIconActive, bTrashcanIconActive2;
 extern int current_sort_order;
 extern int iWidgetSelection;
@@ -375,7 +371,6 @@ extern ImVec4 drawCol_toogle;
 extern int g_EntityClipboardAnchorEntityIndex;
 extern std::vector<int> g_EntityClipboard;
 extern preferences pref;
-//extern cFolderItem MainEntityList;
 extern bool bExport_Standalone_Window;
 extern bool bExport_SaveToGameCloud_Window;
 extern bool bExternal_Entities_Window;
@@ -611,8 +606,6 @@ void imgui_set_openproperty_flags(int iMasterID)
 			if (t.entityprofile[iMasterID].ismarker == 0)
 			{
 				t.tflagvis = 1; t.tflagmobile = 1; t.tflagobjective = 1; t.tflagsound = 1; t.tflagstats = 1; t.tflagspawn = 1;
-				// 070115 - removed until UBER character (multiweapon) is ready for action
-				// t.entityprofile[iMasterID].ischaracter>0 then t.tflagchar = 1  ) ; t.tflaghasweapon = 1 ; t.tflagsoundset = 1 ; t.tflagsound = 0
 				if (t.entityprofile[iMasterID].ischaracter > 0) { t.tflagchar = 1; t.tflagsoundset = 1; t.tflagsound = 0; }
 				if (Len(t.entityprofile[iMasterID].isweapon_s.Get()) > 2) { t.tflagweap = 1; t.tflagammoclip = 1; t.tflagsound = 0; }
 				if (t.entityprofile[iMasterID].isammo > 0) { t.tflagammo = 1; t.tflagobjective = 0; t.tflagsound = 0; }
@@ -657,11 +650,6 @@ void imgui_set_openproperty_flags(int iMasterID)
 					t.tflagnosecond = 1; t.tflagifused = 1;
 				}
 				if (t.entityprofile[iMasterID].ismarker == 4) { t.tflagtdecal = 1; t.tflagdecalparticle = 1; }
-				#ifdef WICKEDENGINE
-				// handled next to Behavior component for MAX
-				#else
-				if (t.entityprofile[iMasterID].ismarker == 10) { t.tflagnewparticle = 1; }
-				#endif
 				if (t.entityprofile[iMasterID].ismarker == 3)
 				{
 					if (t.entityprofile[iMasterID].markerindex <= 1)
@@ -1001,20 +989,6 @@ void interface_openpropertywindow ( void )
 				setpropertylist2(t.group,t.controlindex,Str(t.grideleprof.isocluder),"Occluder","Set to YES makes this entity an occluder",0) ; ++t.controlindex;
 				setpropertylist2(t.group,t.controlindex,Str(t.grideleprof.isocludee),"Occludee","Set to YES makes this entity an occludee",0) ; ++t.controlindex;
 				#endif
-				
-				// these will be back when EBE needs doors and windows
-				//setpropertystring2(t.group,Str(t.grideleprof.parententityindex),"Parent Index","Selects another entity element to be a parent") ; ++t.controlindex;
-				//setpropertystring2(t.group,Str(t.grideleprof.parentlimbindex),"Parent Limb","Specifies the limb index of the parent to connect with") ; ++t.controlindex;
-			}
-
-			// 281116 - added Specular Control per entity
-			if ( t.tflagvis == 1 ) 
-			{
-				if ( t.tflagsimpler == 0 )
-				{
-					//not used in MAX
-					//setpropertystring2(t.group,Str(t.grideleprof.specularperc),"Specular","Set specular percentage to modulate object specular effect")  ; ++t.controlindex; 
-				}
 			}
 
 			//  Basic AI
@@ -1064,8 +1038,6 @@ void interface_openpropertywindow ( void )
 					setpropertystring2(t.group,Str(t.grideleprof.range),"Range","Maximum range of bullet travel") ; ++t.controlindex;
 					setpropertystring2(t.group, Str(t.grideleprof.dropoff), "Dropoff", "Amount in inches of vertical dropoff per 100 feet of bullet travel"); ++t.controlindex;
 					setpropertystring2(t.group, Str(t.grideleprof.clipcapacity), "Clip Capacity", "The total maximum number of clips the player can carry for this weapon"); ++t.controlindex;
-					//int weaponpropres1;
-					//int weaponpropres2;
 				}
 				else
 				{
@@ -1189,36 +1161,7 @@ void interface_openpropertywindow ( void )
 				t.propfield[t.group]=t.controlindex;
 				++t.group ; startgroup(t.strarr_s[439].Get()) ; t.controlindex=0;
 				setpropertylist2(t.group,t.controlindex,Str(t.grideleprof.spawnatstart),t.strarr_s[562].Get(),t.strarr_s[563].Get(),0) ; ++t.controlindex;
-				//     `setpropertystring2(group,Str(grideleprof.spawnmax),strarr$(440),strarr$(231)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawnupto),strarr$(441),strarr$(232)) ; inc controlindex
-				//     `setpropertylist2(group,controlindex,Str(grideleprof.spawnafterdelay),strarr$(442),strarr$(233),0) ; inc controlindex
-				//     `setpropertylist2(group,controlindex,Str(grideleprof.spawnwhendead),strarr$(443),strarr$(234),0) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawndelay),strarr$(444),strarr$(235)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawndelayrandom),strarr$(564),strarr$(565)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawnqty),strarr$(445),strarr$(236)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawnqtyrandom),strarr$(566),strarr$(567)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawnvel),strarr$(568),strarr$(569)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawnvelrandom),strarr$(570),strarr$(571)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawnangle),strarr$(572),strarr$(573)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawnanglerandom),strarr$(574),strarr$(575)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.spawnlife),strarr$(576),strarr$(577)) ; inc controlindex
 			}
-
-			//  Visual
-			//    `if tflagvis=1
-			//     `propfield(group)=controlindex
-			//     `inc group ; startgroup(strarr$(446)) ; controlindex=0
-			//     `setpropertyfile2(group,grideleprof.texd$,strarr$(447),strarr$(237),"") ; inc controlindex
-			//     `setpropertyfile2(group,grideleprof.texaltd$,strarr$(448),strarr$(238),"") ; inc controlindex
-			//     `setpropertyfile2(group,grideleprof.effect$,strarr$(578),strarr$(579),"effectbank\\") ; inc controlindex
-			//     `setpropertystring2(group,Str(grideleprof.transparency),strarr$(449),strarr$(240)) ; inc controlindex
-			//     `setpropertystring2(group,Str(grideleprof.reducetexture),strarr$(450),strarr$(241)) ; inc controlindex
-			//    `endif
-			//if ( t.tflagvis == 1 ) // more engine needs improving to allow on the spot changes to shader!
-			//{
-			//	setpropertyfile2(t.group,t.grideleprof.effect_s.Get(),t.strarr_s[578].Get(),t.strarr_s[579].Get(),"effectbank\\"); ++t.controlindex;
-			//	setpropertystring2(t.group,Str(t.grideleprof.transparency),t.strarr_s[449].Get(),t.strarr_s[240].Get()); ++t.controlindex;
-			//}
 
 			//  Statistics
 			if (  (t.tflagvis == 1 || t.tflagobjective == 1 || t.tflaglives == 1 || t.tflagstats == 1) && t.tflagweap == 0 && t.tflagammo == 0 ) 
@@ -1272,8 +1215,6 @@ void interface_openpropertywindow ( void )
 				setpropertylist2(t.group,t.controlindex,Str(t.grideleprof.phyalways),t.strarr_s[582].Get(),t.strarr_s[583].Get(),0) ; ++t.controlindex;
 				setpropertystring2(t.group,Str(t.grideleprof.phyweight),t.strarr_s[584].Get(),t.strarr_s[585].Get()) ; ++t.controlindex;
 				setpropertystring2(t.group,Str(t.grideleprof.phyfriction),t.strarr_s[586].Get(),t.strarr_s[587].Get()) ; ++t.controlindex;
-				//     `setpropertystring2(group,Str(grideleprof.phyforcedamage),strarr$(588),strarr$(589)) ; inc controlindex
-				//     `setpropertystring2(group,Str(grideleprof.rotatethrow),strarr$(590),strarr$(591)) ; inc controlindex
 				#ifdef VRTECH
 				if ( t.tflagsimpler == 0 )
 				{
@@ -1318,10 +1259,6 @@ void interface_openpropertywindow ( void )
 			if (  t.tflagtdecal == 1 ) 
 			{
 				t.propfield[t.group]=t.controlindex;
-
-				//  FPGC - 300710 - could never change base decal, so comment out this property (entity denotes decal choice)
-				//     `inc group ; startgroup(strarr$(464)) ; controlindex=0
-				//     `setpropertyfile2(group,grideleprof.basedecal$,strarr$(465),strarr$(252),"gamecore\\decals\\") ; inc controlindex
 
 				//  Decal Particle data
 				if (  t.tflagdecalparticle == 1 ) 
@@ -1538,11 +1475,8 @@ void interface_copydatatoentity ( void )
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[479].Get()) ) == 0 )  t.grideleprof.name_s = t.tdataclipped_s;
 			#endif
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[414].Get()) ) == 0 )  t.gridentitystaticmode = ValF(t.tdata_s.Get());
-			// if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[561].Get()) ) == 0 )  t.grideleprof.aiinit_s = t.tdataclipped_s; //PE: Not used anymore.
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[417].Get()) ) == 0 )  t.grideleprof.aimain_s = t.tdataclipped_s;
 			if (  strcmp( Lower(t.tfield_s.Get()) , "behaviour" ) == 0 )  t.grideleprof.aimain_s = t.tdataclipped_s;
-			//if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[418].Get()) ) == 0 )  t.grideleprof.aidestroy_s = t.tdataclipped_s;  //PE: Not used anymore.
-			//if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[433].Get()) ) == 0 )  t.grideleprof.aishoot_s = t.tdataclipped_s; //PE: Not used anymore.
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[434].Get()) ) == 0 )  t.grideleprof.coneangle = ValF(t.tdata_s.Get());
 			#ifdef VRTECH
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[476].Get()) ) == 0 )  t.grideleprof.conerange = ValF(t.tdata_s.Get());
@@ -1595,9 +1529,6 @@ void interface_copydatatoentity ( void )
 			}
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower("Occluder") ) == 0 )  t.grideleprof.isocluder = ValF(t.tdata_s.Get());
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower("Occludee") ) == 0 )  t.grideleprof.isocludee = ValF(t.tdata_s.Get());
-
-			//not used in MAX
-			//if (  strcmp( Lower(t.tfield_s.Get()) , Lower("Specular") ) == 0 )  t.grideleprof.specularperc = ValF(t.tdata_s.Get());
 			
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower("End Collision") ) == 0 )  t.grideleprof.colondeath = ValF(t.tdata_s.Get());
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower("Parent Index") ) == 0 )  t.grideleprof.parententityindex = ValF(t.tdata_s.Get());
@@ -1614,8 +1545,6 @@ void interface_copydatatoentity ( void )
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower("Dropoff") ) == 0 )  t.grideleprof.dropoff = ValF(t.tdata_s.Get());
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower("Spot Lighting") ) == 0 )  t.grideleprof.usespotlighting = ValF(t.tdata_s.Get());
 			if (strcmp(Lower(t.tfield_s.Get()), Lower("Clip Capacity")) == 0)  t.grideleprof.clipcapacity = ValF(t.tdata_s.Get());
-			//int weaponpropres1;
-			//int weaponpropres2;
 
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[424].Get()) ) == 0 )  t.grideleprof.lifespan = ValF(t.tdata_s.Get());
 			if (  strcmp( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[425].Get()) ) == 0 )  t.grideleprof.throwspeed = ValF(t.tdata_s.Get());
@@ -1638,16 +1567,7 @@ void interface_copydatatoentity ( void )
 			#else
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower("Anim Speed") ) == 0 ) 
 			{
-				//PE: we cant do this , as t.playercontrol.thirdperson.enabled is a global and will trigger for ALL objects.
-				//PE: https://github.com/TheGameCreators/GameGuruRepo/issues/310
-//				if (  t.playercontrol.thirdperson.enabled == 1 ) 
-//				{
-//					t.entityelement[t.playercontrol.thirdperson.charactere].eleprof.animspeed=ValF(t.tdata_s.Get());
-//				}
-//				else
-//				{
-					t.grideleprof.animspeed=ValF(t.tdata_s.Get());
-//				}
+				t.grideleprof.animspeed=ValF(t.tdata_s.Get());
 			}
 			#endif
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[432].Get()) ) == 0 )  t.grideleprof.quantity = ValF(t.tdata_s.Get());
@@ -1675,7 +1595,6 @@ void interface_copydatatoentity ( void )
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower("Run Mode")  ) == 0 ) t.playercontrol.thirdperson.camerafollow = ValF(t.tdata_s.Get());
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower("Show Reticle")  ) == 0 ) t.playercontrol.thirdperson.camerareticle = ValF(t.tdata_s.Get());
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[458].Get()) ) == 0 )  t.grideleprof.isobjective = ValF(t.tdata_s.Get());
-			// if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[464].Get()) ) == 0 )  t.grideleprof.basedecal_s = t.tdataclipped_s; //PE: Not used anymore.
 
 			//  FPGC - 300710 - read data changes back into grideleprof
 			if (  strcmp ( Lower(t.tfield_s.Get()) , "custom settings"  ) == 0 ) t.grideleprof.particleoverride = ValF(t.tdata_s.Get());
@@ -1701,8 +1620,6 @@ void interface_copydatatoentity ( void )
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[468].Get()) ) == 0 )  t.grideleprof.soundset1_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[480].Get()) ) == 0 )  t.grideleprof.soundset2_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[481].Get()) ) == 0 )  t.grideleprof.soundset3_s = t.tdataclipped_s;
-			//if (strcmp (Lower(t.tfield_s.Get()), Lower(t.strarr_s[482].Get())) == 0)		t.grideleprof.soundset5_s = t.tdataclipped_s;
-			//if (strcmp (Lower(t.tfield_s.Get()), Lower("Sound5")) == 0)					t.grideleprof.soundset6_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower("Sound5")) == 0)					t.grideleprof.soundset5_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower("Sound6")) == 0)					t.grideleprof.soundset6_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[469].Get()) ) == 0 )  t.grideleprof.soundset_s = t.tdataclipped_s;
@@ -1724,8 +1641,6 @@ void interface_copydatatoentity ( void )
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[590].Get()) ) == 0 )  t.grideleprof.rotatethrow = ValF(t.tdata_s.Get());
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[592].Get()) ) == 0 )  t.grideleprof.explodable = ValF(t.tdata_s.Get());
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[594].Get()) ) == 0 )  t.grideleprof.explodedamage = ValF(t.tdata_s.Get());
-			
-			//if (  strcmp ( Lower(t.tfield_s.Get()) , Lower("team")  ) == 0 )  t.grideleprof.teamfield = ValF(t.tdata_s.Get());
 
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[463].Get()) ) == 0 ) 
 			{
@@ -1822,7 +1737,6 @@ void interface_live_updates(void)
 		if (cstr(Lower(t.tfield_s.Get())) == Lower("Camera Y Offset"))  t.playercontrol.thirdperson.livecameraheight = ValF(t.tdata_s.Get());
 		t.iControl = 4; t.tfield_s = getpropertyfield(t.iGroup, t.iControl); t.tdata_s = getpropertydata(t.iGroup, t.iControl);
 		if (cstr(Lower(t.tfield_s.Get())) == Lower("Camera Focus"))  t.playercontrol.thirdperson.livecamerafocus = ValF(t.tdata_s.Get());
-		//CloseFileMap (  2 );
 	}
 	#endif
 }
@@ -1897,7 +1811,6 @@ char* imgui_setpropertyfile2_ex_dlua(int group, char* data_s, char* field_s, cha
 	bool bParticle = false;
 	bool bUseNewAudioWindow = false;
 #ifdef USENEWMEDIASELECTWINDOWS
-	//bUseNewAudioWindow = true;
 	if (pestrcasestr(lwithin_s.Get(), "audiobank"))
 	{
 		bUseNewAudioWindow = true;
@@ -1955,9 +1868,6 @@ char* imgui_setpropertyfile2_ex_dlua(int group, char* data_s, char* field_s, cha
 				cStr tOldDir = GetDir();
 				if (iSelectedLibraryStingReturnID == window->GetID(uniquiField.c_str()))
 				{
-					//Update selected var.
-					//MessageBoxA(NULL, sSelectedLibrarySting.Get(), "ReturnVar", 0);
-
 					char * cFileSelected = sSelectedLibrarySting.Get();
 
 					SetDir(tOldDir.Get());
@@ -2121,11 +2031,7 @@ char * imgui_setpropertyfile2(int group, char* data_s, char* field_s, char* desc
 		//PE: filedialogs change dir so.
 		cStr tOldDir = GetDir();
 		char * cFileSelected;
-		//NOC_FILE_DIALOG_DIR
-//		if(bSoundSet)
-//			cFileSelected = (char *)noc_file_dialog_open(NOC_FILE_DIALOG_DIR, "All\0*.*\0", lwithin_s.Get(), NULL);
-//		else
-			cFileSelected = (char *)noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "All\0*.*\0", lwithin_s.Get(), NULL);
+		cFileSelected = (char *)noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "All\0*.*\0", lwithin_s.Get(), NULL);
 
 		SetDir(tOldDir.Get());
 
@@ -2183,8 +2089,6 @@ char * imgui_setpropertystring2(int group, char* data_s, char* field_s, char* de
 	ImGui::PushItemWidth(-10);
 
 	int inputFlags = 0;
-//	if (!ImGui::IsWindowHovered()) //Not needed input is already disabled in rendertarget.
-//		inputFlags = ImGuiInputTextFlags_ReadOnly;
 
 	strcpy(cTmpInput, ldata_s.Get());
 	if (ImGui::InputText(uniquiField.c_str(), &cTmpInput[0], MAXTEXTINPUT, inputFlags)) {
@@ -2776,11 +2680,6 @@ int fillgloballistwithHands(void)
 	{
 		t.list_s[iIndex++] = g_HandsList_s[i];
 	}
-	//t.list_s[iIndex++] = "Legacy Combat";
-	//t.list_s[iIndex++] = "Male Light";
-	//t.list_s[iIndex++] = "Male Dark";
-	//t.list_s[iIndex++] = "Female Light";
-	//t.list_s[iIndex++] = "Female Dark";
 	return iIndex-1;
 }
 
@@ -3754,22 +3653,6 @@ void AddPayLoad(ImGuiPayload* payload, bool addtocursor)
 							rubberbandItem.scalez = t.entityelement[t.e].scalez;
 							#endif
 							g.entityrubberbandlist.push_back(rubberbandItem);
-
-							/* grids shape not predictable, so lets go for a simple row
-							//Make grid , perhaps wrap.
-							#define MINGRIDSIZE 120
-							float gsx = ObjectSizeX(masterobj);
-							float gsz = ObjectSizeZ(masterobj);
-							if (gsx < MINGRIDSIZE) gsx = MINGRIDSIZE;
-							if (gsz < MINGRIDSIZE) gsz = MINGRIDSIZE;
-							centerx += gsx * 1.25;
-							if (++gridcolcount >= gridcol)
-							{
-								centerz += gsz * 1.25;
-								centerx = GGORIGIN_X;
-								gridcolcount = 0;
-							}
-							*/
 							centerx += gsx * 1.05f;
 						}
 					}
@@ -3792,17 +3675,6 @@ void AddPayLoad(ImGuiPayload* payload, bool addtocursor)
 						g_fHoldGridEntityPosX = t.gridentityposx_f;
 						g_fHoldGridEntityPosY = t.gridentityposy_f;
 						g_fHoldGridEntityPosZ = t.gridentityposz_f;
-
-						/*LB: not robust enough, and should not change modes without users permission
-						//PE: Make sure cursor offset is set at bottom of selection list.
-						float seletion_height = higesty - lowesty;
-						if (seletion_height > 1.0f && seletion_height < 5000.0f)
-						{
-							fHitOffsetY = seletion_height;
-						}
-						//PE: Always start in horizontal mode.
-						iObjectMoveMode = 0;
-						*/
 					}
 					bNormalMasterAdd = false;
 					t.onetimeentitypickup = 0;
@@ -3817,7 +3689,6 @@ void AddPayLoad(ImGuiPayload* payload, bool addtocursor)
 					DuplicateFromListToCursor(vEntityGroupList[l]);
 					bNormalMasterAdd = false;
 					t.onetimeentitypickup = 0;
-					//bCreateNewGroupOnNextDrop = true; //PE: Dont create a new group when drag/drop a group.
 				}
 				else if (payload_n->iAnimationFrom > 0 )
 				{
@@ -3863,10 +3734,8 @@ void AddPayLoad(ImGuiPayload* payload, bool addtocursor)
 				}
 				//PE: Removed in design "Keep window open when dragging in objects to level".
 				//PE: Now always close window.
-				//#ifndef WICKEDENGINE
 				if(bExternal_Entities_Window)
 					bCheckForClosing = true;
-				//#endif
 			}
 		}
 		pDragDropFile = NULL;
@@ -3945,42 +3814,28 @@ bool CheckTutorialAction(const char * action, float x_adder)
 						ImGuiWindow* window = ImGui::GetCurrentWindow();
 						ImVec2 pos = window->DC.CursorPos;
 
-						//if ((pos.y-32.0f) > viewPortPos.y) //Dont allow it to display outside main viewport
-						//{
-							float icon_additional_size = 32.0f;
-							st.PopupBorderSize = 0;
-							pos.x += x_adder + 4;
-							pos.x -= (icon_additional_size*0.60);
-							//pos.y -= 80.0f;
-							pos.y += 80.0f; // pointer points up now (could make this a toggle mode)
-							pos.y -= icon_additional_size;
-							pos.y += sin(sincounter) * 22.0f;
-							sincounter = sincounter + (5.5f*t.ElapsedTime_f);
-							if (sincounter >= 360.0f) sincounter -= 360.0f;
+						float icon_additional_size = 32.0f;
+						st.PopupBorderSize = 0;
+						pos.x += x_adder + 4;
+						pos.x -= (icon_additional_size*0.60);
+						pos.y += 80.0f; // pointer points up now (could make this a toggle mode)
+						pos.y -= icon_additional_size;
+						pos.y += sin(sincounter) * 22.0f;
+						sincounter = sincounter + (5.5f*t.ElapsedTime_f);
+						if (sincounter >= 360.0f) sincounter -= 360.0f;
 
-							if (strcmp(tut.cStepAction[tut.iCurrent_Step], "PLACEIT") == 0) {
-								pos = OldrenderTargetPos + ImVec2((OldrenderTargetSize.x*0.5f) - 64.0f, 60 + (sin(sincounter) * 22.0f));
-								pos += tut.vOffsetPointer[tut.iCurrent_Step];
-								//ImGui::SetNextWindowPos(OldrenderTargetPos + ImVec2((OldrenderTargetSize.x*0.5f) - 64.0f, 80 + (sin(sincounter) * 22.0f)));
-							}
+						if (strcmp(tut.cStepAction[tut.iCurrent_Step], "PLACEIT") == 0) {
+							pos = OldrenderTargetPos + ImVec2((OldrenderTargetSize.x*0.5f) - 64.0f, 60 + (sin(sincounter) * 22.0f));
+							pos += tut.vOffsetPointer[tut.iCurrent_Step];
+						}
 
-							ID3D11ShaderResourceView* lpTexture = GetImagePointerView(TUTORIAL_POINTERUP);
-							if (lpTexture) 
-							{
-								ImGuiWindow* window = ImGui::GetCurrentWindow();
-								ImGui::GetForegroundDrawList()->AddImage((ImTextureID)lpTexture, pos , pos + ImVec2(64+icon_additional_size, 64+icon_additional_size), ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
-							}
+						ID3D11ShaderResourceView* lpTexture = GetImagePointerView(TUTORIAL_POINTERUP);
+						if (lpTexture) 
+						{
+							ImGuiWindow* window = ImGui::GetCurrentWindow();
+							ImGui::GetForegroundDrawList()->AddImage((ImTextureID)lpTexture, pos , pos + ImVec2(64+icon_additional_size, 64+icon_additional_size), ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
+						}
 
-							/*
-							//This system will make non transparent window when outside main viewport. (has its own main window).
-							ImGui::SetNextWindowPos(pos);
-							ImGui::SetNextWindowBgAlpha(0.0f);
-							ImGuiWindowFlags flags = ImGuiNextWindowDataFlags_HasBgAlpha | ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking;
-							ImGui::Begin("##TutorialPointerWindow", NULL, flags);
-							ImGui::ImgBtn(TUTORIAL_POINTER, ImVec2(64, 64), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false);
-							ImGui::End();
-							*/
-						//}
 						st.PopupBorderSize = oldborder;
 						ImGui::SetCursorPos(oldpos);
 					}
@@ -4248,7 +4103,6 @@ void CheckTooltipObjectDelete(void)
 
 		t.tentitytoselect = iTooltipLastObjectId;
 		t.entobj = g.entitybankoffset + iTooltipLastObjectId;
-		//entity_deleteentityfrommap(); //We dont actually have a entityelement
 		if (ObjectExist(g.entitybankoffset + iTooltipLastObjectId)) {
 			DeleteObject(g.entitybankoffset + iTooltipLastObjectId);
 		}
@@ -4407,8 +4261,6 @@ void generic_preloadfiles(void)
 	image_preload_files_add("languagebank\\english\\artwork\\f9-help-entity.png",1);
 	image_preload_files_add("languagebank\\english\\artwork\\f9-help-conkit.png",1);
 
-	///image_preload_files_add("languagebank\\neutral\\gamecore\\huds\\interactive\\close-highlight.png",1);
-
 	image_preload_files_add("editors\\gfx\\resources.png",1);
 	image_preload_files_add("editors\\gfx\\resourceslow.png",1);
 
@@ -4462,7 +4314,6 @@ void SpeechControls(int speech_entries, bool bUpdateMainString, entityeleproftyp
 
 	//LB: Solve intend and incorrect component inclusion inside FPE (behavior area)
 	ImGui::TextCenter("Speech Control");
-	//if (ImGui::StyleCollapsingHeader("Speech Control", ImGuiTreeNodeFlags_DefaultOpen)) 
 	{
 		bool sapi_available = false;
 		if (g_voiceList_s.size() > 0)
@@ -4628,10 +4479,7 @@ void SpeechControls(int speech_entries, bool bUpdateMainString, entityeleproftyp
 				uniquiField = "o";
 				uniquiField = uniquiField + "##";
 				uniquiField = uniquiField + std::to_string(grideleprof_uniqui_id++);
-				//ImGui::SameLine();
-				//ImGui::PushItemWidth(ImGui::GetFontSize()*2.0);
 				ImGui::PushID(grideleprof_uniqui_id++);
-				//ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() - 6.0, ImGui::GetCursorPosY()));
 				int iRecordBtnImg = MEDIA_RECORD;
 				if (g_bRecordingSound == true) iRecordBtnImg = MEDIA_RECORDING;
 				if (bLipSyncGenerationBusy == true) iRecordBtnImg = MEDIA_RECORDPROCESSING;
@@ -4966,10 +4814,6 @@ void SpeechControls(int speech_entries, bool bUpdateMainString, entityeleproftyp
 								}
 							}
 						}
-						else
-						{
-							// if not, the 'pRelLocationOfWAV' carries the previous WAV we can use from the TTS table
-						}
 
 						// change field of SPEECH X to [use text speech] - indicating its using the internal TTS wav created
 						if (tmpvar == "speech1" || tmpvar == "speech 1") edit_grideleprof->soundset1_s = pRelLocationOfWAV;
@@ -5270,7 +5114,6 @@ void RedockWindow(char *name)
 		if (winNodeId != 0 && winNodeId2 != 0 && winNodeId != winNodeId2) {
 			//Somthing wrong we cant rebuild.
 			//Change window size to normal and undock:
-			//m_editor->resizewindownext = true;
 		}
 		else {
 			ImGui::DockBuilderFinish(dockspace_id);
@@ -5301,7 +5144,6 @@ void CheckMinimumDockSpaceSize(float minsize)
 					testnode->Size.x = minsize;
 					testnode->SizeRef.x = minsize;
 				}
-				//ImGui::DockNodeTreeUpdatePosSize(testnode, testnode->Pos, testnode->Size,false);
 			}
 			if (testnode->Size.y < 20.0f) {
 				//Something wrong , adjust.
@@ -5313,7 +5155,6 @@ void CheckMinimumDockSpaceSize(float minsize)
 					testnode->Size.y = 50.0f;
 					testnode->SizeRef.y = 50.0f;
 				}
-				//ImGui::DockNodeTreeUpdatePosSize(testnode, host_window->Pos, host_window->Size);
 			}
 		}
 	}
@@ -5353,7 +5194,6 @@ static void DisplayPerformanceData(bool* p_open)
 		ImVec2 window_pos = ImVec2((corner & 1) ? (viewport->Pos.x + viewport->Size.x - DISTANCE) : (viewport->Pos.x + DISTANCE), (corner & 2) ? (viewport->Pos.y + viewport->Size.y - DISTANCE) : (viewport->Pos.y + DISTANCE));
 		ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
 		ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-		//ImGui::SetNextWindowViewport(viewport->ID); //PE: Always main viewport.
 	}
 	ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
 	if (ImGui::Begin("##DisplayPerformanceData", p_open, (corner != -1 ? ImGuiWindowFlags_NoMove : 0) | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
@@ -5502,18 +5342,8 @@ float gridedit_instruction_calculatewidth_rec (sLeafNode* pinstruction)
 	else
 	{
 		// new system needed, this is a little hard to navigate when have LARGE behaviors!!
-		//if (pinstruction->pAlso) fTotalWidthNeededForChildren += 0.05f + gridedit_instruction_calculatewidth_rec(pinstruction->pAlso);
-		//if (pinstruction->pElse) fTotalWidthNeededForChildren += 0.1f + gridedit_instruction_calculatewidth_rec(pinstruction->pElse);
 		if (pinstruction->pAlso) fTotalWidthNeededForChildren += gridedit_instruction_calculatewidth_rec(pinstruction->pAlso);
 		if (pinstruction->pElse) fTotalWidthNeededForChildren += gridedit_instruction_calculatewidth_rec(pinstruction->pElse);
-		// works but is massively wide!!
-		// parent node
-		//float fLeftSide = 0.0f; if (pinstruction->pAlso) fLeftSide = gridedit_instruction_calculatewidth_rec(pinstruction->pAlso);
-		//float fRightSide = 0.0f; if (pinstruction->pElse) fRightSide = gridedit_instruction_calculatewidth_rec(pinstruction->pElse);
-		/// taker largest child width and make it symetrical
-		//fTotalWidthNeededForChildren = fLeftSide;
-		//if (fRightSide > fTotalWidthNeededForChildren) fTotalWidthNeededForChildren = fRightSide;
-		//fTotalWidthNeededForChildren *= 2;
 	}
 	pinstruction->fWidthRequired = fTotalWidthNeededForChildren;
 	return fTotalWidthNeededForChildren;
@@ -7031,13 +6861,6 @@ void tab_tab_visuals(int iPage, int iMode)
 			bVisualUpdated = Shadows_Settings(fTabColumnWidth, bVisualUpdated);
 		}
 
-		//PE: Moved to login window.
-		//if (iMode == 0)
-		//{
-		//	bool Global_Behaviors_Settings(float fTabColumnWidth, bool bVisualUpdated);
-		//	bVisualUpdated = Global_Behaviors_Settings(fTabColumnWidth, bVisualUpdated);
-		//}
-
 		// Control all in-game debugging options 
 		if (pref.iEnableDeveloperProperties && iMode != 0) //PE: Now only in tab tab (iMode != 0))
 		{
@@ -7072,28 +6895,6 @@ void tab_tab_visuals(int iPage, int iMode)
 			}
 			#endif
 		}
-
-		//PE: Moved to Game Settings.
-		/*
-		//Reset
-		ImGui::Separator();
-		float but_gadget_size = ImGui::GetFontSize()*10.0;
-		ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (but_gadget_size*0.5), 0.0f));
-		if (ImGui::StyleButton("Reset Visuals##WickedResetVisualsUniqueId", ImVec2(but_gadget_size, 0)))
-		{
-			int iAction = askBoxCancel("This will delete all your visual changes, are you sure?", "Confirmation"); //1==Yes 2=Cancel 0=No
-			if (iAction == 1)
-			{
-				//Reset
-				visuals_resetvalues(false);
-				t.gamevisuals = t.visuals;
-				bVisualUpdated = true;
-			}
-		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Reset Visuals to Default Values");
-		*/
-
-		//ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (but_gadget_size*0.5), 0.0f));
 
 		if (ImGui::GetCurrentWindow()->ScrollbarSizes.x > 0)
 		{
@@ -7747,7 +7548,6 @@ void Wicked_Update_Shadows(void *voidvisual)
 	else if (shadowscube <= 16) shadowscube = 16;
 
 	//LB: Increased cap in Wicked to SIXTEEN as hitting issues on even small interior levels, lets see what the fall out is
-	//if (shadowscube > 5) shadowscube = 5;
 	if (shadowscube > visuals->iShadowPointMax) shadowscube = visuals->iShadowPointMax;
 	
 	if (old_iShadowPointResolution != visuals->iShadowPointResolution || shadowscube > total_active_cube_shadows || (bForceRefreshLightCount && shadowscube != total_active_cube_shadows ) || bTransparentChanged )
@@ -7862,7 +7662,6 @@ void Wicked_Update_Visuals(void *voidvisual)
 		weather->ambient.z = visuals->AmbienceBlue_f / 255.0;
 		weather->fogStart = visuals->FogNearest_f;
 		weather->fogEnd = visuals->FogDistance_f;
-		//weather->fogHeight = visuals->FogA_f; // mergecheck: field no longer present
 		weather->fogColorAndOpacity.x = visuals->FogR_f / 255.0f;
 		weather->fogColorAndOpacity.y = visuals->FogG_f / 255.0f;
 		weather->fogColorAndOpacity.z = visuals->FogB_f / 255.0f;
@@ -7884,7 +7683,6 @@ void Wicked_Update_Visuals(void *voidvisual)
 			weather->volumetricCloudParameters.WindSpeed = 0.0f;
 			weather->SetRealisticSky(false);
 			weather->SetVolumetricClouds(false);
-			//weather->SetSimpleSky(false);
 		}
 		else if (visuals->skyindex == 0)
 		{
@@ -7934,27 +7732,17 @@ void Wicked_Update_Visuals(void *voidvisual)
 		else
 			bWaterEnabled = visuals->bWaterEnable;
 
-		//if (t.interactive.testgameused == 1 || t.game.gameisexe == 1)
-		//	bWaterEnabled = visuals->bWaterEnable;
-		//else
-		//	bWaterEnabled = t.showeditorwater;
-
 		if (bWaterEnabled)
 		{
 			weather->SetOceanEnabled(true);
 			weather->oceanParameters.waterHeight = g.gdefaultwaterheight;
-			//XMFLOAT3 waterColor = XMFLOAT3(visuals->WaterRed_f / 255.0f, visuals->WaterGreen_f / 255.0f, visuals->WaterBlue_f / 255.0f); // LB seems to tame water color with latest Wicked Engine
 			XMFLOAT4 waterColor = XMFLOAT4(visuals->WaterRed_f / 255.0f, visuals->WaterGreen_f / 255.0f, visuals->WaterBlue_f / 255.0f, visuals->WaterAlpha_f / 255.0f);
 			weather->oceanParameters.waterColor = waterColor;
 			weather->oceanParameters.time_scale = visuals->WaterSpeed1;
 			weather->oceanParameters.patch_length = visuals->fWaterPatchLength;
 			weather->oceanParameters.choppy_scale = visuals->fWaterChoppyScale;
 			weather->oceanParameters.wave_amplitude = visuals->fWaterWaveAmplitude;
-			//weather->oceanParameters.wind_speed = visuals->WaterFlowSpeed;
 			weather->oceanParameters.wind_dependency = visuals->fWaterWindDependency;
-			//weather->oceanParameters.wind_dir.x = acos( visuals->WaterFlowDirectionX * PI / 180.0f );
-			//weather->oceanParameters.wind_dir.y = asin( visuals->WaterFlowDirectionX * PI / 180.0f );
-
 			weather->oceanParameters.fogMaxDist = visuals->WaterFogMaxDist;
 			weather->oceanParameters.fogMinDist = visuals->WaterFogMinDist;
 			weather->oceanParameters.fogMinAmount = visuals->WaterFogMinAmount;
@@ -7966,14 +7754,11 @@ void Wicked_Update_Visuals(void *voidvisual)
 			weather->oceanParameters.waterHeight = g.gdefaultwaterheight; //PE: Pauls shader need this set.
 			weather->SetOceanEnabled(false);
 		}
-		
-		//weather->skyIntensity = visuals->SkyIntensity_f;
 	}
 
 	WickedCall_SetSunColors(visuals->SunRed_f / 255.0, visuals->SunGreen_f / 255.0, visuals->SunBlue_f / 255.0, visuals->SunIntensity_f, 1.0f, t.visuals.fSunShadowBias);
 	WickedCall_SetSunDirection(visuals->SunAngleX, visuals->SunAngleY, visuals->SunAngleZ);
 
-	//
 	if (master_renderer) 
 	{
 		#ifdef POSTPROCESSSNOW
@@ -8122,11 +7907,8 @@ void Wicked_Update_Visuals(void *voidvisual)
 		master_renderer->setEyeAdaptionKey(visuals->fAutoExposureKey);
 		master_renderer->setExposure(visuals->fExposure);
 
-		//master_renderer->setTessellationEnabled(visuals->bTessellation); moved to renderer
-		//wiRenderer::SetTessellationEnabled(visuals->bTessellation);  //PE: Tessellation dont work like this it has to be set per mesh, so have never worked.
 		//PE: Still need a way to disable light shafts :)
 		master_renderer->setLightShaftsEnabled(visuals->bLightShafts);
-		//LB: master_renderer->setLightShaftValues(visuals->lightShaftDensity, visuals->lightShaftWeight, visuals->lightShaftDecay, visuals->lightShaftExposure);
 
 		master_renderer->setLensFlareEnabled(visuals->bLensFlare);
 		
@@ -8260,10 +8042,6 @@ void Wicked_Update_Visuals(void *voidvisual)
 			last_wave_amplitude = weather->oceanParameters.wave_amplitude;
 			last_wind_dependency = weather->oceanParameters.wind_dependency;
 
-			//wiRenderer::OceanRegenerate(); now needs a weather component
-			//wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
-			//wiScene::GetScene().OceanRegenerate();
-
 			// delay update because RunWeatherUpdateSystem needs to run before our new values can take effect
 			iUpdateOcean = 2;
 		}
@@ -8289,7 +8067,6 @@ void Wicked_Update_Visuals(void *voidvisual)
 	// can disable terrain drawing in graphics engine
 	if (t.visuals.bEnableEmptyLevelMode == false)
 	{
-		//GGTerrain::ggterrain_draw_enabled = (int)bSetting; //PE: Cant set it here as bSetting = grass.
 		// can call this to affect some visibles without causing water to flicker
 		Wicked_Update_Visibles(voidvisual);
 		GGTrees::ggtrees_draw_enabled = 1;
@@ -8619,13 +8396,12 @@ void DisplaySmallImGuiMessage(char *text)
 
 	ImGui::Begin("##TriggerSmallMessageinfo", &winopen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoInputs);
 	ImGui::SetWindowFontScale(1.5);
-//	ImGui::Text(" ");
+
 	//Center Text.
 	float fTextSize = ImGui::CalcTextSize(text).x;
 	ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x*0.5) - (fTextSize*0.5), ImGui::GetCursorPos().y));
 
 	ImGui::Text(text);
-//	ImGui::Text(" ");
 	ImGui::SetWindowFontScale(1.0);
 	ImGui::End();
 	style_colors[ImGuiCol_WindowBg] = oldBgColor;
@@ -9096,7 +8872,6 @@ void SmallTutorialVideo(char *tutorial, char* combo_items[], int combo_entries,i
 				float animV = GetAnimV(iSmallVideoSlot[iVideoEntry]);
 				ImVec2 uv0 = ImVec2(0, 0);
 				ImVec2 uv1 = ImVec2(animU, animV);
-				//window->DrawList->AddImage((ImTextureID)lpVideoTexture, image_bb.Min, image_bb.Max, uv0, uv1, ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)));
 
 				ImGui::PushID(lpVideoTexture);
 				const ImGuiID id = window->GetID("#image");
@@ -9118,8 +8893,6 @@ void SmallTutorialVideo(char *tutorial, char* combo_items[], int combo_entries,i
 				SmallTutorialThumbLoad(iActiveID);
 				ID3D11ShaderResourceView* lpTexture = NULL;
 				if (iSmallVideoThumbnail[iActiveID] > 0) lpTexture = GetImagePointerView(iSmallVideoThumbnail[iActiveID]);
-
-				//if (lpTexture) window->DrawList->AddImage((ImTextureID)lpTexture, image_bb.Min, image_bb.Max, ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)));
 
 				ImGui::PushID(lpTexture);
 				const ImGuiID id = window->GetID("#image");
@@ -9146,7 +8919,6 @@ void SmallTutorialVideo(char *tutorial, char* combo_items[], int combo_entries,i
 					bSmallVideoResumePossible[iVideoEntry] = false;
 					iSmallVideoDelayExecute[iVideoEntry] = 1; //force play - restart.
 					bSmallVideoFrameStart = false; //PE: Wait until next frame.
-					//bVideoAreaPressed = true;
 					if (!bSectionHub && bSmallVideoFirstClick[iVideoEntry])
 					{
 						bSmallVideoFirstClick[iVideoEntry] = false;
@@ -9583,12 +9355,7 @@ void ProcessPreferences(void)
 			const char* quaity_items[] = { "Test Level - Low Settings", "Test Level - Medium Settings", "Test Level - High Settings" };
 			if (ImGui::Combo("##GraphicsQualityTest", &pref.iTestGameGraphicsQuality, quaity_items, IM_ARRAYSIZE(quaity_items))) {
 				//PE: This will overwrite "level designer" settings , in editor and test game, this is only for test game, so set later.
-				//SetGlobalGraphicsSettings( pref.iTestGameGraphicsQuality );
 			}
-
-			//PE: Not possible at the moment.
-			//ImGui::Checkbox("Disable Multiple Viewport Support", &pref.bDisableMultipleViewport);
-			//if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Restart Max for this to take effect");
 
 			ImGui::PopItemWidth();
 			ImGui::Indent(-10);
@@ -9597,181 +9364,8 @@ void ProcessPreferences(void)
 
 			ImGui::PushItemWidth(-10);
 			ImGui::Text("Interface style");
-			//ImGui::Text("");
 			ImGui::Indent(10);
 
-			//const char* style_combo[] = {	"Dark Style",//0->12
-			//								"Darker Style",//1->13 
-			//								"Evening blue",//2->9
-			//								"Green tea",//3->2
-			//								"Light Style",//4->14 
-			//								"Moody red",//5->8
-			//								"Purple haze",//6->4
-			//								"Racing green",//7->10
-			//								"Red Lines",//8->7
-			//								"Retro green",//9->11
-			//								"Sea blue",//10->0
-			//								"Smart purple",//11->5
-			//								"Striking yellow",//12->6
-			//								"Sunset red",//13->3
-			//								"Tango",//14->3
-			//								"Blue" };//15->1
-
-			//// current_style: 0-3 are the old styles, 10+ are the new colorful ones
-			//int style_current_type_selection;
-			//if (pref.current_style == 0) style_current_type_selection = 0;
-			//if (pref.current_style == 1) style_current_type_selection = 1;
-			//if (pref.current_style == 3) style_current_type_selection = 4;
-			//if (pref.current_style >= 10) style_current_type_selection = pref.current_style - 10;
-
-			//if (ImGui::Combo("##BehavioursSimpleInput", &style_current_type_selection, style_combo, IM_ARRAYSIZE(style_combo))) 
-			//{
-			//	if (style_current_type_selection == 0) {
-			//		// dark
-			//		pref.tint_style = ImVec4(1.0, 1.0, 1.0, 1.0);
-			//		pref.shade_style = ImVec4(0.0, 0.0, 0.0, 0.0);
-			//		pref.title_style = ImVec4(0.0, 0.0, 0.0, 0.0);
-			//		pref.current_style = 0;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 1) {
-			//		// darker
-			//		pref.tint_style = ImVec4(1.0, 1.0, 1.0, 1.0);
-			//		pref.shade_style = ImVec4(0.0, 0.0, 0.0, 0.0);
-			//		pref.title_style = ImVec4(0.0, 0.0, 0.0, 0.0);
-			//		pref.current_style = 1;
-			//		myDarkStyle(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 2) {
-			//		//Evening blue
-			//		pref.tint_style = ImVec4(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0, 0.0);
-			//		pref.shade_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.title_style = ImVec4(1 / 255.0, 36 / 255.0, 73 / 255.0, 0.0);
-			//		pref.current_style = 12;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 3) {
-			//		//Green tea
-			//		pref.tint_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.shade_style = ImVec4(4 / 255.0, 124 / 255.0, 10 / 255.0, 0.0);
-			//		pref.title_style = ImVec4(89 / 255.0, 160 / 255.0, 93 / 255.0, 0.0);
-			//		pref.current_style = 13;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 4) {
-			//		// Light style
-			//		pref.tint_style = ImVec4(0.0, 0.0, 0.0, 0.0);
-			//		pref.shade_style = ImVec4(1.0, 1.0, 1.0, 1.0);
-			//		pref.title_style = ImVec4(1.0, 1.0, 1.0, 1.0);
-			//		pref.current_style = 3;
-			//		myLightStyle(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 5) {
-			//		//Moody red
-			//		pref.tint_style = ImVec4(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0, 0.0);
-			//		pref.shade_style = ImVec4(14 / 255.0, 12 / 255.0, 29 / 255.0, 0.0);
-			//		pref.title_style = ImVec4(131 / 255.0, 16 / 255.0, 6 / 255.0, 0.0);
-			//		pref.current_style = 15;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 6) {
-			//		//Purple haze
-			//		pref.tint_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.shade_style = ImVec4(163 / 255.0, 43 / 255.0, 179 / 255.0, 0.0);
-			//		pref.title_style = ImVec4(251 / 255.0, 251 / 255.0, 251 / 255.0, 0.0);
-			//		pref.current_style = 16;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 7) {
-			//		//Racing green
-			//		pref.tint_style = ImVec4(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0, 0.0);
-			//		pref.shade_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.title_style = ImVec4(18 / 255.0, 62 / 255.0, 0 / 255.0, 0.0);
-			//		pref.current_style = 17;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 8) {
-			//		//Red Lines
-			//		pref.tint_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.shade_style = ImVec4(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0, 0.0);
-			//		pref.title_style = ImVec4(230 / 255.0, 56 / 255.0, 56 / 255.0, 0.0);
-			//		pref.current_style = 18;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 9) {
-			//		//Retro green
-			//		pref.tint_style = ImVec4(11 / 255.0, 248 / 255.0, 25 / 255.0, 0.0);
-			//		pref.shade_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.title_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.current_style = 19;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 10) {
-			//		//Sea blue
-			//		pref.tint_style = ImVec4(7 / 255.0, 7 / 255.0, 7 / 255.0, 1.0);
-			//		pref.shade_style = ImVec4(12 / 255.0, 100 / 255.0, 168 / 255.0, 0.0);
-			//		pref.title_style = ImVec4(28 / 255.0, 77 / 255.0, 244 / 255.0, 0.0);
-			//		pref.current_style = 20;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 11) {
-			//		//Smart purple
-			//		pref.tint_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.shade_style = ImVec4(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0, 0.0);
-			//		pref.title_style = ImVec4(172 / 255.0, 96 / 255.0, 182 / 255.0, 0.0);
-			//		pref.current_style = 21;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 12) {
-			//		//Striking yellow
-			//		pref.tint_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.shade_style = ImVec4(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0, 0.0);
-			//		pref.title_style = ImVec4(200 / 255.0, 191 / 255.0, 34 / 255.0, 0.0);
-			//		pref.current_style = 22;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 13) {
-			//		//Sunset red
-			//		pref.tint_style = ImVec4(0,0,0, 1.0);
-			//		pref.shade_style = ImVec4(164 / 255.0, 70 / 255.0, 70 / 255.0, 0.0);
-			//		pref.title_style = ImVec4(204 / 255.0, 63 / 255.0, 50 / 255.0, 0.0);
-			//		pref.current_style = 23;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 14) {
-			//		//Tango
-			//		pref.tint_style = ImVec4(0, 0, 0, 1.0);
-			//		pref.shade_style = ImVec4(244 / 255.0, 251 / 255.0, 0, 0.0);
-			//		pref.title_style = ImVec4(237 / 255.0, 86 / 255.0, 7 / 255.0, 0.0);
-			//		pref.current_style = 24;
-			//		myStyle2(NULL);
-			//		SetIconSet();
-			//	}
-			//	if (style_current_type_selection == 15) {
-			//		//Blue
-			//		pref.tint_style = ImVec4(1.0, 1.0, 1.0, 1.0);
-			//		pref.shade_style = ImVec4(0.0, 0.0, 0.0, 0.0);
-			//		pref.title_style = ImVec4(0.0, 0.0, 0.0, 0.0);
-			//		pref.current_style = 25;
-			//		myStyleBlue(NULL);
-			//		SetIconSet();
-			//	}
-			//}
-			//if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Select interface style");
 			const char* style_combo[] = { 
 						"Blue Style", //0->1
 						"Dark Style",//1->12
@@ -10119,7 +9713,6 @@ void ProcessPreferences(void)
 				ChangeColor[2] = pref.tint_style.z;
 				ChangeColor[3] = 1.0f;
 
-				//float hw = (ImGui::GetContentRegionAvailWidth() - 20.0f) * 0.5;
 				float hw = (ImGui::GetContentRegionAvailWidth() - 20.0f) * 0.33;
 				ImGui::Text("");
 				ImVec2 cpos = ImGui::GetCursorPos();
@@ -10130,7 +9723,6 @@ void ProcessPreferences(void)
 				ImGui::Text("Highlight "); 
 
 				ImGui::PushItemWidth(hw);
-				//ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX()+30.0, ImGui::GetCursorPosY()));
 				if (ImGui::ColorPicker4("##ChangeTintColor", &ChangeColor[0], ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_DisplayRGB))
 				{
 					pref.tint_style.x = ChangeColor[0];
@@ -10153,8 +9745,6 @@ void ProcessPreferences(void)
 					change_colors = true;
 				}
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Change the color of the background to make your own custom style");
-				//ImGui::PopItemWidth();
-
 
 				ChangeColor[0] = pref.title_style.x;
 				ChangeColor[1] = pref.title_style.y;
@@ -10176,7 +9766,6 @@ void ProcessPreferences(void)
 
 			if (change_colors) {
 				if (pref.current_style == 0 || pref.current_style >= 10 && pref.current_style != 25) {
-					//myStyle2_colors_only();
 					myStyle2(NULL);
 				}
 				if (pref.current_style == 1) {
@@ -10260,13 +9849,6 @@ void ProcessPreferences(void)
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "This will reset the interface to fit the current desktop size");
 
-			/*
-			if (ImGui::StyleButton("Reset view to current window size", ImVec2(w, 0)) ) {
-				refresh_gui_docking = 0;
-			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Reset view to current window size");
-			*/
-
 			ImGui::Indent(-10);
 
 			ImGui::PopItemWidth();
@@ -10293,17 +9875,6 @@ void ProcessPreferences(void)
 					if (pref.iObjectEnableAdvanced == 2)
 					{
 						// skip message warnings when advanced user is in compact mode
-					}
-					else
-					{
-						/* removed, annoying everyone - added warning to user manual instead
-						int iAction = askBoxCancel("Are you sure you want to change settings in here? This will add a lot of additional features to the software.", "Warning"); //1==Yes 2=Cancel 0=No
-						if (iAction != 1)
-						{
-							iAdvCountDown = 10;
-							iSetSettingsFocusTab = 1;
-						}
-						*/
 					}
 				}
 			}
@@ -10620,7 +10191,6 @@ void ProcessPreferences(void)
 						if (pref.cCustomWriteFolder[strlen(pref.cCustomWriteFolder) - 1] != '\\') strcat(pref.cCustomWriteFolder, "\\");
 						strcpy(cPreferencesMessage, "Please restart MAX for this change to take effect!");
 					}
-					//Validate Write ?
 				}
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Choose a new writables location where your projects are to be saved by default");
 				ImGui::PopItemWidth();
@@ -10685,17 +10255,6 @@ void ProcessPreferences(void)
 					{
 						// skip message warnings when advanced user is in compact mode
 					}
-					else
-					{
-						/* removed, annoying everyone - added warning to user manual instead
-						int iAction = askBoxCancel("Be aware these settings are for developers only, Are you very sure you want to change any of these settings ?", "Warning"); //1==Yes 2=Cancel 0=No
-						if (iAction != 1)
-						{
-							iDevCountDown = 10;
-							iSetSettingsFocusTab = 1;
-						}
-						*/
-					}
 				}
 			}
 
@@ -10718,10 +10277,6 @@ void ProcessPreferences(void)
 				wiProfiler::SetEnabled(bProfilerEnable);
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Display the rendering profile data in the level editor");
-			//ImGui::NextColumn();
-			//ImGui::Text("");
-			//ImGui::Text("");
-			//ImGui::NextColumn();
 			ImGui::Indent(-10);
 
 			ImGui::Text("");
@@ -10778,7 +10333,6 @@ void ProcessPreferences(void)
 
 			if (g_iDevToolsOpen != 0)
 			{
-				//ImGui::PushItemWidth(-10);
 				ImGui::Text("");
 				ImGui::Text("Developer Mode Tools");
 
@@ -10843,7 +10397,6 @@ void ProcessPreferences(void)
 
 			if (pref.iEnableEditorOutlineSelection)
 			{
-				//ImGui::SameLine();
 				ImGui::Indent(20);
 				ImGui::SliderFloat("##OutlineThicknessSmall", &pref.fHighLightThickness, 0.0, 6.0, "%.2f");
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Set the outline's thickness with this slider");
@@ -10877,9 +10430,6 @@ void ProcessPreferences(void)
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("The auto exposure effect can be turned on and off during editing of a level");
 
-			//pref.iEnableAutoExposureInEditor
-			//pref.iEnableDeveloperProperties = false;
-			
 			bTmp = pref.iEnableDeveloperObjectTools;
 			if (ImGui::Checkbox("Display Object Tools Developer Mode", &bTmp)) 
 			{
@@ -11102,14 +10652,7 @@ void ProcessPreferences(void)
 	vLastWindowSize = ImGui::GetWindowSize();
 	fLastContentWidth = ImGui::GetContentRegionAvailWidth();
 
-//	if (ImGui::GetCurrentWindow()->ScrollbarSizes.x > 0) {
-//		//Hitting exactly at the botton could cause flicker, so add some additional lines when scrollbar on.
-//		ImGui::Text("");
-//		ImGui::Text("");
-//	}
-
 	bImGuiGotFocus = true;
-
 
 	ImGui::End();
 	if (bDigAHoleToHWND && bwindow)
@@ -11128,7 +10671,6 @@ void CloseAllOpenTools(bool bTerrainTools)
 	if (bTerrainTools)
 	{
 		if (bTerrain_Tools_Window) bTerrain_Tools_Window = false;
-		//if (Visuals_Tools_Window) Visuals_Tools_Window = false; //PE: Now toggle.
 	}
 	#ifdef WICKEDENGINE
 	if (Shooter_Tools_Window)
@@ -11149,20 +10691,6 @@ void imgui_shooter_tools(void)
 	if (ImGui::windowTabVisible())
 	{
 		Shooter_Tools_Window_Active = true;
-
-		// globals
-		#ifndef REMOVED_EARLYACCESS
-		if (ImGui::StyleCollapsingHeader("Shooter Settings", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Indent(10);
-			ImGui::TextCenter("Level Difficulty");
-			if (ImGui::MaxSliderInputFloat("##ShooterfLevelDifficulty", &t.visuals.fLevelDifficulty, 0.0f, 100.0f, "Set Level Difficulty"))
-			{
-				t.gamevisuals.fLevelDifficulty = t.visuals.fLevelDifficulty;
-			}
-			ImGui::Indent(-10);
-		}
-		#endif
 
 		// if have selection selected
 		bool bRubberBand = false;
@@ -11211,268 +10739,6 @@ void imgui_shooter_tools(void)
 			}
 			if (!bRubberBand && iEntIndex <= 0)
 				bToolsOpen = false;
-
-			if (bToolsOpen)
-			{
-				// ZJ: Moved to character settings.
-				/*
-				//PE: A char is selected.
-				//Character
-				if (ImGui::StyleCollapsingHeader("Character Logic", ImGuiTreeNodeFlags_DefaultOpen))
-				{
-					ImGui::Indent(10);
-					ImGui::TextCenter("Allegiance");
-					ImGui::PushItemWidth(-10);
-					if (!bRubberBand)
-					{
-						// ZJ: Moved to character settings.
-						////PE: Single Char
-						//const char* items_combo[] = { "Enemy", "Ally", "Neutral" };
-						//if (ImGui::Combo("##ShooteriCharAlliance", &t.entityelement[iEntIndex].eleprof.iCharAlliance, items_combo, IM_ARRAYSIZE(items_combo)))
-						//{
-						//	//No function yet.
-						//}
-						//if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Set Character Alliance");
-
-					}
-					else
-					{
-						//PE: As we can have diffent results , start by displaying change all.
-						const char* items_combo[] = { "... change all to ...", "Enemies", "Allies", "Neutrale" };
-						
-						int new_selection = t.entityelement[g.entityrubberbandlist[0].e].eleprof.iCharAlliance;
-						bool bGotSameSelection = true;
-						//Check if all selection are the same.
-						for (int i = 0; i < (int)g.entityrubberbandlist.size(); i++)
-						{
-							int e = g.entityrubberbandlist[i].e;
-							if (e > 0 && t.entityprofile[t.entityelement[e].bankindex].ischaracter > 0)
-							{
-								if (t.entityelement[e].eleprof.iCharAlliance != new_selection)
-								{
-									bGotSameSelection = false;
-									break;
-								}
-							}
-						}
-						if (bGotSameSelection)
-							new_selection++;
-						else
-							new_selection = 0;
-						
-						if (ImGui::Combo("##ShooteriCharAlliancem", &new_selection, items_combo, IM_ARRAYSIZE(items_combo)))
-						{
-							if (new_selection > 0)
-							{
-								new_selection--;
-								for (int i = 0; i < (int)g.entityrubberbandlist.size(); i++)
-								{
-									int e = g.entityrubberbandlist[i].e;
-									if (e > 0 && t.entityprofile[t.entityelement[e].bankindex].ischaracter > 0)
-									{
-										t.entityelement[e].eleprof.iCharAlliance = new_selection;
-									}
-								}
-							}
-						}
-						if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Set Character Alliance");
-					}
-					ImGui::PopItemWidth();
-					ImGui::Indent(-10);
-				}
-				*/
-
-				#ifndef REMOVED_EARLYACCESS
-				if (t.visuals.sFactionName[0] == "")
-				{
-					t.visuals.sFactionName[0] = "Faction 1";
-					t.visuals.sFactionName[1] = "Faction 2";
-					t.visuals.sFactionName[2] = "Faction 3";
-					for (int iL = 0; iL < 16; iL++)
-						bFactionWindow[iL] = false;
-				}
-				for (int iL = 0; iL < 16; iL++)
-				{
-					if (bFactionWindow[iL])
-					{
-						//Ask for a proper name of faction.
-						ImGui::SetNextWindowSize(ImVec2(26 * ImGui::GetFontSize(), 8 * ImGui::GetFontSize()), ImGuiCond_Once);
-						ImGui::SetNextWindowPosCenter(ImGuiCond_Once);
-						cstr sUniqueWinName = cstr("Faction Name##ttn") + cstr(iL);
-						ImGui::Begin(sUniqueWinName.Get(), &bFactionWindow[iL], 0);
-						ImGui::Indent(10);
-						static char NewTextureName[256];
-						cstr sUniqueInputName = cstr("##InputFactionName") + cstr(iL);
-						ImGui::PushItemWidth(-10);
-						ImGui::Text("Enter a name for faction:");
-
-						if (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0))
-							ImGui::SetKeyboardFocusHere(0);
-
-						if (t.visuals.sFactionName[iL] == " ")
-							t.visuals.sFactionName[iL] = "";
-
-						if (ImGui::InputText(sUniqueInputName.Get(), t.visuals.sFactionName[iL].Get(), 250, ImGuiInputTextFlags_EnterReturnsTrue)) {
-							t.gamevisuals.sFactionName[iL] = t.visuals.sFactionName[iL];
-							bFactionWindow[iL] = false;
-						}
-						if (ImGui::MaxIsItemFocused()) bImGuiGotFocus = true;
-
-						if (t.visuals.sFactionName[iL] == "")
-							t.visuals.sFactionName[iL] = " ";
-						ImGui::PopItemWidth();
-						ImGui::Indent(-10);
-						if (ImGui::GetCurrentWindow()->ScrollbarSizes.x > 0)
-						{
-							//Hitting exactly at the botton could cause flicker, so add some additional lines when scrollbar on.
-							ImGui::Text("");
-							ImGui::Text("");
-						}
-						bImGuiGotFocus = true;
-						ImGui::End();
-					}
-				}
-
-				if (t.entityelement[iEntIndex].eleprof.iCharAlliance == 1)
-				{
-					// only for an enemy do they have a faction
-					ImGui::Indent(10);
-					ImGui::TextCenter("Enemy Faction");
-					//PE: New code support both rubberband and single changes.
-					if (1)
-					{
-						int UseEntIndex = iEntIndex;
-
-						if (bRubberBand)
-							UseEntIndex = g.entityrubberbandlist[0].e;
-
-						bool bGotSameSelection = true;
-
-						int new_selection = t.entityelement[UseEntIndex].eleprof.iCharFaction;
-						if (bRubberBand)
-						{
-							//Check if all selection are the same.
-							for (int i = 0; i < (int)g.entityrubberbandlist.size(); i++)
-							{
-								int e = g.entityrubberbandlist[i].e;
-								if (e > 0 && t.entityprofile[t.entityelement[e].bankindex].ischaracter > 0)
-								{
-									if (t.entityelement[e].eleprof.iCharFaction != new_selection)
-									{
-										bGotSameSelection = false;
-										break;
-									}
-								}
-							}
-						}
-						cstr cFactionName = "";
-						if (t.entityelement[UseEntIndex].eleprof.iCharFaction >= 0 && t.entityelement[UseEntIndex].eleprof.iCharFaction < 16)
-							cFactionName = t.visuals.sFactionName[t.entityelement[UseEntIndex].eleprof.iCharFaction];
-
-						if (bRubberBand && !bGotSameSelection)
-						{
-							cFactionName = "... change all to ...";
-						}
-
-						if (ImGui::BeginCombo("##SelectFactionName", cFactionName.Get()))
-						{
-							int iCountIndex = 0;
-							for (int iL = 0; iL < 16; iL++)
-							{
-								if (t.visuals.sFactionName[iL] != "")
-								{
-									bool is_selected = false;
-									if (t.entityelement[UseEntIndex].eleprof.iCharFaction == iCountIndex)
-										is_selected = true;
-									if (ImGui::Selectable(t.visuals.sFactionName[iL].Get(), is_selected))
-									{
-										t.entityelement[UseEntIndex].eleprof.iCharFaction = iCountIndex;
-										if (bRubberBand)
-										{
-											for (int i = 0; i < (int)g.entityrubberbandlist.size(); i++)
-											{
-												int e = g.entityrubberbandlist[i].e;
-												if (e > 0 && t.entityprofile[t.entityelement[e].bankindex].ischaracter > 0)
-												{
-													t.entityelement[e].eleprof.iCharFaction = iCountIndex;
-												}
-											}
-										}
-									}
-									if (is_selected)
-										ImGui::SetItemDefaultFocus();
-
-									ImVec2 cpos = ImGui::GetCursorPos();
-
-									ImGui::SetItemAllowOverlap();
-									ImGui::SetCursorPos(ImVec2(cpos.x + ImGui::GetContentRegionAvail().x - 30.0f, cpos.y - (ImGui::GetFontSize()*1.5) - 3.0));
-									ImGui::PushID(99 + iL);
-									if (ImGui::ImgBtn(TOOL_PENCIL, ImVec2(16, 16), ImColor(255, 255, 255, 0)))
-									{
-										bFactionWindow[iL] = true;
-									}
-									if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Change Faction Name");
-									ImGui::PopID();
-
-									ImGui::SetCursorPos(cpos);
-
-									iCountIndex++;
-								}
-							}
-
-							//Find first free.
-							for (int iL = 0; iL < 16; iL++)
-							{
-								if (t.visuals.sFactionName[iL] == "")
-								{
-									//Add new.
-									bool is_selected = false;
-									if (ImGui::Selectable("Add a New Faction", is_selected))
-									{
-										t.visuals.sFactionName[iL] = cstr("Faction") + cstr(iL);
-										bFactionWindow[iL] = true;
-									}
-									break;
-								}
-							}
-
-							ImGui::EndCombo();
-						}
-						if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Set Enemy Characters Faction (this feature is not yet complete)");
-					}
-					ImGui::Indent(-10);
-				}
-				#endif
-			}
-		}
-
-		if (!pref.bHideTutorials)
-		{
-			#ifdef REMOVED_EARLYACCESS
-			#else
-			if (ImGui::StyleCollapsingHeader("Tutorial (this feature is incomplete)", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				ImGui::Indent(10);
-				cstr cShowTutorial = "01 - Getting started";
-				char* tutorial_combo_items[] = { "01 - Getting started", "02 - Creating terrain", "03 - Add character and set a path" };
-				SmallTutorialVideo(cShowTutorial.Get(), tutorial_combo_items, ARRAYSIZE(tutorial_combo_items), SECTION_SHOOTERGENRE);
-				float but_gadget_size = ImGui::GetFontSize()*12.0;
-				float w = ImGui::GetWindowContentRegionWidth() - 20.0;
-				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (but_gadget_size*0.5), 0.0f));
-				#ifdef INCLUDESTEPBYSTEP
-				if (ImGui::StyleButton("View Step by Step Tutorial", ImVec2(but_gadget_size, 0)))
-				{
-					bHelp_Window = true;
-					bHelpVideo_Window = true;
-					extern bool bSetTutorialSectionLeft;
-					bSetTutorialSectionLeft = false;
-					strcpy(cForceTutorialName, cShowTutorial.Get());
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Start Step by Step Tutorial");
-				#endif
-				ImGui::Indent(-10);
-			}
-			#endif
 		}
 	}
 	else
@@ -11482,8 +10748,6 @@ void imgui_shooter_tools(void)
 }
 #endif
 #endif
-
-//PE: This also fixed TW TASK "BETA 3 - When placing an Audio marker, an outline of another appeared off - screen.Not sure what I did and I can't seem to replicate it. I can't select the outline.".
 
 void DeleteWaypointsAddedToCurrentCursor(void)
 {
@@ -11515,7 +10779,6 @@ std::vector<NodeConnection> nodeconnections;
 void AddDotObjectRelation(int sobj, int dobj);
 void FindDotObjectRelation(int sobj, int dobj,int middle_index);
 void GetMiddleEntityIdAndRelationshipId(int sobj, int dobj, int &Entid, int &ReleationshipId, int& NodeConnectionId, int* NodeConnectionIndex = nullptr);
-//void DrawDotArcs(int from, int to,bool bDrawMiddleBut);
 void DrawObjectRelation(int from, int to, bool bDrawMiddleBut, int forceVertUpdate = 0);
 void CreateDotMiddleObject(int obj);
 void deleterelationobjects();
@@ -11870,10 +11133,6 @@ void CreateDotMiddleObject(int obj)
 	{
 		if (ObjectExist(g.gameplayparentobjects + 2) == 0)
 		{
-			//LoadObject("editors\\uiv3\\dotmiddleobject.dbo", g.gameplayparentobjects + 2);
-			//LoadObject("editors\\uiv3\\brain_marker.dbo", g.gameplayparentobjects + 2);
-			//ScaleObject(g.gameplayparentobjects + 2, 30, 30, 30);
-			//MakeObjectSphere(g.gameplayparentobjects + 2, 10, 2, 4 );
 			LoadObject("editors\\uiv3\\brain_logic_marker.dbo", g.gameplayparentobjects + 2);
 			ScaleObject(g.gameplayparentobjects + 2, 25, 25, 25);
 			HideObject(g.gameplayparentobjects + 2);
@@ -11884,7 +11143,6 @@ void CreateDotMiddleObject(int obj)
 		SetObjectMask(obj, 1);
 		SetObjectTransparency(obj, 6);
 		SetObjectEffect (obj, g.decaleffectoffset);
-		//DisableObjectZWrite(obj);
 		DisableObjectZDepth (obj);
 		SetObjectCull(obj, 0);
 		TextureObject(obj, UI3D_DOTMIDDLEOBJECTS);
@@ -11901,27 +11159,17 @@ void CreateDotObject(int obj)
 {
 	if (ObjectExist(obj) == 0)
 	{
-		//float fSphereSize = 15.0f;
-		//MakeObjectSphere(obj, fSphereSize);
 		if (ObjectExist(g.gameplayparentobjects + 0) == 0)
 		{
-			//LoadObject("editors\\uiv3\\dotobject.dbo", g.gameplayparentobjects + 0);
-			//ScaleObject(g.gameplayparentobjects + 0, 50, 50, 50);
 			MakeObjectSphere(g.gameplayparentobjects + 0, 5, 5, 5);
 			HideObject(g.gameplayparentobjects + 0); //PE: Hide object its visible on maps.
 		}
 		CloneObject(obj, g.gameplayparentobjects + 0);
-		//SetAlphaMappingOn(obj, 25);
-		//DisableObjectZRead(obj);
 		HideObject(obj);
 		SetObjectMask(obj, 1);
 		SetObjectEffect(obj, g.guishadereffectindex);
 		SetObjectMask(obj, 1);
 		
-		//SetObjectTransparency(obj, 6);
-
-		//TextureObject(obj, UI3D_DOTOBJECTS);
-		//DisableObjectZWrite(obj);
 		DisableObjectZDepth (obj);
 		SetObjectCull(obj, 0);
 		TextureObject(obj, UI3D_DOTOBJECTS);// UI3D_DOTMIDDLEOBJECTS);
@@ -11941,23 +11189,18 @@ void CreateDotArcObject(int obj)
 	{
 		float fSphereSize = 15.0f;
 		WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
-		//MakeObjectBox(obj, 2.5f, 2.5f, 7.0f);
 		if (ObjectExist(g.gameplayparentobjects + 1) == 0)
 		{		
 			//LoadObject("editors\\uiv3\\dotpipe.dbo", g.gameplayparentobjects + 1);
 			LoadObject("editors\\uiv3\\dotobject.dbo", g.gameplayparentobjects + 1);
 			ScaleObject(g.gameplayparentobjects + 1, 25, 25, 25);
-			//RotateObject(g.gameplayparentobjects + 1, 0, 90, 0);
-			//FixObjectPivot(g.gameplayparentobjects + 1);
 		}
 		CloneObject(obj, g.gameplayparentobjects + 1);
 		WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-		//DisableObjectZRead(obj);
 		DisableObjectZDepth (obj);
 		HideObject(obj);
 		SetObjectMask(obj, 1);
 		SetObjectEffect(obj, g.guishadereffectindex);
-		//SetObjectDiffuseEx(obj, Rgb(255, 255, 0), 0);
 		TextureObject(obj, UI3D_DOTOBJECTS);
 		SetObjectMask(obj, 1);
 		sObject* pDotObject = GetObjectData(obj);
@@ -12077,13 +11320,9 @@ void MoveSelectedDotObject(void)
 						if (iLastEmmisiveObject > 0) 
 						{
 							SetObjectEmissive(iLastEmmisiveObject, Rgb(0, 0, 0));
-							//sObject* pLastObj = GetObjectData(iLastEmmisiveObject);
-							//WickedCall_SetObjectHighlightBlue(pLastObj, false);
 							if (sobj > 0)
 							{
 								SetObjectEmissive(sobj, Rgb(0, 0, 0));
-								//sObject* pSrcObj = GetObjectData(sobj);
-								//WickedCall_SetObjectHighlightBlue(pSrcObj, false);
 							}
 						}
 
@@ -12091,13 +11330,9 @@ void MoveSelectedDotObject(void)
 						if (!bDraggingActive)
 						{
 							SetObjectEmissive(dobj, Rgb(56, 110, 146));// 255, 0));
-							//sObject* pDestObj = GetObjectData(dobj);
-							//WickedCall_SetObjectHighlightBlue(pDestObj, true);
 							if (sobj > 0)
 							{
 								SetObjectEmissive(sobj, Rgb(56, 110, 146));//255, 0));
-								//sObject* pSrcObj = GetObjectData(sobj);
-								//WickedCall_SetObjectHighlightBlue(pSrcObj, true);
 							}
 						}
 					}
@@ -12128,14 +11363,10 @@ void MoveSelectedDotObject(void)
 			if (iLastEmmisiveObject > 0)
 			{
 				SetObjectEmissive(iLastEmmisiveObject, Rgb(0, 0, 0));
-				//sObject* pLastObj = GetObjectData(iLastEmmisiveObject);
-				//WickedCall_SetObjectHighlightBlue(pLastObj, false);
 				int sobj = g_source_dot_pobject->dwObjectNumber;
 				if (sobj > 0)
 				{
 					SetObjectEmissive(sobj, Rgb(0, 0, 0));
-					//sObject* pSrcObj = GetObjectData(sobj);
-					//WickedCall_SetObjectHighlightBlue(pSrcObj, false);
 				}
 			}
 			iLastEmmisiveObject = 0;
@@ -12159,8 +11390,6 @@ void MoveSelectedDotObject(void)
 		if (iLastEmmisiveObject > 0)
 		{
 			SetObjectEmissive(iLastEmmisiveObject, Rgb(0, 0, 0));
-			//sObject* pLastObj = GetObjectData(iLastEmmisiveObject);
-			//WickedCall_SetObjectHighlightBlue(pLastObj, false);
 		}
 		iLastEmmisiveObject = 0;
 		g_destination_dot_pobject = NULL;
@@ -12200,7 +11429,6 @@ void DisplayRelationshipMenu(int iDotMiddleIndex, int mode)
 	{
 		int iRelationType = t.entityelement[iEntID].eleprof.iObjectRelationshipsType[iRelationID];
 		ImGui::Indent(10);
-		//ImGui::PushItemWidth(-10);
 		ImGui::PushItemWidth(-1.25f * fFontSize);
 		
 		// character v character
@@ -12252,7 +11480,6 @@ void DisplayRelationshipMenu(int iDotMiddleIndex, int mode)
 		{
 			ImGui::TextCenter("Character and Zone");
 			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(fFontSize * 2, 0));
-			//const char* items_combo[] = { "Alert character", "Stand-down character", "Toggle alert the character", "Activate zone", "Deactivate zone", "Toggle zone" };
 			const char* items_combo[] = { "Alert character", "Stand-down character", "Toggle alert the character" };
 			if (ImGui::Combo("##iCharRelationshipsDataPatrol", &t.entityelement[iEntID].eleprof.iObjectRelationshipsData[iRelationID], items_combo, IM_ARRAYSIZE(items_combo)))
 			{
@@ -12333,7 +11560,6 @@ void DisplayRelationshipMenu(int iDotMiddleIndex, int mode)
 		{
 			ImGui::TextCenter("Zone and Zone");
 			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(fFontSize * 2, 0));
-			//const char* items_combo[] = { "Do Nothing" }; // Activate other zone", "Deactivate other zone", "Toggle other zone" ;
 			const char* items_combo[] = { "Activate other zone", "Deactivate other zone", "Toggle other zone" };
 			if (ImGui::Combo("##iCharRelationshipsDataPatrol", &t.entityelement[iEntID].eleprof.iObjectRelationshipsData[iRelationID], items_combo, IM_ARRAYSIZE(items_combo)))
 			{
@@ -12694,16 +11920,6 @@ void FindDotObjectRelation(int sobj, int dobj,int middle_index)
 		int iBankIndex = t.entityelement[iEntityID].bankindex;
 		int iMasterObject = g.entitybankoffset + t.entityelement[iEntityID].bankindex;
 		int iEntityObject = t.entityelement[iEntityID].obj;
-
-		if (sobj == iEntityObject)
-		{
-			//iDotMiddleInfoSourceType[middle_index] = from;
-		}
-
-		if (dobj == iEntityObject)
-		{
-			//iDotMiddleInfoDestinationType[middle_index] = from;
-		}
 	}
 }
 
@@ -12937,13 +12153,6 @@ void CreateObjectRelationMesh(float fromx, float fromy, float fromz, float tox, 
 
 	//SetObjectDiffuse(obj, color);
 	SetObjectCull(obj, 0);
-
-	//DisableObjectZRead(obj);
-	//DisableObjectZDepth(obj);
-
-	// Set alpha and transparency of this object
-	//SetObjectTransparency(obj, 1);
-	//SetAlphaMappingOn(obj, 35);
 
 	DeleteMemblock(iFound);
 	ShowObject(obj);
@@ -13251,17 +12460,6 @@ void DrawObjectRelation(int from, int to, bool bDrawMiddleBut, int forceVertUpda
 		int iColorAdd = 0;
 		if (bHighlight)
 			iColorAdd = 45;
-
-		//dwNewColor = Rgb(6 + iColorAdd, 65 + iColorAdd, 100 + iColorAdd);
-
-		/* cleaner light blue for EA
-		if (iColor == 1)
-			dwNewColor = Rgb(0 + iColorAdd, 255, 0 + iColorAdd);
-		else if (iColor == 2)
-			dwNewColor = Rgb(255, 0 + iColorAdd, 0 + iColorAdd);
-		else if (iColor == 3)
-			dwNewColor = Rgb(20 + iColorAdd, 100 + iColorAdd, 255);
-		*/
 	}
 
 	if (bHighlight)
@@ -13308,16 +12506,10 @@ void DrawObjectRelation(int from, int to, bool bDrawMiddleBut, int forceVertUpda
 		// Make the button go green when selected.
 		if (bHighlight && iNodeConnectionIndex >= 0 && !bDraggingActive)
 		{
-			//SetObjectDiffuse(nodeconnections[iNodeConnectionIndex].middle, Rgb(40, 140, 65));
-			//SetObjectEmissive(nodeconnections[iNodeConnectionIndex].middle, Rgb(0, 255, 0));
-			//ScaleObject(nodeconnections[iNodeConnectionIndex].middle, 130, 130, 130);
 			ScaleObject(nodeconnections[iNodeConnectionIndex].middle, 35, 35, 35);
 		}
 		else if (iNodeConnectionIndex >= 0)
 		{
-			//SetObjectDiffuse(nodeconnections[iNodeConnectionIndex].middle, Rgb(255, 255, 255));
-			//SetObjectEmissive(nodeconnections[iNodeConnectionIndex].middle, Rgb(0, 0, 0));
-			//ScaleObject(nodeconnections[iNodeConnectionIndex].middle, 100, 100, 100);
 			ScaleObject(nodeconnections[iNodeConnectionIndex].middle, 25, 25, 25);
 		}
 
@@ -13359,33 +12551,6 @@ void DrawObjectRelation(int from, int to, bool bDrawMiddleBut, int forceVertUpda
 			PositionObject(DOTMIDDLEOBJECTID + iTotalMiddle, ffromx, ffromy, ffromz);
 			PointObject(DOTMIDDLEOBJECTID + iTotalMiddle, ftox, ftoy, ftoz);
 			MoveObject(DOTMIDDLEOBJECTID + iTotalMiddle, fDistance*0.5);
-
-			if (bDotMiddleWindow == false)
-			{
-				/* do not show labels
-				// show label of relationship connection
-				int thisobj = DOTMIDDLEOBJECTID + iTotalMiddle;
-				LPSTR pRelationshipActivity = "";
-				int iRelationType = t.entityelement[iEntID].eleprof.iObjectRelationshipsType[iRelationID];
-				int iRelationshipsData = t.entityelement[iEntID].eleprof.iObjectRelationshipsData[iRelationID];
-				const char* items_combo1[] = { "Alert other character", "Stand-down other character", "Toggle alert of other character" };
-				const char* items_combo2[] = { "Reverse at End", "Loop Around At End", "Follow One Way", "Choose Random Flag" };
-				const char* items_combo3[] = { "Alert character", "Stand-down character", "Toggle alert the character" };
-				const char* items_combo4[] = { "Alert character", "Stand-down character", "Toggle alert the character" };
-				const char* items_combo9[] = { "Activate object", "Deactivate object", "Toggle object" }; // "Activate zone", "Deactivate zone", "Toggle zone", "Activate object", "Deactivate object", "Toggle object" ;
-				const char* items_combo10[] = { "Activate other object", "Deactivate other object", "Toggle other object" };
-				if (iRelationType == 1)	pRelationshipActivity = (LPSTR)items_combo1[iRelationshipsData];
-				if (iRelationType == 2)	pRelationshipActivity = (LPSTR)items_combo2[iRelationshipsData];
-				if (iRelationType == 3)	pRelationshipActivity = (LPSTR)items_combo3[iRelationshipsData];
-				if (iRelationType == 4)	pRelationshipActivity = (LPSTR)items_combo4[iRelationshipsData];
-				if (iRelationType == 9)	pRelationshipActivity = (LPSTR)items_combo9[iRelationshipsData];
-				if (iRelationType == 10) pRelationshipActivity = (LPSTR)items_combo10[iRelationshipsData];
-				if (GetInScreen(thisobj) == 1 && iRelationType !=5 && iRelationType != 6 && iRelationType != 7 && iRelationType != 8)
-				{
-					pastebitmapfontcenter(pRelationshipActivity, GetScreenX(thisobj), GetScreenY(thisobj), 1, 192);
-				}
-				*/
-			}
 
 			iDotMiddleInfoSource[iTotalMiddle] = from;
 			iDotMiddleInfoDestination[iTotalMiddle] = to;
@@ -13555,7 +12720,6 @@ void CreateBackdropObject(bool bForceRecreate,cstr newImageFile,cstr fpefile)
 		SetVertexDataUV(5, U_f, V_f);
 		UnlockVertexData();
 		#endif
-		//SetObjectUVManually(backdropobj, 0, 1, 1);
 
 		FixObjectPivot(backdropobj);
 		SetObjectTransparency(backdropobj, 1);
@@ -13566,8 +12730,6 @@ void CreateBackdropObject(bool bForceRecreate,cstr newImageFile,cstr fpefile)
 		if(cCurrentBackDropImageFile.Len() > 0 && ImageExist(BACKDROPMAGE))
 			TextureObject(backdropobj, BACKDROPMAGE);
 		SetObjectCull(backdropobj, 0);
-		//DisableObjectZDepth(backdropobj);
-		//DisableObjectZRead(backdropobj);
 		sObject* pBackObject = GetObjectData(backdropobj);
 		if (pBackObject)
 		{
@@ -13664,16 +12826,6 @@ void CreateBackdropObject(bool bForceRecreate,cstr newImageFile,cstr fpefile)
 	//PE: Disable fog.
 	float oldFogNear = t.visuals.FogNearest_f;
 	float oldFogFar = t.visuals.FogDistance_f;
-	//PE: Fog is now removed in wicked repo.
-//	if (t.visuals.FogDistance_f < 30000.0f)
-//	{
-//		t.visuals.FogDistance_f = 1000000.0f; //Disable fog.
-//		t.visuals.FogNearest_f = 960400;// 1000000.0f;
-//		Wicked_Update_Visuals((void *)&t.visuals);
-//		iFogChangedFramesBeforeRestore = 5;
-//		t.visuals.FogDistance_f = oldFogFar;
-//		t.visuals.FogNearest_f = oldFogNear;
-//	}
 	//Now always use thumb light.
 	WickedCall_EnableThumbLight(true);
 
@@ -13697,7 +12849,6 @@ void StartForceRender(void)
 	extern bool g_bNoGGUntilGameGuruMainCalled;
 	//PE: Cant use forcerender until init is done.
 	if (!g_bNoGGUntilGameGuruMainCalled) return;
-	//bool renderstate = master.ForceRender(0);
 	extern bool bSkipAllGameLogic;
 	bSkipAllGameLogic = true;
 	//PE: Empty messages , so windows dont think we are dead. ( perhaps remember QUIT ? )
@@ -13720,7 +12871,6 @@ int current_backbuffer_grabimg = 0;
 
 void GrabBackBufferForAnImage(void)
 {
-	//if (g.vrglobals.GGVREnabled > 0 && g.vrglobals.GGVRUsingVRSystem == 1 && t.game.activeStoryboardScreen > -1)
 	extern int g_iActivelyUsingVRNow;
 	if (g.vrglobals.GGVREnabled > 0 && g_iActivelyUsingVRNow == 1 && t.game.activeStoryboardScreen > -1)
 	{
@@ -13822,7 +12972,6 @@ void GrabBackBufferForAnImage(void)
 				PositionObject (g.hudscreen3dobjectoffset, fX, fY, fZ);
 				
 				//not reliable in VR mode
-				//SetObjectToCameraOrientation(g.hudscreen3dobjectoffset);
 				RotateObject(g.hudscreen3dobjectoffset, 0, t.playercontrol.cy_f, 0);
 				MoveObject(g.hudscreen3dobjectoffset, 20.0f);
 
@@ -14779,7 +13928,6 @@ void process_entity_library(void)
 				{
 					if (current_tab != i) {
 						//Tab changed.
-						//timestampactivity(0, "Entity Library Tab change");
 						current_tab = i;
 						iCurrentFilter = 0;
 					}
@@ -14796,7 +13944,6 @@ void process_entity_library(void)
 					strcpy(cFilter, "");
 					strcpy(cHeader, "");
 					//PE: Debug dynamic icon load unload.
-					//ImGui::Text("Entities: %ld , in memory: %ld", olduniqueId-4000, loaded_images);
 					ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3.0));
 					ImGui::Text("Filter: ");
 					ImGui::SameLine();
@@ -14845,16 +13992,10 @@ void process_entity_library(void)
 
 						if (iCurrentFilter == 1) strcpy(cFilter, "Character");
 						if (iCurrentFilter == 2) strcpy(cFilter, "Building");
-						//								if (iCurrentFilter == 3) strcpy(cFilter, "Foliage");
-						//								if (iCurrentFilter == 4) strcpy(cFilter, "Cartoon");
-						//								if (iCurrentFilter == 5) strcpy(cFilter, "Fixtures");
 						if (iCurrentFilter == 6) strcpy(cFilter, "*");
 
 						strcpy(cAllFilters[0], "Character");
 						strcpy(cAllFilters[1], "Building");
-						//								strcpy(cAllFilters[2], "Foliage");
-						//								strcpy(cAllFilters[3], "Cartoon");
-						//								strcpy(cAllFilters[4], "Fixtures");
 
 					}
 					if (i == 1) {
@@ -15510,8 +14651,6 @@ void process_entity_library(void)
 																		ImGui::BeginTooltip();
 																		float icon_ratio;
 																		ImGui::ImgBtn(g.importermenuimageoffset + 50, ImVec2(TooltipImageSize, ImgY), ImVec4(0.0, 0.0, 0.0, 1.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false);
-																		//char hchar[MAX_PATH];
-																		//ImGui::Text("%s", hchar);
 																		ImGui::EndTooltip();
 																	}
 																	else
@@ -16015,7 +15154,6 @@ bool DoTreeNode(int parentid, char *ignore, char *ignore2, char *selectfolder = 
 					if (stricmp(cSearchAllEntities[0], "purchased") == NULL)
 					{
 						// only show purchased behaviors
-						//bValid = true;
 						if (treename == "Animals") bValid = false;
 						if (treename == "Effects") bValid = false;
 						if (treename == "Horror") bValid = false;
@@ -16174,7 +15312,6 @@ bool DoTreeNodeSearch(int parentid, char *lookup)
 			else
 				node_flags &= ~ImGuiTreeNodeFlags_Selected;
 
-			//ImRect frame_bb = ImRect(ImGui::GetWindowPos()+ImGui::GetCursorPos(), ImGui::GetWindowPos() + ImGui::GetCursorPos() + ImVec2(ImGui::GetContentRegionAvailWidth(), ImGui::GetFontSize()) );
 			ImGui::PushItemWidth(-20.0);
 
 			std::string treename = it->second->show_name;
@@ -16655,7 +15792,6 @@ void process_entity_library_v2(void)
 							if (myfiles->iPreview > 0)
 							{
 								cstr check = myfiles->m_sPath + cstr("\\") + myfiles->m_sName;
-								//if (myfiles->m_sPath == t.addentityfile_s)
 								if (pestrcasestr(check.Get(), t.addentityfile_s.Get()))
 								{
 									//Set default backdrop.
@@ -16668,8 +15804,6 @@ void process_entity_library_v2(void)
 									}
 									else
 									{
-										//CreateBackdropObject(false, "Blue spotlight.dds", t.addentityfile_s);
-										//cCurrentBackDrop = "Blue spotlight.dds";
 										CreateBackdropObject(false, "None", t.addentityfile_s);
 										cCurrentBackDrop = "None";
 									}
@@ -16809,9 +15943,6 @@ void process_entity_library_v2(void)
 
 					if (ImGui::IsMouseDown(1) && ImGui::IsItemHovered() && ImGui::IsMouseDragging(1))
 					{
-						//BackBufferCamLeft += ImGui::GetIO().MouseDelta.x / fMoveSpeed * 160.0f;
-						//BackBufferCamUp += ImGui::GetIO().MouseDelta.y / fMoveSpeed * 160.0f;
-
 						//PE: Use inertia slerp
 						fMoveBackbufferToLeft = fMoveBackbufferToLeft + ImGui::GetIO().MouseDelta.x / fMoveSpeed * fCamDistance;
 						BackBufferCamLeft = ImLerp(fMoveBackbufferToLeft, BackBufferCamLeftOld, 0.85);
@@ -16838,9 +15969,6 @@ void process_entity_library_v2(void)
 						BackBufferZoom += ImGui::GetIO().MouseWheel*speed;
 						bLoopFullFPS = true;
 					}
-					//ImGui::Text("fCamDistance: %f", fCamDistance);
-					//ImGui::Text("g.timeelapsed_f: %f", g.timeelapsed_f);
-
 				}
 
 				ImGui::Spacing();
@@ -16857,7 +15985,6 @@ void process_entity_library_v2(void)
 					ImGui::Indent(10);
 					ImGui::TextCenter("Static Image");
 					ImGui::PushItemWidth(-10);
-					//cstr cRet = ListboxFilesListForLibrary(cCurrentBackDrop.Get());
 					cstr cRet = ComboFilesListForLibrary(cCurrentBackDrop.Get(), 6, 120, true);
 					if (cRet != cCurrentBackDrop)
 					{
@@ -16994,7 +16121,6 @@ void process_entity_library_v2(void)
 								{
 									if (ImGui::ImgBtn(MEDIA_PLAY, ImVec2(fFontSize, fFontSize), ImColor(255, 255, 255, 0), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 128), drawCol_Down, -1, 0, 0, 0, false, false, false, false, false, bBoostIconColors))
 									{
-										//SetObjectFrame(BackBufferObjectID, iFrameStart);
 										SetObjectFrame(BackBufferObjectID, iFrameCurrent);
 										LoopObject(BackBufferObjectID, iFrameStart, iFrameEnd);
 
@@ -17007,8 +16133,6 @@ void process_entity_library_v2(void)
 								{
 									if (ImGui::ImgBtn(MEDIA_PAUSE, ImVec2(fFontSize, fFontSize), ImColor(255, 255, 255, 0), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 128), drawCol_Down, -1, 0, 0, 0, false, false, false, false, false, bBoostIconColors))
 									{
-										//SetObjectFrame(BackBufferObjectID, iFrameStart);
-										//LoopObject(BackBufferObjectID);
 										StopObject(BackBufferObjectID);
 										SetObjectFrame(BackBufferObjectID, iFrameCurrent);
 										bStartAnimation = false;
@@ -17077,10 +16201,6 @@ void process_entity_library_v2(void)
 				t.grideleprof = backup_grideleprof;
 				t.gridentity = backup_gridentity;
 				t.entid = backup_entid;
-
-				// insert a keyboard shortcut component into panel
-				// no shortcuts in this section!
-				//UniversalKeyboardShortcut(eKST_ObjectLibrary);
 
 				if (!bIsCCPObject)
 				{
@@ -17208,10 +16328,7 @@ void process_entity_library_v2(void)
 								myfiles = pNewFolder->m_pFirstFile->m_pNext;
 								while (myfiles)
 								{
-									//if (myfiles->iPreview > 0)
-									//{
 									cstr check = myfiles->m_sPath + cstr("\\") + myfiles->m_sName;
-									//if (myfiles->m_sPath == t.addentityfile_s)
 									if (pestrcasestr(check.Get(), t.addentityfile_s.Get()))
 									{
 										if (myfiles->iPreview > 0 && GetImageExistEx(myfiles->iPreview) && myfiles->iPreview >= 4000 && myfiles->iPreview < UIV3IMAGES) { //PE: Need to protect system images after tool img range has changed. (myfiles->iPreview can be a system icon)
@@ -17405,7 +16522,6 @@ void process_entity_library_v2(void)
 				WickedCall_SetSunDirection(t.visuals.SunAngleX, t.visuals.SunAngleY, t.visuals.SunAngleZ);
 				master_renderer->setBloomEnabled(t.visuals.bBloomEnabled);
 				WickedCall_MoveReflectionProbe(GGORIGIN_X, GGORIGIN_Y + 5000, GGORIGIN_Z, "editorProbe", 500);
-				//WickedCall_EnableCameraLight(bEditorLight);
 				WickedCall_EnableThumbLight(false);
 				if (pPreviewFile)
 					pPreviewFile->iPreview = 0;
@@ -17537,7 +16653,6 @@ void process_entity_library_v2(void)
 
 			if (g_iDevToolsOpen != 0)
 			{
-				//ImGui::SameLine();
 				ImGui::PushItemWidth(30);
 				if (ImGui::StyleButton("Refresh##+", ImVec2(0, 0)))
 				{
@@ -18136,10 +17251,6 @@ void process_entity_library_v2(void)
 		{
 			//PE: Must match 230 for defaults to match the exact icons on screen.
 			//PE: Perhaps add the percent adjustment later.
-			//float fWinX = ImGui::GetWindowSize().x;
-			//float fRatio = 0.2323232323232323;
-			//float fNewColW = floor(fWinX * fRatio);
-			//ImGui::SetColumnWidth(0, fNewColW);
 			ImGui::SetColumnWidth(0, 230.0f);
 			init_Left_Categories_Column_Width--;
 		}
@@ -18764,19 +17875,6 @@ void process_entity_library_v2(void)
 									{
 										std::string AddToSort = "";
 										std::string SortSearch = Lower(cSearchAllEntities[i]);
-
-										/* LB: this confused users who found their A-Z messed up
-										char * dist = (char *)pestrcasestr(myfiles->m_sBetterSearch.Get(), cSearchAllEntities[i]);
-										int iDist = 99;
-										if (dist)
-										{
-											iDist = dist - myfiles->m_sBetterSearch.Get();
-										}
-										if (iDist < 10)
-											AddToSort = "0";
-										AddToSort = AddToSort + std::to_string(iDist);
-										SortBy = AddToSort + SortBy;
-										*/
 									}
 
 									if (current_sortby == 3 || current_sortby == 4)
@@ -18837,10 +17935,6 @@ void process_entity_library_v2(void)
 									extern char szBeforeChangeWriteDir[MAX_PATH];
  									if (strlen(szBeforeChangeWriteDir) > 0 && strlen(projectfolder) > 0 )
 									{
-
-										//strcpy(projectfolder, Storyboard.customprojectfolder);
-										//strcat(projectfolder, Storyboard.gamename);
-
 										LPSTR pFileFolderToCheck = pNewFolder->m_sFolderFullPath.Get();
 										if (myfiles && strnicmp(pFileFolderToCheck, projectfolder, strlen(projectfolder)) == NULL)
 										{
@@ -18879,8 +17973,6 @@ void process_entity_library_v2(void)
 
 									//Map pNewFolder to files entry.
 									myfiles->pNewFolder = pNewFolder;
-									//myfiles->bLoadedInNewFormat = bLoadedInNewFormat;
-									//myfiles->textureId = textureId;
 									myfiles->uniqueId = uniqueId;
 								}
 
@@ -18944,7 +18036,6 @@ void process_entity_library_v2(void)
 				iColumns = 1;
 
 			ImGui::BeginColumns("##filescolumns4entities", iColumns, ImGuiColumnsFlags_NoBorder);
-			//ImGui::Columns(iColumns, "filescolumns4entities", false);  //false no border
 
 			if (bUpdateSearchScrollbar)
 			{
@@ -19109,19 +18200,12 @@ void process_entity_library_v2(void)
 
 						PauseAnim(iVideoPreviewThumbID);
 						SetVideoVolume(100.0); //Turn back volume.
-						//UpdateAllAnimation();
 						//Capture frame.
 						ID3D11ShaderResourceView* lpVideoTextureView = GetAnimPointerView(iVideoPreviewThumbID);
 						LPGGSURFACE lpVideoTexture = GetAnimPointerTexture(iVideoPreviewThumbID);
 
 						float fVideoW = GetAnimWidth(iVideoPreviewThumbID);
 						float fVideoH = GetAnimHeight(iVideoPreviewThumbID);
-
-						//Save image do not work on some image sizes ?
-						//int rounftofour = fVideoW / 32;
-						//fVideoW = rounftofour * 32;
-						//rounftofour = fVideoH / 32;
-						//fVideoH = rounftofour * 32;
 
 						if (iVideoPreviewThumbID > 0 && lpVideoTexture && iVideoGenerateImageID > 0) {
 							float fRatio = 1.0f / (fVideoW / fVideoH);
@@ -19209,11 +18293,6 @@ void process_entity_library_v2(void)
 					std::string path_for_filename = final_name;
 					std::string dir_name = final_name;
 					replaceAll(dir_name, "\\", " - ");
-
-					//if (pestrcasestr(dir_name.c_str(), "_markers"))
-					//	isMarkers = true;
-
-
 
 					bool bDisplayText = true;
 
@@ -19311,7 +18390,6 @@ void process_entity_library_v2(void)
 									{
 										if (strlen(pCaptureAnyScriptDesc) < 8192)
 										{
-											//strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.VariableSectionDescription[i]);
 											strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.VariableSectionDescription[i].Get());
 											if (dluaload.PropertiesVariable.Variable[i] && strlen(dluaload.PropertiesVariable.Variable[i]) > 0)
 											{
@@ -19320,10 +18398,6 @@ void process_entity_library_v2(void)
 												strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.Variable[i]);
 												strcat(pCaptureAnyScriptDesc, "]");
 											}
-											//if (dluaload.PropertiesVariable.VariableSectionEndDescription[i] && strlen(dluaload.PropertiesVariable.VariableSectionEndDescription[i]) > 0)
-											//{
-											//	strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.VariableSectionEndDescription[i]);
-											//}
 											if (dluaload.PropertiesVariable.VariableSectionEndDescription[i].Len() > 0)
 											{
 												strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.VariableSectionEndDescription[i].Get());
@@ -19389,7 +18463,6 @@ void process_entity_library_v2(void)
 										{
 											//PE: Changed to support subfolders.
 											sFpeName = "";
-											//if (strnicmp(path_for_filename.c_str(), "projectbank", 11) != NULL) 
 											sFpeName = "particlesbank\\";
 											sFpeName = sFpeName + path_for_filename.c_str();
 											sFpeName = sFpeName + "\\" + myfiles->m_sName.Get();
@@ -19473,7 +18546,6 @@ void process_entity_library_v2(void)
 																void SetVideoPosition(float seconds);
 																SetVideoPosition(1.0f);
 																PlayAnimation(iVideoPreviewThumbID);
-																//UpdateAllAnimation();
 																SetRenderAnimToImage(iVideoPreviewThumbID, true);
 
 																UpdateAllAnimation();
@@ -19559,7 +18631,6 @@ void process_entity_library_v2(void)
 													gpup_setEffectOpacity(BackBufferParticleEmitter, 1.0f);
 
 													fLive = gpup_getEffectLifespan(BackBufferParticleEmitter);
-													//gpup_emitter[enr].lifespan * 60 * 10
 												}
 												//We need to delay the thumb as we cant fast forward the particles.
 												if (fLive < 100.0f)
@@ -19612,7 +18683,6 @@ void process_entity_library_v2(void)
 												{
 													if (strlen(pCaptureAnyScriptDesc) < 8192)
 													{
-														//strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.VariableSectionDescription[i]);
 														strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.VariableSectionDescription[i].Get());
 														if (dluaload.PropertiesVariable.Variable[i] && strlen(dluaload.PropertiesVariable.Variable[i]) > 0)
 														{
@@ -19621,10 +18691,6 @@ void process_entity_library_v2(void)
 															strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.Variable[i]);
 															strcat(pCaptureAnyScriptDesc, "]");
 														}
-														//if (dluaload.PropertiesVariable.VariableSectionEndDescription[i] && strlen(dluaload.PropertiesVariable.VariableSectionEndDescription[i]) > 0)
-														//{
-														//	strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.VariableSectionEndDescription[i]);
-														//}
 														if (dluaload.PropertiesVariable.VariableSectionEndDescription[i].Len() > 0)
 														{
 															strcat(pCaptureAnyScriptDesc, dluaload.PropertiesVariable.VariableSectionEndDescription[i].Get());
@@ -19716,7 +18782,6 @@ void process_entity_library_v2(void)
 						if (iDisplayLibraryType == 4 && bDLUAOnly)
 						{
 							//PE: We now preload all dlua descriptions, so just process everything.
-							//if (myfiles->iPreview > 0)
 							if(1)
 							{
 								if (myfiles->m_sDLuaDescription.Len() <= 0)
@@ -19798,9 +18863,6 @@ void process_entity_library_v2(void)
 									}
 									if (bAddAllVisible)
 									{
-										//int gcpy = ImGui::GetCursorPosY();
-										//PE: Only include visible objects.
-										//if (bIsVisible && gcpy < (iIconVisiblePosY - (media_icon_size*1.1)) && gcpy >= (ImGui::GetScrollY() - (media_icon_size*0.5)))
 										//PE: Include All.
 										if (bIsVisible)
 										{
@@ -19817,14 +18879,11 @@ void process_entity_library_v2(void)
 							if (sMakeDefaultSelecting != "")
 							{
 								std::string sMediaName = "";
-								//if (strnicmp(path_for_filename.c_str(), "projectbank", 11) != NULL)
-								//{
-									if (iDisplayLibraryType == 1) sMediaName = "audiobank\\";
-									if (iDisplayLibraryType == 2) sMediaName = "imagebank\\";
-									if (iDisplayLibraryType == 3) sMediaName = "videobank\\";
-									if (iDisplayLibraryType == 5) sMediaName = "particlesbank\\";
-									if (iDisplayLibraryType == 0 && iDisplayLibrarySubType == 1) sMediaName = "charactercreatorplus\\animations\\";
-								//}
+								if (iDisplayLibraryType == 1) sMediaName = "audiobank\\";
+								if (iDisplayLibraryType == 2) sMediaName = "imagebank\\";
+								if (iDisplayLibraryType == 3) sMediaName = "videobank\\";
+								if (iDisplayLibraryType == 5) sMediaName = "particlesbank\\";
+								if (iDisplayLibraryType == 0 && iDisplayLibrarySubType == 1) sMediaName = "charactercreatorplus\\animations\\";
 								sMediaName = sMediaName + path_for_filename.c_str();
 								if (path_for_filename.length() == 0)
 									sMediaName = sMediaName + myfiles->m_sName.Get();
@@ -19869,7 +18928,6 @@ void process_entity_library_v2(void)
 								}
 							}
 
-							//std::string sFinal = Left(myfiles->m_sName.Get(), Len(myfiles->m_sName.Get()) - 4);
 							std::string sFinal = myfiles->m_sNameFinal.Get(); //PE: For speed.
 
 							CheckTutorialAction(sFinal.c_str(), 13.0f); //Tutorial: check if we are waiting for this action
@@ -20062,7 +19120,6 @@ void process_entity_library_v2(void)
 
 													bBlockBackBufferUpdating = true;
 													DeleteWaypointsAddedToCurrentCursor();
-													//CheckTooltipObjectDelete();
 													CloseDownEditorProperties();
 													FreeTempImageList(); //PE: Make sure we free all not used textures before adding new objects.
 													#ifdef WICKEDENGINE
@@ -20662,7 +19719,6 @@ void process_entity_library_v2(void)
 							else
 							{
 								bool bHoverGroupActive = true;
-								//if (bAdvancedFPEFeatures && myfiles->m_bIsGroupObject) bHoverGroupActive = false;
 								if ( myfiles->m_bIsGroupObject) bHoverGroupActive = false; // do not allow smarts to load/generate thumbs - performance hit!
 								if (bHoverGroupActive && !bImagesStillInImGuiQueue && !bLargePreview && !bBlockBackBufferUpdating && !bEntity_Properties_Window && !g_bCharacterCreatorPlusActivated && !bImporter_Window && i == 0 && bThumbHovered)
 								{
@@ -21228,8 +20284,6 @@ void process_entity_library_v2(void)
 
 											if (bDoBackbufferUpdate)
 											{
-												//BackBufferSizeX = 512;
-												//BackBufferSizeY = 512;
 												BackBufferSaveCacheName = ""; //No saving on tooltip images
 
 												if (textureId >= 4000 && textureId < UIV3IMAGES)
@@ -21483,81 +20537,6 @@ void process_entity_library_v2(void)
 								window->DrawList->AddRect(selection_bb.Min, selection_bb.Max, ImGui::GetColorU32(bg_col), 0.0f, 0, 3.0f);
 							}
 
-							//PE: Right click context menu removed from design.
-							/*
-							if (0)
-							{
-								static cFolderItem::sFolderFiles * ContextSelection = NULL;
-								if (bThumbHovered || ContextSelection == myfiles)
-								{
-									if (!bInContextThumb || ContextSelection == myfiles)
-									{
-										if (ImGui::BeginPopupContextWindow())
-										{
-											bInContextThumb = true;
-											ContextSelection = myfiles;
-											if (ImGui::MenuItem("Update Thumbnail"))
-											{
-												std::string sFpeName = path_for_filename.c_str();
-												sFpeName = sFpeName + "\\" + myfiles->m_sName.Get();
-												t.addentityfile_s = sFpeName.c_str();
-												CreateBackBufferCacheNameEx(t.addentityfile_s.Get(), thumb_x, thumb_y, true);
-												GG_SetWritablesToRoot(true);
-												if (FileExist(BackBufferCacheName.Get()))
-												{
-													DeleteAFile(BackBufferCacheName.Get());
-													if (myfiles->iPreview > 0)
-													{
-														if (GetImageExistEx(myfiles->iPreview) && myfiles->iPreview >= 4000 && myfiles->iPreview < UIV3IMAGES) 
-														{ 
-															//PE: Need to protect system images after tool img range has changed. (myfiles->iPreview can be a system icon)
-															iDeleteInNextUpdate = myfiles->iPreview;
-														}
-													}
-													myfiles->iPreview = 0;
-													myfiles->iBigPreview = 0;
-												}
-												GG_SetWritablesToRoot(false);
-												ContextSelection = NULL;
-											}
-
-											if (myfiles->bFavorite)
-											{
-												if (ImGui::MenuItem("Remove Favourite"))
-												{
-													cstr file = myfiles->m_sPath;
-													file = file + "\\" + myfiles->m_sName.Get();
-													extern std::vector<std::string> files_favorite;
-													myfiles->bFavorite = false;
-													//Remove.
-													auto itr = std::find(files_favorite.begin(), files_favorite.end(), file.Get());
-													if (itr != files_favorite.end())
-														files_favorite.erase(itr);
-													saveVectorFileContent("favoritelist.ini", files_favorite);
-													ContextSelection = NULL;
-												}
-											}
-											else
-											{
-												if (ImGui::MenuItem("Add to Favourite"))
-												{
-													cstr file = myfiles->m_sPath;
-													file = file + "\\" + myfiles->m_sName.Get();
-													extern std::vector<std::string> files_favorite;
-													myfiles->bFavorite = true;
-													files_favorite.push_back(file.Get());
-													saveVectorFileContent("favoritelist.ini", files_favorite);
-													ContextSelection = NULL;
-												}
-											}
-											ImGui::EndPopup();
-										}
-										else
-											bInContextThumb = false;
-									}
-								}
-							}
-							*/
 							ImGui::NextColumn();
 						}
 						ImGui::PopID();
@@ -22849,7 +21828,6 @@ bool imgui_AddMinMaxButton(int win, bool bRestore)
 		ImRect avail_window_rect;
 		avail_window_rect.Min = ImGui::GetWindowPos();
 		avail_window_rect.Max = ImGui::GetWindowPos() + ImGui::GetWindowSize();
-		//avail_window_rect.Min.y -= 15.0f;
 		#define USEARROWBUTTON
 		ImGui::PushClipRect(avail_window_rect.Min, avail_window_rect.Max, false);
 		#ifdef USEARROWBUTTON
@@ -23263,18 +22241,6 @@ void DuplicateLogicConnections (std::vector<sRubberBandType> vEntityDuplicateLis
 		// have 'vEntityDuplicateList' which is the original and g.entityrubberbandlist which is the duplicated copy
 		sCopiedLogicConnections item = g_copiedLogicConnectionList[iOriginalGroupIndexSpecified];
 		
-		/* preserve linkIDs as can link to external entities using older IDs
-		// generate new LinkIDs in duplicate
-		for (int listindex = 0; listindex < g_iCopiedLogicConnectionsCount; listindex++)
-		{
-			int iDuplicateE = g.entityrubberbandlist[listindex].e;
-			t.entityelement[iDuplicateE].eleprof.iObjectLinkID = 0;
-			if (item.iObjectLinkID[listindex] != 0)
-			{
-				t.entityelement[iDuplicateE].eleprof.iObjectLinkID = GenerateRelationshipUniqueLinkID();
-			}
-		}
-		*/
 		if (g_iCopiedLogicConnectionsCount != g.entityrubberbandlist.size())
 		{
 			//PE: Somehow g_iCopiedLogicConnectionsCount is larger then g.entityrubberbandlist.size() and you end up with a crash.
@@ -23295,19 +22261,6 @@ void DuplicateLogicConnections (std::vector<sRubberBandType> vEntityDuplicateLis
 				t.entityelement[iDuplicateE].eleprof.iObjectRelationshipsData[i] = item.iObjectRelationshipsData[listindex][i];
 			}
 		}
-		/*
-		else
-		{
-			// clear all logic connections
-			t.grideleprof.iObjectLinkID = 0;
-			for (int i = 0; i < 10; i++)
-			{
-				t.grideleprof.iObjectRelationships[i] = 0;
-				t.grideleprof.iObjectRelationshipsData[i] = 0;
-				t.grideleprof.iObjectRelationshipsType[i] = 0;
-			}
-		}
-		*/
 
 		// completed logic duplication
 		g_iCopiedLogicConnectionsCount = 0;
@@ -23497,7 +22450,6 @@ int DuplicateFromListToCursor(std::vector<sRubberBandType> vEntityDuplicateList,
 
 			//LB: should not change modes without users permission
 			//PE: Always start in horizontal mode.
-			//iObjectMoveMode = 0;
 			//LB: When dragging in groups, need to be in smart mode to handle object placement on terrain/surface
 			iObjectMoveMode = 2; // not happy to change users preference, need better solution for release
 		}
@@ -24544,7 +23496,6 @@ void AddEntityToCursor(int e, bool bDuplicate)
 	if (bImporter_Window) { importer_quit(); bImporter_Window = false; }
 
 	DeleteWaypointsAddedToCurrentCursor();
-	//CheckTooltipObjectDelete();
 	CloseDownEditorProperties();
 
 	//LB: Only when not in shooter mode
@@ -24756,14 +23707,6 @@ void AddEntityToCursor(int e, bool bDuplicate)
 
 			if (!bDuplicate) 
 			{
-				// find surface height (terrain is surface for now)
-				//float fHitX, fHitY, fHitZ;
-				//float fSurfaceFloorHeight = GGORIGIN_Y;
-				//if (WickedCall_SentRay(t.entityelement[t.tentitytoselect].x, t.entityelement[t.tentitytoselect].y, t.entityelement[t.tentitytoselect].z, 0, -1.0f, 0, &fHitX, &fHitY, &fHitZ, NULL, NULL, NULL, NULL, GGRENDERLAYERS_TERRAIN))
-				//{
-				//	fSurfaceFloorHeight = fHitY;
-				//}
-
 				// in smart positning mode, always find surface when drop into level
 				if (iObjectMoveMode == 2 && iObjectMoveModeDropSystem == 0)
 				{
@@ -24883,10 +23826,7 @@ void BeginDragDropFPE(char *fpe, int textureid, bool bToolTipActive, ImVec2 vISi
 			foundfiles->m_sFolder = sFpeName.c_str();
 			ImGui::SetDragDropPayload("DND_MODEL_DROP_TARGET", foundfiles, sizeof(void *));
 			ImGui::ImgBtn(textureid, vISize, drawCol_back, drawCol_normal, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false);
-			//ImGui::Text("%s", myfiles->m_sName.Get());
-			//ImGui::SetCursorPos(oldCursor);
 			pDragDropFile = foundfiles;
-			/*ImGui::EndDragDropSource();*/
 			bReadyToDropEntity = false;
 			iDragDropActive = 50;
 			bDraggingActive = true;
@@ -24966,9 +23906,6 @@ void DisplayFPEMedia(bool readonly, int entid, entityeleproftype *edit_gridelepr
 		{
 			group_text = "Media";
 		}
-
-
-		//ImGui::TextCenter(group_text.Get());
 
 		if (g.fpgcgenre == 1)
 		{
@@ -25066,8 +24003,6 @@ void DisplayFPEMedia(bool readonly, int entid, entityeleproftype *edit_gridelepr
 						edit_grideleprof->soundset2_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset2_s.Get(), t.strarr_s[480].Get(), t.strarr_s[254].Get(), "audiobank\\",readonly);
 					if (mediaactive[3])
 						edit_grideleprof->soundset3_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset3_s.Get(), t.strarr_s[481].Get(), t.strarr_s[254].Get(), "audiobank\\",readonly);
-					//if (mediaactive[4])
-					//	edit_grideleprof->soundset5_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset5_s.Get(), t.strarr_s[482].Get(), t.strarr_s[254].Get(), "audiobank\\", readonly);
 					if (mediaactive[4])
 						edit_grideleprof->soundset6_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset5_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\", readonly);
 					if (mediaactive[5])
@@ -25129,7 +24064,6 @@ void DisplayFPEPhysics(bool readonly, int entid, entityeleproftype *edit_gridele
 
 		if (edit_grideleprof->physics != 1)  edit_grideleprof->physics = 0;
 
-		//t.grideleprof.physics = imgui_setpropertylist2(t.group, t.controlindex, Str(t.grideleprof.physics), t.strarr_s[580].Get(), t.strarr_s[581].Get(), 0);
 		bool btmp = edit_grideleprof->physics;
 		ImGui::Checkbox("Object Uses Physics?", &btmp);
 		edit_grideleprof->physics = btmp;
@@ -25156,7 +24090,6 @@ void DisplayFPEPhysics(bool readonly, int entid, entityeleproftype *edit_gridele
 			ImGui::SetTooltip("%s", newtext.c_str());
 		}
 
-		//t.grideleprof.phyweight = atol(imgui_setpropertystring2(t.group, Str(t.grideleprof.phyweight), t.strarr_s[584].Get(), t.strarr_s[585].Get()));
 		ImGui::TextCenter("Weight of Object");
 		desc = t.strarr_s[585];
 		ImGui::MaxSliderInputInt("##weightphysics", &edit_grideleprof->phyweight, 0, 1000, desc.Get());
@@ -25167,7 +24100,6 @@ void DisplayFPEPhysics(bool readonly, int entid, entityeleproftype *edit_gridele
 	
 		if (t.tflagsimpler == 0)
 		{
-			//t.grideleprof.explodable = imgui_setpropertylist2(t.group, t.controlindex, Str(t.grideleprof.explodable), t.strarr_s[592].Get(), t.strarr_s[593].Get(), 0);
 			btmp = edit_grideleprof->explodable;
 			ImGui::Checkbox("Explodable Object?", &btmp);
 			edit_grideleprof->explodable = btmp;
@@ -25325,9 +24257,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		for (int speech_loop = 0; speech_loop < 5; speech_loop++)
 			speech_ids[speech_loop] = -1;
 		
-		//"Character Behavior"
-		//ImGui::TextCenter("Behaviors");
-
 		ImGui::PushItemWidth(-10);
 
 		// scan PEOPLE folder for complete list of script
@@ -25397,7 +24326,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		for (int i = 0; i < g_scriptpeople_item_count - 1; i++)
 		{
 			// with workshop items updating core scripts, need to check entire path now!
-			//if (pestrcasestr(edit_grideleprof->aimain_s.Get(), scriptList_s[i].Get()))
 			if (stricmp (edit_grideleprof->aimain_s.Get(), scriptList_s[i].Get()) == NULL)
 			{
 				item_current_type_selection = i;
@@ -25425,7 +24353,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				script_name_append += edit_grideleprof->aimain_s;
 
 			cstr script_name = "";
-			//if (strnicmp(script_name_append.Get(), "projectbank", 11) != NULL) 
 			script_name = "scriptbank\\";
 			script_name += script_name_append;
 
@@ -26687,7 +25614,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				std::string sString = t.entityelement[elementID].eleprof.newparticle.emittername.Get();
 				replaceAll(sString, "/", "\\");
 				if ( stricmp(sString.c_str() , Predefined_Particle_Name[i].Get()) != 0 ) bValid = false;
-				//if (t.entityelement[elementID].eleprof.newparticle.emittername != Predefined_Particle_Name[i]) bValid = false;
 				if (t.entityelement[elementID].eleprof.newparticle.bParticle_Preview != Predefined_bParticle_Preview[i]) bValid = false;
 				if (t.entityelement[elementID].eleprof.newparticle.bParticle_Show_At_Start != Predefined_bParticle_Show_At_Start[i]) bValid = false;
 				if (t.entityelement[elementID].eleprof.newparticle.bParticle_Looping_Animation != Predefined_bParticle_Looping_Animation[i]) bValid = false;
@@ -26749,8 +25675,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			{
 				image_bb = ImRect((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(particle_image_size, particle_image_size * fRatio));
 			}
-
-			//ImGui::BeginChildFrame(ImGui::GetID("particleframe"), ImVec2(particle_image_size, particle_image_size * fRatio + ImGui::GetTextLineHeightWithSpacing()), ImGuiWindowFlags_NoMove| ImGuiWindowFlags_NoResize| ImGuiWindowFlags_NoScrollbar);
 
 			ImGui::PushID(FILETYPE_PARTICLE + i);
 			if (ImGui::ImgBtn(Predefined_Particle_Image[i], ImVec2(particle_image_size, particle_image_size * fRatio), background, IconColor, ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false, true, false)) //bBoostIconColors
@@ -26945,53 +25869,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				ImGui::SetTooltip("Delete selected custom particle");
 		}
 
-		//PE: Not very useful , you can just click the "default particle" in the list, removed for now.
-		/*
-		if (ImGui::StyleButton("Reset to Default Particles", ImVec2(particle_w, 0)))
-		{
-			//Dont reset saved.
-			bPredefinedParticleInit = false; //Setup everything again.
-			bFindBestParticleChoice = true;
-			iLastParticleEntityElementIDHere = -1;
-			current_particle_selected = 0;
-			int iParticleEmitter = t.entityelement[elementID].eleprof.newparticle.emitterid;
-			if (iParticleEmitter != -1)
-			{
-				gpup_deleteEffect(iParticleEmitter);
-			}
-			Predefined_bParticle_Preview[current_particle_selected] = true;
-			Predefined_bParticle_Show_At_Start[current_particle_selected] = true;
-			if (current_particle_selected == 7)
-				Predefined_bParticle_Looping_Animation[current_particle_selected] = false;
-			else
-				Predefined_bParticle_Looping_Animation[current_particle_selected] = true;
-			Predefined_bParticle_Full_Screen[current_particle_selected] = false;
-			Predefined_fParticle_Fullscreen_Duration[current_particle_selected] = 10.0f;
-			Predefined_fParticle_Fullscreen_Fadein[current_particle_selected] = 1.0f;
-			Predefined_fParticle_Fullscreen_Fadeout[current_particle_selected] = 1.0f;
-			Predefined_Particle_Fullscreen_Transition[current_particle_selected] = "";
-			Predefined_fParticle_Speed[current_particle_selected] = 1.0f;
-			Predefined_fParticle_Opacity[current_particle_selected] = 1.0f;
-
-			t.entityelement[elementID].eleprof.newparticle.emitterid = -1;
-			t.entityelement[elementID].eleprof.newparticle.emittername = Predefined_Particle_Name[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.bParticle_Preview = Predefined_bParticle_Preview[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.bParticle_Show_At_Start = Predefined_bParticle_Show_At_Start[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.bParticle_Looping_Animation = Predefined_bParticle_Looping_Animation[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.bParticle_Full_Screen = Predefined_bParticle_Full_Screen[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.fParticle_Fullscreen_Duration = Predefined_fParticle_Fullscreen_Duration[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.fParticle_Fullscreen_Fadein = Predefined_fParticle_Fullscreen_Fadein[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.fParticle_Fullscreen_Fadeout = Predefined_fParticle_Fullscreen_Fadeout[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.Particle_Fullscreen_Transition = Predefined_Particle_Fullscreen_Transition[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.fParticle_Speed = Predefined_fParticle_Speed[current_particle_selected];
-			t.entityelement[elementID].eleprof.newparticle.fParticle_Opacity = Predefined_fParticle_Opacity[current_particle_selected];
-			edit_grideleprof->newparticle = t.entityelement[elementID].eleprof.newparticle;
-			current_particle_selected = -1;
-
-		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Reset Particles to The Default Settings");
-		*/
-
 		ImGui::TextCenter("Particle Values");
 
 		bool btmp = edit_grideleprof->newparticle.bParticle_Preview;
@@ -27122,7 +25999,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		}
 
 		//Name only.
-		//ImGui::Text("");
 		if(bDisplayName)
 			edit_grideleprof->name_s = imgui_setpropertystring2_v2(t.group, edit_grideleprof->name_s.Get(), "Name", t.strarr_s[204].Get(),readonly);
 
@@ -27146,7 +26022,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 			//Load in lua and check for custom properties.
 			cstr script_name = "";
-			//if (strnicmp(edit_grideleprof->aimain_s.Get(), "projectbank", 11) != NULL) 
 			script_name = "scriptbank\\";
 			script_name += edit_grideleprof->aimain_s;
 
@@ -27556,7 +26431,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				else
 					script_name_appendage += edit_grideleprof->aimain_s;
 				cstr script_name = "";
-				//if (strnicmp(script_name_appendage.Get(), "projectbank", 11) != NULL) 
 				script_name = "scriptbank\\";
 				script_name += script_name_appendage;
 
@@ -27925,12 +26799,10 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		strcpy(pCaptureAnyScriptDesc, edit_grideleprof->PropertiesVariable.VariableDescription.Get());
 		for (int i = 0; i < edit_grideleprof->PropertiesVariable.iVariables; i++)
 		{
-			//strcat(pCaptureAnyScriptDesc, edit_grideleprof->PropertiesVariable.VariableSectionDescription[i]);
 			strcat(pCaptureAnyScriptDesc, edit_grideleprof->PropertiesVariable.VariableSectionDescription[i].Get());
 		}
 		for (int i = 0; i < edit_grideleprof->PropertiesVariable.iVariables; i++)
 		{
-			//strcat(pCaptureAnyScriptDesc, edit_grideleprof->PropertiesVariable.VariableSectionEndDescription[i]);
 			strcat(pCaptureAnyScriptDesc, edit_grideleprof->PropertiesVariable.VariableSectionEndDescription[i].Get());
 		}
 		if (strstr(pCaptureAnyScriptDesc, "<Sound0>") != 0) bSound0Mentioned = true;
@@ -28029,34 +26901,28 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			extern bool g_bNowPopulateWithCorrectAnimSet;
 			if (bShootingWeaponMentioned == true || bMeleeWeaponMentioned == true)
 			{
-				//if (t.entityprofile[entid].ischaracter == 1) any behavior can show a weapon choice now!
-				//{
-					bool btmp = g_bNowPopulateWithCorrectAnimSet;
-					g_bNowPopulateWithCorrectAnimSet = false;
-					extern void animsystem_weaponproperty (int, bool, entityeleproftype*, bool, bool);
-					animsystem_weaponproperty(t.entityprofile[entid].characterbasetype, readonly, edit_grideleprof, bShootingWeaponMentioned, bMeleeWeaponMentioned);
-					//PE: We changed weapon so must update animations.
-					if (g_bNowPopulateWithCorrectAnimSet)
-					{
-						//PE: Must refresh DLUA
-						bMustUpdateAnimations = true;
-						fpe_current_loaded_script = -1;
-					}
-					g_bNowPopulateWithCorrectAnimSet = btmp;
-				//}
+				bool btmp = g_bNowPopulateWithCorrectAnimSet;
+				g_bNowPopulateWithCorrectAnimSet = false;
+				extern void animsystem_weaponproperty (int, bool, entityeleproftype*, bool, bool);
+				animsystem_weaponproperty(t.entityprofile[entid].characterbasetype, readonly, edit_grideleprof, bShootingWeaponMentioned, bMeleeWeaponMentioned);
+				//PE: We changed weapon so must update animations.
+				if (g_bNowPopulateWithCorrectAnimSet)
+				{
+					//PE: Must refresh DLUA
+					bMustUpdateAnimations = true;
+					fpe_current_loaded_script = -1;
+				}
+				g_bNowPopulateWithCorrectAnimSet = btmp;
 			}
 			else if (bUnarmedMentioned)
 			{
-				//if (t.entityprofile[entid].ischaracter == 1) any behavior can show a weapon choice now!
-				//{
-					if (edit_grideleprof->hasweapon_s.Len() > 0)
-					{
-						edit_grideleprof->hasweapon_s = "";
-						edit_grideleprof->overrideanimset_s = "";
-						extern bool g_bNowPopulateWithCorrectAnimSet;
-						g_bNowPopulateWithCorrectAnimSet = true;
-					}
-				//}
+				if (edit_grideleprof->hasweapon_s.Len() > 0)
+				{
+					edit_grideleprof->hasweapon_s = "";
+					edit_grideleprof->overrideanimset_s = "";
+					extern bool g_bNowPopulateWithCorrectAnimSet;
+					g_bNowPopulateWithCorrectAnimSet = true;
+				}
 			}
 			if (iAnimationSetMentioned > 0 || bMustUpdateAnimations )
 			{
@@ -28074,12 +26940,6 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				}
 				g_bNowPopulateWithCorrectAnimSet = btmp;
 			}
-			//moved below, should not be dependent on having DLUA params, or some other attribute requirement
-			//if (t.entityprofile[entid].ischaracter == 1)
-			//{
-			//	extern void animsystem_dropcollectablesetproperty(bool, entityeleproftype*);
-			//	animsystem_dropcollectablesetproperty(readonly, edit_grideleprof);
-			//}
 		}
 	}
 	if (t.entityprofile[entid].ischaracter == 1)
@@ -28208,28 +27068,6 @@ void DisplayFPEGeneral(bool readonly, int entid, entityeleproftype *edit_gridele
 					const char* itemsAll[] = { "Change All To" , "Static", "Physics on", "Physics off" };
 					const char** Selected = items;
 					int iArraySize = 3;
-
-					//PE: Users are relying on this feature so they can, set a polygon collision object to have "behaviour".
-					//PE: Used by many where polygon is needed with a "behaviour" , platforms ... explodeable ... isimmobile == 1 ... Is Collectable ...
-					//PE: https://github.com/TheGameCreators/GameGuruMAX/commit/a1929f0a832db7b799d53a01955837b15a8d2d5c
-					/*
-					// limit selection to just Static if certain collision modes used
-					if (t.entityelement[elementID].eleprof.iOverrideCollisionMode == 1 || t.entityelement[elementID].eleprof.iOverrideCollisionMode == 8)
-					{
-						// polygon and collision mesh can only be static
-						iArraySize = 1;
-					}
-					else
-					{
-						if (t.entityelement[elementID].eleprof.iOverrideCollisionMode==-1)
-						{
-							// polygon and collision mesh can only be static
-							int entid = t.entityelement[elementID].bankindex;
-							if (t.entityprofile[entid].collisionmode == 1) iArraySize = 1;
-							if (t.entityprofile[entid].collisionmode == 8) iArraySize = 1;
-						}
-					}
-					*/
 
 					int item_current = 0;
 					if (t.entityelement[elementID].staticflag == 1)
@@ -28592,9 +27430,6 @@ void DisplayFPEGeneral(bool readonly, int entid, entityeleproftype *edit_gridele
 
 				// Don't display certtain collision modes for dynamic objects!
 				if (i == 1 && t.entityelement[elementID].staticflag == 0) continue;
-				//if (i == 4 && t.entityelement[elementID].staticflag == 0) continue;
-				//if (i == 8 && t.entityelement[elementID].staticflag == 0) continue;
-				//if (i == 9 && t.entityelement[elementID].staticflag == 0) continue;
 
 				// get collision shape name
 				char* pCollisionShapeName = pCollisionShapes[i];
@@ -28895,22 +27730,15 @@ void DisplayFPEAdvanced(bool readonly, int entid, entityeleproftype *edit_gridel
 		t.group = 0;
 		if (t.tflagchar == 0 && t.tflagvis == 1 && t.tflagsimpler == 0)
 		{
-			//if (ImGui::StyleCollapsingHeader(t.strarr_s[412].Get(), ImGuiTreeNodeFlags_DefaultOpen))
 			ImGui::TextCenter(t.strarr_s[412].Get());
 			{
 				// 101016 - Additional General Parameters
 				edit_grideleprof->isocluder = imgui_setpropertylist2_v2(t.group, t.controlindex, Str(edit_grideleprof->isocluder), "Occluder", "Set to YES makes this object an occluder", 0, readonly);
 				edit_grideleprof->isocludee = imgui_setpropertylist2_v2(t.group, t.controlindex, Str(edit_grideleprof->isocludee), "Occludee", "Set to YES makes this object an occludee", 0, readonly);
 			}
-
-			// these will be back when EBE needs doors and windows
-			//setpropertystring2(t.group,Str(t.grideleprof.parententityindex),"Parent Index","Selects another entity element to be a parent") ; ++t.controlindex;
-			//setpropertystring2(t.group,Str(t.grideleprof.parentlimbindex),"Parent Limb","Specifies the limb index of the parent to connect with") ; ++t.controlindex;
 		}
 
 		t.group = 1;
-		//if (ImGui::StyleCollapsingHeader(t.strarr_s[415].Get(), ImGuiTreeNodeFlags_DefaultOpen))
-		//if (t.entityprofile[entid].lives == 0)
 		ImGui::TextCenter(t.strarr_s[415].Get());
 		{
 			//  Basic AI
@@ -28959,8 +27787,6 @@ void DisplayFPEAdvanced(bool readonly, int entid, entityeleproftype *edit_gridel
 					edit_grideleprof->range = atol(imgui_setpropertystring2_v2(t.group, Str(edit_grideleprof->range), "Range", "Maximum range of bullet travel",readonly));
 					edit_grideleprof->dropoff = atol(imgui_setpropertystring2_v2(t.group, Str(edit_grideleprof->dropoff), "Dropoff", "Amount in inches of vertical dropoff per 100 feet of bullet travel",readonly));
 					edit_grideleprof->clipcapacity = atol(imgui_setpropertystring2_v2(t.group, Str(edit_grideleprof->clipcapacity), "Clip Capacity", "The total maximum number of clips the player can carry for this weapon", readonly));
-					//int weaponpropres1;
-					//int weaponpropres2;
 				}
 				else
 				{
@@ -29069,7 +27895,6 @@ void DisplayFPEAdvanced(bool readonly, int entid, entityeleproftype *edit_gridel
 		if (t.tflagspawn == 1)
 		{
 			t.group = 1;
-			//if (ImGui::StyleCollapsingHeader(t.strarr_s[439].Get(), ImGuiTreeNodeFlags_DefaultOpen)) 
 			ImGui::TextCenter(t.strarr_s[439].Get());
 			{
 				edit_grideleprof->spawnatstart = imgui_setpropertylist2_v2(t.group, t.controlindex, Str(edit_grideleprof->spawnatstart), t.strarr_s[562].Get(), t.strarr_s[563].Get(), 0,readonly);
@@ -29292,15 +28117,10 @@ void DisplayFPEAdvanced(bool readonly, int entid, entityeleproftype *edit_gridel
 		{
 			t.propfield[t.group] = t.controlindex;
 
-			//  FPGC - 300710 - could never change base decal, so comment out this property (entity denotes decal choice)
-			//     `inc group ; startgroup(strarr$(464)) ; controlindex=0
-			//     `setpropertyfile2(group,grideleprof.basedecal$,strarr$(465),strarr$(252),"gamecore\\decals\\") ; inc controlindex
-
 			//  Decal Particle data
 			if (t.tflagdecalparticle == 1)
 			{
 				//++t.group; startgroup("Decal Particle"); t.controlindex = 0;
-				//if (ImGui::StyleCollapsingHeader("Decal Particle", ImGuiTreeNodeFlags_DefaultOpen)) 
 				ImGui::TextCenter("Decal Particle");
 				{
 					edit_grideleprof->particleoverride = imgui_setpropertylist2_v2(t.group, t.controlindex, Str(edit_grideleprof->particleoverride), "Custom Settings", "Whether you wish to override default settings", 0,readonly);
@@ -29372,7 +28192,6 @@ void DisplayFPEAdvanced(bool readonly, int entid, entityeleproftype *edit_gridel
 			{
 			}
 
-			//if (ImGui::StyleCollapsingHeader(group_text.Get(), ImGuiTreeNodeFlags_DefaultOpen))
 			ImGui::TextCenter(group_text.Get());
 			{
 				if (g.fpgcgenre == 1)
@@ -29455,7 +28274,6 @@ void DisplayFPEAdvanced(bool readonly, int entid, entityeleproftype *edit_gridel
 		{
 			if (ImGui::StyleCollapsingHeader(t.strarr_s[597].Get(), ImGuiTreeNodeFlags_DefaultOpen)) {
 
-				//edit_grideleprof->soundset_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset_s.Get(), t.strarr_s[467].Get(), t.strarr_s[599].Get(), "audiobank\\",readonly);
 				edit_grideleprof->soundset1_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset1_s.Get(), "Video Slot", t.strarr_s[601].Get(), "videobank\\",readonly);
 			}
 		}
@@ -30304,7 +29122,6 @@ ImVec4 GetRealSizeToGridEntity(int direction)
 				AABB aabb;
 				if (direction == 0)
 				{
-//					aabb._min.x = pObject->collision.vecMin.x + pObject->collision.vecMax.x;  //offset from pivot.
 					aabb._min.x = (pObject->collision.vecMin.x - pObject->collision.vecMax.x) * 0.5;  //offset from center.
 					aabb._min.y = pObject->collision.vecMin.y;
 					aabb._min.z = 0.0f;
@@ -30313,7 +29130,6 @@ ImVec4 GetRealSizeToGridEntity(int direction)
 				{
 					aabb._min.x = 0.0f;
 					aabb._min.y = pObject->collision.vecMin.y;
-//					aabb._min.z = pObject->collision.vecMin.z + pObject->collision.vecMax.z; //offset from pivot.
 					aabb._min.z = (pObject->collision.vecMin.z - pObject->collision.vecMax.z) * 0.5; //offset from center.
 				}
 				else if (direction == 2)
@@ -30541,70 +29357,6 @@ float GetLowestY(int obj)
 
 void ApplyPivotToGridEntity(void)
 {
-	/*LB: messes up smart move system and also introduces sometimes unwanted object shifting, allow user to choose position, do not autoate it (for now)
-	int iRealObjectMoveMode = iObjectMoveMode;
-	if (iObjectMoveModeDropSystem > 0) iRealObjectMoveMode = 0;
-	if (bExtractFixPivot && t.gridentityobj > 0 && iRealObjectMoveMode == 2) // LB: only find surface can use this as Y needs constantly resetting to allow the +=
-	{
-		//PE: Only use pivot on non markers and not on ebe.
-		if (t.entityprofile[t.gridentity].isebe == 0 && t.entityprofile[t.gridentity].ismarker == 0)
-		{
-			//Find lowest point in bounding box, and use this to adjust Y
-			sObject* pObject = GetObjectData(t.gridentityobj);
-			if (pObject)
-			{
-				GGMATRIX matARotation;
-				GGVECTOR3 box1;
-				GGMATRIX matRotateX, matRotateY, matRotateZ;
-				if (pObject->position.bFreeFlightRotation)
-				{
-					matARotation = pObject->position.matFreeFlightRotate;
-				}
-				else
-				{
-					//ZXY
-					GGMatrixRotationX(&matRotateX, GGToRadian(pObject->position.vecRotate.x));	// x rotation
-					GGMatrixRotationY(&matRotateY, GGToRadian(pObject->position.vecRotate.y));	// y rotation
-					GGMatrixRotationZ(&matRotateZ, GGToRadian(pObject->position.vecRotate.z));	// z rotation
-					matARotation = matRotateX * matRotateY * matRotateZ;
-				}
-				if (pObject->position.bApplyPivot)
-				{
-					matARotation *= pObject->position.matPivot;
-				}
-
-				AABB aabb;
-				aabb._min.x = pObject->collision.vecMin.x;
-				aabb._min.y = pObject->collision.vecMin.y;
-				aabb._min.z = pObject->collision.vecMin.z;
-				aabb._max.x = pObject->collision.vecMax.x;
-				aabb._max.y = pObject->collision.vecMax.y;
-				aabb._max.z = pObject->collision.vecMax.z;
-
-				box1.x = aabb._min.x; box1.y = aabb._min.y; box1.z = aabb._min.z;
-				GGVec3TransformCoord(&box1, &box1, &matARotation);
-				aabb._min.x = box1.x; aabb._min.y = box1.y; aabb._min.z = box1.z;
-				box1.x = aabb._max.x; box1.y = aabb._max.y; box1.z = aabb._max.z;
-				GGVec3TransformCoord(&box1, &box1, &matARotation);
-				aabb._max.x = box1.x; aabb._max.y = box1.y; aabb._max.z = box1.z;
-
-				aabb._min.x = (aabb._min.x * pObject->position.vecScale.x);
-				aabb._min.y = (aabb._min.y * pObject->position.vecScale.y);
-				aabb._min.z = (aabb._min.z * pObject->position.vecScale.z);
-				aabb._max.x = (aabb._max.x * pObject->position.vecScale.x);
-				aabb._max.y = (aabb._max.y * pObject->position.vecScale.y);
-				aabb._max.z = (aabb._max.z * pObject->position.vecScale.z);
-
-				float fLowestPoint = aabb._min.y;
-				if (aabb._max.y < aabb._min.y)
-					fLowestPoint = aabb._max.y;
-
-				if (fLowestPoint < 0)
-					t.gridentityposy_f += fabs(fLowestPoint);
-			}
-		}
-	}
-	*/
 }
 
 bool bUseEditorOutlineSelection(void) { return pref.iEnableEditorOutlineSelection; }
@@ -30652,13 +29404,6 @@ void ProcessTemplateWindow(void)
 		if (ImGui::MaxSliderInputFloat("##templatefloatinput", &fFloatSliderTest, 0.0, 2000.0, "All Sliders should use this code."))
 		{
 		}
-
-		//Add a pencil to a gadget.
-		//ImGuiWindow* window = ImGui::GetCurrentWindow(); //PE: Add a pencil to all color gadgets.
-		//ID3D11ShaderResourceView* lpTexture = GetImagePointerView(TOOL_PENCIL);
-		//ImVec2 vDrawPos = { ImGui::GetCursorScreenPos().x + (ImGui::GetContentRegionAvail().x - 30.0f) ,ImGui::GetCursorScreenPos().y - (ImGui::GetFontSize()*1.5f) - 3.0f };
-		//if(lpTexture)
-		//	window->DrawList->AddImage((ImTextureID)lpTexture, vDrawPos, vDrawPos + ImVec2(16, 16), ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
 
 		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 		ImGui::PopItemWidth();
@@ -30789,8 +29534,6 @@ void ProcessBugReporting(void)
 		//Window just open , reset variables.
 		strcpy(cBugTitle, "");
 		strcpy(cBugDescription, "");
-		//bIncludeScreenShot = true; // keep these preferences from the user
-		//bIncludesystemSpecs = true;
 		bLastBugStatus = bBug_Reporting_Window;
 		if (sBugList.size() == 0 || bBug_RefreshBugList==true)
 		{
@@ -30937,24 +29680,6 @@ void ProcessBugReporting(void)
 				float ListBoxHeight = ImGui::GetFontSize()*16.0f;
 				float fAvailableX = ImGui::GetContentRegionAvailWidth();
 
-				/*
-				if (ImGui::ListBoxHeader("##BugListBox", ImVec2(0, ListBoxHeight)) == true)
-				{
-					int i = 0;
-					for (auto item : sBugList)
-					{
-						bool bIsSelected = false;
-						ImGui::PushID(i);
-						if (ImGui::Selectable(item->cTitle, bIsSelected))
-						{
-							break;
-						}
-						ImGui::PopID();
-						i++;
-					}
-					ImGui::ListBoxFooter();
-				}
-				*/
 				if (ImGui::ListBoxHeader("##BugListBox", ImVec2(0, ListBoxHeight)) == true)
 				{
 					ImGui::Columns(3, "buglistcolumns3", false);  //false no border
@@ -31025,10 +29750,6 @@ void ProcessBugReporting(void)
 									ImGui::Text("We have been able to reproduce this. ");
 								if (item->iStatus == 3)
 									ImGui::Text("The bug has been fixed. ");
-
-								// no need for this
-								//ImGui::Separator();
-								//ImGui::Text("Reply: %s", item->cReply);
 
 								ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 
@@ -32527,16 +31248,6 @@ cstr ListboxFilesListForLibrary(char *currentselection, int columns, int iFixedW
 		ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0, 3));
 		bool is_selected = false;
 
-		//if (bIncludeNone)
-		//{
-		//	is_selected = (sReturnComboName == "None");
-		//	if (ImGui::StyleButton("No Backdrop", ImVec2(ImGui::GetContentRegionAvail().x - 10.0, 0)))
-		//	{
-		//		sReturnComboName = "None";
-		//	}
-		//	if (is_selected) ImGui::SetItemDefaultFocus();
-		//}
-
 		ImGui::Columns(columns, "ListboxFilesListForLibrarycolumns", false);  //false no border
 
 		int columns_count = 0;
@@ -32630,7 +31341,6 @@ cstr ListboxFilesListForWelcomeScreen(char *currentselection, int columns, int i
 	box_height += ImGui::GetFontSize() * 8.0;
 	if (fbox_height > 0) box_height = fbox_height;
 
-	//ImGui::BeginChild("##ListboxFilesListForWelcome", ImVec2(ImGui::GetContentRegionAvail().x - 4.0, box_height), false, iGenralWindowsFlags | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::BeginChild("##ListboxFilesListForWelcome", ImVec2(ImGui::GetContentRegionAvail().x - 2.0, box_height), false, iGenralWindowsFlags | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::Indent(2);
 	if (1)
@@ -32753,17 +31463,6 @@ cstr ListboxFilesListForWelcomeScreen(char *currentselection, int columns, int i
 							triggerEndVideo = 1;
 						if (triggerEndVideo > 0 && (fdone == 0.0f || fdone >= 1.0f))
 						{
-							//End loop.
-							//PE: Loop dont work, at some point the player breaks and flicker, just restart everyting.
-							//void SetVideoPositionPlay(float seconds);
-							//SetVideoPositionPlay(0.0);
-							//ResumeAnim(iWelcomeVideoID);
-							//Try stopping and starting.
-							//StopAnimation(iWelcomeVideoID);
-							//PlaceAnimation(iWelcomeVideoID, -1, -1, -1, -1);
-							//SetRenderAnimToImage(iWelcomeVideoID, true);
-							//PlayAnimation(iWelcomeVideoID);
-							//SetVideoVolume(100);
 							g_LibraryFileList[n].timer = 0;
 							bRemoveVideoInNextFrame = true;
 							triggerEndVideo = 0;
@@ -32913,7 +31612,6 @@ cstr ListboxFilesListForWelcomeScreen_v2(char *currentselection, int columns, in
 	box_height += ImGui::GetFontSize() * 8.0;
 	if (fbox_height > 0) box_height = fbox_height;
 
-	//ImGui::BeginChild("##ListboxFilesListForWelcome", ImVec2(ImGui::GetContentRegionAvail().x - 4.0, box_height), false, iGenralWindowsFlags | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::BeginChild("##ListboxFilesListForWelcome", ImVec2(ImGui::GetContentRegionAvail().x - 2.0, box_height), false, iGenralWindowsFlags | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::Indent(2);
 	if (1)
@@ -33056,17 +31754,6 @@ cstr ListboxFilesListForWelcomeScreen_v2(char *currentselection, int columns, in
 							triggerEndVideo = 1;
 						if (triggerEndVideo > 0 && (fdone == 0.0f || fdone >= 1.0f))
 						{
-							//End loop.
-							//PE: Loop dont work, at some point the player breaks and flicker, just restart everyting.
-							//void SetVideoPositionPlay(float seconds);
-							//SetVideoPositionPlay(0.0);
-							//ResumeAnim(iWelcomeVideoID);
-							//Try stopping and starting.
-							//StopAnimation(iWelcomeVideoID);
-							//PlaceAnimation(iWelcomeVideoID, -1, -1, -1, -1);
-							//SetRenderAnimToImage(iWelcomeVideoID, true);
-							//PlayAnimation(iWelcomeVideoID);
-							//SetVideoVolume(100);
 							g_LibraryFileList[n].timer = 0;
 							bRemoveVideoInNextFrame = true;
 							triggerEndVideo = 0;
@@ -33137,7 +31824,6 @@ cstr ListboxFilesListForWelcomeScreen_v2(char *currentselection, int columns, in
 							ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.0f, 0.0f, 1.00f));
 							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.6f, 0.0f, 0.0f, 0.75f));
 							ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.0f, 0.0f, 1.00f));
-							//sprintf(UniqueString, "Design Complexity: Developer##%d", n);
 							sprintf(UniqueString, "Design Complexity: Developer");
 						}
 						else if (g_LibraryFileList[n].iType == 1)
@@ -33145,7 +31831,6 @@ cstr ListboxFilesListForWelcomeScreen_v2(char *currentselection, int columns, in
 							ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.7f, 0.0f, 1.00f));
 							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.7f, 0.0f, 0.75f));
 							ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.7f, 0.0f, 1.00f));
-							//sprintf(UniqueString, "Design Complexity: Advanced##%d", n);
 							sprintf(UniqueString, "Design Complexity: Advanced");
 						}
 						else
@@ -33153,7 +31838,6 @@ cstr ListboxFilesListForWelcomeScreen_v2(char *currentselection, int columns, in
 							ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.6f, 0.0f, 1.00f));
 							ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.6f, 0.0f, 0.75f));
 							ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.6f, 0.0f, 1.00f));
-							//sprintf(UniqueString, "Design Complexity: Standard##%d", n);
 							sprintf(UniqueString, "Design Complexity: Standard");
 						}
 
@@ -33210,8 +31894,6 @@ struct ProjectSortData
 {
 	std::string writeDate;
 	std::string folderName;
-	//int imageID;
-	//std::string imageName;
 };
 
 // Compare two ProjectSortData by date.
@@ -33316,12 +31998,6 @@ void GetProjectSortData (std::vector<ProjectSortData>& output)
 						// Convert the last-write time to local time.
 						FileTimeToSystemTime(&ftWrite, &stUTC);
 						SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);
-
-						// Build a string showing the date and time.
-						//StringCchPrintf(wWriteTime, MAX_PATH,
-						//	TEXT("%02d/%02d/%d  %02d:%02d:%02d"),
-						//	stLocal.wMonth, stLocal.wDay, stLocal.wYear,
-						//	stLocal.wHour, stLocal.wMinute, stLocal.wSecond);
 
 						// the sort system just uses string compare to work out which is the newest date, so make year/month more important
 						StringCchPrintf(wWriteTime, MAX_PATH,
@@ -33443,9 +32119,6 @@ void GetProjectThumbnails()
 				//PE: Use this so we can upgrade from 202 to 203+
 				bool load__storyboard_into_struct(const char*, StoryboardStruct&);
 				load__storyboard_into_struct(project, checkproject);
-
-				//PE: Need full load now, as we can have Game Settings.
-				//size_t size = fread(&checkproject, 1, sizeof(checkproject), projectfile);
 
 				char sig[12] = "Storyboard\0";
 				if (checkproject.sig[0] == 'S' && checkproject.sig[8] == 'r')
@@ -33661,9 +32334,6 @@ void Welcome_Screen(void)
 			ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Once);
 			ImGui::SetNextWindowPosCenter(ImGuiCond_Always);
 
-			//if (bDisplayAsModal)
-			//	ImGui::BeginPopupModal("Welcome Screen##WelcomeScreenWindowModal", &bWelcomeScreen_Window, ImGuiWindowFlags_None | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings);
-			//else
 			ImGui::Begin("Welcome Screen##WelcomeScreenWindow", &bWelcomeScreen_Window, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_None | ImGuiWindowFlags_NoMove  | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings);
 
 			ImGui::Indent(10);
@@ -33927,7 +32597,6 @@ void Welcome_Screen(void)
 							bResizeWelcome = true;
 							bStopVideo = true;
 						}
-						//ImGui::ProgressBar(fdone, ImVec2(ImGui::GetContentRegionAvail().x - 20, 6), "");
 						ImVec2 rstart = ImGui::GetWindowPos() + ImGui::GetCursorPos();
 						ImGui::ProgressBar(fdone, ImVec2(ImGui::GetContentRegionAvail().x - 20, 8), "");
 						ImVec2 rend = ImGui::GetWindowPos() + ImGui::GetCursorPos() + ImVec2(ImGui::GetContentRegionAvail().x - 20.0,0.0);
@@ -34066,14 +32735,10 @@ void Welcome_Screen(void)
 				{
 					toolbarwindow->DrawList->PushClipRect(ImVec2(-1, -1), ImGui::GetMainViewport()->Size + ImVec2(0, 40), true);
 					ImGuiWindow* stastuswindow = ImGui::FindWindowByName("Statusbar");//ImGui::GetCurrentWindow();
-					//monitor_col = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
 					monitor_col = ImGui::GetStyle().Colors[ImGuiCol_WindowBg] * ImVec4(0.8, 0.8, 0.8, 0.8);
 					monitor_col.w = 1.0;
 					toolbarwindow->DrawList->AddRectFilled(ImVec2(-1, -1), ImGui::GetMainViewport()->Size + ImVec2(1, 40), ImGui::GetColorU32(monitor_col));
 					if (stastuswindow && stastuswindow->DrawList) stastuswindow->DrawList->AddRectFilled(ImVec2(-1, -1), ImGui::GetMainViewport()->Size + ImVec2(1, 40), ImGui::GetColorU32(monitor_col));
-					//monitor_col = ImGui::GetStyle().Colors[ImGuiCol_ModalWindowDimBg]; //ImGuiCol_WindowBg
-					//toolbarwindow->DrawList->AddRectFilled(ImVec2(-1, -1), ImGui::GetMainViewport()->Size + ImVec2(1, 40), ImGui::GetColorU32(monitor_col));
-					//if (stastuswindow && stastuswindow->DrawList) stastuswindow->DrawList->AddRectFilled(ImVec2(-1, -1), ImGui::GetMainViewport()->Size + ImVec2(1, 40), ImGui::GetColorU32(monitor_col));
 					toolbarwindow->DrawList->PopClipRect();
 					monitor_col = ImVec4(0, 0, 0, 1.0); //Black for now.
 				}
@@ -34147,9 +32812,6 @@ void Welcome_Screen(void)
 				}
 			}
 
-			//if (bDisplayAsModal)
-			//	ImGui::BeginPopupModal("Welcome Screen##WelcomeScreenWindow", &bWelcomeScreen_Window, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings);
-			//else
 			ImGui::Begin("Welcome Screen##WelcomeScreenWindow", &bWelcomeScreen_Window, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_None | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings);
 			ImGui::Indent(10);
 
@@ -34296,9 +32958,6 @@ void Welcome_Screen(void)
 
 			ImGui::Columns(2, "WelcomeScreencolumns2", false);  //false no border
 
-			//ImGui::SetColumnOffset(0, 0.0f);
-			//ImGui::SetColumnOffset(1, fTotalContentWidth * 0.4 ); //Right 60% size.
-
 			//PE: swap.
 			ImGui::SetColumnOffset(0, 0.0f);
 			ImGui::SetColumnOffset(1, fTotalContentWidth * 0.6); //Right 40% size.
@@ -34339,31 +32998,8 @@ void Welcome_Screen(void)
 
 						ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + 3.0, ImGui::GetCursorPosY() + 6.0));
 
-						//					ID3D11ShaderResourceView* lpTexture = GetImagePointerView(TOOL_ENT_FILTER);
-						//					if (lpTexture)
-						//					{
-						//						ImVec2 vImagePos = ImGui::GetCursorPos();
-						//						ImGuiWindow* window = ImGui::GetCurrentWindow();
-						//						ImVec2 search_icon_pos = ImGui::GetWindowPos() + vImagePos + ImVec2(-5.0, -2.0);
-						//						window->DrawList->AddImage((ImTextureID)lpTexture, search_icon_pos, search_icon_pos + ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
-						//						ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + 22.0, ImGui::GetCursorPosY()));
-						//					}
 						ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3.0));
 
-						/* No filter in design.
-						static bool bFilterAll = true, bFilterShooter = true;
-						cstr filters = "";
-						ImGui::Checkbox("All", &bFilterAll);
-						ImGui::SameLine();
-						ImGui::Checkbox("Shooters", &bFilterShooter);
-						if (bFilterAll) filters = "*,";
-						if (bFilterShooter) filters = filters + "Shooter,";
-						ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3.0));
-						*/
-
-
-						//cstr cRet = ListboxFilesListForWelcomeScreen(sCurrentGame.Get(), 3, -1, true, false, filters.Get(),0,false);
-						//cstr cRet = ListboxFilesListForWelcomeScreen(sCurrentGame.Get(), 1, -1, true, false, filters.Get(), tab_box_height,true);
 						ImGui::SetWindowFontScale(1.0);
 						cstr cRet = ListboxFilesListForWelcomeScreen_v2(sCurrentGame.Get(), 3, -1, true, false, NULL, tab_box_height, false, bUseFullScreen);
 						if (cRet != sCurrentGame)
@@ -35162,127 +33798,6 @@ void Welcome_Screen(void)
 				if (ImGui::IsMouseHoveringRect(rect.Min, rect.Max)) ImGui::SetTooltip("%s", "View the changelog direct from the GitHub Repository");
 				ImGui::SetWindowFontScale(1.2);
 
-				/* now changelog (above)
-				//
-				// Websites & Social
-				//
-				rect.Min = TabStartPos;
-				rect.Max = rect.Min + ImGui::TabItemCalcSize(" Websites & Social ", false);
-				TabStartPos.x += ImGui::TabItemCalcSize(" Websites & Social ", false).x + gui.Style.ItemInnerSpacing.x;
-				if (ImGui::BeginTabItem(" Websites & Social ", NULL, tabflags))
-				{
-					ImGui::Text("");
-					ImGui::SetWindowFontScale(2.0);
-					ImGui::TextCenter("GameGuru MAX Socials");
-					ImGui::SetWindowFontScale(1.0);
-					ImGui::Text("");
-					ImGui::Text("");
-
-					//const char* items_social_header[] = { "OFFICIAL FORUMS","TWITTER", "INSTAGRAM", "TIKTOK" , "FACEBOOK","DISCORD" };
-					//const char* items_social_header[] = { "OFFICIAL FORUMS", "TIKTOK" , "FACEBOOK", "DISCORD" };
-					const char* items_social_header[] = { "OFFICIAL FORUMS", "FACEBOOK", "DISCORD" };
-					const char* items_social_desc[] = {
-						"The online forums are a great place to learn and ask questions",
-						//"Keep up to date with announcements by following our official Twitter account",
-						//"Follow us on Instagram to see new images and news",
-						//"Watch vidoes and updates on our official TikTok channel" ,
-						"Follow us at our official GameGuru MAX Facebook page",
-						"Join the conversation with other users of GameGuru MAX on Discord" };
-					const char* items_social_link[] = {
-						"https://bit.ly/MAXForum",
-						//"https://bit.ly/MAXTwitter",
-						//"https://bit.ly/MAXInstagram",
-						//"https://bit.ly/MAXTikTok" ,
-						"https://bit.ly/MAXMeta",
-						"https://bit.ly/MAX_Discord" };
-					//const int items_social_thumb[] = { HUB_FORUM,HUB_TWITTER, HUB_INSTAGRAM, HUB_TIKTOK,HUB_FACEBOOK,HUB_DISCORD };
-					//const int items_social_thumb[] = { HUB_FORUM, HUB_TIKTOK, HUB_FACEBOOK, HUB_DISCORD };
-					const int items_social_thumb[] = { HUB_FORUM, HUB_FACEBOOK, HUB_DISCORD };
-
-					iCurrentOpenTab = 5;
-
-					ImGui::SetWindowFontScale(1.0);
-					//ImVec2 vWidthOfSocialsArea = ImVec2(ImGui::GetContentRegionAvail().x - 2.0, tab_box_height);
-					//ImVec2 vWidthOfSocialsArea = ImVec2((ImGui::GetContentRegionAvail().x*0.66f) - 2.0, tab_box_height);
-					ImVec2 vWidthOfSocialsArea = ImVec2(ImGui::GetContentRegionAvail().x - 2.0, tab_box_height);
-					//float fIntendAmount = (ImGui::GetContentRegionAvail().x*0.33f) / 2.0f;
-					float fIntendAmount = 0.0f;
-					ImGui::Indent(fIntendAmount);
-					ImGui::BeginChild("##MySocialsForWelcome", vWidthOfSocialsArea, false, iGenralWindowsFlags | ImGuiWindowFlags_NoSavedSettings);
-					ImGui::Indent(2);
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0, 6));
-					float total_width = ImGui::GetContentRegionAvailWidth();
-					//ImGui::Columns(3, "MySocialsForWelcomecolumns", false);  //false no border
-					//ImGui::Columns(2, "MySocialsForWelcomecolumns", false);  //false no border
-					ImGui::Columns(3, "MySocialsForWelcomecolumns", false);  //false no border
-
-					float colwidth = ImGui::GetContentRegionAvailWidth(); //padding.
-					float fRatio = colwidth / 512.0f;
-					ImVec2 iThumbSize = { (float)512.0*fRatio, (float)288.0*fRatio };
-					
-					char child[MAX_PATH];
-					for (int i = 0; i < IM_ARRAYSIZE(items_social_thumb); i++)
-					{
-						sprintf(child, "##JustaSocialFrame%d", i);
-						ImGui::BeginChild(child, ImVec2(iThumbSize.x-8.0, iThumbSize.x - 60.0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-
-						ImGui::SetWindowFontScale(1.6);
-						ImGui::TextCenter(items_social_header[i]);
-						ImGui::SetWindowFontScale(1.0);
-
-						int TextureID = items_social_thumb[i];
-						if (!ImageExist(TextureID))
-						{
-							TextureID = BOX_CLICK_HERE;
-						}
-
-						ImGui::PushID(554231 + i);
-						float wthumb = iThumbSize.x - 120.0;
-						ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((ImGui::GetContentRegionAvailWidth()*0.5)-(wthumb*0.5)-3.0, 0.0f));
-						if (ImGui::ImgBtn(TextureID, ImVec2(wthumb, wthumb), ImColor(0, 0, 0, 0), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 200), ImColor(255, 255, 255, 200), 0, 0, 0, 0, false, false, false, false, true))
-						{
-							ExecuteFile( (LPSTR) items_social_link[i], "", "", 0);
-						}
-						ImGui::PopID();
-
-						ImGui::EndChild();
-
-						ImGui::SetWindowFontScale(1.2);
-						ImGui::TextWrapped(items_social_desc[i]);
-						ImGui::SetWindowFontScale(1.0);
-
-						ImGui::SetWindowFontScale(1.0);
-						ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0, 8));
-						ImGui::NextColumn();
-					}
-
-					ImGui::Columns(1);
-					ImGui::Indent(-2);
-
-					if (ImGui::GetCurrentWindow()->ScrollbarSizes.x > 0) 
-					{
-						//Hitting exactly at the botton could cause flicker, so add some additional lines when scrollbar on.
-						ImGui::Text("");
-						ImGui::Text("");
-						ImGui::Text("");
-					}
-
-					ImGui::EndChild();
-					ImGui::Indent(-fIntendAmount);
-
-					if (ImGui::GetCurrentWindow()->ScrollbarSizes.x > 0) 
-					{
-						//Hitting exactly at the botton could cause flicker, so add some additional lines when scrollbar on.
-						ImGui::Text("");
-						ImGui::Text("");
-						ImGui::Text("");
-					}
-					ImGui::EndTabItem();
-				}
-				if (ImGui::IsMouseHoveringRect(rect.Min, rect.Max)) ImGui::SetTooltip("%s", "Websites & Social");
-				ImGui::SetWindowFontScale(1.2);
-				*/
-
 				//
 				// Workshop Uploader and Workshop Viewer
 				//
@@ -35960,16 +34475,10 @@ void Welcome_Screen(void)
 					ImGui::Indent(2);
 					ImGui::SetWindowFontScale(1.2);
 				}
-				else
-				{
-					//ImGui::TextWrapped("Description:");
-				}
 
 			}
 			else if (bUseProject)
 			{
-				//lpTexture
-				//sDisplayName
 				int iTextureID = BOX_CLICK_HERE;
 				if (ImageExist(projectbank_imageid[current_project_id])) iTextureID = projectbank_imageid[current_project_id];
 
@@ -37035,9 +35544,6 @@ void editor_toggle_element_vis(bool bIsVisible)
 	//  Update entity cursor? (delete many of these as it WAS old shroud updater!)
 	t.refreshgrideditcursor = 1;
 
-	//  Update clipboard items based on mode
-	//editor_cutcopyclearstate();
-
 	//  Waypoint visibility
 	if (t.grideditselect != t.lastgrideditselect)
 	{
@@ -37235,22 +35741,8 @@ bool DoTreeNodeGroup(int groupindex, bool bMoveCameraToObjectPosition)
 							}
 							if (bMoveCameraToObjectPosition == true)
 							{
-								//float zoom = 500;
-								//float zoom = ObjectSize(t.entityelement[i].obj, 1) * 2.0;
-								//if (zoom < 30.0f) zoom = 30.0f;
-								//float realcamy = ObjectSizeY(t.entityelement[i].obj, 1) * 0.75;
-								//float camy = realcamy;
-								//if (camy < 30.0f) camy = 30.0f;
-								//if (t.entityprofile[masterid].ismarker > 0)
-								//{
-								//	zoom = 100.0;
-								//	camy = 50.0;
-								//}
 								PositionCamera(t.entityelement[i].x, t.entityelement[i].y+500, t.entityelement[i].z-500);
 								PointCamera(t.entityelement[i].x, t.entityelement[i].y, t.entityelement[i].z);
-								//MoveCamera(0, -zoom);
-								//PositionCamera(CameraPositionX(0), t.entityelement[i].y + camy, CameraPositionZ(0));
-								//PointCamera(t.entityelement[i].x, t.entityelement[i].y + (realcamy * 0.5), t.entityelement[i].z);
 								t.editorfreeflight.c.x_f = CameraPositionX();
 								t.editorfreeflight.c.y_f = CameraPositionY();
 								t.editorfreeflight.c.z_f = CameraPositionZ();
@@ -37378,8 +35870,6 @@ bool DoTreeNodeBehavior(LPSTR behaviorscriptname, bool bMoveCameraToObjectPositi
 
 void SetupDecalObject(int obj, int elementID)
 {
-	//SetAlphaMappingOn(obj, 100.0);
-
 	bool bUseFPE = false;
 	if (elementID > 0 && t.entityelement[elementID].eleprof.bUseFPESettings)
 		bUseFPE = true;
@@ -37493,15 +35983,7 @@ void loadMarketplaceData(int* ggMaxDlc, cstr* ggMaxLink, int* sketchfabDlc, cstr
 			strcpy(converter, fullImageDir.c_str());
 			LoadImage(converter, ggMaxDlc[i]);
 
-			//Link
-			//if (g_bUpdateAppAvailable==true) 
-			//{ 
-			//	link = jsonFile["ggMaxDLC"][i]["tgcLink"]; 
-			//}
-			//else 
-			{ 
-				link = jsonFile["ggMaxDLC"][i]["steamLink"]; 
-			}
+			link = jsonFile["ggMaxDLC"][i]["steamLink"]; 
 			strcpy(converter, link.c_str());
 			ggMaxLink[i] = converter;
 
@@ -37866,11 +36348,6 @@ int get_hidehudstate()
 #define STORYBOARD_SAVE_MESSAGE "Do you wish to save your game project first ?"
 #define STORYBOARD_YSTART 30
 
-//PE: Undo redo will be hole structure copy.
-//#define STORYBOARD_UNDO_MAX 10
-//StoryboardStruct Storyboard_Undo[STORYBOARD_UNDO_MAX];
-//int iStoryboardUndoIndex = 0;
-
 //PE: Not needed in save struct.
 int StoryboardiActiveLinksId[STORYBOARD_MAXNODES];
 int StoryboardiActiveLinksIdFrom[STORYBOARD_MAXNODES];
@@ -37930,12 +36407,6 @@ int get_output_linkindex(int node, int index)
 
 void setup_output_links(int node)
 {
-
-	//int iTitleScreenNodeID = 1;
-	//int iAboutScreenNodeID = 4;
-	//int iGameWonScreenNodeID = 5;
-	//int iGameLostScreenNodeID = 6;
-
 	if (node < 0 || node > STORYBOARD_MAXNODES) return;
 	int i = node;
 	int outlinknum = 0;
@@ -38099,7 +36570,6 @@ void duplicate_single_node (int sourceid)
 	memcpy(Storyboard.Nodes[iNewNode].screen_title, Storyboard.Nodes[sourceid].screen_title, sizeof(Storyboard.Nodes[sourceid].screen_title));
 	memcpy(Storyboard.Nodes[iNewNode].screen_music, Storyboard.Nodes[sourceid].screen_music, sizeof(Storyboard.Nodes[sourceid].screen_music));
 	memcpy(Storyboard.Nodes[iNewNode].screen_backdrop, Storyboard.Nodes[sourceid].screen_backdrop, sizeof(Storyboard.Nodes[sourceid].screen_backdrop));
-	//assignedperHUDscr Storyboard.Nodes[iNewNode].screen_backdrop_id = Storyboard.Nodes[sourceid].screen_backdrop_id;
 	Storyboard.Nodes[iNewNode].screen_back_color = Storyboard.Nodes[sourceid].screen_back_color;
 	Storyboard.Nodes[iNewNode].screen_backdrop_placement = Storyboard.Nodes[sourceid].screen_backdrop_placement;
 	memcpy(Storyboard.Nodes[iNewNode].screen_thumb, Storyboard.Nodes[sourceid].screen_thumb, sizeof(Storyboard.Nodes[sourceid].screen_thumb));
@@ -38110,11 +36580,8 @@ void duplicate_single_node (int sourceid)
 	memcpy(Storyboard.Nodes[iNewNode].widget_size, Storyboard.Nodes[sourceid].widget_size, sizeof(Storyboard.Nodes[sourceid].widget_size));
 	memcpy(Storyboard.Nodes[iNewNode].widget_pos, Storyboard.Nodes[sourceid].widget_pos, sizeof(Storyboard.Nodes[sourceid].widget_pos));
 	memcpy(Storyboard.Nodes[iNewNode].widget_normal_thumb, Storyboard.Nodes[sourceid].widget_normal_thumb, sizeof(Storyboard.Nodes[sourceid].widget_normal_thumb));
-	//assignedperHUDscr memcpy(Storyboard.Nodes[iNewNode].widget_normal_thumb_id, Storyboard.Nodes[sourceid].widget_normal_thumb_id, sizeof(Storyboard.Nodes[sourceid].widget_normal_thumb_id));
 	memcpy(Storyboard.Nodes[iNewNode].widget_highlight_thumb, Storyboard.Nodes[sourceid].widget_highlight_thumb, sizeof(Storyboard.Nodes[sourceid].widget_highlight_thumb));
-	//assignedperHUDscr memcpy(Storyboard.Nodes[iNewNode].widget_highlight_thumb_id, Storyboard.Nodes[sourceid].widget_highlight_thumb_id, sizeof(Storyboard.Nodes[sourceid].widget_highlight_thumb_id));
 	memcpy(Storyboard.Nodes[iNewNode].widget_selected_thumb, Storyboard.Nodes[sourceid].widget_selected_thumb, sizeof(Storyboard.Nodes[sourceid].widget_selected_thumb));
-	//assignedperHUDscr memcpy(Storyboard.Nodes[iNewNode].widget_selected_thumb_id, Storyboard.Nodes[sourceid].widget_selected_thumb_id, sizeof(Storyboard.Nodes[sourceid].widget_selected_thumb_id));
 	memcpy(Storyboard.Nodes[iNewNode].widget_click_sound, Storyboard.Nodes[sourceid].widget_click_sound, sizeof(Storyboard.Nodes[sourceid].widget_click_sound));
 	memcpy(Storyboard.Nodes[iNewNode].widget_action, Storyboard.Nodes[sourceid].widget_action, sizeof(Storyboard.Nodes[sourceid].widget_action));
 	memcpy(Storyboard.Nodes[iNewNode].widget_font, Storyboard.Nodes[sourceid].widget_font, sizeof(Storyboard.Nodes[sourceid].widget_font));
@@ -38958,51 +37425,6 @@ int storyboard_add_missing_nodex(int node,float area_width, float node_width, fl
 			strcpy(Storyboard.Nodes[node].widget_highlight_thumb[button], "editors\\templates\\buttons\\default-hover.png");
 			strcpy(Storyboard.Nodes[node].widget_selected_thumb[button], "editors\\templates\\buttons\\default-selected.png");
 			strcpy(Storyboard.Nodes[node].widget_name[button], "back-load-game"); //NOTE: DUP (back) - Also add "-hover.png" ...
-			/* done elsewhere and another way now
-			bool bAddLoadGameButton = true;
-			int iFirstFreeButton = -1;
-			for (int i = 0; i < STORYBOARD_MAXWIDGETS;i++)
-			{
-				if (Storyboard.Nodes[iTitleScreenNodeID].widget_used[i] == 1)
-				{
-					if (stricmp(Storyboard.Nodes[iTitleScreenNodeID].widget_name[i], "load-game") == 0)
-					{
-						bAddLoadGameButton = false;
-						break;
-					}
-				}
-				else
-				{
-					if (iFirstFreeButton < 0) iFirstFreeButton = i;
-				}
-			}
-			//PE: Check if "load game" button is added to title menu.
-			if (bAddLoadGameButton && iFirstFreeButton >= 0)
-			{
-				strcpy(Storyboard.Nodes[iTitleScreenNodeID].widget_label[iFirstFreeButton], "LOAD GAME");
-				Storyboard.Nodes[iTitleScreenNodeID].widget_used[iFirstFreeButton] = 1;
-				Storyboard.Nodes[iTitleScreenNodeID].widget_type[iFirstFreeButton] = STORYBOARD_WIDGET_BUTTON;
-				Storyboard.Nodes[iTitleScreenNodeID].widget_size[iFirstFreeButton] = ImVec2(1.0, 1.0); //Only for scaling. else but image size.
-				Storyboard.Nodes[iTitleScreenNodeID].widget_pos[iFirstFreeButton] = ImVec2(50.0, 20.0 + 40.0); //Pos in percent. using pivot center on X only.
-				Storyboard.Nodes[iTitleScreenNodeID].widget_action[iFirstFreeButton] = STORYBOARD_ACTIONS_GOTOSCREEN;
-				Storyboard.Nodes[iTitleScreenNodeID].widget_layer[iFirstFreeButton] = 0;
-				Storyboard.Nodes[iTitleScreenNodeID].widget_font_color[iFirstFreeButton] = ImVec4(1.0, 1.0, 1.0, 1.0);
-				strcpy(Storyboard.Nodes[iTitleScreenNodeID].widget_font[iFirstFreeButton], "Default Font"); // ?
-				strcpy(Storyboard.Nodes[iTitleScreenNodeID].widget_normal_thumb[iFirstFreeButton], "editors\\templates\\buttons\\default.png");
-				strcpy(Storyboard.Nodes[iTitleScreenNodeID].widget_highlight_thumb[iFirstFreeButton], "editors\\templates\\buttons\\default-hover.png");
-				strcpy(Storyboard.Nodes[iTitleScreenNodeID].widget_selected_thumb[iFirstFreeButton], "editors\\templates\\buttons\\default-selected.png");
-				strcpy(Storyboard.Nodes[iTitleScreenNodeID].widget_name[iFirstFreeButton], "load-game"); //Also add "-hover.png" ...
-				strcpy(Storyboard.Nodes[iTitleScreenNodeID].output_title[iFirstFreeButton], " LOAD GAME -> Connect to Scene ");
-				strcpy(Storyboard.Nodes[iTitleScreenNodeID].output_action[iFirstFreeButton], "loadscene"); //Not defined this yet.
-				Storyboard.Nodes[iTitleScreenNodeID].output_can_link_to_type[iFirstFreeButton] = STORYBOARD_TYPE_SCREEN;
-				//Storyboard.Nodes[iTitleScreenNodeID].output_linkto[iFirstFreeButton] = Storyboard.Nodes[node].input_id[0];
-			}
-			//PE: setup output links on "game paused" screen. , they are already there so fixed output links.
-			strcpy(Storyboard.Nodes[iGamePausedNodeID].output_title[0], " LOAD GAME -> Connect to Scene ");
-			strcpy(Storyboard.Nodes[iGamePausedNodeID].output_action[0], "loadscene"); //Not defined this yet.
-			Storyboard.Nodes[iGamePausedNodeID].output_can_link_to_type[0] = STORYBOARD_TYPE_SCREEN;
-			//Storyboard.Nodes[iGamePausedNodeID].output_linkto[0] = Storyboard.Nodes[node].input_id[0];
-			*/
 		}
 	}
 
@@ -39852,7 +38274,6 @@ void CheckWindowsOnTop(ImGuiWindow* storyboard_window)
 			bool bSwitchOrder = false;
 			int settings_idx = ImGui_GetWindowOrder(win);
 			if (settings_idx < storyboard_idx) bSwitchOrder = true;
-			//if (!bSwitchOrder && secondscreen_idx > 0 && settings_idx < secondscreen_idx) bSwitchOrder = true; //On top of second window.
 			if (bSwitchOrder)
 			{
 				//Focus settings
@@ -40144,15 +38565,6 @@ void process_storeboard(bool bInitOnly)
 						welcome_init(2);
 					}
 
-					/* replaced with live changelog
-					bool welcome_get_change_log(void);
-					if (welcome_get_change_log() == true)
-					{
-						welcome_runloop(WELCOME_ANNOUNCEMENTS);
-						iTriggerWelcomeSystemStuff = 99; //PE: Start welcome system.
-					}
-					*/
-
 					welcome_init(0);
 				}
 				bTriggerWhatsNewInStoryboard = false;
@@ -40200,10 +38612,6 @@ void process_storeboard(bool bInitOnly)
 				{
 					if (g.gshowannouncements == 1)
 					{
-						//bAddWhatNewToMenu = true;
-						//welcome_init(1);
-						//welcome_init(0);
-						//welcome_show(WELCOME_ANNOUNCEMENTS);
 						if (g_iWelcomeLoopPage == WELCOME_ANNOUNCEMENTS)
 						{
 							if (gbWelcomeSystemActive == false)
@@ -40211,15 +38619,6 @@ void process_storeboard(bool bInitOnly)
 								welcome_init(1);
 								welcome_init(2);
 							}
-
-							/* replaced with live changelog
-							bool welcome_get_change_log(void);
-							if (welcome_get_change_log() == true)
-							{
-								welcome_runloop(WELCOME_ANNOUNCEMENTS);
-								iTriggerWelcomeSystemStuff = 99; //PE: Start welcome system.
-							}
-							*/
 
 							welcome_init(0);
 						}
@@ -40383,7 +38782,6 @@ void process_storeboard(bool bInitOnly)
 							{
 								//Save into thumbbank , and save thumb filename in node.
 								//PE: Needed to add Storyboard.gamename so we dont get duplicates.
-								/*cstr name = cstr("screen_") + cstr(Storyboard.gamename) + cstr("_") + cstr(Storyboard.Nodes[iWaitFor2DEditorNode].lua_name);*/
 								// name of thumb is now based on screen title, to prevent multiple screens with same thumb name
 								cstr name = cstr("screen_") + cstr(Storyboard.gamename) + cstr("_") + cstr(Storyboard.Nodes[iWaitFor2DEditorNode].title);
 								CreateBackBufferCacheNameEx(name.Get(), 512, 288, true);
@@ -40803,9 +39201,6 @@ void process_storeboard(bool bInitOnly)
 						{
 							//Cancel just ignore.
 						}
-
-						//strcpy(Storyboard.Nodes[node].level_name, "");
-						//Overwrite ?
 					}
 					else
 					{
@@ -41063,7 +39458,6 @@ void process_storeboard(bool bInitOnly)
 							{
 								if (strlen(Storyboard.Nodes[i].level_name) > 0)
 								{
-									//CreateBackBufferCacheName(Storyboard.Nodes[i].level_name, 512, 288);
 									char *find = (char *)pestrcasestr(Storyboard.Nodes[i].thumb, "thumbbank\\");
 									if (find)
 									{
@@ -41095,7 +39489,6 @@ void process_storeboard(bool bInitOnly)
 			if (strlen(Storyboard.game_icon) > 0)
 			{
 				image_setlegacyimageloading(true);
-				//LoadImage(Storyboard.game_icon, Storyboard.game_icon_id);
 				LoadImageSize(Storyboard.game_icon, Storyboard.game_icon_id, 256, 256);
 				image_setlegacyimageloading(false);
 			}
@@ -41238,23 +39631,9 @@ void process_storeboard(bool bInitOnly)
 			int iWindowWidth = 1100;
 			int iWindowHeight = 600;
 			float buttonwide = 200.0f;
-			//ImGui::OpenPopup("Edit Game Settings##Storyboard");
-			//ImGui::SetNextWindowSize(ImVec2(iWindowWidth, iWindowHeight), ImGuiCond_Always);
-			//ImGui::SetNextWindowPosCenter(ImGuiCond_Always);
 			ImGui::SetNextWindowSize(ImVec2(iWindowWidth, iWindowHeight), ImGuiCond_Always);
-			//static bool bUpdateWinPos = false;
-			//static ImVec2 winpos = ImVec2(iWindowWidth, iWindowHeight);
-			//if (bUpdateWinPos)
-			//{
-			//	ImGui::SetNextWindowPos(winpos,ImGuiCond_Always);
-			//	bUpdateWinPos = false;
-			//}
-			//else
-			//{
-				ImGui::SetNextWindowPosCenter(ImGuiCond_Once);
-			//}
+			ImGui::SetNextWindowPosCenter(ImGuiCond_Once);
 			bool bOpenWindow = true;
-			//if (ImGui::BeginPopupModal("Edit Game Settings##Storyboard", &bOpenWindow, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
 
 			if (ImGui::Begin("Edit Game Settings##Storyboard", &bEditGameSettings, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings))
 			{
@@ -41268,24 +39647,6 @@ void process_storeboard(bool bInitOnly)
 
 				ImVec4 style_back = ImGui::GetStyle().Colors[ImGuiCol_WindowBg] * ImVec4(0.9, 0.9, 0.9, 0.9); //A Little darker.
 				style_back.w = 1.0f;
-
-
-				/*
-				static bool bDragTitleActive = false;
-				if ( (ImGui::IsMouseHoveringRect(rHeader.Min, rHeader.Max, true) || bDragTitleActive) && ImGui::IsMouseDragging())
-				{
-					if (ImGui::IsMouseDragging())
-					{
-						float offsetx = ImGui::GetIO().MouseDelta.x;
-						float offsety = ImGui::GetIO().MouseDelta.y;
-						winpos += ImVec2(offsetx, offsety);
-						bDragTitleActive = true;
-						bUpdateWinPos = true;
-					}
-				}
-				if (!ImGui::IsMouseDown(0))
-					bDragTitleActive = false;
-				*/
 
 				ImGui::Text("");
 				ImGui::SetWindowFontScale(1.8);
@@ -41520,13 +39881,6 @@ void process_storeboard(bool bInitOnly)
 							else if (keyi == 5) { iDefKey = 46;  sprintf(pButtonName, "Crouch Key"); sprintf(pBindingDesc, "[C] Mapped To Scancode %d", g.keymap[iDefKey]); }
 							else if (keyi == 6) { iDefKey = 42;  sprintf(pButtonName, "Run Key"); sprintf(pBindingDesc, "[SHIFT] Mapped To Scancode %d", g.keymap[iDefKey]); }
 							else if (keyi == 7) { iDefKey = 57;  sprintf(pButtonName, "Jump Key"); sprintf(pBindingDesc, "[SPACE] Mapped To Scancode %d", g.keymap[iDefKey]); }
-							//else if (keyi == 0) { iDefKey = 16;  sprintf(pButtonName, "[Q] Key: %d", g.keymap[iDefKey]); }
-							//else if (keyi == 0) { iDefKey = 19;  sprintf(pButtonName, "[R] Key: %d", g.keymap[iDefKey]); }
-							//else if (keyi == 0) { iDefKey = 12;  sprintf(pButtonName, "[MINUS1] Key: %d", g.keymap[iDefKey]); }
-							//else if (keyi == 0) { iDefKey = 74;  sprintf(pButtonName, "[MINUS2] Key: %d", g.keymap[iDefKey]); }
-							//else if (keyi == 0) { iDefKey = 13;  sprintf(pButtonName, "[PLUS1] Key: %d", g.keymap[iDefKey]); }
-							//else if (keyi == 0) { iDefKey = 78;  sprintf(pButtonName, "[PLUS2] Key: %d", g.keymap[iDefKey]); }
-							//else if (keyi == 0) { iDefKey = 28;  sprintf(pButtonName, "[RETURN] Key: %d", g.keymap[iDefKey]); }
 							ImGui::SetCursorPos(ImVec2(cPos.x, ImGui::GetCursorPos().y));
 							if (ImGui::StyleButton(pButtonName, ImVec2(buttonwide, 0.0f))) 
 							{ 
@@ -41558,7 +39912,6 @@ void process_storeboard(bool bInitOnly)
 							if (iSelectedLibraryStingReturnID == window->GetID(UniqueIconnailSelect.Get()))
 							{
 								strcpy(Storyboard.game_icon, sSelectedLibrarySting.Get());
-								//bUpdateIconImage = true; //Update icon.
 								sSelectedLibrarySting = "";
 								iSelectedLibraryStingReturnID = -1; //disable.
 								Storyboard.iChanged = true;
@@ -41567,7 +39920,6 @@ void process_storeboard(bool bInitOnly)
 								if (strlen(Storyboard.game_icon) > 0)
 								{
 									image_setlegacyimageloading(true);
-									//LoadImage(Storyboard.game_icon, Storyboard.game_icon_id);
 									LoadImageSize(Storyboard.game_icon, Storyboard.game_icon_id, 256, 256);
 									image_setlegacyimageloading(false);
 								}
@@ -41603,8 +39955,6 @@ void process_storeboard(bool bInitOnly)
 										strcat(projectico, Storyboard.gamename);
 
 										//PE: in MAX 256x256 is 256 colors only, so use 128x128 as main icon.
-										//strcat(parameters, "\" -vf scale=256:256 \"");
-										//palettegen=max_colors=256
 										if (a == 0)
 										{
 											strcat(parameters, "\" -vf scale=256:256 \"");
@@ -42048,57 +40398,23 @@ void process_storeboard(bool bInitOnly)
 						if (!bAbort)
 						{
 							iLevelEditorFromStoryboardID = -1;
-							//if (pref.iDisplayWelcomeScreen == 0) no longer can be called
-							//{
-							//	//Welcome not open , so to level editor.
-							//	bStoryboardWindow = false;
-							//}
-							//else
-							{
-								//Back to welcome.
-								bWelcomeScreen_Window = true;
-								bStoryboardWindow = false;
-								cLastProjectList = ""; //Trigger a reload of projects, if anything changed.
-								bSortProjects = true;
+							//Back to welcome.
+							bWelcomeScreen_Window = true;
+							bStoryboardWindow = false;
+							cLastProjectList = ""; //Trigger a reload of projects, if anything changed.
+							bSortProjects = true;
 
-								// and in case this was a remote project, restore to writables regular
-								extern void switch_to_regular_projects(void);
-								switch_to_regular_projects();
-							}
+							// and in case this was a remote project, restore to writables regular
+							extern void switch_to_regular_projects(void);
+							switch_to_regular_projects();
 						}
 					}
 					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Exit to GameGuru MAX Hub"); //Welcome Screen
 				}
-				// Bouncing between storyboard and 'last' level breaks the flow and use of storyboard as the parent
-				// and this also prevents levels from potentially floating free and causing other connected issues
-				//if (pref.iDisplayWelcomeScreen == 0)
-				//{
-				//	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Exit to Level Editor");
-				//}
-				//else
-				//{
-				//	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Exit to GameGuru MAX Hub"); //Welcome Screen
-				//}
-				//
 
 				ImGui::SetWindowFontScale(2.0); //1.4
-				//ImGui::TextCenter("GAME STORYBOARD");
 				ImGui::TextCenter(""); //New header already have this text.
 
-				//ImGui::Text(""); //Without a header use this.
-
-				//Display game project name in a inputtext.
-//				ImGui::SetWindowFontScale(1.4);
-//				float fInputWidth = 300.0;
-//				ImGui::PushItemWidth(fInputWidth);
-//				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(ImGui::GetContentRegionAvailWidth()*0.5 - ((fInputWidth + 16)*0.5), 28)); //Center with new header.
-//				ImGui::InputText("##GamenameStoryboardInput", Storyboard.gamename, 250, ImGuiInputTextFlags_ReadOnly); //ImGuiInputTextFlags_None
-//				if (ImGui::MaxIsItemFocused())
-//				{
-//					bImGuiGotFocus = true;
-//				}
-//				ImGui::PopItemWidth();
-//				ImGui::SetWindowFontScale(1.0);
 				//PE: changed inputtext to just displying the project name.
 				ImGui::SetWindowFontScale(1.0);
 				ImGui::Text("");
@@ -42120,7 +40436,6 @@ void process_storeboard(bool bInitOnly)
 
 
 				ImVec2 vNodeAreaStart = ImGui::GetCursorScreenPos();
-				//int iUniqueIds = STORYBOARD_THUMBS;
 
 				//PE: Make sure if we focus another window and go back , mouse dragging is reset.
 				extern bool g_bAppActiveStat;
@@ -42790,7 +41105,6 @@ void process_storeboard(bool bInitOnly)
 										iLaunchAfterSync = 7; //Direct load.
 										iSkibFramesBeforeLaunch = 5;
 										bCloseStoryboardAfterLoad = true;
-										//bStoryboardWindow = false;
 										iLevelEditorFromStoryboardID = i;
 									}
 								}
@@ -42805,14 +41119,6 @@ void process_storeboard(bool bInitOnly)
 									bTerrain_Tools_Window = false;
 									Entity_Tools_Window = true;
 
-									//bForceKey = true;
-									//csForceKey = "t";
-									//bForceKey2 = true;
-									//csForceKey2 = "6";
-									//t.inputsys.domodeterrain = 1; t.inputsys.dowaypointview = 0;
-									//t.gridentitymarkersmodeonly = 0; t.grideditselect = 0;
-									//t.terrain.terrainpaintermode = 6;
-									//bTerrain_Tools_Window = true;
 									bProceduralLevelFromStoryboard = true;
 									iLaunchAfterSync = 5;
 									iBlackoutForFrames = 5;
@@ -42885,7 +41191,6 @@ void process_storeboard(bool bInitOnly)
 								window->DrawList->AddImage((ImTextureID)lpTexture, img_pos, img_pos + iThumbSize, ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 0.8)));
 							}
 						}
-						//ImGui::SetCursorPos(cpos + ImVec2(0, iThumbSize.y)); Start output from top and down.
 
 						//#### Output attibs ####
 						for (int l = 0; l < STORYBOARD_MAXOUTPUTS; l++)
@@ -43062,20 +41367,6 @@ void process_storeboard(bool bInitOnly)
 						{
 							valid_link = true;
 						}
-						/* Not so, there is some hardcoded stuff still; START to loading to LEVEL
-						else
-						{
-							// can also allow screen and level types to interconnect
-							if (Storyboard.Nodes[iOutNode].type == STORYBOARD_TYPE_SCREEN && Storyboard.Nodes[iInNode].output_can_link_to_type[iInAttr] == STORYBOARD_TYPE_LEVEL)
-							{
-								valid_link = true;
-							}
-							if (Storyboard.Nodes[iOutNode].type == STORYBOARD_TYPE_LEVEL && Storyboard.Nodes[iInNode].output_can_link_to_type[iInAttr] == STORYBOARD_TYPE_SCREEN)
-							{
-								valid_link = true;
-							}
-						}
-						*/
 					}
 
 					if (valid_link)
@@ -44350,11 +42641,6 @@ void process_storeboard(bool bInitOnly)
 											}
 										}
 									}
-									//if (checkproject)
-									//{
-									//	delete checkproject;
-									//	checkproject = NULL;
-									//}
 								}
 							}
 						}
@@ -44984,9 +43270,6 @@ int save_level_as( void )
 	int iRet = 0;
 	static bool bGotAThumb = false;
 	static int iSetKeyboardFocusHere = 10;
-
-	// LB: allow levels to be saved, even if not currently connected to game project (for HUB skippers)
-	//if (iNewLevelNode < 0) return(0);
 
 	if (bTriggerTerrainSaveAsWindow)
 	{
@@ -45687,22 +43970,6 @@ int save_create_storyboard_project(void)
 	return iRet;
 }
 
-
-//FindFirstLevel(g_Storyboard_First_Level_Node, g_Storyboard_First_fpm);
-//if( g_Storyboard_First_Level_Node == -1) // Not Found.
-//g_Storyboard_Current_Level MUST be set by load_fpm , so "load game" will also work.
-//g_Storyboard_Current_Level = g_Storyboard_First_Level_Node;
-//strcpy(g_Storyboard_Current_fpm,g_Storyboard_First_fpm);
-//Win
-// int a = Find NextLevel(g_Storyboard_Current_Level, g_Storyboard_Current_fpm)
-//if( a == 0 ) // No more levels found, go to won.lua
-// if( a == 1 ) //Goto a new level.
-// if( a == 2 ) //Goto a new lua screen.
-//Lost
-// int a = Find NextLevel(g_Storyboard_Current_Level, g_Storyboard_Current_lua , 1)
-// jump to g_Storyboard_Current_lua.
-
-
 int FindOutputScreenNode(int iNode, int index)
 {
 	//Storyboard.Nodes[iNextNode].lua_name
@@ -45849,36 +44116,6 @@ void FindFirstSplash(char *splash_name)
 				{
 					// replace stock splash with custom one specified by storybaord game project
 					strcpy(splash_name, Storyboard.Nodes[i].thumb);
-
-					/* LB: reason was simpler, the splash image file was not copied over - and the public repo code does not contain the encryption code so could not be tested/verified. Sorted now :)
-					//PE: Need decrypt support here.
-					strcpy(splash_name, Storyboard.Nodes[i].thumb);
-					if (!pestrcasestr(splash_name, "Files\\"))
-					{
-						int GG_GetRealPath(char* fullPath, int create, bool bIgnoreAdditional = false);
-						GG_GetRealPath(splash_name, 0);
-					}
-					if (!GG_FileExists(splash_name))
-					{
-						//Try 
-						void SetCanUse_e_(int flag);
-						SetCanUse_e_(1);
-						char VirtualFilename[MAX_PATH];
-						strcpy(VirtualFilename, splash_name);
-						bool CheckForWorkshopFile(LPSTR VirtualFilename);
-						CheckForWorkshopFile(VirtualFilename);
-						// Decrypt and use media
-						g_pGlob->Decrypt(VirtualFilename);
-						if (FileExist(VirtualFilename))
-						{
-							strcpy(splash_name, VirtualFilename);
-						}
-
-						//PE: We cant do this, need another way to later clean up decrypt area.
-						//PE: Wait until the actual g_pGlob->Decrypt works so we can see how it works.
-						//g_pGlob->Encrypt(VirtualFilename);
-					}
-					*/
 				}
 			}
 		}
@@ -46172,10 +44409,6 @@ void mapNodeStyle(void)
 	GImNodes->Style.Colors[ImNodesCol_TitleBar] = ImGui::ColorConvertFloat4ToU32(fade);
 	GImNodes->Style.Colors[ImNodesCol_TitleBarHovered] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_Button]);
 	GImNodes->Style.Colors[ImNodesCol_TitleBarSelected] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_Button]);
-//	GImNodes->Style.Colors[ImNodesCol_TitleBar] = ImGui::ColorConvertFloat4ToU32(fade);
-//	GImNodes->Style.Colors[ImNodesCol_TitleBarHovered] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_TitleBg]);
-//	GImNodes->Style.Colors[ImNodesCol_TitleBarSelected] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_TitleBg]);
-
 
 	GImNodes->Style.Colors[ImNodesCol_Link] = IM_COL32(180, 180, 180, 200);
 	GImNodes->Style.Colors[ImNodesCol_LinkHovered] = IM_COL32(180, 180, 180, 255);
@@ -46183,14 +44416,6 @@ void mapNodeStyle(void)
 	// pin colors match ImGui's button colors
 	GImNodes->Style.Colors[ImNodesCol_Pin] = IM_COL32(180, 180, 180, 200);
 	GImNodes->Style.Colors[ImNodesCol_PinHovered] = IM_COL32(180, 180, 180, 255);
-
-	// link colors match ImGui's slider grab colors
-	//GImNodes->Style.Colors[ImNodesCol_Link] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_Button]);
-	//GImNodes->Style.Colors[ImNodesCol_LinkHovered] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_ButtonHovered]);
-	//GImNodes->Style.Colors[ImNodesCol_LinkSelected] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_ButtonHovered]);
-	// pin colors match ImGui's button colors
-	//GImNodes->Style.Colors[ImNodesCol_Pin] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_Button]);
-	//GImNodes->Style.Colors[ImNodesCol_PinHovered] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_ButtonHovered]);
 
 	GImNodes->Style.Colors[ImNodesCol_BoxSelector] = IM_COL32(128, 128, 128, 30);
 	GImNodes->Style.Colors[ImNodesCol_BoxSelectorOutline] = ImGui::ColorConvertFloat4ToU32(colors[ImGuiCol_PlotLines]);
@@ -46696,24 +44921,6 @@ void storyboard_menubar(float area_width, float node_width, float node_height)
 				}
 				if (!bIsMenuHovered) bIsMenuHovered = ImGui::IsItemHovered();
 
-				/*
-				if (g_bUpdateAppAvailable == true)
-				{
-					if (ImGui::MenuItem("Check For Updates"))
-					{
-						int iRet = AskSaveBeforeNewAction();
-						if (iRet != 2)
-						{
-							g.projectmodified = 0;
-							g.projectmodifiedstatic = 0;
-							ExecuteFile("..\\..\\GameGuru MAX Updater.exe", "", "", 0);
-							g_bCascadeQuitFlag = true;
-						}
-					}
-					if (!bIsMenuHovered) bIsMenuHovered = ImGui::IsItemHovered();
-				}
-				*/
-
 				if (ImGui::MenuItem("Report an Issue (GitHub)"))
 				{
 					ExecuteFile("https://github.com/TheGameCreators/GameGuruRepo/issues/new", "", "", 0);
@@ -46733,14 +44940,6 @@ void storyboard_menubar(float area_width, float node_width, float node_height)
 #endif
 
 				image_setlegacyimageloading(true);
-				/*
-				if (ImGui::MenuItem("Level Shortcuts")) {
-					strcpy(cHelpMenuImage, "languagebank\\english\\artwork\\testgamelayout.png");
-					LoadImage(cHelpMenuImage, HELPMENU_IMAGE);
-					bHelp_Menu_Image_Window = true;
-				}
-				if (!bIsMenuHovered) bIsMenuHovered = ImGui::IsItemHovered();
-				*/
 
 				if (bAddWhatNewToMenu)
 				{
@@ -46753,14 +44952,6 @@ void storyboard_menubar(float area_width, float node_width, float node_height)
 							welcome_init(2);
 						}
 						welcome_init(0);
-						/* replaced with live changelog
-						bool welcome_get_change_log(void);
-						if (welcome_get_change_log() == true)
-						{
-							welcome_runloop(WELCOME_ANNOUNCEMENTS);
-							iTriggerWelcomeSystemStuff = 99; //PE: Start welcome system.
-						}
-						*/
 					}
 				}
 
@@ -46828,18 +45019,6 @@ void save_storyboard(char *name,bool bSaveAs)
 		//Select name.
 		bTriggerSaveAs = true;
 		return;
-		//cStr tOldDir = GetDir();
-		//char * cFileSelected;
-		//cstr fulldir = "projectbank\\";
-		//cFileSelected = (char *)noc_file_dialog_open(NOC_FILE_DIALOG_DIR, "All\0*.*\0", fulldir.Get(), NULL);
-		//SetDir(tOldDir.Get());
-
-		//if (cFileSelected && strlen(cFileSelected) > 0) {
-		//	cstr tmp = cFileSelected;
-		//	//D:\dev\GameGuru MAX\Max\Files\projectbank\My New Game
-		//	//PathExist()
-		//	return;
-		//}
 	}
 	if (savename.Len() <= 0)
 	{
@@ -46991,10 +45170,6 @@ void load_storyboard(char *name)
 
 		bUpgradeAndBackupOldProject = false;
 
-		//this sets ALL fields data to zero, and only filled with known structure (members added at end not part of the copy to remain zeros)
-		//memset(&checkproject, 0, sizeof(StoryboardStruct));
-		//size_t size = fread(&checkproject, 1, sizeof(checkproject), projectfile);
-
 		char sig[12] = "Storyboard\0";
 		if (checkproject.sig[0] == 'S' && checkproject.sig[8] == 'r')
 		{
@@ -47108,9 +45283,6 @@ void load_storyboard(char *name)
 
 		//PE: Add custom fonts from remote project.
 		iLaunchAfterSync = 699;
-		//void AddRemoteProjectFonts(void);
-		//AddRemoteProjectFonts();
-
 	}
 	else
 	{
@@ -47187,11 +45359,6 @@ bool load_checkproject_storyboard(char *name)
 		//PE: Use this so we can upgrade from 202 to 203+
 		bool load__storyboard_into_struct(const char*, StoryboardStruct&);
 		load__storyboard_into_struct(project, checkproject);
-
-		//memset(&checkproject, 0, sizeof(StoryboardStruct));
-		//size_t size = fread(&checkproject, 1, sizeof(checkproject), projectfile);
-		//Valid pref:
-		//fclose(projectfile);
 
 		char sig[12] = "Storyboard\0";
 		if (checkproject.sig[0] == 'S' && checkproject.sig[8] == 'r')
@@ -47400,8 +45567,6 @@ bool load__storyboard_into_struct(const char *filepath, StoryboardStruct& storyb
 	return false;
 }
 
-//SmallStoryboardStruct smallcheckproject; //PE: Switched to full as we have game settings now.
-
 void GetProjectList(char *path, bool bGetThumbs)
 {
 	if (!path) return;
@@ -47478,160 +45643,6 @@ void GetProjectList(char *path, bool bGetThumbs)
 			}
 		}
 		SetDir(pOldDir.Get());
-
-		//PE: No need to read it here, as we need to do that after sorting.
-		
-		//Find project thumbs.
-		/*
-		if (bGetThumbs)
-		{
-			projectbank_active.resize(projectbank_list.size());
-
-			for (int i = 0; i < projectbank_list.size(); i++)
-			{
-				projectbank_active[i] = true;
-
-				if (!pestrcasestr((char *)projectbank_list[i].c_str(), "_backup_"))
-				{
-					char project[MAX_PATH];
-					strcpy(project, "projectbank\\");
-					strcat(project, projectbank_list[i].c_str());
-					strcat(project, "\\remoteproject.txt");
-					FILE* projectfile = NULL;
-					if (GG_FileExists(project))
-					{
-						// this project is a remote project (aproj7\Files\projectbank\aproj7)
-						char pAbsTrueProjectPath[MAX_PATH];
-						OpenToRead(1, project);
-						strcpy(pAbsTrueProjectPath, ReadString(1));
-						CloseFile(1);
-						GG_GetRealPath(pAbsTrueProjectPath, 0);
-						strcpy(project, pAbsTrueProjectPath);
-						strcat(project, projectbank_list[i].c_str());
-						strcat(project, "\\Files\\projectbank\\");
-					}
-					else
-					{
-						// regular projectbank project
-						strcpy(project, "projectbank\\");
-					}
-					strcat(project, projectbank_list[i].c_str());
-					strcat(project, "\\project.dat");
-
-					std::string newname = project;
-					char newversion[MAX_PATH];
-					sprintf(newversion, "project%d.dat", STORYBOARDVERSION);
-					replaceAll(newname, "project.dat", newversion);
-					projectfile = GG_fopen(newname.c_str(), "rb");
-
-					if (!projectfile)
-						projectfile = GG_fopen(project, "rb");
-					else
-						strcpy(project, newname.c_str());
-
-					if (projectfile)
-					{
-						fclose(projectfile);
-
-						//PE: Use this so we can upgrade from 202 to 203+
-						bool load__storyboard_into_struct(const char*, StoryboardStruct&);
-						load__storyboard_into_struct(project, checkproject);
-
-						//PE: Need full load now, as we can have Game Settings.
-						//size_t size = fread(&checkproject, 1, sizeof(checkproject), projectfile);
-
-						char sig[12] = "Storyboard\0";
-						if (checkproject.sig[0] == 'S' && checkproject.sig[8] == 'r')
-						{
-							cstr bestfound = "";
-							char pFindGameThumb[MAX_PATH];
-							strcpy(pFindGameThumb, "");
-							if (strlen(checkproject.customprojectfolder) > 0)
-							{
-								strcat(pFindGameThumb, checkproject.customprojectfolder);
-								strcat(pFindGameThumb, checkproject.gamename);
-								strcat(pFindGameThumb, "\\Files\\");
-							}
-							strcat(pFindGameThumb, checkproject.game_thumb);
-							if (strlen(checkproject.game_thumb) > 0 && FileExist(pFindGameThumb) )
-							{
-								bestfound = pFindGameThumb;
-							}
-							else
-							{
-								for (int i = 0; i < STORYBOARD_MAXNODES; i++) //SMALL_STORYBOARD_MAXNODES
-								{
-									if (checkproject.Nodes[i].used)
-									{
-										if (checkproject.Nodes[i].type == STORYBOARD_TYPE_SPLASH)
-										{
-											//Splash if no level found.
-											if (bestfound == "")
-											{
-												if (!pestrcasestr(checkproject.Nodes[i].thumb, "editors\\uiv3\\"))
-												{
-													//custom use.
-													bestfound = checkproject.Nodes[i].thumb;
-												}
-											}
-										}
-										if (checkproject.Nodes[i].type == STORYBOARD_TYPE_SCREEN)
-										{
-											if (pestrcasestr(checkproject.Nodes[i].title, "title screen"))
-											{
-												//Splash if no level found.
-												if (!pestrcasestr(checkproject.Nodes[i].thumb, "editors\\templates\\"))
-												{
-													//custom use.
-													bestfound = checkproject.Nodes[i].thumb;
-												}
-											}
-										}
-										//PE: Try finding level that loading.lua is pointing to ?
-										if (checkproject.Nodes[i].type == STORYBOARD_TYPE_LEVEL && !pestrcasestr(Storyboard.Nodes[i].lua_name, "loading"))
-										{
-											if (strlen(checkproject.Nodes[i].level_name) > 0)
-											{
-												CreateBackBufferCacheNameEx(checkproject.Nodes[i].level_name, 512, 288, true);
-												if (CreateProjectCacheName(checkproject.gamename, BackBufferCacheName.Get()) &&
-													FileExist(ProjectCacheName.Get()))
-												{
-													bestfound = ProjectCacheName.Get();
-													break;
-												}
-												else if (FileExist(BackBufferCacheName.Get()))
-												{
-													bestfound = BackBufferCacheName.Get();
-													break;
-												}
-											}
-										}
-									}
-								}
-							}
-							projectbank_image.push_back(bestfound.Get());
-							if (checkproject.project_inactive)
-								projectbank_active[i] = false;
-
-						}
-						else
-						{
-							projectbank_image.push_back(""); //Just use CLICK HERE.
-						}
-					}
-					else
-					{
-						//PE: Was missing if not found. https://github.com/TheGameCreators/GameGuruRepo/issues/1722
-						projectbank_image.push_back(""); //Just use CLICK HERE.
-					}
-				}
-				else
-				{
-					projectbank_image.push_back(""); //Backup just use CLICK HERE.
-				}
-			}
-		}
-		*/
 	}
 }
 
@@ -48119,15 +46130,7 @@ void RemoveWidgetFromScreen(int nodeID, int widgetID)
 			else
 			{
 				return;
-				//if (!(widgetID == 0 && Storyboard.Nodes[nodeID].widget_type[widgetID] != STORYBOARD_WIDGET_TEXT))
-				//	return;
 			}
-			//if (nodeID == iGraphicsNodeID && widgetID <= 6) return;
-			//if (nodeID == iSoundsNodeID && widgetID <= 5) return;
-			//if (nodeID == iSaveGameNodeID && widgetID <= 9) return;
-			//if (nodeID == iLoadGameNodeID && widgetID <= 9) return;
-			//if (nodeID == iLoadingScreenNodeID && widgetID <= 2) return;
-			//if (nodeID == iControlNodeID && widgetID <= 7) return;
 		}
 
 		//Also not all pages got add sliders.
@@ -48193,7 +46196,6 @@ void RemoveWidgetFromScreen(int nodeID, int widgetID)
 			node.widget_type[i] = node.widget_type[i + 1];
 			node.widget_read_only[i] = node.widget_read_only[i + 1];
 			node.widget_layer[i] = node.widget_layer[i + 1];
-			//node.widget_output_pin[i] = node.widget_output_pin[i + 1];
 			node.widget_initial_value[i] = node.widget_initial_value[i + 1];
 			strcpy(node.widget_name[i], node.widget_name[i + 1]);
 			Storyboard.widget_colors[nodeID][i] = Storyboard.widget_colors[nodeID][i + 1];
@@ -48380,7 +46382,6 @@ void SwapWidgets(int nodeID, int widgetA, int widgetB)
 	std::swap(node.widget_type[widgetA], node.widget_type[widgetB]);
 	std::swap(node.widget_read_only[widgetA], node.widget_read_only[widgetB]);
 	std::swap(node.widget_layer[widgetA], node.widget_layer[widgetB]);
-	//std::swap(node.widget_output_pin[widgetA], node.widget_output_pin[widgetB]);
 	std::swap(node.widget_initial_value[widgetA], node.widget_initial_value[widgetB]);	
 	std::swap(node.widget_name[widgetA], node.widget_name[widgetB]);
 	std::swap(Storyboard.widget_colors[nodeID][widgetA], Storyboard.widget_colors[nodeID][widgetB]);
@@ -48859,7 +46860,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 				if (Storyboard.Nodes[iUpdateBackDropNode].type == STORYBOARD_TYPE_SCREEN)
 				{
 					///PE: Not transparent screens.
-					//if (!Storyboard.Nodes[iUpdateBackDropNode].screen_backdrop_transparent)
 					{
 						if (ImageExist(Storyboard.Nodes[iUpdateBackDropNode].screen_backdrop_id)) DeleteImage(Storyboard.Nodes[iUpdateBackDropNode].screen_backdrop_id);
 
@@ -49053,7 +47053,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 		//ImGui::Separator(); //Ruin Columns ?
 		ImVec2 vMonitorPos = ImVec2(0, -8.0);
 		ImVec2 vMonitorBorder = ImVec2(15, 15);/*ImVec2(20, 20);*/
-		//float fRatio = 1.777777; // Default ratio 1920x1080
 		ImVec2 vViewportSize = ImGui::GetMainViewport()->Size;
 
 		int panelWidth = 250;
@@ -50179,8 +48178,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 											ImVec2 uv0 = ImVec2(0, 0);
 											ImVec2 uv1 = ImVec2(animU, animV);
 											window->DrawList->AddImage((ImTextureID)lpVideoTexture, image_bb.Min, image_bb.Max, uv0, uv1, ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)));
-											//ImGui::SetCursorPos(vMonitorStart); //PE: Debug
-											//ImGui::Text("widget_size: %0.2f,%0.2f widget_pos: %0.2f,%0.2f", widget_size.x, widget_size.y, widget_pos.x, widget_pos.y);
 										}
 									}
 								}
@@ -50475,8 +48472,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 								}
 								if (Storyboard.Nodes[nodeid].widget_action[index] == STORYBOARD_ACTIONS_GOTOSCREEN)
 								{
-									//if (_stricmp(Storyboard.Nodes[nodeid].lua_name, "gamemenu.lua") == 0 && strlen(Storyboard.Nodes[nodeid].output_action[index]) > 0
-									//	&& Storyboard.Nodes[nodeid].output_can_link_to_type[index] == STORYBOARD_TYPE_SCREEN)
 									if ( _stricmp(Storyboard.Nodes[nodeid].lua_name,"gamemenu.lua") == 0 ) // output_* CANNOT be trusted!
 									{
 										//PE: Special mode where we need to follow output_action.
@@ -50525,9 +48520,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 										if (iNodeToLinkTo > 0)
 										{
 											// screens can have same name (old corruption issue), so new method to identify screen by node
-											//lua_name = Storyboard.Nodes[iNodeToLinkTo].lua_name;
-											//replaceAll(lua_name, ".lua", "");
-											//t.s_s = lua_name.c_str();
 											std::string node_ident_name = ":node:";
 											node_ident_name += std::to_string(iNodeToLinkTo);
 											t.s_s = node_ident_name.c_str();
@@ -50548,9 +48540,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 												if (strlen(Storyboard.Nodes[iNewNode].lua_name) > 0)
 												{
 													// screens can have same name (old corruption issue), so new method to identify screen by node
-													//std::string lua_name = Storyboard.Nodes[iNewNode].lua_name;
-													//replaceAll(lua_name, ".lua", "");
-													//t.s_s = lua_name.c_str();
 													std::string node_ident_name = ":node:"; 
 													node_ident_name += std::to_string(iNewNode);
 													t.s_s = node_ident_name.c_str();
@@ -50575,9 +48564,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 															if (Storyboard.Nodes[nodeid].output_linkto[index] == 0)
 															{
 																// screens can have same name (old corruption issue), so new method to identify screen by node
-																//std::string lua_name = Storyboard.Nodes[nodeid].output_action[index];
-																//replaceAll(lua_name, ".lua", "");
-																//t.s_s = lua_name.c_str();
 																std::string node_ident_name = ":node:";
 																node_ident_name += std::to_string(nodeid);
 																t.s_s = node_ident_name.c_str();
@@ -50798,14 +48784,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 
 		ImGui::SetWindowFontScale(1.0);
 		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + vMonitorCenterX + vMonitorPos.x, vHeaderEnd.y + vMonitorSize.y + vMonitorPos.y + 3.0));
-		//ImGui::Text("Below monitor");
-
-#ifdef EMULATERESOLUTION
-		//ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + vMonitorCenterX + vMonitorPos.x, vHeaderEnd.y + vMonitorPos.y + 3.0));
-		//ImGui::Text("v: %d,%d m: %d,%d vs: %0.2f,%0.2f gs: %0.2f,%0.2f", (int) vViewportSize.x, (int) vViewportSize.y, (int) vMonitorSize.x,(int) vMonitorSize.y, vScale.x, vScale.y, fGlobalScale.x, fGlobalScale.y);
-#endif
 		ImGui::SetCursorPos( ImVec2(ImGui::GetCursorPosX(), vHeaderEnd.y + fMaxMonitorY + 6.0));
-		//ImGui::Text("Way down : Status");
 
 		bool bPrevPreviewScreen = bPreviewScreen;
 
@@ -51013,8 +48992,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 						{
 							monitor_size_x = 3840.0f;
 							monitor_size_y = 1080.0f;
-							//monitor_size_x = 1600.0f;
-							//monitor_size_y = 1200.0f;
 						}
 						else if (monitor_resolution_current_selection == 5)
 						{
@@ -51131,8 +49108,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 						{
 							monitor_size_x = 3840.0f;
 							monitor_size_y = 1080.0f;
-							//monitor_size_x = 1600.0f;
-							//monitor_size_y = 1200.0f;
 						}
 						else if (monitor_resolution_current_selection == 5)
 						{
@@ -52188,10 +50163,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 					ImRect rGrabMonitorArea = rMonitorArea;
 
 					//PE: Widescreen - now use full backbuffer so everything fits.
-					//ImRect rGrabMonitorArea = { 29.0,108.0,1597.0,990.0 };
-					//float screen_ration_x = 1920.0 / ImGui::GetMainViewport()->Size.x;
-					//float screen_ration_y = 1017.0 / ImGui::GetMainViewport()->Size.y;
-
 					SetGrabImageMode(1);
 					LPGGSURFACE	pTmpSurface = g_pGlob->pCurrentBitmapSurface;
 					ID3D11Texture2D *pBackBuffer = NULL;
@@ -52282,7 +50253,6 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 				BackBufferEntityID = 0;
 				BackBufferObjectID = 0;
 				BackBufferImageID = g.importermenuimageoffset + 50;
-				//iLargePreviewImageID = BackBufferImageID;
 				BackBufferSizeX = ImGui::GetMainViewport()->Size.x;
 				BackBufferSizeY = ImGui::GetMainViewport()->Size.y;
 				BackBufferZoom = 1.0f;
@@ -53690,25 +51660,6 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 												XMStoreFloat4x4(&hoverBox, aabb->getAsBoxMatrix());
 												wiRenderer::DrawBox(hoverBox, XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
 											}
-
-											//PE: Expanded bounding box.
-											/*
-											XMMATRIX transform;
-											const float expand = 2.5f;
-											//extern wiScene::CameraComponent camera_previous;
-											wiScene::CameraComponent& camera_previous = wiScene::GetCamera();
-											XMMATRIX VP = camera_previous.GetViewProjection();
-											XMFLOAT3 ext = aabb->getHalfWidth();
-											ext.x++;
-											ext.y++;
-											ext.z++;
-											XMMATRIX sca = XMMatrixScaling(ext.x * expand, ext.y * expand, ext.z * expand);
-											XMFLOAT3 pos = aabb->getCenter();
-											XMMATRIX tra = XMMatrixTranslation(pos.x, pos.y, pos.z);
-											transform = (sca * tra); // *VP;
-											XMStoreFloat4x4(&hoverBox, transform);
-											wiRenderer::DrawBox(hoverBox, XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f));
-											*/
 										}
 									}
 								}
@@ -53834,13 +51785,6 @@ void tmpdebugfunc(void)
 		int iSpot = WickedCall_GetSpotShadowLights(true);
 		sprintf(memtmp, "T: %d SpotShadows: %d", iSpot, iCulledSpotShadows);
 		draw->AddText(customfont, 15, ImVec2(window_pos.x - wide, viewport->Pos.y + 47.0), IM_COL32(255, 255, 255, 255), memtmp);
-
-		//bool bEnableTerrainChunkCulling = true;
-		//bool bEnablePointShadowCulling = true;
-		//bool bEnableSpotShadowCulling = true;
-		//bool bEnableObjectCulling = true;
-
-
 	}
 }
 
@@ -54105,19 +52049,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::Indent(10);
 		iLastOpenHeader = 8;
 
-
-		//setVolumeLightsEnabled(true)
-		//PE: Do not work ?
-		//PE: Need to set SetVolumetricsEnabled(true) on the lights.
-		//PE: Better to use on spot lights ?
-		//static bool bVolumeLight = false;
-		//if (ImGui::Checkbox("bVolumeLight", &bVolumeLight))
-		//{
-		//	WickedCall_SunSetVolumetricsEnabled(bVolumeLight);
-		//	if (master_renderer)
-		//		master_renderer->setVolumeLightsEnabled(bVolumeLight);
-		//}
-
 		// only show option if not disabled VSYNC in SETUP.INI
 		if (g.gvsync != 0)
 		{
@@ -54153,7 +52084,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				if (master_renderer) {
 					master_renderer->setBloomThreshold(t.visuals.fsetBloomThreshold);
 				}
-				//bVisualUpdated = true;
 				g.projectmodified = 1;
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Threshold is a measure of how bright an object or area must be before the bloom effect is applied");
@@ -54164,7 +52094,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				if (master_renderer) {
 					master_renderer->setBloomStrength(t.visuals.fsetBloomStrength);
 				}
-				//bVisualUpdated = true;
 				g.projectmodified = 1;
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Strength is a measure of how strongly the bloom is applied to the scene");
@@ -54172,7 +52101,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			ImGui::PopItemWidth();
 		}
 
-		//tab_tab_Column_text("SSR", fTabColumnWidth);
 		ImGui::PushItemWidth(-10);
 		if (ImGui::Checkbox("SSR##setSSREnabled", &t.visuals.bSSREnabled)) {
 			t.gamevisuals.bSSREnabled = t.visuals.bSSREnabled;
@@ -54195,7 +52123,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 
 		ImGui::PopItemWidth();
 
-		//tab_tab_Column_text("FXAA", fTabColumnWidth);
 		ImGui::PushItemWidth(-10);
 		if (ImGui::Checkbox("FXAA##setFXAAEnabled", &t.visuals.bFXAAEnabled)) {
 			t.gamevisuals.bFXAAEnabled = t.visuals.bFXAAEnabled;
@@ -54206,23 +52133,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("FXAA can smooth out edges on-screen that look pixelated, at the cost of a slight blur");
 		ImGui::PopItemWidth();
 
-		/*
-		//tab_tab_Column_text("Tessellation", fTabColumnWidth);
-		//PE: Tessellation dont work, it deform some objects , so cant be used for now. it need to be controlled per mesh.
-		ImGui::PushItemWidth(-10);
-		if (ImGui::Checkbox("Tessellation##setTessellationEnabled", &t.visuals.bTessellation)) {
-			t.gamevisuals.bTessellation = t.visuals.bTessellation;
-			if (master_renderer)
-			{
-				wiRenderer::SetTessellationEnabled(t.visuals.bTessellation);
-			}
-			g.projectmodified = 1;
-		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Increases polygon counts for some objects based on how close they are to the camera");
-		ImGui::PopItemWidth();
-		*/
-
-		//tab_tab_Column_text("Light Shafts", fTabColumnWidth);
 		ImGui::PushItemWidth(-10);
 		if (ImGui::Checkbox("Light Shafts##setLightShaftsEnabled", &t.visuals.bLightShafts)) {
 			t.gamevisuals.bLightShafts = t.visuals.bLightShafts;
@@ -54234,7 +52144,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::PopItemWidth();
 
 		// LB: aded lens flare
-		//tab_tab_Column_text("Lens Flare", fTabColumnWidth);
 		ImGui::PushItemWidth(-10);
 		if (ImGui::Checkbox("Lens Flare##setLensFlareEnabled", &t.visuals.bLensFlare))
 		{
@@ -54246,8 +52155,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enables lens flare from light cast from the sun");
 		ImGui::PopItemWidth();
 
-		// LB: added auto-exposure toggle
-		//tab_tab_Column_text("Auto Exposure", fTabColumnWidth);
 		ImGui::PushItemWidth(-10);
 		if (ImGui::Checkbox("Auto Exposure##setAutoExposureEnabled", &t.visuals.bAutoExposure))
 		{
@@ -54396,7 +52303,6 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::PopItemWidth();
 
 		// SSAO
-		//const char* ao_options[] = { "Disabled", "SSAO", "HBAO", "MSAO", "RTAO" };
 		const char* ao_options[] = { "Disabled", "Enabled" };
 		tab_tab_Column_text("SSAO", fTabColumnWidth);
 		ImGui::PushItemWidth(-10);
@@ -54537,17 +52443,6 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		}
 		ImGui::PopItemWidth();
 
-		//extern bool bEnableDelayPointShadow;
-		//extern float pointShadowScaler;
-		//if (ImGui::Checkbox("Delay Point Shadows", &bEnableDelayPointShadow))
-		//{
-		//}
-		//if (ImGui::SliderFloat("pointShadowScaler", &pointShadowScaler, 0.1f, 4.0f, "%.2f", 1.0f))
-		//{
-		//}
-		//ImGui::Text("Max 2 sec = %ld", LastMaxInTimer);
-
-
 		extern bool bEnableObjectCulling;
 		ImGui::PushItemWidth(-10);
 		if (ImGui::Checkbox("Occlusion Culling##bOcclusionCulling", &t.visuals.bOcclusionCulling))
@@ -54592,14 +52487,6 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 					t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
 				}
 			}
-			//if (bEnableTerrainChunkCulling)
-			//{
-			//	extern int OCCLODSTART;
-			//	ImGui::PushItemWidth(-10);
-			//	ImGui::SliderInt("Terrain LOD Culling Start", &OCCLODSTART, 0, 8);
-			//	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Terrain Chunk Culling Start LOD Level. For less occlusion check make value higher.");
-			//	ImGui::PopItemWidth();
-			//}
 			if (ImGui::Checkbox("Point Shadow Culling", &bEnablePointShadowCulling))
 			{
 				t.gamevisuals.bEnablePointShadowCulling = t.visuals.bEnablePointShadowCulling = bEnablePointShadowCulling;

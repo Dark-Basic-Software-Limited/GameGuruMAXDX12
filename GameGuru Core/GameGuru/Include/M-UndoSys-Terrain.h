@@ -59,7 +59,6 @@ struct sUndoSysEventGrass
 struct sUndoSysEventTrees
 {
 	uint8_t* treeData;
-	//uint8_t* chunkData;
 };
 
 // Data storage for events using a single tree, data matches one of the structs below.

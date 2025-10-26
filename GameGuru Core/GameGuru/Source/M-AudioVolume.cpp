@@ -51,7 +51,6 @@ void audio_volume_update ( void )
 					if (t.tSound == 8804)
 					{
 						//PE: We are using restore_last_lua_volumes_settings to set the correct volume, so no need.
-						//SetSoundVolume(t.tSound, (t.gamevisuals.iAmbientMusicTrackVolume * t.audioVolume.soundFloat));
 					}
 					else
 					{

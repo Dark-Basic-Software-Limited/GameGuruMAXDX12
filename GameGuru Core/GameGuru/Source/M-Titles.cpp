@@ -35,145 +35,6 @@ void titles_init ( void )
 		LoadImage ( pPath.Get(), g.editorimagesoffset+64 );
 	}
 	#endif
-
-	/* redundant now LUA in control of titles system
-	//  determine the resolution we should use
-	t.tclosest=9999999;
-	t.tclosestreswidth=0 ; t.tclosestresheight=0;
-	for ( t.tres = 1 ; t.tres<=  8; t.tres++ )
-	{
-		if (  t.tres == 1 ) { t.treswidth = 1280  ; t.tresheight = 720; }
-		if (  t.tres == 2 ) { t.treswidth = 1280  ; t.tresheight = 800; }
-		if (  t.tres == 3 ) { t.treswidth = 1366  ; t.tresheight = 768; }
-		if (  t.tres == 4 ) { t.treswidth = 1440  ; t.tresheight = 900; }
-		if (  t.tres == 5 ) { t.treswidth = 1600  ; t.tresheight = 900; }
-		if (  t.tres == 6 ) { t.treswidth = 1680  ; t.tresheight = 1050; }
-		if (  t.tres == 7 ) { t.treswidth = 1920  ; t.tresheight = 1080; }
-		if (  t.tres == 8 ) { t.treswidth = 1920  ; t.tresheight = 1200; }
-		t.tdiff=abs(GetDisplayWidth()-t.treswidth)+abs(GetDisplayHeight()-t.tresheight);
-		if (  t.tdiff<t.tclosest ) 
-		{
-			t.tclosest=t.tdiff;
-			t.tclosestreswidth=t.treswidth;
-			t.tclosestresheight=t.tresheight;
-		}
-	}
-	t.resfolder_s = "";t.resfolder_s=t.resfolder_s+Str(t.tclosestreswidth)+"x"+Str(t.tclosestresheight)+"\\";
-
-	//  Separate resolution options for MP backdrop image
-	t.tmpclosest=9999999;
-	t.tmpclosestreswidth=0 ; t.tmpclosestresheight=0;
-	for ( t.tres = 1 ; t.tres<=  13; t.tres++ )
-	{
-		if (  t.tres == 1 ) { t.treswidth = 640  ; t.tresheight = 480; }
-		if (  t.tres == 2 ) { t.treswidth = 1024 ; t.tresheight = 768; }
-		if (  t.tres == 3 ) { t.treswidth = 1152 ; t.tresheight = 864; }
-		if (  t.tres == 4 ) { t.treswidth = 1280 ; t.tresheight = 720; }
-		if (  t.tres == 5 ) { t.treswidth = 1280 ; t.tresheight = 800; }
-		if (  t.tres == 6 ) { t.treswidth = 1280 ; t.tresheight = 960; }
-		if (  t.tres == 7 ) { t.treswidth = 1366 ; t.tresheight = 768; }
-		if (  t.tres == 8 ) { t.treswidth = 1440 ; t.tresheight = 900; }
-		if (  t.tres == 9 ) { t.treswidth = 1600 ; t.tresheight = 900; }
-		if (  t.tres == 10 ) { t.treswidth = 1600 ; t.tresheight = 1200; }
-		if (  t.tres == 11 ) { t.treswidth = 1680 ; t.tresheight = 1050; }
-		if (  t.tres == 12 ) { t.treswidth = 1920 ; t.tresheight = 1080; }
-		if (  t.tres == 13 ) { t.treswidth = 1920 ; t.tresheight = 1200; }
-		t.tdiff=abs(GetDisplayWidth()-t.treswidth)+abs(GetDisplayHeight()-t.tresheight);
-		if (  t.tdiff<t.tmpclosest ) 
-		{
-			t.tmpclosest=t.tdiff;
-			t.tmpclosestreswidth=t.treswidth;
-			t.tmpclosestresheight=t.tresheight;
-		}
-	}
-	t.tmpres_s = "" ;t.tmpres_s=t.tmpres_s + Str(t.tmpclosestreswidth)+"x"+Str(t.tmpclosestresheight);
-
-	//  Load all titles images
-	t.strwork = ""; t.strwork = t.strwork + "titlesbank\\"+t.ttheme_s+"\\"+t.resfolder_s+t.tthemeprefix_s+"title.jpg";
-	LoadImage ( t.strwork.Get(), g.titlesimageoffset+0 );
-	t.tfile_s=""; t.tfile_s=t.tfile_s+"languagebank\\neutral\\artwork\\MPbackground-"+t.tmpres_s+".png";
-	if (  FileExist(t.tfile_s.Get()) == 1  )  LoadImage (  t.tfile_s.Get(),g.titlesimageoffset+10 );
-	LoadImage (  "titlesbank\\default\\start.png",g.titlesimageoffset+1 );
-	LoadImage (  "titlesbank\\default\\start-hover.png",g.titlesimageoffset+2 );
-	LoadImage (  "titlesbank\\default\\quit-game.png",g.titlesimageoffset+3 );
-	LoadImage (  "titlesbank\\default\\quit-game-hover.png",g.titlesimageoffset+4 );
-	LoadImage (  "titlesbank\\default\\visit-website.png",g.titlesimageoffset+6 );
-	LoadImage (  "titlesbank\\default\\visit-website-hover.png",g.titlesimageoffset+7 );
-	LoadImage (  "titlesbank\\default\\about.png",g.titlesimageoffset+8 );
-	LoadImage (  "titlesbank\\default\\about-hover.png",g.titlesimageoffset+9 );
-
-	t.strwork = ""; t.strwork = t.strwork +"titlesbank\\"+t.ttheme_s+"\\"+t.resfolder_s+t.tthemeprefix_s+"loading.jpg";
-	LoadImage (  t.strwork.Get() ,g.titlesimageoffset+14 );
-	LoadImage (  "titlesbank\\default\\loading-text.png",g.titlesimageoffset+15 ) ;
-	LoadImage (  "titlesbank\\default\\loading-bar-empty.png",g.titlesimageoffset+16 );
-	LoadImage (  "titlesbank\\default\\loading-bar-full.png",g.titlesimageoffset+17 );
-	LoadImage (  "titlesbank\\default\\loading-dot.png",g.titlesimageoffset+18 ) ;
-
-	LoadImage (  "titlesbank\\default\\game-paused-title.png",g.titlesimageoffset+21 );
-	LoadImage (  "titlesbank\\default\\resume-game.png",g.titlesimageoffset+23 );
-	LoadImage (  "titlesbank\\default\\resume-game-hover.png",g.titlesimageoffset+24 );
-	LoadImage (  "titlesbank\\default\\graphics-settings.png",g.titlesimageoffset+25 );
-	LoadImage (  "titlesbank\\default\\graphics-settings-hover.png",g.titlesimageoffset+26 );
-	LoadImage (  "titlesbank\\default\\sound-levels.png",g.titlesimageoffset+27 );
-	LoadImage (  "titlesbank\\default\\sound-levels-hover.png",g.titlesimageoffset+28 );
-
-	LoadImage (  "titlesbank\\default\\sound-levels-title.png",g.titlesimageoffset+31 );
-	LoadImage (  "titlesbank\\default\\sound-effects-label.png",g.titlesimageoffset+32 );
-	LoadImage (  "titlesbank\\default\\music-label.png",g.titlesimageoffset+33 );
-	LoadImage (  "titlesbank\\default\\slider-bar-empty.png",g.titlesimageoffset+34 );
-	LoadImage (  "titlesbank\\default\\slider-bar-full.png",g.titlesimageoffset+35 );
-	LoadImage (  "titlesbank\\default\\slider-bar-dot.png",g.titlesimageoffset+36 );
-	LoadImage (  "titlesbank\\default\\main-menu.png",g.titlesimageoffset+37 );
-	LoadImage (  "titlesbank\\default\\main-menu-hover.png",g.titlesimageoffset+38 );
-
-	t.strwork = ""; t.strwork = t.strwork + "titlesbank\\"+t.ttheme_s+"\\"+t.resfolder_s+t.tthemeprefix_s+"lost.jpg";
-	LoadImage (  t.strwork.Get(),g.titlesimageoffset+39 );
-	t.strwork = ""; t.strwork = t.strwork + "titlesbank\\"+t.ttheme_s+"\\"+t.resfolder_s+t.tthemeprefix_s+"end.jpg";
-	LoadImage ( t.strwork.Get() ,g.titlesimageoffset+40 );
-	LoadImage (  "titlesbank\\default\\level-complete-title.png",g.titlesimageoffset+41 );
-	LoadImage (  "titlesbank\\default\\game-won-title.png",g.titlesimageoffset+42 );
-	LoadImage (  "titlesbank\\default\\back.png",g.titlesimageoffset+43 );
-	LoadImage (  "titlesbank\\default\\back-hover.png",g.titlesimageoffset+44 );
-	LoadImage (  "titlesbank\\default\\continue.png",g.titlesimageoffset+45 );
-	LoadImage (  "titlesbank\\default\\continue-hover.png",g.titlesimageoffset+46 );
-	LoadImage (  "titlesbank\\default\\fov.png",g.titlesimageoffset+47 );
-
-	LoadImage (  "titlesbank\\default\\graphics-settings.png",g.titlesimageoffset+51 );
-	LoadImage (  "titlesbank\\default\\graphics-settings-hover.png",g.titlesimageoffset+52 );
-	LoadImage (  "titlesbank\\default\\graphics-settings-title.png",g.titlesimageoffset+53 );
-	LoadImage (  "titlesbank\\default\\lowest.png",g.titlesimageoffset+54 );
-	LoadImage (  "titlesbank\\default\\lowest-hover.png",g.titlesimageoffset+55 );
-	LoadImage (  "titlesbank\\default\\lowest-selected.png",g.titlesimageoffset+56 );
-	LoadImage (  "titlesbank\\default\\medium.png",g.titlesimageoffset+57 );
-	LoadImage (  "titlesbank\\default\\medium-hover.png",g.titlesimageoffset+58 );
-	LoadImage (  "titlesbank\\default\\medium-selected.png",g.titlesimageoffset+59 );
-	LoadImage (  "titlesbank\\default\\highest.png",g.titlesimageoffset+60 );
-	LoadImage (  "titlesbank\\default\\highest-hover.png",g.titlesimageoffset+61 );
-	LoadImage (  "titlesbank\\default\\highest-selected.png",g.titlesimageoffset+62 );
-
-	t.strwork = ""; t.strwork = t.strwork +"titlesbank\\"+t.ttheme_s+"\\"+t.resfolder_s+t.tthemeprefix_s+"about.jpg";
-	LoadImage ( t.strwork.Get() ,g.titlesimageoffset+66 );
-
-	//  Load title audio
-	if (  SoundExist(g.titlessoundoffset+1) == 1  )  DeleteSound (  g.titlessoundoffset+1 );
-	t.strwork = ""; t.strwork = t.strwork + "titlesbank\\"+t.ttheme_s+"\\title.ogg";
-	if (  FileExist( t.strwork.Get() ) == 1 ) 
-	{
-		t.strwork = ""; t.strwork = t.strwork + "titlesbank\\"+t.ttheme_s+"\\title.ogg";
-		LoadSound ( t.strwork.Get() , g.titlessoundoffset+1 );
-	}
-
-	//  Sound Volume defaults
-	t.gamesounds.sounds=100;
-	t.gamesounds.music=100;
-	t.gamesounds.titlemusicvolume = 0;
-
-	//  Load any settings if present
-	titles_load ( );
-
-	//  flags for titles system
-	t.game.quitflag=0;
-	*/
 }
 
 void titles_getstyle ( void )
@@ -191,38 +52,10 @@ void titles_getstyle ( void )
 
 void titles_save ( void )
 {
-	/* 080216 superceded with LUA system now
-	//  save settings from all title menus
-	t.tfile_s=g.myownrootdir_s+"\\"+g.titlessavefile_s;
-	t.ttitleversion=101;
-	if (  FileExist(t.tfile_s.Get()) == 1  )  DeleteAFile (  t.tfile_s.Get() );
-	OpenToWrite (  1,t.tfile_s.Get() );
-	WriteLong (  1,t.ttitleversion );
-	WriteLong (  1,t.gamesounds.sounds );
-	WriteLong (  1,t.gamesounds.music );
-	WriteLong (  1,g.titlesettings.graphicsettingslevel );
-	CloseFile (  1 );
-	*/
 }
 
 void titles_load ( void )
 {
-	/* 080216 superceded with LUA system now
-	//  load settings for all title menus
-	t.tfile_s=g.myownrootdir_s+"\\"+g.titlessavefile_s;
-	if (  FileExist(t.tfile_s.Get()) == 1 ) 
-	{
-		OpenToRead (  1,t.tfile_s.Get() );
-		t.ttitleversion = ReadLong ( 1 );
-		if (  t.ttitleversion == 101 ) 
-		{
-			t.a = ReadLong ( 1 ); t.gamesounds.sounds=t.a;
-			t.a = ReadLong ( 1 ); t.gamesounds.music=t.a;
-			t.a = ReadLong ( 1 ); g.titlesettings.graphicsettingslevel=t.a;
-		}
-		CloseFile (  1 );
-	}
-	*/
 }
 
 void titles_immediateupdatesound ( void )
@@ -485,8 +318,6 @@ void titles_loadingpageinit ( void )
 void titles_loadingpageupdate ( void )
 {
 	// 090216 - replaced with LUA system
-	//t.titlesbar[t.titlespage][g.titlesbarmax].fill=t.game.levelloadprogress;
-	//titles_base ( );
 	if ( t.loadingresource[0] > 0 )
 	{
 		int iSpriteIndex = t.loadingresource[1];
@@ -1888,49 +1719,6 @@ void titles_base ( void )
 				}
 			}
 
-			#ifdef VRTECH
-			/* 160419 - seems redundant, one one choice, so we go direct to it
-			// PLAY ONE OF YOUR LEVELS BUTTON SCREEN
-			if (  t.titlespagetousehere == 14 ) 
-			{
-				if (  t.ttitlesbuttonhighlight == 1 ) 
-				{
-					//  create list
-					g.mp.listboxmode = 1;
-					mp_searchForFpms ( );
-					titles_steamchoosefpmtouse ( );
-					t.tescapepress=0 ; t.ttitlesbuttonhighlight=0;
-				} 
-				if (  t.ttitlesbuttonhighlight == 2 ) 
-				{
-					mp_backToStart ( );
-					t.tescapepress=0 ; t.ttitlesbuttonhighlight=0;
-					titles_steampage ( );
-				}
-			}
-			*/
-			#else
-			//  STEAM PAGE Choose type of level (host)
-			if (  t.titlespagetousehere == 14 ) 
-			{
-				if (  t.ttitlesbuttonhighlight == 1 ) 
-				{
-					//  create list
-					g.mp.listboxmode = 1;
-					mp_searchForFpms ( );
-					titles_steamchoosefpmtouse ( );
-					t.tescapepress=0 ; t.ttitlesbuttonhighlight=0;
-				} 
-				//  TAKE THIS Line (  OUT BELOW WHEN YOU PUT THE CODE ABOVE BACK! )
-				if (  t.ttitlesbuttonhighlight == 2 ) 
-				{
-					mp_backToStart ( );
-					t.tescapepress=0 ; t.ttitlesbuttonhighlight=0;
-					titles_steampage ( );
-				}
-			}
-			#endif
-
 			// SELECTED OWN LEVEL - CREATE LOBBY/ROOM FOR IT
 			#ifdef VRTECH
 			if ( t.titlespagetousehere == 15 ) 
@@ -2459,8 +2247,6 @@ void titleslua_main_stage3_inloop(void)
 	if (!bJustRederedScreenEditor && g_iInGameMenuState != 1 )
 	{
 		//PE: We need to render everything. This is like the old Sync in Wicked.
-//		void StartForceRender(void);
-//		StartForceRender();
 	}
 	if (bForceRender)
 	{
@@ -2481,7 +2267,6 @@ void titleslua_main_stage4_afterloop(void)
 	// wait for mouse click release
 	while ( MouseClick()!=0 ) { Sleep(1); }
 
-	//int CustomScreenNode = GetStoryboardCustomScreenNode(g_pTitleCurrentPage);
 	int CustomScreenNode = 0;
 	if (strncmp(g_pTitleCurrentPage, ":node:", 6) == NULL)
 	{
@@ -2588,8 +2373,6 @@ void titleslua_blocking_run(void)
 			if (titleslua_main_loopcode() == true) bRunLoop = false;
 			bForceRender = false;
 		}
-		//void StartForceRender(void);
-		//StartForceRender();
 	}
 	#endif
 }

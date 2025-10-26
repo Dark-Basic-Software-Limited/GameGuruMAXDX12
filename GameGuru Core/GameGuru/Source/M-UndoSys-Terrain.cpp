@@ -9,7 +9,6 @@
 std::stack<sUndoStackItem> g_UndoSysTerrainStack[2];
 int g_iCalculatingChangeBounds = 0;
 TerrainEditsBB g_EditBounds = { 0 };
-//TerrainEditsRealBB g_WorldEditBounds = { 0 };
 
 // These are copies of pHeightmapEdit
 uint8_t* g_pTerrainSnapshot = nullptr;
@@ -24,7 +23,6 @@ int g_iChunkCount = 0;
 uint32_t g_iChunkSize = 0;
 
 #define GGTERRAIN_HEIGHTMAP_EDIT_SIZE 4096
-//GGTERRAIN_HEIGHTMAP_EDIT_SIZE* GGTERRAIN_HEIGHTMAP_EDIT_SIZE* (sizeof(float) + sizeof(uint8_t)) = 83886080
 #define SCULPTSIZE 83886080
 uint8_t OutOfHeapMem1[157286400];
 uint8_t OutOfHeapMem2[157286400];

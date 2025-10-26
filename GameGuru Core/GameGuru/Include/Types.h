@@ -11,7 +11,6 @@
 #include <vector>
 #include "M-CharacterCreatorPlus.h"
 
-
 //PE: MAX_PATH not defined in all source files.
 #define MAXPATH 1050
 
@@ -132,7 +131,7 @@
   //#define RAVEY_PARTICLES_MAX 100
   //PE: 700 seams fine now, we must have done something good somewhere :)
   #define RAVEY_PARTICLES_MAX 700
-//PE: We use these less now so lower. from 200 to 100
+  //PE: We use these less now so lower. from 200 to 100
   #define RAVEY_PARTICLES_MAX_FIRST_BATCH 100
 #endif
 #endif
@@ -392,7 +391,6 @@ struct interactivetype
 		 active = 0;
 	}
 	// End of Constructor
-
 };
 
 //  promptimage data structure for script image prompts
@@ -414,7 +412,6 @@ struct promptimagetype
 		 x = 0.0f;
 	}
 	// End of Constructor
-
 };
 
 struct luatexttype
@@ -433,7 +430,6 @@ struct luatexttype
 		 x = 0.0f;
 	}
 	// End of Constructor
-
 };
 
 struct luapaneltype
@@ -511,7 +507,6 @@ struct characterkitcontroltype
 		 count = 0;
 	}
 	// End of Constructor
-
 };
 
 struct mptype
@@ -858,40 +853,6 @@ struct mpmultiplayerstarttype
 	}
 };
 
-/*
-//  RealSense Data Structures
-struct realsensetype
-{
-	int init;
-	int grammermax;
-	int grammer;
-	int disconnected;
-	float bMassX_f;
-	float bMassY_f;
-	float bMassCalibrateX_f;
-	int id;
-	int confidence;
-	cstr currentCommand_s;
-
-	// Constructor
-	realsensetype ( )
-	{
-		 currentCommand_s = "";
-		 confidence = 0;
-		 id = 0;
-		 bMassCalibrateX_f = 0.0f;
-		 bMassY_f = 0.0f;
-		 bMassX_f = 0.0f;
-		 disconnected = 0;
-		 grammer = 0;
-		 grammermax = 0;
-		 init = 0;
-	}
-	// End of Constructor
-
-};
-*/
-
 //  Weapon System Data Structures
 //  Top level variables for the weapon system
 struct WeaponSystemType
@@ -914,9 +875,7 @@ struct WeaponSystemType
 		 objTracer = 0;
 	}
 	// End of Constructor
-
 };
-
 
 //  This is a definition for a particle emitter. Anything from ejecting brass, to smoke, muzzle flare etc.
 //  This forms the basis for the data passed to the particle system. Not all values are used by all particle types
@@ -1016,7 +975,6 @@ struct weaponParticleEmitterType
 //  Settings for the currently held weapon and global high level settings
 struct CurrentWeaponType
 {
-
 	int currentWeapon;
 	int previousWeapon;
 
@@ -1048,7 +1006,6 @@ struct CurrentWeaponType
 	weaponParticleEmitterType particle3;
 	weaponParticleEmitterType particle4;
 
-
 	// Constructor
 	CurrentWeaponType ( )
 	{
@@ -1075,13 +1032,10 @@ struct CurrentWeaponType
 		 currentWeapon = 0;
 	}
 	// End of Constructor
-
 };
-
 
 struct weaponType
 {
-
 	int activeFlag;
 	int availableFlag;
 	cstr name_s;
@@ -1211,7 +1165,6 @@ struct weaponType
 	weaponParticleEmitterBaseType particle3;
 	weaponParticleEmitterBaseType particle4;
 
-
 	// Constructor
 	weaponType ( )
 	{
@@ -1331,9 +1284,7 @@ struct weaponType
 		 activeFlag = 0;
 	}
 	// End of Constructor
-
 };
-
 
 struct weaponSoundType
 {
@@ -1563,13 +1514,10 @@ struct weaponProjectileBaseType
 		 WPE_Root = 0;
 	}
 	// End of Constructor
-
 };
-
 
 struct weaponProjectileType
 {
-
 	int baseType;
 	int activeFlag;
 	int obj;
@@ -1670,15 +1618,12 @@ struct weaponProjectileType
 
 };
 
-
 struct weaponAnimationType
 {
-
 	int startFrame;
 	int endFrame;
 	int speed;
 	int loopFlag;
-
 
 	// Constructor
 	weaponAnimationType ( )
@@ -1689,7 +1634,6 @@ struct weaponAnimationType
 		 startFrame = 0;
 	}
 	// End of Constructor
-
 };
 
 //  Construction Kit type structures
@@ -1729,7 +1673,6 @@ struct conkitfeaturetype
 		 featureType = 0;
 	}
 	// End of Constructor
-
 };
 
 struct conkitfeaturebasetype
@@ -1762,7 +1705,6 @@ struct conkitfeaturebasetype
 		 obj = 0;
 	}
 	// End of Constructor
-
 };
 
 struct conkitheldfeaturetype
@@ -2726,16 +2668,12 @@ struct importerCollisionType
 
 struct importerFPEtype
 {
-//  `;header
-
 	cstr desc;
-//  `;visualinfo
 
 	cstr textured;
 	cstr effect;
 	cstr castshadow;
 	cstr transparency;
-//  `;orientation
 
 	cstr model;
 	cstr offx;
@@ -2750,8 +2688,6 @@ struct importerFPEtype
 	cstr cullmode;
 	cstr materialindex;
 	cstr matrixmode;
-
-//  `;CHARACTER
 
 //  `;identity details
 
@@ -4531,10 +4467,6 @@ struct editortype
 	int entityworkobjectchoice;
 	int entitytoselect;
 	DWORD shadowupdatepacer;
-//  `mousemodifierx# as float
-
-//  `mousemodifiery# as float
-
 	cstr replacefilepresent_s;
 
 	// Constructor
@@ -4548,7 +4480,6 @@ struct editortype
 		 objectstartindex = 0;
 	}
 	// End of Constructor
-
 };
 
 //  HUDLAYER database (jet packs)
@@ -4568,9 +4499,7 @@ struct hudlayertype
 		 name_s = "";
 	}
 	// End of Constructor
-
 };
-
 
 //  Ragdoll data structure
 struct tHingeJoint
@@ -4585,7 +4514,6 @@ struct tHingeJoint
 		 rotationVec3 = 0;
 	}
 	// End of Constructor
-
 };
 
 struct tTwistJoint
@@ -4600,7 +4528,6 @@ struct tTwistJoint
 		 rotationVec3 = 0;
 	}
 	// End of Constructor
-
 };
 
 struct tRagdoll
@@ -4615,7 +4542,6 @@ struct tRagdoll
 		 obj = 0;
 	}
 	// End of Constructor
-
 };
 
 struct tBphys_CollisionGroups
@@ -4632,7 +4558,6 @@ struct tBphys_CollisionGroups
 		 group0 = 0;
 	}
 	// End of Constructor
-
 };
 
 struct tBphys_CollisionMasks
@@ -6374,9 +6299,7 @@ struct PropertiesVariables {
 	uint8_t VariableType[MAXPROPERTIESVARIABLES] = { 0 };
 	char Variable[MAXPROPERTIESVARIABLES][MAXVARIABLESIZE] = { "\0" }; //This can be removed later only for debug.
 	char VariableValue[MAXPROPERTIESVARIABLES][MAXVARIABLETEXTSIZE] = { "\0" };
-	//char VariableSectionDescription[MAXPROPERTIESVARIABLES][MAXVARIABLETEXTSIZELARGE] = { "\0" };
 	cStr VariableSectionDescription[MAXPROPERTIESVARIABLES] = { "" };
-	//char VariableSectionEndDescription[MAXPROPERTIESVARIABLES][MAXVARIABLETEXTSIZE] = { "\0" };
 	cStr VariableSectionEndDescription[MAXPROPERTIESVARIABLES] = { "" };
 	float VariableValueFrom[MAXPROPERTIESVARIABLES] = { 0.0f };
 	float VariableValueTo[MAXPROPERTIESVARIABLES] = { 0.0f };
@@ -6387,7 +6310,6 @@ struct PropertiesVariables {
 };
 
 
-//PE: 11/30/24 - 58432
 //  Entity Element Custom Profile Data
 struct entityeleproftype
 {
@@ -6399,15 +6321,8 @@ struct entityeleproftype
 	cstr aimainname_s;
 	int aimain;
 	int aipreexit;
-	//cstr aidestroy_s;
-	//cstr aidestroyname_s;
-	//int aidestroy;
-	//cstr aishoot_s;
-	//cstr aishootname_s;
-	//int aishoot;
 	cstr usekey_s;
 	cstr ifused_s;
-	//cstr ifusednear_s;
 	float scale;
 	float coneheight;
 	float coneangle;
@@ -6442,7 +6357,6 @@ struct entityeleproftype
 	int markerindex;
 	entitylighttype light;
 	entitytriggertype trigger;
-	//cstr basedecal_s;
 	int particleoverride;
 	decalparticletype particle;
 	newparticletype newparticle;
@@ -6496,8 +6410,6 @@ struct entityeleproftype
 	int explodable;
 	int explodedamage;
 	int explodeheight; // was teamfield
-	//PE: This takes up mem , should be converted to *PropertiesVariable
-	//PE: 10000 object * this ...
 	PropertiesVariables PropertiesVariable;
 	int PropertiesVariableActive;
 	bool bCustomWickedMaterialActive;
@@ -6644,7 +6556,6 @@ struct entityeleproftype
 		 voiceset_s = "";
 		 voicerate = 0;
 		 particleoverride = 0;
-		 //basedecal_s = "";
 		 markerindex = 0;
 		 lives = 0;
 		 isobjective = 0;
@@ -6677,22 +6588,13 @@ struct entityeleproftype
 		 coneangle = 0.0f;
 		 coneheight = 0.0f;
 		 scale = 0.0f;
-		 //ifusednear_s = "";
 		 ifused_s = "";
 		 usekey_s = "";
-		 //aishoot = 0;
-		 //aishootname_s = "";
-		 //aishoot_s = "";
-		 //aidestroy = 0;
-		 //aidestroyname_s = "";
-		 //aidestroy_s = "";
 		 aimain = 0;
 		 aipreexit = 0;
 		 aimainname_s = "";
 		 aimain_s = "";
 		 aiinit = 0;
-		 //aiinitname_s = "";
-		 //aiinit_s = "";
 		 name_s = "";
 		 explodable_decalname = "";
 		 bUseFPESettings = true;
@@ -6742,98 +6644,20 @@ struct entityluastatestype
 		flagschanged = 0;
 	}
 	// End of Constructor
-
 };
 
-/*
-//  Entity LUA DATA structure
-struct entityluadatastatestype
-{
-	float x;
-	float y;
-	float z;
-	float anglex;
-	float angley;
-	float anglez;
-	float obj;
-	float active;
-	float activated;
-	float collected;
-	float haskey;
-	float plrinzone;
-	float entityinzone;
-	float plrvisible;
-	float health;
-	float frame;
-	int timer;
-	float plrdist;
-	float avoid;
-	cstr limbhit;
-	float limbhitindex;
-	float animating;
-	entityluadatastatestype ( )
-	{
-		 x = 0;
-		 y = 0;
-		 z = 0;
-		 anglex = 0;
-		 angley = 0;
-		 anglez = 0;
-		 obj = 0;
-		 active = 0;
-		 activated = 0;
-		 collected = 0;
-		 haskey = 0;
-		 plrinzone = 0;
-		 entityinzone = 0;
-		 plrvisible = 0;
-		 health = 0;
-		 frame = 0;
-		 timer = 0;
-		 plrdist = 0;
-		 avoid = 0;
-		 limbhit = "";
-		 limbhitindex = 0;
-		 animating = 0;
-	}
-};
-*/
-
-//PE: We really need to save on entitytype memory used, if you have 10000+ objects you could look at using 1gb when also in test game.
-//PE: Have commented out not used variables, and really tried to limit cstr that preallocate STRMINSIZE.
-
-//PE: 11/30/24 - 59400
 //  Entity Elements Data (entityelement array)
 struct entitytype
 {
 	float animspeedmod;
-	//int enterwater;
 	int isflak;
-	//int curvcmx;
-	//int curvcmy;
-	//int curvcmz;
 	int spine;
-	//float spiner;
-	//float spineraim;
-	//int eyeoffset;
-	//int aimoved;
-	//float aimovex;
-	//float aimovez;
 	int ttarget;
 	int etimer;
-	//int etimerpaused;
-	//int lastdamagetimer;
-	//int lastdamagepaused;
 	int editorfixed;
-	//int servercontrolled;
-	//int fakeplrindex;
 	int active;
-	//int dormant;
 	entityeleproftype eleprof;
-	//movertype mover;
-	//aistatustype ai;
 	spawntype spawn;
-	//forcetype force;
 	int maintype;
 	int bankindex;
 	int profileobj;
@@ -6841,12 +6665,10 @@ struct entitytype
 	int obj;
 	int attachmentobj;
 	int attachmentbaseobj;
-	//int attachmentweapontype;
 	int attachmentobjfirespotlimb;
 	float fFirespotOffsetX;
 	float fFirespotOffsetY;
 	float fFirespotOffsetZ;
-	//int attachmentblobobj;
 	float x;
 	float y;
 	float z;
@@ -6862,7 +6684,6 @@ struct entitytype
 	float customlastx;
 	float customlasty;
 	float customlastz;
-	//int norotate;
 	int nogravity;
 	int hoverfactoroverride;
 	float dry;
@@ -6871,23 +6692,7 @@ struct entitytype
 	int colr;
 	int colg;
 	int colb;
-	//int limbslerp;
-	//float logiccount;
-	//int logiccountburst;
-	//DWORD logictimestamp;
-	//int priorityai;
-	//int priorityduration;
-	//int raycastcount;
-	//int raycastlaststate;
-	//int nofloorlogic;
-	//int crouchprofile;
 	float plrdist;
-	//int decalindex;
-	//int decalmode;
-	//float decalloop;
-	//int decalslotused;
-	//float decalsizex;
-	//float decalsizey;
 	int animset;
 	int animdir;
 	int animdo;
@@ -6896,35 +6701,12 @@ struct entitytype
 	int animonce;
 	float destanimframe;
 	int animframeupdate;
-	//int spinrate;
-	//float spinvalue;
-	//int floatrate;
-	//float floatvalue;
 	int health;
 	int briefimmunity;
-	//int lifecode;
 	int beenkilled;
-	//int shotdamage;
-	//int shotdamagesource;
-	//int shotdamagetype;
-	//float delaydamagecount;
-	//float delaydamagetimer;
-	//int delaydamagesource;
-	//int delaydamage;
-	//int delayimpact;
-	//float delaydamagex_f;
-	//float delaydamagey_f;
-	//float delaydamagez_f;
-	//int delaydir;
 	int collected;
 	int activated;
 	int whoactivated;
-	//int collisionactive;
-	//int invincibleactive;
-	//int blockedby;
-	//int blockedtox;
-	//int blockedtoy;
-	//int blockedtoz;
 	int soundset;
 	int soundset1;
 	int soundset2;
@@ -6944,30 +6726,13 @@ struct entitytype
 	int doorobsactive;
 	int destroyme;
 	int explodefusetime;
-	//int reserve1;
-	//int reserve2;
-	//int reserve3;
-	//int reserve4;
-	//int reserve5;
-	//float lastdamagex_f;
-	//float lastdamagey_f;
-	//float lastdamagez_f;
-	//unsigned char nobulletcol;
-	//int isaltammo;
-	//int hideshadow;
-	//float floorpositiony;
-	//float reserved2;
 	int precreatedspawnedentityelementindex;
 	int ishidden;
 	int iCanGoUnderwater;
 	int soundplaying;
-	//frozentype frozen;
 	int distance;
-	//int delaydestroy;
-	//int delaydestroytimer;
 	int consumed;
 	entityluastatestype lua;
-	//entityluadatastatestype luadata;
 	int isclone;
 	int plrvisible;
 	int limbhurt;
@@ -7020,7 +6785,6 @@ struct entitytype
 	bool dc_merged;
 	float dc_distance;
 	bool bPlrVisibleCheckDone;
-#ifdef WICKEDENGINE
 	int iCurrentColorType;
 	int iIsSmarkobjectDummyObj;
 	float fDecalFrame;
@@ -7045,7 +6809,6 @@ struct entitytype
 	int iThumbnail;
 	int old_bankindex;
 
-	#endif
 	// Constructor
 	entitytype ( )
 	{
@@ -7107,48 +6870,11 @@ struct entitytype
 		 plrvisible = 0;
 		 isclone = 0;
 		 consumed = 0;
-		 //delaydestroytimer = 0;
-		 //delaydestroy = 0;
 		 distance = 0;
 		 soundplaying = 0;
 		 iCanGoUnderwater = 0;
-		 //objectivecurrentrange = 0;
-		 //objectiveradarrange = 0;
-		 //isanobjective = 0;
-		 //cullimmobile = 0;
-		 //positionchanged = 0;
-		 //camrotz = 0;
-		 //camroty = 0;
-		 //camrotx = 0;
-		 //offsetanglez = 0.0f;
-		 //offsetangley = 0.0f;
-		 //offsetanglex = 0.0f;
-		 //camoffsetz = 0;
-		 //camoffsety = 0;
-		 //camoffsetx = 0;
-		 //camuse = 0;
-		 //isimmune = 0;
-		 //shotbyammo_s = "";
-		 //shotby = 0;
-		 //radardistance = 0;
-		 //onradar = 0;
-		 //usefade = 0;
-		 //cullstate = 0;
 		 ishidden = 0;
-		 //reserved2 = 0.0f;
 		 precreatedspawnedentityelementindex = 0;
-		 //floorpositiony = 0.0f;
-		 //hideshadow = 0;
-		 //isaltammo = 0;
-		 //nobulletcol = 0;
-		 //lastdamagez_f = 0.0f;
-		 //lastdamagey_f = 0.0f;
-		 //lastdamagex_f = 0.0f;
-		 //reserve5 = 0;
-		 //reserve4 = 0;
-		 //reserve3 = 0;
-		 //reserve2 = 0;
-		 //reserve1 = 0;
 		 explodefusetime = 0;
 		 destroyme = 0;
 		 usingphysicsnow = 0;
@@ -7163,34 +6889,11 @@ struct entitytype
 		 soundset2 = 0;
 		 soundset1 = 0;
 		 soundset = 0;
-		 //blockedtoz = 0;
-		 //blockedtoy = 0;
-		 //blockedtox = 0;
-		 //blockedby = 0;
-		 //invincibleactive = 0;
-		 //collisionactive = 0;
 		 activated = 0;
 		 collected = 0;
-		 //delaydir = 0;
-		 //delaydamagez_f = 0.0f;
-		 //delaydamagey_f = 0.0f;
-		 //delaydamagex_f = 0.0f;
-		 //delayimpact = 0;
-		 //delaydamage = 0;
-		 //delaydamagesource = 0;
-		 //delaydamagetimer = 0.0f;
-		 //delaydamagecount = 0.0f;
-		 //shotdamagetype = 0;
-		 //shotdamagesource = 0;
-		 //shotdamage = 0;
 		 beenkilled = 0;
-		 //lifecode = 0;
 		 briefimmunity = 0;
 		 health = 0;
-		 //floatvalue = 0.0f;
-		 //floatrate = 0;
-		 //spinvalue = 0.0f;
-		 //spinrate = 0;
 		 animframeupdate = 0;
 		 destanimframe = 0.0f;
 		 animonce = 0;
@@ -7199,27 +6902,10 @@ struct entitytype
 		 animdo = 0;
 		 animdir = 0;
 		 animset = 0;
-		 //decalsizey = 0.0f;
-		 //decalsizex = 0.0f;
-		 //decalslotused = 0;
-		 //decalloop = 0.0f;
-		 //decalmode = 0;
-		 //decalindex = 0;
 		 plrdist = 0.0f;
-		 //crouchprofile = 0;
-		 //nofloorlogic = 0;
-		 //raycastlaststate = 0;
-		 //raycastcount = 0;
-		 //priorityduration = 0;
-		 //priorityai = 0;
-		 //logictimestamp = 0;
-		 //logiccountburst = 0;
-		 //logiccount = 0.0f;
-		 //limbslerp = 0;
 		 colb = 0;
 		 colg = 0;
 		 colr = 0;
-		#ifdef WICKEDENGINE
 		 floorposy = -90000.0f;
 		 delay_floorposy = -90000.0f;
 		 soundset5 = 0;
@@ -7232,14 +6918,9 @@ struct entitytype
 		 quaty = 0;
 		 quatz = 0;
 		 quatw = 1;
-		#else
-		 floorposy = 0.0f;
-		 delay_floorposy = 0.0f;
-		#endif
 		 dry = 0.0f;
 		 hoverfactoroverride = 0;
 		 nogravity = 0;
-		 //norotate = 0;
 		 scalez = 0.0f;
 		 scaley = 0.0f;
 		 scalex = 0.0f;
@@ -7255,12 +6936,10 @@ struct entitytype
 		 customlastx = 0.0f;
 		 customlasty = 0.0f;
 		 customlastz = 0.0f;
-		 //attachmentblobobj = 0;
 		 attachmentobjfirespotlimb = 0;
 		 fFirespotOffsetX = 0;
 		 fFirespotOffsetY = 0;
 		 fFirespotOffsetZ = 0;
-		 //attachmentweapontype = 0;
 		 attachmentbaseobj = 0;
 		 attachmentobj = 0;
 		 obj = 0;
@@ -7268,28 +6947,12 @@ struct entitytype
 		 profileobj = 0;
 		 bankindex = 0;
 		 maintype = 0;
-		 //dormant = 0;
 		 active = 0;
-		 //fakeplrindex = 0;
-		 //servercontrolled = 0;
 		 editorfixed = 0;
-		 //lastdamagepaused = 0;
-		 //lastdamagetimer = 0;
-		 //etimerpaused = 0;
 		 etimer = 0;
 		 ttarget = 0;
-		 //aimovez = 0.0f;
-		 //aimovex = 0.0f;
-		 //aimoved = 0;
-		 //eyeoffset = 0;
-		 //spineraim = 0.0f;
-		 //spiner = 0.0f;
 		 spine = 0;
-		 //curvcmz = 0;
-		 //curvcmy = 0;
-		 //curvcmx = 0;
 		 isflak = 0;
-		 //enterwater = 0;
 		 animspeedmod = 1.0f;
 		 dc_obj[0] = 0;
 		 dc_obj[1] = 0;
@@ -7320,7 +6983,6 @@ struct entitytype
 	}
 	// End of Constructor
 };
-
 
 //  Entity Breadcrumbs Data
 struct entitybreadcrumbstype
@@ -7448,11 +7110,6 @@ struct ailiblisttype
 	// End of Constructor
 
 };
-
-
-
-//Waypoint Data Structures
-
 
 //  Waypoint data structure
 struct waypointtype
@@ -7830,6 +7487,7 @@ struct gunsettingstype
 	cStr tracer_imagefile;
 	uint32_t tracer_WPEId;
 	bool fake_reload;
+
 	// Constructor
 	gunsettingstype ( )
 	{
@@ -8211,6 +7869,7 @@ struct guntype
 	int storeclipammo;
 	int newweaponsystem;
 	cstr legacy_animation_s;
+
 	// Constructor
 	guntype ( )
 	{
@@ -8503,12 +8162,10 @@ struct playercheckpointtype
 	float y;
 	float z;
 	float a;
-	//int soundloopcheckpointcountdown;
 
 	// Constructor
 	playercheckpointtype ( )
 	{
-		 //soundloopcheckpointcountdown = 0;
 		 a = 0.0f;
 		 z = 0.0f;
 		 y = 0.0f;
@@ -8981,15 +8638,6 @@ struct respawntype
 
 };
 
-
-
-
-
-//Editor Structure Types
-
-
-
-
 //  Input Control System Data Structure
 struct inputsystemtype
 {
@@ -9278,167 +8926,6 @@ struct editorfreeflighttype
 
 };
 
-
-
-//Segment Data
-
-/*      
-
-//  Segment Profile Data Structure
-struct segmentprofileheadertype
-{
-	int partmax;
-	int lastmeshmax;
-	int preventai;
-
-	// Constructor
-	segmentprofileheadertype ( )
-	{
-		 preventai = 0;
-		 lastmeshmax = 0;
-		 partmax = 0;
-	}
-	// End of Constructor
-
-};
-
-//  V110 - 160508 - added flag to control portal generation
-// `type segmentprofilevistype overlay f r wb wr wf wl owb owr owf owl ctl ctr cbr cbl octl octr ocbr ocbl endtype
-
-struct segmentprofilevistype overlay t.f t.r wb wr wf wl owb owr owf owl ctl ctr cbr cbl octl octr ocbr ocbl portalmode endtype
-{
-int type;
-	int mode;
-	int symbol;
-	int floorsizey;
-	int sidesizex;
-	int sidesizey;
-	int sidesizez;
-
-	// Constructor
-	segmentprofilevistype overlay t.f t.r wb wr wf wl owb owr owf owl ctl ctr cbr cbl octl octr ocbr ocbl portalmode endtype ( )
-	{
-		 sidesizez = 0;
-		 sidesizey = 0;
-		 sidesizex = 0;
-		 floorsizey = 0;
-		 symbol = 0;
-		 mode = 0;
-		type = 0;
-	}
-	// End of Constructor
-
-};
-
-struct segmentprofileproperties
-{
-	int groundmode;
-	int kindof;
-
-	// Constructor
-	segmentprofileproperties ( )
-	{
-		 kindof = 0;
-		 groundmode = 0;
-	}
-	// End of Constructor
-
-};
-
-struct materialtype
-{
-	int t.index;
-
-	// Constructor
-	materialtype ( )
-	{
-		 t.index = 0;
-	}
-	// End of Constructor
-
-};
-
-struct segmentprofiletype
-{
-	int partmode;
-	cstr meshname_s;
-	int meshid;
-	int actuallimb;
-	float offx;
-	float offy;
-	float offz;
-	float rotx;
-	float roty;
-	float t.rotz;
-	cstr tex_s;
-	cstr texd_s;
-	cstr texn_s;
-	cstr texs_s;
-	cstr effect_s;
-	int texid;
-	int texdid;
-	int texiid;
-	int texnid;
-	int texsid;
-	int t.effectid;
-	int transparency;
-	int colmode;
-	int vis;
-	int blueprint;
-	int properties;
-	cstr csgmesh_s;
-	int csgmode;
-	int csgimmune;
-	int lightmode;
-	int multimeshmode;
-	int multimeshstart;
-	int t.material;
-	int approxmemused;
-
-	// Constructor
-	segmentprofiletype ( )
-	{
-		 approxmemused = 0;
-		 t.material = 0;
-		 multimeshstart = 0;
-		 multimeshmode = 0;
-		 lightmode = 0;
-		 csgimmune = 0;
-		 csgmode = 0;
-		 csgmesh_s = "";
-		 properties = 0;
-		 blueprint = 0;
-		 vis = 0;
-		 colmode = 0;
-		 transparency = 0;
-		 t.effectid = 0;
-		 texsid = 0;
-		 texnid = 0;
-		 texiid = 0;
-		 texdid = 0;
-		 texid = 0;
-		 effect_s = "";
-		 texs_s = "";
-		 texn_s = "";
-		 texd_s = "";
-		 tex_s = "";
-		 t.rotz = 0.0f;
-		 roty = 0.0f;
-		 rotx = 0.0f;
-		 offz = 0.0f;
-		 offy = 0.0f;
-		 offx = 0.0f;
-		 actuallimb = 0;
-		 meshid = 0;
-		 meshname_s = "";
-		 partmode = 0;
-	}
-	// End of Constructor
-
-};
-
-*/    
-
 // 
 //  New Types For Reloaded
 // 
@@ -9480,7 +8967,6 @@ struct realtimelightmappingtype
 	int includeoldlightstart;
 	int lmintervalat;
 	int lminterval;
-	//int liofinterest;
 	int lasttimer;
 	int cascadecount;
 	int carryonfromo;
@@ -9769,7 +9255,6 @@ struct terraintype
 	int TerrainID;
 	int terrainobjectindex;
 	int terrainshaderindex;
-	//float terrainlevel_f;
 	float waterliney_f;
 	float waterlineyadjustforclip_f;
 	float WaterCamY_f;
@@ -9787,12 +9272,6 @@ struct terraintype
 	float ldirny_f;
 	float ldirnz_f;
 	float TerrainSize_f;
-	//float zoom_f;
-	//float camx_f;
-	//float camz_f;
-	//float playerx_f;
-	//float playerz_f;
-	//float playera_f;
 	int terrainpaintermode;
 	int lastterrainpaintermode;
 	float RADIUS_f;
@@ -9816,7 +9295,6 @@ struct terraintype
 	int terrainregionx2;
 	int terrainregionz1;
 	int terrainregionz2;
-	//int terraintriggercheapshadowrefresh;
 	int terrainquickupdate;
 	int terrainquickx1;
 	int terrainquickx2;
@@ -9908,14 +9386,10 @@ struct terraintype
 	int reflsizer;
 	cstr skyshader_s;
 	cstr skyscrollshader_s;
-	//int iTerrainPBRMode;
-	//int iForceTerrainVegShaderUpdate;
 
 	// Constructor
 	terraintype ( )
 	{
-		 //iForceTerrainVegShaderUpdate = 0;
-		 //iTerrainPBRMode = 0;
 		 skyscrollshader_s = "";
 		 skyshader_s = "";
 		 reflsizer = 0;
@@ -10007,7 +9481,6 @@ struct terraintype
 		 terrainquickx2 = 0;
 		 terrainquickx1 = 0;
 		 terrainquickupdate = 0;
-		 //terraintriggercheapshadowrefresh = 0;
 		 terrainregionz2 = 0;
 		 terrainregionz1 = 0;
 		 terrainregionx2 = 0;
@@ -10522,10 +9995,6 @@ struct weaponstype
 	// End of Constructor
 
 };
-
-
-//  +0 -
-
 
 //Physics types
 
@@ -11338,6 +10807,7 @@ struct travey_particle
 	float fFpsUpdate;
 	float fFpsTimePassed;
 	int iCreated;
+
 	// Constructor
 	travey_particle ( )
 	{
@@ -11364,11 +10834,6 @@ struct travey_particle
 		 effectId = 0;
 		 rotz = 0.0f;
 		 rotateSpeedZ = 0.0f;
-		 //rotateSpeedY = 0.0f;
-		 //rotateSpeedX = 0.0f;
-		 //moveSpeedZ = 0.0f;
-		 //moveSpeedY = 0.0f;
-		 //moveSpeedX = 0.0f;
 		 z = 0.0f;
 		 y = 0.0f;
 		 x = 0.0f;
@@ -11382,796 +10847,7 @@ struct travey_particle
 	}
 };
 
-#define AICORPSETIME 20000
-
-/*
-//  AI constants
-#define AICONDNEVER 1
-#define AICONDALWAYS 2
-#define AICONDSTATE 3
-#define AICONDRANDOM 4
-#define AICONDHEALTH 5
-#define AICONDHEALTHLESS 6
-#define AICONDQUANTITY 7
-#define AICONDSPEED 8
-#define AICONDRATEOFFIRE 9
-#define AICONDHEALTHGREATER 10
-#define AICONDVAREQUAL 11
-#define AICONDVARNOTEQUAL 12
-#define AICONDVARGREATER 13
-#define AICONDVARLESS 14
-#define AICONDPLRHEALTHLESS 21
-#define AICONDPLRHEALTHGREATER 22
-#define AICONDLEVELEQUAL 31
-#define AICONDLEVELNOTEQUAL 32
-#define AICONDASSOCIATED 51
-#define AICONDSHADERVARIABLE 71
-#define AICONDSHADERVARIABLELESS 72
-#define AICONDSHADERVARIABLEGREATER 73
-#define AICONDPLRDISTWITHIN 101
-#define AICONDPLRDISTFURTHER 102
-#define AICONDPLRHIGHER 103
-#define AICONDANYWITHIN 104
-#define AICONDANYFURTHER 105
-#define AICONDPLRELEVWITHIN 106
-#define AICONDPLRELEVFURTHER 107
-#define AICONDPLRFACING 108
-#define AICONDPLRNOTFACING 109
-#define AICONDPLRUNDERWATER 110
-#define AICONDPLRALIVE 111
-#define AICONDUNDERWATER 120
-#define AICONDSHOTDAMAGE 121
-#define AICONDIFWEAPON 122
-#define AICONDSHOTDAMAGETYPE 123
-#define AICONDCANTAKE 131
-#define AICONDPLRCANBESEEN 151
-#define AICONDPLRCANNOTBESEEN 152
-#define AICONDPLRHASKEY 153
-#define AICONDPLRUSINGACTION 154
-#define AICONDACTIVATED 155
-#define AICONDPLRWITHINZONE 156
-#define AICONDENTITYWITHINZONE 157
-#define AICONDPLRINGUNSIGHT 158
-#define AICONDNEARACTIVATABLE 159
-#define AICONDNEWWEAPONCANBESEEN 161
-#define AICONDNOISEHEARD 171
-#define AICONDANYWITHINZONE 191
-#define AICONDANYKEYWITHINZONE 192
-#define AICONDRAYCAST 201
-#define AICONDRAYCASTUP 202
-#define AICONDRAYCASTBACK 203
-#define AICONDNORAYCASTUP 204
-#define AICONDFRAMEATEND 301
-#define AICONDFRAMEATSTART 302
-#define AICONDFRAMEWITHIN 303
-#define AICONDFRAMEBEYOND 304
-#define AICONDANIMATIONOVER 305
-#define AICONDREACHTARGET 351
-#define AICONDLOSETARGET 352
-//  Hockeykid - 250210 - Dark AI conditions
-#define AICONDDARKAISTRAFEL 353
-#define AICONDDARKAISTRAFER 354
-#define AICONDDARKAIMOVINGF 355
-#define AICONDDARKAIIDLE 356
-#define AICONDDARKAIMOVINGB 357
-#define AICONDDARKAICANSHOOT 358
-#define AICONDDARKAISTRAFELA 359
-#define AICONDAIDUCKING 360
-#define AICONDAIHEARDSOUND 361
-#define AICONDAIACTION 362
-#define AICONDAIISAI 363
-#define AICONDAITEAM 364
-#define AICONDAIATPOINT 365
-#define AICONDAICALLED 367
-#define AICONDAITARGETDISTWITHIN 368
-#define AICONDAITARGETDISTFURTHER 369
-#define AICONDAIATCOVER 370
-#define AICONDAICALLEDBYPLR 371
-#define AICONDAIHASTARGET 372
-#define AICONDDARKAIRUNNINGF 373
-//  End Dark AI
-#define AICONDHEADANGLEGREATER 401
-#define AICONDHEADANGLELESS 402
-#define AICONDSOUNDFINISHED 451
-#define AICONDALPHAFADEEQUAL 471
-#define AICONDWAYPOINTSTATE 501
-#define AICONDIFMARKER 551
-#define AICONDIFPLRTRAIL 552
-#define AICONDHUDSELECTIONMADE 801
-#define AICONDTIMERGREATER 811
-#define AICONDETIMERGREATER 812
-#define AICONDESCAPEKEYPRESSED 821
-#define AICONDHUDEDITDONE 822
-#define AICONDHUDHAVENAME 823
-#define AICONDSCANCODEKEYPRESSED 824
-//  AirMod - New Conditions >>>
-#define AICONDPLRBLOCKING 825
-#define AICONDINVIEW 826
-#define AICONDPICKOBJECT 827
-#define AICONDVELOCITY 828
-//  AirMod - Done <<<
-#define AICONDKEYPRESSED 829
-#define AICONDHASWEAPON 830
-//  V118 - 110810 - knxrb - Hud Layers
-#define AICONDHUDSELECTED 831
-//  V118 - 110810 - knxrb - Setup.ini Variable Conditions
-#define AICONDSETUPSHADER 832
-#define AICONDSETUPTEXQUALITY 833
-#define AICONDSETUPMOUSESENS 834
-#define AICONDSETUPASPECTRATIO 835
-#define AICONDSETUPPOSTPROCESSING 836
-#define AICONDSETUPWIDTH 837
-#define AICONDSETUPHEIGHT 838
-#define AICONDSETUPDEPTH 839
-#define AICONDSETUPANTIALIAS 840
-#define AICONDSETUPSHADOWS 841
-//  V118 - 130810 - knxrb - Invert Mouse
-#define AICONDSETUPMOUSEINVERT 842
-//  V118 - 120810 - knxrb - 'mousestate=X' command
-#define AICONDMOUSESTATE 843
-//  V118 - 140810 - knxrb - Disable Particles
-#define AICONDSETUPPARTICLESUSED 844
-//  V118 - 160810 - knxrb - Auto Resolution
-#define AICONDSETUPAUTORES 845
-//  GUI-X9 (knxrb) >>>
-#define AICONDHUDMOUSEDOWN 846
-#define AICONDHUDMOUSEUP 847
-#define AICONDHUDMOUSEOVER 848
-#define AICONDLOADVISIBLE 849
-#define AICONDSAVEVISIBLE 850
-#define AICONDSTOPWATCHGREATER 851
-#define AICONDSTOPWATCHLESS 852
-#define AICONDSTOPWATCHRUNNING 853
-#define AICONDSETUPVAREQUAL 854
-#define AICONDCURSORIMAGE 855
-#define AICONDCHOICEVALUEEQUAL 856
-#define AICONDSLIDERVALUEEQUAL 857
-//  GUI-X9 (knxrb) <<<
-
-//  v118 - 110511 - cinematic hands - (terry cox) >>>>
-// `test to see if player is prevented from selecting a gun
-
-#define AICONDPREVENTEDSELECTINGGUN 858
-//  cinematic hands <<<<
-
-//  Scene commander conditions
-#define AICONDMOUSECONDITION 870
-#define AICONDAIRGREATER 871
-#define AICONDAIRLESSER 872
-#define AICONDAIREQUAL 873
-#define AICONDSAMEFLOORASPLR 874
-#define AICONDPLRFLOOREQUAL 875
-#define AICONDENTFLOOREQUAL 876
-#define AICONDISIMMUNE 877
-#define AICONDWEAPONSGREATER 878
-#define AICONDWEAPONSLESSER 879
-#define AICONDWEAPONSEQUAL 880
-#define AICONDWEAPONINSLOT 881
-#define AICONDCURRENTWEAPON 882
-#define AICONDPLRRUNNING 883
-#define AICONDPLRCROUCHING 884
-#define AICONDZOOMED 885
-#define AICONDPLRUSINGRELOAD 886
-#define AICONDPLRONGROUND 887
-#define AICONDPLRJUMPING 888
-#define AICONDFIREMODE 889
-#define AICONDONRADAR 890
-#define AICONDLASTFIRED 891
-#define AICONDRADARGREATER 892
-#define AICONDRADAREQUAL 893
-#define AICONDENTITYPLRGREATER 894
-#define AICONDENTITYPLRLESSER 895
-#define AICONDFLOORHIGHER 896
-#define AICONDFLOORLOWER 897
-#define AICONDFLASHING 898
-#define AICONDSPAWNSLEFT 899
-#define AICONDSPAWNSGREATER 900
-#define AICONDSHOTBY 901
-#define AICONDNOTZOOMED 902
-#define AICONDPLRNOTRUNNING 903
-#define AICONDPLRNOTCROUCHING 904
-#define AICONDPLRNOTJUMPING 905
-#define AICONDPLRNOTUSINGRELOAD 906
-#define AICONDNOTONRADAR 907
-#define AICONDPLRCARRYING 908
-#define AICONDPLRNOTCARRYING 906
-#define AICONDLASTDAMAGETIME 907
-#define AICONDCURRENTJAMMED 908
-#define AICONDENTITYISIMMUNE 909
-#define AICONDENTITYISNOTIMMUNE 910
-#define AICONDPLRWEAPONIDLE 911
-#define AICONDPLRWEAPONNOTIDLE 912
-#define AICONDOBJECTRANGELESS 913
-#define AICONDOBJECTRANGEGREATER 914
-#define AICONDSOUNDPLAYING 915
-#define AICONDSOUNDNOTPLAYING 916
-#define AICONDWATEREQUAL 917
-#define AICONDWATERLESSER 918
-#define AICONDWATERGREATER 919
-#define AICONDWATERISON 920
-#define AICONDSHOTBYAMMO 921
-#define AICONDPLRFIRED 923
-#define AICONDPLRFIREDGREATER 924
-#define AICONDPLRFIREDLESSER 925
-#define AICONDSTATEGREATER 926
-#define AICONDSTATELESSER 927
-#define AICONDLMBGREATER 928
-#define AICONDLMBLESSER 929
-#define AICONDRMBGREATER 930
-#define AICONDRMBLESSER 931
-
-#define AICONDLAST 932
-
-#define AIACTNONE 0
-#define AIACTDESTROY 1
-#define AIACTSUSPEND 2
-#define AIACTFLOORLOGIC 11
-#define AIACTNOGRAVITY 12
-#define AIACTGLOBALVAR 31
-#define AIACTLOCALVAR 32
-#define AIACTSETVAR 33
-#define AIACTINCVAR 34
-#define AIACTDECVAR 35
-#define AIACTDIMVAR 36
-#define AIACTADDVAR 37
-#define AIACTSUBVAR 38
-#define AIACTMULVAR 39
-#define AIACTDIVVAR 40
-#define AIACTMODVAR 41
-#define AIACTWRAPVAR 42
-#define AIACTDIMLOCALVAR 43
-#define AIACTRUNFPIDEFAULT 51
-#define AIACTRUNFPI 52
-#define AIACTWIN 61
-#define AIACTSELECTSHADERVARIABLE 71
-#define AIACTSETSHADERVARIABLE 72
-#define AIACTINCSHADERVARIABLE 73
-#define AIACTDECSHADERVARIABLE 74
-#define AIACTSTATE 101
-#define AIACTINCSTATE 102
-#define AIACTMOVEUP 201
-#define AIACTMOVEFORE 202
-#define AIACTMOVEBACK 203
-#define AIACTFREEZE 204
-#define AIACTRUNFORE 205
-#define AIACTROTATEY 226
-#define AIACTROTATETOPLR 227
-#define AIACTROTATEIY 228
-#define AIACTNOROTATE 229
-#define AIACTRESETHEAD 231
-#define AIACTROTATEHEAD 232
-#define AIACTROTATEHEADRANDOM 233
-#define AIACTFORCEBACK 251
-#define AIACTFORCEFORE 252
-#define AIACTFORCELEFT 253
-#define AIACTFORCERIGHT 254
-#define AIACTFORCEBOUNCE 255
-#define AIACTSPINRATE 281
-#define AIACTFLOATRATE 282
-#define AIACTSETFRAME 301
-#define AIACTINCFRAME 302
-#define AIACTDECFRAME 303
-#define AIACTANIMATE 304
-#define AIACTADVFRAME 305
-#define AIACTANIMATIONNORMAL 306
-#define AIACTANIMATIONREVERSE 307
-#define AIACTSETTARGET 351
-#define AIACTROTATETOTARGET 352
-#define AIACTLOOKATTARGET 353
-#define AIACTMOVETOTARGET 354
-#define AIACTCOLLECTTARGET 355
-#define AIACTCHOOSESTRAFE 356
-#define AIACTSTRAFE 357
-#define AIACTPIVOTRANDOM 358
-#define AIACTLOOKATPLR 359
-#define AIACTSETTARGETNAME 360
-#define AIACTRAGDOLL 370
-#define AIACTCARRYALL 391
-#define AIACTPLRASS 401
-#define AIACTPLRNOASS 402
-#define AIACTPLRMOVEUP 403
-#define AIACTPLRMOVEDOWN 404
-#define AIACTPLRMOVEEAST 405
-#define AIACTPLRMOVEWEST 406
-#define AIACTPLRMOVENORTH 407
-#define AIACTPLRMOVESOUTH 408
-#define AIACTPLRMOVETO 409
-#define AIACTPLRMOVEIFUSED 410
-#define AIACTPLRFREEZE 411
-#define AIACTPLRDISABLE 412
-#define AIACTACTIVATEIFUSED 421
-#define AIACTACTIVATEIFUSEDNEAR 422
-#define AIACTACTIVATETARGET 423
-#define AIACTACTIVATE 424
-#define AIACTACTIVATEALLINZONE 425
-#define AIACTPLRADDHEALTH 431
-#define AIACTPLRSUBHEALTH 432
-#define AIACTPLRSETHEALTH 433
-#define AIACTADDHEALTH 441
-#define AIACTSUBHEALTH 442
-#define AIACTSETHEALTH 443
-#define AIACTSOUND 451
-#define AIACT3DSOUND 452
-#define AIACTLOOPSOUND 453
-#define AIACTSTOPSOUND 454
-#define AIACTTALK 455
-#define AIACTTALKORDERED 456
-#define AIACTTALKRANDOM 457
-#define AIACTALTTEXTURE 461
-#define AIACTSETALPHAFADE 471
-#define AIACTINCALPHAFADE 472
-#define AIACTDECALPHAFADE 473
-#define AIACTRUNDECAL 481
-#define AIACTSHAPEDECAL 482
-#define AIACTTRIGGERFORCE 491
-#define AIACTWAYPOINTSTART 501
-#define AIACTWAYPOINTSTOP 502
-#define AIACTWAYPOINTREVERSE 503
-#define AIACTWAYPOINTNEXT 504
-#define AIACTWAYPOINTPREV 505
-#define AIACTWAYPOINTRANDOM 506
-#define AIACTDROPMARKER 551
-#define AIACTNEXTMARKER 552
-#define AIACTRESETMARKERS 553
-#define AIACTFOLLOWPLR 554
-#define AIACTPLRTAKE 601
-#define AIACTPLRDROP 602
-#define AIACTPLRDROPCURRENT 603
-#define AIACTSHOOTPLR 701
-#define AIACTUSEWEAPON 711
-#define AIACTRELOADWEAPON 712
-#define AIACTCOLOFF 751
-#define AIACTCOLON 752
-#define AIACTETIMERSTART 753
-#define AIACTSPAWNON 761
-#define AIACTSPAWNOFF 762
-#define AIACTHEADSHOT 771
-#define AIACTHEADSHOTDAMAGE 772
-#define AIACTAMBIENCE 821
-#define AIACTAMBIENCERED 822
-#define AIACTAMBIENCEGREEN 823
-#define AIACTAMBIENCEBLUE 824
-#define AIACTFOG 831
-#define AIACTFOGRED 832
-#define AIACTFOGGREEN 833
-#define AIACTFOGBLUE 834
-// `markblosser - add fogstart,fogend commands
-
-#define AIACTFOGSTART 835
-#define AIACTFOGEND 836
-// `markblosser - set post process effect
-
-#define AIACTSETPOSTEFFECT 837
-#define AIACTSKY 841
-#define AIACTSKYSCROLL 842
-#define AIACTNEWJUMPHEIGHT 901
-#define AIACTBACKDROP 1001
-#define AIACTMUSIC 1011
-#define AIACTMUSICVOLUME 1012
-#define AIACTSOUNDSCALE 1013
-#define AIACTMUSICOVERRIDE 1014
-#define AIACTVIDEO 1021
-#define AIACTAISETVIEWRANGE 1022
-#define AIACTWEBLINK 1031
-#define AIACTEXPLODE 1032
-#define AIACTLIGHTON 1051
-#define AIACTLIGHTOFF 1052
-#define AIACTLIGHTRED 1053
-#define AIACTLIGHTGREEN 1054
-#define AIACTLIGHTBLUE 1055
-#define AIACTLIGHTRANGE 1056
-#define AIACTLIGHTINTENSITY 1057
-//  Hockeykid - 250210 - Dark AI constants
-#define AIACTADDAITEAM 1058
-#define AIACTAIALLYFOLLOW 1059
-#define AIACTAISETTARGET 1061
-#define AIACTAIMOVERANDOM 1062
-#define AIACTAIREMOVE 1063
-#define AIACTAIMOVEMENT 1065
-#define AIACTAIACTIVE 1066
-#define AIACTTOGGLEACTIVE 1067
-#define AIACTAIACTION 1070
-#define AIACTAIFOLLOWPLR 1071
-#define AIACTAIMOVETOSOUND 1072
-#define AIACTAIMOVEAWAYFROMSOUND 1073
-#define AIACTAIADDPOINT 1074
-#define AIACTAIGOTOPOINT 1075
-#define AIACTAICALLTEAM 1076
-#define AIACTAIRESPONDTOCALL 1077
-#define AIACTAIMOVETOCOVER 1078
-#define AIACTAIMOVETOTARGET 1079
-#define AIACTAISTOP 1080
-#define AIACTAIUSEMELEE 1081
-#define AIACTAISETMELEEDAMAGE 1082
-#define AIACTAIROTATETOTARGET 1083
-#define AIACTAIROTATETOSOUND 1084
-#define AIACTAIPLRCALLTEAM 1085
-#define AIACTAISETSPEED 1086
-#define AIACTAIRESPONDTOPLAYER 1087
-#define AIACTAITOGLLEATTACK 1088
-#define AIACTAICLEARTARGET 1089
-#define AIACTAIENABLEFULLAIM 1090
-#define AIACTAIEYELEVEL 1091
-#define AIACTAIADDALLY 1092
-#define AIACTAIADDENEMY 1093
-#define AIACTAIADDNEUTRAL 1094
-#define AIACTAIAUTOFACTIONOFF 1095
-#define AIACTAIROTATEY 1097
-#define AIACTAILOOKAROUND 1098
-//  end Dark AI constants
-#define AIACTNEXTLEVEL 1096
-#define AIACTHUDUSERVAR 1099
-#define AIACTHUDRESET 1100
-#define AIACTHUDX 1101
-#define AIACTHUDY 1102
-#define AIACTHUDZ 1103
-#define AIACTHUDSIZEX 1104
-#define AIACTHUDSIZEY 1105
-#define AIACTHUDSIZEZ 1106
-#define AIACTHUDRED 1107
-#define AIACTHUDGREEN 1108
-#define AIACTHUDBLUE 1109
-#define AIACTHUDIMAGE 1110
-#define AIACTHUDIMAGEFINE 1111
-#define AIACTHUDFONT 1112
-#define AIACTHUDSIZE 1113
-#define AIACTHUDTEXT 1114
-#define AIACTHUDTYPE 1115
-#define AIACTHUDHIDE 1116
-#define AIACTHUDSHOW 1117
-#define AIACTHUDUNSHOW 1118
-#define AIACTHUDNAME 1119
-#define AIACTHUDANIM 1120
-#define AIACTHUDFADEOUT 1121
-#define AIACTHUDMAKE 1199
-#define AIACTNEWGAME 1201
-#define AIACTLOADGAME 1202
-#define AIACTSAVEGAME 1203
-#define AIACTCONTINUEGAME 1204
-#define AIACTQUITGAME 1205
-#define AIACTPAUSEGAME 1206
-#define AIACTRESUMEGAME 1207
-#define AIACTHOSTGAME 1208
-#define AIACTJOINGAME 1209
-#define AIACTREPEATGAME 1210
-#define AIACTTIMERSTART 1211
-#define AIACTQUICKLOADGAME 1212
-#define AIACTQUICKSAVEGAME 1213
-//  AirMod - New Actions >>>
-#define AIACTSETIFUSED 1214
-#define AIACTSETUSEKEY 1215
-#define AIACTRESETPLRWEAPONS 1216
-#define AIACTBACKDROPVID 1217
-#define AIACTBLOODSPURT 1218
-#define AIACTNOBULLETCOL 1219
-#define AIACTALTAMMO 1220
-#define AIACTBLOODSPLASH 1221
-#define AIACTCAMSHAKE 1222
-#define AIACTCAMFOV 1223
-#define AIACTCAMFOVINC 1224
-#define AIACTHIDEWEAPON 1225
-#define AIACTSHOWLASTWEAPON 1227
-#define AIACTCAMPOINTOBJECT 1228
-//  AirMod - Done <<<
-#define AIACTSETUPDYNAMICSHADOWS 1229
-#define AIACTSETUPUSEEFFECTS 1230
-#define AIACTSETUPDIVIDETEXTURESIZE 1231
-#define AIACTSETUPMOUSESENSITIVITY 1232
-#define AIACTSETUPASPECTRATIO 1233
-#define AIACTSETUPPOSTPROCESSING 1234
-#define AIACTSETUPWIDTH 1235
-#define AIACTSETUPHEIGHT 1236
-#define AIACTSETUPDEPTH 1237
-#define AIACTSETUPANTIALIAS 1238
-#define AIACTRESET 1239
-#define AIACTSAVESETUP 1240
-#define AIACTPASSTOSETUP 1241
-#define AIACTFPGCRAWTEXTR 1251
-#define AIACTFPGCRAWTEXTG 1252
-#define AIACTFPGCRAWTEXTB 1253
-#define AIACTFPGCRAWTEXTX 1254
-#define AIACTFPGCRAWTEXTY 1255
-#define AIACTFPGCRAWTEXTSIZE 1256
-#define AIACTFPGCRAWTEXTFONT 1257
-#define AIACTFPGCRAWTEXTOFF 1258
-#define AIACTFPGCRAWTEXT 1259
-//  V118 - 110810 - knxrb - Hud Layers
-#define AIACTHUDLAYER 1260
-//  V118 - 130810 - knxrb - Mouse Invert (Options Screen)
-#define AIACTSETUPMOUSEINVERT 1261
-//  V118 - 140810 - knxrb - Disable Particles (Options Screen)
-#define AIACTSETUPPARTICLESUSED 1262
-//  V118 - 160810 - knxrb - Hud - sethudx Command
-#define AIACTSETHUDXPOS 1263
-//  V118 - 160810 - knxrb - Auto Resolution
-#define AIACTSETUPAUTORES 1264
-//  GUI-X9 (knxrb) >>>
-#define AIACTLOADIMAGE 1265
-#define AIACTMAKEHUD 1266
-#define AIACTSETHUDX 1267
-#define AIACTSETHUDY 1268
-#define AIACTSETHUDW 1269
-#define AIACTSETHUDH 1270
-#define AIACTSETHUDCOLOUR 1271
-#define AIACTSETHUDCOLOR 1272
-#define AIACTSETHUDALPHA 1273
-#define AIACTSETHUDNIMAGE 1274
-#define AIACTSETHUDOIMAGE 1275
-#define AIACTMAKECHECKBOX 1276
-#define AIACTSETCHECKBOXX 1277
-#define AIACTSETCHECKBOXY 1278
-#define AIACTSETCHECKBOXW 1279
-#define AIACTSETCHECKBOXH 1280
-#define AIACTSETCHECKBOXCOLOUR 1281
-#define AIACTSETCHECKBOXCOLOR 1282
-#define AIACTSETCHECKBOXALPHA 1283
-#define AIACTSETCHECKBOXNIMAGE 1284
-#define AIACTSETCHECKBOXCIMAGE 1285
-#define AIACTSETCHECKBOXSTATE 1286
-#define AIACTMAKESLIDER 1287
-#define AIACTSETSLIDERX 1288
-#define AIACTSETSLIDERY 1289
-#define AIACTSETSLIDERW 1290
-#define AIACTSETSLIDERH 1291
-#define AIACTSETSLIDERCOLOUR 1292
-#define AIACTSETSLIDERCOLOR 1293
-#define AIACTSETSLIDERALPHA 1294
-#define AIACTSETSLIDERVALUE 1295
-#define AIACTMAKECHOICE 1296
-#define AIACTSETCHOICEX 1297
-#define AIACTSETCHOICEY 1298
-#define AIACTSETCHOICEW 1299
-#define AIACTSETCHOICEH 1300
-#define AIACTSETCHOICECOLOUR 1301
-#define AIACTSETCHOICECOLOR 1302
-#define AIACTSETCHOICEALPHA 1303
-#define AIACTADDCHOICESTATE 1304
-#define AIACTSETCHOICESTATE 1305
-#define AIACTSETCURSOR 1306
-#define AIACTHIDEALL 1307
-#define AIACTREPLACEIMAGE 1308
-#define AIACTSHOWHUD 1309
-#define AIACTHIDEHUD 1310
-#define AIACTSHOWCURSOR 1311
-#define AIACTHIDECURSOR 1312
-#define AIACTCLEARGUI 1313
-#define AIACTMAKESTOPWATCH 1314
-#define AIACTSTARTSTOPWATCH 1315
-#define AIACTSTOPSTOPWATCH 1316
-#define AIACTMAKESETUPVAR 1317
-#define AIACTSETSETUPVARVALUE 1318
-#define AIACTSETSETUPVARLINE 1319
-#define AIACTREADSETUPVARVALUE 1320
-#define AIACTSAVESETUPVARS 1321
-#define AIACTSETHUDCLICKABLE 1322
-#define AIACTSETSETUPTOCOMP 1323
-#define AIACTSHOWCHOICE 1324
-#define AIACTHIDECHOICE 1325
-#define AIACTSHOWSLIDER 1326
-#define AIACTHIDESLIDER 1327
-#define AIACTSHOWCHECKBOX 1328
-#define AIACTHIDECHECKBOX 1329
-#define AIACTSETHUDNUMERIC 1330
-#define AIACTSETHUDVALUE 1331
-//  GUI-X9 (knxrb) <<<
-//  Water commands
-#define AIACTWATERHEIGHT 1332
-#define AIACTWATER 1333
-#define AIACTWATERFOGDIST 1334
-#define AIACTWATERSPEED 1335
-#define AIACTWATERFOGRED 1336
-#define AIACTWATERFOGGREEN 1337
-#define AIACTWATERFOGBLUE 1338
-#define AIACTWATERRED 1339
-#define AIACTWATERGREEN 1340
-#define AIACTWATERBLUE 1341
-#define AIACTWATERHEIGHTOFZONE 1342
-//  Scene Commander water quality
-#define AIACTWATERFLEC 1343
-//  GUI-X9 (knxrb) >>>
-#define AIACTEYEHURTTIME 1442
-#define AIACTFADERSPEED 1443
-#define AIACTUSEGUIX9 1444
-//  GUI-X9 (knxrb) <<<
-#define AIACTHIDESHADOW 1445
-//  LightRay Addition
-//  LightRayMod
-#define AIACTLRAYSET 1447
-#define AIACTLRAYACT 1448
-#define AIACTLRBLOOMACT 1449
-#define AIACTLRDEBUGDEACTIVE 1450
-//  GUI-X9 (knxrb) >>>
-#define AIACTFORCEGUISUB 1451
-//  GUI-X9 (knxrb) <<<
-
-//  v118 - 110511 - cinematic hands (terry cox) >>>>
-// `commands that are needed for cinematic hands
-
-// `the first two are optional - the last two are required
-
-#define AIACTPREVENTPLAYERSELECTINGGUN 1452
-#define AIACTDISABLEFIREBUTTON 1453
-#define AIACTSTARTCINEMATICHANDS 1454
-#define AIACTGETNEWWEAPON 1455
-#define AIACTREMOVECURRENTWEAPON 1456
-#define AIACTDISABLEBLOCKINGBUTTON 1457
-//  cinematic hands <<<<
-//  set entity speed - (markblosser)
-#define AIACTSETENTITYSPEED 1458
-//  set animate command speed - (markblosser)
-#define AIACTSETANIMATESPEED 1459
-
-//  Scene Commander actions
-#define AIACTWOBBLE 1500
-#define AIACTTILTON 1501
-#define AIACTTILTSPEED 1502
-#define AIACTTILTBOUNCE 1503
-#define AIACTUNSKIP 1504
-#define AIACTPLRACTION 1505
-#define AIACTFORCEMOVE 1506
-#define AIACTEMITFORCE 1507
-#define AIACTFORCEDAMAGEON 1508
-#define AIACTCROSSHAIRON 1509
-#define AIACTWEAPONTOSLOT 1510
-#define AIACTARMON 1511
-#define AIACTARMADD 1512
-#define AIACTARMDEC 1513
-#define AIACTARMX 1514
-#define AIACTARMY 1515
-#define AIACTSETARM 1516
-#define AIACTAIRON 1517
-#define AIACTADDAIR 1518
-#define AIACTAIRTIME 1519
-#define AIACTDROWNTIME 1520
-#define AIACTAIRMAX 1521
-#define AIACTSETAIR 1522
-#define AIACTSETAIRX 1523
-#define AIACTSETAIRY 1524
-#define AIACTINSTANTDROWN 1525
-#define AIACTIMMUNE 1526
-#define AIACTARROWON 1527
-#define AIACTJUMPON 1528
-#define AIACTCROUCHON 1529
-#define AIACTPEEKON 1530
-#define AIACTWALKON 1531
-#define AIACTRUNON 1532
-#define AIACTFORCEDAMAGE 1533
-#define AIACTCOMPASSON 1534
-#define AIACTCOMPASSOFF 1535
-#define AIACTCOMPASSX 1536
-#define AIACTCOMPASSY 1537
-#define AIACTCOMPASSSPIN 1538
-#define AIACTNEEDLESPIN 1539
-#define AIACTRADAR 1540
-#define AIACTRADARX 1541
-#define AIACTRADARY 1542
-#define AIACTRADARROTATE 1543
-#define AIACTRADARRANGE 1544
-#define AIACTSPEEDMOD 1545
-#define AIACTADDFPGCRAWTEXT 1546
-#define AIACTSETOBJECTIVE 1547
-#define AIACTSETOBJECTIVEX 1548
-#define AIACTSETOBJECTIVEY 1549
-#define AIACTOBJECTIVEMODE 1550
-#define AIACTSETVARRND 1551
-#define AIACTRANDOMIZE 1552
-#define AIACTMAXSLOTS 1553
-#define AIACTEDAMMULT 1554
-#define AIACTPLRSTRENGTH 1555
-#define AIACTCULLMODE 1556
-#define AIACTCULLRANGE 1557
-#define AIACTHIDEOBJ 1558
-#define AIACTSHOWOBJ 1559
-#define AIACTCULLMODI 1560
-#define AIACTFOOTFALL 1561
-#define AIACTSWAPALT 1562
-#define AIACTROTATEPLRX 1563
-#define AIACTROTATEPLRY 1564
-#define AIACTENTROTX 1565
-#define AIACTENTROTY 1566
-#define AIACTENTROTZ 1567
-#define AIACTMOVEPLRX 1568
-#define AIACTMOVEPLRY 1569
-#define AIACTMOVEPLRZ 1570
-#define AIACTSCALE 1571
-#define AIACTSCALELIMB 1572
-#define AIACTHOLSTER 1573
-#define AIACTNOAIR 1574
-#define AIACTSETDROWNDAMAGE 1575
-#define AIACTPLRPICKON 1576
-#define AIACTPLRPICKRANGE 1577
-#define AIACTFLASH 1578
-#define AIACTFLASHRED 1579
-#define AIACTFLASHGREEN 1580
-#define AIACTFLASHBLUE 1581
-#define AIACTFLASHRANGE 1582
-#define AIACTLOGICBURST 1583
-#define AIACTPLRDAM 1584
-#define AIACTDESTROYIN 1585
-#define AIACTSETLISTKEY 1586
-#define AIACTRAWTEXTVAR 1587
-#define AIACTSIN 1588
-#define AIACTCOS 1589
-#define AIACTSCALEHUDX 1590
-#define AIACTSCALEHUDY 1591
-#define AIACTCHANGEHUDALPHA 1592
-#define AIACTWATERFLOW 1593
-#define AIACTWATERCURRENT 1594
-#define AIACTREMOVEWEAPON 1595
-#define AIACTGIVEWEAPON 1596
-#define AIACTENTITYSETIMMUNE 1597
-#define AIACTRESETONRELOAD 1598
-#define AIACTENTITYCAM 1599
-#define AIACTPLAYERCAM 1600
-#define AIACTLASTCAM 1601
-#define AIACTCUSTGUNANIM 1602
-#define AIACTUSEENTROT 1603
-#define AIACTSETCAMOFFSETX 1604
-#define AIACTSETCAMOFFSETY 1605
-#define AIACTSETCAMOFFSETZ 1606
-#define AIACTSETCAMROTX 1607
-#define AIACTSETCAMROTY 1608
-#define AIACTSETCAMROTZ 1609
-#define AIACTHIDELIMB 1610
-#define AIACTSHOWLIMB 1611
-#define AIACTPLAYPRESET 1612
-#define AIACTLOCKEMPLACEMENT 1613
-#define AIACTFREEEMPLACEMENT 1614
-#define AIACTCULLIMMOBILE 1615
-#define AIACTPLRACC 1616
-#define AIACTENTITYACC 1617
-#define AIACTDEBUGCURSOR 1618
-#define AIACTDEBUGVAR 1619
-#define AIACTDEBUGTEXT 1620
-#define AIACTWIREFRAME 1621
-#define AIACTPLAYEROFFSETON 1622
-#define AIACTPLAYEROFFSETX 1623
-#define AIACTPLAYEROFFSETY 1624
-#define AIACTPLAYEROFFSETZ 1625
-#define AIACTMUTATE 1626
-#define AIACTOBJECTRANGE 1627
-#define AIACTLINKTOPLAYER 1628
-#define AIACTFREEFROMPLAYER 1629
-#define AIACTOBJMET 1630
-#define AIACTALWAYSRUN 1631
-#define AIACTLINKENTITYROTX 1632
-#define AIACTLINKENTITYROTY 1633
-#define AIACTLINKENTITYROTZ 1634
-#define AIACTPLROFFSETANGLEX 1635
-#define AIACTPLROFFSETANGLEY 1636
-#define AIACTPLROFFSETANGLEZ 1637
-#define AIACTENTITYOFFSETANGLEX 1638
-#define AIACTENTITYOFFSETANGLEY 1639
-#define AIACTENTTIYOFFSETANGLEZ 1640
-#define AIACTSHOWWEAPON 1641
-#define AIACTNOSELECT 1642
-#define AIACTDELAYTIMER 1643
-#define AIACTCREATESPLASHSOUND 1644
-#define AIACTTARGETLINK 1645
-#define AIACTSHOWFLAK 1646
-#define AIACTMAKEVIDEOTEXTURE 1647
-#define AIACTUSEVIDEOTEXTURE 1648
-#define AIACTDELETEVIDEOTEXTURE 1649
-#define AIACTPAUSEVIDEOTEXTURE 1650
-#define AIACTRESUMEVIDEOTEXTURE 1651
-#define AIACTVIDEOTEXTURESPEED 1652
-#define AIACTVIDEOTEXTUREVOLUME 1653
-#define AIACTSTOPVIDEOTEXTURE 1654
-#define AIACTSETBULLETCOL 1655
-#define AIACTSYNCRATE 1656
-#define AIACTFLASHLIGHT 1657
-#define AIACTFLASHLIGHTRED 1658
-#define AIACTFLASHLIGHTGREEN 1659
-#define AIACTFLASHLIGHTBLUE 1660
-#define AIACTFLASHLIGHTRANGE 1661
-#define AIACTUSEFADE 1662
-#define AIACTSHOWAIR 1663
-#define AIACTDELAYDESTROY 1664
-#define AIACTLAST 1665
-*/
-
 //Interface Constants Data
-
 
 //  PROPERTIES
 #define ENTITY_SETUP                           0

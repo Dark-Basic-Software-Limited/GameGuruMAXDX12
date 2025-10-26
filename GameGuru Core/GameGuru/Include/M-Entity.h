@@ -33,14 +33,7 @@ void entity_assignentityparticletodecalelement ( void );
 void entity_addentitytomap_core ( void );
 void entity_addentitytomap ( void );
 void entity_deleteentityfrommap ( void );
-#ifdef WICKEDENGINE
-// new improved system using master and event stacks
 void entity_createundoaction (int eventtype, int te, bool bUserAction = true);
-#else
-void entity_recordbuffer_add ( void );
-void entity_recordbuffer_delete ( void );
-void entity_recordbuffer_move ( void );
-#endif
 void entity_undo ( void );
 void entity_redo ( void );
 void entity_updateparticleemitterbyID(entityeleproftype* pEleprof, int iObj, float fScale, float fX, float fY, float fZ, float fRX, float fRY, float fRZ);
@@ -89,7 +82,6 @@ void Wicked_Highlight_Rubberband(void);
 void Wicked_Highlight_Selection(void);
 void Wicked_Highlight_LockedList(void);
 void Wicked_Hide_Lower_Lod_Meshes(int obj);
-void Wicked_Delete_Lower_Lod_Meshes(int obj);
 int GetLodLevels(int obj);
 
 void entity_placeprobe(int obj, float fLightProbeScale);

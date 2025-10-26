@@ -502,7 +502,6 @@ struct Sglobals
 	std::vector<sRubberBandType> entityrubberbandlist;
 	std::vector<sRubberBandType> thumbentityrubberbandlist;
 	std::vector<entityundotype> entityrubberbandlistundo;
-	//float fForceYRotationOfRubberBandFromKeyPress;
 	int explosionstressed;
 	int filecollectionmax;
 	int gamerealtimeobjoffset;
@@ -2266,7 +2265,6 @@ struct Stemps
 	int gamememactuallyusedstarttriggercount;
 	std::vector <inventorytype> saveloadgamepositionplayerinventory;
 	std::vector <int> saveloadgamepositionplayerobjective;
-	//int gdynamicterrainshadowcameragenerate;
 	cstr tsteamlostconnectioncustommessage_s;
 	int gdynamicterrainshadowcameratrigger;
 	int tempsteamingameinitialwaitingdelay;
@@ -2277,13 +2275,11 @@ struct Stemps
 	int tempsteamhaveaskedtosubscribeflag;
 	cstr tempMPLobbyNameFromList_s;
 	std::vector <int> mp_playerAttachmentIndex;
-	//int gdynamicterrainshadowcameratimer;
 	float liftshadowstositontopofterrain_f;
 	int tconsolidatelocallightmapobjects;
 	int tmaxcharacterstateengineentities;
 	int tMPshopHasItemChangedFlag;
 	std::vector <cstr> mp_playerAvatarOwners_s;
-	//int machineindependentphysicsupdate;
 	float machineindependentphysicsupdate;
 	int tgenerateterraindirtyregiononly;
 	int tlasttimecheckedforlobbiestimer;
@@ -2303,7 +2299,6 @@ struct Stemps
 	std::vector <int> csi_stoodincoverthrowleftANIM;
 	std::vector <int> interactivesequencemaxhistory;
 	int entityorsegmententrieschanged;
-	//int gdynamicterrainshadowcameraid;
 	int geditorhighlightingtentityobj;
 	int geditorhighlightingtentityID;
 	int scanforentitiescharactersonly;
@@ -2345,7 +2340,6 @@ struct Stemps
 	std::vector <int> characterchoiceentityindex;
 	std::vector <int> csi_crouchreloadrocketANIM;
 	std::vector <int> csi_stoodincoverthrowright;
-	//std::vector <saveloadgamepositionentitytype> saveloadgamepositionentity; //PE: Not used.
 	std::vector <cstr> mp_playerAvatars_s;
 	bool bTriggerAvatarRescanAndLoad;
 	std::vector <bool> mp_playerAvatarLoaded;	
@@ -2399,7 +2393,6 @@ struct Stemps
 	std::vector <int> mp_playerShooting;
 	std::vector <int> mp_playingRagdoll;
 	int characterkitfacialhairmax;
-	//std::vector <cstr> characterSoundStackType_s;
 	int darkaifirerayhitcharacter;
 	cstr goverridefpmdestination_s;
 	int hudlayersimageoffsetindex;
@@ -2412,7 +2405,6 @@ struct Stemps
 	cstr tempMPshopidfile_s;
 	int thideprojectileinhudmodel;
 	int tischaracterholdingweapon;
-	//int tonlyusingcheapestcascade;
 	int tsteamdisplaymessagetimer;
 	int tsteamlastdamageincounter;
 	int tsteamwaitedforlobbytimer;
@@ -2644,7 +2636,6 @@ struct Stemps
 	std::vector <int> csi_stoodmoverunANIM;
 	std::vector <int> csi_stoodmoverunleft;
 	std::vector <int> csi_stoodstraferight;
-	//std::vector <int> debrisshapeindexused;
 	std::vector <int> infinilightshortlist;
 	std::vector <int> statecolmaterialtype;
 	std::vector <int> mp_jetpackOn;
@@ -8789,7 +8780,6 @@ struct Stemps
 		 scanforentitiescharactersonly = 0;
 		 geditorhighlightingtentityobj = 0;
 		 geditorhighlightingtentityID = 0;
-		 //gdynamicterrainshadowcameraid = 0;
 		 entityorsegmententrieschanged = 0;
 		 tMPshopTheVersionNumber = 0;
 		 tforwardoffsettohideshoulder_f = 0.0f;
@@ -8804,7 +8794,6 @@ struct Stemps
 		 tmaxcharacterstateengineentities = 0;
 		 tconsolidatelocallightmapobjects = 0;
 		 liftshadowstositontopofterrain_f = 0.0f;
-		 //gdynamicterrainshadowcameratimer = 0;
 		 tempMPLobbyNameFromList_s = "";
 		 tempsteamhaveaskedtosubscribeflag = 0;
 		 tsteamiseveryoneloadedandreadytime = 0;
@@ -8813,7 +8802,6 @@ struct Stemps
 		 tempsteamingameinitialwaitingdelay = 0;
 		 gdynamicterrainshadowcameratrigger = 0;
 		 tsteamlostconnectioncustommessage_s = "";
-		 //gdynamicterrainshadowcameragenerate = 0;
 		 gamememactuallyusedstarttriggercount = 0;
 		 tmaskforcamerasnoreflectionlightrayflag = 0;
 		 tconsolidatelocallightmapobjectspolylimit = 0;
@@ -8831,9 +8819,6 @@ struct Stemps
 		 showtestgameelements = 0;
 		 showtestgame2dbounds = 0;
 		 showtestgame3dbounds = 0;
-		 //showtestgametrees = 1;
-		 //showtestgameveg = 1;
-		 //showtestgamewater = 1;
 		 iPhysicsDebugMaxOffset = 0;
 		 iPhysicsCreatedStaticMesh = 0;
 		 iPhysicsCreatedDynamicMesh = 0;

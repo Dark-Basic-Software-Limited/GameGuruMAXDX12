@@ -22,7 +22,6 @@ void grass_buildblankgrass ( void );
 void grass_buildblankgrass_fornew ( void );
 void grass_free ( void );
 void grass_changevegstyle(void);
-
 void grass_editcontrol(void);
 void grass_paint(void);
 void grass_resetchoices(void);

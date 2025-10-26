@@ -559,14 +559,11 @@ void decalelement_create ( void )
 			t.decalelement[t.d].newparticle.emitterid = iEmitterID;
 
 			// orientation support for some new partidle effects
-			//if (t.decalelement[t.d].orient == 0)
-			{
-				// always face camera using Y angle only
-				t.decalelement[t.d].newparticle.bParticle_LocalRot_Used = true;
-				float fCorrectAngleForParticlesToSpray = GGToDegree(atan2(t.tdxx, t.tdzz)); // angle from camera to point we hit
-				fCorrectAngleForParticlesToSpray += 90; // but rotate 90 degrees as FOUNTAIN_DIRECTION pours out to the RIGHT, so need to pour at us (-Z)
-				t.decalelement[t.d].newparticle.bParticle_LocalRot_Y = fCorrectAngleForParticlesToSpray;
-			}
+			// always face camera using Y angle only
+			t.decalelement[t.d].newparticle.bParticle_LocalRot_Used = true;
+			float fCorrectAngleForParticlesToSpray = GGToDegree(atan2(t.tdxx, t.tdzz)); // angle from camera to point we hit
+			fCorrectAngleForParticlesToSpray += 90; // but rotate 90 degrees as FOUNTAIN_DIRECTION pours out to the RIGHT, so need to pour at us (-Z)
+			t.decalelement[t.d].newparticle.bParticle_LocalRot_Y = fCorrectAngleForParticlesToSpray;
 
 			// no object required
 			t.tobj = 0;
@@ -585,14 +582,11 @@ void decalelement_create ( void )
 			t.decalelement[t.d].newparticle.emitterid = -2;
 
 			// orientation support for some new partidle effects
-			//if (t.decalelement[t.d].orient == 0)
-			{
-				// always face camera using Y angle only
-				t.decalelement[t.d].newparticle.bParticle_LocalRot_Used = true;
-				float fCorrectAngleForParticlesToSpray = GGToDegree(atan2(t.tdxx, t.tdzz)); // angle from camera to point we hit
-				fCorrectAngleForParticlesToSpray += 90; // but rotate 90 degrees as FOUNTAIN_DIRECTION pours out to the RIGHT, so need to pour at us (-Z)
-				t.decalelement[t.d].newparticle.bParticle_LocalRot_Y = fCorrectAngleForParticlesToSpray;
-			}
+			// always face camera using Y angle only
+			t.decalelement[t.d].newparticle.bParticle_LocalRot_Used = true;
+			float fCorrectAngleForParticlesToSpray = GGToDegree(atan2(t.tdxx, t.tdzz)); // angle from camera to point we hit
+			fCorrectAngleForParticlesToSpray += 90; // but rotate 90 degrees as FOUNTAIN_DIRECTION pours out to the RIGHT, so need to pour at us (-Z)
+			t.decalelement[t.d].newparticle.bParticle_LocalRot_Y = fCorrectAngleForParticlesToSpray;
 
 			// no object required
 			t.tobj = 0;
@@ -960,15 +954,7 @@ void decalelement_control ( void )
 							PointObject (t.tobj, t.tcamerapositionx_f, t.tcamerapositiony_f, t.tcamerapositionz_f);
 							XRotateObject (t.tobj, 0); ZRotateObject (t.tobj, 0);
 						}
-						//LB: this caused cull mode to be set, but never unset when decal reused! Missing decals bug - phew!
-						//if (  t.decalelement[t.f].orient == 2 ) 
-						//{
-						//SetObjectCull (  t.tobj,1 );
-						//}
-						//else
-						{
-							SetObjectCull (t.tobj, 0);
-						}
+						SetObjectCull (t.tobj, 0);
 						if (t.decalelement[t.f].orient == 3 || t.decalelement[t.f].orient == 11 || t.decalelement[t.f].orient == 12)
 						{
 							PointObject (t.tobj, t.tcamerapositionx_f, t.tcamerapositiony_f, t.tcamerapositionz_f);

@@ -897,7 +897,6 @@ void lua_setcameradistance ( void )
 	//PE: for lua script to trigger far plane changes.
 	//PE: t.visuals.refreshmaincameras = 1 do not work for near/farplane changes in wicked.
 	t.visuals.CameraFAR_f=t.v_f; //PE: Only to display it in tab tab.
-	//t.visuals.refreshmaincameras = 1;
 	void WickedCall_SetCameraFarPlanes(float farplane);
 	WickedCall_SetCameraFarPlanes(t.v_f);
 }

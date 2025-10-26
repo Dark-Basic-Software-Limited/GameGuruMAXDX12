@@ -57,7 +57,6 @@ void darkai_shootcharacter ( void );
 void darkai_character_remove_charpart ( void );
 void darkai_character_remove ( void );
 void darkai_character_loop ( void );
-void darkai_finalsettingofcharacterobjects ( void );
 void darkai_character_freezeall ( void );
 void darkai_assignanimtofield ( void );
 void char_createseqdata ( void );

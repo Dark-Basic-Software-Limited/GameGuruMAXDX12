@@ -397,7 +397,6 @@ void charactercreatorplus_GetDefaultCharacterPartNum (int iBase, int iPart, LPST
 		if (iPart == 2) { pPart = "01"; pPartVariant = "01"; } 
 		if (iPart == 3) { pPart = "01"; pPartVariant = "01"; }
 		if (iPart == 4) { pPart = "01"; pPartVariant = "01"; }
-		//if (iPart == 5) { pPart = "01"; pPartVariant = "01"; } no hair by default
 	}
 	strcpy (pPartNumStr, pPart);
 	if ( pPartNumVariantStr ) strcpy (pPartNumVariantStr, pPartVariant);
@@ -410,10 +409,6 @@ void charactercreatorplus_preloadallcharacterbasedefaults(void)
 	{
 		LPSTR pBase = NULL;
 		char pRelFile[MAX_PATH];
-		//if (base == 1) pBase = "adult male";
-		//if (base == 2) pBase = "adult female";
-		//if (base == 3) pBase = "zombie male";
-		//if (base == 4) pBase = "zombie female";
 		pBase = g_CharacterType[base-1].pPartsFolder;
 
 		//PE: Only preload from the current selected Type (when changing type we reset release the old textures anyway).
@@ -444,9 +439,6 @@ void charactercreatorplus_preloadallcharacterbasedefaults(void)
 					sprintf(pRelFile, "charactercreatorplus\\parts\\%s\\%s %s%s", pBase, pBase, pPart, pItem);
 					image_preload_files_add(pRelFile);
 				}
-				//PE: Disable until thread safe.
-				//sprintf(pRelFile, "charactercreatorplus\\parts\\%s\\%s %s%s", pBase, pBase, pPart, CCPMODELEXT);
-				//object_preload_files_add(pRelFile);
 			}
 		}
 	}
@@ -455,7 +447,6 @@ void charactercreatorplus_preloadallcharacterbasedefaults(void)
 void charactercreatorplus_preloadallcharacterpartchoices ( void )
 {
 	image_preload_files_start();
-	// object_preload_files_start(); //PE: Disable until thread safe.
 	static std::map<std::string, std::string> CharacterCreatorCurrent_s;
 	for (int part_loop = 0; part_loop < 10; part_loop++) 
 	{
@@ -507,7 +498,6 @@ void charactercreatorplus_preloadallcharacterpartchoices ( void )
 	// also add in any base model defaults
 	charactercreatorplus_preloadallcharacterbasedefaults();
 	image_preload_files_finish();
-	// object_preload_files_finish(); //PE: Disable until thread safe.
 }
 
 void charactercreatorplus_preparechange(char *path, int part, char* tag)
@@ -692,7 +682,6 @@ void charactercreatorplus_refreshskincolor(void)
 						int iB = ((DWORD)skinCol >> 16) & 0xFF;
 						int iG = ((DWORD)skinCol >> 8) & 0xFF;
 						int iR = ((DWORD)skinCol >> 0) & 0xFF;
-						//DWORD newSkinCol = (iA<<24)+(iR << 16)+(iG << 8)+iB; // strangely, we need to switch RGB/BGR to get PBG skin into albedo final
 						//PE: The problem was CreateImageFromMemblock+SaveImage would switch the colors each time it was called :)
 						DWORD newSkinCol = (iA << 24) + (iB << 16) + (iG << 8) + iR; // 
 						WriteMemblockDWord(iMemblockAlbedoID, imgOffset, newSkinCol);
@@ -864,7 +853,6 @@ void charactercreatorplus_change(char *path, int part, char* tag)
 			}
 
 			// User chose a new head, if there is an active headgear auto-swap, then reswap the head if needed.
-			/*if (iUserChoseCategory == 2)*/
 			if (iUserChoseCategory > 0 && iUserChoseCategory < 5)
 			{
 				for (int i = 0; i < g_previousAutoSwap->requiredSwapCategories.size(); i++)
@@ -1723,17 +1711,6 @@ void charactercreatorplus_refreshtype(void)
 				else
 					bActive = false;
 			}
-			//PE: szBeforeChangeWriteDir contain document folder if using remoteproject , needed ?
-			/*
-			if (strlen(szBeforeChangeWriteDir) > 0)
-			{
-				strcpy(pTempStr, szBeforeChangeWriteDir);
-				strcat(pTempStr, "Files\\");
-				strcat(pTempStr, "charactercreatorplus\\parts\\");
-				SetDir(pTempStr);
-				bActive = true;
-			}
-			*/
 		}
 		if (bActive)
 		{
@@ -2374,17 +2351,11 @@ void charactercreatorplus_refreshtype(void)
 
 	if (ObjectExist(iCharObjAccessory1) == 1)
 	{
-		//SetObjectCull(iCharObjAccessory1, 0);
-		//DisableObjectZWriteEx(iCharObjAccessory1, true);
-		//SetObjectTransparency(iCharObjAccessory1, 2);
 		StealMeshesFromObject(iCharObj, iCharObjAccessory1);
 		DeleteObject(iCharObjAccessory1);
 	}
 	if (ObjectExist(iCharObjAccessory2) == 1)
 	{
-		//SetObjectCull(iCharObjAccessory2, 0);
-		//DisableObjectZWriteEx(iCharObjAccessory2, true);
-		//SetObjectTransparency(iCharObjAccessory2, 2);
 		StealMeshesFromObject(iCharObj, iCharObjAccessory2);
 		DeleteObject(iCharObjAccessory2);
 	}
@@ -2438,7 +2409,6 @@ void charactercreatorplus_refreshtype(void)
 
 	// if it highly likely new users will go from male, female, girl and boy,
 	// so anticipate this by preloading the default sets of each just after a type selected
-	// preloadallcharacterpartchoices includes !!charactercreatorplus_preloadallcharacterbasedefaults!!
 	charactercreatorplus_preloadallcharacterpartchoices(); 
 
 	// finished legacy loading
@@ -2464,7 +2434,6 @@ void charactercreatorplus_refreshtype(void)
 
 	// Set default character behavior
 	char script[260];
-	//strcpy(script, "people\\");
 	switch (iBase)
 	{
 		case 1: strcpy(script, "character_attack.lua");
@@ -2486,9 +2455,6 @@ void charactercreatorplus_init(void)
 	// Initialisation prompt 
 	timestampactivity ( 0, "Start character creator plus initialisation" );
 	g_CharacterCreatorPlus.bInitialised = true;
-
-	// grab all char types from parts folder 
-	//charactercreatorplus_populatechartypes(); now done much earlier in mapexecutable!
 
 	// create voice list for choices
 	pCCPVoiceSet = "";
@@ -3260,56 +3226,6 @@ void change_dress_room(int charactertypeindex)
 		iLightIndex = scene.Entity_CreateLight("CCPLight", XMFLOAT3(0, 0, 0), XMFLOAT3(1, 1, 1), 7, 550, wiScene::LightComponent::LightType::POINT);
 		WickedCall_UpdateLight(iLightIndex, g_HeadTransition.to[0] + 100, g_HeadTransition.to[1] + 40, g_HeadTransition.to[2] - 110, 0, 0, 0, 550, 0, 255, 255, 255, true);
 
-		/* old method, new one allows custom rooms
-		if (current_dress_room == 0)
-		{
-			LoadObject("charactercreatorplus\\locker room.dbo", iDressRoom);
-			LoadImage("charactercreatorplus\\locker room_color.dds", iDressRoomImage);
-			newVisuals.SunIntensity_f = 0.0f;
-			wiScene::Scene& scene = wiScene::GetScene();
-			iLightIndex = scene.Entity_CreateLight("CCPLight", XMFLOAT3(0, 0, 0),
-				XMFLOAT3(1, 1, 1), 7, 550, wiScene::LightComponent::LightType::POINT);
-			WickedCall_UpdateLight(iLightIndex, g_HeadTransition.to[0]+100, g_HeadTransition.to[1]+40, g_HeadTransition.to[2]-110,
-				0, 0, 0, 550, 0, 255, 255, 255, true);
-			
-		}
-		else if (current_dress_room == 1)
-		{
-			LoadObject("charactercreatorplus\\dressing room.dbo", iDressRoom);
-			LoadImage("charactercreatorplus\\pine dressing room.dds", iDressRoomImage);
-			newVisuals.SunIntensity_f = 0.0f;
-			wiScene::Scene& scene = wiScene::GetScene();
-			iLightIndex = scene.Entity_CreateLight("CCPLight", XMFLOAT3(0, 0, 0),
-				XMFLOAT3(1, 1, 1), 7, 550, wiScene::LightComponent::LightType::POINT);
-			WickedCall_UpdateLight(iLightIndex, g_HeadTransition.to[0] + 100, g_HeadTransition.to[1] + 40, g_HeadTransition.to[2] - 110,
-				0, 0, 0, 550, 0, 255, 255, 255, true);
-		}
-		else
-		{
-			LoadObject("charactercreatorplus\\zombie locker room001.dbo", iDressRoom);
-			LoadImage("charactercreatorplus\\zombie locker room_color.dds", iDressRoomImage);
-
-			// Darken zombie locker rooms.
-			newVisuals.AmbienceRed_f = 30;
-			newVisuals.AmbienceGreen_f = 30;
-			newVisuals.AmbienceBlue_f = 30;
-			// Don't want any shadows from the sun in the room.
-			newVisuals.SunRed_f = 0;
-			newVisuals.SunGreen_f = 0;
-			newVisuals.SunBlue_f = 0;
-
-			// Zombie locker rooms are lit.
-			//shadertype = wiScene::MaterialComponent::SHADERTYPE_PBR;
-
-			// Add a spotlight pointing at the character.
-			wiScene::Scene& scene = wiScene::GetScene();
-			iLightIndex = scene.Entity_CreateLight("CCPLight", XMFLOAT3(0,0,0),
-				XMFLOAT3(1, 1, 1), 12, 1000, wiScene::LightComponent::LightType::SPOT);
-			WickedCall_UpdateLight(iLightIndex, g_DefaultCamPosition[0], g_DefaultCamPosition[1], g_DefaultCamPosition[2],
-				g_DefaultCamAngle[0] +12, g_DefaultCamAngle[1], g_DefaultCamAngle[2], 1000, 34, 255, 255, 255, true);
-		}
-		*/
-
 		// The current settings will not be stored, as they are already stored in t.visualsStorage, so create throwaway object.
 		visualsdatastoragetype throwaway;
 		set_temp_visuals(t.visuals, throwaway, newVisuals);
@@ -3382,10 +3298,7 @@ void charactercreatorplus_imgui_v3(void)
 
 			charactercreatorplus_performcameratransition();
 
-			//static float fFreezeCamX = 0.0, fFreezeCamY = 0.0 , fFreezeCamZ = 0.0, fFreezeCamAX = 0.0, fFreezeCamAY = 0.0, fFreezeCamAZ = 0.0;
-			//static float fFreezeCamZoomX = 0.0f, fFreezeCamZoomY = 0.0f, fFreezeCamZoomZ = 0.0f, fFreezeCamZoomAX = 0.0f;
 			// handle in-level visuals
-	
 			if (!bCharObjVisible)
 			{
 				oldtcameraviewmode = t.cameraviewmode;
@@ -3427,7 +3340,6 @@ void charactercreatorplus_imgui_v3(void)
 				ccpTargetAX = t.editorfreeflight.c.angx_f;
 				ccpTargetAY = t.editorfreeflight.c.angy_f;
 
-				//float terrain_height = BT_GetGroundHeight(t.terrain.TerrainID, ccpTargetX, ccpTargetZ, 1);
 				fCharObjectY = 180000.0f;
 
 				float oangx = ObjectAngleX(iCharObj);
@@ -3470,7 +3382,6 @@ void charactercreatorplus_imgui_v3(void)
 				//Restore real input.
 				input_calculatelocalcursor();
 
-				//terrain_height = BT_GetGroundHeight(t.terrain.TerrainID, ccpTargetX, ccpTargetZ, 1);
 				fCharObjectY = 180000.0f;
 
 				t.editorfreeflight.c.x_f = ccpTargetX;
@@ -3484,7 +3395,6 @@ void charactercreatorplus_imgui_v3(void)
 				// Set default visuals for the Character Creator, and restore them when leaving.
 				visualsdatastoragetype desiredVisuals;
 				set_temp_visuals(t.visuals, t.visualsStorage, desiredVisuals);
-				//t.visuals.refreshskysettings = 1; keep custom settings
 				visuals_loop();
 
 				fCharObjectY = 180000.0f;
@@ -3630,7 +3540,6 @@ void charactercreatorplus_imgui_v3(void)
 			ImGui::PushItemWidth(ImGui::GetFontSize()*10.0);
 			
 			// ZJ: Made global so when user has auto close enabled, the selection is still known.
-			//int item_current_type_selection = 0;
 			static int ccp_part_selection = 5;
 			static int item_current_room_selection = 0;
 
@@ -4076,10 +3985,7 @@ void charactercreatorplus_imgui_v3(void)
 
 					ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 					ImGui::TextCenter(field_name.Get());
-					//ImGui::SameLine();
 					ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
-
-					//ImGui::SetCursorPos(ImVec2(col_start, ImGui::GetCursorPosY()));
 
 					float Color_gadget_size = ImGui::GetFontSize()*2.0;
 
@@ -4103,7 +4009,6 @@ void charactercreatorplus_imgui_v3(void)
 					if (rows > 3) rows = 3;
 
 					partsheight = 60.0f * rows;
-					//partsheight = ImGui::GetContentRegionAvail().y / 11 * rows;
 					if(rows == 1)
 						partsheight = ImGui::GetContentRegionAvail().y / 9.5f * rows;
 					else
@@ -4205,12 +4110,9 @@ void charactercreatorplus_imgui_v3(void)
 							// hide the icon for any restricted part (part that doesn't work with another part).
 							for (int i = 0; i < g_restrictedParts.size(); i++)
 							{
-								//if (strstr(annotated_label.c_str(), g_restrictedParts[i]))
 								if (strstr(annotated->second.c_str(), g_restrictedParts[i]))
 								{
 									bIconRestricted = true;
-									//IconColor = ImVec4(0.05f, 0.05f, 0.05f, 1.0f);
-									//HoverColor = ImVec4(0.05f, 0.05f, 0.05f, 1.0f);
 									break;
 								}
 							}
@@ -4301,10 +4203,6 @@ void charactercreatorplus_imgui_v3(void)
 						// ZJ: Following feedback, the two line gap was removed.
 						ImGui::Spacing();
 
-						//Hitting exactly at the botton could cause flicker, so add some additional lines when scrollbar on.
-						//ImGui::Text("");
-						//ImGui::Text("");
-
 					}
 					ImGui::EndChild();
 
@@ -4344,7 +4242,6 @@ void charactercreatorplus_imgui_v3(void)
 				//	Zoom in/out to character.
 				ImGui::TextCenter("Zoom");
 				ImGui::Indent(10.0f);
-				//float fTmp = (g_fCCPZoom - 50.0f) * 2.0f;
 				if (ImGui::MaxSliderInputFloat("##CCPZoom", &g_fCCPZoom, 0.0f, 100.0f, "Adjust Zoom"))
 				{
 					charactercreatorplus_dozoom();
@@ -4570,7 +4467,6 @@ void charactercreatorplus_imgui_v3(void)
 								g_CharacterCreatorPlus.obj.settings.voice_s = pCCPVoiceSet;
 								g_CharacterCreatorPlus.obj.settings.iSpeakRate = CCP_Speak_Rate;
 								int iCharObj = g.characterkitobjectoffset + 1;
-								//g_grideleprof_holdchoices.hasweapon_s.Get()
 
 								// Character names saved starting with a space don't save correctly. Wipe out spaces before characters.
 								int iSpaceBeforeCharCount = 0;
@@ -4700,10 +4596,6 @@ void charactercreatorplus_imgui_v3(void)
 				object_preload_files_wait(); // If it is still working on loading, it will crash when data is reset.
 				object_preload_files_reset();
 
-				//PE: No need to preload these, as we will use the last setup the user made, and not these predefined next time they enter CCP.
-				//PE: So we should only do this when user have not already been in CCP.
-				//charactercreatorplus_preloadinitialcharacter();
-
 				// hide character creator model
 				HideObject(iCharObj);
 
@@ -4778,7 +4670,6 @@ void charactercreatorplus_getautoswapdata(char* filename)
 			char pLeft[128];
 			char pRight[128];
 			bool bIsNewAutoSwap = false;
-			//LPSTR pEquals = strstr(pLeft, "=");
 			char* pEquals = strstr(line_s.Get(), "=");
 
 			if (pEquals)
@@ -4788,12 +4679,6 @@ void charactercreatorplus_getautoswapdata(char* filename)
 
 			if (!pEquals)
 			{
-				// Can't parse values.
-				if (pAutoSwapData)
-				{
-					//delete pAutoSwapData;
-					//pAutoSwapData = nullptr;
-				}
 				CloseFile(1);
 				return;
 			}
@@ -4802,8 +4687,6 @@ void charactercreatorplus_getautoswapdata(char* filename)
 			strcpy(pRight, pEquals + 2);
 			strcpy(pLeft, line_s.Get());
 			pLeft[strlen(pLeft) - strlen(pEquals) - 1] = 0;
-			//pLeft = line_s.Get();
-			//pRight = line_s.Get() + *pEquals;
 			
 			if (bIsNewAutoSwap)
 			{

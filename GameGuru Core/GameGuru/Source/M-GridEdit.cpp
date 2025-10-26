@@ -20,7 +20,6 @@
 #endif
 
 #ifdef STORYBOARD
-//#include "..\..\GameGuru\Imgui\imnodes.cpp" now added to project to compile the CPP
 #include "..\..\GameGuru\Imgui\imnodes.h"
 int grideleprof_uniqui_id = 35000;
 #define MAXTEXTINPUT 1024
@@ -39,7 +38,6 @@ std::vector<std::string> projectbank_image;
 std::vector<int> projectbank_imageid;
 std::vector<int> projectbank_active;
 StoryboardStruct Storyboard;
-//StoryboardStruct StoryboardBackup; //PE: Not used.
 StoryboardStruct checkproject;
 StoryboardStruct202 updateproject202;
 std::vector< std::pair<ImFont*, std::string>> StoryboardFonts;
@@ -96,7 +94,6 @@ bool g_bChangedGameCollectionList = false;
 bool g_bUpdateCollectionList = false;
 bool g_bSelectedNewObjectToAddToLevel = false;
 
-//#include "M-CharacterCreatorPlusTTS.h" now done in new header
 #include <algorithm>
 #include <string>
 #include <time.h>
@@ -146,7 +143,6 @@ using namespace GGGrass;
 extern sObject* g_selected_editor_object;
 extern int g_selected_editor_objectID;
 extern XMFLOAT4 g_selected_editor_color;
-//bool bEditorGridFitObjectSize = false;
 int iEditorGridSizeX = 100;
 int iEditorGridSizeZ = 100;
 bool bRenderTabTab = false;
@@ -520,7 +516,6 @@ int iColumns_leftpanel = 0;
 bool bDisplayText_leftpanel = true;
 float fFontSize_leftpanel = 1.0;
 
-//entityeleproftype backup_grideleprof;  //PE: We dont use a cancel system anymore.
 cFolderItem::sFolderFiles *pDragDropFile = NULL;
 int iOldgridentity = -1;
 float fPropertiesColoumWidth = 100.0f;
@@ -618,10 +613,6 @@ void EmptyMessages(void);
 void set_inputsys_mclick(int value)
 {
 	t.inputsys.mclick = value;
-
-	//char pDebugMouseClick[32];
-	//sprintf(pDebugMouseClick, "inputsys.mclick = %d", t.inputsys.mclick);
-	//timestampactivity(0, pDebugMouseClick);
 }
 
 #ifdef VRTECH
@@ -690,8 +681,6 @@ void gridedit_triggermessagehandler (bool bForceMessageNoFade)
 			//PE: Now always center on viewport instead of rendertarget. as we now are inside storyboard.
 			ImVec2 viewPortPos = ImGui::GetMainViewport()->Pos;
 			ImVec2 viewPortSize = ImGui::GetMainViewport()->Size;
-			//ImGui::SetNextWindowPos(viewPortPos + ImVec2(200, 130), ImGuiCond_Always);
-			//ImGui::SetNextWindowSize(ImVec2(viewPortSize.x - 400, 0), ImGuiCond_Always); // been wanting to get the message inside the level editor viewport for a while now
 			ImGui::SetNextWindowPos(viewPortPos + ImVec2(350, 130), ImGuiCond_Always);
 			ImGui::SetNextWindowSize(ImVec2(viewPortSize.x - 700, 0), ImGuiCond_Always);
 		}
@@ -793,7 +782,6 @@ void vr_init (void)
 			if (g.gvrmode > 0)
 			{
 				// Give portal enough time to start its launch, then get rid of GameWindow until we need it!
-				//Sleep(1900); seems daft pausing every launch just in case WMR Portal is not already active, reduce
 				Sleep(10);
 				CloseWindow(g_pGlob->hOriginalhWnd);
 				Sleep(10);
@@ -939,7 +927,6 @@ void mapeditorexecutable_init ( void )
 			#ifdef WICKEDENGINE
 			t.terrain.grassregionx1 = t.terrain.grassregionx2;
 			grass_init();
-			//bUpdateVeg = true;
 			extern int g_iSuperTriggerFullGrassReveal; // hmm, shoved in to get the damn grass showing on initial load!
 			g_iSuperTriggerFullGrassReveal = 10;
 			#endif
@@ -952,7 +939,6 @@ void mapeditorexecutable_init ( void )
 		t.tsplashstatusprogress_s="";
 		timestampactivity(0,t.tsplashstatusprogress_s.Get());
 		version_splashtext_statusupdate ( );
-		//version_splashtext ( );
 	}
 
 	//  trigger zoom to aquire camera range for editor
@@ -1568,21 +1554,11 @@ bool commonexecutable_loop_for_game(void)
 		}
 		if (iTriggerGrassTreeUpdate == 1)
 		{
-			//PE: Still not fully working if you move from one area to another and terrain at camera is getting updated, and tree/veg dont update ?
-			//if (GGGrass::GGGrass_UpdateInstances() == 0)
-			//{
-			//	//PE: Failed try again.
-			//	iTriggerGrassTreeUpdate++;
-			//}
-
-			{
-				ggterrain_extra_params.iUpdateGrass = 1;
-				ggterrain_extra_params.iUpdateTrees = 1;
-				//PE: Also update probe after terrain is done.
-				extern bool g_bLightProbeScaleChanged;
-				g_bLightProbeScaleChanged = true;
-
-			}
+			ggterrain_extra_params.iUpdateGrass = 1;
+			ggterrain_extra_params.iUpdateTrees = 1;
+			//PE: Also update probe after terrain is done.
+			extern bool g_bLightProbeScaleChanged;
+			g_bLightProbeScaleChanged = true;
 		}
 		iTriggerGrassTreeUpdate--;
 	}
@@ -2044,33 +2020,6 @@ void launchOrShowEditorCore ( char* pFolderName, char* pWindowNameA, char* pWind
 		// found you!
 		WindowToFront(pEditorWindowTitle);
 	}
-	/*
-	char pOldDir[MAX_PATH];
-	strcpy(pOldDir, GetDir());
-	SetDir("..");
-	SetDir("Tools\\Particle Editor\\");
-	LPSTR pParticleEditorWindowTitle = "Particle Editor 0.7b";
-	if (WindowExist(pParticleEditorWindowTitle) == 0)
-	{
-		pParticleEditorWindowTitle = "Particle Editor";
-		if (WindowExist(pParticleEditorWindowTitle) == 0)
-		{
-			// not here, launch it!
-			ExecuteFile("particle_editor.exe", "", "");
-		}
-		else
-		{
-			// found you!
-			WindowToFront(pParticleEditorWindowTitle);
-		}
-	}
-	else
-	{
-		// found you!
-		WindowToFront(pParticleEditorWindowTitle);
-	}
-	SetDir(pOldDir);
-	*/
 }
 
 void launchOrShowParticleEditor(void)
@@ -2312,15 +2261,8 @@ void mapeditorexecutable_loop(void)
 					}
 				}
 
-				#ifdef WICKEDENGINE
-				//PE: Just let the old fade out.
-				//strcpy(cTriggerMessage, "Level loaded");
-				//bTriggerMessage = true;
-				#endif
 				iLastUpdateVeg = 0;
 				bUpdateVeg = true;
-				//extern bool bFullVegUpdate;
-				//bFullVegUpdate = true; // seems to be a lot of bUpdateVeg=true calls, but no good at showing grass initially, needed bFullVegUpdate ?!? 
 				extern int g_iSuperTriggerFullGrassReveal; // hmm, shoved in to get the damn grass showing on initial load!
 				g_iSuperTriggerFullGrassReveal = 10;
 
@@ -2345,8 +2287,6 @@ void mapeditorexecutable_loop(void)
 				iRet = AskSaveBeforeNewAction();
 				if (iRet != 2)
 				{
-					//t.returnstring_s must have full path to .fpm.
-
 					//PE: filedialogs change dir so.
 					cStr tOldDir = GetDir();
 
@@ -2883,8 +2823,6 @@ void mapeditorexecutable_loop(void)
 
 		ImVec4 drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 		float fDiv = 1.0f / 255.0f;
-		//ImVec4 drawCol_Divider_Selected = ImVec4(0.4f, 0.8f, 1.0f, 1.0f);
-		//ImVec4 drawCol_Divider_Selected = ImVec4(fDiv * 142.0f, fDiv * 184.0f, fDiv * 212.0f, 1.0f);
 		ImVec4 drawCol_Divider_Selected = ImVec4(fDiv * 177.0f, fDiv * 206.0f, fDiv * 225.0f, 1.0f);
 		if (pref.current_style == 25) 
 		{
@@ -3158,22 +3096,6 @@ void mapeditorexecutable_loop(void)
 		ImGui::SameLine();
 		#endif
 
-		/*
-		CheckTutorialAction("TOOL_NEWWAYPOINTS", -10.0f); //Tutorial: check if we are waiting for this action
-		if (ImGui::ImgBtn(TOOL_NEWWAYPOINTS, iToolbarIconSize, drawCol_back_waypoint, drawCol_normal*drawCol_Selection, drawCol_hover, drawCol_Down,0, 0, 0, 0, false, toolbar_gradiant)) {
-
-			CloseAllOpenTools();
-			if (bTutorialCheckAction) TutorialNextAction();
-
-			bWaypoint_Window = true;
-			bForceKey = true;
-			csForceKey = "p";
-			t.inputsys.domodewaypointcreate = 1;
-		}
-		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Create New Waypoint");
-		ImGui::SameLine();
-		*/
-
 		#ifndef WICKEDENGINE
 		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPos().x + 2.0f, ImGui::GetCursorPos().y));
 		CheckTutorialAction("TOOL_CCP", -10.0f); //Tutorial: check if we are waiting for this action
@@ -3262,17 +3184,11 @@ void mapeditorexecutable_loop(void)
 
 
 		CheckTutorialAction("TOOL_TESTGAME", -10.0f); //Tutorial: check if we are waiting for this action
-		//if (ImGui::ImgBtn(TOOL_TESTGAME, iToolbarIconSize, drawCol_back_test, drawCol_normal*drawCol_Selection, drawCol_hover, drawCol_Down,0, 0, 0, 0, false, toolbar_gradiant)) {
 		if (ImGui::ImgBtn(TOOL_TESTGAME, iToolbarIconSize, drawCol_tmp, drawCol_normal/**drawCol_Selection*/, drawCol_hover, drawCol_Down,0, 0, 0, 0, false, toolbar_gradiant,false,false,false, bBoostIconColors))
 		{
 			CloseAllOpenTools(false);
 			if (bTutorialCheckAction) TutorialNextAction();
-
-			//#ifdef WICKEDENGINE
-			//MessageBoxA(NULL, "Test Game will return when model loading working", "Not In Alpha", MB_OK);
-			//#else
 			iLaunchAfterSync = 1;
-			//#endif
 		}
 
 		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Test Level");
@@ -3284,7 +3200,6 @@ void mapeditorexecutable_loop(void)
 		// VR Mode
 		if (g.gvrmode > 0 && g.gvrmodefordevelopers == 1)
 		{
-			//CheckTutorialAction("TOOL_VRMODE", -10.0f); //Tutorial: check if we are waiting for this action
 			if (ImGui::ImgBtn(TOOL_VRMODE, iToolbarIconSize, drawCol_tmp, drawCol_normal*drawCol_Selection, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant, false, false, false, bBoostIconColors))
 			{
 				CloseAllOpenTools();
@@ -3336,171 +3251,14 @@ void mapeditorexecutable_loop(void)
 
 #ifdef WICKEDENGINE
 
-//		float rightx = ImGui::GetContentRegionAvailWidth();
 		float rightx = ImGui::GetContentRegionMax().x;
 		float right_border = 2.0f;
-
-		/*
-		CheckTutorialAction("TOOL_VISUALS", -10.0f); //Tutorial: check if we are waiting for this action
-		if (current_mode == TOOL_VISUALS) drawCol_tmp = drawCol_back_terrain_tools * drawCol_back_active; else drawCol_tmp = drawCol_back_terrain_tools;
-		if (current_mode == TOOL_VISUALS && pref.current_style >= 0) window->DrawList->AddRect((window->DC.CursorPos - tool_selected_padding), window->DC.CursorPos + tool_selected_padding + iToolbarIconSize, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-		if (ImGui::ImgBtn(TOOL_VISUALS, iToolbarIconSize, drawCol_tmp, drawCol_normal*drawCol_Selection, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant))
-		{
-			CloseAllOpenTools();
-			if (bTutorialCheckAction) TutorialNextAction();
-
-			Visuals_Tools_Window = true;
-			//PE: Switch to entity mode, to remove terrain circle.
-			bForceKey = true;
-			csForceKey = "e";
-
-		}
-		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Environment Effects");
-
-		*/
 
 		//########################
 		//#### Toggle Buttons ####
 		//########################
 
 		ImVec4 toggle_color;
-
-		/* new design does not need separate RPG and PUZZLE toolbars
-		//RPG Start
-		bool bRPGToggle = false; // = RPG_Tools_Window (when ready to be used).
-		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 8), ImGui::GetCursorPos().y));
-		toggle_color = drawCol_toogle;
-		if (pref.current_style == 25) drawCol_Selection = drawCol_Divider_Selected;
-		if (!bRPGToggle) {
-			drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-			toggle_color = drawCol_back_test;
-		}
-
-		if (ImGui::ImgBtn(TOOL_RPG, iToolbarIconSize, toggle_color, drawCol_normal, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant, false, false, false, bBoostIconColors)) 
-		{
-			bInfo_Window = true;
-			cInfoMessage = "Future Feature: New Game Elements and Behavior logic will be added during the Early Access development phase that will allow you to create RPG style games.";
-			if (0) //PE: Set to 1 when window ready.
-			{
-				if (iRestoreLastWindow == 0 && !pref.iEnableSingleRightPanelAdvanced)
-				{
-					if (bTerrain_Tools_Window)
-						iRestoreLastWindow = 1;
-					else
-						iRestoreLastWindow = 2;
-				}
-				if (!pref.iEnableSingleRightPanelAdvanced)
-					CloseAllOpenTools();
-
-				if (Puzzle_Tools_Window) {
-
-					Puzzle_Tools_Window = false;
-					if (iRestoreLastWindow >= 0 && !pref.iEnableSingleRightPanelAdvanced)
-					{
-						if (iRestoreLastWindow == 1)
-						{
-							bTerrain_Tools_Window = true;
-							t.grideditselect = 0;
-						}
-						else
-						{
-							bForceKey = true;
-							csForceKey = "o";
-							Entity_Tools_Window = true;
-						}
-						iRestoreLastWindow = 0;
-					}
-				}
-				else {
-					Puzzle_Tools_Window = true;
-					if (!pref.iEnableSingleRightPanelAdvanced)
-					{
-						if (Weather_Tools_Window)
-							Weather_Tools_Window = false;
-						if (Visuals_Tools_Window)
-							Visuals_Tools_Window = false;
-						Entity_Tools_Window = false;
-					}
-					t.inputsys.dowaypointview = 0;
-					t.gridentitymarkersmodeonly = 0;
-					t.grideditselect = 5;
-
-				}
-			}
-		}
-
-		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "RPG Games (This feature not yet available)");
-		ImGui::SameLine();
-
-		//RPG End
-
-		//Puzzle Start
-		bool bPuzzleToggle = false; // = Puzzle_Tools_Window (when ready to be used).
-		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 7), ImGui::GetCursorPos().y));
-		toggle_color = drawCol_toogle;
-		if (pref.current_style == 25) drawCol_Selection = drawCol_Divider_Selected;
-		if (!bPuzzleToggle) {
-			drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-			toggle_color = drawCol_back_test;
-		}
-
-		if (ImGui::ImgBtn(TOOL_PUZZLE, iToolbarIconSize, toggle_color, drawCol_normal, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant, false, false, false, bBoostIconColors)) {
-			bInfo_Window = true;
-			cInfoMessage = "Future Feature: New Game Elements and Behavior logic will be added during the Early Access development phase that will allow you to create Puzzle style games.";
-			if (0) //PE: Set to 1 when window ready.
-			{
-				if (iRestoreLastWindow == 0 && !pref.iEnableSingleRightPanelAdvanced)
-				{
-					if (bTerrain_Tools_Window)
-						iRestoreLastWindow = 1;
-					else
-						iRestoreLastWindow = 2;
-				}
-				if (!pref.iEnableSingleRightPanelAdvanced)
-					CloseAllOpenTools();
-
-				if (Puzzle_Tools_Window) {
-
-					Puzzle_Tools_Window = false;
-					if (iRestoreLastWindow >= 0 && !pref.iEnableSingleRightPanelAdvanced)
-					{
-						if (iRestoreLastWindow == 1)
-						{
-							bTerrain_Tools_Window = true;
-							t.grideditselect = 0;
-						}
-						else
-						{
-							bForceKey = true;
-							csForceKey = "o";
-							Entity_Tools_Window = true;
-						}
-						iRestoreLastWindow = 0;
-					}
-				}
-				else {
-					Puzzle_Tools_Window = true;
-					if (!pref.iEnableSingleRightPanelAdvanced)
-					{
-						if (Weather_Tools_Window)
-							Weather_Tools_Window = false;
-						if (Visuals_Tools_Window)
-							Visuals_Tools_Window = false;
-						Entity_Tools_Window = false;
-					}
-					t.inputsys.dowaypointview = 0;
-					t.gridentitymarkersmodeonly = 0;
-					t.grideditselect = 5;
-
-				}
-			}
-		}
-
-		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Puzzle Games (This feature not yet available)");
-		ImGui::SameLine();
-		//Puzzle End
-		*/
-
 
 		//------------------------------------------------------------------
 
@@ -3547,7 +3305,6 @@ void mapeditorexecutable_loop(void)
 
 		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 6), ImGui::GetCursorPos().y));
 
-		//ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPos().x + 2.0f, ImGui::GetCursorPos().y));
 		drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 		CheckTutorialAction("TOOL_ENTITY", -10.0f); //Tutorial: check if we are waiting for this action
 		if (current_mode == TOOL_ENTITY || current_mode == TOOL_LOGIC) drawCol_tmp = drawCol_back_entities * drawCol_back_active; else drawCol_tmp = drawCol_back_entities;
@@ -3584,31 +3341,12 @@ void mapeditorexecutable_loop(void)
 		// Logic Toolbar - was Shooter Start
 		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 5), ImGui::GetCursorPos().y));
 
-		//ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPos().x + 2.0f, ImGui::GetCursorPos().y));
-		
-		//PE: Changed to toggle icon like all the others, also has its own window now.
-		/*
-		toggle_color = drawCol_toogle;
-		if (pref.current_style == 25) drawCol_Selection = drawCol_Divider_Selected;
-		if (!Shooter_Tools_Window) 
-		{
-			drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-			toggle_color = drawCol_back_test;
-		}
-		else
-		{
-			window->DrawList->AddRect((window->DC.CursorPos - tool_selected_padding), window->DC.CursorPos + tool_selected_padding + iToolbarIconSize, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-		}
-		*/
-
 		toggle_color = drawCol_toogle;
 		if (pref.current_style == 25) drawCol_Selection = drawCol_Divider_Selected;
 		if (!Shooter_Tools_Window) {
 			drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 			toggle_color = drawCol_back_test;
 		}
-
-
 
 		if (ImGui::ImgBtn(TOOL_LOGIC, iToolbarIconSize, toggle_color, drawCol_normal/**drawCol_Selection*/, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant, false, false, false, bBoostIconColors))
 		{
@@ -3662,25 +3400,6 @@ void mapeditorexecutable_loop(void)
 				}
 			}
 			Logic_Settings_Window = Shooter_Tools_Window;
-			/* OLD
-			//LB: Shooter now a filter mode toggle only
-			if (Shooter_Tools_Window)
-				Shooter_Tools_Window = false;
-			else
-				Shooter_Tools_Window = true;
-			Logic_Settings_Window = Shooter_Tools_Window;
-			if (Logic_Settings_Window)
-			{
-				if (!pref.iEnableSingleRightPanelAdvanced)
-				{
-					Visuals_Tools_Window = false;
-					Game_Settings_Window = false;
-					if (Weather_Tools_Window)
-						Weather_Tools_Window = false;
-					Entity_Tools_Window = false;
-				}
-			}
-			*/
 		}
 		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Visual Logic Connections");
 		ImGui::SameLine();
@@ -3794,71 +3513,12 @@ void mapeditorexecutable_loop(void)
 				{
 					if (Visuals_Tools_Window)
 						Visuals_Tools_Window = false;
-					//LB: Shooter now a filter mode
-					//if (Shooter_Tools_Window)
-					//	Shooter_Tools_Window = false;
 					Entity_Tools_Window = false;
 				}
 			}
 		}
 		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Game Settings");
 		ImGui::SameLine();
-
-
-		/*
-		if (!Weather_Tools_Window)
-		{
-			drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-			toggle_color = drawCol_back_test;
-		}
-		if (ImGui::ImgBtn(ENV_WEATHER, iToolbarIconSize, toggle_color, drawCol_normal, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant,false,false,false, bBoostIconColors)) 
-		{
-			//Display weather window.
-			if (iRestoreLastWindow == 0 && !pref.iEnableSingleRightPanelAdvanced)
-			{
-				if (bTerrain_Tools_Window)
-					iRestoreLastWindow = 1;
-				else
-					iRestoreLastWindow = 2;
-			}
-			if (!pref.iEnableSingleRightPanelAdvanced)
-				CloseAllOpenTools();
-			if (Weather_Tools_Window) 
-			{
-				Weather_Tools_Window = false;
-				if (iRestoreLastWindow >= 0 && !pref.iEnableSingleRightPanelAdvanced)
-				{
-					if (iRestoreLastWindow == 1)
-					{
-						bTerrain_Tools_Window = true;
-						t.grideditselect = 0;
-					}
-					else
-					{
-						bForceKey = true;
-						csForceKey = "o";
-						Entity_Tools_Window = true;
-					}
-					iRestoreLastWindow = 0;
-				}
-			}
-			else 
-			{
-				Weather_Tools_Window = true;
-				if (!pref.iEnableSingleRightPanelAdvanced)
-				{
-					if (Visuals_Tools_Window)
-						Visuals_Tools_Window = false;
-					//LB: Shooter now a filter mode
-					//if (Shooter_Tools_Window)
-					//	Shooter_Tools_Window = false;
-					Entity_Tools_Window = false;
-				}
-			}
-		}
-		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Weather Settings");
-		ImGui::SameLine();
-		*/
 
 		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 2), ImGui::GetCursorPos().y));
 		toggle_color = drawCol_toogle;
@@ -3883,11 +3543,6 @@ void mapeditorexecutable_loop(void)
 		bool bIsTopDownStatus = !(bool)t.editorfreeflight.mode;
 		toggle_color = drawCol_toogle;
 		if (pref.current_style == 25) drawCol_Selection = drawCol_Divider_Selected;
-		//if (bIsTopDownStatus)
-		//{
-		//	drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-		//	toggle_color = drawCol_back_test;
-		//}
 		drawCol_Selection = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 		toggle_color = drawCol_back_test;
 
@@ -3907,20 +3562,6 @@ void mapeditorexecutable_loop(void)
 			}
 		}
 		if (ImGui::IsItemHovered() && iSkibFramesBeforeLaunch == 0) ImGui::SetTooltip("%s", "Camera View");
-
-		/* PE: Removed.
-		ImGui::SameLine();
-		ImGui::SetCursorPos(ImVec2(rightx - right_border - (precise_icon_width * 1), ImGui::GetCursorPos().y));
-		
-		if (ImGui::ImgBtn(QUESTION_ICON, iToolbarIconSize, toggle_color, drawCol_normal, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, toolbar_gradiant,
-			false, false, false, bBoostIconColors))
-		{
-			//ExecuteFile("https://gameguru-max.document360.io/docs/test-topic", "", "", 0);
-			ExecuteFile("..\\Guides\\User Manual\\GameGuru MAX - User Guide.pdf", "", "", 0);
-		}
-		if (ImGui::IsItemHovered())ImGui::SetTooltip("Open GameGuru MAX User Guide");
-		*/
-
 		#endif
 
 		ImGui::PopStyleVar();
@@ -4513,17 +4154,6 @@ void mapeditorexecutable_loop(void)
 					iDrawPoints = 0;
 
 				}
-				//Old waypoint system.
-//					if (ImGui::MenuItem("Create New Path")) {
-//						if (bImporter_Window) { importer_quit(); bImporter_Window = false; }
-//						if (g_bCharacterCreatorPlusActivated) g_bCharacterCreatorPlusActivated = false;
-//						if (bEntity_Properties_Window) bEntity_Properties_Window = false;
-//						if (t.ebe.on == 1) ebe_hide();
-//						bWaypoint_Window = true;
-//						bForceKey = true;
-//						csForceKey = "p";
-//						t.inputsys.domodewaypointcreate = 1;
-//					}
 
 				ImGui::EndMenu();
 			}
@@ -4606,17 +4236,6 @@ void mapeditorexecutable_loop(void)
 
 				image_setlegacyimageloading(true);
 
-				// ZJ: No longer needed.
-				/*				
-				#ifdef HIDE_MOVED_MENU_TO_STORYBOARD
-				if (ImGui::MenuItem("Editor Shortcuts", "F1")) {
-					strcpy(cHelpMenuImage, "languagebank\\english\\artwork\\quick-help.png");
-					LoadImage(cHelpMenuImage, HELPMENU_IMAGE);
-					bHelp_Menu_Image_Window = true;
-				}
-				#endif
-				*/
-
 				#ifndef WICKEDENGINE
 				if (ImGui::MenuItem("Editor Shortcuts","F1")) {
 					strcpy(cHelpMenuImage, "languagebank\\english\\artwork\\quick-help.png");
@@ -4687,12 +4306,7 @@ void mapeditorexecutable_loop(void)
 				{
 					if (ImGui::MenuItem("Building Editor Getting Started"))
 					{
-						//char pOldDir[MAX_PATH];
-						//strcpy(pOldDir, GetDir());
-						//SetDir("..");
-						//SetDir("Tools\\Building Editor\\media\\docs\\");
 						ExecuteFile("https://www.youtube.com/watch?v=5o865epIhqY", "", "", 0);
-						//SetDir(pOldDir);
 					}
 				}
 				#ifndef DISABLETUTORIALS
@@ -4705,36 +4319,6 @@ void mapeditorexecutable_loop(void)
 				}
 				#endif
 				#ifdef WICKEDENGINE
-				/* ZJ: Now these are in the hub.
-				if (ImGui::MenuItem("GameGuru MAX YouTube Channel"))
-				{
-					ExecuteFile("https://www.youtube.com/channel/UC1q1e3Q9IKMk4nDlAGb_5Jg", "", "", 0);
-				}
-				if (ImGui::MenuItem("GameGuru MAX Forum"))
-				{
-					ExecuteFile("https://forum.game-guru.com/", "", "", 0);
-				}
-				if (ImGui::MenuItem("GameGuru MAX Discord"))
-				{
-					ExecuteFile("https://discord.gg/xnTAbBR", "", "", 0);
-				}
-				*/
-				/*
-      			if ( g_bUpdateAppAvailable == true )
-				{
-					if (ImGui::MenuItem("Check For Updates"))
-					{
-						int iRet = AskSaveBeforeNewAction();
-						if (iRet != 2)
-						{
-							g.projectmodified = 0;
-							g.projectmodifiedstatic = 0;
-							ExecuteFile("..\\..\\GameGuru MAX Updater.exe", "", "", 0);
-							g_bCascadeQuitFlag = true;
-						}
-					}
-				}
-				*/
 				#ifndef LBBUGTRACKING
 				if (ImGui::MenuItem("Report an Issue (GitHub)"))
 				{
@@ -4827,7 +4411,7 @@ void mapeditorexecutable_loop(void)
 
 			//LB: ensure CTRL+Z can release Z and repress so all does not happen at once
 			static bool bWaitOnZRelease = false;
-			if (bWaitOnZRelease /*&& ImGui::IsKeyReleased(90)*/ && !ImGui::IsKeyDown(90))
+			if (bWaitOnZRelease && !ImGui::IsKeyDown(90))
 			{
 				t.inputsys.undokeypress = 0;
 				bWaitOnZRelease = false;
@@ -4945,7 +4529,6 @@ void mapeditorexecutable_loop(void)
 					iSkibFramesBeforeLaunch = 5;
 				}
 			}
-			//else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(83) || iExecuteCTRLkey == 'S') //S
 #ifdef WICKEDENGINE
 			else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(66) || iExecuteCTRLkey == 'B') //B
 #else
@@ -4964,32 +4547,6 @@ void mapeditorexecutable_loop(void)
 				{
 					lastKeyTime = (float)ImGui::GetTime();
 					iExecuteCTRLkey = 0;
-
-					#ifdef WICKEDENGINE
-					//PE: Do a copy before delete. , so we can paste after cut.
-					//PE: TODO - To suppot CUT objects, we need to also store the masterid in g_EntityClipboard.
-					/*
-					if (t.widget.pickedEntityIndex > 0)
-					{
-						g_EntityClipboard.clear();
-						if (g.entityrubberbandlist.size() > 0)
-						{
-							for (int i = 0; i < (int)g.entityrubberbandlist.size(); i++)
-							{
-								int e = g.entityrubberbandlist[i].e;
-								g_EntityClipboard.push_back(e);
-							}
-						}
-						else
-						{
-							g_EntityClipboard.push_back(t.widget.pickedEntityIndex);
-						}
-						g_EntityClipboardAnchorEntityIndex = t.widget.pickedEntityIndex;
-					}
-					*/
-
-					#endif
-
 					t.widget.deletebuttonselected = 1;
 					widget_show_widget();
 				}
@@ -5231,29 +4788,6 @@ void mapeditorexecutable_loop(void)
 			}
 			#endif
 
-			/*
-			#ifdef HIDE_MOVED_MENU_TO_STORYBOARD
-			static bool bReadyToProcessF1Key = true;
-			if (bReadyToProcessF1Key && ImGui::IsKeyPressed(0x70)) // 0x70 = F1
-			{
-				bReadyToProcessF1Key = false;
-				if (bHelp_Menu_Image_Window)
-					bHelp_Menu_Image_Window = false;
-				else
-				{
-					image_setlegacyimageloading(true);
-					strcpy(cHelpMenuImage, "languagebank\\english\\artwork\\quick-help.png");
-					LoadImage(cHelpMenuImage, HELPMENU_IMAGE);
-					image_setlegacyimageloading(false);
-					bHelp_Menu_Image_Window = true;
-				}
-			}
-			else {
-				bReadyToProcessF1Key = true;
-			}
-			#endif
-			*/
-
 			#ifndef WICKEDENGINE
 			static bool bReadyToProcessF1Key = true;
 			if(bReadyToProcessF1Key && ImGui::IsKeyPressed(0x70)) { // 0x70 = F1
@@ -5296,7 +4830,6 @@ void mapeditorexecutable_loop(void)
 			ImGui::GetStyle().WindowBorderSize = 1.0f;
 
 			float paddingy = ImGui::GetStyle().WindowPadding.y;
-			//float startposy = viewPortSize.y - ImGuiStatusBar_Size - 2.0; //(ImGui::GetStyle().WindowBorderSize*2.0)
 			#ifdef PENEWLAYOUT
 			float startposy = viewPortSize.y - (ImGuiStatusBar_Size + 2);
 			#else
@@ -5304,7 +4837,6 @@ void mapeditorexecutable_loop(void)
 			#endif
 			ImGui::SetNextWindowPos(viewPortPos + ImVec2(0.0f, startposy), ImGuiCond_Always);
 			ImGui::SetNextWindowSize(ImVec2(ImGui::GetMainViewport()->Size.x, ImGuiStatusBar_Size));
-			//ImGuiWindowFlags_NoDocking,ImGuiWindowFlags_MenuBar
 
 			if (pref.current_style == 25)
 			{
@@ -5461,10 +4993,7 @@ void mapeditorexecutable_loop(void)
 		#ifdef WICKEDENGINE
 		ImVec4 OldImGuiColWindowBg = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
 		ImVec4 OldImGuiColChildBg = ImGui::GetStyle().Colors[ImGuiCol_ChildBg];
-		//ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = ImVec4(1.0f, 0.0f, 0.0f, 1.00f);
-		//ImGui::GetStyle().Colors[ImGuiCol_ChildBg] = ImVec4(1.0f, 0.0f, 0.0f, 1.00f);
 		ImGui::GetStyle().Colors[ImGuiCol_ChildBg] = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
-		//ImGui::GetStyle().Alpha = 1.0f;
 		#endif
 
 		//######################################################################
@@ -5503,7 +5032,6 @@ void mapeditorexecutable_loop(void)
 			//Default docking setup.
 			ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
 			ImGui::DockBuilderRemoveNode(dockspace_id); // Clear out existing layout
-			//int ImGuiDockNodeFlags_Dockspace = 1 << 10;
 			ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace); // Add empty node
 			ImGui::DockBuilderSetNodePos(dockspace_id, viewport->Pos + ImVec2(0, toolbar_size));
 			ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size - ImVec2(0, toolbar_size + ImGuiStatusBar_Size));
@@ -5581,11 +5109,9 @@ void mapeditorexecutable_loop(void)
 #endif	
 #ifdef WICKEDENGINE
 			ImGui::DockBuilderDockWindow("Environment Effects##VisualsToolsWindow", dock_id_right);
-			//ImGui::DockBuilderDockWindow("Weather##WeatherEffectsV2", dock_id_right);
 			ImGui::DockBuilderDockWindow("Game Settings##GameSettings", dock_id_right);
 			ImGui::DockBuilderDockWindow("Logic Settings##LogicSettings", dock_id_right);
 			ImGui::DockBuilderDockWindow("Shooter Genre##GameLogicTools", dock_id_right);
-			///ImGui::DockBuilderDockWindow("Game Genre##AdditionalIconsWindow", dock_id_left_down);
 			ImGui::DockBuilderDockWindow("Current Objects##AdditionalIconsWindow", dock_id_left_down_large);
 			ImGui::DockBuilderDockWindow("Bug Reporting System##BugReportingWindow", dock_id_right);
 
@@ -5716,8 +5242,6 @@ void mapeditorexecutable_loop(void)
 					{
 						if( bStart )
 							break; // new section exit.
-						//Always take first entry.
-//							if (count_tut++ >= selected_tutorial)
 						bStart = true;
 					}
 					if (bStart) {
@@ -6272,9 +5796,6 @@ void mapeditorexecutable_loop(void)
 			}
 			if (refresh_gui_docking == 0)
 			{
-				//if(STOREPROMOICONS <= 4)
-				//	ImGui::SetNextWindowSize(ImVec2(90 * ImGui::GetFontSize(), 38 * ImGui::GetFontSize()), ImGuiCond_Always); // 4 promo icons.
-				//else
 				ImGui::SetNextWindowSize(ImVec2(68 * ImGui::GetFontSize(), fMarketplacePanelHeight * ImGui::GetFontSize()), ImGuiCond_Always);
 				ImGui::SetNextWindowPosCenter(ImGuiCond_Always);
 				bool bTmp = true;
@@ -6417,12 +5938,6 @@ void mapeditorexecutable_loop(void)
 
 				float fButWidth = 150.0f;
 				
-				/* sketchfab sold up and moved
-				if(bHideGGMaxMarketplace)
-					ImGui::Columns(2, "Marketplacecolumns4", false);  //false no border
-				else
-					ImGui::Columns(3, "Marketplacecolumns4", false);  //false no border
-				*/
 				if (bHideGGMaxMarketplace)
 					ImGui::Columns(1, "Marketplacecolumns4", false);  //false no border
 				else
@@ -6461,24 +5976,16 @@ void mapeditorexecutable_loop(void)
 					if (ImageExist(MARKETPLACE_GGMAX)) TextureID = MARKETPLACE_GGMAX;
 					if (ImGui::ImgBtn(TextureID, vLogoSize, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1), drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, false, false, false, false, false))
 					{
-						//if (g_bUpdateAppAvailable == false)
-							ExecuteFile("https://store.steampowered.com/app/1247290/GameGuru_MAX/", "", "", 0);
-						//else
-						//	ExecuteFile("https://www.game-guru.com/max", "", "", 0);
+						ExecuteFile("https://store.steampowered.com/app/1247290/GameGuru_MAX/", "", "", 0);
 					}
 					if (ImGui::IsItemHovered())
 					{
-						//if (g_bUpdateAppAvailable == false)
-							ImGui::SetTooltip("%s", "Click to view the GameGuru MAX Steam Store Page");
-						//else
-						//	ImGui::SetTooltip("%s", "Click to view the GameGuru MAX Webpage");
+						ImGui::SetTooltip("%s", "Click to view the GameGuru MAX Steam Store Page");
 					}
 
 					//#### Promo icon section. ####
-					//ImGui::Text("");
 					vCurPos = ImGui::GetCursorPos();
 					fPromoHeight = ImGui::GetCursorPosY();
-					//for (int i = 0; i < 3; i++) Sketchfab sold and moved, must remove
 					for (int i = 0; i < 2; i++)
 					{
 						TextureID = MARKETPLACE_FILLER;
@@ -6492,38 +5999,16 @@ void mapeditorexecutable_loop(void)
 						if (ImGui::ImgBtn(TextureID, vPromoSize*2, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1)*vFadeIcons, drawCol_hover*vFadeIcons, drawCol_Down*vFadeIcons, -1, 0, 0, 0, false, false, false, false, false, false))
 						{
 							// already aware of steam and non-steam, assigned directly from "MarketplaceData.json"
-							//if (i <= 1)
+							if (gg_max_link[i].Len() > 0)
 							{
-								if (gg_max_link[i].Len() > 0)
-								{
-									ExecuteFile(gg_max_link[i].Get(), "", "", 0);
-								}
+								ExecuteFile(gg_max_link[i].Get(), "", "", 0);
 							}
 						}
-						/* removed as marketplace DLC items can change now
-						if (ImGui::IsItemHovered())
-						{
-							//if (g_bUpdateAppAvailable == false)
-							{
-								if (i == 0) ImGui::SetTooltip("%s", "Click to view the Aztec Game Kit Steam Store Page");
-								if (i == 1) ImGui::SetTooltip("%s", "Click to view the GameGuru MAX Booster Steam Store Page");
-								if (i == 2) ImGui::SetTooltip("%s", "Click to view the GameGuru MAX Particle Editor Steam Store Page");
-							}
-							//else
-							//{
-							//	if (i == 0) ImGui::SetTooltip("%s", "Click to view the Aztec Game Kit DLC Page");
-							//	if (i == 1) ImGui::SetTooltip("%s", "Click to view the GameGuru MAX Booster DLC Page");
-							//	if (i == 2) ImGui::SetTooltip("%s", "Click to view the GameGuru MAX DLC Page");
-							//}
-						}
-						*/
 					}
-					//ImGui::Text("");
 					fPromoHeight = ImGui::GetCursorPosY() - fPromoHeight;
 
 					ImGui::SetWindowFontScale(1.4f);		
 					ImGui::SetCursorPos(vCurPos + vYOffsetToButtons);
-					//if (g_bUpdateAppAvailable == false)
 					{
 						if (ImGui::StyleButton("Get More DLC", ImVec2(vLogoSize.x, fFontSize*2.0)))
 						{
@@ -6534,17 +6019,6 @@ void mapeditorexecutable_loop(void)
 						}
 						if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view the GameGuru MAX Steam DLC Page");
 					}
-					//else
-					//{
-					//	if (ImGui::StyleButton("Get More DLC", ImVec2(vLogoSize.x, fFontSize*2.0)))
-					//	{
-					//		DeleteWaypointsAddedToCurrentCursor();
-					//		CloseDownEditorProperties();
-					//		ExecuteFile("https://www.game-guru.com/order?_ga=2.207655313.227153589.1653311971-1982497974.1625668666#dlc", "", "", 0);
-					//		bTriggerCloseEntityWindow = true;
-					//	}
-					//	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view the GameGuru MAX DLC Page");
-					//}
 					ImGui::SetWindowFontScale(1.0);
 
 					ImGui::NextColumn();
@@ -6561,7 +6035,6 @@ void mapeditorexecutable_loop(void)
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view the Game Creator Store Website");
 
 				//#### Promo icon section. ####
-				//ImGui::Text("");
 				vCurPos = ImGui::GetCursorPos();
 				if ( iDisplayLibraryType == 0 )
 				{
@@ -6625,27 +6098,6 @@ void mapeditorexecutable_loop(void)
 						if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view this object on the Game Creator Store Website");
 					}
 					ImGui::EndChild();
-					/* uses a 2x4 grid - small previews - rejected
-					for (int i = 0; i < StorePromoItems; i++)
-					{
-						TextureID = MARKETPLACE_FILLER;
-						ImVec4 vFadeIcons = { 1.0,1.0,1.0,0.2 };
-						if (ImageExist(gcstore_dlc[i]))
-						{
-							TextureID = gcstore_dlc[i];
-							vFadeIcons = { 1.0,1.0,1.0,1.0 };
-						}
-						if (ImGui::ImgBtn(TextureID, vPromoSize, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1)*vFadeIcons, drawCol_hover*vFadeIcons, drawCol_Down*vFadeIcons, 0, 0, 0, 0, false, false, false, false, false, false))
-						{
-							if (gcstore_link[i].Len() > 0)
-							{
-								ExecuteFile(gcstore_link[i].Get(), "", "", 0);
-							}
-						}
-						if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view this object on the Game Creator Store Website");
-						if (i % 2 == 0) ImGui::SameLine();
-					}
-					*/
 					ImGui::Text("");
 					fPromoHeight = ImGui::GetCursorPosY() - fPromoHeight;
 				}
@@ -6692,7 +6144,6 @@ void mapeditorexecutable_loop(void)
 					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "GameGuru MAX Community");
 
 					//#### Promo icon section. ####
-					//ImGui::Text("");
 					vCurPos = ImGui::GetCursorPos();
 					fPromoHeight = ImGui::GetCursorPosY();
 					for (int i = 0; i < StorePromoItems; i++)
@@ -6746,30 +6197,7 @@ void mapeditorexecutable_loop(void)
 						if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view the Shockwave Sound Website");
 
 						//#### Promo icon section. ####
-						//ImGui::Text("");
 						vCurPos = ImGui::GetCursorPos();
-						//fPromoHeight = ImGui::GetCursorPosY();
-						/* no previews of sounds for now in shockwave store
-						for (int i = 0; i < StorePromoItems; i++)
-						{
-							TextureID = MARKETPLACE_FILLER;
-							ImVec4 vFadeIcons = { 1.0,1.0,1.0,0.2 };
-
-							if (ImageExist(shockwavesound_dlc[i]))
-							{
-								TextureID = shockwavesound_dlc[i];
-								vFadeIcons = { 1.0,1.0,1.0,1.0 };
-							}
-							if (ImGui::ImgBtn(TextureID, vPromoSize, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1)*vFadeIcons, drawCol_hover*vFadeIcons, drawCol_Down*vFadeIcons, 0, 0, 0, 0, false, false, false, false, false, false))
-							{
-								if (shockwavesound_link[i].Len() > 0)
-								{
-									ExecuteFile(shockwavesound_link[i].Get(), "", "", 0);
-								}
-							}
-							if (i % 2 == 0) ImGui::SameLine();
-						}
-						*/
 
 						ImGui::Text("");
 						float fShockwaveTextHeight = fPromoHeight * 0.5;
@@ -6784,7 +6212,6 @@ void mapeditorexecutable_loop(void)
 							DeleteWaypointsAddedToCurrentCursor();
 							CloseDownEditorProperties();
 							bTriggerCloseEntityWindow = true;
-							//bMarketplace_Window = false;
 							ExecuteFile("https://www.shockwave-sound.com/a/e43bd272af", "", "", 0);
 						}
 						if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view the Shockwave Sound Website");
@@ -6794,57 +6221,6 @@ void mapeditorexecutable_loop(void)
 					else
 					{
 						TextureID = MARKETPLACE_FILLER;
-						/*
-						if (ImageExist(MARKETPLACE_SKETCHFAB))
-							TextureID = MARKETPLACE_SKETCHFAB;
-
-						if (ImGui::ImgBtn(TextureID, vLogoSize, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1), drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, false, false, false, false, false))
-						{
-							ExecuteFile("https://shareasale.com/r.cfm?b=1507456&u=2865438&m=84042&urllink=&afftrack", "", "", 0);
-						}
-						if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view the Sketchfab Website");
-
-						//#### Promo icon section. ####
-						//ImGui::Text("");
-						vCurPos = ImGui::GetCursorPos();
-						fPromoHeight = ImGui::GetCursorPosY();
-						ImGui::BeginChild("##sketchfabstorescrollable", vSizeOfScrollablePanels, false, ImGuiWindowFlags_None | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings);
-						for (int i = 0; i < StorePromoItems; i++)
-						{
-							TextureID = MARKETPLACE_FILLER;
-							ImVec4 vFadeIcons = { 1.0,1.0,1.0,0.2 };
-							if (ImageExist(sketchfab_dlc[i]))
-							{
-								TextureID = sketchfab_dlc[i];
-								vFadeIcons = { 1.0,1.0,1.0,1.0 };
-							}
-							if (ImGui::ImgBtn(TextureID, vPromoSize * 2, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1)*vFadeIcons, drawCol_hover*vFadeIcons, drawCol_Down*vFadeIcons, -1, 0, 0, 0, false, false, false, false, false, false))
-							{
-								if (sketchfab_link[i].Len() > 0)
-								{
-									ExecuteFile(sketchfab_link[i].Get(), "", "", 0);
-								}
-							}
-							if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view this object on the Sketchfab Website");
-						}
-						ImGui::EndChild();
-
-						ImGui::Text("");
-						fPromoHeight = ImGui::GetCursorPosY() - fPromoHeight;
-
-						ImGui::SetWindowFontScale(1.4);
-						ImGui::SetCursorPos(vCurPos + vYOffsetToButtons);
-						if (ImGui::StyleButton("Visit Sketchfab Store", ImVec2(vLogoSize.x, fFontSize*2.0)))
-						{
-							DeleteWaypointsAddedToCurrentCursor();
-							CloseDownEditorProperties();
-							bTriggerCloseEntityWindow = true;
-							//bMarketplace_Window = false;
-							ExecuteFile("https://shareasale.com/r.cfm?b=1507456&u=2865438&m=84042&urllink=&afftrack", "", "", 0);
-						}
-						if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Click to view the Sketchfab Website");
-
-						*/
 						ImGui::SetWindowFontScale(1.0);
 					}
 				}
@@ -7061,14 +6437,10 @@ void mapeditorexecutable_loop(void)
 				float img_h = ImageHeight(INFOIMAGE);
 				float fRatio = img_h / img_w;
 #ifndef REMOVED_EARLYACCESS
-
 				ImGui::ImgBtn(INFOIMAGE, ImVec2(fRegionWidth, fRegionWidth*fRatio), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(1.0, 1.0, 1.0, 1.0), 0, 0, 0, 0, false);
-
 			}
 			ImGui::TextWrapped(cInfoMessage.Get());
-
 #else
-
 			}
 
 			char newLine[MAX_PATH];
@@ -7452,7 +6824,6 @@ void mapeditorexecutable_loop(void)
 					ImGui::SameLine();
 					ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
 					ImGui::SetCursorPos(ImVec2(col_start, ImGui::GetCursorPosY()));
-					//ImGui::PushItemWidth(-10);
 
 					float path_gadget_size = ImGui::GetFontSize()*2.0;
 
@@ -7788,13 +7159,6 @@ void mapeditorexecutable_loop(void)
 					ImGui::Begin("Object Tools##EntityToolsWindow", &Entity_Tools_Window, iGenralWindowsFlags);
 				}
 
-				//PE: Moved to new Logic window.
-				// LB: inserted shooter properties at top of Object Tools if filter mode active
-				//if (Shooter_Tools_Window)
-				//{
-				//	imgui_shooter_tools();
-				//}
-
 				bool bRunExtractDuplicate = false;
 				bool bDuplicate = false;
 				bool bChildWindowOpen = false;
@@ -7873,7 +7237,6 @@ void mapeditorexecutable_loop(void)
 							bToolProperties = false;
 							bToolScale = false;
 							bToolEdit = true;
-							//bToolSave = true; inside EBE editor
 						}
 					}
 
@@ -7984,24 +7347,6 @@ void mapeditorexecutable_loop(void)
 									}
 								}
 
-								//PE: Quest setting not need anymore.
-								/*
-								// detect if this object is a quest holder
-								for (int n = 0; n < t.entityelement[iEntityIndex].eleprof.PropertiesVariable.iVariables; n++)
-								{
-									if (pestrcasestr(t.entityelement[iEntityIndex].eleprof.PropertiesVariable.Variable[n], "QuestChoice"))
-									{
-										iCollectionQuestIndex = 0;
-										int iQuestIndex = atoi(t.entityelement[iEntityIndex].eleprof.PropertiesVariable.VariableValue[n]);
-										if (iQuestIndex >= 2 && iQuestIndex <= 1 + g_collectionQuestList.size())
-										{
-											iCollectionQuestIndex = iQuestIndex - 1;
-										}
-										break;
-									}
-								}
-								*/
-
 								// special color change when object is a collectable
 								bool bObjectIsACollectableAndReadOnlyName = false;
 								LPSTR pDescTooltip = t.strarr_s[204].Get();
@@ -8040,14 +7385,11 @@ void mapeditorexecutable_loop(void)
 						ImGui::BeginChild("##objectpropertieswithnoscrollbar", ImVec2(0, 0), false, iGenralWindowsFlags);
 					}
 
-					//bChildWindowOpen = true;
-
 					static int iLastEntityIndex = -1;
 					if (iEntityIndex != iLastEntityIndex)
 					{
 						iLastEntityIndex = iEntityIndex;
 						ImGui::SetScrollY(0);
-						//bTriggerScrollToTop = false;
 					}
 
 					#endif
@@ -8084,11 +7426,6 @@ void mapeditorexecutable_loop(void)
 							{
 								iLastOpenHeader = 14;
 							}
-							//if (bReadOnlyMode)
-							//{
-							//	// When the object is locked, a child window is created so a tooltip can display even when the items are disabled.
-							//	ImGui::BeginChild("##transform");
-							//}
 							float w = ImGui::GetWindowContentRegionWidth() - 30.0f;
 
 							// if change these, update the object
@@ -8868,7 +8205,7 @@ void mapeditorexecutable_loop(void)
 							ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0.0f, 4.0f));
 
 							// scale stuff
-							float fImporterScaleMultiply = 1.0f;//GetScaleMultiply(iActiveObj);
+							float fImporterScaleMultiply = 1.0f;
 							fScale[0] = ObjectScaleX(iActiveObj);
 							fScale[1] = ObjectScaleY(iActiveObj);
 							fScale[2] = ObjectScaleZ(iActiveObj);
@@ -9923,15 +9260,6 @@ void mapeditorexecutable_loop(void)
 
 									ImGui::Indent(10);
 
-									//if (ImGui::Checkbox("Custom Materials Used##2", &t.entityelement[iEntityIndex].eleprof.bCustomWickedMaterialActive))
-									//{
-									//	bNeedMaterialUpdate = true;
-									//	t.importer.bModelMeshNamesSet = false;
-									//	t.importer.cModelMeshNames.clear();
-									//}
-									//if (ImGui::IsItemHovered()) ImGui::SetTooltip("This flag indicates the object has modified the original model, either through FPE level additions or changes within the level editor");
-
-									//if (t.entityelement[iEntityIndex].eleprof.bCustomWickedMaterialActive)
 									{
 										// display custom material settings
 										WickedSetEntityId(iMasterID);
@@ -9959,12 +9287,7 @@ void mapeditorexecutable_loop(void)
 										if (pMasterObject && iMasterID > 0 && iMasterID < t.entityprofile.size())
 										{
 											Wicked_Copy_Material_To_Grideleprof((void*)pMasterObject, 0, &t.entityelement[iEntityIndex].eleprof);
-											//if (t.entityprofile[iMasterID].WEMaterial.dwBaseColor[0] == -1)
-											//	SetObjectDiffuse(iActiveObj, Rgb(255, 255, 255));
-
 											Wicked_Set_Material_From_grideleprof((void*)pObject, 0, &t.entityelement[iEntityIndex].eleprof);
-											//t.grideleprof.WEMaterial.MaterialActive = false;
-											//t.entityelement[iEntityIndex].eleprof.WEMaterial.MaterialActive = false;
 										}
 									}
 									else
@@ -10004,19 +9327,6 @@ void mapeditorexecutable_loop(void)
 											bAnyUseFPESettings = true;
 										}
 									}
-									//if (ImGui::Checkbox("Custom Materials Used##3", &bAnyCustomMaterials))
-									//{
-									//	// set all materials as custom or not
-									//	for (int ii = 0; ii < g.entityrubberbandlist.size(); ii++)
-									//	{
-									//		int ee = g.entityrubberbandlist[ii].e;
-									//		t.entityelement[ee].eleprof.bCustomWickedMaterialActive = bAnyCustomMaterials;
-									//	}
-									//}
-									//if (ImGui::IsItemHovered()) ImGui::SetTooltip("This flag indicates the object has modified the original model, either through FPE level additions or changes within the level editor");
-
-									// if custom materials, opens up options to mass change certain properties
-									//if (bAnyCustomMaterials==true)
 									{
 										// display custom material settings for ALL objects
 										if (g.entityrubberbandlist.size() > 0)
@@ -10132,7 +9442,6 @@ void mapeditorexecutable_loop(void)
 								}
 							}
 						}
-						//gridedit_clearentityrubberbandlist(); // do not clear list, may want to toggle back!
 						iLastActiveEntityIndex = -1;
 						iLastActiveObj = -1;
 
@@ -10165,8 +9474,6 @@ void mapeditorexecutable_loop(void)
 						static int iGridOffsetMode = 0;
 						if (t.gridentitygridlock > 0)
 						{
-							//pref.iGridMode = true;
-							//bEditorGridFitObjectSize = true;
 							if (t.gridentitygridlock == 2)
 								iGridOffsetMode = 0;
 							else
@@ -10174,8 +9481,6 @@ void mapeditorexecutable_loop(void)
 						}
 						else
 						{
-							//pref.iGridMode = false;
-							//bEditorGridFitObjectSize = false;
 							iGridOffsetMode = 0;
 						}
 						bool bGridEnabled = pref.iGridEnabled;
@@ -10334,8 +9639,6 @@ void mapeditorexecutable_loop(void)
 					{
 						// now scan all entities in common with this entity, and clone all details
 						// to them (there should only be one collectale entity element/eleprof identity)
-						//char pDebugMe[512];
-						//sprintf(pDebugMe, "%d", iWhereWeDetectedChange);
 						if (t.entityelement[iEntityIndex].eleprof.iscollectable != 0)
 						{
 							int thismasterid = t.entityelement[iEntityIndex].bankindex;
@@ -11033,8 +10336,6 @@ void mapeditorexecutable_loop(void)
 			//ImGui::End();
 			iIncludeLeftIconSet = 1;
 			g_bDotsAreVisible = true;
-			//DrawCharacterDots(true);
-			//DrawLogicNodes(true);
 			if (t.showeditorelements == 1)
 			{
 				g_bDotsAreVisible = true;
@@ -11047,7 +10348,6 @@ void mapeditorexecutable_loop(void)
 			Shooter_Tools_Window_Active = false;
 			if (g_bDotsAreVisible)
 			{
-				//DrawCharacterDots(false);
 				DrawLogicNodes(false);
 				g_bDotsAreVisible = false;
 			}
@@ -11056,15 +10356,6 @@ void mapeditorexecutable_loop(void)
 		//########################
 		//#### Weather Window ####
 		//########################
-
-		//PE: Moved to Environment Effects.
-		//if (Weather_Tools_Window) 
-		//{
-		//	//PE: Need own docking window.
-		//	ImGui::Begin("Weather##WeatherEffectsV2", &Weather_Tools_Window, 0);
-		//	imgui_Customize_Weather_V2(3);
-		//	ImGui::End();
-		//}
 
 		//PE: Game Settings window.
 		if (refresh_gui_docking == 0 && !Game_Settings_Window)
@@ -11175,14 +10466,7 @@ void mapeditorexecutable_loop(void)
 		}
 		else
 		{
-			//if (pref.iTerrainDebugMode)
-			//{
-			//	imgui_terrain_loop_v2(); //PE: New design.
-			//}
-			//else
-			//{
 			imgui_terrain_loop_v3(); //PE: New design for Paul's new terrain system :)
-			//}
 		}
 
 		//############################
@@ -11260,10 +10544,6 @@ void mapeditorexecutable_loop(void)
 					
 				if (iOldPickedEntityIndex != t.widget.pickedEntityIndex) 
 				{
-					//New item , backup grideleprof , for cancel function.
-					//PE: NOTE this do not backup position ...
-					//backup_grideleprof = t.grideleprof; //PE: We dont use a cancel system anymore.
-
 					#ifdef WICKEDENGINE
 					//PE: Setup "Materials" defaults.
 					//PE: NOTE: we also need a way to get this info from t.entityelement[t.e].eleprof.WEMaterial
@@ -11279,11 +10559,6 @@ void mapeditorexecutable_loop(void)
 								Wicked_Set_Material_Defaults(g_ObjectList[t.gridentityobj], 0);
 						}
 					}
-					//LB:suspected mem crash - will find a global way to remember different preferred folders
-					//PE: Default material file selection always same folder as .fpe
-					//extern cstr oldtextimportpath;
-					//oldtextimportpath = g.rootdir_s + "entitybank\\" + t.entitybank_s[t.gridentity];
-					//oldtextimportpath = getpath(oldtextimportpath.Get());
 					#endif
 
 					iOldPickedEntityIndex = t.widget.pickedEntityIndex;
@@ -11373,17 +10648,6 @@ void mapeditorexecutable_loop(void)
 					//Collect the flags to use.
 					imgui_set_openproperty_flags(t.gridentity);
 					int tflagtext = 0, tflagimage=0;
-					if (t.entityprofile[t.gridentity].ismarker == 3)
-					{
-						if (!t.entityprofile[t.gridentity].markerindex <= 1)
-						{
-							#ifdef VRTECH
-							#else
-								if (t.entityprofile[t.gridentity].markerindex == 2) tflagtext = 1;
-								if (t.entityprofile[t.gridentity].markerindex == 3) tflagimage = 1;
-							#endif
-						}
-					}
 
 					LPSTR pAIRoot = "scriptbank\\";
 					if (t.tflagai == 1)
@@ -11559,7 +10823,6 @@ void mapeditorexecutable_loop(void)
 											script_name_append += t.grideleprof.aimain_s;
 
 										cstr script_name = "";
-										//if (strnicmp(script_name_append.Get(), "projectbank", 11) != NULL) 
 										script_name = "scriptbank\\";
 										script_name += script_name_append;
 
@@ -11675,7 +10938,6 @@ void mapeditorexecutable_loop(void)
 									//Name and color setup only.
 									ImGui::Text("");
 									t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), "Name", t.strarr_s[204].Get());
-									//ImGui::Text("");
 									ImGui::Indent(-10);
 								}
 
@@ -12142,40 +11404,7 @@ void mapeditorexecutable_loop(void)
 							if (ImGui::StyleCollapsingHeader("Materials", ImGuiTreeNodeFlags_DefaultOpen))
 							{
 								ImGui::Indent(10);
-								//if(0)// (!t.grideleprof.bCustomWickedMaterialActive) 
-								//{
-								//	ImGui::Checkbox("Custom Materials Used", &t.grideleprof.bCustomWickedMaterialActive);
-								//	if (ImGui::IsItemHovered()) ImGui::SetTooltip("This can break instancing and add additional draw calls");
-								//
-								//	//PE: Copy master material settings to t.grideleprof.WEMaterial
-								//	if (t.grideleprof.bCustomWickedMaterialActive) 
-								//	{
-								//		Wicked_Copy_Material_To_Grideleprof((void*)pObject, 0);
-								//		t.grideleprof.WEMaterial.MaterialActive = true;
-								//	}
-								//	else 
-								//	{
-								//		t.grideleprof.WEMaterial.MaterialActive = false;
-								//	}
-								//}
-								//else 
 								{
-									//if (ImGui::Checkbox("Custom Materials Used", &t.grideleprof.bCustomWickedMaterialActive))
-									//{
-									//	//PE: Temp change.
-									//	if (t.grideleprof.bCustomWickedMaterialActive)
-									//	{
-									//		Wicked_Copy_Material_To_Grideleprof((void*)pObject, 0);
-									//		t.grideleprof.WEMaterial.MaterialActive = true;
-									//	}
-									//	else
-									//	{
-									//		t.grideleprof.WEMaterial.MaterialActive = false;
-									//	}
-									//}
-									//if (ImGui::IsItemHovered()) ImGui::SetTooltip("This flag indicates the object has modified the original model, either through FPE level additions or changes within the level editor");
-
-								
 									Wicked_Change_Object_Material((void*)pObject, 0, NULL , true , t.grideleprof.bUseFPESettings);
 
 									if (ImGui::Checkbox("Always use Original Object Settings##2", &t.grideleprof.bUseFPESettings))
@@ -12229,8 +11458,6 @@ void mapeditorexecutable_loop(void)
 								{
 									if (t.entityprofile[t.gridentity].ischaracter > 0)
 									{
-										//478 missing.
-										//t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), t.strarr_s[478].Get(), t.strarr_s[204].Get());
 										t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), "Name", t.strarr_s[204].Get());
 									}
 									else
@@ -12238,18 +11465,13 @@ void mapeditorexecutable_loop(void)
 										if (t.entityprofile[t.gridentity].ismarker > 0)
 										{
 											if (t.entityprofile[t.gridentity].islightmarker > 0) {
-												//483 missing.
-												//t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), t.strarr_s[483].Get(), t.strarr_s[204].Get());
 												t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), "Name", t.strarr_s[204].Get());
 											}
 											else {
-												//479 missing.
-												//t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), t.strarr_s[479].Get(), t.strarr_s[204].Get());
 												t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), "Name", t.strarr_s[204].Get());
 											}
 										}
 										else {
-											//t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), t.strarr_s[413].Get(), t.strarr_s[204].Get());
 											t.grideleprof.name_s = imgui_setpropertystring2(t.group, t.grideleprof.name_s.Get(), "Name", t.strarr_s[204].Get());
 										}
 									}
@@ -12269,7 +11491,6 @@ void mapeditorexecutable_loop(void)
 										}
 										if (t.tokay == 1)
 										{
-											//PE: 414=Static Mode
 											t.gridentitystaticmode = imgui_setpropertylist2(t.group, t.controlindex, Str(t.gridentitystaticmode), t.strarr_s[414].Get(), t.strarr_s[205].Get(), 0);
 										}
 									}
@@ -12398,8 +11619,6 @@ void mapeditorexecutable_loop(void)
 										t.grideleprof.range = atol(imgui_setpropertystring2(t.group, Str(t.grideleprof.range), "Range", "Maximum range of bullet travel"));
 										t.grideleprof.dropoff = atol(imgui_setpropertystring2(t.group, Str(t.grideleprof.dropoff), "Dropoff", "Amount in inches of vertical dropoff per 100 feet of bullet travel"));
 										t.grideleprof.clipcapacity = atol(imgui_setpropertystring2(t.group, Str(t.grideleprof.clipcapacity), "Clip Capacity", "The total maximum number of clips the player can carry for this weapon"));
-										//int weaponpropres1;
-										//int weaponpropres2;
 									}
 									else
 									{
@@ -12460,8 +11679,6 @@ void mapeditorexecutable_loop(void)
 									{
 										if (t.tflagweap == 0 && t.tflagammo == 0)
 										{
-											//t.propfield[t.group] = t.controlindex;
-											//++t.group; startgroup(t.strarr_s[435].Get()); t.controlindex = 0;
 											t.grideleprof.usekey_s = imgui_setpropertystring2(t.group, t.grideleprof.usekey_s.Get(), t.strarr_s[436].Get(), t.strarr_s[225].Get());
 											if (t.tflagsimpler != 0 & t.entityprofile[t.gridentity].ismarker == 3 && t.entityprofile[t.gridentity].trigger.stylecolor == 1)
 											{
@@ -12498,20 +11715,6 @@ void mapeditorexecutable_loop(void)
 								if (ImGui::StyleCollapsingHeader(t.strarr_s[439].Get(), ImGuiTreeNodeFlags_DefaultOpen)) {
 
 									t.grideleprof.spawnatstart = imgui_setpropertylist2(t.group, t.controlindex, Str(t.grideleprof.spawnatstart), t.strarr_s[562].Get(), t.strarr_s[563].Get(), 0);
-									//     `setpropertystring2(group,Str(grideleprof.spawnmax),strarr$(440),strarr$(231)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawnupto),strarr$(441),strarr$(232)) ; inc controlindex
-									//     `setpropertylist2(group,controlindex,Str(grideleprof.spawnafterdelay),strarr$(442),strarr$(233),0) ; inc controlindex
-									//     `setpropertylist2(group,controlindex,Str(grideleprof.spawnwhendead),strarr$(443),strarr$(234),0) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawndelay),strarr$(444),strarr$(235)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawndelayrandom),strarr$(564),strarr$(565)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawnqty),strarr$(445),strarr$(236)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawnqtyrandom),strarr$(566),strarr$(567)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawnvel),strarr$(568),strarr$(569)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawnvelrandom),strarr$(570),strarr$(571)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawnangle),strarr$(572),strarr$(573)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawnanglerandom),strarr$(574),strarr$(575)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.spawnlife),strarr$(576),strarr$(577)) ; inc controlindex
-
 								}
 							}
 
@@ -12553,8 +11756,6 @@ void mapeditorexecutable_loop(void)
 							//  Physics Data (non-multiplayer)
 							if (t.entityprofile[t.gridentity].ismarker == 0 && t.entityprofile[t.gridentity].islightmarker == 0)
 							{
-								//t.propfield[t.group] = t.controlindex;
-								//++t.group; startgroup(t.strarr_s[596].Get()); t.controlindex = 0;
 								t.group = 1;
 								if (ImGui::StyleCollapsingHeader(t.strarr_s[596].Get(), ImGuiTreeNodeFlags_DefaultOpen)) {
 
@@ -12563,8 +11764,6 @@ void mapeditorexecutable_loop(void)
 									t.grideleprof.phyalways = imgui_setpropertylist2(t.group, t.controlindex, Str(t.grideleprof.phyalways), t.strarr_s[582].Get(), t.strarr_s[583].Get(), 0);
 									t.grideleprof.phyweight = atol(imgui_setpropertystring2(t.group, Str(t.grideleprof.phyweight), t.strarr_s[584].Get(), t.strarr_s[585].Get()));
 									t.grideleprof.phyfriction = atol(imgui_setpropertystring2(t.group, Str(t.grideleprof.phyfriction), t.strarr_s[586].Get(), t.strarr_s[587].Get()));
-									//     `setpropertystring2(group,Str(grideleprof.phyforcedamage),strarr$(588),strarr$(589)) ; inc controlindex
-									//     `setpropertystring2(group,Str(grideleprof.rotatethrow),strarr$(590),strarr$(591)) ; inc controlindex
 									if (t.tflagsimpler == 0)
 									{
 										t.grideleprof.explodable = imgui_setpropertylist2(t.group, t.controlindex, Str(t.grideleprof.explodable), t.strarr_s[592].Get(), t.strarr_s[593].Get(), 0);
@@ -12613,7 +11812,6 @@ void mapeditorexecutable_loop(void)
 
 									ImGui::PopItemWidth();
 
-									//setpropertycolor2(t.group, t.grideleprof.light.color, t.strarr_s[463].Get(), t.strarr_s[251].Get()); ++t.controlindex; //PE: 463=Light Color
 									if (t.tflagsimpler == 0)
 									{
 										t.grideleprof.usespotlighting = imgui_setpropertylist2(t.group, t.controlindex, Str(t.grideleprof.usespotlighting), "Spot Lighting", "Change dynamic light to spot lighting", 0);
@@ -12625,11 +11823,6 @@ void mapeditorexecutable_loop(void)
 							if (t.tflagtdecal == 1)
 							{
 								t.propfield[t.group] = t.controlindex;
-
-								//  FPGC - 300710 - could never change base decal, so comment out this property (entity denotes decal choice)
-								//     `inc group ; startgroup(strarr$(464)) ; controlindex=0
-								//     `setpropertyfile2(group,grideleprof.basedecal$,strarr$(465),strarr$(252),"gamecore\\decals\\") ; inc controlindex
-
 								//  Decal Particle data
 								if (t.tflagdecalparticle == 1)
 								{
@@ -12726,7 +11919,6 @@ void mapeditorexecutable_loop(void)
 												if (t.strarr_s[468] == "") t.strarr_s[468] = "Sound1";
 												if (t.strarr_s[480] == "") t.strarr_s[480] = "Sound2";
 												if (t.strarr_s[481] == "") t.strarr_s[481] = "Sound3";
-												//if (t.strarr_s[482] == "") t.strarr_s[482] = "Sound4";
 												t.grideleprof.soundset1_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset1_s.Get(), t.strarr_s[468].Get(), t.strarr_s[254].Get(), "audiobank\\");
 												t.grideleprof.soundset2_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset2_s.Get(), t.strarr_s[480].Get(), t.strarr_s[254].Get(), "audiobank\\");
 												t.grideleprof.soundset3_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset3_s.Get(), t.strarr_s[481].Get(), t.strarr_s[254].Get(), "audiobank\\");
@@ -13003,8 +12195,6 @@ void mapeditorexecutable_loop(void)
 				bTreeViewInitInNextFrame = true;
 				// also update the gun list, we might have new weapons
 				timestampactivity(0, "RESCANNING G-LIST");
-				//gun_scaninall_ref(); can mess up slot order, just adds any new ones now
-				//gun_scaninall_dataonly();
 				extern bool g_bGunListNeedsRefreshing;
 				g_bGunListNeedsRefreshing = true;
 				gun_scaninall_findnewlyaddedgun();
@@ -13020,18 +12210,6 @@ void mapeditorexecutable_loop(void)
 			ImGui::SameLine();
 			ImGui::PopItemWidth();
 
-			//	Display info icon to give user more information on adding objects to the level.
-			//ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(-6.0, 0));
-			//if (ImGui::ImgBtn(ICON_INFO, ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize()), ImColor(0, 0, 0, 0), ImColor(220, 220, 220, 220), ImColor(255, 255, 255, 255),
-			//	ImColor(180, 180, 160, 255), -1, 0, 0, 0, false, false, false, false, false))
-			//{
-			//	bInfo_Window = true;
-			//	cInfoMessage = "By pressing the Add button, you can browse the object library to choose game objects that you would like to add to your game level. You also have the option to import your own models or even create your own character with the built in character creator.";
-			//}
-			//if (ImGui::IsItemHovered()) ImGui::SetTooltip("Click here to learn how to add objects to your level.");
-
-			//ImGui::PushItemWidth(-1);
-			//ImGui::PopItemWidth();
 			static bool bToggleThumbViews = true;
 			int iToggleIcon;
 			if (bToggleThumbViews)
@@ -13064,7 +12242,6 @@ void mapeditorexecutable_loop(void)
 			float current_item_width = ImGui::GetItemRectSize().x;
 
 			#ifdef V2SEARCHBAR
-			//ImGuiStyle& style = ImGui::GetStyle();
 			float fOldSpacing = style.FramePadding.x;
 			style.FramePadding.x = 22.0; //Make room for search icon.
 			ImVec2 vSearchPos = ImGui::GetCursorPos();
@@ -13178,19 +12355,11 @@ void mapeditorexecutable_loop(void)
 			{
 				//Do we have a search history.
 				bool display_history = true; //false;
-				//for (int l = 0; l < MAXSEARCHHISTORY; l++) {
-				//	if (strlen(pref.small_search_history[l]) > 0) {
-				//		display_history = true;
-				//		break;
-				//	}
-				//}
 				if (display_history)
 				{
 					ImGui::SameLine();
-					//ImGui::SetCursorPos(current_pos);
 					
 					ImGui::SetNextWindowPos(ImGui::GetWindowPos() + current_pos);
-					//ImGui::SetNextWindowSize({ current_item_width, 0 });
 					if (ImGui::Begin("##searchselectpopup", &bSearchWinToggle, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_Tooltip )) //| ImGuiWindowFlags_Tooltip
 					{
 						#ifndef V2SEARCHBAR
@@ -13210,11 +12379,8 @@ void mapeditorexecutable_loop(void)
 									strcpy(cSearchEntities, pref.small_search_history[l]);
 									bSearchWinToggle = false;
 								}
-								//if (is_selected)
-								//	ImGui::SetItemDefaultFocus();
 							}
 						}
-						//ImGui::Indent(-10);
 					}
 					ImGui::End();
 				}
@@ -13231,7 +12397,6 @@ void mapeditorexecutable_loop(void)
 			}
 
 			ImGui::SetCursorPos(ImVec2(restore_pos.x-8.0f, restore_pos.y));
-			//const char* sortby_modes[] = { "A-Z", "Z-A", "Newest", "Oldest", "Detailed Object List", "Collection Items List", "Group List", "Instance List", "Behavior List" };
 
 			#ifdef REMOVE_NEWEST_AND_OLDEST
 			const char* sortby_modes[] = { "Level Items", "Project Items", "Detailed Object List", "Group List", "Instance List", "Behavior List"};
@@ -13430,7 +12595,6 @@ void mapeditorexecutable_loop(void)
 							// Sort entity parent list.
 							for (t.entid = 1; t.entid <= iMasterEntid; t.entid++)
 							{
-								//std::string stmp = t.entityprofile[t.entid].model_s.Get();
 								std::string stmp = Lower(t.entityprofileheader[t.entid].desc_s.Get());
 								if (current_sort_order == SORT_NEWESTITEMS || current_sort_order == SORT_OLDESTITEMS)
 								{
@@ -13450,18 +12614,6 @@ void mapeditorexecutable_loop(void)
 								stmp += std::to_string(t.entid);
 								int itmp = t.entid;
 
-								//####
-								//if (t.entityelement[e].x == -99999 && t.entityelement[e].y == -99999 && t.entityelement[e].z == -99999)
-								//{
-								//	treename = treename + " (Auto-Gen) ";
-								//	bAutoGenObject = true;
-								//}
-								//if (t.entityelement[e].y == -999999)
-								//{
-								//	treename = treename + " (Hidden) ";
-								//	bAutoGenObject = true;
-								//}
-								//####
 								bool bValid = true;
 								if (current_sort_order == SORT_LEVELITEMS && !bProjectItems)
 								{
@@ -13851,13 +13003,6 @@ void mapeditorexecutable_loop(void)
 									iTextureID = t.entityprofile[it->second].iThumbnailLarge;
 								}
 
-								if (t.entityprofile[it->second].groupreference != -1)
-								{
-									//PE: Dont display smartobjects as they are not really a object.
-									//LB: Can linger in older corrupt levels and need a way to delete them from the level via Detailed Object List
-									//DisplayEntry = false;
-								}
-
 								if (DisplayEntry && iTextureID > 0)
 								{
 									ImGui::PushID(uniqueId++);
@@ -14038,11 +13183,9 @@ void mapeditorexecutable_loop(void)
 
 										ImGui::PushID(uniqueId++);
 										float fFramePadding = (iColumnsWidth_leftpanel - media_icon_size_leftpanel)*0.5;
-										//float fCenterX = iColumnsWidth * 0.5;
 										float fCenterX = ImGui::GetContentRegionAvail().x * 0.5;
 										ImVec2 vIconSize = { (float)media_icon_size_leftpanel , (float)media_icon_size_leftpanel };
 
-										//ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(fFramePadding, 2.0f));
 										if (!bUseWideThumb)
 										{
 											ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + (fCenterX - (media_icon_size_leftpanel*0.5)), ImGui::GetCursorPosY()));
@@ -14206,12 +13349,6 @@ void mapeditorexecutable_loop(void)
 				wiScene::Scene* pScene = &wiScene::GetScene();
 				int iMeshes = pScene->meshes.GetCount();
 				int iMaterials = pScene->materials.GetCount();
-				//int iAnimations = pScene->animations.GetCount();
-				//int iArmatures = pScene->armatures.GetCount();
-				//int iTransforms = pScene->transforms.GetCount();
-				//int iObjects = pScene->objects.GetCount();
-				//int iHierarchy = pScene->hierarchy.GetCount();
-				//int iPrev_transforms = pScene->prev_transforms.GetCount();
 
 				int dc = wiProfiler::GetDrawCalls();
 				int dcs = wiProfiler::GetDrawCallsShadows();
@@ -14230,14 +13367,8 @@ void mapeditorexecutable_loop(void)
 				ImGui::Text("TrianglesTransparent: %d", trisTransparent);
 				ImGui::Text("Scene Meshes: %d", iMeshes);
 				ImGui::Text("Scene Materials: %d", iMaterials);
-				//ImGui::Text("Scene Animations: %d", iAnimations);
-				//ImGui::Text("Scene Armatures: %d", iArmatures);
 				ImGui::Text("Scene Transforms: %d", (int)pScene->transforms.GetCount());
-				//ImGui::Text("Scene Objects: %d", iObjects);
 				ImGui::Text("Scene Hierarchy: %d", (int)pScene->hierarchy.GetCount());
-				//ImGui::Text("Scene Prev_transforms: %d", iPrev_transforms);
-				//ImGui::Text("Scene iSkinable: %d", iSkinable);
-				//ImGui::Text("Scene iSkinableV: %d", iSkinableV);
 
 				ImGui::Separator();
 				std::string profiler_data = wiProfiler::GetProfilerData();
@@ -14432,8 +13563,6 @@ void mapeditorexecutable_loop(void)
 					bShow = t.showeditortrees;
 					if (ImGui::Checkbox("##EditorTrees", &bShow))
 					{
-						//t.gamevisuals.bEndableTreeDrawing = t.visuals.bEndableTreeDrawing;
-						//ggtrees_global_params.draw_enabled = t.visuals.bEndableTreeDrawing;
 						ggtrees_global_params.draw_enabled = bShow;
 						t.showeditortrees = bShow;
 					}
@@ -14514,21 +13643,6 @@ void mapeditorexecutable_loop(void)
 						t.gamevisuals.bEndableTerrainDrawing = t.visuals.bEndableTerrainDrawing;
 				}
 				ImGui::Columns(1);
-
-				/*
-				if (t.visuals.bEnableEmptyLevelMode)
-				{
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0.0f, 12.0f));
-					ImGui::Text("Level Floor Y");
-					ImGui::SameLine();
-					ImGui::SetCursorPos(ImGui::GetCursorPos() - ImVec2(0.0f, 3.0f));
-					if (ImGui::InputFloat("##fEmptyLevelFloorY", &fEmptyLevelFloorY, -10000.0f, 10000.0f, "%.0f")) //"%.2f"
-					{
-
-					}
-					ImGui::Checkbox("Display Grid", &bEmptyLevelGrid);
-				}
-				*/
 			}
 
 			int iGridObj = g.ebeobjectbankoffset + 1000;
@@ -14571,129 +13685,6 @@ void mapeditorexecutable_loop(void)
 				}
 			}
 
-			//PE: This looks better way more slow so...
-			/*
-			if (bEmptyLevelGrid)
-			{
-				float camx = CameraPositionX();
-				float camz = CameraPositionZ();
-
-				const int GridSizeX = 3000;
-				const int GridSizeZ = 3000;
-
-				int SnapTo1 = 100;
-				float centerx1 = (float)((int)camx / SnapTo1) * (float)SnapTo1;
-				float centerz1 = (float)((int)camz / SnapTo1) * (float)SnapTo1;
-
-				wiRenderer::RenderableLine line1;
-				line1.color_start.x = 0.99f;
-				line1.color_start.y = 0.99f;
-				line1.color_start.z = 0.99f;
-				line1.color_end = line1.color_start;
-
-				float base_alpha1 = 0.3f;
-				float power_exponent1 = 2.5f;
-
-				for (int z = -GridSizeZ; z <= GridSizeZ; z += SnapTo1)
-				{
-					line1.start.y = fEmptyLevelFloorY;
-					line1.end.y = fEmptyLevelFloorY;
-
-					line1.start.x = centerx1 - GridSizeX;
-					line1.start.z = centerz1 + z;
-					line1.end.x = centerx1 + GridSizeX;
-					line1.end.z = centerz1 + z;
-
-					float zdist_norm = (float)z / (float)GridSizeZ;
-					float normalized_distance = std::abs(zdist_norm);
-					float fade = 1.0f - normalized_distance;
-
-					line1.color_start.w = base_alpha1 * fade;
-					line1.color_end.w = base_alpha1 * fade;
-
-					wiRenderer::DrawLineDepth(line1);
-				}
-
-				for (int x = -GridSizeX; x <= GridSizeX; x += SnapTo1)
-				{
-					line1.start.y = fEmptyLevelFloorY;
-					line1.end.y = fEmptyLevelFloorY;
-
-					line1.start.x = centerx1 + x;
-					line1.start.z = centerz1 - GridSizeZ;
-					line1.end.x = centerx1 + x;
-					line1.end.z = centerz1 + GridSizeZ;
-
-					float xdist_norm = (float)x / (float)GridSizeX;
-					float normalized_distance = std::abs(xdist_norm);
-					float fade = 1.0f - normalized_distance;
-
-					line1.color_start.w = base_alpha1 * fade;
-					line1.color_end.w = base_alpha1 * fade;
-
-					wiRenderer::DrawLineDepth(line1);
-				}
-
-				int SnapTo2 = 50;
-				float centerx2 = centerx1;
-				float centerz2 = centerz1;
-
-				wiRenderer::RenderableLine line2;
-				line2.color_start.x = 0.5f;
-				line2.color_start.y = 0.5f;
-				line2.color_start.z = 0.5f;
-				line2.color_end = line2.color_start;
-
-				float base_alpha2 = 0.20f;
-				float power_exponent2 = 6.5f;
-
-				for (int z = -GridSizeZ; z <= GridSizeZ; z += SnapTo2)
-				{
-					float world_z_pos = centerz2 + z;
-					if (fmod(std::abs(world_z_pos), SnapTo1) < 0.001f) continue;
-
-					line2.start.y = fEmptyLevelFloorY;
-					line2.end.y = fEmptyLevelFloorY;
-
-					line2.start.x = centerx2 - GridSizeX;
-					line2.start.z = centerz2 + z;
-					line2.end.x = centerx2 + GridSizeX;
-					line2.end.z = centerz2 + z;
-
-					float zdist_norm = (float)z / (float)GridSizeZ;
-					float normalized_distance = std::abs(zdist_norm);
-					float fade = 1.0f - normalized_distance;
-					line2.color_start.w = base_alpha2 * fade;
-					line2.color_end.w = base_alpha2 * fade;
-
-					wiRenderer::DrawLineDepth(line2);
-				}
-
-				for (int x = -GridSizeX; x <= GridSizeX; x += SnapTo2)
-				{
-					float world_x_pos = centerx2 + x;
-					if (fmod(std::abs(world_x_pos), SnapTo1) < 0.001f) continue;
-
-					line2.start.y = fEmptyLevelFloorY;
-					line2.end.y = fEmptyLevelFloorY;
-
-					line2.start.x = centerx2 + x;
-					line2.start.z = centerz2 - GridSizeZ;
-					line2.end.x = centerx2 + x;
-					line2.end.z = centerz2 + GridSizeZ;
-
-					float xdist_norm = (float)x / (float)GridSizeX;
-					float normalized_distance = std::abs(xdist_norm);
-					float fade = 1.0f - normalized_distance;
-
-					line2.color_start.w = base_alpha2 * fade;
-					line2.color_end.w = base_alpha2 * fade;
-
-					wiRenderer::DrawLineDepth(line2);
-				}
-			}
-			*/
-
 			//Drag/Drop to remove objects.
 			ImRect bb = { ImGui::GetWindowContentRegionMin()+ImGui::GetWindowPos(),ImGui::GetWindowContentRegionMax() + ImGui::GetWindowPos() };
 
@@ -14703,8 +13694,6 @@ void mapeditorexecutable_loop(void)
 
 			if (ImGui::BeginDragDropTargetCustom(bb, 12345))
 			{
-				//ImGui::Text("BeginDragDropTargetCustom");
-				//Hightlight Here!
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_MODEL_DROP_TARGET", 0)) // ImGuiDragDropFlags_AcceptNoDrawDefaultRect
 				{
 					AddPayLoad((ImGuiPayload*)payload, false);
@@ -14729,13 +13718,6 @@ void mapeditorexecutable_loop(void)
 			//#### Current objects ####
 			//#########################
 			
-			
-			//ImGuiWindowClass subWinClass;
-			//subWinClass.DockingAlwaysTabBar = true;
-			//subWinClass.DockingAllowUnclassed = false;
-			//subWinClass.ClassId = ImGui::GetID((void*)("CUSTOM_SUB_WINDOW_CLASS_CURRENT_OBJECTS" ));
-			//ImGui::SetNextWindowClass(&subWinClass);
-
 			ImGui::Begin("Current Objects##AdditionalIconsWindow", &bAlwaysOpen, iGenralWindowsFlags | ImGuiWindowFlags_NoTitleBar);
 
 			static ImVec2 vBelowContentSize = { 0.0,40.0 };
@@ -14779,14 +13761,10 @@ void mapeditorexecutable_loop(void)
 					tabflags = 0;
 
 					ImGui::SetWindowFontScale(fFontSize_leftpanel);
-					//ImGui::Text("Current Objects");
 					//PE: To stop flicker of icons in list. it can take some frames before t.widget.pickedObject is set.
-					//static int iPickedObject = 0; unsure of this logic - prevented locked object from being shown!
 					static int iLastWidgetPickedObject[4] = { -1,-1,-1,-1 };
 					if (t.gridentity <= 0)
 					{
-						//if (iLastWidgetPickedObject[0] == iLastWidgetPickedObject[1] && iLastWidgetPickedObject[1] == iLastWidgetPickedObject[2])
-						//	iPickedObject = iLastWidgetPickedObject[0];
 						iLastWidgetPickedObject[0] = iLastWidgetPickedObject[1];
 						iLastWidgetPickedObject[1] = iLastWidgetPickedObject[2];
 						iLastWidgetPickedObject[2] = t.widget.pickedObject;
@@ -14796,13 +13774,9 @@ void mapeditorexecutable_loop(void)
 					int iFirstEntityId = -1;
 					if (t.gridentity > 0)
 					{
-						//backup_pickedObject
 						iFirstIcon = t.gridentity;
-						//if (t.gridentityobj > 0)
-						//	iPickedObject = t.gridentityobj;
 						iLastWidgetPickedObject[2] = -1;
 					}
-					//else if (iPickedObject > 0 && t.widget.pickedEntityIndex > 0) // t.widget.pickedObject > 0 && 
 					else if (t.widget.pickedEntityIndex > 0) // t.widget.pickedObject > 0 && 
 					{
 						//Ignore picked if rubberband.
@@ -15208,7 +14182,6 @@ void mapeditorexecutable_loop(void)
 					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 2.0f));
 					iInsideTab = 2;
 					
-					//ImGui::Indent(10);
 					//#### Group Lists ####
 					for (int l = 0; l < MAXGROUPSLISTS; l++)
 					{
@@ -15963,22 +14936,6 @@ void mapeditorexecutable_loop(void)
 		ProcessRPGSetupWindow();
 		#endif
 
-
-		//######################################
-		//#### Handle Change to Hand cursor ####
-		//######################################
-
-		//if (refresh_gui_docking >= 4)
-		//{
-		//	//PE: Set hand if we can pick and move a object.
-		//	if (iReusePickEntityID > 0 && t.entityelement[iReusePickEntityID].editorlock == 0)
-		//	{
-		//		if(ImGui::GetMouseCursor() == 0) //Only if arrow cursor.
-		//			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-		//	}
-		//}
-
-
 		//###########################
 		//#### VISULS LEFT PANEL ####
 		//###########################
@@ -16016,11 +14973,6 @@ void mapeditorexecutable_loop(void)
 			bImGuiInitDone = true;
 			static bool bLeftPanelSelectedAsDefault = false;
 			if (!bLeftPanelSelectedAsDefault) {
-				//ImGui::SetWindowFocus(TABENTITYNAME);
-				//PE: Start in terrain tools.
-				//if(pref.iTerrainDebugMode)
-				//	ImGui::SetWindowFocus("Paint Terrain##TerrainToolsWindow");
-				//else
 				ImGui::SetWindowFocus("Terrain Tools##Paint Terrain##TerrainToolsWindow");
 				bLeftPanelSelectedAsDefault = true;
 			}
@@ -16230,7 +15182,6 @@ void mapeditorexecutable_loop(void)
 						correctFPMLocation_s = g.mysystem.mapbankAbs_s.Get();
 					}
 
-					//char* cFileSelected = (char*)noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "fpm\0*.fpm\0", correctFPMLocatrion_s.Get(), NULL, true);
 					char* cFileSelected = (char*)noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "fpm\0*.fpm\0", correctFPMLocation_s.Get(), NULL, true);
 
 					SetDir(tOldDir.Get());
@@ -16350,8 +15301,6 @@ void mapeditorexecutable_loop(void)
 						t.inputsys.donew = 0;
 						iLaunchAfterSync = 80;
 						iSkibFramesBeforeLaunch = 5;
-						//strcpy(cTriggerMessage, "New level created");
-						//bTriggerMessage = true;
 						// go to procedural terrain generator
 						bProceduralLevel = true;
 						bProceduralLevelStartup = true; // will trigger a random theme to be selected (overriding EMPTY init above)
@@ -16715,8 +15664,6 @@ void mapeditorexecutable_loop(void)
 								if (stricmp(pExtension, ".fbx") == NULL) bPermittedFormat = true;
 								if (stricmp(pExtension, ".gltf") == NULL) bPermittedFormat = true;
 								if (stricmp(pExtension, ".glb") == NULL) bPermittedFormat = true;
-								//if (stricmp(pExtension, ".dae") == NULL) bPermittedFormat = true;
-								//if (stricmp(pExtension, ".3ds") == NULL) bPermittedFormat = true;
 								if ( bPermittedFormat == true )
 								{
 									// load the model
@@ -17230,14 +16177,6 @@ void mapeditorexecutable_finish(void)
 #ifdef ENABLEIMGUI
 	if (t.game.set.ismapeditormode == 1) {
 
-		// seems this command no longer detecting if user maximised the window? Rely on settings set elsewhere (avoids always setting to minimized)
-		//if (IsZoomed(g_pGlob->hWnd)) {
-		//	pref.iMaximized = 1;
-		//}
-		//else {
-		//	pref.iMaximized = 0;
-		//}
-
 		cstr prefile = defaultWriteFolder;
 		prefile += "gamegurumax.pref";
 		FILE* preffile = GG_fopen(prefile.Get(), "wb+");
@@ -17258,21 +16197,6 @@ void mapeditorexecutable_finish(void)
 		}
 	}
 #endif
-
-	#ifdef VRTECH
-	// ensure this gets called when leave software too
-	//extern HMODULE hGGWMRDLL;
-	//PE: GGVR_DeleteHolographicSpace identifier not found.
-	//	if( hGGWMRDLL) //PE: Only if dll is loaded.
-	//		GGVR_DeleteHolographicSpace;
-	#endif
-
-	#ifdef WICKEDENGINE
-	// Ends naturally after this - runs through to end of WinMain
-	#else
-	// final exit
-	ExitProcess ( 0 );
-	#endif
 }
 
 void mapeditorexecutable(void)
@@ -17345,45 +16269,6 @@ int AskSaveBeforeNewAction(void)
 
 void editor_detect_invalid_screen ( void )
 {
-	/* legacy method to detect GPU card switching out - no longer needed
-	if ( GetDisplayInvalid() != 0 || MatrixExist(g.m4_projection) == 0 ) 
-	{
-		if ( 1 ) 
-		{
-			#ifdef FPSEXCHANGE
-			OpenFileMap (  1, "FPSEXCHANGE" );
-			SetFileMapDWORD (  1, 900, 1 );
-			SetFileMapString (  1, 1256, t.strarr_s[622].Get() );
-			SetFileMapString (  1, 1000, t.strarr_s[623].Get() );
-			SetEventAndWait (  1 );
-			while (  GetFileMapDWORD(1, 900) == 1 ) 
-			{
-				SetEventAndWait (  1 );
-			}
-			t.tokay=GetFileMapDWORD(1, 904);
-			if (  t.tokay == 1 ) 
-			{
-				//  no references to 3D objects (all gone now)
-				t.recoverdonotuseany3dreferences=1;
-				//  save now
-				gridedit_save_map_ask ( );
-			}
-			//  call a new map editor
-			OpenFileMap (  2, "FPSEXCHANGE" );
-			SetFileMapString (  2, 1000, "Guru-MapEditor.exe" );
-			SetFileMapString (  2, 1256, "-r" );
-			SetFileMapDWORD (  2, 994, 0 );
-			SetFileMapDWORD (  2, 924, 1 );
-			SetEventAndWait (  2 );
-			#endif
-			//  free steam to unload the module in effect
-			mp_free ( );
-			//  end this old mapeditor
-			common_justbeforeend();
-			ExitProcess ( 0 );
-		}
-	}
-	*/
 }
 
 void editor_showhelppage ( int iHelpType )
@@ -17649,20 +16534,13 @@ void editor_showquickstart ( int iForceMainOpen )
 	else
 	{
 		// Welcome system not syncronous any more
-		//if (g.iTriggerSoftwareToQuit != 0)
-		//{
-		//	welcome_show(WELCOME_EXITAPP);
-		//}
-		//else
+		if (g.iFreeVersionModeActive == 1)
 		{
-			if (g.iFreeVersionModeActive == 1)
-			{
-				welcome_show(WELCOME_FREEINTROAPP);
-			}
-			if (g.iFreeVersionModeActive == 2)
-			{
-				welcome_show(WELCOME_FREETRIALINTROAPP);
-			}
+			welcome_show(WELCOME_FREEINTROAPP);
+		}
+		if (g.iFreeVersionModeActive == 2)
+		{
+			welcome_show(WELCOME_FREETRIALINTROAPP);
 		}
 
 		// if welcome not deactivated
@@ -17768,7 +16646,6 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 	//Hide any windows outside main viewport.
 	ImGui::HideAllViewPortWindows();
 	LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-	//SetWindowLong(g_pGlob->hWnd, GWL_WNDPROC, (LONG)WindowProc);
 
 	//  center mouse pointer in editor (and hide it)
 	game_hidemouse ( );
@@ -17910,8 +16787,6 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 			}
 		}
 
-		// also reestablish links with constant vars for terrain and veh shaders
-		//t.terrain.iForceTerrainVegShaderUpdate = 1;
 		// re-assign params for reloaded terrain and veg
 		terrain_applyshader();
 		grass_applyshader();
@@ -18040,7 +16915,6 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 	gggrass_save_params = gggrass_global_params;
 
 	#ifdef WICKEDENGINE
-	//PE: SetGlobalGraphicsSettings 2 = highest , this is the users current settings, user knows best dont change there settings.
 	if(pref.iTestGameGraphicsQuality != 2)
 		SetGlobalGraphicsSettings( pref.iTestGameGraphicsQuality );
 	#endif
@@ -18207,14 +17081,7 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 		}
 	}
 
-#ifdef WICKEDENGINE
-	//TestLevel_ToggleTreeVegWater(false, false, false);
 	editor_toggle_element_vis(t.showtestgameelements);
-	//TestLevel_ToggleBoundary(t.showtestgame2dbounds, t.showtestgame3dbounds);
-#else
-	// hide all waypoints and zones
-	waypoint_hideall ( );
-#endif
 
 	// hide editor objects too
 	for ( t.obj = t.editor.objectstartindex+1; t.obj <= t.editor.objectstartindex+1+10 ;  t.obj++ ) //?//t.editor.objectstartindex+10;
@@ -18288,7 +17155,6 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 	//
 	// launch game root with IDE 'test at cursor position' settings
 	//
-	//t.game.gameisexe=0; only set right at start!
 	t.game.set.resolution=0;
 	t.game.set.initialsplashscreen=0;
 	t.game.set.ismapeditormode=0;
@@ -18635,7 +17501,6 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 			{
 				if (t.entityelement[t.tte].editorlock == 0)
 				{
-					//t.tobj = t.tentityobj; t.tte = t.tentitytoselect;
 					entity_converttoinstance();
 				}
 			}
@@ -18713,13 +17578,6 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 	 SetFileMapDWORD (  1, 970, 1 );
 	 SetEventAndWait (  1 );
 	#endif
-
-	// LB101019 - this can cause a freeze due to DirectInput bug when screensaver/hybernate kicks in
-	// as the key pressed when waking up the boot screen remains in the key buffer even though key not pressed
-	// though does get cleared later somehow (replace DX Input at some point to avoid this issue)
-	// wait until all mouse activity over and escape key released
-	//while ( MouseClick() != 0 ) {}
-	//while ( ScanCode() != 0 ) {}
 
 	// Restore camera
 	editor_restoreeditcamera ( );
@@ -18993,7 +17851,6 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 
 	// Set editor to use a true 1;1 pixel mapping for Text ( , Steam GUI and other overlay images )
 	SetChildWindowTruePixel ( 1 );
-	//common_refreshDisplaySize ( );
 
 	// restore if project modified
 	t.tignoreinvalidateobstacles=1;
@@ -19107,693 +17964,6 @@ void editor_previewmap_afterloopcode(int iUseVRTest)
 	editor_previewmapormultiplayer_afterloopcode ( iUseVRTest );
 }
 
-/*
-void input_getfilemapcontrols ( void )
-{
-	//  Update triggers and issue actions through filemapping system
-	#ifdef FPSEXCHANGE
-	OpenFileMap (  1, "FPSEXCHANGE" );
-	SetEventAndWait (  1 );
-	#endif
-
-	#ifdef FPSEXCHANGE
-	 // only if the IDE has foreground focus
-	 DWORD dwForegroundFocusForIDE = GetFileMapDWORD( 1, 596 );
-	 if ( dwForegroundFocusForIDE == 10 )
-	 {
-		t.inputsys.xmouse=GetFileMapDWORD( 1, 0 );
-		t.inputsys.ymouse=GetFileMapDWORD( 1, 4 );
-		t.inputsys.xmousemove=GetFileMapDWORD( 1, 8 );
-		t.inputsys.ymousemove=GetFileMapDWORD( 1, 12 );
-		SetFileMapDWORD (  1, 8, 0 );
-		SetFileMapDWORD (  1, 12, 0 );
-		t.inputsys.wheelmousemove=GetFileMapDWORD( 1, 16 );
-		set_inputsys_mclick(GetFileMapDWORD(1, 20));// t.inputsys.mclick = GetFileMapDWORD(1, 20);
-		if (GetFileMapDWORD(1, 28) == 1)  set_inputsys_mclick(2);// t.inputsys.mclick = 2;
-		if (MouseClick() == 4)  set_inputsys_mclick(4);// t.inputsys.mclick = 4;
-		if (t.interactive.insidepanel == 1)  set_inputsys_mclick(0);// t.inputsys.mclick = 0;
-		t.inputsys.kscancode=GetFileMapDWORD( 1, 100 );
-	 }
-	#else
-	 t.inputsys.xmouse = MouseX();
-	 t.inputsys.ymouse = MouseY();
-	 t.inputsys.xmousemove = MouseMoveX();
-	 t.inputsys.ymousemove = MouseMoveY();
-	 t.inputsys.wheelmousemove = MouseMoveZ();
-	 t.inputsys.mclick = MouseClick();
-	 if (t.interactive.insidepanel == 1) t.inputsys.mclick = 0;
-	 t.inputsys.kscancode = ScanCode();
-	#endif
-
-	//  extra mappings
-	input_extramappings ( );
-
-	//  Control keys direct from keyboard
-	#ifdef FPSEXCHANGE
-	 t.inputsys.keyreturn=GetFileMapDWORD( 1, 108 );
-	 t.inputsys.keyshift=GetFileMapDWORD( 1, 112 );
-	 t.inputsys.keytab = 0;
-	 t.inputsys.keyup=GetFileMapDWORD( 1, 120 );
-	 t.inputsys.keydown=GetFileMapDWORD( 1, 124 );
-	 t.inputsys.keyleft=GetFileMapDWORD( 1, 128 );
-	 t.inputsys.keyright=GetFileMapDWORD( 1, 132 );
-	 t.inputsys.keycontrol=GetFileMapDWORD( 1, 116 );
-	 t.inputsys.keyalt=GetFileMapDWORD( 1, 136 );
-	#else
-	t.inputsys.keyreturn = ReturnKey();
-	t.inputsys.keyshift = ShiftKey();
-	t.inputsys.keytab = 0;
-	t.inputsys.keyup = UpKey();
-	t.inputsys.keydown = DownKey();
-	t.inputsys.keyleft = LeftKey();
-	t.inputsys.keyright = RightKey();
-	t.inputsys.keycontrol = ControlKey();
-	t.inputsys.keyalt = 0;
-	#endif
-	if (  t.inputsys.kscancode == 32  )  t.inputsys.keyspace = 1; else t.inputsys.keyspace = 0;
-
-	// will release keypress flag if no key AND no SHIFT!!
-	if (t.inputsys.kscancode == 0 && t.inputsys.keyshift == 0) t.inputsys.keypressallowshift = 0;
-
-	//  W,A,S,D in editor for scrolling about (easier for user)
-	if (  t.inputsys.kscancode == 87  )
-		t.inputsys.keyup = 1;
-	if (  t.inputsys.kscancode == 65  )  t.inputsys.keyleft = 1;
-	if (  t.inputsys.kscancode == 83  )  t.inputsys.keydown = 1;
-	if (  t.inputsys.kscancode == 68  )  t.inputsys.keyright = 1;
-
-	//  fake mousemove values for low-response systems (when in zoomed in mode)
-	if (  t.grideditselect == 4 ) 
-	{
-		if (  t.inputsys.keyshift == 1 ) 
-		{
-			if (  t.inputsys.keyleft == 1  )  t.inputsys.xmousemove = -10;
-			if (  t.inputsys.keyright == 1  )  t.inputsys.xmousemove = 10;
-			if (  t.inputsys.keyup == 1  )  t.inputsys.ymousemove = -10;
-			if (  t.inputsys.keydown == 1  )  t.inputsys.ymousemove = 10;
-			set_inputsys_mclick(2);// t.inputsys.mclick = 2;
-			t.inputsys.keyleft=0;
-			t.inputsys.keyright=0;
-			t.inputsys.keyup=0;
-			t.inputsys.keydown=0;
-		}
-	}
-
-	//  special trigger when click LIBRARY TAB, force into respective mode
-	#ifdef FPSEXCHANGE
-	if (  GetFileMapDWORD( 1, 546 ) == 1 ) 
-	{
-		t.ttabindex=GetFileMapDWORD( 1, 520 );
-		if (  t.ttabindex == 0  )  t.inputsys.domodeentity = 1;
-		if (  t.ttabindex == 1  )  t.inputsys.domodeentity = 1;
-		if (  t.ttabindex == 2  )
-		{
-			if ( t.ebe.active == 0 )
-			{
-				// need to select a site (using entity creation and placement first)
-			}
-			else
-			{
-				// reset for tool work
-				ebe_reset();
-			}
-		}
-		else
-		{
-			// When click non-Builder tab, should leave builder mode
-			ebe_hide();
-
-			//PE: If first entity, shader have not yet had constant set , so update shaders.
-			//PE: Prevent new created ebe from disappering when clicking away from "builder".
-			visuals_justshaderupdate();
-		}
-		SetFileMapDWORD (  1, 546, 0 );
-	}
-	#endif
-
-	//  recent file list
-	#ifdef FPSEXCHANGE
-	t.trecentfilechoice=GetFileMapDWORD( 1, 442 );
-	if (  t.trecentfilechoice>0 ) 
-	{
-		//  retain choice for action at end of subroutine
-		t.trecentfilechoice_s=GetFileMapString( 1, 1000 );
-		SetFileMapDWORD (  1, 442, 0 );
-	}
-	#endif
-
-	//  termination trigger
-	#ifdef FPSEXCHANGE
-	if (  GetFileMapDWORD( 1, 908 ) == 1 ) 
-	{
-		// show outtro message if free version mode
-		if ( g.iFreeVersionModeActive == 1 || ( g.iFreeVersionModeActive == 2 && g_trialStampDaysLeft > 0 ) )
-		{
-			t.inputsys.ignoreeditorintermination = 1;
-			welcome_init(1);
-			welcome_init(0);
-			if ( g.iFreeVersionModeActive == 1 ) welcome_show(WELCOME_FREEINTROAPP);
-			if ( g.iFreeVersionModeActive == 2 ) welcome_show(WELCOME_FREETRIALINTROAPP);
-			t.inputsys.ignoreeditorintermination = 0;
-		}
-
-		// Here we ask if changes should be saved, etc
-		gridedit_intercept_savefirst_noreload ( );
-		OpenFileMap (  1,"FPSEXCHANGE" );
-		if (  t.editorcanceltask == 0 ) 
-		{
-			//  go ahead, confirmed, end interface program
-			SetFileMapDWORD (  1, 912, 1 );
-			SetEventAndWait (  1 );
-			//  close down Steam hook
-			mp_free ( );
-			//  end editor program
-			timestampactivity(0,"Terminated because 908=1");
-			common_justbeforeend();
-			ExitProcess ( 0 );
-		}
-		else
-		{
-			//  carry on with interface
-			SetFileMapDWORD (  1, 908, 0 );
-			SetEventAndWait (  1 );
-			//CloseFileMap (  1 );
-		}
-	}
-	#endif
-
-	//  EDIT MENU
-	#ifdef FPSEXCHANGE
-	if (  GetFileMapDWORD( 1, 446 ) == 1 ) 
-	{  
-		t.inputsys.doundo = 1; 
-		SetFileMapDWORD (  1, 446, 0 ); 
-	}
-	if (  GetFileMapDWORD( 1, 450 ) == 1 ) { t.inputsys.doredo = 1  ; SetFileMapDWORD (  1, 450, 0 ); }
-	if (  GetFileMapDWORD( 1, 454 ) == 1 ) { t.inputsys.tselcontrol = 1  ; t.inputsys.tselcut = 1 ; t.inputsys.tselcopy = 1 ; SetFileMapDWORD (  1, 454, 0 ); }
-	if (  GetFileMapDWORD( 1, 458 ) == 1 ) { t.inputsys.tselcontrol = 1  ; t.inputsys.tselcopy = 1 ; SetFileMapDWORD (  1, 458, 0 ); }
-	#endif
-
-	//  Get toolbar triggers
-	#ifdef FPSEXCHANGE
-	t.inputsys.doartresize=0;
-	t.toolbarset=GetFileMapDWORD( 1, 200 );
-	t.toolbarindex=GetFileMapDWORD( 1, 204 );
-	if (  t.toolbarindex>0 ) 
-	{
-		if (  t.toolbarset == 2 ) 
-		{
-			//  ZOOM IN and ZOOM OUT
-			switch (  t.toolbarindex ) 
-			{
-			case 1 : t.inputsys.kscancode = 188 ; break ;
-			case 2 : t.inputsys.kscancode = 190 ; break ;
-			}		//~   endif
-		}
-		if (  t.toolbarset == 4 ) 
-		{
-			//  EDIT MODE SELECTOR (entity/terrain)
-			switch (  t.toolbarindex ) 
-			{
-			case 7 : t.inputsys.kscancode = Asc("E") ; break ;
-			case 8 : t.inputsys.kscancode = Asc("M") ; break ;
-			case 9 : t.inputsys.kscancode = Asc("T") ; break ;
-			}		//~   endif
-		}
-		if (  t.toolbarset == 6 ) 
-		{
-			//  TERRAIN TOOLS (sculpt,flatten,paint)
-			t.inputsys.domodeterrain=1;
-			switch (  t.toolbarindex ) 
-			{
-			case 1 : t.inputsys.kscancode = Asc("1") ; break ;
-			case 2 : t.inputsys.kscancode = Asc("2") ; break ;
-			case 3 : t.inputsys.kscancode = Asc("3") ; break ;
-			case 4 : t.inputsys.kscancode = Asc("4") ; break ;
-			case 5 : t.inputsys.kscancode = Asc("5") ; break ;
-			case 6 : t.inputsys.kscancode = Asc("6") ; break ;
-			case 7 : t.inputsys.kscancode = Asc("7") ; break ;
-			case 8 : t.inputsys.kscancode = Asc("8") ; break ;
-			case 9 : t.inputsys.kscancode = Asc("9") ; break ;
-			case 10 : t.inputsys.kscancode = Asc("0") ; break ;
-			}
-		}
-		if (  t.toolbarset == 8 ) 
-		{
-			//  wayppoint
-			t.inputsys.domodewaypoint=1;
-			switch (  t.toolbarindex ) 
-			{
-				case 1 :
-					t.inputsys.domodewaypointcreate=1;
-				break;
-			}		//~   endif
-		}
-		if (  t.toolbarset == 9 ) 
-		{
-			//  rem LAUNCH TEST GAME
-			switch (  t.toolbarindex ) 
-			{
-				case 1 :
-					editor_previewmap ( 0 );
-				break;
-				case 2 :
-					editor_multiplayermode ( );
-				break;
-				#ifdef VRTECH
-				case 3 :
-					if ( g.gvrmode == 0 )
-					{
-						//HWND hThisWnd = GetForegroundWindow();
-						//MessageBoxA ( hThisWnd, "You are not in VR mode. You need to exit the software. When you restart, select VR MODE ON to enable VR.", "Not in VR Mode", MB_OK );
-						//OpenFileMap (  1, "FPSEXCHANGE" );
-						//SetFileMapDWORD (  1, 970, 1 );
-						//SetEventAndWait (  1 );
-					}
-					else
-					{
-						editor_previewmap ( 1 );
-					}
-				break;
-				#endif
-			}
-		}
-		if ( t.toolbarset == 21 ) 
-		{
-			// HELP MENU Actions
-			#ifdef VRTECH
-			switch ( t.toolbarindex ) 
-			{
-				#ifndef WICKEDENGINE
-				case 1 : editor_showhelppage ( 1 );  break;
-				#endif
-				case 2 : editor_showhelppage ( 2 );  break;
-				case 3 : editor_showhelppage ( 3 );  break;
-			}
-			#else
-			switch (  t.toolbarindex ) 
-			{
-				case 1 : editor_showhelppage ( 0 ); break;
-				case 2 : 
-					if (  t.interactive.active == 0  )  
-						t.interactive.active = 2;
-					break;
-			}
-			#endif
-		}
-	}
-	#endif
-
-	// Clear toolbar index and deltas
-	#ifdef FPSEXCHANGE
-	SetFileMapDWORD (  1, 200, 0 );
-	SetFileMapDWORD (  1, 204, 0 );
-	SetFileMapDWORD (  1, 8, 0 );
-	SetFileMapDWORD (  1, 12, 0 );
-	SetFileMapDWORD (  1, 16, 0 );
-	#endif
-
-	// Deactivate mouse if leave 3d area
-	if ( t.inputsys.xmouse == -1 && t.inputsys.ymouse == -1 ) 
-	{
-		t.inputsys.xmouse=500000;
-		t.inputsys.ymouse=0;
-		t.inputsys.xmousemove=0;
-		t.inputsys.ymousemove=0;
-		t.inputsys.activemouse=0;
-		set_inputsys_mclick(0);// t.inputsys.mclick = 0;
-		t.syncthreetimes=2;
-	}
-	else
-	{
-		if (  t.inputsys.activemouse == 0 ) 
-		{
-			//  was out, now back in
-			editor_refresheditmarkers ( );
-		}
-	}
-	t.inputsys.activemouse=1;
-
-	// Convert FILE MAP COMM VALUES to DX INPUT CODES
-	t.t_s="" ; t.tt=0;
-	switch ( t.inputsys.kscancode ) 
-	{
-		case 9 : t.tt = 15 ; break ;
-		case 32 : t.tt = 57 ; break ;
-		case 33 : t.tt = 201 ; break ;
-		case 34 : t.tt = 209 ; break ;
-		case 37 : t.tt = 203 ; break ;
-		case 38 : t.tt = 200 ; break ;
-		case 39 : t.tt = 205 ; break ;
-		case 40 : t.tt = 208 ; break ;
-		case 42 : t.tt = 16 ; break ;
-		case 46 : t.tt = 211 ; break ;
-		case 54 : t.tt = 16 ; break ;
-		case 112 : t.tt = 59 ; break ;
-		case 113 : t.tt = 60 ; break ;
-		case 114 : t.tt = 61 ; break ;
-		case 115 : t.tt = 62 ; break ;
-		case 123 : t.tt = 88 ; break ;
-		case 187 : t.tt = 13 ; break ;
-		case 188 : t.tt = 51 ; break ;
-		case 189 : t.tt = 12 ; break ;
-		case 190 : t.tt = 52 ; break ;
-		case 192 : t.tt = 40 ; break ;
-		case 219 : t.tt = 26 ; break ;
-		case 220 : t.tt = 86 ; break ;
-		case 221 : t.tt = 27 ; break ;
-		case 222 : t.tt = 43 ; break ;
-		case 1001 : t.tt = 13 ; break ;
-		case 1002 : t.tt = 12 ; break ;
-	}
-
-	// 031215 - then remap to new scancodes (from keymap)
-	t.tt = g.keymap[t.tt];
-
-	// and temp back into IDE key values (for last bit)
-	int ttt = 0;
-	switch ( t.tt )
-	{
-		case 15 : ttt = 9 ; break ;
-		case 57 : ttt = 32 ; break ;
-		case 201 : ttt = 33 ; break ;
-		case 209 : ttt = 34 ; break ;
-		case 203 : ttt = 37 ; break ;
-		case 200 : ttt = 38 ; break ;
-		case 205 : ttt = 39 ; break ;
-		case 208 : ttt = 40 ; break ;
-		case 16 : ttt = 42 ; break ;
-		case 211 : ttt = 46 ; break ;
-		case 59 : ttt = 112 ; break ;
-		case 60 : ttt = 113 ; break ;
-		case 61 : ttt = 114 ; break ;
-		case 62 : ttt = 115 ; break ;
-		case 88 : ttt = 123 ; break ;
-		case 13 : ttt = 187 ; break ;
-		case 51 : ttt = 188 ; break ;
-		case 12 : ttt = 189 ; break ;
-		case 52 : ttt = 190 ; break ;
-		case 40 : ttt = 192 ; break ;
-		case 26 : ttt = 219 ; break ;
-		case 86 : ttt = 220 ; break ;
-		case 27 : ttt = 221 ; break ;
-		case 43 : ttt = 222 ; break ;
-	}
-	// then create proper inkey chars from revised (if any) scancodes
-	switch ( ttt )
-	{
-		case 16 : t.t_s = "q"; break;
-		case 57 : t.t_s = " "; break;
-		case 107 : t.t_s = "="; break;
-		case 109 : t.t_s = "-"; break;
-		case 187 : t.t_s = "="; break;
-		case 188 : t.t_s = ","; break;
-		case 189 : t.t_s = "-"; break;
-		case 190 : t.t_s = "."; break;
-		case 192 : t.t_s = "'"; break;
-		case 219 : t.t_s = "["; break;
-		case 220 : t.t_s = "\\"; break;
-		case 221 : t.t_s = "]"; break;
-		case 222 : t.t_s = "#"; break;
-	}
-	if (  t.inputsys.kscancode >= Asc("A") && t.inputsys.kscancode <= Asc("Z")  )  t.t_s = Lower(Chr(t.inputsys.kscancode));
-	if (  t.inputsys.kscancode >= Asc("0") && t.inputsys.kscancode <= Asc("9")  )  t.t_s = Lower(Chr(t.inputsys.kscancode));
-	if (  t.t_s != ""  )  t.tt = 1;
-
-	//  Get menu triggers
-	t.inputsys.dosave=0 ; t.inputsys.doopen=0 ; t.inputsys.donew=0 ; t.inputsys.donewflat=0 ; t.inputsys.dosaveas=0;
-	#ifdef FPSEXCHANGE
-	if (  GetFileMapDWORD( 1, 404 ) == 1 ) { t.inputsys.dosave = 1  ; SetFileMapDWORD (  1, 404, 0 ); }
-	if (  GetFileMapDWORD( 1, 408 ) == 1 ) { t.inputsys.donew = 1  ; SetFileMapDWORD (  1, 408, 0 ); }
-	if (  GetFileMapDWORD( 1, 408 ) == 2 ) 
-	{ 
-		if ( t.bIgnoreFirstCallToNewLevel == true )
-		{
-			// 280317 - editor calls to create new map, but can load in default.fpm at start (when welcome screen active)
-			t.bIgnoreFirstCallToNewLevel = false;
-		}
-		else
-		{
-			t.inputsys.donewflat = 1; 
-		}
-		SetFileMapDWORD (  1, 408, 0 ); 
-	}
-	if (  GetFileMapDWORD( 1, 434 ) == 1 ) { t.inputsys.dosaveas = 1  ; SetFileMapDWORD (  1, 434, 0 ); }
-	if (  GetFileMapDWORD( 1, 400 ) == 1 ) { t.inputsys.doopen = 1  ; t.inputsys.donew = 0 ; t.inputsys.donewflat = 0 ; SetFileMapDWORD (  1, 400, 0 ); }
-	#else
-	if (t.bTriggerNewMapAtStart == true)
-	{
-		t.bTriggerNewMapAtStart = false;
-		t.inputsys.donew = 1;
-	}
-	#endif
-
-	// select items from editing to see values
-	#ifdef FPSEXCHANGE
-	SetEventAndWait (  1 );
-	t.tindex1=GetFileMapDWORD( 1, 712 );
-	if (  t.tindex1>0 ) 
-	{
-		t.tt=1 ; t.t_s="";
-		t.tindex2=GetFileMapDWORD( 1, 716 );
-		if (  t.tindex1 == 2 ) 
-		{
-			t.inputsys.domodeterrain=1;
-			switch (  t.tindex2 ) 
-			{
-				case 1 : t.t_s = "1" ; break ;
-				case 2 : t.t_s = "2" ; break ;
-				case 3 : t.t_s = "3" ; break ;
-				case 4 : t.t_s = "6" ; break ;
-				case 5 : t.t_s = "9" ; break ;
-				case 6 : t.t_s = "0" ; break ;
-			}
-		}
-		if (  t.tindex1 == 1 ) 
-		{
-			switch (  t.tindex2 ) 
-			{
-				case 1 : t.t_s = "t" ; break ;
-				case 2 : t.t_s = "e" ; break ;
-			}
-		}
-		SetFileMapDWORD (  1, 712, 0 );
-		SetFileMapDWORD (  1, 716, 0 );
-		SetEventAndWait (  1 );
-	}
-	#endif
-
-	//  Record final translated key values
-	t.inputsys.k_s=t.t_s ; t.inputsys.kscancode=t.tt;
-
-	//  Determine if Library Selection Made
-	#ifdef FPSEXCHANGE
-	if ( GetFileMapDWORD( 1, 516 ) > 0 )
-	{
-		SetFileMapDWORD ( 1, 516, 0 );
-		t.clickedonworkspace = GetFileMapDWORD( 1, 520 );
-		t.clickeditemonworkspace = GetFileMapDWORD( 1, 524 );
-		if ( t.clickeditemonworkspace != -1 ) 
-		{
-			// if in EBE tool, and switch to Entity/Marker tab, reactivate EBE
-			if ( t.clickedonworkspace == 2 ) 
-			{
-				if ( t.ebe.active != 0 )
-				{
-					// switch on EBE tool visuals
-					ebe_reset();
-				}
-				else
-				{
-					// not active, but need to be in entity mode for placement of site
-					t.inputsys.domodeentity = 1; 
-					t.grideditselect = 5; 
-				}
-			}
-			else
-			{
-				ebe_hide();
-			}
-
-			// check if Entity/Marker/Builder tab selected
-			if ( t.clickedonworkspace == 1 || t.clickedonworkspace == 2 ) 
-			{
-				if ( t.clickedonworkspace == 1 || (t.clickedonworkspace == 2 && t.clickeditemonworkspace == 0) )
-				{
-					if ( t.clickedonworkspace == 1 )
-					{
-						// Selected Marker (playerstart,light,trigger,emission)
-						t.addentityfile_s = t.markerentitybank_s[1+t.clickeditemonworkspace];
-					}
-					else
-					{
-						// Or Builder 'Add New Site' which produces an entity we can use
-						t.addentityfile_s = t.ebebank_s[1+t.clickeditemonworkspace];
-						t.inputsys.domodeentity = 1; // ensure can position entity when select site
-					}
-					if ( t.addentityfile_s != "" ) 
-					{
-						#ifdef ENABLEIMGUI
-						DeleteWaypointsAddedToCurrentCursor();
-						//CheckTooltipObjectDelete();
-						CloseDownEditorProperties();
-						#endif
-						#ifdef WICKEDENGINE
-						iLastEntityOnCursor = 0;
-						#endif
-						entity_adduniqueentity ( false );
-						t.tasset=t.entid;
-						if ( t.talreadyloaded == 0 ) 
-						{
-							editor_filllibrary ( );
-						}
-					}
-					t.inputsys.constructselection = t.tasset;
-				}
-				if ( t.clickedonworkspace == 2 && t.clickeditemonworkspace > 0 )
-				{
-					#ifdef ENABLEIMGUI
-					CloseDownEditorProperties();
-					#endif
-					// selected builder tool icon - load in pattern for cube-insertion
-					LPSTR pPBFEBEFile = t.ebebank_s[1+t.clickeditemonworkspace].Get();
-					// loads painting pattern
-					ebe_loadpattern ( pPBFEBEFile );
-					t.inputsys.constructselection = 0;
-				}
-			}
-			if ( t.clickedonworkspace == 0 ) 
-			{
-				if (  t.clickeditemonworkspace == 0 ) 
-				{
-					t.tnewadd=0;
-					if (  t.clickedonworkspace == 0 ) 
-					{
-						#ifdef ENABLEIMGUI
-						DeleteWaypointsAddedToCurrentCursor();
-						//CheckTooltipObjectDelete();
-						CloseDownEditorProperties();
-						#endif
-
-						//  [new entity]
-						entity_addtoselection ( );
-						t.tnewadd=t.entnewloaded;
-						t.tasset=t.entid;
-					}
-					//  add asset to library
-					if ( t.tnewadd == 1 ) editor_filllibrary ( );
-					//  use as current asset
-					t.inputsys.constructselection=t.tasset;
-				}
-				else
-				{
-					//  select existing asset
-					if (  t.clickedonworkspace == 0 ) 
-					{
-						//  entity uses array to indicate the real entity index (to exclude markers - see above)
-						if (  t.clickeditemonworkspace >= 0 && t.clickeditemonworkspace <= ArrayCount(t.locallibraryent) ) 
-						{
-							t.inputsys.constructselection=t.locallibraryent[t.clickeditemonworkspace];
-						}
-						else
-						{
-							t.inputsys.constructselection=0;
-						}
-					}
-					else
-					{
-						//  direct relationship between list index and choice
-						t.inputsys.constructselection=t.clickeditemonworkspace;
-					}
-				}
-			}
-
-			//  Workspace index determines editing mode
-			if (  t.clickedonworkspace  == 0 ) { t.inputsys.domodeentity = 1 ; t.grideditselect  =  5; }
-			if (  t.clickedonworkspace  == 1 ) { t.inputsys.domodeentity = 1 ; t.grideditselect  =  5; }
-			editor_refresheditmarkers ( );
-		}
-	}
-	#endif
-
-	// Ensure status bar is constantly updated
-	#ifdef FPSEXCHANGE
-	++t.interfacestatusbarupdate;
-	if ( t.interfacestatusbarupdate>30 ) 
-	{
-		// cursor position
-		if ( g.gridlayershowsingle == 1 ) 
-		{
-			t.t_s = "" ; t.t_s=t.t_s +"CLIP="+Str(int(t.clipheight_f));
-		}
-		else
-		{
-			t.t_s="CLIP OFF";//"ALL" ; t.t_s=t.strarr_s[80]+":"+t.t_s;
-		}
-		SetFileMapString (  1, 4256, t.t_s.Get() );
-		 t.strwork = "" ; t.strwork = t.strwork + "X:"+Str(t.inputsys.mmx)+"  "+"Z:"+Str(t.inputsys.mmy);
-		SetFileMapString (  1, 4512, t.strwork.Get() );
-		if (  t.gridentitygridlock == 0  )  t.tpre_s = "NORMAL";
-		if (  t.gridentitygridlock == 1  )  t.tpre_s = "SNAP";
-		if (  t.gridentitygridlock == 2  )  t.tpre_s = "GRID";
-		SetFileMapString (  1, 4768, t.tpre_s.Get() );
-		SetEventAndWait (  1 );
-		//  editing mode
-		if (  t.grideditselect == 0 ) 
-		{
-			t.statusbar_s=t.strarr_s[332];
-			terrain_getpaintmode ( );
-			t.statusbar_s=t.statusbar_s+" "+t.mode_s;
-		}
-		if (  t.grideditselect  ==  1  )  t.statusbar_s = t.strarr_s[336];
-		if (  t.grideditselect == 2 ) 
-		{
-			//  art tools not used any more
-		}
-		if (  t.grideditselect == 3 ) 
-		{
-			//  map view mode not used any more
-		}
-		if (  t.grideditselect == 4 )  t.statusbar_s = t.strarr_s[343];
-		if (  t.grideditselect == 5 ) 
-		{
-			t.statusbar_s=t.strarr_s[344];
-			t.statusbar_s=t.statusbar_s+"  Entity : "+t.relaytostatusbar_s;
-		}
-		if (  t.grideditselect == 6 ) 
-		{
-			//  add waypoint status
-			t.statusbar_s="Waypoint Mode (LMB=Drag Point  SHIFT+LMB=Clone Point  SHIFT+RMB=Remove Point)";
-		}
-		//  only update infrequently
-		t.interfacestatusbarupdate=0;
-	}
-	#endif
-
-	//  Update status bar out of action subroutines
-	gridedit_updatestatusbar ( );
-
-	// Action after filemap activity
-	if ( t.trecentfilechoice>0 ) 
-	{
-		// save first
-		gridedit_intercept_savefirst ( );
-		if ( t.editorcanceltask == 0 ) 
-		{
-			// go ahead, load direct (skip the open dialog)
-			g.projectfilename_s=t.trecentfilechoice_s;
-			gridedit_load_map ( );
-#ifdef WICKEDENGINE
-			grass_init();
-			bUpdateVeg = true;
-#endif
-
-		}
-		t.trecentfilechoice=0;
-	}
-}
-*/
-
 void editor_handlepguppgdn ( void )
 {
 	// changes and returns 't.tupdownstepvalue_f'
@@ -19822,8 +17992,6 @@ void editor_handlepguppgdn ( void )
 				if (t.widget.pickedEntityIndex > 0)
 					CheckGroupListForRubberbandSelections(t.widget.pickedEntityIndex);
 				bWidgetMove = true;
-				//				if (g.entityrubberbandlist.size() > 0) //Cancel it
-				//					return;
 				#endif
 			}
 		}
@@ -19865,7 +18033,6 @@ void editor_handlepguppgdn ( void )
 						wobj = t.widget.activeObject;
 
 					PositionObject(wobj, t.entityelement[t.widget.pickedEntityIndex].x, t.entityelement[t.widget.pickedEntityIndex].y, t.entityelement[t.widget.pickedEntityIndex].z);
-					//widget_movezonesandlights(t.widget.pickedEntityIndex);
 
 					// if we need to also move rubber band highlighted objects, do so now
 					if (g.entityrubberbandlist.size() > 0)
@@ -19886,20 +18053,12 @@ void editor_handlepguppgdn ( void )
 										if (t.inputsys.kscancode == 209) g.entityrubberbandlist[i].x -= t.tupdownstepvalue_f;
 
 										PositionObject(tobj, t.entityelement[e].x, t.entityelement[e].y, t.entityelement[e].z);
-
-										//widget_movezonesandlights(e);
 									}
 								}
 							}
 						}
 					}
 				}
-
-				//for (int i = 0; i < (int)g.entityrubberbandlist.size(); i++)
-				//{
-				//	if (t.inputsys.kscancode == 201) g.entityrubberbandlist[i].x += t.tupdownstepvalue_f;
-				//	if (t.inputsys.kscancode == 209) g.entityrubberbandlist[i].x -= t.tupdownstepvalue_f;
-				//}
 			}
 		}
 		else
@@ -19956,16 +18115,6 @@ void imgui_input_getcontrols(void)
 	float itmpmousey = ImGui::GetMousePos().y;
 	int iSecureZone = 4;
 	RECT winpos = { 0,0,0,0 };
-
-	if (pref.bDisableMultipleViewport) 
-	{
-		//PE: Mouse coords is different when using non Multiple Viewport.
-		//PE: TODO we need to match the Multiple Viewport mouse coord system here:
-		//POINT p;
-		//GetCursorPos(&p);
-		//itmpmousex = p.x;
-		//itmpmousey = p.y;
-	}
 
 	//PE: Must be relative to windows pos, or nothing work if you have a window placed at the rigth of the screen.
 	GetWindowRect(g_pGlob->hWnd, &winpos);
@@ -20751,23 +18900,8 @@ void imgui_input_getcontrols(void)
 	++t.interfacestatusbarupdate;
 	if (t.interfacestatusbarupdate > 30)
 	{
-		#ifdef WICKEDENGINE
-		//PE: No clipping in wicked yet.
 		strcpy(statusbar, "");
-		//t.statusbar_s = "";
-		#else
-		//  cursor position
-		if (g.gridlayershowsingle == 1)
-		{
-			t.statusbar_s = ""; t.statusbar_s = t.statusbar_s + "CLIP=" + Str(int(t.clipheight_f));
-		}
-		else
-		{
-			t.statusbar_s = "CLIP OFF";//"ALL" ; t.t_s=t.strarr_s[80]+":"+t.t_s;
-		}
 
-		t.statusbar_s = t.statusbar_s + " | ";
-		#endif
 		if (t.inputsys.xmouse == 500000)
 		{
 			//t.strwork = ""; t.statusbar_s = t.statusbar_s + "X: 0 Z: 0";
@@ -20811,17 +18945,6 @@ void imgui_input_getcontrols(void)
 			else {
 
 				t.laststatusbar_s = "Terrain Sculpt Mode ";
-
-				//if (t.terrain.terrainpaintermode == 1)
-				//	t.laststatusbar_s = t.laststatusbar_s + "- Shape Mode";
-				//if (t.terrain.terrainpaintermode == 2)
-				//	t.laststatusbar_s = t.laststatusbar_s + "- Level Mode";
-				//if (t.terrain.terrainpaintermode == 3)
-				//	t.laststatusbar_s = t.laststatusbar_s + "- Copy Mode";
-				//if (t.terrain.terrainpaintermode == 4)
-				//	t.laststatusbar_s = t.laststatusbar_s + "- Blend Mode";
-				//if (t.terrain.terrainpaintermode == 5)
-				//	t.laststatusbar_s = t.laststatusbar_s + "- Ramp Mode";
 
 				if (ggterrain_extra_params.sculpt_mode == GGTERRAIN_SCULPT_RAISE || ggterrain_extra_params.sculpt_mode == GGTERRAIN_SCULPT_LOWER)
 					t.laststatusbar_s = t.laststatusbar_s + "- Shape Mode";
@@ -20893,7 +19016,6 @@ void imgui_input_getcontrols(void)
 		//  only update infrequently
 		t.interfacestatusbarupdate = 0;
 
-		//t.laststatusbar_s = t.statusbar_s;
 	}
 
 	static cstr WinTitle = "";
@@ -20964,16 +19086,7 @@ void input_getcontrols ( void )
 	t.inputsys.tselcopy=0;
 	t.inputsys.tseldelete=0;
 
-	// Obtain input data
-	// ideinputmode always zero here
-	//if (  g.globals.ideinputmode == 1 ) 
-	//{
-	//	input_getfilemapcontrols ( );
-	//}
-	//else
-	//{
 	input_getdirectcontrols ( );
-	//}
 
 	//  Flag reset
 	t.inputsys.dorotation=0;
@@ -21971,7 +20084,6 @@ void editor_init ( void )
 	SetObjectTransparency (  t.editor.objectstartindex+5,2 );
 	modifyplaneimagestrip(5,8,1);
 	SetObjectCollisionOff (  t.editor.objectstartindex+5 );
-	//DisableObjectZDepth (  t.editor.objectstartindex+5 ); //PE: UpdateLayerInner layer 4 do not render bNewZLayerObject in pass 0 so is clipped.
 	SetObjectLight (  t.editor.objectstartindex+5,0 );
 	HideObject (  t.editor.objectstartindex+5 );
 	OffsetLimb (  t.editor.objectstartindex+5,0,0,0,-1 );
@@ -22018,9 +20130,6 @@ void editor_init ( void )
 	t.bordery_f=1024.0*50.0 ; t.cy_f=t.bordery_f/2;
 	#endif
 	editor_restoreeditcamera ( );
-
-	//  Reset statu bar Text (  )
-	//t.statusbar_s="" ; t.laststatusbar_s="";
 }
 
 void editor_makeundergroundobj ( void )
@@ -22251,21 +20360,11 @@ void editor_hideall3d ( void )
 
 void editor_restoreeditcamera ( void )
 {
-	#ifdef WICKEDENGINE
-	// when returning from a VR session, need to restore camera perspective and original resolution settings
-	//PE: GetPhysicalWidth/Height are wrong here, we set the correct values when "ResizeBuffer" are also called. triggered by WM_SIZE
-	//master.masterrenderer.Set3DResolution( master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight() );
-	#endif
-
 	// editor starting camera position - reset camera
 	SetCurrentCamera (  0 );
 	PositionCamera ( t.cx_f, 600*t.gridzoom_f, t.cy_f );
 	PointCamera ( t.cx_f, 0, t.cy_f );
-	#ifdef WICKEDENGINE
 	SetCameraFOV(45); //PE: default 45 in wicked.
-	#else
-	SetCameraFOV (  90 );
-	#endif
 }
 
 void editor_clearlibrary ( void )
@@ -22963,8 +21062,6 @@ void editor_constructionselection ( void )
 				int iFromGroupEntityID = 0;
 				if (t.entityprofile[t.gridentity].groupreference != -1)
 				{
-					// this entity is a group, create new child group for selection
-					//int iParentGroupID = t.entityprofile[t.gridentity].groupreference; !! group IDs can MOVE!!
 					// look for group that matches the group object entity FPE name
 					extern int GetGroupIndexFromName (cstr sLookFor);
 					cstr sLookFor = cstr("entitybank\\") + t.entitybank_s[t.gridentity];
@@ -23095,7 +21192,6 @@ void editor_constructionselection ( void )
 				}
 				//  select entity profile and start orientation
 				t.gridedit.autoflatten=t.entityprofile[t.gridentity].autoflatten;
-				//t.gridedit.entityspraymode=0; //PE: spray checkbox.
 				t.inputsys.dragoffsetx_f=0;
 				t.inputsys.dragoffsety_f=0;
 				#ifdef WICKEDENGINE
@@ -23425,10 +21521,8 @@ void editor_overallfunctionality ( void )
 				{
 					#ifdef WICKEDENGINE
 					float ftmp = BT_GetGroundHeight(t.terrain.TerrainID, t.gridentityposx_f, t.gridentityposz_f);
-					//if (ftmp > 0) { //LB: Terrain height can be negative
 					t.gridentityposy_f = ftmp;
 					ApplyPivotToGridEntity(); //PE: Apply pivot here.
-					//}
 					#endif
 				}
 				#ifdef WICKEDENGINE
@@ -23529,8 +21623,6 @@ void editor_refreshcamerarange ( void )
 	else
 	{
 		//  top down camera distance
-		//SetCameraRange (  t.tcamneardistance_f,t.tcamrange_f );
-		//PE: Test
 		SetCameraRange( t.tcamneardistance_f, DEFAULT_FAR_PLANE );
 	}
 }
@@ -23718,7 +21810,6 @@ void editor_mainfunctionality ( void )
 						}
 
 						// quat rotation event
-						//GGQUATERNION quatRotationEvent = { 0,0,0,0 };
 						GGQUATERNION QuatAroundX, QuatAroundY, QuatAroundZ;
 						GGQuaternionRotationAxis(&QuatAroundX, &GGVECTOR3(1, 0, 0), GGToRadian(fMoveAngX));
 						GGQuaternionRotationAxis(&QuatAroundY, &GGVECTOR3(0, 1, 0), GGToRadian(fMoveAngY));
@@ -24059,7 +22150,6 @@ void editor_mainfunctionality ( void )
 		//PE: @Paul we need this in object mode :)
 		MouseLeftDragXZPanning();
 		MouseWheelYPanning();
-		//DragCameraMovement();
 	}
 	#endif
 }
@@ -24152,25 +22242,9 @@ float editor_forceentityfindfloor (bool bPredictMode)
 				t.thardauto = 1; editor_findentityground();
 				if (t.gridentityposoffground == 0)
 				{
-					#ifdef WICKEDENGINE
 					float ftmp = BT_GetGroundHeight(t.terrain.TerrainID, t.gridentityposx_f, t.gridentityposz_f);
-					//if (ftmp > 0) //LB: terrain heights can be negative too!
-						t.gridentityposy_f = ftmp;
-					//else
-					//	t.gridentityposy_f = g.gdefaultterrainheight;
-					#else
-					if (t.terrain.TerrainID > 0)
-					{
-						t.gridentityposy_f = BT_GetGroundHeight(t.terrain.TerrainID, t.gridentityposx_f, t.gridentityposz_f);
-					}
-					else
-					{
-						t.gridentityposy_f = g.gdefaultterrainheight;
-					}
-					#endif
-					#ifdef WICKEDENGINE
+					t.gridentityposy_f = ftmp;
 					ApplyPivotToGridEntity();
-					#endif
 					if (t.entityprofile[t.gridentity].ismarker != 0)  t.gridentityposy_f = t.gridentityposy_f + t.entityprofile[t.gridentity].offy;
 					if (t.entityprofile[t.gridentity].defaultheight != 0)  t.gridentityposy_f = t.gridentityposy_f + t.entityprofile[t.gridentity].defaultheight;
 				}
@@ -24263,168 +22337,6 @@ void editor_viewfunctionality ( void )
 	// zoom view controls
 	if ( t.grideditselect == 4 ) 
 	{
-		#ifdef WICKEDENGINE
-		// control camera of 'zoomed entity' in a different way
-		#else
-		// can repos and rotate non-editor-entities
-		if ( t.entityelement[t.gridentityinzoomview].editorfixed == 0 ) 
-		{
-			// position adjustment
-			t.tposadjspeed_f=1.0;
-			if ( t.inputsys.keycontrol == 1  )  t.tposadjspeed_f = 0.05f;
-			if ( t.inputsys.dozoomviewmovex == 1  )  t.zoomviewtargetx_f -= t.tposadjspeed_f;
-			if ( t.inputsys.dozoomviewmovex == 2  )  t.zoomviewtargetx_f += t.tposadjspeed_f;
-			if ( t.inputsys.dozoomviewmovey == 1  )  t.zoomviewtargety_f -= t.tposadjspeed_f;
-			if ( t.inputsys.dozoomviewmovey == 2  )  t.zoomviewtargety_f += t.tposadjspeed_f;
-			if ( t.inputsys.dozoomviewmovez == 1  )  t.zoomviewtargetz_f -= t.tposadjspeed_f;
-			if ( t.inputsys.dozoomviewmovez == 2  )  t.zoomviewtargetz_f += t.tposadjspeed_f;
-
-			// rotation adjustment
-			//PE: rotate lights rem: t.entityprofile[t.gridentity].ismarker != 2 &&
-			if ( t.entityprofile[t.gridentity].ismarker != 3 ) 
-			{
-				if ( t.inputsys.keyshift == 1 ) 
-				{
-					t.tspeedofrot_f=10.0 ; t.inputsys.keypress=0;
-				}
-				else
-				{
-					if ( t.inputsys.keycontrol == 1 ) 
-					{
-						t.tspeedofrot_f=1.0;
-					}
-					else
-					{
-						t.tspeedofrot_f=45.0;
-					}
-				}
-				if ( t.inputsys.dorotation == 1 ) {  t.zoomviewtargetry_f += t.tspeedofrot_f  ; t.gridentityrotateaxis = 1; }
-				if ( t.inputsys.dozoomviewrotatex == 1 ) { t.zoomviewtargetrx_f -= t.tspeedofrot_f  ; t.gridentityrotateaxis = 0; }
-				if ( t.inputsys.dozoomviewrotatex == 2 ) { t.zoomviewtargetrx_f += t.tspeedofrot_f  ; t.gridentityrotateaxis = 0; }
-				if ( t.inputsys.dozoomviewrotatey == 1 ) { t.zoomviewtargetry_f -= t.tspeedofrot_f  ; t.gridentityrotateaxis = 1; }
-				if ( t.inputsys.dozoomviewrotatey == 2 ) { t.zoomviewtargetry_f += t.tspeedofrot_f  ; t.gridentityrotateaxis = 1; }
-				if ( t.inputsys.dozoomviewrotatez == 1 ) { t.zoomviewtargetrz_f -= t.tspeedofrot_f  ; t.gridentityrotateaxis = 2; }
-				if ( t.inputsys.dozoomviewrotatez == 2 ) { t.zoomviewtargetrz_f += t.tspeedofrot_f  ; t.gridentityrotateaxis = 2; }
-				if ( t.inputsys.dozoomviewrotatex >= 98 ) 
-				{
-					if ( t.inputsys.dozoomviewrotatex == 98 ) 
-					{
-						if ( t.gridentityrotateaxis == 0  )  t.zoomviewtargetrx_f = 0;
-						if ( t.gridentityrotateaxis == 1  )  t.zoomviewtargetry_f = 0;
-						if ( t.gridentityrotateaxis == 2  )  t.zoomviewtargetrz_f = 0;
-					}
-					if ( t.inputsys.dozoomviewrotatex == 99 ) 
-					{
-						t.zoomviewtargetrx_f=0;
-						t.zoomviewtargetry_f=0;
-						t.zoomviewtargetrz_f=0;
-					}
-				}
-			}
-
-			// update gridentity vars for visual
-			t.gridentityposx_f=t.zoomviewtargetx_f;
-			t.gridentityposy_f=t.zoomviewtargety_f;
-			t.gridentityposz_f=t.zoomviewtargetz_f;
-			t.gridentityrotatex_f=t.zoomviewtargetrx_f;
-			t.gridentityrotatey_f=t.zoomviewtargetry_f;
-			t.gridentityrotatez_f=t.zoomviewtargetrz_f;
-
-
-			//PE: We are in properties and have snap mode, the original object position is then moved.
-			//PE: We dont want this snap 5x5 grid in properties.
-			// aply grid if 5x5
-			#ifdef THISHASBEENREMOVED
-			if ( t.gridentitygridlock == 1 ) 
-			{
-				t.gridentityposx_f=(int(t.gridentityposx_f/5)*5);
-				t.gridentityposz_f=(int(t.gridentityposz_f/5)*5);
-			}
-			#endif
-		}
-
-		// mouselook mode on/off RMB
-		OpenFileMap ( 1, "FPSEXCHANGE" );
-		if ( t.inputsys.mclick == 2 ) 
-		{
-			// center mouse
-			#if !defined(ENABLEIMGUI) || defined(USEOLDIDE)
-			SetFileMapDWORD (  1, 48, 1 );
-			#else
-			if (g.mouseishidden == 0) 
-			{
-				g.mouseishidden = 1;
-				t.tgamemousex_f = t.inputsys.xmouse; //MouseX();
-				t.tgamemousey_f = t.inputsys.ymouse; //MouseY();
-				HideMouse();
-				#ifdef USERENDERTARGET
-
-				POINT tmp;
-				GetCursorPos(&tmp);
-				t.editorfreeflight.storemousex = tmp.x;
-				t.editorfreeflight.storemousey = tmp.y;
-
-				ImVec2 setPos = { (OldrenderTargetSize.x*0.5f) + OldrenderTargetPos.x , (OldrenderTargetSize.y*0.5f) + OldrenderTargetPos.y };
-				setPos.x = (int)setPos.x;
-				setPos.y = (int)setPos.y;
-				SetCursorPos(setPos.x, setPos.y);
-
-				float RatioX = ((float)GetDisplayWidth() / (float)renderTargetAreaSize.x) * ((float)GetDisplayWidth() / (float)GetChildWindowWidth(-1));
-				float RatioY = ((float)GetDisplayHeight() / (float)renderTargetAreaSize.y) * ((float)GetDisplayHeight() / (float)GetChildWindowHeight(-1));
-				xmouseold = (setPos.x - renderTargetAreaPos.x) * RatioX;
-				ymouseold = (setPos.y - renderTargetAreaPos.y) * RatioY;
-				t.inputsys.xmousemove = 0;
-				t.inputsys.ymousemove = 0;
-				#else
-				RECT rect;
-				GetWindowRect(g_pGlob->hWnd, &rect);
-				SetCursorPos(rect.left + (GetChildWindowWidth() / 2), rect.top + (GetChildWindowHeight() / 2));
-				xmouseold = rect.left + (GetChildWindowWidth() / 2); //t.inputsys.xmouse;
-				ymouseold = rect.top + (GetChildWindowHeight() / 2); //t.inputsys.xmouse;
-				#endif
-			}
-			else 
-			{
-				//Center mouse here.
-				//PE: imgui this need to be center on imgui window.
-				#ifdef USERENDERTARGET
-				extern ImVec2 OldrenderTargetSize;
-				extern ImVec2 OldrenderTargetPos;
-				ImVec2 setPos = { (OldrenderTargetSize.x*0.5f) + OldrenderTargetPos.x , (OldrenderTargetSize.y*0.5f) + OldrenderTargetPos.y };
-				SetCursorPos(setPos.x, setPos.y);
-
-				float RatioX = ((float)GetDisplayWidth() / (float)renderTargetAreaSize.x) * ((float)GetDisplayWidth() / (float)GetChildWindowWidth(-1));
-				float RatioY = ((float)GetDisplayHeight() / (float)renderTargetAreaSize.y) * ((float)GetDisplayHeight() / (float)GetChildWindowHeight(-1));
-				xmouseold = (setPos.x - renderTargetAreaPos.x) * RatioX;
-				ymouseold = (setPos.y - renderTargetAreaPos.y) * RatioY;
-
-				#else
-				RECT rect;
-				GetWindowRect(g_pGlob->hWnd, &rect);
-				SetCursorPos(rect.left + (GetChildWindowWidth() / 2), rect.top + (GetChildWindowHeight() / 2));
-				#endif
-			}
-			#endif			
-
-			// camera position
-			t.zoomviewcameraangle_f += (float) t.inputsys.xmousemove/2.0f;
-			t.zoomviewcameraheight_f -= (float) t.inputsys.ymousemove/1.5f;
-		}
-		else
-		{
-			#if defined(ENABLEIMGUI) && !defined(USEOLDIDE)
-			if (g.mouseishidden == 1) 
-			{
-				g.mouseishidden = 0;
-				ShowMouse();
-			}
-			#else
-			SetFileMapDWORD (  1, 48, 0 );
-			#endif
-		}
-		SetEventAndWait (  1 );
-		#endif
-
 		//  exit zoom view
 		#if defined(ENABLEIMGUI) && !defined(USEOLDIDE) 
 		if (!bImGuiGotFocus && bImGuiRenderTargetFocus && t.inputsys.mclick == 1)  t.tpressedtoleavezoommode = 1;
@@ -24605,9 +22517,6 @@ void editor_findentityground ( void )
 						if (ObjectExist(t.gridentityobj) == 1)
 						{
 							// only allow a stack slightly higher than the height of the object we are stacking (so dont end up on a roof)
-							//float fObjectSizeY = ObjectSizeY(t.gridentityobj, 1);
-							//float fMargin = fObjectSizeY * 0.2f;
-							//t.tfrom_f = t.gridentityposy_f + fObjectSizeY + fMargin;
 							// Rick complainted, so use a fixed high height so we can stack anything, even if on the roof
 							t.tfrom_f = t.gridentityposy_f + 200.0f;// fObjectSizeY + fMargin;
 
@@ -24720,31 +22629,13 @@ void editor_findentityground ( void )
 					}
 				}
 				// ensure a 'autofoundYpos' never drops BELOW Floor ( ( (i.e. skull under Floor) ) )
-				#ifdef WICKEDENGINE
 				float ftmp = BT_GetGroundHeight(t.terrain.TerrainID, t.gridentityposx_f, t.gridentityposz_f);
-				//if (ftmp > 0) //LB: terrain height can be negative
 				t.trygridentityposy_f = ftmp;
-				#else
-				if (  t.terrain.TerrainID>0 ) 
-				{
-					t.trygridentityposy_f=BT_GetGroundHeight(t.terrain.TerrainID,t.gridentityposx_f,t.gridentityposz_f);
-				}
-				else
-				{
-					t.trygridentityposy_f=g.gdefaultterrainheight;
-				}
-				#endif
-				#ifdef WICKEDENGINE
-				//PE: Apply pivot here.
 				ApplyPivotToGridEntity();
-				#endif
 				if (  t.gridentityposy_f<t.trygridentityposy_f ) 
 				{
 					t.gridentityposy_f = t.trygridentityposy_f;
-					#ifdef WICKEDENGINE
-					//PE: Apply pivot here.
 					ApplyPivotToGridEntity();
-					#endif
 					if (  t.entityprofile[t.gridentity].ismarker != 0  )  t.gridentityposy_f = t.gridentityposy_f + t.entityprofile[t.gridentity].offy;
 					if (  t.entityprofile[t.gridentity].defaultheight != 0  )  t.gridentityposy_f = t.gridentityposy_f + t.entityprofile[t.gridentity].defaultheight;
 				}
@@ -24966,10 +22857,6 @@ void editor_camera(void)
 		{
 			//Trigger warning.
 			sprintf(cSmallTriggerMessage, "Outside of editable area, you cannot add objects or change the terrain here. Press spacebar to recenter.");
-			
-			// test new unhandled exception crash report system
-			// int crashme = 0;
-			// crashme = crashme / crashme;
 
 			if(t.inputsys.keyspace == 1)
 			{
@@ -25315,20 +23202,6 @@ void editor_camera(void)
 						if (modifier < 2) modifier = 2;
 						t.tffcspeed_f *= modifier;
 					}
-					/*
-					else
-					{
-						// modify movement speed based on camera height
-						// LBNOTE: Should not be based on pure height, but height relative to terrain on which objects are being managed
-						float fHeightAtThisPartOfTerrain = BT_GetGroundHeight(t.terrain.TerrainID, t.editorfreeflight.c.x_f, t.editorfreeflight.c.z_f);
-						float height = t.editorfreeflight.c.y_f - fHeightAtThisPartOfTerrain;
-						if (height < 0) height = 0;
-						float modifier = height * height * 0.00001f + 2 + 50 * fAccelerationTimer; // ZJ: added 50 * fAccelerationTimer so you can reach the same high speed when holding shift, regardless of height.
-						if (modifier > 50) modifier = 50;
-						if (modifier < 2) modifier = 2;
-						t.tffcspeed_f *= modifier;
-					}
-					*/
 				}
 
 				// speed up wheel movement
@@ -25459,10 +23332,6 @@ void editor_camera(void)
 				#endif
 			}
 			#if defined(ENABLEIMGUI) && !defined(USEOLDIDE) 
-			//PE: TODO
-			//Not really usefull in imgui , to small , we need another way to display this.
-			//t.ttxtwid = getbitmapfontwidth(t.t_s.Get(), 3);
-			//pastebitmapfont(t.t_s.Get(), GetChildWindowWidth(0) - 8 - t.ttxtwid, 4, 3, 228);
 			#else
 			t.ttxtwid=getbitmapfontwidth(t.t_s.Get(),2);
 			pastebitmapfont(t.t_s.Get(),GetChildWindowWidth(0)-8-t.ttxtwid,4,2,228);
@@ -25646,12 +23515,6 @@ void gridedit_showtobjlegend ( void )
 void editor_checkIfInSubApp ( void )
 {
 	t.result = 0;
-	#ifdef VRTECH
-	///if ( g_bCharacterCreatorPlusActivated == true ) charactercreatorplus_free(); //if ( t.characterkit.loaded == 1 ) characterkit_free ( );
-	#else
-	//if (t.characterkit.loaded == 1) characterkit_free();
-	if ( t.importer.loaded == 1 ) importer_free ( );
-	#endif
 }
 
 int findentitycursorobj ( int currentlyover )
@@ -26717,8 +24580,6 @@ void gridedit_mapediting ( void )
 							if (pref.iEnableDragDropEntityMode)
 							{
 								int picksystem = t.widget.pickedSection;
-								// LB: Fixes initial selection and dragging once positioned
-								//if (fHitPointY == 0.0f) 
 								{
 									if (bDraggingActive == false) bDraggingActiveInitial = false;
 									if (ImGui::GetIO().MouseReleased[1])
@@ -26797,10 +24658,6 @@ void gridedit_mapediting ( void )
 								// LB: mousepick functionality disabled for now, see how new smart find ground system works out...
 								if (!(fHitOffsetX == 0 && fHitOffsetY == 0 && fHitOffsetZ == 0))
 								{
-									//if (iObjectMoveMode == 1)
-									//{
-									//	newpicksystem = -98;
-									//}
 									int iRealObjectMoveMode = iObjectMoveMode;
 									if (iObjectMoveModeDropSystem > 0) iRealObjectMoveMode = 0;
 								}
@@ -27050,11 +24907,6 @@ void gridedit_mapediting ( void )
 									if (iObjectMoveModeDropSystem > 0) iRealObjectMoveMode = 0;
 									if (iRealObjectMoveMode == 2)
 									{
-										/* drop system removed, now this mode can find the surface
-										// LB: mousepick functionality disabled for now, see how new smart find ground system works out...
-										// can update Y if using move object and find surface positioning mode
-										bCanUpdateY = false;
-										*/
 										bCanUpdateY = true;
 									}
 									else
@@ -27465,9 +25317,6 @@ void gridedit_mapediting ( void )
 													vBestOffsetUp = vOffset;
 												if (i == 3 && fLastRayDist[3] < fLastRayDist[1])
 													vBestOffsetUp = vOffset;
-
-												//t.gridentityposx_f += vOffset.x;
-												//t.gridentityposz_f += vOffset.z;
 											}
 											#ifndef NOOVERLABDEBUG
 											WickedCall_DrawPoint(fHitX, fHitY, fHitZ, 6.0f, color, true);
@@ -28061,23 +25910,12 @@ void gridedit_mapediting ( void )
 									t.inputsys.kscancode = 211;
 								}
 
-								#ifdef WICKEDENGINE
 								//PE: If this system rubberband is not dublicated, so we cant do shift. also it react on mouse release not mouse down.
 								//PE: So mouse release we have no rubberband selection, if still works fine with single objects.
-								if (1) // LB: match functionality for pasting down pref.iEnableDragDropEntityMode ) 
+								if (g.entityrubberbandlist.size() > 0)
 								{
-									if (g.entityrubberbandlist.size() > 0)
-									{
-										t.inputsys.kscancode = 211;
-									}
-									//PE: Perhaps if shift we could dublicate a new group ?
-									//int grouplist = isEntityInGroupList(t.e);
-									//if (grouplist >= 0) {
-									//	//Only allow one group at the same time, no shift.
-									//	t.inputsys.kscancode = 211;
-									//}
+									t.inputsys.kscancode = 211;
 								}
-								#endif
 								t.selstage=1;
 							}
 
@@ -28188,8 +26026,6 @@ void gridedit_mapediting ( void )
 											g.entityrubberbandlist[i].e = 0;
 
 									//  Ensure grab GetPoint (  does not move entity! )
-									//t.inputsys.dragoffsetx_f=t.entityelement[t.tentitytoselect].x-t.inputsys.localx_f;
-									//t.inputsys.dragoffsety_f=t.entityelement[t.tentitytoselect].z-t.inputsys.localy_f;
 									t.inputsys.dragoffsetx_f=t.entityelement[t.tentitytoselect].x-t.inputsys.originallocalx_f;
 									t.inputsys.dragoffsety_f=t.entityelement[t.tentitytoselect].z-t.inputsys.originallocaly_f;
 								}
@@ -28215,10 +26051,6 @@ void gridedit_mapediting ( void )
 							GetViewMatrix (  g.m4_view );
 
 							// works in DX9 (D3DXVec4Transform) but not DX11 (KMATRIX)
-							//SetVector4 (  g.v4_far, ObjectPositionX(t.widget.widgetXYObj), ObjectPositionY(t.widget.widgetXYObj), ObjectPositionZ(t.widget.widgetXYObj), 1 );
-							//TransformVector4 (  g.v4_far,g.v4_far,g.m4_view );
-							//t.tx_f=GetXVector4(g.v4_far);
-							//t.ty_f=GetYVector4(g.v4_far);
 							SetVector3 ( g.v3_far, ObjectPositionX(t.widget.widgetXYObj), ObjectPositionY(t.widget.widgetXYObj), ObjectPositionZ(t.widget.widgetXYObj) );
 							TransformVectorCoordinates3 ( g.v3_far, g.v3_far, g.m4_view );
 							t.tx_f=GetXVector3(g.v3_far);
@@ -28238,9 +26070,6 @@ void gridedit_mapediting ( void )
 							t.tideframestartx=148 ; t.tideframestarty=96;
 
 							#ifdef ENABLEIMGUI
-							//PE: Why do we need this ? everything should already match.
-							//PE: IMGUI need fix.
-							//PositionMouse (  (t.tideframestartx+t.inputsys.xmouse)*-1,(t.tideframestarty+t.inputsys.ymouse)*-1 );
 							#else
 							PositionMouse (  (t.tideframestartx+t.inputsys.xmouse)*-1,(t.tideframestarty+t.inputsys.ymouse)*-1 );
 							#endif
@@ -28253,234 +26082,8 @@ void gridedit_mapediting ( void )
 					}
 				}
 
-				#ifdef WICKEDENGINE
-				// ZJ: Moved this to a function so it can be called from the delete button in the edit menu.
-				//  delete selected entity via delete key
-				//bool bNoDelete = false;
-				//static bool bWaitOnDelRelease = false;
-				//#ifdef WICKEDENGINE
-				//if (bWaitOnDelRelease && t.inputsys.kscancode == 211)
-				//	bNoDelete = true;
-				//else
-				//	bWaitOnDelRelease = false;
-				//#endif
-
-				//if ( !bNoDelete && t.onetimeentitypickup == 0 )
-				//{
-				//	if ( t.gridentity != 0 ) 
-				//	{
-				//		if ( t.inputsys.kscancode == 211 ) 
-				//		{
-				//			t.inputsys.mclickreleasestate=1;
-				//			t.gridentitydelete=1;
-				//			t.selstage=1;
-				//			t.inputsys.kscancode = 0;
-				//			t.widget.pickedObject = 0; //dont remove widget object.
-				//			bWaitOnDelRelease = true;
-				//		}
-				//	}
-				//	else
-				//	{
-				//		if ( t.inputsys.kscancode == 211 || (t.widget.deletebuttonselected == 1 && t.inputsys.mclick == 0) ) 
-				//		{
-				//			t.widget.deletebuttonselected=0;
-				//			bool bContinueWithDelete = true;
-				//			if ( t.widget.pickedEntityIndex > 0 )
-				//			{
-				//				// specifically avoid deleting child entities if highlighting a parent
-				//				if ( g.entityrubberbandlist.size() > 0 )
-				//				{
-				//					bool bDisableRubberBandMoving = false;
-				//					#ifdef WICKEDENGINE
-				//					if (current_selected_group >= 0 && group_editing_on)
-				//					{
-				//						bDisableRubberBandMoving = true;
-				//					}
-				//					#endif
-				//					if (!bDisableRubberBandMoving)
-				//					{
-				//						//LB: to ensure cannot delete objects that are part of a group, 
-				//						// check if the group is a parent group (user can delete child groups okay)
-				//						#ifdef WICKEDENGINE
-				//						// before make final decision, see if a parent group can hand over control to one of its child groups
-				//						if (current_selected_group >= 0 && vEntityGroupList[current_selected_group][0].iGroupID != -1)
-				//						{
-				//							// this group is a parent, so see if there are any child groups
-				//							int iLookForThisID = vEntityGroupList[current_selected_group][0].iGroupID;
-				//							for (int gi = 0; gi < MAXGROUPSLISTS; gi++)
-				//							{
-				//								if (gi != current_selected_group && vEntityGroupList[gi].size() > 0)
-				//								{
-				//									if (vEntityGroupList[gi][0].iParentGroupID == iLookForThisID)
-				//									{
-				//										// found a child of this parent, switch roles (so parent can be deleted below)
-				//										for (int n = 0; n < vEntityGroupList[gi].size(); n++)
-				//										{
-				//											// child becomes the parent
-				//											vEntityGroupList[gi][n].iGroupID = iLookForThisID;
-				//											vEntityGroupList[gi][n].iParentGroupID = -1;
-				//										}
-				//										for (int n = 0; n < vEntityGroupList[current_selected_group].size(); n++)
-				//										{
-				//											// parent becomes the child (temporarily so they can be deleted)
-				//											vEntityGroupList[current_selected_group][n].iGroupID = -1;
-				//											vEntityGroupList[current_selected_group][n].iParentGroupID = iLookForThisID;
-				//										}
-				//										// also, ensure the original parent group image survives, so copy just before deletions
-				//										iEntityGroupListImage[gi] = iEntityGroupListImage[current_selected_group];
-				//										// only need one child to become parent
-				//										break;
-				//									}
-				//								}
-				//							}
-				//						}
-				//						// prevent deleting them, and instead instruct user to ungroup the objects first
-				//						if (current_selected_group >= 0 && vEntityGroupList[current_selected_group][0].iGroupID != -1)
-				//						{
-				//							// do not delete 'key' objects that are part of group
-				//							strcpy(cTriggerMessage, "Cannot delete a parent group. First ungroup objects, then you can delete them all.");
-				//							bTriggerMessage = true;
-				//							bContinueWithDelete = false;
-				//						}
-				//						else
-				//						#endif
-				//						{
-				//							#ifdef WICKEDENGINE
-				//							// before delete, ensure child groups are ungrouped before the delete
-				//							if (current_selected_group >= 0 && vEntityGroupList[current_selected_group][0].iParentGroupID != -1)
-				//							{
-				//								// pass flag to ensure rubber band list not cleared, so we can delete below
-				//								UnGroupSelected(true);
-				//							}
-				//							#endif
-				//							// delete all entities in rubber band highlight list
-				//							gridedit_deleteentityrubberbandfrommap();
-				//							gridedit_clearentityrubberbandlist();
-				//							t.widget.pickedEntityIndex = 0;
-				//						}
-				//					}
-				//				}
-				//			}
-				//			if (bContinueWithDelete == true)
-				//			{
-				//				if (t.widget.pickedObject > 0)
-				//				{
-				//					// delete a single entity selected by widget
-				//					if (t.widget.pickedEntityIndex > 0)
-				//					{
-				//						t.tentitytoselect = t.widget.pickedEntityIndex;
-				//						#ifdef WICKEDENGINE
-				//						DeleteEntityFromLists(t.tentitytoselect);
-				//						#endif
-				//						gridedit_deleteentityfrommap ();
-				//					}
-				//					t.widget.pickedObject = 0;
-				//					widget_updatewidgetobject ();
-				//				}
-				//				bWaitOnDelRelease = true;
-				//				t.tentitytoselect = 0;
-				//			}
-				//		}
-				//		if ( t.inputsys.keyspace == 0 ) t.inputsys.spacekeynotreleased = 0;
-				//		if ( t.inputsys.keyspace == 1 && t.inputsys.rubberbandmode == 0 && t.inputsys.spacekeynotreleased == 0 )
-				//		{
-				//			// end selection when press SPACE
-				//			gridedit_clearentityrubberbandlist();
-				//			t.widget.pickedEntityIndex = 0;
-				//			if (  t.widget.pickedObject>0 ) 
-				//			{
-				//				t.widget.pickedObject=0;
-				//				widget_updatewidgetobject ( );
-				//			}
-				//			t.tentitytoselect=0;
-				//		}
-				//	}
-				//}
-				//else
-				//{
-				//	if (  t.inputsys.mclick == 0  )  t.onetimeentitypickup = 0;
-				//}
-				#else
-				// still needed for CLASSIC and VRQUEST - delete selected entity via delete key
-				bool bNoDelete = false;
-				static bool bWaitOnDelRelease = false;
-				if ( !bNoDelete && t.onetimeentitypickup == 0 )
-				{
-					if ( t.gridentity != 0 ) 
-					{
-						if ( t.inputsys.kscancode == 211 ) 
-						{
-							t.inputsys.mclickreleasestate=1;
-							t.gridentitydelete=1;
-							t.selstage=1;
-							t.inputsys.kscancode = 0;
-							t.widget.pickedObject = 0; //dont remove widget object.
-							bWaitOnDelRelease = true;
-						}
-					}
-					else
-					{
-						if ( t.inputsys.kscancode == 211 || (t.widget.deletebuttonselected == 1 && t.inputsys.mclick == 0) ) 
-						{
-							t.widget.deletebuttonselected=0;
-							bool bContinueWithDelete = true;
-							if ( t.widget.pickedEntityIndex > 0 )
-							{
-								// specifically avoid deleting child entities if highlighting a parent
-								if ( g.entityrubberbandlist.size() > 0 )
-								{
-									bool bDisableRubberBandMoving = false;
-									if (!bDisableRubberBandMoving)
-									{
-										// check if the group is a parent group (user can delete child groups okay)
-										// delete all entities in rubber band highlight list
-										gridedit_deleteentityrubberbandfrommap();
-										gridedit_clearentityrubberbandlist();
-										t.widget.pickedEntityIndex = 0;
-									}
-								}
-							}
-							if (bContinueWithDelete == true)
-							{
-								if (t.widget.pickedObject > 0)
-								{
-									// delete a single entity selected by widget
-									if (t.widget.pickedEntityIndex > 0)
-									{
-										t.tentitytoselect = t.widget.pickedEntityIndex;
-										gridedit_deleteentityfrommap ();
-									}
-									t.widget.pickedObject = 0;
-									widget_updatewidgetobject ();
-								}
-								bWaitOnDelRelease = true;
-								t.tentitytoselect = 0;
-							}
-						}
-						if ( t.inputsys.keyspace == 0 ) t.inputsys.spacekeynotreleased = 0;
-						if ( t.inputsys.keyspace == 1 && t.inputsys.rubberbandmode == 0 && t.inputsys.spacekeynotreleased == 0 )
-						{
-							// end selection when press SPACE
-							gridedit_clearentityrubberbandlist();
-							t.widget.pickedEntityIndex = 0;
-							if (  t.widget.pickedObject>0 ) 
-							{
-								t.widget.pickedObject=0;
-								widget_updatewidgetobject ( );
-							}
-							t.tentitytoselect=0;
-						}
-					}
-				}
-				else
-				{
-					if (  t.inputsys.mclick == 0  )  t.onetimeentitypickup = 0;
-				}
-				#endif
-
-				#ifdef WICKEDENGINE
 				HandleObjectDeletion();
-				#endif
+
 				bool bDisableWidgetSelection = false;
 				#ifdef WICKEDENGINE
 				if (bDotObjectDragging)
@@ -28681,8 +26284,6 @@ void gridedit_mapediting ( void )
 							// EBE entity - begin editing this site
 							if ( ebe_save ( t.widget.pickedEntityIndex ) == 1 )
 							{
-								// Added NEW (not overwritten) - now saved to entitybank\user\ebestructures
-								//editor_addEBEtoLibrary ( entid );
 							}
 
 							// and close widget as Save bit big deal
@@ -28693,11 +26294,6 @@ void gridedit_mapediting ( void )
 							// regular entity
 							// prepare zoom-in adjustment vars
 							t.tentitytoselect=t.widget.pickedEntityIndex;
-							#ifdef WICKEDENGINE
-							//MessageBoxA(NULL, "move", "", MB_OK);
-							#else
-							entity_recordbuffer_move ( );
-							#endif
 							t.e=t.tentitytoselect;
 
 							t.gridentityinzoomview=t.e;
@@ -28816,9 +26412,6 @@ void gridedit_mapediting ( void )
 					{
 						// rotate all selected around t.tobj, the active object
 						GGQUATERNION QuatAroundX, QuatAroundY, QuatAroundZ;
-						//GGQuaternionRotationAxis(&QuatAroundX, &GGVECTOR3(1, 0, 0), GGToRadian(fMovedActiveObjectRX)); (see above)
-						//GGQuaternionRotationAxis(&QuatAroundY, &GGVECTOR3(0, 1, 0), GGToRadian(fMovedActiveObjectRY));
-						//GGQuaternionRotationAxis(&QuatAroundZ, &GGVECTOR3(0, 0, 1), GGToRadian(fMovedActiveObjectRZ));
 						GGQuaternionRotationAxis(&QuatAroundX, &GGVECTOR3(1, 0, 0), GGToRadian(0));
 						GGQuaternionRotationAxis(&QuatAroundY, &GGVECTOR3(0, 1, 0), GGToRadian(0));
 						GGQuaternionRotationAxis(&QuatAroundZ, &GGVECTOR3(0, 0, 1), GGToRadian(0));
@@ -28828,7 +26421,6 @@ void gridedit_mapediting ( void )
 					}
 				}
 				// record all current offsets from primary cursor entity and rubberband selection
-				//if (pref.iEnableDragDropEntityMode && t.gridentity > 0) //prevented non drag/drop entity mode smart object update
 				if (t.gridentity > 0)
 				{
 					//PE: Dont reset t.fOldGridEntityX when we got a t.gridentity
@@ -29185,10 +26777,6 @@ void gridedit_save_map ( void )
 		editor_hideall3d ( );
 	}
 
-	// Use large prompt
-	//t.statusbar_s=t.strarr_s[365]; 
-	//popup_text(t.statusbar_s.Get());
-
 	// Save only to TESTMAP area (for map testing)
 	gridedit_save_test_map ( );
 
@@ -29233,15 +26821,11 @@ void gridedit_save_map ( void )
 
 void gridedit_updatemapbeforeedit ( void )
 {
+	//  Completely reset filemap (and interface parts ie library)
+	editor_filemapinit ( );
 
-//  Completely reset filemap (and interface parts ie library)
-editor_filemapinit ( );
-
-//  Newly loaded map starts at layer X
-t.gridlayer=5 ; t.refreshgrideditcursor=1;
-
-return;
-
+	//  Newly loaded map starts at layer X
+	t.gridlayer=5 ; t.refreshgrideditcursor=1;
 }
 
 void gridedit_clear_settings ( void )
@@ -29465,7 +27049,6 @@ void gridedit_new_map(void)
 
 	//  Load map data
 	editor_hideall3d();
-	//t.statusbar_s = t.strarr_s[366]; gridedit_updatestatusbar();
 
 	//  Clear all settings
 	timestampactivity(0, "NEWMAP: _gridedit_clear_settings");
@@ -29613,9 +27196,6 @@ void gridedit_new_map(void)
 	//  Reset cursor
 	t. grideditselect = 0 ; editor_refresheditmarkers ( );
 
-	//  Clear status Text (  )
-	//t.statusbar_s = "" ; gridedit_updatestatusbar ( );
-
 	//  Clear widget status
 	t.widget.pickedObject=0 ; widget_updatewidgetobject ( );
 
@@ -29681,7 +27261,6 @@ void gridedit_new_map_quick(void)
 	
 	//  Load map data
 	editor_hideall3d();
-	//t.statusbar_s = t.strarr_s[366]; gridedit_updatestatusbar();
 
 	//  Clear all settings
 	timestampactivity(0, "NEWMAP: _gridedit_clear_settings");
@@ -29760,13 +27339,9 @@ void gridedit_new_map_quick(void)
 	gridedit_resetmemortracker();
 
 	//  Delete all assets of map work
-	//timestampactivity(0, "NEWMAP: _waypoint_deleteall");
-	//waypoint_deleteall();
 	mapfile_newmap();
 
 	//  Update remaining map data before editing
-	//timestampactivity(0, "NEWMAP: _gridedit_updatemapbeforeedit");
-	//gridedit_updatemapbeforeedit();
 	if (t.game.gameisexe == 0)
 	{
 		// for now, it seems the standalone can call this function!!
@@ -29815,9 +27390,6 @@ void gridedit_new_map_quick(void)
 
 	//  Reset cursor
 	t.grideditselect = 0; editor_refresheditmarkers();
-
-	//  Clear status Text (  )
-	//t.statusbar_s = ""; gridedit_updatestatusbar();
 
 	//  Clear widget status
 	t.widget.pickedObject = 0; widget_updatewidgetobject();
@@ -29882,10 +27454,6 @@ void gridedit_load_map ( void )
 
 	if (bKeepWindowsResponding)
 		EmptyMessages();
-
-	//  Use large prompt
-	//t.statusbar_s=t.strarr_s[367]; 
-	//popup_text(t.statusbar_s.Get());
 
 	//  Reset visual settings for new map
 	if (  t.skipfpmloading == 0 ) 
@@ -30080,8 +27648,6 @@ void gridedit_load_map ( void )
 	if ( g.timestampactivityflagged == 1 ) 
 	{
 		//  message prompt
-		//t.statusbar_s=t.strarr_s[368];
-		//popup_text_change(t.statusbar_s.Get()) ; SleepNow (  2000 );
 		g.timestampactivityflagged=0;
 
 		//  copy time stamp log to map bank log
@@ -30101,15 +27667,6 @@ void gridedit_load_map ( void )
 				}
 				SaveArray (  t.tmblogfile_s.Get() ,t.missingmedia_s );
 			}
-		}
-	}
-	else
-	{
-		// if no missing media, is parental control system removing some?
-		if ( g_bBlackListRemovedSomeEntities == true ) 
-		{
-			//t.statusbar_s = "Parental Control system has removed some content from this level";
-			//popup_text_change(t.statusbar_s.Get()) ; SleepNow ( 3000 );
 		}
 	}
 
@@ -30197,17 +27754,10 @@ void gridedit_load_map ( void )
 	}
 	g.missingmediacounter=0;
 
-	//  Clear status Text (  )
-	//t.statusbar_s="" ; popup_text_close();
-
 	//  Quick update of cursor
 	t.lastgrideditselect=-1 ; editor_refresheditmarkers ( );
 
 	//  Recreate all entities in level
-
-	//DumpImageList(); // PE: DEBUG - Dump image usage after loading master objects.
-	//DEBUG - United Tribes of Gahkistahn.fpm: 7.6 gb wicked engine textures , 400mb legacy images.
-
 	char debug[MAX_PATH];
 	sprintf(debug, "Setup objects: %ld", g.entityelementlist);
 	timestampactivity(0, debug);
@@ -30223,21 +27773,7 @@ void gridedit_load_map ( void )
 
 	for ( t.e = 1 ; t.e <=  g.entityelementlist; t.e++ )
 	{
-		//PE: DEBUG - Crash here at 654 level have (1200+) : United Tribes of Gahkistahn.fpm
-		//if (t.e == 600)
-		//{
-		//	DumpImageList(); // PE: Dump image usage.
-		//}
-		//int entid = t.entityelement[t.e].bankindex;
-		//if (entid > 0 && entid < t.entityprofileheader.size())
-		//{
-		//	char debug[MAX_PATH];
-		//	sprintf(debug, "Adding %d: %s", t.e, t.entityprofileheader[entid].desc_s.Get());
-		//	timestampactivity(0, debug);
-		//}
-
 		t.tupdatee=t.e ; gridedit_updateentityobj ( );
-
 		if (t.e % 20 == 0)
 		{
 			if (bKeepWindowsResponding)
@@ -30261,9 +27797,6 @@ void gridedit_load_map ( void )
 
 	//  Refresh any 'shaders' that associat with new entities loaded in
 	visuals_justshaderupdate ( );
-
-	//  Generate heightmap texture for cheap shadows (if required)
-	//t.terrain.terraintriggercheapshadowrefresh=2;
 
 	//  Ensure editor zoom refreshes
 	t.updatezoom=1;
@@ -30560,20 +28093,6 @@ void gridedit_new_map_ask ( void )
 		gridedit_intercept_savefirst ( );
 	}
 
-	#ifdef VRTECH
-	//  refresh 3d view so dialog Box-  not left black Box
-	//if ( gbWelcomeSystemActive == false )
-	//{
-	//	for ( t.tsync = 1 ; t.tsync <=  5 ; t.tsync++ ) { Sync ( ); SleepNow ( 10 ); }
-	//}
-	#else
-	//  refresh 3d view so dialog Box-  not left black Box
-	if ( gbWelcomeSystemActive == false )
-	{
-		for ( t.tsync = 1 ; t.tsync <=  5 ; t.tsync++ ) { Sync ( ); SleepNow ( 10 ); }
-	}
-	#endif
-
 	if (  t.editorcanceltask == 0 ) 
 	{
 		//  NEW MAP
@@ -30709,20 +28228,6 @@ void gridedit_addentitytomap(void)
 			t.entityelement[t.e].eleprof.thumb_aimain_s = "";
 		}
 	}
-	/*
-	int entid = t.entityelement[t.e].bankindex;
-	if (entid > 0)
-	{
-		if (t.entityprofile[entid].ismarker == 2)
-		{
-			float fLightProbeScale = t.entityelement[t.e].eleprof.light.fLightHasProbe;
-			if ( fLightProbeScale > 0 )
-				entity_placeprobe(t.entityelement[t.e].obj, fLightProbeScale);
-			else
-				entity_deleteprobe(t.entityelement[t.e].obj);
-		}
-	}
-	*/
 	// clear any gridentity light if gridentity no longer used
 	if (t.gridentitywickedlightindex > 0)
 	{
@@ -30763,15 +28268,6 @@ void gridedit_deleteentityfrommap ( void )
 	}
 
 	#ifdef WICKEDENGINE
-	// if entity is a light, remove its probe
-	//int entid = t.entityelement[t.tentitytoselect].bankindex;
-	//if (entid > 0)
-	//{
-	//	if (t.entityprofile[entid].ismarker == 2)
-	//	{
-	//		entity_deleteprobe(t.entityelement[t.tentitytoselect].obj);
-	//	}
-	//}
 	// if entity is a light, has a probe
 	int entid = t.entityelement[t.tentitytoselect].bankindex;
 	if (entid > 0)
@@ -30807,7 +28303,6 @@ void gridedit_deleteentityfrommap ( void )
 	if (g_UndoSysObjectIsBeingMoved == true)
 	{
 		// its move - so we store the change posrotscl event so we know where the entity came from
-		//g_UndoSysObjectIsBeingMoved = false; //PE: Reuse for entity_deleteentityfrommap
 		g_UndoSysObjectRememberBeforeMove = true;
 		g_UndoSysObjectRememberBeforeMoveE = te;
 		g_UndoSysObjectRememberBeforeMovePX = t.entityelement[te].x;
@@ -31145,8 +28640,6 @@ void gridedit_recreateentitycursor ( void )
 						WickedCall_SetObjectCastShadows(pObject, false);
 					t.entityprofile[t.entid].castshadow = -1;
 				}
-				//LB: Always process new object through TextureMesh to set from element or parent, cannot skip this step now
-				//if ((ele_id > 0 && t.entityelement[ele_id].eleprof.WEMaterial.MaterialActive) || (ele_id==0 && t.gridentity>0 && t.entityprofile[t.gridentity].WEMaterial.MaterialActive ))
 				if ((ele_id > 0) || (ele_id==0 && t.gridentity>0))
 				{
 					//PE: Wicked material can overwrite objects settings.
@@ -31353,11 +28846,6 @@ void gridedit_displayentitycursor ( void )
 			t.tfinalscaley_f=t.gridentityscaley_f;
 			t.tfinalscalez_f=t.gridentityscalez_f;
 			ScaleObject ( t.obj, t.tfinalscalex_f, t.tfinalscaley_f, t.tfinalscalez_f );
-			//PE: Particle scale bug fix.
-			//if (t.entityprofile[t.gridentity].ismarker == 10)
-			//{
-			//	ScaleObject (t.obj, t.entityprofile[t.gridentity].scale, t.entityprofile[t.gridentity].scale, t.entityprofile[t.gridentity].scale);
-			//}
 			if (  t.gridentity>0 )
 			{
 				if (  t.entityprofile[t.gridentity].ischaracter == 0 ) 
@@ -31452,9 +28940,6 @@ void modifyplaneimagestrip ( int objno, int texmax, int texindex )
 
 	//  Unlock the vertex data of the object
 	UnlockVertexData (  );
-
-//endfunction
-
 }
 
 int Get_Spray_Mode_On(void)
@@ -31559,25 +29044,6 @@ void init_readouts()
 	readoutLayers.push_back(READOUT_GAMEPLAY);
 	readoutTypes.push_back(READOUT_INT);
 	readoutCallbacks.push_back(nullptr);
-
-	// Removed for now
-	/*readoutTitles.push_back("VSync");
-	readoutWidgetTypes.push_back(STORYBOARD_WIDGET_TICKBOX);
-	readoutLayers.push_back(READOUT_GRAPHICS);
-	readoutTypes.push_back(READOUT_BOOL);
-	readoutCallbacks.push_back(nullptr);
-
-	readoutTitles.push_back("Music Volume");
-	readoutWidgetTypes.push_back(STORYBOARD_WIDGET_SLIDER);
-	readoutLayers.push_back(READOUT_SOUND);
-	readoutTypes.push_back(READOUT_INT);
-	readoutCallbacks.push_back(titles_immediateupdatesound);
-
-	readoutTitles.push_back("Sound Effects Volume");
-	readoutWidgetTypes.push_back(STORYBOARD_WIDGET_SLIDER);
-	readoutLayers.push_back(READOUT_SOUND);
-	readoutTypes.push_back(READOUT_INT);
-	readoutCallbacks.push_back(titles_immediateupdatesound);*/
 }
 
 
@@ -31590,12 +29056,8 @@ void display_profiler_data(ImDrawList* draw, char* filter,int startline)
 	ImVec2 window_pos = ImVec2((viewport->Pos.x + viewport->Size.x - 10.0f), (viewport->Pos.y + 10.0f));
 
 	bool bProfile = true;
-	//wiProfiler::SetEnabled(false); //PE: Clear stat.
 	bProfilerEnable = true;
-	//if (!wiProfiler::IsEnabled())
-	//{
 	wiProfiler::SetEnabled(true);
-	//}
 	std::string profiler_data = wiProfiler::GetProfilerDataFilter(filter);
 	float line = startline;
 	char* find = (char*)pestrcasestr(profiler_data.c_str(), "\n");
@@ -32046,8 +29508,3 @@ void EmptyMessages(void)
 		}
 	}
 }
-
-
-
-
-

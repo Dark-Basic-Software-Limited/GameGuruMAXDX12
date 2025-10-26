@@ -127,7 +127,6 @@ void lua_resumegame ( void );
 void lua_switchpage ( void );
 void lua_switchpageback ( void );
 void lua_levelfilenametoload ( void );
-void lua_resetfade ( void );
 void lua_triggerfadein (void);
 void lua_wingame (void);
 void lua_losegame (void);

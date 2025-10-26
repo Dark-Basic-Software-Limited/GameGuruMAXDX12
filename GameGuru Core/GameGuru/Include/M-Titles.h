@@ -38,7 +38,6 @@ void titles_base ( void );
 void loadingpageprogress ( int delta );
 void handletitlesmusic ( void );
 void fadetitlesmusic ( int tFadeVol );
-
 void titleslua_init ( void );
 void titleslua_main_inandout ( LPSTR pPageName );
 bool titleslua_main_loopcode(void);

@@ -1130,12 +1130,6 @@ void characterkit_update_object ( void )
 
 					if (  ObjectExist(t.tobj)  ==  1 ) 
 					{
-//       `position object tobj,LimbPositionX(t.characterkit.objectstart+2,tBip01_FacialHair),LimbPositionY(t.characterkit.objectstart+2,tBip01_FacialHair),LimbPositionZ(t.characterkit.objectstart+2,tBip01_FacialHair)
-
-//       `offset limb t.characterkit.objectstart+2,tBip01_FacialHair,0,0,-1
-
-//       `scale limb t.characterkit.objectstart+2,tBip01_FacialHair,650,650,650
-
 						GlueObjectToLimbEx (  t.tobj,t.characterkit.objectstart+2,t.tBip01_FacialHair,2 );
 					}
 				}
@@ -1771,84 +1765,6 @@ return;
 void characterkit_mousePick ( void )
 {
 	if (  t.importer.objectRotateMode  !=  0 || t.characterkit.thumbGadgetOn  ==  1 || t.characterkit.skinPickOn  ==  1   )  return;
-
-	#ifdef VRTECH
-	 // No picking in CC for now
-	#else
-	 //  try attachments first
-	 t.tpick = 0;
-	 #ifdef DX11
-	 float fMX = (GetDisplayWidth()+0.0) / 800.0f;
-	 float fMY = (GetDisplayHeight()+0.0) / 600.0f;
-	 t.tadjustedtoareax_f = t.tccoldmousex*fMX;
-	 t.tadjustedtoareay_f = t.tccoldmousey*fMY;
-	 #else
-	 t.tadjustedtoareax_f=(GetDisplayWidth()+0.0)/(GetChildWindowWidth()+0.0);
-	 t.tadjustedtoareay_f=(GetDisplayHeight()+0.0)/(GetChildWindowHeight()+0.0);
-	 t.tadjustedtoareax_f=((t.tccoldmousex+0.0)/800.0)/t.tadjustedtoareax_f;
-	 t.tadjustedtoareay_f=((t.tccoldmousey+0.0)/600.0)/t.tadjustedtoareay_f;
-	 t.tadjustedtoareax_f=t.tadjustedtoareax_f*(GetChildWindowWidth()+0.0);
-	 t.tadjustedtoareay_f=t.tadjustedtoareay_f*(GetChildWindowHeight()+0.0);
-	 #endif
-	 if (  t.tpick  ==  0  )  t.tpick  =  PickScreenObjectEx ( t.tadjustedtoareax_f , t.tadjustedtoareay_f , t.characterkit.objectstart , t.characterkit.objectstart+10 , 1, 0 ) ;
-	 if (  t.tpick  !=  0 ) 
-	 {
-		//  long message, handles with two lines
-		t.tccmessage_s = "*1";
-		t.characterkit.selected = t.tpick - t.characterkit.objectstart;
-		if (  t.inputsys.mclick  ==  1 && t.characterkit.oldMouseClick  ==  0 ) { t.characterkit.thumbGadgetOn  =  1  ; t.characterkit.oldMouseClick  =  1 ; t.characterkit.loadthumbs  =  1; }
-		if (  t.tpick  !=  t.characterkit.picked ) 
-		{
-			if (  t.tpick < t.characterkit.objectstart+3 ) 
-			{
-				SetObjectEffect (  t.tpick,t.characterkit.effectforcharacterHighlight );
-			}
-			if (  t.tpick  ==  t.characterkit.objectstart+4 ) 
-			{
-				SetObjectEffectCore (  t.tpick,t.characterkit.effectforAttachmentsHighlight,1 );
-			}
-			if (  t.tpick  ==  t.characterkit.objectstart+3 ) 
-			{
-				SetObjectEffectCore (  t.tpick,t.characterkit.effectforBeardHighlight,1 );
-			}
-			if (  t.characterkit.picked  !=  0 ) 
-			{
-				if (  t.characterkit.picked < t.characterkit.objectstart+3 ) 
-				{
-					SetObjectEffect (  t.characterkit.picked,t.characterkit.effectforcharacter );
-				}
-				if (  t.characterkit.picked  ==  t.characterkit.objectstart+4 ) 
-				{
-					SetObjectEffectCore (  t.characterkit.picked,t.characterkit.effectforAttachments,1 );
-				}
-				if (  t.characterkit.picked  ==  t.characterkit.objectstart+3 ) 
-				{
-					SetObjectEffectCore (  t.characterkit.picked,t.characterkit.effectforBeard,1 );
-				}
-			}
-			t.characterkit.picked = t.tpick;
-		}
-	 }
-	 else
-	 {
-		if (  t.characterkit.picked  !=  0 ) 
-		{
-			if (  t.characterkit.picked < t.characterkit.objectstart+3 ) 
-			{
-				SetObjectEffect (  t.characterkit.picked,t.characterkit.effectforcharacter );
-			}
-			if (  t.characterkit.picked  ==  t.characterkit.objectstart+4 ) 
-			{
-				SetObjectEffectCore (  t.characterkit.picked,t.characterkit.effectforAttachments,1 );
-			}
-			if (  t.characterkit.picked  ==  t.characterkit.objectstart+3 ) 
-			{
-				SetObjectEffectCore (  t.characterkit.picked,t.characterkit.effectforBeard,1 );
-			}
-			t.characterkit.picked = 0;
-		}
-	 }
-	#endif
 }
 
 void characterkit_mouseRotate ( void )
@@ -2058,7 +1974,6 @@ void characterkit_thumbgadget ( void )
 				if (  t.tYPos_f > (t.tsliderbottom_f-t.tslidersize_f)  )  t.tYPos_f  =  (t.tsliderbottom_f-t.tslidersize_f);
 				t.characterkit.scrollPosition = t.tYPos_f;
 			}
-			//BoxGradient (  t.tboxleft_f,t.tboxtop_f,t.tboxright_f,t.tboxbottom_f, Rgb(102+t.tscrollbarboost,107+t.tscrollbarboost,112+t.tscrollbarboost),Rgb(102+t.tscrollbarboost,107+t.tscrollbarboost,112+t.tscrollbarboost),Rgb(36+t.tscrollbarboost,43+t.tscrollbarboost,50+t.tscrollbarboost),Rgb(36+t.tscrollbarboost,43+t.tscrollbarboost,50+t.tscrollbarboost) );
 			GGBoxGradient (  t.tboxleft_f,t.tboxtop_f,t.tboxright_f,t.tboxbottom_f, 255, 102+t.tscrollbarboost, 107+t.tscrollbarboost, 112+t.tscrollbarboost );//),Rgb(102+t.tscrollbarboost,107+t.tscrollbarboost,112+t.tscrollbarboost),Rgb(36+t.tscrollbarboost,43+t.tscrollbarboost,50+t.tscrollbarboost),Rgb(36+t.tscrollbarboost,43+t.tscrollbarboost,50+t.tscrollbarboost );
 		}
 

@@ -18,7 +18,6 @@ using namespace GGTrees;
 bool g_bSpecialPhysicsDebuggingMode = false;
 GGVECTOR3 g_vPlayAreaMin = GGVECTOR3(0, 0, 0);
 GGVECTOR3 g_vPlayAreaMax = GGVECTOR3(0, 0, 0);
-//bool g_bSculptingRequiresNewPhysics = false;
 bool g_bModifiedThisTerrainGrid[21][21];
 int g_iLastProgressPercentage = -1;
 bool g_bMapMatIDToMatIndexAvailable = false;
@@ -191,10 +190,6 @@ void physics_init ( void )
 		MakeObjectCube (  t.aisystem.objectstartindex,10 );
 	}
 	HideObject (  t.aisystem.objectstartindex );
-
-	// moved player physics setup closer to main loop
-	//t.freezeplayerposonly = 0;
-	//physics_setupplayer ( );
 
 	//  set default player gravity
 	t.playercontrol.gravityactive=1;
@@ -473,630 +468,6 @@ void physics_createterraincollision ( void )
 
 	// and we are done
 	return;
-
-	/* this code never used once ODECreateGGTerrain was invented!
-	// this is there the terrain physics is created
-	timestampactivity(0, "create terrain physics");
-	float fPlayAreaSizeX = g_vPlayAreaMax.x - g_vPlayAreaMin.x; // soon to be relegated to 'nav clusters'
-	float fPlayAreaSizeZ = g_vPlayAreaMax.z - g_vPlayAreaMin.z;
-	float fEditableSizeX = t.terraineditableareasizemaxx - t.terraineditableareasizeminx;
-	float fEditableSizeZ = t.terraineditableareasizemaxz - t.terraineditableareasizeminz;
-
-	// if terrain has been changed
-	bool bSkipTerrainPhyGen = false;
-	if ( bSkipTerrainPhyGen == false )
-	{
-		// create terrain physics from GGTerrain Height Data
-		float fEditableSizeHalved = GGTerrain_GetEditableSize();
-		float fEditableSize = fEditableSizeHalved * 2.0f;
-		int iDivideGrid = 20;
-		int iFullResolutionSize = 5000;// PE: 5000 produce a maxVertex of 0x0000d9d4 (6000 go above 0xFFFF).
-		int maxVertex = 0;
-		int iHeightDataSize = iFullResolutionSize * iFullResolutionSize;
-		float* pfHeightData = new float[iHeightDataSize];
-		if (pfHeightData)
-		{
-			// get height data and other terrain settings
-			bool bUseOriginalLOD = true; // need real correct height data, even if far away! Prevents player falling through terrain
-			int iResult = GGTerrain_GetHeightMapEx(iFullResolutionSize, iFullResolutionSize, pfHeightData, bUseOriginalLOD);
-			int iResolutionSIze = iFullResolutionSize / iDivideGrid;
-			float fOneTileSize = fEditableSize / (iFullResolutionSize - 1);
-
-			// init for ALL editable terrain (but slow until move to terrain gen UI and latest bullet3)
-			int iGridFromX = 0;
-			int iGridFromZ = 0;
-			int iGridToX = iDivideGrid;
-			int iGridToZ = iDivideGrid;
-
-			// so we reduce to only the playable area to speed up test level experiences
-			bool bLimitPhysicsToPlayableArea = false;
-			if (bLimitPhysicsToPlayableArea == true)
-			{			
-				int iCameraGridX1 = iFullResolutionSize - (((fEditableSizeHalved - g_vPlayAreaMin.x) / fOneTileSize));
-				int iCameraGridZ1 = iFullResolutionSize - (((fEditableSizeHalved - g_vPlayAreaMin.z) / fOneTileSize));
-				iCameraGridX1 /= (iFullResolutionSize / iDivideGrid);
-				iCameraGridZ1 /= (iFullResolutionSize / iDivideGrid);
-				if (iCameraGridX1 < 2) iCameraGridX1 = 2;
-				if (iCameraGridZ1 < 2) iCameraGridZ1 = 2;
-				iGridFromX = iCameraGridX1 - 2;
-				iGridFromZ = iCameraGridZ1 - 2;
-				int iCameraGridX2 = iFullResolutionSize - (((fEditableSizeHalved - g_vPlayAreaMax.x) / fOneTileSize));
-				int iCameraGridZ2 = iFullResolutionSize - (((fEditableSizeHalved - g_vPlayAreaMax.z) / fOneTileSize));
-				iCameraGridX2 /= (iFullResolutionSize / iDivideGrid);
-				iCameraGridZ2 /= (iFullResolutionSize / iDivideGrid);
-				if (iCameraGridX2 > iDivideGrid - 2) iCameraGridX2 = iDivideGrid - 2;
-				if (iCameraGridZ2 > iDivideGrid - 2) iCameraGridZ2 = iDivideGrid - 2;
-				iGridToX = iCameraGridX2 + 2;
-				iGridToZ = iCameraGridZ2 + 2;
-			}
-
-			// if area of terrain changed, need to wipe out old terrain cache files so can create new ones
-			static int iGridFromXLast = -1;
-			static int iGridToXLast = -1;
-			static int iGridFromZLast = -1;
-			static int iGridToZLast = -1;
-			static cstr oldprojectfilename_s = "";
-			if (g.projectfilename_s != oldprojectfilename_s)
-			{
-				//PE: Also if loaded another level, clear.
-				iGridFromXLast = -1;
-				oldprojectfilename_s = g.projectfilename_s;
-			}
-			if (iGridFromX != iGridFromXLast || iGridToX != iGridToXLast || iGridFromZ != iGridFromZLast || iGridToZ != iGridToZLast)
-			{
-				iGridFromXLast = iGridFromX;
-				iGridToXLast = iGridToX;
-				iGridFromZLast = iGridFromZ;
-				iGridToZLast = iGridToZ;
-				extern void gridedit_emptyallterrainobjfiles();
-				cstr pStoreOld = GetDir();
-				if (PathExist (g.mysystem.levelBankTestMap_s.Get()) == 0)
-				{
-					SetDir (cstr(g.fpscrootdir_s + "\\Files\\").Get());
-					if (PathExist ("levelbank") == 0)
-					{
-						MakeDirectory ("levelbank");
-						SetDir ("levelbank");
-					}
-					if (PathExist ("testmap") == 0)
-					{
-						MakeDirectory ("testmap");
-						SetDir ("testmap");
-					}
-				}
-				else
-				{
-					//PE: We must resolve this, so we dont use the standalone folder but the writefolder where everything is stored.
-					char resolvefolder[MAX_PATH];
-					strcpy(resolvefolder, g.mysystem.levelBankTestMap_s.Get());
-					GG_GetRealPath(resolvefolder, 1);
-					SetDir (resolvefolder);
-				}
-				gridedit_emptyallterrainobjfiles();
-				SetDir (pStoreOld.Get());
-			}
-			// all grids for now
-			int iIterCount = 0;
-			int iTerrainPhyObjIndex = 0;
-			int iDataSizeX = iGridToX - iGridFromX;
-			int iDataSizeZ = iGridToZ - iGridFromZ;
-			for (int iGridAtZ = iGridFromZ; iGridAtZ <= iGridToZ; iGridAtZ++)
-			{
-				for (int iGridAtX = iGridFromX; iGridAtX <= iGridToX; iGridAtX++)
-				{
-					// terrain object
-					t.tphysicsterrainobjstart = t.terrain.objectstartindex + 1000;
-					int iTerrainPhyObj = t.tphysicsterrainobjstart + iTerrainPhyObjIndex;
-					iTerrainPhyObjIndex++;
-					char pTerrainBVHChunkFilename[MAX_PATH];
-					sprintf(pTerrainBVHChunkFilename, "%s\\Files\\levelbank\\testmap\\terrainobj%d.bullet", g.fpscrootdir_s.Get(), iTerrainPhyObj);
-					GG_GetRealPath(pTerrainBVHChunkFilename, 1);
-
-					// if this terrain object has been changed, delete its file, so it will regenerate
-					if (g_bModifiedThisTerrainGrid[iGridAtX][iGridAtZ] == true)
-					{
-						if (FileExist(pTerrainBVHChunkFilename) == 1) DeleteFileA(pTerrainBVHChunkFilename);
-						g_bModifiedThisTerrainGrid[iGridAtX][iGridAtZ] = false;
-					}
-
-					// report progress
-					char pProgressStr[256];
-					float fProgressPercentage = (float(((iGridAtZ - iGridFromZ)*iDataSizeX) + (iGridAtX - iGridFromX)) / (iDataSizeX*iDataSizeZ))*100.0f;
-					if (fProgressPercentage > 100.0f) fProgressPercentage = 100.0f;
-					if (t.game.gameisexe == 0 && g_iLastProgressPercentage != (int)fProgressPercentage)
-					{
-						g_iLastProgressPercentage = (int)fProgressPercentage / 3;
-						sprintf(pProgressStr, "CREATING TERRAIN PHYSICS - [%d] : %d\\100 Complete", iIterCount, (int)fProgressPercentage);
-						t.screenprompt_s = pProgressStr;
-						printscreenprompt(t.screenprompt_s.Get());
-					}
-
-					// LB: New system to (a) speed up terrain physics generation and (b) improve accuracy for sharp and steep terrain details
-					bool bNewFloodFillTerrainPhysicsReducer = true;
-					if (bNewFloodFillTerrainPhysicsReducer == true)
-					{
-						// relative position in overall height field
-						int iRealX = (iGridAtX*iResolutionSIze);
-						int iRealZ = (iGridAtZ*iResolutionSIze);
-
-						// one way flood fill uses no iteration for performance
-						g_LargeQuadList.clear();
-						memset(g_iQuadGrid, 0, sizeof(g_iQuadGrid));
-						for (int z = 0; z < iResolutionSIze; z++)
-						{
-							for (int x = 0; x < iResolutionSIze; x++)
-							{
-								if (g_iQuadGrid[x][z] == 0)
-								{
-									physics_processheightsusingfloodfill (x, z, iGridAtX, iGridAtZ, fOneTileSize, iFullResolutionSize, iResolutionSIze, iHeightDataSize, pfHeightData);
-								}
-							}
-						}
-
-						// go through original large quads
-						int iLargeQuadListSizeBeforeAdditions = g_LargeQuadList.size();
-						g_RefinedLargeQuadList.clear();
-						for (int quad = 0; quad < g_LargeQuadList.size(); quad++)
-						{
-							int iX1 = g_LargeQuadList[quad].iX1;
-							int iZ1 = g_LargeQuadList[quad].iZ1;
-							int iX2 = g_LargeQuadList[quad].iX2;
-							int iZ2 = g_LargeQuadList[quad].iZ2;
-							//if (iX2 > iX1 || iZ2 > iZ1) real solution is allow single strips to be divided !!!
-							if (iX2 == iX1 && iZ2 == iZ1)
-							{
-								// no need to divide a SINGLE grid item
-							}
-							else
-							{
-								// bottom edge
-								if (iZ2 < iResolutionSIze )// && iTopEdgeUsed != iZ2)
-								{
-									int iNeighboughID = g_iQuadGrid[iX1][iZ2 + 1] - 1;
-									if (iNeighboughID >= 0)
-									{
-										if (g_LargeQuadList[iNeighboughID].iX1 == iX1 && g_LargeQuadList[iNeighboughID].iX2 == iX2)
-										{
-											// the neighbor lines up exactly, no need to fragment this edge
-										}
-										else
-										{
-											// we need to scan this edge and create fragments of neighboring quads to line up to
-											int iCurrentX = iX1;
-											int iCurrentID = iNeighboughID;
-											for (int x = iX1; x <= iX2; x++)
-											{
-												iNeighboughID = g_iQuadGrid[x][iZ2 + 1] - 1;
-												if (iNeighboughID >= 0)
-												{
-													if (iNeighboughID != iCurrentID)
-													{
-														// fill quad grid
-														for (int fillx = iCurrentX; fillx < x - 1; fillx++)
-														{
-															int iUniqueTileID = 1 + g_RefinedLargeQuadList.size() + iLargeQuadListSizeBeforeAdditions;
-															g_iQuadGrid[fillx][iZ2] = iUniqueTileID;
-														}
-
-														// need a new line up quad here
-														sLargeQuadListItem item;
-														item.iX1 = iCurrentX;
-														item.iX2 = x - 1;
-														item.iZ1 = iZ2;
-														item.iZ2 = iZ2;
-														g_RefinedLargeQuadList.push_back(item);
-
-														// set up for next one
-														iCurrentX = x;
-														iCurrentID = iNeighboughID;
-													}
-												}
-											}
-											if (iZ2 > iZ1)
-											{
-												// multiple rows deep, the norm
-												if (iCurrentX <= iX2)
-												{
-													// fill quad grid
-													for (int fillx = iCurrentX; fillx < iX2; fillx++)
-													{
-														int iUniqueTileID = 1 + g_RefinedLargeQuadList.size() + iLargeQuadListSizeBeforeAdditions;
-														g_iQuadGrid[fillx][iZ2] = iUniqueTileID;
-													}
-
-													// final line-up quad on this edge
-													sLargeQuadListItem item;
-													item.iX1 = iCurrentX;
-													item.iX2 = iX2;
-													item.iZ1 = iZ2;
-													item.iZ2 = iZ2;
-													g_RefinedLargeQuadList.push_back(item);
-												}
-												// and finally reduce the original on this side
-												g_LargeQuadList[quad].iZ2 = iZ2 - 1;
-											}
-											else
-											{
-												// only a single row deep
-												if (iCurrentX <= iX2)
-												{
-													// so instead of using a new one, use existing orig
-													g_LargeQuadList[quad].iX1 = iCurrentX;
-													g_LargeQuadList[quad].iX2 = iX2;
-													g_LargeQuadList[quad].iZ1 = iZ2;
-													g_LargeQuadList[quad].iZ2 = iZ2;
-												}
-												else
-												{
-													// if the last one created was indeed the last one
-													// edit the old orig and delete from g_RefinedLargeQuadList list
-													int iLastNewItemIndex = g_RefinedLargeQuadList.size();
-													g_LargeQuadList[quad] = g_RefinedLargeQuadList[iLastNewItemIndex- 1];
-													g_RefinedLargeQuadList.erase(g_RefinedLargeQuadList.begin() + iLastNewItemIndex);
-												}
-											}
-										}
-									}
-									else
-									{
-										// error - seems we have a missing neightbor
-									}
-								}
-							}
-							if (g_RefinedLargeQuadList.size() > 0)
-							{
-								for (int addquad = 0; addquad < g_RefinedLargeQuadList.size(); addquad++)
-								{
-									g_LargeQuadList.push_back(g_RefinedLargeQuadList[addquad]);
-								}
-								g_RefinedLargeQuadList.clear();
-							}
-						}
-						for (int quad = 0; quad < g_LargeQuadList.size(); quad++)
-						{
-							int iX1 = g_LargeQuadList[quad].iX1;
-							int iZ1 = g_LargeQuadList[quad].iZ1;
-							int iX2 = g_LargeQuadList[quad].iX2;
-							int iZ2 = g_LargeQuadList[quad].iZ2;
-							if (iX2 == iX1 && iZ2 == iZ1)
-							{
-								// no need to divide single grid
-							}
-							else
-							{
-								// right edge
-								if (iX2 < iResolutionSIze)
-								{
-									int iNeighboughID = g_iQuadGrid[iX2 + 1][iZ1] - 1;
-									if (iNeighboughID >= 0)
-									{
-										if (g_LargeQuadList[iNeighboughID].iZ1 == iZ1 && g_LargeQuadList[iNeighboughID].iZ2 == iZ2)
-										{
-											// the neighbor lines up exactly, no need to fragment this edge
-										}
-										else
-										{
-											// we need to scan this edge and create fragments of neighboring quads to line up to
-											int iCurrentZ = iZ1;
-											int iCurrentID = iNeighboughID;
-											for (int z = iZ1; z <= iZ2; z++)
-											{
-												iNeighboughID = g_iQuadGrid[iX2 + 1][z] - 1;
-												if (iNeighboughID >= 0)
-												{
-													if (iNeighboughID != iCurrentID)
-													{
-														// fill quad grid
-														for (int fillz = iCurrentZ; fillz < z - 1; fillz++)
-														{
-															int iUniqueTileID = 1 + g_RefinedLargeQuadList.size() + iLargeQuadListSizeBeforeAdditions;
-															g_iQuadGrid[iX2][fillz] = iUniqueTileID;
-														}
-
-														// need a new line up quad here
-														sLargeQuadListItem item;
-														item.iZ1 = iCurrentZ;
-														item.iZ2 = z - 1;
-														item.iX1 = iX2;
-														item.iX2 = iX2;
-														g_RefinedLargeQuadList.push_back(item);
-
-														// set up for next one
-														iCurrentZ = z;
-														iCurrentID = iNeighboughID;
-													}
-												}
-											}
-											if (iX2 > iX1)
-											{
-												// multi-row
-												if (iCurrentZ <= iZ2)
-												{
-													// fill quad grid
-													for (int fillz = iCurrentZ; fillz < iZ2; fillz++)
-													{
-														int iUniqueTileID = 1 + g_RefinedLargeQuadList.size() + iLargeQuadListSizeBeforeAdditions;
-														g_iQuadGrid[iX2][fillz] = iUniqueTileID;
-													}
-
-													// final line-up quad on this edge
-													sLargeQuadListItem item;
-													item.iZ1 = iCurrentZ;
-													item.iZ2 = iZ2;
-													item.iX1 = iX2;
-													item.iX2 = iX2;
-													g_RefinedLargeQuadList.push_back(item);
-												}
-												// and finally reduce the original on this side
-												g_LargeQuadList[quad].iX2 = iX2 - 1;
-											}
-											else
-											{
-												// single row
-												if (iCurrentZ <= iZ2)
-												{
-													// so instead of using a new one, use existing orig
-													g_LargeQuadList[quad].iZ1 = iCurrentZ;
-													g_LargeQuadList[quad].iZ2 = iZ2;
-													g_LargeQuadList[quad].iX1 = iX2;
-													g_LargeQuadList[quad].iX2 = iX2;
-												}
-												else
-												{
-													// if the last one created was indeed the last one
-													// edit the old orig and delete from g_RefinedLargeQuadList list
-													int iLastNewItemIndex = g_RefinedLargeQuadList.size();
-													g_LargeQuadList[quad] = g_RefinedLargeQuadList[iLastNewItemIndex - 1];
-													g_RefinedLargeQuadList.erase(g_RefinedLargeQuadList.begin() + iLastNewItemIndex);
-												}
-											}
-										}
-									}
-									else
-									{
-										// error - seems we have a missing neightbor
-									}
-								}
-							}
-							if (g_RefinedLargeQuadList.size() > 0)
-							{
-								for (int addquad = 0; addquad < g_RefinedLargeQuadList.size(); addquad++)
-								{
-									g_LargeQuadList.push_back(g_RefinedLargeQuadList[addquad]);
-								}
-								g_RefinedLargeQuadList.clear();
-							}
-						}
-
-						// create verts from largerquad list
-						int iVertexIndex = 0;
-						int iVertFloatIndex = 0;
-						int iVertIndex[4];
-						int iIndicesIndex = 0;
-						int iQuadListsCount = g_LargeQuadList.size() + g_RefinedLargeQuadList.size();
-						float* pNewVertData = new float[iQuadListsCount * 4 * 3]; // max size needed
-						int iRefGridSize = ((iResolutionSIze + 2)*(iResolutionSIze + 2));
-						int* pRefVertGrid = new int[iRefGridSize];
-						memset(pRefVertGrid, 0, iRefGridSize*sizeof(int));
-						DWORD* pNewTerrainIndexData = new DWORD[iQuadListsCount * 6];
-
-						// first pass creates the unique and shared verts (and faces)
-						for (int twoquadlists = 0; twoquadlists < 2; twoquadlists++)
-						{
-							int quadcount = 0;
-							if (twoquadlists == 0) quadcount = g_LargeQuadList.size();
-							if (twoquadlists == 1) quadcount = g_RefinedLargeQuadList.size();
-							for (int quad = 0; quad < quadcount; quad++)
-							{
-								// for each quad, create vert positions
-								for (int four = 0; four < 4; four++)
-								{
-									int iX, iZ;
-									if (twoquadlists == 0)
-									{
-										if (four == 0) { iX = g_LargeQuadList[quad].iX1; iZ = g_LargeQuadList[quad].iZ1; }
-										if (four == 1) { iX = g_LargeQuadList[quad].iX2; iZ = g_LargeQuadList[quad].iZ1; }
-										if (four == 2) { iX = g_LargeQuadList[quad].iX1; iZ = g_LargeQuadList[quad].iZ2; }
-										if (four == 3) { iX = g_LargeQuadList[quad].iX2; iZ = g_LargeQuadList[quad].iZ2; }
-									}
-									if (twoquadlists == 1)
-									{
-										if (four == 0) { iX = g_RefinedLargeQuadList[quad].iX1; iZ = g_RefinedLargeQuadList[quad].iZ1; }
-										if (four == 1) { iX = g_RefinedLargeQuadList[quad].iX2; iZ = g_RefinedLargeQuadList[quad].iZ1; }
-										if (four == 2) { iX = g_RefinedLargeQuadList[quad].iX1; iZ = g_RefinedLargeQuadList[quad].iZ2; }
-										if (four == 3) { iX = g_RefinedLargeQuadList[quad].iX2; iZ = g_RefinedLargeQuadList[quad].iZ2; }
-									}
-									// ensure the correct locations for the corners are worked out
-									int iCornerX = iX, iCornerZ = iZ;
-									if (four == 0) { iCornerX += 0; iCornerZ += 0; }
-									if (four == 1) { iCornerX += 1; iCornerZ += 0; }
-									if (four == 2) { iCornerX += 0; iCornerZ += 1; }
-									if (four == 3) { iCornerX += 1; iCornerZ += 1; }
-									int iRefGridOffset = (iCornerZ*(iResolutionSIze + 2)) + iCornerX;
-									if (pRefVertGrid[iRefGridOffset] == 0)
-									{
-										// create unique vertex at this point
-										iVertIndex[four] = iVertexIndex;
-										float fHeight = 0.0f;
-										int iGetHeightX = (iRealX + iCornerX);
-										int iGetHeightZ = (iRealZ + iCornerZ);
-										int iOffset = (iGetHeightZ*iFullResolutionSize) + iGetHeightX;
-										if (iOffset < iHeightDataSize) fHeight = pfHeightData[iOffset];
-										pNewVertData[iVertFloatIndex + 0] = iCornerX * fOneTileSize;
-										pNewVertData[iVertFloatIndex + 2] = iCornerZ * fOneTileSize;
-										pNewVertData[iVertFloatIndex + 1] = fHeight;
-										iVertFloatIndex += 3;
-										pRefVertGrid[iRefGridOffset] = 1 + iVertexIndex;
-										iVertexIndex++;
-									}
-									else
-									{
-										// can share a vertex
-										iVertIndex[four] = pRefVertGrid[iRefGridOffset] - 1;
-									}
-								}
-
-								// then make the polygoon (face)
-								pNewTerrainIndexData[iIndicesIndex + 0] = iVertIndex[0];
-								pNewTerrainIndexData[iIndicesIndex + 1] = iVertIndex[1];
-								pNewTerrainIndexData[iIndicesIndex + 2] = iVertIndex[2];
-								pNewTerrainIndexData[iIndicesIndex + 3] = iVertIndex[1];
-								pNewTerrainIndexData[iIndicesIndex + 4] = iVertIndex[3];
-								pNewTerrainIndexData[iIndicesIndex + 5] = iVertIndex[2];
-								iIndicesIndex += 6;
-							}
-						}
-
-						// prepare mesh object with required mesh allocation
-						DWORD dwVertexCount = iVertexIndex;
-						DWORD dwIndexCount = iIndicesIndex;
-
-						if (ObjectExist(iTerrainPhyObj) == 1) DeleteObject (iTerrainPhyObj);
-						MakeObjectPlane (iTerrainPhyObj, 1, 1);
-						sObject* pObject = GetObjectData(iTerrainPhyObj);
-						delete pObject->ppMeshList[0];
-						sMesh* pMesh = new sMesh();
-						
-						//PE: Check if 32bit buffers works in physics. NO: BVH dont support 32bit, and crash. Must lower resolution.
-						//SetupMeshFVFData (pMesh, GGFVF_XYZ, dwVertexCount, dwIndexCount, true);
-
-						if (dwVertexCount > maxVertex)
-							maxVertex = dwVertexCount;
-
-						SetupMeshFVFData(pMesh, GGFVF_XYZ, dwVertexCount, dwIndexCount, false);
-
-						pMesh->iPrimitiveType = GGPT_TRIANGLELIST;
-						pMesh->iDrawVertexCount = pMesh->dwVertexCount;
-						pMesh->iDrawPrimitives = dwIndexCount / 3;
-						pObject->ppMeshList[0] = pMesh;
-						pObject->pFrame->pMesh = pMesh;
-						// create mesh vertx and indices
-						float* pVertPtr = (float*)pMesh->pVertexData;
-						for (int v = 0; v < iVertFloatIndex; v++)
-						{
-							*(pVertPtr) = pNewVertData[v];
-							pVertPtr++;
-						}
-						WORD* pIndicePtr = (WORD*)pMesh->pIndices;
-						for (int i = 0; i < iIndicesIndex; i++)
-						{
-							*(pIndicePtr) = pNewTerrainIndexData[i];
-							pIndicePtr++;
-						}
-						// create a mesh from the terrain heights
-						float fBottomLeftCorner = -fEditableSize / 2;
-						float fShiftForGridAtX = iRealX * fOneTileSize;
-						float fShiftForGridAtZ = iRealZ * fOneTileSize;
-						PositionObject (iTerrainPhyObj, fBottomLeftCorner + fShiftForGridAtX, 0, fBottomLeftCorner + fShiftForGridAtZ);
-						SetObjectArbitaryValue (iTerrainPhyObj, 12345);
-						// submit terrain object to physics system
-						ODESetMeshFilename(pTerrainBVHChunkFilename);
-						ODECreateStaticTerrainMesh (iTerrainPhyObj);
-						ODESetMeshFilename("");
-						t.tphysicsterrainobjend = iTerrainPhyObj;
-						HideObject(iTerrainPhyObj);
-						iIterCount++;
-
-						// free resources
-						if (pRefVertGrid)
-						{
-							delete pRefVertGrid;
-							pRefVertGrid = NULL;
-						}
-						if (pNewVertData)
-						{
-							delete pNewVertData;
-							pNewVertData = NULL;
-						}
-						if (pNewTerrainIndexData)
-						{
-							delete pNewTerrainIndexData;
-							pNewTerrainIndexData = NULL;
-						}
-					}
-					else
-					{
-						// prepare mesh object with required mesh allocation
-						if (ObjectExist(iTerrainPhyObj) == 1) DeleteObject (iTerrainPhyObj);
-						MakeObjectPlane (iTerrainPhyObj, 1, 1);
-						sObject* pObject = GetObjectData(iTerrainPhyObj);
-						delete pObject->ppMeshList[0];
-						sMesh* pMesh = new sMesh();
-						DWORD dwVertexCount = ((iResolutionSIze + 1) * (iResolutionSIze + 1));
-						DWORD dwIndexCount = ((iResolutionSIze) * (iResolutionSIze)) * 6;
-						SetupMeshFVFData (pMesh, GGFVF_XYZ, dwVertexCount, dwIndexCount, false);
-						pMesh->iPrimitiveType = GGPT_TRIANGLELIST;
-						pMesh->iDrawVertexCount = pMesh->dwVertexCount;
-						pMesh->iDrawPrimitives = dwIndexCount / 3;
-						pObject->ppMeshList[0] = pMesh;
-						pObject->pFrame->pMesh = pMesh;
-						// scan height data from editable area of iResolutionSIze
-						float* pVertPtr = (float*)pMesh->pVertexData;
-						int iVertIndex = 0;
-						int iRealX = (iGridAtX*iResolutionSIze);
-						int iRealZ = (iGridAtZ*iResolutionSIze);
-						for (int z = 0; z < iResolutionSIze + 1; z++)
-						{
-							int iGetHeightZ = (iRealZ + z);
-							int iVertAtLeftside = iVertIndex;
-							for (int x = 0; x < iResolutionSIze + 1; x++)
-							{
-								// get raw height
-								int iGetHeightX = (iRealX + x);
-								float fHeight = 0.0f;
-								int iOffset = (iGetHeightZ*iFullResolutionSize) + iGetHeightX;
-								if (iOffset < iHeightDataSize) fHeight = pfHeightData[iOffset];
-
-								// write vert required at this XZ
-								*(pVertPtr + 0) = x * fOneTileSize;
-								*(pVertPtr + 1) = fHeight;
-								*(pVertPtr + 2) = z * fOneTileSize;
-								pVertPtr += 3;
-								iVertIndex++;
-							}
-						}
-						// now write indices to describe polygons connecting verts
-						WORD* pIndicePtr = (WORD*)pMesh->pIndices;
-						for (int z = 0; z < iResolutionSIze; z++)
-						{
-							for (int x = 0; x < iResolutionSIze; x++)
-							{
-								int iTL = (z*(iResolutionSIze + 1)) + (x + 0);
-								int iTR = (z*(iResolutionSIze + 1)) + (x + 1);
-								int iBL = ((z + 1)*(iResolutionSIze + 1)) + (x + 0);
-								int iBR = ((z + 1)*(iResolutionSIze + 1)) + (x + 1);
-								*(pIndicePtr + 0) = iTL;
-								*(pIndicePtr + 1) = iTR;
-								*(pIndicePtr + 2) = iBL;
-								*(pIndicePtr + 3) = iTR;
-								*(pIndicePtr + 4) = iBR;
-								*(pIndicePtr + 5) = iBL;
-								pIndicePtr += 6;
-							}
-						}
-						// create a mesh from the terrain heights
-						float fBottomLeftCorner = -fEditableSize / 2;
-						float fShiftForGridAtX = iRealX * fOneTileSize;
-						float fShiftForGridAtZ = iRealZ * fOneTileSize;
-						PositionObject (iTerrainPhyObj, fBottomLeftCorner + fShiftForGridAtX, 0, fBottomLeftCorner + fShiftForGridAtZ);
-						SetObjectArbitaryValue (iTerrainPhyObj, 12345);
-						// submit terrain object to physics system
-						ODESetMeshFilename(pTerrainBVHChunkFilename);
-						ODECreateStaticTerrainMesh (iTerrainPhyObj);
-						ODESetMeshFilename("");
-						HideObject(iTerrainPhyObj);
-						iIterCount++;
-					}
-				}
-			}
-
-			// clean up resources
-			delete pfHeightData;
-			pfHeightData = NULL;
-		}
-	}
-	timestampactivity(0, "terrian physics complete");
-	*/
 }
 
 struct sVTreeObj
@@ -1846,15 +1217,11 @@ void physics_disableobject ( void )
 
 void physics_beginsimulation ( void )
 {
-	//t.ptimer=PerformanceTimer() ; t.pfreq=PerformanceFrequency()/1000 ; t.ptimer=t.ptimer/t.pfreq;
-	//t.machineindependentphysicsupdate=t.ptimer;
 	t.machineindependentphysicsupdate = timeGetSecond();
 }
 
 void physics_pausephysics ( void )
 {
-	//t.pfreq1=PerformanceFrequency()/1000;
-	//t.ptimer1=PerformanceTimer() ; t.ptimer1=t.ptimer1/t.pfreq1;
 	t.ptimer1 = timeGetSecond();
 }
 
@@ -1893,11 +1260,6 @@ void physics_loop ( void )
 		if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling ODEUpdate");
 		ODEUpdate ( t.tphysicsadvance_f );
 	}
-	//PE: This cant run in the thread.
-	//if (BPhys_GetDebugDrawerMode() != 0)
-	//{
-	//	physics_render_debug_meshes();
-	//}
 }
 
 void physics_free ( void )
@@ -2099,56 +1461,39 @@ void physics_explodesphere ( void )
 				float fRayDestFromExplosionX = fCenterOfEntityX - t.texplodex_f;
 				float fRayDestFromExplosionY = fCenterOfEntityY - t.texplodey_f;
 				float fRayDestFromExplosionZ = fCenterOfEntityZ - t.texplodez_f;
-				//fRayDestFromExplosionX /= t.tdd_f; no benefit to extending ray beyond target entity (hits walls beyond target=-1)
-				//fRayDestFromExplosionY /= t.tdd_f;
-				//fRayDestFromExplosionZ /= t.tdd_f;
-				//fRayDestFromExplosionX *= t.texploderadius_f;
-				//fRayDestFromExplosionY *= t.texploderadius_f;
-				//fRayDestFromExplosionZ *= t.texploderadius_f;
 				fRayDestFromExplosionX += t.texplodex_f;
 				fRayDestFromExplosionY += t.texplodey_f;
 				fRayDestFromExplosionZ += t.texplodez_f;
 
-				//bool bOldMethodAllAtOnce = false;
-				//if (bOldMethodAllAtOnce == true)
-				//{
-				//	// test evrything all the time
-				//	t.tintersectvalue = IntersectAll(g.entityviewstartobj, g.entityviewendobj,
-				//						t.texplodex_f, t.texplodey_f, t.texplodez_f, 
-				//						fRayDestFromExplosionX, fRayDestFromExplosionY, fRayDestFromExplosionZ, 
-				//						t.entityelement[t.e].obj );
-				//}
-				//else
+				// refer to previously collected information on anything that explodes (performance boost and anit-freeze system)
+				t.tintersectvalue = -1;
+				int iExplodingE = t.texplodesourceEntity;
+				if (iExplodingE > 0)
 				{
-					// refer to previously collected information on anything that explodes (performance boost and anit-freeze system)
-					t.tintersectvalue = -1;
-					int iExplodingE = t.texplodesourceEntity;
-					if (iExplodingE > 0)
+					if (t.entityelement[iExplodingE].iPreScannedVisible.size() > 0)
 					{
-						if (t.entityelement[iExplodingE].iPreScannedVisible.size() > 0)
+						for (int i = 0; i < t.entityelement[iExplodingE].iPreScannedVisible.size(); i++)
 						{
-							for (int i = 0; i < t.entityelement[iExplodingE].iPreScannedVisible.size(); i++)
+							if (t.e == t.entityelement[iExplodingE].iPreScannedVisible[i])
 							{
-								if (t.e == t.entityelement[iExplodingE].iPreScannedVisible[i])
-								{
-									t.tintersectvalue = 0;
-									break;
-								}
+								t.tintersectvalue = 0;
+								break;
 							}
 						}
 					}
-
-					// if still no block, must check all (the slower way)
-					if (t.tintersectvalue == -1)
-					{
-						// NOTE: May speed this up by setting all above prescan objects to cursor objects for this one test..
-						// must perform direct test as dont have prescannedvis list to compare if we have a direct ray line
-						t.tintersectvalue = IntersectAll(g.entityviewstartobj, g.entityviewendobj,
-											t.texplodex_f, t.texplodey_f, t.texplodez_f, 
-											fRayDestFromExplosionX, fRayDestFromExplosionY, fRayDestFromExplosionZ, 
-											t.entityelement[t.e].obj );
-					}
 				}
+
+				// if still no block, must check all (the slower way)
+				if (t.tintersectvalue == -1)
+				{
+					// NOTE: May speed this up by setting all above prescan objects to cursor objects for this one test..
+					// must perform direct test as dont have prescannedvis list to compare if we have a direct ray line
+					t.tintersectvalue = IntersectAll(g.entityviewstartobj, g.entityviewendobj,
+										t.texplodex_f, t.texplodey_f, t.texplodez_f, 
+										fRayDestFromExplosionX, fRayDestFromExplosionY, fRayDestFromExplosionZ, 
+										t.entityelement[t.e].obj );
+				}
+
 				if ( t.tintersectvalue == 0 || t.tintersectvalue == t.entityelement[ t.texplodesourceEntity ].obj )
 				{
 					t.tdamage = (1.0f - (t.tdd_f / t.texploderadius_f)) * t.tstrengthofexplosion_f;
@@ -2211,17 +1556,6 @@ void physics_player_init ( void )
 		t.playercontrol.hurtfall=0;
 		t.playercontrol.speedratio_f=1.0;
 	}
-	// see if this level has any checkpoints to stave off lives logic
-	//bool bUsingCheckpoint = false;
-	//for (t.e = 1; t.e <= g.entityelementlist; t.e++)
-	//{
-	//	t.entid = t.entityelement[t.e].bankindex;
-	//	if (t.entityprofile[t.entid].ismarker == 6)
-	//	{
-	//		bUsingCheckpoint = true;
-	//		break;
-	//	}
-	//}
 	for ( t.e = 1 ; t.e <= g.entityelementlist; t.e++ )
 	{
 		t.entid=t.entityelement[t.e].bankindex;
@@ -2248,16 +1582,7 @@ void physics_player_init ( void )
 			//  Player Global Settings for this level
 			if ( t.game.levelplrstatsetup == 1 )
 			{
-				//this ended up confusing folk!
-				//if (bUsingCheckpoint == true)
-				//{
-				//	// if using checkpoints, ignore lives system (infinite restarts)
-				//	t.playercontrol.startlives = 0;
-				//}
-				//else
-				//{
-					t.playercontrol.startlives = t.entityelement[t.e].eleprof.lives;
-				//}
+				t.playercontrol.startlives = t.entityelement[t.e].eleprof.lives;
 				t.playercontrol.startstrength=t.entityelement[t.e].eleprof.strength;
 				if (  t.playercontrol.thirdperson.enabled == 1 ) 
 				{
@@ -2474,9 +1799,6 @@ void physics_player ( void )
 		{
 			if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling physics_player_gatherkeycontrols");
 			physics_player_gatherkeycontrols ( );
-			if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling physics_player_control");
-			//physics_player_control ( ); moved out of extra thread and called in main thread
-			if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling gun_update_hud");
 			gun_update_hud ( );
 			if ( ++physics_player_listener_delay > 3 )
 			{
@@ -2504,8 +1826,6 @@ void physics_player ( void )
 			}
 
 		}
-		if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling physics_player_handledeath");
-		//physics_player_handledeath ( ); // handles sound, so keep in main thread
 	}
 }
 
@@ -2689,8 +2009,6 @@ void physics_player_gatherkeycontrols ( void )
 
 			// this sets the origin based on the current camera zero (ARG!)
 			// should only set based on player angle (minus HMD influence) as HMD added later at right time for smooth headset viewing!
-			//GGVR_SetPlayerRotation(0, CameraAngleY(t.terrain.gameplaycamera), 0);
-			//GGVR_SetPlayerRotation(0, t.camangy_f, 0); actually not called in main loop (actually in postproces with call to GGVR_SetPlayerAngleY)
 			GGVR_SetPlayerRotation(0, 0, 0);
 
 			if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling GGVR_UpdatePlayer(false,terrainID)");
@@ -2719,8 +2037,6 @@ void physics_player_gatherkeycontrols ( void )
 		}
 		if (g.walkonkeys == 1)
 		{
-			//if ( GGVR_RightController_JoyY() >  0.5 || GGVR_LeftController_JoyY() >  0.5 ) t.plrkeyW = 1; // right used for weapons!
-			//if ( GGVR_RightController_JoyY() < -0.5 || GGVR_LeftController_JoyY() < -0.5)  t.plrkeyS = 1;
 			if (GGVR_LeftController_JoyY() > 0.5) t.plrkeyW = 1;
 			if (GGVR_LeftController_JoyY() < -0.5)  t.plrkeyS = 1;
 		}
@@ -2886,8 +2202,6 @@ void physics_player_control_LUA ( void )
 		// F9 Edit Mode Controls internal
 		if ( t.conkit.editmodeactive != 0 )
 		{
-			// F9 movement control (for some reason LuaCall does not run PlayerControl in global.lua)??!
-			//physics_player_control_F9();
 		}
 		else
 		{
@@ -2912,26 +2226,6 @@ void physics_player_control_LUA ( void )
 			LuaSetFunction ( "PlayerControl", 0, 0 );
 			LuaCall();
 		}
-
-		#ifdef WICKEDENGINE
-		// Wicked has no interest in intercepting this event internally!
-		#else
-		// System to detect when player (for whatever reason) drops BELOW the terrain
-		if ( ObjectPositionY(t.aisystem.objectstartindex)<t.tplayerterrainheight_f-1030.0 ) 
-		{
-			// player should NEVER be here - drastically recreate player
-			t.terrain.playerx_f=ObjectPositionX(t.aisystem.objectstartindex);
-			t.terrain.playery_f=t.tplayerterrainheight_f+20.0+t.terrain.adjaboveground_f;
-			t.terrain.playerz_f=ObjectPositionZ(t.aisystem.objectstartindex);
-			t.terrain.playerax_f=0;
-			t.terrain.playeray_f=CameraAngleY(0);
-			t.camangy_f=t.terrain.playeray_f;
-			t.terrain.playeraz_f=0;
-			t.playercontrol.finalcameraangley_f=t.terrain.playeray_f;
-			physics_disableplayer ( );
-			physics_setupplayernoreset ( );
-		}
-		#endif
 	}
 }
 
@@ -3033,10 +2327,6 @@ void physics_player_handledeath ( void )
 						#endif
 					}
 				}
-				else
-				{
-					//  screen fade now handled in _physics_player_handlehealth
-				}
 			}
 		}
 	}
@@ -3088,7 +2378,6 @@ void physics_player_takedamage ( void )
 	float fOriginalDamage = t.tdamage;
 
 	// Apply player shake, even if immune to damage
-	//if ((t.tdamage > 0 && t.player[t.plrid].health > 0 && t.player[t.plrid].health < 99999) || t.tdamage > 65000)
 	if ((t.tdamage > 0 && t.player[t.plrid].health > 0) || t.tdamage > 65000)
 	{
 		float fMoreShakeIfMeleeBased = 1.0f;
@@ -3184,8 +2473,6 @@ void physics_player_takedamage ( void )
 		if (t.playercontrol.startstrength > 0 && bSuccessfullyBlockingNow==false)
 		{	
 			// deduct player health
-			//LB: new player health intercept
-			//t.player[t.plrid].health = t.player[t.plrid].health - t.tdamage;
 			LuaSetFunction ("PlayerHealthSubtract", 1, 0);
 			LuaPushInt(t.tdamage);
 			LuaCall();
@@ -3687,12 +2974,6 @@ bool physics_player_addweapon ( void )
 
 			// LB: superceded with more pref control, just need 't.ws <= 10' to know we have a slot available at this point!
 			// count weapons for maximum slots. If exceeded, prevent pick up.
-			//t.weaps=0;
-			//for ( t.count = 1 ; t.count <= 10 ; t.count++ )
-			//{
-			//	if (t.weaponslot[t.count].pref != 0)  ++t.weaps;
-			//}
-			//if ( t.weaps >= g.maxslots  )  t.ws = 100;
 			if ( t.ws < 10 ) 
 			{
 				// add weapon into free slot and create pref for it
@@ -4258,13 +3539,6 @@ void physics_update_debug_mesh(float* data, int count, int objectID, int offsetL
 		SetVertexDataPosition(v++, x3, y3, z3);
 	}
 
-	if (pMesh->dwVertexCount > count)
-	{
-		// If the amount of vertices has been reduced, fill the remaining vertex data with invalid values.
-		// Prevents having to reallocate.
-		//for (int i = v; i < pMesh->dwVertexCount; i++) SetVertexDataPosition(v++, 0.0f, 0.0f, 0.0f);
-	}
-
 	UnlockVertexData();
 
 	WickedCall_UpdateMeshVertexData(pMesh);
@@ -4286,8 +3560,6 @@ void physics_debug_make_prism_between_points(float* p0, float* p1, float* result
 	XMVECTOR up;
 
 	// for terrain physics debug!
-	//float thickness = 0.12f;
-	//float thickness = 5.12f; see from afar :)
 	XMVECTOR points[6];
 
 	// Calculate direction between the two points.
@@ -4432,14 +3704,7 @@ void physics_importer_create_temp()
 
 	if (t.tstatic == 1) // now allow physics entities in multiplayer || t.game.runasmultiplayer == 1 ) 
 	{
-		// if static, need to ensure FIXNEWY pivot is respected
-		if (t.tstatic == 1)
-		{
-			//t.tstaticfixnewystore_f = ObjectAngleY(t.tphyobj);
-			//RotateObject(t.tphyobj, ObjectAngleX(t.tphyobj), ObjectAngleY(t.tphyobj) + t.entityprofile[t.entid].fixnewy, ObjectAngleZ(t.tphyobj));
-		}
 		//  create the physics now
-		
 		if (t.tshape >= 1000 && t.tshape < 2000)
 		{
 			ODECreateStaticBox(t.tphyobj, t.tshape - 1000);

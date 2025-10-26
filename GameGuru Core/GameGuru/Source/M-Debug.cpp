@@ -57,7 +57,6 @@ void timestampactivity ( int i, char* desc_s )
 	if (g.gproducelogfiles > 0 || !bTimestampactivityReady)
 	{
 		static cstr ttimestampactivity_s[2] = { "" };
-		//Dim(t.timestampactivity_s, 1);
 		file_s = g.fpscrootdir_s + "\\" + g.trueappname_s + ".log";
 		if (bTimestampactivityReady)
 		{
@@ -86,9 +85,8 @@ void timestampactivity ( int i, char* desc_s )
 			Sync();
 		}
 		mem = DMEMAvailable();
+
 		//PE: Always show dedicated VRAM + system RAM GPU use.
-		//float GetVramUsage(void);
-		//float vram = GetVramUsage();
 		float GetTotalVramUsage(void);
 		float tvram = GetTotalVramUsage();
 

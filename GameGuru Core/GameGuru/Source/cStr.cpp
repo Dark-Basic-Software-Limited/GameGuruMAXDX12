@@ -19,7 +19,6 @@ extern "C" FILE* GG_fopen( const char* filename, const char* mode );
 
 bool noDeleteCSTR = false;
 #define STRMAXSIZE 8192
-//#define STRMINSIZE 256 // some DLUA strings can easily exceed 256 characters!
 #ifdef PRODUCTCLASSIC
 //PE: We cant affort this in classic, when you add one object to a level:
 //PE: we have around 30 cstr inside entityelement , each is constructed with s="" that preallocate STRMINSIZE.
@@ -74,13 +73,6 @@ cStr::cStr(const cStr& cString)
 		m_pString = new char[m_capacity];
 		memset(m_pString, 0, m_capacity);
 	}
-//	else
-//	{
-//		m_capacity = STRMINSIZE;
-//		m_pString = new char[m_capacity];
-//	}
-
-	//memset(m_pString, 0, m_capacity);
 	strcpy(m_pString, cString.m_pString);
 }
 
@@ -94,13 +86,6 @@ cStr::cStr(char* szString)
 		m_pString = new char[m_capacity];
 		memset(m_pString, 0, m_capacity);
 	}
-//	else
-//	{
-//		m_capacity = STRMINSIZE;
-//		m_pString = new char[m_capacity];
-//	}
-
-	//memset(m_pString, 0, m_capacity);
 	strcpy(m_pString, szString);
 }
 

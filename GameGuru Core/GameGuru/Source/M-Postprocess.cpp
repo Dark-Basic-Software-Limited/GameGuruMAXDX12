@@ -294,39 +294,10 @@ void postprocess_init ( void )
 
 void postprocess_reset_fade ( void )
 {
-	#ifdef WICKEDENGINE
-	// Wicked has post processing covered!
-	#else
-	// reset post process shader defaults
-	if ( t.gpostprocessmode>0 ) 
-	{
-		if (  GetEffectExist(g.postprocesseffectoffset+0) == 1 ) 
-		{
-			SetVector4 (  g.terrainvectorindex,0,0,0,0 );
-			SetEffectConstantV (  g.postprocesseffectoffset+0,"ScreenColor",g.terrainvectorindex );
-			SetEffectConstantV (  g.postprocesseffectoffset+2,"ScreenColor",g.terrainvectorindex );
-			SetEffectConstantV (  g.postprocesseffectoffset+4,"ScreenColor",g.terrainvectorindex );
-			t.postprocessings.fadeinvalue_f=0;
-			SetVector4 (  g.terrainvectorindex,t.postprocessings.fadeinvalue_f,t.postprocessings.fadeinvalue_f,t.postprocessings.fadeinvalue_f,0 );
-			SetEffectConstantV (  g.postprocesseffectoffset+0,"OverallColor",g.terrainvectorindex );
-			SetEffectConstantV (  g.postprocesseffectoffset+2,"OverallColor",g.terrainvectorindex );
-			SetEffectConstantV (  g.postprocesseffectoffset+4,"OverallColor",g.terrainvectorindex );
-		}
-	}
-	#endif
 }
 
 void postprocess_general_init ( void )
 {
-	#ifdef WICKEDENGINE
-	// Wicked has post processing covered!
-	#else
-	// called at start of prepare level sequence
-	if (  GetEffectExist(g.decaleffectoffset) == 0 ) 
-	{
-		LoadEffect ( "effectbank\\reloaded\\decal_basic.fx", g.decaleffectoffset, 0 );
-	}
-	#endif
 }
 
 void postprocess_free ( void )
@@ -394,48 +365,10 @@ void postprocess_free ( void )
 
 void postprocess_off ( void )
 {
-	#ifdef WICKEDENGINE
-	// Wicked has post processing covered!
-	#else
-	if ( t.gpostprocessmode>0 ) 
-	{
-		if (  ObjectExist(g.postprocessobjectoffset+0) == 1  )  HideObject (  g.postprocessobjectoffset+0 );
-		if (  ObjectExist(g.postprocessobjectoffset+1) == 1  )  HideObject (  g.postprocessobjectoffset+1 );
-		if (  ObjectExist(g.postprocessobjectoffset+2) == 1  )  HideObject (  g.postprocessobjectoffset+2 );
-		SetCameraToImage (  0,-1,0,0,0 );
-		if (  g.gfinalrendercameraid>0 ) 
-		{
-			SetCameraView (  g.gfinalrendercameraid,0,0,1,1 );
-		}
-		if (  t.glightraycameraid>0 ) 
-		{
-			SetCameraView (  t.glightraycameraid,0,0,1,1 );
-		}
-	}
-	#endif
 }
 
 void postprocess_on ( void )
 {
-	#ifdef WICKEDENGINE
-	// Wicked has post processing covered!
-	#else
-	if ( t.gpostprocessmode>0 ) 
-	{
-		if ( ObjectExist(g.postprocessobjectoffset+0) == 1  )  ShowObject (  g.postprocessobjectoffset+0 );
-		if ( ObjectExist(g.postprocessobjectoffset+1) == 1  )  ShowObject (  g.postprocessobjectoffset+1 );
-		if ( ObjectExist(g.postprocessobjectoffset+2) == 1  )  ShowObject (  g.postprocessobjectoffset+2 );
-		SetCameraToImage (  0,g.postprocessimageoffset+0,GetDisplayWidth(),GetDisplayHeight(),2 );
-		if ( g.gfinalrendercameraid>0 ) 
-		{
-			SetCameraView (  g.gfinalrendercameraid,0,0,GetDisplayWidth(),GetDisplayHeight() );
-		}
-		if ( t.glightraycameraid>0 ) 
-		{
-			SetCameraView (  t.glightraycameraid,0,0,GetDisplayWidth(),GetDisplayHeight() );
-		}
-	}
-	#endif
 }
 
 void postprocess_preterrain ( void )
@@ -498,9 +431,6 @@ void postprocess_preterrain ( void )
 
 void postprocess_setscreencolor ( void )
 {
-	#ifdef WICKEDENGINE
-	// Wicked has post processing covered
-
 	float fade = GetXVector4(t.tColorVector);
 	if (fade > 0.0)
 	{
@@ -535,9 +465,4 @@ void postprocess_setscreencolor ( void )
 			}
 		}
 	}
-	#else
-	SetEffectConstantVEx (  g.postprocesseffectoffset+0,t.effectparam.postprocess.ScreenColor0,t.tColorVector );
-	SetEffectConstantVEx (  g.postprocesseffectoffset+2,t.effectparam.postprocess.ScreenColor2,t.tColorVector );
-	SetEffectConstantVEx (  g.postprocesseffectoffset+4,t.effectparam.postprocess.ScreenColor4,t.tColorVector );
-	#endif
 }

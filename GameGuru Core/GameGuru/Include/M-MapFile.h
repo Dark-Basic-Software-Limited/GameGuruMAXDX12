@@ -18,7 +18,6 @@ int mapfile_savestandalone_continue ( void );
 float mapfile_savestandalone_getprogress ( void );
 void mapfile_savestandalone_finish ( void );
 void mapfile_savestandalone_restoreandclose ( void );
-//void mapfile_savestandalone ( void );
 void scanscriptfileandaddtocollection ( char* tfile_s , char *pPath = NULL);
 bool addtocollection ( char* file_s );
 void removefromcollection ( char* file_s );
@@ -31,8 +30,4 @@ void findalltexturesinmodelfile ( char* file_s, char* folder_s, char* texpath_s 
 void CreateItineraryFile ( void );
 void scanallfolder ( cstr subThisFolder_s, cstr subFolder_s );
 bool IsFileAStockAsset ( LPSTR pCheckThisFile );
-//void ScanLevelForCustomContent ( LPSTR pFPMBeingSaved );
-
-#ifdef WICKEDENGINE
 void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded);
-#endif

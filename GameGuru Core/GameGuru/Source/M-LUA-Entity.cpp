@@ -173,8 +173,6 @@ void entity_lua_getentityplrvisible_processlist (void)
 	{
 		// entity to process
 		while (!g_PlrVisibilityListLock.Acquire()) {}
-		//t.e = g_EntityPlrVisList.front();// .back();
-		//g_EntityPlrVisList.erase(g_EntityPlrVisList.begin());
 		for ( int i = 0; i < g_EntityPlrVisList.size(); i++ )
 		{
 			//PE: We should never use globals in threads (t.e), it get changed everywhere,got a crash here (as it got changed while inside the function).
@@ -481,9 +479,6 @@ void entity_lua_spawn_core ( void )
 				PositionObject ( t.charanimstates[g.charanimindex].obj,t.entityelement[t.e].x,t.entityelement[t.e].y,t.entityelement[t.e].z );
 				darkai_setupcharacter ( );
 
-				// reapply shader in case object was refreshed
-				//SetObjectEffect( g.entitybankoffset+t.entityelement[t.e].bankindex , t.entityprofile[t.entid].usingeffect);
-
 				// finally initialise AI (see below)
 				lua_initscript();
 
@@ -513,16 +508,7 @@ void entity_lua_spawn_core ( void )
 	{
 		// 120916 - ensure collision restored if not character (exploding barrels could be walked through)
 		// 120916 - seems collisionON sets SetObjectCollisionProperty to 0 (needed for exploding barrel)
-		//if ( t.entityelement[t.e].eleprof.explodable  ==  0 ) 
-		//{
 		entity_lua_collisionon ( );
-		//}
-		//else
-		//{
-		//	t.tphyobj = t.entityelement[t.e].obj;
-		//	t.entid = t.ttentid;
-		//	physics_setupobject ( );
-		//}
 		t.entityelement[t.e].collected = 0;
 		t.entityelement[t.e].explodefusetime = 0;
 	}
@@ -579,19 +565,7 @@ void entity_lua_spawn ( void )
 void entity_lua_setactivated ( void )
 {
 	t.entityelement[t.e].activated = t.v;
-	#ifdef VRTECH
 	t.entityelement[t.e].lua.flagschanged = 1;
-	//sepaate all MP influence to FORMP commands!
-	//if ( t.game.runasmultiplayer == 1 && t.tLuaDontSendLua == 0 ) 
-	//{
-	//	mp_sendlua ( MP_LUA_SetActivated, t.e, t.v );
-	//}
-	#else
-	if (  t.game.runasmultiplayer  ==  1 && t.tLuaDontSendLua  ==  0 ) 
-	{
-		mp_sendlua (  MP_LUA_SetActivated,t.e,t.v );
-	}
-	#endif
 }
 
 #ifdef VRTECH
@@ -644,7 +618,6 @@ bool entity_lua_manageactivationresult (int iEntityID)
 	if (iEntityID > 0)
 	{
 		// in addition, if object inactive, spawn it (only if have health, otherwise this entity was really destroyed/collected)
-		//if (t.entityelement[iEntityID].active == 0 && t.entityelement[iEntityID].health > 0)
 		// active condition moved to caller as I need to call this even if active was 1 (loading saved games)
 		if (t.entityelement[iEntityID].health > 0)
 		{
@@ -1412,7 +1385,6 @@ void entity_lua_setsoundvolume ( void )
 			if (  t.tvolume_f>100  )  t.tvolume_f = 100;
 			t.tvolume_f = t.tvolume_f * t.audioVolume.soundFloat;
 			SetSoundVolume (  t.tsnd,t.tvolume_f );
-			//luavolumes[t.tsnd] = t.tvolume_f;
 			if (luavolumes.size() == 0)
 			{
 				luavolumes.reserve(100);
@@ -1533,7 +1505,6 @@ void entity_lua_playvideonoskip ( int i3DMode, int iNoSkipFlag )
 				{
 					float fCorrectWidth = AnimationWidth(t.luaglobal.lastvideonumber);
 					float fCorrectHeight = AnimationHeight(t.luaglobal.lastvideonumber);
-					//MakeObjectPlane ( g.video3dobjectoffset, fCorrectWidth/18, fCorrectHeight/18.0f );
 					MakeObjectBox(g.video3dobjectoffset, 10, fCorrectHeight/9.0f, fCorrectWidth/18);
 					PositionObject ( g.video3dobjectoffset, -100000, -100000, -100000 );
 					SetObjectEffect ( g.video3dobjectoffset, g.guishadereffectindex );
@@ -2472,15 +2443,6 @@ void entity_lua_movewithanimation ( void )
 			{
 				if ( t.v == 1 )
 				{
-					#ifdef WICKEDENGINE
-					// moved this to darkai_handlegotomove so we can do it every frame :)
-					#else
-					pObject->bSpineTrackerMoving = true;
-					float fMoveForwardDelta = pObject->fSpineCenterTravelDeltaX;
-					pObject->fSpineCenterTravelDeltaX = 0.0f;
-					if ( fMoveForwardDelta < 0.0f ) fMoveForwardDelta = 0.0f;
-					entity_lua_moveforward_core (fMoveForwardDelta);
-					#endif
 				}
 				else
 				{
@@ -2517,15 +2479,6 @@ void entity_lua_setanimationframe ( void )
 		sObject* pObject = g_ObjectList [ iID ];
 		if ( pObject )
 		{
-			/* no longer needed
-			if ( (int)pObject->fAnimTotalFrames > 0 || t.v_f > 0.0f )
-			{
-				if ( pObject->bVisible == 1 && pObject->bUniverseVisible == 1 )
-				{
-					t.tte = t.e; entity_converttoclone ( );
-				}
-			}
-			*/
 		}
 		else
 			return;
@@ -3052,7 +3005,6 @@ void entity_lua_rotatetoanglecore ( float fDestAngle, float fAngleOffset )
 		#ifdef WICKEDENGINE
 		// MAX has no AI subsystem - but for characters we will set the destination angle and smoothly rotate within char_loop or similar
 		t.charanimstate.currentangle_f = fDestAngle;
-		//t.charanimstate.currentangleslowlyspeed_f = t.v;
 		float fModulateRotSpeed = t.charanimstate.iRotationAlongPathMode / 100.0f;
 		t.charanimstate.currentangleslowlyspeed_f = (t.v * fModulateRotSpeed);
 		t.charanimstate.moveToMode = 0; // face target will override goto target
@@ -3327,9 +3279,6 @@ void entity_lua_addplayerammo ( void )
 	t.tpool=g.firemodes[t.tgunid][t.tfiremode].settings.poolindex;
 	if (  t.tpool == 0 ) 
 	{
-		// Lee, are we using AMMO POOL only from now on (ammo for a single gun still relevant?)
-		// `tammo=weaponclipammo(weaponammoindex+ammooffset)
-
 		// the ammo is for a weapon that is missing from files, check to see if the ammo can be used for any other weapons.
 		if (t.entityprofile[t.tentid].ammopool_s.Len() > 0)
 		{
@@ -3364,17 +3313,10 @@ void entity_lua_addplayerhealth ( void )
 	#endif
 
 	//LB: new player health intercept
-	//t.player[t.plrid].health = t.player[t.plrid].health + t.tqty;
 	LuaSetFunction ("PlayerHealthAdd", 1, 0);
 	LuaPushInt(t.tqty);
 	LuaCall();
 	t.player[t.plrid].health = LuaGetInt("g_PlayerHealth");
-
-	/* now handled inside gameplayerhealth
-	#ifdef WICKEDENGINE // MD: Players health would go above max health value after picking up health items
-	if (t.player[t.plrid].health > t.playercontrol.startstrength) { t.player[t.plrid].health = t.playercontrol.startstrength; }
-	#endif // WICKEDENGINE
-	*/
 }
 
 void entity_lua_setplayerpower ( void )

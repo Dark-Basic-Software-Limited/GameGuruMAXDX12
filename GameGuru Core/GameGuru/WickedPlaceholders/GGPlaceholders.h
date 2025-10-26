@@ -5,7 +5,6 @@
 #include "windows.h"
 #include "cstr.h"
 
-void LoadFBX(char* dsadsa, int wwewda);
 void BT_MakeSectorObject(unsigned long a11, unsigned long a22, unsigned long a33, unsigned long a44);
 float BT_GetSectorPositionX(unsigned long a11, unsigned long a22, unsigned long a33);
 float BT_GetSectorPositionY(unsigned long a11, unsigned long a22, unsigned long a33);

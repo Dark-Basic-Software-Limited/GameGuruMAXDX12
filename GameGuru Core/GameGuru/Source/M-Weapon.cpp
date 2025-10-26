@@ -258,23 +258,8 @@ void weapon_projectile_init ( void )
 		ExcludeOn (t.tObjID);
 	}
 	#else
-	/* no more tracer object for now
-	// always need projectiles for MAX
-	t.tFileName_s = "gamecore\\projectiletypes\\TracerParticle.dbo"; 
-	weapon_loadobject ();
-	if (t.tObjID > 0)
-	{
-		g.weaponSystem.objTracer = t.tObjID;
-		ExcludeOn (t.tObjID);
-		PositionObject(t.tObjID, 0, -19000, 0);
-		SetObjectCollisionOff(t.tObjID);
-		HideObject(t.tObjID);
-	}
-	*/
 	#endif
 
-	//PE: Also need to read from docwrite.
-	
 	// scan all projectiles in 'projectiletypes' folder
 	timestampactivity (0, "Preparing ProjectileTypes");
 	SetDir ( "gamecore" );
@@ -1239,11 +1224,6 @@ void weapon_projectile_load ( void )
 	t.WeaponProjectileBase[t.tNewProjBase].cacheLoaded = false;
 	weapon_projectile_setup ( &iSndForBaseSound, &iSndForBaseDestroy ); //Add one so we get the basetype mapping.
 
-//	for ( t.tP = 1 ; t.tP <= t.tcount; t.tP++ )
-//	{
-//		weapon_projectile_setup ( &iSndForBaseSound, &iSndForBaseDestroy );
-//	}
-
 	UnDim (  t.fileData_s );
 
 	t.WeaponProjectileBase[t.tNewProjBase].activeFlag = 1;
@@ -1328,31 +1308,6 @@ void weapon_projectile_setup ( int* piSndForBaseSound, int* piSndForBaseDestroy 
 			}
 			t.WeaponProjectile[t.tNew].sound = *piSndForBaseSound;
 			t.WeaponProjectile[t.tNew].soundDeath = *piSndForBaseDestroy;
-
-			// old way cloned sounds for each instance of projectile, but took time to clone (loading wait)
-			/*
-			//  make the sound effect
-			if (  t.WeaponProjectileBase[t.tNewProjBase].sound > 0 ) 
-			{
-				weapon_getfreesound ( );
-				if (  t.tSndID > 0 ) 
-				{
-					CloneSound (  t.tSndID,t.WeaponProjectileBase[t.tNewProjBase].sound );
-					t.WeaponProjectile[t.tNew].sound = t.tSndID;
-				}
-			}
-
-			//  make the onDeath sound effect
-			if (  t.WeaponProjectileBase[t.tNewProjBase].soundDeath > 0 ) 
-			{
-				weapon_getfreesound ( );
-				if (  t.tSndID > 0 ) 
-				{
-					CloneSound (  t.tSndID,t.WeaponProjectileBase[t.tNewProjBase].soundDeath );
-					t.WeaponProjectile[t.tNew].soundDeath = t.tSndID;
-				}
-			}
-			*/
 
 			// done creating instance,can leave
 			t.tResult = t.tNew; return;
@@ -1648,11 +1603,6 @@ void weapon_projectile_make ( bool bUsingVRForAngle, bool bDoNotAdvanceToAvoidPe
 	}
 
 	// setup particle emitters for this projectile
-	/*
-	// but only if entities not set to LOWEST as particle trails are expensive!
-	t.tokay = 1 ; if (  t.visuals.shader levels.entities == 3  )  t.tokay = 0;
-	if (  t.WeaponProjectileBase[t.tProjectileType].particleType>0 && t.tokay == 1 )
-	*/
 	if ( t.WeaponProjectileBase[t.tProjectileType].particleType > 0 ) 
 	{
 		ravey_particles_get_free_emitter ( );
@@ -1799,11 +1749,8 @@ void weapon_projectile_destroy ( void )
 		//PE: Add a pauseemitter , so no one is added but the rest can just stay and emitter will stop.
 		bool WickedCall_ParticleEffectPosition(uint32_t root, float fX, float fY, float fZ);
 		uint32_t root = t.WeaponProjectile[t.tProj].WPE_Root;
-		//WickedCall_ParticleEffectPosition(root, t.tStartX_f, t.tStartY_f, t.tStartZ_f);
 		//iAction = 1 Burst all. 2 = Pause. - 3 = Resume. - 4 = Restart - 5 - visible - 6 = not visible.
 		void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
-		//WickedCall_PerformEmitterAction(2, root);
-		//WickedCall_PerformEmitterAction(6, root);
 		WickedCall_PerformEmitterAction(7, root); //PE: Stop emit new particles. but keep simulation active.
 
 	}
