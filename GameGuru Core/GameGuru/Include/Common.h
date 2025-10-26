@@ -9,9 +9,7 @@ void common_init_globals ( void );
 void common_init ( void );
 void common_autoupdatecheck ( void );
 void common_loop_logic(void);
-#ifdef WICKEDENGINE
 void common_loop_render(void);
-#endif
 void common_finish(void);
 int common_isserialcodevalid ( LPSTR pCode, LPSTR pOptionalUserName );
 void common_writeserialcode ( LPSTR pCode, LPSTR pOptionalUserName );
@@ -20,11 +18,6 @@ void FPSC_LoadSETUPVRINI (void);
 void FPSC_SaveSETUPVRINI (void);
 void FPSC_LoadSETUPINI ( bool bUseMySystemFolder );
 void FPSC_Full_Data_Init ( void );
-#ifdef WICKEDENGINE
-// using new DocWrite system
-#else
-void common_switchtomysystemfolder ( void );
-#endif
 void FPSC_VeryEarlySetup(void);
 void FPSC_Setup ( void );
 LPSTR FindFileFromEntityBank ( LPSTR pFindThisFilename );
@@ -68,7 +61,6 @@ void loadscreenpromptassets ( int iUseVRTest );
 void printscreenprompt ( char* screenprompt_s );
 int mod ( int num, int modulus );
 void GGBoxGradient ( int iLeft, int iTop, int iRight, int iBottom, DWORD dw1, DWORD dw2, DWORD dw3, DWORD dw4 );
-
 void InkEx ( int r, int g, int b );
 void BoxEx ( int x1, int y1, int x2, int y2 );
 void LineEx ( int x1, int y1, int x2, int y2 );
