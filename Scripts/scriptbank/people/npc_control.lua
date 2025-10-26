@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- NPC Control v90 by Necrym59
+-- NPC Control v91 by Necrym59
 -- DESCRIPTION: The attached NPC will be controlled by this behavior.
 -- DESCRIPTION: [SENSE_TEXT$="Who's that ..an intruder??"]
 -- DESCRIPTION: [SENSE_RANGE=500(0,2000)]
@@ -36,6 +36,7 @@
 -- DESCRIPTION: [@LASTFLAG_LOOP=2(1=On,2=Off)]
 -- DESCRIPTION: [@FORCE_MOVE=2(1=On,2=Off)]
 -- DESCRIPTION: [@NPC_TILTING=1(1=On,2=Off)]
+-- DESCRIPTION: [@ON_DEATH=1(1=Nothing,2=Activate IfUsed)]
 -- DESCRIPTION: [IFUSED$=""]
 -- DESCRIPTION: [DIAGNOSTICS!=0]
 -- DESCRIPTION: <Sound0> for movement sound
@@ -84,6 +85,7 @@ local lastflag_time = {}
 local lastflag_loop = {}
 local force_move = {}
 local npc_tilting = {}
+local on_death = {}
 local ifused = {}
 local diagnostics = {}
 
@@ -165,9 +167,10 @@ local ishit = {}
 local setframes = {}
 local dist = {}
 local tmphit = {}
+local deathifusedno = {}
 g_GibsEnabled = 0
 
-function npc_control_properties(e, sense_text, sense_range, sense_mode, npc_can_flee, idle_time, attack_range, attack_damage, random_damage, npc_can_roam, roam_range, npc_anim_speed, npc_move_speed, npc_run_speed, npc_turn_speed, npc_can_shoot, idle1_animation,  idle2_animation, walk_animation, run_animation, threat_animation, attack1_animation, attack1_hitframe, attack2_animation, attack2_hitframe, attack3_animation, attack3_hitframe, shoot_animation, hurt_animation, death1_animation, death2_animation, lastflag_animation, lastflag_time, lastflag_loop, force_move, npc_tilting, ifused, diagnostics)
+function npc_control_properties(e, sense_text, sense_range, sense_mode, npc_can_flee, idle_time, attack_range, attack_damage, random_damage, npc_can_roam, roam_range, npc_anim_speed, npc_move_speed, npc_run_speed, npc_turn_speed, npc_can_shoot, idle1_animation,  idle2_animation, walk_animation, run_animation, threat_animation, attack1_animation, attack1_hitframe, attack2_animation, attack2_hitframe, attack3_animation, attack3_hitframe, shoot_animation, hurt_animation, death1_animation, death2_animation, lastflag_animation, lastflag_time, lastflag_loop, force_move, npc_tilting, on_death, ifused, diagnostics)
 	npc_control[e].sense_text = sense_text
 	npc_control[e].sense_range = sense_range
 	npc_control[e].sense_mode = sense_mode
@@ -203,7 +206,8 @@ function npc_control_properties(e, sense_text, sense_range, sense_mode, npc_can_
 	npc_control[e].lastflag_loop = lastflag_loop
 	npc_control[e].force_move = force_move or 2
 	npc_control[e].npc_tilting = npc_tilting or 1
-	npc_control[e].ifused = ifused
+	npc_control[e].on_death = on_death or 1
+	npc_control[e].ifused = string.lower(ifused)
 	npc_control[e].diagnostics = diagnostics or 0
 end
 
@@ -245,6 +249,7 @@ function npc_control_init_name(e,name)
 	npc_control[e].lastflag_loop = 2
 	npc_control[e].force_move = 2
 	npc_control[e].npc_tilting = 1
+	npc_control[e].on_death = 1
 	npc_control[e].ifused = ""	
 	npc_control[e].diagnostics = 0
 
@@ -319,6 +324,7 @@ function npc_control_init_name(e,name)
 	setframes[e] = 0
 	dist[e] = 0
 	tmphit[e] = 0
+	deathifusedno[e] = 0
 	math.randomseed(os.time())
 	math.random(); math.random(); math.random()
 end
@@ -327,6 +333,17 @@ function npc_control_main(e)
 
 	CollisionOn(e)
 	if status[e] == "init" then
+		if npc_control[e].ifused ~= "" and deathifusedno[e] == 0 then
+			for p = 1, g_EntityElementMax do
+				if p ~= nil and g_Entity[p] ~= nil then
+					deathifusedno[e] = p
+					if string.lower(GetEntityName(p)) == npc_control[e].ifused then					
+						deathifusedno[e] = p
+						break
+					end
+				end
+			end
+		end	
 		allegiance[e] = GetEntityAllegiance(e) -- (0-enemy, 1-ally, 2-neutral)
 		SetAnimationSpeed(e,npc_control[e].npc_anim_speed)
 		SetEntityMoveSpeed(e,npc_control[e].npc_move_speed)
@@ -1126,16 +1143,20 @@ function npc_control_main(e)
 		if g_Entity[e]['animating'] == 0 or g_Entity[e]['health'] >= 1 then
 			CollisionOff(e)
 			animonce[e] = 1
-			state[e] = "dead"
 			StopSound(e,0)
 			StopSound(e,1)
 			StopSound(e,2)
 			StopSound(e,3)
-			SetEntityHealth(e,0)
-			SetPreExitValue(e,2)
-			SwitchScript(e,"no_behavior_selected.lua")
-		end
+			if npc_control[e].on_death == 2 then SetEntityActivated(deathifusedno[e],1) end
+			state[e] = "dead"			
+		end		
 	end
+	if state[e] == "dead" then
+		SetEntityHealth(e,0)
+		SetPreExitValue(e,2)
+		SwitchScript(e,"no_behavior_selected.lua")
+	end
+
 	--- Check Health and Hurt Animation -------------------------------------
 
 	if g_Time > regen[e] and g_Entity[e]['health'] > 1000 and g_Entity[e]['health'] < init_health[e] then
