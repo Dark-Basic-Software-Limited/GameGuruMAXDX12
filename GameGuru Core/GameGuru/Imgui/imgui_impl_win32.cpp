@@ -824,11 +824,9 @@ LRESULT ImGui_ImplWin32_WndProcHandler_NewPlatformWindow(HWND hWnd, UINT msg, WP
 
 static LRESULT CALLBACK ImGui_ImplWin32_WndProcHandler_PlatformWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	#ifdef WICKEDENGINE
 	//PE: If we have additional windows , we cant sleep.
 	extern bool g_bActiveApp;
 	g_bActiveApp = true;
-	#endif
 
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
         return true;

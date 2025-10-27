@@ -14,7 +14,6 @@
 #endif
 
 //PE: GameGuru IMGUI.
-#ifdef ENABLEIMGUI
 #include "..\..\GameGuru\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -22,7 +21,6 @@
 #include "..\..\GameGuru\Imgui\imgui_internal.h"
 #include "..\..\GameGuru\Imgui\imgui_impl_win32.h"
 #include "..\..\GameGuru\Imgui\imgui_gg_dx11.h"
-#endif
 
 // Globals
 std::vector<cstr> g_collectionLabels;

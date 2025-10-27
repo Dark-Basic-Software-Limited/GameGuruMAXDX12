@@ -55,7 +55,6 @@ struct sRoomType
 extern std::vector<sRoomType> g_RoomType;
 extern char pRoomTypeDropDownList[32][260];
 
-#ifdef WICKEDENGINE
 // Some parts (e.g. head gear) require specific head shapes or hair styles to ensure no meshes overlap.
 //	This struct stores parts that require other parts to ensure no overlap occurs.
 struct AutoSwapData
@@ -76,7 +75,6 @@ struct CameraTransition
 	float angTo[2];
 };
 
-#endif
 
 void charactercreatorplus_preloadinitialcharacter ( void );
 void charactercreatorplus_preloadallcharacterpartchoices ( void );
@@ -98,19 +96,15 @@ LPSTR charactercreatorplus_findannotationtag ( LPSTR pSearchStr );
 void charactercreatorplus_initautoswaps();
 void charactercreatorplus_getautoswapdata(char* filename);
 int charactercreatorplus_getcategoryindex(char* category);
-#ifdef WICKEDENGINE
 void charactercreatorplus_storeautoswapdata(AutoSwapData* pData);
-#endif
 void charactercreatorplus_performautoswap(int part);
 void charactercreatorplus_restoreswappedparts();
 void charactercreatorplus_extracthaircolour(const char* source, char* destination);
 void charactercreatorplus_restrictpart(int part);
 
-#ifdef WICKEDENGINE
 void charactercreatorplus_initcameratransitions();
 void charactercreatorplus_changecameratransition(int part);
 void charactercreatorplus_performcameratransition(bool bIsZooming = false);
-#endif
 
 void characterkitplus_chooseOnlineAvatar(void);
 void characterkitplus_saveAvatarInfo(void);

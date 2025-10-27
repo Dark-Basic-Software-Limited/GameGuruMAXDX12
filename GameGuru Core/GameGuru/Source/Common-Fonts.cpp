@@ -20,7 +20,6 @@ void changebitmapfont ( char* name_s, int index )
 
 void loadallfonts ( void )
 {
-	//#ifdef WICKEDENGINE
 	#ifdef WICKEDENGINE_PETEST
 	// Uses truetype fonts, not old bitmap fonts - hides prompt text and welcome text!!
 	#else
@@ -228,11 +227,7 @@ void pastebitmapfontcolor ( char* text_s, int tx, int ty, int index, int alpha, 
 	if (  ImageExist(sid)  ==  0  )  return;
 	float fImageTexOffsetU = 0.5f/ImageWidth(sid);
 	float fImageTexOffsetV = 0.5f/ImageHeight(sid);
-	#ifdef VRTECH
 	Sprite (  sid,-10000,-10000,g.bitmapfontimagetart+index );
-	#else
-	Sprite ( sid, -10000, -10000, sid );
-	#endif
 	for ( n = 1 ; n<=  Len(text_s); n++ )
 	{
 		charindex=Asc(Mid(text_s,n) );

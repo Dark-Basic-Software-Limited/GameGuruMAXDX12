@@ -383,11 +383,7 @@ void conkitedit_loop ( void )
 						t.entid = t.entityelement[t.e].bankindex;
 						if ( t.entid>0 ) 
 						{
-							#ifdef VRTECH
 							if ( t.entityprofile[t.entid].isebe == 0 )
-							#else
-							if ( 1 ) // allow EBEs now   t.entityprofile[t.entid].isebe == 0 )
-							#endif
 							{
 								if (  t.entityelement[t.e].editorlock == 0 || (t.entityelement[t.e].editorlock == 1 && t.inputsys.keyspace == 1) ) // 010416 - && t.inputsys.keyshift == 1) ) 
 								{
@@ -811,9 +807,7 @@ void conkitedit_loop ( void )
 		t.terrain.lastymouse=-1;
 		t.terrain.zoom_f=0.10f; 
 		terrain_editcontrol ( );
-		#ifdef WICKEDENGINE
 		grass_editcontrol();
-		#endif
 
 		//  update terrain physics on the fly
 		if (  t.terrain.dirtyterrain == 1 ) 

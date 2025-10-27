@@ -128,7 +128,6 @@ void panel_free ( void )
 void panel_First2DDrawing(void)
 {
 	// if running VR
-	#ifdef VRTECH
 	extern int g_iActivelyUsingVRNow;
 	if (g.vrglobals.GGVREnabled > 0 && g_iActivelyUsingVRNow == 1 )//g.vrglobals.GGVRUsingVRSystem == 1 )
 	{
@@ -150,13 +149,11 @@ void panel_First2DDrawing(void)
 		g_fPreferredVRScreenRotY = CameraAngleY(0)+180.0f;
 		MoveCamera(0, -75);
 	}
-	#endif
 }
 
 void panel_Last2DDrawing(void)
 {
 	// if running VR
-	#ifdef VRTECH
 	extern int g_iActivelyUsingVRNow;
 	if (g.vrglobals.GGVREnabled > 0 && g_iActivelyUsingVRNow == 1)//g.vrglobals.GGVRUsingVRSystem == 1 )
 	{
@@ -196,15 +193,12 @@ void panel_Last2DDrawing(void)
 			}
 		}
 	}
-	#endif
 }
 
 void panel_Free2DDrawing(void)
 {
-	#ifdef VRTECH
 	if (BitmapExist(12) == 1) DeleteBitmapEx(12);
 	if (CheckObjectExist(g.luadrawredirectobjectoffset) == 1) DeleteObject(g.luadrawredirectobjectoffset);
 	if (GetImageExistEx(g.luadrawredirectimageoffset) == 1) DeleteImage(g.luadrawredirectimageoffset);
 	g_iInit2DDrawingCapture = 0;
-	#endif
 }

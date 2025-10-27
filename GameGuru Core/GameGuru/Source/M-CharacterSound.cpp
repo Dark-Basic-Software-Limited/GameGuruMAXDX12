@@ -244,12 +244,8 @@ void character_soundset ( void )
 {
 	//PE: soundset_s has been removed from chars.
 	//PE: For now always use male, until this is converted into a new lua setup.
-	#ifdef VRTECH
 	//	t.s_s=t.entityelement[t.e].eleprof.soundset_s;
 	t.s_s = "male";
-	#else
-	t.s_s=t.entityelement[t.e].eleprof.soundset_s;
-	#endif
 	if (  Len(t.s_s.Get())<2  )  t.s_s = "soldier";
 	character_sound_load ( );
 }

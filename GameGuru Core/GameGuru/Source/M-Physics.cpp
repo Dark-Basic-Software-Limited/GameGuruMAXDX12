@@ -5,11 +5,9 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-#ifdef ENABLEIMGUI
 #include "..\..\GameGuru\Imgui\imgui.h"
 #include "..\..\GameGuru\Imgui\imgui_impl_win32.h"
 #include "..\..\GameGuru\Imgui\imgui_gg_dx11.h"
-#endif
 
 #include "GGTerrain\GGTerrain.h"
 #include "GGTerrain\GGTrees.h"
@@ -178,10 +176,8 @@ void physics_init ( void )
 	physics_createterraincollision ( );
 	t.tgenerateterraindirtyregiononly=0;
 
-	#ifdef WICKEDENGINE
 	// MAX also has virtual trees that need physics
 	physics_createvirtualtreecylinders();
-	#endif
 
 	//  Player Controller Object
 	if (  ObjectExist(t.aisystem.objectstartindex) == 0 ) 
@@ -220,12 +216,8 @@ void physics_init ( void )
 		{
 			t.e = t.charanimstates[g.charanimindex].e;
 			bool bCharacterUsesPhysics = false;
-			#ifdef WICKEDENGINE
 			t.entityelement[t.e].usingphysicsnow = 0;
 			if (t.entityprofile[t.entityelement[t.e].bankindex].physics != 0) bCharacterUsesPhysics = true;
-			#else
-			bCharacterUsesPhysics = true;
-			#endif
 			if (bCharacterUsesPhysics == true)
 			{
 				// get entity index associated with character
@@ -482,7 +474,6 @@ std::vector<sVTreeObj> g_VTreeObj;
 
 void physics_createvirtualtreecylinders (void)
 {
-	#ifdef WICKEDENGINE
 	// going to use GGTrees_GetClosest to position kenetic cylinders so player cannot walk through virtual trees
 	if (ObjectExist(g.virtualtreeobjectstart) == 0)
 	{
@@ -503,7 +494,6 @@ void physics_createvirtualtreecylinders (void)
 
 	// start new Vtrees list
 	g_VTreeObj.clear();
-	#endif
 }
 
 void physics_freevirtualtreecylinders (void)
@@ -523,7 +513,6 @@ void physics_freevirtualtreecylinders (void)
 
 void physics_managevirtualtreecylinders (void)
 {
-	#ifdef WICKEDENGINE
 	// first start assuming all existing visible trees may not show again
 	for (int vti = 0; vti < g_VTreeObj.size(); vti++)
 		g_VTreeObj[vti].bActive = false;
@@ -631,7 +620,6 @@ void physics_managevirtualtreecylinders (void)
 			}
 		}
 	}
-	#endif
 }
 
 void physics_prepareentityforphysics ( void )
@@ -641,14 +629,12 @@ void physics_prepareentityforphysics ( void )
 	if (  t.entid>0 && t.tphyobj>0 ) 
 	{
 		// Entity has a different collision mode to the parent object in the FPE file...
-		#ifdef WICKEDENGINE
 		int iStoreEntityIndex = t.entid;
 		int iStoreOriginalCollisionMode = t.entityprofile[iStoreEntityIndex].collisionmode;
 		if (t.e < t.entityelement.size() && t.entityelement[t.e].eleprof.iOverrideCollisionMode != -1)
 		{
 			t.entityprofile[t.entid].collisionmode = t.entityelement[t.e].eleprof.iOverrideCollisionMode;
 		}
-		#endif
 
 		// special hybrid collision mode can hide static limbs of primary object
 		if (t.entityprofile[t.entid].collisionmode == 31)
@@ -814,9 +800,7 @@ void physics_prepareentityforphysics ( void )
 		}
 
 		// ...and restore parent when done
-		#ifdef WICKEDENGINE
 		t.entityprofile[iStoreEntityIndex].collisionmode = iStoreOriginalCollisionMode;
-		#endif
 	}
 }
 
@@ -936,11 +920,9 @@ void physics_setupobject ( void )
 					char pHullDecompWait[256];
 					sprintf(pHullDecompWait, "HULL DECOMPOSITION%s", pJustName);
 					t.screenprompt_s = pHullDecompWait;
-					#ifdef WICKEDENGINE
 					extern DWORD g_SensibleMessageTimer;
 					g_SensibleMessageTimer = 1;
 					printscreenprompt(t.screenprompt_s.Get());
-					#endif
 				}
 			}
 
@@ -1073,13 +1055,11 @@ void physics_setupobject ( void )
 					ODECreateDynamicBox(t.tphyobj, -1, 0, t.tweight, t.tfriction, -1);
 				}
 
-				#ifdef WICKEDENGINE
 				// apply zero gravity if ticked
 				if (t.entityelement[t.e].eleprof.iAffectedByGravity == 0)
 				{
 					ODESetNoGravity(t.tphyobj, 0);
 				}
-				#endif
 			}
 		}
 	}
@@ -1381,9 +1361,6 @@ void physics_explodesphere ( void )
 	{
 		//  apply camera shake for nearby explosion
 		t.playercontrol.camerashake_f=(((t.texploderadius_f*2)-(t.tdd_f/(t.texploderadius_f*2)))*t.tstrengthofexplosion_f)/150.0/20.0;
-		#ifndef WICKEDENGINE
-		if (  t.playercontrol.camerashake_f > 25.0f  )  t.playercontrol.camerashake_f = 25.0f;
-		#endif
 	}
 	if (  t.tdd_f<t.texploderadius_f ) 
 	{
@@ -1600,11 +1577,9 @@ void physics_player_init ( void )
 
 				t.playercontrol.iPlayHeartBeatSoundOff = t.entityelement[t.e].eleprof.perentityflags & 1;
 				t.playercontrol.iShowScreenBloodOff = (t.entityelement[t.e].eleprof.perentityflags & (1 << 1)) >> 1;
-				#ifdef WICKEDENGINE
 				t.playercontrol.fWeaponDamageMultiplier = t.entityelement[t.e].eleprof.weapondamagemultiplier;
 				t.playercontrol.fMeleeDamageMultiplier = t.entityelement[t.e].eleprof.meleedamagemultiplier;
 				t.playercontrol.fSwimSpeed = t.entityelement[t.e].eleprof.iSwimSpeed;
-				#endif
 
 				// new property of player start marker to disable flashlight
 				if (t.entityelement[t.e].eleprof.usespotlighting == 1 )
@@ -1644,7 +1619,6 @@ void physics_player_init ( void )
 		}
 	}
 
-	#ifdef WICKEDENGINE
 	float fEditableSizeHalved = GGTerrain_GetEditableSize();
 	t.terraineditableareasizeminx = -fEditableSizeHalved;
 	t.terraineditableareasizeminz = -fEditableSizeHalved;
@@ -1654,7 +1628,6 @@ void physics_player_init ( void )
 	if (t.terrain.playerx_f > t.terraineditableareasizemaxx - 100.0f) t.terrain.playerx_f = t.terraineditableareasizemaxx - 100.0f;
 	if (t.terrain.playerz_f < t.terraineditableareasizeminz + 100.0f) t.terrain.playerz_f = t.terraineditableareasizeminz + 100.0f;
 	if (t.terrain.playerz_f > t.terraineditableareasizemaxz - 100.0f) t.terrain.playerz_f = t.terraineditableareasizemaxz - 100.0f;
-	#endif
 
 	//  If no player start marker, reset player physics tweakables
 	if ( t.game.levelplrstatsetup == 1 )
@@ -1662,7 +1635,6 @@ void physics_player_init ( void )
 		if ( t.tnostartmarker == 1 ) physics_inittweakables ( );
 	}
 
-	#ifdef VRTECH
 	// if multiplayer mode, change start position to the multiplayer start marker default
 	if ( t.game.runasmultiplayer == 1 ) 
 	{
@@ -1691,21 +1663,9 @@ void physics_player_init ( void )
 		}
 		t.playercontrol.finalcameraangley_f=t.terrain.playeray_f;
 	}
-	#endif
 
 	//  Player start height (marker or no)
-	#ifdef WICKEDENGINE
 	t.tbestterrainplayery_f = BT_GetGroundHeight(t.terrain.TerrainID, t.terrain.playerx_f, t.terrain.playerz_f) + t.terrain.adjaboveground_f;
-	#else
-	if (  t.terrain.TerrainID>0 ) 
-	{
-		t.tbestterrainplayery_f=BT_GetGroundHeight(t.terrain.TerrainID,t.terrain.playerx_f,t.terrain.playerz_f)+t.terrain.adjaboveground_f;
-	}
-	else
-	{
-		t.tbestterrainplayery_f=g.gdefaultterrainheight+t.terrain.adjaboveground_f;
-	}
-	#endif
 
 	//  also ensure ABOVE water Line (  )
 	if (  t.tbestterrainplayery_f<t.terrain.waterliney_f+20+t.terrain.adjaboveground_f ) 
@@ -1769,10 +1729,8 @@ void physics_player_init ( void )
 	//  OpenFileMap (  for IDE access )
 	if (  t.plrfilemapaccess == 0 && t.game.gameisexe == 0 ) 
 	{
-		#ifdef FPSEXCHANGE
 		OpenFileMap (  11, "FPSEXCHANGE" );
 		SetEventAndWait (  11 );
-		#endif
 		t.plrfilemapaccess=1;
 	}
 }
@@ -1791,11 +1749,7 @@ void physics_player ( void )
 {
 	if ( t.game.runasmultiplayer == 0 || g.mp.noplayermovement == 0 ) 
 	{
-		#ifdef VRTECH
 		if ( t.aisystem.processplayerlogic == 1 ) 
-		#else
-		if ( t.aisystem.processplayerlogic == 1 || t.conkit.editmodeactive != 0 ) 
-		#endif
 		{
 			if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling physics_player_gatherkeycontrols");
 			physics_player_gatherkeycontrols ( );
@@ -1901,7 +1855,6 @@ void physics_player_gatherkeycontrols ( void )
 	if ( KeyState(g.keymap[t.plrkeySHIFT]) == 1 && g.runkeys == 1 && t.jumpaction == 0  )  t.plrkeySHIFT = 1; else t.plrkeySHIFT = 0;
 	if ( KeyState(g.keymap[t.plrkeySHIFT2]) == 1 && g.runkeys == 1 && t.jumpaction == 0  )  t.plrkeySHIFT2 = 1; else t.plrkeySHIFT2 = 0;
 
-	#ifdef VRTECH
 	// when in vr mode
 	if ( g.vrglobals.GGVREnabled > 0 && g.vrglobals.GGVRUsingVRSystem == 1 )
 	{
@@ -1927,7 +1880,6 @@ void physics_player_gatherkeycontrols ( void )
 			FPSC_SaveSETUPVRINI();
 		}
 	}
-	#endif
 
 	if ( t.conkit.editmodeactive != 0 ) 
 	{
@@ -1995,7 +1947,6 @@ void physics_player_gatherkeycontrols ( void )
 		}
 	}
 
-	#ifdef VRTECH
 	// VR Support - take extra input from VR controllers
 	if ( g.vrglobals.GGVREnabled > 0 && g.vrglobals.GGVRUsingVRSystem == 1 )
 	{
@@ -2047,7 +1998,6 @@ void physics_player_gatherkeycontrols ( void )
 		g.vrglobals.GGVR_Old_XposOffset = g.vrglobals.GGVR_XposOffset;
 		g.vrglobals.GGVR_Old_ZposOffset = g.vrglobals.GGVR_ZposOffset;
 	}
-	#endif
 
 	// Automated actions (script control)
 	switch ( g.playeraction ) 
@@ -2124,7 +2074,6 @@ void physics_player_gatherkeycontrols ( void )
 		t.plrhasfocus=1;
 		if ( t.plrfilemapaccess == 1 ) 
 		{
-			#ifdef VRTECH
 			// if VR, disable this as WMR changes the focus window
 			if ( g.vrglobals.GGVREnabled > 0 )
 			{
@@ -2138,9 +2087,6 @@ void physics_player_gatherkeycontrols ( void )
 				t.plrhasfocus=GetFileMapDWORD( 11, 148 );
 				#endif
 			}
-			#else
-			t.plrhasfocus=GetFileMapDWORD( 11, 148 );
-			#endif
 		}
 	}
 
@@ -2291,7 +2237,6 @@ void physics_player_handledeath ( void )
 					{
 						//  move player to start
 						physics_player_gotolastcheckpoint ( );
-						#ifdef WICKEDENGINE
 						//PE: Restart any ambient music tracks.
 						if (t.gamevisuals.bEndableAmbientMusicTrack)
 						{
@@ -2324,7 +2269,6 @@ void physics_player_handledeath ( void )
 								}
 							}
 						}
-						#endif
 					}
 				}
 			}
@@ -2786,7 +2730,6 @@ void physics_resetplayer_core ( void )
 		//  play default music
 		music_playdefault ( );
 
-		#ifdef VRTECH
 		//  Restore any sounds from last checkpoint/start marker
 		for ( t.s = g.soundbankoffset ; t.s<=  g.soundbankoffsetfinish; t.s++ )
 		{
@@ -2798,22 +2741,6 @@ void physics_resetplayer_core ( void )
 				}
 			}
 		}
-		#else
-		// LB-Issue-262: play/loop resume any sounds that had been playing at the time 
-		for ( t.s = g.soundbankoffset; t.s <= g.soundbankoffsetfinish; t.s++ )
-		{
-			if (t.soundloopcheckpoint[t.s] != 0)
-			{
-				if (t.soundloopcheckpoint[t.s] > 0 && SoundExist(t.s) == 1)
-				{
-					if (t.soundloopcheckpoint[t.s] == 3)
-						LoopSound(t.s);
-					else if (t.soundloopcheckpoint[t.s] == 1)
-						PlaySound(t.s);
-				}
-			}
-		}
-		#endif
 	}
 
 	//  ensure all markers and waypoints remain hidden
@@ -3463,7 +3390,6 @@ void physics_create_debug_mesh(float* data, int count, bool bStatic, int offset)
 
 void physics_add_vert_to_debug_mesh(float x, float y, float z, int v, int memblock)
 {
-#ifdef WICKEDENGINE
 	//  Position of vertex in memblock
 	int pos = 12 + (v * 32);// 12);
 
@@ -3471,12 +3397,10 @@ void physics_add_vert_to_debug_mesh(float x, float y, float z, int v, int memblo
 	WriteMemblockFloat(memblock, pos + 0, x);
 	WriteMemblockFloat(memblock, pos + 4, y);
 	WriteMemblockFloat(memblock, pos + 8, z);
-#endif // WICKEDENGINE
 }
 
 void physics_update_debug_mesh(float* data, int count, int objectID, int offsetLower, int offsetUpper)
 {
-#ifdef WICKEDENGINE
 	float x0, x1, x2, x3, x4, x5;
 	float y0, y1, y2, y3, y4, y5;
 	float z0, z1, z2, z3, z4, z5;
@@ -3542,12 +3466,10 @@ void physics_update_debug_mesh(float* data, int count, int objectID, int offsetL
 	UnlockVertexData();
 
 	WickedCall_UpdateMeshVertexData(pMesh);
-#endif // WICKEDENGINE
 }
 
 void physics_debug_make_prism_between_points(float* p0, float* p1, float* results, float thickness)
 {
-#ifdef WICKEDENGINE
 	XMFLOAT3 a;
 	XMFLOAT3 b;
 	XMVECTOR positionA;
@@ -3603,7 +3525,6 @@ void physics_debug_make_prism_between_points(float* p0, float* p1, float* result
 		results[3 * j + 1] = XMVectorGetY(points[j]);
 		results[3 * j + 2] = XMVectorGetZ(points[j]);
 	}
-#endif // WICKEDENGINE
 }
 
 // For editor only.
@@ -3633,7 +3554,6 @@ void physics_debug_draw()
 // For test game and editor.
 void physics_render_debug_meshes()
 {
-	#ifdef WICKEDENGINE
 	if (BPhys_GetDebugDrawerMode() != 0)
 	{
 		int elementCount = 0;
@@ -3686,12 +3606,10 @@ void physics_render_debug_meshes()
 			}
 		}
 	}
-	#endif
 }
 
 void physics_importer_create_temp()
 {
-	#ifdef WICKEDENGINE
 	if (t.importer.collisionshape == 0) t.tshape = 0;   // box
 	if (t.importer.collisionshape == 1) t.tshape = 1;   // polygon
 	if (t.importer.collisionshape == 2) t.tshape = 2;   // sphere
@@ -3700,7 +3618,6 @@ void physics_importer_create_temp()
 	if (t.importer.collisionshape == 5) t.tshape = 21;  // character collission
 	if (t.importer.collisionshape == 6) t.tshape = 50;  // tree collision
 	if (t.importer.collisionshape == 7) t.tshape = 11;  // no collision
-	#endif
 
 	if (t.tstatic == 1) // now allow physics entities in multiplayer || t.game.runasmultiplayer == 1 ) 
 	{
@@ -3800,17 +3717,12 @@ void physics_importer_create_temp()
 
 int physics_getmaterialindex (float fX, float fZ)
 {
-	#ifdef WICKEDENGINE
 	int iMatID = GGTerrain_GetMaterialIndex(fX, fZ) & 0xFF;
 	int iMaterialIndex = 0;
 	if (iMatID >= 0 && iMatID < 32) iMaterialIndex = g_iMapMatIDToMatIndex[iMatID];
 	return iMaterialIndex;
-	#else
-	return 0;
-	#endif
 }
 
-#ifdef WICKEDENGINE
 int physics_rayintersecttree (float fX, float fY, float fZ, float fToX, float fToY, float fToZ)
 {
 	float fHeightOfTreeDetect = 200.0f; //LB: Can be improved with geometry awareness (slower)
@@ -3853,4 +3765,3 @@ int physics_rayintersecttree (float fX, float fY, float fZ, float fToX, float fT
 	}
 	return 0;
 }
-#endif

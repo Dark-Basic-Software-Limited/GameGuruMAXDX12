@@ -4,13 +4,8 @@
 #include "stdafx.h"
 #include "gameguru.h"
 #include "..\..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\ShadowMapping\cShadowMaps.h"
-#ifdef WICKEDENGINE
-#else
-#include "DirectXTex.h"
-#endif
 #include "wincodec.h"
 
-#ifdef ENABLEIMGUI
 //PE: GameGuru IMGUI.
 #include "..\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
@@ -19,11 +14,8 @@
 #include "..\Imgui\imgui_internal.h"
 #include "..\Imgui\imgui_impl_win32.h"
 #include "..\Imgui\imgui_gg_dx11.h"
-#endif
 
-#ifndef PRODUCTCLASSIC
 #include "openxr.h"
-#endif
 
 
 // Prototypes
@@ -37,11 +29,9 @@ using namespace DirectX;
 extern CascadedShadowsManager g_CascadedShadow;
 extern int g_iTerrainIDForShadowMap;
 
-#ifdef ENABLEIMGUI
 extern bool bHelp_Window;
 extern bool bHelpVideo_Window;
 extern char cForceTutorialName[1024];
-#endif
 
 // Terrain Build Globals
 #define TERRAINTEXPANELSPRMAX 6
@@ -79,8 +69,6 @@ terrainbuildtype terrainbuild;
 // moved from below so Classic could compile
 bool bUpdateVeg = true; //Update veg on by default.
 
-#ifdef VRTECH
-#ifdef ENABLEIMGUI
 
 int delay_terrain_execute = 0;
 int skib_terrain_frames_execute = 0;
@@ -111,11 +99,7 @@ int iTerrainRaiseMode = 1;
 int iLastRegionUpdateX, iLastRegionUpdateY;
 int iTerrainVegLoopUpdate = 0;
 extern bool bImGuiGotFocus;
-#else
-bool bDisableAllTerrainSprites = false;
-#endif
 //bool bVegHasChanged = false;
-#endif
 
 // moved here for Classic to compile
 int iTerrainPaintMode = 1;
@@ -336,7 +320,6 @@ void terrain_paintselector_init ( void )
 			// terrain texture plate
 			cstr sTerrainTextureLocation = terrain_getterrainfolder();
 			terrainbuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(sTerrainTextureLocation+"\\"+TEXTURE_D_NAME).Get());
-			#ifdef VRTECH
 			if ( terrainbuild.iTexturePanelImg[iTex] == 0 )
 			{
 				terrainbuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(sTerrainTextureLocation+"\\texture_D.dds").Get());
@@ -349,7 +332,6 @@ void terrain_paintselector_init ( void )
 					terrainbuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(sTerrainTextureLocation+"\\"+TEXTURE_D_NAME).Get());
 				}
 			}
-			#endif
 			terrainbuild.terrainstyle = g.terrainstyle_s;
 		}
 		else
@@ -358,52 +340,30 @@ void terrain_paintselector_init ( void )
 			terrainbuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(cstr("terrainbuild\\default\\")+cstr(pTexImg)).Get());
 		}
 		terrainbuild.iTexturePanelSprite[iTex] = g.terrainpainterinterfacesprite + 31 + iTex;
-		#ifdef VRTECH
 		if (!bDisableAllTerrainSprites) Sprite ( terrainbuild.iTexturePanelSprite[iTex], iX, iY, terrainbuild.iTexturePanelImg[iTex] );
 		if (!bDisableAllTerrainSprites) SizeSprite ( terrainbuild.iTexturePanelSprite[iTex], iWidth, iHeight );
-		#else
-		Sprite ( terrainbuild.iTexturePanelSprite[iTex], iX, iY, terrainbuild.iTexturePanelImg[iTex] );
-		SizeSprite ( terrainbuild.iTexturePanelSprite[iTex], iWidth, iHeight );
-		#endif
 		if ( iTex==5 ) 
 		{
 			terrainbuild.iTexPlateImage = terrainbuild.iTexturePanelImg[iTex];
-			#ifdef VRTECH
 			if (!bDisableAllTerrainSprites) SetSprite ( terrainbuild.iTexturePanelSprite[iTex], 0, 0 );
-			#else
-			SetSprite ( terrainbuild.iTexturePanelSprite[iTex], 0, 0 );
-			#endif
 		}
 	}
 
 	// Texture highlighter
 	terrainbuild.iTexturePanelHighSprite = g.terrainpainterinterfacesprite + 0;
 	terrainbuild.iTexturePanelHighImg = loadinternalimage("terrainbuild\\default\\TextureHighlighter.dds");
-	#ifdef VRTECH
 	if (!bDisableAllTerrainSprites) Sprite ( terrainbuild.iTexturePanelHighSprite, terrainbuild.iTexturePanelX, terrainbuild.iTexturePanelY, terrainbuild.iTexturePanelHighImg );
 	if (!bDisableAllTerrainSprites) SizeSprite ( terrainbuild.iTexturePanelHighSprite, terrainbuild.iTexturePanelWidth/4, terrainbuild.iTexturePanelHeight/4 );
-	#else
-	Sprite ( terrainbuild.iTexturePanelHighSprite, terrainbuild.iTexturePanelX, terrainbuild.iTexturePanelY, terrainbuild.iTexturePanelHighImg );
-	SizeSprite ( terrainbuild.iTexturePanelHighSprite, terrainbuild.iTexturePanelWidth/4, terrainbuild.iTexturePanelHeight/4 );
-	#endif
 
 	// Help Dialog Shortcut Keys
 	terrainbuild.iHelpSpr = g.terrainpainterinterfacesprite + 1;
 	terrainbuild.iHelpImg = loadinternalimage("languagebank\\english\\artwork\\terrainbuild-help.png");
-	#ifdef VRTECH
 	if (!bDisableAllTerrainSprites) Sprite ( terrainbuild.iHelpSpr, terrainbuild.iTexturePanelX - ImageWidth(terrainbuild.iHelpImg) - 10, terrainbuild.iTexturePanelY + 210 - ImageHeight(terrainbuild.iHelpImg), terrainbuild.iHelpImg );
-	#else
-	Sprite ( terrainbuild.iHelpSpr, terrainbuild.iTexturePanelX - ImageWidth(terrainbuild.iHelpImg) - 10, terrainbuild.iTexturePanelY + 210 - ImageHeight(terrainbuild.iHelpImg), terrainbuild.iHelpImg );
-	#endif
 
 	// Help Dialog Shortcut Keys
 	terrainbuild.iTexHelpSpr = g.terrainpainterinterfacesprite + 2;
  	terrainbuild.iTexHelpImg = loadinternalimage("languagebank\\english\\artwork\\terrainbuild-texturehelp.png");
-	#ifdef VRTECH
 	if (!bDisableAllTerrainSprites) Sprite ( terrainbuild.iTexHelpSpr, terrainbuild.iTexturePanelX - 10, terrainbuild.iTexturePanelY - 10 - ImageHeight(terrainbuild.iTexHelpImg), terrainbuild.iTexHelpImg );
-	#else
-	Sprite ( terrainbuild.iTexHelpSpr, terrainbuild.iTexturePanelX - 10, terrainbuild.iTexturePanelY - 10 - ImageHeight(terrainbuild.iTexHelpImg), terrainbuild.iTexHelpImg );
-	#endif
 
 	// terrain paint selector inited
 	terrainbuild.initialised = 1;
@@ -415,11 +375,7 @@ void terrain_paintselector_hide ( void )
 	if ( terrainbuild.active == 1 )
 	{
 		// hide any UI elements
-		#ifdef VRTECH
 		if (!bDisableAllTerrainSprites) 
-		#else
-		if(1)
-		#endif
 		{
 			if (terrainbuild.iTexturePanelSprite[0] > 0)
 			{
@@ -447,7 +403,6 @@ void terrain_paintselector_show ( void )
 	if ( t.conkit.editmodeactive != 0 )  
 		return;
 
-	#ifdef VRTECH
 	// if switch from terrain paint to grass paint, hide and reshow (grass does not need texture panel)
 	if (!bDisableAllTerrainSprites) {
 		if (SpriteExist(terrainbuild.iTexHelpSpr) == 1)
@@ -462,12 +417,10 @@ void terrain_paintselector_show ( void )
 			}
 		}
 	}
-	#endif
 
 	if ( terrainbuild.active == 0 )
 	{
 		// show UI elements
-		#ifdef VRTECH
 		if (!bDisableAllTerrainSprites) 
 		{
 			if (terrainbuild.iTexturePanelSprite[0] > 0)
@@ -484,18 +437,6 @@ void terrain_paintselector_show ( void )
 				}
 			}
 		}
-		#else
-		if ( terrainbuild.iTexturePanelSprite[0] > 0 )
-		{
-			if ( SpriteExist ( terrainbuild.iTexHelpSpr ) == 1 ) ShowSprite ( terrainbuild.iTexHelpSpr );
-			if ( SpriteExist ( terrainbuild.iHelpSpr ) == 1 ) ShowSprite ( terrainbuild.iHelpSpr );
-			if ( SpriteExist ( terrainbuild.iTexturePanelHighSprite ) == 1 ) ShowSprite ( terrainbuild.iTexturePanelHighSprite );
-			for ( int iTex = 0; iTex < TERRAINTEXPANELSPRMAX; iTex++ )
-			{
-				if ( SpriteExist ( terrainbuild.iTexturePanelSprite[iTex] ) == 1 ) ShowSprite ( terrainbuild.iTexturePanelSprite[iTex] );
-			}
-		}
-		#endif
 		terrainbuild.active = 1;
 
 		// if terrain style changed, load correct terrain texture into UI
@@ -503,7 +444,6 @@ void terrain_paintselector_show ( void )
 		if ( strcmp ( terrainbuild.terrainstyle.Get(), g.terrainstyle_s.Get() ) != NULL )
 		{
 			terrainbuild.terrainstyle = g.terrainstyle_s;
-			#ifdef VRTECH
 			if ( FileExist ( cstr(sTerrainTextureLocation+"\\"+TEXTURE_D_NAME).Get() ) == 1 )
 				LoadImage ( cstr(sTerrainTextureLocation+"\\"+TEXTURE_D_NAME).Get(), terrainbuild.iTexPlateImage );
 			else
@@ -512,13 +452,6 @@ void terrain_paintselector_show ( void )
 			int iY = terrainbuild.iTexturePanelY;
 			if (!bDisableAllTerrainSprites) Sprite ( terrainbuild.iTexturePanelSprite[5], iX, iY, terrainbuild.iTexturePanelImg[5] );
 			if (!bDisableAllTerrainSprites) SetSprite ( terrainbuild.iTexturePanelSprite[5], 0, 0 );
-			#else
-			LoadImage ( cstr(sTerrainTextureLocation+"\\Texture_D.dds").Get(), terrainbuild.iTexPlateImage );
-			int iX = terrainbuild.iTexturePanelX;
-			int iY = terrainbuild.iTexturePanelY;
-			Sprite ( terrainbuild.iTexturePanelSprite[5], iX, iY, terrainbuild.iTexturePanelImg[5] );
-			SetSprite ( terrainbuild.iTexturePanelSprite[5], 0, 0 );
-			#endif
 		}
 	}
 }
@@ -531,15 +464,10 @@ void terrainbuild_settexturehighlight ( void )
 		int iCol = terrainbuild.iCurrentTexture - (iRow*4);
 		float fChoiceWidth = terrainbuild.iTexturePanelWidth/4;
 		float fChoiceHeight = terrainbuild.iTexturePanelHeight/4;
-		#ifdef VRTECH
 		if (!bDisableAllTerrainSprites) Sprite ( terrainbuild.iTexturePanelHighSprite, terrainbuild.iTexturePanelX+(iCol*fChoiceWidth), terrainbuild.iTexturePanelY+(iRow*fChoiceHeight), terrainbuild.iTexturePanelHighImg );
-		#else
-		Sprite ( terrainbuild.iTexturePanelHighSprite, terrainbuild.iTexturePanelX+(iCol*fChoiceWidth), terrainbuild.iTexturePanelY+(iRow*fChoiceHeight), terrainbuild.iTexturePanelHighImg );
-		#endif
 	}
 }
 
-#if defined(ENABLEIMGUI)
 void imgui_terrain_loop(void)
 {
 	if (!imgui_is_running)
@@ -554,12 +482,8 @@ void imgui_terrain_loop(void)
 			t.visuals.VegHeight_f = t.gamevisuals.VegHeight_f;
 			grass_setgrassgridandfade();
 
-			#ifdef PRODUCTV3
-			grass_init();
-			#else
 			if (!(ObjectExist(t.tGrassObj) == 1 && GetMeshExist(t.tGrassObj) == 1) )
 				grass_init();
-			#endif
 
 			//t.completelyfillvegarea = 1;
 			t.terrain.grassupdateafterterrain = 1;
@@ -1334,7 +1258,6 @@ void imgui_terrain_loop(void)
 		//bTerrain_Tools_Window = false;
 	}
 }
-#endif
 
 void terrain_paintselector_control ( void )
 {
@@ -1350,9 +1273,7 @@ void terrain_paintselector_control ( void )
 		terrain_paintselector_init();
 	}
 
-#ifdef ENABLEIMGUI
 #ifndef USEOLDGUI
-#ifdef USERENDERTARGET
 	//PE: Reposition everything
 	terrainbuild.iTexturePanelX = GetChildWindowWidth() - 210;
 	terrainbuild.iTexturePanelY = GetChildWindowHeight() - 200;
@@ -1377,8 +1298,6 @@ void terrain_paintselector_control ( void )
 	if (!bDisableAllTerrainSprites) Sprite(terrainbuild.iHelpSpr, terrainbuild.iTexturePanelX - ImageWidth(terrainbuild.iHelpImg) - 10, terrainbuild.iTexturePanelY + 210 - ImageHeight(terrainbuild.iHelpImg), terrainbuild.iHelpImg);
 	if (!bDisableAllTerrainSprites) Sprite(terrainbuild.iTexHelpSpr, terrainbuild.iTexturePanelX - 10, terrainbuild.iTexturePanelY - 10 - ImageHeight(terrainbuild.iTexHelpImg), terrainbuild.iTexHelpImg);
 	terrainbuild_settexturehighlight();
-#endif
-#endif
 #endif
 
 	terrain_paintselector_show();
@@ -1435,21 +1354,6 @@ void terrain_paintselector_control ( void )
 					CopyFile ( pOldTerrainTextureFile, pNewLocationForFile, FALSE );
 
 					// normal file
-					#ifdef VRTECH
-					#else
-					 if ( bUseFirstChoice == true )
-					 {
-						strcpy ( pOldTerrainTextureFile, cstr(cstr(pThisTerrainTexturePath)+cstr("\\")+TEXTURE_N_NAME).Get() );
-						strcpy ( pNewLocationForFile, cstr(g.mysystem.levelBankTestMap_s+TEXTURE_N_NAME).Get() );
-					 }
-					 else
-					 {
-						strcpy ( pOldTerrainTextureFile, cstr(cstr(pThisTerrainTexturePath)+cstr("\\texture_N.dds")).Get() );
-						strcpy ( pNewLocationForFile, cstr(g.mysystem.levelBankTestMap_s+"texture_N.dds").Get() );
-					 }
-					 if ( FileExist ( pNewLocationForFile ) == 1 ) DeleteFile ( pNewLocationForFile );
-					 CopyFile ( pOldTerrainTextureFile, pNewLocationForFile, FALSE );
-					#endif
 
 					if ( bUseFirstChoice == true )
 						strcpy ( pOldTerrainTextureFile, cstr(g.mysystem.levelBankTestMap_s+TEXTURE_D_NAME).Get() );
@@ -1470,11 +1374,7 @@ void terrain_paintselector_control ( void )
 					LoadImage ( pOldTerrainTextureFile, terrainbuild.iTexPlateImage );
 					int iX = terrainbuild.iTexturePanelX;
 					int iY = terrainbuild.iTexturePanelY;
-					#ifdef VRTECH
 					if (!bDisableAllTerrainSprites) Sprite ( terrainbuild.iTexturePanelSprite[5], iX, iY, terrainbuild.iTexturePanelImg[5] );
-					#else
-					Sprite ( terrainbuild.iTexturePanelSprite[5], iX, iY, terrainbuild.iTexturePanelImg[5] );
-					#endif
 
 					// also re-texture current terrain with change too
 					terrain_loadlatesttexture ( );
@@ -1494,14 +1394,12 @@ void terrain_paintselector_control ( void )
 				}
 			}
 		}
-		#if defined(ENABLEIMGUI)
 		//After blocking dialogs , Reset click state.
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.MouseDown[1] = 0;
 		io.MouseDownDuration[1] = 0;
 		io.MouseDown[0] = 0;
 		io.MouseDownDuration[0] = 0;
-	    #endif
 	 }
 	#endif
 
@@ -1564,11 +1462,7 @@ int terrain_loadcustomtexture ( LPSTR pDestPathAndFile, int iTextureSlot )
 	HWND hThisWnd = GetForegroundWindow();
 
 	// terrain build Load Folder
-	#ifdef WICKEDENGINE
 	t.strwork = g.fpscrootdir_s + "\\Files\\texturebank";
-	#else
-	t.strwork = g.fpscrootdir_s + "\\Files\\terrainbuild\\texturesource";
-	#endif
 	if ( PathExist( t.strwork.Get() ) == 0 ) 
 	{
 		MessageBox ( hThisWnd, "Cannot find textures folder", "Error", MB_OK | MB_TOPMOST );
@@ -1611,17 +1505,6 @@ int terrain_loadcustomtexture ( LPSTR pDestPathAndFile, int iTextureSlot )
 	terrain_createnewterraintexture ( TEXTURE_D_NAME, iTextureSlot, tLoadFile.Get(), 0, 1 );
 	
 	// if a normal map exists for it, use that too
-	#ifdef VRTECH
-	#else
-	cstr tOrigLoadNormalFile = tLoadFile;
-	cstr tLoadNormalFile = cstr(Left(tOrigLoadNormalFile.Get(),strlen(tOrigLoadNormalFile.Get())-6)) + "_N.dds";
-	if ( FileExist ( tLoadNormalFile.Get() ) == 0 ) tLoadNormalFile = cstr(Left(tOrigLoadNormalFile.Get(),strlen(tOrigLoadNormalFile.Get())-6)) + "_N.jpg";
-	if ( FileExist ( tLoadNormalFile.Get() ) == 0 )
-	{
-		tLoadNormalFile = g.fpscrootdir_s + "\\Files\\effectbank\\reloaded\\media\\blank_N.dds";
-	}
-    terrain_createnewterraintexture ( TEXTURE_N_NAME, iTextureSlot, tLoadNormalFile.Get(), 0, 0 );
-	#endif
 
 	// restore current folder
 	SetDir(pOldDir);
@@ -1755,7 +1638,6 @@ int terrain_createnewterraintexture ( LPSTR pDestTerrainTextureFile, int iWhichT
 					hr = Resize( pWrkImage->GetImages(), pWrkImage->GetImageCount(), pWrkImage->GetMetadata(), 1022, 1022, TEX_FILTER_SEPARATE_ALPHA, InsertImage512 );
 					hr = CreateTexture(m_pD3D, InsertImage512.GetImages(), InsertImage512.GetImageCount(), InsertImage512.GetMetadata(), &pLoadedTexSurface512 );
 				}
-#ifdef VRTECH
 				// texture plate always compressed (not any more)
 				//hr = Decompress( imageTexturePlate.GetImages(), imageTexturePlate.GetImageCount(), imageTexturePlate.GetMetadata(),
 				//	DXGI_FORMAT_B8G8R8A8_UNORM, convertedTexturePlate );
@@ -1768,20 +1650,6 @@ int terrain_createnewterraintexture ( LPSTR pDestTerrainTextureFile, int iWhichT
 				//	platedata.format = convertedTexturePlate.GetImages()->format;
 				//	CreateTexture(m_pD3D, convertedTexturePlate.GetImages(), convertedTexturePlate.GetImageCount(), platedata, &pPlateSurface );
 				//}
-#else
-				// texture plate always compressed
-				hr = Decompress( imageTexturePlate.GetImages(), imageTexturePlate.GetImageCount(), imageTexturePlate.GetMetadata(),
-					DXGI_FORMAT_B8G8R8A8_UNORM, convertedTexturePlate );
-				if ( convertedTexturePlate.GetImageCount() == 0 )
-				{
-					CreateTexture(m_pD3D, imageTexturePlate.GetImages(), imageTexturePlate.GetImageCount(), platedata, &pPlateSurface );
-				}
-				else
-				{
-					platedata.format = convertedTexturePlate.GetImages()->format;
-					CreateTexture(m_pD3D, convertedTexturePlate.GetImages(), convertedTexturePlate.GetImageCount(), platedata, &pPlateSurface );
-				}
-#endif
 			}
 		}
 
@@ -2047,25 +1915,7 @@ void terrain_loadlatesttexture ( void )
 	}
 
 	// normals for terrain
-	#ifdef VRTECH
 	 LoadImage ( "effectbank\\reloaded\\media\\blank_N.dds", t.terrain.imagestartindex+21, 0, g.gdividetexturesize );
-	#else
-	 if ( FileExist ( cstr(cstr(pLocationOfTerrainTexture)+"\\"+TEXTURE_N_NAME).Get() ) == 1 )
-	 {
-		LoadImage ( cstr(cstr(pLocationOfTerrainTexture)+"\\"+TEXTURE_N_NAME).Get(),t.terrain.imagestartindex+21,0,g.gdividetexturesize );
-	 }
-	 else
-	 {
-		if ( FileExist ( cstr(cstr(pLocationOfTerrainTexture)+"\\texture_N.dds").Get() ) == 1 )
-		{
-			LoadImage (  cstr(cstr(pLocationOfTerrainTexture)+"\\texture_N.dds").Get(), t.terrain.imagestartindex+21,0,g.gdividetexturesize );
-		}
-		else
-		{
-			LoadImage ( "effectbank\\reloaded\\media\\blank_N.dds", t.terrain.imagestartindex+21,0,g.gdividetexturesize );
-		}
-	 }
-	#endif
 	TextureObject ( t.terrain.terrainobjectindex,2,t.terrain.imagestartindex+13 );
 	// stage 3 : rem circle texture for highlighter
 	TextureObject ( t.terrain.terrainobjectindex,4,t.terrain.imagestartindex+21 );
@@ -2120,29 +1970,6 @@ void terrain_changestyle ( void )
 					terrain_createnewterraintexture ( pNewTerrainTextureFile, 15, "Rocky_D.dds", 0, 1 );
 				
 					// and now the normals file
-					#ifdef VRTECH
-					#else
-					if ( bUseNewJPG == true )
-						strcpy ( pNewTerrainTextureFile, TEXTURE_N_NAME );
-					else
-						strcpy ( pNewTerrainTextureFile, "texture_N.dds" );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 0, "Path_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 1, "Path_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 2, "Path_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 3, "Default_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 4, "Default_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 5, "Default_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 6, "Sedimentary_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 7, "Sedimentary_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 8, "Sedimentary_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 9, "Sedimentary_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 10, "Mossy_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 11, "Mossy_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 12, "Mossy_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 13, "Rocky_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 14, "Rocky_N.dds", 0, 0 );
-					terrain_createnewterraintexture ( pNewTerrainTextureFile, 15, "Rocky_N.dds", 0, 0 );
-					#endif
 
 					// restore directory after terrain texture file creation
 					SetDir ( pOldDir );
@@ -2400,11 +2227,7 @@ void terrain_editcontrol ( void )
 					{
 						t.terrain.AMOUNT_f=50*t.terrain.zoom_f;
 					}
-					#ifdef VRTECH
 					if (  t.mc == 1 && (t.inputsys.keyshift == 1 || (iTerrainRaiseMode == 0 && t.terrain.terrainpaintermode == 1) ) )
-					#else
-					if (  t.mc == 1 && t.inputsys.keyshift == 1 )
-					#endif
 					{
 						t.terrain.AMOUNT_f=-50*t.terrain.zoom_f;
 					}
@@ -2729,9 +2552,7 @@ void terrain_editcontrol ( void )
 				t.terrain.grassregionx2 = t.terrain.dirtyx2;
 				t.terrain.grassregionz1 = t.terrain.dirtyz1;
 				t.terrain.grassregionz2 = t.terrain.dirtyz2;
-				#ifdef VRTECH
 				bVegHasChanged = true;
-				#endif
 			}
 		}
 		t.terrain.lastmc=t.mc;
@@ -2762,11 +2583,7 @@ void terrain_editcontrol ( void )
 				t.terrain.lastpaintz_f=t.terrain.Y_f;
 				if ( t.terrain.terrainpaintermode != 10 ) 
 				{
-					#ifdef VRTECH
 					if ( t.inputsys.keyshift == 1 || iTerrainPaintMode != 1 )
-					#else
-					if ( t.inputsys.keyshift == 1 )
-					#endif
 						t.texselect = Rgb(0,0,64);
 					else
 						t.texselect = Rgb(0,0,terrainbuild.iCurrentTexture*17);
@@ -2800,18 +2617,12 @@ void terrain_editcontrol ( void )
 
 					// grass value stored in RED component
 					t.texselectgrass = 1;
-					#ifdef VRTECH
 					if ( t.inputsys.keyshift == 1 || iTerrainPaintMode != 1 )
-					#else
-					if ( t.inputsys.keyshift == 1 )
-					#endif
 						t.texselect = Rgb(0,0,0);
 					else
 						t.texselect = Rgb(255,0,0);
 
-					#ifdef VRTECH
 					bVegHasChanged = true;
-					#endif
 				}
 
 				// finally paint to veghshadow texture
@@ -3239,15 +3050,10 @@ void terrain_cursor ( void )
 		//if (  t.terrain.terrainpaintermode >= 6 && t.terrain.terrainpaintermode <= 10 ) 
 		if ( t.terrain.terrainpaintermode == 10 ) 
 		{
-#if defined(ENABLEIMGUI)
 			if(!bEnableVeg || (bVegHasChanged && t.inputsys.mclick == 1) )
 				SetVector4(g.terrainvectorindex, 1, 1, 1, 1);
 			else
 				SetVector4(g.terrainvectorindex, 1, 0, 1, 1);
-#else
-			//  only show grass in GRASS paint mode
-			SetVector4 (  g.terrainvectorindex,1,1,1,1 );
-#endif
 		}
 		else
 		{
@@ -3291,11 +3097,7 @@ void terrain_update ( void )
 		BT_SetCurrentCamera (  t.terrain.gameplaycamera );
 		BT_UpdateTerrainCull (  t.terrain.TerrainID );
 		BT_UpdateTerrainLOD (  t.terrain.TerrainID );
-#ifdef WICKEDENGINE
 		if (g.globals.riftmode > 0 || OpenXRIsSessionActive())
-#else
-		if (g.globals.riftmode > 0)
-#endif
 		{
 			//  rendered in _postprocess_preterrain
 		}
@@ -3526,11 +3328,7 @@ void terrain_make ( void )
 
 		// Prepare shader as a shadow mapping primary effect (updated also in terrain_applyshader function if iTerrainPBRMode changes)
 		SetEffectShadowMappingMode ( 255 );
-		#ifdef VRTECH
 		SetEffectToShadowMappingEx ( t.terrain.terrainshaderindex, g.shadowdebugobjectoffset, g.guidepthshadereffectindex, g.globals.hidedistantshadows, 0, g.globals.realshadowresolution, g.globals.realshadowcascadecount, g.globals.realshadowcascade[0], g.globals.realshadowcascade[1], g.globals.realshadowcascade[2], g.globals.realshadowcascade[3], g.globals.realshadowcascade[4], g.globals.realshadowcascade[5], g.globals.realshadowcascade[6], g.globals.realshadowcascade[7] );
-		#else
-		SetEffectToShadowMappingEx ( t.terrain.terrainshaderindex, g.shadowdebugobjectoffset, g.guidepthshadereffectindex, g.globals.hidedistantshadows, g.globals.terrainshadows, g.globals.realshadowresolution, g.globals.realshadowcascadecount, g.globals.realshadowcascade[0], g.globals.realshadowcascade[1], g.globals.realshadowcascade[2], g.globals.realshadowcascade[3], g.globals.realshadowcascade[4], g.globals.realshadowcascade[5], g.globals.realshadowcascade[6], g.globals.realshadowcascade[7] );
-		#endif
 
 		//  Load all terrain textures
 		if ( t.game.runasmultiplayer == 1 ) mp_refresh ( );
@@ -3580,28 +3378,14 @@ void terrain_make ( void )
 				else
 					LoadImage ( cstr(cstr("terrainbank\\")+g.terrainstyle_s+"\\texture_D.dds").Get(),t.terrain.imagestartindex+13,0,g.gdividetexturesize );
 
-				#ifdef VRTECH
 				 LoadImage ( "effectbank\\reloaded\\media\\blank_N.dds", t.terrain.imagestartindex+21, 0, g.gdividetexturesize );
-				#else
-				 t.tsplashstatusprogress_s="LOADING TERRAIN NORMALS";
-				 timestampactivity(0,t.tsplashstatusprogress_s.Get());
-				 version_splashtext_statusupdate ( );
-				 if ( FileExist ( cstr(cstr("terrainbank\\")+g.terrainstyle_s+"\\"+TEXTURE_N_NAME).Get() ) == 1 )
-					LoadImage ( cstr(cstr("terrainbank\\")+g.terrainstyle_s+"\\"+TEXTURE_N_NAME).Get(),t.terrain.imagestartindex+21,0,g.gdividetexturesize );
-				 else
-					LoadImage ( cstr(cstr("terrainbank\\")+g.terrainstyle_s+"\\texture_N.dds").Get(),t.terrain.imagestartindex+21,0,g.gdividetexturesize );
-				#endif
 			}
 			if ( t.game.runasmultiplayer == 1 ) mp_refresh ( );
 
 			// This texture acts as highlight graphic and also store for mega texture (distant terrain texture composite)
 			SetImageAutoMipMap (  0 ); // PE: SetImageAutoMipMap Dont work anymore.
 			SetMipmapNum(1); //PE: mipmaps not needed.
-#ifdef VRTECH
 			LoadImage("effectbank\\reloaded\\media\\circle2.dds", t.terrain.imagestartindex + 17, 10, 0);
-#else
-			LoadImage("effectbank\\reloaded\\media\\circle.dds", t.terrain.imagestartindex + 17, 10, 0);
-#endif
 			SetMipmapNum(-1);
 			SetImageAutoMipMap (  1 );
 		}
@@ -3618,7 +3402,6 @@ void terrain_make ( void )
 	t.terrain.waterliney_f = g.gdefaultwaterheight;
 }
 
-#ifdef VRTECH
 void terrain_make_image_only(void)
 {
 	// Terrain system
@@ -3679,17 +3462,7 @@ void terrain_make_image_only(void)
 			else
 				LoadImage(cstr(cstr("terrainbank\\") + g.terrainstyle_s + "\\texture_D.dds").Get(), t.terrain.imagestartindex + 13, 0, g.gdividetexturesize);
 
-			#ifdef VRTECH
 			LoadImage("effectbank\\reloaded\\media\\blank_N.dds", t.terrain.imagestartindex + 21, 0, g.gdividetexturesize);
-			#else
-			t.tsplashstatusprogress_s = "LOADING TERRAIN NORMALS";
-			timestampactivity(0, t.tsplashstatusprogress_s.Get());
-			version_splashtext_statusupdate();
-			if (FileExist(cstr(cstr("terrainbank\\") + g.terrainstyle_s + "\\" + TEXTURE_N_NAME).Get()) == 1)
-				LoadImage(cstr(cstr("terrainbank\\") + g.terrainstyle_s + "\\" + TEXTURE_N_NAME).Get(), t.terrain.imagestartindex + 21, 0, g.gdividetexturesize);
-			else
-				LoadImage(cstr(cstr("terrainbank\\") + g.terrainstyle_s + "\\texture_N.dds").Get(), t.terrain.imagestartindex + 21, 0, g.gdividetexturesize);
-			#endif
 		}
 		if (t.game.runasmultiplayer == 1) mp_refresh();
 
@@ -3703,7 +3476,6 @@ void terrain_make_image_only(void)
 
 	}
 }
-#endif
 
 void terrain_load ( void )
 {
@@ -3879,7 +3651,6 @@ void terrain_loaddata ( void )
 			}
 
 			// Load water mask
-			#ifdef VRTECH
 			cstr WaterMask_s = cstr(t.levelmapptah_s + "watermask.png").Get();
 			if ( FileExist(WaterMask_s.Get()) == 0 ) WaterMask_s = cstr(t.levelmapptah_s + "watermask.dds").Get();
 			if ( g.memskipwatermask == 0 && FileExist( WaterMask_s.Get() ) == 1 )
@@ -3889,15 +3660,6 @@ void terrain_loaddata ( void )
 				LoadImage ( WaterMask_s.Get(), t.terrain.imagestartindex+4, 10, 0, 1 );
 				SetMipmapNum(-1);
 			}
-			#else
-			if (g.memskipwatermask == 0 && FileExist( cstr(t.levelmapptah_s+"watermask.dds").Get() ) == 1 )
-			{
-				if ( ImageExist(t.terrain.imagestartindex+4) == 1  )  DeleteImage (  t.terrain.imagestartindex+4 );
-				SetMipmapNum(1);
-				LoadImage (  cstr(t.levelmapptah_s+"watermask.dds").Get(),t.terrain.imagestartindex+4,10,0,1 );
-				SetMipmapNum(-1);
-			}
-			#endif
 			if (ImageExist(t.terrain.imagestartindex + 4) == 0)
 			{
 				GrabImage(t.terrain.imagestartindex + 4, 0, 0, 1, 1);
@@ -4040,11 +3802,7 @@ void terrain_shadowupdate ( void )
 			#else
 			//  place shadowlight
 			t.x_f=0 ; t.y_f=1000 ; t.z_f=0;
-			#ifdef VRTECH
 			PositionLight ( 0, t.x_f-5000, t.y_f+10000, t.z_f-5000 ); // team decided sun default should be behind/left of forward facing direction
-			#else
-			PositionLight (  0,t.x_f+5000,t.y_f+10000,t.z_f+5000 );
-			#endif
 			PointLight ( 0, t.x_f, t.y_f, t.z_f );
 			#endif
 			//  hide any jetpack
@@ -4104,11 +3862,7 @@ void terrain_shadowupdate ( void )
 				for ( t.t = -6 ; t.t<=  g.effectbankmax; t.t++ )
 				{
 					if ( t.t == -6  )  t.effectid = g.lightmappbreffectillum;
-					#ifdef VRTECH
 					if ( t.t == -5  ) t.effectid = g.controllerpbreffect;
-					#else
-					if ( t.t == -5  ) continue;
-					#endif
 					if ( t.t == -4  )  t.effectid = g.lightmappbreffect;
 					if ( t.t == -3  )  t.effectid = g.thirdpersonentityeffect;
 					if ( t.t == -2  )  t.effectid = g.thirdpersoncharactereffect;
@@ -4283,11 +4037,7 @@ void terrain_shadowupdate ( void )
 				for ( t.t = -6 ; t.t<=  g.effectbankmax; t.t++ )
 				{
 					if (  t.t == -6  )  t.effectid = g.lightmappbreffectillum;
-					#ifdef VRTECH
 					if (  t.t == -5  ) t.effectid = g.controllerpbreffect;
-					#else
-					if (  t.t == -5  ) continue;
-					#endif
 					if (  t.t == -4  )  t.effectid = g.lightmappbreffect;
 					if (  t.t == -3  )  t.effectid = g.thirdpersonentityeffect;
 					if (  t.t == -2  )  t.effectid = g.thirdpersoncharactereffect;
@@ -4305,11 +4055,7 @@ void terrain_shadowupdate ( void )
 			//  show all vegetation, but only if in game (we don't show veg in grid edit mode)
 			if (  t.hardwareinfoglobals.nograss == 0 ) 
 			{
-				#ifdef VRTECH
 				if (  t.game.gameloop  !=  0 || bEnableVeg )  ShowVegetationGrid (  );
-				#else
-				if (  t.game.gameloop  !=  0 )  ShowVegetationGrid (  );
-				#endif
 			}
 
 			//  show water in editor
@@ -5654,7 +5400,6 @@ void terrain_water_loop ( void )
 		// Reflection camera
 		if ( t.visuals.reflectionmode>1 ) 
 		{
-			#ifdef VRTECH
 			// if in VR mode, lef/right eye math messy, so dont change reflected sky angle for clean render
 			if ( g.gvrmode != 0 )//&& CameraExist(6) == 1 ) 
 			{
@@ -5666,10 +5411,6 @@ void terrain_water_loop ( void )
 				// special render technique for terrain reflection
 				SetEffectTechnique ( t.terrain.effectstartindex+1, "UseReflection" );
 			}
-			#else
-			// special render technique for terrain reflection
-			SetEffectTechnique ( t.terrain.effectstartindex+1, "UseReflection" );
-			#endif
 
 			// set sky position to be relative to reflection render
 			PositionObject (  t.terrain.objectstartindex+4,CameraPositionX(),t.terrain.waterliney_f-t.terrain.WaterCamY_f,CameraPositionZ() );
@@ -5689,7 +5430,6 @@ void terrain_water_loop ( void )
 			// only render terrain/objects if mode allows
 			if ( t.visuals.reflectionmode>25 ) 
 			{
-				#ifdef VRTECH
 				// special render technique for terrain reflection
 				SetEffectTechnique ( t.terrain.effectstartindex+1, "UseReflection" );
 
@@ -5702,9 +5442,6 @@ void terrain_water_loop ( void )
 
 				// only render terrain/objects if mode allows
 				if (t.visuals.reflectionmode > 25)
-				#else
-				if ( 1 )
-				#endif
 				{
 					// full reflection mode renders terrain
 					if ( t.terrain.WaterCamY_f>0 ) 

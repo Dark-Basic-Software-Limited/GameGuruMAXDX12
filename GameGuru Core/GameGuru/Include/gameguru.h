@@ -68,10 +68,6 @@
 #include "MapEditor.h"
 #include "Types.h"
 
-#ifdef BUILDINGEDITOR
-//#include "BuildingEditor/BuildingEditor.h"
-#include "..\..\..\BuildingEditor\BuildingEditor.h"
-#endif
 
 // Engine Includes
 #include "CTextC.h"
@@ -105,11 +101,7 @@
 #include "LightMapper.h"
 #include "SimonReloaded.h"
 #include "SoftwareCulling.h"
-#ifdef PHOTONMP
 #include "PhotonCommands.h"
-#else
-#include "SteamCommands.h"
-#endif
 
 #include ".\..\..\Guru-WickedMAX\wickedcalls.h"
 #include "GGVR.h"
@@ -124,7 +116,6 @@ struct sRubberBandType
 	int e;
 	float x, y, z;
 	GGQUATERNION quatAngle;
-	#ifdef WICKEDENGINE
 	int iGroupID;
 	int iParentGroupID;
 	float px, py, pz;
@@ -132,16 +123,11 @@ struct sRubberBandType
 	int quatmode;
 	float quatx, quaty, quatz, quatw;
 	float scalex, scaley, scalez;
-	#endif
 };
 
 struct mysystemtype
 {
-	#ifdef WICKEDENGINE
 	// using new DocWrite system
-	#else
-	bool bUsingMySystemFolder;
-	#endif
 	cstr root_s;
 	cstr levelBankTestMap_s;
 	cstr levelBankTestMapAbs_s;
@@ -155,9 +141,7 @@ struct mysystemtype
 struct Sglobals
 {
 	globalstype globals;
-	#ifdef VRTECH
 	vrglobalstype vrglobals;
-	#endif
 	mysystemtype mysystem;
 	int characterSoundCurrentPlayingNumber;
 	cstr characterSoundCurrentPlayingType_s;
@@ -532,9 +516,7 @@ struct Sglobals
 	float plroffsetangley_f;
 	float plroffsetanglez_f;
 	float prevwaterheight_f;
-	#ifdef STORYBOARD
 	bool bUseStoryBoardSetup;
-	#endif
 	cstr projectfilename_s;
 	cstr serveripaddress_s;
 	int silentsoundoffset;
@@ -1252,11 +1234,6 @@ struct Sglobals
 	int physicssecondariesoffsetend;
 	int physicsdebugdraweroffset;
 	bool isGameBeingPlayed;
-	#ifdef BUILDINGEDITOR
-	int buildingeditorimgoffset;
-	int buildingeditorobjoffset;
-	int buildingeditoroffsetmax;
-	#endif
 	float globalhudscale;
 
 	// Constructor
@@ -1891,9 +1868,7 @@ struct Sglobals
 		 silentsoundoffset = 0;
 		 serveripaddress_s = "";
 		 projectfilename_s = "";
-		 #ifdef STORYBOARD
 		 bUseStoryBoardSetup = false;
-		 #endif
 		 prevwaterheight_f = 0.0f;
 		 plroffsetanglez_f = 0.0f;
 		 plroffsetangley_f = 0.0f;
@@ -2229,11 +2204,7 @@ struct Sglobals
 		 mysystem.root_s = "";
 		 physicsdebugdraweroffset = 0;
 		 isGameBeingPlayed = false;
-		 #ifdef WICKEDENGINE
 		 // using new DocWrite system
-		 #else
-		 mysystem.bUsingMySystemFolder = false;
-		 #endif
 	}
 	// End of Constructor
 
@@ -3051,9 +3022,7 @@ struct Stemps
 	float gridentityposx_f;
 	float gridentityposy_f;
 	float gridentityposz_f;
-	#ifdef WICKEDENGINE
 	uint64_t gridentitywickedlightindex;
-	#endif
 	int gridentityextractedindex;
 	int gridentityhasparent;
 	float fOldGridEntityX;
@@ -5275,9 +5244,6 @@ struct Stemps
 	std::vector <decaltype> decal;
 	std::vector <int> frags;
 	std::vector <int> mshot;
-	#ifndef WICKEDENGINE
-	std::vector <entityprofiletype> tempe; //PE: Not used in wicked.
-	#endif
 	std::vector< std::vector<int> > wshot;
 	cstr alt_s;
 	float asx_f;
@@ -5821,7 +5787,6 @@ struct Stemps
 	int ccLimbHitOverrideLimb;
 	std::vector <int> entitiesActivatedForLua;
 	int delayOneFrameForActivatedLua;
-#ifdef WICKEDENGINE
 	visualsdatastoragetype visualsStorage;
 	int showeditorelements;
 	int showeditortrees;
@@ -5847,14 +5812,11 @@ struct Stemps
 	std::vector <cStr> inventoryContainers;
 	std::vector <inventoryContainerType> inventoryContainer[MAX_INVENTORY_CONTAINERS];
 	bool bSpawnCalledFromLua;
-#endif
 
 	// Constructor
 	Stemps ( )
 	{
-		#ifdef WICKEDENGINE
 		gridentitywickedlightindex = 0;
-		#endif
 		gridentityextractedindex = 0;
 		ebebankmax = 0;
 		delayOneFrameForActivatedLua = 0;
@@ -8810,7 +8772,6 @@ struct Stemps
 		 tmphopitemtocheckifchangedandversion_s = "";
 		 tmaskforcamerasnoreflectionlightrayshadowsflag = 0;
 		 strwork = "";
-		 #ifdef WICKEDENGINE
 		 showeditorelements = 1;
 		 showeditortrees = -1;
 		 showeditorveg = -1;
@@ -8824,7 +8785,6 @@ struct Stemps
 		 iPhysicsCreatedDynamicMesh = 0;
 		 activerelationobjectid = -1;
 		 bSpawnCalledFromLua = false;
-		 #endif
 	}
 	// End of Constructor
 

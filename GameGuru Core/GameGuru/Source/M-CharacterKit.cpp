@@ -7,11 +7,7 @@
 
 void set_inputsys_mclick(int value);
 
-#ifdef WICKEDENGINE
 #define IMPORTER_TMP_IMAGE (g.importermenuimageoffset+49)
-#else
-#define IMPORTER_TMP_IMAGE (g.importermenuimageoffset+50)
-#endif
 
 void characterkit_init ( void )
 {
@@ -24,10 +20,8 @@ void characterkit_init ( void )
 		pastebitmapfontcenter("PREPARING CHARACTERS",GetChildWindowWidth()/2,40,1,255) ; Sync (  );
 	}
 
-	#ifdef VRTECH
 	// hide paint tool
 	terrain_paintselector_hide();
-	#endif
 
 	// hide waypoints
 	waypoint_hideall ( );
@@ -237,7 +231,6 @@ void characterkit_init ( void )
 		int iMovePanelUp = 32-((GetChildWindowHeight()/2)-281-3);
 		t.slidersmenu[g.slidersmenumax].ttop = ((GetChildWindowHeight()/2)-281-3)+iMovePanelUp; //also set in characterkit_alignUI
 		t.slidersmenu[g.slidersmenumax].tleft = (GetChildWindowWidth() ) - 265;
-		#ifdef VRTECH
 		 t.slidersmenuvalue[g.slidersmenumax][1].name_s = "";
 		 t.slidersmenuvalue[g.slidersmenumax][1].gadgettype = -1;
 		 t.slidersmenuvalue[g.slidersmenumax][1].useCustomRange = 1;
@@ -250,20 +243,6 @@ void characterkit_init ( void )
 		 t.slidersmenuvalue[g.slidersmenumax][2].valueMin = 0;
 		 t.slidersmenuvalue[g.slidersmenumax][2].valueMax = 10;
 		 t.slidersmenuvalue[g.slidersmenumax][2].value = 5;
-		#else
-		 t.slidersmenuvalue[g.slidersmenumax][1].name_s = "Character View Angle";
-		 t.slidersmenuvalue[g.slidersmenumax][1].value = 180;
-		 t.slidersmenuvalue[g.slidersmenumax][1].readmodeindex = 0;
-		 t.slidersmenuvalue[g.slidersmenumax][1].useCustomRange = 1;
-		 t.slidersmenuvalue[g.slidersmenumax][1].valueMin = 0;
-		 t.slidersmenuvalue[g.slidersmenumax][1].valueMax = 360;
-		 t.slidersmenuvalue[g.slidersmenumax][2].name_s = "Character View Height";
-		 t.slidersmenuvalue[g.slidersmenumax][2].value = 5;
-		 t.slidersmenuvalue[g.slidersmenumax][2].readmodeindex = 0;
-		 t.slidersmenuvalue[g.slidersmenumax][2].useCustomRange = 1;
-		 t.slidersmenuvalue[g.slidersmenumax][2].valueMin = 0;
-		 t.slidersmenuvalue[g.slidersmenumax][2].valueMax = 10;
-		#endif
 
 		t.slidersmenuvalue[g.slidersmenumax][3].name_s = "";
 		t.slidersmenuvalue[g.slidersmenumax][3].gadgettype = -1;
@@ -398,13 +377,8 @@ void characterkit_init ( void )
 	t.importerTabs[12].selected = 0;
 	t.importerTabs[12].tabpage = -1;
 
-	#ifdef VRTECH
 	t.importerTabs[5].x = 40 + 200;
 	t.importerTabs[5].y = 40;
-	#else
-	t.importerTabs[5].x = t.txpos;
-	t.importerTabs[5].y = (GetChildWindowHeight() / 2) -180 + 96 + 10 + 192 +42;
-	#endif
 	t.importerTabs[5].label = "Save Character";
 	t.importerTabs[5].selected = 0;
 	t.importerTabs[5].tabpage = -1;
@@ -415,14 +389,6 @@ void characterkit_init ( void )
 	t.importerTabs[6].selected = 0;
 	t.importerTabs[6].tabpage = -1;
 
-	#ifdef VRTECH
-	#else
-	if (  ImageExist(t.characterkit.imagestart+41) == 0  )  LoadImage (  "languagebank\\neutral\\gamecore\\huds\\importer\\tab_wide.png",t.characterkit.imagestart+41,1 );
-	if (  ImageExist(t.characterkit.imagestart+42) == 0  )  LoadImage (  "languagebank\\neutral\\gamecore\\huds\\importer\\tabselected_wide.png",t.characterkit.imagestart+42,1 );
-	if (  ImageExist(t.characterkit.imagestart+43) == 0  )  LoadImage (  "languagebank\\neutral\\gamecore\\huds\\importer\\paneltop.png",t.characterkit.imagestart+43,1 );
-	if (  ImageExist(t.characterkit.imagestart+44) == 0  )  LoadImage (  "languagebank\\neutral\\gamecore\\huds\\importer\\panelmiddle.png",t.characterkit.imagestart+44,1 );
-	if (  ImageExist(t.characterkit.imagestart+45) == 0  )  LoadImage (  "languagebank\\neutral\\gamecore\\huds\\importer\\panelbottom.png",t.characterkit.imagestart+45,1 );
-	#endif
 	return;
 }
 
@@ -866,14 +832,8 @@ void characterkit_alignUI ( void )
 	t.importerTabs[11].y = (GetChildWindowHeight() / 2) -180 + 96 + 10 + 192 + t.toffset;
 	t.importerTabs[11].y += iMovePanelUp;
 
-	#ifdef VRTECH
 	t.importerTabs[5].x = 40 + 200;
 	t.importerTabs[5].y = 40;
-	#else
-	t.importerTabs[5].x = t.txpos;
-	t.importerTabs[5].y = (GetChildWindowHeight() / 2) -180 + 96 + 10 + 192 + 90 + 38;
-	t.importerTabs[5].y += iMovePanelUp;
-	#endif
 
 	t.importerTabs[6].x = 40;
 	t.importerTabs[6].y = 40;
@@ -907,9 +867,7 @@ void characterkit_draw ( void )
 		for ( t.t = 0 ; t.t <=  12 ; t.t++ ) t.importerTabs[t.t].x=t.txpos ;
 		t.importerTabs[1].label = "Head";
 		t.importerTabs[2].label = "Body";
-		#ifdef VRTECH
 		t.importerTabs[5].x = 40 + 200;
-		#endif
 		t.importerTabs[5].label = "Save Character";
 		t.importerTabs[6].label = "Back to Editor";
 		t.importerTabs[6].x = 40;
@@ -959,12 +917,6 @@ void characterkit_update_object ( void )
 {
 	if (  ImageExist(t.characterkit.imagestart+25)  ==  0 ) 
 	{
-		#ifdef VRTECH
-		#else
-		LoadImage (  "languagebank\\neutral\\gamecore\\huds\\characterkit\\skintones.png",t.characterkit.imagestart+25 );
-		LoadImage (  "languagebank\\neutral\\gamecore\\huds\\characterkit\\colorwheel.png",t.characterkit.imagestart+26 );
-		LoadImage (  "languagebank\\neutral\\gamecore\\huds\\characterkit\\target.png",t.characterkit.imagestart+28 );
-		#endif
 	}
 	//  Asset loading and prep
 	t.trestartanimationloop=0;
@@ -1236,15 +1188,7 @@ void characterkit_save_entity ( void )
 	}
 
 	// soldier or civilian
-	#ifdef WICKEDENGINE
 	t.tcopyfrom_s = g.fpscrootdir_s+"\\Files\\charactercreatorplus\\Uber Character.fpe";
-	#else
-	#ifdef PHOTONMP
-	 t.tcopyfrom_s = g.fpscrootdir_s+"\\Files\\entitybank\\Characters\\Uber Character.fpe";
-	#else
-	 t.tcopyfrom_s = g.fpscrootdir_s+"\\Files\\entitybank\\Characters\\Uber Soldier.fpe";
-	#endif
-	#endif
 
 	// prepare destination file
 	t.tcopyto_s = t.tSaveFile_s;
@@ -1262,54 +1206,13 @@ void characterkit_save_entity ( void )
 		// get line by line
 		t.ts_s = ReadString ( 1 );
 
-		#ifdef VRTECH
-		#else
-		// adjust offset for male/female
-		if (  cstr(Lower(Left(t.ts_s.Get(),4)))  ==  "offy" ) 
-		{
-			t.ts_s = "offy          = -6";
-			if (  cstr(Lower(Left(t.ts_s.Get(),5)))  ==  "fmale" || cstr(Lower(Left(t.ts_s.Get(),7)))  ==  "1_fmale"  )  t.ts_s  =  "offy           =  -4";
-		}
-		#endif
 
 		// update description
 		if ( cstr(Lower(Left(t.ts_s.Get(),4)))  ==  "desc"  )  t.ts_s  =  cstr("desc           =  ") + t.tname_s;
 
 		// update weapon carried by character if any
-		#ifdef PHOTONMP
-		#else
-		if ( cstr(Lower(Left(t.ts_s.Get(),9)))  ==  "hasweapon" ) 
-		{
-			t.ts_s = "";
-			if ( strlen( t.slidersmenuvalue[t.characterkit.properties1Index][12].value_s.Get()) > 1 )
-			{
-				t.ts_s = cstr("hasweapon     = ") + t.slidersmenuvalue[t.characterkit.properties1Index][12].value_s;
-			}
-			if (  t.slidersmenuvalue[t.characterkit.properties1Index][12].value_s  ==  "None"  )  t.ts_s  =  "";
-		}
-		#endif
 
 		// profile controls the animation sets exported
-		#ifdef PHOTONMP
-		#else
-		if ( cstr(Lower(Left(t.ts_s.Get(),7))) == "animmax" 
-		||   cstr(Lower(Left(t.ts_s.Get(),16))) == "playanimineditor" 
-		||   cstr(Lower(Left(t.ts_s.Get(),13))) == "ignorecsirefs" 			
-		||   cstr(Lower(Left(t.ts_s.Get(),5))) == "anim0" 
-		||   cstr(Lower(Left(t.ts_s.Get(),5))) == "anim1" 
-		||   cstr(Lower(Left(t.ts_s.Get(),5))) == "anim2" 
-		||   cstr(Lower(Left(t.ts_s.Get(),5))) == "anim3" 
-		||   cstr(Lower(Left(t.ts_s.Get(),5))) == "anim4" 
-		||   cstr(Lower(Left(t.ts_s.Get(),20))) == ";character animation" 
-		||   cstr(Lower(Left(t.ts_s.Get(),4))) == "csi_" 
-		||   cstr(Lower(Left(t.ts_s.Get(),5))) == "speed" 
-		||   cstr(Lower(Left(t.ts_s.Get(),3))) == ";ai" 
-		||   cstr(Lower(Left(t.ts_s.Get(),6))) == "aimain" )
-		{
-			// first step is blank out old animation data from source FPE
-			continue;
-		}
-		#endif
 		if ( cstr(Lower(Left(t.ts_s.Get(),5))) == ";anim" )
 		{
 			// get anim profile name (references file of same name)
@@ -1332,10 +1235,8 @@ void characterkit_save_entity ( void )
 			continue;
 		}
 
-		#ifdef VRTECH
 		bool bSkipWritingReadLine = false;
 		bool bWriteCharacterCreationDetail = false;
-		#ifdef PHOTONMP
 		if ( cstr(Lower(Left(t.ts_s.Get(),16))) == "charactercreator" )
 		{
 			// replace with this custom character creation
@@ -1356,37 +1257,8 @@ void characterkit_save_entity ( void )
 		{
 			WriteString ( 2, t.ts_s.Get() );
 		}
-		#else
-		WriteString ( 2, t.ts_s.Get() );
-		#endif	
 
-		#else
-#ifdef PRODUCTCLASSIC
-		WriteString(2, t.ts_s.Get());
-#endif
-		// on the second line write, add lines for character creator specific data
-		++t.tcount;
-		if ( t.tcount == 2 ) 
-		{
-			#ifdef VRTECH
-			if ( cstr(Lower(Left(t.characterkit.head_s.Get(),5))) == "fmale" || cstr(Lower(Left(t.characterkit.head_s.Get(),7))) == "1_fmale" ) 
-			{
-				WriteString ( 2,";sound" );
-				WriteString ( 2,"soundset      = Female" );
-			}
-			#endif
-			WriteString (  2,"" );
-			WriteString (  2,";character creator" );
-			#ifdef VRTECH
-			bWriteCharacterCreationDetail = true;
-			#endif
-		}
-		#endif
-		#ifdef VRTECH
 		if ( bWriteCharacterCreationDetail == true )
-		#else
-		if(t.tcount == 2)
-		#endif
 		{
 			t.tcc_s = "charactercreator = t.v:2:";
 			t.tcc_s = t.tcc_s + t.characterkit.body_s+":"+t.characterkit.head_s+":"+t.characterkit.facialhair_s+":"+t.characterkit.hat_s+":";
@@ -1397,14 +1269,6 @@ void characterkit_save_entity ( void )
 			t.tcc_s = t.tcc_s +Str(t.tnewredshoes_f)+":"+Str(t.tnewgreenshoes_f)+":"+Str(t.tnewblueshoes_f)+":";
 			t.tcc_s = t.tcc_s +Str(t.tnewredhat_f)+":"+Str(t.tnewgreenhat_f)+":"+Str(t.tnewbluehat_f);
 			WriteString (  2,t.tcc_s.Get() );
-			#ifdef VRTECH
-			#else
-			if (  cstr(Lower(Left(t.characterkit.head_s.Get(),5)))  ==  "fmale" || cstr(Lower(Left(t.characterkit.head_s.Get(),7)))  ==  "1_fmale" ) 
-			{
-				WriteString (  2,";sound" );
-				WriteString (  2,"soundset      = Female" );
-			}
-			#endif
 		}
 	}
 	
@@ -1540,15 +1404,7 @@ void characterkit_makeMultiplayerCharacterCreatorAvatar ( void )
 	}
 
 	// template reference
-	#ifdef WICKEDENGINE
 	t.tcopyfrom_s = g.fpscrootdir_s+"\\Files\\charactercreatorplus\\Uber Character.fpe";
-	#else
-	#ifdef PHOTONMP
-	 t.tcopyfrom_s = g.fpscrootdir_s+"\\Files\\entitybank\\Characters\\Uber Character.fpe";
-	#else
-	 t.tcopyfrom_s = g.fpscrootdir_s+"\\Files\\entitybank\\Characters\\Uber Soldier.fpe";
-	#endif
-	#endif
 	t.tcopyto_s = t.tSaveFile_s;
 	if ( cstr(Lower(Right(t.tcopyto_s.Get(),4)))  !=  ".fpe"  )  t.tcopyto_s  =  t.tcopyto_s + ".fpe";
 
@@ -1564,43 +1420,25 @@ void characterkit_makeMultiplayerCharacterCreatorAvatar ( void )
 		t.ts_s = ReadString ( 1 );
 
 		// adjust offset for male/female
-		#ifdef VRTECH
 		bool bIsFemale = false;
-		#endif
 		if ( cstr(Lower(Left(t.ts_s.Get(),4))) == "offy" ) 
 		{
 			t.ts_s = "offy          = -6";
-			#ifdef VRTECH
 			if (  cstr(Lower(Left(t.ts_s.Get(),5)))  ==  "fmale"  )  
 			{
 				t.ts_s  =  "offy           =  -4";
 				bIsFemale = true;
 			}
-			#else
-			if (  cstr(Lower(Left(t.ts_s.Get(),5)))  ==  "fmale"  )  t.ts_s  =  "offy           =  -4";
-			#endif
 		}
 		if ( cstr(Lower(Left(t.ts_s.Get(),4)))  ==  "desc"  )  t.ts_s  =  cstr("desc           =  ") + t.tname_s;
 
-		#ifdef VRTECH
 		// replace charactercreator and soundset fields
 		if ( cstr(Lower(Left(t.ts_s.Get(),16))) == "charactercreator" ) t.ts_s = cstr(cstr("charactercreator = ") + t.avatarString_s).Get();
 		if ( cstr(Lower(Left(t.ts_s.Get(),8))) == "soundset" ) t.ts_s = "soundset      = female";
-		#endif
 
 		// write back out
 		WriteString ( 2, t.ts_s.Get() );
 
-		#ifdef PHOTONMP
-		#else
-		++t.tcount;
-		if (  t.tcount  ==  2 ) 
-		{
-			WriteString (  2,"" );
-			WriteString (  2,";character creator" );
-			WriteString (  2, cstr(cstr("charactercreator = ") + t.avatarString_s).Get() );
-		}
-		#endif
 	}
 
 	CloseFile (  1 );
@@ -3375,15 +3213,10 @@ void characterkit_chooseOnlineAvatar ( void )
 	do
 	{
 		// handle input
-		#ifdef FPSEXCHANGE
 		 OpenFileMap (  1, "FPSEXCHANGE" );
 		 SetEventAndWait (  1 );
 		 t.inputsys.xmouse=GetFileMapDWORD( 1, 0 );
 		 t.inputsys.ymouse=GetFileMapDWORD( 1, 4 );
-		#else
-		 t.inputsys.xmouse = MouseX();
-		 t.inputsys.ymouse = MouseY();
-		#endif
 
 		t.tadjustedtoccxbase_f=GetChildWindowWidth()/800.0;
 		t.tadjustedtoccybase_f=GetChildWindowHeight()/600.0;
@@ -3483,17 +3316,13 @@ void characterkit_loadMyAvatarInfo ( void )
 	g.mp.myAvatarName_s = "";
 	g.mp.myAvatarHeadTexture_s = "";
 	g.mp.haveSentMyAvatar = 0;
-	#ifdef VRTECH
 	t.bTriggerAvatarRescanAndLoad = false;
-	#endif
 	
 	for ( t.c = 0 ; t.c <= MP_MAX_NUMBER_OF_PLAYERS-1; t.c++ )
 	{
 		t.mp_playerAvatars_s[t.c] = "";
 		t.mp_playerAvatarOwners_s[t.c] = "";
-		#ifdef VRTECH
 		t.mp_playerAvatarLoaded[t.c] = false;
-		#endif
 	}
 
 	if ( FileOpen(1) == 1 ) CloseFile ( 1 );
@@ -4350,20 +4179,12 @@ int CharacterKitCheckForUserMade ( void )
 	cstr toldfolder_s = "";
 	int result = 0;
 	result = 0;
-	#ifdef VRTECH
 	sprintf ( t.szwork, "%s\\Files\\entitybank\\user\\charactercreatorplus" , g.fpscrootdir_s.Get() );
-	#else
-	sprintf ( t.szwork, "%s\\Files\\entitybank\\user\\charactercreator" , g.fpscrootdir_s.Get() );
-	#endif
 	if ( PathExist( t.szwork )  ==  1 ) 
 	{
 		// store original folder
 		toldfolder_s = GetDir();
-		#ifdef VRTECH
 		sprintf ( t.szwork , "%s\\Files\\entitybank\\user\\charactercreatorplus" , g.fpscrootdir_s.Get() );
-		#else
-		sprintf ( t.szwork , "%s\\Files\\entitybank\\user\\charactercreator" , g.fpscrootdir_s.Get() );
-		#endif
 		SetDir ( t.szwork );
 
 		// check for character fpe's

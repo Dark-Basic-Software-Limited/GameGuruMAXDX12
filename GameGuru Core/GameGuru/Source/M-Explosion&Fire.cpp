@@ -87,7 +87,6 @@ void draw_particles ( void )
 			if (  t.particle[emitter][draw].used != 0 ) 
 			{
 				// if determined for use, create it now
-				#ifdef WICKEDENGINE
 				int iObjID = t.particle[emitter][draw].obj;
 				if (iObjID > 0)
 				{
@@ -102,7 +101,6 @@ void draw_particles ( void )
 						}
 					}
 				}
-				#endif
 
 				//  check for delayed particles
 				doit=1;
@@ -701,15 +699,12 @@ void make_particles ( void )
 {
 	int nextobject = 0;
 	nextobject = g.explosionparticleobjectstart;
-	#ifdef WICKEDENGINE
 	// quit is ALREADY created these - it seems!
 	if (ObjectExist(nextobject) == 1)
 	{
 		return;
 	}
-	#endif
 
-	#ifdef WICKEDENGINE
 	#ifdef _DEBUG
 	// limit emitters quantity in debug mode (too slow to create all scene elements in debug?!)
 	// eventually replace all this with a GPU based particle system (no more eating wicked resources)
@@ -717,7 +712,6 @@ void make_particles ( void )
 	#endif
 	WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
 	WickedCall_PresetObjectCreateOnDemand(true);
-	#endif
 
 	// make and intilise particle objects, different types for different tasks.
 	int emitter = 0;
@@ -792,10 +786,8 @@ void make_particles ( void )
 		}
 	}
 
-	#ifdef WICKEDENGINE
 	WickedCall_PresetObjectCreateOnDemand(false);
 	WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-	#endif
 }
 
 int find_free_particle ( int emitter, int start, int endpart )

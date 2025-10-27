@@ -4,9 +4,7 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-#ifdef WICKEDENGINE
 #include ".\..\..\Guru-WickedMAX\wickedcalls.h"
-#ifdef ENABLEIMGUI
 #include "..\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -14,9 +12,7 @@
 #include "..\Imgui\imgui_internal.h"
 #include "..\Imgui\imgui_impl_win32.h"
 #include "..\Imgui\imgui_gg_dx11.h"
-#endif
 extern wiECS::Entity g_weatherEntityID;
-#endif
 
 #ifdef OPTICK_ENABLE
 #include "optick.h"
@@ -540,22 +536,5 @@ void sky_loop ( void )
 	}
 
 	// update sky fog
-	#ifdef WICKEDENGINE
 	// wicked has its own fog
-	#else
-	if ( GetEffectExist(t.terrain.effectstartindex+4) ) 
-	{
-		SetVector4 ( g.terrainvectorindex,t.visuals.FogNearest_f,t.visuals.FogDistance_f,0,0 );
-		SetEffectConstantVEx ( t.terrain.effectstartindex+4,t.effectparam.sky.HudFogDist,g.terrainvectorindex );
-		SetVector4 ( g.terrainvectorindex,t.visuals.FogR_f/255.0,t.visuals.FogG_f/255.0,t.visuals.FogB_f/255.0,t.visuals.FogA_f/255.0 );
-		SetEffectConstantVEx ( t.terrain.effectstartindex+4,t.effectparam.sky.HudFogColor,g.terrainvectorindex );
-	}
-	if ( GetEffectExist(t.terrain.effectstartindex+9) == 1 ) 
-	{
-		SetVector4 ( g.terrainvectorindex,t.visuals.FogNearest_f,t.visuals.FogDistance_f,0,0 );
-		SetEffectConstantVEx ( t.terrain.effectstartindex+9,t.effectparam.skyscroll.HudFogDist,g.terrainvectorindex );
-		SetVector4 ( g.terrainvectorindex,t.visuals.FogR_f/255.0,t.visuals.FogG_f/255.0,t.visuals.FogB_f/255.0,t.visuals.FogA_f/255.0 );
-		SetEffectConstantVEx ( t.terrain.effectstartindex+9,t.effectparam.skyscroll.HudFogColor,g.terrainvectorindex );
-	}
-	#endif
 }

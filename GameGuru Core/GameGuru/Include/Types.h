@@ -119,7 +119,6 @@
 #define RAVEY_PARTICLE_EMITTERS_MAX 100
 
 #define RAVEY_PARTICLES_MAX 2000
-#ifdef WICKEDENGINE
  #undef RAVEY_PARTICLES_MAX
  #ifdef _DEBUG
   // limit particle quantity in debug mode (too slow to create all scene elements in debug?!)
@@ -133,7 +132,6 @@
   #define RAVEY_PARTICLES_MAX 700
   //PE: We use these less now so lower. from 200 to 100
   #define RAVEY_PARTICLES_MAX_FIRST_BATCH 100
-#endif
 #endif
 
 #define RAVEY_PARTICLES_MAX_SPAWNED_AT_ONCE_BY_AN_EMITTER 50
@@ -155,11 +153,7 @@
 #define BITBOBS_FADETIME        2000.0
 
 //  terrain constants
-#ifdef WICKEDENGINE
 #define TERRAIN_SUPERFLAT_HEIGHT 600 // 1000.0 to align with temp flat terrain
-#else
-#define TERRAIN_SUPERFLAT_HEIGHT 1000.0
-#endif
 #define TERRAIN_WATERLINE_SWIMOFFSET 20.0
 
 //  conKit Edit constants
@@ -2403,19 +2397,6 @@ struct widgettype
 	int widgetYScaleObj;
 	int widgetZScaleObj;
 	int widgetXYZScaleObj;
-	#ifdef WICKEDENGINE
-	#else
-	int widgetXColObj;
-	int widgetYColObj;
-	int widgetZColObj;
-	int widgetPOSObj;
-	int widgetROTObj;
-	int widgetSCLObj;
-	int widgetPRPObj;
-	int widgetDUPObj;
-	int widgetDELObj;
-	int widgetLCKObj;
-	#endif
 	int widgetMAXObj;
 	int widgetPlaneObj;
 	int pickedSection;
@@ -2436,19 +2417,6 @@ struct widgettype
 		 pickedSection = 0;
 		 widgetPlaneObj = 0;
 		 widgetMAXObj = 0;
-		 #ifdef WICKEDENGINE
-		 #else
-		 widgetLCKObj = 0;
-		 widgetDELObj = 0;
-		 widgetDUPObj = 0;
-		 widgetPRPObj = 0;
-		 widgetSCLObj = 0;
-		 widgetROTObj = 0;
-		 widgetPOSObj = 0;
-		 widgetZColObj = 0;
-		 widgetYColObj = 0;
-		 widgetXColObj = 0;
-		 #endif
 		 widgetXYZScaleObj = 0;
 		 widgetZScaleObj = 0;
 		 widgetYScaleObj = 0;
@@ -2845,7 +2813,6 @@ struct importertype
 	float originalcameraheight;
 	float lastcameraheightforshift;
 	float camerazoom;
-	#ifdef WICKEDENGINE
 	int lastscalingmodeused;
 	int centermodelbyshiftingmesh;
 	int collisionshape;
@@ -2873,18 +2840,15 @@ struct importertype
 	char pOrigNormalMap[MAXPATH];
 	std::vector<cstr> pSurfaceFilesToDelete;
 	std::vector<cstr> meshesToExclude;
-	#endif
 
 	// Constructor
 	importertype ( )
 	{
-		#ifdef WICKEDENGINE
 		lastscalingmodeused = 0; //PE: changed from 4 to 0 , original scale.
 		centermodelbyshiftingmesh = 0;
 		collisionshape = 0;
 		defaultstatic = 0;
 		ischaracter = 0;
-		#endif
 		 viewMessage = "";
 		 message = "";
 		 mouseMoveSnap = 0;
@@ -2953,7 +2917,6 @@ struct importertype
 		 slidersmenumax = 0;
 		 oldTime = 0;
 		 dropDownListNumber = 0;
-		 #ifdef WICKEDENGINE
 		 fSceneLocationY = 0.0f;
 		 fSceneryDiameter = 1000.0f;
 		 bEditAllMesh = false;
@@ -2973,7 +2936,6 @@ struct importertype
 		 iViewCollisionShapes = 0;
 		 bInvertNormalMap = false;
 		 pOrigNormalMap[0] = 0;
-		 #endif
 	}
 	// End of Constructor
 
@@ -3310,7 +3272,6 @@ struct huddamagetype
 };
 
 // VR Globals
-#ifdef VRTECH
 struct vrglobalstype
 {
 	int GGVREnabled;
@@ -3336,7 +3297,6 @@ struct vrglobalstype
 		GGVRStandingMode = 0;
 	}
 };
-#endif
 
 //  Main game data structure (to avoid globals, place new game globals here)
 struct globalstype
@@ -4120,15 +4080,12 @@ struct visualstype
 		 WaterFlowDirectionY = 0.0f;
 		 WaterDistortionWaves=0.0f;
 		 WaterSpeed1 = 0.06f;
-#ifdef WICKEDENGINE
 		 WaterFogMaxDist = 11500.0f;
 		 WaterFogMinDist = 0.0f;
 		 WaterFogMinAmount = 0.25f;
-#endif
 		 WaterFlowSpeed=0.0f;
 		 iEnvironmentWeather = 0;
 
-#ifdef WICKEDENGINE
 		 SkyIntensity_f = 1.0f;
 		 SunIntensity_f = 9.0f;
 		 SunRed_f = 255.0f;
@@ -4295,7 +4252,6 @@ struct visualstype
 
 		 bDisableSkybox = false;
 
-#endif
 	}
 	// End of Constructor
 
@@ -4413,7 +4369,6 @@ struct visualsdatastoragetype
 		FogG_f = visuals.FogG_f;
 		FogB_f = visuals.FogB_f;
 		FogA_f = visuals.FogA_f;
-		#ifdef WICKEDENGINE
 		SunIntensity_f = visuals.SunIntensity_f; 
 		SunRed_f = visuals.SunRed_f;
 		SunGreen_f = visuals.SunGreen_f;
@@ -4454,7 +4409,6 @@ struct visualsdatastoragetype
 		SunAngleY = visuals.SunAngleY;
 		SunAngleZ = visuals.SunAngleZ;
 		iTimeOfday = visuals.iTimeOfday;
-		#endif
 		skyindex = visuals.skyindex;
 		fExposure = visuals.fExposure;
 	}
@@ -5013,11 +4967,7 @@ struct saveloadgamepositionentitytype
 		 animframe = 0.0f;
 		 animdo = 0;
 		 animset = 0;
-		#ifdef WICKEDENGINE
 		 floorposy = -90000.0f;
-		#else
-		 floorposy = 0.0f;
-		#endif
 		 orz = 0.0f;
 		 ory = 0.0f;
 		 orx = 0.0f;
@@ -5113,26 +5063,9 @@ enum eMatSoundType
 struct materialsettingstype
 {
 	cstr name_s;
-	#ifdef WICKEDENGINE
 	cstr base_s;
 	cstr matsound_s[matSound_Count][MATSOUNDITERMAX];
 	int matsound_id[matSound_Count][MATSOUNDITERMAX];
-	#else
-	cstr tred0_s;
-	int tred0id;
-	cstr tred1_s;
-	int tred1id;
-	cstr tred2_s;
-	int tred2id;
-	cstr tred3_s;
-	int tred3id;
-	cstr scrape_s;
-	int scrapeid;
-	cstr impact_s;
-	int impactid;
-	cstr destroy_s;
-	int destroyid;
-	#endif
 	int freq;
 	cstr decal_s;
 	int decalid;
@@ -5145,7 +5078,6 @@ struct materialsettingstype
 		 decalid = 0;
 		 decal_s = "";
 		 freq = 0;
-		 #ifdef WICKEDENGINE
 		 base_s = "";
 		 for (int n = 0; n < matSound_Count; n++)
 		 {
@@ -5155,22 +5087,6 @@ struct materialsettingstype
 			 matsound_id[n][i] = 0;
 			}
 		 }
-		 #else
-		 destroyid = 0;
-		 destroy_s = "";
-		 impactid = 0;
-		 impact_s = "";
-		 scrapeid = 0;
-		 scrape_s = "";
-		 tred3id = 0;
-		 tred3_s = "";
-		 tred2id = 0;
-		 tred2_s = "";
-		 tred1id = 0;
-		 tred1_s = "";
-		 tred0id = 0;
-		 tred0_s = "";
-		 #endif
 		 name_s = "";
 	}
 	// End of Constructor
@@ -5710,7 +5626,6 @@ struct ebeType
 	DWORD dwTexRefCount;
 	LPSTR* pTexRef;
 };
-#ifdef WICKEDENGINE
 
 // wicked custom materials
 #define MAXMESHMATERIALS 100
@@ -5759,7 +5674,6 @@ struct CollectableType
 	cStr ingredients;
 	cStr style;
 };
-#endif
 
 struct headspinetrackertype
 {
@@ -6611,9 +6525,7 @@ struct entityeleproftype
 //  Entity flags for LUA control/states
 struct entityluastatestype
 {
-	#ifdef WICKEDENGINE
 	int outofrangefreeze;
-	#endif
 	int flagschanged;
 	int firsttime;
 	int plrinzone;
@@ -6629,9 +6541,7 @@ struct entityluastatestype
 	// Constructor
 	entityluastatestype ( )
 	{
-		#ifdef WICKEDENGINE
 		outofrangefreeze = 0;
-		#endif
 		returningaimain_s = "";
 		returningaimainstored = 0;
 		dynamicavoidancestuckclock = 0.0f;
@@ -6970,7 +6880,6 @@ struct entitytype
 		 dc_entid[6] = 0;
 		 draw_call_obj = 0;
 		 dc_merged = false;
-		 #ifdef WICKEDENGINE
 		 iCurrentColorType = -1;
 		 iIsSmarkobjectDummyObj = 0;
 		 fDecalFrame = 0;
@@ -6979,7 +6888,6 @@ struct entitytype
 		 pReservey1 = NULL;
 		 specialentityloadflag = 0;
 		 creationOfGroupID = -1;
-		 #endif
 	}
 	// End of Constructor
 };
@@ -8338,22 +8246,18 @@ struct infinilighttype
 	float f_angle_y;
 	float f_angle_z;
 
-	#ifdef WICKEDENGINE
 	uint64_t wickedlightindex;
 	float fLightHasProbe;
 	float spotlightradius;
 	bool bCanShadow;
-	#endif
 
 	// Constructor
 	infinilighttype ( )
 	{
-		 #ifdef WICKEDENGINE
 		 bCanShadow = true;
 		 wickedlightindex = 0;
 		 fLightHasProbe = 0.0f;
 		 spotlightradius = 45.0f;
-		 #endif
 
 		 intensity_f = 0.0f;
 		 distfromcam_f = 0.0f;
@@ -10189,12 +10093,10 @@ struct playercontroltype
 	int canrun;
 	int iShowScreenBloodOff;
 	int iPlayHeartBeatSoundOff;
-#ifdef WICKEDENGINE
 	float fWeaponDamageMultiplier; 
 	float fMeleeDamageMultiplier;
 	float fFallDamageMultiplier;
 	float fSwimSpeed;
-#endif
 
 	// Constructor
 	playercontroltype ( )
@@ -10292,12 +10194,10 @@ struct playercontroltype
 		 startstrength = 0;
 		 startlives = 0;
 		 soundstartindex = 0;
-#ifdef WICKEDENGINE
 		fWeaponDamageMultiplier = 1.0f;
 		fMeleeDamageMultiplier = 1.0f;
 		fFallDamageMultiplier = 4.0f;
 		fSwimSpeed = 3.0f;
-#endif
 	}
 };
 

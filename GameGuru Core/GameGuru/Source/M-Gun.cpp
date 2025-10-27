@@ -398,11 +398,9 @@ void gun_loaddata ( void )
 					if( matched )  g.firemodes[t.gunid][0].settings.zoomhidecrosshair = t.value1;
 					cmpStrConst( t_field_s, "doesnotuseammo" );
 					if( matched )  g.firemodes[t.gunid][0].settings.doesnotuseammo = t.value1;
-#ifdef WICKEDENGINE
 					cmpStrConst( t_field_s, "usemeleedamageonly" );
 					if( matched )  
 						g.firemodes[t.gunid][0].settings.usemeleedamageonly = t.value1;
-#endif
 
 					//  Brass details
 					cmpStrConst( t_field_s, "brass" );
@@ -558,7 +556,6 @@ void gun_loaddata ( void )
 						t.keyframeratio = t.value1;
 					}
 
-					#ifdef WICKEDENGINE
 					//PE: This fails when called from entity_load , and t.currentgunobj == 0. We can use t.gun[t.gunid].obj instead.
 					// if no comma and anim field, look up start and finish frames from object directly
 					if (bFoundComma == false && iCurrentGunObj != 0)
@@ -744,7 +741,6 @@ void gun_loaddata ( void )
 							}
 						}
 					}
-					#endif
 
 					//  Classic animations
 					cmpStrConst( t_field_s, "select" );
@@ -1578,7 +1574,6 @@ void gun_loaddata ( void )
 
 					if (  t.gun[t.gunid].sound.soundframes > 0 ) 
 					{
-						#ifdef WICKEDENGINE
 						cmpNStrConst(t_field_s, "sframeanim");
 						if (matched)
 						{
@@ -1590,7 +1585,6 @@ void gun_loaddata ( void )
 								}
 							}
 						}
-						#endif
 						cmpNStrConst( t_field_s, "sframe" );
 						if ( matched )
 						{
@@ -2080,10 +2074,8 @@ void gun_sortintoorder ( void )
 	}
 
 	// once have correct order, populate weapon slots for player
-	#ifdef WICKEDENGINE
 	void gun_gatherslotorder_load (void);
 	gun_gatherslotorder_load();
-	#endif
 }
 
 void gun_findweaponindexbyname_core ( void )

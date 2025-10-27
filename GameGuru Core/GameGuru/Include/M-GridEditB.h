@@ -6,7 +6,6 @@
 #include "M-CharacterCreatorPlusTTS.h"
 
 //PE: GameGuru IMGUI.
-#ifdef ENABLEIMGUI
 #include "..\..\GameGuru\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -14,7 +13,6 @@
 #include "..\..\GameGuru\Imgui\imgui_internal.h"
 #include "..\..\GameGuru\Imgui\imgui_impl_win32.h"
 #include "..\..\GameGuru\Imgui\imgui_gg_dx11.h"
-#endif
 
 // structures
 #define TUTORIALMAXTEXT 1024
@@ -79,7 +77,6 @@ public:
 		cFolderItem *pNewFolder;
 		cStr m_sBetterSearch;
 		int uniqueId;
-#ifdef WICKEDENGINE
 		bool m_bFPELoaded;
 		cstr m_sFPEModel;
 		cstr m_sFPETextured;
@@ -91,7 +88,6 @@ public:
 		bool m_bIsCharacterCreator;
 		bool m_bIsGroupObject;
 		int iType;
-#endif
 	};
 	cStr m_sFolder;
 	cStr m_sFolderFullPath;
@@ -114,11 +110,8 @@ public:
 	~cFolderItem() { }
 };
 
-#ifdef STORYBOARD
 int screen_editor(int nodeid, bool standalone = false, char *screen = NULL);
-#endif
 
-#ifdef WICKEDENGINE
 #include ".\..\..\Guru-WickedMAX\wickedcalls.h"
 void tab_tab_visuals(int iPage, int iMode);
 void Wicked_Update_Visuals(void *voidvisual);
@@ -193,12 +186,9 @@ void process_storeboard(bool bInitOnly = false);
 int save_create_storyboard_project(void);
 void LockSelectedObject(bool bLock, int iLockedIndex);
 
-#endif //WICKEDENGINE
 
-#ifdef VRTECH
 void process_entity_library(void);
 void process_entity_library_v2(void);
-#ifdef ENABLEIMGUI
 bool TutorialNextAction(void);
 bool CheckTutorialPlaceit(void);
 bool CheckTutorialAction(const char * action, float x_adder = 0.0f);
@@ -233,8 +223,6 @@ void CheckMinimumDockSpaceSize(float minsize);
 void generic_preloadfiles(void);
 void CloseDownEditorProperties(void);
 
-#endif
-#endif
 
 // moved here so Classic would compile
 void ControlAdvancedSetting(int& setting, const char* tooltip, bool* bLargePreview);

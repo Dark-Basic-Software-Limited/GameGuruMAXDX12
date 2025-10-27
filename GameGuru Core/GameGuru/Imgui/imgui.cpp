@@ -12730,14 +12730,9 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
 
     const ImGuiDockNodeFlags node_flags = node->GetMergedFlags();
 
-#ifdef WICKEDENGINE
 	const bool has_window_menu_button = 0;
 	const bool has_close_button = 0;
 	node->HasWindowMenuButton = false;
-#else
-	const bool has_window_menu_button = (node_flags & ImGuiDockNodeFlags_NoWindowMenuButton) == 0;
-	const bool has_close_button = (node_flags & ImGuiDockNodeFlags_NoCloseButton) == 0;
-#endif
 
     // In a dock node, the Collapse Button turns into the Window Menu button.
     // FIXME-DOCK FIXME-OPT: Could we recycle popups id accross multiple dock nodes?
@@ -13712,33 +13707,19 @@ void ImGui::DockSpace(ImGuiID id, const ImVec2& size_arg, ImGuiDockNodeFlags fla
     window_flags |= ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
     window_flags |= ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
-	#ifdef WICKEDENGINE
 	ImGuiWindowFlags oldwindow_flags = window_flags;
 	window_flags |= ImGuiWindowFlags_NoBackground;
-	#endif
 
     char title[256];
     ImFormatString(title, IM_ARRAYSIZE(title), "%s/DockSpace_%08X", window->Name, id);
 
-	#ifdef WICKEDENGINE
 	// Wicked engine overrides window backdrop color so needs the child backdrop color to work
- 	#else
-	if (node->Windows.Size > 0 || node->IsSplitNode())
-        PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 0));
-	#endif
     PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
     Begin(title, NULL, window_flags);
     PopStyleVar();
-	#ifdef WICKEDENGINE
 	// Wicked engine overrides window backdrop color so needs the child backdrop color to work
- 	#else
-    if (node->Windows.Size > 0 || node->IsSplitNode())
-        PopStyleColor();
-	#endif
 
-	#ifdef WICKEDENGINE
 	window_flags = oldwindow_flags;
-	#endif
 
     ImGuiWindow* host_window = g.CurrentWindow;
     host_window->DockNodeAsHost = node;

@@ -6,7 +6,6 @@
 #include "gameguru.h"
 
 //PE: GameGuru IMGUI.
-#ifdef ENABLEIMGUI
 #include "..\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -14,15 +13,12 @@
 #include "..\Imgui\imgui_internal.h"
 #include "..\Imgui\imgui_impl_win32.h"
 #include "..\Imgui\imgui_gg_dx11.h"
-#endif
 
-#ifdef WICKEDENGINE
 #include ".\..\..\Guru-WickedMAX\wickedcalls.h"
 bool widget_temp_disabled = false;
 extern bool g_bRefreshRotationValuesFromObjectOnce;
 #include "GGTerrain/GGTerrain.h"
 using namespace GGTerrain;
-#endif
 
 #ifdef OPTICK_ENABLE
 #include "optick.h"
@@ -43,12 +39,10 @@ void SetStartPositionsForRubberBand(int iActiveObj);
 
 void SlowPositionObject(int iID, float fX, float fY, float fZ)
 {
-#ifdef ENABLEIMGUI
 	if (t.inputsys.keyshift)
 		MAXMOVEPERSYNC = 0.1f; //Fine adjust when holding SHIFT
 	else
 		MAXMOVEPERSYNC = 1000.0f; //PE: Disabled for now, this should be a config setting. when you need precise placement.
-#endif
 
 	float fCurX = ObjectPositionX(iID);
 	float fCurY = ObjectPositionY(iID);
@@ -88,21 +82,7 @@ void widget_init ( void )
 	t.widget.widgetYScaleObj = g.widgetobjectoffset+10;
 	t.widget.widgetZScaleObj = g.widgetobjectoffset+11;
 	t.widget.widgetXYZScaleObj = g.widgetobjectoffset+12;
-	#ifdef WICKEDENGINE
 	t.widget.widgetMAXObj = 12;
-	#else
-	t.widget.widgetXColObj = g.widgetobjectoffset+16;
-	t.widget.widgetYColObj = g.widgetobjectoffset+17;
-	t.widget.widgetZColObj = g.widgetobjectoffset+18;
-	t.widget.widgetPOSObj = g.widgetobjectoffset+19;
-	t.widget.widgetROTObj = g.widgetobjectoffset+20;
-	t.widget.widgetSCLObj = g.widgetobjectoffset+21;
-	t.widget.widgetPRPObj = g.widgetobjectoffset+22;
-	t.widget.widgetDUPObj = g.widgetobjectoffset+23;
-	t.widget.widgetDELObj = g.widgetobjectoffset+24;
-	t.widget.widgetLCKObj = g.widgetobjectoffset+25;
-	t.widget.widgetMAXObj = 25;
-	#endif
 	t.widget.widgetPlaneObj = g.widgetobjectoffset+26;
 
 	//  Load in media
@@ -249,42 +229,31 @@ void widget_movezonesandlights(int e)
 			t.infinilight[iLightIndex].z = t.entityelement[e].z;
 			t.infinilight[iLightIndex].is_spot_light = t.entityelement[e].eleprof.usespotlighting;
 			t.infinilight[iLightIndex].range = t.entityelement[e].eleprof.light.range;
-			#ifdef WICKEDENGINE
 			t.infinilight[iLightIndex].spotlightradius = t.entityelement[e].eleprof.light.offsetup;
 			t.infinilight[iLightIndex].fLightHasProbe = t.entityelement[e].eleprof.light.fLightHasProbe;
 			if (t.entityelement[e].eleprof.castshadow == 1)
 				t.infinilight[iLightIndex].bCanShadow = false;
 			else
 				t.infinilight[iLightIndex].bCanShadow = true;
-			#endif
 			t.infinilight[iLightIndex].colrgb.r = RgbR(t.entityelement[e].eleprof.light.color);
 			t.infinilight[iLightIndex].colrgb.g = RgbG(t.entityelement[e].eleprof.light.color);
 			t.infinilight[iLightIndex].colrgb.b = RgbB(t.entityelement[e].eleprof.light.color);
 			sObject* pObject = g_ObjectList[t.entityelement[e].obj];
 			if (pObject)
 			{
-				#ifdef WICKEDENGINE
 				//PE: In wicked we use the rotation vector for spot light.
 				t.infinilight[iLightIndex].f_angle_x = pObject->position.vecRotate.x;
 				t.infinilight[iLightIndex].f_angle_y = pObject->position.vecRotate.y;
 				t.infinilight[iLightIndex].f_angle_z = pObject->position.vecRotate.z;
-				#else
-				t.infinilight[iLightIndex].f_angle_x = pObject->position.vecLook.x;
-				t.infinilight[iLightIndex].f_angle_y = pObject->position.vecLook.y;
-				t.infinilight[iLightIndex].f_angle_z = pObject->position.vecLook.z;
-				#endif
 			}
 		}
 	}
 
 	// also update if particle emitter
-	#ifdef WICKEDENGINE
 	entity_updateparticleemitter(e);
 	entity_updateautoflatten(e);
-	#endif
 }
 
-#ifdef WICKEDENGINE
 int PickObjectUsingWicked(void)
 {
 	//PE: Dont change anything when right mouse down.
@@ -328,9 +297,7 @@ int PickObjectUsingWicked(void)
 	}
 	return 0;
 }
-#endif
 
-#ifdef WICKEDENGINE
 bool widget_getplanepos ( float fActivePosX, float fActivePosY, float fActivePosZ, float* pPlanePosX, float* pPlanePosY, float* pPlanePosZ )
 {
 	#ifdef OPTICK_ENABLE
@@ -470,7 +437,6 @@ void widget_cancelplanerotation( float *pPlanePosX, float *pPlanePosY, float *pP
 	*pPlanePosY = vecRelPlanePos.y;
 	*pPlanePosZ = vecRelPlanePos.z;
 }
-#endif
 
 void widget_loop ( void )
 {
@@ -516,10 +482,6 @@ void widget_loop ( void )
 	if ( t.widget.activeObject>0 ) 
 	{
 		if ( t.widget.pickedSection != 0  ) t.tdim_f = 15; else t.tdim_f = 50;
-		#ifdef WICKEDENGINE
-		#else
-		if ( t.widget.pickedSection >= t.widget.widgetPOSObj && t.widget.pickedSection <= t.widget.widgetLCKObj ) t.tdim_f = 50;
-		#endif
 		for ( t.a = 0 ; t.a <= t.widget.widgetMAXObj; t.a++ )
 		{
 			if ( ObjectExist(g.widgetobjectoffset+t.a) ) SetAlphaMappingOn ( g.widgetobjectoffset+t.a, t.tdim_f );
@@ -530,11 +492,7 @@ void widget_loop ( void )
 		}
 		else
 		{
-			#ifdef WICKEDENGINE
 			t.thighlighterobj = PickObjectUsingWicked();
-			#else
-			t.thighlighterobj = PickScreenObject(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, g.widgetobjectoffset+0, g.widgetobjectoffset+t.widget.widgetMAXObj);
-			#endif
 		}
 		if (t.thighlighterobj > 0)
 		{
@@ -560,7 +518,6 @@ void widget_loop ( void )
 		}
 	}
 
-	#ifdef WICKEDENGINE
 	extern bool Shooter_Tools_Window_Active;
 	extern preferences pref;
 	extern bool bTriggerVisibleWidget;
@@ -578,9 +535,7 @@ void widget_loop ( void )
 			bTriggerVisibleWidget = false;
 		}
 	}
-	#endif
 
-	#ifdef WICKEDENGINE
 	if (t.widget.pickedEntityIndex > 0 && t.entityelement[t.widget.pickedEntityIndex].editorlock == 1)
 	{
 		//PE: hide. but keep t.widget.pickedEntityIndex for properties.
@@ -591,7 +546,6 @@ void widget_loop ( void )
 		extern bool bTriggerVisibleWidget;
 		bTriggerVisibleWidget = false;
 	}
-	#endif
 
 	// check if the widget is needed
 	if ( t.widget.activeObject == 0 )
@@ -600,13 +554,11 @@ void widget_loop ( void )
 	}
 	else
 	{
-		#ifdef WICKEDENGINE
 		if ( (!Shooter_Tools_Window_Active && (!pref.iEnableDragDropEntityMode || bTriggerVisibleWidget ) )  && widget_temp_disabled)
 		{
 			widget_temp_disabled = false;
 			widget_show_widget();
 		}
-		#endif
 		// Setup positions for widget objects
 		if ( ObjectExist(t.widget.activeObject) == 1 ) 
 		{
@@ -614,9 +566,7 @@ void widget_loop ( void )
 			{
 				if ( ObjectExist (g.widgetobjectoffset+t.a) )  
 				{
-					#ifdef WICKEDENGINE
 					if ( GetVisible (g.widgetobjectoffset+t.a) )
-					#endif
 					{
 						PositionObject(g.widgetobjectoffset + t.a, CameraPositionX(), CameraPositionY(), CameraPositionZ());
 						if ( t.widget.mode == 0 )
@@ -626,12 +576,10 @@ void widget_loop ( void )
 						MoveObject(g.widgetobjectoffset + t.a, 40);
 						RotateObject(g.widgetobjectoffset + t.a, 0, 0, 0);
 					}
-					#ifdef WICKEDENGINE
 					else
 					{
 						PositionObject(g.widgetobjectoffset + t.a, -100000, -100000, -100000);
 					}
-					#endif
 				}
 			}
 
@@ -690,17 +638,12 @@ void widget_loop ( void )
 						gridedit_moveentityrubberband();
 					else
 					{
-						#ifdef WICKEDENGINE
 						entity_createundoaction(eUndoSys_Object_ChangePosRotScl, t.tentitytoselect);
-						#else
-						entity_recordbuffer_move ( );
-						#endif
 					}
 					t.tentitytoselect=t.sttentitytoselect;
 				}
 
 				// Translation, rotation and scale
-				#ifdef WICKEDENGINE
 				t.widget.mclickpress=0;
 				t.toriginalTranslateClickDeferred = 3;
 				t.toriginalTranslateClickX_f = 0;
@@ -735,302 +678,18 @@ void widget_loop ( void )
 				// leelee, move below once it works so this code is not duplicated!! (also duplicated in gridedit for right panel -argzz)
 				// record all current offsets from primary widget object
 				bool bDisableRubberBandMoving = false;
-				#ifdef WICKEDENGINE
 				extern int current_selected_group;
 				extern bool group_editing_on;
 				if (current_selected_group >= 0 && group_editing_on)
 				{
 					bDisableRubberBandMoving = true;
 				}
-				#endif
 				if (!bDisableRubberBandMoving)
 				{
 					// storing offsets in g.entityrubberbandlist[i].x/y/z/quat
 					SetStartPositionsForRubberBand(t.widget.activeObject);
 				}
-				#else
-				// offset+20 is the plane object
-				t.widget.mclickpress=0;
-				ShowObject (  t.widget.widgetPlaneObj );
-				PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-				RotateObject (  t.widget.widgetPlaneObj,-90,0,0 );
-				if (1)
-				{
-					t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-					t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-					t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-					t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-					PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-				}
-
-				t.toriginalClickX_f = CameraPositionX() + GetPickVectorX();
-				t.toriginalClickY_f = CameraPositionY() + GetPickVectorY();
-				t.toriginalClickZ_f = CameraPositionZ() + GetPickVectorZ();
-				t.toriginalClick2X_f = t.toriginalClickX_f;
-				t.toriginalClick2Y_f = t.toriginalClickY_f;
-				t.toriginalClick2Z_f = t.toriginalClickZ_f;
-				t.tdx_f = t.toriginalClickX_f - ObjectPositionX(t.widget.activeObject);
-				t.tdy_f = t.toriginalClickY_f - ObjectPositionY(t.widget.activeObject);
-				t.tdz_f = t.toriginalClickZ_f - ObjectPositionZ(t.widget.activeObject);
-				t.toriginalDistance_f = Sqrt(t.tdx_f*t.tdx_f + t.tdy_f*t.tdy_f + t.tdz_f*t.tdz_f);
-				t.fOriginalDistanceX = t.tdx_f;
-				t.fOriginalDistanceZ = t.tdz_f;
-				if (  t.widget.pickedSection  ==  t.widget.widgetYScaleObj ) 
-				{
-					RotateObject (  t.widget.widgetPlaneObj,0,0,0 );
-					//t.a=PickScreenObject (t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.widget.widgetPlaneObj, t.widget.widgetPlaneObj);
-					if (1) //(t.a == 0) //PE: Fixed
-					{
-						t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-						t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-						t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-						t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-						PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-					}
-					t.toriginalClick2X_f = CameraPositionX() + GetPickVectorX();
-					t.toriginalClick2Y_f = CameraPositionY() + GetPickVectorY();
-					t.toriginalClick2Z_f = CameraPositionZ() + GetPickVectorZ();
-				}
-
-				if (  t.widget.pickedSection  ==  t.widget.widgetXScaleObj ) 
-				{
-					if (  t.tdx_f<0  )  t.toriginalDistance_f = t.toriginalDistance_f*-1;
-				}
-				if (  t.widget.pickedSection  ==  t.widget.widgetYScaleObj ) 
-				{
-					if (  t.tdy_f<0  )  t.toriginalDistance_f = t.toriginalDistance_f*-1;
-				}
-				if (  t.widget.pickedSection  ==  t.widget.widgetZScaleObj ) 
-				{
-					if (  t.tdz_f<0  )  t.toriginalDistance_f = t.toriginalDistance_f*-1;
-				}
-				t.toriginalScaleX_f = ObjectScaleX(t.widget.activeObject);
-				t.toriginalScaleY_f = ObjectScaleY(t.widget.activeObject);
-				t.toriginalScaleZ_f = ObjectScaleZ(t.widget.activeObject);
-				t.toriginalDistance2_f = Sqrt(t.tdx_f*t.tdx_f);
-				if (  t.tdx_f<0  )  t.toriginalDistance2_f = t.toriginalDistance2_f*-1;
-
-				// record all current offsets from primary widget object
-				for ( int i = 0; i < (int)g.entityrubberbandlist.size(); i++ )
-				{
-					int e = g.entityrubberbandlist[i].e;
-					GGVECTOR3 VecPos;
-					VecPos.x = t.entityelement[e].x - ObjectPositionX ( t.widget.activeObject );
-					VecPos.y = t.entityelement[e].y - ObjectPositionY ( t.widget.activeObject );
-					VecPos.z = t.entityelement[e].z - ObjectPositionZ ( t.widget.activeObject );
-					// transform offset with current inversed orientation of primary object
-					int tobj = t.entityelement[e].obj;
-					if ( tobj > 0 )
-					{
-						float fDet = 0.0f;
-						sObject* pObject = GetObjectData(tobj);
-						GGMATRIX inverseMatrix = pObject->position.matObjectNoTran;
-						GGMatrixInverse ( &inverseMatrix, &fDet, &inverseMatrix );
-						GGVec3TransformCoord ( &VecPos, &VecPos, &inverseMatrix );
-						g.entityrubberbandlist[i].x = VecPos.x;
-						g.entityrubberbandlist[i].y = VecPos.y;
-						g.entityrubberbandlist[i].z = VecPos.z;
-					}
-				}
-
-				RotateObject (  t.widget.widgetPlaneObj,0,0,0 );
-				//t.a=PickScreenObject (t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.widget.widgetPlaneObj, t.widget.widgetPlaneObj) ;
-				if (1) //(t.a == 0) //PE: Had wrong pick vectors if not found.
-				{
-					t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-					t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-					t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-					t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-					PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-				}
-				t.toriginalClickX_f = CameraPositionX() + GetPickVectorX();
-				t.toriginalClickY_f = CameraPositionY() + GetPickVectorY();
-				t.toriginalClickZ_f = CameraPositionZ() + GetPickVectorZ();
-				t.tdx_f = t.toriginalClickX_f - ObjectPositionX(t.widget.activeObject);
-				t.tdy_f = t.toriginalClickY_f - ObjectPositionY(t.widget.activeObject);
-				t.tdz_f = t.toriginalClickZ_f - ObjectPositionZ(t.widget.activeObject);
-				t.toriginalTranslateClickY_f = CameraPositionY() + GetPickVectorY() - ObjectPositionY(t.widget.activeObject);
-
-				//  for the YZ position modifier
-				RotateObject (  t.widget.widgetPlaneObj,0,90,0 );
-				//t.a=PickScreenObject (t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.widget.widgetPlaneObj, t.widget.widgetPlaneObj);
-				if (1) //(t.a == 0) //PE: Had wrong pick vectors if not found.
-				{
-					t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-					t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-					t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-					t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-					PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-				}
-				t.toriginalTranslateClickYonZ_f = CameraPositionY() + GetPickVectorY() - ObjectPositionY(t.widget.activeObject);
-
-				//  record entity RY for ragdoll/character rotation code lower down
-				t.tlastgoody_f = ObjectAngleY(t.widget.activeObject);
-
-				ShowObject (  t.widget.widgetPlaneObj );
-				PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-				RotateObject (  t.widget.widgetPlaneObj, -90,0,0 );
-				//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-				if (1) //(t.a == 0) //PE: Tested OK.
-				{
-					//PE: We get some huge jumpes/moves if we get here. it will use PicVector from prev call.
-					t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-					t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-					t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-					t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-					PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-				}
-				//debugobj = t.a;
-				t.toriginalTranslateClickX_f = CameraPositionX() + GetPickVectorX() - ObjectPositionX(t.widget.activeObject);
-				t.toriginalTranslateClickZ_f = CameraPositionZ() + GetPickVectorZ() - ObjectPositionZ(t.widget.activeObject);
-
-				//  310315 - XZ startclick for XY and ZY modding
-				RotateObject (  t.widget.widgetPlaneObj,0,0,0 );
-				//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-				if (1) //(t.a == 0) //PE: Had wrong pick vectors if not found.
-				{
-					t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-					t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-					t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-					t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-					PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-				}
-				t.toriginalTranslateClickX1_f = CameraPositionX() + GetPickVectorX() - ObjectPositionX(t.widget.activeObject);
-				RotateObject (  t.widget.widgetPlaneObj,0,90,0 );
-				//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-				if (1) //(t.a == 0) //PE: Had wrong pick vectors if not found.
-				{
-					t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-					t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-					t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-					t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-					PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-				}
-				t.toriginalTranslateClickZ2_f = CameraPositionZ() + GetPickVectorZ() - ObjectPositionZ(t.widget.activeObject);
-
-				HideObject (  t.widget.widgetPlaneObj );
-
-				//  mode 0 = translate, 1 = rotate, 2 = scale
-				if (  t.widget.mode  ==  0 || t.widget.mode  ==  2 ) 
-				{
-					ShowObject (  t.widget.widgetXColObj );
-					ShowObject (  t.widget.widgetYColObj );
-					ShowObject (  t.widget.widgetZColObj );
-					if (  t.widget.mode  ==  0 ) 
-					{
-						RotateObject (  g.widgetobjectoffset+16, 0,0,0 );
-						RotateObject (  g.widgetobjectoffset+17, 0,0,0 );
-						RotateObject (  g.widgetobjectoffset+18, 0,0,0 );
-					}
-					else
-					{
-						RotateObject (  g.widgetobjectoffset+16, ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject), ObjectAngleZ(t.widget.activeObject) );
-						RotateObject (  g.widgetobjectoffset+17, ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject), ObjectAngleZ(t.widget.activeObject) );
-						RotateObject (  g.widgetobjectoffset+18, ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject), ObjectAngleZ(t.widget.activeObject) );
-					}
-				}
-
-				if (  t.widget.mode  ==  0 || t.widget.mode  ==  2 ) 
-				{
-					HideObject (  t.widget.widgetXColObj );
-					HideObject (  t.widget.widgetYColObj );
-					HideObject (  t.widget.widgetZColObj );
-				}
-				#endif
-				#ifdef WICKEDENGINE
 				// No widget property popup
-				#else
-				if ( t.widget.pickedSection >= t.widget.widgetPOSObj && t.widget.pickedSection <= t.widget.widgetLCKObj ) 
-				{
-					t.toldmode=t.widget.mode;
-					if (  t.widget.pickedSection == t.widget.widgetPOSObj  )  t.widget.mode = 0;
-					if (  t.widget.pickedSection == t.widget.widgetROTObj  )  t.widget.mode = 1;
-					if (  t.widget.pickedSection == t.widget.widgetSCLObj  )  
-					{
-						bool bIsThisAnEBE = false;
-						if ( t.widget.pickedEntityIndex > 0 ) 
-						{
-							int iEntID = t.entityelement[t.widget.pickedEntityIndex].bankindex;
-							if ( iEntID > 0 ) 
-								if ( t.entityprofile[iEntID].isebe != 0 )
-									bIsThisAnEBE = true;
-						}
-						if ( bIsThisAnEBE == true )
-						{
-							//  Edit EBE construction
-							t.widget.propertybuttonselected = 1;
-							t.ebe.bReleaseMouseFirst = true;							
-						}
-						else
-						{
-							// default is scale
-							t.widget.mode = 2;
-						}
-					}
-					if (  t.widget.pickedSection == t.widget.widgetPRPObj ) 
-					{
-						//  entity properties / Save EBE construction
-						t.widget.propertybuttonselected = 2;
-					}
-					if (  t.widget.pickedSection == t.widget.widgetDUPObj ) 
-					{
-						//  duplicate / now extract
-						t.widget.duplicatebuttonselected=1;
-					}
-					if (  t.widget.pickedSection == t.widget.widgetDELObj ) 
-					{
-						//  delete
-						t.widget.deletebuttonselected=1;
-					}
-					if ( t.widget.pickedSection == t.widget.widgetLCKObj ) 
-					{
-						//  entity lock/unlock
-						if ( t.widget.pickedEntityIndex>0 ) 
-						{
-							int iLoopMax = 1;
-							if ( g.entityrubberbandlist.size() > 0 ) iLoopMax = g.entityrubberbandlist.size();
-							for ( int i = 0; i < iLoopMax; i++ )
-							{
-								// get entity index
-								int e = t.widget.pickedEntityIndex;
-								if ( g.entityrubberbandlist.size() > 0 )
-									e = g.entityrubberbandlist[i].e;
-
-								// toggle lock flag
-								t.entityelement[e].editorlock = 1 - t.entityelement[e].editorlock;
-
-								// also recreate entity as a clone and set as semi-transparent
-								// this messes up depth render order, totally, best to leave as solid, just locked
-								// LB - but the feature was useful to some users, so reinstated
-								if ( t.entityelement[e].editorlock == 1 ) 
-								{
-									t.tte=e; t.tobj=t.entityelement[t.tte].obj;
-									if ( t.tobj>0 ) 
-									{
-										if ( ObjectExist(t.tobj) == 1 ) 
-										{
-											t.entityelement[t.tte].isclone=0;
-											entity_converttoclonetransparent ( );
-										}
-									}
-								}
-							}
-							gridedit_clearentityrubberbandlist();
-						}
-						//  exit widget when lock entity
-						t.widget.pickedSection=0;
-					}
-					if ( t.toldmode != t.widget.mode ) widget_show_widget ( );
-				}
-				else
-				{
-					if ( t.widget.pickedSection >= g.widgetobjectoffset+16 && t.widget.pickedSection <= g.widgetobjectoffset+t.widget.widgetMAXObj ) 
-					{
-						if ( t.widget.mode  ==  0  ) t.widget.pickedSection -= 16;
-						if ( t.widget.mode  ==  2  ) t.widget.pickedSection -= 7;
-					}
-				}
-				#endif
 
 				// No section selected, so switch the widget off
 				if ( t.widget.pickedSection == 0 )//&& g.fForceYRotationOfRubberBandFromKeyPress == 0.0f ) 
@@ -1063,16 +722,7 @@ void widget_loop ( void )
 			float fOldActiveObjectX = ObjectPositionX ( t.widget.activeObject );
 			float fOldActiveObjectY = ObjectPositionY ( t.widget.activeObject );
 			float fOldActiveObjectZ = ObjectPositionZ ( t.widget.activeObject );
-			#ifdef WICKEDENGINE
-			#else
-			if ( t.widget.pickedSection >= t.widget.widgetPOSObj && t.widget.pickedSection <= t.widget.widgetLCKObj ) 
 			{
-				// widget button selected
-			}
-			else
-			#endif
-			{
-				#ifdef WICKEDENGINE
 				// defer detect system to fix the issue of the plane not being ready to return correct XYZ until frame AFTER plane is positioned
 				if (t.toriginalTranslateClickDeferred > 0) t.toriginalTranslateClickDeferred--;
 				// position
@@ -1115,7 +765,6 @@ void widget_loop ( void )
 							t.gridentityposz_f = fPlanePosZ;
 
 
-							#ifdef WICKEDENGINE
 							//PE: Prevent user for placing objects outside playable area.
 							bool bObjectOutSideEditArea = false;
 							float fEditableSizeHalved = GGTerrain_GetEditableSize();
@@ -1138,7 +787,6 @@ void widget_loop ( void )
 								iTriggerMessageFrames = 60;
 								bTriggerSmallMessage = true;
 							}
-							#endif
 
 							void Add_Grid_Snap_To_Position(bool bFromWidgetMode);
 							Add_Grid_Snap_To_Position(true);
@@ -1168,14 +816,12 @@ void widget_loop ( void )
 						widget_movezonesandlights ( t.te );
 
 						bool bDisableRubberBandMoving = false;
-						#ifdef WICKEDENGINE
 						extern int current_selected_group;
 						extern bool group_editing_on;
 						if (current_selected_group >= 0 && group_editing_on)
 						{
 							bDisableRubberBandMoving = true;
 						}
-						#endif
 						if (!bDisableRubberBandMoving)
 						{
 							// if we need to also move rubber band highlighted objects, do so now
@@ -1209,202 +855,6 @@ void widget_loop ( void )
 						}
 					}
 				}
-				#else
-				// translate, rotation and scale
-				//  translate
-				if (  t.widget.mode == 0 && ObjectExist(t.widget.activeObject) == 1 ) 
-				{
-					if (  t.widget.pickedSection  ==  t.widget.widgetXObj ) 
-					{
-						//PE: Fixed
-						PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.widget.widgetPlaneObj, -90,0,0 );
-						ShowObject (  t.widget.widgetPlaneObj );
-						//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-						if (1) //(  t.a == 0 ) 
-						{
-							t.ttdx_f=CameraPositionX()-ObjectPositionX(t.widget.activeObject);
-							t.ttdy_f=CameraPositionY()-ObjectPositionY(t.widget.activeObject);
-							t.ttdz_f=CameraPositionZ()-ObjectPositionZ(t.widget.activeObject);
-							t.ttdist_f=Sqrt(abs(t.ttdx_f*t.ttdx_f)+abs(t.ttdy_f*t.ttdy_f)+abs(t.ttdz_f*t.ttdz_f));
-							PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.ttdist_f );
-						}
-
-						//extern char cImGuiDebug[2048];
-						//sprintf(cImGuiDebug, "HITOBJ: %d\ndebugobj: %f\nDIST: %f", t.a, debugobj, t.ttdist_f);
-						
-						HideObject (  t.widget.widgetPlaneObj );
-						float fMaxMoveSpeed = GetPickVectorX();
-						t.tx_f = CameraPositionX() + fMaxMoveSpeed;
-						SlowPositionObject (  t.widget.activeObject,t.tx_f - t.toriginalTranslateClickX_f,ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-					}
-					if (  t.widget.pickedSection  ==  t.widget.widgetYObj ) 
-					{
-						//PE: Fixed
-						PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.widget.widgetPlaneObj,0,0,0 );
-						ShowObject (  t.widget.widgetPlaneObj );
-						//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-						if (1) //(  t.a == 0 ) 
-						{
-							t.ttdx_f=CameraPositionX()-ObjectPositionX(t.widget.activeObject);
-							t.ttdy_f=CameraPositionY()-ObjectPositionY(t.widget.activeObject);
-							t.ttdz_f=CameraPositionZ()-ObjectPositionZ(t.widget.activeObject);
-							t.ttdist_f=Sqrt(abs(t.ttdx_f*t.ttdx_f)+abs(t.ttdy_f*t.ttdy_f)+abs(t.ttdz_f*t.ttdz_f));
-							PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.ttdist_f );
-						}
-						HideObject (  t.widget.widgetPlaneObj );
-						t.ty_f = CameraPositionY() + GetPickVectorY();
-						SlowPositionObject (  t.widget.activeObject,ObjectPositionX(t.widget.activeObject),t.ty_f - t.toriginalTranslateClickY_f,ObjectPositionZ(t.widget.activeObject) );
-					}
-					if (  t.widget.pickedSection  ==  t.widget.widgetZObj ) 
-					{
-						//PE: Fixed
-						PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.widget.widgetPlaneObj,-90,0,0 );
-						ShowObject (  t.widget.widgetPlaneObj );
-						//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-						if (1) //(  t.a == 0 ) 
-						{
-							t.ttdx_f=CameraPositionX()-ObjectPositionX(t.widget.activeObject);
-							t.ttdy_f=CameraPositionY()-ObjectPositionY(t.widget.activeObject);
-							t.ttdz_f=CameraPositionZ()-ObjectPositionZ(t.widget.activeObject);
-							t.ttdist_f=Sqrt(abs(t.ttdx_f*t.ttdx_f)+abs(t.ttdy_f*t.ttdy_f)+abs(t.ttdz_f*t.ttdz_f));
-							PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.ttdist_f );
-						}
-						HideObject (  t.widget.widgetPlaneObj );
-						t.tz_f = CameraPositionZ() + GetPickVectorZ();
-						SlowPositionObject(  t.widget.activeObject,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),t.tz_f - t.toriginalTranslateClickZ_f );
-					}
-					if (  t.widget.pickedSection  ==  t.widget.widgetXYObj ) 
-					{
-						//PE: Fixed
-						PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.widget.widgetPlaneObj,0,0,0 );
-						ShowObject (  t.widget.widgetPlaneObj );
-						//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-						if (1) //(  t.a == 0 ) 
-						{
-							t.ttdx_f=CameraPositionX()-ObjectPositionX(t.widget.activeObject);
-							t.ttdy_f=CameraPositionY()-ObjectPositionY(t.widget.activeObject);
-							t.ttdz_f=CameraPositionZ()-ObjectPositionZ(t.widget.activeObject);
-							t.ttdist_f=Sqrt(abs(t.ttdx_f*t.ttdx_f)+abs(t.ttdy_f*t.ttdy_f)+abs(t.ttdz_f*t.ttdz_f));
-							PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.ttdist_f );
-						}
-						t.tx_f = CameraPositionX() + GetPickVectorX();
-						//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-						if (1) //(  t.a == 0 )
-						{
-							t.ttdx_f=CameraPositionX()-ObjectPositionX(t.widget.activeObject);
-							t.ttdy_f=CameraPositionY()-ObjectPositionY(t.widget.activeObject);
-							t.ttdz_f=CameraPositionZ()-ObjectPositionZ(t.widget.activeObject);
-							t.ttdist_f=Sqrt(abs(t.ttdx_f*t.ttdx_f)+abs(t.ttdy_f*t.ttdy_f)+abs(t.ttdz_f*t.ttdz_f));
-							PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.ttdist_f );
-						}
-						HideObject (  t.widget.widgetPlaneObj );
-						t.ty_f = CameraPositionY() + GetPickVectorY();
-						SlowPositionObject(  t.widget.activeObject,t.tx_f - t.toriginalTranslateClickX1_f,t.ty_f - t.toriginalTranslateClickY_f,ObjectPositionZ(t.widget.activeObject) );
-					}
-					if (  t.widget.pickedSection  ==  t.widget.widgetXZObj ) 
-					{
-						//PE: Fixed
-						PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.widget.widgetPlaneObj,-90,0,0 );
-						ShowObject (  t.widget.widgetPlaneObj );
-						//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-						if (1) //(  t.a == 0 ) 
-						{
-							//PE: This did not match with so gives huge jumps/moves.
-							t.ttdx_f=CameraPositionX()-ObjectPositionX(t.widget.activeObject);
-							t.ttdy_f=CameraPositionY()-ObjectPositionY(t.widget.activeObject);
-							t.ttdz_f=CameraPositionZ()-ObjectPositionZ(t.widget.activeObject);
-							t.ttdist_f=Sqrt(abs(t.ttdx_f*t.ttdx_f)+abs(t.ttdy_f*t.ttdy_f)+abs(t.ttdz_f*t.ttdz_f));
-							PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.ttdist_f );
-						}
-						HideObject (  t.widget.widgetPlaneObj );
-						float fMaxMoveSpeedX = GetPickVectorX();
-						float fMaxMoveSpeedZ = GetPickVectorZ();
-						t.tx_f = CameraPositionX() + fMaxMoveSpeedX;
-						t.tz_f = CameraPositionZ() + fMaxMoveSpeedZ;
-						//extern char cImGuiDebug[2048];
-						//sprintf(cImGuiDebug, "fMaxMoveSpeedX: %f\nfMaxMoveSpeedZ: %f", fMaxMoveSpeedX, fMaxMoveSpeedZ);
-						SlowPositionObject(t.widget.activeObject, t.tx_f - t.toriginalTranslateClickX_f, ObjectPositionY(t.widget.activeObject), t.tz_f - t.toriginalTranslateClickZ_f);
-					}
-					if (  t.widget.pickedSection  ==  t.widget.widgetYZObj ) 
-					{
-						//PE: Fixed
-						PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.widget.widgetPlaneObj,0,90,0 );
-						ShowObject (  t.widget.widgetPlaneObj );
-						//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-						if (1) //(  t.a == 0 ) 
-						{
-							t.ttdx_f=CameraPositionX()-ObjectPositionX(t.widget.activeObject);
-							t.ttdy_f=CameraPositionY()-ObjectPositionY(t.widget.activeObject);
-							t.ttdz_f=CameraPositionZ()-ObjectPositionZ(t.widget.activeObject);
-							t.ttdist_f=Sqrt(abs(t.ttdx_f*t.ttdx_f)+abs(t.ttdy_f*t.ttdy_f)+abs(t.ttdz_f*t.ttdz_f));
-							PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.ttdist_f );
-						}
-						t.tz_f = CameraPositionZ() + GetPickVectorZ();
-						//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-						if (1) //(  t.a == 0 ) 
-						{
-							t.ttdx_f=CameraPositionX()-ObjectPositionX(t.widget.activeObject);
-							t.ttdy_f=CameraPositionY()-ObjectPositionY(t.widget.activeObject);
-							t.ttdz_f=CameraPositionZ()-ObjectPositionZ(t.widget.activeObject);
-							t.ttdist_f=Sqrt(abs(t.ttdx_f*t.ttdx_f)+abs(t.ttdy_f*t.ttdy_f)+abs(t.ttdz_f*t.ttdz_f));
-							PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.ttdist_f );
-						}
-						HideObject (  t.widget.widgetPlaneObj );
-						t.ty_f = CameraPositionY() + GetPickVectorY();
-						SlowPositionObject(  t.widget.activeObject,ObjectPositionX(t.widget.activeObject),t.ty_f - t.toriginalTranslateClickYonZ_f,t.tz_f - t.toriginalTranslateClickZ2_f );
-					}
-					t.te=t.widget.pickedEntityIndex;
-					t.entityelement[t.te].x=ObjectPositionX(t.widget.activeObject);
-					t.entityelement[t.te].y=ObjectPositionY(t.widget.activeObject);
-					t.entityelement[t.te].z=ObjectPositionZ(t.widget.activeObject);
-					t.entityelement[t.te].beenmoved=1;
-					// mark as static if it was
-					if ( t.entityelement[t.te].staticflag == 1 ) g.projectmodifiedstatic = 1;
-					//  update infinilight list with addition
-					t.tttentid=t.entityelement[t.te].bankindex;
-					if (  t.entityprofile[t.tttentid].ismarker == 2 || t.entityprofile[t.tttentid].ismarker == 5 ) 
-					{
-						lighting_refresh ( );
-					}
-				}
-
-				// 201015 - if we need to also move rubber band highlighted objects, do so now
-				if (g.entityrubberbandlist.size() > 0)
-				{
-					float fMovedActiveObjectX = ObjectPositionX(t.widget.activeObject) - fOldActiveObjectX;
-					float fMovedActiveObjectY = ObjectPositionY(t.widget.activeObject) - fOldActiveObjectY;
-					float fMovedActiveObjectZ = ObjectPositionZ(t.widget.activeObject) - fOldActiveObjectZ;
-					for (int i = 0; i < (int)g.entityrubberbandlist.size(); i++)
-					{
-						int e = g.entityrubberbandlist[i].e;
-						int tobj = t.entityelement[e].obj;
-						if (tobj > 0)
-						{
-							if (ObjectExist(tobj) == 1)
-							{
-								if (tobj != t.widget.activeObject)
-								{
-									// reposition this entity
-									SlowPositionObject(tobj, ObjectPositionX(tobj) + fMovedActiveObjectX, ObjectPositionY(tobj) + fMovedActiveObjectY, ObjectPositionZ(tobj) + fMovedActiveObjectZ);
-									t.entityelement[e].x = ObjectPositionX(tobj);
-									t.entityelement[e].y = ObjectPositionY(tobj);
-									t.entityelement[e].z = ObjectPositionZ(tobj);
-									// mark as static if it was
-									if (t.entityelement[e].staticflag == 1) g.projectmodifiedstatic = 1;
-									// also update zones if part of group
-									widget_movezonesandlights(e);
-								}
-							}
-						}
-					}
-				}
-				#endif
 			}
 
 			// only allow rot/scl for non markers
@@ -1423,7 +873,6 @@ void widget_loop ( void )
 			if (t.entityprofile[t.tttentid].ismarker == 10) bHaveFullRotation = true;
 			if ( (bHaveFullRotation==true || t.thaveyrot == 1) && ObjectExist(t.widget.activeObject) == 1 )
 			{
-				#ifdef WICKEDENGINE
 				// rotation
 				if ( t.widget.mode == 1 && t.toriginalTranslateClickDeferred <= 1 )//|| g.fForceYRotationOfRubberBandFromKeyPress != 0.0f )
 				{
@@ -1525,14 +974,12 @@ void widget_loop ( void )
 
 					// if we need to also rotate rubber band highlighted objects, do so now
 					bool bDisableRubberBandMoving = false;
-					#ifdef WICKEDENGINE
 					extern int current_selected_group;
 					extern bool group_editing_on;
 					if (current_selected_group >= 0 && group_editing_on)
 					{
 						bDisableRubberBandMoving = true;
 					}
-					#endif
 					if (!bDisableRubberBandMoving)
 					{
 						if (g.entityrubberbandlist.size() > 0)
@@ -1620,14 +1067,12 @@ void widget_loop ( void )
 
 					// if we need to also scale rubber band highlighted objects, do so now
 					bool bDisableRubberBandMoving = false;
-					#ifdef WICKEDENGINE
 					extern int current_selected_group;
 					extern bool group_editing_on;
 					if (current_selected_group >= 0 && group_editing_on)
 					{
 						bDisableRubberBandMoving = true;
 					}
-					#endif
 					if (!bDisableRubberBandMoving)
 					{
 
@@ -1658,483 +1103,6 @@ void widget_loop ( void )
 						}
 					}
 				}
-				#else
-				if ( t.widget.mode ==  1 ) //|| g.fForceYRotationOfRubberBandFromKeyPress != 0.0f
-				{
-					// 271015 - store old active object angles
-					float fOldActiveObjectRX = ObjectAngleX ( t.widget.activeObject );
-					float fOldActiveObjectRY = ObjectAngleY ( t.widget.activeObject );
-					float fOldActiveObjectRZ = ObjectAngleZ ( t.widget.activeObject );
-
-					//  RotateObject (  on all three axis )
-					PickScreen2D23D (  t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,50000 );
-
-					//  control distant mouse pointer object
-					t.p0x_f=CameraPositionX();
-					t.p0y_f=CameraPositionY();
-					t.p0z_f=CameraPositionZ();
-					t.px_f=t.p0x_f+GetPickVectorX();
-					t.py_f=t.p0y_f+GetPickVectorY();
-					t.pz_f=t.p0z_f+GetPickVectorZ();
-					PositionObject (  t.twidgetRotStartObject+11,t.px_f,t.py_f,t.pz_f );
-					t.p1x_f=ObjectPositionX(t.twidgetRotStartObject+11);
-					t.p1y_f=ObjectPositionY(t.twidgetRotStartObject+11);
-					t.p1z_f=ObjectPositionZ(t.twidgetRotStartObject+11);
-
-					//PE: At some angles InterSectObject fails, so make sure we have valid values before processing.
-					//PE: This prevent suttenly jumps where first click values is not valid.
-					//PE: This could be improved more, so we never had invalid data. but fine for now.
-					bool bValidRotation = false;
-
-					//  handle rotation modes
-					if (  t.widget.pickedSection  ==  t.widget.widgetXRotObj && (t.thaveyrot == 0 || t.entityelement[t.te].eleprof.usespotlighting ) )
-					{
-						if (  ObjectExist(t.twidgetRotStartObject+14) == 1  )  DeleteObject (  t.twidgetRotStartObject+14 );
-						MakeObjectBox (  t.twidgetRotStartObject+14,1,5000000,5000000 );
-						HideObject (  t.twidgetRotStartObject+14 );
-						PositionObject (  t.twidgetRotStartObject+14,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.twidgetRotStartObject+14,ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject),ObjectAngleZ(t.widget.activeObject) );
-						if (  IntersectObject(t.twidgetRotStartObject+14,t.p0x_f,t.p0y_f,t.p0z_f,t.p1x_f,t.p1y_f,t.p1z_f) != 0 ) 
-						{
-							t.pinterx_f=ChecklistFValueA(6); //PE: MegaCollisionFeedback.vecHitPoint.x
-							t.pintery_f=ChecklistFValueB(6);
-							t.pinterz_f=ChecklistFValueC(6);
-							bValidRotation = true;
-						}
-						PositionObject (  t.twidgetRotStartObject+13,t.pinterx_f,t.pintery_f,t.pinterz_f );
-					}
-					if (  t.widget.pickedSection  ==  t.widget.widgetYRotObj ) 
-					{
-						if (  ObjectExist(t.twidgetRotStartObject+14) == 1  )  DeleteObject (  t.twidgetRotStartObject+14 );
-						MakeObjectBox (  t.twidgetRotStartObject+14,5000000,1,5000000 );
-						HideObject (  t.twidgetRotStartObject+14 );
-						PositionObject (  t.twidgetRotStartObject+14,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.twidgetRotStartObject+14,ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject),ObjectAngleZ(t.widget.activeObject) );
-						if (  IntersectObject(t.twidgetRotStartObject+14,t.p0x_f,t.p0y_f,t.p0z_f,t.p1x_f,t.p1y_f,t.p1z_f) != 0 ) 
-						{
-							t.pinterx_f=ChecklistFValueA(6);
-							t.pintery_f=ChecklistFValueB(6);
-							t.pinterz_f=ChecklistFValueC(6);
-							bValidRotation = true;
-
-						}
-						PositionObject (  t.twidgetRotStartObject+13,t.pinterx_f,t.pintery_f,t.pinterz_f );
-					}
-					if (  t.widget.pickedSection  ==  t.widget.widgetZRotObj && ( t.thaveyrot == 0|| t.entityelement[t.te].eleprof.usespotlighting) )
-					{
-						if (  ObjectExist(t.twidgetRotStartObject+14) == 1  )  DeleteObject (  t.twidgetRotStartObject+14 );
-						MakeObjectBox (  t.twidgetRotStartObject+14,5000000,5000000,1 );
-						HideObject (  t.twidgetRotStartObject+14 );
-						PositionObject (  t.twidgetRotStartObject+14,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-						RotateObject (  t.twidgetRotStartObject+14,ObjectAngleX(t.widget.activeObject),ObjectAngleY(t.widget.activeObject),ObjectAngleZ(t.widget.activeObject) );
-						if (  IntersectObject(t.twidgetRotStartObject+14,t.p0x_f,t.p0y_f,t.p0z_f,t.p1x_f,t.p1y_f,t.p1z_f) != 0 ) 
-						{
-							t.pinterx_f=ChecklistFValueA(6);
-							t.pintery_f=ChecklistFValueB(6);
-							t.pinterz_f=ChecklistFValueC(6);
-							bValidRotation = true;
-
-						}
-						PositionObject (  t.twidgetRotStartObject+13,t.pinterx_f,t.pintery_f,t.pinterz_f );
-					}
-
-					//  control rotations
-					if (bValidRotation && t.widget.grabbed == 0 )
-					{
-						//  start drag
-						t.gmx=t.widgetinputsysxmouse_f;
-						t.gmy=t.widgetinputsysymouse_f;
-						PositionObject (  t.twidgetRotStartObject+12,t.pinterx_f,t.pintery_f,t.pinterz_f );
-						t.fAngleStoreX = ObjectAngleX ( t.widget.activeObject );
-						t.fAngleStoreY = ObjectAngleY ( t.widget.activeObject );
-						t.fAngleStoreZ = ObjectAngleZ ( t.widget.activeObject );
-						t.widget.grabbed=1;
-					}
-					if (bValidRotation && t.widget.grabbed == 1 )
-					{
-						SetIdentityMatrix (  g.widgetStartMatrix+3 );
-						RotateXMatrix (  g.widgetStartMatrix+4,ObjectAngleX(t.widget.activeObject)*0.017444 );
-						MultiplyMatrix (  g.widgetStartMatrix+3,g.widgetStartMatrix+3,g.widgetStartMatrix+4 );
-						RotateYMatrix (  g.widgetStartMatrix+4,ObjectAngleY(t.widget.activeObject)*0.017444 );
-						MultiplyMatrix (  g.widgetStartMatrix+3,g.widgetStartMatrix+3,g.widgetStartMatrix+4 );
-						RotateZMatrix (  g.widgetStartMatrix+4,ObjectAngleZ(t.widget.activeObject)*0.017444 );
-						MultiplyMatrix (  g.widgetStartMatrix+3,g.widgetStartMatrix+3,g.widgetStartMatrix+4 );
-						t.widget.grabbed=2;
-					}
-					if ( (bValidRotation && t.widget.grabbed == 2)  ) //|| g.fForceYRotationOfRubberBandFromKeyPress != 0.0f
-					{
-//						if ( g.fForceYRotationOfRubberBandFromKeyPress != 0.0f )
-//						{
-//							// comes from pressing the R key (and 3 and 4 key)
-//							t.tanglediff_f = g.fForceYRotationOfRubberBandFromKeyPress;
-//						}
-//						else
-						{
-							//  dragging in world space
-							//  x-axis oriented by object
-							if (  t.widget.pickedSection == t.widget.widgetXRotObj  )  SetVector3 (  g.widgetvectorindex+1,1,0,0 );
-							if (  t.widget.pickedSection == t.widget.widgetYRotObj  )  SetVector3 (  g.widgetvectorindex+1,0,1,0 );
-							if (  t.widget.pickedSection == t.widget.widgetZRotObj  )  SetVector3 (  g.widgetvectorindex+1,0,0,1 );
-							TransformVectorCoordinates3 (  g.widgetvectorindex+1,g.widgetvectorindex+1,g.widgetStartMatrix+3 );
-							//  work out grab locations
-							SetVector3 (  g.widgetvectorindex+7,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-							SetVector3 (  g.widgetvectorindex+8,ObjectPositionX(t.twidgetRotStartObject+12),ObjectPositionY(t.twidgetRotStartObject+12),ObjectPositionZ(t.twidgetRotStartObject+12) );
-							SetVector3 (  g.widgetvectorindex+9,ObjectPositionX(t.twidgetRotStartObject+13),ObjectPositionY(t.twidgetRotStartObject+13),ObjectPositionZ(t.twidgetRotStartObject+13) );
-							SubtractVector3 (  g.widgetvectorindex+8,g.widgetvectorindex+8,g.widgetvectorindex+7 );
-							SubtractVector3 (  g.widgetvectorindex+9,g.widgetvectorindex+9,g.widgetvectorindex+7 );
-							SetVector3 (  g.widgetvectorindex+7,0,0,0 );
-							if (  t.tanglediff_f>360  )  t.tanglediff_f = t.tanglediff_f-360;
-							if (  t.tanglediff_f<-360  )  t.tanglediff_f = t.tanglediff_f+360;
-							//  transform vector 8 and 9 around new UP vector
-							SetVector3 (  g.widgetvectorindex+12,0,1,0 );
-							CopyMatrix (  g.widgetStartMatrix+4,g.widgetStartMatrix+3 );
-							t.r=InverseMatrix(g.widgetStartMatrix+4,g.widgetStartMatrix+4);
-							TransformVectorCoordinates3 (  g.widgetvectorindex+8,g.widgetvectorindex+8,g.widgetStartMatrix+4 );
-							TransformVectorCoordinates3 (  g.widgetvectorindex+9,g.widgetvectorindex+9,g.widgetStartMatrix+4 );
-							if (  t.widget.pickedSection == t.widget.widgetXRotObj ) 
-							{
-								t.tangle1_f=atan2deg(GetZVector3(g.widgetvectorindex+8),GetYVector3(g.widgetvectorindex+8)) ;
-							}
-							if (  t.widget.pickedSection == t.widget.widgetYRotObj ) 
-							{
-								t.tangle1_f=atan2deg(GetXVector3(g.widgetvectorindex+8),GetZVector3(g.widgetvectorindex+8));
-							}
-							if (  t.widget.pickedSection == t.widget.widgetZRotObj ) 
-							{
-								t.tangle1_f=atan2deg(GetYVector3(g.widgetvectorindex+8),GetXVector3(g.widgetvectorindex+8)) ;
-							}
-							if (  t.widget.pickedSection == t.widget.widgetXRotObj ) 
-							{
-								t.tangle2_f=atan2deg(GetZVector3(g.widgetvectorindex+9),GetYVector3(g.widgetvectorindex+9));
-							}
-							if (  t.widget.pickedSection == t.widget.widgetYRotObj ) 
-							{
-								t.tangle2_f=atan2deg(GetXVector3(g.widgetvectorindex+9),GetZVector3(g.widgetvectorindex+9));
-							}
-							if (  t.widget.pickedSection == t.widget.widgetZRotObj ) 
-							{
-								t.tangle2_f=atan2deg(GetYVector3(g.widgetvectorindex+9),GetXVector3(g.widgetvectorindex+9)) ;
-							}
-							t.tanglediff_f=t.tangle2_f-t.tangle1_f;
-						}
-
-						// if group rotation, use simpler Y only rotation
-						if ( g.entityrubberbandlist.size() > 0 )
-						{
-							// avoids messy math for now
-							t.pVecAnglesx_f = t.fAngleStoreX;
-							t.pVecAnglesy_f = t.fAngleStoreY + t.tanglediff_f;
-							t.pVecAnglesz_f = t.fAngleStoreZ;
-						}
-						else
-						{
-							//  apply rotation
-							BuildRotationAxisMatrix (  g.widgetStartMatrix+4,g.widgetvectorindex+1,t.tanglediff_f*0.017444 ) ;
-							MultiplyMatrix (  g.widgetStartMatrix+5,g.widgetStartMatrix+3,g.widgetStartMatrix+4 );
-							//  convert matrix to euler angles
-							t.m00_f = GetMatrixElement(g.widgetStartMatrix+5,0);
-							t.m01_f = GetMatrixElement(g.widgetStartMatrix+5,1);
-							t.m02_f = GetMatrixElement(g.widgetStartMatrix+5,2);
-							t.m12_f = GetMatrixElement(g.widgetStartMatrix+5,6);
-							t.m22_f = GetMatrixElement(g.widgetStartMatrix+5,10);
-							t.heading_f = atan2deg(t.m01_f,t.m00_f);
-							t.attitude_f = atan2deg(t.m12_f,t.m22_f);
-							t.bank_f = Asin(-t.m02_f);
-							if (  abs ( t.m02_f ) > 1.0 ) 
-							{
-								t.PI_f = 3.14159265f / 2.0f;
-								t.pVecAnglesx_f = 0.0;
-								t.pVecAnglesy_f = ( t.PI_f * t.m02_f ) / 0.017444;
-								t.pVecAnglesz_f = 0.0;
-							}
-							else
-							{
-								t.pVecAnglesx_f = ( t.attitude_f );
-								t.pVecAnglesy_f = ( t.bank_f );
-								t.pVecAnglesz_f = ( t.heading_f );
-							}
-						}
-						//  update object with regular euler
-						RotateObject ( t.widget.activeObject,t.pVecAnglesx_f,t.pVecAnglesy_f,t.pVecAnglesz_f );
-
-//						if (g.fForceYRotationOfRubberBandFromKeyPress != 0.0f)
-//						{
-//							//PE: From "R" key, also update t.fAngleStoreY.
-//							t.fAngleStoreX = ObjectAngleX(t.widget.activeObject);
-//							t.fAngleStoreY = ObjectAngleY(t.widget.activeObject);
-//							t.fAngleStoreZ = ObjectAngleZ(t.widget.activeObject);
-//						}
-					}
-					//  transfer final eulers to entity element setting
-					if (  t.entityprofile[t.tttentid].ragdoll == 1 ) 
-					{
-						t.entityelement[t.te].rx=0;
-						t.entityelement[t.te].ry=t.tlastgoody_f+t.tanglediff_f;
-						t.entityelement[t.te].rz=0;
-						RotateObject (  t.widget.activeObject,0,t.entityelement[t.te].ry,0 );
-					}
-					else
-					{
-						t.entityelement[t.te].rx=ObjectAngleX(t.widget.activeObject);
-						t.entityelement[t.te].ry=ObjectAngleY(t.widget.activeObject);
-						t.entityelement[t.te].rz=ObjectAngleZ(t.widget.activeObject);
-					}
-					// mark as static if it was
-					if ( t.entityelement[t.te].staticflag == 1 ) g.projectmodifiedstatic = 1;
-
-					// 271015 - if we need to also rotate rubber band highlighted objects, do so now
-					if ( g.entityrubberbandlist.size() > 0 )
-					{
-						// rotate all the grouped entities and move around Y axis of widget as pivot
-						float fMovedActiveObjectRX = ObjectAngleX ( t.widget.activeObject ) - fOldActiveObjectRX;
-						float fMovedActiveObjectRY = ObjectAngleY ( t.widget.activeObject ) - fOldActiveObjectRY;
-						float fMovedActiveObjectRZ = ObjectAngleZ ( t.widget.activeObject ) - fOldActiveObjectRZ;
-						for ( int i = 0; i < (int)g.entityrubberbandlist.size(); i++ )
-						{
-							int e = g.entityrubberbandlist[i].e;
-							int tobj = t.entityelement[e].obj;
-							if ( tobj > 0 )
-							{
-								if ( ObjectExist(tobj) == 1 )
-								{
-									if ( tobj != t.widget.activeObject )
-									{
-										// 061115 - a fix for entities that have been inverted
-										if ( t.entityelement[e].rx==180 && t.entityelement[e].rz==180 )
-										{
-											t.entityelement[e].rx = 0;
-											t.entityelement[e].ry = t.entityelement[e].ry;
-											t.entityelement[e].rz = 0;
-											RotateObject ( tobj, t.entityelement[e].rx, t.entityelement[e].ry, t.entityelement[e].rz );
-										}
-
-										// rotate the entity
-										RotateObject ( tobj, ObjectAngleX(tobj)+fMovedActiveObjectRX, ObjectAngleY(tobj)+fMovedActiveObjectRY, ObjectAngleZ(tobj)+fMovedActiveObjectRZ );
-										t.entityelement[e].rx = ObjectAngleX(tobj);
-										t.entityelement[e].ry = ObjectAngleY(tobj);
-										t.entityelement[e].rz = ObjectAngleZ(tobj);
-										// mark as static if it was
-										if ( t.entityelement[e].staticflag == 1 ) g.projectmodifiedstatic = 1;
-
-										// move the entity around a pivot point
-										GGVECTOR3 VecPos;
-										VecPos.x = g.entityrubberbandlist[i].x;
-										VecPos.y = g.entityrubberbandlist[i].y;
-										VecPos.z = g.entityrubberbandlist[i].z;
-										sObject* pObject = GetObjectData(tobj);
-										GGVec3TransformCoord ( &VecPos, &VecPos, &pObject->position.matObjectNoTran );
-										t.entityelement[e].x = ObjectPositionX ( t.widget.activeObject ) + VecPos.x;
-										t.entityelement[e].y = ObjectPositionY ( t.widget.activeObject ) + VecPos.y;
-										t.entityelement[e].z = ObjectPositionZ ( t.widget.activeObject ) + VecPos.z;
-										PositionObject ( tobj, t.entityelement[e].x, t.entityelement[e].y, t.entityelement[e].z );
-
-										// move zones and lights if in group
-										widget_movezonesandlights ( e );
-									}
-								}
-							}
-						}
-					}
-				}
-
-				// scale
-				if ( t.entityprofile[t.tttentid].ragdoll == 0 && t.thaveyrot == 0 ) 
-				{
-					// only if NOT using ragdoll
-					if ( t.widget.mode  ==  2 ) 
-					{
-						// 271015 - store old active object scales
-						float fOldActiveObjectSX = ObjectScaleX ( t.widget.activeObject );
-						float fOldActiveObjectSY = ObjectScaleY ( t.widget.activeObject );
-						float fOldActiveObjectSZ = ObjectScaleZ ( t.widget.activeObject );
-
-						// 281015 - take scale of object inti account
-						float fEntityTotalSize = ObjectSize ( t.widget.activeObject, 0 );
-						float fEntityScalingRatio = 100.0f / fEntityTotalSize;
-
-						// scale on X, Y and Z axis
-						if (  t.widget.pickedSection  ==  t.widget.widgetXScaleObj ) 
-						{
-							ShowObject (  t.widget.widgetPlaneObj );
-							PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-							RotateObject (  t.widget.widgetPlaneObj,-90,0,0 );
-							//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-							if (1) //(t.a == 0) //PE: Fixed
-							{
-								t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-								t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-								t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-								t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-								PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-							}
-							HideObject (  t.widget.widgetPlaneObj );
-							t.tNewClickX_f = CameraPositionX() + GetPickVectorX();
-							t.tNewClickY_f = CameraPositionY() + GetPickVectorY();
-							t.tNewClickZ_f = CameraPositionZ() + GetPickVectorZ();
-							GGVECTOR3 vecOrig = GGVECTOR3(t.toriginalClick2X_f,t.toriginalClick2Y_f,t.toriginalClick2Z_f);
-							GGVECTOR3 vecNew = GGVECTOR3(t.tNewClickX_f,t.tNewClickY_f,t.tNewClickZ_f);
-							sObject* pObject = GetObjectData ( t.widget.activeObject );
-							float pDet;
-							GGMATRIX matInverse;
-							GGMatrixInverse ( &matInverse, &pDet, &pObject->position.matRotation );
-							vecNew = vecNew - vecOrig;
-							GGVec3TransformCoord ( &vecNew, &vecNew, &matInverse );
-							t.tnewDistance_f = vecNew.x;
-							t.tfactor_f=(t.toriginalScaleX_f/100.0)*2;
-							if (  t.tfactor_f<1.0  )  t.tfactor_f = 1.0;
-							if (  t.tfactor_f>5.0  )  t.tfactor_f = 5.0;
-							t.tscale_f = (t.tnewDistance_f*t.tfactor_f*fEntityScalingRatio)+t.toriginalScaleX_f;
-							if (  t.tscale_f < 5  )  t.tscale_f  =  5;
-							if (  t.tscale_f > 10000  )  t.tscale_f  =  10000;
-							ScaleObject (  t.widget.activeObject,t.tscale_f,ObjectScaleY(t.widget.activeObject),ObjectScaleZ(t.widget.activeObject) );
-						}
-						if (  t.widget.pickedSection  ==  t.widget.widgetYScaleObj ) 
-						{
-							ShowObject (  t.widget.widgetPlaneObj );
-							PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-							RotateObject (  t.widget.widgetPlaneObj,0,0,0 );
-							//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-							if (1) //(t.a == 0) //PE: Fixed
-							{
-								t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-								t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-								t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-								t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-								PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-							}
-							HideObject (  t.widget.widgetPlaneObj );
-							t.tNewClickX_f = CameraPositionX() + GetPickVectorX();
-							t.tNewClickY_f = CameraPositionY() + GetPickVectorY();
-							t.tNewClickZ_f = CameraPositionZ() + GetPickVectorZ();
-							GGVECTOR3 vecOrig = GGVECTOR3(t.toriginalClick2X_f,t.toriginalClick2Y_f,t.toriginalClick2Z_f);
-							GGVECTOR3 vecNew = GGVECTOR3(t.tNewClickX_f,t.tNewClickY_f,t.tNewClickZ_f);
-							sObject* pObject = GetObjectData ( t.widget.activeObject );
-							float pDet;
-							GGMATRIX matInverse;
-							GGMatrixInverse ( &matInverse, &pDet, &pObject->position.matRotation );
-							vecNew = vecNew - vecOrig;
-							GGVec3TransformCoord ( &vecNew, &vecNew, &matInverse );
-							t.tnewDistance_f = vecNew.y;
-							t.tfactor_f=(t.toriginalScaleY_f/100.0)*2;
-							if (  t.tfactor_f<1.0  )  t.tfactor_f = 1.0;
-							if (  t.tfactor_f>5.0  )  t.tfactor_f = 5.0;
-							t.tscale_f = ((t.tnewDistance_f)*t.tfactor_f*fEntityScalingRatio)+t.toriginalScaleY_f;
-							if (  t.tscale_f < 5  )  t.tscale_f  =  5;
-							if (  t.tscale_f > 10000  )  t.tscale_f  =  10000;
-							ScaleObject (  t.widget.activeObject,ObjectScaleX(t.widget.activeObject),t.tscale_f,ObjectScaleZ(t.widget.activeObject) );
-						}
-						if (  t.widget.pickedSection  ==  t.widget.widgetZScaleObj ) 
-						{
-							ShowObject (  t.widget.widgetPlaneObj );
-							PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-							RotateObject (  t.widget.widgetPlaneObj,-90,0,0 );
-							//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj) ;
-							if (1) //(t.a == 0) //PE: Fixed
-							{
-								t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-								t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-								t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-								t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-								PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-							}
-							HideObject (  t.widget.widgetPlaneObj );
-							t.tNewClickX_f = CameraPositionX() + GetPickVectorX();
-							t.tNewClickY_f = CameraPositionY() + GetPickVectorY();
-							t.tNewClickZ_f = CameraPositionZ() + GetPickVectorZ();
-							GGVECTOR3 vecOrig = GGVECTOR3(t.toriginalClick2X_f,t.toriginalClick2Y_f,t.toriginalClick2Z_f);
-							GGVECTOR3 vecNew = GGVECTOR3(t.tNewClickX_f,t.tNewClickY_f,t.tNewClickZ_f);
-							sObject* pObject = GetObjectData ( t.widget.activeObject );
-							float pDet;
-							GGMATRIX matInverse;
-							GGMatrixInverse ( &matInverse, &pDet, &pObject->position.matRotation );
-							vecNew = vecNew - vecOrig;
-							GGVec3TransformCoord ( &vecNew, &vecNew, &matInverse );
-							t.tnewDistance_f = vecNew.z;
-							t.tfactor_f=(t.toriginalScaleZ_f/100.0)*2;
-							if (  t.tfactor_f<1.0  )  t.tfactor_f = 1.0;
-							if (  t.tfactor_f>5.0  )  t.tfactor_f = 5.0;
-							t.tscale_f = ((t.tnewDistance_f)*t.tfactor_f*fEntityScalingRatio)+t.toriginalScaleZ_f;
-							if (  t.tscale_f < 5  )  t.tscale_f  =  5;
-							if (  t.tscale_f > 10000  )  t.tscale_f  =  10000;
-							ScaleObject (  t.widget.activeObject,ObjectScaleX(t.widget.activeObject),ObjectScaleY(t.widget.activeObject),t.tscale_f );
-						}
-
-						// scale on XYZ together
-						if (  t.widget.pickedSection  ==  t.widget.widgetXYZScaleObj ) 
-						{
-							//PE: Fixed.
-							ShowObject (  t.widget.widgetPlaneObj );
-							PositionObject (  t.widget.widgetPlaneObj,ObjectPositionX(t.widget.activeObject),ObjectPositionY(t.widget.activeObject),ObjectPositionZ(t.widget.activeObject) );
-							RotateObject (  t.widget.widgetPlaneObj,-90,0,0 );
-							//t.a=PickScreenObject (t.widgetinputsysxmouse_f,t.widgetinputsysymouse_f,t.widget.widgetPlaneObj,t.widget.widgetPlaneObj);
-							if (1) //(t.a == 0)
-							{
-								t.ttdx_f = CameraPositionX() - ObjectPositionX(t.widget.activeObject);
-								t.ttdy_f = CameraPositionY() - ObjectPositionY(t.widget.activeObject);
-								t.ttdz_f = CameraPositionZ() - ObjectPositionZ(t.widget.activeObject);
-								t.ttdist_f = Sqrt(abs(t.ttdx_f*t.ttdx_f) + abs(t.ttdy_f*t.ttdy_f) + abs(t.ttdz_f*t.ttdz_f));
-								PickScreen2D23D(t.widgetinputsysxmouse_f, t.widgetinputsysymouse_f, t.ttdist_f);
-							}
-							HideObject (  t.widget.widgetPlaneObj );
-							t.tNewClickX_f = CameraPositionX() + GetPickVectorX();
-							t.tNewClickY_f = CameraPositionY() + GetPickVectorY();
-							t.tNewClickZ_f = CameraPositionZ() + GetPickVectorZ();
-							t.tdx_f = t.tNewClickX_f - ObjectPositionX(t.widget.activeObject);
-							t.tdy_f = t.tNewClickY_f - ObjectPositionY(t.widget.activeObject);
-							t.tdz_f = t.tNewClickZ_f - ObjectPositionZ(t.widget.activeObject);
-							t.tnewDistance_f = Sqrt(t.tdx_f*t.tdx_f + t.tdy_f*t.tdy_f + t.tdz_f*t.tdz_f);
-							t.tfactor_f=(t.toriginalScaleX_f/100.0)*2;
-							if (  t.tfactor_f<1.0  )  t.tfactor_f = 1.0;
-							if (  t.tfactor_f>5.0  )  t.tfactor_f = 5.0;
-							t.tscale_f = ((t.tnewDistance_f-t.toriginalDistance_f)*t.tfactor_f*fEntityScalingRatio)+t.toriginalScaleX_f;
-							t.tScaleY_f = (t.toriginalScaleY_f / t.toriginalScaleX_f) * t.tscale_f;
-							t.tScaleZ_f = (t.toriginalScaleZ_f / t.toriginalScaleX_f) * t.tscale_f;
-							if (  t.tscale_f < 5  )  t.tscale_f  =  5;
-							if (  t.tscale_f > 10000  )  t.tscale_f  =  10000;
-							if (  t.tScaleY_f < 5  )  t.tScaleY_f  =  5;
-							if (  t.tScaleY_f > 10000  )  t.tScaleY_f  =  10000;
-							if (  t.tScaleZ_f < 5  )  t.tScaleZ_f  =  5;
-							if (  t.tScaleZ_f > 10000  )  t.tScaleZ_f  =  10000;
-							ScaleObject (  t.widget.activeObject,t.tscale_f,t.tScaleY_f,t.tScaleZ_f );
-						}
-
-						//  transfer final scale to entity element setting
-						t.entityelement[t.te].scalex = ObjectScaleX(t.widget.activeObject)-100.0;
-						t.entityelement[t.te].scaley = ObjectScaleY(t.widget.activeObject)-100.0;
-						t.entityelement[t.te].scalez = ObjectScaleZ(t.widget.activeObject)-100.0;
-						// mark as static if it was
-						if ( t.entityelement[t.te].staticflag == 1 ) g.projectmodifiedstatic = 1;
-
-						// 271015 - if we need to also scale rubber band highlighted objects, do so now
-						if ( g.entityrubberbandlist.size() > 0 )
-						{
-							float fMovedActiveObjectSX = ObjectScaleX ( t.widget.activeObject ) - fOldActiveObjectSX;
-							float fMovedActiveObjectSY = ObjectScaleY ( t.widget.activeObject ) - fOldActiveObjectSY;
-							float fMovedActiveObjectSZ = ObjectScaleZ ( t.widget.activeObject ) - fOldActiveObjectSZ;
-							for ( int i = 0; i < (int)g.entityrubberbandlist.size(); i++ )
-							{
-								int e = g.entityrubberbandlist[i].e;
-								int tobj = t.entityelement[e].obj;
-								if ( tobj > 0 )
-								{
-									if ( ObjectExist(tobj) == 1 )
-									{
-										if ( tobj != t.widget.activeObject )
-										{
-											ScaleObject ( tobj, ObjectScaleX(tobj)+fMovedActiveObjectSX, ObjectScaleY(tobj)+fMovedActiveObjectSY, ObjectScaleZ(tobj)+fMovedActiveObjectSZ );
-											t.entityelement[e].scalex = ObjectScaleX(tobj) - 100;
-											t.entityelement[e].scaley = ObjectScaleY(tobj) - 100;
-											t.entityelement[e].scalez = ObjectScaleZ(tobj) - 100;
-											// mark as static if it was
-											if ( t.entityelement[e].staticflag == 1 ) g.projectmodifiedstatic = 1;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-				#endif				
 			}
 
 			//  detect if widget panel off screen, and shift back in
@@ -2271,13 +1239,11 @@ void widget_show_widget ( void )
 	//  Show the widget in all its glory
 	if ( t.widget.activeObject == 0  )  return;
 	if ( ObjectExist(t.widget.activeObject) == 0  )  return;
-	#ifdef WICKEDENGINE
 	if (widget_temp_disabled) return;
 	#ifdef ALLOWSELECTINGLOCKEDOBJECTS
 	//PE: Never enable if locked.
 	if (t.widget.pickedEntityIndex > 0 && t.entityelement[t.widget.pickedEntityIndex].editorlock == 1)
 		return;
-	#endif
 	#endif
 	// what is shown varies on which mode is picked (translate, rotate or scale)
 	t.oldry_f = ObjectAngleY(t.widget.activeObject);
@@ -2287,7 +1253,6 @@ void widget_show_widget ( void )
 		{
 			HideObject(g.widgetobjectoffset + t.a);
 		}
-		#ifdef WICKEDENGINE
 		sObject* pObject = g_ObjectList[g.widgetobjectoffset + t.a];
 		if (pObject)
 		{
@@ -2295,7 +1260,6 @@ void widget_show_widget ( void )
 		}
 		extern bool bTriggerVisibleWidget;
 		bTriggerVisibleWidget = false;
-		#endif
 	}
 	// detect if selected in an EBE entity
 	bool bIsEBEWidget = false;
@@ -2310,11 +1274,6 @@ void widget_show_widget ( void )
 	}
 
 	// normally scale and property (but EBE can change this texture)
-	#ifdef WICKEDENGINE
-	#else
-	TextureObject ( t.widget.widgetSCLObj, 0, t.widget.imagestart+3 );
-	TextureObject ( t.widget.widgetPRPObj, 0, t.widget.imagestart+4 );
-	#endif
 
 	// rubber band or selected parent
 	bool bRealRubberBand = false;
@@ -2331,48 +1290,6 @@ void widget_show_widget ( void )
 	}
 
 	// show all or just POS in widget popup
-	#ifdef WICKEDENGINE
-	#else
-	if ( bRealRubberBand == true )
-	{
-		// Rubber band select POS, DELETE and LOCK only
-		t.a = t.widget.widgetPOSObj; if ( ObjectExist(t.a) == 1  ) ShowObject ( t.a );
-		t.a = t.widget.widgetROTObj; if ( ObjectExist(t.a) == 1  ) ShowObject ( t.a );
-		t.a = t.widget.widgetSCLObj; if ( ObjectExist(t.a) == 1  ) ShowObject ( t.a );
-		t.a = t.widget.widgetDELObj; if ( ObjectExist(t.a) == 1  ) ShowObject ( t.a );
-		t.a = t.widget.widgetLCKObj; if ( ObjectExist(t.a) == 1  ) ShowObject ( t.a );
-
-		// move POS button alongside DEL and EXT
-		OffsetLimb ( t.widget.widgetPOSObj,0,-1.2f,3.0f+(t.tmovestep_f*3),t.tmovezup_f  ); RotateLimb (  t.widget.widgetPOSObj,0,0,0,0 );
-		OffsetLimb ( t.widget.widgetROTObj,0,-1.2f,3.0f+(t.tmovestep_f*2),t.tmovezup_f  ); RotateLimb (  t.widget.widgetPOSObj,0,0,0,0 );
-		OffsetLimb ( t.widget.widgetSCLObj,0,-1.2f,3.0f+(t.tmovestep_f*1),t.tmovezup_f  ); RotateLimb (  t.widget.widgetPOSObj,0,0,0,0 );
-	}
-	else
-	{
-		// POS, ROT, SCALE, etc
-		for ( t.a = t.widget.widgetPOSObj ; t.a<=  t.widget.widgetLCKObj; t.a++ )
-		{
-			if (  ObjectExist(t.a) == 1  )  ShowObject (  t.a );
-		}
-
-		// hide if EBE widget
-		if ( bIsEBEWidget == true ) 
-		{
-			OffsetLimb ( t.widget.widgetPOSObj,0,-1.2f,3.0f+(t.tmovestep_f*5),t.tmovezup_f  ); RotateLimb (  t.widget.widgetPOSObj,0,0,0,0 );
-			OffsetLimb ( t.widget.widgetROTObj,0,-1.2f,3.0f+(t.tmovestep_f*4),t.tmovezup_f  ); RotateLimb (  t.widget.widgetROTObj,0,0,0,0 );
-			OffsetLimb ( t.widget.widgetSCLObj,0,-1.2f,3.0f+(t.tmovestep_f*3),t.tmovezup_f  ); RotateLimb (  t.widget.widgetSCLObj,0,0,0,0 );
-			TextureObject ( t.widget.widgetSCLObj, 0, t.widget.imagestart+8 ); // EDIT
-			TextureObject ( t.widget.widgetPRPObj, 0, t.widget.imagestart+9 ); // SAVE
-		}
-		else
-		{
-			// correct POS position
-			OffsetLimb ( t.widget.widgetPOSObj,0,-1.2f,3.0f+(t.tmovestep_f*5),t.tmovezup_f  ); RotateLimb (  t.widget.widgetPOSObj,0,0,0,0 );
-			OffsetLimb ( t.widget.widgetROTObj,0,-1.2f,3.0f+(t.tmovestep_f*4),t.tmovezup_f  ); RotateLimb (  t.widget.widgetROTObj,0,0,0,0 );
-			OffsetLimb ( t.widget.widgetSCLObj,0,-1.2f,3.0f+(t.tmovestep_f*3),t.tmovezup_f  ); RotateLimb (  t.widget.widgetSCLObj,0,0,0,0 );
-		}
-	}
-	#endif
 
 	if ( t.widget.mode == 0 ) 
 	{
@@ -2397,7 +1314,6 @@ void widget_show_widget ( void )
 		{
 			if ( ObjectExist(g.widgetobjectoffset+t.a) == 1 ) 
 			{
-				#ifdef WICKEDENGINE
 				if (iEntID > 0)
 				{
 					// Player start marker and characters can be rotated about the y-axis, so show the partial widget object
@@ -2410,7 +1326,6 @@ void widget_show_widget ( void )
 						}
 					}
 				}
-				#endif
 				ShowObject ( g.widgetobjectoffset+t.a );
 				PositionObject ( g.widgetobjectoffset+t.a, CameraPositionX(), CameraPositionY(), CameraPositionZ() );
 				if (t.widget.mode == 0)
@@ -2469,29 +1384,6 @@ void widget_show_widget ( void )
 	}
 
 	// hide any buttons and widgets if entity is a 'waypoint zone type'
-	#ifdef WICKEDENGINE
-	#else
-	t.ttte=t.widget.pickedEntityIndex;
-	if ( t.ttte>0 ) 
-	{
-		t.tttwi=t.entityelement[t.ttte].eleprof.trigger.waypointzoneindex;
-		if ( t.tttwi>0 ) 
-		{
-			// hide top three buttons
-			if ( ObjectExist(t.widget.widgetPOSObj) == 1 ) 
-			{
-				HideObject (  t.widget.widgetPOSObj );
-				HideObject (  t.widget.widgetROTObj );
-				HideObject (  t.widget.widgetSCLObj );
-				// hide widget gadgets
-				for ( t.a = 6 ; t.a<=  12; t.a++ )
-				{
-					HideObject ( g.widgetobjectoffset+t.a );
-				}
-			}
-		}
-	}
-	#endif
 }
 
 void widget_switchoff ( void )

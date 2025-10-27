@@ -455,93 +455,18 @@ int loadinternaltextureex ( char* tfile_s, int compressmode, int quality )
 int loadinternaleffectunique ( char* tfile_s, int makeunique )
 {
 	int effectid = 0;
-	#ifdef WICKEDENGINE
 	// WickedEngine has its own shaders
-	#else
-	int tt = 0;
-
-	//  Default return
-	effectid=0;
-
-	//  Scan for existing
-	if (  g.effectbankmax>0 && makeunique == 0 ) 
-	{
-		for ( tt = 1 ; tt<=  g.effectbankmax; tt++ )
-		{
-			if ( strcmp ( tfile_s , t.effectbank_s[tt].Get() ) == 0 ) { effectid = g.effectbankoffset+tt ; break; }
-		}
-	}
-	else
-	{
-		tt=g.effectbankmax+1;
-	}
-
-	//  Did not find, load it
-	if (  tt>g.effectbankmax ) 
-	{
-		if (  FileExist(tfile_s) == 1 ) 
-		{
-			++g.effectbankmax;
-			Dim (  t.effectbank_s,g.effectbankmax  );
-			effectid=g.effectbankoffset+g.effectbankmax;
-			LoadEffect (  tfile_s,effectid,0 );
-			if (  GetEffectExist(effectid) == 1 ) 
-			{
-				t.effectbank_s[g.effectbankmax]=tfile_s;
-				filleffectparamarray(effectid);
-			}
-			else
-			{
-				//  could not use effect
-				--g.effectbankmax;
-				effectid=0;
-			}
-		}
-	}
-	#endif
 	return effectid;
 }
 
 void deleteinternaleffect ( int iEffectIndex )
 {
-	#ifdef WICKEDENGINE
 	// WickedEngine has its own shaders
-	#else
-	// Scan for existing
-	int effectid = iEffectIndex - g.effectbankoffset;
-	if ( effectid > 0 ) 
-	{
-		if ( strlen(t.effectbank_s[effectid].Get()) > 0 )
-		{
-			t.effectbank_s[effectid] = "";
-			DeleteEffect ( iEffectIndex );
-		}
-	}
-	#endif
 }
 
 void filleffectparamarray ( int effectid )
 {
-	#ifdef WICKEDENGINE
 	// WickedEngine has its own shaders
-	#else
-	if (  ArrayCount(t.effectparamarray)<effectid ) 
-	{
-		Dim (  t.effectparamarray,effectid+32 );
-	}
-	t.effectparamarray[effectid].g_lights_data=GetEffectParameterIndex(effectid,"g_lights_data");
-	t.effectparamarray[effectid].g_lights_pos0=GetEffectParameterIndex(effectid,"g_lights_pos0");
-	t.effectparamarray[effectid].g_lights_atten0=GetEffectParameterIndex(effectid,"g_lights_atten0");
-	t.effectparamarray[effectid].g_lights_diffuse0=GetEffectParameterIndex(effectid,"g_lights_diffuse0");
-	t.effectparamarray[effectid].g_lights_pos1=GetEffectParameterIndex(effectid,"g_lights_pos1");
-	t.effectparamarray[effectid].g_lights_atten1=GetEffectParameterIndex(effectid,"g_lights_atten1");
-	t.effectparamarray[effectid].g_lights_diffuse1=GetEffectParameterIndex(effectid,"g_lights_diffuse1");
-	t.effectparamarray[effectid].g_lights_pos2=GetEffectParameterIndex(effectid,"g_lights_pos2");
-	t.effectparamarray[effectid].g_lights_atten2=GetEffectParameterIndex(effectid,"g_lights_atten2");
-	t.effectparamarray[effectid].g_lights_diffuse2=GetEffectParameterIndex(effectid,"g_lights_diffuse2");
-	t.effectparamarray[effectid].SpotFlashPos=GetEffectParameterIndex(effectid,"SpotFlashPos");
-	t.effectparamarray[effectid].SpotFlashColor=GetEffectParameterIndex(effectid,"SpotFlashColor");
-	#endif
 }
 
 int loadinternaleffect ( char* tfile_s )
@@ -602,9 +527,7 @@ void cubemap_buildviews ( int iImageID, int iCubeMapSize, float fX, float fY, fl
 		HRESULT hr = m_pD3D->CreateTexture2D( &texDesc, NULL, &cubeTex );
 		if( FAILED( hr ) )
 		{
-			#ifdef VRTECH
 			Error1 ( "Failed to CreateTexture2D\n" );
-			#endif
 			return;
 		}
 
@@ -621,9 +544,7 @@ void cubemap_buildviews ( int iImageID, int iCubeMapSize, float fX, float fY, fl
 			hr = m_pD3D->CreateRenderTargetView ( cubeTex, &rtvDesc, &_dynamicCubeMapRTV[i] );
 			if( FAILED( hr ) )
 			{
-				#ifdef VRTECH
 				Error1 ( "Failed to CreateRenderTargetView\n" );
-				#endif
 				return;
 			}
 		}
@@ -655,9 +576,7 @@ void cubemap_buildviews ( int iImageID, int iCubeMapSize, float fX, float fY, fl
 		hr = m_pD3D->CreateTexture2D( &depthTexDesc, NULL, &depthTex );
 		if( FAILED( hr ) )
 		{
-			#ifdef VRTECH
 			Error1 ( "Failed to CreateTexture2D\n" );
-			#endif
 			return;
 		}
 		D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
@@ -669,9 +588,7 @@ void cubemap_buildviews ( int iImageID, int iCubeMapSize, float fX, float fY, fl
 		hr = m_pD3D->CreateDepthStencilView( depthTex, &dsvDesc, &_dynamicCubeMapDSV );
 		if( FAILED( hr ) )
 		{
-			#ifdef VRTECH
 			Error1 ( "Failed to CreateDepthStencilView\n" );
-			#endif
 			return;
 		}
 
@@ -793,11 +710,7 @@ void cubemap_buildviews ( int iImageID, int iCubeMapSize, float fX, float fY, fl
 void cubemap_generateimage ( int iImageID, float fX, float fY, float fZ, LPSTR pCacheCubeMapFile )
 {
 	// can only generate when in-game (not during init or editor modes)
-	#ifdef VRTECH
 	if ( t.game.set.ismapeditormode == 0 || t.visuals.refreshskysettingsfromlua )
-	#else
-	if ( t.game.set.ismapeditormode == 0 )
-	#endif
 	{
 		// create render target cube texture and views
 		cubemap_buildviews ( iImageID, 256, fX, fY, fZ );
@@ -814,17 +727,11 @@ void cubemap_generateimage ( int iImageID, float fX, float fY, float fZ, LPSTR p
 
 void cubemap_generateglobalenvmap ( void )
 {
-	#ifdef WICKEDENGINE
 	//PE: t.terrain.imagestartindex+31 not used in wicked.
 	WickedCall_UpdateProbes();
 	return;
-	#endif
 
-	#ifdef VRTECH
 	if ( t.game.gameisexe == 0 || t.visuals.refreshskysettingsfromlua)
-	#else
-	if ( t.game.gameisexe == 0 )
-	#endif
 	{
 		// until have dynamic cubes from light probes, use a corner of terrain to get good floor and sky simulation
 		float fSampleAtX = 2000;

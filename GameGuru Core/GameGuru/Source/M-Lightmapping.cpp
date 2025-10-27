@@ -1731,7 +1731,6 @@ void lm_emptylightmapandttsfilesfolder ( void )
 		SetDir ( t.tolddir_s.Get() );
 	}
 
-	#ifdef VRTECH
 	// ttsfiles - only if ttsfiles folder exists
 	cstr ttsFilesPath_s = g.mysystem.levelBankTestMapAbs_s + "ttsfiles";
 	if ( PathExist(ttsFilesPath_s.Get()) == 1 ) 
@@ -1752,7 +1751,6 @@ void lm_emptylightmapandttsfilesfolder ( void )
 		timestampactivity(0,"Deleting complete.");
 		SetDir ( t.tolddir_s.Get() );
 	}
-	#endif
 }
 
 extern int lightmappedterrainoffset;
@@ -2071,7 +2069,6 @@ void lm_loadscene ( void )
 						if (t.entid > 0)
 						{
 							// apply certain settings lost in the conversion
-							#ifdef VRTECH
 							if (t.entityprofile[t.entid].cullmode >= 0)
 							{
 								if (t.entityprofile[t.entid].cullmode != 0)
@@ -2087,17 +2084,6 @@ void lm_loadscene ( void )
 							{
 								SetObjectTransparency(t.tlmobj, t.entityelement[t.e].eleprof.transparency);
 							}
-							#else
-							SetObjectTransparency(t.tlmobj, t.entityelement[t.e].eleprof.transparency);
-							if (t.entityprofile[t.entid].cullmode != 0)
-							{
-								SetObjectCull(t.tlmobj, 0);
-							}
-							else
-							{
-								SetObjectCull(t.tlmobj, 1);
-							}
-							#endif
 						}
 					}
 				}
@@ -2218,7 +2204,6 @@ void lm_handleshaders ( void )
 						if (t.entid > 0)
 						{
 							// apply certain settings lost in the conversion
-							#ifdef VRTECH
 							if (t.entityprofile[t.entid].cullmode >= 0)
 							{
 								if (t.entityprofile[t.entid].cullmode != 0)
@@ -2234,17 +2219,6 @@ void lm_handleshaders ( void )
 							{
 								SetObjectTransparency(t.tlmobj, t.entityelement[t.e].eleprof.transparency);
 							}
-							#else
-							SetObjectTransparency (  t.tlmobj,t.entityelement[t.e].eleprof.transparency );
-							if (  t.entityprofile[t.entid].cullmode != 0 ) 
-							{
-								SetObjectCull (  t.tlmobj,0 );
-							}
-							else
-							{
-								SetObjectCull (  t.tlmobj,1 );
-							}
-							#endif
 						}
 					}
 				}

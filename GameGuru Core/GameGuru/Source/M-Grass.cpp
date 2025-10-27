@@ -4,9 +4,7 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-#ifdef WICKEDENGINE
 #include ".\..\..\Guru-WickedMAX\wickedcalls.h"
-#endif
 
 #ifdef OPTICK_ENABLE
 #include "optick.h"
@@ -17,9 +15,7 @@ int g_iSuperTriggerFullGrassReveal = 0;
 
 // Externs
 
-#ifndef PRODUCTCLASSIC
 extern bool bUpdateVeg;
-#endif
 
 // 
 //  GRASS SYSTEM

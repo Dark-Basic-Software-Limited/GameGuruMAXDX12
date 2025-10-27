@@ -13,29 +13,6 @@
 //#donotdef TESTSTEAMFREETRIAL - instead find it in master.cpp as a test flag - MAX uses Steam to detect if its in demo mode or not = one binary :) (remember to delete installsteam.dat)
 
 // Determine compile flags for each product
-#ifdef PRODUCTV3
- // Flags to compile the VR QUEST V3 version of GameGuru
- #define FPSEXCHANGE
- #define ENABLEIMGUI
- #define PHOTONMP
- #define VRTECH
- #define CLOUDKEYSYSTEM
- #define USERENDERTARGET
- #define WMFVIDEO
- #define DEFAULT_NEAR_PLANE 2
- #define DEFAULT_FAR_PLANE 300000
-#else
- #ifdef PRODUCTMAX
-  // Flags to compile the MAX version of GameGuru
-  #define FPSEXCHANGE
-  #define ENABLEIMGUI
-  #define PHOTONMP
-  #define VRTECH
-  #define ALPHAEXPIRESYSTEM
-  #define USERENDERTARGET
-  #define WMFVIDEO
- #else
-  #ifdef PRODUCTWICKEDMAX
    // Flags to compile the MAX version of GameGuru
    #define FPSEXCHANGE
    #define ENABLEIMGUI
@@ -147,14 +124,4 @@
 	//PE: 2.6 times faster then the old wicked pick() function.
 	#define PICKBVHTHREADED
 
-  #else
-   // Flags to compile the Classic version of GameGuru
-   #define FPSEXCHANGE
-   #define ENABLECUSTOMTERRAIN
-   #ifdef PRODUCTCONVERTER
-    #define NOSTEAMORVIDEO
-   #endif
-  #endif
- #endif
-#endif
 

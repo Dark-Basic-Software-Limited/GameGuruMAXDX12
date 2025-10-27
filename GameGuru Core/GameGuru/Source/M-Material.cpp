@@ -53,7 +53,6 @@ void material_init ( void )
 							if (  g.gmaterialmax<18  )  g.gmaterialmax = 18;
 							Dim (  t.material,g.gmaterialmax );
 						}
-						#ifdef WICKEDENGINE
 						//  load material data (MAX)
 						for (t.m = 0; t.m <= g.gmaterialmax; t.m++)
 						{
@@ -62,26 +61,12 @@ void material_init ( void )
 							t.tryfield_s = cstr("matfreq") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].freq = t.value1;
 							t.tryfield_s = cstr("matdecal") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].decal_s = t.value_s;
 						}
-						#else
-						//  load material data (Classic)
-						for (t.m = 0; t.m <= g.gmaterialmax; t.m++)
-						{
-							t.tryfield_s = cstr("matdesc") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].name_s = t.value_s;
-							t.tryfield_s = cstr("matwave") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].tred0_s = t.value_s;
-							t.tryfield_s = cstr("matwaves") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].scrape_s = t.value_s;
-							t.tryfield_s = cstr("matwavei") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].impact_s = t.value_s;
-							t.tryfield_s = cstr("matwaved") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].destroy_s = t.value_s;
-							t.tryfield_s = cstr("matfreq") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].freq = t.value1;
-							t.tryfield_s = cstr("matdecal") + Str(t.m); if (t.field_s == t.tryfield_s)  t.material[t.m].decal_s = t.value_s;
-						}
-						#endif
 					}
 				}
 			}
 			UnDim (  t.data_s );
 		}
 
-		#ifdef WICKEDENGINE
 		// Fill in material defaults if info lacking (Classic)
 		if (g.gmaterialmax > 0)
 		{
@@ -108,23 +93,6 @@ void material_init ( void )
 				if (t.material[t.m].freq == 0)  t.material[t.m].freq = 22000;
 			}
 		}
-		#else
-		// Fill in material defaults if info lacking (Classic)
-		if (  g.gmaterialmax>0 ) 
-		{
-			for ( t.m = 0 ; t.m<=  g.gmaterialmax; t.m++ )
-			{
-				if (  FileExist(t.material[t.m].scrape_s.Get()) == 0  )  t.material[t.m].scrape_s = t.material[t.m].tred0_s;
-				if (  FileExist(t.material[t.m].impact_s.Get()) == 0  )  t.material[t.m].impact_s = t.material[t.m].tred0_s;
-				if (  FileExist(t.material[t.m].destroy_s.Get()) == 0  )  t.material[t.m].destroy_s = t.material[t.m].tred0_s;
-				t.material[t.m].tred1_s=cstr(Left(t.material[t.m].tred0_s.Get(),Len(t.material[t.m].tred0_s.Get())-4))+"A1.wav";
-				t.material[t.m].tred2_s=cstr(Left(t.material[t.m].tred0_s.Get(),Len(t.material[t.m].tred0_s.Get())-4))+"A2.wav";
-				t.material[t.m].tred3_s=cstr(Left(t.material[t.m].tred0_s.Get(),Len(t.material[t.m].tred0_s.Get())-4))+"A3.wav";
-				t.material[t.m].tred0_s=cstr(Left(t.material[t.m].tred0_s.Get(),Len(t.material[t.m].tred0_s.Get())-4))+"A4.wav";
-				if (  t.material[t.m].freq == 0  )  t.material[t.m].freq = 22000;
-			}
-		}
-		#endif
 	}
 }
 

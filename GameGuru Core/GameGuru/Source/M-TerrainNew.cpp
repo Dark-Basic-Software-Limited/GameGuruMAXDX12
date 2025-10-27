@@ -7,7 +7,6 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-#ifdef ENABLEIMGUI
 #include "..\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -15,7 +14,6 @@
 #include "..\Imgui\imgui_internal.h"
 #include "..\Imgui\imgui_impl_win32.h"
 #include "..\Imgui\imgui_gg_dx11.h"
-#endif
 
 //#include "Terrain.h"
 #include "Utility/stb_image.h"
@@ -45,17 +43,12 @@ void visuals_calcsunanglefromtimeofday(int iTimeOfday, float* pfSunAngleX, float
 // shadow mapping
 extern int g_iTerrainIDForShadowMap;
 
-#ifdef ENABLEIMGUI
 extern bool bHelp_Window;
 extern bool bHelpVideo_Window;
 extern char cForceTutorialName[1024];
-#endif
 
-#ifndef PRODUCTCLASSIC
 extern bool bBoostIconColors;
-#endif
 
-#ifdef PROCEDURALTERRAINWINDOW
 extern bool bProceduralLevel;
 extern int iQuitProceduralLevel;
 extern bool BackBufferSnapShotMode;
@@ -90,7 +83,6 @@ extern ImVec4 drawCol_Down;
 bool bPopModalOpenProcedural = false;
 bool bPopModalOpenProceduralCameraMode = false;
 bool bPopModalTakeMapSnapshot = false;
-#endif
 
 #ifdef CUSTOMTEXTURES
 int g_iCustomTerrainMatSounds[32] = { 10 };
@@ -102,7 +94,6 @@ cstr g_DeferTextureUpdateCurrentFolder_s = "";
 std::vector<std::string> g_DeferTextureUpdate;
 std::vector<int> g_DeferTextureUpdateIncompatibleTextures;
 
-#ifdef WICKEDENGINE
 void Wicked_Update_Visuals(void *voidvisual);
 ImVec4 vLastTerrainPickPosition = ImVec4(0, 0,0,0);
 ImVec4 vLastRampTerrainPickPosition = ImVec4(0, 0, 0, 0);
@@ -112,7 +103,6 @@ extern bool bProceduralLevelFromStoryboard;
 extern wiECS::Entity g_weatherEntityID;
 extern MasterRenderer * master_renderer;
 
-#endif
 
 // Terrain Build Globals
 #define TERRAINTEXPANELSPRMAX 6
@@ -182,8 +172,6 @@ struct terrainbuildtype
 };
 terrainbuildtype terrainbuild;
 
-#ifdef VRTECH
-#ifdef ENABLEIMGUI
 
 int delay_terrain_execute = 0;
 int skib_terrain_frames_execute = 0;
@@ -215,13 +203,8 @@ int iTerrainRaiseMode = 1;
 int iLastRegionUpdateX, iLastRegionUpdateY;
 int iTerrainVegLoopUpdate = 0;
 extern bool bImGuiGotFocus;
-#else
-bool bDisableAllTerrainSprites = false;
-#endif
 bool bVegHasChanged = false;
-#endif
 
-#ifdef WICKEDENGINE
 struct NewLevelCamera
 {
 	float x;
@@ -231,7 +214,6 @@ struct NewLevelCamera
 };
 NewLevelCamera newLevelCamera;
 void PositionCameraForNewLevel();
-#endif
 
 struct sCustomBiomeType
 {
@@ -270,7 +252,6 @@ std::vector<sCustomBiomeType> g_sCustomBiomes;
 // Prototypes
 void set_inputsys_mclick(int value);
 
-#if defined(ENABLEIMGUI)
 int current_mode = 0;
 ImVec4 tool_selected_col;
 
@@ -551,7 +532,6 @@ void imgui_terrain_loop_v2(void)
 			if (ImGui::StyleCollapsingHeader("Edit Mode", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				iLastOpenHeader = 30;
-#ifdef GGTERRAIN_USE_NEW_TERRAIN
 
 				extern wiECS::Entity g_weatherEntityID;
 				wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
@@ -1373,366 +1353,6 @@ void imgui_terrain_loop_v2(void)
 
 				ImGui::PopItemWidth();
 
-#else
-
-				ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-				// center icons
-				float center_icons_numbers = 3.0f; //5
-				float icon_spacer = 10.0f;
-				int max_icon_size = 56;
-				int control_image_size = 26; //PE: 34 - This is now the lowest possible icon size.
-				float control_width = (control_image_size + 3.0) * center_icons_numbers + 6.0;
-				control_width += (icon_spacer * center_icons_numbers);
-				int indent = 10;
-				if (w > control_width) 
-				{
-					//PE: fit perfectly with window width.
-					control_image_size = (w - 20.0) / center_icons_numbers;
-					control_image_size -= 4.0; //Padding.
-					if (control_image_size > max_icon_size) control_image_size = max_icon_size;
-					control_width = (control_image_size + 3.0) * center_icons_numbers + 6.0;
-					control_width += (icon_spacer * (center_icons_numbers-1.0f));
-					if (control_image_size == max_icon_size)
-					{
-						indent = (w*0.5) - (control_width*0.5);
-						if (indent < 10)
-							indent = 10;
-					}
-				}
-				else
-				{
-					indent = (w*0.5) - (control_width*0.5);
-					if (indent < 10)
-						indent = 10;
-				}
-				int control_image_size_2 = control_image_size;
-				ImGui::Indent(indent);
-
-				//bool bHoldShift = t.inputsys.keyshift == 1;
-				// LB: Use TAB instead of shift or ctrl, and trigger the toggle as though clicking the button
-				bool bSwitchModeToOne = false;
-				bool bSwitchModeToZero = false;
-				static bool bReadyToChange = true;
-				bool bPressTAB = t.inputsys.keytab == 1;
-				if (!bPressTAB) bReadyToChange = true;
-				if (bReadyToChange && bPressTAB)
-				{
-					if (current_mode != TOOL_PAINTTEXTURE && current_mode != TOOL_PAINTGRASS)
-					{
-						if (iTerrainRaiseMode == 0) bSwitchModeToOne = true;
-						if (iTerrainRaiseMode == 1) bSwitchModeToZero = true;
-					}
-					else
-					{
-						if (iTerrainPaintMode == 0) bSwitchModeToOne = true;
-						if (iTerrainPaintMode == 1) bSwitchModeToZero = true;
-					}
-					bReadyToChange = false; //toggle, wait until tab is released again.
-				}
-
-				// add title above edit mode
-				LPSTR pEditTitle = "Sculpting Mode";
-				if (current_mode == TOOL_PAINTTEXTURE) pEditTitle = "Painting Mode";
-				if (current_mode == TOOL_PAINTGRASS) pEditTitle = "Paint and Erase";
-				ImGui::TextCenter(pEditTitle);
-
-				if (current_mode != TOOL_PAINTTEXTURE && current_mode != TOOL_PAINTGRASS)
-				{
-					//###############################
-					//## PE: Display Sculpt tools. ##
-					//###############################
-					
-					ImVec2 padding = { 3.0, 3.0 };
-
-					ImVec4 toggle_color = ImColor(255, 255, 255, 0);
-					if (current_mode == TOOL_SHAPE && iTerrainRaiseMode==1 )//(iTerrainRaiseMode == 1 && !bHoldShift) )
-					{
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size, control_image_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (bSwitchModeToOne==true || ImGui::ImgBtn(TOOL_SHAPE_UP, ImVec2(control_image_size, control_image_size), toggle_color, ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors))
-					{
-						//Paint mode.
-						iTerrainRaiseMode = 1;
-						bForceKey = true;
-						csForceKey = "t";
-						bForceKey2 = true;
-						csForceKey2 = "1";
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Raise Terrain");
-					ImGui::SameLine();
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(icon_spacer, 0.0f));
-
-					toggle_color = ImColor(255, 255, 255, 0);
-					if (current_mode == TOOL_SHAPE && iTerrainRaiseMode != 1 )//(iTerrainRaiseMode != 1 || bHoldShift ) )
-					{
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size, control_image_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (bSwitchModeToZero==true || ImGui::ImgBtn(TOOL_SHAPE_DOWN, ImVec2(control_image_size, control_image_size), toggle_color, ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors))
-					{
-						//Remove mode.
-						iTerrainRaiseMode = 0;
-						bForceKey = true;
-						csForceKey = "t";
-						bForceKey2 = true;
-						csForceKey2 = "1";
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Lower Terrain");
-
-					ImGui::SameLine();
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(icon_spacer, 0.0f));
-
-
-					CheckTutorialAction("TOOL_LEVELMODE", -10.0f); //Tutorial: check if we are waiting for this action
-					if (current_mode == TOOL_LEVELMODE)
-					{
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size, control_image_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (ImGui::ImgBtn(TOOL_LEVELMODE, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors)) {
-						bForceKey = true;
-						csForceKey = "t";
-						bForceKey2 = true;
-						csForceKey2 = "2";
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Level Mode (This feature is not yet available)");
-					
-					//New line.
-
-					CheckTutorialAction("TOOL_STOREDLEVEL", -10.0f); //Tutorial: check if we are waiting for this action
-					if (current_mode == TOOL_STOREDLEVEL)
-					{
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size, control_image_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (ImGui::ImgBtn(TOOL_STOREDLEVEL, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors)) {
-						bForceKey = true;
-						csForceKey = "t";
-						bForceKey2 = true;
-						csForceKey2 = "3";
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Copy Mode (This feature is not yet available)");
-					ImGui::SameLine();
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(icon_spacer, 0.0f));
-
-					CheckTutorialAction("TOOL_BLENDMODE", -10.0f); //Tutorial: check if we are waiting for this action
-					if (current_mode == TOOL_BLENDMODE)
-					{
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size, control_image_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (ImGui::ImgBtn(TOOL_BLENDMODE, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors)) {
-
-						bForceKey = true;
-						csForceKey = "t";
-						bForceKey2 = true;
-						csForceKey2 = "4";
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Blend Mode (This feature is not yet available)");
-					ImGui::SameLine();
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(icon_spacer, 0.0f));
-
-					CheckTutorialAction("TOOL_RAMPMODE", -10.0f); //Tutorial: check if we are waiting for this action
-					if (current_mode == TOOL_RAMPMODE)
-					{
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size, control_image_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (ImGui::ImgBtn(TOOL_RAMPMODE, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors)) {
-
-						bForceKey = true;
-						csForceKey = "t";
-						bForceKey2 = true;
-						csForceKey2 = "5";
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Ramp Mode (This feature is not yet available)");
-
-					//#########################
-				}
-				ImGui::Indent(-indent);
-
-				//Setup indent for 2 icons.
-				control_width = (control_image_size_2 + 3.0f) * 2.0f + 6.0f;
-				indent = (w*0.5f) - (control_width*0.5f);
-				if (indent < 10)
-					indent = 10;
-
-				ImGui::Indent(indent);
-				if (t.terrain.terrainpaintermode >= 6)
-				{
-					if (iTerrainPaintMode == 1)// && !bHoldShift)
-					{
-						ImVec2 padding = { 3.0, 3.0 };
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size_2, control_image_size_2));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-
-					if (bSwitchModeToOne == true || ImGui::ImgBtn(EBE_CONTROL1, ImVec2(control_image_size_2, control_image_size_2), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors)) {
-						//Paint mode.
-						iTerrainPaintMode = 1;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Paint Mode");
-					ImGui::SameLine();
-
-					if (iTerrainPaintMode != 1)// || bHoldShift )
-					{
-						ImVec2 padding = { 3.0, 3.0 };
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size_2, control_image_size_2));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (bSwitchModeToZero == true || ImGui::ImgBtn(EBE_CONTROL2, ImVec2(control_image_size_2, control_image_size_2), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors)) {
-						//Remove mode.
-						iTerrainPaintMode = 0;
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Delete Mode");
-
-				}
-				ImGui::Indent(-indent);
-
-
-				ImGui::Indent(10);
-				
-				//Brush Size.
-				ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-				ImGui::PushItemWidth(-10);
-				ImGui::TextCenter("Brush Size");
-				if (ImGui::MaxSliderInputFloat("##Brushsize", &t.terrain.RADIUS_f, 70.0f, 500.0f, "Draw Radius"))
-				{
-					if (t.terrain.RADIUS_f < t.tmin) t.terrain.RADIUS_f = t.tmin;
-					if (t.terrain.RADIUS_f > g.fTerrainBrushSizeMax) t.terrain.RADIUS_f = g.fTerrainBrushSizeMax;
-				}
-				ImGui::PopItemWidth();
-
-				//PE: Process brush size keyboard-shortcuts.
-				if (ImGui::IsKeyDown(17) && (ImGui::IsKeyDown(187) || ImGui::IsKeyDown(107) ) ) //[CTRL] + [+]
-				{
-					t.terrain.RADIUS_f += g.timeelapsed_f*3.0;
-					if (t.terrain.RADIUS_f < t.tmin) t.terrain.RADIUS_f = t.tmin;
-					if (t.terrain.RADIUS_f > g.fTerrainBrushSizeMax) t.terrain.RADIUS_f = g.fTerrainBrushSizeMax;
-				}
-				if (ImGui::IsKeyDown(17) && (ImGui::IsKeyDown(189) || ImGui::IsKeyDown(109))) //[CTRL] + [-]
-				{
-					t.terrain.RADIUS_f -= g.timeelapsed_f*3.0;
-					if (t.terrain.RADIUS_f < t.tmin) t.terrain.RADIUS_f = t.tmin;
-					if (t.terrain.RADIUS_f > g.fTerrainBrushSizeMax) t.terrain.RADIUS_f = g.fTerrainBrushSizeMax;
-				}
-
-				if (current_mode != TOOL_PAINTTEXTURE && current_mode != TOOL_PAINTGRASS)
-				{
-					control_width = (control_image_size_2 + 3.0f) * 2.0f + 6.0f;
-					control_width += 10.0f; //icon spacer.
-					int indent3 = (w*0.5f) - (control_width*0.5f);
-					if (indent3 < 10)
-						indent3 = 10;
-
-					ImGui::TextCenter("Brush Shape");
-
-					ImGui::Indent(-10);
-					ImGui::Indent(indent3);
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0.0f, 4.0f));
-
-					if (iBrushShape == 0)
-					{
-						ImVec2 padding = { 3.0, 3.0 };
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size, control_image_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (ImGui::ImgBtn(SHAPE_CIRCLE, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors)) {
-						iBrushShape = 0;
-						g_pTerrain->SetBrush(0);
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Shape Circle");
-
-					ImGui::SameLine();
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(icon_spacer, 0.0f));
-
-					if (iBrushShape != 0)
-					{
-						ImVec2 padding = { 3.0, 3.0 };
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(control_image_size, control_image_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-					if (ImGui::ImgBtn(SHAPE_SQUARE, ImVec2(control_image_size, control_image_size), ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false,false, bBoostIconColors))
-					{
-						iBrushShape = 1;
-						//PE: @Lee Square brush is not working, it only have a circle function.
-						g_pTerrain->SetBrush(1);
-					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Shape Square (This feature is not yet available)");
-
-					ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-
-					ImGui::Indent(-indent3);
-					ImGui::Indent(10);
-
-				}
-				else
-				{
-					//PE: Make sure we always use circle if not in "Sculpt" mode.
-					g_pTerrain->SetBrush(0);
-					iBrushShape = 0;
-				}
-
-				if (current_mode == TOOL_PAINTTEXTURE)
-				{
-					if (g_pTerrain)
-					{
-						ImGui::TextCenter("Texture Opacity");
-						ImGui::PushItemWidth(-10);
-						float fTmp = iBrushStrength;
-						if (ImGui::MaxSliderInputFloat("##TerrainBrushStrength", &fTmp, 1, 255, "Goes From Transparent to Opaque",1)) {
-							iBrushStrength = fTmp;
-							g_pTerrain->SetPaintHardness(iBrushStrength);
-						}
-						ImGui::PopItemWidth();
-
-						ImGui::TextCenter("Texture Size");
-						//Range 0.0 - 10.0 1:1 = 1.0
-						static int iSourceScale = 1;
-						ImGui::PushItemWidth(-10);
-						if (ImGui::MaxSliderInputInt("##TerrainScaleSourcesize", &iSourceScale, 1, 10, "Set Texture Size")) {
-							g_pTerrain->SetScaleSource(iSourceScale);
-						}
-						ImGui::PopItemWidth();
-
-					}
-				}
-
-				if (current_mode == TOOL_PAINTGRASS)
-				{
-					int iTextRightPos = 116; //136
-
-					ImGui::TextCenter("Spray Strength");
-					ImGui::PushItemWidth(-10);
-					//PE: @Lee iBrushStrength shared with terrain paint texture strength.
-					float fTmp = iBrushStrength;
-					if (ImGui::MaxSliderInputFloat("##TerrainGrassBrushStrength", &fTmp, 1, 255, "Set Spray Strength (This feature is not yet available)", 1)) {
-						iBrushStrength = fTmp;
-						//No function yet.
-					}
-					ImGui::PopItemWidth();
-
-					ImGui::TextCenter("Vegetation Height");
-					ImGui::PushItemWidth(-10);
-					if (ImGui::MaxSliderInputRangeFloat("##GrassVegHeight", &g_fvegRandomMin, &g_fvegRandomMax, 0.0, 100.0, "Set Vegetation Height"))
-					{
-						//No function needed.
-					}
-					ImGui::PopItemWidth();
-
-					ImGui::TextCenter("Vegetation Density");
-					ImGui::PushItemWidth(-10);
-					//PE: @Lee use g_fvegDensityMin , g_fvegDensityMax.
-					if (ImGui::MaxSliderInputRangeFloat("##GrassDensity", &g_fvegDensityMin, &g_fvegDensityMax, 0.0, 100.0, "Set Vegetation Density (This feature is not yet available)"))
-					{
-						//No function needed.
-					}
-					ImGui::PopItemWidth();
-				}
-				
-				ImGui::Indent(-10);
-#endif // GGTERRAIN_USE_NEW_TERRAIN
 			}
 
 			if (current_mode == TOOL_PAINTTEXTURE)
@@ -3592,7 +3212,6 @@ void imgui_terrain_loop(void)
 	}
 }
 
-#endif
 
 void terrain_createactualterrain(void)
 {
@@ -3753,11 +3372,7 @@ void imgui_Customize_Terrain(int mode)
 	float media_icon_size = 40.0f;
 	float w = ImGui::GetWindowContentRegionWidth();
 	float plate_width = (media_icon_size + 6.0) * 4.0f;
-#ifdef WICKEDENGINE
 	if (ImGui::StyleCollapsingHeader("Palette", wflags))
-#else
-	if (ImGui::StyleCollapsingHeader("Customize Terrain", wflags))
-#endif
 	{
 		if (mode == 1) iLastOpenHeader = 2;
 		//Drpo down.
@@ -3765,7 +3380,6 @@ void imgui_Customize_Terrain(int mode)
 		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 
 
-#ifdef WICKEDENGINE
 
 		//Use "texturebank" as default folder.
 
@@ -3889,9 +3503,7 @@ void imgui_Customize_Terrain(int mode)
 							t.gamevisuals.sTerrainTexturesName[iL] = t.visuals.sTerrainTexturesName[iL];
 							bTextureNameWindow[iL] = false;
 						}
-						#ifdef WICKEDENGINE
 						if (ImGui::MaxIsItemFocused()) bImGuiGotFocus = true;
-						#endif
 
 						ImGui::PopItemWidth();
 						ImGui::Indent(-10);
@@ -4233,212 +3845,8 @@ void imgui_Customize_Terrain(int mode)
 			bUpdateTerrainMaterials = false;
 		}
 
-#else
-		ImGui::PushItemWidth(-10);
-		char * current_terrain = NULL;
-		if (t.visuals.terrainindex < g.terrainstylemax) current_terrain = t.terrainstylebank_s[t.visuals.terrainindex].Get();
-		if (!current_terrain) current_terrain = "NA";
-
-		if (ImGui::BeginCombo("##SelectTerrainCombo", current_terrain)) // The second parameter is the label previewed before opening the combo.
-		{
-			for (int terrainindex = 1; terrainindex <= g.terrainstylemax; terrainindex++)
-			{
-				if (t.terrainstylebank_s[terrainindex].Len() > 0 && t.terrainstylebank_s[terrainindex] != "custom")
-				{
-					bool is_selected = false;
-					if (t.terrainstylebank_s[terrainindex].Get() == current_terrain)
-						is_selected = true;
-					if (ImGui::Selectable(t.terrainstylebank_s[terrainindex].Get(), is_selected))
-					{
-						//Change Terrain.
-						bool bNewTextureValid = true;
-
-						#ifdef ENABLECUSTOMTERRAIN
-						if (t.terrainstylebank_s[terrainindex] == "CUSTOM")
-						{
-							if (FileExist(cstr(g.mysystem.levelBankTestMap_s + TEXTURE_D_NAME).Get()) == 0)
-							{
-								extern bool bTriggerMessage;
-								extern char cTriggerMessage[MAX_PATH];
-								bNewTextureValid = false;
-								strcpy(cTriggerMessage, "Custom Terrain Not Found.");
-								bTriggerMessage = true;
-							}
-						}
-						#endif
-						if (bNewTextureValid) 
-						{
-							g.projectmodified = 1;
-							current_terrain = t.terrainstylebank_s[terrainindex].Get();
-
-							//Get old so we can delete later. (they take up some mem).
-							cstr sOldTerrainTextureLocation = terrain_getterrainfolder();
-
-							g.terrainstyleindex = terrainindex;
-							t.visuals.terrainindex = g.terrainstyleindex;
-							if (g.terrainstyleindex > g.terrainstylemax)  g.terrainstyleindex = g.terrainstylemax;
-							t.visuals.terrain_s = t.terrainstylebank_s[g.terrainstyleindex];
-							t.gamevisuals.terrain_s = t.visuals.terrain_s;
-							t.gamevisuals.terrainindex = t.visuals.terrainindex; //for save fpm
-							terrain_changestyle();
-
-							//Load new terrain textures
-							int iTex = 5; //Terrain plate.
-
-							//PE: First Delete old internal image.
-							deleteinternaltexture(cstr(sOldTerrainTextureLocation + "\\" + TEXTURE_D_NAME).Get());
-
-							cstr sTerrainTextureLocation = terrain_getterrainfolder();
-							//PE: Delete current if we had been switched to custom.
-							//deleteinternaltexture(cstr(sTerrainTextureLocation + "\\" + TEXTURE_D_NAME).Get());
-							removeinternalimage(terrainbuild.iTexturePanelImg[iTex]);
-
-							terrainbuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(sTerrainTextureLocation + "\\" + TEXTURE_D_NAME).Get());
-							if (terrainbuild.iTexturePanelImg[iTex] == 0)
-							{
-								terrainbuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(sTerrainTextureLocation + "\\texture_D.dds").Get());
-								if (terrainbuild.iTexturePanelImg[iTex] == 0)
-								{
-									// means the terrain texture is missing, report this and switch to default to avoid crash
-									terrain_initstyles_reset();
-									grass_initstyles_reset();
-									sTerrainTextureLocation = terrain_getterrainfolder();
-									terrainbuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(sTerrainTextureLocation + "\\" + TEXTURE_D_NAME).Get());
-								}
-							}
-							terrainbuild.terrainstyle = g.terrainstyle_s;
-							terrainbuild.iTexPlateImage = terrainbuild.iTexturePanelImg[iTex];
-
-							//if (t.terrainstylebank_s[terrainindex] == "CUSTOM") {
-							terrain_generatesupertexture(false);
-							//}
-
-							visuals_justshaderupdate();
-							// if change sky, regenerate env map
-							t.visuals.refreshskysettingsfromlua = true;
-							cubemap_generateglobalenvmap();
-							t.visuals.refreshskysettingsfromlua = false;
-
-						}
-					}
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-			}
-			ImGui::EndCombo();
-		}
-		ImGui::PopItemWidth();
-		ImGui::Indent(-10);
-
-
-		ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (plate_width*0.5), 0.0f));
-		int indent = (w*0.5) - (plate_width*0.5);
-		if (indent < 10)
-			indent = 10;
-		ImGui::Indent(indent);
-
-
-		ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0.0f, 4.0f));
-
-		if (terrainbuild.iTexPlateImage <= 0) {
-			ImGui::Text("");
-		}
-		int n = 0;
-		for (int y = 0; y < 4; y++)
-		{
-			for (int x = 0; x < 4; x++)
-			{
-
-				if (terrainbuild.iTexPlateImage > 0) {
-
-					ImGuiWindow* window = ImGui::GetCurrentWindow();
-
-					ImVec2 padding = { 2.0, 2.0 };
-					ImVec4 bg_col = { 0.0, 0.0, 0.0, 1.0 };
-					const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(media_icon_size, media_icon_size));
-					window->DrawList->AddRectFilled(image_bb.Min, image_bb.Max, ImGui::GetColorU32(bg_col), 0.0f, 15);
-
-					if (current_mode == TOOL_PAINTTEXTURE && terrainbuild.iCurrentTexture == n) {
-						ImVec2 padding = { 4.0, 4.0 };
-						const ImRect image_bb((window->DC.CursorPos - padding), window->DC.CursorPos + padding + ImVec2(media_icon_size, media_icon_size));
-						window->DrawList->AddRect(image_bb.Min, image_bb.Max, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
-					}
-
-					if (n == 0) {
-						CheckTutorialAction("TOOL_TERRAIN_SAND", -20.0f); //Tutorial: check if we are waiting for this action
-					}
-					ImGui::PushID(terrainbuild.iTexPlateImage + n + 200000);
-					if (ImGui::ImgBtn(terrainbuild.iTexPlateImage, ImVec2(media_icon_size, media_icon_size), ImVec4(0.0, 0.0, 0.0, 1.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, n + 1, 4, 4, false, false, false, true)) {
-
-						if (n == 0 && bTutorialCheckAction) TutorialNextAction();
-
-						terrainbuild.iCurrentTexture = n;
-						//Change to selected terrainpaintermode
-						if (current_mode != TOOL_PAINTTEXTURE) {
-
-							if (terrainbuild.iCurrentTexture < 8)
-								t.terrain.terrainpaintermode = 6;
-							else if (terrainbuild.iCurrentTexture < 12)
-								t.terrain.terrainpaintermode = 7;
-							else if (terrainbuild.iCurrentTexture < 15)
-								t.terrain.terrainpaintermode = 8;
-							else
-								t.terrain.terrainpaintermode = 9;
-
-						}
-					}
-					if (skib_terrain_frames_execute == 0 && ImGui::IsItemHovered() && ImGui::IsMouseClicked(1)) {
-						terrainbuild.iCurrentTexture = n;
-						if (current_mode != TOOL_PAINTTEXTURE) {
-							if (terrainbuild.iCurrentTexture < 8)
-								t.terrain.terrainpaintermode = 6;
-							else if (terrainbuild.iCurrentTexture < 12)
-								t.terrain.terrainpaintermode = 7;
-							else if (terrainbuild.iCurrentTexture < 15)
-								t.terrain.terrainpaintermode = 8;
-							else
-								t.terrain.terrainpaintermode = 9;
-						}
-						delay_terrain_execute = 1; //@Lee remove this line if you dont want to support changing textures.
-					}
-
-					ImGui::PopID();
-					if (x != 3)
-						ImGui::SameLine();
-
-					if (delay_terrain_execute == 0 && ImGui::IsItemHovered()) {
-						ImVec2 cursor_pos = ImGui::GetIO().MousePos;
-						ImVec2 tooltip_offset(10.0f, ImGui::GetFontSize()*1.5);
-						ImVec2 tooltip_position = cursor_pos;
-						if (tooltip_position.x + 210 > GetDesktopWidth())
-							tooltip_position.x -= 210;
-						tooltip_position.x += tooltip_offset.x;
-						tooltip_position.y += tooltip_offset.y;
-						ImGui::SetNextWindowPos(tooltip_position);
-						ImGui::SetNextWindowContentWidth(204.0f);
-						ImGui::BeginTooltip();
-						float icon_ratio;
-						int icon_size = 204;
-						ImGui::ImgBtn(terrainbuild.iTexPlateImage, ImVec2(icon_size, icon_size), ImVec4(0.0, 0.0, 0.0, 1.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, n + 1, 4, 4, false, false, false, true);
-						//char hchar[MAX_PATH];
-						//ImGui::Text("%s", hchar);
-						ImGui::EndTooltip();
-
-					}
-
-				}
-				n++;
-			}
-		}
-
-		ImGui::Indent(-indent);
-		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-
-#endif
-#ifdef WICKEDENGINE
 		ImGui::Indent(-10);
 		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-#endif
 
 	}
 }
@@ -6016,7 +5424,6 @@ void imgui_Customize_Vegetation(int mode)
 		ImGui::Indent(10);
 		ImGui::PushItemWidth(-10);
 
-		#ifdef WICKEDENGINE
 		if (iDeleteSingleGrassTextures > 0) 
 		{
 			if (ImageExist(iDeleteSingleGrassTextures))
@@ -6163,9 +5570,7 @@ void imgui_Customize_Vegetation(int mode)
 							t.gamevisuals.sGrassTexturesName[iL] = t.visuals.sGrassTexturesName[iL];
 							bGrassNameWindow[iL] = false;
 						}
-						#ifdef WICKEDENGINE
 						if (ImGui::MaxIsItemFocused()) bImGuiGotFocus = true;
-						#endif
 
 						ImGui::PopItemWidth();
 						ImGui::Indent(-10);
@@ -6575,134 +5980,10 @@ void imgui_Customize_Vegetation(int mode)
 			}
 			bUpdateGrassMaterials = false;
 		}
-		#else
-		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-		char * current_veg = NULL;// t.vegstylebank_s[g.vegstyleindex].Get();
-		if (g.vegstyleindex <= g.vegstylemax) current_veg = t.vegstylebank_s[g.vegstyleindex].Get();
-		if (!current_veg) current_veg = "NA";
-		if (ImGui::BeginCombo("##SelectVegetationCombo", current_veg)) // The second parameter is the label previewed before opening the combo.
-		{
-
-			for (int vegindex = 1; vegindex <= g.vegstylemax; vegindex++)
-			{
-
-				if (t.vegstylebank_s[vegindex].Len() > 0)
-				{
-					bool is_selected = false;
-					if (t.vegstylebank_s[vegindex].Get() == current_veg)
-						is_selected = true;
-					if (ImGui::Selectable(t.vegstylebank_s[vegindex].Get(), is_selected)) {
-
-
-						//Test display veg.
-						//grass_setgrassgridandfade();
-						//grass_init();
-						//t.completelyfillvegarea = 1;
-						t.terrain.grassupdateafterterrain = 1;
-						grass_loop();
-						t.terrain.grassupdateafterterrain = 0;
-
-						g.projectmodified = 1;
-						//	current_veg = t.terrainstylebank_s[vegindex].Get(); a bug?
-						current_veg = t.vegstylebank_s[vegindex].Get();
-
-						g.vegstyleindex = vegindex;
-						g.vegstyle_s = t.vegstylebank_s[g.vegstyleindex];
-
-						t.visuals.vegetationindex = g.vegstyleindex;
-						t.visuals.vegetation_s = t.vegstylebank_s[g.vegstyleindex];;
-						t.gamevisuals.vegetationindex = t.visuals.vegetationindex;
-						t.gamevisuals.vegetation_s = t.visuals.vegetation_s;
-						grass_changevegstyle();
-						bUpdateVeg = true;
-					}
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-			}
-
-			ImGui::EndCombo();
-		}
-		ImGui::PopItemWidth();
-		#endif
 
 		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-		#ifdef WICKEDENGINE
 		// no need to toggle veg, we ALWAYS 'may' need it!
 		bEnableVeg = true;
-		#else
-		if (ImGui::Checkbox("Display Vegetation##DisplayVeg", &bEnableVeg)) {
-			if (bEnableVeg) {
-				iLastUpdateVeg = 0;
-				bUpdateVeg = true;
-			}
-		}
-		#endif
-#ifndef WICKEDENGINE
-		if (bEnableVeg) 
-		{
-			int iTextRightPos = 116; //136
-			//PE: Now use new RangeSlider.	
-			ImGui::PushItemWidth(-10);
-			static float fval1=20.0, fval2 = 80.0;
-			ImVec2 vOldPos = ImGui::GetCursorPos();
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-			ImGui::Text("Height:");
-			ImGui::SameLine();
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
-			ImGui::SetCursorPos(ImVec2(iTextRightPos, ImGui::GetCursorPosY()));
-			ImGui::RangeSlider("##VegHeight", g_fvegRandomMin, g_fvegRandomMax, 100.0f);
-			ImGui::SetCursorPos(ImVec2(vOldPos.x, ImGui::GetCursorPosY()+9));
-			ImGui::PopItemWidth();
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Vegetation Draw Height Range");
-
-
-			//PE: These is still Overall and not when spraying, so keep them as is for now.
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-			ImGui::Text("Overall Quantity:");
-			ImGui::SameLine();
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
-			ImGui::SetCursorPos(ImVec2(iTextRightPos, ImGui::GetCursorPosY()));
-			ImGui::PushItemWidth(-10);
-			if (ImGui::SliderFloat("##VegOverallQuantity", &t.gamevisuals.VegQuantity_f, 0.0, 100.0))
-			{
-				iLastUpdateVeg = Timer();
-				bUpdateVeg = true;
-			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Overall Vegetation Quantity");
-			ImGui::PopItemWidth();
-
-			//PE: Overall Height: is not used anymore in MAX.
-#ifndef WICKEDENGINE
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-			ImGui::Text("Overall Height:");
-			ImGui::SameLine();
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
-			ImGui::SetCursorPos(ImVec2(iTextRightPos, ImGui::GetCursorPosY()));
-			ImGui::PushItemWidth(-10);
-			if (ImGui::SliderFloat("##VegOverallHeight", &t.gamevisuals.VegHeight_f, 0.0, 100.0))
-			{
-				iLastUpdateVeg = Timer();
-				bUpdateVeg = true;
-			}
-			ImGui::PopItemWidth();
-#endif
-
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
-			ImGui::Text("Overall Width:");
-			ImGui::SameLine();
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
-			ImGui::SetCursorPos(ImVec2(iTextRightPos, ImGui::GetCursorPosY()));
-			ImGui::PushItemWidth(-10);
-			if (ImGui::SliderFloat("##VegOverallWidth", &t.gamevisuals.VegWidth_f, 0.0, 100.0))
-			{
-				iLastUpdateVeg = Timer();
-				bUpdateVeg = true;
-			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Overall Vegetation Width");
-			ImGui::PopItemWidth();
-		}
-#endif
 
 		ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 3));
 		ImGui::Indent(-10);
@@ -7683,74 +6964,6 @@ void imgui_Customize_Weather_V2(int mode)
 		}
 		#endif
 
-		#ifdef POSTPROCESSSNOW
-		//PE: Postprocess rain.
-		if (t.visuals.iEnvironmentWeather == 3)
-		{
-			// Hidden for now.
-			/*if (ImGui::StyleCollapsingHeader("Snow Post Process", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				ImGui::PushItemWidth(-10);
-				if (ImGui::Checkbox("Snow Post Process##setSnowEnabled", &t.visuals.bSnowEnabled)) {
-					t.gamevisuals.bSnowEnabled = t.visuals.bSnowEnabled;
-					if (master_renderer)
-						master_renderer->setSnowEnabled(t.visuals.bSnowEnabled); //PE: test post process shader.
-					g.projectmodified = 1;
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enable Snow Post Process");
-				ImGui::PopItemWidth();
-
-				if (t.visuals.bSnowEnabled)
-				{
-					ImGui::PushItemWidth(-10);
-					ImGui::TextCenter("Snow Speed");
-					if (ImGui::SliderFloat("##Snow Speed", &t.visuals.fSnowSpeed, -30.0, 30.0))
-					{
-						t.gamevisuals.fSnowSpeed = t.visuals.fSnowSpeed;
-					}
-					ImGui::PopItemWidth();
-
-					ImGui::PushItemWidth(-10);
-					ImGui::TextCenter("Snow Layers");
-					if (ImGui::SliderFloat("##Snow Layers", &t.visuals.fSnowLayers, 1.0, 20.0))
-					{
-						t.gamevisuals.fSnowLayers = t.visuals.fSnowLayers;
-						master_renderer->setSnowLayers(t.visuals.fSnowLayers);
-					}
-					ImGui::PopItemWidth();
-
-
-					ImGui::PushItemWidth(-10);
-					ImGui::TextCenter("Snow Opacity");
-					if (ImGui::SliderFloat("##Snow Opacity", &t.visuals.fSnowOpacity, 0.0, 1.0))
-					{
-						master_renderer->setSnowOpacity(t.visuals.fSnowOpacity);
-						t.gamevisuals.fSnowOpacity = t.visuals.fSnowOpacity;
-					}
-					ImGui::PopItemWidth();
-
-					ImGui::PushItemWidth(-10);
-					ImGui::TextCenter("Snow Depth");
-					if (ImGui::SliderFloat("##Snow Depth", &t.visuals.fSnowDepth, 0.01, 10.0))
-					{
-						master_renderer->setSnowDepth(t.visuals.fSnowDepth);
-						t.gamevisuals.fSnowDepth = t.visuals.fSnowDepth;
-					}
-					ImGui::PopItemWidth();
-
-					ImGui::PushItemWidth(-10);
-					ImGui::TextCenter("Snow Wind");
-					if (ImGui::SliderFloat("##Snow Wind", &t.visuals.fSnowWind, 0.01, 10.0))
-					{
-						master_renderer->setSnowWindiness(t.visuals.fSnowWind);
-						t.gamevisuals.fSnowWind = t.visuals.fSnowWind;
-					}
-					ImGui::PopItemWidth();
-				}
-			}
-			*/
-		}
-		#endif
 
 		ImGui::Separator();
 
@@ -8529,11 +7742,7 @@ void terrain_UpdateInputAndEntities ( void )
 			for ( t.e = 1; t.e <= g.entityelementlist; t.e++ )
 			{
 				t.entid = t.entityelement [ t.e ].bankindex;
-				#ifdef WICKEDENGINE
 				if (t.entityelement[t.e].floorposy > -89998 && t.entityelement[t.e].editorlock == false)
-				#else
-				if (t.entityelement[t.e].floorposy > 0 && t.entityelement[t.e].editorlock == false)
-				#endif
 				{
 					t.obj = t.entityelement [ t.e ].obj;
 					if ( g.gridlayershowsingle == 1 )
@@ -8577,11 +7786,7 @@ void terrain_UpdateInputAndEntities ( void )
 							}
 						}
 					}
-					#ifdef WICKEDENGINE
 					t.entityelement [ t.e ].floorposy = -90000.0;
-					#else
-					t.entityelement[t.e].floorposy = 0;
-					#endif
 				}
 			}
 			if ( t.trevealallinstancestampentities == 1 )
@@ -8625,7 +7830,6 @@ void terrain_renderonly ( void ) {}
 
 float BT_GetGroundHeight ( unsigned long value, float x, float z )
 {
-	#ifdef GGTERRAIN_USE_NEW_TERRAIN
 	extern int g_iDisableTerrainSystem;
 	if (g_iDisableTerrainSystem == 0 && t.visuals.bEnableEmptyLevelMode==false)
 	{
@@ -8642,12 +7846,10 @@ float BT_GetGroundHeight ( unsigned long value, float x, float z )
 		}
 		return GGORIGIN_Y;
 	}
-	#endif
 }
 
 float BT_GetGroundHeight ( unsigned long value, float x, float z, bool dsadsadsa )
 {
-	#ifdef GGTERRAIN_USE_NEW_TERRAIN
 	extern int g_iDisableTerrainSystem;
 	if (g_iDisableTerrainSystem == 0 && t.visuals.bEnableEmptyLevelMode == false)
 	{
@@ -8665,7 +7867,6 @@ float BT_GetGroundHeight ( unsigned long value, float x, float z, bool dsadsadsa
 		}
 		return GGORIGIN_Y;
 	}
-	#endif
 }
 
 void terrain_clearterraindirtyregion ( void ) {}
@@ -8730,7 +7931,6 @@ void terrain_updatewatermechanism ( void ) {}
 void terrain_updatewaterphysics ( void ) {}
 void terrain_water_setfog ( void ) {}
 
-#ifdef PROCEDURALTERRAINWINDOW
 
 //Variables to use else where.
 float fTerrainHeightStart = 0.0f; //Meters
@@ -12622,9 +11822,7 @@ void procedural_new_level(void)
 	//#### END Procedural Preview. ####
 	//#################################
 }
-#endif
 
-#ifdef WICKEDENGINE
 void PositionCameraForNewLevel()
 {
 	if (newLevelCamera.set)
@@ -12639,7 +11837,6 @@ void PositionCameraForNewLevel()
 		newLevelCamera.set = 0;
 	}
 }
-#endif
 
 #ifdef CUSTOMTEXTURES
 void ChooseTerrainTextureFolder(char* folder)

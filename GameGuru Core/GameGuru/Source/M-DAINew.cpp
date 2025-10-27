@@ -518,7 +518,6 @@ void darkai_mouthandheadtracking (void)
 			t.charanimstate.ccpo.speak.fNeedToBlink += 0.01f;
 	}
 
-	#ifdef WICKEDENGINE
 	// Neck(head) tracking is smoother as called all the time now
 	float fLookAtX = 0;
 	float fLookAtY = 0;
@@ -593,7 +592,6 @@ void darkai_mouthandheadtracking (void)
 	fDiffY -= t.charanimstate.neckUpAndDown;
 	t.charanimstate.neckRightAndLeft += fDiffX * fSmoothSpeed;
 	t.charanimstate.neckUpAndDown += fDiffY * fSmoothSpeed;
-	#endif
 
 	// clever system to reset pose to use a specific frame, and then allow regular animation to transform on top of it
 	if (t.charanimstate.ccpo.settings.iNeckBone > 0)
@@ -1511,11 +1509,7 @@ void darkai_loop (void)
 				// only use reverse polarity if animationspeed is NOT negative
 				if (GetSpeed(t.charanimstate.obj) < 0) fPolarity = -1; else fPolarity = 1;
 			}
-			#ifdef WICKEDENGINE
 			t.tfinalspeed_f = t.entityelement[t.charanimstate.e].speedmodulator_f * t.charanimstate.animationspeed_f * fPolarity * 2.5f;
-			#else
-			t.tfinalspeed_f = t.entityelement[t.charanimstate.e].speedmodulator_f * t.charanimstate.animationspeed_f * fPolarity * 2.5f * g.timeelapsed_f;
-			#endif
 			SetObjectSpeed (t.charanimstate.obj, t.tfinalspeed_f);
 		}
 
@@ -1575,10 +1569,8 @@ void darkai_setupcharacter (void)
 	t.charanimstates[g.charanimindex].requiremovementnow = 0;
 	t.charanimstates[g.charanimindex].movespeed_f = 1.0f;
 	t.charanimstates[g.charanimindex].turnspeed_f = 10.0f;
-	#ifdef WICKEDENGINE
 	t.charanimstates[g.charanimindex].movespeed_f = (float)t.entityelement[t.charanimstates[g.charanimindex].e].eleprof.iMoveSpeed / 100.0f;
 	t.charanimstates[g.charanimindex].turnspeed_f = (float)t.entityelement[t.charanimstates[g.charanimindex].e].eleprof.iTurnSpeed / 100.0f;
-	#endif
 
 	// setup head and spine tracker details	
 	t.charanimstates[g.charanimindex].neckRightAndLeftLimit = t.entityprofile[t.ttentid].headspinetracker.headhlimit;
@@ -1871,7 +1863,6 @@ void darkai_killai (void)
 			StopSound (t.ttsnd);
 		}
 	}
-	#ifdef WICKEDENGINE
 	// additionally any sounds triggered by this entity
 	int e = t.charanimstates[t.tcharanimindex].e;
 	for (int s = 0; s <= 6; s++)
@@ -1897,7 +1888,6 @@ void darkai_killai (void)
 			}
 		}
 	}
-	#endif
 
 }
 
@@ -1965,11 +1955,7 @@ void smoothanimtriggerrev (int obj, float st, float fn, int speedoftransition, i
 	if (t.smoothanim[obj].st != st)
 	{
 		StopObject (obj);
-		#ifdef WICKEDENGINE
 		SetObjectInterpolation (obj, speedoftransition);
-		#else
-		SetObjectInterpolation (obj, 100.0 / speedoftransition);
-		#endif
 		if (rev == 1)
 		{
 			SetObjectFrame (obj, fn);
@@ -1983,15 +1969,10 @@ void smoothanimtriggerrev (int obj, float st, float fn, int speedoftransition, i
 		t.smoothanim[obj].rev = rev;
 		t.smoothanim[obj].playflag = playflag;
 		t.smoothanim[obj].playstarted = 0;
-		#ifdef WICKEDENGINE
 		// transitions handled differently with MAX, we control a lerp factor that handles transitions
 		// nicely within the Wicked animation system
 		t.smoothanim[obj].transition = 1;
-		#else
-		t.smoothanim[obj].transition = speedoftransition;
-		#endif
 
-		#ifdef WICKEDENGINE
 		// affect starting frame if specified
 		float fThisAnimLength = fn - st;
 		t.smoothanim[obj].startat = 0;
@@ -2001,7 +1982,6 @@ void smoothanimtriggerrev (int obj, float st, float fn, int speedoftransition, i
 			fStartFrame += (fThisAnimLength / 100.0f)*fStartFromPercentage;
 			t.smoothanim[obj].startat = fStartFrame;
 		}
-		#endif
 	}
 }
 
@@ -2017,12 +1997,8 @@ void smoothanimupdate (int obj)
 		t.smoothanim[obj].transition = t.smoothanim[obj].transition - 1;
 		if (t.smoothanim[obj].transition == 0)
 		{
-			#ifdef WICKEDENGINE
 			// for MAX we operate a smooth transition system
 			SetObjectInterpolation (obj, 1.0);
-			#else
-			SetObjectInterpolation (obj, 100.0);
-			#endif
 			if (t.smoothanim[obj].playflag == 1)
 			{
 				if (t.smoothanim[obj].playstarted == 0)
@@ -2032,10 +2008,8 @@ void smoothanimupdate (int obj)
 					{
 						if (t.smoothanim[obj].startat > 0)
 						{
-							#ifdef WICKEDENGINE
 							sObject* pObject = GetObjectData(obj);
 							WickedCall_SetObjectFrameEx(pObject, t.smoothanim[obj].startat);
-							#endif
 							t.smoothanim[obj].startat = 0;
 						}
 						SetObjectSpeed (obj, abs(GetSpeed(obj)));
@@ -2053,10 +2027,8 @@ void smoothanimupdate (int obj)
 				LoopObject ( obj, t.smoothanim[obj].st, t.smoothanim[obj].fn);
 				if (t.smoothanim[obj].startat > 0)
 				{
-					#ifdef WICKEDENGINE
 					sObject* pObject = GetObjectData(obj);
 					WickedCall_SetObjectFrameEx(pObject, t.smoothanim[obj].startat);
-					#endif
 					t.smoothanim[obj].startat = 0;
 				}
 				if (t.smoothanim[obj].rev == 0)
@@ -2198,7 +2170,6 @@ void darkai_shoottarget (int targete)
 								}
 							}
 
-							#ifdef WICKEDENGINE
 							t.charanimstate.firesoundindex = t.ttsnd; t.tt = 3;
 							t.tfireloopend = g.firemodes[t.tgunid][0].sound.fireloopend;
 							t.charanimstate.firesoundstarted = Timer();
@@ -2222,21 +2193,6 @@ void darkai_shoottarget (int targete)
 									t.charanimstate.firesoundexpiry = Timer() + 5000;
 								}
 							}
-							#else
-							t.charanimstate.firesoundindex = t.ttsnd; t.tt = 3;
-							t.tfireloopend = g.firemodes[t.tgunid][0].sound.fireloopend;
-							t.charanimstate.firesoundstarted = Timer();
-							if (t.tfireloopend > 0)
-							{
-								// sound loops (need to cap it off)
-								t.charanimstate.firesoundexpiry = Timer() + 200 + Rnd(200);
-							}
-							else
-							{
-								// can let sound fade out slowly naturally
-								t.charanimstate.firesoundexpiry = Timer() + 5000;
-							}
-							#endif
 						}
 					}
 				}
@@ -2343,22 +2299,14 @@ void darkai_shooteffect (void)
 		t.decalscalemodx = 0; t.decalorient = 11;
 		t.originatore = -1;
 		t.originatorobj = t.tattachedobj;
-		#ifdef WICKEDENGINE
 		// if gunspec does not specify decal forward, apply some so we can see the muzzle flash for characters!
 		t.decalforward = g.firemodes[t.tgunid][0].settings.decalforward;
 		if (t.decalforward == 0) t.decalforward = 100.0f;
 		t.decalforward = t.decalforward * 2.0f;
-		#else
-		t.decalforward = g.firemodes[t.tgunid][0].settings.decalforward;
-		#endif
 		if (g.firemodes[t.tgunid][0].action.automatic.s > 0)
 		{
 			// special instruction for decal to loop X times
-			#ifdef WICKEDENGINE
 			t.decalburstloop = 0;
-			#else
-			t.decalburstloop = 4;
-			#endif // WICKEDENGINE
 		}
 		else
 		{
@@ -2369,7 +2317,6 @@ void darkai_shooteffect (void)
 	}
 
 	// emit sound
-	#ifdef WICKEDENGINE
 	// a better system is to create the event between shooter and target, bringing alert position closer to combat
 	t.tsx_f = t.entityelement[t.te].x;
 	t.tsy_f = t.entityelement[t.te].y;
@@ -2386,23 +2333,13 @@ void darkai_shooteffect (void)
 	t.tsz_f += fDZ;
 	t.tradius_f = fDIst;
 	if (t.tradius_f < 500) t.tradius_f = 500;
-	#else
-	t.tsx_f = t.entityelement[t.te].x;
-	t.tsy_f = t.entityelement[t.te].y;
-	t.tsz_f = t.entityelement[t.te].z;
-	t.tradius_f = 200;
-	#endif
 	darkai_makesound ();
 	t.ttsnd = t.charanimstate.firesoundindex;
 	if (t.ttsnd > 0)
 	{
 		if (SoundExist(t.ttsnd) == 1)
 		{
-			#ifdef WICKEDENGINE
 			t.tfireloopend = 0;
-			#else
-			t.tfireloopend = g.firemodes[t.tgunid][0].sound.fireloopend;
-			#endif // WICKEDENGINE
 
 			if (t.tfireloopend > 0)
 			{

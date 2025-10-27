@@ -12,9 +12,7 @@
 #endif
 
 // Externs
-#ifdef VRTECH
 extern GGVR_PlayerData GGVR_Player;
-#endif
 
 // 
 //  LUA Module
@@ -255,7 +253,6 @@ void lua_initscript ( void )
 	}
 }
 
-#ifdef VRTECH
 void lua_execute_properties_variable(char *string)
 {
 	char tmp[4096];
@@ -311,7 +308,6 @@ void lua_execute_properties_variable(char *string)
 		}
 	}
 }
-#endif
 
 void lua_launchallinitscripts ( void )
 {
@@ -360,10 +356,8 @@ void lua_launchallinitscripts ( void )
 		}
 	}
 
-	#ifdef WICKEDENGINE
 	// clear entity vis list for new test level/game level run
 	entity_lua_getentityplrvisible_clear();
-	#endif
 }
 
 void lua_loop_begin ( void )
@@ -435,13 +429,11 @@ void lua_loop_begin ( void )
 		if ( JoystickFireD() == 1 )  
 			t.tKeyPressE = 1;
 	}
-	#ifdef VRTECH
 	if ( g.vrglobals.GGVREnabled > 0 && g.vrglobals.GGVRUsingVRSystem == 1 )
 	{
 		if ( GGVR_RightController_Trigger() > 0.9f )
 			t.tKeyPressE = 1;
 	}
-	#endif
 	LuaSetInt ( "g_KeyPressE",t.tKeyPressE );
 	LuaSetInt ( "g_KeyPressQ",KeyState(g.keymap[16]) );
 
@@ -456,7 +448,6 @@ void lua_loop_begin ( void )
 	LuaSetInt ( "g_KeyPressSPACE", KeyState(g.keymap[57]) );
 
 	// shift key for running/etc
-	#ifdef VRTECH
 	int tKeyPressShift = 0;
 	if ( KeyState(g.keymap[42]) ) tKeyPressShift = 1;
 	if ( KeyState(g.keymap[54]) ) tKeyPressShift = 1;
@@ -466,9 +457,6 @@ void lua_loop_begin ( void )
 			tKeyPressShift = 1;
 	}
 	LuaSetInt ( "g_KeyPressSHIFT", tKeyPressShift );
-	#else
-	LuaSetInt ( "g_KeyPressSHIFT", KeyState(g.keymap[42]) | KeyState(g.keymap[54]) );
-	#endif
 	static int iResetMouseWheel = 0;
 	if ( g.luaactivatemouse != 0 )
 	{
@@ -491,13 +479,10 @@ void lua_loop_begin ( void )
 
 		LuaSetInt("g_MouseWheel", (int) fFinalWheel ); //PE: Moved here so delta is not lost.
 
-		#ifdef WICKEDENGINE
 		iResetMouseWheel = 6; //PE: Reset when we leave menu and go back to the game. need 6 frame before everything is in sync.
 		extern DBPRO_GLOBAL int			g_iMouseLocalZ;
 		g_iMouseLocalZ = 0;
-		#endif
 
-		#ifdef VRTECH
 		if (g.vrglobals.GGVREnabled > 0 && g.vrglobals.GGVRUsingVRSystem == 1)
 		{
 			// also only do this if NOT in in-game menu
@@ -579,14 +564,11 @@ void lua_loop_begin ( void )
 				}
 			}
 		}
-		#endif
-		#ifdef STORYBOARD 
 		extern float LuaMousePosPercentX, LuaMousePosX, LuaMousePosPercentY, LuaMousePosY;
 		LuaMousePosX = g.LUAMouseX;
 		LuaMousePosY = g.LUAMouseY;
 		LuaMousePosPercentX = fFinalPercX;
 		LuaMousePosPercentY = fFinalPercY;
-		#endif
 		LuaSetFloat("g_MouseX", fFinalPercX);
 		LuaSetFloat("g_MouseY", fFinalPercY);
 
@@ -652,10 +634,8 @@ void lua_loop_begin ( void )
 	}
 	LuaSetInt("g_MouseClick", iMouseClickState);
 
-	#ifdef STORYBOARD 
 	extern int LuaMouseClick;
 	LuaMouseClick = iMouseClickState;
-	#endif
 
 	// continuing settinf of LUA globals
 	LuaSetInt ( "g_EntityElementMax", g.entityelementlist);

@@ -12,8 +12,6 @@ float g_fLastKnownFOVin = -1;
 // Externals
 extern UINT g_StereoEyeToggle;
 
-#ifdef STORYBOARD
-#ifdef ENABLEIMGUI
 #include "..\..\GameGuru\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -21,18 +19,14 @@ extern UINT g_StereoEyeToggle;
 #include "..\..\GameGuru\Imgui\imgui_internal.h"
 #include "..\..\GameGuru\Imgui\imgui_impl_win32.h"
 #include "..\..\GameGuru\Imgui\imgui_gg_dx11.h"
-#endif
 extern StoryboardStruct Storyboard;
-#endif
 
-#ifdef WICKEDENGINE
 #include ".\\..\..\\Guru-WickedMAX\\GPUParticles.h"
 using namespace GPUParticles;
 #include "GGTerrain\GGTerrain.h"
 #include "GGTerrain\GGTrees.h"
 using namespace GGTerrain;
 using namespace GGTrees;
-#endif
 
 // 
 //  LUA General Commands
@@ -84,7 +78,6 @@ void lua_prompt ( void )
 	}
 }
 
-#ifdef VRTECH
 void lua_promptimage ( void )
 {
 	if ( g.vrqcontrolmode != 0 )
@@ -95,23 +88,14 @@ void lua_promptimage ( void )
 		lua_prompt3d (imgname, Timer(), t.v );
 	}
 }
-#endif
 
 void lua_promptduration ( void )
 {
 	// changes press E for press trigger
 	lua_correct_for_VR();
 
-	#ifdef VRTECH
-	#ifdef WICKEDENGINE
 	extern int g_iActivelyUsingVRNow;
 	if ( g_iActivelyUsingVRNow != 0 )
-	#else
-	if ( g.vrqcontrolmode != 0 )
-	#endif
-	#else
-	if ( g.gvrmode > 0 )
-	#endif
 	{
 		// use VR prompt instead
 		lua_prompt3d ( t.s_s.Get(), Timer()+t.v, 0 );
@@ -136,23 +120,11 @@ void lua_promptlocalcore ( int iTrueLocalOrForVR , int addtime = 1000)
 	// changes press E for press trigger
 	lua_correct_for_VR();
 
-	#ifdef VRTECH
-	#ifdef WICKEDENGINE
 	extern int g_iActivelyUsingVRNow;
 	if ( g_iActivelyUsingVRNow != 0 )
-	#else
-	if ( g.vrqcontrolmode != 0 )
-	#endif
-	#else
-	if ( g.gvrmode > 0 )
-	#endif
 	{
 		// use VR prompt instead
-		#ifdef VRTECH
 		if ( iTrueLocalOrForVR == 0 ) lua_prompt3d ( t.s_s.Get(), Timer()+ addtime, 0 );
-		#else
-		lua_prompt3d ( t.s_s.Get(), Timer()+ addtime, 0 );
-		#endif
 		float fObjCtrX = GetObjectCollisionCenterX(t.entityelement[t.e].obj);
 		float fObjCtrZ = GetObjectCollisionCenterZ(t.entityelement[t.e].obj);
 		float fObjHeight = ObjectSizeY(t.entityelement[t.e].obj);
@@ -163,7 +135,6 @@ void lua_promptlocalcore ( int iTrueLocalOrForVR , int addtime = 1000)
 			// characters facing other way, so align local prompt so can read right way
 			fObjAngle += 180.0f;
 		}
-		#ifdef VRTECH
 		bool bAngleToFaceCameraExactly = false;
 		bool bUseCharacterPositioning = false;
 		if ( iTrueLocalOrForVR > 0 )
@@ -188,23 +159,6 @@ void lua_promptlocalcore ( int iTrueLocalOrForVR , int addtime = 1000)
 			lua_positionprompt3d ( 0, t.entityelement[t.e].x+fObjCtrX, t.entityelement[t.e].y+fHeightAdjustment, t.entityelement[t.e].z+fObjCtrZ, fObjAngle, bAngleToFaceCameraExactly );
 		else
 			lua_positionprompt3d ( t.e, t.entityelement[t.e].x+fObjCtrX, t.entityelement[t.e].y+fHeightAdjustment, t.entityelement[t.e].z+fObjCtrZ, fObjAngle, bAngleToFaceCameraExactly );
-		#else
-		if ( iTrueLocalOrForVR > 0 )
-		{
-			// if PromptLocalForVR mode 1 used, always face player
-			float fDX = t.entityelement[t.e].x - CameraPositionX(0);
-			float fDZ = t.entityelement[t.e].z - CameraPositionZ(0);
-			float fDA = atan2deg ( fDX, fDZ );
-			fObjAngle = fDA;
-
-			// if PromptLocalForVR mode 2 used, also elevate text toi above entity (for characters)
-			if ( iTrueLocalOrForVR == 2 )
-			{
-				fObjHeight = fObjHeight * 1.8f;
-			}
-		}
-		lua_positionprompt3d ( t.e, t.entityelement[t.e].x+fObjCtrX, t.entityelement[t.e].y+(fObjHeight/2.0f), t.entityelement[t.e].z+fObjCtrZ, fObjAngle, false );
-		#endif
 	}
 	else
 	{
@@ -215,9 +169,7 @@ void lua_promptlocalcore ( int iTrueLocalOrForVR , int addtime = 1000)
 		}
 		else
 		{
-			#ifdef VRTECH
 			t.entityelement[t.e].overpromptuse3D = false;
-			#endif
 			t.entityelement[t.e].overprompt_s=t.s_s;
 			t.entityelement[t.e].overprompttimer=Timer()+ addtime;
 			extern bool bActivatePromptXYOffset;
@@ -531,37 +483,26 @@ void lua_freeprompt3d ( void )
 	}
 }
 
-#ifdef VRTECH
 void lua_updateperentity3d ( int e, LPSTR pText, float fX, float fY, float fZ, float fA, bool bFaceCamera )
 {
 	// object for text render
 	int iPerEntity3dObjectID = g.perentitypromptoffset + e;
 
 	// set prompt 3D - only regenerate if text changes
-	#ifdef WICKEDENGINE
 	if ( strcmp ( pText, t.entityelement[e].overprompt_s.Get() ) != NULL )
-	#else
-	if ( strcmp ( pText, t.entityelement[e].overprompt_s.Get() ) != NULL && g_StereoEyeToggle == 0 )
-	#endif
 	{
 		// new text to display
 		t.entityelement[e].overprompt_s = pText;
 
-		#ifdef WICKEDENGINE
 		WickedCall_PresetObjectTextureFromImagePtr(true,1);
-		#endif
 
 		// create 3d object for text or image
 		if ( ObjectExist(iPerEntity3dObjectID)==1 ) DeleteObject ( iPerEntity3dObjectID );
 		if ( ObjectExist(iPerEntity3dObjectID)==0 )
 		{
-			#ifdef WICKEDENGINE
 			WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
-			#endif
 			MakeObjectPlane ( iPerEntity3dObjectID, 512/5.0f, 32.0f/5.0f );
-			#ifdef WICKEDENGINE
 			WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-			#endif
 			PositionObject ( iPerEntity3dObjectID, -100000, -100000, -100000 );
 			SetObjectEffect ( iPerEntity3dObjectID, g.guishadereffectindex );
 			DisableObjectZDepth ( iPerEntity3dObjectID );
@@ -585,10 +526,8 @@ void lua_updateperentity3d ( int e, LPSTR pText, float fX, float fY, float fZ, f
 
 		// apply to object
 		TextureObject ( iPerEntity3dObjectID, 0, iPerEntityImageID );
-		#ifdef WICKEDENGINE
 		WickedCall_PresetObjectTextureFromImagePtr(false,0);
 		SetObjectTransparency(iPerEntity3dObjectID, 1); //PE: Transparent not really good before we can disable depth test in wicked.
-		#endif
 	}
 
 	// position 3d prompt and face camera
@@ -601,9 +540,6 @@ void lua_updateperentity3d ( int e, LPSTR pText, float fX, float fY, float fZ, f
 			PointObject ( iPerEntity3dObjectID, CameraPositionX(0), CameraPositionY(0), CameraPositionZ(0) );
 		else
 			RotateObject ( iPerEntity3dObjectID, 0, fA+180.0f, 0 );
-		#ifdef PRODUCTV3
-		RotateObject ( iPerEntity3dObjectID, ObjectAngleX(iPerEntity3dObjectID)*-1, ObjectAngleY(iPerEntity3dObjectID)+180, ObjectAngleZ(iPerEntity3dObjectID) );
-		#endif
 		ShowObject ( iPerEntity3dObjectID );
 	}
 }
@@ -627,7 +563,6 @@ void lua_freeallperentity3d ( void )
 		t.entityelement[e].overprompttimer = 0;
 	}
 }
-#endif
 
 ///
 void Wicked_Update_Fog(void*);
@@ -669,9 +604,6 @@ void lua_setfogblue ( void )
 void lua_setfogintensity ( void )
 {
 	//PE: In wicked this is height.
-#ifndef WICKEDENGINE
-	t.visuals.FogA_f=t.v_f;
-#endif
 	visuals_justshaderupdate ( );
 	t.visuals.FogA_f = t.v_f;
 	Wicked_Update_Fog((void *)&t.visuals);
@@ -1085,10 +1017,8 @@ void lua_unfreezeai ( void )
 
 void lua_freezeplayer ( void )
 {
-	#ifdef WICKEDENGINE
 	// if already called, do not call twice!
 	if (t.aisystem.processplayerlogic == 0) return;
-	#endif
 	
 	// skip player logic (freezing it)
 	t.aisystem.processplayerlogic = 0;
@@ -1131,10 +1061,8 @@ void lua_freezeplayer ( void )
 
 void lua_unfreezeplayer ( void )
 {
-	#ifdef WICKEDENGINE
 	// if already unfrozen, do not call twice!
 	if (t.aisystem.processplayerlogic == 1) return;
-	#endif
 
 	// allow regular player control
 	t.aisystem.processplayerlogic = 1;
@@ -1208,9 +1136,7 @@ void lua_transporttofreezeposition ( void )
 		t.terrain.playerax_f = t.freezeplayerax;
 		t.terrain.playeray_f = t.freezeplayeray;
 		t.terrain.playeraz_f = t.freezeplayeraz;
-		#ifdef VRTECH
 			t.camangy_f=t.terrain.playeray_f;
-		#endif
 	}
 	physics_setupplayer ( );
 	ODESetWorldGravity(0, 0, 0, 0);
@@ -1623,22 +1549,18 @@ void lua_leavegame ( void )
 	mp_quitGame ( );
 
 	// ensure IMGUI does not attempt to render to wicked during resource shifting
-	#ifndef PRODUCTCLASSIC
 	extern int iBlockRenderingForFrames;
 	iBlockRenderingForFrames = 2;
-	#endif
 }
 void lua_resumegame ( void )
 {
 	t.game.titleloop=0;
 	strcpy ( t.game.pSwitchToPage, "" );
-	#ifdef WICKEDENGINE
 	//PE: Need a frame to call _free.
 	extern int iBlockRenderingForFrames;
 	iBlockRenderingForFrames = 2;
 	// and ensure no HUDs on return to game
 	t.game.activeStoryboardScreen = -1;
-	#endif
 }
 void lua_switchpage ( void )
 {
@@ -1654,11 +1576,9 @@ void lua_switchpageback ( void )
 {
 	t.game.titleloop=0;
 	strcpy ( t.game.pSwitchToPage, "-1" );
-	#ifdef WICKEDENGINE
 	//PE: We need 2 frames when switching page, 1 that call "_free_ and one that call "_init" on new page.
 	extern int iBlockRenderingForFrames;
 	iBlockRenderingForFrames = 2;
-	#endif
 }
 void lua_levelfilenametoload ( void )
 {
@@ -1691,11 +1611,9 @@ void lua_losegame (void)
 
 void lua_setgamequality ( void )
 {
-	#ifdef VRTECH
 	g.titlesettings.graphicsettingslevel = t.v;
 	titles_immediateupdategraphics ( );
 
-	#ifdef WICKEDENGINE
 	if (g.titlesettings.graphicsettingslevel >= 1 && g.titlesettings.graphicsettingslevel <= 4)
 	{
 		static bool graphicsettings_changed = false;
@@ -1706,16 +1624,7 @@ void lua_setgamequality ( void )
 		if(graphicsettings_changed)
 			SetGlobalGraphicsSettings( g.titlesettings.graphicsettingslevel - 1 );
 	}
-	#endif
 
-	#else
-	//PE: Only we we have a change.
-	if (g.titlesettings.graphicsettingslevel != t.v) 
-	{
-		g.titlesettings.graphicsettingslevel = t.v;
-		titles_immediateupdategraphics();
-	}
-	#endif
 }
 void lua_setplayerfov ( void )
 {

@@ -6,10 +6,8 @@
 #include "gameguru.h"
 #include "CObjectsC.h"
 
-#ifdef WICKEDENGINE
 #include "GGTerrain/GGTerrain.h"
 #include "GGTerrain/GGGrass.h"
-#endif
 
 #ifdef OPTICK_ENABLE
 #include "optick.h"

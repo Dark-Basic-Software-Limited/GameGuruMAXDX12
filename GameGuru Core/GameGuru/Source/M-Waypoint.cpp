@@ -5,7 +5,6 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-#ifdef ENABLEIMGUI
 //PE: GameGuru IMGUI.
 #include "..\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
@@ -31,19 +30,15 @@ extern char cForceTutorialName[1024];
 bool bOnlyFollowTerrain = false;
 bool g_bZonesFollowTerrain = false; // OFF for EA
 
-#endif
 
-#ifdef WICKEDENGINE
 bool TutorialNextAction(void);
 bool CheckTutorialPlaceit(void);
 bool CheckTutorialAction(const char * action, float x_adder = 0.0f);
 extern bool bTutorialCheckAction;
-#endif
 
 
 //Subroutines for waypoint system
 
-#ifdef ENABLEIMGUI
 void waypoint_imgui_loop(void)
 {
 	if (bWaypointDrawmode)
@@ -89,15 +84,11 @@ void waypoint_imgui_loop(void)
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Waypoint Editing Mode (P)");
 			ImGui::SameLine();
 
-#ifdef WICKEDENGINE
 			CheckTutorialAction("TOOL_DRAWWAYPOINTS", -10.0f); //Tutorial: check if we are waiting for this action
-#endif
 			if (current_mode == TOOL_DRAWWAYPOINTS) window->DrawList->AddRect((window->DC.CursorPos - tool_selected_padding), window->DC.CursorPos + tool_selected_padding + iToolbarIconSize, ImGui::GetColorU32(tool_selected_col), 0.0f, 15, 2.0f);
 			if (ImGui::ImgBtn(TOOL_DRAWWAYPOINTS, iToolbarIconSize, ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImVec4(0.8, 0.8, 0.8, 0.8), ImVec4(0.8, 0.8, 0.8, 0.8), 0, 0, 0, 0, false, false, false, false)) {
 				//Draw waypoint mode
-#ifdef WICKEDENGINE
 				if (bTutorialCheckAction) TutorialNextAction();
-#endif
 
 				bWaypointDrawmode = true;
 				iWaypointDeleteMode = 1;
@@ -259,7 +250,6 @@ void waypoint_drawmode_loop(void)
 		{
 			if (t.terrain.TerrainID > 0 || ObjectExist(t.terrain.terrainobjectindex))
 			{
-				#ifdef WICKEDENGINE
 				int tobj;
 				if (ObjectExist(t.terrain.terrainobjectindex))
 					tobj = t.terrain.terrainobjectindex;
@@ -277,9 +267,6 @@ void waypoint_drawmode_loop(void)
 					placeatz_f = t.tz_f;
 					g.waypointeditheight_f = fPickedYAxis;
 				}
-				#else
-				g.waypointeditheight_f = BT_GetGroundHeight(t.terrain.TerrainID, placeatx_f, placeatz_f);
-				#endif
 			}
 			else
 			{
@@ -290,14 +277,10 @@ void waypoint_drawmode_loop(void)
 		if (ObjectExist(g.editorwaypointoffset + 0) == 0)
 		{
 			float fSphereSize = 25.0f;
-			#ifdef WICKEDENGINE
 			fSphereSize = 10.0f;
 			WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
 			MakeObjectSphere(g.editorwaypointoffset + 0, fSphereSize);
 			WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-			#else
-			MakeObjectSphere(g.editorwaypointoffset + 0, fSphereSize);
-			#endif
 			SetObjectCollisionOff(g.editorwaypointoffset + 0);
 			SetAlphaMappingOn(g.editorwaypointoffset + 0, 25);
 			DisableObjectZRead(g.editorwaypointoffset + 0);
@@ -390,7 +373,6 @@ void waypoint_drawmode_loop(void)
 		}
 	}
 }
-#endif
 
 void waypoint_savedata ( void )
 {
@@ -757,14 +739,10 @@ void waypoint_createnew ( void )
 		if ( ObjectExist(g.editorwaypointoffset+0) == 0 ) 
 		{
 			float fSphereSize = 25.0f;
-			#ifdef WICKEDENGINE
 			fSphereSize = 10.0f;
 			WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
 			MakeObjectSphere ( g.editorwaypointoffset+0,fSphereSize );
 			WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-			#else
-			MakeObjectSphere ( g.editorwaypointoffset+0,fSphereSize );
-			#endif
 			SetObjectCollisionOff ( g.editorwaypointoffset+0 );
 			SetAlphaMappingOn ( g.editorwaypointoffset+0,25 );
 			DisableObjectZRead ( g.editorwaypointoffset+0 );
@@ -859,15 +837,8 @@ void waypoint_showallpaths ( void )
 
 void waypoint_mousemanage ( void )
 {
-	#ifdef VRTECH
-	#ifndef WICKEDENGINE
-	if (bWaypointDrawmode || t.inputsys.mclick == 2 )
-		return;
-	#else
 	if (bWaypointDrawmode)
 		return;
-	#endif
-	#endif
 
 	// Grid the waypoint coordinate input
 	float fOrigMX = t.mx_f;
@@ -924,14 +895,11 @@ void waypoint_mousemanage ( void )
 	if ( t.mclick > 0 && t.mclickpressed == 0 ) { t.mclickdone = t.mclick ; t.mclickpressed = 1; }
 
 	bool bWaypointActive = true;
-	#ifdef WICKEDENGINE
 	extern bool bDotObjectDragging;
 	if (bDotObjectDragging) bWaypointActive = false;
-	#endif
 	// move existing new waypoint
 	if (bWaypointActive && t.mclick > 0 )
 	{
-		#ifdef VRTECH
 		if (iWaypointDeleteMode == 0 && t.grideditselect == 6 ) 
 		{
 			if (t.onedrag == 0)
@@ -948,9 +916,6 @@ void waypoint_mousemanage ( void )
 			}
 		}
 		else if (iWaypointDeleteMode != 0 || t.grideditselect == 5 )
-		#else
-		if(1)
-		#endif
 		{
 			if (t.onedrag == 0)
 			{
@@ -970,22 +935,18 @@ void waypoint_mousemanage ( void )
 				if (t.onedragmode == 1 && (t.mx_f != t.onedragx_f || t.mz_f != t.onedragz_f))
 				{
 					float fWaypointHeightNow = g.waypointeditheight_f;
-					#ifdef WICKEDENGINE
 					float fRiseAboveTerrainSoCanSeeZone = 5.0f;
 					fWaypointHeightNow += fRiseAboveTerrainSoCanSeeZone;
-					#endif
 
 					t.w = t.onedrag;
 					t.tmovedeltax_f = t.mx_f - t.waypointcoord[t.w].x;
 					t.tmovedeltay_f = fWaypointHeightNow - t.waypointcoord[t.w].y;
 					t.tmovedeltaz_f = t.mz_f - t.waypointcoord[t.w].z;
 
-					#ifndef PRODUCTCLASSIC
 					if (bOnlyFollowTerrain)
 					{
 						fWaypointHeightNow = BT_GetGroundHeight(0, t.mx_f, t.mz_f) + fRiseAboveTerrainSoCanSeeZone;
 					}
-					#endif
 					t.waypointcoord[t.w].x = t.mx_f;
 					t.waypointcoord[t.w].y = fWaypointHeightNow;
 					t.waypointcoord[t.w].z = t.mz_f;
@@ -1040,11 +1001,7 @@ void waypoint_mousemanage ( void )
 	}
 
 	//  Delete last waypoint selected
-	#ifdef VRTECH
 	if (  ((t.inputsys.keyshift == 1 && t.mclickdone == 2) || (iWaypointDeleteMode == 0 && t.mclickdone == 1 && t.grideditselect == 6 ) ) && t.waypointiovercursor > 0 )
-	#else
-	if (  t.inputsys.keyshift == 1 && t.mclickdone == 2 && t.waypointiovercursor>0 ) 
-	#endif
 	{
 		//  if this is a zone style waypoint we want to always have a minimum of 4 waypoint nodes!
 		if (  t.waypoint[t.waypointindex].count>4 || ( t.waypoint[t.waypointindex].style != 2 && t.waypoint[t.waypointindex].style != 3) ) 
@@ -1053,7 +1010,6 @@ void waypoint_mousemanage ( void )
 			t.w=t.waypointiovercursor;
 			if (  t.w == t.waypoint[t.waypointindex].start ) 
 			{
-				#ifdef VRTECH
 				bool bSure = true;
 				if ((iWaypointDeleteMode == 0 && t.mclickdone == 1) && t.waypoint[t.waypointindex].finish >= t.waypoint[t.waypointindex].start+1) 
 				{
@@ -1065,9 +1021,6 @@ void waypoint_mousemanage ( void )
 						bSure = false;
 				}
 				if(bSure)
-				#else
-				if ( 1 )
-				#endif
 				{
 					waypoint_delete();
 
@@ -1294,7 +1247,6 @@ void waypoint_movetogrideleprof ( void )
 	t.thisx_f=t.gridentityposx_f;
 	t.thisy_f=t.gridentityposy_f;
 	t.thisz_f=t.gridentityposz_f;
-	#ifdef WICKEDENGINE
 	// takling care to never allow waypoints to sit UNDER the terrain
 	float fGroundHeight = BT_GetGroundHeight(0, t.thisx_f, t.thisz_f);
 	if (t.thisy_f < fGroundHeight)
@@ -1302,7 +1254,6 @@ void waypoint_movetogrideleprof ( void )
 		t.gridentityposy_f = fGroundHeight;
 		t.thisy_f = fGroundHeight;
 	}
-	#endif
 	waypoint_movetothiscoordinate ( );
 }
 
@@ -1364,7 +1315,6 @@ void waypoint_movetothiscoordinate ( void )
 		t.waypointcoord[t.ttw].y=t.thisy_f+(t.waypointcoord[t.ttw].y-t.tavy_f);
 		t.waypointcoord[t.ttw].z=t.thisz_f+(t.waypointcoord[t.ttw].z-t.tavz_f);
 
-		#ifdef WICKEDENGINE
 		float fRiseAboveTerrainSoCanSeeZone = 5.0f;
 		t.waypointcoord[t.ttw].y = t.thisy_f + fRiseAboveTerrainSoCanSeeZone;
 		if (g_bZonesFollowTerrain == true )
@@ -1379,7 +1329,6 @@ void waypoint_movetothiscoordinate ( void )
 				t.waypointcoord[t.ttw].y = BT_GetGroundHeight(0, t.waypointcoord[t.ttw].x, t.waypointcoord[t.ttw].z) + fRiseAboveTerrainSoCanSeeZone;
 			}
 		}
-		#endif
 	}
 
 	//  refresh waypoint object
@@ -1488,14 +1437,9 @@ void createwaypointobj ( int obj, int waypointindex )
 			float fHeightFromFloor = 6.0f;
 			float fLineThickness = 5.0f;
 			polycount=((t.waypoint[waypointindex].count-1)*2);
-			#ifdef WICKEDENGINE
 			// no stars or infills and closer to floor and thinner lines
 			fHeightFromFloor = 2.0f;
 			fLineThickness = 2.0f;
-			#else
-			polycount+=(t.waypoint[waypointindex].count*2);
-			if ( t.waypoint[waypointindex].style == 2 || t.waypoint[waypointindex].style == 3 )  polycount = polycount+t.waypoint[waypointindex].count-2;
-			#endif
 			t.waypoint[waypointindex].polycount=polycount;
 			makepolymesh(obj,polycount);
 			w=t.waypoint[waypointindex].start;
@@ -1511,26 +1455,8 @@ void createwaypointobj ( int obj, int waypointindex )
 				wa_f=atan2deg(wx_f-fwx_f,wz_f-fwz_f)-90;
 				pwa_f=wa_f ; fwa_f=wa_f;
 				fade_f=1.0;
-				#ifdef WICKEDENGINE
 				// no vertex colors in wicked
 				diffuse=Rgb(255,255,255);
-				#else
-				if ( t.waypoint[waypointindex].style == 2 || t.waypoint[waypointindex].style == 3 ) 
-				{
-					// zones have white lines
-					diffuse=Rgb(155*fade_f,155*fade_f,155*fade_f);
-				}
-				else
-				{
-					tcolorcycle=t.waypointcoord[w].index-((t.waypointcoord[w].index/6)*6);
-					if (  tcolorcycle == 0  )  diffuse = Rgb(0*fade_f,0*fade_f,155*fade_f);
-					if (  tcolorcycle == 1  )  diffuse = Rgb(155*fade_f,0,0);
-					if (  tcolorcycle == 2  )  diffuse = Rgb(0,155*fade_f,0);
-					if (  tcolorcycle == 3  )  diffuse = Rgb(155*fade_f,155*fade_f,0);
-					if (  tcolorcycle == 4  )  diffuse = Rgb(155*fade_f,0,155*fade_f);
-					if (  tcolorcycle == 5  )  diffuse = Rgb(0,155*fade_f,155*fade_f);
-				}
-				#endif
 				if (  w == t.waypoint[waypointindex].start+1  )  lastdiffuse = diffuse;
 				c1x_f=NewXValue(fwx_f,fwa_f,fLineThickness) ; c1z_f=NewZValue(fwz_f,fwa_f,fLineThickness) ; c1y_f=fwy_f;
 				c2x_f=NewXValue(fwx_f,fwa_f,-fLineThickness) ; c2z_f=NewZValue(fwz_f,fwa_f,-fLineThickness) ; c2y_f=fwy_f;
@@ -1543,74 +1469,9 @@ void createwaypointobj ( int obj, int waypointindex )
 				}
 				fwx_f=wx_f ; fwy_f=wy_f ; fwz_f=wz_f ; fwa_f=wa_f ; lastdiffuse=diffuse ; polyindex += 2;
 			}
-			#ifdef WICKEDENGINE
 			// no stars in wicked
-			#else
-			//  stars
-			for ( w = t.waypoint[waypointindex].start ; w<=  t.waypoint[waypointindex].finish; w++ )
-			{
-				wx_f=t.waypointcoord[w].x;
-				wy_f=t.waypointcoord[w].y+6;
-				wz_f=t.waypointcoord[w].z;
-				if (  t.waypointcoord[w].link>0 ) 
-				{
-					diffuse=Rgb(0,255,255);
-				}
-				else
-				{
-					diffuse=Rgb(255,255,0);
-				}
-				if (  w == t.waypoint[waypointindex].start  )  tsize_f = 1.5; else tsize_f = 1.0;
-				c1x_f=NewXValue(wx_f,55,8*tsize_f) ; c1z_f=NewZValue(wz_f,55,8*tsize_f) ; c1y_f=wy_f;
-				c2x_f=NewXValue(wx_f,-55,8*tsize_f) ; c2z_f=NewZValue(wz_f,-55,8*tsize_f) ; c2y_f=wy_f;
-				c3x_f=NewXValue(wx_f,180,10*tsize_f) ; c3z_f=NewZValue(wz_f,180,10*tsize_f) ; c3y_f=wy_f;
-				c4x_f=NewXValue(wx_f,235,8*tsize_f) ; c4z_f=NewZValue(wz_f,235,8*tsize_f) ; c4y_f=wy_f;
-				c5x_f=NewXValue(wx_f,125,8*tsize_f) ; c5z_f=NewZValue(wz_f,125,8*tsize_f) ; c5y_f=wy_f;
-				c6x_f=NewXValue(wx_f,0,10*tsize_f) ; c6z_f=NewZValue(wz_f,0,10*tsize_f) ; c6y_f=wy_f;
-				if (  polyindex+1<t.waypoint[waypointindex].polycount ) 
-				{
-					addpolytomesh(obj,polyindex+0,diffuse,diffuse,diffuse,c1x_f,c1y_f,c1z_f,c2x_f,c2y_f,c2z_f,c3x_f,c3y_f,c3z_f);
-					addpolytomesh(obj,polyindex+1,diffuse,diffuse,diffuse,c4x_f,c4y_f,c4z_f,c5x_f,c5y_f,c5z_f,c6x_f,c6y_f,c6z_f);
-				}
-				polyindex += 2;
-			}
-			#endif
-			#ifdef WICKEDENGINE
 			// wicked does not shade the interior
-			#else
-			//  zone style also shades interior
-			if ( t.waypoint[waypointindex].style == 2 || t.waypoint[waypointindex].style == 3 ) 
-			{
-				w=t.waypoint[waypointindex].start;
-				c1x_f=t.waypointcoord[w].x;
-				c1y_f=t.waypointcoord[w].y+6;
-				c1z_f=t.waypointcoord[w].z;
-				fade_f=0.5;
-				if (  t.waypoint[waypointindex].fillcolor == 1  )  diffuse = Rgb(255*fade_f,128*fade_f,0*fade_f);
-				if (  t.waypoint[waypointindex].fillcolor == 2  )  diffuse = Rgb(183*fade_f,220*fade_f,244*fade_f);
-				if (  t.waypoint[waypointindex].fillcolor == 3  )  diffuse = Rgb(0*fade_f,128*fade_f,255*fade_f);
-				if (  t.waypoint[waypointindex].fillcolor == 4  )  diffuse = Rgb(0*fade_f,255*fade_f,0*fade_f);
-				if (  t.waypoint[waypointindex].fillcolor == 5  )  diffuse = Rgb(64*fade_f,64*fade_f,64*fade_f);
-				if (  t.waypoint[waypointindex].fillcolor == 6  )  diffuse = Rgb(255*fade_f,0*fade_f,0*fade_f);
-				if (  t.waypoint[waypointindex].fillcolor == 7  )  diffuse = Rgb(0*fade_f,0*fade_f,255*fade_f);
-				for ( w = t.waypoint[waypointindex].start+1 ; w<=  t.waypoint[waypointindex].finish-1; w++ )
-				{
-					c2x_f=t.waypointcoord[w].x;
-					c2y_f=t.waypointcoord[w].y+6;
-					c2z_f=t.waypointcoord[w].z;
-					c3x_f=t.waypointcoord[w+1].x;
-					c3y_f=t.waypointcoord[w+1].y+6;
-					c3z_f=t.waypointcoord[w+1].z;
-					if (  polyindex+0<t.waypoint[waypointindex].polycount ) 
-					{
-						addpolytomesh(obj,polyindex+0,diffuse,diffuse,diffuse,c1x_f,c1y_f,c1z_f,c2x_f,c2y_f,c2z_f,c3x_f,c3y_f,c3z_f);
-					}
-					++polyindex;
-				}
-			}
-			#endif
 			finalisepolymesh(obj);
-			#ifdef WICKEDENGINE
 			if (polycount == 0)
 			{
 				if (ObjectExist(obj) == 1) DeleteObject(obj);
@@ -1636,7 +1497,6 @@ void createwaypointobj ( int obj, int waypointindex )
 			if ( t.waypoint[waypointindex].fillcolor == 7 ) diffuse = Rgb(0*fade_f,0*fade_f,255*fade_f);
 			SetObjectDiffuse ( obj, Rgb(0,0,0) );
 			SetObjectEmissive ( obj, diffuse );
-			#endif
 		}
 		else
 		{
@@ -1755,7 +1615,6 @@ void finalisepolymesh ( int obj )
 	// 150817 - GUI shader with DIFFUSE element included
 	SetObjectEffect ( obj, g.guidiffuseshadereffectindex );
 
-	#ifdef WICKEDENGINE
 	sObject* pObject = GetObjectData(obj);
 	WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
 	WickedCall_RemoveObject(pObject);
@@ -1774,7 +1633,6 @@ void finalisepolymesh ( int obj )
 	}
 	SetObjectDiffuse (obj, Rgb(0, 0, 0));
 	SetObjectEmissive (obj, diffuse);
-	#endif
 
 	// set alpha and transparency of this object
 	SetObjectTransparency ( obj, 2 );
@@ -1881,7 +1739,6 @@ int ispointinzone ( int waypointindex, int tpointx_f, int tpointz_f )
 	return c;
 }
 
-#ifdef WICKEDENGINE
 // For zones only (style == 2).
 void waypoint_delete_createundoredo(waypointtype* waypoint, waypointcoordtype* coords, int index)
 {
@@ -1949,14 +1806,10 @@ void waypoint_undoredo_add(const waypointtype& waypoint, waypointcoordtype* coor
 		if (ObjectExist(g.editorwaypointoffset + 0) == 0)
 		{
 			float fSphereSize = 25.0f;
-#ifdef WICKEDENGINE
 			fSphereSize = 10.0f;
 			WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
 			MakeObjectSphere(g.editorwaypointoffset + 0, fSphereSize);
 			WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-#else
-			MakeObjectSphere(g.editorwaypointoffset + 0, fSphereSize);
-#endif
 			SetObjectCollisionOff(g.editorwaypointoffset + 0);
 			SetAlphaMappingOn(g.editorwaypointoffset + 0, 25);
 			DisableObjectZRead(g.editorwaypointoffset + 0);
@@ -1968,4 +1821,3 @@ void waypoint_undoredo_add(const waypointtype& waypoint, waypointcoordtype* coor
 		}
 	}
 }
-#endif

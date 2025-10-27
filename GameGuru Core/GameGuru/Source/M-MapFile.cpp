@@ -820,7 +820,6 @@ void mapfile_emptyebesfromtestmapfolder(bool bIgnoreValidTextureFiles)
 void mapfile_emptyterrainfilesfromtestmapfolder ( void )
 {
 	// also makes sense to empty terrain files too as we are clearing this folder for new activity
-	#ifdef WICKEDENGINE
 	// move to terrain node folder location
 	cstr pOldDir = GetDir();
 	char pRealWritableArea[MAX_PATH];
@@ -864,7 +863,6 @@ void mapfile_emptyterrainfilesfromtestmapfolder ( void )
 		RemoveDirectoryA(pTerrainNodeFolder);
 	}
 	SetDir(pOldDir.Get());
-	#endif
 }
 
 void lm_emptylightmapandttsfilesfolder_wicked( void )
@@ -1034,7 +1032,6 @@ void mapfile_loadproject_fpm ( void )
 			t.tloadsuccessfully=2;
 		}
 
-		#ifdef WICKEDENGINE
 		// new terrain system loads its data settings
 		//PE: We are already inside "levelbank\\testmap\\" ?
 		//PE: In editor g.mysystem.levelBankTestMap_s have "c:" and works, in standalone we dont have that so:
@@ -1233,7 +1230,6 @@ void mapfile_loadproject_fpm ( void )
 			iTriggerInvalidateAfterFrames = 60; //PE: Height data need to be set first, then we can adjust grass/trees/virtual texture.
 
 		}
-		#endif
 
 		//  load in visuals from loaded file
 		timestampactivity(0,"LOADMAP: load in visuals");
@@ -1266,7 +1262,6 @@ void mapfile_loadproject_fpm ( void )
 			t.gamevisuals.vegetationindex=t.visuals.vegetationindex;
 		}
 
-#ifdef WICKEDENGINE
 
 		uint32_t iHeightmapSize = 0, iHeightmapWidth = 0, iHeightmapHeight = 0;
 		iHeightmapWidth = t.gamevisuals.iHeightmapWidth;
@@ -1317,7 +1312,6 @@ void mapfile_loadproject_fpm ( void )
 			g_iDeferTextureUpdateToNow = 2;
 		}
 
-#endif
 
 		//  if MAP OBS exists, we are not generating OBS data this time
 		t.aisystem.generateobs=1;
@@ -1550,9 +1544,7 @@ void mapfile_loadplayerconfig ( void )
 	}
 
 	// No third person mode in MAX
-	#ifdef WICKEDENGINE
 	t.playercontrol.thirdperson.enabled = 0;
-	#endif
 }
 
 void mapfile_saveplayerconfig ( void )
@@ -1610,7 +1602,6 @@ void mapfile_saveplayerconfig ( void )
 	SetDir (  t.old_s.Get() );
 }
 
-#ifdef VRTECH
 void addthisentityprofilesfilestocollection (entityeleproftype* pEleProf)
 {
 	// takes t.entid and t.e/pEleProf
@@ -1856,7 +1847,6 @@ void addthisentityprofilesfilestocollection (entityeleproftype* pEleProf)
 		while (!feof(tFPEFile))
 		{
 			fgets (tTempLine, 2047, tFPEFile);
-			#ifdef WICKEDENGINE
 			//PE: We need to add all custom mesh textures.
 			if (strstr(tTempLine, "baseColorMap"))
 			{
@@ -1924,7 +1914,6 @@ void addthisentityprofilesfilestocollection (entityeleproftype* pEleProf)
 					}
 				}
 			}
-			#endif
 			if (strstr (tTempLine, "textureref"))
 			{
 				char* pToFilename = strstr (tTempLine, "=");
@@ -2004,9 +1993,7 @@ void addthisentityprofilesfilestocollection (entityeleproftype* pEleProf)
 								addtocollection (cstr(pTmpFile + "_gloss.dds").Get());
 								addtocollection (cstr(pTmpFile + "_mask.dds").Get());
 								addtocollection (cstr(pTmpFile + "_metalness.dds").Get());
-								#ifdef WICKEDENGINE
 								addtocollection(cstr(pTmpFile + "_surface.dds").Get());
-								#endif
 								addtocollection (cstr(pTmpFile + "_normal.dds").Get());
 							}
 						}
@@ -3637,13 +3624,7 @@ void mapfile_savestandalone_stage4 ( void )
 	SetDir ( g.originalrootdir_s.Get() );
 
 	// Copy steam files (see above)
-	#ifdef PHOTONMP
 	 // No Steam in Photon build
-	#else
-	 t.dest_s=t.exepath_s+t.exename_s+"\\steam_appid.txt";
-	 if ( FileExist(t.dest_s.Get()) == 1  ) DeleteAFile (  t.dest_s.Get() );
-	 if ( FileExist("steam_appid.txt") == 1  ) CopyAFile ( "steam_appid.txt",t.dest_s.Get() );
-	#endif
 
 	// copy visuals settings file
 	t.visuals=t.gamevisuals ; visuals_save ( );
@@ -4056,8 +4037,6 @@ void mapfile_savestandalone_restoreandclose ( void )
 	// no longer exclusive use of file collection array
 	g_bMakingAStandaloneUsingFileCollectionArray = false;
 }
-#else
-#endif
 
 void scanscriptfileandaddtocollection ( char* tfile_s , char *pPath)
 {
@@ -4742,7 +4721,6 @@ void findalltexturesinmodelfile ( char* inputfile_s, char* folder_s, char* texpa
 	}
 }
 
-#ifdef VRTECH
 //
 // Scan default installation, keep core copy of default files for reference (so know custom content when we see it)
 //
@@ -4843,9 +4821,7 @@ bool IsFileAStockAsset ( LPSTR pCheckThisFile )
 	return false;
 }
 
-#endif
 
-#ifdef WICKEDENGINE
 void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 {
 	//  Store and switch folders
@@ -5580,7 +5556,6 @@ void mapfile_convertCLASSICtoMAX(LPSTR pFPMLoaded)
 	#endif
 
 }
-#endif
 
 void AddWPETextures(char* filename)
 {

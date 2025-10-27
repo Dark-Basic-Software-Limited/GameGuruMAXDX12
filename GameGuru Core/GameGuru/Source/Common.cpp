@@ -12,15 +12,9 @@
 #include "direct.h"
 #include <wininet.h>
 #include "M-WelcomeSystem.h"
-#ifdef WICKEDENGINE
-#else
-#include "Common-Keys.h"
-#include "CFtpC.h"
-#endif
 #include "..\..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\ShadowMapping\cShadowMaps.h"
 #include "..\..\Dark Basic Public Shared\Include\CObjectsC.h"
 
-#ifdef ENABLEIMGUI
 //PE: GameGuru IMGUI.
 #include "..\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
@@ -29,7 +23,6 @@
 #include "..\Imgui\imgui_internal.h"
 #include "..\Imgui\imgui_impl_win32.h"
 #include "..\Imgui\imgui_gg_dx11.h"
-#endif
 
 //220mb saved.
 #define REDUCEMEMUSE
@@ -41,10 +34,8 @@
 extern LPSTR gRefCommandLineString;
 extern bool gbAlwaysIgnoreShaderBlobFile;
 
-#ifdef VRTECH
 extern bool g_bDisableVRDetectionByUserRequest;
 extern bool bStartNewPrompt;
-#endif
 
 // Globals
 int g_PopupControlMode = 0;
@@ -53,17 +44,13 @@ char g_trialDiscountCode[1024];
 char g_trialDiscountExpires[1024];
 int tgamesetismapeditormode = 1; //PE: Need access to this.
 // Externs
-#ifdef WICKEDENGINE
 extern void ImGui_RenderLast(void);
-#endif
 
 // to enable the use of _e_ in standalone
 void SetCanUse_e_ ( int flag );
-#ifdef VRTECH
 char g_pCloudKeyErrorString[10240];
 char g_pCloudKeyExpiresDate[11];
 bool g_bCloudKeyIsHomeEdition = false;
-#endif
 
 // global to store abs path to converter
 char g_pAbsPathToConverter[MAX_PATH];
@@ -77,13 +64,10 @@ Sglobals g;
 // C++ CONVERSION: t contains all variables that were considered temporary and subject to change between routines
 Stemps t;
 
-#ifdef VRTECH
 void SetCanUse_e_ ( int flag );
 void SetWorkshopFolder ( LPSTR pFolder );
-#endif
 
 //Subroutines
-#ifdef WICKEDENGINE
 void CheckForNewUpdateWicked(void)
 {
 	extern bool bAreWeAEditor;
@@ -107,7 +91,6 @@ void CheckForNewUpdateWicked(void)
 		}
 	}
 }
-#endif
 
 void common_init ( void )
 {
@@ -252,7 +235,6 @@ void common_init ( void )
 
 	// determines if EDITOR or GAME right away!
 	FPSC_VeryEarlySetup();
-	#ifdef WICKEDENGINE
 	if (stricmp(g.trueappname_s.Get(), "Guru-MapEditor") == NULL)
 	{
 		// MAP EDITOR
@@ -289,15 +271,12 @@ void common_init ( void )
 		else
 			SetWriteSameAsRoot(true);
 	}
-	#endif
 
-	#ifdef WICKEDENGINE
 	// new image loading system uses both legacy for IMGUI and wicked for rest
 	// this image is loaded very early so the old image system can store it for use
 	// when other non-UI images are loaded, this allows the old images to 'think'
 	// they successfully loaded and permit normal logical flow through the engine
 	LoadImage("Files\\Editors\\gfx\\dummy.png", 1);
-	#endif
 
 	// ensures the DWORD to INT conversion always produces a positive value
 	SetLocalTimerReset();
@@ -337,11 +316,9 @@ void common_init ( void )
 	t.Kernel32 = 1;
 	t.memptr = PerformanceTimer();
 
-	#ifdef VRTECH
 	// some important resets
 	strcpy_s ( g_pCloudKeyErrorString, 10240, "Unknown Validation Error");
 	strcpy_s ( g_pCloudKeyExpiresDate, 11, "");
-	#endif
 
 	//  flashlight
 	g.flashlighton = 0;
@@ -546,11 +523,7 @@ void common_init ( void )
 	g.timestampactivityindex = 0;
 	g.timestampactivitymemthen = 0;
 	g.timestampactivityvideomemthen = 0;
-	#ifdef WICKEDENGINE
 	Dim(t.timestampactivity_s, 10); //PE: Not needed in wicked.
-	#else
-	Dim (  t.timestampactivity_s,1000  );
-	#endif
 	//  speed up
 	g.timebasepercycle_f = 0;
 	g.timebasepercyclestamp = Timer();
@@ -588,12 +561,8 @@ void common_init ( void )
 	//  game memory tracker (test game creates, editor uses to show in meter)
 	Dim (  t.gamememtable,0  );
 	Undim ( t.gamememtable );
-#ifdef WICKEDENGINE
 	//PE: Box() dont work in wicked anyway.
 	g.ghidememorygauge = 1;
-#else
-	g.ghidememorygauge = 0;
-#endif
 	g.gamememactuallyused = 0;
 	g.gamememactuallyusedstart = 0;
 	g.gamememactualmax = (102400*(10-4));
@@ -634,7 +603,6 @@ void common_init ( void )
 	Dim (  t.material,100  );
 	g.gmaterialmax = 0;
 
-	#ifdef WICKEDENGINE
 
 	// wicked MAX engine uses IMGUI in both mapeditor and standalone games, so init earlier
 	timestampactivity(0, "Startup ImGui.");
@@ -653,18 +621,13 @@ void common_init ( void )
 	if (pref.save_layout) 
 	{
 		static char cLayoutFile[MAX_PATH];
-		#ifdef WICKEDENGINE
 		sprintf(cLayoutFile, "%suimax.layout", defaultWriteFolder);
-		#else
-			sprintf(cLayoutFile, "%suiv3.layout", defaultWriteFolder);
-		#endif
 		io.IniFilename = &cLayoutFile[0]; //Enable saving.
 		ImGuiContext& g = *GImGui;
 		extern int refresh_gui_docking;
 		if (DoesFileExist(cLayoutFile)) {
 			refresh_gui_docking = 4; // dont update layout.
 		}
-#ifdef WICKEDENGINE
 		
 		if (pref.current_version_new_windows != MAXWINDOWSVERSION) {
 			pref.current_version_new_windows = MAXWINDOWSVERSION;
@@ -675,12 +638,6 @@ void common_init ( void )
 			refresh_gui_docking = 0; // reset layout.
 			if (MAXVERSION >= 26) pref.iDisableObjectLibraryViewport = 1;
 		}
-#else
-		if (pref.current_version != V3VERSION) {
-			pref.current_version = V3VERSION;
-			refresh_gui_docking = 0; // reset layout.
-		}
-#endif
 	}
 	else 
 	{
@@ -698,20 +655,14 @@ void common_init ( void )
 		myStyle2(NULL);
 	else if (pref.current_style == 1)
 	{
-		#ifdef PENEWLAYOUT
 		void DarkColorsNoTransparent(void);
 		myStyle2(NULL);
 		DarkColorsNoTransparent();
-		#else
-		myDarkStyle(NULL);
-		#endif
 	}
-	#ifdef PENEWLAYOUT
 	else if (pref.current_style == 9)
 	{
 		myDarkStyle(NULL);
 	}
-	#endif
 	else if (pref.current_style == 2)
 		ImGui::StyleColorsClassic();
 	else if (pref.current_style == 3)
@@ -740,28 +691,20 @@ void common_init ( void )
 	// Setup Platform/Renderer bindings
 	ImGui_ImplWin32_Init(g_pGlob->hWnd);
 	ImGui_ImplDX11_Init(m_pD3D, m_pImmediateContext);
-	#endif
 
 	//PE: First check forupdates just after imgui is up , if we need some special render.
-	#ifdef WICKEDENGINE
 	CheckForNewUpdateWicked(); //PE: Check if update process is done, and ask if user like to update.
-	#endif
 
 	//  Init FPSC then leap to SETUP.INI loader
 	t.leavegamedataalone=0;
 	FPSC_Full_Data_Init ( );
 
-	#ifdef WICKEDENGINE
 	CheckForNewUpdateWicked(); //PE: Check if update process is done, and ask if user like to update.
-	#endif
 
 	FPSC_Setup();
 
-	#ifdef WICKEDENGINE
 	CheckForNewUpdateWicked(); //PE: Check if update process is done, and ask if user like to update.
-	#endif
 
-	#ifdef WICKEDENGINE
 	// WickedEngine has own main loop later in sequence - must pass this point to get to it
 	if (stricmp(g.trueappname_s.Get(), "Guru-MapEditor") == NULL)
 	{
@@ -775,16 +718,11 @@ void common_init ( void )
 	extern void init_readouts();
 	init_readouts();
 
-	#else
-	// DBPEngine has internal loop called from inside FPSC_Setup(), so quit when get here
-	ExitProcess ( 0 );
-	#endif
 }
 
 //Against Steam Policy!
 //bool g_bOfferSteamReviewReminder = false;
 
-#ifdef WICKEDENGINE
 bool g_bOfferLatestUpdate = false;
 void common_autoupdatecheck(void)
 {
@@ -807,7 +745,6 @@ void common_autoupdatecheck(void)
 
 	}
 }
-#endif
 
 bool bSkipAllGameLogic = false;
 void common_loop_logic(void)
@@ -822,7 +759,6 @@ void common_loop_logic(void)
 		gameexecutable_loop();
 }
 
-#ifdef WICKEDENGINE
 void common_loop_render(void)
 {
 	// for standalone game, need sprites for title system (etc)
@@ -848,7 +784,6 @@ void common_loop_render(void)
 		ImGui_RenderLast();
 	}
 }
-#endif
 
 void common_finish(void)
 {
@@ -894,10 +829,8 @@ void common_init_globals ( void )
 	GG_GetRealPath(pConfirmDestinationCreated, 1);
 	g.myownrootdir_s = pConfirmDestinationCreated;
 
-	#ifdef VRTECH
 	// Store globally (for custom content loading inside SteamCheckForWorkshop)
 	SetWorkshopFolder ( g.fpscrootdir_s.Get() );
-	#endif
 
 	//  Image Resources
 	//  1-20 images used somewhere (terrain heightdata?)
@@ -965,9 +898,7 @@ void common_init_globals ( void )
 	g.charactercreatorEditorImageoffset = 95000;
 	g.LUAImageoffset = 96000;
 	g.LUAImageoffsetMax = 105999;
-	#ifdef VRTECH
 	g.perentitypromptimageoffset = 110000; // allow 10,000 slots
-	#endif
 
 	// Sprite ( Resource markers )
 	g.ammopanelsprite = 63400;
@@ -1002,12 +933,8 @@ void common_init_globals ( void )
 	//  +X = see postprocessimages for assignment
 	g.effectbankoffset = 1000;
 	g.explosionandfireeffectbankoffset = 1100;
-	#ifdef VRTECH
 	g.lightmappbreffectillum = 1295;
 	g.controllerpbreffect = 1296;
-	#else
-	g.lightmappbreffectillum = 1296;
-	#endif
 	g.lightmappbreffect = 1297;
 	g.thirdpersonentityeffect = 1298;
 	g.thirdpersoncharactereffect = 1299;
@@ -1122,11 +1049,7 @@ void common_init_globals ( void )
 	//  +3 = virtual reality RIFT second eye quad
 	//  +5 = dynamic terrain shadow camera image
 	//  [be aware anything added after 150001 might mess up post process?!] 
-	#ifdef VRTECH
 	g.batchobjectoffset = 85000; //160001;
-	#else
-	g.batchobjectoffset = 160001;
-	#endif
 	g.explosionsandfireobjectoffset = 170001;
 	g.raveyparticlesobjectoffset = 180001;
 	g.ebeobjectbankoffset = 189901;
@@ -1136,20 +1059,12 @@ void common_init_globals ( void )
 	g.charactercreatorrmodelsbankoffset = 200000;
 	g.charactercreatorrmodelsoffset = 201000;
 	g.charactercreatorrmodelsoffsetEnd = 203000;
-	#ifdef VRTECH
 	g.perentitypromptoffset = 210000; // allow 10,000 slots
-	#endif
 
 	g.physicssecondariesoffset = 220000; // used for hybrid entities that need a secondary object (door frames that are static)
 	g.physicssecondariesoffsetend = 299999;
 
 	g.physicsdebugdraweroffset = 300000;
-	#ifdef BUILDINGEDITOR
-	g.buildingeditorimgoffset = 310000;
-	g.buildingeditorobjoffset = 310100;
-	/*g.buildingeditoroffsetmax = 311000;*/
-	g.buildingeditoroffsetmax = 320000;
-	#endif
 
 	//  Particle Resources
 	g.particlebankoffset = 1;
@@ -1287,9 +1202,7 @@ void common_init_globals ( void )
 	Dim (  t.mp_subbedItems,20  );
 	Dim (  t.mp_playerAvatars_s,MP_MAX_NUMBER_OF_PLAYERS  );
 	Dim (  t.mp_playerAvatarOwners_s,MP_MAX_NUMBER_OF_PLAYERS  );
-	#ifdef VRTECH
 	Dim (  t.mp_playerAvatarLoaded,MP_MAX_NUMBER_OF_PLAYERS  );
-	#endif
 
 	Dim (  t.mpmultiplayerstart,MP_MAX_NUMBER_OF_PLAYERS );
 
@@ -1438,7 +1351,6 @@ void common_init_globals ( void )
 	g.decalmax = 10;
 	Dim (  t.decal,g.decalmax );
 	t.decal[1].name_s="";
-#ifdef WICKEDENGINE
 	//PE: For now until we found out why wicked use all that "update" time on non visible objects.
 	//PE: REDUCEMEMUSE
 	#ifdef REDUCEMEMUSE
@@ -1446,9 +1358,6 @@ void common_init_globals ( void )
 	#else
 	g.decalelementmax = 199; //499;
 	#endif
-#else
-	g.decalelementmax = 499;
-#endif
 	Dim (  t.decalelement,g.decalelementmax );
 
 	Dim (  t.weaponslot,12 ); //PE: 11 to be used for interaction hands, t.weaponammo[slot+10] still works.
@@ -1536,10 +1445,6 @@ void common_init_globals ( void )
 	Dim2(  t.bitmapfont,10, 255 );
 
 	Dim (  t.effectparamarray,1300 );
-#ifndef WICKEDENGINE
-	//PE: Not used in wicked. REDUCEMEMUSE
-	Dim2( t.terrainmatrix ,terrain_chunk_size+3 , terrain_chunk_size+3 );
-#endif
 	t.terrain.waterlineyadjustforclip_f=0.0f;
 	t.terrain.adjaboveground_f=30.0; // 070116 - caued spawned entity drop from sky 50.0f
 	t.terrain.superflat=0;
@@ -1551,9 +1456,6 @@ void common_init_globals ( void )
 	t.terrain.grassmemblock = 44;
 
 	if (MemblockExist(t.terrain.grassmemblock) == 1) DeleteMemblock(t.terrain.grassmemblock);
-	#ifndef PAULNEWGRASSSYSTEM
-	MakeMemblock(t.terrain.grassmemblock, MAXTEXTURESIZE*MAXTEXTURESIZE);
-	#endif
 
 	//  Resource start indices
 	// `terrain.paintcameraindex=11
@@ -1646,16 +1548,9 @@ void common_init_globals ( void )
 	t.aisystem.debugentitymesh2 = t.aisystem.objectstartindex + 3002;
 	t.aisystem.debugentityworkobj = t.aisystem.objectstartindex + 3003;
 	t.aisystem.debugentityworkobj2 = t.aisystem.objectstartindex + 3004;
-	#ifdef WICKEDENGINE
 	// will be using g.debugandmiscobjects [1000] +3010 thru 5000 (real values 4010 thru 6000)
 	// 4009 is g.debugraycastvisual
 	//t.aisystem.debugconeofsightobj = g.debugconeofsightstart; // is 4010 g.debugconeofsightstart used directly now!!
-	#else
-	// +3005 - debugconeofsightobj
-	// +3100 - building object (not currently used now)
-	// +4001/5000 - visual character VWEAP object
-	t.aisystem.debugconeofsightobj = t.aisystem.objectstartindex + 3005;
-	#endif
 	t.aisystem.imagestartindex=111;
 	//  +0 - default character D texture (proto)
 	//  +1 - default character I texture (proto)
@@ -1768,11 +1663,6 @@ void FPSC_Full_Data_Init ( void )
 	g.lastmshotmem = 0;
 	//  TDM - Plystire
 	//  workload counters
-#ifndef WICKEDENGINE
-	//PE: Not used in wicked. REDUCEMEMUSE
-	Dim2(  t.wshot,400, 4  );
-	Dim (  t.wshotmax,4  );
-#endif
 	g.wshoti = 0;
 
 	//  raw Text (  for HUD )
@@ -1826,13 +1716,6 @@ void FPSC_Full_Data_Init ( void )
 
 	//  Visible-Col-Map used for per-cycle quick entity collision checks
 	t.viscolx=160 ; t.viscoly=20 ; t.viscolz=160;
-#ifndef WICKEDENGINE
-	//PE: Not used in wicked. REDUCEMEMUSE
-	Dim3(  t.viscolmap,t.viscolx, t.viscoly, t.viscolz  );
-
-	//  Prepare entity reference map (references entityelementlist indexes)
-	Dim3(t.refmap, t.layermax, t.maxx, t.maxy);
-#endif
 
 
 	//  Default settings
@@ -1857,15 +1740,11 @@ void FPSC_Full_Data_Init ( void )
 
 	g.animmax = 700;
 	g.footfallmax = 200;
-#ifdef WICKEDENGINE
 	#ifdef DEFAULTMASTERENTITY
 	g.entidmastermax = DEFAULTMASTERENTITY;
 	#else
 	g.entidmastermax = 100;
 	#endif
-#else
-	g.entidmastermax = 100;
-#endif
 
 	//Dave fix - 100 was not enough for some stress test levels
 	Dim2(  t.entityphysicsbox,MAX_ENTITY_PHYSICS_BOXES*2, MAX_ENTITY_PHYSICS_BOXES  );
@@ -1877,10 +1756,6 @@ void FPSC_Full_Data_Init ( void )
 	Dim (  t.entityprofile, g.entidmastermax);
 	Dim2(  t.entitydecal_s, g.entidmastermax, 100 );
 	Dim2(  t.entitydecal, g.entidmastermax, 100 );
-#ifndef WICKEDENGINE
-	//PE: Not used in wicked. REDUCEMEMUSE
-	Dim2(  t.entityblood, g.entidmastermax, BLOODMAX );
-#endif
 
 	g.entityelementlist = 0;
 	g.entityelementmax = 100;
@@ -2232,20 +2107,14 @@ void FPSC_SetDefaults ( void )
 	g.gprofileinstandalone = 0;
 	g.greflectionrendersize = 512;
 	g.gadapterordinal = 0;
-	#ifdef VRTECH
 	g.gadapterd3d11only = 0;
-	#endif
 	g.ghideallhuds = 0;
 	g.gskipobstaclecreation = 0;
 	g.gskipterrainobstaclecreation = 0;
 	g.gdeletetxpcachesonexit = 0;
 	g.gdisablesurfacesnap = 0;
 	g.gdefaultterrainheight = GGORIGIN_Y+10;
-	#ifdef WICKEDENGINE
 	g.gdefaultwaterheight = -500.0f; //GGORIGIN_Y;
-	#else
-	g.gdefaultwaterheight = GGORIGIN_Y;
-	#endif
 	g.gdefaultebegridoffsetx = 50;
 	g.gdefaultebegridoffsetz = 50;
 	g.allowcpuanimations = 0;
@@ -2404,10 +2273,8 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 
 					// All SETUP.INI Fields:
 
-#ifdef VRTECH
 // DOCDOC: generatehelpfromdocdoc = Set to 1 to generate new assetitinerary file every time, 2 to prevent CUSTOM_* being added to FPM (dev)
 					t.tryfield_s = "generateassetitinerary"; if (t.field_s == t.tryfield_s)  g.globals.generateassetitinerary = t.value1;
-#endif
 
 					// DOCDOC: generatehelpfromdocdoc = Enable GameGuru to generate new DOCDOC Help (when source relatively available).
 					t.tryfield_s = "generatehelpfromdocdoc"; if (t.field_s == t.tryfield_s)  g.globals.generatehelpfromdocdoc = t.value1;
@@ -2442,11 +2309,6 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: hidedistantshadows = Causes more distant shadows to be hidden to improve performance
 					t.tryfield_s = "hidedistantshadows"; if (t.field_s == t.tryfield_s) g.globals.hidedistantshadows = t.value1;
 
-#ifdef VRTECH
-#else
-					// DOCDOC: terrainshadows = Enables terrain to cast shadow maps at a cost of performance
-					t.tryfield_s = "terrainshadows"; if (t.field_s == t.tryfield_s) g.globals.terrainshadows = t.value1;
-#endif
 
 					// DOCDOC: realshadowresolution = Size of the texture plate dimension to render the shadow onto. Default is 2048.
 					t.tryfield_s = "realshadowresolution"; if (t.field_s == t.tryfield_s) g.globals.realshadowresolution = t.value1;
@@ -2553,11 +2415,6 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: allowfragmentation = Set to 0 to force game to relaunch at end of game, 1 to never relaunch the game and 2 to relaunch after every level. Default is 1.
 					t.tryfield_s = "allowfragmentation"; if (t.field_s == t.tryfield_s)  t.game.allowfragmentation = t.value1;
 
-#ifdef VRTECH
-#else
-					// DOCDOC: standalonefreememorybetweenlevels = Enables the deletion of textures from the previous level before loading the next one.
-					t.tryfield_s = "standalonefreememorybetweenlevels"; if (t.field_s == t.tryfield_s)  g.standalonefreememorybetweenlevels = t.value1;
-#endif
 
 					// DOCDOC: reflectionrendersize = Sets the size of the texture plate dimension for rendering the reflections in water. Default is 512.
 					t.tryfield_s = "reflectionrendersize"; if (t.field_s == t.tryfield_s)  g.greflectionrendersize = t.value1;
@@ -2586,10 +2443,8 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: hideallhuds = Forces all display HUDs to hide when in the game
 					t.tryfield_s = "hideallhuds"; if (t.field_s == t.tryfield_s)  g.ghideallhuds = t.value1;
 
-#ifdef VRTECH
 					// DOCDOC: adapterd3d11only = Set to 1 to change the feature levels requested when DirectX is initialised
 					t.tryfield_s = "adapterd3d11only"; if (t.field_s == t.tryfield_s)  g.gadapterd3d11only = t.value1;
-#endif
 
 					// DOCDOC: skipobstaclecreation = Speed up level preparation time by skipping AI obstacle creation. AI will not have pathfinding. Default is 0.
 					t.tryfield_s = "skipobstaclecreation"; if (t.field_s == t.tryfield_s)  g.gskipobstaclecreation = t.value1;
@@ -2651,12 +2506,7 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: loadreport = Not Used
 					t.tryfield_s = "loadreport"; if (t.field_s == t.tryfield_s)  g.gloadreportstate = t.value1;
 
-#ifdef WICKEDENGINE
 					// using new DocWrite system
-#else
-					// DOCDOC: usingmysystemfolder = [BETA] Moves all temporary files to a user writable location (for Safe Mode Compatibility)
-					t.tryfield_s = "usingmysystemfolder"; if (t.field_s == t.tryfield_s)  g.mysystem.bUsingMySystemFolder = t.value1;
-#endif
 
 					// DOCDOC: optimizemode = Not Used
 					t.tryfield_s = "optimizemode"; if (t.field_s == t.tryfield_s)  g.goptimizemode = t.value1;
@@ -2830,10 +2680,8 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: memskipwatermask = Disables the generation of a water mask which reduces the alpha of water as it reaches the shoreline.
 					t.tryfield_s = "memskipwatermask"; if (t.field_s == t.tryfield_s)  g.memskipwatermask = t.value1;
 
-#ifdef VRTECH
 					// DOCDOC: standalonefreememorybetweenlevels = Enables the deletion of textures from the previous level before loading the next one.
 					t.tryfield_s = "standalonefreememorybetweenlevels"; if (t.field_s == t.tryfield_s)  g.standalonefreememorybetweenlevels = t.value1;
-#endif
 
 					// DOCDOC: videoprecacheframes = Set the amount of pre-caching each video in a game level uses, lowering memory usage. Default is 1.
 					t.tryfield_s = "videoprecacheframes"; if (t.field_s == t.tryfield_s)  g.videoprecacheframes = t.value1;
@@ -2876,11 +2724,7 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					if (t.field_s == t.tryfield_s)
 					{
 						g.maxtotalmeshlights = t.value1;
-#ifdef VRTECH
 						if (g.maxtotalmeshlights > 38) g.maxtotalmeshlights = 38;
-#else
-						if (g.maxtotalmeshlights > 79) g.maxtotalmeshlights = 79;
-#endif
 						if (g.maxtotalmeshlights < 4) g.maxtotalmeshlights = 4; //PE: Lowest to support old system on terrain
 					}
 
@@ -2889,11 +2733,7 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					if (t.field_s == t.tryfield_s)
 					{
 						g.maxpixelmeshlights = t.value1;
-#ifdef VRTECH
 						if (g.maxpixelmeshlights > 38) g.maxpixelmeshlights = 38; //PE: Leave 2 vertex based lights per mesh.
-#else
-						if (g.maxpixelmeshlights > 80) g.maxpixelmeshlights = 80; //PE: Leave 2 vertex based lights per mesh.
-#endif
 					}
 
 					// DOCDOC: maxterrainlights = Set the maximum number of terrain lights to be used in the scene. Range is 0-40. Default is 20.
@@ -3262,9 +3102,7 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 		}
 		UnDim (t.data_s);
 
-#ifdef WICKEDENGINE
 		g.ghidememorygauge = 1; //PE: Box() dont work in wicked anyway.
-#endif
 		//  V118 - 160810 - knxrb - Auto Resolution
 		if (g.gautores == 1)
 		{
@@ -3301,7 +3139,6 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 	if (g.gforceloadtestgameshaders != 0) gbAlwaysIgnoreShaderBlobFile = true;
 }
 
-#ifdef VRTECH
 LPSTR FindFileFromEntityBank ( LPSTR pFindThisFilename )
 {
 	// look through entire file collection for this file
@@ -3332,7 +3169,6 @@ LPSTR FindFileFromEntityBank ( LPSTR pFindThisFilename )
 	}
 	return NULL;
 }
-#endif
 
 void FPSC_LoadKEYMAP ( void )
 {
@@ -3562,14 +3398,10 @@ void FPSC_VeryEarlySetup(void)
 {
 	// Determine if GAME or MAPEDITOR here, so can set display mode accordingly
 	g.trueappname_s = "Guru-Game";
-	#ifdef VRTECH
 	// still called guru-mapeditor.exe for now
 	if (strcmp(Lower(Right(Appname(), 18)), "guru-mapeditor.exe") == 0
 	||  strcmp(Lower(Right(Appname(), 16)), "vr quest app.exe") == 0
 	||  strcmp(Lower(Right(Appname(), 15)), "gamegurumax.exe") == 0)
-	#else
-	if (strcmp(Lower(Right(Appname(), 18)), "guru-mapeditor.exe") == 0)
-	#endif
 	{
 		g.trueappname_s = "Guru-MapEditor";
 	}
@@ -3617,16 +3449,6 @@ void FPSC_Setup(void)
 		{
 			OpenToRead(1, t.tfile_s.Get());
 			t.tshowonstart_s = ReadString(1);
-#ifdef VRTECH
-#else
-			cstr videoPlayedMax_s = ReadString(1);
-			int iVideoPlayedMax = atoi(videoPlayedMax_s.Get());
-			for (int n = 0; n < 10; n++)
-			{
-				cstr videoPlayedItem_s = ReadString(1);
-				g.videoMenuPlayed[n] = atoi(videoPlayedItem_s.Get());
-			}
-#endif
 			CloseFile(1);
 			g.gshowonstartup = ValF(t.tshowonstart_s.Get());
 		}
@@ -3634,22 +3456,10 @@ void FPSC_Setup(void)
 		{
 			// first time run (for welcome and serial code system)
 			g.gfirsttimerun = 1;
-#ifdef VRTECH
 			g.gshowonstartup = 1;
 			OpenToWrite(1, t.tfile_s.Get());
 			WriteString(1, "1");
 			CloseFile(1);
-#else
-			g.gshowonstartup = 0;
-			OpenToWrite(1, t.tfile_s.Get());
-			WriteString(1, "0");
-			WriteString(1, "0");
-			for (int n = 0; n < 10; n++)
-			{
-				WriteString(1, "0");
-			}
-			CloseFile(1);
-#endif
 		}
 
 		// news announcement flag
@@ -3671,32 +3481,7 @@ void FPSC_Setup(void)
 	}
 
 	// 050416 - get parental control flag and any password
-#ifdef VRTECH
 	g.quickparentalcontrolmode = 0;
-#else
-	g.quickparentalcontrolmode = 0;
-	g.quickparentalcontrolmodepassword[0] = 0;
-	g.quickparentalcontrolmodepassword[1] = 0;
-	g.quickparentalcontrolmodepassword[2] = 0;
-	g.quickparentalcontrolmodepassword[3] = 0;
-	t.tfile_s = "parentalcontrolmode.ini";
-	if (FileExist(t.tfile_s.Get()) == 1)
-	{
-		if (FileOpen(1) == 1)  CloseFile(1);
-		OpenToRead(1, t.tfile_s.Get());
-		cstr quickparentalcontrolmode_s = ReadString(1);
-		g.quickparentalcontrolmodepassword[0] = ReadByte(1);
-		g.quickparentalcontrolmodepassword[1] = ReadByte(1);
-		g.quickparentalcontrolmodepassword[2] = ReadByte(1);
-		g.quickparentalcontrolmodepassword[3] = ReadByte(1);
-		CloseFile(1);
-		g.quickparentalcontrolmode = ValF(quickparentalcontrolmode_s.Get());
-	}
-	else
-	{
-		g.quickparentalcontrolmode = 0;
-	}
-#endif
 
 	// 050416 - get VRQ control flag and serial code
 	g.vrqorggcontrolmode = 0;
@@ -3714,47 +3499,15 @@ void FPSC_Setup(void)
 	}
 	else
 	{
-#ifdef PRODUCTV3
-		t.tfile_s = "cleverbooksmode.ini";
-		if (FileExist(t.tfile_s.Get()) == 1)
-		{
-			g.bCleverbooksBundleMode = true;
-		}
-		else
-		{
-			t.tfile_s = "vrqcontrolmode.ini";
-			if (FileExist(t.tfile_s.Get()) == 0)
-			{
-				OpenToWrite(1, t.tfile_s.Get());
-				WriteString(1, "");
-				CloseFile(1);
-			}
-		}
-		g.vrqorggcontrolmode = 1;
-#else
-#ifdef VRTECH
 		t.tfile_s = "ggcontrolmode.ini";
 		if (FileExist(t.tfile_s.Get()) == 0)
 		{
 			OpenToWrite(1, t.tfile_s.Get());
-#ifdef ALPHAEXPIRESYSTEM
 			WriteString(1, "ALPHA");
-#else
-			WriteString(1, "");
-#endif
 			CloseFile(1);
 		}
 		g.vrqorggcontrolmode = 2;
-#else
-		t.tfile_s = "educontrolmode.ini";
-		if (FileExist(t.tfile_s.Get()) == 1)
-		{
-			g.vrqorggcontrolmode = 2;
-		}
-#endif
-#endif
 
-#ifndef PRODUCTCLASSIC
 		if (g.vrqorggcontrolmode > 0)
 		{
 			// cleverbooks or vrq standalone
@@ -3804,15 +3557,7 @@ void FPSC_Setup(void)
 				if (iValidCode <= 0)
 				{
 					// serial code expired
-#ifdef ALPHAEXPIRESYSTEM
 ///MessageBoxA(NULL, "Build has expired! Find out more at https://www.game-guru.com/max", "Activation Error", MB_OK);
-#else
-#ifdef CLOUDKEYSYSTEM
-// Allow UI to offer up cloud key dialog now - message already given with more detailed info on error earlier
-#else
-					MessageBox(NULL, "Your code has expired, obtain an updated code to continue using the software.", "License Not Found", MB_OK);
-#endif
-#endif
 					if (iValidCode == -1)
 					{
 						// no internet connection so cannot check key, just quit!
@@ -3836,76 +3581,27 @@ void FPSC_Setup(void)
 				g.vrqTriggerSerialCodeEntrySystem = 1;
 				g.iTriggerSoftwareToQuit = 1;
 			}
-#ifndef PRODUCTV3
 			g.vrqTriggerSerialCodeEntrySystem = 0;
 			g.iTriggerSoftwareToQuit = 0;
-#endif
 
 			// all VRQ is restricted content mode
 			g.quickparentalcontrolmode = 2;
 		}
-#endif
 
-#ifdef VRTECH
-#else
-
-#ifndef PRODUCTCLASSIC
-		else
-		{
-			// no serial code found, ask for one
-			g.vrqTriggerSerialCodeEntrySystem = 1;
-			g.iTriggerSoftwareToQuit = 1;
-		}
-#endif
-#endif
 		//g.vrqTriggerSerialCodeEntrySystem = 0;
 		//g.iTriggerSoftwareToQuit = 0;
 
-#ifndef PRODUCTCLASSIC
-#ifdef WICKEDENGINE
 		g.quickparentalcontrolmode = 0;
-#else
-// all VRQ is restricted content mode
-		g.quickparentalcontrolmode = 2;
-#endif
-#endif
 	}
 
 	// standalones need to know we are running in VR flavor
-#ifdef VRTECH
 	if (g.iTriggerSoftwareToQuit == 0)
 	{
 		g.vrqcontrolmode = 1;
 	}
-#endif
 
 	//  Review Request Reminder state
 	g.reviewRequestReminder = 0;
-#ifndef VRTECH
-	g.reviewRequestMinuteCounter = 0;
-	g.dwReviewRequestTimeStart = timeGetTime();
-	t.tfile_s = "reviewrequestreminder.ini";
-	if (FileExist(t.tfile_s.Get()) == 1)
-	{
-		// read existing review status 
-		if (FileOpen(1) == 1) CloseFile(1);
-		OpenToRead(1, t.tfile_s.Get());
-		t.reviewRequestReminder_s = ReadString(1);
-		t.reviewRequestMinuteCounter_s = ReadString(1);
-		CloseFile(1);
-		g.reviewRequestReminder = ValF(t.reviewRequestReminder_s.Get());
-		g.reviewRequestMinuteCounter = ValF(t.reviewRequestMinuteCounter_s.Get());
-	}
-	else
-	{
-		// create new review status file
-		if (FileOpen(1) == 1) CloseFile(1);
-		OpenToWrite(1, t.tfile_s.Get());
-		WriteString(1, "1");
-		WriteString(1, "0");
-		CloseFile(1);
-	}
-#endif
 
 	//  Version Control - TEST GAME Mode
 	g.gtestgamemodefromeditor = 0;
@@ -3987,11 +3683,7 @@ void FPSC_Setup(void)
 	}
 
 	// Check and load SETUP.INI defaults
-#ifdef WICKEDENGINE
 // using new DocWrite system
-#else
-	g.mysystem.bUsingMySystemFolder = false; //PE: Need to be false by default.
-#endif
 
 	FPSC_LoadSETUPINI(false);
 	FPSC_LoadSETUPVRINI();
@@ -4024,9 +3716,7 @@ void FPSC_Setup(void)
 	{
 		ForceAdapterOrdinal ( g.gadapterordinal );
 	}
-	#ifdef VRTECH
 	ForceAdapterD3D11ONLY ( g.gadapterd3d11only );
-	#endif
 
 	// true name of app to log
 
@@ -4274,80 +3964,15 @@ void FPSC_Setup(void)
 		}
 	}
 
-	#ifdef ENABLEIMGUI
 	//PE: IMGUI init.
 	if (t.game.set.ismapeditormode == 1) 
 	{
-		#ifdef WICKEDENGINE
 		// done earlier as standalone games need this too in wicked MAX engine
-		#else
-		extern char defaultWriteFolder[260];
-		extern preferences pref;
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-		io.ConfigViewportsNoTaskBarIcon = true;
-
-		// no layout saving until complete UI work
-		extern int refresh_gui_docking;
-		refresh_gui_docking = 0; // reset layout.
-		if (pref.save_layout) 
-		{
-			static char cLayoutFile[MAX_PATH];
-			#ifdef WICKEDENGINE
-			sprintf(cLayoutFile, "%suimax.layout", defaultWriteFolder);
-			#else
-			sprintf(cLayoutFile, "%suiv3.layout", defaultWriteFolder);
-			#endif
-			io.IniFilename = &cLayoutFile[0]; //Enable saving.
-			ImGuiContext& g = *GImGui;
-			extern int refresh_gui_docking;
-			if (DoesFileExist(cLayoutFile)) {
-				refresh_gui_docking = 4; // dont update layout.
-			}
-			if (pref.current_version != V3VERSION) {
-				pref.current_version = V3VERSION;
-				refresh_gui_docking = 0; // reset layout.
-			}
-		}
-		else {
-			io.IniFilename = NULL; //Disable saving imgui.ini
-		}
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		myDarkStyle(NULL); //for bordersize,padding ...
-		myStyle2(NULL); //additional settings before change.
-
-		//Restore style from preferences.
-		if(pref.current_style == 0)
-			myStyle2(NULL);
-		else if (pref.current_style == 1)
-			myDarkStyle(NULL);
-		else if (pref.current_style == 2)
-			ImGui::StyleColorsClassic();
-		else if (pref.current_style == 3)
-			myLightStyle(NULL);
-
-		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-		ImGuiStyle& style = ImGui::GetStyle();
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			style.WindowRounding = 0.0f;
-		}
-
-		// Setup Platform/Renderer bindings
-		ImGui_ImplWin32_Init(g_pGlob->hWnd);
-		ImGui_ImplDX11_Init(m_pD3D, m_pImmediateContext);
-		#endif
 	}
 
 	extern bool bImGuiInTestGame;
 	if(t.game.gameisexe == 1)
 		bImGuiInTestGame = true;
-	#endif
 
 	t.newwidth=g.gdisplaywidth ; t.newheight=g.gdisplayheight ; t.newdepth=g.gdisplaydepth;
 	g.gratiox_f = g.gdisplaywidth;
@@ -4479,17 +4104,9 @@ void FPSC_Setup(void)
 	
 	// Common redirections to new My System write/read folder
 	cstr mysystemfolder_s = "My System";
-	#ifdef WICKEDENGINE
 	// using new DocWrite system
-	#else
-	if ( bIsThisMapEditor == false ) g.mysystem.bUsingMySystemFolder = false;
-	#endif
 	g.mysystem.root_s = g.myownrootdir_s + "\\" + mysystemfolder_s + "\\";
-	#ifdef WICKEDENGINE
 	// using new DocWrite system
-	#else
-	if ( g.mysystem.bUsingMySystemFolder == false ) g.mysystem.root_s = g.fpscrootdir_s + "\\";;
-	#endif
 	g.mysystem.levelBankTestMap_s = "levelbank\\testmap\\";
 	g.mysystem.levelBankTestMapAbs_s = g.fpscrootdir_s+"\\Files\\levelbank\\testmap\\";
 	g.mysystem.editorsGridedit_s = "editors\\gridedit\\";
@@ -4506,11 +4123,9 @@ void FPSC_Setup(void)
 	g.mysystem.thumbbank_s = pCacheFolder;
 
 	// also create particlebank\user folder for Particle Editor Exports
-	#ifdef WICKEDENGINE
 	cstr particlesbankfolder_s = g.fpscrootdir_s + "\\Files\\particlesbank\\user\\";
 	strcpy(pCacheFolder, particlesbankfolder_s.Get());
 	GG_GetRealPath(pCacheFolder, 1); //make sure it exists.
-	#endif
 
 	cstr emitterbankfolder_s = g.fpscrootdir_s + "\\Files\\emitterbank\\";
 	strcpy(pCacheFolder, emitterbankfolder_s.Get());
@@ -4530,7 +4145,6 @@ void FPSC_Setup(void)
 	{
 		// MAP EDITOR
 
-		#ifdef WICKEDENGINE
 		// wicked uses DocWrite system
 		char pNewLevelBankFolder[MAX_PATH];
 		strcpy(pNewLevelBankFolder, g.mysystem.levelBankTestMapAbs_s.Get());
@@ -4586,19 +4200,13 @@ void FPSC_Setup(void)
 			// restore directory
 			SetDir(pOldDir);
 		}
-		#endif
 
-		#ifdef VRTECH
 		// create itinerary file if first time, or just read it in
 		CreateItineraryFile();
 
 		// Write latest location of software to registry (for future patch installers)
 		HKEY hKeyNames = 0;
-		#ifdef WICKEDENGINE
 		LPCSTR pSubKeyName = "Software\\GameGuruMAX";
-		#else
-		LPCSTR pSubKeyName = "Software\\VRQuest";
-		#endif
 		LPSTR pThisVersion = g.version_s.Get();
 		LPSTR pThisPath = g.fpscrootdir_s.Get();
 		DWORD dwDisposition;
@@ -4620,7 +4228,6 @@ void FPSC_Setup(void)
 			}
 			RegCloseKey(hKeyNames);
 		}
-		#endif
 
 		// using new DocWrite system
 		char pRealRecompile[MAX_PATH];
@@ -4656,7 +4263,6 @@ void FPSC_Setup(void)
 			ExitPrompt ( "Game Guru cannot write files to the Files area. Exit the software, right click on the Game Guru icon, and select 'Run As Administrator'", "Init Error" );
 		}
 
-		#ifdef WICKEDENGINE
 		// at very start for wicked, create user folders so dont need to exit and return to see any creations
 		char pUserFolder[MAX_PATH];
 		// entitybank writables
@@ -4690,7 +4296,6 @@ void FPSC_Setup(void)
 		strcpy(pUserFolder, g.fpscrootdir_s.Get());
 		strcat(pUserFolder, "\\Files\\videobank\\user\\");
 		GG_GetRealPath(pUserFolder, 1);
-#endif
 	
 		//  New security requires Steam client to be running (for ownership check)
 		g.iFreeVersionModeActive = 0;
@@ -4734,10 +4339,6 @@ void FPSC_Setup(void)
 			strcpy ( pGetDataString, "/api/discount/codes/generate?" );
 			strcat ( pGetDataString, DISCOUNTKEY );
 			strcat ( pGetDataString, "&discount=gamegurutrial" );
-			#ifdef VRTECH
-			#else
-			strcat ( pGetDataString, "&discount_percentage=70" );
-			#endif
 			UINT iError = GetURLData ( pDataReturned, &dwDataReturnedSize, pGetDataString );
 			if ( iError <= 0 && *pDataReturned != 0 && strchr(pDataReturned, '{') != 0 && dwDataReturnedSize < 10240 )
 			{
@@ -4879,20 +4480,10 @@ void FPSC_Setup(void)
 
 		//  Enter Map Editor specific code
 		SETUPLoadAllCoreShadersREST(g.gforceloadtestgameshaders,g.gpbroverride);
-		#ifdef VRTECH
 		material_loadsounds ( 1 );
-		#else
-		material_loadsounds ( 0 );
-		#endif
 
 		// finally launch editor 
-		#ifdef WICKEDENGINE
 		// wicked has own loop, do not use regular internal loop! (see GuruLoop)
-		#else
-		mapeditorexecutable();
-		// Free before exit app
-		mp_free ( );
-		#endif
 	}
 	else
 	{
@@ -4904,7 +4495,6 @@ void FPSC_Setup(void)
 		//  Activate Steam (always so single player can do snapshots and get Steam notifications)
 		mp_init();
 
-		#ifdef VRTECH
 		// VR Mode Initialisation
 		g.globals.riftmode = 0;
 		g.vrglobals.GGVREnabled = 0;
@@ -4941,7 +4531,6 @@ void FPSC_Setup(void)
 		if (!GetImageExistEx(g.editorimagesoffset + 14)) LoadImage("editors\\gfx\\14.png", g.editorimagesoffset + 14);
 		LoadImage("editors\\gfx\\14-red.png", g.editorimagesoffset + 16);
 		LoadImage("editors\\gfx\\14-green.png", g.editorimagesoffset + 17);
-		#endif
 
 		// Init default material sounds
 		material_init();
@@ -4961,13 +4550,9 @@ void FPSC_Setup(void)
 		SetCameraAspect(t.aspect_f);
 
 		//  set-up test game screen prompt assets (for printscreenprompt())
-		#ifdef VRTECH
 		int iUseVRTest = 0;
 		if (g.vrglobals.GGVREnabled > 0) iUseVRTest = 1;
 		loadscreenpromptassets(iUseVRTest);
-		#else
-		loadscreenpromptassets(0);
-		#endif
 		printscreenprompt("");
 
 		// delayed material load to after logo splash
@@ -4991,11 +4576,7 @@ void FPSC_Setup(void)
 		t.tfile_s = g.mysystem.levelBankTestMap_s + "m.dat"; //"levelbank\\testmap\\m.dat";
 		if (FileExist(t.tfile_s.Get()) == 1)
 		{
-			#ifdef WICKEDENGINE
 			terrain_load(t.tfile_s.Get());
-			#else
-			terrain_load();
-			#endif
 		}
 
 		//  Call visuals loop once to set shader constants
@@ -5003,11 +4584,9 @@ void FPSC_Setup(void)
 		t.visuals.refreshshaders = 1;
 		visuals_loop();
 
-		#ifdef WICKEDENGINE
 		// may not be needed if this is called deeper in!
 		void gun_gatherslotorder_load (void);
 		gun_gatherslotorder_load();
-		#endif
 
 		//  Main loop
 		timestampactivity(0, "Main Game Executable Loop Starts");
@@ -5038,70 +4617,7 @@ void FPSC_Setup(void)
 		//
 		//  Launch game in EXE mode
 		//
-		#ifdef WICKEDENGINE
 		// allowed to leave, so gamexecutable_init, loop and finish can handle replacing the old internal loop
-		#else
-		// Master Root Run and Loop
-		#ifdef VRTECH
-		game_masterroot(iUseVRTest);
-		#else
-		game_masterroot(0);
-		#endif
-
-		bool bUseFragmentationMainloop = false;
-
-		if (t.game.allowfragmentation == 0 || t.game.allowfragmentation == 2)
-		{
-			if(t.game.allowfragmentation_mainloop != 0)
-				bUseFragmentationMainloop = true;
-		}
-		 // Only if not quitting standalone
-		 if ( t.game.masterloop != 0 || bUseFragmentationMainloop )
-		 {
-			// 250619 - very large levels can fragment 32 bit memory after a few levels
-			// so this mode will restart the executable, and launch the new level
-			// crude solution until 64 bit allows greater memory referencing
-			if ( t.game.allowfragmentation == 2 )
-			{
-				// next level load or back to main menu (both require relaunch)
-				if ( strlen(t.game.jumplevel_s.Get()) > 0 )
-				{
-					// next level
-					//timestampactivity(0, "Next level...");
-					SoundDestructor();
-					SetDir("..");
-					LPSTR pEXEName = Appname();
-					cstr pCommandLineString = cstr("-reloadstandalonelevel") + t.game.jumplevel_s + ":" + Str(t.luaglobal.gamestatechange);
-					ExecuteFile ( pEXEName, pCommandLineString.Get(), "", 0 );
-					Sleep(8000);
-					return;
-				}
-				else
-				{
-					// new main menu (except if t.game.masterloop == 0 in which case we are quitting)
-					t.game.allowfragmentation = 0;
-				}
-			}
-
-			// 131115 - standalone game sessions fragment memory over time, so launch new instance
-			// of the game executable (with silencing command line) and then quit this 'fragmented'
-			// session after a few seconds to allow for a decent transition
-			if ( t.game.allowfragmentation == 0 )
-			{
-				// replaced master loop with EXE relaunch
-				//timestampactivity(0, "Relaunch...");
-				SoundDestructor();
-				SetDir("..");
-				LPSTR pEXEName = Appname();
-				ExecuteFile ( pEXEName, "-reloadstandalone", "", 0 );
-				Sleep(8000);
-				return;
-			}
-		 }
-
-		 // Free before exit app
-		 mp_free ( );
-	    #endif
 	}
 }
 
@@ -5144,21 +4660,6 @@ void common_justbeforeend ( void )
 	}
 
 	// save number of minutes user been in session (added to global recorded when we entered)
-	#ifndef VRTECH
-	DWORD dwTimeNow = timeGetTime();
-	DWORD dwTimeDifference = dwTimeNow - g.dwReviewRequestTimeStart;
-	int moreMinutes = (int)(dwTimeDifference / 1000 / 60);
-	g.reviewRequestMinuteCounter += moreMinutes;
-	t.tfile_s = g.fpscrootdir_s + "\\reviewrequestreminder.ini";
-	if ( FileExist(t.tfile_s.Get()) == 1 ) DeleteAFile (  t.tfile_s.Get() );
-	if ( FileOpen(1) ==  1 ) CloseFile ( 1 );
-	OpenToWrite ( 1, t.tfile_s.Get() );
-	cstr theFlag = cstr(g.reviewRequestReminder);
-	cstr theMinutes = cstr(g.reviewRequestMinuteCounter);
-	WriteString ( 1, theFlag.Get() );
-	WriteString ( 1, theMinutes.Get() );
-	CloseFile (  1 );
-	#endif
 }
 
 void common_loadfonts ( void )
@@ -5364,7 +4865,6 @@ void common_mustreload_foreachnewproject(void)
 
 void common_hide_mouse ( void )
 {
-	#ifdef FPSEXCHANGE
 	OpenFileMap (  1, "FPSEXCHANGE" );
 	SetEventAndWait (  1 );
 	SetFileMapDWORD (  1, 44, 0 );
@@ -5373,13 +4873,11 @@ void common_hide_mouse ( void )
 	SetFileMapDWORD (  1, 56, GetChildWindowHeight()/2 );
 	SetFileMapDWORD (  1, 704,GetChildWindowWidth() );
 	SetFileMapDWORD (  1, 708,GetChildWindowHeight() );
-	#endif
 }
 
 void common_show_mouse ( void )
 {
 	// This does crazy cool stuff
-	#ifdef FPSEXCHANGE
 	OpenFileMap (  1, "FPSEXCHANGE" );
 	SetEventAndWait (  1 );
 	SetFileMapDWORD (  1, 44, 1 );
@@ -5388,7 +4886,6 @@ void common_show_mouse ( void )
 	SetFileMapDWORD (  1, 56, GetChildWindowHeight()/2 );
 	SetFileMapDWORD (  1, 704,GetChildWindowWidth() );
 	SetFileMapDWORD (  1, 708,GetChildWindowHeight() );
-	#endif
 }
 
 void common_vectorsinit ( void )
@@ -5645,127 +5142,8 @@ char promptText[1024] = "\0";
 
 void popup_text ( char* statusbar_s )
 {
-	#ifdef WICKEDENGINE
 	// below cases ImGui::DockSpace to be called twice in same frame (assert)
 	// and wicked does not prompt in this way any more
-	#else
-	#if defined(ENABLEIMGUI) && !defined(USEOLDIDE) && defined(USERENDERTARGET)
-	//PE: Update status bar.
-	//statusbar_s
-	extern bool bImGuiFrameState;
-	extern bool bImGuiReadyToRender;
-	extern bool imgui_is_running;
-
-	if (!imgui_is_running) { //sent to backbuffer if we are not ready.
-		pastebitmapfontcenter(statusbar_s, GetChildWindowWidth(0) / 2, ((GetChildWindowHeight(0) - 30) / 2), 4, 255);
-		Sync();
-		return;
-	}
-
-	#ifdef WICKEDENGINE
-	if (!bImGuiFrameState && !bRenderTabTab) // lee added && !bRenderTabTab to prevent double newframes
-	#else
-	if (!bImGuiFrameState)
-	#endif
-	{
-		ImGui_ImplDX11_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
-		bImGuiFrameState = true;
-
-		//######################################################################
-		//#### Default dockspace setup, how is our windows split on screen. ####
-		//######################################################################
-
-		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking; //ImGuiWindowFlags_MenuBar
-		ImGuiViewport* viewport;
-		viewport = ImGui::GetMainViewport();
-		extern int toolbar_size;
-		extern int ImGuiStatusBar_Size;
-		ImGui::SetNextWindowPos(viewport->Pos + ImVec2(0, toolbar_size));
-		ImGui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbar_size + ImGuiStatusBar_Size));
-		ImGui::SetNextWindowViewport(viewport->ID);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-		window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-		window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-		bool dockingopen = true;
-		ImGui::Begin("DockSpaceAGK", &dockingopen, window_flags);
-		ImGui::PopStyleVar();
-		ImGui::PopStyleVar(2);
-		static ImGuiID dock_id_bottom;
-
-		if (ImGui::DockBuilderGetNode(ImGui::GetID("MyDockspace")) != NULL) 
-		{
-			ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
-			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
-		}
-		ImGui::End();
-
-		ImGui::Begin(TABENTITYNAME);
-		ImGui::End();
-		#ifdef USELEFTPANELSTRUCTUREEDITOR
-		 extern bool bBuilder_Left_Window;
-		 if (bBuilder_Left_Window) {
-			ImGui::Begin("Structure Editor##LeftPanel");
-			ImGui::End();
-		 }
-		#endif
-		extern bool bHelpVideo_Window;
-		extern bool bHelp_Window;
-		if (bHelpVideo_Window && bHelp_Window) 
-		{
-			ImGui::Begin("Tutorial Video##HelpVideoWindow");
-			ImGui::End();
-			ImGui::Begin("Tutorial Steps##HelpWindow");
-			ImGui::End();
-		}
-	}
-
-	if (bImGuiFrameState && bImGuiReadyToRender) 
-	{
-		strcpy(promptText, statusbar_s);
-		bStartNewPrompt = true;
-		if( !imgui_is_running ) //sent to backbuffer if we are not ready.
-		pastebitmapfontcenter(statusbar_s, GetChildWindowWidth(0) / 2, ((GetChildWindowHeight(0) - 30) / 2), 4, 255);
-		Sync();
-		Sync();
-		bStartNewPrompt = true;
-	}
-	return;
-	#endif
-
-	if ( g_PopupControlMode == 0 )
-	{
-		t.strwork = "" ; t.strwork = t.strwork + "1:popup_text "+statusbar_s;
-		timestampactivity(0, t.strwork.Get() );
-		#ifdef FPSEXCHANGE
-		OpenFileMap (  1,"FPSEXCHANGE" );
-		SetFileMapDWORD (  1, 750, 1 );
-		SetEventAndWait (  1 );
-		while (  1 ) 
-		{
-			OpenFileMap (  2, "FPSPOPUP" );
-			SetEventAndWait (  2 );
-			if (  GetFileMapDWORD( 2, 0 )  ==  1 ) 
-			{
-				SetFileMapString (  2, 1000, statusbar_s );
-				SetFileMapDWORD (  2, 4, 1 );
-				SetEventAndWait (  2 );
-				return;
-			}
-			Sync (  );
-		}
-		#endif
-		g_PopupControlMode = 1;
-	}
-	else
-	{
-		popup_text_change ( statusbar_s );
-	}
-	#endif
 }
 
 void loadresource ( void )
@@ -6094,7 +5472,6 @@ void debugviewtext ( int progress, char* gamedebugviewtext_s )
 		//  detect if CANCEL early (while building)
 		if (  g.gtestgamemodefromeditorokaypressed == 0 ) 
 		{
-			#ifdef FPSEXCHANGE
 			OpenFileMap (  2, "FPSEXCHANGE" );
 			SetEventAndWait (  2 );
 			if (  GetFileMapDWORD( 2, 994 )  ==  1 ) 
@@ -6133,7 +5510,6 @@ void debugviewtext ( int progress, char* gamedebugviewtext_s )
 				SetFileMapDWORD (  1, 12, 1 );
 				SetEventAndWait (  1 );
 			}
-			#endif
 		}
 	}
 	//  Build Executable Game Mode
@@ -6141,7 +5517,6 @@ void debugviewtext ( int progress, char* gamedebugviewtext_s )
 	{
 		//  check if build cancelled
 		tokay=0;
-		#ifdef FPSEXCHANGE
 		OpenFileMap (  2, "FPSEXCHANGE" );
 		SetEventAndWait (  2 );
 		if (  GetFileMapDWORD( 2, 994 )  ==  1  )  tokay = 1;
@@ -6187,7 +5562,6 @@ void debugviewtext ( int progress, char* gamedebugviewtext_s )
 			}
 			SetEventAndWait (  1 );
 		}
-		#endif
 	}
 
 	//  FPGC - 110210 - some systems having issues with builds exceeding 1.5GB, so provide a graceful cap
@@ -6595,11 +5969,7 @@ void loadscreenpromptassets ( int iUseVRTest )
 					// 050917 - check if this file exists for consideration
 					if ( t.game.gameisexe == 1 ) 
 					{
-						#ifdef VRTECH
 						sprintf ( t.szwork , "languagebank\\%s\\artwork\\watermark\\watermark-%ix%i.jpg", g.language_s.Get(), treswidth, tresheight );			
-						#else
-						sprintf ( t.szwork , "languagebank\\%s\\artwork\\watermark\\gameguru-watermark-%ix%i.jpg", g.language_s.Get(), treswidth, tresheight );
-						#endif
 						if ( FileExist ( t.szwork ) == 1 )
 						{
 							tclosest=tdiff;
@@ -6626,11 +5996,7 @@ void loadscreenpromptassets ( int iUseVRTest )
 				if ( tclosest != 9999999 )
 				{
 					// use closest to current resolution
-					#ifdef VRTECH
 					 sprintf ( t.szwork , "watermark-%ix%i.jpg" , tclosestreswidth , tclosestresheight );
-					#else
-					 sprintf ( t.szwork , "gameguru-watermark-%ix%i.jpg" , tclosestreswidth , tclosestresheight );
-					#endif
 					respart_s = t.szwork;
 				}
 				else
@@ -6675,55 +6041,13 @@ void loadscreenpromptassets ( int iUseVRTest )
 			}
 			else
 			{
-				#ifdef WICKEDENGINE
 				// do not show the key/vr instructions during test level - it is too quick (hardly shows)
-				#else
-				if ( g.quickparentalcontrolmode == 2 )
-				{	
-					#ifdef VRTECH
-					if ( g.vrqcontrolmode != 0 )
-					{
-						if ( (g.gvrmode == 3 && iUseVRTest == 1) || iUseVRTest == 2 )
-							sprintf ( t.szwork , "languagebank\\%s\\artwork\\testgamelayout-vr.png", g.language_s.Get() );
-						else
-							sprintf ( t.szwork , "languagebank\\%s\\artwork\\testgamelayout.png", g.language_s.Get() );
-					}
-					else
-					{
-						sprintf ( t.szwork , "languagebank\\%s\\artwork\\testgamelayout.png", g.language_s.Get() );
-					}
-					#else
-					sprintf ( t.szwork , "languagebank\\%s\\artwork\\testgamelayout-noweapons.png", g.language_s.Get() );
-					#endif
-				}
-				else
-				{
-					if (  t.game.runasmultiplayer == 1 ) 
-					{
-						sprintf ( t.szwork , "testgamelayoutmp-%s.png" , respart_s.Get() );
-						tfile_s=t.szwork;
-					}
-					else
-					{
-						sprintf ( t.szwork , "testgamelayout-%s.png" , respart_s.Get() );
-						tfile_s=t.szwork;
-					}
-					sprintf ( t.szwork , "languagebank\\%s\\artwork\\%s" , g.language_s.Get() , tfile_s.Get() );
-				}
-				SetMipmapNum(1); //PE: mipmaps not needed.
-				image_setlegacyimageloading(true);
-				LoadImage (  t.szwork , g.testgamesplashimage );
-				image_setlegacyimageloading(false);
-				SetMipmapNum(-1);
-				#endif
 			}
 		}
 	}
 }
 
-#ifdef WICKEDENGINE
 DWORD g_SensibleMessageTimer = 0;
-#endif
 
 void printscreenprompt ( char* screenprompt_s )
 {
@@ -6797,9 +6121,7 @@ int mod ( int num, int modulus )
 
 void GGBoxGradient ( int iLeft, int iTop, int iRight, int iBottom, DWORD dw1, DWORD dw2, DWORD dw3, DWORD dw4 )
 {
-	#ifdef WICKEDENGINE
 	return; //PE: No sliders in Max.
-	#endif
 	int iWidth = iRight - iLeft;
 	int iHeight = iBottom - iTop;
 	Sprite ( 1235, -100000, -100000, g.slidersmenuimageoffset + 8 );

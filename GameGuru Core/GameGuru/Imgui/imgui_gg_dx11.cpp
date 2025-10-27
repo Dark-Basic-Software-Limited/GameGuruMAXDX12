@@ -35,9 +35,7 @@
 #include <algorithm>
 #include <string>
 
-#ifdef WICKEDENGINE
 #include "..\..\Guru-WickedMAX\wickedcalls.h"
-#endif
 
 #include "M-RPG.h"
 #include "M-Workshop.h"
@@ -120,11 +118,9 @@ struct VERTEX_CONSTANT_BUFFER
     float   mvp[4][4];
 };
 
-#ifdef WICKEDENGINE
 std::vector<SliderData> g_SliderData; // For storing max values for sliders.
 std::vector<std::vector<std::string>> luadropdownlabels; // Storage for dropdown labels extracted from lua script.
 std::vector<std::string> g_DLuaVariableNames;
-#endif
 
 // Forward Declarations
 static void ImGui_ImplDX11_InitPlatformInterface();
@@ -169,22 +165,17 @@ static void ImGui_ImplDX11_SetupRenderState(ImDrawData* draw_data, ID3D11DeviceC
     ctx->RSSetState(g_pRasterizerState);
 }
 
-#ifdef WICKEDENGINE
 extern bool bRenderTabTab;
 extern bool bRenderNextFrame;
-#endif
 
 bool bForceRenderEverywhere = false;
 
-#ifdef WICKEDENGINE
 std::vector<ID3D11ShaderResourceView*> lpBadTexture;
 std::deque<std::vector<ID3D11ShaderResourceView*>> badTextureFrames;
 const size_t MAX_FRAMES_TO_KEEP = 3;
-#endif
 
 void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 {
-#ifdef WICKEDENGINE
 	if (bBlockImGuiUntilNewFrame || bBlockImGuiUntilFurtherNotice)
 		return;
 	if (bRenderNextFrame)
@@ -198,7 +189,6 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 		//	if (bRenderTabTab)
 		//		bRenderTabTab = false;
 	}
-#endif
 
 	// goes through the same sequence as 'ImGui_ImplDX11_RenderDrawData' but Wicked Friendly..
 	ID3D11DeviceContext* ctx = (ID3D11DeviceContext*)ctxptr;
@@ -385,7 +375,6 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 
 				//Locate bad textures.
 				bool bBadTexture = false;
-				#ifdef WICKEDENGINE
 				//PE: Prevent imgui from crashing when rendering using a deleted ID3D11ShaderResourceView.
 				if (lpBadTexture.size() > 0)
 				{
@@ -398,7 +387,6 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 						}
 					}
 				}
-				#endif
 				if (!bBadTexture)
 				{
 					ctx->PSSetShaderResources(0, 1, &texture_srv);
@@ -412,13 +400,11 @@ void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 		global_vtx_offset += cmd_list->VtxBuffer.Size;
 	}
 
-	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
 
 	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
 		badTextureFrames.pop_front();
 	}
-	#endif
 
 }
 
@@ -440,7 +426,6 @@ bool IntersectsWith(D3D11_RECT rect , D3D11_RECT compare)
 
 void ImGuiHook_RenderCall(void* ctxptr)
 {
-	#ifdef WICKEDENGINE
 	extern bool g_bNoGGUntilGameGuruMainCalled;
 	if (g_bNoGGUntilGameGuruMainCalled==false)
 		return;
@@ -473,7 +458,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
 		//	if (bRenderTabTab)
 		//		bRenderTabTab = false;
 	}
-	#endif
 
 	// goes through the same sequence as 'ImGui_ImplDX11_RenderDrawData' but Wicked Friendly..
     ID3D11DeviceContext* ctx = (ID3D11DeviceContext*)ctxptr;
@@ -667,7 +651,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
                 //else
                 //    pcmd->UserCallback(cmd_list, pcmd);
             }
-			#ifdef WICKEDENGINE
 			else if(bSpecialNoCustomTextureRender)
 			{
 				//PE: Only render eveything but no special textures.
@@ -681,7 +664,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
 					ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
 
 					bool bBadTexture = false;
-					#ifdef WICKEDENGINE
 					//PE: Prevent imgui from crashing when rendering using a deleted ID3D11ShaderResourceView.
 					if (lpBadTexture.size() > 0)
 					{
@@ -694,7 +676,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
 							}
 						}
 					}
-					#endif
 
 					if (!bBadTexture)
 					{
@@ -717,7 +698,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
 					}
 				}
 			}
-			#endif
             else
             {
                 // Apply scissor/clipping rectangle
@@ -741,7 +721,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
 					ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
 
 					bool bBadTexture = false;
-					#ifdef WICKEDENGINE
 					//PE: Prevent imgui from crashing when rendering using a deleted ID3D11ShaderResourceView.
 					if (lpBadTexture.size() > 0)
 					{
@@ -754,7 +733,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
 							}
 						}
 					}
-					#endif
 					if (!bBadTexture)
 					{
 						for (int i = 0; i < 3; i++)
@@ -787,7 +765,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
 	            ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
 
 				bool bBadTexture = false;
-				#ifdef WICKEDENGINE
 				//PE: Prevent imgui from crashing when rendering using a deleted ID3D11ShaderResourceView.
 				if (lpBadTexture.size() > 0)
 				{
@@ -800,7 +777,6 @@ void ImGuiHook_RenderCall(void* ctxptr)
 						}
 					}
 				}
-				#endif
 				if (!bBadTexture)
 				{
 
@@ -829,23 +805,19 @@ void ImGuiHook_RenderCall(void* ctxptr)
         global_vtx_offset += cmd_list->VtxBuffer.Size;
     }
 
-	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
 	
 	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
 		badTextureFrames.pop_front();
 	}
-	#endif
 
 }
 
 bool ImGuiHook_GetScissorArea(float* pX1, float* pY1, float* pX2, float* pY2)
 {
-	#ifdef WICKEDENGINE
 	extern bool m_bForceRender;
 	if (m_bForceRender)
 		return false;
-	#endif
 
 	if (1)
 	{
@@ -1143,7 +1115,6 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
                 ID3D11ShaderResourceView* texture_srv = (ID3D11ShaderResourceView*)pcmd->TextureId;
 
 				bool bBadTexture = false;
-				#ifdef WICKEDENGINE
 				//PE: Prevent imgui from crashing when rendering using a deleted ID3D11ShaderResourceView.
 				if (lpBadTexture.size() > 0)
 				{
@@ -1156,7 +1127,6 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
 						}
 					}
 				}
-				#endif
 				if (!bBadTexture)
 				{
 					try
@@ -1179,14 +1149,12 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
         global_vtx_offset += cmd_list->VtxBuffer.Size;
     }
 
-	#ifdef WICKEDENGINE
 	lpBadTexture.clear();
 
 	if (badTextureFrames.size() > MAX_FRAMES_TO_KEEP) {
 		badTextureFrames.pop_front();
 	}
 
-	#endif
     // Restore modified DX state
     ctx->RSSetScissorRects(old.ScissorRectsCount, old.ScissorRects);
     ctx->RSSetViewports(old.ViewportsCount, old.Viewports);
@@ -1797,7 +1765,6 @@ static void ImGui_ImplDX11_SwapBuffers(ImGuiViewport* viewport, void*)
 		#ifndef DXGI_PRESENT_DO_NOT_WAIT
 		#define DXGI_PRESENT_DO_NOT_WAIT               0x00000008UL
 		#endif
-		#ifdef WICKEDENGINE
 		//PE: Sometimes Present never return.
 		//PE: This did not help.
 		//PE: This only happen in tab tab when you move a window to another monitor, so disable this for now.
@@ -1805,11 +1772,9 @@ static void ImGui_ImplDX11_SwapBuffers(ImGuiViewport* viewport, void*)
 		//wiRenderer::GetDevice()->WaitForGPU(); //This did not help.
 		//DXGI_SWAP_EFFECT_DISCARD 
 		//PE: Think the problem is that we use a VERY old gxgi.h and we really should update this and start using a FLIP model.
-		#endif
 
 		HRESULT hr = data->SwapChain->Present(0, DXGI_PRESENT_DO_NOT_WAIT); // Present without vsync
 
-		#ifdef WICKEDENGINE
 		if (FAILED(hr))
 		{
 			#ifdef DEBUGDISPLAY
@@ -1830,7 +1795,6 @@ static void ImGui_ImplDX11_SwapBuffers(ImGuiViewport* viewport, void*)
 				//printf("tmp");
 			}
 		}
-		#endif
 	}
 }
 
@@ -2943,7 +2907,6 @@ namespace ImGui {
 		return(bLastSliderHovered);
 	}
 
-#ifdef WICKEDENGINE
 	bool MaxSliderInputInt(const char* label, int* v, int v_min, int v_max, const char* tooltip, int boxWidth)
 	{
 		bLastSliderHovered = false;
@@ -3507,237 +3470,6 @@ namespace ImGui {
 		return(bRet);
 	}
 
-#else
-
-	bool MaxSliderInputInt(const char* label, int* v, int v_min, int v_max, const char* tooltip)
-	{
-		bLastSliderHovered = false;
-		if (!label) return(false);
-		char cUniqueLabel[256];
-		strncpy(cUniqueLabel, label, 240);
-		cUniqueLabel[240] = 0;
-
-		int iInput = *v;
-		bool bRet = false;
-		ImGui::PushItemWidth(-10 - 40);
-
-		if (ImGui::SliderInt(cUniqueLabel, &iInput, v_min, v_max, " "))
-		{
-			bRet = true;
-		}
-		if (tooltip && ImGui::IsItemHovered()) {
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-		ImGui::PushItemWidth(30);
-		strcat(cUniqueLabel, "##i");
-
-		if (ImGui::InputInt(cUniqueLabel, &iInput, 0, 0))
-		{
-			bRet = true;
-		}
-		if (!pref.iTurnOffEditboxTooltip && tooltip && ImGui::IsItemHovered()) {
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-
-		if (iInput < v_min)
-			iInput = v_min;
-		if (iInput > v_max)
-			iInput = v_max;
-
-		*v = iInput;
-		return(bRet);
-	}
-
-	bool MaxSliderInputFloat(const char* label, float* v, float v_min, float v_max, const char* tooltip, int startval, float maxval, int numericboxwidth)
-	{
-		bLastSliderHovered = false;
-		if (!label) return(false);
-		char cUniqueLabel[256];
-		strncpy(cUniqueLabel, label, 240);
-		cUniqueLabel[240] = 0;
-
-		float fInput = *v - v_min;
-		float fRange = v_max - v_min;
-		bool bRet = false;
-		int iControlInput, iMaxInt = 100;
-		ImGui::PushItemWidth(-10 - 40);
-		iControlInput = maxval / fRange * fInput;
-		if (iControlInput < startval)
-			iControlInput = startval;
-
-		iMaxInt = maxval;
-
-		if (ImGui::SliderInt(cUniqueLabel, &iControlInput, startval, iMaxInt, " "))
-		{
-			fInput = (float)iControlInput * (fRange / maxval);
-			bRet = true;
-		}
-		if (tooltip && ImGui::IsItemHovered())
-		{
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-
-		ImGui::PushItemWidth(numericboxwidth);
-		strcat(cUniqueLabel, "##i");
-		if (ImGui::InputInt(cUniqueLabel, &iControlInput, 0, 0))
-		{
-			fInput = (float)iControlInput * (fRange / maxval);
-			bRet = true;
-		}
-		if (!pref.iTurnOffEditboxTooltip && tooltip && ImGui::IsItemHovered())
-		{
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-
-		*v = v_min + fInput;
-		return(bRet);
-	}
-
-	bool MaxSliderInputFloat2(const char* label, float* v, float v_min, float v_max, const char* tooltip, int startval, float maxval, int numericboxwidth)
-	{
-		bLastSliderHovered = false;
-		if (!label) return(false);
-		char cUniqueLabel[256];
-		strncpy(cUniqueLabel, label, 240);
-		cUniqueLabel[240] = 0;
-
-		float fInput = *v - v_min;
-		float fRange = v_max - v_min;
-		bool bRet = false;
-		float fControlInput, iMaxInt = 100;
-		ImGui::PushItemWidth(-10 - 10 - numericboxwidth);
-		fControlInput = maxval / fRange * fInput;
-		if (fControlInput < startval)
-			fControlInput = startval;
-
-		iMaxInt = maxval;
-
-		if (ImGui::SliderFloat(cUniqueLabel, &fControlInput, startval, iMaxInt, " ")) //"%.2f"
-		{
-			fInput = (float)fControlInput * (fRange / maxval);
-			bRet = true;
-		}
-		if (tooltip && ImGui::IsItemHovered())
-		{
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-
-		ImGui::PushItemWidth(numericboxwidth);
-		strcat(cUniqueLabel, "##i");
-		if (ImGui::InputFloat(cUniqueLabel, &fControlInput, 0, 0, 2))
-		{
-			fInput = (float)fControlInput * (fRange / maxval);
-			bRet = true;
-		}
-		if (tooltip && ImGui::IsItemHovered())
-		{
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-
-		*v = v_min + fInput;
-		return(bRet);
-	}
-
-	bool MaxSliderInputRangeFloat(const char* label, float* v, float* v2, float v_min, float v_max, const char* tooltip)
-	{
-		bLastSliderHovered = false;
-		if (!label) return(false);
-
-		char cUniqueLabel[256];
-		strncpy(cUniqueLabel, label, 240);
-		cUniqueLabel[240] = 0;
-
-		float fInput = *v - v_min;
-		float fInput2 = *v2;
-
-		//		if (fInput > fInput2)
-		//		{
-		//			float ftmp = fInput;
-		//			fInput = fInput2;
-		//			fInput2 = ftmp;
-		//		}
-
-		float fRange = v_max - v_min;
-		bool bRet = false;
-		int iControlInput, iControlInput2;
-		iControlInput = 100.0 / fRange * fInput;
-		iControlInput2 = 100.0 / fRange * fInput2;
-		float fTmp1 = iControlInput, fTmp2 = iControlInput2;
-
-		//ImGui::SetCursorPos( ImVec2(ImGui::GetCursorPosX(), end_post.y) );
-		ImGui::PushItemWidth(30);
-		strcat(cUniqueLabel, "##i");
-		if (ImGui::InputInt(cUniqueLabel, &iControlInput, 0, 0))
-		{
-			fInput = (float)iControlInput * (fRange / 100.0);
-			bRet = true;
-		}
-		if (!pref.iTurnOffEditboxTooltip && tooltip && ImGui::IsItemHovered())
-		{
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-
-		ImGui::PushItemWidth(-10 - 40); //77
-		ImVec2 end_post = ImGui::GetCursorPos();
-		strcat(cUniqueLabel, "slider");
-		if (ImGui::RangeSlider(cUniqueLabel, fTmp1, fTmp2, 100.0f, false))
-		{
-			fInput = fTmp1 * (fRange / 100.0);
-			fInput2 = fTmp2 * (fRange / 100.0);
-			bRet = true;
-		}
-		if (tooltip && ImGui::IsItemHovered())
-		{
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-
-		ImGui::PushItemWidth(30);
-		strcat(cUniqueLabel, "t");
-		if (ImGui::InputInt(cUniqueLabel, &iControlInput2, 0, 0))
-		{
-			fInput2 = (float)iControlInput2 * (fRange / 100.0);
-			bRet = true;
-		}
-		if (!pref.iTurnOffEditboxTooltip && tooltip && ImGui::IsItemHovered())
-		{
-			bLastSliderHovered = true;
-			ImGui::SetTooltip(tooltip);
-		}
-		ImGui::PopItemWidth();
-
-		//		if (fInput > fInput2)
-		//		{
-		//			float ftmp = fInput;
-		//			fInput = fInput2;
-		//			fInput2 = ftmp;
-		//		}
-
-		*v = v_min + fInput;
-		*v2 = fInput2;
-		return(bRet);
-	}
-#endif
 
 	bool BeginPopupContextItemAGK(const char* str_id, int mouse_button)
 	{
@@ -3934,7 +3666,6 @@ namespace ImGui {
 
 		return(pressed);
 	}
-#ifdef WICKEDENGINE
 	bool ImgBtnWicked(void* pMaterial, const ImVec2& btn_size, const ImVec4& bg_col,
 		const ImVec4& drawCol_normal,
 		const ImVec4& drawCol_hover,
@@ -4070,7 +3801,6 @@ namespace ImGui {
 
 		return(pressed);
 	}
-#endif
 
 	struct ImGuiViewportDataWin32
 	{
@@ -4750,11 +4480,7 @@ void myStyleBlue(ImGuiStyle* dst)
 	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.22f, 0.43f, 0.57f, 1.00f);
 
 	// Wicked renders first, IMGUI last, let Wicked renderings through! 
-#ifdef WICKEDENGINE
 	colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.00f);
-#else
-	colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-#endif
 
 	colors[ImGuiCol_NavHighlight] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
 	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 1.0f);
@@ -4922,11 +4648,7 @@ void myStyle2(ImGuiStyle* dst)
 	style->Colors[ImGuiCol_DockingPreview] = ImVec4(0.38f, 0.48f, 0.60f, 1.00f);
 
 	// Wicked renders first, IMGUI last, let Wicked renderings through! 
-	#ifdef WICKEDENGINE
 	 style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.00f);
-	#else
-	 style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-	#endif
 
 	style->Colors[ImGuiCol_NavHighlight] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
 	style->Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 1.0f);
@@ -4990,11 +4712,7 @@ void myStyle2_colors_only(void)
 	style->Colors[ImGuiCol_DockingPreview] = ImVec4(0.38f, 0.48f, 0.60f, 1.00f);
 
 	// Wicked renders first, IMGUI last, let Wicked renderings through! 
-#ifdef WICKEDENGINE
 //	style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.00f);
-#else
-//	style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-#endif
 
 	style->Colors[ImGuiCol_NavHighlight] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
 	style->Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 1.0f);
@@ -5068,11 +4786,7 @@ void myStyle3(ImGuiStyle* dst)
 	colors[ImGuiCol_TabUnfocused] = ImVec4(0.114f, 0.161f, 0.200f, 0.86f);
 	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.124f, 0.171f, 0.210f, 1.0f);
 	colors[ImGuiCol_DockingPreview] = ImVec4(0.38f, 0.48f, 0.60f, 1.00f);
-	#ifdef WICKEDENGINE
 	colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.00f);
-	#else
-	colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-	#endif
 	colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
 	colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.68f, 0.68f, 0.68f, 1.00f);
 	colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.77f, 0.33f, 1.00f);
@@ -5261,11 +4975,7 @@ void TintCurrentStyle( void )
 	TintColor(style->Colors[ImGuiCol_DockingPreview]);
 
 	// Wicked renders first, IMGUI last, let Wicked renderings through! 
-#ifdef WICKEDENGINE
 	//style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-#else
-	TintColor(style->Colors[ImGuiCol_DockingEmptyBg]);
-#endif
 
 	TintColor(style->Colors[ImGuiCol_NavHighlight]);
 	TintColor(style->Colors[ImGuiCol_NavWindowingHighlight]);
@@ -5273,10 +4983,8 @@ void TintCurrentStyle( void )
 	TintColor(style->Colors[ImGuiCol_ModalWindowDimBg]);
 	TintColor(style->Colors[ImGuiCol_DragDropTarget]);
 
-#ifdef WICKEDENGINE
 	//PE: To prevent flicker when changing tint, this code has been added to the main loop.
 	ImGui::GetStyle().Colors[ImGuiCol_ChildBg] = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
-#endif
 }
 
 
@@ -5358,7 +5066,6 @@ void ChangeGGFont(const char *cpcustomfont, int iIDEFontSize)
 	}
 	defaultfont = io.Fonts->AddFontDefault();
 
-	#ifdef STORYBOARD
 	//Add all fonts from:
 
 	extern std::vector< std::pair<ImFont*, std::string>> StoryboardFonts;
@@ -5396,7 +5103,6 @@ void ChangeGGFont(const char *cpcustomfont, int iIDEFontSize)
 		}
 	}
 	SetDir(pOldDir.Get());
-	#endif
 
 
 	ImGui_ImplDX11_CreateDeviceObjects();
@@ -5552,7 +5258,6 @@ public:
 		cFolderItem *pNewFolder;
 		cStr m_sBetterSearch;
 		int uniqueId;
-		#ifdef WICKEDENGINE
 		bool m_bFPELoaded;
 		cstr m_sFPEModel;
 		cstr m_sFPETextured;
@@ -5564,7 +5269,6 @@ public:
 		bool m_bIsCharacterCreator;
 		bool m_bIsGroupObject;
 		int iType;
-		#endif
 	};
 	cStr m_sFolder;
 	cStr m_sFolderFullPath;
@@ -5614,7 +5318,6 @@ int iTotalFiles = 0;
 //	bExternal_Entities_Init = false;
 //}
 
-#ifdef WICKEDENGINE
 
 //std::vector< std::pair<std::string, time_t> > files_time_stamp;
 std::unordered_map<std::string, time_t> files_time_stamp;
@@ -5955,7 +5658,6 @@ bool fpe_thread_in_progress(void)
 	return g_bFpeScanning;
 }
 
-#endif
 
 //std::vector<std::string> duplicate_files_check;
 //PE: Converted to unordered_set using hash for faster lookups.
@@ -6183,14 +5885,12 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 	// get legacy white list once
 	if (g_bCreateLegacyWhiteList == true)
 	{
-		#ifdef WICKEDENGINE
 		getVectorFileContent("favoritelist.ini", files_favorite);
 		extern bool g_bFreeTrialVersion;
 		if (g_bFreeTrialVersion == true)
 		{
 			getVectorFileContent("freetriallist.ini", files_availableinfreetrial);
 		}
-		#endif
 
 		g_pLegacyWhiteList.clear();
 		FILE* fp = GG_fopen(".\\..\\legacyblacklist.ini", "rt");
@@ -6282,26 +5982,16 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 			}
 
 			// project folder passed in override specific detection above
-			#ifndef NEWPROJSYSWORKINPROGRESS
-			LPSTR pFindProjectBankFolder = "\\projectbank";
-			if (strnicmp(pPathSearch + n, pFindProjectBankFolder, strlen(pFindProjectBankFolder)) == NULL)
-			{
-				pNewItem->m_iEntityOffset = n;
-				break;
-			}
-			#endif
 		}
 
 		strcpy(pNewItem->cfolder, pNewItem->m_sFolderFullPath.Get() );
 
-		#ifdef WICKEDENGINE
 		// ensures writable folder sorts all its folders to top
 		if ( bForceToTop == true )
 		{
 			// ensure when sorted, these folders stay at the very top for easy discovery
 			pNewItem->cfolder[0] = 'A';
 		}
-		#endif
 
 		pNewItem->m_pSubFolder = NULL;
 		pNewItem->visible = true;
@@ -6320,18 +6010,7 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 				pNewItem->m_tFolderModify = sb.st_mtime;
 			}
 		}	
-		#ifdef WICKEDENGINE
 		// taken care of above with bForceToTop
-		#else
-		if (pestrcasestr(pNewItem->m_sFolderFullPath.Get(), "entitybank\\user")) 
-		{
-			//Make sure they come ontop in list.
-			strcpy(pNewItem->cfolder, pNewItem->m_sFolderFullPath.Get());
-			char *find = (char *) pestrcasestr(pNewItem->cfolder, "entitybank\\user");
-			if (find)
-				find[11] = '1';
-		}
-		#endif
 		pNewFolder->m_pNext = pNewItem;
 
 		FindFirst(); fin = 0;
@@ -6367,7 +6046,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					bool bValid = false;
 					if (foldertype == 0 && pestrcasestr(file_s.Get(), ".fpe"))
 						bValid = true;
-					#ifdef WICKEDENGINE
 					if (foldertype == 1 && pestrcasestr(file_s.Get(), ".wav"))
 						bValid = true;
 					if (foldertype == 1 && pestrcasestr(file_s.Get(), ".mp3"))
@@ -6404,7 +6082,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					if (foldertype == 6 && pestrcasestr(file_s.Get(), ".fpe"))
 						bValid = true;
 
-					#endif
 					// file
 					if(bValid)
 					{
@@ -6429,14 +6106,12 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 							// not found in legacy whitelist, allow
 							sorted_files.push_back(file_s.Get());
 							
-							#ifdef WICKEDENGINE
 							//SAVE: time_create
 							time_t ts = GetFileDateLong();
 							cstr file = pNewFolder->m_pNext->m_sFolderFullPath;
 							file = file + "\\" + file_s;
 							//files_time_stamp.push_back( std::make_pair(file.Get(), ts ) );
 							files_time_stamp[file.Get()] = ts;
-							#endif
 						}
 					}
 				}
@@ -6472,7 +6147,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 				pNewItem->m_pNextTime = NULL;
 				pNewItem->m_pCustomSort = NULL;
 
-				#ifdef WICKEDENGINE
 				pNewItem->m_bFPELoaded = false;
 				pNewItem->m_sFPEModel="";
 				pNewItem->m_sFPETextured = "";
@@ -6483,7 +6157,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 				pNewItem->m_iFPEDBOFileSize = 0;
 				pNewItem->m_bIsCharacterCreator = 0;
 				pNewItem->iType = foldertype;
-				#endif
 
 				pNewFolder->m_pNext->m_pFirstFile = pNewItem;
 				m_pFiles = pNewItem;
@@ -6491,7 +6164,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 			for (; it != sorted_files.end(); ++it) 
 			{
 				bool bAddToList = true;
-				#ifdef WICKEDENGINE
 				//PE: Eliminate any duplicates here, DocWrite and Normal Path, Prefer DocWrite.
 				if (it->size() > 0) {
 					cStr sName = (char *) it->c_str();
@@ -6532,7 +6204,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					else
 						duplicate_files_check.insert(sCheck.Get());
 				}
-				#endif
 				if (it->size() > 0 && bAddToList) 
 				{
 					cFolderItem::sFolderFiles *pNewItem;
@@ -6548,7 +6219,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					pNewItem->m_sNameFinalCredit = GetNameFinalCreditFromAbsPath (pNewFolder->m_pNext->m_sFolderFullPath.Get());
 
 					//Generate a better search string. include category at end.
-					#ifdef WICKEDENGINE
 					std::string sBetterSearch = pNewItem->m_sNameFinal.Get();
 					sBetterSearch = sBetterSearch + " ( " + pNewFolder->m_pNext->m_sFolder.Get() + " )";
 					//Remove main folder for better search.
@@ -6567,13 +6237,11 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					replaceAll(sBetterSearch, "_", " ");
 					replaceAll(sBetterSearch, "-", " ");
 					pNewItem->m_sBetterSearch = sBetterSearch.c_str();
-					#endif
 
 					pNewItem->m_tFileModify = 0; //PE: Need timestamp here.
 					pNewItem->bFavorite = false;
 					pNewItem->bAvailableInFreeTrial = false;
 
-					#ifdef WICKEDENGINE
 					//PE: This was to slow.
 					struct stat sb;
 					cstr file = pNewFolder->m_pNext->m_sFolderFullPath;
@@ -6612,7 +6280,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					{
 						SetAvailableInFreeTrial(foldertype, pNewItem, file);
 					}
-					#endif
 
 					pNewItem->m_sPath = pNewFolder->m_pNext->m_sFolderFullPath;
 					pNewItem->m_sFolder = pNewFolder->m_pNext->m_sFolder;
@@ -6626,7 +6293,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					pNewItem->m_pNextTime = NULL;
 					pNewItem->m_pCustomSort = NULL;
 
-					#ifdef WICKEDENGINE
 					pNewItem->m_bFPELoaded = false;
 					pNewItem->m_sFPEModel = "";
 					pNewItem->m_sFPETextured = "";
@@ -6637,7 +6303,6 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					pNewItem->m_iFPEDBOFileSize = 0;
 					pNewItem->m_bIsCharacterCreator = 0;
 					pNewItem->iType = foldertype;
-					#endif
 
 					m_pFiles->m_pNext = pNewItem;
 					m_pFiles->m_pNextTime = pNewItem;
@@ -6647,9 +6312,7 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 			}
 			sorted_files.clear();
 
-			#ifdef WICKEDENGINE
 			CustomSortFiles(0, pNewFolder->m_pNext->m_pFirstFile);
-			#endif
 		}
 		SetDir("..");
 	}
@@ -6713,7 +6376,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 					bool bValid = false;
 					if (foldertype == 0 && pestrcasestr(file_s.Get(), ".fpe"))
 						bValid = true;
-					#ifdef WICKEDENGINE
 					if (foldertype == 1 && pestrcasestr(file_s.Get(), ".wav"))
 						bValid = true;
 					if (foldertype == 1 && pestrcasestr(file_s.Get(), ".mp3"))
@@ -6757,12 +6419,10 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 						bValid = true;
 
 
-					#endif
 
 					if (bValid) {
 						sorted_files.push_back(file_s.Get());
 
-						#ifdef WICKEDENGINE
 						//SAVE: time_create
 						time_t ts = GetFileDateLong();
 						cstr file = pNewFolder->m_sFolderFullPath;
@@ -6787,7 +6447,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 
 						//files_time_stamp.push_back(std::make_pair(file.Get(), ts));
 						files_time_stamp[file.Get()] = ts;
-						#endif
 
 					}
 				}
@@ -6824,7 +6483,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 				pNewItem->m_pNextTime = NULL;
 				pNewItem->m_pCustomSort = NULL;
 
-				#ifdef WICKEDENGINE
 				pNewItem->m_bFPELoaded = false;
 				pNewItem->m_sFPEModel = "";
 				pNewItem->m_sFPETextured = "";
@@ -6835,7 +6493,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 				pNewItem->m_iFPEDBOFileSize = 0;
 				pNewItem->m_bIsCharacterCreator = 0;
 				pNewItem->iType = foldertype;
-				#endif
 
 				pNewFolder->m_pFirstFile = pNewItem;
 				m_pFiles = pNewItem;
@@ -6843,7 +6500,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 
 			for (; it != sorted_files.end(); ++it) 
 			{
-				#ifdef WICKEDENGINE
 				//PE: Here we update , so we only have new files. but need to update duplicate_files_check
 				if (it->size() > 0) {
 					cStr sName = (char *)it->c_str();
@@ -6883,7 +6539,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 						duplicate_files_check.insert(sCheck.Get());
 
 				}
-				#endif
 				if (it->size() > 0)
 				{
 					cFolderItem::sFolderFiles *pNewItem = new cFolderItem::sFolderFiles;
@@ -6897,7 +6552,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 					pNewItem->m_sNameFinalCredit = GetNameFinalCreditFromAbsPath (pNewFolder->m_sFolderFullPath.Get());
 
 					//Generate a better search string. include category at end.#
-					#ifdef WICKEDENGINE
 					std::string sBetterSearch = pNewItem->m_sNameFinal.Get();
 					sBetterSearch = sBetterSearch + " ( " + pNewFolder->m_sFolder.Get() + " )";
 					//Remove main folder for better search.
@@ -6917,13 +6571,11 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 					replaceAll(sBetterSearch, "_", " ");
 					replaceAll(sBetterSearch, "-", " ");
 					pNewItem->m_sBetterSearch = sBetterSearch.c_str();
-					#endif
 
 					pNewItem->m_tFileModify = 0; //PE: Need timestamp here.
 					pNewItem->bFavorite = false;
 					pNewItem->bAvailableInFreeTrial = false;
 
-					#ifdef WICKEDENGINE
 					//PE: This was to slow.
 					struct stat sb;
 					cstr file = pNewFolder->m_sFolderFullPath;
@@ -6978,7 +6630,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 						}
 						*/
 					}
-					#endif
 
 					pNewItem->m_sPath = folder_s;
 					pNewItem->m_sFolder = folder_s;
@@ -6992,7 +6643,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 					pNewItem->m_pNextTime = NULL;
 					pNewItem->m_pCustomSort = NULL;
 
-					#ifdef WICKEDENGINE
 					pNewItem->m_bFPELoaded = false;
 					pNewItem->m_sFPEModel = "";
 					pNewItem->m_sFPETextured = "";
@@ -7003,7 +6653,6 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 					pNewItem->m_iFPEDBOFileSize = 0;
 					pNewItem->m_bIsCharacterCreator = 0;
 					pNewItem->iType = foldertype;
-					#endif
 					m_pFiles->m_pNext = pNewItem;
 					m_pFiles->m_pNextTime = pNewItem;
 					m_pFiles->m_pCustomSort = pNewItem;
@@ -7012,9 +6661,7 @@ void RefreshEntityFolder(char* folder_s, void *pFolder)
 			}
 			sorted_files.clear();
 
-			#ifdef WICKEDENGINE
 			CustomSortFiles(0, pNewFolder->m_pFirstFile);
-			#endif
 
 		}
 
@@ -7136,10 +6783,8 @@ void InitParseLuaScript(entityeleproftype *tmpeleprof)
 		tmpeleprof->PropertiesVariable.VariableSectionEndDescription[i] = "";
 	}
 
-	#ifdef WICKEDENGINE
 	luadropdownlabels.clear();
 	g_DLuaVariableNames.clear();
-	#endif
 }
 
 void ParseLuaScriptWithElementID(entityeleproftype *tmpeleprof, char * script, int iObjID)
@@ -7286,7 +6931,6 @@ void ParseLuaScriptWithElementID(entityeleproftype *tmpeleprof, char * script, i
 						tmpeleprof->PropertiesVariable.VariableType[tmpeleprof->PropertiesVariable.iVariables] = 2; //string
 					if (pestrcasestr(tmpVariable, "!"))
 						tmpeleprof->PropertiesVariable.VariableType[tmpeleprof->PropertiesVariable.iVariables] = 3; //bool
-					#ifdef WICKEDENGINE
 					if (pestrcasestr(tmpVariable, "@"))
 						tmpeleprof->PropertiesVariable.VariableType[tmpeleprof->PropertiesVariable.iVariables] = 4; // labelled int[]
 					if (pestrcasestr(tmpVariable, "@@"))
@@ -7295,7 +6939,6 @@ void ParseLuaScriptWithElementID(entityeleproftype *tmpeleprof, char * script, i
 						tmpeleprof->PropertiesVariable.VariableType[tmpeleprof->PropertiesVariable.iVariables] = 5; // user specified in seconds
 					if (pestrcasestr(tmpVariable, "&"))
 						tmpeleprof->PropertiesVariable.VariableType[tmpeleprof->PropertiesVariable.iVariables] = 6; // should alter eleprof variable
-					#endif			
 
 					//Set default values search for =
 					char *find3 = (char *)pestrcasestr(tmpVariable, "=");
@@ -7314,7 +6957,6 @@ void ParseLuaScriptWithElementID(entityeleproftype *tmpeleprof, char * script, i
 							char from[1050];
 							strcpy(from, find4 + 1);
 
-							#ifdef WICKEDENGINE
 							// Need to calculate the range differently for the dropdown type.
 							if (tmpeleprof->PropertiesVariable.VariableType[tmpeleprof->PropertiesVariable.iVariables] == 4 || tmpeleprof->PropertiesVariable.VariableType[tmpeleprof->PropertiesVariable.iVariables] == 7)
 							{
@@ -7741,21 +7383,6 @@ void ParseLuaScriptWithElementID(entityeleproftype *tmpeleprof, char * script, i
 									}
 								}
 							}
-							#else
-							// Extract range normally.
-							char *find5 = (char *)pestrcasestr(from, ",");
-							if (find5)
-							{
-								find5[0] = 0;
-								tmpeleprof->PropertiesVariable.VariableValueFrom[tmpeleprof->PropertiesVariable.iVariables] = atof(find4 + 1);
-								char *find6 = (char *)pestrcasestr(find5 + 1, ")");
-								if (find6)
-								{
-									find6[0] = 0;
-									tmpeleprof->PropertiesVariable.VariableValueTo[tmpeleprof->PropertiesVariable.iVariables] = atof(find5 + 1);
-								}
-							}
-							#endif
 						}
 					}
 					else
@@ -7770,7 +7397,6 @@ void ParseLuaScriptWithElementID(entityeleproftype *tmpeleprof, char * script, i
 					replaceAll(clean_string, "#", "");
 					replaceAll(clean_string, "$", "");
 					replaceAll(clean_string, "!", "");
-					#ifdef WICKEDENGINE
 					replaceAll(clean_string, "@", "");
 					replaceAll(clean_string, "*", "");
 					replaceAll(clean_string, "&", "");
@@ -7778,7 +7404,6 @@ void ParseLuaScriptWithElementID(entityeleproftype *tmpeleprof, char * script, i
 					{
 						g_DLuaVariableNames.push_back(clean_string);
 					}
-					#endif			
 					strcpy(tmpeleprof->PropertiesVariable.Variable[tmpeleprof->PropertiesVariable.iVariables], clean_string.c_str());
 
 					//Clean variablevalue.
@@ -8027,7 +7652,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 			{
 				//Float
 				float tmpfloat = atof(val.Get());
-				#ifdef WICKEDENGINE
 				if (tmpeleprof->PropertiesVariable.VariableValueTo[i] > 0 && tmpeleprof->PropertiesVariable.VariableValueTo[i] > tmpeleprof->PropertiesVariable.VariableValueFrom[i])
 				{
 					ImGui::PushItemWidth(-50);
@@ -8067,20 +7691,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 					bUpdateMainString = true;
 				}
 
-				#else
-				if (ImGui::InputFloat("##float", &tmpfloat)) 
-				{
-					if (tmpeleprof->PropertiesVariable.VariableValueFrom[i] > 0 && tmpeleprof->PropertiesVariable.VariableValueTo[i] > 0 && tmpeleprof->PropertiesVariable.VariableValueTo[i] > tmpeleprof->PropertiesVariable.VariableValueFrom[i])
-					{
-						// optionally cap within any specified range
-						if (tmpfloat < tmpeleprof->PropertiesVariable.VariableValueFrom[i]) tmpfloat = tmpeleprof->PropertiesVariable.VariableValueFrom[i];
-						if (tmpfloat > tmpeleprof->PropertiesVariable.VariableValueTo[i]) tmpfloat = tmpeleprof->PropertiesVariable.VariableValueTo[i];
-					}
-					sprintf(tmp, "%f", tmpfloat);
-					strcpy(tmpeleprof->PropertiesVariable.VariableValue[i], tmp);
-					bUpdateMainString = true;
-				}
-				#endif
 			}
 			else if (tmpeleprof->PropertiesVariable.VariableType[i] == 2) 
 			{
@@ -8094,7 +7704,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 					if (pestrcasestr(tmpvar.Get(), "image")) 
 					{
 						cstr tmpvalue = tmpeleprof->PropertiesVariable.VariableValue[i];
-						#ifdef WICKEDENGINE
 						bool readonly = false;
 
 						//Allow up to 8 images to be previewed in the properties area
@@ -8145,9 +7754,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 							ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (iwidth*0.5), 0.0f));
 							ImGui::ImgBtn(imgfile_preview_id[iImgFileIndex], ImVec2( iwidth-18.0f, (iwidth - 18.0f) * fHighRatio), drawCol_back, drawCol_normal, drawCol_normal, drawCol_normal, -1, 0, 0, 0, true);
 						}
-						#else
-						tmpvalue = imgui_setpropertyfile2(1, tmpvalue.Get(), "", "Select image to appear in-level", "scriptbank\\images\\imagesinzone\\");
-						#endif
 						if (tmpvalue != tmpeleprof->PropertiesVariable.VariableValue[i]) {
 							strcpy(tmpeleprof->PropertiesVariable.VariableValue[i], tmpvalue.Get());
 							bUpdateMainString = true;
@@ -8242,7 +7848,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 				{
 					cstr tmpvalue = tmpeleprof->soundset1_s;
 
-					#ifdef WICKEDENGINE
 					#define VIDEOFILEID (PROPERTIES_CACHE_ICONS+997)
 					static cstr videofile = "";
 					static int videofile_preview_id = 0;
@@ -8279,7 +7884,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 						videofile = tmpvalue;
 					}
 
-					#endif
 
 					tmpvalue = imgui_setpropertyfile2(1, tmpeleprof->soundset1_s.Get(), "", "Specify movie file you would like to play when the player enters the zone", "videobank\\");
 					if (tmpvalue != tmpeleprof->soundset1_s) 
@@ -8288,7 +7892,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 						bUpdateMainString = true;
 					}
 
-					#ifdef WICKEDENGINE
 					if (videofile_preview_id > 0 && GetImageExistEx(videofile_preview_id))
 					{
 						extern ImVec4 drawCol_back;
@@ -8304,7 +7907,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 						ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w*0.5) - (iwidth*0.5), 0.0f));
 						ImGui::ImgBtn(videofile_preview_id, ImVec2(iwidth - 18.0f, (iwidth - 18.0f) * fHighRatio), drawCol_back, drawCol_normal, drawCol_normal, drawCol_normal, -1, 0, 0, 0, true);
 					}
-					#endif
 
 				}
 				else 
@@ -8313,9 +7915,7 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 					{
 						bUpdateMainString = true;
 					}
-					#ifdef WICKEDENGINE
 					if (ImGui::MaxIsItemFocused()) bImGuiGotFocus = true;
-					#endif
 
 				}
 			}
@@ -8341,7 +7941,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 				if (stricmp (tmpeleprof->PropertiesVariable.Variable[i], "Feeding") == NULL) pTooltipForTickbox = "Tick to start the zombie off in a ground feeding state";
 				if (pTooltipForTickbox && ImGui::IsItemHovered()) ImGui::SetTooltip(pTooltipForTickbox);
 			}
-			#ifdef WICKEDENGINE
 			else if (tmpeleprof->PropertiesVariable.VariableType[i] == 4 || tmpeleprof->PropertiesVariable.VariableType[i] == 7)
 			{
 				// Dropdown of labelled integers.
@@ -8812,7 +8411,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 					}
 				}
 			}
-			#endif
 			else 
 			{
 				//Integer
@@ -9379,7 +8977,6 @@ float fLastContentHeight[eKST_Last];
 
 void UniversalKeyboardShortcut(eKeyboardShortcutType KST)
 {
-	#ifdef WICKEDENGINE
 
 	if (pref.iHideKeyboardShortcuts)
 		return;
@@ -9425,13 +9022,11 @@ void UniversalKeyboardShortcut(eKeyboardShortcutType KST)
 			UniversalKeyboardShortcutAddItem(KEY_Q, 0, "Move camera down"); iContentHeight[KST]++;
 			UniversalKeyboardShortcutAddItem(KEY_SHIFT, 0, "Move camera around quickly"); iContentHeight[KST]++;
 			UniversalKeyboardShortcutAddItem(KEY_CONTROL, 0, "Move camera around slowly"); iContentHeight[KST]++;
-			#ifdef WICKEDENGINE
 			extern bool bEditorInFreeFlightMode;
 			if (bEditorInFreeFlightMode == true)
 			{
 				UniversalKeyboardShortcutAddItem(MOUSE_RMB, 0, "Rotate camera view"); iContentHeight[KST]++;
 			}
-			#endif
 			UniversalKeyboardShortcutAddItem(MOUSE_MMB, 0, "Zoom in and out"); iContentHeight[KST]++;
 			UniversalKeyboardShortcutAddItem(KEY_O, 0, "Enable object tools"); iContentHeight[KST]++;
 			UniversalKeyboardShortcutAddItem(KEY_T, 0, "Enable terrain tools"); iContentHeight[KST]++;
@@ -9549,7 +9144,6 @@ void UniversalKeyboardShortcut(eKeyboardShortcutType KST)
 		// finished panel
 		ImGui::EndChild();
 	}
-	#endif
 }
 
 void coreResetIMGUIFunctionalityPrefs(void)
@@ -9558,7 +9152,6 @@ void coreResetIMGUIFunctionalityPrefs(void)
 	// and restores/resets all flags so that each NEW build
 	// provides users with a view of the STANDARD USER MOD£
 	// not advanced or developer tools modes
-	#ifdef WICKEDENGINE
 	pref.current_style = 25; // 0
 	pref.bHideTutorials = false;
 	pref.bMultiplyOpenHeaders = false;
@@ -9630,7 +9223,6 @@ void coreResetIMGUIFunctionalityPrefs(void)
 	pref.iCheckFilesModifiedOnFocus = 1;
 	pref.status_bar_color = ImVec4((1.0f / 255.0f) * 14, (1.0f / 255.0f) * 99, (1.0f / 255.0f) * 156, 1.0);
 	pref.highlight_color = pref.status_bar_color;
-	#endif
 }
 
 void DrawRubberBand(float fx, float fy, float fx2, float fy2 )

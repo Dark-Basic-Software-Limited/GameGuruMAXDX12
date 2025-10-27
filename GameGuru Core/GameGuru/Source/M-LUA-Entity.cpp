@@ -6,9 +6,7 @@
 #include "stdafx.h"
 #include "gameguru.h"
 #include <vector>
-#ifdef WICKEDENGINE
 #include "GPUParticles.h"
-#endif
 
 // Externs
 extern void entity_refreshelementforuse ( void );
@@ -156,7 +154,6 @@ void entity_lua_collisionoff ( void )
 }
 
 // PROCESSING VIS FOR EVERYONE EVERY CYCLE IS SLOW, DO IT ON A LIST
-#ifdef WICKEDENGINE
 std::vector<int> g_EntityPlrVisList;
 #include "GGThread.h"
 using namespace GGThread;
@@ -208,7 +205,6 @@ void entity_lua_getentityplrvisible_processlist (void)
 		g_PlrVisibilityListLock.Release();
 	}
 }
-#endif
 
 void entity_lua_getentityplrvisible ( void )
 {
@@ -568,7 +564,6 @@ void entity_lua_setactivated ( void )
 	t.entityelement[t.e].lua.flagschanged = 1;
 }
 
-#ifdef VRTECH
 void entity_lua_setactivatedformp ( void )
 {
 	t.entityelement[t.e].activated = t.v;
@@ -578,7 +573,6 @@ void entity_lua_setactivatedformp ( void )
 		mp_sendlua ( MP_LUA_SetActivated, t.e, t.v );
 	}
 }
-#endif
 
 void entity_lua_resetlimbhit ( void )
 {
@@ -1005,10 +999,8 @@ void entity_lua_transporttoifused ( void )
 		t.terrain.playerz_f = t.entityelement[t.transporttoe].z;
 		t.terrain.playerax_f = 0;
 		t.terrain.playeray_f = t.entityelement[t.transporttoe].ry;
-		#ifdef VRTECH
 		t.playercontrol.finalcameraangley_f = t.terrain.playeray_f;
 		t.camangy_f = t.terrain.playeray_f;
-		#endif
 		t.terrain.playeraz_f = 0;
 		physics_setupplayer ();
 	}
@@ -1485,7 +1477,6 @@ void entity_lua_playvideonoskip ( int i3DMode, int iNoSkipFlag )
 		if ( AnimationExist(t.tvideoid) == 1 ) 
 		{
 			// run animation
-			#ifdef VRTECH
 			PlayAnimation (  t.tvideoid );
 			if (i3DMode == 1)
 			{
@@ -1568,7 +1559,6 @@ void entity_lua_playvideonoskip ( int i3DMode, int iNoSkipFlag )
 					OverrideTextureWithAnimation ( t.tvideoid, g.video3dobjectoffset ); //PE: This dont work with wicked.
 				}
 
-				#ifdef WICKEDENGINE
 				//PE: Just a fullscreen video for now!
 				//PE: Add a sprite draw call.
 				//PE: TODO - Need to fit video ratio to screen ratio.
@@ -1585,7 +1575,6 @@ void entity_lua_playvideonoskip ( int i3DMode, int iNoSkipFlag )
 						PasteImageRaw(lpVideoTexture, GetDisplayWidth() + 1, GetDisplayHeight() + 1, 0, 0, animU, animV, 0);
 					}
 				}
-				#endif
 				// keep things going
 				t.aisystem.processplayerlogic = 0;
 
@@ -1596,14 +1585,11 @@ void entity_lua_playvideonoskip ( int i3DMode, int iNoSkipFlag )
 				postprocess_preterrain ( );
 				game_sync ( );
 
-				#ifdef WICKEDENGINE
 				//We need to render everything.
 				void StartForceRender(void);
 				StartForceRender();
-				#endif
 			}
 
-			#ifdef WICKEDENGINE
 
 			//PE: Make sure Video texture lpVideoTexture , is removed from imgui drawlist, so we dont crash when its deleted below.
 			//PE: dont matter what we render,it will get clipped. , TOOL_PENCIL = 43095
@@ -1622,7 +1608,6 @@ void entity_lua_playvideonoskip ( int i3DMode, int iNoSkipFlag )
 			extern bool bBlockImGuiUntilNewFrame;
 			bBlockImGuiUntilNewFrame = true;
 			bRenderNextFrame = false;
-			#endif
 
 			t.aisystem.processplayerlogic = 1;
 			PlaceAnimation (  t.tvideoid,-1,-1,0,0 );
@@ -1638,31 +1623,6 @@ void entity_lua_playvideonoskip ( int i3DMode, int iNoSkipFlag )
 			t.tclear=MouseMoveY();
 			t.tclear=GetFileMapDWORD( 1, 0 );
 			t.tclear=GetFileMapDWORD( 1, 4 );
-			#else
-			PlayAnimation (  t.tvideoid );
-			PlaceAnimation (  t.tvideoid,0,0,GetDisplayWidth(),GetDisplayHeight() );
-			t.ttrackmouse=0;
-			while (  AnimationPlaying(t.tvideoid) == 1 ) 
-			{
-				if ( iNoSkipFlag == 0 )
-				{
-					t.inputsys.mclick = GetFileMapDWORD( 1, 20 );
-					if ( t.inputsys.mclick == 0 ) t.inputsys.mclick = MouseClick();
-					if (  t.inputsys.mclick == 0 && t.ttrackmouse == 0  )  t.ttrackmouse = 1;
-					if (  t.inputsys.mclick != 0 && t.ttrackmouse == 1  )  t.ttrackmouse = 2;
-					if (  t.inputsys.mclick == 0 && t.ttrackmouse == 2  )  break;
-				}
-				Sync (  );
-			}
-			PlaceAnimation (  t.tvideoid,-1,-1,0,0 );
-			StopAnimation (  t.tvideoid );
-			t.luaglobal.lastvideonumber=t.tvideoid;
-			//  clear mouse deltas when return to game
-			t.tclear=MouseMoveX();
-			t.tclear=MouseMoveY();
-			t.tclear=GetFileMapDWORD( 1, 0 );
-			t.tclear=GetFileMapDWORD( 1, 4 );
-			#endif
 		}
 	}
 
@@ -1767,15 +1727,7 @@ void entity_lua_moveforward_core_nooverlap ( int te, float* pNX, float* pNZ )
 					fDZ *= 30.1f;
 					*pNX = t.entityelement[ee].x - fDX;
 					*pNZ = t.entityelement[ee].z - fDZ;
-					#ifdef WICKEDENGINE
 					// uses dynamicavoidance in a different way in co-op with behavior script system
-					#else
-					if ( fPlrDistOfMovingEntity > t.entityelement[ee].plrdist )
-					{
-						// only trigger avoidance if entity moving if more distant one touching 
-						t.entityelement[te].lua.dynamicavoidance = 2;
-					}
-					#endif
 					break;
 				}
 			}
@@ -1837,16 +1789,7 @@ void entity_lua_moveforward_core_ex (float fActualMoveUnitsOverride, float fActu
 	// process movement of visual object (with physics) and calc avoidance state
 	entity_lua_moveupdate ( );
 
-	#ifdef WICKEDENGINE
 	// uses dynamicavoidance in a different way in co-op with behavior script system
-	#else
-	// if collided and moved with another character, do not use hard avoid, allow chars to smoothly resolve positions
-	if ( bCancelAvoidFlag == true )
-	{
-		// NOTE: would this collapse the system if two enemies rubbed side by side against same dynamic obstacle?!?
-		t.entityelement[t.e].lua.dynamicavoidance = 0;
-	}
-	#endif
 }
 
 void entity_lua_moveforward_core (float fActualMoveUnitsOverride)
@@ -1931,11 +1874,7 @@ void entity_lua_resetpositiony ( void )
 	{
 		//t.i = t.charanimstates[g.charanimindex].obj;
 		t.i = t.charanimstates[t.tcharanimindex].obj;
-#ifdef WICKEDENGINE
 		// MAX has no AI subsystem
-#else
-		AISetEntityPosition ( t.i, ObjectPositionX(t.tobj), t.v_f, ObjectPositionZ(t.tobj) );
-#endif
 	}
 }
 
@@ -1960,11 +1899,7 @@ void entity_lua_resetpositionz ( void )
 	{
 		//t.i = t.charanimstates[g.charanimindex].obj;
 		t.i = t.charanimstates[t.tcharanimindex].obj;
-#ifdef WICKEDENGINE
 		// MAX has no AI subsystem
-#else
-		AISetEntityPosition ( t.i, ObjectPositionX(t.tobj), ObjectPositionY(t.tobj), t.v_f );
-#endif
 	}
 }
 
@@ -2020,7 +1955,6 @@ void entity_lua_resetrotationy ( void )
 	}
 
 	// if character, also set the current angle as this was a hard reset of the Y angle
-	#ifdef WICKEDENGINE
 	entity_lua_findcharanimstate ();
 	if (t.tcharanimindex != -1)
 	{
@@ -2028,7 +1962,6 @@ void entity_lua_resetrotationy ( void )
 		t.charanimstate.currentangle_f = t.entityelement[t.e].ry;
 		t.charanimstates[t.tcharanimindex] = t.charanimstate;
 	}
-	#endif
 }
 
 void entity_lua_resetrotationz ( void )
@@ -2358,22 +2291,12 @@ void entity_lua_playorloopanimation ( float fStartFromPercentage )
 
 			// trigger transition to desired animation
 			t.playflag=1-t.luaglobal.loopmode ; t.smoothanim[t.obj].st=-1;
-			#ifdef WICKEDENGINE
 			float fCurrentlyNotUsed = 5.0f;
 			smoothanimtriggerrev(t.obj, t.ttstart, t.ttfinish, fCurrentlyNotUsed, 0, t.playflag, fStartFromPercentage);
-			#else
-			#ifdef VRTECH
-			smoothanimtriggerrev(t.obj,t.ttstart,t.ttfinish,1.0,0,t.playflag);
-			#else
-			smoothanimtriggerrev(t.obj,t.ttstart,t.ttfinish,10.0,0,t.playflag, 0);
-			#endif
-			#endif
 
 			// ensure spine tracker is reset when start new animation
-			#ifdef WICKEDENGINE
 			sObject* pObject = GetObjectData(t.obj);
 			pObject->bSpineTrackerMoving = false;
-			#endif
 
 			// set as animating
 			t.entityelement[t.e].lua.animating=1;
@@ -2449,7 +2372,6 @@ void entity_lua_movewithanimation ( void )
 					// keep character still, ignore spine vs base tracking
 					if (pObject->bSpineTrackerMoving == true)
 					{
-						#ifdef WICKEDENGINE
 						if (pObject->ppFrameList)
 						{
 							if (pObject->dwSpineCenterLimbIndex > 0)
@@ -2461,7 +2383,6 @@ void entity_lua_movewithanimation ( void )
 								}
 							}
 						}
-						#endif
 						pObject->bSpineTrackerMoving = false;
 					}
 				}
@@ -2836,86 +2757,12 @@ void entity_lua_setcharactervisiondelay ( void )
 void entity_lua_lookatplayer ( void )
 {
 	entity_lua_findcharanimstate();
-	#ifdef WICKEDENGINE
 	if (t.tcharanimindex != -1)
 	{
 		// for smoothness, move smooth track so always called until reach final position (for head tracking)
 		t.charanimstates[t.tcharanimindex].entityTarget = 0;
 		t.charanimstates[t.tcharanimindex].neckAiming = t.v_f;
 	}
-	#else
-	if ( t.tcharanimindex != -1 )
-	{
-		#ifdef VRTECH
-		// new look to player involves access to neck bone of character - head tracking data passed out
-		float fLookAtX = CameraPositionX();
-		float fLookAtY = CameraPositionY();
-		float fLookAtZ = CameraPositionZ();
-		float fDX = fLookAtX - ObjectPositionX ( t.charanimstate.obj );
-		float fDZ = fLookAtZ - ObjectPositionZ ( t.charanimstate.obj );
-		float fDD = sqrt (fabs(fDX*fDX) + fabs(fDZ*fDZ));
-
-		// work out how far to twist neck left and right
-		float fNeckLimit = 45.0f;
-		float fDA = atan2deg(fDX, fDZ);
-		float fAIObjAngleY = ObjectAngleY (t.charanimstate.obj);
-		float fDiffA = WrapValue(fDA) - WrapValue(fAIObjAngleY);
-		if (fDiffA < -180) fDiffA  = fDiffA + 360;
-		if (fDiffA > 180) fDiffA = fDiffA - 360;
-		if (fabs(fDiffA) > fNeckLimit)
-		{
-			if (fDiffA < -45.0f) fDiffA = -45.0f;
-			if (fDiffA >  45.0f) fDiffA =  45.0f;
-		}
-		float fXLookRightAndLeft = fDiffA;
-
-		// and the neck up and down
-		float fDY = fLookAtY - (ObjectPositionY ( t.charanimstate.obj ) + 70.0f);
-		fDA = WrapValue ( GGToDegree(atan2(fDY,fDD)) );
-		fNeckLimit = 45.0f;
-		if ( fDA < 360-fNeckLimit && fDA > 180.0f ) fDA = 360-fNeckLimit;
-		if ( fDA > fNeckLimit && fDA < 180.0f ) fDA = fNeckLimit;
-		float fYLookUpAndDown = fDA;
-
-		// smooth transition to final angle
-		float fSmoothSpeed = t.v_f/100.0f;
-		float fDiffX = fXLookRightAndLeft; if ( fDiffX >= 180.0f ) fDiffX -= 360.0f;
-		float fDiffY = fYLookUpAndDown; if ( fDiffY >= 180.0f ) fDiffY -= 360.0f;
-		fDiffX -= t.charanimstate.neckRightAndLeft;
-		fDiffY -= t.charanimstate.neckUpAndDown;
-		t.charanimstate.neckRightAndLeft += fDiffX*fSmoothSpeed;
-		t.charanimstate.neckUpAndDown += fDiffY*fSmoothSpeed;
-		t.charanimstates[t.tcharanimindex] = t.charanimstate;
-		#else
-		//  Simply look in direction of player
-		t.tdx_f=CameraPositionX(0)-t.entityelement[t.e].x;
-		t.tdz_f=CameraPositionZ(0)-t.entityelement[t.e].z;
-		AISetEntityAngleY (  t.charanimstate.obj,atan2deg(t.tdx_f,t.tdz_f) );
-
-		//  If angle beyond 'look angle range', perform full rotation
-		t.tangley_f=AIGetEntityAngleY(t.charanimstate.obj) ;
-		t.headangley_f=t.tangley_f-ObjectAngleY(t.charanimstate.obj) ;
-		if (  t.headangley_f<-180  )  t.headangley_f = t.headangley_f+360;
-		if (  t.headangley_f>180  )  t.headangley_f = t.headangley_f-360;
-		if (  t.headangley_f<-75 || t.headangley_f>75 ) 
-		{
-			t.charanimstate.currentangle_f=t.tangley_f;
-			t.charanimstate.updatemoveangle=1;
-			AISetEntityAngleY (  t.charanimstate.obj,t.charanimstate.currentangle_f );
-			t.charanimstates[t.tcharanimindex] = t.charanimstate;
-		}
-		#endif
-	}
-	if ( t.game.runasmultiplayer == 1 && g.mp.coop == 1 && t.tLuaDontSendLua == 0 ) 
-	{
-		// only send this max once a second
-		if ( Timer() - t.entityelement[t.e].mp_rotateTimer > 1000 ) 
-		{
-			mp_sendlua ( MP_LUA_LookAtPlayer, t.e, g.mp.me );
-			t.entityelement[t.e].mp_rotateTimer = Timer();
-		}
-	}
-	#endif
 }
 
 int g_presetTargetE = 0;
@@ -2955,21 +2802,12 @@ void entity_lua_aimsmoothmode (void)
 	}
 }
 
-#ifdef VRTECH
 void entity_lua_lookforward ( void )
 {
 	entity_lua_findcharanimstate();
 	if ( t.tcharanimindex != -1 ) 
 	{
-		#ifdef WICKEDENGINE
 		t.charanimstates[t.tcharanimindex].neckAiming = 0.0f;
-		#else
-		// reset head tracker look angles (V as 100 will do it in one)
-		float fSmoothSpeed = (100.0f-t.v_f)/100.0f;
-		t.charanimstate.neckRightAndLeft *= fSmoothSpeed;
-		t.charanimstate.neckUpAndDown *= fSmoothSpeed;
-		t.charanimstates[t.tcharanimindex] = t.charanimstate;
-		#endif
 	}
 }
 void entity_lua_lookatangle (void)
@@ -2980,7 +2818,6 @@ void entity_lua_lookatangle (void)
 		t.charanimstates[t.tcharanimindex].neckAiming = (t.v_f - 10000); // special code to store forced angle
 	}
 }
-#endif
 
 void entity_lua_rotatetoanglecore ( float fDestAngle, float fAngleOffset )
 {
@@ -3002,29 +2839,12 @@ void entity_lua_rotatetoanglecore ( float fDestAngle, float fAngleOffset )
 	}
 	else
 	{
-		#ifdef WICKEDENGINE
 		// MAX has no AI subsystem - but for characters we will set the destination angle and smoothly rotate within char_loop or similar
 		t.charanimstate.currentangle_f = fDestAngle;
 		float fModulateRotSpeed = t.charanimstate.iRotationAlongPathMode / 100.0f;
 		t.charanimstate.currentangleslowlyspeed_f = (t.v * fModulateRotSpeed);
 		t.charanimstate.moveToMode = 0; // face target will override goto target
 		t.charanimstates[t.tcharanimindex] = t.charanimstate;
-		#else
-		// need to factor in entity speed for AI characters
-		t.tsmooth_f /= (t.entityelement[t.charanimstate.e].eleprof.speed/100.0f);
-
-		//  character subsystem
-		t.tnewangley_f=CurveAngle(fDestAngle,t.charanimstate.currentangle_f,t.tsmooth_f);
-		t.charanimstate.currentangle_f=t.tnewangley_f;
-		t.charanimstate.updatemoveangle=1;
-		t.charanimstates[t.tcharanimindex] = t.charanimstate;
-		t.entityelement[t.e].ry=t.tnewangley_f;
-
-		//this overwrites angle assigned by pathfinder (causing circular paths at high speed with smoothing on)
-		AISetEntityAngleY ( t.charanimstate.obj, fDestAngle );
-		// and update visually (relies on being called by LUA constantly for smooth rotation)
-		entity_lua_rotateupdate ();
-		#endif
 	}
 	if (  t.game.runasmultiplayer  ==  1 && g.mp.coop  ==  1 && t.tLuaDontSendLua  ==  0 ) 
 	{
@@ -3071,12 +2891,7 @@ void entity_lua_rotatetoplayerwithoffset ( void )
 void entity_lua_set_gravity ( void )
 {
 	t.entityelement[t.e].nogravity=t.v;
-	#ifdef WICKEDENGINE
 	ODESetNoGravity(t.entityelement[t.e].obj, 1 - t.entityelement[t.e].nogravity);
-	#else
-	//  commented out for now due to not working anyway
-	//BPhys_SetNoGravity entityelement(e).obj,v;
-	#endif
 }
 
 void entity_lua_fireweapon ( bool instant )
@@ -3306,11 +3121,7 @@ void entity_lua_addplayerammo ( void )
 void entity_lua_addplayerhealth ( void )
 {
 	// collect health
-	#ifdef WICKEDENGINE
 	t.tqty = t.entityelement[t.e].eleprof.strength;
-	#else
-	t.tqty = t.entityelement[t.e].eleprof.quantity;
-	#endif
 
 	//LB: new player health intercept
 	LuaSetFunction ("PlayerHealthAdd", 1, 0);
@@ -3369,11 +3180,6 @@ void entity_lua_set_light_visible ( void )
 			if (  t.infinilight[t.l].e == t.e ) 
 			{
 				t.infinilight[t.l].islit=t.v;
-				#ifdef VRTECH
-				#else
-				extern bool bLightDataChanged;
-				bLightDataChanged = true; //update light data in next sync.
-				#endif
 			}
 		}
 	}

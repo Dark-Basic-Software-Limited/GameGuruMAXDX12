@@ -5,7 +5,6 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-#ifdef ENABLEIMGUI
 //PE: GameGuru IMGUI.
 #include "..\Imgui\imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
@@ -17,7 +16,6 @@
 #include <algorithm>
 #include <string>
 #include <time.h>
-#endif
 
 // Enums (duplicated, need to clean this up)
 enum MaterialComponentTEXTURESLOT
@@ -37,9 +35,7 @@ enum MaterialComponentTEXTURESLOT
 	TEXTURESLOT_COUNT
 };
 
-#ifdef VRTECH
 bool dbo2xConvert(LPSTR pFilefrom, LPSTR pFileto);
-#endif
 
 void set_inputsys_mclick(int value);
 
@@ -52,11 +48,8 @@ DWORD pVertCountStore[CUBEMAXMESH];
 bool pbTriggerDrawBufferCreation[CUBEMAXMESH];
 short pMasterGridMeshRef[20][20][20][2];
 
-#ifdef VRTECH
 char ActiveEBEFilename[260] = { "\0" };
-#endif
 
-#if defined(ENABLEIMGUI)
 extern bool bBuilder_Properties_Window;
 int texture_set_selection = 0;
 char structure_name[MAX_PATH];
@@ -71,18 +64,11 @@ char BuilderPath[MAX_PATH] = "entitybank\\user\\ebestructures";
 extern bool bTriggerMessage;
 extern char cTriggerMessage[MAX_PATH];
 extern preferences pref;
-#endif
 
-#ifdef WICKEDENGINE
 extern bool bImGuiGotFocus;
-#endif
 
-#ifdef VRTECH
 bool bDisableAllSprites = true;
 int iPaintMode = 1;
-#else
-bool bDisableAllSprites = false;
-#endif
 
 struct sMyColBox 
 {
@@ -123,10 +109,6 @@ struct ebebuildtype
 {
 	int iToolObj;
 	int iBuildObj;
-	#ifdef WICKEDENGINE
-	#else
-	int iCasterObj;
-	#endif
 	int iCurrentGridLayer;
 	int iLocalKeyPressed;
 	int iCursorGridPosX;
@@ -184,10 +166,6 @@ void ebe_init ( int BuildObj, int iEntID )
 	unsigned char cTexIndex = 0;
 
 	// Create texture selection panel
-	#ifdef VRTECH
-	#else
-	ebebuild.iTexPlateImage = 0;
-	#endif
 	ebebuild.iTexturePanelX = GetChildWindowWidth()-210;
 	ebebuild.iTexturePanelY = GetChildWindowHeight()-210;
 	ebebuild.iTexturePanelWidth = 200;
@@ -205,15 +183,7 @@ void ebe_init ( int BuildObj, int iEntID )
 		if ( iTex==2 ) { pTexImg = "TexHUD-L.png"; iX -= 10; iY += 209; iWidth += 20; iHeight = 1; }
 		if ( iTex==3 ) { pTexImg = "TexHUD-L.png"; iX -= 10; iY -= 10; iWidth = 1; iHeight += 20; }
 		if ( iTex==4 ) { pTexImg = "TexHUD-L.png"; iX += 209; iY -= 10; iWidth = 1; iHeight += 20; }
-		#ifdef WICKEDENGINE
 		if ( iTex==5 ) { pTexImg = "textures_color.dds"; }
-		#else
-		#ifdef VRTECH
-		if ( iTex==5 ) { pTexImg = "textures_D.jpg"; }
-		#else
-		if ( iTex==5 ) { pTexImg = "textures_D.dds"; }
-		#endif
-		#endif
 		ebebuild.iTexturePanelSprite[iTex] = g.ebeinterfacesprite + 31 + iTex;
 		ebebuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(cstr("ebebank\\default\\")+cstr(pTexImg)).Get());
 		if(!bDisableAllSprites)
@@ -300,7 +270,6 @@ void ebe_init ( int BuildObj, int iEntID )
 	int iFloatImg = loadinternaltexture("ebebank\\default\\FloatBox.dds");
 	int iCursorImg = loadinternaltexture("ebebank\\default\\CursorBox.dds");	
 	image_setlegacyimageloading(false);
-	#ifdef WICKEDENGINE
 	// base mesh is wrong, so we get rid of it
 	int iLimbIndex = 0;
 	OffsetLimb (iToolObj, iLimbIndex, 0, 0.05, 0);
@@ -308,13 +277,6 @@ void ebe_init ( int BuildObj, int iEntID )
 	iLimbIndex = 1;
 	AddLimb (iToolObj, iLimbIndex, g.meshebe);
 	OffsetLimb (iToolObj, iLimbIndex, 500, 0.05, 500);
-	#else
-	int iLimbIndex = 0;
-	OffsetLimb (iToolObj, iLimbIndex, 500, 0.05, 500);
-	iLimbIndex = 1;
-	AddLimb (iToolObj, iLimbIndex, g.meshebe);
-	OffsetLimb (iToolObj, iLimbIndex, 500, 0.05, 500);
-	#endif
 
 	// now scale present meshes so grid creates a mirror effect of UVs for good textured grid
 	ScaleObjectTexture ( iToolObj, 200, 200 );
@@ -337,14 +299,6 @@ void ebe_init ( int BuildObj, int iEntID )
 	SetObjectMask ( iToolObj, 0x1 );
 
 	// Create invisible obj to cast for object selection detection
-	#ifdef WICKEDENGINE
-	#else
-	ebebuild.iCasterObj = g.ebeobjectbankoffset + 1;
-	if (ObjectExist(ebebuild.iCasterObj) == 1) DeleteObject(ebebuild.iCasterObj);
-	MakeObjectCube ( ebebuild.iCasterObj, 1 );
-	SetObjectMask ( ebebuild.iCasterObj, 0x1 );
-	HideObject ( ebebuild.iCasterObj );
-	#endif
 	
 	// New template has marker in limb 2, regular EBE structure has it in zero
 	int iLimbWithMarker = 0;
@@ -355,7 +309,6 @@ void ebe_init ( int BuildObj, int iEntID )
 	if (GetMeshExist(g.meshebemarker) == 1) DeleteMesh(g.meshebemarker);
 	MakeMeshFromLimb ( g.meshebemarker, BuildObj, iLimbWithMarker );
 
-	#if defined(ENABLEIMGUI)
 	image_setlegacyimageloading(true);
 	if (!ImageExist(EBE_CONTROL1))
 		LoadImage("editors\\uiv3\\ebe-control1.png", EBE_CONTROL1);
@@ -372,9 +325,7 @@ void ebe_init ( int BuildObj, int iEntID )
 	if (!ImageExist(EBE_THUMB))
 		LoadImage("editors\\uiv3\\ebe-thumb.png", EBE_THUMB);
 	image_setlegacyimageloading(false);
-	#endif
 
-	#ifdef WICKEDENGINE
 	WickedCall_PresetObjectLimbRenderLayer(GGRENDERLAYERS_CURSOROBJECT,2);
 	sObject* pToolObject = GetObjectData(iToolObj);
 	WickedCall_RemoveObject(pToolObject);
@@ -383,13 +334,11 @@ void ebe_init ( int BuildObj, int iEntID )
 	WickedCall_TextureObject(pToolObject,NULL);
 	WickedCall_SetObjectTransparent(pToolObject);
 	WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-	#endif
 
 	// mark EBE has intialised
 	t.ebe.active = 1;
 }
 
-#ifdef VRTECH
 void ebe_free(void)
 {
 	// delete all resources created in above _init
@@ -444,7 +393,6 @@ void ebe_free(void)
 
 	t.ebe.active = 0;
 }
-#endif
 
 void ebe_init_newbuild ( int iBuildObj, int entid )
 {
@@ -489,71 +437,28 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 			ebebuild.TXP.sTextureFile[n] = t.entityprofile[entid].ebe.pTexRef[n];
 
 		// Also save snapshot of latest textures_DNS
-		#ifdef WICKEDENGINE
 		cstr sUniqueFilename = ebe_constructlongTXPname("_color.dds");
-		#else
-		#ifdef VRTECH
-		cstr sUniqueFilename = ebe_constructlongTXPname("_D.jpg");
-		#else
-		cstr sUniqueFilename = ebe_constructlongTXPname("_D.dds");
-		#endif
-		#endif
 		cstr sLongFilename = cstr("ebebank\\default\\") + sUniqueFilename;
-		#ifdef WICKEDENGINE
 		cstr tRawPathAndFile = cstr(Left(sLongFilename.Get(),strlen(sLongFilename.Get())-10));
 		cstr sDDSFile = tRawPathAndFile + cstr("_color.dds");
-		#else
-		cstr tRawPathAndFile = cstr(Left(sLongFilename.Get(),strlen(sLongFilename.Get())-6));
-		#ifdef VRTECH
-		cstr sDDSFile = tRawPathAndFile + cstr("_D.jpg");
-		#else
-		cstr sDDSFile = tRawPathAndFile + cstr("_D.dds");
-		#endif
-		#endif
 		if ( FileExist(sDDSFile.Get()) == 0 ) 
 		{
 			// cache in ebebank\default deleted, so copy from
 			cstr tSourceRaw = g.mysystem.levelBankTestMap_s + sUniqueFilename; //cstr("levelbank\\testmap\\") + sUniqueFilename;
-			#ifdef WICKEDENGINE
 			tSourceRaw = cstr(Left(tSourceRaw.Get(),strlen(tSourceRaw.Get())-10));
 			cstr tDDSSource = tSourceRaw + "_color.dds";
-			#else
-			tSourceRaw = cstr(Left(tSourceRaw.Get(),strlen(tSourceRaw.Get())-6));
-			#ifdef VRTECH
-			cstr tDDSSource = tSourceRaw + "_D.jpg";
-			#else
-			cstr tDDSSource = tSourceRaw + "_D.dds";
-			#endif
-			#endif
 			if ( FileExist(tDDSSource.Get()) == 0 ) 
 			{
 				// not in ebebank or in levelbank, try original saved ebe entity (though a real entity should never get here - only their entitybank copies)
 				tSourceRaw = cstr("entitybank\\")+cstr(t.entitybank_s[entid]) + "\\" + sUniqueFilename;
-				#ifdef WICKEDENGINE
 				tDDSSource = tSourceRaw + "_color.dds";
-				#else
-				#ifdef VRTECH
-				tDDSSource = tSourceRaw + "_D.jpg";
-				#else
-				tDDSSource = tSourceRaw + "_D.dds";
-				#endif
-				#endif
 			}
-			#ifdef WICKEDENGINE
 			sDDSFile = tRawPathAndFile + cstr("_color.dds");
 			char pRealDestFile[MAX_PATH];
 			strcpy(pRealDestFile, sDDSFile.Get());
 			GG_GetRealPath(pRealDestFile, 1);
 			sDDSFile = pRealDestFile;
-			#else
-			#ifdef VRTECH
-			sDDSFile = tRawPathAndFile + cstr("_D.jpg");
-			#else
-			sDDSFile = tRawPathAndFile + cstr("_D.dds");
-			#endif
-			#endif
 			CopyFileA ( tDDSSource.Get(), sDDSFile.Get(), FALSE );
-			#ifdef WICKEDENGINE
 			 tDDSSource = tSourceRaw + "_normal.dds";
 			 sDDSFile = tRawPathAndFile + cstr("_normal.dds");
 			 strcpy(pRealDestFile, sDDSFile.Get());
@@ -566,30 +471,10 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 			 GG_GetRealPath(pRealDestFile, 1);
 			 sDDSFile = pRealDestFile;
 			 CopyFileA ( tDDSSource.Get(), sDDSFile.Get(), FALSE );
-			#else
-			#ifdef VRTECH
-			#else
-			 tDDSSource = tSourceRaw + "_N.dds";
-			 sDDSFile = tRawPathAndFile + cstr("_N.dds");
-			 CopyFile ( tDDSSource.Get(), sDDSFile.Get(), FALSE );
-			 tDDSSource = tSourceRaw + "_S.dds";
-			 sDDSFile = tRawPathAndFile + cstr("_S.dds");
-			 CopyFile ( tDDSSource.Get(), sDDSFile.Get(), FALSE );
-			#endif
-			#endif
-			#ifdef WICKEDENGINE
 			sDDSFile = tRawPathAndFile + cstr("_color.dds");
-			#else
-			#ifdef VRTECH
-			sDDSFile = tRawPathAndFile + cstr("_D.jpg");
-			#else
-			sDDSFile = tRawPathAndFile + cstr("_D.dds");
-			#endif
-			#endif
 		}
 		if ( FileExist(sDDSFile.Get()) == 1 ) 
 		{
-			#ifdef WICKEDENGINE
 			cstr tDDSFilename = "ebebank\\default\\textures_color.dds";
 			char pRealSrcFile[MAX_PATH];
 			strcpy(pRealSrcFile, sDDSFile.Get());
@@ -599,16 +484,8 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 			strcpy(pRealDestFile, tDDSFilename.Get());
 			GG_GetRealPath(pRealDestFile, 1);
 			tDDSFilename = pRealDestFile;
-			#else
-			#ifdef VRTECH
-			cstr tDDSFilename = "ebebank\\default\\textures_D.jpg";
-			#else
-			cstr tDDSFilename = "ebebank\\default\\textures_D.dds";
-			#endif
-			#endif
 			if ( FileExist(tDDSFilename.Get()) == 1 ) DeleteFileA ( tDDSFilename.Get() );
 			CopyFileA ( sDDSFile.Get(), tDDSFilename.Get(), FALSE );
-			#ifdef WICKEDENGINE
 			 sDDSFile = tRawPathAndFile + cstr("_normal.dds");
 			 tDDSFilename = "ebebank\\default\\textures_normal.dds";
 			 strcpy(pRealSrcFile, sDDSFile.Get());
@@ -629,36 +506,15 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 			 tDDSFilename = pRealDestFile;
 			 if ( FileExist(tDDSFilename.Get()) == 1 ) DeleteAFile ( tDDSFilename.Get() );
 			 CopyFileA ( sDDSFile.Get(), tDDSFilename.Get(), FALSE );
-			#else
-			#ifdef VRTECH
-			#else
-			 sDDSFile = tRawPathAndFile + cstr("_N.dds");
-			 tDDSFilename = "ebebank\\default\\textures_N.dds";
-			 if ( FileExist(tDDSFilename.Get()) == 1 ) DeleteAFile ( tDDSFilename.Get() );
-			 CopyFile ( sDDSFile.Get(), tDDSFilename.Get(), FALSE );
-			 sDDSFile = tRawPathAndFile + cstr("_S.dds");
-			 tDDSFilename = "ebebank\\default\\textures_S.dds";
-			 if ( FileExist(tDDSFilename.Get()) == 1 ) DeleteAFile ( tDDSFilename.Get() );
-			 CopyFile ( sDDSFile.Get(), tDDSFilename.Get(), FALSE );
-			#endif
-			#endif
 		}
 
 		// and the TXP file too (260317 - generate, as copy may not exist)
 		ebe_savetxp(cstr(cstr("ebebank\\default\\")+cstr("textures_profile.txp")).Get());
 
 		// and update EBE editor textures image for selector
-		#ifdef WICKEDENGINE
 		image_setlegacyimageloading(true);
 		LoadImage ( "ebebank\\default\\textures_color.dds", ebebuild.iTexPlateImage );
 		image_setlegacyimageloading(false);
-		#else
-		#ifdef VRTECH
-		LoadImage ( "ebebank\\default\\textures_D.jpg", ebebuild.iTexPlateImage );
-		#else
-		LoadImage ( "ebebank\\default\\textures_D.dds", ebebuild.iTexPlateImage );
-		#endif
-		#endif
 		if (!bDisableAllSprites) Sprite ( ebebuild.iTexturePanelSprite[5], SpriteX(ebebuild.iTexturePanelSprite[5]), SpriteY(ebebuild.iTexturePanelSprite[5]), ebebuild.iTexPlateImage );
 	}
 
@@ -699,44 +555,12 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 	}
 
 	// Apply textures
-	#ifdef WICKEDENGINE
 	image_setlegacyimageloading(true);
  	 int iTexD = loadinternaltexture("ebebank\\default\\textures_color.dds");
 	 int iTexN = loadinternaltexture("ebebank\\default\\textures_normal.dds");
 	 int iTexS = loadinternaltexture("ebebank\\default\\textures_surface.dds");
 	 TextureObject(iBuildObj, iTexD);
 	 image_setlegacyimageloading(false);
-	#else
-	#ifdef VRTECH
- 	 int iTexD = loadinternaltexture("ebebank\\default\\textures_D.jpg");
-	 int iTexN = loadinternaltexture("effectbank\\reloaded\\media\\blank_N.dds");
-	 int iTexS = loadinternaltexture("effectbank\\reloaded\\media\\blank_medium_S.DDS");
-	#else
- 	 int iTexD = loadinternaltexture("ebebank\\default\\textures_D.dds");
-	 int iTexN = loadinternaltexture("ebebank\\default\\textures_N.dds");
-	 int iTexS = loadinternaltexture("ebebank\\default\\textures_S.dds");
-	#endif
-	#ifdef VRTECH
-	 LoadImage ( "ebebank\\default\\textures_D.jpg", iTexD );
-	 LoadImage ( "effectbank\\reloaded\\media\\blank_N.dds", iTexN );
-	 LoadImage ( "effectbank\\reloaded\\media\\blank_medium_S.DDS", iTexS );
-	#else
-	 LoadImage ( "ebebank\\default\\textures_D.dds", iTexD, 0, g.gdividetexturesize);
-	 LoadImage ( "ebebank\\default\\textures_N.dds", iTexN, 0, g.gdividetexturesize);
-	 LoadImage ( "ebebank\\default\\textures_S.dds", iTexS, 0, g.gdividetexturesize);
-	#endif
-	TextureObject ( iBuildObj, 0, iTexD );
-	TextureObject ( iBuildObj, 1, loadinternaltexture("effectbank\\reloaded\\media\\blank_O.dds") );
-	TextureObject ( iBuildObj, 2, iTexN );
-	TextureObject ( iBuildObj, 3, iTexS );
-	#ifdef VRTECH
-	TextureObject ( iBuildObj, 4, loadinternaltexture("effectbank\\reloaded\\media\\materials\\0_Gloss.dds") );
-	#else
-	TextureObject ( iBuildObj, 4, t.terrain.imagestartindex );
-	#endif
-	TextureObject ( iBuildObj, 5, g.postprocessimageoffset+5 );
-	TextureObject ( iBuildObj, 6, loadinternaltexture("effectbank\\reloaded\\media\\blank_I.dds") );
-	#endif
 	SetObjectTransparency ( iBuildObj, 0 );
 
 	// unpack data into cube data
@@ -770,13 +594,10 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 	SetColOff ( pObject );
 
 
-#ifdef WICKEDENGINE
 //	if (t.grideleprof.bCustomWickedMaterialActive) {
 //		Wicked_Copy_Material_To_Grideleprof((void*)pObject, 3);
 //		Wicked_Update_All_Materials((void*)pObject, 3);
 //	}
-#endif
-#ifdef WICKEDENGINE
 	int e = t.ebe.entityelementindex;
 	if (t.entityelement[e].eleprof.bCustomWickedMaterialActive) {
 		t.grideleprof.WEMaterial = t.entityelement[e].eleprof.WEMaterial;
@@ -786,29 +607,7 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 		Wicked_Update_All_Materials((void*)pObject, 3);
 	}
 
-#endif
 
-#ifndef WICKEDENGINE
-	#ifdef VRTECH
-	//Place camera.
-	int iAtX = t.entityelement[t.ebe.entityelementindex].x;
-	int iAtY = t.entityelement[t.ebe.entityelementindex].y;
-	int iAtZ = t.entityelement[t.ebe.entityelementindex].z;
-	t.editorfreeflight.mode = 1;
-	t.editorfreeflight.c.x_f = iAtX;
-	t.editorfreeflight.c.y_f = iAtY + 400.0f;
-	t.editorfreeflight.c.z_f = iAtZ;
-	t.editorfreeflight.c.angx_f = 0.0f;
-	t.editorfreeflight.c.angy_f = 50.0f;
-	PositionCamera(t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f);
-	RotateCamera(t.editorfreeflight.c.angx_f, t.editorfreeflight.c.angy_f, 0);
-	MoveCamera(-350.0f);
-	t.editorfreeflight.c.x_f = CameraPositionX();
-	t.editorfreeflight.c.y_f = CameraPositionY();
-	t.editorfreeflight.c.z_f = CameraPositionZ();
-	t.editorfreeflight.c.angx_f = 30;
-	#endif
-#endif
 }
 
 void ebe_updateparent ( int entityelementindex )
@@ -903,21 +702,8 @@ void ebe_makeseamless ( int iRow, int iCol, float* fU1, float* fU1R, float* fV1,
 	*fW2 -= (0.25f) * iCol;
 	*fW1R -= (0.25f) * iCol;
 	*fW2R -= (0.25f) * iCol;
-	#ifdef VRTECH
 	float fPixelBorder = 1.0f;
 	float fShrinkDest = 1022.0f;
-	#else
-
-	//PE: We need 1022 on both versions now. ( https://github.com/TheGameCreators/GameGuruRepo/issues/782 )
-	float fPixelBorder = 1.0f;
-	float fShrinkDest = 1022.0f;
-	
-	//Old classic.
-	// move UV coordinates inside texture slot so not touching with borders of other texture slots
-	//float fPixelBorder = 32.0f;
-	//float fShrinkDest = 1024.0f - (fPixelBorder*2);
-
-	#endif
 	*fU1 = (*fU1/1024.0f) * fShrinkDest;
 	*fV1 = (*fV1/1024.0f) * fShrinkDest;
 	*fU2 = (*fU2/1024.0f) * fShrinkDest;
@@ -968,7 +754,6 @@ void ebe_refreshmesh ( int iBuildObj, int x1, int y1, int z1, int x2, int y2, in
 	sObject* pObject = GetObjectData ( iBuildObj );
 	if ( pObject )
 	{
-		#ifdef WICKEDENGINE
 		// object going to be extensively modified
 		WickedCall_RemoveObject(pObject);
 		WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
@@ -978,7 +763,6 @@ void ebe_refreshmesh ( int iBuildObj, int x1, int y1, int z1, int x2, int y2, in
 			WickedSetElementId(t.ebe.entityelementindex);
 			WickedSetEntityId(t.entityelement[t.ebe.entityelementindex].bankindex);
 		}
-		#endif
 
 		// may need this to map effect to newly created limb
 		int iEBEEffectIndex = loadinternaleffect("effectbank\\reloaded\\ebe_basic.fx");
@@ -1055,15 +839,6 @@ void ebe_refreshmesh ( int iBuildObj, int x1, int y1, int z1, int x2, int y2, in
 						pObject->ppFrameList[iLimbIndex]->pMesh->pTextures = new sTexture[1];
 						sMesh* pDestMesh = pObject->ppFrameList[iLimbIndex]->pMesh;
 						CloneInternalTextures ( pDestMesh, pObject->ppMeshList[0] );
-						#ifdef WICKEDENGINE
-						#else
-						if ( pDestMesh->pVertexShaderEffect == NULL )
-						{
-							sEffectItem* pEffectItem = m_EffectList [ iEBEEffectIndex ];
-							SetSpecialEffect ( pDestMesh, pEffectItem->pEffectObj );
-							pDestMesh->bVertexShaderEffectRefOnly = true;
-						}
-						#endif
 						pMasterGridMeshRef[iMasterGridRefX][iMasterGridRefY][iMasterGridRefZ][1] = iLimbIndex;
 					}
 
@@ -1077,9 +852,6 @@ void ebe_refreshmesh ( int iBuildObj, int x1, int y1, int z1, int x2, int y2, in
 					pMesh->iDrawPrimitives  = dwIndicePos / 3;
 					pMesh->bVBRefreshRequired = true;
 					pMesh->bMeshHasBeenReplaced = true;
-#ifndef WICKEDENGINE
-					g_vRefreshMeshList.push_back ( pMesh );
-#endif
 					ShowLimb ( iBuildObj, iLimbIndex );
 					if ( pMesh->pDrawBuffer == NULL )
 					{
@@ -1209,7 +981,6 @@ void ebe_refreshmesh ( int iBuildObj, int x1, int y1, int z1, int x2, int y2, in
 			}
 		}
 
-		#ifdef WICKEDENGINE
 		// object was modified, so recreate in wicked engine
 		WickedCall_AddObject(pObject);
 		WickedCall_UpdateObject(pObject);
@@ -1218,7 +989,6 @@ void ebe_refreshmesh ( int iBuildObj, int x1, int y1, int z1, int x2, int y2, in
 		// so we can handle custom material applied to this EBE
 		WickedSetElementId(0);
 		WickedSetEntityId(-1);
-		#endif
 	}
 }
 
@@ -1241,9 +1011,7 @@ void ebe_loadpattern ( LPSTR pEBEFilename )
 	// if EBE file exists, replace above pattern
 	if ( FileExist(pEBEFilename) == 1 ) 
 	{
-		#ifdef VRTECH
 		strcpy(ActiveEBEFilename, pEBEFilename);
-		#endif
 		Dim ( t.data_s, 2000 );
 		LoadArray ( pEBEFilename, t.data_s );
 		for ( t.l = 0; t.l <= 1999; t.l++ )
@@ -1425,7 +1193,6 @@ void ebe_settexturehighlight ( void )
 	if (!bDisableAllSprites) Sprite ( ebebuild.iTexturePanelHighSprite, ebebuild.iTexturePanelX+(iCol*fChoiceWidth), ebebuild.iTexturePanelY+(iRow*fChoiceHeight), ebebuild.iTexturePanelHighImg );
 }
 
-#if defined(ENABLEIMGUI)
 void imgui_ebe_loop(void)
 {
 	// if no tools object, cannot proceed
@@ -1496,12 +1263,8 @@ void imgui_ebe_loop(void)
 			ImGui::PushItemWidth(-10);
 			ImGui::InputText("##structure_nameInput", &structure_name[0], MAX_PATH, ImGuiInputTextFlags_EnterReturnsTrue);
 			ImGui::PopItemWidth();
-			#ifdef WICKEDENGINE
 			if (!pref.iTurnOffEditboxTooltip && ImGui::IsItemHovered()) ImGui::SetTooltip("Enter the name of this structure");
 			if (ImGui::MaxIsItemFocused()) bImGuiGotFocus = true;
-			#else
-			if (ImGui::IsItemHovered() ) ImGui::SetTooltip("Enter the name of this structure");
-			#endif
 			ImGui::Indent(-10);
 
 		}
@@ -1879,7 +1642,6 @@ void imgui_ebe_loop(void)
 			ImGui::Text("");
 		}
 
-		#ifdef WICKEDENGINE
 		int iBuilderId = t.ebe.entityelementindex;
 		sObject* pObject = g_ObjectList[ebebuild.iBuildObj];
 		if (iBuilderId > 0 && pObject)
@@ -1914,7 +1676,6 @@ void imgui_ebe_loop(void)
 				ImGui::Indent(-10);
 			}
 		}
-		#endif
 
 		if (ImGui::StyleCollapsingHeader("Save Structure", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -1933,9 +1694,7 @@ void imgui_ebe_loop(void)
 			ImGui::PushItemWidth(-10 - path_gadget_size);
 
 			ImGui::InputText("##InputPathBuilder", &BuilderPath[0], 250);
-			#ifdef WICKEDENGINE
 			if (ImGui::MaxIsItemFocused()) bImGuiGotFocus = true;
-			#endif
 			ImGui::PopItemWidth();
 
 			ImGui::SameLine();
@@ -1984,9 +1743,7 @@ void imgui_ebe_loop(void)
 							tSaveFile = resolved;
 						}
 
-#ifdef WICKEDENGINE
 						Wicked_Copy_Material_To_Grideleprof((void*)pObject, 3);
-#endif
 
 						int iBuilderId = t.ebe.entityelementindex;
 						ebe_hide();
@@ -2018,12 +1775,10 @@ void imgui_ebe_loop(void)
 
 						ebe_newsite(iBuilderId);
 
-						#ifdef WICKEDENGINE
 						pObject = g_ObjectList[ebebuild.iBuildObj];
 						Wicked_Set_Material_From_grideleprof((void*)pObject, 3);
 						//PE: Finally copy material to all meshed in new structure.
 						Wicked_Update_All_Materials((void*)pObject, 3);
-						#endif
 					}
 					else
 					{
@@ -2085,7 +1840,6 @@ void imgui_ebe_loop(void)
 		ImGui::End();
 	}
 }
-#endif
 
 void ebe_loop(void)
 {
@@ -2178,18 +1932,7 @@ void ebe_loop(void)
 	}
 
 	// use - and + keys to scroll through material index for current texture selected
-	#ifdef WICKEDENGINE
 	// handled in the IMGUI hover window, changing the one being hovered over, not the one selected (quicker)
-	#else
-	if (ebebuild.iLocalKeyPressed == 0)
-	{
-		if (t.inputsys.k_s == "-") { ebebuild.TXP.iMaterialRef[ebebuild.iCurrentTexture] -= 1; ebebuild.iLocalKeyPressed = 1; }
-		if (t.inputsys.k_s == "=") { ebebuild.TXP.iMaterialRef[ebebuild.iCurrentTexture] += 1; ebebuild.iLocalKeyPressed = 1; }
-		if (ebebuild.TXP.iMaterialRef[ebebuild.iCurrentTexture] < 0) ebebuild.TXP.iMaterialRef[ebebuild.iCurrentTexture] = 0;
-		if (ebebuild.TXP.iMaterialRef[ebebuild.iCurrentTexture] > 18) ebebuild.TXP.iMaterialRef[ebebuild.iCurrentTexture] = 18;
-		if (!bDisableAllSprites) SetSpriteImage(ebebuild.iMatSpr[ebebuild.iCurrentTexture], ebebuild.iMatImg[ebebuild.TXP.iMaterialRef[ebebuild.iCurrentTexture]]);
-	}
-	#endif
 
 	#if defined(ENABLEIMGUI) && !defined(USEOLDIDE)
 	//This has been moved to imgui.
@@ -2281,82 +2024,15 @@ void ebe_loop(void)
 	// Position cursor on current grid layer
 	bool bOffGrid = false;
 	float fGridAbsHeight = LimbPositionY(ebebuild.iToolObj, 1);
-	#ifdef WICKEDENGINE
 	float fFloorWorldPosX, fFloorWorldPosY, fFloorWorldPosZ;
 	if (WickedCall_GetPick(&fFloorWorldPosX, &fFloorWorldPosY, &fFloorWorldPosZ, NULL, NULL, NULL, NULL, GGRENDERLAYERS_NORMAL) == true)
 	{
 		// found surface to locate the world position of the cursor
 	}
-	#else
-	SetCurrentCamera(0);
-	SetCameraRange(1, 70000);
-	t.screenwidth_f = 800.0;
-	t.screenheight_f = 600.0;
-	GetProjectionMatrix(g.m4_projection);
-	GetViewMatrix(g.m4_view);
-	t.blank = InverseMatrix(g.m4_projection, g.m4_projection);
-	t.blank = InverseMatrix(g.m4_view, g.m4_view);
-	#if defined(ENABLEIMGUI) && !defined(USEOLDIDE) 
-	//PE: Do not use (800.0x600.0) Just convert , we need any resolution to work.
-	t.tadjustedtoareax_f = ((float)t.inputsys.xmouse / (float)GetDisplayWidth()) / ((float)GetDisplayWidth() / (float)GetChildWindowWidth(-1));
-	t.tadjustedtoareay_f = ((float)t.inputsys.ymouse / (float)GetDisplayHeight()) / ((float)GetDisplayHeight() / (float)GetChildWindowHeight(-1));
-	#else
-	t.tadjustedtoareax_f = (GetDisplayWidth() + 0.0) / (GetChildWindowWidth() + 0.0);
-	t.tadjustedtoareay_f = (GetDisplayHeight() + 0.0) / (GetChildWindowHeight() + 0.0);
-	t.tadjustedtoareax_f = ((t.inputsys.xmouse + 0.0) / 800.0) / t.tadjustedtoareax_f;
-	t.tadjustedtoareay_f = ((t.inputsys.ymouse + 0.0) / 600.0) / t.tadjustedtoareay_f;
-	#endif
-	SetVector4(g.v4_far, (t.tadjustedtoareax_f * 2) - 1, -((t.tadjustedtoareay_f * 2) - 1), 0, 1);
-	TransformVector4(g.v4_far, g.v4_far, g.m4_projection);
-	// works in DX9 (D3DXVec4Transform) but not DX11 (KMATRIX)
-	t.tx_f = GetXVector4(g.v4_far);
-	t.ty_f = GetYVector4(g.v4_far);
-	t.tz_f = GetZVector4(g.v4_far);
-	SetVector3(g.v3_far, t.tx_f, t.ty_f, t.tz_f);
-	TransformVectorCoordinates3(g.v3_far, g.v3_far, g.m4_view);
-	t.tx_f = GetXVector3(g.v3_far);
-	t.ty_f = GetYVector3(g.v3_far);
-	t.tz_f = GetZVector3(g.v3_far);
-	t.fx_f = CameraPositionX(0);
-	t.fy_f = CameraPositionY(0);
-	t.fz_f = CameraPositionZ(0);
-	t.tx_f = t.tx_f - t.fx_f;
-	t.ty_f = t.ty_f - t.fy_f;
-	t.tz_f = t.tz_f - t.fz_f;
-	t.tt_f = abs(t.tx_f) + abs(t.ty_f) + abs(t.tz_f);
-	t.tx_f = t.tx_f / t.tt_f;
-	t.ty_f = t.ty_f / t.tt_f;
-	t.tz_f = t.tz_f / t.tt_f;
-	if (t.ty_f < 0)
-	{
-		// face down onto grid
-		float fDistToGridLayer = CameraPositionY(0) - fGridAbsHeight;
-		float fSteps = fDistToGridLayer / fabs(t.ty_f);
-		t.tx_f *= fSteps;
-		t.tz_f *= fSteps;
-#ifndef WICKEDENGINE
-		t.tx_f -= ObjectPositionX ( ebebuild.iToolObj );
-		t.tz_f -= ObjectPositionZ ( ebebuild.iToolObj );
-#endif
-		t.tx_f += CameraPositionX(0);
-		t.tz_f += CameraPositionZ(0);
-		#ifdef WICKEDENGINE
-		fFloorWorldPosX = t.tx_f;
-		fFloorWorldPosY = CameraPositionY(0) - fDistToGridLayer;
-		fFloorWorldPosZ = t.tz_f;
-		#endif
-	}
-	else
-	{
-		bOffGrid = true;
-	}
-	#endif
 	if ( bOffGrid == false )
 	{
-		#ifdef WICKEDENGINE
 		t.tx_f = fFloorWorldPosX - ObjectPositionX(ebebuild.iToolObj); 
 		t.tz_f = fFloorWorldPosZ - ObjectPositionZ(ebebuild.iToolObj);
-		#endif
 		GGVECTOR3 vec3 = GGVECTOR3(t.tx_f, 0, t.tz_f);
 		GGMATRIX matRot;
 		GGMatrixRotationY(&matRot, GGToRadian(-ObjectAngleY(ebebuild.iToolObj)));
@@ -2488,11 +2164,7 @@ void ebe_loop(void)
 						{
 							// add or delete pattern
 							bool bPreserveCube = false;
-							#ifdef VRTECH
 							if (bReverseOperation == true || iPaintMode != 1)
-							#else
-							if (bReverseOperation == true)
-							#endif
 							{
 								// delete mode
 								// only wipe out if same texture
@@ -2621,12 +2293,10 @@ void ebe_loop(void)
 		}
 	}
 
-	#ifdef WICKEDENGINE
 	sObject* pToolObject = GetObjectData(ebebuild.iToolObj);
 	if (pToolObject) WickedCall_UpdateLimbsOfObject(pToolObject);
 	sObject* pBuildObject = GetObjectData(ebebuild.iBuildObj);
 	if (pToolObject) WickedCall_UpdateLimbsOfObject(pBuildObject);
-	#endif
 }
 
 void ebe_snapshottobuffer ( void )
@@ -2901,7 +2571,6 @@ void ebe_optimize_e ( void )
 	//Update master.
 	int iEntityBankID = t.entityelement[e].bankindex;
 	t.sourceobj = g.entitybankoffset + iEntityBankID;
-	#ifdef WICKEDENGINE
 	if (t.grideleprof.bCustomWickedMaterialActive) 
 	{
 		// in the case of EBE, we want to point to unique texture name for this structure
@@ -2933,7 +2602,6 @@ void ebe_optimize_e ( void )
 			Wicked_Update_All_Materials((void*)pObject, 3);
 		}
 	}
-	#endif
 
 	// ensure parent is updated (for things like extracting, lightmapping, etc)
 	ebe_updateparent ( e );
@@ -3137,7 +2805,6 @@ void ebe_optimize_object ( int iObj, int iEntID )
 	float fRZ = ObjectAngleZ(iObj);
 	DeleteObject ( iObj );
 	MakeObject ( iObj, g.meshebemarker, 0 );
-	#ifdef WICKEDENGINE
 	sObject* pObjectRemove = GetObjectData(iObj);
 	WickedCall_RemoveObject(pObjectRemove);
 	// so we can handle custom material applied to this EBE
@@ -3146,7 +2813,6 @@ void ebe_optimize_object ( int iObj, int iEntID )
 		WickedSetElementId(t.ebe.entityelementindex);
 		WickedSetEntityId(t.entityelement[t.ebe.entityelementindex].bankindex);
 	}
-	#endif
 	PositionObject ( iObj, fX, fY, fZ );
 	RotateObject ( iObj, fRX, fRY, fRZ );
 
@@ -3169,9 +2835,6 @@ void ebe_optimize_object ( int iObj, int iEntID )
 		sMesh* pMesh = pObject->ppMeshList[iMeshIndex];
 		pMesh->bVBRefreshRequired = true;
 		pMesh->bMeshHasBeenReplaced = true;
-#ifndef WICKEDENGINE
-		g_vRefreshMeshList.push_back ( pMesh );
-#endif
 		DWORD dwVertPos = iCountMaterialForThisMesh * 24;
 		int secure_vertex_data = 62400; //PE: must be divideable by 24
 		if (dwVertPos > secure_vertex_data)
@@ -3308,7 +2971,6 @@ void ebe_optimize_object ( int iObj, int iEntID )
 	CalculateObjectBounds ( iObj );
 
 	// Apply textures
-	#ifdef WICKEDENGINE
 	 image_setlegacyimageloading(true);
 	 int iTexD = loadinternaltexture(cstr(cstr("ebebank\\default\\") + ebe_constructlongTXPname("_color.dds")).Get());
 	 int iTexN = loadinternaltexture(cstr(cstr("ebebank\\default\\") + ebe_constructlongTXPname("_normal.dds")).Get());
@@ -3317,44 +2979,7 @@ void ebe_optimize_object ( int iObj, int iEntID )
 	 t.entityprofile[iEntID].texdid = iTexD;
 	 t.entityprofile[iEntID].texnid = iTexN;
 	 t.entityprofile[iEntID].texsid = iTexS;
-	#else
-	#ifdef VRTECH
-	 int iTexD = loadinternaltexture(cstr(cstr("ebebank\\default\\") + ebe_constructlongTXPname("_D.jpg")).Get());
-	 int iTexN = loadinternaltexture("effectbank\\reloaded\\media\\blank_N.dds");
-	 int iTexS = loadinternaltexture("effectbank\\reloaded\\media\\blank_medium_S.DDS");
-	#else
-	 int iTexD = loadinternaltexture(cstr(cstr("ebebank\\default\\") + ebe_constructlongTXPname("_D.dds")).Get());
-	 int iTexN = loadinternaltexture(cstr(cstr("ebebank\\default\\") + ebe_constructlongTXPname("_N.dds")).Get());
-	 int iTexS = loadinternaltexture(cstr(cstr("ebebank\\default\\") + ebe_constructlongTXPname("_S.dds")).Get());
-	#endif
-	t.entityprofile[iEntID].texdid = iTexD;
-	t.entityprofile[iEntID].texnid = iTexN;
-	t.entityprofile[iEntID].texsid = iTexS;
-	#endif
-	#ifdef WICKEDENGINE
 	TextureObject ( iObj, 0, iTexD );
-	#else
-	#ifdef VRTECH
-	TextureObject ( iObj, 0, iTexD );
-	TextureObject ( iObj, 1, loadinternaltexture("effectbank\\reloaded\\media\\blank_O.dds") );
-	TextureObject ( iObj, 2, iTexN );
-	TextureObject ( iObj, 3, iTexS );
-	TextureObject ( iObj, 4, loadinternaltexture("effectbank\\reloaded\\media\\materials\\0_Gloss.dds") );
-	TextureObject ( iObj, 5, g.postprocessimageoffset+5 );
-	TextureObject ( iObj, 6, loadinternaltexture("effectbank\\reloaded\\media\\blank_I.dds") );
-	TextureObject ( iObj, 7, loadinternaltexture("effectbank\\reloaded\\media\\detail_default.dds") );
-	#else
-	//PE: for apbr_basic.fx
-	TextureObject(iObj, 0, iTexD); //1=albedo
-	TextureObject(iObj, 1, loadinternaltexture("effectbank\\reloaded\\media\\blank_O.dds")); //1=ao
-	TextureObject(iObj, 2, iTexN); //2=normal
-	TextureObject(iObj, 3, iTexS); //3=metalness spec is fine here.
-	TextureObject(iObj, 4, loadinternaltexture("effectbank\\reloaded\\media\\white_D.dds")); //4=Gloss 
-	TextureObject(iObj, 5, loadinternaltexture("effectbank\\reloaded\\media\\blank_black.dds")); //5=height
-	TextureObject(iObj, 6, t.terrain.imagestartindex + 31); //6=env.
-	TextureObject(iObj, 7, loadinternaltexture("effectbank\\reloaded\\media\\detail_default.dds")); //7 = illum/detail ...
-	#endif
-	#endif
 	SetObjectTransparency ( iObj, 0 );
 	
 	// now apply regular entity shader
@@ -3365,7 +2990,6 @@ void ebe_optimize_object ( int iObj, int iEntID )
 	// free resources
 	SAFE_DELETE ( pMatRefTable );
 
-	#ifdef WICKEDENGINE
 	// finally submit optimized to wicked
 	sObject* pObject = GetObjectData(iObj);
 	WickedCall_AddObject(pObject);
@@ -3375,7 +2999,6 @@ void ebe_optimize_object ( int iObj, int iEntID )
 	// so we can handle custom material applied to this EBE
 	WickedSetElementId(0);
 	WickedSetEntityId(-1);
-	#endif
 }
 
 void ebe_reset ( void )
@@ -3413,12 +3036,7 @@ void ebe_reset ( void )
 
 		// begin tool work
 		t.ebe.on = 1;
-		#ifdef ENABLEIMGUI
-		#ifdef USELEFTPANELSTRUCTUREEDITOR
-		ImGui::SetWindowFocus("Structure Editor##LeftPanel");
-		#endif
 		bBuilder_Properties_Window = true;
-		#endif
 	}
 }
 
@@ -3455,10 +3073,8 @@ void ebe_hide ( void )
 			if ( ObjectExist ( ebebuild.iToolObj ) == 1 ) HideObject ( ebebuild.iToolObj );
 		}
 		t.ebe.on = 0;
-		#ifdef ENABLEIMGUI
 		ImGui::SetWindowFocus(TABENTITYNAME);
 		bBuilder_Properties_Window = false;
-		#endif
 	}
 
 	// always clear undo buffers
@@ -3735,7 +3351,6 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 
 	// Now create a real entity from it (for quickest library and level loading)
 	// FPE
-	#ifdef WICKEDENGINE
 	Dim(t.setuparr_s, 50);
 	int iA = 0;
 	t.setuparr_s[iA++] = ";EBE Entity";
@@ -3748,7 +3363,6 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 	t.setuparr_s[iA++] = "";
 	t.setuparr_s[iA++] = ";Orientation";
 
-	#ifdef VRTECH
 	t.setuparr_s[iA++] = cstr("model         = ") + tNameOnly + ".x";
 	//If single mesh just store one entry. else make a entry per mesh.
 	sObject* pObject = g_ObjectList[ebebuild.iBuildObj];
@@ -3839,16 +3453,7 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 		t.setuparr_s[iA++] = cstr("textured      = ") + t.entityprofile[iEntID].texd_s.Get();
 	}
 
-	#ifdef WICKEDENGINE
 	t.setuparr_s[iA++] = "effect        = effectbank\\reloaded\\apbr_basic.fx";
-	#else
-	t.setuparr_s[iA++] = "effect        = effectbank\\reloaded\\entity_basic.fx";
-	#endif
-	#else
-	t.setuparr_s[iA++] = cstr("model         = ") + tNameOnly + ".dbo";
-	t.setuparr_s[iA++] = cstr("textured      = ") + t.entityprofile[iEntID].texd_s;
-	t.setuparr_s[iA++] = "effect        = effectbank\\reloaded\\apbr_basic.fx"; // entity_basic.fx";
-	#endif
 
 	t.setuparr_s[iA++] = "scale         = 100";
 	t.setuparr_s[iA++] = "defaultstatic = 1";
@@ -3937,52 +3542,16 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 	SaveArray(pFPEFile.Get(), t.setuparr_s);
 	UnDim(t.setuparr_s);
 
-#else
-	Dim ( t.setuparr_s, 30 );
-	t.setuparr_s[ 0]=";EBE Entity";
-	t.setuparr_s[ 1]="";
-	t.setuparr_s[ 2]=";Header";
-	t.setuparr_s[ 3]=cstr("desc          = ") + tNameOnly;
-	t.setuparr_s[ 4]="";
-	t.setuparr_s[ 5]=";AI";
-	t.setuparr_s[ 6]="aimain	      = default.lua";
-	t.setuparr_s[ 7]="";
-	t.setuparr_s[ 8]=";Orientation";
-	#ifdef VRTECH
-	t.setuparr_s[9] = cstr("model         = ") + tNameOnly + ".x";
-	t.setuparr_s[10]=cstr("textured      = ") + t.entityprofile[iEntID].texd_s.Get();
-	t.setuparr_s[11]="effect        = effectbank\\reloaded\\entity_basic.fx";
-	#else
-	t.setuparr_s[ 9]=cstr("model         = ") + tNameOnly + ".dbo";
-	t.setuparr_s[10]=cstr("textured      = ") + t.entityprofile[iEntID].texd_s;
-	t.setuparr_s[11]="effect        = effectbank\\reloaded\\apbr_basic.fx"; // entity_basic.fx";
-	#endif
-	t.setuparr_s[12]="transparency  = 0";
-	t.setuparr_s[13]="scale         = 100";
-	t.setuparr_s[14]="defaultstatic = 1";
-	t.setuparr_s[15]="collisionmode = 1";
-	t.setuparr_s[16]="forcesimpleobstacle = 3";
-	t.setuparr_s[17]=cstr("forceobstaclepolysize = ") + cstr(t.entityprofile[iEntID].forceobstaclepolysize);
-	t.setuparr_s[18]="";
-	t.setuparr_s[19]=";EBE Builder Extras";
-	t.setuparr_s[20]="isebe         = 1";
-	cstr pFPEFile = tRawPathAndFile + cstr(".fpe");
-	if ( FileExist(pFPEFile.Get()) == 1 ) DeleteAFile ( pFPEFile.Get() );
-	SaveArray ( pFPEFile.Get(), t.setuparr_s );
-	UnDim ( t.setuparr_s );
-#endif
 
 	// BMP
 	cstr tBMPFilename = "ebebank\\_builder\\EBE.bmp";
 	if ( FileExist(tBMPFilename.Get()) == 1 ) 
 	{
 		cstr sBMPFile = tRawPathAndFile + cstr(".bmp");
-		#ifdef WICKEDENGINE
 		char pRealBMPFile[MAX_PATH];
 		strcpy(pRealBMPFile, sBMPFile.Get());
 		GG_GetRealPath(pRealBMPFile, 1);
 		sBMPFile = pRealBMPFile;
-		#endif
 		if ( FileExist(sBMPFile.Get()) == 1 ) DeleteAFile ( sBMPFile.Get() );
 		CopyFileA ( tBMPFilename.Get(), sBMPFile.Get(), FALSE );
 	}
@@ -3990,77 +3559,38 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 	// DBO
 	int iSourceObj = g.entitybankoffset + iEntID;
 	cstr tDBOFile = tRawPathAndFile + cstr(".dbo");
-	#ifdef WICKEDENGINE
 	char pRealDBOFile[MAX_PATH];
 	strcpy(pRealDBOFile, tDBOFile.Get());
 	GG_GetRealPath(pRealDBOFile, 1);
 	tDBOFile = pRealDBOFile;
-	#endif
 	if ( FileExist(tDBOFile.Get()) == 1 ) DeleteAFile ( tDBOFile.Get() );
 	SaveObject ( tDBOFile.Get(), iSourceObj );
 
 	// and X
-	#ifdef VRTECH
 	cstr tXFile = tRawPathAndFile + cstr(".x");
 	if ( FileExist(tXFile.Get()) == 1 ) DeleteAFile ( tXFile.Get() );
 	dbo2xConvert(tDBOFile.Get(), tXFile.Get());
-	#ifdef WICKEDENGINE
 	// keep DBO for faster loading
-	#else
-	// and finally delete DBO now we have an X
-	if ( FileExist(tDBOFile.Get()) == 1 ) DeleteAFile ( tDBOFile.Get() );
-	#endif
-	#endif
 
 	// DDS/JPG
-	#ifdef WICKEDENGINE
 	cstr tDDSSourceRaw = cstr("ebebank\\default\\") + Left(t.entityprofile[iEntID].texd_s.Get(),strlen(t.entityprofile[iEntID].texd_s.Get())-10);
 	cstr tDDSSourceFilename = tDDSSourceRaw + "_color.dds";
 	tRawPathAndFile = tRawPath + Left(t.entityprofile[iEntID].texd_s.Get(),strlen(t.entityprofile[iEntID].texd_s.Get())-10);
-	#else
-	cstr tDDSSourceRaw = cstr("ebebank\\default\\") + Left(t.entityprofile[iEntID].texd_s.Get(),strlen(t.entityprofile[iEntID].texd_s.Get())-6);
-	#ifdef VRTECH
-	cstr tDDSSourceFilename = tDDSSourceRaw + "_D.jpg";
-	#else
-	cstr tDDSSourceFilename = tDDSSourceRaw + "_D.dds";
-	#endif
-	tRawPathAndFile = tRawPath + Left(t.entityprofile[iEntID].texd_s.Get(),strlen(t.entityprofile[iEntID].texd_s.Get())-6);
-	#endif
 	if ( FileExist(tDDSSourceFilename.Get()) == 0 ) 
 	{
 		if ( strnicmp ( tRawPath.Get(), "levelbank", 9 ) != NULL )
 		{
-			#ifdef WICKEDENGINE
 			tDDSSourceRaw = g.mysystem.levelBankTestMap_s + Left(t.entityprofile[iEntID].texd_s.Get(),strlen(t.entityprofile[iEntID].texd_s.Get())-10);
 			tDDSSourceFilename = tDDSSourceRaw + "_color.dds";
-			#else
-			tDDSSourceRaw = g.mysystem.levelBankTestMap_s + Left(t.entityprofile[iEntID].texd_s.Get(),strlen(t.entityprofile[iEntID].texd_s.Get())-6);
-			#ifdef VRTECH
-			tDDSSourceFilename = tDDSSourceRaw + "_D.jpg";
-			#else
-			tDDSSourceFilename = tDDSSourceRaw + "_D.dds";
-			#endif
-			#endif
 		}
 	}
 	if ( FileExist(tDDSSourceFilename.Get()) == 1 ) 
 	{
-		#ifdef WICKEDENGINE
 		cstr sDDSFile = tRawPathAndFile + cstr("_color.dds");
-		#ifdef WICKEDENGINE
 		char pRealDDSFile[MAX_PATH];
 		strcpy(pRealDDSFile, sDDSFile.Get());
 		GG_GetRealPath(pRealDDSFile, 1);
 		sDDSFile = pRealDDSFile;
-		#endif
-		#else
-		#ifdef VRTECH
-		cstr sDDSFile = tRawPathAndFile + cstr("_D.jpg");
-		#else
-		cstr sDDSFile = tRawPathAndFile + cstr("_D.dds");
-		#endif
-		#endif
-		#ifdef WICKEDENGINE
 		// if source and dest are same, should not delete or copy, just leave EBE texture in place
 		bool bProceedWithCopy = true;
 		if (stricmp (tDDSSourceFilename.Get(), sDDSFile.Get()) == NULL)
@@ -4072,10 +3602,6 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 		{
 			if (FileExist(sDDSFile.Get()) == 1) DeleteAFile (sDDSFile.Get());
 		}
-		#else
-		if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		#endif
-		#ifdef WICKEDENGINE
 		char pRealDDSSourceFilename[MAX_PATH];
 		if (bProceedWithCopy == true)
 		{
@@ -4084,21 +3610,12 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 			tDDSSourceFilename = pRealDDSSourceFilename;
 			CopyFileA (tDDSSourceFilename.Get(), sDDSFile.Get(), FALSE);
 		}
-		#else
-		CopyFileA ( tDDSSourceFilename.Get(), sDDSFile.Get(), FALSE );
-		#endif
-		#ifdef WICKEDENGINE
 		 tDDSSourceFilename = tDDSSourceRaw + "_normal.dds";
 		 sDDSFile = tRawPathAndFile + cstr("_normal.dds");
-		 #ifdef WICKEDENGINE
 		 strcpy(pRealDDSFile, sDDSFile.Get());
 		 GG_GetRealPath(pRealDDSFile, 1);
 		 sDDSFile = pRealDDSFile;
 		 if (bProceedWithCopy == true && FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		 #else
-		 if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		 #endif
-		 #ifdef WICKEDENGINE
 		 if (bProceedWithCopy == true)
 		 {
 			 strcpy(pRealDDSSourceFilename, tDDSSourceFilename.Get());
@@ -4106,20 +3623,12 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 			 tDDSSourceFilename = pRealDDSSourceFilename;
 			 CopyFileA (tDDSSourceFilename.Get(), sDDSFile.Get(), FALSE);
 		 }
-		 #else
-		 CopyFileA ( tDDSSourceFilename.Get(), sDDSFile.Get(), FALSE );
-		 #endif
 		 tDDSSourceFilename = tDDSSourceRaw + "_surface.dds";
 		 sDDSFile = tRawPathAndFile + cstr("_surface.dds");
-		 #ifdef WICKEDENGINE
 		 strcpy(pRealDDSFile, sDDSFile.Get());
 		 GG_GetRealPath(pRealDDSFile, 1);
 		 sDDSFile = pRealDDSFile;
 		 if (bProceedWithCopy == true && FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		 #else
-		 if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		 #endif
-		 #ifdef WICKEDENGINE
 		 if (bProceedWithCopy == true)
 		 {
 			 strcpy(pRealDDSSourceFilename, tDDSSourceFilename.Get());
@@ -4127,22 +3636,6 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 			 tDDSSourceFilename = pRealDDSSourceFilename;
 			 CopyFileA (tDDSSourceFilename.Get(), sDDSFile.Get(), FALSE);
 		 }
-		 #else
-		 CopyFileA ( tDDSSourceFilename.Get(), sDDSFile.Get(), FALSE );
-		 #endif
-		#else
-		#ifdef VRTECH
-		#else
-		 tDDSSourceFilename = tDDSSourceRaw + "_N.dds";
-		 sDDSFile = tRawPathAndFile + cstr("_N.dds");
-		 if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		 CopyFile ( tDDSSourceFilename.Get(), sDDSFile.Get(), FALSE );
-		 tDDSSourceFilename = tDDSSourceRaw + "_S.dds";
-		 sDDSFile = tRawPathAndFile + cstr("_S.dds");
-		 if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		 CopyFile ( tDDSSourceFilename.Get(), sDDSFile.Get(), FALSE );
-		#endif
-		#endif
 	}
 }
 
@@ -4157,11 +3650,7 @@ int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 		return 0;
 
 	// EBE Load Folder
-	#ifdef WICKEDENGINE
 	t.strwork = g.fpscrootdir_s + "\\Files\\texturebank";
-	#else
-	t.strwork = g.fpscrootdir_s + "\\Files\\ebebank\\texturesource";
-	#endif
 	if ( PathExist( t.strwork.Get() ) == 0 ) 
 	{
 		MessageBoxA ( hThisWnd, "Cannot find textures folder' folder", "Error", MB_OK | MB_TOPMOST );
@@ -4196,65 +3685,25 @@ int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 	// work out if _D.dds or not
 	int iTexSetsPossible = 1;
 	LPSTR pLoadFilename = tLoadFile.Get();
-	#ifdef WICKEDENGINE
 	cstr pFileExt = Right ( pLoadFilename, 10 );
 	if ( stricmp ( pFileExt.Get(), "_color.dds" ) == NULL )
 		iTexSetsPossible = 3;
-	#else
-	cstr pFileExt = Right ( pLoadFilename, 6 );
-	#ifdef VRTECH
-	#else
-	if ( stricmp ( pFileExt.Get(), "_d.dds" ) == NULL )
-		iTexSetsPossible = 3;
-	#endif
-	#endif
 
 	// go through texture subsets (D, N, S )
 	for ( int iTexSet = 0; iTexSet < iTexSetsPossible; iTexSet++ )
 	{
 		// work out texture filename
 		cstr pFilename = pLoadFilename;
-		#ifdef WICKEDENGINE
 		cstr pFileExt = cstr("_color.dds");
-		#else
-		#ifdef VRTECH
-		cstr pFileExt = cstr("_D.jpg");
-		#else
-		cstr pFileExt = cstr("_D.dds");
-		#endif
-		#endif
 		if ( iTexSetsPossible == 3 )
 		{
-			#ifdef WICKEDENGINE
 			pFilename = Left ( pLoadFilename, strlen(pLoadFilename)-10 );
 			if ( iTexSet == 0 ) pFileExt = cstr("_color.dds");
 			if ( iTexSet == 1 ) pFileExt = cstr("_normal.dds");
 			if ( iTexSet == 2 ) pFileExt = cstr("_surface.dds");
-			#else
-			pFilename = Left ( pLoadFilename, strlen(pLoadFilename)-6 );
-			#ifdef VRTECH
-			if ( iTexSet == 0 ) pFileExt = cstr("_D.jpg");
-			if ( iTexSet == 1 ) pFileExt = cstr("_N.jpg");
-			if ( iTexSet == 2 ) pFileExt = cstr("_S.jpg");
-			#else
-			if ( iTexSet == 0 ) pFileExt = cstr("_D.dds");
-			if ( iTexSet == 1 ) pFileExt = cstr("_N.dds");
-			if ( iTexSet == 2 ) pFileExt = cstr("_S.dds");
-			#endif
-			#endif
 			pFilename = pFilename + pFileExt;
 		}
 
-		#ifdef WICKEDENGINE
-		#else
-		// check if the texture exists, else use backup blank
-		if ( FileExist ( pFilename.Get() ) == 0 )
-		{
-			// file not exist, if N or S, substitute with blank
-			if ( iTexSet == 1 ) pFilename = g.fpscrootdir_s + "\\Files\\effectbank\\reloaded\\media\\blank_N.dds";
-			if ( iTexSet == 2 ) pFilename = g.fpscrootdir_s + "\\Files\\effectbank\\reloaded\\media\\blank_black.dds";
-		}
-		#endif
 
 		// final destination of Textures subsets
 		cstr sSavePathFileNonAbs = "ebebank\\default\\textures";
@@ -4264,27 +3713,13 @@ int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 		#ifdef DX11
 		// use terrain custom texture maker for inserting texture in textureplate
 		cstr pPlateFilename = cstr(sSavePathFile) + pFileExt;
-		#ifdef WICKEDENGINE
 		ebe_createnewstructuretexture ( pPlateFilename.Get(), iWhichTextureOver, pFilename.Get(), 1, 1 );
-		#else
-		terrain_createnewterraintexture ( pPlateFilename.Get(), iWhichTextureOver, pFilename.Get(), 1, 1 );
-		#endif
 
 		// reload image with new file (apply auto-mipmapping when load)
 		if ( iTexSet == 0 ) 
 		{
 			// texture used by textures
-			#ifdef WICKEDENGINE
 			// textures updated (further below) once texture creation finished
-			#else
-			#ifdef VRTECH
-			LoadImage ( pPlateFilename.Get(), ebebuild.iTexPlateImage );
-			#else
-			LoadImage ( pPlateFilename.Get(), ebebuild.iTexPlateImage,0,g.gdividetexturesize);
-			#endif
-			TextureObject ( ebebuild.iBuildObj, 0, ebebuild.iTexPlateImage );
-			TextureObject ( ebebuild.iBuildObj, 1, ebebuild.iTexPlateImage );
-			#endif
 		}
 		#else
 		GGIMAGE_INFO finfo;
@@ -4463,7 +3898,6 @@ int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 	SetDir(pOldDir.Get());
 
 	// wicked allows new textures to be created before deleting old references and loading new ones (once dir restored)
-	#ifdef WICKEDENGINE
 	// destination of Textures subsets
 	cstr sSavePathFileNonAbs = "ebebank\\default\\textures";
 	// rare event where a texture file can be different things, so ensure the image manager 
@@ -4486,7 +3920,6 @@ int ebe_loadcustomtexture ( int iEntityProfileIndex, int iWhichTextureOver )
 	LoadImage ( pReusableTextureColor, ebebuild.iTexPlateImage, 0, g.gdividetexturesize);
 	TextureObject ( ebebuild.iBuildObj, 0, ebebuild.iTexPlateImage );
 	image_setlegacyimageloading(false);
-	#endif
 
 	// Clear status Text
 	//t.statusbar_s = ""; popup_text_close();
@@ -4531,19 +3964,9 @@ void ebe_finishsite ( void )
 			}
 
 			// write new texture path and name for this entity
-			#ifdef VRTECH
 			if ( t.entityprofile[entid].texdid > 0 ) removeinternaltexture(t.entityprofile[entid].texdid);
-			#endif
 			t.entityprofile[entid].texpath_s = "ebebank\\default\\";
-			#ifdef WICKEDENGINE
 			t.entityprofile[entid].texd_s = ebe_constructlongTXPname("_color.dds");
-			#else
-			#ifdef VRTECH
-			t.entityprofile[entid].texd_s = ebe_constructlongTXPname("_D.jpg");
-			#else
-			t.entityprofile[entid].texd_s = ebe_constructlongTXPname("_D.dds");
-			#endif
-			#endif
 			image_setlegacyimageloading(true);
 			cstr tthistexdir_s = t.entityprofile[entid].texpath_s + t.entityprofile[entid].texd_s;
 			if ( t.entityprofile[entid].transparency == 0 ) 
@@ -4551,24 +3974,12 @@ void ebe_finishsite ( void )
 			else
 				t.entityprofile[entid].texdid = loadinternaltextureex(tthistexdir_s.Get(),5,0);
 			image_setlegacyimageloading(false);
-			#ifdef WICKEDENGINE
 			image_setlegacyimageloading(true);
 			 tthistexdir_s = t.entityprofile[entid].texpath_s + ebe_constructlongTXPname("_normal.dds");
 			 t.entityprofile[entid].texnid = loadinternaltextureex(tthistexdir_s.Get(),5,0);
 			 tthistexdir_s = t.entityprofile[entid].texpath_s + ebe_constructlongTXPname("_surface.dds");
 			 t.entityprofile[entid].texsid = loadinternaltextureex(tthistexdir_s.Get(),1,0);
 			 image_setlegacyimageloading(false);
-			#else
-			#ifdef VRTECH
-			 t.entityprofile[entid].texnid = loadinternaltextureex("effectbank\\reloaded\\media\\blank_N.dds",5,0);
-			 t.entityprofile[entid].texsid = loadinternaltextureex("effectbank\\reloaded\\media\\blank_medium_S.DDS",1,0);
-			#else
-			 tthistexdir_s = t.entityprofile[entid].texpath_s + ebe_constructlongTXPname("_N.dds");
-			 t.entityprofile[entid].texnid = loadinternaltextureex(tthistexdir_s.Get(),5,0);
-			 tthistexdir_s = t.entityprofile[entid].texpath_s + ebe_constructlongTXPname("_S.dds");
-			 t.entityprofile[entid].texsid = loadinternaltextureex(tthistexdir_s.Get(),1,0);
-			#endif
-			#endif
 
 			// recreate entity using optimized polygons
 			ebe_optimize_e();
@@ -4649,7 +4060,6 @@ void ebe_unpacksite ( DWORD dwRLESize, DWORD* pRLEData )
 void ebe_loadtxp ( LPSTR pTXPFilename )
 {
 	// default pattern is single cube
-	#ifdef WICKEDENGINE
 	// by default, wicked will use texture array and five to start with
 	ebebuild.TXP.iWidth = 0;
 	ebebuild.TXP.iHeight = 0;
@@ -4658,19 +4068,6 @@ void ebe_loadtxp ( LPSTR pTXPFilename )
 		ebebuild.TXP.sTextureFile[n] = "";
 		ebebuild.TXP.iMaterialRef[n] = 0;
 	}
-	#else
-	ebebuild.TXP.iWidth = 4;
-	ebebuild.TXP.iHeight = 4;
-	for ( int n = 0; n < 64; n++ )
-	{
-		ebebuild.TXP.sTextureFile[n] = "concretelight_d.dds";
-		ebebuild.TXP.iMaterialRef[n] = 0;
-	}
-	ebebuild.TXP.sTextureFile[0] = "concretelight_d.dds"; ebebuild.TXP.iMaterialRef[0] = 1;
-	ebebuild.TXP.sTextureFile[1] = "rock_d.dds"; ebebuild.TXP.iMaterialRef[1] = 1;
-	ebebuild.TXP.sTextureFile[2] = "rusty_d.dds"; ebebuild.TXP.iMaterialRef[2] = 2;
-	ebebuild.TXP.sTextureFile[3] = "planks_d.dds"; ebebuild.TXP.iMaterialRef[3] = 3;
-	#endif
 
 	// if TXP file exists, replace above pattern
 	if ( FileExist(pTXPFilename) == 1 ) 
@@ -4783,19 +4180,11 @@ void ebe_savetxp ( LPSTR pTXPFilename )
 		// Save TXP file out
 		int iLine = 0;
 		Dim ( t.setuparr_s, 100 );
-		#ifdef WICKEDENGINE
 		t.setuparr_s[iLine]=";Texture Array Dimensions"; iLine++;
-		#else
-		t.setuparr_s[iLine]=";Texture Plate Dimensions"; iLine++;
-		#endif
 		t.setuparr_s[iLine]=cstr("Width = ") + ebebuild.TXP.iWidth; iLine++;
 		t.setuparr_s[iLine]=cstr("Height = ") + ebebuild.TXP.iHeight; iLine++;
 		t.setuparr_s[iLine]=""; iLine++;
-		#ifdef WICKEDENGINE
 		t.setuparr_s[iLine]=";Texture Array Files"; iLine++;
-		#else
-		t.setuparr_s[iLine]=";Texture Plate Files"; iLine++;
-		#endif
 		for ( int n = 0; n < ncount; n++ ) 
 		{
 			cstr sNum = cstr(100+n);
@@ -4803,11 +4192,7 @@ void ebe_savetxp ( LPSTR pTXPFilename )
 			iLine++; 
 		}
 		t.setuparr_s[iLine]=""; iLine++;
-		#ifdef WICKEDENGINE
 		t.setuparr_s[iLine]=";Texture Array Materials"; iLine++;
-		#else
-		t.setuparr_s[iLine]=";Texture Plate Materials"; iLine++;
-		#endif
 		for ( int n = 0; n < ncount; n++ ) 
 		{
 			cstr sNum = cstr(100+n);
@@ -4821,48 +4206,22 @@ void ebe_savetxp ( LPSTR pTXPFilename )
 	UnDim ( t.setuparr_s );
 
 	// Also save snapshot of latest textures_DNS
-	#ifdef WICKEDENGINE
 	cstr sLongFilename = cstr("ebebank\\default\\") + ebe_constructlongTXPname("_color.dds");
 	char pRealLongFilename[MAX_PATH];
 	strcpy(pRealLongFilename, sLongFilename.Get());
 	GG_GetRealPath(pRealLongFilename, 1);
 	sLongFilename = pRealLongFilename;
-	#else
-	#ifdef VRTECH
-	cstr sLongFilename = cstr("ebebank\\default\\") + ebe_constructlongTXPname("_D.jpg");
-	#else
-	cstr sLongFilename = cstr("ebebank\\default\\") + ebe_constructlongTXPname("_D.dds");
-	#endif
-	#endif
-	#ifdef WICKEDENGINE
 	cstr tRawPathAndFile = cstr(Left(sLongFilename.Get(),strlen(sLongFilename.Get())-10));
 	cstr tDDSFilename = "ebebank\\default\\textures_color.dds";
 	char pRealDDSFilename[MAX_PATH];
 	strcpy(pRealDDSFilename, tDDSFilename.Get());
 	GG_GetRealPath(pRealDDSFilename, 0);
 	tDDSFilename = pRealDDSFilename;
-	#else
-	cstr tRawPathAndFile = cstr(Left(sLongFilename.Get(),strlen(sLongFilename.Get())-6));
-	#ifdef VRTECH
-	cstr tDDSFilename = "ebebank\\default\\textures_D.jpg";
-	#else
-	cstr tDDSFilename = "ebebank\\default\\textures_D.dds";
-	#endif
-	#endif
 	if ( FileExist(tDDSFilename.Get()) == 1 ) 
 	{
-		#ifdef WICKEDENGINE
 		cstr sDDSFile = tRawPathAndFile + cstr("_color.dds");
-		#else
-		#ifdef VRTECH
-		cstr sDDSFile = tRawPathAndFile + cstr("_D.jpg");
-		#else
-		cstr sDDSFile = tRawPathAndFile + cstr("_D.dds");
-		#endif
-		#endif
 		if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
 		CopyFileA ( tDDSFilename.Get(), sDDSFile.Get(), FALSE );
-		#ifdef WICKEDENGINE
 		 tDDSFilename = "ebebank\\default\\textures_normal.dds";
 		 strcpy(pRealDDSFilename, tDDSFilename.Get());
 		 GG_GetRealPath(pRealDDSFilename, 0);
@@ -4877,53 +4236,30 @@ void ebe_savetxp ( LPSTR pTXPFilename )
 		 sDDSFile = tRawPathAndFile + cstr("_surface.dds");
 		 if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
 		 CopyFileA ( tDDSFilename.Get(), sDDSFile.Get(), FALSE );
-		#else
-		#ifdef VRTECH
-		#else
-		 tDDSFilename = "ebebank\\default\\textures_N.dds";
-		 sDDSFile = tRawPathAndFile + cstr("_N.dds");
-		 if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		 CopyFile ( tDDSFilename.Get(), sDDSFile.Get(), FALSE );
-		 tDDSFilename = "ebebank\\default\\textures_S.dds";
-		 sDDSFile = tRawPathAndFile + cstr("_S.dds");
-		 if ( FileExist(sDDSFile.Get()) == 1 ) DeleteAFile ( sDDSFile.Get() );
-		 CopyFile ( tDDSFilename.Get(), sDDSFile.Get(), FALSE );
-		#endif
-		#endif
 	}
 }
 
-#ifdef VRTECH
 void ebe_restoreebedefaulttextures(void)
 {
 	char pRealDestPath[MAX_PATH];
 	char pRealDestPathAndFile[MAX_PATH];
-	#ifdef WICKEDENGINE
 	// get real destination for texture copies
 	sprintf(pRealDestPath, "%s\\Files\\ebebank\\default\\", g.fpscrootdir_s.Get());
 	GG_GetRealPath(pRealDestPath, 1);
-	#else
-	sprintf(pRealDestPath, "ebebank\\default\\");
-	#endif
 
 	// ensure when start new level/etc, the old EBE textures are reset!
 	sprintf(pRealDestPathAndFile, "%stextures_profile.txp", pRealDestPath);
 	CopyFileA("ebebank\\default\\original_profile.txp", pRealDestPathAndFile,FALSE);
-	#ifdef WICKEDENGINE
 	sprintf(pRealDestPathAndFile, "%stextures_color.dds", pRealDestPath);
 	CopyFileA("ebebank\\default\\original_color.dds", pRealDestPathAndFile,FALSE);
 	sprintf(pRealDestPathAndFile, "%stextures_normal.dds", pRealDestPath);
 	CopyFileA("ebebank\\default\\original_normal.dds", pRealDestPathAndFile,FALSE);
 	sprintf(pRealDestPathAndFile, "%stextures_surface.dds", pRealDestPath);
 	CopyFileA("ebebank\\default\\original_surface.dds", pRealDestPathAndFile,FALSE);
-	#else
-	CopyFileA("ebebank\\default\\original_D.jpg", "ebebank\\default\\textures_D.jpg",FALSE);
-	#endif
 
 	// also free if EBE already active (to erase old plate texture)
 	if (t.ebe.active == 1) ebe_free();
 }
-#endif
 
 int ebe_createnewstructuretexture ( LPSTR pDestTerrainTextureFile, int iWhichTextureOver, LPSTR pTexFileToLoad, int iSeamlessMode, int iCompressIt )
 {

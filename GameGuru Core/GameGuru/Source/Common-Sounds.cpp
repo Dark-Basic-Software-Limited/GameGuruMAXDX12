@@ -41,11 +41,7 @@ float soundtruevolume ( int tvolume_f )
 {
 	if (  t.audioVolume.soundFloat>0 ) 
 	{
-		#ifdef VRTECH
 		tvolume_f= (int) ((float) tvolume_f * (float) t.audioVolume.soundFloat);
-		#else
-		tvolume_f=tvolume_f*t.audioVolume.soundFloat;
-		#endif
 	}
 	else
 	{
@@ -570,11 +566,7 @@ void sound_footfallsound_core (int iPlayerOrCharacter, int footfalltype, float f
 		if (*lastfootfallsound > 2) *lastfootfallsound = 0;
 	}
 	t.trndsnd = *lastfootfallsound;
-	#ifdef WICKEDENGINE
 	t.tsnd = t.material[footfalltype].matsound_id[matSoundIndex][t.trndsnd];
-	#else
-	t.tsnd = t.material[footfalltype].tred0id;
-	#endif
 	if (t.tsnd > 0)
 	{
 		t.tsoundtrigger = t.tsnd; 
@@ -592,34 +584,6 @@ void sound_footfallsound_core (int iPlayerOrCharacter, int footfalltype, float f
 
 void sound_footfallsound ( int footfalltype, float fX, float fY, float fZ, int leftorright, int* lastfootfallsound )
 {
-	#ifdef WICKEDENGINE
 	//remove for now until get get characte capsule to detect which material it is stood on
 	//sound_footfallsound_core(1, footfalltype, fX, fY, fZ, leftorright, 1, lastfootfallsound);
-	#else
-	t.trndsnd = Rnd(3);
-	if ( t.trndsnd == 0 ) t.tsnd = t.material[footfalltype].tred0id;
-	if ( t.trndsnd == 1 ) t.tsnd = t.material[footfalltype].tred1id;
-	if ( t.trndsnd == 2 ) t.tsnd = t.material[footfalltype].tred2id;
-	if ( t.trndsnd == 3 ) t.tsnd = t.material[footfalltype].tred3id;
-	if ( t.tsnd>0 ) 
-	{
-		if ( t.trndsnd == *lastfootfallsound ) 
-		{
-			t.trndsnd = t.trndsnd+1 ; if ( t.trndsnd>3 ) t.trndsnd = 0;
-			if ( t.trndsnd == 0 ) t.tsnd = t.material[footfalltype].tred0id;
-			if ( t.trndsnd == 1 ) t.tsnd = t.material[footfalltype].tred1id;
-			if ( t.trndsnd == 2 ) t.tsnd = t.material[footfalltype].tred2id;
-			if ( t.trndsnd == 3 ) t.tsnd = t.material[footfalltype].tred3id;
-		}
-		*lastfootfallsound = t.trndsnd;
-
-		//  play this material sound (will play tsnd+0 through tsnd+4)
-		t.tsoundtrigger = t.tsnd; t.tvol_f = 90;
-		t.tspd_f = t.material[footfalltype].freq;
-		t.tsx_f = fX;
-		t.tsy_f = fY;
-		t.tsz_f = fZ;
-		material_triggersound ( 0 );
-	}
-	#endif
 }

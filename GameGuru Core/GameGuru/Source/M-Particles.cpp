@@ -17,10 +17,8 @@ void ravey_particles_set_wind_vector(float fwindX, float fwindZ)
 	fwindVectZ = fwindZ;
 }
 
-#ifdef WICKEDENGINE
 int particle_copy = 0;
 bool g_bOnlyCreateOnceForFasterNewLevels = true;
-#endif
 
 //PE: Still suffer for many wicked objects , limit it and only use what is needed. only add batch of 30 to make it fast.
 void add_more( void )
@@ -112,19 +110,14 @@ void add_more( void )
 
 void ravey_particles_init ( void )
 {
-	#ifdef WICKEDENGINE
 	WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
-	#endif
 
-	#ifdef WICKEDENGINE
 	if (g_bOnlyCreateOnceForFasterNewLevels == true)
 	{
-	#endif
 
 		// pre create max particles
 		for (int i = 0; i < RAVEY_PARTICLES_MAX_FIRST_BATCH; i++)
 		{
-#ifdef WICKEDENGINE
 			particle_copy = g.raveyparticlesobjectoffset + RAVEY_PARTICLES_MAX;
 			if (ObjectExist(particle_copy) == 0)
 			{
@@ -142,7 +135,6 @@ void ravey_particles_init ( void )
 				SetVertexDataNormals(5, 0, 1, 0);
 				UnlockVertexData();
 			}
-#endif
 
 			//  create particle object
 			int obj = g.raveyparticlesobjectoffset + i;
@@ -150,7 +142,6 @@ void ravey_particles_init ( void )
 
 			// currently all 'particles' are a simple 100x100 Plane
 
-#ifdef WICKEDENGINE
 			if (ObjectExist(particle_copy) == 1)
 			{
 				CloneObject(obj, particle_copy);
@@ -159,30 +150,20 @@ void ravey_particles_init ( void )
 			{
 				MakeObjectPlane(obj, 100, 100);
 			}
-#else
-			MakeObjectPlane(obj, 100, 100);
-#endif
 
 			FixObjectPivot(obj);
 			SetObjectTransparency(obj, 6);
 			SetObjectCollisionOff(obj);
 
 			//PE: Wicked enabling additive (blending) not just DEPTHREAD, make it hard to see the particles, did we have that on Classic ?
-#ifndef WICKEDENGINE
-			DisableObjectZWrite(obj);
-#endif
 			SetObjectTextureMode(obj, 0, 0);
 			SetObjectLight(obj, 0);
 
-#ifdef VRTECH
 			// ensure VR can see particles too!
 			if (g.vrglobals.GGVREnabled > 0)
 				SetObjectMask (obj, (1 << 6) + (1 << 7) + 1);
 			else
 				SetObjectMask (obj, 1);
-#else
-			SetObjectMask (obj, 1);
-#endif
 
 			HideObject(obj);
 			TextureObject(obj, RAVEY_PARTICLES_IMAGETYPE_LIGHTSMOKE + g.particlesimageoffset);
@@ -198,30 +179,24 @@ void ravey_particles_init ( void )
 			SetVertexDataUV(4, 0, 1.0 / 8.0);
 			SetVertexDataUV(5, 1.0 / 8.0, 1.0 / 8.0);
 
-#ifdef WICKEDENGINE
 			SetVertexDataNormals(0, 0, 1, 0);
 			SetVertexDataNormals(1, 0, 1, 0);
 			SetVertexDataNormals(2, 0, 1, 0);
 			SetVertexDataNormals(3, 0, 1, 0);
 			SetVertexDataNormals(4, 0, 1, 0);
 			SetVertexDataNormals(5, 0, 1, 0);
-#endif
 
 			UnlockVertexData();
 
-#ifdef WICKEDENGINE
 			sObject* pVegObject = GetObjectData(obj);
 			if (pVegObject)
 			{
 				WickedCall_SetObjectCastShadows(pVegObject, false); //PE: No shadows on particles for now.
 			}
-#endif
 		}
 
-	#ifdef WICKEDENGINE
 	}
 	g_bOnlyCreateOnceForFasterNewLevels = false;
-	#endif
 
 	//  reset emitters
 	for ( int i = 0 ; i < RAVEY_PARTICLE_EMITTERS_MAX; i++ )
@@ -243,9 +218,7 @@ void ravey_particles_init ( void )
 
 	if ( t.game.runasmultiplayer == 1 ) mp_refresh ( );
 
-	#ifdef WICKEDENGINE
 	WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-	#endif
 }
 
 void ravey_particles_load_images ( void )
@@ -508,7 +481,6 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 	PositionObject( obj, this_particle->x, this_particle->y, this_particle->z );
 
 	//PE: TextureObject will clear animation list and trigger a new to be generated , so just texture them directly.
-	#ifdef VRTECH
 	sObject* pObject = g_ObjectList[obj];
 	int iImgId = this_emitter->imageNumber;
 	if(this_emitter->imageNumberSecond > 0 && Rnd(1) == 0) iImgId = this_emitter->imageNumberSecond;
@@ -518,18 +490,9 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 		{
 			SetBaseTextureStage(pObject->ppMeshList[iMesh], 0, iImgId);
 		}
-		#ifdef WICKEDENGINE
 		// hmm, maybe quick, but wicked needs to know
 		WickedCall_TextureObject(pObject, NULL);
-		#endif
 	}
-	#else
-	sObject* pObject = g_ObjectList[obj];
-	if (pObject) {
-		for (int iMesh = 0; iMesh < pObject->iMeshCount; iMesh++)
-			SetBaseTextureStage(pObject->ppMeshList[iMesh], 0, this_emitter->imageNumber);
-	}
-	#endif
 
 	SetAlphaMappingOn( obj, this_particle->alphaStart );
 	ScaleObject( obj, this_particle->scaleStart, this_particle->scaleStart, this_particle->scaleStart );
@@ -541,11 +504,7 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 	this_particle->frameDivide    = this_emitter->frameDivide;
 	this_particle->frameMulti     = this_emitter->frameMulti;
 
-	#ifdef VRTECH
 	if ( this_emitter->animationSpeed == 0.0 && this_emitter->frameCount > 0 && this_emitter->useAtlas )
-	#else
-	if ( this_emitter->animationSpeed == 0.0 && this_emitter->frameCount > 0 )
-	#endif
 	{
 		this_particle->startFrame = Rnd( this_emitter->frameCount );
 		this_particle->endFrame   = this_particle->startFrame;
@@ -583,7 +542,6 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 		PointObject(   obj, CameraPositionX(), CameraPositionY(), CameraPositionZ() );
 	}
 	
-	#ifdef VRTECH
 	if (!this_emitter->useAtlas) 
 	{
 		float uvwh = 1.0f;
@@ -601,30 +559,10 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 		ScaleObjectTexture(obj, 1.0f, 1.0f);
 	}
 	else if ( this_particle->isAnimated == 1 )
-	#else
-	if ( this_particle->isAnimated == 1 )
-	#endif
 	{
-		#ifdef WICKEDENGINE
 		// adjust UV manually until GPU particles come along
 		SetObjectUVManually(obj, this_particle->frame, this_particle->frameDivide, this_particle->frameDivide);
-		#else
-		// 200918 - lock UV here and fill with UV grid ref (copied from init as particles can specify different grid sizes)
-		float uvwh  = (float) 1.0 / this_particle->frameDivide;
-		LockVertexDataForLimbCore( obj, 0, 1 );
-		SetVertexDataUV( 0, uvwh, 0 );
-		SetVertexDataUV( 1, 0, 0 );
-		SetVertexDataUV( 2, uvwh, uvwh );
-		SetVertexDataUV( 3, 0, 0 );
-		SetVertexDataUV( 4, 0, uvwh );
-		SetVertexDataUV( 5, uvwh, uvwh );
-		UnlockVertexData();
-		float fa = Floor( this_particle->frame / this_particle->frameDivide );
-		float line_f = fa * this_particle->frameDivide;
-		ScaleObjectTexture( obj, Floor(this_particle->frame - line_f) * this_particle->frameMulti, fa * this_particle->frameMulti );
-		#endif
 	}
-	#ifdef VRTECH
 	else
 	{
 		//Default
@@ -638,7 +576,6 @@ void generateParticle( travey_particle_emitter* this_emitter, int tfound )
 		UnlockVertexData();
 		ScaleObjectTexture(obj, 1.0f, 1.0f);
 	}
-	#endif
   
 	this_particle->iDelayUpdate = 0;
 	this_particle->fFpsTimePassed = 0.0;
@@ -841,18 +778,10 @@ bool ravey_particles_update_particles( void )
 
 					this_particle->fFpsUpdate = current_timer;
 
-					#ifdef VRTECH
 					if (this_emitter->useAtlas)
-					#else
-					if ( 1 )
-					#endif
 					{
 						//  Alpha
-						#ifdef VRTECH
 						tAmount_f = this_particle->alphaStart + (perc_f * (this_particle->alphaEnd - this_particle->alphaStart));
-						#else
-						float tAmount_f = this_particle->alphaStart + (perc_f * (this_particle->alphaEnd - this_particle->alphaStart));
-						#endif
 						if (tAmount_f < 0.0)   tAmount_f = 0.0;
 						if (tAmount_f > 100.0) tAmount_f = 100.0;
 						SetAlphaMappingOn(obj, tAmount_f);
@@ -881,13 +810,7 @@ bool ravey_particles_update_particles( void )
 
 							if (int(this_particle->frame) != this_particle->previousFrame)
 							{
-								#ifdef WICKEDENGINE
 								SetObjectUVManually ( obj, this_particle->frame, this_particle->frameDivide, this_particle->frameDivide );
-								#else
-								float fa = Floor(this_particle->frame / this_particle->frameDivide);
-								float line_f = fa * this_particle->frameDivide;
-								ScaleObjectTexture(obj, Floor(this_particle->frame - line_f) * this_particle->frameMulti, fa * this_particle->frameMulti);
-								#endif
 								this_particle->previousFrame = int(this_particle->frame);
 							}
 						}
@@ -920,7 +843,6 @@ bool ravey_particles_update_particles( void )
 						}
 						this_particle->fFpsTimePassed = 0.0;
 					}
-					#ifdef VRTECH
 					else
 					{
 					
@@ -962,7 +884,6 @@ bool ravey_particles_update_particles( void )
 						}
 
 					}
-					#endif
 				}
 				this_particle->iDelayUpdate++;
 			}
@@ -1087,12 +1008,10 @@ void ravey_particles_add_emitter( void )
 	this_emitter->alphaEndMax = g.tEmitter.alphaEndMax;
 	this_emitter->frequency = g.tEmitter.frequency;
 
-	#ifdef VRTECH
 	this_emitter->useAtlas = g.tEmitter.useAtlas;
 	this_emitter->imageNumberSecond = g.tEmitter.imageNumberSecond;
 	g.tEmitter.useAtlas = true;
 	g.tEmitter.imageNumberSecond = 0;
-	#endif
 }
 
 void ravey_particles_delete_emitter ( void )
@@ -1133,7 +1052,6 @@ void ravey_particles_hide_all_particles(void)
 	ravey_particles_update_particles();
 }
 
-#ifdef VRTECH
 #define MAX_ENV_PARTICLES 600
 int environment_weather = 0; // 1 = rain.
 int environment_emitter_id = 0;
@@ -1187,7 +1105,6 @@ void env_add_rain_particles(void)
 		g.tEmitter.scaleEndMin = 6;
 		g.tEmitter.scaleEndMax = 35;
 
-#ifdef WICKEDENGINE
 		//A bit faster in wicked.
 		g.tEmitter.movementSpeedMinX = -0.1f;
 		g.tEmitter.movementSpeedMinY = -25.0f;
@@ -1195,14 +1112,6 @@ void env_add_rain_particles(void)
 		g.tEmitter.movementSpeedMaxX = 0.1f;
 		g.tEmitter.movementSpeedMaxY = -11.0f;
 		g.tEmitter.movementSpeedMaxZ = 0.1f;
-#else
-		g.tEmitter.movementSpeedMinX = -0.1f;
-		g.tEmitter.movementSpeedMinY = -20.0f;
-		g.tEmitter.movementSpeedMinZ = -0.1f;
-		g.tEmitter.movementSpeedMaxX = 0.1f;
-		g.tEmitter.movementSpeedMaxY = -9.0f;
-		g.tEmitter.movementSpeedMaxZ = 0.1f;
-#endif
 
 		g.tEmitter.rotateSpeedMinZ = -0.1f;
 		g.tEmitter.rotateSpeedMaxZ = 0.1f;
@@ -1423,21 +1332,12 @@ void env_add_snow_particles(float fSpeedAdjust)
 		g.tEmitter.scaleEndMin = 3;
 		g.tEmitter.scaleEndMax = 14;
 
-#ifdef WICKEDENGINE
 		g.tEmitter.movementSpeedMinX = -0.1f;
 		g.tEmitter.movementSpeedMinY = -12.0f + fSpeedAdjust;
 		g.tEmitter.movementSpeedMinZ = -0.1f;
 		g.tEmitter.movementSpeedMaxX = 0.1f;
 		g.tEmitter.movementSpeedMaxY = -6.0f + fSpeedAdjust;
 		g.tEmitter.movementSpeedMaxZ = 0.1f;
-#else
-		g.tEmitter.movementSpeedMinX = -0.1f;
-		g.tEmitter.movementSpeedMinY = -8.0f+ fSpeedAdjust;
-		g.tEmitter.movementSpeedMinZ = -0.1f;
-		g.tEmitter.movementSpeedMaxX = 0.1f;
-		g.tEmitter.movementSpeedMaxY = -4.0f+ fSpeedAdjust;
-		g.tEmitter.movementSpeedMaxZ = 0.1f;
-#endif
 
 		g.tEmitter.rotateSpeedMinZ = -0.1f;
 		g.tEmitter.rotateSpeedMaxZ = 0.1f;
@@ -1749,12 +1649,6 @@ void update_env_particles(void)
 		if (iDelayedRayCast++ % 15 == 0)
 		{
 			//Try a ray and check if we need to disable.(indoor)
-			#ifndef WICKEDENGINE
-			if (g.lightmappedobjectoffset >= g.lightmappedobjectoffsetfinish)
-				int ttt = IntersectAll(85000, 85000 + g.merged_new_objects - 1, 0, 0, 0, 0, 0, 0, -123);
-			else
-				int ttt = IntersectAll(g.lightmappedobjectoffset, g.lightmappedobjectoffsetfinish, 0, 0, 0, 0, 0, 0, -123);
-			#endif
 			//PE: https://github.com/TheGameCreators/GameGuruRepo/issues/5917#issuecomment-2744470171
 			//PE: Bug Fix - Respect "no collision".
 			int iHitObj = IntersectAllEx(g.entityviewstartobj, g.entityviewendobj, this_emitter->xPos, this_emitter->yPos, this_emitter->zPos, this_emitter->xPos, this_emitter->yPos + 2000.0f, this_emitter->zPos, 0, 0, 0, 0, 1, false);
@@ -1766,13 +1660,9 @@ void update_env_particles(void)
 			}
 			else 
 			{
-				#ifdef WICKEDENGINE
 				this_emitter->maxParticles = (MAX_ENV_PARTICLES/100.0) * t.visuals.fWeatherIntensity;
 				if (this_emitter->maxParticles > MAX_ENV_PARTICLES)
 					this_emitter->maxParticles = MAX_ENV_PARTICLES;
-				#else
-				this_emitter->maxParticles = MAX_ENV_PARTICLES;
-				#endif
 			}
 		}
 		inumParticles += this_emitter->numParticles;
@@ -1791,13 +1681,9 @@ void update_env_particles(void)
 			this_emitter->maxParticles = 0;
 		else 
 		{
-			#ifdef WICKEDENGINE
 			this_emitter->maxParticles = (MAX_ENV_PARTICLES / 100.0) * t.visuals.fWeatherIntensity;
 			if (this_emitter->maxParticles > MAX_ENV_PARTICLES)
 				this_emitter->maxParticles = MAX_ENV_PARTICLES;
-			#else
-			this_emitter->maxParticles = MAX_ENV_PARTICLES;
-			#endif
 		}
 		inumParticles += this_emitter->numParticles;
 	}
@@ -1812,13 +1698,9 @@ void update_env_particles(void)
 			this_emitter->maxParticles = 0;
 		else 
 		{
-			#ifdef WICKEDENGINE
 			this_emitter->maxParticles = (MAX_ENV_PARTICLES / 100.0) * t.visuals.fWeatherIntensity;
 			if (this_emitter->maxParticles > MAX_ENV_PARTICLES)
 				this_emitter->maxParticles = MAX_ENV_PARTICLES;
-			#else
-			this_emitter->maxParticles = MAX_ENV_PARTICLES;
-			#endif
 		}
 		inumParticles += this_emitter->numParticles;
 	}
@@ -1910,13 +1792,7 @@ bool ravey_particles_update_particles_quick(void)
 
 					if (int(this_particle->frame) != this_particle->previousFrame)
 					{
-						#ifdef WICKEDENGINE
 						SetObjectUVManually ( obj, this_particle->frame, this_particle->frameDivide, this_particle->frameDivide );
-						#else
-						float fa = Floor(this_particle->frame / this_particle->frameDivide);
-						float line_f = fa * this_particle->frameDivide;
-						ScaleObjectTexture(obj, Floor(this_particle->frame - line_f) * this_particle->frameMulti, fa * this_particle->frameMulti);
-						#endif
 						this_particle->previousFrame = int(this_particle->frame);
 					}
 				}
@@ -1978,4 +1854,3 @@ void delete_env_particles(void)
 		}
 	}
 }
-#endif

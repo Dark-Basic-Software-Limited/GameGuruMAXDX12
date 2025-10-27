@@ -6,11 +6,9 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-#ifdef VRTECH
 #include "..\Imgui\imgui.h"
 #include "..\Imgui\imgui_impl_win32.h"
 #include "..\Imgui\imgui_gg_dx11.h"
-#endif
 
 #ifdef OPTICK_ENABLE
 #include "optick.h"
@@ -153,20 +151,12 @@ void sliders_draw ( void )
 	//  new crosshair system (avoids motion blur issue)
 	if (  t.gunid>0 && t.postprocessings.fadeinvalue_f == 1.0 ) 
 	{
-		#ifdef WICKEDENGINE
 		static float timer = 0.0f;
 		if ( g.firemodes[t.gunid][g.firemode].settings.zoomhidecrosshair == 0 && t.gunzoommode > 0 )
-		#else		
-		if (  g.firemodes[t.gunid][g.firemode].settings.zoomhidecrosshair == 0 || t.gunzoommode == 0 ) 
-		#endif // WICKEDENGINE
 		{
 			t.timg=t.gun[t.gunid].settings.crosshairimg;
-			#ifdef WICKEDENGINE
 			timer += ImGui::GetIO().DeltaTime;
 			if (  t.timg>0 && timer > 0.155f) // If keeping the crosshair as a replacement for red dot, it would be best to store the timer length/frame to trigger crosshair in the gun spec.
-			#else
-			if (t.timg > 0)
-			#endif
 			{
 				if (  ImageExist(t.timg) == 1 ) 
 				{
@@ -194,9 +184,7 @@ void sliders_draw ( void )
 		}
 		else
 		{
-			#ifdef WICKEDENGINE
 			timer = 0.0f;
-			#endif
 		}
 	}
 
@@ -460,9 +448,7 @@ void sliders_getchoice ( void )
 	if (  t.slidersmenuvaluechoice == 5  )  t.sliderschoicemax = 3;
 	if (  t.slidersmenuvaluechoice == 6  )  t.sliderschoicemax = 4; // grass techniques
 	if (  t.slidersmenuvaluechoice == 7  )  t.sliderschoicemax = 2;//3; // 150917 - added PBR - now using pbroverride
-	#ifdef VRTECH
 	if (t.slidersmenuvaluechoice == 40)  t.sliderschoicemax = 5;//Weather
-	#endif
 
 	//  If we are in the character kit
 	if (  t.slidersmenuvaluechoice == 51  )  t.sliderschoicemax = g.characterkitbodymax;
@@ -550,7 +536,6 @@ void sliders_getnamefromvalue ( void )
 		if (  t.slidersmenuvalueindex == 2  )  t.slidervaluename_s = "REALTIME";
 	}
 
-	#ifdef VRTECH
 	if (t.slidersmenuvaluechoice == 40)
 	{
 		t.slidervaluename_s = "";
@@ -560,7 +545,6 @@ void sliders_getnamefromvalue ( void )
 		if (t.slidersmenuvalueindex == 4)  t.slidervaluename_s = "Light Snow";
 		if (t.slidersmenuvalueindex == 5)  t.slidervaluename_s = "Heavy Snow";
 	}
-	#endif
 
 	//  if we are in the character kit
 	if (  t.slidersmenuvaluechoice == 51 ) 
@@ -916,7 +900,6 @@ void sliders_write (bool bOnlyVisualSettings )
 				t.visuals.refreshvegtexture = 1;
 			}
 		}
-		#ifdef VRTECH
 		if (t.visuals.iEnvironmentWeather+1 != t.slidersmenuvalue[t.slidersmenuindex][4].value)
 		{
 			t.visuals.iEnvironmentWeather = t.slidersmenuvalue[t.slidersmenuindex][4].value-1;
@@ -925,7 +908,6 @@ void sliders_write (bool bOnlyVisualSettings )
 				t.storeprojectmodified = 1;
 			}
 		}
-		#endif
 	}
 	if (  t.slidersmenuindex == t.slidersmenunames.graphicoptions ) 
 	{
