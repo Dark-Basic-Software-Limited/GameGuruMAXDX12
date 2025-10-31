@@ -102,7 +102,7 @@ void entity_lua_collisionon ( void )
 				// so allowing path finder to ignore gaps that would have normally been used should the door be open
 				if ( strnicmp ( t.entityprofile[t.entid].aimain_s.Get(), "door", 4) == NULL ) 
 				{
-					t.tobj=t.obj ; darkai_adddoor ( );
+					t.tobj=t.obj ;
 					t.entityelement[t.e].doorobsactive = 1;
 				}
 			}
@@ -140,7 +140,6 @@ void entity_lua_collisionoff ( void )
 			{
 				if ( strnicmp ( t.entityprofile[t.entid].aimain_s.Get(), "door", 4) == NULL ) 
 				{
-					darkai_removedoor ( );
 					t.entityelement[t.e].doorobsactive = 0;
 				}
 			}
@@ -467,7 +466,6 @@ void entity_lua_spawn_core ( void )
 				// first destroy any part-leftovers of character
 				t.charanimstate = t.charanimstates[g.charanimindex];
 				t.entityelement[t.e].ragdollified = 1; // entity reload might have wiped ragdoll state
-				darkai_character_remove_charpart ( );
 				t.charanimstates[g.charanimindex] = t.charanimstate;
 
 				//  create new AI for this entity
@@ -1119,7 +1117,6 @@ void entity_lua_refreshentity ( void )
 					darkai_killai ( );
 
 					//  Convert object back to instance and hide it
-					darkai_character_remove ( );
 					t.charanimstates[t.tcharanimindex] = t.charanimstate;
 				}
 				else

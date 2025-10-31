@@ -918,7 +918,6 @@ void game_masterroot_gameloop_initcode(int iUseVRTest)
 		if ( t.game.runasmultiplayer == 1 ) 
 		{
 			entity_delete ( );
-			lm_removeold ( );
 		}
 		#ifdef WIP_PROLOADLEVELTEXTURES
 		//PE: Record preload informations here.
@@ -1189,10 +1188,6 @@ void game_masterroot_gameloop_initcode(int iUseVRTest)
 	printscreenprompt(pProgressStr);
 	game_preparelevel_finally ( );
 
-	// Load any light map objects if available
-	timestampactivity(0,"load lightmapped objects");
-	lm_loadscene ( );
-	
 	//PE: Disable collision.
 	for (t.e = 1; t.e <= g.entityelementlist; t.e++)
 	{
@@ -2295,7 +2290,6 @@ bool game_masterroot_gameloop_loopcode(int iUseVRTest)
 		t.tremembertimer=Timer();
 		game_main_snapshotsound ( );
 		while ( EscapeKey() != 0 ) {}
-		darkai_character_freezeall ( );
 		physics_pausephysics ( );
 		entity_pauseanimations ( );
 		extern void gun_SetObjectSpeed(int, float);
@@ -2320,7 +2314,7 @@ bool game_masterroot_gameloop_loopcode(int iUseVRTest)
 			}
 			if ( t.conkit.editmodeactive == 1 ) 
 			{
-				conkitedit_switchoff ( );
+				//conkitedit_switchoff ( );
 			}
 		}
 		else
@@ -3398,7 +3392,6 @@ void game_preparelevel ( void )
 	t.screenprompt_s="PREPARING A.I SYSTEM";
 	if (  t.game.gameisexe == 0  )  printscreenprompt(t.screenprompt_s.Get()); else loadingpageprogress(5);
 	timestampactivity(0,t.screenprompt_s.Get());
-	darkai_preparedata ( );
 
 	//  Reset waypoint for game activity
 	if (t.showtestgameelements == 0)
@@ -3436,9 +3429,6 @@ void game_preparelevel ( void )
 		t.screenprompt_s="CREATING A.I OBSTACLES";
 		timestampactivity(0,t.screenprompt_s.Get());
 	}
-	if ( t.game.runasmultiplayer == 1 ) mp_refresh ( );
-	darkai_completeobstacles ( );
-	if ( t.game.runasmultiplayer == 1 ) mp_refresh ( );
 
 	//  setup infinilights
 	t.screenprompt_s="PREPARING DYNAMIC LIGHTS";
@@ -3534,12 +3524,8 @@ void game_preparelevel_finally ( void )
 	{
 		t.screenprompt_s="GENERATING TERRAIN SUPER TEXTURE";
 		timestampactivity(0,t.screenprompt_s.Get());
-		terrain_generatesupertexture ( false );
 		t.terrain.generatedsupertexture = 1;
 	}
-
-	//  Trigger the technique to switch to DISTANT shader is far away
-	BT_ForceTerrainTechnique (  0 );
 
 	//  Initiate post process system (or reactivate it)
 	t.screenprompt_s="INITIALIZING POSTPROCESS";
@@ -3554,7 +3540,7 @@ void game_preparelevel_finally ( void )
 	if ( t.game.runasmultiplayer == 1 ) mp_refresh ( );
 
 	//  Initialise Construction Kit
-	conkit_init ( );
+	//conkit_init ( );
 
 	//  Init physics
 	t.screenprompt_s="INITIALIZING PHYSICS";
@@ -3688,7 +3674,6 @@ void game_preparelevel_finally ( void )
 	//  Once player start known, fill veg area instantly
 	timestampactivity(0,"Fill Veg Areas");
 	t.completelyfillvegarea=1;
-	grass_loop ( );
 	if ( t.game.runasmultiplayer == 1 ) mp_refresh ( );
 
 	//  Force a shader update to ensure correct shadows are used at start
@@ -3756,10 +3741,6 @@ void game_freelevel ( void )
 		if ( g_hOccluderEnd ) WaitForSingleObject ( g_hOccluderEnd, INFINITE );
 	}
 	
-	//  free any character AI related stuff
-	darkai_release_characters ( );
-	darkai_destroy_all_characterdata ( );
-
 	// remove bits created by LUA scripts
 	lua_freeprompt3d();
 	lua_freeallperentity3d();
@@ -3793,11 +3774,8 @@ void game_freelevel ( void )
 	//  restore terrain from in-game
 	terrain_stop_play ( );
 
-	//  free vegetation
-	grass_free ( );
-
 	//  free Construction Kit
-	conkit_free ( );
+	//conkit_free ( );
 
 	//  free any visual leftovers
 	visuals_free ( );
@@ -3819,8 +3797,6 @@ void game_freelevel ( void )
 
 		// only for standalone as test game needs entities for editor :)
 		entity_delete();
-		//PE: Free any lightmaps, next level might not use lightmaps.
-		lm_deleteall();
 		ClearAnyLightMapInternalTextures();
 
 		//PE: Delete all entitybank textures used.
@@ -3845,9 +3821,6 @@ void game_init ( void )
 
 	//  Last thing before main game loop
 	physics_beginsimulation ( );
-
-	//  Just before start, stagger AI processing timers
-	darkai_staggerAIprocessing ( );
 
 	//  Reset game checkpoint
 	t.playercheckpoint.stored=1;
@@ -4342,7 +4315,7 @@ void game_main_loop ( void )
 
 			//  Construction Kit control
 			if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling conkit_loop");
-			conkit_loop ( );
+			//conkit_loop ( );
 		}
 		t.game.perf.physics += PerformanceTimer()-g.gameperftimestamp ; g.gameperftimestamp=PerformanceTimer();
 
@@ -4495,15 +4468,7 @@ void game_main_loop ( void )
 		//Grass every other frame
 		//Gets me 10fps increase on my machine		
 		static bool terrainvegdelay = true;
-		if ( terrainvegdelay = !terrainvegdelay )
-		{
-			if ( g.gproducelogfiles == 2 ) timestampactivity(0,"calling grass_loop");
-			grass_loop ( );
-			t.game.perf.terrain1 += PerformanceTimer()-g.gameperftimestamp ; g.gameperftimestamp=PerformanceTimer();
-		}
-		else
-			t.game.perf.terrain1 += PerformanceTimer()-g.gameperftimestamp ; g.gameperftimestamp=PerformanceTimer();
-
+		t.game.perf.terrain1 += PerformanceTimer()-g.gameperftimestamp ; g.gameperftimestamp=PerformanceTimer();
 		t.game.perf.terrain2 += PerformanceTimer()-g.gameperftimestamp ; g.gameperftimestamp=PerformanceTimer();
 	}
 	if (  t.hardwareinfoglobals.nosky == 0 ) 
@@ -4761,7 +4726,7 @@ void game_main_stop ( void )
 	// Rest any ingame variables
 	if ( t.conkit.entityeditmode != 0 || t.conkit.editmodeactive == 1 ) 
 	{
-		conkitedit_switchoff ( );
+		//conkitedit_switchoff ( );
 	}
 }
 

@@ -3205,13 +3205,6 @@ void entity_loaddata ( void )
 						matched = false; // prevent skipping other strings that start with "anim"
 					}
 
-					// 291014 - AI system animation sets (takes field$ and value1/value2)
-					if ( 1 ) // t.entityprofile[t.entid].ignorecsirefs == 0 ) // for now, still need these for THIRD PERSON which uses old CSI system
-					{
-						// 200918 - externalised internal AI system into scripts, but keeping for legacy support
-						darkai_assignanimtofield ( );
-					}
-
 					// get foot fall data (optional)
 					cmpStrConst( t_field_s, "footfallmax" );
 					if (  matched  )  t.entityprofile[t.entid].footfallmax = t.value1;
@@ -7671,10 +7664,7 @@ void entity_loadentitiesnow ( void )
 			t.entdir_s = "entitybank\\";
 			t.ent_s = t.entitybank_s[t.entid];
 			t.entpath_s = getpath(t.ent_s.Get());
-			if (  t.lightmapper.onlyloadstaticentitiesduringlightmapper == 1 ) 
-			{
-				t.tonscreenprompt_s=cstr("Load ")+Str(t.entid)+" : "+Right(t.ent_s.Get(),Len(t.ent_s.Get())-1)  ; lm_flashprompt ( );
-			}
+			t.tonscreenprompt_s = "";
 			// if not an FPE, load FPE from EBE source
 			if ( strcmp ( Lower(Right(t.ent_s.Get(),4)), ".fpe" ) != NULL )
 			{

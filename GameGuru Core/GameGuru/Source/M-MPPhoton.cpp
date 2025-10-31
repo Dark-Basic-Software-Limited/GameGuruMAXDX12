@@ -5664,9 +5664,6 @@ void mp_cleanupGame ( void )
 	t.terrain.playeraz_f=0.0;
 	t.camangy_f=0.0;
 
-	// remove light map objects for return to IDE editor
-	lm_restoreall ( );
-
 	// remove all entities
 	if ( g.entityelementlist>0 ) 
 	{

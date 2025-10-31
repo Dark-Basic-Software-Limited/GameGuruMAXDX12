@@ -92,6 +92,8 @@ bool g_bChangedGameCollectionList = false;
 bool g_bUpdateCollectionList = false;
 bool g_bSelectedNewObjectToAddToLevel = false;
 
+int g_iSuperTriggerFullGrassReveal = 0;
+
 #include <algorithm>
 #include <string>
 #include <time.h>
@@ -358,8 +360,7 @@ float fLocalMax = 1000.0f;
 
 //Check if we are in f9 mode
 extern bool g_occluderf9Mode;
-//Skip terrain rendering when going into importer mode
-extern bool g_bSkipTerrainRender;
+
 // extern to global that toggles when load map removed from entities
 extern bool g_bBlackListRemovedSomeEntities;
 extern bool gbWelcomeSystemActive;
@@ -897,7 +898,6 @@ void mapeditorexecutable_init ( void )
 			//  load in current files in LEVELBANK\TESTMAP (not from FPM)
 			gridedit_load_map ( );
 			t.terrain.grassregionx1 = t.terrain.grassregionx2;
-			grass_init();
 			extern int g_iSuperTriggerFullGrassReveal; // hmm, shoved in to get the damn grass showing on initial load!
 			g_iSuperTriggerFullGrassReveal = 10;
 			t.skipfpmloading=0;
@@ -1316,7 +1316,6 @@ void mapeditorexecutable_init ( void )
 					gridedit_load_map();
 					g_EntityClipboard.clear(); //PE: Clear any old copy/paste.
 					t.terrain.grassregionx1 = t.terrain.grassregionx2;
-					grass_init();
 					bUpdateVeg = true;
 
 					//Locate player start marker.
@@ -1362,13 +1361,8 @@ void mapeditorexecutable_init ( void )
 	t.visuals.VegQuantity_f = t.gamevisuals.VegQuantity_f;
 	t.visuals.VegWidth_f = t.gamevisuals.VegWidth_f;
 	t.visuals.VegHeight_f = t.gamevisuals.VegHeight_f;
-	grass_setgrassgridandfade();
-
-	if (!(ObjectExist(t.tGrassObj) == 1 && GetMeshExist(t.tGrassObj) == 1))
-		grass_init();
 
 	t.terrain.grassupdateafterterrain = 1;
-	grass_loop();
 	t.terrain.grassupdateafterterrain = 0;
 	ShowVegetationGrid();
 	visuals_justshaderupdate();
@@ -2149,7 +2143,6 @@ void mapeditorexecutable_loop(void)
 					iLevelEditorFromStoryboardID = -1; //If loaded from here, we cant update storyboard.
 
 				t.terrain.grassregionx1 = t.terrain.grassregionx2;
-				grass_init();
 				bUpdateVeg = true;
 
 				iLaunchAfterSync = 80; //Update env
@@ -14074,7 +14067,6 @@ void mapeditorexecutable_loop(void)
 				{
 					WickedCall_DisplayCubes(true);
 				}
-				grass_editcontrol();
 
 				//PE: Make sure clicks inside terrain tools also record a change, so level is saved.
 				if (bImGuiRenderTargetFocus)
@@ -14808,7 +14800,6 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 
 		// re-assign params for reloaded terrain and veg
 		terrain_applyshader();
-		grass_applyshader();
 	}
 	
 	//  set-up test game screen prompt assets
@@ -14844,7 +14835,6 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 	// GCStore could have assed assets since the last 'test game' so refresh internal lists
 	sky_init ( );
 	terrain_initstyles ( );
-	grass_initstyles();
 
 	// Re-acquire indices now the lists have changed
 	// takes visuals.sky$ visuals.terrain$ visuals.vegetation$
@@ -15194,9 +15184,6 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 
 	WickedCall_SetEditorCameraLight(true);
 
-	// Restore entities (remove light map objects for return to IDE editor)
-	lm_restoreall ( );
-
 	//PE: Hide any hit decals.
 	decal_hide();
 
@@ -15219,7 +15206,6 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 
 	// Revert mode to only render NEAR technique
 	visuals_restoreterrainshaderforeditor ( );
-	BT_ForceTerrainTechnique ( 1 );
 
 	// editor speed max
 	SyncMask ( 1 );
@@ -15875,7 +15861,6 @@ void editor_multiplayermode ( void )
 		g.projectfilename_s=g.mysystem.editorsGrideditAbs_s+"worklevel.fpm";//g.fpscrootdir_s+"\\Files\\editors\\gridedit\\worklevel.fpm";
 		editor_loadcfg ( );
 		gridedit_load_map ( );
-		grass_init();
 		bUpdateVeg = true;
 
 		//  added to solve fog issue when go in and out of MP menu
@@ -23954,8 +23939,6 @@ void gridedit_save_test_map ( void )
 		EmptyMessages();
 
 	t.tfileveggrass_s=g.mysystem.levelBankTestMap_s+"TTR0XR0\\vegmaskgrass.dat";
-	timestampactivity(0,"SAVETESTMAP: Save terrain veg");
-	grass_savegrass ( );
 
 	if (bKeepWindowsResponding)
 		EmptyMessages();
@@ -24081,9 +24064,6 @@ void gridedit_clear_configsettings ( void )
 
 void gridedit_clear_map ( void )
 {
-	//  Delete ALL light map objects
-	lm_deleteall ( );
-
 	//Stop delete any particle effects.
 	gpup_deleteAllEffects();
 
@@ -24245,7 +24225,6 @@ void gridedit_new_map(void)
 	//  Ensure default terrain and veg graphics
 	terrain_changestyle();
 	g.vegstyleindex = t.visuals.vegetationindex;
-	grass_changevegstyle();
 
 	//  Load map data
 	editor_hideall3d();
@@ -24255,11 +24234,9 @@ void gridedit_new_map(void)
 	gridedit_clear_settings();
 
 	//  Empty the lightmap folder
-	timestampactivity(0, "NEWMAP: _lm_emptylightmapandttsfilesfolder");
-	lm_emptylightmapandttsfilesfolder();
-
-	void lm_emptylightmapandttsfilesfolder_wicked(void);
-	lm_emptylightmapandttsfilesfolder_wicked();
+	timestampactivity(0, "NEWMAP: mapfile_emptylightmapandttsfilesfolder_wicked");
+	void mapfile_emptylightmapandttsfilesfolder_wicked(void);
+	mapfile_emptylightmapandttsfilesfolder_wicked();
 
 	// Reset texture/profile in EBE folder
 	ebe_restoreebedefaulttextures();
@@ -24315,10 +24292,6 @@ void gridedit_new_map(void)
 	// ensures new terrain in new map is loaded into terrain texture panel when shown
 	terrain_resetfornewlevel();
 
-	//  Ensure no old OBS file and OBS triggers to generate
-	timestampactivity(0,"NEWMAP: invalidate any old OBS");
-	darkai_invalidateobstacles ( );
-
 	//  Clear map first
 	timestampactivity(0,"NEWMAP: _gridedit_clear_map");
 	gridedit_clear_map ( );
@@ -24367,7 +24340,6 @@ void gridedit_new_map(void)
 	terrain_generatevegandmaskfromterrain ( );
 	timestampactivity(0,"NEWMAP: Save terrain mask data");
 	t.tfileveggrass_s=g.mysystem.levelBankTestMap_s+"TTR0XR0\\vegmaskgrass.dat";
-	grass_buildblankgrass_fornew ( );
 
 	timestampactivity(0,"NEWMAP: Finish t.terrain generation");
 	
@@ -24476,10 +24448,8 @@ void gridedit_new_map_quick(void)
 			t.aisystem.generateobs = 1;
 		}
 
-		lm_emptylightmapandttsfilesfolder();
-
-		void lm_emptylightmapandttsfilesfolder_wicked(void);
-		lm_emptylightmapandttsfilesfolder_wicked();
+		void mapfile_emptylightmapandttsfilesfolder_wicked(void);
+		mapfile_emptylightmapandttsfilesfolder_wicked();
 
 		// Delete any EBE files for new levels
 		mapfile_emptyebesfromtestmapfolder(false);
@@ -24544,7 +24514,6 @@ void gridedit_new_map_quick(void)
 	t.tgeneratefreshwatermaskflag = 1;
 	terrain_generatevegandmaskfromterrain();
 	t.tfileveggrass_s = g.mysystem.levelBankTestMap_s + "TTR0XR0\\vegmaskgrass.dat";
-	grass_buildblankgrass_fornew(); //Delay this ?
 
 	//  Set standard start height for camera
 	t.gridzoom_f = 3.0; t.clipheight_f = 655; t.updatezoom = 1;
@@ -24984,7 +24953,6 @@ void gridedit_changemodifiedflag ( void )
 		if ( g.projectmodified == 1 && g.projectmodifiedstatic == 1 ) 
 		{
 			// trigger actions if any modification made
-			darkai_invalidateobstacles ( );
 			g.projectmodifiedstatic = 0;
 		}
 	}

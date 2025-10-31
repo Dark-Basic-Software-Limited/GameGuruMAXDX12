@@ -542,22 +542,6 @@ void titles_steampage ( void )
 	t.titlesbutton[t.titlespage][g.titlesbuttonmax].x2=(GetDisplayWidth()/2)+t.timgwid;
 	t.titlesbutton[t.titlespage][g.titlesbuttonmax].y1=(GetDisplayHeight()-200.0*t.tva_f)-t.timghig;
 	t.titlesbutton[t.titlespage][g.titlesbuttonmax].y2=(GetDisplayHeight()-200.0*t.tva_f)+t.timghig;
-
-	// add another button if the user has character creator entities made
-	#ifdef ENABLEMPAVATAR
-	if (CharacterKitCheckForUserMade() == 1)
-	{
-		++g.titlesbuttonmax;
-		t.titlesbutton[t.titlespage][g.titlesbuttonmax].img = 0;
-		t.titlesbutton[t.titlespage][g.titlesbuttonmax].imghigh = 0;
-		t.titlesbutton[t.titlespage][g.titlesbuttonmax].name_s = "CHOOSE/CHANGE ONLINE AVATAR";
-		t.timgwid = 200; t.timghig = 16;
-		t.titlesbutton[t.titlespage][g.titlesbuttonmax].x1 = (GetDisplayWidth() / 2) - t.timgwid;
-		t.titlesbutton[t.titlespage][g.titlesbuttonmax].x2 = (GetDisplayWidth() / 2) + t.timgwid;
-		t.titlesbutton[t.titlespage][g.titlesbuttonmax].y1 = (GetDisplayHeight() - 150.0*t.tva_f) - t.timghig;
-		t.titlesbutton[t.titlespage][g.titlesbuttonmax].y2 = (GetDisplayHeight() - 150.0*t.tva_f) + t.timghig;
-	}
-	#endif
 	titles_base ( );
 }
 

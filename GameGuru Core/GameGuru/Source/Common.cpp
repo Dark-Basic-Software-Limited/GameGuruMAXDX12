@@ -4708,7 +4708,6 @@ void common_loadcommonassets_delayed(int iShowScreenPrompts)
 	timestampactivity(0, t.tsplashstatusprogress_s.Get());
 	version_splashtext_statusupdate();
 	terrain_initstyles();
-	grass_initstyles();
 
 	t.tsplashstatusprogress_s = "INIT GAME VISUAL ASSETS";
 	timestampactivity(0, t.tsplashstatusprogress_s.Get());
@@ -4719,11 +4718,6 @@ void common_loadcommonassets_delayed(int iShowScreenPrompts)
 	timestampactivity(0, t.tsplashstatusprogress_s.Get());
 	version_splashtext_statusupdate();
 	decal_init();
-
-	t.tsplashstatusprogress_s = "INIT LIGHTMAP ASSETS";
-	timestampactivity(0, t.tsplashstatusprogress_s.Get());
-	version_splashtext_statusupdate();
-	lm_init();
 
 	//  Setup default paths
 	t.levelmapptah_s = g.mysystem.levelBankTestMap_s;
@@ -4755,7 +4749,6 @@ void common_loadcommonassets_delayed(int iShowScreenPrompts)
 	if (t.game.gameisexe == 0)
 	{
 		t.terrain.terrainobjectindex = t.terrain.objectstartindex + 3;
-		BT_ForceTerrainTechnique(1);
 		t.terrain.waterliney_f = g.gdefaultwaterheight;
 		if (GetEffectExist(t.terrain.effectstartindex + 0) == 0)
 		{
@@ -4769,7 +4762,6 @@ void common_loadcommonassets_delayed(int iShowScreenPrompts)
 		SetEffectToShadowMappingEx(t.terrain.terrainshaderindex, g.shadowdebugobjectoffset, g.guidepthshadereffectindex, g.globals.hidedistantshadows, 0, g.globals.realshadowresolution, g.globals.realshadowcascadecount, g.globals.realshadowcascade[0], g.globals.realshadowcascade[1], g.globals.realshadowcascade[2], g.globals.realshadowcascade[3], g.globals.realshadowcascade[4], g.globals.realshadowcascade[5], g.globals.realshadowcascade[6], g.globals.realshadowcascade[7]);
 		if (t.game.runasmultiplayer == 1) mp_refresh();
 		t.terrain.WaterCamY_f = 0.0;
-		BT_ForceTerrainTechnique(1);
 		t.terrain.waterliney_f = g.gdefaultwaterheight;
 
 		//Create blank terrain here, while we also load in the background. this can take 2 sec.
@@ -4784,14 +4776,12 @@ void common_loadcommonassets_delayed(int iShowScreenPrompts)
 		{
 			TextureObject(t.terrain.terrainobjectindex, 2, t.terrain.imagestartindex + 13);
 			TextureObject(t.terrain.terrainobjectindex, 4, t.terrain.imagestartindex + 21);
-			terrain_generatesupertexture(false);
 		}
 		else
 		{
 			terrain_changestyle();
 		}
 		g.vegstyleindex = t.visuals.vegetationindex;
-		grass_changevegstyle();
 	}
 	else
 	{

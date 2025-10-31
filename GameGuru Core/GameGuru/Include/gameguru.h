@@ -22,10 +22,7 @@
 #include "G-Lighting.h"
 #include "M-AudioVolume.h"
 #include "M-Bulletholes.h"
-#include "M-characterkit.h"
 #include "M-CharacterSound.h"
-#include "M-ConstructionKit.h"
-#include "M-ConstructionKitEdit.h"
 #include "M-Debug.h"
 #include "M-Decal.h"
 #include "M-EBE.h"
@@ -54,7 +51,6 @@
 #include "M-Sliders.h"
 #include "M-MP.h"
 #include "M-Sky.h"
-#include "M-Grass.h"
 #include "M-TerrainNew.h"
 #include "M-DAINew.h"
 #include "M-Titles.h"
@@ -65,7 +61,6 @@
 #include "M-UndoSys.h"
 #include "M-UndoSys-Object.h"
 #include "M-UndoSys-Terrain.h"
-#include "MapEditor.h"
 #include "Types.h"
 
 

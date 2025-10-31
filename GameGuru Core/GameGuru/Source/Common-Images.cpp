@@ -6,9 +6,6 @@
 #include "stdafx.h"
 #include "gameguru.h"
 
-// Externals
-extern bool g_bSkipTerrainRender;
-
 // 
 //  Common Code - Image and Effect Functions
 // 
@@ -606,7 +603,6 @@ void cubemap_buildviews ( int iImageID, int iCubeMapSize, float fX, float fY, fl
 
 		// create temp camera to carry terrain perspective and clear any old terrain stack instructions
 		int iCubeRenderTempCamera = 30;
-		g_bSkipTerrainRender = true;
 		CreateCamera ( iCubeRenderTempCamera );
 		SetCurrentCamera ( 0 );
 

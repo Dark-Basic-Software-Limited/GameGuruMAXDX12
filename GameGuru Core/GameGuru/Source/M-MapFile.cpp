@@ -865,7 +865,7 @@ void mapfile_emptyterrainfilesfromtestmapfolder ( void )
 	SetDir(pOldDir.Get());
 }
 
-void lm_emptylightmapandttsfilesfolder_wicked( void )
+void mapfile_emptylightmapandttsfilesfolder_wicked( void )
 {
 	//PE: lightmaps
 	cstr pOldDir = GetDir();
@@ -932,10 +932,8 @@ void mapfile_loadproject_fpm ( void )
 	if ( FileExist(g.projectfilename_s.Get()) == 1 ) 
 	{
 		//  Empty the lightmap folder
-		timestampactivity(0,"LOADMAP: lm_emptylightmapandttsfilesfolder");
-		lm_emptylightmapandttsfilesfolder ( );
-
-		lm_emptylightmapandttsfilesfolder_wicked();
+		timestampactivity(0,"LOADMAP: mapfile_emptylightmapandttsfilesfolder_wicked");
+		mapfile_emptylightmapandttsfilesfolder_wicked();
 
 		// empty any terrain node files
 		mapfile_emptyterrainfilesfromtestmapfolder();

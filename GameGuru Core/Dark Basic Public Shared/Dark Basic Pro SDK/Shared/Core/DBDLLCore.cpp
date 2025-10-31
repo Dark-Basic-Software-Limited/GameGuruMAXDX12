@@ -2831,7 +2831,6 @@ DARKSDK void ConstructPostDLLItems(HINSTANCE hInstance,bool bNeededToCreateExtra
 	#ifndef NOSTEAMORVIDEO
 	AnimationConstructor();
 	LuaConstructor();
-	BTConstructor();
 	#endif
 }
 

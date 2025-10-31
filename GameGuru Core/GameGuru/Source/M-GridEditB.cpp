@@ -286,7 +286,6 @@ extern float fMouseWheelZoomFactor;
 extern bool g_bResetCameraToFreeFlightOnNewLevel;
 extern float fLocalMax;
 extern bool g_occluderf9Mode;
-extern bool g_bSkipTerrainRender;
 extern bool g_bBlackListRemovedSomeEntities;
 extern bool gbWelcomeSystemActive;
 extern int g_iWelcomeLoopPage;
@@ -42271,7 +42270,6 @@ void process_storeboard(bool bInitOnly)
 								g_bAllowBackwardCompatibleConversion = false;
 
 								t.terrain.grassregionx1 = t.terrain.grassregionx2;
-								grass_init();
 
 								iLastUpdateVeg = 0;
 								bUpdateVeg = true;

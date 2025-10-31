@@ -59,7 +59,6 @@ void terrain_whitewashwatermask ( void );
 void terrain_createheightmapfromheightdata ( void );
 void terrain_quickupdateheightmapfromheightdata ( void );
 void terrain_generatetextureselect ( void );
-void terrain_generatesupertexture ( bool bForceRecalcOfPalette );
 void terrain_generateshadows ( void );
 void terrain_start_play ( void );
 void terrain_stop_play ( void );

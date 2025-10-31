@@ -136,9 +136,6 @@
     <ClInclude Include="..\GameGuru\Include\G-Lighting.h">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClInclude>
-    <ClInclude Include="..\GameGuru\Include\MapEditor.h">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClInclude>
     <ClInclude Include="..\GameGuru\Include\M-AudioVolume.h">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClInclude>
@@ -148,16 +145,7 @@
     <ClInclude Include="..\GameGuru\Include\M-CharacterCreatorPlusTTS.h">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClInclude>
-    <ClInclude Include="..\GameGuru\Include\M-CharacterKit.h">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClInclude>
     <ClInclude Include="..\GameGuru\Include\M-CharacterSound.h">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClInclude>
-    <ClInclude Include="..\GameGuru\Include\M-ConstructionKit.h">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClInclude>
-    <ClInclude Include="..\GameGuru\Include\M-ConstructionKitEdit.h">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClInclude>
     <ClInclude Include="..\GameGuru\Include\M-Decal.h">
@@ -263,9 +251,6 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\GameGuru\Include\M-Sky.h">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClInclude>
-    <ClInclude Include="..\GameGuru\Include\M-Grass.h">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClInclude>
     <ClInclude Include="Particles\Models\gpup_part_1024.h">
@@ -671,9 +656,6 @@
     <ClCompile Include="..\GameGuru\Source\G-Lighting.cpp">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClCompile>
-    <ClCompile Include="..\GameGuru\Source\MapEditor.cpp">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClCompile>
     <ClCompile Include="..\GameGuru\Source\M-AudioVolume.cpp">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClCompile>
@@ -683,16 +665,7 @@
     <ClCompile Include="..\GameGuru\Source\M-CharacterCreatorPlusTTS.cpp">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClCompile>
-    <ClCompile Include="..\GameGuru\Source\M-CharacterKit.cpp">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClCompile>
     <ClCompile Include="..\GameGuru\Source\M-CharacterSound.cpp">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\GameGuru\Source\M-ConstructionKit.cpp">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\GameGuru\Source\M-ConstructionKitEdit.cpp">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClCompile>
     <ClCompile Include="..\GameGuru\Source\M-Decal.cpp">
@@ -797,9 +770,6 @@
     <ClCompile Include="..\GameGuru\Source\M-Sky.cpp">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClCompile>
-    <ClCompile Include="..\GameGuru\Source\M-Grass.cpp">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClCompile>
     <ClCompile Include="GPUParticles.cpp">
       <Filter>GPUParticles</Filter>
     </ClCompile>
@@ -825,9 +795,6 @@
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClCompile>
     <ClCompile Include="..\GameGuru\Source\M-UndoSys-Terrain.cpp">
-      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\GameGuru\Source\M-DAINew.cpp">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClCompile>
     <ClCompile Include="GGRecastDetour\DebugUtils\Source\DebugDraw.cpp">
@@ -1048,6 +1015,9 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="CustomShaders.cpp" />
+    <ClCompile Include="..\GameGuru\Source\M-DAINew.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico">

@@ -41,7 +41,7 @@ void SmallTutorialVideo(char *tutorial, char* combo_items[] = NULL, int combo_en
 void visuals_calcsunanglefromtimeofday(int iTimeOfday, float* pfSunAngleX, float* pfSunAngleY, float* pfSunAngleZ);
 
 // shadow mapping
-extern int g_iTerrainIDForShadowMap;
+//extern int g_iTerrainIDForShadowMap;
 
 extern bool bHelp_Window;
 extern bool bHelpVideo_Window;
@@ -381,11 +381,8 @@ void imgui_terrain_loop_v2(void)
 			t.visuals.VegQuantity_f = t.gamevisuals.VegQuantity_f;
 			t.visuals.VegWidth_f = t.gamevisuals.VegWidth_f;
 			t.visuals.VegHeight_f = t.gamevisuals.VegHeight_f;
-			grass_setgrassgridandfade();
 
 			extern bool bResourcesSet, bGridMade;
-			if (!(ObjectExist(t.tGrassObj) == 1 && GetMeshExist(t.tGrassObj) == 1))
-				grass_init();
 
 			bool bOldGridMade = bGridMade;
 			int iTrimUsingGrassMemblock = 0;
@@ -410,7 +407,6 @@ void imgui_terrain_loop_v2(void)
 			t.terrain.grassregionupdate = 0; //PE: Make sure we update.
 			t.terrain.grassupdateafterterrain = 1;
 			t.terrain.lastgrassupdatex1 = -1; //PE: Force update.
-			grass_loop();
 			t.terrain.grassupdateafterterrain = 0;
 			ShowVegetationGrid();
 			visuals_justshaderupdate();
@@ -431,7 +427,6 @@ void imgui_terrain_loop_v2(void)
 
 		if (bEnableVeg && iTerrainVegLoopUpdate++ > 10)
 		{
-			grass_loop();
 			iTerrainVegLoopUpdate = 0;
 		}
 
@@ -441,13 +436,8 @@ void imgui_terrain_loop_v2(void)
 			t.visuals.VegQuantity_f = t.gamevisuals.VegQuantity_f;
 			t.visuals.VegWidth_f = t.gamevisuals.VegWidth_f;
 			t.visuals.VegHeight_f = t.gamevisuals.VegHeight_f;
-			grass_setgrassgridandfade();
-
-			if (!(ObjectExist(t.tGrassObj) == 1 && GetMeshExist(t.tGrassObj) == 1))
-				grass_init();
 
 			t.terrain.grassupdateafterterrain = 1;
-			grass_loop();
 			t.terrain.grassupdateafterterrain = 0;
 			ShowVegetationGrid();
 
@@ -2737,11 +2727,8 @@ void imgui_terrain_loop(void)
 			t.visuals.VegQuantity_f = t.gamevisuals.VegQuantity_f;
 			t.visuals.VegWidth_f = t.gamevisuals.VegWidth_f;
 			t.visuals.VegHeight_f = t.gamevisuals.VegHeight_f;
-			grass_setgrassgridandfade();
 
 			extern bool bResourcesSet, bGridMade;
-			if (!(ObjectExist(t.tGrassObj) == 1 && GetMeshExist(t.tGrassObj) == 1) )
-				grass_init();
 
 			bool bOldGridMade = bGridMade;
 			int iTrimUsingGrassMemblock = 0;
@@ -2766,7 +2753,6 @@ void imgui_terrain_loop(void)
 			t.terrain.grassregionupdate = 0; //PE: Make sure we update.
 			t.terrain.grassupdateafterterrain = 1;
 			t.terrain.lastgrassupdatex1 = -1; //PE: Force update.
-			grass_loop();
 			t.terrain.grassupdateafterterrain = 0;
 			ShowVegetationGrid();
 			visuals_justshaderupdate();
@@ -2787,7 +2773,6 @@ void imgui_terrain_loop(void)
 
 		if (bEnableVeg && iTerrainVegLoopUpdate++ > 10) 
 		{
-			grass_loop();
 			iTerrainVegLoopUpdate = 0;
 		}
 
@@ -2797,13 +2782,8 @@ void imgui_terrain_loop(void)
 			t.visuals.VegQuantity_f = t.gamevisuals.VegQuantity_f;
 			t.visuals.VegWidth_f = t.gamevisuals.VegWidth_f;
 			t.visuals.VegHeight_f = t.gamevisuals.VegHeight_f;
-			grass_setgrassgridandfade();
-
-			if (!(ObjectExist(t.tGrassObj) == 1 && GetMeshExist(t.tGrassObj) == 1))
-				grass_init();
 
 			t.terrain.grassupdateafterterrain = 1;
-			grass_loop();
 			t.terrain.grassupdateafterterrain = 0;
 			ShowVegetationGrid();
 
@@ -5489,9 +5469,6 @@ void imgui_Customize_Vegetation(int mode)
 
 			// save out reset grass plate choices
 			visuals_save ( );
-
-			// reset grass type choices to paint with
-			grass_resetchoices();
 		}
 
 		// find last slot used
@@ -5971,9 +5948,6 @@ void imgui_Customize_Vegetation(int mode)
 						{
 							// must remove pre-stored reference to any previous grass_color texture set
 							WickedCall_DeleteImage("levelbank\\testmap\\grass_coloronly.dds");
-
-							// Reload grass plate textures on all grass objects
-							grass_setgrassimage();
 						}
 					}
 				}
@@ -7914,7 +7888,6 @@ void terrain_quickupdateheightmapfromheightdata ( void )
 	int k = 0;
 }
 void terrain_generatetextureselect ( void ) {}
-void terrain_generatesupertexture ( bool bForceRecalcOfPalette );
 void terrain_generateshadows ( void ) {}
 void terrain_start_play ( void ) 
 {

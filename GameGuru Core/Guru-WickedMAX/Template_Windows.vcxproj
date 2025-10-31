@@ -524,10 +524,7 @@
     <ClInclude Include="..\GameGuru\Include\M-Bulletholes.h" />
     <ClInclude Include="..\GameGuru\Include\M-CharacterCreatorPlus.h" />
     <ClInclude Include="..\GameGuru\Include\M-CharacterCreatorPlusTTS.h" />
-    <ClInclude Include="..\GameGuru\Include\M-CharacterKit.h" />
     <ClInclude Include="..\GameGuru\Include\M-CharacterSound.h" />
-    <ClInclude Include="..\GameGuru\Include\M-ConstructionKit.h" />
-    <ClInclude Include="..\GameGuru\Include\M-ConstructionKitEdit.h" />
     <ClInclude Include="..\GameGuru\Include\M-DAINew.h" />
     <ClInclude Include="..\GameGuru\Include\M-Debug.h" />
     <ClInclude Include="..\GameGuru\Include\M-Decal.h" />
@@ -535,7 +532,6 @@
     <ClInclude Include="..\GameGuru\Include\M-Entity.h" />
     <ClInclude Include="..\GameGuru\Include\M-Explosion&amp;Fire.h" />
     <ClInclude Include="..\GameGuru\Include\M-Game.h" />
-    <ClInclude Include="..\GameGuru\Include\M-Grass.h" />
     <ClInclude Include="..\GameGuru\Include\M-GridEdit.h" />
     <ClInclude Include="..\GameGuru\Include\M-GridEditB.h" />
     <ClInclude Include="..\GameGuru\Include\M-Gun.h" />
@@ -569,7 +565,6 @@
     <ClInclude Include="..\GameGuru\Include\M-WelcomeSystem.h" />
     <ClInclude Include="..\GameGuru\Include\M-Widget.h" />
     <ClInclude Include="..\GameGuru\Include\M-Workshop.h" />
-    <ClInclude Include="..\GameGuru\Include\MapEditor.h" />
     <ClInclude Include="..\GameGuru\Include\miniz.h" />
     <ClInclude Include="..\GameGuru\Include\preprocessor-moreflags.h" />
     <ClInclude Include="..\GameGuru\Include\Types.h" />
@@ -708,10 +703,7 @@
     <ClCompile Include="..\GameGuru\Source\M-Bulletholes.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-CharacterCreatorPlus.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-CharacterCreatorPlusTTS.cpp" />
-    <ClCompile Include="..\GameGuru\Source\M-CharacterKit.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-CharacterSound.cpp" />
-    <ClCompile Include="..\GameGuru\Source\M-ConstructionKit.cpp" />
-    <ClCompile Include="..\GameGuru\Source\M-ConstructionKitEdit.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-DAINew.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-Debug.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-Decal.cpp" />
@@ -719,7 +711,6 @@
     <ClCompile Include="..\GameGuru\Source\M-Entity.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-Explosion&amp;Fire.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-Game.cpp" />
-    <ClCompile Include="..\GameGuru\Source\M-Grass.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-GridEdit.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-GridEditB.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-Gun.cpp" />
@@ -753,7 +744,6 @@
     <ClCompile Include="..\GameGuru\Source\M-WelcomeSystem.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-Widget.cpp" />
     <ClCompile Include="..\GameGuru\Source\M-Workshop.cpp" />
-    <ClCompile Include="..\GameGuru\Source\MapEditor.cpp" />
     <ClCompile Include="..\GameGuru\Source\miniz.c" />
     <ClCompile Include="..\GameGuru\Source\sha1.cpp" />
     <ClCompile Include="..\GameGuru\Source\sha2.cpp" />

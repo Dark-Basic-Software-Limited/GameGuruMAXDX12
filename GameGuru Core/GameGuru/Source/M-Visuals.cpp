@@ -162,7 +162,6 @@ void visuals_resetvalues (bool bNewLevel)
 
 	//  World Settings (reset to default selections)
 	terrain_initstyles_reset ( );
-	grass_initstyles_reset();
 	t.visuals.sky_s="";
 	t.visuals.terrain_s=g.terrainstyle_s;
 	t.visuals.vegetation_s=g.vegstyle_s;
@@ -1622,9 +1621,6 @@ void visuals_load ( void )
 			t.terrain.waterliney_f = g.gdefaultwaterheight = -10000.0f;
 		}
 
-		// reset grass type choices to paint with
-		grass_resetchoices();
-
 		// if older visuals file and loaded into new performance aware engine, add best defaults for PERFORMANCE! No-one remarks on QUALITY in Steam Reviews, so favor PERFORMANCE.
 		if (bVisualFileFromLevel == true)
 		{
@@ -2104,9 +2100,6 @@ void visuals_loop ( void )
 		// One refresh per request
 		t.visuals.refreshshaders=0;
 
-		// If change in debug objects flag should update relevant modules
-		darkai_updatedebugobjects ( );
-
 		// 091115 - new system to SKIP the depth render of all qualifying shader (using a pass called "RenderDepthPixelsPass")
 		visuals_CheckSetGlobalDepthSkipSystem();
 
@@ -2255,14 +2248,6 @@ void visuals_loop ( void )
 			}
 		}
 
-		// Set terrain LOD distances (700 is slightly larger than width of terrain segment piece)
-		if ( t.terrain.TerrainID>0 ) 
-		{
-			BT_SetTerrainLODDistance ( t.terrain.TerrainID,1,1401.0+t.visuals.TerrainLOD1_f );
-			BT_SetTerrainLODDistance ( t.terrain.TerrainID,2,1401.0+t.visuals.TerrainLOD2_f );
-			SetTerrainRenderLevel ( t.visuals.TerrainSize_f );
-		}
-
 		// Ensures LOW FPS detector not fooled by setting changes
 		g.lowfpstarttimer=Timer();
 
@@ -2300,8 +2285,6 @@ void visuals_loop ( void )
 	{
 		if (  MouseClick() == 0 ) 
 		{
-			// Set grass grid and fade
-			grass_setgrassgridandfade ( );
 			// Only update the vegetation grid if the view distance is far enough, otherwise just clear it
 			if ( t.terrain.vegetationgridsize>1 ) 
 			{
@@ -2311,7 +2294,6 @@ void visuals_loop ( void )
 					if ( GetEffectExist(t.terrain.vegetationshaderindex) == 1 ) 
 					{
 						SetEffectConstantF (  t.terrain.vegetationshaderindex,"GrassFadeDistance",t.tGrassFadeDistance );
-						grass_init ( );
 					}
 				}
 			}
@@ -2334,7 +2316,6 @@ void visuals_loop ( void )
 		if ( t.visuals.refreshterrainsupertexture == 2 ) 
 		{
 			//  generate super texture from above textures
-			terrain_generatesupertexture ( false );
 			t.visuals.refreshterrainsupertexture=0;
 		}
 		else
@@ -2411,7 +2392,6 @@ void visuals_loop ( void )
 		g.vegstyleindex=t.visuals.vegetationindex;
 		if (  g.vegstyleindex>g.vegstylemax  )  g.vegstyleindex = g.vegstylemax;
 		t.visuals.vegetation_s=t.vegstylebank_s[g.vegstyleindex];
-		grass_changevegstyle ( );
 		t.visuals.refreshvegtexture=0;
 		g.lowfpstarttimer=Timer();
 	}

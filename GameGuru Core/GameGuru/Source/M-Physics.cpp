@@ -2696,7 +2696,6 @@ void physics_resetplayer_core ( void )
 
 	//  reset vegetation
 	t.completelyfillvegarea=1;
-	grass_loop ( );
 
 	//  fade in game screen again
 	t.postprocessings.fadeinvalue_f=0.0;

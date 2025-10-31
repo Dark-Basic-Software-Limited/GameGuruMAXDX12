@@ -120,22 +120,6 @@ void entity_init ( void )
 							if (  t.entityprofile[t.entid].collisionmode >= 50 && t.entityprofile[t.entid].collisionmode<60 ) 
 							{
 								t.ttreemode=t.entityprofile[t.entid].collisionmode-50;
-								//  dont need to setup ai for multiplayer since it doesnt use any ai - unless coop mode!
-								if ( g.aidisabletreeobstacles == 0 && (t.game.runasmultiplayer == 0 || ( g.mp.coop  ==  1 && t.entityprofile[t.entid].ismultiplayercharacter  ==  0 ) ) ) 
-								{
-									darkai_setup_tree ( );
-								}
-							}
-							else
-							{
-								//  dont need to setup ai for multiplayer since it doesnt use any ai
-								if (  t.game.runasmultiplayer == 0 || ( g.mp.coop  ==  1 && t.entityprofile[t.entid].ismultiplayercharacter  ==  0 ) ) 
-								{
-									if (g.aidisableobstacles == 0 && t.entityprofile[t.entid].collisionmode != 11 && t.entityprofile[t.entid].collisionmode != 12)
-									{
-										darkai_setup_entity();
-									}
-								}
 							}
 						}
 					}
@@ -1927,7 +1911,6 @@ void entity_loop ( void )
 					darkai_killai ( );
 
 					//  Convert object back to instance and hide it
-					darkai_character_remove ( );
 					t.charanimstates[t.tcharanimindex] = t.charanimstate;
 				}
 				else
