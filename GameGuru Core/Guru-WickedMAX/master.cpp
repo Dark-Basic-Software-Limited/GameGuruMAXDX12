@@ -652,7 +652,7 @@ void Master::Update(float dt)
 			// determine if in editor or game/standalone
 			bAreWeAEditor = true;
 			std::string appname = Appname();
-			const char *pestrcasestr(const char *arg1, const char *arg2);
+			const char* pestrcasestr(const char* arg1, const char* arg2);
 			if (!(pestrcasestr(appname.c_str(), "guru-mapeditor.exe") || pestrcasestr(appname.c_str(), "vr quest app.exe") || pestrcasestr(appname.c_str(), "gamegurumax.exe")))
 				bAreWeAEditor = false;
 
@@ -696,7 +696,7 @@ void Master::Update(float dt)
 					SetDir(pRealWritableArea);
 					MakeDirectory("buildingeditor");
 					SetDir(pOldDir.Get());
-				}		
+				}
 
 				// are we non-steam
 				SetDir("..");
@@ -707,11 +707,11 @@ void Master::Update(float dt)
 
 				//force non-Steam version (some installations are NOT detecting 'GameGuru MAX Updater.exe')
 				//#define FORCENONSTEAMAUTHENTICATION
-				#ifdef FORCENONSTEAMAUTHENTICATION
+#ifdef FORCENONSTEAMAUTHENTICATION
 				timestampactivity(0, "forcing non-Steam authentication");
 				timestampactivity(0, pCurrentDirChecking.Get());
 				g_bUpdateAppAvailable = true;
-				#endif
+#endif
 
 				// test for Steam functionality 
 				///#define TESTSTEAMFREETRIAL
@@ -719,14 +719,14 @@ void Master::Update(float dt)
 				// if steam, do auth check
 				if (g_bUpdateAppAvailable == false)
 				{
-					#ifndef GGMAXEDU
+#ifndef GGMAXEDU
 					// Steam Purchased (Owned)
 					char pInstallSteamTrialFile[MAX_PATH];
 					strcpy(pInstallSteamTrialFile, pOldDir.Get());
 					strcat(pInstallSteamTrialFile, "\\installsteamtrial.dat");
 					char pInstallSteamFile[MAX_PATH];
 					strcpy(pInstallSteamFile, pOldDir.Get());
-					strcat(pInstallSteamFile,"\\installsteam.dat");
+					strcat(pInstallSteamFile, "\\installsteam.dat");
 					GG_GetRealPath(pInstallSteamFile, 0);
 					timestampactivity(0, "GameGuru Steam version check");
 					bool bGameGuruMAXOwned = false;
@@ -739,11 +739,11 @@ void Master::Update(float dt)
 						{
 							SteamInitClient();
 
-							#ifdef TESTSTEAMFREETRIAL
+#ifdef TESTSTEAMFREETRIAL
 							if (SteamApps()->BIsSubscribedApp(1247289) == true) // dummy app, forces the free trial mode
-							#else
+#else
 							if (SteamApps()->BIsSubscribedApp(1247290) == true) //1247290) == true) // APPID = 1247290 = GameGuru MAX
-							#endif
+#endif
 							{
 								// yes, user owns Steam version :)
 								timestampactivity(0, "GameGuru MAX Steam version owned!");
@@ -803,7 +803,7 @@ void Master::Update(float dt)
 
 							// update install steam date stamp (so can run afterwards offline for 30 days - or 7 days if free trial)
 							// do not create the "pInstallSteamFile" file when running free trial
-							if(g_bFreeTrialVersion==false || (g_bFreeTrialVersion==true && FileExist(pInstallSteamFile)==0))
+							if (g_bFreeTrialVersion == false || (g_bFreeTrialVersion == true && FileExist(pInstallSteamFile) == 0))
 							{
 								if (FileExist(pInstallSteamFile) == 1) DeleteFileA(pInstallSteamFile);
 								OpenToWrite(1, pInstallSteamFile);
@@ -815,7 +815,7 @@ void Master::Update(float dt)
 								WriteString(1, pDateString);
 								char pDateChecksum[MAX_PATH];
 								int iDayTrick1 = (now->tm_mday - now->tm_mon);
-								int iDayTrick2 = (iDayTrick1*iDayTrick1) % 31;
+								int iDayTrick2 = (iDayTrick1 * iDayTrick1) % 31;
 								int iChecksumValue = (now->tm_year * 1165) + (now->tm_mon * 412) + (iDayTrick2 * 9);
 								sprintf(pDateChecksum, "%d", iChecksumValue);
 								WriteString(1, pDateChecksum);
@@ -865,7 +865,7 @@ void Master::Update(float dt)
 					extern int g_iFreeTrialDaysLeft;
 					g_iFreeTrialDaysLeft = 0;
 					bool bReadSteamDateFile = false;
-					if (iSteamErrorCode > 0 || g_bFreeTrialVersion==true)
+					if (iSteamErrorCode > 0 || g_bFreeTrialVersion == true)
 					{
 						// before declare auth error, check 30 day offline system, allow if have previously logged into Steam during 30 days
 						// or if a free trial and need to work out days left
@@ -888,7 +888,7 @@ void Master::Update(float dt)
 									int iWasM = (iDateAsValueLast - (iWasY * 380)) / 31;
 									int iWasD = iDateAsValueLast - (iWasY * 380) - (iWasM * 31);
 									int iDayTrick1 = (iWasD - iWasM);
-									int iDayTrick2 = (iDayTrick1*iDayTrick1) % 31;
+									int iDayTrick2 = (iDayTrick1 * iDayTrick1) % 31;
 									int iChecksumValueShouldBe = (iWasY * 1165) + (iWasM * 412) + (iDayTrick2 * 9);
 									int iChecksumValueIs = atoi(pDateChecksum);
 									if (iChecksumValueIs == iChecksumValueShouldBe)
@@ -899,7 +899,7 @@ void Master::Update(float dt)
 										if (g_bFreeTrialVersion == true)
 										{
 											// MAX free trial
-											g_iFreeTrialDaysLeft = 7 - (iDateAsValueNow-iDateAsValueLast);
+											g_iFreeTrialDaysLeft = 7 - (iDateAsValueNow - iDateAsValueLast);
 											if (g_iFreeTrialDaysLeft < 0) g_iFreeTrialDaysLeft = 0;
 											iSteamErrorCode = 0;
 										}
@@ -941,14 +941,14 @@ void Master::Update(float dt)
 						timestampactivity(0, pErrorStr);
 						PostQuitMessage(0);
 					}
-					#else
+#else
 					// can use an Educational Authenticator here (i.e. license key) if needed in the future..
-					#endif
+#endif
 				}
 
 				// Init EOS SDK
-				#ifdef GGMAXEDU
-				#ifdef GGMAXEPIC
+#ifdef GGMAXEDU
+#ifdef GGMAXEPIC
 				timestampactivity(0, "Initialize Epic Online Services API");
 				EOS_InitializeOptions SDKOptions = {};
 				SDKOptions.ApiVersion = EOS_INITIALIZE_API_LATEST;
@@ -983,7 +983,7 @@ void Master::Update(float dt)
 						{
 							extern bool bSpecialStandalone;
 							extern bool bSpecialEditorFromStandalone;
-							if (bSpecialStandalone == true || bSpecialEditorFromStandalone == true || g.iStandaloneIsReloading > 0 )
+							if (bSpecialStandalone == true || bSpecialEditorFromStandalone == true || g.iStandaloneIsReloading > 0)
 							{
 								// editor calling itself
 								timestampactivity(0, "GameGuru MAX Calling Itself.");
@@ -1003,7 +1003,7 @@ void Master::Update(float dt)
 									// run via Epic Launcher, so use exchange code
 									timestampactivity(0, "[EOS SDK] run via Epic Launcher, so use exchange code...");
 									char pExchangeCode[MAX_PATH];
-									strcpy(pExchangeCode, findexchangecode+strlen("-AUTH_PASSWORD="));
+									strcpy(pExchangeCode, findexchangecode + strlen("-AUTH_PASSWORD="));
 									for (int n = 0; n < strlen(pExchangeCode); n++)
 									{
 										if (pExchangeCode[n] == ' ')
@@ -1078,8 +1078,8 @@ void Master::Update(float dt)
 					timestampactivity(0, "GameGuru MAX Epic version not owned - switching to free trial mode!");
 					g_bFreeTrialVersion = true;
 				}
-				#endif
-				#endif
+#endif
+#endif
 			}
 
 			// and then get the correct splash
@@ -1094,9 +1094,21 @@ void Master::Update(float dt)
 			else
 				pFolderToUse = "uiv3";
 			if (bSpecialEditorFromStandalone == true)
+			{
 				sprintf(fileName, "Files\\editors\\%s\\loadingsplash-fromstandalone.jpg", pFolderToUse);
+			}
 			else
-				sprintf(fileName, "Files\\editors\\%s\\loadingsplash.jpg", pFolderToUse);
+			{
+				if (bAreWeAEditor == true)
+				{
+					// use higher quality PNG when loading MAX!
+					sprintf(fileName, "Files\\editors\\%s\\loadingsplash.png", pFolderToUse);
+				}
+				else
+				{
+					sprintf(fileName, "Files\\editors\\%s\\loadingsplash.jpg", pFolderToUse);
+				}
+			}
 
 			// Do we have a storyboard ?
 			if ( bAreWeAEditor == false )
@@ -1242,6 +1254,37 @@ void Master::Update(float dt)
 			}
 			wiImage::Draw(&g_pSplashTexture, fx, cmd);
 		}
+
+		// and overlay with a ratio corrected 'universal' logo for UltraWide goodness
+		if (bAreWeAEditor == true)
+		{ 
+			bool bUniversalLogo = true;
+			if (bUniversalLogo == true)
+			{
+				char logoFile[MAX_PATH];
+				sprintf(logoFile, "Files\\editors\\uiv3\\MAX-Logo-Square.png");
+				std::shared_ptr<wiResource> tex = wiResourceManager::Load(logoFile);
+				wiGraphics::Texture pMAXLogoTexture;
+				if (tex) pMAXLogoTexture = tex->texture;
+				if (pMAXLogoTexture.IsValid())
+				{
+					float screenheight = canvas.GetLogicalHeight();
+					float screenwidth = canvas.GetLogicalWidth();
+					float img_w = pMAXLogoTexture.desc.Width;
+					float img_h = pMAXLogoTexture.desc.Height;
+					fx.disableFullScreen();
+					fx.pos.x = screenwidth * 0.5;
+					fx.pos.y = screenheight * 0.5;
+					fx.pivot.x = 0.5;
+					fx.pivot.y = 0.5;
+					fx.siz.x = img_w;
+					fx.siz.y = img_h;
+					fx.blendFlag = BLENDMODE_ALPHA;
+					wiImage::Draw(&pMAXLogoTexture, fx, cmd);
+				}
+			}
+		}
+
 		wiRenderer::GetDevice()->RenderPassEnd(cmd);
 		wiRenderer::GetDevice()->SubmitCommandLists();
 		g_iShowSplashForFirstFewCycles--;

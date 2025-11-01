@@ -17340,10 +17340,37 @@ void process_entity_library_v2(void)
 							}
 							else
 							{
-								if (pestrcasestr(pNewFolder->m_sFolderFullPath.Get(), cSearchAllEntities[i]))
+								//LB011125-could pick up matches outside of MAX relative folders (i.e. C:\\Users\)
+								//if (pestrcasestr(pNewFolder->m_sFolderFullPath.Get(), cSearchAllEntities[i]))
+								//	bDisplayEverythingHere = true;
+								//else if (pestrcasestr(dir_name.c_str(), cSearchAllEntities[i]))
+								//	bDisplayEverythingHere = true;
+
+								// exact matches with dir_name fine
+								if (pestrcasestr(dir_name.c_str(), cSearchAllEntities[i])) 
 									bDisplayEverythingHere = true;
-								else if (pestrcasestr(dir_name.c_str(), cSearchAllEntities[i]))
-									bDisplayEverythingHere = true;
+
+								// also matches with m_sFolderFullPath, but only after MAX root folder
+								LPSTR pRelevantPathString = pNewFolder->m_sFolderFullPath.Get();
+								char cMaxPathString[MAX_PATH];
+								strcpy(cMaxPathString, g.fpscrootdir_s.Get());
+								LPSTR pch = (LPSTR)pestrcasestr(pRelevantPathString, cMaxPathString);
+								if (pch)
+								{
+									pch += strlen(cMaxPathString);
+									if (pestrcasestr(pch, cSearchAllEntities[i]))
+										bDisplayEverythingHere = true;
+								}
+
+								// and of course the writables area
+								strcpy(cMaxPathString, pref.cCustomWriteFolder);
+								pch = (LPSTR)pestrcasestr(pRelevantPathString, cMaxPathString);
+								if (pch)
+								{
+									pch += strlen(cMaxPathString);
+									if (pestrcasestr(pch, cSearchAllEntities[i]))
+										bDisplayEverythingHere = true;
+								}
 							}
 						}
 

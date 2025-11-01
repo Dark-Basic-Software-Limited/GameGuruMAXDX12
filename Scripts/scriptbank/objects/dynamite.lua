@@ -1,4 +1,4 @@
--- Dynamite v12 - By Necrym59
+-- Dynamite v13 - By Necrym59 and Lee
 -- DESCRIPTION: Allows for pick and deployment of an exposive bomb device. Set Entity Explodable.
 -- DESCRIPTION: [WEAPON_NAME$="Dynamite"]
 -- DESCRIPTION: [PLACEMENT_TIME=1(1,3)]
@@ -12,6 +12,7 @@
 -- DESCRIPTION: [@PROMPT_DISPLAY=1(1=Local,2=Screen)]
 -- DESCRIPTION: [@ITEM_HIGHLIGHT=0(0=None,1=Shape,2=Outline,3=Icon)]
 -- DESCRIPTION: [HIGHLIGHT_ICON_IMAGEFILE$="imagebank\\icons\\pickup.png"]
+-- DESCRIPTION: [ADDED_DAMAGE=99999(0,99999)]
 -- DESCRIPTION: <Sound0> Pickup Sound
 -- DESCRIPTION: <Sound1> the primed/armed sound
 
@@ -54,7 +55,7 @@ local hl_icon = {}
 local hl_imgwidth = {}
 local hl_imgheight = {}
 
-function dynamite_properties(e, weapon_name, placement_time, explosion_delay, bomb_type, bomb_prime_key, player_safe_distance, enemy_hear_distance, pickup_range, prompt_text, prompt_display, item_highlight, highlight_icon_imagefile)
+function dynamite_properties(e, weapon_name, placement_time, explosion_delay, bomb_type, bomb_prime_key, player_safe_distance, enemy_hear_distance, pickup_range, prompt_text, prompt_display, item_highlight, highlight_icon_imagefile, added_damage)
 	dynamite[e].weapon_name = weapon_name						--Name of weapon
 	dynamite[e].placement_time = placement_time					--How long you need to hold key for before the bomb is placed (in seconds)
 	dynamite[e].explosion_delay = explosion_delay				--How long before the bomb explodes once triggered (in seconds)
@@ -67,6 +68,7 @@ function dynamite_properties(e, weapon_name, placement_time, explosion_delay, bo
 	dynamite[e].prompt_display = prompt_display					--Prompt text
 	dynamite[e].item_highlight = item_highlight					--Highlight style
 	dynamite[e].highlight_icon = highlight_icon_imagefile		--Highlight Icon
+	dynamite[e].added_damage = added_damage	or 99999   	        --How much additional damage at closest point
 end
 
 function dynamite_init(e)
@@ -83,6 +85,7 @@ function dynamite_init(e)
 	dynamite[e].prompt_display = prompt_display
 	dynamite[e].item_highlight = item_highlight
 	dynamite[e].highlight_icon = "imagebank\\icons\\pickup.png"
+	dynamite[e].added_damage = 99999
 	
 	bombs[e] = 0
 	pressed[e] = 0
@@ -255,11 +258,19 @@ function dynamite_main(e)
 		MakeAISound(g_PlayerPosX,g_PlayerPosY,g_PlayerPosZ,dynamite[e].enemy_hear_distance,1,e)
 		for ee = 1, g_EntityElementMax, 1 do
 			if e ~= ee then
-				if g_Entity[ee] ~= nil and math.ceil(GetFlatDistance(ee,e)) <= dynamite[e].player_safe_distance then
-					SetEntityHealth(ee,0)
+				local thisdistance = GetFlatDistance(ee,e)
+				if g_Entity[ee] ~= nil and thisdistance <= dynamite[e].player_safe_distance then
+					local proportion = 1.0 - (thisdistance / dynamite[e].player_safe_distance)
+					local actualdamage = dynamite[e].added_damage
+					actualdamage = actualdamage * proportion
+					local finalhealth = g_Entity[ee]['health']-actualdamage
+					if finalhealth < 0 then finalhealth = 0 end
+					SetEntityHealth(ee,finalhealth)
 				end
 			end
 		end
+		-- ensure explosion only affects healths once
+		dynamite_armed[e] = 2 
 	end
 
 	if g_KeyPressE == 0 then

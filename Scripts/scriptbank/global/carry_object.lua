@@ -1,4 +1,4 @@
--- Carry Object V43 by Necrym59 and Lee
+-- Carry Object V44 by Necrym59 and Lee
 -- DESCRIPTION: A global behaviour for object handling.
 -- DESCRIPTION: Weight: Must be between 1-99. 0=No Pickup.
 -- DESCRIPTION: [PICKUP_TEXT$="E or LMB to pick-up, RMB to carry/throw"]
@@ -168,7 +168,7 @@ function carry_object_main(e)
 		updatetimer[e] = g_Time + 1000
 		for n = 1, g_EntityElementMax do
 			if n ~= nil and g_Entity[n] ~= nil and GetEntityAllegiance(n) == -1 then
-				if GetEntityWeight(n) < 100 and g_Entity[n]['health'] > 0 then
+				if GetEntityWeight(n) < 100 then --and g_Entity[n]['health'] > 0 then
 					table.insert(objectlist,n)
 				end
 			end
@@ -183,7 +183,7 @@ function carry_object_main(e)
 				objectlist = {}
 				for n = 1, g_EntityElementMax do
 					if n ~= nil and g_Entity[n] ~= nil and GetEntityAllegiance(n) == -1 then
-						if GetEntityWeight(n) < 100 and g_Entity[n]['health'] > 0 then
+						if GetEntityWeight(n) < 100 then --and g_Entity[n]['health'] > 0 then
 							table.insert(objectlist,n)
 						end
 					end
@@ -196,9 +196,11 @@ function carry_object_main(e)
 			objlookedat[e] = U.ObjectPlayerLookingAt(carry_object[e].pickup_range)
 			if objlookedat[e] > 0 then
 				for a,b in pairs (objectlist) do
-					if g_Entity[b]['obj'] == objlookedat[e] and g_Entity[b]['health'] > 0 then
-						status[e] = "pickup2"
-						break
+					if g_Entity[b]['obj'] == objlookedat[e] then
+						--if g_Entity[b]['health'] > 0 then allow carry of zero health objects
+							status[e] = "pickup2"
+							break
+						--end
 					end
 				end
 			else
@@ -331,7 +333,7 @@ function carry_object_main(e)
 			prop_x[tEnt[e]] = g_PlayerPosX + (math.sin(new_y[tEnt[e]]) * carrydist[tEnt[e]])
 			prop_y[tEnt[e]] = g_PlayerPosY - math.sin(math.rad(g_PlayerAngX))*carrydist[tEnt[e]]
 			prop_z[tEnt[e]] = g_PlayerPosZ + (math.cos(new_y[tEnt[e]]) * carrydist[tEnt[e]])
-			SetEntityZDepthMode(tEnt[e],2)
+			--SetEntityZDepthMode(tEnt[e],2) fixes shadow and zdepth issue
 			doonce[e] = 1
 			GravityOff(tEnt[e])
 			CollisionOff(tEnt[e])
@@ -388,7 +390,7 @@ function carry_object_main(e)
 			if g_MouseClick == 2 then kpressed[e] = 0 end
 		end
 		if kpressed[e] == 0 and g_MouseClick == 0 and colobj[e] == 0 then
-			SetEntityZDepthMode(tEnt[e],1)
+			--SetEntityZDepthMode(tEnt[e],1) fixes shadow and zdepth issue
 			surface[e] = GetSurfaceHeight(g_Entity[tEnt[e]]['x'],g_Entity[tEnt[e]]['y'],g_Entity[tEnt[e]]['z'])
 			if prop_y[tEnt[e]] < surface[e] then prop_y[tEnt[e]] = surface[e] end
 			CollisionOff(tEnt[e])
@@ -410,7 +412,7 @@ function carry_object_main(e)
 			end
 		end
 		if thrown[e] == 1 and g_MouseClick == 0 and g_KeyPressQ == 0 and GetEntityVisibility(tEnt[e]) == 1 then
-			SetEntityZDepthMode(tEnt[e],1)
+			--SetEntityZDepthMode(tEnt[e],1) fixes shadow and zdepth issue
 			local paX, paY, paZ = math.rad( g_PlayerAngX ), math.rad( g_PlayerAngY ),math.rad( g_PlayerAngZ )
 			local vx, vy, vz = U.Rotate3D( 0, 0, 1, paX, paY, paZ)
 			objforce[tEnt[e]] = objforce[tEnt[e]] + (fgain[e]*10)
@@ -426,7 +428,7 @@ function carry_object_main(e)
 	if status[e] == 'thrown' then
 		for _, v in pairs(U.ClosestEntities(80,math.huge,g_Entity[tEnt[e]]['x'],g_Entity[tEnt[e]]['z'])) do
 			if GetEntityAllegiance(v) > -1 then
-				if g_Entity[v]['health'] > 0 then
+				--if g_Entity[v]['health'] > 0 then
 					SetEntityHealth(v,g_Entity[v]['health']-(objforce[tEnt[e]]))
 					if carry_object[e].throw_damage == 1 then
 						SetEntityHealth(tEnt[e],g_Entity[tEnt[e]]['health']-(objforce[tEnt[e]]))
@@ -442,10 +444,10 @@ function carry_object_main(e)
 					status[e] = 'pickup'
 					checktimer[e] = g_Time + 250
 					objlookedat[e] = 0
-				end
+				--end
 			end
 			if g_Time > throwtimer[e] and GetEntityAllegiance(v) < 0 then
-				if g_Entity[v]['health'] > 0 then
+				--if g_Entity[v]['health'] > 0 then
 					if carry_object[e].throw_damage == 1 then
 						SetEntityHealth(tEnt[e],g_Entity[tEnt[e]]['health']-(objforce[tEnt[e]]))
 					else
@@ -460,7 +462,7 @@ function carry_object_main(e)
 					status[e] = 'pickup'
 					checktimer[e] = g_Time + 250
 					objlookedat[e] = 0
-				end
+				--end
 			end
 		end
 	end
