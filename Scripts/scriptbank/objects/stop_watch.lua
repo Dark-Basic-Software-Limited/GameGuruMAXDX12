@@ -1,7 +1,7 @@
--- Stop Watch v4 by Necrym59
--- DESCRIPTION: A time counter using a user global for display that when stopped can process an end action.
+-- Stop Watch v5 by Necrym59
+-- DESCRIPTION: A time counter using a text user global for display that when stopped can process an end action.
 -- DESCRIPTION: Attach to an object. Set Always Active ON. Trigger Start/Stop from a zone or switch.
--- DESCRIPTION: [DISPLAY_USER_GLOBAL$=""] eg: MyTime
+-- DESCRIPTION: [@@DISPLAY_USER_GLOBAL$=""(0=globallist)] eg: MyTime
 -- DESCRIPTION: [@END_ACTION=1(1=None, 2=Terminate Player, 3=Hurt Player, 4=Activate Entities, 5=Lose Game, 6=Win Game, 7=Display Hud Screen)]
 -- DESCRIPTION: [@LAUNCH_WARNING=1(1=Off, 2=On)]
 -- DESCRIPTION: [@@END_SCREEN$=""(0=hudscreenlist)] eg; HUD Screen 9
