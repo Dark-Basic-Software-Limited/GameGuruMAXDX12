@@ -1057,6 +1057,7 @@ void mapeditorexecutable_init ( void )
 	LoadImage("editors\\uiv3\\camera.png", TOOL_CAMERA);
 	LoadImage("editors\\uiv3\\light.png", TOOL_CAMERALIGHT);
 	LoadImage("editors\\uiv3\\goback.png", TOOL_GOBACK);
+	LoadImage("editors\\uiv3\\goexit.png", TOOL_GOEXIT);
 	LoadImage("editors\\uiv3\\media-maximize.png", MEDIA_MAXIMIZE);
 	LoadImage("editors\\uiv3\\media-minimize.png", MEDIA_MINIMIZE);
 
@@ -3497,12 +3498,6 @@ void mapeditorexecutable_loop(void)
 				{
 					ExecuteFile("https://github.com/TheGameCreators/GameGuruRepo/issues/new", "", "", 0);
 
-				}
-
-				if (ImGui::MenuItem("GameGuru MAX Hub"))
-				{
-					bWelcomeNoBackButton = false;
-					bWelcomeScreen_Window = true;
 				}
 				if (g_bFreeTrialVersion == true)
 				{

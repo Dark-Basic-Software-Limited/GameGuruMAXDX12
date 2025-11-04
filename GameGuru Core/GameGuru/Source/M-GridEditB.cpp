@@ -8960,7 +8960,7 @@ void ProcessPreferences(void)
 
 			//pref.iDisplayWelcomeScreen
 			bool bWelcomeStartup = pref.iDisplayWelcomeScreen;
-			if (ImGui::Checkbox("Show GameGuru MAX Hub on Startup", &bWelcomeStartup)) 
+			if (ImGui::Checkbox("Show Hub on Startup", &bWelcomeStartup)) 
 			{
 				pref.iDisplayWelcomeScreen = bWelcomeStartup;
 			}
@@ -32000,6 +32000,7 @@ void Welcome_Screen(void)
 				}
 			}
 
+			/*
 			ID3D11ShaderResourceView* lpTexture = GetImagePointerView(WELCOME_HEADER);
 			ImVec2 vHeaderDim = { 1200.0f,150.0f };
 			if (iWelcomeHeaderType == 3) vHeaderDim = { 1500.0f,150.0f };
@@ -32024,20 +32025,43 @@ void Welcome_Screen(void)
 					window->DrawList->AddImage((ImTextureID)lpTexture, header_pos, header_pos + vHeaderDim, ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 0.9)));
 				}
 			}
-
-			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0, 6.0f));
+			*/
+			int preview_size_x = ImGui::GetMainViewport()->Size.x;
+			float fStartWinPosY = ImGui::GetCursorPosY();
+			ImGui::SetWindowFontScale(1.0);
+			ImVec2 vIconSize = { (float)ImGui::GetFontSize() * 3.5f, (float)ImGui::GetFontSize() * 3.5f };
+			ImVec2 vHeaderDim = { (float)preview_size_x, vIconSize.y };
+			float fHeaderHeight = vHeaderDim.y;
+			ImVec2 header_pos = ImVec2(0.0, fStartWinPosY + 14.0f);
+			ID3D11ShaderResourceView* lpTexture;
+			lpTexture = GetImagePointerView(WELCOME_HEADER);
+			if (lpTexture)
+			{
+				ImGuiWindow* window = ImGui::GetCurrentWindow();
+				window->DrawList->AddImage((ImTextureID)lpTexture, header_pos, header_pos + vHeaderDim + ImVec2(0, 8), ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
+			}
+			ImGui::SetCursorPos(ImVec2(4.0f, fStartWinPosY - 1.0f));
+			ImGui::SetItemAllowOverlap();
+			if (ImGui::ImgBtn(TOOL_GOEXIT, vIconSize, ImVec4(0, 0, 0, 0), drawCol_normal, drawCol_hover, drawCol_Down, 0, 0, 0, 0, false, false, false, false, false, bBoostIconColors))
+			{
+				// exit to desktop
+				int iAction = askBoxCancel("Are you sure you would like to exit to desktop?", "Confirmation"); //1==Yes 2=Cancel 0=No
+				if (iAction == 1)
+				{
+					g_bCascadeQuitFlag = true;
+				}
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Exit to Desktop"); //Welcome Screen
 
 			ImVec2 vCurPos = ImGui::GetCursorPos();
-
-			if (iWelcomeHeaderType == 2)
-			{
-				ImGui::SetWindowFontScale(2.0);
-				ImGui::SetCursorPos(ImVec2(0, (vHeaderDim.y*0.5) - (ImGui::GetFontSize()*0.5)));
-				ImGui::TextCenter("GameGuru MAX Hub");
-			}
+			ImGui::SetWindowFontScale(3.5);
+			ImGui::SetCursorPos(ImVec2(4.0f, fStartWinPosY - 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0, 1.0, 1.0, 0.25));
+			ImGui::TextCenter("H U B");
+			ImGui::PopStyleColor();
 			ImGui::SetWindowFontScale(1.0);
 			float fFontSize = ImGui::GetFontSize();
-			ImGui::SetWindowFontScale(1.0);
+			ImGui::SetCursorPos(vCurPos);
 
 			#ifdef HUBOLDFEEDBACKBOX
 			ImRect rect;
@@ -32055,6 +32079,7 @@ void Welcome_Screen(void)
 			}
 			#endif
 
+			/* exit to desktop now always present
 			// Display a button that allows the user to exit the welcome screen window.
 			// Store the previous cursor position so that it can be reset (adding the below button at the start of the window causes it to appear faded and i'm not sure why).
 			ImVec2 vPrevCursorPos(ImGui::GetCursorPos());
@@ -32067,14 +32092,11 @@ void Welcome_Screen(void)
 					bWelcomeScreen_Window = false;
 					if (current_tutorial_id >= 0) iStopAndFreeThisVideo = current_tutorial_id;
 				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Exit GameGuru MAX Hub");
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Exit to Hub");
 			}
 			// Reset the cursor position to not interfere with the rest of the menu.
 			ImGui::SetCursorPos(vPrevCursorPos);
-
-
-
-			ImGui::SetCursorPos(ImVec2(0, vHeaderDim.y));
+			*/
 
 			float fButWidth = 150.0f;
 
@@ -34186,14 +34208,14 @@ void Welcome_Screen(void)
 			ImGui::SetWindowFontScale(1.0);
 
 			//###########################################################
-			//#### SWAP TOOL_GOBACK was here "Exit GameGuru MAX Hub" ####
+			//#### SWAP TOOL_GOBACK was here "Exit to Hub" ####
 			//###########################################################
 			if (projectbank_list.size() > 0)
 			{
 				bool bTmp = 1 - pref.iDisplayWelcomeScreen;
-				float fTextWidth = ImGui::CalcTextSize("Tick to skip GameGuru MAX Hub and continue editing the last game project").x + 20.0f;
+				float fTextWidth = ImGui::CalcTextSize("Tick to skip Hub and continue editing the last game project").x + 20.0f;
 				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(((ImGui::GetContentRegionAvailWidth() - 10.0) * 0.5) - (fTextWidth * 0.5), 0));
-				if (ImGui::Checkbox("Tick to skip GameGuru MAX Hub and continue editing the last game project", &bTmp))
+				if (ImGui::Checkbox("Tick to skip Hub and continue editing the last game project", &bTmp))
 				{
 					pref.iDisplayWelcomeScreen = 1 - bTmp;
 				}
@@ -34328,9 +34350,9 @@ void About_Screen(void)
 		ImGui::TextCenter("Programming Team");
 		ImGui::SetWindowFontScale(1.0);
 		ImGui::Text("");
-		ImGui::TextCenter("Lee Bamber & Zak Judges");
-		ImGui::TextCenter("Preben Eriksen & Paul Johnston");
-		ImGui::TextCenter("Maciej Dowbor & Mike Johnson");
+		ImGui::TextCenter("Lee Bamber & Preben Eriksen");
+		ImGui::TextCenter("Paul Johnston & Zak Judges");
+		ImGui::TextCenter("Mike Johnson & Maciej Dowbor");
 		ImGui::Text("");
 
 		ImGui::SetWindowFontScale(1.5);
@@ -39460,11 +39482,10 @@ void process_storeboard(bool bInitOnly)
 				static ImVec2 vTooltipPos;
 				static cstr sTooltip = "";
 
+				/* old storyboard banner replaced with more modern header
 				float fRatio = preview_size_x / 1200.0f;
 				float fHeaderHeight = g_Storyboard_header_height * fRatio;
-
 				ID3D11ShaderResourceView* lpTexture;
-				
 				lpTexture = GetImagePointerView(STORYBOARD_HEADER);
 				ImVec2 vHeaderDim = { (float)preview_size_x, fHeaderHeight };
 				static ImVec4 fade_heading = ImVec4(1.0, 1.0, 1.0, 1.0); //New header no fading.
@@ -39476,8 +39497,20 @@ void process_storeboard(bool bInitOnly)
 				}	
 				ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(0, fStartWinPosY + 6.0f));
 				ImVec2 vCurPos = ImGui::GetCursorPos();
-				ImVec2 vIconSize = { (float)ImGui::GetFontSize()*3.5f, (float)ImGui::GetFontSize()*3.5f };
-				ImGui::SetCursorPos(ImVec2(3.0f, fStartWinPosY + 1.0f));
+				*/
+				ImGui::SetWindowFontScale(1.0);
+				ImVec2 vIconSize = { (float)ImGui::GetFontSize() * 3.5f, (float)ImGui::GetFontSize() * 3.5f };
+				ImVec2 vHeaderDim = { (float)preview_size_x, vIconSize.y };
+				float fHeaderHeight = vHeaderDim.y;
+				ID3D11ShaderResourceView* lpTexture;
+				lpTexture = GetImagePointerView(STORYBOARD_HEADER);
+				if (lpTexture)
+				{
+					ImGuiWindow* window = ImGui::GetCurrentWindow();
+					ImVec2 header_pos = ImGui::GetWindowPos() + ImVec2(0.0, fStartWinPosY);
+					window->DrawList->AddImage((ImTextureID)lpTexture, header_pos, header_pos + vHeaderDim, ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1.0, 1.0, 1.0, 1.0)));
+				}
+				ImGui::SetCursorPos(ImVec2(4.0f, fStartWinPosY - 1.0f));
 				ImGui::SetItemAllowOverlap();
 				if (pref.iDisplayWelcomeScreen != 0)
 				{
@@ -39521,7 +39554,7 @@ void process_storeboard(bool bInitOnly)
 							switch_to_regular_projects();
 						}
 					}
-					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Exit to GameGuru MAX Hub"); //Welcome Screen
+					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Exit to Hub"); //Welcome Screen
 				}
 
 				ImGui::SetWindowFontScale(2.0); //1.4
