@@ -1,9 +1,9 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Hud_Interface v11 by Necrym59 and Lee
+-- Hud_Interface v14 by Necrym59 and Lee
 -- DESCRIPTION: Will this will enable to use a hud screen as an interface for the attached object.
 -- DESCRIPTION: Ensure your Hud Button names match the ones you put in here and are set to "return id to lua".
--- DESCRIPTION: Optionally reduce use range to 1 to allow HUD control anytime the specified HUD is visible.
--- DESCRIPTION: If used by a zone, the specified HUD will show when the player enters the zone.
+-- DESCRIPTION: Reduce use range to 1 to allow display of the HUD anytime via the HUD hotkey.
+-- DESCRIPTION: Can be also used as a zone, the specified HUD will show when the player enters the zone. Or can be activeted by another entity.
 -- DESCRIPTION: [USE_RANGE=80(1,100)]
 -- DESCRIPTION: [USE_PROMPT$="E to Use"]
 -- DESCRIPTION: [@@HUD_SCREEN$=""(0=hudscreenlist)] Eg: HUD Screen 9
@@ -22,15 +22,21 @@
 -- DESCRIPTION: [HUD_BUTTON5$="Exit"]
 -- DESCRIPTION: [@HUD_ACTION5=13(0=Link 0,1=Link 1,2=Link 2,3=Link 3,4=Link 4,5=Link 5,6=Link 6,7=Link 7,8=Link 8,9=Link 9,10=Play Audio,11=Destroy Object,12=Activate IfUsed,13=Exit Hud)]
 -- DESCRIPTION: [HUD_ACTION5_TEXT$="Exiting"]
+-- DESCRIPTION: [@HUD_AUTO_EXIT=1(1=Off,2=On)]to auto exit the hud after any button press
 -- DESCRIPTION: [@PROMPT_DISPLAY=1(1=Local,2=Screen)]
 -- DESCRIPTION: [@ITEM_HIGHLIGHT=0(0=None,1=Shape,2=Outline,3=Icon)]
 -- DESCRIPTION: [HIGHLIGHT_ICON_IMAGEFILE$="imagebank\\icons\\hand.png"]
+-- DESCRIPTION: [@@UPDATE_USER_GLOBAL$=""(0=globallist)] user global that will be assigned with the buttons elements text eg: MyGlobal
+-- DESCRIPTION: [@USER_VARIABLE_HUDS$=1(1=Off,2=On)] to use variable HUD Screens with a user global
+-- DESCRIPTION: [@@HUD_VARIABLE_GLOBAL$=""(0=globallist)] to overide the HUD SCreen with a variable HUD Screen named in this user global
 -- DESCRIPTION: <Sound0>  Interface activation
 -- DESCRIPTION: <Sound1>  Audiofile sound
 
 local module_misclib = require "scriptbank\\module_misclib"
 local U = require "scriptbank\\utillib"
 g_tEnt = {}
+
+local lower = string.lower
 
 local hud_interface 	= {}
 local use_range 		= {}
@@ -51,9 +57,13 @@ local hud_action4_text 	= {}
 local hud_button5 		= {}
 local hud_action5 		= {}
 local hud_action5_text 	= {}
+local hud_auto_exit		= {}
 local prompt_display	= {}
 local item_highlight	= {}
 local highlight_icon	= {}
+local update_user_global= {}
+local user_variable_huds= {}
+local hud_variable_global= {}
 
 local status			= {}
 local tEnt				= {}
@@ -63,9 +73,10 @@ local hl_imgheight		= {}
 local pressed			= {}
 local actioned			= {}
 local current_link		= {}
+local current_hud		= {}
 local playonce			= {}
 
-function hud_interface_properties(e, use_range, use_prompt, hud_screen, hud_button1, hud_action1, hud_action1_text, hud_button2, hud_action2, hud_action2_text, hud_button3, hud_action3, hud_action3_text, hud_button4, hud_action4, hud_action4_text, hud_button5, hud_action5, hud_action5_text, prompt_display, item_highlight, highlight_icon_imagefile)
+function hud_interface_properties(e, use_range, use_prompt, hud_screen, hud_button1, hud_action1, hud_action1_text, hud_button2, hud_action2, hud_action2_text, hud_button3, hud_action3, hud_action3_text, hud_button4, hud_action4, hud_action4_text, hud_button5, hud_action5, hud_action5_text, hud_auto_exit, prompt_display, item_highlight, highlight_icon_imagefile, update_user_global, user_variable_huds, hud_variable_global)
 	hud_interface[e].use_range = use_range
 	hud_interface[e].use_prompt = use_prompt
 	hud_interface[e].hud_screen = hud_screen
@@ -84,9 +95,13 @@ function hud_interface_properties(e, use_range, use_prompt, hud_screen, hud_butt
 	hud_interface[e].hud_button5 = hud_button5
 	hud_interface[e].hud_action5 = hud_action5
 	hud_interface[e].hud_action5_text = hud_action5_text
+	hud_interface[e].hud_auto_exit = hud_auto_exit or 1
 	hud_interface[e].prompt_display = prompt_display
 	hud_interface[e].item_highlight = item_highlight
 	hud_interface[e].highlight_icon = highlight_icon_imagefile
+	hud_interface[e].update_user_global = update_user_global
+	hud_interface[e].user_variable_huds = user_variable_huds or 1
+	hud_interface[e].hud_variable_global = hud_variable_global	
 end
 
 function hud_interface_init(e)
@@ -109,9 +124,13 @@ function hud_interface_init(e)
 	hud_interface[e].hud_button5 = "Exit"
 	hud_interface[e].hud_action5 = 5
 	hud_interface[e].hud_action5_text = "Exiting"
+	hud_interface[e].hud_auto_exit = 1
 	hud_interface[e].prompt_display = 1
 	hud_interface[e].item_highlight = 0
 	hud_interface[e].highlight_icon = "imagebank\\icons\\hand.png"
+	hud_interface[e].update_user_global = ""
+	hud_interface[e].user_variable_huds = 1	
+	hud_interface[e].hud_variable_global = ""	
 
 	status[e] = "init"
 	tEnt[e] = 0
@@ -122,6 +141,7 @@ function hud_interface_init(e)
 	pressed[e] = 0
 	actioned[e] = 0
 	current_link[e] = 0
+	current_hud[e] = ""
 	playonce[e] = 0
 end
 
@@ -140,7 +160,7 @@ function hud_interface_main(e)
 		pressed[e] = 0
 		playonce[e] = 0
 		actioned[e] = 0
-		current_link[e] = 0
+		current_link[e] = 0		
 		status[e] = "start"
 	end
 
@@ -148,8 +168,21 @@ function hud_interface_main(e)
 		-- zone behaviour
 		if g_Entity[e]['plrinzone'] == 1 and g_PlayerPosY > g_Entity[e]['y'] and g_PlayerPosY < g_Entity[e]['y']+100 then
 			-- OPEN HUD
-			ScreenToggle(hud_interface[e].hud_screen)
-			status[e] = "interface"
+			if hud_interface[e].user_variable_huds == 1 then
+				ScreenToggle(hud_interface[e].hud_screen)
+				status[e] = "interface"
+			end	
+			if hud_interface[e].user_variable_huds == 2 then
+				if _G["g_UserGlobal['"..hud_interface[e].hud_variable_global.."']"] ~= nil then
+					current_hud[e] = _G["g_UserGlobal['"..hud_interface[e].hud_variable_global.."']"]
+					if current_hud[e] ~= "" then
+						ScreenToggle(current_hud[e])
+						status[e] = "interface"
+					else
+						status[e] = "start"
+					end
+				end	
+			end						
 		end
 		if hud_interface[e].use_range == 1 then
 			-- responds instead whenever the HUD screen is visible (i.e opened by a hotkey)
@@ -177,10 +210,41 @@ function hud_interface_main(e)
 					pressed[e] = 1
 					PromptLocal(e,"")
 					-- OPEN HUD
-					ScreenToggle(hud_interface[e].hud_screen)
-					status[e] = "interface"
+					if hud_interface[e].user_variable_huds == 1 then
+						ScreenToggle(hud_interface[e].hud_screen)
+						status[e] = "interface"
+					end	
+					if hud_interface[e].user_variable_huds == 2 then
+						if _G["g_UserGlobal['"..hud_interface[e].hud_variable_global.."']"] ~= nil then
+							current_hud[e] = _G["g_UserGlobal['"..hud_interface[e].hud_variable_global.."']"]
+							if current_hud[e] ~= "" then
+								ScreenToggle(current_hud[e])
+								status[e] = "interface"
+							else
+								status[e] = "start"
+							end						
+						end	
+					end
 				end
-			end
+			end	
+		end
+		if g_Entity[e]['activated'] == 1 then
+			-- OPEN HUD
+			if hud_interface[e].user_variable_huds == 1 then
+				ScreenToggle(hud_interface[e].hud_screen)
+				status[e] = "interface"
+			end	
+			if hud_interface[e].user_variable_huds == 2 then
+				if _G["g_UserGlobal['"..hud_interface[e].hud_variable_global.."']"] ~= nil then
+					current_hud[e] = _G["g_UserGlobal['"..hud_interface[e].hud_variable_global.."']"]
+					if current_hud[e] ~= "" then
+						ScreenToggle(current_hud[e])
+						status[e] = "interface"
+					else
+						status[e] = "start"
+					end					
+				end					
+			end	
 		end
 	end
 
@@ -191,7 +255,8 @@ function hud_interface_main(e)
 			local buttonElementName = GetScreenElementName(1+buttonElementID)
 			if string.len(buttonElementName) > 0 then
 				if buttonElementName == hud_interface[e].hud_button1 then
-					if hud_interface[e].prompt_display == 1 then PromptLocal(e,hud_interface[e].hud_action1_text) end
+					if _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] ~= nil then _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] = lower(buttonElementName)	end
+					if hud_interface[e].prompt_display == 1 then PromptLocal(e,hud_interface[e].hud_action1_text) end					
 					if hud_interface[e].prompt_display == 2 then Prompt(hud_interface[e].hud_action1_text) end
 					if hud_interface[e].hud_action1 < 10 then
 						current_link[e] = hud_interface[e].hud_action1
@@ -204,6 +269,7 @@ function hud_interface_main(e)
 					status[e] = "action"
 				end
 				if buttonElementName == hud_interface[e].hud_button2 then
+					if _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] ~= nil then _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] = lower(buttonElementName) end				
 					if hud_interface[e].prompt_display == 1 then PromptLocal(e,hud_interface[e].hud_action2_text) end
 					if hud_interface[e].prompt_display == 2 then Prompt(hud_interface[e].hud_action2_text) end
 					if hud_interface[e].hud_action1 < 10 then
@@ -217,6 +283,7 @@ function hud_interface_main(e)
 					status[e] = "action"
 				end
 				if buttonElementName == hud_interface[e].hud_button3 then
+					if _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] ~= nil then _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] = lower(buttonElementName) end				
 					if hud_interface[e].prompt_display == 1 then PromptLocal(e,hud_interface[e].hud_action3_text) end
 					if hud_interface[e].prompt_display == 2 then Prompt(hud_interface[e].hud_action3_text) end
 					if hud_interface[e].hud_action3 < 10 then
@@ -230,6 +297,7 @@ function hud_interface_main(e)
 					status[e] = "action"
 				end
 				if buttonElementName == hud_interface[e].hud_button4 then
+					if _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] ~= nil then _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] = lower(buttonElementName) end				
 					if hud_interface[e].prompt_display == 1 then PromptLocal(e,hud_interface[e].hud_action4_text) end
 					if hud_interface[e].prompt_display == 2 then Prompt(hud_interface[e].hud_action4_text) end
 					if hud_interface[e].hud_action4 < 10 then
@@ -243,7 +311,7 @@ function hud_interface_main(e)
 					status[e] = "action"
 				end
 				if buttonElementName == hud_interface[e].hud_button5 then
-					if hud_interface[e].prompt_display == 1 then PromptLocal(e,hud_interface[e].hud_action5_text) end
+					if hud_interface[e].prompt_display == 1 then PromptLocal(e,hud_interface[e].hud_action5_text) end					
 					if hud_interface[e].prompt_display == 2 then Prompt(hud_interface[e].hud_action5_text) end
 					if hud_interface[e].hud_action5 < 10 then
 						current_link[e] = hud_interface[e].hud_action5
@@ -259,34 +327,62 @@ function hud_interface_main(e)
 		end
 	end
 
-	if status[e] == "action" then
+	if status[e] == "action" then		
 		if actioned[e] == 1 then
 			PerformLogicConnectionNumber(e,current_link[e])
-			actioned[e] = 0
-			status[e] = "interface"
+			if hud_interface[e].hud_auto_exit == 1 then
+				actioned[e] = 0
+				status[e] = "interface"
+			end
+			if hud_interface[e].hud_auto_exit == 2 then
+				actioned[e] = 0
+				ScreenToggle("")
+				status[e] = "init"
+			end
 		end
 		if actioned[e] == 2 then
 			PlaySound(e,1)
-			actioned[e] = 0
-			status[e] = "interface"
+			if hud_interface[e].hud_auto_exit == 1 then
+				actioned[e] = 0
+				status[e] = "interface"
+			end
+			if hud_interface[e].hud_auto_exit == 2 then
+				actioned[e] = 0
+				ScreenToggle("")
+				status[e] = "init"
+			end			
 		end
 		if actioned[e] == 3 then
-			ScreenToggle("")
 			Hide(e)
 			CollisionOff(e)
 			Destroy(e)
-			actioned[e] = 0
-			status[e] = "interface"
+			if hud_interface[e].hud_auto_exit == 1 then
+				actioned[e] = 0
+				status[e] = "interface"
+			end
+			if hud_interface[e].hud_auto_exit == 2 then
+				actioned[e] = 0
+				ScreenToggle("")
+				status[e] = "init"
+			end
 		end
 		if actioned[e] == 4 then
 			ActivateIfUsed(e)
-			actioned[e] = 0
-			status[e] = "interface"
+			if hud_interface[e].hud_auto_exit == 1 then
+				actioned[e] = 0
+				status[e] = "interface"
+			end	
+			if hud_interface[e].hud_auto_exit == 2 then
+				actioned[e] = 0
+				ScreenToggle("")
+				status[e] = "init"
+			end			
 		end
 		if actioned[e] == 5 then
+			if _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] ~= nil then _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] = _G["g_UserGlobal['"..hud_interface[e].update_user_global.."']"] end
 			-- CLOSE HUD
 			ScreenToggle("")
 			status[e] = "init"
-		end
+		end		
 	end
 end
