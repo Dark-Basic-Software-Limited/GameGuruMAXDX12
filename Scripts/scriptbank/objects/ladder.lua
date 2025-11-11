@@ -1,14 +1,14 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Ladder v26
+-- Ladder v27 by Necrym59
 -- DESCRIPTION: This script is to be attached to the ladder object? Set ladder object to Physics on, Collision=Box. IsImobile=ON
--- DESCRIPTION: [DISPLAY_PROMPTS!=1] to display on/off the prompts, change the 
+-- DESCRIPTION: [DISPLAY_PROMPTS!=1] prompts on/off
 -- DESCRIPTION: [PROMPT_TEXT$="W-up S-down, Spacebar-jump off"]
--- DESCRIPTION: Use 'E' to use as the [USE_MOUNT_KEY!=0] and the 
--- DESCRIPTION: [MOUNT_PROMPT$="E to use"]
--- DESCRIPTION: Set the [#CLIMBING_SPEED=0.7(0.1,3.0)]
--- DESCRIPTION: and ladder [GRIP_ADJUSTMENT=1(1,3)]
--- DESCRIPTION: Select the [@CLIMB_STYLE=2(1=With Weapon, 2=Hide Weapon)]
--- DESCRIPTION: Set the [#EXIT_FORCE=0.5(0.1,3.0)]
+-- DESCRIPTION: [USE_MOUNT_KEY!=0] Use 'E' to mount
+-- DESCRIPTION: [MOUNT_PROMPT$="E to use"] Mount prompt
+-- DESCRIPTION: [#CLIMBING_SPEED=0.7(0.1,3.0)] player climbing speed
+-- DESCRIPTION: [GRIP_ADJUSTMENT=1(1,3)] for ladder model
+-- DESCRIPTION: [@CLIMB_STYLE=2(1=With Weapon, 2=Hide Weapon)] Climbing style
+-- DESCRIPTION: [#EXIT_FORCE=0.5(0.1,3.0)] exit force for exiting/jumping off ladder
 -- DESCRIPTION: [@PROMPT_DISPLAY=1(1=Local,2=Screen)]
 -- DESCRIPTION: [@ITEM_HIGHLIGHT=0(0=None,1=Shape,2=Outline,3=Icon)]
 -- DESCRIPTION: [HIGHLIGHT_ICON_IMAGEFILE$="imagebank\\icons\\hand.png"]
@@ -35,16 +35,18 @@ local prompt_display	= {}
 local item_highlight	= {}
 local highlight_icon	= {}
 
-local climbkeyscan = 17
 local playerheight = 38
 local playerwidth  = 30
+local mounted = 0
+local ekeypause = {}
 local exittop = 0
 local exitbottom = 0
 local tEnt = 0
 local hl_icon = 0
 local hl_imgwidth = 0
 local hl_imgheight = 0
-local last_gun     = g_PlayerGunName
+local last_gun = g_PlayerGunName
+g_tEnt = 0
 
 function ladder_properties(e, display_prompts ,prompt_text, use_mount_key, mount_prompt, climbing_speed, grip_adjustment, climb_style, exit_force, prompt_display, item_highlight, highlight_icon_imagefile)
 	ladders[e].display_prompts = display_prompts
@@ -72,8 +74,10 @@ function ladder_init(e)
 	ladders[e].exit_force = 0.5
 	ladders[e].prompt_display = 1
 	ladders[e].item_highlight = 0
-	ladders[e].highlight_icon = "imagebank\\icons\\hand.png"	
+	ladders[e].highlight_icon = "imagebank\\icons\\hand.png"
 	ladders[e].playerwidth = playerwidth
+
+	ekeypause[e] = math.huge
 end
 
 function ladder_main(e)
@@ -89,7 +93,7 @@ function ladder_main(e)
 			SetSpriteDepth(hl_icon,100)
 			SetSpriteOffset(hl_icon,hl_imgwidth/2.0, hl_imgheight/2.0)
 			SetSpritePosition(hl_icon,500,500)
-		end	
+		end
 		local Ent = g_Entity[e]
 		local dims = P.GetObjectDimensions(Ent.obj)
 		ladder.bottom = Ent.y
@@ -100,10 +104,12 @@ function ladder_main(e)
 		ladder.y = y
 		ladder.z = z + zo
 		ladder.playerwidth = ladder.playerwidth + ladder.grip_adjustment
+		ekeypause[e] = g_Time + 1000
 		ladder.state = 'idle'
+	end
 	-- Ladder idle ----------------------------------------------------------------
-	elseif
-		ladder.state == 'idle' then		
+	if ladder.state == 'idle' then
+
 		local PlayerDist = GetPlayerDistance(e)
 
 		if U.PlayerCloserThanPos(ladder.x, g_PlayerPosY, ladder.z, ladder.playerwidth) or PlayerDist < ladder.playerwidth then
@@ -120,46 +126,52 @@ function ladder_main(e)
 					if ladder.display_prompts == 1 and g_PlayerPosY < ladder.top then
 						if ladder.prompt_display == 1 then TextCenterOnX(50,55,1,ladder.prompt_text) end
 						if ladder.prompt_display == 2 then Prompt(ladder.prompt_text) end
-						climbkeyscan = 17
+						mounted = 1
 					end
 					--If at top not using mount key
 					if ladder.display_prompts == 1 and g_PlayerPosY >= ladder.top then
 						if ladder.prompt_display == 1 then TextCenterOnX(50,55,1,ladder.prompt_text) end
 						if ladder.prompt_display == 2 then Prompt(ladder.prompt_text) end
-						climbkeyscan = 17
+						mounted = 1
 					end
-				end	
-				if ladder.use_mount_key == 1 then
+				end
+				if ladder.use_mount_key == 1 and mounted == 0 then
 					--If at bottom using mount key
 					if ladder.display_prompts == 1 or ladder.display_prompts == 0 and g_PlayerPosY < ladder.top then
 						if ladder.prompt_display == 1 then TextCenterOnX(50,55,1,ladder.mount_prompt) end
 						if ladder.prompt_display == 2 then Prompt(ladder.mount_prompt) end
-						climbkeyscan = 18
+						if g_KeyPressE == 1 then mounted = 1 end
 					end
 					--If at top using mount key
 					if ladder.display_prompts == 1 or ladder.display_prompts == 0 and g_PlayerPosY >= ladder.top then
-						if ladder.prompt_display == 1 then TextCenterOnX(50,55,1,ladder.prompt_text) end
-						if ladder.prompt_display == 2 then Prompt(ladder.prompt_text) end
-						climbkeyscan = 17
-					end					
-				end	
+						if ladder.prompt_display == 1 then TextCenterOnX(50,55,1,ladder.mount_prompt) end
+						if ladder.prompt_display == 2 then Prompt(ladder.mount_prompt) end
+						if g_KeyPressE == 1 then mounted = 1 end
+					end
+				end
 
 				local playeraty = g_PlayerPosY - playerheight
 				if GetGamePlayerControlInWaterState()== 0 then
-					if g_Scancode == climbkeyscan and abs(playeraty-ladder.bottom) < playerheight then 	-- 'W' or alternate 'E' up
-						ladder.state = 'active'
-						SetEntityEmissiveStrength(tEnt,0)
-						last_gun     = g_PlayerGunName
-						ladder.ypos  = ladder.bottom
-					elseif
-						g_Scancode == 31 and abs(playeraty-ladder.top) < playerheight then				-- 'S' down
-						ladder.state = 'active'
-						last_gun     = g_PlayerGunName
-						ladder.ypos  = ladder.top
+					if mounted == 1 then
+						if ladder.display_prompts == 1 then
+							if ladder.prompt_display == 1 then TextCenterOnX(50,55,1,ladder.prompt_text) end
+							if ladder.prompt_display == 2 then Prompt(ladder.prompt_text) end
+						end
+						if g_KeyPressW == 1 and abs(playeraty-ladder.bottom) < playerheight then -- 'W' up
+							ladder.state = 'active'
+							SetEntityEmissiveStrength(tEnt,0)
+							last_gun     = g_PlayerGunName
+							ladder.ypos  = ladder.bottom
+						end
+						if g_KeyPressS == 1 and abs(playeraty-ladder.top) < playerheight then -- 'S' down
+							ladder.state = 'active'
+							last_gun     = g_PlayerGunName
+							ladder.ypos  = ladder.top
+						end
 					end
 				end
 				if GetGamePlayerControlInWaterState()>= 1 then
-					if g_Scancode == climbkeyscan then 	-- 'W' or alternate 'E' up
+					if g_KeyPressW == 1 then -- 'W' or alternate 'E' up
 						ladder.state = 'active'
 						SetEntityEmissiveStrength(tEnt,0)
 						last_gun     = g_PlayerGunName
@@ -167,16 +179,14 @@ function ladder_main(e)
 					end
 				end
 			end
+		else
+			mounted = 0
 		end
-
+	end
 	-- Ladder active -------------------------------------------------------------
-	elseif
-		ladder.state == 'active' then
+	if ladder.state == 'active' then
 
-		if g_PlayerHealth <= 0 then
-			ladder.state = 'idle'
-		end
-
+		if g_PlayerHealth <= 0 then ladder.state = 'idle' end
 		if ladder.display_prompts == 1 then
 			if ladder.prompt_display == 1 then TextCenterOnX(50,55,1,ladder.prompt_text) end
 			if ladder.prompt_display == 2 then Prompt(ladder.prompt_text) end
@@ -188,21 +198,30 @@ function ladder_main(e)
 		-- Allow ladders to work whilst swimming
 		LimitSwimmingVerticalMovement(0)
 
-		local keyScan = g_Scancode
-
-		if keyScan == 57 then 	-- 'SPACEBAR' to jump off
-			ladder.state = 'idle'
+		if g_KeyPressSPACE == 1 then -- 'SPACEBAR' to jump off
 			StopSound(e,0)
 			PlaySound(e,1)
 			ForcePlayer(g_PlayerAngY + 180, ladders[e].exit_force)
+			mounted = 0
 			if ladder.climb_style == 2 then
 				ChangePlayerWeapon(last_gun)
-				SetPlayerWeapons(1)				
+				SetPlayerWeapons(1)
 			end
-			return
-
-		elseif
-		   keyScan == 17 then	-- 'W' up
+			ladder.state = 'idle'
+		end
+		if g_KeyPressE == 1 and g_Time > ekeypause[e] then -- 'E' used while on ladder
+			ekeypause[e] = g_Time + 1000
+			StopSound(e,0)
+			PlaySound(e,1)
+			ForcePlayer(g_PlayerAngY + 180, ladders[e].exit_force)
+			mounted = 0
+			if ladder.climb_style == 2 then
+				ChangePlayerWeapon(last_gun)
+				SetPlayerWeapons(1)
+			end
+			ladder.state = 'idle'
+		end
+		if g_KeyPressW == 1 then	-- 'W' up
 			LoopSound(e,0)
 			if ladder.climb_style == 2 then
 				SetPlayerWeapons(0)
@@ -220,12 +239,12 @@ function ladder_main(e)
 				ForcePlayer(g_PlayerAngY, ladders[e].exit_force)
 				ladder.z = ladder.z - 40
 				ladder.state = 'top'
+				mounted = 0
 			else
 				ladder.ypos = ladder.ypos + ladder.climbing_speed
 			end
-
-		elseif
-		   keyScan == 31 then	-- 'S' down
+		end
+		if g_KeyPressS == 1 then -- 'S' down
 			LoopSound(e,0)
 			if ladder.climb_style == 2 then
 				SetPlayerWeapons(0)
@@ -236,32 +255,30 @@ function ladder_main(e)
 					SetPlayerWeapons(1)
 				end
 				ladder.state = 'idle'
+				mounted = 0
 				StopSound(e,0)
 			else
 				ladder.ypos = ladder.ypos - ladder.climbing_speed
 			end
-
-		elseif
-		   keyScan == 0 then
-			StopSound(e,0)
 		end
+		if g_Scancode == 0 then StopSound(e,0) end
+	end
 
 	-- Ladder Top and Bottom ------------------------------------------------------
-	elseif
-		ladder.state == 'top' then
+	if ladder.state == 'top' then
 		StopSound(e,0)
 		PlaySound(e,1)
 		if ladder.climb_style == 2 then
 			ChangePlayerWeapon(last_gun)
 			SetPlayerWeapons(1)
-		end		
+		end
 		ladder.state = 'wait'
 		ladder.timer = g_Time + 1500
-
-	elseif
-		ladder.state == 'wait' and
+	end
+	if ladder.state == 'wait' and
 		g_Time > ladder.timer then
 		ladder.timer = math.huge
+		mounted = 0
 		ladder.state = 'idle'
 	end
 end
