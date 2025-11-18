@@ -45,23 +45,23 @@ function stop_watch_init(e)
 	stop_watch[e].launch_warning = 1
 	stop_watch[e].end_screen = ""
 	stop_watch[e].readout = 1
-	
+
 	startcount[e] = 0
 	currenttm[e] = 0
 	millisec[e] = 0
-	tenths[e] = 0	
+	tenths[e] = 0
 	seconds[e] = 0
 	minutes[e] = 0
 	hours[e] = 0
 	played[e] = 0
 	doonce[e] = 0
 	launch_stage[e] = 0
-	launch_count[e] = 600	
-	wait[e] = math.huge	
+	launch_count[e] = 600
+	wait[e] = math.huge
 	status[e] = "init"
 	state[e] = ""
 end
- 
+
 function stop_watch_main(e)
 	if status[e] == "init" then
 		_G["g_UserGlobal['"..stop_watch[e].display_user_global.."']"] = nil
@@ -75,7 +75,7 @@ function stop_watch_main(e)
 	if g_Entity[e]['activated'] == 1 then
 		if state[e] == "stopped" then
 			if stop_watch[e].launch_warning == 2 and launch_stage[e] == 0 then
-				if launch_stage[e] == 0 then 
+				if launch_stage[e] == 0 then
 					if launch_count[e] > 400  then TextCenterOnX(50,50,5,"READY") end
 					if launch_count[e] > 200 and launch_count[e] <= 400 then TextCenterOnX(50,50,5,"SET") end
 					if launch_count[e] <= 200  then TextCenterOnX(50,50,5,"GO") end
@@ -88,14 +88,14 @@ function stop_watch_main(e)
 					end
 					launch_count[e] = launch_count[e] - 1
 				end
-			end		
+			end
 			if startcount[e] == 0 and launch_stage[e] == 1 then
 				played[e] = 0
 				StartTimer(e)
 				startcount[e] = 1
 				state[e] = "running"
 			end
-		end	
+		end
 		if state[e] == "running" then
 			if startcount[e] == 1 then
 				currenttm[e] = GetTimer(e)/1000
@@ -104,7 +104,7 @@ function stop_watch_main(e)
 				if millisec[e] > 99 then millisec[e] = 0 end
 				if millisec[e] >= 99 then
 					tenths[e] = tenths[e] + 1
-					if tenths[e] >= 10 then tenths[e] = 0 end	
+					if tenths[e] >= 10 then tenths[e] = 0 end
 				end
 				if seconds[e] >= 60 then
 					minutes[e] = minutes[e] + 1
@@ -113,29 +113,29 @@ function stop_watch_main(e)
 				end
 				if minutes[e] >= 60 then
 					minutes[e] = 0
-					hours[e] = hours[e] + 1					
+					hours[e] = hours[e] + 1
 				end
 				if hours[e] == 25 then
 					hours[e] = 0
 				end
-				if stop_watch[e].readout == 1 then 
+				if stop_watch[e].readout == 1 then
 					_G["g_UserGlobal['"..stop_watch[e].display_user_global.."']"] = string.format("%02d", minutes[e]).. ":" ..string.format("%02d", seconds[e]).. ":" ..string.format("%02d", millisec[e])
 				end
-				if stop_watch[e].readout == 2 then 
+				if stop_watch[e].readout == 2 then
 					_G["g_UserGlobal['"..stop_watch[e].display_user_global.."']"] = string.format("%02d", minutes[e]).. ":" ..string.format("%02d", seconds[e]).. ":" ..string.format("%02d", tenths[e])
 				end
-				if stop_watch[e].readout == 3 then 
+				if stop_watch[e].readout == 3 then
 					_G["g_UserGlobal['"..stop_watch[e].display_user_global.."']"] = string.format("%02d",hours[e]).. ":" ..string.format("%02d", minutes[e]).. ":" ..string.format("%02d", seconds[e]).. ":" ..string.format("%02d", millisec[e])
-				end	
-				if stop_watch[e].readout == 4 then 
+				end
+				if stop_watch[e].readout == 4 then
 					_G["g_UserGlobal['"..stop_watch[e].display_user_global.."']"] = string.format("%02d",hours[e]).. ":" ..string.format("%02d", minutes[e]).. ":" ..string.format("%02d", seconds[e]).. ":"  ..string.format("%02d", tenths[e]).. ":" ..string.format("%02d", millisec[e])
-				end					
+				end
 			end
-		end		
+		end
 	end
 	if g_Entity[e]['activated'] == 0 and state[e] == "running" then
-		if stop_watch[e].end_action == 1 then					
-		end	
+		if stop_watch[e].end_action == 1 then
+		end
 		if stop_watch[e].end_action == 2 then
 			HurtPlayer(e,g_PlayerHealth)
 		end
