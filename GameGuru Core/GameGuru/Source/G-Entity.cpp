@@ -2471,9 +2471,12 @@ void entity_updatepos ( void )
 			// used when resetpositionxyz needs to set exact XYZ position of refreshed/loaded entity
 		}
 		else
-		{
+		{ 
+			/* removed to fix CineGuru collision bug where entity would snap to ground - that is, we retain the position set in the level 
 			if (t.entityelement[t.te].nogravity == 0 && t.entityelement[t.te].collected == 0)
 			{
+				//LB: if collision mode sets no physics, cannot apply a gravity assumption (fixes CineGuru collision bug)
+				int entid = t.entityelement[t.te].bankindex;
 				// non physics objects stick with the floor
 				t.tterrainfloorposy_f = BT_GetGroundHeight (t.terrain.TerrainID, t.entityelement[t.te].x, t.entityelement[t.te].z);
 				t.entityelement[t.te].y = t.tterrainfloorposy_f;
@@ -2482,6 +2485,7 @@ void entity_updatepos ( void )
 			{
 				// no gravity allows entities to be in the sky (birds and blimps)
 			}
+			*/
 		}
 		PositionObject (t.tobj, t.entityelement[t.te].x, t.entityelement[t.te].y, t.entityelement[t.te].z);
 	}
