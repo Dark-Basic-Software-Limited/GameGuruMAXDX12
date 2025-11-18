@@ -1,4 +1,4 @@
--- DESCRIPTION: This will control a character using <Soldier Animations> to engage their enemy within view using cover Animations
+-- DESCRIPTION: This will control an enemy character using <Soldier Animations> to engage the player within view using cover Animations
 -- DESCRIPTION: Is capable of attacking their target using a <Shooting Weapon>
 -- DESCRIPTION: Can [BreakCoverDistance=300] and move to best cover zone
 -- DESCRIPTION: Initially [!AwareOfTarget=0] for quicker response
