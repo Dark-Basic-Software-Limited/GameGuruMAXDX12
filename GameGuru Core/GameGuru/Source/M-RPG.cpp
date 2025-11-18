@@ -593,7 +593,7 @@ bool fill_rpg_item_defaults_passedin(collectionItemType* pItem, int entid, int e
 {
 	// only some entities can make an item
 	int iAddThisItem = 0;
-	if (entid > 0 && e > 0)
+	if (entid > 0 && e > 0 && e < t.entityelement.size() )
 	{
 		if (t.entityelement[e].eleprof.iscollectable != 0) iAddThisItem = 2;
 		if (t.entityelement[e].eleprof.isProjectGlobal != 0) iAddThisItem = 2;
@@ -606,7 +606,7 @@ bool fill_rpg_item_defaults_passedin(collectionItemType* pItem, int entid, int e
 	else
 	{
 		if (pPassedInTitle && pPassedInImageFile) iAddThisItem = 3;
-		if (e > 0)
+		if (e > 0 && e < t.entityelement.size())
 		{
 			if (t.entityelement[e].eleprof.hasweapon_s.Len() > 0) iAddThisItem = 5;
 		}
@@ -817,12 +817,15 @@ void refresh_rpg_parents_of_items(void)
 				// all collectables in list are collectables, and resources are always favoured if flagged
 				int e = g_collectionList[n].iEntityElementE;
 				int iCollectableValue = 0;
-				if (t.entityelement[e].eleprof.isProjectGlobal == 0)
+				if (e > 0 && e < t.entityelement.size())
 				{
-					if (e > 0 && e < t.entityelement.size()) iCollectableValue = t.entityelement[e].eleprof.iscollectable;
-					if (iCollectableValue < 1) iCollectableValue = 1;
-					if (iCollectableValue > t.entityprofile[entid].iscollectable) t.entityprofile[entid].iscollectable = iCollectableValue;
+					if (t.entityelement[e].eleprof.isProjectGlobal == 0)
+					{
+						iCollectableValue = t.entityelement[e].eleprof.iscollectable;
+					}
 				}
+				if (iCollectableValue < 1) iCollectableValue = 1;
+				if (iCollectableValue > t.entityprofile[entid].iscollectable) t.entityprofile[entid].iscollectable = iCollectableValue;
 			}
 		}
 	}
