@@ -2174,8 +2174,9 @@ void visuals_loop ( void )
 			// go through all entities to ensure they render to VR scenes
 			for ( t.e = 1; t.e <= g.entityelementlist; t.e++ )
 			{
+				// LB: visuals_loop can be called when project FPM loads, but strangely BEFORE the entity parents and elements are loaded, so this might be an issue (resolved for now with t.entid < t.entityprofile.size())
 				t.entid = t.entityelement[t.e].bankindex;
-				if ( t.entid > 0 ) 
+				if ( t.entid > 0 && t.entid < t.entityprofile.size())
 				{
 					if ( t.entityprofile[t.entid].ischaractercreator == 1 ) 
 					{

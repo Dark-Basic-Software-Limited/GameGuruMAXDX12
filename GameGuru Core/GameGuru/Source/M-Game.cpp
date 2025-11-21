@@ -3220,6 +3220,17 @@ void game_loadinentitiesdatainlevel ( void )
 	timestampactivity(0, "s2:entity_loadelementsdata()");
 	entity_loadelementsdata ( );
 	timestampactivity(0, "e2:entity_loadelementsdata()");
+
+	// LB: quick sanity check to screen out corrupt entityparent ID references
+	for (t.e = 1; t.e <= g.entityelementlist; t.e++)
+	{
+		t.entid = t.entityelement[t.e].bankindex;
+		if (t.entid > 0 && t.entid >= t.entityprofile.size())
+		{
+			// ensures can never reference an out of bounds entityparent ID
+			t.entityelement[t.e].bankindex = 0;
+		}
+	}
 }
 
 void game_loadinleveldata ( void )
