@@ -1934,7 +1934,7 @@ void entity_loaddata ( void )
 		t.entityprofile[t.entid].forcesimpleobstacle=0;
 		t.entityprofile[t.entid].forceobstaclepolysize=20.0f;//30.0f; hagia model
 		t.entityprofile[t.entid].forceobstaclesliceheight=20.0f;//14.0f; hagia model
-		t.entityprofile[t.entid].forceobstaclesliceminsize=4.0f;//5.0f; hagia model 
+		t.entityprofile[t.entid].forceobstaclesliceminsize=4.0f;//5.0f; hagia model  
 		t.entityprofile[t.entid].effectprofile=0;
 		t.entityprofile[t.entid].ignorecsirefs=0;
 		t.entityprofile[t.entid].voiceset_s = ""; // when empty, default to first voice
