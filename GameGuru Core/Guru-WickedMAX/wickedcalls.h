@@ -24,11 +24,20 @@ enum GGRENDERLAYERS
 #endif
 
 // pre-declare Wicked classes
-//struct wiResource; DX12 duplicate in wiResource.h
-//struct wiResource;
-
+//struct wi::Resource; DX12 duplicate in wi::Resource.h
 #undef WICKEDENGINE
 #include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\WickedEngine.h"
+//#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphics.h"
+//#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene.h"
+//#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiECS.h"
+//#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiEmittedParticle.h"
+//#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiPrimitive.h"
+//#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h"
+//namespace wiGraphics = wi::graphics;
+//namespace wiScene = wi::scene;
+//namespace wiECS = wi::ecs;
+//using wiEmittedParticle = wi::EmittedParticleSystem;
+//using RAY = wi::primitive::Ray;
 
 // Image Management
 #ifndef GGIMAGERESENUM
@@ -43,7 +52,7 @@ struct sImageList
 {
 	LPSTR pName;
 	eImageResType eType;
-	std::shared_ptr<wiResource> image;
+	std::shared_ptr<wi::Resource> image;
 	int iMemUsedKB = 0;
 	uint32_t MasterObject = 0;
 };
@@ -54,9 +63,9 @@ void WickedCall_FreeImage(sImageList* pImage);
 void WickedCall_FreeAllImagesOfType(eImageResType eType);
 void WickedCall_GetRelativeAfterRoot(std::string pFilename, LPSTR pFullRelativeLocationFilename);
 int WickedCall_FindImageIndexInList(std::string pFilenameToFind, LPSTR pFullRelativeLocationFilename);
-void WickedCall_AddImageToList(std::shared_ptr<wiResource> image, eImageResType eType, std::string pFilenameRef, int iKbused);
-std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoad, eImageResType eType);
-std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoad);
+void WickedCall_AddImageToList(std::shared_ptr<wi::Resource> image, eImageResType eType, std::string pFilenameRef, int iKbused);
+std::shared_ptr<wi::Resource> WickedCall_LoadImage(std::string pFilenameToLoad, eImageResType eType);
+std::shared_ptr<wi::Resource> WickedCall_LoadImage(std::string pFilenameToLoad);
 void WickedCall_DeleteImage(std::string pFilenameToLoad);
 
 // Functions

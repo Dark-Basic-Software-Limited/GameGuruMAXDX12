@@ -6,6 +6,7 @@
 #ifdef WINVER
 #undef WINVER
 #endif
+
 //PE: We need the latest dpi functions.
 #define WINVER 0x0605
 #include "Windows.h"
