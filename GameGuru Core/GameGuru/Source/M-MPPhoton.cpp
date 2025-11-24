@@ -232,10 +232,10 @@ void mp_loop ( void )
 
 			// if lose lobby list
 			 mp_text(-1,5,3,"LIST OF LEVELS");
-			 if ( Timer() - g.mp.oldtime > 3000 ) 
+			 if ( MAXTimer() - g.mp.oldtime > 3000 ) 
 			 {
 				PhotonGetLobbyList();
-				g.mp.oldtime = Timer();
+				g.mp.oldtime = MAXTimer();
 			 }
 			mp_lobbyListBox ( );
 		}
@@ -297,7 +297,7 @@ void mp_loop ( void )
 				 // at moment of starting server, register all present players so they dont get re-added when game starts
 				 PhotonRegisterEveryonePresentAsHere();
 				g.mp.mode = MP_WAITING_FOR_SERVER_CREATION;
-				g.mp.oldtime = Timer();
+				g.mp.oldtime = MAXTimer();
 			}
 		}
 	}
@@ -305,12 +305,12 @@ void mp_loop ( void )
 	// Handle joining the lobby/room
 	if ( g.mp.mode == MP_JOINING_LOBBY ) 
 	{
-		if ( Timer() - g.mp.oldtime > 1000 && PhotonGetLobbyUserCount() > 1 ) //iIsGameRunning  == 1 ) just go direct to getting file and starting
+		if ( MAXTimer() - g.mp.oldtime > 1000 && PhotonGetLobbyUserCount() > 1 ) //iIsGameRunning  == 1 ) just go direct to getting file and starting
 		{
 			g.mp.mode = MP_IN_GAME_CLIENT;
 			g.mp.needToResetOnStartup = 1;
 			t.toldsteamfolder_s=GetDir();
-			t.tsteamtimeoutongamerunning = Timer();
+			t.tsteamtimeoutongamerunning = MAXTimer();
 
 			// Reset player var
 			 int tPlayerIndex = PhotonGetMyPlayerIndex();
@@ -369,7 +369,7 @@ void mp_loop ( void )
 			 int iIsGameRunning = PhotonIsGameRunning();
 			if ( iIsGameRunning == 1 ) 
 			{
-				if ( Timer() - g.mp.oldtime > 150 ) 
+				if ( MAXTimer() - g.mp.oldtime > 150 ) 
 				{
 					g.mp.mode = MP_IN_GAME_SERVER;
 					g.mp.needToResetOnStartup = 1;
@@ -377,9 +377,9 @@ void mp_loop ( void )
 			}
 			else
 			{
-				if ( Timer() - g.mp.oldtime > 150 ) 
+				if ( MAXTimer() - g.mp.oldtime > 150 ) 
 				{
-					g.mp.oldtime = Timer();
+					g.mp.oldtime = MAXTimer();
 					t.tStartingServerCount_s = t.tStartingServerCount_s + ".";
 					if ( Len(t.tStartingServerCount_s.Get()) > 5 )  t.tStartingServerCount_s = ".";
 				}
@@ -390,9 +390,9 @@ void mp_loop ( void )
 		}
 		else
 		{
-			if ( Timer() - g.mp.oldtime > 150 ) 
+			if ( MAXTimer() - g.mp.oldtime > 150 ) 
 			{
-				g.mp.oldtime = Timer();
+				g.mp.oldtime = MAXTimer();
 				t.tStartingServerCount_s = t.tStartingServerCount_s + ".";
 				if ( Len(t.tStartingServerCount_s.Get()) > 5 ) t.tStartingServerCount_s = ".";
 			}
@@ -411,8 +411,8 @@ void mp_loop ( void )
 			 PhotonSetThisPlayerAsCurrentServer ( );
 			 PhotonSendIAmLoadedAndReady ( );
 			g.mp.iHaveSaidIAmAlmostReady = 1;
-			t.tempsteamingameinitialwaitingdelay = Timer();
-			while ( Timer() - t.tempsteamingameinitialwaitingdelay < 2000 ) // not needed any more, server can serve up clients any time now.. was 20000 ) 
+			t.tempsteamingameinitialwaitingdelay = MAXTimer();
+			while ( MAXTimer() - t.tempsteamingameinitialwaitingdelay < 2000 ) // not needed any more, server can serve up clients any time now.. was 20000 ) 
 			{
 				g.mp.syncedWithServerMode = 0;
 				g.mp.onlySendMapToSpecificPlayer = -1;
@@ -420,16 +420,16 @@ void mp_loop ( void )
 				t.fLastProgress = 0;
 				 PhotonLoop(); // dangerous - risk of recursion!
 				mp_textDots(-1,20,3,"Waiting for other players");
-				if ( Timer() - t.tsteamiseveryoneloadedandreadytime > 1000 ) 
+				if ( MAXTimer() - t.tsteamiseveryoneloadedandreadytime > 1000 ) 
 				{
-					t.tsteamiseveryoneloadedandreadytime = Timer();
+					t.tsteamiseveryoneloadedandreadytime = MAXTimer();
 					if ( PhotonIsEveryoneLoadedAndReady() == 1 )
 					{
 						t.tempsteamingameinitialwaitingdelay = -30000;
 					}
 				}
 			}
-			t.tskipLevelSync = Timer();
+			t.tskipLevelSync = MAXTimer();
 		}
 
 		// wait for everyone before starting to load, at this GetPoint (  they have all the files they need, they just have not loaded them )
@@ -445,7 +445,7 @@ void mp_loop ( void )
 			g.mp.playGame = 1;
 			g.mp.okayToLoadLevel = 1;
 			PhotonResetFile ( );
-			t.tskipLevelSync = Timer();
+			t.tskipLevelSync = MAXTimer();
 		}
 		else
 		{
@@ -485,25 +485,25 @@ void mp_loop ( void )
 		{
 			 //this is wrong, it is sending the loaded and ready flag even before the file was received! (moved later in sequence)
 			 //PhotonSendIAmLoadedAndReady (  );
-			t.tskipLevelSync = Timer();
-			t.tempsteamingameinitialwaitingdelay = Timer();
-			g.mp.iKeepCheckingForGameRunning = Timer();
+			t.tskipLevelSync = MAXTimer();
+			t.tempsteamingameinitialwaitingdelay = MAXTimer();
+			g.mp.iKeepCheckingForGameRunning = MAXTimer();
 			g.mp.iHaveSaidIAmAlmostReady = 1;
 		}
 		if ( g.mp.iHaveSaidIAmAlmostReady == 1 ) 
 		{
 			DWORD dwReasonableTimeOutIfWaitingForGameToStart = 3 * 60 * 1000; // 3 minutes (could simply be waiting for more players, not real time out here)
-			if ( Timer() - t.tempsteamingameinitialwaitingdelay < dwReasonableTimeOutIfWaitingForGameToStart ) 
+			if ( MAXTimer() - t.tempsteamingameinitialwaitingdelay < dwReasonableTimeOutIfWaitingForGameToStart ) 
 			{
 				g.mp.syncedWithServerMode = 0;
 				g.mp.onlySendMapToSpecificPlayer = -1;
 				g.mp.okayToLoadLevel = 0;
-				g.mp.oldtime = Timer();
+				g.mp.oldtime = MAXTimer();
 				t.fLastProgress = 0;
 				mp_textDots(-1,50,3,"Waiting for other players");
 				 PhotonLoop(); // dangerous - risk of recursion!
 				// real time-out if no connection after 16 seconds of coming in here
-				if ( Timer() - t.tsteamtimeoutongamerunning > 16000 ) 
+				if ( MAXTimer() - t.tsteamtimeoutongamerunning > 16000 ) 
 				{
 					if ( PhotonGetClientServerConnectionStatus() == 0 ) 
 					{
@@ -516,9 +516,9 @@ void mp_loop ( void )
 				if ( iIsEveryoneLoadedAndReady == 1 ) t.tempsteamingameinitialwaitingdelay = -3000000; // was just = not ==
 
 				// can also skip this wait if game is already running (or was started after joining)
-				if ( Timer() - g.mp.iKeepCheckingForGameRunning > 1000 ) 
+				if ( MAXTimer() - g.mp.iKeepCheckingForGameRunning > 1000 ) 
 				{
-					g.mp.iKeepCheckingForGameRunning = Timer();
+					g.mp.iKeepCheckingForGameRunning = MAXTimer();
 					PhotonCheckIfGameRunning();
 				}
 				int iGameRunning = PhotonIsGameRunning();
@@ -562,7 +562,7 @@ void mp_loop ( void )
 				g.mp.playGame = 1;
 				g.mp.okayToLoadLevel = 1;
 				PhotonResetFile ( );
-				t.tskipLevelSync = Timer();
+				t.tskipLevelSync = MAXTimer();
 			}
 			else
 			{
@@ -1410,7 +1410,7 @@ void mp_pre_game_file_sync_server ( int iOnlySendMapToSpecificPlayer )
 				if ( iSendFileStatus == 1 )
 				{
 					g.mp.syncedWithServerMode = 2;
-					g.mp.oldtime = Timer();
+					g.mp.oldtime = MAXTimer();
 				}
 				else
 				{
@@ -1430,11 +1430,11 @@ void mp_pre_game_file_sync_server ( int iOnlySendMapToSpecificPlayer )
 
 		case 2:
 			g.mp.syncedWithServerMode = 3;
-			g.mp.oldtime = Timer();
+			g.mp.oldtime = MAXTimer();
 			break;
 
 		case 3:
-			g.mp.oldtime = Timer();
+			g.mp.oldtime = MAXTimer();
 			g.mp.syncedWithServer = 1;
 			g.mp.syncedWithServerMode = 99;
 			break;
@@ -1472,9 +1472,9 @@ void mp_pre_game_file_sync_client ( void )
 				float fProgress = PhotonGetFileProgress();
 
 				// after 20 seconds, and no percentage change, produce timeout
-				if ( Timer() - g.mp.oldtime > 1000*20 ) 
+				if ( MAXTimer() - g.mp.oldtime > 1000*20 ) 
 				{
-					g.mp.oldtime = Timer();
+					g.mp.oldtime = MAXTimer();
 					if ( fProgress == t.fLastProgress )
 					{
 						t.tsteamconnectionlostmessage_s = "Timed out waiting for transfer of file";
@@ -1619,8 +1619,8 @@ void mp_updatePlayerPositions ( void )
 		 float fAngle = PhotonGetPlayerAngle(t.c);
 		if ( t.mp_forcePosition[t.c] > 0 && iAlive == 1 ) 
 		{
-			if ( t.mp_forcePosition[t.c] == 1 ) t.mp_forcePosition[t.c] = Timer();
-			if ( Timer() - t.mp_forcePosition[t.c] > 1000 ) 
+			if ( t.mp_forcePosition[t.c] == 1 ) t.mp_forcePosition[t.c] = MAXTimer();
+			if ( MAXTimer() - t.mp_forcePosition[t.c] > 1000 ) 
 			{
 				t.mp_forcePosition[t.c] = 0;
 				t.x_f = fX; // seem redundant 9and are if you look below!!)
@@ -1678,12 +1678,12 @@ if (  g.mp.coop  ==  1 )
 }
 if (  t.s_s  !=  "" ) 
 {
-	t.tsteamdisplaymessagetimer = Timer();
+	t.tsteamdisplaymessagetimer = MAXTimer();
 	t.s_s = Upper(t.s_s.Get());
 }
 if (  t.s_s  ==  ""  )  t.s_s  =  g.mp.previousMessage_s;
 g.mp.previousMessage_s = t.s_s;
-if (  Timer() - t.tsteamdisplaymessagetimer < 2000  )  mp_text(-1,10,3,t.s_s.Get());
+if (  MAXTimer() - t.tsteamdisplaymessagetimer < 2000  )  mp_text(-1,10,3,t.s_s.Get());
 // `text GetDisplayWidth()/2 - Text (  width(s$)/2, 100, s$ )
 }
 
@@ -2682,7 +2682,7 @@ void mp_add_respawn_timed ( void )
 			{
 				t.mp_respawn_timed[t.i].inuse = 1;
 				t.mp_respawn_timed[t.i].e = t.e;
-				t.mp_respawn_timed[t.i].time = Timer();
+				t.mp_respawn_timed[t.i].time = MAXTimer();
 				break;
 			}
 	}
@@ -2761,8 +2761,8 @@ void mp_updatePlayerInput ( void )
 	// handle floor contact and reloading counter
 	if ( t.playercontrol.plrhitfloormaterial == 0 ) 
 	{
-		if ( g.mp.oldfootfloortime == 0 ) g.mp.oldfootfloortime = Timer();
-		if ( Timer()-g.mp.oldfootfloortime > 100 )  g.mp.footfloor = 0;
+		if ( g.mp.oldfootfloortime == 0 ) g.mp.oldfootfloortime = MAXTimer();
+		if ( MAXTimer()-g.mp.oldfootfloortime > 100 )  g.mp.footfloor = 0;
 	}
 	else
 	{
@@ -2770,7 +2770,7 @@ void mp_updatePlayerInput ( void )
 		g.mp.footfloor = 1;
 	}
 	if ( g.plrreloading == 0 ) g.mp.reloadingCount = 0;
-	t.tTime = Timer();
+	t.tTime = MAXTimer();
 	
 	// send appearance info
 	if ( t.tTime - g.mp.lastSendTimeAppearance > MP_APPEARANCE_UPDATE_DELAY ) 
@@ -3217,7 +3217,7 @@ void mp_check_for_attachments ( void )
 								if (  SoundPlaying(t.ttsnd) == 0 || t.tt == t.ttrr+1 ) 
 								{
 									t.charanimstate.firesoundindex=t.ttsnd ; t.tt=3;
-									t.charanimstate.firesoundexpiry=Timer()+200;
+									t.charanimstate.firesoundexpiry= MAXTimer()+200;
 								}
 							}
 						}
@@ -3333,7 +3333,7 @@ void mp_NearOtherPlayers ( void )
 
 void mp_check_respawn_objects ( void )
 {
-	t.tTime = Timer();
+	t.tTime = MAXTimer();
 	for ( t.i = 0 ; t.i<=  MP_RESPAWN_TIME_OBJECT_LIST_SIZE; t.i++ )
 	{
 		if (  t.mp_respawn_timed[t.i].inuse  ==  1 ) 
@@ -3372,13 +3372,13 @@ void mp_checkForEveryoneLeft ( void )
 
 void mp_lostConnection ( void )
 {
-	t.tTime = Timer();
+	t.tTime = MAXTimer();
 	editor_hideall3d ( );
 	SetDir ( cstr(g.fpscrootdir_s + "\\Files").Get() );
 	if ( t.tsteamconnectionlostmessage_s == "GAMEOVER" )  g.mp.backtoeditorforyou = 1;
 	if ( t.tsteamconnectionlostmessage_s == "" ) t.tsteamconnectionlostmessage_s = "Lost connection to server";
 	if ( t.tsteamlostconnectioncustommessage_s != "" )  t.tsteamconnectionlostmessage_s = t.tsteamlostconnectioncustommessage_s;
-	while ( Timer() - t.tTime < 5000 ) 
+	while ( MAXTimer() - t.tTime < 5000 ) 
 	{
 		Cls ( );
 		mp_text(-1,30,3,t.tsteamconnectionlostmessage_s.Get());
@@ -3577,7 +3577,7 @@ void mp_gameLoop ( void )
 	}
 
 	// Player is alive
-	t.tTime = Timer();
+	t.tTime = MAXTimer();
 	if ( t.tTime - g.mp.lastSendAliveTime > MP_ALIVE_UPDATE_DELAY ) 
 	{
 		g.mp.lastSendAliveTime = t.tTime;
@@ -3720,9 +3720,9 @@ void mp_checkItemSubbed ( void )
 	{
 		if (  t.mp_subbedItems[t.tloop]  ==  t.tlobbytring_s && t.tlobbytring_s != "" ) 
 		{
-			if (  Timer() - t.tsteaminstallingdotstime > 150 ) 
+			if (  MAXTimer() - t.tsteaminstallingdotstime > 150 ) 
 			{
-				t.tsteaminstallingdotstime = Timer();
+				t.tsteaminstallingdotstime = MAXTimer();
 				t.tsteamInstallingDots_s = t.tsteamInstallingDots_s + ".";
 				if (  Len(t.tsteamInstallingDots_s.Get()) > 3  )  t.tsteamInstallingDots_s  =  "";
 			}
@@ -4093,14 +4093,14 @@ void mp_setMessage ( void )
 {
 	//  takes tmsg$
 	g.mp.message = t.tmsg_s;
-	g.mp.messageTime = Timer();
+	g.mp.messageTime = MAXTimer();
 }
 
 void mp_setMessageDots ( void )
 {
 	//  takes tmsg$
 	g.mp.messageDots = t.tmsg_s;
-	g.mp.messageTimeDots = Timer();
+	g.mp.messageTimeDots = MAXTimer();
 }
 
 void mp_message ( void )
@@ -4108,7 +4108,7 @@ void mp_message ( void )
 	if ( g.mp.message  !=  "" ) 
 	{
 		mp_text(-1,15,3,g.mp.message.Get());
-		if ( Timer() - g.mp.messageTime > MP_MESSAGE_TIMOUT ) 
+		if ( MAXTimer() - g.mp.messageTime > MP_MESSAGE_TIMOUT ) 
 		{
 			g.mp.message = "";
 		}
@@ -4120,7 +4120,7 @@ void mp_messageDots ( void )
 	if (  g.mp.messageDots  !=  "" ) 
 	{
 		mp_textDots(-1,15,3,g.mp.messageDots.Get());
-		if (  Timer() - g.mp.messageTimeDots > MP_MESSAGE_TIMOUT ) 
+		if (  MAXTimer() - g.mp.messageTimeDots > MP_MESSAGE_TIMOUT ) 
 		{
 			g.mp.messageDots = "";
 		}
@@ -4135,7 +4135,7 @@ void mp_update_projectile ( void )
 
 	t.tSteamBullet = (g.mp.me*20) + t.tProj;
 
-	t.tTime = Timer();
+	t.tTime = MAXTimer();
 	if (  t.tTime - t.mp_bullets_send_time[t.tSteamBullet] < MP_PROJECTILE_UPDATE_DELAY && t.tSteamBulletOn  ==  1  )  return;
 
 	t.mp_bullets_send_time[t.tSteamBullet] = t.tTime;
@@ -4223,7 +4223,7 @@ void mp_networkkill ( void )
 		g.mp.playerThatKilledMe = t.tsource;
 		t.tsteamforce = 500;
 		SteamKilledBy (  g.mp.playerThatKilledMe , CameraPositionX(), CameraPositionY(), CameraPositionZ(), t.tsteamforce, 0 );
-		g.mp.dyingTime = Timer();
+		g.mp.dyingTime = MAXTimer();
 	}
 }
 
@@ -4337,10 +4337,10 @@ void mp_lobbyListBox ( void )
 			InkEx ( 128, 128, 128 );
 			if (  t.mc  ==  1 ) 
 			{
-				if (  Timer() - t.tempsteamscrollclicktimer > 100 ) 
+				if (  MAXTimer() - t.tempsteamscrollclicktimer > 100 ) 
 				{
 					--g.mp.lobbyoffset;
-					t.tempsteamscrollclicktimer = Timer();
+					t.tempsteamscrollclicktimer = MAXTimer();
 				}
 			}
 		}
@@ -4358,10 +4358,10 @@ void mp_lobbyListBox ( void )
 			InkEx ( 128, 128, 128 );
 			if (  t.mc  ==  1 ) 
 			{
-				if (  Timer() - t.tempsteamscrollclicktimer > 100 ) 
+				if (  MAXTimer() - t.tempsteamscrollclicktimer > 100 ) 
 				{
 					++g.mp.lobbyoffset;
-					t.tempsteamscrollclicktimer = Timer();
+					t.tempsteamscrollclicktimer = MAXTimer();
 				}
 			}
 		}
@@ -4558,7 +4558,7 @@ void mp_createLobby ( void )
 	// mark as host and wait for creation to succeed
 	g.mp.isGameHost = 1;
 	g.mp.mode = MP_WAITING_FOR_LOBBY_CREATION;
-	t.tempsteamlobbycreationtimeout = Timer();
+	t.tempsteamlobbycreationtimeout = MAXTimer();
 }
 
 void mp_searchForLobbies ( void )
@@ -4907,9 +4907,9 @@ void mp_joinALobby ( void )
 		 PhotonJoinLobby(g.mp.lobbyjoinedname.Get());
 
 		g.mp.mode = MP_JOINING_LOBBY;
-		g.mp.oldtime = Timer();
-		t.tsteamwaitedforlobbytimer = Timer();
-		g.mp.AttemptedToJoinLobbyTime = Timer();
+		g.mp.oldtime = MAXTimer();
+		t.tsteamwaitedforlobbytimer = MAXTimer();
+		g.mp.AttemptedToJoinLobbyTime = MAXTimer();
 		g.mp.lobbycount = 0;
 	}
 }
@@ -5496,7 +5496,7 @@ void mp_chat ( void )
 	}
 	if (  g.mp.chaton  ==  1 ) 
 	{
-		if (  Timer() - g.mp.lastSpawnedTime > 1000 ) 
+		if (  MAXTimer() - g.mp.lastSpawnedTime > 1000 ) 
 		{
 			t.aisystem.processplayerlogic=0;
 		}
@@ -5504,13 +5504,13 @@ void mp_chat ( void )
 		{
 			t.aisystem.processplayerlogic=1;
 		}
-		g.mp.chattimer = Timer();
+		g.mp.chattimer = MAXTimer();
 
 		g.mp.chatstring = Entry(1);
 		//  show the Text (  we have typed )
-		if (  Timer() - t.chatcursortime > 250 ) 
+		if (  MAXTimer() - t.chatcursortime > 250 ) 
 		{
-			t.chatcursortime = Timer();
+			t.chatcursortime = MAXTimer();
 			g.mp.cursoron = 1-g.mp.cursoron;
 		}
 		if (  g.mp.cursoron  ==  0 ) 
@@ -5528,16 +5528,16 @@ void mp_chat ( void )
 	}
 	t.oldchatscancode = t.tscancode;
 
-	if (  Timer() - g.mp.chattimer  <=  MP_CHAT_DELAY+2550 ) 
+	if (  MAXTimer() - g.mp.chattimer  <=  MP_CHAT_DELAY+2550 ) 
 	{
-		t.ttimegone = Timer()-t.toldchattime;
+		t.ttimegone = MAXTimer()-t.toldchattime;
 		if (  t.ttimegone > 50 ) 
 		{
-			t.toldchattime = Timer();
+			t.toldchattime = MAXTimer();
 			t.ttimegone = 16;
 		}
-		t.toldchattime = Timer();
-		if (  Timer() - g.mp.chattimer  >=  MP_CHAT_DELAY ) 
+		t.toldchattime = MAXTimer();
+		if (  MAXTimer() - g.mp.chattimer  >=  MP_CHAT_DELAY ) 
 		{
 			t.tsteamalpha = t.tsteamalpha - t.ttimegone;
 		}
@@ -5596,7 +5596,7 @@ void mp_chatNew ( void )
 	if (  cstr(Left(t.tchat_s.Get(),1))  !=  "s" ) 
 	{
 		t.mp_chat[MP_MAX_CHAT_LINES-1] = t.tchat_s;
-		g.mp.chattimer = Timer();
+		g.mp.chattimer = MAXTimer();
 	}
 	//  200315 - 021 - pick up users joining the game from the server message sent
 	if (  cstr(Left(t.tchat_s.Get(),1))  ==  "s" ) 
@@ -5691,10 +5691,10 @@ void mp_sendSteamIDToEditor ( void )
 void mp_checkIfLobbiesAvailable ( void )
 {
 	if (  t.thowlongbetweenlobbychecks  <=  0  )  t.thowlongbetweenlobbychecks  =  15*1000;
-	if (  Timer() - t.tlasttimecheckedforlobbiestimer > t.thowlongbetweenlobbychecks ) 
+	if (  MAXTimer() - t.tlasttimecheckedforlobbiestimer > t.thowlongbetweenlobbychecks ) 
 	{
 		SteamLoop (  );
-		t.tlasttimecheckedforlobbiestimer = Timer();
+		t.tlasttimecheckedforlobbiestimer = MAXTimer();
 		if (  g.mp.checkiflobbiesavailablemode  ==  0 ) 
 		{
 			SteamGetLobbyList (  );
@@ -5835,7 +5835,7 @@ void mp_entity_lua_fireweaponEffectOnly ( void )
 					if (  SoundPlaying(t.ttsnd) == 0 || t.tt == t.ttrr+1 ) 
 					{
 						t.charanimstate.firesoundindex=t.ttsnd ; t.tt=3;
-						t.charanimstate.firesoundexpiry=Timer()+200;
+						t.charanimstate.firesoundexpiry= MAXTimer()+200;
 					}
 				}
 			}
@@ -5890,7 +5890,7 @@ void mp_updateAIForCOOP ( void )
 							// rotate or look at player for 1 second after receiving lua command, to cut down packets being sent
 							if (  t.entityelement[t.e].mp_rotateType  ==  1 ) 
 							{
-								if (  Timer() - t.entityelement[t.e].mp_rotateTimer > 1000  )  t.entityelement[t.e].mp_rotateType  =  0;
+								if (  MAXTimer() - t.entityelement[t.e].mp_rotateTimer > 1000  )  t.entityelement[t.e].mp_rotateType  =  0;
 								if (  t.entityelement[t.e].obj > 0 ) 
 								{
 									if (  ObjectExist(t.entityelement[t.e].obj)  ==  1 ) 
@@ -5905,7 +5905,7 @@ void mp_updateAIForCOOP ( void )
 							}
 							if (  t.entityelement[t.e].mp_rotateType  ==  2 ) 
 							{
-								if (  Timer() - t.entityelement[t.e].mp_rotateTimer > 1000  )  t.entityelement[t.e].mp_rotateType  =  0;
+								if (  MAXTimer() - t.entityelement[t.e].mp_rotateTimer > 1000  )  t.entityelement[t.e].mp_rotateType  =  0;
 								if (  t.entityelement[t.e].obj > 0 ) 
 								{
 									if (  ObjectExist(t.entityelement[t.e].obj)  ==  1 ) 
@@ -5932,7 +5932,7 @@ void mp_updateAIForCOOP ( void )
 								{
 									t.tsteamplayeralive = SteamGetPlayerAlive(t.entityelement[t.e].mp_coopControlledByPlayer);
 								}
-								if (  Timer() - t.entityelement[t.e].mp_coopLastTimeSwitchedTarget > 5000 || t.tsteamplayeralive  ==  0 ) 
+								if (  MAXTimer() - t.entityelement[t.e].mp_coopLastTimeSwitchedTarget > 5000 || t.tsteamplayeralive  ==  0 ) 
 								{
 									t.tthrowaway = Rnd(1);
 									if (  t.tsteamplayeralive  ==  0 || t.entityelement[t.e].mp_coopControlledByPlayer  ==  -1  )  t.tthrowaway  =  1;
@@ -5945,7 +5945,7 @@ void mp_updateAIForCOOP ( void )
 										t.entityelement[t.e].mp_updateOn = 1;
 										t.entityelement[t.e].mp_lastUpdateSent = 0;
 									}
-									t.entityelement[t.e].mp_coopLastTimeSwitchedTarget = Timer()+5000;
+									t.entityelement[t.e].mp_coopLastTimeSwitchedTarget = MAXTimer()+5000;
 								}
 							}
 						}
@@ -5965,14 +5965,14 @@ void mp_updateAIForCOOP ( void )
 										if (  t.entityelement[t.e].active == 1 && t.entityelement[t.e].health > 0 ) 
 										{
 
-											if (  Timer() - t.tcoopLastUpdateSent > 500 || t.tcoopLastUpdateSent < 0 ) 
+											if (  MAXTimer() - t.tcoopLastUpdateSent > 500 || t.tcoopLastUpdateSent < 0 ) 
 											{
 													t.tsentone = 1;
 													SteamSendLua (  MP_LUA_HaveAggro,t.e,g.mp.me );
 													SteamSendLua (  MP_LUA_AiGoToX,t.entityelement[t.e].obj,ObjectPositionX(t.entityelement[t.e].obj) );
 													SteamSendLua (  MP_LUA_AiGoToZ,t.entityelement[t.e].obj,ObjectPositionZ(t.entityelement[t.e].obj) );
-													t.entityelement[t.e].mp_lastUpdateSent = Timer();
-													t.tcoopLastUpdateSent = Timer();
+													t.entityelement[t.e].mp_lastUpdateSent = MAXTimer();
+													t.tcoopLastUpdateSent = MAXTimer();
 													t.tcoopyentityupdatetostartat = t.e+1;
 
 
@@ -6104,9 +6104,9 @@ void mp_text ( int x, int y, int size, char* txt_s )
 void mp_textDots ( int x, int y, int size, char* txt_s )
 {
 
-	if (  Timer() - g.mp.steamdotsoldtime > 150 ) 
+	if (  MAXTimer() - g.mp.steamdotsoldtime > 150 ) 
 	{
-		g.mp.steamdotsoldtime = Timer();
+		g.mp.steamdotsoldtime = MAXTimer();
 		g.mp.buildingDots = g.mp.buildingDots + ".";
 		if (  Len(g.mp.buildingDots.Get()) > 5  )  g.mp.buildingDots  =  ".";
 	}

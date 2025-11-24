@@ -12,6 +12,7 @@
 #include "stdio.h"
 #include "mmsystem.h"
 #include <vector>
+#include ".\..\..\Shared\Core\DBDLLCore.h"
 
 #include "CBasic2DC.h"
 #include "CObjectsC.h"
@@ -2839,11 +2840,11 @@ void CPU3DDoOcclude()
 		{
 			OccludeeListNotVis[c] = 0;
 		}
-		OccluderQuickTimeDelay = Timer();
+		OccluderQuickTimeDelay = MAXTimer();
 		occluderLastTime = 0;
 	}
 
-	if ( Timer() - OccluderQuickTimeDelay < 500 ) 
+	if ( MAXTimer() - OccluderQuickTimeDelay < 500 ) 
 	{
 		sObject* p;
 		for ( int c = 0 ; c < OccludeeList.size() ; c++ )

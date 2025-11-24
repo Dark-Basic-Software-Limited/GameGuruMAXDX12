@@ -791,12 +791,12 @@ void PlayVideoToImage( uint32_t imageID )
 			DWORD dwTimeElapsed = timeGetTime() + 5000; // 5 seconds
 
 			// must wait for topology to finish setting before we can get the volume interface
-			///float startTime = Timer();
+			///float startTime = MAXTimer();
 			IMFMediaEvent *pEvent = 0;
 			do
 			{
 				Sleep( 100 );
-				///if ( agk::Timer() - startTime > 4 )
+				///if ( agk::MAXTimer() - startTime > 4 )
 				///{
 				///	Error1( "Failed to load video, format may not be supported" );
 				///	goto failed;

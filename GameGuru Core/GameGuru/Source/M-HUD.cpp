@@ -312,7 +312,7 @@ void blood_damage_init ( void )
 			{
 				LoadImage (  t.a_s.Get(),t.huddamage.bloodstart+t.mb,0,g.gdividetexturesize );
 				WickedCall_LoadImage(t.a_s.Get()); //PE: Also add to wicked for textureobject that cant use legacy image.
-				Sprite(t.huddamage.bloodstart + t.mb, -100000, -100000, t.huddamage.bloodstart + t.mb);
+				MAXSprite(t.huddamage.bloodstart + t.mb, -100000, -100000, t.huddamage.bloodstart + t.mb);
 				++t.huddamage.bloodtotal;
 
 				//  keep alive with steam server
@@ -330,7 +330,7 @@ void blood_damage_init ( void )
 		if (ImageExist(t.huddamage.indicator) == 0)  LoadImage (t.a_s.Get(), t.huddamage.indicator);
 		if (ImageExist(t.huddamage.indicator) == 1)
 		{
-			Sprite(t.huddamage.indicator, -100000, -100000, t.huddamage.indicator);
+			MAXSprite(t.huddamage.indicator, -100000, -100000, t.huddamage.indicator);
 			OffsetSprite(t.huddamage.indicator, ImageWidth(t.huddamage.indicator) / 2, ImageHeight(t.huddamage.indicator) / 2);
 		}
 		image_setlegacyimageloading(false);
@@ -371,7 +371,7 @@ void placeblood ( int damage, int x, int y, int z, int howfar )
 			ScaleSprite (  t.screenblood[find].image,t.screenblood[find].scale );
 
 			//  set life
-			t.screenblood[find].life=Timer() + t.huddamage.bloodtimestart;
+			t.screenblood[find].life= MAXTimer() + t.huddamage.bloodtimestart;
 			if (  t.huddamage.bloodtimeend>t.huddamage.bloodtimestart ) 
 			{
 				t.screenblood[find].life += Rnd(t.huddamage.bloodtimeend-t.huddamage.bloodtimestart);
@@ -389,7 +389,7 @@ int controlblood ( void )
 	int howmany = 0;
 	int tAlpha = 0;
 	int cb = 0;
-	tTimerCache = Timer();
+	tTimerCache = MAXTimer();
 	howmany=0;
 	for ( cb = 1 ; cb<=  40; cb++ )
 	{
@@ -428,7 +428,7 @@ void resetblood ( void )
 	for ( cb = 1 ; cb<=  40; cb++ )
 	{
 		t.screenblood[cb].fadeout=0;
-		t.screenblood[cb].fadetime=Timer();
+		t.screenblood[cb].fadetime= MAXTimer();
 		t.screenblood[cb].used=0;
 	}
 }
@@ -480,10 +480,10 @@ void new_damage_marker ( int entity, int x, int z, int y, int tempdamage )
 				t.damagemarker[find].fadelife = t.huddamage.fadespeed / 255;
 				//  ensure fade isn't too slow based on user settings.
 				if (t.damagemarker[find].fadelife > t.huddamage.fadespeed)  t.damagemarker[find].fadelife = t.huddamage.fadespeed;
-				t.damagemarker[find].fadetime = Timer();
+				t.damagemarker[find].fadetime = MAXTimer();
 				t.damagemarker[find].used = 1;
 				t.damagemarker[find].image = t.huddamage.indicator;
-				t.damagemarker[find].time = Timer();
+				t.damagemarker[find].time = MAXTimer();
 				t.damagemarker[find].scale = 200;
 				t.damagemarker[find].entity = entity;
 				//  store damage start location
@@ -563,11 +563,11 @@ int controldamagemarker ( void )
 				//  otherwise do the business
 				++howmany;
 				ScaleSprite (  t.damagemarker[dm].image,t.damagemarker[dm].scale );
-				findtime=Timer()-t.damagemarker[dm].time;
-				if (  Timer()-t.damagemarker[dm].fadetime>t.damagemarker[dm].fadelife ) 
+				findtime= MAXTimer()-t.damagemarker[dm].time;
+				if (MAXTimer()-t.damagemarker[dm].fadetime>t.damagemarker[dm].fadelife )
 				{
 					t.damagemarker[dm].fadeout -= t.damagemarker[dm].fadelife;
-					t.damagemarker[dm].fadetime=Timer();
+					t.damagemarker[dm].fadetime= MAXTimer();
 				}
 				talpha=t.damagemarker[dm].fadeout;
 				if (  talpha<0  )  talpha = 0;
@@ -641,7 +641,7 @@ void resetdamagemarker ( void )
 	{
 		t.damagemarker[dm].used=0;
 		t.damagemarker[dm].fadeout=0;
-		t.damagemarker[dm].fadetime=Timer();
+		t.damagemarker[dm].fadetime= MAXTimer();
 		t.damagemarker[dm].used=0;
 		t.damagemarker[dm].entity=0;
 	}

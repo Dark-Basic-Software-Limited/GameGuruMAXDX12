@@ -165,6 +165,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <DisableSpecificWarnings>4005;4995;4723</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -216,8 +217,6 @@
     <ClInclude Include="..\..\Shared\DBOFormat\DBORawMesh.h" />
     <ClInclude Include="..\..\Shared\DBOFormat\Extras\NVMeshMender.h" />
     <ClInclude Include="..\..\Shared\Objects\Occlusion\cOcclusion.h" />
-    <ClInclude Include="..\..\Shared\Objects\ShadowMapping\cShadowMaps.h" />
-    <ClInclude Include="..\..\Shared\Objects\ShadowMapping\DepthTexture.h" />
     <ClInclude Include="..\..\Shared\Camera\CCameraDataC.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -335,8 +334,6 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;OBJECTS_EXPORTS</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="..\..\Shared\Objects\Occlusion\cOcclusion.cpp" />
-    <ClCompile Include="..\..\Shared\Objects\ShadowMapping\cShadowMaps.cpp" />
-    <ClCompile Include="..\..\Shared\Objects\ShadowMapping\DepthTexture.cpp" />
     <ClCompile Include="..\..\Shared\Objects\GameFXCalls.cpp" />
     <ClCompile Include="..\..\Shared\Core\globstruct.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>

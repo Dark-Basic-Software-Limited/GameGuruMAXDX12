@@ -406,7 +406,7 @@ void lua_loop_begin ( void )
 	LuaSetInt(pUserDefinedGlobal, t.player[t.plrid].lives);
 
 	LuaSetInt (  "g_PlayerGunZoomed", t.gunzoommode );
-	LuaSetInt (  "g_Time", Timer()-t.aisystem.cumilativepauses );
+	LuaSetInt (  "g_Time", MAXTimer()-t.aisystem.cumilativepauses );
 	LuaSetFloat (  "g_TimeElapsed", g.timeelapsed_f );
 	LuaSetInt (  "g_PlayerThirdPerson", t.playercontrol.thirdperson.enabled );
 	LuaSetInt (  "g_PlayerController", g.gxbox );

@@ -1911,13 +1911,13 @@ void game_masterroot_gameloop_initcode(int iUseVRTest)
 		{
 			t.visuals.generalprompt_s = "Press TAB to see framerate or ESCAPE to exit test";
 		}
-		t.visuals.generalpromptstatetimer=Timer()+123;
+		t.visuals.generalpromptstatetimer= MAXTimer()+123;
 	}
 	else
 	{
 		if ( t.game.runasmultiplayer == 1 ) 
 		{
-			t.visuals.generalpromptstatetimer=Timer()+1000;
+			t.visuals.generalpromptstatetimer= MAXTimer()+1000;
 			t.visuals.generalprompt_s="Welcome to GameGuru MAX Multiplayer";
 		}
 		else
@@ -2046,7 +2046,7 @@ void game_masterroot_gameloop_initcode(int iUseVRTest)
 	t.tMousemove_f = MouseMoveX() + MouseMoveY() + MouseZ(); t.tMousemove_f  = 0;
 
 	//  Tab mode LOW FPS Warning
-	g.tabmode=0 ; g.lowfpstarttimer=Timer();
+	g.tabmode=0 ; g.lowfpstarttimer= MAXTimer();
 
 	//  Game loop will run while single level is in play
 	t.huddamage.immunity=1000;
@@ -2176,7 +2176,7 @@ void game_masterroot_gameloop_afterescapepressed(void)
 	if ( t.currentgunobj>0 ) { if ( ObjectExist(t.currentgunobj) == 1 ) { gun_SetObjectSpeed (  t.currentgunobj,t.currentgunanimspeed_f); } }
 	physics_resumephysics ( );
 	entity_resumeanimations ( );
-	t.aisystem.cumilativepauses=Timer()-t.tremembertimer;
+	t.aisystem.cumilativepauses= MAXTimer()-t.tremembertimer;
 	game_main_snapshotsoundresume ( );
 	t.strwork = ""; t.strwork = t.strwork + "resuming game loop with flag "+Str(t.game.gameloop);
 	timestampactivity(0, t.strwork.Get() );
@@ -2287,7 +2287,7 @@ bool game_masterroot_gameloop_loopcode(int iUseVRTest)
 		// can perform some extra debug snapshots when enter in-game menu - useful!
 		if (g.gproducelogfiles == 2) GGTerrain::GGTerrain_DebugOutputFlattenedAreas();
 
-		t.tremembertimer=Timer();
+		t.tremembertimer= MAXTimer();
 		game_main_snapshotsound ( );
 		while ( EscapeKey() != 0 ) {}
 		physics_pausephysics ( );
@@ -4215,7 +4215,7 @@ void game_main_loop ( void )
 			 if ( t.game.gameisexe != 0 )
 			 {
 				// No lightmapping in free trial version
-				t.visuals.generalpromptstatetimer=Timer()+123;
+				t.visuals.generalpromptstatetimer= MAXTimer()+123;
 				t.visuals.generalprompt_s="Game Created With Free Trial Version Of GameGuru";
 			 }
 			#endif
@@ -4661,13 +4661,13 @@ void game_sync ( void )
 		{
 			// cooldown ensures this FPS warning only happens when cooled off
 			--t.conkit.cooldown;
-			g.lowfpstarttimer = Timer();
+			g.lowfpstarttimer = MAXTimer();
 		}
 		if (  t.conkit.editmodeactive == 0 && t.conkit.cooldown == 0 ) 
 		{
 			if (  g.lowfpswarning == 0 ) 
 			{
-				if ( (unsigned long)Timer()>g.lowfpstarttimer+2000 ) 
+				if ( (unsigned long)MAXTimer()>g.lowfpstarttimer+2000 ) 
 				{
 					if ( GetDisplayFPS()<20 ) 
 					{

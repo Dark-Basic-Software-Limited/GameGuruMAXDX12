@@ -106,7 +106,7 @@ void draw_particles ( void )
 				doit=1;
 				if (  t.particle[emitter][draw].activein != 0 ) 
 				{
-					zz=Timer()-t.particle[emitter][draw].activetime;
+					zz= MAXTimer()-t.particle[emitter][draw].activetime;
 					if (  zz<t.particle[emitter][draw].activein  )  doit = 0;
 				}
 
@@ -163,10 +163,10 @@ void draw_particles ( void )
 					//  if particle is a fire, generate sparks every 2.5 seconds
 					if (  t.particle[emitter][draw].etype == 5 || t.particle[emitter][draw].etype == 12 || t.particle[emitter][draw].etype == 13 ) 
 					{
-						if (  Timer()-t.particle[emitter][draw].time>2500 ) 
+						if (  MAXTimer()-t.particle[emitter][draw].time>2500 ) 
 						{
 							Create_Emitter(t.particle[emitter][draw].x,t.particle[emitter][draw].y,t.particle[emitter][draw].z,14,Rnd(2)+1,g.sparkdecal,0,0,0,0,0,0);
-							t.particle[emitter][draw].time=Timer();
+							t.particle[emitter][draw].time= MAXTimer();
 							if (  t.particle[emitter][draw].etype == 5 && t.particle[emitter][draw].nextframe>35 ) 
 							{
 								make_large_fire(t.particle[emitter][draw].x,t.particle[emitter][draw].y-20,t.particle[emitter][draw].z);
@@ -189,9 +189,9 @@ void draw_particles ( void )
 					if (  t.particle[emitter][draw].etype == 2 && t.particle[emitter][draw].nextframe == 1  )  hideframe = 1;
 					if (  hideframe == 0  )  ShowObject (  t.particle[emitter][draw].obj );
 					//  update animation frame if time.
-					if (  Timer()-t.particle[emitter][draw].lastanitime>t.particle[emitter][draw].anispeed ) 
+					if (MAXTimer()-t.particle[emitter][draw].lastanitime>t.particle[emitter][draw].anispeed )
 					{
-						t.particle[emitter][draw].lastanitime=Timer();
+						t.particle[emitter][draw].lastanitime= MAXTimer();
 						Set_Object_Frame_Update(t.particle[emitter][draw].obj,t.particle[emitter][draw].nextframe,size,size);
 						++t.particle[emitter][draw].nextframe;
 						//  reset if animation at last frame, kill if not looped
@@ -225,7 +225,7 @@ void draw_particles ( void )
 					//  if particle has a life counter, kill when exceeds it
 					if (  t.particle[emitter][draw].life != 0 ) 
 					{
-						if (  Timer()>t.particle[emitter][draw].life ) 
+						if (MAXTimer()>t.particle[emitter][draw].life )
 						{
 							t.particle[emitter][draw].used=0;
 						}
@@ -301,11 +301,11 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].etype=1;
 							t.particle[emitter][use].size=8;
 							t.particle[emitter][use].activein=delay;
-							t.particle[emitter][use].activetime=Timer();
+							t.particle[emitter][use].activetime= MAXTimer();
 							t.particle[emitter][use].rotate=0;
 							t.particle[emitter][use].life=0;
-							t.particle[emitter][use].lasttime=Timer();
-							t.particle[emitter][use].lastanitime=Timer();
+							t.particle[emitter][use].lasttime= MAXTimer();
+							t.particle[emitter][use].lastanitime= MAXTimer();
 							t.particle[emitter][use].anispeed=60;
 							TextureObject (  t.particle[emitter][use].obj,0,textureid );
 							t.particle[emitter][use].nextframe=1;
@@ -352,11 +352,11 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].size=4;
 							t.particle[emitter][use].etype=7;
 							t.particle[emitter][use].activein=delay;
-							t.particle[emitter][use].activetime=Timer();
+							t.particle[emitter][use].activetime= MAXTimer();
 							t.particle[emitter][use].rotate=4;
-							t.particle[emitter][use].life=Timer()+1500;
-							t.particle[emitter][use].lasttime=Timer();
-							t.particle[emitter][use].lastanitime=Timer();
+							t.particle[emitter][use].life= MAXTimer()+1500;
+							t.particle[emitter][use].lasttime= MAXTimer();
+							t.particle[emitter][use].lastanitime= MAXTimer();
 							t.particle[emitter][use].anispeed=35;
 							TextureObject (  t.particle[emitter][use].obj,0,textureid );
 							t.particle[emitter][use].size=8;
@@ -402,11 +402,11 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].etype=5;
 							t.particle[emitter][use].size=8;
 							t.particle[emitter][use].activein=delay;
-							t.particle[emitter][use].activetime=Timer();
+							t.particle[emitter][use].activetime= MAXTimer();
 							t.particle[emitter][use].rotate=0;
 							t.particle[emitter][use].life=0;
-							t.particle[emitter][use].lasttime=Timer();
-							t.particle[emitter][use].lastanitime=Timer();
+							t.particle[emitter][use].lasttime= MAXTimer();
+							t.particle[emitter][use].lastanitime= MAXTimer();
 							t.particle[emitter][use].anispeed=20;
 							TextureObject (  t.particle[emitter][use].obj,0,textureid );
 							t.particle[emitter][use].nextframe=Rnd(8)+1;
@@ -423,7 +423,7 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].fadedir=0;
 							t.particle[emitter][use].fadeout=0;
 							t.particle[emitter][use].alpha=0;
-							t.particle[emitter][use].time=Timer()+Rnd(1000);
+							t.particle[emitter][use].time= MAXTimer()+Rnd(1000);
 						}
 					}
 				}
@@ -454,10 +454,10 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].size=8;
 							t.particle[emitter][use].rotate=0;
 							t.particle[emitter][use].activein=delay;
-							t.particle[emitter][use].activetime=Timer();
+							t.particle[emitter][use].activetime= MAXTimer();
 							t.particle[emitter][use].life=0;
-							t.particle[emitter][use].lasttime=Timer();
-							t.particle[emitter][use].lastanitime=Timer();
+							t.particle[emitter][use].lasttime= MAXTimer();
+							t.particle[emitter][use].lastanitime= MAXTimer();
 							t.particle[emitter][use].anispeed=25;
 							t.particle[emitter][use].fadein=10.0f;
 							t.particle[emitter][use].fademax=100;
@@ -502,11 +502,11 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].etype=12;
 							t.particle[emitter][use].size=8;
 							t.particle[emitter][use].activein=delay;
-							t.particle[emitter][use].activetime=Timer();
+							t.particle[emitter][use].activetime= MAXTimer();
 							t.particle[emitter][use].rotate=0;
 							t.particle[emitter][use].life=0;
-							t.particle[emitter][use].lasttime=Timer();
-							t.particle[emitter][use].lastanitime=Timer();
+							t.particle[emitter][use].lasttime= MAXTimer();
+							t.particle[emitter][use].lastanitime= MAXTimer();
 							t.particle[emitter][use].anispeed=20;
 							TextureObject (  t.particle[emitter][use].obj,0,textureid );
 							t.particle[emitter][use].nextframe=Rnd(8)+1;
@@ -523,7 +523,7 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].fadedir=0;
 							t.particle[emitter][use].fadeout=0;
 							t.particle[emitter][use].alpha=0;
-							t.particle[emitter][use].time=Timer()+Rnd(1000);
+							t.particle[emitter][use].time= MAXTimer()+Rnd(1000);
 						}
 					}
 				}
@@ -553,11 +553,11 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].etype=13;
 							t.particle[emitter][use].size=8;
 							t.particle[emitter][use].activein=delay;
-							t.particle[emitter][use].activetime=Timer();
+							t.particle[emitter][use].activetime= MAXTimer();
 							t.particle[emitter][use].rotate=0;
 							t.particle[emitter][use].life=0;
-							t.particle[emitter][use].lasttime=Timer();
-							t.particle[emitter][use].lastanitime=Timer();
+							t.particle[emitter][use].lasttime= MAXTimer();
+							t.particle[emitter][use].lastanitime= MAXTimer();
 							t.particle[emitter][use].anispeed=20;
 							TextureObject (  t.particle[emitter][use].obj,0,textureid );
 							t.particle[emitter][use].nextframe=Rnd(8)+1;
@@ -574,7 +574,7 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].fadedir=0;
 							t.particle[emitter][use].fadeout=0;
 							t.particle[emitter][use].alpha=0;
-							t.particle[emitter][use].time=Timer()+Rnd(1000);
+							t.particle[emitter][use].time= MAXTimer()+Rnd(1000);
 						}
 					}
 				}
@@ -603,11 +603,11 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].etype=1;
 							t.particle[emitter][use].size=8;
 							t.particle[emitter][use].activein=delay;
-							t.particle[emitter][use].activetime=Timer();
+							t.particle[emitter][use].activetime= MAXTimer();
 							t.particle[emitter][use].rotate=0;
 							t.particle[emitter][use].life=0;
-							t.particle[emitter][use].lasttime=Timer();
-							t.particle[emitter][use].lastanitime=Timer();
+							t.particle[emitter][use].lasttime= MAXTimer();
+							t.particle[emitter][use].lastanitime= MAXTimer();
 							t.particle[emitter][use].anispeed=35;
 							TextureObject (  t.particle[emitter][use].obj, 0, textureid );
 							ScaleObject ( t.particle[emitter][use].obj, scale, scale, scale );
@@ -656,11 +656,11 @@ int Create_Emitter ( int x, int y, int z, int etype, int part, int textureid, in
 							t.particle[emitter][use].etype=16;
 							t.particle[emitter][use].size=8;
 							t.particle[emitter][use].activein=delay;
-							t.particle[emitter][use].activetime=Timer();
+							t.particle[emitter][use].activetime= MAXTimer();
 							t.particle[emitter][use].rotate=0;
 							t.particle[emitter][use].life=0;
-							t.particle[emitter][use].lasttime=Timer();
-							t.particle[emitter][use].lastanitime=Timer();
+							t.particle[emitter][use].lasttime= MAXTimer();
+							t.particle[emitter][use].lastanitime= MAXTimer();
 							t.particle[emitter][use].anispeed=25;
 							TextureObject ( t.particle[emitter][use].obj,0,textureid );
 							ScaleObject ( t.particle[emitter][use].obj, scale, scale, scale );
@@ -925,11 +925,11 @@ void reset_current_particle ( int emitter, int use )
 	t.particle[emitter][use].etype=0;
 	t.particle[emitter][use].size=0;
 	t.particle[emitter][use].activein=0;
-	t.particle[emitter][use].activetime=Timer();
+	t.particle[emitter][use].activetime= MAXTimer();
 	t.particle[emitter][use].rotate=0;
 	t.particle[emitter][use].life=0;
-	t.particle[emitter][use].lasttime=Timer();
-	t.particle[emitter][use].lastanitime=Timer();
+	t.particle[emitter][use].lasttime= MAXTimer();
+	t.particle[emitter][use].lastanitime= MAXTimer();
 	t.particle[emitter][use].anispeed=0;
 	t.particle[emitter][use].nextframe=0;
 	t.particle[emitter][use].vx=0;

@@ -795,8 +795,8 @@ void importer_assignsprite ( int tCount )
 	while (  SpriteExist(t.tSpriteID) == 1 ) ++t.tSpriteID;
 	t.importerTextures[tCount].spriteID = t.tSpriteID+1;
 	t.importerTextures[tCount].spriteID2 = t.tSpriteID;
-	Sprite ( t.importerTextures[tCount].spriteID, -10000, -10000, g.importermenuimageoffset+6 );
-	Sprite ( t.importerTextures[tCount].spriteID2, -10000, -10000, g.importermenuimageoffset+6 );
+	MAXSprite ( t.importerTextures[tCount].spriteID, -10000, -10000, g.importermenuimageoffset+6 );
+	MAXSprite ( t.importerTextures[tCount].spriteID2, -10000, -10000, g.importermenuimageoffset+6 );
 }
 
 void importer_recreate_texturesprites ( void )
@@ -6693,23 +6693,23 @@ void importer_update_textures ( void )
 
 		if (!bRemoveSprites) {
 			if (t.importer.scaleMulti != 1.0)
-				Sprite(t.importerTextures[tCount].spriteID2, t.tOffsetX, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY - 19 + 20, g.importermenuimageoffset + 7);
+				MAXSprite(t.importerTextures[tCount].spriteID2, t.tOffsetX, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY - 19 + 20, g.importermenuimageoffset + 7);
 			else
-				Sprite(t.importerTextures[tCount].spriteID2, (GetChildWindowWidth() / 2) - 430 - t.tOffsetX - 19 - 20, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY - 19 + 20, g.importermenuimageoffset + 7);
+				MAXSprite(t.importerTextures[tCount].spriteID2, (GetChildWindowWidth() / 2) - 430 - t.tOffsetX - 19 - 20, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY - 19 + 20, g.importermenuimageoffset + 7);
 			SizeSprite(t.importerTextures[tCount].spriteID2, 128, 128);
 
 			if (iTexSlotImage > 0)
 			{
 				if (t.importer.scaleMulti != 1.0)
-					Sprite(t.importerTextures[tCount].spriteID, t.tOffsetX + 20, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY + 20, iTexSlotImage);
+					MAXSprite(t.importerTextures[tCount].spriteID, t.tOffsetX + 20, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY + 20, iTexSlotImage);
 				else
-					Sprite(t.importerTextures[tCount].spriteID, (GetChildWindowWidth() / 2) - 430 - t.tOffsetX - 20, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY + 20, iTexSlotImage);
+					MAXSprite(t.importerTextures[tCount].spriteID, (GetChildWindowWidth() / 2) - 430 - t.tOffsetX - 20, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY + 20, iTexSlotImage);
 				SizeSprite(t.importerTextures[tCount].spriteID, 90, 90);
 				SetSpritePriority(t.importerTextures[tCount].spriteID, 1);
 			}
 			else
 			{
-				Sprite(t.importerTextures[tCount].spriteID, -10000, -10000, g.importermenuimageoffset + 7);
+				MAXSprite(t.importerTextures[tCount].spriteID, -10000, -10000, g.importermenuimageoffset + 7);
 			}
 
 			if (t.importer.MouseX >= SpriteX(t.importerTextures[tCount].spriteID2) - 5 && t.importer.MouseY >= (GetChildWindowHeight() / 2) - 400 + (iVertical * 128) + 5)
@@ -6720,20 +6720,20 @@ void importer_update_textures ( void )
 					if (t.inputsys.mclick == 0)
 					{
 						if (t.importer.scaleMulti != 1.0)
-							Sprite(t.importerTextures[tCount].spriteID2, t.tOffsetX, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY - 19 + 20, g.importermenuimageoffset + 7);
+							MAXSprite(t.importerTextures[tCount].spriteID2, t.tOffsetX, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY - 19 + 20, g.importermenuimageoffset + 7);
 						else
-							Sprite(t.importerTextures[tCount].spriteID2, (GetChildWindowWidth() / 2) - 430 - t.tOffsetX - 19 - 20, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY - 19 + 20, g.importermenuimageoffset + 7);
+							MAXSprite(t.importerTextures[tCount].spriteID2, (GetChildWindowWidth() / 2) - 430 - t.tOffsetX - 19 - 20, (GetChildWindowHeight() / 2) - 400 + t.tOffsetY - 19 + 20, g.importermenuimageoffset + 7);
 						SizeSprite(t.importerTextures[tCount].spriteID2, 128, 128);
 						SizeSprite(t.importerTextures[tCount].spriteID, 106, 106);
 						if (t.importer.scaleMulti == 1.0)
 						{
-							Sprite(t.importerTextures[tCount].spriteID, (GetChildWindowWidth() / 2) - 430 - 8 - 20, (GetChildWindowHeight() / 2) - 400 + tCount * 128 - 8 + 20, iTexSlotImage);
+							MAXSprite(t.importerTextures[tCount].spriteID, (GetChildWindowWidth() / 2) - 430 - 8 - 20, (GetChildWindowHeight() / 2) - 400 + tCount * 128 - 8 + 20, iTexSlotImage);
 						}
 						else
 						{
 							if (iTexSlotImage > 0)
 							{
-								Sprite(t.importerTextures[tCount].spriteID, t.tOffsetX + 10, (GetChildWindowHeight() / 2) - 400 + (iVertical * 128) - 8 + 20, iTexSlotImage);
+								MAXSprite(t.importerTextures[tCount].spriteID, t.tOffsetX + 10, (GetChildWindowHeight() / 2) - 400 + (iVertical * 128) - 8 + 20, iTexSlotImage);
 							}
 						}
 						SetSpritePriority(t.importerTextures[tCount].spriteID, 1);
@@ -6872,7 +6872,7 @@ void importer_load_textures ( void )
 		MakeMemblockFromFile(t.mbi, 11);
 		CloseFile(11);
 		tCount = 0;
-		t.leavetime = Timer();
+		t.leavetime = MAXTimer();
 		for (t.b = 0; t.b <= t.filesize - 5; t.b++)
 		{
 			//  JPG, PNG, DDS, BMP, TGA
@@ -9508,7 +9508,7 @@ void importer_help ( void )
 			}
 			else
 			{
-				Sprite (  t.importer.helpSprite4 , (GetChildWindowWidth()/2) - 303 , (GetChildWindowHeight()/2) - 213, g.importermenuimageoffset+9 );
+				MAXSprite (  t.importer.helpSprite4 , (GetChildWindowWidth()/2) - 303 , (GetChildWindowHeight()/2) - 213, g.importermenuimageoffset+9 );
 			}
 		}
 		return;
@@ -9583,7 +9583,7 @@ void importer_help ( void )
 		SetCurrentBitmap (  0 );
 		DeleteBitmapEx (  32 );
 	}
-	Sprite (  t.importer.helpSprite4 , (GetChildWindowWidth()/2) - 303 , (GetChildWindowHeight()/2) - 213, g.importermenuimageoffset+9 );
+	MAXSprite (  t.importer.helpSprite4 , (GetChildWindowWidth()/2) - 303 , (GetChildWindowHeight()/2) - 213, g.importermenuimageoffset+9 );
 	SetSpritePriority (  t.importer.helpSprite4,2 );
 	SetSpriteAlpha (  t.importer.helpSprite4, t.importer.helpFade );
 	if (  t.importer.helpFade < 255  )  t.importer.helpFade  =  t.importer.helpFade + 20;
@@ -9597,11 +9597,11 @@ void importer_screenSwitch ( void )
 
 	if (  t.importer.scaleMulti > 1.0 ) 
 	{
-		Sprite (  t.importer.helpSprite , (GetChildWindowWidth()/2) - 170 + 128 , 0, g.importermenuimageoffset+8 );
+		MAXSprite (  t.importer.helpSprite , (GetChildWindowWidth()/2) - 170 + 128 , 0, g.importermenuimageoffset+8 );
 	}
 	else
 	{
-		Sprite (  t.importer.helpSprite , (GetChildWindowWidth()/2) - 170 + 128 , (GetChildWindowHeight()/2) - 300 - 4, g.importermenuimageoffset+8 );
+		MAXSprite (  t.importer.helpSprite , (GetChildWindowWidth()/2) - 170 + 128 , (GetChildWindowHeight()/2) - 300 - 4, g.importermenuimageoffset+8 );
 	}
 
 	if (  t.importer.scaleMulti > 1.0 ) 

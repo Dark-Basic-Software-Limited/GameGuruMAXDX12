@@ -1583,9 +1583,9 @@ void interface_live_updates(void)
 {
 	//  constantly open access to properties values
 	//  so can represent the values prior to using APPLY CHANGES
-	if (Timer() > t.lastliveupdatestimer)
+	if (MAXTimer() > t.lastliveupdatestimer)
 	{
-		t.lastliveupdatestimer = Timer() + 200;
+		t.lastliveupdatestimer = MAXTimer() + 200;
 		OpenFileMap(2, "FPSENTITY");
 		SetEventAndWait(2);
 		t.iGroup = t.livegroupforthirdperson;
@@ -3285,14 +3285,14 @@ void checkmemoryforgracefulexit ( void )
 		//  The Red Screen of Resurrection
 		t.strwork = ""; t.strwork = t.strwork + "checkmemoryforgracefulexit - memory detector "+Str(tsmemavailable)+" Kb";
 		timestampactivity(0, t.strwork.Get() );
-		tredscreencount=Timer()+2000;
-		ttogglebannertimer=Timer()+450;
-		while (  Timer()<tredscreencount ) 
+		tredscreencount= MAXTimer()+2000;
+		ttogglebannertimer= MAXTimer()+450;
+		while (MAXTimer()<tredscreencount )
 		{
 			CLS (  Rgb(128,0,0) );
-			if (  Timer()>ttogglebannertimer ) 
+			if (MAXTimer()>ttogglebannertimer )
 			{
-				ttogglebannertimer=Timer()+450;
+				ttogglebannertimer= MAXTimer()+450;
 				ttogglebanner=1-ttogglebanner;
 			}
 			PasteImage (  g.editorimagesoffset+5+ttogglebanner,(GetDisplayWidth()-ImageWidth(g.editorimagesoffset+5))/2,(GetDisplayHeight()-ImageHeight(g.editorimagesoffset+5))/2 );
@@ -13940,9 +13940,9 @@ void process_entity_library(void)
 									}
 
 									//PE: Check here if we need to reload the folder, for new files.
-									if (pNewFolder->m_fLastTimeUpdate < Timer())
+									if (pNewFolder->m_fLastTimeUpdate < MAXTimer())
 									{
-										pNewFolder->m_fLastTimeUpdate = Timer() + 4000; //Check every 4-6 sec.
+										pNewFolder->m_fLastTimeUpdate = MAXTimer() + 4000; //Check every 4-6 sec.
 										pNewFolder->m_fLastTimeUpdate += rand() % 2000; //Make sure we dont check folders in same cycle.
 										struct stat sb;
 										if (stat(pNewFolder->m_sFolderFullPath.Get(), &sb) == 0) 
@@ -14248,7 +14248,7 @@ void process_entity_library(void)
 
 												if (!bEntity_Properties_Window && !g_bCharacterCreatorPlusActivated && !bImporter_Window && i == 0 && ImGui::IsItemHovered()) {
 
-													iTooltipHoveredTimer = Timer();
+													iTooltipHoveredTimer = MAXTimer();
 													static void* additionalcheck = NULL;
 
 													if (iLastTooltipSelection != textureId || (additionalcheck != myfiles)) {
@@ -17074,9 +17074,9 @@ void process_entity_library_v2(void)
 					if (pNewFolder)
 					{
 						//PE: Check here if we need to reload the folder, for new files.
-						if (pNewFolder->m_fLastTimeUpdate < Timer())
+						if (pNewFolder->m_fLastTimeUpdate < MAXTimer())
 						{
-							pNewFolder->m_fLastTimeUpdate = Timer() + 4000; //Check every 4-6 sec.
+							pNewFolder->m_fLastTimeUpdate = MAXTimer() + 4000; //Check every 4-6 sec.
 							pNewFolder->m_fLastTimeUpdate += rand() % 2000; //Make sure we dont check folders in same cycle.
 							struct stat sb;
 							if (PathExist(pNewFolder->m_sFolderFullPath.Get()))
@@ -17375,9 +17375,9 @@ void process_entity_library_v2(void)
 						}
 
 						//PE: Check here if we need to reload the folder, for new files.
-						if (pNewFolder->m_fLastTimeUpdate < Timer())
+						if (pNewFolder->m_fLastTimeUpdate < MAXTimer())
 						{
-							pNewFolder->m_fLastTimeUpdate = Timer() + 4000; //Check every 4-6 sec.
+							pNewFolder->m_fLastTimeUpdate = MAXTimer() + 4000; //Check every 4-6 sec.
 							pNewFolder->m_fLastTimeUpdate += rand() % 2000; //Make sure we dont check folders in same cycle.
 							struct stat sb;
 							if (stat(pNewFolder->m_sFolderFullPath.Get(), &sb) == 0) 
@@ -19221,7 +19221,7 @@ void process_entity_library_v2(void)
 									if (iDisplayLibraryType == 5 && bThumbHovered)
 									{
 										//Enable rotation
-										iTooltipHoveredTimer = Timer();
+										iTooltipHoveredTimer = MAXTimer();
 										if (!bTriggerTimer)
 										{
 											iTooltipTimer = iTooltipHoveredTimer;
@@ -19374,7 +19374,7 @@ void process_entity_library_v2(void)
 								if ( myfiles->m_bIsGroupObject) bHoverGroupActive = false; // do not allow smarts to load/generate thumbs - performance hit!
 								if (bHoverGroupActive && !bImagesStillInImGuiQueue && !bLargePreview && !bBlockBackBufferUpdating && !bEntity_Properties_Window && !g_bCharacterCreatorPlusActivated && !bImporter_Window && i == 0 && bThumbHovered)
 								{
-									iTooltipHoveredTimer = Timer();
+									iTooltipHoveredTimer = MAXTimer();
 									if (iLastTooltipSelection != textureId || (additionalcheck != myfiles))
 									{
 										// new thumbnail to create
@@ -33063,7 +33063,7 @@ void Welcome_Screen(void)
 							{
 								extern std::vector<cstr> g_sStillDownloadingLog;
 								extern int g_iStillDownloadingLogCount;
-								if (Timer() > g_iStillDownloadingThingsWithDelayTimer + 1000 && g_sStillDownloadingLog.size() == 0 )
+								if (MAXTimer() > g_iStillDownloadingThingsWithDelayTimer + 1000 && g_sStillDownloadingLog.size() == 0 )
 								{
 									g_bStillDownloadingThingsWithDelay = false;
 									g_iStillDownloadingLogCount = 0;
@@ -33112,7 +33112,7 @@ void Welcome_Screen(void)
 										g_bUpdateWorkshopDownloadsAlwaysPerformOnce = true;
 										g_bStillDownloadingThings = true;
 										g_bStillDownloadingThingsWithDelay = true;
-										g_iStillDownloadingThingsWithDelayTimer = Timer();
+										g_iStillDownloadingThingsWithDelayTimer = MAXTimer();
 										g_bUpdateWorkshopItemList = true;
 										g_iUnsubscribeByForce = 1;
 										g_bRequireRestartAfterUnsubByForce = true;
@@ -33178,9 +33178,9 @@ void Welcome_Screen(void)
 									ImGui::Indent(-((iTotalWidthOfArea - 500) / 2.0f));
 									if (g_bStillDownloadingThingsWithDelay == true)
 									{
-										if (Timer() > g_iStillDownloadingThingsWithDelayTimer + iPauseOnEachInMS)
+										if (MAXTimer() > g_iStillDownloadingThingsWithDelayTimer + iPauseOnEachInMS)
 										{
-											g_iStillDownloadingThingsWithDelayTimer = Timer();
+											g_iStillDownloadingThingsWithDelayTimer = MAXTimer();
 											g_sStillDownloadingLog.pop_back();
 											g_sStillDownloadingLogTitle.pop_back();
 										}

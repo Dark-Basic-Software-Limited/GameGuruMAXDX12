@@ -93,7 +93,7 @@ void timestampactivity ( int i, char* desc_s )
 		videomemdesc_s = Str((mem - g.timestampactivityvideomemthen)); videomemdesc_s = videomemdesc_s + "MB";
 		g.timestampactivityvideomemthen = mem;
 		videomemsofardesc_s = " ("; videomemsofardesc_s = videomemsofardesc_s + Str(smem / 1024) + "," + Str((int)tvram) + ")";
-		tpart1_s = Str(Timer()); tpart1_s = tpart1_s + " : " + desc_s + " ";
+		tpart1_s = Str(MAXTimer()); tpart1_s = tpart1_s + " : " + desc_s + " ";
 		tpart2_s = "S:"; tpart2_s = tpart2_s + memdesc_s;
 		tpart3_s = "V:"; tpart3_s = tpart3_s + videomemsofardesc_s;
 		//if (Len(tpart1_s.Get())<64)  tpart1_s = tpart1_s + Spaces2(64 - Len(tpart1_s.Get()));

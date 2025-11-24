@@ -1559,7 +1559,7 @@ void entity_loop ( void )
 			{
 				if ( ObjectExist(t.tobj) == 1 ) 
 				{
-					if ( Timer()>(int)t.entityelement[t.e].overprompttimer ) 
+					if ( MAXTimer()>(int)t.entityelement[t.e].overprompttimer ) 
 					{
 						if ( t.entityelement[t.e].overpromptuse3D == false ) 
 							t.entityelement[t.e].overprompttimer=0;
@@ -2021,7 +2021,7 @@ void entity_loop ( void )
 			// flag to explode entity after a fused amount of time
 			if ( t.entityelement[t.ee].explodefusetime>0 ) 
 			{
-				if ( Timer()>t.entityelement[t.ee].explodefusetime ) 
+				if ( MAXTimer()>t.entityelement[t.ee].explodefusetime ) 
 				{
 					t.entityelement[t.ee].explodefusetime = -1;
 					// explode from beneath
@@ -2617,12 +2617,12 @@ void entity_applydamage ( void )
 				{
 					t.tsteamplayeralive = SteamGetPlayerAlive(t.entityelement[t.ttte].mp_coopControlledByPlayer);
 				}
-				if (  Timer() - t.entityelement[t.ttte].mp_coopLastTimeSwitchedTarget > 5000 || t.tsteamplayeralive  ==  0 ) 
+				if (  MAXTimer() - t.entityelement[t.ttte].mp_coopLastTimeSwitchedTarget > 5000 || t.tsteamplayeralive  ==  0 ) 
 				{
 					t.entityelement[t.ttte].mp_coopControlledByPlayer = g.mp.me;
 					t.entityelement[t.ttte].mp_updateOn = 1;
 					mp_sendlua (  MP_LUA_TakenAggro,t.ttte,g.mp.me );
-					t.entityelement[t.ttte].mp_coopLastTimeSwitchedTarget = Timer()+5000;
+					t.entityelement[t.ttte].mp_coopLastTimeSwitchedTarget = MAXTimer()+5000;
 				}
 			}
 		}
@@ -2772,12 +2772,12 @@ void entity_applydamage ( void )
 				if (t.tdamagesource == 2)
 				{
 					//  explosion is time delayed
-					t.entityelement[t.ttte].explodefusetime = Timer() + 350 + ( rand() % 250 );
+					t.entityelement[t.ttte].explodefusetime = MAXTimer() + 350 + ( rand() % 250 );
 				}
 				else
 				{
 					//  explosion is instant
-					t.entityelement[t.ttte].explodefusetime = Timer();
+					t.entityelement[t.ttte].explodefusetime = MAXTimer();
 				}
 			}
 		}
@@ -2895,7 +2895,7 @@ void entity_applydamage ( void )
 				//  Prepare character for eventual fade out
 				if (t.entityprofile[t.ttentid].ragdoll == 1)
 				{
-					t.charanimstates[iCharacterIndexToUse].timetofadeout = Timer() + 20000; // from old AICORPSETIME
+					t.charanimstates[iCharacterIndexToUse].timetofadeout = MAXTimer() + 20000; // from old AICORPSETIME
 					t.charanimstates[iCharacterIndexToUse].fadeoutvalue_f = 1.0;
 				}
 			}

@@ -454,7 +454,7 @@ void workshop_update ( bool bRefreshIfFlagged )
 			delete pEntries;
 			g_bUpdateWorkshopDownloads = false;
 			g_bStillDownloadingThingsWithDelay = true;
-			g_iStillDownloadingThingsWithDelayTimer = Timer();
+			g_iStillDownloadingThingsWithDelayTimer = MAXTimer();
 		}
 
 		// ensure once flag reset
@@ -682,10 +682,10 @@ void CSteamUserGeneratedWorkshopItem::SteamRunCallbacks()
 	extern bool g_bFreeTrialVersion;
 	if (g_bFreeTrialVersion == false)
 	{
-		if (g_iFiveOnOffTimer < Timer())
+		if (g_iFiveOnOffTimer < MAXTimer())
 		{
 			g_iFiveOnOffTimerState = 1 - g_iFiveOnOffTimerState;
-			g_iFiveOnOffTimer = Timer() + 5000;
+			g_iFiveOnOffTimer = MAXTimer() + 5000;
 
 			if (g_iLastSubscripe == 1)
 			{
@@ -732,7 +732,7 @@ void CSteamUserGeneratedWorkshopItem::SteamRunCallbacks()
 						// this item is not ready to use, we are still busy downloading things
 						g_bStillDownloadingThings = true;
 						g_bStillDownloadingThingsWithDelay = true;
-						g_iStillDownloadingThingsWithDelayTimer = Timer();
+						g_iStillDownloadingThingsWithDelayTimer = MAXTimer();
 					}
 				}
 
@@ -767,7 +767,7 @@ void CSteamUserGeneratedWorkshopItem::SteamRunCallbacks()
 									timestampactivity(0, ">SteamUGC()->DownloadItem");
 									g_bStillDownloadingThings = true;
 									g_bStillDownloadingThingsWithDelay = true;
-									g_iStillDownloadingThingsWithDelayTimer = Timer();
+									g_iStillDownloadingThingsWithDelayTimer = MAXTimer();
 								}
 							}
 						}

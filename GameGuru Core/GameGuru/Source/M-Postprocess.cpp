@@ -64,7 +64,7 @@ void postprocess_init ( void )
 		{
 			sprintf ( pErrorStr, "Error starting VR : Code %d", iErrorCode );
 			timestampactivity(0,pErrorStr);
-			t.visuals.generalpromptstatetimer = Timer()+1000;
+			t.visuals.generalpromptstatetimer = MAXTimer()+1000;
 			t.visuals.generalprompt_s = "No OpenXR runtime found";
 		}
 		GGVR_SetGenericOffsetAngX( g.gvroffsetangx );
@@ -120,7 +120,7 @@ void postprocess_preterrain ( void )
 		if ( !GGVR_IsRuntimeFound() ) GGVR_ReInit();
 		if ( !GGVR_IsRuntimeFound() )
 		{
-			t.visuals.generalpromptstatetimer = Timer()+1000;
+			t.visuals.generalpromptstatetimer = MAXTimer()+1000;
 			t.visuals.generalprompt_s = "OpenXR runtime not found";
 		}
 		else

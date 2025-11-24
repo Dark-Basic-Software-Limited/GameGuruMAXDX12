@@ -410,12 +410,12 @@ void imgui_terrain_loop_v2(void)
 			t.terrain.grassupdateafterterrain = 0;
 			ShowVegetationGrid();
 			visuals_justshaderupdate();
-			iLastUpdateVeg = Timer();
+			iLastUpdateVeg = MAXTimer();
 		}
 		else
 		{
 			HideVegetationGrid();
-			iLastUpdateVeg = Timer();
+			iLastUpdateVeg = MAXTimer();
 		}
 		bUpdateVeg = false;
 	}
@@ -442,7 +442,7 @@ void imgui_terrain_loop_v2(void)
 			ShowVegetationGrid();
 
 			bReadyToUpdateVeg = false;
-			iLastUpdateVeg = Timer();
+			iLastUpdateVeg = MAXTimer();
 			bVegHasChanged = false;
 		}
 	}
@@ -2756,12 +2756,12 @@ void imgui_terrain_loop(void)
 			t.terrain.grassupdateafterterrain = 0;
 			ShowVegetationGrid();
 			visuals_justshaderupdate();
-			iLastUpdateVeg = Timer();
+			iLastUpdateVeg = MAXTimer();
 		}
 		else 
 		{
 			HideVegetationGrid();
-			iLastUpdateVeg = Timer();
+			iLastUpdateVeg = MAXTimer();
 		}
 		bUpdateVeg = false;
 	}
@@ -2788,7 +2788,7 @@ void imgui_terrain_loop(void)
 			ShowVegetationGrid();
 
 			bReadyToUpdateVeg = false;
-			iLastUpdateVeg = Timer();
+			iLastUpdateVeg = MAXTimer();
 			bVegHasChanged = false;
 		}
 	}
@@ -3130,7 +3130,7 @@ void imgui_terrain_loop(void)
 					ImGui::PushItemWidth(-10);
 					if (ImGui::SliderFloat("##VegOverallQuantity", &t.gamevisuals.VegQuantity_f, 0.0, 100.0,"%.0f"))
 					{
-						iLastUpdateVeg = Timer();
+						iLastUpdateVeg = MAXTimer();
 						bUpdateVeg = true;
 					}
 					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Overall Vegetation Quantity");
@@ -3144,7 +3144,7 @@ void imgui_terrain_loop(void)
 					ImGui::PushItemWidth(-10);
 					if (ImGui::SliderFloat("##VegOverallWidth", &t.gamevisuals.VegWidth_f, 0.0, 100.0, "%.0f"))
 					{
-						iLastUpdateVeg = Timer();
+						iLastUpdateVeg = MAXTimer();
 						bUpdateVeg = true;
 					}
 					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Overall Vegetation Width");

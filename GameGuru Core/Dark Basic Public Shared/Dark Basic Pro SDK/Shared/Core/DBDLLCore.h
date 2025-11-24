@@ -89,6 +89,7 @@ DARKSDK LONGLONG PerformanceTimer ( void );
 DARKSDK LPSTR MakeMemory(int iSize);
 DARKSDK void SetLocalTimerReset(void);
 DARKSDK int Timer(void);
+DARKSDK int MAXTimer(void);
 DARKSDK void LoadArray( LPSTR szFilename, DWORD dwAllocation );
 DARKSDK void SaveArray(LPSTR pFilename, DWORD dwAllocation);
 DARKSDK LPSTR Cl ( void );

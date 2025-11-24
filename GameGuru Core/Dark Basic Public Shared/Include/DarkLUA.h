@@ -9,9 +9,9 @@
 #define __DARKLUA_H__
 
 extern "C" {
-#include ".\..\Dark Basic Pro SDK\DarkSDKMore\DarkLUA\lua\lua.h"
-#include ".\..\Dark Basic Pro SDK\DarkSDKMore\DarkLUA\lua\lualib.h"
-#include ".\..\Dark Basic Pro SDK\DarkSDKMore\DarkLUA\lua\lauxlib.h"
+#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\LUA\lua.h"
+#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\LUA\lualib.h"
+#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\LUA\lauxlib.h"
 }
 
 /*

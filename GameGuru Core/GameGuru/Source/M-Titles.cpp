@@ -1184,7 +1184,7 @@ void titles_base ( void )
 			{
 				if ( ImageExist ( g.editorimagesoffset+64 ) )
 				{
-					Sprite ( 123, -100000, -100000, g.editorimagesoffset+64 );
+					MAXSprite ( 123, -100000, -100000, g.editorimagesoffset+64 );
 					SizeSprite ( 123, GetDisplayWidth(), GetDisplayHeight() );
 					PasteSprite ( 123, 0, 0 );
 				}
@@ -1211,7 +1211,7 @@ void titles_base ( void )
 				{
 					if (  ImageExist(t.timg) ) 
 					{
-						Sprite (  123,-100000,-100000,t.timg );
+						MAXSprite (  123,-100000,-100000,t.timg );
 						SizeSprite (  123,t.titlesbar[t.p][t.b].x2-t.titlesbar[t.p][t.b].x1,t.titlesbar[t.p][t.b].y2-t.titlesbar[t.p][t.b].y1 );
 						PasteSprite (  123,t.titlesbar[t.p][t.b].x1,t.titlesbar[t.p][t.b].y1 );
 					}
@@ -1222,16 +1222,16 @@ void titles_base ( void )
 				if (  t.titlesbar[t.p][t.b].img>0 ) 
 				{
 					//  empty bar
-					Sprite (  123,-100000,-100000,t.titlesbar[t.p][t.b].img );
+					MAXSprite (  123,-100000,-100000,t.titlesbar[t.p][t.b].img );
 					SizeSprite (  123,t.titlesbar[t.p][t.b].x2-t.titlesbar[t.p][t.b].x1,t.titlesbar[t.p][t.b].y2-t.titlesbar[t.p][t.b].y1 );
 					PasteSprite (  123,t.titlesbar[t.p][t.b].x1,t.titlesbar[t.p][t.b].y1 );
 					//  fill bar
 					t.ttxx=((t.titlesbar[t.p][t.b].x2-t.titlesbar[t.p][t.b].x1)/100.0)*t.titlesbar[t.p][t.b].fill;
-					Sprite (  123,-100000,-100000,t.titlesbar[t.p][t.b].img+1 );
+					MAXSprite (  123,-100000,-100000,t.titlesbar[t.p][t.b].img+1 );
 					SizeSprite (  123,t.ttxx,ImageHeight(t.titlesbar[t.p][t.b].img+1) );
 					PasteSprite (  123,t.titlesbar[t.p][t.b].x1,t.titlesbar[t.p][t.b].y1 );
 					//  star
-					Sprite (  123,-100000,-100000,t.titlesbar[t.p][t.b].img+2 );
+					MAXSprite (  123,-100000,-100000,t.titlesbar[t.p][t.b].img+2 );
 					SizeSprite (  123,ImageWidth(t.titlesbar[t.p][t.b].img+2),ImageHeight(t.titlesbar[t.p][t.b].img+2) );
 					PasteSprite (  123,t.titlesbar[t.p][t.b].x1+t.ttxx,t.titlesbar[t.p][t.b].y1 );
 				}
@@ -1303,7 +1303,7 @@ void titles_base ( void )
 					t.nstep_f=((t.titlesbutton[t.p][t.b].x2-t.titlesbutton[t.p][t.b].x1)/100.0)*t.titlesbutton[t.p][t.b].value;
 					if (  t.titlesbutton[t.p][t.b].img>0 ) 
 					{
-						Sprite (  123,-100000,-100000,t.titlesbutton[t.p][t.b].img+1 );
+						MAXSprite (  123,-100000,-100000,t.titlesbutton[t.p][t.b].img+1 );
 						SizeSprite (  123,t.nstep_f,t.titlesbutton[t.p][t.b].y2-t.titlesbutton[t.p][t.b].y1 );
 						PasteSprite (  123,t.titlesbutton[t.p][t.b].x1,t.titlesbutton[t.p][t.b].y1 );
 					}
@@ -1332,7 +1332,7 @@ void titles_base ( void )
 					{
 						if (  g.titlesettings.graphicsettingslevel == t.titlesbutton[t.p][t.b].specialmodevalue ) 
 						{
-							Sprite (  123,-100000,-100000,t.titlesbutton[t.p][t.b].img+2 );
+							MAXSprite (  123,-100000,-100000,t.titlesbutton[t.p][t.b].img+2 );
 							t.timagechosen=1;
 						}
 					}
@@ -1340,11 +1340,11 @@ void titles_base ( void )
 					{
 						if (  t.b == t.ttitlesbuttonhighlight && t.titlesbutton[t.p][t.b].imghigh>0 ) 
 						{
-							Sprite (  123,-100000,-100000,t.titlesbutton[t.p][t.b].imghigh );
+							MAXSprite (  123,-100000,-100000,t.titlesbutton[t.p][t.b].imghigh );
 						}
 						else
 						{
-							Sprite (  123,-100000,-100000,t.titlesbutton[t.p][t.b].img );
+							MAXSprite (  123,-100000,-100000,t.titlesbutton[t.p][t.b].img );
 						}
 					}
 					SizeSprite (  123,t.titlesbutton[t.p][t.b].x2-t.titlesbutton[t.p][t.b].x1,t.titlesbutton[t.p][t.b].y2-t.titlesbutton[t.p][t.b].y1 );
@@ -1487,11 +1487,11 @@ void titles_base ( void )
 					ClearEntryBuffer();
 					char pCursor[32];
 					strcpy ( pCursor, "|" );
-					DWORD dwTimeFlash = Timer() + 500;
+					DWORD dwTimeFlash = MAXTimer() + 500;
 					while ( iGotCode == 0 )
 					{
 						// clear screen
-						Sprite ( 123, -100000, -100000, g.editorimagesoffset+64 );
+						MAXSprite ( 123, -100000, -100000, g.editorimagesoffset+64 );
 						SizeSprite ( 123, GetDisplayWidth(), GetDisplayHeight() );
 						PasteSprite ( 123, 0, 0 );
 
@@ -1529,9 +1529,9 @@ void titles_base ( void )
 						}
 
 						// Flash cursor
-						if ( Timer() > dwTimeFlash )
+						if ( MAXTimer() > dwTimeFlash )
 						{
-							dwTimeFlash = Timer() + 500;
+							dwTimeFlash = MAXTimer() + 500;
 							if ( strcmp ( pCursor, "|" ) == NULL )
 								strcpy ( pCursor, " " );
 							else
@@ -1835,7 +1835,7 @@ void titles_base ( void )
 			if ( t.game.runasmultiplayer == 1 ) mp_refresh ( );
 			// Update screen
 			// dave added a skip test for syncing to prevent the editor being drawn when switching to mp game start
-			if (  Timer() - t.tskipLevelSync > 200  )  Sync (  );
+			if (  MAXTimer() - t.tskipLevelSync > 200  )  Sync (  );
 		}
 	}
 	t.null=MouseMoveX()+MouseMoveY();
@@ -1871,7 +1871,7 @@ void handletitlesmusic ( void )
 	if (  SoundExist(tMusicID) == 0  )  return;
 
 	//  process fading (all fades take 1 second)
-	tFadeTime_f = (Timer() - t.gamesounds.titlemusicfadestamp)/1000.0;
+	tFadeTime_f = (MAXTimer() - t.gamesounds.titlemusicfadestamp)/1000.0;
 	if (  tFadeTime_f > 1 ) 
 	{
 		t.gamesounds.titlemusicvolume = t.gamesounds.titlemusicvolumetarget;
@@ -1901,7 +1901,7 @@ void fadetitlesmusic ( int tFadeVol )
 {
 	t.gamesounds.titlemusicvolumestart = t.gamesounds.titlemusicvolume;
 	t.gamesounds.titlemusicvolumetarget = tFadeVol;
-	t.gamesounds.titlemusicfadestamp = Timer();
+	t.gamesounds.titlemusicfadestamp = MAXTimer();
 }
 
 /// LUA powered screens

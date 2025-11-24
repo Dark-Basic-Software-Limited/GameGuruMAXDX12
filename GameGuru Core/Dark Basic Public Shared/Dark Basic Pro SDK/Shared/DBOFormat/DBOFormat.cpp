@@ -6165,8 +6165,8 @@ DARKSDK_DLL bool CalculateAllBounds ( sObject* pObject, bool bNotUsed )
 	SAFE_MEMORY ( pObject );
 
 	// u74b7 - get the largest scale
-	float fBiggestScale = max (
-		pObject->position.vecScale.x, max (
+	float fBiggestScale = std::max (
+		pObject->position.vecScale.x, std::max (
 			pObject->position.vecScale.y,
 			pObject->position.vecScale.z)
 		);

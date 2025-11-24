@@ -187,7 +187,7 @@ void ebe_init ( int BuildObj, int iEntID )
 		ebebuild.iTexturePanelSprite[iTex] = g.ebeinterfacesprite + 31 + iTex;
 		ebebuild.iTexturePanelImg[iTex] = loadinternalimage(cstr(cstr("ebebank\\default\\")+cstr(pTexImg)).Get());
 		if(!bDisableAllSprites)
-			Sprite ( ebebuild.iTexturePanelSprite[iTex], iX, iY, ebebuild.iTexturePanelImg[iTex] );
+			MAXSprite ( ebebuild.iTexturePanelSprite[iTex], iX, iY, ebebuild.iTexturePanelImg[iTex] );
 		if (!bDisableAllSprites) SizeSprite ( ebebuild.iTexturePanelSprite[iTex], iWidth, iHeight );
 		if ( iTex==5 ) ebebuild.iTexPlateImage = ebebuild.iTexturePanelImg[iTex];
 	}
@@ -196,18 +196,18 @@ void ebe_init ( int BuildObj, int iEntID )
 	// Texture highlighter
 	ebebuild.iTexturePanelHighSprite = g.ebeinterfacesprite + 0;
 	ebebuild.iTexturePanelHighImg = loadinternalimage("ebebank\\default\\TextureHighlighter.dds");
-	if (!bDisableAllSprites) Sprite ( ebebuild.iTexturePanelHighSprite, ebebuild.iTexturePanelX, ebebuild.iTexturePanelY, ebebuild.iTexturePanelHighImg );
+	if (!bDisableAllSprites) MAXSprite ( ebebuild.iTexturePanelHighSprite, ebebuild.iTexturePanelX, ebebuild.iTexturePanelY, ebebuild.iTexturePanelHighImg );
 	if (!bDisableAllSprites) SizeSprite ( ebebuild.iTexturePanelHighSprite, ebebuild.iTexturePanelWidth/4, ebebuild.iTexturePanelHeight/4 );
 
 	// Help Dialog Shortcut Keys
 	ebebuild.iEBEHelpSpr = g.ebeinterfacesprite + 1;
 	ebebuild.iEBEHelpImg = loadinternalimage("languagebank\\english\\artwork\\ebe-help.png");
-	if (!bDisableAllSprites) Sprite ( ebebuild.iEBEHelpSpr, ebebuild.iTexturePanelX - ImageWidth(ebebuild.iEBEHelpImg) - 10, ebebuild.iTexturePanelY + 210 - ImageHeight(ebebuild.iEBEHelpImg), ebebuild.iEBEHelpImg );
+	if (!bDisableAllSprites) MAXSprite ( ebebuild.iEBEHelpSpr, ebebuild.iTexturePanelX - ImageWidth(ebebuild.iEBEHelpImg) - 10, ebebuild.iTexturePanelY + 210 - ImageHeight(ebebuild.iEBEHelpImg), ebebuild.iEBEHelpImg );
 
 	// Help Dialog Shortcut Keys
 	ebebuild.iEBETexHelpSpr = g.ebeinterfacesprite + 2;
     ebebuild.iEBETexHelpImg = loadinternalimage("languagebank\\english\\artwork\\ebe-texturehelp.png");
-	if (!bDisableAllSprites) Sprite ( ebebuild.iEBETexHelpSpr, ebebuild.iTexturePanelX - 10, ebebuild.iTexturePanelY - 10 - ImageHeight(ebebuild.iEBETexHelpImg), ebebuild.iEBETexHelpImg );
+	if (!bDisableAllSprites) MAXSprite ( ebebuild.iEBETexHelpSpr, ebebuild.iTexturePanelX - 10, ebebuild.iTexturePanelY - 10 - ImageHeight(ebebuild.iEBETexHelpImg), ebebuild.iEBETexHelpImg );
 
 	// Load TXP default file
 	ebe_loadtxp(cstr(cstr("ebebank\\default\\")+cstr("textures_profile.txp")).Get());
@@ -243,7 +243,7 @@ void ebe_init ( int BuildObj, int iEntID )
 		for ( int x = 0; x < 4; x++ )
 		{
 			ebebuild.iMatSpr[n] = g.ebeinterfacesprite + 11 + n;
-			if (!bDisableAllSprites) Sprite ( ebebuild.iMatSpr[n], ebebuild.iTexturePanelX + 36 + (x*50), ebebuild.iTexturePanelY + 36 + (y*50), ebebuild.iMatImg[ebebuild.TXP.iMaterialRef[n]] );
+			if (!bDisableAllSprites) MAXSprite ( ebebuild.iMatSpr[n], ebebuild.iTexturePanelX + 36 + (x*50), ebebuild.iTexturePanelY + 36 + (y*50), ebebuild.iMatImg[ebebuild.TXP.iMaterialRef[n]] );
 			if (!bDisableAllSprites) SizeSprite ( ebebuild.iMatSpr[n], 13, 13 );
 			n++;
 		}
@@ -411,7 +411,7 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 		for ( int n = 0; n < ncount; n++ )
 		{
 			ebebuild.TXP.iMaterialRef[n] = t.entityprofile[entid].ebe.iMatRef[n];
-			if (!bDisableAllSprites) Sprite ( ebebuild.iMatSpr[n], SpriteX(ebebuild.iMatSpr[n]), SpriteY(ebebuild.iMatSpr[n]), ebebuild.iMatImg[ebebuild.TXP.iMaterialRef[n]] );
+			if (!bDisableAllSprites) MAXSprite ( ebebuild.iMatSpr[n], SpriteX(ebebuild.iMatSpr[n]), SpriteY(ebebuild.iMatSpr[n]), ebebuild.iMatImg[ebebuild.TXP.iMaterialRef[n]] );
 		}
 	}
 
@@ -515,7 +515,7 @@ void ebe_init_newbuild ( int iBuildObj, int entid )
 		image_setlegacyimageloading(true);
 		LoadImage ( "ebebank\\default\\textures_color.dds", ebebuild.iTexPlateImage );
 		image_setlegacyimageloading(false);
-		if (!bDisableAllSprites) Sprite ( ebebuild.iTexturePanelSprite[5], SpriteX(ebebuild.iTexturePanelSprite[5]), SpriteY(ebebuild.iTexturePanelSprite[5]), ebebuild.iTexPlateImage );
+		if (!bDisableAllSprites) MAXSprite ( ebebuild.iTexturePanelSprite[5], SpriteX(ebebuild.iTexturePanelSprite[5]), SpriteY(ebebuild.iTexturePanelSprite[5]), ebebuild.iTexPlateImage );
 	}
 
 	// shift grid object away so don't see last incarnation of it
@@ -1190,7 +1190,7 @@ void ebe_settexturehighlight ( void )
 	int iCol = ebebuild.iCurrentTexture - (iRow*4);
 	float fChoiceWidth = ebebuild.iTexturePanelWidth/4;
 	float fChoiceHeight = ebebuild.iTexturePanelHeight/4;
-	if (!bDisableAllSprites) Sprite ( ebebuild.iTexturePanelHighSprite, ebebuild.iTexturePanelX+(iCol*fChoiceWidth), ebebuild.iTexturePanelY+(iRow*fChoiceHeight), ebebuild.iTexturePanelHighImg );
+	if (!bDisableAllSprites) MAXSprite ( ebebuild.iTexturePanelHighSprite, ebebuild.iTexturePanelX+(iCol*fChoiceWidth), ebebuild.iTexturePanelY+(iRow*fChoiceHeight), ebebuild.iTexturePanelHighImg );
 }
 
 void imgui_ebe_loop(void)
@@ -1866,17 +1866,17 @@ void ebe_loop(void)
 		if (iTex == 2) { iX -= 10; iY += 209; iWidth += 20; iHeight = 1; }
 		if (iTex == 3) { iX -= 10; iY -= 10; iWidth = 1; iHeight += 20; }
 		if (iTex == 4) { iX += 209; iY -= 10; iWidth = 1; iHeight += 20; }
-		if (!bDisableAllSprites) Sprite(ebebuild.iTexturePanelSprite[iTex], iX, iY, ebebuild.iTexturePanelImg[iTex]);
+		if (!bDisableAllSprites) MAXSprite(ebebuild.iTexturePanelSprite[iTex], iX, iY, ebebuild.iTexturePanelImg[iTex]);
 	}
-	if (!bDisableAllSprites) Sprite(ebebuild.iTexturePanelHighSprite, ebebuild.iTexturePanelX, ebebuild.iTexturePanelY, ebebuild.iTexturePanelHighImg);
-	if (!bDisableAllSprites) Sprite(ebebuild.iEBEHelpSpr, ebebuild.iTexturePanelX - ImageWidth(ebebuild.iEBEHelpImg) - 10, ebebuild.iTexturePanelY + 210 - ImageHeight(ebebuild.iEBEHelpImg), ebebuild.iEBEHelpImg);
-	if (!bDisableAllSprites) Sprite(ebebuild.iEBETexHelpSpr, ebebuild.iTexturePanelX - 10, ebebuild.iTexturePanelY - 10 - ImageHeight(ebebuild.iEBETexHelpImg), ebebuild.iEBETexHelpImg);
+	if (!bDisableAllSprites) MAXSprite(ebebuild.iTexturePanelHighSprite, ebebuild.iTexturePanelX, ebebuild.iTexturePanelY, ebebuild.iTexturePanelHighImg);
+	if (!bDisableAllSprites) MAXSprite(ebebuild.iEBEHelpSpr, ebebuild.iTexturePanelX - ImageWidth(ebebuild.iEBEHelpImg) - 10, ebebuild.iTexturePanelY + 210 - ImageHeight(ebebuild.iEBEHelpImg), ebebuild.iEBEHelpImg);
+	if (!bDisableAllSprites) MAXSprite(ebebuild.iEBETexHelpSpr, ebebuild.iTexturePanelX - 10, ebebuild.iTexturePanelY - 10 - ImageHeight(ebebuild.iEBETexHelpImg), ebebuild.iEBETexHelpImg);
 	int n = 0;
 	for (int y = 0; y < 4; y++)
 	{
 		for (int x = 0; x < 4; x++)
 		{
-			if (!bDisableAllSprites) Sprite(ebebuild.iMatSpr[n], ebebuild.iTexturePanelX + 36 + (x * 50), ebebuild.iTexturePanelY + 36 + (y * 50), ebebuild.iMatImg[ebebuild.TXP.iMaterialRef[n]]);
+			if (!bDisableAllSprites) MAXSprite(ebebuild.iMatSpr[n], ebebuild.iTexturePanelX + 36 + (x * 50), ebebuild.iTexturePanelY + 36 + (y * 50), ebebuild.iMatImg[ebebuild.TXP.iMaterialRef[n]]);
 			n++;
 		}
 	}

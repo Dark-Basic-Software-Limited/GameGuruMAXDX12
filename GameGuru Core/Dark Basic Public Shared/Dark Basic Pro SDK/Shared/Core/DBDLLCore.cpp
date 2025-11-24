@@ -1190,7 +1190,7 @@ void ImGui_RenderLast(void)
 
 			if (bStartNewPrompt || iMessageTimer == 0 ) {
 				bStartNewPrompt = false;
-				iMessageTimer = Timer();
+				iMessageTimer = MAXTimer();
 			}
 
 			//	ImVec2 wpos = ImVec2(( GetChildWindowWidth(-1) - 460) * 0.5, 50) + ImGui::GetMainViewport()->Pos;
@@ -1203,7 +1203,7 @@ void ImGui_RenderLast(void)
 			ImVec4 oldBgColor = style_colors[ImGuiCol_WindowBg];
 			ImVec4 oldTextColor = style_colors[ImGuiCol_Text];
 
-			float fader = ((float)Timer() - (float)iMessageTimer) / 500.0f;
+			float fader = ((float)MAXTimer() - (float)iMessageTimer) / 500.0f;
 			fader -= 1.0;
 			if (fader < 0) {
 				fader = 0.0001;
@@ -1211,7 +1211,7 @@ void ImGui_RenderLast(void)
 			fader /= 3.0;
 
 			fader = 1.0 - fader;
-			if (fader < 0.1 || Timer() - iMessageTimer > 3500 ) {
+			if (fader < 0.1 || MAXTimer() - iMessageTimer > 3500 ) {
 				strcpy(promptText, "");
 			}
 			style_colors[ImGuiCol_WindowBg].x = 0.0;
@@ -5489,6 +5489,11 @@ DARKSDK int Timer(void)
 		iTimer = 0;
 	}
 	return iTimer;
+}
+
+DARKSDK int MAXTimer(void)
+{
+	return Timer();
 }
 
 DARKSDK void SleepNow(int iDelay)

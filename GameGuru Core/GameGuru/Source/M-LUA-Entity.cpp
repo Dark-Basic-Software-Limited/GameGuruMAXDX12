@@ -20,7 +20,7 @@ void set_inputsys_mclick(int value);
 
 void entity_lua_starttimer ( void )
 {
-	t.entityelement[t.e].etimer=Timer();
+	t.entityelement[t.e].etimer= MAXTimer();
 	t.entityelement[t.e].lua.flagschanged=1;
 	if (  t.game.runasmultiplayer  ==  1 && t.tLuaDontSendLua  ==  0 ) 
 	{
@@ -903,9 +903,9 @@ void entity_lua_activateifusedfromqueue ( void )
 {
 	if ( t.entitiesToActivateQueue.size() == 0 ) return;
 
-	if ( Timer() - lastActiveTime < 70 ) return;
+	if ( MAXTimer() - lastActiveTime < 70 ) return;
 
-	lastActiveTime = Timer();
+	lastActiveTime = MAXTimer();
 
 	t.tstore=t.e;
 	t.e = t.entitiesToActivateQueue.back();
@@ -940,9 +940,9 @@ int lastSpawnedTime = 0;
 void entity_lua_spawnifusedfromqueue ( void )
 {
 	if ( t.entitiesToSpawnQueue.size() == 0 ) return;
-	if ( Timer() - lastSpawnedTime < 70 ) return;
+	if ( MAXTimer() - lastSpawnedTime < 70 ) return;
 
-	lastSpawnedTime = Timer();
+	lastSpawnedTime = MAXTimer();
 	t.tstore=t.e;
 	t.e = t.entitiesToSpawnQueue.back();
 	t.entitiesToSpawnQueue.pop_back();
@@ -1431,7 +1431,7 @@ void entity_lua_playspeech ( void )
 				t.charanimstates[t.tcharanimindex].ccpo.speak.mouthData.push_back (pMouthData[n]);
 
 			// and trigger mouth to start speaking
-			t.charanimstates[t.tcharanimindex].ccpo.speak.fMouthTimeStamp = (float)Timer() / 1000.0f;
+			t.charanimstates[t.tcharanimindex].ccpo.speak.fMouthTimeStamp = (float)MAXTimer() / 1000.0f;
 			t.charanimstates[t.tcharanimindex].ccpo.speak.fMouthTimeStamp -= 0.1f; // accelerate mouth by tenth of a second to arrive at mouth shape at same time as audio
 			t.charanimstates[t.tcharanimindex].ccpo.speak.fSmouthDataSpeedToNextShape = 4.0f;
 		}
@@ -1624,7 +1624,7 @@ void entity_lua_playvideonoskip ( int i3DMode, int iNoSkipFlag )
 	}
 
 	// ensure video trigger does not cause low FPS message
-	g.lowfpstarttimer = Timer();
+	g.lowfpstarttimer = MAXTimer();
 }
 
 void entity_lua_stopvideo ( void )
@@ -2845,10 +2845,10 @@ void entity_lua_rotatetoanglecore ( float fDestAngle, float fAngleOffset )
 	}
 	if (  t.game.runasmultiplayer  ==  1 && g.mp.coop  ==  1 && t.tLuaDontSendLua  ==  0 ) 
 	{
-		if (  Timer() - t.entityelement[t.e].mp_rotateTimer > 1000 ) 
+		if (  MAXTimer() - t.entityelement[t.e].mp_rotateTimer > 1000 ) 
 		{
 			mp_sendlua (  MP_LUA_RotateToPlayer,t.e,t.tnewangley_f );
-			t.entityelement[t.e].mp_rotateTimer = Timer();
+			t.entityelement[t.e].mp_rotateTimer = MAXTimer();
 		}
 	}
 }

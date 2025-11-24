@@ -69,11 +69,11 @@ void lua_prompt ( void )
 	if ( g_iActivelyUsingVRNow != 0 )
 	{
 		// use VR prompt instead
-		lua_prompt3d ( t.s_s.Get(), Timer(), 0 );
+		lua_prompt3d ( t.s_s.Get(), MAXTimer(), 0 );
 	}
 	else
 	{
-		t.luaglobal.scriptprompttime=Timer();
+		t.luaglobal.scriptprompttime= MAXTimer();
 		t.luaglobal.scriptprompt_s=t.s_s;
 	}
 }
@@ -85,7 +85,7 @@ void lua_promptimage ( void )
 		// use VR prompt instead
 		char imgname[MAX_PATH];
 		sprintf(imgname, "image%d", t.v); //PE: Need this so we are able to go from one image zone to another.
-		lua_prompt3d (imgname, Timer(), t.v );
+		lua_prompt3d (imgname, MAXTimer(), t.v );
 	}
 }
 
@@ -98,11 +98,11 @@ void lua_promptduration ( void )
 	if ( g_iActivelyUsingVRNow != 0 )
 	{
 		// use VR prompt instead
-		lua_prompt3d ( t.s_s.Get(), Timer()+t.v, 0 );
+		lua_prompt3d ( t.s_s.Get(), MAXTimer()+t.v, 0 );
 	}
 	else
 	{
-		t.luaglobal.scriptprompttime=Timer()+t.v;
+		t.luaglobal.scriptprompttime= MAXTimer()+t.v;
 		t.luaglobal.scriptprompt_s=t.s_s;
 	}
 }
@@ -124,7 +124,7 @@ void lua_promptlocalcore ( int iTrueLocalOrForVR , int addtime = 1000)
 	if ( g_iActivelyUsingVRNow != 0 )
 	{
 		// use VR prompt instead
-		if ( iTrueLocalOrForVR == 0 ) lua_prompt3d ( t.s_s.Get(), Timer()+ addtime, 0 );
+		if ( iTrueLocalOrForVR == 0 ) lua_prompt3d ( t.s_s.Get(), MAXTimer()+ addtime, 0 );
 		float fObjCtrX = GetObjectCollisionCenterX(t.entityelement[t.e].obj);
 		float fObjCtrZ = GetObjectCollisionCenterZ(t.entityelement[t.e].obj);
 		float fObjHeight = ObjectSizeY(t.entityelement[t.e].obj);
@@ -164,14 +164,14 @@ void lua_promptlocalcore ( int iTrueLocalOrForVR , int addtime = 1000)
 	{
 		if ( iTrueLocalOrForVR == 1 )
 		{
-			t.luaglobal.scriptprompttime=Timer()+t.v;
+			t.luaglobal.scriptprompttime= MAXTimer()+t.v;
 			t.luaglobal.scriptprompt_s=t.s_s;
 		}
 		else
 		{
 			t.entityelement[t.e].overpromptuse3D = false;
 			t.entityelement[t.e].overprompt_s=t.s_s;
-			t.entityelement[t.e].overprompttimer=Timer()+ addtime;
+			t.entityelement[t.e].overprompttimer= MAXTimer()+ addtime;
 			extern bool bActivatePromptXYOffset;
 			extern int iPromptXOffset;
 			extern int iPromptYOffset;
@@ -408,7 +408,7 @@ void lua_positionprompt3d ( int e, float fX, float fY, float fZ, float fAngleY, 
 	else
 	{
 		t.entityelement[e].overpromptuse3D = true; 
-		t.entityelement[e].overprompttimer = Timer()+100;
+		t.entityelement[e].overprompttimer = MAXTimer()+100;
 		t.entityelement[e].overprompt3dX = fX;
 		t.entityelement[e].overprompt3dY = fY;
 		t.entityelement[e].overprompt3dZ = fZ;
@@ -1328,7 +1328,7 @@ void lua_musicplaytime ( void )
 	// plays the track m for v amount of time, before returning to the default track
 	if ( t.m < 1 || t.m > MUSICSYSTEM_MAXTRACKS  )  return;
 	if ( SoundExist(g.musicsoundoffset + t.m - 1)  ==  0  )  return;
-	t.musictrack[t.m].playtimestamp = Timer();
+	t.musictrack[t.m].playtimestamp = MAXTimer();
 	t.musictrack[t.m].playtime = t.v;
 	t.musictrack[t.m].playtimefade = g.musicsystem.fadetime;
 
@@ -1342,7 +1342,7 @@ void lua_musicplaytimecue ( void )
 	// plays the track m for v amount of time, before returning to the default track, using the timing interval system
 	if ( t.m < 1 || t.m > MUSICSYSTEM_MAXTRACKS  )  return;
 	if ( SoundExist(g.musicsoundoffset + t.m - 1)  ==  0  )  return;
-	t.musictrack[t.m].playtimestamp = Timer();
+	t.musictrack[t.m].playtimestamp = MAXTimer();
 	t.musictrack[t.m].playtime = t.v;
 	t.musictrack[t.m].playtimefade = g.musicsystem.fadetime;
 

@@ -810,7 +810,7 @@ bool entity_load (bool bCalledFromLibrary)
 	t.entobj=g.entitybankoffset+t.entid;
 
 	//  debug info
-	t.mytimer=Timer();
+	t.mytimer= MAXTimer();
 
 	//  Load Entity profile data
 	entity_loaddata ();

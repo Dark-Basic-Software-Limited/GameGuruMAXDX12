@@ -144,8 +144,8 @@ void physics_init ( void )
 	t.playercontrol.footfallcount=0;
 	if (  t.playercontrol.regenrate>0 ) 
 	{
-		t.playercontrol.regentime=Timer();
-		t.playercontrol.regentick=Timer();
+		t.playercontrol.regentime= MAXTimer();
+		t.playercontrol.regentick= MAXTimer();
 	}
 	else
 	{
@@ -2226,7 +2226,7 @@ void physics_player_handledeath ( void )
 			//  when death pause over
 			if (  t.aisystem.processplayerlogic == 1 ) 
 			{
-				if (  Timer()>t.playercontrol.deadtime ) 
+				if (  MAXTimer()>t.playercontrol.deadtime ) 
 				{
 					if (  t.playercontrol.startlives>0 && t.player[t.plrid].lives == 0 && t.game.gameisexe == 1 ) 
 					{
@@ -2411,7 +2411,7 @@ void physics_player_takedamage ( void )
 		}
 
 		//  Flag player damage in health regen code
-		if (  t.playercontrol.regentime>0  )  t.playercontrol.regentime = Timer();
+		if (  t.playercontrol.regentime>0  )  t.playercontrol.regentime = MAXTimer();
 
 		//  Deduct health from player
 		if (t.playercontrol.startstrength > 0 && bSuccessfullyBlockingNow==false)
@@ -2504,10 +2504,10 @@ void physics_player_takedamage ( void )
 				{
 					if (t.playercontrol.startviolent != 0 && g.quickparentalcontrolmode != 2)
 					{
-						if ((DWORD)(Timer() + 250) > t.playercontrol.timesincelastgrunt)
+						if ((DWORD)(MAXTimer() + 250) > t.playercontrol.timesincelastgrunt)
 						{
 							// only ever one in three or if been a while since we grunted
-							t.playercontrol.timesincelastgrunt = Timer();
+							t.playercontrol.timesincelastgrunt = MAXTimer();
 							int iLastOne = t.tplrhurt;
 							bool bHaveUniqueSound = false;
 							while (bHaveUniqueSound == false)
@@ -2631,7 +2631,7 @@ void physics_player_takedamage ( void )
 			t.plrzoominchange=1 ; t.plrzoomin_f=0.0;
 			gun_playerdead ( );
 			// start death sequence for player
-			t.playercontrol.deadtime=Timer()+2000;
+			t.playercontrol.deadtime= MAXTimer()+2000;
 			// make sure all music is stopped
 			if (  t.playercontrol.disablemusicreset == 0 ) 
 			{
@@ -2692,7 +2692,7 @@ void physics_resetplayer_core ( void )
 	t.player[t.plrid].health=t.playercontrol.startstrength;
 
 	//  ressurection cease fire allows player to escape shooters when respawn
-	t.playercontrol.ressurectionceasefire=Timer()+3000;
+	t.playercontrol.ressurectionceasefire= MAXTimer()+3000;
 
 	//  reset vegetation
 	t.completelyfillvegarea=1;

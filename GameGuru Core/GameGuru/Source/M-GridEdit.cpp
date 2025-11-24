@@ -638,13 +638,13 @@ void gridedit_triggermessagehandler (bool bForceMessageNoFade)
 
 		if (iTriggerMessageY == 1)
 		{
-			if (iMessageTimer == 0 || Timer() - iMessageTimer > 8100)
-				iMessageTimer = Timer();
+			if (iMessageTimer == 0 || MAXTimer() - iMessageTimer > 8100)
+				iMessageTimer = MAXTimer();
 		}
 		else
 		{
-			if (iMessageTimer == 0 || Timer() - iMessageTimer > 4100)
-				iMessageTimer = Timer();
+			if (iMessageTimer == 0 || MAXTimer() - iMessageTimer > 4100)
+				iMessageTimer = MAXTimer();
 		}
 		ImGuiViewport* viewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowViewport(viewport->ID);
@@ -673,9 +673,9 @@ void gridedit_triggermessagehandler (bool bForceMessageNoFade)
 		if (bForceMessageNoFade == false)
 		{
 			if (iTriggerMessageY == 1)
-				fader = ((float)Timer() - (float)iMessageTimer) / 1500.0f;
+				fader = ((float)MAXTimer() - (float)iMessageTimer) / 1500.0f;
 			else
-				fader = ((float)Timer() - (float)iMessageTimer) / 1000.0f;
+				fader = ((float)MAXTimer() - (float)iMessageTimer) / 1000.0f;
 
 			fader -= 1.0;
 			if (fader < 0) {
@@ -922,7 +922,7 @@ void mapeditorexecutable_init ( void )
 
 	//  Var to control machine independent speed
 	game_timeelapsed_init ( );
-	t.tsl_f=Timer();
+	t.tsl_f= MAXTimer();
 
 	// IDE announcement system (note VR Quest has this option)
 	// (note VR Quest has this option)
@@ -1379,7 +1379,7 @@ void mapeditorexecutable_init ( void )
 	charactercreatorplus_populatechartypes();
 
 	//  Main loop
-	iStartupTime = Timer();
+	iStartupTime = MAXTimer();
 	timestampactivity(0, "Guru Map Editor Loop Starts");
 
 	//Default to OBJECT TOOL panel (so can view tutorials right away)
@@ -13900,7 +13900,7 @@ void mapeditorexecutable_loop(void)
 
 	//  Machine Independent Speed
 	game_timeelapsed ( );
-	t.ts_f=(Timer()-t.tsl_f)/50.0 ; t.tsl_f=Timer();
+	t.ts_f=(MAXTimer()-t.tsl_f)/50.0 ; t.tsl_f= MAXTimer();
 
 	//  Send SteamID to the editor if needed
 	mp_sendSteamIDToEditor ( );
@@ -14313,7 +14313,7 @@ void editor_showparentalcontrolpage ( void )
 	t.asy_f=1.0;
 	t.imgx_f=ImageWidth(g.editorimagesoffset+8)*t.asx_f;
 	t.imgy_f=ImageHeight(g.editorimagesoffset+8)*t.asy_f;
-	Sprite (  123,-10000,-10000,g.editorimagesoffset+8 );
+	MAXSprite (  123,-10000,-10000,g.editorimagesoffset+8 );
 	SizeSprite (  123,t.imgx_f,t.imgy_f );
 	t.lastmousex=MouseX() ; t.lastmousey=MouseY();
 	t.tpressf1toleave=0;

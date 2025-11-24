@@ -25,9 +25,6 @@
     <Filter Include="GameFXCalls">
       <UniqueIdentifier>{6e7c458b-e5d3-47d1-ad27-eacd51b7bdba}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShadowMapping">
-      <UniqueIdentifier>{58f833d6-db03-473a-be2b-854d098fb400}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Occlusion">
       <UniqueIdentifier>{9c6030e9-f084-4b52-afa5-3e38566a3218}</UniqueIdentifier>
     </Filter>
@@ -92,12 +89,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Shared\Camera\CCameraDataC.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="..\..\Shared\Objects\ShadowMapping\DepthTexture.h">
-      <Filter>ShadowMapping</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Shared\Objects\ShadowMapping\cShadowMaps.h">
-      <Filter>ShadowMapping</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Shared\Objects\Occlusion\cOcclusion.h">
       <Filter>Occlusion</Filter>
     </ClInclude>
@@ -170,12 +161,6 @@
       <Filter>GameFXCalls</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Shared\Core\globstruct.cpp" />
-    <ClCompile Include="..\..\Shared\Objects\ShadowMapping\DepthTexture.cpp">
-      <Filter>ShadowMapping</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Shared\Objects\ShadowMapping\cShadowMaps.cpp">
-      <Filter>ShadowMapping</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Shared\Objects\Occlusion\cOcclusion.cpp">
       <Filter>Occlusion</Filter>
     </ClCompile>

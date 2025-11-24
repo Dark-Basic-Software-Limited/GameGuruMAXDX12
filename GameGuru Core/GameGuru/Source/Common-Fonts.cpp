@@ -148,7 +148,7 @@ void pastebitmapfont ( char* text_s, int tx, int ty, int index, int alpha )
 	if (  ImageExist(sid)  ==  0  )  return;
 	float fImageTexOffsetU = 0.5f/ImageWidth(sid);
 	float fImageTexOffsetV = 0.5f/ImageHeight(sid);
-	Sprite (  sid,-10000,-10000,g.bitmapfontimagetart+index );
+	MAXSprite (  sid,-10000,-10000,g.bitmapfontimagetart+index );
 	for ( n = 1 ; n <= Len(text_s); n++ )
 	{
 		charindex=Asc(Mid(text_s,n));
@@ -227,7 +227,7 @@ void pastebitmapfontcolor ( char* text_s, int tx, int ty, int index, int alpha, 
 	if (  ImageExist(sid)  ==  0  )  return;
 	float fImageTexOffsetU = 0.5f/ImageWidth(sid);
 	float fImageTexOffsetV = 0.5f/ImageHeight(sid);
-	Sprite (  sid,-10000,-10000,g.bitmapfontimagetart+index );
+	MAXSprite (  sid,-10000,-10000,g.bitmapfontimagetart+index );
 	for ( n = 1 ; n<=  Len(text_s); n++ )
 	{
 		charindex=Asc(Mid(text_s,n) );

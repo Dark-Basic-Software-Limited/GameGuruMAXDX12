@@ -1,7 +1,7 @@
 //#pragma optimize("", off)
  
 //PE: Really slow , switched to wicked xaudio2.
-#define WICKEDAUDIO
+//#define WICKEDAUDIO DX12 can return this functionality in time!!
 
 //PE: reverB works.
 //#define REVERBTEST
@@ -39,7 +39,10 @@
 #include "CFileC.h"
 
 #ifdef WICKEDAUDIO
-#include "..\..\..\..\WickedRepo\WickedEngine\WickedEngine.h"
+
+#undef WICKEDENGINE
+#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\WickedEngine.h"
+
 #include <xaudio2.h>
 using namespace wiGraphics;
 using namespace wiScene;
@@ -1630,12 +1633,14 @@ uint32_t GetSoundFrequency(int iID)
 		return 0;
 	}
 
+#ifdef WICKEDAUDIO
 	SoundComponent* sound = GetScene().sounds.GetComponent(m_ptr->wickedEntity);
 	if (sound != nullptr)
 	{
 		uint32_t SamplePerSec = wiAudio::GetSamplePersec(&sound->soundinstance);
 		return(SamplePerSec);
 	}
+#endif
 	return(0);
 }
 DARKSDK void SetSoundSpeed ( int iID, int iFrequency )

@@ -14,9 +14,9 @@
 #include "CObjectsC.h"
 #include ".\..\..\Error\CError.h"
 
-#ifdef WICKEDENGINE
-#include ".\..\..\..\..\Guru-WickedMAX\wickedcalls.h"
-#endif
+//#ifdef WICKEDENGINE DX12
+//#include ".\..\..\..\..\Guru-WickedMAX\wickedcalls.h"
+//#endif
 
 // externs to globals elsewhere
 extern btDiscreteDynamicsWorld* g_dynamicsWorld;
@@ -694,7 +694,7 @@ void DBProRagDoll::Update()
 				{
 					bool bIncludeTranslation = false;
 					if (iF == m_iAnimateFromJoint) bIncludeTranslation = true;
-					WickedCall_OverrideLimbWithCombined(pObject, pFrame, bIncludeTranslation);
+					//WickedCall_OverrideLimbWithCombined(pObject, pFrame, bIncludeTranslation); DX12
 				}
 			}
 		}

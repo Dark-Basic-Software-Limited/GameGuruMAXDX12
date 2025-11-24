@@ -1144,6 +1144,11 @@ DARKSDK void Sprite ( int iID, int iX, int iY, int iImage )
 	CreateSprite( iID, iX, iY, iImage );
 }
 
+DARKSDK void MAXSprite (int iID, int iX, int iY, int iImage)
+{
+	MAXSprite (iID, iX, iY, iImage);
+}
+
 DARKSDK void PasteSprite ( int iID, int iX, int iY )
 {
 	// can instantly disable this feature temporarily for screen blanking

@@ -24,7 +24,11 @@ enum GGRENDERLAYERS
 #endif
 
 // pre-declare Wicked classes
-struct wiResource;
+//struct wiResource; DX12 duplicate in wiResource.h
+//struct wiResource;
+
+#undef WICKEDENGINE
+#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\WickedEngine.h"
 
 // Image Management
 #ifndef GGIMAGERESENUM

@@ -11,7 +11,9 @@
 #include "CMemblocks.h"
 #include "cOccluderThread.h"
 #include <algorithm>
-#include "ShadowMapping\cShadowMaps.h"
+
+//#include "ShadowMapping\cShadowMaps.h" DX12 not needed here
+
 #include "CFileC.h"
 #ifdef WICKEDENGINE
 #include ".\..\..\..\..\Guru-WickedMAX\wickedcalls.h"
@@ -21,7 +23,8 @@
 // Occlusion object global
 #include "Occlusion\cOcclusion.h"
 extern COcclusion g_Occlusion;
-extern CascadedShadowsManager g_CascadedShadow;
+
+//.extern CascadedShadowsManager g_CascadedShadow;
 
 // External Globals
 extern bool g_bSwitchLegacyOn;
@@ -5241,19 +5244,19 @@ DARKSDK_DLL void DeleteEffect ( int iEffectID )
 }
 
 // globals for now
-#include "ShadowMapping\cShadowMaps.h"
+//#include "ShadowMapping\cShadowMaps.h" not for DX12
 int							g_PrimaryShadowEffect = 0;
 int							g_iDebugObjStart = 0;
 int							g_iDebugEffectIndex = 0;
 int							g_HideDistantShadows = 1;
 int							g_TerrainShadows = 0;
 int							g_RealShadowResolution = 1024;
-CascadedShadowsManager      g_CascadedShadow;
-CascadeConfig               g_CascadeConfig;
+//CascadedShadowsManager      g_CascadedShadow;
+//CascadeConfig               g_CascadeConfig;
 bool                        g_bMoveLightTexelSize = TRUE;
-CFirstPersonCamera          g_ViewerCamera;          
-CFirstPersonCamera          g_LightCamera;         
-CFirstPersonCamera*         g_pActiveCamera = &g_ViewerCamera;
+//CFirstPersonCamera          g_ViewerCamera;          
+//CFirstPersonCamera          g_LightCamera;         
+//CFirstPersonCamera*         g_pActiveCamera = &g_ViewerCamera;
 
 DARKSDK_DLL void SetEffectToShadowMappingEx ( int iEffectID, int iDebugObjStart, int iDebugEffectIndex, int iHideDistantShadows, int iTerrainShadows, int iRealShadowResolution, int iRealShadowCascadeCount, int iC0, int iC1, int iC2, int iC3, int iC4, int iC5, int iC6, int iC7 )
 {
@@ -5267,29 +5270,29 @@ DARKSDK_DLL void SetEffectToShadowMappingEx ( int iEffectID, int iDebugObjStart,
 	g_HideDistantShadows = iHideDistantShadows;
 	g_TerrainShadows = iTerrainShadows;
 	g_RealShadowResolution = iRealShadowResolution;
-    g_CascadeConfig.m_iBufferSize = g_RealShadowResolution;
-    g_CascadeConfig.m_nCascadeLevels = iRealShadowCascadeCount;
-    g_CascadedShadow.m_iCascadePartitionsZeroToOne[0] = iC0;
-    g_CascadedShadow.m_iCascadePartitionsZeroToOne[1] = iC1;
-    g_CascadedShadow.m_iCascadePartitionsZeroToOne[2] = iC2;
-    g_CascadedShadow.m_iCascadePartitionsZeroToOne[3] = iC3;
-    g_CascadedShadow.m_iCascadePartitionsZeroToOne[4] = iC4;
-    g_CascadedShadow.m_iCascadePartitionsZeroToOne[5] = iC5;
-    g_CascadedShadow.m_iCascadePartitionsZeroToOne[6] = iC6;
-    g_CascadedShadow.m_iCascadePartitionsZeroToOne[7] = iC7;
-    g_CascadedShadow.m_iCascadePartitionsMax = 100;
-    SHADOW_TEXTURE_FORMAT sbt = (SHADOW_TEXTURE_FORMAT)0;
-    g_CascadeConfig.m_ShadowBufferFormat = sbt;
-    g_CascadedShadow.m_bMoveLightTexelSize = g_bMoveLightTexelSize;
-    g_CascadedShadow.m_eSelectedCascadesFit = FIT_TO_SCENE; 
-    g_CascadedShadow.m_eSelectedNearFarFit = FIT_NEARFAR_SCENE_AABB;
-	g_CascadedShadow.m_fBlurBetweenCascadesAmount = 0.25f;
+    //g_CascadeConfig.m_iBufferSize = g_RealShadowResolution;
+    //g_CascadeConfig.m_nCascadeLevels = iRealShadowCascadeCount;
+    //g_CascadedShadow.m_iCascadePartitionsZeroToOne[0] = iC0;
+    //g_CascadedShadow.m_iCascadePartitionsZeroToOne[1] = iC1;
+    //g_CascadedShadow.m_iCascadePartitionsZeroToOne[2] = iC2;
+    //g_CascadedShadow.m_iCascadePartitionsZeroToOne[3] = iC3;
+    //g_CascadedShadow.m_iCascadePartitionsZeroToOne[4] = iC4;
+    //g_CascadedShadow.m_iCascadePartitionsZeroToOne[5] = iC5;
+    //g_CascadedShadow.m_iCascadePartitionsZeroToOne[6] = iC6;
+    //g_CascadedShadow.m_iCascadePartitionsZeroToOne[7] = iC7;
+    //g_CascadedShadow.m_iCascadePartitionsMax = 100;
+    //SHADOW_TEXTURE_FORMAT sbt = (SHADOW_TEXTURE_FORMAT)0;
+    //g_CascadeConfig.m_ShadowBufferFormat = sbt;
+    //g_CascadedShadow.m_bMoveLightTexelSize = g_bMoveLightTexelSize;
+    //g_CascadedShadow.m_eSelectedCascadesFit = FIT_TO_SCENE; 
+    //g_CascadedShadow.m_eSelectedNearFarFit = FIT_NEARFAR_SCENE_AABB;
+	//g_CascadedShadow.m_fBlurBetweenCascadesAmount = 0.25f;
 
 	// create resources for shadow mapper
-    g_CascadedShadow.Init(	&g_ViewerCamera, &g_LightCamera, &g_CascadeConfig );
+   // g_CascadedShadow.Init(	&g_ViewerCamera, &g_LightCamera, &g_CascadeConfig );
 
 	// cascade render mask (upto eight cascades)
-	g_CascadedShadow.m_dwMask = 0xF;
+	//g_CascadedShadow.m_dwMask = 0xF;
 
 	// complete
 	return;
@@ -5309,13 +5312,13 @@ DARKSDK_DLL void SetEffectToShadowMapping ( int iEffectID )
 DARKSDK_DLL void SetEffectShadowMappingMode ( int iMode )
 {
 	// Can set the mask for which cascades get rendered
-	g_CascadedShadow.m_dwMask = iMode;
+	//g_CascadedShadow.m_dwMask = iMode;
 }
 
 DARKSDK_DLL void SetShadowTexelSize(int isize)
 {
 	// Can set the size of the cascade textures use, to calculate the texel size.
-	g_CascadeConfig.m_iBufferSize = isize;
+	//g_CascadeConfig.m_iBufferSize = isize;
 }
 
 DARKSDK_DLL void RenderEffectShadowMapping ( int iEffectID )
@@ -5344,7 +5347,7 @@ DARKSDK_DLL void RenderEffectShadowMapping ( int iEffectID )
 		FLOAT ClearColor[4] = { 0.0f, 0.25f, 0.25f, 0.55f };
 
 		// process shadow mapping frame
-		g_CascadedShadow.InitFrame( pEffectPtr );
+		//g_CascadedShadow.InitFrame( pEffectPtr );
 
 		// set technique for depth rendering
 		#ifdef DX11
@@ -5364,7 +5367,7 @@ DARKSDK_DLL void RenderEffectShadowMapping ( int iEffectID )
 		#endif
 
 		// render all shadows in cascades (multiple shadow maps based on frustrum slices)
-		g_CascadedShadow.RenderShadowsForAllCascades(pEffectPtr);
+		//g_CascadedShadow.RenderShadowsForAllCascades(pEffectPtr);
 
 		// Restore technique after depth renders
 		#ifdef DX11
@@ -5378,7 +5381,7 @@ DARKSDK_DLL void RenderEffectShadowMapping ( int iEffectID )
 		#endif
 	}
 	// set shaodw mapping settings for final render (for all effects that call this command inc. primary)
-    g_CascadedShadow.RenderScene( iEffectID, pEffectPtr, NULL, NULL, NULL, false );
+    //g_CascadedShadow.RenderScene( iEffectID, pEffectPtr, NULL, NULL, NULL, false );
 
 	// create debug objects to view shadow maps
 	if ( g_iDebugObjStart > 0 )
@@ -5904,7 +5907,7 @@ DARKSDK_DLL void ResetEffect ( int iEffectID )
 		return;
 
 	// called when switching shader and need new param values from new shader
-	SAFE_DELETE ( g_CascadedShadow.m_pEffectParam[iEffectID] );
+	//SAFE_DELETE ( g_CascadedShadow.m_pEffectParam[iEffectID] );
 }
 
 DARKSDK_DLL void EraseEffectParameterIndex ( int iEffectID, LPSTR pConstantName )

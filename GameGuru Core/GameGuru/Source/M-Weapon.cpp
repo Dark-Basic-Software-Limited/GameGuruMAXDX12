@@ -295,7 +295,7 @@ void weapon_projectile_loop ( void )
 	//PE: Support WPE particles here.
 	
 	//  processes all active projectiles
-	t.tTimer = Timer();
+	t.tTimer = MAXTimer();
 	for ( t.tProj = 1 ; t.tProj <= g.weaponSystem.numProjectiles; t.tProj++ )
 	{
 		if (  t.WeaponProjectile[t.tProj].activeFlag  ==  1 ) 
@@ -1322,7 +1322,7 @@ void weapon_projectile_make ( bool bUsingVRForAngle, bool bDoNotAdvanceToAvoidPe
 	}
 
 	t.WeaponProjectile[t.tNewProj].activeFlag = 1;
-	t.tTimer = Timer();
+	t.tTimer = MAXTimer();
 	t.WeaponProjectile[t.tNewProj].createStamp = t.tTimer;
 	t.WeaponProjectile[t.tNewProj].resultIntervalStamp = t.tTimer;
 	t.WeaponProjectile[t.tNewProj].soundIntervalStamp = t.tTimer;

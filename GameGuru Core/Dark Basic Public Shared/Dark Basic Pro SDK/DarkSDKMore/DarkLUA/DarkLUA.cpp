@@ -54,9 +54,9 @@ extern StoryboardStruct Storyboard;
 #endif
 
 #include "..\..\..\..\Guru-WickedMAX\wickedcalls.h"
-
-#undef WICKEDENGINE
-#include "WickedEngine.h"
+//#undef WICKEDENGINE
+//#include "WickedEngine.h"
+#define MAXPI 3.14159265358979323846f
 
 using namespace std;
 using namespace wiGraphics;
@@ -122,9 +122,9 @@ HMODULE MultiplayerModule = NULL;
 //extern float g_fDriverCompensationRoll;
 
 extern "C" {
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
+#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\LUA\lua.h"
+#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\LUA\lualib.h"
+#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\LUA\lauxlib.h"
 }
 
  extern GlobStruct* g_pGlob;
@@ -144,10 +144,10 @@ extern "C" {
 
 struct luaState
 {
-	lua_State	*state;
+	lua_State *state;
 };
 
-lua_State *lua = NULL;
+lua_State *lua2 = NULL;
 
 int maxLuaStates = 0;
 luaState** ppLuaStates = NULL;
@@ -174,7 +174,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int LuaSendMessage(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 
 	/* get number of arguments */
 	int n = lua_gettop(L);
@@ -237,7 +237,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int LuaSendMessageI(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 
 	/* get number of arguments */
 	int n = lua_gettop(L);
@@ -318,7 +318,7 @@ luaMessage** ppLuaMessages = NULL;
 
   int LuaSendMessageF(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 
 	/* get number of arguments */
 	int n = lua_gettop(L);
@@ -396,7 +396,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int LuaSendMessageS(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 
 	/* get number of arguments */
 	int n = lua_gettop(L);
@@ -484,7 +484,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int RestoreGameFromSlot(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	t.luaglobal.gamestatechange = lua_tonumber(L, 1);
@@ -497,7 +497,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int ResetFade(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	if ( t.game.gameloop == 1 )
 	{
 		// only blank if in the game menu (not main menu load page)
@@ -511,7 +511,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetInternalSoundState(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -524,7 +524,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetInternalSoundState(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -548,7 +548,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetCheckpoint(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 4 ) return 0;
 	t.playercheckpoint.x=lua_tonumber(L, 1);
@@ -560,7 +560,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int UpdateWeaponStats(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	lua_updateweaponstats();
 	return 0;
  }
@@ -572,7 +572,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponSlotGot(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
@@ -581,7 +581,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponSlotNoSelect(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
@@ -590,7 +590,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetWeaponSlot(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
@@ -600,7 +600,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponAmmo(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
@@ -612,7 +612,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetWeaponAmmo(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
@@ -624,7 +624,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponClipAmmo(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iWeaponSlotClipIndex = lua_tonumber(L, 1);
@@ -636,7 +636,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetWeaponClipAmmo(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iWeaponSlotClipIndex = lua_tonumber(L, 1);
@@ -654,7 +654,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponPoolAmmoIndex(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int iWeaponSlot = lua_tonumber(L, 1);
@@ -672,7 +672,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponPoolAmmo(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iPoolIndex = lua_tonumber(L, 1);
@@ -688,7 +688,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetWeaponPoolAmmo(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iPoolIndex = lua_tonumber(L, 1);
@@ -700,7 +700,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponSlot(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 
@@ -717,7 +717,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponSlotPref(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int iWeaponID = 0;
@@ -730,7 +730,7 @@ luaMessage** ppLuaMessages = NULL;
  // Weapon Modding Commands
  int GetPlayerWeaponID(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n > 0 ) return 0;
 
@@ -741,7 +741,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponID(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 
@@ -764,7 +764,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityWeaponID(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
@@ -782,7 +782,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int RawSetWeaponData ( lua_State *L, int iDataMode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	int tgunid = lua_tonumber(L, 1);
@@ -809,7 +809,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int RawGetWeaponData( lua_State *L, int iDataMode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 
@@ -843,7 +843,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetWeaponName(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int tgunid = lua_tonumber(L, 1);
@@ -881,7 +881,7 @@ luaMessage** ppLuaMessages = NULL;
  //
  int RawSetCameraData ( lua_State *L, int iDataMode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	int tcameraid=0, tvalue=0;
 	float fX=0, fY=0, fZ=0;
@@ -920,7 +920,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int RawGetCameraData( lua_State *L, int iDataMode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	int tcameraid = 0;
 	if ( iDataMode < 500 )
@@ -954,7 +954,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int WrapAngle(lua_State *L) 
  { 
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	float fAngle = wrapangleoffset(lua_tonumber(L, 1));
@@ -985,7 +985,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int SetCameraFOV ( lua_State *L )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iCameraIndex = lua_tonumber(L, 1);
@@ -999,7 +999,7 @@ luaMessage** ppLuaMessages = NULL;
  //
  int RawSetPlayerData ( lua_State *L, int iDataMode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( iDataMode == 1 )
 	{
@@ -1020,7 +1020,7 @@ luaMessage** ppLuaMessages = NULL;
  /*
  int SetEntityLUACore ( lua_State *L, int iCode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -1053,7 +1053,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityLUACore ( lua_State *L, int iCode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -1143,7 +1143,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int SetEntityActive(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -1153,7 +1153,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetEntityActivated(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -1162,7 +1162,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetEntityHasKey(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iIndex = lua_tonumber(L, 1);
@@ -1171,7 +1171,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetEntityObjective(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iIndex = lua_tonumber(L, 1);
@@ -1180,7 +1180,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetEntityCollectable(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iIndex = lua_tonumber(L, 1);
@@ -1190,7 +1190,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityCollectedEx(lua_State *L, bool bForceMode)
  {
 	// bForceMode when true will ignore state of entity, only interested in adding to inventory (used for saved game restoring)
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 || n > 6 ) return 0;
 	int iReturnSlot = -1;
@@ -1469,7 +1469,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetEntityUsed(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1493,7 +1493,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int SetEntityExplodable(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1506,7 +1506,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetExplosionDamage(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1519,7 +1519,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetExplosionHeight(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1533,7 +1533,7 @@ luaMessage** ppLuaMessages = NULL;
  //PE: SetCustomExplosion(e,effectname) sound is using <Sound5>. SetCustomExplosionShould only be called one time.
  int SetCustomExplosion(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1582,7 +1582,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityExplodable(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
@@ -1598,7 +1598,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityObjective(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
@@ -1615,7 +1615,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityProjectGlobal(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
@@ -1630,7 +1630,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityCollectable(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
@@ -1644,7 +1644,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityCollected(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
@@ -1658,7 +1658,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityUsed(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
@@ -1672,7 +1672,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetEntityQuantity(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1685,7 +1685,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityQuantity(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
@@ -1700,7 +1700,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityWhoActivated(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
@@ -1714,7 +1714,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityActive(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -1731,7 +1731,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityVisibility(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
@@ -1751,7 +1751,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetEntitySpawnAtStart(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -1763,7 +1763,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntitySpawnAtStart(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
@@ -1777,7 +1777,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityFilePath(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	char pReturnValue[1024];
@@ -1797,7 +1797,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityClonedSinceStartValue(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int iReturnValue = 0;
@@ -1809,7 +1809,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int SetPreExitValue(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -1822,7 +1822,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int RawSetEntityData ( lua_State *L, int iDataMode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -1879,7 +1879,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityData ( lua_State *L, int iDataMode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( iDataMode == 19 )
 	{
@@ -2081,7 +2081,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int SetEntityIfUsed(lua_State* L) 
  { 
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -2091,7 +2091,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityIfUsed(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -2115,7 +2115,7 @@ luaMessage** ppLuaMessages = NULL;
  #ifdef WICKEDENGINE
  int SetEntityRelationshipData (lua_State *L, int iDataMode)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -2135,7 +2135,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityRelationshipData (lua_State *L, int iDataMode)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1 || n > 2) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -2220,7 +2220,7 @@ luaMessage** ppLuaMessages = NULL;
  std::vector<int> g_entitiesinconelist;
  int GetEntitiesWithinCone(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 8) return 0;
 	 float fX = lua_tonumber(L, 1);
@@ -2259,7 +2259,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityWithinCone(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int iIndex = lua_tonumber(L, 1);
@@ -2332,7 +2332,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int MakeAISound (lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 6) return 0;
 	 t.tsx_f = lua_tonumber(L, 1);
@@ -2368,7 +2368,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int SetEntityString(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop( L );
 	if ( n < 3 ) return 0;
 	bool setSound = ( n == 4 ) && lua_tonumber( L, 4 ) == 1;
@@ -2438,7 +2438,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityString(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iReturnValue = 0;
@@ -2460,7 +2460,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetLimbName(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iID = lua_tonumber(L, 1);
@@ -2487,7 +2487,7 @@ luaMessage** ppLuaMessages = NULL;
  // Entity Animation
  int SetEntityAnimation(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 4 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -2511,7 +2511,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityAnimationStart(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
@@ -2530,7 +2530,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityAnimationFinish(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
@@ -2549,7 +2549,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityAnimationFound(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
@@ -2569,7 +2569,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetObjectAnimationFinished(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1 || n > 2) return 0;
 	 int iReturnValue = 0;
@@ -2600,7 +2600,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int AdjustLookAimSettings (lua_State *L, int iMode )
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 t.e = lua_tonumber(L, 1);
@@ -2633,7 +2633,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityFootfallMax(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
@@ -2651,7 +2651,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetEntityFootfallKeyframe(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	int iReturnValue = 0;
@@ -2675,7 +2675,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityAnimationNameExistCore(lua_State *L, int iAnimQueryMode)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iReturnValue = 0;
@@ -2772,7 +2772,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityAnimationTriggerFrame(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iReturnValue = -1;
@@ -2812,7 +2812,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetEntityAnimationStartFinish(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 int iReturnValue = 0;
@@ -2834,7 +2834,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetOriginalEntityElementMax(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int iEntityCount = g.entityelementlist;
 	 lua_pushinteger (L, iEntityCount);
 	 return 1;
@@ -2842,7 +2842,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int CreateEntityIfNotPresent(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int iNewE = -1;
@@ -2946,7 +2946,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int SpawnNewEntity(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int iNewE = -1;
@@ -3014,7 +3014,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int DeleteNewEntity(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 1) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -3071,7 +3071,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetAmmoClipMax(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	t.e = lua_tonumber(L, 1);
@@ -3083,7 +3083,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetAmmoClip(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	t.e = lua_tonumber(L, 1);
@@ -3095,7 +3095,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int SetAmmoClip(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	t.e = lua_tonumber(L, 1);
@@ -3109,7 +3109,7 @@ luaMessage** ppLuaMessages = NULL;
  //
  int FreezeEntityCore ( lua_State *L, int iCoreMode )
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( iCoreMode == 0 && n < 1 ) return 0;
 	if ( iCoreMode == 1 && n < 2 ) return 0;
@@ -3147,7 +3147,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetTerrainHeight(lua_State *L)
  {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	float fReturnHeight = 0.0f;
@@ -3159,7 +3159,7 @@ luaMessage** ppLuaMessages = NULL;
  }
  int GetTerrainHeightFloat(lua_State* L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 2) return 0;
 	 float fReturnHeight = 0.0f;
@@ -3201,7 +3201,7 @@ luaMessage** ppLuaMessages = NULL;
 	 #else
 	 if (Timer() > iUpdateTimer + 55) //PE: 1000/20 = 50 (20 fps).
 	 {
-		 iUpdateTimer = Timer();
+		 iUpdateTimer = MAXTimer();
 	 }
 	 else
 	 {
@@ -3306,7 +3306,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int GetSurfaceHeight(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 	 int n = lua_gettop(L);
 	 if (n < 3) return 0;
 	 float fReturnHeight = 0.0f;
@@ -3332,7 +3332,7 @@ luaMessage** ppLuaMessages = NULL;
  // DarkAI
  int AISetEntityControl(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3353,7 +3353,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int AIEntityAssignPatrolPath(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3371,7 +3371,7 @@ luaMessage** ppLuaMessages = NULL;
 
  int AIEntityStop(lua_State *L)
  {
-	 lua = L;
+	 lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3389,7 +3389,7 @@ luaMessage** ppLuaMessages = NULL;
 
 int AIEntityAddTarget(lua_State *L)
 {
-	 lua = L;
+	 lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3407,7 +3407,7 @@ int AIEntityAddTarget(lua_State *L)
 
 int AIEntityRemoveTarget(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3425,7 +3425,7 @@ int AIEntityRemoveTarget(lua_State *L)
 
 int AIEntityMoveToCover(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3444,7 +3444,7 @@ int AIEntityMoveToCover(lua_State *L)
 
 int AIGetEntityCanSee(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3463,7 +3463,7 @@ int AIGetEntityCanSee(lua_State *L)
 
 int AIGetEntityCanFire(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3482,7 +3482,7 @@ int AIGetEntityCanFire(lua_State *L)
 
 int AIGetEntityViewRange(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3495,7 +3495,7 @@ int AIGetEntityViewRange(lua_State *L)
 }
 int AIGetEntitySpeed(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3509,7 +3509,7 @@ int AIGetEntitySpeed(lua_State *L)
 
 int AIGetTotalPaths(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n != 0 ) return 0;
 #ifdef WICKEDENGINE
@@ -3522,7 +3522,7 @@ int AIGetTotalPaths(lua_State *L)
 }
 int AIGetPathCountPoints(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3535,7 +3535,7 @@ int AIGetPathCountPoints(lua_State *L)
 }
 int AIPathGetPointX(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 #ifdef WICKEDENGINE
@@ -3548,7 +3548,7 @@ int AIPathGetPointX(lua_State *L)
 }
 int AIPathGetPointY(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 #ifdef WICKEDENGINE
@@ -3561,7 +3561,7 @@ int AIPathGetPointY(lua_State *L)
 }
 int AIPathGetPointZ(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 #ifdef WICKEDENGINE
@@ -3575,7 +3575,7 @@ int AIPathGetPointZ(lua_State *L)
 
 int AIGetTotalCover(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n != 0 ) return 0;
 #ifdef WICKEDENGINE
@@ -3588,7 +3588,7 @@ int AIGetTotalCover(lua_State *L)
 }
 int AICoverGetPointX(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3601,7 +3601,7 @@ int AICoverGetPointX(lua_State *L)
 }
 int AICoverGetPointY(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3614,7 +3614,7 @@ int AICoverGetPointY(lua_State *L)
 }
 int AICoverGetPointZ(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3627,7 +3627,7 @@ int AICoverGetPointZ(lua_State *L)
 }
 int AICoverGetAngle(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3640,7 +3640,7 @@ int AICoverGetAngle(lua_State *L)
 }
 int AICoverGetIfUsed(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3654,7 +3654,7 @@ int AICoverGetIfUsed(lua_State *L)
 
 int MsgBox(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3668,7 +3668,7 @@ int MsgBox(lua_State *L)
 
 int AISetEntityMoveBoostPriority(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	int iObj = lua_tointeger(L, 1);
@@ -3685,7 +3685,7 @@ int AIEntityGoToPosition(lua_State *L)
 	// can pass in 3 or 4 params
 	// (3) obj,x,z 
 	// (4) obj,x,y,z
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	int iObj = lua_tointeger(L, 1);
@@ -3746,7 +3746,7 @@ int AIGetEntityHeardSound(lua_State *L )
 
 int AISetData ( lua_State *L, int iDataMode )
 {
-	lua = L;
+	lua2 = L;
 	int iParamNum = 0;
 	switch ( iDataMode )
 	{
@@ -3768,7 +3768,7 @@ int AISetData ( lua_State *L, int iDataMode )
 }
 int AIGetData ( lua_State *L, int iDataMode )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
@@ -3798,7 +3798,7 @@ int AIGetEntityIsMoving ( lua_State *L ) { return AIGetData ( L, 2 ); }
 
 int AIGetVisualSetting ( lua_State *L, int iMode )
 {
-	lua = L;
+	lua2 = L;
 	//int n = lua_gettop(L);
 	//if ( n < 1 ) return 0;
 	switch ( iMode )
@@ -3851,7 +3851,7 @@ int GetPostDepthOfFieldIntensity(lua_State *L) { return AIGetVisualSetting ( L, 
 
 int AICouldSee(lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -3875,7 +3875,7 @@ int AICouldSee(lua_State *L )
 #ifdef WICKEDENGINE
 int SetEntityAttachmentVisibility (lua_State *L, bool bVisible)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
@@ -3919,7 +3919,7 @@ int ShowEntityAttachment (lua_State *L) { return SetEntityAttachmentVisibility(L
 
 int SetDebuggingData (lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
@@ -3945,7 +3945,7 @@ int SetDebuggingData (lua_State *L)
 
 int RDFindPath (lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 6) return 0;
 
@@ -3981,7 +3981,7 @@ int RD_GetPoint_Core (float* pXYZ,int iCurrentPoint)
 
 int RDGetPathPointCount(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	float thisPoint[3] = { 0, 0, 0 };
 	int iCount = RD_GetPoint_Core(thisPoint,0);
 	lua_pushnumber (L, iCount);
@@ -3990,7 +3990,7 @@ int RDGetPathPointCount(lua_State *L)
 
 int RDGetPathPointX(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iPointIndex = lua_tonumber(L, 1);
@@ -4002,7 +4002,7 @@ int RDGetPathPointX(lua_State *L)
 
 int RDGetPathPointY(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iPointIndex = lua_tonumber(L, 1);
@@ -4014,7 +4014,7 @@ int RDGetPathPointY(lua_State *L)
 
 int RDGetPathPointZ(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iPointIndex = lua_tonumber(L, 1);
@@ -4026,7 +4026,7 @@ int RDGetPathPointZ(lua_State *L)
 
 int StartMoveAndRotateToXYZ (lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 3 || n > 5) return 0;
 	t.e = lua_tonumber(L, 1);
@@ -4066,7 +4066,7 @@ int StartMoveAndRotateToXYZ (lua_State *L)
 
 int MoveAndRotateToXYZ (lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 3 || n > 5) return 0;
 	t.e = lua_tonumber(L, 1);
@@ -4097,7 +4097,7 @@ int MoveAndRotateToXYZ (lua_State *L)
 
 int SetEntityPathRotationMode (lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	t.e = lua_tonumber(L, 1);
@@ -4111,7 +4111,7 @@ int SetEntityPathRotationMode (lua_State *L)
 
 int RDIsWithinMesh(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 3) return 0;
 	float fX = lua_tonumber(L, 1);
@@ -4128,7 +4128,7 @@ int RDIsWithinMesh(lua_State *L)
 
 int RDIsWithinAndOverMesh(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 3) return 0;
 	float fX = lua_tonumber(L, 1);
@@ -4146,7 +4146,7 @@ int RDIsWithinAndOverMesh(lua_State* L)
 
 int RDGetYFromMeshPosition(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 3) return 0;
 	float fX = lua_tonumber(L, 1);
@@ -4164,7 +4164,7 @@ int RDGetYFromMeshPosition(lua_State *L)
 int RDBlockNavMeshCore(lua_State* L,int iWithShape)
 {
 	// block and unblock navmesh
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (iWithShape == 0 && n < 5) return 0;
 	if (iWithShape == 1 && n < 7) return 0;
@@ -4294,7 +4294,7 @@ int RDBlockNavMesh(lua_State *L)
 
 int DoTokenDrop(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 5) return 0;
 	float fX = lua_tonumber(L, 1);
@@ -4308,7 +4308,7 @@ int DoTokenDrop(lua_State* L)
 
 int GetTokenDropCount(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n > 0) return 0;
 	int iTokenDropCount = g_RecastDetour.GetTokenDropCount();
@@ -4317,7 +4317,7 @@ int GetTokenDropCount(lua_State* L)
 }
 int GetTokenDropX(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -4327,7 +4327,7 @@ int GetTokenDropX(lua_State* L)
 }
 int GetTokenDropY(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -4337,7 +4337,7 @@ int GetTokenDropY(lua_State* L)
 }
 int GetTokenDropZ(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -4347,7 +4347,7 @@ int GetTokenDropZ(lua_State* L)
 }
 int GetTokenDropType(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -4357,7 +4357,7 @@ int GetTokenDropType(lua_State* L)
 }
 int GetTokenDropTimeLeft(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
@@ -4369,7 +4369,7 @@ int GetTokenDropTimeLeft(lua_State* L)
 
 int AdjustPositionToGetLineOfSight (lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 8) return 0;
 	int iIgnoreObjNo = lua_tonumber(L, 1);
@@ -4432,7 +4432,7 @@ int AdjustPositionToGetLineOfSight (lua_State *L)
 
 int SetCharacterMode(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	float e = lua_tonumber(L, 1);
@@ -4454,7 +4454,7 @@ int SetCharacterMode(lua_State *L)
 
 int GetDeviceWidth(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	lua_pushinteger ( L , GetDisplayWidth() );
 
@@ -4463,7 +4463,7 @@ int GetDeviceWidth(lua_State *L)
 
 int GetDeviceHeight(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	lua_pushinteger ( L , GetDisplayHeight() );
 
@@ -4472,7 +4472,7 @@ int GetDeviceHeight(lua_State *L)
 
 int GetFirstEntitySpawn(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	int id = 0;
 
@@ -4496,7 +4496,7 @@ int GetFirstEntitySpawn(lua_State *L)
 
 int GetHeadTracker(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int id = 0;
 	//if ( GGVR_IsHmdPresent() > 0 && g.vrglobals.GGVRUsingVRSystem == 1 ) id = 1;
 	extern int g_iActivelyUsingVRNow;
@@ -4506,7 +4506,7 @@ int GetHeadTracker(lua_State *L)
 }
 int ResetHeadTracker(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int id = 0;
 	#ifdef VRTECH
 	#else
@@ -4517,7 +4517,7 @@ int ResetHeadTracker(lua_State *L)
 }
 int GetHeadTrackerYaw(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	#ifdef VRTECH
 	 float fValue = GGVR_GetHMDYaw();// + g_fDriverCompensationYaw;
 	#else
@@ -4529,7 +4529,7 @@ int GetHeadTrackerYaw(lua_State *L)
 }
 int GetHeadTrackerPitch(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	#ifdef VRTECH
 	 float fValue = GGVR_GetHMDPitch();// + g_fDriverCompensationYaw;
 	#else
@@ -4541,7 +4541,7 @@ int GetHeadTrackerPitch(lua_State *L)
 }
 int GetHeadTrackerRoll(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	#ifdef VRTECH
 	 float fValue = GGVR_GetHMDRoll();// + g_fDriverCompensationYaw;
 	#else
@@ -4554,7 +4554,7 @@ int GetHeadTrackerRoll(lua_State *L)
 
 int GetHeadTrackerNormalX(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 #ifdef WICKEDENGINE
     float fValue = GGVR_GetHMDRNormalX();
 #else
@@ -4566,7 +4566,7 @@ int GetHeadTrackerNormalX(lua_State *L)
 
 int GetHeadTrackerNormalY(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 #ifdef WICKEDENGINE
 	float fValue = GGVR_GetHMDRNormalY();
 #else
@@ -4578,7 +4578,7 @@ int GetHeadTrackerNormalY(lua_State *L)
 
 int GetHeadTrackerNormalZ(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 #ifdef WICKEDENGINE
 	float fValue = GGVR_GetHMDRNormalZ();
 #else
@@ -4598,7 +4598,7 @@ int Prompt3D(lua_State *L)
 	char pTextToRender[1024];
 	strcpy ( pTextToRender, lua_tostring(L, 1));
 	DWORD dwPrompt3DTime = lua_tonumber(L, 2);
-	lua_prompt3d(pTextToRender, Timer() + dwPrompt3DTime , 0 );
+	lua_prompt3d(pTextToRender, MAXTimer() + dwPrompt3DTime , 0 );
 	return 1;
 }
 
@@ -4646,7 +4646,7 @@ int PromptLocalDuration(lua_State* L)
 
 int LoadImage(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -4691,7 +4691,7 @@ int LoadImage(lua_State *L)
 int GetImageWidth(lua_State *L)
 {
 	// get LUA param
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) { lua_pushnumber ( L , 0 ); return 1; }
 
@@ -4709,7 +4709,7 @@ int GetImageWidth(lua_State *L)
 int GetImageHeight(lua_State *L)
 {
 	// get LUA param
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) { lua_pushnumber ( L , 0 ); return 1; }
 
@@ -4727,7 +4727,7 @@ int GetImageHeight(lua_State *L)
 int DeleteSpriteImage(lua_State *L)
 {
 	// get LUA param
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) { lua_pushnumber ( L , 0 ); return 1; }
 
@@ -4748,7 +4748,7 @@ int DeleteSpriteImage(lua_State *L)
 
 int CreateSprite(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -4769,7 +4769,7 @@ int CreateSprite(lua_State *L)
 			iID = GetFreeLUASpriteID();
 			if (iID > 0)
 			{
-				Sprite (iID, 0, 0, iImageID);
+				MAXSprite (iID, 0, 0, iImageID);
 				SetSpritePriority (iID, 90); // which is 10 in agk
 			}
 		}
@@ -4780,7 +4780,7 @@ int CreateSprite(lua_State *L)
 
 int PasteSprite(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) { lua_pushnumber ( L , 0 ); return 1; }
 	int iID = lua_tointeger(L, 1);
@@ -4793,7 +4793,7 @@ int PasteSprite(lua_State *L)
 
 int PasteSpritePosition(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) { lua_pushnumber ( L , 0 ); return 1; }
 	int iID = lua_tointeger(L, 1);
@@ -4812,7 +4812,7 @@ int PasteSpritePosition(lua_State *L)
 
 int SetSpriteScissor(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 	float fX = lua_tonumber(L, 1);
@@ -4829,7 +4829,7 @@ int SetSpriteScissor(lua_State* L)
 
 int SetSpriteImage(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -4844,7 +4844,7 @@ int SetSpriteImage(lua_State *L)
 	{
 		if (SpriteExist (iID) == 1)
 		{
-			Sprite (iID, SpriteX(iID), SpriteY(iID), image);
+			MAXSprite (iID, SpriteX(iID), SpriteY(iID), image);
 		}
 	}
 	return 0;
@@ -4852,7 +4852,7 @@ int SetSpriteImage(lua_State *L)
 
 int SetSpritePosition(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -4874,7 +4874,7 @@ int SetSpritePosition(lua_State *L)
 		{
 			if (SpriteExist (iID) == 1)
 			{
-				Sprite (iID, x, y, GetSpriteImage(iID));
+				MAXSprite (iID, x, y, GetSpriteImage(iID));
 			}
 		}
 	}
@@ -4883,7 +4883,7 @@ int SetSpritePosition(lua_State *L)
 
 int SetSpritePriorityForLUA(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int iID = lua_tointeger(L, 1);
@@ -4900,7 +4900,7 @@ int SetSpritePriorityForLUA(lua_State* L)
 
 int SetSpriteDepth(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -4924,7 +4924,7 @@ int SetSpriteDepth(lua_State *L)
 
 int SetSpriteColor(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -4951,7 +4951,7 @@ int SetSpriteColor(lua_State *L)
 
 int SetSpriteAngle(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -4974,7 +4974,7 @@ int SetSpriteAngle(lua_State *L)
 
 int DeleteSprite(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -4996,7 +4996,7 @@ int DeleteSprite(lua_State *L)
 
 int SetSpriteOffset(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -5044,7 +5044,7 @@ int SetSpriteOffset(lua_State *L)
 
 int SetSpriteSize ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -5219,7 +5219,7 @@ int SetGlobalSoundVolume ( lua_State *L )
 }
 int GetGlobalSoundExist(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
@@ -5228,7 +5228,7 @@ int GetGlobalSoundExist(lua_State *L)
 }
 int GetGlobalSoundPlaying(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
@@ -5237,7 +5237,7 @@ int GetGlobalSoundPlaying(lua_State *L)
 }
 int GetGlobalSoundLooping(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
@@ -5247,7 +5247,7 @@ int GetGlobalSoundLooping(lua_State *L)
 
 int GetSoundPlaying(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int e = lua_tointeger(L, 1);
@@ -5274,7 +5274,7 @@ int GetSoundPlaying(lua_State* L)
 
 int SetRawSoundData ( lua_State *L, int iDataMode )
 {
-	lua = L;
+	lua2 = L;
 	int iParamNum = 0;
 	switch ( iDataMode )
 	{
@@ -5309,7 +5309,7 @@ int SetRawSoundData ( lua_State *L, int iDataMode )
 }
 int GetRawSoundData ( lua_State *L, int iDataMode )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	switch ( iDataMode )
@@ -5330,7 +5330,7 @@ int RawSoundPlaying ( lua_State *L ) { return GetRawSoundData ( L, 2 ); }
 
 int GetEntityRawSound(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	int iE = lua_tonumber(L, 1);
@@ -5380,7 +5380,7 @@ int StopAmbientMusicTrack(lua_State* L)
 }
 int SetAmbientMusicTrackVolume(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	if (t.gamevisuals.bEndableAmbientMusicTrack)
@@ -5423,7 +5423,7 @@ int StopCombatMusicTrack(lua_State* L)
 }
 int SetCombatMusicTrackVolume(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iFreeSoundID = g.temppreviewsoundoffset + 5;
@@ -5439,7 +5439,7 @@ int SetCombatMusicTrackVolume(lua_State* L)
 }
 int GetCombatMusicTrackPlaying(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int iPlaying = 0;
 	int iFreeSoundID = g.temppreviewsoundoffset + 5;
 	if (SoundExist(iFreeSoundID) == 1 && SoundPlaying(iFreeSoundID) == 1)
@@ -5452,7 +5452,7 @@ int GetCombatMusicTrackPlaying(lua_State *L)
 
 int SetSoundMusicMode(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	extern bool g_bSoundIsMusic[65536];
@@ -5463,7 +5463,7 @@ int SetSoundMusicMode(lua_State* L)
 }
 int GetSoundMusicMode(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	extern bool g_bSoundIsMusic[65536];
@@ -5479,7 +5479,7 @@ int GetSoundMusicMode(lua_State* L)
 #ifdef VRTECH
 int GetSpeech(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iRunning = 0;
@@ -5502,14 +5502,14 @@ int GetSpeech(lua_State *L)
 
 int GetTimeElapsed ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, g.timeelapsed_f );
 	return 1;
 }
 
 int GetKeyState ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iKeyValue = lua_tonumber(L, 1);
@@ -5519,7 +5519,7 @@ int GetKeyState ( lua_State *L )
 
 int SetGlobalTimer (lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iRestoreToTime = lua_tonumber(L, 1);
@@ -5532,38 +5532,38 @@ int SetGlobalTimer (lua_State* L)
 
 int GetGlobalTimer ( lua_State *L )
 {
-	lua = L;
-	lua_pushnumber ( L, Timer() );
+	lua2 = L;
+	lua_pushnumber ( L, MAXTimer() );
 	return 1;
 }
 
 int MouseMoveX ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, MouseMoveX() );
 	return 1;
 }
 int MouseMoveY ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, MouseMoveY() );
 	return 1;
 }
 int GetDesktopWidth ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, GetDesktopWidth() );
 	return 1;
 }
 int GetDesktopHeight ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, GetDesktopHeight() );
 	return 1;
 }
 int CurveValue ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	float a = lua_tonumber(L, 1);
@@ -5574,7 +5574,7 @@ int CurveValue ( lua_State *L )
 }
 int CurveAngle ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	float a = lua_tonumber(L, 1);
@@ -5585,7 +5585,7 @@ int CurveAngle ( lua_State *L )
 }
 int PositionMouse ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	float fScreenX = lua_tonumber(L, 1);
@@ -5598,20 +5598,20 @@ int PositionMouse ( lua_State *L )
 
 int GetDynamicCharacterControllerDidJump ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, ODEGetDynamicCharacterControllerDidJump() );
 	return 1;
 }
 int GetCharacterControllerDucking ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, ODEGetCharacterControllerDucking(t.aisystem.objectstartindex) );
 	return 1;
 }
 
 int WrapValue ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	float a = lua_tonumber(L, 1);
@@ -5620,49 +5620,49 @@ int WrapValue ( lua_State *L )
 }
 int GetElapsedTime ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, t.ElapsedTime_f );
 	return 1;
 }
 int GetPlrObjectPositionX ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, ObjectPositionX(t.aisystem.objectstartindex) );
 	return 1;
 }
 int GetPlrObjectPositionY ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, ObjectPositionY(t.aisystem.objectstartindex) );
 	return 1;
 }
 int GetPlrObjectPositionZ ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, ObjectPositionZ(t.aisystem.objectstartindex) );
 	return 1;
 }
 int GetPlrObjectAngleX ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, ObjectAngleX(t.aisystem.objectstartindex) );
 	return 1;
 }
 int GetPlrObjectAngleY ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, ObjectAngleY(t.aisystem.objectstartindex) );
 	return 1;
 }
 int GetPlrObjectAngleZ ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber ( L, ObjectAngleZ(t.aisystem.objectstartindex) );
 	return 1;
 }
 int GetGroundHeight ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	float x = lua_tonumber(L, 1);
@@ -5672,7 +5672,7 @@ int GetGroundHeight ( lua_State *L )
 }
 int NewXValue ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	float a = lua_tonumber(L, 1);
@@ -5683,7 +5683,7 @@ int NewXValue ( lua_State *L )
 }
 int NewZValue ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	float a = lua_tonumber(L, 1);
@@ -6125,7 +6125,7 @@ int GetIntersectCollisionNZ ( lua_State *L )
 }
 int PositionCamera ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 4 ) return 0;
 	PositionCamera ( lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
@@ -6133,7 +6133,7 @@ int PositionCamera ( lua_State *L )
 }
 int PointCamera ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 4 ) return 0;
 	PointCamera ( lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
@@ -6141,7 +6141,7 @@ int PointCamera ( lua_State *L )
 }
 int MoveCamera ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	MoveCamera ( lua_tonumber(L, 1), lua_tonumber(L, 2) );
@@ -6326,7 +6326,7 @@ int SetGunAnimationSpeed(lua_State* L)
 }
 int PlayGunAnimation(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	float start = lua_tonumber(L, 1);
@@ -6346,7 +6346,7 @@ int PlayGunAnimation(lua_State* L)
 }
 int StopGunAnimation(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	gun_StopObject(t.currentgunobj);
 	if (fOldGunSpeed > 1)
@@ -6359,7 +6359,7 @@ int StopGunAnimation(lua_State* L)
 }
 int LoopGunAnimation(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	float start = lua_tonumber(L, 1);
@@ -6382,7 +6382,7 @@ int LoopGunAnimation(lua_State* L)
 
 int SetObjectFrame (lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	SetObjectFrame (lua_tonumber(L, 1), lua_tonumber(L, 2));
@@ -6397,7 +6397,7 @@ int GetObjectFrame ( lua_State *L )
 }
 int SetObjectSpeed ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 2 ) return 0;
 	SetObjectSpeed ( lua_tonumber(L, 1), lua_tonumber(L, 2) );
@@ -6478,7 +6478,7 @@ int QuatToEuler(lua_State *L)
 	}
 	else
 	{
-		y = ( PI / 2 ) * h;
+		y = ( MAXPI / 2 ) * h;
 	}
 
 	lua_pushnumber( L, x );
@@ -7067,7 +7067,7 @@ int RemoveObjectCollisionCheck(lua_State *L)
 // then use that in the other light functions
 int GetEntityLightNumber( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop( L );
 	if ( n < 1 ) return 0;
 
@@ -7087,7 +7087,7 @@ int GetEntityLightNumber( lua_State *L )
 }
 int GetLightPosition( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop( L );
 	if ( n < 1 )
 		return 0;
@@ -7109,7 +7109,7 @@ int GetLightPosition( lua_State *L )
 //RotateGlobalAngleY(ax,ay,az,NewAngleY)
 int RotateGlobalAngleY(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	// get number of arguments
 	int n = lua_gettop(L);
 	// Not enough params, return out
@@ -7134,7 +7134,7 @@ int RotateGlobalAngleY(lua_State *L)
 
 int GetLightAngle(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1)
 		return 0;
@@ -7166,7 +7166,7 @@ int GetLightAngle(lua_State *L)
 }
 int GetLightEuler(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int i = lua_tointeger(L, 1);
@@ -7186,7 +7186,7 @@ int GetLightEuler(lua_State* L)
 }
 int GetLightRGB( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop( L );
 	if ( n < 1 )
 		return 0;
@@ -7205,7 +7205,7 @@ int GetLightRGB( lua_State *L )
 }
 int GetLightRange(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop( L );
 	if ( n < 1 )
 		return 0;
@@ -7223,7 +7223,7 @@ int GetLightRange(lua_State *L)
 // uses light number from above
 int SetLightPosition( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	// get number of arguments
 	int n = lua_gettop( L );
 	// Not enough params, return out
@@ -7252,7 +7252,7 @@ float QuickEulerWrapAngle(float Angle)
 
 int SetLightAngle(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -7282,7 +7282,7 @@ int SetLightAngle(lua_State *L)
 }
 int SetLightEuler(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 	int i = lua_tonumber(L, 1);
@@ -7296,7 +7296,7 @@ int SetLightEuler(lua_State* L)
 }
 int SetLightRGB( lua_State *L ) 
 {
-	lua = L;
+	lua2 = L;
 	// get number of arguments
 	int n = lua_gettop( L );
 	// Not enough params, return out
@@ -7317,7 +7317,7 @@ int SetLightRGB( lua_State *L )
 
 int SetLightRange( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	// get number of arguments
 	int n = lua_gettop(L);
 	// Not enough params, return out
@@ -7672,19 +7672,19 @@ int SetRippleWaterSpeed(lua_State *L)
 //getter
 int GetWaterHeight(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.terrain.waterliney_f);
 	return 1;
 }
 int GetWaterWaveIntensity(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterWaveIntensity_f);
 	return 1;
 }
 int GetWaterShaderColorRed(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 #ifdef WICKEDENGINE
 	lua_pushnumber(L, t.gamevisuals.WaterRed_f);
 #else
@@ -7694,7 +7694,7 @@ int GetWaterShaderColorRed(lua_State *L)
 }
 int GetWaterShaderColorGreen(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 #ifdef WICKEDENGINE
 	lua_pushnumber(L, t.gamevisuals.WaterGreen_f);
 #else
@@ -7704,7 +7704,7 @@ int GetWaterShaderColorGreen(lua_State *L)
 }
 int GetWaterShaderColorBlue(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 #ifdef WICKEDENGINE
 	lua_pushnumber(L, t.gamevisuals.WaterBlue_f);
 #else
@@ -7714,63 +7714,63 @@ int GetWaterShaderColorBlue(lua_State *L)
 }
 int GetWaterTransparancy(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterTransparancy_f);
 	return 1;
 }
 int GetWaterReflection(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterReflection_f);
 	return 1;
 }
 int GetWaterReflectionSparkleIntensity(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterReflectionSparkleIntensity);
 	return 1;
 }
 int GetWaterFlowDirectionX(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterFlowDirectionX);
 	return 1;
 }
 int GetWaterFlowDirectionY(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterFlowDirectionY);
 	return 1;
 }
 int GetWaterFlowSpeed(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterFlowSpeed);
 	return 1;
 }
 int GetWaterDistortionWaves(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterDistortionWaves);
 	return 1;
 }
 int GetRippleWaterSpeed(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.WaterSpeed1);
 	return 1;
 }
 #ifdef WICKEDENGINE
 int GetWaterEnabled(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	lua_pushnumber(L, t.visuals.bWaterEnable);
 	return 1;
 }
 #endif
 
 int GetIsTestgame(lua_State *L) {
-	lua = L;
+	lua2 = L;
 	if ((t.game.gameisexe == 0 || g.gprofileinstandalone == 1) && t.game.runasmultiplayer == 0) 
 	{
 		lua_pushnumber(L, 1);
@@ -7805,7 +7805,7 @@ int FindLuaScreenTitleNodeByKey(char* key);
 
 int GetStoryboardActive(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	char pScreenName[512];
 	strcpy(pScreenName, lua_tostring(L, 1));
@@ -7914,7 +7914,7 @@ int CheckScreenToggles(lua_State* L)
 }
 int ScreenToggle(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L); if (n < 1) return 0;
 	char pScreenTitle[512];
 	strcpy(pScreenTitle, lua_tostring(L, 1));
@@ -7928,7 +7928,7 @@ int ScreenToggle(lua_State* L)
 }
 int ScreenToggleByKey(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L); if (n < 1) return 0;
 	char pKeyToSearchFor[512];
 	strcpy(pKeyToSearchFor, lua_tostring(L, 1));
@@ -8637,7 +8637,7 @@ int SetInventoryItemSlot(lua_State* L)
 }
 int MoveInventoryItem (lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 5) return 0;
 	char pNameOfInventoryFrom[512];
@@ -8823,7 +8823,7 @@ int DeleteAllInventoryContainers (lua_State* L)
 }
 int AddInventoryItem (lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 	char pNameOfInventoryTo[512];
@@ -8854,7 +8854,7 @@ int AddInventoryItem (lua_State* L)
 
 int SetGamePlayerControlData ( lua_State *L, int iDataMode )
 {
-	lua = L;
+	lua2 = L;
 	int iSrc = 0;
 	int iDest = 0;
 	int n = lua_gettop(L);
@@ -9191,7 +9191,7 @@ int SetGamePlayerControlData ( lua_State *L, int iDataMode )
 }
 int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 {
-	lua = L;
+	lua2 = L;
 	int iSrc = 0;
 	int n = lua_gettop(L);
 	if ( iDataMode >= 500 )
@@ -9588,7 +9588,7 @@ int GetPlayerAttacking (lua_State* L)
 }
 int PushPlayer (lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	// trigger short or long player arms animation (jerked back; typically when counter attacked)
@@ -10078,7 +10078,7 @@ int GetEntityAnimFinish ( lua_State *L ) { return GetGamePlayerControlData ( L, 
 
 int CombatControllerLaserGuidedHit(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iObjToHit = lua_tonumber(L, 1);
@@ -10093,7 +10093,7 @@ int CombatControllerLaserGuidedHit(lua_State* L)
 
 int SetRotationYSlowly ( lua_State *L ) 
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 3 ) return 0;
 	int iEntityID = lua_tonumber( L, 1 );
@@ -10112,7 +10112,7 @@ int SetRotationYSlowly ( lua_State *L )
 
 int ParticlesGetFreeEmitter ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	ravey_particles_get_free_emitter ( );
 	lua_pushnumber ( L, t.tResult );
 	return 1;
@@ -10120,7 +10120,7 @@ int ParticlesGetFreeEmitter ( lua_State *L )
 
 int ParticlesLoadImage(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 
@@ -10140,7 +10140,7 @@ int ParticlesLoadImage(lua_State *L)
 
 int ParticlesLoadEffect(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 
@@ -10153,7 +10153,7 @@ int ParticlesLoadEffect(lua_State *L)
 
 int ParticlesSetFrames(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 
@@ -10163,7 +10163,7 @@ int ParticlesSetFrames(lua_State *L)
 
 int ParticlesSetSpeed(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 7) return 0;
 
@@ -10174,7 +10174,7 @@ int ParticlesSetSpeed(lua_State *L)
 
 int ParticlesSetGravity(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 3) return 0;
 
@@ -10184,7 +10184,7 @@ int ParticlesSetGravity(lua_State *L)
 
 int ParticlesSetOffset(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 7) return 0;
 
@@ -10195,7 +10195,7 @@ int ParticlesSetOffset(lua_State *L)
 
 int ParticlesSetAngle(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 
@@ -10205,7 +10205,7 @@ int ParticlesSetAngle(lua_State *L)
 
 int ParticlesSetRotation(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 8) return 0;
 
@@ -10216,7 +10216,7 @@ int ParticlesSetRotation(lua_State *L)
 
 int ParticlesSetScale(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 5) return 0;
 
@@ -10227,7 +10227,7 @@ int ParticlesSetScale(lua_State *L)
 
 int ParticlesSetAlpha(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 5) return 0;
 
@@ -10238,7 +10238,7 @@ int ParticlesSetAlpha(lua_State *L)
 
 int ParticlesSetLife( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop( L );
 	if ( n < 6 ) return 0;
 
@@ -10257,7 +10257,7 @@ int ParticlesSetLife( lua_State *L )
 
 int ParticlesSetWindVector(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 
@@ -10267,7 +10267,7 @@ int ParticlesSetWindVector(lua_State *L)
 
 int ParticlesSetNoWind(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 
@@ -10277,7 +10277,7 @@ int ParticlesSetNoWind(lua_State *L)
 
 int ParticlesSpawnParticle(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 
@@ -10294,7 +10294,7 @@ int ParticlesSpawnParticle(lua_State *L)
 
 int ParticlesAddEmitterCore(lua_State *L, int iExtended)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (iExtended == 0)
 	{
@@ -10431,7 +10431,7 @@ int ParticlesAddEmitterEx( lua_State *L )
 
 int ParticlesDeleteEmitter( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	t.tRaveyParticlesEmitterID = lua_tonumber(L, 1);
@@ -10443,7 +10443,7 @@ int ParticlesDeleteEmitter( lua_State *L )
 
 int EffectStart(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10452,7 +10452,7 @@ int EffectStart(lua_State* L)
 }
 int EffectStop(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10461,7 +10461,7 @@ int EffectStop(lua_State* L)
 }
 int EffectSetLocalPosition(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10476,7 +10476,7 @@ int EffectSetLocalPosition(lua_State* L)
 }
 int EffectSetLocalRotation(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10491,7 +10491,7 @@ int EffectSetLocalRotation(lua_State* L)
 }
 int EffectSetSpeed(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10502,7 +10502,7 @@ int EffectSetSpeed(lua_State* L)
 }
 int EffectSetOpacity(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10513,7 +10513,7 @@ int EffectSetOpacity(lua_State* L)
 }
 int EffectSetParticleSize(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10524,7 +10524,7 @@ int EffectSetParticleSize(lua_State* L)
 }
 int EffectSetBurstMode(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10534,7 +10534,7 @@ int EffectSetBurstMode(lua_State* L)
 }
 int EffectFireBurst(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10543,7 +10543,7 @@ int EffectFireBurst(lua_State* L)
 }
 int EffectSetFloorReflection(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 3) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10555,7 +10555,7 @@ int EffectSetFloorReflection(lua_State* L)
 }
 int EffectSetBounciness(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10566,7 +10566,7 @@ int EffectSetBounciness(lua_State* L)
 }
 int EffectSetColor(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10581,7 +10581,7 @@ int EffectSetColor(lua_State* L)
 }
 int EffectSetLifespan(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
@@ -10652,7 +10652,7 @@ void CleanUpEmitterEffects(void)
 //PE: WParticleEffectPosition("FileName") - Return EffectID
 int WParticleEffectLoad(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 
@@ -10695,7 +10695,7 @@ int WParticleEffectLoad(lua_State* L)
 		if (ec)
 		{
 			ec->Restart();
-			ec->SetVisible(true);
+			//ec->SetVisible(true); DX12 discontinued
 		}
 	}
 	if (root != 0)
@@ -10707,7 +10707,7 @@ int WParticleEffectLoad(lua_State* L)
 //PE: WParticleEffectPosition(EffectID,x,y,z)
 int WParticleEffectPosition(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 
@@ -10767,7 +10767,7 @@ int WParticleEffectPosition(lua_State* L)
 }
 int WParticleEffectVisible(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 
@@ -10787,7 +10787,7 @@ int WParticleEffectVisible(lua_State* L)
 				wiEmittedParticle* ec = scene.emitters.GetComponent(emitter);
 				if (ec)
 				{
-					ec->SetVisible(bVisible);
+					//ec->SetVisible(bVisible); DX12 discontinued
 				}
 			}
 		}
@@ -10799,7 +10799,7 @@ int WParticleEffectVisible(lua_State* L)
 //WParticleEffectAction(EffectID,Action) - Action = 1 Burst all. 2 = Pause. - 3 = Resume. - 4 = Restart
 int WParticleEffectAction(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	Entity root = lua_tonumber(L, 1);
@@ -10839,7 +10839,7 @@ int entity_lua_positionsound(lua_State* L)
 //PE: Tracers commands.
 int LoadTracerImage(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 2) return 0;
 	char FileName[MAX_PATH];
@@ -10857,7 +10857,7 @@ int LoadTracerImage(lua_State* L)
 
 int AddTracer(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 16) return 0;
 
@@ -10977,7 +10977,7 @@ void HideOrShowLUASprites ( bool hide )
 
 int SetFlashLight ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -10998,7 +10998,7 @@ int SetFlashLight ( lua_State *L )
 
 int SetFlashLightPosition(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -11032,7 +11032,7 @@ int GetFlashLightPosition(lua_State* L)
 
 int SetPlayerRun ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -11050,7 +11050,7 @@ int SetPlayerRun ( lua_State *L )
 
 int SetFont ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -11107,7 +11107,7 @@ int SetFont ( lua_State *L )
 int SetOcclusion ( lua_State *L )
 {
 
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -11125,7 +11125,7 @@ int SetOcclusion ( lua_State *L )
 int SetFlashLightKeyEnabled ( lua_State *L )
 {
 
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -11146,7 +11146,7 @@ int SetFlashLightKeyEnabled ( lua_State *L )
 int SetPlayerWeapons ( lua_State *L )
 {
 
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -11186,7 +11186,7 @@ int SetPlayerWeapons ( lua_State *L )
 
 int FirePlayerWeapon(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 
@@ -11207,7 +11207,7 @@ int FirePlayerWeapon(lua_State *L)
 
 int SetAttachmentVisible ( lua_State *L )
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -11240,7 +11240,7 @@ int SetAttachmentVisible ( lua_State *L )
 
 int Include(lua_State *L)
 {
-	lua = L;
+	lua2 = L;
 
 	// get number of arguments
 	int n = lua_gettop(L);
@@ -11283,7 +11283,7 @@ int GetCharacterForwardZ(lua_State* L)
 // material commands
 int SetMaterialData(lua_State *L, int mode)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	int iEntityID = lua_tonumber(L, 1);
 	int iObjID = t.entityelement[iEntityID].obj;
@@ -11380,7 +11380,7 @@ int SetMaterialData(lua_State *L, int mode)
 }
 int GetMaterialData(lua_State *L, int mode)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int iEntityID = lua_tonumber(L, 1);
@@ -11465,7 +11465,7 @@ int SetEntityTextureOffset (lua_State *L) { return SetMaterialData (L, 23); }
 
 int GetEntityInZoneWithFilter(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 
@@ -11492,7 +11492,7 @@ int GetEntityInZoneWithFilter(lua_State* L)
 
 int IsPointWithinZone(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 4) return 0;
 	int iIsInZone = 0;
@@ -11527,7 +11527,7 @@ int IsPointWithinZone(lua_State* L)
 
 int SetWeaponArmsVisible(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 
@@ -11556,7 +11556,7 @@ int SetWeaponArmsVisible(lua_State* L)
 
 int GetWeaponArmsVisible(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	extern bool bHideWeapons;
 	lua_pushboolean(L, bHideWeapons);
 	return 1;
@@ -11571,7 +11571,7 @@ int IsPlayerInGame(lua_State* L)
 
 int SetLevelFadeoutEnabled(lua_State* L)
 {
-	lua = L;
+	lua2 = L;
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
 	int newFadeoutState = lua_tonumber(L, 1);
@@ -11662,7 +11662,7 @@ int PromptGuruMeditation(lua_State * L)
 {
 	int n = lua_gettop(L);
 	if (n < 1) return 0;
-	t.luaglobal.gurumeditationprompttime = Timer();
+	t.luaglobal.gurumeditationprompttime = MAXTimer();
 	t.luaglobal.gurumeditationprompt_s = lua_tostring(L, 1);
 }
 
@@ -11688,9 +11688,9 @@ int lua_get_lut(lua_State* L)
 {
 	std::string retstr = t.visuals.ColorGradingLUT.Get();
 	if(retstr.length() > 0)
-		lua_pushstring(lua, retstr.c_str());
+		lua_pushstring(lua2, retstr.c_str());
 	else
-		lua_pushstring(lua, "None");
+		lua_pushstring(lua2, "None");
 	return 1;
 }
 
@@ -12060,17 +12060,17 @@ int SendMessage_losegame(lua_State* L) { return int_core_sendmessagenone(L, enum
 int SendMessage_musicstop(lua_State* L) { return int_core_sendmessagenone(L, enum_musicstop); }
 void addInternalFunctions_nones()
 {
-	lua_register(lua, "SendMessage_startgame", SendMessage_startgame);
-	lua_register(lua, "SendMessage_loadgame", SendMessage_loadgame);
-	lua_register(lua, "SendMessage_savegame", SendMessage_savegame);
-	lua_register(lua, "SendMessage_quitgame", SendMessage_quitgame);
-	lua_register(lua, "SendMessage_leavegame", SendMessage_leavegame);
-	lua_register(lua, "SendMessage_resumegame", SendMessage_resumegame);
-	lua_register(lua, "SendMessage_switchpageback", SendMessage_switchpageback);
-	lua_register(lua, "SendMessage_triggerfadein", SendMessage_triggerfadein);
-	lua_register(lua, "SendMessage_wingame", SendMessage_wingame);
-	lua_register(lua, "SendMessage_losegame", SendMessage_losegame);
-	lua_register(lua, "SendMessage_musicstop", SendMessage_musicstop);
+	lua_register(lua2, "SendMessage_startgame", SendMessage_startgame);
+	lua_register(lua2, "SendMessage_loadgame", SendMessage_loadgame);
+	lua_register(lua2, "SendMessage_savegame", SendMessage_savegame);
+	lua_register(lua2, "SendMessage_quitgame", SendMessage_quitgame);
+	lua_register(lua2, "SendMessage_leavegame", SendMessage_leavegame);
+	lua_register(lua2, "SendMessage_resumegame", SendMessage_resumegame);
+	lua_register(lua2, "SendMessage_switchpageback", SendMessage_switchpageback);
+	lua_register(lua2, "SendMessage_triggerfadein", SendMessage_triggerfadein);
+	lua_register(lua2, "SendMessage_wingame", SendMessage_wingame);
+	lua_register(lua2, "SendMessage_losegame", SendMessage_losegame);
+	lua_register(lua2, "SendMessage_musicstop", SendMessage_musicstop);
 }
 
 // Internal Integer commands:
@@ -12373,143 +12373,143 @@ int SendMessageI_performlogicconnectionsaskey(lua_State* L) { return int_core_se
 int SendMessageI_setprioritytotransporter(lua_State* L) { return int_core_sendmessagei(L, enum_setprioritytotransporter); }
 void addInternalFunctions_integer()
 {
-	lua_register(lua, "SendMessageI_collisionon", SendMessageI_collisionon);
-	lua_register(lua, "SendMessageI_drownplayer", SendMessageI_drownplayer);
-	lua_register(lua, "SendMessageI_finishlevel", SendMessageI_finishlevel);
-	lua_register(lua, "SendMessageI_hideterrain", SendMessageI_hideterrain);
-	lua_register(lua, "SendMessageI_promptvideo", SendMessageI_promptvideo);
-	lua_register(lua, "SendMessageI_promptimage", SendMessageI_promptimage);
-	lua_register(lua, "SendMessageI_showterrain", SendMessageI_showterrain);
-	lua_register(lua, "SendMessageI_spawnifused", SendMessageI_spawnifused);
-	lua_register(lua, "SendMessageI_textcenterx", SendMessageI_textcenterx);
-	lua_register(lua, "SendMessageI_setservertimer", SendMessageI_setservertimer);
-	lua_register(lua, "SendMessageI_setsoundvolume", SendMessageI_setsoundvolume);
-	lua_register(lua, "SendMessageI_unfreezeplayer", SendMessageI_unfreezeplayer);
-	lua_register(lua, "SendMessageI_activateifused", SendMessageI_activateifused);
-	lua_register(lua, "SendMessageI_addplayerpower", SendMessageI_addplayerpower);
-	lua_register(lua, "SendMessageI_loopnon3dsound", SendMessageI_loopnon3dsound);
-	lua_register(lua, "SendMessageI_musicsetlength", SendMessageI_musicsetlength);
-	lua_register(lua, "SendMessageI_musicsetvolume", SendMessageI_musicsetvolume);
-	lua_register(lua, "SendMessageI_playnon3dsound", SendMessageI_playnon3dsound);
-	lua_register(lua, "SendMessageI_rotatetocamera", SendMessageI_rotatetocamera);
-	lua_register(lua, "SendMessageI_rotatetoplayer", SendMessageI_rotatetoplayer);
-	lua_register(lua, "SendMessageI_prompttextsize", SendMessageI_prompttextsize);
-	lua_register(lua, "SendMessageI_setgamequality", SendMessageI_setgamequality);
-	lua_register(lua, "SendMessageI_setplayerhealthcore", SendMessageI_setplayerhealthcore);
-	lua_register(lua, "SendMessageI_setplayerlives", SendMessageI_setplayerlives);
-	lua_register(lua, "SendMessageI_setplayerpower", SendMessageI_setplayerpower);
-	lua_register(lua, "SendMessageI_hide", SendMessageI_hide);
-	lua_register(lua, "SendMessageI_show", SendMessageI_show);
-	lua_register(lua, "SendMessageI_hidelimbs", SendMessageI_hidelimbs);
-	lua_register(lua, "SendMessageI_showlimbs", SendMessageI_showlimbs);
-	lua_register(lua, "SendMessageI_setanimationframes", SendMessageI_setanimationframes);
-	lua_register(lua, "SendMessageI_removeplayerweapon", SendMessageI_removeplayerweapon);
-	lua_register(lua, "SendMessageI_setgamemusicvolume", SendMessageI_setgamemusicvolume);
-	lua_register(lua, "SendMessageI_setgamesoundvolume", SendMessageI_setgamesoundvolume);
-	lua_register(lua, "SendMessageI_setloadingresource", SendMessageI_setloadingresource);
-	lua_register(lua, "SendMessageI_getentityplrvisible", SendMessageI_getentityplrvisible);
-	lua_register(lua, "SendMessageI_replaceplayerweapon", SendMessageI_replaceplayerweapon);
-	lua_register(lua, "SendMessageI_setserverkillstowin", SendMessageI_setserverkillstowin);
-	lua_register(lua, "SendMessageI_removeplayerweapons", SendMessageI_removeplayerweapons);
-	lua_register(lua, "SendMessageI_setanimation", SendMessageI_setanimation);
-	lua_register(lua, "SendMessageI_setactivated", SendMessageI_setactivated);
-	lua_register(lua, "SendMessageI_collisionoff", SendMessageI_collisionoff);
-	lua_register(lua, "SendMessageI_freezeplayer", SendMessageI_freezeplayer);
-	lua_register(lua, "SendMessageI_musicplaycue", SendMessageI_musicplaycue);
-	lua_register(lua, "SendMessageI_nameplateson", SendMessageI_nameplateson);
-	lua_register(lua, "SendMessageI_resetlimbhit", SendMessageI_resetlimbhit);
-	lua_register(lua, "SendMessageI_ragdollforce", SendMessageI_ragdollforce);
-	lua_register(lua, "SendMessageI_setforcelimb", SendMessageI_setforcelimb);
-	lua_register(lua, "SendMessageI_setforcex", SendMessageI_setforcex);
-	lua_register(lua, "SendMessageI_setforcey", SendMessageI_setforcey);
-	lua_register(lua, "SendMessageI_setforcez", SendMessageI_setforcez);
-	lua_register(lua, "SendMessageI_setplayerfov", SendMessageI_setplayerfov);
-	lua_register(lua, "SendMessageI_setnogravity", SendMessageI_setnogravity);
-	lua_register(lua, "SendMessageI_setlimbindex", SendMessageI_setlimbindex);
-	lua_register(lua, "SendMessageI_destroy", SendMessageI_destroy);
-	lua_register(lua, "SendMessageI_dopanel", SendMessageI_dopanel);
-	lua_register(lua, "SendMessageI_textred", SendMessageI_textred);
-	lua_register(lua, "SendMessageI_freezeai", SendMessageI_freezeai);
-	lua_register(lua, "SendMessageI_hidehuds", SendMessageI_hidehuds);
-	lua_register(lua, "SendMessageI_setsound", SendMessageI_setsound);
-	lua_register(lua, "SendMessageI_showhuds", SendMessageI_showhuds);
-	lua_register(lua, "SendMessageI_textblue", SendMessageI_textblue);
-	lua_register(lua, "SendMessageI_textsize", SendMessageI_textsize);
-	lua_register(lua, "SendMessageI_collected", SendMessageI_collected);
-	lua_register(lua, "SendMessageI_hideimage", SendMessageI_hideimage);
-	lua_register(lua, "SendMessageI_hidewater", SendMessageI_hidewater);
-	lua_register(lua, "SendMessageI_loopsound", SendMessageI_loopsound);
-	lua_register(lua, "SendMessageI_playsound", SendMessageI_playsound);
-	lua_register(lua, "SendMessageI_playvideo", SendMessageI_playvideo);
-	lua_register(lua, "SendMessageI_stopvideo", SendMessageI_stopvideo);
-	lua_register(lua, "SendMessageI_showimage", SendMessageI_showimage);
-	lua_register(lua, "SendMessageI_showwater", SendMessageI_showwater);
-	lua_register(lua, "SendMessageI_stopsound", SendMessageI_stopsound);
-	lua_register(lua, "SendMessageI_textgreen", SendMessageI_textgreen);
-	lua_register(lua, "SendMessageI_checkpoint", SendMessageI_checkpoint);
-	lua_register(lua, "SendMessageI_fireweapon", SendMessageI_fireweapon);
-	lua_register(lua, "SendMessageI_hurtplayer", SendMessageI_hurtplayer);
-	lua_register(lua, "SendMessageI_mpgamemode", SendMessageI_mpgamemode);
-	lua_register(lua, "SendMessageI_playspeech", SendMessageI_playspeech);
-	lua_register(lua, "SendMessageI_stopspeech", SendMessageI_stopspeech);
-	lua_register(lua, "SendMessageI_starttimer", SendMessageI_starttimer);
-	lua_register(lua, "SendMessageI_unfreezeai", SendMessageI_unfreezeai);
-	lua_register(lua, "SendMessageI_disablemusicreset", SendMessageI_disablemusicreset);
-	lua_register(lua, "SendMessageI_fireweaponinstant", SendMessageI_fireweaponinstant);
-	lua_register(lua, "SendMessageI_loopanimationfrom", SendMessageI_loopanimationfrom);
-	lua_register(lua, "SendMessageI_movewithanimation", SendMessageI_movewithanimation);
-	lua_register(lua, "SendMessageI_playanimationfrom", SendMessageI_playanimationfrom);
-	lua_register(lua, "SendMessageI_setactivatedformp", SendMessageI_setactivatedformp);
-	lua_register(lua, "SendMessageI_promptvideonoskip", SendMessageI_promptvideonoskip);
-	lua_register(lua, "SendMessageI_playsoundifsilent", SendMessageI_playsoundifsilent);
-	lua_register(lua, "SendMessageI_setimagealignment", SendMessageI_setimagealignment);
-	lua_register(lua, "SendMessageI_transporttoifused", SendMessageI_transporttoifused);
-	lua_register(lua, "SendMessageI_serverendplay", SendMessageI_serverendplay);
-	lua_register(lua, "SendMessageI_activatemouse", SendMessageI_activatemouse);
-	lua_register(lua, "SendMessageI_addplayerammo", SendMessageI_addplayerammo);
-	lua_register(lua, "SendMessageI_loopanimation", SendMessageI_loopanimation);
-	lua_register(lua, "SendMessageI_musicplaytime", SendMessageI_musicplaytime);
-	lua_register(lua, "SendMessageI_musicplayfade", SendMessageI_musicplayfade);
-	lua_register(lua, "SendMessageI_playanimation", SendMessageI_playanimation);
-	lua_register(lua, "SendMessageI_nameplatesoff", SendMessageI_nameplatesoff);
-	lua_register(lua, "SendMessageI_refreshentity", SendMessageI_refreshentity);
-	lua_register(lua, "SendMessageI_setsoundspeed", SendMessageI_setsoundspeed);
-	lua_register(lua, "SendMessageI_stopanimation", SendMessageI_stopanimation);
-	lua_register(lua, "SendMessageI_deactivatemouse", SendMessageI_deactivatemouse);
-	lua_register(lua, "SendMessageI_addplayerhealth", SendMessageI_addplayerhealth);
-	lua_register(lua, "SendMessageI_addplayerweapon", SendMessageI_addplayerweapon);
-	lua_register(lua, "SendMessageI_getentityinzone", SendMessageI_getentityinzone);
-	lua_register(lua, "SendMessageI_musicsetdefault", SendMessageI_musicsetdefault);
-	lua_register(lua, "SendMessageI_playvideonoskip", SendMessageI_playvideonoskip);
-	lua_register(lua, "SendMessageI_setentityhealth", SendMessageI_setentityhealth);
-	lua_register(lua, "SendMessageI_setlightvisible", SendMessageI_setlightvisible);
-	lua_register(lua, "SendMessageI_addplayerjetpack", SendMessageI_addplayerjetpack);
-	lua_register(lua, "SendMessageI_musicplayinstant", SendMessageI_musicplayinstant);
-	lua_register(lua, "SendMessageI_musicplaytimecue", SendMessageI_musicplaytimecue);
-	lua_register(lua, "SendMessageI_musicsetfadetime", SendMessageI_musicsetfadetime);
-	lua_register(lua, "SendMessageI_musicsetinterval", SendMessageI_musicsetinterval);
-	lua_register(lua, "SendMessageI_serverrespawnall", SendMessageI_serverrespawnall);
-	lua_register(lua, "SendMessageI_setlockcharacter", SendMessageI_setlockcharacter);
-	lua_register(lua, "SendMessageI_spawn", SendMessageI_spawn);
-	lua_register(lua, "SendMessageI_changeplayerweaponid", SendMessageI_changeplayerweaponid);
-	lua_register(lua, "SendMessageI_setcharactersoundset", SendMessageI_setcharactersoundset);
-	lua_register(lua, "SendMessageI_setcharactertostrafe", SendMessageI_setcharactertostrafe);
-	lua_register(lua, "SendMessageI_charactercontrolarmed", SendMessageI_charactercontrolarmed);
-	lua_register(lua, "SendMessageI_charactercontrollimbo", SendMessageI_charactercontrollimbo);
-	lua_register(lua, "SendMessageI_charactercontrolstand", SendMessageI_charactercontrolstand);
-	lua_register(lua, "SendMessageI_setcharactertowalkrun", SendMessageI_setcharactertowalkrun);
-	lua_register(lua, "SendMessageI_setentityhealthsilent", SendMessageI_setentityhealthsilent);
-	lua_register(lua, "SendMessageI_charactercontrolducked", SendMessageI_charactercontrolducked);
-	lua_register(lua, "SendMessageI_charactercontrolfidget", SendMessageI_charactercontrolfidget);
-	lua_register(lua, "SendMessageI_charactercontrolmanual", SendMessageI_charactercontrolmanual);
-	lua_register(lua, "SendMessageI_charactercontrolunarmed", SendMessageI_charactercontrolunarmed);
-	lua_register(lua, "SendMessageI_performlogicconnections", SendMessageI_performlogicconnections);
-	lua_register(lua, "SendMessageI_performlogicconnectionnumber", SendMessageI_performlogicconnectionnumber);
-	lua_register(lua, "SendMessageI_setcharactervisiondelay", SendMessageI_setcharactervisiondelay);
-	lua_register(lua, "SendMessageI_transporttofreezeposition", SendMessageI_transporttofreezeposition);
-	lua_register(lua, "SendMessageI_setentityhealthwithdamage", SendMessageI_setentityhealthwithdamage);
-	lua_register(lua, "SendMessageI_performlogicconnectionsaskey", SendMessageI_performlogicconnectionsaskey);
-	lua_register(lua, "SendMessageI_setprioritytotransporter", SendMessageI_setprioritytotransporter);
+	lua_register(lua2, "SendMessageI_collisionon", SendMessageI_collisionon);
+	lua_register(lua2, "SendMessageI_drownplayer", SendMessageI_drownplayer);
+	lua_register(lua2, "SendMessageI_finishlevel", SendMessageI_finishlevel);
+	lua_register(lua2, "SendMessageI_hideterrain", SendMessageI_hideterrain);
+	lua_register(lua2, "SendMessageI_promptvideo", SendMessageI_promptvideo);
+	lua_register(lua2, "SendMessageI_promptimage", SendMessageI_promptimage);
+	lua_register(lua2, "SendMessageI_showterrain", SendMessageI_showterrain);
+	lua_register(lua2, "SendMessageI_spawnifused", SendMessageI_spawnifused);
+	lua_register(lua2, "SendMessageI_textcenterx", SendMessageI_textcenterx);
+	lua_register(lua2, "SendMessageI_setservertimer", SendMessageI_setservertimer);
+	lua_register(lua2, "SendMessageI_setsoundvolume", SendMessageI_setsoundvolume);
+	lua_register(lua2, "SendMessageI_unfreezeplayer", SendMessageI_unfreezeplayer);
+	lua_register(lua2, "SendMessageI_activateifused", SendMessageI_activateifused);
+	lua_register(lua2, "SendMessageI_addplayerpower", SendMessageI_addplayerpower);
+	lua_register(lua2, "SendMessageI_loopnon3dsound", SendMessageI_loopnon3dsound);
+	lua_register(lua2, "SendMessageI_musicsetlength", SendMessageI_musicsetlength);
+	lua_register(lua2, "SendMessageI_musicsetvolume", SendMessageI_musicsetvolume);
+	lua_register(lua2, "SendMessageI_playnon3dsound", SendMessageI_playnon3dsound);
+	lua_register(lua2, "SendMessageI_rotatetocamera", SendMessageI_rotatetocamera);
+	lua_register(lua2, "SendMessageI_rotatetoplayer", SendMessageI_rotatetoplayer);
+	lua_register(lua2, "SendMessageI_prompttextsize", SendMessageI_prompttextsize);
+	lua_register(lua2, "SendMessageI_setgamequality", SendMessageI_setgamequality);
+	lua_register(lua2, "SendMessageI_setplayerhealthcore", SendMessageI_setplayerhealthcore);
+	lua_register(lua2, "SendMessageI_setplayerlives", SendMessageI_setplayerlives);
+	lua_register(lua2, "SendMessageI_setplayerpower", SendMessageI_setplayerpower);
+	lua_register(lua2, "SendMessageI_hide", SendMessageI_hide);
+	lua_register(lua2, "SendMessageI_show", SendMessageI_show);
+	lua_register(lua2, "SendMessageI_hidelimbs", SendMessageI_hidelimbs);
+	lua_register(lua2, "SendMessageI_showlimbs", SendMessageI_showlimbs);
+	lua_register(lua2, "SendMessageI_setanimationframes", SendMessageI_setanimationframes);
+	lua_register(lua2, "SendMessageI_removeplayerweapon", SendMessageI_removeplayerweapon);
+	lua_register(lua2, "SendMessageI_setgamemusicvolume", SendMessageI_setgamemusicvolume);
+	lua_register(lua2, "SendMessageI_setgamesoundvolume", SendMessageI_setgamesoundvolume);
+	lua_register(lua2, "SendMessageI_setloadingresource", SendMessageI_setloadingresource);
+	lua_register(lua2, "SendMessageI_getentityplrvisible", SendMessageI_getentityplrvisible);
+	lua_register(lua2, "SendMessageI_replaceplayerweapon", SendMessageI_replaceplayerweapon);
+	lua_register(lua2, "SendMessageI_setserverkillstowin", SendMessageI_setserverkillstowin);
+	lua_register(lua2, "SendMessageI_removeplayerweapons", SendMessageI_removeplayerweapons);
+	lua_register(lua2, "SendMessageI_setanimation", SendMessageI_setanimation);
+	lua_register(lua2, "SendMessageI_setactivated", SendMessageI_setactivated);
+	lua_register(lua2, "SendMessageI_collisionoff", SendMessageI_collisionoff);
+	lua_register(lua2, "SendMessageI_freezeplayer", SendMessageI_freezeplayer);
+	lua_register(lua2, "SendMessageI_musicplaycue", SendMessageI_musicplaycue);
+	lua_register(lua2, "SendMessageI_nameplateson", SendMessageI_nameplateson);
+	lua_register(lua2, "SendMessageI_resetlimbhit", SendMessageI_resetlimbhit);
+	lua_register(lua2, "SendMessageI_ragdollforce", SendMessageI_ragdollforce);
+	lua_register(lua2, "SendMessageI_setforcelimb", SendMessageI_setforcelimb);
+	lua_register(lua2, "SendMessageI_setforcex", SendMessageI_setforcex);
+	lua_register(lua2, "SendMessageI_setforcey", SendMessageI_setforcey);
+	lua_register(lua2, "SendMessageI_setforcez", SendMessageI_setforcez);
+	lua_register(lua2, "SendMessageI_setplayerfov", SendMessageI_setplayerfov);
+	lua_register(lua2, "SendMessageI_setnogravity", SendMessageI_setnogravity);
+	lua_register(lua2, "SendMessageI_setlimbindex", SendMessageI_setlimbindex);
+	lua_register(lua2, "SendMessageI_destroy", SendMessageI_destroy);
+	lua_register(lua2, "SendMessageI_dopanel", SendMessageI_dopanel);
+	lua_register(lua2, "SendMessageI_textred", SendMessageI_textred);
+	lua_register(lua2, "SendMessageI_freezeai", SendMessageI_freezeai);
+	lua_register(lua2, "SendMessageI_hidehuds", SendMessageI_hidehuds);
+	lua_register(lua2, "SendMessageI_setsound", SendMessageI_setsound);
+	lua_register(lua2, "SendMessageI_showhuds", SendMessageI_showhuds);
+	lua_register(lua2, "SendMessageI_textblue", SendMessageI_textblue);
+	lua_register(lua2, "SendMessageI_textsize", SendMessageI_textsize);
+	lua_register(lua2, "SendMessageI_collected", SendMessageI_collected);
+	lua_register(lua2, "SendMessageI_hideimage", SendMessageI_hideimage);
+	lua_register(lua2, "SendMessageI_hidewater", SendMessageI_hidewater);
+	lua_register(lua2, "SendMessageI_loopsound", SendMessageI_loopsound);
+	lua_register(lua2, "SendMessageI_playsound", SendMessageI_playsound);
+	lua_register(lua2, "SendMessageI_playvideo", SendMessageI_playvideo);
+	lua_register(lua2, "SendMessageI_stopvideo", SendMessageI_stopvideo);
+	lua_register(lua2, "SendMessageI_showimage", SendMessageI_showimage);
+	lua_register(lua2, "SendMessageI_showwater", SendMessageI_showwater);
+	lua_register(lua2, "SendMessageI_stopsound", SendMessageI_stopsound);
+	lua_register(lua2, "SendMessageI_textgreen", SendMessageI_textgreen);
+	lua_register(lua2, "SendMessageI_checkpoint", SendMessageI_checkpoint);
+	lua_register(lua2, "SendMessageI_fireweapon", SendMessageI_fireweapon);
+	lua_register(lua2, "SendMessageI_hurtplayer", SendMessageI_hurtplayer);
+	lua_register(lua2, "SendMessageI_mpgamemode", SendMessageI_mpgamemode);
+	lua_register(lua2, "SendMessageI_playspeech", SendMessageI_playspeech);
+	lua_register(lua2, "SendMessageI_stopspeech", SendMessageI_stopspeech);
+	lua_register(lua2, "SendMessageI_starttimer", SendMessageI_starttimer);
+	lua_register(lua2, "SendMessageI_unfreezeai", SendMessageI_unfreezeai);
+	lua_register(lua2, "SendMessageI_disablemusicreset", SendMessageI_disablemusicreset);
+	lua_register(lua2, "SendMessageI_fireweaponinstant", SendMessageI_fireweaponinstant);
+	lua_register(lua2, "SendMessageI_loopanimationfrom", SendMessageI_loopanimationfrom);
+	lua_register(lua2, "SendMessageI_movewithanimation", SendMessageI_movewithanimation);
+	lua_register(lua2, "SendMessageI_playanimationfrom", SendMessageI_playanimationfrom);
+	lua_register(lua2, "SendMessageI_setactivatedformp", SendMessageI_setactivatedformp);
+	lua_register(lua2, "SendMessageI_promptvideonoskip", SendMessageI_promptvideonoskip);
+	lua_register(lua2, "SendMessageI_playsoundifsilent", SendMessageI_playsoundifsilent);
+	lua_register(lua2, "SendMessageI_setimagealignment", SendMessageI_setimagealignment);
+	lua_register(lua2, "SendMessageI_transporttoifused", SendMessageI_transporttoifused);
+	lua_register(lua2, "SendMessageI_serverendplay", SendMessageI_serverendplay);
+	lua_register(lua2, "SendMessageI_activatemouse", SendMessageI_activatemouse);
+	lua_register(lua2, "SendMessageI_addplayerammo", SendMessageI_addplayerammo);
+	lua_register(lua2, "SendMessageI_loopanimation", SendMessageI_loopanimation);
+	lua_register(lua2, "SendMessageI_musicplaytime", SendMessageI_musicplaytime);
+	lua_register(lua2, "SendMessageI_musicplayfade", SendMessageI_musicplayfade);
+	lua_register(lua2, "SendMessageI_playanimation", SendMessageI_playanimation);
+	lua_register(lua2, "SendMessageI_nameplatesoff", SendMessageI_nameplatesoff);
+	lua_register(lua2, "SendMessageI_refreshentity", SendMessageI_refreshentity);
+	lua_register(lua2, "SendMessageI_setsoundspeed", SendMessageI_setsoundspeed);
+	lua_register(lua2, "SendMessageI_stopanimation", SendMessageI_stopanimation);
+	lua_register(lua2, "SendMessageI_deactivatemouse", SendMessageI_deactivatemouse);
+	lua_register(lua2, "SendMessageI_addplayerhealth", SendMessageI_addplayerhealth);
+	lua_register(lua2, "SendMessageI_addplayerweapon", SendMessageI_addplayerweapon);
+	lua_register(lua2, "SendMessageI_getentityinzone", SendMessageI_getentityinzone);
+	lua_register(lua2, "SendMessageI_musicsetdefault", SendMessageI_musicsetdefault);
+	lua_register(lua2, "SendMessageI_playvideonoskip", SendMessageI_playvideonoskip);
+	lua_register(lua2, "SendMessageI_setentityhealth", SendMessageI_setentityhealth);
+	lua_register(lua2, "SendMessageI_setlightvisible", SendMessageI_setlightvisible);
+	lua_register(lua2, "SendMessageI_addplayerjetpack", SendMessageI_addplayerjetpack);
+	lua_register(lua2, "SendMessageI_musicplayinstant", SendMessageI_musicplayinstant);
+	lua_register(lua2, "SendMessageI_musicplaytimecue", SendMessageI_musicplaytimecue);
+	lua_register(lua2, "SendMessageI_musicsetfadetime", SendMessageI_musicsetfadetime);
+	lua_register(lua2, "SendMessageI_musicsetinterval", SendMessageI_musicsetinterval);
+	lua_register(lua2, "SendMessageI_serverrespawnall", SendMessageI_serverrespawnall);
+	lua_register(lua2, "SendMessageI_setlockcharacter", SendMessageI_setlockcharacter);
+	lua_register(lua2, "SendMessageI_spawn", SendMessageI_spawn);
+	lua_register(lua2, "SendMessageI_changeplayerweaponid", SendMessageI_changeplayerweaponid);
+	lua_register(lua2, "SendMessageI_setcharactersoundset", SendMessageI_setcharactersoundset);
+	lua_register(lua2, "SendMessageI_setcharactertostrafe", SendMessageI_setcharactertostrafe);
+	lua_register(lua2, "SendMessageI_charactercontrolarmed", SendMessageI_charactercontrolarmed);
+	lua_register(lua2, "SendMessageI_charactercontrollimbo", SendMessageI_charactercontrollimbo);
+	lua_register(lua2, "SendMessageI_charactercontrolstand", SendMessageI_charactercontrolstand);
+	lua_register(lua2, "SendMessageI_setcharactertowalkrun", SendMessageI_setcharactertowalkrun);
+	lua_register(lua2, "SendMessageI_setentityhealthsilent", SendMessageI_setentityhealthsilent);
+	lua_register(lua2, "SendMessageI_charactercontrolducked", SendMessageI_charactercontrolducked);
+	lua_register(lua2, "SendMessageI_charactercontrolfidget", SendMessageI_charactercontrolfidget);
+	lua_register(lua2, "SendMessageI_charactercontrolmanual", SendMessageI_charactercontrolmanual);
+	lua_register(lua2, "SendMessageI_charactercontrolunarmed", SendMessageI_charactercontrolunarmed);
+	lua_register(lua2, "SendMessageI_performlogicconnections", SendMessageI_performlogicconnections);
+	lua_register(lua2, "SendMessageI_performlogicconnectionnumber", SendMessageI_performlogicconnectionnumber);
+	lua_register(lua2, "SendMessageI_setcharactervisiondelay", SendMessageI_setcharactervisiondelay);
+	lua_register(lua2, "SendMessageI_transporttofreezeposition", SendMessageI_transporttofreezeposition);
+	lua_register(lua2, "SendMessageI_setentityhealthwithdamage", SendMessageI_setentityhealthwithdamage);
+	lua_register(lua2, "SendMessageI_performlogicconnectionsaskey", SendMessageI_performlogicconnectionsaskey);
+	lua_register(lua2, "SendMessageI_setprioritytotransporter", SendMessageI_setprioritytotransporter);
 }
 
 // Internal float commands:
@@ -12855,115 +12855,115 @@ int SendMessageF_setpostdepthoffielddistance(lua_State* L) { return int_core_sen
 int SendMessageF_setpostdepthoffieldintensity(lua_State* L) { return int_core_sendmessagef(L, enum_setpostdepthoffieldintensity); }
 void addInternalFunctions_float()
 {
-	lua_register(lua, "SendMessageF_lookatangle", SendMessageF_lookatangle);
-	lua_register(lua, "SendMessageF_lookforward", SendMessageF_lookforward);
-	lua_register(lua, "SendMessageF_moveforward", SendMessageF_moveforward);
-	lua_register(lua, "SendMessageF_rotatelimbx", SendMessageF_rotatelimbx);
-	lua_register(lua, "SendMessageF_rotatelimby", SendMessageF_rotatelimby);
-	lua_register(lua, "SendMessageF_rotatelimbz", SendMessageF_rotatelimbz);
-	lua_register(lua, "SendMessageF_setfoggreen", SendMessageF_setfoggreen);
-	lua_register(lua, "SendMessageF_texty", SendMessageF_texty);
-	lua_register(lua, "SendMessageF_setsurfaceblue", SendMessageF_setsurfaceblue);
-	lua_register(lua, "SendMessageF_setterrainsize", SendMessageF_setterrainsize);
-	lua_register(lua, "SendMessageF_setambiencered", SendMessageF_setambiencered);
-	lua_register(lua, "SendMessageF_resetpositionx", SendMessageF_resetpositionx);
-	lua_register(lua, "SendMessageF_resetpositiony", SendMessageF_resetpositiony);
-	lua_register(lua, "SendMessageF_resetpositionz", SendMessageF_resetpositionz);
-	lua_register(lua, "SendMessageF_resetrotationx", SendMessageF_resetrotationx);
-	lua_register(lua, "SendMessageF_resetrotationy", SendMessageF_resetrotationy);
-	lua_register(lua, "SendMessageF_resetrotationz", SendMessageF_resetrotationz);
-	lua_register(lua, "SendMessageF_setfogdistance", SendMessageF_setfogdistance);
-	lua_register(lua, "SendMessageF_sethoverfactor", SendMessageF_sethoverfactor);
-	lua_register(lua, "SendMessageF_changeplayerweapon", SendMessageF_changeplayerweapon);
-	lua_register(lua, "SendMessageF_playcharactersound", SendMessageF_playcharactersound);
-	lua_register(lua, "SendMessageF_setcameraweaponfov", SendMessageF_setcameraweaponfov);
-	lua_register(lua, "SendMessageF_setanimationframes", SendMessageF_setanimationframes);
-	lua_register(lua, "SendMessageF_setfreezepositionx", SendMessageF_setfreezepositionx);
-	lua_register(lua, "SendMessageF_setfreezepositiony", SendMessageF_setfreezepositiony);
-	lua_register(lua, "SendMessageF_setfreezepositionz", SendMessageF_setfreezepositionz);
-	lua_register(lua, "SendMessageF_setgamemusicvolume", SendMessageF_setgamemusicvolume);
-	lua_register(lua, "SendMessageF_setgamesoundvolume", SendMessageF_setgamesoundvolume);
-	lua_register(lua, "SendMessageF_setloadingresource", SendMessageF_setloadingresource);
-	lua_register(lua, "SendMessageF_setoptionlightrays", SendMessageF_setoptionlightrays);
-	lua_register(lua, "SendMessageF_setoptionocclusion", SendMessageF_setoptionocclusion);
-	lua_register(lua, "SendMessageF_setvegetationwidth", SendMessageF_setvegetationwidth);
-	lua_register(lua, "SendMessageF_levelfilenametoload", SendMessageF_levelfilenametoload);
-	lua_register(lua, "SendMessageF_replaceplayerweapon", SendMessageF_replaceplayerweapon);
-	lua_register(lua, "SendMessageF_setfreezepositionax", SendMessageF_setfreezepositionax);
-	lua_register(lua, "SendMessageF_setfreezepositionay", SendMessageF_setfreezepositionay);
-	lua_register(lua, "SendMessageF_setfreezepositionaz", SendMessageF_setfreezepositionaz);
-	lua_register(lua, "SendMessageF_setoptionreflection", SendMessageF_setoptionreflection);
-	lua_register(lua, "SendMessageF_setoptionvegetation", SendMessageF_setoptionvegetation);
-	lua_register(lua, "SendMessageF_setpostsaointensity", SendMessageF_setpostsaointensity);
-	lua_register(lua, "SendMessageF_setsurfaceintensity", SendMessageF_setsurfaceintensity);
-	lua_register(lua, "SendMessageF_setsurfacesunfactor", SendMessageF_setsurfacesunfactor);
-	lua_register(lua, "SendMessageF_setvegetationheight", SendMessageF_setvegetationheight);
-	lua_register(lua, "SendMessageF_stopparticleemitter", SendMessageF_stopparticleemitter);
-	lua_register(lua, "SendMessageF_lookattargetyoffset", SendMessageF_lookattargetyoffset);
-	lua_register(lua, "SendMessageF_setconstrast", SendMessageF_setconstrast);
-	lua_register(lua, "SendMessageF_setcamerafov", SendMessageF_setcamerafov);
-	lua_register(lua, "SendMessageF_lookattarget", SendMessageF_lookattarget);
-	lua_register(lua, "SendMessageF_lookatplayer", SendMessageF_lookatplayer);
-	lua_register(lua, "SendMessageF_movebackward", SendMessageF_movebackward);
-	lua_register(lua, "SendMessageF_mp_aimovetox", SendMessageF_mp_aimovetox);
-	lua_register(lua, "SendMessageF_mp_aimovetoz", SendMessageF_mp_aimovetoz);
-	lua_register(lua, "SendMessageF_setrotationx", SendMessageF_setrotationx);
-	lua_register(lua, "SendMessageF_setrotationy", SendMessageF_setrotationy);
-	lua_register(lua, "SendMessageF_setrotationz", SendMessageF_setrotationz);
-	lua_register(lua, "SendMessageF_setpositionx", SendMessageF_setpositionx);
-	lua_register(lua, "SendMessageF_setpositiony", SendMessageF_setpositiony);
-	lua_register(lua, "SendMessageF_setpositionz", SendMessageF_setpositionz);
-	lua_register(lua, "SendMessageF_setpostbloom", SendMessageF_setpostbloom);
-	lua_register(lua, "SendMessageF_moveup", SendMessageF_moveup);
-	lua_register(lua, "SendMessageF_panelx", SendMessageF_panelx);
-	lua_register(lua, "SendMessageF_panely", SendMessageF_panely);
-	lua_register(lua, "SendMessageF_panelx2", SendMessageF_panelx2);
-	lua_register(lua, "SendMessageF_panely2", SendMessageF_panely2);
-	lua_register(lua, "SendMessageF_rotatex", SendMessageF_rotatex);
-	lua_register(lua, "SendMessageF_rotatey", SendMessageF_rotatey);
-	lua_register(lua, "SendMessageF_rotatez", SendMessageF_rotatez);
-	lua_register(lua, "SendMessageF_setfogred", SendMessageF_setfogred);
-	lua_register(lua, "SendMessageF_setfogblue", SendMessageF_setfogblue);
-	lua_register(lua, "SendMessageF_setcameradistance", SendMessageF_setcameradistance);
-	lua_register(lua, "SendMessageF_setanimationframe", SendMessageF_setanimationframe);
-	lua_register(lua, "SendMessageF_changeanimationframe", SendMessageF_changeanimationframe);
-	lua_register(lua, "SendMessageF_setanimationspeed", SendMessageF_setanimationspeed);
-	lua_register(lua, "SendMessageF_setglobalspecular", SendMessageF_setglobalspecular);
-	lua_register(lua, "SendMessageF_setimagepositionx", SendMessageF_setimagepositionx);
-	lua_register(lua, "SendMessageF_setimagepositiony", SendMessageF_setimagepositiony);
-	lua_register(lua, "SendMessageF_setterrainlodnear", SendMessageF_setterrainlodnear);
-	lua_register(lua, "SendMessageF_setbrightness", SendMessageF_setbrightness);
-	lua_register(lua, "SendMessageF_aimsmoothmode", SendMessageF_aimsmoothmode);
-	lua_register(lua, "SendMessageF_lookattargete", SendMessageF_lookattargete);
-	lua_register(lua, "SendMessageF_modulatespeed", SendMessageF_modulatespeed);
-	lua_register(lua, "SendMessageF_setfognearest", SendMessageF_setfognearest);
-	lua_register(lua, "SendMessageF_setsurfacered", SendMessageF_setsurfacered);
-	lua_register(lua, "SendMessageF_setambienceblue", SendMessageF_setambienceblue);
-	lua_register(lua, "SendMessageF_setfogintensity", SendMessageF_setfogintensity);
-	lua_register(lua, "SendMessageF_setsurfacegreen", SendMessageF_setsurfacegreen);
-	lua_register(lua, "SendMessageF_setambiencegreen", SendMessageF_setambiencegreen);
-	lua_register(lua, "SendMessageF_setoptionshadows", SendMessageF_setoptionshadows);
-	lua_register(lua, "SendMessageF_setpostsaoradius", SendMessageF_setpostsaoradius);
-	lua_register(lua, "SendMessageF_setterrainlodfar", SendMessageF_setterrainlodfar);
-	lua_register(lua, "SendMessageF_setterrainlodmid", SendMessageF_setterrainlodmid);
-	lua_register(lua, "SendMessageF_scale", SendMessageF_scale);
-	lua_register(lua, "SendMessageF_textx", SendMessageF_textx);
-	lua_register(lua, "SendMessageF_promptlocalforvrmode", SendMessageF_promptlocalforvrmode);
-	lua_register(lua, "SendMessageF_setambienceintensity", SendMessageF_setambienceintensity);
-	lua_register(lua, "SendMessageF_setpostlightraydecay", SendMessageF_setpostlightraydecay);
-	lua_register(lua, "SendMessageF_startparticleemitter", SendMessageF_startparticleemitter);
-	lua_register(lua, "SendMessageF_setpostlightraylength", SendMessageF_setpostlightraylength);
-	lua_register(lua, "SendMessageF_setpostmotiondistance", SendMessageF_setpostmotiondistance);
-	lua_register(lua, "SendMessageF_setpostvignetteradius", SendMessageF_setpostvignetteradius);
-	lua_register(lua, "SendMessageF_setvegetationquantity", SendMessageF_setvegetationquantity);
-	lua_register(lua, "SendMessageF_setpostmotionintensity", SendMessageF_setpostmotionintensity);
-	lua_register(lua, "SendMessageF_setpostlightrayquality", SendMessageF_setpostlightrayquality);
-	lua_register(lua, "SendMessageF_setcamerazoompercentage", SendMessageF_setcamerazoompercentage);
-	lua_register(lua, "SendMessageF_rotatetoplayerwithoffset", SendMessageF_rotatetoplayerwithoffset);
-	lua_register(lua, "SendMessageF_setpostvignetteintensity", SendMessageF_setpostvignetteintensity);
-	lua_register(lua, "SendMessageF_setpostlensflareintensity", SendMessageF_setpostlensflareintensity);
-	lua_register(lua, "SendMessageF_setpostdepthoffielddistance", SendMessageF_setpostdepthoffielddistance);
-	lua_register(lua, "SendMessageF_setpostdepthoffieldintensity", SendMessageF_setpostdepthoffieldintensity);
+	lua_register(lua2, "SendMessageF_lookatangle", SendMessageF_lookatangle);
+	lua_register(lua2, "SendMessageF_lookforward", SendMessageF_lookforward);
+	lua_register(lua2, "SendMessageF_moveforward", SendMessageF_moveforward);
+	lua_register(lua2, "SendMessageF_rotatelimbx", SendMessageF_rotatelimbx);
+	lua_register(lua2, "SendMessageF_rotatelimby", SendMessageF_rotatelimby);
+	lua_register(lua2, "SendMessageF_rotatelimbz", SendMessageF_rotatelimbz);
+	lua_register(lua2, "SendMessageF_setfoggreen", SendMessageF_setfoggreen);
+	lua_register(lua2, "SendMessageF_texty", SendMessageF_texty);
+	lua_register(lua2, "SendMessageF_setsurfaceblue", SendMessageF_setsurfaceblue);
+	lua_register(lua2, "SendMessageF_setterrainsize", SendMessageF_setterrainsize);
+	lua_register(lua2, "SendMessageF_setambiencered", SendMessageF_setambiencered);
+	lua_register(lua2, "SendMessageF_resetpositionx", SendMessageF_resetpositionx);
+	lua_register(lua2, "SendMessageF_resetpositiony", SendMessageF_resetpositiony);
+	lua_register(lua2, "SendMessageF_resetpositionz", SendMessageF_resetpositionz);
+	lua_register(lua2, "SendMessageF_resetrotationx", SendMessageF_resetrotationx);
+	lua_register(lua2, "SendMessageF_resetrotationy", SendMessageF_resetrotationy);
+	lua_register(lua2, "SendMessageF_resetrotationz", SendMessageF_resetrotationz);
+	lua_register(lua2, "SendMessageF_setfogdistance", SendMessageF_setfogdistance);
+	lua_register(lua2, "SendMessageF_sethoverfactor", SendMessageF_sethoverfactor);
+	lua_register(lua2, "SendMessageF_changeplayerweapon", SendMessageF_changeplayerweapon);
+	lua_register(lua2, "SendMessageF_playcharactersound", SendMessageF_playcharactersound);
+	lua_register(lua2, "SendMessageF_setcameraweaponfov", SendMessageF_setcameraweaponfov);
+	lua_register(lua2, "SendMessageF_setanimationframes", SendMessageF_setanimationframes);
+	lua_register(lua2, "SendMessageF_setfreezepositionx", SendMessageF_setfreezepositionx);
+	lua_register(lua2, "SendMessageF_setfreezepositiony", SendMessageF_setfreezepositiony);
+	lua_register(lua2, "SendMessageF_setfreezepositionz", SendMessageF_setfreezepositionz);
+	lua_register(lua2, "SendMessageF_setgamemusicvolume", SendMessageF_setgamemusicvolume);
+	lua_register(lua2, "SendMessageF_setgamesoundvolume", SendMessageF_setgamesoundvolume);
+	lua_register(lua2, "SendMessageF_setloadingresource", SendMessageF_setloadingresource);
+	lua_register(lua2, "SendMessageF_setoptionlightrays", SendMessageF_setoptionlightrays);
+	lua_register(lua2, "SendMessageF_setoptionocclusion", SendMessageF_setoptionocclusion);
+	lua_register(lua2, "SendMessageF_setvegetationwidth", SendMessageF_setvegetationwidth);
+	lua_register(lua2, "SendMessageF_levelfilenametoload", SendMessageF_levelfilenametoload);
+	lua_register(lua2, "SendMessageF_replaceplayerweapon", SendMessageF_replaceplayerweapon);
+	lua_register(lua2, "SendMessageF_setfreezepositionax", SendMessageF_setfreezepositionax);
+	lua_register(lua2, "SendMessageF_setfreezepositionay", SendMessageF_setfreezepositionay);
+	lua_register(lua2, "SendMessageF_setfreezepositionaz", SendMessageF_setfreezepositionaz);
+	lua_register(lua2, "SendMessageF_setoptionreflection", SendMessageF_setoptionreflection);
+	lua_register(lua2, "SendMessageF_setoptionvegetation", SendMessageF_setoptionvegetation);
+	lua_register(lua2, "SendMessageF_setpostsaointensity", SendMessageF_setpostsaointensity);
+	lua_register(lua2, "SendMessageF_setsurfaceintensity", SendMessageF_setsurfaceintensity);
+	lua_register(lua2, "SendMessageF_setsurfacesunfactor", SendMessageF_setsurfacesunfactor);
+	lua_register(lua2, "SendMessageF_setvegetationheight", SendMessageF_setvegetationheight);
+	lua_register(lua2, "SendMessageF_stopparticleemitter", SendMessageF_stopparticleemitter);
+	lua_register(lua2, "SendMessageF_lookattargetyoffset", SendMessageF_lookattargetyoffset);
+	lua_register(lua2, "SendMessageF_setconstrast", SendMessageF_setconstrast);
+	lua_register(lua2, "SendMessageF_setcamerafov", SendMessageF_setcamerafov);
+	lua_register(lua2, "SendMessageF_lookattarget", SendMessageF_lookattarget);
+	lua_register(lua2, "SendMessageF_lookatplayer", SendMessageF_lookatplayer);
+	lua_register(lua2, "SendMessageF_movebackward", SendMessageF_movebackward);
+	lua_register(lua2, "SendMessageF_mp_aimovetox", SendMessageF_mp_aimovetox);
+	lua_register(lua2, "SendMessageF_mp_aimovetoz", SendMessageF_mp_aimovetoz);
+	lua_register(lua2, "SendMessageF_setrotationx", SendMessageF_setrotationx);
+	lua_register(lua2, "SendMessageF_setrotationy", SendMessageF_setrotationy);
+	lua_register(lua2, "SendMessageF_setrotationz", SendMessageF_setrotationz);
+	lua_register(lua2, "SendMessageF_setpositionx", SendMessageF_setpositionx);
+	lua_register(lua2, "SendMessageF_setpositiony", SendMessageF_setpositiony);
+	lua_register(lua2, "SendMessageF_setpositionz", SendMessageF_setpositionz);
+	lua_register(lua2, "SendMessageF_setpostbloom", SendMessageF_setpostbloom);
+	lua_register(lua2, "SendMessageF_moveup", SendMessageF_moveup);
+	lua_register(lua2, "SendMessageF_panelx", SendMessageF_panelx);
+	lua_register(lua2, "SendMessageF_panely", SendMessageF_panely);
+	lua_register(lua2, "SendMessageF_panelx2", SendMessageF_panelx2);
+	lua_register(lua2, "SendMessageF_panely2", SendMessageF_panely2);
+	lua_register(lua2, "SendMessageF_rotatex", SendMessageF_rotatex);
+	lua_register(lua2, "SendMessageF_rotatey", SendMessageF_rotatey);
+	lua_register(lua2, "SendMessageF_rotatez", SendMessageF_rotatez);
+	lua_register(lua2, "SendMessageF_setfogred", SendMessageF_setfogred);
+	lua_register(lua2, "SendMessageF_setfogblue", SendMessageF_setfogblue);
+	lua_register(lua2, "SendMessageF_setcameradistance", SendMessageF_setcameradistance);
+	lua_register(lua2, "SendMessageF_setanimationframe", SendMessageF_setanimationframe);
+	lua_register(lua2, "SendMessageF_changeanimationframe", SendMessageF_changeanimationframe);
+	lua_register(lua2, "SendMessageF_setanimationspeed", SendMessageF_setanimationspeed);
+	lua_register(lua2, "SendMessageF_setglobalspecular", SendMessageF_setglobalspecular);
+	lua_register(lua2, "SendMessageF_setimagepositionx", SendMessageF_setimagepositionx);
+	lua_register(lua2, "SendMessageF_setimagepositiony", SendMessageF_setimagepositiony);
+	lua_register(lua2, "SendMessageF_setterrainlodnear", SendMessageF_setterrainlodnear);
+	lua_register(lua2, "SendMessageF_setbrightness", SendMessageF_setbrightness);
+	lua_register(lua2, "SendMessageF_aimsmoothmode", SendMessageF_aimsmoothmode);
+	lua_register(lua2, "SendMessageF_lookattargete", SendMessageF_lookattargete);
+	lua_register(lua2, "SendMessageF_modulatespeed", SendMessageF_modulatespeed);
+	lua_register(lua2, "SendMessageF_setfognearest", SendMessageF_setfognearest);
+	lua_register(lua2, "SendMessageF_setsurfacered", SendMessageF_setsurfacered);
+	lua_register(lua2, "SendMessageF_setambienceblue", SendMessageF_setambienceblue);
+	lua_register(lua2, "SendMessageF_setfogintensity", SendMessageF_setfogintensity);
+	lua_register(lua2, "SendMessageF_setsurfacegreen", SendMessageF_setsurfacegreen);
+	lua_register(lua2, "SendMessageF_setambiencegreen", SendMessageF_setambiencegreen);
+	lua_register(lua2, "SendMessageF_setoptionshadows", SendMessageF_setoptionshadows);
+	lua_register(lua2, "SendMessageF_setpostsaoradius", SendMessageF_setpostsaoradius);
+	lua_register(lua2, "SendMessageF_setterrainlodfar", SendMessageF_setterrainlodfar);
+	lua_register(lua2, "SendMessageF_setterrainlodmid", SendMessageF_setterrainlodmid);
+	lua_register(lua2, "SendMessageF_scale", SendMessageF_scale);
+	lua_register(lua2, "SendMessageF_textx", SendMessageF_textx);
+	lua_register(lua2, "SendMessageF_promptlocalforvrmode", SendMessageF_promptlocalforvrmode);
+	lua_register(lua2, "SendMessageF_setambienceintensity", SendMessageF_setambienceintensity);
+	lua_register(lua2, "SendMessageF_setpostlightraydecay", SendMessageF_setpostlightraydecay);
+	lua_register(lua2, "SendMessageF_startparticleemitter", SendMessageF_startparticleemitter);
+	lua_register(lua2, "SendMessageF_setpostlightraylength", SendMessageF_setpostlightraylength);
+	lua_register(lua2, "SendMessageF_setpostmotiondistance", SendMessageF_setpostmotiondistance);
+	lua_register(lua2, "SendMessageF_setpostvignetteradius", SendMessageF_setpostvignetteradius);
+	lua_register(lua2, "SendMessageF_setvegetationquantity", SendMessageF_setvegetationquantity);
+	lua_register(lua2, "SendMessageF_setpostmotionintensity", SendMessageF_setpostmotionintensity);
+	lua_register(lua2, "SendMessageF_setpostlightrayquality", SendMessageF_setpostlightrayquality);
+	lua_register(lua2, "SendMessageF_setcamerazoompercentage", SendMessageF_setcamerazoompercentage);
+	lua_register(lua2, "SendMessageF_rotatetoplayerwithoffset", SendMessageF_rotatetoplayerwithoffset);
+	lua_register(lua2, "SendMessageF_setpostvignetteintensity", SendMessageF_setpostvignetteintensity);
+	lua_register(lua2, "SendMessageF_setpostlensflareintensity", SendMessageF_setpostlensflareintensity);
+	lua_register(lua2, "SendMessageF_setpostdepthoffielddistance", SendMessageF_setpostdepthoffielddistance);
+	lua_register(lua2, "SendMessageF_setpostdepthoffieldintensity", SendMessageF_setpostdepthoffieldintensity);
 }
 
 //Internal String commands:
@@ -13047,22 +13047,22 @@ int SendMessageS_loadimages(lua_State* L) { return int_core_sendmessages(L, enum
 int SendMessageS_setcharactersound(lua_State* L) { return int_core_sendmessages(L, enum_setcharactersound); }
 void addInternalFunctions_string()
 {
-	lua_register(lua, "SendMessageS_jumptolevel", SendMessageS_jumptolevel);
-	lua_register(lua, "SendMessageS_promptlocal", SendMessageS_promptlocal);
-	lua_register(lua, "SendMessageS_playcharactersound", SendMessageS_playcharactersound);
-	lua_register(lua, "SendMessageS_promptduration", SendMessageS_promptduration);
-	lua_register(lua, "SendMessageS_changeplayerweapon", SendMessageS_changeplayerweapon);
-	lua_register(lua, "SendMessageS_levelfilenametoload", SendMessageS_levelfilenametoload);
-	lua_register(lua, "SendMessageS_switchscript", SendMessageS_switchscript);
-	lua_register(lua, "SendMessageS_prompt", SendMessageS_prompt);
-	lua_register(lua, "SendMessageS_texttxt", SendMessageS_texttxt);
-	lua_register(lua, "SendMessageS_setskyto", SendMessageS_setskyto);
-	lua_register(lua, "SendMessageS_musicload", SendMessageS_musicload);
-	lua_register(lua, "SendMessageS_switchpage", SendMessageS_switchpage);
-	lua_register(lua, "SendMessageS_setanimationname", SendMessageS_setanimationname);
-	lua_register(lua, "SendMessageS_promptlocalforvr", SendMessageS_promptlocalforvr);
-	lua_register(lua, "SendMessageS_loadimages", SendMessageS_loadimages);
-	lua_register(lua, "SendMessageS_setcharactersound", SendMessageS_setcharactersound);
+	lua_register(lua2, "SendMessageS_jumptolevel", SendMessageS_jumptolevel);
+	lua_register(lua2, "SendMessageS_promptlocal", SendMessageS_promptlocal);
+	lua_register(lua2, "SendMessageS_playcharactersound", SendMessageS_playcharactersound);
+	lua_register(lua2, "SendMessageS_promptduration", SendMessageS_promptduration);
+	lua_register(lua2, "SendMessageS_changeplayerweapon", SendMessageS_changeplayerweapon);
+	lua_register(lua2, "SendMessageS_levelfilenametoload", SendMessageS_levelfilenametoload);
+	lua_register(lua2, "SendMessageS_switchscript", SendMessageS_switchscript);
+	lua_register(lua2, "SendMessageS_prompt", SendMessageS_prompt);
+	lua_register(lua2, "SendMessageS_texttxt", SendMessageS_texttxt);
+	lua_register(lua2, "SendMessageS_setskyto", SendMessageS_setskyto);
+	lua_register(lua2, "SendMessageS_musicload", SendMessageS_musicload);
+	lua_register(lua2, "SendMessageS_switchpage", SendMessageS_switchpage);
+	lua_register(lua2, "SendMessageS_setanimationname", SendMessageS_setanimationname);
+	lua_register(lua2, "SendMessageS_promptlocalforvr", SendMessageS_promptlocalforvr);
+	lua_register(lua2, "SendMessageS_loadimages", SendMessageS_loadimages);
+	lua_register(lua2, "SendMessageS_setcharactersound", SendMessageS_setcharactersound);
 }
 
 // LUA command names
@@ -13075,1259 +13075,1259 @@ void addFunctions()
 	addInternalFunctions_string();
 
 	// add extra commands (old method)
-	lua_register(lua, "SendMessage", LuaSendMessage);
-	lua_register(lua, "SendMessageI", LuaSendMessageI);
-	lua_register(lua, "SendMessageF", LuaSendMessageF);
-	lua_register(lua, "SendMessageS", LuaSendMessageS);
-	lua_register(lua, "Include", Include);
+	lua_register(lua2, "SendMessage", LuaSendMessage);
+	lua_register(lua2, "SendMessageI", LuaSendMessageI);
+	lua_register(lua2, "SendMessageF", LuaSendMessageF);
+	lua_register(lua2, "SendMessageS", LuaSendMessageS);
+	lua_register(lua2, "Include", Include);
 
 	// Direct Calls
-	lua_register(lua, "RestoreGameFromSlot", RestoreGameFromSlot);
-	lua_register(lua, "ResetFade", ResetFade);
+	lua_register(lua2, "RestoreGameFromSlot", RestoreGameFromSlot);
+	lua_register(lua2, "ResetFade", ResetFade);
 
-	lua_register(lua, "GetInternalSoundState", GetInternalSoundState);
-	lua_register(lua, "SetInternalSoundState", SetInternalSoundState);
-	lua_register(lua, "SetCheckpoint", SetCheckpoint);
+	lua_register(lua2, "GetInternalSoundState", GetInternalSoundState);
+	lua_register(lua2, "SetInternalSoundState", SetInternalSoundState);
+	lua_register(lua2, "SetCheckpoint", SetCheckpoint);
 
-	lua_register(lua, "UpdateWeaponStats", UpdateWeaponStats);
-	lua_register(lua, "ResetWeaponSystems", ResetWeaponSystems);
-	lua_register(lua, "GetWeaponSlotGot", GetWeaponSlotGot);
-	lua_register(lua, "GetWeaponSlotNoSelect", GetWeaponSlotNoSelect);
-	lua_register(lua, "SetWeaponSlot", SetWeaponSlot);
+	lua_register(lua2, "UpdateWeaponStats", UpdateWeaponStats);
+	lua_register(lua2, "ResetWeaponSystems", ResetWeaponSystems);
+	lua_register(lua2, "GetWeaponSlotGot", GetWeaponSlotGot);
+	lua_register(lua2, "GetWeaponSlotNoSelect", GetWeaponSlotNoSelect);
+	lua_register(lua2, "SetWeaponSlot", SetWeaponSlot);
 
-	lua_register(lua, "GetWeaponAmmo", GetWeaponAmmo);
-	lua_register(lua, "SetWeaponAmmo", SetWeaponAmmo);
-	lua_register(lua, "GetWeaponClipAmmo", GetWeaponClipAmmo);
-	lua_register(lua, "SetWeaponClipAmmo", SetWeaponClipAmmo);
-	lua_register(lua, "GetWeaponPoolAmmoIndex", GetWeaponPoolAmmoIndex);
-	lua_register(lua, "GetWeaponPoolAmmo", GetWeaponPoolAmmo);
-	lua_register(lua, "SetWeaponPoolAmmo", SetWeaponPoolAmmo);
+	lua_register(lua2, "GetWeaponAmmo", GetWeaponAmmo);
+	lua_register(lua2, "SetWeaponAmmo", SetWeaponAmmo);
+	lua_register(lua2, "GetWeaponClipAmmo", GetWeaponClipAmmo);
+	lua_register(lua2, "SetWeaponClipAmmo", SetWeaponClipAmmo);
+	lua_register(lua2, "GetWeaponPoolAmmoIndex", GetWeaponPoolAmmoIndex);
+	lua_register(lua2, "GetWeaponPoolAmmo", GetWeaponPoolAmmo);
+	lua_register(lua2, "SetWeaponPoolAmmo", SetWeaponPoolAmmo);
 
-	lua_register(lua, "GetWeaponSlot", GetWeaponSlot);
-	lua_register(lua, "GetWeaponSlotPref", GetWeaponSlotPref);
-	lua_register(lua, "GetPlayerWeaponID", GetPlayerWeaponID);
-	lua_register(lua, "GetWeaponID", GetWeaponID);
-	lua_register(lua, "GetEntityWeaponID", GetEntityWeaponID);
-	lua_register(lua, "GetWeaponName", GetWeaponName);
-	lua_register(lua, "SetWeaponDamage", SetWeaponDamage);
-	lua_register(lua, "SetWeaponAccuracy", SetWeaponAccuracy);
-	lua_register(lua, "SetWeaponReloadQuantity", SetWeaponReloadQuantity);
-	lua_register(lua, "SetWeaponFireIterations", SetWeaponFireIterations);
-	lua_register(lua, "SetWeaponRange", SetWeaponRange);
-	lua_register(lua, "SetWeaponDropoff", SetWeaponDropoff);
-	lua_register(lua, "SetWeaponSpotLighting", SetWeaponSpotLighting);
-	lua_register(lua, "GetWeaponDamage", GetWeaponDamage);
-	lua_register(lua, "GetWeaponAccuracy", GetWeaponAccuracy);
-	lua_register(lua, "GetWeaponReloadQuantity", GetWeaponReloadQuantity);
-	lua_register(lua, "GetWeaponFireIterations", GetWeaponFireIterations);
-	lua_register(lua, "GetWeaponRange", GetWeaponRange);
-	lua_register(lua, "GetWeaponDropoff", GetWeaponDropoff);
-	lua_register(lua, "GetWeaponSpotLighting", GetWeaponSpotLighting);
-	lua_register(lua, "SetWeaponFireRate", SetWeaponFireRate);
-	lua_register(lua, "GetWeaponFireRate", GetWeaponFireRate);
-	lua_register(lua, "SetWeaponClipCapacity", SetWeaponClipCapacity);
-	lua_register(lua, "GetWeaponClipCapacity", GetWeaponClipCapacity);
+	lua_register(lua2, "GetWeaponSlot", GetWeaponSlot);
+	lua_register(lua2, "GetWeaponSlotPref", GetWeaponSlotPref);
+	lua_register(lua2, "GetPlayerWeaponID", GetPlayerWeaponID);
+	lua_register(lua2, "GetWeaponID", GetWeaponID);
+	lua_register(lua2, "GetEntityWeaponID", GetEntityWeaponID);
+	lua_register(lua2, "GetWeaponName", GetWeaponName);
+	lua_register(lua2, "SetWeaponDamage", SetWeaponDamage);
+	lua_register(lua2, "SetWeaponAccuracy", SetWeaponAccuracy);
+	lua_register(lua2, "SetWeaponReloadQuantity", SetWeaponReloadQuantity);
+	lua_register(lua2, "SetWeaponFireIterations", SetWeaponFireIterations);
+	lua_register(lua2, "SetWeaponRange", SetWeaponRange);
+	lua_register(lua2, "SetWeaponDropoff", SetWeaponDropoff);
+	lua_register(lua2, "SetWeaponSpotLighting", SetWeaponSpotLighting);
+	lua_register(lua2, "GetWeaponDamage", GetWeaponDamage);
+	lua_register(lua2, "GetWeaponAccuracy", GetWeaponAccuracy);
+	lua_register(lua2, "GetWeaponReloadQuantity", GetWeaponReloadQuantity);
+	lua_register(lua2, "GetWeaponFireIterations", GetWeaponFireIterations);
+	lua_register(lua2, "GetWeaponRange", GetWeaponRange);
+	lua_register(lua2, "GetWeaponDropoff", GetWeaponDropoff);
+	lua_register(lua2, "GetWeaponSpotLighting", GetWeaponSpotLighting);
+	lua_register(lua2, "SetWeaponFireRate", SetWeaponFireRate);
+	lua_register(lua2, "GetWeaponFireRate", GetWeaponFireRate);
+	lua_register(lua2, "SetWeaponClipCapacity", SetWeaponClipCapacity);
+	lua_register(lua2, "GetWeaponClipCapacity", GetWeaponClipCapacity);
 
-	lua_register(lua, "WrapAngle", WrapAngle);
-	lua_register(lua, "GetCameraOverride", GetCameraOverride);
-	lua_register(lua, "SetCameraOverride", SetCameraOverride);
-	lua_register(lua, "SetCameraFOV", SetCameraFOV);
-	lua_register(lua, "SetCameraPosition", SetCameraPosition);
-	lua_register(lua, "SetCameraAngle", SetCameraAngle);
-	lua_register(lua, "SetCameraFreeFlight", SetCameraFreeFlight);
-	lua_register(lua, "GetCameraPositionX", GetCameraPositionX);
-	lua_register(lua, "GetCameraPositionY", GetCameraPositionY);
-	lua_register(lua, "GetCameraPositionZ", GetCameraPositionZ);
-	lua_register(lua, "GetCameraAngleX", GetCameraAngleX);
-	lua_register(lua, "GetCameraAngleY", GetCameraAngleY);
-	lua_register(lua, "GetCameraAngleZ", GetCameraAngleZ);
-	lua_register(lua, "GetCameraLookAtX", GetCameraLookAtX);
-	lua_register(lua, "GetCameraLookAtY", GetCameraLookAtY);
-	lua_register(lua, "GetCameraLookAtZ", GetCameraLookAtZ);
+	lua_register(lua2, "WrapAngle", WrapAngle);
+	lua_register(lua2, "GetCameraOverride", GetCameraOverride);
+	lua_register(lua2, "SetCameraOverride", SetCameraOverride);
+	lua_register(lua2, "SetCameraFOV", SetCameraFOV);
+	lua_register(lua2, "SetCameraPosition", SetCameraPosition);
+	lua_register(lua2, "SetCameraAngle", SetCameraAngle);
+	lua_register(lua2, "SetCameraFreeFlight", SetCameraFreeFlight);
+	lua_register(lua2, "GetCameraPositionX", GetCameraPositionX);
+	lua_register(lua2, "GetCameraPositionY", GetCameraPositionY);
+	lua_register(lua2, "GetCameraPositionZ", GetCameraPositionZ);
+	lua_register(lua2, "GetCameraAngleX", GetCameraAngleX);
+	lua_register(lua2, "GetCameraAngleY", GetCameraAngleY);
+	lua_register(lua2, "GetCameraAngleZ", GetCameraAngleZ);
+	lua_register(lua2, "GetCameraLookAtX", GetCameraLookAtX);
+	lua_register(lua2, "GetCameraLookAtY", GetCameraLookAtY);
+	lua_register(lua2, "GetCameraLookAtZ", GetCameraLookAtZ);
 
-	lua_register(lua, "ForcePlayer", ForcePlayer);
+	lua_register(lua2, "ForcePlayer", ForcePlayer);
 
-	lua_register(lua, "SetEntityActive", SetEntityActive);
-	lua_register(lua, "SetEntityActivated", SetEntityActivated);
-	lua_register(lua, "SetEntityObjective", SetEntityObjective);
-	lua_register(lua, "SetEntityCollectable", SetEntityCollectable);
-	lua_register(lua, "SetEntityCollected", SetEntityCollected);
-	lua_register(lua, "SetEntityCollectedForce", SetEntityCollectedForce);
-	lua_register(lua, "SetEntityUsed", SetEntityUsed);
-	lua_register(lua, "GetEntityObjective", GetEntityObjective);
-	lua_register(lua, "GetEntityExplodable", GetEntityExplodable);
-	lua_register(lua, "SetEntityExplodable", SetEntityExplodable);
-	lua_register(lua, "SetExplosionHeight", SetExplosionHeight);
-	lua_register(lua, "SetExplosionDamage", SetExplosionDamage);
-	lua_register(lua, "SetCustomExplosion", SetCustomExplosion);
+	lua_register(lua2, "SetEntityActive", SetEntityActive);
+	lua_register(lua2, "SetEntityActivated", SetEntityActivated);
+	lua_register(lua2, "SetEntityObjective", SetEntityObjective);
+	lua_register(lua2, "SetEntityCollectable", SetEntityCollectable);
+	lua_register(lua2, "SetEntityCollected", SetEntityCollected);
+	lua_register(lua2, "SetEntityCollectedForce", SetEntityCollectedForce);
+	lua_register(lua2, "SetEntityUsed", SetEntityUsed);
+	lua_register(lua2, "GetEntityObjective", GetEntityObjective);
+	lua_register(lua2, "GetEntityExplodable", GetEntityExplodable);
+	lua_register(lua2, "SetEntityExplodable", SetEntityExplodable);
+	lua_register(lua2, "SetExplosionHeight", SetExplosionHeight);
+	lua_register(lua2, "SetExplosionDamage", SetExplosionDamage);
+	lua_register(lua2, "SetCustomExplosion", SetCustomExplosion);
 	
 	
-	lua_register(lua, "GetEntityProjectGlobal", GetEntityProjectGlobal);
-	lua_register(lua, "GetEntityCollectable", GetEntityCollectable);
-	lua_register(lua, "GetEntityCollected", GetEntityCollected);
-	lua_register(lua, "GetEntityUsed", GetEntityUsed);
-	lua_register(lua, "SetEntityQuantity", SetEntityQuantity);
-	lua_register(lua, "GetEntityQuantity", GetEntityQuantity);
-	lua_register(lua, "SetEntityHasKey", SetEntityHasKey);
-	lua_register(lua, "GetEntityActive", GetEntityActive);
-	lua_register(lua, "GetEntityWhoActivated", GetEntityWhoActivated);
-	lua_register(lua, "GetEntityVisibility", GetEntityVisibility);
-	lua_register(lua, "GetEntityPositionX", GetEntityPositionX);
-	lua_register(lua, "GetEntityPositionY", GetEntityPositionY);
-	lua_register(lua, "GetEntityPositionZ", GetEntityPositionZ);
-	lua_register(lua, "GetEntityCollBox", GetEntityCollBox);
-	lua_register(lua, "GetEntityColBox", GetEntityColBox);
-	lua_register(lua, "GetEntityPosAng", GetEntityPosAng);
-	lua_register(lua, "GetEntityWeight", GetEntityWeight);
-	lua_register(lua, "GetEntityScales", GetEntityScales);
-	lua_register(lua, "GetEntityName", GetEntityName);
-	lua_register(lua, "GetEntityAngleX", GetEntityAngleX);
-	lua_register(lua, "GetEntityAngleY", GetEntityAngleY);
-	lua_register(lua, "GetEntityAngleZ", GetEntityAngleZ);
-	lua_register(lua, "GetMovementSpeed", GetMovementSpeed);
-	lua_register(lua, "GetAnimationSpeed", GetAnimationSpeed);
-	lua_register(lua, "SetAnimationSpeedModulation", SetAnimationSpeedModulation);
-	lua_register(lua, "GetAnimationSpeedModulation", GetAnimationSpeedModulation);
-	lua_register(lua, "GetMovementDelta", GetMovementDelta);
-	lua_register(lua, "GetMovementDeltaManually", GetMovementDeltaManually);
-	lua_register(lua, "GetEntityMarkerMode", GetEntityMarkerMode);
-	lua_register(lua, "SetEntityAlwaysActive", SetEntityAlwaysActive);
-	lua_register(lua, "GetEntityAlwaysActive", GetEntityAlwaysActive);
-	lua_register(lua, "SetEntityUnderwaterMode", SetEntityUnderwaterMode);
-	lua_register(lua, "GetEntityUnderwaterMode", GetEntityUnderwaterMode);
-	lua_register(lua, "GetEntityParentID", GetEntityParentID);
+	lua_register(lua2, "GetEntityProjectGlobal", GetEntityProjectGlobal);
+	lua_register(lua2, "GetEntityCollectable", GetEntityCollectable);
+	lua_register(lua2, "GetEntityCollected", GetEntityCollected);
+	lua_register(lua2, "GetEntityUsed", GetEntityUsed);
+	lua_register(lua2, "SetEntityQuantity", SetEntityQuantity);
+	lua_register(lua2, "GetEntityQuantity", GetEntityQuantity);
+	lua_register(lua2, "SetEntityHasKey", SetEntityHasKey);
+	lua_register(lua2, "GetEntityActive", GetEntityActive);
+	lua_register(lua2, "GetEntityWhoActivated", GetEntityWhoActivated);
+	lua_register(lua2, "GetEntityVisibility", GetEntityVisibility);
+	lua_register(lua2, "GetEntityPositionX", GetEntityPositionX);
+	lua_register(lua2, "GetEntityPositionY", GetEntityPositionY);
+	lua_register(lua2, "GetEntityPositionZ", GetEntityPositionZ);
+	lua_register(lua2, "GetEntityCollBox", GetEntityCollBox);
+	lua_register(lua2, "GetEntityColBox", GetEntityColBox);
+	lua_register(lua2, "GetEntityPosAng", GetEntityPosAng);
+	lua_register(lua2, "GetEntityWeight", GetEntityWeight);
+	lua_register(lua2, "GetEntityScales", GetEntityScales);
+	lua_register(lua2, "GetEntityName", GetEntityName);
+	lua_register(lua2, "GetEntityAngleX", GetEntityAngleX);
+	lua_register(lua2, "GetEntityAngleY", GetEntityAngleY);
+	lua_register(lua2, "GetEntityAngleZ", GetEntityAngleZ);
+	lua_register(lua2, "GetMovementSpeed", GetMovementSpeed);
+	lua_register(lua2, "GetAnimationSpeed", GetAnimationSpeed);
+	lua_register(lua2, "SetAnimationSpeedModulation", SetAnimationSpeedModulation);
+	lua_register(lua2, "GetAnimationSpeedModulation", GetAnimationSpeedModulation);
+	lua_register(lua2, "GetMovementDelta", GetMovementDelta);
+	lua_register(lua2, "GetMovementDeltaManually", GetMovementDeltaManually);
+	lua_register(lua2, "GetEntityMarkerMode", GetEntityMarkerMode);
+	lua_register(lua2, "SetEntityAlwaysActive", SetEntityAlwaysActive);
+	lua_register(lua2, "GetEntityAlwaysActive", GetEntityAlwaysActive);
+	lua_register(lua2, "SetEntityUnderwaterMode", SetEntityUnderwaterMode);
+	lua_register(lua2, "GetEntityUnderwaterMode", GetEntityUnderwaterMode);
+	lua_register(lua2, "GetEntityParentID", GetEntityParentID);
 
-	lua_register(lua, "SetEntityIfUsed", SetEntityIfUsed);
-	lua_register(lua, "GetEntityIfUsed", GetEntityIfUsed);
+	lua_register(lua2, "SetEntityIfUsed", SetEntityIfUsed);
+	lua_register(lua2, "GetEntityIfUsed", GetEntityIfUsed);
 
 	#ifdef WICKEDENGINE
-	lua_register(lua, "SetEntityAllegiance", SetEntityAllegiance);
-	lua_register(lua, "GetEntityAllegiance", GetEntityAllegiance);
-	lua_register(lua, "GetEntityPatrolMode", GetEntityPatrolMode);
-	lua_register(lua, "GetEntityRelationshipID", GetEntityRelationshipID);
-	lua_register(lua, "GetEntityRelationshipType", GetEntityRelationshipType);
-	lua_register(lua, "GetEntityRelationshipData", GetEntityRelationshipData);
-	lua_register(lua, "GetEntityCanFire", GetEntityCanFire);
-	lua_register(lua, "GetEntityHasWeapon", GetEntityHasWeapon);
-	lua_register(lua, "GetEntityViewAngle", GetEntityViewAngle);
-	lua_register(lua, "GetEntityViewRange", GetEntityViewRange);
-	lua_register(lua, "SetEntityViewRange", SetEntityViewRange);
-	lua_register(lua, "GetEntityMoveSpeed", GetEntityMoveSpeed);
-	lua_register(lua, "GetEntityTurnSpeed", GetEntityTurnSpeed);
-	lua_register(lua, "SetEntityMoveSpeed", SetEntityMoveSpeed);
-	lua_register(lua, "SetEntityTurnSpeed", SetEntityTurnSpeed);
+	lua_register(lua2, "SetEntityAllegiance", SetEntityAllegiance);
+	lua_register(lua2, "GetEntityAllegiance", GetEntityAllegiance);
+	lua_register(lua2, "GetEntityPatrolMode", GetEntityPatrolMode);
+	lua_register(lua2, "GetEntityRelationshipID", GetEntityRelationshipID);
+	lua_register(lua2, "GetEntityRelationshipType", GetEntityRelationshipType);
+	lua_register(lua2, "GetEntityRelationshipData", GetEntityRelationshipData);
+	lua_register(lua2, "GetEntityCanFire", GetEntityCanFire);
+	lua_register(lua2, "GetEntityHasWeapon", GetEntityHasWeapon);
+	lua_register(lua2, "GetEntityViewAngle", GetEntityViewAngle);
+	lua_register(lua2, "GetEntityViewRange", GetEntityViewRange);
+	lua_register(lua2, "SetEntityViewRange", SetEntityViewRange);
+	lua_register(lua2, "GetEntityMoveSpeed", GetEntityMoveSpeed);
+	lua_register(lua2, "GetEntityTurnSpeed", GetEntityTurnSpeed);
+	lua_register(lua2, "SetEntityMoveSpeed", SetEntityMoveSpeed);
+	lua_register(lua2, "SetEntityTurnSpeed", SetEntityTurnSpeed);
 	#endif
 
 	#ifdef WICKEDENGINE
-	lua_register(lua, "GetEntitiesWithinCone", GetEntitiesWithinCone);
-	lua_register(lua, "GetEntityWithinCone", GetEntityWithinCone);
+	lua_register(lua2, "GetEntitiesWithinCone", GetEntitiesWithinCone);
+	lua_register(lua2, "GetEntityWithinCone", GetEntityWithinCone);
 	#endif
 
 	#ifdef WICKEDENGINE
-	lua_register(lua, "GetNearestEntityDestroyed", GetNearestEntityDestroyed);
-	lua_register(lua, "GetNearestSoundDistance", GetNearestSoundDistance);
-	lua_register(lua, "MakeAISound", MakeAISound);
+	lua_register(lua2, "GetNearestEntityDestroyed", GetNearestEntityDestroyed);
+	lua_register(lua2, "GetNearestSoundDistance", GetNearestSoundDistance);
+	lua_register(lua2, "MakeAISound", MakeAISound);
 	#endif
 	
 	#ifdef WICKEDENGINE
-	lua_register(lua, "GetTerrainEditableArea", GetTerrainEditableArea);
+	lua_register(lua2, "GetTerrainEditableArea", GetTerrainEditableArea);
 	#endif
 
-	lua_register(lua, "SetEntityString", SetEntityString);
-	lua_register(lua, "GetEntityString", GetEntityString);
+	lua_register(lua2, "SetEntityString", SetEntityString);
+	lua_register(lua2, "GetEntityString", GetEntityString);
 
-	lua_register(lua, "GetLimbName", GetLimbName);
+	lua_register(lua2, "GetLimbName", GetLimbName);
 
-	lua_register(lua, "SetEntitySpawnAtStart", SetEntitySpawnAtStart);
-	lua_register(lua, "GetEntitySpawnAtStart", GetEntitySpawnAtStart);
-	lua_register(lua, "GetEntityFilePath", GetEntityFilePath);
-	lua_register(lua, "GetEntityClonedSinceStartValue", GetEntityClonedSinceStartValue);
-	lua_register(lua, "SetPreExitValue", SetPreExitValue);
+	lua_register(lua2, "SetEntitySpawnAtStart", SetEntitySpawnAtStart);
+	lua_register(lua2, "GetEntitySpawnAtStart", GetEntitySpawnAtStart);
+	lua_register(lua2, "GetEntityFilePath", GetEntityFilePath);
+	lua_register(lua2, "GetEntityClonedSinceStartValue", GetEntityClonedSinceStartValue);
+	lua_register(lua2, "SetPreExitValue", SetPreExitValue);
 
-	lua_register(lua, "SetEntityAnimation", SetEntityAnimation);
-	lua_register(lua, "GetEntityAnimationStart", GetEntityAnimationStart);
-	lua_register(lua, "GetEntityAnimationFinish", GetEntityAnimationFinish);
-	lua_register(lua, "GetEntityAnimationFound", GetEntityAnimationFound);
-	lua_register(lua, "GetObjectAnimationFinished", GetObjectAnimationFinished);
+	lua_register(lua2, "SetEntityAnimation", SetEntityAnimation);
+	lua_register(lua2, "GetEntityAnimationStart", GetEntityAnimationStart);
+	lua_register(lua2, "GetEntityAnimationFinish", GetEntityAnimationFinish);
+	lua_register(lua2, "GetEntityAnimationFound", GetEntityAnimationFound);
+	lua_register(lua2, "GetObjectAnimationFinished", GetObjectAnimationFinished);
 
-	lua_register(lua, "AdjustLookSettingHorizLimit", AdjustLookSettingHorizLimit);
-	lua_register(lua, "AdjustLookSettingHorizOffset", AdjustLookSettingHorizOffset);
-	lua_register(lua, "AdjustLookSettingVertLimit", AdjustLookSettingVertLimit);
-	lua_register(lua, "AdjustLookSettingVertOffset", AdjustLookSettingVertOffset);
-	lua_register(lua, "AdjustAimSettingHorizLimit", AdjustAimSettingHorizLimit);
-	lua_register(lua, "AdjustAimSettingHorizOffset", AdjustAimSettingHorizOffset);
-	lua_register(lua, "AdjustAimSettingVertLimit", AdjustAimSettingVertLimit);
-	lua_register(lua, "AdjustAimSettingVertOffset", AdjustAimSettingVertOffset);
+	lua_register(lua2, "AdjustLookSettingHorizLimit", AdjustLookSettingHorizLimit);
+	lua_register(lua2, "AdjustLookSettingHorizOffset", AdjustLookSettingHorizOffset);
+	lua_register(lua2, "AdjustLookSettingVertLimit", AdjustLookSettingVertLimit);
+	lua_register(lua2, "AdjustLookSettingVertOffset", AdjustLookSettingVertOffset);
+	lua_register(lua2, "AdjustAimSettingHorizLimit", AdjustAimSettingHorizLimit);
+	lua_register(lua2, "AdjustAimSettingHorizOffset", AdjustAimSettingHorizOffset);
+	lua_register(lua2, "AdjustAimSettingVertLimit", AdjustAimSettingVertLimit);
+	lua_register(lua2, "AdjustAimSettingVertOffset", AdjustAimSettingVertOffset);
 
-	lua_register(lua, "GetEntityFootfallMax", GetEntityFootfallMax);
-	lua_register(lua, "GetEntityFootfallKeyframe", GetEntityFootfallKeyframe);
-	lua_register(lua, "GetEntityAnimationNameExist", GetEntityAnimationNameExist);
-	lua_register(lua, "GetEntityAnimationNameExistAndPlaying", GetEntityAnimationNameExistAndPlaying);
-	lua_register(lua, "GetEntityAnimationNameExistAndPlayingSearchAny", GetEntityAnimationNameExistAndPlayingSearchAny);
-	lua_register(lua, "GetEntityAnimationTriggerFrame", GetEntityAnimationTriggerFrame);
-	lua_register(lua, "GetEntityAnimationStartFinish", GetEntityAnimationStartFinish);
+	lua_register(lua2, "GetEntityFootfallMax", GetEntityFootfallMax);
+	lua_register(lua2, "GetEntityFootfallKeyframe", GetEntityFootfallKeyframe);
+	lua_register(lua2, "GetEntityAnimationNameExist", GetEntityAnimationNameExist);
+	lua_register(lua2, "GetEntityAnimationNameExistAndPlaying", GetEntityAnimationNameExistAndPlaying);
+	lua_register(lua2, "GetEntityAnimationNameExistAndPlayingSearchAny", GetEntityAnimationNameExistAndPlayingSearchAny);
+	lua_register(lua2, "GetEntityAnimationTriggerFrame", GetEntityAnimationTriggerFrame);
+	lua_register(lua2, "GetEntityAnimationStartFinish", GetEntityAnimationStartFinish);
 	
 	// Entity creation/destruction
-	lua_register(lua, "GetOriginalEntityElementMax", GetOriginalEntityElementMax);
-	lua_register(lua, "CreateEntityIfNotPresent", CreateEntityIfNotPresent);
-	lua_register(lua, "SpawnNewEntity", SpawnNewEntity);
-	lua_register(lua, "DeleteNewEntity", DeleteNewEntity);
+	lua_register(lua2, "GetOriginalEntityElementMax", GetOriginalEntityElementMax);
+	lua_register(lua2, "CreateEntityIfNotPresent", CreateEntityIfNotPresent);
+	lua_register(lua2, "SpawnNewEntity", SpawnNewEntity);
+	lua_register(lua2, "DeleteNewEntity", DeleteNewEntity);
 
-	lua_register(lua, "GetAmmoClipMax", GetAmmoClipMax);
-	lua_register(lua, "GetAmmoClip", GetAmmoClip);
-	lua_register(lua, "SetAmmoClip", SetAmmoClip);
+	lua_register(lua2, "GetAmmoClipMax", GetAmmoClipMax);
+	lua_register(lua2, "GetAmmoClip", GetAmmoClip);
+	lua_register(lua2, "SetAmmoClip", SetAmmoClip);
 
 	// Entity Physics
-	lua_register(lua, "FreezeEntity", FreezeEntity);
-	lua_register(lua, "UnFreezeEntity", UnFreezeEntity);
+	lua_register(lua2, "FreezeEntity", FreezeEntity);
+	lua_register(lua2, "UnFreezeEntity", UnFreezeEntity);
 
 	// Terrain
-	lua_register(lua, "GetTerrainHeight", GetTerrainHeight);
-	lua_register(lua, "GetSurfaceHeight", GetSurfaceHeight);
-	lua_register(lua, "SetPlayerSlopeAngle", SetPlayerSlopeAngle);
-	lua_register(lua, "GetTerrainHeightFloat", GetTerrainHeightFloat);
+	lua_register(lua2, "GetTerrainHeight", GetTerrainHeight);
+	lua_register(lua2, "GetSurfaceHeight", GetSurfaceHeight);
+	lua_register(lua2, "SetPlayerSlopeAngle", SetPlayerSlopeAngle);
+	lua_register(lua2, "GetTerrainHeightFloat", GetTerrainHeightFloat);
 
 	// DarkAI - Legacy Automatic Mode
-	lua_register(lua, "AIEntityAssignPatrolPath" , AIEntityAssignPatrolPath );
-	lua_register(lua, "AIEntityAddTarget" , AIEntityAddTarget );
-	lua_register(lua, "AIEntityRemoveTarget" , AIEntityRemoveTarget );
-	lua_register(lua, "AIEntityMoveToCover" , AIEntityMoveToCover );
-	lua_register(lua, "AIGetEntityCanFire" , AIGetEntityCanFire );
+	lua_register(lua2, "AIEntityAssignPatrolPath" , AIEntityAssignPatrolPath );
+	lua_register(lua2, "AIEntityAddTarget" , AIEntityAddTarget );
+	lua_register(lua2, "AIEntityRemoveTarget" , AIEntityRemoveTarget );
+	lua_register(lua2, "AIEntityMoveToCover" , AIEntityMoveToCover );
+	lua_register(lua2, "AIGetEntityCanFire" , AIGetEntityCanFire );
 
 	// DarkAI - New Manual Mode Control
-	lua_register(lua, "AISetEntityControl", AISetEntityControl);
-	lua_register(lua, "AIEntityStop" , AIEntityStop );
-	lua_register(lua, "AIGetEntityCanSee" , AIGetEntityCanSee );
-	lua_register(lua, "AIGetEntityViewRange" , AIGetEntityViewRange );
-	lua_register(lua, "AIGetEntitySpeed" , AIGetEntitySpeed );
-	lua_register(lua, "AISetEntityMoveBoostPriority" , AISetEntityMoveBoostPriority );
-	lua_register(lua, "AIEntityGoToPosition" , AIEntityGoToPosition );
-	lua_register(lua, "AIGetEntityHeardSound" , AIGetEntityHeardSound );
-	lua_register(lua, "AISetEntityPosition" , AISetEntityPosition );
-	lua_register(lua, "AISetEntityTurnSpeed" , AISetEntityTurnSpeed );
-	lua_register(lua, "AIGetEntityAngleY" , AIGetEntityAngleY );
-	lua_register(lua, "AIGetEntityIsMoving" , AIGetEntityIsMoving );
+	lua_register(lua2, "AISetEntityControl", AISetEntityControl);
+	lua_register(lua2, "AIEntityStop" , AIEntityStop );
+	lua_register(lua2, "AIGetEntityCanSee" , AIGetEntityCanSee );
+	lua_register(lua2, "AIGetEntityViewRange" , AIGetEntityViewRange );
+	lua_register(lua2, "AIGetEntitySpeed" , AIGetEntitySpeed );
+	lua_register(lua2, "AISetEntityMoveBoostPriority" , AISetEntityMoveBoostPriority );
+	lua_register(lua2, "AIEntityGoToPosition" , AIEntityGoToPosition );
+	lua_register(lua2, "AIGetEntityHeardSound" , AIGetEntityHeardSound );
+	lua_register(lua2, "AISetEntityPosition" , AISetEntityPosition );
+	lua_register(lua2, "AISetEntityTurnSpeed" , AISetEntityTurnSpeed );
+	lua_register(lua2, "AIGetEntityAngleY" , AIGetEntityAngleY );
+	lua_register(lua2, "AIGetEntityIsMoving" , AIGetEntityIsMoving );
 
-	lua_register(lua, "AIGetTotalPaths" , AIGetTotalPaths );
-	lua_register(lua, "AIGetPathCountPoints" , AIGetPathCountPoints );
-	lua_register(lua, "AIPathGetPointX" , AIPathGetPointX );
-	lua_register(lua, "AIPathGetPointY" , AIPathGetPointY );
-	lua_register(lua, "AIPathGetPointZ" , AIPathGetPointZ );
+	lua_register(lua2, "AIGetTotalPaths" , AIGetTotalPaths );
+	lua_register(lua2, "AIGetPathCountPoints" , AIGetPathCountPoints );
+	lua_register(lua2, "AIPathGetPointX" , AIPathGetPointX );
+	lua_register(lua2, "AIPathGetPointY" , AIPathGetPointY );
+	lua_register(lua2, "AIPathGetPointZ" , AIPathGetPointZ );
 
-	lua_register(lua, "AIGetTotalCover" , AIGetTotalCover );
-	lua_register(lua, "AICoverGetPointX" , AICoverGetPointX );
-	lua_register(lua, "AICoverGetPointY" , AICoverGetPointY );
-	lua_register(lua, "AICoverGetPointZ" , AICoverGetPointZ );
-	lua_register(lua, "AICoverGetAngle" , AICoverGetAngle );
-	lua_register(lua, "AICoverGetIfUsed" , AICoverGetIfUsed );
-	lua_register(lua, "AICouldSee", AICouldSee);
+	lua_register(lua2, "AIGetTotalCover" , AIGetTotalCover );
+	lua_register(lua2, "AICoverGetPointX" , AICoverGetPointX );
+	lua_register(lua2, "AICoverGetPointY" , AICoverGetPointY );
+	lua_register(lua2, "AICoverGetPointZ" , AICoverGetPointZ );
+	lua_register(lua2, "AICoverGetAngle" , AICoverGetAngle );
+	lua_register(lua2, "AICoverGetIfUsed" , AICoverGetIfUsed );
+	lua_register(lua2, "AICouldSee", AICouldSee);
 
 	// New Attachment Commands
 	#ifdef WICKEDENGINE
-	lua_register(lua, "HideEntityAttachment", HideEntityAttachment);
-	lua_register(lua, "ShowEntityAttachment", ShowEntityAttachment);
+	lua_register(lua2, "HideEntityAttachment", HideEntityAttachment);
+	lua_register(lua2, "ShowEntityAttachment", ShowEntityAttachment);
 	#endif
 
 	// New Debugging Commands
 	#ifdef WICKEDENGINE
-	lua_register(lua, "SetDebuggingData", SetDebuggingData);
+	lua_register(lua2, "SetDebuggingData", SetDebuggingData);
 	#endif
 		
 	// New RecastDetour (RD) AI Commands
-	lua_register(lua, "RDFindPath", RDFindPath);
-	lua_register(lua, "RDGetPathPointCount", RDGetPathPointCount);
-	lua_register(lua, "RDGetPathPointX", RDGetPathPointX);
-	lua_register(lua, "RDGetPathPointY", RDGetPathPointY);
-	lua_register(lua, "RDGetPathPointZ", RDGetPathPointZ);
-	lua_register(lua, "StartMoveAndRotateToXYZ", StartMoveAndRotateToXYZ);
-	lua_register(lua, "MoveAndRotateToXYZ", MoveAndRotateToXYZ);
-	lua_register(lua, "SetEntityPathRotationMode", SetEntityPathRotationMode);	
-	lua_register(lua, "RDIsWithinMesh", RDIsWithinMesh);
-	lua_register(lua, "RDIsWithinAndOverMesh", RDIsWithinAndOverMesh);
-	lua_register(lua, "RDGetYFromMeshPosition", RDGetYFromMeshPosition);
-	lua_register(lua, "RDBlockNavMesh", RDBlockNavMesh);
-	lua_register(lua, "RDBlockNavMeshWithShape", RDBlockNavMeshWithShape);
+	lua_register(lua2, "RDFindPath", RDFindPath);
+	lua_register(lua2, "RDGetPathPointCount", RDGetPathPointCount);
+	lua_register(lua2, "RDGetPathPointX", RDGetPathPointX);
+	lua_register(lua2, "RDGetPathPointY", RDGetPathPointY);
+	lua_register(lua2, "RDGetPathPointZ", RDGetPathPointZ);
+	lua_register(lua2, "StartMoveAndRotateToXYZ", StartMoveAndRotateToXYZ);
+	lua_register(lua2, "MoveAndRotateToXYZ", MoveAndRotateToXYZ);
+	lua_register(lua2, "SetEntityPathRotationMode", SetEntityPathRotationMode);	
+	lua_register(lua2, "RDIsWithinMesh", RDIsWithinMesh);
+	lua_register(lua2, "RDIsWithinAndOverMesh", RDIsWithinAndOverMesh);
+	lua_register(lua2, "RDGetYFromMeshPosition", RDGetYFromMeshPosition);
+	lua_register(lua2, "RDBlockNavMesh", RDBlockNavMesh);
+	lua_register(lua2, "RDBlockNavMeshWithShape", RDBlockNavMeshWithShape);
 
-	lua_register(lua, "DoTokenDrop", DoTokenDrop);
-	lua_register(lua, "GetTokenDropCount", GetTokenDropCount);
-	lua_register(lua, "GetTokenDropX", GetTokenDropZ);
-	lua_register(lua, "GetTokenDropY", GetTokenDropY);
-	lua_register(lua, "GetTokenDropZ", GetTokenDropZ);
-	lua_register(lua, "GetTokenDropType", GetTokenDropType);
-	lua_register(lua, "GetTokenDropTimeLeft", GetTokenDropTimeLeft);
+	lua_register(lua2, "DoTokenDrop", DoTokenDrop);
+	lua_register(lua2, "GetTokenDropCount", GetTokenDropCount);
+	lua_register(lua2, "GetTokenDropX", GetTokenDropZ);
+	lua_register(lua2, "GetTokenDropY", GetTokenDropY);
+	lua_register(lua2, "GetTokenDropZ", GetTokenDropZ);
+	lua_register(lua2, "GetTokenDropType", GetTokenDropType);
+	lua_register(lua2, "GetTokenDropTimeLeft", GetTokenDropTimeLeft);
 
-	lua_register(lua, "AdjustPositionToGetLineOfSight", AdjustPositionToGetLineOfSight);
-	lua_register(lua, "SetCharacterMode", SetCharacterMode);
+	lua_register(lua2, "AdjustPositionToGetLineOfSight", AdjustPositionToGetLineOfSight);
+	lua_register(lua2, "SetCharacterMode", SetCharacterMode);
 	
 	// Visual Attribs
-	lua_register(lua, "GetFogNearest" , GetFogNearest );
-	lua_register(lua, "GetFogDistance" , GetFogDistance );
-	lua_register(lua, "GetFogRed" , GetFogRed );
-	lua_register(lua, "GetFogGreen" , GetFogGreen );
-	lua_register(lua, "GetFogBlue" , GetFogBlue );
-	lua_register(lua, "GetFogIntensity" , GetFogIntensity );
-	lua_register(lua, "GetAmbienceIntensity" , GetAmbienceIntensity );
-	lua_register(lua, "GetAmbienceRed" , GetAmbienceRed );
-	lua_register(lua, "GetAmbienceGreen" , GetAmbienceGreen );
-	lua_register(lua, "GetAmbienceBlue" , GetAmbienceBlue );
-	lua_register(lua, "GetSurfaceRed" , GetSurfaceRed );
-	lua_register(lua, "GetSurfaceGreen" , GetSurfaceGreen );
-	lua_register(lua, "GetSurfaceBlue" , GetSurfaceBlue );
-	lua_register(lua, "GetSurfaceIntensity" , GetSurfaceIntensity );
-	lua_register(lua, "GetPostVignetteRadius" , GetPostVignetteRadius );
-	lua_register(lua, "GetPostVignetteIntensity" , GetPostVignetteIntensity );
-	lua_register(lua, "GetPostMotionDistance" , GetPostMotionDistance );
-	lua_register(lua, "GetPostMotionIntensity" , GetPostMotionIntensity );
-	lua_register(lua, "GetPostDepthOfFieldDistance" , GetPostDepthOfFieldDistance );
-	lua_register(lua, "GetPostDepthOfFieldIntensity" , GetPostDepthOfFieldIntensity );
+	lua_register(lua2, "GetFogNearest" , GetFogNearest );
+	lua_register(lua2, "GetFogDistance" , GetFogDistance );
+	lua_register(lua2, "GetFogRed" , GetFogRed );
+	lua_register(lua2, "GetFogGreen" , GetFogGreen );
+	lua_register(lua2, "GetFogBlue" , GetFogBlue );
+	lua_register(lua2, "GetFogIntensity" , GetFogIntensity );
+	lua_register(lua2, "GetAmbienceIntensity" , GetAmbienceIntensity );
+	lua_register(lua2, "GetAmbienceRed" , GetAmbienceRed );
+	lua_register(lua2, "GetAmbienceGreen" , GetAmbienceGreen );
+	lua_register(lua2, "GetAmbienceBlue" , GetAmbienceBlue );
+	lua_register(lua2, "GetSurfaceRed" , GetSurfaceRed );
+	lua_register(lua2, "GetSurfaceGreen" , GetSurfaceGreen );
+	lua_register(lua2, "GetSurfaceBlue" , GetSurfaceBlue );
+	lua_register(lua2, "GetSurfaceIntensity" , GetSurfaceIntensity );
+	lua_register(lua2, "GetPostVignetteRadius" , GetPostVignetteRadius );
+	lua_register(lua2, "GetPostVignetteIntensity" , GetPostVignetteIntensity );
+	lua_register(lua2, "GetPostMotionDistance" , GetPostMotionDistance );
+	lua_register(lua2, "GetPostMotionIntensity" , GetPostMotionIntensity );
+	lua_register(lua2, "GetPostDepthOfFieldDistance" , GetPostDepthOfFieldDistance );
+	lua_register(lua2, "GetPostDepthOfFieldIntensity" , GetPostDepthOfFieldIntensity );
 
-	lua_register(lua, "LoadImage" , LoadImage );
-	lua_register(lua, "DeleteImage" , DeleteSpriteImage );
-	lua_register(lua, "GetImageWidth" , GetImageWidth );
-	lua_register(lua, "GetImageHeight" , GetImageHeight );
-	lua_register(lua, "CreateSprite" , CreateSprite );
-	lua_register(lua, "PasteSprite" , PasteSprite );
-	lua_register(lua, "PasteSpritePosition" , PasteSpritePosition );
-	lua_register(lua, "SetSpritePosition", SetSpritePosition);
-	lua_register(lua, "SetSpritePriority" , SetSpritePriorityForLUA);
-	lua_register(lua, "SetSpriteSize" , SetSpriteSize );
-	lua_register(lua, "SetSpriteDepth" , SetSpriteDepth );
-	lua_register(lua, "SetSpriteColor" , SetSpriteColor );	
-	lua_register(lua, "SetSpriteAngle" , SetSpriteAngle );	
-	lua_register(lua, "SetSpriteOffset" , SetSpriteOffset );
-	lua_register(lua, "DeleteSprite" , DeleteSprite );
-	lua_register(lua, "SetSpriteScissor", SetSpriteScissor);
-	lua_register(lua, "SetSpriteImage", SetSpriteImage);
-	lua_register(lua, "DrawSpritesFirst" , DrawSpritesFirstForLUA );
-	lua_register(lua, "DrawSpritesLast" , DrawSpritesLastForLUA );	
-	lua_register(lua, "BackdropOff" , BackdropOffForLUA );	
-	lua_register(lua, "BackdropOn" , BackdropOnForLUA );	
+	lua_register(lua2, "LoadImage" , LoadImage );
+	lua_register(lua2, "DeleteImage" , DeleteSpriteImage );
+	lua_register(lua2, "GetImageWidth" , GetImageWidth );
+	lua_register(lua2, "GetImageHeight" , GetImageHeight );
+	lua_register(lua2, "CreateSprite" , CreateSprite );
+	lua_register(lua2, "PasteSprite" , PasteSprite );
+	lua_register(lua2, "PasteSpritePosition" , PasteSpritePosition );
+	lua_register(lua2, "SetSpritePosition", SetSpritePosition);
+	lua_register(lua2, "SetSpritePriority" , SetSpritePriorityForLUA);
+	lua_register(lua2, "SetSpriteSize" , SetSpriteSize );
+	lua_register(lua2, "SetSpriteDepth" , SetSpriteDepth );
+	lua_register(lua2, "SetSpriteColor" , SetSpriteColor );	
+	lua_register(lua2, "SetSpriteAngle" , SetSpriteAngle );	
+	lua_register(lua2, "SetSpriteOffset" , SetSpriteOffset );
+	lua_register(lua2, "DeleteSprite" , DeleteSprite );
+	lua_register(lua2, "SetSpriteScissor", SetSpriteScissor);
+	lua_register(lua2, "SetSpriteImage", SetSpriteImage);
+	lua_register(lua2, "DrawSpritesFirst" , DrawSpritesFirstForLUA );
+	lua_register(lua2, "DrawSpritesLast" , DrawSpritesLastForLUA );	
+	lua_register(lua2, "BackdropOff" , BackdropOffForLUA );	
+	lua_register(lua2, "BackdropOn" , BackdropOnForLUA );	
 
-	lua_register(lua, "LoadGlobalSound" , LoadGlobalSound );	
-	lua_register(lua, "PlayGlobalSound" , PlayGlobalSound );	
-	lua_register(lua, "LoopGlobalSound" , LoopGlobalSound );	
-	lua_register(lua, "StopGlobalSound" , StopGlobalSound );	
-	lua_register(lua, "DeleteGlobalSound" , DeleteGlobalSound );	
-	lua_register(lua, "SetGlobalSoundSpeed" , SetGlobalSoundSpeed );	
-	lua_register(lua, "SetGlobalSoundVolume" , SetGlobalSoundVolume );	
-	lua_register(lua, "GetGlobalSoundExist" , GetGlobalSoundExist );
-	lua_register(lua, "GetGlobalSoundPlaying" , GetGlobalSoundPlaying );
-	lua_register(lua, "GetGlobalSoundLooping" , GetGlobalSoundLooping );
-	lua_register(lua, "GetSoundPlaying", GetSoundPlaying);
+	lua_register(lua2, "LoadGlobalSound" , LoadGlobalSound );	
+	lua_register(lua2, "PlayGlobalSound" , PlayGlobalSound );	
+	lua_register(lua2, "LoopGlobalSound" , LoopGlobalSound );	
+	lua_register(lua2, "StopGlobalSound" , StopGlobalSound );	
+	lua_register(lua2, "DeleteGlobalSound" , DeleteGlobalSound );	
+	lua_register(lua2, "SetGlobalSoundSpeed" , SetGlobalSoundSpeed );	
+	lua_register(lua2, "SetGlobalSoundVolume" , SetGlobalSoundVolume );	
+	lua_register(lua2, "GetGlobalSoundExist" , GetGlobalSoundExist );
+	lua_register(lua2, "GetGlobalSoundPlaying" , GetGlobalSoundPlaying );
+	lua_register(lua2, "GetGlobalSoundLooping" , GetGlobalSoundLooping );
+	lua_register(lua2, "GetSoundPlaying", GetSoundPlaying);
 
-	lua_register(lua, "PlayRawSound" , PlayRawSound );
-	lua_register(lua, "LoopRawSound" , LoopRawSound );
-	lua_register(lua, "StopRawSound" , StopRawSound );
-	lua_register(lua, "SetRawSoundVolume" , SetRawSoundVolume );
-	lua_register(lua, "SetRawSoundSpeed" , SetRawSoundSpeed );
-	lua_register(lua, "RawSoundExist" , RawSoundExist );
-	lua_register(lua, "RawSoundPlaying" , RawSoundPlaying );
-	lua_register(lua, "GetEntityRawSound" , GetEntityRawSound );
-	lua_register(lua, "StartAmbientMusicTrack", StartAmbientMusicTrack);
-	lua_register(lua, "StopAmbientMusicTrack", StopAmbientMusicTrack);
-	lua_register(lua, "SetAmbientMusicTrackVolume", SetAmbientMusicTrackVolume);
-	lua_register(lua, "StartCombatMusicTrack", StartCombatMusicTrack);
-	lua_register(lua, "StopCombatMusicTrack", StopCombatMusicTrack);
-	lua_register(lua, "SetCombatMusicTrackVolume", SetCombatMusicTrackVolume);
-	lua_register(lua, "GetCombatMusicTrackPlaying", GetCombatMusicTrackPlaying);
+	lua_register(lua2, "PlayRawSound" , PlayRawSound );
+	lua_register(lua2, "LoopRawSound" , LoopRawSound );
+	lua_register(lua2, "StopRawSound" , StopRawSound );
+	lua_register(lua2, "SetRawSoundVolume" , SetRawSoundVolume );
+	lua_register(lua2, "SetRawSoundSpeed" , SetRawSoundSpeed );
+	lua_register(lua2, "RawSoundExist" , RawSoundExist );
+	lua_register(lua2, "RawSoundPlaying" , RawSoundPlaying );
+	lua_register(lua2, "GetEntityRawSound" , GetEntityRawSound );
+	lua_register(lua2, "StartAmbientMusicTrack", StartAmbientMusicTrack);
+	lua_register(lua2, "StopAmbientMusicTrack", StopAmbientMusicTrack);
+	lua_register(lua2, "SetAmbientMusicTrackVolume", SetAmbientMusicTrackVolume);
+	lua_register(lua2, "StartCombatMusicTrack", StartCombatMusicTrack);
+	lua_register(lua2, "StopCombatMusicTrack", StopCombatMusicTrack);
+	lua_register(lua2, "SetCombatMusicTrackVolume", SetCombatMusicTrackVolume);
+	lua_register(lua2, "GetCombatMusicTrackPlaying", GetCombatMusicTrackPlaying);
 
-	lua_register(lua, "SetSoundMusicMode", SetSoundMusicMode);
-	lua_register(lua, "GetSoundMusicMode", GetSoundMusicMode);
+	lua_register(lua2, "SetSoundMusicMode", SetSoundMusicMode);
+	lua_register(lua2, "GetSoundMusicMode", GetSoundMusicMode);
 
 	#ifdef VRTECH
-	lua_register(lua, "GetSpeech" , GetSpeech );
+	lua_register(lua2, "GetSpeech" , GetSpeech );
 	#endif
 
-	lua_register(lua, "GetTimeElapsed" , GetTimeElapsed );
-	lua_register(lua, "GetKeyState" , GetKeyState );
-	lua_register(lua, "SetGlobalTimer" , SetGlobalTimer);
-	lua_register(lua, "Timer", GetGlobalTimer);
-	lua_register(lua, "MouseMoveX" , MouseMoveX );
-	lua_register(lua, "MouseMoveY" , MouseMoveY );
-	lua_register(lua, "GetDesktopWidth" , GetDesktopWidth );
-	lua_register(lua, "GetDesktopHeight" , GetDesktopHeight );
-	lua_register(lua, "CurveValue" , CurveValue );
-	lua_register(lua, "CurveAngle" , CurveAngle );
-	lua_register(lua, "PositionMouse" , PositionMouse );
-	lua_register(lua, "GetDynamicCharacterControllerDidJump" , GetDynamicCharacterControllerDidJump );
-	lua_register(lua, "GetCharacterControllerDucking" , GetCharacterControllerDucking );
-	lua_register(lua, "WrapValue" , WrapValue );
-	lua_register(lua, "GetElapsedTime" , GetElapsedTime );
-	lua_register(lua, "GetPlrObjectPositionX" , GetPlrObjectPositionX );
-	lua_register(lua, "GetPlrObjectPositionY" , GetPlrObjectPositionY );
-	lua_register(lua, "GetPlrObjectPositionZ" , GetPlrObjectPositionZ );
-	lua_register(lua, "GetPlrObjectAngleX" , GetPlrObjectAngleX );
-	lua_register(lua, "GetPlrObjectAngleY" , GetPlrObjectAngleY );
-	lua_register(lua, "GetPlrObjectAngleZ" , GetPlrObjectAngleZ );
-	lua_register(lua, "GetGroundHeight" , GetGroundHeight );
-	lua_register(lua, "NewXValue" , NewXValue );
-	lua_register(lua, "NewZValue" , NewZValue );
-	lua_register(lua, "ControlDynamicCharacterController" , ControlDynamicCharacterController );
-	lua_register(lua, "GetCharacterHitFloor" , GetCharacterHitFloor );
-	lua_register(lua, "GetCharacterFallDistance" , GetCharacterFallDistance );
-	lua_register(lua, "RayTerrain" , RayTerrain );
-	lua_register(lua, "GetRayCollisionX" , GetRayCollisionX );
-	lua_register(lua, "GetRayCollisionY" , GetRayCollisionY );
-	lua_register(lua, "GetRayCollisionZ" , GetRayCollisionZ );
-	lua_register(lua, "IntersectAll" , IntersectAll );
-	lua_register(lua, "IntersectStatic", IntersectStatic);
-	lua_register(lua, "IntersectStaticPerformant", IntersectStaticPerformant);
-	lua_register(lua, "IntersectAllIncludeTerrain", IntersectAllIncludeTerrain);
-	lua_register(lua, "GetIntersectCollisionX" , GetIntersectCollisionX );
-	lua_register(lua, "GetIntersectCollisionY" , GetIntersectCollisionY );
-	lua_register(lua, "GetIntersectCollisionZ" , GetIntersectCollisionZ );
-	lua_register(lua, "GetIntersectCollisionNX" , GetIntersectCollisionNX );
-	lua_register(lua, "GetIntersectCollisionNY" , GetIntersectCollisionNY );
-	lua_register(lua, "GetIntersectCollisionNZ" , GetIntersectCollisionNZ );
-	lua_register(lua, "IntersectGetLastHitBone", IntersectGetLastHitBone);
-	lua_register(lua, "IntersectGetLastHitFrame", IntersectGetLastHitFrame);
+	lua_register(lua2, "GetTimeElapsed" , GetTimeElapsed );
+	lua_register(lua2, "GetKeyState" , GetKeyState );
+	lua_register(lua2, "SetGlobalTimer" , SetGlobalTimer);
+	lua_register(lua2, "Timer", GetGlobalTimer);
+	lua_register(lua2, "MouseMoveX" , MouseMoveX );
+	lua_register(lua2, "MouseMoveY" , MouseMoveY );
+	lua_register(lua2, "GetDesktopWidth" , GetDesktopWidth );
+	lua_register(lua2, "GetDesktopHeight" , GetDesktopHeight );
+	lua_register(lua2, "CurveValue" , CurveValue );
+	lua_register(lua2, "CurveAngle" , CurveAngle );
+	lua_register(lua2, "PositionMouse" , PositionMouse );
+	lua_register(lua2, "GetDynamicCharacterControllerDidJump" , GetDynamicCharacterControllerDidJump );
+	lua_register(lua2, "GetCharacterControllerDucking" , GetCharacterControllerDucking );
+	lua_register(lua2, "WrapValue" , WrapValue );
+	lua_register(lua2, "GetElapsedTime" , GetElapsedTime );
+	lua_register(lua2, "GetPlrObjectPositionX" , GetPlrObjectPositionX );
+	lua_register(lua2, "GetPlrObjectPositionY" , GetPlrObjectPositionY );
+	lua_register(lua2, "GetPlrObjectPositionZ" , GetPlrObjectPositionZ );
+	lua_register(lua2, "GetPlrObjectAngleX" , GetPlrObjectAngleX );
+	lua_register(lua2, "GetPlrObjectAngleY" , GetPlrObjectAngleY );
+	lua_register(lua2, "GetPlrObjectAngleZ" , GetPlrObjectAngleZ );
+	lua_register(lua2, "GetGroundHeight" , GetGroundHeight );
+	lua_register(lua2, "NewXValue" , NewXValue );
+	lua_register(lua2, "NewZValue" , NewZValue );
+	lua_register(lua2, "ControlDynamicCharacterController" , ControlDynamicCharacterController );
+	lua_register(lua2, "GetCharacterHitFloor" , GetCharacterHitFloor );
+	lua_register(lua2, "GetCharacterFallDistance" , GetCharacterFallDistance );
+	lua_register(lua2, "RayTerrain" , RayTerrain );
+	lua_register(lua2, "GetRayCollisionX" , GetRayCollisionX );
+	lua_register(lua2, "GetRayCollisionY" , GetRayCollisionY );
+	lua_register(lua2, "GetRayCollisionZ" , GetRayCollisionZ );
+	lua_register(lua2, "IntersectAll" , IntersectAll );
+	lua_register(lua2, "IntersectStatic", IntersectStatic);
+	lua_register(lua2, "IntersectStaticPerformant", IntersectStaticPerformant);
+	lua_register(lua2, "IntersectAllIncludeTerrain", IntersectAllIncludeTerrain);
+	lua_register(lua2, "GetIntersectCollisionX" , GetIntersectCollisionX );
+	lua_register(lua2, "GetIntersectCollisionY" , GetIntersectCollisionY );
+	lua_register(lua2, "GetIntersectCollisionZ" , GetIntersectCollisionZ );
+	lua_register(lua2, "GetIntersectCollisionNX" , GetIntersectCollisionNX );
+	lua_register(lua2, "GetIntersectCollisionNY" , GetIntersectCollisionNY );
+	lua_register(lua2, "GetIntersectCollisionNZ" , GetIntersectCollisionNZ );
+	lua_register(lua2, "IntersectGetLastHitBone", IntersectGetLastHitBone);
+	lua_register(lua2, "IntersectGetLastHitFrame", IntersectGetLastHitFrame);
 
-	lua_register(lua, "PositionCamera" , PositionCamera );
-	lua_register(lua, "PointCamera" , PointCamera );
-	lua_register(lua, "MoveCamera" , MoveCamera );
-	lua_register(lua, "GetObjectExist" , GetObjectExist );
-	lua_register(lua, "SetObjectFrame", SetObjectFrame);
-	lua_register(lua, "GetObjectFrame" , GetObjectFrame );
-	lua_register(lua, "SetObjectSpeed" , SetObjectSpeed );
-	lua_register(lua, "GetObjectSpeed" , GetObjectSpeed );
-	lua_register(lua, "PositionObject" , PositionObject );
-	lua_register(lua, "RotateObject" , RotateObject );
-	lua_register(lua, "GetObjectAngleX" , GetObjectAngleX );
-	lua_register(lua, "GetObjectAngleY" , GetObjectAngleY );
-	lua_register(lua, "GetObjectAngleZ" , GetObjectAngleZ );
-	lua_register(lua, "GetObjectPosAng",  GetObjectPosAng );
-	lua_register(lua, "GetObjectColBox",  GetObjectColBox );
-	lua_register(lua, "GetObjectCentre", GetObjectCentre);
-	lua_register(lua, "GetObjectColCentre", GetObjectColCentre);
-	lua_register(lua, "GetObjectScales",  GetObjectScales );
-	lua_register(lua, "ScaleObject",   ScaleObjectXYZ );
+	lua_register(lua2, "PositionCamera" , PositionCamera );
+	lua_register(lua2, "PointCamera" , PointCamera );
+	lua_register(lua2, "MoveCamera" , MoveCamera );
+	lua_register(lua2, "GetObjectExist" , GetObjectExist );
+	lua_register(lua2, "SetObjectFrame", SetObjectFrame);
+	lua_register(lua2, "GetObjectFrame" , GetObjectFrame );
+	lua_register(lua2, "SetObjectSpeed" , SetObjectSpeed );
+	lua_register(lua2, "GetObjectSpeed" , GetObjectSpeed );
+	lua_register(lua2, "PositionObject" , PositionObject );
+	lua_register(lua2, "RotateObject" , RotateObject );
+	lua_register(lua2, "GetObjectAngleX" , GetObjectAngleX );
+	lua_register(lua2, "GetObjectAngleY" , GetObjectAngleY );
+	lua_register(lua2, "GetObjectAngleZ" , GetObjectAngleZ );
+	lua_register(lua2, "GetObjectPosAng",  GetObjectPosAng );
+	lua_register(lua2, "GetObjectColBox",  GetObjectColBox );
+	lua_register(lua2, "GetObjectCentre", GetObjectCentre);
+	lua_register(lua2, "GetObjectColCentre", GetObjectColCentre);
+	lua_register(lua2, "GetObjectScales",  GetObjectScales );
+	lua_register(lua2, "ScaleObject",   ScaleObjectXYZ );
 
 	// Physics related functions
-	lua_register(lua, "PushObject",              PushObject );
-	lua_register(lua, "ConstrainObjMotion",      ConstrainObjMotion );
-	lua_register(lua, "ConstrainObjRotation",    ConstrainObjRotation );
-	lua_register(lua, "CreateSingleHinge",       CreateSingleHinge );
-	lua_register(lua, "CreateSingleJoint",       CreateSingleJoint );
-	lua_register(lua, "CreateDoubleHinge",       CreateDoubleHinge );
-	lua_register(lua, "CreateDoubleJoint",       CreateDoubleJoint );
-	lua_register(lua, "CreateSliderDouble",      CreateSliderDouble );
-	lua_register(lua, "RemoveObjectConstraints", RemoveObjectConstraints );
-	lua_register(lua, "RemoveConstraint",        RemoveConstraint );
-	lua_register(lua, "PhysicsRayCast",          PhysicsRayCast );
-	lua_register(lua, "SetObjectDamping",        SetObjectDamping );
-	lua_register(lua, "SetHingeLimits",          SetHingeLimits );
-	lua_register(lua, "GetHingeAngle",           GetHingeAngle );
-	lua_register(lua, "SetHingeMotor",           SetHingeMotor );
-	lua_register(lua, "SetSliderMotor",          SetSliderMotor );
-	lua_register(lua, "SetBodyScaling",          SetBodyScaling );
-	lua_register(lua, "SetSliderLimits",         SetSliderLimits );
-	lua_register(lua, "GetSliderPosition",       GetSliderPosition );
+	lua_register(lua2, "PushObject",              PushObject );
+	lua_register(lua2, "ConstrainObjMotion",      ConstrainObjMotion );
+	lua_register(lua2, "ConstrainObjRotation",    ConstrainObjRotation );
+	lua_register(lua2, "CreateSingleHinge",       CreateSingleHinge );
+	lua_register(lua2, "CreateSingleJoint",       CreateSingleJoint );
+	lua_register(lua2, "CreateDoubleHinge",       CreateDoubleHinge );
+	lua_register(lua2, "CreateDoubleJoint",       CreateDoubleJoint );
+	lua_register(lua2, "CreateSliderDouble",      CreateSliderDouble );
+	lua_register(lua2, "RemoveObjectConstraints", RemoveObjectConstraints );
+	lua_register(lua2, "RemoveConstraint",        RemoveConstraint );
+	lua_register(lua2, "PhysicsRayCast",          PhysicsRayCast );
+	lua_register(lua2, "SetObjectDamping",        SetObjectDamping );
+	lua_register(lua2, "SetHingeLimits",          SetHingeLimits );
+	lua_register(lua2, "GetHingeAngle",           GetHingeAngle );
+	lua_register(lua2, "SetHingeMotor",           SetHingeMotor );
+	lua_register(lua2, "SetSliderMotor",          SetSliderMotor );
+	lua_register(lua2, "SetBodyScaling",          SetBodyScaling );
+	lua_register(lua2, "SetSliderLimits",         SetSliderLimits );
+	lua_register(lua2, "GetSliderPosition",       GetSliderPosition );
 
 	// Collision detection functions 
-	lua_register(lua, "GetObjectNumCollisions",     GetObjectNumCollisions );
-	lua_register(lua, "GetObjectCollisionDetails",  GetObjectCollisionDetails );
-	lua_register(lua, "GetTerrainNumCollisions",    GetTerrainNumCollisions );
-	lua_register(lua, "GetTerrainCollisionDetails", GetTerrainCollisionDetails );
-	lua_register(lua, "AddObjectCollisionCheck",    AddObjectCollisionCheck );
-	lua_register(lua, "RemoveObjectCollisionCheck", RemoveObjectCollisionCheck );
+	lua_register(lua2, "GetObjectNumCollisions",     GetObjectNumCollisions );
+	lua_register(lua2, "GetObjectCollisionDetails",  GetObjectCollisionDetails );
+	lua_register(lua2, "GetTerrainNumCollisions",    GetTerrainNumCollisions );
+	lua_register(lua2, "GetTerrainCollisionDetails", GetTerrainCollisionDetails );
+	lua_register(lua2, "AddObjectCollisionCheck",    AddObjectCollisionCheck );
+	lua_register(lua2, "RemoveObjectCollisionCheck", RemoveObjectCollisionCheck );
 
 	// quaternion library functions
-	lua_register(lua, "QuatToEuler",  QuatToEuler );
-	lua_register(lua, "EulerToQuat",  EulerToQuat );
-	lua_register(lua, "QuatMultiply", QuatMultiply );
-	lua_register(lua, "QuatSLERP",    QuatSLERP );
-	lua_register(lua, "QuatLERP",     QuatLERP );
+	lua_register(lua2, "QuatToEuler",  QuatToEuler );
+	lua_register(lua2, "EulerToQuat",  EulerToQuat );
+	lua_register(lua2, "QuatMultiply", QuatMultiply );
+	lua_register(lua2, "QuatSLERP",    QuatSLERP );
+	lua_register(lua2, "QuatLERP",     QuatLERP );
 
-	lua_register(lua, "Convert3DTo2D", LuaConvert3DTo2D); // x,y = Convert3DTo2D(x,y,z)
-	lua_register(lua, "Convert2DTo3D", LuaConvert2DTo3D); // px,py,pz,dx,dy,dz = Convert2DTo3D(x percent,y percent) -- percent
-	lua_register(lua, "ScreenCoordsToPercent", ScreenCoordsToPercent); // percentx,percentx = ScreenCordsToPercent(x,y) -- return percent positions.
+	lua_register(lua2, "Convert3DTo2D", LuaConvert3DTo2D); // x,y = Convert3DTo2D(x,y,z)
+	lua_register(lua2, "Convert2DTo3D", LuaConvert2DTo3D); // px,py,pz,dx,dy,dz = Convert2DTo3D(x percent,y percent) -- percent
+	lua_register(lua2, "ScreenCoordsToPercent", ScreenCoordsToPercent); // percentx,percentx = ScreenCordsToPercent(x,y) -- return percent positions.
 
 	
 	// Lua control of dynamic light
-	lua_register(lua, "GetEntityLightNumber", GetEntityLightNumber );
-	lua_register(lua, "GetLightPosition",     GetLightPosition );
-	lua_register(lua, "GetLightAngle",		  GetLightAngle);
-	lua_register(lua, "GetLightEuler",		  GetLightEuler);
-	lua_register(lua, "GetLightRGB",          GetLightRGB );
-	lua_register(lua, "GetLightRange",        GetLightRange );
-	lua_register(lua, "SetLightPosition",     SetLightPosition );
-	lua_register(lua, "SetLightAngle",		  SetLightAngle);
-	lua_register(lua, "SetLightEuler",		  SetLightEuler);
-	lua_register(lua, "SetLightRGB",          SetLightRGB );
-	lua_register(lua, "SetLightRange",        SetLightRange );
+	lua_register(lua2, "GetEntityLightNumber", GetEntityLightNumber );
+	lua_register(lua2, "GetLightPosition",     GetLightPosition );
+	lua_register(lua2, "GetLightAngle",		  GetLightAngle);
+	lua_register(lua2, "GetLightEuler",		  GetLightEuler);
+	lua_register(lua2, "GetLightRGB",          GetLightRGB );
+	lua_register(lua2, "GetLightRange",        GetLightRange );
+	lua_register(lua2, "SetLightPosition",     SetLightPosition );
+	lua_register(lua2, "SetLightAngle",		  SetLightAngle);
+	lua_register(lua2, "SetLightEuler",		  SetLightEuler);
+	lua_register(lua2, "SetLightRGB",          SetLightRGB );
+	lua_register(lua2, "SetLightRange",        SetLightRange );
 	
-	lua_register(lua, "RunCharLoop" , RunCharLoop );
-	lua_register(lua, "TriggerWaterRipple" , TriggerWaterRipple );
-	lua_register(lua, "TriggerWaterRippleSize", TriggerWaterRippleSize);
-	lua_register(lua, "TriggerWaterSplash", TriggerWaterSplash);
-	lua_register(lua, "PlayFootfallSound" , PlayFootfallSound );
-	lua_register(lua, "ResetUnderwaterState" , ResetUnderwaterState );
-	lua_register(lua, "SetUnderwaterOn" , SetUnderwaterOn );
-	lua_register(lua, "SetUnderwaterOff" , SetUnderwaterOff );
+	lua_register(lua2, "RunCharLoop" , RunCharLoop );
+	lua_register(lua2, "TriggerWaterRipple" , TriggerWaterRipple );
+	lua_register(lua2, "TriggerWaterRippleSize", TriggerWaterRippleSize);
+	lua_register(lua2, "TriggerWaterSplash", TriggerWaterSplash);
+	lua_register(lua2, "PlayFootfallSound" , PlayFootfallSound );
+	lua_register(lua2, "ResetUnderwaterState" , ResetUnderwaterState );
+	lua_register(lua2, "SetUnderwaterOn" , SetUnderwaterOn );
+	lua_register(lua2, "SetUnderwaterOff" , SetUnderwaterOff );
 
-	lua_register(lua, "SetWorldGravity", SetWorldGravity);
+	lua_register(lua2, "SetWorldGravity", SetWorldGravity);
 
-	lua_register(lua, "SetShaderVariable" , SetShaderVariable );
+	lua_register(lua2, "SetShaderVariable" , SetShaderVariable );
 	
-	lua_register(lua, "GetGamePlayerControlJetpackMode" , GetGamePlayerControlJetpackMode );
-	lua_register(lua, "GetGamePlayerControlJetpackFuel" , GetGamePlayerControlJetpackFuel );
-	lua_register(lua, "GetGamePlayerControlJetpackHidden" , GetGamePlayerControlJetpackHidden );
-	lua_register(lua, "GetGamePlayerControlJetpackCollected" , GetGamePlayerControlJetpackCollected );
-	lua_register(lua, "GetGamePlayerControlSoundStartIndex" , GetGamePlayerControlSoundStartIndex );
-	lua_register(lua, "GetGamePlayerControlJetpackParticleEmitterIndex" , GetGamePlayerControlJetpackParticleEmitterIndex );
-	lua_register(lua, "GetGamePlayerControlJetpackThrust" , GetGamePlayerControlJetpackThrust );
-	lua_register(lua, "GetGamePlayerControlStartStrength" , GetGamePlayerControlStartStrength );
-	lua_register(lua, "GetGamePlayerControlIsRunning" , GetGamePlayerControlIsRunning );
-	lua_register(lua, "GetGamePlayerControlFinalCameraAngley" , GetGamePlayerControlFinalCameraAngley );
-	lua_register(lua, "GetGamePlayerControlCx" , GetGamePlayerControlCx );
-	lua_register(lua, "GetGamePlayerControlCy" , GetGamePlayerControlCy );
-	lua_register(lua, "GetGamePlayerControlCz" , GetGamePlayerControlCz );
-	lua_register(lua, "GetGamePlayerControlBasespeed" , GetGamePlayerControlBasespeed );
-	lua_register(lua, "GetGamePlayerControlCanRun" , GetGamePlayerControlCanRun );
-	lua_register(lua, "GetGamePlayerControlMaxspeed" , GetGamePlayerControlMaxspeed );
-	lua_register(lua, "GetGamePlayerControlTopspeed" , GetGamePlayerControlTopspeed );
-	lua_register(lua, "GetGamePlayerControlMovement" , GetGamePlayerControlMovement );
-	lua_register(lua, "GetGamePlayerControlMovey" , GetGamePlayerControlMovey );
-	lua_register(lua, "GetGamePlayerControlLastMovement" , GetGamePlayerControlLastMovement );
-	lua_register(lua, "GetGamePlayerControlFootfallCount" , GetGamePlayerControlFootfallCount );
-	lua_register(lua, "GetGamePlayerControlLastMovement" , GetGamePlayerControlLastMovement );
-	lua_register(lua, "GetGamePlayerControlGravityActive" , GetGamePlayerControlGravityActive );
-	lua_register(lua, "GetGamePlayerControlPlrHitFloorMaterial" , GetGamePlayerControlPlrHitFloorMaterial );
-	lua_register(lua, "GetGamePlayerControlUnderwater" , GetGamePlayerControlUnderwater );
-	lua_register(lua, "GetGamePlayerControlJumpMode" , GetGamePlayerControlJumpMode );
-	lua_register(lua, "GetGamePlayerControlJumpModeCanAffectVelocityCountdown" , GetGamePlayerControlJumpModeCanAffectVelocityCountdown );
-	lua_register(lua, "GetGamePlayerControlSpeed" , GetGamePlayerControlSpeed );
-	lua_register(lua, "GetGamePlayerControlAccel" , GetGamePlayerControlAccel );
-	lua_register(lua, "GetGamePlayerControlSpeedRatio" , GetGamePlayerControlSpeedRatio );
-	lua_register(lua, "GetGamePlayerControlWobble" , GetGamePlayerControlWobble );
-	lua_register(lua, "GetGamePlayerControlWobbleSpeed" , GetGamePlayerControlWobbleSpeed );
-	lua_register(lua, "GetGamePlayerControlWobbleHeight" , GetGamePlayerControlWobbleHeight );
-	lua_register(lua, "GetGamePlayerControlJumpmax" , GetGamePlayerControlJumpmax );
-	lua_register(lua, "GetGamePlayerControlPushangle" , GetGamePlayerControlPushangle );
-	lua_register(lua, "GetGamePlayerControlPushforce" , GetGamePlayerControlPushforce );
-	lua_register(lua, "GetGamePlayerControlFootfallPace" , GetGamePlayerControlFootfallPace );
-	lua_register(lua, "GetGamePlayerControlFinalCameraAngley" , GetGamePlayerControlFinalCameraAngley );
-	lua_register(lua, "GetGamePlayerControlLockAtHeight" , GetGamePlayerControlLockAtHeight );
-	lua_register(lua, "GetGamePlayerControlControlHeight" , GetGamePlayerControlControlHeight );
-	lua_register(lua, "GetGamePlayerControlControlHeightCooldown" , GetGamePlayerControlControlHeightCooldown );
-	lua_register(lua, "GetGamePlayerControlStoreMovey" , GetGamePlayerControlStoreMovey );
-	lua_register(lua, "GetGamePlayerControlPlrHitFloorMaterial" , GetGamePlayerControlPlrHitFloorMaterial );
-	lua_register(lua, "GetGamePlayerControlHurtFall" , GetGamePlayerControlHurtFall );
-	lua_register(lua, "GetGamePlayerControlLeanoverAngle" , GetGamePlayerControlLeanoverAngle );
-	lua_register(lua, "GetGamePlayerControlLeanover" , GetGamePlayerControlLeanover );
-	lua_register(lua, "GetGamePlayerControlCameraShake" , GetGamePlayerControlCameraShake );
-	lua_register(lua, "GetGamePlayerControlFinalCameraAnglex" , GetGamePlayerControlFinalCameraAnglex );
-	lua_register(lua, "GetGamePlayerControlFinalCameraAngley" , GetGamePlayerControlFinalCameraAngley );
-	lua_register(lua, "GetGamePlayerControlFinalCameraAnglez" , GetGamePlayerControlFinalCameraAnglez );
-	lua_register(lua, "GetGamePlayerControlCamRightMouseMode" , GetGamePlayerControlCamRightMouseMode );
-	lua_register(lua, "GetGamePlayerControlCamCollisionSmooth" , GetGamePlayerControlCamCollisionSmooth );
-	lua_register(lua, "GetGamePlayerControlCamCurrentDistance" , GetGamePlayerControlCamCurrentDistance );
-	lua_register(lua, "GetGamePlayerControlCamDoFullRayCheck" , GetGamePlayerControlCamDoFullRayCheck );
-	lua_register(lua, "GetGamePlayerControlLastGoodcx" , GetGamePlayerControlLastGoodcx );
-	lua_register(lua, "GetGamePlayerControlLastGoodcy" , GetGamePlayerControlLastGoodcy );
-	lua_register(lua, "GetGamePlayerControlLastGoodcz" , GetGamePlayerControlLastGoodcz );
-	lua_register(lua, "GetGamePlayerControlCamDoFullRayCheck" , GetGamePlayerControlCamDoFullRayCheck );
-	lua_register(lua, "GetGamePlayerControlFlinchx" , GetGamePlayerControlFlinchx );
-	lua_register(lua, "GetGamePlayerControlFlinchy" , GetGamePlayerControlFlinchy );
-	lua_register(lua, "GetGamePlayerControlFlinchz" , GetGamePlayerControlFlinchz );
-	lua_register(lua, "GetGamePlayerControlFlinchCurrentx" , GetGamePlayerControlFlinchCurrentx );
-	lua_register(lua, "GetGamePlayerControlFlinchCurrenty" , GetGamePlayerControlFlinchCurrenty );
-	lua_register(lua, "GetGamePlayerControlFlinchCurrentz" , GetGamePlayerControlFlinchCurrentz );
-	lua_register(lua, "GetGamePlayerControlFootfallType" , GetGamePlayerControlFootfallType );
-	lua_register(lua, "GetGamePlayerControlRippleCount" , GetGamePlayerControlRippleCount );
-	lua_register(lua, "GetGamePlayerControlLastFootfallSound" , GetGamePlayerControlLastFootfallSound );
-	lua_register(lua, "GetGamePlayerControlInWaterState" , GetGamePlayerControlInWaterState );
-	lua_register(lua, "GetGamePlayerControlDrownTimestamp" , GetGamePlayerControlDrownTimestamp );
-	lua_register(lua, "GetGamePlayerControlDeadTime" , GetGamePlayerControlDeadTime );
-	lua_register(lua, "GetGamePlayerControlSwimTimestamp" , GetGamePlayerControlSwimTimestamp );
-	lua_register(lua, "GetGamePlayerControlRedDeathFog" , GetGamePlayerControlRedDeathFog );
-	lua_register(lua, "GetGamePlayerControlHeartbeatTimeStamp" , GetGamePlayerControlHeartbeatTimeStamp );
-	lua_register(lua, "GetGamePlayerControlThirdpersonEnabled" , GetGamePlayerControlThirdpersonEnabled );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCharacterIndex" , GetGamePlayerControlThirdpersonCharacterIndex );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCameraFollow" , GetGamePlayerControlThirdpersonCameraFollow );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCameraFocus" , GetGamePlayerControlThirdpersonCameraFocus );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCharactere" , GetGamePlayerControlThirdpersonCharactere );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCameraFollow" , GetGamePlayerControlThirdpersonCameraFollow );
-	lua_register(lua, "GetGamePlayerControlThirdpersonShotFired" , GetGamePlayerControlThirdpersonShotFired );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCameraDistance" , GetGamePlayerControlThirdpersonCameraDistance );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCameraSpeed" , GetGamePlayerControlThirdpersonCameraSpeed );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCameraLocked" , GetGamePlayerControlThirdpersonCameraLocked );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCameraHeight" , GetGamePlayerControlThirdpersonCameraHeight );
-	lua_register(lua, "GetGamePlayerControlThirdpersonCameraShoulder" , GetGamePlayerControlThirdpersonCameraShoulder );
-	lua_register(lua, "GetGamePlayerControlFallDamageModifier", GetGamePlayerControlFallDamageModifier);
-	lua_register(lua, "GetGamePlayerControlSwimSpeed", GetGamePlayerControlSwimSpeed);
-	lua_register(lua, "SetGamePlayerControlJetpackMode" , SetGamePlayerControlJetpackMode );
-	lua_register(lua, "SetGamePlayerControlJetpackFuel" , SetGamePlayerControlJetpackFuel );
-	lua_register(lua, "SetGamePlayerControlJetpackHidden" , SetGamePlayerControlJetpackHidden );
-	lua_register(lua, "SetGamePlayerControlJetpackCollected" , SetGamePlayerControlJetpackCollected );
-	lua_register(lua, "SetGamePlayerControlSoundStartIndex" , SetGamePlayerControlSoundStartIndex );
-	lua_register(lua, "SetGamePlayerControlJetpackParticleEmitterIndex" , SetGamePlayerControlJetpackParticleEmitterIndex );
-	lua_register(lua, "SetGamePlayerControlJetpackThrust" , SetGamePlayerControlJetpackThrust );
-	lua_register(lua, "SetGamePlayerControlStartStrength" , SetGamePlayerControlStartStrength );
-	lua_register(lua, "SetGamePlayerControlIsRunning" , SetGamePlayerControlIsRunning );
-	lua_register(lua, "SetGamePlayerControlFinalCameraAngley" , SetGamePlayerControlFinalCameraAngley );
-	lua_register(lua, "SetGamePlayerControlCx" , SetGamePlayerControlCx );
-	lua_register(lua, "SetGamePlayerControlCy" , SetGamePlayerControlCy );
-	lua_register(lua, "SetGamePlayerControlCz" , SetGamePlayerControlCz );
-	lua_register(lua, "SetGamePlayerControlBasespeed" , SetGamePlayerControlBasespeed );
-	lua_register(lua, "SetGamePlayerControlCanRun" , SetGamePlayerControlCanRun );
-	lua_register(lua, "SetGamePlayerControlMaxspeed" , SetGamePlayerControlMaxspeed );
-	lua_register(lua, "SetGamePlayerControlTopspeed" , SetGamePlayerControlTopspeed );
-	lua_register(lua, "SetGamePlayerControlMovement" , SetGamePlayerControlMovement );
-	lua_register(lua, "SetGamePlayerControlMovey" , SetGamePlayerControlMovey );
-	lua_register(lua, "SetGamePlayerControlLastMovement" , SetGamePlayerControlLastMovement );
-	lua_register(lua, "SetGamePlayerControlFootfallCount" , SetGamePlayerControlFootfallCount );
-	lua_register(lua, "SetGamePlayerControlLastMovement" , SetGamePlayerControlLastMovement );
-	lua_register(lua, "SetGamePlayerControlGravityActive" , SetGamePlayerControlGravityActive );
-	lua_register(lua, "SetGamePlayerControlPlrHitFloorMaterial" , SetGamePlayerControlPlrHitFloorMaterial );
-	lua_register(lua, "SetGamePlayerControlUnderwater" , SetGamePlayerControlUnderwater );
-	lua_register(lua, "SetGamePlayerControlJumpMode" , SetGamePlayerControlJumpMode );
-	lua_register(lua, "SetGamePlayerControlJumpModeCanAffectVelocityCountdown" , SetGamePlayerControlJumpModeCanAffectVelocityCountdown );
-	lua_register(lua, "SetGamePlayerControlSpeed" , SetGamePlayerControlSpeed );
-	lua_register(lua, "SetGamePlayerControlAccel" , SetGamePlayerControlAccel );
-	lua_register(lua, "SetGamePlayerControlSpeedRatio" , SetGamePlayerControlSpeedRatio );
-	lua_register(lua, "SetGamePlayerControlWobble" , SetGamePlayerControlWobble );
-	lua_register(lua, "SetGamePlayerControlWobbleSpeed" , SetGamePlayerControlWobbleSpeed );
-	lua_register(lua, "SetGamePlayerControlWobbleHeight" , SetGamePlayerControlWobbleHeight );
-	lua_register(lua, "SetGamePlayerControlJumpmax" , SetGamePlayerControlJumpmax );
-	lua_register(lua, "SetGamePlayerControlPushangle" , SetGamePlayerControlPushangle );
-	lua_register(lua, "SetGamePlayerControlPushforce" , SetGamePlayerControlPushforce );
-	lua_register(lua, "SetGamePlayerControlFootfallPace" , SetGamePlayerControlFootfallPace );
-	lua_register(lua, "SetGamePlayerControlFinalCameraAngley" , SetGamePlayerControlFinalCameraAngley );
-	lua_register(lua, "SetGamePlayerControlLockAtHeight" , SetGamePlayerControlLockAtHeight );
-	lua_register(lua, "SetGamePlayerControlControlHeight" , SetGamePlayerControlControlHeight );
-	lua_register(lua, "SetGamePlayerControlControlHeightCooldown" , SetGamePlayerControlControlHeightCooldown );
-	lua_register(lua, "SetGamePlayerControlStoreMovey" , SetGamePlayerControlStoreMovey );
-	lua_register(lua, "SetGamePlayerControlPlrHitFloorMaterial" , SetGamePlayerControlPlrHitFloorMaterial );
-	lua_register(lua, "SetGamePlayerControlHurtFall" , SetGamePlayerControlHurtFall );
-	lua_register(lua, "SetGamePlayerControlLeanoverAngle" , SetGamePlayerControlLeanoverAngle );
-	lua_register(lua, "SetGamePlayerControlLeanover" , SetGamePlayerControlLeanover );
-	lua_register(lua, "SetGamePlayerControlCameraShake" , SetGamePlayerControlCameraShake );
-	lua_register(lua, "SetGamePlayerControlFinalCameraAnglex" , SetGamePlayerControlFinalCameraAnglex );
-	lua_register(lua, "SetGamePlayerControlFinalCameraAngley" , SetGamePlayerControlFinalCameraAngley );
-	lua_register(lua, "SetGamePlayerControlFinalCameraAnglez" , SetGamePlayerControlFinalCameraAnglez );
-	lua_register(lua, "SetGamePlayerControlCamRightMouseMode" , SetGamePlayerControlCamRightMouseMode );
-	lua_register(lua, "SetGamePlayerControlCamCollisionSmooth" , SetGamePlayerControlCamCollisionSmooth );
-	lua_register(lua, "SetGamePlayerControlCamCurrentDistance" , SetGamePlayerControlCamCurrentDistance );
-	lua_register(lua, "SetGamePlayerControlCamDoFullRayCheck" , SetGamePlayerControlCamDoFullRayCheck );
-	lua_register(lua, "SetGamePlayerControlLastGoodcx" , SetGamePlayerControlLastGoodcx );
-	lua_register(lua, "SetGamePlayerControlLastGoodcy" , SetGamePlayerControlLastGoodcy );
-	lua_register(lua, "SetGamePlayerControlLastGoodcz" , SetGamePlayerControlLastGoodcz );
-	lua_register(lua, "SetGamePlayerControlCamDoFullRayCheck" , SetGamePlayerControlCamDoFullRayCheck );
-	lua_register(lua, "SetGamePlayerControlFlinchx" , SetGamePlayerControlFlinchx );
-	lua_register(lua, "SetGamePlayerControlFlinchy" , SetGamePlayerControlFlinchy );
-	lua_register(lua, "SetGamePlayerControlFlinchz" , SetGamePlayerControlFlinchz );
-	lua_register(lua, "SetGamePlayerControlFlinchCurrentx" , SetGamePlayerControlFlinchCurrentx );
-	lua_register(lua, "SetGamePlayerControlFlinchCurrenty" , SetGamePlayerControlFlinchCurrenty );
-	lua_register(lua, "SetGamePlayerControlFlinchCurrentz" , SetGamePlayerControlFlinchCurrentz );
-	lua_register(lua, "SetGamePlayerControlFootfallType" , SetGamePlayerControlFootfallType );
-	lua_register(lua, "SetGamePlayerControlRippleCount" , SetGamePlayerControlRippleCount );
-	lua_register(lua, "SetGamePlayerControlLastFootfallSound" , SetGamePlayerControlLastFootfallSound );
-	lua_register(lua, "SetGamePlayerControlInWaterState" , SetGamePlayerControlInWaterState );
-	lua_register(lua, "SetGamePlayerControlDrownTimestamp" , SetGamePlayerControlDrownTimestamp );
-	lua_register(lua, "SetGamePlayerControlDeadTime" , SetGamePlayerControlDeadTime );
-	lua_register(lua, "SetGamePlayerControlSwimTimestamp" , SetGamePlayerControlSwimTimestamp );
-	lua_register(lua, "SetGamePlayerControlRedDeathFog" , SetGamePlayerControlRedDeathFog );
-	lua_register(lua, "SetGamePlayerControlHeartbeatTimeStamp" , SetGamePlayerControlHeartbeatTimeStamp );
-	lua_register(lua, "SetGamePlayerControlThirdpersonEnabled" , SetGamePlayerControlThirdpersonEnabled );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCharacterIndex" , SetGamePlayerControlThirdpersonCharacterIndex );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCameraFollow" , SetGamePlayerControlThirdpersonCameraFollow );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCameraFocus" , SetGamePlayerControlThirdpersonCameraFocus );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCharactere" , SetGamePlayerControlThirdpersonCharactere );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCameraFollow" , SetGamePlayerControlThirdpersonCameraFollow );
-	lua_register(lua, "SetGamePlayerControlThirdpersonShotFired" , SetGamePlayerControlThirdpersonShotFired );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCameraDistance" , SetGamePlayerControlThirdpersonCameraDistance );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCameraSpeed" , SetGamePlayerControlThirdpersonCameraSpeed );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCameraLocked" , SetGamePlayerControlThirdpersonCameraLocked );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCameraHeight" , SetGamePlayerControlThirdpersonCameraHeight );
-	lua_register(lua, "SetGamePlayerControlThirdpersonCameraShoulder" , SetGamePlayerControlThirdpersonCameraShoulder );
+	lua_register(lua2, "GetGamePlayerControlJetpackMode" , GetGamePlayerControlJetpackMode );
+	lua_register(lua2, "GetGamePlayerControlJetpackFuel" , GetGamePlayerControlJetpackFuel );
+	lua_register(lua2, "GetGamePlayerControlJetpackHidden" , GetGamePlayerControlJetpackHidden );
+	lua_register(lua2, "GetGamePlayerControlJetpackCollected" , GetGamePlayerControlJetpackCollected );
+	lua_register(lua2, "GetGamePlayerControlSoundStartIndex" , GetGamePlayerControlSoundStartIndex );
+	lua_register(lua2, "GetGamePlayerControlJetpackParticleEmitterIndex" , GetGamePlayerControlJetpackParticleEmitterIndex );
+	lua_register(lua2, "GetGamePlayerControlJetpackThrust" , GetGamePlayerControlJetpackThrust );
+	lua_register(lua2, "GetGamePlayerControlStartStrength" , GetGamePlayerControlStartStrength );
+	lua_register(lua2, "GetGamePlayerControlIsRunning" , GetGamePlayerControlIsRunning );
+	lua_register(lua2, "GetGamePlayerControlFinalCameraAngley" , GetGamePlayerControlFinalCameraAngley );
+	lua_register(lua2, "GetGamePlayerControlCx" , GetGamePlayerControlCx );
+	lua_register(lua2, "GetGamePlayerControlCy" , GetGamePlayerControlCy );
+	lua_register(lua2, "GetGamePlayerControlCz" , GetGamePlayerControlCz );
+	lua_register(lua2, "GetGamePlayerControlBasespeed" , GetGamePlayerControlBasespeed );
+	lua_register(lua2, "GetGamePlayerControlCanRun" , GetGamePlayerControlCanRun );
+	lua_register(lua2, "GetGamePlayerControlMaxspeed" , GetGamePlayerControlMaxspeed );
+	lua_register(lua2, "GetGamePlayerControlTopspeed" , GetGamePlayerControlTopspeed );
+	lua_register(lua2, "GetGamePlayerControlMovement" , GetGamePlayerControlMovement );
+	lua_register(lua2, "GetGamePlayerControlMovey" , GetGamePlayerControlMovey );
+	lua_register(lua2, "GetGamePlayerControlLastMovement" , GetGamePlayerControlLastMovement );
+	lua_register(lua2, "GetGamePlayerControlFootfallCount" , GetGamePlayerControlFootfallCount );
+	lua_register(lua2, "GetGamePlayerControlLastMovement" , GetGamePlayerControlLastMovement );
+	lua_register(lua2, "GetGamePlayerControlGravityActive" , GetGamePlayerControlGravityActive );
+	lua_register(lua2, "GetGamePlayerControlPlrHitFloorMaterial" , GetGamePlayerControlPlrHitFloorMaterial );
+	lua_register(lua2, "GetGamePlayerControlUnderwater" , GetGamePlayerControlUnderwater );
+	lua_register(lua2, "GetGamePlayerControlJumpMode" , GetGamePlayerControlJumpMode );
+	lua_register(lua2, "GetGamePlayerControlJumpModeCanAffectVelocityCountdown" , GetGamePlayerControlJumpModeCanAffectVelocityCountdown );
+	lua_register(lua2, "GetGamePlayerControlSpeed" , GetGamePlayerControlSpeed );
+	lua_register(lua2, "GetGamePlayerControlAccel" , GetGamePlayerControlAccel );
+	lua_register(lua2, "GetGamePlayerControlSpeedRatio" , GetGamePlayerControlSpeedRatio );
+	lua_register(lua2, "GetGamePlayerControlWobble" , GetGamePlayerControlWobble );
+	lua_register(lua2, "GetGamePlayerControlWobbleSpeed" , GetGamePlayerControlWobbleSpeed );
+	lua_register(lua2, "GetGamePlayerControlWobbleHeight" , GetGamePlayerControlWobbleHeight );
+	lua_register(lua2, "GetGamePlayerControlJumpmax" , GetGamePlayerControlJumpmax );
+	lua_register(lua2, "GetGamePlayerControlPushangle" , GetGamePlayerControlPushangle );
+	lua_register(lua2, "GetGamePlayerControlPushforce" , GetGamePlayerControlPushforce );
+	lua_register(lua2, "GetGamePlayerControlFootfallPace" , GetGamePlayerControlFootfallPace );
+	lua_register(lua2, "GetGamePlayerControlFinalCameraAngley" , GetGamePlayerControlFinalCameraAngley );
+	lua_register(lua2, "GetGamePlayerControlLockAtHeight" , GetGamePlayerControlLockAtHeight );
+	lua_register(lua2, "GetGamePlayerControlControlHeight" , GetGamePlayerControlControlHeight );
+	lua_register(lua2, "GetGamePlayerControlControlHeightCooldown" , GetGamePlayerControlControlHeightCooldown );
+	lua_register(lua2, "GetGamePlayerControlStoreMovey" , GetGamePlayerControlStoreMovey );
+	lua_register(lua2, "GetGamePlayerControlPlrHitFloorMaterial" , GetGamePlayerControlPlrHitFloorMaterial );
+	lua_register(lua2, "GetGamePlayerControlHurtFall" , GetGamePlayerControlHurtFall );
+	lua_register(lua2, "GetGamePlayerControlLeanoverAngle" , GetGamePlayerControlLeanoverAngle );
+	lua_register(lua2, "GetGamePlayerControlLeanover" , GetGamePlayerControlLeanover );
+	lua_register(lua2, "GetGamePlayerControlCameraShake" , GetGamePlayerControlCameraShake );
+	lua_register(lua2, "GetGamePlayerControlFinalCameraAnglex" , GetGamePlayerControlFinalCameraAnglex );
+	lua_register(lua2, "GetGamePlayerControlFinalCameraAngley" , GetGamePlayerControlFinalCameraAngley );
+	lua_register(lua2, "GetGamePlayerControlFinalCameraAnglez" , GetGamePlayerControlFinalCameraAnglez );
+	lua_register(lua2, "GetGamePlayerControlCamRightMouseMode" , GetGamePlayerControlCamRightMouseMode );
+	lua_register(lua2, "GetGamePlayerControlCamCollisionSmooth" , GetGamePlayerControlCamCollisionSmooth );
+	lua_register(lua2, "GetGamePlayerControlCamCurrentDistance" , GetGamePlayerControlCamCurrentDistance );
+	lua_register(lua2, "GetGamePlayerControlCamDoFullRayCheck" , GetGamePlayerControlCamDoFullRayCheck );
+	lua_register(lua2, "GetGamePlayerControlLastGoodcx" , GetGamePlayerControlLastGoodcx );
+	lua_register(lua2, "GetGamePlayerControlLastGoodcy" , GetGamePlayerControlLastGoodcy );
+	lua_register(lua2, "GetGamePlayerControlLastGoodcz" , GetGamePlayerControlLastGoodcz );
+	lua_register(lua2, "GetGamePlayerControlCamDoFullRayCheck" , GetGamePlayerControlCamDoFullRayCheck );
+	lua_register(lua2, "GetGamePlayerControlFlinchx" , GetGamePlayerControlFlinchx );
+	lua_register(lua2, "GetGamePlayerControlFlinchy" , GetGamePlayerControlFlinchy );
+	lua_register(lua2, "GetGamePlayerControlFlinchz" , GetGamePlayerControlFlinchz );
+	lua_register(lua2, "GetGamePlayerControlFlinchCurrentx" , GetGamePlayerControlFlinchCurrentx );
+	lua_register(lua2, "GetGamePlayerControlFlinchCurrenty" , GetGamePlayerControlFlinchCurrenty );
+	lua_register(lua2, "GetGamePlayerControlFlinchCurrentz" , GetGamePlayerControlFlinchCurrentz );
+	lua_register(lua2, "GetGamePlayerControlFootfallType" , GetGamePlayerControlFootfallType );
+	lua_register(lua2, "GetGamePlayerControlRippleCount" , GetGamePlayerControlRippleCount );
+	lua_register(lua2, "GetGamePlayerControlLastFootfallSound" , GetGamePlayerControlLastFootfallSound );
+	lua_register(lua2, "GetGamePlayerControlInWaterState" , GetGamePlayerControlInWaterState );
+	lua_register(lua2, "GetGamePlayerControlDrownTimestamp" , GetGamePlayerControlDrownTimestamp );
+	lua_register(lua2, "GetGamePlayerControlDeadTime" , GetGamePlayerControlDeadTime );
+	lua_register(lua2, "GetGamePlayerControlSwimTimestamp" , GetGamePlayerControlSwimTimestamp );
+	lua_register(lua2, "GetGamePlayerControlRedDeathFog" , GetGamePlayerControlRedDeathFog );
+	lua_register(lua2, "GetGamePlayerControlHeartbeatTimeStamp" , GetGamePlayerControlHeartbeatTimeStamp );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonEnabled" , GetGamePlayerControlThirdpersonEnabled );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCharacterIndex" , GetGamePlayerControlThirdpersonCharacterIndex );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCameraFollow" , GetGamePlayerControlThirdpersonCameraFollow );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCameraFocus" , GetGamePlayerControlThirdpersonCameraFocus );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCharactere" , GetGamePlayerControlThirdpersonCharactere );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCameraFollow" , GetGamePlayerControlThirdpersonCameraFollow );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonShotFired" , GetGamePlayerControlThirdpersonShotFired );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCameraDistance" , GetGamePlayerControlThirdpersonCameraDistance );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCameraSpeed" , GetGamePlayerControlThirdpersonCameraSpeed );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCameraLocked" , GetGamePlayerControlThirdpersonCameraLocked );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCameraHeight" , GetGamePlayerControlThirdpersonCameraHeight );
+	lua_register(lua2, "GetGamePlayerControlThirdpersonCameraShoulder" , GetGamePlayerControlThirdpersonCameraShoulder );
+	lua_register(lua2, "GetGamePlayerControlFallDamageModifier", GetGamePlayerControlFallDamageModifier);
+	lua_register(lua2, "GetGamePlayerControlSwimSpeed", GetGamePlayerControlSwimSpeed);
+	lua_register(lua2, "SetGamePlayerControlJetpackMode" , SetGamePlayerControlJetpackMode );
+	lua_register(lua2, "SetGamePlayerControlJetpackFuel" , SetGamePlayerControlJetpackFuel );
+	lua_register(lua2, "SetGamePlayerControlJetpackHidden" , SetGamePlayerControlJetpackHidden );
+	lua_register(lua2, "SetGamePlayerControlJetpackCollected" , SetGamePlayerControlJetpackCollected );
+	lua_register(lua2, "SetGamePlayerControlSoundStartIndex" , SetGamePlayerControlSoundStartIndex );
+	lua_register(lua2, "SetGamePlayerControlJetpackParticleEmitterIndex" , SetGamePlayerControlJetpackParticleEmitterIndex );
+	lua_register(lua2, "SetGamePlayerControlJetpackThrust" , SetGamePlayerControlJetpackThrust );
+	lua_register(lua2, "SetGamePlayerControlStartStrength" , SetGamePlayerControlStartStrength );
+	lua_register(lua2, "SetGamePlayerControlIsRunning" , SetGamePlayerControlIsRunning );
+	lua_register(lua2, "SetGamePlayerControlFinalCameraAngley" , SetGamePlayerControlFinalCameraAngley );
+	lua_register(lua2, "SetGamePlayerControlCx" , SetGamePlayerControlCx );
+	lua_register(lua2, "SetGamePlayerControlCy" , SetGamePlayerControlCy );
+	lua_register(lua2, "SetGamePlayerControlCz" , SetGamePlayerControlCz );
+	lua_register(lua2, "SetGamePlayerControlBasespeed" , SetGamePlayerControlBasespeed );
+	lua_register(lua2, "SetGamePlayerControlCanRun" , SetGamePlayerControlCanRun );
+	lua_register(lua2, "SetGamePlayerControlMaxspeed" , SetGamePlayerControlMaxspeed );
+	lua_register(lua2, "SetGamePlayerControlTopspeed" , SetGamePlayerControlTopspeed );
+	lua_register(lua2, "SetGamePlayerControlMovement" , SetGamePlayerControlMovement );
+	lua_register(lua2, "SetGamePlayerControlMovey" , SetGamePlayerControlMovey );
+	lua_register(lua2, "SetGamePlayerControlLastMovement" , SetGamePlayerControlLastMovement );
+	lua_register(lua2, "SetGamePlayerControlFootfallCount" , SetGamePlayerControlFootfallCount );
+	lua_register(lua2, "SetGamePlayerControlLastMovement" , SetGamePlayerControlLastMovement );
+	lua_register(lua2, "SetGamePlayerControlGravityActive" , SetGamePlayerControlGravityActive );
+	lua_register(lua2, "SetGamePlayerControlPlrHitFloorMaterial" , SetGamePlayerControlPlrHitFloorMaterial );
+	lua_register(lua2, "SetGamePlayerControlUnderwater" , SetGamePlayerControlUnderwater );
+	lua_register(lua2, "SetGamePlayerControlJumpMode" , SetGamePlayerControlJumpMode );
+	lua_register(lua2, "SetGamePlayerControlJumpModeCanAffectVelocityCountdown" , SetGamePlayerControlJumpModeCanAffectVelocityCountdown );
+	lua_register(lua2, "SetGamePlayerControlSpeed" , SetGamePlayerControlSpeed );
+	lua_register(lua2, "SetGamePlayerControlAccel" , SetGamePlayerControlAccel );
+	lua_register(lua2, "SetGamePlayerControlSpeedRatio" , SetGamePlayerControlSpeedRatio );
+	lua_register(lua2, "SetGamePlayerControlWobble" , SetGamePlayerControlWobble );
+	lua_register(lua2, "SetGamePlayerControlWobbleSpeed" , SetGamePlayerControlWobbleSpeed );
+	lua_register(lua2, "SetGamePlayerControlWobbleHeight" , SetGamePlayerControlWobbleHeight );
+	lua_register(lua2, "SetGamePlayerControlJumpmax" , SetGamePlayerControlJumpmax );
+	lua_register(lua2, "SetGamePlayerControlPushangle" , SetGamePlayerControlPushangle );
+	lua_register(lua2, "SetGamePlayerControlPushforce" , SetGamePlayerControlPushforce );
+	lua_register(lua2, "SetGamePlayerControlFootfallPace" , SetGamePlayerControlFootfallPace );
+	lua_register(lua2, "SetGamePlayerControlFinalCameraAngley" , SetGamePlayerControlFinalCameraAngley );
+	lua_register(lua2, "SetGamePlayerControlLockAtHeight" , SetGamePlayerControlLockAtHeight );
+	lua_register(lua2, "SetGamePlayerControlControlHeight" , SetGamePlayerControlControlHeight );
+	lua_register(lua2, "SetGamePlayerControlControlHeightCooldown" , SetGamePlayerControlControlHeightCooldown );
+	lua_register(lua2, "SetGamePlayerControlStoreMovey" , SetGamePlayerControlStoreMovey );
+	lua_register(lua2, "SetGamePlayerControlPlrHitFloorMaterial" , SetGamePlayerControlPlrHitFloorMaterial );
+	lua_register(lua2, "SetGamePlayerControlHurtFall" , SetGamePlayerControlHurtFall );
+	lua_register(lua2, "SetGamePlayerControlLeanoverAngle" , SetGamePlayerControlLeanoverAngle );
+	lua_register(lua2, "SetGamePlayerControlLeanover" , SetGamePlayerControlLeanover );
+	lua_register(lua2, "SetGamePlayerControlCameraShake" , SetGamePlayerControlCameraShake );
+	lua_register(lua2, "SetGamePlayerControlFinalCameraAnglex" , SetGamePlayerControlFinalCameraAnglex );
+	lua_register(lua2, "SetGamePlayerControlFinalCameraAngley" , SetGamePlayerControlFinalCameraAngley );
+	lua_register(lua2, "SetGamePlayerControlFinalCameraAnglez" , SetGamePlayerControlFinalCameraAnglez );
+	lua_register(lua2, "SetGamePlayerControlCamRightMouseMode" , SetGamePlayerControlCamRightMouseMode );
+	lua_register(lua2, "SetGamePlayerControlCamCollisionSmooth" , SetGamePlayerControlCamCollisionSmooth );
+	lua_register(lua2, "SetGamePlayerControlCamCurrentDistance" , SetGamePlayerControlCamCurrentDistance );
+	lua_register(lua2, "SetGamePlayerControlCamDoFullRayCheck" , SetGamePlayerControlCamDoFullRayCheck );
+	lua_register(lua2, "SetGamePlayerControlLastGoodcx" , SetGamePlayerControlLastGoodcx );
+	lua_register(lua2, "SetGamePlayerControlLastGoodcy" , SetGamePlayerControlLastGoodcy );
+	lua_register(lua2, "SetGamePlayerControlLastGoodcz" , SetGamePlayerControlLastGoodcz );
+	lua_register(lua2, "SetGamePlayerControlCamDoFullRayCheck" , SetGamePlayerControlCamDoFullRayCheck );
+	lua_register(lua2, "SetGamePlayerControlFlinchx" , SetGamePlayerControlFlinchx );
+	lua_register(lua2, "SetGamePlayerControlFlinchy" , SetGamePlayerControlFlinchy );
+	lua_register(lua2, "SetGamePlayerControlFlinchz" , SetGamePlayerControlFlinchz );
+	lua_register(lua2, "SetGamePlayerControlFlinchCurrentx" , SetGamePlayerControlFlinchCurrentx );
+	lua_register(lua2, "SetGamePlayerControlFlinchCurrenty" , SetGamePlayerControlFlinchCurrenty );
+	lua_register(lua2, "SetGamePlayerControlFlinchCurrentz" , SetGamePlayerControlFlinchCurrentz );
+	lua_register(lua2, "SetGamePlayerControlFootfallType" , SetGamePlayerControlFootfallType );
+	lua_register(lua2, "SetGamePlayerControlRippleCount" , SetGamePlayerControlRippleCount );
+	lua_register(lua2, "SetGamePlayerControlLastFootfallSound" , SetGamePlayerControlLastFootfallSound );
+	lua_register(lua2, "SetGamePlayerControlInWaterState" , SetGamePlayerControlInWaterState );
+	lua_register(lua2, "SetGamePlayerControlDrownTimestamp" , SetGamePlayerControlDrownTimestamp );
+	lua_register(lua2, "SetGamePlayerControlDeadTime" , SetGamePlayerControlDeadTime );
+	lua_register(lua2, "SetGamePlayerControlSwimTimestamp" , SetGamePlayerControlSwimTimestamp );
+	lua_register(lua2, "SetGamePlayerControlRedDeathFog" , SetGamePlayerControlRedDeathFog );
+	lua_register(lua2, "SetGamePlayerControlHeartbeatTimeStamp" , SetGamePlayerControlHeartbeatTimeStamp );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonEnabled" , SetGamePlayerControlThirdpersonEnabled );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCharacterIndex" , SetGamePlayerControlThirdpersonCharacterIndex );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCameraFollow" , SetGamePlayerControlThirdpersonCameraFollow );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCameraFocus" , SetGamePlayerControlThirdpersonCameraFocus );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCharactere" , SetGamePlayerControlThirdpersonCharactere );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCameraFollow" , SetGamePlayerControlThirdpersonCameraFollow );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonShotFired" , SetGamePlayerControlThirdpersonShotFired );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCameraDistance" , SetGamePlayerControlThirdpersonCameraDistance );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCameraSpeed" , SetGamePlayerControlThirdpersonCameraSpeed );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCameraLocked" , SetGamePlayerControlThirdpersonCameraLocked );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCameraHeight" , SetGamePlayerControlThirdpersonCameraHeight );
+	lua_register(lua2, "SetGamePlayerControlThirdpersonCameraShoulder" , SetGamePlayerControlThirdpersonCameraShoulder );
 
-	lua_register(lua, "SetGamePlayerStateGunMode" , SetGamePlayerStateGunMode );
-	lua_register(lua, "GetGamePlayerStateGunMode" , GetGamePlayerStateGunMode );
-	lua_register(lua, "SetGamePlayerStateFiringMode" , SetGamePlayerStateFiringMode );
-	lua_register(lua, "GetGamePlayerStateFiringMode" , GetGamePlayerStateFiringMode );
-	lua_register(lua, "GetGamePlayerStateWeaponAmmoIndex" , GetGamePlayerStateWeaponAmmoIndex );
-	lua_register(lua, "GetGamePlayerStateAmmoOffset" , GetGamePlayerStateAmmoOffset );
-	lua_register(lua, "GetGamePlayerStateGunMeleeKey" , GetGamePlayerStateGunMeleeKey );
-	lua_register(lua, "SetGamePlayerStateBlockingAction", SetGamePlayerStateBlockingAction);
-	lua_register(lua, "GetGamePlayerStateBlockingAction", GetGamePlayerStateBlockingAction);
-	lua_register(lua, "SetGamePlayerStateGunShootNoAmmo" , SetGamePlayerStateGunShootNoAmmo );
-	lua_register(lua, "GetGamePlayerStateGunShootNoAmmo" , GetGamePlayerStateGunShootNoAmmo );
-	lua_register(lua, "SetGamePlayerStateUnderwater" , SetGamePlayerStateUnderwater );
-	lua_register(lua, "GetGamePlayerStateUnderwater" , GetGamePlayerStateUnderwater );
-	lua_register(lua, "SetGamePlayerStateRightMouseHold" , SetGamePlayerStateRightMouseHold );
-	lua_register(lua, "GetGamePlayerStateRightMouseHold" , GetGamePlayerStateRightMouseHold );
-	lua_register(lua, "SetGamePlayerStateXBOX" , SetGamePlayerStateXBOX );
-	lua_register(lua, "GetGamePlayerStateXBOX" , GetGamePlayerStateXBOX );
-	lua_register(lua, "SetGamePlayerStateXBOXControllerType" , SetGamePlayerStateXBOXControllerType );
-	lua_register(lua, "GetGamePlayerStateXBOXControllerType" , GetGamePlayerStateXBOXControllerType );
-	lua_register(lua, "JoystickX" , JoystickY );
-	lua_register(lua, "JoystickY" , JoystickX );
-	lua_register(lua, "JoystickZ" , JoystickZ );
-	lua_register(lua, "SetGamePlayerStateGunZoomMode" , SetGamePlayerStateGunZoomMode );
-	lua_register(lua, "GetGamePlayerStateGunZoomMode" , GetGamePlayerStateGunZoomMode );
-	lua_register(lua, "SetGamePlayerStateGunZoomMag" , SetGamePlayerStateGunZoomMag );
-	lua_register(lua, "GetGamePlayerStateGunZoomMag" , GetGamePlayerStateGunZoomMag );
-	lua_register(lua, "SetGamePlayerStateGunReloadNoAmmo" , SetGamePlayerStateGunReloadNoAmmo );
-	lua_register(lua, "GetGamePlayerStateGunReloadNoAmmo" , GetGamePlayerStateGunReloadNoAmmo );
-	lua_register(lua, "SetGamePlayerStatePlrReloading" , SetGamePlayerStatePlrReloading );
-	lua_register(lua, "GetGamePlayerStatePlrReloading" , GetGamePlayerStatePlrReloading );
-	lua_register(lua, "SetGamePlayerStateGunAltSwapKey1" , SetGamePlayerStateGunAltSwapKey1 );
-	lua_register(lua, "GetGamePlayerStateGunAltSwapKey1" , GetGamePlayerStateGunAltSwapKey1 );
-	lua_register(lua, "SetGamePlayerStateGunAltSwapKey2" , SetGamePlayerStateGunAltSwapKey2 );
-	lua_register(lua, "GetGamePlayerStateGunAltSwapKey2" , GetGamePlayerStateGunAltSwapKey2 );
-	lua_register(lua, "SetGamePlayerStateWeaponKeySelection" , SetGamePlayerStateWeaponKeySelection );
-	lua_register(lua, "GetGamePlayerStateWeaponKeySelection" , GetGamePlayerStateWeaponKeySelection );
-	lua_register(lua, "SetGamePlayerStateWeaponIndex" , SetGamePlayerStateWeaponIndex );
-	lua_register(lua, "GetGamePlayerStateWeaponIndex" , GetGamePlayerStateWeaponIndex );
-	lua_register(lua, "SetGamePlayerStateCommandNewWeapon" , SetGamePlayerStateCommandNewWeapon );
-	lua_register(lua, "GetGamePlayerStateCommandNewWeapon" , GetGamePlayerStateCommandNewWeapon );
-	lua_register(lua, "SetGamePlayerStateGunID" , SetGamePlayerStateGunID );
-	lua_register(lua, "GetGamePlayerStateGunID" , GetGamePlayerStateGunID );
-	lua_register(lua, "SetGamePlayerStateGunSelectionAfterHide" , SetGamePlayerStateGunSelectionAfterHide );
-	lua_register(lua, "GetGamePlayerStateGunSelectionAfterHide" , GetGamePlayerStateGunSelectionAfterHide );
-	lua_register(lua, "SetGamePlayerStateGunBurst" , SetGamePlayerStateGunBurst );
-	lua_register(lua, "GetGamePlayerStateGunBurst", GetGamePlayerStateGunBurst);
-	lua_register(lua, "SetGamePlayerStatePlrKeyForceKeystate", SetGamePlayerStatePlrKeyForceKeystate);
-	lua_register(lua, "JoystickHatAngle" , JoystickHatAngle );
-	lua_register(lua, "JoystickFireXL" , JoystickFireXL );
-	lua_register(lua, "JoystickTwistX" , JoystickTwistX );
-	lua_register(lua, "JoystickTwistY" , JoystickTwistY );
-	lua_register(lua, "JoystickTwistZ" , JoystickTwistZ );
-	lua_register(lua, "SetGamePlayerStatePlrZoomInChange" , SetGamePlayerStatePlrZoomInChange );
-	lua_register(lua, "GetGamePlayerStatePlrZoomInChange" , GetGamePlayerStatePlrZoomInChange );
-	lua_register(lua, "SetGamePlayerStatePlrZoomIn" , SetGamePlayerStatePlrZoomIn );
-	lua_register(lua, "GetGamePlayerStatePlrZoomIn" , GetGamePlayerStatePlrZoomIn );
-	lua_register(lua, "SetGamePlayerStateLuaActiveMouse" , SetGamePlayerStateLuaActiveMouse );
-	lua_register(lua, "GetGamePlayerStateLuaActiveMouse" , GetGamePlayerStateLuaActiveMouse );
-	lua_register(lua, "SetGamePlayerStateRealFov" , SetGamePlayerStateRealFov );
-	lua_register(lua, "GetGamePlayerStateRealFov" , GetGamePlayerStateRealFov );
-	lua_register(lua, "SetGamePlayerStateDisablePeeking" , SetGamePlayerStateDisablePeeking );
-	lua_register(lua, "GetGamePlayerStateDisablePeeking" , GetGamePlayerStateDisablePeeking );
-	lua_register(lua, "SetGamePlayerStatePlrHasFocus" , SetGamePlayerStatePlrHasFocus );
-	lua_register(lua, "GetGamePlayerStatePlrHasFocus" , GetGamePlayerStatePlrHasFocus );
-	lua_register(lua, "SetGamePlayerStateGameRunAsMultiplayer" , SetGamePlayerStateGameRunAsMultiplayer );
-	lua_register(lua, "GetGamePlayerStateGameRunAsMultiplayer" , GetGamePlayerStateGameRunAsMultiplayer );
-	lua_register(lua, "SetGamePlayerStateSteamWorksRespawnLeft" , SetGamePlayerStateSteamWorksRespawnLeft );
-	lua_register(lua, "GetGamePlayerStateSteamWorksRespawnLeft" , GetGamePlayerStateSteamWorksRespawnLeft );
-	lua_register(lua, "SetGamePlayerStateMPRespawnLeft" , SetGamePlayerStateMPRespawnLeft );
-	lua_register(lua, "GetGamePlayerStateMPRespawnLeft" , GetGamePlayerStateMPRespawnLeft );
-	lua_register(lua, "SetGamePlayerStateTabMode" , SetGamePlayerStateTabMode );
-	lua_register(lua, "GetGamePlayerStateTabMode" , GetGamePlayerStateTabMode );
-	lua_register(lua, "SetGamePlayerStateLowFpsWarning" , SetGamePlayerStateLowFpsWarning );
-	lua_register(lua, "GetGamePlayerStateLowFpsWarning" , GetGamePlayerStateLowFpsWarning );
-	lua_register(lua, "SetGamePlayerStateCameraFov" , SetGamePlayerStateCameraFov );
-	lua_register(lua, "GetGamePlayerStateCameraFov" , GetGamePlayerStateCameraFov );
+	lua_register(lua2, "SetGamePlayerStateGunMode" , SetGamePlayerStateGunMode );
+	lua_register(lua2, "GetGamePlayerStateGunMode" , GetGamePlayerStateGunMode );
+	lua_register(lua2, "SetGamePlayerStateFiringMode" , SetGamePlayerStateFiringMode );
+	lua_register(lua2, "GetGamePlayerStateFiringMode" , GetGamePlayerStateFiringMode );
+	lua_register(lua2, "GetGamePlayerStateWeaponAmmoIndex" , GetGamePlayerStateWeaponAmmoIndex );
+	lua_register(lua2, "GetGamePlayerStateAmmoOffset" , GetGamePlayerStateAmmoOffset );
+	lua_register(lua2, "GetGamePlayerStateGunMeleeKey" , GetGamePlayerStateGunMeleeKey );
+	lua_register(lua2, "SetGamePlayerStateBlockingAction", SetGamePlayerStateBlockingAction);
+	lua_register(lua2, "GetGamePlayerStateBlockingAction", GetGamePlayerStateBlockingAction);
+	lua_register(lua2, "SetGamePlayerStateGunShootNoAmmo" , SetGamePlayerStateGunShootNoAmmo );
+	lua_register(lua2, "GetGamePlayerStateGunShootNoAmmo" , GetGamePlayerStateGunShootNoAmmo );
+	lua_register(lua2, "SetGamePlayerStateUnderwater" , SetGamePlayerStateUnderwater );
+	lua_register(lua2, "GetGamePlayerStateUnderwater" , GetGamePlayerStateUnderwater );
+	lua_register(lua2, "SetGamePlayerStateRightMouseHold" , SetGamePlayerStateRightMouseHold );
+	lua_register(lua2, "GetGamePlayerStateRightMouseHold" , GetGamePlayerStateRightMouseHold );
+	lua_register(lua2, "SetGamePlayerStateXBOX" , SetGamePlayerStateXBOX );
+	lua_register(lua2, "GetGamePlayerStateXBOX" , GetGamePlayerStateXBOX );
+	lua_register(lua2, "SetGamePlayerStateXBOXControllerType" , SetGamePlayerStateXBOXControllerType );
+	lua_register(lua2, "GetGamePlayerStateXBOXControllerType" , GetGamePlayerStateXBOXControllerType );
+	lua_register(lua2, "JoystickX" , JoystickY );
+	lua_register(lua2, "JoystickY" , JoystickX );
+	lua_register(lua2, "JoystickZ" , JoystickZ );
+	lua_register(lua2, "SetGamePlayerStateGunZoomMode" , SetGamePlayerStateGunZoomMode );
+	lua_register(lua2, "GetGamePlayerStateGunZoomMode" , GetGamePlayerStateGunZoomMode );
+	lua_register(lua2, "SetGamePlayerStateGunZoomMag" , SetGamePlayerStateGunZoomMag );
+	lua_register(lua2, "GetGamePlayerStateGunZoomMag" , GetGamePlayerStateGunZoomMag );
+	lua_register(lua2, "SetGamePlayerStateGunReloadNoAmmo" , SetGamePlayerStateGunReloadNoAmmo );
+	lua_register(lua2, "GetGamePlayerStateGunReloadNoAmmo" , GetGamePlayerStateGunReloadNoAmmo );
+	lua_register(lua2, "SetGamePlayerStatePlrReloading" , SetGamePlayerStatePlrReloading );
+	lua_register(lua2, "GetGamePlayerStatePlrReloading" , GetGamePlayerStatePlrReloading );
+	lua_register(lua2, "SetGamePlayerStateGunAltSwapKey1" , SetGamePlayerStateGunAltSwapKey1 );
+	lua_register(lua2, "GetGamePlayerStateGunAltSwapKey1" , GetGamePlayerStateGunAltSwapKey1 );
+	lua_register(lua2, "SetGamePlayerStateGunAltSwapKey2" , SetGamePlayerStateGunAltSwapKey2 );
+	lua_register(lua2, "GetGamePlayerStateGunAltSwapKey2" , GetGamePlayerStateGunAltSwapKey2 );
+	lua_register(lua2, "SetGamePlayerStateWeaponKeySelection" , SetGamePlayerStateWeaponKeySelection );
+	lua_register(lua2, "GetGamePlayerStateWeaponKeySelection" , GetGamePlayerStateWeaponKeySelection );
+	lua_register(lua2, "SetGamePlayerStateWeaponIndex" , SetGamePlayerStateWeaponIndex );
+	lua_register(lua2, "GetGamePlayerStateWeaponIndex" , GetGamePlayerStateWeaponIndex );
+	lua_register(lua2, "SetGamePlayerStateCommandNewWeapon" , SetGamePlayerStateCommandNewWeapon );
+	lua_register(lua2, "GetGamePlayerStateCommandNewWeapon" , GetGamePlayerStateCommandNewWeapon );
+	lua_register(lua2, "SetGamePlayerStateGunID" , SetGamePlayerStateGunID );
+	lua_register(lua2, "GetGamePlayerStateGunID" , GetGamePlayerStateGunID );
+	lua_register(lua2, "SetGamePlayerStateGunSelectionAfterHide" , SetGamePlayerStateGunSelectionAfterHide );
+	lua_register(lua2, "GetGamePlayerStateGunSelectionAfterHide" , GetGamePlayerStateGunSelectionAfterHide );
+	lua_register(lua2, "SetGamePlayerStateGunBurst" , SetGamePlayerStateGunBurst );
+	lua_register(lua2, "GetGamePlayerStateGunBurst", GetGamePlayerStateGunBurst);
+	lua_register(lua2, "SetGamePlayerStatePlrKeyForceKeystate", SetGamePlayerStatePlrKeyForceKeystate);
+	lua_register(lua2, "JoystickHatAngle" , JoystickHatAngle );
+	lua_register(lua2, "JoystickFireXL" , JoystickFireXL );
+	lua_register(lua2, "JoystickTwistX" , JoystickTwistX );
+	lua_register(lua2, "JoystickTwistY" , JoystickTwistY );
+	lua_register(lua2, "JoystickTwistZ" , JoystickTwistZ );
+	lua_register(lua2, "SetGamePlayerStatePlrZoomInChange" , SetGamePlayerStatePlrZoomInChange );
+	lua_register(lua2, "GetGamePlayerStatePlrZoomInChange" , GetGamePlayerStatePlrZoomInChange );
+	lua_register(lua2, "SetGamePlayerStatePlrZoomIn" , SetGamePlayerStatePlrZoomIn );
+	lua_register(lua2, "GetGamePlayerStatePlrZoomIn" , GetGamePlayerStatePlrZoomIn );
+	lua_register(lua2, "SetGamePlayerStateLuaActiveMouse" , SetGamePlayerStateLuaActiveMouse );
+	lua_register(lua2, "GetGamePlayerStateLuaActiveMouse" , GetGamePlayerStateLuaActiveMouse );
+	lua_register(lua2, "SetGamePlayerStateRealFov" , SetGamePlayerStateRealFov );
+	lua_register(lua2, "GetGamePlayerStateRealFov" , GetGamePlayerStateRealFov );
+	lua_register(lua2, "SetGamePlayerStateDisablePeeking" , SetGamePlayerStateDisablePeeking );
+	lua_register(lua2, "GetGamePlayerStateDisablePeeking" , GetGamePlayerStateDisablePeeking );
+	lua_register(lua2, "SetGamePlayerStatePlrHasFocus" , SetGamePlayerStatePlrHasFocus );
+	lua_register(lua2, "GetGamePlayerStatePlrHasFocus" , GetGamePlayerStatePlrHasFocus );
+	lua_register(lua2, "SetGamePlayerStateGameRunAsMultiplayer" , SetGamePlayerStateGameRunAsMultiplayer );
+	lua_register(lua2, "GetGamePlayerStateGameRunAsMultiplayer" , GetGamePlayerStateGameRunAsMultiplayer );
+	lua_register(lua2, "SetGamePlayerStateSteamWorksRespawnLeft" , SetGamePlayerStateSteamWorksRespawnLeft );
+	lua_register(lua2, "GetGamePlayerStateSteamWorksRespawnLeft" , GetGamePlayerStateSteamWorksRespawnLeft );
+	lua_register(lua2, "SetGamePlayerStateMPRespawnLeft" , SetGamePlayerStateMPRespawnLeft );
+	lua_register(lua2, "GetGamePlayerStateMPRespawnLeft" , GetGamePlayerStateMPRespawnLeft );
+	lua_register(lua2, "SetGamePlayerStateTabMode" , SetGamePlayerStateTabMode );
+	lua_register(lua2, "GetGamePlayerStateTabMode" , GetGamePlayerStateTabMode );
+	lua_register(lua2, "SetGamePlayerStateLowFpsWarning" , SetGamePlayerStateLowFpsWarning );
+	lua_register(lua2, "GetGamePlayerStateLowFpsWarning" , GetGamePlayerStateLowFpsWarning );
+	lua_register(lua2, "SetGamePlayerStateCameraFov" , SetGamePlayerStateCameraFov );
+	lua_register(lua2, "GetGamePlayerStateCameraFov" , GetGamePlayerStateCameraFov );
 
-	lua_register(lua, "GetPlayerFov", GetPlayerFov);
-	lua_register(lua, "GetPlayerAttacking", GetPlayerAttacking);
-	lua_register(lua, "PushPlayer", PushPlayer);
+	lua_register(lua2, "GetPlayerFov", GetPlayerFov);
+	lua_register(lua2, "GetPlayerAttacking", GetPlayerAttacking);
+	lua_register(lua2, "PushPlayer", PushPlayer);
 	
-	lua_register(lua, "SetGamePlayerStateCameraFovZoomed" , SetGamePlayerStateCameraFovZoomed );
-	lua_register(lua, "GetGamePlayerStateCameraFovZoomed" , GetGamePlayerStateCameraFovZoomed );
-	lua_register(lua, "SetGamePlayerStateMouseInvert" , SetGamePlayerStateMouseInvert );
-	lua_register(lua, "GetGamePlayerStateMouseInvert" , GetGamePlayerStateMouseInvert );
+	lua_register(lua2, "SetGamePlayerStateCameraFovZoomed" , SetGamePlayerStateCameraFovZoomed );
+	lua_register(lua2, "GetGamePlayerStateCameraFovZoomed" , GetGamePlayerStateCameraFovZoomed );
+	lua_register(lua2, "SetGamePlayerStateMouseInvert" , SetGamePlayerStateMouseInvert );
+	lua_register(lua2, "GetGamePlayerStateMouseInvert" , GetGamePlayerStateMouseInvert );
 
-	lua_register(lua, "SetGamePlayerStateSlowMotion" , SetGamePlayerStateSlowMotion );
-	lua_register(lua, "GetGamePlayerStateSlowMotion" , GetGamePlayerStateSlowMotion );
-	lua_register(lua, "SetGamePlayerStateSmoothCameraKeys" , SetGamePlayerStateSmoothCameraKeys );
-	lua_register(lua, "GetGamePlayerStateSmoothCameraKeys" , GetGamePlayerStateSmoothCameraKeys );
-	lua_register(lua, "SetGamePlayerStateCamMouseMoveX" , SetGamePlayerStateCamMouseMoveX );
-	lua_register(lua, "GetGamePlayerStateCamMouseMoveX" , GetGamePlayerStateCamMouseMoveX );
-	lua_register(lua, "SetGamePlayerStateCamMouseMoveY" , SetGamePlayerStateCamMouseMoveY );
-	lua_register(lua, "GetGamePlayerStateCamMouseMoveY" , GetGamePlayerStateCamMouseMoveY );
-	lua_register(lua, "SetGamePlayerStateGunRecoilX" , SetGamePlayerStateGunRecoilX );
-	lua_register(lua, "GetGamePlayerStateGunRecoilX" , GetGamePlayerStateGunRecoilX );
-	lua_register(lua, "SetGamePlayerStateGunRecoilY" , SetGamePlayerStateGunRecoilY );
-	lua_register(lua, "GetGamePlayerStateGunRecoilY" , GetGamePlayerStateGunRecoilY );
-	lua_register(lua, "SetGamePlayerStateGunRecoilAngleX" , SetGamePlayerStateGunRecoilAngleX );
-	lua_register(lua, "GetGamePlayerStateGunRecoilAngleX" , GetGamePlayerStateGunRecoilAngleX );
-	lua_register(lua, "SetGamePlayerStateGunRecoilAngleY" , SetGamePlayerStateGunRecoilAngleY );
-	lua_register(lua, "GetGamePlayerStateGunRecoilAngleY" , GetGamePlayerStateGunRecoilAngleY );
-	lua_register(lua, "SetGamePlayerStateGunRecoilCorrectY" , SetGamePlayerStateGunRecoilCorrectY );
-	lua_register(lua, "GetGamePlayerStateGunRecoilCorrectY" , GetGamePlayerStateGunRecoilCorrectY );
-	lua_register(lua, "SetGamePlayerStateGunRecoilCorrectX" , SetGamePlayerStateGunRecoilCorrectX );
-	lua_register(lua, "GetGamePlayerStateGunRecoilCorrectX" , GetGamePlayerStateGunRecoilCorrectX );
-	lua_register(lua, "SetGamePlayerStateGunRecoilCorrectAngleY" , SetGamePlayerStateGunRecoilCorrectAngleY );
-	lua_register(lua, "GetGamePlayerStateGunRecoilCorrectAngleY" , GetGamePlayerStateGunRecoilCorrectAngleY );
-	lua_register(lua, "SetGamePlayerStateGunRecoilCorrectAngleX" , SetGamePlayerStateGunRecoilCorrectAngleX );
-	lua_register(lua, "GetGamePlayerStateGunRecoilCorrectAngleX" , GetGamePlayerStateGunRecoilCorrectAngleX );
-	lua_register(lua, "SetGamePlayerStateCamAngleX" , SetGamePlayerStateCamAngleX );
-	lua_register(lua, "GetGamePlayerStateCamAngleX" , GetGamePlayerStateCamAngleX );
-	lua_register(lua, "SetGamePlayerStateCamAngleY" , SetGamePlayerStateCamAngleY );
-	lua_register(lua, "GetGamePlayerStateCamAngleY" , GetGamePlayerStateCamAngleY );
-	lua_register(lua, "SetGamePlayerStatePlayerDucking" , SetGamePlayerStatePlayerDucking );
-	lua_register(lua, "GetGamePlayerStatePlayerDucking" , GetGamePlayerStatePlayerDucking );
-	lua_register(lua, "SetGamePlayerStateEditModeActive" , SetGamePlayerStateEditModeActive );
-	lua_register(lua, "GetGamePlayerStateEditModeActive" , GetGamePlayerStateEditModeActive );
-	lua_register(lua, "SetGamePlayerStatePlrKeyShift" , SetGamePlayerStatePlrKeyShift );
-	lua_register(lua, "GetGamePlayerStatePlrKeyShift" , GetGamePlayerStatePlrKeyShift );
-	lua_register(lua, "SetGamePlayerStatePlrKeyShift2" , SetGamePlayerStatePlrKeyShift2 );
-	lua_register(lua, "GetGamePlayerStatePlrKeyShift2" , GetGamePlayerStatePlrKeyShift2 );
-	lua_register(lua, "SetGamePlayerStatePlrKeyControl" , SetGamePlayerStatePlrKeyControl );
-	lua_register(lua, "GetGamePlayerStatePlrKeyControl" , GetGamePlayerStatePlrKeyControl );
-	lua_register(lua, "SetGamePlayerStateNoWater" , SetGamePlayerStateNoWater );
-	lua_register(lua, "GetGamePlayerStateNoWater" , GetGamePlayerStateNoWater );
-	lua_register(lua, "SetGamePlayerStateWaterlineY" , SetGamePlayerStateWaterlineY );
-	lua_register(lua, "GetGamePlayerStateWaterlineY" , GetGamePlayerStateWaterlineY );
+	lua_register(lua2, "SetGamePlayerStateSlowMotion" , SetGamePlayerStateSlowMotion );
+	lua_register(lua2, "GetGamePlayerStateSlowMotion" , GetGamePlayerStateSlowMotion );
+	lua_register(lua2, "SetGamePlayerStateSmoothCameraKeys" , SetGamePlayerStateSmoothCameraKeys );
+	lua_register(lua2, "GetGamePlayerStateSmoothCameraKeys" , GetGamePlayerStateSmoothCameraKeys );
+	lua_register(lua2, "SetGamePlayerStateCamMouseMoveX" , SetGamePlayerStateCamMouseMoveX );
+	lua_register(lua2, "GetGamePlayerStateCamMouseMoveX" , GetGamePlayerStateCamMouseMoveX );
+	lua_register(lua2, "SetGamePlayerStateCamMouseMoveY" , SetGamePlayerStateCamMouseMoveY );
+	lua_register(lua2, "GetGamePlayerStateCamMouseMoveY" , GetGamePlayerStateCamMouseMoveY );
+	lua_register(lua2, "SetGamePlayerStateGunRecoilX" , SetGamePlayerStateGunRecoilX );
+	lua_register(lua2, "GetGamePlayerStateGunRecoilX" , GetGamePlayerStateGunRecoilX );
+	lua_register(lua2, "SetGamePlayerStateGunRecoilY" , SetGamePlayerStateGunRecoilY );
+	lua_register(lua2, "GetGamePlayerStateGunRecoilY" , GetGamePlayerStateGunRecoilY );
+	lua_register(lua2, "SetGamePlayerStateGunRecoilAngleX" , SetGamePlayerStateGunRecoilAngleX );
+	lua_register(lua2, "GetGamePlayerStateGunRecoilAngleX" , GetGamePlayerStateGunRecoilAngleX );
+	lua_register(lua2, "SetGamePlayerStateGunRecoilAngleY" , SetGamePlayerStateGunRecoilAngleY );
+	lua_register(lua2, "GetGamePlayerStateGunRecoilAngleY" , GetGamePlayerStateGunRecoilAngleY );
+	lua_register(lua2, "SetGamePlayerStateGunRecoilCorrectY" , SetGamePlayerStateGunRecoilCorrectY );
+	lua_register(lua2, "GetGamePlayerStateGunRecoilCorrectY" , GetGamePlayerStateGunRecoilCorrectY );
+	lua_register(lua2, "SetGamePlayerStateGunRecoilCorrectX" , SetGamePlayerStateGunRecoilCorrectX );
+	lua_register(lua2, "GetGamePlayerStateGunRecoilCorrectX" , GetGamePlayerStateGunRecoilCorrectX );
+	lua_register(lua2, "SetGamePlayerStateGunRecoilCorrectAngleY" , SetGamePlayerStateGunRecoilCorrectAngleY );
+	lua_register(lua2, "GetGamePlayerStateGunRecoilCorrectAngleY" , GetGamePlayerStateGunRecoilCorrectAngleY );
+	lua_register(lua2, "SetGamePlayerStateGunRecoilCorrectAngleX" , SetGamePlayerStateGunRecoilCorrectAngleX );
+	lua_register(lua2, "GetGamePlayerStateGunRecoilCorrectAngleX" , GetGamePlayerStateGunRecoilCorrectAngleX );
+	lua_register(lua2, "SetGamePlayerStateCamAngleX" , SetGamePlayerStateCamAngleX );
+	lua_register(lua2, "GetGamePlayerStateCamAngleX" , GetGamePlayerStateCamAngleX );
+	lua_register(lua2, "SetGamePlayerStateCamAngleY" , SetGamePlayerStateCamAngleY );
+	lua_register(lua2, "GetGamePlayerStateCamAngleY" , GetGamePlayerStateCamAngleY );
+	lua_register(lua2, "SetGamePlayerStatePlayerDucking" , SetGamePlayerStatePlayerDucking );
+	lua_register(lua2, "GetGamePlayerStatePlayerDucking" , GetGamePlayerStatePlayerDucking );
+	lua_register(lua2, "SetGamePlayerStateEditModeActive" , SetGamePlayerStateEditModeActive );
+	lua_register(lua2, "GetGamePlayerStateEditModeActive" , GetGamePlayerStateEditModeActive );
+	lua_register(lua2, "SetGamePlayerStatePlrKeyShift" , SetGamePlayerStatePlrKeyShift );
+	lua_register(lua2, "GetGamePlayerStatePlrKeyShift" , GetGamePlayerStatePlrKeyShift );
+	lua_register(lua2, "SetGamePlayerStatePlrKeyShift2" , SetGamePlayerStatePlrKeyShift2 );
+	lua_register(lua2, "GetGamePlayerStatePlrKeyShift2" , GetGamePlayerStatePlrKeyShift2 );
+	lua_register(lua2, "SetGamePlayerStatePlrKeyControl" , SetGamePlayerStatePlrKeyControl );
+	lua_register(lua2, "GetGamePlayerStatePlrKeyControl" , GetGamePlayerStatePlrKeyControl );
+	lua_register(lua2, "SetGamePlayerStateNoWater" , SetGamePlayerStateNoWater );
+	lua_register(lua2, "GetGamePlayerStateNoWater" , GetGamePlayerStateNoWater );
+	lua_register(lua2, "SetGamePlayerStateWaterlineY" , SetGamePlayerStateWaterlineY );
+	lua_register(lua2, "GetGamePlayerStateWaterlineY" , GetGamePlayerStateWaterlineY );
 
-	lua_register(lua, "SetGamePlayerStateFlashlightKeyEnabled" , SetGamePlayerStateFlashlightKeyEnabled );
-	lua_register(lua, "GetGamePlayerStateFlashlightKeyEnabled" , GetGamePlayerStateFlashlightKeyEnabled );
-	lua_register(lua, "SetGamePlayerStateFlashlightControl", SetGamePlayerStateFlashlightControl);
-	lua_register(lua, "GetGamePlayerStateFlashlightControl", GetGamePlayerStateFlashlightControl);
-	lua_register(lua, "SetGamePlayerStateFlashlightRange", SetGamePlayerStateFlashlightRange);
-	lua_register(lua, "GetGamePlayerStateFlashlightRange", GetGamePlayerStateFlashlightRange);
-	lua_register(lua, "SetGamePlayerStateFlashlightRadius", SetGamePlayerStateFlashlightRadius);
-	lua_register(lua, "GetGamePlayerStateFlashlightRadius", GetGamePlayerStateFlashlightRadius);
-	lua_register(lua, "SetGamePlayerStateFlashlightColorR", SetGamePlayerStateFlashlightColorR);
-	lua_register(lua, "GetGamePlayerStateFlashlightColorR", GetGamePlayerStateFlashlightColorR);
-	lua_register(lua, "SetGamePlayerStateFlashlightColorG", SetGamePlayerStateFlashlightColorG);
-	lua_register(lua, "GetGamePlayerStateFlashlightColorG", GetGamePlayerStateFlashlightColorG);
-	lua_register(lua, "SetGamePlayerStateFlashlightColorB", SetGamePlayerStateFlashlightColorB);
-	lua_register(lua, "GetGamePlayerStateFlashlightColorB", GetGamePlayerStateFlashlightColorB);
-	lua_register(lua, "SetGamePlayerStateFlashlightCastShadow", SetGamePlayerStateFlashlightCastShadow);
-	lua_register(lua, "GetGamePlayerStateFlashlightCastShadow", GetGamePlayerStateFlashlightCastShadow);
+	lua_register(lua2, "SetGamePlayerStateFlashlightKeyEnabled" , SetGamePlayerStateFlashlightKeyEnabled );
+	lua_register(lua2, "GetGamePlayerStateFlashlightKeyEnabled" , GetGamePlayerStateFlashlightKeyEnabled );
+	lua_register(lua2, "SetGamePlayerStateFlashlightControl", SetGamePlayerStateFlashlightControl);
+	lua_register(lua2, "GetGamePlayerStateFlashlightControl", GetGamePlayerStateFlashlightControl);
+	lua_register(lua2, "SetGamePlayerStateFlashlightRange", SetGamePlayerStateFlashlightRange);
+	lua_register(lua2, "GetGamePlayerStateFlashlightRange", GetGamePlayerStateFlashlightRange);
+	lua_register(lua2, "SetGamePlayerStateFlashlightRadius", SetGamePlayerStateFlashlightRadius);
+	lua_register(lua2, "GetGamePlayerStateFlashlightRadius", GetGamePlayerStateFlashlightRadius);
+	lua_register(lua2, "SetGamePlayerStateFlashlightColorR", SetGamePlayerStateFlashlightColorR);
+	lua_register(lua2, "GetGamePlayerStateFlashlightColorR", GetGamePlayerStateFlashlightColorR);
+	lua_register(lua2, "SetGamePlayerStateFlashlightColorG", SetGamePlayerStateFlashlightColorG);
+	lua_register(lua2, "GetGamePlayerStateFlashlightColorG", GetGamePlayerStateFlashlightColorG);
+	lua_register(lua2, "SetGamePlayerStateFlashlightColorB", SetGamePlayerStateFlashlightColorB);
+	lua_register(lua2, "GetGamePlayerStateFlashlightColorB", GetGamePlayerStateFlashlightColorB);
+	lua_register(lua2, "SetGamePlayerStateFlashlightCastShadow", SetGamePlayerStateFlashlightCastShadow);
+	lua_register(lua2, "GetGamePlayerStateFlashlightCastShadow", GetGamePlayerStateFlashlightCastShadow);
 
-	lua_register(lua, "SetGamePlayerStateMoving" , SetGamePlayerStateMoving );
-	lua_register(lua, "GetGamePlayerStateMoving" , GetGamePlayerStateMoving );
-	lua_register(lua, "SetGamePlayerStateTerrainHeight" , SetGamePlayerStateTerrainHeight );
-	lua_register(lua, "GetGamePlayerStateTerrainHeight" , GetGamePlayerStateTerrainHeight );
-	lua_register(lua, "SetGamePlayerStateJetpackVerticalMove" , SetGamePlayerStateJetpackVerticalMove );
-	lua_register(lua, "GetGamePlayerStateJetpackVerticalMove" , GetGamePlayerStateJetpackVerticalMove );
-	lua_register(lua, "SetGamePlayerStateTerrainID" , SetGamePlayerStateTerrainID );
-	lua_register(lua, "GetGamePlayerStateTerrainID" , GetGamePlayerStateTerrainID );
-	lua_register(lua, "SetGamePlayerStateEnablePlrSpeedMods" , SetGamePlayerStateEnablePlrSpeedMods );
-	lua_register(lua, "GetGamePlayerStateEnablePlrSpeedMods" , GetGamePlayerStateEnablePlrSpeedMods );
-	lua_register(lua, "SetGamePlayerStateRiftMode" , SetGamePlayerStateRiftMode );
-	lua_register(lua, "GetGamePlayerStateRiftMode" , GetGamePlayerStateRiftMode );
-	lua_register(lua, "SetGamePlayerStatePlayerX" , SetGamePlayerStatePlayerX );
-	lua_register(lua, "GetGamePlayerStatePlayerX" , GetGamePlayerStatePlayerX );
-	lua_register(lua, "SetGamePlayerStatePlayerY" , SetGamePlayerStatePlayerY );
-	lua_register(lua, "GetGamePlayerStatePlayerY" , GetGamePlayerStatePlayerY );
-	lua_register(lua, "SetGamePlayerStatePlayerZ" , SetGamePlayerStatePlayerZ );
-	lua_register(lua, "GetGamePlayerStatePlayerZ" , GetGamePlayerStatePlayerZ );
-	lua_register(lua, "SetGamePlayerStateTerrainPlayerX" , SetGamePlayerStateTerrainPlayerX );
-	lua_register(lua, "GetGamePlayerStateTerrainPlayerX" , GetGamePlayerStateTerrainPlayerX );
-	lua_register(lua, "SetGamePlayerStateTerrainPlayerY" , SetGamePlayerStateTerrainPlayerY );
-	lua_register(lua, "GetGamePlayerStateTerrainPlayerY" , GetGamePlayerStateTerrainPlayerY );
-	lua_register(lua, "SetGamePlayerStateTerrainPlayerZ" , SetGamePlayerStateTerrainPlayerZ );
-	lua_register(lua, "GetGamePlayerStateTerrainPlayerZ" , GetGamePlayerStateTerrainPlayerZ );
-	lua_register(lua, "SetGamePlayerStateTerrainPlayerAX" , SetGamePlayerStateTerrainPlayerAX );
-	lua_register(lua, "GetGamePlayerStateTerrainPlayerAX" , GetGamePlayerStateTerrainPlayerAX );
-	lua_register(lua, "SetGamePlayerStateTerrainPlayerAY" , SetGamePlayerStateTerrainPlayerAY );
-	lua_register(lua, "GetGamePlayerStateTerrainPlayerAY" , GetGamePlayerStateTerrainPlayerAY );
-	lua_register(lua, "SetGamePlayerStateTerrainPlayerAZ" , SetGamePlayerStateTerrainPlayerAZ );
-	lua_register(lua, "GetGamePlayerStateTerrainPlayerAZ" , GetGamePlayerStateTerrainPlayerAZ );
-	lua_register(lua, "SetGamePlayerStateAdjustBasedOnWobbleY" , SetGamePlayerStateAdjustBasedOnWobbleY );
-	lua_register(lua, "GetGamePlayerStateAdjustBasedOnWobbleY" , GetGamePlayerStateAdjustBasedOnWobbleY );
-	lua_register(lua, "SetGamePlayerStateFinalCamX" , SetGamePlayerStateFinalCamX );
-	lua_register(lua, "GetGamePlayerStateFinalCamX" , GetGamePlayerStateFinalCamX );
-	lua_register(lua, "SetGamePlayerStateFinalCamY" , SetGamePlayerStateFinalCamY );
-	lua_register(lua, "GetGamePlayerStateFinalCamY" , GetGamePlayerStateFinalCamY );
-	lua_register(lua, "SetGamePlayerStateFinalCamZ" , SetGamePlayerStateFinalCamZ );
-	lua_register(lua, "GetGamePlayerStateFinalCamZ" , GetGamePlayerStateFinalCamZ );
-	lua_register(lua, "SetGamePlayerStateShakeX" , SetGamePlayerStateShakeX );
-	lua_register(lua, "GetGamePlayerStateShakeX" , GetGamePlayerStateShakeX );
-	lua_register(lua, "SetGamePlayerStateShakeY" , SetGamePlayerStateShakeY );
-	lua_register(lua, "GetGamePlayerStateShakeY" , GetGamePlayerStateShakeY );
-	lua_register(lua, "SetGamePlayerStateShakeZ" , SetGamePlayerStateShakeZ );
-	lua_register(lua, "GetGamePlayerStateShakeZ" , GetGamePlayerStateShakeZ );
-	lua_register(lua, "SetGamePlayerStateImmunity" , SetGamePlayerStateImmunity );
-	lua_register(lua, "GetGamePlayerStateImmunity" , GetGamePlayerStateImmunity );
-	lua_register(lua, "SetGamePlayerStateCharAnimIndex" , SetGamePlayerStateCharAnimIndex );
-	lua_register(lua, "GetGamePlayerStateCharAnimIndex" , GetGamePlayerStateCharAnimIndex );
+	lua_register(lua2, "SetGamePlayerStateMoving" , SetGamePlayerStateMoving );
+	lua_register(lua2, "GetGamePlayerStateMoving" , GetGamePlayerStateMoving );
+	lua_register(lua2, "SetGamePlayerStateTerrainHeight" , SetGamePlayerStateTerrainHeight );
+	lua_register(lua2, "GetGamePlayerStateTerrainHeight" , GetGamePlayerStateTerrainHeight );
+	lua_register(lua2, "SetGamePlayerStateJetpackVerticalMove" , SetGamePlayerStateJetpackVerticalMove );
+	lua_register(lua2, "GetGamePlayerStateJetpackVerticalMove" , GetGamePlayerStateJetpackVerticalMove );
+	lua_register(lua2, "SetGamePlayerStateTerrainID" , SetGamePlayerStateTerrainID );
+	lua_register(lua2, "GetGamePlayerStateTerrainID" , GetGamePlayerStateTerrainID );
+	lua_register(lua2, "SetGamePlayerStateEnablePlrSpeedMods" , SetGamePlayerStateEnablePlrSpeedMods );
+	lua_register(lua2, "GetGamePlayerStateEnablePlrSpeedMods" , GetGamePlayerStateEnablePlrSpeedMods );
+	lua_register(lua2, "SetGamePlayerStateRiftMode" , SetGamePlayerStateRiftMode );
+	lua_register(lua2, "GetGamePlayerStateRiftMode" , GetGamePlayerStateRiftMode );
+	lua_register(lua2, "SetGamePlayerStatePlayerX" , SetGamePlayerStatePlayerX );
+	lua_register(lua2, "GetGamePlayerStatePlayerX" , GetGamePlayerStatePlayerX );
+	lua_register(lua2, "SetGamePlayerStatePlayerY" , SetGamePlayerStatePlayerY );
+	lua_register(lua2, "GetGamePlayerStatePlayerY" , GetGamePlayerStatePlayerY );
+	lua_register(lua2, "SetGamePlayerStatePlayerZ" , SetGamePlayerStatePlayerZ );
+	lua_register(lua2, "GetGamePlayerStatePlayerZ" , GetGamePlayerStatePlayerZ );
+	lua_register(lua2, "SetGamePlayerStateTerrainPlayerX" , SetGamePlayerStateTerrainPlayerX );
+	lua_register(lua2, "GetGamePlayerStateTerrainPlayerX" , GetGamePlayerStateTerrainPlayerX );
+	lua_register(lua2, "SetGamePlayerStateTerrainPlayerY" , SetGamePlayerStateTerrainPlayerY );
+	lua_register(lua2, "GetGamePlayerStateTerrainPlayerY" , GetGamePlayerStateTerrainPlayerY );
+	lua_register(lua2, "SetGamePlayerStateTerrainPlayerZ" , SetGamePlayerStateTerrainPlayerZ );
+	lua_register(lua2, "GetGamePlayerStateTerrainPlayerZ" , GetGamePlayerStateTerrainPlayerZ );
+	lua_register(lua2, "SetGamePlayerStateTerrainPlayerAX" , SetGamePlayerStateTerrainPlayerAX );
+	lua_register(lua2, "GetGamePlayerStateTerrainPlayerAX" , GetGamePlayerStateTerrainPlayerAX );
+	lua_register(lua2, "SetGamePlayerStateTerrainPlayerAY" , SetGamePlayerStateTerrainPlayerAY );
+	lua_register(lua2, "GetGamePlayerStateTerrainPlayerAY" , GetGamePlayerStateTerrainPlayerAY );
+	lua_register(lua2, "SetGamePlayerStateTerrainPlayerAZ" , SetGamePlayerStateTerrainPlayerAZ );
+	lua_register(lua2, "GetGamePlayerStateTerrainPlayerAZ" , GetGamePlayerStateTerrainPlayerAZ );
+	lua_register(lua2, "SetGamePlayerStateAdjustBasedOnWobbleY" , SetGamePlayerStateAdjustBasedOnWobbleY );
+	lua_register(lua2, "GetGamePlayerStateAdjustBasedOnWobbleY" , GetGamePlayerStateAdjustBasedOnWobbleY );
+	lua_register(lua2, "SetGamePlayerStateFinalCamX" , SetGamePlayerStateFinalCamX );
+	lua_register(lua2, "GetGamePlayerStateFinalCamX" , GetGamePlayerStateFinalCamX );
+	lua_register(lua2, "SetGamePlayerStateFinalCamY" , SetGamePlayerStateFinalCamY );
+	lua_register(lua2, "GetGamePlayerStateFinalCamY" , GetGamePlayerStateFinalCamY );
+	lua_register(lua2, "SetGamePlayerStateFinalCamZ" , SetGamePlayerStateFinalCamZ );
+	lua_register(lua2, "GetGamePlayerStateFinalCamZ" , GetGamePlayerStateFinalCamZ );
+	lua_register(lua2, "SetGamePlayerStateShakeX" , SetGamePlayerStateShakeX );
+	lua_register(lua2, "GetGamePlayerStateShakeX" , GetGamePlayerStateShakeX );
+	lua_register(lua2, "SetGamePlayerStateShakeY" , SetGamePlayerStateShakeY );
+	lua_register(lua2, "GetGamePlayerStateShakeY" , GetGamePlayerStateShakeY );
+	lua_register(lua2, "SetGamePlayerStateShakeZ" , SetGamePlayerStateShakeZ );
+	lua_register(lua2, "GetGamePlayerStateShakeZ" , GetGamePlayerStateShakeZ );
+	lua_register(lua2, "SetGamePlayerStateImmunity" , SetGamePlayerStateImmunity );
+	lua_register(lua2, "GetGamePlayerStateImmunity" , GetGamePlayerStateImmunity );
+	lua_register(lua2, "SetGamePlayerStateCharAnimIndex" , SetGamePlayerStateCharAnimIndex );
+	lua_register(lua2, "GetGamePlayerStateCharAnimIndex" , GetGamePlayerStateCharAnimIndex );
 
-	lua_register(lua, "SetGamePlayerStateCounteredAction", SetGamePlayerStateCounteredAction);
-	lua_register(lua, "GetGamePlayerStateCounteredAction", GetGamePlayerStateCounteredAction);
+	lua_register(lua2, "SetGamePlayerStateCounteredAction", SetGamePlayerStateCounteredAction);
+	lua_register(lua2, "GetGamePlayerStateCounteredAction", GetGamePlayerStateCounteredAction);
 
-	lua_register(lua, "GetCharacterForwardX", GetCharacterForwardX);
-	lua_register(lua, "GetCharacterForwardY", GetCharacterForwardY);
-	lua_register(lua, "GetCharacterForwardZ", GetCharacterForwardZ);
+	lua_register(lua2, "GetCharacterForwardX", GetCharacterForwardX);
+	lua_register(lua2, "GetCharacterForwardY", GetCharacterForwardY);
+	lua_register(lua2, "GetCharacterForwardZ", GetCharacterForwardZ);
 
-	lua_register(lua, "GetGamePlayerStateMotionController" , GetGamePlayerStateMotionController );
-	lua_register(lua, "GetGamePlayerStateMotionControllerType" , GetGamePlayerStateMotionControllerType );
-	lua_register(lua, "MotionControllerThumbstickX" , MotionControllerThumbstickX );
-	lua_register(lua, "MotionControllerThumbstickY" , MotionControllerThumbstickY );
-	lua_register(lua, "CombatControllerTrigger" , CombatControllerTrigger );
-	lua_register(lua, "CombatControllerGrip", CombatControllerGrip);
-	lua_register(lua, "CombatControllerButtonA", CombatControllerButtonA);
-	lua_register(lua, "CombatControllerButtonB", CombatControllerButtonB);
-	lua_register(lua, "CombatControllerThumbstickX" , CombatControllerThumbstickX );
-	lua_register(lua, "CombatControllerThumbstickY" , CombatControllerThumbstickY );
-	lua_register(lua, "MotionControllerBestX" , MotionControllerBestX );
-	lua_register(lua, "MotionControllerBestY" , MotionControllerBestY );
-	lua_register(lua, "MotionControllerBestZ" , MotionControllerBestZ );
-	lua_register(lua, "MotionControllerBestAngleX" , MotionControllerBestAngleX );
-	lua_register(lua, "MotionControllerBestAngleY" , MotionControllerBestAngleY );
-	lua_register(lua, "MotionControllerBestAngleZ" , MotionControllerBestAngleZ );
-	lua_register(lua, "MotionControllerLaserGuidedEntityObj", MotionControllerLaserGuidedEntityObj);
-	lua_register(lua, "CombatControllerLaserGuidedHit", CombatControllerLaserGuidedHit);
+	lua_register(lua2, "GetGamePlayerStateMotionController" , GetGamePlayerStateMotionController );
+	lua_register(lua2, "GetGamePlayerStateMotionControllerType" , GetGamePlayerStateMotionControllerType );
+	lua_register(lua2, "MotionControllerThumbstickX" , MotionControllerThumbstickX );
+	lua_register(lua2, "MotionControllerThumbstickY" , MotionControllerThumbstickY );
+	lua_register(lua2, "CombatControllerTrigger" , CombatControllerTrigger );
+	lua_register(lua2, "CombatControllerGrip", CombatControllerGrip);
+	lua_register(lua2, "CombatControllerButtonA", CombatControllerButtonA);
+	lua_register(lua2, "CombatControllerButtonB", CombatControllerButtonB);
+	lua_register(lua2, "CombatControllerThumbstickX" , CombatControllerThumbstickX );
+	lua_register(lua2, "CombatControllerThumbstickY" , CombatControllerThumbstickY );
+	lua_register(lua2, "MotionControllerBestX" , MotionControllerBestX );
+	lua_register(lua2, "MotionControllerBestY" , MotionControllerBestY );
+	lua_register(lua2, "MotionControllerBestZ" , MotionControllerBestZ );
+	lua_register(lua2, "MotionControllerBestAngleX" , MotionControllerBestAngleX );
+	lua_register(lua2, "MotionControllerBestAngleY" , MotionControllerBestAngleY );
+	lua_register(lua2, "MotionControllerBestAngleZ" , MotionControllerBestAngleZ );
+	lua_register(lua2, "MotionControllerLaserGuidedEntityObj", MotionControllerLaserGuidedEntityObj);
+	lua_register(lua2, "CombatControllerLaserGuidedHit", CombatControllerLaserGuidedHit);
 
-	lua_register(lua, "SetGamePlayerStateIsMelee" , SetGamePlayerStateIsMelee );
-	lua_register(lua, "GetGamePlayerStateIsMelee" , GetGamePlayerStateIsMelee );
-	lua_register(lua, "SetGamePlayerStateAlternate" , SetGamePlayerStateAlternate );
-	lua_register(lua, "GetGamePlayerStateAlternate" , GetGamePlayerStateAlternate );
-	lua_register(lua, "SetGamePlayerStateModeShareMags" , SetGamePlayerStateModeShareMags );
-	lua_register(lua, "GetGamePlayerStateModeShareMags" , GetGamePlayerStateModeShareMags );
-	lua_register(lua, "SetGamePlayerStateAlternateIsFlak" , SetGamePlayerStateAlternateIsFlak );
-	lua_register(lua, "GetGamePlayerStateAlternateIsFlak" , GetGamePlayerStateAlternateIsFlak );
-	lua_register(lua, "SetGamePlayerStateAlternateIsRay" , SetGamePlayerStateAlternateIsRay );
-	lua_register(lua, "GetGamePlayerStateAlternateIsRay" , GetGamePlayerStateAlternateIsRay );
-	lua_register(lua, "SetFireModeSettingsReloadQty" , SetFireModeSettingsReloadQty );
-	lua_register(lua, "GetFireModeSettingsReloadQty" , GetFireModeSettingsReloadQty );
-	lua_register(lua, "SetFireModeSettingsIsEmpty" , SetFireModeSettingsIsEmpty );
-	lua_register(lua, "GetFireModeSettingsIsEmpty" , GetFireModeSettingsIsEmpty );
-	lua_register(lua, "SetFireModeSettingsJammed" , SetFireModeSettingsJammed );
-	lua_register(lua, "GetFireModeSettingsJammed" , GetFireModeSettingsJammed );
-	lua_register(lua, "SetFireModeSettingsJamChance" , SetFireModeSettingsJamChance );
-	lua_register(lua, "GetFireModeSettingsJamChance" , GetFireModeSettingsJamChance );
-	lua_register(lua, "SetFireModeSettingsMinTimer" , SetFireModeSettingsMinTimer );
-	lua_register(lua, "GetFireModeSettingsMinTimer" , GetFireModeSettingsMinTimer );
-	lua_register(lua, "SetFireModeSettingsAddTimer" , SetFireModeSettingsAddTimer );
-	lua_register(lua, "GetFireModeSettingsAddTimer" , GetFireModeSettingsAddTimer );
-	lua_register(lua, "SetFireModeSettingsShotsFired" , SetFireModeSettingsShotsFired );
-	lua_register(lua, "GetFireModeSettingsShotsFired" , GetFireModeSettingsShotsFired );
-	lua_register(lua, "SetFireModeSettingsCoolTimer" , SetFireModeSettingsCoolTimer );
-	lua_register(lua, "GetFireModeSettingsCoolTimer" , GetFireModeSettingsCoolTimer );
-	lua_register(lua, "SetFireModeSettingsOverheatAfter" , SetFireModeSettingsOverheatAfter );
-	lua_register(lua, "GetFireModeSettingsOverheatAfter" , GetFireModeSettingsOverheatAfter );
-	lua_register(lua, "SetFireModeSettingsJamChanceTime" , SetFireModeSettingsJamChanceTime );
-	lua_register(lua, "GetFireModeSettingsJamChanceTime" , GetFireModeSettingsJamChanceTime );
-	lua_register(lua, "SetFireModeSettingsCoolDown" , SetFireModeSettingsCoolDown );
-	lua_register(lua, "GetFireModeSettingsCoolDown" , GetFireModeSettingsCoolDown );
-	lua_register(lua, "SetFireModeSettingsNoSubmergedFire" , SetFireModeSettingsNoSubmergedFire );
-	lua_register(lua, "GetFireModeSettingsNoSubmergedFire" , GetFireModeSettingsNoSubmergedFire );
-	lua_register(lua, "SetFireModeSettingsSimpleZoom" , SetFireModeSettingsSimpleZoom );
-	lua_register(lua, "GetFireModeSettingsSimpleZoom" , GetFireModeSettingsSimpleZoom );
-	lua_register(lua, "SetFireModeSettingsForceZoomOut" , SetFireModeSettingsForceZoomOut );
-	lua_register(lua, "GetFireModeSettingsForceZoomOut" , GetFireModeSettingsForceZoomOut );
-	lua_register(lua, "SetFireModeSettingsZoomMode" , SetFireModeSettingsZoomMode );
-	lua_register(lua, "GetFireModeSettingsZoomMode" , GetFireModeSettingsZoomMode );
-	lua_register(lua, "SetFireModeSettingsSimpleZoomAnim" , SetFireModeSettingsSimpleZoomAnim );
-	lua_register(lua, "GetFireModeSettingsSimpleZoomAnim" , GetFireModeSettingsSimpleZoomAnim );
-	lua_register(lua, "SetFireModeSettingsPoolIndex" , SetFireModeSettingsPoolIndex );
-	lua_register(lua, "GetFireModeSettingsPoolIndex" , GetFireModeSettingsPoolIndex );
-	lua_register(lua, "SetFireModeSettingsPlrTurnSpeedMod" , SetFireModeSettingsPlrTurnSpeedMod );
-	lua_register(lua, "GetFireModeSettingsPlrTurnSpeedMod" , GetFireModeSettingsPlrTurnSpeedMod );
-	lua_register(lua, "SetFireModeSettingsZoomTurnSpeed" , SetFireModeSettingsZoomTurnSpeed );
-	lua_register(lua, "GetFireModeSettingsZoomTurnSpeed" , GetFireModeSettingsZoomTurnSpeed );
-	lua_register(lua, "SetFireModeSettingsPlrJumpSpeedMod" , SetFireModeSettingsPlrJumpSpeedMod );
-	lua_register(lua, "GetFireModeSettingsPlrJumpSpeedMod" , GetFireModeSettingsPlrJumpSpeedMod );
-	lua_register(lua, "SetFireModeSettingsPlrEmptySpeedMod" , SetFireModeSettingsPlrEmptySpeedMod );
-	lua_register(lua, "GetFireModeSettingsPlrEmptySpeedMod" , GetFireModeSettingsPlrEmptySpeedMod );
-	lua_register(lua, "SetFireModeSettingsPlrMoveSpeedMod" , SetFireModeSettingsPlrMoveSpeedMod );
-	lua_register(lua, "GetFireModeSettingsPlrMoveSpeedMod" , GetFireModeSettingsPlrMoveSpeedMod );
-	lua_register(lua, "SetFireModeSettingsZoomWalkSpeed" , SetFireModeSettingsZoomWalkSpeed );
-	lua_register(lua, "GetFireModeSettingsZoomWalkSpeed" , GetFireModeSettingsZoomWalkSpeed );
-	lua_register(lua, "SetFireModeSettingsPlrReloadSpeedMod" , SetFireModeSettingsPlrReloadSpeedMod );
-	lua_register(lua, "GetFireModeSettingsPlrReloadSpeedMod" , GetFireModeSettingsPlrReloadSpeedMod );
-	lua_register(lua, "SetFireModeSettingsHasEmpty" , SetFireModeSettingsHasEmpty );
-	lua_register(lua, "GetFireModeSettingsHasEmpty" , GetFireModeSettingsHasEmpty );
-	lua_register(lua, "GetFireModeSettingsActionBlockStart", GetFireModeSettingsActionBlockStart);
-	lua_register(lua, "GetFireModeSettingsMeleeWithRightClick", GetFireModeSettingsMeleeWithRightClick);
-	lua_register(lua, "GetFireModeSettingsBlockWithRightClick", GetFireModeSettingsBlockWithRightClick);
+	lua_register(lua2, "SetGamePlayerStateIsMelee" , SetGamePlayerStateIsMelee );
+	lua_register(lua2, "GetGamePlayerStateIsMelee" , GetGamePlayerStateIsMelee );
+	lua_register(lua2, "SetGamePlayerStateAlternate" , SetGamePlayerStateAlternate );
+	lua_register(lua2, "GetGamePlayerStateAlternate" , GetGamePlayerStateAlternate );
+	lua_register(lua2, "SetGamePlayerStateModeShareMags" , SetGamePlayerStateModeShareMags );
+	lua_register(lua2, "GetGamePlayerStateModeShareMags" , GetGamePlayerStateModeShareMags );
+	lua_register(lua2, "SetGamePlayerStateAlternateIsFlak" , SetGamePlayerStateAlternateIsFlak );
+	lua_register(lua2, "GetGamePlayerStateAlternateIsFlak" , GetGamePlayerStateAlternateIsFlak );
+	lua_register(lua2, "SetGamePlayerStateAlternateIsRay" , SetGamePlayerStateAlternateIsRay );
+	lua_register(lua2, "GetGamePlayerStateAlternateIsRay" , GetGamePlayerStateAlternateIsRay );
+	lua_register(lua2, "SetFireModeSettingsReloadQty" , SetFireModeSettingsReloadQty );
+	lua_register(lua2, "GetFireModeSettingsReloadQty" , GetFireModeSettingsReloadQty );
+	lua_register(lua2, "SetFireModeSettingsIsEmpty" , SetFireModeSettingsIsEmpty );
+	lua_register(lua2, "GetFireModeSettingsIsEmpty" , GetFireModeSettingsIsEmpty );
+	lua_register(lua2, "SetFireModeSettingsJammed" , SetFireModeSettingsJammed );
+	lua_register(lua2, "GetFireModeSettingsJammed" , GetFireModeSettingsJammed );
+	lua_register(lua2, "SetFireModeSettingsJamChance" , SetFireModeSettingsJamChance );
+	lua_register(lua2, "GetFireModeSettingsJamChance" , GetFireModeSettingsJamChance );
+	lua_register(lua2, "SetFireModeSettingsMinTimer" , SetFireModeSettingsMinTimer );
+	lua_register(lua2, "GetFireModeSettingsMinTimer" , GetFireModeSettingsMinTimer );
+	lua_register(lua2, "SetFireModeSettingsAddTimer" , SetFireModeSettingsAddTimer );
+	lua_register(lua2, "GetFireModeSettingsAddTimer" , GetFireModeSettingsAddTimer );
+	lua_register(lua2, "SetFireModeSettingsShotsFired" , SetFireModeSettingsShotsFired );
+	lua_register(lua2, "GetFireModeSettingsShotsFired" , GetFireModeSettingsShotsFired );
+	lua_register(lua2, "SetFireModeSettingsCoolTimer" , SetFireModeSettingsCoolTimer );
+	lua_register(lua2, "GetFireModeSettingsCoolTimer" , GetFireModeSettingsCoolTimer );
+	lua_register(lua2, "SetFireModeSettingsOverheatAfter" , SetFireModeSettingsOverheatAfter );
+	lua_register(lua2, "GetFireModeSettingsOverheatAfter" , GetFireModeSettingsOverheatAfter );
+	lua_register(lua2, "SetFireModeSettingsJamChanceTime" , SetFireModeSettingsJamChanceTime );
+	lua_register(lua2, "GetFireModeSettingsJamChanceTime" , GetFireModeSettingsJamChanceTime );
+	lua_register(lua2, "SetFireModeSettingsCoolDown" , SetFireModeSettingsCoolDown );
+	lua_register(lua2, "GetFireModeSettingsCoolDown" , GetFireModeSettingsCoolDown );
+	lua_register(lua2, "SetFireModeSettingsNoSubmergedFire" , SetFireModeSettingsNoSubmergedFire );
+	lua_register(lua2, "GetFireModeSettingsNoSubmergedFire" , GetFireModeSettingsNoSubmergedFire );
+	lua_register(lua2, "SetFireModeSettingsSimpleZoom" , SetFireModeSettingsSimpleZoom );
+	lua_register(lua2, "GetFireModeSettingsSimpleZoom" , GetFireModeSettingsSimpleZoom );
+	lua_register(lua2, "SetFireModeSettingsForceZoomOut" , SetFireModeSettingsForceZoomOut );
+	lua_register(lua2, "GetFireModeSettingsForceZoomOut" , GetFireModeSettingsForceZoomOut );
+	lua_register(lua2, "SetFireModeSettingsZoomMode" , SetFireModeSettingsZoomMode );
+	lua_register(lua2, "GetFireModeSettingsZoomMode" , GetFireModeSettingsZoomMode );
+	lua_register(lua2, "SetFireModeSettingsSimpleZoomAnim" , SetFireModeSettingsSimpleZoomAnim );
+	lua_register(lua2, "GetFireModeSettingsSimpleZoomAnim" , GetFireModeSettingsSimpleZoomAnim );
+	lua_register(lua2, "SetFireModeSettingsPoolIndex" , SetFireModeSettingsPoolIndex );
+	lua_register(lua2, "GetFireModeSettingsPoolIndex" , GetFireModeSettingsPoolIndex );
+	lua_register(lua2, "SetFireModeSettingsPlrTurnSpeedMod" , SetFireModeSettingsPlrTurnSpeedMod );
+	lua_register(lua2, "GetFireModeSettingsPlrTurnSpeedMod" , GetFireModeSettingsPlrTurnSpeedMod );
+	lua_register(lua2, "SetFireModeSettingsZoomTurnSpeed" , SetFireModeSettingsZoomTurnSpeed );
+	lua_register(lua2, "GetFireModeSettingsZoomTurnSpeed" , GetFireModeSettingsZoomTurnSpeed );
+	lua_register(lua2, "SetFireModeSettingsPlrJumpSpeedMod" , SetFireModeSettingsPlrJumpSpeedMod );
+	lua_register(lua2, "GetFireModeSettingsPlrJumpSpeedMod" , GetFireModeSettingsPlrJumpSpeedMod );
+	lua_register(lua2, "SetFireModeSettingsPlrEmptySpeedMod" , SetFireModeSettingsPlrEmptySpeedMod );
+	lua_register(lua2, "GetFireModeSettingsPlrEmptySpeedMod" , GetFireModeSettingsPlrEmptySpeedMod );
+	lua_register(lua2, "SetFireModeSettingsPlrMoveSpeedMod" , SetFireModeSettingsPlrMoveSpeedMod );
+	lua_register(lua2, "GetFireModeSettingsPlrMoveSpeedMod" , GetFireModeSettingsPlrMoveSpeedMod );
+	lua_register(lua2, "SetFireModeSettingsZoomWalkSpeed" , SetFireModeSettingsZoomWalkSpeed );
+	lua_register(lua2, "GetFireModeSettingsZoomWalkSpeed" , GetFireModeSettingsZoomWalkSpeed );
+	lua_register(lua2, "SetFireModeSettingsPlrReloadSpeedMod" , SetFireModeSettingsPlrReloadSpeedMod );
+	lua_register(lua2, "GetFireModeSettingsPlrReloadSpeedMod" , GetFireModeSettingsPlrReloadSpeedMod );
+	lua_register(lua2, "SetFireModeSettingsHasEmpty" , SetFireModeSettingsHasEmpty );
+	lua_register(lua2, "GetFireModeSettingsHasEmpty" , GetFireModeSettingsHasEmpty );
+	lua_register(lua2, "GetFireModeSettingsActionBlockStart", GetFireModeSettingsActionBlockStart);
+	lua_register(lua2, "GetFireModeSettingsMeleeWithRightClick", GetFireModeSettingsMeleeWithRightClick);
+	lua_register(lua2, "GetFireModeSettingsBlockWithRightClick", GetFireModeSettingsBlockWithRightClick);
 		
-	lua_register(lua, "SetGamePlayerStateGunSound" , SetGamePlayerStateGunSound );
-	lua_register(lua, "GetGamePlayerStateGunSound" , GetGamePlayerStateGunSound );
-	lua_register(lua, "SetGamePlayerStateGunAltSound" , SetGamePlayerStateGunAltSound );
-	lua_register(lua, "GetGamePlayerStateGunAltSound" , GetGamePlayerStateGunAltSound );
+	lua_register(lua2, "SetGamePlayerStateGunSound" , SetGamePlayerStateGunSound );
+	lua_register(lua2, "GetGamePlayerStateGunSound" , GetGamePlayerStateGunSound );
+	lua_register(lua2, "SetGamePlayerStateGunAltSound" , SetGamePlayerStateGunAltSound );
+	lua_register(lua2, "GetGamePlayerStateGunAltSound" , GetGamePlayerStateGunAltSound );
 
-	lua_register(lua, "CopyCharAnimState" , CopyCharAnimState );
-	lua_register(lua, "SetCharAnimStatePlayCsi" , SetCharAnimStatePlayCsi );
-	lua_register(lua, "GetCharAnimStatePlayCsi" , GetCharAnimStatePlayCsi );
-	lua_register(lua, "SetCharAnimStateOriginalE" , SetCharAnimStateOriginalE );
-	lua_register(lua, "GetCharAnimStateOriginalE" , GetCharAnimStateOriginalE );
-	lua_register(lua, "SetCharAnimStateObj" , SetCharAnimStateObj );
-	lua_register(lua, "GetCharAnimStateObj" , GetCharAnimStateObj );
-	lua_register(lua, "SetCharAnimStateAnimationSpeed" , SetCharAnimStateAnimationSpeed );
-	lua_register(lua, "GetCharAnimStateAnimationSpeed" , GetCharAnimStateAnimationSpeed );
-	lua_register(lua, "SetCharAnimStateE" , SetCharAnimStateE );
-	lua_register(lua, "GetCharAnimStateE" , GetCharAnimStateE );
+	lua_register(lua2, "CopyCharAnimState" , CopyCharAnimState );
+	lua_register(lua2, "SetCharAnimStatePlayCsi" , SetCharAnimStatePlayCsi );
+	lua_register(lua2, "GetCharAnimStatePlayCsi" , GetCharAnimStatePlayCsi );
+	lua_register(lua2, "SetCharAnimStateOriginalE" , SetCharAnimStateOriginalE );
+	lua_register(lua2, "GetCharAnimStateOriginalE" , GetCharAnimStateOriginalE );
+	lua_register(lua2, "SetCharAnimStateObj" , SetCharAnimStateObj );
+	lua_register(lua2, "GetCharAnimStateObj" , GetCharAnimStateObj );
+	lua_register(lua2, "SetCharAnimStateAnimationSpeed" , SetCharAnimStateAnimationSpeed );
+	lua_register(lua2, "GetCharAnimStateAnimationSpeed" , GetCharAnimStateAnimationSpeed );
+	lua_register(lua2, "SetCharAnimStateE" , SetCharAnimStateE );
+	lua_register(lua2, "GetCharAnimStateE" , GetCharAnimStateE );
 
-	lua_register(lua, "GetCsiStoodVault" , GetCsiStoodVault );
-	lua_register(lua, "GetCharSeqTrigger" , GetCharSeqTrigger );
-	lua_register(lua, "GetEntityElementBankIndex" , GetEntityElementBankIndex );
-	lua_register(lua, "GetEntityElementObj" , GetEntityElementObj );
-	lua_register(lua, "GetEntityElementRagdollified" , GetEntityElementRagdollified );
-	lua_register(lua, "GetEntityElementSpeedModulator" , GetEntityElementSpeedModulator );
-	lua_register(lua, "GetEntityProfileJumpModifier" , GetEntityProfileJumpModifier );
-	lua_register(lua, "GetEntityProfileStartOfAIAnim" , GetEntityProfileStartOfAIAnim );
-	lua_register(lua, "GetEntityProfileJumpHold" , GetEntityProfileJumpHold );
-	lua_register(lua, "GetEntityProfileJumpResume" , GetEntityProfileJumpResume );
+	lua_register(lua2, "GetCsiStoodVault" , GetCsiStoodVault );
+	lua_register(lua2, "GetCharSeqTrigger" , GetCharSeqTrigger );
+	lua_register(lua2, "GetEntityElementBankIndex" , GetEntityElementBankIndex );
+	lua_register(lua2, "GetEntityElementObj" , GetEntityElementObj );
+	lua_register(lua2, "GetEntityElementRagdollified" , GetEntityElementRagdollified );
+	lua_register(lua2, "GetEntityElementSpeedModulator" , GetEntityElementSpeedModulator );
+	lua_register(lua2, "GetEntityProfileJumpModifier" , GetEntityProfileJumpModifier );
+	lua_register(lua2, "GetEntityProfileStartOfAIAnim" , GetEntityProfileStartOfAIAnim );
+	lua_register(lua2, "GetEntityProfileJumpHold" , GetEntityProfileJumpHold );
+	lua_register(lua2, "GetEntityProfileJumpResume" , GetEntityProfileJumpResume );
 
-	lua_register(lua, "SetCharAnimControlsLeaping" , SetCharAnimControlsLeaping );
-	lua_register(lua, "GetCharAnimControlsLeaping" , GetCharAnimControlsLeaping );
-	lua_register(lua, "SetCharAnimControlsMoving" , SetCharAnimControlsMoving );
-	lua_register(lua, "GetCharAnimControlsMoving" , GetCharAnimControlsMoving );
+	lua_register(lua2, "SetCharAnimControlsLeaping" , SetCharAnimControlsLeaping );
+	lua_register(lua2, "GetCharAnimControlsLeaping" , GetCharAnimControlsLeaping );
+	lua_register(lua2, "SetCharAnimControlsMoving" , SetCharAnimControlsMoving );
+	lua_register(lua2, "GetCharAnimControlsMoving" , GetCharAnimControlsMoving );
 	
-	lua_register(lua, "GetEntityAnimStart" , GetEntityAnimStart );
-	lua_register(lua, "GetEntityAnimFinish" , GetEntityAnimFinish );
+	lua_register(lua2, "GetEntityAnimStart" , GetEntityAnimStart );
+	lua_register(lua2, "GetEntityAnimFinish" , GetEntityAnimFinish );
 
-	lua_register(lua, "SetRotationYSlowly" , SetRotationYSlowly );
+	lua_register(lua2, "SetRotationYSlowly" , SetRotationYSlowly );
 
 	// OLD Particle System
-	lua_register(lua, "ParticlesGetFreeEmitter" , ParticlesGetFreeEmitter );
-	lua_register(lua, "ParticlesAddEmitter" ,     ParticlesAddEmitter );
-	lua_register(lua, "ParticlesAddEmitterEx" ,   ParticlesAddEmitterEx );
-	lua_register(lua, "ParticlesDeleteEmitter" ,  ParticlesDeleteEmitter );
-	lua_register(lua, "ParticlesSpawnParticle",   ParticlesSpawnParticle );
-	lua_register(lua, "ParticlesLoadImage",       ParticlesLoadImage );
-	lua_register(lua, "ParticlesLoadEffect",      ParticlesLoadEffect );
-	lua_register(lua, "ParticlesSetFrames",       ParticlesSetFrames );
-	lua_register(lua, "ParticlesSetSpeed",        ParticlesSetSpeed );
-	lua_register(lua, "ParticlesSetGravity",      ParticlesSetGravity );
-	lua_register(lua, "ParticlesSetOffset",       ParticlesSetOffset );
-	lua_register(lua, "ParticlesSetAngle",        ParticlesSetAngle );
-	lua_register(lua, "ParticlesSetRotation",     ParticlesSetRotation );
-	lua_register(lua, "ParticlesSetScale",        ParticlesSetScale );
-	lua_register(lua, "ParticlesSetAlpha",        ParticlesSetAlpha );
-	lua_register(lua, "ParticlesSetLife",         ParticlesSetLife );
-	lua_register(lua, "ParticlesSetWindVector",   ParticlesSetWindVector );
-	lua_register(lua, "ParticlesSetNoWind",       ParticlesSetNoWind );
+	lua_register(lua2, "ParticlesGetFreeEmitter" , ParticlesGetFreeEmitter );
+	lua_register(lua2, "ParticlesAddEmitter" ,     ParticlesAddEmitter );
+	lua_register(lua2, "ParticlesAddEmitterEx" ,   ParticlesAddEmitterEx );
+	lua_register(lua2, "ParticlesDeleteEmitter" ,  ParticlesDeleteEmitter );
+	lua_register(lua2, "ParticlesSpawnParticle",   ParticlesSpawnParticle );
+	lua_register(lua2, "ParticlesLoadImage",       ParticlesLoadImage );
+	lua_register(lua2, "ParticlesLoadEffect",      ParticlesLoadEffect );
+	lua_register(lua2, "ParticlesSetFrames",       ParticlesSetFrames );
+	lua_register(lua2, "ParticlesSetSpeed",        ParticlesSetSpeed );
+	lua_register(lua2, "ParticlesSetGravity",      ParticlesSetGravity );
+	lua_register(lua2, "ParticlesSetOffset",       ParticlesSetOffset );
+	lua_register(lua2, "ParticlesSetAngle",        ParticlesSetAngle );
+	lua_register(lua2, "ParticlesSetRotation",     ParticlesSetRotation );
+	lua_register(lua2, "ParticlesSetScale",        ParticlesSetScale );
+	lua_register(lua2, "ParticlesSetAlpha",        ParticlesSetAlpha );
+	lua_register(lua2, "ParticlesSetLife",         ParticlesSetLife );
+	lua_register(lua2, "ParticlesSetWindVector",   ParticlesSetWindVector );
+	lua_register(lua2, "ParticlesSetNoWind",       ParticlesSetNoWind );
 
 	// NEW Particle Effects System
-	lua_register(lua, "EffectStart",				EffectStart);
-	lua_register(lua, "EffectStop",					EffectStop);
-	lua_register(lua, "EffectSetLocalPosition",		EffectSetLocalPosition);
-	lua_register(lua, "EffectSetLocalRotation",		EffectSetLocalRotation);
-	lua_register(lua, "EffectSetSpeed",				EffectSetSpeed);
-	lua_register(lua, "EffectSetOpacity",			EffectSetOpacity);
-	lua_register(lua, "EffectSetParticleSize",		EffectSetParticleSize);
-	lua_register(lua, "EffectSetBurstMode",			EffectSetBurstMode);
-	lua_register(lua, "EffectFireBurst",			EffectFireBurst);
-	lua_register(lua, "EffectSetFloorReflection",	EffectSetFloorReflection);
-	lua_register(lua, "EffectSetBounciness",		EffectSetBounciness);
-	lua_register(lua, "EffectSetColor",				EffectSetColor);
-	lua_register(lua, "EffectSetLifespan",			EffectSetLifespan);
+	lua_register(lua2, "EffectStart",				EffectStart);
+	lua_register(lua2, "EffectStop",					EffectStop);
+	lua_register(lua2, "EffectSetLocalPosition",		EffectSetLocalPosition);
+	lua_register(lua2, "EffectSetLocalRotation",		EffectSetLocalRotation);
+	lua_register(lua2, "EffectSetSpeed",				EffectSetSpeed);
+	lua_register(lua2, "EffectSetOpacity",			EffectSetOpacity);
+	lua_register(lua2, "EffectSetParticleSize",		EffectSetParticleSize);
+	lua_register(lua2, "EffectSetBurstMode",			EffectSetBurstMode);
+	lua_register(lua2, "EffectFireBurst",			EffectFireBurst);
+	lua_register(lua2, "EffectSetFloorReflection",	EffectSetFloorReflection);
+	lua_register(lua2, "EffectSetBounciness",		EffectSetBounciness);
+	lua_register(lua2, "EffectSetColor",				EffectSetColor);
+	lua_register(lua2, "EffectSetLifespan",			EffectSetLifespan);
 
 #ifdef WICKEDPARTICLESYSTEM
 	//PE: Wicked particle system.
-	lua_register(lua, "WParticleEffectLoad", WParticleEffectLoad);
-	lua_register(lua, "WParticleEffectPosition", WParticleEffectPosition);
-	lua_register(lua, "WParticleEffectVisible", WParticleEffectVisible);
-	lua_register(lua, "WParticleEffectAction", WParticleEffectAction);
+	lua_register(lua2, "WParticleEffectLoad", WParticleEffectLoad);
+	lua_register(lua2, "WParticleEffectPosition", WParticleEffectPosition);
+	lua_register(lua2, "WParticleEffectVisible", WParticleEffectVisible);
+	lua_register(lua2, "WParticleEffectAction", WParticleEffectAction);
 #endif
 
 	//PE: Other missing commands.
-	lua_register(lua, "PositionSound", entity_lua_positionsound);
-	lua_register(lua, "AddTracer", AddTracer);
-	lua_register(lua, "LoadTracerImage", LoadTracerImage);
+	lua_register(lua2, "PositionSound", entity_lua_positionsound);
+	lua_register(lua2, "AddTracer", AddTracer);
+	lua_register(lua2, "LoadTracerImage", LoadTracerImage);
 
 
-	lua_register(lua, "GetBulletHit",             GetBulletHit);
-	lua_register(lua, "SetFlashLight" , SetFlashLight );
-	lua_register(lua, "SetFlashLightPosition", SetFlashLightPosition);
-	lua_register(lua, "GetFlashLightPosition", GetFlashLightPosition);
+	lua_register(lua2, "GetBulletHit",             GetBulletHit);
+	lua_register(lua2, "SetFlashLight" , SetFlashLight );
+	lua_register(lua2, "SetFlashLightPosition", SetFlashLightPosition);
+	lua_register(lua2, "GetFlashLightPosition", GetFlashLightPosition);
 
-	lua_register(lua, "SetAttachmentVisible" , SetAttachmentVisible );
-	lua_register(lua, "SetOcclusion" , SetOcclusion );
-	lua_register(lua, "SetPlayerWeapons", SetPlayerWeapons);
-	lua_register(lua, "FirePlayerWeapon", FirePlayerWeapon);
-	lua_register(lua, "SetFlashLightKeyEnabled" , SetFlashLightKeyEnabled );
-	lua_register(lua, "SetPlayerRun" , SetPlayerRun );
-	lua_register(lua, "SetFont" , SetFont );
-	lua_register(lua, "GetDeviceWidth" , GetDeviceWidth );
-	lua_register(lua, "GetDeviceHeight" , GetDeviceHeight );
-	lua_register(lua, "GetFirstEntitySpawn" , GetFirstEntitySpawn );
-	lua_register(lua, "GetNextEntitySpawn" , GetFirstEntitySpawn );	
+	lua_register(lua2, "SetAttachmentVisible" , SetAttachmentVisible );
+	lua_register(lua2, "SetOcclusion" , SetOcclusion );
+	lua_register(lua2, "SetPlayerWeapons", SetPlayerWeapons);
+	lua_register(lua2, "FirePlayerWeapon", FirePlayerWeapon);
+	lua_register(lua2, "SetFlashLightKeyEnabled" , SetFlashLightKeyEnabled );
+	lua_register(lua2, "SetPlayerRun" , SetPlayerRun );
+	lua_register(lua2, "SetFont" , SetFont );
+	lua_register(lua2, "GetDeviceWidth" , GetDeviceWidth );
+	lua_register(lua2, "GetDeviceHeight" , GetDeviceHeight );
+	lua_register(lua2, "GetFirstEntitySpawn" , GetFirstEntitySpawn );
+	lua_register(lua2, "GetNextEntitySpawn" , GetFirstEntitySpawn );	
 
 	// VR and head tracking
-	lua_register(lua, "GetHeadTracker" , GetHeadTracker );	
-	lua_register(lua, "ResetHeadTracker" , ResetHeadTracker );	
-	lua_register(lua, "GetHeadTrackerYaw" , GetHeadTrackerYaw );	
-	lua_register(lua, "GetHeadTrackerPitch" , GetHeadTrackerPitch );	
-	lua_register(lua, "GetHeadTrackerRoll" , GetHeadTrackerRoll );	
-	lua_register(lua, "GetHeadTrackerNormalX" , GetHeadTrackerNormalX );	
-	lua_register(lua, "GetHeadTrackerNormalY" , GetHeadTrackerNormalY );	
-	lua_register(lua, "GetHeadTrackerNormalZ" , GetHeadTrackerNormalZ );		
+	lua_register(lua2, "GetHeadTracker" , GetHeadTracker );	
+	lua_register(lua2, "ResetHeadTracker" , ResetHeadTracker );	
+	lua_register(lua2, "GetHeadTrackerYaw" , GetHeadTrackerYaw );	
+	lua_register(lua2, "GetHeadTrackerPitch" , GetHeadTrackerPitch );	
+	lua_register(lua2, "GetHeadTrackerRoll" , GetHeadTrackerRoll );	
+	lua_register(lua2, "GetHeadTrackerNormalX" , GetHeadTrackerNormalX );	
+	lua_register(lua2, "GetHeadTrackerNormalY" , GetHeadTrackerNormalY );	
+	lua_register(lua2, "GetHeadTrackerNormalZ" , GetHeadTrackerNormalZ );		
 
 	// Prompt3D
-	lua_register(lua, "Prompt3D" , Prompt3D );	
-	lua_register(lua, "PositionPrompt3D" , PositionPrompt3D );	
-	lua_register(lua, "PromptLocalDuration", PromptLocalDuration);
+	lua_register(lua2, "Prompt3D" , Prompt3D );	
+	lua_register(lua2, "PositionPrompt3D" , PositionPrompt3D );	
+	lua_register(lua2, "PromptLocalDuration", PromptLocalDuration);
 
 	// utility
-	lua_register(lua, "MsgBox" , MsgBox );
-	lua_register(lua, "IsTestGame", GetIsTestgame);
+	lua_register(lua2, "MsgBox" , MsgBox );
+	lua_register(lua2, "IsTestGame", GetIsTestgame);
 
 	//Cloud Shader
-	lua_register(lua, "GetCloudDensity", GetCloudDensity);
-	lua_register(lua, "GetCloudCoverage", GetCloudCoverage);
-	lua_register(lua, "GetCloudHeight", GetCloudHeight);
-	lua_register(lua, "GetCloudThickness", GetCloudThickness);
-	lua_register(lua, "GetCloudSpeed", GetCloudSpeed);
-	lua_register(lua, "SetCloudDensity", SetCloudDensity);
-	lua_register(lua, "SetCloudCoverage", SetCloudCoverage);
-	lua_register(lua, "SetCloudHeight", SetCloudHeight);
-	lua_register(lua, "SetCloudThickness", SetCloudThickness);
-	lua_register(lua, "SetCloudSpeed", SetCloudSpeed);
+	lua_register(lua2, "GetCloudDensity", GetCloudDensity);
+	lua_register(lua2, "GetCloudCoverage", GetCloudCoverage);
+	lua_register(lua2, "GetCloudHeight", GetCloudHeight);
+	lua_register(lua2, "GetCloudThickness", GetCloudThickness);
+	lua_register(lua2, "GetCloudSpeed", GetCloudSpeed);
+	lua_register(lua2, "SetCloudDensity", SetCloudDensity);
+	lua_register(lua2, "SetCloudCoverage", SetCloudCoverage);
+	lua_register(lua2, "SetCloudHeight", SetCloudHeight);
+	lua_register(lua2, "SetCloudThickness", SetCloudThickness);
+	lua_register(lua2, "SetCloudSpeed", SetCloudSpeed);
 
 	//PE: Other Shader
-	lua_register(lua, "SetTreeWind", SetTreeWind);
-	lua_register(lua, "GetTreeWind", GetTreeWind);
+	lua_register(lua2, "SetTreeWind", SetTreeWind);
+	lua_register(lua2, "GetTreeWind", GetTreeWind);
 
 	//Water Shader
 	//setter
-	lua_register(lua, "SetWaterHeight", SetWaterHeight);
-	lua_register(lua, "SetWaterColor", SetWaterShaderColor);
-	lua_register(lua, "SetWaterWaveIntensity", SetWaterWaveIntensity);
-	lua_register(lua, "SetWaterTransparancy", SetWaterTransparancy);
-	lua_register(lua, "SetWaterReflection", SetWaterReflection);
-	lua_register(lua, "SetWaterReflectionSparkleIntensity", SetWaterReflectionSparkleIntensity);
-	lua_register(lua, "SetWaterFlowDirection", SetWaterFlowDirection);
-	lua_register(lua, "SetWaterDistortionWaves", SetWaterDistortionWaves);
-	lua_register(lua, "SetRippleWaterSpeed", SetRippleWaterSpeed);
+	lua_register(lua2, "SetWaterHeight", SetWaterHeight);
+	lua_register(lua2, "SetWaterColor", SetWaterShaderColor);
+	lua_register(lua2, "SetWaterWaveIntensity", SetWaterWaveIntensity);
+	lua_register(lua2, "SetWaterTransparancy", SetWaterTransparancy);
+	lua_register(lua2, "SetWaterReflection", SetWaterReflection);
+	lua_register(lua2, "SetWaterReflectionSparkleIntensity", SetWaterReflectionSparkleIntensity);
+	lua_register(lua2, "SetWaterFlowDirection", SetWaterFlowDirection);
+	lua_register(lua2, "SetWaterDistortionWaves", SetWaterDistortionWaves);
+	lua_register(lua2, "SetRippleWaterSpeed", SetRippleWaterSpeed);
 	//getter
-	lua_register(lua, "GetWaterHeight", GetWaterHeight);
-	lua_register(lua, "GetWaterWaveIntensity", GetWaterWaveIntensity);
-	lua_register(lua, "GetWaterShaderColorRed", GetWaterShaderColorRed);
-	lua_register(lua, "GetWaterShaderColorGreen", GetWaterShaderColorGreen);
-	lua_register(lua, "GetWaterShaderColorBlue", GetWaterShaderColorBlue);
-	lua_register(lua, "GetWaterTransparancy", GetWaterTransparancy);
-	lua_register(lua, "GetWaterReflection", GetWaterReflection);
-	lua_register(lua, "GetWaterReflectionSparkleIntensity", GetWaterReflectionSparkleIntensity);
-	lua_register(lua, "GetWaterFlowDirectionX", GetWaterFlowDirectionX);
-	lua_register(lua, "GetWaterFlowDirectionY", GetWaterFlowDirectionY);
-	lua_register(lua, "GetWaterFlowSpeed", GetWaterFlowSpeed);
-	lua_register(lua, "GetWaterDistortionWaves", GetWaterDistortionWaves);
-	lua_register(lua, "GetRippleWaterSpeed", GetRippleWaterSpeed); 
-	lua_register(lua, "GetWaterEnabled", GetWaterEnabled);
+	lua_register(lua2, "GetWaterHeight", GetWaterHeight);
+	lua_register(lua2, "GetWaterWaveIntensity", GetWaterWaveIntensity);
+	lua_register(lua2, "GetWaterShaderColorRed", GetWaterShaderColorRed);
+	lua_register(lua2, "GetWaterShaderColorGreen", GetWaterShaderColorGreen);
+	lua_register(lua2, "GetWaterShaderColorBlue", GetWaterShaderColorBlue);
+	lua_register(lua2, "GetWaterTransparancy", GetWaterTransparancy);
+	lua_register(lua2, "GetWaterReflection", GetWaterReflection);
+	lua_register(lua2, "GetWaterReflectionSparkleIntensity", GetWaterReflectionSparkleIntensity);
+	lua_register(lua2, "GetWaterFlowDirectionX", GetWaterFlowDirectionX);
+	lua_register(lua2, "GetWaterFlowDirectionY", GetWaterFlowDirectionY);
+	lua_register(lua2, "GetWaterFlowSpeed", GetWaterFlowSpeed);
+	lua_register(lua2, "GetWaterDistortionWaves", GetWaterDistortionWaves);
+	lua_register(lua2, "GetRippleWaterSpeed", GetRippleWaterSpeed); 
+	lua_register(lua2, "GetWaterEnabled", GetWaterEnabled);
 
 	#ifdef STORYBOARD
 	//Storyboard
-	lua_register(lua, "SetScreenHUDGlobalScale", SetScreenHUDGlobalScale);
-	lua_register(lua, "InitScreen", InitScreen);
-	lua_register(lua, "DisplayScreen", DisplayScreen);
-	lua_register(lua, "DisplayCurrentScreen", DisplayCurrentScreen);
-	lua_register(lua, "GetCurrentScreen", GetCurrentScreen);
-	lua_register(lua, "GetCurrentScreenName", GetCurrentScreenName);
-	lua_register(lua, "CheckScreenToggles", CheckScreenToggles);
-	lua_register(lua, "DisableGunFireInHUD", DisableGunFireInHUD);
-	lua_register(lua, "EnableGunFireInHUD", EnableGunFireInHUD);
-	lua_register(lua, "DisableBoundHudKeys", DisableBoundHudKeys);
-	lua_register(lua, "EnableBoundHudKeys", EnableBoundHudKeys);
+	lua_register(lua2, "SetScreenHUDGlobalScale", SetScreenHUDGlobalScale);
+	lua_register(lua2, "InitScreen", InitScreen);
+	lua_register(lua2, "DisplayScreen", DisplayScreen);
+	lua_register(lua2, "DisplayCurrentScreen", DisplayCurrentScreen);
+	lua_register(lua2, "GetCurrentScreen", GetCurrentScreen);
+	lua_register(lua2, "GetCurrentScreenName", GetCurrentScreenName);
+	lua_register(lua2, "CheckScreenToggles", CheckScreenToggles);
+	lua_register(lua2, "DisableGunFireInHUD", DisableGunFireInHUD);
+	lua_register(lua2, "EnableGunFireInHUD", EnableGunFireInHUD);
+	lua_register(lua2, "DisableBoundHudKeys", DisableBoundHudKeys);
+	lua_register(lua2, "EnableBoundHudKeys", EnableBoundHudKeys);
 	
-	lua_register(lua, "ScreenToggle", ScreenToggle);
-	lua_register(lua, "ScreenToggleByKey", ScreenToggleByKey);
-	lua_register(lua, "GetIfUsingTABScreen", GetIfUsingTABScreen);
-	lua_register(lua, "GetStoryboardActive", GetStoryboardActive);
-	lua_register(lua, "GetScreenWidgetValue", GetScreenWidgetValue);
-	lua_register(lua, "SetScreenWidgetValue", SetScreenWidgetValue);
-	lua_register(lua, "SetScreenWidgetSelection", SetScreenWidgetSelection);
-	lua_register(lua, "GetScreenElementsType", GetScreenElementsType);
-	lua_register(lua, "GetScreenElementTypeID", GetScreenElementTypeID);
-	lua_register(lua, "GetScreenElements", GetScreenElements);
-	lua_register(lua, "GetScreenElementID", GetScreenElementID);
-	lua_register(lua, "GetScreenElementImage", GetScreenElementImage);
-	lua_register(lua, "GetScreenElementArea", GetScreenElementArea);
-	lua_register(lua, "GetScreenElementDetails", GetScreenElementDetails);
-	lua_register(lua, "GetScreenElementName", GetScreenElementName);
-	lua_register(lua, "SetScreenElementVisibility", SetScreenElementVisibility);
-	lua_register(lua, "SetScreenElementPosition", SetScreenElementPosition);
-	lua_register(lua, "SetScreenElementText", SetScreenElementText);
-	lua_register(lua, "SetScreenElementColor", SetScreenElementColor);
-	lua_register(lua, "GetCollectionAttributeQuantity", GetCollectionAttributeQuantity);
-	lua_register(lua, "GetCollectionAttributeLabel", GetCollectionAttributeLabel);
-	lua_register(lua, "GetCollectionItemQuantity", GetCollectionItemQuantity);
-	lua_register(lua, "GetCollectionItemAttribute", GetCollectionItemAttribute);	
-	lua_register(lua, "GetCollectionQuestAttributeQuantity", GetCollectionQuestAttributeQuantity);
-	lua_register(lua, "GetCollectionQuestAttributeLabel", GetCollectionQuestAttributeLabel);
-	lua_register(lua, "GetCollectionQuestQuantity", GetCollectionQuestQuantity);
-	lua_register(lua, "GetCollectionQuestAttribute", GetCollectionQuestAttribute);
-	lua_register(lua, "MakeInventoryContainer", MakeInventoryContainer);
-	lua_register(lua, "GetInventoryTotal", GetInventoryTotal);
-	lua_register(lua, "GetInventoryName", GetInventoryName);
-	lua_register(lua, "GetInventoryExist", GetInventoryExist);
-	lua_register(lua, "GetInventoryQuantity", GetInventoryQuantity);
-	lua_register(lua, "GetInventoryItem", GetInventoryItem);
-	lua_register(lua, "GetInventoryItemID", GetInventoryItemID);
-	lua_register(lua, "GetInventoryItemSlot", GetInventoryItemSlot);
-	lua_register(lua, "SetInventoryItemSlot", SetInventoryItemSlot);
-	lua_register(lua, "MoveInventoryItem", MoveInventoryItem);
-	lua_register(lua, "DeleteAllInventoryContainers", DeleteAllInventoryContainers);
-	lua_register(lua, "AddInventoryItem", AddInventoryItem);
+	lua_register(lua2, "ScreenToggle", ScreenToggle);
+	lua_register(lua2, "ScreenToggleByKey", ScreenToggleByKey);
+	lua_register(lua2, "GetIfUsingTABScreen", GetIfUsingTABScreen);
+	lua_register(lua2, "GetStoryboardActive", GetStoryboardActive);
+	lua_register(lua2, "GetScreenWidgetValue", GetScreenWidgetValue);
+	lua_register(lua2, "SetScreenWidgetValue", SetScreenWidgetValue);
+	lua_register(lua2, "SetScreenWidgetSelection", SetScreenWidgetSelection);
+	lua_register(lua2, "GetScreenElementsType", GetScreenElementsType);
+	lua_register(lua2, "GetScreenElementTypeID", GetScreenElementTypeID);
+	lua_register(lua2, "GetScreenElements", GetScreenElements);
+	lua_register(lua2, "GetScreenElementID", GetScreenElementID);
+	lua_register(lua2, "GetScreenElementImage", GetScreenElementImage);
+	lua_register(lua2, "GetScreenElementArea", GetScreenElementArea);
+	lua_register(lua2, "GetScreenElementDetails", GetScreenElementDetails);
+	lua_register(lua2, "GetScreenElementName", GetScreenElementName);
+	lua_register(lua2, "SetScreenElementVisibility", SetScreenElementVisibility);
+	lua_register(lua2, "SetScreenElementPosition", SetScreenElementPosition);
+	lua_register(lua2, "SetScreenElementText", SetScreenElementText);
+	lua_register(lua2, "SetScreenElementColor", SetScreenElementColor);
+	lua_register(lua2, "GetCollectionAttributeQuantity", GetCollectionAttributeQuantity);
+	lua_register(lua2, "GetCollectionAttributeLabel", GetCollectionAttributeLabel);
+	lua_register(lua2, "GetCollectionItemQuantity", GetCollectionItemQuantity);
+	lua_register(lua2, "GetCollectionItemAttribute", GetCollectionItemAttribute);	
+	lua_register(lua2, "GetCollectionQuestAttributeQuantity", GetCollectionQuestAttributeQuantity);
+	lua_register(lua2, "GetCollectionQuestAttributeLabel", GetCollectionQuestAttributeLabel);
+	lua_register(lua2, "GetCollectionQuestQuantity", GetCollectionQuestQuantity);
+	lua_register(lua2, "GetCollectionQuestAttribute", GetCollectionQuestAttribute);
+	lua_register(lua2, "MakeInventoryContainer", MakeInventoryContainer);
+	lua_register(lua2, "GetInventoryTotal", GetInventoryTotal);
+	lua_register(lua2, "GetInventoryName", GetInventoryName);
+	lua_register(lua2, "GetInventoryExist", GetInventoryExist);
+	lua_register(lua2, "GetInventoryQuantity", GetInventoryQuantity);
+	lua_register(lua2, "GetInventoryItem", GetInventoryItem);
+	lua_register(lua2, "GetInventoryItemID", GetInventoryItemID);
+	lua_register(lua2, "GetInventoryItemSlot", GetInventoryItemSlot);
+	lua_register(lua2, "SetInventoryItemSlot", SetInventoryItemSlot);
+	lua_register(lua2, "MoveInventoryItem", MoveInventoryItem);
+	lua_register(lua2, "DeleteAllInventoryContainers", DeleteAllInventoryContainers);
+	lua_register(lua2, "AddInventoryItem", AddInventoryItem);
 	#endif
 
-	lua_register(lua, "SetCharacterDirectionOverride", SetCharacterDirectionOverride);
-	lua_register(lua, "LimitSwimmingVerticalMovement", LimitSwimmingVerticalMovement);
+	lua_register(lua2, "SetCharacterDirectionOverride", SetCharacterDirectionOverride);
+	lua_register(lua2, "LimitSwimmingVerticalMovement", LimitSwimmingVerticalMovement);
 
 	// material commands
-	lua_register(lua, "SetEntityBaseColor", SetEntityBaseColor);
-	lua_register(lua, "GetEntityBaseColor", GetEntityBaseColor);
-	lua_register(lua, "SetEntityBaseAlpha", SetEntityBaseAlpha);
-	lua_register(lua, "GetEntityBaseAlpha", GetEntityBaseAlpha);
-	lua_register(lua, "SetEntityAlphaClipping", SetEntityAlphaClipping);
-	lua_register(lua, "GetEntityAlphaClipping", GetEntityAlphaClipping);
-	lua_register(lua, "SetEntityNormalStrength", SetEntityNormalStrength);
-	lua_register(lua, "GetEntityNormalStrength", GetEntityNormalStrength);
-	lua_register(lua, "SetEntityRoughnessStrength", SetEntityRoughnessStrength);
-	lua_register(lua, "GetEntityRoughnessStrength", GetEntityRoughnessStrength);
-	lua_register(lua, "SetEntityMetalnessStrength", SetEntityMetalnessStrength);
-	lua_register(lua, "GetEntityMetalnessStrength", GetEntityMetalnessStrength);
-	lua_register(lua, "SetEntityEmissiveColor", SetEntityEmissiveColor);
-	lua_register(lua, "GetEntityEmissiveColor", GetEntityEmissiveColor);
-	lua_register(lua, "SetEntityEmissiveStrength", SetEntityEmissiveStrength);
-	lua_register(lua, "GetEntityEmissiveStrength", GetEntityEmissiveStrength);
-	lua_register(lua, "SetEntityReflectance", SetEntityReflectance);
-	lua_register(lua, "GetEntityReflectance", GetEntityReflectance);
-	lua_register(lua, "SetEntityRenderBias", SetEntityRenderBias);
-	lua_register(lua, "GetEntityRenderBias", GetEntityRenderBias);
-	lua_register(lua, "SetEntityTransparency", SetEntityTransparency);
-	lua_register(lua, "GetEntityTransparency", GetEntityTransparency);
-	lua_register(lua, "SetEntityDoubleSided", SetEntityDoubleSided);
-	lua_register(lua, "GetEntityDoubleSided", GetEntityDoubleSided);
-	lua_register(lua, "SetEntityPlanarReflection", SetEntityPlanarReflection);
-	lua_register(lua, "GetEntityPlanarReflection", GetEntityPlanarReflection);
-	lua_register(lua, "SetEntityCastShadows", SetEntityCastShadows);
-	lua_register(lua, "GetEntityCastShadows", GetEntityCastShadows);
-	lua_register(lua, "SetEntityZDepthMode", SetEntityZDepthMode);
-	lua_register(lua, "GetEntityZDepthMode", GetEntityZDepthMode);
-	lua_register(lua, "SetEntityOutline", SetEntityOutline);
-	lua_register(lua, "GetEntityOutline", GetEntityOutline);
+	lua_register(lua2, "SetEntityBaseColor", SetEntityBaseColor);
+	lua_register(lua2, "GetEntityBaseColor", GetEntityBaseColor);
+	lua_register(lua2, "SetEntityBaseAlpha", SetEntityBaseAlpha);
+	lua_register(lua2, "GetEntityBaseAlpha", GetEntityBaseAlpha);
+	lua_register(lua2, "SetEntityAlphaClipping", SetEntityAlphaClipping);
+	lua_register(lua2, "GetEntityAlphaClipping", GetEntityAlphaClipping);
+	lua_register(lua2, "SetEntityNormalStrength", SetEntityNormalStrength);
+	lua_register(lua2, "GetEntityNormalStrength", GetEntityNormalStrength);
+	lua_register(lua2, "SetEntityRoughnessStrength", SetEntityRoughnessStrength);
+	lua_register(lua2, "GetEntityRoughnessStrength", GetEntityRoughnessStrength);
+	lua_register(lua2, "SetEntityMetalnessStrength", SetEntityMetalnessStrength);
+	lua_register(lua2, "GetEntityMetalnessStrength", GetEntityMetalnessStrength);
+	lua_register(lua2, "SetEntityEmissiveColor", SetEntityEmissiveColor);
+	lua_register(lua2, "GetEntityEmissiveColor", GetEntityEmissiveColor);
+	lua_register(lua2, "SetEntityEmissiveStrength", SetEntityEmissiveStrength);
+	lua_register(lua2, "GetEntityEmissiveStrength", GetEntityEmissiveStrength);
+	lua_register(lua2, "SetEntityReflectance", SetEntityReflectance);
+	lua_register(lua2, "GetEntityReflectance", GetEntityReflectance);
+	lua_register(lua2, "SetEntityRenderBias", SetEntityRenderBias);
+	lua_register(lua2, "GetEntityRenderBias", GetEntityRenderBias);
+	lua_register(lua2, "SetEntityTransparency", SetEntityTransparency);
+	lua_register(lua2, "GetEntityTransparency", GetEntityTransparency);
+	lua_register(lua2, "SetEntityDoubleSided", SetEntityDoubleSided);
+	lua_register(lua2, "GetEntityDoubleSided", GetEntityDoubleSided);
+	lua_register(lua2, "SetEntityPlanarReflection", SetEntityPlanarReflection);
+	lua_register(lua2, "GetEntityPlanarReflection", GetEntityPlanarReflection);
+	lua_register(lua2, "SetEntityCastShadows", SetEntityCastShadows);
+	lua_register(lua2, "GetEntityCastShadows", GetEntityCastShadows);
+	lua_register(lua2, "SetEntityZDepthMode", SetEntityZDepthMode);
+	lua_register(lua2, "GetEntityZDepthMode", GetEntityZDepthMode);
+	lua_register(lua2, "SetEntityOutline", SetEntityOutline);
+	lua_register(lua2, "GetEntityOutline", GetEntityOutline);
 
 	// texture commands
-	lua_register(lua, "SetEntityTexture", SetEntityTexture);
-	lua_register(lua, "SetEntityTextureScale", SetEntityTextureScale);
-	lua_register(lua, "SetEntityTextureOffset", SetEntityTextureOffset);
+	lua_register(lua2, "SetEntityTexture", SetEntityTexture);
+	lua_register(lua2, "SetEntityTextureScale", SetEntityTextureScale);
+	lua_register(lua2, "SetEntityTextureOffset", SetEntityTextureOffset);
 
-	lua_register(lua, "SetWeaponArmsVisible", SetWeaponArmsVisible);
-	lua_register(lua, "GetWeaponArmsVisible", GetWeaponArmsVisible);
+	lua_register(lua2, "SetWeaponArmsVisible", SetWeaponArmsVisible);
+	lua_register(lua2, "GetWeaponArmsVisible", GetWeaponArmsVisible);
 
-	lua_register(lua, "GetEntityInZoneWithFilter", GetEntityInZoneWithFilter);
-	lua_register(lua, "IsPointWithinZone", IsPointWithinZone);
+	lua_register(lua2, "GetEntityInZoneWithFilter", GetEntityInZoneWithFilter);
+	lua_register(lua2, "IsPointWithinZone", IsPointWithinZone);
 
 	// In-game HUD
-	lua_register(lua, "IsPlayerInGame", IsPlayerInGame);
-	lua_register(lua, "SetLevelFadeoutEnabled", SetLevelFadeoutEnabled);
+	lua_register(lua2, "IsPlayerInGame", IsPlayerInGame);
+	lua_register(lua2, "SetLevelFadeoutEnabled", SetLevelFadeoutEnabled);
 
 	// Sun
-	lua_register(lua, "SetSunDirection", SetSunDirection);
-	lua_register(lua, "SetSunLightingColor", SetSunLightingColor);
-	lua_register(lua, "SetSunIntensity", SetSunIntensity);
-	lua_register(lua, "GetSunIntensity", GetSunIntensity);
+	lua_register(lua2, "SetSunDirection", SetSunDirection);
+	lua_register(lua2, "SetSunLightingColor", SetSunLightingColor);
+	lua_register(lua2, "SetSunIntensity", SetSunIntensity);
+	lua_register(lua2, "GetSunIntensity", GetSunIntensity);
 
 	// Lighting
-	lua_register(lua, "SetExposure", SetExposure);
-	lua_register(lua, "GetExposure", GetExposure);
+	lua_register(lua2, "SetExposure", SetExposure);
+	lua_register(lua2, "GetExposure", GetExposure);
 
-	lua_register(lua, "SetLutTo", lua_set_lut);
-	lua_register(lua, "GetLut", lua_get_lut);
-	lua_register(lua, "PromptLocalOffset", PromptLocalOffset);
-	lua_register(lua, "PromptGuruMeditation", PromptGuruMeditation);
+	lua_register(lua2, "SetLutTo", lua_set_lut);
+	lua_register(lua2, "GetLut", lua_get_lut);
+	lua_register(lua2, "PromptLocalOffset", PromptLocalOffset);
+	lua_register(lua2, "PromptGuruMeditation", PromptGuruMeditation);
 
 	//Other effects.
-	lua_register(lua, "SetGrassScale", SetGrassScale);
-	lua_register(lua, "GetGrassScale", GetGrassScale);
-	lua_register(lua, "GunAnimationSetFrame", GunAnimationSetFrame);
-	lua_register(lua, "LoopGunAnimation", LoopGunAnimation);
-	lua_register(lua, "StopGunAnimation", StopGunAnimation);
-	lua_register(lua, "PlayGunAnimation", PlayGunAnimation);
-	lua_register(lua, "GunAnimationPlaying", GunAnimationPlaying);
-	lua_register(lua, "GetGunAnimationFramesFromName", GetGunAnimationFramesFromName);
-	lua_register(lua, "SetGunAnimationSpeed", SetGunAnimationSpeed);
-	lua_register(lua, "ForceGunUnderWater", ForceGunUnderWater);
-	lua_register(lua, "GetGunEmissiveStrength", GetGunEmissiveStrength);
-	lua_register(lua, "SetGunEmissiveStrength", SetGunEmissiveStrength);
+	lua_register(lua2, "SetGrassScale", SetGrassScale);
+	lua_register(lua2, "GetGrassScale", GetGrassScale);
+	lua_register(lua2, "GunAnimationSetFrame", GunAnimationSetFrame);
+	lua_register(lua2, "LoopGunAnimation", LoopGunAnimation);
+	lua_register(lua2, "StopGunAnimation", StopGunAnimation);
+	lua_register(lua2, "PlayGunAnimation", PlayGunAnimation);
+	lua_register(lua2, "GunAnimationPlaying", GunAnimationPlaying);
+	lua_register(lua2, "GetGunAnimationFramesFromName", GetGunAnimationFramesFromName);
+	lua_register(lua2, "SetGunAnimationSpeed", SetGunAnimationSpeed);
+	lua_register(lua2, "ForceGunUnderWater", ForceGunUnderWater);
+	lua_register(lua2, "GetGunEmissiveStrength", GetGunEmissiveStrength);
+	lua_register(lua2, "SetGunEmissiveStrength", SetGunEmissiveStrength);
 	
 }
 
@@ -14517,7 +14517,7 @@ char szLuaReturnString[1024];
 		//return 0;
 
 		// create new Lua state   
-		lua = luaL_newstate();
+		lua2 = luaL_newstate();
 
 		// load Lua libraries
 		static const luaL_Reg lualibs[] =
@@ -14531,11 +14531,11 @@ char szLuaReturnString[1024];
 		/*const luaL_Reg *lib = lualibs;
 		for(; lib->func != NULL; lib++)
 		{
-			lib->func(lua);
-			lua_settop(lua, 0);
+			lib->func(lua2);
+			lua_settop(lua2, 0);
 		}*/
 
-		luaL_openlibs(lua);
+		luaL_openlibs(lua2);
 	}
 
     // run the Lua script
@@ -14545,21 +14545,21 @@ char szLuaReturnString[1024];
 	strcpy ( VirtualFilename , pString );
 	LuaCheckForWorkshopFile ( VirtualFilename );
 
-	result =  luaL_dofile(lua, VirtualFilename);
+	result =  luaL_dofile(lua2, VirtualFilename);
 
 	if (result == 1 )
 	{
 		while(ShowCursor(TRUE) <= 0);
 		SetCursorPos ( g_dwScreenWidth / 2 , g_dwScreenHeight / 2 );
-		MessageBox( g_pGlob->hWnd , lua_tostring(lua, -1), "LUA ERROR!" , MB_OK | MB_APPLMODAL | MB_TOPMOST | MB_SETFOREGROUND );
-		lua_pop(lua, 1);
+		MessageBox( g_pGlob->hWnd , lua_tostring(lua2, -1), "LUA ERROR!" , MB_OK | MB_APPLMODAL | MB_TOPMOST | MB_SETFOREGROUND );
+		lua_pop(lua2, 1);
 	}
 	else
 	{
 		if ( ppLuaStates[id] == NULL )
 			ppLuaStates[id] = new luaState;
 
-		ppLuaStates[id]->state = lua;
+		ppLuaStates[id]->state = lua2;
 	}
 
 	return result;
@@ -14611,7 +14611,7 @@ char szLuaReturnString[1024];
 		//return 0;
 
 		// create new Lua state   
-		lua = luaL_newstate();
+		lua2 = luaL_newstate();
 
 		// load Lua libraries
 		static const luaL_Reg lualibs[] =
@@ -14625,23 +14625,23 @@ char szLuaReturnString[1024];
 		/*const luaL_Reg *lib = lualibs;
 		for(; lib->func != NULL; lib++)
 		{
-			lib->func(lua);
-			lua_settop(lua, 0);
+			lib->func(lua2);
+			lua_settop(lua2, 0);
 		}*/
 
-		luaL_openlibs(lua);
+		luaL_openlibs(lua2);
 
 	}
 
-	/*lua_getglobal(lua, "package");
-	lua_getfield(lua, -1, "path"); // get field "path" from table at top of stack (-1)
-	std::string cur_path = lua_tostring(lua, -1); // grab path string from top of stack
+	/*lua_getglobal(lua2, "package");
+	lua_getfield(lua2, -1, "path"); // get field "path" from table at top of stack (-1)
+	std::string cur_path = lua_tostring(lua2, -1); // grab path string from top of stack
 	cur_path.append (";"); // do your path magic here
 	cur_path.append("F:/TGCSHARED/fpsc-reloaded/FPS Creator Files/Files/?");
-	lua_pop(lua, 1); // get rid of the string on the stack we just pushed on line 5
-	lua_pushstring(lua, cur_path.c_str()); // push the new one
-	lua_setfield(lua, -2, "path"); // set the field "path" in table at -2 with value at top of stack
-	lua_pop(lua, 1); // get rid of package table from top of stack*/
+	lua_pop(lua2, 1); // get rid of the string on the stack we just pushed on line 5
+	lua_pushstring(lua2, cur_path.c_str()); // push the new one
+	lua_setfield(lua2, -2, "path"); // set the field "path" in table at -2 with value at top of stack
+	lua_pop(lua2, 1); // get rid of package table from top of stack*/
 
     // run the Lua script
 	int result = 0;
@@ -14650,22 +14650,22 @@ char szLuaReturnString[1024];
 	strcpy ( VirtualFilename , pString );
 	LuaCheckForWorkshopFile ( VirtualFilename );
 
-	result = luaL_dofile(lua, VirtualFilename);
+	result = luaL_dofile(lua2, VirtualFilename);
 
 	if (result == 1 )
 	{
 		while(ShowCursor(TRUE) <= 0);
 		SetCursorPos ( g_dwScreenWidth / 2 , g_dwScreenHeight / 2 );
-		MessageBox( g_pGlob->hWnd , lua_tostring(lua, -1), "LUA ERROR!" , MB_OK | MB_APPLMODAL | MB_TOPMOST | MB_SETFOREGROUND );
-		//MessageBox(NULL, lua_tostring(lua, -1), "LUA ERROR", MB_TOPMOST | MB_OK);
-		lua_pop(lua, 1);
+		MessageBox( g_pGlob->hWnd , lua_tostring(lua2, -1), "LUA ERROR!" , MB_OK | MB_APPLMODAL | MB_TOPMOST | MB_SETFOREGROUND );
+		//MessageBox(NULL, lua_tostring(lua2, -1), "LUA ERROR", MB_TOPMOST | MB_OK);
+		lua_pop(lua2, 1);
 	}
 	else
 	{
 		if ( ppLuaStates[id] == NULL )
 			ppLuaStates[id] = new luaState;
 
-		ppLuaStates[id]->state = lua;
+		ppLuaStates[id]->state = lua2;
 	}
 
 	return result;
@@ -14686,7 +14686,7 @@ DARKLUA_API void LuaSetFunction( LPSTR pString , int id, int params, int results
 		return ;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 	
 	char* pLastOccurance =  strrchr ( pString , '\\' );
 	if ( pLastOccurance )
@@ -14698,7 +14698,7 @@ DARKLUA_API void LuaSetFunction( LPSTR pString , int id, int params, int results
 	functionStateID = id;
 
 	// the function name 
-	lua_getglobal(lua, functionName );
+	lua_getglobal(lua2, functionName );
 }
 
 DARKLUA_API void LuaSetFunction( LPSTR pString , int params, int results )
@@ -14727,7 +14727,7 @@ DARKLUA_API void LuaSetFunction( LPSTR pString , int params, int results )
 		return ;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	char* pLastOccurance =  strrchr ( pString , '\\' );
 	if ( pLastOccurance )
@@ -14739,7 +14739,7 @@ DARKLUA_API void LuaSetFunction( LPSTR pString , int params, int results )
 	functionStateID = id;
 
 	// the function name 
-	lua_getglobal(lua, functionName );
+	lua_getglobal(lua2, functionName );
 }
 
 DARKLUA_API int LuaValidateEntityTable ( int iEntityIndex )
@@ -14749,22 +14749,22 @@ DARKLUA_API int LuaValidateEntityTable ( int iEntityIndex )
 	if ( id > maxLuaStates+1 ) return 0;
 	if ( ppLuaStates==NULL ) return 0;
 	if ( ppLuaStates[id] == NULL ) return 0;
-	lua = ppLuaStates[id]->state;
-	int stacktopindex = lua_gettop (lua);
-	lua_getglobal(lua, "g_Entity");
-	lua_pushnumber(lua, iEntityIndex); 
-	lua_gettable(lua, -2); // g_Entity[e] 
-	lua_pushstring(lua, "x");
-	if ( lua_istable(lua,-2) )
+	lua2 = ppLuaStates[id]->state;
+	int stacktopindex = lua_gettop (lua2);
+	lua_getglobal(lua2, "g_Entity");
+	lua_pushnumber(lua2, iEntityIndex); 
+	lua_gettable(lua2, -2); // g_Entity[e] 
+	lua_pushstring(lua2, "x");
+	if ( lua_istable(lua2,-2) )
 	{
-		lua_gettable(lua, -2);  // g_Entity[e]["x"]
-		if ( lua_isnumber ( lua, -1 ) || lua_isstring ( lua, -1 ) )
+		lua_gettable(lua2, -2);  // g_Entity[e]["x"]
+		if ( lua_isnumber ( lua2, -1 ) || lua_isstring ( lua2, -1 ) )
 		{
 			// table exists and the element within the table also exists as a number/string so its valid
 			iValid = 1;
 		}
 	}
-	lua_settop (lua, stacktopindex);
+	lua_settop (lua2, stacktopindex);
 	return iValid;
 }
 
@@ -14775,7 +14775,7 @@ DARKLUA_API void LuaCall()
 	{
 		if ( strcmp ( functionName , FunctionsWithErrors[c].fileName ) == 0 )
 		{
-			lua_pop(lua,functionParams+1);
+			lua_pop(lua2,functionParams+1);
 			return;
 		}
 	}
@@ -14792,7 +14792,7 @@ DARKLUA_API void LuaCall()
 		strcpy ( item.fileName , functionName );
 		FunctionsWithErrors.push_back(item);
 
-		lua_pop(lua,functionParams+1);
+		lua_pop(lua2,functionParams+1);
 
 		//MessageBox(NULL, "Lua ID not in use", "LUA ERROR", MB_TOPMOST | MB_OK);
 		return ;
@@ -14807,7 +14807,7 @@ DARKLUA_API void LuaCall()
 		strcpy ( item.fileName , functionName );
 		FunctionsWithErrors.push_back(item);
 
-		lua_pop(lua,functionParams+1);
+		lua_pop(lua2,functionParams+1);
 
 		//MessageBox(NULL, "Lua ID not in use", "LUA ERROR", MB_TOPMOST | MB_OK);
 		return ;
@@ -14821,16 +14821,16 @@ DARKLUA_API void LuaCall()
 	WriteToDebugLog ( "===========" , true );
 #endif
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	//if ( functionParams == 1 )
 	//	int dave = 1;
 
 	// call the function with x arguments, return y results
-	if ( lua_isfunction(lua, -(1+functionParams)) == 1 )
+	if ( lua_isfunction(lua2, -(1+functionParams)) == 1 )
 	{
-		//lua_call(lua, functionParams, functionResults);
-      if (lua_pcall(lua, functionParams, functionResults, 0) != 0)
+		//lua_call(lua2, functionParams, functionResults);
+      if (lua_pcall(lua2, functionParams, functionResults, 0) != 0)
 	  {
 		//add to error list
 		StringList item;
@@ -14838,12 +14838,12 @@ DARKLUA_API void LuaCall()
 		FunctionsWithErrors.push_back(item);
 
 		char s[256];
-		sprintf ( s , "error running function: %s", lua_tostring(lua, -1));
+		sprintf ( s , "error running function: %s", lua_tostring(lua2, -1));
 		//MessageBox(NULL, s, "LUA ERROR", MB_TOPMOST | MB_OK);
 		while(ShowCursor(TRUE) <= 0);
 		SetCursorPos ( g_dwScreenWidth / 2 , g_dwScreenHeight / 2 );
-		MessageBox( g_pGlob->hWnd , lua_tostring(lua, -1), "LUA ERROR" , MB_OK | MB_APPLMODAL | MB_TOPMOST | MB_SETFOREGROUND );
-		lua_pop(lua, 1);
+		MessageBox( g_pGlob->hWnd , lua_tostring(lua2, -1), "LUA ERROR" , MB_OK | MB_APPLMODAL | MB_TOPMOST | MB_SETFOREGROUND );
+		lua_pop(lua2, 1);
 		failedResults = 1;
 	  }
 	}
@@ -14856,7 +14856,7 @@ DARKLUA_API void LuaCall()
 		FunctionsWithErrors.push_back(item);
 
 		// remove params from the stack
-		lua_pop(lua,functionParams);
+		lua_pop(lua2,functionParams);
 		failedResults = 1;
 
 		char s[256];
@@ -14866,7 +14866,7 @@ DARKLUA_API void LuaCall()
 
 	functionStateID = 0;
 	if ( failedResults > 0 )
-		lua_pop(lua, failedResults);
+		lua_pop(lua2, failedResults);
 }
 
 DARKLUA_API void LuaCallSilent()
@@ -14875,7 +14875,7 @@ DARKLUA_API void LuaCallSilent()
 	{
 		if ( strcmp ( functionName , FunctionsWithErrors[c].fileName ) == 0 )
 		{
-			lua_pop(lua,functionParams+1);
+			lua_pop(lua2,functionParams+1);
 			return;
 		}
 	}
@@ -14892,7 +14892,7 @@ DARKLUA_API void LuaCallSilent()
 		strcpy ( item.fileName , functionName );
 		FunctionsWithErrors.push_back(item);
 
-		lua_pop(lua,functionParams+1);
+		lua_pop(lua2,functionParams+1);
 
 		//MessageBox(NULL, "Lua ID not in use", "LUA ERROR", MB_TOPMOST | MB_OK);
 		return ;
@@ -14907,7 +14907,7 @@ DARKLUA_API void LuaCallSilent()
 		strcpy ( item.fileName , functionName );
 		FunctionsWithErrors.push_back(item);
 
-		lua_pop(lua,functionParams+1);
+		lua_pop(lua2,functionParams+1);
 
 		//MessageBox(NULL, "Lua ID not in use", "LUA ERROR", MB_TOPMOST | MB_OK);
 		return ;
@@ -14921,13 +14921,13 @@ DARKLUA_API void LuaCallSilent()
 	WriteToDebugLog ( "===========" , true );
 #endif
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	// call the function with x arguments, return y results
-	if ( lua_isfunction(lua, -(1+functionParams)) == 1 )
+	if ( lua_isfunction(lua2, -(1+functionParams)) == 1 )
 	{
-		//lua_call(lua, functionParams, functionResults);
-      if (lua_pcall(lua, functionParams, functionResults, 0) != 0)
+		//lua_call(lua2, functionParams, functionResults);
+      if (lua_pcall(lua2, functionParams, functionResults, 0) != 0)
 	  {
 		//add to error list
 		StringList item;
@@ -14935,7 +14935,7 @@ DARKLUA_API void LuaCallSilent()
 		FunctionsWithErrors.push_back(item);
 
 		char s[256];
-		//sprintf ( s , "error running function: %s", lua_tostring(lua, -1));
+		//sprintf ( s , "error running function: %s", lua_tostring(lua2, -1));
 		//MessageBox(NULL, s, "LUA ERROR", MB_TOPMOST | MB_OK);
 		failedResults = 1;
 	  }
@@ -14949,13 +14949,13 @@ DARKLUA_API void LuaCallSilent()
 		FunctionsWithErrors.push_back(item);
 
 		// remove params from the stack
-		lua_pop(lua,functionParams);
+		lua_pop(lua2,functionParams);
 		failedResults = 1;
 	}
 
 	functionStateID = 0;
 	if ( failedResults > 0 )
-		lua_pop(lua, failedResults);
+		lua_pop(lua2, failedResults);
 
 }
 
@@ -15086,16 +15086,16 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
     // run the Lua script string
 	int a = 0;
 
-	a = luaL_loadbuffer(lua, pString, strlen(pString), pString) ||	lua_pcall(lua, 0, 0, 0);
+	a = luaL_loadbuffer(lua2, pString, strlen(pString), pString) ||	lua_pcall(lua2, 0, 0, 0);
 	if (a) 
 	{
-	  //MessageBox(NULL, lua_tostring(lua, -1), "LUA ERROR", MB_TOPMOST | MB_OK);
-	  lua_pop(lua, 1);  /* pop error message from the stack */
+	  //MessageBox(NULL, lua_tostring(lua2, -1), "LUA ERROR", MB_TOPMOST | MB_OK);
+	  lua_pop(lua2, 1);  /* pop error message from the stack */
 	}
 
 	// Return 1 for success, like dbpro styles
@@ -15125,16 +15125,16 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
     // run the Lua script string
 	int a = 0;
 
-	a = luaL_loadbuffer(lua, pString, strlen(pString), pString) ||	lua_pcall(lua, 0, 0, 0);
+	a = luaL_loadbuffer(lua2, pString, strlen(pString), pString) ||	lua_pcall(lua2, 0, 0, 0);
 	if (a) 
 	{
-	  //MessageBox(NULL, lua_tostring(lua, -1), "LUA ERROR", MB_TOPMOST | MB_OK);
-	  lua_pop(lua, 1);  /* pop error message from the stack */
+	  //MessageBox(NULL, lua_tostring(lua2, -1), "LUA ERROR", MB_TOPMOST | MB_OK);
+	  lua_pop(lua2, 1);  /* pop error message from the stack */
 	}
 
 	// Return 1 for success, like dbpro styles
@@ -15161,8 +15161,8 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
-    lua_getglobal(lua, pString);
+	lua2 = ppLuaStates[id]->state;
+    lua_getglobal(lua2, pString);
 
 	/*if (!lua_isnumber(L, -1))
     {
@@ -15170,8 +15170,8 @@ DARKLUA_API void LuaCallSilent()
         return 0;
     }*/
 
-	int ret = (int)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	int ret = (int)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 
     return ret;
  }
@@ -15192,8 +15192,8 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
-    lua_getglobal(lua, pString);
+	lua2 = ppLuaStates[id]->state;
+    lua_getglobal(lua2, pString);
 
 	/*if (!lua_isnumber(L, -1))
     {
@@ -15201,8 +15201,8 @@ DARKLUA_API void LuaCallSilent()
         return 0;
     }*/
 
-	int ret = (int)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	int ret = (int)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 
     return ret;
  }
@@ -15221,12 +15221,12 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	if ( lua_gettop(lua) == 0 )
+	if ( lua_gettop(lua2) == 0 )
 	{
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	/*if (!lua_isnumber(L, -1))
     {
@@ -15234,8 +15234,8 @@ DARKLUA_API void LuaCallSilent()
         return 0;
     }*/
 
-	int ret = (int)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	int ret = (int)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 
     return ret;
  }
@@ -15256,12 +15256,12 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	if ( lua_gettop(lua) == 0 )
+	if ( lua_gettop(lua2) == 0 )
 	{
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	/*if (!lua_isnumber(L, -1))
     {
@@ -15269,8 +15269,8 @@ DARKLUA_API void LuaCallSilent()
         return 0;
     }*/
 
-	int ret = (int)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	int ret = (int)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 
     return ret;
  }
@@ -15290,8 +15290,8 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
-    lua_getglobal(lua, pString);
+	lua2 = ppLuaStates[id]->state;
+    lua_getglobal(lua2, pString);
 
 	/*if (!lua_isnumber(L, -1))
     {
@@ -15299,8 +15299,8 @@ DARKLUA_API void LuaCallSilent()
         return 0;
     }*/
 
-	float fValue = (float)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	float fValue = (float)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 	return fValue;
  }
 
@@ -15320,8 +15320,8 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
-    lua_getglobal(lua, pString);
+	lua2 = ppLuaStates[id]->state;
+    lua_getglobal(lua2, pString);
 
 	/*if (!lua_isnumber(L, -1))
     {
@@ -15329,8 +15329,8 @@ DARKLUA_API void LuaCallSilent()
         return 0;
     }*/
 
-	float fValue = (float)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	float fValue = (float)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 	return fValue;
  }
 
@@ -15349,12 +15349,12 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	if ( lua_gettop(lua) == 0 )
+	if ( lua_gettop(lua2) == 0 )
 	{
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	/*if (!lua_isnumber(L, -1))
     {
@@ -15362,8 +15362,8 @@ DARKLUA_API void LuaCallSilent()
         return 0;
     }*/
 
-	float fValue = (float)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	float fValue = (float)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 	return fValue;
  }
 
@@ -15383,12 +15383,12 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	if ( lua_gettop(lua) == 0 )
+	if ( lua_gettop(lua2) == 0 )
 	{
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	/*if (!lua_isnumber(L, -1))
     {
@@ -15396,8 +15396,8 @@ DARKLUA_API void LuaCallSilent()
         return 0;
     }*/
 
-	float fValue = (float)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	float fValue = (float)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 	return fValue;
  }
 
@@ -15413,15 +15413,15 @@ DARKLUA_API void LuaCallSilent()
 		 return;
 	 }
 
-	 lua = ppLuaStates[id]->state;
-	 lua_getglobal(lua, pString);
+	 lua2 = ppLuaStates[id]->state;
+	 lua_getglobal(lua2, pString);
 
-	 const char* pValue = lua_tostring(lua, -1);
+	 const char* pValue = lua_tostring(lua2, -1);
 	 if (pDestStr && pValue)
 	 {
 		 strcpy(pDestStr, pValue);
 	 }
-	 lua_pop(lua, 1);
+	 lua_pop(lua2, 1);
  }
 
  DARKLUA_API void LuaSetInt ( LPSTR pString , int value, int id )
@@ -15439,9 +15439,9 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushnumber( lua, (lua_Number)value );
-	lua_setglobal( lua, pString );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushnumber( lua2, (lua_Number)value );
+	lua_setglobal( lua2, pString );
 
  }
 
@@ -15462,9 +15462,9 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushnumber( lua, (lua_Number)value );
-	lua_setglobal( lua, pString );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushnumber( lua2, (lua_Number)value );
+	lua_setglobal( lua2, pString );
 
  }
 
@@ -15483,8 +15483,8 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushnumber( lua, (lua_Number)value );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushnumber( lua2, (lua_Number)value );
 
  }
 
@@ -15512,8 +15512,8 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushnumber( lua, (lua_Number)value );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushnumber( lua2, (lua_Number)value );
 
  }
 
@@ -15533,9 +15533,9 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushnumber( lua, (lua_Number)value );
-	lua_setglobal( lua, pString );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushnumber( lua2, (lua_Number)value );
+	lua_setglobal( lua2, pString );
  }
 
  DARKLUA_API void LuaSetFloat ( LPSTR pString , float value )
@@ -15555,9 +15555,9 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushnumber( lua, (lua_Number)value );
-	lua_setglobal( lua, pString );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushnumber( lua2, (lua_Number)value );
+	lua_setglobal( lua2, pString );
  }
 
  DARKLUA_API void LuaPushFloat ( float value, int id )
@@ -15576,8 +15576,8 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushnumber( lua, (lua_Number)value );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushnumber( lua2, (lua_Number)value );
 
  }
 
@@ -15605,8 +15605,8 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushnumber( lua, (lua_Number)value );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushnumber( lua2, (lua_Number)value );
 
  }
 	
@@ -15626,9 +15626,9 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushstring( lua, pStringValue );
-	lua_setglobal( lua, pString );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushstring( lua2, pStringValue );
+	lua_setglobal( lua2, pString );
  }
 
  DARKLUA_API void LuaSetString ( LPSTR pString , LPSTR pStringValue )
@@ -15648,9 +15648,9 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushstring( lua, pStringValue );
-	lua_setglobal( lua, pString );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushstring( lua2, pStringValue );
+	lua_setglobal( lua2, pString );
  }
 
 
@@ -15670,8 +15670,8 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushstring( lua, pStringValue );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushstring( lua2, pStringValue );
 
  }
 
@@ -15699,8 +15699,8 @@ DARKLUA_API void LuaCallSilent()
 		return;
 	}
 
-	lua = ppLuaStates[id]->state;
-	lua_pushstring( lua, pStringValue );
+	lua2 = ppLuaStates[id]->state;
+	lua_pushstring( lua2, pStringValue );
 
  }
 
@@ -15719,7 +15719,7 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	//
 	char str[512];
@@ -15750,12 +15750,12 @@ DARKLUA_API void LuaCallSilent()
 			foundFunction = true;
 			
 			//sprintf ( errorString , "Array = %s" , pch );
-			lua_getglobal(lua, pch );
+			lua_getglobal(lua2, pch );
 			strcpy ( lastString, pch );
 			//MessageBox(NULL, errorString , "" , NULL);
-			if ( !lua_istable(lua, offset) )
+			if ( !lua_istable(lua2, offset) )
 			{
-				lua_pop(lua,-offset);
+				lua_pop(lua2,-offset);
 				sprintf ( errorString , "%s is not a Lua Table" , pch );
 				MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 				return 0;
@@ -15766,11 +15766,11 @@ DARKLUA_API void LuaCallSilent()
 			if (lastWas == 1)
 			{
 
-				lua_getfield ( lua , offset , lastString );
+				lua_getfield ( lua2 , offset , lastString );
 
-				if ( !lua_istable(lua, offset) )
+				if ( !lua_istable(lua2, offset) )
 				{
-					lua_pop(lua,-offset);
+					lua_pop(lua2,-offset);
 					sprintf ( errorString , "previous field to %s does not exist in table" , pch );
 					MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 					return 0;
@@ -15778,7 +15778,7 @@ DARKLUA_API void LuaCallSilent()
 			}
 			else if ( lastWas == 2 )
 			{
-				lua_rawgeti ( lua, offset , lastNumber );
+				lua_rawgeti ( lua2, offset , lastNumber );
 			}
 
 			lastWas = 1;
@@ -15804,17 +15804,17 @@ DARKLUA_API void LuaCallSilent()
 
 	if ( lastWas != 2 )
 	{
-		lua_pushstring(lua, lastString );
+		lua_pushstring(lua2, lastString );
 		offset--;
-		lua_gettable(lua, offset);
+		lua_gettable(lua2, offset);
 	}
 	else
 	{
-		lua_rawgeti ( lua, offset , lastNumber );
+		lua_rawgeti ( lua2, offset , lastNumber );
 	}
 
-	int ret = (int)lua_tonumber(lua, -1);
-	lua_pop(lua,-(++offset));
+	int ret = (int)lua_tonumber(lua2, -1);
+	lua_pop(lua2,-(++offset));
 	return ret;
 
  }
@@ -15836,7 +15836,7 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	//
 	char str[512];
@@ -15867,12 +15867,12 @@ DARKLUA_API void LuaCallSilent()
 			foundFunction = true;
 			
 			//sprintf ( errorString , "Array = %s" , pch );
-			lua_getglobal(lua, pch );
+			lua_getglobal(lua2, pch );
 			strcpy ( lastString, pch );
 			//MessageBox(NULL, errorString , "" , NULL);
-			if ( !lua_istable(lua, offset) )
+			if ( !lua_istable(lua2, offset) )
 			{
-				lua_pop(lua,-offset);
+				lua_pop(lua2,-offset);
 				sprintf ( errorString , "%s is not a Lua Table" , pch );
 				MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 				return 0;
@@ -15883,11 +15883,11 @@ DARKLUA_API void LuaCallSilent()
 			if (lastWas == 1)
 			{
 
-				lua_getfield ( lua , offset , lastString );
+				lua_getfield ( lua2 , offset , lastString );
 
-				if ( !lua_istable(lua, offset) )
+				if ( !lua_istable(lua2, offset) )
 				{
-					lua_pop(lua,-offset);
+					lua_pop(lua2,-offset);
 					sprintf ( errorString , "previous field to %s does not exist in table" , pch );
 					MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 					return 0;
@@ -15895,7 +15895,7 @@ DARKLUA_API void LuaCallSilent()
 			}
 			else if ( lastWas == 2 )
 			{
-				lua_rawgeti ( lua, offset , lastNumber );
+				lua_rawgeti ( lua2, offset , lastNumber );
 			}
 
 			lastWas = 1;
@@ -15921,17 +15921,17 @@ DARKLUA_API void LuaCallSilent()
 
 	if ( lastWas != 2 )
 	{
-		lua_pushstring(lua, lastString );
+		lua_pushstring(lua2, lastString );
 		offset--;
-		lua_gettable(lua, offset);
+		lua_gettable(lua2, offset);
 	}
 	else
 	{
-		lua_rawgeti ( lua, offset , lastNumber );
+		lua_rawgeti ( lua2, offset , lastNumber );
 	}
 
-	int ret = (int)lua_tonumber(lua, -1);
-	lua_pop(lua,-(++offset));
+	int ret = (int)lua_tonumber(lua2, -1);
+	lua_pop(lua2,-(++offset));
 	return ret;
 
  }
@@ -15952,7 +15952,7 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	//
 	char str[512];
@@ -15983,12 +15983,12 @@ DARKLUA_API void LuaCallSilent()
 			foundFunction = true;
 			
 			//sprintf ( errorString , "Array = %s" , pch );
-			lua_getglobal(lua, pch );
+			lua_getglobal(lua2, pch );
 			strcpy ( lastString, pch );
 			//MessageBox(NULL, errorString , "" , NULL);
-			if ( !lua_istable(lua, offset) )
+			if ( !lua_istable(lua2, offset) )
 			{
-				lua_pop(lua,-offset);
+				lua_pop(lua2,-offset);
 				sprintf ( errorString , "%s is not a Lua Table" , pch );
 				MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 				return 0;
@@ -15999,11 +15999,11 @@ DARKLUA_API void LuaCallSilent()
 			if (lastWas == 1)
 			{
 
-				lua_getfield ( lua , offset , lastString );
+				lua_getfield ( lua2 , offset , lastString );
 
-				if ( !lua_istable(lua, offset) )
+				if ( !lua_istable(lua2, offset) )
 				{
-					lua_pop(lua,-offset);
+					lua_pop(lua2,-offset);
 					sprintf ( errorString , "previous field to %s does not exist in table" , pch );
 					MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 					return 0;
@@ -16011,7 +16011,7 @@ DARKLUA_API void LuaCallSilent()
 			}
 			else if ( lastWas == 2 )
 			{
-				lua_rawgeti ( lua, offset , lastNumber );
+				lua_rawgeti ( lua2, offset , lastNumber );
 			}
 
 			lastWas = 1;
@@ -16037,17 +16037,17 @@ DARKLUA_API void LuaCallSilent()
 
 	if ( lastWas != 2 )
 	{
-		lua_pushstring(lua, lastString );
+		lua_pushstring(lua2, lastString );
 		offset--;
-		lua_gettable(lua, offset);
+		lua_gettable(lua2, offset);
 	}
 	else
 	{
-		lua_rawgeti ( lua, offset , lastNumber );
+		lua_rawgeti ( lua2, offset , lastNumber );
 	}
 
-	float fValue = (float)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	float fValue = (float)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 	return fValue;
 
  }
@@ -16069,7 +16069,7 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	//
 	char str[512];
@@ -16100,12 +16100,12 @@ DARKLUA_API void LuaCallSilent()
 			foundFunction = true;
 			
 			//sprintf ( errorString , "Array = %s" , pch );
-			lua_getglobal(lua, pch );
+			lua_getglobal(lua2, pch );
 			strcpy ( lastString, pch );
 			//MessageBox(NULL, errorString , "" , NULL);
-			if ( !lua_istable(lua, offset) )
+			if ( !lua_istable(lua2, offset) )
 			{
-				lua_pop(lua,-offset);
+				lua_pop(lua2,-offset);
 				sprintf ( errorString , "%s is not a Lua Table" , pch );
 				MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 				return 0;
@@ -16116,11 +16116,11 @@ DARKLUA_API void LuaCallSilent()
 			if (lastWas == 1)
 			{
 
-				lua_getfield ( lua , offset , lastString );
+				lua_getfield ( lua2 , offset , lastString );
 
-				if ( !lua_istable(lua, offset) )
+				if ( !lua_istable(lua2, offset) )
 				{
-					lua_pop(lua,-offset);
+					lua_pop(lua2,-offset);
 					sprintf ( errorString , "previous field to %s does not exist in table" , pch );
 					MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 					return 0;
@@ -16128,7 +16128,7 @@ DARKLUA_API void LuaCallSilent()
 			}
 			else if ( lastWas == 2 )
 			{
-				lua_rawgeti ( lua, offset , lastNumber );
+				lua_rawgeti ( lua2, offset , lastNumber );
 			}
 
 			lastWas = 1;
@@ -16154,17 +16154,17 @@ DARKLUA_API void LuaCallSilent()
 
 	if ( lastWas != 2 )
 	{
-		lua_pushstring(lua, lastString );
+		lua_pushstring(lua2, lastString );
 		offset--;
-		lua_gettable(lua, offset);
+		lua_gettable(lua2, offset);
 	}
 	else
 	{
-		lua_rawgeti ( lua, offset , lastNumber );
+		lua_rawgeti ( lua2, offset , lastNumber );
 	}
 
-	float fValue = (float)lua_tonumber(lua, -1);
-	lua_pop(lua,1);
+	float fValue = (float)lua_tonumber(lua2, -1);
+	lua_pop(lua2,1);
 	return fValue;
 
  }
@@ -16184,7 +16184,7 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	//
 	char str[512];
@@ -16215,12 +16215,12 @@ DARKLUA_API void LuaCallSilent()
 			foundFunction = true;
 			
 			//sprintf ( errorString , "Array = %s" , pch );
-			lua_getglobal(lua, pch );
+			lua_getglobal(lua2, pch );
 			strcpy ( lastString, pch );
 			//MessageBox(NULL, errorString , "" , NULL);
-			if ( !lua_istable(lua, offset) )
+			if ( !lua_istable(lua2, offset) )
 			{
-				lua_pop(lua,-offset);
+				lua_pop(lua2,-offset);
 				sprintf ( errorString , "%s is not a Lua Table" , pch );
 				MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 				return 0;
@@ -16231,11 +16231,11 @@ DARKLUA_API void LuaCallSilent()
 			if (lastWas == 1)
 			{
 
-				lua_getfield ( lua , offset , lastString );
+				lua_getfield ( lua2 , offset , lastString );
 
-				if ( !lua_istable(lua, offset) )
+				if ( !lua_istable(lua2, offset) )
 				{
-					lua_pop(lua,-offset);
+					lua_pop(lua2,-offset);
 					sprintf ( errorString , "previous field to %s does not exist in table" , pch );
 					MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 					return 0;
@@ -16243,7 +16243,7 @@ DARKLUA_API void LuaCallSilent()
 			}
 			else if ( lastWas == 2 )
 			{
-				lua_rawgeti ( lua, offset , lastNumber );
+				lua_rawgeti ( lua2, offset , lastNumber );
 			}
 
 			lastWas = 1;
@@ -16269,19 +16269,19 @@ DARKLUA_API void LuaCallSilent()
 
 	if ( lastWas != 2 )
 	{
-		lua_pushstring(lua, lastString );
+		lua_pushstring(lua2, lastString );
 		offset--;
-		lua_gettable(lua, offset);
+		lua_gettable(lua2, offset);
 	}
 	else
 	{
-		lua_rawgeti ( lua, offset , lastNumber );
+		lua_rawgeti ( lua2, offset , lastNumber );
 	}
 
   	// Return string pointer
 	LPSTR pReturnString=NULL;
-	const char *s = lua_tostring(lua, -1);
-	lua_pop(lua,1);
+	const char *s = lua_tostring(lua2, -1);
+	lua_pop(lua2,1);
 
 	// If input string valid
 	if(s)
@@ -16317,7 +16317,7 @@ DARKLUA_API void LuaCallSilent()
 		return 0;
 	}
 
-	lua = ppLuaStates[id]->state;
+	lua2 = ppLuaStates[id]->state;
 
 	//
 	char str[512];
@@ -16348,12 +16348,12 @@ DARKLUA_API void LuaCallSilent()
 			foundFunction = true;
 			
 			//sprintf ( errorString , "Array = %s" , pch );
-			lua_getglobal(lua, pch );
+			lua_getglobal(lua2, pch );
 			strcpy ( lastString, pch );
 			//MessageBox(NULL, errorString , "" , NULL);
-			if ( !lua_istable(lua, offset) )
+			if ( !lua_istable(lua2, offset) )
 			{
-				lua_pop(lua,-offset);
+				lua_pop(lua2,-offset);
 				sprintf ( errorString , "%s is not a Lua Table" , pch );
 				MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 				return 0;
@@ -16364,11 +16364,11 @@ DARKLUA_API void LuaCallSilent()
 			if (lastWas == 1)
 			{
 
-				lua_getfield ( lua , offset , lastString );
+				lua_getfield ( lua2 , offset , lastString );
 
-				if ( !lua_istable(lua, offset) )
+				if ( !lua_istable(lua2, offset) )
 				{
-					lua_pop(lua,-offset);
+					lua_pop(lua2,-offset);
 					sprintf ( errorString , "previous field to %s does not exist in table" , pch );
 					MessageBox(NULL, errorString , "" , MB_TOPMOST | MB_OK);
 					return 0;
@@ -16376,7 +16376,7 @@ DARKLUA_API void LuaCallSilent()
 			}
 			else if ( lastWas == 2 )
 			{
-				lua_rawgeti ( lua, offset , lastNumber );
+				lua_rawgeti ( lua2, offset , lastNumber );
 			}
 
 			lastWas = 1;
@@ -16402,19 +16402,19 @@ DARKLUA_API void LuaCallSilent()
 
 	if ( lastWas != 2 )
 	{
-		lua_pushstring(lua, lastString );
+		lua_pushstring(lua2, lastString );
 		offset--;
-		lua_gettable(lua, offset);
+		lua_gettable(lua2, offset);
 	}
 	else
 	{
-		lua_rawgeti ( lua, offset , lastNumber );
+		lua_rawgeti ( lua2, offset , lastNumber );
 	}
 
   	// Return string pointer
 	LPSTR pReturnString=NULL;
-	const char *s = lua_tostring(lua, -1);
-	lua_pop(lua,1);
+	const char *s = lua_tostring(lua2, -1);
+	lua_pop(lua2,1);
 
 	// If input string valid
 	if(s)

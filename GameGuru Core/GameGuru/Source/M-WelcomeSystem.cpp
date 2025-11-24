@@ -82,7 +82,7 @@ void welcome_waitfornoinput ( void )
 		set_inputsys_mclick(MouseClick());// t.inputsys.mclick = MouseClick();
 		t.terrain.gameplaycamera=0;
 		// stretch anim backdrop to size of client window
-		Sprite ( 123, -100000, -100000, g.editorimagesoffset+12 );
+		MAXSprite ( 123, -100000, -100000, g.editorimagesoffset+12 );
 		SizeSprite ( 123, GetChildWindowWidth(0)+1, GetChildWindowHeight(0)+11 );
 		PasteSprite ( 123, 0, 0 );
 		FastSync (  );
@@ -393,7 +393,7 @@ void welcome_drawrotatedimage ( int iImageID, float fX, float fY, float fAngle, 
 	welcome_converttopagecoords ( fX, fY );
 	int iX = g_welcome.iTopLeftX + fX;
 	int iY = g_welcome.iTopLeftY + fY;
-	Sprite ( 123, -10000, -10000, iImageID );
+	MAXSprite ( 123, -10000, -10000, iImageID );
 	SizeSprite ( 123, ImageWidth(iImageID), ImageHeight(iImageID) );
 	OffsetSprite ( 123, iOffsetX, iOffsetY );
 	RotateSprite ( 123, fAngle );
@@ -467,9 +467,9 @@ void welcome_serialcode_page ( int iHighlightingButton )
 			welcome_text (pCodeEnterText, 1, 50, 38, 192, true, false);
 
 			// cursor flash
-			if (Timer() > g_welcomeserialcode.dwCodeEntryTimeStamp)
+			if (MAXTimer() > g_welcomeserialcode.dwCodeEntryTimeStamp)
 			{
-				g_welcomeserialcode.dwCodeEntryTimeStamp = Timer() + 500;
+				g_welcomeserialcode.dwCodeEntryTimeStamp = MAXTimer() + 500;
 				if (g_welcomeserialcode.bCodeEntryCursor == true)
 					g_welcomeserialcode.bCodeEntryCursor = false;
 				else
@@ -522,9 +522,9 @@ void welcome_serialcode_page ( int iHighlightingButton )
 			welcome_drawbox (0, 30, 50, 70, 60);
 			char pFinalCodeDisplay[1024];
 			strcpy (pFinalCodeDisplay, g_welcomeserialcode.pCode);
-			if (Timer() > g_welcomeserialcode.dwCodeEntryTimeStamp)
+			if (MAXTimer() > g_welcomeserialcode.dwCodeEntryTimeStamp)
 			{
-				g_welcomeserialcode.dwCodeEntryTimeStamp = Timer() + 500;
+				g_welcomeserialcode.dwCodeEntryTimeStamp = MAXTimer() + 500;
 				if (g_welcomeserialcode.bCodeEntryCursor == true)
 					g_welcomeserialcode.bCodeEntryCursor = false;
 				else
@@ -822,7 +822,7 @@ void welcome_main_page ( int iHighlightingButton )
 			welcome_staticbackdrop();
 			iHighlightingButton = 0;
 			// stretch anim backdrop to size of client window
-			Sprite ( 123, -100000, -100000, g.editorimagesoffset+12 );
+			MAXSprite ( 123, -100000, -100000, g.editorimagesoffset+12 );
 			SizeSprite ( 123, GetChildWindowWidth(0)+1, GetChildWindowHeight(0)+11 );
 			PasteSprite ( 123, 0, 0 );
 		}
@@ -2075,9 +2075,9 @@ void imgui_download_store( void )
 	if (iDownloadStoreProgress == 2 && bLoginButtonClicked)
 	{
 		//PE: Check if user had been logged in. only every 3 sec.
-		if (fCheckForLoginTimer < Timer()) 
+		if (fCheckForLoginTimer < MAXTimer()) 
 		{
-			fCheckForLoginTimer = Timer() + 3000;
+			fCheckForLoginTimer = MAXTimer() + 3000;
 			iCheckForLoginCount++;
 			memset(pDataReturned, 0, sizeof(pDataReturned));
 			dwDataReturnedSize = 0;

@@ -172,7 +172,7 @@ void interactive_loop ( void )
 		t.tcenterx=(GetChildWindowWidth(0)-t.imgx_f)/2;
 		t.tcentery=(GetChildWindowHeight(0)-t.imgy_f)/2;
 		t.tcentery=t.tcentery+t.tbackdropoffsety;
-		Sprite (  223,-10000,-10000,t.tbackdropimage );
+		MAXSprite (  223,-10000,-10000,t.tbackdropimage );
 		SizeSprite (  223,t.imgx_f,t.imgy_f );
 		if (  t.interactive.pageindex == 1 && t.interactive.alphainitial == 1 ) 
 		{
@@ -207,8 +207,8 @@ void interactive_loop ( void )
 	//  alpha control
 	if (  t.interactive.alphafadestage == 1 ) 
 	{
-		t.interactive.alphafade=t.interactive.alphafade+((Timer()-t.interactive.alphalasttime)*2);
-		t.interactive.alphalasttime=Timer();
+		t.interactive.alphafade=t.interactive.alphafade+((MAXTimer()-t.interactive.alphalasttime)*2);
+		t.interactive.alphalasttime= MAXTimer();
 		if (  t.interactive.alphafade >= 255 ) 
 		{
 			t.interactive.alphafade=255;
@@ -226,7 +226,7 @@ void interactive_restartalpha ( void )
 	//  Force a fade in
 	t.interactive.alphafadestage=1;
 	t.interactive.alphafade=0;
-	t.interactive.alphalasttime=Timer();
+	t.interactive.alphalasttime= MAXTimer();
 }
 
 void interactive_welcome ( void )
@@ -644,7 +644,7 @@ void interactivedrawonly ( int x, int y, int img, int noalpha )
 	int high = 0;
 	int wid = 0;
 	wid=ImageWidth(img) ; high=ImageHeight(img);
-	Sprite (  223,-10000,-10000,img );
+	MAXSprite (  223,-10000,-10000,img );
 	if (  noalpha == 1 ) 
 	{
 		SetSpriteAlpha (  223,255 );

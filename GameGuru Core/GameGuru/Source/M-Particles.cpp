@@ -393,11 +393,11 @@ void ravey_particles_update ( void )
 #endif
 	if ( g.ravey_particles_old_time > 0 ) 
 	{
-		g.ravey_particles_time_passed = Timer() - g.ravey_particles_old_time;
+		g.ravey_particles_time_passed = MAXTimer() - g.ravey_particles_old_time;
 	}
 	if ( ravey_particles_update_particles() )
 	{
-		g.ravey_particles_old_time = Timer();
+		g.ravey_particles_old_time = MAXTimer();
 	}
 	ravey_particles_update_emitters();
 }
@@ -711,7 +711,7 @@ static float fit_to_60_fps = 0.0;
 
 bool ravey_particles_update_particles( void )
 {
-	float current_timer = Timer();
+	float current_timer = MAXTimer();
 	float time_since_last = GetDisplayFPS();
 
 	//PE: Automate particle update intervals by FPS.

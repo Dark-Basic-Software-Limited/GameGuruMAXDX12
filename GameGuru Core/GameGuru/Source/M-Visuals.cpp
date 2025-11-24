@@ -2042,7 +2042,7 @@ void visuals_loop ( void )
 				{
 					t.visuals.showpromptssavestate=t.aisystem.showprompts;
 				}
-				t.visuals.promptstatetimer=Timer()+3000;
+				t.visuals.promptstatetimer= MAXTimer()+3000;
 			}
 			if ( KeyState(g.keymap[87]) == 1 ) 
 			{ 
@@ -2057,13 +2057,13 @@ void visuals_loop ( void )
 	{
 		t.tvisualprompt_s="";
 		t.tvisualprompt_s=t.tvisualprompt_s+" : "+StrEx(t.visuals.value_f,2);
-		if ( Timer()>t.visuals.promptstatetimer ) 
+		if ( MAXTimer()>t.visuals.promptstatetimer ) 
 		{
 			t.visuals.promptstatetimer=0;
 			t.aisystem.showprompts=t.visuals.showpromptssavestate;
 		}
 		t.tvisualalpha=255;
-		if ( Timer()>t.visuals.promptstatetimer-255  )  t.tvisualalpha = (t.visuals.promptstatetimer-Timer());
+		if ( MAXTimer()>t.visuals.promptstatetimer-255  )  t.tvisualalpha = (t.visuals.promptstatetimer-MAXTimer());
 		if ( t.tvisualalpha<0  )  t.tvisualalpha = 0;
 		if ( t.tvisualalpha>255  )  t.tvisualalpha = 255;
 		pastebitmapfont(t.tvisualprompt_s.Get(),20,(GetDisplayHeight()-50),1,t.tvisualalpha);
@@ -2075,13 +2075,13 @@ void visuals_loop ( void )
 		if ( t.postprocessings.fadeinvalue_f == 1.0 ) 
 		{
 			t.tvisualprompt_s=t.visuals.generalprompt_s;
-			if ( Timer()>t.visuals.generalpromptstatetimer ) 
+			if ( MAXTimer()>t.visuals.generalpromptstatetimer ) 
 			{
 				t.visuals.generalpromptstatetimer=0;
 				t.visuals.generalpromptalignment=0;
 			}
 			t.tvisualalpha=255;
-			if ( Timer()>t.visuals.generalpromptstatetimer-255  )  t.tvisualalpha = (t.visuals.generalpromptstatetimer-Timer());
+			if ( MAXTimer()>t.visuals.generalpromptstatetimer-255  )  t.tvisualalpha = (t.visuals.generalpromptstatetimer-MAXTimer());
 			if ( t.tvisualalpha<0  )  t.tvisualalpha = 0;
 			if ( t.tvisualalpha>255  )  t.tvisualalpha = 255;
 			t.txwidth=getbitmapfontwidth(t.tvisualprompt_s.Get(),1);
@@ -2090,7 +2090,7 @@ void visuals_loop ( void )
 		}
 		else
 		{
-			t.visuals.generalpromptstatetimer=Timer()+3000;
+			t.visuals.generalpromptstatetimer= MAXTimer()+3000;
 		}
 	}
 
@@ -2250,7 +2250,7 @@ void visuals_loop ( void )
 		}
 
 		// Ensures LOW FPS detector not fooled by setting changes
-		g.lowfpstarttimer=Timer();
+		g.lowfpstarttimer= MAXTimer();
 
 		// and trigger camera refresh (but flag can be triggered elsewhere, like LUA command to change camera)
 		t.visuals.refreshmaincameras = 1;
@@ -2303,7 +2303,7 @@ void visuals_loop ( void )
 				DeleteVegetationGrid (  );
 			}
 			t.visuals.refreshvegetation=0;
-			g.lowfpstarttimer=Timer();
+			g.lowfpstarttimer= MAXTimer();
 		}
 		else
 		{
@@ -2337,7 +2337,7 @@ void visuals_loop ( void )
 		t.sky.daynightprogress=0;
 		t.sky.changingsky=1;
 		t.visuals.refreshskysettings=0;
-		g.lowfpstarttimer=Timer();
+		g.lowfpstarttimer= MAXTimer();
 
 		// if change sky, regenerate env map
 		cubemap_generateglobalenvmap();
@@ -2378,7 +2378,7 @@ void visuals_loop ( void )
 				}
 			}
 			t.visuals.refreshterraintexture=0;
-			g.lowfpstarttimer=Timer();
+			g.lowfpstarttimer= MAXTimer();
 			t.visuals.refreshshaders=1;
 
 			// if change terrain, regenerate env map
@@ -2394,7 +2394,7 @@ void visuals_loop ( void )
 		if (  g.vegstyleindex>g.vegstylemax  )  g.vegstyleindex = g.vegstylemax;
 		t.visuals.vegetation_s=t.vegstylebank_s[g.vegstyleindex];
 		t.visuals.refreshvegtexture=0;
-		g.lowfpstarttimer=Timer();
+		g.lowfpstarttimer= MAXTimer();
 	}
 }
 

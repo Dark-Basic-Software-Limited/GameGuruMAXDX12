@@ -7,7 +7,7 @@
 #include "wiRenderer.h"
 #include "wiProfiler.h"
 #include "wiECS.h"
-#include "Utility/tinyddsloader.h"
+//#include "Utility/tinyddsloader.h" DX12
 
 #include "master.h"
 

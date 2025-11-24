@@ -310,7 +310,7 @@ void music_loop ( void )
 #endif
 
 	//  process all our music tracks
-	t.tTime = Timer();
+	t.tTime = MAXTimer();
 	for ( t.m = 1 ; t.m<=  MUSICSYSTEM_MAXTRACKS; t.m++ )
 	{
 		if (  t.musictrack[t.m].state > 0 ) 
@@ -408,7 +408,7 @@ void music_fadeAllMusicToNewVolume ( void )
 {
 
 	//  if the master volume is adjusted we can set all tracks to fade to this new volume
-	t.tTime = Timer();
+	t.tTime = MAXTimer();
 	for ( t.m = 1 ; t.m<=  MUSICSYSTEM_MAXTRACKS; t.m++ )
 	{
 		if (  t.musictrack[t.m].state  ==  1 ) 
@@ -466,7 +466,7 @@ void music_stoptrack ( int m, int tFadeOut )
 		else
 		{
 			t.musictrack[m].fadetime = tFadeOut;
-			t.musictrack[m].fadestamp = Timer();
+			t.musictrack[m].fadestamp = MAXTimer();
 			t.musictrack[m].previousVolume = t.musictrack[m].currentVolume;
 			t.musictrack[m].targetVolume = 0;
 			t.musictrack[m].state = 2;
@@ -498,7 +498,7 @@ void music_play ( int m, int tFadeTime )
 	if (  SoundExist(tSndID)  ==  0  )  return;
 	t.musictrack[m].targetVolume = g.musicsystem.percentageVolume;
 	t.musictrack[m].previousVolume = 0;
-	tTime = Timer();
+	tTime = MAXTimer();
 	t.musictrack[m].startstamp = tTime;
 	t.musictrack[m].fadestamp = tTime;
 	t.musictrack[m].fadetime = tFadeTime;

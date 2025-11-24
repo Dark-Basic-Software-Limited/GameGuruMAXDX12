@@ -97,6 +97,6 @@ void ExecuteRenderList()
     std::for_each(
         RenderList.begin(),
         RenderList.end(),
-        std::mem_fun_ref( &RenderListItem::Execute )
+        std::mem_fn( &RenderListItem::Execute )
     );
 }

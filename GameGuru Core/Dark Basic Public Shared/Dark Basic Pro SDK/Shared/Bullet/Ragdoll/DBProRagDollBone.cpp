@@ -12,9 +12,9 @@
 #include "DBProToBullet.h"
 #include "CObjectsC.h"
 
-#ifdef WICKEDENGINE
-#include ".\..\..\..\..\Guru-WickedMAX\wickedcalls.h"
-#endif
+//#ifdef WICKEDENGINE DX12
+//#include ".\..\..\..\..\Guru-WickedMAX\wickedcalls.h"
+//#endif
 
 // externs to globals elsewhere
 extern btDiscreteDynamicsWorld* g_dynamicsWorld;
@@ -155,8 +155,8 @@ void DBProRagDollBone::CreateBone()
 	if (g_bDebugRagdoll==false)
 	{
 		//LB: Seems we need these objects, but can remove them from the Wicked system which slows them down
-		WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);
-		WickedCall_PresetObjectCreateOnDemand(true);
+		//WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_CURSOROBJECT);DX12
+		//WickedCall_PresetObjectCreateOnDemand(true);DX12
 
 		// not using debug capsule
 		dbproRagDollBoneID = 0;
@@ -171,8 +171,8 @@ void DBProRagDollBone::CreateBone()
 		boneTrans.setBasis(boneRotation);
 
 		//LB: and restore when finished creating this 'light weight' bone object
-		WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);
-		WickedCall_PresetObjectCreateOnDemand(false);
+		//WickedCall_PresetObjectRenderLayer(GGRENDERLAYERS_NORMAL);DX12
+		//WickedCall_PresetObjectCreateOnDemand(false);DX12
 	}
 	else
 	{

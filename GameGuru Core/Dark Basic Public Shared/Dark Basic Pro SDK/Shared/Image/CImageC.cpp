@@ -21,6 +21,7 @@
 #include "CObjectsC.h"
 #include "DarkLUA.h"
 #include <thread>
+#include ".\..\Core\DBDLLCore.h"
 
 extern "C" HANDLE GG_CreateFile( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile );
 extern "C" int GG_GetRealPath( char* fullPath, int create, bool bIgnoreAdditional = false);
@@ -1273,7 +1274,7 @@ DARKSDK LPGGTEXTURE GetTextureCore ( char* szFilename, GGIMAGE_INFO* info, int i
 	LPGGTEXTURE	lpTexture = NULL;	// set texture to null
 
 	DARKSDK int Timer(void);
-	int ts = Timer();
+	int ts = MAXTimer();
 
 	// get file image info
 	HRESULT hRes = 0;
@@ -2683,7 +2684,7 @@ DARKSDK bool LoadImageCoreRetainName ( char* szRealName, char* szFilename, int i
 	}
 
 	DARKSDK int Timer(void);
-	int ts = Timer();
+	int ts = MAXTimer();
 
 	//PE: Debug , show list of combination checked.,
 	//char mdebug[2048];
@@ -2851,8 +2852,8 @@ DARKSDK bool LoadImageCoreRetainName ( char* szRealName, char* szFilename, int i
 #ifdef PETESTIMAGEUSAGE
 	test->AccessCountGPU = 0;
 	test->AccessCountCPU = 0;
-	test->iImageLoadTime = Timer() - ts;
-	LoadImageCoreRetainNameTime += Timer() - ts;
+	test->iImageLoadTime = MAXTimer() - ts;
+	LoadImageCoreRetainNameTime += MAXTimer() - ts;
 #endif
 
 	// add to the list

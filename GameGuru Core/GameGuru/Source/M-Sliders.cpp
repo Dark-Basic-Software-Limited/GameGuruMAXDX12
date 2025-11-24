@@ -193,7 +193,7 @@ void sliders_draw ( void )
 	bool bHUDPromptCurrentlyActive = false;
 	if (  t.luaglobal.scriptprompttime>0 && t.conkit.editmodeactive == 0 ) 
 	{
-		if ( (DWORD)(Timer())<t.luaglobal.scriptprompttime+500 ) 
+		if ( (DWORD)(MAXTimer())<t.luaglobal.scriptprompttime+500 ) 
 		{
 			t.tscriptprompttextsize=t.luaglobal.scriptprompttextsize;
 			t.tscriptprompttextsizeyoffset=t.tscriptprompttextsize*20;
@@ -239,7 +239,7 @@ void sliders_draw ( void )
 	// manage prompt 3D
 	if ( t.luaglobal.scriptprompt3dtime>0 && t.conkit.editmodeactive == 0 ) 
 	{
-		if ( (DWORD)(Timer())<t.luaglobal.scriptprompt3dtime+500 ) 
+		if ( (DWORD)(MAXTimer())<t.luaglobal.scriptprompt3dtime+500 ) 
 			lua_updateprompt3d();
 		else
 			lua_hideprompt3d();
@@ -312,7 +312,7 @@ void sliders_draw ( void )
 	// GURU MEDITATION : Internal Errors From LUA (helps users work out any of their logic issues)
 	if (t.luaglobal.gurumeditationprompttime > 0 && t.conkit.editmodeactive == 0)
 	{
-		if ((DWORD)(Timer()) < t.luaglobal.gurumeditationprompttime + 5000)
+		if ((DWORD)(MAXTimer()) < t.luaglobal.gurumeditationprompttime + 5000)
 		{
 			int tgurumeditationprompttextsize = 5; // large!
 			int tgurumeditationpromptx = (GetDisplayWidth() - getbitmapfontwidth(t.luaglobal.gurumeditationprompt_s.Get(), tgurumeditationprompttextsize)) / 2;
@@ -353,7 +353,7 @@ void sliders_draw ( void )
 
 				if (  t.inputsys.ymouse*t.tadjustedtoimporterybase_f  <=  t.slidersdropdowntop+(t.importer.dropDownListNumber*16) ) 
 				{
-					if (  Timer() - t.importer.oldTime > 100 ) 
+					if (  MAXTimer() - t.importer.oldTime > 100 ) 
 					{
 						--t.importer.dropDownListNumber;
 						if (  t.importer.dropDownListNumber < 0 ) 
@@ -364,12 +364,12 @@ void sliders_draw ( void )
 						{
 							t.slidersdropdowntop+=16;
 						}
-						t.importer.oldTime = Timer();
+						t.importer.oldTime = MAXTimer();
 					}
 				}
 				if (  t.inputsys.ymouse*t.tadjustedtoimporterybase_f  >=  t.slidersdropdowntop+10+(t.tlistmax*16)+(t.importer.dropDownListNumber*16) ) 
 				{
-					if (  Timer() - t.importer.oldTime > 100 ) 
+					if (  MAXTimer() - t.importer.oldTime > 100 ) 
 					{
 						++t.importer.dropDownListNumber;
 						if (  t.importer.dropDownListNumber > t.slidersdropdownmax-9 ) 
@@ -380,7 +380,7 @@ void sliders_draw ( void )
 						{
 							t.slidersdropdowntop -= 16;
 						}
-						t.importer.oldTime = Timer();
+						t.importer.oldTime = MAXTimer();
 					}
 				}
 
@@ -1015,7 +1015,7 @@ void sliders_scope_draw ( void )
 		if (  g.firemodes[t.gunid][0].zoomscope>0 ) 
 		{
 			t.timgbase=g.firemodes[t.gunid][0].zoomscope;
-			Sprite (  t.timgbase,-10000,-10000,t.timgbase );
+			MAXSprite (  t.timgbase,-10000,-10000,t.timgbase );
 			t.timgwidth_f=ImageWidth(t.timgbase) ; t.timgheight_f=ImageHeight(t.timgbase);
 			t.timgratio_f=t.timgwidth_f/t.timgheight_f;
 			t.tsprwidth_f=GetDisplayHeight()*t.timgratio_f;

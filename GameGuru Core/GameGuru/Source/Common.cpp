@@ -12,7 +12,7 @@
 #include "direct.h"
 #include <wininet.h>
 #include "M-WelcomeSystem.h"
-#include "..\..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\ShadowMapping\cShadowMaps.h"
+//#include "..\..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\ShadowMapping\cShadowMaps.h" DX12
 #include "..\..\Dark Basic Public Shared\Include\CObjectsC.h"
 
 //PE: GameGuru IMGUI.
@@ -357,8 +357,8 @@ void common_init ( void )
 	g.airmax = 100;
 	g.drowntime = 2000;
 	g.airtime = 2000;
-	g.airtimer = Timer();
-	g.drowntimer = Timer();
+	g.airtimer = MAXTimer();
+	g.drowntimer = MAXTimer();
 	g.airx = 24;
 	g.airy = 8;
 	g.instantdrown = 1;
@@ -462,7 +462,7 @@ void common_init ( void )
 	g.rmbheld = 0;
 	g.rmbheldtime = 0;
 	g.jamadjust = 0;
-	g.screengrabtimer = Timer();
+	g.screengrabtimer = MAXTimer();
 	g.forcecrouch = 0;
 
 	//  Used to record last best pick 3D coordinate (exact widget pos)
@@ -526,7 +526,7 @@ void common_init ( void )
 	Dim(t.timestampactivity_s, 10); //PE: Not needed in wicked.
 	//  speed up
 	g.timebasepercycle_f = 0;
-	g.timebasepercyclestamp = Timer();
+	g.timebasepercyclestamp = MAXTimer();
 	g.timestampactivitymemthen = SMEMAvailable(1);
 
 	//  FPGC - 090909 - mising media collector
@@ -1628,7 +1628,7 @@ void FPSC_Full_Data_Init ( void )
 	g.deactivatecollision = 0;
 	g.entitysystemdisabled = 0;
 	g.lightingsystemdisabled = 0;
-	g.gameperftimetracker=Timer();
+	g.gameperftimetracker= MAXTimer();
 
 	//  Water
 	g.waterobj = 11;
@@ -5389,12 +5389,12 @@ void debugviewtext ( int progress, char* gamedebugviewtext_s )
 	{
 		if (  g.loadreportarraydimmed == 0 ) { Dim (  t.loadreport_s,100000   ) ; g.loadreportarraydimmed = 1; }
 		//  get time, distance from last time, description, etc..
-		if (  g.gloadreporttime == 0  )  g.gloadreporttime = Timer();
-		thetime=Timer()-g.gloadreporttime;
+		if (  g.gloadreporttime == 0  )  g.gloadreporttime = MAXTimer();
+		thetime= MAXTimer()-g.gloadreporttime;
 		thetime_s=Right(Str(1000000+thetime),6);
-		thediff=Timer()-g.gloadreportlasttime;
+		thediff= MAXTimer()-g.gloadreportlasttime;
 		thediff_s=Right(Str(1000000+thediff),6);
-		g.gloadreportlasttime=Timer();
+		g.gloadreportlasttime= MAXTimer();
 		t.loadreport_s[g.gloadreportindex]=thetime_s+" : "+thediff_s+" : "+gamedebugviewtext_s;
 		++g.gloadreportindex ; if (  g.gloadreportindex>10000  )  g.gloadreportindex = 10000;
 		if (  progress>g.gprogressmax-10 ) 
@@ -5591,7 +5591,7 @@ void printvalue ( int x, int y, int value )
 
 	//  prepare Sprite (  for Text (  Print ( ing ) ) )
 	sid=g.effectmenuimagestart+4;
-	Sprite (  sid,-10000,-10000,g.effectmenuimagestart+31 );
+	MAXSprite (  sid,-10000,-10000,g.effectmenuimagestart+31 );
 	SetSpriteDiffuse (  sid,255,255,255 );
 	SetSpriteAlpha (  sid,255 );
 	SizeSprite (  sid,10,10 );
@@ -5619,7 +5619,7 @@ void printvalue ( int x, int y, int value )
 	}
 
 	//  restore Sprite (  image )
-	Sprite (  sid,-10000,-10000,sid );
+	MAXSprite (  sid,-10000,-10000,sid );
 }
 
 //FUNCTION TO LAUNCH BROWSER
@@ -6055,10 +6055,10 @@ void printscreenprompt ( char* screenprompt_s )
 		else
 		{
 			// do not show any prompts in first 2 seconds (if test level instant)
-			if (g_SensibleMessageTimer == 0) g_SensibleMessageTimer = Timer() + 500;
-			if (Timer() > g_SensibleMessageTimer + 500)
+			if (g_SensibleMessageTimer == 0) g_SensibleMessageTimer = MAXTimer() + 500;
+			if (MAXTimer() > g_SensibleMessageTimer + 500)
 			{
-				g_SensibleMessageTimer = Timer();
+				g_SensibleMessageTimer = MAXTimer();
 				// only for developer mode users
 				extern int g_iDevToolsOpen;
 				if ((bool)g_iDevToolsOpen == true)
@@ -6075,7 +6075,7 @@ void printscreenprompt ( char* screenprompt_s )
 					if (fProgress > 1.0f) fProgress = 1.0f;
 					if (ImageExist(g.editorimagesoffset + 14) == 1)
 					{
-						Sprite(124, -10000, -10000, g.editorimagesoffset + 14);
+						MAXSprite(124, -10000, -10000, g.editorimagesoffset + 14);
 						SizeSprite(124, 500, 2);
 						OffsetSprite(124, 0, 0);
 						PasteSprite(124, (GetChildWindowWidth() / 2) - 250, (GetChildWindowHeight() / 2) - 32);
@@ -6114,7 +6114,7 @@ void GGBoxGradient ( int iLeft, int iTop, int iRight, int iBottom, DWORD dw1, DW
 	return; //PE: No sliders in Max.
 	int iWidth = iRight - iLeft;
 	int iHeight = iBottom - iTop;
-	Sprite ( 1235, -100000, -100000, g.slidersmenuimageoffset + 8 );
+	MAXSprite ( 1235, -100000, -100000, g.slidersmenuimageoffset + 8 );
 	SetSprite ( 1235, 0, 1 );
 	SizeSprite ( 1235, iWidth, iHeight );
 	SetSpriteDiffuse ( 1235, dw2, dw3, dw4 );
@@ -6128,7 +6128,7 @@ int geditorimagesoffset = 65110;
 void InkEx ( int r, int g, int b )
 {
 	if ( ImageExist ( geditorimagesoffset+14 ) == 0 ) LoadImage (  "editors\\gfx\\14.png", geditorimagesoffset+14 );
-	Sprite ( 123, -10000, -10000, geditorimagesoffset+14 );
+	MAXSprite ( 123, -10000, -10000, geditorimagesoffset+14 );
 	SetSpriteDiffuse ( 123, r, g, b );
 }
 void BoxEx ( int x1, int y1, int x2, int y2 )

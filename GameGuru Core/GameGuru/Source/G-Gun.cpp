@@ -1312,7 +1312,7 @@ void gun_control ( void )
 			{
 				if (  t.plrzoomaccuracybreath == 0 ) 
 				{
-					t.plrzoomaccuracybreath=Timer()+g.firemodes[t.gunid][g.firemode].settings.zoomaccuracybreath;
+					t.plrzoomaccuracybreath= MAXTimer()+g.firemodes[t.gunid][g.firemode].settings.zoomaccuracybreath;
 					if (  SoundExist(t.playercontrol.soundstartindex+31) == 1 ) 
 					{
 						PlaySound (  t.playercontrol.soundstartindex+31 );
@@ -1320,13 +1320,13 @@ void gun_control ( void )
 				}
 				else
 				{
-					if (  Timer()<t.plrzoomaccuracybreath ) 
+					if (MAXTimer()<t.plrzoomaccuracybreath )
 					{
 						t.plrzoomaccuracydest_f=t.plrzoomaccuracydest_f*(g.firemodes[t.gunid][g.firemode].settings.zoomaccuracyheld/100.0);
 					}
 					else
 					{
-						t.plrzoomaccuracybreath=(Timer()+2000)*-1;
+						t.plrzoomaccuracybreath=(MAXTimer()+2000)*-1;
 						if (  SoundExist(t.playercontrol.soundstartindex+33) == 1 ) 
 						{
 							PlaySound (  t.playercontrol.soundstartindex+33 );
@@ -1338,7 +1338,7 @@ void gun_control ( void )
 			{
 				if (  t.plrzoomaccuracybreath>0 ) 
 				{
-					t.plrzoomaccuracybreath=(Timer()+200)*-1;
+					t.plrzoomaccuracybreath=(MAXTimer()+200)*-1;
 					if (  SoundExist(t.playercontrol.soundstartindex+31) == 1 ) 
 					{
 						if (  SoundPlaying(t.playercontrol.soundstartindex+31) == 0 ) 
@@ -1354,7 +1354,7 @@ void gun_control ( void )
 		}
 		else
 		{
-			if (  Timer()<abs(t.plrzoomaccuracybreath) ) 
+			if (MAXTimer()<abs(t.plrzoomaccuracybreath) )
 			{
 				t.plrzoomaccuracydest_f=t.plrzoomaccuracydest_f*2.0;
 			}
@@ -1682,9 +1682,9 @@ void gun_control ( void )
 		if ( t.playercontrol.movement != 0 && (t.gunmode < 121 || t.gunmode > 126) && (t.gunmode < 700 || t.gunmode > 707) )
 		{
 			if ( t.playercontrol.isrunningtime == 0 ) 
-				t.playercontrol.isrunningtime = Timer();
+				t.playercontrol.isrunningtime = MAXTimer();
 			else
-				if ( Timer() > t.playercontrol.isrunningtime + g.firemodes[t.gunid][g.firemode].settings.runanimdelay )
+				if (MAXTimer() > t.playercontrol.isrunningtime + g.firemodes[t.gunid][g.firemode].settings.runanimdelay )
 					bReallyRunning = true;
 		}
 	}
@@ -2809,14 +2809,14 @@ void gun_control ( void )
 							// fireloop for automatic weapons
 							PlaySoundOffset ( t.sndid, t.fireloopend  ); 
 							LoopSound ( t.sndid, 0, t.fireloopend );
-							t.gunmodeloopsnd=t.sndid ; t.gunmodeloopstarted=Timer();
+							t.gunmodeloopsnd=t.sndid ; t.gunmodeloopstarted= MAXTimer();
 						}
 						else
 						{
 							// when fireloop is negative, we use 'single instance' shots
 							// and use negative value as MS time between instance plays
 							PlaySound ( t.sndid );
-							t.gunmodeloopsnd=0; t.gunmodeloopstarted=Timer();
+							t.gunmodeloopsnd=0; t.gunmodeloopstarted= MAXTimer();
 						}
 						t.tvolume_f = 100.0f;// 95.0;
 						t.tvolume_f = t.tvolume_f * t.audioVolume.soundFloat;
@@ -2911,7 +2911,7 @@ void gun_control ( void )
 				if ( t.fireloopend >= 0 )
 				{
 					// regular fireloop handles loop timing
-					if (  t.gunmodeloopsnd>0  )  t.gunmodeloopstarted = Timer();
+					if (  t.gunmodeloopsnd>0  )  t.gunmodeloopstarted = MAXTimer();
 				}
 				else
 				{
@@ -3086,7 +3086,7 @@ void gun_control ( void )
 	{
 		if (  t.gunmode >= 101 && t.gunmode<107 ) 
 		{
-			g.mefrozentype=2 ; g.mefrozen=Timer()+100;
+			g.mefrozentype=2 ; g.mefrozen= MAXTimer()+100;
 		}
 	}
 
@@ -3104,7 +3104,7 @@ void gun_control ( void )
 			t.tfireanim=0;
 
 			// ensure run anim does not kick in right away, leave for Xms until 
-			t.playercontrol.isrunningtime = Timer();
+			t.playercontrol.isrunningtime = MAXTimer();
 
 			// auto-reload if no bullets
 			t.tpool=g.firemodes[t.gunid][g.firemode].settings.poolindex;
@@ -3149,7 +3149,7 @@ void gun_control ( void )
 	//  if gunloop sound continues beyond gunfire loop, end it!
 	if (  t.gunmodeloopsnd>0 ) 
 	{
-		if (  Timer()>t.gunmodeloopstarted+300 ) 
+		if (MAXTimer()>t.gunmodeloopstarted+300 )
 		{
 			if (  t.gunmode<101 || t.gunmode>107 ) 
 			{
@@ -3167,7 +3167,7 @@ void gun_control ( void )
 	//  and after 1 second, terminate LoopSound (  if not refreshed Sin ( ce (looping uzi issue) ) )
 	if (  t.gunmodeloopsnd>0 ) 
 	{
-		if (  Timer()>t.gunmodeloopstarted+1000 ) 
+		if (MAXTimer()>t.gunmodeloopstarted+1000 )
 		{
 			if (  SoundExist(t.gunmodeloopsnd) == 1 ) 
 			{
@@ -3487,9 +3487,9 @@ void gunmode121_cancel ( void )
 					{
 						PlaySound(t.sndid);
 						posinternal3dsound(t.sndid, CameraPositionX(), CameraPositionY(), CameraPositionZ());
-						soundtimer = Timer() + 600;
+						soundtimer = MAXTimer() + 600;
 						if (pestrcasestr(t.gun[t.gunid].name_s.Get(), "rpg"))
-							soundtimer = Timer() + 1700;
+							soundtimer = MAXTimer() + 1700;
 					}
 				}
 			}
@@ -3528,7 +3528,7 @@ void gunmode121_cancel ( void )
 			gun_SetObjectFrame(t.currentgunobj, t.gcock.e);
 			if (soundtimer > 0)
 			{
-				if (Timer() > soundtimer)
+				if (MAXTimer() > soundtimer)
 				{
 					if (t.gunsounditem[t.gunid][3].keyframe > realreload.s && t.gunsounditem[t.gunid][3].keyframe <= realreload.e)
 					{

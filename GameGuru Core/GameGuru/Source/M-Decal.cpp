@@ -604,7 +604,7 @@ void decalelement_create ( void )
 				t.decalelement[t.d].particle.randommotionz = (t.decalelement[t.d].particle.randommotionz / 100.0) * t.decalscalemodx;
 				t.decalelement[t.d].particle.camerazshift = (t.decalelement[t.d].particle.camerazshift / 100.0) * t.decalscalemodx;
 			}
-			t.decalelement[t.d].fadestarttime = Timer();
+			t.decalelement[t.d].fadestarttime = MAXTimer();
 			if (t.decalelement[t.d].orient == 8 || t.decalelement[t.d].orient == 13)
 			{
 				t.decalelement[t.d].fadespan = 750 * (100.0 / t.decalelement[t.d].particle.lifeincrement);
@@ -906,7 +906,7 @@ void decalelement_control ( void )
 					{
 						//  Sin ( gle image fader Timer (  based life ) )
 						t.decalelement[t.f].frame = 0;
-						if ((int)((Timer() - t.decalelement[t.f].fadestarttime)) > t.decalelement[t.f].fadespan)
+						if ((int)((MAXTimer() - t.decalelement[t.f].fadestarttime)) > t.decalelement[t.f].fadespan)
 						{
 							t.tdetonate = 1;
 						}
@@ -980,7 +980,7 @@ void decalelement_control ( void )
 						if (t.decalelement[t.f].orient == 8 || t.decalelement[t.f].orient == 11 || t.decalelement[t.f].orient == 13)
 						{
 							//  single image fader
-							t.tfadeperc_f = ((Timer() - t.decalelement[t.f].fadestarttime) + 0.0) / (t.decalelement[t.f].fadespan + 0.0);
+							t.tfadeperc_f = ((MAXTimer() - t.decalelement[t.f].fadestarttime) + 0.0) / (t.decalelement[t.f].fadespan + 0.0);
 							if (t.tfadeperc_f < 0.0)  t.tfadeperc_f = 0.0;
 							if (t.tfadeperc_f > 1.0)  t.tfadeperc_f = 1.0;
 							t.tfinalalphavalue_f = t.decalelement[t.f].particle.alphaintensity / 100.0;

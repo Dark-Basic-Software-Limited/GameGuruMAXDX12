@@ -49,33 +49,33 @@ void lua_panel ( void )
 
 	//  top left
 	t.timage = g.panelimageoffset;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,t.tw,t.th );
 	PasteSprite (  t.tSprite,t.luaPanel.x,t.luaPanel.y );
 	//  top middle
 	t.timage = g.panelimageoffset+1;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,(t.luaPanel.x2 - t.luaPanel.x) - (t.tw*2),t.th );
 	PasteSprite (  t.tSprite,t.luaPanel.x+t.tw,t.luaPanel.y );
 	//  top right
 	t.timage = g.panelimageoffset+2;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,t.tw,t.th );
 	PasteSprite (  t.tSprite,t.luaPanel.x2-t.tw,t.luaPanel.y );
 
 	//  middle left
 	t.timage = g.panelimageoffset+3;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,t.tw,(t.luaPanel.y2 - t.luaPanel.y) - (t.th*2) );
 	PasteSprite (  t.tSprite,t.luaPanel.x,t.luaPanel.y+t.th );
 	//  middle middle
 	t.timage = g.panelimageoffset+4;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,(t.luaPanel.x2 - t.luaPanel.x) - (t.tw*2),(t.luaPanel.y2 - t.luaPanel.y) - (t.th*2) );
 	PasteSprite (  t.tSprite,t.luaPanel.x+t.tw,t.luaPanel.y+t.th );
 	//  middle right
 	t.timage = g.panelimageoffset+5;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,t.tw,(t.luaPanel.y2 - t.luaPanel.y) - (t.th*2) );
 	PasteSprite (  t.tSprite,t.luaPanel.x2-t.tw,t.luaPanel.y+t.th );
 
@@ -84,17 +84,17 @@ void lua_panel ( void )
 	t.th = ImageHeight ( g.panelimageoffset );
 	//  top left
 	t.timage = g.panelimageoffset+6;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,t.tw,t.th );
 	PasteSprite (  t.tSprite,t.luaPanel.x,t.luaPanel.y2-t.th );
 	//  top middle
 	t.timage = g.panelimageoffset+7;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,(t.luaPanel.x2 - t.luaPanel.x) - (t.tw*2),t.th );
 	PasteSprite (  t.tSprite,t.luaPanel.x+t.tw,t.luaPanel.y2-t.th );
 	//  top right
 	t.timage = g.panelimageoffset+8;
-	Sprite (  t.tSprite,-10000,-10000,t.timage );
+	MAXSprite (  t.tSprite,-10000,-10000,t.timage );
 	SizeSprite (  t.tSprite,t.tw,t.th );
 	PasteSprite (  t.tSprite,t.luaPanel.x2-t.tw,t.luaPanel.y2-t.th );
 

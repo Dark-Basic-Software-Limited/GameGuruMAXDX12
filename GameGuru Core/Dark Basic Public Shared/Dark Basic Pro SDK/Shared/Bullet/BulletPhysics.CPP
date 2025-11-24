@@ -57,7 +57,8 @@
 // access to other LIBs
 #include "CObjectsC.h"
 #include "CFileC.h"
-#include ".\..\..\..\..\Guru-WickedMAX\wickedcalls.h"
+
+//#include ".\..\..\..\..\Guru-WickedMAX\wickedcalls.h" DX12 removal
 
 //Dave
 void BULLETAnglesFromMatrix ( GGMATRIX* pmatMatrix, GGVECTOR3* pVecAngles );
@@ -1076,7 +1077,7 @@ void Update(float fTimeStep)
 				pObject->position.matWorld = matWorld;
 
 				// communicate custom world matrix to wicked
-				WickedCall_UpdateObject(pObject);
+				//WickedCall_UpdateObject(pObject); DX12
 
 				// update DBPro object position and rotation to match physics
 				pObject->position.vecPosition = GGVECTOR3(matWorld._41, matWorld._42, matWorld._43);

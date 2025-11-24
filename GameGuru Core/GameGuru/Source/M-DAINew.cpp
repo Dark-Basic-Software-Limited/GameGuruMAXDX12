@@ -353,7 +353,7 @@ void darkai_updatedebugobjects_forcharacter (bool bCharIsActive)
 						}
 					}
 					t.entityelement[t.charanimstate.e].overprompt_s = pShowNavigationDebugVisualstext;
-					t.entityelement[t.charanimstate.e].overprompttimer = Timer() + 250;
+					t.entityelement[t.charanimstate.e].overprompttimer = MAXTimer() + 250;
 				}
 			}
 		}
@@ -457,7 +457,7 @@ void darkai_mouthandheadtracking (void)
 		// only if mouth data
 		if (t.charanimstate.ccpo.speak.mouthData.size() > 0)
 		{
-			fTimeFromStartOfSpeak = ((float)Timer() / 1000.0f) - t.charanimstate.ccpo.speak.fMouthTimeStamp;
+			fTimeFromStartOfSpeak = ((float)MAXTimer() / 1000.0f) - t.charanimstate.ccpo.speak.fMouthTimeStamp;
 			int iMouthDataNextIndex = t.charanimstate.ccpo.speak.iMouthDataIndex;
 			if (fTimeFromStartOfSpeak > t.charanimstate.ccpo.speak.mouthData[iMouthDataNextIndex].fTimeStamp)
 			{
@@ -1178,14 +1178,14 @@ void darkai_handlegotomove(void)
 	{
 		// no overlap, no blockage, or was allowed to shift around another character safely (still in nav mesh)
 		t.entityelement[t.charanimstate.e].lua.dynamicavoidance = 0;
-		t.entityelement[t.charanimstate.e].lua.dynamicavoidancestuckclock = Timer();
+		t.entityelement[t.charanimstate.e].lua.dynamicavoidancestuckclock = MAXTimer();
 	}
 	else
 	{
 		// shift did not take place, character heading THROUGH another one
 		// signal to AI so behavior can do something about walking through other people!
 		// or signal that the path has been blocked and cannot move onwards for some reason
-		t.entityelement[t.charanimstate.e].lua.dynamicavoidance = Timer() - t.entityelement[t.charanimstate.e].lua.dynamicavoidancestuckclock;
+		t.entityelement[t.charanimstate.e].lua.dynamicavoidance = MAXTimer() - t.entityelement[t.charanimstate.e].lua.dynamicavoidancestuckclock;
 	}
 	// special flag which interupts any path in progress
 	if (t.entityelement[t.charanimstate.e].lua.interuptpath > 0)
@@ -1352,7 +1352,7 @@ void darkai_loop (void)
 		{
 			if (SoundExist(t.ttsnd) == 1)
 			{
-				if (Timer() > (int)t.charanimstate.firesoundexpiry)
+				if (MAXTimer() > (int)t.charanimstate.firesoundexpiry)
 				{
 					StopSound (t.ttsnd);
 				}
@@ -2079,7 +2079,7 @@ int darkai_canshoot (void)
 
 	// if want to shoot, can override firesound in use (otherwise can wait 7 seconds while sound fades)
 	t.tpermitanoverride = 0;
-	if (t.charanimstate.firesoundindex > 0 && Timer() > (int)t.charanimstate.firesoundstarted + 50)  t.tpermitanoverride = 1;
+	if (t.charanimstate.firesoundindex > 0 && MAXTimer() > (int)t.charanimstate.firesoundstarted + 50)  t.tpermitanoverride = 1;
 	bool bProceed = false;
 	if (t.charanimstate.entityTarget == 0 && ((t.charanimstate.firesoundindex == 0 || t.tpermitanoverride == 1) && t.entityelement[t.charanimstate.e].plrvisible == 1)) bProceed = true;
 	if (t.charanimstate.entityTarget > 0  && ((t.charanimstate.firesoundindex == 0 || t.tpermitanoverride == 1)) ) bProceed = true;
@@ -2172,11 +2172,11 @@ void darkai_shoottarget (int targete)
 
 							t.charanimstate.firesoundindex = t.ttsnd; t.tt = 3;
 							t.tfireloopend = g.firemodes[t.tgunid][0].sound.fireloopend;
-							t.charanimstate.firesoundstarted = Timer();
+							t.charanimstate.firesoundstarted = MAXTimer();
 							if (t.tfireloopend > 0)
 							{
 								// sound loops (need to cap it off)
-								t.charanimstate.firesoundexpiry = Timer() + 200 + Rnd(200);
+								t.charanimstate.firesoundexpiry = MAXTimer() + 200 + Rnd(200);
 							}
 							else
 							{
@@ -2185,12 +2185,12 @@ void darkai_shoottarget (int targete)
 									// when fireloop is negative, we use 'single instance' shots
 									// and use negative value as MS time between instance plays
 									// need to simulate how player weapon works for EA for now
-									t.charanimstate.firesoundexpiry = Timer() + 500;// (fabs(t.tfireloopend));
+									t.charanimstate.firesoundexpiry = MAXTimer() + 500;// (fabs(t.tfireloopend));
 								}
 								else
 								{
 									// can let sound fade out slowly naturally
-									t.charanimstate.firesoundexpiry = Timer() + 5000;
+									t.charanimstate.firesoundexpiry = MAXTimer() + 5000;
 								}
 							}
 						}

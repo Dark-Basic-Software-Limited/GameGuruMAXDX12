@@ -874,7 +874,7 @@ std::string soundexall(std::string all)
 	string result = "";
 	string search = removeChars(all, 0, notAlphaPlusSpace);
 	istringstream iss(search);
-	vector<string> tokens{ istream_iterator<string>{iss},istream_iterator<string>{} };
+	std::vector<string> tokens{ istream_iterator<string>{iss},istream_iterator<string>{} };
 	for (int i = 0; i < tokens.size(); i++)
 	{
 		result += soundex(tokens[i]);
