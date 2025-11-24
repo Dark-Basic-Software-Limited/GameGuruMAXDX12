@@ -54,7 +54,10 @@ extern StoryboardStruct Storyboard;
 #endif
 
 #include "..\..\..\..\Guru-WickedMAX\wickedcalls.h"
+
+#undef WICKEDENGINE
 #include "WickedEngine.h"
+
 using namespace std;
 using namespace wiGraphics;
 using namespace wiScene;

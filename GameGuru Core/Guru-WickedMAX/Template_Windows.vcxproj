@@ -133,7 +133,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(GG_MAX_BUILD_PATH)\Max\</OutDir>
+    <OutDir>D:\PROTOTIME\_PROTOBUILD\GameGuru Wicked MAX Build Area\Max\</OutDir>
     <TargetName>GameGuruMAX</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)SDK\DirectXTex\DirectXTex;$(SolutionDir)SDK\OGG\include;$(SolutionDir)SDK\DirectX\Include;$(SolutionDir)SDK\DirectX;$(SolutionDir)SDK\DB3\;$(SolutionDir)SDK\BaseClasses\;$(SolutionDir)SDK\OpenXR\include;$(SolutionDir)SDK\OPTICK\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)SDK\PhotonSDK\Common-cpp\lib\;$(SolutionDir)SDK\PhotonSDK\LoadBalancing-cpp\lib\;$(SolutionDir)SDK\PhotonSDK\Photon-cpp\lib\;$(SolutionDir)SDK\DirectX\Lib\x64\;$(SolutionDir)SDK\OGG\lib64\Release\;$(SolutionDir)SDK\Steamworks SDK\redistributable_bin\win64\;$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;$(SolutionDir)SDK\OpenXR\lib64\Release;$(SolutionDir)SDK\OPTICK\lib\x64\release;$(LibraryPath)</LibraryPath>
@@ -142,7 +142,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(GG_MAX_BUILD_PATH)\Max\</OutDir>
+    <OutDir>D:\PROTOTIME\_PROTOBUILD\GameGuru Wicked MAX Build Area\Max\</OutDir>
     <TargetName>GameGuruMAX</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)SDK\DirectXTex\DirectXTex;$(SolutionDir)SDK\OGG\include;$(SolutionDir)SDK\DirectX\Include;$(SolutionDir)SDK\DirectX;$(SolutionDir)SDK\DB3\;$(SolutionDir)SDK\BaseClasses\;$(SolutionDir)SDK\OpenXR\include;$(SolutionDir)SDK\OPTICK\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)SDK\PhotonSDK\Common-cpp\lib\;$(SolutionDir)SDK\PhotonSDK\LoadBalancing-cpp\lib\;$(SolutionDir)SDK\PhotonSDK\Photon-cpp\lib\;$(SolutionDir)SDK\DirectX\Lib\x64\;$(SolutionDir)SDK\OGG\lib64\Debug\;$(SolutionDir)SDK\Steamworks SDK\redistributable_bin\win64\;$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Debug\;$(SolutionDir)SDK\OpenXR\lib64\Debug\;$(SolutionDir)SDK\OPTICK\lib\x64\debug;$(LibraryPath)</LibraryPath>
