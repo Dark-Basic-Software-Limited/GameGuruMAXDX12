@@ -299,7 +299,7 @@ void sliders_draw ( void )
 			// Resolution
 			cstr pHardwareDetailInfo;
 			pHardwareDetailInfo = "Graphics Card:";
-			pHardwareDetailInfo += wi::graphics::GetDevice()->GetGraphicsCardName();
+			//pHardwareDetailInfo += wi::graphics::GetDevice()->GetGraphicsCardName();
 			pHardwareDetailInfo += "  Resolution:";
 			pHardwareDetailInfo += cstr(Str(GetDisplayWidth())) + "x" + cstr(Str(GetDisplayHeight()));
 			pastebitmapfontcenter(pHardwareDetailInfo.Get(),GetDisplayWidth()/2,GetDisplayHeight()-55,1,255);
