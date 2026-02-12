@@ -1,8 +1,8 @@
 #ifndef _H_GGTERRAIN
 #define _H_GGTERRAIN
 
-#include "../../../../WickedEngineDX12/WickedEngine/wiGraphicsDevice.h"
-#include "../../../../WickedEngineDX12/WickedEngine/wiScene.h"
+#include "../../../WickedEngineDX12/WickedEngine/wiGraphicsDevice.h"
+#include "../../../WickedEngineDX12/WickedEngine/wiScene.h"
 
 #include "Shaders/GGTerrainConstants.hlsli"
 
