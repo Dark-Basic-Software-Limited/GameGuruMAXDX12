@@ -1,4 +1,4 @@
-Rebuild started at 20:09...
+Rebuild started at 21:54...
 1>------ Rebuild All started: Project: PhotonMultiplayer, Configuration: Release x64 ------
 2>------ Rebuild All started: Project: GGVR, Configuration: Release x64 ------
 3>------ Rebuild All started: Project: InfiniteVegetation, Configuration: Release x64 ------
@@ -34,60 +34,66 @@ Rebuild started at 20:09...
 2>(compiling source file '../GGVR/GGVR.cpp')
 2>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\preprocessor-moreflags.h(11,9):
 2>    see previous definition of 'MAX_PATH'
-5>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-5>stdafx.cpp
-5>DarkLUA.cpp
 3>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 3>stdafx.cpp
-3>SimonReloaded.cpp
+4>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+4>Core.cpp
+5>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+5>stdafx.cpp
+7>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+7>stdafx.cpp
+6>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+6>AIThread.cpp
+9>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+9>cVectorC.cpp
+10>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+10>CTextC.cpp
 8>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 8>cl : command line  warning D9035: option 'Zc:forScope-' has been deprecated and will be removed in a future release
 8>bChunk.cpp
-8>bDNA.cpp
-7>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-7>stdafx.cpp
-7>CPU3D.cpp
-4>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-4>Core.cpp
+12>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+12>SteamCheckForWorkshop.cpp
 11>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 11>dxdiaginfo.cpp
-10>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-10>CTextC.cpp
-6>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-6>AIThread.cpp
 14>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 14>CError.cpp
-16>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-16>CMemblocks.cpp
 15>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 15>SteamCheckForWorkshop.cpp
 13>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 13>SteamCheckForWorkshop.cpp
-9>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-9>cVectorC.cpp
-12>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+3>SimonReloaded.cpp
+5>DarkLUA.cpp
+16>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+16>CMemblocks.cpp
+17>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+17>CLightC.cpp
 19>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-19>DDSTextureLoader.cpp
-18>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-18>CInputC.cpp
+20>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+21>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+22>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+7>CPU3D.cpp
 23>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+25>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 24>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 26>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-12>SteamCheckForWorkshop.cpp
-22>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-21>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-17>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-25>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-23>ConvX.cpp
-1>CClient.cpp
+19>DDSTextureLoader.cpp
+27>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+20>CFTPC.cpp
 21>SteamCheckForWorkshop.cpp
-26>CBasic2DC.cpp
 22>DBDLLCore.cpp
-24>CCameraC.cpp
-7>cThread.cpp
 25>SteamCheckForWorkshop.cpp
-10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(46,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>ConvX.cpp
+24>CCameraC.cpp
+26>CBasic2DC.cpp
+27>CAnimation.cpp
+18>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 6>Beacon.cpp
+1>CClient.cpp
+8>bDNA.cpp
+7>cThread.cpp
+18>CInputC.cpp
+14>CGfxC.cpp
+10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(46,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(84,59): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(165,16): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(223,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
@@ -98,73 +104,22 @@ Rebuild started at 20:09...
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(418,16): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(425,16): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(444,31): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bDNA.cpp(257,10): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-14>CGfxC.cpp
-17>CLightC.cpp
 11>CSystemC.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bDNA.cpp(506,10): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-8>bFile.cpp
-20>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(174,20): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(201,53): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-27>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(522,35): warning C4805: '==': unsafe mix of type 'int' and type 'bool' in operation
-2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(642,26): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-20>CFTPC.cpp
-10>Text.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Text.lib
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(519,22): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Core.cpp(110,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-10>Done building project "Text.vcxproj".
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(531,66): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(709,5): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(709,43): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(811,18): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(816,16): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(837,15): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1365,98): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1426,28): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1455,61): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1928,26): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1961,15): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
-18>CError.cpp
-4>EAX.cpp
-16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(153,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-15>DBO2X.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bFile.cpp(34,11): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-13>ADPCMtoWAV.cpp
-27>CAnimation.cpp
-4>CpuUsage.cpp
-16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1003,28): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
-16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1007,24): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
-16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1055,28): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
-16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1059,24): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
-7>SoftwareCulling.cpp
-16>CError.cpp
-8>btBulletFile.cpp
-26>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Basic2D\CBasic2DC.cpp(43,9): warning C4311: 'type cast': pointer truncation from 'DWORD *' to 'DWORD'
-26>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Basic2D\CBasic2DC.cpp(43,9): warning C4302: 'type cast': truncation from 'DWORD *' to 'DWORD'
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bDNA.cpp(257,10): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 9>cVectorManagerC.cpp
-26>CError.cpp
-2>GGVR.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\GGVR.lib
-19>globstruct.cpp
-2>Done building project "GGVR.vcxproj".
-1>CServer.cpp
-6>CollisionTree.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bDNA.cpp(506,10): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(73,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(82,20): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(82,37): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(82,55): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(88,18): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(88,35): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(782,27): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(120,9): warning C4101: 'dwStore': unreferenced local variable
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-18>globstruct.cpp
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1167,14): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1505,11): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1917,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(88,53): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(94,17): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
+2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(174,20): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(201,53): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+10>Text.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Text.lib
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Core.cpp(110,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(110,18): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(118,26): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(123,18): warning C4311: 'type cast': pointer truncation from 'char *' to 'DWORD'
@@ -180,26 +135,94 @@ Rebuild started at 20:09...
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(271,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(272,36): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 20>ftp.cpp
+2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(522,35): warning C4805: '==': unsafe mix of type 'int' and type 'bool' in operation
+2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(642,26): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+8>bFile.cpp
+10>Done building project "Text.vcxproj".
+26>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Basic2D\CBasic2DC.cpp(43,9): warning C4311: 'type cast': pointer truncation from 'DWORD *' to 'DWORD'
+26>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Basic2D\CBasic2DC.cpp(43,9): warning C4302: 'type cast': truncation from 'DWORD *' to 'DWORD'
+13>ADPCMtoWAV.cpp
+17>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Light\CLightC.cpp(13,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+15>DBO2X.cpp
+4>EAX.cpp
+16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(153,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+26>CError.cpp
+7>SoftwareCulling.cpp
+17>CLightManagerC.cpp
+16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1003,28): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
+16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1007,24): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
+16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1055,28): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
+16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1059,24): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
+4>CpuUsage.cpp
+16>CError.cpp
+12>CError.cpp
+6>CollisionTree.cpp
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(519,22): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(531,66): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(709,5): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(709,43): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(811,18): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
+19>globstruct.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bFile.cpp(34,11): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+1>CServer.cpp
+2>GGVR.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\GGVR.lib
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(816,16): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(837,15): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1365,98): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1426,28): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1455,61): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1928,26): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1961,15): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
+18>CError.cpp
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+22>(compiling source file '../../Shared/Core/DBDLLCore.cpp')
+2>Done building project "GGVR.vcxproj".
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(782,27): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+8>btBulletFile.cpp
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1167,14): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1505,11): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1917,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>DBOBlock.cpp
 13>Generating Code...
+21>CFileC.cpp
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+27>(compiling source file '../../Shared/Animation/CAnimation.cpp')
+25>CError.cpp
+26>Generating Code...
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+14>(compiling source file '../../Shared/Setup/CGfxC.cpp')
+11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(120,9): warning C4101: 'dwStore': unreferenced local variable
 11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(411,29): warning C4244: 'return': conversion from 'SIZE_T' to 'int', possible loss of data
 11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(447,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(454,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(728,75): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
-11>CError.cpp
-12>CError.cpp
-22>(compiling source file '../../Shared/Core/DBDLLCore.cpp')
-8>btBulletWorldImporter.cpp
-17>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Light\CLightC.cpp(13,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-23>DBOBlock.cpp
-17>CLightManagerC.cpp
-16>Generating Code...
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-14>(compiling source file '../../Shared/Setup/CGfxC.cpp')
-21>CFileC.cpp
-25>CError.cpp
-26>Generating Code...
 13>CSoundC.cpp
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1138,16): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1139,17): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1140,32): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1140,22): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1141,33): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1141,23): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,45): warning C4838: conversion from 'float' to 'UINT' requires a narrowing conversion
+16>Generating Code...
+11>CError.cpp
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,45): warning C4244: 'initializing': conversion from 'float' to 'UINT', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,59): warning C4838: conversion from 'float' to 'UINT' requires a narrowing conversion
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,59): warning C4244: 'initializing': conversion from 'float' to 'UINT', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1183,36): warning C4244: '=': conversion from 'float' to 'LONG', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1184,37): warning C4244: '=': conversion from 'float' to 'LONG', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1600,27): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1601,28): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1613,57): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1686,49): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1686,73): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+9>CError.cpp
+12>CSpriteManagerC.cpp
+8>btBulletWorldImporter.cpp
 19>Generating Code...
+27>CError.cpp
+18>globstruct.cpp
+20>CError.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(439,23): warning C4018: '<': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(444,12): warning C4018: '<': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(480,23): warning C4018: '<': signed/unsigned mismatch
@@ -207,31 +230,14 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(525,23): warning C4018: '<': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(530,12): warning C4018: '<': signed/unsigned mismatch
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\CpuUsage.cpp(58,7): warning C4996: 'GetVersionExA': was declared deprecated
+26>Basic2D.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Basic2D.lib
+26>Done building project "Basic2D.vcxproj".
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1067,22): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1076,40): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1089,12): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
-15>DBOAssImp.cpp
-4>OSCpu.cpp
-7>Generating Code...
-3>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
-3>(compiling source file '/SimonReloaded.cpp')
-1>LoadBalancingListener.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
-16>Memblocks.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Memblocks.lib
-16>Done building project "Memblocks.vcxproj".
-9>CError.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(257,32): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(361,53): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(362,68): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-19>CImageC.cpp
-18>Generating Code...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(485,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(499,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(542,45): warning C4305: 'argument': truncation from 'double' to 'float'
@@ -240,6 +246,11 @@ Rebuild started at 20:09...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(585,28): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(589,22): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(593,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+7>Generating Code...
+4>OSCpu.cpp
+17>CError.cpp
+1>LoadBalancingListener.cpp
+15>DBOAssImp.cpp
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(634,225): warning C4305: 'argument': truncation from 'double' to 'float'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(634,220): warning C4305: 'argument': truncation from 'double' to 'float'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(634,215): warning C4305: 'argument': truncation from 'double' to 'float'
@@ -424,28 +435,6 @@ Rebuild started at 20:09...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4289,28): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4295,28): warning C4311: 'type cast': pointer truncation from 'unsigned long *' to 'unsigned long'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4295,28): warning C4302: 'type cast': truncation from 'unsigned long *' to 'unsigned long'
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(632,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(700,37): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(781,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(848,36): warning C4311: 'type cast': pointer truncation from 'HICON' to 'LONG'
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(848,36): warning C4302: 'type cast': truncation from 'HICON' to 'LONG'
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(2249,16): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(2250,17): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(3323,19): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4135,23): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4136,24): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4147,24): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4212,11): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4214,10): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
-11>Generating Code...
-3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,40): warning C4101: 'fLow': unreferenced local variable
-3>(compiling source file '/SimonReloaded.cpp')
-3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,58): warning C4101: 'fNewHigh': unreferenced local variable
-3>(compiling source file '/SimonReloaded.cpp')
-3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,45): warning C4101: 'fHigh': unreferenced local variable
-3>(compiling source file '/SimonReloaded.cpp')
-6>Container.cpp
-12>CSpriteManagerC.cpp
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4295,50): warning C4311: 'type cast': pointer truncation from 'LPSTR' to 'unsigned long'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4295,50): warning C4302: 'type cast': truncation from 'LPSTR' to 'unsigned long'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4297,13): warning C4311: 'type cast': pointer truncation from 'LPSTR' to 'unsigned long'
@@ -458,6 +447,9 @@ Rebuild started at 20:09...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4342,21): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4364,4): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4365,4): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
+6>Container.cpp
+3>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+3>(compiling source file '/SimonReloaded.cpp')
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4376,22): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4377,4): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4388,22): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
@@ -549,6 +541,85 @@ Rebuild started at 20:09...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(6212,45): warning C4312: 'reinterpret_cast': conversion from 'unsigned long' to 'char *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(6212,6): warning C4311: 'reinterpret_cast': pointer truncation from 'char *' to 'unsigned long'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(6212,6): warning C4302: 'reinterpret_cast': truncation from 'char *' to 'unsigned long'
+16>Memblocks.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Memblocks.lib
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(632,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(700,37): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
+16>Done building project "Memblocks.vcxproj".
+19>CImageC.cpp
+3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,40): warning C4101: 'fLow': unreferenced local variable
+3>(compiling source file '/SimonReloaded.cpp')
+3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,58): warning C4101: 'fNewHigh': unreferenced local variable
+3>(compiling source file '/SimonReloaded.cpp')
+3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,45): warning C4101: 'fHigh': unreferenced local variable
+3>(compiling source file '/SimonReloaded.cpp')
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(781,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(848,36): warning C4311: 'type cast': pointer truncation from 'HICON' to 'LONG'
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(848,36): warning C4302: 'type cast': truncation from 'HICON' to 'LONG'
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(2249,16): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(2250,17): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(3323,19): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4135,23): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4136,24): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4147,24): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4212,11): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4214,10): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(53,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(68,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(86,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(117,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(173,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(211,19): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(249,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(284,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(310,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(365,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(410,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(455,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(650,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(681,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(712,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(798,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(950,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(977,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(992,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1034,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1085,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1093,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1102,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1111,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1120,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1128,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1136,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1144,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1169,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1206,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1271,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1279,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1286,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1294,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1302,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1310,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1322,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1344,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1388,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1400,61): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1427,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1436,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1454,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+22>DBDLLCoreInternal.cpp
+25>CBitmapC.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+23>DBOData.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+11>Generating Code...
+14>globstruct.cpp
+9>Generating Code...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(206,7): warning C4288: nonstandard extension used: 'i': loop control variable declared in the for-loop is used outside the for-loop scope; it conflicts with the declaration in the outer scope
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(91,6):
 8>    definition of 'i' used
@@ -619,81 +690,13 @@ Rebuild started at 20:09...
 8>    definition of 'i' used
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(128,11):
 8>    definition of 'i' ignored
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-27>(compiling source file '../../Shared/Animation/CAnimation.cpp')
-26>Basic2D.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Basic2D.lib
-22>DBDLLCoreInternal.cpp
-14>globstruct.cpp
-26>Done building project "Basic2D.vcxproj".
+27>Generating Code...
+18>Generating Code...
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(913,1): warning C4715: 'GetVideoPlaying': not all control paths return a value
+20>HTTPComm.cpp
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(927,1): warning C4715: 'GetVideoPosition': not all control paths return a value
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1217,1): warning C4715: 'DB_LoadAnimationCore': not all control paths return a value
 8>btMultiBodyWorldImporter.cpp
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(53,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(68,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(86,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(117,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(173,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(211,19): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(249,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(284,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(310,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(365,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(410,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(455,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(650,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(681,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(712,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(798,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(950,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(977,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(992,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1034,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1085,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1093,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1102,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1111,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1120,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1128,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1136,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1144,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1169,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1206,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1271,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1279,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1286,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1294,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1302,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1310,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1322,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1344,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1388,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1400,61): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1427,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1436,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1454,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1138,16): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1139,17): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1140,32): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1140,22): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1141,33): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1141,23): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,45): warning C4838: conversion from 'float' to 'UINT' requires a narrowing conversion
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,45): warning C4244: 'initializing': conversion from 'float' to 'UINT', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,59): warning C4838: conversion from 'float' to 'UINT' requires a narrowing conversion
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,59): warning C4244: 'initializing': conversion from 'float' to 'UINT', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1183,36): warning C4244: '=': conversion from 'float' to 'LONG', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1184,37): warning C4244: '=': conversion from 'float' to 'LONG', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1600,27): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1601,28): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1613,57): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1686,49): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1686,73): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
-18>Controller.cpp
-25>CBitmapC.cpp
-20>CError.cpp
-23>DBOData.cpp
-27>CError.cpp
-17>CError.cpp
-11>System.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\System.lib
-11>Done building project "System.vcxproj".
 1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(804,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
 1>(compiling source file '/LoadBalancingListener.cpp')
 1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(807,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
@@ -706,7 +709,7 @@ Rebuild started at 20:09...
 1>(compiling source file '/LoadBalancingListener.cpp')
 1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(962,86): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
 1>(compiling source file '/LoadBalancingListener.cpp')
-9>Generating Code...
+17>Generating Code...
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1764,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1778,42): warning C4244: 'argument': conversion from 'float' to 'LONG', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1857,71): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
@@ -715,69 +718,16 @@ Rebuild started at 20:09...
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1869,57): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1914,73): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1914,73): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
-1>MPAudio.cpp
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(2134,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(2135,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+12>(compiling source file '../../Shared/Sprites/CSpriteManagerC.cpp')
+11>System.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\System.lib
+1>MPAudio.cpp
+11>Done building project "System.vcxproj".
+18>Controller.cpp
 13>CSoundManagerC.cpp
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(325,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(27,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(27,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(93,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(93,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(101,14): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(101,14): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(107,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(107,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(112,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(112,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-5>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
-5>(compiling source file '../DarkLUA/DarkLUA.cpp')
-14>Generating Code...
-6>DarkAI.cpp
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(458,24): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(463,24): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(475,25): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(506,20): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(729,15): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(378,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCoreInternal.cpp(132,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(142,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(142,52):
-8>    the template instantiation context (the oldest one first) is
-8>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(298,6):
-8>        see reference to function template instantiation 'void syncMultiBody<btMultiBodyDoubleData>(T *,btMultiBody *,btMultiBodyWorldImporterInternalData *,btAlignedObjectArray<btQuaternion> &,btAlignedObjectArray<btVector3> &)' being compiled
-8>        with
-8>        [
-8>            T=btMultiBodyDoubleData
-8>        ]
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(143,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(148,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(149,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(181,56): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(181,56):
-8>    the template instantiation context (the oldest one first) is
-8>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(463,5):
-8>        see reference to function template instantiation 'void convertMultiBody<btMultiBodyDoubleData>(T *,btMultiBodyWorldImporterInternalData *)' being compiled
-8>        with
-8>        [
-8>            T=btMultiBodyDoubleData
-8>        ]
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(208,38): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(219,42): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(221,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(223,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(231,41): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(233,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(235,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(242,42): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(893,13): warning C4244: 'initializing': conversion from 'intptr_t' to 'long', possible loss of data
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(1073,13): warning C4244: 'initializing': conversion from 'intptr_t' to 'long', possible loss of data
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(1150,6): warning C4311: 'type cast': pointer truncation from 'HINSTANCE' to 'DWORD'
@@ -819,6 +769,47 @@ Rebuild started at 20:09...
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(2735,22): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(3020,12): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(3149,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+6>DarkAI.cpp
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCoreInternal.cpp(132,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+9>Vectors.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Vectors.lib
+24>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+24>(compiling source file '../../Shared/Camera/CCameraC.cpp')
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(304,64): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(324,35): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+21>CError.cpp
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(325,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+9>Done building project "Vectors.vcxproj".
+22>DBDLLDisplay.cpp
+14>Generating Code...
+27>mfplat.lib(MFPlat.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in mf.lib(MF.dll); second definition ignored
+5>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+5>(compiling source file '../../DarkSDKMore/DarkLUA/DarkLUA.cpp')
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(458,24): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(463,24): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(475,25): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(506,20): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(729,15): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(469,41): warning C4305: 'argument': truncation from 'double' to 'float'
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(469,36): warning C4305: 'argument': truncation from 'double' to 'float'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(27,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(27,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(93,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(93,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+27>Animation.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Animation.lib
+27>Done building project "Animation.vcxproj".
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\DBOFORMAT\DBOData.cpp(113,22): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
+20>globstruct.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+1>p2pauth.cpp
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(101,14): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(101,14): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(107,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(107,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(112,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(112,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1051,22): warning C4018: '<': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1062,23): warning C4018: '<': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1209,23): warning C4018: '<': signed/unsigned mismatch
@@ -848,96 +839,104 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1905,20): warning C4018: '<': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1925,20): warning C4018: '<': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(2034,20): warning C4018: '<': signed/unsigned mismatch
-4>OSCpuInfo.cpp
-22>DBDLLDisplay.cpp
-24>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
-24>(compiling source file '../../Shared/Camera/CCameraC.cpp')
-20>HTTPComm.cpp
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-12>(compiling source file '../../Shared/Sprites/CSpriteManagerC.cpp')
-21>CError.cpp
-1>p2pauth.cpp
-27>Generating Code...
-8>btWorldImporter.cpp
-17>Generating Code...
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(927,1): warning C4715: 'GetVideoPosition': not all control paths return a value
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(913,1): warning C4715: 'GetVideoPlaying': not all control paths return a value
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\DBOFORMAT\DBOData.cpp(113,22): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1217,1): warning C4715: 'DB_LoadAnimationCore': not all control paths return a value
-9>Vectors.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Vectors.lib
 23>DBOEffects.cpp
-18>Input.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Input.lib
-15>CObjectManagerC.cpp
-9>Done building project "Vectors.vcxproj".
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(304,64): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(324,35): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(469,41): warning C4305: 'argument': truncation from 'double' to 'float'
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(469,36): warning C4305: 'argument': truncation from 'double' to 'float'
+17>Light.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Light.lib
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+12>CSpritesC.cpp
+17>Done building project "Light.vcxproj".
+4>OSCpuInfo.cpp
 25>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Bitmap\CBitmapC.cpp(267,55): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 25>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Bitmap\CBitmapC.cpp(267,63): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Camera\CCameraC.cpp(1100,41): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Camera\CCameraC.cpp(1100,49): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
-18>Done building project "Input.vcxproj".
 25>Generating Code...
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(142,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(142,52):
+8>    the template instantiation context (the oldest one first) is
+8>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(298,6):
+8>        see reference to function template instantiation 'void syncMultiBody<btMultiBodyDoubleData>(T *,btMultiBody *,btMultiBodyWorldImporterInternalData *,btAlignedObjectArray<btQuaternion> &,btAlignedObjectArray<btVector3> &)' being compiled
+8>        with
+8>        [
+8>            T=btMultiBodyDoubleData
+8>        ]
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(143,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(148,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(149,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(181,56): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(181,56):
+8>    the template instantiation context (the oldest one first) is
+8>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(463,5):
+8>        see reference to function template instantiation 'void convertMultiBody<btMultiBodyDoubleData>(T *,btMultiBodyWorldImporterInternalData *)' being compiled
+8>        with
+8>        [
+8>            T=btMultiBodyDoubleData
+8>        ]
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(208,38): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(219,42): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(221,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(223,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(231,41): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(233,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(235,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(242,42): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+15>CObjectManagerC.cpp
+8>btWorldImporter.cpp
 7>CPU3DTest.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\CPU3D.lib
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 19>(compiling source file '../../Shared/Image/CImageC.cpp')
 7>Done building project "CPU3DTest.vcxproj".
-12>CSpritesC.cpp
-14>Setup.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Setup.lib
-14>Done building project "Setup.vcxproj".
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
-20>globstruct.cpp
+13>dsutil.cpp
+21>globstruct.cpp
+18>Input.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Input.lib
+22>DBDLLEXT.cpp
+25>Bitmap.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Bitmap.lib
+20>Generating Code...
+18>Done building project "Input.vcxproj".
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(2636,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(2637,32): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+25>Done building project "Bitmap.vcxproj".
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(1195,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(1222,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(1428,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
-27>mfplat.lib(MFPlat.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in mf.lib(MF.dll); second definition ignored
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(1947,30): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2420,32): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2420,40): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2420,101): warning C4838: conversion from 'D3D11_BIND_FLAG' to 'UINT' requires a narrowing conversion
-19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2995,30): warning C4018: '<': signed/unsigned mismatch
-19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2997,31): warning C4018: '<': signed/unsigned mismatch
-22>DBDLLEXT.cpp
-13>dsutil.cpp
-27>Animation.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Animation.lib
-27>Done building project "Animation.vcxproj".
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1257,71): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1307,71): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1308,79): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1310,67): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-5>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\tracers\TracerManager.h(3,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
-5>(compiling source file '../DarkLUA/DarkLUA.cpp')
-21>globstruct.cpp
-17>Light.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Light.lib
-17>Done building project "Light.vcxproj".
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1314,76): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1315,84): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1317,72): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-25>Bitmap.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Bitmap.lib
-1>PhotonMultiplayer.cpp
-5>Done building project "DarkLUA.vcxproj" -- FAILED.
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(2636,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(2637,32): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-25>Done building project "Bitmap.vcxproj".
-8>VHACD.cpp
+14>Setup.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Setup.lib
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3115,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3133,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3157,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3169,28): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+14>Done building project "Setup.vcxproj".
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2995,30): warning C4018: '<': signed/unsigned mismatch
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2997,31): warning C4018: '<': signed/unsigned mismatch
+5>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\tracers\TracerManager.h(3,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
+5>(compiling source file '../../DarkSDKMore/DarkLUA/DarkLUA.cpp')
 23>DBOExternals.cpp
+1>PhotonMultiplayer.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
 6>DBPro Functions.cpp
-4>OSHardDrive.cpp
-20>Generating Code...
+5>Done building project "DarkLUA.vcxproj" -- FAILED.
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1257,71): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1307,71): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1308,79): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1310,67): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1314,76): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1315,84): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 12>(compiling source file '../../Shared/Sprites/CSpritesC.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1317,72): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+20>FTP.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\FTP.lib
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(613,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(615,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(620,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
@@ -948,41 +947,28 @@ Rebuild started at 20:09...
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(636,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 12>Generating Code...
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(1150,1): warning C4717: 'MAXSprite': recursive on all control paths, function will cause runtime stack overflow
-22>DBDLLExtCalls.cpp
-21>Generating Code...
+4>OSHardDrive.cpp
+20>Done building project "FTP.vcxproj".
+8>VHACD.cpp
 13>dxutil.cpp
+21>Generating Code...
 23>DBOFile.cpp
+22>DBDLLExtCalls.cpp
+12>Sprites.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Sprites.lib
+6>DynamicPathFinder.cpp
+12>Done building project "Sprites.vcxproj".
 19>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
 19>(compiling source file '../../Shared/Image/CImageC.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1434,58): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1434,24): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:         with
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:         [
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:             T=float
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:         ]
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1452,91): warning C4267: 'argument': conversion from 'size_t' to 'const int', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1459,14): warning C4244: 'initializing': conversion from 'size_t' to 'double', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1490,58): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1490,24): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244:         with
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244:         [
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244:             T=float
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244:         ]
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:         with
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:         [
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:             T=float
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:         ]
+1>PhotonView.cpp
+21>File.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\File.lib
+21>Done building project "File.vcxproj".
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(51,62): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3537,22): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3537,27): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3537,46): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3537,73): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3550,23): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3550,28): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
-1>PhotonView.cpp
-20>FTP.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\FTP.lib
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3550,47): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3550,74): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3614,39): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
@@ -992,6 +978,10 @@ Rebuild started at 20:09...
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3619,46): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3619,73): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3634,39): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+23>DBOFormat.cpp
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(374,40): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(398,41): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+13>CError.cpp
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3634,60): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4204,108): warning C4474: 'sprintf' : too many arguments passed for format string
 19>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4204,108):
@@ -1015,59 +1005,66 @@ Rebuild started at 20:09...
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5933,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5939,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5916,11): warning C4101: 'hRes': unreferenced local variable
-20>Done building project "FTP.vcxproj".
-6>DynamicPathFinder.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1434,58): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1434,24): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:         with
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:         [
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:             T=float
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:         ]
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1452,91): warning C4267: 'argument': conversion from 'size_t' to 'const int', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1459,14): warning C4244: 'initializing': conversion from 'size_t' to 'double', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1490,58): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1490,24): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244:         with
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244:         [
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244:             T=float
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244:         ]
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:         with
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:         [
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:             T=float
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:         ]
 8>vhacdICHull.cpp
-21>File.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\File.lib
-21>Done building project "File.vcxproj".
-12>Sprites.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Sprites.lib
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(51,62): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-12>Done building project "Sprites.vcxproj".
-23>DBOFormat.cpp
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(374,40): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(398,41): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-13>CError.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(413,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(413,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(432,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(432,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(483,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(483,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-4>OSComputerNames.cpp
 1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\PhotonView.cpp(40,23): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 1>(compiling source file '/PhotonView.cpp')
 1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\PhotonView.cpp(66,25): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 1>(compiling source file '/PhotonView.cpp')
-8>vhacdManifoldMesh.cpp
+4>OSComputerNames.cpp
 22>DBDLLGDI.cpp
 1>ServerBrowser.cpp
-15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
-15>(compiling source file '../../Shared/Objects/CObjectManagerC.cpp')
 13>CDataC.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(30,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
-1>ShouldISend.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(145,14): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(146,14): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(1324,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(1334,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>Entity.cpp
+15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+15>(compiling source file '../../Shared/Objects/CObjectManagerC.cpp')
+1>ShouldISend.cpp
 13>OggVorbis.cpp
-8>vhacdMesh.cpp
+8>vhacdManifoldMesh.cpp
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLGDI.cpp(79,18): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLGDI.cpp(124,19): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLGDI.cpp(180,50): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
 22>globstruct.cpp
+8>vhacdMesh.cpp
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1103,17): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1104,34): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1108,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+1>timer.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSComputerNames.cpp(44,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSComputerNames.cpp(44,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSComputerNames.cpp(54,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSComputerNames.cpp(54,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-4>OSDisplay.cpp
-1>timer.cpp
-1>voicechat.cpp
-8>vhacdVolume.cpp
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1103,17): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1104,34): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1108,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1233,47): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1234,49): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1235,62): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
@@ -1145,82 +1142,86 @@ Rebuild started at 20:09...
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(4864,37): warning C4477: 'sprintf_s' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
 6>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(4864,37):
 6>    consider using '%zd' in the format string
-22>CError.cpp
+1>voicechat.cpp
 13>OggVorbisEncoderAudio.cpp
-1>Generating Code...
+4>OSDisplay.cpp
 6>EntityBuffer.cpp
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderAudio.cpp(42,24): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderAudio.cpp(76,19): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-3>SimonReloaded.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\InfiniteVegetation.lib
-3>Done building project "SimonReloaded.vcxproj".
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderAudio.cpp(222,20): warning C4267: 'initializing': conversion from 'size_t' to 'long', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderAudio.cpp(277,19): warning C4267: 'initializing': conversion from 'size_t' to 'long', possible loss of data
 13>OggVorbisEncoderEncode.cpp
+22>CError.cpp
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderEncode.cpp(151,20): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderEncode.cpp(152,20): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
 13>OggVorbisEncoderMain.cpp
+1>Generating Code...
 13>OggVorbisEncoderPlatform.cpp
+3>SimonReloaded.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\InfiniteVegetation.lib
+3>Done building project "SimonReloaded.vcxproj".
 23>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
 23>(compiling source file '../../Shared/DBOFormat/DBOFormat.cpp')
-8>btAxisSweep3.cpp
+8>vhacdVolume.cpp
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(298,27): warning C4244: 'initializing': conversion from '__int64' to 'DWORD', possible loss of data
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(331,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-22>Generating Code...
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,35): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,42): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(2933,22): warning C4018: '<': signed/unsigned mismatch
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3130,25): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3131,23): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-8>btBroadphaseProxy.cpp
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7411,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7488,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7561,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-8>btCollisionAlgorithm.cpp
 13>Generating Code...
-4>OSDialog.cpp
-8>btDbvt.cpp
+22>Generating Code...
 6>EntityThread.cpp
+8>btAxisSweep3.cpp
+4>OSDialog.cpp
 1>PhotonMultiplayer.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\PhotonMultiplayer.lib
 1>Done building project "PhotonMultiplayer.vcxproj".
-8>btDbvtBroadphase.cpp
+8>btBroadphaseProxy.cpp
 24>CCameraManagerC.cpp
+13>Sound.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Sound.lib
+8>btCollisionAlgorithm.cpp
+13>Done building project "Sound.vcxproj".
+8>btDbvt.cpp
+22>DBDLLCoreEncryptCall.cpp
+8>btDbvtBroadphase.cpp
+6>Grid.cpp
 8>btDispatcher.cpp
 8>btOverlappingPairCache.cpp
-22>DBDLLCoreEncryptCall.cpp
-13>Sound.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Sound.lib
-13>Done building project "Sound.vcxproj".
 8>btQuantizedBvh.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(49,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(51,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(53,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(58,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(58,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+22>cMatrix.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(73,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
-6>Grid.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(75,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(77,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(82,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(82,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>OSMemory.cpp
-8>Generating Code...
-19>CError.cpp
-22>cMatrix.cpp
-24>CDataC.cpp
 6>Hero.cpp
+24>CDataC.cpp
+19>CError.cpp
+8>Generating Code...
 24>Generating Code...
-19>Generating Code...
 22>cVector2D.cpp
 15>cOcclusion.cpp
+19>Generating Code...
 4>FileBlocks.cpp
-24>CCameraDataC.cpp
 6>LeeThread.cpp
+24>CCameraDataC.cpp
 22>cVector3D.cpp
 19>DIB.C
-19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(437,16): warning C4013: 'GG_CreateFile' undefined; assuming extern returning int
-19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(437,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
-19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(551,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
 15>GameFXCalls.cpp
-19>ICONS.C
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(64,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(72,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(73,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(97,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(115,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 24>DBCameraGraphics.cpp
 15>Generating Code...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(713,16): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
@@ -1230,19 +1231,18 @@ Rebuild started at 20:09...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(754,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(782,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(787,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>LUAScript.cpp
+6>Path.cpp
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(437,16): warning C4013: 'GG_CreateFile' undefined; assuming extern returning int
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(437,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(551,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(792,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(1017,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 22>cVector4D.cpp
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(64,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(72,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(73,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(97,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(115,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+19>ICONS.C
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileBlocks.cpp(172,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(156,18): warning C4013: 'GG_CreateFile' undefined; assuming extern returning int
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(156,16): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
-6>LUAScript.cpp
-6>Path.cpp
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileBlocks.cpp(172,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(386,42): warning C4311: 'type cast': pointer truncation from 'LPTSTR' to 'DWORD'
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(396,34): warning C4312: 'type cast': conversion from 'LONG' to 'HWND' of greater size
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(396,14): warning C4244: '=': conversion from 'LRESULT' to 'LONG', possible loss of data
@@ -1252,30 +1252,30 @@ Rebuild started at 20:09...
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(545,31): warning C4244: '=': conversion from 'LRESULT' to 'UINT', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(586,35): warning C4244: '=': conversion from 'LRESULT' to 'LONG', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(847,16): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
+23>DBOFrame.cpp
 19>Generating Code...
 4>FileMapping.cpp
+22>RenderList.cpp
 19>Image.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Image.lib
 19>Done building project "Image.vcxproj".
-23>DBOFrame.cpp
-22>RenderList.cpp
 24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Camera\DBCameraGraphics.cpp(165,22): warning C4244: '=': conversion from 'DWORD' to 'FLOAT', possible loss of data
 24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Camera\DBCameraGraphics.cpp(166,22): warning C4244: '=': conversion from 'DWORD' to 'FLOAT', possible loss of data
-24>Generating Code...
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Path.cpp(57,28): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
+24>Generating Code...
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Path.cpp(219,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Path.cpp(227,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Path.cpp(241,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>PathFinderAdvanced.cpp
-24>Camera.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Camera.lib
 23>DBOMesh.cpp
+24>Camera.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Camera.lib
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(226,27): warning C4804: '>': unsafe use of type 'bool' in operation
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(238,10): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(240,10): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(242,10): warning C4244: 'return': conversion from 'double' to 'DWORD', possible loss of data
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(313,22): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(383,77): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-4>IPC.cpp
 22>SteamCheckForWorkshop.cpp
+4>IPC.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(40,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(726,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(937,20): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
@@ -1301,86 +1301,78 @@ Rebuild started at 20:09...
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(3659,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(3673,18): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(3890,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>Polygon.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\IPC.cpp(49,25): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\IPC.cpp(49,25): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
-6>Polygon.cpp
+6>StateAttack.cpp
 4>cZip.cpp
 8>Compiling...
 8>btSimpleBroadphase.cpp
-6>StateAttack.cpp
-8>btActivatingCollisionAlgorithm.cpp
-8>btBox2dBox2dCollisionAlgorithm.cpp
 22>Generating Code...
-8>btBoxBoxCollisionAlgorithm.cpp
+8>btActivatingCollisionAlgorithm.cpp
+24>BSCMAKE : warning BK4503: minor error in .SBR file 'x64\Release\CCameraC.sbr' ignored
+24>BSCMAKE : warning BK4503: minor error in .SBR file 'x64\Release\CCameraC.sbr' ignored
+8>btBox2dBox2dCollisionAlgorithm.cpp
 4>Generating Code...
-24>BSCMAKE : warning BK4503: minor error in .SBR file 'x64\Release\CCameraC.sbr' ignored
-24>BSCMAKE : warning BK4503: minor error in .SBR file 'x64\Release\CCameraC.sbr' ignored
-15>CObjectsC.cpp
-8>btBoxBoxDetector.cpp
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(404,1): warning C4700: uninitialized local variable 'CPUSignature' used
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'edx2' used
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'eax2' used
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'edx1' used
 6>StateAttackFromCover.cpp
-8>btCollisionDispatcher.cpp
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'eax1' used
-22>DBDLLCore.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\DBDLLCore.lib
-22>Done building project "DBDLLCore.vcxproj".
-8>btCollisionDispatcherMt.cpp
+15>CObjectsC.cpp
 23>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
 23>(compiling source file '../../Shared/DBOFormat/DBOMesh.cpp')
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1646,18): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1708,26): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-8>btCollisionObject.cpp
+8>btBoxBoxCollisionAlgorithm.cpp
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(404,1): warning C4700: uninitialized local variable 'CPUSignature' used
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'edx2' used
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'eax2' used
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'edx1' used
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'eax1' used
+22>DBDLLCore.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\DBDLLCore.lib
+22>Done building project "DBDLLCore.vcxproj".
+8>btBoxBoxDetector.cpp
+8>btCollisionDispatcher.cpp
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateAttackFromCover.cpp(44,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 4>adler32.c
+8>btCollisionDispatcherMt.cpp
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateAttackFromCover.cpp(154,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>StateChaseAttack.cpp
 4>aescrypt.c
 4>aeskey.c
 4>aestab.c
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateAttackFromCover.cpp(44,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+8>btCollisionObject.cpp
 4>compress.c
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateAttackFromCover.cpp(154,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>StateChaseAttack.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionObject.cpp(40,20): warning C4305: 'initializing': truncation from 'double' to 'btScalar'
 4>crc32.c
 4>deflate.c
 4>entropy.c
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionObject.cpp(40,20): warning C4305: 'initializing': truncation from 'double' to 'btScalar'
+4>fileenc.c
 8>btCollisionWorld.cpp
+6>Generating Code...
+4>gzclose.c
+4>gzlib.c
+4>gzread.c
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp')
-4>fileenc.c
+4>gzwrite.c
+4>hmac.c
+4>infback.c
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp')
-4>gzclose.c
-4>gzlib.c
-4>gzread.c
-4>gzwrite.c
-4>hmac.c
-4>infback.c
 4>inffast.c
 4>inflate.c
 4>inftrees.c
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.cpp(1331,51): warning C4305: 'argument': truncation from 'double' to 'btScalar'
 4>ioapi.c
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\ioapi.c(122,48): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 4>ioapi_buf.c
 4>Generating Code...
-6>Generating Code...
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.cpp(1331,51): warning C4305: 'argument': truncation from 'double' to 'btScalar'
 8>btCollisionWorldImporter.cpp
+24>Done building project "Camera.vcxproj".
 15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
 15>(compiling source file '../../Shared/Objects/CObjectsC.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
-24>Done building project "Camera.vcxproj".
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 15>(compiling source file '../../Shared/Objects/CObjectsC.cpp')
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\types.h(3954,32): warning C4305: 'initializing': truncation from 'double' to 'float'
@@ -1442,6 +1434,10 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(6217,13): warning C4312: 'type cast': conversion from 'DWORD' to 'ID3DX11EffectVariable *' of greater size
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(6266,13): warning C4312: 'type cast': conversion from 'DWORD' to 'ID3DX11EffectVariable *' of greater size
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(6373,40): warning C4312: 'type cast': conversion from 'DWORD' to 'ID3DX11EffectTechnique *' of greater size
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(6405,10): warning C4311: 'type cast': pointer truncation from 'ID3DX11EffectTechnique *' to 'DWORD'
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(6405,10): warning C4302: 'type cast': truncation from 'ID3DX11EffectTechnique *' to 'DWORD'
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(6697,29): warning C4018: '<': signed/unsigned mismatch
@@ -1459,7 +1455,6 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(7911,27): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(8529,40): warning C4018: '<': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(9274,9): warning C4311: 'type cast': pointer truncation from 'sMesh *' to 'DWORD'
-8>btCompoundCollisionAlgorithm.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(9274,9): warning C4302: 'type cast': truncation from 'sMesh *' to 'DWORD'
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(9352,16): warning C4244: 'initializing': conversion from 'DWORD' to 'float', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(9353,17): warning C4244: 'initializing': conversion from 'DWORD' to 'float', possible loss of data
@@ -1482,15 +1477,18 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(10593,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(10627,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(10656,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-8>btCompoundCompoundCollisionAlgorithm.cpp
-8>btConvex2dConvex2dAlgorithm.cpp
-4>Compiling...
-4>ioapi_mem.c
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
+8>btCompoundCollisionAlgorithm.cpp
 6>Compiling...
 6>StateDefend.cpp
-8>btConvexConcaveCollisionAlgorithm.cpp
+8>btCompoundCompoundCollisionAlgorithm.cpp
+4>Compiling...
+4>ioapi_mem.c
 4>iowin32.c
-8>btConvexConvexAlgorithm.cpp
+8>btConvex2dConvex2dAlgorithm.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(124,17): warning C4013: 'GG_CreateFile' undefined; assuming extern returning int
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(124,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(131,47): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
@@ -1498,6 +1496,7 @@ Rebuild started at 20:09...
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(161,46): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(182,17): warning C4013: 'GG_CreateFileW' undefined; assuming extern returning int
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(182,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
+8>btConvexConcaveCollisionAlgorithm.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(191,50): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(218,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(225,47): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
@@ -1505,18 +1504,23 @@ Rebuild started at 20:09...
 4>pwd2key.c
 4>sha1.c
 4>trees.c
-8>btConvexPlaneCollisionAlgorithm.cpp
 4>uncompr.c
 4>unzip.c
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\unzip.c(1368,84): warning C4244: '=': conversion from '__int64' to 'uInt', possible loss of data
 4>zip.c
 4>zutil.c
-4>Generating Code...
-8>btDefaultCollisionConfiguration.cpp
 6>StateDiving.cpp
-8>btEmptyCollisionAlgorithm.cpp
-8>btGhostObject.cpp
+8>btConvexConvexAlgorithm.cpp
+4>Generating Code...
 23>DBORawMesh.cpp
+8>btConvexPlaneCollisionAlgorithm.cpp
+8>btDefaultCollisionConfiguration.cpp
+8>btEmptyCollisionAlgorithm.cpp
+6>StateFallBack.cpp
+4>Main.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Enhancements.lib
+8>btGhostObject.cpp
+4>Done building project "Main.vcxproj".
+23>NVMeshMenderD3DX.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btGhostObject.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
@@ -1527,10 +1531,6 @@ Rebuild started at 20:09...
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btGhostObject.cpp')
 8>btHashedSimplePairCache.cpp
 8>Generating Code...
-4>Main.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Enhancements.lib
-4>Done building project "Main.vcxproj".
-6>StateFallBack.cpp
-23>NVMeshMenderD3DX.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateFallBack.cpp(93,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>StateGoToDest.cpp
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(243,52): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
@@ -1547,11 +1547,12 @@ Rebuild started at 20:09...
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(876,39): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,49): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,32): warning C4267: 'initializing': conversion from 'size_t' to 'const int', possible loss of data
-15>CommonC.cpp
-6>StateIdle.cpp
 23>CError.cpp
+6>StateIdle.cpp
+15>CommonC.cpp
 23>globstruct.cpp
 6>StateInvestigate.cpp
+23>Generating Code...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CommonC.cpp(269,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CommonC.cpp(776,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CommonC.cpp(779,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
@@ -1560,7 +1561,6 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CommonC.cpp(1026,32): warning C4018: '>': signed/unsigned mismatch
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CommonC.cpp(1031,36): warning C4018: '>': signed/unsigned mismatch
 15>CPositionC.cpp
-23>Generating Code...
 6>StateLeaping.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CPositionC.cpp(893,38): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CPositionC.cpp(918,38): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
@@ -1569,52 +1569,51 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CPositionC.cpp(964,36): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CPositionC.cpp(975,36): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
 15>CError.cpp
+6>StateManual.cpp
 8>Compiling...
 8>btInternalEdgeUtility.cpp
-6>StateManual.cpp
 15>3DCol.cpp
-8>btManifoldResult.cpp
-8>btSimulationIslandManager.cpp
 6>StatePatrol.cpp
+8>btManifoldResult.cpp
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(67,2): warning C5033: 'register' is no longer a supported storage class
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(68,2): warning C5033: 'register' is no longer a supported storage class
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(69,2): warning C5033: 'register' is no longer a supported storage class
+8>btSimulationIslandManager.cpp
+15>cBoxCol.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btSimulationIslandManager.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btSimulationIslandManager.cpp')
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(67,2): warning C5033: 'register' is no longer a supported storage class
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(68,2): warning C5033: 'register' is no longer a supported storage class
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(69,2): warning C5033: 'register' is no longer a supported storage class
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btSimulationIslandManager.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btSimulationIslandManager.cpp')
 8>btSphereBoxCollisionAlgorithm.cpp
-15>cBoxCol.cpp
-8>btSphereSphereCollisionAlgorithm.cpp
-8>btSphereTriangleCollisionAlgorithm.cpp
-8>btUnionFind.cpp
 6>StatePeekFromCorner.cpp
-8>SphereTriangleDetector.cpp
-8>btBox2dShape.cpp
-15>CCollision.cpp
-8>btBoxShape.cpp
+8>btSphereSphereCollisionAlgorithm.cpp
 23>ConvX.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\ConvX.lib
 23>Done building project "ConvX.vcxproj".
-8>btBvhTriangleMeshShape.cpp
+8>btSphereTriangleCollisionAlgorithm.cpp
+8>btUnionFind.cpp
+15>CCollision.cpp
+8>SphereTriangleDetector.cpp
+8>btBox2dShape.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StatePeekFromCorner.cpp(41,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+8>btBoxShape.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StatePeekFromCorner.cpp(122,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>StateSearchArea.cpp
-8>btCapsuleShape.cpp
-8>btCollisionShape.cpp
+8>btBvhTriangleMeshShape.cpp
 15>PolyPool.cpp
+8>btCapsuleShape.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateSearchArea.cpp(113,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-8>btCompoundShape.cpp
+8>btCollisionShape.cpp
 6>StateSet.cpp
+8>btCompoundShape.cpp
 15>DBOBlock.cpp
+6>StateStrafeAttack.cpp
 8>btConcaveShape.cpp
 8>btConeShape.cpp
-6>StateStrafeAttack.cpp
 8>btConvex2dShape.cpp
-8>btConvexHullShape.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(53,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(68,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(86,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
@@ -1626,6 +1625,7 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(310,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(365,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(410,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+8>btConvexHullShape.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(455,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(650,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(681,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
@@ -1659,27 +1659,27 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1436,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1454,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
 15>DBOData.cpp
-8>btConvexInternalShape.cpp
 6>StateWaitInCover.cpp
+8>btConvexInternalShape.cpp
 8>btConvexPointCloudShape.cpp
-8>Generating Code...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\DBOFORMAT\DBOData.cpp(113,22): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
 15>DBOEffects.cpp
+8>Generating Code...
 6>Team.cpp
 15>DBOExternals.cpp
-15>DBOFile.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Team.cpp(472,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>TeamController.cpp
+15>DBOFile.cpp
 8>Compiling...
 8>btConvexPolyhedron.cpp
-6>TeamController.cpp
 15>DBOFormat.cpp
 8>btConvexShape.cpp
-8>btConvexTriangleMeshShape.cpp
-8>btCylinderShape.cpp
 6>TreeFace.cpp
-8>btEmptyShape.cpp
 6>TreeNode.cpp
 6>World.cpp
+8>btConvexTriangleMeshShape.cpp
+8>btCylinderShape.cpp
+8>btEmptyShape.cpp
 8>btHeightfieldTerrainShape.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btHeightfieldTerrainShape.cpp(205,62): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btHeightfieldTerrainShape.cpp(842,42): warning C4244: 'argument': conversion from 'const int' to 'const btScalar', possible loss of data
@@ -1701,6 +1701,12 @@ Rebuild started at 20:09...
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionShapes/btMiniSDF.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.h(75,16): warning C4244: 'argument': conversion from 'double' to 'const btScalar', possible loss of data
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionShapes/btMiniSDF.cpp')
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(821,33): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(822,70): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(945,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(981,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(1164,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>Zone.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.cpp(53,28): warning C4244: '=': conversion from 'double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.cpp(54,28): warning C4244: '=': conversion from 'double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.cpp(55,28): warning C4244: '=': conversion from 'double' to 'btScalar', possible loss of data
@@ -1758,15 +1764,20 @@ Rebuild started at 20:09...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.cpp(517,23): warning C4244: '+=': conversion from 'double' to 'btScalar', possible loss of data
 8>btMinkowskiSumShape.cpp
 8>btMultimaterialTriangleMeshShape.cpp
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(821,33): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(822,70): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(945,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(981,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(1164,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>Zone.cpp
 8>btMultiSphereShape.cpp
 15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
 15>(compiling source file '../../Shared/DBOFormat/DBOFormat.cpp')
+6>Generating Code...
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(298,27): warning C4244: 'initializing': conversion from '__int64' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(331,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,35): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,42): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(2933,22): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3130,25): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3131,23): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7411,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7488,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7561,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMultiSphereShape.cpp(84,18): warning C4288: nonstandard extension used: 'i': loop control variable declared in the for-loop is used outside the for-loop scope; it conflicts with the declaration in the outer scope
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMultiSphereShape.cpp(80,8):
 8>    definition of 'i' used
@@ -1777,18 +1788,7 @@ Rebuild started at 20:09...
 8>    definition of 'i' used
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMultiSphereShape.cpp(110,14):
 8>    definition of 'i' ignored
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(298,27): warning C4244: 'initializing': conversion from '__int64' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(331,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 8>btOptimizedBvh.cpp
-6>Generating Code...
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,35): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,42): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(2933,22): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3130,25): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3131,23): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7411,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7488,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7561,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 8>btPolyhedralConvexShape.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btGrahamScan2dConvexHull.h(104,7): warning C4288: nonstandard extension used: 'i': loop control variable declared in the for-loop is used outside the for-loop scope; it conflicts with the declaration in the outer scope
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionShapes/btPolyhedralConvexShape.cpp')
@@ -1846,6 +1846,8 @@ Rebuild started at 20:09...
 8>    definition of 'i' ignored
 8>btScaledBvhTriangleMeshShape.cpp
 8>btSdfCollisionShape.cpp
+6>DarkMind.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\DarkAI.lib
+6>Done building project "DarkMind.vcxproj".
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.h(67,16): warning C4244: 'argument': conversion from 'double' to 'const btScalar', possible loss of data
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionShapes/btSdfCollisionShape.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.h(75,16): warning C4244: 'argument': conversion from 'double' to 'const btScalar', possible loss of data
@@ -1854,8 +1856,6 @@ Rebuild started at 20:09...
 8>btShapeHull.cpp
 8>btSphereShape.cpp
 8>btStaticPlaneShape.cpp
-6>DarkMind.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\DarkAI.lib
-6>Done building project "DarkMind.vcxproj".
 8>btStridingMeshInterface.cpp
 8>btTetrahedronShape.cpp
 8>btTriangleBuffer.cpp
@@ -1877,16 +1877,16 @@ Rebuild started at 20:09...
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.cpp')
+15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+15>(compiling source file '../../Shared/DBOFormat/DBOMesh.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.cpp')
 8>btGImpactQuantizedBvh.cpp
-15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
-15>(compiling source file '../../Shared/DBOFormat/DBOMesh.cpp')
-8>btGImpactShape.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1646,18): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1708,26): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+8>btGImpactShape.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/Gimpact/btGImpactShape.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
@@ -1909,19 +1909,7 @@ Rebuild started at 20:09...
 8>Compiling...
 8>btGjkEpa2.cpp
 8>btGjkEpaPenetrationDepthSolver.cpp
-8>btGjkPairDetector.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(36,38): warning C4305: 'initializing': truncation from 'double' to 'btScalar'
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,19): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,104): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,137): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,185): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(372,21): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(373,21): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(411,9): warning C4244: 'return': conversion from 'double' to 'btScalar', possible loss of data
-8>btMinkowskiPenetrationDepthSolver.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(243,52): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-8>btPersistentManifold.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(315,50): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(491,45): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(491,31): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
@@ -1935,7 +1923,19 @@ Rebuild started at 20:09...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(876,39): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,49): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,32): warning C4267: 'initializing': conversion from 'size_t' to 'const int', possible loss of data
+8>btGjkPairDetector.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(36,38): warning C4305: 'initializing': truncation from 'double' to 'btScalar'
 15>globstruct.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,19): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,104): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,137): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,185): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(372,21): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(373,21): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(411,9): warning C4244: 'return': conversion from 'double' to 'btScalar', possible loss of data
+8>btMinkowskiPenetrationDepthSolver.cpp
+8>btPersistentManifold.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(362,46): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(363,48): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(374,70): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
@@ -1943,6 +1943,7 @@ Rebuild started at 20:09...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(376,86): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(377,86): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(381,59): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
+15>Generating Code...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(382,88): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(383,92): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(385,64): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
@@ -1957,7 +1958,6 @@ Rebuild started at 20:09...
 8>btPolyhedralContactClipping.cpp
 8>btRaycastCallback.cpp
 8>btSubSimplexConvexCast.cpp
-15>Generating Code...
 8>btVoronoiSimplexSolver.cpp
 8>btKinematicCharacterController.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
@@ -11527,4 +11527,4 @@ Rebuild started at 20:09...
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2489,26): error C1003: error count exceeds 100; stopping compilation
 28>Done building project "Template_Windows.vcxproj" -- FAILED.
 ========== Rebuild All: 26 succeeded, 2 failed, 0 skipped ==========
-========== Rebuild completed at 20:14 and took 05:22.042 minutes ==========
+========== Rebuild completed at 21:59 and took 05:11.586 minutes ==========
