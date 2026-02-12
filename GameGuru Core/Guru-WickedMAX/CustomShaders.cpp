@@ -1,5 +1,5 @@
 #include <string>
-#include "Utility/stb_image.h"
+#include "../GameGuru/Include/Utility/stb_image.h"
 #include "CFileC.h"
 #include "CStr.h"
 #include "wiGraphicsDevice.h"

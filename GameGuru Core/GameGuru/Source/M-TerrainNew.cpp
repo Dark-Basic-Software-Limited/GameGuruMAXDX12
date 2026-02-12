@@ -16,7 +16,7 @@
 #include "..\Imgui\imgui_gg_dx11.h"
 
 //#include "Terrain.h"
-#include "Utility/stb_image.h"
+#include "../Include/Utility/stb_image.h"
 
 #include "GGTerrain\GGTerrainFile.h"
 #include "GGTerrain\GGTerrain.h"
