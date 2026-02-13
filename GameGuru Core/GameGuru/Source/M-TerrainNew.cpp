@@ -16,7 +16,7 @@
 #include "..\Imgui\imgui_gg_dx11.h"
 
 //#include "Terrain.h"
-#include "../Include/Utility/stb_image.h"
+#include "../Include/Utility/stb_image.h" // Fixed include path
 
 #include "GGTerrain\GGTerrainFile.h"
 #include "GGTerrain\GGTerrain.h"
@@ -11600,7 +11600,8 @@ void procedural_new_level(void)
 					ID3D11Texture2D *pBackBuffer = NULL;
 					#ifdef DIGAHOLE
 					//PE: We need 5 frames (iQuitProceduralLevel). before backbuffer is updated with latest without 2d. ?
-					pBackBuffer = (ID3D11Texture2D *)wiRenderer::GetDevice()->GetBackBufferForGG(&master.swapChain);
+					//pBackBuffer = (ID3D11Texture2D *)wiRenderer::GetDevice()->GetBackBufferForGG(&master.swapChain);
+					pBackBuffer = NULL;
 					#else
 					pBackBuffer = (ID3D11Texture2D *)GetBitmapTexture2D(99);
 					#endif

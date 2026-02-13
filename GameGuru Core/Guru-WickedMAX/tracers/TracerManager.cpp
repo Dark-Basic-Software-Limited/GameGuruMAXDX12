@@ -3,7 +3,7 @@
 //#define DISABLETEMP
 
 #include "stdafx.h"
-#include "../../../WickedEngineDX12/WickedEngine/WickedEngine.h"
+#include "../../../../WickedEngineDX12/WickedEngine/WickedEngine.h"
 #include "TracerManager.h"
 #include "wiResourceManager.h"
 #include "wiTimer.h"

@@ -4,7 +4,7 @@
 #define ONLYLOADWHENUSED
 
 #include <string>
-#include "../../GameGuru/Include/Utility/stb_image.h"
+#include "../../GameGuru/Include/Utility/stb_image.h" // Fixed include path
 #include "CFileC.h"
 #include "CStr.h"
 #include "wiRenderer.h"

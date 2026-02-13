@@ -16,7 +16,7 @@
 using namespace DirectX;
 
 //#define STB_IMAGE_IMPLEMENTATION
-#include "../../../GameGuru/Include/Utility/stb_image.h"
+#include "../../../GameGuru/Include/Utility/stb_image.h" // Fixed include path
 
 static ALWAYS_INLINED int Max(int x, int y) noexcept
 {
