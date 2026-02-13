@@ -1,0 +1,44 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Debug x64",
+            "type": "shell",
+            "command": "${workspaceFolder}\\build.bat",
+            "args": ["Debug"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$msCompile",
+            "detail": "Build Debug configuration using MSVC"
+        },
+        {
+            "label": "Build Release x64",
+            "type": "shell",
+            "command": "${workspaceFolder}\\build.bat",
+            "args": ["Release"],
+            "group": "build",
+            "problemMatcher": "$msCompile",
+            "detail": "Build Release configuration using MSVC"
+        },
+        {
+            "label": "Rebuild Debug x64",
+            "type": "shell",
+            "command": "${workspaceFolder}\\build.bat",
+            "args": ["Debug", "rebuild"],
+            "group": "build",
+            "problemMatcher": "$msCompile",
+            "detail": "Clean rebuild Debug configuration"
+        },
+        {
+            "label": "Rebuild Release x64",
+            "type": "shell",
+            "command": "${workspaceFolder}\\build.bat",
+            "args": ["Release", "rebuild"],
+            "group": "build",
+            "problemMatcher": "$msCompile",
+            "detail": "Clean rebuild Release configuration"
+        }
+    ]
+}
