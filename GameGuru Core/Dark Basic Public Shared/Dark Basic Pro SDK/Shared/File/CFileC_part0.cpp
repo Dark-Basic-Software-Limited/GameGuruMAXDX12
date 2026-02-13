@@ -1,0 +1,1982 @@
+﻿#include <windows.h> 
+#include <windowsx.h>
+#include "mmsystem.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "cfilec.h"
+#include "direct.h"
+#include "time.h"
+#include "io.h"
+#include ".\..\error\cerror.h"
+#include "globstruct.h"
+#include "winioctl.h"
+#include "shlobj.h"
+#include ".\..\Core\SteamCheckForWorkshop.h"
+
+#include <vector>
+#include "CFileC.h"
+#include "CMemblocks.h"
+
+#ifdef WICKEDENGINE
+#ifdef ENABLEIMGUI
+#include "..\..\GameGuru\Imgui\imgui.h"
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_DEFINE_MATH_OPERATORS
+#endif
+#include "..\..\GameGuru\Imgui\imgui_internal.h"
+#include "..\..\GameGuru\Imgui\imgui_impl_win32.h"
+#include "..\..\GameGuru\Imgui\imgui_gg_dx11.h"
+#endif
+#endif
+
+int fileRedirectSetup = 0;
+FILE *pLogFile = 0;
+char szRootDir[ MAX_PATH ];
+bool bRootDirWriteable = false;
+char szWriteDir[ MAX_PATH ];
+char szBeforeChangeWriteDir[MAX_PATH] = "\0";
+char szAddWriteDirAdditional[MAX_PATH];
+
+// separate writabkes for root/global writing and rest for remote project location (or can also be in global if no remote set)
+bool bUseRootAsWriteArea = false;
+char szRootWriteDir[MAX_PATH];
+
+//#define FILE_LOG_ACCESS
+
+const char* GG_GetWritePath()
+{ 
+	if (bUseRootAsWriteArea==true)
+	{
+		return szRootWriteDir;
+	}
+	else
+	{
+		return szWriteDir;
+	}
+}
+
+void GG_SetWritablesToRoot(bool bFlag)
+{
+	bUseRootAsWriteArea = bFlag;
+}
+
+int GG_CreatePath( const char *path )
+{
+	if ( !path || !*path ) return 0;
+	if ( *(path+1) != ':' ) 
+	{
+		// must be absolute path
+		return 0;
+	}
+
+	char *newPath = new char[ strlen(path) + 1 ];
+	strcpy( newPath, path );
+	char *origPath = newPath;
+
+	char *ptr = origPath;
+	while( *ptr ) 
+	{
+		if ( *ptr == '/' ) *ptr = '\\';
+		ptr++;
+	}
+
+	// skip C:/
+	newPath += 3;
+
+	char *szPrev = newPath;
+	char *szSlash = 0;
+	while( (szSlash = strchr( szPrev, '\\' )) )
+	{
+		uint32_t length = (uint32_t)(szSlash-szPrev);
+		if ( length == 0 )
+		{
+			// empty folder name
+			return 0;
+		}
+
+		*szSlash = 0;
+
+		uint32_t result = GetFileAttributes( origPath );
+		if ( result == INVALID_FILE_ATTRIBUTES && !CreateDirectory( origPath, NULL ) )
+		{
+			// failed to create folder
+			return 0;
+		}
+
+		*szSlash = '\\';
+		
+		szPrev = szSlash+1;
+	}
+
+	delete [] origPath;
+	return 1;
+}
+
+bool g_bUseRootAsWriteAreaForStandaloneGames = false;
+void SetWriteSameAsRoot(bool bEnable)
+{
+	g_bUseRootAsWriteAreaForStandaloneGames = bEnable;
+}
+
+bool g_bSetWriteAsRootTemp = false;
+void SetWriteAsRootTemp(bool bEnable)
+{
+	g_bSetWriteAsRootTemp = bEnable;
+}
+
+bool FileRedirectChangeWritableArea ( LPSTR szEXE )
+{
+	bool bResult = false;
+	extern preferences pref;
+	strcpy(szAddWriteDirAdditional, "");
+	if (strlen(pref.cCustomWriteFolder) > 0)
+	{
+		strcpy(szWriteDir, pref.cCustomWriteFolder);
+		if (GG_CreatePath(szWriteDir))
+		{
+			//Check if we can write to this folder.
+			char TestWrite[MAX_PATH];
+			strcpy(TestWrite, szWriteDir);
+			strcat(TestWrite, "test.tst");
+			FILE* testFile = fopen(TestWrite, "w");
+			if (testFile)
+			{
+				fprintf(testFile, "test");
+				fclose(testFile);
+			}
+			if (FileExist(TestWrite) == 1)
+			{
+				DeleteAFile(TestWrite);
+				//Write success , use this folder.
+				if (!SHGetSpecialFolderPath(NULL, szAddWriteDirAdditional, CSIDL_MYDOCUMENTS, TRUE))
+				{
+					//PE: This happened for a user , even when they got the document folder ? , try the new way.
+					HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, szAddWriteDirAdditional);
+					if (result != S_OK)
+					{
+						strcpy(szAddWriteDirAdditional, "");
+						return false;
+					}
+				}
+				if (strlen(szEXE) > 0)
+				{
+					strcat_s(szAddWriteDirAdditional, MAX_PATH, "\\GameGuruApps\\");
+					strcat_s(szAddWriteDirAdditional, MAX_PATH, szEXE);
+					strcat_s(szAddWriteDirAdditional, MAX_PATH, "\\");
+				}
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void FileRedirectRestoreWritableArea (LPSTR szEXE)
+{
+	// restore to regular writeables system
+	if (!SHGetSpecialFolderPath(NULL, szWriteDir, CSIDL_MYDOCUMENTS, TRUE))
+	{
+		//PE: This happened for a user , even when they got the document folder ? , try the new way.
+		HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, szWriteDir);
+		if (result != S_OK)
+		{
+			// if no my documents folder use exe location
+			strcpy(szWriteDir, szRootDir);
+
+			//PE: Dont add to this folder , so just return.
+			return;
+		}
+	}
+
+	// store writables folder
+	extern preferences pref;
+	if (strlen(pref.cCustomWriteFolder) > 0)
+	{
+		// override writables with known custom writables folder
+		strcpy_s(szWriteDir, MAX_PATH, pref.cCustomWriteFolder);
+	}
+	else
+	{
+		// create the initial documents path
+		strcat_s(szWriteDir, MAX_PATH, "\\GameGuruApps\\");
+		strcat_s(szWriteDir, MAX_PATH, szEXE);
+		strcat_s(szWriteDir, MAX_PATH, "\\");
+	}
+
+	// then copy to root write dir (used during int)
+	strcpy_s(szRootWriteDir, MAX_PATH, szWriteDir);
+}
+
+void FileRedirectSetup()
+{
+	// leave if already set up
+	if ( fileRedirectSetup ) return;
+	fileRedirectSetup = 1;
+
+	// get current directory
+	char cwd[ MAX_PATH ];
+	GetCurrentDirectoryA( MAX_PATH, cwd );
+
+	// generate app folder using exe name
+	HMODULE hModule = GetModuleHandle( NULL );
+	char szModule[ MAX_PATH ] = "";
+	char szDrive[ 10 ] = "";
+	char szDir[ MAX_PATH ] = "";
+	char szEXE[ MAX_PATH ] = "";
+	GetModuleFileName( hModule, szModule, MAX_PATH );
+	_splitpath_s( szModule, szDrive, 10, szDir, MAX_PATH, szEXE, MAX_PATH, NULL, 0 );
+	strcpy( szRootDir, szDrive );
+	strcat( szRootDir, szDir ); 
+
+	bRootDirWriteable = false;
+	char TestWrite[MAX_PATH];
+	strcpy(TestWrite, szRootDir);
+	strcat(TestWrite, "test.tst");
+	FILE* testFile = fopen(TestWrite, "w");
+	if (testFile)
+	{
+		fprintf(testFile, "test");
+		fclose(testFile);
+	}
+	if (FileExist(TestWrite) == 1)
+	{
+		DeleteAFile(TestWrite);
+		bRootDirWriteable = true;
+	}
+
+	// set write directory string
+	if (g_bUseRootAsWriteAreaForStandaloneGames == true)
+	{
+		// use exe location for standalone games
+		strcpy(szWriteDir, szRootDir);
+		strcpy(szRootWriteDir, szRootDir);
+
+		//PE: Check if we can write access to this folder. normally not if installed in \programfiles
+		char TestWrite[MAX_PATH];
+		strcpy(TestWrite, szWriteDir);
+		strcat(TestWrite, "test.tst");
+		FILE* testFile = fopen(TestWrite, "w");
+		if (testFile)
+		{
+			fprintf(testFile, "test");
+			fclose(testFile);
+		}
+		if (FileExist(TestWrite) == 1)
+		{
+			DeleteAFile(TestWrite);
+		}
+		else
+		{
+			//PE: Second pri. standalone own document folder.
+			bool bFail = false;
+			if (!SHGetSpecialFolderPath(NULL, szWriteDir, CSIDL_MYDOCUMENTS, TRUE))
+			{
+				//PE: This happened for a user , even when they got the document folder ? , try the new way.
+				HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, szWriteDir);
+				if (result != S_OK)
+				{
+					bFail = true;
+				}
+			}
+			if (!bFail)
+			{
+				strcat_s(szWriteDir, MAX_PATH, "\\GameGuruApps\\");
+				strcat_s(szWriteDir, MAX_PATH, szEXE);
+				strcat_s(szWriteDir, MAX_PATH, "\\");
+				strcpy_s(szRootWriteDir, MAX_PATH, szWriteDir);
+
+				GG_CreatePath(szWriteDir);
+
+				strcpy(TestWrite, szWriteDir);
+				strcat(TestWrite, "test.tst");
+				FILE* testFile = fopen(TestWrite, "w");
+				if (testFile)
+				{
+					fprintf(testFile, "test");
+					fclose(testFile);
+				}
+				if (FileExist(TestWrite) == 1)
+				{
+					DeleteAFile(TestWrite);
+				}
+				else
+				{
+					bFail = true;
+				}
+			}
+			if(bFail)
+			{
+				//PE: Last pri. whatever works.
+				if (FileRedirectChangeWritableArea(szEXE) == true)
+				{
+					//PE: pref.cCustomWriteFolder works as szWriteDir also set szRootWriteDir.
+					strcpy_s(szRootWriteDir, MAX_PATH, szWriteDir);
+					return;
+				}
+				FileRedirectRestoreWritableArea(szEXE);
+			}
+		}
+	}
+	else
+	{
+		// szWriteDir and szRootWriteDir set in FileRedirectChangeWritableArea
+		if (FileRedirectChangeWritableArea(szEXE) == true)
+		{
+			//PE: pref.cCustomWriteFolder works as szWriteDir also set szRootWriteDir.
+			strcpy_s(szRootWriteDir, MAX_PATH, szWriteDir);
+			return;
+		}
+		FileRedirectRestoreWritableArea(szEXE);
+	}
+
+	// use this writable area folder
+	GG_CreatePath( szWriteDir );
+}
+
+// returns 1 if file was found or created, 2 if directory was found or created, 0 if not known
+int GG_GetRealPath( char* fullPath, int create, bool bIgnoreAdditional)
+{
+	// should only be called once pref structure filled (with custom writables folder location)
+	FileRedirectSetup();
+
+	// check it is absolute path
+	if ( *(fullPath+1) != ':' )
+	{
+		char fullPath2[ MAX_PATH ];
+		GetCurrentDirectoryA( MAX_PATH, fullPath2 );
+		strcat_s( fullPath2, MAX_PATH, "\\" );
+		strcat_s( fullPath2, MAX_PATH, fullPath );
+		strcpy_s( fullPath, MAX_PATH, fullPath2 );
+	}
+
+	// convert forward slashes to back slashes
+	char *ptr = fullPath;
+	while( *ptr ) 
+	{
+		if ( *ptr == '/' ) *ptr = '\\';
+		ptr++;
+	}
+
+	// remove any double back slashes
+	ptr = fullPath;
+	char *ptr2 = fullPath;
+	char prev = 0;
+	while( *ptr )
+	{
+		if ( prev != '\\' || *ptr != '\\' )
+		{
+			*ptr2 = *ptr;
+			ptr2++;
+		}
+		prev = *ptr;
+		ptr++;
+	}
+	*ptr2 = 0;
+
+
+	// check if this path is accessing the install folder
+	int rootLen = strlen( szRootDir );
+
+	//PE: This fails , if you set the "app" startup path using lowercase.
+	if ( strnicmp( fullPath, szRootDir, rootLen ) == 0 )
+	{
+		// trying to access root folder
+		char newPath[ MAX_PATH ];
+		if(g_bSetWriteAsRootTemp==true)
+		{
+			//PE: Mainly used for debug.log , but must be sure we can actually write here.
+			if (bRootDirWriteable)
+			{
+				strcpy_s(newPath, MAX_PATH, szRootDir);
+			}
+			else
+			{
+				//PE: Else use szRootWriteDir.
+				strcpy_s(newPath, MAX_PATH, szRootWriteDir);
+			}
+		}
+		else
+		{
+			if(bUseRootAsWriteArea == true)
+			{
+				strcpy_s(newPath, MAX_PATH, szRootWriteDir);
+			}
+			else
+			{
+				strcpy_s(newPath, MAX_PATH, szWriteDir);
+			}
+		}
+		strcat_s( newPath, MAX_PATH, fullPath+rootLen );
+		DWORD attrib = GetFileAttributes(newPath);
+		if ( attrib != INVALID_FILE_ATTRIBUTES )
+		{
+			// found, redirect fullPath to file in documents
+			strcpy_s( fullPath, MAX_PATH, newPath );
+			if ( attrib == FILE_ATTRIBUTE_DIRECTORY ) return 2;
+			else return 1;
+		}
+		else
+		{
+			//PE: If using custom docwrite folder, try to read from original /USER/ folder.
+			//PE: if user did not copy over all media after changing to a custom docwrite folder.
+			//PE: szAddWriteDirAdditional is a readonly folder.
+			if (bUseRootAsWriteArea == false && !bIgnoreAdditional)
+			{
+				if (!create && strlen(szAddWriteDirAdditional) > 0)
+				{
+					strcpy_s(newPath, MAX_PATH, szAddWriteDirAdditional);
+					strcat_s(newPath, MAX_PATH, fullPath + rootLen);
+					DWORD attrib = GetFileAttributes(newPath);
+					if (attrib != INVALID_FILE_ATTRIBUTES)
+					{
+						// found, redirect fullPath to file in documents
+						strcpy_s(fullPath, MAX_PATH, newPath);
+						if (attrib == FILE_ATTRIBUTE_DIRECTORY) return 2;
+						else return 1;
+					}
+				}
+			}
+
+			// not found, if we are writing then it should be created in documents
+			if ( create )
+			{
+				if ( GG_CreatePath( newPath ) == 0 ) return 0;
+				strcpy_s( fullPath, MAX_PATH, newPath );
+				return 2;
+			}
+		}
+	}
+
+	return 0; // may or may not exist
+}
+
+FILE* GG_fopen( const char* filename, const char* mode )
+{
+	FILE* filereturn = nullptr;
+
+	FileRedirectSetup();
+
+	char fullPath[ MAX_PATH ]; fullPath[0] = 0;
+	if ( !strchr(filename,':') ) 
+	{
+		getcwd( fullPath, MAX_PATH );
+		strcat_s( fullPath, MAX_PATH, "\\" );
+		strcat_s( fullPath, MAX_PATH, filename );
+
+		int get_gameisexe(void);
+		if (get_gameisexe() != 0)
+		{
+			//PE: In standalone where files is not crypted like "gunspec.txt", prefer standalone folder not docwrite folder.
+			const char* pestrcasestr(const char* arg1, const char* arg2);
+			if (pestrcasestr(fullPath, "gunspec.txt"))
+			{
+				int create = 0;
+				if (strchr(mode, 'w') != 0 || strchr(mode, 'a') != 0) create = 1;
+				filereturn = fopen(fullPath, mode);
+				if (filereturn)
+					return(filereturn);
+			}
+		}
+	}
+	else
+	{
+		strcpy_s( fullPath, MAX_PATH, filename );
+	}
+
+	int create = 0;
+	if ( strchr(mode, 'w') != 0 || strchr(mode, 'a') != 0 ) create = 1;
+	GG_GetRealPath( fullPath, create );
+
+	return fopen( fullPath, mode );
+}
+
+int GG_fopen_s( FILE** pFile, const char* filename, const char* mode )
+{
+	FileRedirectSetup();
+
+	char fullPath[ MAX_PATH ]; fullPath[0] = 0;
+	if ( !strchr(filename,':') ) 
+	{
+		getcwd( fullPath, MAX_PATH );
+		strcat_s( fullPath, MAX_PATH, "\\" );
+		strcat_s( fullPath, MAX_PATH, filename );
+	}
+	else
+	{
+		strcpy_s( fullPath, MAX_PATH, filename );
+	}
+
+	int create = 0;
+	if ( strchr(mode, 'w') != 0 || strchr(mode, 'a') != 0 ) create = 1;
+	GG_GetRealPath( fullPath, create );
+
+	return fopen_s( pFile, fullPath, mode );
+}
+
+FILE* GG_wfopen( const wchar_t* filename, const wchar_t* mode )
+{
+	FileRedirectSetup();
+
+	char mode_utf8[ 32 ];
+	WideCharToMultiByte( CP_UTF8, 0, mode, -1, mode_utf8, 32, 0, 0 );
+
+	char filename_utf8[ MAX_PATH ];
+	WideCharToMultiByte( CP_UTF8, 0, filename, -1, filename_utf8, MAX_PATH, 0, 0 );
+	
+	char fullPath[ MAX_PATH ]; fullPath[0] = 0;
+	if ( !strchr(filename_utf8,':') ) 
+	{
+		getcwd( fullPath, MAX_PATH );
+		strcat_s( fullPath, MAX_PATH, "\\" );
+		strcat_s( fullPath, MAX_PATH, filename_utf8 );
+	}
+	else
+	{
+		strcpy_s( fullPath, MAX_PATH, filename_utf8 );
+	}
+
+	int create = 0;
+	if ( strchr(mode_utf8, 'w') != 0 || strchr(mode_utf8, 'a') != 0 ) create = 1;
+	GG_GetRealPath( fullPath, create );
+
+	return fopen( fullPath, mode_utf8 );
+}
+
+int GG_FileExists( const char* filename )
+{
+	FileRedirectSetup();
+
+	char fullPath[ MAX_PATH ]; fullPath[0] = 0;
+	if ( !strchr(filename,':') ) 
+	{
+		getcwd( fullPath, MAX_PATH );
+		strcat_s( fullPath, MAX_PATH, "\\" );
+		strcat_s( fullPath, MAX_PATH, filename );
+	}
+	else
+	{
+		strcpy_s( fullPath, MAX_PATH, filename );
+	}
+
+	if ( GG_GetRealPath( fullPath, 0 ) == 1 ) return 1;
+
+	DWORD attrib = GetFileAttributes( fullPath );
+	if ( attrib == INVALID_FILE_ATTRIBUTES || attrib == FILE_ATTRIBUTE_DIRECTORY ) return 0;
+	else return 1;
+}
+
+int RAW_FileExists(const char* filename)
+{
+	char fullPath[MAX_PATH]; fullPath[0] = 0;
+	if (!strchr(filename, ':'))
+	{
+		getcwd(fullPath, MAX_PATH);
+		strcat_s(fullPath, MAX_PATH, "\\");
+		strcat_s(fullPath, MAX_PATH, filename);
+	}
+	else
+	{
+		strcpy_s(fullPath, MAX_PATH, filename);
+	}
+	DWORD attrib = GetFileAttributes(fullPath);
+	if (attrib == INVALID_FILE_ATTRIBUTES || attrib == FILE_ATTRIBUTE_DIRECTORY) return 0;
+	else return 1;
+}
+
+HANDLE GG_CreateFile( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile )
+{
+	FileRedirectSetup();
+
+	char fullPath[ MAX_PATH ]; fullPath[0] = 0;
+	if ( !strchr(lpFileName,':') ) 
+	{
+		GetCurrentDirectoryA( MAX_PATH, fullPath );
+		strcat_s( fullPath, MAX_PATH, "\\" );
+		strcat_s( fullPath, MAX_PATH, lpFileName );
+	}
+	else
+	{
+		strcpy_s( fullPath, MAX_PATH, lpFileName );
+	}
+
+	int create = (dwDesiredAccess & GENERIC_WRITE) ? 1 : 0;
+	GG_GetRealPath( fullPath, create );
+
+	return CreateFileA( fullPath, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
+}
+
+HANDLE GG_CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile )
+{
+	FileRedirectSetup();
+
+	char filename_utf8[ MAX_PATH ];
+	WideCharToMultiByte( CP_UTF8, 0, lpFileName, -1, filename_utf8, MAX_PATH, 0, 0 );
+
+	char fullPath[ MAX_PATH ]; fullPath[0] = 0;
+	if ( !strchr(filename_utf8,':') ) 
+	{
+		GetCurrentDirectoryA( MAX_PATH, fullPath );
+		strcat( fullPath, "\\" );
+		strcat( fullPath, filename_utf8 );
+	}
+	else
+	{
+		strcpy( fullPath, filename_utf8 );
+	}
+
+	int create = (dwDesiredAccess & GENERIC_WRITE) ? 1 : 0;
+	GG_GetRealPath( fullPath, create );
+
+	return CreateFileA( fullPath, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
+}
+
+struct sHardDrive
+{
+	LARGE_INTEGER	liCylinderCount;
+	DWORD			dwTracksPerCylinder; 
+	DWORD			dwSectorsPerTrack; 
+	DWORD			dwBytesPerSector; 
+
+	ULONGLONG		ulTotalBytes;
+	ULONGLONG		ulTotalMB;
+	ULONGLONG		ulTotalGB;
+};
+
+#define MAX_HARD_DRIVE 24
+
+DBPRO_GLOBAL sHardDrive					g_HardDrives      [ MAX_HARD_DRIVE ];
+DBPRO_GLOBAL char						g_HardDiskLetters [ MAX_HARD_DRIVE ] [ 4 ] = 
+																					{
+																						"c:\\",	"d:\\",	"e:\\",	"f:\\",	"g:\\",	"h:\\",
+																						"i:\\",	"j:\\",	"k:\\",	"l:\\",	"m:\\",	"n:\\",
+																						"o:\\",	"p:\\",	"q:\\",	"r:\\",	"s:\\",	"t:\\",
+																						"u:\\",	"v:\\",	"w:\\",	"x:\\",	"y:\\",	"z:\\"
+																					};
+DBPRO_GLOBAL int						g_iHardDriveCount = 0;
+DBPRO_GLOBAL HANDLE						ghExecuteFileProcess			= NULL;
+#define					MAX_FILES	64
+DBPRO_GLOBAL HANDLE						File[MAX_FILES];
+DBPRO_GLOBAL BOOL						FileEOF[MAX_FILES];
+DBPRO_GLOBAL LPSTR						pVirtFileEncrypted[MAX_FILES];
+DBPRO_GLOBAL char						filetext[_MAX_PATH];
+DBPRO_GLOBAL struct _finddata_t			filedata;
+DBPRO_GLOBAL intptr_t 					hInternalFile					= NULL; // was long
+DBPRO_GLOBAL int						FileReturnValue					= -1;
+extern DBPRO_GLOBAL bool						g_bCreateChecklistNow;
+extern DBPRO_GLOBAL DWORD						g_dwMaxStringSizeInEnum;
+
+extern DBPRO_GLOBAL char			m_pWorkString[_MAX_PATH];
+extern GlobStruct*					g_pGlob;
+
+DARKSDK void FileConstructor ( void )
+{
+	ZeroMemory(File, sizeof(File));
+	ZeroMemory(FileEOF, sizeof(FileEOF));
+	ZeroMemory(filetext, sizeof(filetext));
+	ZeroMemory(&filedata, sizeof(filedata));
+	ZeroMemory(&pVirtFileEncrypted, sizeof(pVirtFileEncrypted));
+
+	{
+		// local variables
+		int				iIndex          = 0;		// drive index
+		HANDLE			hDevice         = NULL;		// handle to device
+		DWORD			dwBytesReturned = 0;		// bytes returned from io control
+
+		DISK_GEOMETRY	drive;						// drive structure
+		char			szDrive [ 256 ];			// to store drive name
+
+		// get a handle to the device
+		hDevice = CreateFile ( "\\\\.\\PhysicalDrive0", 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL );
+
+		// check handle is valid
+		if ( hDevice == INVALID_HANDLE_VALUE )
+			return;
+
+		// loop round for all drives
+		while ( hDevice != INVALID_HANDLE_VALUE )
+		{
+			// get information
+			if ( !DeviceIoControl (
+										hDevice,						// handle to device
+										IOCTL_DISK_GET_DRIVE_GEOMETRY,	// control type
+										NULL,							// no input data
+										0,								// use 0 because we have no input data
+										&drive,							// pointer to drive structure
+										sizeof ( DISK_GEOMETRY ),		// size of data
+										&dwBytesReturned,				// number of bytes returned
+										( LPOVERLAPPED ) NULL			// ignored
+								  ) )
+										return;
+
+			// calculate the disk size
+			ULONGLONG TotalBytes = drive.Cylinders.QuadPart * ( ULONG ) drive.TracksPerCylinder * ( ULONG ) drive.SectorsPerTrack * ( ULONG ) drive.BytesPerSector;
+			
+			g_HardDrives [ g_iHardDriveCount ].liCylinderCount     = drive.Cylinders;
+			g_HardDrives [ g_iHardDriveCount ].dwTracksPerCylinder = drive.TracksPerCylinder;
+			g_HardDrives [ g_iHardDriveCount ].dwSectorsPerTrack   = drive.SectorsPerTrack;
+			g_HardDrives [ g_iHardDriveCount ].dwBytesPerSector    = drive.BytesPerSector;
+			g_HardDrives [ g_iHardDriveCount ].ulTotalBytes        = TotalBytes;
+			g_HardDrives [ g_iHardDriveCount ].ulTotalMB           = TotalBytes / 1024 / 1024;
+			g_HardDrives [ g_iHardDriveCount ].ulTotalGB           = TotalBytes / 1024 / 1024 / 1024;
+
+			g_iHardDriveCount++;
+
+			// close this handle
+			CloseHandle ( hDevice );
+
+			// set up string for next drive
+			sprintf ( szDrive, "\\\\.\\PhysicalDrive%d", ++iIndex );
+
+			// access the next drive
+			hDevice = CreateFile ( szDrive, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL );
+		}
+	}
+
+}
+
+DARKSDK void FileDestructor ( void )
+{
+	if(hInternalFile)
+	{
+		_findclose(hInternalFile);
+		hInternalFile=NULL;
+	}
+	for(DWORD f=0; f<MAX_FILES; f++)
+	{
+		if(File[f])
+		{
+			CloseHandle(File[f]);
+			File[f]=NULL;
+		}
+		if(pVirtFileEncrypted[f])
+		{
+			delete pVirtFileEncrypted[f];
+			pVirtFileEncrypted[f]=NULL;
+		}
+	}
+}
+
+DARKSDK void FileSetErrorHandler ( LPVOID pErrorHandlerPtr )
+{
+	// Update error handler pointer
+	g_pErrorHandler = (CRuntimeErrorHandler*)pErrorHandlerPtr;
+}
+
+DARKSDK void FilePassCoreData( LPVOID pGlobPtr )
+{
+	// Held in Core, used here..
+	g_pGlob = (GlobStruct*)pGlobPtr;
+}
+
+DARKSDK void FFindCloseFile(void)
+{
+	_findclose(hInternalFile);
+	hInternalFile=NULL;
+}
+
+DARKSDK void FFindFirstFile(void)
+{
+	if(hInternalFile) FFindCloseFile();
+	hInternalFile = _findfirst("*.*", &filedata);
+	if(hInternalFile!=-1L)
+	{
+		// Success!
+		FileReturnValue=0;
+	}
+	else
+		RunTimeWarning(RUNTIMEERROR_CANNOTSCANCURRENTDIR);
+}
+
+DARKSDK int FGetFileReturnValue(void)
+{
+	return FileReturnValue;
+}
+
+DARKSDK void FFindNextFile(void)
+{
+	FileReturnValue = _findnext(hInternalFile, &filedata);
+}
+
+DARKSDK int FGetActualTypeValue(int flagvalue)
+{
+	if(flagvalue & _A_SUBDIR)
+		return 1;
+	else
+		return 0;
+}
+
+DARKSDK BOOL DB_FileExist(char* Filename)
+{
+	// If no string, no file
+	if(Filename==NULL || *Filename==NULL)
+		return FALSE;
+
+	// Uses actual or virtual file..
+	char VirtualFilename[_MAX_PATH];
+	strcpy(VirtualFilename, (LPSTR)Filename);
+
+	// no longer have files inside EXE VT!
+	CheckForWorkshopFile ( VirtualFilename );
+
+	if ( GG_FileExists( VirtualFilename ) ) return TRUE;
+	else return false;
+}
+
+DARKSDK DWORD DB_FileSize(char* Filename)
+{
+	DWORD size;
+
+	// If no string, no file
+	if(Filename==NULL || *Filename==NULL)
+		return 0;
+
+	// Uses actual or virtual file..
+	char VirtualFilename[_MAX_PATH];
+	strcpy(VirtualFilename, (LPSTR)Filename);
+
+	CheckForWorkshopFile ( VirtualFilename );
+
+	// Open BASIC Script
+	HANDLE hfile = GG_CreateFile(VirtualFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(hfile==INVALID_HANDLE_VALUE)
+	{
+		DWORD dwErr = GetLastError();
+		return 0;
+	}
+
+	// Obtain filesize
+	size = GetFileSize(hfile, NULL);
+	CloseHandle(hfile);
+
+	return size;
+}
+
+DARKSDK BOOL DB_FileWriteProtected(char* Filename)
+{
+
+	// If no string, no file
+	if(Filename==NULL || *Filename==NULL)
+		return 0;
+
+	// Uses actual or virtual file..
+	char VirtualFilename[_MAX_PATH];
+	strcpy(VirtualFilename, (LPSTR)Filename);
+
+	CheckForWorkshopFile ( VirtualFilename );
+
+	DWORD flags = GetFileAttributes(VirtualFilename);
+	if(flags & FILE_ATTRIBUTE_READONLY)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+DARKSDK BOOL DB_DeleteFile(char* Filename)
+{
+	if(DB_FileExist(Filename))
+	{
+		DeleteFile(Filename);
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
+DARKSDK bool rFindFileInSub(char* currentpath, char* searchfile, char* returnpath)
+{
+	struct _finddata_t filedata;
+
+	// Set directory
+	_chdir(currentpath);
+
+	// Find first file in this directory
+	long hFile = _findfirst("*.*", &filedata);
+	if(hFile!=-1L)
+	{
+		// Skip '..'
+		_findnext(hFile, &filedata);
+
+		// Start directory scan
+		while(_findnext(hFile, &filedata)==0)
+		{
+			// Is File or Directory
+			if(filedata.attrib & _A_SUBDIR)
+			{
+				// Sub-Directory
+				char gointodir[512];
+				strcpy(gointodir, currentpath);
+				strcat(gointodir, "\\");
+				strcat(gointodir, filedata.name);
+				if(strlen(gointodir)<=255)
+				{
+					if(rFindFileInSub(gointodir, searchfile, returnpath))
+					{
+						_findclose(hFile);
+						return TRUE;
+					}
+				}
+			}
+			else
+			{
+				// File
+				char checkfilenameA[256];
+				strcpy(checkfilenameA, _strlwr(filedata.name));
+				if(strcmp(checkfilenameA, searchfile)==0)
+				{
+					// Found File & Path!
+					strcpy(returnpath, currentpath);
+					strcat(returnpath, "\\");
+					strcat(returnpath, searchfile);
+					_findclose(hFile);
+					return TRUE;
+				}
+			}
+		}
+
+		// Close Scan File 
+		_findclose(hFile);
+	}
+
+	return FALSE;
+}
+
+DARKSDK BOOL DB_FindFileInSubPath(char* filename, char* returnpath)
+{
+	BOOL bResult=FALSE;
+
+	// Get current directory
+	char path[256];
+	_getcwd(path, 256);
+
+	// Make search filename lowercase
+	char searchfile[256];
+	strcpy(searchfile, filename);
+	_strlwr(searchfile);
+
+	// Search for filen
+	if(rFindFileInSub(path, searchfile, returnpath))
+		bResult=TRUE;
+
+	// Restore current working directory
+	_chdir(path);
+
+	return bResult;
+}
+
+DARKSDK BOOL DB_CanMakeFile(char* Filename)
+{
+	// Create Empty File
+	HANDLE hfile = GG_CreateFile(Filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(hfile!=INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(hfile);
+		DeleteFile(Filename);
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
+}
+
+DARKSDK BOOL DB_MakeFile(char* Filename)
+{
+	// Create Empty File
+	HANDLE hfile = GG_CreateFile(Filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(hfile==INVALID_HANDLE_VALUE)
+		return FALSE;
+
+	CloseHandle(hfile);
+	return TRUE;
+}
+
+DARKSDK BOOL DB_CopyFile(char* From, char* To)
+{
+	if(DB_FileExist(From))
+	{
+		if(!CopyFile(From, To, TRUE))
+			return FALSE;
+	}
+	else
+		RunTimeWarning(RUNTIMEERROR_FILENOTEXIST);
+
+	return TRUE;
+}
+
+DARKSDK BOOL DB_MoveFile(char* From, char* To)
+{
+	if(DB_FileExist(From))
+	{
+		if(!MoveFile(From, To))
+			return FALSE;
+	}
+	else
+		RunTimeError(RUNTIMEERROR_FILEEXISTS, To);
+
+	return TRUE;
+}
+
+DARKSDK BOOL DB_RenameFile(char* From, char* To)
+{
+	if(!MoveFile(From, To))
+		return FALSE;
+
+	return TRUE;
+}
+
+DARKSDK BOOL DB_PathExist(char* OriginalPathname)
+{
+	// Get File Data
+	DWORD Attribs = GetFileAttributes(OriginalPathname);
+	if(Attribs==0xFFFFFFFF)
+		return FALSE;
+
+	// If file a directory
+	if(Attribs | FILE_ATTRIBUTE_DIRECTORY)
+		return TRUE;
+
+	// Not a directory
+	return FALSE;
+}
+
+DARKSDK BOOL DB_MakeDir(char* Dirname)
+{
+	// Create Empty Directory
+	BOOL bResult = CreateDirectory(Dirname, NULL);
+	return bResult;
+}
+
+DARKSDK BOOL DB_DeleteDir(char* Dirname)
+{
+	if(DB_PathExist(Dirname))
+	{
+		RemoveDirectory(Dirname);
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
+DARKSDK void EmptyThisDirectoryFirst(char* Dirname)
+{
+	struct _finddata_t filedata;
+
+	// Record old dir
+	char olddir[256];
+	getcwd(olddir, 256);
+
+	// Set directory
+	_chdir(Dirname);
+
+	// Find first file in this directory
+	int res;
+	long hFile = _findfirst("*.*", &filedata);
+	if(hFile!=-1L)
+	{
+		if(strcmp(filedata.name,".")==0) res = _findnext(hFile, &filedata);
+		if(strcmp(filedata.name,"..")==0) res = _findnext(hFile, &filedata);
+		while(res!=-1)
+		{
+			if(filedata.attrib & _A_SUBDIR)
+			{
+				EmptyThisDirectoryFirst(filedata.name);
+				RemoveDirectory(filedata.name);
+			}
+			else
+				DeleteFile(filedata.name);
+
+			res = _findnext(hFile, &filedata);
+		}
+		_findclose(hFile);
+	}
+
+	// Restore old dir
+	_chdir(olddir);
+}
+
+DARKSDK BOOL DB_DeleteDirRecursively(char* Dirname)
+{
+	if(DB_PathExist(Dirname))
+	{
+		EmptyThisDirectoryFirst(Dirname);
+		BOOL bResult = RemoveDirectory(Dirname);
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
+DARKSDK BOOL DB_ExecuteFile(HANDLE* phExecuteFileProcess, char* Operation, char* Filename, char* String, char* Path, bool bWaitForTermination )
+{
+	if(*phExecuteFileProcess)
+	{
+		CloseHandle(*phExecuteFileProcess);
+		*phExecuteFileProcess=NULL;
+	}
+	if(bWaitForTermination==true)
+	{
+		SHELLEXECUTEINFO seinfo;
+		ZeroMemory(&seinfo, sizeof(seinfo));
+		seinfo.cbSize = sizeof(seinfo);
+		seinfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
+		seinfo.hwnd = NULL;
+		seinfo.lpVerb = "open";
+		seinfo.lpFile = Filename;
+		seinfo.lpParameters = String;
+		seinfo.lpDirectory = Path;
+		if ( strcmp ( Operation, "hide" ) == NULL )
+			seinfo.nShow = SW_HIDE;
+		else
+			seinfo.nShow = SW_SHOWDEFAULT;
+		if(ShellExecuteEx(&seinfo)==TRUE)
+		{
+			*phExecuteFileProcess=seinfo.hProcess;
+			return TRUE;
+		}
+		else
+		{
+			*phExecuteFileProcess=NULL;
+			return FALSE;
+		}
+	}
+	else
+	{
+		HINSTANCE hinstance = ShellExecute(	NULL,//g_pGlob->hWnd,
+											"open",
+											Filename,
+											String,
+											Path,
+											SW_SHOWDEFAULT);
+		if((DWORD)hinstance<=32)
+			return FALSE;
+		else
+			return TRUE;
+	}
+}
+
+DARKSDK BOOL DB_ExecuteFileIndi ( DWORD* dwExecuteFileProcess, char* Operation, char* Filename, char* String, char* Path, int iPriorityOfProcess )
+{
+	// create process data
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory( &si, sizeof(si) );
+    si.cb = sizeof(si);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_SHOWDEFAULT;
+
+	// directory must be absolute
+	LPSTR pDirectory = NULL;
+	if ( strlen ( Path )>0 )
+	{
+		pDirectory = new char[_MAX_PATH];
+		if ( Path[1]==':' )
+		{
+			// absolute
+			strcpy ( pDirectory, Path );
+		}
+		else
+		{
+			// relative
+			getcwd ( pDirectory, _MAX_PATH );
+			strcat ( pDirectory, "\\" );
+			strcat ( pDirectory, Path );
+		}
+	}
+
+	// Concat Filename and Commandline String
+	char pConcat[512];
+	strcpy ( pConcat, Filename );
+	strcat ( pConcat, " " );
+	strcat ( pConcat, String );
+
+	// Process priority
+	DWORD dwPriority = NORMAL_PRIORITY_CLASS;
+	switch ( iPriorityOfProcess )
+	{
+		case 1 : dwPriority = HIGH_PRIORITY_CLASS;	break;
+	}
+
+    // Start the process. 
+    if( CreateProcess(	NULL,
+						pConcat,	
+						NULL, 
+						NULL, 
+						FALSE,
+						dwPriority,
+						NULL,
+						pDirectory,
+						&si, 
+						&pi )			) 
+    {
+		SAFE_DELETE(pDirectory);
+		CloseHandle ( pi.hThread );
+		CloseHandle ( pi.hProcess );
+		*dwExecuteFileProcess = pi.dwProcessId;
+		return TRUE;
+	}
+	else
+	{
+		SAFE_DELETE(pDirectory);
+		*dwExecuteFileProcess = 0;
+		return FALSE;
+	}
+}
+
+DARKSDK BOOL DB_OpenToReadCore(int FileIndex, char* Filename)
+{
+	// Create file READ
+	File[FileIndex] = GG_CreateFile(Filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(File[FileIndex]==INVALID_HANDLE_VALUE)
+	{
+		File[FileIndex]=NULL;
+		FileEOF[FileIndex]=FALSE;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+DARKSDK BOOL DB_OpenToRead(int FileIndex, char* Filename)
+{
+	BOOL bRes = FALSE;
+	if(pVirtFileEncrypted[FileIndex]==NULL)
+	{
+		// Uses actual or virtual file..
+		char VirtualFilename[_MAX_PATH];
+		strcpy(VirtualFilename, (LPSTR)Filename);
+
+		CheckForWorkshopFile ( VirtualFilename );
+
+		// Decrypt and use media
+		g_pGlob->Decrypt( VirtualFilename );
+		pVirtFileEncrypted[FileIndex] = new char[strlen(VirtualFilename)+1];
+		strcpy(pVirtFileEncrypted[FileIndex], VirtualFilename);
+		bRes = DB_OpenToReadCore( FileIndex, VirtualFilename );
+	}
+	return bRes;
+}
+
+DARKSDK BOOL DB_OpenToWrite(int FileIndex, char* Filename)
+{
+	// Create file WRITE
+	File[FileIndex] = GG_CreateFile(Filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(File[FileIndex]==INVALID_HANDLE_VALUE)
+	{
+		File[FileIndex]=NULL;
+		FileEOF[FileIndex]=FALSE;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+DARKSDK BOOL DB_CloseFile(int FileIndex)
+{
+	if(File[FileIndex])
+	{
+		CloseHandle(File[FileIndex]);
+		File[FileIndex]=NULL;
+		FileEOF[FileIndex]=FALSE;
+
+		// Re-encrypt
+		if(pVirtFileEncrypted[FileIndex])
+		{
+			g_pGlob->Encrypt( pVirtFileEncrypted[FileIndex] );
+			delete pVirtFileEncrypted[FileIndex];
+			pVirtFileEncrypted[FileIndex]=NULL;
+		}
+	}
+	return TRUE;
+}
+
+
+DARKSDK LPSTR GetReturnStringFromWorkString(char* WorkString = m_pWorkString)
+{
+	LPSTR pReturnString=NULL;
+	if(WorkString)
+	{
+		DWORD dwSize=strlen(WorkString);		
+		g_pGlob->CreateDeleteString((char**)&pReturnString, dwSize+1);
+		strcpy(pReturnString, WorkString);
+	}
+	return pReturnString;
+}
+
+//
+// Command Functions
+//
+
+DARKSDK void SetDir( LPSTR pString )
+{
+	if(pString)
+	{
+		if(_chdir((LPSTR)pString)==-1)
+		{
+			// determine cause
+			char strstr[MAX_PATH];
+			switch(errno)
+			{
+				case EACCES: wsprintf(strstr, "Search permission is denied for any component of '%s", (LPSTR)pString); break;
+				case ELOOP: wsprintf(strstr, "Too many symbolic links were encountered in resolving of '%s", (LPSTR)pString); break;
+				case ENAMETOOLONG: wsprintf(strstr, "The path argument exceeds {PATH_MAX} in length of '%s", (LPSTR)pString); break;
+				case ENOENT: wsprintf(strstr, "A component of path does not name an existing directory or path is an empty for '%s", (LPSTR)pString); break;
+				case ENOTDIR: wsprintf(strstr, "A component of the pathname is not a directory for '%s", (LPSTR)pString); break;
+				default: wsprintf(strstr, "Error: %ld Folder: %s", errno , (LPSTR)pString); break;
+			}
+			char cwd[MAX_PATH];
+			getcwd(cwd, MAX_PATH);
+			strcat(strstr, "' (looking in ");
+			strcat(strstr, cwd);
+			strcat(strstr, ")");
+			MessageBox ( NULL, strstr, "Path Cannot Be Found", MB_OK );
+			RunTimeError(RUNTIMEERROR_PATHCANNOTBEFOUND);
+		}
+	}
+	else
+		RunTimeError(RUNTIMEERROR_PATHCANNOTBEFOUND);
+}
+
+DARKSDK void Dir(void)
+{
+	// Show CWD..
+	getcwd(filetext, _MAX_PATH);
+	strcat(filetext, ":");
+	g_pGlob->PrintStringFunction(filetext, true);
+
+	// List Files..
+	FFindFirstFile();
+	while(FGetFileReturnValue()!=-1L)
+	{
+		if(filedata.attrib & _A_SUBDIR)	
+			wsprintf(filetext, "<dir>%s", filedata.name);
+		else
+			wsprintf(filetext, "%s", filedata.name);
+		
+		g_pGlob->PrintStringFunction(filetext, true);
+		FFindNextFile();
+	}
+	FFindCloseFile();
+}
+
+DARKSDK void DriveList(void)
+{
+	// List Drives..
+	char storedrive[_MAX_PATH];
+	getcwd(storedrive, _MAX_PATH);
+	_strlwr(storedrive);
+	for(int drive = 1; drive <= 26; drive++)
+	{
+		if(!_chdrive( drive ))
+		{
+			wsprintf(filetext, "%c:", drive + 'A' - 1);
+			g_pGlob->PrintStringFunction(filetext, true);
+		}
+	}
+	_chdrive( storedrive[0] - 'a' + 1 );
+}
+
+DARKSDK void ChecklistForFiles(void)
+{
+	// Checklist flags
+	g_pGlob->checklisthasvalues=true;
+	g_pGlob->checklisthasstrings=true;
+	g_pGlob->checklistexists=true;
+
+	g_dwMaxStringSizeInEnum=0;
+	g_bCreateChecklistNow=false;
+	for(int pass=0; pass<2; pass++)
+	{
+		if(pass==1)
+		{
+			// Ensure checklist is large enough
+			g_bCreateChecklistNow=true;
+			for(int c=0; c<g_pGlob->checklistqty; c++)
+				GlobExpandChecklist(c, g_dwMaxStringSizeInEnum);
+		}
+
+		FFindFirstFile();
+		g_pGlob->checklistqty=0;
+		while(FGetFileReturnValue()!=-1L)
+		{
+			DWORD dwSize = strlen(filedata.name)+1;
+			if(dwSize>g_dwMaxStringSizeInEnum) g_dwMaxStringSizeInEnum=dwSize;
+			if(g_bCreateChecklistNow)
+			{
+				strcpy(g_pGlob->checklist[g_pGlob->checklistqty].string, filedata.name);
+				g_pGlob->checklist[g_pGlob->checklistqty].valuea = FGetActualTypeValue(filedata.attrib);
+			}
+			g_pGlob->checklistqty++;
+			FFindNextFile();
+		}
+		FFindCloseFile();
+	}
+}
+
+DARKSDK void ChecklistForDrives(void)
+{
+	// mike - 250604
+	char szList [ 26 ] [ 255 ];
+	int  iCount = 0;
+
+	memset ( szList, 0, sizeof ( szList ) );
+
+	strcpy ( szList [ iCount++ ], "a:\\" );
+
+	for ( int iCounter = 0; iCounter < MAX_HARD_DRIVE; iCounter++ )
+	{
+		if ( GetDriveType ( g_HardDiskLetters [ iCounter ] ) == DRIVE_FIXED )
+			strcpy ( szList [ iCount++ ], g_HardDiskLetters [ iCounter ] );
+
+		if ( GetDriveType ( g_HardDiskLetters [ iCounter ] ) == DRIVE_CDROM )
+			strcpy ( szList [ iCount++ ], g_HardDiskLetters [ iCounter ] );
+	}
+
+	g_pGlob->checklisthasvalues=false;
+	g_pGlob->checklisthasstrings=true;
+	g_pGlob->checklistexists=true;
+
+	g_pGlob->checklistqty = iCount;
+
+	for(int c=0; c<g_pGlob->checklistqty; c++)
+		GlobExpandChecklist(c, 255);
+
+	// mike - 020206 - addition for vs8
+	for( int c=0; c<g_pGlob->checklistqty; c++)
+	{
+		strcpy(g_pGlob->checklist[c].string, szList[c]);
+	}
+
+	int i = g_pGlob->checklistqty;
+}
+
+DARKSDK void FindFirst(void)
+{
+	FFindFirstFile();
+}
+
+DARKSDK void FindNext(void)
+{
+	if(hInternalFile)
+	{
+		if(FileReturnValue==-1L)
+		{
+			RunTimeError(RUNTIMEERROR_NOMOREFILESINDIR);
+			return;
+		}
+
+		FFindNextFile();
+	}
+}
+
+DARKSDK int CanMakeFile( DWORD pFilename )
+{
+	// 031107 - used to determine if in LIMITED USER AREA (no write)
+	if(DB_CanMakeFile((LPSTR)pFilename))
+		return 1;
+	else
+		return 0;
+}
+
+DARKSDK void MakeFile( DWORD pFilename )
+{
+	if(!DB_MakeFile((LPSTR)pFilename))
+		RunTimeWarning(RUNTIMEERROR_CANNOTMAKEFILE);
+}
+
+DARKSDK void DeleteAFile( LPSTR pFilename )
+{
+	// get real file path
+	char pRealFilename[MAX_PATH];
+	strcpy(pRealFilename, pFilename);
+	GG_GetRealPath(pRealFilename, 0);
+
+	// will set the file to NORMAL so can delete READONLY files too
+	if ( SetFileAttributes ( pRealFilename, FILE_ATTRIBUTE_NORMAL )==FALSE )
+	{
+		RunTimeSoftWarning(RUNTIMEERROR_CANNOTDELETEFILE);
+		return;
+	}
+
+	// added Code to return if file locked when deleting it..
+	if(DB_FileExist(pRealFilename))
+	{
+		DeleteFile(pRealFilename);
+		DWORD dwErr = GetLastError();
+		if(dwErr==ERROR_SHARING_VIOLATION)
+		{
+			RunTimeWarning(RUNTIMEERROR_FILEISLOCKED);
+		}
+	}
+	else
+	{
+		RunTimeSoftWarning(RUNTIMEERROR_CANNOTDELETEFILE);
+	}
+}
+
+DARKSDK void CopyFileCore( LPSTR pFromFilename, LPSTR pFilename2 )
+{
+	if(!DB_CopyFile((LPSTR)pFromFilename, (LPSTR)pFilename2 ))
+		RunTimeWarning(RUNTIMEERROR_FILEEXISTS);
+}
+
+DARKSDK void CopyAFile( LPSTR szFilename, LPSTR pFilename2 )
+{
+	// Uses actual or virtual file..
+	char VirtualFilename[_MAX_PATH];
+	strcpy(VirtualFilename, (LPSTR)szFilename);
+
+	// Decrypt and use media, re-encrypt
+	g_pGlob->Decrypt( VirtualFilename );
+	CopyFileCore ( VirtualFilename, pFilename2 );
+	g_pGlob->Encrypt( VirtualFilename );
+}
+
+DARKSDK void RenameAFile( DWORD pFilename, DWORD pFilename2 )
+{
+	if(!DB_FileExist((LPSTR)pFilename2))
+	{
+		if(!DB_RenameFile((LPSTR)pFilename, (LPSTR)pFilename2 ))
+			RunTimeWarning(RUNTIMEERROR_CANNOTRENAMEFILE);
+	}
+	else
+		RunTimeWarning(RUNTIMEERROR_FILEEXISTS);
+}
+
+DARKSDK void MoveAFile( DWORD pFilename, DWORD pFilename2 )
+{
+	if(!DB_FileExist((LPSTR)pFilename2))
+	{
+		if(!DB_RenameFile((LPSTR)pFilename, (LPSTR)pFilename2))
+			RunTimeWarning(RUNTIMEERROR_CANNOTMOVEFILE);
+	}
+	else
+		RunTimeWarning(RUNTIMEERROR_FILEEXISTS);
+}
+
+DARKSDK void WriteByteToFile( DWORD pFilename, int iPos, int iByte )
+{
+	char FilenameString[256];
+	strcpy(FilenameString, (LPSTR)pFilename);
+	if(DB_FileExist(FilenameString))
+	{
+		// Open file to be read
+		HANDLE hreadfile = GG_CreateFile(FilenameString, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if(hreadfile!=INVALID_HANDLE_VALUE)
+		{
+			// Read file into memory
+			DWORD bytesread;
+			int filebuffersize = GetFileSize(hreadfile, NULL);	
+			char* filebuffer = (char*)GlobalAlloc(GMEM_FIXED, filebuffersize);
+			ReadFile(hreadfile, filebuffer, filebuffersize, &bytesread, NULL); 
+			CloseHandle(hreadfile);		
+
+			// Modify byte
+			int offset = iPos;
+			if(offset>=0 && offset<filebuffersize)
+				filebuffer[offset] = iByte;
+
+			// Write back out again
+			HANDLE hwritefile = GG_CreateFile(FilenameString, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+			if(hreadfile!=INVALID_HANDLE_VALUE)
+			{
+				// Write mem to file
+				DWORD byteswritten;
+				WriteFile(hwritefile, filebuffer, filebuffersize, &byteswritten, NULL); 
+				CloseHandle(hwritefile);		
+			}
+
+			// Discard memory used
+			if(filebuffer)
+			{
+				GlobalFree(filebuffer);
+				filebuffer=NULL;
+			}
+		}
+	}
+	else
+		RunTimeWarning(RUNTIMEERROR_FILENOTEXIST);
+}
+
+DARKSDK int ReadByteFromFile( DWORD pFilename, int iPos )
+{
+	int iResult=0;
+	char FilenameString[_MAX_PATH];
+	strcpy(FilenameString, (LPSTR)pFilename);
+	if(DB_FileExist(FilenameString))
+	{
+		// Open file to be read
+		HANDLE hreadfile = GG_CreateFile(FilenameString, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if(hreadfile!=INVALID_HANDLE_VALUE)
+		{
+			// Read file into memory
+			DWORD bytesread;
+			int filebuffersize = GetFileSize(hreadfile, NULL);	
+			char* filebuffer = (char*)GlobalAlloc(GMEM_FIXED, filebuffersize);
+			ReadFile(hreadfile, filebuffer, filebuffersize, &bytesread, NULL); 
+			CloseHandle(hreadfile);		
+
+			// Read byte
+			int data = 0;
+			int offset = iPos;
+			if(offset>=0 && offset<filebuffersize) data = filebuffer[offset];
+			iResult=data;
+
+			// Discard memory used
+			if(filebuffer)
+			{
+				GlobalFree(filebuffer);
+				filebuffer=NULL;
+			}
+		}
+	}
+	else
+		RunTimeWarning(RUNTIMEERROR_FILENOTEXIST);
+
+	return iResult;
+}
+
+DARKSDK void MakeDirectory( LPSTR pFilename )
+{
+	if(!DB_MakeDir(pFilename))
+		RunTimeWarning(RUNTIMEERROR_CANNOTMAKEDIR);
+}
+
+DARKSDK void DeleteDir( DWORD pFilename )
+{
+	if(!DB_DeleteDirRecursively((LPSTR)pFilename))
+		RunTimeWarning(RUNTIMEERROR_CANNOTDELETEDIR);
+}
+
+DARKSDK void DeleteDir( DWORD pFilename, int iFlag )
+{
+	if(!DB_DeleteDirRecursively((LPSTR)pFilename))
+		RunTimeWarning(RUNTIMEERROR_CANNOTDELETEDIR);
+}
+
+DARKSDK void ExecuteFile( LPSTR pFilename, LPSTR pFilename2, LPSTR pFilename3 )
+{
+	if(!DB_ExecuteFile(&ghExecuteFileProcess, "", pFilename, pFilename2, pFilename3, false ))
+		RunTimeWarning(RUNTIMEERROR_CANNOTEXECUTEFILE);
+}
+
+DARKSDK int ExecuteFile( LPSTR pFilename, LPSTR pFilename2, LPSTR pFilename3, int iWaitForExeEndFlag, int iAndReturnStatusValue )
+{
+	if(!DB_ExecuteFile(&ghExecuteFileProcess, "",pFilename, pFilename2, pFilename3, true ))
+		RunTimeWarning(RUNTIMEERROR_CANNOTEXECUTEFILE);
+
+	// Wait Here Until Exe Terminates
+	int iPossibleReturnValue = 0;
+	if ( iWaitForExeEndFlag==1 )
+	{
+		while(ghExecuteFileProcess)
+		{
+			DWORD dwStatus;
+			if(GetExitCodeProcess(ghExecuteFileProcess, &dwStatus)==TRUE)
+			{
+				if(dwStatus!=STILL_ACTIVE)
+				{
+					// Store any return value
+					iPossibleReturnValue = (int)dwStatus;
+
+					// Closes process after it deactivates
+					CloseHandle(ghExecuteFileProcess);
+					ghExecuteFileProcess=NULL;
+				}
+			}
+			if (g_pGlob && g_pGlob->ProcessMessageFunction)
+			{
+				if (g_pGlob->ProcessMessageFunction() == 1)
+				{
+					// Closes process if main app terminates
+					CloseHandle(ghExecuteFileProcess);
+					ghExecuteFileProcess = NULL;
+				}
+			}
+		}
+	}
+
+	// return possible return value from process
+	return iPossibleReturnValue;
+}
+
+DARKSDK int CheckExecuteFileDone( void )
+{
+	int iPossibleReturnValue = -1;
+
+	if(ghExecuteFileProcess)
+	{
+		DWORD dwStatus;
+		if (GetExitCodeProcess(ghExecuteFileProcess, &dwStatus) == TRUE)
+		{
+			if (dwStatus != STILL_ACTIVE)
+			{
+				// Store any return value
+				iPossibleReturnValue = (int)dwStatus;
+
+				// Closes process after it deactivates
+				CloseHandle(ghExecuteFileProcess);
+				ghExecuteFileProcess = NULL;
+			}
+		}
+		if (g_pGlob && g_pGlob->ProcessMessageFunction)
+		{
+			if (g_pGlob->ProcessMessageFunction() == 1)
+			{
+				// Closes process if main app terminates
+				CloseHandle(ghExecuteFileProcess);
+				ghExecuteFileProcess = NULL;
+			}
+		}
+	}
+	return iPossibleReturnValue;
+}
+
+
+DARKSDK void ExecuteFile( LPSTR pFilename, LPSTR pFilename2, LPSTR pFilename3, int iWaitForExeEndFlag )
+{
+	ExecuteFile(pFilename, pFilename2, pFilename3, iWaitForExeEndFlag, 0);
+}
+
+DARKSDK DWORD ExecuteFileIndi( DWORD pFilename, DWORD pFilename2, DWORD pFilename3, int iPriorityOfProcess )
+{
+	// Create process and return handle
+	DWORD dwIndiExecuteFileProcess = 0;
+	if(!DB_ExecuteFileIndi ( &dwIndiExecuteFileProcess, "",(LPSTR)pFilename, (LPSTR)pFilename2, (LPSTR)pFilename3, iPriorityOfProcess ) )
+		RunTimeWarning(RUNTIMEERROR_CANNOTEXECUTEFILE);
+
+	// return handle for later monitoring
+	return dwIndiExecuteFileProcess;
+}
+
+DARKSDK DWORD ExecuteFileIndi( DWORD pFilename, DWORD pFilename2, DWORD pFilename3 )
+{
+	return ExecuteFileIndi( pFilename, pFilename2, pFilename3, 0 );
+}
+
+DARKSDK BOOL CALLBACK EnumWindowsProcForTerminator( HWND hwnd, LPARAM lParam )
+{
+	// check process ID of window
+	DWORD dwProcessID;
+	GetWindowThreadProcessId ( hwnd, &dwProcessID );
+	if ( dwProcessID==(DWORD)lParam )
+	{
+		// Post close message to any windows associated with process
+		PostMessage ( hwnd, WM_CLOSE, 0, 0 );
+	}
+	return TRUE;
+}
+
+DARKSDK void StopExecutable ( DWORD dwIndiExecuteFileProcess )
+{
+	// check if exe in active and running
+	if ( dwIndiExecuteFileProcess )
+	{
+		// Enumerate all windows and close any that are owned by the process ID
+		EnumWindows ( EnumWindowsProcForTerminator, dwIndiExecuteFileProcess );
+	}
+}
+
+DARKSDK int GetExecutableRunning ( DWORD dwIndiExecuteFileProcess )
+{
+	// running
+	int iRunning=0;
+
+	// check if exe in active and running
+	if ( dwIndiExecuteFileProcess )
+	{
+		// get handle to process
+		HANDLE hIndiExecuteFileProcess = OpenProcess ( PROCESS_QUERY_INFORMATION, TRUE, dwIndiExecuteFileProcess );
+
+		DWORD dwStatus;
+		if ( GetExitCodeProcess ( hIndiExecuteFileProcess, &dwStatus )==TRUE )
+			if(dwStatus==STILL_ACTIVE)
+				iRunning = 1;
+
+		// close handle to process
+		CloseHandle ( hIndiExecuteFileProcess );
+	}
+
+	// not running
+	return iRunning;
+}
+
+//
+// File Mapping Functions
+//
+
+DARKSDK void WriteFilemap ( LPSTR pFilemapname, DWORD dwValue, DWORD pString, int iWriteType )
+{
+	// Open or create filemap
+	HANDLE hFileMap = OpenFileMapping(FILE_MAP_WRITE, TRUE, pFilemapname);
+	if ( hFileMap==NULL ) hFileMap = CreateFileMapping((HANDLE)0xFFFFFFFF,NULL,PAGE_READWRITE,0,1024,pFilemapname);
+	LPVOID lpVoid = MapViewOfFile(hFileMap,FILE_MAP_WRITE,0,0,1024);
+
+	// Copy data to filemap
+	if ( iWriteType==0 )
+	{
+		*((DWORD*)lpVoid+0) = dwValue;
+	}
+	if ( iWriteType==1 )
+	{
+		// Copy data to filemap
+		DWORD dwStringSize = strlen((LPSTR)pString);
+		*((DWORD*)lpVoid+1) = dwStringSize;
+		strcpy((LPSTR)lpVoid+8, (LPSTR)pString);
+	}
+
+	// Release virtual file
+	UnmapViewOfFile(lpVoid);
+}
+
+DARKSDK void WriteFilemapValue ( LPSTR pFilemapname, DWORD dwValue )
+{
+	// Write value to filemap
+	WriteFilemap ( pFilemapname, dwValue, NULL, 0 );
+}
+
+DARKSDK void WriteFilemapString ( LPSTR pFilemapname, LPSTR pString )
+{
+	// Write string to filemap
+	if ( pString )
+		if ( strlen((LPSTR)pString)<=1000 )
+			WriteFilemap ( pFilemapname, 0, (DWORD)pString, 1 );
+}
+
+DARKSDK int ReadFilemapValue ( LPSTR pFilemapname )
+{
+	// Open or create filemap for reading
+	HANDLE hFileMap = OpenFileMapping(FILE_MAP_WRITE, TRUE, pFilemapname);
+	if ( hFileMap==NULL ) hFileMap = CreateFileMapping((HANDLE)0xFFFFFFFF,NULL,PAGE_READWRITE,0,1024,pFilemapname);
+	LPVOID lpVoid = MapViewOfFile(hFileMap,FILE_MAP_WRITE,0,0,1024);
+
+	// Copy data from filemap
+	DWORD dwValue = *((DWORD*)lpVoid+0);
+
+	// Release virtual file
+	UnmapViewOfFile(lpVoid);
+
+	// return data
+	return (int)dwValue;
+}
+
+DARKSDK LPSTR ReadFilemapString ( LPSTR pFilemapname )
+{
+	// Open or create filemap for reading
+	HANDLE hFileMap = OpenFileMapping(FILE_MAP_READ, TRUE, pFilemapname);
+	if ( hFileMap==NULL ) hFileMap = CreateFileMapping((HANDLE)0xFFFFFFFF,NULL,PAGE_READWRITE,0,1024,pFilemapname);
+	LPVOID lpVoid = MapViewOfFile(hFileMap,FILE_MAP_READ,0,0,1024);
+
+	// Copy data from filemap
+	strcpy ( m_pWorkString, (LPSTR)lpVoid+8 );
+
+	// Release virtual file
+	UnmapViewOfFile(lpVoid);
+
+	// Create and return string
+	LPSTR pReturnString=GetReturnStringFromWorkString();
+
+	// return data
+	return pReturnString;
+}
+
+//
+// Sequential File Access Functions
+//
+
+DARKSDK void OpenToRead( int f, LPSTR pFilename )
+{
+	if(f>=1 && f<=MAX_FILES)
+	{
+		if(File[f]==NULL)
+		{
+			if(DB_FileExist(pFilename))
+			{
+				if(!DB_OpenToRead(f, pFilename))
+					RunTimeSoftWarning(RUNTIMEERROR_CANNOTOPENFILEFORREADING);
+			}
+			else
+				RunTimeError(RUNTIMEERROR_FILENOTEXIST,pFilename);
+		}
+		else
+			RunTimeError(RUNTIMEERROR_FILEALREADYOPEN,pFilename);
+	}
+	else
+		RunTimeError(RUNTIMEERROR_FILENUMBERINVALID,pFilename);
+}
+
+DARKSDK void OpenToWrite( int f, LPSTR pFilename )
+{
+	if(f>=1 && f<=MAX_FILES)
+	{
+		if(File[f]==NULL)
+		{
+			bool bForce = false;
+			#ifdef WICKEDENGINE
+			//PE: editors\gridedit\cfg.cfg failed if inside c:\program... where it cant be deleted.
+			//PE: Any relative path where we have a copy in c:\program... fails.
+			if(pFilename[1] != ':' ) bForce = true;
+			#endif
+			if(!DB_FileExist(pFilename) || bForce )
+			{
+				if(!DB_OpenToWrite(f, pFilename))
+					RunTimeSoftWarning(RUNTIMEERROR_CANNOTOPENFILEFORWRITING);
+			}
+			else
+				RunTimeWarning(RUNTIMEERROR_FILEEXISTS);
+		}
+		else
+			RunTimeWarning(RUNTIMEERROR_FILEALREADYOPEN);
+	}
+	else
+	{
+		// mike - 011005 - use run time error for this
+		RunTimeError(RUNTIMEERROR_FILENUMBERINVALID);
+	}
+}
+
+DARKSDK bool OpenToWriteEx( int f, LPSTR pFilename )
+{
+	if(f>=1 && f<=MAX_FILES)
+	{
+		if(File[f]==NULL)
+		{
+			if(!DB_FileExist(pFilename))
+			{
+				if(!DB_OpenToWrite(f, pFilename))
+				{
+					RunTimeSoftWarning(RUNTIMEERROR_CANNOTOPENFILEFORWRITING);
+					return false;
+				}
+			}
+			else
+			{
+				RunTimeWarning(RUNTIMEERROR_FILEEXISTS);
+				return false;
+			}
+		}
+		else
+		{
+			RunTimeWarning(RUNTIMEERROR_FILEALREADYOPEN);
+			return false;
+		}
+	}
+	else
+	{
+		// mike - 011005 - use run time error for this
+		RunTimeError(RUNTIMEERROR_FILENUMBERINVALID);
+		return false;
+	}
+	return true;
+}
+
+DARKSDK void CloseFile( int f )
+{
+	if(f>=1 && f<=MAX_FILES)
+	{
+		if(File[f]!=NULL)
+			DB_CloseFile(f);
+		else
+			RunTimeWarning(RUNTIMEERROR_FILENOTOPEN);
+	}
+	else
+		RunTimeWarning(RUNTIMEERROR_FILENUMBERINVALID);
+}
+
