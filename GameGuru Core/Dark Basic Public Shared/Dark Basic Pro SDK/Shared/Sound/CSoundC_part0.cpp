@@ -41,7 +41,7 @@
 #ifdef WICKEDAUDIO
 
 #undef WICKEDENGINE
-#include "D:\PROTOTIME\WickedEngineDX12\WickedEngine\WickedEngine.h"
+#include "../../../../../../WickedEngineDX12/WickedEngine/WickedEngine.h"
 
 #include <xaudio2.h>
 using namespace wiGraphics;

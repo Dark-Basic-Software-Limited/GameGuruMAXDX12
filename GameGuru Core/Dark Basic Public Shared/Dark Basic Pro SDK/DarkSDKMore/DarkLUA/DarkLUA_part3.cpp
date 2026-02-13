@@ -1968,3 +1968,5 @@ int SetScreenHUDGlobalScale(lua_State* L)
 	screen_editor_setscalemod (fGlobalScaleMod);
 	return 0;
 }
+
+#endif // STORYBOARD - continued in part4

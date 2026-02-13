@@ -161,7 +161,7 @@ bool GuruLoopLogic ( void )
 				{
 					// terrain init
 					timestampactivity(0, "GGTerrain::GGTerrain_Init();");
-					wiGraphics::CommandList cmd = wiRenderer::GetDevice()->BeginCommandList();
+					wiGraphics::CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
 					GGTerrain::GGTerrain_Init(cmd);
 					timestampactivity(0, "GGTrees::GGTrees_Init();");
 					GGTrees::GGTrees_Init();

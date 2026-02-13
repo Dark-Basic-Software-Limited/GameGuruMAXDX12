@@ -194,7 +194,7 @@
 			if (pScene)
 			{
 				iObjects = pScene->objects.GetCount();
-				iFrustumCulled = wiProfiler::GetFrustumCulled();
+				iFrustumCulled = 0;
 			}
 			if (bOCDebug)
 				ImGui::Text("Total Objects: %d Hidden: %d", iObjects, iHiddenObjects);
@@ -321,8 +321,10 @@
 			t.gamevisuals.iFSRMode = t.visuals.iFSRMode;
 			if (t.visuals.iFSRMode == 1)
 			{
-				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				master.masterrenderer.SetFSRScale(1.3f);
+				// TODO: Set3DResolution removed, use resolutionScale instead
+				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				// TODO: SetFSRScale removed, use setFSR2Preset instead
+				//master.masterrenderer.SetFSRScale(1.3f);
 				master.masterrenderer.setFSREnabled(true);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -332,8 +334,10 @@
 			}
 			else if (t.visuals.iFSRMode == 2)
 			{
-				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				master.masterrenderer.SetFSRScale(1.5f);
+				// TODO: Set3DResolution removed, use resolutionScale instead
+				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				// TODO: SetFSRScale removed, use setFSR2Preset instead
+				//master.masterrenderer.SetFSRScale(1.5f);
 				master.masterrenderer.setFSREnabled(true);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -343,8 +347,10 @@
 			}
 			else if (t.visuals.iFSRMode == 3)
 			{
-				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				master.masterrenderer.SetFSRScale(1.7f);
+				// TODO: Set3DResolution removed, use resolutionScale instead
+				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				// TODO: SetFSRScale removed, use setFSR2Preset instead
+				//master.masterrenderer.SetFSRScale(1.7f);
 				master.masterrenderer.setFSREnabled(true);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -354,8 +360,10 @@
 			}
 			else if (t.visuals.iFSRMode == 4)
 			{
-				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				master.masterrenderer.SetFSRScale(2.0f);
+				// TODO: Set3DResolution removed, use resolutionScale instead
+				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				// TODO: SetFSRScale removed, use setFSR2Preset instead
+				//master.masterrenderer.SetFSRScale(2.0f);
 				master.masterrenderer.setFSREnabled(true);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -366,8 +374,10 @@
 			else
 			{
 				//PE: Disable FSR
-				master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				master.masterrenderer.SetFSRScale(1.0f);
+				// TODO: Set3DResolution removed, use resolutionScale instead
+				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+				// TODO: SetFSRScale removed, use setFSR2Preset instead
+				//master.masterrenderer.SetFSRScale(1.0f);
 				master.masterrenderer.setFSREnabled(false);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 			}

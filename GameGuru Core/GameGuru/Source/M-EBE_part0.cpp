@@ -17,23 +17,9 @@
 #include <string>
 #include <time.h>
 
-// Enums (duplicated, need to clean this up)
-enum MaterialComponentTEXTURESLOT
-{
-	BASECOLORMAP,
-	NORMALMAP,
-	SURFACEMAP,
-	EMISSIVEMAP,
-	DISPLACEMENTMAP,
-	OCCLUSIONMAP,
-	TRANSMISSIONMAP,
-	SHEENCOLORMAP,
-	SHEENROUGHNESSMAP,
-	CLEARCOATMAP,
-	CLEARCOATROUGHNESSMAP,
-	CLEARCOATNORMALMAP,
-	TEXTURESLOT_COUNT
-};
+// Use WickedEngine's MaterialComponent::TEXTURESLOT enum directly
+// (was duplicated here, removed to avoid redefinition errors)
+using wiScene::MaterialComponent;
 
 bool dbo2xConvert(LPSTR pFilefrom, LPSTR pFileto);
 

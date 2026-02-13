@@ -357,16 +357,13 @@
 				wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 				if (weather)
 				{
-					weather->pp_voxel_steps = t.visuals.voxel_steps;
+					//weather->pp_voxel_steps = t.visuals.voxel_steps; // REMOVED
 					weather->windDirection = XMFLOAT3(t.visuals.wind_direction_x, t.visuals.wind_direction_y, t.visuals.wind_direction_z);
 					weather->windSpeed = t.visuals.wind_speed;
 					weather->windWaveSize = t.visuals.pp_size;
-					weather->pp_alpha = t.visuals.pp_alpha;
+					//weather->pp_alpha = t.visuals.pp_alpha; // REMOVED
 					weather->windRandomness = t.visuals.wind_randomness;
-					if(bEnableWeather)
-						weather->SetPPSnowEnabled(t.visuals.bPPSnow);
-					else
-						weather->SetPPSnowEnabled(false);
+					//weather->SetPPSnowEnabled(...); // removed in new WickedEngine API - no equivalent
 				}
 			}
 		}
@@ -819,8 +816,7 @@ void imgui_Customize_Sky_V2(int mode)
 			{
 				t.visuals.SkyCloudiness = fTmp * 0.01f;
 				t.gamevisuals.SkyCloudiness = t.visuals.SkyCloudiness;
-				weather->cloudiness = t.visuals.SkyCloudiness;
-				weather->volumetricCloudParameters.CoverageAmount = t.visuals.SkyCloudiness;
+				weather->volumetricCloudParameters.layerFirst.coverageAmount = t.visuals.SkyCloudiness;
 				g.projectmodified = 1;
 				// when sky type changes, refresh env probes
 				extern bool g_bLightProbeScaleChanged;
@@ -833,7 +829,7 @@ void imgui_Customize_Sky_V2(int mode)
 			{
 				t.visuals.SkyCloudCoverage = fTmp * 0.01f;
 				t.gamevisuals.SkyCloudCoverage = t.visuals.SkyCloudCoverage;
-				weather->volumetricCloudParameters.CoverageMinimum = t.visuals.SkyCloudCoverage;
+				weather->volumetricCloudParameters.layerFirst.coverageMinimum = t.visuals.SkyCloudCoverage;
 				g.projectmodified = 1;
 				// when sky type changes, refresh env probes
 				extern bool g_bLightProbeScaleChanged;
@@ -846,8 +842,8 @@ void imgui_Customize_Sky_V2(int mode)
 			{
 				t.visuals.SkyCloudHeight = GGTerrain_MetersToUnits( cloudHeight );
 				t.gamevisuals.SkyCloudHeight = t.visuals.SkyCloudHeight;
-				weather->cloudScale = t.visuals.SkyCloudHeight;
-				weather->volumetricCloudParameters.CloudStartHeight = cloudHeight;
+				//weather->cloudScale = t.visuals.SkyCloudHeight; // REMOVED
+				weather->volumetricCloudParameters.cloudStartHeight = cloudHeight;
 				g.projectmodified = 1;
 				// when sky type changes, refresh env probes
 				extern bool g_bLightProbeScaleChanged;
@@ -862,7 +858,7 @@ void imgui_Customize_Sky_V2(int mode)
 				cloudHeight = fTmp * 10.0f;
 				t.visuals.SkyCloudThickness = GGTerrain_MetersToUnits( cloudHeight );
 				t.gamevisuals.SkyCloudThickness = t.visuals.SkyCloudThickness;
-				weather->volumetricCloudParameters.CloudThickness = cloudHeight;
+				weather->volumetricCloudParameters.cloudThickness = cloudHeight;
 				g.projectmodified = 1;
 				// when sky type changes, refresh env probes
 				extern bool g_bLightProbeScaleChanged;
@@ -873,9 +869,8 @@ void imgui_Customize_Sky_V2(int mode)
 			if (ImGui::MaxSliderInputFloat("##V2WickedSkyCloudSpeed", &t.visuals.SkyCloudSpeed, 0.0f, 50.0f, "The cloud movement speed across the sky", 0.0f, 50.0f))
 			{
 				t.gamevisuals.SkyCloudSpeed = t.visuals.SkyCloudSpeed;
-				weather->cloudSpeed = t.visuals.SkyCloudSpeed;
-				weather->volumetricCloudParameters.CoverageWindSpeed = t.visuals.SkyCloudSpeed;
-				weather->volumetricCloudParameters.WindSpeed = t.visuals.SkyCloudSpeed;
+				weather->volumetricCloudParameters.layerFirst.windSpeed = t.visuals.SkyCloudSpeed;
+				weather->volumetricCloudParameters.layerFirst.coverageWindSpeed = t.visuals.SkyCloudSpeed;
 				g.projectmodified = 1;
 			}
 		}

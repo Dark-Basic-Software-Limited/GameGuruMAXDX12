@@ -1,4 +1,5 @@
-﻿DARKSDK void SetCurrentBitmap ( int iID )
+﻿#ifndef DX11 // continued from part0
+DARKSDK void SetCurrentBitmap ( int iID )
 {
 	if ( iID>=0 )
 	{

@@ -157,37 +157,37 @@ void imporer_save_multimeshsection(sObject* pObject, int iFileIndex)
 				if (pObjectMaterial)
 				{
 					// texture names and control values
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource.IsValid())
 					{
 						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("baseColorMap") + cstr(iMeshIndex)).Get()) + "= " + TextureFilename; WriteString(iFileIndex, t.tString.Get());
 						t.tString = ""; t.tString = t.tString + importerPadString(cStr(cStr("alphaRef") + cstr(iMeshIndex)).Get()) + "= " + cStr(pObjectMaterial->alphaRef); WriteString(iFileIndex, t.tString.Get());
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].resource.IsValid())
 					{
 						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("normalMap") + cstr(iMeshIndex)).Get()) + "= " + TextureFilename; WriteString(iFileIndex, t.tString.Get());
 						t.tString = ""; t.tString = t.tString + importerPadString(cStr(cStr("normalStrength") + cstr(iMeshIndex)).Get()) + "= " + cStr(pObjectMaterial->normalMapStrength); WriteString(iFileIndex, t.tString.Get());
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].resource.IsValid())
 					{
 						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("emissiveMap") + cstr(iMeshIndex)).Get()) + "= " + TextureFilename; WriteString(iFileIndex, t.tString.Get());
 						t.tString = ""; t.tString = t.tString + importerPadString(cStr(cStr("emissiveStrength") + cstr(iMeshIndex)).Get()) + "= " + cStr(pObjectMaterial->GetEmissiveStrength()); WriteString(iFileIndex, t.tString.Get());
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource.IsValid())
 					{
 						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("surfaceMap") + cstr(iMeshIndex)).Get()) + "= " + TextureFilename; WriteString(iFileIndex, t.tString.Get());
 						t.tString = ""; t.tString = t.tString + importerPadString(cStr(cStr("roughnessStrength") + cstr(iMeshIndex)).Get()) + "= " + cStr(pObjectMaterial->roughness); WriteString(iFileIndex, t.tString.Get());
 						t.tString = ""; t.tString = t.tString + importerPadString(cStr(cStr("metalnessStrength") + cstr(iMeshIndex)).Get()) + "= " + cStr(pObjectMaterial->metalness); WriteString(iFileIndex, t.tString.Get());
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource.IsValid())
 					{
 						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("occlusionMap") + cstr(iMeshIndex)).Get()) + "= " + TextureFilename; WriteString(iFileIndex, t.tString.Get());
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource.IsValid())
 					{
 						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("displacementMap") + cstr(iMeshIndex)).Get()) + "= " + TextureFilename; WriteString(iFileIndex, t.tString.Get());
@@ -219,7 +219,7 @@ void imporer_save_multimeshsection(sObject* pObject, int iFileIndex)
 						wiScene::ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 						if (object)
 						{
-							fRenderOrderBias = object->GetRenderOrderBiasDistance();
+							fRenderOrderBias = object->sort_priority;
 							t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("renderorderbias") + cstr(iMeshIndex)).Get()) + "= " + cStr(fRenderOrderBias); WriteString(iFileIndex, t.tString.Get());
 						}
 					}
@@ -437,7 +437,7 @@ void importer_save_fpe(void)
 			wiScene::MaterialComponent* pObjectMaterial = wiScene::GetScene().materials.GetComponent(materialEntity);
 			if (pObjectMaterial)
 			{
-				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource)
+				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource.IsValid())
 				{
 					cStr TextureFilename = importer_getfilenameonly((LPSTR) pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].name.c_str());
 					t.tString = ""; t.tString = t.tString + importerPadString("textured") + "= " + TextureFilename; WriteString(1, t.tString.Get());
@@ -445,31 +445,31 @@ void importer_save_fpe(void)
 					t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("alpharef")).Get()) + "= " + cStr(pObjectMaterial->alphaRef); WriteString(1, t.tString.Get());
 					bTextured = true;
 				}
-				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].resource)
+				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].resource.IsValid())
 				{
 					cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].name.c_str());
 					t.tString = ""; t.tString = t.tString + importerPadString("normalMap") + "= " + TextureFilename; WriteString(1, t.tString.Get());
 					t.tString = ""; t.tString = t.tString + importerPadString("normalStrength") + "= " + cStr(pObjectMaterial->normalMapStrength); WriteString(1, t.tString.Get());
 				}
-				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource)
+				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource.IsValid())
 				{
 					cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].name.c_str());
 					t.tString = ""; t.tString = t.tString + importerPadString("surfaceMap") + "= " + TextureFilename; WriteString(1, t.tString.Get());
 					t.tString = ""; t.tString = t.tString + importerPadString("roughnessStrength") + "= " + cStr(pObjectMaterial->roughness); WriteString(1, t.tString.Get());
 					t.tString = ""; t.tString = t.tString + importerPadString("metalnessStrength") + "= " + cStr(pObjectMaterial->metalness); WriteString(1, t.tString.Get());
 				}
-				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource)
+				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource.IsValid())
 				{
 					cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].name.c_str());
 					t.tString = ""; t.tString = t.tString + importerPadString("displacementMap") + "= " + TextureFilename; WriteString(1, t.tString.Get());
 				}
-				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].resource)
+				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].resource.IsValid())
 				{
 					cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].name.c_str());
 					t.tString = ""; t.tString = t.tString + importerPadString("emissiveMap") + "= " + TextureFilename; WriteString(1, t.tString.Get());
 					t.tString = ""; t.tString = t.tString + importerPadString("emissiveStrength") + "= " + cStr(pObjectMaterial->GetEmissiveStrength()); WriteString(1, t.tString.Get());
 				}
-				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource)
+				if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource.IsValid())
 				{
 					cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].name.c_str());
 					t.tString = ""; t.tString = t.tString + importerPadString("occlusionMap") + "= " + TextureFilename; WriteString(1, t.tString.Get());
@@ -502,7 +502,7 @@ void importer_save_fpe(void)
 					wiScene::ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 					if (object)
 					{
-						fRenderOrderBias = object->GetRenderOrderBiasDistance();
+						fRenderOrderBias = object->sort_priority;
 						t.tString = ""; t.tString = t.tString + importerPadString(cstr(cstr("renderorderbias")).Get()) + "= " + cStr(fRenderOrderBias); WriteString(1, t.tString.Get());
 					}
 				}
@@ -1289,41 +1289,41 @@ void importer_save_entity ( char *filename )
 					{
 						int tCount = 1;
 
-						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource.IsValid())
 						{
 							cStr TextureFilename = (char *) pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].name.c_str();
 							int iInsertedAtSlot = importer_addtexturefiletolist(TextureFilename, TextureFilename, &t.tcounttextures);
 							t.importerTextures[iInsertedAtSlot].imageID = 1; //Fake id. Reset later.
 						}
 
-						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].resource.IsValid())
 						{
 							cStr TextureFilename = (char *)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].name.c_str();
 							int iInsertedAtSlot = importer_addtexturefiletolist(TextureFilename, TextureFilename, &t.tcounttextures);
 							t.importerTextures[iInsertedAtSlot].imageID = 1; //Fake id. Reset later.
 						}
 
-						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource.IsValid())
 						{
 							cStr TextureFilename = (char *)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].name.c_str();
 							int iInsertedAtSlot = importer_addtexturefiletolist(TextureFilename, TextureFilename, &t.tcounttextures);
 							t.importerTextures[iInsertedAtSlot].imageID = 1; //Fake id. Reset later.
 						}
 
-						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource.IsValid())
 						{
 							cStr TextureFilename = (char *)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].name.c_str();
 							int iInsertedAtSlot = importer_addtexturefiletolist(TextureFilename, TextureFilename, &t.tcounttextures);
 							t.importerTextures[iInsertedAtSlot].imageID = 1; //Fake id. Reset later.
 						}
 
-						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].resource.IsValid())
 						{
 							cStr TextureFilename = (char *)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].name.c_str();
 							int iInsertedAtSlot = importer_addtexturefiletolist(TextureFilename, TextureFilename, &t.tcounttextures);
 							t.importerTextures[iInsertedAtSlot].imageID = 1; //Fake id. Reset later.
 						}
-						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource.IsValid())
 						{
 							cStr TextureFilename = (char *)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].name.c_str();
 							int iInsertedAtSlot = importer_addtexturefiletolist(TextureFilename, TextureFilename, &t.tcounttextures);

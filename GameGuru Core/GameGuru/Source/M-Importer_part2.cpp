@@ -201,7 +201,7 @@
 			bool bIfColorValid = false;
 			if (pSelectedMesh)
 			{
-				if (pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource)
+				if (pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource.IsValid())
 				{
 					// check if we can auto fill other tex refs
 					if (strstr(pTextureFilename, "_color") != NULL) bIfColorValid = true;
@@ -307,7 +307,7 @@
 			bHaveMaterialUpdate = true;
 			if (pSelectedMaterial && !pSelectedMesh) 
 			{
-				pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource = nullptr;
+				pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource = {};
 				pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].name = "";
 				pSelectedMaterial->SetDirty();
 				wiJobSystem::context ctx;
@@ -331,7 +331,7 @@
 				{
 					pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].name = cFileSelected;
 					pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource = WickedCall_LoadImage(pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].name);
-					if (pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource)
+					if (pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource.IsValid())
 					{
 						//worked activate.
 						pSelectedMaterial->SetParallaxOcclusionMapping(0.05f);// SetDisplacementMapping(0.1f); //Default.
@@ -342,7 +342,7 @@
 					else 
 					{
 						//Failed reset slot.
-						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource = nullptr;
+						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource = {};
 						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].name = "";
 						pSelectedMaterial->SetDirty();
 						wiJobSystem::context ctx;
@@ -369,7 +369,7 @@
 			bHaveMaterialUpdate = true;
 			if (pSelectedMaterial && !pSelectedMesh) 
 			{
-				pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource = nullptr;
+				pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource = {};
 				pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].name = "";
 				pSelectedMaterial->SetOcclusionEnabled_Primary(true);
 				pSelectedMaterial->SetOcclusionEnabled_Secondary(false);
@@ -395,7 +395,7 @@
 				{
 					pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].name = cFileSelected;
 					pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource = WickedCall_LoadImage(pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].name);
-					if (pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource)
+					if (pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource.IsValid())
 					{
 						//worked activate.
 						pSelectedMaterial->SetOcclusionEnabled_Primary(false);
@@ -404,10 +404,10 @@
 						wiJobSystem::context ctx;
 						wiJobSystem::Wait(ctx);
 					}
-					else 
+					else
 					{
 						//Failed reset slot.
-						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource = nullptr;
+						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource = {};
 						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].name = "";
 						pSelectedMaterial->SetOcclusionEnabled_Primary(true);
 						pSelectedMaterial->SetOcclusionEnabled_Secondary(false);
@@ -498,7 +498,7 @@
 					else
 					{
 						if (strlen(pOrigSurfaceFile) > 0) WickedCall_DeleteImage(pOrigSurfaceFile);
-						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource = nullptr;
+						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource = {};
 						pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].name = "";
 						pSelectedMaterial->SetDirty();
 						wiJobSystem::context ctx;
@@ -677,14 +677,14 @@
 				// recreate surface material from newly created surface file
 				pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].name = newSurfaceFileTemp;
 				pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource = WickedCall_LoadImage(pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].name);
-				if (pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource)
+				if (pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource.IsValid())
 				{
 					// successfully loaded surface texture
 				}
-				else 
+				else
 				{
 					//Failed reset slot.
-					pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource = nullptr;
+					pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource = {};
 					pSelectedMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].name = "";
 				}
 				pSelectedMaterial->SetDirty();

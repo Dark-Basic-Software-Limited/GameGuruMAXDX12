@@ -769,22 +769,22 @@ void procedural_new_level(void)
 					if (ratio > 1.0) ratio = 1.0;
 					wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 					if (t.visuals.skyindex == 0 && t.visuals.bDisableSkybox == false)
-						weather->fogColorAndOpacity.w = 0.0; //PE: No fog Opacity in dynamic skybox mode.
+						; //weather->fogColorAndOpacity.w = 0.0; // removed in new WickedEngine API
 					else
 					{
-						weather->fogColorAndOpacity.w = fFog * ratio;
+						//weather->fogColorAndOpacity.w = fFog * ratio; // removed in new WickedEngine API
 						t.gamevisuals.FogA_f = t.visuals.FogA_f = oldFogA_f = fFog * ratio;
 					}
 
 					float fCover = 0.8;
-					weather->volumetricCloudParameters.CoverageAmount = fCover * ratio;
+					weather->volumetricCloudParameters.layerFirst.coverageAmount = fCover * ratio;
 					if (fSnapShotModeCameraY + 4000 > t.visuals.SkyCloudHeight)
 					{
-						weather->volumetricCloudParameters.CloudStartHeight = GGTerrain_UnitsToMeters(fSnapShotModeCameraY + 4000);
+						weather->volumetricCloudParameters.cloudStartHeight = GGTerrain_UnitsToMeters(fSnapShotModeCameraY + 4000);
 					}
 					else
 					{
-						weather->volumetricCloudParameters.CloudStartHeight = GGTerrain_UnitsToMeters(t.visuals.SkyCloudHeight);
+						weather->volumetricCloudParameters.cloudStartHeight = GGTerrain_UnitsToMeters(t.visuals.SkyCloudHeight);
 					}
 
 				}
@@ -1270,15 +1270,15 @@ void procedural_new_level(void)
 						t.gamevisuals.bDisableSkybox = t.visuals.bDisableSkybox = false;
 						if (weather)
 						{
-							if (weather->skyMap != nullptr && weather->skyMapName.length() > 0)
+							if (weather->skyMap.IsValid() && weather->skyMapName.length() > 0)
 							{
 								//PE: Make sure to free any old resources.
 								WickedCall_DeleteImage(weather->skyMapName);
 							}
-							weather->skyMap = nullptr;
+							weather->skyMap = {};
 							weather->skyMapName = "";
-							weather->cloudSpeed = t.visuals.SkyCloudSpeed;
-							weather->cloudiness = t.visuals.SkyCloudiness;
+							weather->volumetricCloudParameters.layerFirst.windSpeed = t.visuals.SkyCloudSpeed;
+							weather->volumetricCloudParameters.layerFirst.coverageAmount = t.visuals.SkyCloudiness;
 						}
 						Wicked_Update_Visuals((void *)&t.visuals); //PE: Switch to dynamic skybox.
 						bTriggerSetTimeOfDay = true;
@@ -1288,15 +1288,15 @@ void procedural_new_level(void)
 						//Delete if we already have one loaded.
 						if (weather)
 						{
-							if (weather->skyMap != nullptr && weather->skyMapName.length() > 0)
+							if (weather->skyMap.IsValid() && weather->skyMapName.length() > 0)
 							{
 								//PE: Make sure to free any old resources.
 								WickedCall_DeleteImage(weather->skyMapName);
 							}
-							weather->skyMap = nullptr;
+							weather->skyMap = {};
 							weather->skyMapName = "";
-							weather->cloudSpeed = t.visuals.SkyCloudSpeed;
-							weather->cloudiness = t.visuals.SkyCloudiness;
+							weather->volumetricCloudParameters.layerFirst.windSpeed = t.visuals.SkyCloudSpeed;
+							weather->volumetricCloudParameters.layerFirst.coverageAmount = t.visuals.SkyCloudiness;
 						}
 						t.visuals.skyindex = 0;
 						t.gamevisuals.skyindex = t.visuals.skyindex;
@@ -2621,13 +2621,13 @@ void procedural_new_level(void)
 							int iMeshes = pScene->meshes.GetCount();
 							int iMaterials = pScene->materials.GetCount();
 
-							int dc = wiProfiler::GetDrawCalls();
-							int dcs = wiProfiler::GetDrawCallsShadows();
-							int dct = wiProfiler::GetDrawCallsTransparent();
+							int dc = 0;
+							int dcs = 0;
+							int dct = 0;
 
-							int tris = wiProfiler::GetPolygons();
-							int trisShadow = wiProfiler::GetPolygonsShadows();
-							int trisTransparent = wiProfiler::GetPolygonsTransparent();
+							int tris = 0;
+							int trisShadow = 0;
+							int trisTransparent = 0;
 
 							ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 							ImGui::Text("DrawCalls: %d", dc);
@@ -2641,7 +2641,7 @@ void procedural_new_level(void)
 							ImGui::Text("Scene Transforms: %d", (int)pScene->transforms.GetCount());
 							ImGui::Text("Scene Hierarchy: %d", (int)pScene->hierarchy.GetCount());
 							ImGui::Separator();
-							std::string profiler_data = wiProfiler::GetProfilerData();
+							std::string profiler_data = std::string("");
 							ImGui::Text(profiler_data.c_str());
 						}
 					}
@@ -3564,7 +3564,7 @@ void procedural_new_level(void)
 					ID3D11Texture2D *pBackBuffer = NULL;
 					#ifdef DIGAHOLE
 					//PE: We need 5 frames (iQuitProceduralLevel). before backbuffer is updated with latest without 2d. ?
-					//pBackBuffer = (ID3D11Texture2D *)wiRenderer::GetDevice()->GetBackBufferForGG(&master.swapChain);
+					//pBackBuffer = (ID3D11Texture2D *)wiGraphics::GetDevice()->GetBackBufferForGG(&master.swapChain);
 					pBackBuffer = NULL;
 					#else
 					pBackBuffer = (ID3D11Texture2D *)GetBitmapTexture2D(99);

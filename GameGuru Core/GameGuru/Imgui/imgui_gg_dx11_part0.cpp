@@ -1769,7 +1769,7 @@ static void ImGui_ImplDX11_SwapBuffers(ImGuiViewport* viewport, void*)
 		//PE: This did not help.
 		//PE: This only happen in tab tab when you move a window to another monitor, so disable this for now.
 		//PE: Until the reason is found. DXGI_PRESENT_DO_NOT_WAIT dont seam to fix it.
-		//wiRenderer::GetDevice()->WaitForGPU(); //This did not help.
+		//wiGraphics::GetDevice()->WaitForGPU(); //This did not help.
 		//DXGI_SWAP_EFFECT_DISCARD 
 		//PE: Think the problem is that we use a VERY old gxgi.h and we really should update this and start using a FLIP model.
 
@@ -1872,7 +1872,7 @@ static int __stdcall BrowseCallbackProcW(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM
 	return 0;
 }
 
-
+#endif // GG_WINDOWS - continued in part1
 // callback function
 INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 {

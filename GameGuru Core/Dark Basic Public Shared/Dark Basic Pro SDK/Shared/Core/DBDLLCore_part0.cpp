@@ -1951,3 +1951,6 @@ LRESULT CALLBACK ImguiWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	// Default Action
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
+
+#endif // ENABLEIMGUI
+#endif // !WICKEDENGINE

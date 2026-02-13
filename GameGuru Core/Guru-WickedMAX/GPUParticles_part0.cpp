@@ -9,6 +9,7 @@
 #include "Particles/Models/gpup_part_1024.h"
 #include "Particles/Models/gpup_part_4096.h"
 #include "wiRenderer.h"
+#include "WickedEngine.h"
 
 // redefines MAX_PATH to 1050
 #include "preprocessor-moreflags.h"
@@ -556,7 +557,7 @@ int gpu_particles_initialised = 0;
 
 void GPUP_LoadTexture( const char* filename, Texture* tex ) 
 { 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	int width, height, channels;
 	char filePath[ MAX_PATH ];
@@ -565,22 +566,22 @@ void GPUP_LoadTexture( const char* filename, Texture* tex )
 	uint8_t* imageData = stbi_load( filePath, &width, &height, &channels, 4 );
 
 	SubresourceData data = {};
-	data.pSysMem = imageData;
-	data.SysMemPitch = width * 4;
+	data.data_ptr = imageData;
+	data.row_pitch = width * 4;
 
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_SHADER_RESOURCE | BIND_UNORDERED_ACCESS;
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
 	texDesc.clear.color[0] = 1.0f;
 	texDesc.clear.color[1] = 0.0f;
 	texDesc.clear.color[2] = 0.0f;
 	texDesc.clear.color[3] = 0.0f;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = 1;
-	texDesc.ArraySize = 1;
-	texDesc.Format = FORMAT_R8G8B8A8_UNORM;
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = 1;
+	texDesc.format = Format::R8G8B8A8_UNORM;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = width;
+	texDesc.height = height;
 
 	device->CreateTexture( &texDesc, &data, tex );
 	device->SetName( tex, "imageTex" );
@@ -590,28 +591,28 @@ void GPUP_LoadTexture( const char* filename, Texture* tex )
 
 void GPUP_CreateRenderTexture( int width, int height, Texture* tex ) 
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	uint32_t* imageData = new uint32_t[ width * height ];
 	for( int i = 0; i < width * height; i++ ) imageData[i] = 0;
 
 	SubresourceData data = {};
-	data.pSysMem = imageData;
-	data.SysMemPitch = width * 4;
+	data.data_ptr = imageData;
+	data.row_pitch = width * 4;
 
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_RENDER_TARGET | BIND_SHADER_RESOURCE | BIND_UNORDERED_ACCESS;
+	texDesc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
 	texDesc.clear.color[0] = 1.0f;
 	texDesc.clear.color[1] = 0.0f;
 	texDesc.clear.color[2] = 0.0f;
 	texDesc.clear.color[3] = 0.0f;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = 1;
-	texDesc.ArraySize = 1;
-	texDesc.Format = FORMAT_R8G8B8A8_UNORM;
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = 1;
+	texDesc.format = Format::R8G8B8A8_UNORM;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = width;
+	texDesc.height = height;
 
 	device->CreateTexture( &texDesc, &data, tex );
 	device->SetName( tex, "renderTex" );
@@ -621,18 +622,18 @@ void GPUP_CreateRenderTexture( int width, int height, Texture* tex )
 
 void GPUP_DeleteTexture( Texture* tex ) 
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 }
 
 void GPUParticlesDrawQuad( RenderPass* renderPass, CommandList cmd )
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	device->RenderPassBegin( renderPass, cmd );
 
 	Viewport vp;
-	vp.Width = (float) renderPass->GetDesc().attachments[0].texture->GetDesc().Width;
-	vp.Height = (float) renderPass->GetDesc().attachments[0].texture->GetDesc().Height;
+	vp.width = (float) renderPass->GetDesc().attachments[0].texture.GetDesc().width;
+	vp.height = (float) renderPass->GetDesc().attachments[0].texture.GetDesc().height;
 	device->BindViewports( 1, &vp, cmd );
 			
 	const GPUBuffer* vbs[] = { &quadVertexBuffer };
@@ -640,9 +641,9 @@ void GPUParticlesDrawQuad( RenderPass* renderPass, CommandList cmd )
 	device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
 	
 	// bind samplers
-	device->BindSampler( PS, &samplerLinear, 0, cmd );
-	device->BindSampler( PS, &samplerPoint, 1, cmd );
-	device->BindSampler( PS, &samplerLinearWrap, 2, cmd );
+	device->BindSampler(&samplerLinear, 0, cmd );
+	device->BindSampler(&samplerPoint, 1, cmd );
+	device->BindSampler(&samplerLinearWrap, 2, cmd );
 
 	device->Draw( 6, 0, cmd );
 
@@ -658,37 +659,47 @@ extern "C" void gpup_draw_init(const wiScene::CameraComponent & camera, wiGraphi
 	// calculates all needed particles and distances from camera
 	for (size_t i = 0; i < gpup_maxeffects; ++i)
 	{
-		g_emitterSortingDrawCount[cmd][i] = 0;
-		g_emitterSorting[cmd][i] = 0;
-		g_emitterSorting[cmd][i] |= (uint32_t)i & 0x0000FFFF;
+		// TODO: CommandList is no longer an integer index
+		//g_emitterSortingDrawCount[cmd][i] = 0;
+		//g_emitterSorting[cmd][i] = 0;
+		//g_emitterSorting[cmd][i] |= (uint32_t)i & 0x0000FFFF;
 		if (gpup_emitter[i].effectLoaded == 0 || gpup_emitter[i].effectVisible == 0) continue;
 		XMFLOAT3 emitercenter = XMFLOAT3(gpup_emitter[i].globalx[0], gpup_emitter[i].globaly[0], gpup_emitter[i].globalz[0]);
 		float distance = wiMath::DistanceEstimated(XMFLOAT3(emitercenter.x, camera.Eye.y, emitercenter.z), camera.Eye);
 		gpup_emitter[i].currentdistancefromcamera = distance;
-		g_emitterSorting[cmd][i] |= ((uint32_t)(distance * 10) & 0x0000FFFF) << 16;
+		// TODO: CommandList is no longer an integer index
+		//g_emitterSorting[cmd][i] |= ((uint32_t)(distance * 10) & 0x0000FFFF) << 16;
 	}
 
 	// now sort so distant particles are first in list
-	std::sort(std::begin(g_emitterSorting[cmd]), std::end(g_emitterSorting[cmd]), std::greater<uint32_t>());
+	// TODO: CommandList is no longer an integer index
+	//std::sort(std::begin(g_emitterSorting[cmd]), std::end(g_emitterSorting[cmd]), std::greater<uint32_t>());
 
 	// we start here, being the particle furthest away
-	g_emitterCurrentIndex[cmd] = 0;
+	// TODO: CommandList is no longer an integer index
+	//g_emitterCurrentIndex[cmd] = 0;
 }
 
 extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wiGraphics::CommandList cmd, float fDistanceFromCamera)
 {
 	// finished rendering particles
-	if (g_emitterCurrentIndex[cmd] == -1 || g_emitterCurrentIndex[cmd] >= gpup_maxeffects)
-		return;
+	// TODO: CommandList is no longer an integer index
+	//if (g_emitterCurrentIndex[cmd] == -1 || g_emitterCurrentIndex[cmd] >= gpup_maxeffects)
+	//	return;
+	return;
 
 	// is called just before a transparent object is rendered at the specified distance
 	// allowing us to insert the particle rendering as needed (i.e. window, particle, window, window, particle, window)
-	int iThisLoopStart = g_emitterCurrentIndex[cmd];
+	// TODO: CommandList is no longer an integer index
+	//int iThisLoopStart = g_emitterCurrentIndex[cmd];
+	int iThisLoopStart = 0;
 	for (size_t i = iThisLoopStart; i < gpup_maxeffects; ++i)
 	{
-		size_t e = g_emitterSorting[cmd][i] & 0x0000FFFF;
+		// TODO: CommandList is no longer an integer index
+		//size_t e = g_emitterSorting[cmd][i] & 0x0000FFFF;
+		size_t e = i;
 
-		// clever bit - if this particle distance is further than the current distance from the camera, 
+		// clever bit - if this particle distance is further than the current distance from the camera,
 		// we need to render it now as the transparent object from Wicked will be rendered next and particle
 		// needs to be behind it!
 		if (e >= 0 && e < gpup_maxeffects && gpup_emitter[e].currentdistancefromcamera > fDistanceFromCamera)
@@ -705,11 +716,12 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 		}
 
 		// next time we are ready for next particle after this one
-		g_emitterCurrentIndex[cmd] = i + 1;
+		// TODO: CommandList is no longer an integer index
+		//g_emitterCurrentIndex[cmd] = i + 1;
 
 		if (e < 0 || e >= gpup_maxeffects || gpup_emitter[e].effectLoaded == 0 || gpup_emitter[e].effectVisible == 0) continue;
 
-		GraphicsDevice* device = wiRenderer::GetDevice();
+		GraphicsDevice* device = wiGraphics::GetDevice();
 		device->EventBegin("GPUParticles Draw", cmd);
 
 		gpup_emitter[e].mainVSConstantData.Proj = camera.Projection;
@@ -783,21 +795,21 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 		gpup_emitter[e].mainPSConstantData.agk_time = AGKTimer();
 
 		device->UpdateBuffer(&mainPSConstants, &gpup_emitter[e].mainPSConstantData, cmd, sizeof(sMainPSConstantData));
-		device->BindConstantBuffer(VS, &mainVSConstants, 0, cmd);
-		device->BindConstantBuffer(PS, &mainPSConstants, 1, cmd);
+		device->BindConstantBuffer(&mainVSConstants, 0, cmd);
+		device->BindConstantBuffer(&mainPSConstants, 1, cmd);
 
 		int numIndices = 0;
 		const GPUBuffer* vbs[1];
 		if (gpup_emitter[e].particles == 32)
 		{
 			vbs[0] = &mainVertexBufferObj1;
-			device->BindIndexBuffer(&mainIndexBufferObj1, INDEXFORMAT_16BIT, 0, cmd);
+			device->BindIndexBuffer(&mainIndexBufferObj1, IndexBufferFormat::UINT16, 0, cmd);
 			numIndices = mainIndexCountObj1;
 		}
 		else
 		{
 			vbs[0] = &mainVertexBufferObj0;
-			device->BindIndexBuffer(&mainIndexBufferObj0, INDEXFORMAT_16BIT, 0, cmd);
+			device->BindIndexBuffer(&mainIndexBufferObj0, IndexBufferFormat::UINT16, 0, cmd);
 			numIndices = mainIndexCountObj0;
 		}
 
@@ -805,23 +817,25 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 		device->BindVertexBuffers(vbs, 0, 1, &stride, 0, cmd);
 
 		// bind textures
-		device->BindResource(VS, &gpup_emitter[e].texPos[gpup_emitter[e].currImage], 0, cmd);
-		device->BindResource(VS, &gpup_emitter[e].gradient_1, 2, cmd);
-		device->BindResource(VS, &gpup_emitter[e].texSpeed[gpup_emitter[e].currImage], 5, cmd);
-		device->BindResource(PS, &gpup_emitter[e].imagex, 1, cmd);
-		device->BindResource(PS, &gpup_emitter[e].image1, 3, cmd);
-		device->BindResource(PS, &texDist2, 4, cmd);
+		device->BindResource(&gpup_emitter[e].texPos[gpup_emitter[e].currImage], 0, cmd);
+		device->BindResource(&gpup_emitter[e].gradient_1, 2, cmd);
+		device->BindResource(&gpup_emitter[e].texSpeed[gpup_emitter[e].currImage], 5, cmd);
+		device->BindResource(&gpup_emitter[e].imagex, 1, cmd);
+		device->BindResource(&gpup_emitter[e].image1, 3, cmd);
+		device->BindResource(&texDist2, 4, cmd);
 
 		// bind samplers
-		device->BindSampler(PS, &samplerLinear, 0, cmd);
-		device->BindSampler(PS, &samplerPoint, 1, cmd);
-		device->BindSampler(PS, &samplerLinearWrap, 2, cmd);
-		device->BindSampler(VS, &samplerPoint, 1, cmd);
+		device->BindSampler(&samplerLinear, 0, cmd);
+		device->BindSampler(&samplerPoint, 1, cmd);
+		device->BindSampler(&samplerLinearWrap, 2, cmd);
+		device->BindSampler(&samplerPoint, 1, cmd);
 
 		int ii = gpup_emitter[e].particles / 64;
 		if (gpup_emitter[e].particles == 32) ii = 1;
 
-		if (g_emitterSortingDrawCount[cmd][i] == 0)
+		// TODO: CommandList is no longer an integer index
+		//if (g_emitterSortingDrawCount[cmd][i] == 0)
+		if (true)
 		{
 			for (int i = 0; i < ii; i++)
 			{
@@ -840,7 +854,8 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 		device->EventEnd(cmd);
 
 		// increment draw count for this emitter
-		g_emitterSortingDrawCount[cmd][i]++;
+		// TODO: CommandList is no longer an integer index
+		//g_emitterSortingDrawCount[cmd][i]++;
 	}
 }
 
@@ -856,11 +871,13 @@ extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 
 	for( size_t i = 0; i < gpup_maxeffects; ++i )
 	{
-		size_t e = g_emitterSorting[cmd][i] & 0x0000FFFF;
+		// TODO: CommandList is no longer an integer index
+		//size_t e = g_emitterSorting[cmd][i] & 0x0000FFFF;
+		size_t e = i;
 
 		if ( e < 0 || e >= gpup_maxeffects || gpup_emitter[e].effectLoaded == 0 || gpup_emitter[e].effectVisible == 0 ) continue;
 
-		GraphicsDevice* device = wiRenderer::GetDevice();
+		GraphicsDevice* device = wiGraphics::GetDevice();
 		device->EventBegin("GPUParticles Draw", cmd);
 		
 		gpup_emitter[e].mainVSConstantData.Proj = camera.Projection;
@@ -935,21 +952,21 @@ extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 		
 		device->UpdateBuffer( &mainPSConstants, &gpup_emitter[e].mainPSConstantData, cmd, sizeof(sMainPSConstantData) );
 		
-		device->BindConstantBuffer( VS, &mainVSConstants, 0, cmd );
-		device->BindConstantBuffer( PS, &mainPSConstants, 1, cmd );
+		device->BindConstantBuffer(&mainVSConstants, 0, cmd );
+		device->BindConstantBuffer(&mainPSConstants, 1, cmd );
 
 		int numIndices = 0;
 		const GPUBuffer* vbs[ 1 ];
 		if ( gpup_emitter[e].particles == 32 ) 
 		{
 			vbs[ 0 ] = &mainVertexBufferObj1;
-			device->BindIndexBuffer( &mainIndexBufferObj1, INDEXFORMAT_16BIT, 0, cmd );
+			device->BindIndexBuffer( &mainIndexBufferObj1, IndexBufferFormat::UINT16, 0, cmd );
 			numIndices = mainIndexCountObj1;
 		}
 		else 
 		{
 			vbs[ 0 ] = &mainVertexBufferObj0;
-			device->BindIndexBuffer( &mainIndexBufferObj0, INDEXFORMAT_16BIT, 0, cmd );
+			device->BindIndexBuffer( &mainIndexBufferObj0, IndexBufferFormat::UINT16, 0, cmd );
 			numIndices = mainIndexCountObj0;
 		}
 
@@ -957,20 +974,20 @@ extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 		device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
 
 		// bind textures
-		device->BindResource( VS, &gpup_emitter[e].texPos[ gpup_emitter[e].currImage ], 0, cmd );
-		device->BindResource( VS, &gpup_emitter[e].gradient_1, 2, cmd );
-		device->BindResource( VS, &gpup_emitter[e].texSpeed[ gpup_emitter[e].currImage ], 5, cmd );
+		device->BindResource(&gpup_emitter[e].texPos[ gpup_emitter[e].currImage ], 0, cmd );
+		device->BindResource(&gpup_emitter[e].gradient_1, 2, cmd );
+		device->BindResource(&gpup_emitter[e].texSpeed[ gpup_emitter[e].currImage ], 5, cmd );
 		
-		device->BindResource( PS, &gpup_emitter[e].imagex, 1, cmd );
-		device->BindResource( PS, &gpup_emitter[e].image1, 3, cmd );
-		device->BindResource( PS, &texDist2, 4, cmd );
+		device->BindResource(&gpup_emitter[e].imagex, 1, cmd );
+		device->BindResource(&gpup_emitter[e].image1, 3, cmd );
+		device->BindResource(&texDist2, 4, cmd );
 	
 		// bind samplers
-		device->BindSampler( PS, &samplerLinear, 0, cmd );
-		device->BindSampler( PS, &samplerPoint, 1, cmd );
-		device->BindSampler( PS, &samplerLinearWrap, 2, cmd );
+		device->BindSampler(&samplerLinear, 0, cmd );
+		device->BindSampler(&samplerPoint, 1, cmd );
+		device->BindSampler(&samplerLinearWrap, 2, cmd );
 
-		device->BindSampler( VS, &samplerPoint, 1, cmd );
+		device->BindSampler(&samplerPoint, 1, cmd );
 
 		int ii = gpup_emitter[e].particles / 64;
 		if ( gpup_emitter[e].particles == 32 ) ii = 1;
@@ -1172,7 +1189,7 @@ void gpup_updatesettings( int enr )
 
 void gpup_addEmitter( int enr, int selcol )
 {	
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	gpup_emitter[enr].mainVSConstantData.globalsize.x = 1;
 	gpup_emitter[enr].mainVSConstantData.globalsize.y = 1;
@@ -1211,19 +1228,19 @@ void gpup_addEmitter( int enr, int selcol )
 
 	// render passes for above textures
 	RenderPassDesc renderDesc;
-	renderDesc.attachments = {{ RenderPassAttachment::RENDERTARGET, RenderPassAttachment::LOADOP_DONTCARE, &gpup_emitter[enr].texPos[0], -1 }};
+	renderDesc.attachments = {{ RenderPassAttachment::Type::RENDERTARGET, RenderPassAttachment::LoadOp::DONTCARE, gpup_emitter[enr].texPos[0], -1 }};
 	device->CreateRenderPass( &renderDesc, &gpup_emitter[enr].renderPassPos[0] );
 
-	renderDesc.attachments = {{ RenderPassAttachment::RENDERTARGET, RenderPassAttachment::LOADOP_DONTCARE, &gpup_emitter[enr].texPos[1], -1 }};
+	renderDesc.attachments = {{ RenderPassAttachment::Type::RENDERTARGET, RenderPassAttachment::LoadOp::DONTCARE, gpup_emitter[enr].texPos[1], -1 }};
 	device->CreateRenderPass( &renderDesc, &gpup_emitter[enr].renderPassPos[1] );
-	
-	renderDesc.attachments = {{ RenderPassAttachment::RENDERTARGET, RenderPassAttachment::LOADOP_DONTCARE, &gpup_emitter[enr].texSpeed[0], -1 }};
+
+	renderDesc.attachments = {{ RenderPassAttachment::Type::RENDERTARGET, RenderPassAttachment::LoadOp::DONTCARE, gpup_emitter[enr].texSpeed[0], -1 }};
 	device->CreateRenderPass( &renderDesc, &gpup_emitter[enr].renderPassSpeed[0] );
 
-	renderDesc.attachments = {{ RenderPassAttachment::RENDERTARGET, RenderPassAttachment::LOADOP_DONTCARE, &gpup_emitter[enr].texSpeed[1], -1 }};
+	renderDesc.attachments = {{ RenderPassAttachment::Type::RENDERTARGET, RenderPassAttachment::LoadOp::DONTCARE, gpup_emitter[enr].texSpeed[1], -1 }};
 	device->CreateRenderPass( &renderDesc, &gpup_emitter[enr].renderPassSpeed[1] );
 
-	renderDesc.attachments = {{ RenderPassAttachment::RENDERTARGET, RenderPassAttachment::LOADOP_DONTCARE, &gpup_emitter[enr].texNoise, -1 }};
+	renderDesc.attachments = {{ RenderPassAttachment::Type::RENDERTARGET, RenderPassAttachment::LoadOp::DONTCARE, gpup_emitter[enr].texNoise, -1 }};
 	device->CreateRenderPass( &renderDesc, &gpup_emitter[enr].renderPassNoise );
 			
 	gpup_emitter[enr].testpos = 0;
@@ -1601,7 +1618,7 @@ void gpup_spawnit( int enr, int spawnint )
 
 void  gpup_doit( int enr, CommandList cmd )
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	float emitter_time = gpup_settings.time * gpup_emitter[enr].emitter_animation_speed;
 
 	gpup_emitter[enr].speedConstantData.warp = emitter_time;
@@ -1637,9 +1654,9 @@ void  gpup_doit( int enr, CommandList cmd )
 		noiseConstantData.off.z = gpup_emitter[enr].noiseZaehler/360.0f;
 
 		device->UpdateBuffer( &noiseConstants, &noiseConstantData.off, cmd, sizeof(sNoiseConstantData) );
-		device->BindConstantBuffer( PS, &noiseConstants, 0, cmd );
+		device->BindConstantBuffer(&noiseConstants, 0, cmd );
 		device->BindPipelineState( &psoNoise, cmd );
-		device->BindResource( PS, &texNoiseOrig, 0, cmd );
+		device->BindResource(&texNoiseOrig, 0, cmd );
 		GPUParticlesDrawQuad( &gpup_emitter[enr].renderPassNoise, cmd );
 
 		// emittance stats
@@ -1745,22 +1762,22 @@ void  gpup_doit( int enr, CommandList cmd )
 
 			// render speed image
 			device->UpdateBuffer( &speedConstants, &gpup_emitter[enr].speedConstantData, cmd, sizeof(sSpeedConstantData) );
-			device->BindConstantBuffer( PS, &speedConstants, 0, cmd );
+			device->BindConstantBuffer(&speedConstants, 0, cmd );
 			device->BindPipelineState( &psoSpeed, cmd );
-			device->BindResource( PS, &gpup_emitter[enr].texPos[currImage], 0, cmd );
-			device->BindResource( PS, &gpup_emitter[enr].texSpeed[currImage], 1, cmd );
-			device->BindResource( PS, &gpup_emitter[enr].texNoise, 2, cmd );
-			device->BindResource( PS, &gpup_emitter[enr].t_field, 3, cmd );
+			device->BindResource(&gpup_emitter[enr].texPos[currImage], 0, cmd );
+			device->BindResource(&gpup_emitter[enr].texSpeed[currImage], 1, cmd );
+			device->BindResource(&gpup_emitter[enr].texNoise, 2, cmd );
+			device->BindResource(&gpup_emitter[enr].t_field, 3, cmd );
 			GPUParticlesDrawQuad( &gpup_emitter[enr].renderPassSpeed[nextImage], cmd );
 
 			gpup_emitter[enr].posConstantData.agk_time = AGKTimer();
 			
 			// render pos image
 			device->UpdateBuffer( &posConstants, &gpup_emitter[enr].posConstantData, cmd, sizeof(sPosConstantData) );
-			device->BindConstantBuffer( PS, &posConstants, 0, cmd );
+			device->BindConstantBuffer(&posConstants, 0, cmd );
 			device->BindPipelineState( &psoPos, cmd );
-			device->BindResource( PS, &gpup_emitter[enr].texPos[currImage], 0, cmd );
-			device->BindResource( PS, &gpup_emitter[enr].texSpeed[nextImage], 1, cmd );
+			device->BindResource(&gpup_emitter[enr].texPos[currImage], 0, cmd );
+			device->BindResource(&gpup_emitter[enr].texSpeed[nextImage], 1, cmd );
 			GPUParticlesDrawQuad( &gpup_emitter[enr].renderPassPos[nextImage], cmd );
 				
 			gpup_emitter[enr].currImage = nextImage;
@@ -1811,7 +1828,7 @@ int gpup_init()
 	if ( gpu_particles_initialised ) return 1;
 	gpu_particles_initialised = 1;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	AGKTimerInit();
 	RandomInit();
@@ -1822,14 +1839,14 @@ int gpup_init()
 	gpup_settings.spawnCount = 0;
 
 	// shaders
-	wiRenderer::LoadShader( VS, shaderQuadVS, "GPUP_QuadVS.cso" );
-	wiRenderer::LoadShader( VS, shaderMainVS, "GPUP_MainVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderQuadVS, "GPUP_QuadVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderMainVS, "GPUP_MainVS.cso" );
 
-	wiRenderer::LoadShader( PS, shaderQuadDefaultPS, "QuadDefaultPS.cso" );
-	wiRenderer::LoadShader( PS, shaderNoisePS, "GPUP_NoisePS.cso" );
-	wiRenderer::LoadShader( PS, shaderSpeedPS, "GPUP_SpeedPS.cso" );
-	wiRenderer::LoadShader( PS, shaderPosPS, "GPUP_PosPS.cso" );
-	wiRenderer::LoadShader( PS, shaderMainPS, "GPUP_MainPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderQuadDefaultPS, "QuadDefaultPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderNoisePS, "GPUP_NoisePS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderSpeedPS, "GPUP_SpeedPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderPosPS, "GPUP_PosPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderMainPS, "GPUP_MainPS.cso" );
 
 	// images	
 	if ( !GetFileExists("Files/effectbank/common/noise64.png") ) return -1;
@@ -1840,39 +1857,39 @@ int gpup_init()
 
 	// pipeline state
 	RasterizerState rasterDesc = {};
-	rasterDesc.FillMode = FILL_SOLID;
-	rasterDesc.CullMode = CULL_NONE;
-	rasterDesc.FrontCounterClockwise = true;
-	rasterDesc.DepthBias = 0;
-	rasterDesc.DepthBiasClamp = 0;
-	rasterDesc.SlopeScaledDepthBias = 0;
-	rasterDesc.DepthClipEnable = false;
-	rasterDesc.MultisampleEnable = false;
-	rasterDesc.AntialiasedLineEnable = false;
+	rasterDesc.fill_mode = FillMode::SOLID;
+	rasterDesc.cull_mode = CullMode::NONE;
+	rasterDesc.front_counter_clockwise = true;
+	rasterDesc.depth_bias = 0;
+	rasterDesc.depth_bias_clamp = 0;
+	rasterDesc.slope_scaled_depth_bias = 0;
+	rasterDesc.depth_clip_enable = false;
+	rasterDesc.multisample_enable = false;
+	rasterDesc.antialiased_line_enable = false;
 	
 	DepthStencilState depthDesc = {};
-	depthDesc.DepthEnable = true;
-	depthDesc.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
-	depthDesc.DepthFunc = COMPARISON_GREATER_EQUAL;
-	depthDesc.StencilEnable = false;
+	depthDesc.depth_enable = true;
+	depthDesc.depth_write_mask = DepthWriteMask::ZERO;
+	depthDesc.depth_func = ComparisonFunc::GREATER_EQUAL;
+	depthDesc.stencil_enable = false;
 		
 	BlendState blendDesc = {};
-	blendDesc.RenderTarget[0].BlendEnable = true;
-	blendDesc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
-	blendDesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-	blendDesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].SrcBlendAlpha = BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlendAlpha = BLEND_INV_SRC_ALPHA;
-	blendDesc.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_ALL;
-	blendDesc.IndependentBlendEnable = false;
+	blendDesc.render_target[0].blend_enable = true;
+	blendDesc.render_target[0].src_blend = Blend::SRC_ALPHA;
+	blendDesc.render_target[0].dest_blend = Blend::INV_SRC_ALPHA;
+	blendDesc.render_target[0].blend_op = BlendOp::ADD;
+	blendDesc.render_target[0].src_blend_alpha = Blend::ONE;
+	blendDesc.render_target[0].dest_blend_alpha = Blend::INV_SRC_ALPHA;
+	blendDesc.render_target[0].blend_op_alpha = BlendOp::ADD;
+	blendDesc.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
+	blendDesc.independent_blend_enable = false;
 	
 	// input layout
 	InputLayout layoutDesc;
 	layoutDesc.elements =
 	{
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 0, INPUT_PER_VERTEX_DATA },
-		{ "UV",       0, wiGraphics::FORMAT_R32G32_FLOAT,    0, 12, INPUT_PER_VERTEX_DATA },
+		{ "POSITION", 0, wiGraphics::Format::R32G32B32_FLOAT, 0, 0, InputClassification::PER_VERTEX_DATA },
+		{ "UV",       0, wiGraphics::Format::R32G32_FLOAT,    0, 12, InputClassification::PER_VERTEX_DATA },
 	};
 	
 	// pipeline state objects
@@ -1882,31 +1899,31 @@ int gpup_init()
 
 	// alpha
 	desc.il = &layoutDesc;
-	desc.pt = TRIANGLELIST;
+	desc.pt = PrimitiveTopology::TRIANGLELIST;
 	desc.rs = &rasterDesc;
 	desc.dss = &depthDesc;
 	desc.bs = &blendDesc;
 	device->CreatePipelineState( &desc, &psoAlpha );
 
 	// additive
-	blendDesc.RenderTarget[0].DestBlend = BLEND_ONE;
-	blendDesc.RenderTarget[0].SrcBlendAlpha = BLEND_ZERO;
-	blendDesc.RenderTarget[0].DestBlendAlpha = BLEND_ONE;
+	blendDesc.render_target[0].dest_blend = Blend::ONE;
+	blendDesc.render_target[0].src_blend_alpha = Blend::ZERO;
+	blendDesc.render_target[0].dest_blend_alpha = Blend::ONE;
 	device->CreatePipelineState( &desc, &psoAdd );
 
 	// opaque
-	depthDesc.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
-	blendDesc.RenderTarget[0].BlendEnable = false;
+	depthDesc.depth_write_mask = DepthWriteMask::ALL;
+	blendDesc.render_target[0].blend_enable = false;
 	device->CreatePipelineState( &desc, &psoOpaque );
 	
 	// Quad pipeline state
 	InputLayout layoutDescQuad;
 	layoutDescQuad.elements =
 	{
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32_FLOAT, 0, 0, INPUT_PER_VERTEX_DATA }		
+		{ "POSITION", 0, wiGraphics::Format::R32G32_FLOAT, 0, 0, InputClassification::PER_VERTEX_DATA }		
 	};
 	
-	depthDesc.DepthEnable = false;
+	depthDesc.depth_enable = false;
 	desc.vs = &shaderQuadVS;
 	desc.ps = &shaderQuadDefaultPS;
 	desc.il = &layoutDescQuad;
@@ -1923,90 +1940,90 @@ int gpup_init()
 
 	// constant buffers
 	GPUBufferDesc bd = {};
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(sPosConstantData);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &posConstants );
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(sPosConstantData);
+	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed
+	//bd.MiscFlags = 0; // removed
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &posConstants );
 
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(sSpeedConstantData);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &speedConstants );
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(sSpeedConstantData);
+	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed
+	//bd.MiscFlags = 0; // removed
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &speedConstants );
 
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(sNoiseConstantData);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &noiseConstants );
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(sNoiseConstantData);
+	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed
+	//bd.MiscFlags = 0; // removed
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &noiseConstants );
 
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(sMainVSConstantData);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &mainVSConstants );
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(sMainVSConstantData);
+	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed
+	//bd.MiscFlags = 0; // removed
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &mainVSConstants );
 
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(sMainPSConstantData);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &mainPSConstants );
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(sMainPSConstantData);
+	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed
+	//bd.MiscFlags = 0; // removed
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &mainPSConstants );
 
 	// 1024 index buffer (obj1)
 	mainIndexCountObj1 = 6144;
 	SubresourceData data = {};
-	data.pSysMem = gpup_1024_indices;
-	bd.ByteWidth = sizeof(unsigned short) * mainIndexCountObj1;
-	bd.BindFlags = BIND_INDEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &mainIndexBufferObj1 );
+	data.data_ptr = gpup_1024_indices;
+	bd.size = sizeof(unsigned short) * mainIndexCountObj1;
+	bd.bind_flags = BindFlag::INDEX_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed
+	//bd.MiscFlags = 0; // removed
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &mainIndexBufferObj1 );
 
 	// 4096 index buffer (obj0)
 	mainIndexCountObj0 = 24576;
-	data.pSysMem = gpup_4096_indices;
-	bd.ByteWidth = sizeof(unsigned short) * mainIndexCountObj0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &mainIndexBufferObj0 );
+	data.data_ptr = gpup_4096_indices;
+	bd.size = sizeof(unsigned short) * mainIndexCountObj0;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &mainIndexBufferObj0 );
 
 	// 1024 vertex buffer (obj1)
-	data.pSysMem = gpup_1024_vertices;
-	bd.ByteWidth = sizeof(GPUP_1024_Vertex) * 4096;
-	bd.BindFlags = BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &mainVertexBufferObj1 );
+	data.data_ptr = gpup_1024_vertices;
+	bd.size = sizeof(GPUP_1024_Vertex) * 4096;
+	bd.bind_flags = BindFlag::VERTEX_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed
+	//bd.MiscFlags = 0; // removed
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &mainVertexBufferObj1 );
 
 	// 4096 vertex buffer (obj0)
-	data.pSysMem = gpup_4096_vertices;
-	bd.ByteWidth = sizeof(GPUP_4096_Vertex) * 16384;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &mainVertexBufferObj0 );
+	data.data_ptr = gpup_4096_vertices;
+	bd.size = sizeof(GPUP_4096_Vertex) * 16384;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &mainVertexBufferObj0 );
 
 	// quad vertex buffer
-	data.pSysMem = g_VerticesQuad;
-	bd.ByteWidth = sizeof(VertexQuad) * 6;
-	bd.BindFlags = BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &quadVertexBuffer );
+	data.data_ptr = g_VerticesQuad;
+	bd.size = sizeof(VertexQuad) * 6;
+	bd.bind_flags = BindFlag::VERTEX_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed
+	//bd.MiscFlags = 0; // removed
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &quadVertexBuffer );
 
 	// samplers
 	SamplerDesc samplerDesc = {};
-	samplerDesc.AddressU = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_POINT;
+	samplerDesc.address_u = TextureAddressMode::CLAMP;
+	samplerDesc.address_v = TextureAddressMode::CLAMP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_POINT;
 	device->CreateSampler( &samplerDesc, &samplerPoint );
 
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
 	device->CreateSampler( &samplerDesc, &samplerLinear );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
 	device->CreateSampler( &samplerDesc, &samplerLinearWrap );
 
 	//InitGPUParticlesTest();
@@ -2551,7 +2568,7 @@ void gpup_update( float frameTime, wiGraphics::CommandList cmd )
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin( "GPUParticles Update", cmd );
 	
 	gpup_settings.tmr = frameTime * g_fSlowParticleTime;

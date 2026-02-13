@@ -20,22 +20,8 @@
 #define IMPORTER_TMP_IMAGE (g.importermenuimageoffset+48)
 
 // Enums
-enum MaterialComponentTEXTURESLOT
-{
-	BASECOLORMAP,
-	NORMALMAP,
-	SURFACEMAP,
-	EMISSIVEMAP,
-	DISPLACEMENTMAP,
-	OCCLUSIONMAP,
-	TRANSMISSIONMAP,
-	SHEENCOLORMAP,
-	SHEENROUGHNESSMAP,
-	CLEARCOATMAP,
-	CLEARCOATROUGHNESSMAP,
-	CLEARCOATNORMALMAP,
-	TEXTURESLOT_COUNT
-};
+// Use WickedEngine's MaterialComponent::TEXTURESLOT instead of standalone enum
+using MaterialComponentTEXTURESLOT = wiScene::MaterialComponent::TEXTURESLOT;
 
 // Globals
 bool g_bLoadedFBXModel = false;

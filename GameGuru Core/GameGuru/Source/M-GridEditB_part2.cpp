@@ -989,20 +989,20 @@ static void DisplayPerformanceData(bool* p_open)
 		ImGui::Text("Performance data\n");
 		ImGui::Separator();
 
-		int dc = wiProfiler::GetDrawCalls();
-		int dcs = wiProfiler::GetDrawCallsShadows();
-		int dct = wiProfiler::GetDrawCallsTransparent();
+		int dc = 0;
+		int dcs = 0;
+		int dct = 0;
 
-		int tris = wiProfiler::GetPolygons();
-		int trisShadow = wiProfiler::GetPolygonsShadows();
-		int trisTransparent = wiProfiler::GetPolygonsTransparent();
+		int tris = 0;
+		int trisShadow = 0;
+		int trisTransparent = 0;
 		
 		ImGui::Text("FPS: %.1f - Draw Calls: %5d, S:%5d, T:%5d", ImGui::GetIO().Framerate, dc, dcs, dct);
 		ImGui::Text("Triangles: %7d, S:%7d, T:%7d", tris, trisShadow, trisTransparent);
 
 		ImGui::Separator();
 
-		std::string profiler_data = wiProfiler::GetProfilerData();
+		std::string profiler_data = std::string("");
 		ImGui::Text(profiler_data.c_str());
 
 		ImGui::Separator();

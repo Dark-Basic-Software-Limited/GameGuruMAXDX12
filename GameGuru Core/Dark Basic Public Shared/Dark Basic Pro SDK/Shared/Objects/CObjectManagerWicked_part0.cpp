@@ -1989,4 +1989,4 @@ bool CObjectManager::SortVisibilityList ( void )
 	// all went okay
 	return true;
 }
-
+*/

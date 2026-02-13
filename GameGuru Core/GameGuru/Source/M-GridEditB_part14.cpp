@@ -1,4 +1,6 @@
-﻿int Get_t_gridentityobj(void)
+﻿#include <fstream>
+
+int Get_t_gridentityobj(void)
 {
 	return t.gridentityobj;
 }

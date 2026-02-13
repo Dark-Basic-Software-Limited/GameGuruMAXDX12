@@ -1970,3 +1970,4 @@ DARKSDK void DeleteAnimation( int animindex )
 		RunTimeError(RUNTIMEERROR_ANIMNUMBERILLEGAL);
 }
 
+#endif // DX11 - continued in part1

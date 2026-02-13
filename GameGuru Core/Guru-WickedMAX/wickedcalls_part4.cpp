@@ -1,4 +1,5 @@
-﻿//iAction = 1 Burst all. 2 = Pause. - 3 = Resume. - 4 = Restart - 5 - visible - 6 = not visible. - 7 = pause emit - 8 = resume emit
+﻿#ifdef WICKEDPARTICLESYSTEM // continued from wickedcalls_part3.cpp
+//iAction = 1 Burst all. 2 = Pause. - 3 = Resume. - 4 = Restart - 5 - visible - 6 = not visible. - 7 = pause emit - 8 = resume emit
 void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root)
 {
 
@@ -38,22 +39,22 @@ void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root)
 					}
 					case 5:
 					{
-						ec->SetVisible(true);
+						//ec->SetVisible(true); // SetVisible not in EmittedParticleSystem
 						break;
 					}
 					case 6:
 					{
-						ec->SetVisible(false);
+						//ec->SetVisible(false); // SetVisible not in EmittedParticleSystem
 						break;
 					}
 					case 7:
 					{
-						ec->SetEmitPaused(true);
+						//ec->SetEmitPaused(true); // SetEmitPaused not in EmittedParticleSystem
 						break;
 					}
 					case 8:
 					{
-						ec->SetEmitPaused(false);
+						//ec->SetEmitPaused(false); // SetEmitPaused not in EmittedParticleSystem
 						break;
 					}
 				}
@@ -148,7 +149,8 @@ void WickedCall_UpdateEmitters(void)
 
 		//PE: If bFollowCamera , find InDoor , OutDoor , UnderWater.
 		//PE: bFindFloor ONLY if ec->bFollowCamera
-		if (ec && (ec->bFindFloor || ec->bFollowCamera))
+		//if (ec && (ec->bFindFloor || ec->bFollowCamera)) // bFindFloor/bFollowCamera not in EmittedParticleSystem
+		if (false) // disabled: bFindFloor/bFollowCamera not in EmittedParticleSystem
 		{
 			HierarchyComponent* hier = scene.hierarchy.GetComponent(emitter);
 			if (hier)
@@ -171,7 +173,7 @@ void WickedCall_UpdateEmitters(void)
 						if (root_tranform)
 						{
 
-							if (ec->bFollowCamera)
+							if (false) //if (ec->bFollowCamera) // bFollowCamera not in EmittedParticleSystem
 							{
 								float fX, fY, fZ;
 								fX = CameraPositionX();
@@ -182,7 +184,7 @@ void WickedCall_UpdateEmitters(void)
 								root_tranform->Translate(XMFLOAT3(fX, fY, fZ));
 								root_tranform->UpdateTransform();
 							}
-							if (ec->bFindFloor && ec->bFollowCamera)
+							if (false) //if (ec->bFindFloor && ec->bFollowCamera) // bFindFloor/bFollowCamera not in EmittedParticleSystem
 							{
 								float fX = root_tranform->GetPosition().x;
 								float fZ = root_tranform->GetPosition().z;
@@ -298,10 +300,10 @@ uint32_t GetVisibleWEmitters( void )
 	{
 		Entity emitter = scene.emitters.GetEntity(i);
 		wiEmittedParticle& ec = scene.emitters[i];
-		if (!ec.IsVisible())
-			continue;
-		if (!ec.IsActive())
-			continue;
+		//if (!ec.IsVisible()) // IsVisible not in EmittedParticleSystem
+		//	continue;
+		//if (!ec.IsActive()) // IsActive not in EmittedParticleSystem
+		//	continue;
 		total_visible++;
 	}
 	return total_visible;
@@ -332,62 +334,63 @@ void WickedCall_SetShaderParameter(int obj, int parameter , float value)
 					if (pMeshMaterial->customShaderID >= 0)
 					{
 						bool bChanged = false;
-						if (parameter == 1)
-						{
-							if (value != pMeshMaterial->customShaderParam1)
-							{
-								pMeshMaterial->customShaderParam1 = value;
-								bChanged = true;
-							}
-						}
-						if (parameter == 2)
-						{
-							if (value != pMeshMaterial->customShaderParam2)
-							{
-								pMeshMaterial->customShaderParam2 = value;
-								bChanged = true;
-							}
-						}
-						if (parameter == 3)
-						{
-							if (value != pMeshMaterial->customShaderParam3)
-							{
-								pMeshMaterial->customShaderParam3 = value;
-								bChanged = true;
-							}
-						}
-						if (parameter == 4)
-						{
-							if (value != pMeshMaterial->customShaderParam4)
-							{
-								pMeshMaterial->customShaderParam4 = value;
-								bChanged = true;
-							}
-						}
-						if (parameter == 5)
-						{
-							if (value != pMeshMaterial->customShaderParam5)
-							{
-								pMeshMaterial->customShaderParam5 = value;
-								bChanged = true;
-							}
-						}
-						if (parameter == 6)
-						{
-							if (value != pMeshMaterial->customShaderParam6)
-							{
-								pMeshMaterial->customShaderParam6 = value;
-								bChanged = true;
-							}
-						}
-						if (parameter == 7)
-						{
-							if (value != pMeshMaterial->customShaderParam7)
-							{
-								pMeshMaterial->customShaderParam7 = value;
-								bChanged = true;
-							}
-						}
+						// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
+						//if (parameter == 1)
+						//{
+						//	if (value != pMeshMaterial->customShaderParam1)
+						//	{
+						//		pMeshMaterial->customShaderParam1 = value;
+						//		bChanged = true;
+						//	}
+						//}
+						//if (parameter == 2)
+						//{
+						//	if (value != pMeshMaterial->customShaderParam2)
+						//	{
+						//		pMeshMaterial->customShaderParam2 = value;
+						//		bChanged = true;
+						//	}
+						//}
+						//if (parameter == 3)
+						//{
+						//	if (value != pMeshMaterial->customShaderParam3)
+						//	{
+						//		pMeshMaterial->customShaderParam3 = value;
+						//		bChanged = true;
+						//	}
+						//}
+						//if (parameter == 4)
+						//{
+						//	if (value != pMeshMaterial->customShaderParam4)
+						//	{
+						//		pMeshMaterial->customShaderParam4 = value;
+						//		bChanged = true;
+						//	}
+						//}
+						//if (parameter == 5)
+						//{
+						//	if (value != pMeshMaterial->customShaderParam5)
+						//	{
+						//		pMeshMaterial->customShaderParam5 = value;
+						//		bChanged = true;
+						//	}
+						//}
+						//if (parameter == 6)
+						//{
+						//	if (value != pMeshMaterial->customShaderParam6)
+						//	{
+						//		pMeshMaterial->customShaderParam6 = value;
+						//		bChanged = true;
+						//	}
+						//}
+						//if (parameter == 7)
+						//{
+						//	if (value != pMeshMaterial->customShaderParam7)
+						//	{
+						//		pMeshMaterial->customShaderParam7 = value;
+						//		bChanged = true;
+						//	}
+						//}
 						if(bChanged)
 							pMeshMaterial->SetDirty();
 

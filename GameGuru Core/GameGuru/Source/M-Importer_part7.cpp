@@ -66,13 +66,14 @@
 					if (bValid)
 					{
 						edit_grideleprof->WEMaterial.customShaderID = pObjectMaterial->customShaderID;
-						edit_grideleprof->WEMaterial.customShaderParam1 = pObjectMaterial->customShaderParam1;
-						edit_grideleprof->WEMaterial.customShaderParam2 = pObjectMaterial->customShaderParam2;
-						edit_grideleprof->WEMaterial.customShaderParam3 = pObjectMaterial->customShaderParam3;
-						edit_grideleprof->WEMaterial.customShaderParam4 = pObjectMaterial->customShaderParam4;
-						edit_grideleprof->WEMaterial.customShaderParam5 = pObjectMaterial->customShaderParam5;
-						edit_grideleprof->WEMaterial.customShaderParam6 = pObjectMaterial->customShaderParam6;
-						edit_grideleprof->WEMaterial.customShaderParam7 = pObjectMaterial->customShaderParam7;
+						// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
+						edit_grideleprof->WEMaterial.customShaderParam1 = 0.0f; //pObjectMaterial->customShaderParam1;
+						edit_grideleprof->WEMaterial.customShaderParam2 = 0.0f; //pObjectMaterial->customShaderParam2;
+						edit_grideleprof->WEMaterial.customShaderParam3 = 0.0f; //pObjectMaterial->customShaderParam3;
+						edit_grideleprof->WEMaterial.customShaderParam4 = 0.0f; //pObjectMaterial->customShaderParam4;
+						edit_grideleprof->WEMaterial.customShaderParam5 = 0.0f; //pObjectMaterial->customShaderParam5;
+						edit_grideleprof->WEMaterial.customShaderParam6 = 0.0f; //pObjectMaterial->customShaderParam6;
+						edit_grideleprof->WEMaterial.customShaderParam7 = 0.0f; //pObjectMaterial->customShaderParam7;
 					}
 					sFrame* pFrame = pMesh->pFrameAttachedTo;
 					if (pFrame)
@@ -80,7 +81,7 @@
 						wiScene::ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 						if (object)
 						{
-							fRenderOrderBias = object->GetRenderOrderBiasDistance();
+							fRenderOrderBias = object->sort_priority;
 							edit_grideleprof->WEMaterial.fRenderOrderBias[iMeshIndex] = fRenderOrderBias;
 						}
 					}
@@ -499,13 +500,14 @@ void importer_set_all_material_shader_id(int shaderID,float p1, float p2, float 
 				if (bValid)
 				{
 					pMeshMaterial->customShaderID = shaderID;
-					pMeshMaterial->customShaderParam1 = p1;
-					pMeshMaterial->customShaderParam2 = p2;
-					pMeshMaterial->customShaderParam3 = p3;
-					pMeshMaterial->customShaderParam4 = p4;
-					pMeshMaterial->customShaderParam5 = p5;
-					pMeshMaterial->customShaderParam6 = p6;
-					pMeshMaterial->customShaderParam7 = p7;
+					// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
+					//pMeshMaterial->customShaderParam1 = p1;
+					//pMeshMaterial->customShaderParam2 = p2;
+					//pMeshMaterial->customShaderParam3 = p3;
+					//pMeshMaterial->customShaderParam4 = p4;
+					//pMeshMaterial->customShaderParam5 = p5;
+					//pMeshMaterial->customShaderParam6 = p6;
+					//pMeshMaterial->customShaderParam7 = p7;
 					pMeshMaterial->SetDirty();
 				}
 			}

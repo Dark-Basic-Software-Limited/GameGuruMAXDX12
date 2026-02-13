@@ -1212,7 +1212,7 @@ void physics_resumephysics ( void )
 	t.machineindependentphysicsupdate=t.machineindependentphysicsupdate+(t.ptimer2-t.ptimer1);
 }
 
-#include "..\..\..\WICKEDREPO\WickedEngine\wiProfiler.h"
+#include "wiProfiler.h"
 
 void physics_loop ( void )
 {

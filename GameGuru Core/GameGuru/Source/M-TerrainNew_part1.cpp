@@ -1050,7 +1050,7 @@ void imgui_terrain_loop_v3(void)
 						wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 						if (weather)
 						{
-							weather->tree_wind = t.visuals.tree_wind;
+							//weather->tree_wind = t.visuals.tree_wind; // REMOVED
 						}
 					}
 
@@ -1062,7 +1062,7 @@ void imgui_terrain_loop_v3(void)
 						wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 						if (weather)
 						{
-							weather->tree_sss = t.visuals.tree_sss; // t.visuals.tree_wind;
+							//weather->tree_sss = t.visuals.tree_sss; // REMOVED
 						}
 					}
 

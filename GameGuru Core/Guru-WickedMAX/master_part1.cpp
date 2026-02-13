@@ -42,7 +42,7 @@ void MasterRenderer::Load()
 	wiRenderer::SetTessellationEnabled(false); //PE: Tessellation dont work like this it has to be set per mesh, so have never worked.
 	setLightShaftsEnabled ( true );
 	setBloomThreshold ( 2.0f );
-	setBloomStrength( 1.0f );
+	//setBloomStrength( 1.0f );
 
 	// only activated when in TEST LEVEL
 	setEyeAdaptionEnabled( false );
@@ -54,8 +54,8 @@ void MasterRenderer::Load()
 	}
 
 	// for best terrain rendering
-	wiGraphics::SamplerDesc desc = wiRenderer::GetSampler ( SSLOT_OBJECTSHADER )->GetDesc ( );
-	desc.Filter = wiGraphics::FILTER_ANISOTROPIC;
+	wiGraphics::SamplerDesc desc = wiRenderer::GetSampler ( SAMPLER_OBJECTSHADER )->GetDesc ( );
+	desc.filter = wiGraphics::Filter::ANISOTROPIC;
 
 	// create cloudy sky by default
 	Scene weatherscene;
@@ -66,10 +66,10 @@ void MasterRenderer::Load()
 	weather.zenith = XMFLOAT3 ( 0.42f, 0.42f, 0.42f );
 	
 	//PE: We dont want any lightshaft from the sun. before we activate it.
-	weather.cloudiness = 0.0f;
-	weather.cloudSpeed = 0.0f;
+	weather.volumetricCloudParameters.layerFirst.coverageAmount = 0.0f;
+	weather.volumetricCloudParameters.layerFirst.windSpeed = 0.0f;
 	weather.fogStart = 0;
-	weather.fogEnd = 5000;
+	weather.fogDensity = 0;
 	weather.SetRealisticSky( true );
 
 	weather.SetVolumetricClouds( true );
@@ -130,7 +130,7 @@ void MasterRenderer::Update(float dt)
 			wiScene::CameraComponent &camera = wiScene::GetCamera();
 
 			// must be outside a render pass and only called once, even if VR renders twice
-			CommandList cmd = wiRenderer::GetDevice()->BeginCommandList();
+			CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
 			auto range = wiProfiler::BeginRangeCPU("Update - Particles");
 			gpup_update(dt, cmd);
 			wiProfiler::EndRange(range);
@@ -190,24 +190,25 @@ void MasterRenderer::ResizeBuffers(void)
 	//PE: Cant change if in VR that have another resolution.
 	if (!m_bUsingVR)
 	{
-		master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false); //GGREDUCED
+		// TODO: Set3DResolution removed, use resolutionScale instead
+		//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false); //GGREDUCED
 	}
 
 	//PE: Resizebuffers change FOV.
 
 	__super::ResizeBuffers();
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	HRESULT hr;
 
 	if (GetDepthStencil() != nullptr)
 	{
 		TextureDesc desc;
-		desc.Width = GetWidth3D();
-		desc.Height = GetHeight3D();
-		desc.SampleCount = 1;
-		desc.Format = FORMAT_R8_UNORM;
-		desc.BindFlags = BIND_RENDER_TARGET | BIND_SHADER_RESOURCE;
+		desc.width = GetPhysicalWidth();
+		desc.height = GetPhysicalHeight();
+		desc.sample_count = 1;
+		desc.format = Format::R8_UNORM;
+		desc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE;
 
 		//PE: Get the below error when using dx11 debug layer, so switched to resolving MSAA instead.
 		//D3D11 ERROR: ID3D11DeviceContext::Draw: The Shader Resource View dimension declared in the shader code (TEXTURE2D)
@@ -220,7 +221,7 @@ void MasterRenderer::ResizeBuffers(void)
 		hr = device->CreateTexture(&desc, nullptr, &rt_Outline_Blue);
 		if (getMSAASampleCount() > 1)
 		{
-			desc.SampleCount = getMSAASampleCount();
+			desc.sample_count = getMSAASampleCount();
 			hr = device->CreateTexture(&desc, nullptr, &rt_MSAAOutline);
 			hr = device->CreateTexture(&desc, nullptr, &rt_MSAAOutline_Red);
 			hr = device->CreateTexture(&desc, nullptr, &rt_MSAAOutline_Blue);
@@ -232,45 +233,45 @@ void MasterRenderer::ResizeBuffers(void)
 		RenderPassDesc desc;
 
 		//PE: New wickedrepo.
-		desc.attachments.push_back(RenderPassAttachment::RenderTarget(&rt_Outline, RenderPassAttachment::LOADOP_CLEAR));
+		desc.attachments.push_back(RenderPassAttachment::RenderTarget(rt_Outline, RenderPassAttachment::LoadOp::CLEAR));
 
-		//PE: We now use the MSAA desc.SampleCount so dont need to resolve it.
+		//PE: We now use the MSAA desc.sample_count so dont need to resolve it.
 		if (getMSAASampleCount() > 1)
 		{
-			desc.attachments[0].texture = &rt_MSAAOutline;
-			desc.attachments.push_back(RenderPassAttachment::Resolve(&rt_Outline));
+			desc.attachments[0].texture = rt_MSAAOutline;
+			desc.attachments.push_back(RenderPassAttachment::Resolve(rt_Outline));
 		}
-		
+
 		//wiTextureHelper::getBlack(),
-		
+
 		desc.attachments.push_back(
 			RenderPassAttachment::DepthStencil(
-				GetDepthStencil(),
-				RenderPassAttachment::LOADOP_LOAD,
-				RenderPassAttachment::STOREOP_STORE,
-				IMAGE_LAYOUT_DEPTHSTENCIL_READONLY,
-				IMAGE_LAYOUT_DEPTHSTENCIL_READONLY,
-				IMAGE_LAYOUT_DEPTHSTENCIL_READONLY
+				*GetDepthStencil(),
+				RenderPassAttachment::LoadOp::LOAD,
+				RenderPassAttachment::StoreOp::STORE,
+				ResourceState::DEPTHSTENCIL_READONLY,
+				ResourceState::DEPTHSTENCIL_READONLY,
+				ResourceState::DEPTHSTENCIL_READONLY
 			)
 		);
-		
+
 		hr = device->CreateRenderPass(&desc, &renderpass_Outline);
 		assert(hr);
 
-		desc.attachments[0].texture = &rt_Outline_Red;
+		desc.attachments[0].texture = rt_Outline_Red;
 		if (getMSAASampleCount() > 1)
 		{
-			desc.attachments[0].texture = &rt_MSAAOutline_Red;
-			desc.attachments[1].texture = &rt_Outline_Red;
+			desc.attachments[0].texture = rt_MSAAOutline_Red;
+			desc.attachments[1].texture = rt_Outline_Red;
 		}
 		hr = device->CreateRenderPass(&desc, &renderpass_Outline_Red);
 		assert(hr);
 
-		desc.attachments[0].texture = &rt_Outline_Blue;
+		desc.attachments[0].texture = rt_Outline_Blue;
 		if (getMSAASampleCount() > 1)
 		{
-			desc.attachments[0].texture = &rt_MSAAOutline_Blue;
-			desc.attachments[1].texture = &rt_Outline_Blue;
+			desc.attachments[0].texture = rt_MSAAOutline_Blue;
+			desc.attachments[1].texture = rt_Outline_Blue;
 	}
 		hr = device->CreateRenderPass(&desc, &renderpass_Outline_Blue);
 		assert(hr);
@@ -293,19 +294,19 @@ void Wicked_Render_Opaque_Scene(CommandList cmd)
 	{
 		if (bActivateStandaloneOutline && master_renderer->GetDepthStencil() != nullptr) //&& !translator.selected.empty())
 		{
-			GraphicsDevice* device = wiRenderer::GetDevice();
+			GraphicsDevice* device = wiGraphics::GetDevice();
 
 			XMFLOAT4 area;
 			bool ImGuiHook_GetScissorArea(float* pX1, float* pY1, float* pX2, float* pY2);
 			if (ImGuiHook_GetScissorArea(&area.x, &area.y, &area.z, &area.w) == true)
-				device->SetScissorArea(cmd, area);
+				//device->SetScissorArea(cmd, area);
 
 			wiRenderer::BindCommonResources(cmd);
 			XMFLOAT4 col = XMFLOAT4(0.8f, 0.8f, 0.8f, 0.8f);;
 			wiRenderer::Postprocess_Outline(rt_Outline, cmd, 0.1f, 0.8f, col);
 			device->EventEnd(cmd);
-			area = { 0, 0, (float)master.masterrenderer.GetWidth3D(), (float)master.masterrenderer.GetHeight3D() };
-			device->SetScissorArea(cmd, area);
+			area = { 0, 0, (float)master.masterrenderer.GetPhysicalWidth(), (float)master.masterrenderer.GetPhysicalHeight() };
+			//device->SetScissorArea(cmd, area);
 		}
 		return;
 	}
@@ -314,13 +315,13 @@ void Wicked_Render_Opaque_Scene(CommandList cmd)
 	{
 		if (master_renderer->GetDepthStencil() != nullptr) //&& !translator.selected.empty())
 		{
-			GraphicsDevice* device = wiRenderer::GetDevice();
+			GraphicsDevice* device = wiGraphics::GetDevice();
 
 			XMFLOAT4 area;
 			float thickness = fGetHighlightThickness();
 			bool ImGuiHook_GetScissorArea(float* pX1, float* pY1, float* pX2, float* pY2);
 			if (ImGuiHook_GetScissorArea(&area.x, &area.y, &area.z, &area.w) == true)
-				device->SetScissorArea(cmd, area);
+				//device->SetScissorArea(cmd, area);
 
 			wiRenderer::BindCommonResources(cmd);
 			XMFLOAT4 col = selectionColor;
@@ -338,8 +339,8 @@ void Wicked_Render_Opaque_Scene(CommandList cmd)
 			wiRenderer::Postprocess_Outline(rt_Outline_Blue, cmd, 0.1f, thickness, col);
 			device->EventEnd(cmd);
 
-			area = { 0, 0, (float)master.masterrenderer.GetWidth3D(), (float)master.masterrenderer.GetHeight3D() };
-			device->SetScissorArea(cmd, area);
+			area = { 0, 0, (float)master.masterrenderer.GetPhysicalWidth(), (float)master.masterrenderer.GetPhysicalHeight() };
+			//device->SetScissorArea(cmd, area);
 
 		}
 	}
@@ -353,9 +354,9 @@ void MasterRenderer::Compose(CommandList cmd) const
 	__super::Compose(cmd);
 }
 
-void MasterRenderer::Render( int mode ) const
+void MasterRenderer::Render() const
 {
-	__super::Render( mode );
+	__super::Render();
 }
 
 // moved into function so we can call it at the right time from within renderpath3D, just before 2D is rendered
@@ -381,24 +382,24 @@ void MasterRenderer::RenderOutlineHighlighers(CommandList cmd) const
 			// Selection outline:
 			if (GetDepthStencil() != nullptr)
 			{
-				GraphicsDevice* device = wiRenderer::GetDevice();
+				GraphicsDevice* device = wiGraphics::GetDevice();
 				CommandList cmd = device->BeginCommandList();
 
 				device->EventBegin("GGMax - Selection Outline Mask", cmd);
 
 				Viewport vp;
-				vp.Width = (float)rt_Outline.GetDesc().Width;
-				vp.Height = (float)rt_Outline.GetDesc().Height;
+				vp.width = (float)rt_Outline.GetDesc().width;
+				vp.height = (float)rt_Outline.GetDesc().height;
 				device->BindViewports(1, &vp, cmd);
 
 				wiImageParams fx;
 				fx.enableFullScreen();
 				fx.stencilComp = STENCILMODE::STENCILMODE_EQUAL;
-				fx.stencilRefMode = STENCILREFMODE_USER;
+				fx.stencilRefMode = wi::image::STENCILREFMODE_USER;
 
 				// Objects outline:
 				{
-					device->UnbindResources(TEXSLOT_ONDEMAND0, 1, cmd);
+					//device->UnbindResources(TEXSLOT_ONDEMAND0, 1, cmd);
 					device->RenderPassBegin(&renderpass_Outline, cmd);
 					// Draw solid blocks of selected objects
 					fx.stencilRef = EDITORSTENCILREF_HIGHLIGHT_OBJECT;
@@ -408,7 +409,7 @@ void MasterRenderer::RenderOutlineHighlighers(CommandList cmd) const
 
 				// Objects outline Red:
 				{
-					device->UnbindResources(TEXSLOT_ONDEMAND0, 1, cmd);
+					//device->UnbindResources(TEXSLOT_ONDEMAND0, 1, cmd);
 					device->RenderPassBegin(&renderpass_Outline_Red, cmd);
 					// Draw solid blocks of selected objects
 					fx.stencilRef = EDITORSTENCILREF_HIGHLIGHT_OBJECT_RED;
@@ -418,7 +419,7 @@ void MasterRenderer::RenderOutlineHighlighers(CommandList cmd) const
 
 				// Objects outline Blue:
 				{
-					device->UnbindResources(TEXSLOT_ONDEMAND0, 1, cmd);
+					//device->UnbindResources(TEXSLOT_ONDEMAND0, 1, cmd);
 					device->RenderPassBegin(&renderpass_Outline_Blue, cmd);
 					// Draw solid blocks of selected objects
 					fx.stencilRef = EDITORSTENCILREF_HIGHLIGHT_OBJECT_BLUE;
@@ -458,24 +459,24 @@ void MasterRenderer::RenderOutlineHighlighers(CommandList cmd) const
 
 			if (GetDepthStencil() != nullptr)
 			{
-				GraphicsDevice* device = wiRenderer::GetDevice();
+				GraphicsDevice* device = wiGraphics::GetDevice();
 				CommandList cmd = device->BeginCommandList();
 
 				device->EventBegin("GGMax - Selection Outline Mask", cmd);
 
 				Viewport vp;
-				vp.Width = (float)rt_Outline.GetDesc().Width;
-				vp.Height = (float)rt_Outline.GetDesc().Height;
+				vp.width = (float)rt_Outline.GetDesc().width;
+				vp.height = (float)rt_Outline.GetDesc().height;
 				device->BindViewports(1, &vp, cmd);
 
 				wiImageParams fx;
 				fx.enableFullScreen();
 				fx.stencilComp = STENCILMODE::STENCILMODE_EQUAL;
-				fx.stencilRefMode = STENCILREFMODE_USER;
+				fx.stencilRefMode = wi::image::STENCILREFMODE_USER;
 
 				// Objects outline:
 				{
-					device->UnbindResources(TEXSLOT_ONDEMAND0, 1, cmd);
+					//device->UnbindResources(TEXSLOT_ONDEMAND0, 1, cmd);
 					device->RenderPassBegin(&renderpass_Outline, cmd);
 					// Draw solid blocks of selected objects
 					fx.stencilRef = EDITORSTENCILREF_HIGHLIGHT_OBJECT;

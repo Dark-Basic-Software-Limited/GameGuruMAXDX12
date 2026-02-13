@@ -57,8 +57,8 @@ struct WickedLoaderState
 {
 	Scene* scene;
 	uint64_t storeMasterRootEntityIndex;
-	unordered_map<int, Entity> entityMap;  // node/frame -> entity
-	unordered_map<int, Entity> entityMeshMap;  // node/frame -> entity
+	std::unordered_map<int, Entity> entityMap;  // node/frame -> entity
+	std::unordered_map<int, Entity> entityMeshMap;  // node/frame -> entity
 };
 
 // Globals
@@ -183,18 +183,18 @@ void WickedCall_FreeImage(sImageList* pImage)
 			char pRealNameToDeleteFromWickedResource[MAX_PATH];
 			strcpy(pRealNameToDeleteFromWickedResource, pImage->pName);
 			GG_GetRealPath(pRealNameToDeleteFromWickedResource, 0);
-			wiResourceManager::FreeResource(pRealNameToDeleteFromWickedResource);
+			//wiResourceManager::FreeResource(pRealNameToDeleteFromWickedResource); // REMOVED - FreeResource no longer exists
 
 			// and then the string holding the name
 			delete pImage->pName;
 			pImage->pName = NULL;
 		}
-		if (pImage->image != NULL)
+		if (pImage->image.IsValid())
 		{
 			// free wicked resource
 			//wiResourceManager::Clear() <-- clears everything!!
 			//pImage->image.swap(); what frees all resources created with the wiResourceManager::Load call?
-			pImage->image = NULL;
+			pImage->image = {};
 			pImage->MasterObject = 0;
 		}
 	}
@@ -266,7 +266,7 @@ int WickedCall_FindImageIndexInList(std::string pFilenameToFind, LPSTR pFullRela
 	return iImageIndex;
 }
 uint32_t SetMasterObject = 0;
-void WickedCall_AddImageToList(std::shared_ptr<wiResource> image, eImageResType eType, std::string pFilenameRef, int iKbused)
+void WickedCall_AddImageToList(wiResource image, eImageResType eType, std::string pFilenameRef, int iKbused)
 {
 	sImageList newImage;
 	newImage.image = image;
@@ -298,7 +298,7 @@ void WickedCall_AddImageToList(std::shared_ptr<wiResource> image, eImageResType 
 
 int total_mem_from_load = 0;
 bool bCalledFromWickedLoadImage = false;
-std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoadIN, eImageResType eType)
+wiResource WickedCall_LoadImage(std::string pFilenameToLoadIN, eImageResType eType)
 {
 	//PE: Prevent dublicate textures even if using different names.
 	//PE: Scan all our images and make a text file including filename+CRC64 of the file.
@@ -307,7 +307,7 @@ std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoadIN, 
 	//PE: Below also lookup filename CRC64 and check against the g_imageList CRC64 to also reused image.
 	const int iLen = pFilenameToLoadIN.length();
 	if (iLen <= 4)
-		return NULL; //PE: We get this alot from DISPLACEMENTMAP ... 
+		return {}; //PE: We get this alot from DISPLACEMENTMAP ...
 
 	// when gdividetexturesize is 0, we are not using textures, so use a dummy texture (tests performance against using too LARGE a texture set)
 	std::string pFilenameToLoad = pFilenameToLoadIN;
@@ -316,7 +316,7 @@ std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoadIN, 
 		pFilenameToLoad = "editors\\gfx\\notexture.dds";
 	}
 
-	std::shared_ptr<wiResource> image = NULL;
+	wiResource image;
 	char pFullRelativeLocationFilename[MAX_PATH];
 	int iImageIndex = WickedCall_FindImageIndexInList(pFilenameToLoad,pFullRelativeLocationFilename);
 	if (iImageIndex != -1)
@@ -334,17 +334,17 @@ std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoadIN, 
 		|| strnicmp ( pRealFilenameToLoad + strlen(pRealFilenameToLoad) - 5, "\\.png", 5 ) == NULL )
 		{
 			// is not a filename that makes sense, reject load
-			return NULL;
+			return {};
 		}
 
 		//PE: Ignore all $NoName$_Color.png, alot of old dbo have this.
 		if (iLen >= 8 && pFilenameToLoad[0] == '$' && pFilenameToLoad[7] == '$')
 		{
-			return NULL;
+			return {};
 		}
 		if (iLen > 18 && pFilenameToLoad[iLen-11] == '$' && pFilenameToLoad[iLen - 18] == '$')
 		{
-			return NULL;
+			return {};
 		}
 
 		bool bFound = false;
@@ -424,7 +424,7 @@ std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoadIN, 
 		if( bFileExists )
 		{
 			// if not, load it
-			wiResourceManager::SetErrorCode(0);
+			//wiResourceManager::SetErrorCode(0); // REMOVED
 			DARKSDK int SMEMAvailable(int iMode);
 			int startmem = SMEMAvailable(1);
 
@@ -432,11 +432,11 @@ std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoadIN, 
 			std::vector<uint8_t> data;
 			if (wiHelper::FileRead(VirtualFilename, data))
 			{
-				uint32_t flag = 1 << 2; //IMPORT_CONVERT_TO_DDS
+				wiResourceManager::Flags flag = wiResourceManager::Flags::IMPORT_NORMALMAP;
 				image = wiResourceManager::Load(pFilenameToLoad, flag, data.data(), data.size());
 				data.clear();
 			}
-			if (image != NULL)
+			if (image.IsValid())
 			{
 				// add image list item
 				int endmem = SMEMAvailable(1);
@@ -446,15 +446,7 @@ std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoadIN, 
 			else
 			{
 				// image failed to load - no need to add to list
-				if (wiResourceManager::GetErrorCode() == 1)
-				{
-					if (g_bDisplayWarnings)
-					{
-						char pFriendlyMessage[MAX_PATH];
-						sprintf(pFriendlyMessage, "The DDS texture (%s) could not be loaded into MAX, likely an unknown or 24-bit format. Re-export the DDS as a 32-bit format.", pFilenameToLoad.c_str());
-						MessageBoxA(NULL, pFriendlyMessage, "TinyDDS Load Failure", MB_OK);
-					}
-				}
+				// wiResourceManager::GetErrorCode() removed
 			}
 		}
 
@@ -469,7 +461,7 @@ std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoadIN, 
 	return image;
 }
 
-std::shared_ptr<wiResource> WickedCall_LoadImage(std::string pFilenameToLoad)
+wiResource WickedCall_LoadImage(std::string pFilenameToLoad)
 {
 	return WickedCall_LoadImage(pFilenameToLoad, IMAGERES_LEVEL);
 }
@@ -703,17 +695,17 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 			mesh.subsets.back().materialID = pDBOMesh->wickedmaterialindex;
 			mesh.subsets.back().indexOffset = 0;
 			mesh.subsets.back().indexCount = (uint32_t)mesh.indices.size();
-			mesh.subsets.back().active = true;
+			//mesh.subsets.back().active = true; // REMOVED - MeshSubset.active no longer exists
 
-			mesh.lodlevels = 0; //PE: NEWLOD
+			mesh.subsets_per_lod = 0; //PE: NEWLOD
 			if (pDBOMesh->dwIndexCountLOD1 > 0)
 			{
-				mesh.lodlevels = 1;
+				mesh.subsets_per_lod = 1;
 				mesh.subsets.push_back(wiScene::MeshComponent::MeshSubset());
 				mesh.subsets.back().materialID = pDBOMesh->wickedmaterialindex;
 				mesh.subsets.back().indexOffset = mesh.indices.size();
 				mesh.subsets.back().indexCount = pDBOMesh->dwIndexCountLOD1;
-				mesh.subsets.back().active = false;
+				//mesh.subsets.back().active = false; // REMOVED
 
 				for (size_t i = 0; i < pDBOMesh->dwIndexCountLOD1; i += 3)
 				{
@@ -724,12 +716,12 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 			}
 			if (pDBOMesh->dwIndexCountLOD2 > 0)
 			{
-				mesh.lodlevels = 2;
+				mesh.subsets_per_lod = 2;
 				mesh.subsets.push_back(wiScene::MeshComponent::MeshSubset());
 				mesh.subsets.back().materialID = pDBOMesh->wickedmaterialindex;
 				mesh.subsets.back().indexOffset = mesh.indices.size();
 				mesh.subsets.back().indexCount = pDBOMesh->dwIndexCountLOD2;
-				mesh.subsets.back().active = false;
+				//mesh.subsets.back().active = false; // REMOVED
 
 				for (size_t i = 0; i < pDBOMesh->dwIndexCountLOD2; i += 3)
 				{
@@ -740,12 +732,12 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 			}
 			if (pDBOMesh->dwIndexCountLOD3 > 0)
 			{
-				mesh.lodlevels = 3;
+				mesh.subsets_per_lod = 3;
 				mesh.subsets.push_back(wiScene::MeshComponent::MeshSubset());
 				mesh.subsets.back().materialID = pDBOMesh->wickedmaterialindex;
 				mesh.subsets.back().indexOffset = mesh.indices.size();
 				mesh.subsets.back().indexCount = pDBOMesh->dwIndexCountLOD3;
-				mesh.subsets.back().active = false;
+				//mesh.subsets.back().active = false; // REMOVED
 
 				for (size_t i = 0; i < pDBOMesh->dwIndexCountLOD3; i += 3)
 				{
@@ -767,79 +759,12 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 			if (MAX_SUBAABB > 0 && bCanUseBVH && iCurrentObjectID > 50000 && iCurrentObjectID < 90000) //70000
 			{
 				//PE: Add BVH subAABBs too all subsets including lods.
-				for (auto& subset : mesh.subsets)
-				{
-					subset.subAABBactive = true;
-					subset.usedAABB = MAX_SUBAABB;
-
-					const size_t totalIndexCount = subset.indexCount;
-
-					const size_t totalTriangleCount = totalIndexCount / 3;
-					const size_t trianglesPerAABB = totalTriangleCount / MAX_SUBAABB;
-					const size_t remainderTriangles = totalTriangleCount % MAX_SUBAABB;
-
-					size_t currentOffset = subset.indexOffset;
-
-					for (size_t i = 0; i < MAX_SUBAABB; ++i)
-					{
-						size_t currentTriangleCount = trianglesPerAABB;
-
-						if (i == MAX_SUBAABB - 1)
-						{
-							currentTriangleCount += remainderTriangles;
-						}
-
-						subset.subAABB_index_offset[i] = currentOffset;
-						subset.subAABB_index_count[i] = currentTriangleCount * 3;
-
-						if (subset.subAABB_index_count[i] > 0)
-						{
-							AABB currentAABB;
-
-							for (size_t j = 0; j < subset.subAABB_index_count[i]; j += 3)
-							{
-								const uint32_t i0 = mesh.indices[currentOffset + j];
-								const uint32_t i1 = mesh.indices[currentOffset + j + 1];
-								const uint32_t i2 = mesh.indices[currentOffset + j + 2];
-
-								const XMFLOAT3& p0 = mesh.vertex_positions[i0];
-								const XMFLOAT3& p1 = mesh.vertex_positions[i1];
-								const XMFLOAT3& p2 = mesh.vertex_positions[i2];
-
-								const XMFLOAT3 minPos = {
-									min(p0.x, min(p1.x, p2.x)),
-									min(p0.y, min(p1.y, p2.y)),
-									min(p0.z, min(p1.z, p2.z))
-								};
-								const XMFLOAT3 maxPos = {
-									max(p0.x, max(p1.x, p2.x)),
-									max(p0.y, max(p1.y, p2.y)),
-									max(p0.z, max(p1.z, p2.z))
-								};
-								const AABB triangleAABB(minPos, maxPos);
-
-								currentAABB = currentAABB.Merge(currentAABB,triangleAABB);
-							}
-							subset.subAABB[i] = currentAABB;
-						}
-						currentOffset += subset.subAABB_index_count[i];
-					}
-				}
+				// REMOVED - subAABB members no longer exist on MeshSubset
 			}
 			else
 			#endif
 			{
-				for (auto& subset : mesh.subsets)
-				{
-					subset.subAABBactive = false;
-					subset.usedAABB = 0;
-
-					for (size_t i = 0; i < MAX_SUBAABB; ++i)
-					{
-						subset.subAABB_index_offset[i] = 0;
-						subset.subAABB_index_count[i] = 0;
-					}
-				}
+				// REMOVED - subAABB members no longer exist on MeshSubset
 			}
 
 			// LB: ensure culling mode is set for mesh
@@ -1008,79 +933,8 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 			AnimationComponent& animationcomponent = pScene->animations.Create(animentity);
 			pAnimSet->wickedanimentityindex = animentity;
 
-			animationcomponent.objectIndex = 0;
-			if (pstate->entityMeshMap.size() > 0)
-			{
-				//PE: TODO better way to indentify supported animation culling objects needed ?
-				DWORD objid = pObject->dwObjectNumber;
-				int masterId = -1;
-				if (t.tupdatee > 0)
-				{
-					if(t.tupdatee < g.entityelementlist)
-						masterId = t.entityelement[t.tupdatee].bankindex;
-				}
-				if (masterId < 1 && objid > 70000)
-				{
-					//PE: Locate object.
-					for (int i = 0; i < g.entityelementlist; i++)
-					{
-						if (t.entityelement[i].obj == objid)
-						{
-							masterId = t.entityelement[i].bankindex;
-							break;
-						}
-					}
-				}
-				else if (masterId < 1 && objid > 50000 && objid < 60000)
-				{
-					masterId = objid - 50000;
-				}
-				if (masterId > 0)
-				{
-					if (masterId > 0 && masterId < t.entityprofile.size())
-					{
-						if (t.entityprofile[masterId].ischaracter && (pstate->entityMeshMap.size() >= 4 && pstate->entityMeshMap.size() <= 6))
-						{
-							//PE: CCP Map all animations to first mesh for culling.
-							animationcomponent.objectIndex = pstate->entityMeshMap.begin()->second;
-						}
-					}
-				}
-				if (animationcomponent.objectIndex == 0 && objid != 50000)
-				{
-					//PE: Only 1 mesh for culling will work.
-					if (pstate->entityMeshMap.size() == 1)
-					{
-						animationcomponent.objectIndex = pstate->entityMeshMap.begin()->second;
-					}
-					else
-					{
-						//PE: Check for LOD and hidden meshes.
-						int iTotalVisible = 0;
-						int iVisibleIndex = 0;
-						for (unordered_map<int, Entity>::iterator it = pstate->entityMeshMap.begin(); it != pstate->entityMeshMap.end(); ++it)
-						{
-							ObjectComponent* object = wiScene::GetScene().objects.GetComponent(it->second);
-							NameComponent* name = wiScene::GetScene().names.GetComponent(it->second);
-							bool bThisLODWillBeHidden = false;
-							if(name && pestrcasestr(name->name.c_str(), "LOD_") && !pestrcasestr(name->name.c_str(), "LOD_0"))
-								bThisLODWillBeHidden = true;
-							if (object)
-							{
-								if (!bThisLODWillBeHidden && object->IsRenderable())
-								{
-									iTotalVisible++;
-									iVisibleIndex = it->second;
-								}
-							}
-						}
-						if (iTotalVisible == 1 && iVisibleIndex > 0)
-						{
-							animationcomponent.objectIndex = iVisibleIndex;
-						}
-					}
-				}
-			}
+			//animationcomponent.objectIndex = 0; // REMOVED - objectIndex no longer exists
+			// REMOVED - animation culling via objectIndex no longer supported
 			// increases as add more anim data (all goes into the above animationcomponent)
 			int iSamplerAndChannelCount = 0;
 
@@ -1288,10 +1142,10 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 							if (i == 2) animationcomponent.channels[iChannelOffset].path = AnimationComponent::AnimationChannel::Path::SCALE;
 
 							// new features of the wicked animation system
-							animationcomponent.channels[iChannelOffset].iUsePreFrame = 0;
-							animationcomponent.channels[iChannelOffset].vPreFrameScale = XMVectorSet(1, 1, 1, 0);
-							animationcomponent.channels[iChannelOffset].qPreFrameRotation = XMQuaternionRotationRollPitchYaw(0, 0, 0);
-							animationcomponent.channels[iChannelOffset].vPreFrameTranslation = XMVectorSet(0, 0, 0, 0);
+							//animationcomponent.channels[iChannelOffset].iUsePreFrame = 0; // REMOVED
+							//animationcomponent.channels[iChannelOffset].vPreFrameScale = XMVectorSet(1, 1, 1, 0); // REMOVED
+							//animationcomponent.channels[iChannelOffset].qPreFrameRotation = XMQuaternionRotationRollPitchYaw(0, 0, 0); // REMOVED
+							//animationcomponent.channels[iChannelOffset].vPreFrameTranslation = XMVectorSet(0, 0, 0, 0); // REMOVED
 							int iThisSamplerOffset = animationcomponent.channels[iChannelOffset].samplerIndex;
 
 							// finally store channel and sampler offsets for this animation item
@@ -1453,8 +1307,8 @@ void WickedCall_AddObject ( sObject* pObject )
 										if (object)
 										{
 											//pDBOMesh->pFrameAttachedTo->wickedobjindex
-											object->SetLOD(true);
-											object->SetLodDistance(pDBOMesh->iReservedForFuture);
+											//object->SetLOD(true); // REMOVED
+											//object->SetLodDistance(pDBOMesh->iReservedForFuture); // REMOVED
 										}
 									}
 								}
@@ -1555,7 +1409,7 @@ void WickedCall_SetObjectSpeed(sObject* pObject, float fSpeed)
 			if (animationcomponent)
 			{
 				// not all animation entries have data (FBX imports can have empty animation sets!)
-				animationcomponent->SetSpeed(fSpeed*50); //PE: (ORG:50) Need to adjust this to fit old speed.
+				animationcomponent->speed = fSpeed*50; //PE: (ORG:50) Need to adjust this to fit old speed.
 			}
 		}
 	}
@@ -1596,7 +1450,7 @@ void WickedCall_CheckAnimationDone(sObject* pObject)
 						//PE: Must make sure we are set at the last frame.
 						//PE: Fix - https://thegamecreators.teamwork.com/index.cfm#/tasks/21003817?c=10406263 ,
 						animationcomponent->timer = fEndFrame;
-						animationcomponent->SetUpdateOnce();
+						//animationcomponent->SetUpdateOnce(); // REMOVED
 					}
 				}
 			}
@@ -1627,7 +1481,7 @@ void WickedCall_SetAnimationLerpFactor (sObject* pObject)
 		AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 		if (animationcomponent)
 		{
-			if (animationcomponent->updateonce == false)
+			//if (animationcomponent->updateonce == false) // REMOVED
 			{
 				animationcomponent->amount = pObject->fAnimInterp;
 			}
@@ -1653,7 +1507,7 @@ void WickedCall_PlayObject(sObject* pObject, float fStart, float fEnd, bool bLoo
 					animationcomponent->end = fEnd;
 				}
 				animationcomponent->timer = fStart;
-				if (animationcomponent->updateonce == false)
+				//if (animationcomponent->updateonce == false) // REMOVED
 				{
 					animationcomponent->amount = pObject->fAnimInterp;
 				}
@@ -1673,7 +1527,7 @@ void WickedCall_InstantObjectFrameUpdate(sObject* pObject)
 		AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 		if (animationcomponent)
 		{
-			animationcomponent->updateonce = true;
+			//animationcomponent->updateonce = true; // REMOVED
 			animationcomponent->amount = 1;
 		}
 	}
@@ -1722,7 +1576,7 @@ void WickedCall_SetObjectFrame(sObject* pObject, float fFrame)
 				animationcomponent->SetLooped(false);
 				animationcomponent->Stop();
 				animationcomponent->timer = fFrame;
-				animationcomponent->SetUpdateOnce();
+				//animationcomponent->SetUpdateOnce(); // REMOVED
 			}
 		}
 	}
@@ -1740,7 +1594,7 @@ void WickedCall_SetObjectFrameEx(sObject* pObject, float fFrame)
 			if (animationcomponent)
 			{
 				animationcomponent->timer = fFrame;
-				animationcomponent->SetUpdateOnce();
+				//animationcomponent->SetUpdateOnce(); // REMOVED
 			}
 		}
 	}

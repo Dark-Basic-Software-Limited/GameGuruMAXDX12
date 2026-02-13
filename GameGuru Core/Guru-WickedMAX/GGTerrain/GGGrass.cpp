@@ -3,12 +3,13 @@
 
 #include "GGGrass.h"
 
+#include "WickedEngine.h"
 #include "wiRenderer.h"
 #include "wiProfiler.h"
 #include "wiInput.h"
 
 #include "CFileC.h"
-#include "Utility/tinyddsloader.h"
+//#include "Utility/dds.h" // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
 
 #include "master.h"
 
@@ -412,12 +413,12 @@ struct GrassChunk
 		{
 			GPUBufferDesc bufferDesc = {};
 			SubresourceData data = {};
-			data.pSysMem = pInstances;
-			bufferDesc.ByteWidth = sizeof(InstanceGrass) * numValid;
-			bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-			bufferDesc.CPUAccessFlags = 0;
-			bufferDesc.MiscFlags = 0;
-			wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstances );
+			data.data_ptr = pInstances;
+			bufferDesc.size = sizeof(InstanceGrass) * numValid;
+			bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
+			//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+			bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstances );
 		}
 
 		return 1;
@@ -471,98 +472,100 @@ Sampler samplerTrilinearClamp;
 Sampler samplerTrilinearWrap;
 Sampler samplerPointWrap;
 
+// TODO: DX12 - tinyddsloader removed, rewrite DDS loading
+#if 0
 wiGraphics::FORMAT ConvertDDSFormat( tinyddsloader::DDSFile::DXGIFormat format )
 {
 	switch (format)
 	{
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_Float: return FORMAT_R32G32B32A32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_UInt: return FORMAT_R32G32B32A32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_SInt: return FORMAT_R32G32B32A32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_Float: return FORMAT_R32G32B32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_UInt: return FORMAT_R32G32B32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_SInt: return FORMAT_R32G32B32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_Float: return FORMAT_R16G16B16A16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UNorm: return FORMAT_R16G16B16A16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UInt: return FORMAT_R16G16B16A16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SNorm: return FORMAT_R16G16B16A16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SInt: return FORMAT_R16G16B16A16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_Float: return FORMAT_R32G32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_UInt: return FORMAT_R32G32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_SInt: return FORMAT_R32G32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UNorm: return FORMAT_R10G10B10A2_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UInt: return FORMAT_R10G10B10A2_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R11G11B10_Float: return FORMAT_R11G11B10_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8X8_UNorm: return FORMAT_B8G8R8A8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm: return FORMAT_B8G8R8A8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm_SRGB: return FORMAT_B8G8R8A8_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm: return FORMAT_R8G8B8A8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm_SRGB: return FORMAT_R8G8B8A8_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UInt: return FORMAT_R8G8B8A8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SNorm: return FORMAT_R8G8B8A8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SInt: return FORMAT_R8G8B8A8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_Float: return FORMAT_R16G16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_UNorm: return FORMAT_R16G16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_UInt: return FORMAT_R16G16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_SNorm: return FORMAT_R16G16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_SInt: return FORMAT_R16G16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::D32_Float: return FORMAT_D32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_Float: return FORMAT_R32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_UInt: return FORMAT_R32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_SInt: return FORMAT_R32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_UNorm: return FORMAT_R8G8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_UInt: return FORMAT_R8G8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_SNorm: return FORMAT_R8G8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_SInt: return FORMAT_R8G8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_Float: return FORMAT_R16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::D16_UNorm: return FORMAT_D16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_UNorm: return FORMAT_R16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_UInt: return FORMAT_R16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_SNorm: return FORMAT_R16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_SInt: return FORMAT_R16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_UNorm: return FORMAT_R8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_UInt: return FORMAT_R8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_SNorm: return FORMAT_R8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_SInt: return FORMAT_R8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::A8_UNorm: return FORMAT_R8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm: return FORMAT_BC1_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm_SRGB: return FORMAT_BC1_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm: return FORMAT_BC2_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm_SRGB: return FORMAT_BC2_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm: return FORMAT_BC3_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm_SRGB: return FORMAT_BC3_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC4_UNorm: return FORMAT_BC4_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC4_SNorm: return FORMAT_BC4_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC5_UNorm: return FORMAT_BC5_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC5_SNorm: return FORMAT_BC5_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm: return FORMAT_BC7_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm_SRGB: return FORMAT_BC7_UNORM_SRGB; 
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_Float: return FORMAT_R32G32B32A32_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_UInt: return FORMAT_R32G32B32A32_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_SInt: return FORMAT_R32G32B32A32_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_Float: return FORMAT_R32G32B32_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_UInt: return FORMAT_R32G32B32_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_SInt: return FORMAT_R32G32B32_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_Float: return FORMAT_R16G16B16A16_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UNorm: return FORMAT_R16G16B16A16_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UInt: return FORMAT_R16G16B16A16_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SNorm: return FORMAT_R16G16B16A16_SNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SInt: return FORMAT_R16G16B16A16_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32_Float: return FORMAT_R32G32_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32_UInt: return FORMAT_R32G32_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32G32_SInt: return FORMAT_R32G32_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UNorm: return FORMAT_R10G10B10A2_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UInt: return FORMAT_R10G10B10A2_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R11G11B10_Float: return FORMAT_R11G11B10_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8X8_UNorm: return FORMAT_B8G8R8A8_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm: return FORMAT_B8G8R8A8_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm_SRGB: return FORMAT_B8G8R8A8_UNORM_SRGB;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm: return FORMAT_R8G8B8A8_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm_SRGB: return FORMAT_R8G8B8A8_UNORM_SRGB;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UInt: return FORMAT_R8G8B8A8_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SNorm: return FORMAT_R8G8B8A8_SNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SInt: return FORMAT_R8G8B8A8_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16_Float: return FORMAT_R16G16_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16_UNorm: return FORMAT_R16G16_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16_UInt: return FORMAT_R16G16_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16_SNorm: return FORMAT_R16G16_SNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R16G16_SInt: return FORMAT_R16G16_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::D32_Float: return FORMAT_D32_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32_Float: return FORMAT_R32_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32_UInt: return FORMAT_R32_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R32_SInt: return FORMAT_R32_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8_UNorm: return FORMAT_R8G8_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8_UInt: return FORMAT_R8G8_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8_SNorm: return FORMAT_R8G8_SNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R8G8_SInt: return FORMAT_R8G8_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R16_Float: return FORMAT_R16_FLOAT;
+		case tinyddsloader::DDSFile::DXGIFormat::D16_UNorm: return FORMAT_D16_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R16_UNorm: return FORMAT_R16_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R16_UInt: return FORMAT_R16_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R16_SNorm: return FORMAT_R16_SNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R16_SInt: return FORMAT_R16_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R8_UNorm: return FORMAT_R8_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R8_UInt: return FORMAT_R8_UINT;
+		case tinyddsloader::DDSFile::DXGIFormat::R8_SNorm: return FORMAT_R8_SNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::R8_SInt: return FORMAT_R8_SINT;
+		case tinyddsloader::DDSFile::DXGIFormat::A8_UNorm: return FORMAT_R8_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm: return FORMAT_BC1_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm_SRGB: return FORMAT_BC1_UNORM_SRGB;
+		case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm: return FORMAT_BC2_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm_SRGB: return FORMAT_BC2_UNORM_SRGB;
+		case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm: return FORMAT_BC3_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm_SRGB: return FORMAT_BC3_UNORM_SRGB;
+		case tinyddsloader::DDSFile::DXGIFormat::BC4_UNorm: return FORMAT_BC4_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC4_SNorm: return FORMAT_BC4_SNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC5_UNorm: return FORMAT_BC5_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC5_SNorm: return FORMAT_BC5_SNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm: return FORMAT_BC7_UNORM;
+		case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm_SRGB: return FORMAT_BC7_UNORM_SRGB;
 		default:
-			assert(0); // incoming format is not supported 
+			assert(0); // incoming format is not supported
 			return FORMAT_UNKNOWN;
 	}
 }
 
-void GGGrass_LoadTextureDDS( const char* filename, Texture* tex ) 
-{ 
+void GGGrass_LoadTextureDDS( const char* filename, Texture* tex )
+{
 	if (!gggrass_initialised) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
 	char filePath[ MAX_PATH ];
 	strcpy_s( filePath, MAX_PATH, filename );
 	GG_GetRealPath( filePath, 0 );
-	
+
 	tinyddsloader::DDSFile dds;
 	auto result = dds.Load( filePath );
 
 	if (result != tinyddsloader::Result::Success) return;
-	
+
 	TextureDesc desc;
 	desc.ArraySize = 1;
 	desc.BindFlags = BIND_SHADER_RESOURCE;
 	desc.CPUAccessFlags = 0;
-	desc.Width = dds.GetWidth();
-	desc.Height = dds.GetHeight();
+	desc.width = dds.GetWidth();
+	desc.height = dds.GetHeight();
 	desc.Depth = dds.GetDepth();
 	desc.MipLevels = dds.GetMipCount();
 	desc.ArraySize = dds.GetArraySize();
@@ -570,7 +573,7 @@ void GGGrass_LoadTextureDDS( const char* filename, Texture* tex )
 	desc.Usage = USAGE_IMMUTABLE;
 	desc.layout = IMAGE_LAYOUT_SHADER_RESOURCE;
 	desc.Format = ConvertDDSFormat( dds.GetFormat() );
-		
+
 	std::vector<SubresourceData> InitData;
 	for (uint32_t arrayIndex = 0; arrayIndex < desc.ArraySize; ++arrayIndex)
 	{
@@ -584,7 +587,7 @@ void GGGrass_LoadTextureDDS( const char* filename, Texture* tex )
 			InitData.push_back(subresourceData);
 		}
 	}
-	
+
 	auto dim = dds.GetTextureDimension();
 	switch (dim)
 	{
@@ -596,37 +599,40 @@ void GGGrass_LoadTextureDDS( const char* filename, Texture* tex )
 
 	device->CreateTexture( &desc, InitData.data(), tex );
 }
+#endif
 
-void GGGrass_CreateEmptyTexture( int width, int height, int mipLevels, int levels, FORMAT format, Texture* tex ) 
+void GGGrass_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex )
 {
 	if (!gggrass_initialised) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_SHADER_RESOURCE;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = mipLevels;
-	texDesc.ArraySize = levels;
-	texDesc.Format = format;
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = mipLevels;
+	texDesc.array_size = levels;
+	texDesc.format = format;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = width;
+	texDesc.height = height;
 
 	device->CreateTexture( &texDesc, nullptr, tex );
 	device->SetName( tex, "tex" );
 }
 
-void GGGrass_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32_t arraySlice ) 
-{ 
+// TODO: DX12 - tinyddsloader removed, rewrite DDS loading
+#if 0
+void GGGrass_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32_t arraySlice )
+{
 	if (!gggrass_initialised) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
 	char filePath[ MAX_PATH ];
 	strcpy_s( filePath, MAX_PATH, filename );
 	GG_GetRealPath( filePath, 0 );
-	
+
 	tinyddsloader::DDSFile dds;
 	auto result = dds.Load( filePath );
 
@@ -634,13 +640,25 @@ void GGGrass_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32
 
 	uint32_t maxMip = dds.GetMipCount();
 	if ( maxMip > tex->desc.MipLevels ) maxMip = tex->desc.MipLevels;
-	
+
 	std::vector<SubresourceData> InitData;
 	for( uint32_t mip = 0; mip < maxMip; ++mip )
 	{
-		auto imageData = dds.GetImageData(mip, 0);		
+		auto imageData = dds.GetImageData(mip, 0);
 		device->UpdateTexture( tex, mip, arraySlice, 0, imageData->m_mem, imageData->m_memPitch, -1 );
 	}
+}
+#endif
+
+// TODO: DX12 - tinyddsloader removed, stub functions until DDS loading is rewritten
+void GGGrass_LoadTextureDDS( const char* filename, Texture* tex )
+{
+	// stub - DDS loading disabled
+}
+
+void GGGrass_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32_t arraySlice )
+{
+	// stub - DDS loading disabled
 }
 
 // only call this when grass heights need to be updated, e.g. when the terrain has changed
@@ -778,16 +796,16 @@ void GGGrass_Init()
 	gggrass_initialised = 1;
 	GrassTimerInit();
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
-	wiRenderer::LoadShader( VS, shaderGrassVS, "GGGrassVS.cso" );
-	wiRenderer::LoadShader( PS, shaderGrassPS, "GGGrassPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderGrassVS, "GGGrassVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderGrassPS, "GGGrassPS.cso" );
 									  
-	wiRenderer::LoadShader( VS, shaderGrassPrepassVS, "GGGrassPrepassVS.cso" );
-	wiRenderer::LoadShader( PS, shaderGrassPrepassPS, "GGGrassPrepassPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderGrassPrepassVS, "GGGrassPrepassVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderGrassPrepassPS, "GGGrassPrepassPS.cso" );
 
 	GGGrass_LoadTextureDDS("Files/treebank/noise.dds", &texNoise);
-	GGGrass_CreateEmptyTexture(1024, 1024, 9, GGGRASS_NUM_TYPES, FORMAT_BC3_UNORM_SRGB, &texGrass);
+	GGGrass_CreateEmptyTexture(1024, 1024, 9, GGGRASS_NUM_TYPES, Format::BC3_UNORM_SRGB, &texGrass);
 
 #ifdef ONLYLOADWHENUSED
 	for (uint32_t i = 0; i < GGGRASS_NUM_TYPES; i++)
@@ -821,42 +839,42 @@ void GGGrass_Init()
 
 	// raster state
 	RasterizerState rastState = {};
-	rastState.FillMode = FILL_SOLID;
-	rastState.CullMode = CULL_NONE;
-	rastState.FrontCounterClockwise = true;
-	rastState.DepthBias = 0;
-	rastState.DepthBiasClamp = 0;
-	rastState.SlopeScaledDepthBias = 0;
-	rastState.DepthClipEnable = true;
-	rastState.MultisampleEnable = false;
-	rastState.AntialiasedLineEnable = false;
+	rastState.fill_mode = FillMode::SOLID;
+	rastState.cull_mode = CullMode::NONE;
+	rastState.front_counter_clockwise = true;
+	rastState.depth_bias = 0;
+	rastState.depth_bias_clamp = 0;
+	rastState.slope_scaled_depth_bias = 0;
+	rastState.depth_clip_enable = true;
+	rastState.multisample_enable = false;
+	rastState.antialiased_line_enable = false;
 	
 	// depth stencil state
 	DepthStencilState depthStateOpaque = {};
-	depthStateOpaque.DepthEnable = true;
-	depthStateOpaque.DepthFunc = COMPARISON_GREATER_EQUAL;
-	depthStateOpaque.StencilEnable = false;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	depthStateOpaque.depth_enable = true;
+	depthStateOpaque.depth_func = ComparisonFunc::GREATER_EQUAL;
+	depthStateOpaque.stencil_enable = false;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	
 	// blend state
 	BlendState blendStateOpaque = {};
-	blendStateOpaque.RenderTarget[0].BlendEnable = false;
-	blendStateOpaque.RenderTarget[0].SrcBlend = BLEND_ONE;
-	blendStateOpaque.RenderTarget[0].DestBlend = BLEND_ZERO;
-	blendStateOpaque.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-	blendStateOpaque.RenderTarget[0].SrcBlendAlpha = BLEND_ONE;
-	blendStateOpaque.RenderTarget[0].DestBlendAlpha = BLEND_ZERO;
-	blendStateOpaque.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
-	blendStateOpaque.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_ALL;
-	blendStateOpaque.IndependentBlendEnable = false;
-	blendStateOpaque.AlphaToCoverageEnable = true;
+	blendStateOpaque.render_target[0].blend_enable = false;
+	blendStateOpaque.render_target[0].src_blend = Blend::ONE;
+	blendStateOpaque.render_target[0].dest_blend = Blend::ZERO;
+	blendStateOpaque.render_target[0].blend_op = BlendOp::ADD;
+	blendStateOpaque.render_target[0].src_blend_alpha = Blend::ONE;
+	blendStateOpaque.render_target[0].dest_blend_alpha = Blend::ZERO;
+	blendStateOpaque.render_target[0].blend_op_alpha = BlendOp::ADD;
+	blendStateOpaque.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
+	blendStateOpaque.independent_blend_enable = false;
+	blendStateOpaque.alpha_to_coverage_enable = true;
 	
 	// input layout
 	InputLayout inputLayout;
 	inputLayout.elements = {
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32_FLOAT,    0, 0,  INPUT_PER_VERTEX_DATA },
-		{ "OFFSET",   0, wiGraphics::FORMAT_R32G32B32_FLOAT, 1, 0,  INPUT_PER_INSTANCE_DATA },
-		{ "DATA",     0, wiGraphics::FORMAT_R32_UINT,        1, 12, INPUT_PER_INSTANCE_DATA },
+		{ "POSITION", 0, wiGraphics::Format::R32G32_FLOAT,    0, 0,  InputClassification::PER_VERTEX_DATA },
+		{ "OFFSET",   0, wiGraphics::Format::R32G32B32_FLOAT, 1, 0,  InputClassification::PER_INSTANCE_DATA },
+		{ "DATA",     0, wiGraphics::Format::R32_UINT,        1, 12, InputClassification::PER_INSTANCE_DATA },
 	};
 
 	// pipeline state object
@@ -865,79 +883,79 @@ void GGGrass_Init()
 	desc.ps = &shaderGrassPS;
 
 	desc.il = &inputLayout;
-	desc.pt = TRIANGLELIST;
+	desc.pt = PrimitiveTopology::TRIANGLELIST;
 	desc.rs = &rastState;
 	desc.dss = &depthStateOpaque;
 	desc.bs = &blendStateOpaque;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
 	device->CreatePipelineState( &desc, &psoGrass );
 
 	// prepass pipeline state
 	desc.vs = &shaderGrassPrepassVS;
 	desc.ps = &shaderGrassPrepassPS;
 	desc.il = &inputLayout;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	device->CreatePipelineState( &desc, &psoGrassPrepass );
 
 	/*
 	// shadow pipeline state
-	rastState.DepthBias = -1;
-	rastState.SlopeScaledDepthBias = -4.0f;
-	rastState.MultisampleEnable = false;
+	rastState.depth_bias = -1;
+	rastState.slope_scaled_depth_bias = -4.0f;
+	rastState.multisample_enable = false;
 	desc.vs = &shaderGrassShadowVS;
 	desc.ps = &shaderGrassShadowPS;
 	desc.il = &inputLayout;
-	rastState.DepthClipEnable = false;
-	blendStateOpaque.AlphaToCoverageEnable = false;
+	rastState.depth_clip_enable = false;
+	blendStateOpaque.alpha_to_coverage_enable = false;
 	device->CreatePipelineState( &desc, &psoGrassShadow );
-	rastState.DepthBias = 0;
-	rastState.DepthClipEnable = true;
-	rastState.SlopeScaledDepthBias = 0;
+	rastState.depth_bias = 0;
+	rastState.depth_clip_enable = true;
+	rastState.slope_scaled_depth_bias = 0;
 	*/
 
 	// samplers
 	SamplerDesc samplerDesc;
-	samplerDesc.AddressU = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.address_u = TextureAddressMode::CLAMP;
+	samplerDesc.address_v = TextureAddressMode::CLAMP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
 	device->CreateSampler( &samplerDesc, &samplerTrilinearClamp );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
 	device->CreateSampler( &samplerDesc, &samplerTrilinearWrap );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_POINT;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_POINT;
 	device->CreateSampler( &samplerDesc, &samplerPointWrap );
 
 	// constant buffer
 	GPUBufferDesc bd = {};
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(GrassCB);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &grassConstantBuffer );
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(GrassCB);
+	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &grassConstantBuffer );
 
 	// vertex buffer
 	GPUBufferDesc bufferDesc = {};
 	SubresourceData data = {};
-	data.pSysMem = g_VerticesGrass;
-	bufferDesc.ByteWidth = sizeof(g_VerticesGrass);
-	bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferGrassVertices );
+	data.data_ptr = g_VerticesGrass;
+	bufferDesc.size = sizeof(g_VerticesGrass);
+	bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
+	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferGrassVertices );
 
 	// index buffer
-	data.pSysMem = g_IndicesGrass;
-	bufferDesc.ByteWidth = sizeof(g_IndicesGrass);
-	bufferDesc.BindFlags = BIND_INDEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferGrassIndices );
+	data.data_ptr = g_IndicesGrass;
+	bufferDesc.size = sizeof(g_IndicesGrass);
+	bufferDesc.bind_flags = BindFlag::INDEX_BUFFER;
+	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferGrassIndices );
 }
 
 int GGGrass_UsingBrush()
@@ -948,7 +966,7 @@ int GGGrass_UsingBrush()
 void GGGrass_BindGrassArray( uint32_t slot, wiGraphics::CommandList cmd )
 {
 	if (!gggrass_initialised) return;
-	wiRenderer::GetDevice()->BindResource( PS, &texGrass, slot, cmd ); 
+	wiGraphics::GetDevice()->BindResource( &texGrass, slot, cmd );
 }
 
 uint32_t GGGrass_GetGrassMap( float x, float z )
@@ -1161,7 +1179,7 @@ int GGGrass_SetData( uint32_t size, uint8_t* data, sUndoSysEventGrass* pEvent)
 		if (size1 != size) return 0;
 		memcpy(pGrassMap, data, size1);
 
-		//wiRenderer::GetDevice()->UpdateTexture(&texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1);
+		//wiGraphics::GetDevice()->UpdateTexture(&texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1);
 #ifdef ONLYLOADWHENUSED
 		for (uint32_t y = 0; y < GGGRASS_MAP_SIZE; y++)
 		{
@@ -1320,7 +1338,7 @@ void GGGrass_UpdateFlatArea( int mode, int type, float posX, float posZ, float s
 			}
 		}
 
-		//wiRenderer::GetDevice()->UpdateTexture( &texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1 );
+		//wiGraphics::GetDevice()->UpdateTexture( &texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1 );
 	}
 
 	GGGrass_UpdateInstances();
@@ -1545,7 +1563,7 @@ void GGGrass_Update_Painting( RAY ray )
 				}
 			}
 
-			//wiRenderer::GetDevice()->UpdateTexture( &texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1 );
+			//wiGraphics::GetDevice()->UpdateTexture( &texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1 );
 		}
 
 		GGGrass_UpdateInstances();
@@ -1741,7 +1759,7 @@ void GGGrass_Update( wiScene::CameraComponent* camera, CommandList cmd, bool bRe
 	grassConstantData.grass_flags = 0;
 	if ( gggrass_global_params.simplePBR ) grassConstantData.grass_flags |= GGGRASS_FLAGS_SIMPLE_PBR;
 	
-	wiRenderer::GetDevice()->UpdateBuffer( &grassConstantBuffer, &grassConstantData, cmd, sizeof(GrassCB) );
+	wiGraphics::GetDevice()->UpdateBuffer( &grassConstantBuffer, &grassConstantData, cmd, sizeof(GrassCB) );
 
 	//wiProfiler::EndRange( range );
 }
@@ -1753,7 +1771,7 @@ extern "C" void GGGrass_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	if (!gggrass_initialised) return;
 	if ( !gggrass_global_params.draw_enabled ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGGrass Prepass Draw", cmd);
 	wiProfiler::range_id range;
 	if ( mode == 0 ) range = wiProfiler::BeginRangeGPU("Z-Prepass - Grass Low", cmd);
@@ -1762,15 +1780,15 @@ extern "C" void GGGrass_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	device->BindPipelineState( &psoGrassPrepass, cmd );
 
 	uint32_t bindSlot = 2;
-	device->BindConstantBuffer( VS, &grassConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &grassConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
 
-	device->BindResource( PS, &texGrass, 50, cmd );
-	device->BindResource( PS, &texNoise, 51, cmd );
-	device->BindResource( PS, &texGrassNormal, 53, cmd );
-	device->BindSampler( PS, &samplerPointWrap, 0, cmd );
-	device->BindSampler( PS, &samplerTrilinearClamp, 1, cmd );
-	device->BindSampler( PS, &samplerTrilinearWrap, 2, cmd );
+	device->BindResource( &texGrass, 50, cmd );
+	device->BindResource( &texNoise, 51, cmd );
+	device->BindResource( &texGrassNormal, 53, cmd );
+	device->BindSampler( &samplerPointWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
 
 	const GPUBuffer* vbs[] = { &bufferGrassVertices };
 	const uint32_t strides[] = { sizeof( VertexGrass ) };
@@ -1799,7 +1817,7 @@ extern "C" void GGGrass_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceGrass) };
 		device->BindVertexBuffers( vbs, 1, 1, strides, 0, cmd );
-		device->BindIndexBuffer( &bufferGrassIndices, INDEXFORMAT_16BIT, 0, cmd );
+		device->BindIndexBuffer( &bufferGrassIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	
@@ -1816,26 +1834,26 @@ extern "C" void GGGrass_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 	if ( !gggrass_global_params.draw_enabled ) return;
 	if ( cascade >= gggrass_global_params.shadow_range ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGGreass Shadow Draw", cmd);
 
 	device->BindPipelineState( &psoGrassShadow, cmd );
 
 	uint32_t bindSlot = 2;
-	device->BindConstantBuffer( VS, &grassConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &grassConstantBuffer, bindSlot, cmd );
-	
-	device->BindResource( PS, &texGrass, 50, cmd );
-	device->BindResource( PS, &texNoise, 51, cmd );
-	device->BindResource( PS, &texGrassNormal, 53, cmd );
-	device->BindSampler( PS, &samplerPointWrap, 0, cmd );
-	device->BindSampler( PS, &samplerTrilinearClamp, 1, cmd );
-	device->BindSampler( PS, &samplerTrilinearWrap, 2, cmd );
+	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
+
+	device->BindResource( &texGrass, 50, cmd );
+	device->BindResource( &texNoise, 51, cmd );
+	device->BindResource( &texGrassNormal, 53, cmd );
+	device->BindSampler( &samplerPointWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
 
 	const GPUBuffer* vbs[] = { &bufferGrassVertices };
 	const uint32_t strides[] = { sizeof( VertexGrass ) };
 	device->BindVertexBuffers( vbs, 0, 1, strides, 0, cmd );
-	
+
 	for( uint32_t i = 0; i < numGrassChunks; i++ )
 	{
 		GrassChunk* pChunk = &pGrassChunks[ i ];
@@ -1848,7 +1866,7 @@ extern "C" void GGGrass_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceGrass) };
 		device->BindVertexBuffers( vbs, 1, 1, strides, 0, cmd );
-		device->BindIndexBuffer( &bufferGrassIndices, INDEXFORMAT_16BIT, 0, cmd );
+		device->BindIndexBuffer( &bufferGrassIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 12, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	
@@ -1863,7 +1881,7 @@ extern "C" void GGGrass_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	if (!gggrass_initialised) return;
 	if ( !gggrass_global_params.draw_enabled ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGGrass Draw", cmd);
 	wiProfiler::range_id range;
 	if ( mode == 0 ) range = wiProfiler::BeginRangeGPU("Opaque - Grass Low", cmd);
@@ -1872,16 +1890,16 @@ extern "C" void GGGrass_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	device->BindPipelineState( &psoGrass, cmd );
 
 	uint32_t bindSlot = 2;
-	device->BindConstantBuffer( VS, &grassConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &grassConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
 
 	// bind texture and sampler
-	device->BindResource( PS, &texGrass, 50, cmd ); 
-	device->BindResource( PS, &texNoise, 51, cmd );
-	device->BindResource( PS, &texGrassNormal, 53, cmd );
-	device->BindSampler( PS, &samplerPointWrap, 0, cmd );
-	device->BindSampler( PS, &samplerTrilinearClamp, 1, cmd );
-	device->BindSampler( PS, &samplerTrilinearWrap, 2, cmd );
+	device->BindResource( &texGrass, 50, cmd );
+	device->BindResource( &texNoise, 51, cmd );
+	device->BindResource( &texGrassNormal, 53, cmd );
+	device->BindSampler( &samplerPointWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
 
 	const GPUBuffer* vbs[] = { &bufferGrassVertices };
 	const uint32_t strides[] = { sizeof( VertexGrass ) };
@@ -1910,7 +1928,7 @@ extern "C" void GGGrass_Draw( const Frustum* frustum, int mode, CommandList cmd 
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceGrass) };
 		device->BindVertexBuffers( vbs, 1, 1, strides, 0, cmd );
-		device->BindIndexBuffer( &bufferGrassIndices, INDEXFORMAT_16BIT, 0, cmd );
+		device->BindIndexBuffer( &bufferGrassIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	

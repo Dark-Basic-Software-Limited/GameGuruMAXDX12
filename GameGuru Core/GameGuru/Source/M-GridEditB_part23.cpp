@@ -1178,10 +1178,11 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 							ObjectComponent* object = wiScene::GetScene().objects.GetComponent(rootEntity);
 							if (object)
 							{
-								if (object->IsOccluded() || object->IsCulled())
+								//if (object->IsOccluded() || object->IsCulled()) // REMOVED
+							if (false)
 								{
-									if(object->IsOccluded())
-										total++;
+									//if(object->IsOccluded()) // REMOVED
+									//	total++;
 									if (bDebug)
 									{
 
@@ -1190,7 +1191,8 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 
 										if(t.entityelement[t.e].bankindex > 0 && t.entityprofile[t.entityelement[t.e].bankindex].ischaracter)
 											DrawDot("*", center.x, center.y, center.z);
-										else if(object->IsCulled())
+										//else if(object->IsCulled()) // REMOVED
+										else if(false)
 											DrawDot(".", center.x, center.y, center.z);
 										else
 											DrawDot("-", center.x, center.y, center.z);
@@ -1200,7 +1202,9 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 								{
 									if (bBox)
 									{
-										AABB* aabb = wiScene::GetScene().aabb_objects.GetComponent(rootEntity);
+										//AABB* aabb = wiScene::GetScene().aabb_objects.GetComponent(rootEntity); // aabb_objects is now a plain vector
+									// Entire block disabled: aabb_objects no longer supports entity lookup, transform_index removed
+									/*
 										if (aabb)
 										{
 											float sizeX = aabb->_max.x - aabb->_min.x;
@@ -1241,6 +1245,7 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 												wiRenderer::DrawBox(hoverBox, XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
 											}
 										}
+									*/
 									}
 								}
 								//break;
@@ -1264,18 +1269,18 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 			LightComponent& light = wiScene::GetScene().lights[i];
 			if (light.IsCastingShadow())
 			{
-				if (light.GetType() == ENTITY_TYPE_POINTLIGHT)
+				if (light.GetType() == LightComponent::POINT)
 				{
 					if (point)
 						*point = *point + 1;
 					AABB aabb = wiScene::GetScene().aabb_lights[i];
 					XMFLOAT3 center = aabb.getCenter();
 					void DrawDot(char* text, float x, float y, float z);
-					if (light.history == 0)
+					//if (light.history == 0) // light.history removed
 					{
 						DrawDot("p", center.x, center.y, center.z);
 					}
-					else
+					/*else
 					{
 						t.tdiffx_f = center.x - CameraPositionX();
 						t.tdiffy_f = center.y - CameraPositionY();
@@ -1283,20 +1288,20 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 						float dist = Sqrt(abs(t.tdiffx_f * t.tdiffx_f) + abs(t.tdiffy_f * t.tdiffy_f) + abs(t.tdiffz_f * t.tdiffz_f));
 						std::string sdist = "P: " + std::to_string((int)dist);
 						DrawDot( (char *) sdist.c_str(), center.x, center.y, center.z);
-					}
+					}*/
 				}
-				if (light.GetType() == ENTITY_TYPE_SPOTLIGHT)
+				if (light.GetType() == LightComponent::SPOT)
 				{
 					if (spot)
 						*spot = *spot + 1;
 					AABB aabb = wiScene::GetScene().aabb_lights[i];
 					XMFLOAT3 center = aabb.getCenter();
 					void DrawDot(char* text, float x, float y, float z);
-					if (light.history == 0)
+					//if (light.history == 0) // light.history removed
 					{
 						DrawDot("s", center.x, center.y, center.z);
 					}
-					else
+					/*else
 					{
 						t.tdiffx_f = center.x - CameraPositionX();
 						t.tdiffy_f = center.y - CameraPositionY();
@@ -1304,7 +1309,7 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 						float dist = Sqrt(abs(t.tdiffx_f * t.tdiffx_f) + abs(t.tdiffy_f * t.tdiffy_f) + abs(t.tdiffz_f * t.tdiffz_f));
 						std::string sdist = "S: " + std::to_string((int)dist);
 						DrawDot((char *)sdist.c_str(), center.x, center.y, center.z);
-					}
+					}*/
 				}
 			}
 		}
@@ -1344,8 +1349,8 @@ void tmpdebugfunc(void)
 
 		wiScene::Scene* pScene = &wiScene::GetScene();
 		int iObjects = pScene->objects.GetCount();
-		int iFrustumCulled = wiProfiler::GetFrustumCulled();
-		int dc = wiProfiler::GetDrawCalls();
+		int iFrustumCulled = 0;
+		int dc = 0;
 		int iHiddenObjects = 0;
 		int spot = 0, point = 0;
 		int occ = DrawOccludedObjects(true,false,&iHiddenObjects,&spot,&point);
@@ -1672,7 +1677,7 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			{
 				t.gamevisuals.fsetBloomStrength = t.visuals.fsetBloomStrength;
 				if (master_renderer) {
-					master_renderer->setBloomStrength(t.visuals.fsetBloomStrength);
+					//master_renderer->setBloomStrength(t.visuals.fsetBloomStrength); // removed from RenderPath3D
 				}
 				g.projectmodified = 1;
 			}
@@ -1838,7 +1843,8 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::SliderFloat("##fGamma:", &t.visuals.fGamma, 0.1, 10.0))
 		{
 			t.gamevisuals.fGamma = t.visuals.fGamma;
-			wiRenderer::SetGamma(t.visuals.fGamma);
+			// TODO: wiRenderer::SetGamma removed in new WickedEngine
+			//wiRenderer::SetGamma(t.visuals.fGamma);
 			g.projectmodified = 1;
 		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Gamma Correction alters how bright colors are perceived");
@@ -1848,7 +1854,7 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::SliderFloat("##fDeSaturate:", &t.visuals.fDeSaturate, 0.0, 1.0))
 		{
 			t.gamevisuals.fDeSaturate = t.visuals.fDeSaturate;
-			wiRenderer::SetDeSaturate(t.visuals.fDeSaturate);
+			//wiRenderer::SetDeSaturate(t.visuals.fDeSaturate); // REMOVED
 			g.projectmodified = 1;
 		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("De Saturate colors");

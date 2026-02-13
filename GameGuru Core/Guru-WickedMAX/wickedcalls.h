@@ -52,7 +52,7 @@ struct sImageList
 {
 	LPSTR pName;
 	eImageResType eType;
-	std::shared_ptr<wi::Resource> image;
+	wi::Resource image;
 	int iMemUsedKB = 0;
 	uint32_t MasterObject = 0;
 };
@@ -63,9 +63,9 @@ void WickedCall_FreeImage(sImageList* pImage);
 void WickedCall_FreeAllImagesOfType(eImageResType eType);
 void WickedCall_GetRelativeAfterRoot(std::string pFilename, LPSTR pFullRelativeLocationFilename);
 int WickedCall_FindImageIndexInList(std::string pFilenameToFind, LPSTR pFullRelativeLocationFilename);
-void WickedCall_AddImageToList(std::shared_ptr<wi::Resource> image, eImageResType eType, std::string pFilenameRef, int iKbused);
-std::shared_ptr<wi::Resource> WickedCall_LoadImage(std::string pFilenameToLoad, eImageResType eType);
-std::shared_ptr<wi::Resource> WickedCall_LoadImage(std::string pFilenameToLoad);
+void WickedCall_AddImageToList(wi::Resource image, eImageResType eType, std::string pFilenameRef, int iKbused);
+wi::Resource WickedCall_LoadImage(std::string pFilenameToLoad, eImageResType eType);
+wi::Resource WickedCall_LoadImage(std::string pFilenameToLoad);
 void WickedCall_DeleteImage(std::string pFilenameToLoad);
 
 // Functions

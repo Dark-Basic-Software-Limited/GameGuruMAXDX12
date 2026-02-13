@@ -1,5 +1,6 @@
 #pragma once
 
+#include "WickedEngine.h"
 #include "wiGraphicsDevice.h"
 #include "wiScene.h"
 #include "wiRenderer.h"

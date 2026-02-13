@@ -1166,7 +1166,7 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 	float dist = g.globals.realshadowdistance;
 	int flash = g.globals.flashlightshadows;
 	int speed = 0;
-	InitShadowMapDetails(rs0, rs1, rs2, rs3, rs4, rs5, rs6, rs7, dist, flash, speed);
+	//InitShadowMapDetails(rs0, rs1, rs2, rs3, rs4, rs5, rs6, rs7, dist, flash, speed); // function no longer exists
 
 	// special global flag which can affect how shaders are loaded
 	if (g.gforceloadtestgameshaders != 0) gbAlwaysIgnoreShaderBlobFile = true;

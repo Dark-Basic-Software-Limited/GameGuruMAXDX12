@@ -1,4 +1,5 @@
-﻿const char *noc_file_dialog_open(int flags,
+﻿#ifdef GG_WINDOWS // continued from part0
+const char *noc_file_dialog_open(int flags,
 	const char *filters,
 	const char *default_path,
 	const char *default_name,

@@ -1,4 +1,6 @@
-﻿void DarkColorsNoTransparent(void)
+﻿#include <fstream>
+#include <unordered_set>
+void DarkColorsNoTransparent(void)
 {
 	ImVec4* colors = ImGui::GetStyle().Colors;
 	//colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);

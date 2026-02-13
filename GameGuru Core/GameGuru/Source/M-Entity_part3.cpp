@@ -1,4 +1,6 @@
-﻿int g_iAddEntityElementsMode = 0;
+﻿#define USEFASTLOADING
+#ifdef USEFASTLOADING // continued from part2
+int g_iAddEntityElementsMode = 0;
 
 void c_entity_loadelementsdata ( void )
 {

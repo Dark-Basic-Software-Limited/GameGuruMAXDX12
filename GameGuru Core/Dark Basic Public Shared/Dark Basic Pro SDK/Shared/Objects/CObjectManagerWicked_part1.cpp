@@ -1,4 +1,5 @@
-﻿bool CObjectManager::UpdateTextures ( void )
+﻿/*
+bool CObjectManager::UpdateTextures ( void )
 {
 	// clear tep list immediately as now invalid
 	g_vAnimatableObjectList.clear();
@@ -1985,3 +1986,4 @@ bool CObjectManager::DrawMesh ( sMesh* pMesh, bool bIgnoreOwnMeshVisibility, sOb
 		if (!SetMeshRenderStates(pMesh))
 			return false;
 	}
+*/

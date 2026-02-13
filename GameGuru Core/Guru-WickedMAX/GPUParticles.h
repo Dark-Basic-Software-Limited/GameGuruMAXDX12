@@ -6,6 +6,7 @@
 #pragma once
 
 #ifndef NOTFORMAINENGINE
+#include "../../../WickedEngineDX12/WickedEngine/WickedEngine.h"
 #include "../../../WickedEngineDX12/WickedEngine/wiGraphicsDevice.h"
 #include "../../../WickedEngineDX12/WickedEngine/wiScene.h"
 #endif

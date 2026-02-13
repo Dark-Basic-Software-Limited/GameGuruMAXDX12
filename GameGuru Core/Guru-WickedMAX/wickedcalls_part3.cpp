@@ -21,7 +21,7 @@ bool WickedCall_GetPick2_OLD(float fMouseX, float fMouseY, float* pOutX, float* 
 	// check scene first if flagged, then terrain which is naturally underneath
 	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
 	{
-		wiScene::PickResult hovered = wiScene::Pick_OLD(pickRay, RENDERTYPE_ALL, iLayerMask);
+		wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
 		if (hovered.entity > 0)
 		{
 			if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0)
@@ -173,7 +173,7 @@ bool WickedCall_SentRay(float originx, float originy, float originz, float direc
 	XMStoreFloat3(&direction_inverse, XMVectorDivide(XMVectorReplicate(1.0f), XMVectorSet(directionx, directiony, directionz,1.0f)));
 	pickRay.direction_inverse = direction_inverse;
 #ifdef PICKBVHTHREADED
-	wiScene::PickResult hovered = wiScene::PickThread(pickRay, RENDERTYPE_ALL, iLayerMask);
+	wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
 #else
 	wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
 #endif
@@ -249,7 +249,7 @@ bool WickedCall_SentRay2(float originx, float originy, float originz, float dire
 	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
 	{
 #ifdef PICKBVHTHREADED
-		wiScene::PickResult hovered = wiScene::PickThread(pickRay, RENDERTYPE_ALL, iLayerMask);
+		wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
 #else
 		wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
 #endif
@@ -357,7 +357,7 @@ bool WickedCall_SentRay4(float originx, float originy, float originz, float dire
 	//PE: @Lee we have no checks on transparent objects, we cant shoot glass, no impact effects , no killing pradator ...
 	if (bOpaqueOnly == true) checkType = RENDERTYPE_OPAQUE | RENDERTYPE_TRANSPARENT;
 #ifdef PICKBVHTHREADED
-	wiScene::PickResult hit = wiScene::PickThread(pickRay, checkType, GGRENDERLAYERS_NORMAL);
+	wiScene::PickResult hit = wiScene::Pick(pickRay, checkType, GGRENDERLAYERS_NORMAL);
 #else
 	wiScene::PickResult hit = wiScene::Pick(pickRay, checkType, GGRENDERLAYERS_NORMAL);
 #endif
@@ -446,12 +446,12 @@ void WickedCall_GetMouseDeltas(float* pfX, float* pfY)
 uint32_t WickedCall_GetTextureWidth(void* ptex)
 {
 	Texture* tex = (Texture*)ptex;
-	return( tex->GetDesc().Width);
+	return( tex->GetDesc().width);
 }
 uint32_t WickedCall_GetTextureHeight(void* ptex)
 {
 	Texture* tex = (Texture*)ptex;
-	return(tex->GetDesc().Height);
+	return(tex->GetDesc().height);
 }
 
 uint64_t WickedCall_GetFirstRootEntityID(sObject* pObject)
@@ -951,17 +951,17 @@ void WickedCall_UpdateLight(uint64_t wickedlightindex, float fX, float fY, float
 
 	LightComponent* lightComponent = wiScene::GetScene ( ).lights.GetComponent ( wickedlightindex );
 	lightComponent->SetCastShadow ( bCastShadow );
-	lightComponent->fov = GGToRadian(fSpotRadius);
+	lightComponent->outerConeAngle = GGToRadian(fSpotRadius);
 	lightComponent->color = XMFLOAT3((float)iColR / 255.0f, (float)iColG / 255.0f, (float)iColB / 255.0f);
 
 	// for now, only change env probe if light on/off
 	TransformComponent* transformLight = wiScene::GetScene ().transforms.GetComponent (wickedlightindex);
 	bool bDetectOnOffNotRangeChange = false;
-	if (lightComponent->range_local != fRange)
+	if (lightComponent->range != fRange)
 	{
-		if (lightComponent->range_local > 1 && fRange <= 1) bDetectOnOffNotRangeChange = true;
-		if (lightComponent->range_local <= 1 && fRange > 1) bDetectOnOffNotRangeChange = true;
-		lightComponent->range_local = fRange;
+		if (lightComponent->range > 1 && fRange <= 1) bDetectOnOffNotRangeChange = true;
+		if (lightComponent->range <= 1 && fRange > 1) bDetectOnOffNotRangeChange = true;
+		lightComponent->range = fRange;
 	}
 	float fCurrentX = transformLight->GetPosition().x;
 	if (fCurrentX <= -999999.0 && fX > -999999.0) bDetectOnOffNotRangeChange = true;
@@ -1112,8 +1112,8 @@ void WickedCall_SetSunColors(float fRed, float fGreen, float fBlue,float fEnergy
 	lightSun->color.x = fRed;
 	lightSun->color.y = fGreen;
 	lightSun->color.z = fBlue;
-	lightSun->energy = fEnergy;
-	lightSun->fov = fFov;
+	lightSun->intensity = fEnergy;
+	lightSun->outerConeAngle = fFov;
 }
 #include "master.h"
 
@@ -1138,7 +1138,7 @@ void WickedCall_SunSetSetStatic(bool bSetStatic)
 void WickedCall_SunSetRange(float fRange)
 {
 	LightComponent* lightSun = wiScene::GetScene().lights.GetComponent(g_entitySunLight);
-	lightSun->range_global = fRange;
+	lightSun->range = fRange;
 }
 
 void WickedCall_SetTextureName(int obj, char *texturename)
@@ -1360,7 +1360,7 @@ void CapsuleTest(void)
 
 void WickedCall_SetLDSSkinningEnabled(bool enabled)
 {
-	wiRenderer::SetLDSSkinningEnabled(enabled);
+	//wiRenderer::SetLDSSkinningEnabled(enabled); // removed from wi::renderer
 }
 
 void WickedCall_SetLightShaftParameters(float density, float weight, float decay, float exposure)
@@ -1377,212 +1377,212 @@ void WickedCall_GetLightShaftParameters(float& density, float& weight, float& de
 }
 
 
-constexpr DXGI_FORMAT _ConvertFormat(FORMAT value)
+constexpr DXGI_FORMAT _ConvertFormat(wiGraphics::Format value)
 {
 	switch (value)
 	{
-	case FORMAT_UNKNOWN:
+	case wiGraphics::Format::UNKNOWN:
 		return DXGI_FORMAT_UNKNOWN;
 		break;
-	case FORMAT_R32G32B32A32_FLOAT:
+	case wiGraphics::Format::R32G32B32A32_FLOAT:
 		return DXGI_FORMAT_R32G32B32A32_FLOAT;
 		break;
-	case FORMAT_R32G32B32A32_UINT:
+	case wiGraphics::Format::R32G32B32A32_UINT:
 		return DXGI_FORMAT_R32G32B32A32_UINT;
 		break;
-	case FORMAT_R32G32B32A32_SINT:
+	case wiGraphics::Format::R32G32B32A32_SINT:
 		return DXGI_FORMAT_R32G32B32A32_SINT;
 		break;
-	case FORMAT_R32G32B32_FLOAT:
+	case wiGraphics::Format::R32G32B32_FLOAT:
 		return DXGI_FORMAT_R32G32B32_FLOAT;
 		break;
-	case FORMAT_R32G32B32_UINT:
+	case wiGraphics::Format::R32G32B32_UINT:
 		return DXGI_FORMAT_R32G32B32_UINT;
 		break;
-	case FORMAT_R32G32B32_SINT:
+	case wiGraphics::Format::R32G32B32_SINT:
 		return DXGI_FORMAT_R32G32B32_SINT;
 		break;
-	case FORMAT_R16G16B16A16_FLOAT:
+	case wiGraphics::Format::R16G16B16A16_FLOAT:
 		return DXGI_FORMAT_R16G16B16A16_FLOAT;
 		break;
-	case FORMAT_R16G16B16A16_UNORM:
+	case wiGraphics::Format::R16G16B16A16_UNORM:
 		return DXGI_FORMAT_R16G16B16A16_UNORM;
 		break;
-	case FORMAT_R16G16B16A16_UINT:
+	case wiGraphics::Format::R16G16B16A16_UINT:
 		return DXGI_FORMAT_R16G16B16A16_UINT;
 		break;
-	case FORMAT_R16G16B16A16_SNORM:
+	case wiGraphics::Format::R16G16B16A16_SNORM:
 		return DXGI_FORMAT_R16G16B16A16_SNORM;
 		break;
-	case FORMAT_R16G16B16A16_SINT:
+	case wiGraphics::Format::R16G16B16A16_SINT:
 		return DXGI_FORMAT_R16G16B16A16_SINT;
 		break;
-	case FORMAT_R32G32_FLOAT:
+	case wiGraphics::Format::R32G32_FLOAT:
 		return DXGI_FORMAT_R32G32_FLOAT;
 		break;
-	case FORMAT_R32G32_UINT:
+	case wiGraphics::Format::R32G32_UINT:
 		return DXGI_FORMAT_R32G32_UINT;
 		break;
-	case FORMAT_R32G32_SINT:
+	case wiGraphics::Format::R32G32_SINT:
 		return DXGI_FORMAT_R32G32_SINT;
 		break;
-	case FORMAT_R32G8X24_TYPELESS:
-		return DXGI_FORMAT_R32G8X24_TYPELESS;
-		break;
-	case FORMAT_D32_FLOAT_S8X24_UINT:
+	//case wiGraphics::Format::R32G8X24_TYPELESS: // not in WickedEngine Format enum
+	//	return DXGI_FORMAT_R32G8X24_TYPELESS;
+	//	break;
+	case wiGraphics::Format::D32_FLOAT_S8X24_UINT:
 		return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 		break;
-	case FORMAT_R10G10B10A2_UNORM:
+	case wiGraphics::Format::R10G10B10A2_UNORM:
 		return DXGI_FORMAT_R10G10B10A2_UNORM;
 		break;
-	case FORMAT_R10G10B10A2_UINT:
+	case wiGraphics::Format::R10G10B10A2_UINT:
 		return DXGI_FORMAT_R10G10B10A2_UINT;
 		break;
-	case FORMAT_R11G11B10_FLOAT:
+	case wiGraphics::Format::R11G11B10_FLOAT:
 		return DXGI_FORMAT_R11G11B10_FLOAT;
 		break;
-	case FORMAT_R8G8B8A8_UNORM:
+	case wiGraphics::Format::R8G8B8A8_UNORM:
 		return DXGI_FORMAT_R8G8B8A8_UNORM;
 		break;
-	case FORMAT_R8G8B8A8_UNORM_SRGB:
+	case wiGraphics::Format::R8G8B8A8_UNORM_SRGB:
 		return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 		break;
-	case FORMAT_R8G8B8A8_UINT:
+	case wiGraphics::Format::R8G8B8A8_UINT:
 		return DXGI_FORMAT_R8G8B8A8_UINT;
 		break;
-	case FORMAT_R8G8B8A8_SNORM:
+	case wiGraphics::Format::R8G8B8A8_SNORM:
 		return DXGI_FORMAT_R8G8B8A8_SNORM;
 		break;
-	case FORMAT_R8G8B8A8_SINT:
+	case wiGraphics::Format::R8G8B8A8_SINT:
 		return DXGI_FORMAT_R8G8B8A8_SINT;
 		break;
-	case FORMAT_R16G16_FLOAT:
+	case wiGraphics::Format::R16G16_FLOAT:
 		return DXGI_FORMAT_R16G16_FLOAT;
 		break;
-	case FORMAT_R16G16_UNORM:
+	case wiGraphics::Format::R16G16_UNORM:
 		return DXGI_FORMAT_R16G16_UNORM;
 		break;
-	case FORMAT_R16G16_UINT:
+	case wiGraphics::Format::R16G16_UINT:
 		return DXGI_FORMAT_R16G16_UINT;
 		break;
-	case FORMAT_R16G16_SNORM:
+	case wiGraphics::Format::R16G16_SNORM:
 		return DXGI_FORMAT_R16G16_SNORM;
 		break;
-	case FORMAT_R16G16_SINT:
+	case wiGraphics::Format::R16G16_SINT:
 		return DXGI_FORMAT_R16G16_SINT;
 		break;
-	case FORMAT_R32_TYPELESS:
-		return DXGI_FORMAT_R32_TYPELESS;
-		break;
-	case FORMAT_D32_FLOAT:
+	//case wiGraphics::Format::R32_TYPELESS: // not in WickedEngine Format enum
+	//	return DXGI_FORMAT_R32_TYPELESS;
+	//	break;
+	case wiGraphics::Format::D32_FLOAT:
 		return DXGI_FORMAT_D32_FLOAT;
 		break;
-	case FORMAT_R32_FLOAT:
+	case wiGraphics::Format::R32_FLOAT:
 		return DXGI_FORMAT_R32_FLOAT;
 		break;
-	case FORMAT_R32_UINT:
+	case wiGraphics::Format::R32_UINT:
 		return DXGI_FORMAT_R32_UINT;
 		break;
-	case FORMAT_R32_SINT:
+	case wiGraphics::Format::R32_SINT:
 		return DXGI_FORMAT_R32_SINT;
 		break;
-	case FORMAT_R24G8_TYPELESS:
-		return DXGI_FORMAT_R24G8_TYPELESS;
-		break;
-	case FORMAT_D24_UNORM_S8_UINT:
+	//case wiGraphics::Format::R24G8_TYPELESS: // not in WickedEngine Format enum
+	//	return DXGI_FORMAT_R24G8_TYPELESS;
+	//	break;
+	case wiGraphics::Format::D24_UNORM_S8_UINT:
 		return DXGI_FORMAT_D24_UNORM_S8_UINT;
 		break;
-	case FORMAT_R8G8_UNORM:
+	case wiGraphics::Format::R8G8_UNORM:
 		return DXGI_FORMAT_R8G8_UNORM;
 		break;
-	case FORMAT_R8G8_UINT:
+	case wiGraphics::Format::R8G8_UINT:
 		return DXGI_FORMAT_R8G8_UINT;
 		break;
-	case FORMAT_R8G8_SNORM:
+	case wiGraphics::Format::R8G8_SNORM:
 		return DXGI_FORMAT_R8G8_SNORM;
 		break;
-	case FORMAT_R8G8_SINT:
+	case wiGraphics::Format::R8G8_SINT:
 		return DXGI_FORMAT_R8G8_SINT;
 		break;
-	case FORMAT_R16_TYPELESS:
-		return DXGI_FORMAT_R16_TYPELESS;
-		break;
-	case FORMAT_R16_FLOAT:
+	//case wiGraphics::Format::R16_TYPELESS: // not in WickedEngine Format enum
+	//	return DXGI_FORMAT_R16_TYPELESS;
+	//	break;
+	case wiGraphics::Format::R16_FLOAT:
 		return DXGI_FORMAT_R16_FLOAT;
 		break;
-	case FORMAT_D16_UNORM:
+	case wiGraphics::Format::D16_UNORM:
 		return DXGI_FORMAT_D16_UNORM;
 		break;
-	case FORMAT_R16_UNORM:
+	case wiGraphics::Format::R16_UNORM:
 		return DXGI_FORMAT_R16_UNORM;
 		break;
-	case FORMAT_R16_UINT:
+	case wiGraphics::Format::R16_UINT:
 		return DXGI_FORMAT_R16_UINT;
 		break;
-	case FORMAT_R16_SNORM:
+	case wiGraphics::Format::R16_SNORM:
 		return DXGI_FORMAT_R16_SNORM;
 		break;
-	case FORMAT_R16_SINT:
+	case wiGraphics::Format::R16_SINT:
 		return DXGI_FORMAT_R16_SINT;
 		break;
-	case FORMAT_R8_UNORM:
+	case wiGraphics::Format::R8_UNORM:
 		return DXGI_FORMAT_R8_UNORM;
 		break;
-	case FORMAT_R8_UINT:
+	case wiGraphics::Format::R8_UINT:
 		return DXGI_FORMAT_R8_UINT;
 		break;
-	case FORMAT_R8_SNORM:
+	case wiGraphics::Format::R8_SNORM:
 		return DXGI_FORMAT_R8_SNORM;
 		break;
-	case FORMAT_R8_SINT:
+	case wiGraphics::Format::R8_SINT:
 		return DXGI_FORMAT_R8_SINT;
 		break;
-	case FORMAT_BC1_UNORM:
+	case wiGraphics::Format::BC1_UNORM:
 		return DXGI_FORMAT_BC1_UNORM;
 		break;
-	case FORMAT_BC1_UNORM_SRGB:
+	case wiGraphics::Format::BC1_UNORM_SRGB:
 		return DXGI_FORMAT_BC1_UNORM_SRGB;
 		break;
-	case FORMAT_BC2_UNORM:
+	case wiGraphics::Format::BC2_UNORM:
 		return DXGI_FORMAT_BC2_UNORM;
 		break;
-	case FORMAT_BC2_UNORM_SRGB:
+	case wiGraphics::Format::BC2_UNORM_SRGB:
 		return DXGI_FORMAT_BC2_UNORM_SRGB;
 		break;
-	case FORMAT_BC3_UNORM:
+	case wiGraphics::Format::BC3_UNORM:
 		return DXGI_FORMAT_BC3_UNORM;
 		break;
-	case FORMAT_BC3_UNORM_SRGB:
+	case wiGraphics::Format::BC3_UNORM_SRGB:
 		return DXGI_FORMAT_BC3_UNORM_SRGB;
 		break;
-	case FORMAT_BC4_UNORM:
+	case wiGraphics::Format::BC4_UNORM:
 		return DXGI_FORMAT_BC4_UNORM;
 		break;
-	case FORMAT_BC4_SNORM:
+	case wiGraphics::Format::BC4_SNORM:
 		return DXGI_FORMAT_BC4_SNORM;
 		break;
-	case FORMAT_BC5_UNORM:
+	case wiGraphics::Format::BC5_UNORM:
 		return DXGI_FORMAT_BC5_UNORM;
 		break;
-	case FORMAT_BC5_SNORM:
+	case wiGraphics::Format::BC5_SNORM:
 		return DXGI_FORMAT_BC5_SNORM;
 		break;
-	case FORMAT_B8G8R8A8_UNORM:
+	case wiGraphics::Format::B8G8R8A8_UNORM:
 		return DXGI_FORMAT_B8G8R8A8_UNORM;
 		break;
-	case FORMAT_B8G8R8A8_UNORM_SRGB:
+	case wiGraphics::Format::B8G8R8A8_UNORM_SRGB:
 		return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
 		break;
-	case FORMAT_BC6H_UF16:
+	case wiGraphics::Format::BC6H_UF16:
 		return DXGI_FORMAT_BC6H_UF16;
 		break;
-	case FORMAT_BC6H_SF16:
+	case wiGraphics::Format::BC6H_SF16:
 		return DXGI_FORMAT_BC6H_SF16;
 		break;
-	case FORMAT_BC7_UNORM:
+	case wiGraphics::Format::BC7_UNORM:
 		return DXGI_FORMAT_BC7_UNORM;
 		break;
-	case FORMAT_BC7_UNORM_SRGB:
+	case wiGraphics::Format::BC7_UNORM_SRGB:
 		return DXGI_FORMAT_BC7_UNORM_SRGB;
 		break;
 	}
@@ -1608,14 +1608,15 @@ void Wicked_Memory_Use_Textures(void)
 		{
 			if (!pScene->materials[i].textures[a].name.empty())
 			{
-				std::shared_ptr<wiResource> image = pScene->materials[i].textures[a].resource;
-				if (image)
+				wiResource image = pScene->materials[i].textures[a].resource;
+				if (image.IsValid())
 				{
-					auto filedata = image->filedata.data();
-					auto filesize = image->filedata.size();
+					auto filedata = image.GetFileData().data();
+					auto filesize = image.GetFileData().size();
 
 					void *pmat = (void *)pScene->materials[i].textures[a].GetGPUResource();
-					ID3D11ShaderResourceView* lpTexture = (ID3D11ShaderResourceView*)wiRenderer::GetDevice()->MaterialGetSRV((void*)pmat);
+						// TODO: MaterialGetSRV removed from GraphicsDevice
+					ID3D11ShaderResourceView* lpTexture = (ID3D11ShaderResourceView*)nullptr; //wiGraphics::GetDevice()->MaterialGetSRV((void*)pmat);
 					bool bAlreadyDisplayed = false;
 					for(int b=0;b< already_registred.size();b++)
 						if (already_registred[b] == (void*)lpTexture) { bAlreadyDisplayed = true; break; }
@@ -1623,12 +1624,13 @@ void Wicked_Memory_Use_Textures(void)
 					{
 						already_registred.push_back((void*)lpTexture);
 
-						wiGraphics::Texture texture = image->texture;
-						auto Height = texture.desc.Height;
-						auto Width = texture.desc.Width;
-						auto Format = texture.desc.Format;
+						wiGraphics::Texture texture = image.GetTexture();
+						auto Height = texture.desc.height;
+						auto Width = texture.desc.width;
+						auto Format = texture.desc.format;
 						TextureDesc imgdesc = texture.GetDesc();
-						DXGI_FORMAT DxgiFormat = _ConvertFormat(Format);
+							// _ConvertFormat was DX11-specific, cast format directly (values match DXGI_FORMAT)
+						DXGI_FORMAT DxgiFormat = static_cast<DXGI_FORMAT>(Format);
 
 						int getBitsPerPixel(int fmt);
 						float bperpixel = 32;
@@ -1641,8 +1643,8 @@ void Wicked_Memory_Use_Textures(void)
 						}
 						int addmipmapssize;
 
-						if (imgdesc.MipLevels > 1) {
-							addmipmapssize = (int)((float)(Width*Height) * bperpixel) / 1024 * imgdesc.ArraySize - 1; // Full mipmaps always give size -1.
+						if (imgdesc.mip_levels > 1) {
+							addmipmapssize = (int)((float)(Width*Height) * bperpixel) / 1024 * imgdesc.array_size - 1; // Full mipmaps always give size -1.
 							if (addmipmapssize <= 0) addmipmapssize = 0;
 						}
 						else {
@@ -1650,10 +1652,10 @@ void Wicked_Memory_Use_Textures(void)
 						}
 
 						usedFilesize += filesize;
-						usedsize += ((int)(((float)(Width*Height) * bperpixel) / 1024) * imgdesc.ArraySize) + addmipmapssize;
+						usedsize += ((int)(((float)(Width*Height) * bperpixel) / 1024) * imgdesc.array_size) + addmipmapssize;
 
 						std::string getImageformat(int fmt);
-						sprintf(timestampMsg, "WList%d: (%ld,%ld) (%ld kb.+ mipm %ld kb.) filesize %ldkb mipmaps %d array %d format %s \"%s\" (*%ld)", i, Width, Height, (int)((float)(Width*Height) * bperpixel) / 1024 * imgdesc.ArraySize, addmipmapssize, (long)filesize / 1024.0, imgdesc.MipLevels, imgdesc.ArraySize, getImageformat(DxgiFormat).c_str(), pScene->materials[i].textures[a].name.c_str(), lpTexture);
+						sprintf(timestampMsg, "WList%d: (%ld,%ld) (%ld kb.+ mipm %ld kb.) filesize %ldkb mipmaps %d array %d format %s \"%s\" (*%ld)", i, Width, Height, (int)((float)(Width*Height) * bperpixel) / 1024 * imgdesc.array_size, addmipmapssize, (long)filesize / 1024.0, imgdesc.mip_levels, imgdesc.array_size, getImageformat(DxgiFormat).c_str(), pScene->materials[i].textures[a].name.c_str(), lpTexture);
 						timestampactivity(0, timestampMsg);
 					}
 				}
@@ -1694,7 +1696,7 @@ void WickedCall_UpdateTreeWind(float wind)
 	wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 	if (weather)
 	{
-		weather->tree_wind = wind;
+		//weather->tree_wind = wind; // removed from WeatherComponent
 	}
 }
 
@@ -1732,7 +1734,7 @@ void WickedCall_RemoveObjectTextures(sObject* pObject)
 					for (int slot = 0; slot < wiScene::MaterialComponent::TEXTURESLOT_COUNT; slot++)
 					{
 						pObjectMaterial->textures[slot].name = "";
-						pObjectMaterial->textures[slot].resource = nullptr;
+						pObjectMaterial->textures[slot].resource = {};
 						pObjectMaterial->SetDirty();
 					}
 				}
@@ -1772,35 +1774,36 @@ uint32_t WickedCall_LoadWiSceneDirect(Scene& scene2,char* filename, bool attache
 		}
 
 		//PE: Keeping this alive to keep serialized resources alive until entity serialization ends:
-		wiResourceManager::ResourceSerializer resource_seri;
-		if (archive.GetVersion() >= 63)
-		{
-			wiResourceManager::Serialize(archive, resource_seri);
-		}
+		//wiResourceManager::Serialize removed from API
+		//wiResourceManager::ResourceSerializer resource_seri;
+		//if (archive.GetVersion() >= 63)
+		//{
+		//	wiResourceManager::Serialize(archive, resource_seri);
+		//}
 
 		EntitySerializer seri;
 
 		scene2.names.Serialize(archive, seri);
 		scene2.layers.Serialize(archive, seri);
 		scene2.transforms.Serialize(archive, seri);
-		scene2.prev_transforms.Serialize(archive, seri);
+		//scene2.prev_transforms.Serialize(archive, seri); // removed, replaced by matrix_objects_prev
 		scene2.hierarchy.Serialize(archive, seri);
 		scene2.materials.Serialize(archive, seri);
 		scene2.meshes.Serialize(archive, seri);
 		scene2.impostors.Serialize(archive, seri);
 		scene2.objects.Serialize(archive, seri);
-		scene2.aabb_objects.Serialize(archive, seri);
+		//scene2.aabb_objects.Serialize(archive, seri); // aabb vectors no longer have Serialize
 		scene2.rigidbodies.Serialize(archive, seri);
 		scene2.softbodies.Serialize(archive, seri);
 		scene2.armatures.Serialize(archive, seri);
 		scene2.lights.Serialize(archive, seri);
-		scene2.aabb_lights.Serialize(archive, seri);
+		//scene2.aabb_lights.Serialize(archive, seri); // aabb vectors no longer have Serialize
 		scene2.cameras.Serialize(archive, seri);
 		scene2.probes.Serialize(archive, seri);
-		scene2.aabb_probes.Serialize(archive, seri);
+		//scene2.aabb_probes.Serialize(archive, seri); // aabb vectors no longer have Serialize
 		scene2.forces.Serialize(archive, seri);
 		scene2.decals.Serialize(archive, seri);
-		scene2.aabb_decals.Serialize(archive, seri);
+		//scene2.aabb_decals.Serialize(archive, seri); // aabb vectors no longer have Serialize
 		scene2.animations.Serialize(archive, seri);
 		scene2.emitters.Serialize(archive, seri);
 		scene2.hairs.Serialize(archive, seri);
@@ -1855,7 +1858,7 @@ uint32_t WickedCall_LoadWiSceneDirect(Scene& scene2,char* filename, bool attache
 			{
 				if (scene2.materials[i].textures[a].name.size() > 0)
 				{
-					if (!scene2.materials[i].textures[a].resource)
+					if (!scene2.materials[i].textures[a].resource.IsValid())
 					{
 						scene2.materials[i].textures[a].resource = WickedCall_LoadImage(scene2.materials[i].textures[a].name);
 					}
@@ -1873,9 +1876,9 @@ uint32_t WickedCall_LoadWiSceneDirect(Scene& scene2,char* filename, bool attache
 				scene2.materials[i].userBlendMode = BLENDMODE_MULTIPLY;
 			if (scene2.materials[i].userBlendMode == BLENDMODE_ALPHA)
 				scene2.materials[i].userBlendMode = BLENDMODE_ADDITIVE;
-			if (scene2.materials[i].userBlendMode == BLENDMODE_FORCEDEPTH)
+			if (scene2.materials[i].userBlendMode == BLENDMODE_OPAQUE) // was BLENDMODE_FORCEDEPTH, removed
 				scene2.materials[i].userBlendMode = BLENDMODE_PREMULTIPLIED;
-			if (scene2.materials[i].userBlendMode == BLENDMODE_ALPHANOZ)
+			if (scene2.materials[i].userBlendMode == BLENDMODE_ALPHA) // was BLENDMODE_ALPHANOZ, removed
 				scene2.materials[i].userBlendMode = BLENDMODE_ALPHA;
 			scene2.materials[i].SetDirty();
 		}
@@ -1933,9 +1936,9 @@ uint32_t WickedCall_LoadWPE(char* filename)
 		if (ec)
 		{
 			ec->Restart();
-			ec->SetVisible(false);
+			//ec->SetVisible(false); // SetVisible removed from EmittedParticleSystem
 		}
 	}
 	return root;
 }
-
+#endif // WICKEDPARTICLESYSTEM (continued in wickedcalls_part4.cpp)

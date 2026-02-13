@@ -155,9 +155,9 @@
 					}
 					if (bFound || FileExistPrefDDS((LPSTR)sFoundFinalPathAndFilename.c_str()) == 1)
 					{
-						if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource) //PE: Delete first if already active.
+						if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource.IsValid()) //PE: Delete first if already active.
 						{
-							pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = nullptr;
+							pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = {};
 							pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name = "";
 							pObjectMaterial->SetDirty();
 							wiJobSystem::context ctx;
@@ -166,7 +166,7 @@
 
 						pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name = sFoundFinalPathAndFilename;
 						pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name);
-						if (!pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource)
+						if (!pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource.IsValid())
 						{
 							//PE: If prefer dds and got png in filename it fails, try dds version.
 							char texturename[MAX_PATH];
@@ -183,7 +183,7 @@
 								pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name);
 							}
 						}
-						if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource.IsValid())
 						{
 							//PE: save full path as g_pWickedTexturePath is lost later.
 							strcpy(pMesh->pTextures[0].pName, sFoundFinalPathAndFilename.c_str());
@@ -213,9 +213,9 @@
 										sFoundFinalPathAndFilename = WickedGetNormalName().Get();
 								}
 							}
-							if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource) //PE: Delete first if already active.
+							if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid()) //PE: Delete first if already active.
 							{
-								pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = nullptr;
+								pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = {};
 								pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = "";
 								pObjectMaterial->SetDirty();
 								wiJobSystem::context ctx;
@@ -224,7 +224,7 @@
 
 							pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = sFoundFinalPathAndFilename;
 							pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::NORMALMAP].name);
-							if (!pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource)
+							if (!pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid())
 							{
 								//PE: If prefer dds and got png in filename it fails, try dds version.
 								char texturename[MAX_PATH];
@@ -242,7 +242,7 @@
 								}
 							}
 
-							if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource)
+							if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid())
 							{
 								//Set normal intensity.
 								pObjectMaterial->SetNormalMapStrength(WickedGetNormalStrength());
@@ -273,9 +273,9 @@
 								}
 							}
 
-							if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource) //PE: Delete first if already active.
+							if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid()) //PE: Delete first if already active.
 							{
-								pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = nullptr;
+								pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = {};
 								pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name = "";
 								pObjectMaterial->SetDirty();
 								wiJobSystem::context ctx;
@@ -284,7 +284,7 @@
 
 							pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name = sFoundFinalPathAndFilename;
 							pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name);
-							if (!pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource)
+							if (!pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid())
 							{
 								//PE: If prefer dds and got png in filename it fails, try dds version.
 								char texturename[MAX_PATH];
@@ -302,7 +302,7 @@
 								}
 							}
 
-							if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource)
+							if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid())
 							{
 								//Set roughness,metalness intensity.
 								pObjectMaterial->SetRoughness(WickedGetRoughnessStrength());
@@ -326,9 +326,9 @@
 								if (FileExistPrefDDS((LPSTR)sFoundFinalPathAndFilename.c_str()) == 0)
 									sFoundFinalPathAndFilename = WickedGetDisplacementName().Get();
 							}
-							if (pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource)
+							if (pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource.IsValid())
 							{
-								pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource = nullptr;
+								pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource = {};
 								pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].name = "";
 								pObjectMaterial->SetDirty();
 								wiJobSystem::context ctx;
@@ -337,7 +337,7 @@
 
 							pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].name = sFoundFinalPathAndFilename;
 							pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].name);
-							if (!pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource)
+							if (!pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource.IsValid())
 							{
 								//PE: If prefer dds and got png in filename it fails, try dds version.
 								char texturename[MAX_PATH];
@@ -355,7 +355,7 @@
 								}
 							}
 
-							if (pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource)
+							if (pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource.IsValid())
 							{
 								pObjectMaterial->parallaxOcclusionMapping = 0.05f;
 								bPOMShaderRequired = true;
@@ -401,9 +401,9 @@
 										sFoundFinalPathAndFilename = WickedGetEmissiveName().Get();
 								}
 							}
-							if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource) //PE: Delete first if already active.
+							if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid()) //PE: Delete first if already active.
 							{
-								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = nullptr;
+								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = {};
 								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = "";
 								pObjectMaterial->SetDirty();
 								wiJobSystem::context ctx;
@@ -413,7 +413,7 @@
 							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sFoundFinalPathAndFilename;
 							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name);
 							float fEmissive = WickedGetEmissiveStrength();
-							if (!pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+							if (!pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 							{
 								//PE: If prefer dds and got png in filename it fails, try dds version.
 								char texturename[MAX_PATH];
@@ -431,7 +431,7 @@
 								}
 							}
 
-							if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+							if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 							{
 								//Set Emissive intensity.
 								pObjectMaterial->SetEmissiveStrength(fEmissive);
@@ -501,13 +501,14 @@
 								float iCustomShaderParam6 = WickedCustomShaderParam6();
 								float iCustomShaderParam7 = WickedCustomShaderParam7();
 								pObjectMaterial->customShaderID = iCustomShaderID;
-								pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
-								pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
-								pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
-								pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
-								pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
-								pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
-								pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
+								// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
+								//pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
+								//pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
+								//pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
+								//pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
+								//pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
+								//pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
+								//pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
 							}
 							bool bPlanerReflection = WickedPlanerReflection();
 							if (bPlanerReflection)
@@ -588,13 +589,14 @@
 								float iCustomShaderParam6 = WickedCustomShaderParam6();
 								float iCustomShaderParam7 = WickedCustomShaderParam7();
 								pObjectMaterial->customShaderID = iCustomShaderID;
-								pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
-								pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
-								pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
-								pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
-								pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
-								pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
-								pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
+								// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
+								//pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
+								//pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
+								//pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
+								//pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
+								//pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
+								//pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
+								//pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
 							}
 							bool bPlanerReflection = WickedPlanerReflection();
 							if (bPlanerReflection)
@@ -675,13 +677,14 @@
 							float iCustomShaderParam6 = WickedCustomShaderParam6();
 							float iCustomShaderParam7 = WickedCustomShaderParam7();
 							pObjectMaterial->customShaderID = iCustomShaderID;
-							pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
-							pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
-							pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
-							pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
-							pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
-							pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
-							pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
+							// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
+							//pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
+							//pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
+							//pObjectMaterial->customShaderParam3 = iCustomShaderParam3;
+							//pObjectMaterial->customShaderParam4 = iCustomShaderParam4;
+							//pObjectMaterial->customShaderParam5 = iCustomShaderParam5;
+							//pObjectMaterial->customShaderParam6 = iCustomShaderParam6;
+							//pObjectMaterial->customShaderParam7 = iCustomShaderParam7;
 						}
 
 						bool bPlanerReflection = WickedPlanerReflection();
@@ -722,9 +725,9 @@
 					bool bGotSurfaceTexture = false;
 					bool bGotEmissiveTexture = false;
 
-					if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource) //PE: Delete first if already active.
+					if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource.IsValid()) //PE: Delete first if already active.
 					{
-						pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = nullptr;
+						pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = {};
 						pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name = "";
 						pObjectMaterial->SetDirty();
 						wiJobSystem::context ctx;
@@ -743,7 +746,7 @@
 
 						pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name = sFoundFinalPathAndFilename;
 						pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name);
-						if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource.IsValid())
 						{
 							// found the texture file location and type
 							// carried in sFoundFinalPathAndFilename
@@ -764,9 +767,9 @@
 					if ( pMesh->dwTextureCount > GG_MESH_TEXTURE_NORMAL && *(pMesh->pTextures[GG_MESH_TEXTURE_NORMAL].pName) )
 					{
 						// Normal texture
-						if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource) // Delete first if already active.
+						if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid()) // Delete first if already active.
 						{
-							pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = nullptr;
+							pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = {};
 							pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = "";
 							pObjectMaterial->SetDirty();
 							wiJobSystem::context ctx;
@@ -784,9 +787,9 @@
 					if ( pMesh->dwTextureCount > GG_MESH_TEXTURE_SURFACE && *(pMesh->pTextures[GG_MESH_TEXTURE_SURFACE].pName) )
 					{
 						// Ambient occlusion texture
-						if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource) // Delete first if already active.
+						if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid()) // Delete first if already active.
 						{
-							pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = nullptr;
+							pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = {};
 							pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name = "";
 							pObjectMaterial->SetDirty();
 							wiJobSystem::context ctx;
@@ -806,9 +809,9 @@
 					if ( pMesh->dwTextureCount > GG_MESH_TEXTURE_EMISSIVE && *(pMesh->pTextures[GG_MESH_TEXTURE_EMISSIVE].pName) )
 					{
 						// Emissive texture
-						if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource) // Delete first if already active.
+						if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid()) // Delete first if already active.
 						{
-							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = nullptr;
+							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = {};
 							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = "";
 							pObjectMaterial->SetDirty();
 							wiJobSystem::context ctx;
@@ -864,9 +867,9 @@
 							if (bGotNormalTexture == false)
 							{
 								// PBR Normal texture
-								if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource) //PE: Delete first if already active.
+								if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid()) //PE: Delete first if already active.
 								{
-									pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = nullptr;
+									pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = {};
 									pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = "";
 									pObjectMaterial->SetDirty();
 									wiJobSystem::context ctx;
@@ -875,7 +878,7 @@
 								pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = sTextureFilenameBase + "_normal" + sFoundTextureType;
 								if (!FileExist((char*)pObjectMaterial->textures[MaterialComponent::NORMALMAP].name.c_str())) pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = sTextureFilenameBase + "_normal" + sAltTextureType;
 								pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::NORMALMAP].name);
-								if (!pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource)
+								if (!pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid())
 								{
 									pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = "";
 								}
@@ -885,9 +888,9 @@
 							if (bGotSurfaceTexture == false && (!pObjectMaterial->IsUsingVertexColors() || pMesh->iReservedForFuture > 10 ))
 							{
 								// PBR Surface texture
-								if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource) //PE: Delete first if already active.
+								if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid()) //PE: Delete first if already active.
 								{
-									pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = nullptr;
+									pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = {};
 									pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name = "";
 									pObjectMaterial->SetDirty();
 									wiJobSystem::context ctx;
@@ -901,7 +904,7 @@
 								if (!FileExist((char*)pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name.c_str())) pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name = sTextureFilenameBase + "_surface" + sAltTextureType;
 								pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name);
 								std::string surfaceTexFile = "";
-								if (!pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource)
+								if (!pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid())
 								{
 									// could not load DDS or PNG surface during the import, fall back and make one
 									pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name = "";
@@ -975,7 +978,7 @@
 
 								// PBR Surface texture
 								pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name);
-								if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource)
+								if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid())
 								{
 									pObjectMaterial->roughness = 1;
 									pObjectMaterial->metalness = 1;
@@ -987,9 +990,9 @@
 							// PBR emissive
 							if ( bGotEmissiveTexture == false )
 							{
-								if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource) //PE: Delete first if already active.
+								if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid()) //PE: Delete first if already active.
 								{
-									pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = nullptr;
+									pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = {};
 									pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = "";
 									pObjectMaterial->SetDirty();
 									wiJobSystem::context ctx;
@@ -998,7 +1001,7 @@
 								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_emissive" + sFoundTextureType;
 								if (!FileExist((char*)pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name.c_str())) pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_emissive" + sAltTextureType;
 								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name);
-								if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+								if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 								{
 									//PE: We need a default emissiveColor for anything to illume.
 									pMesh->mMaterial.Emissive.r = 1.0f;
@@ -1017,7 +1020,7 @@
 									pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_illum" + sFoundTextureType;
 									if (!FileExist((char*)pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name.c_str())) pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_illum" + sAltTextureType;
 									pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name);
-									if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+									if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 									{
 										//PE: We need a default emissiveColor for anything to illume.
 										pMesh->mMaterial.Emissive.r = 1.0f;
@@ -1036,7 +1039,7 @@
 										pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_illumination" + sFoundTextureType;
 										if (!FileExist((char*)pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name.c_str())) pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_illumination" + sAltTextureType;
 										pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name);
-										if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+										if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 										{
 											//PE: We need a default emissiveColor for anything to illume.
 											pMesh->mMaterial.Emissive.r = 1.0f;
@@ -1056,7 +1059,7 @@
 											pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_i" + sFoundTextureType;
 											if (!FileExist((char*)pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name.c_str())) pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_i" + sAltTextureType;
 											pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name);
-											if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+											if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 											{
 												//PE: We need a default emissiveColor for anything to illume.
 												pMesh->mMaterial.Emissive.r = 1.0f;
@@ -1094,9 +1097,9 @@
 								sTextureFilenameBase = pTrimFinalTextureFilenameBase;
 
 								// Normal texture
-								if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource) //PE: Delete first if already active.
+								if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid()) //PE: Delete first if already active.
 								{
-									pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = nullptr;
+									pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = {};
 									pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = "";
 									pObjectMaterial->SetDirty();
 									wiJobSystem::context ctx;
@@ -1105,15 +1108,15 @@
 								pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = sTextureFilenameBase + "_n" + sFoundTextureType;
 								if (!FileExist((char*)pObjectMaterial->textures[MaterialComponent::NORMALMAP].name.c_str())) pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = sTextureFilenameBase + "_n" + sAltTextureType;
 								pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::NORMALMAP].name);
-								if (!pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource)
+								if (!pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid())
 								{
 									pObjectMaterial->textures[MaterialComponent::NORMALMAP].name = "";
 								}
 
 								// Surface texture
-								if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource) //PE: Delete first if already active.
+								if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid()) //PE: Delete first if already active.
 								{
-									pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = nullptr;
+									pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = {};
 									pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name = "";
 									pObjectMaterial->SetDirty();
 									wiJobSystem::context ctx;
@@ -1147,7 +1150,7 @@
 									pMesh->pTextures[GG_MESH_TEXTURE_OCCLUSION].channelMask = (2 << 4) + (15);
 								}
 								pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name);
-								if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource)
+								if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid())
 								{
 									pObjectMaterial->roughness = 1;
 									pObjectMaterial->metalness = 1;
@@ -1163,7 +1166,7 @@
 								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_i" + sFoundTextureType;
 								if (!FileExist((char*)pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name.c_str())) pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureFilenameBase + "_i" + sAltTextureType;
 								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = WickedCall_LoadImage(pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name);
-								if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+								if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 								{
 									pObjectMaterial->SetEmissiveStrength(1.0f);
 								}
@@ -1179,9 +1182,9 @@
 						if (g_iWickedPutInEmissiveMode > 0)
 						{
 							// emissive override
-							if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+							if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 							{
-								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = nullptr;
+								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = {};
 								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = "";
 								pObjectMaterial->SetDirty();
 								wiJobSystem::context ctx;
@@ -1189,7 +1192,7 @@
 							}
 							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name;
 							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource;
-							if (!pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+							if (!pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 							{
 								pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = "";
 							}
@@ -1420,8 +1423,8 @@ void WickedCall_SetMeshDisableDepth(sMesh* pMesh, bool bDisable)
 			{
 				if (bDisable == true)
 				{
-					pObjectMaterial->userBlendMode = BLENDMODE_FORCEDEPTH;
-					pObjectMaterial->shaderType = MaterialComponent::SHADERTYPE_WEAPON;
+					pObjectMaterial->userBlendMode = BLENDMODE_OPAQUE; // was BLENDMODE_FORCEDEPTH (REMOVED)
+					pObjectMaterial->shaderType = MaterialComponent::SHADERTYPE_PBR; // was SHADERTYPE_WEAPON (REMOVED)
 					pObjectMaterial->SetDoubleSided(true);
 				}
 				else
@@ -1471,7 +1474,7 @@ std::string WickedCall_GetAllTexturesUsed(sObject* pObject)
 					for (int i = 0; i < MaterialComponent::TEXTURESLOT_COUNT; i++)
 					{
 						//Extract textures.
-						if (pObjectMaterial->textures[i].resource)
+						if (pObjectMaterial->textures[i].resource.IsValid())
 						{
 							if (pObjectMaterial->textures[i].name.length() > 0)
 							{
@@ -1524,7 +1527,7 @@ LPSTR WickedCall_GetMeshMaterialName(sMesh* pMesh)
 			{
 				// return a pointer to the material basecolor name (used to determine if a successful texture was loaded)
 				// in place of the old method of checking the iImageID which now may be zero
-				if ( pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource )
+				if ( pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource.IsValid() )
 					pName = (LPSTR)pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name.c_str();
 			}
 		}
@@ -1857,7 +1860,7 @@ void WickedCall_SetMeshMaterial ( sMesh* pMesh, bool bForce)
 				// emissive color
 				//PE: Prevent us for setting emissive color to black ? another way is needed.
 				//PE: Only do trick if we dont have any custom material settings.
-				if (!bWickedMaterialActive && pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource && (pMesh->mMaterial.Emissive.r + pMesh->mMaterial.Emissive.g + pMesh->mMaterial.Emissive.b) == 0)
+				if (!bWickedMaterialActive && pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid() && (pMesh->mMaterial.Emissive.r + pMesh->mMaterial.Emissive.g + pMesh->mMaterial.Emissive.b) == 0)
 				{
 					// a trick so that old mesh materials set to black can be seen in new wicked engine
 					pObjectMaterial->emissiveColor.x = 1.0f;
@@ -1870,7 +1873,7 @@ void WickedCall_SetMeshMaterial ( sMesh* pMesh, bool bForce)
 					pObjectMaterial->emissiveColor.x = pMesh->mMaterial.Emissive.r;
 					pObjectMaterial->emissiveColor.y = pMesh->mMaterial.Emissive.g;
 					pObjectMaterial->emissiveColor.z = pMesh->mMaterial.Emissive.b;
-					if (!pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+					if (!pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 					{
 						//PE: emissiveColor.w is used for emissive strength , so dont touch if we have a texture :)
 						pObjectMaterial->emissiveColor.w = pMesh->mMaterial.Emissive.a;
@@ -1915,7 +1918,7 @@ float WickedCall_GetObjectRenderOrderBias(sObject* pObject)
 			ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 			if (object)
 			{
-				fRenderOrderBias = object->GetRenderOrderBiasDistance();
+				fRenderOrderBias = (float)object->sort_priority;
 				break;
 			}
 		}

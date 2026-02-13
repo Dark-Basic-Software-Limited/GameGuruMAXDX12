@@ -377,12 +377,12 @@ void visuals_resetvalues (bool bNewLevel)
 		if (weather)
 		{
 			//PE: Must delete old skymap.
-			if (weather->skyMap != nullptr && weather->skyMapName.length() > 0)
+			if (weather->skyMap.IsValid() && weather->skyMapName.length() > 0)
 			{
 				//PE: Make sure to free any old resources.
 				WickedCall_DeleteImage(weather->skyMapName);
 			}
-			weather->skyMap = nullptr;
+			weather->skyMap = {};
 			weather->skyMapName = "";
 		}
 	}

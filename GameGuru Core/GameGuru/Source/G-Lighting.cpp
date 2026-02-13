@@ -279,9 +279,11 @@ void lighting_loop(void)
 			g_fGlobalGammaFadeIn = g_fGlobalGammaFadeInDest;
 		}
 		if (g_fGlobalGammaFadeIn >= 0)
-			wiRenderer::SetGamma(g_fGlobalGammaFadeIn);
+			; // TODO: wiRenderer::SetGamma removed in new WickedEngine
+			//wiRenderer::SetGamma(g_fGlobalGammaFadeIn);
 		else
-			wiRenderer::SetGamma(0);
+			; // TODO: wiRenderer::SetGamma removed in new WickedEngine
+			//wiRenderer::SetGamma(0);
 	}
 }
 

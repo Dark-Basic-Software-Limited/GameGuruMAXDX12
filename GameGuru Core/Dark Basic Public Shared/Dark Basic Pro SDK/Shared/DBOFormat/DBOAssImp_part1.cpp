@@ -1,4 +1,6 @@
-﻿void ReadNodeHeirarchy(float AnimationTime, const aiNode* pNode, const aiMatrix4x4 & ParentTransform)
+﻿#ifdef WICKEDENGINE // continued from part0
+
+void ReadNodeHeirarchy(float AnimationTime, const aiNode* pNode, const aiMatrix4x4 & ParentTransform)
 {
 	std::string NodeName(pNode->mName.data);
 
@@ -72,7 +74,9 @@
 	}
 }
 
-#else
+#endif // WICKEDENGINE
+
+#ifndef WICKEDENGINE // continued from part0
 
 bool LoadAssImpObject(char* pModelFilename, sObject** ppObject, enumScalingMode eScalingMode)
 {

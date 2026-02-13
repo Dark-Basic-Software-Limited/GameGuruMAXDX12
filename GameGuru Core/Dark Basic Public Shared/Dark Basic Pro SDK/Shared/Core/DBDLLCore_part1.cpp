@@ -1,4 +1,6 @@
-﻿#endif
+﻿#ifndef WICKEDENGINE // continued from part0
+#ifdef ENABLEIMGUI // continued from part0
+#endif
 #endif
 
 #ifdef ENABLEIMGUI

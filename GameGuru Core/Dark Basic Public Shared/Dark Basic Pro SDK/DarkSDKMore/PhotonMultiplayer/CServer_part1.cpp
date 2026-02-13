@@ -1,4 +1,5 @@
-﻿	if ( found > -1 )
+﻿/*
+	if ( found > -1 )
 	{
 		switch ( PacketSend_Log_Server[found].packetType )
 		{

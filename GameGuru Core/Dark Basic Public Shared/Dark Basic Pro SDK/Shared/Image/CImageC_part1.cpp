@@ -1720,3 +1720,5 @@ DARKSDK bool GrabImageCore(int iID, int iX1, int iY1, int iX2, int iY2, int iTex
 	}
 	return true;
 }
+
+#endif // WICKEDENGINE - continued in part2

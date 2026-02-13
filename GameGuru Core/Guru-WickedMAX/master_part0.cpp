@@ -323,7 +323,8 @@ void Master::InitializeSecondaries()
 	masterrenderer.Load();
 	masterrenderer.setMSAASampleCount(1);
 	ActivatePath(&masterrenderer);
-	masterrenderer.Set3DResolution( masterrenderer.GetPhysicalWidth(), masterrenderer.GetPhysicalHeight() );
+	// TODO: Set3DResolution removed, use resolutionScale instead
+	//masterrenderer.Set3DResolution( masterrenderer.GetPhysicalWidth(), masterrenderer.GetPhysicalHeight() );
 
 	// smooth out experience, avoid jerkiness
 	wiEvent::SetVSync(bVsyncEnabled);
@@ -333,8 +334,8 @@ void Master::InitializeSecondaries()
 	wiRenderer::SetOcclusionCullingEnabled(false); // the lag is clearly visible, causing obvious gaps for some level designs (performance hit now disabled)!
 
 	// populate D3D ptrs (for IMGUI)
-	m_pD3D = (ID3D11Device*)wiRenderer::GetDevice()->GetDeviceForIMGUI();
-	m_pImmediateContext = (ID3D11DeviceContext*)wiRenderer::GetDevice()->GetImmediateForIMGUI();
+	//m_pD3D = (ID3D11Device*)wiGraphics::GetDevice()->GetDeviceForIMGUI();
+	//m_pImmediateContext = (ID3D11DeviceContext*)wiGraphics::GetDevice()->GetImmediateForIMGUI();
 
 	// Get current working directory (for temp folder compare)
 	char CurrentDirectory[_MAX_PATH];
@@ -491,11 +492,11 @@ void Master::InitializeSecondaries()
 	// setup OpenXR, will fail if VR not available
 	// OpenXRInit now as vrmodefordevelopers=1 can activate VR for experiments!
 	m_bUsingVR = false;
-	if ( OpenXRInit( (ID3D11Device*) wiRenderer::GetDevice()->GetDeviceForIMGUI() ) >= 0 )
-	{
-		// VR available
-		m_bUsingVR = true;
-	}
+	//if ( OpenXRInit( (ID3D11Device*) wiGraphics::GetDevice()->GetDeviceForIMGUI() ) >= 0 )
+	//{
+	//	// VR available
+	//	m_bUsingVR = true;
+	//}
 
 	// Before launch MAX, run the Classic to MAX converter to see if any assets require porting from X files to DBO
 	// continues in background, does not wait until finished before launching MAX (small chance of trying to use an old X file first time!)
@@ -632,11 +633,11 @@ void Master::Update(float dt)
 		{
 			//extern char g_pGraphicsCardLog[10240];
 			//timestampactivity(0, g_pGraphicsCardLog);
-			GraphicsDevice* device = wiRenderer::GetDevice();
-			if (device->GetGraphicsCardName())
+			GraphicsDevice* device = wiGraphics::GetDevice();
+			if (!device->GetAdapterName().empty())
 			{
 				char pActualGraphicsCardUsed[MAX_PATH];
-				sprintf(pActualGraphicsCardUsed, "Graphics Card Used: %s", device->GetGraphicsCardName());
+				sprintf(pActualGraphicsCardUsed, "Graphics Card Used: %s", device->GetAdapterName().c_str());
 				timestampactivity(0, pActualGraphicsCardUsed);
 			}
 			bOnlyReportOnce = false;
@@ -1172,9 +1173,9 @@ void Master::Update(float dt)
 				SetDir("..");
 				bCustomSplash = true;
 			}
-			std::shared_ptr<wiResource> tex = wiResourceManager::Load(fileName);
-			if (tex) g_pSplashTexture = tex->texture;
-			if (g_pSplashTexture.desc.Width == 0)
+			wiResource tex = wiResourceManager::Load(fileName);
+			if (tex.IsValid()) g_pSplashTexture = tex.GetTexture();
+			if (g_pSplashTexture.desc.width == 0)
 			{
 				// could be a DDS renamed as JPG
 				char pTryDDS[MAX_PATH];
@@ -1183,10 +1184,10 @@ void Master::Update(float dt)
 				strcat(pTryDDS, ".dds");
 				DeleteFileA(pTryDDS);
 				CopyFileA(fileName, pTryDDS, FALSE);
-				std::shared_ptr<wiResource> tex2 = wiResourceManager::Load(pTryDDS);
-				if (tex2)
+				wiResource tex2 = wiResourceManager::Load(pTryDDS);
+				if (tex2.IsValid())
 				{
-					g_pSplashTexture = tex2->texture;
+					g_pSplashTexture = tex2.GetTexture();
 				}
 			}
 			if (bDecryptedFile == true)
@@ -1217,14 +1218,14 @@ void Master::Update(float dt)
 	if (g_iShowSplashForFirstFewCycles > 0)
 	{
 		// render splash screen here
-		CommandList cmd = wiRenderer::GetDevice()->BeginCommandList();
-		wiRenderer::GetDevice()->RenderPassBegin(&swapChain, cmd);
-		wiImage::SetCanvas(canvas, cmd);
-		wiFont::SetCanvas(canvas, cmd);
+		CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
+		wiGraphics::GetDevice()->RenderPassBegin(&swapChain, cmd);
+		wiImage::SetCanvas(canvas);
+		wiFont::SetCanvas(canvas);
 		Viewport viewport;
-		viewport.Width = (float)swapChain.desc.width;
-		viewport.Height = (float)swapChain.desc.height;
-		wiRenderer::GetDevice()->BindViewports(1, &viewport, cmd);
+		viewport.width = (float)swapChain.desc.width;
+		viewport.height = (float)swapChain.desc.height;
+		wiGraphics::GetDevice()->BindViewports(1, &viewport, cmd);
 		wiFontParams params;
 		params.posX = 5.f;
 		params.posY = 5.f;
@@ -1234,15 +1235,15 @@ void Master::Update(float dt)
 			{
 				float screenheight = canvas.GetLogicalHeight();
 				float screenwidth = canvas.GetLogicalWidth();
-				float img_w = g_pSplashTexture.desc.Width;
-				float img_h = g_pSplashTexture.desc.Height;
+				float img_w = g_pSplashTexture.desc.width;
+				float img_h = g_pSplashTexture.desc.height;
 				float fRatio = 1.0f / (img_h / img_w);
 				img_h = screenheight;
 				img_w = screenheight * fRatio;
 				if (img_w < screenwidth)
 				{
 					img_w = screenwidth;
-					img_h = screenwidth * (1.0f / ((float)g_pSplashTexture.desc.Width / (float)g_pSplashTexture.desc.Height));
+					img_h = screenwidth * (1.0f / ((float)g_pSplashTexture.desc.width / (float)g_pSplashTexture.desc.height));
 				}
 				fx.disableFullScreen();
 				fx.pos.x = screenwidth * 0.5;
@@ -1263,15 +1264,15 @@ void Master::Update(float dt)
 			{
 				char logoFile[MAX_PATH];
 				sprintf(logoFile, "Files\\editors\\uiv3\\MAX-Logo-Square.png");
-				std::shared_ptr<wiResource> tex = wiResourceManager::Load(logoFile);
+				wiResource tex = wiResourceManager::Load(logoFile);
 				wiGraphics::Texture pMAXLogoTexture;
-				if (tex) pMAXLogoTexture = tex->texture;
+				if (tex.IsValid()) pMAXLogoTexture = tex.GetTexture();
 				if (pMAXLogoTexture.IsValid())
 				{
 					float screenheight = canvas.GetLogicalHeight();
 					float screenwidth = canvas.GetLogicalWidth();
-					float img_w = pMAXLogoTexture.desc.Width;
-					float img_h = pMAXLogoTexture.desc.Height;
+					float img_w = pMAXLogoTexture.desc.width;
+					float img_h = pMAXLogoTexture.desc.height;
 					fx.disableFullScreen();
 					fx.pos.x = screenwidth * 0.5;
 					fx.pos.y = screenheight * 0.5;
@@ -1285,8 +1286,8 @@ void Master::Update(float dt)
 			}
 		}
 
-		wiRenderer::GetDevice()->RenderPassEnd(cmd);
-		wiRenderer::GetDevice()->SubmitCommandLists();
+		wiGraphics::GetDevice()->RenderPassEnd(cmd);
+		wiGraphics::GetDevice()->SubmitCommandLists();
 		g_iShowSplashForFirstFewCycles--;
 		if (g_iShowSplashForFirstFewCycles <= 0)
 		{
@@ -1308,7 +1309,7 @@ void Master::Update(float dt)
 		{
 			// only hand over rendering submissions when splash is no longer needed
 			g_iShowSplashForFirstFewCycles = 0;
-			setCompletelyLoaded(true);
+			//setCompletelyLoaded(true);
 		}
 	}
 }
@@ -1343,9 +1344,9 @@ bool Master::ForceRender(void* rt)
 	Update(0);
 	masterrenderer.SetRenderingVR(false);
 
-	Render( 0 );
+	Render();
 
-	CommandList cmd = wiRenderer::GetDevice()->BeginCommandList();
+	CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
 	{
 		if (nrt)
 		{
@@ -1358,36 +1359,36 @@ bool Master::ForceRender(void* rt)
 			if (bProceduralLevel || bSnapShotModeUse2D || bFullScreenBackbuffer)
 			{
 				Viewport vp;
-				vp.Width = (float)masterrenderer.GetPhysicalWidth();
-				vp.Height = (float)masterrenderer.GetPhysicalHeight();
-				wiRenderer::GetDevice()->BindViewports(1, &vp, cmd);
+				vp.width = (float)masterrenderer.GetPhysicalWidth();
+				vp.height = (float)masterrenderer.GetPhysicalHeight();
+				wiGraphics::GetDevice()->BindViewports(1, &vp, cmd);
 			}
 			else
 			{
-				vp.Width = (float)1920.0f;
-				vp.Height = (float)1017.0f;
-				wiRenderer::GetDevice()->BindViewports(1, &vp, cmd);
+				vp.width = (float)1920.0f;
+				vp.height = (float)1017.0f;
+				wiGraphics::GetDevice()->BindViewports(1, &vp, cmd);
 			}
 			#endif
-			wiRenderer::GetDevice()->SetRenderTarget(cmd, nrt);
+			//wiGraphics::GetDevice()->SetRenderTarget(cmd, nrt);
 
 		}
 		else
 		{
-			wiRenderer::GetDevice()->RenderPassBegin( &swapChain, cmd );
+			wiGraphics::GetDevice()->RenderPassBegin( &swapChain, cmd );
 		}
 		extern bool bPopModalOpenProcedural;
 		extern bool bSnapShotModeUse2D;
 		extern bool BackBufferGrabGameScreen;
 		if (!bPopModalOpenProcedural && !bSnapShotModeUse2D && !BackBufferGrabGameScreen)
 		{
-			masterrenderer.ComposeSimple(cmd);
+			//masterrenderer.ComposeSimple(cmd);
 		}
 		else
 		{
 			if (BackBufferGrabGameScreen)
 			{
-				masterrenderer.ComposeSimple2D(cmd); //only 2D
+				//masterrenderer.ComposeSimple2D(cmd); //only 2D
 			}
 			else
 			{
@@ -1399,7 +1400,7 @@ bool Master::ForceRender(void* rt)
 	wiProfiler::EndFrame(cmd);
 
 	//wiFont::Draw("TESTING FONT HERE", wiFontParams(148, 148, 30, WIFALIGN_LEFT, WIFALIGN_TOP, wiColor(255, 255, 255, 255)), cmd);
-	wiRenderer::GetDevice()->SubmitCommandLists();
+	wiGraphics::GetDevice()->SubmitCommandLists();
 	m_bForceRender = false;
 	return true;
 }
@@ -1502,7 +1503,7 @@ void Master::RunCustom()
 #ifdef OPTICK_ENABLE
 			OPTICK_EVENT("Initialize OpenXR");
 #endif
-			if ( OpenXRInit( (ID3D11Device*) wiRenderer::GetDevice()->GetDeviceForIMGUI() ) < 0 )
+			//if ( OpenXRInit( (ID3D11Device*) wiGraphics::GetDevice()->GetDeviceForIMGUI() ) < 0 )
 			{
 				bRequireVRRendering = false;
 				g_iActivelyUsingVRNow = 0;
@@ -1540,7 +1541,8 @@ void Master::RunCustom()
 			}
 			bVsyncEnabled = false;
 			wiEvent::SetVSync(bVsyncEnabled);
-			masterrenderer.Set3DResolution( width/resolutionScale, height/resolutionScale );
+			// TODO: Set3DResolution removed, use resolutionScale instead
+			//masterrenderer.Set3DResolution( width/resolutionScale, height/resolutionScale );
 		}
 
 		// regular logic loop (stripped out render aspects)
@@ -1561,7 +1563,7 @@ void Master::RunCustom()
 			wiScene::CameraComponent &camera = wiScene::GetCamera();
 
 			// must be outside a render pass and only called once, even if VR renders twice
-			CommandList cmd = wiRenderer::GetDevice()->BeginCommandList();
+			CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
 			auto range = wiProfiler::BeginRangeCPU("Update - Particles");
 			gpup_update(deltaTime, cmd);
 			wiProfiler::EndRange(range);
@@ -1583,7 +1585,7 @@ void Master::RunCustom()
 		}
 		
 		// Wake up the events that need to be executed on the main thread, in thread safe manner:
-		wiEvent::FireEvent(SYSTEM_EVENT_THREAD_SAFE_POINT, 0);
+		wiEvent::FireEvent(wi::eventhandler::EVENT_THREAD_SAFE_POINT, 0);
 
 		// get ready with OpenXR
 		OpenXRHandleEvents();
@@ -1764,22 +1766,22 @@ void Master::RunCustom()
 
 				// Variable-timed update:
 				Update(dt);
-				wiInput::Update( window );
+				wiInput::Update( window, canvas );
 
 				// render everything to left eye now
-				Render( EYE_LEFT );
+				Render();
 
-				activePath->StorePreviousLeft();
+				//activePath->StorePreviousLeft();
 
 				// compose left eye
 				ID3D11RenderTargetView* leftView = OpenXRStartRender(OPENXR_RENDER_LEFT);
-				CommandList cmd = wiRenderer::GetDevice()->BeginCommandList();
-				wiRenderer::GetDevice()->SetRenderTarget(cmd, leftView);
+				CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
+				//wiGraphics::GetDevice()->SetRenderTarget(cmd, leftView);
 				Viewport vp;
-				vp.Width = (float)masterrenderer.GetWidth3D() * resolutionScale;
-				vp.Height = (float)masterrenderer.GetHeight3D() * resolutionScale;
-				wiRenderer::GetDevice()->BindViewports(1, &vp, cmd);
-				masterrenderer.ComposeSimple(cmd);
+				vp.width = (float)masterrenderer.GetPhysicalWidth() * resolutionScale;
+				vp.height = (float)masterrenderer.GetPhysicalHeight() * resolutionScale;
+				wiGraphics::GetDevice()->BindViewports(1, &vp, cmd);
+				//masterrenderer.ComposeSimple(cmd);
 				OpenXREndRender();
 
 				// render right eye
@@ -1797,36 +1799,36 @@ void Master::RunCustom()
 				GGTrees_UpdateFrustumCulling( &wiScene::GetCamera() );
 
 				Update(0);
-				Render( EYE_RIGHT );
+				Render();
 
-				activePath->StorePreviousRight();
+				//activePath->StorePreviousRight();
 
 				// compose right eye
 				ID3D11RenderTargetView* rightView = OpenXRStartRender(OPENXR_RENDER_RIGHT);
-				cmd = wiRenderer::GetDevice()->BeginCommandList();
-				wiRenderer::GetDevice()->SetRenderTarget(cmd, rightView);
-				vp.Width = (float)masterrenderer.GetWidth3D() * resolutionScale;
-				vp.Height = (float)masterrenderer.GetHeight3D() * resolutionScale;
-				wiRenderer::GetDevice()->BindViewports(1, &vp, cmd);
-				masterrenderer.ComposeSimple(cmd);
+				cmd = wiGraphics::GetDevice()->BeginCommandList();
+				//wiGraphics::GetDevice()->SetRenderTarget(cmd, rightView);
+				vp.width = (float)masterrenderer.GetPhysicalWidth() * resolutionScale;
+				vp.height = (float)masterrenderer.GetPhysicalHeight() * resolutionScale;
+				wiGraphics::GetDevice()->BindViewports(1, &vp, cmd);
+				//masterrenderer.ComposeSimple(cmd);
 				OpenXREndRender();
 
 				// present final to device
 				wiScene::GetCamera().SetCustomProjectionEnabled(false);
-				cmd = wiRenderer::GetDevice()->BeginCommandList();
-				wiRenderer::GetDevice()->RenderPassBegin( &swapChain, cmd );
+				cmd = wiGraphics::GetDevice()->BeginCommandList();
+				wiGraphics::GetDevice()->RenderPassBegin( &swapChain, cmd );
 				{
-					wiImage::SetCanvas(canvas, cmd);
-					wiFont::SetCanvas(canvas, cmd);
+					wiImage::SetCanvas(canvas);
+					wiFont::SetCanvas(canvas);
 					Viewport viewport;
-					viewport.Width = (float)swapChain.desc.width;
-					viewport.Height = (float)swapChain.desc.height;
-					wiRenderer::GetDevice()->BindViewports(1, &viewport, cmd);
-					masterrenderer.ComposeSimple(cmd); // no 2D stuff, done through forcerender to quad plane
-					wiRenderer::GetDevice()->RenderPassEnd(cmd);
+					viewport.width = (float)swapChain.desc.width;
+					viewport.height = (float)swapChain.desc.height;
+					wiGraphics::GetDevice()->BindViewports(1, &viewport, cmd);
+					//masterrenderer.ComposeSimple(cmd); // no 2D stuff, done through forcerender to quad plane
+					wiGraphics::GetDevice()->RenderPassEnd(cmd);
 					wiProfiler::EndFrame(cmd); // End before Present() so that GPU queries are properly recorded
 				}
-				wiRenderer::GetDevice()->SubmitCommandLists();
+				wiGraphics::GetDevice()->SubmitCommandLists();
 			}
 			OpenXREndFrame();
 		}

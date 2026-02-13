@@ -395,15 +395,15 @@ void sky_skyspec_init(bool bResetVisuals)
 			}
 
 			// wicked has its own cube map to render the static sky backdrop!
-			if (weather->skyMap != nullptr && weather->skyMapName.length() > 0)
+			if (weather->skyMap.IsValid() && weather->skyMapName.length() > 0)
 			{
 				//PE: Make sure to free any old resources.
 				WickedCall_DeleteImage(weather->skyMapName);
 			}
 			weather->skyMapName = pFileToLoad.Get();
 			weather->skyMap = WickedCall_LoadImage(weather->skyMapName);
-			weather->cloudiness = 0.0f; //PE: This has changed in the new repo, same shader is now used and cloudiness turn it off, so must now be zero.
-			weather->cloudSpeed = 0.0f; //To stop moving lightshaft.
+			weather->volumetricCloudParameters.layerFirst.coverageAmount = 0.0f; //PE: This has changed in the new repo, same shader is now used and cloudiness turn it off, so must now be zero.
+			weather->volumetricCloudParameters.layerFirst.windSpeed = 0.0f; //To stop moving lightshaft.
 
 			// set the sun parameters
 			extern void Wicked_Update_Visuals(void *voidvisual);
@@ -413,15 +413,15 @@ void sky_skyspec_init(bool bResetVisuals)
 		{
 			//Delete if we alreadey have one loaded.
 			timestampactivity(0, "delete any old sky");
-			if (weather->skyMap != nullptr && weather->skyMapName.length() > 0)
+			if (weather->skyMap.IsValid() && weather->skyMapName.length() > 0)
 			{
 				//PE: Make sure to free any old resources.
 				WickedCall_DeleteImage(weather->skyMapName);
 			}
-			weather->skyMap = nullptr;
+			weather->skyMap = {};
 			weather->skyMapName = "";
-			weather->cloudSpeed = t.visuals.SkyCloudSpeed;
-			weather->cloudiness = t.visuals.SkyCloudiness;
+			weather->volumetricCloudParameters.layerFirst.windSpeed = t.visuals.SkyCloudSpeed;
+			weather->volumetricCloudParameters.layerFirst.coverageAmount = t.visuals.SkyCloudiness;
 		}
 		// and ensure env probes updated
 		timestampactivity(0, "update probes for the sky");

@@ -575,7 +575,7 @@ void display_profiler_data(ImDrawList* draw, char* filter,int startline)
 	bool bProfile = true;
 	bProfilerEnable = true;
 	wiProfiler::SetEnabled(true);
-	std::string profiler_data = wiProfiler::GetProfilerDataFilter(filter);
+	std::string profiler_data = std::string("");
 	float line = startline;
 	char* find = (char*)pestrcasestr(profiler_data.c_str(), "\n");
 	while (find)
@@ -600,7 +600,7 @@ void display_profiler_data(ImDrawList* draw, char* filter,int startline)
 
 int GetDrawCallsShadowsCube2(void)
 {
-	return(wiProfiler::GetDrawCallsShadowsCube());
+	return(0);
 }
 
 int GetWidgetMode(void)

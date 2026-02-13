@@ -1,4 +1,4 @@
-﻿#else
+﻿#ifndef WICKEDENGINE // continued from part1
 DARKSDK bool GrabImageCore ( int iID, int iX1, int iY1, int iX2, int iY2, int iTextureFlagForGrab )
 {
 	#ifdef WICKEDENGINE

@@ -10,7 +10,7 @@
 #include "wiTimer.h"
 #include "preprocessor-moreflags.h"
 #include "gameguru.h"
-#include "Utility/tinyddsloader.h"
+//#include "Utility/dds.h" // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
 #ifdef OPTICK_ENABLE
 #include "optick.h"
 #endif
@@ -51,6 +51,8 @@ namespace Tracers
     };
     uint16_t indices[] = { 0, 1, 2, 2, 1, 3 };
 
+    // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
+#if 0
     wiGraphics::FORMAT ConvertDDSFormat(tinyddsloader::DDSFile::DXGIFormat format)
     {
         switch (format)
@@ -117,7 +119,7 @@ namespace Tracers
         case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm: return FORMAT_BC7_UNORM;
         case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm_SRGB: return FORMAT_BC7_UNORM_SRGB;
         default:
-            assert(0); // incoming format is not supported 
+            assert(0); // incoming format is not supported
             return FORMAT_UNKNOWN;
         }
     }
@@ -139,8 +141,8 @@ namespace Tracers
         desc.ArraySize = 1;
         desc.BindFlags = BIND_SHADER_RESOURCE;
         desc.CPUAccessFlags = 0;
-        desc.Width = dds.GetWidth();
-        desc.Height = dds.GetHeight();
+        desc.width = dds.GetWidth();
+        desc.height = dds.GetHeight();
         desc.Depth = dds.GetDepth();
         desc.MipLevels = dds.GetMipCount();
         desc.ArraySize = dds.GetArraySize();
@@ -174,6 +176,13 @@ namespace Tracers
 
         device->CreateTexture(&desc, InitData.data(), tex);
     }
+#endif
+
+    // TODO: DX12 - tinyddsloader removed, stub function until DDS loading is rewritten
+    void Tracer_LoadTextureDDS(const char* filename, Texture* tex)
+    {
+        // stub - DDS loading disabled
+    }
 
     void LoadTracerImage(char * filename , uint32_t gunid)
     {
@@ -193,36 +202,36 @@ namespace Tracers
 
         //PE: Create constant buffer
         GPUBufferDesc cbd;
-        cbd.Usage = USAGE_DYNAMIC;
-        cbd.ByteWidth = sizeof(TracerCB);
-        cbd.BindFlags = BIND_CONSTANT_BUFFER;
-        cbd.CPUAccessFlags = CPU_ACCESS_WRITE;
+        cbd.usage = Usage::UPLOAD;
+        cbd.size = sizeof(TracerCB);
+        cbd.bind_flags = BindFlag::CONSTANT_BUFFER;
+        //cbd.CPUAccessFlags = CPU_ACCESS_WRITE; // removed in DX12 API
         device->CreateBuffer(&cbd, nullptr, &constantBuffer);
 
         SamplerDesc samplerDesc;
-        samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressW = TEXTURE_ADDRESS_WRAP;
-        samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDesc.address_u = TextureAddressMode::WRAP;
+        samplerDesc.address_v = TextureAddressMode::WRAP;
+        samplerDesc.address_w = TextureAddressMode::WRAP;
+        samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
         device->CreateSampler(&samplerDesc, &samplerTrilinearWrap);
 
-        samplerDesc.AddressU = TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.AddressV = TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.AddressW = TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDesc.address_u = TextureAddressMode::CLAMP;
+        samplerDesc.address_v = TextureAddressMode::CLAMP;
+        samplerDesc.address_w = TextureAddressMode::CLAMP;
+        samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
         device->CreateSampler(&samplerDesc, &samplerTrilinearClamp);
 
         BlendState bd;
         //PE: Additive for now.
-        bd.RenderTarget[0].BlendEnable = true;
-        bd.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
-        bd.RenderTarget[0].DestBlend = BLEND_ONE;
-        bd.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-        bd.RenderTarget[0].SrcBlendAlpha = BLEND_ZERO;
-        bd.RenderTarget[0].DestBlendAlpha = BLEND_ONE;
-        bd.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
-        bd.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_ALL;
-        bd.IndependentBlendEnable = false;
+        bd.render_target[0].blend_enable = true;
+        bd.render_target[0].src_blend = Blend::SRC_ALPHA;
+        bd.render_target[0].dest_blend = Blend::ONE;
+        bd.render_target[0].blend_op = BlendOp::ADD;
+        bd.render_target[0].src_blend_alpha = Blend::ZERO;
+        bd.render_target[0].dest_blend_alpha = Blend::ONE;
+        bd.render_target[0].blend_op_alpha = BlendOp::ADD;
+        bd.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
+        bd.independent_blend_enable = false;
         blendStatesAdditive = bd;
 
         /*
@@ -235,27 +244,27 @@ namespace Tracers
         bd.RenderTarget[0].DestBlendAlpha = BLEND_INV_SRC_ALPHA;
         bd.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
         bd.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_ALL;
-        bd.IndependentBlendEnable = false;
+        bd.independent_blend_enable = false;
         blendStatesAdditive = bd;
         */
 
         RasterizerState rs;
-        rs.FillMode = FILL_SOLID;
-        rs.CullMode = CULL_NONE;
-        rs.FrontCounterClockwise = true;
-        rs.DepthBias = 0;
-        rs.DepthBiasClamp = 0;
-        rs.SlopeScaledDepthBias = 0;
-        rs.DepthClipEnable = false;
-        rs.MultisampleEnable = false;
-        rs.AntialiasedLineEnable = false;
+        rs.fill_mode = FillMode::SOLID;
+        rs.cull_mode = CullMode::NONE;
+        rs.front_counter_clockwise = true;
+        rs.depth_bias = 0;
+        rs.depth_bias_clamp = 0;
+        rs.slope_scaled_depth_bias = 0;
+        rs.depth_clip_enable = false;
+        rs.multisample_enable = false;
+        rs.antialiased_line_enable = false;
         rasterizerState = rs;
 
         DepthStencilState dsd;
-        dsd.DepthEnable = true;
-        dsd.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
-        dsd.DepthFunc = COMPARISON_GREATER_EQUAL;
-        dsd.StencilEnable = false;
+        dsd.depth_enable = true;
+        dsd.depth_write_mask = DepthWriteMask::ZERO;
+        dsd.depth_func = ComparisonFunc::GREATER_EQUAL;
+        dsd.stencil_enable = false;
         depthStencilState = dsd;
 
         //PE: Create quad mesh and pipeline state
@@ -385,23 +394,23 @@ namespace Tracers
 
             uint32_t bindSlot = 2;
             device->UpdateBuffer(&constantBuffer, &cb, cmd);
-            device->BindConstantBuffer(VS, &constantBuffer, bindSlot, cmd);
-            device->BindConstantBuffer(PS, &constantBuffer, bindSlot, cmd);
+            device->BindConstantBuffer(&constantBuffer, bindSlot, cmd);
+            device->BindConstantBuffer(&constantBuffer, bindSlot, cmd);
             uint32_t tID = tracer.tracerID;
             if (tID > MAXTRACERS + MAXLUATRACERS) tID = 0;
             if (tracerTexture[tID].IsValid())
-                device->BindResource(PS, &tracerTexture[tID], 0, cmd);
+                device->BindResource(&tracerTexture[tID], 0, cmd);
             else
-                device->BindResource(PS, wiTextureHelper::getWhite() , 0, cmd);
+                device->BindResource(wiTextureHelper::getWhite() , 0, cmd);
 
-            device->BindResource(PS, &tracerTexture[tID], 0, cmd);
-            device->BindSampler(PS, &samplerTrilinearWrap, 0, cmd);
+            device->BindResource(&tracerTexture[tID], 0, cmd);
+            device->BindSampler(&samplerTrilinearWrap, 0, cmd);
 
             const GPUBuffer* vbs[] = { &quadVB };
             const UINT strides[] = { sizeof(XMFLOAT3) + sizeof(XMFLOAT2) };
             const UINT offsets[] = { 0 };
             device->BindVertexBuffers(vbs, 0, 1, strides, 0, cmd);
-            device->BindIndexBuffer(&quadIB, INDEXFORMAT_16BIT, 0, cmd);
+            device->BindIndexBuffer(&quadIB, IndexBufferFormat::UINT16, 0, cmd);
             device->DrawIndexed(6, 0, 0, cmd);
         }
 
@@ -415,23 +424,23 @@ namespace Tracers
     {
         GPUBufferDesc bd = {};
         SubresourceData data = {};
-        data.pSysMem = vertices;
-        bd.Usage = USAGE_IMMUTABLE;
-        bd.ByteWidth = sizeof(vertices);
-        bd.BindFlags = BIND_VERTEX_BUFFER;
+        data.data_ptr = vertices;
+        bd.usage = Usage::DEFAULT;
+        bd.size = sizeof(vertices);
+        bd.bind_flags = BindFlag::VERTEX_BUFFER;
         wi::graphics::GetDevice()->CreateBuffer(&bd, &data, &quadVB);
 
-        data.pSysMem = indices;
-        bd.ByteWidth = sizeof(indices);
-        bd.BindFlags = BIND_INDEX_BUFFER;
+        data.data_ptr = indices;
+        bd.size = sizeof(indices);
+        bd.bind_flags = BindFlag::INDEX_BUFFER;
         wi::graphics::GetDevice()->CreateBuffer(&bd, &data, &quadIB);
     }
 
     void CreatePipelineState()
     {
         PipelineStateDesc desc;
-        wiRenderer::LoadShader(VS, shaderTracerVS, "BulletTracerVS.cso");
-        wiRenderer::LoadShader(PS, shaderTracerPS, "BulletTracerPS.cso");
+        wiRenderer::LoadShader(ShaderStage::VS, shaderTracerVS, "BulletTracerVS.cso");
+        wiRenderer::LoadShader(ShaderStage::PS, shaderTracerPS, "BulletTracerPS.cso");
         desc.ps = &shaderTracerPS;
         desc.vs = &shaderTracerVS;
         desc.bs = &blendStatesAdditive;
@@ -440,8 +449,8 @@ namespace Tracers
 
         InputLayout layout;
         layout.elements = {
-            { "POSITION", 0, FORMAT_R32G32B32_FLOAT, 0, 0, INPUT_PER_VERTEX_DATA },
-            { "TEXCOORD", 0, FORMAT_R32G32_FLOAT, 0, 12, INPUT_PER_VERTEX_DATA }
+            { "POSITION", 0, Format::R32G32B32_FLOAT, 0, 0, InputClassification::PER_VERTEX_DATA },
+            { "TEXCOORD", 0, Format::R32G32_FLOAT, 0, 12, InputClassification::PER_VERTEX_DATA }
         };
         desc.il = &layout;
 

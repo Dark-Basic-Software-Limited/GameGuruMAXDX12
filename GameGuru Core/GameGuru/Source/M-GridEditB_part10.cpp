@@ -171,7 +171,7 @@ void FreeTempImageList(void)
 			}
 			else
 			{
-				if (g_imageList[i].image != g_TempimageList[i].image)
+				if (g_imageList[i].image.IsValid() != g_TempimageList[i].image.IsValid())
 				{
 					pImage = &g_imageList[i];
 				}

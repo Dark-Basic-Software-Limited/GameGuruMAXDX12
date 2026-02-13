@@ -1993,4 +1993,4 @@ void CClient::OnAvatarImageLoaded( AvatarImageLoaded_t *pCallback )
 {
 }
 
-
+*/

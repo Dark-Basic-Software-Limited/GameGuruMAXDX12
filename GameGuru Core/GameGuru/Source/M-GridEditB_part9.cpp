@@ -362,7 +362,7 @@ void process_entity_library_v2(void)
 								wiScene::MaterialComponent* pObjectMaterial = wiScene::GetScene().materials.GetComponent(materialEntity);
 								if (pObjectMaterial)
 								{
-									if (pObjectMaterial->textures[0].resource) // MaterialComponent::BASECOLORMAP].resource)
+									if (pObjectMaterial->textures[0].resource.IsValid()) // MaterialComponent::BASECOLORMAP].resource)
 									{
 										wiGraphics::Texture* texture;
 										//texture = (wiGraphics::Texture*) &pObjectMaterial->textures[0].resource;// pObjectMaterial->GetBaseColorMap();
@@ -370,8 +370,8 @@ void process_entity_library_v2(void)
 										if (texture)
 										{
 											int width, height;
-											width = (int)texture->GetDesc().Width;
-											height = (int)texture->GetDesc().Height;
+											width = (int)texture->GetDesc().width;
+											height = (int)texture->GetDesc().height;
 											cGetTextureSize = cGetTextureSize + cstr(width) + "x" + cstr(height);
 										}
 									}

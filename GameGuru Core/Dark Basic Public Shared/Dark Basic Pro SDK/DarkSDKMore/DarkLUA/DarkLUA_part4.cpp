@@ -1,4 +1,6 @@
-﻿int InitScreen(lua_State* L)
+﻿#ifdef STORYBOARD // continued from part3
+
+int InitScreen(lua_State* L)
 {
 	// write to active LUA, i.e. g_UserGlobal[yourscript.user_variable_name]
 	char pScreenName[512];

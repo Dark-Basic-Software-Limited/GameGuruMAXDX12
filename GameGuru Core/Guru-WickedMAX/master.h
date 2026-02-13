@@ -9,12 +9,12 @@
 class MasterRenderer : public RenderPath3D
 {
 	protected:
-		std::shared_ptr<wiResource> testTex;
+		wiResource testTex;
 		bool m_bRenderingVR;
 	public:
 		void Load() override;
 		void Update(float dt) override;
-		void Render( int mode ) const override;
+		void Render() const override;
 		void Compose(wiGraphics::CommandList cmd) const override;
 		void ResizeBuffers(void);
 		void SetRenderingVR(bool bFlag) { m_bRenderingVR = bFlag; }

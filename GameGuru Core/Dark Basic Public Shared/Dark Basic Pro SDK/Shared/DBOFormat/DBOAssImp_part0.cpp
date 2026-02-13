@@ -21,6 +21,16 @@
 #include <assimp/scene.h>
 #include <assimp/cfileio.h>
 
+// PBR texture types added in assimp 5.x, not present in older headers
+#ifndef aiTextureType_BASE_COLOR
+#define aiTextureType_BASE_COLOR ((aiTextureType)12)
+#define aiTextureType_NORMAL_CAMERA ((aiTextureType)13)
+#define aiTextureType_EMISSION_COLOR ((aiTextureType)14)
+#define aiTextureType_METALNESS ((aiTextureType)15)
+#define aiTextureType_DIFFUSE_ROUGHNESS ((aiTextureType)16)
+#define aiTextureType_AMBIENT_OCCLUSION ((aiTextureType)17)
+#endif
+
 #include "CImageC.h"
 
 char sLoadAssImpObjectError[1024] = "";
@@ -1962,3 +1972,4 @@ aiMatrix4x4 CalculateGlobalTransform(const aiNode* pNode, const aiNode* pNodePar
 	return(mGlobalTransform);
 }
 
+#endif // WICKEDENGINE - continued in part1

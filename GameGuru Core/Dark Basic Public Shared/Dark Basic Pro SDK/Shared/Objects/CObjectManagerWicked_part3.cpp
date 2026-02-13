@@ -1,4 +1,5 @@
-﻿					if ( bIsWeaponOrJetPack == true )
+﻿/*
+					if ( bIsWeaponOrJetPack == true )
 						continue;
 
 					// do not render not-transparent, not locked and bNewZLayerObject true objects (did this earlier before weapon renders)

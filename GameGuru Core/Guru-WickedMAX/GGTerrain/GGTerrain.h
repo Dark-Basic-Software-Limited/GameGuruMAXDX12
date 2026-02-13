@@ -2,6 +2,7 @@
 #define _H_GGTERRAIN
 
 // Force update
+#include "../../../../WickedEngineDX12/WickedEngine/WickedEngine.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiGraphicsDevice.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiScene.h"
 
@@ -343,8 +344,8 @@ void GGTerrain_Physics_RayCast( void* callback, float worldToPhysScale, float sr
 
 int GGTerrain_GetTriangleList( KMaths::Vector3** vertices, float minX, float minZ, float maxX, float maxZ, int firstLOD=2 ); 
 
-void GGTerrain_ReloadTextures(wiGraphics::CommandList cmd = 0, std::vector<std::string>* files = nullptr, std::vector<int>* failures = nullptr, char* rootDir = nullptr);
-void GGTerrain_LoadDefaultTextureIntoSlot(int i, char* rootDir, wiGraphics::CommandList cmd = 0);
+void GGTerrain_ReloadTextures(wiGraphics::CommandList cmd = {}, std::vector<std::string>* files = nullptr, std::vector<int>* failures = nullptr, char* rootDir = nullptr);
+void GGTerrain_LoadDefaultTextureIntoSlot(int i, char* rootDir, wiGraphics::CommandList cmd = {});
 
 void GGTerrain_DebugOutputFlattenedAreas(void);
 void GGTerrain_CheckMaterialUsed(wiGraphics::CommandList cmd);

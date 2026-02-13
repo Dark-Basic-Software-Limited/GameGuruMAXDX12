@@ -340,14 +340,8 @@ void game_main_loop ( void )
 			extern wiECS::Entity g_weatherEntityID;
 			wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 			int iHitObj = IntersectAllEx(g.entityviewstartobj, g.entityviewendobj, xPos, yPos, zPos, xPos, yPos + 2000.0f, zPos, 0, 0, 0, 0, 1, true);
-			if (iHitObj > 0)
-			{
-				weather->SetPPSnowEnabled(false);
-			}
-			else
-			{
-				weather->SetPPSnowEnabled(t.visuals.bPPSnow);
-			}
+			//weather->SetPPSnowEnabled(...); // removed in new WickedEngine API - no equivalent
+			(void)iHitObj;
 		}
 	}
 

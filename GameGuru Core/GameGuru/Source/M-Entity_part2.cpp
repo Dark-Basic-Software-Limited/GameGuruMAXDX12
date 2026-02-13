@@ -1057,3 +1057,5 @@ LPSTR c_ReadStringIncl0xAOLD(int f)
 	return pReturnString;
 }
 
+#endif // USEFASTLOADING - continued in part3
+

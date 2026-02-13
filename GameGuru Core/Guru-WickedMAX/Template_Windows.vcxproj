@@ -133,7 +133,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>D:\PROTOTIME\_PROTOBUILD\GameGuru Wicked MAX Build Area\Max\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <TargetName>GameGuruMAX</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)SDK\DirectXTex\DirectXTex;$(SolutionDir)SDK\OGG\include;$(SolutionDir)SDK\DirectX\Include;$(SolutionDir)SDK\DirectX;$(SolutionDir)SDK\DB3\;$(SolutionDir)SDK\BaseClasses\;$(SolutionDir)SDK\OpenXR\include;$(SolutionDir)SDK\OPTICK\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)SDK\PhotonSDK\Common-cpp\lib\;$(SolutionDir)SDK\PhotonSDK\LoadBalancing-cpp\lib\;$(SolutionDir)SDK\PhotonSDK\Photon-cpp\lib\;$(SolutionDir)SDK\DirectX\Lib\x64\;$(SolutionDir)SDK\OGG\lib64\Release\;$(SolutionDir)SDK\Steamworks SDK\redistributable_bin\win64\;$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;$(SolutionDir)SDK\OpenXR\lib64\Release;$(SolutionDir)SDK\OPTICK\lib\x64\release;$(LibraryPath)</LibraryPath>
@@ -142,7 +142,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>D:\PROTOTIME\_PROTOBUILD\GameGuru Wicked MAX Build Area\Max\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <TargetName>GameGuruMAX</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)SDK\DirectXTex\DirectXTex;$(SolutionDir)SDK\OGG\include;$(SolutionDir)SDK\DirectX\Include;$(SolutionDir)SDK\DirectX;$(SolutionDir)SDK\DB3\;$(SolutionDir)SDK\BaseClasses\;$(SolutionDir)SDK\OpenXR\include;$(SolutionDir)SDK\OPTICK\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)SDK\PhotonSDK\Common-cpp\lib\;$(SolutionDir)SDK\PhotonSDK\LoadBalancing-cpp\lib\;$(SolutionDir)SDK\PhotonSDK\Photon-cpp\lib\;$(SolutionDir)SDK\DirectX\Lib\x64\;$(SolutionDir)SDK\OGG\lib64\Debug\;$(SolutionDir)SDK\Steamworks SDK\redistributable_bin\win64\;$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Debug\;$(SolutionDir)SDK\OpenXR\lib64\Debug\;$(SolutionDir)SDK\OPTICK\lib\x64\debug;$(LibraryPath)</LibraryPath>
@@ -211,12 +211,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>GGREDUCED;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../WICKEDREPO/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../WickedEngineDX12/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;$(GAMEGURU_ATLMFC_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BrowseInformation>false</BrowseInformation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zo /FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -249,12 +249,12 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>GGREDUCED;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\PROTOTIME\WickedEngineDX12\WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../WickedEngineDX12/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;$(GAMEGURU_ATLMFC_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BrowseInformation>false</BrowseInformation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zo /FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -287,12 +287,12 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>OPTICK_ENABLE;GGREDUCED;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../WICKEDREPO/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../WickedEngineDX12/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;$(GAMEGURU_ATLMFC_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BrowseInformation>false</BrowseInformation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zo /FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -325,12 +325,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>GGREDUCED;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../WICKEDREPO/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../WickedEngineDX12/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;$(GAMEGURU_ATLMFC_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BrowseInformation>false</BrowseInformation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zo /FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -362,12 +362,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>GGREDUCED;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../WICKEDREPO/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../WickedEngineDX12/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;$(GAMEGURU_ATLMFC_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BrowseInformation>false</BrowseInformation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zo /FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -400,12 +400,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>GGMAXEPIC;GGMAXEDU;GGREDUCED;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../WICKEDREPO/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../WickedEngineDX12/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;$(GAMEGURU_ATLMFC_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BrowseInformation>false</BrowseInformation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zo /FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -438,12 +438,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>GGMAXEDU;GGREDUCED;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../WICKEDREPO/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../WickedEngineDX12/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;$(GAMEGURU_ATLMFC_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BrowseInformation>false</BrowseInformation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zo /FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -475,12 +475,12 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>OPTICK_ENABLE;GGREDUCED;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../WICKEDREPO/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../WickedEngineDX12/WickedEngine;../Dark Basic Public Shared/Include/;../Dark Wicked Shared/Include;../GameGuru/Include/;../SDK/DirectX/;../Guru-WickedMAX;../Dark Wicked Shared/DWTerrain/;../SDK/BULLET/bullet-3.19/src;../SDK/Steamworks SDK/public/;..\SDK\RecastContrib;..\SDK\RecastContrib\fastlz;../Guru-WickedMAX/GGRecastDetour/DebugUtils/Include;../Guru-WickedMAX/GGRecastDetour/Detour/Include;../Guru-WickedMAX/GGRecastDetour/DetourCrowd/Include;../Guru-WickedMAX/GGRecastDetour/DetourTileCache/Include;../Guru-WickedMAX/GGRecastDetour/Recast/Include;..\SDK\RecastContrib\SDL\include;../Guru-WickedMAX/GGRecastDetour/;$(GAMEGURU_ATLMFC_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BrowseInformation>false</BrowseInformation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zo /FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

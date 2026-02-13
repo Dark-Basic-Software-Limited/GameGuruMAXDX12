@@ -1,4 +1,6 @@
-﻿DARKSDK void PlayOrLoopAnimation(int animindex, int iLoopFlag)
+﻿#ifdef DX11 // continued from part0
+
+DARKSDK void PlayOrLoopAnimation(int animindex, int iLoopFlag)
 {
 	if (animindex >= 1 && animindex < ANIMATIONMAX)
 	{

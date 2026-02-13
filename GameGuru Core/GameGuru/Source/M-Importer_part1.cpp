@@ -735,7 +735,7 @@ bool importer_apply_materialformesh(MaterialComponentTEXTURESLOT eMatSlot, int i
 	}
 	if (pSelectedMaterial && !pSelectedMesh)
 	{
-		pSelectedMaterial->textures[eMatSlot].resource = nullptr;
+		pSelectedMaterial->textures[eMatSlot].resource = {};
 		pSelectedMaterial->textures[eMatSlot].name = "";
 		pSelectedMaterial->SetDirty();
 		wiJobSystem::context ctx;
@@ -849,7 +849,7 @@ bool importer_apply_materialformesh(MaterialComponentTEXTURESLOT eMatSlot, int i
 			// apply texture file to material
 			pSelectedMaterial->textures[eMatSlot].name = cFileSelected;
 			pSelectedMaterial->textures[eMatSlot].resource = WickedCall_LoadImage(pSelectedMaterial->textures[eMatSlot].name);
-			if (pSelectedMaterial->textures[eMatSlot].resource)
+			if (pSelectedMaterial->textures[eMatSlot].resource.IsValid())
 			{
 				//PE: TODO Check if we need to copy file to remote project.
 				extern bool entity_copytoremoteifnotthere(LPSTR);
@@ -882,7 +882,7 @@ bool importer_apply_materialformesh(MaterialComponentTEXTURESLOT eMatSlot, int i
 			else
 			{
 				// failed to load, reset slot
-				pSelectedMaterial->textures[eMatSlot].resource = nullptr;
+				pSelectedMaterial->textures[eMatSlot].resource = {};
 				pSelectedMaterial->textures[eMatSlot].name = "";
 				pSelectedMaterial->SetDirty();
 				wiJobSystem::context ctx;

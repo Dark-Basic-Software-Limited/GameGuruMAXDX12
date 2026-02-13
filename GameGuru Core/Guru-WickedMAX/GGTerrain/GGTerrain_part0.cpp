@@ -8,11 +8,12 @@
 #include "../../GameGuru/Include/Utility/stb_image.h" // Fixed include path
 #include "CFileC.h"
 #include "CStr.h"
+#include "WickedEngine.h"
 #include "wiRenderer.h"
 #include "wiProfiler.h"
 #include "SimplexNoise.h"
 #include "wiECS.h"
-#include "Utility/tinyddsloader.h"
+//#include "Utility/dds.h" // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
 
 #include "master.h"
 
@@ -1023,7 +1024,7 @@ Sampler samplerAnisotropicWrap;
 
 Texture texQuad;
 
-void GGTerrain_CreateEmptyTexture( int width, int height, int mipLevels, int levels, FORMAT format, Texture* tex );
+void GGTerrain_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex );
 
 class GGTerrainChunk
 {
@@ -1082,20 +1083,20 @@ public:
 		
 	void Reset()
 	{
-		GraphicsDevice* device = wiRenderer::GetDevice();
+		GraphicsDevice* device = wiGraphics::GetDevice();
 		
 		// clear vertex and index buffers by replacing them with smaller versions
 		GPUBufferDesc bd = {};
-		bd.ByteWidth = 4;
-		bd.BindFlags = BIND_VERTEX_BUFFER;
-		bd.CPUAccessFlags = 0;
-		bd.MiscFlags = 0;
+		bd.size =4;
+		bd.bind_flags =BindFlag::VERTEX_BUFFER;
+		//bd.CPUAccessFlags = 0; // removed in DX12 API
+		bd.misc_flags = ResourceMiscFlag::NONE;
 		device->CreateBuffer( &bd, nullptr, &vertexBuffer );
 
-		bd.ByteWidth = 4;
-		bd.BindFlags = BIND_INDEX_BUFFER;
-		bd.CPUAccessFlags = 0;
-		bd.MiscFlags = 0;
+		bd.size =4;
+		bd.bind_flags =BindFlag::INDEX_BUFFER;
+		//bd.CPUAccessFlags = 0; // removed in DX12 API
+		bd.misc_flags = ResourceMiscFlag::NONE;
 		device->CreateBuffer( &bd, nullptr, &indexBuffer );
 		
 		pNextChunk = 0;
@@ -2601,28 +2602,28 @@ public:
 	{
 		if ( !pVertices || !pIndices ) return;
 
-		GraphicsDevice* device = wiRenderer::GetDevice();
+		GraphicsDevice* device = wiGraphics::GetDevice();
 
 		// index buffer
 		SubresourceData data = {};
-		data.pSysMem = pIndices;
+		data.data_ptr =pIndices;
 
 		GPUBufferDesc bd = {};
-		bd.ByteWidth = sizeof(unsigned short) * numIndices;
-		bd.BindFlags = BIND_INDEX_BUFFER;
-		bd.CPUAccessFlags = 0;
-		bd.MiscFlags = 0;
+		bd.size =sizeof(unsigned short) * numIndices;
+		bd.bind_flags =BindFlag::INDEX_BUFFER;
+		//bd.CPUAccessFlags = 0; // removed in DX12 API
+		bd.misc_flags = ResourceMiscFlag::NONE;
 		device->CreateBuffer( &bd, &data, &indexBuffer );
 
 		delete [] pIndices;
 		pIndices = 0;
 
 		// vertex buffer
-		data.pSysMem = pVertices;
-		bd.ByteWidth = sizeof(TerrainVertex) * numVertices;
-		bd.BindFlags = BIND_VERTEX_BUFFER;
-		bd.CPUAccessFlags = 0;
-		bd.MiscFlags = 0;
+		data.data_ptr =pVertices;
+		bd.size =sizeof(TerrainVertex) * numVertices;
+		bd.bind_flags =BindFlag::VERTEX_BUFFER;
+		//bd.CPUAccessFlags = 0; // removed in DX12 API
+		bd.misc_flags = ResourceMiscFlag::NONE;
 		device->CreateBuffer( &bd, &data, &vertexBuffer );
 
 		delete [] pVertices;
@@ -3475,13 +3476,13 @@ public:
 		
 				if ( numLODLevels > 1 )
 				{
-					GraphicsDevice* device = wiRenderer::GetDevice();
+					GraphicsDevice* device = wiGraphics::GetDevice();
 	
 					// height map and normal map per LOD level
 					// technically LODSize should be increased by 1, but it's currently a nice power of two, and we shouldn't need the final pixel anyway
 					uint32_t LODSize = ggterrain_local_params.segments_per_chunk * 8;  
-					GGTerrain_CreateEmptyTexture( LODSize, LODSize, 1, numLODLevels, FORMAT_R32_FLOAT, &texLODHeightMapArray );
-					GGTerrain_CreateEmptyTexture( LODSize, LODSize, 1, numLODLevels, FORMAT_R8G8B8A8_UNORM, &texLODNormalMapArray );
+					GGTerrain_CreateEmptyTexture( LODSize, LODSize, 1, numLODLevels, Format::R32_FLOAT, &texLODHeightMapArray );
+					GGTerrain_CreateEmptyTexture( LODSize, LODSize, 1, numLODLevels, Format::R8G8B8A8_UNORM, &texLODNormalMapArray );
 				}
 
 				iFlags |= GGTERRAIN_FLAG_VALID;
@@ -3530,7 +3531,7 @@ public:
 	
 	void UpdateLODTextures( GGTerrainLODSet* pLODs, int fullUpdate )
 	{
-		GraphicsDevice* device = wiRenderer::GetDevice();
+		GraphicsDevice* device = wiGraphics::GetDevice();
 
 		uint32_t segsPerChunk = ggterrain_local_params.segments_per_chunk;
 		uint32_t stride = (segsPerChunk + 1) * sizeof(float);
@@ -3547,7 +3548,7 @@ public:
 			}
 			pLevel->SetRegenerated( 0 );
 
-			CopyBox dstBox;
+			Box dstBox;
 			dstBox.front = 0; dstBox.back = 1;
 			for( uint32_t y = 0; y < 8; y++ )
 			{
@@ -3564,8 +3565,8 @@ public:
 					//if ( x == 7 ) dstBox.right++;
 					//if ( y == 0 ) dstBox.bottom++;
 					
-					device->UpdateTexture( &texLODHeightMapArray, 0, lod, &dstBox, pLevel->chunkGrid[ index ]->pHeightMap, stride, -1 ); 
-					device->UpdateTexture( &texLODNormalMapArray, 0, lod, &dstBox, pLevel->chunkGrid[ index ]->pNormalMap, stride, -1 ); 
+					//device->UpdateTexture( &texLODHeightMapArray, 0, lod, &dstBox, pLevel->chunkGrid[ index ]->pHeightMap, stride, -1 ); // TODO: DX12 - UpdateTexture removed 
+					//device->UpdateTexture( &texLODNormalMapArray, 0, lod, &dstBox, pLevel->chunkGrid[ index ]->pNormalMap, stride, -1 ); // TODO: DX12 - UpdateTexture removed 
 				}
 			}
 		}
@@ -4089,7 +4090,7 @@ int ggterrain_render_debug = 0;
 
 void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size ) 
 { 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	/*
 	//uint32_t palette[ 8 ] = { 0xFF28B380, 0xFF0C491D, 0xFF6CF1AB, 0xFF2B6035, 0xFF006440, 0xFF147232, 0xFF1FDA48, 0xFF61B487 };
@@ -4154,19 +4155,19 @@ void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
 #endif
 
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET; // BIND_RENDER_TARGET must be set for generating mipmaps
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::RENDER_TARGET; // RENDER_TARGET must be set for generating mipmaps
 	texDesc.clear.color[0] = 1.0f;
 	texDesc.clear.color[1] = 0.0f;
 	texDesc.clear.color[2] = 0.0f;
 	texDesc.clear.color[3] = 0.0f;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = 1;
-	texDesc.ArraySize = 1;
-	texDesc.Format = FORMAT_R8_UNORM;
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = size;
-	texDesc.Height = size;
-	texDesc.MiscFlags = RESOURCE_MISC_GEN_MIPMAPS;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = 1;
+	texDesc.format = Format::R8_UNORM;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = size;
+	texDesc.height = size;
+	//texDesc.misc_flags = ResourceMiscFlag::GENERATE_MIPMAPS; // TODO: DX12 - GENERATE_MIPMAPS removed
 
 	// to generate mipmaps the texture must be created with MipLevels set to 0 (all) or the desired number of levels
 	// so CreateTexture data can't set a single mip level, use UpdateTexture afterwards instead
@@ -4176,7 +4177,7 @@ void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
 	// upload mip level 0 data here
 	uint32_t rowStride = size;
 
-	device->UpdateTexture( tex, 0, 0, 0, imageData, rowStride, -1 );
+	//device->UpdateTexture( tex, 0, 0, 0, imageData, rowStride, -1 ); // TODO: DX12 - UpdateTexture removed
 	delete [] imageData;
 
 	// generate all mip levels from mip 0
@@ -4185,7 +4186,7 @@ void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
 
 void GGTerrain_LoadTexturePNG( const char* filename, Texture* tex ) 
 { 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	
 	int width, height, channels;
 	char filePath[ MAX_PATH ];
@@ -4194,26 +4195,26 @@ void GGTerrain_LoadTexturePNG( const char* filename, Texture* tex )
 	uint8_t* imageData = stbi_load( filePath, &width, &height, &channels, 4 );
 		
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET; // BIND_RENDER_TARGET must be set for generating mipmaps
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::RENDER_TARGET; // RENDER_TARGET must be set for generating mipmaps
 	texDesc.clear.color[0] = 1.0f;
 	texDesc.clear.color[1] = 0.0f;
 	texDesc.clear.color[2] = 0.0f;
 	texDesc.clear.color[3] = 0.0f;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = 0;
-	texDesc.ArraySize = 1;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 0;
+	texDesc.array_size = 1;
 	switch( channels )
 	{
-		case 1: texDesc.Format = FORMAT_R8_UNORM; break;
-		case 2: texDesc.Format = FORMAT_R8G8_UNORM; break;
+		case 1: texDesc.format = Format::R8_UNORM; break;
+		case 2: texDesc.format = Format::R8G8_UNORM; break;
 		case 3: // fall through
-		case 4: texDesc.Format = FORMAT_R8G8B8A8_UNORM; break;
+		case 4: texDesc.format = Format::R8G8B8A8_UNORM; break;
 		default: return; // error
 	}
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = width;
-	texDesc.Height = height;
-	texDesc.MiscFlags = RESOURCE_MISC_GEN_MIPMAPS;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = width;
+	texDesc.height = height;
+	//texDesc.misc_flags = ResourceMiscFlag::GENERATE_MIPMAPS; // TODO: DX12 - GENERATE_MIPMAPS removed
 
 	// to generate mipmaps the texture must be created with MipLevels set to 0 (all) or the desired number of levels
 	// so CreateTexture data can't set a single mip level, use UpdateTexture afterwards instead
@@ -4222,142 +4223,29 @@ void GGTerrain_LoadTexturePNG( const char* filename, Texture* tex )
 
 	// upload mip level 0 data here
 	uint32_t rowStride = width * ((channels == 3) ? 4 : channels);
-	device->UpdateTexture( tex, 0, 0, 0, imageData, rowStride, -1 );  //for when new Wicked Terrain Shader is created
+	//device->UpdateTexture( tex, 0, 0, 0, imageData, rowStride, -1 ); // TODO: DX12 - UpdateTexture removed
 	stbi_image_free( imageData );
 
 	// generate all mip levels from mip 0
-	device->GenerateMipmaps( tex, -1 );
+	//device->GenerateMipmaps( tex, -1 ); // TODO: DX12 - GenerateMipmaps removed
 }
 
+// TODO: DX12 - tinyddsloader removed, rewrite DDS loading
+#if 0
 wiGraphics::FORMAT ConvertDDSFormat( tinyddsloader::DDSFile::DXGIFormat format )
 {
-	switch (format)
-	{
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_Float: return FORMAT_R32G32B32A32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_UInt: return FORMAT_R32G32B32A32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_SInt: return FORMAT_R32G32B32A32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_Float: return FORMAT_R32G32B32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_UInt: return FORMAT_R32G32B32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_SInt: return FORMAT_R32G32B32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_Float: return FORMAT_R16G16B16A16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UNorm: return FORMAT_R16G16B16A16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UInt: return FORMAT_R16G16B16A16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SNorm: return FORMAT_R16G16B16A16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SInt: return FORMAT_R16G16B16A16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_Float: return FORMAT_R32G32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_UInt: return FORMAT_R32G32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_SInt: return FORMAT_R32G32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UNorm: return FORMAT_R10G10B10A2_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UInt: return FORMAT_R10G10B10A2_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R11G11B10_Float: return FORMAT_R11G11B10_FLOAT; 
-#ifdef GGREDUCED
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8X8_UNorm: return FORMAT_B8G8R8A8_UNORM; 
-#endif
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm: return FORMAT_B8G8R8A8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm_SRGB: return FORMAT_B8G8R8A8_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm: return FORMAT_R8G8B8A8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm_SRGB: return FORMAT_R8G8B8A8_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UInt: return FORMAT_R8G8B8A8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SNorm: return FORMAT_R8G8B8A8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SInt: return FORMAT_R8G8B8A8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_Float: return FORMAT_R16G16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_UNorm: return FORMAT_R16G16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_UInt: return FORMAT_R16G16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_SNorm: return FORMAT_R16G16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_SInt: return FORMAT_R16G16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::D32_Float: return FORMAT_D32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_Float: return FORMAT_R32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_UInt: return FORMAT_R32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_SInt: return FORMAT_R32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_UNorm: return FORMAT_R8G8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_UInt: return FORMAT_R8G8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_SNorm: return FORMAT_R8G8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_SInt: return FORMAT_R8G8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_Float: return FORMAT_R16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::D16_UNorm: return FORMAT_D16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_UNorm: return FORMAT_R16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_UInt: return FORMAT_R16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_SNorm: return FORMAT_R16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_SInt: return FORMAT_R16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_UNorm: return FORMAT_R8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_UInt: return FORMAT_R8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_SNorm: return FORMAT_R8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_SInt: return FORMAT_R8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm: return FORMAT_BC1_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm_SRGB: return FORMAT_BC1_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm: return FORMAT_BC2_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm_SRGB: return FORMAT_BC2_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm: return FORMAT_BC3_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm_SRGB: return FORMAT_BC3_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC4_UNorm: return FORMAT_BC4_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC4_SNorm: return FORMAT_BC4_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC5_UNorm: return FORMAT_BC5_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC5_SNorm: return FORMAT_BC5_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm: return FORMAT_BC7_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm_SRGB: return FORMAT_BC7_UNORM_SRGB; 
-		default:
-			assert(0); // incoming format is not supported 
-			return FORMAT_UNKNOWN;
-	}
+	// ... tinyddsloader format conversion table removed ...
+	return FORMAT_UNKNOWN;
 }
 
-void GGTerrain_LoadTextureDDS( const char* filename, Texture* tex ) 
-{ 
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
-	char filePath[ MAX_PATH ];
-	strcpy_s( filePath, MAX_PATH, filename );
-	GG_GetRealPath( filePath, 0 );
-	
-	tinyddsloader::DDSFile dds;
-	auto result = dds.Load( filePath );
-
-	if (result != tinyddsloader::Result::Success) return;
-	
-	TextureDesc desc;
-	desc.ArraySize = 1;
-	desc.BindFlags = BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags = 0;
-	desc.Width = dds.GetWidth();
-	desc.Height = dds.GetHeight();
-	desc.Depth = dds.GetDepth();
-	desc.MipLevels = dds.GetMipCount();
-	desc.ArraySize = dds.GetArraySize();
-	desc.MiscFlags = 0;
-	desc.Usage = USAGE_IMMUTABLE;
-	desc.layout = IMAGE_LAYOUT_SHADER_RESOURCE;
-	desc.Format = ConvertDDSFormat( dds.GetFormat() );
-
-	std::vector<SubresourceData> InitData;
-	for (uint32_t arrayIndex = 0; arrayIndex < desc.ArraySize; ++arrayIndex)
-	{
-		for (uint32_t mip = 0; mip < desc.MipLevels; ++mip)
-		{
-			auto imageData = dds.GetImageData(mip, arrayIndex);
-			SubresourceData subresourceData;
-			subresourceData.pSysMem = imageData->m_mem;
-			subresourceData.SysMemPitch = imageData->m_memPitch;
-			subresourceData.SysMemSlicePitch = imageData->m_memSlicePitch;
-			InitData.push_back(subresourceData);
-		}
-	}
-
-	auto dim = dds.GetTextureDimension();
-	switch (dim)
-	{
-		case tinyddsloader::DDSFile::TextureDimension::Texture1D: desc.type = TextureDesc::TEXTURE_1D; break;
-		case tinyddsloader::DDSFile::TextureDimension::Texture2D: desc.type = TextureDesc::TEXTURE_2D; break;
-		case tinyddsloader::DDSFile::TextureDimension::Texture3D: desc.type = TextureDesc::TEXTURE_3D;break;
-		default: assert(0); break;
-	}
-
-	device->CreateTexture( &desc, InitData.data(), tex );
-	device->SetName( tex, "imageTex" );
+void GGTerrain_LoadTextureDDS( const char* filename, Texture* tex )
+{
+	// ... tinyddsloader DDS loading removed ...
 }
 
-bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint32_t arraySlice, DDSRequirements* requirements, wiGraphics::CommandList cmd, bool bFillAllSlots = false)
+bool GGTerrain_LoadTextureDDSIntoSlice_DISABLED(const char* filename, Texture* tex, uint32_t arraySlice, DDSRequirements* requirements, wiGraphics::CommandList cmd, bool bFillAllSlots = false)
 { 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	char filePath[MAX_PATH];
 	strcpy_s(filePath, MAX_PATH, filename);
 	GG_GetRealPath(filePath, 0);
@@ -4421,6 +4309,19 @@ bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint3
 		}
 	}
 	return true;
+}
+#endif
+
+// TODO: DX12 - tinyddsloader removed, stub functions until DDS loading is rewritten
+void GGTerrain_LoadTextureDDS( const char* filename, Texture* tex )
+{
+	// stub - DDS loading disabled
+}
+
+bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint32_t arraySlice, DDSRequirements* requirements, wiGraphics::CommandList cmd, bool bFillAllSlots = false)
+{
+	// stub - DDS loading disabled
+	return false;
 }
 
 // compress normals with BC5 (2 channel greyscale)
@@ -4915,7 +4816,7 @@ extern "C" bool GGTerrain_ConvertToDDS(uint8_t* ImageData, int width, int height
 	}
 
 	HRESULT hr;
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	DirectX::ScratchImage srcImage;
 	hr = srcImage.Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, width, height, 1, 1, DirectX::DDS_FLAGS_NONE);
 
@@ -4996,32 +4897,32 @@ extern "C" bool GGTerrain_ConvertToDDS(uint8_t* ImageData, int width, int height
 	//}
 
 	TextureDesc desc;
-	desc.CPUAccessFlags = 0;
-	desc.ArraySize = 1;
-	desc.Depth = 1;
+	//desc.CPUAccessFlags = 0; // removed in DX12 API
+	desc.array_size = 1;
+	desc.depth = 1;
 
-	desc.Height = uint32_t(height);
-	desc.Width = uint32_t(width);
-	desc.layout = IMAGE_LAYOUT_SHADER_RESOURCE;
-	desc.BindFlags = BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags = 0;
+	desc.height = uint32_t(height);
+	desc.width = uint32_t(width);
+	desc.layout = ResourceState::SHADER_RESOURCE;
+	desc.bind_flags = BindFlag::SHADER_RESOURCE;
+	//desc.CPUAccessFlags = 0; // removed in DX12 API
 	if (bPureAlpha)
-		desc.Format = FORMAT_BC1_UNORM;
+		desc.format = Format::BC1_UNORM;
 	else
-		desc.Format = FORMAT_BC3_UNORM;
+		desc.format = Format::BC3_UNORM;
 	size_t mipLevelCount = compressedSurface.GetImageCount();
-	desc.MipLevels = mipLevelCount;
-	desc.MiscFlags = 0;
-	desc.Usage = USAGE_IMMUTABLE;
-	desc.layout = IMAGE_LAYOUT_SHADER_RESOURCE;
+	desc.mip_levels = mipLevelCount;
+	desc.misc_flags = ResourceMiscFlag::NONE;
+	desc.usage = Usage::DEFAULT;
+	desc.layout = ResourceState::SHADER_RESOURCE;
 
-	desc.type = TextureDesc::TEXTURE_2D;
+	desc.type = TextureDesc::Type::TEXTURE_2D;
 
 	//PE: Lowest size if block compression. already set above in maxwidth.
-	if (desc.Width < 4)
-		desc.Width = 4;
-	if (desc.Height < 4)
-		desc.Height = 4;
+	if (desc.width < 4)
+		desc.width = 4;
+	if (desc.height < 4)
+		desc.height = 4;
 
 
 	std::vector<SubresourceData> initialData;
@@ -5033,9 +4934,9 @@ extern "C" bool GGTerrain_ConvertToDDS(uint8_t* ImageData, int width, int height
 		if (img)
 		{
 			SubresourceData subData;
-			subData.pSysMem = img->pixels;
-			subData.SysMemPitch = (uint32_t)img->rowPitch;
-			subData.SysMemSlicePitch = (uint32_t)img->slicePitch;
+			subData.data_ptr =img->pixels;
+			subData.row_pitch =(uint32_t)img->rowPitch;
+			subData.slice_pitch = (uint32_t)img->slicePitch;
 			initialData.push_back(subData);
 		}
 		else
@@ -5126,81 +5027,81 @@ void GGTerrain_DiscardMipLevels( LPSTR filename, uint32_t firstMip )
 	finalImage.Release();
 }
 
-void GGTerrain_CreateRenderTexture( int width, int height, int mipLevels, FORMAT format, Texture* tex ) 
+void GGTerrain_CreateRenderTexture( int width, int height, int mipLevels, Format format, Texture* tex )
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_RENDER_TARGET | BIND_SHADER_RESOURCE;
+	texDesc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE;
 	texDesc.clear.color[0] = 0.0f;
 	texDesc.clear.color[1] = 0.0f;
 	texDesc.clear.color[2] = 0.0f;
 	texDesc.clear.color[3] = 0.0f;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = mipLevels;
-	texDesc.ArraySize = 1;
-	texDesc.Format = format;
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = mipLevels;
+	texDesc.array_size = 1;
+	texDesc.format = format;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = width;
+	texDesc.height = height;
 
 	device->CreateTexture( &texDesc, nullptr, tex );
 	device->SetName( tex, "renderTex" );
 }
 
-void GGTerrain_CreateComputeTexture( int width, int height, FORMAT format, Texture* tex ) 
+void GGTerrain_CreateComputeTexture( int width, int height, Format format, Texture* tex )
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_UNORDERED_ACCESS | BIND_SHADER_RESOURCE;
+	texDesc.bind_flags = BindFlag::UNORDERED_ACCESS | BindFlag::SHADER_RESOURCE;
 	texDesc.clear.color[0] = 0.0f;
 	texDesc.clear.color[1] = 0.0f;
 	texDesc.clear.color[2] = 0.0f;
 	texDesc.clear.color[3] = 0.0f;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = 1;
-	texDesc.ArraySize = 1;
-	texDesc.Format = format;
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = 1;
+	texDesc.format = format;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = width;
+	texDesc.height = height;
 
 	device->CreateTexture( &texDesc, nullptr, tex );
 	device->SetName( tex, "computeTex" );
 }
 
-void GGTerrain_CreateEmptyTexture( int width, int height, int mipLevels, int levels, FORMAT format, Texture* tex ) 
+void GGTerrain_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex )
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_SHADER_RESOURCE;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = mipLevels;
-	texDesc.ArraySize = levels;
-	texDesc.Format = format;
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = mipLevels;
+	texDesc.array_size = levels;
+	texDesc.format = format;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = width;
+	texDesc.height = height;
 
 	device->CreateTexture( &texDesc, nullptr, tex );
 	device->SetName( tex, "tex" );
 }
 
-void GGTerrain_CreateCPUReadTexture( int width, int height, FORMAT format, Texture* tex ) 
+void GGTerrain_CreateCPUReadTexture( int width, int height, Format format, Texture* tex ) 
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	
 	TextureDesc texDesc = {};
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = 1;
-	texDesc.ArraySize = 1;
-	texDesc.Format = format;
-	texDesc.Usage = USAGE_STAGING;
-	texDesc.CPUAccessFlags = CPU_ACCESS_READ;
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = 1;
+	texDesc.format = format;
+	texDesc.usage = Usage::READBACK;
+	//texDesc.CPUAccessFlags = CPU_ACCESS_READ; // removed in DX12 API, READBACK usage implies CPU read
+	texDesc.width = width;
+	texDesc.height = height;
 
 	device->CreateTexture( &texDesc, nullptr, tex );
 	device->SetName( tex, "stagingTex" );
@@ -6400,7 +6301,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	ChunkGenerator::SetThreads( numThreads );
 	FractalGenerator::SetThreads( numThreads );
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	RandomInit();
 	Random2Init();
@@ -6408,40 +6309,40 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	noise.reshuffle( ggterrain_local_params.seed );
 
 	// shaders
-	wiRenderer::LoadShader( VS, shaderQuadVS, "GGTerrainQuadVS.cso" );
-	wiRenderer::LoadShader( PS, shaderQuadPS, "GGTerrainQuadPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderQuadVS, "GGTerrainQuadVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderQuadPS, "GGTerrainQuadPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderPageGenVS, "GGTerrainPageGenVS.cso" );
-	wiRenderer::LoadShader( PS, shaderPageGenPS, "GGTerrainPageGenPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderPageGenVS, "GGTerrainPageGenVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderPageGenPS, "GGTerrainPageGenPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderMainVS, "GGTerrainVS.cso" );
-	wiRenderer::LoadShader( PS, shaderMainVirtualPS, "GGTerrainVirtualPBR_PS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderMainVS, "GGTerrainVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderMainVirtualPS, "GGTerrainVirtualPBR_PS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderMainPrepassVS, "GGTerrainPrepassVS.cso" );
-	wiRenderer::LoadShader( PS, shaderMainPrepassPS, "GGTerrainPrepassPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderMainPrepassVS, "GGTerrainPrepassVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderMainPrepassPS, "GGTerrainPrepassPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderReflectionPrepassVS, "GGTerrainPrepassRefVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderReflectionPrepassVS, "GGTerrainPrepassRefVS.cso" );
 
-	wiRenderer::LoadShader( CS, shaderReadBackMSCS, "GGTerrainReadBackMSCS.cso" );
-	wiRenderer::LoadShader( CS, shaderReadBackCS, "GGTerrainReadBackCS.cso" );
+	wiRenderer::LoadShader( ShaderStage::CS, shaderReadBackMSCS, "GGTerrainReadBackMSCS.cso" );
+	wiRenderer::LoadShader( ShaderStage::CS, shaderReadBackCS, "GGTerrainReadBackCS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderMainShadowVS, "GGTerrainShadowMapVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderMainShadowVS, "GGTerrainShadowMapVS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderEditCubeVS, "GGTerrainEditBoxVS.cso" );
-	wiRenderer::LoadShader( PS, shaderEditCubePS, "GGTerrainEditBoxPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderEditCubeVS, "GGTerrainEditBoxVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderEditCubePS, "GGTerrainEditBoxPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderOverlayVS, "GGTerrainOverlayVS.cso" );
-	wiRenderer::LoadShader( PS, shaderOverlayPS, "GGTerrainOverlayPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderOverlayVS, "GGTerrainOverlayVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderOverlayPS, "GGTerrainOverlayPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderEnvProbeVS, "GGTerrainEnvProbeVS.cso" );
-	wiRenderer::LoadShader( PS, shaderEnvProbePS, "GGTerrainEnvProbePS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderEnvProbeVS, "GGTerrainEnvProbeVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderEnvProbePS, "GGTerrainEnvProbePS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderRampVS, "GGTerrainRampVS.cso" );
-	wiRenderer::LoadShader( PS, shaderRampPS, "GGTerrainRampPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderRampVS, "GGTerrainRampVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderRampPS, "GGTerrainRampPS.cso" );
 
-	wiRenderer::LoadShader( VS, sphereVS, "GGTerrainSphereVS.cso" );
-	wiRenderer::LoadShader( PS, spherePS, "GGTerrainSpherePS.cso" );
-	wiRenderer::LoadShader( PS, spherePrepassPS, "GGTerrainSpherePrepassPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, sphereVS, "GGTerrainSphereVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, spherePS, "GGTerrainSpherePS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, spherePrepassPS, "GGTerrainSpherePrepassPS.cso" );
 
 	// images	
 
@@ -6472,13 +6373,13 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	
 	//if ( GetFileExists("Files/mipmap_debug.dds") ) GGTerrain_LoadTextureDDS( "Files/mipmap_debug.dds", &texMipmapDebug );
 	GGTerrain_CreateFractalTexture( &texMask, 1024 );
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, FORMAT_BC7_UNORM_SRGB, &texColorArray );
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, FORMAT_BC5_UNORM, &texNormalsArray );
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC7_UNORM_SRGB, &texColorArray );
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC5_UNORM, &texNormalsArray );
 #ifdef GGTERRAIN_USE_SURFACE_TEXTURE
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, FORMAT_BC1_UNORM, &texSurfaceArray ); // R: occlusion, G: roughness, B: metalness
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC1_UNORM, &texSurfaceArray ); // R: occlusion, G: roughness, B: metalness
 #else
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, FORMAT_BC5_UNORM, &texRoughnessMetalnessArray );
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, FORMAT_BC4_UNORM, &texAOArray );
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC5_UNORM, &texRoughnessMetalnessArray );
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC4_UNORM, &texAOArray );
 #endif
 
 	colorDDS.format = DXGI_FORMAT_BC7_UNORM;
@@ -6578,7 +6479,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	//GGTerrain_DecompressImage( "E:/Downloads/grass1-bl/grass1_color.dds", "E:/Downloads/grass1-bl/grass1_color_RGB.dds" );
 
 	// final page table texture
-	GGTerrain_CreateEmptyTexture( pagesX, pagesY, GGTERRAIN_MAX_PAGE_TABLE_MIP, 1, FORMAT_R16_UNORM, &texPageTableFinal );
+	GGTerrain_CreateEmptyTexture( pagesX, pagesY, GGTERRAIN_MAX_PAGE_TABLE_MIP, 1, Format::R16_UNORM, &texPageTableFinal );
 
 	/*
 	GGTerrain_LoadHeightMap( "Files/heightmaps/Valley.raw", 4096, 4096 );
@@ -6740,7 +6641,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	}
 	
 	// editable material map
-	GGTerrain_CreateEmptyTexture( 4096, 4096, 1, 1, FORMAT_R8_UNORM, &texMaterialMap );
+	GGTerrain_CreateEmptyTexture( 4096, 4096, 1, 1, Format::R8_UNORM, &texMaterialMap );
 	//GGTerrain_CreateFractalTexture( &texMaterialMap, 4096 );
 
 	pMaterialMap = &pMaterialMapMemMoveOutOfHeap[0]; // new uint8_t[GGTERRAIN_MATERIALMAP_SIZE * GGTERRAIN_MATERIALMAP_SIZE];
@@ -6774,7 +6675,8 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 		}
 	}
 	*/
-	device->UpdateTexture( &texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1 );
+	// TODO: DX12 - UpdateTexture removed
+	//device->UpdateTexture( &texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1 );
 
 	ggterrain_flat_areas_array_size = 4;
 	ggterrain_flat_areas = new GGTerrainFlatArea[ ggterrain_flat_areas_array_size ];
@@ -6789,19 +6691,33 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	// trilinear filtering requires 2 pixel border all around on mip 0 and 1 pixel border all around on mip 1
 	// anisotropic x4 filtering requires 4 pixel border all around on mip 0 and 2 pixel border all around on mip 1
 	// anisotropic x8 filtering seems to be fine with 6 pixel border all around on mip 0 and 3 pixel border all around on mip 1, may require more
-	GGTerrain_CreateRenderTexture( physTexSizeX, physTexSizeY, 2, FORMAT_R8G8B8A8_UNORM_SRGB, &texPagesColorAndMetal );
-	GGTerrain_CreateRenderTexture( physTexSizeX, physTexSizeY, 2, FORMAT_R8G8B8A8_UNORM, &texPagesNormalsRoughnessAO );
+	GGTerrain_CreateRenderTexture( physTexSizeX, physTexSizeY, 2, Format::R8G8B8A8_UNORM_SRGB, &texPagesColorAndMetal );
+	GGTerrain_CreateRenderTexture( physTexSizeX, physTexSizeY, 2, Format::R8G8B8A8_UNORM, &texPagesNormalsRoughnessAO );
 
 	// have to create subresource views individually
-	device->CreateSubresource( &texPagesColorAndMetal, RTV, 0, -1, 0, 1 );
-	device->CreateSubresource( &texPagesColorAndMetal, RTV, 0, -1, 1, 1 );
-	device->CreateSubresource( &texPagesNormalsRoughnessAO, RTV, 0, -1, 0, 1 );
-	device->CreateSubresource( &texPagesNormalsRoughnessAO, RTV, 0, -1, 1, 1 );
+	device->CreateSubresource( &texPagesColorAndMetal, SubresourceType::RTV, 0, -1, 0, 1 );
+	device->CreateSubresource( &texPagesColorAndMetal, SubresourceType::RTV, 0, -1, 1, 1 );
+	device->CreateSubresource( &texPagesNormalsRoughnessAO, SubresourceType::RTV, 0, -1, 0, 1 );
+	device->CreateSubresource( &texPagesNormalsRoughnessAO, SubresourceType::RTV, 0, -1, 1, 1 );
 
 	// create render passes for physical texture
 	RenderPassDesc renderDesc = {};
-	renderDesc.attachments.push_back( { RenderPassAttachment::RENDERTARGET, RenderPassAttachment::LOADOP_LOAD, &texPagesColorAndMetal, 0 } );
-	renderDesc.attachments.push_back( { RenderPassAttachment::RENDERTARGET, RenderPassAttachment::LOADOP_LOAD, &texPagesNormalsRoughnessAO, 0 } );
+	{
+		RenderPassAttachment att;
+		att.type = RenderPassAttachment::Type::RENDERTARGET;
+		att.loadop = RenderPassAttachment::LoadOp::LOAD;
+		att.texture = texPagesColorAndMetal;
+		att.subresource = 0;
+		renderDesc.attachments.push_back(att);
+	}
+	{
+		RenderPassAttachment att;
+		att.type = RenderPassAttachment::Type::RENDERTARGET;
+		att.loadop = RenderPassAttachment::LoadOp::LOAD;
+		att.texture = texPagesNormalsRoughnessAO;
+		att.subresource = 0;
+		renderDesc.attachments.push_back(att);
+	}
 	device->CreateRenderPass( &renderDesc, &renderPassPhysicalTex );
 
 	// and for the mip level
@@ -6814,7 +6730,8 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	uint32_t stride = pagesX * sizeof(uint16_t); 
 	for( uint32_t mipLevel = 0; mipLevel < GGTERRAIN_MAX_PAGE_TABLE_MIP; mipLevel++ ) // not a full mip stack
 	{
-		device->UpdateTexture( &texPageTableFinal, mipLevel, 0, 0, pageTableData, stride, -1 );
+		// TODO: DX12 - UpdateTexture removed
+		//device->UpdateTexture( &texPageTableFinal, mipLevel, 0, 0, pageTableData, stride, -1 );
 		stride /= 2;
 	}
 
@@ -6884,40 +6801,40 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	
 	// raster state
 	rastState = {};
-	rastState.FillMode = FILL_SOLID;
-	rastState.CullMode = CULL_BACK;
-	rastState.FrontCounterClockwise = false;
-	rastState.DepthBias = 0;
-	rastState.DepthBiasClamp = 0;
-	rastState.SlopeScaledDepthBias = 0;
-	rastState.DepthClipEnable = true;
-	rastState.MultisampleEnable = false;
-	rastState.AntialiasedLineEnable = false;
+	rastState.fill_mode = FillMode::SOLID;
+	rastState.cull_mode = CullMode::BACK;
+	rastState.front_counter_clockwise = false;
+	rastState.depth_bias = 0;
+	rastState.depth_bias_clamp = 0;
+	rastState.slope_scaled_depth_bias = 0;
+	rastState.depth_clip_enable = true;
+	rastState.multisample_enable = false;
+	rastState.antialiased_line_enable = false;
 	
 	// depth stencil state
 	depthStateOpaque = {};
-	depthStateOpaque.DepthEnable = true;
-	depthStateOpaque.DepthFunc = COMPARISON_GREATER_EQUAL;
-	depthStateOpaque.StencilEnable = false;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	depthStateOpaque.depth_enable = true;
+	depthStateOpaque.depth_func = ComparisonFunc::GREATER_EQUAL;
+	depthStateOpaque.stencil_enable = false;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	
 	// blend state
 	blendStateOpaque = {};
-	blendStateOpaque.RenderTarget[0].BlendEnable = false;
-	blendStateOpaque.RenderTarget[0].SrcBlend = BLEND_ONE;
-	blendStateOpaque.RenderTarget[0].DestBlend = BLEND_ZERO;
-	blendStateOpaque.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-	blendStateOpaque.RenderTarget[0].SrcBlendAlpha = BLEND_ONE;
-	blendStateOpaque.RenderTarget[0].DestBlendAlpha = BLEND_ZERO;
-	blendStateOpaque.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
-	blendStateOpaque.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_ALL;
-	blendStateOpaque.IndependentBlendEnable = false;
+	blendStateOpaque.render_target[0].blend_enable = false;
+	blendStateOpaque.render_target[0].src_blend = Blend::ONE;
+	blendStateOpaque.render_target[0].dest_blend = Blend::ZERO;
+	blendStateOpaque.render_target[0].blend_op = BlendOp::ADD;
+	blendStateOpaque.render_target[0].src_blend_alpha = Blend::ONE;
+	blendStateOpaque.render_target[0].dest_blend_alpha = Blend::ZERO;
+	blendStateOpaque.render_target[0].blend_op_alpha = BlendOp::ADD;
+	blendStateOpaque.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
+	blendStateOpaque.independent_blend_enable = false;
 	
 	// input layout
 	inputLayout.elements = {
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 0,  INPUT_PER_VERTEX_DATA },
-		{ "INORMAL",  0, wiGraphics::FORMAT_R8G8B8A8_UNORM,  0, 12, INPUT_PER_VERTEX_DATA },
-		{ "ID",       0, wiGraphics::FORMAT_R32_UINT,        0, 16, INPUT_PER_VERTEX_DATA },
+		{ "POSITION", 0, wiGraphics::Format::R32G32B32_FLOAT, 0, 0,  InputClassification::PER_VERTEX_DATA },
+		{ "INORMAL",  0, wiGraphics::Format::R8G8B8A8_UNORM,  0, 12, InputClassification::PER_VERTEX_DATA },
+		{ "ID",       0, wiGraphics::Format::R32_UINT,        0, 16, InputClassification::PER_VERTEX_DATA },
 	};
 
 	// pipeline state object
@@ -6926,46 +6843,46 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	desc.ps = &shaderMainVirtualPS;
 
 	desc.il = &inputLayout;
-	desc.pt = TRIANGLESTRIP;
+	desc.pt = PrimitiveTopology::TRIANGLESTRIP;
 	desc.rs = &rastState;
 	desc.dss = &depthStateOpaque;
 	desc.bs = &blendStateOpaque;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
 	device->CreatePipelineState( &desc, &psoMain );
 
-	rastState.FillMode = FILL_WIREFRAME;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	rastState.fill_mode = FillMode::WIREFRAME;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	device->CreatePipelineState( &desc, &psoMainWire );
-	rastState.FillMode = FILL_SOLID;
+	rastState.fill_mode = FillMode::SOLID;
 
 	desc.vs = &shaderMainPrepassVS;
 	desc.ps = &shaderMainPrepassPS;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	device->CreatePipelineState( &desc, &psoMainPrepass );
 
 	desc.vs = &shaderReflectionPrepassVS;
 	desc.ps = nullptr;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	device->CreatePipelineState( &desc, &psoReflectionPrepass );
 	
-	rastState.DepthBias = -1;
-	rastState.SlopeScaledDepthBias = -4.0f;
+	rastState.depth_bias = -1;
+	rastState.slope_scaled_depth_bias = -4.0f;
 	desc.vs = &shaderMainShadowVS;
 	desc.ps = nullptr;
-	rastState.DepthClipEnable = false;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	rastState.depth_clip_enable = false;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	device->CreatePipelineState( &desc, &psoMainShadow );
-	rastState.DepthBias = 0;
-	rastState.DepthClipEnable = true;
-	rastState.SlopeScaledDepthBias = 0;
+	rastState.depth_bias = 0;
+	rastState.depth_clip_enable = true;
+	rastState.slope_scaled_depth_bias = 0;
 
 	// env probe layout with instances
 	InputLayout envLayout;
 	envLayout.elements = {
-		{ "POSITION",     0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 0,  INPUT_PER_VERTEX_DATA },
-		{ "INORMAL",      0, wiGraphics::FORMAT_R8G8B8A8_UNORM,  0, 12, INPUT_PER_VERTEX_DATA },
-		{ "ID",           0, wiGraphics::FORMAT_R32_UINT,        0, 16, INPUT_PER_VERTEX_DATA },
-		{ "INSTANCEDATA", 0, wiGraphics::FORMAT_R32_UINT,        1, 0,  INPUT_PER_INSTANCE_DATA },
+		{ "POSITION",     0, wiGraphics::Format::R32G32B32_FLOAT, 0, 0,  InputClassification::PER_VERTEX_DATA },
+		{ "INORMAL",      0, wiGraphics::Format::R8G8B8A8_UNORM,  0, 12, InputClassification::PER_VERTEX_DATA },
+		{ "ID",           0, wiGraphics::Format::R32_UINT,        0, 16, InputClassification::PER_VERTEX_DATA },
+		{ "INSTANCEDATA", 0, wiGraphics::Format::R32_UINT,        1, 0,  InputClassification::PER_INSTANCE_DATA },
 	};
 
 	desc.il = &envLayout;
@@ -6975,42 +6892,42 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 
 	// instance buffer
 	GPUBufferDesc bd = {};
-	bd.ByteWidth = sizeof(uint32_t) * 6;
-	bd.BindFlags = BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
+	bd.size =sizeof(uint32_t) * 6;
+	bd.bind_flags =BindFlag::VERTEX_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
 	device->CreateBuffer( &bd, nullptr, &instanceBuffer );
 
 	{
 		// PBR spheres
 		InputLayout sphereLayout;
 		sphereLayout.elements = {
-			{ "POSITION",     0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 0,  INPUT_PER_VERTEX_DATA },
-			{ "NORMAL",       0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 12, INPUT_PER_VERTEX_DATA },
-			{ "UV",           0, wiGraphics::FORMAT_R32G32_FLOAT,    0, 24, INPUT_PER_VERTEX_DATA },
+			{ "POSITION",     0, wiGraphics::Format::R32G32B32_FLOAT, 0, 0,  InputClassification::PER_VERTEX_DATA },
+			{ "NORMAL",       0, wiGraphics::Format::R32G32B32_FLOAT, 0, 12, InputClassification::PER_VERTEX_DATA },
+			{ "UV",           0, wiGraphics::Format::R32G32_FLOAT,    0, 24, InputClassification::PER_VERTEX_DATA },
 		};
 
 		RasterizerState rastState2 = {};
-		rastState2.FillMode = FILL_SOLID;
-		rastState2.CullMode = CULL_BACK;
-		rastState2.FrontCounterClockwise = true;
-		rastState2.DepthBias = 0;
-		rastState2.DepthBiasClamp = 0;
-		rastState2.SlopeScaledDepthBias = 0;
-		rastState2.DepthClipEnable = true;
-		rastState2.MultisampleEnable = false;
-		rastState2.AntialiasedLineEnable = false;
+		rastState2.fill_mode = FillMode::SOLID;
+		rastState2.cull_mode = CullMode::BACK;
+		rastState2.front_counter_clockwise = true;
+		rastState2.depth_bias = 0;
+		rastState2.depth_bias_clamp = 0;
+		rastState2.slope_scaled_depth_bias = 0;
+		rastState2.depth_clip_enable = true;
+		rastState2.multisample_enable = false;
+		rastState2.antialiased_line_enable = false;
 
 		desc.rs = &rastState2;
 		desc.vs = &sphereVS;
 		desc.ps = &spherePS;
-		desc.pt = TRIANGLELIST;
+		desc.pt = PrimitiveTopology::TRIANGLELIST;
 		desc.il = &sphereLayout;
-		depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+		depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
 		device->CreatePipelineState( &desc, &psoSphere );
 
 		desc.ps = &spherePrepassPS;
-		depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+		depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 		device->CreatePipelineState( &desc, &psoSpherePrepass );
 		
 		desc.rs = &rastState;
@@ -7018,73 +6935,73 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 		GGTerrain_CreateSphere( 2, 100, 100 );
 
 		SubresourceData data = {};
-		data.pSysMem = g_VerticesSphere;
-		bd.ByteWidth = sizeof(VertexSphere) * g_numVerticesSphere;
-		bd.BindFlags = BIND_VERTEX_BUFFER;
-		bd.CPUAccessFlags = 0;
-		bd.MiscFlags = 0;
-		wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &sphereVertexBuffer );
+		data.data_ptr =g_VerticesSphere;
+		bd.size =sizeof(VertexSphere) * g_numVerticesSphere;
+		bd.bind_flags =BindFlag::VERTEX_BUFFER;
+		//bd.CPUAccessFlags = 0; // removed in DX12 API
+		bd.misc_flags = ResourceMiscFlag::NONE;
+		wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &sphereVertexBuffer );
 
 		// index buffer
-		data.pSysMem = g_IndicesSphere;
-		bd.ByteWidth = sizeof(uint16_t) * g_numIndicesSphere;
-		bd.BindFlags = BIND_INDEX_BUFFER;
-		bd.CPUAccessFlags = 0;
-		bd.MiscFlags = 0;
-		wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &sphereIndexBuffer );
+		data.data_ptr =g_IndicesSphere;
+		bd.size =sizeof(uint16_t) * g_numIndicesSphere;
+		bd.bind_flags =BindFlag::INDEX_BUFFER;
+		//bd.CPUAccessFlags = 0; // removed in DX12 API
+		bd.misc_flags = ResourceMiscFlag::NONE;
+		wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &sphereIndexBuffer );
 	}
 
 	// edit box layout
 	InputLayout boxLayout;
 	boxLayout.elements = {
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 0,  INPUT_PER_VERTEX_DATA },
+		{ "POSITION", 0, wiGraphics::Format::R32G32B32_FLOAT, 0, 0,  InputClassification::PER_VERTEX_DATA },
 	};
 
 	// transparent edit box
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
-	blendStateOpaque.RenderTarget[0].BlendEnable = true;
-	blendStateOpaque.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
-	blendStateOpaque.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-	blendStateOpaque.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-	rastState.CullMode = CULL_NONE;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
+	blendStateOpaque.render_target[0].blend_enable = true;
+	blendStateOpaque.render_target[0].src_blend = Blend::SRC_ALPHA;
+	blendStateOpaque.render_target[0].dest_blend = Blend::INV_SRC_ALPHA;
+	blendStateOpaque.render_target[0].blend_op = BlendOp::ADD;
+	rastState.cull_mode = CullMode::NONE;
 	desc.vs = &shaderEditCubeVS;
 	desc.ps = &shaderEditCubePS;
-	desc.pt = TRIANGLELIST;
+	desc.pt = PrimitiveTopology::TRIANGLELIST;
 	desc.il = &boxLayout;
-	rastState.FrontCounterClockwise = true;
+	rastState.front_counter_clockwise = true;
 	device->CreatePipelineState( &desc, &psoEditCube );
-	blendStateOpaque.RenderTarget[0].BlendEnable = false;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
-	rastState.CullMode = CULL_BACK;
+	blendStateOpaque.render_target[0].blend_enable = false;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
+	rastState.cull_mode = CullMode::BACK;
 
 	// transparent ramp
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
-	blendStateOpaque.RenderTarget[0].BlendEnable = true;
-	blendStateOpaque.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
-	blendStateOpaque.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-	blendStateOpaque.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-	rastState.CullMode = CULL_NONE;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
+	blendStateOpaque.render_target[0].blend_enable = true;
+	blendStateOpaque.render_target[0].src_blend = Blend::SRC_ALPHA;
+	blendStateOpaque.render_target[0].dest_blend = Blend::INV_SRC_ALPHA;
+	blendStateOpaque.render_target[0].blend_op = BlendOp::ADD;
+	rastState.cull_mode = CullMode::NONE;
 	desc.vs = &shaderRampVS;
 	desc.ps = &shaderRampPS;
-	desc.pt = TRIANGLELIST;
-	rastState.FrontCounterClockwise = true;
+	desc.pt = PrimitiveTopology::TRIANGLELIST;
+	rastState.front_counter_clockwise = true;
 	device->CreatePipelineState( &desc, &psoRamp );
-	blendStateOpaque.RenderTarget[0].BlendEnable = false;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
-	rastState.CullMode = CULL_BACK;
+	blendStateOpaque.render_target[0].blend_enable = false;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
+	rastState.cull_mode = CullMode::BACK;
 	
 	// Quad pipeline state
 	quadInputLayout.elements = {
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32_FLOAT, 0, 0, INPUT_PER_VERTEX_DATA }		
+		{ "POSITION", 0, wiGraphics::Format::R32G32_FLOAT, 0, 0, InputClassification::PER_VERTEX_DATA }		
 	};
 	
 	desc.vs = &shaderQuadVS;
 	desc.ps = &shaderQuadPS;
 	desc.il = &quadInputLayout;
-	desc.pt = TRIANGLELIST;
-	depthStateOpaque.DepthEnable = false;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
-	rastState.FrontCounterClockwise = true;
+	desc.pt = PrimitiveTopology::TRIANGLELIST;
+	depthStateOpaque.depth_enable = false;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
+	rastState.front_counter_clockwise = true;
 
 	device->CreatePipelineState( &desc, &psoQuad );
 
@@ -7096,122 +7013,122 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 
 	// page gen pipeline state
 	pageGenInputLayout.elements = {
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32_FLOAT, 0, 0,  INPUT_PER_VERTEX_DATA },
-		{ "UV",       0, wiGraphics::FORMAT_R32G32_FLOAT, 0, 8,  INPUT_PER_VERTEX_DATA },
-		{ "HEIGHTUV", 0, wiGraphics::FORMAT_R32G32_FLOAT, 0, 16, INPUT_PER_VERTEX_DATA },
-		{ "WORLDPOS", 0, wiGraphics::FORMAT_R32G32_FLOAT, 0, 24, INPUT_PER_VERTEX_DATA },
-		{ "CHUNKID",  0, wiGraphics::FORMAT_R32_UINT,     0, 32, INPUT_PER_VERTEX_DATA },
+		{ "POSITION", 0, wiGraphics::Format::R32G32_FLOAT, 0, 0,  InputClassification::PER_VERTEX_DATA },
+		{ "UV",       0, wiGraphics::Format::R32G32_FLOAT, 0, 8,  InputClassification::PER_VERTEX_DATA },
+		{ "HEIGHTUV", 0, wiGraphics::Format::R32G32_FLOAT, 0, 16, InputClassification::PER_VERTEX_DATA },
+		{ "WORLDPOS", 0, wiGraphics::Format::R32G32_FLOAT, 0, 24, InputClassification::PER_VERTEX_DATA },
+		{ "CHUNKID",  0, wiGraphics::Format::R32_UINT,     0, 32, InputClassification::PER_VERTEX_DATA },
 	};
 	
 	desc.vs = &shaderPageGenVS;
 	desc.ps = &shaderPageGenPS;
 	desc.il = &pageGenInputLayout;
-	desc.pt = TRIANGLELIST;
-	depthStateOpaque.DepthEnable = false;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
-	rastState.FrontCounterClockwise = true;
+	desc.pt = PrimitiveTopology::TRIANGLELIST;
+	depthStateOpaque.depth_enable = false;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
+	rastState.front_counter_clockwise = true;
 
 	device->CreatePipelineState( &desc, &psoPageGen );
 
 	// constant buffers
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(TerrainCB);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &terrainConstantBuffer );
+	bd.usage = Usage::DEFAULT;
+	bd.size =sizeof(TerrainCB);
+	bd.bind_flags =BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &terrainConstantBuffer );
 
 	// quad constant buffers
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(sQuadVSConstantData);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &quadVSConstantBuffer );
+	bd.usage = Usage::DEFAULT;
+	bd.size =sizeof(sQuadVSConstantData);
+	bd.bind_flags =BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &quadVSConstantBuffer );
 
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(sQuadPSConstantData);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &quadPSConstantBuffer );
+	bd.usage = Usage::DEFAULT;
+	bd.size =sizeof(sQuadPSConstantData);
+	bd.bind_flags =BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &quadPSConstantBuffer );
 		
 	// samplers
 	SamplerDesc samplerDesc = {};
-	samplerDesc.AddressU = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_POINT;
+	samplerDesc.address_u = TextureAddressMode::CLAMP;
+	samplerDesc.address_v = TextureAddressMode::CLAMP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_POINT;
 	device->CreateSampler( &samplerDesc, &samplerPoint );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_POINT;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_POINT;
 	device->CreateSampler( &samplerDesc, &samplerPointWrap );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.Filter = FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	samplerDesc.address_u = TextureAddressMode::CLAMP;
+	samplerDesc.address_v = TextureAddressMode::CLAMP;
+	samplerDesc.filter = Filter::MIN_MAG_LINEAR_MIP_POINT;
 	device->CreateSampler( &samplerDesc, &samplerBilinear );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	samplerDesc.filter = Filter::MIN_MAG_LINEAR_MIP_POINT;
 	device->CreateSampler( &samplerDesc, &samplerBilinearWrap );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.address_u = TextureAddressMode::CLAMP;
+	samplerDesc.address_v = TextureAddressMode::CLAMP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
 	device->CreateSampler( &samplerDesc, &samplerTrilinear );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
 	device->CreateSampler( &samplerDesc, &samplerTrilinearWrap );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = FILTER_ANISOTROPIC;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	samplerDesc.filter = Filter::ANISOTROPIC;
 #if (GGTERRAIN_TEXTURE_FILTERING == GGTERRAIN_TEXTURE_FILTERING_ANISO_X8)
-	samplerDesc.MaxAnisotropy = 8;
+	samplerDesc.max_anisotropy = 8;
 #else
-	samplerDesc.MaxAnisotropy = 4;
+	samplerDesc.max_anisotropy = 4;
 #endif
 	device->CreateSampler( &samplerDesc, &samplerAnisotropicWrap );
 	
 	// box vertex buffer
 	SubresourceData data = {};
-	data.pSysMem = g_VerticesBox;
-	bd.ByteWidth = sizeof(BoxVertex) * 8;
-	bd.BindFlags = BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &boxVertexBuffer );
+	data.data_ptr =g_VerticesBox;
+	bd.size =sizeof(BoxVertex) * 8;
+	bd.bind_flags =BindFlag::VERTEX_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &boxVertexBuffer );
 
 	// box index buffer
-	data.pSysMem = g_IndicesBox;
-	bd.ByteWidth = sizeof(uint16_t) * 36;
-	bd.BindFlags = BIND_INDEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &boxIndexBuffer );
+	data.data_ptr =g_IndicesBox;
+	bd.size =sizeof(uint16_t) * 36;
+	bd.bind_flags =BindFlag::INDEX_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &boxIndexBuffer );
 
 	// quad vertex buffer (no index buffer)
 	data = {};
-	data.pSysMem = g_VerticesQuad;
-	bd.ByteWidth = sizeof(VertexQuad) * 6;
-	bd.BindFlags = BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &quadVertexBuffer );
+	data.data_ptr =g_VerticesQuad;
+	bd.size =sizeof(VertexQuad) * 6;
+	bd.bind_flags =BindFlag::VERTEX_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &quadVertexBuffer );
 
 	// page gen vertex buffer (no index buffer)
 	data = {};
-	data.pSysMem = g_VerticesPageGen;
-	bd.ByteWidth = sizeof(VertexPageGen) * 6 * GGTERRAIN_REPLACEMENT_PAGE_MAX;
-	bd.BindFlags = BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, &data, &pageGenVertexBuffer );
+	data.data_ptr =g_VerticesPageGen;
+	bd.size =sizeof(VertexPageGen) * 6 * GGTERRAIN_REPLACEMENT_PAGE_MAX;
+	bd.bind_flags =BindFlag::VERTEX_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &pageGenVertexBuffer );
 	
 	//GGTerrainInitTest();
 
@@ -7244,7 +7161,8 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	globalEnvProbe = wiScene::GetScene().Entity_CreateEnvironmentProbe("globalEnvProbe", globalEnvProbePos);
 	EnvironmentProbeComponent* probe = wiScene::GetScene().probes.GetComponent(globalEnvProbe);
 	probe->range = globalrange;
-	probe->userdata = 255;
+	// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+	//probe->userdata = 255;
 	probe->SetDirty();
 	wiScene::TransformComponent* pTransform = wiScene::GetScene().transforms.GetComponent(globalEnvProbe);
 	pTransform->ClearTransform();
@@ -7260,11 +7178,12 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 		range = 1;
 		localEnvProbePos[ i ] = XMFLOAT3( 0, 0, 0 );
 		char strName[ 64 ];
-		sprintf_s( strName, "localEnvProbe%d", i ); 
+		sprintf_s( strName, "localEnvProbe%d", i );
 		localEnvProbe[ i ] = wiScene::GetScene().Entity_CreateEnvironmentProbe(strName, localEnvProbePos[i]);
 		probe = wiScene::GetScene().probes.GetComponent(localEnvProbe[i]);
 		probe->range = range; // env cube range
-		probe->userdata = 0; // 0-255 alpha
+		// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+		//probe->userdata = 0; // 0-255 alpha
 		probe->SetDirty();
 		pTransform = wiScene::GetScene().transforms.GetComponent(localEnvProbe[i]);
 		pTransform->ClearTransform();
@@ -7283,17 +7202,17 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 
 void GGTerrain_WindowResized()
 {
-	uint32_t screenWidth = master.masterrenderer.GetWidth3D();
-	uint32_t screenHeight = master.masterrenderer.GetHeight3D();
+	uint32_t screenWidth = master.masterrenderer.GetPhysicalWidth();
+	uint32_t screenHeight = master.masterrenderer.GetPhysicalHeight();
 
 	uint32_t renderWidth = screenWidth / ggterrain_local_render_params2.readBackTextureReduction;
 	uint32_t renderHeight = screenHeight / ggterrain_local_render_params2.readBackTextureReduction;
 
-	GGTerrain_CreateComputeTexture( renderWidth, renderHeight, FORMAT_R32_UINT, &texReadBackCompute );
+	GGTerrain_CreateComputeTexture( renderWidth, renderHeight, Format::R32_UINT, &texReadBackCompute );
 
 	for( uint32_t i = 0; i < NUM_READ_BACK_TEXTURES; i++ )
 	{
-		GGTerrain_CreateCPUReadTexture( renderWidth, renderHeight, FORMAT_R32_UINT, texReadBackStaging + i );
+		GGTerrain_CreateCPUReadTexture( renderWidth, renderHeight, Format::R32_UINT, texReadBackStaging + i );
 	}
 
 	pageGenerationList.Clear();
@@ -7305,7 +7224,7 @@ void GGTerrain_DrawPages( CommandList cmd )
 {
 	if ( !ggterrain_initialised ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	auto range = wiProfiler::BeginRangeGPU( "Terrain Page Generation", cmd );
 	device->EventBegin("Terrain Page Generation", cmd);
 
@@ -7468,40 +7387,40 @@ void GGTerrain_DrawPages( CommandList cmd )
 	device->RenderPassBegin( &renderPassPhysicalTex, cmd );
 
 	Viewport vp;
-	vp.TopLeftX = 0;
-	vp.TopLeftY = 0;
-	vp.Width = (float) renderPassPhysicalTex.GetDesc().attachments[0].texture->GetDesc().Width;
-	vp.Height = (float) renderPassPhysicalTex.GetDesc().attachments[0].texture->GetDesc().Height;
+	vp.top_left_x = 0;
+	vp.top_left_y = 0;
+	vp.width = (float) renderPassPhysicalTex.GetDesc().attachments[0].texture.GetDesc().width;
+	vp.height = (float) renderPassPhysicalTex.GetDesc().attachments[0].texture.GetDesc().height;
 	device->BindViewports( 1, &vp, cmd );
 
 	device->BindPipelineState( &psoPageGen, cmd );
 	
 	uint32_t bindSlot = 2;
-	device->BindConstantBuffer( VS, &terrainConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	
 	const GPUBuffer* vbs[] = { &pageGenVertexBuffer };
 	uint32_t stride = sizeof( VertexPageGen );
 	device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
 	
-	device->BindResource( PS, &texColorArray, 50, cmd );
-	device->BindResource( PS, &texNormalsArray, 51, cmd );
+	device->BindResource( &texColorArray, 50, cmd );
+	device->BindResource( &texNormalsArray, 51, cmd );
 #ifdef GGTERRAIN_USE_SURFACE_TEXTURE
-	device->BindResource( PS, &texSurfaceArray, 52, cmd );
+	device->BindResource( &texSurfaceArray, 52, cmd );
 #else
-	device->BindResource( PS, &texRoughnessMetalnessArray, 52, cmd );
-	device->BindResource( PS, &texAOArray, 53, cmd );
+	device->BindResource( &texRoughnessMetalnessArray, 52, cmd );
+	device->BindResource( &texAOArray, 53, cmd );
 #endif
-	device->BindResource( PS, &texLODHeightMapArray, 54, cmd );
-	device->BindResource( PS, &texLODNormalMapArray, 55, cmd );
-	device->BindResource( PS, &texMask, 56, cmd );
-	device->BindResource( PS, &texMaterialMap, 57, cmd );
+	device->BindResource( &texLODHeightMapArray, 54, cmd );
+	device->BindResource( &texLODNormalMapArray, 55, cmd );
+	device->BindResource( &texMask, 56, cmd );
+	device->BindResource( &texMaterialMap, 57, cmd );
 	GGGrass_BindGrassArray( 58, cmd );
 
-	device->BindSampler( PS, &samplerTrilinearWrap, 0, cmd );
-	device->BindSampler( PS, &samplerBilinear, 1, cmd );
-	device->BindSampler( PS, &samplerBilinearWrap, 2, cmd );
-	device->BindSampler( PS, &samplerPoint, 3, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 0, cmd );
+	device->BindSampler( &samplerBilinear, 1, cmd );
+	device->BindSampler( &samplerBilinearWrap, 2, cmd );
+	device->BindSampler( &samplerPoint, 3, cmd );
 
 	device->Draw( 6*numPages, 0, cmd );
 
@@ -7623,8 +7542,8 @@ void GGTerrain_DrawPages( CommandList cmd )
 
 	device->RenderPassBegin( &renderPassPhysicalTexMip, cmd );
 
-	vp.Width /= 2;
-	vp.Height /= 2;
+	vp.width /= 2;
+	vp.height /= 2;
 	device->BindViewports( 1, &vp, cmd );
 
 	device->BindPipelineState( &psoPageGen, cmd );
@@ -7643,7 +7562,7 @@ int GGTerrain_GeneratePage( PageEntry* pPage )
 {
 	if ( pageGenerationList.NumItems() >= GGTERRAIN_REPLACEMENT_PAGE_MAX ) return 0;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	// update page table texture
 	uint32_t detailLevel = pPage->GetDetailLevel(); // detailLevel 0 is the highest detail level
@@ -7656,7 +7575,7 @@ int GGTerrain_GeneratePage( PageEntry* pPage )
 			
 	uint16_t pixel = (physOffsetY << 8) | physOffsetX;
 			
-	CopyBox dstBox;
+	Box dstBox;
 	dstBox.left = virtOffsetX; dstBox.right = virtOffsetX + 1;
 	dstBox.top = virtOffsetY; dstBox.bottom = virtOffsetY + 1;
 	dstBox.front = 0; dstBox.back = 1;
@@ -7664,22 +7583,24 @@ int GGTerrain_GeneratePage( PageEntry* pPage )
 	if ( ggterrain.IsHighDetail( detailLevel ) )
 	{
 		pageTableData[ detailLevel ][ virtOffsetY * pagesX + virtOffsetX ] = pixel;
-		device->UpdateTexture( &texPageTableArray, 0, detailLevel, &dstBox, &pixel, 0, -1 ); 
+		// TODO: DX12 - UpdateTexture removed
+		//device->UpdateTexture( &texPageTableArray, 0, detailLevel, &dstBox, &pixel, 0, -1 );
 	}
 	else
 	{
 		uint32_t mipLevel = ggterrain.ConvertToMipLevel( detailLevel );
 		pageTableData[ detailLevel ][ virtOffsetY * (pagesX >> mipLevel) + virtOffsetX ] = pixel;
-		device->UpdateTexture( &texPageTableFinal, mipLevel, 0, &dstBox, &pixel, 0, -1 ); 
+		// TODO: DX12 - UpdateTexture removed
+		//device->UpdateTexture( &texPageTableFinal, mipLevel, 0, &dstBox, &pixel, 0, -1 );
 	}
-			
+
 	pageGenerationList.AddItem( pPage );
 	return 1;
 }
 
 void GGTerrain_CheckPageShift()
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
 	uint32_t numLODLevels = pCurrLODs->GetNumLevels();
@@ -7705,19 +7626,21 @@ void GGTerrain_CheckPageShift()
 		}
 
 		// page table array texture, one level per LOD, except the last LOD level which is mipmapped
-		GGTerrain_CreateEmptyTexture( pagesX, pagesY, 1, numLODLevels-1, FORMAT_R16_UNORM, &texPageTableArray );
+		GGTerrain_CreateEmptyTexture( pagesX, pagesY, 1, numLODLevels-1, Format::R16_UNORM, &texPageTableArray );
 
 		// clear page tables
 		memset( pageTableData, 0, GGTERRAIN_PAGE_TABLE_DEPTH*pagesX*pagesY*sizeof(uint16_t) ); // default everything to 0 (invalid page)
 		uint32_t stride = pagesX * sizeof(uint16_t); 
 		for( uint32_t level = 0; level < numLODLevels-1; level++ )
 		{
-			device->UpdateTexture( &texPageTableArray, 0, level, 0, pageTableData, stride, -1 );
+			// TODO: DX12 - UpdateTexture removed
+			//device->UpdateTexture( &texPageTableArray, 0, level, 0, pageTableData, stride, -1 );
 		}
 
 		for( uint32_t mipLevel = 0; mipLevel < GGTERRAIN_MAX_PAGE_TABLE_MIP; mipLevel++ ) // not a full mip stack
 		{
-			device->UpdateTexture( &texPageTableFinal, mipLevel, 0, 0, pageTableData, stride, -1 );
+			// TODO: DX12 - UpdateTexture removed
+			//device->UpdateTexture( &texPageTableFinal, mipLevel, 0, 0, pageTableData, stride, -1 );
 			stride /= 2;
 		}
 		
@@ -7850,7 +7773,8 @@ void GGTerrain_CheckPageShift()
 
 			memcpy( &pageTableData[ level ], newPageData, pagesX*pagesY*sizeof(uint16_t) );
 			uint32_t stride = pagesX * sizeof(uint16_t);
-			device->UpdateTexture( &texPageTableArray, 0, level, 0, &pageTableData[ level ], stride, -1 );
+			// TODO: DX12 - UpdateTexture removed
+			//device->UpdateTexture( &texPageTableArray, 0, level, 0, &pageTableData[ level ], stride, -1 );
 		}
 
 		// shift final mipmapped page table texture
@@ -7912,7 +7836,8 @@ void GGTerrain_CheckPageShift()
 
 				memcpy( &pageTableData[ pageLevel ], newPageData, mippedPagesX*mippedPagesY*sizeof(uint16_t) );
 				uint32_t stride = mippedPagesX * sizeof(uint16_t);
-				device->UpdateTexture( &texPageTableFinal, level, 0, 0, &pageTableData[ pageLevel ], stride, -1 );
+				// TODO: DX12 - UpdateTexture removed
+				//device->UpdateTexture( &texPageTableFinal, level, 0, 0, &pageTableData[ pageLevel ], stride, -1 );
 			}
 						
 			// generate any new 4x4 level pages
@@ -7943,21 +7868,23 @@ void GGTerrain_CheckPageShift()
 
 void GGTerrain_CheckReadBack()
 {
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
 	uint32_t numLODLevels = pCurrLODs->GetNumLevels();
 		
 	if ( readBackValid )
 	{
-		uint32_t texWidth = texReadBackCompute.GetDesc().Width;
-		uint32_t texHeight = texReadBackCompute.GetDesc().Height;
+		uint32_t texWidth = texReadBackCompute.GetDesc().width;
+		uint32_t texHeight = texReadBackCompute.GetDesc().height;
 
 		auto rangeTotal = wiProfiler::BeginRangeCPU( "Max - Terrain Read Back (All)" );
 		auto range = wiProfiler::BeginRangeCPU( "Max - Terrain Read Back Collect" );
 		
 		pagesNeeded.Setup( texWidth, texHeight );
 		
+		// TODO: DX12 - Mapping/Map/Unmap removed from GraphicsDevice
+		/*
 		Mapping mapping;
 		mapping._flags = Mapping::FLAG_READ;
 		mapping.size = texWidth * texHeight * sizeof(uint32_t);
@@ -7971,7 +7898,7 @@ void GGTerrain_CheckReadBack()
 		}
 
 		uint32_t pitch = mapping.rowpitch / sizeof(uint32_t);
-		
+
 		#ifdef PEOPTIMIZING
 		//PE: OPT1 No need to update all pages each frame. Moving camera from Lod to Lod takes many frames.
 		//PE: This reduce the sort that are really the most slow part of the terrain system and done each frame.
@@ -8016,6 +7943,7 @@ void GGTerrain_CheckReadBack()
 		}
 #endif
 		device->Unmap( &texReadBackStaging[currReadBackTex] );
+		*/
 
 		wiProfiler::EndRange( range );
 		range = wiProfiler::BeginRangeCPU( "Max - Terrain Read Back Sort" );
@@ -8122,7 +8050,7 @@ void GGTerrain_CheckReadBack()
 				
 				uint16_t pixel = 0; // 0 will cause the shader to loop down the mip levels until it finds a suitable page
 				
-				CopyBox dstBox;
+				Box dstBox;
 				dstBox.left = virtOffsetX; dstBox.right = virtOffsetX + 1;
 				dstBox.top = virtOffsetY; dstBox.bottom = virtOffsetY + 1;
 				dstBox.front = 0; dstBox.back = 1;
@@ -8130,13 +8058,15 @@ void GGTerrain_CheckReadBack()
 				if ( ggterrain.IsHighDetail( detailLevel ) )
 				{
 					pageTableData[ detailLevel ][ virtOffsetY * pagesX + virtOffsetX ] = pixel;
-					device->UpdateTexture( &texPageTableArray, 0, detailLevel, &dstBox, &pixel, 0, -1 ); 
+					// TODO: DX12 - UpdateTexture removed
+					//device->UpdateTexture( &texPageTableArray, 0, detailLevel, &dstBox, &pixel, 0, -1 );
 				}
 				else
 				{
 					uint32_t mipLevel = ggterrain.ConvertToMipLevel( detailLevel );
 					pageTableData[ detailLevel ][ virtOffsetY * (pagesX >> mipLevel) + virtOffsetX ] = pixel;
-					device->UpdateTexture( &texPageTableFinal, mipLevel, 0, &dstBox, &pixel, 0, -1 ); 
+					// TODO: DX12 - UpdateTexture removed
+					//device->UpdateTexture( &texPageTableFinal, mipLevel, 0, &dstBox, &pixel, 0, -1 );
 				}
 			}
 
@@ -8964,7 +8894,8 @@ void GGTerrain_Update_Painting( float pickX, float pickY, float pickZ )
 				}
 			}
 
-			wiRenderer::GetDevice()->UpdateTexture( &texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1 );
+			// TODO: DX12 - UpdateTexture removed
+			//wiGraphics::GetDevice()->UpdateTexture( &texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1 );
 
 			float realRadius = ggterrain_local_render_params2.brushSize + 50;
 			GGTerrain_InvalidateRegion( pickX - realRadius, pickZ - realRadius, pickX + realRadius, pickZ + realRadius, GGTERRAIN_INVALIDATE_TEXTURES );
@@ -9050,7 +8981,8 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 		globalEnvProbe = wiScene::GetScene().Entity_CreateEnvironmentProbe("globalEnvProbe", globalEnvProbePos);
 		EnvironmentProbeComponent* probe = wiScene::GetScene().probes.GetComponent(globalEnvProbe);
 		probe->range = globalrange;
-		probe->userdata = 255;
+		// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+		//probe->userdata = 255;
 		probe->SetDirty();
 		wiScene::TransformComponent* pTransform = wiScene::GetScene().transforms.GetComponent(globalEnvProbe);
 		pTransform->ClearTransform();
@@ -9070,7 +9002,8 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 			localEnvProbe[i] = wiScene::GetScene().Entity_CreateEnvironmentProbe(strName, localEnvProbePos[i]);
 			probe = wiScene::GetScene().probes.GetComponent(localEnvProbe[i]);
 			probe->range = range; // env cube range
-			probe->userdata = 0; // 0-255 alpha
+			// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+			//probe->userdata = 0; // 0-255 alpha
 			probe->SetDirty();
 			pTransform = wiScene::GetScene().transforms.GetComponent(localEnvProbe[i]);
 			pTransform->ClearTransform();
@@ -9227,22 +9160,24 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 						// move probe and set range
 						int range = g_envProbeList[p].range;
 						probe->range = range;
-						if (probe->userdata < 255)
-						{
-							int iNewValue = probe->userdata + (fabs(fMovementDelta) * 20.0f);
-							probe->userdata = iNewValue;
-							if (probe->userdata >= 255)
-							{
-								g_bEnvProbeTrackingUpdate[iRealProbeIndex] = false;
-								probe->userdata = 255;
-							}
-						}
-						else
-						{
+						// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+						//if (probe->userdata < 255)
+						//{
+						//	int iNewValue = probe->userdata + (fabs(fMovementDelta) * 20.0f);
+						//	probe->userdata = iNewValue;
+						//	if (probe->userdata >= 255)
+						//	{
+						//		g_bEnvProbeTrackingUpdate[iRealProbeIndex] = false;
+						//		probe->userdata = 255;
+						//	}
+						//}
+						//else
+						//{
 							g_bEnvProbeTrackingUpdate[iRealProbeIndex] = false;
-						}
+						//}
 
-						probe->SetBrightness(g_envProbeList[p].brightness);
+						// TODO: DX12 - SetBrightness removed from EnvironmentProbeComponent
+						//probe->SetBrightness(g_envProbeList[p].brightness);
 
 						// update probe with correct scaling
 						pTransform->ClearTransform();
@@ -9263,21 +9198,22 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 							probe->range -= (fMovementDelta * 20.0f);
 							if (probe->range < 1) probe->range = 1;
 						}
-						if (probe->userdata > 0)
-						{
-							int iNewValue = probe->userdata - (fabs(fMovementDelta) * 20.0f);
-							if (iNewValue < 0) iNewValue = 0;
-							probe->userdata = iNewValue;
-							if (probe->userdata <= 0)
-							{
-								g_bEnvProbeTrackingUpdate[iRealProbeIndex] = false;
-								probe->userdata = 0;
-							}
-						}
-						else
-						{
+						// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+						//if (probe->userdata > 0)
+						//{
+						//	int iNewValue = probe->userdata - (fabs(fMovementDelta) * 20.0f);
+						//	if (iNewValue < 0) iNewValue = 0;
+						//	probe->userdata = iNewValue;
+						//	if (probe->userdata <= 0)
+						//	{
+						//		g_bEnvProbeTrackingUpdate[iRealProbeIndex] = false;
+						//		probe->userdata = 0;
+						//	}
+						//}
+						//else
+						//{
 							g_bEnvProbeTrackingUpdate[iRealProbeIndex] = false;
-						}
+						//}
 						if (g_bEnvProbeTrackingUpdate[iRealProbeIndex] == false)
 						{
 							// update probe with correct scaling
@@ -9334,7 +9270,8 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 				EnvironmentProbeComponent* probe = wiScene::GetScene().probes.GetComponent(localEnvProbe[currLocalEnvProbe]);
 				probe->position = playerPos;
 				probe->range = range;
-				probe->userdata = 0;
+				// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+				//probe->userdata = 0;
 				probe->SetDirty();
 
 				// update probe with correct scaling
@@ -9367,11 +9304,13 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 
 				// new probe expands
 				EnvironmentProbeComponent* probe = wiScene::GetScene().probes.GetComponent(localEnvProbe[currLocalEnvProbe]);
-				probe->userdata = 255 - transition2;
+				// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+				//probe->userdata = 255 - transition2;
 
 				// old probe shrinks
 				probe = wiScene::GetScene().probes.GetComponent(localEnvProbe[1 - currLocalEnvProbe]);
-				probe->userdata = transition1;
+				// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+				//probe->userdata = transition1;
 
 				// when finished transition
 				if (localEnvProbeTransition == 0)
@@ -9393,7 +9332,8 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 					if (restprobe)
 					{
 						restprobe->range = 1;
-						restprobe->userdata = 0;
+						// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+						//restprobe->userdata = 0;
 						wiScene::TransformComponent* pRestTransform = wiScene::GetScene().transforms.GetComponent(localEnvProbe[iRest]);
 						if (pRestTransform)
 						{
@@ -9420,7 +9360,8 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 					EnvironmentProbeComponent* probe = wiScene::GetScene().probes.GetComponent(localEnvProbe[twoway]);
 					probe->SetRealTime(false);
 					probe->range = 1;
-					probe->userdata = 0;
+					// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+					//probe->userdata = 0;
 					probe->SetDirty();
 					wiScene::TransformComponent* pTransform = wiScene::GetScene().transforms.GetComponent(localEnvProbe[twoway]);
 					pTransform->ClearTransform();
@@ -9435,7 +9376,8 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 			{
 				EnvironmentProbeComponent* probe = wiScene::GetScene().probes.GetComponent(localEnvProbe[twoway]);
 				probe->range = 1;
-				probe->userdata = 0;
+				// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+				//probe->userdata = 0;
 				probe->SetDirty();
 				wiScene::TransformComponent* pTransform = wiScene::GetScene().transforms.GetComponent(localEnvProbe[twoway]);
 				pTransform->ClearTransform();
@@ -9471,9 +9413,11 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 		EnvironmentProbeComponent* probe = wiScene::GetScene().probes.GetComponent(globalEnvProbe);
 		probe->position = globalEnvProbePos;
 		probe->range = globalrange;
-		probe->userdata = 255;
+		// TODO: DX12 - userdata removed from EnvironmentProbeComponent
+		//probe->userdata = 255;
 		float GetEnvProbeBrightness(void);
-		probe->SetBrightness(GetEnvProbeBrightness());
+		// TODO: DX12 - SetBrightness removed from EnvironmentProbeComponent
+		//probe->SetBrightness(GetEnvProbeBrightness());
 		probe->SetDirty();
 		
 		wiScene::TransformComponent* pTransform = wiScene::GetScene().transforms.GetComponent(globalEnvProbe);
@@ -9647,7 +9591,7 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 	terrainConstantData.terrain_detailLimit = (float) ggterrain_global_render_params2.detailLimit;
 
 	float detailScale = 1.0f;
-	uint32_t screenWidth = master.masterrenderer.GetWidth3D();
+	uint32_t screenWidth = master.masterrenderer.GetPhysicalWidth();
 	if ( screenWidth > 2560 )
 	{
 		ggterrain_global_render_params2.detailScale = 1.42f - screenWidth * 0.0001628f; // carefully chosen to equal 1.0 at 2560
@@ -9860,7 +9804,7 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		}
 	}
 
-	wiRenderer::GetDevice()->UpdateBuffer( &terrainConstantBuffer, &terrainConstantData, cmd, sizeof(TerrainCB) );
+	wiGraphics::GetDevice()->UpdateBuffer( &terrainConstantBuffer, &terrainConstantData, cmd, sizeof(TerrainCB) );
 
 	if ( !pCurrLODs->IsGenerating() )
 	{
@@ -9914,13 +9858,13 @@ void GGTerrain_Update_EmptyLevel(float playerX, float playerY, float playerZ, wi
 
 	// also need to mighrate settings related to the editbox for seeing extent of mapsize
 	float detailScale = 1.0f;
-	uint32_t screenWidth = master.masterrenderer.GetWidth3D();
+	uint32_t screenWidth = master.masterrenderer.GetPhysicalWidth();
 	if (screenWidth > 2560) ggterrain_global_render_params2.detailScale = 1.42f - screenWidth * 0.0001628f; // carefully chosen to equal 1.0 at 2560
 	terrainConstantData.terrain_detailScale = 1.0f / (detailScale * ggterrain_global_render_params2.detailScale);
 	terrainConstantData.terrain_flags = ggterrain_local_render_params.flags | ggterrain_local_render_params2.flags2;
 	terrainConstantData.terrain_maskScale = ggterrain_local_render_params.maskScale / 50000.0f;
 	terrainConstantData.terrain_mapEditSize = ggterrain_global_render_params2.editable_size;
-	wiRenderer::GetDevice()->UpdateBuffer(&terrainConstantBuffer, &terrainConstantData, cmd, sizeof(TerrainCB));
+	wiGraphics::GetDevice()->UpdateBuffer(&terrainConstantBuffer, &terrainConstantData, cmd, sizeof(TerrainCB));
 
 	// also need to handle env probe refreshes - Environmental Light Probe System
 	GGTerrain_EnvProbeWork(playerX, playerY, playerZ);
@@ -10156,7 +10100,8 @@ int GGTerrain_SetPaintData( uint32_t size, uint8_t* data, sUndoSysEventTerrainPa
 		memcpy(pMaterialMap, data, size1);
 
 		//PE: Was needed so we can invalidate region and clear old textures.
-		wiRenderer::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
+		// TODO: DX12 - UpdateTexture removed
+		//wiGraphics::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
 
 #ifdef ONLYLOADWHENUSED
 		bCheckForNewTerrainTextures = true;
@@ -10192,7 +10137,8 @@ int GGTerrain_SetPaintData( uint32_t size, uint8_t* data, sUndoSysEventTerrainPa
 	realMaxZ *= ggterrain_local_render_params2.editable_size;
 
 	GGTerrain_InvalidateRegion(realMinX, realMinZ, realMaxX, realMaxZ, GGTERRAIN_INVALIDATE_ALL);
-	wiRenderer::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
+	// TODO: DX12 - UpdateTexture removed
+	//wiGraphics::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
 
 	return 1;
 #endif
@@ -10202,7 +10148,8 @@ int GGTerrain_SetPaintData( uint32_t size, uint8_t* data, sUndoSysEventTerrainPa
 void GGTerrain_ResetPaintData()
 {
 	memset( pMaterialMap, 0, GGTERRAIN_MATERIALMAP_SIZE * GGTERRAIN_MATERIALMAP_SIZE );
-	wiRenderer::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
+	// TODO: DX12 - UpdateTexture removed
+	//wiGraphics::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
 
 	GGTerrain_InvalidateEverything( GGTERRAIN_INVALIDATE_TEXTURES );
 }
@@ -10278,25 +10225,26 @@ extern "C" void GGTerrain_VirtualTexReadBack( Texture texReadBack, uint32_t samp
 	if (!ggterrain_initialised) return;
 	if (!ggterrain_draw_enabled) return; //Needed if we render to diffrent backbuffers, currReadBackTex get out of sync.
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	device->EventBegin("VirtTexReadBackDownSample", cmd);
 	auto range = wiProfiler::BeginRangeGPU("Terrain Read Back Downsample", cmd);
 
-	device->BindResource(CS, &texReadBack, 50, cmd);
-	device->BindUAV(CS, &texReadBackCompute, 0, cmd);
+	device->BindResource(&texReadBack, 50, cmd);
+	device->BindUAV(&texReadBackCompute, 0, cmd);
 
 	const TextureDesc& desc = texReadBackCompute.GetDesc();
 
 	if (sampleCount > 1) device->BindComputeShader(&shaderReadBackMSCS, cmd);
 	else device->BindComputeShader(&shaderReadBackCS, cmd);
 
-	device->BindConstantBuffer( CS, &terrainConstantBuffer, 2, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, 2, cmd );
 
-	device->Dispatch((desc.Width + 7) / 8, (desc.Height + 7) / 8, 1, cmd);
+	device->Dispatch((desc.width + 7) / 8, (desc.height + 7) / 8, 1, cmd);
 
-	device->UnbindResources(50, 1, cmd);
-	device->UnbindUAVs(0, 1, cmd);
+	// TODO: DX12 - UnbindResources/UnbindUAVs removed
+	//device->UnbindResources(50, 1, cmd);
+	//device->UnbindUAVs(0, 1, cmd);
 
 	device->CopyResource(&texReadBackStaging[currReadBackTex], &texReadBackCompute, cmd);
 
@@ -10316,13 +10264,13 @@ void GGTerrain_DrawQuad( RenderPass* renderPass, CommandList cmd )
 	if (!ggterrain_update_enabled) return;
 	if ( !ggterrain_initialised ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	device->RenderPassBegin( renderPass, cmd );
 
 	Viewport vp;
-	vp.Width = (float) renderPass->GetDesc().attachments[0].texture->GetDesc().Width;
-	vp.Height = (float) renderPass->GetDesc().attachments[0].texture->GetDesc().Height;
+	vp.width = (float) renderPass->GetDesc().attachments[0].texture.GetDesc().width;
+	vp.height = (float) renderPass->GetDesc().attachments[0].texture.GetDesc().height;
 	device->BindViewports( 1, &vp, cmd );
 
 	device->BindPipelineState( &psoQuad, cmd );
@@ -10332,7 +10280,7 @@ void GGTerrain_DrawQuad( RenderPass* renderPass, CommandList cmd )
 	device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
 	
 	// bind samplers
-	device->BindSampler( PS, &samplerBilinear, 0, cmd );
+	device->BindSampler( &samplerBilinear, 0, cmd );
 
 	device->Draw( 6, 0, cmd );
 
@@ -10352,22 +10300,22 @@ extern "C" void GGTerrain_Draw_Prepass( const Frustum* frustum, CommandList cmd 
 	if ( !ggterrain.IsValid() ) return;
 	if ( ggterrain_render_wireframe ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Prepass Draw", cmd);
 		
 	device->BindPipelineState( &psoMainPrepass, cmd );
 
 	int bindSlot = 2;
-	device->BindConstantBuffer( VS, &terrainConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 
-	device->BindResource( PS, &texPageTableArray, 53, cmd );
-	device->BindResource( PS, &texPageTableFinal, 54, cmd );
+	device->BindResource( &texPageTableArray, 53, cmd );
+	device->BindResource( &texPageTableFinal, 54, cmd );
 
 #if (GGTERRAIN_TEXTURE_FILTERING == GGTERRAIN_TEXTURE_FILTERING_TRILINEAR)
-	device->BindSampler( PS, &samplerTrilinearWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 0, cmd );
 #else
-	device->BindSampler( PS, &samplerAnisotropicWrap, 0, cmd );
+	device->BindSampler( &samplerAnisotropicWrap, 0, cmd );
 #endif
 
 	uint32_t numSegments = ggterrain_local_params.segments_per_chunk;
@@ -10392,7 +10340,7 @@ extern "C" void GGTerrain_Draw_Prepass( const Frustum* frustum, CommandList cmd 
 			const GPUBuffer* vbs[] = { &pChunk->vertexBuffer };
 			uint32_t stride = sizeof( TerrainVertex );
 			device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-			device->BindIndexBuffer( &pChunk->indexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+			device->BindIndexBuffer( &pChunk->indexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 			device->DrawIndexed( numIndices, 0, 0, cmd );
 		}
 	}
@@ -10405,7 +10353,7 @@ extern "C" void GGTerrain_Draw_Prepass( const Frustum* frustum, CommandList cmd 
 	const GPUBuffer* vbs[] = { &sphereVertexBuffer };
 	uint32_t stride = sizeof( VertexSphere );
 	device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-	device->BindIndexBuffer( &sphereIndexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+	device->BindIndexBuffer( &sphereIndexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 	device->DrawIndexedInstanced( g_numIndicesSphere, 23, 0, 0, 0, cmd );		
 	device->EventEnd(cmd);
 #endif
@@ -10426,7 +10374,7 @@ extern "C" void GGTerrain_Draw_Prepass_Reflections( const Frustum* frustum, Comm
 	if ( !ggterrain.IsValid() ) return;
 	if ( ggterrain_render_wireframe ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Prepass Reflections Draw", cmd);
 		
 	device->BindPipelineState( &psoReflectionPrepass, cmd );
@@ -10454,7 +10402,7 @@ extern "C" void GGTerrain_Draw_Prepass_Reflections( const Frustum* frustum, Comm
 			const GPUBuffer* vbs[] = { &pChunk->vertexBuffer };
 			uint32_t stride = sizeof( TerrainVertex );
 			device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-			device->BindIndexBuffer( &pChunk->indexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+			device->BindIndexBuffer( &pChunk->indexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 			device->DrawIndexed( numIndices, 0, 0, cmd );
 		}
 	}
@@ -10472,7 +10420,7 @@ extern "C" void GGTerrain_Draw_ShadowMap( const Frustum* frustum, int cascade, C
 	if ( !ggterrain.IsValid() ) return;
 	if ( ggterrain_render_wireframe ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Shadow Draw", cmd);
 
 	device->BindPipelineState( &psoMainShadow, cmd );
@@ -10508,7 +10456,7 @@ extern "C" void GGTerrain_Draw_ShadowMap( const Frustum* frustum, int cascade, C
 			const GPUBuffer* vbs[] = { &pChunk->vertexBuffer };
 			uint32_t stride = sizeof( TerrainVertex );
 			device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-			device->BindIndexBuffer( &pChunk->indexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+			device->BindIndexBuffer( &pChunk->indexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 			device->DrawIndexed( numIndices, 0, 0, cmd );
 		}
 	}
@@ -10529,7 +10477,7 @@ extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* fr
 	if ( !ggterrain.IsValid() ) return;
 	if ( ggterrain_render_wireframe ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Draw Env Probe", cmd);
 
 	// environment probe doesn't happen every frame, but it can be expensive when it does
@@ -10538,20 +10486,20 @@ extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* fr
 	device->BindPipelineState( &psoEnvProbe, cmd );
 
 	int bindSlot = 2;
-	device->BindConstantBuffer( VS, &terrainConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 
 	// bind texture and sampler
-	device->BindResource( PS, &texPagesColorAndMetal, 50, cmd );
-	device->BindResource( PS, &texPagesNormalsRoughnessAO, 51, cmd );
+	device->BindResource( &texPagesColorAndMetal, 50, cmd );
+	device->BindResource( &texPagesNormalsRoughnessAO, 51, cmd );
 	
-	device->BindResource( PS, &texPageTableArray, 53, cmd );
-	device->BindResource( PS, &texPageTableFinal, 54, cmd );
+	device->BindResource( &texPageTableArray, 53, cmd );
+	device->BindResource( &texPageTableFinal, 54, cmd );
 	
 #if (GGTERRAIN_TEXTURE_FILTERING == GGTERRAIN_TEXTURE_FILTERING_TRILINEAR)
-	device->BindSampler( PS, &samplerTrilinearWrap, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 1, cmd );
 #else
-	device->BindSampler( PS, &samplerAnisotropicWrap, 1, cmd );
+	device->BindSampler( &samplerAnisotropicWrap, 1, cmd );
 #endif
 
 	uint32_t numSegments = ggterrain_local_params.segments_per_chunk;
@@ -10593,9 +10541,9 @@ extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* fr
 
 			uint32_t buckets[2] = { 0,0 };
 			wiRenderer::Visibility *vis = &master.masterrenderer.visibility_main;
-			for (size_t i = 0; i < min(size_t(64), vis->visibleLights.size()); ++i) // only support indexing 64 lights at max for now
+			for (size_t i = 0; i < std::min(size_t(64), vis->visibleLights.size()); ++i) // only support indexing 64 lights at max for now
 			{
-				const uint16_t lightIndex = vis->visibleLights[i].index;
+				const uint16_t lightIndex = (uint16_t)vis->visibleLights[i];
 				const AABB& light_aabb = vis->scene->aabb_lights[lightIndex];
 				if (light_aabb.intersects(*aabb))
 				{
@@ -10608,13 +10556,14 @@ extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* fr
 			cb.xForwardLightMask.y = buckets[1];
 
 			// update light buffer
-			device->UpdateBuffer(&wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], &cb, cmd);
-			device->BindConstantBuffer(PS, &wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], CB_GETBINDSLOT(ForwardEntityMaskCB), cmd);
+			// TODO: DX12 - constantBuffers[CBTYPE_FORWARDENTITYMASK] removed from wi::renderer
+			//device->UpdateBuffer(&wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], &cb, cmd);
+			//device->BindConstantBuffer(&wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], CB_GETBINDSLOT(ForwardEntityMaskCB), cmd);
 
 			const GPUBuffer* vbs[] = { &pChunk->vertexBuffer };
 			uint32_t stride = sizeof( TerrainVertex );
 			device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-			device->BindIndexBuffer( &pChunk->indexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+			device->BindIndexBuffer( &pChunk->indexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 			device->DrawIndexedInstanced( numIndices, 6, 0, 0, 0, cmd );
 		}
 	}
@@ -10654,27 +10603,27 @@ extern "C" void GGTerrain_Draw( const Frustum* frustum, int mode, CommandList cm
 	if ( mode == 1 && ggterrain_render_wireframe ) return;
 
 	iOccludedTerrainChunks = 0;
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Draw", cmd);
 		
 	if ( ggterrain_render_wireframe ) device->BindPipelineState( &psoMainWire, cmd );
 	else device->BindPipelineState( &psoMain, cmd );
 
 	int bindSlot = 2;
-	device->BindConstantBuffer( VS, &terrainConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 
 	// bind texture and sampler
-	device->BindResource( PS, &texPagesColorAndMetal, 50, cmd );
-	device->BindResource( PS, &texPagesNormalsRoughnessAO, 51, cmd );
+	device->BindResource( &texPagesColorAndMetal, 50, cmd );
+	device->BindResource( &texPagesNormalsRoughnessAO, 51, cmd );
 	
-	device->BindResource( PS, &texPageTableArray, 53, cmd );
-	device->BindResource( PS, &texPageTableFinal, 54, cmd );
+	device->BindResource( &texPageTableArray, 53, cmd );
+	device->BindResource( &texPageTableFinal, 54, cmd );
 	
 #if (GGTERRAIN_TEXTURE_FILTERING == GGTERRAIN_TEXTURE_FILTERING_TRILINEAR)
-	device->BindSampler( PS, &samplerTrilinearWrap, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 1, cmd );
 #else
-	device->BindSampler( PS, &samplerAnisotropicWrap, 1, cmd );
+	device->BindSampler( &samplerAnisotropicWrap, 1, cmd );
 #endif
 
 	uint32_t numSegments = ggterrain_local_params.segments_per_chunk;
@@ -10729,7 +10678,7 @@ extern "C" void GGTerrain_Draw( const Frustum* frustum, int mode, CommandList cm
 			const GPUBuffer* vbs[] = { &pChunk->vertexBuffer };
 			uint32_t stride = sizeof( TerrainVertex );
 			device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-			device->BindIndexBuffer( &pChunk->indexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+			device->BindIndexBuffer( &pChunk->indexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 			device->DrawIndexed( numIndices, 0, 0, cmd );
 		}
 	}
@@ -10741,18 +10690,18 @@ extern "C" void GGTerrain_Draw( const Frustum* frustum, int mode, CommandList cm
 
 	device->BindPipelineState( &psoSphere, cmd );
 
-	device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 
-	device->BindResource( PS, &texColorArray, 50, cmd );
-	device->BindResource( PS, &texNormalsArray, 51, cmd );
-	device->BindResource( PS, &texSurfaceArray, 52, cmd );
+	device->BindResource( &texColorArray, 50, cmd );
+	device->BindResource( &texNormalsArray, 51, cmd );
+	device->BindResource( &texSurfaceArray, 52, cmd );
 
-	device->BindSampler( PS, &samplerTrilinearWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 0, cmd );
 
 	const GPUBuffer* vbs[] = { &sphereVertexBuffer };
 	uint32_t stride = sizeof( VertexSphere );
 	device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-	device->BindIndexBuffer( &sphereIndexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+	device->BindIndexBuffer( &sphereIndexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 	device->DrawIndexedInstanced( g_numIndicesSphere, 23, 0, 0, 0, cmd );
 	
 	device->EventEnd(cmd);
@@ -10771,7 +10720,7 @@ extern "C" void GGTerrain_Draw_Transparent( const Frustum* frustum, CommandList 
 	//if ( !ggterrain_draw_enabled ) return;
 	//if ( !ggterrain.IsValid() ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Transparents", cmd);
 
 	if ( GGTerrain_GetEditSizeVisible3D() )
@@ -10779,13 +10728,13 @@ extern "C" void GGTerrain_Draw_Transparent( const Frustum* frustum, CommandList 
 		device->BindPipelineState( &psoEditCube, cmd );
 
 		int bindSlot = 2;
-		device->BindConstantBuffer( VS, &terrainConstantBuffer, bindSlot, cmd );
-		device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
+		device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+		device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	
 		const GPUBuffer* vbs[] = { &boxVertexBuffer };
 		uint32_t stride = sizeof( BoxVertex );
 		device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-		device->BindIndexBuffer( &boxIndexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+		device->BindIndexBuffer( &boxIndexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexed( 24, 0, 0, cmd );
 	}
 
@@ -10794,13 +10743,13 @@ extern "C" void GGTerrain_Draw_Transparent( const Frustum* frustum, CommandList 
 		device->BindPipelineState( &psoRamp, cmd );
 
 		int bindSlot = 2;
-		device->BindConstantBuffer( VS, &terrainConstantBuffer, bindSlot, cmd );
-		device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
+		device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+		device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	
 		const GPUBuffer* vbs[] = { &boxVertexBuffer };
 		uint32_t stride = sizeof( BoxVertex );
 		device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-		device->BindIndexBuffer( &boxIndexBuffer, INDEXFORMAT_16BIT, 0, cmd );
+		device->BindIndexBuffer( &boxIndexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexed( 24, 0, 0, cmd );
 	}
 	
@@ -10816,29 +10765,30 @@ extern "C" void GGTerrain_Draw_Debug( CommandList cmd )
 
 	auto range = wiProfiler::BeginRangeGPU( "Terrain - Debug", cmd );
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	XMFLOAT4 area = { 0, 0, (float)master.masterrenderer.GetWidth3D(), (float)master.masterrenderer.GetHeight3D() };
-	device->SetScissorArea(cmd, area);
+	GraphicsDevice* device = wiGraphics::GetDevice();
+	XMFLOAT4 area = { 0, 0, (float)master.masterrenderer.GetPhysicalWidth(), (float)master.masterrenderer.GetPhysicalHeight() };
+	// TODO: DX12 - SetScissorArea removed
+	//device->SetScissorArea(cmd, area);
 
 	device->BindPipelineState( &psoQuad, cmd );
 
 	int bindSlot = 2;
-	device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
-	
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+
 	const GPUBuffer* vbs[] = { &quadVertexBuffer };
 	uint32_t stride = sizeof( VertexQuad );
 	device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
-	
-	device->BindResource( PS, &texReadBackCompute, 0, cmd );
-	device->BindResource( PS, &texPageTableArray, 1, cmd );
-	device->BindResource( PS, &texPageTableFinal, 2, cmd );
-	device->BindResource( PS, &texPagesColorAndMetal, 3, cmd );
-	device->BindResource( PS, &texPagesNormalsRoughnessAO, 4, cmd );
-	device->BindResource( PS, &texMask, 5, cmd );
-	device->BindResource( PS, &texLODNormalMapArray, 6, cmd );
-	device->BindResource( PS, &texMaterialMap, 7, cmd );
-	device->BindResource( PS, wiRenderer::GetTexture(TEXTYPE_2D_SKYATMOSPHERE_SKYLUMINANCELUT), 13, cmd );
-	device->BindSampler( PS, &samplerBilinear, 0, cmd );
+
+	device->BindResource( &texReadBackCompute, 0, cmd );
+	device->BindResource( &texPageTableArray, 1, cmd );
+	device->BindResource( &texPageTableFinal, 2, cmd );
+	device->BindResource( &texPagesColorAndMetal, 3, cmd );
+	device->BindResource( &texPagesNormalsRoughnessAO, 4, cmd );
+	device->BindResource( &texMask, 5, cmd );
+	device->BindResource( &texLODNormalMapArray, 6, cmd );
+	device->BindResource( &texMaterialMap, 7, cmd );
+	device->BindResource( wiRenderer::GetTexture(TEXTYPE_2D_SKYATMOSPHERE_SKYLUMINANCELUT), 13, cmd );
+	device->BindSampler( &samplerBilinear, 0, cmd );
 
 	device->Draw( 6, 0, cmd );
 
@@ -10855,25 +10805,26 @@ extern "C" void GGTerrain_Draw_Overlay( CommandList cmd )
 
 	auto range = wiProfiler::BeginRangeGPU( "Terrain - Overlay", cmd );
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	XMFLOAT4 area = { 0, 0, (float)master.masterrenderer.GetWidth3D(), (float)master.masterrenderer.GetHeight3D() };
-	device->SetScissorArea(cmd, area);
+	GraphicsDevice* device = wiGraphics::GetDevice();
+	XMFLOAT4 area = { 0, 0, (float)master.masterrenderer.GetPhysicalWidth(), (float)master.masterrenderer.GetPhysicalHeight() };
+	// TODO: DX12 - SetScissorArea removed
+	//device->SetScissorArea(cmd, area);
 
 	device->BindPipelineState( &psoOverlay, cmd );
 
 	int bindSlot = 2;
-	device->BindConstantBuffer( VS, &terrainConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	
 	const GPUBuffer* vbs[] = { &quadVertexBuffer };
 	uint32_t stride = sizeof( VertexQuad );
 	device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
 	
-	device->BindResource( PS, &texLODHeightMapArray, 0, cmd );
-	device->BindResource( PS, &texLODNormalMapArray, 1, cmd );
-	device->BindResource( PS, &texColorArray, 2, cmd );
+	device->BindResource( &texLODHeightMapArray, 0, cmd );
+	device->BindResource( &texLODNormalMapArray, 1, cmd );
+	device->BindResource( &texColorArray, 2, cmd );
 
-	device->BindSampler( PS, &samplerBilinear, 0, cmd );
+	device->BindSampler( &samplerBilinear, 0, cmd );
 
 	device->Draw( 6, 0, cmd );
 
@@ -11239,7 +11190,7 @@ void GGTerrain_CheckMaterialUsed(wiGraphics::CommandList cmd)
 		{
 			if(bMaterialUsed[i] == true && bTextureUploaded[i] == false)
 			{
-				//wiGraphics::CommandList cmd = wiRenderer::GetDevice()->BeginCommandList();
+				//wiGraphics::CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
 
 				//PE: Check all material IDs if we need to update any.
 				char szDstRoot[MAX_PATH];

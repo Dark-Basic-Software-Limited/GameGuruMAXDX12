@@ -1143,7 +1143,8 @@ namespace ImGui {
 		const ImVec4& drawCol_Down, int frame_padding, int atlasindex, int atlasrows, int atlascolumns, bool nowhite, bool gratiant, bool center_image, bool noalpha, bool useownid)
 	{
 
-		ID3D11ShaderResourceView* lpTexture = (ID3D11ShaderResourceView*)wiRenderer::GetDevice()->MaterialGetSRV((void*)pMaterial);
+		//ID3D11ShaderResourceView* lpTexture = (ID3D11ShaderResourceView*)wiGraphics::GetDevice()->MaterialGetSRV((void*)pMaterial); // MaterialGetSRV no longer exists in GraphicsDevice
+		ID3D11ShaderResourceView* lpTexture = nullptr;
 		
 		//(Texture*) pMaterial
 

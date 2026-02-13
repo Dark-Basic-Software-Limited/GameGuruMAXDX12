@@ -1946,3 +1946,4 @@ DARKSDK void SetRenderTargetAndDepth ( LPGGSURFACE pRender, LPGGSURFACE pDepth )
 	#endif
 }
 
+#endif // DX11 - continued in part1

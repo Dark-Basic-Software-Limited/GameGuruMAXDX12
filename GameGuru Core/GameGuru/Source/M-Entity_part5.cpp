@@ -63,7 +63,7 @@ bool preload_wicked_particle_effect(newparticletype* pParticle, int decal_id)
 						if (ec)
 						{
 							//ec->Restart();
-							ec->SetVisible(true);
+							//ec->SetVisible(true); // REMOVED
 						}
 
 						if (master_root > 0)
@@ -77,7 +77,7 @@ bool preload_wicked_particle_effect(newparticletype* pParticle, int decal_id)
 								{
 									if (scene.materials[from].textures[a].name.size() > 0)
 									{
-										if (!scene.materials[from].textures[a].resource)
+										if (!scene.materials[from].textures[a].resource.IsValid())
 										{
 											scene.materials[from].textures[a].resource = WickedCall_LoadImage(scene.materials[from].textures[a].name);
 										}
@@ -199,7 +199,7 @@ void newparticle_updateparticleemitter ( newparticletype* pParticle, float fScal
 						if (ec)
 						{
 							ec->Restart();
-							ec->SetVisible(true);
+							//ec->SetVisible(true); // REMOVED
 						}
 					}
 					if (root != 0)

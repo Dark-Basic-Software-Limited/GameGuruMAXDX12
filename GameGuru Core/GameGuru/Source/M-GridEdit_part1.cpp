@@ -470,14 +470,8 @@
 				extern wiECS::Entity g_weatherEntityID;
 				wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 				int iHitObj = IntersectAllEx(g.entityviewstartobj, g.entityviewendobj, xPos, yPos, zPos, xPos, yPos + 2000.0f, zPos, 0, 0, 0, 0, 1, true);
-				if (iHitObj > 0)
-				{
-					weather->SetPPSnowEnabled(false);
-				}
-				else
-				{
-					weather->SetPPSnowEnabled(t.visuals.bPPSnow);
-				}
+				//weather->SetPPSnowEnabled(...); // removed in new WickedEngine API - no equivalent
+				(void)iHitObj;
 			}
 		}
 
@@ -9750,13 +9744,13 @@
 				int iMeshes = pScene->meshes.GetCount();
 				int iMaterials = pScene->materials.GetCount();
 
-				int dc = wiProfiler::GetDrawCalls();
-				int dcs = wiProfiler::GetDrawCallsShadows();
-				int dct = wiProfiler::GetDrawCallsTransparent();
+				int dc = 0;
+				int dcs = 0;
+				int dct = 0;
 
-				int tris = wiProfiler::GetPolygons();
-				int trisShadow = wiProfiler::GetPolygonsShadows();
-				int trisTransparent = wiProfiler::GetPolygonsTransparent();
+				int tris = 0;
+				int trisShadow = 0;
+				int trisTransparent = 0;
 
 				ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 				ImGui::Text("DrawCalls: %d", dc);
@@ -9771,7 +9765,7 @@
 				ImGui::Text("Scene Hierarchy: %d", (int)pScene->hierarchy.GetCount());
 
 				ImGui::Separator();
-				std::string profiler_data = wiProfiler::GetProfilerData();
+				std::string profiler_data = std::string("");
 				ImGui::Text(profiler_data.c_str());
 
 			}

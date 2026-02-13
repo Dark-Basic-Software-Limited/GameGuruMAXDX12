@@ -1,4 +1,6 @@
-﻿void About_Screen(void)
+﻿#include <fstream>
+
+void About_Screen(void)
 {
 	ImGuiWindowFlags ex_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking;
 	if (refresh_gui_docking == 0)

@@ -1293,7 +1293,7 @@ void Wicked_Update_Shadows(void *voidvisual)
 
 	bool bTransparentChanged = false;
 	static bool bOldTransparent = false;
-	wiRenderer::SetTransparentShadowsEnabled(visuals->bTransparentShadows);
+	//wiRenderer::SetTransparentShadowsEnabled(visuals->bTransparentShadows); // removed from wi::renderer
 	if (bOldTransparent != visuals->bTransparentShadows)
 	{
 		bOldTransparent = visuals->bTransparentShadows;
@@ -1308,9 +1308,9 @@ void Wicked_Update_Shadows(void *voidvisual)
 		if (visuals->iShadowSpotCascadeResolution > 2048) visuals->iShadowSpotCascadeResolution = 2048;
 		old_iShadowSpotCascadeResolution = visuals->iShadowSpotCascadeResolution;
 		if(visuals->iShadowSpotCascadeResolution == 0)
-			wiRenderer::SetShadowProps2D(visuals->iShadowSpotCascadeResolution, 0 ); //cascade only now.
+			wiRenderer::SetShadowProps2D(visuals->iShadowSpotCascadeResolution ); //cascade only now.
 		else
-			wiRenderer::SetShadowProps2D(visuals->iShadowSpotCascadeResolution, 5); //cascade only now.
+			wiRenderer::SetShadowProps2D(visuals->iShadowSpotCascadeResolution); //cascade only now.
 	}
 
 
@@ -1330,10 +1330,7 @@ void Wicked_Update_Shadows(void *voidvisual)
 		total_active_2d_shadows = shadows;
 		if (visuals->iShadowSpotResolution > 2048) visuals->iShadowSpotResolution = 2048;
 		old_iShadowSpotResolution = visuals->iShadowSpotResolution;
-		if(visuals->iShadowSpotResolution == 0 || visuals->iShadowSpotMax == 0 )
-			wiRenderer::SetShadowPropsSpot2D(visuals->iShadowSpotResolution, 0);//soft shadow removed from here , -1);
-		else
-			wiRenderer::SetShadowPropsSpot2D(visuals->iShadowSpotResolution, total_active_2d_shadows);//soft shadow removed from here , -1);
+		//wiRenderer::SetShadowPropsSpot2D - REMOVED
 	}
 
 	//PE: MEM - 1546 : END SetShadowProps2D                                     S:529MB V: (4157,0)     
@@ -1358,9 +1355,9 @@ void Wicked_Update_Shadows(void *voidvisual)
 		if (visuals->iShadowPointResolution > 2048) visuals->iShadowPointResolution = 2048;
 		old_iShadowPointResolution = visuals->iShadowPointResolution;
 		if(visuals->iShadowPointResolution == 0 || visuals->iShadowPointMax == 0)
-			wiRenderer::SetShadowPropsCube(visuals->iShadowPointResolution, 0);
+			wiRenderer::SetShadowPropsCube(visuals->iShadowPointResolution);
 		else
-			wiRenderer::SetShadowPropsCube(visuals->iShadowPointResolution, total_active_cube_shadows);
+			wiRenderer::SetShadowPropsCube(visuals->iShadowPointResolution);
 	}
 
 	if(bForceRefreshLightCount) bForceRefreshLightCount = false;
@@ -1375,11 +1372,11 @@ void Wicked_Update_Fog(void* visual)
 	if (weather)
 	{
 		weather->fogStart = visuals->FogNearest_f;
-		weather->fogEnd = visuals->FogDistance_f;
-		weather->fogColorAndOpacity.x = visuals->FogR_f / 255.0f;
-		weather->fogColorAndOpacity.y = visuals->FogG_f / 255.0f;
-		weather->fogColorAndOpacity.z = visuals->FogB_f / 255.0f;
-		weather->fogColorAndOpacity.w = visuals->FogA_f;
+		//weather->fogEnd = visuals->FogDistance_f; // REMOVED
+		//weather->fogColorAndOpacity.x = visuals->FogR_f / 255.0f; // removed in new WickedEngine API
+		//weather->fogColorAndOpacity.y = visuals->FogG_f / 255.0f; // removed in new WickedEngine API
+		//weather->fogColorAndOpacity.z = visuals->FogB_f / 255.0f; // removed in new WickedEngine API
+		//weather->fogColorAndOpacity.w = visuals->FogA_f; // removed in new WickedEngine API
 		weather->horizon.x = visuals->FogR_f / 255.0f;
 		weather->horizon.y = visuals->FogG_f / 255.0f;
 		weather->horizon.z = visuals->FogB_f / 255.0f;
@@ -1409,39 +1406,33 @@ void Wicked_Update_Cloud(void* visual)
 	wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 	if (weather)
 	{
-		weather->cloudScale = visuals->SkyCloudHeight;
+		//weather->cloudScale = visuals->SkyCloudHeight; // REMOVED
 		if (visuals->bDisableSkybox)
 		{
-			weather->cloudiness = 0.0f;
-			weather->cloudSpeed = 0.0f;
-			weather->volumetricCloudParameters.CoverageAmount = 0.0f;
-			weather->volumetricCloudParameters.CoverageMinimum = 0.0f;
-			weather->volumetricCloudParameters.WindSpeed = 0.0f;
+			weather->volumetricCloudParameters.layerFirst.coverageAmount = 0.0f;
+			weather->volumetricCloudParameters.layerFirst.windSpeed = 0.0f;
+			weather->volumetricCloudParameters.layerFirst.coverageMinimum = 0.0f;
 			weather->SetRealisticSky(false);
 			weather->SetVolumetricClouds(false);
 			//weather->SetSimpleSky(false);
 		}
 		else if (visuals->skyindex == 0)
 		{
-			weather->cloudiness = visuals->SkyCloudiness;
-			weather->cloudSpeed = visuals->SkyCloudSpeed;
-			weather->volumetricCloudParameters.CloudStartHeight = GGTerrain_UnitsToMeters(visuals->SkyCloudHeight);
-			weather->volumetricCloudParameters.CoverageAmount = visuals->SkyCloudiness;
-			weather->volumetricCloudParameters.CoverageMinimum = visuals->SkyCloudCoverage;
-			weather->volumetricCloudParameters.CloudThickness = GGTerrain_UnitsToMeters(visuals->SkyCloudThickness);
-			weather->volumetricCloudParameters.WindSpeed = visuals->SkyCloudSpeed;
-			weather->volumetricCloudParameters.CoverageWindSpeed = visuals->SkyCloudSpeed;
+			weather->volumetricCloudParameters.layerFirst.coverageAmount = visuals->SkyCloudiness;
+			weather->volumetricCloudParameters.layerFirst.windSpeed = visuals->SkyCloudSpeed;
+			weather->volumetricCloudParameters.cloudStartHeight = GGTerrain_UnitsToMeters(visuals->SkyCloudHeight);
+			weather->volumetricCloudParameters.layerFirst.coverageMinimum = visuals->SkyCloudCoverage;
+			weather->volumetricCloudParameters.cloudThickness = GGTerrain_UnitsToMeters(visuals->SkyCloudThickness);
+			weather->volumetricCloudParameters.layerFirst.coverageWindSpeed = visuals->SkyCloudSpeed;
 			weather->SetRealisticSky(true);
 			weather->SetVolumetricClouds(true);
 		}
 		else
 		{
-			weather->cloudiness = 0.0f; //PE: This has changed in the new repo, same shader is now used and cloudiness turn it off, so must now be zero.
-			weather->cloudSpeed = 0.0f; //To stop moving lightshaft.
+			weather->volumetricCloudParameters.layerFirst.coverageAmount = 0.0f; //PE: This has changed in the new repo, same shader is now used and cloudiness turn it off, so must now be zero.
+			weather->volumetricCloudParameters.layerFirst.windSpeed = 0.0f; //To stop moving lightshaft.
 			//PE: Also disable volumetricCloud.
-			weather->volumetricCloudParameters.CoverageAmount = 0.0f;
-			weather->volumetricCloudParameters.CoverageMinimum = 0.0f;
-			weather->volumetricCloudParameters.WindSpeed = 0.0f;
+			weather->volumetricCloudParameters.layerFirst.coverageMinimum = 0.0f;
 			weather->SetRealisticSky(false);
 			weather->SetVolumetricClouds(false);
 		}
@@ -1459,69 +1450,58 @@ void Wicked_Update_Visuals(void *voidvisual)
 		weather->ambient.y = visuals->AmbienceGreen_f / 255.0;
 		weather->ambient.z = visuals->AmbienceBlue_f / 255.0;
 		weather->fogStart = visuals->FogNearest_f;
-		weather->fogEnd = visuals->FogDistance_f;
-		weather->fogColorAndOpacity.x = visuals->FogR_f / 255.0f;
-		weather->fogColorAndOpacity.y = visuals->FogG_f / 255.0f;
-		weather->fogColorAndOpacity.z = visuals->FogB_f / 255.0f;
-		weather->fogColorAndOpacity.w = visuals->FogA_f;
+		//weather->fogEnd = visuals->FogDistance_f; // REMOVED
+		//weather->fogColorAndOpacity.x = visuals->FogR_f / 255.0f; // removed in new WickedEngine API
+		//weather->fogColorAndOpacity.y = visuals->FogG_f / 255.0f; // removed in new WickedEngine API
+		//weather->fogColorAndOpacity.z = visuals->FogB_f / 255.0f; // removed in new WickedEngine API
+		//weather->fogColorAndOpacity.w = visuals->FogA_f; // removed in new WickedEngine API
 		weather->horizon.x = visuals->FogR_f / 255.0f;
 		weather->horizon.y = visuals->FogG_f / 255.0f;
 		weather->horizon.z = visuals->FogB_f / 255.0f;
 		weather->zenith.x = visuals->ZenithRed_f / 255.0f;
 		weather->zenith.y = visuals->ZenithGreen_f / 255.0f;
 		weather->zenith.z = visuals->ZenithBlue_f / 255.0f;
-		weather->cloudScale = visuals->SkyCloudHeight;
+		//weather->cloudScale = visuals->SkyCloudHeight; // REMOVED
 
 		if (visuals->bDisableSkybox)
 		{
-			weather->cloudiness = 0.0f;
-			weather->cloudSpeed = 0.0f;
-			weather->volumetricCloudParameters.CoverageAmount = 0.0f;
-			weather->volumetricCloudParameters.CoverageMinimum = 0.0f;
-			weather->volumetricCloudParameters.WindSpeed = 0.0f;
+			weather->volumetricCloudParameters.layerFirst.coverageAmount = 0.0f;
+			weather->volumetricCloudParameters.layerFirst.windSpeed = 0.0f;
+			weather->volumetricCloudParameters.layerFirst.coverageMinimum = 0.0f;
 			weather->SetRealisticSky(false);
 			weather->SetVolumetricClouds(false);
 		}
 		else if (visuals->skyindex == 0)
 		{
-			weather->cloudiness = visuals->SkyCloudiness;
-			weather->cloudSpeed = visuals->SkyCloudSpeed;
-			weather->volumetricCloudParameters.CloudStartHeight = GGTerrain_UnitsToMeters( visuals->SkyCloudHeight );
-			weather->volumetricCloudParameters.CoverageAmount = visuals->SkyCloudiness;
-			weather->volumetricCloudParameters.CoverageMinimum = visuals->SkyCloudCoverage;
-			weather->volumetricCloudParameters.CloudThickness = GGTerrain_UnitsToMeters( visuals->SkyCloudThickness );
-			weather->volumetricCloudParameters.WindSpeed = visuals->SkyCloudSpeed;
-			weather->volumetricCloudParameters.CoverageWindSpeed = visuals->SkyCloudSpeed;
+			weather->volumetricCloudParameters.layerFirst.coverageAmount = visuals->SkyCloudiness;
+			weather->volumetricCloudParameters.layerFirst.windSpeed = visuals->SkyCloudSpeed;
+			weather->volumetricCloudParameters.cloudStartHeight = GGTerrain_UnitsToMeters( visuals->SkyCloudHeight );
+			weather->volumetricCloudParameters.layerFirst.coverageMinimum = visuals->SkyCloudCoverage;
+			weather->volumetricCloudParameters.cloudThickness = GGTerrain_UnitsToMeters( visuals->SkyCloudThickness );
+			weather->volumetricCloudParameters.layerFirst.coverageWindSpeed = visuals->SkyCloudSpeed;
 			weather->SetRealisticSky(true);
 			weather->SetVolumetricClouds(true);
 		}
 		else
 		{
-			weather->cloudiness = 0.0f; //PE: This has changed in the new repo, same shader is now used and cloudiness turn it off, so must now be zero.
-			weather->cloudSpeed = 0.0f; //To stop moving lightshaft.
+			weather->volumetricCloudParameters.layerFirst.coverageAmount = 0.0f; //PE: This has changed in the new repo, same shader is now used and cloudiness turn it off, so must now be zero.
+			weather->volumetricCloudParameters.layerFirst.windSpeed = 0.0f; //To stop moving lightshaft.
 			//PE: Also disable volumetricCloud.
-			weather->volumetricCloudParameters.CoverageAmount = 0.0f;
-			weather->volumetricCloudParameters.CoverageMinimum = 0.0f;
-			weather->volumetricCloudParameters.WindSpeed = 0.0f;
+			weather->volumetricCloudParameters.layerFirst.coverageMinimum = 0.0f;
 			weather->SetRealisticSky(false);
 			weather->SetVolumetricClouds(false);
 		}
 
-		weather->pp_voxel_steps = visuals->voxel_steps;
+		//weather->pp_voxel_steps = visuals->voxel_steps; // REMOVED
 		weather->windDirection = XMFLOAT3(visuals->wind_direction_x, visuals->wind_direction_y, visuals->wind_direction_z);
 		weather->windSpeed = visuals->wind_speed;
 		weather->windWaveSize = visuals->pp_size;
-		weather->pp_alpha = visuals->pp_alpha;
+		//weather->pp_alpha = visuals->pp_alpha; // REMOVED
 		weather->windRandomness = visuals->wind_randomness;
-		weather->tree_wind = visuals->tree_wind;
-		weather->tree_sss = visuals->tree_sss;
+		//weather->tree_wind = visuals->tree_wind; // REMOVED
+		//weather->tree_sss = visuals->tree_sss; // REMOVED
 
-		if (t.game.set.ismapeditormode != 1)
-			weather->SetPPSnowEnabled(visuals->bPPSnow);
-		else if (bEnableWeather)
-			weather->SetPPSnowEnabled(visuals->bPPSnow);
-		else
-			weather->SetPPSnowEnabled(false);
+		//weather->SetPPSnowEnabled(...); // removed in new WickedEngine API - no equivalent
 
 		// If in Test Level or in standalone, use visual settings, otherwise just use the temporary editor setting.
 		bool bWaterEnabled;
@@ -1541,9 +1521,9 @@ void Wicked_Update_Visuals(void *voidvisual)
 			weather->oceanParameters.choppy_scale = visuals->fWaterChoppyScale;
 			weather->oceanParameters.wave_amplitude = visuals->fWaterWaveAmplitude;
 			weather->oceanParameters.wind_dependency = visuals->fWaterWindDependency;
-			weather->oceanParameters.fogMaxDist = visuals->WaterFogMaxDist;
-			weather->oceanParameters.fogMinDist = visuals->WaterFogMinDist;
-			weather->oceanParameters.fogMinAmount = visuals->WaterFogMinAmount;
+			//weather->oceanParameters.fogMaxDist = visuals->WaterFogMaxDist; // removed from OceanParameters
+			//weather->oceanParameters.fogMinDist = visuals->WaterFogMinDist; // removed from OceanParameters
+			//weather->oceanParameters.fogMinAmount = visuals->WaterFogMinAmount; // removed from OceanParameters
 
 			wiScene::GetScene().ocean = {};
 		}
@@ -1578,12 +1558,12 @@ void Wicked_Update_Visuals(void *voidvisual)
 		master_renderer->setRainRefreactionScale(visuals->fRainRefreactionScale);
 		#endif
 
-		std::shared_ptr<wiResource> image = NULL;
+		wiResource image;
 		master_renderer->setColorGradingEnabled(visuals->bColorGrading);
 		if (master_renderer->getColorGradingEnabled())
 		{
 			weather->colorGradingMapName = visuals->ColorGradingLUT.Get();
-			weather->colorGradingMap = wiResourceManager::Load(visuals->ColorGradingLUT.Get(), wiResourceManager::IMPORT_COLORGRADINGLUT);
+			weather->colorGradingMap = wiResourceManager::Load(visuals->ColorGradingLUT.Get(), wi::resourcemanager::Flags::IMPORT_COLORGRADINGLUT);
 		}
 
 		master.bVsyncEnabled = visuals->bLevelVSyncEnabled;
@@ -1596,7 +1576,7 @@ void Wicked_Update_Visuals(void *voidvisual)
 
 		master_renderer->setBloomEnabled(visuals->bBloomEnabled);
 		master_renderer->setBloomThreshold(visuals->fsetBloomThreshold);
-		master_renderer->setBloomStrength(visuals->fsetBloomStrength);
+		//master_renderer->setBloomStrength(visuals->fsetBloomStrength); // removed from RenderPath3D
 		master_renderer->setSSREnabled(visuals->bSSREnabled);
 		master_renderer->setReflectionsEnabled(visuals->bReflectionsEnabled);
 		master_renderer->setFXAAEnabled(visuals->bFXAAEnabled);
@@ -1706,8 +1686,10 @@ void Wicked_Update_Visuals(void *voidvisual)
 				old_iFSRMode = visuals->iFSRMode;
 				if (visuals->iFSRMode == 1)
 				{
-					master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					master.masterrenderer.SetFSRScale(1.3f);
+					// TODO: Set3DResolution removed, use resolutionScale instead
+					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+					// TODO: SetFSRScale removed, use setFSR2Preset instead
+					//master.masterrenderer.SetFSRScale(1.3f);
 					master.masterrenderer.setFSREnabled(true);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 					master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -1717,8 +1699,10 @@ void Wicked_Update_Visuals(void *voidvisual)
 				}
 				else if (visuals->iFSRMode == 2)
 				{
-					master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					master.masterrenderer.SetFSRScale(1.5f);
+					// TODO: Set3DResolution removed, use resolutionScale instead
+					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+					// TODO: SetFSRScale removed, use setFSR2Preset instead
+					//master.masterrenderer.SetFSRScale(1.5f);
 					master.masterrenderer.setFSREnabled(true);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 					master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -1728,8 +1712,10 @@ void Wicked_Update_Visuals(void *voidvisual)
 				}
 				else if (visuals->iFSRMode == 3)
 				{
-					master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					master.masterrenderer.SetFSRScale(1.7f);
+					// TODO: Set3DResolution removed, use resolutionScale instead
+					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+					// TODO: SetFSRScale removed, use setFSR2Preset instead
+					//master.masterrenderer.SetFSRScale(1.7f);
 					master.masterrenderer.setFSREnabled(true);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 					master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -1739,8 +1725,10 @@ void Wicked_Update_Visuals(void *voidvisual)
 				}
 				else if (visuals->iFSRMode == 4)
 				{
-					master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					master.masterrenderer.SetFSRScale(2.0f);
+					// TODO: Set3DResolution removed, use resolutionScale instead
+					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+					// TODO: SetFSRScale removed, use setFSR2Preset instead
+					//master.masterrenderer.SetFSRScale(2.0f);
 					master.masterrenderer.setFSREnabled(true);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 					master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -1751,8 +1739,10 @@ void Wicked_Update_Visuals(void *voidvisual)
 				else
 				{
 					//PE: Disable FSR
-					master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					master.masterrenderer.SetFSRScale(1.0f);
+					// TODO: Set3DResolution removed, use resolutionScale instead
+					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
+					// TODO: SetFSRScale removed, use setFSR2Preset instead
+					//master.masterrenderer.SetFSRScale(1.0f);
 					master.masterrenderer.setFSREnabled(false);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				}
@@ -1793,12 +1783,13 @@ void Wicked_Update_Visuals(void *voidvisual)
 	}
 	else
 	{
-		wiRenderer::SetGamma(visuals->fGamma);
+		// TODO: wiRenderer::SetGamma removed in new WickedEngine
+		//wiRenderer::SetGamma(visuals->fGamma);
 		g_fGlobalGammaFadeIn = visuals->fGamma;
 	}
 	g_fGlobalGammaFadeInDest = visuals->fGamma;
 
-	wiRenderer::SetDeSaturate(visuals->fDeSaturate);
+	//wiRenderer::SetDeSaturate(visuals->fDeSaturate); // REMOVED
 
 	float fUsedFOV = visuals->CameraFOV_f;
 	if (bImGuiInTestGame == false) fUsedFOV = 45;

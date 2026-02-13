@@ -1978,3 +1978,4 @@ CSteamUserGeneratedWorkshopItem g_UserWorkShopItem;
  {
  }
 
+*/

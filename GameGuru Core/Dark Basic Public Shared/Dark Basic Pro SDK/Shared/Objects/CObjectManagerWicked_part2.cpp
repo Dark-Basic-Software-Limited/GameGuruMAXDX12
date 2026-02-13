@@ -1,4 +1,5 @@
-﻿	// set the input streams
+﻿/*
+	// set the input streams
 	if ( !SetInputStreams ( pMesh ) )
 		return false;
 
@@ -1958,3 +1959,4 @@ bool CObjectManager::UpdateLayerInner ( int iLayer )
 						if ( pWeaponBone && pWeaponBone->pEffectObj > 0 && pActualObject->ppMeshList[0]->pVertexShaderEffect == pWeaponBone->pEffectObj ) bIsWeaponOrJetPack = true;
 						if ( pJetpackBone && pJetpackBone->pEffectObj > 0 && pActualObject->ppMeshList[0]->pVertexShaderEffect == pJetpackBone->pEffectObj ) bIsWeaponOrJetPack = true;
 					}
+*/

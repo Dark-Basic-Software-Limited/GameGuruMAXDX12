@@ -2,6 +2,7 @@
 #define _H_GGRASS
 
 #include <stdint.h>
+#include "../../../../WickedEngineDX12/WickedEngine/WickedEngine.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiGraphicsDevice.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiScene.h"
 

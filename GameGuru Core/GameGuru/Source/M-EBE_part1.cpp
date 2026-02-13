@@ -1550,9 +1550,9 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 				wiScene::MaterialComponent* pObjectMaterial = wiScene::GetScene().materials.GetComponent(materialEntity);
 				if (pObjectMaterial)
 				{
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource.IsValid())
 					{
-						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::BASECOLORMAP].name.c_str());
+						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString("textured") + "= " + TextureFilename;
 						t.setuparr_s[iA++] = t.tString;
 						t.tString = ""; t.tString = t.tString + importerPadString("baseColorMap") + "= " + TextureFilename;
@@ -1561,17 +1561,17 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 						t.setuparr_s[iA++] = t.tString;
 						bTextured = true;
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponent::NORMALMAP].resource.IsValid())
 					{
-						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::NORMALMAP].name.c_str());
+						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponent::NORMALMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString("normalMap") + "= " + TextureFilename;
 						t.setuparr_s[iA++] = t.tString;
 						t.tString = ""; t.tString = t.tString + importerPadString("normalStrength") + "= " + cStr(t.grideleprof.WEMaterial.fNormal[0]);
 						t.setuparr_s[iA++] = t.tString;
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponent::SURFACEMAP].resource.IsValid())
 					{
-						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::SURFACEMAP].name.c_str());
+						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponent::SURFACEMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString("surfaceMap") + "= " + TextureFilename;
 						t.setuparr_s[iA++] = t.tString;
 						t.tString = ""; t.tString = t.tString + importerPadString("roughnessStrength") + "= " + cStr(t.grideleprof.WEMaterial.fRoughness[0]);
@@ -1579,24 +1579,24 @@ void ebe_save_ebefile ( cStr tSaveFile, int iEntID )
 						t.tString = ""; t.tString = t.tString + importerPadString("metalnessStrength") + "= " + cStr(t.grideleprof.WEMaterial.fMetallness[0]);
 						t.setuparr_s[iA++] = t.tString;
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].resource.IsValid())
 					{
-						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::DISPLACEMENTMAP].name.c_str());
+						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponent::DISPLACEMENTMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString("displacementMap") + "= " + TextureFilename;
 						t.setuparr_s[iA++] = t.tString;
 					}
 
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 					{
-						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::EMISSIVEMAP].name.c_str());
+						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString("emissiveMap") + "= " + TextureFilename;
 						t.setuparr_s[iA++] = t.tString;
 						t.tString = ""; t.tString = t.tString + importerPadString("emissiveStrength") + "= " + cStr(t.grideleprof.WEMaterial.fEmissive[0]);
 						t.setuparr_s[iA++] = t.tString;
 					}
-					if (pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].resource)
+					if (pObjectMaterial->textures[MaterialComponent::OCCLUSIONMAP].resource.IsValid())
 					{
-						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponentTEXTURESLOT::OCCLUSIONMAP].name.c_str());
+						cStr TextureFilename = importer_getfilenameonly((LPSTR)pObjectMaterial->textures[MaterialComponent::OCCLUSIONMAP].name.c_str());
 						t.tString = ""; t.tString = t.tString + importerPadString("occlusionMap") + "= " + TextureFilename;
 						t.setuparr_s[iA++] = t.tString;
 					}

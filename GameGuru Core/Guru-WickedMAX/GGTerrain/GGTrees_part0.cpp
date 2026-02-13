@@ -5,6 +5,7 @@
 #define GGTREES_CONSTANTS_FULL_DECL
 #include "Shaders/GGTreesConstants.hlsli"
 
+#include "WickedEngine.h"
 #include "wiRenderer.h"
 #include "wiProfiler.h"
 #include "wiInput.h"
@@ -12,7 +13,7 @@
 #include "wiScene.h"
 
 #include "CFileC.h"
-#include "Utility/tinyddsloader.h"
+//#include "Utility/dds.h" // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
 
 #include "master.h"
 
@@ -564,12 +565,12 @@ struct TreeChunk
 
 		GPUBufferDesc bufferDesc = {};
 		SubresourceData data = {};
-		data.pSysMem = pData;
-		bufferDesc.ByteWidth = sizeof(InstanceTreeGPU) * numValid;
-		bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = 0;
-		wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstances );
+		data.data_ptr = pData;
+		bufferDesc.size = sizeof(InstanceTreeGPU) * numValid;
+		bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
+		//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+		bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstances );
 		
 		delete [] pData;
 	}
@@ -658,173 +659,49 @@ Sampler samplerTrilinearWrap;
 Sampler samplerPointWrap;
 Sampler samplerBilinearWrap;
 
+// TODO: DX12 - tinyddsloader removed, rewrite DDS loading
+#if 0
 wiGraphics::FORMAT ConvertDDSFormat( tinyddsloader::DDSFile::DXGIFormat format )
 {
-	switch (format)
-	{
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_Float: return FORMAT_R32G32B32A32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_UInt: return FORMAT_R32G32B32A32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_SInt: return FORMAT_R32G32B32A32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_Float: return FORMAT_R32G32B32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_UInt: return FORMAT_R32G32B32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_SInt: return FORMAT_R32G32B32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_Float: return FORMAT_R16G16B16A16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UNorm: return FORMAT_R16G16B16A16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UInt: return FORMAT_R16G16B16A16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SNorm: return FORMAT_R16G16B16A16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SInt: return FORMAT_R16G16B16A16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_Float: return FORMAT_R32G32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_UInt: return FORMAT_R32G32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32G32_SInt: return FORMAT_R32G32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UNorm: return FORMAT_R10G10B10A2_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UInt: return FORMAT_R10G10B10A2_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R11G11B10_Float: return FORMAT_R11G11B10_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8X8_UNorm: return FORMAT_B8G8R8A8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm: return FORMAT_B8G8R8A8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm_SRGB: return FORMAT_B8G8R8A8_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm: return FORMAT_R8G8B8A8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm_SRGB: return FORMAT_R8G8B8A8_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UInt: return FORMAT_R8G8B8A8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SNorm: return FORMAT_R8G8B8A8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SInt: return FORMAT_R8G8B8A8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_Float: return FORMAT_R16G16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_UNorm: return FORMAT_R16G16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_UInt: return FORMAT_R16G16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_SNorm: return FORMAT_R16G16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16G16_SInt: return FORMAT_R16G16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::D32_Float: return FORMAT_D32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_Float: return FORMAT_R32_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_UInt: return FORMAT_R32_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R32_SInt: return FORMAT_R32_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_UNorm: return FORMAT_R8G8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_UInt: return FORMAT_R8G8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_SNorm: return FORMAT_R8G8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8G8_SInt: return FORMAT_R8G8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_Float: return FORMAT_R16_FLOAT; 
-		case tinyddsloader::DDSFile::DXGIFormat::D16_UNorm: return FORMAT_D16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_UNorm: return FORMAT_R16_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_UInt: return FORMAT_R16_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_SNorm: return FORMAT_R16_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R16_SInt: return FORMAT_R16_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_UNorm: return FORMAT_R8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_UInt: return FORMAT_R8_UINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_SNorm: return FORMAT_R8_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::R8_SInt: return FORMAT_R8_SINT; 
-		case tinyddsloader::DDSFile::DXGIFormat::A8_UNorm: return FORMAT_R8_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm: return FORMAT_BC1_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm_SRGB: return FORMAT_BC1_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm: return FORMAT_BC2_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm_SRGB: return FORMAT_BC2_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm: return FORMAT_BC3_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm_SRGB: return FORMAT_BC3_UNORM_SRGB; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC4_UNorm: return FORMAT_BC4_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC4_SNorm: return FORMAT_BC4_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC5_UNorm: return FORMAT_BC5_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC5_SNorm: return FORMAT_BC5_SNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm: return FORMAT_BC7_UNORM; 
-		case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm_SRGB: return FORMAT_BC7_UNORM_SRGB; 
-		default:
-			assert(0); // incoming format is not supported 
-			return FORMAT_UNKNOWN;
-	}
+	// ... tinyddsloader format conversion table removed ...
+	return FORMAT_UNKNOWN;
 }
 
-void GGTrees_LoadTextureDDS( const char* filename, Texture* tex ) 
-{ 
-	if (!ggtrees_initialised) return;
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
-	char filePath[ MAX_PATH ];
-	strcpy_s( filePath, MAX_PATH, filename );
-	GG_GetRealPath( filePath, 0 );
-	
-	tinyddsloader::DDSFile dds;
-	auto result = dds.Load( filePath );
+void GGTrees_LoadTextureDDS( const char* filename, Texture* tex )
+{
+	// ... tinyddsloader DDS loading removed ...
+}
+#endif
 
-	if (result != tinyddsloader::Result::Success) return;
-	
-	TextureDesc desc;
-	desc.ArraySize = 1;
-	desc.BindFlags = BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags = 0;
-	desc.Width = dds.GetWidth();
-	desc.Height = dds.GetHeight();
-	desc.Depth = dds.GetDepth();
-	desc.MipLevels = dds.GetMipCount();
-	desc.ArraySize = dds.GetArraySize();
-	desc.MiscFlags = 0;
-	desc.Usage = USAGE_IMMUTABLE;
-	desc.layout = IMAGE_LAYOUT_SHADER_RESOURCE;
-	desc.Format = ConvertDDSFormat( dds.GetFormat() );
-		
-	std::vector<SubresourceData> InitData;
-	for (uint32_t arrayIndex = 0; arrayIndex < desc.ArraySize; ++arrayIndex)
-	{
-		for (uint32_t mip = 0; mip < desc.MipLevels; ++mip)
-		{
-			auto imageData = dds.GetImageData(mip, arrayIndex);
-			SubresourceData subresourceData;
-			subresourceData.pSysMem = imageData->m_mem;
-			subresourceData.SysMemPitch = imageData->m_memPitch;
-			subresourceData.SysMemSlicePitch = imageData->m_memSlicePitch;
-			InitData.push_back(subresourceData);
-		}
-	}
-	
-	auto dim = dds.GetTextureDimension();
-	switch (dim)
-	{
-		case tinyddsloader::DDSFile::TextureDimension::Texture1D: desc.type = TextureDesc::TEXTURE_1D; break;
-		case tinyddsloader::DDSFile::TextureDimension::Texture2D: desc.type = TextureDesc::TEXTURE_2D; break;
-		case tinyddsloader::DDSFile::TextureDimension::Texture3D: desc.type = TextureDesc::TEXTURE_3D;break;
-		default: assert(0); break;
-	}
-
-	device->CreateTexture( &desc, InitData.data(), tex );
+// TODO: DX12 - tinyddsloader removed, stub functions until DDS loading is rewritten
+void GGTrees_LoadTextureDDS( const char* filename, Texture* tex )
+{
+	// stub - DDS loading disabled
 }
 
-void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int levels, FORMAT format, Texture* tex ) 
+void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex )
 {
 	if (!ggtrees_initialised) return;
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
 	TextureDesc texDesc = {};
-	texDesc.BindFlags = BIND_SHADER_RESOURCE;
-	texDesc.SampleCount = 1;
-	texDesc.MipLevels = mipLevels;
-	texDesc.ArraySize = levels;
-	texDesc.Format = format;
-	texDesc.Usage = USAGE_DEFAULT;
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = mipLevels;
+	texDesc.array_size = levels;
+	texDesc.format = format;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = width;
+	texDesc.height = height;
 
 	device->CreateTexture( &texDesc, nullptr, tex );
 	device->SetName( tex, "tex" );
 }
 
-void GGTrees_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32_t arraySlice ) 
-{ 
-	if (!ggtrees_initialised) return;
-	GraphicsDevice* device = wiRenderer::GetDevice();
-	
-	char filePath[ MAX_PATH ];
-	strcpy_s( filePath, MAX_PATH, filename );
-	GG_GetRealPath( filePath, 0 );
-	
-	tinyddsloader::DDSFile dds;
-	auto result = dds.Load( filePath );
-
-	if (result != tinyddsloader::Result::Success) return;
-
-	uint32_t maxMip = dds.GetMipCount();
-	if ( maxMip > tex->desc.MipLevels ) maxMip = tex->desc.MipLevels;
-	
-	std::vector<SubresourceData> InitData;
-	for( uint32_t mip = 0; mip < maxMip; ++mip )
-	{
-		auto imageData = dds.GetImageData(mip, 0);		
-		device->UpdateTexture( tex, mip, arraySlice, 0, imageData->m_mem, imageData->m_memPitch, -1 );
-	}
+// TODO: DX12 - tinyddsloader removed, stub function until DDS loading is rewritten
+void GGTrees_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32_t arraySlice )
+{
+	// stub - DDS loading disabled
 }
 
 TreeChunk* GGTrees_GetChunk( float x, float z )
@@ -1141,50 +1018,50 @@ void GGTrees_LoadTextures(bool bInit = false)
 void GGTrees_Init()
 {
 	ggtrees_initialised = 1;
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 
-	wiRenderer::LoadShader( VS, shaderTreesVS, "GGTreesVS.cso" );
-	wiRenderer::LoadShader( PS, shaderTreesPS, "GGTreesPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderTreesVS, "GGTreesVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderTreesPS, "GGTreesPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderTreesPrepassVS, "GGTreesPrepassVS.cso" );
-	wiRenderer::LoadShader( PS, shaderTreesPrepassPS, "GGTreesPrepassPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderTreesPrepassVS, "GGTreesPrepassVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderTreesPrepassPS, "GGTreesPrepassPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderTreesShadowVS, "GGTreesShadowMapVS.cso" );
-	wiRenderer::LoadShader( PS, shaderTreesShadowPS, "GGTreesShadowMapPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderTreesShadowVS, "GGTreesShadowMapVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderTreesShadowPS, "GGTreesShadowMapPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderTreesHighVS, "GGTreesHighVS.cso" );
-	wiRenderer::LoadShader( PS, shaderTreesHighPS, "GGTreesHighPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderTreesHighVS, "GGTreesHighVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderTreesHighPS, "GGTreesHighPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderTreesHighPrepassVS, "GGTreesHighPrepassVS.cso" );
-	wiRenderer::LoadShader( PS, shaderTreesHighPrepassPS, "GGTreesHighPrepassPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderTreesHighPrepassVS, "GGTreesHighPrepassVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderTreesHighPrepassPS, "GGTreesHighPrepassPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderTreesHighShadowVS, "GGTreesHighShadowMapVS.cso" );
-	wiRenderer::LoadShader( PS, shaderTreesHighShadowPS, "GGTreesHighShadowMapPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderTreesHighShadowVS, "GGTreesHighShadowMapVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderTreesHighShadowPS, "GGTreesHighShadowMapPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderBranchesHighVS, "GGTreeBranchesHighVS.cso" );
-	wiRenderer::LoadShader( PS, shaderBranchesHighPS, "GGTreeBranchesHighPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderBranchesHighVS, "GGTreeBranchesHighVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderBranchesHighPS, "GGTreeBranchesHighPS.cso" );
 									  
-	wiRenderer::LoadShader( VS, shaderBranchesHighPrepassVS, "GGTreeBranchesHighPrepassVS.cso" );
-	wiRenderer::LoadShader( PS, shaderBranchesHighPrepassPS, "GGTreeBranchesHighPrepassPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderBranchesHighPrepassVS, "GGTreeBranchesHighPrepassVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderBranchesHighPrepassPS, "GGTreeBranchesHighPrepassPS.cso" );
 									  
-	wiRenderer::LoadShader( VS, shaderBranchesHighShadowVS, "GGTreeBranchesHighShadowMapVS.cso" );
-	wiRenderer::LoadShader( PS, shaderBranchesHighShadowPS, "GGTreeBranchesHighShadowMapPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderBranchesHighShadowVS, "GGTreeBranchesHighShadowMapVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderBranchesHighShadowPS, "GGTreeBranchesHighShadowMapPS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderTreesHighEnvProbeVS, "GGTreesHighEnvProbeVS.cso" );
-	wiRenderer::LoadShader( PS, shaderTreesHighEnvProbePS, "GGTreesHighEnvProbePS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderTreesHighEnvProbeVS, "GGTreesHighEnvProbeVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderTreesHighEnvProbePS, "GGTreesHighEnvProbePS.cso" );
 
-	wiRenderer::LoadShader( VS, shaderBranchesHighEnvProbeVS, "GGTreeBranchesHighEnvProbeVS.cso" );
-	wiRenderer::LoadShader( PS, shaderBranchesHighEnvProbePS, "GGTreeBranchesHighEnvProbePS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderBranchesHighEnvProbeVS, "GGTreeBranchesHighEnvProbeVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderBranchesHighEnvProbePS, "GGTreeBranchesHighEnvProbePS.cso" );
 
 	GGTrees_LoadTextureDDS( "Files/treebank/noise.dds", &texNoise );
 
 	// billboard textures
-	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, FORMAT_BC3_UNORM_SRGB, &texTree );
-	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, FORMAT_BC1_UNORM, &texTreeNormal );
+	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texTree );
+	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM, &texTreeNormal );
 
 	// high detail tree textures
-	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, FORMAT_BC1_UNORM_SRGB, &texTreeHigh );
-	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, FORMAT_BC3_UNORM_SRGB, &texBranchesHigh );
+	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM_SRGB, &texTreeHigh );
+	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texBranchesHigh );
 
 #ifdef ONLYLOADWHENUSED
 	for (int i = 0; i < numTreeTypes; i++)
@@ -1238,51 +1115,51 @@ void GGTrees_Init()
 
 	// raster state
 	RasterizerState rastState = {};
-	rastState.FillMode = FILL_SOLID;
-	rastState.CullMode = CULL_NONE;
-	rastState.FrontCounterClockwise = true;
-	rastState.DepthBias = 0;
-	rastState.DepthBiasClamp = 0;
-	rastState.SlopeScaledDepthBias = 0;
-	rastState.DepthClipEnable = true;
-	rastState.MultisampleEnable = false;
-	rastState.AntialiasedLineEnable = false;
-	
+	rastState.fill_mode = FillMode::SOLID;
+	rastState.cull_mode = CullMode::NONE;
+	rastState.front_counter_clockwise = true;
+	rastState.depth_bias = 0;
+	rastState.depth_bias_clamp = 0;
+	rastState.slope_scaled_depth_bias = 0;
+	rastState.depth_clip_enable = true;
+	rastState.multisample_enable = false;
+	rastState.antialiased_line_enable = false;
+
 	// depth stencil state
 	DepthStencilState depthStateOpaque = {};
-	depthStateOpaque.DepthEnable = true;
-	depthStateOpaque.DepthFunc = COMPARISON_GREATER_EQUAL;
-	depthStateOpaque.StencilEnable = false;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
-	
+	depthStateOpaque.depth_enable = true;
+	depthStateOpaque.depth_func = ComparisonFunc::GREATER_EQUAL;
+	depthStateOpaque.stencil_enable = false;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
+
 	// blend state
 	BlendState blendStateOpaque = {};
-	blendStateOpaque.RenderTarget[0].BlendEnable = false;
-	blendStateOpaque.RenderTarget[0].SrcBlend = BLEND_ONE;
-	blendStateOpaque.RenderTarget[0].DestBlend = BLEND_ZERO;
-	blendStateOpaque.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-	blendStateOpaque.RenderTarget[0].SrcBlendAlpha = BLEND_ONE;
-	blendStateOpaque.RenderTarget[0].DestBlendAlpha = BLEND_ZERO;
-	blendStateOpaque.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
-	blendStateOpaque.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_ALL;
-	blendStateOpaque.IndependentBlendEnable = false;
-	blendStateOpaque.AlphaToCoverageEnable = true;
+	blendStateOpaque.render_target[0].blend_enable = false;
+	blendStateOpaque.render_target[0].src_blend = Blend::ONE;
+	blendStateOpaque.render_target[0].dest_blend = Blend::ZERO;
+	blendStateOpaque.render_target[0].blend_op = BlendOp::ADD;
+	blendStateOpaque.render_target[0].src_blend_alpha = Blend::ONE;
+	blendStateOpaque.render_target[0].dest_blend_alpha = Blend::ZERO;
+	blendStateOpaque.render_target[0].blend_op_alpha = BlendOp::ADD;
+	blendStateOpaque.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
+	blendStateOpaque.independent_blend_enable = false;
+	blendStateOpaque.alpha_to_coverage_enable = true;
 	
 	// input layout
 	InputLayout inputLayout;
 	inputLayout.elements = {
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32_FLOAT,    0, 0,  INPUT_PER_VERTEX_DATA },
-		{ "OFFSET",   0, wiGraphics::FORMAT_R32G32B32_FLOAT, 1, 0,  INPUT_PER_INSTANCE_DATA },
-		{ "DATA",     0, wiGraphics::FORMAT_R32_UINT,        1, 12, INPUT_PER_INSTANCE_DATA },
+		{ "POSITION", 0, wiGraphics::Format::R32G32_FLOAT,    0, 0,  InputClassification::PER_VERTEX_DATA },
+		{ "OFFSET",   0, wiGraphics::Format::R32G32B32_FLOAT, 1, 0,  InputClassification::PER_INSTANCE_DATA },
+		{ "DATA",     0, wiGraphics::Format::R32_UINT,        1, 12, InputClassification::PER_INSTANCE_DATA },
 	};
 
 	InputLayout inputLayoutHigh;
 	inputLayoutHigh.elements = {
-		{ "POSITION", 0, wiGraphics::FORMAT_R32G32B32_FLOAT, 0, 0,  INPUT_PER_VERTEX_DATA },
-		{ "INORMAL",  0, wiGraphics::FORMAT_R8G8B8A8_UNORM,  0, 12, INPUT_PER_VERTEX_DATA },
-		{ "UV",       0, wiGraphics::FORMAT_R32G32_FLOAT,    0, 16, INPUT_PER_VERTEX_DATA },
-		{ "OFFSET",   0, wiGraphics::FORMAT_R32G32B32_FLOAT, 1, 0,  INPUT_PER_INSTANCE_DATA },
-		{ "DATA",     0, wiGraphics::FORMAT_R32_UINT,        1, 12, INPUT_PER_INSTANCE_DATA },
+		{ "POSITION", 0, wiGraphics::Format::R32G32B32_FLOAT, 0, 0,  InputClassification::PER_VERTEX_DATA },
+		{ "INORMAL",  0, wiGraphics::Format::R8G8B8A8_UNORM,  0, 12, InputClassification::PER_VERTEX_DATA },
+		{ "UV",       0, wiGraphics::Format::R32G32_FLOAT,    0, 16, InputClassification::PER_VERTEX_DATA },
+		{ "OFFSET",   0, wiGraphics::Format::R32G32B32_FLOAT, 1, 0,  InputClassification::PER_INSTANCE_DATA },
+		{ "DATA",     0, wiGraphics::Format::R32_UINT,        1, 12, InputClassification::PER_INSTANCE_DATA },
 	};
 
 	// pipeline state object
@@ -1291,168 +1168,168 @@ void GGTrees_Init()
 	desc.ps = &shaderTreesPS;
 
 	desc.il = &inputLayout;
-	desc.pt = TRIANGLELIST;
+	desc.pt = PrimitiveTopology::TRIANGLELIST;
 	desc.rs = &rastState;
 	desc.dss = &depthStateOpaque;
 	desc.bs = &blendStateOpaque;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
 	device->CreatePipelineState( &desc, &psoTrees );
 
-	rastState.CullMode = CULL_BACK;
+	rastState.cull_mode = CullMode::BACK;
 	desc.vs = &shaderTreesHighVS;
 	desc.ps = &shaderTreesHighPS;
 	desc.il = &inputLayoutHigh;
-	blendStateOpaque.AlphaToCoverageEnable = false;
+	blendStateOpaque.alpha_to_coverage_enable = false;
 	device->CreatePipelineState( &desc, &psoTreesHigh );
 
-	rastState.CullMode = CULL_NONE;
+	rastState.cull_mode = CullMode::NONE;
 	desc.vs = &shaderBranchesHighVS;
 	desc.ps = &shaderBranchesHighPS;
 	desc.il = &inputLayoutHigh;
-	blendStateOpaque.AlphaToCoverageEnable = true;
+	blendStateOpaque.alpha_to_coverage_enable = true;
 	device->CreatePipelineState( &desc, &psoBranchesHigh );
 
-	rastState.CullMode = CULL_BACK;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	rastState.cull_mode = CullMode::BACK;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	desc.vs = &shaderTreesHighEnvProbeVS;
 	desc.ps = &shaderTreesHighEnvProbePS;
 	desc.il = &inputLayoutHigh;
-	blendStateOpaque.AlphaToCoverageEnable = false;
+	blendStateOpaque.alpha_to_coverage_enable = false;
 	device->CreatePipelineState( &desc, &psoTreesHighEnvProbe );
 
-	rastState.CullMode = CULL_NONE;
+	rastState.cull_mode = CullMode::NONE;
 	desc.vs = &shaderBranchesHighEnvProbeVS;
 	desc.ps = &shaderBranchesHighEnvProbePS;
 	desc.il = &inputLayoutHigh;
-	blendStateOpaque.AlphaToCoverageEnable = true;
+	blendStateOpaque.alpha_to_coverage_enable = true;
 	device->CreatePipelineState( &desc, &psoBranchesHighEnvProbe );
 
 	// prepass pipeline state
 	desc.vs = &shaderTreesPrepassVS;
 	desc.ps = &shaderTreesPrepassPS;
 	desc.il = &inputLayout;
-	depthStateOpaque.DepthWriteMask = DEPTH_WRITE_MASK_ALL;
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	device->CreatePipelineState( &desc, &psoTreesPrepass );
 
-	rastState.CullMode = CULL_BACK;
+	rastState.cull_mode = CullMode::BACK;
 	desc.vs = &shaderTreesHighPrepassVS;
 	desc.ps = &shaderTreesHighPrepassPS;
 	desc.il = &inputLayoutHigh;
-	blendStateOpaque.AlphaToCoverageEnable = false;
+	blendStateOpaque.alpha_to_coverage_enable = false;
 	device->CreatePipelineState( &desc, &psoTreesHighPrepass );
 
-	rastState.CullMode = CULL_NONE;
+	rastState.cull_mode = CullMode::NONE;
 	desc.vs = &shaderBranchesHighPrepassVS;
 	desc.ps = &shaderBranchesHighPrepassPS;
 	desc.il = &inputLayoutHigh;
-	blendStateOpaque.AlphaToCoverageEnable = true;
+	blendStateOpaque.alpha_to_coverage_enable = true;
 	device->CreatePipelineState( &desc, &psoBranchesHighPrepass );
 
 	// shadow pipeline state
-	rastState.DepthBias = -1;
-	rastState.SlopeScaledDepthBias = -4.0f;
-	rastState.MultisampleEnable = false;
+	rastState.depth_bias = -1;
+	rastState.slope_scaled_depth_bias = -4.0f;
+	rastState.multisample_enable = false;
 	desc.vs = &shaderTreesShadowVS;
 	desc.ps = &shaderTreesShadowPS;
 	desc.il = &inputLayout;
-	rastState.DepthClipEnable = false;
-	blendStateOpaque.AlphaToCoverageEnable = false;
+	rastState.depth_clip_enable = false;
+	blendStateOpaque.alpha_to_coverage_enable = false;
 	device->CreatePipelineState( &desc, &psoTreesShadow );
 	desc.vs = &shaderTreesHighShadowVS;
 	desc.ps = &shaderTreesHighShadowPS;
 	desc.il = &inputLayoutHigh;
-	rastState.CullMode = CULL_BACK;
+	rastState.cull_mode = CullMode::BACK;
 	device->CreatePipelineState( &desc, &psoTreesHighShadow );
 	desc.vs = &shaderBranchesHighShadowVS;
 	desc.ps = &shaderBranchesHighShadowPS;
-	rastState.CullMode = CULL_NONE;
+	rastState.cull_mode = CullMode::NONE;
 	device->CreatePipelineState( &desc, &psoBranchesHighShadow );
-	rastState.DepthBias = 0;
-	rastState.DepthClipEnable = true;
-	rastState.SlopeScaledDepthBias = 0;
+	rastState.depth_bias = 0;
+	rastState.depth_clip_enable = true;
+	rastState.slope_scaled_depth_bias = 0;
 
 	// samplers
 	SamplerDesc samplerDesc;
-	samplerDesc.AddressU = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.address_u = TextureAddressMode::CLAMP;
+	samplerDesc.address_v = TextureAddressMode::CLAMP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
 	device->CreateSampler( &samplerDesc, &samplerTrilinearClamp );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
 	device->CreateSampler( &samplerDesc, &samplerTrilinearWrap );
 
-	samplerDesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	samplerDesc.filter = Filter::MIN_MAG_LINEAR_MIP_POINT;
 	device->CreateSampler( &samplerDesc, &samplerBilinearWrap );
 
 	// constant buffer
 	GPUBufferDesc bd = {};
-	bd.Usage = USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(TreeCB);
-	bd.BindFlags = BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bd, nullptr, &treeConstantBuffer );
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(TreeCB);
+	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
+	//bd.CPUAccessFlags = 0; // removed in DX12 API
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &treeConstantBuffer );
 
 	// vertex buffer
 	GPUBufferDesc bufferDesc = {};
 	SubresourceData data = {};
-	data.pSysMem = g_VerticesTreeBillboard;
-	bufferDesc.ByteWidth = sizeof(g_VerticesTreeBillboard);
-	bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeVertices );
+	data.data_ptr = g_VerticesTreeBillboard;
+	bufferDesc.size = sizeof(g_VerticesTreeBillboard);
+	bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
+	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeVertices );
 
 	// index buffer
-	data.pSysMem = g_IndicesTreeBillboard;
-	bufferDesc.ByteWidth = sizeof(g_IndicesTreeBillboard);
-	bufferDesc.BindFlags = BIND_INDEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-	wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeIndices );
+	data.data_ptr = g_IndicesTreeBillboard;
+	bufferDesc.size = sizeof(g_IndicesTreeBillboard);
+	bufferDesc.bind_flags = BindFlag::INDEX_BUFFER;
+	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeIndices );
 
 	// vertex buffer high detail
-	bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
+	bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
+	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
 
 	for( uint32_t i = 0; i < numTreeTypes; i++ )
 	{
-		data.pSysMem = g_GGTrees[ i ].trunk->pVertices;
-		bufferDesc.ByteWidth = g_GGTrees[ i ].trunk->numVertices * sizeof(VertexTreeHigh);
-		wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeHighVertices[i] );
+		data.data_ptr = g_GGTrees[ i ].trunk->pVertices;
+		bufferDesc.size = g_GGTrees[ i ].trunk->numVertices * sizeof(VertexTreeHigh);
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeHighVertices[i] );
 	}
 
 	for( uint32_t i = 0; i < numTreeTypes; i++ )
 	{
 		if ( !g_GGTrees[ i ].branches ) continue; // some don't have branches
-		data.pSysMem = g_GGTrees[ i ].branches->pVertices;
-		bufferDesc.ByteWidth = g_GGTrees[ i ].branches->numVertices * sizeof(VertexTreeHigh);
-		wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferBranchesHighVertices[i] );
+		data.data_ptr = g_GGTrees[ i ].branches->pVertices;
+		bufferDesc.size = g_GGTrees[ i ].branches->numVertices * sizeof(VertexTreeHigh);
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferBranchesHighVertices[i] );
 	}
 
 	// index buffer high detail
-	bufferDesc.BindFlags = BIND_INDEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
+	bufferDesc.bind_flags = BindFlag::INDEX_BUFFER;
+	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
 
 	for( uint32_t i = 0; i < numTreeTypes; i++ )
 	{
-		data.pSysMem = g_GGTrees[ i ].trunk->pIndices;
-		bufferDesc.ByteWidth = g_GGTrees[ i ].trunk->numIndices * sizeof(uint16_t);
-		wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeHighIndices[i] );
+		data.data_ptr = g_GGTrees[ i ].trunk->pIndices;
+		bufferDesc.size = g_GGTrees[ i ].trunk->numIndices * sizeof(uint16_t);
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeHighIndices[i] );
 	}
 
 	for( uint32_t i = 0; i < numTreeTypes; i++ )
 	{
 		if ( !g_GGTrees[ i ].branches ) continue; // some don't have branches
-		data.pSysMem = g_GGTrees[ i ].branches->pIndices;
-		bufferDesc.ByteWidth = g_GGTrees[ i ].branches->numIndices * sizeof(uint16_t);
-		wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferBranchesHighIndices[i] );
+		data.data_ptr = g_GGTrees[ i ].branches->pIndices;
+		bufferDesc.size = g_GGTrees[ i ].branches->numIndices * sizeof(uint16_t);
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferBranchesHighIndices[i] );
 	}
 
 	undosys_terrain_settreecount(numTotalTrees, sizeof(InstanceTree), numTreeChunks, sizeof(TreeChunk));
@@ -2256,12 +2133,12 @@ void GGTrees_UpdateFrustumCulling( wiScene::CameraComponent* camera )
 		{
 			GPUBufferDesc bufferDesc = {};
 			SubresourceData data = {};
-			data.pSysMem = treeInstancesHigh[ i ];
-			bufferDesc.ByteWidth = sizeof(InstanceTreeGPU) * numTreeInstancesHigh[ i ];
-			bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-			bufferDesc.CPUAccessFlags = 0;
-			bufferDesc.MiscFlags = 0;
-			wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHigh[i] );
+			data.data_ptr = treeInstancesHigh[ i ];
+			bufferDesc.size = sizeof(InstanceTreeGPU) * numTreeInstancesHigh[ i ];
+			bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
+			//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+			bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHigh[i] );
 		}
 	}
 }
@@ -2418,12 +2295,12 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 		{
 			GPUBufferDesc bufferDesc = {};
 			SubresourceData data = {};
-			data.pSysMem = treeInstancesHighShadow[ i ];
-			bufferDesc.ByteWidth = sizeof(InstanceTreeGPU) * numTreeInstancesHighShadow[ i ];
-			bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-			bufferDesc.CPUAccessFlags = 0;
-			bufferDesc.MiscFlags = 0;
-			wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHighShadow[i] );
+			data.data_ptr = treeInstancesHighShadow[ i ];
+			bufferDesc.size = sizeof(InstanceTreeGPU) * numTreeInstancesHighShadow[ i ];
+			bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
+			//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+			bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHighShadow[i] );
 		}
 	}
 
@@ -2463,7 +2340,7 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 	treeConstantData.tree_lodDist = ggtrees_global_params.lod_dist;
 	treeConstantData.tree_lodDistShadow = ggtrees_global_params.lod_dist_shadow;
 
-	wiRenderer::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
+	wiGraphics::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
 
 	wiProfiler::EndRange( range );
 }
@@ -2638,7 +2515,7 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Prepass Draw", cmd);
 	wiProfiler::range_id range;
 	if ( mode == 0 ) range = wiProfiler::BeginRangeGPU("Z-Prepass - Trees Low", cmd);
@@ -2647,15 +2524,15 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	device->BindPipelineState( &psoTreesPrepass, cmd );
 
 	uint32_t bindSlot = 2;
-	device->BindConstantBuffer( VS, &treeConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &treeConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
 
-	device->BindResource( PS, &texTree, 50, cmd );
-	device->BindResource( PS, &texNoise, 51, cmd );
-	device->BindResource( PS, &texTreeNormal, 53, cmd );
-	device->BindSampler( PS, &samplerBilinearWrap, 0, cmd );
-	device->BindSampler( PS, &samplerTrilinearClamp, 1, cmd );
-	device->BindSampler( PS, &samplerTrilinearWrap, 2, cmd );
+	device->BindResource( &texTree, 50, cmd );
+	device->BindResource( &texNoise, 51, cmd );
+	device->BindResource( &texTreeNormal, 53, cmd );
+	device->BindSampler( &samplerBilinearWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
 
 	const GPUBuffer* vbs[] = { &bufferTreeVertices };
 	const uint32_t strides[] = { sizeof( VertexTree ) };
@@ -2673,7 +2550,7 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceTreeGPU) };
 		device->BindVertexBuffers( vbs, 1, 1, strides, 0, cmd );
-		device->BindIndexBuffer( &bufferTreeIndices, INDEXFORMAT_16BIT, 0, cmd );
+		device->BindIndexBuffer( &bufferTreeIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	
@@ -2686,7 +2563,7 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		range = wiProfiler::BeginRangeGPU("Z-Prepass - Trees High", cmd);
 
 		device->BindPipelineState( &psoTreesHighPrepass, cmd );
-		device->BindResource( PS, &texTreeHigh, 52, cmd );
+		device->BindResource( &texTreeHigh, 52, cmd );
 		
 		for( uint32_t i = 0; i < numTreeTypes; i++ )
 		{
@@ -2695,13 +2572,13 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 				const GPUBuffer* vbs[] = { &bufferTreeHighVertices[i], &bufferInstancesHigh[i] };
 				const uint32_t strides[] = { sizeof(VertexTreeHigh), sizeof(InstanceTreeGPU) };
 				device->BindVertexBuffers( vbs, 0, 2, strides, 0, cmd );
-				device->BindIndexBuffer( &bufferTreeHighIndices[i], INDEXFORMAT_16BIT, 0, cmd );
+				device->BindIndexBuffer( &bufferTreeHighIndices[i], IndexBufferFormat::UINT16, 0, cmd );
 				device->DrawIndexedInstanced( g_GGTrees[ i ].trunk->numIndices, numTreeInstancesHigh[i], 0, 0, 0, cmd );
 			}
 		}
 
 		device->BindPipelineState( &psoBranchesHighPrepass, cmd );
-		device->BindResource( PS, &texBranchesHigh, 54, cmd );
+		device->BindResource( &texBranchesHigh, 54, cmd );
 		
 		for( uint32_t i = 0; i < numTreeTypes; i++ )
 		{
@@ -2711,7 +2588,7 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 				const GPUBuffer* vbs[] = { &bufferBranchesHighVertices[i], &bufferInstancesHigh[i] };
 				const uint32_t strides[] = { sizeof(VertexTreeHigh), sizeof(InstanceTreeGPU) };
 				device->BindVertexBuffers( vbs, 0, 2, strides, 0, cmd );
-				device->BindIndexBuffer( &bufferBranchesHighIndices[i], INDEXFORMAT_16BIT, 0, cmd );
+				device->BindIndexBuffer( &bufferBranchesHighIndices[i], IndexBufferFormat::UINT16, 0, cmd );
 				device->DrawIndexedInstanced( g_GGTrees[ i ].branches->numIndices, numTreeInstancesHigh[i], 0, 0, 0, cmd );
 			}
 		}
@@ -2732,21 +2609,21 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 
 	if ( cascade >= ggtrees_global_params.tree_shadow_range ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Shadow Draw", cmd);
 
 	device->BindPipelineState( &psoTreesShadow, cmd );
 
 	uint32_t bindSlot = 2;
-	device->BindConstantBuffer( VS, &treeConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &treeConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
 	
-	device->BindResource( PS, &texTree, 50, cmd );
-	device->BindResource( PS, &texNoise, 51, cmd );
-	device->BindResource( PS, &texTreeNormal, 53, cmd );
-	device->BindSampler( PS, &samplerBilinearWrap, 0, cmd );
-	device->BindSampler( PS, &samplerTrilinearClamp, 1, cmd );
-	device->BindSampler( PS, &samplerTrilinearWrap, 2, cmd );
+	device->BindResource( &texTree, 50, cmd );
+	device->BindResource( &texNoise, 51, cmd );
+	device->BindResource( &texTreeNormal, 53, cmd );
+	device->BindSampler( &samplerBilinearWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
 
 	const GPUBuffer* vbs[] = { &bufferTreeVertices };
 	const uint32_t strides[] = { sizeof( VertexTree ) };
@@ -2764,7 +2641,7 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceTreeGPU) };
 		device->BindVertexBuffers( vbs, 1, 1, strides, 0, cmd );
-		device->BindIndexBuffer( &bufferTreeIndices, INDEXFORMAT_16BIT, 0, cmd );
+		device->BindIndexBuffer( &bufferTreeIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	
@@ -2772,7 +2649,7 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 	if ( cascade < 3 )
 	{
 		device->BindPipelineState( &psoTreesHighShadow, cmd );
-		device->BindResource( PS, &texTreeHigh, 52, cmd );
+		device->BindResource( &texTreeHigh, 52, cmd );
 		
 		for( uint32_t i = 0; i < numTreeTypes; i++ )
 		{
@@ -2781,13 +2658,13 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 				const GPUBuffer* vbs2[] = { &bufferTreeHighVertices[i], &bufferInstancesHighShadow[i] };
 				const uint32_t strides2[] = { sizeof(VertexTreeHigh), sizeof(InstanceTreeGPU) };
 				device->BindVertexBuffers( vbs2, 0, 2, strides2, 0, cmd );
-				device->BindIndexBuffer( &bufferTreeHighIndices[i], INDEXFORMAT_16BIT, 0, cmd );
+				device->BindIndexBuffer( &bufferTreeHighIndices[i], IndexBufferFormat::UINT16, 0, cmd );
 				device->DrawIndexedInstanced( g_GGTrees[ i ].trunk->numIndices, numTreeInstancesHighShadow[i], 0, 0, 0, cmd );
 			}
 		}
 
 		device->BindPipelineState( &psoBranchesHighShadow, cmd );
-		device->BindResource( PS, &texBranchesHigh, 54, cmd );
+		device->BindResource( &texBranchesHigh, 54, cmd );
 		
 		for( uint32_t i = 0; i < numTreeTypes; i++ )
 		{
@@ -2797,7 +2674,7 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 				const GPUBuffer* vbs2[] = { &bufferBranchesHighVertices[i], &bufferInstancesHighShadow[i] };
 				const uint32_t strides2[] = { sizeof(VertexTreeHigh), sizeof(InstanceTreeGPU) };
 				device->BindVertexBuffers( vbs2, 0, 2, strides2, 0, cmd );
-				device->BindIndexBuffer( &bufferBranchesHighIndices[i], INDEXFORMAT_16BIT, 0, cmd );
+				device->BindIndexBuffer( &bufferBranchesHighIndices[i], IndexBufferFormat::UINT16, 0, cmd );
 				device->DrawIndexedInstanced( g_GGTrees[ i ].branches->numIndices, numTreeInstancesHighShadow[i], 0, 0, 0, cmd );
 			}
 		}
@@ -2815,20 +2692,20 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 	if ( frustum_count > 255 ) frustum_count = 255; // limited to 8 bits in instance data
 	if (!GGTrees::ggtrees_draw_enabled) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Draw Env Probe", cmd);
 	
 	// environment probe doesn't render every frame, but can be expensive when it does
 	auto range = wiProfiler::BeginRangeGPU( "Environment Probe - Trees", cmd );
 
 	int bindSlot = 2;
-	device->BindConstantBuffer( VS, &treeConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &treeConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
 
 	// bind texture and sampler
-	device->BindSampler( PS, &samplerBilinearWrap, 0, cmd );
-	device->BindSampler( PS, &samplerTrilinearClamp, 1, cmd );
-	device->BindSampler( PS, &samplerTrilinearWrap, 2, cmd );
+	device->BindSampler( &samplerBilinearWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
 
 	const GPUBuffer* vbs[] = { &bufferTreeVertices };
 	const uint32_t strides[] = { sizeof( VertexTree ) };
@@ -2921,6 +2798,9 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 		return;
 	}
 
+	// PE: Commented out - ForwardEntityMaskCB, constantBuffers, and CBTYPE_FORWARDENTITYMASK
+	// were removed from WickedEngine. visibleLights is now vector<uint32_t> (no .index member).
+	/*
 	// find nearby lights for forward renderer
 	ForwardEntityMaskCB cb;
 	cb.xForwardLightMask.x = 0;
@@ -2932,7 +2812,7 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 	wiRenderer::Visibility *vis = &master.masterrenderer.visibility_main;
 	uint32_t size = (uint32_t) vis->visibleLights.size();
 	if ( size > 64 ) size = 64; // only support indexing 64 lights at max for now
-	for (size_t i = 0; i < size; ++i) 
+	for (size_t i = 0; i < size; ++i)
 	{
 		const uint16_t lightIndex = vis->visibleLights[i].index;
 		const AABB& light_aabb = vis->scene->aabb_lights[lightIndex];
@@ -2948,7 +2828,8 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 
 	// update light buffer
 	device->UpdateBuffer(&wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], &cb, cmd);
-	device->BindConstantBuffer(PS, &wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], CB_GETBINDSLOT(ForwardEntityMaskCB), cmd);
+	device->BindConstantBuffer(&wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], CB_GETBINDSLOT(ForwardEntityMaskCB), cmd);
+	*/
 
 	// draw trees
 	for( uint32_t i = 0; i < numTreeTypes; i++ )
@@ -2957,15 +2838,15 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 		
 		GPUBufferDesc bufferDesc = {};
 		SubresourceData data = {};
-		data.pSysMem = treeInstancesHighEnvProbe[ i ];
-		bufferDesc.ByteWidth = sizeof(InstanceTreeGPU) * numTreeInstancesHighEnvProbe[ i ];
-		bufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = 0;
-		wiRenderer::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHighEnvProbe[i] );
+		data.data_ptr = treeInstancesHighEnvProbe[ i ];
+		bufferDesc.size = sizeof(InstanceTreeGPU) * numTreeInstancesHighEnvProbe[ i ];
+		bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
+		//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
+		bufferDesc.misc_flags = ResourceMiscFlag::NONE;
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHighEnvProbe[i] );
 		
 		device->BindPipelineState( &psoTreesHighEnvProbe, cmd );
-		device->BindResource( PS, &texTreeHigh, 52, cmd );
+		device->BindResource( &texTreeHigh, 52, cmd );
 		
 		for( uint32_t i = 0; i < numTreeTypes; i++ )
 		{
@@ -2974,13 +2855,13 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 				const GPUBuffer* vbs[] = { &bufferTreeHighVertices[i], &bufferInstancesHighEnvProbe[i] };
 				const uint32_t strides[] = { sizeof(VertexTreeHigh), sizeof(InstanceTreeGPU) };
 				device->BindVertexBuffers( vbs, 0, 2, strides, 0, cmd );
-				device->BindIndexBuffer( &bufferTreeHighIndices[i], INDEXFORMAT_16BIT, 0, cmd );
+				device->BindIndexBuffer( &bufferTreeHighIndices[i], IndexBufferFormat::UINT16, 0, cmd );
 				device->DrawIndexedInstanced( g_GGTrees[ i ].trunk->numIndices, numTreeInstancesHighEnvProbe[i], 0, 0, 0, cmd );
 			}
 		}
 
 		device->BindPipelineState( &psoBranchesHighEnvProbe, cmd );
-		device->BindResource( PS, &texBranchesHigh, 54, cmd );
+		device->BindResource( &texBranchesHigh, 54, cmd );
 		
 		for( uint32_t i = 0; i < numTreeTypes; i++ )
 		{
@@ -2990,7 +2871,7 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 				const GPUBuffer* vbs[] = { &bufferBranchesHighVertices[i], &bufferInstancesHighEnvProbe[i] };
 				const uint32_t strides[] = { sizeof(VertexTreeHigh), sizeof(InstanceTreeGPU) };
 				device->BindVertexBuffers( vbs, 0, 2, strides, 0, cmd );
-				device->BindIndexBuffer( &bufferBranchesHighIndices[i], INDEXFORMAT_16BIT, 0, cmd );
+				device->BindIndexBuffer( &bufferBranchesHighIndices[i], IndexBufferFormat::UINT16, 0, cmd );
 				device->DrawIndexedInstanced( g_GGTrees[ i ].branches->numIndices, numTreeInstancesHighEnvProbe[i], 0, 0, 0, cmd );
 			}
 		}
@@ -3008,7 +2889,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
 
-	GraphicsDevice* device = wiRenderer::GetDevice();
+	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Draw", cmd);
 	wiProfiler::range_id range;
 	if ( mode == 0 ) range = wiProfiler::BeginRangeGPU("Opaque - Trees Low", cmd);
@@ -3017,16 +2898,16 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	device->BindPipelineState( &psoTrees, cmd );
 
 	uint32_t bindSlot = 2;
-	device->BindConstantBuffer( VS, &treeConstantBuffer, bindSlot, cmd );
-	device->BindConstantBuffer( PS, &treeConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
+	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
 
 	// bind texture and sampler
-	device->BindResource( PS, &texTree, 50, cmd ); 
-	device->BindResource( PS, &texNoise, 51, cmd );
-	device->BindResource( PS, &texTreeNormal, 53, cmd );
-	device->BindSampler( PS, &samplerBilinearWrap, 0, cmd );
-	device->BindSampler( PS, &samplerTrilinearClamp, 1, cmd );
-	device->BindSampler( PS, &samplerTrilinearWrap, 2, cmd );
+	device->BindResource( &texTree, 50, cmd ); 
+	device->BindResource( &texNoise, 51, cmd );
+	device->BindResource( &texTreeNormal, 53, cmd );
+	device->BindSampler( &samplerBilinearWrap, 0, cmd );
+	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
+	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
 
 	const GPUBuffer* vbs[] = { &bufferTreeVertices };
 	const uint32_t strides[] = { sizeof( VertexTree ) };
@@ -3044,7 +2925,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceTreeGPU) };
 		device->BindVertexBuffers( vbs, 1, 1, strides, 0, cmd );
-		device->BindIndexBuffer( &bufferTreeIndices, INDEXFORMAT_16BIT, 0, cmd );
+		device->BindIndexBuffer( &bufferTreeIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	
@@ -3057,7 +2938,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 		range = wiProfiler::BeginRangeGPU("Opaque - Trees High", cmd);
 
 		device->BindPipelineState( &psoTreesHigh, cmd );
-		device->BindResource( PS, &texTreeHigh, 52, cmd );
+		device->BindResource( &texTreeHigh, 52, cmd );
 		
 		for( uint32_t i = 0; i < numTreeTypes; i++ )
 		{
@@ -3066,13 +2947,13 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 				const GPUBuffer* vbs[] = { &bufferTreeHighVertices[i], &bufferInstancesHigh[i] };
 				const uint32_t strides[] = { sizeof(VertexTreeHigh), sizeof(InstanceTreeGPU) };
 				device->BindVertexBuffers( vbs, 0, 2, strides, 0, cmd );
-				device->BindIndexBuffer( &bufferTreeHighIndices[i], INDEXFORMAT_16BIT, 0, cmd );
+				device->BindIndexBuffer( &bufferTreeHighIndices[i], IndexBufferFormat::UINT16, 0, cmd );
 				device->DrawIndexedInstanced( g_GGTrees[ i ].trunk->numIndices, numTreeInstancesHigh[i], 0, 0, 0, cmd );
 			}
 		}
 
 		device->BindPipelineState( &psoBranchesHigh, cmd );
-		device->BindResource( PS, &texBranchesHigh, 54, cmd );
+		device->BindResource( &texBranchesHigh, 54, cmd );
 		
 		for( uint32_t i = 0; i < numTreeTypes; i++ )
 		{
@@ -3082,7 +2963,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 				const GPUBuffer* vbs[] = { &bufferBranchesHighVertices[i], &bufferInstancesHigh[i] };
 				const uint32_t strides[] = { sizeof(VertexTreeHigh), sizeof(InstanceTreeGPU) };
 				device->BindVertexBuffers( vbs, 0, 2, strides, 0, cmd );
-				device->BindIndexBuffer( &bufferBranchesHighIndices[i], INDEXFORMAT_16BIT, 0, cmd );
+				device->BindIndexBuffer( &bufferBranchesHighIndices[i], IndexBufferFormat::UINT16, 0, cmd );
 				device->DrawIndexedInstanced( g_GGTrees[ i ].branches->numIndices, numTreeInstancesHigh[i], 0, 0, 0, cmd );
 			}
 		}

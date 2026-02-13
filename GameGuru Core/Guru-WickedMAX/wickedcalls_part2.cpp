@@ -498,17 +498,17 @@ void WickedCall_TextureMeshWithImagePtr(sMesh* pMesh, int iPutInEmissivemode)
 						pObjectMaterial->reflectance = 0.04f;// 0.002f;
 
 						// first delete old textures
-						if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource.IsValid())
 						{
-							pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = nullptr;
+							pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].resource = {};
 							pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name = "";
 							pObjectMaterial->SetDirty();
 							wiJobSystem::context ctx;
 							wiJobSystem::Wait(ctx);
 						}
-						if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource)
+						if (pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource.IsValid())
 						{
-							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = nullptr;
+							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = {};
 							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = "";
 							pObjectMaterial->SetDirty();
 							wiJobSystem::context ctx;
@@ -517,17 +517,16 @@ void WickedCall_TextureMeshWithImagePtr(sMesh* pMesh, int iPutInEmissivemode)
 
 						// set texture resource description
 						TextureDesc desc;
-						desc.BindFlags = BIND_SHADER_RESOURCE;
-						desc.CPUAccessFlags = 0;
-						desc.Width = ImageWidth(pMeshTexture->iImageID);
-						desc.Height = ImageHeight(pMeshTexture->iImageID);
-						desc.Depth = 32;
-						desc.MipLevels = 1;
-						desc.ArraySize = 1;
-						desc.MiscFlags = 0;
-						desc.Usage = USAGE_IMMUTABLE;
-						desc.Format = FORMAT_R8G8B8A8_UNORM;
-						desc.type = TextureDesc::TEXTURE_2D;
+						desc.bind_flags = BindFlag::SHADER_RESOURCE;
+						desc.width = ImageWidth(pMeshTexture->iImageID);
+						desc.height = ImageHeight(pMeshTexture->iImageID);
+						desc.depth = 1;
+						desc.mip_levels = 1;
+						desc.array_size = 1;
+						desc.misc_flags = ResourceMiscFlag::NONE;
+						desc.usage = Usage::DEFAULT;
+						desc.format = Format::R8G8B8A8_UNORM;
+						desc.type = TextureDesc::Type::TEXTURE_2D;
 
 						// get initdata ready
 						std::vector<SubresourceData> InitData;
@@ -560,9 +559,9 @@ void WickedCall_TextureMeshWithImagePtr(sMesh* pMesh, int iPutInEmissivemode)
 								SubresourceData subresourceData;
 								LPSTR pTextureMem = new char[iSizeOfBitmapData];
 								memset(pTextureMem, 0, iSizeOfBitmapData);
-								subresourceData.pSysMem = pTextureMem;
-								subresourceData.SysMemPitch = dx11desc.Width * 4;
-								subresourceData.SysMemSlicePitch = iSizeOfBitmapData * 4;
+								subresourceData.data_ptr = pTextureMem;
+								subresourceData.row_pitch = dx11desc.Width * 4;
+								subresourceData.slice_pitch = iSizeOfBitmapData * 4;
 								InitData.push_back(subresourceData);
 
 								// copy from surface to newly created texture mem data
@@ -598,15 +597,12 @@ void WickedCall_TextureMeshWithImagePtr(sMesh* pMesh, int iPutInEmissivemode)
 						//WickedCall_DeleteImage(sTextureName);	// leelee, this ensures only ONE copy of this created texture exists, but the engine
 																// will likely require many uniquely created, so need more unique names instead of this hack!
 
-						int found = 0;
-						std::shared_ptr<wiResource> resource = wiResourceManager::GetResource( sTextureName, 1, &found );
-
-						if ( !found )
-						{
-							// use desc and initdata to create the texture
-							wiRenderer::GetDevice()->CreateTexture(&desc, InitData.data(), &resource->texture);
-							wiRenderer::GetDevice()->SetName(&resource->texture, sTextureName.c_str());
-						}
+						// create a texture and wrap it in a wiResource
+						wiGraphics::Texture newTexture;
+						wiGraphics::GetDevice()->CreateTexture(&desc, InitData.data(), &newTexture);
+						wiGraphics::GetDevice()->SetName(&newTexture, sTextureName.c_str());
+						wiResource resource;
+						resource.SetTexture(newTexture);
 
 						// create a new resource manually
 						pObjectMaterial->textures[MaterialComponent::BASECOLORMAP].name = sTextureName;
@@ -617,13 +613,11 @@ void WickedCall_TextureMeshWithImagePtr(sMesh* pMesh, int iPutInEmissivemode)
 							sprintf(pMassivelyRandomTexName, "TotallyRandom%d", (int)(rand() % 99999));
 							sTextureName = pMassivelyRandomTexName;// "OldImagePtrTextureEmssive";
 
-							std::shared_ptr<wiResource> resource2 = wiResourceManager::GetResource( sTextureName, 1, &found );
-
-							if ( !found )
-							{
-								wiRenderer::GetDevice()->CreateTexture(&desc, InitData.data(), &resource2->texture);
-								wiRenderer::GetDevice()->SetName(&resource2->texture, sTextureName.c_str());
-							}
+							wiGraphics::Texture newTexture2;
+							wiGraphics::GetDevice()->CreateTexture(&desc, InitData.data(), &newTexture2);
+							wiGraphics::GetDevice()->SetName(&newTexture2, sTextureName.c_str());
+							wiResource resource2;
+							resource2.SetTexture(newTexture2);
 
 							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].name = sTextureName;
 							pObjectMaterial->textures[MaterialComponent::EMISSIVEMAP].resource = resource2;
@@ -814,7 +808,7 @@ void WickedCall_UpdateSceneForPick(void)
 	// when position/rot/etc an object, and then need to instantly
 	// cast a ray to pick, need to update scene
 	//PE: Only transform update needed.
-	wiScene::GetScene().UpdateSceneTransform(0);
+	wiScene::GetScene().Update(0);
 }
 
 void WickedCall_SetRenderOrderBias(sMesh* pMesh, float fDistanceToAdd)
@@ -825,7 +819,7 @@ void WickedCall_SetRenderOrderBias(sMesh* pMesh, float fDistanceToAdd)
 		ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 		if (object)
 		{
-			object->SetRenderOrderBiasDistance(fDistanceToAdd);
+			object->sort_priority = (int)fDistanceToAdd;
 		}
 	}
 }
@@ -838,7 +832,7 @@ float WickedCall_GetRenderOrderBias(sMesh* pMesh)
 		ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 		if (object)
 		{
-			return object->GetRenderOrderBiasDistance();
+			return (float)object->sort_priority;
 		}
 	}
 	return 0; // compiler complains if this is missing, what's a suitable default value?
@@ -878,7 +872,7 @@ void WickedCall_SetObjectPreventAnyApparentOcclusion (sObject* pObject, bool bPr
 				ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 				if (object)
 				{
-					object->SetRenderPreventAnyKindOfCulling(bPreventAnyApparentOcclusion);
+					//object->SetRenderPreventAnyKindOfCulling(bPreventAnyApparentOcclusion); // REMOVED
 				}
 			}
 		}
@@ -897,7 +891,7 @@ void WickedCall_SetDisableCollision(sObject* pObject,bool collision)
 				ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 				if (object)
 				{
-					object->SetDisableCollision(collision);
+					//object->SetDisableCollision(collision); // REMOVED
 				}
 			}
 		}
@@ -960,8 +954,8 @@ void WickedCall_GlueObjectToObject(sObject* pObjectToGlue, sObject* pParentObjec
 											AnimationComponent* parentanimationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 											if (parentanimationcomponent)
 											{
-												parentanimationcomponent->UsePrimaryAnimTimer(0, parentanimentity);
-												animationcomponent->UsePrimaryAnimTimer(parentanimentity, 0);
+												//parentanimationcomponent->UsePrimaryAnimTimer(0, parentanimentity); // REMOVED
+												//animationcomponent->UsePrimaryAnimTimer(parentanimentity, 0); // REMOVED
 											}
 										}
 									}
@@ -969,7 +963,7 @@ void WickedCall_GlueObjectToObject(sObject* pObjectToGlue, sObject* pParentObjec
 								else
 								{
 									// unsync child from parent (probably not used in favor of unglue/glue operation as one presently used)
-									animationcomponent->UsePrimaryAnimTimer(0,0);
+									//animationcomponent->UsePrimaryAnimTimer(0,0); // REMOVED
 								}
 							}
 						}
@@ -998,7 +992,7 @@ void WickedCall_UnGlueObjectToObject(sObject* pObjectToUnGlue)
 					AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 					if (animationcomponent)
 					{
-						animationcomponent->UsePrimaryAnimTimer(0,0);
+						//animationcomponent->UsePrimaryAnimTimer(0,0); // REMOVED
 					}
 				}
 			}
@@ -1069,8 +1063,8 @@ void WickedCall_RotateLimb(sObject* pObject, sFrame* pFrame, float fAX, float fA
 					AnimationComponent::AnimationChannel* pAnimationChannel = &animationcomponent->channels[iIndex];
 					if (pAnimationChannel)
 					{
-						pAnimationChannel->iUsePreFrame = 1;
-						pAnimationChannel->qPreFrameRotation = XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ));
+						//pAnimationChannel->iUsePreFrame = 1; // REMOVED
+						//pAnimationChannel->qPreFrameRotation = XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ)); // REMOVED
 					}
 				}
 			}
@@ -1147,33 +1141,11 @@ void WickedCall_OverrideLimbWithCombined(sObject* pObject, sFrame* pFrame, bool 
 					AnimationComponent::AnimationChannel* pAnimationChannelRot = &animationcomponent->channels[iIndexRot];
 					if (pAnimationChannelPos && pAnimationChannelRot)
 					{
-						// translation
-						pAnimationChannelPos->iUsePreFrame = 2;
-						pAnimationChannelPos->vPreFrameTranslation = XMVectorSet(pFrame->matCombined._41, pFrame->matCombined._42, pFrame->matCombined._43, 0);
-
-						// rotation
-						GGMATRIX matCombined = pFrame->matCombined;
-						XMFLOAT4X4 matLimbRot;
-						matLimbRot._11 = matCombined._11;
-						matLimbRot._12 = matCombined._12;
-						matLimbRot._13 = matCombined._13;
-						matLimbRot._14 = matCombined._14;
-						matLimbRot._21 = matCombined._21;
-						matLimbRot._22 = matCombined._22;
-						matLimbRot._23 = matCombined._23;
-						matLimbRot._24 = matCombined._24;
-						matLimbRot._31 = matCombined._31;
-						matLimbRot._32 = matCombined._32;
-						matLimbRot._33 = matCombined._33;
-						matLimbRot._34 = matCombined._34;
-						matLimbRot._41 = 0;
-						matLimbRot._42 = 0;
-						matLimbRot._43 = 0;
-						matLimbRot._44 = 0;
-						XMMATRIX finalMat = XMLoadFloat4x4(&matLimbRot);
-						XMVECTOR currentRot = XMQuaternionRotationMatrix(finalMat);
-						pAnimationChannelRot->iUsePreFrame = 2;
-						pAnimationChannelRot->qPreFrameRotation = currentRot;
+						// REMOVED - iUsePreFrame, vPreFrameTranslation, qPreFrameRotation no longer exist
+						//pAnimationChannelPos->iUsePreFrame = 2;
+						//pAnimationChannelPos->vPreFrameTranslation = XMVectorSet(pFrame->matCombined._41, pFrame->matCombined._42, pFrame->matCombined._43, 0);
+						//pAnimationChannelRot->iUsePreFrame = 2;
+						//pAnimationChannelRot->qPreFrameRotation = currentRot;
 					}
 				}
 			}
@@ -1197,8 +1169,8 @@ void WickedCall_OverrideLimbOff(sObject* pObject, sFrame* pFrame)
 				{
 					AnimationComponent::AnimationChannel* pAnimationChannelPos = &animationcomponent->channels[iIndexPos];
 					AnimationComponent::AnimationChannel* pAnimationChannelRot = &animationcomponent->channels[iIndexRot];
-					if (pAnimationChannelPos) pAnimationChannelPos->iUsePreFrame = 0;
-					if (pAnimationChannelRot) pAnimationChannelRot->iUsePreFrame = 0;
+					//if (pAnimationChannelPos) pAnimationChannelPos->iUsePreFrame = 0; // REMOVED
+					//if (pAnimationChannelRot) pAnimationChannelRot->iUsePreFrame = 0; // REMOVED
 				}
 			}
 		}
@@ -1221,15 +1193,15 @@ void WickedCall_SetBip01Position(sObject* pObject, sFrame* pFrame, int iUseMode,
 					AnimationComponent::AnimationChannel* pAnimationChannel = &animationcomponent->channels[iIndexPos];
 					if (pAnimationChannel)
 					{
-						if (iUseMode == 3)
-						{
-							pAnimationChannel->iUsePreFrame = 3;
-							pAnimationChannel->vPreFrameTranslation = XMVectorSet(0, 0, 0, 0);
-						}
-						else
-						{
-							pAnimationChannel->iUsePreFrame = 0;
-						}
+						//if (iUseMode == 3)
+						//{
+						//	pAnimationChannel->iUsePreFrame = 3; // REMOVED
+						//	pAnimationChannel->vPreFrameTranslation = XMVectorSet(0, 0, 0, 0); // REMOVED
+						//}
+						//else
+						//{
+						//	pAnimationChannel->iUsePreFrame = 0; // REMOVED
+						//}
 					}
 				}
 			}
@@ -1253,15 +1225,15 @@ void WickedCall_SetBip01Rotation(sObject* pObject, sFrame* pFrame, int iUseMode,
 					AnimationComponent::AnimationChannel* pAnimationChannel = &animationcomponent->channels[iIndex];
 					if (pAnimationChannel)
 					{
-						if (iUseMode > 0)
-						{
-							pAnimationChannel->iUsePreFrame = iUseMode;
-							pAnimationChannel->qPreFrameRotation = XMQuaternionRotationRollPitchYaw(0, 0, 0);
-						}
-						else
-						{
-							pAnimationChannel->iUsePreFrame = 0;
-						}
+						//if (iUseMode > 0)
+						//{
+						//	pAnimationChannel->iUsePreFrame = iUseMode; // REMOVED
+						//	pAnimationChannel->qPreFrameRotation = XMQuaternionRotationRollPitchYaw(0, 0, 0); // REMOVED
+						//}
+						//else
+						//{
+						//	pAnimationChannel->iUsePreFrame = 0; // REMOVED
+						//}
 					}
 				}
 			}
@@ -1352,23 +1324,23 @@ void WickedCall_SetObjectPreFrames(sObject* pObject, LPSTR pParentFrameName, flo
 									keyLeft = std::max(0, keyRight - 1);
 								}
 
-								// copy the animation data as the preframe so it will be imposed on the animation 
-								pAnimationChannel->fSmoothAmount = 1.0f / fSmoothSlerpToNextShape;
-								if (i == 0)
-								{
-									pAnimationChannel->iUsePreFrame = iPreFrameMode;
-									pAnimationChannel->vPreFrameTranslation = XMLoadFloat3(&((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft]);
-								}
-								if (i == 1)
-								{
-									pAnimationChannel->iUsePreFrame = iPreFrameMode;
-									pAnimationChannel->qPreFrameRotation = XMLoadFloat4(&((const XMFLOAT4*)animationdata->keyframe_data.data())[keyLeft]);
-								}
-								if (i == 2)
-								{
-									pAnimationChannel->iUsePreFrame = iPreFrameMode;
-									pAnimationChannel->vPreFrameScale = XMLoadFloat3(&((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft]);
-								}
+								// REMOVED - preframe members no longer exist on AnimationChannel
+								//pAnimationChannel->fSmoothAmount = 1.0f / fSmoothSlerpToNextShape;
+								//if (i == 0)
+								//{
+								//	pAnimationChannel->iUsePreFrame = iPreFrameMode;
+								//	pAnimationChannel->vPreFrameTranslation = XMLoadFloat3(&((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft]);
+								//}
+								//if (i == 1)
+								//{
+								//	pAnimationChannel->iUsePreFrame = iPreFrameMode;
+								//	pAnimationChannel->qPreFrameRotation = XMLoadFloat4(&((const XMFLOAT4*)animationdata->keyframe_data.data())[keyLeft]);
+								//}
+								//if (i == 2)
+								//{
+								//	pAnimationChannel->iUsePreFrame = iPreFrameMode;
+								//	pAnimationChannel->vPreFrameScale = XMLoadFloat3(&((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft]);
+								//}
 							}
 						}
 					}
@@ -1441,7 +1413,7 @@ bool WickedCall_GetPick2_BVH(float fMouseX, float fMouseY, float* pOutX, float* 
 	//PE: Wicked Mouse is relative to windows pos. ImGui is relative to screen.
 	RAY pickRay = wiRenderer::GetPickRay((long)fMouseX, (long)fMouseY, master.masterrenderer);
 
-	pickRay.bIgnoreNearestTriangle = true; //PE: We do not care about the closest triangle so perform early exit.
+	//pickRay.bIgnoreNearestTriangle = true; //PE: REMOVED - bIgnoreNearestTriangle no longer exists
 
 	// check scene first if flagged, then terrain which is naturally underneath
 	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
@@ -1593,12 +1565,12 @@ bool WickedCall_GetPick2_Thread(float fMouseX, float fMouseY, float* pOutX, floa
 	//PE: Wicked Mouse is relative to windows pos. ImGui is relative to screen.
 	RAY pickRay = wiRenderer::GetPickRay((long)fMouseX, (long)fMouseY, master.masterrenderer);
 
-	pickRay.bIgnoreNearestTriangle = true; //PE: We do not care about the closest triangle so perform early exit.
+	//pickRay.bIgnoreNearestTriangle = true; //PE: REMOVED - bIgnoreNearestTriangle no longer exists
 
 	// check scene first if flagged, then terrain which is naturally underneath
 	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
 	{
-		wiScene::PickResult hovered = wiScene::PickThread(pickRay, RENDERTYPE_ALL, iLayerMask);
+		wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
 		if (hovered.entity > 0)
 		{
 			if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0)
@@ -1747,14 +1719,14 @@ bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOut
 	//PE: Wicked Mouse is relative to windows pos. ImGui is relative to screen.
 	RAY pickRay = wiRenderer::GetPickRay((long)fMouseX, (long)fMouseY, master.masterrenderer);
 
-	pickRay.bIgnoreNearestTriangle = true; //PE: We do not care about the closest triangle so perform early exit.
+	//pickRay.bIgnoreNearestTriangle = true; //PE: REMOVED - bIgnoreNearestTriangle no longer exists
 	
 	// check scene first if flagged, then terrain which is naturally underneath
 	if ((iLayerMask & GGRENDERLAYERS_NORMAL) != 0 || (iLayerMask & GGRENDERLAYERS_CURSOROBJECT) != 0 || (iLayerMask & GGRENDERLAYERS_WIDGETPLANE) != 0)
 	{
 #ifdef PICKBVHTHREADED
 		wiScene::PickResult hovered;
-			hovered = wiScene::PickThread(pickRay, RENDERTYPE_ALL, iLayerMask);
+			hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
 #else
 		wiScene::PickResult hovered = wiScene::Pick(pickRay, RENDERTYPE_ALL, iLayerMask);
 #endif

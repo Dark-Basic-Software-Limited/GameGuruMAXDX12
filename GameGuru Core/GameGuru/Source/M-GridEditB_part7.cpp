@@ -46,18 +46,18 @@
 	{
 		current_backbuffer_height = iLastResolutionHeight;
 		current_backbuffer_width = iLastResolutionWidth;
-		if (wiRenderer::GetDevice())
+		if (wiGraphics::GetDevice())
 		{
-			ID3D11Texture2D *pBackBuffer = (ID3D11Texture2D *)wiRenderer::GetDevice()->GetBackBufferForGG( &master.swapChain );
-			if (pBackBuffer)
+			//ID3D11Texture2D *pBackBuffer = (ID3D11Texture2D *)wiGraphics::GetDevice()->GetBackBufferForGG( &master.swapChain ); // REMOVED
+			//if (pBackBuffer)
 			{
-				GGSURFACE_DESC ddsd;
-				pBackBuffer->GetDesc(&ddsd);
+				//GGSURFACE_DESC ddsd;
+				//pBackBuffer->GetDesc(&ddsd);
 				//PE: This is the resolution all current thumbs has used.
 				if (bProceduralLevel || bFullScreenBackbuffer || BackBufferGrabGameScreen)
 				{
 					//Use current backbuffer size on this.
-					MakeBitmap(99, ddsd.Width, ddsd.Height);
+					MakeBitmap(99, iLastResolutionWidth, iLastResolutionHeight);
 				}
 				else
 				{
@@ -427,8 +427,8 @@
 
 	// handlw wide screen scenario
 	bool bIsWideScreen = false;
-	float gpw = master.masterrenderer.GetWidth3D();
-	float gph = master.masterrenderer.GetHeight3D();
+	float gpw = master.masterrenderer.GetPhysicalWidth();
+	float gph = master.masterrenderer.GetPhysicalHeight();
 	if (( (float)gpw / (float) gph) > 2.1 && gpw > 1920)
 		bIsWideScreen = true;
 
@@ -530,11 +530,11 @@
 			if (rendertarget)
 			{
 				pBackBuffer = (ID3D11Texture2D*)GetBitmapTexture2D(99);
-				if (!pBackBuffer) pBackBuffer = (ID3D11Texture2D*)wiRenderer::GetDevice()->GetBackBufferForGG(&master.swapChain);
+				//if (!pBackBuffer) pBackBuffer = (ID3D11Texture2D*)wiGraphics::GetDevice()->GetBackBufferForGG(&master.swapChain); // REMOVED
 			}
 			else
 			{
-				pBackBuffer = (ID3D11Texture2D*)wiRenderer::GetDevice()->GetBackBufferForGG(&master.swapChain);
+				//pBackBuffer = (ID3D11Texture2D*)wiGraphics::GetDevice()->GetBackBufferForGG(&master.swapChain); // REMOVED
 			}
 			g_pGlob->pCurrentBitmapSurface = pBackBuffer;
 			SetGrabImageMode(1);
@@ -589,11 +589,11 @@
 		if (rendertarget)
 		{
 			pBackBuffer = (ID3D11Texture2D *) GetBitmapTexture2D(99);
-			if (!pBackBuffer) pBackBuffer = (ID3D11Texture2D *)wiRenderer::GetDevice()->GetBackBufferForGG( &master.swapChain );
+			//if (!pBackBuffer) pBackBuffer = (ID3D11Texture2D *)wiGraphics::GetDevice()->GetBackBufferForGG( &master.swapChain ); // REMOVED
 		}
 		else
 		{
-			pBackBuffer = (ID3D11Texture2D*)wiRenderer::GetDevice()->GetBackBufferForGG(&master.swapChain);
+			//pBackBuffer = (ID3D11Texture2D*)wiGraphics::GetDevice()->GetBackBufferForGG(&master.swapChain); // REMOVED
 		}
 		g_pGlob->pCurrentBitmapSurface = pBackBuffer;
 

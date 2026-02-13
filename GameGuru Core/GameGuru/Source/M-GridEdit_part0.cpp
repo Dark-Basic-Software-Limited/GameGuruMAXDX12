@@ -866,8 +866,8 @@ void mapeditorexecutable_init ( void )
 
 	//PE: FOV has changed here if on widescreen that adjust fov depending on aspect ratio.
 	//PE: We must refesh the windows to account for the new fov.
-	float gpw = master.masterrenderer.GetWidth3D();
-	float gph = master.masterrenderer.GetHeight3D();
+	float gpw = master.masterrenderer.GetPhysicalWidth();
+	float gph = master.masterrenderer.GetPhysicalHeight();
 	if (((float)gpw / (float)gph) > 2.1 && gpw > 1920)
 	{
 		bTriggerFovUpdate = true; //PE: Set FOV.
@@ -1561,7 +1561,7 @@ bool commonexecutable_loop_for_game(void)
 		g_pGlob->iScreenHeight = fImGuiScissorBottomRight.y;
 
 		//PE: Change resolution in wicked.
-		if (wiRenderer::GetDevice() != nullptr)
+		if (wiGraphics::GetDevice() != nullptr)
 		{
 			int width = fImGuiScissorBottomRight.x;
 			int height = fImGuiScissorBottomRight.y;

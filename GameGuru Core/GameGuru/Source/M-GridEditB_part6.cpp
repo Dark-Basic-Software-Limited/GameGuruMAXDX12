@@ -1437,15 +1437,15 @@ void CreateBackdropObject(bool bForceRecreate,cstr newImageFile,cstr fpefile)
 			if (FileExist(cUseBackbufferCubemap.Get()))
 			{
 				wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
-				if (weather->skyMap != nullptr && weather->skyMapName.length() > 0)
+				if (weather->skyMap.IsValid() && weather->skyMapName.length() > 0)
 				{
 					//PE: Make sure to free any old resources.
 					WickedCall_DeleteImage(weather->skyMapName);
 				}
 				weather->skyMapName = cUseBackbufferCubemap.Get();
 				weather->skyMap = WickedCall_LoadImage(weather->skyMapName);
-				weather->cloudiness = 0.0f;
-				weather->cloudSpeed = 0.0f;
+				weather->volumetricCloudParameters.layerFirst.coverageAmount = 0.0f;
+				weather->volumetricCloudParameters.layerFirst.windSpeed = 0.0f;
 
 				// update cubes
 				WickedCall_DisplayCubes(false);

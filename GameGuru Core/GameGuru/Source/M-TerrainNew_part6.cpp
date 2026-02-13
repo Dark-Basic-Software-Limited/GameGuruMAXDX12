@@ -1,4 +1,6 @@
-﻿void PositionCameraForNewLevel()
+﻿#include <fstream>
+
+void PositionCameraForNewLevel()
 {
 	if (newLevelCamera.set)
 	{
