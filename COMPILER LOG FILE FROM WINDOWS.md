@@ -1,4 +1,4 @@
-Rebuild started at 23:49...
+Rebuild started at 19:50...
 1>------ Rebuild All started: Project: PhotonMultiplayer, Configuration: Release x64 ------
 2>------ Rebuild All started: Project: GGVR, Configuration: Release x64 ------
 3>------ Rebuild All started: Project: InfiniteVegetation, Configuration: Release x64 ------
@@ -26,69 +26,71 @@ Rebuild started at 23:49...
 25>------ Rebuild All started: Project: Bitmap, Configuration: Release x64 ------
 26>------ Rebuild All started: Project: Basic2D, Configuration: Release x64 ------
 27>------ Rebuild All started: Project: Animation, Configuration: Release x64 ------
+1>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 2>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+4>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+9>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+8>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 2>GGVR.cpp
+1>stdafx.cpp
+10>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+4>Core.cpp
+5>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 2>C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\minwindef.h(60,9): warning C4005: 'MAX_PATH': macro redefinition
-2>(compiling source file '../GGVR/GGVR.cpp')
+2>(compiling source file 'GGVR.cpp')
 2>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\preprocessor-moreflags.h(11,9):
 2>    see previous definition of 'MAX_PATH'
-5>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-5>stdafx.cpp
-5>DarkLUA.cpp
+9>cVectorC.cpp
 3>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+10>CTextC.cpp
+12>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+5>stdafx.cpp
+11>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 3>stdafx.cpp
-3>SimonReloaded.cpp
-7>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-7>stdafx.cpp
-7>CPU3D.cpp
-7>cThread.cpp
-1>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-1>stdafx.cpp
-1>CClient.cpp
-4>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-4>Core.cpp
-8>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 8>cl : command line  warning D9035: option 'Zc:forScope-' has been deprecated and will be removed in a future release
 8>bChunk.cpp
-8>bDNA.cpp
-10>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-10>CTextC.cpp
-11>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-11>dxdiaginfo.cpp
-6>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-6>AIThread.cpp
-14>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-14>CError.cpp
-15>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-15>SteamCheckForWorkshop.cpp
-13>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-13>SteamCheckForWorkshop.cpp
-9>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-9>cVectorC.cpp
-18>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-18>CInputC.cpp
-17>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-17>CLightC.cpp
-12>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 12>SteamCheckForWorkshop.cpp
-22>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-22>DBDLLCore.cpp
-21>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-21>SteamCheckForWorkshop.cpp
-25>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-25>SteamCheckForWorkshop.cpp
-24>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-24>CCameraC.cpp
-23>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-23>ConvX.cpp
-20>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-20>CFTPC.cpp
+7>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+6>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
 16>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+11>dxdiaginfo.cpp
+15>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+13>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+7>stdafx.cpp
+18>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+6>AIThread.cpp
+19>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+16>CMemblocks.cpp
+20>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+17>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+14>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+15>SteamCheckForWorkshop.cpp
+13>SteamCheckForWorkshop.cpp
+23>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+21>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+18>CInputC.cpp
+19>DDSTextureLoader.cpp
+17>CLightC.cpp
+22>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+26>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+14>CError.cpp
+24>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+8>bDNA.cpp
+20>CFTPC.cpp
+23>ConvX.cpp
+25>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+21>SteamCheckForWorkshop.cpp
+22>DBDLLCore.cpp
+26>CBasic2DC.cpp
 27>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+24>CCameraC.cpp
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(46,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(84,59): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
-16>CMemblocks.cpp
-6>Beacon.cpp
+25>SteamCheckForWorkshop.cpp
+7>CPU3D.cpp
+1>CClient.cpp
+5>DarkLUA.cpp
+3>SimonReloaded.cpp
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(165,16): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(223,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(298,32): warning C4312: 'type cast': conversion from 'unsigned int' to 'char *' of greater size
@@ -98,54 +100,44 @@ Rebuild started at 23:49...
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(418,16): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(425,16): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
 10>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Text\CTextC.cpp(444,31): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-19>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bDNA.cpp(257,10): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-14>CGfxC.cpp
 27>CAnimation.cpp
+6>Beacon.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bDNA.cpp(257,10): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bDNA.cpp(506,10): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 8>bFile.cpp
+10>Text.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Text.lib
+10>Done building project "Text.vcxproj".
+7>cThread.cpp
+11>CSystemC.cpp
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Core.cpp(110,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+9>cVectorManagerC.cpp
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(519,22): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
+18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(531,66): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(174,20): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(201,53): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-11>CSystemC.cpp
-2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(522,35): warning C4805: '==': unsafe mix of type 'int' and type 'bool' in operation
-2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(642,26): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.h(29,10): error C1083: Cannot open include file: '../../WickedEngineDX12/WickedEngine/WickedEngine.h': No such file or directory
-3>(compiling source file '/SimonReloaded.cpp')
-19>DDSTextureLoader.cpp
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(519,22): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Core.cpp(110,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-26>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(531,66): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(709,5): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(709,43): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(811,18): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(816,16): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(837,15): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1365,98): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-18>CError.cpp
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1426,28): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1455,61): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1928,26): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 18>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Input\CInputC.cpp(1961,15): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned long', possible loss of data
+18>CError.cpp
 4>EAX.cpp
-4>CpuUsage.cpp
-1>CServer.cpp
-7>SoftwareCulling.cpp
-10>Text.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Text.lib
-15>DBO2X.cpp
-10>Done building project "Text.vcxproj".
-13>ADPCMtoWAV.cpp
-26>CBasic2DC.cpp
-3>Done building project "SimonReloaded.vcxproj" -- FAILED.
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bFile.cpp(34,11): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(73,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-20>ftp.cpp
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(82,20): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(82,37): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(82,55): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(88,18): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(88,35): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(88,53): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
+2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(522,35): warning C4805: '==': unsafe mix of type 'int' and type 'bool' in operation
+2>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\GGVR\GGVR.cpp(642,26): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+14>CGfxC.cpp
+4>CpuUsage.cpp
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(94,17): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(110,18): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(118,26): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
@@ -161,77 +153,55 @@ Rebuild started at 23:49...
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(258,44): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(271,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 20>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\FTP\CFTPC.cpp(272,36): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-2>GGVR.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\GGVR.lib
+20>ftp.cpp
+26>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Basic2D\CBasic2DC.cpp(43,9): warning C4311: 'type cast': pointer truncation from 'DWORD *' to 'DWORD'
+26>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Basic2D\CBasic2DC.cpp(43,9): warning C4302: 'type cast': truncation from 'DWORD *' to 'DWORD'
+26>CError.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletFileLoader\bFile.cpp(34,11): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>DBO2X.cpp
+12>CError.cpp
+13>ADPCMtoWAV.cpp
+16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(153,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 8>btBulletFile.cpp
 17>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Light\CLightC.cpp(13,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-9>cVectorManagerC.cpp
-2>Done building project "GGVR.vcxproj".
-17>CLightManagerC.cpp
-6>CollisionTree.cpp
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-22>(compiling source file '../../Shared/Core/DBDLLCore.cpp')
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(782,27): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1167,14): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1505,11): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1917,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-18>globstruct.cpp
-16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(153,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-13>Generating Code...
-11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(120,9): warning C4101: 'dwStore': unreferenced local variable
-23>DBOBlock.cpp
-24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.h(29,10): error C1083: Cannot open include file: '../../WickedEngineDX12/WickedEngine/WickedEngine.h': No such file or directory
-24>(compiling source file '../../Shared/Camera/CCameraC.cpp')
 16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1003,28): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
 16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1007,24): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
 16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1055,28): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
 16>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Memblocks\CMemblocks.cpp(1059,24): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
+19>globstruct.cpp
+17>CLightManagerC.cpp
 16>CError.cpp
-1>LoadBalancingListener.cpp
+7>SoftwareCulling.cpp
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+22>(compiling source file '../../Shared/Core/DBDLLCore.cpp')
+2>GGVR.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\GGVR.lib
+1>CServer.cpp
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(782,27): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+2>Done building project "GGVR.vcxproj".
+6>CollisionTree.cpp
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1167,14): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1505,11): warning C4312: 'type cast': conversion from 'DWORD' to 'char *' of greater size
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\ConvX\ConvX.cpp(1917,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>DBOBlock.cpp
+18>globstruct.cpp
+21>CFileC.cpp
+26>Generating Code...
 8>btBulletWorldImporter.cpp
+11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(120,9): warning C4101: 'dwStore': unreferenced local variable
 11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(411,29): warning C4244: 'return': conversion from 'SIZE_T' to 'int', possible loss of data
+25>CError.cpp
+13>Generating Code...
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+27>(compiling source file '../../Shared/Animation/CAnimation.cpp')
 11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(447,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(454,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 11>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\System\CSystemC.cpp(728,75): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
 11>CError.cpp
-12>CError.cpp
-24>CCameraManagerC.cpp
-25>CError.cpp
-26>CError.cpp
-21>CFileC.cpp
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-14>(compiling source file '../../Shared/Setup/CGfxC.cpp')
-26>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Basic2D\CBasic2DC.cpp(43,9): warning C4311: 'type cast': pointer truncation from 'DWORD *' to 'DWORD'
-26>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Basic2D\CBasic2DC.cpp(43,9): warning C4302: 'type cast': truncation from 'DWORD *' to 'DWORD'
-19>globstruct.cpp
+9>CError.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\CpuUsage.cpp(58,7): warning C4996: 'GetVersionExA': was declared deprecated
-13>CSoundC.cpp
+12>CSpriteManagerC.cpp
 4>OSCpu.cpp
-7>Generating Code...
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(439,23): warning C4018: '<': signed/unsigned mismatch
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(444,12): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(480,23): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(486,12): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(525,23): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(530,12): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1067,22): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1076,40): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1089,12): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
-27>(compiling source file '../../Shared/Animation/CAnimation.cpp')
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(257,32): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(361,53): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(362,68): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(485,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(499,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(542,45): warning C4305: 'argument': truncation from 'double' to 'float'
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(543,53): warning C4305: 'argument': truncation from 'double' to 'float'
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(548,39): warning C4305: 'argument': truncation from 'double' to 'float'
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(585,28): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(589,22): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(593,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(634,225): warning C4305: 'argument': truncation from 'double' to 'float'
-15>DBOAssImp.cpp
-20>CError.cpp
+19>Generating Code...
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1138,16): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1139,17): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1140,32): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
@@ -244,11 +214,31 @@ Rebuild started at 23:49...
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1167,59): warning C4244: 'initializing': conversion from 'float' to 'UINT', possible loss of data
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1183,36): warning C4244: '=': conversion from 'float' to 'LONG', possible loss of data
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1184,37): warning C4244: '=': conversion from 'float' to 'LONG', possible loss of data
-18>Generating Code...
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+16>Generating Code...
+13>CSoundC.cpp
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1600,27): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1601,28): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1613,57): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1686,49): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1686,73): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+20>CError.cpp
+26>Basic2D.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Basic2D.lib
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(257,32): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
+26>Done building project "Basic2D.vcxproj".
+27>CError.cpp
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+14>(compiling source file '../../Shared/Setup/CGfxC.cpp')
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(361,53): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(362,68): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(485,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(499,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(542,45): warning C4305: 'argument': truncation from 'double' to 'float'
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(543,53): warning C4305: 'argument': truncation from 'double' to 'float'
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(548,39): warning C4305: 'argument': truncation from 'double' to 'float'
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(585,28): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(589,22): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(593,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(634,225): warning C4305: 'argument': truncation from 'double' to 'float'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(634,220): warning C4305: 'argument': truncation from 'double' to 'float'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(634,215): warning C4305: 'argument': truncation from 'double' to 'float'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(634,210): warning C4305: 'argument': truncation from 'double' to 'float'
@@ -410,18 +400,6 @@ Rebuild started at 23:49...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4027,5): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4055,19): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4059,5): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
-9>CError.cpp
-17>CError.cpp
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1600,27): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1601,28): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1613,57): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1686,49): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
-27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1686,73): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
-27>CError.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4085,27): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4087,17): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4097,5): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
@@ -452,6 +430,17 @@ Rebuild started at 23:49...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4312,5): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4319,26): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4326,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
+1>LoadBalancingListener.cpp
+18>Generating Code...
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(439,23): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(444,12): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(480,23): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(486,12): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(525,23): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(530,12): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1067,22): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1076,40): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBO2X.cpp(1089,12): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4334,26): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4342,21): warning C4312: 'type cast': conversion from 'unsigned long' to 'LPSTR' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(4364,4): warning C4312: 'type cast': conversion from 'unsigned long' to 'unsigned long *' of greater size
@@ -547,39 +536,64 @@ Rebuild started at 23:49...
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(6212,45): warning C4312: 'reinterpret_cast': conversion from 'unsigned long' to 'char *' of greater size
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(6212,6): warning C4311: 'reinterpret_cast': pointer truncation from 'char *' to 'unsigned long'
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCore.cpp(6212,6): warning C4302: 'reinterpret_cast': truncation from 'char *' to 'unsigned long'
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(632,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(700,37): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(781,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(848,36): warning C4311: 'type cast': pointer truncation from 'HICON' to 'LONG'
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(848,36): warning C4302: 'type cast': truncation from 'HICON' to 'LONG'
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(2249,16): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(2250,17): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(3323,19): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.cpp')
+19>CImageC.cpp
+15>DBOAssImp.cpp
+17>CError.cpp
 6>Container.cpp
-1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(804,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-1>(compiling source file '/LoadBalancingListener.cpp')
-1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(807,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-1>(compiling source file '/LoadBalancingListener.cpp')
-1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(829,60): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-1>(compiling source file '/LoadBalancingListener.cpp')
-11>Generating Code...
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4135,23): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4136,24): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4147,24): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4212,11): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
-14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4214,10): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
-1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(886,87): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-1>(compiling source file '/LoadBalancingListener.cpp')
-1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(915,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-1>(compiling source file '/LoadBalancingListener.cpp')
-1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(962,86): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-1>(compiling source file '/LoadBalancingListener.cpp')
 22>DBDLLCoreInternal.cpp
-16>Generating Code...
+7>Generating Code...
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(53,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(68,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(86,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(117,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(173,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(211,19): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(249,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(284,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(310,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(365,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(410,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(455,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(650,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(681,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(712,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(798,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(950,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(977,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(992,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1034,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1085,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1093,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1102,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1111,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1120,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1128,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1136,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1144,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1169,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1206,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1271,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1279,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1286,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1294,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1302,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1310,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1322,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1344,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1388,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1400,61): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1427,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1436,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1454,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(206,7): warning C4288: nonstandard extension used: 'i': loop control variable declared in the for-loop is used outside the for-loop scope; it conflicts with the declaration in the outer scope
-26>Generating Code...
-25>CBitmapC.cpp
-12>CSpriteManagerC.cpp
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(91,6):
 8>    definition of 'i' used
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(128,11):
@@ -629,6 +643,10 @@ Rebuild started at 23:49...
 8>    definition of 'i' used
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(128,11):
 8>    definition of 'i' ignored
+16>Memblocks.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Memblocks.lib
+3>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+16>Done building project "Memblocks.vcxproj".
+11>Generating Code...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(286,7): warning C4288: nonstandard extension used: 'i': loop control variable declared in the for-loop is used outside the for-loop scope; it conflicts with the declaration in the outer scope
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(91,6):
 8>    definition of 'i' used
@@ -649,105 +667,62 @@ Rebuild started at 23:49...
 8>    definition of 'i' used
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btBulletWorldImporter.cpp(128,11):
 8>    definition of 'i' ignored
-18>Controller.cpp
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(53,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-1>MPAudio.cpp
-14>globstruct.cpp
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(68,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(86,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(117,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(173,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(211,19): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(249,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(284,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(310,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(365,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(410,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(455,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(650,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(681,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(712,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(798,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(950,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(977,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(992,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1034,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1085,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1093,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1102,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1111,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1120,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1128,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1136,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1144,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1169,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1206,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1271,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1279,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1286,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1294,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1302,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1310,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1322,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1344,57): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1388,58): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1400,61): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1427,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1436,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1454,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-19>Generating Code...
-8>btMultiBodyWorldImporter.cpp
 23>DBOData.cpp
-11>System.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\System.lib
-5>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
-5>(compiling source file '../../DarkSDKMore/DarkLUA/DarkLUA.cpp')
-26>Basic2D.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Basic2D.lib
-16>Memblocks.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Memblocks.lib
-20>HTTPComm.cpp
-1>p2pauth.cpp
-11>Done building project "System.vcxproj".
-19>CImageC.cpp
-26>Done building project "Basic2D.vcxproj".
-16>Done building project "Memblocks.vcxproj".
+18>Controller.cpp
+25>CBitmapC.cpp
 9>Generating Code...
-24>CDataC.cpp
-17>Generating Code...
+3>(compiling source file '/SimonReloaded.cpp')
+8>btMultiBodyWorldImporter.cpp
+3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,40): warning C4101: 'fLow': unreferenced local variable
+3>(compiling source file '/SimonReloaded.cpp')
+3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,58): warning C4101: 'fNewHigh': unreferenced local variable
+3>(compiling source file '/SimonReloaded.cpp')
+3>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\SimonReloaded\SimonReloaded.cpp(395,45): warning C4101: 'fHigh': unreferenced local variable
+3>(compiling source file '/SimonReloaded.cpp')
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(632,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(700,37): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(781,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(848,36): warning C4311: 'type cast': pointer truncation from 'HICON' to 'LONG'
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(848,36): warning C4302: 'type cast': truncation from 'HICON' to 'LONG'
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(2249,16): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(2250,17): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(3323,19): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4135,23): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4136,24): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4147,24): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4212,11): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
+14>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Setup\CGfxC.cpp(4214,10): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
+20>HTTPComm.cpp
 27>Generating Code...
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1764,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1778,42): warning C4244: 'argument': conversion from 'float' to 'LONG', possible loss of data
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1857,71): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1857,71): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1869,57): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1869,57): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1914,73): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1914,73): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
+1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(804,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+1>(compiling source file '/LoadBalancingListener.cpp')
+1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(807,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+1>(compiling source file '/LoadBalancingListener.cpp')
+1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(829,60): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+1>(compiling source file '/LoadBalancingListener.cpp')
+1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(886,87): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+1>(compiling source file '/LoadBalancingListener.cpp')
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(913,1): warning C4715: 'GetVideoPlaying': not all control paths return a value
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(927,1): warning C4715: 'GetVideoPosition': not all control paths return a value
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(2134,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(2135,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+14>globstruct.cpp
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+12>(compiling source file '../../Shared/Sprites/CSpriteManagerC.cpp')
+1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(915,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+1>(compiling source file '/LoadBalancingListener.cpp')
+1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\LoadBalancingListener.cpp(962,86): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+1>(compiling source file '/LoadBalancingListener.cpp')
 27>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Animation\CAnimation.cpp(1217,1): warning C4715: 'DB_LoadAnimationCore': not all control paths return a value
-13>CSoundManagerC.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+11>System.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\System.lib
+11>Done building project "System.vcxproj".
+1>MPAudio.cpp
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(378,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+17>Generating Code...
+9>Vectors.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Vectors.lib
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(27,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(27,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(325,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCoreInternal.cpp(132,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-6>DarkAI.cpp
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(458,24): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(463,24): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(475,25): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(506,20): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(729,15): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1051,22): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1062,23): warning C4018: '<': signed/unsigned mismatch
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(93,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(93,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(101,14): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(893,13): warning C4244: 'initializing': conversion from 'intptr_t' to 'long', possible loss of data
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(1073,13): warning C4244: 'initializing': conversion from 'intptr_t' to 'long', possible loss of data
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(1150,6): warning C4311: 'type cast': pointer truncation from 'HINSTANCE' to 'DWORD'
@@ -789,45 +764,58 @@ Rebuild started at 23:49...
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(2735,22): warning C4312: 'type cast': conversion from 'DWORD' to 'LPSTR' of greater size
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(3020,12): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 21>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\File\CFileC.cpp(3149,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(93,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(93,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(101,14): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+9>Done building project "Vectors.vcxproj".
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btMultiBodyWorldImporter.cpp')
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(304,64): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(324,35): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(469,41): warning C4305: 'argument': truncation from 'double' to 'float'
+12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(469,36): warning C4305: 'argument': truncation from 'double' to 'float'
+22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLCoreInternal.cpp(132,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+22>DBDLLDisplay.cpp
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1764,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1778,42): warning C4244: 'argument': conversion from 'float' to 'LONG', possible loss of data
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1857,71): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1857,71): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1869,57): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1869,57): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1914,73): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(1914,73): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(2134,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\CSoundC.cpp(2135,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(101,14): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(107,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(107,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(112,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpu.cpp(112,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
-24>Generating Code...
-22>DBDLLDisplay.cpp
-14>Generating Code...
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1209,23): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1290,24): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1301,24): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1320,26): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1469,108): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1470,108): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1471,108): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1472,108): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1484,102): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1485,102): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1486,102): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1487,102): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1504,24): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1515,26): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1609,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1720,48): warning C4244: '=': conversion from 'double' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1730,38): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1835,25): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1837,55): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1850,25): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1852,53): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1870,25): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1872,52): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1536,11): warning C4101: 'cFindTexture': unreferenced local variable
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1905,20): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1925,20): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(2034,20): warning C4018: '<': signed/unsigned mismatch
+21>CError.cpp
+6>DarkAI.cpp
 4>OSCpuInfo.cpp
+13>CSoundManagerC.cpp
+24>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+24>(compiling source file '../../Shared/Camera/CCameraC.cpp')
+12>CSpritesC.cpp
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\DBOFORMAT\DBOData.cpp(113,22): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
+20>globstruct.cpp
+18>Input.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Input.lib
+18>Done building project "Input.vcxproj".
+27>mfplat.lib(MFPlat.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in mf.lib(MF.dll); second definition ignored
+27>Animation.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Animation.lib
+27>Done building project "Animation.vcxproj".
+23>DBOEffects.cpp
+1>p2pauth.cpp
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(325,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(458,24): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(463,24): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(475,25): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(506,20): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(729,15): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(142,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(142,52):
 8>    the template instantiation context (the oldest one first) is
@@ -857,73 +845,54 @@ Rebuild started at 23:49...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(233,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(235,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btMultiBodyWorldImporter.cpp(242,42): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-21>CError.cpp
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\DBOFORMAT\DBOData.cpp(113,22): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
+8>btWorldImporter.cpp
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1051,22): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1062,23): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1209,23): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1290,24): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1301,24): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1320,26): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1469,108): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1470,108): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1471,108): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1472,108): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1484,102): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1485,102): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1486,102): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1487,102): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1504,24): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1515,26): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1609,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1720,48): warning C4244: '=': conversion from 'double' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1730,38): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1835,25): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1837,55): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1850,25): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1852,53): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1870,25): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1872,52): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1536,11): warning C4101: 'cFindTexture': unreferenced local variable
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1905,20): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(1925,20): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOAssImp.cpp(2034,20): warning C4018: '<': signed/unsigned mismatch
 25>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Bitmap\CBitmapC.cpp(267,55): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 25>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Bitmap\CBitmapC.cpp(267,63): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-12>(compiling source file '../../Shared/Sprites/CSpriteManagerC.cpp')
-8>btWorldImporter.cpp
-20>globstruct.cpp
-18>Input.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Input.lib
-23>DBOEffects.cpp
-18>Done building project "Input.vcxproj".
-25>Generating Code...
-9>Vectors.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Vectors.lib
+24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Camera\CCameraC.cpp(1100,41): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Camera\CCameraC.cpp(1100,49): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+14>Generating Code...
+5>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+5>(compiling source file 'DarkLUA.cpp')
 17>Light.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Light.lib
-24>Done building project "Camera.vcxproj" -- FAILED.
-9>Done building project "Vectors.vcxproj".
-27>mfplat.lib(MFPlat.DLL) : warning LNK4006: __NULL_IMPORT_DESCRIPTOR already defined in mf.lib(MF.dll); second definition ignored
 17>Done building project "Light.vcxproj".
+25>Generating Code...
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+19>(compiling source file '../../Shared/Image/CImageC.cpp')
 15>CObjectManagerC.cpp
-27>Animation.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Animation.lib
-27>Done building project "Animation.vcxproj".
-1>PhotonMultiplayer.cpp
-7>CPU3DTest.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\CPU3D.lib
-7>Done building project "CPU3DTest.vcxproj".
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(304,64): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(324,35): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(469,41): warning C4305: 'argument': truncation from 'double' to 'float'
-12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpriteManagerC.cpp(469,36): warning C4305: 'argument': truncation from 'double' to 'float'
-5>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\tracers\TracerManager.h(3,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
-5>(compiling source file '../../DarkSDKMore/DarkLUA/DarkLUA.cpp')
-14>Setup.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Setup.lib
-14>Done building project "Setup.vcxproj".
-5>Done building project "DarkLUA.vcxproj" -- FAILED.
-12>CSpritesC.cpp
+21>globstruct.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
-22>DBDLLEXT.cpp
-25>Bitmap.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Bitmap.lib
-25>Done building project "Bitmap.vcxproj".
-21>globstruct.cpp
-13>dsutil.cpp
-20>Generating Code...
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1257,71): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1307,71): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1308,79): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1310,67): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1314,76): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(2636,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(2637,32): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1315,84): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1317,72): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-23>DBOExternals.cpp
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3115,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3133,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3157,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3169,28): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-6>DBPro Functions.cpp
-8>VHACD.cpp
-4>OSHardDrive.cpp
-19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-19>(compiling source file '../../Shared/Image/CImageC.cpp')
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(1195,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(1222,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(1428,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
@@ -931,20 +900,43 @@ Rebuild started at 23:49...
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2420,32): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2420,40): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2420,101): warning C4838: conversion from 'D3D11_BIND_FLAG' to 'UINT' requires a narrowing conversion
+22>DBDLLEXT.cpp
+20>Generating Code...
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/Extras/Serialize/BulletWorldImporter/btWorldImporter.cpp')
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2995,30): warning C4018: '<': signed/unsigned mismatch
 19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(2997,31): warning C4018: '<': signed/unsigned mismatch
-1>PhotonView.cpp
-20>FTP.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\FTP.lib
-19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.h(29,10): error C1083: Cannot open include file: '../../WickedEngineDX12/WickedEngine/WickedEngine.h': No such file or directory
-19>(compiling source file '../../Shared/Image/CImageC.cpp')
-19>CError.cpp
-20>Done building project "FTP.vcxproj".
-21>Generating Code...
-22>DBDLLExtCalls.cpp
-13>dxutil.cpp
-23>DBOFile.cpp
+25>Bitmap.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Bitmap.lib
+25>Done building project "Bitmap.vcxproj".
+14>Setup.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Setup.lib
+14>Done building project "Setup.vcxproj".
+7>CPU3DTest.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\CPU3D.lib
+7>Done building project "CPU3DTest.vcxproj".
+13>dsutil.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1257,71): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1307,71): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1308,79): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1310,67): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1314,76): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+23>DBOExternals.cpp
+1>PhotonMultiplayer.cpp
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(2636,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(2637,32): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1315,84): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\Serialize\BulletWorldImporter\btWorldImporter.cpp(1317,72): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+4>OSHardDrive.cpp
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 12>(compiling source file '../../Shared/Sprites/CSpritesC.cpp')
+5>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\tracers\TracerManager.h(3,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
+5>(compiling source file 'DarkLUA.cpp')
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3115,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3133,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3157,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DarkAI.cpp(3169,28): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+6>DBPro Functions.cpp
+8>VHACD.cpp
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(613,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(615,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(620,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
@@ -954,8 +946,25 @@ Rebuild started at 23:49...
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(635,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(636,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 12>Generating Code...
+5>Done building project "DarkLUA.vcxproj" -- FAILED.
+20>FTP.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\FTP.lib
 12>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\CSpritesC.cpp(1150,1): warning C4717: 'MAXSprite': recursive on all control paths, function will cause runtime stack overflow
+20>Done building project "FTP.vcxproj".
+21>Generating Code...
+23>DBOFile.cpp
+22>DBDLLExtCalls.cpp
+13>dxutil.cpp
+12>Sprites.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Sprites.lib
+19>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+19>(compiling source file '../../Shared/Image/CImageC.cpp')
+12>Done building project "Sprites.vcxproj".
 21>File.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\File.lib
+1>PhotonView.cpp
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3537,22): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3537,27): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3537,46): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3537,73): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+21>Done building project "File.vcxproj".
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1434,58): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1434,24): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
@@ -963,14 +972,44 @@ Rebuild started at 23:49...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:         [
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:             T=float
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1438,41): warning C4244:         ]
-21>Done building project "File.vcxproj".
-6>DynamicPathFinder.cpp
-1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\PhotonView.cpp(40,23): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-1>(compiling source file '/PhotonView.cpp')
-1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\PhotonView.cpp(66,25): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-1>(compiling source file '/PhotonView.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1452,91): warning C4267: 'argument': conversion from 'size_t' to 'const int', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1459,14): warning C4244: 'initializing': conversion from 'size_t' to 'double', possible loss of data
+6>DynamicPathFinder.cpp
+23>DBOFormat.cpp
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3550,23): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3550,28): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3550,47): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3550,74): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3614,39): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3614,52): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3619,22): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3619,27): warning C4838: conversion from 'int' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3619,46): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3619,73): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3634,39): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(3634,60): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4204,108): warning C4474: 'sprintf' : too many arguments passed for format string
+19>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4204,108):
+19>    placeholders and their parameters expect 4 variadic arguments, but 5 were provided
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4524,15): warning C4101: 'info': unreferenced local variable
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4556,9): warning C4311: 'type cast': pointer truncation from 'HICON' to 'DWORD'
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4556,9): warning C4302: 'type cast': truncation from 'HICON' to 'DWORD'
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4562,19): warning C4312: 'type cast': conversion from 'DWORD' to 'HICON' of greater size
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4603,37): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4603,55): warning C4838: conversion from 'LONG' to 'UINT' requires a narrowing conversion
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(4807,12): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5007,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5013,27): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5082,17): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5273,69): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5274,72): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5385,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5477,69): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5478,72): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5586,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5933,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5939,24): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\CImageC.cpp(5916,11): warning C4101: 'hRes': unreferenced local variable
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1490,58): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1490,24): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1494,44): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
@@ -983,42 +1022,36 @@ Rebuild started at 23:49...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:         [
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:             T=float
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\Extras\VHACD\src\VHACD.cpp(1501,42): warning C4244:         ]
-19>Generating Code...
-1>ServerBrowser.cpp
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(51,62): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
-23>DBOFormat.cpp
-8>vhacdICHull.cpp
-19>Done building project "Image.vcxproj" -- FAILED.
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(374,40): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(398,41): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-13>CError.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(413,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(413,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(432,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+8>vhacdICHull.cpp
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(374,40): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sound\dxutil.cpp(398,41): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+13>CError.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(432,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(483,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
-12>Sprites.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Sprites.lib
-12>Done building project "Sprites.vcxproj".
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSHardDrive.cpp(483,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>OSComputerNames.cpp
-1>ShouldISend.cpp
+1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\PhotonView.cpp(40,23): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
 22>DBDLLGDI.cpp
+1>(compiling source file '/PhotonView.cpp')
+1>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\PhotonMultiplayer\PhotonView.cpp(66,25): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+1>(compiling source file '/PhotonView.cpp')
+1>ServerBrowser.cpp
 8>vhacdManifoldMesh.cpp
-15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
-15>(compiling source file '../../Shared/Objects/CObjectManagerC.cpp')
-13>CDataC.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(30,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(145,14): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(146,14): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(1324,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\DynamicPathFinder.cpp(1334,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+13>CDataC.cpp
+1>ShouldISend.cpp
+15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+15>(compiling source file '../../Shared/Objects/CObjectManagerC.cpp')
 6>Entity.cpp
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.h(29,10): error C1083: Cannot open include file: '../../WickedEngineDX12/WickedEngine/WickedEngine.h': No such file or directory
-23>(compiling source file '../../Shared/DBOFormat/DBOFormat.cpp')
 13>OggVorbis.cpp
-23>DBOFrame.cpp
-1>timer.cpp
-1>voicechat.cpp
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLGDI.cpp(79,18): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLGDI.cpp(124,19): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\DBDLLGDI.cpp(180,50): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
@@ -1029,11 +1062,12 @@ Rebuild started at 23:49...
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSComputerNames.cpp(54,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSComputerNames.cpp(54,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>OSDisplay.cpp
-1>Generating Code...
+1>timer.cpp
+1>voicechat.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1103,17): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1104,34): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1108,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-23>DBOMesh.cpp
+22>CError.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1233,47): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1234,49): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(1235,62): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
@@ -1111,104 +1145,129 @@ Rebuild started at 23:49...
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(4864,37): warning C4477: 'sprintf_s' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
 6>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Entity.cpp(4864,37):
 6>    consider using '%zd' in the format string
+8>vhacdVolume.cpp
 13>OggVorbisEncoderAudio.cpp
-22>CError.cpp
+1>Generating Code...
 6>EntityBuffer.cpp
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderAudio.cpp(42,24): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+23>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+23>(compiling source file '../../Shared/DBOFormat/DBOFormat.cpp')
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderAudio.cpp(76,19): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderAudio.cpp(222,20): warning C4267: 'initializing': conversion from 'size_t' to 'long', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderAudio.cpp(277,19): warning C4267: 'initializing': conversion from 'size_t' to 'long', possible loss of data
 13>OggVorbisEncoderEncode.cpp
-8>vhacdVolume.cpp
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderEncode.cpp(151,20): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 13>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\Sound\OggVorbisEncoderEncode.cpp(152,20): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
 13>OggVorbisEncoderMain.cpp
 13>OggVorbisEncoderPlatform.cpp
-1>PhotonMultiplayer.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\PhotonMultiplayer.lib
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(298,27): warning C4244: 'initializing': conversion from '__int64' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(331,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,35): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
+3>SimonReloaded.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\InfiniteVegetation.lib
+3>Done building project "SimonReloaded.vcxproj".
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,42): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(2933,22): warning C4018: '<': signed/unsigned mismatch
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3130,25): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3131,23): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7411,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7488,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7561,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 22>Generating Code...
-1>Done building project "PhotonMultiplayer.vcxproj".
 4>OSDialog.cpp
 8>btAxisSweep3.cpp
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.h(29,10): error C1083: Cannot open include file: '../../WickedEngineDX12/WickedEngine/WickedEngine.h': No such file or directory
-23>(compiling source file '../../Shared/DBOFormat/DBOMesh.cpp')
 13>Generating Code...
-23>DBORawMesh.cpp
 8>btBroadphaseProxy.cpp
-6>EntityThread.cpp
 8>btCollisionAlgorithm.cpp
+6>EntityThread.cpp
 8>btDbvt.cpp
+1>PhotonMultiplayer.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\PhotonMultiplayer.lib
+1>Done building project "PhotonMultiplayer.vcxproj".
+24>CCameraManagerC.cpp
 8>btDbvtBroadphase.cpp
 13>Sound.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Sound.lib
-13>Done building project "Sound.vcxproj".
 22>DBDLLCoreEncryptCall.cpp
-23>NVMeshMenderD3DX.cpp
 8>btDispatcher.cpp
+13>Done building project "Sound.vcxproj".
 8>btOverlappingPairCache.cpp
+8>btQuantizedBvh.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(49,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(51,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(53,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(58,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(58,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(73,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
-8>btQuantizedBvh.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(75,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(77,24): warning C4312: 'type cast': conversion from 'unsigned long' to 'char *' of greater size
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(82,9): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSDialog.cpp(82,9): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
 4>OSMemory.cpp
 6>Grid.cpp
+19>CError.cpp
 22>cMatrix.cpp
 8>Generating Code...
+24>CDataC.cpp
 6>Hero.cpp
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(243,52): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(315,50): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(491,45): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(491,31): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(529,32): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(599,32): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(681,49): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(694,50): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(706,50): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(706,36): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(876,58): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(876,39): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,49): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,32): warning C4267: 'initializing': conversion from 'size_t' to 'const int', possible loss of data
-23>CError.cpp
+24>Generating Code...
+19>Generating Code...
 22>cVector2D.cpp
-15>cOcclusion.cpp
 4>FileBlocks.cpp
-6>LeeThread.cpp
-23>globstruct.cpp
+15>cOcclusion.cpp
+24>CCameraDataC.cpp
 22>cVector3D.cpp
-15>GameFXCalls.cpp
-15>Generating Code...
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileBlocks.cpp(172,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-23>Generating Code...
+6>LeeThread.cpp
+19>DIB.C
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(437,16): warning C4013: 'GG_CreateFile' undefined; assuming extern returning int
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(437,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\DIB.C(551,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
+19>ICONS.C
+24>DBCameraGraphics.cpp
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(713,16): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(714,16): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-4>FileMapping.cpp
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(64,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(72,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(73,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(97,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(115,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(715,16): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(716,13): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(754,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(782,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(787,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(792,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileBlocks.cpp(172,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>GameFXCalls.cpp
 22>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Core\KMaths\cVector3D.cpp(1017,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 22>cVector4D.cpp
+15>Generating Code...
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(156,18): warning C4013: 'GG_CreateFile' undefined; assuming extern returning int
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(156,16): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(386,42): warning C4311: 'type cast': pointer truncation from 'LPTSTR' to 'DWORD'
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(396,34): warning C4312: 'type cast': conversion from 'LONG' to 'HWND' of greater size
+4>FileMapping.cpp
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(396,14): warning C4244: '=': conversion from 'LRESULT' to 'LONG', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(398,25): warning C4312: 'type cast': conversion from 'LONG' to 'HWND' of greater size
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(486,27): warning C4244: '=': conversion from 'LRESULT' to 'DWORD', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(538,76): warning C4113: 'BOOL (__cdecl *)(HANDLE,LPCTSTR,LPTSTR,LONG)' differs in parameter lists from 'ENUMRESNAMEPROCA'
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(545,31): warning C4244: '=': conversion from 'LRESULT' to 'UINT', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(586,35): warning C4244: '=': conversion from 'LRESULT' to 'LONG', possible loss of data
+19>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Image\icons\ICONS.C(847,16): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
+19>Generating Code...
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(64,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(72,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(73,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(97,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\LeeThread.cpp(115,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>LUAScript.cpp
 6>Path.cpp
+23>DBOFrame.cpp
+19>Image.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Image.lib
+19>Done building project "Image.vcxproj".
 22>RenderList.cpp
+24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Camera\DBCameraGraphics.cpp(165,22): warning C4244: '=': conversion from 'DWORD' to 'FLOAT', possible loss of data
+24>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Camera\DBCameraGraphics.cpp(166,22): warning C4244: '=': conversion from 'DWORD' to 'FLOAT', possible loss of data
+24>Generating Code...
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Path.cpp(57,28): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
+24>Camera.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Camera.lib
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Path.cpp(219,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Path.cpp(227,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Path.cpp(241,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>PathFinderAdvanced.cpp
+23>DBOMesh.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(226,27): warning C4804: '>': unsafe use of type 'bool' in operation
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(238,10): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\FileMapping.cpp(240,10): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
@@ -1219,7 +1278,6 @@ Rebuild started at 23:49...
 22>SteamCheckForWorkshop.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\IPC.cpp(49,25): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\IPC.cpp(49,25): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
-23>Done building project "ConvX.vcxproj" -- FAILED.
 4>cZip.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(40,17): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(726,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
@@ -1246,68 +1304,79 @@ Rebuild started at 23:49...
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(3659,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(3673,18): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\PathFinderAdvanced.cpp(3890,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>Polygon.cpp
 8>Compiling...
 8>btSimpleBroadphase.cpp
-6>StateAttack.cpp
-4>Generating Code...
+6>Polygon.cpp
 8>btActivatingCollisionAlgorithm.cpp
+6>StateAttack.cpp
 22>Generating Code...
+8>btBox2dBox2dCollisionAlgorithm.cpp
+4>Generating Code...
+8>btBoxBoxCollisionAlgorithm.cpp
+24>BSCMAKE : warning BK4503: minor error in .SBR file 'x64\Release\CCameraC.sbr' ignored
+24>BSCMAKE : warning BK4503: minor error in .SBR file 'x64\Release\CCameraC.sbr' ignored
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(404,1): warning C4700: uninitialized local variable 'CPUSignature' used
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'edx2' used
+15>CObjectsC.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'eax2' used
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'edx1' used
-8>btBox2dBox2dCollisionAlgorithm.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\OSCpuInfo.cpp(1507,1): warning C4700: uninitialized local variable 'eax1' used
-15>CObjectsC.cpp
-8>btBoxBoxCollisionAlgorithm.cpp
 8>btBoxBoxDetector.cpp
-6>StateAttackFromCover.cpp
-4>adler32.c
+23>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+8>btCollisionDispatcher.cpp
+23>(compiling source file '../../Shared/DBOFormat/DBOMesh.cpp')
 22>DBDLLCore.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\DBDLLCore.lib
 22>Done building project "DBDLLCore.vcxproj".
-8>btCollisionDispatcher.cpp
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1646,18): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1708,26): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+6>StateAttackFromCover.cpp
+4>adler32.c
+8>btCollisionDispatcherMt.cpp
 4>aescrypt.c
 4>aeskey.c
 4>aestab.c
-8>btCollisionDispatcherMt.cpp
+8>btCollisionObject.cpp
 4>compress.c
 4>crc32.c
 4>deflate.c
 4>entropy.c
-8>btCollisionObject.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionObject.cpp(40,20): warning C4305: 'initializing': truncation from 'double' to 'btScalar'
+4>fileenc.c
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateAttackFromCover.cpp(44,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateAttackFromCover.cpp(154,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-4>fileenc.c
+8>btCollisionWorld.cpp
 4>gzclose.c
 4>gzlib.c
-4>gzread.c
 6>StateChaseAttack.cpp
+4>gzread.c
 4>gzwrite.c
 4>hmac.c
 4>infback.c
 4>inffast.c
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionObject.cpp(40,20): warning C4305: 'initializing': truncation from 'double' to 'btScalar'
-8>btCollisionWorld.cpp
-4>inflate.c
-4>inftrees.c
-4>ioapi.c
-4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\ioapi.c(122,48): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-4>ioapi_buf.c
-4>Generating Code...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp')
+4>inflate.c
+4>inftrees.c
+4>ioapi.c
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorld.cpp')
-6>Generating Code...
+4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\ioapi.c(122,48): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+4>ioapi_buf.c
+4>Generating Code...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.cpp(1331,51): warning C4305: 'argument': truncation from 'double' to 'btScalar'
 8>btCollisionWorldImporter.cpp
+6>Generating Code...
 15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
 15>(compiling source file '../../Shared/Objects/CObjectsC.cpp')
+24>Done building project "Camera.vcxproj".
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
+8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 15>(compiling source file '../../Shared/Objects/CObjectsC.cpp')
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\types.h(3954,32): warning C4305: 'initializing': truncation from 'double' to 'float'
@@ -1353,18 +1422,14 @@ Rebuild started at 23:49...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(1143,37): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(1145,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(1829,29): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(2887,32): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(2887,25): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(2995,22): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(3317,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
-8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btCollisionWorldImporter.cpp')
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(2887,32): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(2887,25): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(2995,22): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(3317,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(3968,13): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(3969,13): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectsC.cpp(3970,13): warning C4244: 'initializing': conversion from 'float' to 'DWORD', possible loss of data
@@ -1419,8 +1484,9 @@ Rebuild started at 23:49...
 8>btCompoundCollisionAlgorithm.cpp
 4>Compiling...
 4>ioapi_mem.c
-4>iowin32.c
 8>btCompoundCompoundCollisionAlgorithm.cpp
+4>iowin32.c
+8>btConvex2dConvex2dAlgorithm.cpp
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(124,17): warning C4013: 'GG_CreateFile' undefined; assuming extern returning int
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(124,15): warning C4047: '=': 'HANDLE' differs in levels of indirection from 'int'
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\iowin32.c(131,47): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
@@ -1435,28 +1501,28 @@ Rebuild started at 23:49...
 4>pwd2key.c
 4>sha1.c
 4>trees.c
-6>Compiling...
-6>StateDefend.cpp
-8>btConvex2dConvex2dAlgorithm.cpp
 4>uncompr.c
 4>unzip.c
 4>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\Enhancements\Zlib\unzip.c(1368,84): warning C4244: '=': conversion from '__int64' to 'uInt', possible loss of data
+6>Compiling...
+6>StateDefend.cpp
+8>btConvexConcaveCollisionAlgorithm.cpp
 4>zip.c
 4>zutil.c
 4>Generating Code...
-8>btConvexConcaveCollisionAlgorithm.cpp
 8>btConvexConvexAlgorithm.cpp
-6>StateDiving.cpp
 8>btConvexPlaneCollisionAlgorithm.cpp
+23>DBORawMesh.cpp
 8>btDefaultCollisionConfiguration.cpp
+6>StateDiving.cpp
+8>btEmptyCollisionAlgorithm.cpp
 4>Main.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\Enhancements.lib
 4>Done building project "Main.vcxproj".
-8>btEmptyCollisionAlgorithm.cpp
 8>btGhostObject.cpp
-6>StateFallBack.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btGhostObject.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
+23>NVMeshMenderD3DX.cpp
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btGhostObject.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btGhostObject.cpp')
@@ -1464,10 +1530,28 @@ Rebuild started at 23:49...
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btGhostObject.cpp')
 8>btHashedSimplePairCache.cpp
 8>Generating Code...
+6>StateFallBack.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateFallBack.cpp(93,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(243,52): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(315,50): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
 6>StateGoToDest.cpp
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(491,45): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(491,31): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(529,32): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(599,32): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(681,49): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(694,50): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(706,50): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(706,36): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(876,58): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(876,39): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,49): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+23>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,32): warning C4267: 'initializing': conversion from 'size_t' to 'const int', possible loss of data
+23>CError.cpp
 15>CommonC.cpp
 6>StateIdle.cpp
+23>globstruct.cpp
+23>Generating Code...
 6>StateInvestigate.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CommonC.cpp(269,15): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CommonC.cpp(776,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
@@ -1485,53 +1569,57 @@ Rebuild started at 23:49...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CPositionC.cpp(964,36): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CPositionC.cpp(975,36): warning C4244: 'return': conversion from 'float' to 'DWORD', possible loss of data
 15>CError.cpp
-6>StateManual.cpp
 8>Compiling...
 8>btInternalEdgeUtility.cpp
+6>StateManual.cpp
 15>3DCol.cpp
 8>btManifoldResult.cpp
-6>StatePatrol.cpp
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(67,2): warning C5033: 'register' is no longer a supported storage class
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(68,2): warning C5033: 'register' is no longer a supported storage class
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(69,2): warning C5033: 'register' is no longer a supported storage class
-15>cBoxCol.cpp
 8>btSimulationIslandManager.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btSimulationIslandManager.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btSimulationIslandManager.cpp')
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(67,2): warning C5033: 'register' is no longer a supported storage class
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(68,2): warning C5033: 'register' is no longer a supported storage class
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\BoxCollision\3DCol.cpp(69,2): warning C5033: 'register' is no longer a supported storage class
+6>StatePatrol.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btSimulationIslandManager.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionDispatch/btSimulationIslandManager.cpp')
 8>btSphereBoxCollisionAlgorithm.cpp
+15>cBoxCol.cpp
 8>btSphereSphereCollisionAlgorithm.cpp
 8>btSphereTriangleCollisionAlgorithm.cpp
-6>StatePeekFromCorner.cpp
 8>btUnionFind.cpp
-15>CCollision.cpp
+23>ConvX.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\ConvX.lib
+23>Done building project "ConvX.vcxproj".
 8>SphereTriangleDetector.cpp
 8>btBox2dShape.cpp
+6>StatePeekFromCorner.cpp
+15>CCollision.cpp
 8>btBoxShape.cpp
 8>btBvhTriangleMeshShape.cpp
+8>btCapsuleShape.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StatePeekFromCorner.cpp(41,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+8>btCollisionShape.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StatePeekFromCorner.cpp(122,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 6>StateSearchArea.cpp
 15>PolyPool.cpp
-8>btCapsuleShape.cpp
-8>btCollisionShape.cpp
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateSearchArea.cpp(113,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>StateSet.cpp
-15>DBOBlock.cpp
 8>btCompoundShape.cpp
-6>StateStrafeAttack.cpp
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\StateMachine\StateSearchArea.cpp(113,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+15>DBOBlock.cpp
+6>StateSet.cpp
 8>btConcaveShape.cpp
 8>btConeShape.cpp
+8>btConvex2dShape.cpp
+8>btConvexHullShape.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(53,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(68,14): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(86,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(117,17): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(173,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
+6>StateStrafeAttack.cpp
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(211,19): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(249,18): warning C4267: '=': conversion from 'size_t' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(284,16): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
@@ -1570,29 +1658,24 @@ Rebuild started at 23:49...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1427,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1436,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOBlock.cpp(1454,56): warning C4244: '=': conversion from '__int64' to 'DWORD', possible loss of data
-8>btConvex2dShape.cpp
 15>DBOData.cpp
-8>btConvexHullShape.cpp
-6>StateWaitInCover.cpp
 8>btConvexInternalShape.cpp
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\DBOFORMAT\DBOData.cpp(113,22): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
 8>btConvexPointCloudShape.cpp
-15>DBOEffects.cpp
 8>Generating Code...
-6>Team.cpp
+6>StateWaitInCover.cpp
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\SHARED\DBOFORMAT\DBOData.cpp(113,22): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
+15>DBOEffects.cpp
 15>DBOExternals.cpp
-15>DBOFile.cpp
-6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Team.cpp(472,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-6>TeamController.cpp
+6>Team.cpp
 8>Compiling...
 8>btConvexPolyhedron.cpp
-15>DBOFormat.cpp
+15>DBOFile.cpp
 8>btConvexShape.cpp
+6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\Team.cpp(472,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+15>DBOFormat.cpp
+6>TeamController.cpp
 8>btConvexTriangleMeshShape.cpp
 8>btCylinderShape.cpp
-6>TreeFace.cpp
-6>TreeNode.cpp
-6>World.cpp
 8>btEmptyShape.cpp
 8>btHeightfieldTerrainShape.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btHeightfieldTerrainShape.cpp(205,62): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
@@ -1611,6 +1694,7 @@ Rebuild started at 23:49...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btHeightfieldTerrainShape.cpp(578,70): warning C4244: '=': conversion from 'double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btHeightfieldTerrainShape.cpp(582,71): warning C4244: '=': conversion from 'double' to 'btScalar', possible loss of data
 8>btMiniSDF.cpp
+6>TreeFace.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.h(67,16): warning C4244: 'argument': conversion from 'double' to 'const btScalar', possible loss of data
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionShapes/btMiniSDF.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.h(75,16): warning C4244: 'argument': conversion from 'double' to 'const btScalar', possible loss of data
@@ -1671,7 +1755,10 @@ Rebuild started at 23:49...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.cpp(516,23): warning C4244: '+=': conversion from 'double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMiniSDF.cpp(517,23): warning C4244: '+=': conversion from 'double' to 'btScalar', possible loss of data
 8>btMinkowskiSumShape.cpp
+6>TreeNode.cpp
+6>World.cpp
 8>btMultimaterialTriangleMeshShape.cpp
+8>btMultiSphereShape.cpp
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(821,33): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(822,70): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 6>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\DarkSDKMore\DarkAI\World.cpp(945,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
@@ -1680,18 +1767,6 @@ Rebuild started at 23:49...
 6>Zone.cpp
 15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
 15>(compiling source file '../../Shared/DBOFormat/DBOFormat.cpp')
-8>btMultiSphereShape.cpp
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(298,27): warning C4244: 'initializing': conversion from '__int64' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(331,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,35): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,42): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(2933,22): warning C4018: '<': signed/unsigned mismatch
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3130,25): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3131,23): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7411,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7488,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7561,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-6>Generating Code...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMultiSphereShape.cpp(84,18): warning C4288: nonstandard extension used: 'i': loop control variable declared in the for-loop is used outside the for-loop scope; it conflicts with the declaration in the outer scope
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMultiSphereShape.cpp(80,8):
 8>    definition of 'i' used
@@ -1702,7 +1777,17 @@ Rebuild started at 23:49...
 8>    definition of 'i' used
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btMultiSphereShape.cpp(110,14):
 8>    definition of 'i' ignored
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(298,27): warning C4244: 'initializing': conversion from '__int64' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(331,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 8>btOptimizedBvh.cpp
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,35): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(844,42): warning C4838: conversion from 'INT' to 'UINT' requires a narrowing conversion
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(2933,22): warning C4018: '<': signed/unsigned mismatch
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3130,25): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(3131,23): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7411,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7488,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOFormat.cpp(7561,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 8>btPolyhedralConvexShape.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btGrahamScan2dConvexHull.h(104,7): warning C4288: nonstandard extension used: 'i': loop control variable declared in the for-loop is used outside the for-loop scope; it conflicts with the declaration in the outer scope
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionShapes/btPolyhedralConvexShape.cpp')
@@ -1735,6 +1820,7 @@ Rebuild started at 23:49...
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btGrahamScan2dConvexHull.h(84,11):
 8>    definition of 'i' ignored
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btGrahamScan2dConvexHull.h(108,37): warning C4288: nonstandard extension used: 'i': loop control variable declared in the for-loop is used outside the for-loop scope; it conflicts with the declaration in the outer scope
+6>Generating Code...
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionShapes/btPolyhedralConvexShape.cpp')
 8>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btGrahamScan2dConvexHull.h(103,6):
 8>    definition of 'i' used
@@ -1766,11 +1852,11 @@ Rebuild started at 23:49...
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/CollisionShapes/btSdfCollisionShape.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionShapes\btSdfCollisionShape.cpp(92,13): warning C4244: '=': conversion from 'double' to 'btScalar', possible loss of data
 8>btShapeHull.cpp
-6>DarkMind.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\DarkAI.lib
-6>Done building project "DarkMind.vcxproj".
 8>btSphereShape.cpp
 8>btStaticPlaneShape.cpp
 8>btStridingMeshInterface.cpp
+6>DarkMind.vcxproj -> D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Lib64\Release\DarkAI.lib
+6>Done building project "DarkMind.vcxproj".
 8>btTetrahedronShape.cpp
 8>btTriangleBuffer.cpp
 8>Generating Code...
@@ -1786,11 +1872,7 @@ Rebuild started at 23:49...
 8>btContactProcessing.cpp
 8>btGenericPoolAllocator.cpp
 8>btGImpactBvh.cpp
-15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
-15>(compiling source file '../../Shared/DBOFormat/DBOMesh.cpp')
 8>btGImpactCollisionAlgorithm.cpp
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1646,18): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1708,26): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
@@ -1800,7 +1882,11 @@ Rebuild started at 23:49...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(394,59): warning C4302: 'type cast': truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.cpp')
 8>btGImpactQuantizedBvh.cpp
+15>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
+15>(compiling source file '../../Shared/DBOFormat/DBOMesh.cpp')
 8>btGImpactShape.cpp
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1646,18): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\DBOMesh.cpp(1708,26): warning C4267: 'initializing': conversion from 'size_t' to 'DWORD', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
 8>(compiling source file '../../../../SDK/BULLET/bullet-3.19/src/BulletCollision/Gimpact/btGImpactShape.cpp')
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\CollisionDispatch\btCollisionWorld.h(217,47): warning C4302: 'type cast': truncation from 'void *' to 'int'
@@ -1820,9 +1906,21 @@ Rebuild started at 23:49...
 8>Generating Code...
 15>DBORawMesh.cpp
 15>NVMeshMenderD3DX.cpp
-15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(243,52): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
 8>Compiling...
 8>btGjkEpa2.cpp
+8>btGjkEpaPenetrationDepthSolver.cpp
+8>btGjkPairDetector.cpp
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(36,38): warning C4305: 'initializing': truncation from 'double' to 'btScalar'
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,19): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,104): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,137): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,185): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(372,21): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(373,21): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
+8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(411,9): warning C4244: 'return': conversion from 'double' to 'btScalar', possible loss of data
+8>btMinkowskiPenetrationDepthSolver.cpp
+15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(243,52): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(315,50): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(491,45): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(491,31): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
@@ -1836,21 +1934,8 @@ Rebuild started at 23:49...
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(876,39): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,49): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 15>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\DBOFormat\Extras\NVMeshMenderD3DX.cpp(922,32): warning C4267: 'initializing': conversion from 'size_t' to 'const int', possible loss of data
-8>btGjkEpaPenetrationDepthSolver.cpp
-15>globstruct.cpp
-8>btGjkPairDetector.cpp
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(36,38): warning C4305: 'initializing': truncation from 'double' to 'btScalar'
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,19): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,52): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,104): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,137): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(368,185): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(372,21): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(373,21): warning C4244: 'argument': conversion from 'double' to 'btScalar', possible loss of data
-8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btGjkPairDetector.cpp(411,9): warning C4244: 'return': conversion from 'double' to 'btScalar', possible loss of data
-8>btMinkowskiPenetrationDepthSolver.cpp
 8>btPersistentManifold.cpp
-15>Generating Code...
+15>globstruct.cpp
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(362,46): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(363,48): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(374,70): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
@@ -1871,6 +1956,7 @@ Rebuild started at 23:49...
 8>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\BulletCollision\NarrowPhaseCollision\btPersistentManifold.cpp(402,70): warning C4244: '=': conversion from 'const double' to 'btScalar', possible loss of data
 8>btPolyhedralContactClipping.cpp
 8>btRaycastCallback.cpp
+15>Generating Code...
 8>btSubSimplexConvexCast.cpp
 8>btVoronoiSimplexSolver.cpp
 8>btKinematicCharacterController.cpp
@@ -2879,88 +2965,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/G-Entity.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(777,36): warning C4244: '=': conversion from 'float' to '_Ty', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(777,36): warning C4244:         with
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(777,36): warning C4244:         [
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(777,36): warning C4244:             _Ty=int
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(777,36): warning C4244:         ]
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(803,22): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(975,24): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1003,26): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1005,79): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1017,26): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1019,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1031,26): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1033,79): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1045,26): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1047,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1067,40): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1191,30): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1416,124): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1416,69): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1419,31): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1596,68): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1596,50): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1622,100): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1712,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(1730,87): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2060,32): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2064,49): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2141,48): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2144,38): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2176,24): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2246,34): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2252,50): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2255,41): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2442,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2503,67): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2507,71): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2518,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2598,56): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2599,29): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2600,39): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2639,15): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2662,34): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2663,34): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2664,34): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2666,69): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2666,56): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2666,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2677,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2702,123): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2702,109): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2702,86): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(2702,63): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3000,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3001,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3002,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3005,64): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3322,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3328,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3379,100): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3404,45): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3409,54): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3441,74): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3449,71): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3504,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3548,27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3576,35): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(3975,50): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4249,134): warning C4805: '!=': unsafe mix of type 'bool' and type 'float' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4874,79): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4882,79): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4886,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4894,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4898,79): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4900,79): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4904,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4906,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4966,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4967,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4968,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4981,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4982,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Entity.cpp(4983,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(8,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
+28>(compiling source file '../GameGuru/Source/G-Entity.cpp')
 28>G-Gun.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/G-Gun.cpp')
@@ -2997,83 +3003,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/G-Lighting.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(4,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/G-Lighting.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/G-Lighting.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(149,157): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(149,140): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(149,123): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(189,20): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(190,25): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(282,16): error C2039: 'SetGamma': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(282,16): error C2660: 'SetGamma': function does not take 1 arguments
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\CGfxC.h(201,19):
-28>    see declaration of 'SetGamma'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(282,16):
-28>    while trying to match the argument list '(float)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(284,16): error C2039: 'SetGamma': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(284,16): error C2660: 'SetGamma': function does not take 1 arguments
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\CGfxC.h(201,19):
-28>    see declaration of 'SetGamma'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(284,16):
-28>    while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(322,31): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(321,31): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(320,31): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(401,32): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(401,69): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(401,106): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(405,51): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(408,56): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(420,50): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(427,54): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(432,50): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\G-Lighting.cpp(439,54): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>M-AudioVolume.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-AudioVolume.cpp')
@@ -3143,56 +3074,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-CharacterCreatorPlus.cpp')
 28>C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\intsafe.h(56,1): warning C4091: 'typedef ': ignored on left of 'unsigned __int64' when no variable is declared
 28>(compiling source file '../GameGuru/Source/M-CharacterCreatorPlus.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(16,8): error C3668: 'MasterRenderer::Render': method with override specifier 'override' did not override any base class methods
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(6,10): error C1083: Cannot open include file: 'WickedEngine.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-CharacterCreatorPlus.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(407,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(646,20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(647,20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(657,20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(658,20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(926,35): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(927,31): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(928,31): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(929,37): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(930,37): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(931,31): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(932,31): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(933,31): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(934,37): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(935,37): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(1514,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(2539,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(2727,40): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(2728,41): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3197,11): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3226,41): warning C4244: '=': conversion from 'wi::ecs::Entity' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3304,27): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3305,41): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3307,43): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3364,64): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3365,64): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3489,60): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3531,20): warning C4305: '*=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3540,45): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3585,51): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3638,46): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3754,183): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3754,178): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3754,173): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3754,168): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3754,155): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3754,150): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3754,145): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3754,140): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(3990,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(4006,15): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(4133,28): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(4235,107): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(4394,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(4441,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(4443,64): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(4632,25): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-CharacterCreatorPlus.cpp(4633,32): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>M-CharacterCreatorPlusTTS.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-CharacterCreatorPlusTTS.cpp')
@@ -3643,51 +3526,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-Entity.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(8,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-Entity.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-Entity.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Entity.cpp(25,10): error C1083: Cannot open include file: 'WickedEngine.h': No such file or directory
 28>M-Explosion&Fire.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-Explosion&Fire.cpp')
@@ -3785,117 +3625,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-Game.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(16,8): error C3668: 'MasterRenderer::Render': method with override specifier 'override' did not override any base class methods
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(6,10): error C1083: Cannot open include file: 'WickedEngine.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-Game.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-Game.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-Game.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(445,23): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(453,23): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(557,43): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(572,31): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(573,31): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(578,94): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(1429,27): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(2046,47): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(2184,47): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(2277,62): warning C4553: '==': result of expression not used; did you intend '='?
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(2409,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(2424,44): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3603,37): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3607,259): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3607,171): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3607,83): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3608,258): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3608,170): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3608,82): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3967,41): warning C4244: '=': conversion from 'LONGLONG' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3968,35): warning C4244: '=': conversion from 'LONGLONG' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(3979,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4225,47): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4225,106): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4262,41): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4262,100): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4331,44): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4331,103): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4352,51): warning C4244: '=': conversion from 'LONGLONG' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4362,42): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4362,101): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4365,42): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4365,101): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4385,40): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4424,40): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4424,99): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4445,14): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4449,14): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4475,17): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4482,45): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4482,104): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4483,45): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4483,104): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4490,44): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4490,103): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4561,45): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4561,104): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4585,50): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4585,109): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4644,43): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4644,116): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4711,45): warning C4244: '+=': conversion from 'LONGLONG' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4711,105): warning C4244: '=': conversion from 'LONGLONG' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4779,52): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4796,61): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4803,125): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4804,125): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4846,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4854,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4859,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Game.cpp(4905,65): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>M-GridEdit.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-GridEdit.cpp')
@@ -3921,636 +3652,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-GridEdit.cpp')
 28>C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\intsafe.h(56,1): warning C4091: 'typedef ': ignored on left of 'unsigned __int64' when no variable is declared
 28>(compiling source file '../GameGuru/Source/M-GridEdit.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(8,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-GridEdit.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-GridEdit.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(16,8): error C3668: 'MasterRenderer::Render': method with override specifier 'override' did not override any base class methods
-28>(compiling source file '../GameGuru/Source/M-GridEdit.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(616,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(618,20): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(620,213): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(620,165): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(620,101): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(620,66): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(621,114): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(655,55): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(682,13): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(685,16): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(699,47): warning C4244: '*=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(701,47): warning C4244: '*=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(712,61): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(811,28): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(869,36): error C2039: 'GetWidth3D': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(870,36): error C2039: 'GetHeight3D': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(925,19): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(1558,45): warning C4244: '=': conversion from 'float' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(1559,46): warning C4244: '=': conversion from 'float' to 'unsigned long', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(1560,51): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(1561,52): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(1564,19): error C2039: 'GetDevice': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(1564,19): error C3861: 'GetDevice': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(1566,14): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(1567,15): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(2442,15): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(2446,15): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(2617,40): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(2620,29): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(2623,35): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(2697,69): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(2727,38): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(3257,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(3908,29): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(3915,70): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(3948,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(3956,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4012,39): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4013,41): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4026,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4028,71): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4055,53): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4056,68): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4082,73): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4083,88): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4322,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4327,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4532,19): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4533,19): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4538,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4542,87): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4558,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4559,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4560,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4717,78): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4719,76): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4721,31): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4939,19): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4981,30): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(4982,32): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5019,41): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5040,75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5073,41): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5136,35): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5137,69): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5143,31): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5145,84): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5179,41): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5198,32): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5200,90): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5230,34): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5231,68): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5235,33): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5237,90): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5290,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5338,29): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5339,31): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5367,76): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5398,26): warning C4804: '>': unsafe use of type 'bool' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5456,17): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5457,17): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5474,27): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5480,23): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5559,17): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5560,17): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5595,25): warning C4804: '>': unsafe use of type 'bool' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5642,31): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5669,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5671,64): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5672,31): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5714,32): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5723,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(5758,32): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6219,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6220,85): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6224,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6225,94): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6225,77): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6504,26): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6505,31): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6507,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6512,42): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6513,32): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6515,76): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6518,28): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6525,27): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6539,24): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6543,165): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6543,145): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,207): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,202): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,197): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,174): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,169): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,80): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6546,60): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6556,165): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6556,145): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,198): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,193): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,188): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,183): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,170): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,165): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,160): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,155): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,71): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6559,51): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6570,165): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6570,145): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,197): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,187): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,169): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,159): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,154): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,70): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6573,50): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6590,25): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6592,77): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6595,44): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6596,34): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6598,78): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6601,30): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6608,29): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6612,25): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6617,52): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6617,47): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6617,42): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6617,37): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6622,166): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6622,146): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6632,174): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6632,169): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6632,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6632,159): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6632,78): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6632,58): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6648,45): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6648,40): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6648,35): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6648,30): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6653,166): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6653,146): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6662,176): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6662,171): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6662,166): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6662,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6662,80): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6662,60): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6680,165): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6680,145): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,189): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,184): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,174): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,156): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,146): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6703,42): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6726,24): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6774,100): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,189): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,184): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,174): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,156): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,146): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(6775,42): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7270,41): warning C4805: '!=': unsafe mix of type 'bool' and type 'int' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7285,41): warning C4805: '!=': unsafe mix of type 'bool' and type 'int' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7446,67): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7447,67): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7448,67): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7594,33): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7596,69): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7686,32): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7687,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7746,21): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7747,82): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7933,26): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7934,26): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7940,50): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7940,45): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(7940,40): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8073,33): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8074,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8075,72): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8272,84): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8363,32): warning C4805: '==': unsafe mix of type 'int' and type 'bool' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8420,32): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8422,69): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8427,29): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8429,29): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8432,69): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8452,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8454,67): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8570,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8571,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(8572,66): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9019,31): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9020,46): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9089,70): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9090,96): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9090,79): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9175,56): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9283,136): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9284,45): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9293,21): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9296,27): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9298,133): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9299,42): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9312,70): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9313,96): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9313,79): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9375,28): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9376,33): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9377,20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9378,20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9379,20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9396,70): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9397,96): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9397,79): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9481,136): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9482,45): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9526,71): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9527,97): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9527,80): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9596,58): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9829,70): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9830,96): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(9830,79): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10001,40): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10002,42): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10003,42): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10042,41): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10043,41): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10059,36): warning C4554: '&': check operator precedence for possible error; use parentheses to clarify precedence
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10076,34): warning C4554: '&': check operator precedence for possible error; use parentheses to clarify precedence
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10106,43): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10107,43): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10108,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10109,46): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10112,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10113,208): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10114,212): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10116,203): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10209,48): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10211,53): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10212,53): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10213,53): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10214,54): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10215,54): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10216,54): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10217,54): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10218,54): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10219,54): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10221,53): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10222,51): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10223,54): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10224,55): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10339,59): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10341,57): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10342,56): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10343,56): warning C4244: '=': conversion from 'long' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10435,147): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10508,93): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10514,79): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10514,69): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10617,109): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10822,27): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(10852,28): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11027,26): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11029,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11032,31): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11033,27): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11039,27): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11151,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11152,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11198,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11199,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11235,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11236,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11276,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11278,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11290,68): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11316,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11317,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11376,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11377,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11552,31): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11553,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11558,62): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11634,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11634,55): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11717,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11718,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11720,26): error C2039: 'GetDrawCalls': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11720,26): error C3861: 'GetDrawCalls': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11721,27): error C2039: 'GetDrawCallsShadows': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11721,27): error C3861: 'GetDrawCallsShadows': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11722,27): error C2039: 'GetDrawCallsTransparent': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11722,27): error C3861: 'GetDrawCallsTransparent': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11724,28): error C2039: 'GetPolygons': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11724,28): error C3861: 'GetPolygons': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11725,34): error C2039: 'GetPolygonsShadows': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11725,34): error C3861: 'GetPolygonsShadows': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11726,39): error C2039: 'GetPolygonsTransparent': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11726,39): error C3861: 'GetPolygonsTransparent': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11741,45): error C2039: 'GetProfilerData': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11741,45): error C3861: 'GetProfilerData': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11801,15): warning C4244: '+=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11813,176): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11813,171): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11813,166): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11813,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11813,148): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11813,143): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11813,138): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(11813,133): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12101,28): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12149,11): warning C4804: '>': unsafe use of type 'bool' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12178,23): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12183,59): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12249,57): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12249,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12266,59): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12266,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12347,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12352,61): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12404,59): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12404,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12436,61): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12436,49): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12570,20): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12571,27): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12661,57): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12661,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12700,59): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12700,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12772,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12774,15): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12776,18): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12835,99): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12836,73): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12850,49): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12850,44): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12850,39): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12850,34): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12944,124): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12944,104): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,170): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,165): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,160): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,155): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,142): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,137): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,132): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,127): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,60): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12949,40): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12978,32): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(12979,32): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13041,58): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13044,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13050,18): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13427,29): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13464,24): warning C4553: '==': result of expression not used; did you intend '='?
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13490,24): warning C4553: '==': result of expression not used; did you intend '='?
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13530,27): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13903,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(13903,54): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14056,34): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14143,43): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14161,13): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14317,30): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14317,21): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14416,18): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14417,55): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14424,91): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14427,137): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14428,107): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14432,130): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14433,119): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14435,130): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(14921,106): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(15103,62): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(15103,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(16052,25): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(16062,33): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(16064,91): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(16085,26): warning C4804: '>': unsafe use of type 'bool' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(16101,27): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(16102,27): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(16600,58): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(16737,30): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(17072,58): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(17199,28): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(17655,26): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(17656,26): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(17730,37): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18084,38): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18364,19): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18416,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18778,61): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18784,85): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18794,19): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18814,19): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18825,86): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(18953,31): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19045,43): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19064,27): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19069,38): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19079,46): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19101,24): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19220,41): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19776,82): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19912,27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(19913,27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20068,33): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20091,35): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20097,34): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20148,50): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20149,50): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20152,50): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20153,50): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20237,9): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20238,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20238,22): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20238,91): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20238,70): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20239,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20239,22): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20239,91): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20239,70): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20249,88): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20249,70): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20249,61): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20249,41): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20267,40): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20268,40): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20269,36): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20269,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20270,36): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20270,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20276,107): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20276,89): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20283,24): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20289,59): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20289,40): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20290,59): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20290,40): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20436,34): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20449,26): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20462,29): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20463,29): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20464,36): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20464,26): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20465,25): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20466,25): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20561,47): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20595,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20641,24): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20648,24): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20652,24): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20743,113): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(20845,58): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21387,31): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21391,46): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21456,24): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21526,30): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21527,30): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21553,30): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21554,30): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21621,25): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21676,32): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21680,32): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21685,46): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21706,55): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21707,56): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21708,147): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(21708,86): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(22508,36): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(22751,58): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(22752,58): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(22761,50): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(22761,41): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(22762,50): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(22762,41): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(23305,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(23306,53): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(23307,27): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(23308,27): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(23618,36): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(23667,34): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(23783,86): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(23784,93): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(24783,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25075,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25271,6): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25388,66): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25758,42): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25761,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25761,36): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25761,25): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25868,50): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25869,45): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(25948,9): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26076,42): error C2039: 'GetProfilerDataFilter': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26076,42): error C3861: 'GetProfilerDataFilter': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26077,13): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26088,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26089,84): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26101,21): error C2039: 'GetDrawCallsShadowsCube': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26101,21): error C3861: 'GetDrawCallsShadowsCube': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26128,36): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26238,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26239,47): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26240,29): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26330,67): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26344,68): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26350,26): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26352,26): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26354,26): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26357,68): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEdit.cpp(26382,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
 28>M-GridEditB.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-GridEditB.cpp')
@@ -4576,467 +3679,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-GridEditB.cpp')
 28>C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\intsafe.h(56,1): warning C4091: 'typedef ': ignored on left of 'unsigned __int64' when no variable is declared
 28>(compiling source file '../GameGuru/Source/M-GridEditB.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(8,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-GridEditB.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-GridEditB.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1045,32): warning C4554: '&': check operator precedence for possible error; use parentheses to clarify precedence
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1062,30): warning C4554: '&': check operator precedence for possible error; use parentheses to clarify precedence
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1360,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1368,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1369,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1370,113): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1371,119): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1372,117): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1373,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1374,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1375,120): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1376,118): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1377,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1378,118): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1379,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1380,120): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1381,113): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1385,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1386,117): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1387,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1388,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1389,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1393,37): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1409,102): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1410,102): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1412,108): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1413,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1414,111): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1416,117): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1417,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1418,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1419,110): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1420,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1421,113): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1422,118): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1423,95): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1424,99): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1425,113): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1426,104): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1431,113): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1432,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1433,109): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1436,33): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1438,113): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1439,113): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1440,110): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1441,113): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1442,108): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1443,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1444,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1445,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1451,132): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1452,132): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1453,124): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1454,125): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1459,129): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1460,120): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1461,125): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1462,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1465,110): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1467,99): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1477,110): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1494,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1500,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1502,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1503,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1504,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1505,119): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1506,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1507,115): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1508,118): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1524,77): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1524,58): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1524,39): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1634,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1655,43): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1714,74): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1776,74): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1865,28): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1878,43): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(1880,73): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(2522,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3350,65): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3351,10): warning C4244: 'return': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3401,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3644,37): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3737,25): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3742,35): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3744,50): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3746,50): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3747,35): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3872,119): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3872,56): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3874,96): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3874,67): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3874,57): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3874,49): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(3982,13): warning C4804: '>': unsafe use of type 'bool' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4144,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4250,46): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4256,125): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4290,119): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(16,8): error C3668: 'MasterRenderer::Render': method with override specifier 'override' did not override any base class methods
-28>(compiling source file '../GameGuru/Source/M-GridEditB.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4926,24): error C2039: 'GetDrawCalls': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4926,24): error C3861: 'GetDrawCalls': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4927,25): error C2039: 'GetDrawCallsShadows': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4927,25): error C3861: 'GetDrawCallsShadows': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4928,25): error C2039: 'GetDrawCallsTransparent': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4928,25): error C3861: 'GetDrawCallsTransparent': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4930,26): error C2039: 'GetPolygons': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4930,26): error C3861: 'GetPolygons': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4931,32): error C2039: 'GetPolygonsShadows': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4931,32): error C3861: 'GetPolygonsShadows': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4932,37): error C2039: 'GetPolygonsTransparent': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4932,37): error C3861: 'GetPolygonsTransparent': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4939,43): error C2039: 'GetProfilerData': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(4939,43): error C3861: 'GetProfilerData': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(5327,102): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(5363,93): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6013,79): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6014,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6101,17): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6104,30): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6193,27): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6295,68): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6314,68): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6641,79): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6642,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6823,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6824,68): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6951,27): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6952,69): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6962,62): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(6988,62): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7001,62): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7220,14): error C2039: 'SetTransparentShadowsEnabled': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7220,14): error C3861: 'SetTransparentShadowsEnabled': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7235,16): error C2660: 'wi::renderer::SetShadowProps2D': function does not take 2 arguments
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(1129,7):
-28>    see declaration of 'wi::renderer::SetShadowProps2D'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7235,16):
-28>    while trying to match the argument list '(int, int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7237,16): error C2660: 'wi::renderer::SetShadowProps2D': function does not take 2 arguments
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(1129,7):
-28>    see declaration of 'wi::renderer::SetShadowProps2D'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7237,16):
-28>    while trying to match the argument list '(int, int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7258,16): error C2039: 'SetShadowPropsSpot2D': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7258,16): error C3861: 'SetShadowPropsSpot2D': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7260,16): error C2039: 'SetShadowPropsSpot2D': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7260,16): error C3861: 'SetShadowPropsSpot2D': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7285,16): error C2660: 'wi::renderer::SetShadowPropsCube': function does not take 2 arguments
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(1130,7):
-28>    see declaration of 'wi::renderer::SetShadowPropsCube'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7285,16):
-28>    while trying to match the argument list '(int, int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7287,16): error C2660: 'wi::renderer::SetShadowPropsCube': function does not take 2 arguments
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(1130,7):
-28>    see declaration of 'wi::renderer::SetShadowPropsCube'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7287,16):
-28>    while trying to match the argument list '(int, int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7302,12): error C2039: 'fogEnd': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7303,12): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7304,12): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7305,12): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7306,12): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7320,47): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7321,49): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7322,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7327,101): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7327,73): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7327,44): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7336,12): error C2039: 'cloudScale': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7339,13): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7340,13): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7341,39): error C2039: 'CoverageAmount': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7342,39): error C2039: 'CoverageMinimum': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7343,39): error C2039: 'WindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7350,13): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7351,13): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7352,39): error C2039: 'CloudStartHeight': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7353,39): error C2039: 'CoverageAmount': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7354,39): error C2039: 'CoverageMinimum': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7355,39): error C2039: 'CloudThickness': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7356,39): error C2039: 'WindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7357,39): error C2039: 'CoverageWindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7363,13): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7364,13): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7366,39): error C2039: 'CoverageAmount': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7367,39): error C2039: 'CoverageMinimum': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7368,39): error C2039: 'WindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7382,47): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7383,49): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7384,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7386,12): error C2039: 'fogEnd': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7387,12): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7388,12): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7389,12): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7390,12): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7397,12): error C2039: 'cloudScale': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7401,13): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7402,13): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7403,39): error C2039: 'CoverageAmount': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7404,39): error C2039: 'CoverageMinimum': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7405,39): error C2039: 'WindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7411,13): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7412,13): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7413,39): error C2039: 'CloudStartHeight': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7414,39): error C2039: 'CoverageAmount': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7415,39): error C2039: 'CoverageMinimum': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7416,39): error C2039: 'CloudThickness': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7417,39): error C2039: 'WindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7418,39): error C2039: 'CoverageWindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7424,13): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7425,13): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7427,39): error C2039: 'CoverageAmount': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7428,39): error C2039: 'CoverageMinimum': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7429,39): error C2039: 'WindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7434,12): error C2039: 'pp_voxel_steps': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7438,12): error C2039: 'pp_alpha': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7440,12): error C2039: 'tree_wind': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7441,12): error C2039: 'tree_sss': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7444,13): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7446,13): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7448,13): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7468,29): error C2039: 'fogMaxDist': is not a member of 'wi::Ocean::OceanParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiOcean.h(13,10):
-28>    see declaration of 'wi::Ocean::OceanParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7469,29): error C2039: 'fogMinDist': is not a member of 'wi::Ocean::OceanParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiOcean.h(13,10):
-28>    see declaration of 'wi::Ocean::OceanParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7470,29): error C2039: 'fogMinAmount': is not a member of 'wi::Ocean::OceanParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiOcean.h(13,10):
-28>    see declaration of 'wi::Ocean::OceanParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7481,101): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7481,73): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7481,44): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7510,106): error C2039: 'IMPORT_COLORGRADINGLUT': is not a member of 'wi::resourcemanager'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(50,12):
-28>    see declaration of 'wi::resourcemanager'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7510,106): error C2065: 'IMPORT_COLORGRADINGLUT': undeclared identifier
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7523,20): error C2039: 'setBloomStrength': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7633,28): error C2039: 'Set3DResolution': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7634,28): error C2039: 'SetFSRScale': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7644,28): error C2039: 'Set3DResolution': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7645,28): error C2039: 'SetFSRScale': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7655,28): error C2039: 'Set3DResolution': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7656,28): error C2039: 'SetFSRScale': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7666,28): error C2039: 'Set3DResolution': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7667,28): error C2039: 'SetFSRScale': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7678,28): error C2039: 'Set3DResolution': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7679,28): error C2039: 'SetFSRScale': is not a member of 'MasterRenderer'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(8,7):
-28>    see declaration of 'MasterRenderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7720,15): error C2039: 'SetGamma': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7720,15): error C2660: 'SetGamma': function does not take 1 arguments
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\CGfxC.h(201,19):
-28>    see declaration of 'SetGamma'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7720,15):
-28>    while trying to match the argument list '(float)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7725,14): error C2039: 'SetDeSaturate': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-GridEditB.cpp(7725,14): error C1003: error count exceeds 100; stopping compilation
 28>M-Gun.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-Gun.cpp')
@@ -6982,69 +5626,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-LUA-Entity.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(89,54): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1229,96): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1229,73): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1229,50): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1251,98): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1251,75): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1251,52): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1270,45): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1270,44): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1306,101): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1306,77): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1306,53): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1311,100): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1311,76): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1311,52): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1360,24): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1372,19): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1376,30): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1494,26): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1495,27): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1671,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1694,24): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1702,46): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1757,31): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1804,24): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1805,89): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1806,89): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1986,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1992,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(1998,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2096,71): warning C4244: '=': conversion from 'DWORD' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2111,71): warning C4244: '=': conversion from 'DWORD' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2127,71): warning C4244: '=': conversion from 'DWORD' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2142,71): warning C4244: '=': conversion from 'DWORD' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2219,27): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2220,28): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2223,57): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2223,44): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2234,32): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2234,19): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2249,34): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2249,21): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2292,55): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2292,44): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2292,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2325,35): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2337,36): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2424,49): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2429,67): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2465,22): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2466,38): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2471,22): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2472,41): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2505,23): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2553,16): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2557,16): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2561,16): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2570,69): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2571,69): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2572,69): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2573,54): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2828,32): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-Entity.cpp(2850,45): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(8,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
+28>(compiling source file '../GameGuru/Source/M-LUA-Entity.cpp')
 28>M-LUA-General.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-LUA-General.cpp')
@@ -7062,74 +5645,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-LUA-General.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(8,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-LUA-General.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-LUA-General.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(192,28): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(206,92): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(212,53): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(216,63): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(220,52): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(230,69): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(230,55): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(235,65): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(235,53): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(239,60): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(239,48): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(275,15): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(276,15): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(691,23): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(701,38): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(718,41): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(798,28): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(804,24): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(810,26): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(816,28): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(823,28): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(1103,37): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(1636,24): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA-General.cpp(1637,76): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>M-LUA.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-LUA.cpp')
@@ -7147,59 +5664,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-LUA.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(4,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-LUA.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-LUA.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(270,12): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(290,25): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(413,21): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(470,74): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(471,76): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(478,21): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(679,76): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(879,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-LUA.cpp(1220,18): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>Compiling...
 28>M-MapFile.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
@@ -7218,106 +5684,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-MapFile.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(4,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-MapFile.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-MapFile.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(51,21): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(104,22): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(286,37): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(360,58): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(516,25): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(570,66): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(610,23): warning C4129: '_': unrecognized character escape sequence
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(615,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(734,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(780,69): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(1172,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(1517,56): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(1518,57): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(1519,57): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(1578,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(1579,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(1580,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(1950,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(2454,100): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(2460,100): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(2689,88): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(2770,29): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(2822,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(3017,104): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(3018,100): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(3019,100): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(3020,100): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(3021,100): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(3022,100): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(3435,56): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(3812,77): warning C4552: '+': result of expression not used
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4454,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4576,23): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4596,176): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4597,177): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4598,182): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4599,182): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4600,176): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4601,173): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4603,178): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4913,27): warning C4244: 'initializing': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4918,68): warning C4244: '=': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4920,65): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4922,68): warning C4244: '=': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4924,65): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4926,68): warning C4244: '=': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4928,65): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(4940,29): warning C4244: 'initializing': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(5145,24): warning C4244: 'initializing': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(5155,56): warning C4244: '=': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(5158,56): warning C4244: '=': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(5218,27): warning C4244: 'initializing': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(5228,58): warning C4244: '=': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(5233,58): warning C4244: '=': conversion from 'float' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(5292,15): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-MapFile.cpp(5509,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 28>M-Material.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-Material.cpp')
@@ -7595,90 +5963,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-Physics.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(4,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-Physics.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-Physics.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(63,45): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(225,76): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(259,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(567,32): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(722,55): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(737,55): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(794,55): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(844,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(857,18): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(858,20): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(912,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(960,58): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(960,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1025,87): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1029,58): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1029,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1035,52): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1035,41): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1040,54): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1040,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1045,58): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1045,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1050,58): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1050,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1055,56): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1055,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1111,37): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1124,39): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1125,39): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1126,39): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1128,18): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1129,18): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1130,18): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1131,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1170,43): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1185,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1186,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1205,27): warning C4244: '=': conversion from 'float' to 'LONGLONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1211,27): warning C4244: '=': conversion from 'float' to 'LONGLONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Physics.cpp(1215,10): error C1083: Cannot open include file: '..\..\..\WICKEDREPO\WickedEngine\wiProfiler.h': No such file or directory
 28>M-Postprocess.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-Postprocess.cpp')
@@ -7978,12 +6264,20 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-Sliders.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(95,16): error C2039: 'ResetPeek': is not a member of 'wi::profiler'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
+28>    see declaration of 'wi::profiler'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(95,16): error C3861: 'ResetPeek': identifier not found
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(138,41): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(139,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(145,54): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(146,55): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(147,44): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(147,37): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(302,39): error C2039: 'GetDevice': is not a member of 'wi::renderer'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
+28>    see declaration of 'wi::renderer'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(302,39): error C3861: 'GetDevice': identifier not found
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(421,59): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(751,73): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Sliders.cpp(752,74): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
@@ -8062,1340 +6356,7 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-TerrainNew.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-TerrainNew.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-TerrainNew.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(16,8): error C3668: 'MasterRenderer::Render': method with override specifier 'override' did not override any base class methods
-28>(compiling source file '../GameGuru/Source/M-TerrainNew.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(226,22): warning C4305: 'initializing': truncation from '__int64' to 'int'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(226,22): warning C4309: 'initializing': truncation of constant value
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(234,19): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(391,33): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(393,33): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(401,24): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(401,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(402,24): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(402,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(403,52): warning C4244: '=': conversion from 'double' to '_Ty', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(403,52): warning C4244:         with
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(403,52): warning C4244:         [
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(403,52): warning C4244:             _Ty=float
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(403,52): warning C4244:         ]
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(472,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(546,19): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(558,101): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(558,90): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(562,49): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(562,38): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(578,101): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(578,90): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(581,57): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(581,46): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(596,101): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(596,90): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(599,55): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(599,44): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(627,23): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(641,54): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(681,54): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(721,54): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(761,54): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(794,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(798,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1275,52): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1479,22): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1480,22): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1497,42): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1498,42): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1526,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1613,20): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1614,20): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1730,32): warning C4305: 'initializing': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1734,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1740,38): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1741,28): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1743,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1747,24): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1754,23): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1758,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1779,82): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1784,161): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1784,141): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,188): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,183): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,178): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,173): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,160): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,155): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,150): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,145): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,72): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1786,52): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1798,164): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1798,144): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,185): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,180): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,175): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,170): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,157): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,152): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,147): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,142): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,69): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1799,49): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1812,165): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1812,145): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,177): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,172): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,167): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,154): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,149): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,144): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,139): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,66): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1813,46): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1827,162): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1827,142): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,183): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,178): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,173): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,168): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,155): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,150): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,145): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,140): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1828,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1842,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1850,71): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1856,38): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1857,28): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1859,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1863,24): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1870,23): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1875,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1921,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1921,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,177): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,172): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,167): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,162): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,149): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,144): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,139): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,134): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,66): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1924,46): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1934,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1934,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,178): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,173): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,168): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,163): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,150): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,145): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,140): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,135): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1937,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1948,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1948,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,196): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,191): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,186): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,181): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,168): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,163): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,158): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,153): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,69): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1951,49): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1961,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1961,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,195): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,190): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,185): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,180): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,167): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,162): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,157): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,152): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,68): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1964,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1974,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1974,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,194): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,189): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,184): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,166): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,156): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1977,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1987,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1987,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,197): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,187): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,169): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,159): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,154): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,70): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1990,50): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(1998,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2005,71): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2011,38): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2012,28): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2014,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2018,24): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2025,23): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2030,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2041,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2041,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,207): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,202): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,197): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,174): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,169): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,94): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2044,74): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2062,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2062,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,210): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,205): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,200): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,195): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,177): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,172): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,167): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,97): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2065,77): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2084,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2084,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,194): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,189): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,184): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,166): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,156): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2087,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2102,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2102,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,194): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,189): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,184): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,166): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,156): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2105,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2121,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2121,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,193): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,188): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,183): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,178): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,165): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,160): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,155): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,150): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,66): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2124,46): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2148,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2148,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,191): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,186): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,181): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,176): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,163): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,158): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,153): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,148): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,64): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2151,44): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2167,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2167,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,189): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,184): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,174): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,156): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,146): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2170,42): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2186,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2186,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,190): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,185): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,180): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,175): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,162): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,157): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,152): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,147): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,63): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2189,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2205,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2205,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,187): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,177): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,159): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,154): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,149): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,65): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2208,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2221,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2228,24): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2231,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2239,126): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2239,104): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,225): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,220): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,215): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,210): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,197): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,187): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,96): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2243,74): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2254,126): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2254,104): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,226): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,221): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,216): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,211): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,198): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,193): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,188): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,183): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,97): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2257,75): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2264,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2269,23): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2273,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2279,125): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2279,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,224): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,219): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,214): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,209): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,196): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,191): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,186): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,181): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,95): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2283,73): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2294,125): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2294,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,225): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,220): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,215): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,210): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,197): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,187): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,96): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2297,74): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2318,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2350,116): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2388,111): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2413,15): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2417,40): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2428,157): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2429,157): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2459,135): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2465,135): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2499,29): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2500,29): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2503,17): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2505,25): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2509,55): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2510,56): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2529,17): error C2039: 'tree_wind': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2541,17): error C2039: 'tree_sss': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2545,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2546,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2564,43): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2565,61): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2570,43): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2571,61): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2619,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2620,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2635,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2662,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2663,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2664,65): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2737,33): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2739,33): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2747,24): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2747,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2748,24): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2748,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2749,52): warning C4244: '=': conversion from 'double' to '_Ty', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2749,52): warning C4244:         with
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2749,52): warning C4244:         [
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2749,52): warning C4244:             _Ty=float
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2749,52): warning C4244:         ]
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2805,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2857,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2863,38): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2864,28): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2866,56): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2869,24): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2876,23): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2881,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2894,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2894,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,190): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,185): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,180): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,175): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,162): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,157): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,152): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,147): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,63): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2897,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2909,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2909,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,194): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,189): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,184): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,166): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,156): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2912,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2924,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2924,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,196): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,191): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,186): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,181): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,168): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,163): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,158): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,153): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,69): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2927,49): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2939,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2939,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,194): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,189): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,184): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,166): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,161): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,156): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2942,47): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2955,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2955,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,193): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,188): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,183): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,178): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,165): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,160): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,155): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,150): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,66): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2958,46): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2975,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2975,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,187): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,177): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,159): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,154): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,149): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,65): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2979,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2989,123): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2989,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,192): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,187): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,182): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,177): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,159): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,154): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,149): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,65): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(2992,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,179): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,174): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,169): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,164): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,151): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,146): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,141): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,136): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,66): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3010,46): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,181): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,176): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,171): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,166): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,153): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,148): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,143): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,138): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,68): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3022,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3035,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3038,74): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3040,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3051,61): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3065,122): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3065,102): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,195): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,190): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,185): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,180): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,167): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,162): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,157): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,152): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,68): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3070,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3080,122): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3080,102): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,195): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,190): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,185): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,180): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,167): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,162): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,157): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,152): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,68): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3084,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3094,122): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3094,102): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,193): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,188): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,183): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,178): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,165): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,160): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,155): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,150): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,66): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3098,46): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3104,19): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3118,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3129,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3143,33): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3166,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3267,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3307,94): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3308,91): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3308,73): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3326,93): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3327,62): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3327,44): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3354,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3436,15): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3476,27): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3518,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3519,28): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3534,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3538,43): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3539,33): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3566,80): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3566,56): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3635,115): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3635,91): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3842,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(3990,15): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4030,27): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4073,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4074,28): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4089,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4093,43): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4094,33): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4121,80): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4121,56): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4182,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4184,78): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4201,115): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4201,91): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4741,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4759,24): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4771,24): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4841,30): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4865,23): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4892,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4893,28): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4907,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4911,43): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4912,33): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4934,112): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4934,88): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4935,106): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4937,89): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4950,26): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4952,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4954,78): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4971,120): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(4971,96): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5016,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5017,62): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5029,62): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5374,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5538,27): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5577,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5578,28): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5592,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5596,43): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5597,33): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5614,78): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5614,54): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5688,23): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5689,96): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5694,115): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5694,91): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5791,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5792,63): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(5904,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6110,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6111,28): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6125,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6129,43): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6130,33): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6147,78): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6147,54): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6162,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6164,76): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6167,66): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6167,51): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6179,23): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6180,96): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6185,115): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6185,91): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6214,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6347,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6348,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6349,43): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6350,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6354,70): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6355,74): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6356,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6357,74): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6417,119): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6425,119): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6492,19): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6493,19): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6494,178): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6494,87): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6494,76): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6526,112): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6526,81): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6526,49): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6528,89): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6535,66): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6536,70): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6537,68): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6538,70): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6574,128): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6629,150): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6681,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6682,63): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6729,17): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6740,99): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6740,88): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6744,48): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6744,37): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6757,99): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6757,88): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6760,49): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6760,38): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6775,99): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6775,88): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6778,49): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6778,38): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6829,96): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6829,70): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6829,44): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6830,91): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6837,57): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6838,57): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6839,57): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(6984,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7064,15): error C2039: 'pp_voxel_steps': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7068,15): error C2039: 'pp_alpha': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7071,16): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7073,16): error C2039: 'SetPPSnowEnabled': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7248,26): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7252,90): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7253,33): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7269,65): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7269,41): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7311,41): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7313,77): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7329,115): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7329,91): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7339,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7360,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7360,76): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7360,46): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7361,85): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7368,61): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7369,65): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7370,63): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7388,113): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7388,79): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7388,44): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7389,85): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7396,71): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7397,75): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7398,73): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7418,90): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7418,64): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7418,38): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7419,86): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7426,58): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7427,58): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7428,58): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7446,108): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7446,76): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7446,43): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7447,85): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7454,68): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7455,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7456,70): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7522,116): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7526,14): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7527,40): error C2039: 'CoverageAmount': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7536,132): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7540,40): error C2039: 'CoverageMinimum': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7553,14): error C2039: 'cloudScale': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7554,40): error C2039: 'CloudStartHeight': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7569,40): error C2039: 'CloudThickness': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7577,144): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7580,14): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7581,40): error C2039: 'CoverageWindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7582,40): error C2039: 'WindSpeed': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7935,48): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(7985,48): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8020,26): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8072,53): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8076,54): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8078,54): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8169,52): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8170,52): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8239,24): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8361,57): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8362,57): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8364,53): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8365,53): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8428,36): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8432,83): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8432,67): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8432,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8435,83): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8435,67): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8435,51): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8490,22): warning C4305: '*=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8491,44): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8621,21): warning C4305: '*=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8622,43): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8663,92): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8667,70): warning C4305: 'argument': truncation from 'double' to 'const float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8677,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8685,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8688,32): warning C4305: '+=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8771,26): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8772,28): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8775,67): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8775,51): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8779,26): warning C4244: '=': conversion from 'double' to 'LONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8780,25): warning C4244: '=': conversion from 'double' to 'LONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8781,27): warning C4244: '=': conversion from 'float' to 'LONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8782,53): warning C4244: '=': conversion from 'double' to 'LONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8802,17): warning C4305: 'initializing': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8803,18): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8804,32): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8808,16): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8811,16): error C2039: 'fogColorAndOpacity': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8815,19): warning C4305: 'initializing': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8816,41): error C2039: 'CoverageAmount': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8819,42): error C2039: 'CloudStartHeight': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8823,42): error C2039: 'CloudStartHeight': is not a member of 'VolumetricCloudParameters'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\shaders\ShaderInterop_Weather.h(158,20):
-28>    see declaration of 'VolumetricCloudParameters'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8857,76): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8857,60): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8881,62): warning C4244: '=': conversion from 'double' to 'LONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8882,61): warning C4244: '=': conversion from 'double' to 'LONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8883,63): warning C4244: '=': conversion from 'float' to 'LONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8884,91): warning C4244: '=': conversion from 'double' to 'LONG', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8931,19): warning C4305: '*=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8983,104): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(8984,92): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9025,23): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9028,57): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9050,56): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9086,91): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9134,19): warning C4305: 'initializing': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9141,25): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9144,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9206,27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9207,27): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9223,76): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9238,18): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9257,34): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19): error C2678: binary '!=': no operator found which takes a left-hand operand of type 'wi::Resource' (or there is no acceptable conversion)
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1373,13):
-28>    could be 'bool operator !=(const D3D11_BOX &,const D3D11_BOX &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>        'bool operator !=(const D3D11_BOX &,const D3D11_BOX &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_BOX &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_BOX'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1329,13):
-28>    or       'bool operator !=(const D3D11_RECT &,const D3D11_RECT &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>        'bool operator !=(const D3D11_RECT &,const D3D11_RECT &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_RECT &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_RECT'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1145,13):
-28>    or       'bool operator !=(const D3D11_VIEWPORT &,const D3D11_VIEWPORT &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>        'bool operator !=(const D3D11_VIEWPORT &,const D3D11_VIEWPORT &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_VIEWPORT &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_VIEWPORT'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\guiddef.h(197,15):
-28>    or       'bool operator !=(const GUID &,const GUID &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>        'bool operator !=(const GUID &,const GUID &)': cannot convert argument 1 from 'wi::Resource' to 'const GUID &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>            Reason: cannot convert from 'wi::Resource' to 'const GUID'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9309,19):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,15): error C2679: binary '=': no operator found which takes a right-hand operand of type 'nullptr' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,15):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'nullptr' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>            Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,15):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'nullptr' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>            Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,26):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9314,15):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9316,17): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9317,17): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19): error C2678: binary '!=': no operator found which takes a left-hand operand of type 'wi::Resource' (or there is no acceptable conversion)
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1373,13):
-28>    could be 'bool operator !=(const D3D11_BOX &,const D3D11_BOX &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>        'bool operator !=(const D3D11_BOX &,const D3D11_BOX &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_BOX &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_BOX'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1329,13):
-28>    or       'bool operator !=(const D3D11_RECT &,const D3D11_RECT &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>        'bool operator !=(const D3D11_RECT &,const D3D11_RECT &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_RECT &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_RECT'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1145,13):
-28>    or       'bool operator !=(const D3D11_VIEWPORT &,const D3D11_VIEWPORT &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>        'bool operator !=(const D3D11_VIEWPORT &,const D3D11_VIEWPORT &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_VIEWPORT &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_VIEWPORT'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\guiddef.h(197,15):
-28>    or       'bool operator !=(const GUID &,const GUID &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>        'bool operator !=(const GUID &,const GUID &)': cannot convert argument 1 from 'wi::Resource' to 'const GUID &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>            Reason: cannot convert from 'wi::Resource' to 'const GUID'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9327,19):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,15): error C2679: binary '=': no operator found which takes a right-hand operand of type 'nullptr' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,15):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'nullptr' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>            Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,15):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'nullptr' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>            Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,26):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9332,15):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9334,17): error C2039: 'cloudSpeed': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9335,17): error C2039: 'cloudiness': is not a member of 'wi::scene::WeatherComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1814,21):
-28>    see declaration of 'wi::scene::WeatherComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9391,40): warning C4305: 'initializing': truncation from 'int' to 'bool'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9398,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9414,32): warning C4305: '=': truncation from 'int' to 'bool'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9442,55): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9443,56): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9453,56): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9454,59): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9465,71): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9512,37): warning C4806: '!=': unsafe operation: no value of type 'bool' promoted to type 'int' can equal the given constant
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9514,33): warning C4305: '=': truncation from 'int' to 'bool'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9518,55): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9519,56): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9532,59): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9588,37): warning C4806: '!=': unsafe operation: no value of type 'bool' promoted to type 'int' can equal the given constant
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9590,33): warning C4305: '=': truncation from 'int' to 'bool'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9593,55): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9594,56): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9606,59): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9660,37): warning C4806: '!=': unsafe operation: no value of type 'bool' promoted to type 'int' can equal the given constant
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9662,33): warning C4305: '=': truncation from 'int' to 'bool'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9665,55): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9666,56): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9679,59): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9690,71): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9733,37): warning C4806: '!=': unsafe operation: no value of type 'bool' promoted to type 'int' can equal the given constant
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9735,33): warning C4305: '=': truncation from 'int' to 'bool'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9739,55): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9740,56): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9752,59): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9763,71): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9806,37): warning C4806: '!=': unsafe operation: no value of type 'bool' promoted to type 'int' can equal the given constant
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9808,33): warning C4305: '=': truncation from 'int' to 'bool'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9812,55): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9813,56): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9825,59): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9878,37): warning C4806: '!=': unsafe operation: no value of type 'bool' promoted to type 'int' can equal the given constant
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9880,33): warning C4305: '=': truncation from 'int' to 'bool'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9883,55): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9884,56): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9896,59): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9955,55): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9956,56): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(9969,59): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10023,54): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10073,38): warning C4805: '!=': unsafe mix of type 'bool' and type 'int' in operation
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10089,61): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10091,62): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10092,66): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10093,64): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10094,66): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10095,80): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10096,82): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10097,76): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10098,76): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10099,72): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10100,72): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10122,47): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10175,96): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10213,90): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10217,85): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10236,85): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10306,61): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10319,61): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10433,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10435,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10458,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10460,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10483,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10485,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10487,20): warning C4244: 'initializing': conversion from 'uint32_t' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10511,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10513,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10539,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10541,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10564,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10566,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10589,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10591,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10615,53): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10657,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10658,23): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10660,29): error C2039: 'GetDrawCalls': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10660,29): error C3861: 'GetDrawCalls': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10661,30): error C2039: 'GetDrawCallsShadows': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10661,30): error C3861: 'GetDrawCallsShadows': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10662,30): error C2039: 'GetDrawCallsTransparent': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10662,30): error C3861: 'GetDrawCallsTransparent': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10664,31): error C2039: 'GetPolygons': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10664,31): error C3861: 'GetPolygons': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10665,37): error C2039: 'GetPolygonsShadows': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10665,37): error C3861: 'GetPolygonsShadows': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10666,42): error C2039: 'GetPolygonsTransparent': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10666,42): error C3861: 'GetPolygonsTransparent': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10680,48): error C2039: 'GetProfilerData': is not a member of 'wi::profiler'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiProfiler.h(20,11):
-28>    see declaration of 'wi::profiler'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10680,48): error C3861: 'GetProfilerData': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10791,46): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10831,105): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10925,52): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10936,55): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(10939,52): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11000,27): warning C4244: '*=': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11038,24): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11151,89): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11185,59): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11242,29): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11243,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11244,66): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11306,31): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11310,101): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11347,77): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11347,36): warning C4244: 'initializing': conversion from 'float' to 'const int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11503,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11513,23): warning C4305: 'initializing': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11516,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11526,21): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11527,34): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11528,90): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11530,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11531,35): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11533,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11535,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11537,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11539,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11541,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11543,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11545,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11547,105): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11549,165): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11549,120): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11603,51): error C2039: 'GetDevice': is not a member of 'wi::renderer'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiRenderer.h(27,11):
-28>    see declaration of 'wi::renderer'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11603,51): error C3861: 'GetDevice': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11619,19): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11621,19): warning C4244: '=': conversion from 'UINT' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11623,18): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11624,18): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11629,76): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11629,61): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11629,48): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11629,41): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11751,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11752,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11875,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11887,31): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(11908,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12034,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12129,16): error C2079: 'outputStream' uses undefined class 'std::basic_ofstream<char,std::char_traits<char>>'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,16): error C2677: binary '<<': no global operator found which takes type 'std::string' (or there is no acceptable conversion)
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\cstddef(37,27):
-28>    could be 'std::byte std::operator <<(const std::byte,const _IntType) noexcept'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::byte std::operator <<(const std::byte,const _IntType) noexcept': could not deduce template argument for '__formal'
-28>            C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\cstddef(36,39):
-28>            'std::enable_if_t<false,int>' : Failed to specialize alias template
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\memory(1984,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::shared_ptr<_Ty> &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::shared_ptr<_Ty> &)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\memory(3792,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::unique_ptr<_Ty2,_Dx2> &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::unique_ptr<_Ty2,_Dx2> &)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\thread(251,37):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,std::thread::id)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,std::thread::id)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_string_view.hpp(1976,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::basic_string_view<_Elem,_Traits>)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::basic_string_view<_Elem,_Traits>)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\xstring(3444,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::basic_string<_Elem,_Traits,_Alloc> &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::basic_string<_Elem,_Traits,_Alloc> &)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\valarray(796,26):
-28>    or       'std::valarray<_Ty> std::operator <<(const std::valarray<_Ty> &,const valarray<_Ty>::value_type &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::valarray<_Ty> std::operator <<(const std::valarray<_Ty> &,const valarray<_Ty>::value_type &)': could not deduce template argument for 'const std::valarray<_Ty> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\valarray(806,26):
-28>    or       'std::valarray<_Ty> std::operator <<(const valarray<_Ty>::value_type &,const std::valarray<_Ty> &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::valarray<_Ty> std::operator <<(const valarray<_Ty>::value_type &,const std::valarray<_Ty> &)': could not deduce template argument for 'const std::valarray<_Ty> &' from 'std::string'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\valarray(980,26):
-28>    or       'std::valarray<_Ty> std::operator <<(const std::valarray<_Ty> &,const std::valarray<_Ty> &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::valarray<_Ty> std::operator <<(const std::valarray<_Ty> &,const std::valarray<_Ty> &)': could not deduce template argument for 'const std::valarray<_Ty> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(688,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const char *)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const char *)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(732,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,char)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,char)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(768,31):
-28>    or       'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,const char *)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,const char *)': could not deduce template argument for 'std::basic_ostream<char,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(813,31):
-28>    or       'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,char)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,char)': could not deduce template argument for 'std::basic_ostream<char,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(851,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const _Elem *)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const _Elem *)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(894,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,_Elem)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,_Elem)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(930,31):
-28>    or       'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,const signed char *)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,const signed char *)': could not deduce template argument for 'std::basic_ostream<char,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(936,31):
-28>    or       'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,signed char)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,signed char)': could not deduce template argument for 'std::basic_ostream<char,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(941,31):
-28>    or       'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,const unsigned char *)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,const unsigned char *)': could not deduce template argument for 'std::basic_ostream<char,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(947,31):
-28>    or       'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,unsigned char)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<char,_Traits> &std::operator <<(std::basic_ostream<char,_Traits> &,unsigned char)': could not deduce template argument for 'std::basic_ostream<char,_Traits> &' from '<error type>'
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(1005,9):
-28>    or       '_Ostr &&std::operator <<(_Ostr &&,const _Ty &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        '_Ostr &&std::operator <<(_Ostr &&,const _Ty &)': could not deduce template argument for '__formal'
-28>            C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(1004,103):
-28>            '<template-parameter>': you cannot create a pointer to a reference
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\__msvc_ostream.hpp(1031,32):
-28>    or       'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::error_code &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12133,3):
-28>        'std::basic_ostream<_Elem,_Traits> &std::operator <<(std::basic_ostream<_Elem,_Traits> &,const std::error_code &)': could not deduce template argument for 'std::basic_ostream<_Elem,_Traits> &' from '<error type>'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12143,17): error C2079: 'inputStream' uses undefined class 'std::basic_ifstream<char,std::char_traits<char>>'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(12148,16): warning C4552: '>>': result of expression not used
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-TerrainNew.cpp(19,10): error C1083: Cannot open include file: 'Utility/stb_image.h': No such file or directory
 28>M-Titles.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-Titles.cpp')
@@ -9648,210 +6609,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-Visuals.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(4,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-Visuals.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-Visuals.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(83,31): warning C4305: 'initializing': truncation from 'double' to 'const float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(91,37): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(94,37): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(98,28): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(122,31): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(149,36): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(169,88): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(170,114): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(171,112): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(359,36): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15): error C2678: binary '!=': no operator found which takes a left-hand operand of type 'wi::Resource' (or there is no acceptable conversion)
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1373,13):
-28>    could be 'bool operator !=(const D3D11_BOX &,const D3D11_BOX &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>        'bool operator !=(const D3D11_BOX &,const D3D11_BOX &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_BOX &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_BOX'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1329,13):
-28>    or       'bool operator !=(const D3D11_RECT &,const D3D11_RECT &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>        'bool operator !=(const D3D11_RECT &,const D3D11_RECT &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_RECT &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_RECT'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\D3D11.h(1145,13):
-28>    or       'bool operator !=(const D3D11_VIEWPORT &,const D3D11_VIEWPORT &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>        'bool operator !=(const D3D11_VIEWPORT &,const D3D11_VIEWPORT &)': cannot convert argument 1 from 'wi::Resource' to 'const D3D11_VIEWPORT &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>            Reason: cannot convert from 'wi::Resource' to 'const D3D11_VIEWPORT'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\guiddef.h(197,15):
-28>    or       'bool operator !=(const GUID &,const GUID &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>        'bool operator !=(const GUID &,const GUID &)': cannot convert argument 1 from 'wi::Resource' to 'const GUID &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>            Reason: cannot convert from 'wi::Resource' to 'const GUID'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(380,15):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,11): error C2679: binary '=': no operator found which takes a right-hand operand of type 'nullptr' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,11):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'nullptr' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>            Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,11):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'nullptr' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>            Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,22):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(385,11):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(420,36): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1237,36): warning C4305: '=': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1282,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1285,43): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1286,122): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1287,118): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1288,84): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1342,92): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1344,100): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1346,106): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1348,104): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1349,96): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1350,94): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1351,100): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1353,36): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1354,104): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1355,108): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1386,97): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1462,102): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1464,86): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1467,80): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1486,126): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1487,112): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1488,114): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1490,101): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1491,99): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1514,90): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1563,118): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1566,116): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1590,100): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1591,102): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1600,108): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1602,113): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1758,24): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1888,29): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1889,29): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1890,29): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1912,31): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1913,31): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1914,31): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(1954,27): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2292,77): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2297,82): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2572,46): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2573,45): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2577,70): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2578,68): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2582,70): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2583,68): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2596,39): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2597,111): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2598,111): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2602,38): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2603,109): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2604,109): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2662,48): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2673,57): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2673,49): warning C4305: 'argument': truncation from 'double' to 'float'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2707,37): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Visuals.cpp(2725,49): warning C4305: 'argument': truncation from 'double' to 'float'
 28>M-Waypoint.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file '../GameGuru/Source/M-Waypoint.cpp')
@@ -10154,59 +6913,8 @@ Rebuild started at 23:49...
 28>(compiling source file '../GameGuru/Source/M-Widget.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(4,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file '../GameGuru/Source/M-Widget.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file '../GameGuru/Source/M-Widget.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(231,71): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(232,81): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(450,38): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(451,38): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(472,53): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(473,53): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(1061,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(1062,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Source\M-Widget.cpp(1063,72): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 28>M-Workshop.cpp
 28>C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\minwindef.h(60,9): warning C4005: 'MAX_PATH': macro redefinition
 28>(compiling source file '../GameGuru/Source/M-Workshop.cpp')
@@ -10270,7 +6978,7 @@ Rebuild started at 23:49...
 28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\minwindef.h(60,9):
 28>    see previous definition of 'MAX_PATH'
 28>CustomShaders.cpp
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\CustomShaders.cpp(5,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\CustomShaders.cpp(2,10): error C1083: Cannot open include file: 'Utility/stb_image.h': No such file or directory
 28>Encryptor.cpp
 28>GameGuruMain.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
@@ -10289,51 +6997,7 @@ Rebuild started at 23:49...
 28>(compiling source file 'GameGuruMain.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file 'GameGuruMain.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file 'GameGuruMain.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\tracers\TracerManager.h(3,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(8,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file 'GameGuruMain.cpp')
 28>ChunkyTriMesh.cpp
 28>DebugDraw.cpp
@@ -10388,6 +7052,7 @@ Rebuild started at 23:49...
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGRecastDetour\Sample_TileMesh.cpp(478,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGRecastDetour\Sample_TileMesh.cpp(533,19): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 28>Bc7Compress.cpp
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\BC7Compress\Bc7Compress.cpp(19,10): error C1083: Cannot open include file: 'Utility/stb_image.h': No such file or directory
 28>Bc7Core.cpp
 28>Bc7CoreMode0.cpp
 28>Bc7CoreMode1.cpp
@@ -10406,29 +7071,10 @@ Rebuild started at 23:49...
 28>pch.cpp
 28>Worker.cpp
 28>GGGrass.cpp
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(56,23): error C2653: 'wiScene': is not a class or namespace name
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(5,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(56,32): error C2065: 'CameraComponent': undeclared identifier
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(56,49): error C2065: 'camera': undeclared identifier
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(56,57): error C2653: 'wiGraphics': is not a class or namespace name
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(56,69): error C2065: 'CommandList': undeclared identifier
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(56,81): error C2146: syntax error: missing ')' before identifier 'cmd'
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(57,32): error C2065: 'RAY': undeclared identifier
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(57,36): error C2146: syntax error: missing ')' before identifier 'ray'
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(59,46): error C2653: 'wiGraphics': is not a class or namespace name
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.h(59,58): error C2061: syntax error: identifier 'CommandList'
-28>(compiling source file 'GGTerrain/GGGrass.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGGrass.cpp(6,10): error C1083: Cannot open include file: 'wiRenderer.h': No such file or directory
 28>GGTerrain.cpp
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.cpp(10,10): error C1083: Cannot open include file: 'wiRenderer.h': No such file or directory
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.cpp(7,10): error C1083: Cannot open include file: 'Utility/stb_image.h': No such file or directory
 28>GGTerrainFile.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
 28>(compiling source file 'GGTerrain/GGTerrainFile.cpp')
@@ -10446,141 +7092,27 @@ Rebuild started at 23:49...
 28>(compiling source file 'GGTerrain/GGTerrainFile.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(4,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file 'GGTerrain/GGTerrainFile.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file 'GGTerrain/GGTerrainFile.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
 28>GGTrees.cpp
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(69,23): error C2065: 'RAY': undeclared identifier
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(5,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(69,27): error C2146: syntax error: missing ')' before identifier 'pickRay'
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(81,37): error C2653: 'wiScene': is not a class or namespace name
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(81,46): error C2065: 'CameraComponent': undeclared identifier
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(81,63): error C2065: 'camera': undeclared identifier
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(81,7): error C2182: 'GGTrees_UpdateFrustumCulling': this use of 'void' is not valid
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(82,59): error C2653: 'wiGraphics': is not a class or namespace name
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(82,71): error C2061: syntax error: identifier 'CommandList'
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(83,32): error C2065: 'RAY': undeclared identifier
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.h(83,36): error C2146: syntax error: missing ')' before identifier 'ray'
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\Shaders\GGTreesConstants.hlsli(53,72): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
-28>(compiling source file 'GGTerrain/GGTrees.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTrees.cpp(8,10): error C1083: Cannot open include file: 'wiRenderer.h': No such file or directory
 28>JSONElement.cpp
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\JSONElement.cpp(358,31): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\JSONElement.cpp(614,31): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
 28>SimplexNoise.cpp
 28>GPUParticles.cpp
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(66,36): error C2653: 'wiGraphics': is not a class or namespace name
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(8,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
 28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(66,48): error C2061: syntax error: identifier 'CommandList'
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(67,34): error C2653: 'wiScene': is not a class or namespace name
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(67,28): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(67,58): error C2143: syntax error: missing ',' before '&'
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(68,38): error C2653: 'wiScene': is not a class or namespace name
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(68,32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(68,63): error C2143: syntax error: missing ',' before '&'
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(69,44): error C2653: 'wiScene': is not a class or namespace name
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(69,38): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.h(69,69): error C2143: syntax error: missing ',' before '&'
-28>(compiling source file 'GPUParticles.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GPUParticles.cpp(11,10): error C1083: Cannot open include file: 'wiRenderer.h': No such file or directory
 28>master.cpp
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(16,8): error C3668: 'MasterRenderer::Render': method with override specifier 'override' did not override any base class methods
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(6,10): error C1083: Cannot open include file: 'WickedEngine.h': No such file or directory
 28>(compiling source file 'master.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3452,20): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-28>(compiling source file 'master.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(3954,32): warning C4305: 'initializing': truncation from 'double' to 'float'
-28>(compiling source file 'master.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\Types.h(4243,28): warning C4305: '=': truncation from 'double' to 'float'
-28>(compiling source file 'master.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-28>(compiling source file 'master.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\CFTPC.h(19,10): warning C4005: 'DARKSDK': macro redefinition
-28>(compiling source file 'master.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\CAnimation.h(50,9):
-28>    see previous definition of 'DARKSDK'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\DarkAI.h(4,9): warning C4005: 'DLLEXPORT': macro redefinition
-28>(compiling source file 'master.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
-28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.cpp(35,10): error C1083: Cannot open include file: 'wiECS.h': No such file or directory
 28>main.cpp
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(16,8): error C3668: 'MasterRenderer::Render': method with override specifier 'override' did not override any base class methods
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(6,10): error C1083: Cannot open include file: 'WickedEngine.h': No such file or directory
 28>(compiling source file 'main.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\main.cpp(435,16): error C2039: 'deletefromInput': is not a member of 'wi::backlog'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiBacklog.h(18,11):
-28>    see declaration of 'wi::backlog'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\main.cpp(435,16): error C3861: 'deletefromInput': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\main.cpp(440,16): error C2039: 'acceptInput': is not a member of 'wi::backlog'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiBacklog.h(18,11):
-28>    see declaration of 'wi::backlog'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\main.cpp(440,16): error C3861: 'acceptInput': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\main.cpp(447,16): error C2039: 'input': is not a member of 'wi::backlog'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiBacklog.h(18,11):
-28>    see declaration of 'wi::backlog'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\main.cpp(447,16): error C2882: 'input': illegal use of namespace identifier in expression
 28>Compiling...
 28>TracerManager.cpp
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\tracers\TracerManager.h(3,10): error C1083: Cannot open include file: 'wiGraphicsDevice.h': No such file or directory
-28>(compiling source file 'tracers/TracerManager.cpp')
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\tracers\TracerManager.cpp(6,10): error C1083: Cannot open include file: 'WickedEngine.h': No such file or directory
 28>BulletDebugDrawer.cpp
 28>C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\minwindef.h(60,9): warning C4005: 'MAX_PATH': macro redefinition
 28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
@@ -10602,6 +7134,230 @@ Rebuild started at 23:49...
 28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
 28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
 28>    see previous definition of 'DLLEXPORT'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(99,39): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(99,39):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(111,41): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(111,41):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(133,42): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(133,42):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(143,17): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(143,17):
+28>    while trying to match the argument list '(const DirectX::XMVECTOR, const DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(144,29): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(144,29):
+28>    while trying to match the argument list '(const DirectX::XMVECTOR, const DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(145,14): error C2593: 'operator *' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(355,16):
+28>    could be '__m128 operator *(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14806,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator *(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(145,14):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(149,17): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(149,17):
+28>    while trying to match the argument list '(const DirectX::XMVECTOR, const DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(150,29): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(150,29):
+28>    while trying to match the argument list '(const DirectX::XMVECTOR, const DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(151,30): error C2593: 'operator *' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(355,16):
+28>    could be '__m128 operator *(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14806,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator *(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(151,30):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(159,11): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(159,11):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(159,28): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(159,28):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(179,20): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(179,20):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(414,33): error C2593: 'operator +' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(345,16):
+28>    could be '__m128 operator +(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14784,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator +(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(414,33):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(415,33): error C2593: 'operator +' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(345,16):
+28>    could be '__m128 operator +(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14784,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator +(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(415,33):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(416,33): error C2593: 'operator +' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(345,16):
+28>    could be '__m128 operator +(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14784,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator +(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(416,33):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(417,33): error C2593: 'operator +' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(345,16):
+28>    could be '__m128 operator +(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14784,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator +(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(417,33):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(418,33): error C2593: 'operator +' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(345,16):
+28>    could be '__m128 operator +(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14784,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator +(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(418,33):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(419,32): error C2593: 'operator +' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(345,16):
+28>    could be '__m128 operator +(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14784,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator +(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(419,32):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(429,49): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(429,49):
+28>    while trying to match the argument list '(const DirectX::XMVECTOR, const DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(429,23): error C2660: 'DirectX::XMVector3Dot': function does not take 1 arguments
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(9470,29):
+28>    see declaration of 'DirectX::XMVector3Dot'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(429,23):
+28>    while trying to match the argument list '(const DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(715,25): error C2593: 'operator *' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(355,16):
+28>    could be '__m128 operator *(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14806,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator *(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(715,25):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, const DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(715,3): error C2660: 'DirectX::XMStoreFloat': function does not take 1 arguments
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathConvert.inl(1261,25):
+28>    see declaration of 'DirectX::XMStoreFloat'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(715,3):
+28>    while trying to match the argument list '(float *)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(716,25): error C2593: 'operator *' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(355,16):
+28>    could be '__m128 operator *(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14806,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator *(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(716,25):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, const DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(716,3): error C2660: 'DirectX::XMStoreFloat': function does not take 1 arguments
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathConvert.inl(1261,25):
+28>    see declaration of 'DirectX::XMStoreFloat'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiMath.h(716,3):
+28>    while trying to match the argument list '(float *)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiPrimitive.h(146,46): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiPrimitive.h(146,46):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiPrimitive.h(146,4): error C2660: 'DirectX::XMStoreFloat': function does not take 1 arguments
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathConvert.inl(1261,25):
+28>    see declaration of 'DirectX::XMStoreFloat'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiPrimitive.h(146,4):
+28>    while trying to match the argument list '(float *)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiVoxelGrid.h(70,21): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiVoxelGrid.h(70,21):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiVoxelGrid.h(71,19): error C2593: 'operator *' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(355,16):
+28>    could be '__m128 operator *(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14806,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator *(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiVoxelGrid.h(71,19):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
+28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiVoxelGrid.h(76,21): error C2593: 'operator -' is ambiguous
+28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
+28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BULLET\bullet-3.19\src\LinearMath\btScalar.h(350,16):
+28>    could be '__m128 operator -(const __m128,const __m128)'
+28>    C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\DirectXMathVector.inl(14795,29):
+28>    or       'DirectX::XMVECTOR DirectX::operator -(DirectX::FXMVECTOR,DirectX::FXMVECTOR) noexcept'
+28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiVoxelGrid.h(76,21):
+28>    while trying to match the argument list '(DirectX::XMVECTOR, DirectX::XMVECTOR)'
 28>D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGUI.h(937,8): warning C4003: not enough arguments for function-like macro invocation 'IsMinimized'
 28>(compiling source file 'Wicked-MAX/BulletDebugDrawer.cpp')
 28>wickedcalls.cpp
@@ -10611,831 +7367,8 @@ Rebuild started at 23:49...
 28>(compiling source file 'wickedcalls.cpp')
 28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\GameGuru\Include\types.h(4243,28): warning C4305: '=': truncation from 'double' to 'float'
 28>(compiling source file 'wickedcalls.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(16,8): error C3668: 'MasterRenderer::Render': method with override specifier 'override' did not override any base class methods
+28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\master.h(6,10): error C1083: Cannot open include file: 'WickedEngine.h': No such file or directory
 28>(compiling source file 'wickedcalls.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file 'wickedcalls.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(345,61):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95): error C2440: 'default argument': cannot convert from 'int' to 'wi::graphics::CommandList'
-28>(compiling source file 'wickedcalls.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>    'wi::graphics::CommandList::CommandList': no overloaded function could convert all the argument types
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        could be 'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(wi::graphics::CommandList &&)': cannot convert argument 1 from 'int' to 'wi::graphics::CommandList &&'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiGraphicsDevice.h(21,2):
-28>        or       'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>            'wi::graphics::CommandList::CommandList(const wi::graphics::CommandList &)': cannot convert argument 1 from 'int' to 'const wi::graphics::CommandList &'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Reason: cannot convert from 'int' to 'const wi::graphics::CommandList'
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>                Conversion requires a second user-defined-conversion operator or constructor
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\GGTerrain\GGTerrain.h(346,95):
-28>        while trying to match the argument list '(int)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Sprites\cspritemanagerc.h(35,67): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
-28>(compiling source file 'wickedcalls.cpp')
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\CFTPC.h(19,10): warning C4005: 'DARKSDK': macro redefinition
-28>(compiling source file 'wickedcalls.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\CAnimation.h(50,9):
-28>    see previous definition of 'DARKSDK'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Dark Basic Public Shared\Include\DarkAI.h(4,9): warning C4005: 'DLLEXPORT': macro redefinition
-28>(compiling source file 'wickedcalls.cpp')
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\SDK\BaseClasses\wxdebug.h(74,9):
-28>    see previous definition of 'DLLEXPORT'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(60,2): error C2872: 'unordered_map': ambiguous symbol
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\unordered_map(61,7):
-28>    could be 'std::unordered_map'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiUnorderedMap.h(21,57):
-28>    or       'wi::unordered_map = ska::flat_hash_map<K,V,H,E,A>'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(61,2): error C2872: 'unordered_map': ambiguous symbol
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\unordered_map(61,7):
-28>    could be 'std::unordered_map'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiUnorderedMap.h(21,57):
-28>    or       'wi::unordered_map = ska::flat_hash_map<K,V,H,E,A>'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(186,23): error C2039: 'FreeResource': is not a member of 'wi::resourcemanager'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(50,12):
-28>    see declaration of 'wi::resourcemanager'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(221,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(224,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(308,43): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(308,17): warning C4267: 'initializing': conversion from 'size_t' to 'const int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(427,23): error C2039: 'SetErrorCode': is not a member of 'wi::resourcemanager'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(50,12):
-28>    see declaration of 'wi::resourcemanager'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(427,23): error C3861: 'SetErrorCode': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(436,32): error C2664: 'wi::Resource wi::resourcemanager::Load(const std::string &,wi::resourcemanager::Flags,const uint8_t *,size_t,const std::string &,size_t)': cannot convert argument 2 from 'uint32_t' to 'wi::resourcemanager::Flags'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(436,54):
-28>    Conversion to enumeration type requires an explicit cast (static_cast, C-style cast or parenthesized function-style cast)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(89,12):
-28>    see declaration of 'wi::resourcemanager::Load'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(436,32):
-28>    while trying to match the argument list '(std::string, uint32_t, _Ty *, unsigned __int64)'
-28>        with
-28>        [
-28>            _Ty=uint8_t
-28>        ]
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(449,28): error C2039: 'GetErrorCode': is not a member of 'wi::resourcemanager'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(50,12):
-28>    see declaration of 'wi::resourcemanager'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(449,28): error C3861: 'GetErrorCode': identifier not found
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(567,31): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(567,31): warning C4267:         with
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(567,31): warning C4267:         [
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(567,31): warning C4267:             _Ty=OffsetAllocator::NodeIndex
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(567,31): warning C4267:         ]
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(568,31): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(568,31): warning C4267:         with
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(568,31): warning C4267:         [
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(568,31): warning C4267:             _Ty=OffsetAllocator::NodeIndex
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(568,31): warning C4267:         ]
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(569,31): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(569,31): warning C4267:         with
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(569,31): warning C4267:         [
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(569,31): warning C4267:             _Ty=OffsetAllocator::NodeIndex
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(569,31): warning C4267:         ]
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(706,24): error C2039: 'active': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(708,9): error C2039: 'lodlevels': is not a member of 'wi::scene::MeshComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(653,21):
-28>    see declaration of 'wi::scene::MeshComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(711,10): error C2039: 'lodlevels': is not a member of 'wi::scene::MeshComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(653,21):
-28>    see declaration of 'wi::scene::MeshComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(714,56): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(716,25): error C2039: 'active': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(727,10): error C2039: 'lodlevels': is not a member of 'wi::scene::MeshComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(653,21):
-28>    see declaration of 'wi::scene::MeshComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(730,56): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(732,25): error C2039: 'active': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(743,10): error C2039: 'lodlevels': is not a member of 'wi::scene::MeshComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(653,21):
-28>    see declaration of 'wi::scene::MeshComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(746,56): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(748,25): error C2039: 'active': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(772,13): error C2039: 'subAABBactive': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(773,13): error C2039: 'usedAABB': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(792,14): error C2039: 'subAABB_index_offset': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(793,14): error C2039: 'subAABB_index_count': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(795,18): error C2039: 'subAABB_index_count': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(799,38): error C2039: 'subAABB_index_count': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(823,15): error C2039: 'subAABB': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(825,31): error C2039: 'subAABB_index_count': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(834,13): error C2039: 'subAABBactive': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(835,13): error C2039: 'usedAABB': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(839,14): error C2039: 'subAABB_index_offset': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(840,14): error C2039: 'subAABB_index_count': is not a member of 'wi::scene::MeshComponent::MeshSubset'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(690,10):
-28>    see declaration of 'wi::scene::MeshComponent::MeshSubset'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(870,26): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1011,23): error C2039: 'objectIndex': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1045,27): error C2039: 'objectIndex': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1049,28): error C2039: 'objectIndex': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1054,26): error C2039: 'objectIndex': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1061,12): error C2872: 'unordered_map': ambiguous symbol
-28>    C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\unordered_map(61,7):
-28>    could be 'std::unordered_map'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiUnorderedMap.h(21,57):
-28>    or       'wi::unordered_map = ska::flat_hash_map<K,V,H,E,A>'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1073,28): warning C4244: '=': conversion from '_Ty2' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1073,28): warning C4244:         with
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1073,28): warning C4244:         [
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1073,28): warning C4244:             _Ty2=wi::ecs::Entity
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1073,28): warning C4244:         ]
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1079,27): error C2039: 'objectIndex': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1103,19): warning C4244: 'initializing': conversion from 'DWORD' to 'float', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1118,28): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1119,28): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1120,28): warning C4244: '=': conversion from 'float' to 'DWORD', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1291,52): error C2039: 'iUsePreFrame': is not a member of 'wi::scene::AnimationComponent::AnimationChannel'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1661,10):
-28>    see declaration of 'wi::scene::AnimationComponent::AnimationChannel'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1292,52): error C2039: 'vPreFrameScale': is not a member of 'wi::scene::AnimationComponent::AnimationChannel'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1661,10):
-28>    see declaration of 'wi::scene::AnimationComponent::AnimationChannel'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1293,52): error C2039: 'qPreFrameRotation': is not a member of 'wi::scene::AnimationComponent::AnimationChannel'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1661,10):
-28>    see declaration of 'wi::scene::AnimationComponent::AnimationChannel'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1294,52): error C2039: 'vPreFrameTranslation': is not a member of 'wi::scene::AnimationComponent::AnimationChannel'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1661,10):
-28>    see declaration of 'wi::scene::AnimationComponent::AnimationChannel'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1456,20): error C2039: 'SetLOD': is not a member of 'wi::scene::ObjectComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1143,21):
-28>    see declaration of 'wi::scene::ObjectComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1457,20): error C2039: 'SetLodDistance': is not a member of 'wi::scene::ObjectComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1143,21):
-28>    see declaration of 'wi::scene::ObjectComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1558,25): error C2039: 'SetSpeed': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1599,27): error C2039: 'SetUpdateOnce': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1630,28): error C2039: 'updateonce': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1656,29): error C2039: 'updateonce': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1676,24): error C2039: 'updateonce': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1725,25): error C2039: 'SetUpdateOnce': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1743,25): error C2039: 'SetUpdateOnce': is not a member of 'wi::scene::AnimationComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(1644,21):
-28>    see declaration of 'wi::scene::AnimationComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1912,24): warning C4018: '<': signed/unsigned mismatch
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1986,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(1997,16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2050,69): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2050,69):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,66): error C2679: binary '=': no operator found which takes a right-hand operand of type 'nullptr' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,66):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'nullptr' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>            Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,66):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'nullptr' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>            Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,78):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2052,66):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2060,65): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2060,65):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2060,97):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2060,97):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2060,65):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2060,97):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2060,97):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2060,65):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2061,70): error C2678: binary '!': no operator found which takes a left-hand operand of type 'wi::Resource' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2061,70):
-28>    could be 'built-in C++ operator!(bool)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2061,70):
-28>        '!': cannot convert argument 1 from 'wi::Resource' to 'bool'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2061,70):
-28>    while trying to match the argument list '(wi::Resource)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2061,11): error C2088: built-in operator '!' cannot be applied to an operand of type 'wi::Resource'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2066,17): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2075,67): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2075,67):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2075,99):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2075,99):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2075,67):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2075,99):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2075,99):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2075,67):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2078,69): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2078,69):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2108,67): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2108,67):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,64): error C2679: binary '=': no operator found which takes a right-hand operand of type 'nullptr' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,64):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'nullptr' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>            Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,64):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'nullptr' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>            Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,76):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2110,64):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2118,63): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2118,63):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2118,95):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2118,95):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2118,63):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2118,95):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2118,95):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2118,63):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2119,68): error C2678: binary '!': no operator found which takes a left-hand operand of type 'wi::Resource' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2119,68):
-28>    could be 'built-in C++ operator!(bool)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2119,68):
-28>        '!': cannot convert argument 1 from 'wi::Resource' to 'bool'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2119,68):
-28>    while trying to match the argument list '(wi::Resource)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2119,12): error C2088: built-in operator '!' cannot be applied to an operand of type 'wi::Resource'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2124,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2133,65): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2133,65):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2133,97):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2133,97):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2133,65):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2133,97):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2133,97):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2133,65):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2137,67): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2137,67):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2168,68): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2168,68):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,65): error C2679: binary '=': no operator found which takes a right-hand operand of type 'nullptr' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,65):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'nullptr' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>            Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,65):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'nullptr' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>            Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,77):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2170,65):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2178,64): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2178,64):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2178,96):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2178,96):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2178,64):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2178,96):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2178,96):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2178,64):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2179,69): error C2678: binary '!': no operator found which takes a left-hand operand of type 'wi::Resource' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2179,69):
-28>    could be 'built-in C++ operator!(bool)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2179,69):
-28>        '!': cannot convert argument 1 from 'wi::Resource' to 'bool'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2179,69):
-28>    while trying to match the argument list '(wi::Resource)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2179,12): error C2088: built-in operator '!' cannot be applied to an operand of type 'wi::Resource'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2184,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2193,66): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2193,66):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2193,98):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2193,98):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2193,66):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2193,98):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2193,98):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2193,66):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2197,68): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2197,68):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2221,73): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2221,73):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,70): error C2679: binary '=': no operator found which takes a right-hand operand of type 'nullptr' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,70):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'nullptr' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>            Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,70):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'nullptr' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>            Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,82):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2223,70):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2231,69): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2231,69):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2231,101):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2231,101):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2231,69):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2231,101):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2231,101):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2231,69):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2232,74): error C2678: binary '!': no operator found which takes a left-hand operand of type 'wi::Resource' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2232,74):
-28>    could be 'built-in C++ operator!(bool)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2232,74):
-28>        '!': cannot convert argument 1 from 'wi::Resource' to 'bool'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2232,74):
-28>    while trying to match the argument list '(wi::Resource)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2232,12): error C2088: built-in operator '!' cannot be applied to an operand of type 'wi::Resource'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2237,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2246,71): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2246,71):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2246,103):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2246,103):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2246,71):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2246,103):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2246,103):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2246,71):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2250,73): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2250,73):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2296,69): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2296,69):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,66): error C2679: binary '=': no operator found which takes a right-hand operand of type 'nullptr' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,66):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'nullptr' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>            Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,66):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'nullptr' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>            Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>            'wi::Resource::Resource': no overloaded function could convert all the argument types
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                could be 'wi::Resource::Resource(wi::Resource &&)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                    'wi::Resource::Resource(wi::Resource &&)': cannot convert argument 1 from 'nullptr' to 'wi::Resource &&'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                        Reason: cannot convert from 'nullptr' to 'wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>                or       'wi::Resource::Resource(const wi::Resource &)'
-28>                    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                    'wi::Resource::Resource(const wi::Resource &)': cannot convert argument 1 from 'nullptr' to 'const wi::Resource &'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                        Reason: cannot convert from 'nullptr' to 'const wi::Resource'
-28>                        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                        Conversion requires a second user-defined-conversion operator or constructor
-28>                D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,78):
-28>                while trying to match the argument list '(nullptr)'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2298,66):
-28>    while trying to match the argument list '(wi::Resource, nullptr)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2306,65): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2306,65):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2306,97):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2306,97):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2306,65):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2306,97):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2306,97):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2306,65):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2308,70): error C2678: binary '!': no operator found which takes a left-hand operand of type 'wi::Resource' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2308,70):
-28>    could be 'built-in C++ operator!(bool)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2308,70):
-28>        '!': cannot convert argument 1 from 'wi::Resource' to 'bool'
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2308,70):
-28>    while trying to match the argument list '(wi::Resource)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2308,12): error C2088: built-in operator '!' cannot be applied to an operand of type 'wi::Resource'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2313,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2322,67): error C2679: binary '=': no operator found which takes a right-hand operand of type 'std::shared_ptr<wi::Resource>' (or there is no acceptable conversion)
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    could be 'wi::Resource &wi::Resource::operator =(wi::Resource &&)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2322,67):
-28>        'wi::Resource &wi::Resource::operator =(wi::Resource &&)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'wi::Resource &&'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2322,99):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2322,99):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiResourceManager.h(48,2):
-28>    or       'wi::Resource &wi::Resource::operator =(const wi::Resource &)'
-28>        D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2322,67):
-28>        'wi::Resource &wi::Resource::operator =(const wi::Resource &)': cannot convert argument 2 from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource &'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2322,99):
-28>            Reason: cannot convert from 'std::shared_ptr<wi::Resource>' to 'const wi::Resource'
-28>            D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2322,99):
-28>            No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2322,67):
-28>    while trying to match the argument list '(wi::Resource, std::shared_ptr<wi::Resource>)'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2326,69): error C2451: a conditional expression of type 'wi::Resource' is not valid
-28>    D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2326,69):
-28>    No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2396,26): error C2039: 'customShaderParam1': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2397,26): error C2039: 'customShaderParam2': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2398,26): error C2039: 'customShaderParam3': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2399,26): error C2039: 'customShaderParam4': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2400,26): error C2039: 'customShaderParam5': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2401,26): error C2039: 'customShaderParam6': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2402,26): error C2039: 'customShaderParam7': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2483,26): error C2039: 'customShaderParam1': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2484,26): error C2039: 'customShaderParam2': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2485,26): error C2039: 'customShaderParam3': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2486,26): error C2039: 'customShaderParam4': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2487,26): error C2039: 'customShaderParam5': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2488,26): error C2039: 'customShaderParam6': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2489,26): error C2039: 'customShaderParam7': is not a member of 'wi::scene::MaterialComponent'
-28>    D:\PROTOTIME\WickedEngineDX12\WickedEngine\wiScene_Components.h(118,21):
-28>    see declaration of 'wi::scene::MaterialComponent'
-28>D:\PROTOTIME\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\wickedcalls.cpp(2489,26): error C1003: error count exceeds 100; stopping compilation
 28>Done building project "Template_Windows.vcxproj" -- FAILED.
-========== Rebuild All: 22 succeeded, 6 failed, 0 skipped ==========
-========== Rebuild completed at 23:54 and took 05:11.306 minutes ==========
+========== Rebuild All: 26 succeeded, 2 failed, 0 skipped ==========
+========== Rebuild completed at 19:55 and took 04:58.715 minutes ==========
