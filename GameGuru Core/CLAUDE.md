@@ -29,3 +29,9 @@ build.bat Release rebuild # Clean rebuild Release x64
 - Always use `build.bat` to compile — it sets up the MSVC environment automatically
 - Build errors will use the standard MSVC format and appear in the terminal
 - The `$msCompile` problem matcher is configured in VS Code tasks
+
+## Third-Party Dependencies
+- **WickedEngineDX12** is located at `../WickedEngineDX12` (sibling folder at `D:\max\WickedEngineDX12`)
+- This is the rendering engine the project depends on
+- Reference this repo when resolving includes, engine API calls, or tracking down type definitions
+- Do NOT modify files in WickedEngineDX12 unless explicitly asked
