@@ -1,6 +1,7 @@
 // Bc7Compress.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+// Force update
 #include "pch.h"
 #include "Bc7Core.h"
 #include "Bc7Tables.h"

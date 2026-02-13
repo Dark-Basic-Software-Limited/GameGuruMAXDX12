@@ -2,6 +2,7 @@
 //--- GAMEGURU - M-Sliders
 //----------------------------------------------------
 
+// Force update
 // Globals
 #include "stdafx.h"
 #include "gameguru.h"

@@ -2,6 +2,7 @@
 
 //#define DISABLETEMP
 
+// Force update
 #include "stdafx.h"
 #include "../../../../WickedEngineDX12/WickedEngine/WickedEngine.h"
 #include "TracerManager.h"

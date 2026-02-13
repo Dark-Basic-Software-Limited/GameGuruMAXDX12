@@ -1,6 +1,7 @@
 #ifndef _H_BULLET_DEBUG_DRAWER
 #define _H_BULLET_DEBUG_DRAWER
 
+// Force update
 // We upgraded to BYLLET3 but this header does not know about WICKEDENGINE
 // Ensure SIMD operators are disabled to prevent ambiguity
 #define BT_NO_SIMD_OPERATOR_OVERLOADS

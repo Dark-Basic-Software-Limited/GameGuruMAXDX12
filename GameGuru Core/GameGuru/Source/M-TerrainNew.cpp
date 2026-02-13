@@ -4,6 +4,8 @@
 // Utterly Nre Terrain System for GameGuru MAX
 //
 
+// Force update
+
 #include "stdafx.h"
 #include "gameguru.h"
 
