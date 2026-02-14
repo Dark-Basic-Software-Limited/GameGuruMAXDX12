@@ -9916,6 +9916,8 @@ void GGTerrain_CancelRamp()
 
 void GGTerrain_ResetSculpting()
 {
+	if ( !pHeightMapEdit || !pHeightMapEditType ) return;
+
 	for( int i = 0; i < GGTERRAIN_HEIGHTMAP_EDIT_SIZE * GGTERRAIN_HEIGHTMAP_EDIT_SIZE; i++ )
 	{
 		pHeightMapEdit[ i ] = 0;
