@@ -683,7 +683,8 @@ DARKSDK void AttachWindowToChildOfAnother ( LPSTR pAbsoluteAppFilename )
 
 		if ( g_bWindowOverride == false )
 		{
-			Sleep(3000);
+			//Sleep(3000); reduced from 3s — window is already created at this point
+			Sleep(200);
 			if ( strlen ( g_szMainWindow ) > 1 )
 				EnumWindows ( EnumWindowsProc, 0 );
 		}
