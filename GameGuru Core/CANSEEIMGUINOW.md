@@ -1,6 +1,6 @@
 # DX12 Migration - Current State (2026-02-14)
 
-## Status: App runs stable for 120+ seconds, zero crashes
+## Status: App runs stable, zero crashes, shader caching active
 
 The GameGuru MAX engine has been migrated from DX11 to DX12 via WickedEngine's DX12 backend. The app launches, initializes, shows the editor UI (ImGui), and runs without crashing.
 
@@ -14,7 +14,7 @@ The GameGuru MAX engine has been migrated from DX11 to DX12 via WickedEngine's D
 
 ## What Works
 - WickedEngine DX12 initialization (AMD Radeon RX 9060 XT)
-- All WickedEngine core shaders compile at runtime
+- **Shader caching**: 392 core shaders + custom shaders cached as .cso files with .wishadermeta dependency tracking. First launch compiles (~9s), subsequent launches load from cache (~139 ms total engine init)
 - 8 custom shaders compile OK (trees, water, glass, grid, blood effects)
 - ImGui rendering via custom DX12 bridge (`imgui_gg_dx12_bridge.cpp`)
 - Editor UI appears and is interactive
@@ -42,6 +42,7 @@ The GameGuru MAX engine has been migrated from DX11 to DX12 via WickedEngine's D
 ## Key Fixes Applied
 
 ### WickedEngine modifications (`D:\max\WickedEngineDX12\WickedEngine\`)
+- **wiShaderCompiler.cpp:797**: Removed `return true;` from `IsShaderOutdated()` that forced all 392 shaders to recompile every launch. The timestamp-based cache validation (comparing .cso timestamps against .wishadermeta dependency lists) now runs properly, loading cached shaders in ~139 ms instead of recompiling in ~9 seconds
 - **wiGraphicsDevice_DX12.cpp ~line 4139**: Null guard in `CreatePipelineState` - returns false when `rootSignature` or `rootsig_desc` is null (shaders without DX12 root signatures)
 - **wiGraphicsDevice_DX12.cpp ~line 3944**: Same null guard in `CreateShader` for CS/LIB shaders
 
@@ -50,7 +51,7 @@ The GameGuru MAX engine has been migrated from DX11 to DX12 via WickedEngine's D
 - **master_part1.cpp:401**: Same `dynamic_cast` to `static_cast` fix in Compose()
 - **imgui_gg_dx12_bridge.cpp (ImGui_DX12_NewFrame)**: Added font atlas rebuild detection - checks `io.Fonts->IsBuilt()` and recreates GPU font texture when fonts are cleared/re-added
 - **CInputC.cpp**: Null guards for `m_lpDI` in `SetupMouseEx()` and `SetupKeyboardEx()` - returns instead of calling `InputDestructor()`
-- **GPUParticles_part0.cpp**: `LoadGPUPShader()` function + shader validation + graceful disable
+- **GPUParticles_part0.cpp**: `LoadGPUPShader()` function + shader validation + graceful disable + shader caching via `RegisterShader`/`IsShaderOutdated`
 - **TracerManager.cpp**: `tracerSystemReady` flag, shader/PSO validation, Draw() guard
 - **CAnimation_part0.cpp**: `m_pD3D == NULL` guard at top of `CoreLoadAnimation()`
 - **M-GridEdit_part0.cpp**: `g_iDisableTerrainSystem = 1` (was 0)
@@ -72,5 +73,5 @@ DX11 shaders don't embed root signatures. DX12 requires them. When `wiRenderer::
 - **Init sequence** (`GameGuruMain.cpp`): Case 0 (editor window) -> Case 1 (GPU particles) -> Case 2 (terrain + tracers) -> Case 3 (GuruMain/common_init)
 - **Render loop**: `Master::RunCustom()` -> `Run()` -> `MasterRenderer::Update()` (calls `GuruLoopLogic`) -> `__super::Update(dt)` -> `MasterRenderer::Render()` -> `MasterRenderer::Compose()` (ImGui drawn here)
 - **ImGui DX11->DX12 redirect**: `ImGui_ImplDX11_NewFrame()` checks `ImGui_DX12_IsInitialized()` and redirects to `ImGui_DX12_NewFrame()`
-- **Custom shader pattern**: `LoadCustomShader()` in `CustomShaders.cpp` compiles HLSL from custom directories with WickedEngine include paths
+- **Custom shader pattern**: `LoadCustomShader()` in `CustomShaders.cpp` compiles HLSL from custom directories with WickedEngine include paths; uses `RegisterShader`/`IsShaderOutdated` to skip recompilation when cached .cso is up-to-date
 - **WickedEngine lib flow**: Build WickedEngine_Windows.lib -> copy to GameGuru Lib64 -> link into GameGuruMAX.exe
