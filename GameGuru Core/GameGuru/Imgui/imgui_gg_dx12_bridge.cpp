@@ -433,11 +433,11 @@ static bool CreatePipelineState()
 
     ComPtr<ID3DBlob> rootSigBlob;
     hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &rootSigBlob, &errorBlob);
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) { OutputDebugStringA("ImGui DX12: D3D12SerializeRootSignature FAILED\n"); return false; }
 
     hr = g_pd3dDevice->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(),
         IID_PPV_ARGS(&g_pRootSignature));
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) { OutputDebugStringA("ImGui DX12: CreateRootSignature FAILED\n"); return false; }
 
     // Create PSO
     D3D12_INPUT_ELEMENT_DESC inputLayout[] =
@@ -481,7 +481,7 @@ static bool CreatePipelineState()
     psoDesc.SampleDesc.Count = 1;
 
     hr = g_pd3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&g_pPipelineState));
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) { OutputDebugStringA("ImGui DX12: CreateGraphicsPipelineState FAILED\n"); return false; }
 
     return true;
 }
@@ -515,12 +515,13 @@ bool ImGui_DX12_InitBridge()
     g_SrvDescriptorSize = g_pd3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     memset(g_SrvSlotUsed, 0, sizeof(g_SrvSlotUsed));
 
-    // Create pipeline state (root signature, shaders, PSO)
-    if (!CreatePipelineState())
+    // Always create font texture first — builds the ImGui font atlas.
+    // If this isn't done, ImGui crashes in SetCurrentFont accessing null ContainerAtlas.
+    if (!CreateFontTexture())
         return false;
 
-    // Create font texture
-    if (!CreateFontTexture())
+    // Create pipeline state (root signature, shaders, PSO)
+    if (!CreatePipelineState())
         return false;
 
     g_ImGuiDX12Initialized = true;
