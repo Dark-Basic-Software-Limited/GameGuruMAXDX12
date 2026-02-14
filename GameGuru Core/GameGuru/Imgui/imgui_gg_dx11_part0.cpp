@@ -1253,8 +1253,24 @@ static void ImGui_ImplDX11_CreateFontsTexture()
 
 bool    ImGui_ImplDX11_CreateDeviceObjects()
 {
+    // Phase 5: DX12 path — rebuild font texture via bridge instead of DX11
+    extern bool ImGui_DX12_IsInitialized();
+    if (ImGui_DX12_IsInitialized())
+    {
+        extern void ImGui_DX12_RebuildFontTexture();
+        ImGui_DX12_RebuildFontTexture();
+        return true;
+    }
+
     if (!g_pd3dDevice)
+    {
+        // No DX11 device and no DX12 bridge — at minimum build the font atlas
+        // to prevent crash in SetCurrentFont when accessing null ContainerAtlas
+        ImGuiIO& io = ImGui::GetIO();
+        if (!io.Fonts->IsBuilt())
+            io.Fonts->Build();
         return false;
+    }
     if (g_pFontSampler)
         ImGui_ImplDX11_InvalidateDeviceObjects();
 

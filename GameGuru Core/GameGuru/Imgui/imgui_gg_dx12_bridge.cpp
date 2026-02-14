@@ -543,6 +543,15 @@ void ImGui_DX12_NewFrame()
     }
 }
 
+void ImGui_DX12_RebuildFontTexture()
+{
+    if (!g_ImGuiDX12Initialized) return;
+    // Release old font texture resources and rebuild
+    g_pFontTextureResource.Reset();
+    g_FontTextureCreated = false;
+    CreateFontTexture();
+}
+
 void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
 {
     if (!g_ImGuiDX12Initialized || !cmdList)

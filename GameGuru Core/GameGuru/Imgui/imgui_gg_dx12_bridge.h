@@ -21,6 +21,9 @@ bool ImGui_DX12_IsInitialized();
 // Call ImGui_DX12_NewFrame() once per frame (called from ImGui_ImplDX11_NewFrame redirect).
 void ImGui_DX12_NewFrame();
 
+// Force rebuild the DX12 font texture (called after ChangeGGFont clears the font atlas).
+void ImGui_DX12_RebuildFontTexture();
+
 // Load an image file (PNG/JPG/BMP/TGA) and register it as an ImGui texture.
 // Returns the ImTextureID (GPU descriptor handle) or nullptr on failure.
 // The texture is cached — subsequent calls with the same imageId return the cached handle.
