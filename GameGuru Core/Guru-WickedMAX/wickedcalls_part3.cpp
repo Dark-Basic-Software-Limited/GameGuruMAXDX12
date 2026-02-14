@@ -1161,11 +1161,15 @@ void WickedCall_SetTextureName(int obj, char *texturename)
 
 void WickedCall_DrawImguiNow(void)
 {
-	void ImGuiHook_RenderCall(void* ctxptr);
-	void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr);
-	extern LPGGDEVICE				m_pD3D;
-	extern LPGGIMMEDIATECONTEXT		m_pImmediateContext;
-	ImGuiHook_RenderCall_Direct((void*)m_pImmediateContext, (void*)m_pD3D);
+	// Phase 5: ImGui rendering is now done in MasterRenderer::Compose() via the DX12 backend.
+	// This function is kept for compatibility but is a no-op — the actual rendering happens
+	// through the WickedEngine render pipeline using ImGui_DX12_RenderBridge().
+
+	// TODO: removed DX11 ImGui path
+	// void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr);
+	// extern LPGGDEVICE            m_pD3D;
+	// extern LPGGIMMEDIATECONTEXT  m_pImmediateContext;
+	// ImGuiHook_RenderCall_Direct((void*)m_pImmediateContext, (void*)m_pD3D);
 }
 
 //PE: Changing the far plane in indoor levels can really boost the FPS.

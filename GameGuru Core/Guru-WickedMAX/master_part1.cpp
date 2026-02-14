@@ -1,6 +1,7 @@
 ﻿//
 // MasterRenderer Functions
 //
+#include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
 
 void MasterRenderer::Load()
 {
@@ -352,6 +353,26 @@ void MasterRenderer::Compose(CommandList cmd) const
 	OPTICK_EVENT();
 #endif
 	__super::Compose(cmd);
+
+	// Phase 5: Render ImGui draw data using DX12 backend
+	extern bool bImGuiInitDone;
+	if (bImGuiInitDone)
+	{
+		extern bool ImGui_DX12_IsInitialized();
+		if (ImGui_DX12_IsInitialized())
+		{
+			auto* dx12Device = dynamic_cast<wi::graphics::GraphicsDevice_DX12*>(wi::graphics::GetDevice());
+			if (dx12Device)
+			{
+				ID3D12GraphicsCommandList* nativeCmdList = dx12Device->GetDX12GraphicsCommandList(cmd);
+				if (nativeCmdList)
+				{
+					extern void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList);
+					ImGui_DX12_RenderBridge(nativeCmdList);
+				}
+			}
+		}
+	}
 }
 
 void MasterRenderer::Render() const

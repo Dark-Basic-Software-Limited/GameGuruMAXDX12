@@ -690,15 +690,30 @@ void common_init ( void )
 
 	// Setup Platform/Renderer bindings
 	ImGui_ImplWin32_Init(g_pGlob->hWnd);
-	// TODO Phase 5: Replace with ImGui_ImplDX12_Init() using DX12 device from WickedEngine
-	// Phase 4: DX11 device is no longer available — ImGui_ImplDX11_Init will return false (null guard)
-	bool bDX11BackendOK = ImGui_ImplDX11_Init(m_pD3D, m_pImmediateContext);
-	if (!bDX11BackendOK)
+
+	// Phase 5: Initialize ImGui DX12 backend via WickedEngine bridge
 	{
-		// DX11 backend failed (no device) — disable multi-viewport to prevent crashes
-		// from unregistered renderer viewport callbacks
-		io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+		extern bool ImGui_DX12_InitBridge();
+		bool bDX12BackendOK = ImGui_DX12_InitBridge();
+		if (!bDX12BackendOK)
+		{
+			// DX12 backend failed — disable multi-viewport to prevent crashes
+			io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+		}
+		else
+		{
+			// Phase 5: Multi-viewport requires per-viewport DX12 swap chains — disable for now
+			// TODO: Implement DX12 multi-viewport support in a future phase
+			io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+		}
 	}
+
+	// TODO: removed DX11 ImGui path
+	// bool bDX11BackendOK = ImGui_ImplDX11_Init(m_pD3D, m_pImmediateContext);
+	// if (!bDX11BackendOK)
+	// {
+	//     io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+	// }
 
 	//PE: First check forupdates just after imgui is up , if we need some special render.
 	CheckForNewUpdateWicked(); //PE: Check if update process is done, and ask if user like to update.

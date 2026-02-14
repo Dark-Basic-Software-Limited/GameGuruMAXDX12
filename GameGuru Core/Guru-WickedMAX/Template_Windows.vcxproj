@@ -687,6 +687,8 @@
     </ClCompile>
     <ClCompile Include="..\GameGuru\Imgui\imgui_gg_dx11.cpp" />
     <ClCompile Include="..\GameGuru\Imgui\imgui_impl_win32.cpp" />
+
+    <ClCompile Include="..\GameGuru\Imgui\imgui_gg_dx12_bridge.cpp" />
     <ClCompile Include="..\GameGuru\Imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\GameGuru\Imgui\imnodes.cpp" />
     <ClCompile Include="..\GameGuru\Source\Common-File.cpp" />

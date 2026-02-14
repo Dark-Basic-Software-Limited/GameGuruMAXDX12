@@ -1592,13 +1592,21 @@ void ImGui_ImplDX11_Shutdown()
 
 void ImGui_ImplDX11_NewFrame()
 {
-    // TODO Phase 5: Replace with ImGui_ImplDX12_NewFrame()
-    // Phase 4: Skip DX11 rendering when no DX11 device is available (DX12 migration)
-    if (!g_pd3dDevice)
+    // Phase 5: Redirect to DX12 backend NewFrame
+    // All 9+ call sites continue to call ImGui_ImplDX11_NewFrame() — we forward to DX12 here.
+    extern bool ImGui_DX12_IsInitialized();
+    if (ImGui_DX12_IsInitialized())
+    {
+        extern void ImGui_DX12_NewFrame();
+        ImGui_DX12_NewFrame();
         return;
+    }
 
-    if (!g_pFontSampler)
-        ImGui_ImplDX11_CreateDeviceObjects();
+    // TODO: removed DX11 ImGui path — original DX11 backend NewFrame
+    // if (!g_pd3dDevice)
+    //     return;
+    // if (!g_pFontSampler)
+    //     ImGui_ImplDX11_CreateDeviceObjects();
 }
 
 //--------------------------------------------------------------------------------------------------------

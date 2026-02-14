@@ -286,8 +286,91 @@ WickedEngine DX12 was **already the active rendering backend**. The `Master` cla
 
 ### Blockers for Phase 5 (ImGui DX12 Backend)
 
-1. Need to expose `ID3D12Device*`, `ID3D12CommandQueue*`, and SRV descriptor heap from WickedEngine to initialize `ImGui_ImplDX12_Init()`
-2. Fresh ImGui DX12 backend available at `D:\max\imgui\backends\imgui_impl_dx12.h/cpp`
-3. 5 custom pixel shader variants in ImGui backend need DX12 port
-4. `ImGui_ImplDX11_NewFrame()` called from ~9 different source files — all need updating to DX12 equivalent
-5. Multi-viewport support needs DX12 per-viewport swap chains
+1. ~~Need to expose `ID3D12Device*`, `ID3D12CommandQueue*`, and SRV descriptor heap from WickedEngine~~ **RESOLVED** — Added `GetDX12Device()` and `GetDX12GraphicsCommandList()` to WickedEngine; `GetGraphicsCommandQueue()` already existed
+2. ~~Fresh ImGui DX12 backend available at `D:\max\imgui\backends\imgui_impl_dx12.h/cpp`~~ **INCOMPATIBLE** — requires ImGui 1.92+, project uses 1.73. Wrote custom bridge instead.
+3. 5 custom pixel shader variants in ImGui backend need DX12 port — **DEFERRED** (TODO in bridge code)
+4. ~~`ImGui_ImplDX11_NewFrame()` called from ~9 different source files~~ **RESOLVED** — redirected via shim in `ImGui_ImplDX11_NewFrame()` to `ImGui_DX12_NewFrame()`
+5. Multi-viewport support needs DX12 per-viewport swap chains — **DISABLED** for now (future phase)
+
+---
+
+## Phase 5 Status: ImGui Migrated to DX12 Backend
+
+**Date:** 2026-02-14
+**Branch:** `phase5-imgui-dx12`
+
+### Crash Fix (Pre-requisite)
+
+Fixed three crash vectors caused by NULL DX11 device pointers in the DX12 init path:
+- `ImGuiHook_RenderCall_Direct()` — NULL `d3dptr` used as `ID3D11Device*`
+- `ImGuiHook_RenderCall()` — NULL `ctxptr` used as `ID3D11DeviceContext*`
+- `ImGuiConfigFlags_ViewportsEnable` — multi-viewport enabled without registered renderer callbacks
+
+### DX12 Device Acquisition
+
+- `GetGraphicsCommandQueue()` was already public in `GraphicsDevice_DX12`
+- Added `GetDX12Device()` and `GetDX12GraphicsCommandList(CommandList cmd)` (2 methods, ~10 lines total)
+- `dynamic_cast<GraphicsDevice_DX12*>(GetDevice())` used to obtain the DX12 device from WickedEngine's abstract interface
+- Rebuilt WickedEngine_Windows.lib with `/MTd` (static CRT) to match GameGuru
+
+### ImGui Version Incompatibility
+
+- Project uses ImGui **1.73 WIP** (version 17203)
+- Stock `imgui_impl_dx12.cpp` from `D:\max\imgui\backends\` requires ImGui **1.92+** (uses `ImTextureData`, `ImGuiBackendFlags_RendererHasTextures`, `ImDrawData::Textures`)
+- **Solution:** Created `imgui_gg_dx12_bridge.cpp` — a self-contained DX12 ImGui renderer compatible with ImGui 1.73
+
+### What Was Changed
+
+1. **`imgui_gg_dx12_bridge.h/cpp`** (NEW, ~600 lines) — Self-contained DX12 ImGui renderer:
+   - Dedicated 64-slot shader-visible SRV descriptor heap with free-list allocator
+   - Runtime-compiled HLSL vertex/pixel shaders (vs_5_0/ps_5_0) via `D3DCompile`
+   - Root signature: 32-bit constants (MVP) + SRV descriptor table + static linear sampler
+   - Font texture upload via temporary command list with synchronous fence wait
+   - Double-buffered vertex/index upload buffers
+   - Full draw command rendering loop with scissor rects, texture binding, indexed draws
+
+2. **`master_part1.cpp`** — Added ImGui rendering in `MasterRenderer::Compose()`:
+   - Gets native DX12 command list via `GetDX12GraphicsCommandList(cmd)`
+   - Calls `ImGui_DX12_RenderBridge(nativeCmdList)` after `__super::Compose(cmd)`
+   - Protected by `bImGuiInitDone` and `ImGui_DX12_IsInitialized()` guards
+
+3. **`Common_part0.cpp`** — Replaced DX11 init with DX12 bridge:
+   - Calls `ImGui_DX12_InitBridge()` instead of `ImGui_ImplDX11_Init()`
+   - Multi-viewport disabled in both success and failure paths
+
+4. **`imgui_gg_dx11_part0.cpp`** — NewFrame redirect:
+   - `ImGui_ImplDX11_NewFrame()` now forwards to `ImGui_DX12_NewFrame()` if bridge is initialized
+   - All ~9 call sites transparently redirected without modification
+
+5. **`wickedcalls_part3.cpp`** — `WickedCall_DrawImguiNow()` made into no-op:
+   - Old DX11 rendering path commented out with `// TODO: removed DX11 ImGui path`
+   - Rendering now happens in `MasterRenderer::Compose()` via the WickedEngine pipeline
+
+6. **`Template_Windows.vcxproj`** — Added `imgui_gg_dx12_bridge.cpp` to compilation
+
+### WickedEngine Changes (Minimal)
+
+- `wiGraphicsDevice_DX12.h` — Added 2 public accessor method declarations
+- `wiGraphicsDevice_DX12.cpp` — Added 2 method implementations (~10 lines)
+- `WickedEngine_Windows.vcxproj` — Added `<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>` to Debug config
+
+### Custom Pixel Shaders (DEFERRED)
+
+The DX11 ImGui backend uses 5 custom pixel shader variants for editor effects:
+- `blur` — Background blur behind panels
+- `nowhite` — Transparency without white
+- `noalpha` — Opaque rendering mode
+- `boost25` — Brightness boost
+- Standard — Default textured rendering
+
+Currently only the standard shader is implemented in the DX12 bridge. Custom shader callbacks in `ImGui_DX12_RenderBridge()` are skipped with a TODO comment. These can be ported in a future iteration.
+
+### Multi-Viewport (DISABLED)
+
+Multi-viewport (`ImGuiConfigFlags_ViewportsEnable`) requires per-viewport DX12 swap chains and render targets. This is disabled for now — noted as a future phase task.
+
+### Build Status
+
+- **Debug x64:** COMPILES AND LINKS SUCCESSFULLY
+- Pre-existing warnings only (vorbis CRT mismatch, float truncation)
+- No new compilation errors or warnings from Phase 5 changes
