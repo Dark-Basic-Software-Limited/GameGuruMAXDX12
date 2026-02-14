@@ -1146,7 +1146,7 @@ DARKSDK void Sprite ( int iID, int iX, int iY, int iImage )
 
 DARKSDK void MAXSprite (int iID, int iX, int iY, int iImage)
 {
-	MAXSprite (iID, iX, iY, iImage);
+	Sprite (iID, iX, iY, iImage);
 }
 
 DARKSDK void PasteSprite ( int iID, int iX, int iY )

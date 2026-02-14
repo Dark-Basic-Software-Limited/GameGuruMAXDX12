@@ -1159,23 +1159,39 @@ bool LoadAssImpObject ( char* szFilename, sObject** ppObject, enumScalingMode eS
 					{
 						strcpy(pDBOMesh->pBones[b].szName, pAssImpMesh->mBones[b]->mName.C_Str());
 						int iInfluenceCount = pAssImpMesh->mBones[b]->mNumWeights;
+						// Validate: skip bones with no weights pointer or zero/negative influence count
+						if (!pAssImpMesh->mBones[b]->mWeights || iInfluenceCount <= 0)
+						{
+							pDBOMesh->pBones[b].dwNumInfluences = 0;
+							pDBOMesh->pBones[b].pWeights = NULL;
+							pDBOMesh->pBones[b].pVertices = NULL;
+						}
+						else
+						{
+						// Validate the mWeights memory is readable before accessing it
+						// Each weight entry has a uint + float = 8 bytes
+						size_t requiredSize = (size_t)iInfluenceCount * (sizeof(unsigned int) + sizeof(float));
+						if (IsBadReadPtr(pAssImpMesh->mBones[b]->mWeights, requiredSize))
+						{
+							// Memory is not readable - skip this bone's weights
+							char _eb[512]; sprintf(_eb, "WARNING: Bad bone weight ptr for bone '%s' (influences=%d, ptr=%p)\n",
+								pAssImpMesh->mBones[b]->mName.C_Str(), iInfluenceCount, (void*)pAssImpMesh->mBones[b]->mWeights);
+							OutputDebugStringA(_eb);
+							pDBOMesh->pBones[b].dwNumInfluences = 0;
+							pDBOMesh->pBones[b].pWeights = NULL;
+							pDBOMesh->pBones[b].pVertices = NULL;
+						}
+						else
+						{
 						pDBOMesh->pBones[b].dwNumInfluences = iInfluenceCount;
 						pDBOMesh->pBones[b].pWeights = new float[iInfluenceCount];
 						pDBOMesh->pBones[b].pVertices = new DWORD[iInfluenceCount];
 						for (int i = 0; i < iInfluenceCount; i++)
 						{
-							if (!pAssImpMesh->mBones[b]->mWeights)
-							{
-								//								//PE: bone have no weights.
-								delete[] pDBOMesh->pBones[b].pWeights;
-								delete[] pDBOMesh->pBones[b].pVertices;
-								pDBOMesh->pBones[b].pVertices = NULL;
-								pDBOMesh->pBones[b].pWeights = NULL;
-								pDBOMesh->pBones[b].dwNumInfluences = 0;
-								break;
-							}
 							pDBOMesh->pBones[b].pVertices[i] = pAssImpMesh->mBones[b]->mWeights[i].mVertexId;
 							pDBOMesh->pBones[b].pWeights[i] = pAssImpMesh->mBones[b]->mWeights[i].mWeight;
+						}
+						}
 						}
 
 						GGMatrixIdentity(&pDBOMesh->pBones[b].matTranslation);
@@ -1440,12 +1456,16 @@ bool LoadAssImpObject ( char* szFilename, sObject** ppObject, enumScalingMode eS
 						UINT boneIndex = b;
 
 						// now apply data to all vertices that use this bone
+						// Validate mWeights memory before iterating
+						if (!pAssImpMesh->mBones[b]->mWeights || pAssImpMesh->mBones[b]->mNumWeights <= 0)
+							continue;
+						{
+							size_t reqSize = (size_t)pAssImpMesh->mBones[b]->mNumWeights * (sizeof(unsigned int) + sizeof(float));
+							if (IsBadReadPtr(pAssImpMesh->mBones[b]->mWeights, reqSize))
+								continue;
+						}
 						for (UINT w = 0; w < pAssImpMesh->mBones[b]->mNumWeights; w++)
 						{
-							// have a weight
-							if (!pAssImpMesh->mBones[b]->mWeights)
-								continue;
-
 							// vertex with the weight (original vertex index)
 							UINT vertexIndex = pAssImpMesh->mBones[b]->mWeights[w].mVertexId;
 
