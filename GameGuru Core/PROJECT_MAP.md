@@ -386,3 +386,67 @@ WickedEngine handles all DX12 rendering internally. The GameGuru codebase itself
 ```
 
 The engine runs a **hybrid architecture**: WickedEngine provides the DX12 rendering pipeline for all 3D content, while the editor UI (ImGui) and many DarkSDK subsystems still operate through a DX11 device and context obtained from WickedEngine's interop layer.
+
+---
+
+## Module Graphics Dependency Classification
+
+Modules are classified by their dependency on graphics APIs, relevant for the DX12 migration.
+
+### Graphics-Heavy Modules (Require Migration Attention)
+
+| Module | Graphics API | Notes |
+|--------|-------------|-------|
+| `Guru-WickedMAX/master_part0-1.cpp` | WickedEngine (abstracted) + DX11 interop for VR | VR path uses DX11 RTVs via OpenXR |
+| `Guru-WickedMAX/wickedcalls_part0-4.cpp` | WickedEngine (abstracted) | 200+ bridge functions, all through WickedEngine API |
+| `Guru-WickedMAX/GGTerrain/` | WickedEngine device API | Custom shaders, pipeline states, GPU buffers, compute shaders |
+| `Guru-WickedMAX/GPUParticles_part0.cpp` | WickedEngine device API | Custom shaders, pipeline states, GPU buffers, samplers |
+| `Guru-WickedMAX/CustomShaders.cpp` | WickedEngine shader API | Runtime shader loading and PSO creation |
+| `Guru-WickedMAX/ModelImporter_OBJ.cpp` | WickedEngine scene/ECS | Material and mesh creation |
+| `GameGuru/Imgui/imgui_gg_dx11_part0-5.cpp` | **Direct DX11** (9,249 lines) | Primary DX11 code - must be migrated to DX12 |
+| `GameGuru/Source/Common-Images.cpp` | DX11 via GG* macros | Cube map rendering, texture creation |
+| `GameGuru/Source/M-GridEdit_part*.cpp` | DX11 via GG* macros | Editor texture references (30+ usages) |
+| `SDK/DirectX/directx-macros.h` | DX11 type definitions | 200+ macros mapping GG* names to DX11 types |
+
+### Graphics-Light Modules (Minimal or No Migration)
+
+| Module | Graphics API | Notes |
+|--------|-------------|-------|
+| `Guru-WickedMAX/main.cpp` | WickedEngine (abstracted) | Window setup and main loop only |
+| `Guru-WickedMAX/GameGuruMain.cpp` | WickedEngine (abstracted) | Game loop orchestration |
+| `Guru-WickedMAX/tracers/` | WickedEngine (abstracted) | Uses CommandList and wiRenderer |
+| `GameGuru/Source/M-Game_part*.cpp` | None | Game state machine, level loading |
+| `GameGuru/Source/G-Entity_part*.cpp` | None | Entity runtime (spawning, damage, lifecycle) |
+| `GameGuru/Source/G-Gun_part*.cpp` | None | Weapon runtime |
+| `GameGuru/Source/M-Entity_part*.cpp` | Minimal (GG* texture refs) | Entity management |
+
+### Graphics-Independent Modules (No Migration Needed)
+
+| Module | Notes |
+|--------|-------|
+| `DarkSDK/Sound/`, `DarkSDK/Music/` | DirectSound/XAudio2 - no DX11 |
+| `DarkSDK/Input/` | DirectInput - no DX11 |
+| `DarkSDK/File/`, `DarkSDK/Memblocks/` | Pure data I/O |
+| `DarkSDK/Vectors/`, `DarkSDK/Matrix/`, `DarkSDK/Transforms/` | Pure math |
+| `DarkSDKMore/DarkLUA/` | Lua scripting - no graphics |
+| `DarkSDKMore/DarkAI/` | AI pathfinding/behavior - no graphics |
+| `DarkSDKMore/Enhancements/` | ZIP, OGG Vorbis - no graphics |
+| `DarkSDKMore/SimonReloaded/`, `DarkSDKMore/SimonCSG/` | CSG geometry - no graphics |
+| `DarkSDKMore/PhotonMultiplayer/`, `DarkSDKMore/SteamMultiplayer/` | Networking stubs |
+| `DarkSDK/Bullet/` | Bullet Physics - no graphics |
+| `GameGuru/Source/M-Physics_part*.cpp` | Bullet Physics integration |
+| `GameGuru/Source/M-DAI*.cpp`, `M-DAINew*.cpp` | AI systems |
+| `GameGuru/Source/M-CharacterCreatorPlus*.cpp` | Character creation logic |
+| `GameGuru/Source/M-Importer_part*.cpp` | Asset importing (Assimp) |
+| `GameGuru/Source/M-MapFile.cpp` | Map save/load |
+| `GameGuru/Source/M-LUA*.cpp` | Lua bindings |
+| `SDK/BULLET/` | Physics library |
+| `SDK/OGG/` | Audio codec |
+| `SDK/DirectXTex/` | Texture processing (DXGI-based, API-neutral) |
+| `Guru-WickedMAX/GGRecastDetour/` | Navigation mesh - no graphics |
+| `Guru-WickedMAX/Nlohmann JSON/` | JSON parsing |
+
+### Migration Reference Documents
+
+- **DX12_AUDIT.md** - Detailed audit of every graphics API call in the codebase
+- **MIGRATION_PLAN.md** - Ordered migration plan with phases, risks, and dependencies
