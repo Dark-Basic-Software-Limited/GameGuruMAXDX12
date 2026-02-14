@@ -29,12 +29,13 @@ std::string GetTimestamp()
 // Crash handler
 LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
 {
-    MessageBoxA(
-        NULL,
-        "A crash has been detected! A crash report has been created in file 'Guru-Crash.log'",
-        "GameGuru MAX Crash",
-        MB_OK | MB_ICONERROR
-    );
+    // TODO: removed MessageBox during DX12 migration debugging — re-enable when stable
+    // MessageBoxA(
+    //     NULL,
+    //     "A crash has been detected! A crash report has been created in file 'Guru-Crash.log'",
+    //     "GameGuru MAX Crash",
+    //     MB_OK | MB_ICONERROR
+    // );
 
     // Get path to the EXE folder
     char exeFile[MAX_PATH];
@@ -56,7 +57,8 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     //if (!SymInitialize(process, NULL, FALSE)) {
     if (!SymInitialize(process, NULL, TRUE))
     {
-        MessageBoxA(NULL, "Failed to initialize symbols.", "GameGuru MAX Crash", MB_OK | MB_ICONERROR);
+        // TODO: removed MessageBox during DX12 migration debugging
+        // MessageBoxA(NULL, "Failed to initialize symbols.", "GameGuru MAX Crash", MB_OK | MB_ICONERROR);
         return 1;
     }
 
