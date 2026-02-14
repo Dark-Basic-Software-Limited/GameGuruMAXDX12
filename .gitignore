@@ -39,9 +39,10 @@ GameGuru Core/Guru-WickedMAX/Wicked-MAX/
 .vs/
 **/.vs/
 
-# Nupkg files
+# Nupkg/package files
 *.nupkg
 *.zip
+**/nupkg/
 GameGuru Core/.vs/GameGuruWickedMAX/v17/.suo
 GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Release/Animation.res
 GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Release/Animation.vcxproj.FileListAbsolute.txt
