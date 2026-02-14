@@ -225,13 +225,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         return FALSE;
     }
-
 	// Set resource paths to Max root folder
 	wiRenderer::SetShaderPath("shaders/");
 
 	//PE: need setup.ini before any logic.
 	void GetSetupIniEarly(void);
 	GetSetupIniEarly();
+
+	// Provide splash image for WickedEngine's init-phase rendering
+	CopyFileA("Files\\editors\\uiv3\\loadingsplash.png", "splash_screen.png", TRUE);
 
 	// Main application loop
 	MSG msg = { 0 };

@@ -316,7 +316,6 @@ void Master::InitializeSecondaries()
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
-
 	initializedSecondaries = true;
 	infoDisplay.active = false;
 	infoDisplay.watermark = false;// true;
@@ -1361,6 +1360,21 @@ void Master::RunCustom()
 	}
 	if (!wiInitializer::IsInitializeFinished())
 	{
+		// Render WickedEngine's built-in splash screen during async shader compilation.
+		// Run() handles !IsInitializeFinished() gracefully: it renders splash_screen.png
+		// to the swapchain and presents, giving visual feedback during the ~9 second
+		// init wait instead of relying solely on the GDI+ fallback.
+		Run();
+
+		// Once DX12 is presenting frames, disable the GDI+ splash to prevent
+		// WM_PAINT from briefly overwriting DX12 content during window events.
+		static bool disabledGdiSplash = false;
+		if (!disabledGdiSplash)
+		{
+			disabledGdiSplash = true;
+			extern bool g_bShowEarlySplash;
+			g_bShowEarlySplash = false;
+		}
 		return;
 	}
 	if ( !initializedSecondaries )

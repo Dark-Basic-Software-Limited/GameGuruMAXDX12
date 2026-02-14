@@ -389,7 +389,6 @@ void MasterRenderer::Compose(CommandList cmd) const
 		}
 		return; // skip ImGui during splash
 	}
-
 	// Phase 5: Render ImGui draw data using DX12 backend
 	extern bool bImGuiInitDone;
 	if (bImGuiInitDone)
