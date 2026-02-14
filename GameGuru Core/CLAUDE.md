@@ -5,13 +5,13 @@ This is a large C++ Windows x64 project (game engine) built with MSVC.
 Solution file: `GameGuruWickedMAX.sln`
 
 ## Build Commands
-Build from the project root using `build.bat`:
+Invoke `build.bat` using its full quoted path (required because the project root contains a space):
 
 ```
-build.bat Debug          # Build Debug x64
-build.bat Release        # Build Release x64
-build.bat Debug rebuild  # Clean rebuild Debug x64
-build.bat Release rebuild # Clean rebuild Release x64
+"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Debug          # Build Debug x64
+"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Release        # Build Release x64
+"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Debug rebuild  # Clean rebuild Debug x64
+"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Release rebuild # Clean rebuild Release x64
 ```
 
 ## Build System
