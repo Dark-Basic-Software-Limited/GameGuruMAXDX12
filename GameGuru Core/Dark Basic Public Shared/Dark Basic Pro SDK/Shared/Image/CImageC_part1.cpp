@@ -257,6 +257,18 @@ DARKSDK LPGGTEXTUREREF GetImagePointerView ( int iID )
 	if ( !UpdatePtrImage ( iID ) )
 		return NULL;
 
+	// DX12 path: lazy-load texture via the DX12 bridge
+	extern bool ImGui_DX12_IsInitialized();
+	if (ImGui_DX12_IsInitialized() && m_imgptr->lpTextureView == NULL)
+	{
+		extern void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath);
+		// Try long filename first, fall back to short filename
+		void* texId = ImGui_DX12_GetOrLoadTexture(iID, m_imgptr->szLongFilename);
+		if (!texId && m_imgptr->szShortFilename[0])
+			texId = ImGui_DX12_GetOrLoadTexture(iID, m_imgptr->szShortFilename);
+		return (LPGGTEXTUREREF)texId;
+	}
+
 	if (m_imgptr->lpTextureView) {
 #ifdef PETESTIMAGEUSAGE
 		m_imgptr->AccessCountGPU++;
@@ -820,6 +832,28 @@ DARKSDK bool LoadImageCoreRetainName ( char* szRealName, char* szFilename, int i
 	{
 		// legacy support
 		memcpy ( test->szLongFilename + iLen1, pNameForInternalList + 1, sizeof ( char ) * iLen2 );
+	}
+
+	// DX12 mode: skip DX11 texture creation, store entry with filenames for lazy DX12 loading
+	extern bool ImGui_DX12_IsInitialized();
+	if (ImGui_DX12_IsInitialized())
+	{
+		// Get image dimensions from file header without loading full pixel data
+		extern bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight);
+		int imgW = 0, imgH = 0;
+		ImGui_DX12_GetFileDimensions(test->szLongFilename, &imgW, &imgH);
+		if (imgW == 0 || imgH == 0)
+			ImGui_DX12_GetFileDimensions(szFilename, &imgW, &imgH);
+		test->iWidth = imgW;
+		test->iHeight = imgH;
+		test->iDepth = 32;
+		test->lpTexture = NULL;
+		test->lpTextureView = NULL;
+		test->fTexUMax = 1.0f;
+		test->fTexVMax = 1.0f;
+		test->bLocked = false;
+		m_List.insert(std::make_pair(iID, test));
+		return true;
 	}
 
 	// The default is a setting of zero (0)

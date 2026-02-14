@@ -16,6 +16,10 @@
 #include "shellscalingapi.h"
 #endif
 
+// GDI+ for early splash screen (shown during WickedEngine initialization)
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus")
+
 #ifdef OPTICK_ENABLE
 #include "optick.h"
 #endif
@@ -58,6 +62,11 @@ bool g_bAppActiveStat = true;
 bool g_bLostFocus = false;
 char g_pStartingDirectory[260];
 uint32_t FrameCounter = 0;
+
+// Early splash screen via GDI+ (shown instantly while WickedEngine initializes)
+ULONG_PTR g_gdiplusToken = 0;
+Gdiplus::Bitmap* g_pEarlySplashBitmap = nullptr;
+bool g_bShowEarlySplash = true;
 
 // Encapsulates all other classes for Wicked Engine control
 Master master;
@@ -155,6 +164,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			bReturnToWelcome = true;
 		}
 	}
+	// Initialize GDI+ and load splash image before window creation so it's
+	// ready to paint immediately when the window appears (WM_PAINT).
+	// This eliminates the ~9 second blank white window during WickedEngine init.
+	{
+		Gdiplus::GdiplusStartupInput gdiplusInput;
+		Gdiplus::GdiplusStartup(&g_gdiplusToken, &gdiplusInput, nullptr);
+		g_pEarlySplashBitmap = Gdiplus::Bitmap::FromFile(L"Files\\editors\\uiv3\\loadingsplash.png");
+		if (g_pEarlySplashBitmap && g_pEarlySplashBitmap->GetLastStatus() != Gdiplus::Ok)
+		{
+			delete g_pEarlySplashBitmap;
+			g_pEarlySplashBitmap = nullptr;
+		}
+	}
+
 	// As it is this early, check registry whether we ignore DPI Awareness
 	#ifdef DPIAWARE
 	char pDPINotAware[256];
@@ -270,7 +293,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hInstance      = hInstance;
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GAMEGURUMAX));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
+    wcex.hbrBackground  = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	wcex.lpszMenuName = 0;
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
@@ -450,6 +473,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
+            if (g_bShowEarlySplash && g_pEarlySplashBitmap)
+            {
+                // Draw splash image scaled to fill the window
+                Gdiplus::Graphics graphics(hdc);
+                RECT rc;
+                GetClientRect(hWnd, &rc);
+                graphics.DrawImage(g_pEarlySplashBitmap, 0, 0, rc.right, rc.bottom);
+            }
             EndPaint(hWnd, &ps);
         }
         break;

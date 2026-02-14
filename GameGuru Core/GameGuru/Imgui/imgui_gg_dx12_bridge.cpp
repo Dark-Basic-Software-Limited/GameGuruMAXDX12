@@ -10,9 +10,13 @@
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
 #include <wrl/client.h>
+#include <unordered_map>
 
 #pragma comment(lib, "d3dcompiler")
 #pragma comment(lib, "d3d12")
+
+// stb_image for loading PNG/JPG/BMP/TGA files (implementation in WickedEngine_Windows.lib)
+#include "../Include/Utility/stb_image.h"
 
 // WickedEngine headers for device access
 #include "wiGraphicsDevice_DX12.h"
@@ -29,8 +33,8 @@ static ID3D12CommandQueue* g_pd3dCommandQueue = nullptr;
 static ComPtr<ID3D12RootSignature> g_pRootSignature;
 static ComPtr<ID3D12PipelineState> g_pPipelineState;
 
-// Descriptor heap for ImGui SRV (font texture etc.)
-static const UINT IMGUI_SRV_HEAP_SIZE = 64;
+// Descriptor heap for ImGui SRV (font texture + UI images)
+static const UINT IMGUI_SRV_HEAP_SIZE = 512;
 static ComPtr<ID3D12DescriptorHeap> g_pd3dSrvDescHeap;
 static UINT g_SrvDescriptorSize = 0;
 
@@ -41,6 +45,17 @@ static bool g_SrvSlotUsed[IMGUI_SRV_HEAP_SIZE] = {};
 static ComPtr<ID3D12Resource> g_pFontTextureResource;
 static D3D12_GPU_DESCRIPTOR_HANDLE g_FontSrvGpuHandle = {};
 static bool g_FontTextureCreated = false;
+
+// Texture cache for UI images (image ID → DX12 texture data)
+struct DX12CachedTexture
+{
+    ComPtr<ID3D12Resource> Resource;
+    D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle = {};
+    UINT SrvSlotIndex = 0;
+    int Width = 0;
+    int Height = 0;
+};
+static std::unordered_map<int, DX12CachedTexture> g_TextureCache;
 
 // Per-frame resources (double-buffered)
 static const int NUM_FRAMES_IN_FLIGHT = 2;
@@ -598,6 +613,7 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
 
 void ImGui_DX12_ShutdownBridge()
 {
+    g_TextureCache.clear();
     g_pFontTextureResource.Reset();
     g_pPipelineState.Reset();
     g_pRootSignature.Reset();
@@ -620,4 +636,198 @@ void ImGui_DX12_ShutdownBridge()
 bool ImGui_DX12_IsInitialized()
 {
     return g_ImGuiDX12Initialized;
+}
+
+// --- Texture loading for UI images ---
+
+static bool CreateDX12TextureFromPixels(unsigned char* pixels, int width, int height,
+    ComPtr<ID3D12Resource>& outResource, D3D12_GPU_DESCRIPTOR_HANDLE& outGpuHandle, UINT& outSrvSlot)
+{
+    if (!g_pd3dDevice || !g_pd3dCommandQueue || !pixels || width <= 0 || height <= 0)
+        return false;
+
+    // Create texture resource
+    D3D12_HEAP_PROPERTIES heapProps = {};
+    heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    D3D12_RESOURCE_DESC desc = {};
+    desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    desc.Width = width;
+    desc.Height = height;
+    desc.DepthOrArraySize = 1;
+    desc.MipLevels = 1;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    HRESULT hr = g_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
+        D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&outResource));
+    if (FAILED(hr)) return false;
+
+    // Create upload buffer
+    UINT64 uploadSize = 0;
+    g_pd3dDevice->GetCopyableFootprints(&desc, 0, 1, 0, nullptr, nullptr, nullptr, &uploadSize);
+
+    D3D12_HEAP_PROPERTIES uploadHeapProps = {};
+    uploadHeapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+    D3D12_RESOURCE_DESC uploadDesc = {};
+    uploadDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    uploadDesc.Width = uploadSize;
+    uploadDesc.Height = 1;
+    uploadDesc.DepthOrArraySize = 1;
+    uploadDesc.MipLevels = 1;
+    uploadDesc.Format = DXGI_FORMAT_UNKNOWN;
+    uploadDesc.SampleDesc.Count = 1;
+    uploadDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+    ComPtr<ID3D12Resource> uploadBuffer;
+    hr = g_pd3dDevice->CreateCommittedResource(&uploadHeapProps, D3D12_HEAP_FLAG_NONE, &uploadDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadBuffer));
+    if (FAILED(hr)) return false;
+
+    // Create temp command list for upload
+    ComPtr<ID3D12CommandAllocator> cmdAlloc;
+    ComPtr<ID3D12GraphicsCommandList> cmdList;
+    ComPtr<ID3D12Fence> fence;
+
+    hr = g_pd3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&cmdAlloc));
+    if (FAILED(hr)) return false;
+    hr = g_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmdAlloc.Get(), nullptr, IID_PPV_ARGS(&cmdList));
+    if (FAILED(hr)) return false;
+    hr = g_pd3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+    if (FAILED(hr)) return false;
+
+    // Copy pixel data to upload buffer
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+    UINT numRows;
+    UINT64 rowSizeInBytes;
+    g_pd3dDevice->GetCopyableFootprints(&desc, 0, 1, 0, &layout, &numRows, &rowSizeInBytes, &uploadSize);
+
+    void* mapped = nullptr;
+    D3D12_RANGE readRange = { 0, 0 };
+    hr = uploadBuffer->Map(0, &readRange, &mapped);
+    if (FAILED(hr)) return false;
+
+    for (UINT y = 0; y < numRows; y++)
+    {
+        memcpy((char*)mapped + layout.Offset + y * layout.Footprint.RowPitch,
+               pixels + y * width * 4,
+               width * 4);
+    }
+    uploadBuffer->Unmap(0, nullptr);
+
+    // Copy from upload buffer to texture
+    D3D12_TEXTURE_COPY_LOCATION srcLoc = {};
+    srcLoc.pResource = uploadBuffer.Get();
+    srcLoc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    srcLoc.PlacedFootprint = layout;
+
+    D3D12_TEXTURE_COPY_LOCATION dstLoc = {};
+    dstLoc.pResource = outResource.Get();
+    dstLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dstLoc.SubresourceIndex = 0;
+
+    cmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+
+    // Transition to pixel shader resource
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = outResource.Get();
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    cmdList->ResourceBarrier(1, &barrier);
+
+    hr = cmdList->Close();
+    if (FAILED(hr)) return false;
+
+    // Execute and wait
+    ID3D12CommandList* ppCmdLists[] = { cmdList.Get() };
+    g_pd3dCommandQueue->ExecuteCommandLists(1, ppCmdLists);
+    g_pd3dCommandQueue->Signal(fence.Get(), 1);
+
+    HANDLE event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    fence->SetEventOnCompletion(1, event);
+    WaitForSingleObject(event, INFINITE);
+    CloseHandle(event);
+
+    // Allocate SRV slot
+    D3D12_CPU_DESCRIPTOR_HANDLE srvCpu;
+    if (!AllocSrvSlot(outSrvSlot, srvCpu, outGpuHandle))
+        return false;
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    g_pd3dDevice->CreateShaderResourceView(outResource.Get(), &srvDesc, srvCpu);
+
+    return true;
+}
+
+void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath)
+{
+    if (!g_ImGuiDX12Initialized || !filepath || !filepath[0])
+        return nullptr;
+
+    // Check cache first
+    auto it = g_TextureCache.find(imageId);
+    if (it != g_TextureCache.end())
+        return (void*)it->second.GpuHandle.ptr;
+
+    // Load image from file using stb_image
+    int width, height, channels;
+    unsigned char* pixels = stbi_load(filepath, &width, &height, &channels, 4); // Force RGBA
+    if (!pixels)
+        return nullptr;
+
+    DX12CachedTexture cached;
+    cached.Width = width;
+    cached.Height = height;
+
+    bool ok = CreateDX12TextureFromPixels(pixels, width, height,
+        cached.Resource, cached.GpuHandle, cached.SrvSlotIndex);
+    stbi_image_free(pixels);
+
+    if (!ok)
+        return nullptr;
+
+    void* result = (void*)cached.GpuHandle.ptr;
+    g_TextureCache[imageId] = std::move(cached);
+    return result;
+}
+
+void ImGui_DX12_SetImageSize(int imageId, int width, int height)
+{
+    auto it = g_TextureCache.find(imageId);
+    if (it != g_TextureCache.end())
+    {
+        it->second.Width = width;
+        it->second.Height = height;
+    }
+}
+
+bool ImGui_DX12_GetImageSize(int imageId, int* outWidth, int* outHeight)
+{
+    auto it = g_TextureCache.find(imageId);
+    if (it != g_TextureCache.end() && it->second.Width > 0)
+    {
+        if (outWidth) *outWidth = it->second.Width;
+        if (outHeight) *outHeight = it->second.Height;
+        return true;
+    }
+    return false;
+}
+
+bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight)
+{
+    if (!filepath || !filepath[0])
+        return false;
+    int comp = 0;
+    if (stbi_info(filepath, outWidth, outHeight, &comp))
+        return true;
+    return false;
 }

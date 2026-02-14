@@ -17,3 +17,20 @@ void ImGui_DX12_ShutdownBridge();
 
 // Returns true if the DX12 bridge was successfully initialized.
 bool ImGui_DX12_IsInitialized();
+
+// Call ImGui_DX12_NewFrame() once per frame (called from ImGui_ImplDX11_NewFrame redirect).
+void ImGui_DX12_NewFrame();
+
+// Load an image file (PNG/JPG/BMP/TGA) and register it as an ImGui texture.
+// Returns the ImTextureID (GPU descriptor handle) or nullptr on failure.
+// The texture is cached — subsequent calls with the same imageId return the cached handle.
+void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath);
+
+// Set width/height for an image entry (used during DX12 lazy loading).
+void ImGui_DX12_SetImageSize(int imageId, int width, int height);
+
+// Retrieve cached width/height for an image loaded via DX12.
+bool ImGui_DX12_GetImageSize(int imageId, int* outWidth, int* outHeight);
+
+// Query image file dimensions from disk without loading pixel data.
+bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight);

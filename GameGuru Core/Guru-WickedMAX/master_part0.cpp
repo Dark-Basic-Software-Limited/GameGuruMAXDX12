@@ -18,6 +18,7 @@
 #include "GameGuruMain.h"
 #include <direct.h>
 #include <shellapi.h>
+#include <gdiplus.h>
 #include "GGVR.h"
 #include "gameguru.h"
 #include <ctime>
@@ -1251,6 +1252,12 @@ void Master::Finish(void)
 	OPTICK_EVENT();
 #endif
 	GuruFinish();
+
+	// Clean up early GDI+ splash resources
+	extern Gdiplus::Bitmap* g_pEarlySplashBitmap;
+	extern ULONG_PTR g_gdiplusToken;
+	if (g_pEarlySplashBitmap) { delete g_pEarlySplashBitmap; g_pEarlySplashBitmap = nullptr; }
+	if (g_gdiplusToken) { Gdiplus::GdiplusShutdown(g_gdiplusToken); g_gdiplusToken = 0; }
 }
 
 bool Master::ForceRender(void* rt)
@@ -1420,6 +1427,10 @@ void Master::RunCustom()
 		OPTICK_EVENT("Initialize Secondaries");
 #endif
 		InitializeSecondaries(); // synchronous so no need to return and come back later
+
+		// Disable the early GDI+ splash — WickedEngine is now rendering
+		extern bool g_bShowEarlySplash;
+		g_bShowEarlySplash = false;
 	}
 
 	// we need to customize the Run() process when rendering in VR, 
