@@ -38,9 +38,10 @@ extern bool bProceduralLevel;
 #include "globstruct.h"
 extern GlobStruct* g_pGlob;
 
-// Demo game library list
+// Demo game library list and edit trigger
 #include "M-GridEditB.h"
 extern std::vector<sLibraryList> g_LibraryFileList;
+extern bool bTriggerEditDemoGame;
 
 // Tab force variable
 int g_iAutoForceWelcomeTab = -1;
@@ -303,15 +304,20 @@ static void Cmd_Click(const char* element, char* result, int resultSize)
 
 	if (_stricmp(element, "edit_game") == 0)
 	{
-		// Trigger edit game from storyboard
 		if (bStoryboardWindow)
 		{
 			iStoryboardExecuteKey = 'E';
 			_snprintf(result, resultSize, "OK: Triggered Edit Game from storyboard");
 		}
+		else if (bWelcomeScreen_Window)
+		{
+			// Trigger edit from Demo Games tab (same as double-click)
+			bTriggerEditDemoGame = true;
+			_snprintf(result, resultSize, "OK: Triggered Edit Game from hub (demo games)");
+		}
 		else
 		{
-			_snprintf(result, resultSize, "ERROR: Not in storyboard view, cannot Edit Game");
+			_snprintf(result, resultSize, "ERROR: Not in hub or storyboard view, cannot Edit Game");
 		}
 		result[resultSize - 1] = 0;
 		return;

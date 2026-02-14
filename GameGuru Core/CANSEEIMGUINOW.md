@@ -95,10 +95,22 @@ DX11 shaders don't embed root signatures. DX12 requires them. When `wiRenderer::
 - **File-based command/response** system for Claude Code testing (`AutomationHarness.cpp/.h`)
 - Command file: `auto_command.txt`, Response file: `auto_result.txt`, Log: `auto_log.txt` (all in exe directory)
 - Hooked at top of `GuruLoopLogic()` — zero overhead when no command file present (`GetFileAttributesA` fast-path)
-- Commands: `GET_STATE`, `NAVIGATE hub|hub.<tab>|storyboard`, `CLICK <element>`, `WAIT <ms>`, `SCREENSHOT`, `QUIT`
+- Commands: `GET_STATE`, `NAVIGATE hub|hub.<tab>|storyboard`, `CLICK <element>`, `WAIT <ms>`, `SCREENSHOT`, `QUIT`, `LIST_DEMOS`, `SELECT_DEMO <name>`
+- `LIST_DEMOS` enumerates all demo games by display name (19 games found)
+- `SELECT_DEMO` selects a demo by name (case-insensitive), forces Demo Games tab active via `g_sAutoSelectDemo` consumed in `Welcome_Screen()`
+- `CLICK edit_game` works from both storyboard (via `iStoryboardExecuteKey`) and hub/Demo Games tab (via `bTriggerEditDemoGame` flag)
 - Tab navigation via `g_iAutoForceWelcomeTab` injecting `ImGuiTabItemFlags_SetSelected` into Welcome_Screen tab bar
 - Tab tracking via `g_iAutoCurrentTab` exposing the static `iCurrentOpenTab` to GET_STATE
+- Race condition fix: empty command files are skipped (not deleted) to handle writer flush timing
 - See `AUTOMATION_MAP.md` for full UI state flag documentation
+
+## Automation Test Results (Phase 6B)
+Tested via harness: SELECT_DEMO "Switch Escape" → CLICK edit_game from hub
+
+- **Result**: App freezes during level load. No crash (no new entry in `Guru-Crash.log`), but `GuruLoopLogic()` stops ticking, making the harness unresponsive.
+- **Load path taken**: `iLaunchAfterSync = 7` (direct file load of `mapbank\Switch Escape.fpm`) — this is the non-project path since demo games don't have `.cProject` set.
+- **Log output during freeze**: Repeated `D3D12CreateVersionedRootSignatureDeserializer` failures (0x80070057) for terrain/particle shaders, then `CreatePipelineState failed: shader missing DX12 root signature`. The loading sequence hits disabled subsystems (terrain, GPU particles) which fail gracefully, but the load state machine itself appears to hang.
+- **Implication**: The synchronous level loading path blocks the main loop. Fixing this requires either making the load async or fixing the specific DX11 code paths in the load sequence that cause the hang.
 
 ## Architecture Notes
 - **Init sequence** (`GameGuruMain.cpp`): Case 0 (editor window) -> Case 1 (GPU particles) -> Case 2 (terrain + tracers) -> Case 3 (GuruMain/common_init)
