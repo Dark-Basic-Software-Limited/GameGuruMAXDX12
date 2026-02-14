@@ -112,6 +112,65 @@ Tested via harness: SELECT_DEMO "Switch Escape" → CLICK edit_game from hub
 - **Log output during freeze**: Repeated `D3D12CreateVersionedRootSignatureDeserializer` failures (0x80070057) for terrain/particle shaders, then `CreatePipelineState failed: shader missing DX12 root signature`. The loading sequence hits disabled subsystems (terrain, GPU particles) which fail gracefully, but the load state machine itself appears to hang.
 - **Implication**: The synchronous level loading path blocks the main loop. Fixing this requires either making the load async or fixing the specific DX11 code paths in the load sequence that cause the hang.
 
+## Level Load Freeze - Investigation Notes (Phase 6B)
+
+### How to reproduce
+```
+echo "GET_STATE" > auto_command.txt          # confirm hub/demo_games
+echo "SELECT_DEMO Switch Escape" > auto_command.txt
+echo "CLICK edit_game" > auto_command.txt    # app freezes here
+```
+
+### What happens
+The Demo Games "Edit Game" button (or `bTriggerEditDemoGame` flag) triggers the direct load path because demo games don't have `.cProject` set. The flow is:
+1. `cDirectOpen = "mapbank\Switch Escape.fpm"` + `iLaunchAfterSync = 7` + `bWelcomeScreen_Window = false` (M-GridEditB_part16.cpp:2662-2666)
+2. State 7 handler (M-GridEdit_part1.cpp:296-331): validates filename, sets `sNextLevelToLoad`, transitions to `iLaunchAfterSync = 502` with 3-frame delay
+3. State 502 handler (M-GridEdit_part1.cpp:157-241): calls `gridedit_load_map()` **synchronously** — this blocks the main loop
+
+### State machine location
+**M-GridEdit_part1.cpp** contains the `iLaunchAfterSync` state machine, processed inside `mapeditorexecutable_loop()`:
+- Line 130-132: Delay gate (`iSkibFramesBeforeLaunch` counts down before state is processed)
+- Line 157-241: **State 502** — the actual level load (synchronous, blocking)
+- Line 296-331: **State 7** — "Direct Open" setup, validates `cDirectOpen`, transitions to 502
+
+### Synchronous load call chain
+```
+State 502 (M-GridEdit_part1.cpp:157)
+  → gridedit_load_map() (M-GridEdit_part7.cpp:768)
+    → mapfile_loadproject_fpm() (M-MapFile_part0.cpp:920)
+      → ExtractZipThread + WaitForAll() (M-MapFile_part0.cpp:1013) — BLOCKS
+      → entity_loadbank()
+      → entity_loadelementsdata()
+      → waypoint_loaddata()
+      → [all synchronous, all on main thread]
+```
+
+### Key variables
+| Variable | Type | Defined In | Purpose |
+|----------|------|-----------|---------|
+| `iLaunchAfterSync` | int | M-GridEdit_part0.cpp:393 | Load state machine state |
+| `iSkibFramesBeforeLaunch` | int | M-GridEdit_part0.cpp:394 | Frame delay before processing state |
+| `cDirectOpen` | char[260] | M-GridEdit_part0.cpp:421 | Path to level file to load |
+| `sNextLevelToLoad` | string | M-GridEdit_part1.cpp (extern) | Staged level path for state 502 |
+| `bTriggerEditDemoGame` | bool | M-GridEditB_part15.cpp:4 | Triggers Edit Game from Demo Games tab |
+
+### Where `iLaunchAfterSync = 7` is set (all direct load triggers)
+- M-GridEditB_part16.cpp:2616, 2664 (Demo Games tab play/edit)
+- M-GridEditB_part19.cpp:2038, 2124, 2582, 4292, 4379, 4468 (Storyboard actions)
+- M-GridEdit_part1.cpp:1300 (Recent files menu)
+- DBDLLCore_part0.cpp:1900, 1934 (Command line / drag-and-drop)
+
+### Why it freezes (not crashes)
+The load is fully synchronous on the main thread. During `gridedit_load_map()`, `GuruLoopLogic()` never returns, so `AutoHarness_CheckForCommand()` never runs. The app doesn't crash — it's blocked inside the load. The DX12 root signature errors in the log are from terrain/particle shader loading during the level load (expected failures for disabled subsystems). The freeze likely occurs in one of:
+- Entity loading hitting DX11 texture/model code paths
+- Terrain init attempting DX11 resource creation
+- Asset import using null DX11 device for format conversion
+
+### Next steps
+- Attach a debugger or add logging inside `gridedit_load_map()` / `mapfile_loadproject_fpm()` to find exactly where it hangs
+- Check if `EmptyMessages()` (M-MapFile_part0.cpp:826) is being reached or if execution stalls before it
+- Look for DX11 device calls (`m_pD3D`, `GG*` macros, `ID3D11Device*`) in the entity/terrain loading functions that would block or deadlock under DX12
+
 ## Architecture Notes
 - **Init sequence** (`GameGuruMain.cpp`): Case 0 (editor window) -> Case 1 (GPU particles) -> Case 2 (terrain + tracers) -> Case 3 (GuruMain/common_init)
 - **Render loop**: `Master::RunCustom()` -> `Run()` -> `MasterRenderer::Update()` (calls `GuruLoopLogic`) -> `__super::Update(dt)` -> `MasterRenderer::Render()` -> `MasterRenderer::Compose()` (ImGui drawn here)
