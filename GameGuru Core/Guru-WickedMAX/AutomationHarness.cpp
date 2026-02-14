@@ -34,9 +34,6 @@ extern cstr TriggerLoadGameProject;
 extern bool g_bDisableQuitFlag;
 extern bool bProceduralLevel;
 
-// FPS access - declared in CGfxC.h
-int GetDisplayFPS(void);
-
 // Global struct for window handle
 #include "globstruct.h"
 extern GlobStruct* g_pGlob;
@@ -186,10 +183,6 @@ int g_iAutoCurrentTab = 0;
 static void Cmd_GetState(char* result, int resultSize)
 {
 	const char* state = AutoHarness_GetAppState();
-	int fps = 0;
-	// Only call GetDisplayFPS if fully initialized
-	if (g_bNoGGUntilGameGuruMainCalled)
-		fps = GetDisplayFPS();
 
 	const char* tabName = "none";
 	if (bWelcomeScreen_Window)
@@ -205,11 +198,10 @@ static void Cmd_GetState(char* result, int resultSize)
 	_snprintf(result, resultSize,
 		"STATE: %s\n"
 		"TAB: %s\n"
-		"FPS: %d\n"
 		"VISIBLE_PANELS: %s\n"
 		"ERRORS: none\n"
 		"UPTIME: %lu",
-		state, tabName, fps, panels, uptime);
+		state, tabName, panels, uptime);
 	result[resultSize - 1] = 0;
 }
 

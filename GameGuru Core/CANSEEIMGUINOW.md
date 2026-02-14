@@ -91,6 +91,15 @@ DX11 shaders don't embed root signatures. DX12 requires them. When `wiRenderer::
 - All GGTerrain shaders (~25 shaders in `GGTerrain/Shaders/`)
 - BulletTracer shaders (2 shaders in `tracers/`)
 
+## Automation Harness (Phase 6A)
+- **File-based command/response** system for Claude Code testing (`AutomationHarness.cpp/.h`)
+- Command file: `auto_command.txt`, Response file: `auto_result.txt`, Log: `auto_log.txt` (all in exe directory)
+- Hooked at top of `GuruLoopLogic()` — zero overhead when no command file present (`GetFileAttributesA` fast-path)
+- Commands: `GET_STATE`, `NAVIGATE hub|hub.<tab>|storyboard`, `CLICK <element>`, `WAIT <ms>`, `SCREENSHOT`, `QUIT`
+- Tab navigation via `g_iAutoForceWelcomeTab` injecting `ImGuiTabItemFlags_SetSelected` into Welcome_Screen tab bar
+- Tab tracking via `g_iAutoCurrentTab` exposing the static `iCurrentOpenTab` to GET_STATE
+- See `AUTOMATION_MAP.md` for full UI state flag documentation
+
 ## Architecture Notes
 - **Init sequence** (`GameGuruMain.cpp`): Case 0 (editor window) -> Case 1 (GPU particles) -> Case 2 (terrain + tracers) -> Case 3 (GuruMain/common_init)
 - **Render loop**: `Master::RunCustom()` -> `Run()` -> `MasterRenderer::Update()` (calls `GuruLoopLogic`) -> `__super::Update(dt)` -> `MasterRenderer::Render()` -> `MasterRenderer::Compose()` (ImGui drawn here)

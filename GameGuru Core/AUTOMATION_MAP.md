@@ -140,12 +140,6 @@ bTriggerSaveAs = true
 
 ---
 
-## FPS Access
-
-`GetDisplayFPS()` declared in `CGfxC.h:199` - returns int, available globally.
-
----
-
 ## Window Handle
 
 `g_pGlob->hWnd` (HWND) - the main window handle, set in `main.cpp:316`.
