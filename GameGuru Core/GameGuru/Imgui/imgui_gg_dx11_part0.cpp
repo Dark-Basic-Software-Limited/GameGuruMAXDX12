@@ -176,6 +176,11 @@ const size_t MAX_FRAMES_TO_KEEP = 3;
 
 void ImGuiHook_RenderCall_Direct(void* ctxptr, void* d3dptr)
 {
+	// TODO Phase 5: migrate to DX12
+	// Phase 4: Guard against NULL device pointers during DX12 migration
+	if (!ctxptr || !d3dptr)
+		return;
+
 	if (bBlockImGuiUntilNewFrame || bBlockImGuiUntilFurtherNotice)
 		return;
 	if (bRenderNextFrame)
@@ -426,6 +431,11 @@ bool IntersectsWith(D3D11_RECT rect , D3D11_RECT compare)
 
 void ImGuiHook_RenderCall(void* ctxptr)
 {
+	// TODO Phase 5: migrate to DX12
+	// Phase 4: Guard against NULL device during DX12 migration
+	if (!g_pd3dDevice || !g_pd3dDeviceContext)
+		return;
+
 	extern bool g_bNoGGUntilGameGuruMainCalled;
 	if (g_bNoGGUntilGameGuruMainCalled==false)
 		return;
