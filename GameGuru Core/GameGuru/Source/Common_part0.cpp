@@ -690,6 +690,8 @@ void common_init ( void )
 
 	// Setup Platform/Renderer bindings
 	ImGui_ImplWin32_Init(g_pGlob->hWnd);
+	// TODO Phase 5: Replace with ImGui_ImplDX12_Init() using DX12 device from WickedEngine
+	// Phase 4: DX11 device is no longer available — ImGui_ImplDX11_Init will return false (null guard)
 	ImGui_ImplDX11_Init(m_pD3D, m_pImmediateContext);
 
 	//PE: First check forupdates just after imgui is up , if we need some special render.

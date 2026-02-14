@@ -845,6 +845,11 @@ bool ImGuiHook_GetScissorArea(float* pX1, float* pY1, float* pX2, float* pY2)
 // (this used to be set in io.RenderDrawListsFn and called by ImGui::Render(), but you can now call this directly from your main loop)
 void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
 {
+    // TODO Phase 5: Replace with ImGui_ImplDX12_RenderDrawData()
+    // Phase 4: Skip DX11 rendering when no DX11 device is available (DX12 migration)
+    if (!g_pd3dDevice || !g_pd3dDeviceContext)
+        return;
+
     // Avoid rendering when minimized
     if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
         return;
@@ -1516,6 +1521,14 @@ void    ImGui_ImplDX11_InvalidateDeviceObjects()
 
 bool    ImGui_ImplDX11_Init(ID3D11Device* device, ID3D11DeviceContext* device_context)
 {
+    // TODO Phase 5: Replace DX11 ImGui backend with DX12 backend (imgui_impl_dx12.h/cpp from D:\max\imgui\backends)
+    // Phase 4: Guard against NULL device during DX12 migration — DX11 device is no longer available
+    if (!device || !device_context)
+    {
+        bImGuiInitDone = false;
+        return false;
+    }
+
     // Setup back-end capabilities flags
     ImGuiIO& io = ImGui::GetIO();
     io.BackendRendererName = "imgui_impl_dx11";
@@ -1558,6 +1571,8 @@ int ImGui_Get_Multi_Viewports_Disabled()
 
 void ImGui_ImplDX11_Shutdown()
 {
+    // TODO Phase 5: Replace with ImGui_ImplDX12_Shutdown()
+    // Phase 4: Safe to call even when DX11 was never initialized
     ImGui_ImplDX11_ShutdownPlatformInterface();
     ImGui_ImplDX11_InvalidateDeviceObjects();
     if (g_pFactory) { g_pFactory->Release(); g_pFactory = NULL; }
@@ -1567,6 +1582,11 @@ void ImGui_ImplDX11_Shutdown()
 
 void ImGui_ImplDX11_NewFrame()
 {
+    // TODO Phase 5: Replace with ImGui_ImplDX12_NewFrame()
+    // Phase 4: Skip DX11 rendering when no DX11 device is available (DX12 migration)
+    if (!g_pd3dDevice)
+        return;
+
     if (!g_pFontSampler)
         ImGui_ImplDX11_CreateDeviceObjects();
 }

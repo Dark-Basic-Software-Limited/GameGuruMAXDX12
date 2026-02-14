@@ -88,10 +88,12 @@ GlobStruct*							g_pGlob = &g_Glob;
 extern HINSTANCE					hInst;
 extern HWND							hMainWnd;
 
+// TODO Phase 5: migrate to DX12 — these DX11 globals are NULL since WickedEngine DX12 owns the device
 // For IMGUI
 LPGGDEVICE							m_pD3D = NULL;
 LPGGIMMEDIATECONTEXT				m_pImmediateContext = NULL;
 
+// TODO Phase 5: migrate to DX12 — these DX11 state objects are unused with WickedEngine DX12
 // From EXEBLOCK
 LPGG								m_pDX = NULL;
 LPGGDEPTHSTENCILSTATE				m_pDepthStencilState = NULL;
@@ -333,7 +335,8 @@ void Master::InitializeSecondaries()
 	// occlusion query box has been expanded in an attempt to avoid flickering
 	wiRenderer::SetOcclusionCullingEnabled(false); // the lag is clearly visible, causing obvious gaps for some level designs (performance hit now disabled)!
 
-	// populate D3D ptrs (for IMGUI)
+	// TODO Phase 5: Replace ImGui DX11 init with DX12 backend — get DX12 device/queue from WickedEngine
+	// Phase 4: DX11 device retrieval removed — WickedEngine DX12 owns the graphics device
 	//m_pD3D = (ID3D11Device*)wiGraphics::GetDevice()->GetDeviceForIMGUI();
 	//m_pImmediateContext = (ID3D11DeviceContext*)wiGraphics::GetDevice()->GetImmediateForIMGUI();
 

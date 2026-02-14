@@ -251,3 +251,43 @@ Phases 1 and 2 can run in parallel. Phase 4 is the critical path with highest ef
 - [ ] VR rendering functional with DX12 (or explicitly deferred)
 - [ ] Full Debug + Release build with zero DX11 linker dependencies
 - [ ] Editor and game runtime regression-tested
+
+---
+
+## Phase 4 Status: Engine Initialization Migrated to DX12
+
+**Date:** 2026-02-14
+**Branch:** `phase4-dx12-init`
+
+### Key Finding
+
+WickedEngine DX12 was **already the active rendering backend**. The `Master` class extends `MainComponent` which internally creates the DX12 device, swap chain, command queues, and descriptor heaps during `SetWindow()` and `Initialize()`. The DX11 device globals (`m_pD3D`, `m_pImmediateContext`) were already NULL — the `GetDeviceForIMGUI()` and `GetImmediateForIMGUI()` calls had been commented out previously and don't exist in WickedEngineDX12.
+
+### What Was Changed
+
+1. **`imgui_gg_dx11_part0.cpp`** — Added null guards to 4 functions:
+   - `ImGui_ImplDX11_Init()`: Returns false if device or context is NULL
+   - `ImGui_ImplDX11_NewFrame()`: Returns early if `g_pd3dDevice` is NULL
+   - `ImGui_ImplDX11_RenderDrawData()`: Returns early if device/context is NULL
+   - `ImGui_ImplDX11_Shutdown()`: Added TODO comment (already null-safe)
+
+2. **`Common_part0.cpp`** — Added TODO comments around `ImGui_ImplDX11_Init()` call at line 693
+
+3. **`master_part0.cpp`** — Added TODO comments to:
+   - DX11 device globals (lines 91-108): `m_pD3D`, `m_pImmediateContext`, `m_pDX`, and all DX11 state objects
+   - Commented-out device retrieval (lines 336-338)
+
+### Surprises
+
+- **WickedEngine DX12 was already running** — 3D rendering, splash screen, terrain, particles all use WickedEngine API which routes to DX12 internally. No initialization migration was needed for core rendering.
+- **ImGui DX11 was being called with NULL pointers** — `ImGui_ImplDX11_Init(m_pD3D, m_pImmediateContext)` was called with both pointers NULL, which would crash without the null guards added.
+- **DX11 globals are referenced in ~50 files** — but all via `extern` and never assigned non-NULL values. They are effectively dead code.
+- **No build configuration changes needed** — the project was already linking WickedEngine_Windows.lib (DX12 version).
+
+### Blockers for Phase 5 (ImGui DX12 Backend)
+
+1. Need to expose `ID3D12Device*`, `ID3D12CommandQueue*`, and SRV descriptor heap from WickedEngine to initialize `ImGui_ImplDX12_Init()`
+2. Fresh ImGui DX12 backend available at `D:\max\imgui\backends\imgui_impl_dx12.h/cpp`
+3. 5 custom pixel shader variants in ImGui backend need DX12 port
+4. `ImGui_ImplDX11_NewFrame()` called from ~9 different source files — all need updating to DX12 equivalent
+5. Multi-viewport support needs DX12 per-viewport swap chains
