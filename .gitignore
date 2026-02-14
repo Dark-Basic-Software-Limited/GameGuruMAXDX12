@@ -24,16 +24,24 @@
 *.res
 *.ilk
 *.suo
+*.bin
 
 # Build output directories
 GameGuru Core/Build/
 GameGuru Core/Guru-WickedMAX/Wicked-MAX/
 
-# Intermediate directories (RC temp files, etc.)
+# Intermediate directories
 **/x64/Debug/RC*
 **/x64/Release/RC*
 **/*.vcxproj.FileListAbsolute.txt
+**/*.vcxproj.user
 **/enc_temp_folder/
+
+# Old intermediate directories (pre-split obj files)
+**/DarkSDK/*/Release/
+**/DarkSDK/*/Debug/
+**/DarkSDKMore/*/x64/Release/
+**/DarkSDKMore/*/x64/Debug/
 
 # VS directories
 .vs/
@@ -43,238 +51,17 @@ GameGuru Core/Guru-WickedMAX/Wicked-MAX/
 *.nupkg
 *.zip
 **/nupkg/
-GameGuru Core/.vs/GameGuruWickedMAX/v17/.suo
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Release/Animation.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Release/Animation.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Basic2D/x64/Release/Basic2D.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Basic2D/x64/Release/Basic2D.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bitmap/x64/Release/Bitmap.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bitmap/x64/Release/Bitmap.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bullet/x64/Release/Bullet.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bullet/x64/Release/Script1.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Camera/x64/Release/Camera.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Camera/x64/Release/Camera.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/ConvX/x64/Release/ConvX.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Core/x64/Release/DBDLLCore.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Core/x64/Release/DBDLLCore.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/File/x64/Release/File.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/File/x64/Release/FilePlus.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/FTP/x64/Release/Ftp.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/FTP/x64/Release/FTP.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Image/x64/Release/Image.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Image/x64/Release/Image.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Input/x64/Release/Input.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Input/x64/Release/Input.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Light/x64/Release/Light.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Light/x64/Release/Light.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Memblocks/x64/Release/Memblocks.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Memblocks/x64/Release/Memblocks.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Objects/x64/Release/Objects.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Objects/x64/Release/ObjectsPlus.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Setup/x64/Release/Setup.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Setup/x64/Release/Setup.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sound/x64/Release/Sound.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sound/x64/Release/Sound.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sprites/x64/Release/Sprites.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sprites/x64/Release/Sprites.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/System/x64/Release/System.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/System/x64/Release/System.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Text/x64/Release/Text.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Text/x64/Release/Text.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Vectors/x64/Release/Vectors.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Vectors/x64/Release/Vectors.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/CPU3D/x64/Release/CPU3DTest.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/CPU3D/x64/Release/Resource.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkAI/x64/Release/DarkMind.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkAI/x64/Release/stringtable.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkLUA/x64/Release/DarkLUA.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkLUA/x64/Release/DarkLUA.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/Enhancements/x64/Release/commands.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/Enhancements/x64/Release/Main.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/GGVR/x64/Release/GGVR.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/PhotonMultiplayer/x64/Release/PhotonMultiplayer.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/PhotonMultiplayer/x64/Release/PhotonMultiplayer.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/SimonReloaded/x64/Release/SimonReloaded.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/SimonReloaded/x64/Release/SimonReloaded.vcxproj.FileListAbsolute.txt
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/Release/Template_Windows.vcxproj.FileListAbsolute.txt
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/Release/Wicked-MAX.res
-*.bin
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Debug/Animation.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Debug/Animation.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Basic2D/x64/Debug/Basic2D.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Basic2D/x64/Debug/Basic2D.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bitmap/x64/Debug/Bitmap.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bitmap/x64/Debug/Bitmap.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bullet/x64/Debug/Bullet.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bullet/x64/Debug/Script1.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Camera/x64/Debug/Camera.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Camera/x64/Debug/Camera.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/ConvX/x64/Debug/ConvX.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Core/x64/Debug/DBDLLCore.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Core/x64/Debug/DBDLLCore.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/File/x64/Debug/File.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/File/x64/Debug/FilePlus.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/FTP/x64/Debug/Ftp.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/FTP/x64/Debug/FTP.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Image/x64/Debug/Image.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Image/x64/Debug/Image.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Input/x64/Debug/Input.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Input/x64/Debug/Input.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Light/x64/Debug/Light.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Light/x64/Debug/Light.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Memblocks/x64/Debug/Memblocks.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Memblocks/x64/Debug/Memblocks.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Objects/x64/Debug/Objects.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Objects/x64/Debug/ObjectsPlus.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Setup/x64/Debug/Setup.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Setup/x64/Debug/Setup.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sound/x64/Debug/Sound.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sound/x64/Debug/Sound.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sprites/x64/Debug/Sprites.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sprites/x64/Debug/Sprites.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/System/x64/Debug/System.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/System/x64/Debug/System.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Text/x64/Debug/Text.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Text/x64/Debug/Text.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Vectors/x64/Debug/Vectors.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Vectors/x64/Debug/Vectors.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/CPU3D/x64/Debug/CPU3DTest.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/CPU3D/x64/Debug/Resource.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkAI/x64/Debug/DarkMind.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkAI/x64/Debug/stringtable.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkLUA/x64/Debug/DarkLUA.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkLUA/x64/Debug/DarkLUA.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/Enhancements/x64/Debug/commands.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/Enhancements/x64/Debug/Main.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/GGVR/x64/Debug/GGVR.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/PhotonMultiplayer/x64/Debug/PhotonMultiplayer.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/PhotonMultiplayer/x64/Debug/PhotonMultiplayer.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/SimonReloaded/x64/Debug/SimonReloaded.res
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/SimonReloaded/x64/Debug/SimonReloaded.vcxproj.FileListAbsolute.txt
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/Debug/Template_Windows.vcxproj.FileListAbsolute.txt
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/Debug/Wicked-MAX.res
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseForSteam/Template_Windows.vcxproj.FileListAbsolute.txt
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseForSteam/Wicked-MAX.res
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseForEpic/Template_Windows.vcxproj.FileListAbsolute.txt
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseForEpic/Wicked-MAX.res
-GameGuruMAX-MissingLIBs.zip
-GameGuru Core/.vs/GameGuruWickedMAX/v17/ipch/AutoPCH/136202286816d5ee/M-LUA.ipch
-GameGuru Core/.vs/GameGuruWickedMAX/v17/ipch/AutoPCH/21f360a54d2458e2/M-GRIDEDITB.ipch
-GameGuru Core/.vs/GameGuruWickedMAX/v17/ipch/AutoPCH/2d582f8dbfaec001/COMMON.ipch
-GameGuru Core/.vs/GameGuruWickedMAX/v17/ipch/AutoPCH/61edca16a51fec69/M-GRIDEDIT.ipch
-GameGuru Core/.vs/GameGuruWickedMAX/v17/ipch/AutoPCH/717a7d3a3aed3ab1/DARKLUA.ipch
-GameGuru Core/.vs/GameGuruWickedMAX/v17/ipch/AutoPCH/affff252b47d129a/M-GRIDEDIT.ipch
-GameGuru Core/.vs/GameGuruWickedMAX/v17/ipch/AutoPCH/fa576a72c0a2130/OPENXR.ipch
-GameGuru Core/SDK/DirectXTex/.vs/DirectXTex_Desktop_2022/v17/.suo
-*.pdb
-*.obj
-*.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/BC.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/BC4BC5.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/BC6HBC7.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/BCDirectCompute.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTex.Build.CppClean.log
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTex.pch
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTex.pdb
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTex_Desktop_2017.log
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexCompress.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexCompressGPU.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexConvert.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexD3D11.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexDDS.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexFlipRotate.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexHDR.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexImage.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexMipMaps.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexMisc.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexNormalMaps.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexPMAlpha.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexResize.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexTGA.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexUtil.obj
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTexWIC.obj
-*.ipch
-GameGuru Core/SDK/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release/DirectXTex_Desktop_2022.vcxproj.FileListAbsolute.txt
-GameGuru Launcher MAX/.vs/GameGuru Launcher MAX/v17/.suo
-GameGuru Launcher MAX/GameGuru Launcher MAX/x64/Release/GameGuru Launcher MAX.vcxproj.FileListAbsolute.txt
-GameGuru Launcher MAX/GameGuru Launcher MAX/x64/Release/GameGuru Launcher.ipdb
-GameGuru Launcher MAX/GameGuru Launcher MAX/x64/Release/GameGuru Launcher.res
-Simple Sound Recorder/.vs/voicerecorder/v17/.suo
-Simple Sound Recorder/Win32/Release/SoundRec.res
-Simple Sound Recorder/Win32/Release/SoundRec.vcxproj.FileListAbsolute.txt
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Basic2D/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bitmap/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Bullet/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Camera/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Core/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/File/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/FTP/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Image/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Input/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Light/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Memblocks/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Objects/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Setup/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sound/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Sprites/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/System/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Text/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Vectors/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/CPU3D/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkAI/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/DarkLUA/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/Enhancements/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/PhotonMultiplayer/x64/Release/
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/SimonReloaded/x64/Release/
-GameGuru Core/SDK/OGG/.vs/ogg_vorbis_static/v17/.suo
-GameGuru Core/SDK/OGG/lib64/Debug/ogg_static.idb
-GameGuru Core/SDK/OGG/lib64/Debug/vorbis_static.idb
-GameGuru Core/SDK/OGG/lib64/Debug/vorbisfile_static.idb
-GameGuru Core/SDK/OGG/libogg/win32/VS2022/libogg.vcxproj.user
-GameGuru Core/SDK/OGG/libogg/win32/VS2022/x64/Debug/libogg.vcxproj.FileListAbsolute.txt
-GameGuru Core/SDK/OGG/libogg/win32/VS2022/x64/Release/libogg.vcxproj.FileListAbsolute.txt
-GameGuru Core/SDK/OGG/libvorbis/win32/VS2022/libvorbis/libvorbis_static.vcxproj.user
-GameGuru Core/SDK/OGG/libvorbis/win32/VS2022/libvorbis/x64/Debug/libvorbis_static.vcxproj.FileListAbsolute.txt
-GameGuru Core/SDK/OGG/libvorbis/win32/VS2022/libvorbis/x64/Release/libvorbis_static.vcxproj.FileListAbsolute.txt
-GameGuru Core/SDK/OGG/libvorbis/win32/VS2022/libvorbisfile/x64/Debug/libvorbisfile_static.vcxproj.FileListAbsolute.txt
-GameGuru Core/SDK/OGG/libvorbis/win32/VS2022/libvorbisfile/x64/Release/libvorbisfile_static.vcxproj.FileListAbsolute.txt
-GameGuru Core/.vs/GameGuruWickedMAX/v15/.suo
-GameGuru Core/UseENCRYPTIONANDSECURITYCODES.bat
-GameGuru Core/UseNONE.bat
-SharingScripts/
-4-CopyGoodScriptsToBuildArea.bat
-How To Run The Wizbang Workshop Updates Checker.txt
-How To Run The Wizbang Workshop Updates Checker.txt
-GameGuru Core/SDK/OGG/libvorbis/win32/VS2022/libvorbisfile/libvorbisfile_static.vcxproj.user
-SharingScripts.zip
+
+# EOS SDK binaries
 GameGuru Core/SDK/EOS-SDK/Bin
 GameGuru Core/SDK/EOS-SDK/Tools
 GameGuru Core/SDK/EOS-SDK/Include
 
-GameGuru Core/.vs/GameGuruWickedMAX/v17/DocumentLayout.json
-GameGuru Core/SDK/OGG/.vs/ogg_vorbis_static/v17/DocumentLayout.json
-GameGuru Core/CopyBUILDtoSTEAMandUPLOAD.bat
-GameGuru Core/.vs/GameGuruWickedMAX/copilot-chat/6be43932/sessions/b8586f45-e351-4280-bbd7-5a9f90c9734b
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseForSteam/GameGuruMAX.ipdb
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseForDEV/GameGuruMAX.ipdb
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseForDEV/Template_Windows.vcxproj.FileListAbsolute.txt
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseForDEV/Wicked-MAX.res
+# Misc files at repo root
+SharingScripts/
+4-CopyGoodScriptsToBuildArea.bat
 AI-CompileBuildDeployJustUPLOAD.bat
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseTEST/Screos.ipdb
-GameGuru Core/.vs/GameGuruWickedMAX/copilot-chat/6be43932/sessions/f9a70e4c-3404-4ffa-866e-276a0e09eed1
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseTEST/Naelurec - Moltaren Mysteries.ipdb
-GameGuru Core/Guru-WickedMAX/Wicked-MAX/x64/ReleaseTEST/Naelurec.ipdb
-/GameGuru Core/.vs/CopilotSnapshots
-/GameGuru Core/.vs/GameGuruWickedMAX/v17
-GameGuru Core/.vs/GameGuruWickedMAX/copilot-chat/6be43932/sessions/0a8b443a-5d98-4bfd-b783-0fec045a9933
-/GameGuru Core/enc_temp_folder
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Basic2D/x64/Debug/RCa18180
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/FTP/x64/Debug/RCa08012
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Input/x64/Debug/RCa25632
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Light/x64/Debug/RCa08228
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Memblocks/x64/Debug/RCa25452
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/System/x64/Debug/RCa13284
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Text/x64/Debug/RCa21856
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Vectors/x64/Debug/RCa01580
-GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDKMore/SimonReloaded/x64/Debug/RCa03104
+How To Run The Wizbang Workshop Updates Checker.txt
+GameGuru Core/UseENCRYPTIONANDSECURITYCODES.bat
+GameGuru Core/UseNONE.bat
+GameGuru Core/CopyBUILDtoSTEAMandUPLOAD.bat
