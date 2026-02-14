@@ -7,12 +7,12 @@
 #include "imgui_gg_dx12_bridge.h"
 
 #include <d3d12.h>
-// d3dcompiler no longer needed - shaders are pre-compiled
+#include <d3dcompiler.h>
 #include <dxgi1_4.h>
 #include <wrl/client.h>
 #include <unordered_map>
 
-// d3dcompiler lib no longer needed - shaders are pre-compiled
+#pragma comment(lib, "d3dcompiler")
 #pragma comment(lib, "d3d12")
 
 // stb_image for loading PNG/JPG/BMP/TGA files (implementation in WickedEngine_Windows.lib)
@@ -75,160 +75,28 @@ struct VERTEX_CONSTANT_BUFFER_DX12
     float mvp[4][4];
 };
 
-// Pre-compiled shader bytecode (vs_5_0 and ps_5_0, compiled with fxc.exe)
-// This eliminates the runtime D3DCompile dependency.
-static const BYTE g_ImGuiVS[] =
-{
-     68,  88,  66,  67,  20, 173,   7,  97,  75,  46,  94,  62,
-     52, 248, 140,  61, 105, 223,  61,  15,   1,   0,   0,   0,
-    220,   3,   0,   0,   5,   0,   0,   0,  52,   0,   0,   0,
-     80,   1,   0,   0, 192,   1,   0,   0,  52,   2,   0,   0,
-     64,   3,   0,   0,  82,  68,  69,  70,  20,   1,   0,   0,
-      1,   0,   0,   0, 108,   0,   0,   0,   1,   0,   0,   0,
-     60,   0,   0,   0,   0,   5, 254, 255,   0,   1,   0,   0,
-    236,   0,   0,   0,  82,  68,  49,  49,  60,   0,   0,   0,
-     24,   0,   0,   0,  32,   0,   0,   0,  40,   0,   0,   0,
-     36,   0,   0,   0,  12,   0,   0,   0,   0,   0,   0,   0,
-     92,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      1,   0,   0,   0,   1,   0,   0,   0, 118, 101, 114, 116,
-    101, 120,  66, 117, 102, 102, 101, 114,   0, 171, 171, 171,
-     92,   0,   0,   0,   1,   0,   0,   0, 132,   0,   0,   0,
-     64,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-    172,   0,   0,   0,   0,   0,   0,   0,  64,   0,   0,   0,
-      2,   0,   0,   0, 200,   0,   0,   0,   0,   0,   0,   0,
-    255, 255, 255, 255,   0,   0,   0,   0, 255, 255, 255, 255,
-      0,   0,   0,   0,  80, 114, 111, 106, 101,  99, 116, 105,
-    111, 110,  77,  97, 116, 114, 105, 120,   0, 102, 108, 111,
-     97, 116,  52, 120,  52,   0, 171, 171,   3,   0,   3,   0,
-      4,   0,   4,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0, 189,   0,   0,   0,  77, 105,  99, 114,
-    111, 115, 111, 102, 116,  32,  40,  82,  41,  32,  72,  76,
-     83,  76,  32,  83, 104,  97, 100, 101, 114,  32,  67, 111,
-    109, 112, 105, 108, 101, 114,  32,  49,  48,  46,  49,   0,
-     73,  83,  71,  78, 104,   0,   0,   0,   3,   0,   0,   0,
-      8,   0,   0,   0,  80,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   3,   0,   0,   0,   0,   0,   0,   0,
-      3,   3,   0,   0,  89,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   3,   0,   0,   0,   1,   0,   0,   0,
-      3,   3,   0,   0,  98,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   3,   0,   0,   0,   2,   0,   0,   0,
-     15,  15,   0,   0,  80,  79,  83,  73,  84,  73,  79,  78,
-      0,  84,  69,  88,  67,  79,  79,  82,  68,   0,  67,  79,
-     76,  79,  82,   0,  79,  83,  71,  78, 108,   0,   0,   0,
-      3,   0,   0,   0,   8,   0,   0,   0,  80,   0,   0,   0,
-      0,   0,   0,   0,   1,   0,   0,   0,   3,   0,   0,   0,
-      0,   0,   0,   0,  15,   0,   0,   0,  92,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   3,   0,   0,   0,
-      1,   0,   0,   0,  15,   0,   0,   0,  98,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   3,   0,   0,   0,
-      2,   0,   0,   0,   3,  12,   0,   0,  83,  86,  95,  80,
-     79,  83,  73,  84,  73,  79,  78,   0,  67,  79,  76,  79,
-     82,   0,  84,  69,  88,  67,  79,  79,  82,  68,   0, 171,
-     83,  72,  69,  88,   4,   1,   0,   0,  80,   0,   1,   0,
-     65,   0,   0,   0, 106,   8,   0,   1,  89,   0,   0,   4,
-     70, 142,  32,   0,   0,   0,   0,   0,   4,   0,   0,   0,
-     95,   0,   0,   3,  50,  16,  16,   0,   0,   0,   0,   0,
-     95,   0,   0,   3,  50,  16,  16,   0,   1,   0,   0,   0,
-     95,   0,   0,   3, 242,  16,  16,   0,   2,   0,   0,   0,
-    103,   0,   0,   4, 242,  32,  16,   0,   0,   0,   0,   0,
-      1,   0,   0,   0, 101,   0,   0,   3, 242,  32,  16,   0,
-      1,   0,   0,   0, 101,   0,   0,   3,  50,  32,  16,   0,
-      2,   0,   0,   0, 104,   0,   0,   2,   1,   0,   0,   0,
-     56,   0,   0,   8, 242,   0,  16,   0,   0,   0,   0,   0,
-     86,  21,  16,   0,   0,   0,   0,   0,  70, 142,  32,   0,
-      0,   0,   0,   0,   1,   0,   0,   0,  50,   0,   0,  10,
-    242,   0,  16,   0,   0,   0,   0,   0,  70, 142,  32,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   6,  16,  16,   0,
-      0,   0,   0,   0,  70,  14,  16,   0,   0,   0,   0,   0,
-      0,   0,   0,   8, 242,  32,  16,   0,   0,   0,   0,   0,
-     70,  14,  16,   0,   0,   0,   0,   0,  70, 142,  32,   0,
-      0,   0,   0,   0,   3,   0,   0,   0,  54,   0,   0,   5,
-    242,  32,  16,   0,   1,   0,   0,   0,  70,  30,  16,   0,
-      2,   0,   0,   0,  54,   0,   0,   5,  50,  32,  16,   0,
-      2,   0,   0,   0,  70,  16,  16,   0,   1,   0,   0,   0,
-     62,   0,   0,   1,  83,  84,  65,  84, 148,   0,   0,   0,
-      6,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,
-      6,   0,   0,   0,   3,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   2,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0
-};
+// Shaders (compiled at init time via D3DCompile)
+static const char* g_VertexShaderHLSL =
+    "cbuffer vertexBuffer : register(b0) { float4x4 ProjectionMatrix; };\n"
+    "struct VS_INPUT { float2 pos : POSITION; float2 uv : TEXCOORD0; float4 col : COLOR0; };\n"
+    "struct PS_INPUT { float4 pos : SV_POSITION; float4 col : COLOR0; float2 uv : TEXCOORD0; };\n"
+    "PS_INPUT main(VS_INPUT input)\n"
+    "{\n"
+    "    PS_INPUT output;\n"
+    "    output.pos = mul(ProjectionMatrix, float4(input.pos.xy, 0.f, 1.f));\n"
+    "    output.col = input.col;\n"
+    "    output.uv = input.uv;\n"
+    "    return output;\n"
+    "}\n";
 
-static const BYTE g_ImGuiPS[] =
-{
-     68,  88,  66,  67, 111, 184, 221, 249, 217, 154,  13, 200,
-     70, 122,  34,  91, 210,  73,  87,  63,   1,   0,   0,   0,
-    224,   2,   0,   0,   5,   0,   0,   0,  52,   0,   0,   0,
-    244,   0,   0,   0, 104,   1,   0,   0, 156,   1,   0,   0,
-     68,   2,   0,   0,  82,  68,  69,  70, 184,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   2,   0,   0,   0,
-     60,   0,   0,   0,   0,   5, 255, 255,   0,   1,   0,   0,
-    142,   0,   0,   0,  82,  68,  49,  49,  60,   0,   0,   0,
-     24,   0,   0,   0,  32,   0,   0,   0,  40,   0,   0,   0,
-     36,   0,   0,   0,  12,   0,   0,   0,   0,   0,   0,   0,
-    124,   0,   0,   0,   3,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      1,   0,   0,   0,   1,   0,   0,   0, 133,   0,   0,   0,
-      2,   0,   0,   0,   5,   0,   0,   0,   4,   0,   0,   0,
-    255, 255, 255, 255,   0,   0,   0,   0,   1,   0,   0,   0,
-     13,   0,   0,   0, 115,  97, 109, 112, 108, 101, 114,  48,
-      0, 116, 101, 120, 116, 117, 114, 101,  48,   0,  77, 105,
-     99, 114, 111, 115, 111, 102, 116,  32,  40,  82,  41,  32,
-     72,  76,  83,  76,  32,  83, 104,  97, 100, 101, 114,  32,
-     67, 111, 109, 112, 105, 108, 101, 114,  32,  49,  48,  46,
-     49,   0, 171, 171,  73,  83,  71,  78, 108,   0,   0,   0,
-      3,   0,   0,   0,   8,   0,   0,   0,  80,   0,   0,   0,
-      0,   0,   0,   0,   1,   0,   0,   0,   3,   0,   0,   0,
-      0,   0,   0,   0,  15,   0,   0,   0,  92,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   3,   0,   0,   0,
-      1,   0,   0,   0,  15,  15,   0,   0,  98,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   3,   0,   0,   0,
-      2,   0,   0,   0,   3,   3,   0,   0,  83,  86,  95,  80,
-     79,  83,  73,  84,  73,  79,  78,   0,  67,  79,  76,  79,
-     82,   0,  84,  69,  88,  67,  79,  79,  82,  68,   0, 171,
-     79,  83,  71,  78,  44,   0,   0,   0,   1,   0,   0,   0,
-      8,   0,   0,   0,  32,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   3,   0,   0,   0,   0,   0,   0,   0,
-     15,   0,   0,   0,  83,  86,  95,  84,  97, 114, 103, 101,
-    116,   0, 171, 171,  83,  72,  69,  88, 160,   0,   0,   0,
-     80,   0,   0,   0,  40,   0,   0,   0, 106,   8,   0,   1,
-     90,   0,   0,   3,   0,  96,  16,   0,   0,   0,   0,   0,
-     88,  24,   0,   4,   0, 112,  16,   0,   0,   0,   0,   0,
-     85,  85,   0,   0,  98,  16,   0,   3, 242,  16,  16,   0,
-      1,   0,   0,   0,  98,  16,   0,   3,  50,  16,  16,   0,
-      2,   0,   0,   0, 101,   0,   0,   3, 242,  32,  16,   0,
-      0,   0,   0,   0, 104,   0,   0,   2,   1,   0,   0,   0,
-     69,   0,   0, 139, 194,   0,   0, 128,  67,  85,  21,   0,
-    242,   0,  16,   0,   0,   0,   0,   0,  70,  16,  16,   0,
-      2,   0,   0,   0,  70, 126,  16,   0,   0,   0,   0,   0,
-      0,  96,  16,   0,   0,   0,   0,   0,  56,   0,   0,   7,
-    242,  32,  16,   0,   0,   0,   0,   0,  70,  14,  16,   0,
-      0,   0,   0,   0,  70,  30,  16,   0,   1,   0,   0,   0,
-     62,   0,   0,   1,  83,  84,  65,  84, 148,   0,   0,   0,
-      3,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,
-      3,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0
-};
+static const char* g_PixelShaderHLSL =
+    "struct PS_INPUT { float4 pos : SV_POSITION; float4 col : COLOR0; float2 uv : TEXCOORD0; };\n"
+    "SamplerState sampler0 : register(s0);\n"
+    "Texture2D texture0 : register(t0);\n"
+    "float4 main(PS_INPUT input) : SV_Target\n"
+    "{\n"
+    "    return input.col * texture0.Sample(sampler0, input.uv);\n"
+    "}\n";
 
 // Allocate an SRV slot from the ImGui descriptor heap
 static bool AllocSrvSlot(UINT& outIndex, D3D12_CPU_DESCRIPTOR_HANDLE& outCpu, D3D12_GPU_DESCRIPTOR_HANDLE& outGpu)
@@ -385,9 +253,18 @@ static bool CreateFontTexture()
 
 static bool CreatePipelineState()
 {
-    // Shaders are pre-compiled - no runtime D3DCompile needed
+    // Compile shaders at runtime
+    ComPtr<ID3DBlob> vertexShaderBlob;
+    ComPtr<ID3DBlob> pixelShaderBlob;
     ComPtr<ID3DBlob> errorBlob;
-    HRESULT hr;
+
+    HRESULT hr = D3DCompile(g_VertexShaderHLSL, strlen(g_VertexShaderHLSL), nullptr, nullptr, nullptr,
+        "main", "vs_5_0", 0, 0, &vertexShaderBlob, &errorBlob);
+    if (FAILED(hr)) { OutputDebugStringA("ImGui DX12: VS D3DCompile FAILED\n"); return false; }
+
+    hr = D3DCompile(g_PixelShaderHLSL, strlen(g_PixelShaderHLSL), nullptr, nullptr, nullptr,
+        "main", "ps_5_0", 0, 0, &pixelShaderBlob, &errorBlob);
+    if (FAILED(hr)) { OutputDebugStringA("ImGui DX12: PS D3DCompile FAILED\n"); return false; }
 
     // Create root signature
     // Root parameter 0: 32-bit constants (MVP matrix, 16 floats)
@@ -450,8 +327,8 @@ static bool CreatePipelineState()
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
     psoDesc.InputLayout = { inputLayout, 3 };
     psoDesc.pRootSignature = g_pRootSignature.Get();
-    psoDesc.VS = { g_ImGuiVS, sizeof(g_ImGuiVS) };
-    psoDesc.PS = { g_ImGuiPS, sizeof(g_ImGuiPS) };
+    psoDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+    psoDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
 
     // Rasterizer state
     psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
