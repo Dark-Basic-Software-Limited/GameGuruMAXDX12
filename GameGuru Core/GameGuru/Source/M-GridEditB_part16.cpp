@@ -506,6 +506,10 @@
 			static int current_project_id = -1;
 			static int iCurrentOpenTab = 0;
 
+			// Automation harness: expose current tab to external code
+			extern int g_iAutoCurrentTab;
+			g_iAutoCurrentTab = iCurrentOpenTab;
+
 			static std::string current_tutorial_selected = "";
 			static int current_tutorial_id = -1;
 
@@ -786,12 +790,17 @@
 			{
 				int tabflags = 0;
 
+				// Automation harness: force tab selection
+				extern int g_iAutoForceWelcomeTab;
+				int autoForceTab = g_iAutoForceWelcomeTab;
+				if (autoForceTab >= 0) g_iAutoForceWelcomeTab = -1; // consume the request
+
 				ImRect rect;
 				rect.Min = TabStartPos;
 				rect.Max = rect.Min + ImGui::TabItemCalcSize(" Demo Games ", false);
 				TabStartPos.x += ImGui::TabItemCalcSize(" Demo Games ", false).x + gui.Style.ItemInnerSpacing.x;
 
-				if (ImGui::BeginTabItem(" Demo Games ", NULL, tabflags))
+				if (ImGui::BeginTabItem(" Demo Games ", NULL, (autoForceTab == 0) ? ImGuiTabItemFlags_SetSelected : tabflags))
 				{
 					iCurrentOpenTab = 0;
 
@@ -842,6 +851,7 @@
 					bCheckForAnyProjectFiles = false;
 				}
 				static bool bShowAvtiveProject = true;
+				if (autoForceTab == 1) tabflagsMyGames = ImGuiTabItemFlags_SetSelected;
 				if (ImGui::BeginTabItem(" My Games ", NULL, tabflagsMyGames))
 				{
 					ImGui::SetWindowFontScale(0.99f);
@@ -1162,7 +1172,7 @@
 				rect.Min = TabStartPos;
 				rect.Max = rect.Min + ImGui::TabItemCalcSize(" User Guide ", false);
 				TabStartPos.x += ImGui::TabItemCalcSize(" User Guide ", false).x + gui.Style.ItemInnerSpacing.x;
-				if (ImGui::BeginTabItem(" User Guide ", NULL, tabflags))
+				if (ImGui::BeginTabItem(" User Guide ", NULL, (autoForceTab == 4) ? ImGuiTabItemFlags_SetSelected : tabflags))
 				{
 					iCurrentOpenTab = 4;
 					ImGui::Text("");
@@ -1225,7 +1235,7 @@
 				rect.Min = TabStartPos;
 				rect.Max = rect.Min + ImGui::TabItemCalcSize(" Tutorials ", false);
 				TabStartPos.x += ImGui::TabItemCalcSize(" Tutorials ", false).x + gui.Style.ItemInnerSpacing.x;
-				if (ImGui::BeginTabItem(" Tutorials ", NULL, tabflags))
+				if (ImGui::BeginTabItem(" Tutorials ", NULL, (autoForceTab == 3) ? ImGuiTabItemFlags_SetSelected : tabflags))
 				{
 					char* tutorial_order[] = { "9901-introduction-video.mp4", "0101-getting-started.mp4", "0701-game-storyboard.mp4", "0501-terrain-generator.mp4", "0502-terrain-height-maps.mp4", "0201-level-editor.mp4", "0202-particle-editor.mp4", "0203-animation-library.mp4", "0301-object-library.mp4" , "0801-character-creator.mp4" ,"0601-terrain-editing.mp4", "0401-objects-grouping.mp4", "0901-behaviour-ai.mp4", "0902-behaviour-demos-1.mp4",  "0903-behaviour-demos-2.mp4" };
 
@@ -1363,7 +1373,7 @@
 				rect.Min = TabStartPos;
 				rect.Max = rect.Min + ImGui::TabItemCalcSize(" Community Tutorials ", false);
 				TabStartPos.x += ImGui::TabItemCalcSize(" Community Tutorials ", false).x + gui.Style.ItemInnerSpacing.x;
-				if (ImGui::BeginTabItem(" Community Tutorials ", NULL, tabflags))
+				if (ImGui::BeginTabItem(" Community Tutorials ", NULL, (autoForceTab == 42) ? ImGuiTabItemFlags_SetSelected : tabflags))
 				{
 					ImGui::Text("");
 					ImGui::SetWindowFontScale(2.0);
@@ -1458,7 +1468,7 @@
 				rect.Min = TabStartPos;
 				rect.Max = rect.Min + ImGui::TabItemCalcSize(" Live Changelog ", false);
 				TabStartPos.x += ImGui::TabItemCalcSize(" Live Changelog ", false).x + gui.Style.ItemInnerSpacing.x;
-				if (ImGui::BeginTabItem(" Live Changelog ", NULL, tabflags))
+				if (ImGui::BeginTabItem(" Live Changelog ", NULL, (autoForceTab == 5) ? ImGuiTabItemFlags_SetSelected : tabflags))
 				{
 					iCurrentOpenTab = 5;
 					ImGui::Text("");
@@ -1611,7 +1621,7 @@
 					rect.Min = TabStartPos;
 					rect.Max = rect.Min + ImGui::TabItemCalcSize(" Workshop Uploader ", false);
 					TabStartPos.x += ImGui::TabItemCalcSize(" Workshop Uploader ", false).x + gui.Style.ItemInnerSpacing.x;
-					if (ImGui::BeginTabItem(" Workshop Uploader ", NULL, tabflags))
+					if (ImGui::BeginTabItem(" Workshop Uploader ", NULL, (autoForceTab == 6) ? ImGuiTabItemFlags_SetSelected : tabflags))
 					{
 						iCurrentOpenTab = 6;
 						ImGui::Text("");
@@ -1704,7 +1714,7 @@
 					rect.Min = TabStartPos;
 					rect.Max = rect.Min + ImGui::TabItemCalcSize(" Workshop ", false);
 					TabStartPos.x += ImGui::TabItemCalcSize(" Workshop ", false).x + gui.Style.ItemInnerSpacing.x;
-					if (ImGui::BeginTabItem(" Workshop ", NULL, tabflags))
+					if (ImGui::BeginTabItem(" Workshop ", NULL, (autoForceTab == 7) ? ImGuiTabItemFlags_SetSelected : tabflags))
 					{
 						iCurrentOpenTab = 7;
 						g_bWorkshopTabOpen = true;

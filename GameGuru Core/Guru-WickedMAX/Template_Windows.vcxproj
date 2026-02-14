@@ -573,6 +573,7 @@
     <ClInclude Include="CrashLogger.h" />
     <ClInclude Include="Encryptor.h" />
     <ClInclude Include="GameGuruEngine.h" />
+    <ClInclude Include="AutomationHarness.h" />
     <ClInclude Include="GameGuruMain.h" />
     <ClInclude Include="GGRecastDetour\ChunkyTriMesh.h" />
     <ClInclude Include="GGRecastDetour\DebugUtils\Include\DebugDraw.h" />
@@ -756,6 +757,7 @@
     <ClCompile Include="..\SDK\DirectX\directx-macros.cpp" />
     <ClCompile Include="..\SDK\EOS-SDK\SharedSourceCode\Platform.cpp" />
     <ClCompile Include="..\SDK\OpenXR\src\openxr.cpp" />
+    <ClCompile Include="AutomationHarness.cpp" />
     <ClCompile Include="CrashLogger.cpp" />
     <ClCompile Include="CustomShaders.cpp" />
     <ClCompile Include="Encryptor.cpp" />
