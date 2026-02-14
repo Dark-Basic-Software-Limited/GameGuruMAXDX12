@@ -51,27 +51,42 @@ static bool LoadCustomShader(ShaderStage stage, Shader& shader, const std::strin
 
 	std::string shaderbinaryfilename = wiRenderer::GetShaderPath() + filename;
 
-	wi::shadercompiler::CompilerInput input;
-	input.format = wiGraphics::GetDevice()->GetShaderFormat();
-	input.stage = stage;
-	input.include_directories.push_back(engineShaderDir);
-	input.include_directories.push_back(customDir);
-	input.shadersourcefilename = wi::helper::ReplaceExtension(customDir + filename, "hlsl");
+	// Register for hot-reload tracking and check if cached .cso is up-to-date
+	wi::shadercompiler::RegisterShader(shaderbinaryfilename);
 
-	wi::shadercompiler::CompilerOutput output;
-	wi::shadercompiler::Compile(input, output);
+	if (wi::shadercompiler::IsShaderOutdated(shaderbinaryfilename))
+	{
+		wi::shadercompiler::CompilerInput input;
+		input.format = wiGraphics::GetDevice()->GetShaderFormat();
+		input.stage = stage;
+		input.include_directories.push_back(engineShaderDir);
+		input.include_directories.push_back(customDir);
+		input.shadersourcefilename = wi::helper::ReplaceExtension(customDir + filename, "hlsl");
 
-	if (output.IsValid())
-	{
-		wi::shadercompiler::SaveShaderAndMetadata(shaderbinaryfilename, output);
-		wi::backlog::post("custom shader compiled: " + shaderbinaryfilename);
-		return wiGraphics::GetDevice()->CreateShader(stage, output.shaderdata, output.shadersize, &shader);
+		wi::shadercompiler::CompilerOutput output;
+		wi::shadercompiler::Compile(input, output);
+
+		if (output.IsValid())
+		{
+			wi::shadercompiler::SaveShaderAndMetadata(shaderbinaryfilename, output);
+			wi::backlog::post("custom shader compiled: " + shaderbinaryfilename);
+			return wiGraphics::GetDevice()->CreateShader(stage, output.shaderdata, output.shadersize, &shader);
+		}
+		else
+		{
+			wi::backlog::post("custom shader compile FAILED: " + filename + "\n" + output.error_message, wi::backlog::LogLevel::Error);
+			return false;
+		}
 	}
-	else
+
+	// Cache is up-to-date, load from .cso file
+	wi::vector<uint8_t> buffer;
+	if (wi::helper::FileRead(shaderbinaryfilename, buffer))
 	{
-		wi::backlog::post("custom shader compile FAILED: " + filename + "\n" + output.error_message, wi::backlog::LogLevel::Error);
-		return false;
+		return wiGraphics::GetDevice()->CreateShader(stage, buffer.data(), buffer.size(), &shader);
 	}
+
+	return false;
 }
 
 Shader shaderCustom1PS;
