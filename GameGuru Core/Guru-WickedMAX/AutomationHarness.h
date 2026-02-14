@@ -14,4 +14,7 @@ void AutoHarness_CheckForCommand(void);
 // 6=Workshop Uploader, 7=Workshop, 42=Community Tutorials
 extern int g_iAutoForceWelcomeTab;
 
+// Force a demo game selection from automation (set to display name, empty = no force)
+extern char g_sAutoSelectDemo[260];
+
 #endif

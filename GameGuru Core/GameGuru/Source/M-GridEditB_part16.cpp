@@ -804,6 +804,14 @@
 				{
 					iCurrentOpenTab = 0;
 
+					// Automation harness: force demo selection
+					extern char g_sAutoSelectDemo[260];
+					if (g_sAutoSelectDemo[0] != 0)
+					{
+						sCurrentGame = g_sAutoSelectDemo;
+						g_sAutoSelectDemo[0] = 0; // consume the request
+					}
+
 					//if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Demo Games you can edit and play");
 
 					if (g_LibraryFileList.size() > 0)

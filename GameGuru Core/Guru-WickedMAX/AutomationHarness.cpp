@@ -38,8 +38,15 @@ extern bool bProceduralLevel;
 #include "globstruct.h"
 extern GlobStruct* g_pGlob;
 
+// Demo game library list
+#include "M-GridEditB.h"
+extern std::vector<sLibraryList> g_LibraryFileList;
+
 // Tab force variable
 int g_iAutoForceWelcomeTab = -1;
+
+// Demo selection variable (set by SELECT_DEMO, consumed by Welcome_Screen)
+char g_sAutoSelectDemo[260] = {0};
 
 // Command/response file paths (absolute, computed at init from exe directory)
 static char s_cmdPath[MAX_PATH] = {0};
@@ -352,6 +359,80 @@ static void Cmd_Click(const char* element, char* result, int resultSize)
 	result[resultSize - 1] = 0;
 }
 
+static void Cmd_ListDemos(char* result, int resultSize)
+{
+	if (g_LibraryFileList.size() == 0)
+	{
+		_snprintf(result, resultSize, "OK: DEMOS(0):\n(none loaded)");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	int written = _snprintf(result, resultSize, "OK: DEMOS(%d):\n", (int)g_LibraryFileList.size());
+	if (written < 0) written = 0;
+
+	for (int i = 0; i < (int)g_LibraryFileList.size(); i++)
+	{
+		const char* name = g_LibraryFileList[i].cName.Get();
+		// Strip .png extension for display
+		char displayName[260];
+		strncpy(displayName, name, sizeof(displayName) - 1);
+		displayName[sizeof(displayName) - 1] = 0;
+		char* dot = strrchr(displayName, '.');
+		if (dot) *dot = 0;
+
+		int needed = (int)strlen(displayName) + 4; // "  N\n"
+		if (written + needed >= resultSize - 1) break;
+		written += _snprintf(result + written, resultSize - written, "  %s\n", displayName);
+	}
+	result[resultSize - 1] = 0;
+}
+
+static void Cmd_SelectDemo(const char* demoName, char* result, int resultSize)
+{
+	if (!demoName || !demoName[0])
+	{
+		_snprintf(result, resultSize, "ERROR: SELECT_DEMO requires a demo name argument");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	if (!bWelcomeScreen_Window)
+	{
+		_snprintf(result, resultSize, "ERROR: Not on hub screen, cannot select demo");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	// Search g_LibraryFileList for a case-insensitive match (by display name, without extension)
+	for (int i = 0; i < (int)g_LibraryFileList.size(); i++)
+	{
+		const char* name = g_LibraryFileList[i].cName.Get();
+		char displayName[260];
+		strncpy(displayName, name, sizeof(displayName) - 1);
+		displayName[sizeof(displayName) - 1] = 0;
+		char* dot = strrchr(displayName, '.');
+		if (dot) *dot = 0;
+
+		if (_stricmp(displayName, demoName) == 0)
+		{
+			// Found it - set the global that Welcome_Screen will consume
+			strncpy(g_sAutoSelectDemo, name, sizeof(g_sAutoSelectDemo) - 1);
+			g_sAutoSelectDemo[sizeof(g_sAutoSelectDemo) - 1] = 0;
+
+			// Also force to Demo Games tab
+			g_iAutoForceWelcomeTab = 0;
+
+			_snprintf(result, resultSize, "OK: Selected demo '%s' (file: %s)", displayName, name);
+			result[resultSize - 1] = 0;
+			return;
+		}
+	}
+
+	_snprintf(result, resultSize, "ERROR: Demo '%s' not found in library (%d demos loaded)", demoName, (int)g_LibraryFileList.size());
+	result[resultSize - 1] = 0;
+}
+
 static void Cmd_Wait(const char* msStr, char* result, int resultSize)
 {
 	int ms = 0;
@@ -419,15 +500,17 @@ void AutoHarness_CheckForCommand(void)
 		cmdBuf[0] = 0;
 	fclose(f);
 
-	// Delete the command file
-	DeleteFileA(s_cmdPath);
-
 	// Trim trailing newline/carriage return
 	int len = (int)strlen(cmdBuf);
 	while (len > 0 && (cmdBuf[len - 1] == '\n' || cmdBuf[len - 1] == '\r'))
 		cmdBuf[--len] = 0;
 
+	// If file was empty, don't delete it — writer may still be flushing (race condition).
+	// We'll pick it up on the next tick.
 	if (len == 0) return;
+
+	// Delete the command file now that we have valid content
+	DeleteFileA(s_cmdPath);
 
 	// Log the command
 	AutoHarness_LogCommand(cmdBuf);
@@ -482,6 +565,14 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "SCREENSHOT") == 0)
 	{
 		Cmd_Screenshot(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "LIST_DEMOS") == 0)
+	{
+		Cmd_ListDemos(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "SELECT_DEMO") == 0)
+	{
+		Cmd_SelectDemo(arg, result, sizeof(result));
 	}
 	else if (_stricmp(cmd, "QUIT") == 0)
 	{
