@@ -38,6 +38,42 @@ using namespace wiGraphics;
 using namespace wiScene;
 using namespace wiRenderer;
 
+// Load a custom shader from GGTerrain\CustomShaders\ with WickedEngine shaders as include path
+static bool LoadCustomShader(ShaderStage stage, Shader& shader, const std::string& filename)
+{
+	// Custom shader source lives alongside this .cpp file
+	std::string customDir = wi::helper::GetDirectoryFromPath(std::string(__FILE__)) + "GGTerrain/CustomShaders/";
+	wi::helper::MakePathAbsolute(customDir);
+
+	// WickedEngine shaders directory (for #include "objectHF.hlsli" etc.)
+	std::string engineShaderDir = wiRenderer::GetShaderSourcePath();
+	wi::helper::MakePathAbsolute(engineShaderDir);
+
+	std::string shaderbinaryfilename = wiRenderer::GetShaderPath() + filename;
+
+	wi::shadercompiler::CompilerInput input;
+	input.format = wiGraphics::GetDevice()->GetShaderFormat();
+	input.stage = stage;
+	input.include_directories.push_back(engineShaderDir);
+	input.include_directories.push_back(customDir);
+	input.shadersourcefilename = wi::helper::ReplaceExtension(customDir + filename, "hlsl");
+
+	wi::shadercompiler::CompilerOutput output;
+	wi::shadercompiler::Compile(input, output);
+
+	if (output.IsValid())
+	{
+		wi::shadercompiler::SaveShaderAndMetadata(shaderbinaryfilename, output);
+		wi::backlog::post("custom shader compiled: " + shaderbinaryfilename);
+		return wiGraphics::GetDevice()->CreateShader(stage, output.shaderdata, output.shadersize, &shader);
+	}
+	else
+	{
+		wi::backlog::post("custom shader compile FAILED: " + filename + "\n" + output.error_message, wi::backlog::LogLevel::Error);
+		return false;
+	}
+}
+
 Shader shaderCustom1PS;
 
 
@@ -83,129 +119,111 @@ void AddCustomShaders(void)
 
 	//PE: Tree animated.
 	CustomShader customShader;
-	if(!LoadShader(ShaderStage::VS, shaderMainTreeAnimateVS, "objectVS_common_tree.cso"))
-		; // customShader.bActive removed - bActive no longer exists in CustomShader
-	if(!LoadShader(ShaderStage::VS, shaderPrepassTreeAnimateVS, "objectVS_prepass_trees.cso"))
-		; // customShader.bActive removed - bActive no longer exists in CustomShader
-	if(!LoadShader(ShaderStage::VS, shaderShadowTreeAnimateVS, "shadowVS_alphatest_tree.cso"))
-		; // customShader.bActive removed - bActive no longer exists in CustomShader
+	bool bTreeShadersValid = true;
+	if(!LoadCustomShader(ShaderStage::VS, shaderMainTreeAnimateVS, "objectVS_common_tree.cso"))
+		bTreeShadersValid = false;
+	if(!LoadCustomShader(ShaderStage::VS, shaderPrepassTreeAnimateVS, "objectVS_prepass_trees.cso"))
+		bTreeShadersValid = false;
+	if(!LoadCustomShader(ShaderStage::VS, shaderShadowTreeAnimateVS, "shadowVS_alphatest_tree.cso"))
+		bTreeShadersValid = false;
 
-	PipelineStateDesc desc[RENDERPASS_COUNT];
-	PipelineState pso[RENDERPASS_COUNT];
-	for (int i = 0; i < RENDERPASS_COUNT; i++)
+	if (bTreeShadersValid)
 	{
-		//wiRenderer::AddPipelineDesc(desc[i], i, PSTYPE_OBJECT_PERMUTATION_BEGIN, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_OPAQUE, OBJECTRENDERING_DOUBLESIDED_ENABLED, false, true, false); // AddPipelineDesc removed from new API
-		{
-			if (i == RENDERPASS_MAIN)
-			{
-				desc[i].vs = &shaderMainTreeAnimateVS;
-			}
-			if (i == RENDERPASS_SHADOW)
-			{
-				desc[i].vs = &shaderShadowTreeAnimateVS;
-			}
-			if (i == RENDERPASS_PREPASS)
-			{
-				desc[i].vs = &shaderPrepassTreeAnimateVS;
-			}
-		}
-		wiGraphics::GetDevice()->CreatePipelineState(&desc[i], &pso[i]);
-	}
-	customShader.name = "Tree Animate Doublesided";
-	customShader.filterMask = wi::enums::FILTER_OPAQUE;
-	for (int i = 0; i < RENDERPASS_COUNT; i++)
-		customShader.pso[i] = pso[i];
+		// DX12: Only create PSOs for render passes that have shaders assigned.
+		// Empty PipelineStateDescs crash in DX12 (no root signature to extract).
+		PipelineStateDesc descMain, descShadow, descPrepass;
+		PipelineState psoMain, psoShadow, psoPrepass;
+		descMain.vs = &shaderMainTreeAnimateVS;
+		wiGraphics::GetDevice()->CreatePipelineState(&descMain, &psoMain);
+		descShadow.vs = &shaderShadowTreeAnimateVS;
+		wiGraphics::GetDevice()->CreatePipelineState(&descShadow, &psoShadow);
+		descPrepass.vs = &shaderPrepassTreeAnimateVS;
+		wiGraphics::GetDevice()->CreatePipelineState(&descPrepass, &psoPrepass);
 
-	RegisterCustomShader(customShader);
+		customShader.name = "Tree Animate Doublesided";
+		customShader.filterMask = wi::enums::FILTER_OPAQUE;
+		customShader.pso[RENDERPASS_MAIN] = psoMain;
+		customShader.pso[RENDERPASS_SHADOW] = psoShadow;
+		customShader.pso[RENDERPASS_PREPASS] = psoPrepass;
+
+		RegisterCustomShader(customShader);
+	}
 
 	//PE: Water object.
-	PipelineState psowater;
-	PipelineStateDesc descwater;
-	CustomShader customWaterShader;
-	if (!LoadShader(ShaderStage::PS, shaderWaterPS, "objectPS_custom_water.cso"))
-		; // customWaterShader.bActive removed - bActive no longer exists in CustomShader
-	//wiRenderer::AddPipelineDesc(descwater, RENDERPASS_MAIN, PSTYPE_OBJECT_PERMUTATION_BEGIN, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_ALPHA, OBJECTRENDERING_DOUBLESIDED_DISABLED, false, false, true); // AddPipelineDesc removed from new API
+	if (LoadCustomShader(ShaderStage::PS, shaderWaterPS, "objectPS_custom_water.cso"))
 	{
-		descwater.ps = &shaderWaterPS;
+		PipelineState psowater;
+		PipelineStateDesc descwater;
+		CustomShader customWaterShader;
+		//wiRenderer::AddPipelineDesc(descwater, RENDERPASS_MAIN, PSTYPE_OBJECT_PERMUTATION_BEGIN, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_ALPHA, OBJECTRENDERING_DOUBLESIDED_DISABLED, false, false, true); // AddPipelineDesc removed from new API
+		{
+			descwater.ps = &shaderWaterPS;
+		}
+		wiGraphics::GetDevice()->CreatePipelineState(&descwater, &psowater);
+		customWaterShader.name = "Water Object";
+		customWaterShader.filterMask = wi::enums::FILTER_TRANSPARENT;
+		customWaterShader.pso[RENDERPASS_MAIN] = psowater;
+		RegisterCustomShader(customWaterShader);
 	}
-	wiGraphics::GetDevice()->CreatePipelineState(&descwater, &psowater);
-	customWaterShader.name = "Water Object";
-	customWaterShader.filterMask = wi::enums::FILTER_TRANSPARENT;
-	customWaterShader.pso[RENDERPASS_MAIN] = psowater;
-	RegisterCustomShader(customWaterShader);
 
 
 	//PE: Glass object.
-	PipelineState psoglass;
-	PipelineStateDesc descglass;
-	PipelineState psoglassshadow;
-	PipelineStateDesc descglassshadow;
-	CustomShader customglassShader;
-	if(!LoadShader(ShaderStage::PS, shaderGlassPS, "objectPS_transparent_glass.cso"))
-		; // customglassShader.bActive removed - bActive no longer exists in CustomShader
-	//wiRenderer::AddPipelineDesc(descglass, RENDERPASS_MAIN, PSTYPE_OBJECT_PERMUTATION_BEGIN, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_ALPHA, OBJECTRENDERING_DOUBLESIDED_DISABLED, false, false, true); // AddPipelineDesc removed from new API
-	//wiRenderer::AddPipelineDesc(descglassshadow, RENDERPASS_SHADOW, PSTYPE_OBJECT_PERMUTATION_BEGIN, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_ALPHA, OBJECTRENDERING_DOUBLESIDED_DISABLED, false, false, true); // AddPipelineDesc removed from new API
-
+	if (LoadCustomShader(ShaderStage::PS, shaderGlassPS, "objectPS_transparent_glass.cso"))
 	{
+		PipelineState psoglass;
+		PipelineStateDesc descglass;
+		CustomShader customglassShader;
+		// DX12: Only create PSO for MAIN — shadow PSO had no shaders assigned (would crash)
 		descglass.ps = &shaderGlassPS;
+		wiGraphics::GetDevice()->CreatePipelineState(&descglass, &psoglass);
+		customglassShader.name = "Glass Object";
+		customglassShader.filterMask = wi::enums::FILTER_TRANSPARENT;
+		customglassShader.pso[RENDERPASS_MAIN] = psoglass;
+		RegisterCustomShader(customglassShader);
 	}
-	wiGraphics::GetDevice()->CreatePipelineState(&descglass, &psoglass);
-	wiGraphics::GetDevice()->CreatePipelineState(&descglassshadow, &psoglassshadow);
-	customglassShader.name = "Glass Object";
-	customglassShader.filterMask = wi::enums::FILTER_TRANSPARENT;
-	customglassShader.pso[RENDERPASS_MAIN] = psoglass;
-	customglassShader.pso[RENDERPASS_SHADOW] = psoglassshadow;
-	RegisterCustomShader(customglassShader);
 
 	//PE: Grid object.
-	PipelineState psogrid;
-	PipelineStateDesc descgrid;
-	CustomShader customgridShader;
-	if (!LoadShader(ShaderStage::PS, shaderGridPS, "objectPS_grid.cso"))
-		; // customgridShader.bActive removed - bActive no longer exists in CustomShader
-	//wiRenderer::AddPipelineDesc(descgrid, RENDERPASS_MAIN, PSTYPE_OBJECT_PERMUTATION_BEGIN, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_ALPHA, OBJECTRENDERING_DOUBLESIDED_DISABLED, false, false, true); // AddPipelineDesc removed from new API
-
+	if (LoadCustomShader(ShaderStage::PS, shaderGridPS, "objectPS_grid.cso"))
 	{
-		descgrid.ps = &shaderGridPS;
+		PipelineState psogrid;
+		PipelineStateDesc descgrid;
+		CustomShader customgridShader;
+		//wiRenderer::AddPipelineDesc(descgrid, RENDERPASS_MAIN, PSTYPE_OBJECT_PERMUTATION_BEGIN, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_ALPHA, OBJECTRENDERING_DOUBLESIDED_DISABLED, false, false, true); // AddPipelineDesc removed from new API
+
+		{
+			descgrid.ps = &shaderGridPS;
+		}
+		wiGraphics::GetDevice()->CreatePipelineState(&descgrid, &psogrid);
+		customgridShader.name = "grid Object";
+		customgridShader.filterMask = wi::enums::FILTER_TRANSPARENT;
+		customgridShader.pso[RENDERPASS_MAIN] = psogrid;
+		RegisterCustomShader(customgridShader);
 	}
-	wiGraphics::GetDevice()->CreatePipelineState(&descgrid, &psogrid);
-	customgridShader.name = "grid Object";
-	customgridShader.filterMask = wi::enums::FILTER_TRANSPARENT;
-	customgridShader.pso[RENDERPASS_MAIN] = psogrid;
-	RegisterCustomShader(customgridShader);
 
 
 	//PE: blood damage shader.
-	PipelineState psoBloodDamage;
-	PipelineStateDesc descBloodDamage;
-	CustomShader customBloodDamageShader;
-	if (!LoadShader(ShaderStage::PS, damageBloodPS, "damageBloodPS.cso"))
-		; // customBloodDamageShader.bActive removed - bActive no longer exists in CustomShader
-	if (!LoadShader(ShaderStage::VS, damageBloodVS, "damageBloodVS.cso"))
-		; // customShader.bActive removed - bActive no longer exists in CustomShader
+	bool bBloodShadersValid = true;
+	if (!LoadCustomShader(ShaderStage::PS, damageBloodPS, "damageBloodPS.cso"))
+		bBloodShadersValid = false;
+	if (!LoadCustomShader(ShaderStage::VS, damageBloodVS, "damageBloodVS.cso"))
+		bBloodShadersValid = false;
 
-
-	PipelineStateDesc desc2[RENDERPASS_COUNT];
-	PipelineState pso2[RENDERPASS_COUNT];
-	for (int i = 0; i < RENDERPASS_COUNT; i++)
+	if (bBloodShadersValid)
 	{
-		//wiRenderer::AddPipelineDesc(desc2[i], i, PSTYPE_OBJECT_PERMUTATION_BEGIN, MaterialComponent::SHADERTYPE::SHADERTYPE_PBR, BLENDMODE_OPAQUE, OBJECTRENDERING_DOUBLESIDED_ENABLED, false, true, false); // AddPipelineDesc removed from new API
-		{
-			if (i == RENDERPASS_MAIN)
-			{
-				desc2[i].ps = &damageBloodPS;
-				desc2[i].vs = &damageBloodVS;
-			}
-		}
-		wiGraphics::GetDevice()->CreatePipelineState(&desc2[i], &pso2[i]);
+		CustomShader customBloodDamageShader;
+		// DX12: Only create PSO for MAIN — other render passes have no shaders assigned
+		PipelineStateDesc descBlood;
+		PipelineState psoBlood;
+		descBlood.ps = &damageBloodPS;
+		descBlood.vs = &damageBloodVS;
+		wiGraphics::GetDevice()->CreatePipelineState(&descBlood, &psoBlood);
+
+		customBloodDamageShader.name = "Blood Damage";
+		customBloodDamageShader.filterMask = wi::enums::FILTER_OPAQUE;
+		customBloodDamageShader.pso[RENDERPASS_MAIN] = psoBlood;
+
+		RegisterCustomShader(customBloodDamageShader);
 	}
-
-	customBloodDamageShader.name = "Blood Damage";
-	customBloodDamageShader.filterMask = wi::enums::FILTER_OPAQUE;
-	for (int i = 0; i < RENDERPASS_COUNT; i++)
-		customBloodDamageShader.pso[i] = pso2[i];
-
-	RegisterCustomShader(customBloodDamageShader);
 
 
 }

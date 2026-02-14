@@ -354,7 +354,8 @@ bool ImGui_DX12_InitBridge()
     if (!graphicsDevice)
         return false;
 
-    auto* dx12Device = dynamic_cast<wi::graphics::GraphicsDevice_DX12*>(graphicsDevice);
+    // static_cast: WickedEngine compiled with RTTI disabled (/GR-), dynamic_cast crashes
+    auto* dx12Device = static_cast<wi::graphics::GraphicsDevice_DX12*>(graphicsDevice);
     if (!dx12Device)
         return false;
 
@@ -389,7 +390,17 @@ bool ImGui_DX12_InitBridge()
 
 void ImGui_DX12_NewFrame()
 {
-    // Nothing needed per-frame for our simple DX12 backend
+    if (!g_ImGuiDX12Initialized) return;
+
+    // Check if font atlas needs rebuilding (e.g. after ChangeGGFont calls io.Fonts->Clear())
+    ImGuiIO& io = ImGui::GetIO();
+    if (!io.Fonts->IsBuilt() || !g_FontTextureCreated)
+    {
+        // Release old font texture resources
+        g_pFontTextureResource.Reset();
+        g_FontTextureCreated = false;
+        CreateFontTexture();
+    }
 }
 
 void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)

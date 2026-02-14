@@ -230,13 +230,13 @@ DARKSDK void SetupKeyboardEx ( DWORD dwForeOrBackGround )
 	HRESULT hr;		// used to check return codes
 
 	// create the device
-	if ( FAILED ( hr = m_lpDI->CreateDevice ( GUID_SysKeyboard, &m_lpDIKeyboard, NULL ) ) )
+	if ( m_lpDI == NULL || FAILED ( hr = m_lpDI->CreateDevice ( GUID_SysKeyboard, &m_lpDIKeyboard, NULL ) ) )
 	{
 		// if it fails call the destructor and show an error message
-		InputDestructor ( );
 		Error1 ( "Unable to access keyboard for input library" );
+		return;
 	}
-	
+
 	// set the data format
 	if ( FAILED ( hr = m_lpDIKeyboard->SetDataFormat ( &c_dfDIKeyboard ) ) )
 	{
@@ -271,10 +271,10 @@ DARKSDK void SetupMouseEx ( DWORD dwForeOrBackGround )
 	HRESULT hr = NULL;
 
 	// create the device
-	if ( FAILED ( hr = m_lpDI->CreateDevice ( GUID_SysMouse, &m_lpDIMouse, NULL ) ) )
+	if ( m_lpDI == NULL || FAILED ( hr = m_lpDI->CreateDevice ( GUID_SysMouse, &m_lpDIMouse, NULL ) ) )
 	{
 		Error1("Unable to access mouse for input library");
-		InputDestructor ( );
+		return;
 	}
 
 	// request background and non exclusive mode

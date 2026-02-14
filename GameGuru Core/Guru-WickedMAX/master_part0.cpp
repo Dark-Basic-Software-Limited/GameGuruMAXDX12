@@ -1218,79 +1218,11 @@ void Master::Update(float dt)
 	}
 
 	// handle visual splash until not needed
+	// DX12: Splash rendering moved to MasterRenderer::Compose() — in DX12 we cannot create
+	// a separate render pass on the swap chain here because Application::Run() creates another
+	// one that clears whatever we drew. Counter management stays here.
 	if (g_iShowSplashForFirstFewCycles > 0)
 	{
-		// render splash screen here
-		CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
-		wiGraphics::GetDevice()->RenderPassBegin(&swapChain, cmd);
-		wiImage::SetCanvas(canvas);
-		wiFont::SetCanvas(canvas);
-		Viewport viewport;
-		viewport.width = (float)swapChain.desc.width;
-		viewport.height = (float)swapChain.desc.height;
-		wiGraphics::GetDevice()->BindViewports(1, &viewport, cmd);
-		wiFontParams params;
-		params.posX = 5.f;
-		params.posY = 5.f;
-		if (g_pSplashTexture.IsValid())
-		{
-			if (bCustomSplash)
-			{
-				float screenheight = canvas.GetLogicalHeight();
-				float screenwidth = canvas.GetLogicalWidth();
-				float img_w = g_pSplashTexture.desc.width;
-				float img_h = g_pSplashTexture.desc.height;
-				float fRatio = 1.0f / (img_h / img_w);
-				img_h = screenheight;
-				img_w = screenheight * fRatio;
-				if (img_w < screenwidth)
-				{
-					img_w = screenwidth;
-					img_h = screenwidth * (1.0f / ((float)g_pSplashTexture.desc.width / (float)g_pSplashTexture.desc.height));
-				}
-				fx.disableFullScreen();
-				fx.pos.x = screenwidth * 0.5;
-				fx.pos.y = screenheight * 0.5;
-				fx.pivot.x = 0.5;
-				fx.pivot.y = 0.5;
-				fx.siz.x = img_w;
-				fx.siz.y = img_h;
-			}
-			wiImage::Draw(&g_pSplashTexture, fx, cmd);
-		}
-
-		// and overlay with a ratio corrected 'universal' logo for UltraWide goodness
-		if (bAreWeAEditor == true)
-		{ 
-			bool bUniversalLogo = true;
-			if (bUniversalLogo == true)
-			{
-				char logoFile[MAX_PATH];
-				sprintf(logoFile, "Files\\editors\\uiv3\\MAX-Logo-Square.png");
-				wiResource tex = wiResourceManager::Load(logoFile);
-				wiGraphics::Texture pMAXLogoTexture;
-				if (tex.IsValid()) pMAXLogoTexture = tex.GetTexture();
-				if (pMAXLogoTexture.IsValid())
-				{
-					float screenheight = canvas.GetLogicalHeight();
-					float screenwidth = canvas.GetLogicalWidth();
-					float img_w = pMAXLogoTexture.desc.width;
-					float img_h = pMAXLogoTexture.desc.height;
-					fx.disableFullScreen();
-					fx.pos.x = screenwidth * 0.5;
-					fx.pos.y = screenheight * 0.5;
-					fx.pivot.x = 0.5;
-					fx.pivot.y = 0.5;
-					fx.siz.x = img_w;
-					fx.siz.y = img_h;
-					fx.blendFlag = BLENDMODE_ALPHA;
-					wiImage::Draw(&pMAXLogoTexture, fx, cmd);
-				}
-			}
-		}
-
-		wiGraphics::GetDevice()->RenderPassEnd(cmd);
-		wiGraphics::GetDevice()->SubmitCommandLists();
 		g_iShowSplashForFirstFewCycles--;
 		if (g_iShowSplashForFirstFewCycles <= 0)
 		{
@@ -1298,21 +1230,17 @@ void Master::Update(float dt)
 			{
 				if (SoundPlaying(g.temppreviewsoundoffset) == 1)
 				{
-					// hold off one ending splash sequence until intro sound has finished!
 					g_iShowSplashForFirstFewCycles = 1;
 				}
 				else
 				{
-					// and remove intro sound
 					DeleteSound(8809);
 				}
 			}
 		}
-		if (g_iShowSplashForFirstFewCycles <= 0 )
+		if (g_iShowSplashForFirstFewCycles <= 0)
 		{
-			// only hand over rendering submissions when splash is no longer needed
 			g_iShowSplashForFirstFewCycles = 0;
-			//setCompletelyLoaded(true);
 		}
 	}
 }

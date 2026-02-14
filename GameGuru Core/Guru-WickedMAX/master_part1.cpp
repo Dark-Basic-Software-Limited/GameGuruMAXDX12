@@ -121,11 +121,9 @@ void MasterRenderer::Update(float dt)
 		wiProfiler::EndRange(range);
 
 		// no further than logic while in splash show mode
-		if (g_iShowSplashForFirstFewCycles > 0)
-		{
-			return;
-		}
-		if (bFullyInitialised == true )
+		// DX12: Must NOT return early — __super::Update(dt) must always run so
+		// RenderPath3D prepares render targets before Render()/Compose() are called.
+		if (g_iShowSplashForFirstFewCycles <= 0 && bFullyInitialised == true )
 		{
 			// normal update
 			wiScene::CameraComponent &camera = wiScene::GetCamera();
@@ -352,7 +350,45 @@ void MasterRenderer::Compose(CommandList cmd) const
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
+
 	__super::Compose(cmd);
+
+	// DX12: Render splash screen AFTER normal compose (drawn on top with opaque blend).
+	// Moved from Master::Update where it created a separate render pass that was
+	// immediately cleared by Application::Run's own render pass.
+	extern int g_iShowSplashForFirstFewCycles;
+	extern bool bAreWeAEditor;
+	if (g_iShowSplashForFirstFewCycles > 0)
+	{
+		if (master.g_pSplashTexture.IsValid())
+		{
+			wi::image::Params fx;
+			fx.enableFullScreen();
+			fx.blendFlag = wi::enums::BLENDMODE_OPAQUE;
+			wi::image::Draw(&master.g_pSplashTexture, fx, cmd);
+		}
+		if (bAreWeAEditor)
+		{
+			wi::Resource tex = wi::resourcemanager::Load("Files\\editors\\uiv3\\MAX-Logo-Square.png");
+			if (tex.IsValid())
+			{
+				wi::graphics::Texture logoTex = tex.GetTexture();
+				if (logoTex.IsValid())
+				{
+					wi::image::Params logoFx;
+					logoFx.disableFullScreen();
+					logoFx.pos.x = master.canvas.GetLogicalWidth() * 0.5f;
+					logoFx.pos.y = master.canvas.GetLogicalHeight() * 0.5f;
+					logoFx.pivot = XMFLOAT2(0.5f, 0.5f);
+					logoFx.siz.x = (float)logoTex.desc.width;
+					logoFx.siz.y = (float)logoTex.desc.height;
+					logoFx.blendFlag = wi::enums::BLENDMODE_ALPHA;
+					wi::image::Draw(&logoTex, logoFx, cmd);
+				}
+			}
+		}
+		return; // skip ImGui during splash
+	}
 
 	// Phase 5: Render ImGui draw data using DX12 backend
 	extern bool bImGuiInitDone;
@@ -361,7 +397,8 @@ void MasterRenderer::Compose(CommandList cmd) const
 		extern bool ImGui_DX12_IsInitialized();
 		if (ImGui_DX12_IsInitialized())
 		{
-			auto* dx12Device = dynamic_cast<wi::graphics::GraphicsDevice_DX12*>(wi::graphics::GetDevice());
+			// static_cast: WickedEngine compiled with RTTI disabled (/GR-)
+			auto* dx12Device = static_cast<wi::graphics::GraphicsDevice_DX12*>(wi::graphics::GetDevice());
 			if (dx12Device)
 			{
 				ID3D12GraphicsCommandList* nativeCmdList = dx12Device->GetDX12GraphicsCommandList(cmd);

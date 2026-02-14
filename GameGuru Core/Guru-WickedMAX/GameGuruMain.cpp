@@ -116,11 +116,11 @@ bool GuruLoopLogic ( void )
 	{
 		switch (g_iInitializationSequence)
 		{
-			case 0: 
+			case 0:
 			{
 				// start init sequence
 				g_iInitializationSequence = 1;
-				
+
 				//PE: This will trigger void FileRedirectSetup() before we have set this as standalone.
 				bool bAreWeAEditor = true;
 				std::string appname = Appname();
@@ -153,7 +153,7 @@ bool GuruLoopLogic ( void )
 			case 2:
 			{
 				#ifdef GGTERRAIN_USE_NEW_TERRAIN
-				
+
 				//PE: Start early , while setting up terrain.
 				int iUpdateCheckRetValue = ExecuteFile("..\\..\\GameGuru MAX Update Check.exe", "", "", 0, 1);
 				extern int g_iDisableTerrainSystem;
@@ -169,7 +169,7 @@ bool GuruLoopLogic ( void )
 					GGGrass::GGGrass_Init();
 				}
 				#endif
-				
+
 				Tracers::Initialize();
 
 				g_iInitializationSequence = 3;

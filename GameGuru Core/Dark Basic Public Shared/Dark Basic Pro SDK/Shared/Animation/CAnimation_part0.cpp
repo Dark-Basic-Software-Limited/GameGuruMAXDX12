@@ -1118,6 +1118,9 @@ DARKSDK void AnimationDestructor ( void )
 
 BOOL CoreLoadAnimation( int AnimIndex, char* Filename, int precacheframes)
 {
+	// DX12: video playback requires DX11 device which is not available
+	if (m_pD3D == NULL) return FALSE;
+
 	// Vars
     HRESULT hr = S_OK;
 

@@ -28,6 +28,7 @@ namespace Tracers
     GPUBuffer constantBuffer;
     Texture tracerTexture[MAXTRACERS + MAXLUATRACERS];
     PipelineState tracerPSO;
+    bool tracerSystemReady = false;
     GPUBuffer quadVB;
     GPUBuffer quadIB;
 
@@ -319,6 +320,7 @@ namespace Tracers
 #ifdef DISABLETEMP
         return;
 #endif
+        if (!tracerSystemReady) return;
         if (tracers.empty()) return;
 
         wiRenderer::BindCommonResources(cmd);
@@ -441,6 +443,12 @@ namespace Tracers
         PipelineStateDesc desc;
         wiRenderer::LoadShader(ShaderStage::VS, shaderTracerVS, "BulletTracerVS.cso");
         wiRenderer::LoadShader(ShaderStage::PS, shaderTracerPS, "BulletTracerPS.cso");
+        if (!shaderTracerVS.IsValid() || !shaderTracerPS.IsValid())
+        {
+            wi::backlog::post("Tracer system disabled: shaders failed to load", wi::backlog::LogLevel::Warning);
+            tracerSystemReady = false;
+            return;
+        }
         desc.ps = &shaderTracerPS;
         desc.vs = &shaderTracerVS;
         desc.bs = &blendStatesAdditive;
@@ -454,7 +462,15 @@ namespace Tracers
         };
         desc.il = &layout;
 
-        wi::graphics::GetDevice()->CreatePipelineState(&desc, &tracerPSO);
+        if (wi::graphics::GetDevice()->CreatePipelineState(&desc, &tracerPSO))
+        {
+            tracerSystemReady = true;
+        }
+        else
+        {
+            wi::backlog::post("Tracer system disabled: pipeline state creation failed", wi::backlog::LogLevel::Warning);
+            tracerSystemReady = false;
+        }
     }
 
 }

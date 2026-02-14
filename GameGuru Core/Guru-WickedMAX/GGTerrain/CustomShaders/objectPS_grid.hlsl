@@ -1,10 +1,11 @@
 #define OBJECTSHADER_LAYOUT_COMMON
 #include "objectHF.hlsli"
 
-#define GRID_LINE_THICKNESS_BASE     GetMaterial().customShaderParam1
-#define MAX_FADE_DISTANCE            GetMaterial().customShaderParam2
-#define GRID_POWER_EXPONENT          GetMaterial().customShaderParam3
-#define GRID_MIN_ALPHA               GetMaterial().customShaderParam4
+// DX12: customShaderParam1-4 replaced with uint4 userdata (asfloat to read as float)
+#define GRID_LINE_THICKNESS_BASE     asfloat(GetMaterial().userdata.x)
+#define MAX_FADE_DISTANCE            asfloat(GetMaterial().userdata.y)
+#define GRID_POWER_EXPONENT          asfloat(GetMaterial().userdata.z)
+#define GRID_MIN_ALPHA               asfloat(GetMaterial().userdata.w)
 #define GRID_COLOR 0.6f
 #define DARK_GRID_COLOR 0.2f
 
@@ -24,17 +25,17 @@ float GetLineIntensity(float frac_coord, float world_line_spacing, float base_th
     float half_width = effective_line_thickness * 0.5f;
 
     float dist_to_nearest_line_center = min(frac_coord, 1.0f - frac_coord);
-    
+
     float intensity = smoothstep(half_width, 0.0f, dist_to_nearest_line_center);
-    
+
     return intensity;
 }
 
 
 float4 main(PixelInput input) : SV_TARGET
 {
-    float3 worldPos = input.pos3D;
-    float dist_to_camera = distance(worldPos, g_xCamera_CamPos.xyz);
+    float3 worldPos = input.GetPos3D();
+    float dist_to_camera = distance(worldPos, GetCamera().position.xyz);
 
     //PE: Fading
     float fade_t = saturate(dist_to_camera / MAX_FADE_DISTANCE);
@@ -80,4 +81,3 @@ float4 main(PixelInput input) : SV_TARGET
 
     return float4(grid_pixel_color, final_alpha);
 }
-

@@ -21,6 +21,40 @@
 using namespace wiGraphics;
 using namespace wiScene;
 
+// Load a GPU Particle shader from Particles/Shaders/ with WickedEngine shaders as include path
+static bool LoadGPUPShader(ShaderStage stage, Shader& shader, const std::string& filename)
+{
+	std::string customDir = wi::helper::GetDirectoryFromPath(std::string(__FILE__)) + "Particles/Shaders/";
+	wi::helper::MakePathAbsolute(customDir);
+
+	std::string engineShaderDir = wiRenderer::GetShaderSourcePath();
+	wi::helper::MakePathAbsolute(engineShaderDir);
+
+	std::string shaderbinaryfilename = wiRenderer::GetShaderPath() + filename;
+
+	wi::shadercompiler::CompilerInput input;
+	input.format = wiGraphics::GetDevice()->GetShaderFormat();
+	input.stage = stage;
+	input.include_directories.push_back(engineShaderDir);
+	input.include_directories.push_back(customDir);
+	input.shadersourcefilename = wi::helper::ReplaceExtension(customDir + filename, "hlsl");
+
+	wi::shadercompiler::CompilerOutput output;
+	wi::shadercompiler::Compile(input, output);
+
+	if (output.IsValid())
+	{
+		wi::shadercompiler::SaveShaderAndMetadata(shaderbinaryfilename, output);
+		wi::backlog::post("gpup shader compiled: " + shaderbinaryfilename);
+		return wiGraphics::GetDevice()->CreateShader(stage, output.shaderdata, output.shadersize, &shader);
+	}
+	else
+	{
+		wi::backlog::post("gpup shader compile FAILED: " + filename + "\n" + output.error_message, wi::backlog::LogLevel::Error);
+		return false;
+	}
+}
+
 namespace GPUParticles
 {
 // file functions, only support one file open at a time
@@ -656,6 +690,7 @@ uint32_t g_emitterCurrentIndex[256];
 
 extern "C" void gpup_draw_init(const wiScene::CameraComponent & camera, wiGraphics::CommandList cmd)
 {
+	if ( !gpu_particles_initialised ) return;
 	// calculates all needed particles and distances from camera
 	for (size_t i = 0; i < gpup_maxeffects; ++i)
 	{
@@ -863,6 +898,7 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 // called from WickedEngine RenderPath3D::RenderTransparents()
 extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 {
+	if ( !gpu_particles_initialised ) return;
 	// cannot do any quad rendering in here as we are already in a render pass by this point
 	// only render final emitter objects
 
@@ -1838,15 +1874,23 @@ int gpup_init()
 	gpup_settings.gtimer = 0;
 	gpup_settings.spawnCount = 0;
 
-	// shaders
-	wiRenderer::LoadShader( ShaderStage::VS, shaderQuadVS, "GPUP_QuadVS.cso" );
-	wiRenderer::LoadShader( ShaderStage::VS, shaderMainVS, "GPUP_MainVS.cso" );
-
-	wiRenderer::LoadShader( ShaderStage::PS, shaderQuadDefaultPS, "QuadDefaultPS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderNoisePS, "GPUP_NoisePS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderSpeedPS, "GPUP_SpeedPS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderPosPS, "GPUP_PosPS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderMainPS, "GPUP_MainPS.cso" );
+	// shaders (compile from Particles/Shaders/ source directory)
+	// NOTE: These shaders were written for DX11 and lack DX12 root signatures.
+	// Until they are ported to DX12, GPU particles are disabled to prevent crashes.
+	bool bShadersOK = true;
+	bShadersOK &= LoadGPUPShader( ShaderStage::VS, shaderQuadVS, "GPUP_QuadVS.cso" );
+	bShadersOK &= LoadGPUPShader( ShaderStage::VS, shaderMainVS, "GPUP_MainVS.cso" );
+	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderQuadDefaultPS, "QuadDefaultPS.cso" );
+	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderNoisePS, "GPUP_NoisePS.cso" );
+	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderSpeedPS, "GPUP_SpeedPS.cso" );
+	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderPosPS, "GPUP_PosPS.cso" );
+	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderMainPS, "GPUP_MainPS.cso" );
+	if (!bShadersOK)
+	{
+		wi::backlog::post("GPU Particles disabled: shaders need DX12 root signatures", wi::backlog::LogLevel::Warning);
+		gpu_particles_initialised = 0;
+		return -1;
+	}
 
 	// images	
 	if ( !GetFileExists("Files/effectbank/common/noise64.png") ) return -1;
@@ -2565,6 +2609,7 @@ float g_fSlowParticleTime = 1.0f;
 // Update the Particles
 void gpup_update( float frameTime, wiGraphics::CommandList cmd )
 {
+	if ( !gpu_particles_initialised ) return;
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
