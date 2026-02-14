@@ -223,7 +223,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/$(Configuration);../Dark Basic Public Shared/Lib64/$(Configuration);../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/RecastContrib/SDL/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/$(Configuration);../Dark Basic Public Shared/Lib64/$(Configuration);../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/OpenXR/lib/x64;../SDK/RecastContrib/SDL/lib/x64;../../../WickedEngineDX12/BUILD/$(Platform)/$(Configuration);$(GAMEGURU_ATLMFC_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>shcore.lib;openxr_loader.lib;steam_api64.lib;DirectXTex.lib;D3D11.lib;D3DX11.lib;DXGI.lib;D3DCompiler.lib;DBDLLCore.lib;Enhancements.lib;InfiniteVegetation.lib;DarkLua.lib;CPU3D.lib;DarkAI.lib;Psapi.lib;system.lib;Text.lib;input.lib;Bullet.lib;setup.lib;animation.lib;Basic3D.lib;ftp.lib;memblocks.lib;file.lib;$(ProjectDir)..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\BaseClasses\strmbase.lib;winmm.lib;odbc32.lib;odbccp32.lib;bitmap.lib;basic2d.lib;strmiids.lib;quartz.lib;msacm32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;Sound.lib;ConvX.lib;Light.lib;Sprites.lib;Vectors.lib;Image.lib;Setup.lib;Camera.lib;Version.lib;dxguid.lib;PhotonMultiplayer.lib;OptickCore.lib;Common-cpp_vc14_release_windows_mt_x64.lib;LoadBalancing-cpp_vc14_release_windows_mt_x64.lib;Photon-cpp_vc14_release_windows_mt_x64.lib;mf.lib;mfplat.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <IgnoreSpecificDefaultLibraries>
@@ -261,7 +261,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Debug\;../Guru-WickedMAX/$(Platform)/$(Configuration);../Dark Basic Public Shared/Lib64/$(Configuration);../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/RecastContrib/SDL/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Debug\;../Guru-WickedMAX/$(Platform)/$(Configuration);../Dark Basic Public Shared/Lib64/$(Configuration);../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/OpenXR/lib/x64;../SDK/RecastContrib/SDL/lib/x64;../../../WickedEngineDX12/BUILD/$(Platform)/$(Configuration);$(GAMEGURU_ATLMFC_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>shcore.lib;openxr_loader.lib;steam_api64.lib;DirectXTex.lib;D3D11.lib;D3DX11.lib;DXGI.lib;D3DCompiler.lib;DBDLLCore.lib;Enhancements.lib;InfiniteVegetation.lib;DarkLua.lib;CPU3D.lib;DarkAI.lib;Psapi.lib;system.lib;Text.lib;input.lib;Bullet.lib;setup.lib;animation.lib;Basic3D.lib;ftp.lib;memblocks.lib;file.lib;$(ProjectDir)..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\BaseClasses\strmbase.lib;winmm.lib;odbc32.lib;odbccp32.lib;bitmap.lib;basic2d.lib;strmiids.lib;quartz.lib;msacm32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;Sound.lib;ConvX.lib;Light.lib;Sprites.lib;Vectors.lib;Image.lib;Setup.lib;Camera.lib;Version.lib;dxguid.lib;PhotonMultiplayer.lib;OptickCore.lib;Common-cpp_vc14_debug_windows_mt_x64.lib;LoadBalancing-cpp_vc14_debug_windows_mt_x64.lib;Photon-cpp_vc14_debug_windows_mt_x64.lib;mf.lib;mfplat.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <IgnoreSpecificDefaultLibraries>
@@ -299,7 +299,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Debug\;../Guru-WickedMAX/$(Platform)/Debug;../Dark Basic Public Shared/Lib64/Debug;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/RecastContrib/SDL/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Debug\;../Guru-WickedMAX/$(Platform)/Debug;../Dark Basic Public Shared/Lib64/Debug;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/OpenXR/lib/x64;../SDK/RecastContrib/SDL/lib/x64;../../../WickedEngineDX12/BUILD/$(Platform)/$(Configuration);$(GAMEGURU_ATLMFC_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>shcore.lib;openxr_loader.lib;steam_api64.lib;DirectXTex.lib;D3D11.lib;D3DX11.lib;DXGI.lib;D3DCompiler.lib;DBDLLCore.lib;Enhancements.lib;InfiniteVegetation.lib;DarkLua.lib;CPU3D.lib;DarkAI.lib;Psapi.lib;system.lib;Text.lib;input.lib;Bullet.lib;setup.lib;animation.lib;Basic3D.lib;ftp.lib;memblocks.lib;file.lib;$(ProjectDir)..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\BaseClasses\strmbase.lib;winmm.lib;odbc32.lib;odbccp32.lib;bitmap.lib;basic2d.lib;strmiids.lib;quartz.lib;msacm32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;Sound.lib;ConvX.lib;Light.lib;Sprites.lib;Vectors.lib;Image.lib;Setup.lib;Camera.lib;Version.lib;dxguid.lib;PhotonMultiplayer.lib;OptickCore.lib;Common-cpp_vc14_debug_windows_mt_x64.lib;LoadBalancing-cpp_vc14_debug_windows_mt_x64.lib;Photon-cpp_vc14_debug_windows_mt_x64.lib;mf.lib;mfplat.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <IgnoreSpecificDefaultLibraries>
@@ -337,7 +337,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/RecastContrib/SDL/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/OpenXR/lib/x64;../SDK/RecastContrib/SDL/lib/x64;../../../WickedEngineDX12/BUILD/$(Platform)/$(Configuration);$(GAMEGURU_ATLMFC_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>shcore.lib;openxr_loader.lib;steam_api64.lib;DirectXTex.lib;D3D11.lib;D3DX11.lib;DXGI.lib;D3DCompiler.lib;DBDLLCore.lib;Enhancements.lib;InfiniteVegetation.lib;DarkLua.lib;CPU3D.lib;DarkAI.lib;Psapi.lib;system.lib;Text.lib;input.lib;Bullet.lib;setup.lib;animation.lib;Basic3D.lib;ftp.lib;memblocks.lib;file.lib;$(ProjectDir)..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\BaseClasses\strmbase.lib;winmm.lib;odbc32.lib;odbccp32.lib;bitmap.lib;basic2d.lib;strmiids.lib;quartz.lib;msacm32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;Sound.lib;ConvX.lib;Light.lib;Sprites.lib;Vectors.lib;Image.lib;Setup.lib;Camera.lib;Version.lib;dxguid.lib;PhotonMultiplayer.lib;OptickCore.lib;Common-cpp_vc14_release_windows_mt_x64.lib;LoadBalancing-cpp_vc14_release_windows_mt_x64.lib;Photon-cpp_vc14_release_windows_mt_x64.lib;mf.lib;mfplat.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <IgnoreSpecificDefaultLibraries>
@@ -374,7 +374,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/RecastContrib/SDL/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/OpenXR/lib/x64;../SDK/RecastContrib/SDL/lib/x64;../../../WickedEngineDX12/BUILD/$(Platform)/$(Configuration);$(GAMEGURU_ATLMFC_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>shcore.lib;openxr_loader.lib;steam_api64.lib;DirectXTex.lib;D3D11.lib;D3DX11.lib;DXGI.lib;D3DCompiler.lib;DBDLLCore.lib;Enhancements.lib;InfiniteVegetation.lib;DarkLua.lib;CPU3D.lib;DarkAI.lib;Psapi.lib;system.lib;Text.lib;input.lib;Bullet.lib;setup.lib;animation.lib;Basic3D.lib;ftp.lib;memblocks.lib;file.lib;$(ProjectDir)..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\BaseClasses\strmbase.lib;winmm.lib;odbc32.lib;odbccp32.lib;bitmap.lib;basic2d.lib;strmiids.lib;quartz.lib;msacm32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;Sound.lib;ConvX.lib;Light.lib;Sprites.lib;Vectors.lib;Image.lib;Setup.lib;Camera.lib;Version.lib;dxguid.lib;PhotonMultiplayer.lib;OptickCore.lib;Common-cpp_vc14_release_windows_mt_x64.lib;LoadBalancing-cpp_vc14_release_windows_mt_x64.lib;Photon-cpp_vc14_release_windows_mt_x64.lib;mf.lib;mfplat.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <IgnoreSpecificDefaultLibraries>
@@ -412,7 +412,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/RecastContrib/SDL/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/OpenXR/lib/x64;../SDK/RecastContrib/SDL/lib/x64;../../../WickedEngineDX12/BUILD/$(Platform)/$(Configuration);$(GAMEGURU_ATLMFC_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>EOSSDK-Win64-Shipping.lib;shcore.lib;openxr_loader.lib;DirectXTex.lib;D3D11.lib;D3DX11.lib;DXGI.lib;D3DCompiler.lib;DBDLLCore.lib;Enhancements.lib;InfiniteVegetation.lib;DarkLua.lib;CPU3D.lib;DarkAI.lib;Psapi.lib;system.lib;Text.lib;input.lib;Bullet.lib;setup.lib;animation.lib;Basic3D.lib;ftp.lib;memblocks.lib;file.lib;$(ProjectDir)..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\BaseClasses\strmbase.lib;winmm.lib;odbc32.lib;odbccp32.lib;bitmap.lib;basic2d.lib;strmiids.lib;quartz.lib;msacm32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;Sound.lib;ConvX.lib;Light.lib;Sprites.lib;Vectors.lib;Image.lib;Setup.lib;Camera.lib;Version.lib;dxguid.lib;PhotonMultiplayer.lib;OptickCore.lib;Common-cpp_vc14_release_windows_mt_x64.lib;LoadBalancing-cpp_vc14_release_windows_mt_x64.lib;Photon-cpp_vc14_release_windows_mt_x64.lib;mf.lib;mfplat.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <IgnoreSpecificDefaultLibraries>
@@ -450,7 +450,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/RecastContrib/SDL/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/OpenXR/lib/x64;../SDK/RecastContrib/SDL/lib/x64;../../../WickedEngineDX12/BUILD/$(Platform)/$(Configuration);$(GAMEGURU_ATLMFC_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>shcore.lib;openxr_loader.lib;DirectXTex.lib;D3D11.lib;D3DX11.lib;DXGI.lib;D3DCompiler.lib;DBDLLCore.lib;Enhancements.lib;InfiniteVegetation.lib;DarkLua.lib;CPU3D.lib;DarkAI.lib;Psapi.lib;system.lib;Text.lib;input.lib;Bullet.lib;setup.lib;animation.lib;Basic3D.lib;ftp.lib;memblocks.lib;file.lib;$(ProjectDir)..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\BaseClasses\strmbase.lib;winmm.lib;odbc32.lib;odbccp32.lib;bitmap.lib;basic2d.lib;strmiids.lib;quartz.lib;msacm32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;Sound.lib;ConvX.lib;Light.lib;Sprites.lib;Vectors.lib;Image.lib;Setup.lib;Camera.lib;Version.lib;dxguid.lib;PhotonMultiplayer.lib;OptickCore.lib;Common-cpp_vc14_release_windows_mt_x64.lib;LoadBalancing-cpp_vc14_release_windows_mt_x64.lib;Photon-cpp_vc14_release_windows_mt_x64.lib;mf.lib;mfplat.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <IgnoreSpecificDefaultLibraries>
@@ -487,7 +487,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/RecastContrib/SDL/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SDK\DirectXTex\DirectXTex\Bin\Desktop_2022\x64\Release\;../Guru-WickedMAX/$(Platform)/Release;../Dark Basic Public Shared/Lib64/Release;../Dark Wicked Shared/Lib64/;$(VULKAN_SDK)/Lib;../SDK/OpenXR/lib/x64;../SDK/RecastContrib/SDL/lib/x64;../../../WickedEngineDX12/BUILD/$(Platform)/$(Configuration);$(GAMEGURU_ATLMFC_LIB);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>shcore.lib;openxr_loader.lib;steam_api64.lib;DirectXTex.lib;D3D11.lib;D3DX11.lib;DXGI.lib;D3DCompiler.lib;DBDLLCore.lib;Enhancements.lib;InfiniteVegetation.lib;DarkLua.lib;CPU3D.lib;DarkAI.lib;Psapi.lib;system.lib;Text.lib;input.lib;Bullet.lib;setup.lib;animation.lib;Basic3D.lib;ftp.lib;memblocks.lib;file.lib;$(ProjectDir)..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\BaseClasses\strmbase.lib;winmm.lib;odbc32.lib;odbccp32.lib;bitmap.lib;basic2d.lib;strmiids.lib;quartz.lib;msacm32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;Sound.lib;ConvX.lib;Light.lib;Sprites.lib;Vectors.lib;Image.lib;Setup.lib;Camera.lib;Version.lib;dxguid.lib;PhotonMultiplayer.lib;OptickCore.lib;Common-cpp_vc14_release_windows_mt_x64.lib;LoadBalancing-cpp_vc14_release_windows_mt_x64.lib;Photon-cpp_vc14_release_windows_mt_x64.lib;mf.lib;mfplat.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <IgnoreSpecificDefaultLibraries>
@@ -682,7 +682,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\GameGuru\Imgui\imgui.cpp" />
-    <ClCompile Include="..\GameGuru\Imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\GameGuru\Imgui\imgui_draw.cpp">
+      <PreprocessorDefinitions>IMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <ClCompile Include="..\GameGuru\Imgui\imgui_gg_dx11.cpp" />
     <ClCompile Include="..\GameGuru\Imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="..\GameGuru\Imgui\imgui_widgets.cpp" />
@@ -835,6 +837,10 @@
     <ClCompile Include="tracers\TracerManager.cpp" />
     <ClCompile Include="Wicked-MAX\BulletDebugDrawer.cpp" />
     <ClCompile Include="wickedcalls.cpp" />
+    <ClCompile Include="photon_stubs.cpp">
+      <AdditionalIncludeDirectories>../SDK/PhotonSDK;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="linker_stubs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Wicked-MAX.rc" />

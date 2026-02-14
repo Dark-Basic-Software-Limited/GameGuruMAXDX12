@@ -1604,3 +1604,4 @@ _Use_decl_annotations_ bool DirectX::_LoadScanline(
             }\
             return true; \
         }\
+        return false;

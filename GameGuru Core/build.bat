@@ -23,8 +23,9 @@ REM --- Initialize VS 2026 Developer Environment ---
 REM Using v143 (VS 2022) toolset as installed
 call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 >nul 2>&1
 
-REM Capture ATL/MFC include path from VS 2026 before MSBuild overrides VCToolsInstallDir
+REM Capture ATL/MFC paths from VS 2026 before MSBuild overrides VCToolsInstallDir
 SET GAMEGURU_ATLMFC_INCLUDE=%VCToolsInstallDir%ATLMFC\include
+SET GAMEGURU_ATLMFC_LIB=%VCToolsInstallDir%ATLMFC\lib\x64
 
 IF ERRORLEVEL 1 (
     echo ERROR: Could not initialize Visual Studio environment.

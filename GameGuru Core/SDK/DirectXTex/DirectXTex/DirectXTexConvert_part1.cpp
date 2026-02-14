@@ -1,6 +1,4 @@
-﻿        return false;
-
-_Use_decl_annotations_
+﻿_Use_decl_annotations_
 bool DirectX::_StoreScanline(
     void* pDestination,
     size_t size,
