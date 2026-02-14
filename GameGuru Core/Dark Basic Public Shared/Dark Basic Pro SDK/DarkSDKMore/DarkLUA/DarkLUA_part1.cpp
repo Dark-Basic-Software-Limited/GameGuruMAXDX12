@@ -1320,9 +1320,9 @@
 	 //if (Timer() > iUpdateTimer + 55) //PE: 1000/20 = 50 (20 fps).
 	 return 0;
 	 #else
-	 if (Timer() > iUpdateTimer + 55) //PE: 1000/20 = 50 (20 fps).
+	 if (::Timer() > iUpdateTimer + 55) //PE: 1000/20 = 50 (20 fps).
 	 {
-		 iUpdateTimer = MAXTimer();
+		 iUpdateTimer = ::MAXTimer();
 	 }
 	 else
 	 {

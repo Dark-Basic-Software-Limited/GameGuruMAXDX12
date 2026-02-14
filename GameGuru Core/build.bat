@@ -33,6 +33,13 @@ IF ERRORLEVEL 1 (
     exit /b 1
 )
 
+REM Copy WickedEngine lib to where the linker can find it
+SET WICKED_SRC=D:\max\WickedEngineDX12\BUILD\x64\%CONFIG%\WickedEngine_Windows.lib
+SET WICKED_DST=Dark Basic Public Shared\Lib64\%CONFIG%\WickedEngine_Windows.lib
+if exist "%WICKED_SRC%" (
+    copy /Y "%WICKED_SRC%" "%WICKED_DST%" >nul 2>&1
+)
+
 echo =============================================
 echo  Building %SOLUTION%
 echo  Configuration: %CONFIG%
