@@ -1,0 +1,10 @@
+﻿// Auto-generated wrapper - includes split parts
+#include "DarkLUA_part0.cpp"
+#include "DarkLUA_part1.cpp"
+#include "DarkLUA_part2.cpp"
+#include "DarkLUA_part3.cpp"
+#include "DarkLUA_part4.cpp"
+#include "DarkLUA_part5.cpp"
+#include "DarkLUA_part6.cpp"
+#include "DarkLUA_part7.cpp"
+#include "DarkLUA_part8.cpp"

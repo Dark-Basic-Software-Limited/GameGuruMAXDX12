@@ -1,4 +1,5 @@
 
+# Build artifacts
 *.vsidx
 *.lock
 *.db
@@ -15,6 +16,32 @@
 *.iobj
 *.lib
 *.bsc
+*.ipdb
+*.idb
+*.ipch
+*.exp
+*.map
+*.res
+*.ilk
+*.suo
+
+# Build output directories
+GameGuru Core/Build/
+GameGuru Core/Guru-WickedMAX/Wicked-MAX/
+
+# Intermediate directories (RC temp files, etc.)
+**/x64/Debug/RC*
+**/x64/Release/RC*
+**/*.vcxproj.FileListAbsolute.txt
+**/enc_temp_folder/
+
+# VS directories
+.vs/
+**/.vs/
+
+# Nupkg files
+*.nupkg
+*.zip
 GameGuru Core/.vs/GameGuruWickedMAX/v17/.suo
 GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Release/Animation.res
 GameGuru Core/Dark Basic Public Shared/Dark Basic Pro SDK/DarkSDK/Animation/x64/Release/Animation.vcxproj.FileListAbsolute.txt
