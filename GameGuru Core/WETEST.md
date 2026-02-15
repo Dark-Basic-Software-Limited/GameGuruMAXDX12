@@ -57,7 +57,7 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `GET_STATE` | (none) | Returns STATE, TAB, VISIBLE_PANELS, ERRORS, UPTIME. In storyboard state also returns PROJECT name and NODES summary |
 | `GET_SCREEN_TEXT` | (none) | Detailed dump of all on-screen content: project info, node details, widget labels, connections |
 | `NAVIGATE` | `hub` / `hub.<tab>` / `storyboard` | Switch between hub, hub tabs, or storyboard |
-| `CLICK` | `play_game` / `edit_game` / `add_level` / `load_level` | Simulate button clicks (context-dependent) |
+| `CLICK` | `play_game` / `edit_game` / `test_level` / `add_level` / `load_level` | Simulate button clicks (context-dependent) |
 | `CLICK_NODE` | `<node title>` | Click a storyboard node by title (case-insensitive). Level nodes load into editor |
 | `SELECT_DEMO` | `<demo name>` | Select a demo by display name (case-insensitive) |
 | `LIST_DEMOS` | (none) | List all available demo games |
@@ -115,6 +115,7 @@ Toggle buttons show `[active=0/1]` to indicate their current state. Action-only 
 ## CLICK Context Rules
 
 - `edit_game` from **hub** only: triggers `bTriggerEditDemoGame` flag (opens storyboard for selected demo). Does NOT work from storyboard — use `CLICK_NODE` to load a level from the storyboard
+- `test_level` from **editor** only: triggers `iLaunchAfterSync = 1` (runs the level as a playable test game). `GET_STATE` returns `STATE: game` while running. Harness remains responsive during game
 - `play_game` from **storyboard**: triggers space key (TEST GAME)
 - `add_level` from **storyboard**: triggers 'N' key
 - `load_level` from **storyboard**: triggers 'L' key
