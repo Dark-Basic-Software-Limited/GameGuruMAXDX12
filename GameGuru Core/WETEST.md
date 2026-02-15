@@ -85,7 +85,7 @@ Returns detailed info depending on current state:
 
 ## CLICK_NODE (Storyboard)
 
-Clicks a storyboard node by title to trigger its action. For **level** nodes with a level file assigned, this loads the level into the editor via `cDirectOpen` + `iLaunchAfterSync = 7` (same as clicking the node thumbnail in the UI). The harness will be unresponsive during level load (~20-40s). After load completes, `GET_STATE` returns `STATE: editor`.
+Clicks a storyboard node by title to trigger its action. For **level** nodes with a level file assigned, this loads the level into the editor via `cDirectOpen` + `iLaunchAfterSync = 7` (same as clicking the node thumbnail in the UI). The harness is unresponsive during the synchronous level load. After load completes, `GET_STATE` returns `STATE: editor`.
 
 ## Standard Sequence: Hub -> Demo -> Storyboard (EDIT GAME)
 
@@ -111,15 +111,11 @@ send_cmd() {
 # Launch the app
 cd "$EXE_DIR"
 ./GameGuruMAX.exe &
-sleep 30
+sleep 3
 
-# Confirm hub is ready
+# Confirm hub is ready (hub appears in ~5-10s, poll handles the wait)
 send_cmd "GET_STATE" 30
 # Expected: STATE: hub / TAB: demo_games
-
-# Navigate to demo games tab
-sleep 2
-send_cmd "NAVIGATE hub.demo_games" 15
 
 # Select the demo (e.g. Switch Escape)
 sleep 2
@@ -127,23 +123,19 @@ send_cmd "SELECT_DEMO Switch Escape" 15
 
 # Click Edit Game (hub -> storyboard)
 sleep 2
-send_cmd "CLICK edit_game" 120
+send_cmd "CLICK edit_game" 30
 
 # Wait for storyboard to appear
-sleep 30
+sleep 5
 send_cmd "GET_STATE" 30
 # Expected: STATE: storyboard / PROJECT: Switch Escape / NODES(14): ...
-```
 
-**At this point you are at the storyboard with the selected demo project loaded.** Continue with:
-
-```bash
 # Load the level into the editor
-send_cmd "CLICK_NODE switch escape" 30
+send_cmd "CLICK_NODE switch escape" 15
 
-# Wait for level to load (harness is unresponsive during load, ~20-40s)
-sleep 40
-send_cmd "GET_STATE" 30
+# Wait for level to load (harness unresponsive during synchronous load)
+sleep 10
+send_cmd "GET_STATE" 60
 # Expected: STATE: editor
 ```
 
@@ -155,12 +147,20 @@ Check if the app is still alive (for crash detection):
 tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX"
 ```
 
+## Timing Guide
+
+| Phase | Sleep | Notes |
+|-------|-------|-------|
+| After launch | 3s | Hub appears in ~5-10s, the poll loop handles the rest |
+| Between hub commands | 2s | Small gap for UI to settle |
+| After CLICK edit_game (hub->storyboard) | 5s | Storyboard loads quickly |
+| After CLICK_NODE (level load) | 10s | Synchronous load, harness unresponsive during load |
+
+**Tested**: Launch to editor in ~34 seconds total (2026-02-15).
+
 ## Notes
 
-- The app takes ~20-30 seconds to initialize and reach the hub
-- `CLICK edit_game` from hub is synchronous — the harness blocks during load (~25-30s for most demos)
 - The harness response confirms the command was accepted, not that the resulting operation completed — always follow up with `GET_STATE` after waits
-- All 19 demos were successfully tested through this sequence on 2026-02-14
+- All 19 demos were successfully tested through the hub->storyboard sequence on 2026-02-14
 - `GET_SCREEN_TEXT` provides full widget/button labels for every storyboard node — use this to verify screen content without screenshots
-- `CLICK_NODE` loads a level by directly setting `cDirectOpen` + `iLaunchAfterSync = 7`, which triggers a synchronous load. The harness is unresponsive during load. Wait ~40s then poll with `GET_STATE`
-- When polling after a load, if the result file doesn't appear via the `send_cmd` helper, read it directly: `cat "$EXE_DIR/auto_result.txt"`
+- When polling after a level load, use a longer timeout (60s) on the `GET_STATE` poll to account for the synchronous load
