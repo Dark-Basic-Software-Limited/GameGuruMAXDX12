@@ -24,7 +24,22 @@ Always build **Release** — the Release configuration outputs directly to the r
 "D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Release
 ```
 
+**IMPORTANT**: The app must NOT be running when you build — the linker cannot overwrite the exe while it's locked. Quit the app first (via `QUIT` command or force kill), then build.
+
 Do NOT use Debug builds for testing. Debug builds output to `Build/Debug/` and the exe will fail with exit code 3 when placed in the runtime directory.
+
+## Quitting / Force Killing the App
+
+```bash
+# Graceful quit via harness
+echo "QUIT" > "D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/auto_command.txt"
+
+# Force kill (note: //IM with double slashes for MSYS bash)
+taskkill.exe //IM GameGuruMAX.exe //F
+
+# Check if running
+tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT RUNNING"
+```
 
 ## Protocol
 
@@ -78,7 +93,7 @@ Returns detailed info depending on current state:
 
 ## CLICK Context Rules
 
-- `edit_game` from **hub**: triggers `bTriggerEditDemoGame` flag (opens storyboard for selected demo)
+- `edit_game` from **hub** only: triggers `bTriggerEditDemoGame` flag (opens storyboard for selected demo). Does NOT work from storyboard — use `CLICK_NODE` to load a level from the storyboard
 - `play_game` from **storyboard**: triggers space key (TEST GAME)
 - `add_level` from **storyboard**: triggers 'N' key
 - `load_level` from **storyboard**: triggers 'L' key
@@ -87,64 +102,49 @@ Returns detailed info depending on current state:
 
 Clicks a storyboard node by title to trigger its action. For **level** nodes with a level file assigned, this loads the level into the editor via `cDirectOpen` + `iLaunchAfterSync = 7` (same as clicking the node thumbnail in the UI). The harness is unresponsive during the synchronous level load. After load completes, `GET_STATE` returns `STATE: editor`.
 
-## Standard Sequence: Hub -> Demo -> Storyboard (EDIT GAME)
+## Standard Sequence: Launch -> Hub -> Storyboard -> Editor
 
-This is the proven sequence. Use it as the starting point for any test scenario.
+This is the proven sequence (tested 2026-02-15, ~34s launch to editor).
+
+Use inline paths — do NOT rely on bash helper functions with `$EXE_DIR` expansion as they have scoping issues in MSYS bash. Use a short variable `D` set at the top of each script block.
 
 ```bash
-EXE_DIR="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
-CMD="$EXE_DIR/auto_command.txt"
-RSP="$EXE_DIR/auto_result.txt"
+D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
 
-# Helper: send command and wait for response
-send_cmd() {
-    rm -f "$RSP"
-    echo "$1" > "$CMD"
-    local t=0
-    while [ $t -lt ${2:-30} ]; do
-        [ -f "$RSP" ] && { cat "$RSP"; return 0; }
-        sleep 1; t=$((t+1))
-    done
-    echo "TIMEOUT"; return 1
-}
+# Launch the app (background)
+cd "$D" && ./GameGuruMAX.exe &
 
-# Launch the app
-cd "$EXE_DIR"
-./GameGuruMAX.exe &
+# Wait briefly then poll for hub (hub appears in ~5-10s)
 sleep 3
-
-# Confirm hub is ready (hub appears in ~5-10s, poll handles the wait)
-send_cmd "GET_STATE" 30
+rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
+t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
 # Expected: STATE: hub / TAB: demo_games
 
-# Select the demo (e.g. Switch Escape)
+# Select demo
 sleep 2
-send_cmd "SELECT_DEMO Switch Escape" 15
+rm -f "$D/auto_result.txt"; echo "SELECT_DEMO Switch Escape" > "$D/auto_command.txt"
+t=0; while [ $t -lt 15 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
 
-# Click Edit Game (hub -> storyboard)
+# Edit Game (hub -> storyboard)
 sleep 2
-send_cmd "CLICK edit_game" 30
+rm -f "$D/auto_result.txt"; echo "CLICK edit_game" > "$D/auto_command.txt"
+t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
 
-# Wait for storyboard to appear
+# Confirm storyboard
 sleep 5
-send_cmd "GET_STATE" 30
+rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
+t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
 # Expected: STATE: storyboard / PROJECT: Switch Escape / NODES(14): ...
 
-# Load the level into the editor
-send_cmd "CLICK_NODE switch escape" 15
+# Click level node to load into editor
+rm -f "$D/auto_result.txt"; echo "CLICK_NODE switch escape" > "$D/auto_command.txt"
+t=0; while [ $t -lt 15 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
 
-# Wait for level to load (harness unresponsive during synchronous load)
+# Wait for level load then confirm editor
 sleep 10
-send_cmd "GET_STATE" 60
+rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
+t=0; while [ $t -lt 60 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
 # Expected: STATE: editor
-```
-
-## Process Monitoring
-
-Check if the app is still alive (for crash detection):
-
-```bash
-tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX"
 ```
 
 ## Timing Guide
