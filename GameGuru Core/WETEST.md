@@ -31,15 +31,14 @@ Do NOT use Debug builds for testing. Debug builds output to `Build/Debug/` and t
 ## Quitting / Force Killing the App
 
 ```bash
-# Graceful quit via harness
-echo "QUIT" > "D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/auto_command.txt"
-
-# Force kill (note: //IM with double slashes for MSYS bash)
+# Force kill is the most reliable way to quit (note: //IM with double slashes for MSYS bash)
 taskkill.exe //IM GameGuruMAX.exe //F
 
 # Check if running
 tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT RUNNING"
 ```
+
+**Note**: Prefer `taskkill` over the `QUIT` harness command. The `QUIT` command can fail to be consumed if the app is in a state where the harness isn't polling (e.g., during level loads). `taskkill` always works.
 
 ## Protocol
 
