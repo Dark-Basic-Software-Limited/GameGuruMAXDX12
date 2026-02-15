@@ -9,6 +9,10 @@
 
 void AutoHarness_CheckForCommand(void);
 
+// Set to true once the harness processes its first command.
+// Used by main loop to keep app running even when window loses focus.
+extern bool g_bAutomationActive;
+
 // Force a welcome tab selection from automation (set to tab index, -1 = no force)
 // 0=Demo Games, 1=My Games, 3=Tutorials, 4=User Guide, 5=Live Changelog
 // 6=Workshop Uploader, 7=Workshop, 42=Community Tutorials

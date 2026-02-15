@@ -76,6 +76,10 @@ static char s_logPath[MAX_PATH] = {0};
 static DWORD s_startTick = 0;
 static bool s_initialized = false;
 
+// Set to true once the harness processes its first command.
+// Keeps app running even when window loses focus, so automation works while alt-tabbed.
+bool g_bAutomationActive = false;
+
 static void AutoHarness_InitPaths(void)
 {
 	// Get the directory containing the exe
@@ -784,6 +788,9 @@ void AutoHarness_CheckForCommand(void)
 
 	// Log the command
 	AutoHarness_LogCommand(cmdBuf);
+
+	// Mark harness as active so main loop keeps running even when window loses focus
+	g_bAutomationActive = true;
 
 	// Parse command and argument
 	char cmd[256];

@@ -261,6 +261,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				if (iActiveViewPorts > 1) bKeepActiveEvenInBackground = true;
 				extern bool bExport_Standalone_Window;
 				if (bExport_Standalone_Window == true) bKeepActiveEvenInBackground = true;
+				extern bool g_bAutomationActive;
+				if (g_bAutomationActive) bKeepActiveEvenInBackground = true;
 				if (bKeepActiveEvenInBackground == true)
 				{
 					g_bActiveApp = true;
