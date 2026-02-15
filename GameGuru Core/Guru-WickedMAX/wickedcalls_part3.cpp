@@ -1762,7 +1762,26 @@ uint32_t WickedCall_LoadWiSceneDirect(Scene& scene2,char* filename, bool attache
 	Entity root = 0;
 
 	XMMATRIX& transformMatrix = XMMatrixIdentity();
-	
+
+	// Validate file is a genuine Wicked Engine archive before opening
+	// (old .pe particle files from the DX11 engine have incompatible binary format)
+	{
+		FILE* fcheck = fopen(filename, "rb");
+		if (fcheck)
+		{
+			uint64_t fileVersion = 0;
+			size_t bytesRead = fread(&fileVersion, 1, sizeof(fileVersion), fcheck);
+			fclose(fcheck);
+			if (bytesRead < sizeof(fileVersion) || fileVersion < 22 || fileVersion > 200)
+			{
+				char msg[1024];
+				sprintf(msg, "Skipped non-Wicked archive: %s (version=%llu, expected 22-93)", filename, (unsigned long long)fileVersion);
+				void timestampactivity(int i, char* desc_s);
+				timestampactivity(0, msg);
+				return 0;
+			}
+		}
+	}
 	wiArchive archive(filename, true);
 	if (archive.IsOpen())
 	{
