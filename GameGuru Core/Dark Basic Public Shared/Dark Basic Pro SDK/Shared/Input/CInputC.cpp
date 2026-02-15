@@ -581,6 +581,11 @@ DARKSDK void UpdateKeyboard ( void )
 
 	// ensure coop level assigned to foreground window (see updatemouse for m_lpDIKeyboard->SetCooperativeLevel)
 
+	if ( !m_lpDIKeyboard )
+	{
+		memset ( &m_KeyBuffer, 0, sizeof ( m_KeyBuffer ) );
+		return;
+	}
 	if ( FAILED ( hr = m_lpDIKeyboard->GetDeviceState ( sizeof ( m_KeyBuffer ), ( LPVOID ) &m_KeyBuffer ) ) )
 	{
 		// the device has probably been lost if the get device state has failed, attempt to reacquire it
@@ -622,11 +627,16 @@ DARKSDK void UpdateMouse ( void )
 	if ( hCurrentHWND != g_phWnd )
 	{
 		g_phWnd = hCurrentHWND;
-		hr = m_lpDIMouse->SetCooperativeLevel ( g_phWnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND );
-		hr = m_lpDIKeyboard->SetCooperativeLevel ( g_phWnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND );
+		if ( m_lpDIMouse ) hr = m_lpDIMouse->SetCooperativeLevel ( g_phWnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND );
+		if ( m_lpDIKeyboard ) hr = m_lpDIKeyboard->SetCooperativeLevel ( g_phWnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND );
 	}
 
 	// get data
+	if ( !m_lpDIMouse )
+	{
+		memset ( &m_MouseBuffer, 0, sizeof ( m_MouseBuffer ) );
+		return;
+	}
     if ( FAILED ( hr = m_lpDIMouse->GetDeviceState ( sizeof ( m_MouseBuffer ), ( LPVOID ) &m_MouseBuffer ) ) )
 	{
 		// the device has probably been lost if the get device state has failed, attempt to reacquire it

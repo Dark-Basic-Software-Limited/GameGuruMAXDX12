@@ -402,6 +402,22 @@ static void Cmd_Click(const char* element, char* result, int resultSize)
 		return;
 	}
 
+	if (_stricmp(element, "test_level") == 0)
+	{
+		const char* state = AutoHarness_GetAppState();
+		if (strcmp(state, "editor") == 0)
+		{
+			iLaunchAfterSync = 1;
+			_snprintf(result, resultSize, "OK: Triggered Test Level from editor");
+		}
+		else
+		{
+			_snprintf(result, resultSize, "ERROR: test_level only works from editor (current state: %s)", state);
+		}
+		result[resultSize - 1] = 0;
+		return;
+	}
+
 	if (_stricmp(element, "new_project") == 0)
 	{
 		// New project - only from hub

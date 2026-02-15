@@ -581,7 +581,7 @@ DARKSDK void SETUPFreeAllCoreShaders ( void )
 void SetRenderAndDepthTarget ( LPGGRENDERTARGETVIEW render, LPGGDEPTHSTENCILVIEW depth )
 {
 	#ifdef DX11
-	if ( render ) m_pImmediateContext->OMSetRenderTargets ( 1, &render, depth );
+	if ( render && m_pImmediateContext ) m_pImmediateContext->OMSetRenderTargets ( 1, &render, depth );
 	g_pGlob->pCurrentRenderView = render;
 	g_pGlob->pCurrentDepthView = depth;
 	#endif

@@ -381,8 +381,11 @@ DARKSDK bool SetupDX11 ( void )
 
 DARKSDK void SetupSetViewport ( int iCameraID, D3D11_VIEWPORT* originalvp, LPGGSURFACE pSurface )
 {
+	// DX11 context not available in DX12/Wicked builds
+	if ( !m_pImmediateContext ) return;
+
 	D3D11_VIEWPORT vp = *originalvp;
-	if ( pSurface ) 
+	if ( pSurface )
 	{
 		D3D11_TEXTURE2D_DESC ddsd;
 		pSurface->GetDesc ( &ddsd );
