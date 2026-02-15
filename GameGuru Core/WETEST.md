@@ -62,6 +62,9 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `LIST_DEMOS` | (none) | List all available demo games |
 | `WAIT` | `<milliseconds>` | Sleep up to 30000ms, then return state |
 | `SCREENSHOT` | (none) | Capture screenshot to `auto_screenshot.*` |
+| `GET_PERF_DATA` | (none) | Returns FPS, frame time, memory, VRAM, GPU adapter, scene counts, and visibility counts. Works in any state |
+| `TOGGLE_PROFILER` | (none) | Cycles the in-game TAB mode (0=normal, 1=visuals panel, 2=performance panel). Game state only |
+| `PRESS_ESCAPE` | (none) | Exits test game back to editor (sets gameloop/levelloop/masterloop=0). Game state only |
 | `QUIT` | (none) | Gracefully close the application |
 
 ## Application States
@@ -118,6 +121,61 @@ Toggle buttons show `[active=0/1]` to indicate their current state. Action-only 
 - `play_game` from **storyboard**: triggers space key (TEST GAME)
 - `add_level` from **storyboard**: triggers 'N' key
 - `load_level` from **storyboard**: triggers 'L' key
+
+## GET_PERF_DATA Output
+
+Returns performance metrics. Works in any state. Example output during game:
+
+```
+STATE: game
+FPS: 236.6
+FRAME_TIME_MS: 4.23
+SYSTEM_MEM_MB: 5793456
+SYSTEM_MEM_GB: 5657.67
+VRAM_MB: 37.3
+VRAM_GB: 0.04
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 734
+SCENE_MESHES: 586
+SCENE_MATERIALS: 587
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 1767
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 13
+SCENE_ARMATURES: 34
+SCENE_DECALS: 0
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_WEATHERS: 1
+VISIBLE_OBJECTS: 330
+VISIBLE_LIGHTS: 6
+VISIBLE_DECALS: 0
+VISIBLE_ENVPROBES: 4
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+TAB_MODE: 0
+```
+
+**Note**: SYSTEM_MEM_MB is process working set from Windows, not free RAM. VRAM_MB is dedicated GPU memory usage from DXGI. VISIBLE_* counts change per frame based on camera frustum culling.
+
+## TOGGLE_PROFILER (Game State)
+
+Cycles `g.tabmode` (0→1→2→0), mirroring the TAB key in test game mode:
+- **tabmode=0**: Normal game view
+- **tabmode=1**: Visuals panel (right side — Customize Sky, Water, Weather, etc.)
+- **tabmode=2**: Performance panel (top-left — FPS, draw calls, triangles) + visuals panel
+
+**Important**: Does NOT call `wi::profiler::DrawData()` — that causes GPU TDR crashes. The performance panel uses safe ImGui text rendering only.
+
+## PRESS_ESCAPE (Game State)
+
+Exits test game back to editor by setting `t.game.gameloop=0`, `t.game.levelloop=0`, `t.game.masterloop=0`. This is the same exit path as pressing ESC during a test game (M-Game_part1.cpp line 1523).
 
 ## CLICK_NODE (Storyboard)
 

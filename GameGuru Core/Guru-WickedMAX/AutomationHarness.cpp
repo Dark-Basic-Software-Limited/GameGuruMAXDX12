@@ -53,6 +53,10 @@ extern int iLevelEditorFromStoryboardID;
 #include "globstruct.h"
 extern GlobStruct* g_pGlob;
 
+// Memory/VRAM helpers
+DARKSDK int SMEMAvailable(int iMode);
+float GetTotalVramUsage(void);
+
 // Demo game library list and edit trigger
 #include "M-GridEditB.h"
 extern std::vector<sLibraryList> g_LibraryFileList;
@@ -734,6 +738,152 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 	result[resultSize - 1] = 0;
 }
 
+static void Cmd_GetPerfData(char* result, int resultSize)
+{
+	int written = 0;
+	const char* state = AutoHarness_GetAppState();
+
+	// FPS and frame time
+	float fps = ImGui::GetIO().Framerate;
+	float frameTimeMs = (fps > 0.0f) ? (1000.0f / fps) : 0.0f;
+	written += _snprintf(result + written, resultSize - written,
+		"STATE: %s\n"
+		"FPS: %.1f\n"
+		"FRAME_TIME_MS: %.2f\n",
+		state, fps, frameTimeMs);
+
+	// System memory (MB)
+	int memMB = SMEMAvailable(1);
+	float memGB = (float)memMB / 1024.0f;
+	written += _snprintf(result + written, resultSize - written,
+		"SYSTEM_MEM_MB: %d\n"
+		"SYSTEM_MEM_GB: %.2f\n",
+		memMB, memGB);
+
+	// VRAM (MB)
+	float vramMB = GetTotalVramUsage();
+	written += _snprintf(result + written, resultSize - written,
+		"VRAM_MB: %.1f\n"
+		"VRAM_GB: %.2f\n",
+		vramMB, vramMB / 1024.0f);
+
+	// GPU adapter name
+	auto* device = wi::graphics::GetDevice();
+	if (device)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"GPU_ADAPTER: %s\n", device->GetAdapterName().c_str());
+	}
+
+	// Scene component counts
+	wi::scene::Scene* pScene = master.masterrenderer.scene;
+	if (pScene && written < resultSize - 512)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"SCENE_OBJECTS: %d\n"
+			"SCENE_MESHES: %d\n"
+			"SCENE_MATERIALS: %d\n"
+			"SCENE_LIGHTS: %d\n"
+			"SCENE_TRANSFORMS: %d\n"
+			"SCENE_CAMERAS: %d\n"
+			"SCENE_EMITTERS: %d\n"
+			"SCENE_HAIRS: %d\n"
+			"SCENE_ANIMATIONS: %d\n"
+			"SCENE_ARMATURES: %d\n"
+			"SCENE_DECALS: %d\n"
+			"SCENE_PROBES: %d\n"
+			"SCENE_SOUNDS: %d\n"
+			"SCENE_COLLIDERS: %d\n"
+			"SCENE_RIGIDBODIES: %d\n"
+			"SCENE_SOFTBODIES: %d\n"
+			"SCENE_SCRIPTS: %d\n"
+			"SCENE_WEATHERS: %d\n",
+			(int)pScene->objects.GetCount(),
+			(int)pScene->meshes.GetCount(),
+			(int)pScene->materials.GetCount(),
+			(int)pScene->lights.GetCount(),
+			(int)pScene->transforms.GetCount(),
+			(int)pScene->cameras.GetCount(),
+			(int)pScene->emitters.GetCount(),
+			(int)pScene->hairs.GetCount(),
+			(int)pScene->animations.GetCount(),
+			(int)pScene->armatures.GetCount(),
+			(int)pScene->decals.GetCount(),
+			(int)pScene->probes.GetCount(),
+			(int)pScene->sounds.GetCount(),
+			(int)pScene->colliders.GetCount(),
+			(int)pScene->rigidbodies.GetCount(),
+			(int)pScene->softbodies.GetCount(),
+			(int)pScene->scripts.GetCount(),
+			(int)pScene->weathers.GetCount());
+	}
+
+	// Visibility counts from the main render pass
+	if (written < resultSize - 256)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"VISIBLE_OBJECTS: %d\n"
+			"VISIBLE_LIGHTS: %d\n"
+			"VISIBLE_DECALS: %d\n"
+			"VISIBLE_ENVPROBES: %d\n"
+			"VISIBLE_EMITTERS: %d\n"
+			"VISIBLE_HAIRS: %d\n",
+			(int)master.masterrenderer.visibility_main.visibleObjects.size(),
+			(int)master.masterrenderer.visibility_main.visibleLights.size(),
+			(int)master.masterrenderer.visibility_main.visibleDecals.size(),
+			(int)master.masterrenderer.visibility_main.visibleEnvProbes.size(),
+			(int)master.masterrenderer.visibility_main.visibleEmitters.size(),
+			(int)master.masterrenderer.visibility_main.visibleHairs.size());
+	}
+
+	// Tab mode (profiler panel state)
+	written += _snprintf(result + written, resultSize - written,
+		"TAB_MODE: %d\n", g.tabmode);
+
+	result[resultSize - 1] = 0;
+}
+
+static void Cmd_ToggleProfiler(char* result, int resultSize)
+{
+	const char* state = AutoHarness_GetAppState();
+	if (strcmp(state, "game") != 0)
+	{
+		_snprintf(result, resultSize, "ERROR: TOGGLE_PROFILER only works in game state (current state: %s)", state);
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	// Cycle g.tabmode exactly like the TAB key does (M-Game_part3.cpp line 93)
+	g.tabmode = g.tabmode + 1;
+	if (g.tabmode > 2)
+		g.tabmode = 0;
+
+	const char* modeName = "game (normal)";
+	if (g.tabmode == 1) modeName = "visuals panel";
+	if (g.tabmode == 2) modeName = "performance panel";
+
+	_snprintf(result, resultSize, "OK: Toggled to tabmode=%d (%s)", g.tabmode, modeName);
+	result[resultSize - 1] = 0;
+}
+
+static void Cmd_PressEscape(char* result, int resultSize)
+{
+	const char* state = AutoHarness_GetAppState();
+	if (strcmp(state, "game") == 0)
+	{
+		// Same exit path as ESC key in M-Game_part1.cpp line 1523
+		t.game.gameloop = 0;
+		t.game.levelloop = 0;
+		t.game.masterloop = 0;
+		_snprintf(result, resultSize, "OK: Triggered escape from test game (gameloop=0, levelloop=0, masterloop=0)");
+	}
+	else
+	{
+		_snprintf(result, resultSize, "ERROR: PRESS_ESCAPE only works in game state (current state: %s)", state);
+	}
+	result[resultSize - 1] = 0;
+}
+
 static void Cmd_Quit(char* result, int resultSize)
 {
 	_snprintf(result, resultSize, "OK: Quitting application");
@@ -858,6 +1008,18 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "SELECT_DEMO") == 0)
 	{
 		Cmd_SelectDemo(arg, result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "GET_PERF_DATA") == 0)
+	{
+		Cmd_GetPerfData(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "TOGGLE_PROFILER") == 0)
+	{
+		Cmd_ToggleProfiler(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "PRESS_ESCAPE") == 0)
+	{
+		Cmd_PressEscape(result, sizeof(result));
 	}
 	else if (_stricmp(cmd, "QUIT") == 0)
 	{
