@@ -180,6 +180,61 @@ t=0; while [ $t -lt 60 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_resul
 
 **Tested**: Launch to editor in ~34 seconds total (2026-02-15).
 
+## Crash Diagnosis Using Log Files
+
+When the app crashes or triggers a GPU device reset (TDR), several log files in the EXE directory provide diagnostic information. Cross-reference these with the source code to identify the root cause.
+
+### Log Files
+
+| File | Description |
+|------|-------------|
+| `Guru-Crash.log` | **Primary crash log.** Append-only, survives across sessions. Records exception code, crash address, and **source file + line number** for each crash. Check this first |
+| `crashdump.dmp` | Windows minidump for debugger analysis. Overwritten each crash |
+| `auto_log.txt` | Automation harness log with timestamps. Useful for correlating crash timing with commands issued |
+
+### Reading Guru-Crash.log
+
+Each entry looks like:
+```
+==== GAMEGURU MAX CRASH DETECTED ====
+Time:            2026-02-15 17:55:18
+Exception code:  0xc0000005
+Source Code:     D:\max\WickedEngineDX12\WickedEngine\wiProfiler.cpp:498
+=====================================
+```
+
+- **Exception 0xc0000005** = access violation (read/write to invalid memory). Most common crash type
+- **Source Code line** points to the exact C++ line. Read that line in context to understand what went wrong
+- Multiple entries with the **same source file:line** across sessions indicate a reproducible bug, not a random glitch
+- Multiple **different crash locations** in the same session often indicate a cascade — the first crash corrupts state, causing subsequent crashes elsewhere
+
+### Common Crash Patterns
+
+**GPU Allocator failures (`AllocateGPU` → `memcpy` crash)**:
+Crashes at `std::memcpy` into `allocation.data` in files like `wiProfiler.cpp`, `wiGraphicsDevice.h`, or `wiRenderer.cpp` mean `AllocateGPU()` returned an allocation with a null `data` pointer. The GPU frame allocator failed to provide mapped memory. This typically happens when:
+- A GPU resource is created or used in an invalid context (e.g., inside an active RenderPass)
+- The GPU device has already been removed (TDR occurred, and subsequent operations crash)
+- A feature was enabled mid-frame that requires GPU resources not yet initialized
+
+**TDR / Hard GPU freeze**:
+When the PC resets or the display driver recovers, the crash log may show the *symptom* rather than the *cause*. The access violation from a failed GPU allocation corrupts the DX12 command list (render pass started but never ended, command list never submitted), which hangs the GPU. Look for what was **enabled or changed** just before the first crash in the log, not just the crash location itself.
+
+### Diagnosis Workflow
+
+1. **Read `Guru-Crash.log`** — identify the crash source file and line number
+2. **Read the source code** at that line — understand what operation failed (null pointer, bad allocation, etc.)
+3. **Look for patterns** — if the same line crashes repeatedly, it's a reliable reproduction. If multiple different lines crash, find the earliest/most frequent one as the root cause
+4. **Trace the call chain backwards** — from the crash site, trace what function called it, what enabled the feature, and what user action triggered it
+5. **Check the frame lifecycle** — WickedEngine frame order is: `BeginFrame` → `Update` (game logic) → `Render` (scene) → `Compose` (overlays, ImGui) → `EndFrame`. Features enabled during Update take effect in the same or next frame's Compose
+
+### Key Architecture Notes for Crash Tracing
+
+- **WickedEngine frame loop** (`wiApplication.cpp`): `profiler::BeginFrame()` → `Update()` → `Render()` → `RenderPassBegin` → `Compose(cmd)` → `RenderPassEnd` → `profiler::EndFrame(cmd)` → `SubmitCommandLists`
+- **MasterRenderer::Compose** (`master_part1.cpp`): calls `__super::Compose(cmd)` (which chains through `Application::Compose` where `wi::profiler::DrawData` runs), then `ImGui_DX12_RenderBridge(cmd)`
+- **Game logic runs during Update**: `GuruLoopLogic()` → `common_loop_logic()` → `mapeditorexecutable_loop()` or `gameexecutable_loop()`. The `iLaunchAfterSync` state machine in `M-GridEdit_part1.cpp` controls app flow (states: 0=idle, 7=load requested, 502=loading, 80=post-load, 1=init, 201/202=test game)
+- **ImGui frame lifecycle**: `ImGui::NewFrame()` is called during Update, `ImGui::Render()` during `ImGui_RenderLast()`, and the actual DX12 draw happens in `ImGui_DX12_RenderBridge()` during Compose
+- **wiProfiler**: When enabled via `SetEnabled(true)`, initialization happens on the *next* frame's `BeginFrame()`. `DrawData()` runs during Compose inside an active RenderPass. Enabling mid-game can crash if the profiler's GPU allocations fail in that context
+
 ## Notes
 
 - The harness response confirms the command was accepted, not that the resulting operation completed — always follow up with `GET_STATE` after waits
