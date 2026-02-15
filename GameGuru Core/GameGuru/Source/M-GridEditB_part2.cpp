@@ -996,7 +996,7 @@ static void DisplayPerformanceData(bool* p_open)
 		int tris = 0;
 		int trisShadow = 0;
 		int trisTransparent = 0;
-		
+
 		ImGui::Text("FPS: %.1f - Draw Calls: %5d, S:%5d, T:%5d", ImGui::GetIO().Framerate, dc, dcs, dct);
 		ImGui::Text("Triangles: %7d, S:%7d, T:%7d", tris, trisShadow, trisTransparent);
 

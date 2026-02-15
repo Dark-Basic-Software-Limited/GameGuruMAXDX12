@@ -767,14 +767,17 @@ void gridedit_updatestatusbar ( void )
 
 void gridedit_load_map ( void )
 {
+	TDRTrace("[LOADMAP] gridedit_load_map: ENTER");
 	ClearAllGroupLists();
 	t.widget.pickedEntityIndex = 0;
 	t.gridentity = 0;
 
 	//Stop delete any particle effects.
+	TDRTrace("[LOADMAP] gpup_deleteAllEffects");
 	gpup_deleteAllEffects();
 
 	//  Load map data
+	TDRTrace("[LOADMAP] editor_hideall3d");
 	editor_hideall3d ( );
 
 	//LB: These need to be reset (probably can put these in a common 'new something' area
@@ -782,9 +785,12 @@ void gridedit_load_map ( void )
 	t.tforceentityfindfloor = 0;
 
 	// hide terrain texture panel
+	TDRTrace("[LOADMAP] terrain_paintselector_hide + Sync");
 	terrain_paintselector_hide(); Sync();
+	TDRTrace("[LOADMAP] Sync returned");
 
 	// ensure NO old flat area items in list
+	TDRTrace("[LOADMAP] GGTerrain_RemoveAllFlatAreas");
 	timestampactivity(0, "GGTerrain_RemoveAllFlatAreas:1");
 	GGTerrain_RemoveAllFlatAreas();
 
@@ -792,10 +798,9 @@ void gridedit_load_map ( void )
 		EmptyMessages();
 
 	//  Reset visual settings for new map
-	if (  t.skipfpmloading == 0 ) 
+	if (  t.skipfpmloading == 0 )
 	{
-		// 131115 - prevent visual settings for game get wiped out if restart session
-		// where project loaded from levelbank\testlevel and visuals already filled
+		TDRTrace("[LOADMAP] visuals_newlevel");
 		visuals_newlevel ( );
 	}
 
@@ -804,9 +809,10 @@ void gridedit_load_map ( void )
 
 	//  Load FPM project into testmap files area
 	t.tloadsuccessfully=1;
-	if (  t.skipfpmloading == 1 ) 
+	if (  t.skipfpmloading == 1 )
 	{
 		//  replace NEW with RELOAD
+		TDRTrace("[LOADMAP] skip FPM loading - RELOAD path");
 		OpenFileMap (  1,"FPSEXCHANGE" );
 		SetFileMapDWORD (  1, 408, 0 );
 		SetEventAndWait (  1 );
@@ -814,19 +820,23 @@ void gridedit_load_map ( void )
 	else
 	{
 		//  this setstloadsuccessfully to zero if failed to load FPM (corrupt zipfile)
+		TDRTrace("[LOADMAP] mapfile_loadproject_fpm");
 		mapfile_loadproject_fpm ( );
+		TDRTrace("[LOADMAP] mapfile_loadproject_fpm done, success=%d", t.tloadsuccessfully);
 	}
 
 	//  Loaded successfully
-	if ( t.tloadsuccessfully == 1 ) 
+	if ( t.tloadsuccessfully == 1 )
 	{
 		//  Clear map first
+		TDRTrace("[LOADMAP] gridedit_clear_map");
 		gridedit_clear_map ( );
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();
 
 		// 121115 - Reset memory tracker
+		TDRTrace("[LOADMAP] gridedit_resetmemortracker");
 		gridedit_resetmemortracker ( );
 
 		//  Determine if FPM is accompanied by .REPLACE file
@@ -848,13 +858,17 @@ void gridedit_load_map ( void )
 		}
 
 		//  Load entity bank and elements
+		TDRTrace("[LOADMAP] entity_loadbank");
 		popup_text_change(t.strarr_s[611].Get());
 		entity_loadbank ( );
+		TDRTrace("[LOADMAP] entity_loadbank done");
 		if (bKeepWindowsResponding)
 			EmptyMessages();
 
+		TDRTrace("[LOADMAP] entity_loadelementsdata");
 		timestampactivity(0, "s:entity_loadelementsdata()");
 		entity_loadelementsdata ( );
+		TDRTrace("[LOADMAP] entity_loadelementsdata done");
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();
@@ -863,25 +877,30 @@ void gridedit_load_map ( void )
 		t.editor.replacefilepresent_s="";
 
 		//  Load waypoints
+		TDRTrace("[LOADMAP] waypoint_loaddata");
 		popup_text_change(t.strarr_s[612].Get());
 		waypoint_loaddata ( );
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();
 
+		TDRTrace("[LOADMAP] waypoint_recreateobjs");
 		waypoint_recreateobjs ( );
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();
 
 		//  Load data
+		TDRTrace("[LOADMAP] mapfile_loadmap");
 		popup_text_change(t.strarr_s[613].Get());
 		mapfile_loadmap ( );
+		TDRTrace("[LOADMAP] mapfile_loadmap done");
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();
 
 		//  Load player settings
+		TDRTrace("[LOADMAP] mapfile_loadplayerconfig");
 		timestampactivity(0,"Load player config");
 		mapfile_loadplayerconfig ( );
 
@@ -889,28 +908,36 @@ void gridedit_load_map ( void )
 			EmptyMessages();
 
 		//  Load terrain
+		TDRTrace("[LOADMAP] terrain_createactualterrain");
 		popup_text_change(t.strarr_s[610].Get());
 		timestampactivity(0, "Create Terrain");
 		terrain_createactualterrain ( );
+		TDRTrace("[LOADMAP] terrain_createactualterrain done");
+		TDRTrace("[LOADMAP] terrain_loaddata");
 		terrain_loaddata ( );
+		TDRTrace("[LOADMAP] terrain_loaddata done");
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();
 
 		// ensure firerate settings updated with any overrides set by developer mode changes
+		TDRTrace("[LOADMAP] entity_init_overwritefireratesettings");
 		entity_init_overwritefireratesettings();
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();
 
 		//  Update remaining map data before editing
+		TDRTrace("[LOADMAP] gridedit_updatemapbeforeedit");
 		timestampactivity(0, "Reset Editor.");
 		gridedit_updatemapbeforeedit ( );
+		TDRTrace("[LOADMAP] gridedit_updatemapbeforeedit done");
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();
 
 		//  Load editor configuration
+		TDRTrace("[LOADMAP] editor_loadcfg");
 		int iOldGE = t.grideditselect;
 		editor_loadcfg ( true );
 
@@ -941,6 +968,7 @@ void gridedit_load_map ( void )
 		//In wicked keep current window open, terrain , entity...
 		t.grideditselect = iOldGE;
 		//  Load segments/prefab/entities into window
+		TDRTrace("[LOADMAP] editor_filllibrary");
 		OpenFileMap (  1,"FPSEXCHANGE" );
 		editor_filllibrary ( );
 
@@ -949,6 +977,7 @@ void gridedit_load_map ( void )
 
 		//  Add Latest project To Recent List
 		gridedit_updateprojectname ( );
+		TDRTrace("[LOADMAP] gridedit_load_map: SUCCESS - load complete");
 	}
 	else
 	{
@@ -1086,6 +1115,7 @@ void gridedit_load_map ( void )
 	t.lastgrideditselect=-1 ; editor_refresheditmarkers ( );
 
 	//  Recreate all entities in level
+	TDRTrace("[LOADMAP] gridedit_updateentityobj loop: %ld entities", g.entityelementlist);
 	char debug[MAX_PATH];
 	sprintf(debug, "Setup objects: %ld", g.entityelementlist);
 	timestampactivity(0, debug);
@@ -1106,20 +1136,24 @@ void gridedit_load_map ( void )
 				EmptyMessages();
 		}
 	}
+	TDRTrace("[LOADMAP] entity setup done, instanced=%ld", iInstancedTotal);
 	timestampactivity(0, "End Setup objects:");
-	
+
 	sprintf(debug, "Instanced objects: %ld", iInstancedTotal);
 	timestampactivity(0, debug);
 	bNoHierarchySorting = false;
+	TDRTrace("[LOADMAP] lighting_refresh");
 	lighting_refresh ( );
 
 	//  Ensure newly updated entity does not trigger a terrain update!
 	t.terrain.terrainpainteroneshot=0;
 
 	//  Ensure visual indices for sky, terrain and veg up to date (for when we use test game)
+	TDRTrace("[LOADMAP] visuals_updateskyterrainvegindex");
 	visuals_updateskyterrainvegindex ( );
 
 	//  Refresh any 'shaders' that associat with new entities loaded in
+	TDRTrace("[LOADMAP] visuals_justshaderupdate");
 	visuals_justshaderupdate ( );
 
 	//  Ensure editor zoom refreshes
@@ -1160,6 +1194,7 @@ void gridedit_load_map ( void )
 	// call files modify check function and reset file timestamp map
 	extern void CheckExistingFilesModified(bool);
 	CheckExistingFilesModified(true);
+	TDRTrace("[LOADMAP] gridedit_load_map: EXIT");
 }
 
 void gridedit_changemodifiedflag ( void )

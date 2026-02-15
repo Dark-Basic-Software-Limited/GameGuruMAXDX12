@@ -156,15 +156,14 @@
 			}
 			case 502: //Do the actual level load.
 			{
-
-				::SetCursor(::LoadCursor(NULL, IDC_WAIT));
+					::SetCursor(::LoadCursor(NULL, IDC_WAIT));
 				ImGuiIO& io = ImGui::GetIO();
 				io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
 				bKeepWindowsResponding = true;
 
 				g.projectfilename_s = sNextLevelToLoad;
-			
+
 				extern bool g_bAllowBackwardCompatibleConversion;
 				g_bAllowBackwardCompatibleConversion = true;
 				gridedit_load_map();

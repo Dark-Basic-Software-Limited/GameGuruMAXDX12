@@ -11,9 +11,12 @@
 #include <dxgi1_4.h>
 #include <wrl/client.h>
 #include <unordered_map>
-
 #pragma comment(lib, "d3dcompiler")
 #pragma comment(lib, "d3d12")
+
+// No-op stub so DX12Log calls compile away to nothing
+static UINT64 g_DX12LogFrameCount = 0;
+static inline void DX12Log(const char* fmt, ...) { (void)fmt; }
 
 // stb_image for loading PNG/JPG/BMP/TGA files (implementation in WickedEngine_Windows.lib)
 #include "../Include/Utility/stb_image.h"
@@ -365,43 +368,73 @@ static bool CreatePipelineState()
 
 bool ImGui_DX12_InitBridge()
 {
+    DX12Log("INIT: ImGui_DX12_InitBridge() START");
+
     // Get the WickedEngine DX12 device
     auto* graphicsDevice = wi::graphics::GetDevice();
     if (!graphicsDevice)
+    {
+        DX12Log("INIT: FAILED - wi::graphics::GetDevice() returned null");
         return false;
+    }
 
     // static_cast: WickedEngine compiled with RTTI disabled (/GR-), dynamic_cast crashes
     auto* dx12Device = static_cast<wi::graphics::GraphicsDevice_DX12*>(graphicsDevice);
     if (!dx12Device)
+    {
+        DX12Log("INIT: FAILED - static_cast to GraphicsDevice_DX12 returned null");
         return false;
+    }
 
     g_pd3dDevice = dx12Device->GetDX12Device();
     g_pd3dCommandQueue = dx12Device->GetGraphicsCommandQueue();
+    DX12Log("INIT: Device=%p, CommandQueue=%p", g_pd3dDevice, g_pd3dCommandQueue);
     if (!g_pd3dDevice || !g_pd3dCommandQueue)
+    {
+        DX12Log("INIT: FAILED - null device or command queue");
         return false;
+    }
 
     // Create shader-visible SRV descriptor heap for ImGui
+    DX12Log("INIT: Creating SRV descriptor heap (CBV_SRV_UAV, %u descriptors, SHADER_VISIBLE)", IMGUI_SRV_HEAP_SIZE);
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.NumDescriptors = IMGUI_SRV_HEAP_SIZE;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
     HRESULT hr = g_pd3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
-    if (FAILED(hr)) return false;
+    if (FAILED(hr))
+    {
+        DX12Log("INIT: FAILED - CreateDescriptorHeap hr=0x%08X", hr);
+        return false;
+    }
+    DX12Log("INIT: SRV descriptor heap created OK, handle=%p", g_pd3dSrvDescHeap.Get());
 
     g_SrvDescriptorSize = g_pd3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    DX12Log("INIT: Descriptor increment size = %u", g_SrvDescriptorSize);
     memset(g_SrvSlotUsed, 0, sizeof(g_SrvSlotUsed));
 
     // Always create font texture first — builds the ImGui font atlas.
     // If this isn't done, ImGui crashes in SetCurrentFont accessing null ContainerAtlas.
+    DX12Log("INIT: Creating font texture...");
     if (!CreateFontTexture())
+    {
+        DX12Log("INIT: FAILED - CreateFontTexture returned false");
         return false;
+    }
+    DX12Log("INIT: Font texture created OK, GPU handle ptr=0x%llX", g_FontSrvGpuHandle.ptr);
 
     // Create pipeline state (root signature, shaders, PSO)
+    DX12Log("INIT: Creating pipeline state...");
     if (!CreatePipelineState())
+    {
+        DX12Log("INIT: FAILED - CreatePipelineState returned false");
         return false;
+    }
+    DX12Log("INIT: Pipeline state created OK, RootSig=%p, PSO=%p", g_pRootSignature.Get(), g_pPipelineState.Get());
 
     g_ImGuiDX12Initialized = true;
+    DX12Log("INIT: ImGui_DX12_InitBridge() SUCCESS");
     return true;
 }
 
@@ -431,26 +464,38 @@ void ImGui_DX12_RebuildFontTexture()
 
 void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
 {
+    g_DX12LogFrameCount++;
+
     if (!g_ImGuiDX12Initialized || !cmdList)
+    {
+        DX12Log("RENDER: early exit - initialized=%d cmdList=%p", g_ImGuiDX12Initialized, cmdList);
         return;
+    }
 
     ImDrawData* drawData = ImGui::GetDrawData();
     if (!drawData || drawData->TotalVtxCount == 0)
-        return;
+        return; // normal empty frame, don't spam log
 
     // Avoid rendering when minimized
     if (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f)
         return;
 
+    DX12Log("RENDER: START - vtx=%d idx=%d cmdLists=%d display=%.0fx%.0f",
+        drawData->TotalVtxCount, drawData->TotalIdxCount, drawData->CmdListsCount,
+        drawData->DisplaySize.x, drawData->DisplaySize.y);
+
     // Get frame resources (double-buffered)
     g_FrameIndex = (g_FrameIndex + 1) % NUM_FRAMES_IN_FLIGHT;
     FrameResources* fr = &g_FrameResources[g_FrameIndex];
+    DX12Log("RENDER: frameIndex=%u", g_FrameIndex);
 
     // Create/grow vertex buffer
     if (!fr->VertexBuffer.Get() || fr->VertexBufferSize < drawData->TotalVtxCount)
     {
         fr->VertexBuffer.Reset();
         fr->VertexBufferSize = drawData->TotalVtxCount + 5000;
+        DX12Log("RENDER: (re)creating VB, new size=%d verts (%llu bytes)",
+            fr->VertexBufferSize, (UINT64)fr->VertexBufferSize * sizeof(ImDrawVert));
 
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -463,8 +508,9 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
         desc.Format = DXGI_FORMAT_UNKNOWN;
         desc.SampleDesc.Count = 1;
         desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-        g_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
+        HRESULT hr = g_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
             D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&fr->VertexBuffer));
+        DX12Log("RENDER: VB create hr=0x%08X ptr=%p", hr, fr->VertexBuffer.Get());
     }
 
     // Create/grow index buffer
@@ -472,6 +518,8 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
     {
         fr->IndexBuffer.Reset();
         fr->IndexBufferSize = drawData->TotalIdxCount + 10000;
+        DX12Log("RENDER: (re)creating IB, new size=%d indices (%llu bytes)",
+            fr->IndexBufferSize, (UINT64)fr->IndexBufferSize * sizeof(ImDrawIdx));
 
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -484,17 +532,28 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
         desc.Format = DXGI_FORMAT_UNKNOWN;
         desc.SampleDesc.Count = 1;
         desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-        g_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
+        HRESULT hr = g_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
             D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&fr->IndexBuffer));
+        DX12Log("RENDER: IB create hr=0x%08X ptr=%p", hr, fr->IndexBuffer.Get());
     }
 
     // Upload vertex/index data
+    DX12Log("RENDER: mapping VB/IB for upload");
     void* vtxMapped = nullptr;
     void* idxMapped = nullptr;
     D3D12_RANGE readRange = { 0, 0 };
-    if (FAILED(fr->VertexBuffer->Map(0, &readRange, &vtxMapped))) return;
-    if (FAILED(fr->IndexBuffer->Map(0, &readRange, &idxMapped)))
+    HRESULT hrVB = fr->VertexBuffer->Map(0, &readRange, &vtxMapped);
+    if (FAILED(hrVB))
     {
+        HRESULT hrRemoved = g_pd3dDevice->GetDeviceRemovedReason();
+        DX12Log("RENDER: FAILED - VB Map hr=0x%08X, DeviceRemovedReason=0x%08X", hrVB, hrRemoved);
+        return;
+    }
+    HRESULT hrIB = fr->IndexBuffer->Map(0, &readRange, &idxMapped);
+    if (FAILED(hrIB))
+    {
+        HRESULT hrRemoved = g_pd3dDevice->GetDeviceRemovedReason();
+        DX12Log("RENDER: FAILED - IB Map hr=0x%08X, DeviceRemovedReason=0x%08X", hrIB, hrRemoved);
         fr->VertexBuffer->Unmap(0, nullptr);
         return;
     }
@@ -514,6 +573,7 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
     D3D12_RANGE idxWriteRange = { 0, (SIZE_T)(drawData->TotalIdxCount * sizeof(ImDrawIdx)) };
     fr->VertexBuffer->Unmap(0, &vtxWriteRange);
     fr->IndexBuffer->Unmap(0, &idxWriteRange);
+    DX12Log("RENDER: VB/IB upload done");
 
     // Setup orthographic projection matrix
     VERTEX_CONSTANT_BUFFER_DX12 vertexConstantBuffer;
@@ -540,10 +600,12 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
     vp.MaxDepth = 1.0f;
 
     // Set descriptor heap
+    DX12Log("RENDER: SetDescriptorHeaps - ImGui SRV heap=%p", g_pd3dSrvDescHeap.Get());
     ID3D12DescriptorHeap* heaps[] = { g_pd3dSrvDescHeap.Get() };
     cmdList->SetDescriptorHeaps(1, heaps);
 
     // Set pipeline state
+    DX12Log("RENDER: SetPipelineState=%p, SetRootSignature=%p", g_pPipelineState.Get(), g_pRootSignature.Get());
     cmdList->SetPipelineState(g_pPipelineState.Get());
     cmdList->SetGraphicsRootSignature(g_pRootSignature.Get());
     cmdList->SetGraphicsRoot32BitConstants(0, 16, &vertexConstantBuffer, 0);
@@ -568,9 +630,13 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
     const float blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
     cmdList->OMSetBlendFactor(blendFactor);
 
+    DX12Log("RENDER: VB GPU addr=0x%llX, IB GPU addr=0x%llX, viewport=%.0fx%.0f",
+        vbv.BufferLocation, ibv.BufferLocation, vp.Width, vp.Height);
+
     // Render draw commands
     int globalIdxOffset = 0;
     int globalVtxOffset = 0;
+    int totalDrawCalls = 0;
     ImVec2 clipOff = drawData->DisplayPos;
     for (int n = 0; n < drawData->CmdListsCount; n++)
     {
@@ -585,6 +651,7 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
                 // TODO: Port custom pixel shader variants to DX12
                 if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
                 {
+                    DX12Log("RENDER: ResetRenderState callback at list=%d cmd=%d", n, cmd_i);
                     // Reset render state
                     cmdList->SetPipelineState(g_pPipelineState.Get());
                     cmdList->SetGraphicsRootSignature(g_pRootSignature.Get());
@@ -610,20 +677,44 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
             // Bind texture
             D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = {};
             textureHandle.ptr = (UINT64)pcmd->TextureId;
+
+            // Validate texture handle is within our descriptor heap range
+            D3D12_GPU_DESCRIPTOR_HANDLE heapStart = g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart();
+            UINT64 heapEnd = heapStart.ptr + (UINT64)IMGUI_SRV_HEAP_SIZE * g_SrvDescriptorSize;
+            if (textureHandle.ptr < heapStart.ptr || textureHandle.ptr >= heapEnd)
+            {
+                DX12Log("RENDER: *** BAD TEXTURE HANDLE *** list=%d cmd=%d texID=0x%llX heapRange=[0x%llX..0x%llX) - SKIPPING",
+                    n, cmd_i, textureHandle.ptr, heapStart.ptr, heapEnd);
+                continue;
+            }
+
             cmdList->SetGraphicsRootDescriptorTable(1, textureHandle);
+
+            // Log first few draw calls per frame, then just the count
+            if (totalDrawCalls < 3)
+            {
+                DX12Log("RENDER: DrawIndexed #%d: elems=%u idxOff=%u vtxOff=%d tex=0x%llX scissor=(%ld,%ld,%ld,%ld)",
+                    totalDrawCalls, pcmd->ElemCount,
+                    pcmd->IdxOffset + globalIdxOffset, pcmd->VtxOffset + globalVtxOffset,
+                    textureHandle.ptr, r.left, r.top, r.right, r.bottom);
+            }
 
             // Draw
             cmdList->DrawIndexedInstanced(pcmd->ElemCount, 1,
                 pcmd->IdxOffset + globalIdxOffset,
                 pcmd->VtxOffset + globalVtxOffset, 0);
+            totalDrawCalls++;
         }
         globalIdxOffset += imCmdList->IdxBuffer.Size;
         globalVtxOffset += imCmdList->VtxBuffer.Size;
     }
+
+    DX12Log("RENDER: DONE - %d draw calls issued", totalDrawCalls);
 }
 
 void ImGui_DX12_ShutdownBridge()
 {
+    DX12Log("SHUTDOWN: ImGui_DX12_ShutdownBridge() - clean exit after %llu frames", g_DX12LogFrameCount);
     g_TextureCache.clear();
     g_pFontTextureResource.Reset();
     g_pPipelineState.Reset();
