@@ -292,6 +292,53 @@ When the PC resets or the display driver recovers, the crash log may show the *s
 - **ImGui frame lifecycle**: `ImGui::NewFrame()` is called during Update, `ImGui::Render()` during `ImGui_RenderLast()`, and the actual DX12 draw happens in `ImGui_DX12_RenderBridge()` during Compose
 - **wiProfiler**: When enabled via `SetEnabled(true)`, initialization happens on the *next* frame's `BeginFrame()`. `DrawData()` runs during Compose inside an active RenderPass. Enabling mid-game can crash if the profiler's GPU allocations fail in that context
 
+## Building WickedEngine LIB from Claude Code
+
+### Shell and CMD issues
+
+1. **Never try to call `VsDevCmd.bat` directly from bash** — it doesn't work. Always use `cmd //C` to wrap Windows batch commands.
+
+2. **Never use `call` inside a bash command** — `call` is a CMD built-in and won't work in the Claude Code shell. Instead, write a `.bat` file and execute that via `cmd //C`.
+
+3. **Always use absolute paths for `.sln` files in msbuild** — relative paths fail because the working directory context is unreliable when invoking through `cmd //C`. Use the full path like `msbuild "D:\max\WickedEngineDX12\WickedEngine.sln"`.
+
+4. **Always `cd /D` to the project directory inside the batch file** — don't rely on the bash `cd` command carrying over into the CMD context. Put `cd /D "D:\max\WickedEngineDX12"` as the first line after `@echo off`.
+
+5. **The correct working build command is:**
+
+```bash
+cmd //C "D:\\max\\WickedEngineDX12\\build_wicked.bat" 2>&1 | tail -20
+```
+
+Where `build_wicked.bat` contains:
+
+```batch
+@echo off
+cd /D "D:\max\WickedEngineDX12"
+call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 >nul 2>&1
+msbuild "D:\max\WickedEngineDX12\WickedEngine.sln" /p:Configuration=Release /p:Platform=x64 /t:WickedEngine_Windows /m /verbosity:minimal
+```
+
+6. **Use `| tail -20` on build commands** to avoid flooding the context window with thousands of lines of compiler output. If the build fails, use `| tail -40` or grep for "error" to find the issue.
+
+### Build order and verification
+
+7. **WickedEngine must be built BEFORE GameGuru MAX** — the GameGuru build depends on the WickedEngine `.lib` output. Always build WickedEngine first, confirm it succeeded, then run the GameGuru `build.bat`.
+
+8. **Always verify new symbols are in the `.lib` after rebuilding WickedEngine.** A successful build does NOT guarantee your new functions are linked in. The `.lib` can be stale or the functions can be optimized away by LTCG. After building, run dumpbin to confirm:
+
+```bash
+"C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64/dumpbin.exe" /linkermember:1 "D:/max/WickedEngineDX12/BUILD/x64/Release/WickedEngine_Windows.lib" | grep YourFunctionName
+```
+
+Use `/linkermember:1` not `/symbols` or `/exports` — those return empty for static `.lib` files.
+
+9. **The WickedEngine `.lib` output path is `D:\max\WickedEngineDX12\BUILD\x64\Release\WickedEngine_Windows.lib`** — don't waste time searching in `x64/Release/` or `WickedEngine/x64/Release/`, they don't exist. The output directory is set in the `.vcxproj` as `$(SolutionDir)BUILD\$(Platform)\$(Configuration)\`.
+
+10. **Source files are not listed directly in `WickedEngine_Windows.vcxproj`** — they come from `WickedEngine_SOURCE.vcxitems` (imported at line 40 of the `.vcxproj`). If you need to check whether a `.cpp` file is included in the build, search the `.vcxitems` file, not the `.vcxproj`.
+
+11. **If you add new functions to WickedEngine headers but get linker errors in GameGuru**, the most likely cause is a stale `.lib`. Do a clean rebuild of WickedEngine and verify symbols with dumpbin before investigating anything else.
+
 ## Notes
 
 - The harness response confirms the command was accepted, not that the resulting operation completed — always follow up with `GET_STATE` after waits
