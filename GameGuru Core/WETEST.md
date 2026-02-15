@@ -85,7 +85,28 @@ NODES(14):
 Returns detailed info depending on current state:
 - **Storyboard**: PROJECT, DESCRIPTION, READONLY, and per-node details including title, type, level, levelnumber, editable flag, all output/input pins with actions and link targets, and all widget labels with types
 - **Hub**: TAB name and demo list (when on demo_games tab)
-- **Editor**: PANELS list
+- **Editor**: PANELS list, TOOLBAR_BUTTONS with toggle states, MENU_BAR items
+
+### Editor Output Example
+
+```
+STATE: editor
+PANELS: DockSpaceAGK, ..., Object Tools##EntityToolsWindow, ..., Toolbar, Statusbar
+TOOLBAR_BUTTONS:
+  Back to Game Project Storyboard
+  Save Level
+  Test Level
+  Terrain, Painting, Trees and Vegetation [active=0]
+  Object Tools [active=1]
+  Visual Logic Connections [active=0]
+  Environment Effects [active=0]
+  Game Settings [active=0]
+  Editor Light [active=0]
+  Camera View
+MENU_BAR: File, Edit, Tools, Help
+```
+
+Toggle buttons show `[active=0/1]` to indicate their current state. Action-only buttons (Back, Save, Test Level, Camera View) have no toggle state. "Test Level in VR" only appears when VR developer mode is enabled. "Terrain" only appears when not in empty level mode.
 
 ## Hub Tab Names (for NAVIGATE hub.\<tab\>)
 

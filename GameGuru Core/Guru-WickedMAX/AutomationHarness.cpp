@@ -34,6 +34,15 @@ extern cstr TriggerLoadGameProject;
 extern bool g_bDisableQuitFlag;
 extern bool bProceduralLevel;
 
+// Toolbar toggle states (from M-GridEdit_part0.cpp)
+extern bool bEditorLight;
+extern bool bTerrain_Tools_Window;
+extern bool Entity_Tools_Window;
+extern bool Visuals_Tools_Window;
+extern bool Shooter_Tools_Window;
+extern bool Game_Settings_Window;
+extern bool Weather_Tools_Window;
+
 // Level loading from storyboard
 extern char cDirectOpen[260];
 extern int iSkibFramesBeforeLaunch;
@@ -623,6 +632,32 @@ static void Cmd_GetScreenText(char* result, int resultSize)
 		AutoHarness_GetVisibleWindows(panels, sizeof(panels));
 		written += _snprintf(result + written, resultSize - written,
 			"PANELS: %s\n", panels[0] ? panels : "none");
+
+		// Enumerate toolbar buttons with their tooltip labels and toggle states
+		ImGuiWindow* toolbarWin = ImGui::FindWindowByName("Toolbar");
+		if (toolbarWin && toolbarWin->Active)
+		{
+			written += _snprintf(result + written, resultSize - written, "TOOLBAR_BUTTONS:\n");
+			written += _snprintf(result + written, resultSize - written, "  Back to Game Project Storyboard\n");
+			written += _snprintf(result + written, resultSize - written, "  Save Level\n");
+			written += _snprintf(result + written, resultSize - written, "  Test Level\n");
+			if (g.gvrmode > 0 && g.gvrmodefordevelopers == 1)
+				written += _snprintf(result + written, resultSize - written, "  Test Level in VR\n");
+			if (t.visuals.bEnableEmptyLevelMode == false)
+				written += _snprintf(result + written, resultSize - written, "  Terrain, Painting, Trees and Vegetation [active=%d]\n", bTerrain_Tools_Window ? 1 : 0);
+			written += _snprintf(result + written, resultSize - written, "  Object Tools [active=%d]\n", Entity_Tools_Window ? 1 : 0);
+			written += _snprintf(result + written, resultSize - written, "  Visual Logic Connections [active=%d]\n", Shooter_Tools_Window ? 1 : 0);
+			written += _snprintf(result + written, resultSize - written, "  Environment Effects [active=%d]\n", Visuals_Tools_Window ? 1 : 0);
+			written += _snprintf(result + written, resultSize - written, "  Game Settings [active=%d]\n", Game_Settings_Window ? 1 : 0);
+			written += _snprintf(result + written, resultSize - written, "  Editor Light [active=%d]\n", bEditorLight ? 1 : 0);
+			written += _snprintf(result + written, resultSize - written, "  Camera View\n");
+		}
+
+		// Menu bar items
+		if (toolbarWin && toolbarWin->Active)
+		{
+			written += _snprintf(result + written, resultSize - written, "MENU_BAR: File, Edit, Tools, Help\n");
+		}
 	}
 
 	result[resultSize - 1] = 0;
