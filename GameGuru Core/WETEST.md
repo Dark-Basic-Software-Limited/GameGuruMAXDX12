@@ -339,9 +339,331 @@ Use `/linkermember:1` not `/symbols` or `/exports` — those return empty for st
 
 11. **If you add new functions to WickedEngine headers but get linker errors in GameGuru**, the most likely cause is a stale `.lib`. Do a clean rebuild of WickedEngine and verify symbols with dumpbin before investigating anything else.
 
+## Full Demo FPS Test (FULL TEST)
+
+Automated test that launches all 19 demos, enters test-game mode, collects FPS samples, and reports results. Tested 2026-02-15: 18/19 passed autonomously in ~15 minutes.
+
+### How to Run
+
+1. **Ensure the app is NOT running** — `taskkill.exe //IM GameGuruMAX.exe //F`
+2. **Launch the app** and wait for hub state
+3. **Write the test script** to a `.sh` file (see below) and run it as a **background task** with a 600000ms (10 min) timeout
+4. **Check progress** every 2-4 minutes by tailing the background output file
+5. **Kill the app** after the script completes
+
+### MSYS Bash Compatibility — CRITICAL
+
+- **Do NOT use `${!array[@]}`** — MSYS bash does not support it. Use a `while read` loop with a heredoc instead
+- **Do NOT use bash arrays for the demo list** — use a heredoc `DEMOLIST` block fed into `while IFS= read -r demo`
+- **Use `for s in 1 2 3 4 5`** instead of `for s in $(seq 1 5)` if seq is unavailable
+- **Always use a short variable** `D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"` at the top — do NOT use `$EXE_DIR` or functions that reference it
+
+### The Complete Test Script
+
+Write this to a `.sh` file and execute with `bash <file>`. Run as a background task.
+
+```bash
+#!/bin/bash
+D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
+RESULTS_FILE="/tmp/fps_results.txt"
+
+send_cmd() {
+  rm -f "$D/auto_result.txt"
+  echo "$1" > "$D/auto_command.txt"
+  local t=0
+  local timeout=${2:-30}
+  while [ $t -lt $timeout ]; do
+    if [ -f "$D/auto_result.txt" ]; then
+      cat "$D/auto_result.txt"
+      return 0
+    fi
+    sleep 1
+    t=$((t+1))
+  done
+  echo "TIMEOUT"
+  return 1
+}
+
+echo "DEMO | BEST_FPS | AVG_FPS | SAMPLES" > "$RESULTS_FILE"
+echo "--- | --- | --- | ---" >> "$RESULTS_FILE"
+
+TOTAL=19
+PASSED=0
+FAILED=0
+FAILED_NAMES=""
+num=0
+
+while IFS= read -r demo; do
+  num=$((num+1))
+  echo ""
+  echo "============================================"
+  echo "[$num/$TOTAL] Testing: $demo"
+  echo "============================================"
+
+  # Step 1: Navigate to hub
+  echo "  -> Navigating to hub..."
+  result=$(send_cmd "NAVIGATE hub" 15)
+  sleep 2
+
+  # Step 2: Confirm hub state
+  result=$(send_cmd "GET_STATE" 15)
+  state=$(echo "$result" | grep "^STATE:" | head -1 | sed 's/STATE: //')
+  echo "  -> State: $state"
+  if [ "$state" != "hub" ]; then
+    echo "  !! FAILED - not in hub state, got: $state"
+    FAILED=$((FAILED+1))
+    FAILED_NAMES="$FAILED_NAMES|$demo (not in hub)"
+    echo "$demo | FAIL | - | not in hub" >> "$RESULTS_FILE"
+    continue
+  fi
+
+  # Step 3: Select demo
+  echo "  -> Selecting demo..."
+  result=$(send_cmd "SELECT_DEMO $demo" 15)
+  echo "  -> $result"
+  sleep 2
+
+  # Step 4: Edit game (hub -> storyboard)
+  echo "  -> Clicking edit_game..."
+  result=$(send_cmd "CLICK edit_game" 15)
+  sleep 5
+
+  # Step 5: Confirm storyboard and find level node
+  result=$(send_cmd "GET_STATE" 30)
+  state=$(echo "$result" | grep "^STATE:" | head -1 | sed 's/STATE: //')
+  echo "  -> State: $state"
+  if [ "$state" != "storyboard" ]; then
+    echo "  !! FAILED - not in storyboard, got: $state"
+    FAILED=$((FAILED+1))
+    FAILED_NAMES="$FAILED_NAMES|$demo (not in storyboard)"
+    echo "$demo | FAIL | - | not in storyboard" >> "$RESULTS_FILE"
+    continue
+  fi
+
+  # Step 6: Extract level node title (must have type=level AND level="mapbank...)
+  level_node=$(echo "$result" | grep 'type=level' | grep 'level="mapbank' | head -1 | sed 's/.*title="\([^"]*\)".*/\1/')
+  echo "  -> Level node: '$level_node'"
+  if [ -z "$level_node" ]; then
+    echo "  !! FAILED - no level node with mapbank found"
+    FAILED=$((FAILED+1))
+    FAILED_NAMES="$FAILED_NAMES|$demo (no level node)"
+    echo "$demo | FAIL | - | no level node" >> "$RESULTS_FILE"
+    continue
+  fi
+
+  # Step 7: Click level node to load into editor
+  echo "  -> Loading level '$level_node'..."
+  result=$(send_cmd "CLICK_NODE $level_node" 15)
+  echo "  -> $result"
+
+  # Step 8: Wait for level load + confirm editor (long timeout for big levels)
+  sleep 12
+  result=$(send_cmd "GET_STATE" 60)
+  state=$(echo "$result" | grep "^STATE:" | head -1 | sed 's/STATE: //')
+  echo "  -> State after load: $state"
+
+  # If still loading, wait more (some levels like Aztec Game Kit take 20s+)
+  if [ "$state" = "loading" ] || [ "$state" = "storyboard" ]; then
+    echo "  -> Still loading, waiting more..."
+    sleep 15
+    result=$(send_cmd "GET_STATE" 60)
+    state=$(echo "$result" | grep "^STATE:" | head -1 | sed 's/STATE: //')
+    echo "  -> State: $state"
+  fi
+
+  if [ "$state" != "editor" ]; then
+    echo "  !! FAILED - not in editor, got: $state"
+    FAILED=$((FAILED+1))
+    FAILED_NAMES="$FAILED_NAMES|$demo (not in editor, got $state)"
+    echo "$demo | FAIL | - | not in editor ($state)" >> "$RESULTS_FILE"
+    continue
+  fi
+
+  # Step 9: Test level (enter game mode)
+  echo "  -> Testing level..."
+  result=$(send_cmd "CLICK test_level" 15)
+  sleep 8
+
+  # Step 10: Confirm game state
+  result=$(send_cmd "GET_STATE" 30)
+  state=$(echo "$result" | grep "^STATE:" | head -1 | sed 's/STATE: //')
+  echo "  -> State: $state"
+
+  if [ "$state" != "game" ]; then
+    sleep 5
+    result=$(send_cmd "GET_STATE" 30)
+    state=$(echo "$result" | grep "^STATE:" | head -1 | sed 's/STATE: //')
+    echo "  -> State (retry): $state"
+  fi
+
+  if [ "$state" != "game" ]; then
+    echo "  !! FAILED - not in game state, got: $state"
+    FAILED=$((FAILED+1))
+    FAILED_NAMES="$FAILED_NAMES|$demo (not in game, got $state)"
+    echo "$demo | FAIL | - | not in game ($state)" >> "$RESULTS_FILE"
+    send_cmd "PRESS_ESCAPE" 10 > /dev/null 2>&1
+    sleep 2
+    continue
+  fi
+
+  # Step 11: Collect FPS (5 samples over ~15 seconds)
+  echo "  -> Collecting FPS..."
+  best_fps="0"
+  sample_count=0
+  all_fps=""
+
+  for s in 1 2 3 4 5; do
+    sleep 3
+    result=$(send_cmd "GET_PERF_DATA" 10)
+    fps_val=$(echo "$result" | grep "^FPS:" | sed 's/FPS: //')
+    if [ -n "$fps_val" ]; then
+      echo "    Sample $s: $fps_val FPS"
+      all_fps="$all_fps $fps_val"
+      sample_count=$((sample_count+1))
+
+      # Compare for best (remove decimal point for integer comparison)
+      fps_x10=$(echo "$fps_val" | tr -d '.')
+      best_x10=$(echo "$best_fps" | tr -d '.')
+      fps_x10=${fps_x10##0}
+      best_x10=${best_x10##0}
+      if [ "${fps_x10:-0}" -gt "${best_x10:-0}" ] 2>/dev/null; then
+        best_fps="$fps_val"
+      fi
+    fi
+  done
+
+  # Calculate average
+  if [ $sample_count -gt 0 ]; then
+    avg_fps=$(echo "$all_fps" | tr ' ' '\n' | grep -v '^$' | awk '{sum+=$1; n++} END {printf "%.1f", sum/n}')
+  else
+    avg_fps="N/A"
+  fi
+
+  echo "  ==> Best: $best_fps | Avg: $avg_fps | Samples: $sample_count"
+  echo "$demo | $best_fps | $avg_fps | $sample_count" >> "$RESULTS_FILE"
+  PASSED=$((PASSED+1))
+
+  # Step 12: Exit game back to editor
+  echo "  -> Pressing escape..."
+  result=$(send_cmd "PRESS_ESCAPE" 10)
+  sleep 3
+
+  # Confirm recovery
+  result=$(send_cmd "GET_STATE" 15)
+  state=$(echo "$result" | grep "^STATE:" | head -1 | sed 's/STATE: //')
+  echo "  -> Back to: $state"
+
+done <<'DEMOLIST'
+Aztec Game Kit Teaser
+Aztec Game Kit
+Bounty
+Horseshoe Bend
+Island Showdown
+Operation Amazon
+River Raiders
+Snowy Mountain Stroll
+A Grand Canyon Adventure
+Disruption
+Foggy Forest
+Indian Strike Force
+Switch Escape
+Canyon Offensive
+Escape from the Zombie Cellar
+Jungle Fever
+RPG Template
+The Mystery of Z Island
+Trapped
+DEMOLIST
+
+echo ""
+echo "============================================"
+echo "ALL TESTS COMPLETE"
+echo "Passed: $PASSED / $TOTAL"
+echo "Failed: $FAILED / $TOTAL"
+if [ -n "$FAILED_NAMES" ]; then
+  echo "Failed demos:"
+  echo "$FAILED_NAMES" | tr '|' '\n' | grep -v '^$' | while read -r line; do echo "  - $line"; done
+fi
+echo "============================================"
+echo ""
+echo "=== RESULTS TABLE ==="
+cat "$RESULTS_FILE"
+```
+
+### Execution Pattern
+
+```bash
+# 1. Kill any running instance
+taskkill.exe //IM GameGuruMAX.exe //F
+
+# 2. Launch fresh
+D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
+cd "$D" && ./GameGuruMAX.exe &
+
+# 3. Wait for hub
+sleep 5
+rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
+t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+
+# 4. Write the script to a .sh file (Write tool), then run as background task:
+bash "$D/run_all_tests.sh"
+# Use run_in_background=true, timeout=600000
+
+# 5. Check progress every 2-4 minutes by tailing the background output file
+
+# 6. After completion, kill the app
+taskkill.exe //IM GameGuruMAX.exe //F
+```
+
+### Per-Demo Flow (what the script does for each demo)
+
+```
+NAVIGATE hub -> GET_STATE (confirm hub) -> SELECT_DEMO <name> -> CLICK edit_game
+-> GET_STATE (confirm storyboard, extract level node title) -> CLICK_NODE <title>
+-> sleep 12 + GET_STATE (confirm editor, retry with +15s if still loading)
+-> CLICK test_level -> GET_STATE (confirm game) -> 5x GET_PERF_DATA (3s apart)
+-> PRESS_ESCAPE -> GET_STATE (confirm editor recovery) -> next demo
+```
+
+### Known Behaviours
+
+| Behaviour | Details |
+|-----------|---------|
+| **First FPS sample is often low** | Shader compilation / GPU warmup on the first frame. Sample 1 may read 3-4 FPS. The best/avg calculation handles this — report best FPS as the headline number |
+| **Island Showdown may timeout** | This is the largest level. The 12s sleep + 60s poll may not be enough. If it fails, increase the initial sleep to 20s or add a third retry with another 15s wait |
+| **Zombie Cellar locks at 60 FPS** | This demo has vsync enabled in its settings. 60.0 FPS is correct, not a bug |
+| **PRESS_ESCAPE sometimes returns to `loading`** | Transitional state. The next `NAVIGATE hub` command at the top of the loop recovers from this |
+| **Level node title != demo name** | The script extracts the level node title from `GET_STATE` storyboard output (grep for `type=level` with `level="mapbank`). This handles cases like "Escape from the Zombie Cellar" whose level node is titled "zombie cellar demo - level1" |
+| **Some levels need extra load time** | Aztec Game Kit, Horseshoe Bend, Indian Strike Force, etc. take 15-25s to load. The script retries with +15s if state is still `storyboard` or `loading` after the first check |
+
+### Baseline Results (2026-02-15, AMD Radeon RX 9060 XT)
+
+| # | Demo | Best FPS | Avg FPS |
+|---|------|----------|---------|
+| 1 | Aztec Game Kit Teaser | 137.3 | 135.1 |
+| 2 | Aztec Game Kit | 77.1 | 61.8 |
+| 3 | Bounty | 147.5 | 145.9 |
+| 4 | Horseshoe Bend | 22.3 | 9.4 |
+| 5 | Island Showdown | FAIL | level load timeout |
+| 6 | Operation Amazon | 83.1 | 81.8 |
+| 7 | River Raiders | 90.0 | 88.6 |
+| 8 | Snowy Mountain Stroll | 38.4 | 17.3 |
+| 9 | A Grand Canyon Adventure | 84.1 | 83.4 |
+| 10 | Disruption | 109.3 | 108.3 |
+| 11 | Foggy Forest | 67.2 | 66.7 |
+| 12 | Indian Strike Force | 46.8 | 46.5 |
+| 13 | Switch Escape | 197.4 | 195.3 |
+| 14 | Canyon Offensive | 59.8 | 47.8 |
+| 15 | Escape from the Zombie Cellar | 60.0 | 59.9 |
+| 16 | Jungle Fever | 142.3 | 139.6 |
+| 17 | RPG Template | 163.6 | 161.0 |
+| 18 | The Mystery of Z Island | 75.1 | 73.7 |
+| 19 | Trapped | 228.3 | 225.1 |
+
 ## Notes
 
 - The harness response confirms the command was accepted, not that the resulting operation completed — always follow up with `GET_STATE` after waits
 - All 19 demos were successfully tested through the hub->storyboard sequence on 2026-02-14
+- 18/19 demos passed the full FPS test (hub->storyboard->editor->game->FPS->escape) on 2026-02-15
 - `GET_SCREEN_TEXT` provides full widget/button labels for every storyboard node — use this to verify screen content without screenshots
 - When polling after a level load, use a longer timeout (60s) on the `GET_STATE` poll to account for the synchronous load
