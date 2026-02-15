@@ -351,6 +351,11 @@ void MasterRenderer::Compose(CommandList cmd) const
 	OPTICK_EVENT();
 #endif
 
+	// Always suppress wiProfiler::DrawData() — it calls AllocateGPU() during Compose
+	// which can return an invalid allocation, causing an access violation and GPU TDR.
+	// Profiler timing data is still collected normally; use GetTextData() to read it safely.
+	wi::profiler::DisableDrawForThisFrame();
+
 	__super::Compose(cmd);
 
 	// DX12: Render splash screen AFTER normal compose (drawn on top with opaque blend).

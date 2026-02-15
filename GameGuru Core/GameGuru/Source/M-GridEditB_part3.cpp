@@ -64,9 +64,10 @@ void tab_tab_visuals(int iPage, int iMode)
 	{
 		//Display performance data.
 		bool bStatOpen = true;
-		// Do NOT enable wiProfiler here - its DrawData() calls AllocateGPU() during
-		// Compose which can return an invalid allocation, causing an access violation
-		// that corrupts the GPU command list state and triggers a TDR/device reset.
+		// DrawData() is now suppressed in MasterRenderer::Compose via DisableDrawForThisFrame(),
+		// so enabling the profiler for data collection is safe.
+		if (!wiProfiler::IsEnabled())
+			wiProfiler::SetEnabled(true);
 		DisplayPerformanceData(&bStatOpen);
 	}
 	else

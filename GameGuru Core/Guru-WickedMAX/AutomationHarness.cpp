@@ -840,6 +840,24 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	written += _snprintf(result + written, resultSize - written,
 		"TAB_MODE: %d\n", g.tabmode);
 
+	// Profiler timing data (if profiler is enabled)
+	if (wi::profiler::IsEnabled() && written < resultSize - 256)
+	{
+		float cpuMs = wi::profiler::GetCPUFrameTime();
+		float gpuMs = wi::profiler::GetGPUFrameTime();
+		written += _snprintf(result + written, resultSize - written,
+			"CPU_FRAME_MS: %.2f\n"
+			"GPU_FRAME_MS: %.2f\n",
+			cpuMs, gpuMs);
+
+		std::string profText = wi::profiler::GetTextData();
+		if (!profText.empty() && written + (int)profText.size() < resultSize - 32)
+		{
+			written += _snprintf(result + written, resultSize - written,
+				"PROFILER_DATA:\n%s", profText.c_str());
+		}
+	}
+
 	result[resultSize - 1] = 0;
 }
 

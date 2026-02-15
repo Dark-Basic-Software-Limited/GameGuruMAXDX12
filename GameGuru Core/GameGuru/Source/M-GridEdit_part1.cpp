@@ -9740,32 +9740,22 @@
 			{
 				ImGui::Separator();
 				wiScene::Scene* pScene = &wiScene::GetScene();
-				int iMeshes = pScene->meshes.GetCount();
-				int iMaterials = pScene->materials.GetCount();
 
-				int dc = 0;
-				int dcs = 0;
-				int dct = 0;
+				float cpuFrameMs = wi::profiler::GetCPUFrameTime();
+				float gpuFrameMs = wi::profiler::GetGPUFrameTime();
 
-				int tris = 0;
-				int trisShadow = 0;
-				int trisTransparent = 0;
-
-				ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-				ImGui::Text("DrawCalls: %d", dc);
-				ImGui::Text("DrawCallsShadows: %d", dcs);
-				ImGui::Text("DrawCallsTransparent: %d", dct);
-				ImGui::Text("Triangles: %d", tris);
-				ImGui::Text("TrianglesShadows: %d", trisShadow);
-				ImGui::Text("TrianglesTransparent: %d", trisTransparent);
-				ImGui::Text("Scene Meshes: %d", iMeshes);
-				ImGui::Text("Scene Materials: %d", iMaterials);
+				ImGui::Text("FPS: %.1f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+				ImGui::Text("CPU Frame: %.2f ms", cpuFrameMs);
+				ImGui::Text("GPU Frame: %.2f ms", gpuFrameMs);
+				ImGui::Text("Scene Meshes: %d", (int)pScene->meshes.GetCount());
+				ImGui::Text("Scene Materials: %d", (int)pScene->materials.GetCount());
 				ImGui::Text("Scene Transforms: %d", (int)pScene->transforms.GetCount());
 				ImGui::Text("Scene Hierarchy: %d", (int)pScene->hierarchy.GetCount());
 
 				ImGui::Separator();
-				std::string profiler_data = std::string("");
-				ImGui::Text(profiler_data.c_str());
+				std::string profiler_data = wi::profiler::GetTextData();
+				if (!profiler_data.empty())
+					ImGui::TextUnformatted(profiler_data.c_str());
 
 			}
 

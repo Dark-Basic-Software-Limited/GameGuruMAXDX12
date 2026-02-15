@@ -989,21 +989,20 @@ static void DisplayPerformanceData(bool* p_open)
 		ImGui::Text("Performance data\n");
 		ImGui::Separator();
 
-		int dc = 0;
-		int dcs = 0;
-		int dct = 0;
+		float cpuFrameMs = wi::profiler::GetCPUFrameTime();
+		float gpuFrameMs = wi::profiler::GetGPUFrameTime();
 
-		int tris = 0;
-		int trisShadow = 0;
-		int trisTransparent = 0;
-
-		ImGui::Text("FPS: %.1f - Draw Calls: %5d, S:%5d, T:%5d", ImGui::GetIO().Framerate, dc, dcs, dct);
-		ImGui::Text("Triangles: %7d, S:%7d, T:%7d", tris, trisShadow, trisTransparent);
+		ImGui::Text("FPS: %.1f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+		ImGui::Text("CPU Frame: %.2f ms", cpuFrameMs);
+		ImGui::Text("GPU Frame: %.2f ms", gpuFrameMs);
 
 		ImGui::Separator();
 
-		std::string profiler_data = std::string("");
-		ImGui::Text(profiler_data.c_str());
+		std::string profiler_data = wi::profiler::GetTextData();
+		if (!profiler_data.empty())
+			ImGui::TextUnformatted(profiler_data.c_str());
+		else
+			ImGui::TextDisabled("Profiler collecting data...");
 
 		ImGui::Separator();
 	}
