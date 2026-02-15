@@ -43,6 +43,7 @@ Do NOT use Debug builds for testing. Debug builds output to `Build/Debug/` and t
 | `GET_SCREEN_TEXT` | (none) | Detailed dump of all on-screen content: project info, node details, widget labels, connections |
 | `NAVIGATE` | `hub` / `hub.<tab>` / `storyboard` | Switch between hub, hub tabs, or storyboard |
 | `CLICK` | `play_game` / `edit_game` / `add_level` / `load_level` | Simulate button clicks (context-dependent) |
+| `CLICK_NODE` | `<node title>` | Click a storyboard node by title (case-insensitive). Level nodes load into editor |
 | `SELECT_DEMO` | `<demo name>` | Select a demo by display name (case-insensitive) |
 | `LIST_DEMOS` | (none) | List all available demo games |
 | `WAIT` | `<milliseconds>` | Sleep up to 30000ms, then return state |
@@ -78,10 +79,13 @@ Returns detailed info depending on current state:
 ## CLICK Context Rules
 
 - `edit_game` from **hub**: triggers `bTriggerEditDemoGame` flag (opens storyboard for selected demo)
-- `edit_game` from **storyboard**: triggers 'E' key (loads selected level into editor)
 - `play_game` from **storyboard**: triggers space key (TEST GAME)
 - `add_level` from **storyboard**: triggers 'N' key
 - `load_level` from **storyboard**: triggers 'L' key
+
+## CLICK_NODE (Storyboard)
+
+Clicks a storyboard node by title to trigger its action. For **level** nodes with a level file assigned, this loads the level into the editor via `cDirectOpen` + `iLaunchAfterSync = 7` (same as clicking the node thumbnail in the UI). The harness will be unresponsive during level load (~20-40s). After load completes, `GET_STATE` returns `STATE: editor`.
 
 ## Standard Sequence: Hub -> Demo -> Storyboard (EDIT GAME)
 
@@ -131,7 +135,17 @@ send_cmd "GET_STATE" 30
 # Expected: STATE: storyboard / PROJECT: Switch Escape / NODES(14): ...
 ```
 
-**At this point you are at the storyboard with the selected demo project loaded.** Continue from here with additional commands (e.g. `CLICK edit_game` to load a level into the editor, or `CLICK play_game` to TEST GAME).
+**At this point you are at the storyboard with the selected demo project loaded.** Continue with:
+
+```bash
+# Load the level into the editor
+send_cmd "CLICK_NODE switch escape" 30
+
+# Wait for level to load (harness is unresponsive during load, ~20-40s)
+sleep 40
+send_cmd "GET_STATE" 30
+# Expected: STATE: editor
+```
 
 ## Process Monitoring
 
@@ -148,3 +162,5 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX"
 - The harness response confirms the command was accepted, not that the resulting operation completed — always follow up with `GET_STATE` after waits
 - All 19 demos were successfully tested through this sequence on 2026-02-14
 - `GET_SCREEN_TEXT` provides full widget/button labels for every storyboard node — use this to verify screen content without screenshots
+- `CLICK_NODE` loads a level by directly setting `cDirectOpen` + `iLaunchAfterSync = 7`, which triggers a synchronous load. The harness is unresponsive during load. Wait ~40s then poll with `GET_STATE`
+- When polling after a load, if the result file doesn't appear via the `send_cmd` helper, read it directly: `cat "$EXE_DIR/auto_result.txt"`

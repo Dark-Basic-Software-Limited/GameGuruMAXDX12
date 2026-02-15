@@ -34,6 +34,12 @@ extern cstr TriggerLoadGameProject;
 extern bool g_bDisableQuitFlag;
 extern bool bProceduralLevel;
 
+// Level loading from storyboard
+extern char cDirectOpen[260];
+extern int iSkibFramesBeforeLaunch;
+extern bool bCloseStoryboardAfterLoad;
+extern int iLevelEditorFromStoryboardID;
+
 // Global struct for window handle
 #include "globstruct.h"
 extern GlobStruct* g_pGlob;
@@ -373,12 +379,7 @@ static void Cmd_Click(const char* element, char* result, int resultSize)
 
 	if (_stricmp(element, "edit_game") == 0)
 	{
-		if (bStoryboardWindow)
-		{
-			iStoryboardExecuteKey = 'E';
-			_snprintf(result, resultSize, "OK: Triggered Edit Game from storyboard");
-		}
-		else if (bWelcomeScreen_Window)
+		if (bWelcomeScreen_Window)
 		{
 			// Trigger edit from Demo Games tab (same as double-click)
 			bTriggerEditDemoGame = true;
@@ -386,7 +387,7 @@ static void Cmd_Click(const char* element, char* result, int resultSize)
 		}
 		else
 		{
-			_snprintf(result, resultSize, "ERROR: Not in hub or storyboard view, cannot Edit Game");
+			_snprintf(result, resultSize, "ERROR: edit_game only works from hub. Use CLICK_NODE <title> to open a level from the storyboard");
 		}
 		result[resultSize - 1] = 0;
 		return;
@@ -627,6 +628,57 @@ static void Cmd_GetScreenText(char* result, int resultSize)
 	result[resultSize - 1] = 0;
 }
 
+static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
+{
+	if (!nodeTitle || !nodeTitle[0])
+	{
+		_snprintf(result, resultSize, "ERROR: CLICK_NODE requires a node title argument");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	if (!bStoryboardWindow)
+	{
+		_snprintf(result, resultSize, "ERROR: Not in storyboard view, cannot click node");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	// Find the node by title (case-insensitive)
+	for (int i = 0; i < STORYBOARD_MAXNODES; i++)
+	{
+		if (!Storyboard.Nodes[i].used) continue;
+		if (_stricmp(Storyboard.Nodes[i].title, nodeTitle) != 0) continue;
+
+		const StoryboardNodesStruct& n = Storyboard.Nodes[i];
+
+		if (n.type == STORYBOARD_TYPE_LEVEL && strlen(n.level_name) > 0)
+		{
+			// Load level and exit to editor (mirrors storyboard click logic)
+			strcpy(cDirectOpen, n.level_name);
+			iLaunchAfterSync = 7; // Direct load
+			iSkibFramesBeforeLaunch = 5;
+			bCloseStoryboardAfterLoad = true;
+			iLevelEditorFromStoryboardID = i;
+			_snprintf(result, resultSize, "OK: Loading level node '%s' (file: %s)", n.title, n.level_name);
+		}
+		else if (n.type == STORYBOARD_TYPE_LEVEL)
+		{
+			_snprintf(result, resultSize, "ERROR: Level node '%s' has no level file assigned", n.title);
+		}
+		else
+		{
+			_snprintf(result, resultSize, "OK: Clicked node '%s' (type=%s) - note: only level nodes trigger editor load",
+				n.title, AutoHarness_NodeTypeName(n.type));
+		}
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	_snprintf(result, resultSize, "ERROR: Node '%s' not found in storyboard", nodeTitle);
+	result[resultSize - 1] = 0;
+}
+
 static void Cmd_Quit(char* result, int resultSize)
 {
 	_snprintf(result, resultSize, "OK: Quitting application");
@@ -728,6 +780,10 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "CLICK") == 0)
 	{
 		Cmd_Click(arg, result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "CLICK_NODE") == 0)
+	{
+		Cmd_ClickNode(arg, result, sizeof(result));
 	}
 	else if (_stricmp(cmd, "WAIT") == 0)
 	{
