@@ -15,7 +15,16 @@ GameGuruMAX has a built-in file-based automation harness (`AutomationHarness.cpp
 | **Log file** (append-only timestamped log) | `auto_log.txt` (in EXE directory) |
 | **Source code** | `D:\max\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\AutomationHarness.cpp` |
 | **Header** | `D:\max\GameGuruMAXDX12\GameGuru Core\Guru-WickedMAX\AutomationHarness.h` |
-| **Build script** | `"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Debug` |
+
+## Building
+
+Always build **Release** — the Release configuration outputs directly to the runtime EXE directory, no manual copy needed:
+
+```bash
+"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Release
+```
+
+Do NOT use Debug builds for testing. Debug builds output to `Build/Debug/` and the exe will fail with exit code 3 when placed in the runtime directory.
 
 ## Protocol
 
@@ -30,7 +39,8 @@ GameGuruMAX has a built-in file-based automation harness (`AutomationHarness.cpp
 
 | Command | Arguments | Description |
 |---------|-----------|-------------|
-| `GET_STATE` | (none) | Returns STATE, TAB, VISIBLE_PANELS, ERRORS, UPTIME |
+| `GET_STATE` | (none) | Returns STATE, TAB, VISIBLE_PANELS, ERRORS, UPTIME. In storyboard state also returns PROJECT name and NODES summary |
+| `GET_SCREEN_TEXT` | (none) | Detailed dump of all on-screen content: project info, node details, widget labels, connections |
 | `NAVIGATE` | `hub` / `hub.<tab>` / `storyboard` | Switch between hub, hub tabs, or storyboard |
 | `CLICK` | `play_game` / `edit_game` / `add_level` / `load_level` | Simulate button clicks (context-dependent) |
 | `SELECT_DEMO` | `<demo name>` | Select a demo by display name (case-insensitive) |
@@ -42,6 +52,24 @@ GameGuruMAX has a built-in file-based automation harness (`AutomationHarness.cpp
 ## Application States
 
 `GET_STATE` returns one of: `initializing`, `hub`, `storyboard`, `editor`, `game`, `loading`
+
+## GET_STATE Storyboard Output
+
+When in storyboard state, `GET_STATE` appends:
+```
+PROJECT: Switch Escape
+NODES(14):
+  [0] type=splash title="Splash Screen" level="" out0=" Connect to Scene "->50001
+  [7] type=level title="switch escape" level="mapbank\switch escape.fpm" out0="..."->50005
+  ...
+```
+
+## GET_SCREEN_TEXT Output
+
+Returns detailed info depending on current state:
+- **Storyboard**: PROJECT, DESCRIPTION, READONLY, and per-node details including title, type, level, levelnumber, editable flag, all output/input pins with actions and link targets, and all widget labels with types
+- **Hub**: TAB name and demo list (when on demo_games tab)
+- **Editor**: PANELS list
 
 ## Hub Tab Names (for NAVIGATE hub.\<tab\>)
 
@@ -55,9 +83,9 @@ GameGuruMAX has a built-in file-based automation harness (`AutomationHarness.cpp
 - `add_level` from **storyboard**: triggers 'N' key
 - `load_level` from **storyboard**: triggers 'L' key
 
-## Standard Sequence: Hub → Demo → Storyboard (EDIT GAME)
+## Standard Sequence: Hub -> Demo -> Storyboard (EDIT GAME)
 
-This is the proven sequence from previous testing. Use it as the starting point for any test scenario.
+This is the proven sequence. Use it as the starting point for any test scenario.
 
 ```bash
 EXE_DIR="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
@@ -79,7 +107,7 @@ send_cmd() {
 # Launch the app
 cd "$EXE_DIR"
 ./GameGuruMAX.exe &
-sleep 20
+sleep 30
 
 # Confirm hub is ready
 send_cmd "GET_STATE" 30
@@ -93,14 +121,14 @@ send_cmd "NAVIGATE hub.demo_games" 15
 sleep 2
 send_cmd "SELECT_DEMO Switch Escape" 15
 
-# Click Edit Game (hub → storyboard)
+# Click Edit Game (hub -> storyboard)
 sleep 2
 send_cmd "CLICK edit_game" 120
 
 # Wait for storyboard to appear
 sleep 30
 send_cmd "GET_STATE" 30
-# Expected: STATE: storyboard
+# Expected: STATE: storyboard / PROJECT: Switch Escape / NODES(14): ...
 ```
 
 **At this point you are at the storyboard with the selected demo project loaded.** Continue from here with additional commands (e.g. `CLICK edit_game` to load a level into the editor, or `CLICK play_game` to TEST GAME).
@@ -115,7 +143,8 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX"
 
 ## Notes
 
-- The app takes ~15-20 seconds to initialize and reach the hub
+- The app takes ~20-30 seconds to initialize and reach the hub
 - `CLICK edit_game` from hub is synchronous — the harness blocks during load (~25-30s for most demos)
 - The harness response confirms the command was accepted, not that the resulting operation completed — always follow up with `GET_STATE` after waits
 - All 19 demos were successfully tested through this sequence on 2026-02-14
+- `GET_SCREEN_TEXT` provides full widget/button labels for every storyboard node — use this to verify screen content without screenshots

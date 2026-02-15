@@ -43,6 +43,9 @@ extern GlobStruct* g_pGlob;
 extern std::vector<sLibraryList> g_LibraryFileList;
 extern bool bTriggerEditDemoGame;
 
+// Storyboard data (StoryboardStruct defined in imgui_gg_dx11.h, included via M-GridEditB.h)
+extern StoryboardStruct Storyboard;
+
 // Tab force variable
 int g_iAutoForceWelcomeTab = -1;
 
@@ -188,6 +191,64 @@ static int s_lastKnownTab = 0;
 // This will be set by Welcome_Screen when it runs
 int g_iAutoCurrentTab = 0;
 
+static const char* AutoHarness_NodeTypeName(int type)
+{
+	switch (type)
+	{
+		case STORYBOARD_TYPE_NONE: return "none";
+		case STORYBOARD_TYPE_SPLASH: return "splash";
+		case STORYBOARD_TYPE_SCREEN: return "screen";
+		case STORYBOARD_TYPE_LEVEL: return "level";
+		case STORYBOARD_TYPE_HUD: return "hud";
+		default: return "unknown";
+	}
+}
+
+// Build a summary of storyboard nodes for GET_STATE
+static int AutoHarness_GetStoryboardSummary(char* outBuf, int bufSize)
+{
+	int written = 0;
+	if (!bStoryboardWindow) return 0;
+
+	// Game name
+	written += _snprintf(outBuf + written, bufSize - written,
+		"PROJECT: %s\n", Storyboard.gamename[0] ? Storyboard.gamename : "(none)");
+
+	// Count and list used nodes
+	int nodeCount = 0;
+	for (int i = 0; i < STORYBOARD_MAXNODES; i++)
+		if (Storyboard.Nodes[i].used) nodeCount++;
+
+	written += _snprintf(outBuf + written, bufSize - written,
+		"NODES(%d):\n", nodeCount);
+
+	for (int i = 0; i < STORYBOARD_MAXNODES && written < bufSize - 256; i++)
+	{
+		if (!Storyboard.Nodes[i].used) continue;
+		const StoryboardNodesStruct& n = Storyboard.Nodes[i];
+		written += _snprintf(outBuf + written, bufSize - written,
+			"  [%d] type=%s title=\"%s\" level=\"%s\"",
+			i, AutoHarness_NodeTypeName(n.type),
+			n.title[0] ? n.title : "",
+			n.level_name[0] ? n.level_name : "");
+
+		// Show output connections
+		for (int o = 0; o < STORYBOARD_MAXOUTPUTS; o++)
+		{
+			if (n.output_title[o][0] && written < bufSize - 128)
+			{
+				written += _snprintf(outBuf + written, bufSize - written,
+					" out%d=\"%s\"->%d", o, n.output_title[o], n.output_linkto[o]);
+			}
+		}
+		if (written < bufSize - 2)
+			outBuf[written++] = '\n';
+	}
+
+	outBuf[written] = 0;
+	return written;
+}
+
 static void Cmd_GetState(char* result, int resultSize)
 {
 	const char* state = AutoHarness_GetAppState();
@@ -203,13 +264,21 @@ static void Cmd_GetState(char* result, int resultSize)
 
 	DWORD uptime = (GetTickCount() - s_startTick) / 1000;
 
-	_snprintf(result, resultSize,
+	int written = _snprintf(result, resultSize,
 		"STATE: %s\n"
 		"TAB: %s\n"
 		"VISIBLE_PANELS: %s\n"
 		"ERRORS: none\n"
-		"UPTIME: %lu",
+		"UPTIME: %lu\n",
 		state, tabName, panels, uptime);
+	if (written < 0) written = 0;
+
+	// Append storyboard details when in storyboard state
+	if (bStoryboardWindow && written < resultSize - 1)
+	{
+		AutoHarness_GetStoryboardSummary(result + written, resultSize - written);
+	}
+
 	result[resultSize - 1] = 0;
 }
 
@@ -466,6 +535,98 @@ static void Cmd_Screenshot(char* result, int resultSize)
 	result[resultSize - 1] = 0;
 }
 
+static void Cmd_GetScreenText(char* result, int resultSize)
+{
+	int written = 0;
+	const char* state = AutoHarness_GetAppState();
+	written += _snprintf(result + written, resultSize - written, "STATE: %s\n", state);
+
+	if (bStoryboardWindow)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"PROJECT: %s\n"
+			"DESCRIPTION: %.200s\n"
+			"READONLY: %d\n",
+			Storyboard.gamename[0] ? Storyboard.gamename : "(none)",
+			Storyboard.game_description[0] ? Storyboard.game_description : "",
+			Storyboard.project_readonly);
+
+		// Detailed node dump
+		for (int i = 0; i < STORYBOARD_MAXNODES && written < resultSize - 512; i++)
+		{
+			if (!Storyboard.Nodes[i].used) continue;
+			const StoryboardNodesStruct& n = Storyboard.Nodes[i];
+			written += _snprintf(result + written, resultSize - written,
+				"NODE[%d]: type=%s title=\"%s\" level=\"%s\" levelnumber=\"%s\" editable=%d\n",
+				i, AutoHarness_NodeTypeName(n.type),
+				n.title[0] ? n.title : "",
+				n.level_name[0] ? n.level_name : "",
+				n.levelnumber[0] ? n.levelnumber : "",
+				n.iEditEnable);
+
+			// Screen-specific info
+			if (n.type == STORYBOARD_TYPE_SCREEN || n.type == STORYBOARD_TYPE_SPLASH)
+			{
+				if (n.screen_title[0] && written < resultSize - 256)
+					written += _snprintf(result + written, resultSize - written,
+						"  screen_title=\"%s\"\n", n.screen_title);
+			}
+
+			// Output pins
+			for (int o = 0; o < STORYBOARD_MAXOUTPUTS && written < resultSize - 256; o++)
+			{
+				if (n.output_title[o][0])
+					written += _snprintf(result + written, resultSize - written,
+						"  out[%d]: \"%s\" action=\"%s\" linkto=%d\n",
+						o, n.output_title[o], n.output_action[o], n.output_linkto[o]);
+			}
+
+			// Input pins
+			for (int inp = 0; inp < STORYBOARD_MAXOUTPUTS && written < resultSize - 256; inp++)
+			{
+				if (n.input_title[inp][0])
+					written += _snprintf(result + written, resultSize - written,
+						"  in[%d]: \"%s\"\n", inp, n.input_title[inp]);
+			}
+
+			// Widgets with labels
+			for (int w = 0; w < STORYBOARD_MAXWIDGETS && written < resultSize - 256; w++)
+			{
+				if (n.widget_used[w] && n.widget_label[w][0])
+					written += _snprintf(result + written, resultSize - written,
+						"  widget[%d]: label=\"%s\" type=%d\n",
+						w, n.widget_label[w], n.widget_type[w]);
+			}
+		}
+	}
+	else if (bWelcomeScreen_Window)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"TAB: %s\n", AutoHarness_GetTabName(g_iAutoCurrentTab));
+
+		// List demos if on demo tab
+		if (g_iAutoCurrentTab == 0 && g_LibraryFileList.size() > 0)
+		{
+			written += _snprintf(result + written, resultSize - written, "DEMOS:\n");
+			for (int i = 0; i < (int)g_LibraryFileList.size() && written < resultSize - 256; i++)
+			{
+				const char* name = g_LibraryFileList[i].cName.Get();
+				written += _snprintf(result + written, resultSize - written, "  %s\n", name);
+			}
+		}
+	}
+	else
+	{
+		// Editor state - list visible panels
+		char panels[4096];
+		AutoHarness_GetVisibleWindows(panels, sizeof(panels));
+		written += _snprintf(result + written, resultSize - written,
+			"PANELS: %s\n", panels[0] ? panels : "none");
+	}
+
+	result[resultSize - 1] = 0;
+}
+
 static void Cmd_Quit(char* result, int resultSize)
 {
 	_snprintf(result, resultSize, "OK: Quitting application");
@@ -555,6 +716,10 @@ void AutoHarness_CheckForCommand(void)
 	if (_stricmp(cmd, "GET_STATE") == 0)
 	{
 		Cmd_GetState(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "GET_SCREEN_TEXT") == 0)
+	{
+		Cmd_GetScreenText(result, sizeof(result));
 	}
 	else if (_stricmp(cmd, "NAVIGATE") == 0)
 	{
