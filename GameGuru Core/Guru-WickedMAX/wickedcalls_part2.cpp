@@ -1363,6 +1363,7 @@ void WickedCall_SetObjectRenderLayer(sObject* pObject,int iLayerMask)
 			if (objectEntity > 0)
 			{
 				wiScene::LayerComponent* pWickedLayer = wiScene::GetScene().layers.GetComponent(objectEntity);
+				if (pWickedLayer == nullptr) continue;
 				pWickedLayer->layerMask = iLayerMask;
 
 				//PE: layermask is taken from the parent in the hierarchy
