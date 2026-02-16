@@ -719,8 +719,21 @@ void editor_camera(void)
 						setPos.x = (int)setPos.x;
 						setPos.y = (int)setPos.y;
 						SetCursorPos(setPos.x, setPos.y);
-						xmouseold = setPos.x;
-						ymouseold = setPos.y;
+						// Convert to the coordinate system ImGui::GetMousePos() uses:
+						// With ViewportsEnable ON (DX11): screen coords — setPos is already correct
+						// With ViewportsEnable OFF (DX12): client coords via ScreenToClient
+						if (!(ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+						{
+							POINT clientPt = { (LONG)setPos.x, (LONG)setPos.y };
+							ScreenToClient(g_pGlob->hWnd, &clientPt);
+							xmouseold = clientPt.x;
+							ymouseold = clientPt.y;
+						}
+						else
+						{
+							xmouseold = setPos.x;
+							ymouseold = setPos.y;
+						}
 					}
 					#endif
 					t.trmb = 1;
@@ -789,8 +802,19 @@ void editor_camera(void)
 						#if defined(ENABLEIMGUI) && !defined(USEOLDIDE) 
 						//PE: Restore mouse pos.
 						SetCursorPos(t.editorfreeflight.storemousex, t.editorfreeflight.storemousey);
-						xmouseold = t.editorfreeflight.storemousex;
-						ymouseold = t.editorfreeflight.storemousey;
+						// Convert stored screen coords to ImGui coordinate system
+						if (!(ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+						{
+							POINT clientPt = { (LONG)t.editorfreeflight.storemousex, (LONG)t.editorfreeflight.storemousey };
+							ScreenToClient(g_pGlob->hWnd, &clientPt);
+							xmouseold = clientPt.x;
+							ymouseold = clientPt.y;
+						}
+						else
+						{
+							xmouseold = t.editorfreeflight.storemousex;
+							ymouseold = t.editorfreeflight.storemousey;
+						}
 						t.inputsys.xmouse = xmouseold;
 						t.inputsys.xmouse = ymouseold;
 						game_showmouse();
