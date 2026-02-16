@@ -808,7 +808,21 @@ bool CreateBackBufferCacheNameEx(char *file,int width,int height, bool bUsedForS
 	{
 		std::string src_thumbbank_path = g.fpscrootdir_s.Get();
 		src_thumbbank_path = src_thumbbank_path + "\\Files\\thumbbank\\";
-		cache_final_name = src_thumbbank_path + cache_name + std::to_string(width) + "x" + std::to_string(height) + ".jpg";
+		std::string base_name = src_thumbbank_path + cache_name + std::to_string(width) + "x" + std::to_string(height);
+		cache_final_name = base_name + ".jpg";
+		// Some thumbbank assets only have .dds or .png (no .jpg), try alternatives
+		if (GetFileAttributesA(cache_final_name.c_str()) == INVALID_FILE_ATTRIBUTES)
+		{
+			std::string alt = base_name + ".dds";
+			if (GetFileAttributesA(alt.c_str()) != INVALID_FILE_ATTRIBUTES)
+				cache_final_name = alt;
+			else
+			{
+				alt = base_name + ".png";
+				if (GetFileAttributesA(alt.c_str()) != INVALID_FILE_ATTRIBUTES)
+					cache_final_name = alt;
+			}
+		}
 	}
 	else
 	{
