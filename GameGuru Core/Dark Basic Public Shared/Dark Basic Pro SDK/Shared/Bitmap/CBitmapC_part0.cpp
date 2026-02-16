@@ -260,6 +260,13 @@ DARKSDK LPGGSURFACE MakeFormat ( int iID, int iWidth, int iHeight, GGFORMAT form
 	memset ( test, 0, sizeof ( test ) );
 
 #ifdef WICKEDENGINE
+	// DX12 mode has no DX11 device, so bail out gracefully
+	if (m_pD3D == NULL)
+	{
+		SAFE_DELETE(test);
+		return NULL;
+	}
+
 	// video or system bitmap
 	if ( g_bOffscreenBitmap )
 	{

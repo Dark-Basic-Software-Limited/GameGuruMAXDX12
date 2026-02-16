@@ -3560,69 +3560,79 @@
 					ID3D11Texture2D *pBackBuffer = NULL;
 					pBackBuffer = (ID3D11Texture2D *)GetBitmapTexture2D(99);
 					g_pGlob->pCurrentBitmapSurface = pBackBuffer;
-					GGSURFACE_DESC ddsd;
-					pBackBuffer->GetDesc(&ddsd);
 
-					float grabx = rGrabMonitorArea.Max.x - rGrabMonitorArea.Min.x;
-					float graby = rGrabMonitorArea.Max.y - rGrabMonitorArea.Min.y;
-					//graby -= 10.0;
-
-					//PE: Change to using vMonitorStart its already in pixels.
-					float imgcx = vMonitorStart.x + 1.0; //Skip our padding line.
-					float imgcy = vMonitorStart.y + 1.0; //Skip our padding line.
-
-					if (graby > ddsd.Height)
-						graby = ddsd.Height;
-					if (grabx > ddsd.Width)
-						grabx = ddsd.Width;
-
-					if (imgcx + grabx > ddsd.Width) imgcx = ddsd.Width - grabx - 1.0; // check is >= so need -1.
-					if (imgcy < 0) imgcy = 0;
-					if (imgcx < 0) imgcx = 0;
-
-					bool bValid = true;
-					if (imgcx >= imgcx + grabx || imgcy >= imgcy + graby)
+					if (pBackBuffer)
 					{
-						//PE: pBackBuffer->GetDesc failed ?
-						if (ddsd.Width >= 1900 && ddsd.Height >= 1000)
+						GGSURFACE_DESC ddsd;
+						pBackBuffer->GetDesc(&ddsd);
+
+						float grabx = rGrabMonitorArea.Max.x - rGrabMonitorArea.Min.x;
+						float graby = rGrabMonitorArea.Max.y - rGrabMonitorArea.Min.y;
+						//graby -= 10.0;
+
+						//PE: Change to using vMonitorStart its already in pixels.
+						float imgcx = vMonitorStart.x + 1.0; //Skip our padding line.
+						float imgcy = vMonitorStart.y + 1.0; //Skip our padding line.
+
+						if (graby > ddsd.Height)
+							graby = ddsd.Height;
+						if (grabx > ddsd.Width)
+							grabx = ddsd.Width;
+
+						if (imgcx + grabx > ddsd.Width) imgcx = ddsd.Width - grabx - 1.0; // check is >= so need -1.
+						if (imgcy < 0) imgcy = 0;
+						if (imgcx < 0) imgcx = 0;
+
+						bool bValid = true;
+						if (imgcx >= imgcx + grabx || imgcy >= imgcy + graby)
 						{
-							imgcx = 30.0;
-							imgcy = 98.0;
-							grabx = 1567.0;
-							graby = 872.0;
+							//PE: pBackBuffer->GetDesc failed ?
+							if (ddsd.Width >= 1900 && ddsd.Height >= 1000)
+							{
+								imgcx = 30.0;
+								imgcy = 98.0;
+								grabx = 1567.0;
+								graby = 872.0;
+							}
+							else
+								bValid = false;
 						}
-						else
-							bValid = false;
-					}
 
-					if (bValid)
+						if (bValid)
+						{
+							//PE: We need a unique id for this STORYBOARD_THUMBS+400
+							GrabImage(STORYBOARD_THUMBS + 400, imgcx, imgcy, imgcx + grabx, imgcy + graby, 3);
+							SetGrabImageMode(0);
+						}
+						g_pGlob->pCurrentBitmapSurface = pTmpSurface;
+
+						GG_SetWritablesToRoot(true);
+						if (FileExist("thumbbank\\lastnewlevel.jpg")) DeleteAFile("thumbbank\\lastnewlevel.jpg");
+						GG_SetWritablesToRoot(false);
+
+						if (bValid)
+						{
+							if (ImageExist(STORYBOARD_THUMBS + 400))
+							{
+								char destination[MAX_PATH];
+								strcpy(destination, "thumbbank\\lastnewlevel.jpg");
+								GG_SetWritablesToRoot(true);
+								GG_GetRealPath(destination, 1);
+								GG_SetWritablesToRoot(false);
+								//Need a no alpha save.
+								extern bool g_bDontUseImageAlpha;
+								g_bDontUseImageAlpha = true;
+								SaveImage(destination, STORYBOARD_THUMBS + 400);
+								g_bDontUseImageAlpha = false;
+								DeleteImage(STORYBOARD_THUMBS + 400);
+							}
+						}
+					}
+					else
 					{
-						//PE: We need a unique id for this STORYBOARD_THUMBS+400
-						GrabImage(STORYBOARD_THUMBS + 400, imgcx, imgcy, imgcx + grabx, imgcy + graby, 3);
+						// no backbuffer in DX12 mode, restore state
 						SetGrabImageMode(0);
-					}
-					g_pGlob->pCurrentBitmapSurface = pTmpSurface;
-
-					GG_SetWritablesToRoot(true);
-					if (FileExist("thumbbank\\lastnewlevel.jpg")) DeleteAFile("thumbbank\\lastnewlevel.jpg");
-					GG_SetWritablesToRoot(false);
-
-					if (bValid)
-					{
-						if (ImageExist(STORYBOARD_THUMBS + 400))
-						{
-							char destination[MAX_PATH];
-							strcpy(destination, "thumbbank\\lastnewlevel.jpg");
-							GG_SetWritablesToRoot(true);
-							GG_GetRealPath(destination, 1);
-							GG_SetWritablesToRoot(false);
-							//Need a no alpha save.
-							extern bool g_bDontUseImageAlpha;
-							g_bDontUseImageAlpha = true;
-							SaveImage(destination, STORYBOARD_THUMBS + 400);
-							g_bDontUseImageAlpha = false;
-							DeleteImage(STORYBOARD_THUMBS + 400);
-						}
+						g_pGlob->pCurrentBitmapSurface = pTmpSurface;
 					}
 				}
 

@@ -540,21 +540,24 @@
 			SetGrabImageMode(1);
 
 			// get surface size to ensure grab not larger
-			int grabiconx = 288;
-			int grabicony = 288;
-			GGSURFACE_DESC ddsd;
-			pBackBuffer->GetDesc(&ddsd);
-			if (grabiconx > ddsd.Width) grabiconx = ddsd.Width;
-			if (grabicony > ddsd.Height) grabicony = ddsd.Height;
-			float imgcx = (ddsd.Width * 0.5) - (grabiconx * 0.5);
-			float imgcy = (ddsd.Height * 0.5) - (grabicony * 0.5);
-			if (imgcy < 0) imgcy = 0;
-			if (imgcx < 0) imgcx = 0;
-			if (imgcx + grabiconx > ddsd.Width)	grabiconx = (ddsd.Width - imgcx) - 1.0f;
-			if (imgcy + grabicony > ddsd.Height) grabicony = (ddsd.Height - imgcy) - 1.0f;
-			if (grabiconx > 0 && grabicony > 0)
+			if (pBackBuffer)
 			{
-				GrabImage(iIconImageID, imgcx, imgcy, imgcx + grabiconx, imgcy + grabicony, 3);
+				int grabiconx = 288;
+				int grabicony = 288;
+				GGSURFACE_DESC ddsd;
+				pBackBuffer->GetDesc(&ddsd);
+				if (grabiconx > ddsd.Width) grabiconx = ddsd.Width;
+				if (grabicony > ddsd.Height) grabicony = ddsd.Height;
+				float imgcx = (ddsd.Width * 0.5) - (grabiconx * 0.5);
+				float imgcy = (ddsd.Height * 0.5) - (grabicony * 0.5);
+				if (imgcy < 0) imgcy = 0;
+				if (imgcx < 0) imgcx = 0;
+				if (imgcx + grabiconx > ddsd.Width)	grabiconx = (ddsd.Width - imgcx) - 1.0f;
+				if (imgcy + grabicony > ddsd.Height) grabicony = (ddsd.Height - imgcy) - 1.0f;
+				if (grabiconx > 0 && grabicony > 0)
+				{
+					GrabImage(iIconImageID, imgcx, imgcy, imgcx + grabiconx, imgcy + grabicony, 3);
+				}
 			}
 
 			// restore bitmap pointer
@@ -598,75 +601,83 @@
 		g_pGlob->pCurrentBitmapSurface = pBackBuffer;
 
 		// get surface size to ensure grab not larger
-		GGSURFACE_DESC ddsd;
-		pBackBuffer->GetDesc(&ddsd);
-		SetGrabImageMode(1);
-		if (graby > ddsd.Height)
-			graby = ddsd.Height;
-		if (grabx > ddsd.Width)
-			grabx = ddsd.Width;
-
-		// handle image size
-		float imgcx = (ddsd.Width*0.5) - (grabx*0.5);
-		float imgcy = (ddsd.Height*0.5) - (graby*0.5);
-		if (imgcy < 0) imgcy = 0;
-		if (imgcx < 0) imgcx = 0;
-
-		// all screen for BackBufferGrabGameScreen
-		if (BackBufferObjectID == 0 && BackBufferGrabGameScreen)
+		if (pBackBuffer)
 		{
-			imgcy = 0;
-			imgcx = 0;
-			grabx = ddsd.Width;
-			graby = ddsd.Height;
-		}
+			GGSURFACE_DESC ddsd;
+			pBackBuffer->GetDesc(&ddsd);
+			SetGrabImageMode(1);
+			if (graby > ddsd.Height)
+				graby = ddsd.Height;
+			if (grabx > ddsd.Width)
+				grabx = ddsd.Width;
 
-		// if snapshot mode
-		if (BackBufferSnapShotMode)
-		{
-			if (fLastRubberBandX2 > fLastRubberBandX1 && fLastRubberBandY2 > fLastRubberBandY1)
+			// handle image size
+			float imgcx = (ddsd.Width*0.5) - (grabx*0.5);
+			float imgcy = (ddsd.Height*0.5) - (graby*0.5);
+			if (imgcy < 0) imgcy = 0;
+			if (imgcx < 0) imgcx = 0;
+
+			// all screen for BackBufferGrabGameScreen
+			if (BackBufferObjectID == 0 && BackBufferGrabGameScreen)
 			{
-				imgcx = fLastRubberBandX1;
-				imgcy = fLastRubberBandY1;
-				imgcy -= 10.0f;
-				if (imgcx < 1.0f) imgcx = 1.0f;
-				if (imgcy < 1.0f) imgcy = 1.0f;
-				float fRatio = graby / grabx;
-				if ((fLastRubberBandX2 - fLastRubberBandX1) > ((fLastRubberBandY2 - fLastRubberBandY1)*1.3))
+				imgcy = 0;
+				imgcx = 0;
+				grabx = ddsd.Width;
+				graby = ddsd.Height;
+			}
+
+			// if snapshot mode
+			if (BackBufferSnapShotMode)
+			{
+				if (fLastRubberBandX2 > fLastRubberBandX1 && fLastRubberBandY2 > fLastRubberBandY1)
 				{
-					grabx = fLastRubberBandX2 - fLastRubberBandX1;
-					graby = grabx * fRatio;
-					float fObjectsHeight = fLastRubberBandY2 - fLastRubberBandY1;
-					if (graby > fObjectsHeight)
-						imgcy -= ((graby - fObjectsHeight)*0.5);
-					if (imgcy < 0) imgcy = 0;
-				}
-				else
-				{
-					fRatio = grabx / graby;
-					graby = fLastRubberBandY2 - fLastRubberBandY1;
-					float fObjectsWidth = fLastRubberBandX2 - fLastRubberBandX1;
-					grabx = graby * fRatio;
-					if(grabx > fObjectsWidth)
-						imgcx -= ((grabx-fObjectsWidth)*0.5);
-					if (imgcx < 0) imgcx = 0;
+					imgcx = fLastRubberBandX1;
+					imgcy = fLastRubberBandY1;
+					imgcy -= 10.0f;
+					if (imgcx < 1.0f) imgcx = 1.0f;
+					if (imgcy < 1.0f) imgcy = 1.0f;
+					float fRatio = graby / grabx;
+					if ((fLastRubberBandX2 - fLastRubberBandX1) > ((fLastRubberBandY2 - fLastRubberBandY1)*1.3))
+					{
+						grabx = fLastRubberBandX2 - fLastRubberBandX1;
+						graby = grabx * fRatio;
+						float fObjectsHeight = fLastRubberBandY2 - fLastRubberBandY1;
+						if (graby > fObjectsHeight)
+							imgcy -= ((graby - fObjectsHeight)*0.5);
+						if (imgcy < 0) imgcy = 0;
+					}
+					else
+					{
+						fRatio = grabx / graby;
+						graby = fLastRubberBandY2 - fLastRubberBandY1;
+						float fObjectsWidth = fLastRubberBandX2 - fLastRubberBandX1;
+						grabx = graby * fRatio;
+						if(grabx > fObjectsWidth)
+							imgcx -= ((grabx-fObjectsWidth)*0.5);
+						if (imgcx < 0) imgcx = 0;
+					}
 				}
 			}
-		}
-		// make sure we are not going outside image.
-		if (imgcy + graby > ddsd.Height)
-			graby = (ddsd.Height - imgcy) - 1.0f;
-		if (imgcx + grabx > ddsd.Width)
-			grabx = (ddsd.Width - imgcx) - 1.0f;
+			// make sure we are not going outside image.
+			if (imgcy + graby > ddsd.Height)
+				graby = (ddsd.Height - imgcy) - 1.0f;
+			if (imgcx + grabx > ddsd.Width)
+				grabx = (ddsd.Width - imgcx) - 1.0f;
 
-		if (graby > 0 && grabx > 0)
+			if (graby > 0 && grabx > 0)
+			{
+				GrabImage(iPerEntityImageID, imgcx, imgcy, imgcx + grabx, imgcy + graby, 3);
+			}
+			SetGrabImageMode(0);
+
+			// restore bitmap pointer
+			g_pGlob->pCurrentBitmapSurface = pTmpSurface;
+		}
+		else
 		{
-			GrabImage(iPerEntityImageID, imgcx, imgcy, imgcx + grabx, imgcy + graby, 3);
+			// no backbuffer in DX12 mode, restore state
+			g_pGlob->pCurrentBitmapSurface = pTmpSurface;
 		}
-		SetGrabImageMode(0);
-
-		// restore bitmap pointer
-		g_pGlob->pCurrentBitmapSurface = pTmpSurface;
 	}
 
 	// if not snaposhot mode and we want to save the grab
