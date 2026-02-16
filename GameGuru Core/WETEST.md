@@ -56,8 +56,8 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `GET_STATE` | (none) | Returns STATE, TAB, VISIBLE_PANELS, ERRORS, UPTIME. In storyboard state also returns PROJECT name and NODES summary |
 | `GET_SCREEN_TEXT` | (none) | Detailed dump of all on-screen content: project info, node details, widget labels, connections |
 | `NAVIGATE` | `hub` / `hub.<tab>` / `storyboard` | Switch between hub, hub tabs, or storyboard |
-| `CLICK` | `play_game` / `edit_game` / `test_level` / `add_level` / `load_level` | Simulate button clicks (context-dependent) |
-| `CLICK_NODE` | `<node title>` | Click a storyboard node by title (case-insensitive). Level nodes load into editor |
+| `CLICK` | `play_game` / `edit_game` / `test_level` / `add_level` / `load_level` / `exit_screen_editor` | Simulate button clicks (context-dependent) |
+| `CLICK_NODE` | `<node title>` | Click a storyboard node by title (case-insensitive). Level nodes load into editor, screen/splash nodes open the screen editor |
 | `SELECT_DEMO` | `<demo name>` | Select a demo by display name (case-insensitive) |
 | `LIST_DEMOS` | (none) | List all available demo games |
 | `WAIT` | `<milliseconds>` | Sleep up to 30000ms, then return state |
@@ -121,6 +121,7 @@ Toggle buttons show `[active=0/1]` to indicate their current state. Action-only 
 - `play_game` from **storyboard**: triggers space key (TEST GAME)
 - `add_level` from **storyboard**: triggers 'N' key
 - `load_level` from **storyboard**: triggers 'L' key
+- `exit_screen_editor` from **screen editor** only: triggers Exit to Storyboard (sets `g_iAutoExitScreenEditor=1` which the screen editor consumes as `iQuitWindowLoop=4`). The exit takes ~4 frames to complete the thumbnail capture sequence
 
 ## GET_PERF_DATA Output
 
@@ -179,7 +180,31 @@ Exits test game back to editor by setting `t.game.gameloop=0`, `t.game.levelloop
 
 ## CLICK_NODE (Storyboard)
 
-Clicks a storyboard node by title to trigger its action. For **level** nodes with a level file assigned, this loads the level into the editor via `cDirectOpen` + `iLaunchAfterSync = 7` (same as clicking the node thumbnail in the UI). The harness is unresponsive during the synchronous level load. After load completes, `GET_STATE` returns `STATE: editor`.
+Clicks a storyboard node by title to trigger its action:
+- **Level nodes** with a level file assigned: loads the level into the editor via `cDirectOpen` + `iLaunchAfterSync = 7` (same as clicking the node thumbnail in the UI). The harness is unresponsive during the synchronous level load. After load completes, `GET_STATE` returns `STATE: editor`
+- **Screen/splash nodes**: opens the screen editor by setting `bScreen_Editor_Window = true` and `iScreen_Editor_Node = <index>`. The screen editor renders within the storyboard window. Use `CLICK exit_screen_editor` to close it
+
+## Screen Editor Sequence
+
+```bash
+D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
+
+# Open screen editor for a screen node (from storyboard state)
+rm -f "$D/auto_result.txt"; echo "CLICK_NODE Title Screen" > "$D/auto_command.txt"
+t=0; while [ $t -lt 10 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+# Expected: OK: Opened screen editor for node 'Title Screen' (type=screen, index=1)
+
+# Wait for screen editor to render
+sleep 3
+
+# Exit back to storyboard
+rm -f "$D/auto_result.txt"; echo "CLICK exit_screen_editor" > "$D/auto_command.txt"
+t=0; while [ $t -lt 10 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+# Expected: OK: Triggered Exit to Storyboard from screen editor
+
+# Wait for exit sequence (~4 frames)
+sleep 3
+```
 
 ## Standard Sequence: Launch -> Hub -> Storyboard -> Editor
 
