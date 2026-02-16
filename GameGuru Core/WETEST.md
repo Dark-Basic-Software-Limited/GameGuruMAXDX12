@@ -298,6 +298,33 @@ FPE File (ismarker=2, lightrange, lightcolor, usespotlighting)
 
 Key identification: `entityprofile[bankindex].ismarker == 2` marks a light entity. `eleprof.usespotlighting` determines point (0) vs spot (1). Entities named `%probe` with `fLightHasProbe >= 50` are environment probe carriers — they have range=0 and color=(0,0,0) intentionally.
 
+### Key Source Files for Light System
+
+| File | Function | Role |
+|------|----------|------|
+| `GameGuru/Source/M-Lighting.cpp` | `lighting_refresh()` | Creates `infinilighttype` entries from all entities with `ismarker==2`. Calls `WickedCall_AddLight()` for each. Runs on level load |
+| `GameGuru/Source/G-Lighting.cpp` | `lighting_loop()` | Per-frame update of all infinilights. Calls `WickedCall_UpdateLight()` with position, range, color, shadow. Also handles flashlight and env probes |
+| `Guru-WickedMAX/wickedcalls_part3.cpp` | `WickedCall_AddLight(iLightType)` | Creates a WickedEngine `LightComponent` (1=POINT, 2=SPOT). Sets initial intensity via `BackCompatSetEnergy(30)` |
+| `Guru-WickedMAX/wickedcalls_part3.cpp` | `WickedCall_UpdateLight(...)` | Updates an existing light's color, range, position, cone angle, shadow. **Does NOT update intensity** — intensity is set once at creation and never changed |
+| `GameGuru/Include/Types.h` | `entitylighttype` (line 5574) | Light data struct: `color` (ARGB DWORD), `range`, `offsetup` (spot cone), `islit`, `fLightHasProbe` |
+| `GameGuru/Include/Types.h` | `infinilighttype` (line 8227) | Runtime light bridge: position, range, color, `wickedlightindex` (WickedEngine entity ID), `e` (back-ref to entity index) |
+| `WickedEngine/wiScene_Components.h` | `LightComponent` (line 1321) | WickedEngine light: `intensity` (candela for point/spot, lux for directional), `range`, `color`, `type`, shadow flags |
+
+### Open Issue: Point Light Intensity Still Too Dim (2026-02-16)
+
+**Status**: First fix applied (`BackCompatSetEnergy(30)`) raised intensity from 30cd to 600cd for point lights and 6000cd for spots. Scene is brighter but still darker than expected. Further investigation needed.
+
+**What was done**:
+- `WickedCall_AddLight` now calls `lightComponent->BackCompatSetEnergy(30)` after `SetType()`, converting the old energy value of 30 to physically-based candela (POINT: 30×20=600cd, SPOT: 30×200=6000cd)
+- Verified via `LIST_LIGHTS` that all point lights show `int=600.0` and the spot light shows `int=6000.0`
+
+**What to investigate next**:
+- The energy value `30` is hardcoded in `WickedCall_AddLight` — it may need to be higher, or derived from entity properties (e.g., proportional to range)
+- `WickedCall_UpdateLight` never sets intensity — if lights need per-entity intensity control, this function needs a new parameter
+- The entity `entitylighttype` struct has no explicit intensity/energy field — brightness was historically encoded in the color RGB values and range. The PBR model separates intensity from color, which may require a new FPE field or a formula to derive intensity from range
+- Check whether other demos (especially indoor scenes like Trapped, Disruption) also appear too dark, or if this is specific to Switch Escape
+- WickedEngine `BackCompatSetEnergy` multipliers: POINT=×20, SPOT=×200 (from `wiScene_Components.h` line 1396)
+
 ## CLICK_NODE (Storyboard)
 
 Clicks a storyboard node by title to trigger its action:
