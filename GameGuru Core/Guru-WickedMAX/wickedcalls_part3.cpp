@@ -863,7 +863,7 @@ uint64_t WickedCall_AddLight(int iLightType)
 	LightComponent* lightComponent = wiScene::GetScene ( ).lights.GetComponent ( light );
 	lightComponent->_flags = 0;
 	lightComponent->SetType ( (wiScene::LightComponent::LightType)iLightType );
-	lightComponent->BackCompatSetEnergy(30);
+	lightComponent->BackCompatSetEnergy(60);
 	Wicked_Update_Shadows(NULL);
 	return light;
 }
@@ -954,6 +954,25 @@ void WickedCall_UpdateLight(uint64_t wickedlightindex, float fX, float fY, float
 	lightComponent->SetCastShadow ( bCastShadow );
 	lightComponent->outerConeAngle = GGToRadian(fSpotRadius);
 	lightComponent->color = XMFLOAT3((float)iColR / 255.0f, (float)iColG / 255.0f, (float)iColB / 255.0f);
+
+	// DX12 PBR has two major changes from DX11 that reduce perceived brightness:
+	// 1) Inverse-square attenuation (1/d²) — DX11 used simple (1-d²/r²)² with no 1/d²
+	// 2) Lambertian diffuse normalization (1/PI) — DX11 omitted this
+	// Scale intensity with range²×PI/4 to compensate for both factors, targeting
+	// equivalent DX11 brightness at half the light's range.
+	if (fRange > 0.1f)
+	{
+		float fIntensity = fRange * fRange * 0.785f; // PI/4 ≈ 0.785
+		if (fIntensity < 600.0f) fIntensity = 600.0f;
+		if (fIntensity > 60000.0f) fIntensity = 60000.0f;
+		if (lightComponent->GetType() == LightComponent::SPOT)
+		{
+			fIntensity = fRange * fRange * 7.85f; // spots need ~10x more (cone focus)
+			if (fIntensity < 6000.0f) fIntensity = 6000.0f;
+			if (fIntensity > 60000.0f) fIntensity = 60000.0f;
+		}
+		lightComponent->intensity = fIntensity;
+	}
 
 	// for now, only change env probe if light on/off
 	TransformComponent* transformLight = wiScene::GetScene ().transforms.GetComponent (wickedlightindex);
