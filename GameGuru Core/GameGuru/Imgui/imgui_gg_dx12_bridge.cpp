@@ -21,6 +21,9 @@ static inline void DX12Log(const char* fmt, ...) { (void)fmt; }
 // stb_image for loading PNG/JPG/BMP/TGA files (implementation in WickedEngine_Windows.lib)
 #include "../Include/Utility/stb_image.h"
 
+// DirectXTex for loading DDS files that stb_image cannot handle
+#include "DirectXTex.h"
+
 // WickedEngine headers for device access
 #include "wiGraphicsDevice_DX12.h"
 #include "wiGraphics.h"
@@ -870,6 +873,86 @@ static bool CreateDX12TextureFromPixels(unsigned char* pixels, int width, int he
     return true;
 }
 
+// Load a DDS file into RGBA pixel data using DirectXTex.
+// If the file has a .jpg extension and contains DDS data, rename it to .dds first.
+// Returns malloc'd pixel buffer (caller must free()), or nullptr on failure.
+static unsigned char* TryLoadDDSWithRename(const char* filepath, int* outWidth, int* outHeight)
+{
+    // Check if file starts with DDS magic bytes
+    FILE* f = nullptr;
+    fopen_s(&f, filepath, "rb");
+    if (!f)
+        return nullptr;
+    unsigned char magic[4] = {};
+    size_t rd = fread(magic, 1, 4, f);
+    fclose(f);
+    if (rd < 4 || magic[0] != 'D' || magic[1] != 'D' || magic[2] != 'S' || magic[3] != ' ')
+        return nullptr;
+
+    // It's a DDS file - rename .jpg to .dds for cleanup
+    const char* loadPath = filepath;
+    char ddsPath[512] = {};
+    int pathLen = (int)strlen(filepath);
+    if (pathLen > 4 && _stricmp(filepath + pathLen - 4, ".jpg") == 0)
+    {
+        strcpy_s(ddsPath, filepath);
+        strcpy_s(ddsPath + pathLen - 4, 5, ".dds");
+        if (rename(filepath, ddsPath) == 0)
+            loadPath = ddsPath;
+        // If rename fails (read-only etc), load from original path
+    }
+
+    // Convert path to wide string for DirectXTex
+    wchar_t wPath[512];
+    MultiByteToWideChar(CP_ACP, 0, loadPath, -1, wPath, 512);
+
+    // Load DDS via DirectXTex
+    DirectX::ScratchImage image;
+    DirectX::TexMetadata meta;
+    HRESULT hr = DirectX::LoadFromDDSFile(wPath, DirectX::DDS_FLAGS_NONE, &meta, image);
+    if (FAILED(hr))
+        return nullptr;
+
+    // Decompress if block-compressed format
+    if (DirectX::IsCompressed(meta.format))
+    {
+        DirectX::ScratchImage decompressed;
+        hr = DirectX::Decompress(*image.GetImage(0, 0, 0), DXGI_FORMAT_R8G8B8A8_UNORM, decompressed);
+        if (FAILED(hr))
+            return nullptr;
+        image = std::move(decompressed);
+        meta = image.GetMetadata();
+    }
+
+    // Convert to RGBA8 if not already
+    if (meta.format != DXGI_FORMAT_R8G8B8A8_UNORM)
+    {
+        DirectX::ScratchImage converted;
+        hr = DirectX::Convert(*image.GetImage(0, 0, 0), DXGI_FORMAT_R8G8B8A8_UNORM,
+            DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, converted);
+        if (FAILED(hr))
+            return nullptr;
+        image = std::move(converted);
+    }
+
+    const DirectX::Image* img = image.GetImage(0, 0, 0);
+    if (!img || img->width == 0 || img->height == 0)
+        return nullptr;
+
+    *outWidth = (int)img->width;
+    *outHeight = (int)img->height;
+
+    // Copy pixels to malloc'd buffer (row-by-row in case of pitch padding)
+    size_t rowBytes = img->width * 4;
+    unsigned char* pixels = (unsigned char*)malloc(rowBytes * img->height);
+    if (!pixels)
+        return nullptr;
+    for (size_t y = 0; y < img->height; y++)
+        memcpy(pixels + y * rowBytes, img->pixels + y * img->rowPitch, rowBytes);
+
+    return pixels;
+}
+
 void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath)
 {
     if (!g_ImGuiDX12Initialized || !filepath || !filepath[0])
@@ -883,8 +966,17 @@ void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath)
     // Load image from file using stb_image
     int width, height, channels;
     unsigned char* pixels = stbi_load(filepath, &width, &height, &channels, 4); // Force RGBA
+    bool pixelsFromDDS = false;
+
     if (!pixels)
-        return nullptr;
+    {
+        // stbi_load failed - check if file is actually DDS format (e.g. .jpg containing DDS data)
+        // If so, rename .jpg to .dds for cleanup and load via DirectXTex
+        pixels = TryLoadDDSWithRename(filepath, &width, &height);
+        if (!pixels)
+            return nullptr;
+        pixelsFromDDS = true;
+    }
 
     DX12CachedTexture cached;
     cached.Width = width;
@@ -892,7 +984,11 @@ void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath)
 
     bool ok = CreateDX12TextureFromPixels(pixels, width, height,
         cached.Resource, cached.GpuHandle, cached.SrvSlotIndex);
-    stbi_image_free(pixels);
+
+    if (pixelsFromDDS)
+        free(pixels);
+    else
+        stbi_image_free(pixels);
 
     if (!ok)
         return nullptr;

@@ -997,6 +997,22 @@
 						else
 						{
 							LoadImageSize(Storyboard.Nodes[i].thumb, Storyboard.Nodes[i].thumb_id, 512, 288);
+							// If .jpg failed, try .dds (legacy JPG thumbnails may have been renamed to DDS by DX12 cleanup)
+							if (!ImageExist(Storyboard.Nodes[i].thumb_id))
+							{
+								int thumbLen = strlen(Storyboard.Nodes[i].thumb);
+								if (thumbLen > 4 && _stricmp(Storyboard.Nodes[i].thumb + thumbLen - 4, ".jpg") == 0)
+								{
+									char ddsThumb[256];
+									strcpy(ddsThumb, Storyboard.Nodes[i].thumb);
+									strcpy(ddsThumb + thumbLen - 4, ".dds");
+									LoadImageSize(ddsThumb, Storyboard.Nodes[i].thumb_id, 512, 288);
+									if (ImageExist(Storyboard.Nodes[i].thumb_id))
+									{
+										strcpy(Storyboard.Nodes[i].thumb, ddsThumb);
+									}
+								}
+							}
 							if (!ImageExist(Storyboard.Nodes[i].thumb_id))
 							{
 								//PE: Try relative path.
