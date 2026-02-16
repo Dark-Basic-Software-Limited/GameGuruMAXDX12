@@ -1027,5 +1027,22 @@ bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outH
     int comp = 0;
     if (stbi_info(filepath, outWidth, outHeight, &comp))
         return true;
+    // stbi_info failed - check if it's a DDS file and read dimensions from header
+    FILE* f = nullptr;
+    fopen_s(&f, filepath, "rb");
+    if (f)
+    {
+        unsigned char header[20] = {};
+        size_t rd = fread(header, 1, 20, f);
+        fclose(f);
+        if (rd == 20 && header[0] == 'D' && header[1] == 'D' && header[2] == 'S' && header[3] == ' ')
+        {
+            // DDS header: bytes 12-15 = height, bytes 16-19 = width (little-endian uint32)
+            *outHeight = (int)(header[12] | (header[13] << 8) | (header[14] << 16) | (header[15] << 24));
+            *outWidth  = (int)(header[16] | (header[17] << 8) | (header[18] << 16) | (header[19] << 24));
+            if (*outWidth > 0 && *outHeight > 0)
+                return true;
+        }
+    }
     return false;
 }

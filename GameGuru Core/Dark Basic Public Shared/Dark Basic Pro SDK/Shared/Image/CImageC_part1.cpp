@@ -844,6 +844,12 @@ DARKSDK bool LoadImageCoreRetainName ( char* szRealName, char* szFilename, int i
 		ImGui_DX12_GetFileDimensions(test->szLongFilename, &imgW, &imgH);
 		if (imgW == 0 || imgH == 0)
 			ImGui_DX12_GetFileDimensions(szFilename, &imgW, &imgH);
+		if (imgW == 0 || imgH == 0)
+		{
+			// File not found or unreadable - return false so caller can try fallbacks
+			SAFE_DELETE(test);
+			return false;
+		}
 		test->iWidth = imgW;
 		test->iHeight = imgH;
 		test->iDepth = 32;
