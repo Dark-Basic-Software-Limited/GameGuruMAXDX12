@@ -11,12 +11,29 @@
 #include <dxgi1_4.h>
 #include <wrl/client.h>
 #include <unordered_map>
+#include <cstdio>
+#include <cstdarg>
 #pragma comment(lib, "d3dcompiler")
 #pragma comment(lib, "d3d12")
 
-// No-op stub so DX12Log calls compile away to nothing
+// File logger for diagnosing DX12 texture upload issues
 static UINT64 g_DX12LogFrameCount = 0;
-static inline void DX12Log(const char* fmt, ...) { (void)fmt; }
+static void DX12Log(const char* fmt, ...)
+{
+    FILE* f = nullptr;
+    fopen_s(&f, "imgui_upload.log", "a");
+    if (!f) return;
+    // Timestamp
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    fprintf(f, "[%02d:%02d:%02d.%03d] ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(f, fmt, args);
+    va_end(args);
+    fprintf(f, "\n");
+    fclose(f);
+}
 
 // stb_image for loading PNG/JPG/BMP/TGA files (implementation in WickedEngine_Windows.lib)
 #include "../Include/Utility/stb_image.h"
@@ -64,13 +81,13 @@ struct DX12CachedTexture
 static std::unordered_map<int, DX12CachedTexture> g_TextureCache;
 static bool g_DeviceRemoved = false;
 
-// Dedicated copy queue for texture uploads (avoids conflicts with WickedEngine's graphics queue)
-static ComPtr<ID3D12CommandQueue>        g_pCopyQueue;
-static ComPtr<ID3D12CommandAllocator>    g_pCopyAllocator;
-static ComPtr<ID3D12GraphicsCommandList> g_pCopyCommandList;
-static ComPtr<ID3D12Fence>              g_pCopyFence;
-static HANDLE                            g_hCopyFenceEvent = nullptr;
-static UINT64                            g_CopyFenceValue = 0;
+// Private DIRECT queue for texture uploads (isolates from WickedEngine's graphics queue)
+static ComPtr<ID3D12CommandQueue>        g_pUploadQueue;
+static ComPtr<ID3D12CommandAllocator>    g_pUploadAllocator;
+static ComPtr<ID3D12GraphicsCommandList> g_pUploadCommandList;
+static ComPtr<ID3D12Fence>              g_pUploadFence;
+static HANDLE                            g_hUploadFenceEvent = nullptr;
+static UINT64                            g_UploadFenceValue = 0;
 
 // Per-frame resources (double-buffered)
 static const int NUM_FRAMES_IN_FLIGHT = 2;
@@ -132,30 +149,31 @@ static bool AllocSrvSlot(UINT& outIndex, D3D12_CPU_DESCRIPTOR_HANDLE& outCpu, D3
     return false;
 }
 
-// Execute pending copy commands on the dedicated copy queue and wait for completion.
-// After this returns, the copy command list is reset and ready to record new commands.
-static bool ExecuteCopyAndWait()
+// Execute pending upload commands on the private DIRECT queue and wait for completion.
+// After this returns, the upload command list is reset and ready to record new commands.
+static bool ExecuteUploadAndWait()
 {
-    HRESULT hr = g_pCopyCommandList->Close();
+    DX12Log("UPLOAD: ExecuteUploadAndWait() - closing cmdlist, fenceVal=%llu", g_UploadFenceValue + 1);
+    HRESULT hr = g_pUploadCommandList->Close();
+    if (FAILED(hr)) { DX12Log("UPLOAD: Close FAILED hr=0x%08X", hr); return false; }
+
+    ID3D12CommandList* ppCmdLists[] = { g_pUploadCommandList.Get() };
+    g_pUploadQueue->ExecuteCommandLists(1, ppCmdLists);
+
+    g_UploadFenceValue++;
+    hr = g_pUploadQueue->Signal(g_pUploadFence.Get(), g_UploadFenceValue);
     if (FAILED(hr)) return false;
 
-    ID3D12CommandList* ppCmdLists[] = { g_pCopyCommandList.Get() };
-    g_pCopyQueue->ExecuteCommandLists(1, ppCmdLists);
-
-    g_CopyFenceValue++;
-    hr = g_pCopyQueue->Signal(g_pCopyFence.Get(), g_CopyFenceValue);
-    if (FAILED(hr)) return false;
-
-    if (g_pCopyFence->GetCompletedValue() < g_CopyFenceValue)
+    if (g_pUploadFence->GetCompletedValue() < g_UploadFenceValue)
     {
-        g_pCopyFence->SetEventOnCompletion(g_CopyFenceValue, g_hCopyFenceEvent);
-        WaitForSingleObject(g_hCopyFenceEvent, INFINITE);
+        g_pUploadFence->SetEventOnCompletion(g_UploadFenceValue, g_hUploadFenceEvent);
+        WaitForSingleObject(g_hUploadFenceEvent, INFINITE);
     }
 
     // Reset allocator and command list back to recording state for next use
-    hr = g_pCopyAllocator->Reset();
+    hr = g_pUploadAllocator->Reset();
     if (FAILED(hr)) return false;
-    hr = g_pCopyCommandList->Reset(g_pCopyAllocator.Get(), nullptr);
+    hr = g_pUploadCommandList->Reset(g_pUploadAllocator.Get(), nullptr);
     if (FAILED(hr)) return false;
 
     return true;
@@ -184,7 +202,7 @@ static bool CreateFontTexture()
     desc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
     HRESULT hr = g_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
-        D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&g_pFontTextureResource));
+        D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&g_pFontTextureResource));
     if (FAILED(hr)) return false;
 
     // Create upload buffer
@@ -239,12 +257,18 @@ static bool CreateFontTexture()
     dstLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
     dstLoc.SubresourceIndex = 0;
 
-    g_pCopyCommandList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+    g_pUploadCommandList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
 
-    // Execute on dedicated copy queue and wait — no barrier needed:
-    // COMMON auto-promotes to COPY_DEST on copy queue, decays back to COMMON after fence,
-    // then auto-promotes to PIXEL_SHADER_RESOURCE when bound as SRV on graphics queue.
-    if (!ExecuteCopyAndWait()) return false;
+    // Transition to pixel shader resource on our private DIRECT queue
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = g_pFontTextureResource.Get();
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    g_pUploadCommandList->ResourceBarrier(1, &barrier);
+
+    if (!ExecuteUploadAndWait()) return false;
 
     // Create SRV
     UINT srvIndex;
@@ -426,32 +450,32 @@ bool ImGui_DX12_InitBridge()
     DX12Log("INIT: Descriptor increment size = %u", g_SrvDescriptorSize);
     memset(g_SrvSlotUsed, 0, sizeof(g_SrvSlotUsed));
 
-    // Create dedicated copy queue for texture uploads (isolates from WickedEngine's graphics queue)
-    DX12Log("INIT: Creating dedicated copy queue...");
+    // Create private DIRECT queue for texture uploads (isolates from WickedEngine's graphics queue)
+    DX12Log("INIT: Creating private upload queue...");
     {
-        D3D12_COMMAND_QUEUE_DESC copyQueueDesc = {};
-        copyQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-        copyQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-        copyQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        copyQueueDesc.NodeMask = 0;
-        hr = g_pd3dDevice->CreateCommandQueue(&copyQueueDesc, IID_PPV_ARGS(&g_pCopyQueue));
-        if (FAILED(hr)) { DX12Log("INIT: FAILED - CreateCommandQueue(COPY) hr=0x%08X", hr); return false; }
+        D3D12_COMMAND_QUEUE_DESC uploadQueueDesc = {};
+        uploadQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        uploadQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        uploadQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        uploadQueueDesc.NodeMask = 0;
+        hr = g_pd3dDevice->CreateCommandQueue(&uploadQueueDesc, IID_PPV_ARGS(&g_pUploadQueue));
+        if (FAILED(hr)) { DX12Log("INIT: FAILED - CreateCommandQueue(DIRECT) hr=0x%08X", hr); return false; }
 
-        hr = g_pd3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, IID_PPV_ARGS(&g_pCopyAllocator));
-        if (FAILED(hr)) { DX12Log("INIT: FAILED - CreateCommandAllocator(COPY) hr=0x%08X", hr); return false; }
+        hr = g_pd3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_pUploadAllocator));
+        if (FAILED(hr)) { DX12Log("INIT: FAILED - CreateCommandAllocator(DIRECT) hr=0x%08X", hr); return false; }
 
-        hr = g_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, g_pCopyAllocator.Get(), nullptr, IID_PPV_ARGS(&g_pCopyCommandList));
-        if (FAILED(hr)) { DX12Log("INIT: FAILED - CreateCommandList(COPY) hr=0x%08X", hr); return false; }
+        hr = g_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_pUploadAllocator.Get(), nullptr, IID_PPV_ARGS(&g_pUploadCommandList));
+        if (FAILED(hr)) { DX12Log("INIT: FAILED - CreateCommandList(DIRECT) hr=0x%08X", hr); return false; }
 
-        hr = g_pd3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&g_pCopyFence));
-        if (FAILED(hr)) { DX12Log("INIT: FAILED - CreateFence(COPY) hr=0x%08X", hr); return false; }
+        hr = g_pd3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&g_pUploadFence));
+        if (FAILED(hr)) { DX12Log("INIT: FAILED - CreateFence hr=0x%08X", hr); return false; }
 
-        g_hCopyFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        if (!g_hCopyFenceEvent) { DX12Log("INIT: FAILED - CreateEvent for copy fence"); return false; }
+        g_hUploadFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+        if (!g_hUploadFenceEvent) { DX12Log("INIT: FAILED - CreateEvent for upload fence"); return false; }
 
-        g_CopyFenceValue = 0;
+        g_UploadFenceValue = 0;
     }
-    DX12Log("INIT: Copy queue created OK");
+    DX12Log("INIT: Upload queue created OK");
 
     // Always create font texture first — builds the ImGui font atlas.
     // If this isn't done, ImGui crashes in SetCurrentFont accessing null ContainerAtlas.
@@ -760,13 +784,13 @@ void ImGui_DX12_ShutdownBridge()
     g_pRootSignature.Reset();
     g_pd3dSrvDescHeap.Reset();
 
-    // Clean up dedicated copy queue resources (reverse creation order)
-    g_pCopyCommandList.Reset();
-    g_pCopyAllocator.Reset();
-    g_pCopyFence.Reset();
-    g_pCopyQueue.Reset();
-    if (g_hCopyFenceEvent) { CloseHandle(g_hCopyFenceEvent); g_hCopyFenceEvent = nullptr; }
-    g_CopyFenceValue = 0;
+    // Clean up private upload queue resources (reverse creation order)
+    g_pUploadCommandList.Reset();
+    g_pUploadAllocator.Reset();
+    g_pUploadFence.Reset();
+    g_pUploadQueue.Reset();
+    if (g_hUploadFenceEvent) { CloseHandle(g_hUploadFenceEvent); g_hUploadFenceEvent = nullptr; }
+    g_UploadFenceValue = 0;
 
     for (int i = 0; i < NUM_FRAMES_IN_FLIGHT; i++)
     {
@@ -793,15 +817,23 @@ bool ImGui_DX12_IsInitialized()
 static bool CreateDX12TextureFromPixels(unsigned char* pixels, int width, int height,
     ComPtr<ID3D12Resource>& outResource, D3D12_GPU_DESCRIPTOR_HANDLE& outGpuHandle, UINT& outSrvSlot)
 {
+    DX12Log("UPLOAD: CreateDX12TextureFromPixels(%dx%d) ENTER", width, height);
     if (!g_pd3dDevice || !g_pd3dCommandQueue || !pixels || width <= 0 || height <= 0)
+    {
+        DX12Log("UPLOAD: CreateDX12TextureFromPixels - FAILED null check");
         return false;
+    }
 
     // Check if device has been removed — no point continuing
     if (g_DeviceRemoved)
+    {
+        DX12Log("UPLOAD: CreateDX12TextureFromPixels - SKIPPED (device already removed)");
         return false;
+    }
     HRESULT hrCheck = g_pd3dDevice->GetDeviceRemovedReason();
     if (FAILED(hrCheck))
     {
+        DX12Log("UPLOAD: CreateDX12TextureFromPixels - DEVICE REMOVED hr=0x%08X", hrCheck);
         g_DeviceRemoved = true;
         return false;
     }
@@ -822,7 +854,7 @@ static bool CreateDX12TextureFromPixels(unsigned char* pixels, int width, int he
     desc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
     HRESULT hr = g_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
-        D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&outResource));
+        D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&outResource));
     if (FAILED(hr)) return false;
 
     // Create upload buffer
@@ -877,13 +909,21 @@ static bool CreateDX12TextureFromPixels(unsigned char* pixels, int width, int he
     dstLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
     dstLoc.SubresourceIndex = 0;
 
-    g_pCopyCommandList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+    g_pUploadCommandList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
 
-    // Execute on dedicated copy queue and wait — no barrier needed:
-    // COMMON auto-promotes to COPY_DEST on copy queue, decays back to COMMON after fence,
-    // then auto-promotes to PIXEL_SHADER_RESOURCE when bound as SRV on graphics queue.
-    if (!ExecuteCopyAndWait())
+    // Transition to pixel shader resource on our private DIRECT queue
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = outResource.Get();
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    g_pUploadCommandList->ResourceBarrier(1, &barrier);
+
+    DX12Log("UPLOAD: CreateDX12TextureFromPixels - executing on private DIRECT queue...");
+    if (!ExecuteUploadAndWait())
     {
+        DX12Log("UPLOAD: CreateDX12TextureFromPixels - ExecuteUploadAndWait FAILED, device removed");
         g_DeviceRemoved = true;
         return false;
     }
@@ -900,6 +940,7 @@ static bool CreateDX12TextureFromPixels(unsigned char* pixels, int width, int he
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     g_pd3dDevice->CreateShaderResourceView(outResource.Get(), &srvDesc, srvCpu);
 
+    DX12Log("UPLOAD: CreateDX12TextureFromPixels(%dx%d) SUCCESS - srvSlot=%u", width, height, outSrvSlot);
     return true;
 }
 
@@ -993,6 +1034,8 @@ void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath)
     if (it != g_TextureCache.end())
         return (void*)it->second.GpuHandle.ptr;
 
+    DX12Log("UPLOAD: GetOrLoadTexture(id=%d) LOADING: %s", imageId, filepath);
+
     // Load image from file using stb_image
     int width, height, channels;
     unsigned char* pixels = stbi_load(filepath, &width, &height, &channels, 4); // Force RGBA
@@ -1021,10 +1064,14 @@ void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath)
         stbi_image_free(pixels);
 
     if (!ok)
+    {
+        DX12Log("UPLOAD: GetOrLoadTexture(id=%d) FAILED - CreateDX12TextureFromPixels returned false", imageId);
         return nullptr;
+    }
 
     void* result = (void*)cached.GpuHandle.ptr;
     g_TextureCache[imageId] = std::move(cached);
+    DX12Log("UPLOAD: GetOrLoadTexture(id=%d) OK - %dx%d cached, total=%d", imageId, width, height, (int)g_TextureCache.size());
     return result;
 }
 
