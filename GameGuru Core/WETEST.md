@@ -513,7 +513,7 @@ Use `/linkermember:1` not `/symbols` or `/exports` — those return empty for st
 
 ## Full Demo FPS Test (FULL TEST)
 
-Automated test that launches all 19 demos, enters test-game mode, collects FPS samples, and reports results. Tested 2026-02-15: 18/19 passed autonomously in ~15 minutes.
+Automated test that launches all 19 demos, enters test-game mode, collects FPS samples, and reports results. Tested 2026-02-15 and 2026-02-16: 18/19 passed autonomously in ~20 minutes.
 
 ### How to Run
 
@@ -678,13 +678,13 @@ while IFS= read -r demo; do
     continue
   fi
 
-  # Step 11: Collect FPS (5 samples over ~15 seconds)
-  echo "  -> Collecting FPS..."
+  # Step 11: Collect FPS (10 samples over ~30 seconds)
+  echo "  -> Collecting FPS over 30 seconds..."
   best_fps="0"
   sample_count=0
   all_fps=""
 
-  for s in 1 2 3 4 5; do
+  for s in 1 2 3 4 5 6 7 8 9 10; do
     sleep 3
     result=$(send_cmd "GET_PERF_DATA" 10)
     fps_val=$(echo "$result" | grep "^FPS:" | sed 's/FPS: //')
@@ -793,7 +793,7 @@ taskkill.exe //IM GameGuruMAX.exe //F
 NAVIGATE hub -> GET_STATE (confirm hub) -> SELECT_DEMO <name> -> CLICK edit_game
 -> GET_STATE (confirm storyboard, extract level node title) -> CLICK_NODE <title>
 -> sleep 12 + GET_STATE (confirm editor, retry with +15s if still loading)
--> CLICK test_level -> GET_STATE (confirm game) -> 5x GET_PERF_DATA (3s apart)
+-> CLICK test_level -> GET_STATE (confirm game) -> 10x GET_PERF_DATA (3s apart, ~30s total)
 -> PRESS_ESCAPE -> GET_STATE (confirm editor recovery) -> next demo
 ```
 
@@ -808,7 +808,7 @@ NAVIGATE hub -> GET_STATE (confirm hub) -> SELECT_DEMO <name> -> CLICK edit_game
 | **Level node title != demo name** | The script extracts the level node title from `GET_STATE` storyboard output (grep for `type=level` with `level="mapbank`). This handles cases like "Escape from the Zombie Cellar" whose level node is titled "zombie cellar demo - level1" |
 | **Some levels need extra load time** | Aztec Game Kit, Horseshoe Bend, Indian Strike Force, etc. take 15-25s to load. The script retries with +15s if state is still `storyboard` or `loading` after the first check |
 
-### Baseline Results (2026-02-15, AMD Radeon RX 9060 XT)
+### Baseline Results (2026-02-15, AMD Radeon RX 9060 XT, 5 samples/15s)
 
 | # | Demo | Best FPS | Avg FPS |
 |---|------|----------|---------|
@@ -832,10 +832,36 @@ NAVIGATE hub -> GET_STATE (confirm hub) -> SELECT_DEMO <name> -> CLICK edit_game
 | 18 | The Mystery of Z Island | 75.1 | 73.7 |
 | 19 | Trapped | 228.3 | 225.1 |
 
+### Results (2026-02-16, AMD Radeon RX 9060 XT, 10 samples/30s)
+
+Post DX12 lighting brightness fix (commit 241bd64b). FPS is ~15-20% lower across the board due to increased light intensity (600cd point lights, 6000cd spot lights).
+
+| # | Demo | Best FPS | Avg FPS |
+|---|------|----------|---------|
+| 1 | Aztec Game Kit Teaser | 119.3 | 117.4 |
+| 2 | Aztec Game Kit | 71.0 | 62.0 |
+| 3 | Bounty | 129.3 | 125.0 |
+| 4 | Horseshoe Bend | 20.7 | 14.3 |
+| 5 | Island Showdown | FAIL | level load timeout |
+| 6 | Operation Amazon | 70.8 | 64.2 |
+| 7 | River Raiders | 76.9 | 73.9 |
+| 8 | Snowy Mountain Stroll | 35.5 | 29.0 |
+| 9 | A Grand Canyon Adventure | 73.1 | 71.6 |
+| 10 | Disruption | 93.1 | 88.7 |
+| 11 | Foggy Forest | 58.0 | 56.7 |
+| 12 | Indian Strike Force | 42.6 | 41.3 |
+| 13 | Switch Escape | 164.3 | 161.4 |
+| 14 | Canyon Offensive | 53.9 | 42.2 |
+| 15 | Escape from the Zombie Cellar | 60.0 | 59.9 |
+| 16 | Jungle Fever | 120.6 | 113.7 |
+| 17 | RPG Template | 132.1 | 128.3 |
+| 18 | The Mystery of Z Island | 64.5 | 64.0 |
+| 19 | Trapped | 169.4 | 165.9 |
+
 ## Notes
 
 - The harness response confirms the command was accepted, not that the resulting operation completed — always follow up with `GET_STATE` after waits
 - All 19 demos were successfully tested through the hub->storyboard sequence on 2026-02-14
-- 18/19 demos passed the full FPS test (hub->storyboard->editor->game->FPS->escape) on 2026-02-15
+- 18/19 demos passed the full FPS test (hub->storyboard->editor->game->FPS->escape) on 2026-02-15 and 2026-02-16
 - `GET_SCREEN_TEXT` provides full widget/button labels for every storyboard node — use this to verify screen content without screenshots
 - When polling after a level load, use a longer timeout (60s) on the `GET_STATE` poll to account for the synchronous load
