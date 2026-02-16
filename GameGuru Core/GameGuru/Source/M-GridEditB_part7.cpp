@@ -12,6 +12,14 @@
 	if (!bImGuiInitDone)
 		return;
 
+	// In DX12 mode, skip entirely — this function renders into a DX11 bitmap 99
+	// render target and grabs pixels, none of which works in DX12. Calling
+	// ForceRender(NULL) would start a second render pass on the swapChain
+	// within the same frame, causing "Device Lost on Present".
+	extern bool ImGui_DX12_IsInitialized();
+	if (ImGui_DX12_IsInitialized())
+		return;
+
 	if (BackBufferObjectID == 0 && BackBufferGrabGameScreen)
 	{
 		// allow no object if grabbing whole game scene

@@ -17,6 +17,10 @@ extern LPGGIMMEDIATECONTEXT		m_pImmediateContext;
 extern LPGGSURFACE				g_pBackBuffer;
 extern LPGG						m_pDX;
 
+#ifdef WICKEDENGINE
+extern bool ImGui_DX12_IsInitialized();
+#endif
+
 namespace
 {
     typedef std::map<int, tagCamData*>	BitmapList_t;
@@ -260,8 +264,8 @@ DARKSDK LPGGSURFACE MakeFormat ( int iID, int iWidth, int iHeight, GGFORMAT form
 	memset ( test, 0, sizeof ( test ) );
 
 #ifdef WICKEDENGINE
-	// DX12 mode has no DX11 device, so bail out gracefully
-	if (m_pD3D == NULL)
+	// DX12 mode: skip all DX11 texture/render-target creation to avoid device conflict
+	if (m_pD3D == NULL || ImGui_DX12_IsInitialized())
 	{
 		SAFE_DELETE(test);
 		return NULL;

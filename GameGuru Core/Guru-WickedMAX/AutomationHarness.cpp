@@ -34,6 +34,11 @@ extern cstr TriggerLoadGameProject;
 extern bool g_bDisableQuitFlag;
 extern bool bProceduralLevel;
 
+// Screen editor (from M-GridEdit_part0.cpp)
+extern bool bScreen_Editor_Window;
+extern int iScreen_Editor_Node;
+extern int g_iAutoExitScreenEditor;
+
 // Toolbar toggle states (from M-GridEdit_part0.cpp)
 extern bool bEditorLight;
 extern bool bTerrain_Tools_Window;
@@ -464,6 +469,21 @@ static void Cmd_Click(const char* element, char* result, int resultSize)
 		return;
 	}
 
+	if (_stricmp(element, "exit_screen_editor") == 0)
+	{
+		if (bScreen_Editor_Window)
+		{
+			g_iAutoExitScreenEditor = 1;
+			_snprintf(result, resultSize, "OK: Triggered Exit to Storyboard from screen editor");
+		}
+		else
+		{
+			_snprintf(result, resultSize, "ERROR: Screen editor is not open");
+		}
+		result[resultSize - 1] = 0;
+		return;
+	}
+
 	_snprintf(result, resultSize, "ERROR: Unknown click element '%s'", element);
 	result[resultSize - 1] = 0;
 }
@@ -725,9 +745,17 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 		{
 			_snprintf(result, resultSize, "ERROR: Level node '%s' has no level file assigned", n.title);
 		}
+		else if (n.type == STORYBOARD_TYPE_SCREEN || n.type == STORYBOARD_TYPE_SPLASH)
+		{
+			// Open the screen editor for this node
+			bScreen_Editor_Window = true;
+			iScreen_Editor_Node = i;
+			_snprintf(result, resultSize, "OK: Opened screen editor for node '%s' (type=%s, index=%d)",
+				n.title, AutoHarness_NodeTypeName(n.type), i);
+		}
 		else
 		{
-			_snprintf(result, resultSize, "OK: Clicked node '%s' (type=%s) - note: only level nodes trigger editor load",
+			_snprintf(result, resultSize, "OK: Clicked node '%s' (type=%s) - note: only level/screen nodes trigger actions",
 				n.title, AutoHarness_NodeTypeName(n.type));
 		}
 		result[resultSize - 1] = 0;

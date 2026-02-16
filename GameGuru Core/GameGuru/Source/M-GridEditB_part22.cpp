@@ -284,6 +284,13 @@
 	}
 
 	static int iQuitWindowLoop = 0;
+	// Automation harness trigger for Exit to Storyboard
+	extern int g_iAutoExitScreenEditor;
+	if (g_iAutoExitScreenEditor && iQuitWindowLoop <= 0 && !standalone)
+	{
+		g_iAutoExitScreenEditor = 0;
+		iQuitWindowLoop = 4;
+	}
 	if ((bScreen_Editor_Window || standalone) && nodeid >= 0)
 	{
 		if (standalone)

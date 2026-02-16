@@ -42,6 +42,7 @@ StoryboardStruct202 updateproject202;
 std::vector< std::pair<ImFont*, std::string>> StoryboardFonts;
 bool bScreen_Editor_Window = false;
 int iScreen_Editor_Node = -1;
+int g_iAutoExitScreenEditor = 0;
 int iStoryboardExecuteKey = 0;
 bool bTriggerSaveAs = false;
 bool bTriggerOpenProject = false;
