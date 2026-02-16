@@ -14,10 +14,11 @@
 #include <time.h>
 #include <windows.h>
 
-// WickedEngine helpers for screenshot
+// WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
 #include "wiGraphicsDevice.h"
 #include "wiApplication.h"
+#include "wiScene.h"
 
 // The global Master instance
 extern Master master;
@@ -944,6 +945,283 @@ static void Cmd_Quit(char* result, int resultSize)
 	}
 }
 
+// ---- Scene interrogation commands ----
+
+static void Cmd_ListEntities(const char* filter, char* result, int resultSize)
+{
+	int written = 0;
+	const char* state = AutoHarness_GetAppState();
+
+	bool filterLights = (filter && _stricmp(filter, "lights") == 0);
+
+	written += _snprintf(result + written, resultSize - written,
+		"STATE: %s\nTOTAL_ENTITY_SLOTS: %d\n", state, g.entityelementlist);
+
+	int count = 0;
+	int lightCount = 0;
+	for (int e = 1; e <= g.entityelementlist && written < resultSize - 512; e++)
+	{
+		int bankindex = t.entityelement[e].bankindex;
+		if (bankindex <= 0) continue;
+		if (!t.entityelement[e].active) continue;
+
+		bool isLight = (t.entityprofile[bankindex].ismarker == 2);
+		bool isLightMarker = (t.entityprofile[bankindex].islightmarker == 1);
+		if (isLight || isLightMarker) lightCount++;
+
+		if (filterLights && !isLight && !isLightMarker) continue;
+
+		count++;
+
+		const char* entityName = t.entityelement[e].eleprof.name_s.Get();
+		if (!entityName || !entityName[0]) entityName = "";
+
+		written += _snprintf(result + written, resultSize - written,
+			"  [%d] name=\"%.40s\" bank=%d pos=(%.1f,%.1f,%.1f) marker=%d",
+			e, entityName, bankindex,
+			t.entityelement[e].x, t.entityelement[e].y, t.entityelement[e].z,
+			t.entityprofile[bankindex].ismarker);
+
+		if (isLight || isLightMarker)
+		{
+			DWORD col = t.entityelement[e].eleprof.light.color;
+			written += _snprintf(result + written, resultSize - written,
+				" LIGHT(range=%d rgb=(%d,%d,%d) islit=%d spot=%d lidx=%d)",
+				t.entityelement[e].eleprof.light.range,
+				RgbR(col), RgbG(col), RgbB(col),
+				t.entityelement[e].eleprof.light.islit,
+				t.entityelement[e].eleprof.usespotlighting,
+				t.entityelement[e].eleprof.light.index);
+		}
+
+		if (written < resultSize - 2)
+			result[written++] = '\n';
+	}
+
+	if (written < resultSize - 128)
+		written += _snprintf(result + written, resultSize - written,
+			"LISTED: %d entities (LIGHT_ENTITIES: %d)\n", count, lightCount);
+
+	result[resultSize - 1] = 0;
+}
+
+static void Cmd_GetEntity(const char* indexStr, char* result, int resultSize)
+{
+	if (!indexStr || !indexStr[0])
+	{
+		_snprintf(result, resultSize, "ERROR: GET_ENTITY requires an entity index argument");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	int e = atoi(indexStr);
+	if (e < 1 || e > g.entityelementlist)
+	{
+		_snprintf(result, resultSize, "ERROR: Entity index %d out of range (1-%d)", e, g.entityelementlist);
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	int written = 0;
+	int bankindex = t.entityelement[e].bankindex;
+
+	const char* entityName = t.entityelement[e].eleprof.name_s.Get();
+	if (!entityName || !entityName[0]) entityName = "";
+
+	written += _snprintf(result + written, resultSize - written,
+		"ENTITY[%d]:\n"
+		"  name=\"%s\"\n"
+		"  active=%d\n"
+		"  bankindex=%d\n"
+		"  obj=%d\n"
+		"  pos=(%.2f, %.2f, %.2f)\n"
+		"  rot=(%.2f, %.2f, %.2f)\n"
+		"  scale=(%.2f, %.2f, %.2f)\n"
+		"  staticflag=%d\n",
+		e, entityName,
+		t.entityelement[e].active,
+		bankindex,
+		t.entityelement[e].obj,
+		t.entityelement[e].x, t.entityelement[e].y, t.entityelement[e].z,
+		t.entityelement[e].rx, t.entityelement[e].ry, t.entityelement[e].rz,
+		t.entityelement[e].scalex, t.entityelement[e].scaley, t.entityelement[e].scalez,
+		t.entityelement[e].staticflag);
+
+	if (bankindex > 0 && written < resultSize - 512)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"  PROFILE:\n"
+			"    ismarker=%d\n"
+			"    islightmarker=%d\n"
+			"    usespotlighting=%d\n"
+			"    castshadow=%d\n",
+			t.entityprofile[bankindex].ismarker,
+			t.entityprofile[bankindex].islightmarker,
+			t.entityprofile[bankindex].usespotlighting,
+			t.entityprofile[bankindex].castshadow);
+	}
+
+	// Light data
+	if (written < resultSize - 512)
+	{
+		DWORD col = t.entityelement[e].eleprof.light.color;
+		written += _snprintf(result + written, resultSize - written,
+			"  LIGHT_DATA:\n"
+			"    index=%d\n"
+			"    islit=%d\n"
+			"    range=%d\n"
+			"    color=0x%08X rgb=(%d,%d,%d)\n"
+			"    offsetup=%d\n"
+			"    offsetz=%d\n"
+			"    usespotlighting=%d\n"
+			"    fLightHasProbe=%.1f\n"
+			"    fProbeBrightness=%.2f\n",
+			t.entityelement[e].eleprof.light.index,
+			t.entityelement[e].eleprof.light.islit,
+			t.entityelement[e].eleprof.light.range,
+			t.entityelement[e].eleprof.light.color,
+			RgbR(col), RgbG(col), RgbB(col),
+			t.entityelement[e].eleprof.light.offsetup,
+			t.entityelement[e].eleprof.light.offsetz,
+			t.entityelement[e].eleprof.usespotlighting,
+			t.entityelement[e].eleprof.light.fLightHasProbe,
+			t.entityelement[e].eleprof.light.fProbeBrightness);
+	}
+
+	// If this entity has an infinilight, show it
+	int lightIdx = t.entityelement[e].eleprof.light.index;
+	if (lightIdx > 0 && lightIdx <= g.infinilightmax && written < resultSize - 512)
+	{
+		infinilighttype* pLight = &t.infinilight[lightIdx];
+		written += _snprintf(result + written, resultSize - written,
+			"  INFINILIGHT[%d]:\n"
+			"    used=%d islit=%d e=%d\n"
+			"    pos=(%.1f,%.1f,%.1f) range=%.0f\n"
+			"    rgb=(%d,%d,%d)\n"
+			"    spot=%d shadow=%d\n"
+			"    wickedlightindex=%llu\n",
+			lightIdx,
+			pLight->used, pLight->islit, pLight->e,
+			pLight->x, pLight->y, pLight->z, pLight->range,
+			pLight->colrgb.r, pLight->colrgb.g, pLight->colrgb.b,
+			pLight->is_spot_light ? 1 : 0, pLight->bCanShadow ? 1 : 0,
+			(unsigned long long)pLight->wickedlightindex);
+
+		// WickedEngine cross-reference
+		wi::scene::Scene* pScene = master.masterrenderer.scene;
+		if (pScene && pLight->wickedlightindex > 0)
+		{
+			wi::scene::LightComponent* lightComp = pScene->lights.GetComponent(pLight->wickedlightindex);
+			if (lightComp)
+			{
+				const char* typeName = "UNKNOWN";
+				switch (lightComp->GetType())
+				{
+					case wi::scene::LightComponent::DIRECTIONAL: typeName = "DIRECTIONAL"; break;
+					case wi::scene::LightComponent::POINT: typeName = "POINT"; break;
+					case wi::scene::LightComponent::SPOT: typeName = "SPOT"; break;
+					case wi::scene::LightComponent::RECTANGLE: typeName = "RECTANGLE"; break;
+				}
+				written += _snprintf(result + written, resultSize - written,
+					"  WICKED_LIGHT:\n"
+					"    type=%s\n"
+					"    color=(%.3f,%.3f,%.3f)\n"
+					"    intensity=%.2f\n"
+					"    range=%.1f\n"
+					"    castShadow=%d\n"
+					"    inactive=%d\n"
+					"    position=(%.1f,%.1f,%.1f)\n",
+					typeName,
+					lightComp->color.x, lightComp->color.y, lightComp->color.z,
+					lightComp->intensity,
+					lightComp->range,
+					lightComp->IsCastingShadow() ? 1 : 0,
+					lightComp->IsInactive() ? 1 : 0,
+					lightComp->position.x, lightComp->position.y, lightComp->position.z);
+			}
+			else
+			{
+				written += _snprintf(result + written, resultSize - written,
+					"  WICKED_LIGHT: NOT_FOUND (entity %llu missing from scene)\n",
+					(unsigned long long)pLight->wickedlightindex);
+			}
+		}
+	}
+
+	result[resultSize - 1] = 0;
+}
+
+static void Cmd_ListLights(char* result, int resultSize)
+{
+	int written = 0;
+	const char* state = AutoHarness_GetAppState();
+
+	wi::scene::Scene* pScene = master.masterrenderer.scene;
+	int wickedLightCount = pScene ? (int)pScene->lights.GetCount() : 0;
+
+	written += _snprintf(result + written, resultSize - written,
+		"STATE: %s\n"
+		"INFINILIGHT_MAX: %d\n"
+		"WICKED_SCENE_LIGHTS: %d\n"
+		"VISIBLE_LIGHTS: %d\n",
+		state, g.infinilightmax, wickedLightCount,
+		(int)master.masterrenderer.visibility_main.visibleLights.size());
+
+	for (int l = 1; l <= g.infinilightmax && written < resultSize - 512; l++)
+	{
+		infinilighttype* pLight = &t.infinilight[l];
+
+		written += _snprintf(result + written, resultSize - written,
+			"LIGHT[%d]: e=%d used=%d islit=%d pos=(%.1f,%.1f,%.1f) range=%.0f "
+			"rgb=(%d,%d,%d) spot=%d shadow=%d wkID=%llu",
+			l, pLight->e, pLight->used, pLight->islit,
+			pLight->x, pLight->y, pLight->z,
+			pLight->range,
+			pLight->colrgb.r, pLight->colrgb.g, pLight->colrgb.b,
+			pLight->is_spot_light ? 1 : 0,
+			pLight->bCanShadow ? 1 : 0,
+			(unsigned long long)pLight->wickedlightindex);
+
+		// Cross-reference with WickedEngine
+		if (pScene && pLight->wickedlightindex > 0)
+		{
+			wi::scene::LightComponent* lightComp = pScene->lights.GetComponent(pLight->wickedlightindex);
+			if (lightComp)
+			{
+				const char* typeName = "?";
+				switch (lightComp->GetType())
+				{
+					case wi::scene::LightComponent::DIRECTIONAL: typeName = "DIR"; break;
+					case wi::scene::LightComponent::POINT: typeName = "PT"; break;
+					case wi::scene::LightComponent::SPOT: typeName = "SP"; break;
+					case wi::scene::LightComponent::RECTANGLE: typeName = "RC"; break;
+				}
+				written += _snprintf(result + written, resultSize - written,
+					" W(%s int=%.1f rng=%.1f rgb=(%.2f,%.2f,%.2f) shd=%d%s)",
+					typeName,
+					lightComp->intensity,
+					lightComp->range,
+					lightComp->color.x, lightComp->color.y, lightComp->color.z,
+					lightComp->IsCastingShadow() ? 1 : 0,
+					lightComp->IsInactive() ? " INACTIVE" : "");
+			}
+			else
+			{
+				written += _snprintf(result + written, resultSize - written, " W(MISSING!)");
+			}
+		}
+		else if (pLight->wickedlightindex == 0)
+		{
+			written += _snprintf(result + written, resultSize - written, " W(NONE)");
+		}
+
+		if (written < resultSize - 2)
+			result[written++] = '\n';
+	}
+
+	result[resultSize - 1] = 0;
+}
+
 // ---- Main entry point (called once per tick) ----
 
 void AutoHarness_CheckForCommand(void)
@@ -1015,8 +1293,8 @@ void AutoHarness_CheckForCommand(void)
 		cmd[sizeof(cmd) - 1] = 0;
 	}
 
-	// Dispatch command
-	char result[8192];
+	// Dispatch command (32KB buffer for entity/light listing commands)
+	char result[32768];
 	result[0] = 0;
 
 	if (_stricmp(cmd, "GET_STATE") == 0)
@@ -1066,6 +1344,18 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "PRESS_ESCAPE") == 0)
 	{
 		Cmd_PressEscape(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "LIST_ENTITIES") == 0)
+	{
+		Cmd_ListEntities(arg, result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "GET_ENTITY") == 0)
+	{
+		Cmd_GetEntity(arg, result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "LIST_LIGHTS") == 0)
+	{
+		Cmd_ListLights(result, sizeof(result));
 	}
 	else if (_stricmp(cmd, "QUIT") == 0)
 	{

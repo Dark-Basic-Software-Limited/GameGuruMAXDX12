@@ -859,10 +859,11 @@ void WickedCall_RenderEditorFunctions( void )
 void Wicked_Update_Shadows(void *voidvisual);
 uint64_t WickedCall_AddLight(int iLightType)
 {
-	Entity light = wiScene::GetScene ( ).Entity_CreateLight ( "light", XMFLOAT3 ( 0, 0, 0 ), XMFLOAT3 ( 1, 1, 1 ), 30, 500 );
+	Entity light = wiScene::GetScene ( ).Entity_CreateLight ( "light", XMFLOAT3 ( 0, 0, 0 ), XMFLOAT3 ( 1, 1, 1 ), 1, 500 );
 	LightComponent* lightComponent = wiScene::GetScene ( ).lights.GetComponent ( light );
 	lightComponent->_flags = 0;
 	lightComponent->SetType ( (wiScene::LightComponent::LightType)iLightType );
+	lightComponent->BackCompatSetEnergy(30);
 	Wicked_Update_Shadows(NULL);
 	return light;
 }

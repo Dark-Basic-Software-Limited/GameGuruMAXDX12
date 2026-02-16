@@ -63,6 +63,9 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `WAIT` | `<milliseconds>` | Sleep up to 30000ms, then return state |
 | `SCREENSHOT` | (none) | Capture screenshot to `auto_screenshot.*` |
 | `GET_PERF_DATA` | (none) | Returns FPS, frame time, memory, VRAM, GPU adapter, scene counts, and visibility counts. Works in any state |
+| `LIST_ENTITIES` | (none) or `lights` | Lists all active entities with position, type, and light data. Optional `lights` filter shows only light entities |
+| `GET_ENTITY` | `<index>` | Detailed dump of one entity: position, rotation, scale, profile, light data, infinilight linkage, and WickedEngine cross-reference |
+| `LIST_LIGHTS` | (none) | Full light pipeline debug dump: all infinilights with entity linkage, position, range, color, and WickedEngine LightComponent state |
 | `TOGGLE_PROFILER` | (none) | Cycles the in-game TAB mode (0=normal, 1=visuals panel, 2=performance panel). Game state only |
 | `PRESS_ESCAPE` | (none) | Exits test game back to editor (sets gameloop/levelloop/masterloop=0). Game state only |
 | `QUIT` | (none) | Gracefully close the application |
@@ -177,6 +180,123 @@ Cycles `g.tabmode` (0→1→2→0), mirroring the TAB key in test game mode:
 ## PRESS_ESCAPE (Game State)
 
 Exits test game back to editor by setting `t.game.gameloop=0`, `t.game.levelloop=0`, `t.game.masterloop=0`. This is the same exit path as pressing ESC during a test game (M-Game_part1.cpp line 1523).
+
+## Scene Interrogation Commands
+
+Three commands for inspecting entities, lights, and the full light pipeline at runtime. Works in editor or game state.
+
+### LIST_ENTITIES
+
+Lists all active entities. Optional filter argument:
+- `LIST_ENTITIES` — all active entities
+- `LIST_ENTITIES lights` — only light entities (ismarker=2 or islightmarker=1)
+
+Output per entity:
+```
+STATE: editor
+TOTAL_ENTITY_SLOTS: 195
+  [3] name="" bank=67 pos=(-59.6,117.6,49.0) marker=2 LIGHT(range=450 rgb=(111,72,23) islit=1 spot=0 lidx=1)
+  [11] name="" bank=67 pos=(-569.6,76.2,110.3) marker=2 LIGHT(range=169 rgb=(250,115,46) islit=1 spot=0 lidx=2)
+  [42] name="Big Red Button" bank=15 pos=(-580.0,50.0,120.0) marker=0
+  ...
+LISTED: 145 entities (LIGHT_ENTITIES: 21)
+```
+
+Fields: `name` = instance name from editor, `bank` = entity profile index, `marker` = ismarker value (2=light), `LIGHT(...)` = light-specific data (range, RGB color, islit, spot flag, infinilight index).
+
+### GET_ENTITY
+
+Detailed dump of a single entity by index. Includes entity element data, entity profile data, light data, infinilight linkage, and WickedEngine cross-reference.
+
+```bash
+echo "GET_ENTITY 11" > "$D/auto_command.txt"
+```
+
+Output:
+```
+ENTITY[11]:
+  name=""
+  active=1
+  bankindex=67
+  obj=70011
+  pos=(-569.60, 76.20, 110.30)
+  rot=(0.00, 0.00, 0.00)
+  scale=(100.00, 100.00, 100.00)
+  staticflag=0
+  PROFILE:
+    ismarker=2
+    islightmarker=1
+    usespotlighting=0
+    castshadow=-1
+  LIGHT_DATA:
+    index=2
+    islit=1
+    range=169
+    color=0xFFFA7332 rgb=(250,115,46)
+    offsetup=45
+    offsetz=0
+    usespotlighting=0
+    fLightHasProbe=0.0
+    fProbeBrightness=1.00
+  INFINILIGHT[2]:
+    used=1 islit=1 e=11
+    pos=(-569.6,76.2,110.3) range=169
+    rgb=(250,115,46)
+    spot=0 shadow=1
+    wickedlightindex=2920
+  WICKED_LIGHT:
+    type=POINT
+    color=(0.980,0.451,0.180)
+    intensity=600.00
+    range=169.0
+    castShadow=1
+    inactive=0
+    position=(-569.6,76.2,110.3)
+```
+
+This traces the full data pipeline: entity element → entity profile → infinilight → WickedEngine LightComponent. Useful for diagnosing why a specific light isn't rendering.
+
+### LIST_LIGHTS
+
+Full light pipeline debug dump. Shows every infinilight entry with its entity linkage, GameGuru-side properties, and the actual WickedEngine LightComponent state (type, intensity, range, color, shadow, inactive).
+
+```bash
+echo "LIST_LIGHTS" > "$D/auto_command.txt"
+```
+
+Output:
+```
+STATE: editor
+INFINILIGHT_MAX: 21
+WICKED_SCENE_LIGHTS: 22
+VISIBLE_LIGHTS: 16
+LIGHT[1]: e=3 used=1 islit=1 pos=(-59.6,117.6,49.0) range=450 rgb=(111,72,23) spot=0 shadow=0 wkID=1838 W(PT int=600.0 rng=450.0 rgb=(0.44,0.28,0.09) shd=0)
+LIGHT[2]: e=11 used=1 islit=1 pos=(-569.6,76.2,110.3) range=169 rgb=(250,115,46) spot=0 shadow=1 wkID=1839 W(PT int=600.0 rng=169.0 rgb=(0.98,0.45,0.18) shd=1)
+...
+LIGHT[9]: e=89 used=1 islit=1 pos=(-919.1,208.1,-108.3) range=0 rgb=(0,0,0) spot=0 shadow=1 wkID=1846 W(PT int=600.0 rng=0.0 rgb=(0.00,0.00,0.00) shd=1 INACTIVE)
+```
+
+Each line shows:
+- **GameGuru side**: `e`=entity index, `used`, `islit`, `pos`, `range`, `rgb` (0-255), `spot` (0=point,1=spot), `shadow`, `wkID`=WickedEngine entity ID
+- **WickedEngine side** `W(...)`: type (`PT`=point, `SP`=spot, `DIR`=directional, `RC`=rectangle), `int`=intensity in candela, `rng`=range, `rgb` (0-1 normalized), `shd`=castShadow, `INACTIVE` if intensity or range is near zero
+
+Lights with `W(MISSING!)` indicate the WickedEngine entity was lost. Lights with `W(NONE)` have `wickedlightindex=0` (never created). Both are bugs worth investigating.
+
+### Light Data Pipeline
+
+The full data flow for lights in GameGuru MAX:
+
+```
+FPE File (ismarker=2, lightrange, lightcolor, usespotlighting)
+  → entityprofiletype (template from FPE)
+  → entityeleproftype (per-instance in entityelement[e].eleprof)
+  → lighting_refresh() in M-Lighting.cpp creates infinilighttype entries
+  → WickedCall_AddLight() creates WickedEngine LightComponent
+  → lighting_loop() in G-Lighting.cpp calls WickedCall_UpdateLight() per frame
+  → WickedEngine renders the light
+```
+
+Key identification: `entityprofile[bankindex].ismarker == 2` marks a light entity. `eleprof.usespotlighting` determines point (0) vs spot (1). Entities named `%probe` with `fLightHasProbe >= 50` are environment probe carriers — they have range=0 and color=(0,0,0) intentionally.
 
 ## CLICK_NODE (Storyboard)
 
