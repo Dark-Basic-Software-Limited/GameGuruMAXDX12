@@ -30,6 +30,15 @@ Invoke `build.bat` using its full quoted path (required because the project root
 - Build errors will use the standard MSVC format and appear in the terminal
 - The `$msCompile` problem matcher is configured in VS Code tasks
 
+## Automation Test Harness
+- See `WETEST.md` for full documentation of the file-based automation harness
+- **Source**: `Guru-WickedMAX/AutomationHarness.cpp` — command/response via `auto_command.txt` / `auto_result.txt` in the EXE directory
+- **EXE directory**: `D:\DEV\BUILD\GameGuru Wicked MAX Build Area\Max`
+- **Key commands**: `GET_STATE`, `NAVIGATE`, `CLICK`, `CLICK_NODE`, `SELECT_DEMO`, `GET_PERF_DATA`, `SCREENSHOT`, `PRESS_ESCAPE`
+- **CLICK targets**: `play_game`, `edit_game`, `test_level`, `add_level`, `load_level`, `exit_screen_editor`
+- **CLICK_NODE**: works with level nodes (loads into editor), screen/splash nodes (opens screen editor)
+- **Crash diagnosis**: check `Guru-Crash.log` in the EXE directory for crash source file and line number
+
 ## Third-Party Dependencies
 - **WickedEngineDX12** is located at `../WickedEngineDX12` (sibling folder at `D:\max\WickedEngineDX12`)
 - This is the rendering engine the project depends on
