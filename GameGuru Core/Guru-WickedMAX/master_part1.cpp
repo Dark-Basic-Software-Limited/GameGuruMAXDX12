@@ -1,6 +1,7 @@
 ﻿//
 // MasterRenderer Functions
 //
+#include "GGAnimBridge.h"
 #include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
 
 void MasterRenderer::Load()
@@ -171,10 +172,19 @@ void MasterRenderer::Update(float dt)
 	//Disable wicked backlog, can draw behind imgui , can be seen sometimes. Make sure it is never activated.
 	if (wiBackLog::isActive()) wiBackLog::Toggle();
 
+	// animation bridge pre-hook (before scene->Update runs animations)
+	GGAnimBridge_PreUpdate(&wiScene::GetScene(), dt);
+
 	// super update
 	auto range2 = wiProfiler::BeginRangeCPU("Update - Wicked");
 	__super::Update(dt);
 	wiProfiler::EndRange(range2);
+}
+
+void MasterRenderer::PostUpdate()
+{
+	GGAnimBridge_PostUpdate(&wiScene::GetScene());
+	__super::PostUpdate();
 }
 
 void MasterRenderer::ResizeBuffers(void)

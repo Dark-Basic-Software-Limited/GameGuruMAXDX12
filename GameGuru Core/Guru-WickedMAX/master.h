@@ -14,6 +14,7 @@ class MasterRenderer : public RenderPath3D
 	public:
 		void Load() override;
 		void Update(float dt) override;
+		void PostUpdate() override;
 		void Render() const override;
 		void Compose(wiGraphics::CommandList cmd) const override;
 		void ResizeBuffers(void);

@@ -5,6 +5,7 @@
 // Includes
 #include "stdafx.h"
 #include "wickedcalls.h"
+#include "GGAnimBridge.h"
 #include <vector>
 #include <unordered_map>
 
@@ -909,6 +910,7 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 	// for objects that have animation data, create equivilant for wicked engine
 	if (pObject->pAnimationSet)
 	{
+		// bridge call at end of this block converts backwards_compatibility_data
 		// go through [first] animation set[s]
 		sAnimationSet* pAnimSet = pObject->pAnimationSet;
 		{
@@ -1161,6 +1163,9 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 				// next animation
 				pAnim = pAnim->pNext;
 			}
+
+		// bridge: create AnimationDataComponent entities, set GG defaults
+		GGAnimBridge_OnLoadObject(pScene, pAnimSet->wickedanimentityindex);
 		}
 	}
 }

@@ -669,6 +669,7 @@
     <ClInclude Include="GGTerrain\VegMeshes\bush_var8_LOD2.h" />
     <ClInclude Include="GPUParticles.h" />
     <ClInclude Include="GGThread.h" />
+    <ClInclude Include="GGAnimBridge.h" />
     <ClInclude Include="master.h" />
     <ClInclude Include="Nlohmann JSON\json.hpp" />
     <ClInclude Include="Particles\Models\gpup_part_1024.h" />
@@ -826,6 +827,7 @@
     <ClCompile Include="GGTerrain\JSONElement.cpp" />
     <ClCompile Include="GGTerrain\SimplexNoise.cpp" />
     <ClCompile Include="GPUParticles.cpp" />
+    <ClCompile Include="GGAnimBridge.cpp" />
     <ClCompile Include="master.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
