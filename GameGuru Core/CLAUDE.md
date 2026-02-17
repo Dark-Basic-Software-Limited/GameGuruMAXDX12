@@ -54,11 +54,17 @@ The UI uses a two-layer image system:
 | `RemoveImage` | `CImageC_part0.cpp` | Deletes from `m_List` AND evicts from `g_TextureCache` |
 | `DeleteImage` | `CImageC_part2.cpp` | Calls `RemoveImage` (via `DeleteImageCore`) |
 | `ImGui_DX12_GetOrLoadTexture` | `imgui_gg_dx12_bridge.cpp` | Cache-first lazy loader: returns cached GPU texture or loads from disk |
-| `ImGui_DX12_RemoveTexture` | `imgui_gg_dx12_bridge.cpp` | Evicts a single entry from `g_TextureCache` by image ID |
+| `ImGui_DX12_RemoveTexture` | `imgui_gg_dx12_bridge.cpp` | Evicts a single entry from `g_TextureCache` by image ID (deferred — see below) |
 
 ### Important: cache invalidation
 
 When replacing an image at an existing ID (e.g., storyboard project switch), you MUST call `DeleteImage`/`RemoveImage` first. This evicts the DX12 texture cache entry so the new file gets loaded. Without eviction, `GetOrLoadTexture` returns the stale cached texture (fixed in commit 25713c1f).
+
+### Important: deferred GPU resource deletion
+
+`ImGui_DX12_RemoveTexture` does NOT free GPU resources immediately. It moves the `DX12CachedTexture` to a `g_PendingDeletes` queue with a 4-frame countdown (`DEFERRED_DELETE_FRAMES`). `ProcessPendingDeletes()` runs at the start of each `ImGui_DX12_RenderBridge()` call, decrementing counters and freeing textures + recycling SRV descriptor slots only after enough frames have passed.
+
+This is required because DX12 has 2 frames in flight (`NUM_FRAMES_IN_FLIGHT = 2`). The GPU may still be executing draw commands from a previous frame that reference the texture. Freeing the `ID3D12Resource` while in-flight causes `DXGI_ERROR_DEVICE_REMOVED` (fixed in commit c8ec1739).
 
 ## Third-Party Dependencies
 - **WickedEngineDX12** is located at `../WickedEngineDX12` (sibling folder at `D:\max\WickedEngineDX12`)
