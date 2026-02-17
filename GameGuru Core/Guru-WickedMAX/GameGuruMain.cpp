@@ -77,13 +77,12 @@ public:
 			lock.Release();
 			if (g_bTriggerSomeGameLogic == true)
 			{
-				auto range2 = wiProfiler::BeginRangeCPU("Extra - Logic - Intersects");
+				//auto range2 = wiProfiler::BeginRangeCPU("Extra - Logic - Intersects");
 				ProcessIntersectDatabaseExtraThreadItemList();
-				wiProfiler::EndRange(range2);
-				auto range3 = wiProfiler::BeginRangeCPU("Extra - Logic - Visibility");
+				//wiProfiler::EndRange(range2); DX12
+				//auto range3 = wiProfiler::BeginRangeCPU("Extra - Logic - Visibility");
 				entity_lua_getentityplrvisible_processlist();
-				wiProfiler::EndRange(range3);
-
+				//wiProfiler::EndRange(range3); DX12		
 				g_iCountNumberOfExtraThreadCalls++;
 				g_bTriggerSomeGameLogic = false;
 			}

@@ -56,6 +56,14 @@ void GGAnimBridge_ClearPreFrame(wi::ecs::Entity boneEntity);
 // P8: Associate an animation entity with an object entity for visibility culling
 void GGAnimBridge_SetAnimObjectLink(wi::ecs::Entity animEntity, wi::ecs::Entity objectEntity);
 
+// Zero Bip01 translation X/Z in animation keyframe data so the engine's normal
+// pipeline produces (0, Y, 0) -- prevents double-movement from bone drift + root motion.
+// Saves original values for restoration. Safe to call every frame (idempotent).
+void GGAnimBridge_ZeroBip01TranslationXZ(wi::scene::Scene* scene, wi::ecs::Entity animEntity, int samplerIndex);
+
+// Restore original Bip01 translation X/Z keyframe data (undo the zeroing above).
+void GGAnimBridge_RestoreBip01TranslationXZ(wi::scene::Scene* scene, wi::ecs::Entity animEntity, int samplerIndex);
+
 // Called each frame before scene->Update(dt) (from MasterRenderer::Update)
 void GGAnimBridge_PreUpdate(wi::scene::Scene* scene, float dt);
 

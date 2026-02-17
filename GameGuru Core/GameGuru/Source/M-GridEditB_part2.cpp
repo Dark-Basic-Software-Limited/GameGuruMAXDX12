@@ -969,8 +969,140 @@ void tab_tab_Column_text(char *text,float fColumn)
 	ImGui::SetCursorPos(ImVec2(fColumn, ImGui::GetCursorPosY()));
 }
 
+static bool FirstMsOverThreshold(const char* line_begin, const char* line_end, float threshold_ms)
+{
+	// Find the FIRST "ms" in the line
+	const char* ms_pos = nullptr;
+	for (const char* p = line_begin; p + 1 < line_end; ++p)
+	{
+		if (p[0] == 'm' && p[1] == 's')
+		{
+			ms_pos = p;
+			break;
+		}
+	}
+	if (!ms_pos)
+		return false;
 
+	// Step back over any whitespace before "ms"
+	const char* num_end = ms_pos;
+	while (num_end > line_begin && std::isspace(static_cast<unsigned char>(num_end[-1])))
+		--num_end;
 
+	// Step back over digits/decimal point to find number start
+	const char* num_start = num_end;
+	while (num_start > line_begin)
+	{
+		char c = num_start[-1];
+		if (std::isdigit(static_cast<unsigned char>(c)) || c == '.')
+			--num_start;
+		else
+			break;
+	}
+
+	if (num_start >= num_end)
+		return false;
+
+	// Parse number without allocations
+	char tmp[32];
+	size_t len = static_cast<size_t>(num_end - num_start);
+	if (len >= sizeof(tmp))
+		return false;
+
+	std::memcpy(tmp, num_start, len);
+	tmp[len] = '\0';
+
+	char* endptr = nullptr;
+	float v = std::strtof(tmp, &endptr);
+	if (endptr == tmp)
+		return false;
+
+	return v > threshold_ms;
+}
+
+void DrawProfilerDataColored_FirstMsOnly()
+{
+	const std::string profiler_data = wi::profiler::GetTextData();
+
+	const ImVec4 white = ImVec4(1, 1, 1, 1);
+	const ImVec4 yellow = ImVec4(1, 1, 0, 1);
+
+	const char* text = profiler_data.c_str();
+	const char* line_begin = text;
+
+	for (const char* p = text;; ++p)
+	{
+		if (*p == '\n' || *p == '\0')
+		{
+			const char* line_end = p;
+
+			if (line_end > line_begin)
+			{
+				const bool slow = FirstMsOverThreshold(line_begin, line_end, 1.0f);
+
+				ImGui::PushStyleColor(ImGuiCol_Text, slow ? yellow : white);
+				ImGui::TextUnformatted(line_begin, line_end);
+				ImGui::PopStyleColor();
+			}
+			else
+			{
+				ImGui::TextUnformatted("");
+			}
+
+			if (*p == '\0')
+				break;
+
+			line_begin = p + 1;
+		}
+	}
+}
+
+static void DisplayPerformanceData(bool* p_open)
+{
+	const float DISTANCE = 10.0f;
+	static int corner = 0;
+	ImGuiIO& io = ImGui::GetIO();
+	if (corner != -1)
+	{
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImVec2 window_pos = ImVec2((corner & 1) ? (viewport->Pos.x + viewport->Size.x - DISTANCE) : (viewport->Pos.x + DISTANCE), (corner & 2) ? (viewport->Pos.y + viewport->Size.y - DISTANCE) : (viewport->Pos.y + DISTANCE));
+		ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
+		ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+		ImVec2 viewPortSize = ImGui::GetMainViewport()->Size;
+		float window_width = 20 * ImGui::GetFontSize();
+		ImGui::SetNextWindowSize(ImVec2(window_width, viewPortSize.y - 4.0), ImGuiCond_Once);
+	}
+	ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+
+	int winflag = iGenralWindowsFlags;
+	winflag |= ImGuiWindowFlags_NoMove;
+	winflag |= ImGuiWindowFlags_NoResize;
+	if (ImGui::Begin("Performance data##DisplayPerformanceData", p_open, winflag)) //(corner != -1 ? ImGuiWindowFlags_NoMove : 0) | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+	{
+		// draw performance data info
+		ImGui::SetWindowFontScale(1.0);
+		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+		ImGui::Separator();
+
+		// highlight or regular
+		bool bRegularDebugPrintout = false;
+		if (bRegularDebugPrintout)
+		{
+			std::string profiler_data = wi::profiler::GetTextData();
+			ImGui::Text(profiler_data.c_str());
+		}
+		else
+		{
+			DrawProfilerDataColored_FirstMsOnly();
+		}
+
+		ImGui::Separator();
+		ImGui::Text("");
+	}
+	ImGui::End();
+}
+
+/* simplified for DX12 working test
 static void DisplayPerformanceData(bool* p_open)
 {
 	const float DISTANCE = 10.0f;
@@ -1008,6 +1140,7 @@ static void DisplayPerformanceData(bool* p_open)
 	}
 	ImGui::End();
 }
+*/
 
 void imgui_Customize_Water(int mode);
 

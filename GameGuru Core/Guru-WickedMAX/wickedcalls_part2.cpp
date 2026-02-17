@@ -1208,11 +1208,21 @@ void WickedCall_SetBip01Position(sObject* pObject, sFrame* pFrame, int iUseMode,
 					{
 						if (iUseMode == 3)
 						{
+							// Zero Bip01 X/Z in the animation keyframe data itself so the
+							// engine's normal pipeline produces (0, Y, 0). This prevents
+							// double-movement (root motion extraction + bone animation drift).
+							int samplerIdx = pAnimationChannel->samplerIndex;
+							GGAnimBridge_ZeroBip01TranslationXZ(&wiScene::GetScene(), wickedanimationindex, samplerIdx);
+
 							GGAnimBridge_SetPreFrame(pAnimationChannel->target, 3, 1.0f,
 								XMFLOAT3(0, 0, 0), XMFLOAT4(0, 0, 0, 1), XMFLOAT3(1, 1, 1));
 						}
 						else
 						{
+							// Restore original Bip01 X/Z keyframe data
+							int samplerIdx = pAnimationChannel->samplerIndex;
+							GGAnimBridge_RestoreBip01TranslationXZ(&wiScene::GetScene(), wickedanimationindex, samplerIdx);
+
 							GGAnimBridge_ClearPreFrame(pAnimationChannel->target);
 						}
 					}

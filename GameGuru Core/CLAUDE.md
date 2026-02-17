@@ -44,3 +44,18 @@ Invoke `build.bat` using its full quoted path (required because the project root
 - This is the rendering engine the project depends on
 - Reference this repo when resolving includes, engine API calls, or tracking down type definitions
 - Do NOT modify files in WickedEngineDX12 unless explicitly asked
+
+## File Editing Rules
+
+1. **Always read the target lines immediately before editing.** Use `sed -n 'START,ENDp' file` to confirm exact content before any Update call.
+
+2. **Keep match strings short and unique.** Match on a single unique line when possible, never multi-line blocks with closing braces (`}`), as these are rarely unique and prone to whitespace mismatches.
+
+3. **If an Update fails once, do NOT retry Update with a different guess.** Instead:
+   - Use `sed -n 'l'` or `cat -A` to inspect the exact bytes (tabs vs spaces, CRLF vs LF)
+   - Then use `sed -i` to perform the edit by line number, OR
+   - Re-read the exact lines and retry Update with a single-line match
+
+4. **Never attempt more than 2 Update calls on the same file without re-reading it.** Failed edits can leave the file in an unexpected state.
+
+5. **These project files use tabs for indentation and may have CRLF line endings.** Do not assume spaces or LF-only.

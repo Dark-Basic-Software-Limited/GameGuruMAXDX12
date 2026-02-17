@@ -19,14 +19,19 @@ static std::unordered_map<Entity, Entity> g_AnimSyncMap;
 // P5: Map from bone entity -> preframe override data
 static std::unordered_map<Entity, GGPreFrame> g_PreFrameMap;
 
-// P7: Map from anim entity -> previous frame timer (for loop wrap detection)
-static std::unordered_map<Entity, float> g_PrevTimerMap;
-
 // P8: Map from anim entity -> object entity (for visibility culling)
 static std::unordered_map<Entity, Entity> g_AnimObjectMap;
 
 // P9: Global frame counter for alternating-frame throttle
 static uint32_t g_iAnimFrameCounter = 0;
+
+// Bip01 X/Z zeroing: saved original keyframe values per AnimationDataComponent entity
+struct SavedBip01XZ
+{
+	std::vector<float> savedX;
+	std::vector<float> savedZ;
+};
+static std::unordered_map<Entity, SavedBip01XZ> g_Bip01XZSaved;
 
 
 // ============================================================
@@ -126,6 +131,76 @@ void GGAnimBridge_SetAnimObjectLink(Entity animEntity, Entity objectEntity)
 
 
 // ============================================================
+// Bip01 translation X/Z zeroing in animation keyframe data
+// ============================================================
+
+void GGAnimBridge_ZeroBip01TranslationXZ(Scene* scene, Entity animEntity, int samplerIndex)
+{
+	AnimationComponent* anim = scene->animations.GetComponent(animEntity);
+	if (!anim || samplerIndex < 0 || samplerIndex >= (int)anim->samplers.size())
+		return;
+
+	Entity dataEntity = anim->samplers[samplerIndex].data;
+	if (dataEntity == INVALID_ENTITY)
+		return;
+
+	AnimationDataComponent* data = scene->animation_datas.GetComponent(dataEntity);
+	if (!data)
+		return;
+
+	// Already zeroed? (idempotent -- safe to call every frame)
+	if (g_Bip01XZSaved.count(dataEntity))
+		return;
+
+	size_t numKeys = data->keyframe_times.size();
+	if (numKeys == 0 || data->keyframe_data.size() < numKeys * 3)
+		return;
+
+	// Save original X/Z and zero them (keep Y for walk bounce)
+	SavedBip01XZ& saved = g_Bip01XZSaved[dataEntity];
+	saved.savedX.resize(numKeys);
+	saved.savedZ.resize(numKeys);
+	for (size_t i = 0; i < numKeys; i++)
+	{
+		saved.savedX[i] = data->keyframe_data[i * 3 + 0];
+		saved.savedZ[i] = data->keyframe_data[i * 3 + 2];
+		data->keyframe_data[i * 3 + 0] = 0.0f;
+		data->keyframe_data[i * 3 + 2] = 0.0f;
+	}
+}
+
+void GGAnimBridge_RestoreBip01TranslationXZ(Scene* scene, Entity animEntity, int samplerIndex)
+{
+	AnimationComponent* anim = scene->animations.GetComponent(animEntity);
+	if (!anim || samplerIndex < 0 || samplerIndex >= (int)anim->samplers.size())
+		return;
+
+	Entity dataEntity = anim->samplers[samplerIndex].data;
+	if (dataEntity == INVALID_ENTITY)
+		return;
+
+	AnimationDataComponent* data = scene->animation_datas.GetComponent(dataEntity);
+	if (!data)
+		return;
+
+	auto it = g_Bip01XZSaved.find(dataEntity);
+	if (it == g_Bip01XZSaved.end())
+		return;
+
+	SavedBip01XZ& saved = it->second;
+	size_t numKeys = saved.savedX.size();
+	if (numKeys > data->keyframe_times.size())
+		numKeys = data->keyframe_times.size();
+	for (size_t i = 0; i < numKeys; i++)
+	{
+		data->keyframe_data[i * 3 + 0] = saved.savedX[i];
+		data->keyframe_data[i * 3 + 2] = saved.savedZ[i];
+	}
+	g_Bip01XZSaved.erase(it);
+}
+
+
+// ============================================================
 // PreUpdate: runs before scene->Update(dt)
 // ============================================================
 
@@ -137,6 +212,23 @@ void GGAnimBridge_PreUpdate(Scene* scene, float dt)
 	{
 		AnimationComponent& anim = scene->animations[i];
 		Entity animEntity = scene->animations.GetEntity(i);
+
+		// P7: Pre-wrap looping timers that were advanced past end by the
+		// previous frame's scene->Update. The new engine evaluates bones at
+		// the current timer, THEN snaps to start. If the timer exceeds end,
+		// bones are clamped to the end-of-cycle pose causing a visual jerk.
+		// By wrapping here (before this frame's scene->Update), bones are
+		// evaluated at the correct wrapped position -- matching the old
+		// GGREDUCED subtraction-wrapping behavior.
+		if (anim.IsLooped() && anim.IsPlaying() && anim.speed > 0)
+		{
+			float length = anim.end - anim.start;
+			if (length > 0 && anim.timer > anim.end)
+			{
+				float excess = anim.timer - anim.start;
+				anim.timer = anim.start + fmodf(excess, length);
+			}
+		}
 
 		// P4: Sync secondary animations from their linked primary
 		auto itSync = g_AnimSyncMap.find(animEntity);
@@ -199,8 +291,6 @@ void GGAnimBridge_PreUpdate(Scene* scene, float dt)
 			}
 		}
 
-		// P7: Store timer for loop-wrap detection in PostUpdate
-		g_PrevTimerMap[animEntity] = anim.timer;
 	}
 }
 
@@ -211,37 +301,6 @@ void GGAnimBridge_PreUpdate(Scene* scene, float dt)
 
 void GGAnimBridge_PostUpdate(Scene* scene)
 {
-	// P7: Fix loop timer wrapping -- use subtraction instead of snap
-	for (size_t i = 0; i < scene->animations.GetCount(); ++i)
-	{
-		AnimationComponent& anim = scene->animations[i];
-		Entity animEntity = scene->animations.GetEntity(i);
-
-		if (anim.IsLooped() && anim.IsPlaying())
-		{
-			auto itPrev = g_PrevTimerMap.find(animEntity);
-			if (itPrev != g_PrevTimerMap.end())
-			{
-				float prevTimer = itPrev->second;
-				float length = anim.end - anim.start;
-				if (length > 0)
-				{
-					// Detect that the engine snapped timer back to start
-					// (prevTimer was near end, now timer is at start)
-					if (prevTimer > anim.start + length * 0.5f && anim.timer == anim.start)
-					{
-						// Calculate fractional overshoot and apply it
-						float overshoot = prevTimer - anim.end;
-						if (overshoot > 0 && overshoot < length)
-						{
-							anim.timer = anim.start + overshoot;
-						}
-					}
-				}
-			}
-		}
-	}
-
 	// P5: Apply preframe bone overrides after animation has run
 	for (auto& pair : g_PreFrameMap)
 	{
