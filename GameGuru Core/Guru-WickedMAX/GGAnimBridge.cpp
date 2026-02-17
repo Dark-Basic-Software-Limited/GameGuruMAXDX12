@@ -152,11 +152,18 @@ void GGAnimBridge_PreUpdate(Scene* scene, float dt)
 		}
 
 		// P3: Auto-lerp animation.amount toward 1.0
+		//
+		// The old GGREDUCED code ran this lerp once per CHANNEL (not per animation).
+		// With speed=50 as default, the speed > 1.5 branch always triggered (rate 0.0005).
+		// A typical character has ~50 channels, so the effective per-animation rate was
+		// approximately 1-(1-0.0005)^50 = ~0.025. We approximate this with a single
+		// higher rate per animation, scaled by channel count for accuracy.
 		if (anim.amount < 1.0f)
 		{
-			float fRate = 0.0002f;
-			if (anim.speed < 0.5f) fRate = 0.0001f;
-			if (anim.speed > 1.5f) fRate = 0.0005f;
+			float fBaseRate = 0.0005f; // old per-channel rate (speed > 1.5 always true at speed=50)
+			size_t nChannels = anim.channels.size();
+			if (nChannels < 1) nChannels = 1;
+			float fRate = 1.0f - powf(1.0f - fBaseRate, (float)nChannels);
 			anim.amount = wi::math::Lerp(anim.amount, 1.0f, fRate);
 			if (anim.amount > 0.9999f) anim.amount = 1.0f;
 		}
@@ -247,6 +254,8 @@ void GGAnimBridge_PostUpdate(Scene* scene)
 		if (pf.iUsePreFrame == 1)
 		{
 			// Mode 1: Additive blend
+			// Old GGREDUCED: XMQuaternionMultiply(preframeR, currentR) -- preframe * current
+			// Quaternion multiplication is non-commutative; order matters.
 			XMVECTOR curTrans = XMLoadFloat3(&transform->translation_local);
 			XMVECTOR preTrans = XMLoadFloat3(&pf.vPreFrameTranslation);
 			XMVECTOR curRot = XMLoadFloat4(&transform->rotation_local);
@@ -254,7 +263,7 @@ void GGAnimBridge_PostUpdate(Scene* scene)
 			float t = pf.fSmoothAmount;
 
 			XMStoreFloat3(&transform->translation_local, XMVectorLerp(curTrans, curTrans + preTrans, t));
-			XMStoreFloat4(&transform->rotation_local, XMQuaternionNormalize(XMQuaternionSlerp(curRot, XMQuaternionMultiply(curRot, preRot), t)));
+			XMStoreFloat4(&transform->rotation_local, XMQuaternionNormalize(XMQuaternionSlerp(curRot, XMQuaternionMultiply(preRot, curRot), t)));
 			transform->SetDirty();
 		}
 		else if (pf.iUsePreFrame == 2)
