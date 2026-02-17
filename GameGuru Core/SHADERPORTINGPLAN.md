@@ -1,5 +1,17 @@
 # Task: Create a Detailed Plan to Port GameGuru MAX Custom DX11 Shaders to Wicked Engine DX12
 
+## CURRENT STATUS (2026-02-17)
+
+**Phase 1 (Compilation): COMPLETE** — All 66+ shaders compile with DXC SM 6.0, RTS0 root sigs embedded.
+**Phase 2 (CB Layouts): COMPLETE** — FrameCB/CameraCB/ShaderEntity migrated to new engine layouts.
+**Phase 3-4 (Rendering Integration): NOT STARTED** — Draw functions not yet called from render pipeline.
+
+See `DX11_to_DX12_Shader_Porting_Plan.md` for implementation details (Sections 10-13).
+
+Key commits: `9d5b3868` (Phase 2 main), `810ad37b` (OverlayVS fix), `80c936f5` (GPU particles disable).
+
+---
+
 ## Context
 
 GameGuru MAX uses a modified version of Wicked Engine (v0.71.x). The product has **62 custom shader and shader header files** (~350KB total) located in:
@@ -12,8 +24,8 @@ with PBR/engine shared headers in a `PBR/` subfolder beneath that.
 
 These shaders were written for the **DX11 rendering path** of an older Wicked Engine fork. They are now being loaded by the DX12 backend and **failing at runtime**:
 
-1. `D3D12CreateVersionedRootSignatureDeserializer` fails with `E_INVALIDARG (0x80070057)` — the `.cso` files are SM 5.0 DXBC bytecode (compiled by `fxc.exe`), lacking the `RTS0` root signature chunk that the DX12 backend requires.
-2. Pipeline state creation fails, cascading into disabled features and visual corruption.
+1. `D3D12CreateVersionedRootSignatureDeserializer` fails with `E_INVALIDARG (0x80070057)` — the `.cso` files are SM 5.0 DXBC bytecode (compiled by `fxc.exe`), lacking the `RTS0` root signature chunk that the DX12 backend requires. **RESOLVED in Phase 1.**
+2. Pipeline state creation fails, cascading into disabled features and visual corruption. **RESOLVED in Phase 1.**
 
 ## Priority
 

@@ -2,7 +2,7 @@
 
 ## GameGuruMAX Custom Terrain/Vegetation Shaders
 
-**Status:** Phase 1 COMPLETE (Compilation) | Phase 2-4 TODO (Runtime Correctness)
+**Status:** Phase 1 COMPLETE | Phase 2 COMPLETE | Phase 3-4 TODO (Rendering Integration)
 **Date:** 2026-02-17
 **Scope:** 66 HLSL shaders + 15 header files in `Guru-WickedMAX/GGTerrain/Shaders/`
 
@@ -16,17 +16,37 @@
 - Sampler slots migrated (s4-s13 → s100-s109)
 - GGRootSignature.hlsli created and included in all shaders
 - GGLighting.hlsli factored from 6+ pixel shaders
-- GGBindless.hlsli / GGFrameCompat.hlsli compatibility headers created (not yet integrated)
 
-**Phase 2-4 (Runtime Correctness) - NOT STARTED:**
-- Old PBR headers still declare old FrameCB layout (~896 bytes) but C++ fills new layout (~35 KB)
-- CameraCB layout also mismatched (old flat fields vs new ShaderCamera[16] array)
-- Old PBR functions use old API names (DirectionalLight vs light_directional)
-- ShaderEntity struct changed (48→80 bytes)
-- Entity iteration, shadow atlas, half-precision packing all different
-- Custom GameGuru fields (TreeWind, WaterColor, etc.) need C++ binding
+**Phase 2 (Runtime Correctness - CB Layouts) - COMPLETE:**
+- PBR headers redirected to new engine via GGEngineGlobals.hlsli trampoline
+- FrameCB/CameraCB layouts now match new engine (GetFrame(), GetCamera(), etc.)
+- GGFrameCompat.hlsli maps all old `g_xFrame_*`/`g_xCamera_*` names to new accessors
+- GGCustomFrameCB.hlsli at b4 provides GG-specific fields (TreeWind, WaterColor, etc.)
+- C++ code populates GGCustomFrameData in GGTerrain_Draw, GGTrees_Draw, GGGrass_Draw
+- Tier B shaders (8 files) migrated from local CameraCB to engine includes
+- Tier D-EP env probe VS shaders (3 files) migrated from CubemapRenderCB to GetCameraIndexed()
+- GGLighting.hlsli updated to use load_entity()/load_entitymatrix()/load_entitytile()
+- PBR/lightingHF.hlsli shadow system migrated to shadow atlas approach
+- GPU particles disabled (not yet ported to DX12) — see Section 10
+- All shaders compile in both Debug and Release
+- Runtime test: app loads, enters game mode, runs at ~180 FPS (Switch Escape demo)
+- Commits: 9d5b3868 (Phase 2 main), 810ad37b (OverlayVS fix), 80c936f5 (GPU particles fix)
 
-**Impact:** Shaders will LOAD in DX12 (root signature issue fixed) but produce incorrect visual results due to FrameCB/CameraCB binary layout mismatches. This is a step forward from "crash on load" to "loads but renders incorrectly."
+**Phase 3-4 (Rendering Integration) - NOT STARTED:**
+- GG custom draw functions (`GGTerrain_Draw`, `GGGrass_Draw`, `GGTrees_Draw`) are NOT yet
+  called from the render pipeline — only `GGTerrain_DrawPages()` is active (page gen shaders)
+- To see visual results from Phase 2, the draw functions must be integrated into
+  `MasterRenderer::Render()` at the appropriate render passes
+- Tier 3 pixel shaders (12 files) have correct CB layouts but untested PBR lighting
+  paths (shadow atlas, entity iteration, env probes) — runtime testing needed
+- GPU particles need full DX12 port (texture creation flags, rendering pipeline)
+
+**Known Issue: Two pre-existing DX12 CreateTexture errors in engine log:**
+- `wiGraphicsDevice_DX12.cpp:3769` — E_INVALIDARG (0x80070057) appears twice after engine init
+- These are from the engine's own RenderPath3D::ResizeBuffers or async init, NOT from GG code
+- Non-fatal: engine handles CreateTexture failure gracefully, app runs normally
+- Likely AMD Radeon RX 9060 XT (RDNA 4) driver issue with specific format/flag combinations
+- See Section 11 for details
 
 ---
 
@@ -1059,6 +1079,159 @@ int descriptorIndex = device->CreateSubresource(&texColor, SubresourceType::SRV,
 | s9 | s105 | sampler_aniso_wrap | Static sampler |
 | s10 | s106 | sampler_aniso_mirror | Static sampler |
 | s11 | s107 | sampler_cmp_depth | Static sampler |
+
+---
+
+---
+
+## 10. Phase 2 Implementation Details (CB Layout Migration)
+
+### 10.1 What Was Done
+
+Phase 2 migrated all custom shaders from old DX11-era FrameCB/CameraCB struct layouts to the new WickedEngine DX12 layouts. This was necessary because the C++ engine fills these constant buffers with completely different struct layouts (FrameCB: ~896 bytes old → ~35KB new; CameraCB: ~700 bytes old → ~16KB new).
+
+### 10.2 New Header Files Created
+
+| File | Purpose | Register |
+|------|---------|----------|
+| `GGEngineGlobals.hlsli` | Trampoline to include new engine's `globals.hlsli` via angle-bracket include (`#include <globals.hlsli>`) to bypass DXC's directory stack resolution. Also defines `DISABLE_HALF_PRECISION`. | N/A |
+| `GGCustomFrameCB.hlsli` | Constant buffer at b4 for GG-specific per-frame fields not in new engine's FrameCB. Shared between HLSL and C++ (use `GG_CUSTOMFRAME_FULL_DECL` in C++). Contains: treeWind, treeSubSurfaceScattering, sunEnergy, deSaturate, waterColor/Height/FogMin/Max/MinAmount, fogOpacity, fogColor, fogHeightSky, cloudiness, cloudScale, cloudSpeed, ggOptions. | b4 |
+| `GGFrameCompat.hlsli` | Maps ~60+ old `g_xFrame_*` and `g_xCamera_*` field names to new engine accessors. Sections: (1) FrameCB fields → GetFrame()/GetScene()/GetWeather()/GetCamera(), (2) CameraCB fields → GetCamera(), (3) Custom GG fields → ggCustomFrame struct at b4, (3b) Shadow system stubs, (3c) Voxel GI stubs, (3d) Atmosphere compat, (4) CubemapRenderCB → GetCameraIndexed(), (5) Entity access → load_entity()/load_entitymatrix()/load_entitytile(). | N/A |
+| `GGRootSignature.hlsli` | Defines `GAMEGURU_ROOTSIGNATURE` (identical to engine's but with SRV numDescriptors=64). Overrides `WICKED_ENGINE_DEFAULT_ROOTSIGNATURE` so DXC embeds the expanded root signature. | N/A |
+| `GGBindless.hlsli` | DEPRECATED — forwards to GGFrameCompat.hlsli. C2 decision (expanded SRV range) eliminated need for bindless texture conversion macros. | N/A |
+
+### 10.3 Modified PBR Headers
+
+| File | Change |
+|------|--------|
+| `PBR/globals.hlsli` | **Replaced** with GG compatibility layer. Includes GGEngineGlobals.hlsli → engine globals.hlsli, then adds GG-specific helpers (DEGAMMA/GAMMA macros, GetSunEnergy/GetFogColor/GetFogOpacity/GetFogAmount functions, old-name utility functions). Uses separate guard `GG_SHADER_GLOBALS_HF`. |
+| `PBR/ShaderInterop.h` | **Replaced** with redirect. Includes engine's ShaderInterop.h via GGEngineGlobals.hlsli, then defines GG-specific slot-based resource macros (TEXTURE2D, STRUCTUREDBUFFER, SAMPLERSTATE, etc.) for explicit register bindings at t50-t58. |
+| `PBR/ShaderInterop_Renderer.h` | **Replaced** with redirect. Includes engine's version, then defines GG-specific OPTION_BIT values (SIMPLE_SKY, WATER_ENABLED, SNOW/DUST/RAIN_ENABLED, TRANSPARENTSHADOWS_ENABLED). |
+| `PBR/SamplerMapping.h` | **Replaced** with include guard only — sampler slots now in engine's globals.hlsli static samplers at s100-s109. |
+| `PBR/ResourceMapping.h` | **Kept** — still provides TEXSLOT_ONDEMAND20=50 etc. for GG custom texture slots. |
+| `PBR/ConstantBufferMapping.h` | **Replaced** with include guard only — CB slots now in engine's ShaderInterop.h. |
+
+### 10.4 Shader Tier Classification (Phase 2)
+
+| Tier | Count | Issue | Fix Applied |
+|------|-------|-------|-------------|
+| A (Page Gen) | 18 | No FrameCB/CameraCB usage | None needed — already working |
+| B (Local CameraCB) | 8 | Local `cbuffer CameraCB : register(b1)` | Replaced with `#include "GGEngineGlobals.hlsli"` + GGFrameCompat macros |
+| C/C+ (globals.hlsli) | 17 | Include PBR/globals.hlsli + CameraCB fields | Automatic via new PBR/globals.hlsli redirect |
+| D-EP (Env Probe VS) | 3 | CubemapRenderCB at b8 | Migrated to `GetCameraIndexed(cubeFaceID).view_projection` |
+| D-main (Full PBR) | 9 | Full PBR tiled lighting | Entity/shadow/envmap migrated in GGLighting.hlsli and PBR/lightingHF.hlsli |
+| D-legacy | 2 | Cannot compile, unused | Skipped (test shaders) |
+
+### 10.5 Include Path Configuration
+
+The `.vcxproj` FxCompile `<AdditionalIncludeDirectories>` for all shaders was updated to:
+```
+D:\max\WickedEngineDX12\WickedEngine\shaders;GGTerrain\Shaders;%(AdditionalIncludeDirectories)
+```
+The engine path comes FIRST so that `#include <globals.hlsli>` (angle brackets in GGEngineGlobals.hlsli) resolves to the engine's version. The `GGTerrain\Shaders` path provides GG-specific headers.
+
+### 10.6 C++ GGCustomFrameCB Population
+
+Three draw functions populate and bind the GGCustomFrameData buffer at b4:
+- `GGTerrain_Draw()` in `GGTerrain_part0.cpp`
+- `GGTrees_Draw()` in `GGTrees_part0.cpp`
+- `GGGrass_Draw()` in `GGGrass.cpp`
+
+Each creates a `GGCustomFrameData` struct, fills it from engine/scene data (weather fog, sun, water settings), and binds it:
+```cpp
+GGCustomFrameData ggcf = {};
+ggcf.treeWind = scene.weather.windSpeed;
+ggcf.fogColor = XMFLOAT3(weather.fog.color.x, weather.fog.color.y, weather.fog.color.z);
+// ... etc
+device->BindDynamicConstantBuffer(ggcf, 4, cmd); // b4
+```
+
+### 10.7 Key Architectural Decisions
+
+1. **Trampoline pattern**: GGEngineGlobals.hlsli uses `#include <globals.hlsli>` (angle brackets) to bypass DXC's directory stack and resolve directly to the engine's shaders directory via AdditionalIncludeDirectories. This prevents infinite recursion when PBR/globals.hlsli tries to include the engine's globals.hlsli.
+
+2. **Separate include guards**: PBR/globals.hlsli uses `GG_SHADER_GLOBALS_HF` (not `WI_SHADER_GLOBALS_HF`) so both can coexist. The engine's globals.hlsli is included first and sets `WI_SHADER_GLOBALS_HF`.
+
+3. **Fog density conversion**: Old engine had `fog.start` and `fog.end`. New engine has `fog.start` and `fog.density`. GGFrameCompat reconstructs: `g_xFrame_Fog = float4(start, start + 1/density, height_start, height_end)`.
+
+4. **Half-precision disabled**: `DISABLE_HALF_PRECISION` defined in GGEngineGlobals.hlsli because GG shaders use float everywhere. The new engine uses half3/half4 for sun/ambient/horizon/zenith colors.
+
+5. **Shadow system stubs**: GGFrameCompat provides hardcoded defaults for removed shadow fields (`g_xFrame_ShadowRes2D = 1024.0` etc.). The actual shadow system was migrated to the new atlas-based approach in PBR/lightingHF.hlsli and GGLighting.hlsli.
+
+---
+
+## 11. GPU Particles (Disabled — Requires Full DX12 Port)
+
+### Status
+GPU particles are **disabled** via unconditional early return in `gpup_init()` (`GPUParticles_part0.cpp:1891-1908`). Committed as 80c936f5.
+
+### Root Cause
+Phase 1 added `#include "GGRootSignature.hlsli"` to 9 GPU particle shaders (GPUP_QuadVS, GPUP_MainVS/PS, GPUP_NoisePS, GPUP_PosPS, GPUP_SpeedPS, QuadDefaultPS, testPS/VS). This caused them to compile with embedded root signatures, which let `gpup_init()` progress past the shader load check into texture/buffer creation that wasn't DX12-compatible.
+
+### What Needs Fixing for DX12 Port
+1. **`GPUP_LoadTexture`** (`GPUParticles_part0.cpp:607-636`) — Creates textures with `SHADER_RESOURCE | UNORDERED_ACCESS` flags and sets clear color values. The clear values are dead code (engine passes nullptr since no RENDER_TARGET flag), but the texture creation itself fails with E_INVALIDARG on some configurations.
+2. **`CreateBuffer` with initial data** — After texture creation fails, the staging allocator can return null `mapped_data`, causing a memcpy crash in `wiGraphicsDevice.h:254`.
+3. **Rendering pipeline** — GPU particle rendering (`gpup_render`) uses a custom PSO and render pass that needs migration to the DX12 render pipeline.
+4. **`stbi_load` null check** — `GPUP_LoadTexture` doesn't check if `stbi_load` returns null (file not found → indeterminate width/height).
+
+---
+
+## 12. Pre-existing DX12 CreateTexture Errors (Engine)
+
+### Symptoms
+Two identical errors in `log.txt` immediately after `[wi::initializer] Wicked Engine Initialized`:
+```
+[Error] DX12 error: allocationhandler->allocator->CreateResource(...) failed with 0x80070057
+    (The parameter is incorrect.) (wiGraphicsDevice_DX12.cpp:3769)
+```
+
+### Investigation Findings
+- Line 3769 is the **normal** (non-aliasing, non-sparse) `D3D12MA::Allocator::CreateResource` call inside `CreateTexture`
+- The errors appear BEFORE any GG init code runs (before `g_iInitializationSequence` cases 0-3)
+- GPU particles are disabled, so `GPUP_LoadTexture` is not the source
+- `Tracers::Initialize()` creates only buffers/samplers, not textures
+- `MasterRenderer::Load()` creates no textures
+- The errors likely come from the engine's `RenderPath3D::ResizeBuffers()` which creates ~15+ render targets during the first render frame, two of which fail with E_INVALIDARG
+- Hardware: AMD Radeon RX 9060 XT (RDNA 4) — brand new GPU architecture, possibly driver immaturity with specific DX12 format/flag combinations
+
+### Impact
+**Non-fatal.** The engine handles `CreateTexture` failure gracefully (returns false, logs error). The application runs normally at ~180 FPS. These errors are cosmetic log noise.
+
+### Recommended Action
+- **Low priority.** If these errors need to be resolved, add debug logging to the engine's `CreateTexture` function (in `wiGraphicsDevice_DX12.cpp` around line 3762) to log the `TextureDesc` parameters (format, width, height, bind_flags, misc_flags) for each call that fails. This will identify which two render targets are unsupported on this GPU.
+- Test on different GPU hardware to confirm this is an RDNA 4 driver issue.
+- Check for AMD driver updates for the RX 9060 XT.
+
+---
+
+## 13. Next Steps (Phase 3-4)
+
+### Phase 3: Rendering Pipeline Integration
+The custom draw functions (`GGTerrain_Draw`, `GGGrass_Draw`, `GGTrees_Draw`) must be called from `MasterRenderer::Render()` at the appropriate render passes:
+1. **Shadow pass**: GGTerrain_DrawShadow, GGGrass_DrawShadow, GGTrees_DrawShadow
+2. **Depth prepass**: GGTerrain_DrawPrepass, GGGrass_DrawPrepass, GGTrees_DrawPrepass
+3. **Main pass**: GGTerrain_Draw, GGGrass_Draw, GGTrees_Draw
+4. **Env probe pass**: GGTerrain_DrawEnvProbe, GGTrees_DrawEnvProbe
+
+### Phase 4: Visual Verification & Optimization
+1. Runtime testing of Tier 3 pixel shaders (PBR lighting, shadows, env probes)
+2. Shadow atlas correctness verification (cascade shadows via new atlas API)
+3. Entity iteration correctness (tiled lighting via load_entitytile)
+4. Performance comparison (DX12 vs baseline)
+5. GPU particles full DX12 port (texture creation, rendering pipeline)
+
+### Key Files for Future Work
+
+| File | Purpose |
+|------|---------|
+| `GGTerrain/Shaders/GGEngineGlobals.hlsli` | Trampoline to engine globals (angle-bracket include) |
+| `GGTerrain/Shaders/GGCustomFrameCB.hlsli` | GG custom fields CB at b4 (shared C++/HLSL) |
+| `GGTerrain/Shaders/GGFrameCompat.hlsli` | Old→new field name mapping (60+ macros) |
+| `GGTerrain/Shaders/GGRootSignature.hlsli` | Root signature with SRV=64 |
+| `GGTerrain/Shaders/GGLighting.hlsli` | Shared tiled/forward lighting functions |
+| `GGTerrain/Shaders/PBR/globals.hlsli` | GG globals layer over engine (include chain root) |
+| `GGTerrain/Shaders/PBR/lightingHF.hlsli` | PBR lighting with shadow atlas migration |
+| `GPUParticles_part0.cpp:1891` | GPU particles disabled (unconditional early return) |
 
 ---
 
