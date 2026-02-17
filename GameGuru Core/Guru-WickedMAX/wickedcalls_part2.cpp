@@ -1214,14 +1214,43 @@ void WickedCall_SetBip01Position(sObject* pObject, sFrame* pFrame, int iUseMode,
 							int samplerIdx = pAnimationChannel->samplerIndex;
 							GGAnimBridge_ZeroBip01TranslationXZ(&wiScene::GetScene(), wickedanimationindex, samplerIdx);
 
+							// Freeze Bip01 rotation keyframes to the first keyframe's value
+							// so all animation sections produce the same rotation. Capture the
+							// base rotation to use in the preframe -- this ensures the preframe
+							// and keyframes agree, preventing slerp mismatch during amount < 1
+							// transitions (which caused the 90-degree snap at walk->idle).
+							XMFLOAT4 baseRotation = XMFLOAT4(0, 0, 0, 1);
+							int iIndexRot = pFrame->pAnimRef->wickedanimationchannel[1];
+							if (iIndexRot >= 0)
+							{
+								AnimationComponent::AnimationChannel* pRotChannel = &animationcomponent->channels[iIndexRot];
+								if (pRotChannel)
+								{
+									int rotSamplerIdx = pRotChannel->samplerIndex;
+									GGAnimBridge_ZeroBip01Rotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx, &baseRotation);
+								}
+							}
+
 							GGAnimBridge_SetPreFrame(pAnimationChannel->target, 3, 1.0f,
-								XMFLOAT3(0, 0, 0), XMFLOAT4(0, 0, 0, 1), XMFLOAT3(1, 1, 1));
+								XMFLOAT3(0, 0, 0), baseRotation, XMFLOAT3(1, 1, 1));
 						}
 						else
 						{
 							// Restore original Bip01 X/Z keyframe data
 							int samplerIdx = pAnimationChannel->samplerIndex;
 							GGAnimBridge_RestoreBip01TranslationXZ(&wiScene::GetScene(), wickedanimationindex, samplerIdx);
+
+							// Restore original Bip01 rotation keyframe data
+							int iIndexRot = pFrame->pAnimRef->wickedanimationchannel[1];
+							if (iIndexRot >= 0)
+							{
+								AnimationComponent::AnimationChannel* pRotChannel = &animationcomponent->channels[iIndexRot];
+								if (pRotChannel)
+								{
+									int rotSamplerIdx = pRotChannel->samplerIndex;
+									GGAnimBridge_RestoreBip01Rotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx);
+								}
+							}
 
 							GGAnimBridge_ClearPreFrame(pAnimationChannel->target);
 						}

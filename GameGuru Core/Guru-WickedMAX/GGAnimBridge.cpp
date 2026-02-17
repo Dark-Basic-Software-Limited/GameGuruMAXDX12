@@ -33,6 +33,13 @@ struct SavedBip01XZ
 };
 static std::unordered_map<Entity, SavedBip01XZ> g_Bip01XZSaved;
 
+// Bip01 rotation zeroing: saved original quaternion keyframe values per AnimationDataComponent entity
+struct SavedBip01Rot
+{
+	std::vector<float> savedData; // all 4 floats per key (x,y,z,w) flattened
+};
+static std::unordered_map<Entity, SavedBip01Rot> g_Bip01RotSaved;
+
 
 // ============================================================
 // P0 + P1: Load-time setup
@@ -197,6 +204,95 @@ void GGAnimBridge_RestoreBip01TranslationXZ(Scene* scene, Entity animEntity, int
 		data->keyframe_data[i * 3 + 2] = saved.savedZ[i];
 	}
 	g_Bip01XZSaved.erase(it);
+}
+
+
+// ============================================================
+// Bip01 rotation zeroing in animation keyframe data
+// ============================================================
+
+void GGAnimBridge_ZeroBip01Rotation(Scene* scene, Entity animEntity, int samplerIndex, XMFLOAT4* pOutBaseRotation)
+{
+	AnimationComponent* anim = scene->animations.GetComponent(animEntity);
+	if (!anim || samplerIndex < 0 || samplerIndex >= (int)anim->samplers.size())
+		return;
+
+	Entity dataEntity = anim->samplers[samplerIndex].data;
+	if (dataEntity == INVALID_ENTITY)
+		return;
+
+	AnimationDataComponent* data = scene->animation_datas.GetComponent(dataEntity);
+	if (!data)
+		return;
+
+	// Already frozen? (idempotent -- safe to call every frame)
+	// Still output the base rotation if requested
+	if (g_Bip01RotSaved.count(dataEntity))
+	{
+		if (pOutBaseRotation && data->keyframe_data.size() >= 4)
+			*pOutBaseRotation = XMFLOAT4(data->keyframe_data[0], data->keyframe_data[1], data->keyframe_data[2], data->keyframe_data[3]);
+		return;
+	}
+
+	size_t numKeys = data->keyframe_times.size();
+	if (numKeys == 0 || data->keyframe_data.size() < numKeys * 4)
+		return;
+
+	// Save original quaternion keyframes and freeze all to the first keyframe's
+	// rotation. This preserves the base model orientation (so the character faces
+	// forward) while eliminating per-keyframe variation that causes rotation snaps
+	// during animation transitions (e.g. walk -> idle).
+	float baseX = data->keyframe_data[0];
+	float baseY = data->keyframe_data[1];
+	float baseZ = data->keyframe_data[2];
+	float baseW = data->keyframe_data[3];
+	if (pOutBaseRotation)
+		*pOutBaseRotation = XMFLOAT4(baseX, baseY, baseZ, baseW);
+	SavedBip01Rot& saved = g_Bip01RotSaved[dataEntity];
+	saved.savedData.resize(numKeys * 4);
+	for (size_t i = 0; i < numKeys; i++)
+	{
+		saved.savedData[i * 4 + 0] = data->keyframe_data[i * 4 + 0];
+		saved.savedData[i * 4 + 1] = data->keyframe_data[i * 4 + 1];
+		saved.savedData[i * 4 + 2] = data->keyframe_data[i * 4 + 2];
+		saved.savedData[i * 4 + 3] = data->keyframe_data[i * 4 + 3];
+		data->keyframe_data[i * 4 + 0] = baseX;
+		data->keyframe_data[i * 4 + 1] = baseY;
+		data->keyframe_data[i * 4 + 2] = baseZ;
+		data->keyframe_data[i * 4 + 3] = baseW;
+	}
+}
+
+void GGAnimBridge_RestoreBip01Rotation(Scene* scene, Entity animEntity, int samplerIndex)
+{
+	AnimationComponent* anim = scene->animations.GetComponent(animEntity);
+	if (!anim || samplerIndex < 0 || samplerIndex >= (int)anim->samplers.size())
+		return;
+
+	Entity dataEntity = anim->samplers[samplerIndex].data;
+	if (dataEntity == INVALID_ENTITY)
+		return;
+
+	AnimationDataComponent* data = scene->animation_datas.GetComponent(dataEntity);
+	if (!data)
+		return;
+
+	auto it = g_Bip01RotSaved.find(dataEntity);
+	if (it == g_Bip01RotSaved.end())
+		return;
+
+	SavedBip01Rot& saved = it->second;
+	size_t numKeys = saved.savedData.size() / 4;
+	if (numKeys > data->keyframe_times.size())
+		numKeys = data->keyframe_times.size();
+	for (size_t i = 0; i < numKeys; i++)
+	{
+		data->keyframe_data[i * 4 + 0] = saved.savedData[i * 4 + 0];
+		data->keyframe_data[i * 4 + 1] = saved.savedData[i * 4 + 1];
+		data->keyframe_data[i * 4 + 2] = saved.savedData[i * 4 + 2];
+		data->keyframe_data[i * 4 + 3] = saved.savedData[i * 4 + 3];
+	}
+	g_Bip01RotSaved.erase(it);
 }
 
 

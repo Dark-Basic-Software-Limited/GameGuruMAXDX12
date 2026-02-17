@@ -64,6 +64,16 @@ void GGAnimBridge_ZeroBip01TranslationXZ(wi::scene::Scene* scene, wi::ecs::Entit
 // Restore original Bip01 translation X/Z keyframe data (undo the zeroing above).
 void GGAnimBridge_RestoreBip01TranslationXZ(wi::scene::Scene* scene, wi::ecs::Entity animEntity, int samplerIndex);
 
+// Freeze Bip01 rotation keyframes to the first keyframe's value so the engine's
+// pipeline produces a constant rotation -- prevents per-keyframe variation from
+// causing rotation snaps during animation transitions (e.g. walk -> idle).
+// Saves original values for restoration. Safe to call every frame (idempotent).
+// If pOutBaseRotation is non-null, stores the captured base rotation quaternion.
+void GGAnimBridge_ZeroBip01Rotation(wi::scene::Scene* scene, wi::ecs::Entity animEntity, int samplerIndex, XMFLOAT4* pOutBaseRotation = nullptr);
+
+// Restore original Bip01 rotation keyframe data (undo the zeroing above).
+void GGAnimBridge_RestoreBip01Rotation(wi::scene::Scene* scene, wi::ecs::Entity animEntity, int samplerIndex);
+
 // Called each frame before scene->Update(dt) (from MasterRenderer::Update)
 void GGAnimBridge_PreUpdate(wi::scene::Scene* scene, float dt);
 
