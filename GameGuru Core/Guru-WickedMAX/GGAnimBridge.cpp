@@ -40,6 +40,15 @@ struct SavedBip01Rot
 };
 static std::unordered_map<Entity, SavedBip01Rot> g_Bip01RotSaved;
 
+// Additive rotation override (head/spine tracking): saved original rotation keyframe values
+struct SavedAdditiveRot
+{
+	std::vector<float> savedData; // original quaternion keyframes (x,y,z,w) flattened
+};
+static std::unordered_map<Entity, SavedAdditiveRot> g_AdditiveRotSaved;
+// Track which data entities were modified this frame (for PostUpdate restoration)
+static std::vector<Entity> g_AdditiveRotModifiedThisFrame;
+
 
 // ============================================================
 // P0 + P1: Load-time setup
@@ -297,6 +306,69 @@ void GGAnimBridge_RestoreBip01Rotation(Scene* scene, Entity animEntity, int samp
 
 
 // ============================================================
+// Additive rotation override (head/spine tracking)
+// Modifies rotation keyframes directly so the animation system
+// evaluates them and the armature picks up the result in the
+// normal single pass -- no need to re-run scene systems.
+// ============================================================
+
+void GGAnimBridge_ApplyAdditiveRotation(Scene* scene, Entity animEntity, int samplerIndex, const XMFLOAT4& additiveRot)
+{
+	AnimationComponent* anim = scene->animations.GetComponent(animEntity);
+	if (!anim || samplerIndex < 0 || samplerIndex >= (int)anim->samplers.size())
+		return;
+
+	Entity dataEntity = anim->samplers[samplerIndex].data;
+	if (dataEntity == INVALID_ENTITY)
+		return;
+
+	AnimationDataComponent* data = scene->animation_datas.GetComponent(dataEntity);
+	if (!data)
+		return;
+
+	size_t numKeys = data->keyframe_times.size();
+	if (numKeys == 0 || data->keyframe_data.size() < numKeys * 4)
+		return;
+
+	auto it = g_AdditiveRotSaved.find(dataEntity);
+	if (it == g_AdditiveRotSaved.end())
+	{
+		// First call: save original keyframes
+		SavedAdditiveRot& saved = g_AdditiveRotSaved[dataEntity];
+		saved.savedData.assign(data->keyframe_data.begin(), data->keyframe_data.begin() + numKeys * 4);
+	}
+	else
+	{
+		// Restore originals before re-applying (prevents accumulation across frames)
+		SavedAdditiveRot& saved = it->second;
+		size_t count = std::min(saved.savedData.size(), numKeys * 4);
+		for (size_t i = 0; i < count; i++)
+			data->keyframe_data[i] = saved.savedData[i];
+	}
+
+	// Apply additive rotation to every keyframe: result = additiveRot * keyframeRot
+	// slerp is equivariant under left-multiplication, so interpolation between
+	// modified keyframes produces the same result as additive-after-interpolation.
+	XMVECTOR addRot = XMLoadFloat4(&additiveRot);
+	for (size_t i = 0; i < numKeys; i++)
+	{
+		XMFLOAT4 q(data->keyframe_data[i * 4 + 0], data->keyframe_data[i * 4 + 1],
+			data->keyframe_data[i * 4 + 2], data->keyframe_data[i * 4 + 3]);
+		XMVECTOR kfRot = XMLoadFloat4(&q);
+		XMVECTOR result = XMQuaternionNormalize(XMQuaternionMultiply(addRot, kfRot));
+		XMStoreFloat4(&q, result);
+		data->keyframe_data[i * 4 + 0] = q.x;
+		data->keyframe_data[i * 4 + 1] = q.y;
+		data->keyframe_data[i * 4 + 2] = q.z;
+		data->keyframe_data[i * 4 + 3] = q.w;
+	}
+
+	// Track for PostUpdate restoration
+	g_AdditiveRotModifiedThisFrame.push_back(dataEntity);
+}
+
+
+// ============================================================
 // PreUpdate: runs before scene->Update(dt)
 // ============================================================
 
@@ -398,6 +470,11 @@ void GGAnimBridge_PreUpdate(Scene* scene, float dt)
 void GGAnimBridge_PostUpdate(Scene* scene)
 {
 	// P5: Apply preframe bone overrides after animation has run
+	// Note: Mode 1 (additive head/spine) is now handled via keyframe modification
+	// in GGAnimBridge_ApplyAdditiveRotation, which runs before Scene::Update so the
+	// armature picks up the result in the normal single pass. Modes 2, 3, 10000+
+	// remain here for transforms that don't need armature propagation (mode 3 matches
+	// frozen keyframes; modes 2/10000+ are cosmetic overrides).
 	for (auto& pair : g_PreFrameMap)
 	{
 		const GGPreFrame& pf = pair.second;
@@ -406,24 +483,9 @@ void GGAnimBridge_PostUpdate(Scene* scene)
 		TransformComponent* transform = scene->transforms.GetComponent(pf.boneEntity);
 		if (transform == nullptr) continue;
 
-		if (pf.iUsePreFrame == 1)
+		if (pf.iUsePreFrame == 2)
 		{
-			// Mode 1: Additive blend
-			// Old GGREDUCED: XMQuaternionMultiply(preframeR, currentR) -- preframe * current
-			// Quaternion multiplication is non-commutative; order matters.
-			XMVECTOR curTrans = XMLoadFloat3(&transform->translation_local);
-			XMVECTOR preTrans = XMLoadFloat3(&pf.vPreFrameTranslation);
-			XMVECTOR curRot = XMLoadFloat4(&transform->rotation_local);
-			XMVECTOR preRot = XMLoadFloat4(&pf.qPreFrameRotation);
-			float t = pf.fSmoothAmount;
-
-			XMStoreFloat3(&transform->translation_local, XMVectorLerp(curTrans, curTrans + preTrans, t));
-			XMStoreFloat4(&transform->rotation_local, XMQuaternionNormalize(XMQuaternionSlerp(curRot, XMQuaternionMultiply(preRot, curRot), t)));
-			transform->SetDirty();
-		}
-		else if (pf.iUsePreFrame == 2)
-		{
-			// Mode 2: Replace entirely (head look-at, mouth)
+			// Mode 2: Replace entirely (mouth shapes, blink)
 			float t = pf.fSmoothAmount;
 			XMVECTOR curTrans = XMLoadFloat3(&transform->translation_local);
 			XMVECTOR preTrans = XMLoadFloat3(&pf.vPreFrameTranslation);
@@ -451,7 +513,6 @@ void GGAnimBridge_PostUpdate(Scene* scene)
 		else if (pf.iUsePreFrame >= 10000)
 		{
 			// Mode 10000+: Snap to specific keyframe (rotation only)
-			// The rotation is pre-looked-up and stored in qPreFrameRotation by the caller
 			float t = pf.fSmoothAmount;
 			XMVECTOR curRot = XMLoadFloat4(&transform->rotation_local);
 			XMVECTOR preRot = XMLoadFloat4(&pf.qPreFrameRotation);
@@ -459,4 +520,22 @@ void GGAnimBridge_PostUpdate(Scene* scene)
 			transform->SetDirty();
 		}
 	}
+
+	// Restore additive rotation keyframes that were modified this frame.
+	// The animation system has already evaluated them; now restore originals
+	// so the next frame's ApplyAdditiveRotation works on clean data.
+	for (Entity dataEntity : g_AdditiveRotModifiedThisFrame)
+	{
+		auto it = g_AdditiveRotSaved.find(dataEntity);
+		if (it == g_AdditiveRotSaved.end()) continue;
+
+		AnimationDataComponent* data = scene->animation_datas.GetComponent(dataEntity);
+		if (!data) { g_AdditiveRotSaved.erase(it); continue; }
+
+		SavedAdditiveRot& saved = it->second;
+		size_t count = std::min(saved.savedData.size(), data->keyframe_data.size());
+		for (size_t i = 0; i < count; i++)
+			data->keyframe_data[i] = saved.savedData[i];
+	}
+	g_AdditiveRotModifiedThisFrame.clear();
 }

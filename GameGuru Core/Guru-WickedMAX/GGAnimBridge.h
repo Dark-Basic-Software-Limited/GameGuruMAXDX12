@@ -74,6 +74,12 @@ void GGAnimBridge_ZeroBip01Rotation(wi::scene::Scene* scene, wi::ecs::Entity ani
 // Restore original Bip01 rotation keyframe data (undo the zeroing above).
 void GGAnimBridge_RestoreBip01Rotation(wi::scene::Scene* scene, wi::ecs::Entity animEntity, int samplerIndex);
 
+// Apply additive rotation to a bone's rotation keyframes. Called from game logic
+// (before Scene::Update) so the animation system evaluates modified keyframes and
+// the armature picks up the correct rotation in the normal single pass.
+// Originals are saved and restored automatically in PostUpdate.
+void GGAnimBridge_ApplyAdditiveRotation(wi::scene::Scene* scene, wi::ecs::Entity animEntity, int samplerIndex, const XMFLOAT4& additiveRot);
+
 // Called each frame before scene->Update(dt) (from MasterRenderer::Update)
 void GGAnimBridge_PreUpdate(wi::scene::Scene* scene, float dt);
 

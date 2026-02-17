@@ -1059,15 +1059,18 @@ void WickedCall_RotateLimb(sObject* pObject, sFrame* pFrame, float fAX, float fA
 			if (animationcomponent)
 			{
 				int iIndex = pFrame->pAnimRef->wickedanimationchannel[1];
-				if (iIndex >= 0)//&& iIndex < animationcomponent->channels.size())
+				if (iIndex >= 0)
 				{
 					AnimationComponent::AnimationChannel* pAnimationChannel = &animationcomponent->channels[iIndex];
 					if (pAnimationChannel)
 					{
+						// Modify rotation keyframes directly so the animation system
+						// evaluates them and the armature picks up the result in the
+						// normal single pass (no PostUpdate re-run needed).
 						XMFLOAT4 rot;
 						XMStoreFloat4(&rot, XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ)));
-						GGAnimBridge_SetPreFrame(pAnimationChannel->target, 1, 1.0f,
-							XMFLOAT3(0, 0, 0), rot, XMFLOAT3(1, 1, 1));
+						int rotSamplerIdx = pAnimationChannel->samplerIndex;
+						GGAnimBridge_ApplyAdditiveRotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx, rot);
 					}
 				}
 			}
