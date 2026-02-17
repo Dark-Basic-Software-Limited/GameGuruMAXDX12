@@ -1,3 +1,10 @@
+// LEGACY SHADER - NOT ACTIVELY USED
+// This shader predates the PBR virtual texture system (GGTerrainVirtualPBR_PS.hlsl).
+// It has a local ShaderEntity struct, custom shadow cascades, and references undeclared
+// CB fields (terrain_sunDir, terrain_cameraPos, terrain_fogColor1/2, etc.) that are not
+// in the current GGTerrainConstants.hlsli. It cannot compile without significant rework.
+// Replaced by GGTerrainVirtualPBR_PS.hlsl for all active terrain rendering.
+#include "GGRootSignature.hlsli"
 Texture2D texColor             : register( t40 );
 Texture2D texNormal            : register( t41 );
 

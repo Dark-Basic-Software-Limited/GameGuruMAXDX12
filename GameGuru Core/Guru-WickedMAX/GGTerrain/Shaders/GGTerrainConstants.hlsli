@@ -39,7 +39,7 @@ struct TerrainLayer
 #ifdef __cplusplus
 struct TerrainCB
 #else
-cbuffer TerrainCB : register( b2 )
+cbuffer TerrainCB : register( b3 )
 #endif
 {
 	TerrainLODLevel terrain_LOD[ 16 ];

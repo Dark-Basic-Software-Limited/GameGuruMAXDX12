@@ -31,7 +31,7 @@ struct GrassType
 #ifdef __cplusplus
 struct GrassCB
 #else
-cbuffer GrassCB : register( b2 )
+cbuffer GrassCB : register( b3 )
 #endif
 {
 	float4 grass_rotMat[ 32 ];

@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 Texture2D<float> texNoise : register( t51 );
 Texture2DArray texBranchesHigh : register( t54 );
 
@@ -22,6 +24,7 @@ struct Output
 	uint   readback : SV_TARGET1;  // virtual texture read back
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 Output main( PixelIn IN )
 {
 	uint treeType = GetTreeType( IN.data );

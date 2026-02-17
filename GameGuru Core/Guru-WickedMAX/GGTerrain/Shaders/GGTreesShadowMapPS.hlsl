@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 Texture2DArray texTree : register( t50 );
 Texture2D<float> texNoise : register( t51 );
 
@@ -15,6 +17,7 @@ struct PixelIn
 	float2 uv : TEXCOORD1;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 float4 main( PixelIn IN ) : SV_TARGET
 {
 	uint treeType = GetTreeType( IN.data );

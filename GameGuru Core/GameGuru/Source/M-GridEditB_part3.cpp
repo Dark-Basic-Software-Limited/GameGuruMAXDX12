@@ -1850,6 +1850,19 @@ void Wicked_Update_Visuals(void *voidvisual)
 		GGTrees::ggtrees_draw_enabled = 0;
 	}
 
+	// Populate GG custom frame staging data for shader constant buffer (b4)
+	ggCustomFrameStaging.treeWind = visuals->tree_wind;
+	ggCustomFrameStaging.treeSubSurfaceScattering = visuals->tree_sss;
+	ggCustomFrameStaging.sunEnergy = visuals->SunIntensity_f;
+	ggCustomFrameStaging.deSaturate = visuals->fDeSaturate;
+	ggCustomFrameStaging.waterFogMin = visuals->WaterFogMinDist;
+	ggCustomFrameStaging.waterFogMax = visuals->WaterFogMaxDist;
+	ggCustomFrameStaging.waterFogMinAmount = visuals->WaterFogMinAmount;
+	ggCustomFrameStaging.fogOpacity = visuals->FogA_f;
+	ggCustomFrameStaging.fogColor = XMFLOAT3(visuals->FogR_f / 255.0f, visuals->FogG_f / 255.0f, visuals->FogB_f / 255.0f);
+	ggCustomFrameStaging.cloudiness = visuals->SkyCloudiness;
+	ggCustomFrameStaging.cloudSpeed = visuals->SkyCloudSpeed;
+
 }
 
 void Wicked_Update_Visibles(void* voidvisual)

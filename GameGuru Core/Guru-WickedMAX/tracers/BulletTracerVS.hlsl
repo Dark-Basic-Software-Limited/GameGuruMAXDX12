@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 
 #include "../GGterrain/Shaders/PBR/globals.hlsli"
 

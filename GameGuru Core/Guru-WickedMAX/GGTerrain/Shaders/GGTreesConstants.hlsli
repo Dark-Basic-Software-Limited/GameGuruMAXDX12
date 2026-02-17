@@ -3,6 +3,13 @@
 #include "PBR/ShaderInterop_Renderer.h"
 #endif
 
+#ifndef __cplusplus
+#ifndef GG_FRAMECOMPAT_HLSLI
+#include "GGCustomFrameCB.hlsli"
+#include "GGFrameCompat.hlsli"
+#endif
+#endif
+
 #define GGTREES_REFLECTANCE   0.004
 
 #define GGTREES_LOD_TRANSITION    500.0
@@ -29,7 +36,7 @@ static const VAR_UNIT numTreeTypes = 38;
 #ifdef __cplusplus
 struct TreeCB
 #else
-cbuffer TreeCB : register( b2 )
+cbuffer TreeCB : register( b3 )
 #endif
 {
 	float4   tree_rotMatShadow;

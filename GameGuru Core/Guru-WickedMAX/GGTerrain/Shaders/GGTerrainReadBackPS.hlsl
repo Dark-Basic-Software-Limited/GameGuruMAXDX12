@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 Texture2D<float> texPageTable : register( t3 );
 
 SamplerState sampler0 : register( s0 );
@@ -21,6 +23,7 @@ static const float mipSizeLUT[13] = { 4096, 2048, 1024, 512, 256, 128, 64, 32, 1
 	static const float offset = 0.15;
 #endif
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 uint main( PixelIn IN ) : SV_TARGET
 {
 	float LOD = texPageTable.CalculateLevelOfDetail( sampler0, IN.uv ); // LOD 0 is the highest level of detail

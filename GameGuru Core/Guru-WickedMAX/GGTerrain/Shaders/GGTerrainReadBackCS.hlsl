@@ -1,9 +1,11 @@
+#include "GGRootSignature.hlsli"
 
 Texture2D<uint>   input  : register( t50 );
 RWTexture2D<uint> output : register( u0 );
 
 #include "GGTerrainConstants.hlsli"
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 [numthreads(8, 8, 1)]
 void main( uint3 dispatchThreadId : SV_DispatchThreadID )
 {

@@ -338,7 +338,7 @@ bool MoveToTopAtmosphere(inout float3 worldPosition, in float3 worldDirection, i
 	return retval; // ok to start tracing
 }
 
-float3 GetMultipleScattering(AtmosphereParameters atmosphere, Texture2D<float4> multiScatteringLUTTexture, float2 multiScatteringLUTRes, float3 scattering, float3 extinction, float3 worldPosition, float viewZenithCosAngle)
+float3 GetMultipleScattering(AtmosphereParameters atmosphere, Texture2D<half4> multiScatteringLUTTexture, float2 multiScatteringLUTRes, float3 scattering, float3 extinction, float3 worldPosition, float viewZenithCosAngle)
 {
 	float2 uv = saturate(float2(viewZenithCosAngle * 0.5f + 0.5f, (length(worldPosition) - atmosphere.bottomRadius) / (atmosphere.topRadius - atmosphere.bottomRadius)));
 	uv = float2(FromUnitToSubUvs(uv.x, multiScatteringLUTRes.x), FromUnitToSubUvs(uv.y, multiScatteringLUTRes.y));
@@ -347,7 +347,7 @@ float3 GetMultipleScattering(AtmosphereParameters atmosphere, Texture2D<float4> 
 	return multiScatteredLuminance;
 }
 
-float3 GetTransmittance(AtmosphereParameters atmosphere, float pHeight, float sunZenithCosAngle, Texture2D<float4> transmittanceLutTexture)
+float3 GetTransmittance(AtmosphereParameters atmosphere, float pHeight, float sunZenithCosAngle, Texture2D<half4> transmittanceLutTexture)
 {
 	float2 uv;
 	LutTransmittanceParamsToUv(atmosphere, pHeight, sunZenithCosAngle, uv);
@@ -356,7 +356,7 @@ float3 GetTransmittance(AtmosphereParameters atmosphere, float pHeight, float su
 	return TransmittanceToSun;
 }
 
-float3 GetAtmosphereTransmittance(float3 worldPosition, float3 worldDirection, AtmosphereParameters atmosphere, Texture2D<float4> transmittanceLutTexture)
+float3 GetAtmosphereTransmittance(float3 worldPosition, float3 worldDirection, AtmosphereParameters atmosphere, Texture2D<half4> transmittanceLutTexture)
 {
 	// If the worldDirection is occluded from this virtual planet, then return.
 	// We do this due to the low resolution LUT, where the stored zenith to horizon never reaches black, to prevent linear interpolation artefacts.
@@ -378,7 +378,7 @@ float3 GetAtmosphereTransmittance(float3 worldPosition, float3 worldDirection, A
 	return TransmittanceToSun;
 }
 
-float3 GetAtmosphericLightTransmittance(AtmosphereParameters atmosphere, float3 worldPosition, float3 worldDirection, Texture2D<float4> transmittanceLutTexture)
+float3 GetAtmosphericLightTransmittance(AtmosphereParameters atmosphere, float3 worldPosition, float3 worldDirection, Texture2D<half4> transmittanceLutTexture)
 {
 	const float3 planetCenterWorld = atmosphere.planetCenter * SKY_UNIT_TO_M;
 	const float3 planetCenterToWorldPos = (worldPosition - planetCenterWorld) * M_TO_SKY_UNIT;
@@ -405,7 +405,7 @@ float3 GetCameraPlanetPos(AtmosphereParameters atmosphere, float3 cameraPosition
 	return (skyWorldCameraOrigin - planetCenterWorld) * M_TO_SKY_UNIT;
 }
 
-float3 GetSunLuminance(float3 worldPosition, float3 worldDirection, float3 sunDirection, float3 sunIlluminance, AtmosphereParameters atmosphere, Texture2D<float4> transmittanceLutTexture)
+float3 GetSunLuminance(float3 worldPosition, float3 worldDirection, float3 sunDirection, float3 sunIlluminance, AtmosphereParameters atmosphere, Texture2D<half4> transmittanceLutTexture)
 {
 	//float sunApexAngleDegree = 0.545; // Angular diameter of sun to earth from sea level, see https://en.wikipedia.org/wiki/Solid_angle
 	float sunApexAngleDegree = 2.4; // Modified sun size
@@ -464,7 +464,7 @@ struct SamplingParameters
 SingleScatteringResult IntegrateScatteredLuminance(
 	in AtmosphereParameters atmosphere, in float2 pixPos, in float3 worldPosition, in float3 worldDirection, in float3 sunDirection, in float3 sunIlluminance,
     in SamplingParameters sampling, in bool ground, in float3 depthBufferWorldPos, in bool opaque, in bool mieRayPhase, in bool multiScatteringApprox,
-    in Texture2D<float4> transmittanceLutTexture, in Texture2D<float4> multiScatteringLUTTexture, in float tMaxMax = 9000000.0f)
+    in Texture2D<half4> transmittanceLutTexture, in Texture2D<half4> multiScatteringLUTTexture, in float tMaxMax = 9000000.0f)
 {
 	SingleScatteringResult result = (SingleScatteringResult) 0;
 

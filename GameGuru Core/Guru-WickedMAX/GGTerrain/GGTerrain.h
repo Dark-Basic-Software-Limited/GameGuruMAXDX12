@@ -254,6 +254,15 @@ extern int ggterrain_draw_enabled;
 int GGTerrain_Init( wiGraphics::CommandList cmd);
 void GGTerrain_WindowResized();
 
+// GGCustomFrameCB - shared constant buffer at b4 for GG-specific per-frame data.
+// Updated once per frame in GGTerrain_Update, bound by each GG draw function.
+#define GG_CUSTOMFRAME_FULL_DECL
+#include "Shaders/GGCustomFrameCB.hlsli"
+extern GGCustomFrameData ggCustomFrameStaging;
+void GGCustomFrame_Init();
+void GGCustomFrame_Update( wiGraphics::CommandList cmd );
+void GGCustomFrame_Bind( wiGraphics::CommandList cmd );
+
 void GGTerrain_ClearEnvProbeList(void);
 void GGTerrain_InstantEnvProbeRefresh(int iCoolDownIndex);
 void GGTerrain_AddEnvProbeList(float x, float y, float z, float range, float quatx, float quaty, float quatz, float quatw, float sx, float sy, float sz, float brightness = 1.0f);

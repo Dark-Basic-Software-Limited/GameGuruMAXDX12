@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 Texture2DArray texGrass : register( t50 );
 Texture2D<float> texNoise : register( t51 );
 

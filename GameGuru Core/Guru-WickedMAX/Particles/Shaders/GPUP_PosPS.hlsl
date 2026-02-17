@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 
 #define pi 3.1415926
 #define pi2 6.2831853

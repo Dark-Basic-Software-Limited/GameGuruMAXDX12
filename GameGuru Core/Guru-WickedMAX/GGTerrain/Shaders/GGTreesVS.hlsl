@@ -1,4 +1,6 @@
 
+#include "GGRootSignature.hlsli"
+
 /*
 cbuffer CameraCB : register( b1 )
 {
@@ -29,6 +31,7 @@ struct VertexOut
 	uint data : TEXCOORD2;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;

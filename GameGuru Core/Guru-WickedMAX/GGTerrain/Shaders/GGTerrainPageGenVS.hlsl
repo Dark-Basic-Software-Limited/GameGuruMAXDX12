@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 #include "GGTerrainConstants.hlsli"
 
 struct VertexIn
@@ -19,10 +20,11 @@ struct VertexOut
 	uint lodLevel : TEXCOORD4;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;
- 
+
 	float2 pos;
 	pos.x = (IN.position.x * 2) - 1;
 	pos.y = 1 - (2 * IN.position.y);

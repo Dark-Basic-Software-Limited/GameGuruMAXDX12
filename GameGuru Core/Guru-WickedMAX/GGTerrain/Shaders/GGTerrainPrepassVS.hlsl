@@ -1,9 +1,9 @@
+#include "GGRootSignature.hlsli"
 #include "GGTerrainConstants.hlsli"
 
-cbuffer CameraCB : register( b1 )
-{
-	float4x4	g_xCamera_VP;			// View*Projection
-};
+#include "GGEngineGlobals.hlsli"
+#include "GGCustomFrameCB.hlsli"
+#include "GGFrameCompat.hlsli"
 
 struct VertexIn
 {
@@ -20,10 +20,11 @@ struct VertexOut
 	uint lodLevel : TEXCOORD2;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;
- 
+
 	float4 pos = float4( IN.position.xyz, 1.0 );
 	OUT.position = mul( g_xCamera_VP, pos );
 	OUT.uvPos = IN.position.xz;

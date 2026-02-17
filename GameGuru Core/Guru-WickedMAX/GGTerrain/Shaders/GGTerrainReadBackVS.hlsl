@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 cbuffer constants : register( b0 )
 {
 	float4x4 viewProj;
@@ -16,10 +18,11 @@ struct VertexOut
 	float2 uv2 : TEXCOORD1;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;
- 
+
 	float4 pos = float4( IN.position.xyz, 1.0 );
 	OUT.position = mul( viewProj, pos );
 	

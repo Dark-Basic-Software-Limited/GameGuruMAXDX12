@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 
 Texture2D texture1 : register( t1 ); // imagex
 Texture2D texture3 : register( t3 ); // gradient_1

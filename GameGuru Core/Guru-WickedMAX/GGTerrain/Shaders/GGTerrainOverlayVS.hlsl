@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 cbuffer FrameCB : register( b0 )
 {
 	float2		g_xFrame_CanvasSize;
@@ -18,6 +20,7 @@ struct VertexOut
 	float2 uv : TEXCOORD0;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;

@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 Texture2D<uint> texReadBack : register( t0 ); // read back
 Texture2DArray<float> texPageTableArray : register( t1 );
 Texture2D<float> texPageTableFinal : register( t2 );
@@ -37,6 +39,7 @@ static const float4 mipColors[16] = {
 	float4( 0.0, 0.0, 0.0, 1.0 ),
 };
  
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 float4 main( PixelIn IN ) : SV_TARGET
 {
 	uint maxLayer = terrain_numLODLevels - 1;

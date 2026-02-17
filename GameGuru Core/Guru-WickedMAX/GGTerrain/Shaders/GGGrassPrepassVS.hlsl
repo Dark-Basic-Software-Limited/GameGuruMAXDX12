@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 /*cbuffer CameraCB : register( b1 )
 {
 	float4x4	g_xCamera_VP;			// View*Projection
@@ -26,6 +28,7 @@ struct VertexOut
 	uint data : TEXCOORD2;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;

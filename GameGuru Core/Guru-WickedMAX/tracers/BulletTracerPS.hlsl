@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 
 //desc.vs = wiResourceManager::LoadShader(wiResourceManager::VS, "BulletTracerVS.cso");
 //desc.ps = wiResourceManager::LoadShader(wiResourceManager::PS, "BulletTracerPS.cso");

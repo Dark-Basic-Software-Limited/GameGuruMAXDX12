@@ -777,6 +777,40 @@ GPUBuffer instanceBuffer;
 TerrainCB terrainConstantData = {};
 GPUBuffer terrainConstantBuffer;
 
+// GGCustomFrameCB at b4 - shared across terrain/trees/grass draws
+GGCustomFrameData ggCustomFrameStaging = {};
+static GPUBuffer ggCustomFrameBuffer;
+
+void GGCustomFrame_Init()
+{
+	GPUBufferDesc bd;
+	bd.usage = Usage::DEFAULT;
+	bd.size = sizeof(GGCustomFrameData);
+	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
+	bd.misc_flags = ResourceMiscFlag::NONE;
+	wiGraphics::GetDevice()->CreateBuffer(&bd, nullptr, &ggCustomFrameBuffer);
+}
+
+void GGCustomFrame_Update( wiGraphics::CommandList cmd )
+{
+	// Pull values that still exist in the engine's weather component
+	auto& weather = wiScene::GetScene().weather;
+	ggCustomFrameStaging.waterColor = XMFLOAT3(
+		weather.oceanParameters.waterColor.x,
+		weather.oceanParameters.waterColor.y,
+		weather.oceanParameters.waterColor.z
+	);
+	ggCustomFrameStaging.waterHeight = weather.oceanParameters.waterHeight;
+
+	// Upload to GPU
+	wiGraphics::GetDevice()->UpdateBuffer(&ggCustomFrameBuffer, &ggCustomFrameStaging, cmd, sizeof(GGCustomFrameData));
+}
+
+void GGCustomFrame_Bind( wiGraphics::CommandList cmd )
+{
+	wiGraphics::GetDevice()->BindConstantBuffer(&ggCustomFrameBuffer, 4, cmd);
+}
+
 Shader shaderMainVS;
 Shader shaderMainPS;
 Shader shaderMainVirtualPS;
@@ -7038,6 +7072,9 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	bd.misc_flags = ResourceMiscFlag::NONE;
 	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &terrainConstantBuffer );
 
+	// GGCustomFrameCB at b4 (shared across terrain/trees/grass)
+	GGCustomFrame_Init();
+
 	// quad constant buffers
 	bd.usage = Usage::DEFAULT;
 	bd.size =sizeof(sQuadVSConstantData);
@@ -7395,7 +7432,7 @@ void GGTerrain_DrawPages( CommandList cmd )
 
 	device->BindPipelineState( &psoPageGen, cmd );
 	
-	uint32_t bindSlot = 2;
+	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	
@@ -9806,6 +9843,9 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 
 	wiGraphics::GetDevice()->UpdateBuffer( &terrainConstantBuffer, &terrainConstantData, cmd, sizeof(TerrainCB) );
 
+	// Update GGCustomFrameCB (b4) once per frame
+	GGCustomFrame_Update(cmd);
+
 	if ( !pCurrLODs->IsGenerating() )
 	{
 		// CPU only side of the read back, GPU side is done in prepass render
@@ -9865,6 +9905,9 @@ void GGTerrain_Update_EmptyLevel(float playerX, float playerY, float playerZ, wi
 	terrainConstantData.terrain_maskScale = ggterrain_local_render_params.maskScale / 50000.0f;
 	terrainConstantData.terrain_mapEditSize = ggterrain_global_render_params2.editable_size;
 	wiGraphics::GetDevice()->UpdateBuffer(&terrainConstantBuffer, &terrainConstantData, cmd, sizeof(TerrainCB));
+
+	// Update GGCustomFrameCB (b4) once per frame
+	GGCustomFrame_Update(cmd);
 
 	// also need to handle env probe refreshes - Environmental Light Probe System
 	GGTerrain_EnvProbeWork(playerX, playerY, playerZ);
@@ -10240,7 +10283,7 @@ extern "C" void GGTerrain_VirtualTexReadBack( Texture texReadBack, uint32_t samp
 	if (sampleCount > 1) device->BindComputeShader(&shaderReadBackMSCS, cmd);
 	else device->BindComputeShader(&shaderReadBackCS, cmd);
 
-	device->BindConstantBuffer( &terrainConstantBuffer, 2, cmd );
+	device->BindConstantBuffer( &terrainConstantBuffer, 3, cmd );
 
 	device->Dispatch((desc.width + 7) / 8, (desc.height + 7) / 8, 1, cmd);
 
@@ -10307,9 +10350,10 @@ extern "C" void GGTerrain_Draw_Prepass( const Frustum* frustum, CommandList cmd 
 		
 	device->BindPipelineState( &psoMainPrepass, cmd );
 
-	int bindSlot = 2;
+	int bindSlot = 3;
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	device->BindResource( &texPageTableArray, 53, cmd );
 	device->BindResource( &texPageTableFinal, 54, cmd );
@@ -10487,9 +10531,10 @@ extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* fr
 		
 	device->BindPipelineState( &psoEnvProbe, cmd );
 
-	int bindSlot = 2;
+	int bindSlot = 3;
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	// bind texture and sampler
 	device->BindResource( &texPagesColorAndMetal, 50, cmd );
@@ -10611,9 +10656,10 @@ extern "C" void GGTerrain_Draw( const Frustum* frustum, int mode, CommandList cm
 	if ( ggterrain_render_wireframe ) device->BindPipelineState( &psoMainWire, cmd );
 	else device->BindPipelineState( &psoMain, cmd );
 
-	int bindSlot = 2;
+	int bindSlot = 3;
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	// bind texture and sampler
 	device->BindResource( &texPagesColorAndMetal, 50, cmd );
@@ -10729,7 +10775,7 @@ extern "C" void GGTerrain_Draw_Transparent( const Frustum* frustum, CommandList 
 	{
 		device->BindPipelineState( &psoEditCube, cmd );
 
-		int bindSlot = 2;
+		int bindSlot = 3;
 		device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 		device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	
@@ -10744,7 +10790,7 @@ extern "C" void GGTerrain_Draw_Transparent( const Frustum* frustum, CommandList 
 	{
 		device->BindPipelineState( &psoRamp, cmd );
 
-		int bindSlot = 2;
+		int bindSlot = 3;
 		device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 		device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	
@@ -10774,7 +10820,7 @@ extern "C" void GGTerrain_Draw_Debug( CommandList cmd )
 
 	device->BindPipelineState( &psoQuad, cmd );
 
-	int bindSlot = 2;
+	int bindSlot = 3;
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 
 	const GPUBuffer* vbs[] = { &quadVertexBuffer };
@@ -10814,7 +10860,7 @@ extern "C" void GGTerrain_Draw_Overlay( CommandList cmd )
 
 	device->BindPipelineState( &psoOverlay, cmd );
 
-	int bindSlot = 2;
+	int bindSlot = 3;
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &terrainConstantBuffer, bindSlot, cmd );
 	

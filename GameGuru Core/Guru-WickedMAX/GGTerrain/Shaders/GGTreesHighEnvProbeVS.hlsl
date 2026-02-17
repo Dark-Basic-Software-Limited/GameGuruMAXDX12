@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 #include "PBR/ShaderInterop_Renderer.h"
 #include "GGTreesConstants.hlsli"
 
@@ -22,6 +23,7 @@ struct VertexOut
 	float3 origPos : TEXCOORD3;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;
@@ -50,7 +52,7 @@ VertexOut main( VertexIn IN )
 	OUT.worldPos = pos.xyz;
 	OUT.normal.xz = mul( rotMat, normal.xz );
 	OUT.normal.y = normal.y;
-	OUT.position = mul( xCubemapRenderCams[cubeFaceID].VP, pos );
+	OUT.position = mul( GetCameraIndexed(cubeFaceID).view_projection, pos );
 	OUT.origPos = IN.position.xyz;
 	OUT.uv = IN.uv;
 	OUT.RenderTargetIndex = cubeFaceID;

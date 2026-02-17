@@ -6,7 +6,7 @@
 // Custom Atmosphere based on: https://www.shadertoy.com/view/Ml2cWG
 // Cloud noise based on: https://www.shadertoy.com/view/4tdSWr
 
-float3 AccurateAtmosphericScattering(Texture2D<float4> skyViewLutTexture, Texture2D<float4> transmittanceLUT, Texture2D<float4> multiScatteringLUT, float3 rayOrigin, float3 rayDirection, float3 sunDirection, float sunEnergy, float3 sunColor, bool enableSun, bool darkMode, bool stationary)
+float3 AccurateAtmosphericScattering(Texture2D<half4> skyViewLutTexture, Texture2D<half4> transmittanceLUT, Texture2D<half4> multiScatteringLUT, float3 rayOrigin, float3 rayDirection, float3 sunDirection, float sunEnergy, float3 sunColor, bool enableSun, bool darkMode, bool stationary)
 {
     AtmosphereParameters atmosphere = g_xFrame_Atmosphere;
 

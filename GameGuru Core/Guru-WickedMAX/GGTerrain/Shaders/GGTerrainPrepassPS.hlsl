@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 Texture2DArray<float> texPageTableArray : register( t53 );
 Texture2D<float> texPageTableFinal : register( t54 );
 SamplerState sampler0 : register( s0 );
@@ -19,6 +21,7 @@ struct Output
 	uint   readback : SV_TARGET1;  // virtual texture read back
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 Output main( PixelIn IN )
 {
 	Output output;

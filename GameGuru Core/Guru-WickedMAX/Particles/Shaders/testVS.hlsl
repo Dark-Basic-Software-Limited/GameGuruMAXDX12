@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 cbuffer constants : register( b0 )
 {
     matrix projectionMatrix;

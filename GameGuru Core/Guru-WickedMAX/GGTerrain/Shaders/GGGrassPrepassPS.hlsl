@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 Texture2DArray texGrass : register( t50 );
 Texture2D<float> texNoise : register( t51 );
 
@@ -6,6 +8,8 @@ SamplerState samplerTrilinearClamp : register( s1 );
 SamplerState samplerTrilinearWrap : register( s2 );
 
 #include "PBR/ShaderInterop_Renderer.h"
+#include "GGCustomFrameCB.hlsli"
+#include "GGFrameCompat.hlsli"
 #include "GGGrassConstants.hlsli"
 
 struct PixelIn
@@ -23,6 +27,7 @@ struct Output
 	uint   readback : SV_TARGET1;  // virtual texture read back
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 Output main( PixelIn IN )
 {
 	Output output;

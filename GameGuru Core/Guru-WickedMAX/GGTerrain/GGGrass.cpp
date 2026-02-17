@@ -1779,9 +1779,10 @@ extern "C" void GGGrass_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		
 	device->BindPipelineState( &psoGrassPrepass, cmd );
 
-	uint32_t bindSlot = 2;
+	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	device->BindResource( &texGrass, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
@@ -1839,9 +1840,10 @@ extern "C" void GGGrass_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 
 	device->BindPipelineState( &psoGrassShadow, cmd );
 
-	uint32_t bindSlot = 2;
+	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	device->BindResource( &texGrass, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
@@ -1889,9 +1891,10 @@ extern "C" void GGGrass_Draw( const Frustum* frustum, int mode, CommandList cmd 
 		
 	device->BindPipelineState( &psoGrass, cmd );
 
-	uint32_t bindSlot = 2;
+	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &grassConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	// bind texture and sampler
 	device->BindResource( &texGrass, 50, cmd );

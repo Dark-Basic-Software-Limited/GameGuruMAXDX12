@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 struct VertexIn
 {
     float2 position : POSITION;

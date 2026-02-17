@@ -1,7 +1,7 @@
-cbuffer CameraCB : register( b1 )
-{
-	float4x4	g_xCamera_VP;			// View*Projection
-};
+#include "GGRootSignature.hlsli"
+#include "GGEngineGlobals.hlsli"
+#include "GGCustomFrameCB.hlsli"
+#include "GGFrameCompat.hlsli"
 
 #include "GGGrassConstants.hlsli"
 

@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 Texture2DArray<float> texLODHeight : register( t0 );
 Texture2DArray<float4> texLODNormals : register( t1 );
 Texture2DArray<float4> texColor  : register( t2 );
@@ -13,6 +15,7 @@ struct PixelIn
 	float2 uv : TEXCOORD0;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 float4 main( PixelIn IN ) : SV_TARGET
 {
 	uint layer = terrain_numLODLevels - 2;

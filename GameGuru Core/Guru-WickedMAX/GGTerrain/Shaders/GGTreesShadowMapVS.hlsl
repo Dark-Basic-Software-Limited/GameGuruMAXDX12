@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 /*
 cbuffer CameraCB : register( b1 )
 {

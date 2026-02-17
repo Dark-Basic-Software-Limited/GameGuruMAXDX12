@@ -2523,9 +2523,10 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		
 	device->BindPipelineState( &psoTreesPrepass, cmd );
 
-	uint32_t bindSlot = 2;
+	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
@@ -2614,10 +2615,11 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 
 	device->BindPipelineState( &psoTreesShadow, cmd );
 
-	uint32_t bindSlot = 2;
+	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
-	
+	GGCustomFrame_Bind(cmd);
+
 	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
 	device->BindResource( &texTreeNormal, 53, cmd );
@@ -2698,9 +2700,10 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 	// environment probe doesn't render every frame, but can be expensive when it does
 	auto range = wiProfiler::BeginRangeGPU( "Environment Probe - Trees", cmd );
 
-	int bindSlot = 2;
+	int bindSlot = 3;
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	// bind texture and sampler
 	device->BindSampler( &samplerBilinearWrap, 0, cmd );
@@ -2897,12 +2900,13 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 		
 	device->BindPipelineState( &psoTrees, cmd );
 
-	uint32_t bindSlot = 2;
+	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
+	GGCustomFrame_Bind(cmd);
 
 	// bind texture and sampler
-	device->BindResource( &texTree, 50, cmd ); 
+	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
 	device->BindResource( &texTreeNormal, 53, cmd );
 	device->BindSampler( &samplerBilinearWrap, 0, cmd );

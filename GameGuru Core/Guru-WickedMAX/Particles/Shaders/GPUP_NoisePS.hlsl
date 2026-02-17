@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 Texture2D tex0 : register( t0 );
 SamplerState samplerLinearWrap : register( s2 );
 

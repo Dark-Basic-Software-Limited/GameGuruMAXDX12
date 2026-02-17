@@ -1,3 +1,5 @@
+#include "GGRootSignature.hlsli"
+
 Texture2D<float> texNoise : register( t51 );
 
 SamplerState samplerBilinearWrap : register( s0 );
@@ -21,6 +23,7 @@ struct Output
 	uint   readback : SV_TARGET1;  // virtual texture read back
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 Output main( PixelIn IN )
 {
 	float3 viewDir = g_xCamera_CamPos - IN.worldPos;

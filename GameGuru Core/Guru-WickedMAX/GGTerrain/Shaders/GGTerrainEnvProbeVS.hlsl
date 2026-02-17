@@ -1,3 +1,4 @@
+#include "GGRootSignature.hlsli"
 #include "GGTerrainConstants.hlsli"
 #include "../GGTerrainPageSettings.h"
 
@@ -21,6 +22,7 @@ struct VertexOut
 	float2 uv : TEXCOORD4;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;
@@ -28,7 +30,7 @@ VertexOut main( VertexIn IN )
 	uint cubeFaceID = IN.instanceData & 0x7;
  
 	float4 pos = float4( IN.position.xyz, 1.0 );
-	OUT.position = mul( xCubemapRenderCams[cubeFaceID].VP, pos );
+	OUT.position = mul( GetCameraIndexed(cubeFaceID).view_projection, pos );
 	OUT.worldPos = IN.position.xyz;
 	OUT.normal = IN.inormal.rgb * 2 - 1;
 	

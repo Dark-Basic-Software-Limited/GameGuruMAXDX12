@@ -1,10 +1,8 @@
+#include "GGRootSignature.hlsli"
 
-
-cbuffer CameraCB : register( b1 )
-{
-	float4x4	g_xCamera_VP;			// View*Projection
-	float4		g_xCamera_ClipPlane;
-};
+#include "GGEngineGlobals.hlsli"
+#include "GGCustomFrameCB.hlsli"
+#include "GGFrameCompat.hlsli"
 
 struct VertexIn
 {
@@ -23,6 +21,7 @@ struct VertexOut
 	float2 uv : TEXCOORD4;
 };
 
+[RootSignature(GAMEGURU_ROOTSIGNATURE)]
 VertexOut main( VertexIn IN )
 {
     VertexOut OUT;
