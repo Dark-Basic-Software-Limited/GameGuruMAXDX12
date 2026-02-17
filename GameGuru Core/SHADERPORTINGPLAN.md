@@ -401,3 +401,185 @@ Save as `DX11_to_DX12_Shader_Porting_Plan.md` in the project root.
 - Recommend **factoring duplicated lighting** into shared headers.
 - Recommend **enabling wave intrinsics** for SM 6.0+.
 - Be specific: filenames, line numbers, C++ function/class names, register slots.
+
+---
+
+## Agent Team Structure for Execution
+
+This porting task involves 62 shader/header files (~8,000 lines HLSL), 8 C++ integration files (~18,000 lines), and a critical-path PBR header update (~4,600 lines). The following 6-agent team is designed for maximum safety, parallelism, and quality on a task where one wrong constant buffer layout or register slot can cascade into silent visual corruption or GPU device removal.
+
+### Team Composition
+
+#### 1. COORDINATOR (Team Lead) — `general-purpose` agent
+
+**Role**: Non-coding orchestrator. Manages the task list, enforces porting order, resolves inter-agent conflicts, and is the single source of truth on project status.
+
+**Responsibilities**:
+- Create and maintain the task list based on the 7-phase porting order (Section 7 of the plan)
+- Enforce the dependency chain: PBR headers → compilation infra → Tier 1 → texture infra → Tier 2A → Tier 2B → Tier 3
+- Assign tasks to agents based on readiness (no blocked tasks assigned)
+- Request builds after each milestone and route build results to the Quality Gate agent
+- Coordinate handoffs: Infrastructure Lead must complete PBR headers before Shader Porters begin Tier 2+ work
+- Track the b7→b2 ForwardEntityMaskCB conflict resolution — this is a cross-cutting concern that affects both C++ and shader agents
+- Request the Full Demo FPS Test (WETEST.md) at milestones 4 and 7 to catch regressions
+- **Never writes or edits code directly** — delegates all implementation to specialists
+
+**Key rule**: If any agent proposes a change that affects the root signature, constant buffer layout, or descriptor heap management, the Coordinator MUST halt that agent and route the proposal through the Quality Gate for review BEFORE implementation.
+
+#### 2. INFRASTRUCTURE LEAD — `general-purpose` agent
+
+**Role**: Owns all shared foundation work that blocks other agents. This is the critical-path agent.
+
+**Responsibilities**:
+- **Phase 1**: Update all 11 PBR/ header files to match the latest Wicked Engine DX12 versions:
+  - `PBR/globals.hlsli` (805 lines) — root signature macro, bindless resource declarations, static samplers at s100-s109
+  - `PBR/ShaderInterop.h` — master header, remove old mapping #includes
+  - `PBR/ShaderInterop_Renderer.h` (787 lines) — FrameCB, CameraCB, ShaderEntity struct updates
+  - `PBR/brdf.hlsli` (449 lines) — Surface struct API changes
+  - `PBR/lightingHF.hlsli` (930 lines) — new lighting evaluation, ShaderEntityIterator
+  - Remove obsolete: `ConstantBufferMapping.h`, `SamplerMapping.h`, `ResourceMapping.h`
+  - Update: `skyHF.hlsli`, `skyAtmosphere.hlsli`, `voxelConeTracingHF.hlsli`
+- **Phase 2**: Create `GGBindless.hlsli` — helper macros for descriptor index conversion, wrapping `bindless_textures2DArray[descriptor_index(field)]` patterns
+- **Phase 2**: Create `GGLighting.hlsli` — factor the duplicated TiledLighting/ForwardLighting code from the 12 Tier 3 shaders into a single shared header
+- **Phase 2**: Update `GGCommonFunctions.hlsli` — fix `ApplyFogCustom()` FrameCB field references
+- **Phase 2**: Set up DXC compilation pipeline (fxc→dxc, SM 5.0→SM 6.0+, root signature embedding)
+- Resolve the `CBSLOT_RENDERER_FORWARD_LIGHTMASK` b7→b2 conflict before any Tier 3 work begins
+
+**Key files**: All 11 files in `Shaders/PBR/`, plus `GGCommonFunctions.hlsli`, new `GGBindless.hlsli`, new `GGLighting.hlsli`
+
+**Critical constraint**: No other agent touches PBR/ headers. All PBR header questions route through this agent.
+
+#### 3. C++ INTEGRATION ENGINEER — `general-purpose` agent
+
+**Role**: Owns all C++ side changes. Modifies the engine integration layer so the DX12 backend correctly binds resources for the ported shaders.
+
+**Responsibilities**:
+- Investigate and document how shaders are currently compiled (build step vs runtime) — `GGTerrain_part0.cpp` (11,255 lines)
+- Investigate descriptor heap management in `wiGraphicsDevice_DX12.cpp` — determine feasibility of Option C1 (bindless via CBs) vs Option C2 (expand SRV range)
+- Implement the chosen texture binding strategy on the C++ side:
+  - If C1: Add descriptor index fields to `TerrainCB`, `GrassCB`, `TreeCB` structs; store descriptor heap indices instead of calling `BindResource(slot, texture)`
+  - If C2: Modify root signature SRV range and descriptor table setup
+- Update pipeline state creation for new input layouts if needed
+- Update constant buffer binding code in `GGTerrain_part0.cpp`, `GGGrass.cpp` (2,011 lines), `GGTrees_part0.cpp` (2,978 lines)
+- Ensure ForwardEntityMaskCB binding matches whatever slot the Infrastructure Lead resolves it to
+
+**Key files**: `GGTerrain_part0.cpp`, `GGTerrain_part1.cpp`, `GGGrass.cpp`, `GGTrees_part0.cpp`, `GGTrees_part1.cpp`, `GGTerrainFile.cpp`, and any Wicked Engine DX12 backend files (with permission)
+
+**Critical constraint**: Every CB struct change must be coordinated with the corresponding shader agent to ensure byte-level layout agreement. The Quality Gate agent reviews all CB struct changes.
+
+#### 4. TERRAIN SHADER PORTER — `general-purpose` agent
+
+**Role**: Ports all 28 terrain shader files across all tiers.
+
+**Responsibilities**:
+- **Tier 1** (immediate, no dependencies): `GGTerrainShadowMapVS`, `GGTerrainPrepassRefVS`, `GGTerrainQuadVS`, `GGTerrainRampVS/PS`, `GGTerrainEditBoxVS/PS`, `GGTerrainSpherePrepassPS` — recompile with DXC + embed root signature, zero code changes
+- **Tier 2A** (after PBR headers): `GGTerrainVS`, `GGTerrainPrepassVS`, `GGTerrainEnvProbeVS`, `GGTerrainOverlayVS/PS`, `GGTerrainPageGenVS`, `GGTerrainSphereVS`, `GGTerrainReadBackPS`, `GGTerrainQuadPS` — zero or minimal code changes
+- **Tier 2B** (after texture infra): `GGTerrainReadBackVS` (b0 conflict), `GGTerrainReadBackCS`, `GGTerrainReadBackMSCS`, `GGTerrainPrepassPS` — bindless texture conversion
+- **Tier 3** (after PBR headers + texture infra + GGLighting.hlsli): `GGTerrainPS` (326 lines, local ShaderEntity→load_entity()), `GGTerrainPageGenPS` (293 lines), `GGTerrainVirtualPS`, `GGTerrainVirtualPBR_PS` (424 lines, most complex shader), `GGTerrainEnvProbePS`, `GGTerrainSpherePS`
+
+**Key challenge**: `GGTerrainPS.hlsl` has a local copy of `ShaderEntity` and direct `EntityArray : register(t20)` / `MatrixArray : register(t21)` declarations. Must migrate to `load_entity()`/`load_entitymatrix()` macros.
+
+**Critical constraint**: Must not begin Tier 2B/3 work until Infrastructure Lead confirms PBR headers are finalized and C++ Integration Engineer confirms texture binding strategy.
+
+#### 5. VEGETATION SHADER PORTER — `general-purpose` agent
+
+**Role**: Ports all 24 grass and tree shader files across all tiers.
+
+**Responsibilities**:
+- **Tier 1** (immediate): `GGGrassShadowMapVS/PS`, `GGTreesShadowMapVS`, `GGTreesHighShadowMapVS`, `GGTreeBranchesHighShadowMapVS` — 5 shaders, zero code changes
+- **Tier 2A** (after PBR headers): `GGGrassVS`, `GGGrassPrepassVS`, `GGTreesVS`, `GGTreesPrepassVS`, `GGTreesHighVS`, `GGTreesHighPrepassVS`, `GGTreeBranchesHighVS`, `GGTreeBranchesHighPrepassVS`, `GGTreesHighEnvProbeVS`, `GGTreeBranchesHighEnvProbeVS` — 10 shaders, zero code changes
+- **Tier 2B** (after texture infra): `GGGrassPrepassPS`, `GGTreesShadowMapPS`, `GGTreesHighShadowMapPS`, `GGTreeBranchesHighShadowMapPS`, `GGTreesPrepassPS`, `GGTreesHighPrepassPS`, `GGTreeBranchesHighPrepassPS` — 7 bindless conversions
+- **Tier 3** (after PBR + texture + GGLighting.hlsli): `GGGrassPS` (316 lines), `GGTreesPS`, `GGTreesHighPS` (272 lines), `GGTreeBranchesHighPS`, `GGTreesHighEnvProbePS`, `GGTreeBranchesHighEnvProbePS` — 6 full migrations
+- Also owns: `GGGrassConstants.hlsli`, `GGTreesConstants.hlsli` — update FrameCB field references (`g_xFrame_TreeWind`, `g_xFrame_Time`)
+
+**Critical constraint**: Same as Terrain Porter — no Tier 2B/3 until shared infrastructure is confirmed.
+
+#### 6. QUALITY GATE (Devil's Advocate) — `general-purpose` agent
+
+**Role**: Reviews every code change before it is committed. Catches register slot mismatches, CB layout drift, missing root signature embedding, and regression risks. Has VETO power — can block any commit.
+
+**Responsibilities**:
+
+**Pre-commit review for EVERY change** — no code merges without Quality Gate sign-off:
+- Verify all register slot assignments match the root signature (t0-t15 only in descriptor table, s100-s109 for static samplers, etc.)
+- Verify constant buffer struct layouts match byte-for-byte between C++ and HLSL (padding, alignment, field order)
+- Verify `[RootSignature(WICKED_ENGINE_DEFAULT_ROOTSIGNATURE)]` is present on every shader entry point
+- Verify no texture bindings above t15 remain (unless using bindless)
+- Verify all sampler references use s0-s7 (on-demand) or s100-s109 (static), not the old s4-s13 slots
+- Verify `#include` paths are correct for updated PBR headers
+- Check for CRLF/tab consistency (project uses tabs + CRLF)
+
+**Cross-agent consistency checks**:
+- When C++ Integration Engineer changes a CB struct, verify the corresponding HLSL `cbuffer` declaration matches
+- When Infrastructure Lead updates a PBR header, verify all dependent shaders still compile
+- When a Shader Porter uses `load_entity()` or `bindless_textures2DArray[]`, verify the access pattern matches the latest engine API
+
+**Build validation**:
+- After each milestone, request a build via `build.bat` and verify zero errors/warnings
+- At milestones 4 and 7, coordinate with the Coordinator to run the Full Demo FPS Test (19 demos, ~20 min)
+- Compare FPS results against the baseline table in WETEST.md — flag any demo with >10% regression
+
+**Adversarial review questions** (ask these for every Tier 3 shader change):
+1. "What happens if this shader is loaded but the C++ side hasn't been updated yet? Will it crash or silently render wrong?"
+2. "Is there a frame where the old and new constant buffer layouts could coexist? Could that cause a device removed error?"
+3. "If this bindless descriptor index is wrong/stale, what's the failure mode — black screen, crash, or garbage?"
+4. "Does this change preserve the exact same visual output as the DX11 version, or does it intentionally change rendering?"
+5. "Are there any static_assert or compile-time checks we can add to catch CB layout drift?"
+
+**Key authority**: The Quality Gate agent can request any other agent to:
+- Re-read a file before editing (enforce CLAUDE.md rule #1)
+- Add a `static_assert(sizeof(TerrainCB) == EXPECTED_SIZE)` to C++ code
+- Add comments explaining non-obvious register slot choices
+- Revert a change if it introduces a risk that wasn't discussed with the Coordinator
+
+### Parallelism and Dependency Map
+
+```
+Phase 1 (parallel):
+  Infrastructure Lead: PBR headers ──────────────────────────────┐
+  C++ Integration: Investigate shader compilation & descriptors ─┤
+  Terrain Porter: Tier 1 (8 shaders, zero changes) ──────────────┤
+  Vegetation Porter: Tier 1 (5 shaders, zero changes) ───────────┤
+  Quality Gate: Review all Tier 1 changes ───────────────────────┘
+
+Phase 2 (after PBR headers done):
+  Infrastructure Lead: GGBindless.hlsli + GGLighting.hlsli + DXC pipeline ──┐
+  C++ Integration: Implement texture binding strategy ──────────────────────┤
+  Terrain Porter: Tier 2A (10 shaders) ─────────────────────────────────────┤
+  Vegetation Porter: Tier 2A (10 shaders) ──────────────────────────────────┤
+  Quality Gate: Review all changes, verify builds ──────────────────────────┘
+
+Phase 3 (after texture infra done):
+  Terrain Porter: Tier 2B (4 shaders) ──────────────────────────────────────┐
+  Vegetation Porter: Tier 2B (7 shaders) ───────────────────────────────────┤
+  Quality Gate: Review bindless conversions ────────────────────────────────┘
+
+Phase 4 (after GGLighting.hlsli done — this is the hardest phase):
+  Terrain Porter: Tier 3 (6 shaders, including GGTerrainVirtualPBR_PS) ─────┐
+  Vegetation Porter: Tier 3 (6 shaders) ────────────────────────────────────┤
+  Quality Gate: Intensive review, adversarial questions on every change ────┤
+  C++ Integration: Support any CB struct adjustments discovered during T3 ──┘
+
+Phase 5 (validation):
+  Quality Gate: Full Demo FPS Test (19 demos)
+  Coordinator: Final status report
+```
+
+### Communication Protocol
+
+1. **All CB struct changes** require a message to BOTH the corresponding shader agent AND the Quality Gate, with the exact struct layout in bytes
+2. **All register slot changes** require a message to the Quality Gate with before/after slot numbers
+3. **Build failures** are reported to the Coordinator immediately — the Coordinator decides whether to pause other agents
+4. **The Quality Gate may issue a HOLD** on any agent's work — the agent must stop and wait for resolution
+5. **Phase transitions** (e.g., Phase 1→2) require explicit Coordinator approval after Quality Gate confirms all Phase N work is clean
+
+### Risk Mitigations
+
+| Risk | Mitigation | Owner |
+|------|-----------|-------|
+| PBR header update breaks everything downstream | Infrastructure Lead completes headers in isolation; Quality Gate compiles a test shader against new headers before Phase 2 begins | Infrastructure Lead + Quality Gate |
+| CB layout mismatch between C++ and HLSL | Quality Gate reviews every CB change pair; add `static_assert` on C++ side | Quality Gate |
+| Bindless descriptor indices point to wrong textures | C++ Integration Engineer adds debug validation (descriptor index bounds checking in debug builds) | C++ Integration + Quality Gate |
+| b7→b2 conflict silently corrupts rendering | Infrastructure Lead resolves this in Phase 1; Quality Gate verifies the resolution propagates to all 3 env probe shaders | Infrastructure Lead + Quality Gate |
+| Regression in demo FPS after porting | Full Demo FPS Test at milestones 4 and 7; >10% regression triggers investigation | Coordinator + Quality Gate |
+| Agent edits wrong file or wrong lines | Enforce CLAUDE.md rule: always read target lines immediately before editing; Quality Gate spot-checks | All agents |
