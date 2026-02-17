@@ -1455,7 +1455,7 @@ void WickedCall_CheckAnimationDone(sObject* pObject)
 						//PE: Must make sure we are set at the last frame.
 						//PE: Fix - https://thegamecreators.teamwork.com/index.cfm#/tasks/21003817?c=10406263 ,
 						animationcomponent->timer = fEndFrame;
-						//animationcomponent->SetUpdateOnce(); // REMOVED
+						GGAnimBridge_SetUpdateOnce(animationcomponent);
 					}
 				}
 			}
@@ -1532,7 +1532,7 @@ void WickedCall_InstantObjectFrameUpdate(sObject* pObject)
 		AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 		if (animationcomponent)
 		{
-			//animationcomponent->updateonce = true; // REMOVED
+			GGAnimBridge_SetUpdateOnce(animationcomponent);
 			animationcomponent->amount = 1;
 		}
 	}
@@ -1581,7 +1581,7 @@ void WickedCall_SetObjectFrame(sObject* pObject, float fFrame)
 				animationcomponent->SetLooped(false);
 				animationcomponent->Stop();
 				animationcomponent->timer = fFrame;
-				//animationcomponent->SetUpdateOnce(); // REMOVED
+				GGAnimBridge_SetUpdateOnce(animationcomponent);
 			}
 		}
 	}
@@ -1599,7 +1599,7 @@ void WickedCall_SetObjectFrameEx(sObject* pObject, float fFrame)
 			if (animationcomponent)
 			{
 				animationcomponent->timer = fFrame;
-				//animationcomponent->SetUpdateOnce(); // REMOVED
+				GGAnimBridge_SetUpdateOnce(animationcomponent);
 			}
 		}
 	}

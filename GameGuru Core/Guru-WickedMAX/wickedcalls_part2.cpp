@@ -1,4 +1,6 @@
-﻿bool bActivateStandaloneOutline = false;
+﻿#include "GGAnimBridge.h"
+
+bool bActivateStandaloneOutline = false;
 
 void WickedCall_SetObjectOutline(sObject* pObject, float fHighlight)
 {
@@ -954,16 +956,15 @@ void WickedCall_GlueObjectToObject(sObject* pObjectToGlue, sObject* pParentObjec
 											AnimationComponent* parentanimationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 											if (parentanimationcomponent)
 											{
-												//parentanimationcomponent->UsePrimaryAnimTimer(0, parentanimentity); // REMOVED
-												//animationcomponent->UsePrimaryAnimTimer(parentanimentity, 0); // REMOVED
+												GGAnimBridge_SetPrimaryAnimSync(animentity, parentanimentity);
 											}
 										}
 									}
 								}
 								else
 								{
-									// unsync child from parent (probably not used in favor of unglue/glue operation as one presently used)
-									//animationcomponent->UsePrimaryAnimTimer(0,0); // REMOVED
+									// unsync child from parent
+									GGAnimBridge_ClearPrimaryAnimSync(animentity);
 								}
 							}
 						}
@@ -992,7 +993,7 @@ void WickedCall_UnGlueObjectToObject(sObject* pObjectToUnGlue)
 					AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 					if (animationcomponent)
 					{
-						//animationcomponent->UsePrimaryAnimTimer(0,0); // REMOVED
+						GGAnimBridge_ClearPrimaryAnimSync(animentity);
 					}
 				}
 			}
@@ -1063,8 +1064,10 @@ void WickedCall_RotateLimb(sObject* pObject, sFrame* pFrame, float fAX, float fA
 					AnimationComponent::AnimationChannel* pAnimationChannel = &animationcomponent->channels[iIndex];
 					if (pAnimationChannel)
 					{
-						//pAnimationChannel->iUsePreFrame = 1; // REMOVED
-						//pAnimationChannel->qPreFrameRotation = XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ)); // REMOVED
+						XMFLOAT4 rot;
+						XMStoreFloat4(&rot, XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ)));
+						GGAnimBridge_SetPreFrame(pAnimationChannel->target, 1, 1.0f,
+							XMFLOAT3(0, 0, 0), rot, XMFLOAT3(1, 1, 1));
 					}
 				}
 			}
@@ -1141,11 +1144,21 @@ void WickedCall_OverrideLimbWithCombined(sObject* pObject, sFrame* pFrame, bool 
 					AnimationComponent::AnimationChannel* pAnimationChannelRot = &animationcomponent->channels[iIndexRot];
 					if (pAnimationChannelPos && pAnimationChannelRot)
 					{
-						// REMOVED - iUsePreFrame, vPreFrameTranslation, qPreFrameRotation no longer exist
-						//pAnimationChannelPos->iUsePreFrame = 2;
-						//pAnimationChannelPos->vPreFrameTranslation = XMVectorSet(pFrame->matCombined._41, pFrame->matCombined._42, pFrame->matCombined._43, 0);
-						//pAnimationChannelRot->iUsePreFrame = 2;
-						//pAnimationChannelRot->qPreFrameRotation = currentRot;
+						// Extract rotation from combined matrix
+						GGMATRIX matCombined = pFrame->matCombined;
+						XMFLOAT4X4 mat44;
+						mat44._11 = matCombined._11; mat44._12 = matCombined._12; mat44._13 = matCombined._13; mat44._14 = 0;
+						mat44._21 = matCombined._21; mat44._22 = matCombined._22; mat44._23 = matCombined._23; mat44._24 = 0;
+						mat44._31 = matCombined._31; mat44._32 = matCombined._32; mat44._33 = matCombined._33; mat44._34 = 0;
+						mat44._41 = 0; mat44._42 = 0; mat44._43 = 0; mat44._44 = 1;
+						XMFLOAT4 currentRot;
+						XMStoreFloat4(&currentRot, XMQuaternionRotationMatrix(XMLoadFloat4x4(&mat44)));
+						XMFLOAT3 trans(pFrame->matCombined._41, pFrame->matCombined._42, pFrame->matCombined._43);
+
+						GGAnimBridge_SetPreFrame(pAnimationChannelPos->target, 2, 1.0f,
+							trans, XMFLOAT4(0, 0, 0, 1), XMFLOAT3(1, 1, 1));
+						GGAnimBridge_SetPreFrame(pAnimationChannelRot->target, 2, 1.0f,
+							XMFLOAT3(0, 0, 0), currentRot, XMFLOAT3(1, 1, 1));
 					}
 				}
 			}
@@ -1169,8 +1182,8 @@ void WickedCall_OverrideLimbOff(sObject* pObject, sFrame* pFrame)
 				{
 					AnimationComponent::AnimationChannel* pAnimationChannelPos = &animationcomponent->channels[iIndexPos];
 					AnimationComponent::AnimationChannel* pAnimationChannelRot = &animationcomponent->channels[iIndexRot];
-					//if (pAnimationChannelPos) pAnimationChannelPos->iUsePreFrame = 0; // REMOVED
-					//if (pAnimationChannelRot) pAnimationChannelRot->iUsePreFrame = 0; // REMOVED
+					if (pAnimationChannelPos) GGAnimBridge_ClearPreFrame(pAnimationChannelPos->target);
+					if (pAnimationChannelRot) GGAnimBridge_ClearPreFrame(pAnimationChannelRot->target);
 				}
 			}
 		}
@@ -1193,15 +1206,15 @@ void WickedCall_SetBip01Position(sObject* pObject, sFrame* pFrame, int iUseMode,
 					AnimationComponent::AnimationChannel* pAnimationChannel = &animationcomponent->channels[iIndexPos];
 					if (pAnimationChannel)
 					{
-						//if (iUseMode == 3)
-						//{
-						//	pAnimationChannel->iUsePreFrame = 3; // REMOVED
-						//	pAnimationChannel->vPreFrameTranslation = XMVectorSet(0, 0, 0, 0); // REMOVED
-						//}
-						//else
-						//{
-						//	pAnimationChannel->iUsePreFrame = 0; // REMOVED
-						//}
+						if (iUseMode == 3)
+						{
+							GGAnimBridge_SetPreFrame(pAnimationChannel->target, 3, 1.0f,
+								XMFLOAT3(0, 0, 0), XMFLOAT4(0, 0, 0, 1), XMFLOAT3(1, 1, 1));
+						}
+						else
+						{
+							GGAnimBridge_ClearPreFrame(pAnimationChannel->target);
+						}
 					}
 				}
 			}
@@ -1225,15 +1238,17 @@ void WickedCall_SetBip01Rotation(sObject* pObject, sFrame* pFrame, int iUseMode,
 					AnimationComponent::AnimationChannel* pAnimationChannel = &animationcomponent->channels[iIndex];
 					if (pAnimationChannel)
 					{
-						//if (iUseMode > 0)
-						//{
-						//	pAnimationChannel->iUsePreFrame = iUseMode; // REMOVED
-						//	pAnimationChannel->qPreFrameRotation = XMQuaternionRotationRollPitchYaw(0, 0, 0); // REMOVED
-						//}
-						//else
-						//{
-						//	pAnimationChannel->iUsePreFrame = 0; // REMOVED
-						//}
+						if (iUseMode > 0)
+						{
+							XMFLOAT4 rot;
+							XMStoreFloat4(&rot, XMQuaternionRotationRollPitchYaw(0, 0, 0));
+							GGAnimBridge_SetPreFrame(pAnimationChannel->target, iUseMode, 1.0f,
+								XMFLOAT3(0, 0, 0), rot, XMFLOAT3(1, 1, 1));
+						}
+						else
+						{
+							GGAnimBridge_ClearPreFrame(pAnimationChannel->target);
+						}
 					}
 				}
 			}
@@ -1324,23 +1339,18 @@ void WickedCall_SetObjectPreFrames(sObject* pObject, LPSTR pParentFrameName, flo
 									keyLeft = std::max(0, keyRight - 1);
 								}
 
-								// REMOVED - preframe members no longer exist on AnimationChannel
-								//pAnimationChannel->fSmoothAmount = 1.0f / fSmoothSlerpToNextShape;
-								//if (i == 0)
-								//{
-								//	pAnimationChannel->iUsePreFrame = iPreFrameMode;
-								//	pAnimationChannel->vPreFrameTranslation = XMLoadFloat3(&((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft]);
-								//}
-								//if (i == 1)
-								//{
-								//	pAnimationChannel->iUsePreFrame = iPreFrameMode;
-								//	pAnimationChannel->qPreFrameRotation = XMLoadFloat4(&((const XMFLOAT4*)animationdata->keyframe_data.data())[keyLeft]);
-								//}
-								//if (i == 2)
-								//{
-								//	pAnimationChannel->iUsePreFrame = iPreFrameMode;
-								//	pAnimationChannel->vPreFrameScale = XMLoadFloat3(&((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft]);
-								//}
+								float fSmooth = 1.0f / fSmoothSlerpToNextShape;
+								XMFLOAT3 trans(0, 0, 0);
+								XMFLOAT4 rot(0, 0, 0, 1);
+								XMFLOAT3 scl(1, 1, 1);
+								if (i == 0)
+									trans = ((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft];
+								if (i == 1)
+									rot = ((const XMFLOAT4*)animationdata->keyframe_data.data())[keyLeft];
+								if (i == 2)
+									scl = ((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft];
+								GGAnimBridge_SetPreFrame(pAnimationChannel->target, iPreFrameMode, fSmooth,
+									trans, rot, scl);
 							}
 						}
 					}

@@ -172,6 +172,9 @@ void MasterRenderer::Update(float dt)
 	//Disable wicked backlog, can draw behind imgui , can be seen sometimes. Make sure it is never activated.
 	if (wiBackLog::isActive()) wiBackLog::Toggle();
 
+	// P6: cap delta time to 1/30s to prevent animation jumps after alt-tab or stalls
+	if (dt > (1.0f / 30.0f)) dt = 1.0f / 30.0f;
+
 	// animation bridge pre-hook (before scene->Update runs animations)
 	GGAnimBridge_PreUpdate(&wiScene::GetScene(), dt);
 
