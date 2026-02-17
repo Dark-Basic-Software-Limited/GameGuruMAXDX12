@@ -1204,14 +1204,163 @@ Two identical errors in `log.txt` immediately after `[wi::initializer] Wicked En
 
 ---
 
-## 13. Next Steps (Phase 3-4)
+## 13. Phase 3: Rendering Pipeline Integration (Research — 2026-02-17)
 
-### Phase 3: Rendering Pipeline Integration
-The custom draw functions (`GGTerrain_Draw`, `GGGrass_Draw`, `GGTrees_Draw`) must be called from `MasterRenderer::Render()` at the appropriate render passes:
-1. **Shadow pass**: GGTerrain_DrawShadow, GGGrass_DrawShadow, GGTrees_DrawShadow
-2. **Depth prepass**: GGTerrain_DrawPrepass, GGGrass_DrawPrepass, GGTrees_DrawPrepass
-3. **Main pass**: GGTerrain_Draw, GGGrass_Draw, GGTrees_Draw
-4. **Env probe pass**: GGTerrain_DrawEnvProbe, GGTrees_DrawEnvProbe
+### 13.1 Current State
+
+The GG custom draw functions exist but are **NOT called** from anywhere. The comments say "called from WickedEngine RenderPath3D::Render()" and reference `/alternatename` linker flags, but:
+- The WickedEngine `wiRenderPath3D.cpp` contains **zero references** to any GG function
+- No `/alternatename` linker flags exist in any `.vcxproj` file
+- The `extern "C"` functions are dead code that compiles but never executes
+
+**Only `GGTerrain_DrawPages()`** is currently active — it's called from `GGTerrain_Update()` during the Update phase (not Render), performing virtual texture page generation via compute shaders. This works because it doesn't need render pass integration.
+
+### 13.2 WickedEngine Render Pass Order (wiRenderPath3D.cpp)
+
+The engine's `RenderPath3D::Render()` executes render passes via separate command lists and job system parallelism. Key passes in order:
+
+| # | Pass | Line | Command List | Description |
+|---|------|------|-------------|-------------|
+| 1 | Prepare Frame | 865 | Graphics | Bind camera CB, UpdateRenderData |
+| 2 | Async Compute | 894 | Compute | UpdateRenderDataAsync, surfel GI, DDGI, raytrace accel |
+| 3 | **Depth Prepass** | 950 | Graphics | `DrawScene(RENDERPASS_PREPASS)` — writes depthBuffer_Main + rtPrimitiveID |
+| 4 | Compute Effects | 1038 | Compute | Tiled light culling, visibility shading, AO, SSR, SSGI |
+| 5 | Occlusion Culling | 1183 | Graphics | OcclusionCulling_Render using depthBuffer_Main |
+| 6 | **Shadow Maps** | 1242 | Graphics | `DrawShadowmaps(visibility_main)` |
+| 7 | VXGI | 1251 | Graphics | VXGI_Voxelize |
+| 8 | Update Textures | 1260 | Graphics | RefreshLightmaps, RefreshEnvProbes, PaintDecals |
+| 9 | Planar Reflections Prepass | 1281 | Graphics | DrawScene(PREPASS_DEPTHONLY) for reflection camera |
+| 10 | Planar Reflections Color | 1342 | Graphics | DrawScene(RENDERPASS_MAIN) for reflection camera + sky |
+| 11 | **Main Opaque Color** | 1456 | Graphics | `DrawScene(RENDERPASS_MAIN)` — writes rtMain + depthBuffer_Main |
+| 12 | Transparents | (later) | Graphics | DrawScene(TRANSPARENT), ocean, particles |
+| 13 | Post-processing | (later) | Graphics/Compute | Bloom, TAA, tone map, etc. |
+
+### 13.3 GG Draw Functions Catalog
+
+All functions are `extern "C"` and take `(const Frustum*, int mode, CommandList cmd)` or similar signatures:
+
+| Function | File:Line | Render Pass Target | What It Does |
+|----------|-----------|-------------------|-------------|
+| `GGTerrain_Draw_Prepass` | GGTerrain_part0.cpp:10337 | Depth Prepass (#3) | Binds psoPrepass, draws terrain chunks to depth buffer |
+| `GGTerrain_Draw_Prepass_Reflections` | GGTerrain_part0.cpp:10412 | Reflection Prepass (#9) | Same but for reflection camera |
+| `GGTerrain_Draw_ShadowMap` | GGTerrain_part0.cpp:10461 | Shadow Maps (#6) | Binds psoShadowMap, draws terrain to shadow cascades |
+| `GGTerrain_Draw_EnvProbe` | GGTerrain_part0.cpp:10515 | Env Probes (inside #8) | Draws terrain for environment probe cubemap faces |
+| **`GGTerrain_Draw`** | GGTerrain_part0.cpp:10641 | **Main Opaque (#11)** | Binds psoMain, draws terrain chunks with virtual texture sampling |
+| `GGTerrain_Draw_Transparent` | GGTerrain_part0.cpp:10761 | Transparents (#12) | Edit cube, ramp preview overlays |
+| `GGTerrain_Draw_Debug` | GGTerrain_part0.cpp:10809 | Compose/2D | Debug quad showing virtual texture pages |
+| `GGTerrain_Draw_Overlay` | GGTerrain_part0.cpp:10848 | Compose/2D | Terrain cursor/brush overlay |
+| `GGTerrain_VirtualTexReadBack` | GGTerrain_part0.cpp:10267 | Compute (any) | Readback compute shader for virtual texture feedback |
+| `GGTrees_Draw_Prepass` | GGTrees_part0.cpp:2513 | Depth Prepass (#3) | Tree billboard depth prepass |
+| `GGTrees_Draw_ShadowMap` | GGTrees_part0.cpp:2605 | Shadow Maps (#6) | Tree shadow casting |
+| `GGTrees_Draw_EnvProbe` | GGTrees_part0.cpp:2690 | Env Probes (#8) | Trees in environment probes |
+| **`GGTrees_Draw`** | GGTrees_part0.cpp:2890 | **Main Opaque (#11)** | Low-detail billboard trees + high-detail trunk/branch meshes |
+| `GGGrass_Draw_Prepass` | GGGrass.cpp:1769 | Depth Prepass (#3) | Grass billboard depth prepass |
+| `GGGrass_Draw_ShadowMap` | GGGrass.cpp:1833 | Shadow Maps (#6) | Grass shadow casting |
+| **`GGGrass_Draw`** | GGGrass.cpp:1881 | **Main Opaque (#11)** | Grass billboard rendering (skips reflection mode) |
+
+### 13.4 What Each Main Draw Function Does
+
+**GGTerrain_Draw** (mode: 0=normal, 1=reflection):
+1. Binds `psoMain` (or `psoMainWire` for wireframe)
+2. Binds `terrainConstantBuffer` at b3
+3. Calls `GGCustomFrame_Bind(cmd)` — binds GGCustomFrameData at b4
+4. Binds virtual texture pages at t50-t54 and samplers at s1
+5. Iterates LOD levels → chunks → frustum cull → occlusion cull → `DrawIndexed()`
+6. Uses custom vertex buffers (`TerrainVertex`) and index buffers per chunk
+
+**GGTrees_Draw** (mode: 0=normal, 1=reflection):
+1. Binds `psoTrees` + tree constant buffer at b3 + GGCustomFrame at b4
+2. Binds tree texture atlas at t50, noise at t51, normal at t53, samplers at s0-s2
+3. Low-detail pass: iterates tree chunks, frustum culls, `DrawIndexedInstanced()` with instance buffer
+4. High-detail pass (mode 0 only): binds `psoTreesHigh`, draws trunks then branches per tree type
+
+**GGGrass_Draw** (mode: 0=normal, returns early for reflections):
+1. Binds `psoGrass` + grass constant buffer at b3 + GGCustomFrame at b4
+2. Binds grass texture at t50, noise at t51, normal at t53, samplers at s0-s2
+3. Iterates grass chunks, distance + frustum culls, `DrawIndexedInstanced()` with instance buffer
+
+### 13.5 Integration Strategy
+
+The GG draw functions were designed to be called via `/alternatename` linker stubs inside the engine. Since this mechanism was never set up, there are two approaches:
+
+**Option A: Override MasterRenderer::Render() (Recommended)**
+
+Override `MasterRenderer::Render()` in `master_part1.cpp` to call `__super::Render()` first, then inject GG draw calls. Problem: the engine's render passes are encapsulated in lambdas with their own command lists. GG functions need to be called INSIDE the render pass (between `RenderPassBegin` and `RenderPassEnd`) to share the depth buffer and render targets.
+
+This won't work because the render passes are closed before `Render()` returns.
+
+**Option B: Add hooks to wiRenderPath3D.cpp (Required)**
+
+The engine's `wiRenderPath3D.cpp` must be modified to call the GG functions at the right points:
+
+1. **Depth Prepass** (line ~1021-1031): After `DrawScene(RENDERPASS_PREPASS)` and before `RenderPassEnd`, add:
+   ```cpp
+   GGTerrain_Draw_Prepass(&camera->frustum, cmd);
+   GGTrees_Draw_Prepass(&camera->frustum, 0, cmd);
+   GGGrass_Draw_Prepass(&camera->frustum, 0, cmd);
+   ```
+
+2. **Shadow Maps** (line ~1247): Inside `DrawShadowmaps`, each cascade needs GG shadow draws. This requires hooks inside `wiRenderer::DrawShadowmaps()` or a callback mechanism.
+
+3. **Main Opaque Color** (line ~1632-1639): After `DrawScene(RENDERPASS_MAIN)` and before `DrawSky`, add:
+   ```cpp
+   GGTerrain_Draw(&camera->frustum, 0, cmd);
+   GGTrees_Draw(&camera->frustum, 0, cmd);
+   GGGrass_Draw(&camera->frustum, 0, cmd);
+   ```
+
+4. **Planar Reflections** (line ~1405-1414): After reflection `DrawScene(RENDERPASS_MAIN)`, add with mode=1:
+   ```cpp
+   GGTerrain_Draw(&camera_reflection.frustum, 1, cmd);
+   GGTrees_Draw(&camera_reflection.frustum, 1, cmd);
+   ```
+
+5. **Env Probes** (inside `RefreshEnvProbes`): Requires hooks in `wiRenderer::RefreshEnvProbes()`.
+
+6. **Transparents**: `GGTerrain_Draw_Transparent` needs to be called in the transparent pass.
+
+7. **Overlay/Debug**: `GGTerrain_Draw_Overlay` and `GGTerrain_Draw_Debug` belong in Compose.
+
+### 13.6 DX12-Specific Concerns
+
+1. **Root Signature Compatibility**: GG shaders use `GAMEGURU_ROOTSIGNATURE` (identical to engine's but SRV=64). When GG draw calls run inside engine render passes, the root signature must be re-bound. Each `BindPipelineState()` call in GG functions sets the PSO which includes the root signature.
+
+2. **Descriptor Heap**: GG shaders bind resources at explicit register slots (t50-t54, b3, b4, s0-s2). These must not conflict with engine bindings still active in the render pass. The engine binds common resources at t0-t15 and CBs at b0-b2. GG uses t50+ and b3-b4, so no conflicts.
+
+3. **Render Pass State**: GG draw functions assume they're inside an active render pass with depth buffer attached. They don't call `RenderPassBegin`/`RenderPassEnd` (except `GGTerrain_DrawQuad` which manages its own). This is correct for integration into existing engine render passes.
+
+4. **Command List Ownership**: GG functions use the `cmd` parameter they receive. They don't create new command lists. This is compatible with the engine's job-based command list architecture.
+
+5. **Sampler Slot Conflict**: GG binds samplers at s0-s2 which WILL conflict with engine's static samplers at s0-s13 (now remapped to s100-s109 in Phase 1). The GG sampler bindings at s0-s2 will override engine samplers for the duration of the GG draw call, which is intentional — GG shaders expect their own samplers.
+
+### 13.7 Implementation Plan
+
+**Step 1**: Add `extern "C"` forward declarations in `wiRenderPath3D.cpp`:
+```cpp
+extern "C" void GGTerrain_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTrees_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGGrass_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphics::CommandList);
+extern "C" void GGTrees_Draw_Prepass(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGGrass_Draw_Prepass(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+// etc. for shadow, env probe, transparent, overlay functions
+```
+
+**Step 2**: Add calls in depth prepass (after `DrawScene(RENDERPASS_PREPASS)`, before `RenderPassEnd`)
+
+**Step 3**: Add calls in main opaque pass (after `DrawScene(RENDERPASS_MAIN)`, before `DrawSky`)
+
+**Step 4**: Build WickedEngine lib, then GameGuru, test with Switch Escape demo
+
+**Step 5**: Add shadow, reflection, env probe, transparent, and overlay hooks
+
+**Step 6**: Run full 19-demo FPS test to verify no regressions
+
+### 13.8 Risk Assessment
+
+- **Modifying WickedEngine**: This requires changes to `wiRenderPath3D.cpp` in the engine repo. The CLAUDE.md says "Do NOT modify files in WickedEngineDX12 unless explicitly asked." Phase 3 implementation will need explicit approval.
+- **PSO compatibility**: GG PSOs were compiled with SM 6.0 + custom root signature. If the root signature doesn't match the one active in the engine's render pass, DX12 will fail with `DXGI_ERROR_DEVICE_REMOVED`. Testing with a single draw call first is essential.
+- **Missing depth writes**: If GG terrain draws into the main color pass but not the depth prepass, objects will render on top of terrain. All three passes (prepass, shadow, main) must be hooked simultaneously.
 
 ### Phase 4: Visual Verification & Optimization
 1. Runtime testing of Tier 3 pixel shaders (PBR lighting, shadows, env probes)
@@ -1224,6 +1373,7 @@ The custom draw functions (`GGTerrain_Draw`, `GGGrass_Draw`, `GGTrees_Draw`) mus
 
 | File | Purpose |
 |------|---------|
+| `wiRenderPath3D.cpp` (engine) | Must be modified to add GG draw call hooks |
 | `GGTerrain/Shaders/GGEngineGlobals.hlsli` | Trampoline to engine globals (angle-bracket include) |
 | `GGTerrain/Shaders/GGCustomFrameCB.hlsli` | GG custom fields CB at b4 (shared C++/HLSL) |
 | `GGTerrain/Shaders/GGFrameCompat.hlsli` | Old→new field name mapping (60+ macros) |
