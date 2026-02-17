@@ -39,6 +39,27 @@ Invoke `build.bat` using its full quoted path (required because the project root
 - **CLICK_NODE**: works with level nodes (loads into editor), screen/splash nodes (opens screen editor)
 - **Crash diagnosis**: check `Guru-Crash.log` in the EXE directory for crash source file and line number
 
+## DX12 Image/Texture System
+
+The UI uses a two-layer image system:
+
+1. **DarkBasic image list** (`m_List` in `CImageC_part0.cpp`) — stores image metadata, filenames, and (in DX11 mode) textures. In DX12 mode, textures are NULL (lazy-loaded).
+2. **DX12 texture cache** (`g_TextureCache` in `GameGuru/Imgui/imgui_gg_dx12_bridge.cpp`) — `unordered_map<int, DX12CachedTexture>` keyed by image ID. GPU textures are loaded lazily on first render via `ImGui_DX12_GetOrLoadTexture()`.
+
+### Key functions
+
+| Function | File | Role |
+|----------|------|------|
+| `LoadImage` / `LoadImageSize` | `CImageC_part2.cpp` | Creates `m_List` entry with filenames. In DX12 mode, only reads file dimensions (no GPU texture yet) |
+| `RemoveImage` | `CImageC_part0.cpp` | Deletes from `m_List` AND evicts from `g_TextureCache` |
+| `DeleteImage` | `CImageC_part2.cpp` | Calls `RemoveImage` (via `DeleteImageCore`) |
+| `ImGui_DX12_GetOrLoadTexture` | `imgui_gg_dx12_bridge.cpp` | Cache-first lazy loader: returns cached GPU texture or loads from disk |
+| `ImGui_DX12_RemoveTexture` | `imgui_gg_dx12_bridge.cpp` | Evicts a single entry from `g_TextureCache` by image ID |
+
+### Important: cache invalidation
+
+When replacing an image at an existing ID (e.g., storyboard project switch), you MUST call `DeleteImage`/`RemoveImage` first. This evicts the DX12 texture cache entry so the new file gets loaded. Without eviction, `GetOrLoadTexture` returns the stale cached texture (fixed in commit 25713c1f).
+
 ## Third-Party Dependencies
 - **WickedEngineDX12** is located at `../WickedEngineDX12` (sibling folder at `D:\max\WickedEngineDX12`)
 - This is the rendering engine the project depends on
