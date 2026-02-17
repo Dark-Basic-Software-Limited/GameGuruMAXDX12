@@ -1,13 +1,8 @@
 #include "GGRootSignature.hlsli"
 
-cbuffer FrameCB : register( b0 )
-{
-	float2		g_xFrame_CanvasSize;
-	float2		g_xFrame_CanvasSize_rcp;
-
-	float2		g_xFrame_InternalResolution;
-	float2		g_xFrame_InternalResolution_rcp;
-};
+#include "GGEngineGlobals.hlsli"
+#include "GGCustomFrameCB.hlsli"
+#include "GGFrameCompat.hlsli"
 
 struct VertexIn
 {
