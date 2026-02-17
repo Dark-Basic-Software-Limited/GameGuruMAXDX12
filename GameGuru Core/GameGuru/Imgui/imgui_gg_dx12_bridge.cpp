@@ -81,6 +81,16 @@ struct DX12CachedTexture
 static std::unordered_map<int, DX12CachedTexture> g_TextureCache;
 static bool g_DeviceRemoved = false;
 
+// Deferred deletion queue — GPU resources must stay alive until all in-flight frames are done.
+// Without this, deleting a texture that the GPU is still rendering causes DXGI_ERROR_DEVICE_REMOVED.
+struct PendingTextureDelete
+{
+    DX12CachedTexture Texture;
+    int FramesRemaining;  // count down each frame, free when 0
+};
+static std::vector<PendingTextureDelete> g_PendingDeletes;
+static const int DEFERRED_DELETE_FRAMES = 4;  // wait 4 frames (safe margin over NUM_FRAMES_IN_FLIGHT=2)
+
 // Private DIRECT queue for texture uploads (isolates from WickedEngine's graphics queue)
 static ComPtr<ID3D12CommandQueue>        g_pUploadQueue;
 static ComPtr<ID3D12CommandAllocator>    g_pUploadAllocator;
@@ -525,9 +535,31 @@ void ImGui_DX12_RebuildFontTexture()
     CreateFontTexture();
 }
 
+// Process deferred texture deletions — free GPU resources that are no longer in-flight.
+static void ProcessPendingDeletes()
+{
+    for (auto it = g_PendingDeletes.begin(); it != g_PendingDeletes.end(); )
+    {
+        it->FramesRemaining--;
+        if (it->FramesRemaining <= 0)
+        {
+            // Free the SRV descriptor slot so it can be reused
+            if (it->Texture.SrvSlotIndex < IMGUI_SRV_HEAP_SIZE)
+                g_SrvSlotUsed[it->Texture.SrvSlotIndex] = false;
+            // ComPtr destructor releases the ID3D12Resource
+            it = g_PendingDeletes.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
 void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
 {
     g_DX12LogFrameCount++;
+    ProcessPendingDeletes();
 
     if (!g_ImGuiDX12Initialized || !cmdList || g_DeviceRemoved)
     {
@@ -778,6 +810,7 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
 void ImGui_DX12_ShutdownBridge()
 {
     DX12Log("SHUTDOWN: ImGui_DX12_ShutdownBridge() - clean exit after %llu frames", g_DX12LogFrameCount);
+    g_PendingDeletes.clear();
     g_TextureCache.clear();
     g_pFontTextureResource.Reset();
     g_pPipelineState.Reset();
@@ -1102,6 +1135,12 @@ void ImGui_DX12_RemoveTexture(int imageId)
     auto it = g_TextureCache.find(imageId);
     if (it != g_TextureCache.end())
     {
+        // Defer deletion — the GPU may still be rendering with this texture from a previous frame.
+        // Immediate release of the ID3D12Resource causes DXGI_ERROR_DEVICE_REMOVED.
+        PendingTextureDelete pd;
+        pd.Texture = std::move(it->second);
+        pd.FramesRemaining = DEFERRED_DELETE_FRAMES;
+        g_PendingDeletes.push_back(std::move(pd));
         g_TextureCache.erase(it);
     }
 }
