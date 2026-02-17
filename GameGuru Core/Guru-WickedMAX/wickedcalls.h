@@ -243,4 +243,5 @@ void WickedCall_UpdateEmitters(void);
 uint32_t WickedCall_LoadWPE(char* filename);
 uint32_t WickedCall_CreateEmitter(std::string& name, float posX, float posY, float posZ, uint32_t proot);
 void WickedCall_SetShaderParameter(int obj, int parameter, float value);
+bool WickedCall_CaptureBackbufferRegionToJPG(int x, int y, int w, int h, const char* outputPath);
 

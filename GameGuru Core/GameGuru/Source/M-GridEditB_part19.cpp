@@ -232,36 +232,61 @@
 					GG_SetWritablesToRoot(true);
 					if (FileExist("thumbbank\\lastnewlevel.jpg"))
 					{
-						image_setlegacyimageloading(true);
-						//Use a tmp unique image id
-						LoadImageSize("thumbbank\\lastnewlevel.jpg", STORYBOARD_THUMBS + 401, 512, 288);
-						image_setlegacyimageloading(false);
-
-						if (ImageExist(STORYBOARD_THUMBS + 401))
+						extern bool ImGui_DX12_IsInitialized();
+						if (ImGui_DX12_IsInitialized())
 						{
-							//Get it into the correct id.
+							// DX12 mode: copy the JPG directly (no DX11 SaveImage needed)
+							cstr name = cstr("screen_") + cstr(Storyboard.gamename) + cstr("_") + cstr(Storyboard.Nodes[iWaitFor2DEditorNode].title);
+							CreateBackBufferCacheNameEx(name.Get(), 512, 288, true);
+
+							// Resolve lastnewlevel.jpg to absolute path for CopyFile source
+							char srcPath[MAX_PATH];
+							strcpy(srcPath, "thumbbank\\lastnewlevel.jpg");
+							GG_GetRealPath(srcPath, 0);
+							CopyFileA(srcPath, BackBufferCacheName.Get(), FALSE);
+
+							if (FileExist(BackBufferCacheName.Get()))
+							{
+								if (CopyToProjectFolder(BackBufferCacheName.Get()))
+									strcpy(Storyboard.Nodes[iWaitFor2DEditorNode].thumb, ProjectCacheName.Get());
+								else
+									strcpy(Storyboard.Nodes[iWaitFor2DEditorNode].thumb, BackBufferCacheName.Get());
+							}
+
+							// Evict old DX12 texture cache and reload from the absolute path
+							// (LoadImageSize prepends CWD to build szLongFilename, which won't
+							// find writables-area files; the szFilename/szShortFilename fallbacks
+							// in GetFileDimensions and GetOrLoadTexture use the absolute path)
+							if (ImageExist(Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id)) DeleteImage(Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id);
+							char absThumb[MAX_PATH];
+							strcpy(absThumb, Storyboard.Nodes[iWaitFor2DEditorNode].thumb);
+							GG_GetRealPath(absThumb, 0);
+							LoadImageSize(absThumb, Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id, 512, 288);
+						}
+						else
+						{
+							// DX11 mode: original legacy path
 							image_setlegacyimageloading(true);
-							LoadImageSize("thumbbank\\lastnewlevel.jpg", Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id, 512, 288);
+							LoadImageSize("thumbbank\\lastnewlevel.jpg", STORYBOARD_THUMBS + 401, 512, 288);
 							image_setlegacyimageloading(false);
 
-							if (ImageExist(Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id))
+							if (ImageExist(STORYBOARD_THUMBS + 401))
 							{
-								//Save into thumbbank , and save thumb filename in node.
-								//PE: Needed to add Storyboard.gamename so we dont get duplicates.
-								// name of thumb is now based on screen title, to prevent multiple screens with same thumb name
-								cstr name = cstr("screen_") + cstr(Storyboard.gamename) + cstr("_") + cstr(Storyboard.Nodes[iWaitFor2DEditorNode].title);
-								CreateBackBufferCacheNameEx(name.Get(), 512, 288, true);
-								SaveImage(BackBufferCacheName.Get(), Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id);
-								if (FileExist(BackBufferCacheName.Get()))
+								image_setlegacyimageloading(true);
+								LoadImageSize("thumbbank\\lastnewlevel.jpg", Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id, 512, 288);
+								image_setlegacyimageloading(false);
+
+								if (ImageExist(Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id))
 								{
-									if (CopyToProjectFolder(BackBufferCacheName.Get()))
+									cstr name = cstr("screen_") + cstr(Storyboard.gamename) + cstr("_") + cstr(Storyboard.Nodes[iWaitFor2DEditorNode].title);
+									CreateBackBufferCacheNameEx(name.Get(), 512, 288, true);
+									SaveImage(BackBufferCacheName.Get(), Storyboard.Nodes[iWaitFor2DEditorNode].thumb_id);
+									if (FileExist(BackBufferCacheName.Get()))
 									{
-										//PE: Use relative projectbank filename.
-										strcpy(Storyboard.Nodes[iWaitFor2DEditorNode].thumb, ProjectCacheName.Get());
-									}
-									else
-									{
-										strcpy(Storyboard.Nodes[iWaitFor2DEditorNode].thumb, BackBufferCacheName.Get());
+										if (CopyToProjectFolder(BackBufferCacheName.Get()))
+											strcpy(Storyboard.Nodes[iWaitFor2DEditorNode].thumb, ProjectCacheName.Get());
+										else
+											strcpy(Storyboard.Nodes[iWaitFor2DEditorNode].thumb, BackBufferCacheName.Get());
 									}
 								}
 							}

@@ -1749,3 +1749,81 @@ void WickedCall_SetTexturePath(LPSTR pPath)
 	g_pWickedTexturePath = pPath;
 }
 
+bool WickedCall_CaptureBackbufferRegionToJPG(int x, int y, int w, int h, const char* outputPath)
+{
+	using namespace wi::graphics;
+	GraphicsDevice* device = GetDevice();
+	if (!device) return false;
+
+	// Get the backbuffer texture from the swap chain
+	Texture backbuffer = device->GetBackBuffer(&master.swapChain);
+	TextureDesc desc = backbuffer.GetDesc();
+
+	// Validate/clamp region to backbuffer bounds
+	if (x < 0) x = 0;
+	if (y < 0) y = 0;
+	if (x + w > (int)desc.width) w = (int)desc.width - x;
+	if (y + h > (int)desc.height) h = (int)desc.height - y;
+	if (w <= 0 || h <= 0) return false;
+
+	// Read GPU texture to CPU memory
+	wi::vector<uint8_t> texturedata;
+	if (!wi::helper::saveTextureToMemory(backbuffer, texturedata))
+		return false;
+
+	const uint32_t pixel_count = desc.width * desc.height;
+
+	// Convert pixel format to RGBA8 in-place (mirrors wiHelper.cpp logic)
+	if (desc.format == Format::R10G10B10A2_UNORM)
+	{
+		uint32_t* data32 = (uint32_t*)texturedata.data();
+		for (uint32_t i = 0; i < pixel_count; ++i)
+		{
+			uint32_t pixel = data32[i];
+			float r = ((pixel >> 0) & 1023) / 1023.0f;
+			float g = ((pixel >> 10) & 1023) / 1023.0f;
+			float b = ((pixel >> 20) & 1023) / 1023.0f;
+			float a = ((pixel >> 30) & 3) / 3.0f;
+			uint32_t rgba8 = 0;
+			rgba8 |= (uint32_t)(r * 255.0f) << 0;
+			rgba8 |= (uint32_t)(g * 255.0f) << 8;
+			rgba8 |= (uint32_t)(b * 255.0f) << 16;
+			rgba8 |= (uint32_t)(a * 255.0f) << 24;
+			data32[i] = rgba8;
+		}
+	}
+	else if (desc.format == Format::B8G8R8A8_UNORM || desc.format == Format::B8G8R8A8_UNORM_SRGB)
+	{
+		uint32_t* data32 = (uint32_t*)texturedata.data();
+		for (uint32_t i = 0; i < pixel_count; ++i)
+		{
+			uint32_t pixel = data32[i];
+			uint8_t b = (pixel >> 0u) & 0xFF;
+			uint8_t g = (pixel >> 8u) & 0xFF;
+			uint8_t r = (pixel >> 16u) & 0xFF;
+			uint8_t a = (pixel >> 24u) & 0xFF;
+			data32[i] = r | (g << 8u) | (b << 16u) | (a << 24u);
+		}
+	}
+	// else: assume R8G8B8A8_UNORM, no conversion needed
+
+	// Crop the specified region into a new packed buffer
+	const uint32_t srcRowPitch = desc.width * 4;
+	const uint32_t dstRowPitch = (uint32_t)w * 4;
+	wi::vector<uint8_t> croppedData((size_t)w * h * 4);
+	for (int row = 0; row < h; ++row)
+	{
+		const uint8_t* srcRow = texturedata.data() + (size_t)(y + row) * srcRowPitch + (size_t)x * 4;
+		uint8_t* dstRow = croppedData.data() + (size_t)row * dstRowPitch;
+		std::memcpy(dstRow, srcRow, dstRowPitch);
+	}
+
+	// Save as JPG using the raw-data overload with RGBA8 descriptor
+	TextureDesc croppedDesc;
+	croppedDesc.width = (uint32_t)w;
+	croppedDesc.height = (uint32_t)h;
+	croppedDesc.format = Format::R8G8B8A8_UNORM;
+
+	return wi::helper::saveTextureToFile(croppedData, croppedDesc, std::string(outputPath));
+}
+

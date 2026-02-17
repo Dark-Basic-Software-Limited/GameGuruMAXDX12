@@ -3642,6 +3642,29 @@
 						g_pGlob->pCurrentBitmapSurface = pTmpSurface;
 					}
 				}
+				else
+				{
+					// DX12 mode: bitmap 99 doesn't exist, capture backbuffer directly
+					extern ImRect g_rStealMonitorArea;
+					int captureX = (int)g_rStealMonitorArea.Min.x;
+					int captureY = (int)g_rStealMonitorArea.Min.y;
+					int captureW = (int)(g_rStealMonitorArea.Max.x - g_rStealMonitorArea.Min.x);
+					int captureH = (int)(g_rStealMonitorArea.Max.y - g_rStealMonitorArea.Min.y);
+
+					GG_SetWritablesToRoot(true);
+					if (FileExist("thumbbank\\lastnewlevel.jpg")) DeleteAFile("thumbbank\\lastnewlevel.jpg");
+					GG_SetWritablesToRoot(false);
+
+					if (captureW > 0 && captureH > 0)
+					{
+						char destination[MAX_PATH];
+						strcpy(destination, "thumbbank\\lastnewlevel.jpg");
+						GG_SetWritablesToRoot(true);
+						GG_GetRealPath(destination, 1);
+						GG_SetWritablesToRoot(false);
+						WickedCall_CaptureBackbufferRegionToJPG(captureX, captureY, captureW, captureH, destination);
+					}
+				}
 
 				//Quit and get new thumb to correct node id.
 				iWaitFor2DEditor = 5;
