@@ -1097,6 +1097,15 @@ bool ImGui_DX12_GetImageSize(int imageId, int* outWidth, int* outHeight)
     return false;
 }
 
+void ImGui_DX12_RemoveTexture(int imageId)
+{
+    auto it = g_TextureCache.find(imageId);
+    if (it != g_TextureCache.end())
+    {
+        g_TextureCache.erase(it);
+    }
+}
+
 bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight)
 {
     if (!filepath || !filepath[0])

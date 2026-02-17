@@ -198,6 +198,9 @@ void image_preload_files_reset ( void )
 extern std::vector<ID3D11ShaderResourceView*> lpBadTexture;
 #endif
 
+// Forward declaration for DX12 texture cache eviction (defined in imgui_gg_dx12_bridge.cpp)
+extern void ImGui_DX12_RemoveTexture(int imageId);
+
 namespace
 {
     typedef std::map<int, tagImgData*>		ImageList_t;
@@ -288,6 +291,9 @@ namespace
 			#endif
             SAFE_DELETE( pImage->second->lpName );
             delete pImage->second;
+
+            // Evict from DX12 texture cache so replacement images at the same ID get loaded
+            ::ImGui_DX12_RemoveTexture(iID);
 
             m_List.erase(pImage);
 

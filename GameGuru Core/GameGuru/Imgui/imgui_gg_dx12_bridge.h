@@ -35,5 +35,8 @@ void ImGui_DX12_SetImageSize(int imageId, int width, int height);
 // Retrieve cached width/height for an image loaded via DX12.
 bool ImGui_DX12_GetImageSize(int imageId, int* outWidth, int* outHeight);
 
+// Remove a cached DX12 texture by image ID (must be called when an image is deleted/replaced).
+void ImGui_DX12_RemoveTexture(int imageId);
+
 // Query image file dimensions from disk without loading pixel data.
 bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight);
