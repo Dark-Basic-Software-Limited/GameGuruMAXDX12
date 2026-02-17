@@ -858,10 +858,37 @@ Post DX12 lighting brightness fix (commit 241bd64b). FPS is ~15-20% lower across
 | 18 | The Mystery of Z Island | 64.5 | 64.0 |
 | 19 | Trapped | 169.4 | 165.9 |
 
+### Results (2026-02-17, AMD Radeon RX 9060 XT, 10 samples/30s)
+
+Post Phase 2 DX12 shader port (commit 215ed91b). 19/19 demos tested, all passed. Island Showdown now passes with increased load timeouts in the test script. River Raiders caused a sound crash (dsutil.cpp:1018, pre-existing bug) on first run but passed on retest.
+
+| # | Demo | Best FPS | Avg FPS |
+|---|------|----------|---------|
+| 1 | Aztec Game Kit Teaser | 141.8 | 129.3 |
+| 2 | Aztec Game Kit | 64.8 | 48.6 |
+| 3 | Bounty | 111.8 | 108.3 |
+| 4 | Horseshoe Bend | 16.1 | 10.4 |
+| 5 | Island Showdown | 30.4 | 27.7 |
+| 6 | Operation Amazon | 55.1 | 53.3 |
+| 7 | River Raiders | 59.2 | 57.4 |
+| 8 | Snowy Mountain Stroll | 32.0 | 26.1 |
+| 9 | A Grand Canyon Adventure | 60.3 | 57.9 |
+| 10 | Disruption | 86.9 | 84.8 |
+| 11 | Foggy Forest | 49.1 | 41.9 |
+| 12 | Indian Strike Force | 35.2 | 31.6 |
+| 13 | Switch Escape | 166.3 | 163.3 |
+| 14 | Canyon Offensive | 41.1 | 33.2 |
+| 15 | Escape from the Zombie Cellar | 60.0 | 59.9 |
+| 16 | Jungle Fever | 102.4 | 100.9 |
+| 17 | RPG Template | 110.9 | 107.8 |
+| 18 | The Mystery of Z Island | 54.0 | 50.6 |
+| 19 | Trapped | 179.6 | 175.6 |
+
 ## Notes
 
 - The harness response confirms the command was accepted, not that the resulting operation completed — always follow up with `GET_STATE` after waits
 - All 19 demos were successfully tested through the hub->storyboard sequence on 2026-02-14
 - 18/19 demos passed the full FPS test (hub->storyboard->editor->game->FPS->escape) on 2026-02-15 and 2026-02-16
+- 19/19 demos passed on 2026-02-17 (Island Showdown fixed with increased load timeouts)
 - `GET_SCREEN_TEXT` provides full widget/button labels for every storyboard node — use this to verify screen content without screenshots
 - When polling after a level load, use a longer timeout (60s) on the `GET_STATE` poll to account for the synchronous load
