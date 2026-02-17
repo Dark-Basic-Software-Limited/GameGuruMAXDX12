@@ -21,319 +21,371 @@ These shaders were written for the **DX11 rendering path** of an older Wicked En
 
 ---
 
+## PRE-ANALYZED: DX12 Root Signature Architecture (CRITICAL FINDING)
+
+We have already analyzed the latest Wicked Engine DX12 `globals.hlsli` and `ShaderInterop.h`. This section contains **confirmed findings** that answer most of the critical architecture questions. Use these as ground truth — do not re-investigate what is already answered here.
+
+### The Root Signature (from `globals.hlsli` lines 206-288)
+
+The latest Wicked Engine defines `WICKED_ENGINE_DEFAULT_ROOTSIGNATURE` as a string macro in `globals.hlsli`. It is used by the DXC compiler to embed the root signature into DXIL bytecode. The layout is:
+
+```
+Root Parameter 0: RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)
+Root Parameter 1: RootConstants(num32BitConstants=12, b999)     ← Push constants
+Root Parameter 2: CBV(b0)                                       ← FrameCB
+Root Parameter 3: CBV(b1)                                       ← CameraCB  
+Root Parameter 4: CBV(b2)                                       ← On-demand CB slot
+Root Parameter 5: DescriptorTable(
+                    CBV(b3, numDescriptors=11),                  ← b3-b13
+                    SRV(t0, numDescriptors=16),                  ← t0-t15 ONLY
+                    UAV(u0, numDescriptors=16)                   ← u0-u15
+                  )
+Root Parameter 6: DescriptorTable(Sampler(s0, numDescriptors=8)) ← s0-s7
+Root Parameter 7: DescriptorTable(Sampler space1, unbounded)     ← Bindless samplers
+Root Parameter 8: DescriptorTable(                               ← Bindless resources
+                    SRV space2-30 (unbounded each),              ← Bindless textures by type
+                    UAV space100-115 (unbounded each),           ← Bindless RW resources
+                    SRV space200-208 (unbounded each)            ← Bindless structured buffers
+                  )
+Static Samplers:  s100-s109                                      ← Engine samplers (always available)
+```
+
+### What This Means — Confirmed Compatibility Matrix
+
+#### ✅ WORKS AS-IS (no shader changes needed for these)
+
+| Feature | Why It Works |
+|---------|-------------|
+| **Input Assembler** | `ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT` is set. All 7+ custom vertex formats with custom semantics (INORMAL, OFFSET, DATA, ID, etc.) survive. |
+| **CBV b0 (FrameCB)** | Dedicated root CBV slot. |
+| **CBV b1 (CameraCB)** | Dedicated root CBV slot. |
+| **CBV b2 (TerrainCB/GrassCB/TreeCB)** | Dedicated root CBV slot. This is the big win — all custom constant buffers at b2 work directly. |
+| **CBV b3-b13** | In the descriptor table. Covers b7 (ForwardEntityMaskCB) and b8 (CubemapRenderCB). |
+| **SRV t0-t15** | In the descriptor table. Covers terrain debug textures (t0-t6, t13), shadow arrays (t14). |
+| **UAV u0-u15** | In the descriptor table. Covers compute shader output (u0). |
+| **On-demand samplers s0-s7** | In sampler descriptor table. Covers all custom sampler declarations at s0-s3. |
+| **Push constants b999** | 12 root constants. Available if needed. |
+
+#### ❌ BREAKS — Requires Shader Changes
+
+| Feature | Why It Breaks | Scope of Impact |
+|---------|--------------|-----------------|
+| **SRV t16-t63** | Root signature only has `SRV(t0, numDescriptors=16)` — slots t16+ do not exist in the descriptor table. | **ALL custom texture bindings above t15**: t20-t21 (EntityArray/MatrixArray), t40-t47 (terrain materials), t50-t58 (VT/grass/tree textures) |
+| **Old persistent samplers s4-s15** | These slot numbers no longer exist. Engine samplers moved to static samplers at s100-s109. | Any Tier 3 shader that includes `globals.hlsli` and uses `sampler_linear_clamp`, `sampler_cmp_depth` etc. — these now live at s100-s109 instead of s4-s13. |
+| **`STRUCTUREDBUFFER` macro for EntityTiles** | Old macro expanded to `StructuredBuffer<type> name : register(t##slot)` with a t-slot. In the new engine, structured buffers are accessed via `bindless_structured_uint[]` in space206. | All Tier 3 shaders using TiledLighting (reads EntityTiles) |
+| **EntityArray (t20) and MatrixArray (t21)** | Slot t20/t21 outside the t0-t15 range. In new engine, accessed via `GetFrame().entityArray[index]` and `GetFrame().matrixArray[index]` (stored in FrameCB, accessed via bindless structured buffers). | GGTerrainPS.hlsl (local ShaderEntity copy), plus any shader using shadow cascades |
+
+#### The Bindless Texture Model (New Engine)
+
+In the latest Wicked Engine, textures are accessed via typed unbounded arrays in separate register spaces:
+
+```hlsl
+// DX12 path (from globals.hlsli lines 417-465):
+SamplerState            bindless_samplers[]              : register(space1);
+Texture2D               bindless_textures[]              : register(space2);
+ByteAddressBuffer       bindless_buffers[]               : register(space3);
+Texture2DArray          bindless_textures2DArray[]       : register(space13);
+Texture2D<float>        bindless_textures_float[]        : register(space20);
+Texture2D<uint>         bindless_textures_uint[]         : register(space22);
+StructuredBuffer<uint>  bindless_structured_uint[]       : register(space206);
+// ... etc. for every resource type
+```
+
+Textures are identified by **descriptor index** (an integer stored in material/frame data). Access pattern:
+```hlsl
+// Old (slot-based):
+Texture2DArray texGrass : register(t50);
+color = texGrass.Sample(sampler1, uv);
+
+// New (bindless):
+Texture2DArray texGrass = bindless_textures2DArray[descriptor_index(grass_textureIndex)];
+color = texGrass.Sample(sampler_aniso_wrap, uv);  // static sampler at s107
+```
+
+Engine static samplers (always available, no binding needed):
+```hlsl
+SamplerState          sampler_linear_clamp   : register(s100);
+SamplerState          sampler_linear_wrap    : register(s101);
+SamplerState          sampler_linear_mirror  : register(s102);
+SamplerState          sampler_point_clamp    : register(s103);
+SamplerState          sampler_point_wrap     : register(s104);
+SamplerState          sampler_point_mirror   : register(s105);
+SamplerState          sampler_aniso_clamp    : register(s106);
+SamplerState          sampler_aniso_wrap     : register(s107);
+SamplerState          sampler_aniso_mirror   : register(s108);
+SamplerComparisonState sampler_cmp_depth     : register(s109);
+```
+
+### Confirmed Porting Strategy Per Category
+
+Based on the root signature analysis, here is what each category of change requires:
+
+**Category A — Tier 1 shaders that use ONLY b0/b1/b2 and no textures:**
+→ Recompile with DXC + embed `WICKED_ENGINE_DEFAULT_ROOTSIGNATURE`. **Zero shader code changes.** This covers 13 shaders (all Tier 1).
+
+**Category B — Shaders using t0-t15 textures (terrain debug, shadow arrays):**
+→ Recompile with DXC + embed root signature. **Zero or minimal shader code changes.** Slots t0-t15 are in the descriptor table.
+
+**Category C — Shaders using t16+ textures (the majority of Tier 2 and all Tier 3):**
+→ Must convert texture declarations from `register(t##)` to **bindless lookups**. Two sub-strategies:
+
+  - **C1 (Recommended — Minimal Change):** Pass descriptor indices through the existing custom CBs (TerrainCB, GrassCB, TreeCB). Add `int` fields for each texture index. Shader declares textures via `bindless_textures2DArray[descriptor_index(cb_field)]` instead of `register(t50)`. C++ side stores descriptor heap indices instead of calling `BindResource(slot, texture)`.
+
+  - **C2 (Alternative — Expand Root Signature):** Modify `WICKED_ENGINE_DEFAULT_ROOTSIGNATURE` to increase `numDescriptors` from 16 to 64 for SRVs: `SRV(t0, numDescriptors=64)`. This would make t0-t63 available and preserve all slot-based bindings. **Risk:** this may conflict with how the engine's DX12 backend manages its descriptor heap, and requires changes to `wiGraphicsDevice_DX12.cpp` descriptor table setup. Investigate feasibility.
+
+**Category D — Samplers:**
+→ On-demand samplers at s0-s3 still work (s0-s7 descriptor table exists). Persistent engine samplers have moved from s4-s13 to static samplers at s100-s109. For custom shaders that reference engine samplers by old slot names (via `globals.hlsli`), the updated `globals.hlsli` handles this automatically since the sampler variables are declared at s100+. For custom shaders that declare their own `SamplerState` at s0-s3, no change needed.
+
+**Category E — EntityArray/MatrixArray/EntityTiles (structured buffers):**
+→ Old: `StructuredBuffer<ShaderEntity> EntityArray : register(t20)`. New: accessed via `load_entity(index)`, `load_entitymatrix(index)`, `load_entitytile(index)` macros that use bindless structured buffers. Custom shaders must migrate to these accessor macros or equivalent bindless lookups.
+
+### Important Note on the PBR/ Headers
+
+The custom shaders include **old versions** of `PBR/globals.hlsli`, `PBR/ShaderInterop.h`, `PBR/brdf.hlsli`, `PBR/lightingHF.hlsli`, etc. These are the DX11-era headers from the old Wicked Engine fork. The **latest versions** of these files define bindless resources, the root signature, new Surface/Lighting APIs, new FrameCB/CameraCB layouts, etc.
+
+**The PBR/ headers MUST be updated to the latest Wicked Engine versions** (or a compatible subset). This is not optional — the root signature is defined in `globals.hlsli`, and the old `globals.hlsli` declares slot-based textures/samplers that conflict with the DX12 root signature.
+
+This header update will cascade changes through all Tier 3 shaders because:
+- `Surface` struct API has changed (new fields, different `create*` methods)
+- `Lighting` struct and light evaluation functions have changed
+- `ShaderEntity` struct has changed (new packing, different accessor methods)
+- `FrameCB`/`CameraCB` layouts have changed (different field names, new fields)
+- Fog, ambient, and sky functions have changed
+- Entity iteration now uses `ShaderEntityIterator` and `load_entity()` instead of array indexing
+
+**This PBR header update is the largest single piece of work in the entire port**, affecting all 12 Tier 3 shaders and several Tier 2 shaders that include `globals.hlsli`.
+
+---
+
 ## Complete Shader Inventory (All 62 Files Analyzed)
 
-### Shared Engine Headers (PBR/ subfolder)
+### Shared Engine Headers (PBR/ subfolder — OLD versions, must be updated)
 
 | File | Role |
 |------|------|
-| `PBR/ShaderInterop.h` | Master header — CBUFFER/TEXTURE2D/SAMPLERSTATE macros; has `#ifdef HLSL6`/`SPIRV` paths for PUSHCONSTANT and BINDLESS |
-| `PBR/ConstantBufferMapping.h` | CB slot #defines (b0=Frame, b1=Camera, b2-b10=on-demand) |
-| `PBR/SamplerMapping.h` | Sampler slot #defines (s0-s3=on-demand, s4-s15=persistent) |
-| `PBR/ResourceMapping.h` | Texture/SRV slot #defines (t0-t29=engine, t30-t63=on-demand, TEXSLOT_COUNT=64) |
-| `PBR/ShaderInterop_Renderer.h` | FrameCB, CameraCB, MaterialCB, ShaderEntity, ShaderMaterial, ForwardEntityMaskCB, CubemapRenderCB structs |
-| `PBR/globals.hlsli` | Declares all engine textures/samplers/buffers via macros; utility functions (fog, tonemap, dither, ray tracing helpers) |
-| `PBR/brdf.hlsli` | BRDF functions + Surface struct (includes globals.hlsli) |
-| `PBR/lightingHF.hlsli` | Lighting struct, DirectionalLight, PointLight, SpotLight, shadow sampling (includes brdf, voxelConeTracingHF, skyHF) |
-| `PBR/skyHF.hlsli` | GetDynamicSkyColor, sky rendering |
-| `PBR/skyAtmosphere.hlsli` | Atmospheric scattering math |
-| `PBR/voxelConeTracingHF.hlsli` | Voxel GI cone tracing |
+| `PBR/ShaderInterop.h` | Master header — old version has separate mapping headers, TEXTURE2D/SAMPLERSTATE macros |
+| `PBR/ConstantBufferMapping.h` | CB slot #defines — **removed in latest engine** (inlined into ShaderInterop.h) |
+| `PBR/SamplerMapping.h` | Sampler slot #defines — **removed in latest engine** |
+| `PBR/ResourceMapping.h` | Texture/SRV slot #defines — **removed in latest engine** |
+| `PBR/ShaderInterop_Renderer.h` | FrameCB, CameraCB, ShaderEntity, etc. — **significantly changed** |
+| `PBR/globals.hlsli` | Engine textures/samplers/buffers — **completely rewritten** for bindless |
+| `PBR/brdf.hlsli` | BRDF + Surface struct — **Surface API changed** |
+| `PBR/lightingHF.hlsli` | Lighting functions — **significantly changed** |
+| `PBR/skyHF.hlsli` | Sky rendering — changed |
+| `PBR/skyAtmosphere.hlsli` | Atmospheric scattering — may have changed |
+| `PBR/voxelConeTracingHF.hlsli` | Voxel GI — may have changed or been replaced |
 
 ### Shared GameGuru Headers
 
 | File | Role |
 |------|------|
-| `GGCommonFunctions.hlsli` | `ApplyFogCustom()` — used by all Tier 3 main-render PS shaders |
-| `GGTerrainPageSettings.h` | Virtual texture constants (page sizes, padding, filtering) — shared CPU/GPU |
-
-### Binding Model Architecture
-
-The macros in `ShaderInterop.h` expand differently per platform:
-
-```hlsl
-// Shader side (current DX11 path):
-CBUFFER(name, slot)                    → cbuffer name : register(b##slot)
-TEXTURE2D(name, type, slot)            → Texture2D<type> name : register(t##slot)
-STRUCTUREDBUFFER(name, type, slot)     → StructuredBuffer<type> name : register(t##slot)
-SAMPLERSTATE(name, slot)               → SamplerState name : register(s##slot)
-
-// C++ side:
-CBUFFER(name, slot) → static const int CB_GETBINDSLOT(name) = slot; struct alignas(16) name
-
-// Already exists but unused by custom shaders:
-#ifdef HLSL6
-  PUSHCONSTANT(name, type) → ConstantBuffer<type> name : register(b999)
-#endif
-```
+| `GGCommonFunctions.hlsli` | `ApplyFogCustom()` — references FrameCB fields that may have been renamed |
+| `GGTerrainPageSettings.h` | Virtual texture constants — CPU/GPU shared, likely unchanged |
 
 ### Constant Buffers Used
 
-| Slot | Name | Contents | Used By |
-|------|------|----------|---------|
-| `b0` | `FrameCB` | Sun, fog, time, options, atmosphere, water, entity counts, voxel GI, etc. (~660 bytes) | All shaders via `globals.hlsli` |
-| `b0` | Custom `viewProj` | Just a `float4x4` — **conflicts with FrameCB** | `GGTerrainReadBackVS` only (isolated pass) |
-| `b1` | `CameraCB` | VP matrix, cam pos, clip plane, frustum, jitter, prev-frame matrices | Most VS/PS |
-| `b2` | `TerrainCB` | LOD levels[16], layers[5], slopes[2], mask rotation[64], ramp world matrix | All terrain shaders |
-| `b2` | `GrassCB` | Rotation matrices[32], grass types[46], LOD distance, scale, flags | All grass shaders |
-| `b2` | `TreeCB` | Rotation matrices[8+1], tree types[38], player pos, LOD distances | All tree shaders |
-| `b7` | `ForwardEntityMaskCB` | `xForwardLightMask` (uint2), decal/envprobe masks | Env probe PS shaders |
-| `b8` | `CubemapRenderCB` | `xCubemapRenderCams[6]` VP matrices | Env probe VS shaders |
+| Slot | Name | Contents | Used By | DX12 Status |
+|------|------|----------|---------|-------------|
+| `b0` | `FrameCB` | Sun, fog, time, options, etc. | All shaders | ✅ Root CBV |
+| `b0` | Custom `viewProj` | Just a float4x4 | `GGTerrainReadBackVS` only | ⚠️ Conflicts, isolated pass |
+| `b1` | `CameraCB` | VP matrix, cam pos, clip plane | Most VS/PS | ✅ Root CBV |
+| `b2` | `TerrainCB` | LOD levels, layers, slopes, masks | All terrain shaders | ✅ Root CBV |
+| `b2` | `GrassCB` | Rotation matrices, grass types | All grass shaders | ✅ Root CBV |
+| `b2` | `TreeCB` | Rotation matrices, tree types | All tree shaders | ✅ Root CBV |
+| `b7` | `ForwardEntityMaskCB` | xForwardLightMask | Env probe PS | ✅ b3-b13 table, but ⚠️ slot changed to b2 in latest |
+| `b8` | `CubemapRenderCB` | xCubemapRenderCams[6] | Env probe VS | ✅ b3-b13 table |
+
+**⚠️ SLOT CONFLICT: `CBSLOT_RENDERER_FORWARD_LIGHTMASK` changed from 7 to 2 in latest `ShaderInterop.h`.** This means ForwardEntityMaskCB may now conflict with TerrainCB/GrassCB/TreeCB at b2. Investigate how the latest engine resolves this.
 
 ### Custom Texture Slot Usage
 
-| System | Slots | Resources |
-|--------|-------|-----------|
-| **Terrain (non-VT)** | t40-t47 | Color/Normal pairs for grass, rock, snow, sand materials |
-| **Terrain (VT)** | t50-t58 | Page cache textures, page tables, LOD height/normals, mask, material map, grass atlas |
-| **Terrain (debug)** | t0-t6, t13 | Reuses low engine slots for debug quad rendering |
-| **Terrain (compute)** | t50 + u0 | Input texture + UAV output |
-| **Terrain (non-VT PS)** | t14, t20-t21 | Shadow arrays, EntityArray, MatrixArray (manually declared, not via macros) |
-| **Grass** | t50-t51, t53 | texGrass (2DArray), texNoise, texGrassNormal (2DArray) |
-| **Billboard trees** | t50-t51, t53 | texTree (2DArray), texNoise, texTreeNormal (2DArray) |
-| **High-detail trees** | t51-t52 | texNoise, texTreeHigh (2DArray) |
-| **High-detail branches** | t51, t54 | texNoise, texBranchesHigh (2DArray) |
+| System | Slots | Resources | DX12 Status |
+|--------|-------|-----------|-------------|
+| **Terrain (non-VT)** | t40-t47 | Color/Normal pairs | ❌ Above t15 |
+| **Terrain (VT)** | t50-t58 | Page cache, tables, LOD data | ❌ Above t15 |
+| **Terrain (debug)** | t0-t6, t13 | Debug quad textures | ✅ Within t0-t15 |
+| **Terrain (compute)** | t50 + u0 | Input + UAV | ❌ t50; ✅ u0 |
+| **Terrain (non-VT PS)** | t14, t20-t21 | Shadows, Entity/Matrix arrays | ⚠️ t14 ✅; t20-t21 ❌ |
+| **Grass** | t50-t51, t53 | Textures | ❌ Above t15 |
+| **Billboard trees** | t50-t51, t53 | Textures | ❌ Above t15 |
+| **High-detail trees** | t51-t52 | Textures | ❌ Above t15 |
+| **High-detail branches** | t51, t54 | Textures | ❌ Above t15 |
 
 ### Sampler Usage
 
-Custom shaders declare on-demand samplers at s0-s3:
-```hlsl
-SamplerState samplerPointWrap : register( s0 );      // or samplerBilinearWrap
-SamplerState samplerTrilinearClamp : register( s1 );  // or samplerBiClamp
-SamplerState samplerTrilinearWrap : register( s2 );   // or samplerBiWrap
-SamplerState samplerPointClamp : register( s3 );
-```
+| Slot | Old Name | New Static Sampler | Status |
+|------|----------|-------------------|--------|
+| s0-s3 | Custom on-demand | N/A | ✅ In s0-s7 table |
+| s4 | sampler_linear_clamp | s100 | ⚠️ Auto-fixed by header update |
+| s5 | sampler_linear_wrap | s101 | ⚠️ Auto-fixed by header update |
+| s7 | sampler_point_clamp | s103 | ⚠️ Auto-fixed by header update |
+| s13 | sampler_cmp_depth | s109 | ⚠️ Auto-fixed by header update |
 
-Engine persistent samplers (s4-s15) available via `globals.hlsli`.
+### Vertex Input Formats — All ✅ Confirmed Working
 
-### Vertex Input Formats
-
-**7 distinct vertex formats** (all using input assembler with custom semantics):
-
-| Format | Semantics | Used By |
-|--------|-----------|---------|
-| Terrain mesh | `POSITION`(f3), `INORMAL`(f4), `ID`(u1) | TerrainVS, TerrainPrepassVS, TerrainShadowMapVS, etc. |
-| Terrain sphere | `POSITION`(f3), `NORMAL`(f3), `UV`(f2), `SV_InstanceID` | TerrainSphereVS |
-| Terrain page gen | `POSITION`(f2), `UV`(f2), `HEIGHTUV`(f2), `WORLDPOS`(f2), `CHUNKID`(u1) | TerrainPageGenVS |
-| Billboard tree | `POSITION`(f2), `OFFSET`(f3), `DATA`(u1) | GGTreesVS, GGTreesShadowMapVS, GGTreesPrepassVS |
-| High-detail tree | `POSITION`(f3), `INORMAL`(f4), `UV`(f2), `OFFSET`(f3), `DATA`(u1) | GGTreesHighVS, GGTreeBranchesHighVS, and all shadow/prepass variants |
-| Tree env probe | Same as high-detail + `INSTANCEDATA`(u1) for cubeFaceID | GGTreesHighEnvProbeVS, GGTreeBranchesHighEnvProbeVS |
-| Grass | `POSITION`(f2), `OFFSET`(f3), `DATA`(u1), `SV_InstanceID` | GGGrassVS, GGGrassPrepassVS |
-| Grass shadow | `POSITION`(f3), `UV`(f2), `OFFSET`(f3), `DATA`(u1) | GGGrassShadowMapVS |
-| Simple quad/overlay | `POSITION`(f2) | GGTerrainQuadVS, GGTerrainOverlayVS |
-| Edit box/ramp | `POSITION`(f3) | GGTerrainEditBoxVS, GGTerrainRampVS |
-| Readback | `POSITION`(f3), `ID`(u1) | GGTerrainReadBackVS |
+All use input assembler (`ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT` is set):
+Terrain mesh, Terrain sphere, Terrain page gen, Billboard tree, High-detail tree, Tree env probe, Grass, Grass shadow, Simple quad/overlay, Edit box/ramp, Readback.
 
 ---
 
-### Complete File Inventory with Tiers
+### Complete File Inventory with Tiers and DX12 Status
 
-#### Tier 1 — Simple (recompile + root signature; no PBR, minimal bindings)
+#### Tier 1 — Category A: ZERO code changes (recompile + root signature only)
 
-| File | Type | CBs | Custom Tex | Notes |
-|------|------|-----|------------|-------|
-| GGTerrainShadowMapVS | VS | b1 | — | Simplest possible |
-| GGTerrainPrepassRefVS | VS | b1,b2 | — | Clip distance only |
-| GGTerrainQuadVS | VS | — | — | No cbuffers at all |
-| GGTerrainRampVS | VS | b1,b2 | — | Editor visualization |
-| GGTerrainRampPS | PS | b2 | — | Editor visualization |
-| GGTerrainEditBoxVS | VS | b1,b2 | — | Editor visualization |
-| GGTerrainEditBoxPS | PS | b2 | — | Editor visualization |
-| GGTerrainSpherePrepassPS | PS | — | — | Returns zeros |
-| GGGrassShadowMapVS | VS | b1,b2 | — | |
-| GGGrassShadowMapPS | PS | b2 | — | Alpha test commented out |
-| GGTreesShadowMapVS | VS | b1,b2 | — | Billboard tree shadow |
-| GGTreesHighShadowMapVS | VS | b1,b2 | — | High-detail tree shadow |
-| GGTreeBranchesHighShadowMapVS | VS | b1,b2 | — | Branches shadow |
+| File | Type | CBs | Notes |
+|------|------|-----|-------|
+| GGTerrainShadowMapVS | VS | b1 | Simplest possible |
+| GGTerrainPrepassRefVS | VS | b1,b2 | Clip distance only |
+| GGTerrainQuadVS | VS | — | No cbuffers |
+| GGTerrainRampVS | VS | b1,b2 | Editor |
+| GGTerrainRampPS | PS | b2 | Editor |
+| GGTerrainEditBoxVS | VS | b1,b2 | Editor |
+| GGTerrainEditBoxPS | PS | b2 | Editor |
+| GGTerrainSpherePrepassPS | PS | — | Returns zeros |
+| GGGrassShadowMapVS | VS | b1,b2 | |
+| GGGrassShadowMapPS | PS | b2 | |
+| GGTreesShadowMapVS | VS | b1,b2 | |
+| GGTreesHighShadowMapVS | VS | b1,b2 | |
+| GGTreeBranchesHighShadowMapVS | VS | b1,b2 | |
 
-**Total: 13 shaders**
+**13 shaders — IMMEDIATE QUICK WIN**
 
-#### Tier 2 — Medium (engine globals and/or custom textures, no PBR chain)
+#### Tier 2A — Category A/B: ZERO code changes (VS with no textures, or textures ≤ t15)
 
-| File | Type | CBs | Custom Tex | Notes |
-|------|------|-----|------------|-------|
-| GGTerrainVS | VS | b1,b2 | — | Uses GGTerrainPageSettings.h |
-| GGTerrainPrepassVS | VS | b1,b2 | — | |
-| GGTerrainEnvProbeVS | VS | b2,b8 | — | Uses xCubemapRenderCams |
-| GGTerrainOverlayVS | VS | b0(partial) | — | Re-declares partial FrameCB |
-| GGTerrainPageGenVS | VS | b2 | — | |
-| GGTerrainReadBackVS | VS | b0(custom!) | — | Own viewProj at b0 |
-| GGTerrainSphereVS | VS | b1 | — | Instanced spheres |
-| GGTerrainReadBackCS | CS | b2 | t50,u0 | Compute shader |
-| GGTerrainReadBackMSCS | CS | b2 | t50(MS),u0 | Compute, multisample |
+| File | Type | CBs | Tex Status | Notes |
+|------|------|-----|-----------|-------|
+| GGTerrainVS | VS | b1,b2 | N/A | |
+| GGTerrainPrepassVS | VS | b1,b2 | N/A | |
+| GGTerrainEnvProbeVS | VS | b2,b8 | N/A | |
+| GGTerrainOverlayVS | VS | b0(partial) | N/A | Must update partial FrameCB |
+| GGTerrainPageGenVS | VS | b2 | N/A | |
+| GGTerrainSphereVS | VS | b1 | N/A | |
+| GGTerrainReadBackPS | PS | — | ✅ t3 | |
+| GGTerrainOverlayPS | PS | b2 | ✅ t0-t2 | |
+| GGTerrainQuadPS | PS | b2 | ✅ t0-t6,t13 | |
+| GGGrassVS | VS | b1,b2 | N/A | |
+| GGGrassPrepassVS | VS | b1,b2 | N/A | |
+| GGTreesVS | VS | b1,b2 | N/A | |
+| GGTreesPrepassVS | VS | b1,b2 | N/A | |
+| GGTreesHighVS | VS | b1,b2 | N/A | |
+| GGTreesHighPrepassVS | VS | b1,b2 | N/A | |
+| GGTreeBranchesHighVS | VS | b1,b2 | N/A | |
+| GGTreeBranchesHighPrepassVS | VS | b1,b2 | N/A | |
+| GGTreesHighEnvProbeVS | VS | b2,b8 | N/A | |
+| GGTreeBranchesHighEnvProbeVS | VS | b2,b8 | N/A | |
+
+**19 shaders — ZERO or minimal code changes** (only GGTerrainOverlayVS needs partial FrameCB fix)
+
+#### Tier 2B — Category C: Bindless texture conversion needed
+
+| File | Type | CBs | Broken Tex | Notes |
+|------|------|-----|-----------|-------|
+| GGTerrainReadBackVS | VS | b0(custom!) | — | ⚠️ b0 conflict, isolated pass |
+| GGTerrainReadBackCS | CS | b2 | t50 | Compute shader |
+| GGTerrainReadBackMSCS | CS | b2 | t50(MS) | Compute, multisample |
 | GGTerrainPrepassPS | PS | b2 | t53,t54 | VT readback |
-| GGTerrainReadBackPS | PS | — | t3 | |
-| GGTerrainOverlayPS | PS | b2 | t0-t2 | Includes globals.hlsli |
-| GGTerrainQuadPS | PS | b2 | t0-t6,t13 | Debug visualization |
-| GGGrassVS | VS | b1,b2 | — | Includes globals.hlsli |
-| GGGrassPrepassVS | VS | b1,b2 | — | |
-| GGGrassPrepassPS | PS | b2 | t50-t51 | Alpha test + LOD fade |
-| GGTreesVS | VS | b1,b2 | — | Billboard trees |
-| GGTreesPrepassVS | VS | b1,b2 | — | |
-| GGTreesHighVS | VS | b1,b2 | — | |
-| GGTreesHighPrepassVS | VS | b1,b2 | — | |
-| GGTreeBranchesHighVS | VS | b1,b2 | — | |
-| GGTreeBranchesHighPrepassVS | VS | b1,b2 | — | |
-| GGTreesShadowMapPS | PS | b2 | t50-t51 | Alpha test + LOD fade |
-| GGTreesHighShadowMapPS | PS | b2 | t51 | LOD fade only |
-| GGTreeBranchesHighShadowMapPS | PS | b2 | t51,t54 | Alpha test + LOD fade |
+| GGGrassPrepassPS | PS | b2 | t50-t51 | Alpha test + LOD |
+| GGTreesShadowMapPS | PS | b2 | t50-t51 | Alpha test + LOD |
+| GGTreesHighShadowMapPS | PS | b2 | t51 | LOD fade |
+| GGTreeBranchesHighShadowMapPS | PS | b2 | t51,t54 | Alpha test + LOD |
 | GGTreesPrepassPS | PS | b2 | t50-t51 | |
 | GGTreesHighPrepassPS | PS | b2 | t51 | |
 | GGTreeBranchesHighPrepassPS | PS | b2 | t51,t54 | |
-| GGTreesHighEnvProbeVS | VS | b2,b8 | — | Uses xCubemapRenderCams |
-| GGTreeBranchesHighEnvProbeVS | VS | b2,b8 | — | Uses xCubemapRenderCams |
 
-**Total: 30 shaders**
+**11 shaders — need bindless texture conversion (but no PBR chain changes)**
 
-#### Tier 3 — Complex (full PBR lighting: brdf + lightingHF + sky + voxelConeTracing)
+#### Tier 3 — Category C+E: Full migration (bindless + PBR headers + entity access)
 
-| File | Type | CBs | Custom Tex | Lighting | Notes |
-|------|------|-----|------------|----------|-------|
-| GGTerrainPS | PS | b2 | t40-t47,t14,t20-t21 | Custom shadow | Local ShaderEntity copy, own cascade code |
-| GGTerrainPageGenPS | PS | b2 | t50-t58 | None | Complex multi-layer material blending |
+| File | Type | CBs | Broken Tex | Lighting | Notes |
+|------|------|-----|-----------|----------|-------|
+| GGTerrainPS | PS | b2 | t40-t47,t20-t21 | Custom shadow | Local ShaderEntity, Entity/MatrixArray |
+| GGTerrainPageGenPS | PS | b2 | t50-t58 | None | Complex material blending |
 | GGTerrainVirtualPS | PS | b2 | t50-t54 | Tiled | VT + tiled lighting |
-| GGTerrainVirtualPBR_PS | PS | b2 | t50-t54 | Tiled | Most complete: 424 lines, VT+tiled+fog+editor |
-| GGTerrainEnvProbePS | PS | b2,b7 | t50-t54 | Forward | Env probe rendering |
-| GGTerrainSpherePS | PS | b2 | t50-t52 | Tiled | Material preview spheres |
-| GGGrassPS | PS | b2 | t50-t51,t53 | Tiled | Grass + LOD fade + custom fog |
-| GGTreesPS | PS | b2 | t50-t51,t53 | Tiled | Billboard trees (218 lines) |
-| GGTreesHighPS | PS | b2 | t51-t52 | Tiled | High-detail trees (272 lines) |
-| GGTreeBranchesHighPS | PS | b2 | t51,t54 | Tiled | Branches + alpha test (277 lines) |
-| GGTreesHighEnvProbePS | PS | b2,b7 | t52 | Forward | Trees env probe |
-| GGTreeBranchesHighEnvProbePS | PS | b2,b7 | t54 | Forward | Branches env probe + alpha |
+| GGTerrainVirtualPBR_PS | PS | b2 | t50-t54 | Tiled | 424 lines, most complete |
+| GGTerrainEnvProbePS | PS | b2,b7 | t50-t54 | Forward | ⚠️ b7 slot changed |
+| GGTerrainSpherePS | PS | b2 | t50-t52 | Tiled | Material preview |
+| GGGrassPS | PS | b2 | t50-t51,t53 | Tiled | Grass + LOD + fog |
+| GGTreesPS | PS | b2 | t50-t51,t53 | Tiled | Billboard trees |
+| GGTreesHighPS | PS | b2 | t51-t52 | Tiled | High-detail trees |
+| GGTreeBranchesHighPS | PS | b2 | t51,t54 | Tiled | Branches + alpha |
+| GGTreesHighEnvProbePS | PS | b2,b7 | t52 | Forward | ⚠️ b7 slot changed |
+| GGTreeBranchesHighEnvProbePS | PS | b2,b7 | t54 | Forward | ⚠️ b7 slot changed |
 
-**Total: 12 shaders**
+**12 shaders — all need significant work**
 
 **Grand total: 55 shader files + 7 header files = 62 files**
-
-### Lighting Variants (Duplicated Code)
-
-Two lighting approaches are copy-pasted into each Tier 3 shader (not shared via include):
-
-1. **TiledLighting** — main render shaders. Reads `EntityTiles` via `STRUCTUREDBUFFER(EntityTiles, uint, TEXSLOT_RENDERPATH_ENTITYTILES)`. Iterates entity buckets with `WaveReadLaneFirst`/`WaveActiveBitOr` (note: these are no-ops via `#define DISABLE_WAVE_INTRINSICS` in ShaderInterop.h).
-
-2. **ForwardLighting** — env probe shaders. Uses `xForwardLightMask` from `ForwardEntityMaskCB` (b7). Simpler loop.
+**Breakdown: 32 zero-change + 11 bindless-only + 12 full-migration = 55 shaders**
 
 ### Key Quirks
 
-1. **`GGTerrainPS.hlsl`** — re-declares `ShaderEntity` as a local struct (copy-pasted from `ShaderInterop_Renderer.h`) and manually binds `EntityArray : register(t20)` and `MatrixArray : register(t21)` instead of using the `STRUCTUREDBUFFER` macro.
-2. **`GGTerrainReadBackVS.hlsl`** — declares `cbuffer constants : register(b0)` with just a `float4x4 viewProj`, conflicting with `FrameCB` at `b0`. Used in an isolated render pass.
-3. **`GGTerrainOverlayVS.hlsl`** — re-declares a partial `FrameCB` at `b0` containing only the resolution fields.
-4. **`GGTreesConstants.hlsli`** — includes `PBR/ShaderInterop_Renderer.h` inside a `#ifndef WI_SHADERINTEROP_RENDERER_H` guard, and uses `g_xFrame_TreeWind` and `g_xFrame_Time` from `FrameCB` in its wind animation functions.
-5. **`DISABLE_WAVE_INTRINSICS`** — defined in `ShaderInterop.h`, makes `WaveReadLaneFirst(a)` → `(a)` and `WaveActiveBitOr(a)` → `(a)`. All TiledLighting code uses these wave intrinsics but they're currently disabled.
-
-### Include Dependency Chain (deepest path)
-
-```
-GGTerrainVirtualPBR_PS.hlsl
-├── GGTerrainConstants.hlsli (TerrainCB at b2)
-├── ../GGTerrainPageSettings.h (virtual texture constants)
-├── PBR/brdf.hlsli
-│   └── PBR/globals.hlsli
-│       ├── PBR/ShaderInterop.h
-│       │   ├── PBR/ConstantBufferMapping.h
-│       │   ├── PBR/SamplerMapping.h
-│       │   └── PBR/ResourceMapping.h
-│       └── PBR/ShaderInterop_Renderer.h
-├── PBR/lightingHF.hlsli
-│   ├── PBR/voxelConeTracingHF.hlsli
-│   └── PBR/skyHF.hlsli → PBR/skyAtmosphere.hlsli
-└── GGCommonFunctions.hlsli (ApplyFogCustom)
-```
+1. **`GGTerrainPS.hlsl`** — local `ShaderEntity` copy + manual `EntityArray : register(t20)`, `MatrixArray : register(t21)`. Must migrate to `load_entity()`/`load_entitymatrix()`.
+2. **`GGTerrainReadBackVS.hlsl`** — `cbuffer constants : register(b0)` conflicts with FrameCB.
+3. **`GGTerrainOverlayVS.hlsl`** — partial FrameCB re-declaration.
+4. **`GGTreesConstants.hlsli`** — uses `g_xFrame_TreeWind`, `g_xFrame_Time` from FrameCB. Field names may have changed.
+5. **`CBSLOT_RENDERER_FORWARD_LIGHTMASK` = 2** in latest engine (was 7). Potential b2 conflict.
+6. **`DISABLE_WAVE_INTRINSICS`** — can be removed for SM 6.0+ performance.
+7. **Duplicated TiledLighting/ForwardLighting** — copy-pasted into 12 Tier 3 shaders. Recommend factoring into shared header.
 
 ---
 
 ## Your Task
 
-Using the complete inventory above, investigate the **engine C++ code** and the **DX12 backend**, then produce a detailed porting plan.
+Using the inventory and root signature analysis above, investigate the **engine C++ code** and produce a detailed porting plan.
 
 ### Step 1: Examine the C++ Integration
 
-Find the engine C++ code that manages these custom shaders:
+The root signature and shader-side architecture are already analyzed above. Now find the C++ code:
 
-1. **Shader compilation/loading** — search for `.cso`, `LoadShader`, `CreateShader`, `fxc`. How are the 62 shaders compiled? Build step or runtime?
-2. **Pipeline state creation** — search for `CreatePipelineState`, input layout setup referencing custom semantics (`INORMAL`, `OFFSET`, `DATA`, `ID`, `CHUNKID`, `WORLDPOS`, `HEIGHTUV`, `INSTANCEDATA`)
-3. **Constant buffer binding** — search for `BindConstantBuffer` with slot 2 (GrassCB/TerrainCB/TreeCB)
-4. **Texture binding** — search for `BindResource` with slots 40-58
-5. **Draw calls** — find the render passes using these shaders
-6. **Existing DX12 work** — search for `HLSL6`, `dxc`, `dxcompiler`, SM 6.0 references
+1. **Shader compilation/loading** — how are the 62 shaders compiled? Build step or runtime?
+2. **Pipeline state creation** — input layout setup for custom semantics
+3. **Constant buffer binding** — how does C++ bind TerrainCB/GrassCB/TreeCB to b2?
+4. **Texture binding** — how does C++ currently bind textures to t40-t58? **This must change.**
+5. **Draw calls** — render pass structure
+6. **Descriptor heap management** — how does the DX12 backend allocate descriptor indices?
+7. **Forward light mask** — is it still via b7 or has it changed?
 
-### Step 2: Examine the DX12 Backend
+### Step 2: Determine Texture Binding Strategy
 
-Answer these critical questions by reading the code:
+Two options — investigate feasibility and recommend one:
 
-1. **Root signature generation** — examine `wiGraphicsDevice_DX12.cpp` around line 3927. Does it extract root signatures from bytecode only, or can it auto-generate them?
-2. **Root signature layout** — what register ranges (b, t, u, s) does it cover? Do t40-t58 and b2 fit?
-3. **Input layout support** — does the DX12 backend support `D3D12_INPUT_ELEMENT_DESC` / input assembler, or only manual vertex fetching?
-4. **Shader compilation** — what target profile and DXC flags does `wi::shadercompiler` use?
-5. **Custom shader registration** — how does GameGuru MAX load its non-built-in shaders?
+**Option C1: Bindless via custom CBs** — Add descriptor index fields to TerrainCB/GrassCB/TreeCB. Shaders use `bindless_textures2DArray[descriptor_index(field)]`. C++ stores descriptor heap indices. Clean, future-proof.
 
-### Step 3: Answer the Critical Architecture Questions
+**Option C2: Expand SRV range** — Change `SRV(t0, numDescriptors=16)` to `SRV(t0, numDescriptors=64)`. Keep `register(t##)` declarations. Investigate if this breaks engine descriptor heap management.
 
-Document the answer to each before writing the plan:
-
-1. **Can slot-based binding survive?** If the DX12 root signature covers b0-b10, t0-t63, s0-s15, u0-u7, then recompiling with DXC may be sufficient for most shaders.
-2. **Can input assembler vertex input survive?** The 7 custom vertex formats use non-standard semantics.
-3. **Do custom texture slots t40-t58 fit in the root signature?** ResourceMapping.h says TEXSLOT_COUNT=64.
-4. **Any sampler conflicts at s0-s3?**
-5. **Is the GGTerrainReadBackVS b0 conflict safe** in an isolated render pass?
-6. **Root signature strategy:** single shared root signature covering all slots, per-shader root signatures, or use the engine's existing one?
-
-### Step 4: Write the Plan
+### Step 3: Write the Plan
 
 #### Section 1: Executive Summary
-- 13 Tier 1 + 30 Tier 2 + 12 Tier 3 = 55 shaders across 3 systems + 7 headers
-- High-level approach, estimated effort, key risks
+- 32 zero-change + 11 bindless-only + 12 full-migration = 55 shaders
+- Texture binding strategy recommendation
+- Key risks: PBR header drift, FrameCB field renames, b7→b2 conflict
 
 #### Section 2: Architecture Comparison
-- DX11 vs DX12 for: compilation, binding, vertex input, root signatures
-- Answers to the 6 critical questions
+- Old DX11 slot-based vs new DX12 hybrid (CBs slot-based, textures bindless)
+- Root signature summary (confirmed above)
+- Texture binding strategy decision with rationale
 
 #### Section 3: Shared Infrastructure (do first)
-- Compilation pipeline (fxc→dxc, SM 5.0→6.0+)
-- Root signature strategy
-- Changes to ShaderInterop.h / mapping headers
-- C++ infrastructure changes
-- Compatibility bridge approach
+- Update PBR/ headers to latest Wicked Engine versions
+- Root signature embedding
+- Compilation pipeline (fxc→dxc)
+- Create `GGBindless.hlsli` helper if using C1
+- Create `GGLighting.hlsli` from duplicated code
+- Update GGCommonFunctions.hlsli
+- C++ descriptor index infrastructure
 
 #### Section 4: Per-System Porting Guide
-
-**4.1 Terrain System (28 files: 8 Tier 1, 13 Tier 2, 7 Tier 3)**
-- Special cases: GGTerrainReadBackVS (b0 conflict), GGTerrainOverlayVS (partial FrameCB), compute shaders, GGTerrainPS (local ShaderEntity)
-
-**4.2 Grass System (8 files: 2 Tier 1, 3 Tier 2, 1 Tier 3 + 2 headers)**
-
-**4.3 Tree System (23 files: 3 Tier 1, 14 Tier 2, 4 Tier 3 + 2 headers)**
-- Three rendering variants: billboard (GGTrees*), high-detail trunk (GGTreesHigh*), high-detail branches (GGTreeBranchesHigh*)
-- Each has VS/PS/ShadowMapVS/ShadowMapPS/PrepassVS/PrepassPS + env probe VS/PS
-- Two vertex formats: billboard (f2 position) vs high-detail (f3 position + INORMAL + UV)
-- Note: GGTreesConstants.hlsli auto-includes ShaderInterop_Renderer.h and uses FrameCB globals for wind
-
-**4.4 Shared Headers**
-- PBR/ headers: any drift from latest Wicked Engine versions?
-- GGCommonFunctions.hlsli, GGTerrainPageSettings.h
+- 4.1 Terrain (28 files), 4.2 Grass (8 files), 4.3 Trees (23 files), 4.4 Shared Headers
 
 #### Section 5: Compilation & Build
-- DXC flags per shader type
-- Include path setup (-I for PBR/, parent dir for GGTerrainPageSettings.h)
-- Root signature embedding
-- `#define HLSL6` activation
-
-#### Section 6: Testing Milestones
-1. Tier 1 terrain shadow → validates compilation pipeline
-2. Terrain renders (GGTerrainPS) → validates vertex input + cbuffers
-3. Virtual texture terrain (GGTerrainVirtualPBR_PS) → validates complex PBR
-4. Grass renders → validates instancing + LOD
-5. Billboard trees render → validates tree system
-6. High-detail trees + branches render → validates all tree variants
-7. Env probes render → validates forward lighting + cubemap
-
+#### Section 6: Testing Milestones (7 milestones from shadow→env probes)
 #### Section 7: Porting Order
-1. Shared infrastructure
-2. Tier 1 terrain (quickest validation)
-3. Tier 2 terrain → Tier 3 terrain
-4. Grass (all tiers)
-5. Trees (all tiers, all 3 variants)
-- Dependency graph
+1. PBR/ headers (blocks Tier 2+)
+2. Compilation infrastructure
+3. 13 Tier 1 shaders (zero changes)
+4. Texture binding infrastructure
+5. 19 Tier 2A shaders (zero changes)
+6. 11 Tier 2B shaders (bindless conversion)
+7. 12 Tier 3 shaders (full migration)
 
 ## Output
 
@@ -341,10 +393,11 @@ Save as `DX11_to_DX12_Shader_Porting_Plan.md` in the project root.
 
 ## Critical Reminders
 
-- Be **specific** — actual filenames, line numbers, function names, register slots, C++ class names.
-- **Tier 1 shaders are the quick win** — if recompiling with DXC + compatible root signature works, that's 13 shaders done immediately.
-- If the DX12 root signature is **fundamentally incompatible** with slot-based binding, say so immediately.
-- Note that **GGTerrainPS.hlsl has a local ShaderEntity copy** — should it be replaced with an include?
-- Note that **TiledLighting/ForwardLighting are duplicated** across 12 Tier 3 shaders — recommend factoring into shared headers?
-- Note that **DISABLE_WAVE_INTRINSICS** makes wave ops no-ops — should this be removed for DX12 SM 6.0+ where wave intrinsics are natively supported?
-- The plan must be **actionable, unambiguous, and ordered by dependency**.
+- Root signature analysis is **confirmed** — verify against `wiGraphicsDevice_DX12.cpp` but don't re-derive.
+- **32 shaders need zero code changes** — call this out as the immediate win.
+- **PBR header update is the critical path** — estimate scope carefully.
+- **b7→b2 conflict** for ForwardEntityMaskCB is a potential blocker. Investigate immediately.
+- **GGTerrainPS.hlsl** local ShaderEntity must migrate to `load_entity()`/`load_entitymatrix()`.
+- Recommend **factoring duplicated lighting** into shared headers.
+- Recommend **enabling wave intrinsics** for SM 6.0+.
+- Be specific: filenames, line numbers, C++ function/class names, register slots.
