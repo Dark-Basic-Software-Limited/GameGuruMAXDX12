@@ -1889,20 +1889,11 @@ int gpup_init()
 	gpup_settings.gtimer = 0;
 	gpup_settings.spawnCount = 0;
 
-	// shaders (compile from Particles/Shaders/ source directory)
-	// NOTE: These shaders were written for DX11 and lack DX12 root signatures.
-	// Until they are ported to DX12, GPU particles are disabled to prevent crashes.
-	bool bShadersOK = true;
-	bShadersOK &= LoadGPUPShader( ShaderStage::VS, shaderQuadVS, "GPUP_QuadVS.cso" );
-	bShadersOK &= LoadGPUPShader( ShaderStage::VS, shaderMainVS, "GPUP_MainVS.cso" );
-	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderQuadDefaultPS, "QuadDefaultPS.cso" );
-	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderNoisePS, "GPUP_NoisePS.cso" );
-	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderSpeedPS, "GPUP_SpeedPS.cso" );
-	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderPosPS, "GPUP_PosPS.cso" );
-	bShadersOK &= LoadGPUPShader( ShaderStage::PS, shaderMainPS, "GPUP_MainPS.cso" );
-	if (!bShadersOK)
+	// GPU particles are not yet ported to DX12 (texture creation uses incompatible
+	// UNORDERED_ACCESS + clear color flags, and the rendering pipeline needs migration).
+	// Disable until full DX12 port is done.
 	{
-		wi::backlog::post("GPU Particles disabled: shaders need DX12 root signatures", wi::backlog::LogLevel::Warning);
+		wi::backlog::post("GPU Particles disabled: not yet ported to DX12", wi::backlog::LogLevel::Warning);
 		gpu_particles_initialised = 0;
 		return -1;
 	}
