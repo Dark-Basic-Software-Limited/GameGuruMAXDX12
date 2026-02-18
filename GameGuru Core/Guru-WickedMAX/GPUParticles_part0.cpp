@@ -2034,13 +2034,13 @@ int gpup_init()
 	bd.bind_flags = BindFlag::INDEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &mainIndexBufferObj1 );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainIndexBufferObj1 );
 
 	// 4096 index buffer (obj0)
 	mainIndexCountObj0 = 24576;
 	data.data_ptr = gpup_4096_indices;
 	bd.size = sizeof(unsigned short) * mainIndexCountObj0;
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &mainIndexBufferObj0 );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainIndexBufferObj0 );
 
 	// 1024 vertex buffer (obj1)
 	data.data_ptr = gpup_1024_vertices;
@@ -2048,12 +2048,12 @@ int gpup_init()
 	bd.bind_flags = BindFlag::VERTEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &mainVertexBufferObj1 );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainVertexBufferObj1 );
 
 	// 4096 vertex buffer (obj0)
 	data.data_ptr = gpup_4096_vertices;
 	bd.size = sizeof(GPUP_4096_Vertex) * 16384;
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &mainVertexBufferObj0 );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainVertexBufferObj0 );
 
 	// quad vertex buffer
 	data.data_ptr = g_VerticesQuad;
@@ -2061,7 +2061,7 @@ int gpup_init()
 	bd.bind_flags = BindFlag::VERTEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &quadVertexBuffer );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &quadVertexBuffer );
 
 	// samplers
 	SamplerDesc samplerDesc = {};

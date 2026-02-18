@@ -92,7 +92,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	//WCHAR tmp[80];
 	//wcscpy(tmp, L"debugdevice");
 	//wiStartupArguments::Parse(&tmp[0]);
-	//MessageBoxA(NULL, "WinMain", "Log", MB_OK);
 
 	// Keep an eye for Unhandled Exceptions!
 	InitCrashHandler();
@@ -235,16 +234,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Provide splash image for WickedEngine's init-phase rendering
 	CopyFileA("Files\\editors\\uiv3\\loadingsplash.png", "splash_screen.png", TRUE);
 
+	// Automation bootstrap: if auto_command.txt exists next to our EXE, activate automation
+	// so the app stays active even without window focus (needed for headless testing)
+	{
+		extern bool g_bAutomationActive;
+		char autoBootPath[MAX_PATH];
+		GetModuleFileNameA(NULL, autoBootPath, MAX_PATH);
+		char* pSlash = strrchr(autoBootPath, '\\');
+		if (pSlash) { strcpy(pSlash + 1, "auto_command.txt"); }
+		if (GetFileAttributesA(autoBootPath) != INVALID_FILE_ATTRIBUTES)
+		{
+			g_bAutomationActive = true;
+		}
+	}
+
 	// Main application loop
 	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
 	{
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) 
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		else 
+		else
 		{
 			// Run the update and render loop
 			if (g_bActiveApp == true)
@@ -274,7 +287,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
-	// final closing acts after loop 
+	// final closing acts after loop
 	master.Finish();
 
 	// leelee, tried terrain experiment brach, restored master branch, and complete new download of the master repo,
@@ -353,7 +366,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				// LB: only do this functionality after 45 seconds, allowing the launch process to 
 				// proceed uninterupted, even if user has not focused on the app
-				if (timeGetTime() > dwLaunchTimer + 45000)
+				extern bool g_bAutomationActive;
+				if (timeGetTime() > dwLaunchTimer + 45000 && !g_bAutomationActive)
 				{
 					g_bActiveApp = false;
 					g_bAppActiveStat = false;

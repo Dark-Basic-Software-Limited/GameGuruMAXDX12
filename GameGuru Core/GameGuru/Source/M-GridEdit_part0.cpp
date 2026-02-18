@@ -327,7 +327,7 @@ int active_tools_obj = 0;
 int active_tools_entity_index = 0;
 int g_iUseLODObjects = 1;
 bool bDisableLODLoad = false;
-int g_iDisableTerrainSystem = 1;
+int g_iDisableTerrainSystem = 0;
 int g_iDisableWParticleSystem = 0;
 bool bSprayMoveWithMouse = false;
 

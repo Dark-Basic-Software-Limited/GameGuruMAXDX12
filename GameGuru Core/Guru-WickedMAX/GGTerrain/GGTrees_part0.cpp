@@ -570,7 +570,7 @@ struct TreeChunk
 		bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
 		//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 		bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstances );
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferInstances );
 		
 		delete [] pData;
 	}
@@ -1282,7 +1282,7 @@ void GGTrees_Init()
 	bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
 	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeVertices );
+	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferTreeVertices );
 
 	// index buffer
 	data.data_ptr = g_IndicesTreeBillboard;
@@ -1290,7 +1290,7 @@ void GGTrees_Init()
 	bufferDesc.bind_flags = BindFlag::INDEX_BUFFER;
 	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeIndices );
+	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferTreeIndices );
 
 	// vertex buffer high detail
 	bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
@@ -1301,7 +1301,7 @@ void GGTrees_Init()
 	{
 		data.data_ptr = g_GGTrees[ i ].trunk->pVertices;
 		bufferDesc.size = g_GGTrees[ i ].trunk->numVertices * sizeof(VertexTreeHigh);
-		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeHighVertices[i] );
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferTreeHighVertices[i] );
 	}
 
 	for( uint32_t i = 0; i < numTreeTypes; i++ )
@@ -1309,7 +1309,7 @@ void GGTrees_Init()
 		if ( !g_GGTrees[ i ].branches ) continue; // some don't have branches
 		data.data_ptr = g_GGTrees[ i ].branches->pVertices;
 		bufferDesc.size = g_GGTrees[ i ].branches->numVertices * sizeof(VertexTreeHigh);
-		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferBranchesHighVertices[i] );
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferBranchesHighVertices[i] );
 	}
 
 	// index buffer high detail
@@ -1321,7 +1321,7 @@ void GGTrees_Init()
 	{
 		data.data_ptr = g_GGTrees[ i ].trunk->pIndices;
 		bufferDesc.size = g_GGTrees[ i ].trunk->numIndices * sizeof(uint16_t);
-		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferTreeHighIndices[i] );
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferTreeHighIndices[i] );
 	}
 
 	for( uint32_t i = 0; i < numTreeTypes; i++ )
@@ -1329,7 +1329,7 @@ void GGTrees_Init()
 		if ( !g_GGTrees[ i ].branches ) continue; // some don't have branches
 		data.data_ptr = g_GGTrees[ i ].branches->pIndices;
 		bufferDesc.size = g_GGTrees[ i ].branches->numIndices * sizeof(uint16_t);
-		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferBranchesHighIndices[i] );
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferBranchesHighIndices[i] );
 	}
 
 	undosys_terrain_settreecount(numTotalTrees, sizeof(InstanceTree), numTreeChunks, sizeof(TreeChunk));
@@ -2138,7 +2138,7 @@ void GGTrees_UpdateFrustumCulling( wiScene::CameraComponent* camera )
 			bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
 			//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 			bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHigh[i] );
+			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferInstancesHigh[i] );
 		}
 	}
 }
@@ -2300,7 +2300,7 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 			bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
 			//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 			bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHighShadow[i] );
+			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferInstancesHighShadow[i] );
 		}
 	}
 
@@ -2515,12 +2515,15 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
 
+	// DISABLED: tree Draw_Prepass causes GPU hang due to PSO compilation failure in DX12
+	// TODO: investigate root signature / render pass format mismatch
+	return;
+
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Prepass Draw", cmd);
-	wiProfiler::range_id range;
-	if ( mode == 0 ) range = wiProfiler::BeginRangeGPU("Z-Prepass - Trees Low", cmd);
-	else range = wiProfiler::BeginRangeGPU("Planar Reflections Z-Prepass - Trees", cmd);
-		
+	// wiProfiler calls removed — they acquire a mutex that deadlocks with job system threads
+	wiProfiler::range_id range = {};
+
 	device->BindPipelineState( &psoTreesPrepass, cmd );
 
 	uint32_t bindSlot = 3;
@@ -2538,7 +2541,7 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	const GPUBuffer* vbs[] = { &bufferTreeVertices };
 	const uint32_t strides[] = { sizeof( VertexTree ) };
 	device->BindVertexBuffers( vbs, 0, 1, strides, 0, cmd );
-	
+
 	for( uint32_t i = 0; i < numTreeChunks; i++ )
 	{
 		TreeChunk* pChunk = &pTreeChunks[ i ];
@@ -2554,14 +2557,11 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		device->BindIndexBuffer( &bufferTreeIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
-	
-	wiProfiler::EndRange( range );
 
 	// only draw high detail in non-reflection passes
 	if ( mode == 0 )
 	{
 		// high detail
-		range = wiProfiler::BeginRangeGPU("Z-Prepass - Trees High", cmd);
 
 		device->BindPipelineState( &psoTreesHighPrepass, cmd );
 		device->BindResource( &texTreeHigh, 52, cmd );
@@ -2594,7 +2594,6 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 			}
 		}
 			
-		wiProfiler::EndRange( range );
 	}
 
 	device->EventEnd(cmd);
@@ -2607,6 +2606,8 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
 	if ( !ggtrees_global_params.draw_shadows ) return;
+	// DISABLED: tree Draw_ShadowMap causes GPU hang due to PSO compilation failure in DX12
+	return;
 
 	if ( cascade >= ggtrees_global_params.tree_shadow_range ) return;
 
@@ -2693,12 +2694,13 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 	if ( !ggtrees_global_params.draw_enabled ) return;
 	if ( frustum_count > 255 ) frustum_count = 255; // limited to 8 bits in instance data
 	if (!GGTrees::ggtrees_draw_enabled) return;
+	// DISABLED: tree Draw_EnvProbe causes GPU hang due to PSO compilation failure in DX12
+	return;
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Draw Env Probe", cmd);
 	
 	// environment probe doesn't render every frame, but can be expensive when it does
-	auto range = wiProfiler::BeginRangeGPU( "Environment Probe - Trees", cmd );
 
 	int bindSlot = 3;
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
@@ -2846,7 +2848,7 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 		bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
 		//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 		bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstancesHighEnvProbe[i] );
+		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferInstancesHighEnvProbe[i] );
 		
 		device->BindPipelineState( &psoTreesHighEnvProbe, cmd );
 		device->BindResource( &texTreeHigh, 52, cmd );
@@ -2880,8 +2882,6 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 		}
 	}
 
-	wiProfiler::EndRange( range );
-	
 	device->EventEnd(cmd);
 }
 
@@ -2891,12 +2891,13 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 {
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
+	// DISABLED: tree Draw causes GPU hang due to PSO compilation failure in DX12
+	return;
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Draw", cmd);
-	wiProfiler::range_id range;
-	if ( mode == 0 ) range = wiProfiler::BeginRangeGPU("Opaque - Trees Low", cmd);
-	else range = wiProfiler::BeginRangeGPU("Planar Reflections - Trees", cmd);
+	// wiProfiler calls removed — they acquire a mutex that deadlocks with job system threads
+	wiProfiler::range_id range = {};
 		
 	device->BindPipelineState( &psoTrees, cmd );
 
@@ -2933,14 +2934,10 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	
-	wiProfiler::EndRange( range );
-
 	// only draw high detail in non-reflection passes
 	if ( mode == 0 )
 	{
 		// high detail
-		range = wiProfiler::BeginRangeGPU("Opaque - Trees High", cmd);
-
 		device->BindPipelineState( &psoTreesHigh, cmd );
 		device->BindResource( &texTreeHigh, 52, cmd );
 		
@@ -2972,7 +2969,6 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 			}
 		}
 
-		wiProfiler::EndRange( range );
 	}
 
 	device->EventEnd(cmd);

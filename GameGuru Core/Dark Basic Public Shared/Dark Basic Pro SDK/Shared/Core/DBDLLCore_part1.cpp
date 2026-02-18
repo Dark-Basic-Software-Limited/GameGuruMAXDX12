@@ -51,6 +51,12 @@ LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		case WM_CLOSE:
 		{
+			{
+				void timestampactivity(int i, char* desc_s);
+				char dbgmsg[256];
+				sprintf(dbgmsg, "DBDLL WM_CLOSE: hWnd=0x%p mainWnd=0x%p", hWnd, g_pGlob ? g_pGlob->hWnd : NULL);
+				timestampactivity(0, dbgmsg);
+			}
 			#ifdef DARKSDK_COMPILE
 			g_iDarkGameSDKQuit = 1;
 			#endif
@@ -78,7 +84,15 @@ LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			#ifdef ENABLEIMGUI
 			if (bImGuiInTestGame) return TRUE;
 			#endif
-			PostQuitMessage(0);
+			{
+				void timestampactivity(int i, char* desc_s);
+				char dbgmsg[256];
+				sprintf(dbgmsg, "DBDLL WM_DESTROY: hWnd=0x%p mainWnd=0x%p", hWnd, g_pGlob ? g_pGlob->hWnd : NULL);
+				timestampactivity(0, dbgmsg);
+			}
+			// Only quit if the main window is being destroyed, not auxiliary DarkBasic windows
+			if (g_pGlob && g_pGlob->hWnd == hWnd)
+				PostQuitMessage(0);
 			break;
 		}
 

@@ -124,41 +124,35 @@ void MasterRenderer::Load()
 	HWND hWnd = GetActiveWindow();
 	ShowWindow(hWnd, SW_MAXIMIZE);
 
-	// Phase 3: Set up custom scene draw callbacks for terrain/trees/grass rendering
+	// Phase 3: Set up custom scene draw callbacks
+	// Terrain only (trees/grass disabled until PSO issues resolved)
 	customDraw_Prepass = [](const Frustum* frustum, CommandList cmd) {
 		GGTerrain_Draw_Prepass(frustum, cmd);
-		GGTrees_Draw_Prepass(frustum, 0, cmd);
-		GGGrass_Draw_Prepass(frustum, 0, cmd);
 	};
 	customDraw_Prepass_Reflections = [](const Frustum* frustum, CommandList cmd) {
 		GGTerrain_Draw_Prepass_Reflections(frustum, cmd);
-		GGTrees_Draw_Prepass(frustum, 1, cmd);
 	};
 	customDraw_Opaque = [](const Frustum* frustum, int mode, CommandList cmd) {
 		GGTerrain_Draw(frustum, mode, cmd);
-		GGTrees_Draw(frustum, mode, cmd);
-		GGGrass_Draw(frustum, mode, cmd);
 	};
 	customDraw_Transparent = [](const Frustum* frustum, CommandList cmd) {
 		GGTerrain_Draw_Transparent(frustum, cmd);
 	};
-
-	// Phase 3: Shadow map and env probe callbacks (in wiRenderer namespace)
 	wi::renderer::customDraw_ShadowMap = [](const Frustum* frustum, int cascade, CommandList cmd) {
 		GGTerrain_Draw_ShadowMap(frustum, cascade, cmd);
-		GGTrees_Draw_ShadowMap(frustum, cascade, cmd);
-		GGGrass_Draw_ShadowMap(frustum, cascade, cmd);
 	};
 	wi::renderer::customDraw_EnvProbe = [](const wi::primitive::Sphere* culler, const Frustum* frusta, uint32_t frustum_count, CommandList cmd) {
 		GGTerrain_Draw_EnvProbe(culler, frusta, frustum_count, cmd);
-		GGTrees_Draw_EnvProbe(culler, frusta, frustum_count, cmd);
 	};
-
-	// Phase 4: Compose overlay/debug callbacks
 	customDraw_Compose = [](CommandList cmd) {
 		GGTerrain_Draw_Debug(cmd);
 		GGTerrain_Draw_Overlay(cmd);
 	};
+}
+
+void MasterRenderer::PreUpdate()
+{
+	__super::PreUpdate();
 }
 
 void MasterRenderer::Update(float dt)
@@ -416,7 +410,6 @@ void MasterRenderer::Compose(CommandList cmd) const
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
-
 	// Always suppress wiProfiler::DrawData() — it calls AllocateGPU() during Compose
 	// which can return an invalid allocation, causing an access violation and GPU TDR.
 	// Profiler timing data is still collected normally; use GetTextData() to read it safely.

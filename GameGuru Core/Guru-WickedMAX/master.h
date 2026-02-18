@@ -13,6 +13,7 @@ class MasterRenderer : public RenderPath3D
 		bool m_bRenderingVR;
 	public:
 		void Load() override;
+		void PreUpdate() override;
 		void Update(float dt) override;
 		void PostUpdate() override;
 		void Render() const override;

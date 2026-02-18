@@ -14,6 +14,9 @@
 #include <time.h>
 #include <windows.h>
 
+// Terrain debug accessor (extern "C" from GGTerrain_part0.cpp)
+extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* initFlag, int* drawEn, int* updateEn);
+
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
 #include "wiGraphicsDevice.h"
@@ -875,6 +878,19 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			cam.Eye.x, cam.Eye.y, cam.Eye.z,
 			cam.At.x, cam.At.y, cam.At.z,
 			cam.Up.x, cam.Up.y, cam.Up.z);
+	}
+
+	// Terrain debug info
+	{
+		int drawCount=0, exitReason=0, initFlag=0, drawEn=0, updateEn=0;
+		GGTerrain_GetDrawDebugInfo(&drawCount, &exitReason, &initFlag, &drawEn, &updateEn);
+		written += _snprintf(result + written, resultSize - written,
+			"TERRAIN_DRAW_COUNT: %d\n"
+			"TERRAIN_DRAW_EXIT: %d\n"
+			"TERRAIN_INIT: %d\n"
+			"TERRAIN_DRAW_EN: %d\n"
+			"TERRAIN_UPDATE_EN: %d\n",
+			drawCount, exitReason, initFlag, drawEn, updateEn);
 	}
 
 	// Tab mode (profiler panel state)

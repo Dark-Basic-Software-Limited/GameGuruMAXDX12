@@ -2,7 +2,7 @@
 // GameGuru Main Engine (for Wicked Engine)
 //
 
-// Includes 
+// Includes
 #include "stdafx.h"
 #include "GameGuruMain.h"
 #include <stdio.h>
@@ -59,7 +59,7 @@ public:
 	}
 	static void StopThreads()
 	{
-		for (uint32_t i = 0; i < iNumThreads; i++) pThreads[i].Stop();		
+		for (uint32_t i = 0; i < iNumThreads; i++) pThreads[i].Stop();
 	}
 	static void SetThreads(uint32_t numThreads)
 	{
@@ -82,7 +82,7 @@ public:
 				//wiProfiler::EndRange(range2); DX12
 				//auto range3 = wiProfiler::BeginRangeCPU("Extra - Logic - Visibility");
 				entity_lua_getentityplrvisible_processlist();
-				//wiProfiler::EndRange(range3); DX12		
+				//wiProfiler::EndRange(range3); DX12
 				g_iCountNumberOfExtraThreadCalls++;
 				g_bTriggerSomeGameLogic = false;
 			}
@@ -181,11 +181,13 @@ bool GuruLoopLogic ( void )
 			case 3:
 			{
 				// separated common() into common_init() and common_loop() (no internal loop for Wicked Engine variant)
-				timestampactivity(0, "GuruMain();");
+				timestampactivity(0, "GuruMain() ENTER;");
 				GuruMain();
+				timestampactivity(0, "GuruMain() RETURNED;");
 
 				// can resume normal operations, everything initialised
 				g_bNoGGUntilGameGuruMainCalled = true;
+				timestampactivity(0, "g_bNoGGUntilGameGuruMainCalled SET TRUE;");
 				break;
 			}
 		}
@@ -195,8 +197,16 @@ bool GuruLoopLogic ( void )
 	}
 	else
 	{
+		static int loopCount = 0;
+		loopCount++;
+		if (loopCount <= 3)
+			timestampactivity(0, (char*)"GuruLoopLogic ELSE branch entered;");
+
 		// regular common loop logic call
 		common_loop_logic();
+
+		if (loopCount <= 3)
+			timestampactivity(0, (char*)"common_loop_logic returned;");
 
 		// as new wicked engine never uses Sync(), we still need regular update work for sound and animation
 		ConstantNonDisplayUpdate();
@@ -218,7 +228,7 @@ void GuruLoopRender ( void )
 	OPTICK_EVENT();
 #endif
 
-	// not until main has started 
+	// not until main has started
 	if (g_bNoGGUntilGameGuruMainCalled == false)
 		return;
 

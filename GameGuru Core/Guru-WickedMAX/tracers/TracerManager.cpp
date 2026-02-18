@@ -430,12 +430,12 @@ namespace Tracers
         bd.usage = Usage::DEFAULT;
         bd.size = sizeof(vertices);
         bd.bind_flags = BindFlag::VERTEX_BUFFER;
-        wi::graphics::GetDevice()->CreateBuffer(&bd, &data, &quadVB);
+        wi::graphics::GetDevice()->CreateBuffer(&bd, data.data_ptr, &quadVB);
 
         data.data_ptr = indices;
         bd.size = sizeof(indices);
         bd.bind_flags = BindFlag::INDEX_BUFFER;
-        wi::graphics::GetDevice()->CreateBuffer(&bd, &data, &quadIB);
+        wi::graphics::GetDevice()->CreateBuffer(&bd, data.data_ptr, &quadIB);
     }
 
     void CreatePipelineState()

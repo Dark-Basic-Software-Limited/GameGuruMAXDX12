@@ -2647,7 +2647,7 @@ public:
 		bd.bind_flags =BindFlag::INDEX_BUFFER;
 		//bd.CPUAccessFlags = 0; // removed in DX12 API
 		bd.misc_flags = ResourceMiscFlag::NONE;
-		device->CreateBuffer( &bd, &data, &indexBuffer );
+		device->CreateBuffer( &bd, data.data_ptr, &indexBuffer );
 
 		delete [] pIndices;
 		pIndices = 0;
@@ -2658,7 +2658,7 @@ public:
 		bd.bind_flags =BindFlag::VERTEX_BUFFER;
 		//bd.CPUAccessFlags = 0; // removed in DX12 API
 		bd.misc_flags = ResourceMiscFlag::NONE;
-		device->CreateBuffer( &bd, &data, &vertexBuffer );
+		device->CreateBuffer( &bd, data.data_ptr, &vertexBuffer );
 
 		delete [] pVertices;
 		pVertices = 0;
@@ -4118,6 +4118,10 @@ GGTerrain ggterrain;
 int ggterrain_initialised = 0;
 int ggterrain_draw_enabled = 1;
 int ggprobe_initialised = 0;
+
+// Debug: track terrain draw calls for automation harness diagnosis
+int g_terrainDrawCallCount = 0;
+int g_terrainDrawLastExitReason = 0; // 0=never called, 1=update_disabled, 2=not_init, 3=draw_disabled, 4=not_valid, 5=drew_ok
 
 int ggterrain_render_wireframe = 0;
 int ggterrain_render_debug = 0;
@@ -6974,7 +6978,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 		bd.bind_flags =BindFlag::VERTEX_BUFFER;
 		//bd.CPUAccessFlags = 0; // removed in DX12 API
 		bd.misc_flags = ResourceMiscFlag::NONE;
-		wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &sphereVertexBuffer );
+		wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &sphereVertexBuffer );
 
 		// index buffer
 		data.data_ptr =g_IndicesSphere;
@@ -6982,7 +6986,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 		bd.bind_flags =BindFlag::INDEX_BUFFER;
 		//bd.CPUAccessFlags = 0; // removed in DX12 API
 		bd.misc_flags = ResourceMiscFlag::NONE;
-		wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &sphereIndexBuffer );
+		wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &sphereIndexBuffer );
 	}
 
 	// edit box layout
@@ -7139,7 +7143,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	bd.bind_flags =BindFlag::VERTEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed in DX12 API
 	bd.misc_flags = ResourceMiscFlag::NONE;
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &boxVertexBuffer );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &boxVertexBuffer );
 
 	// box index buffer
 	data.data_ptr =g_IndicesBox;
@@ -7147,7 +7151,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	bd.bind_flags =BindFlag::INDEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed in DX12 API
 	bd.misc_flags = ResourceMiscFlag::NONE;
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &boxIndexBuffer );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &boxIndexBuffer );
 
 	// quad vertex buffer (no index buffer)
 	data = {};
@@ -7156,7 +7160,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	bd.bind_flags =BindFlag::VERTEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed in DX12 API
 	bd.misc_flags = ResourceMiscFlag::NONE;
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &quadVertexBuffer );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &quadVertexBuffer );
 
 	// page gen vertex buffer (no index buffer)
 	data = {};
@@ -7165,7 +7169,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	bd.bind_flags =BindFlag::VERTEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed in DX12 API
 	bd.misc_flags = ResourceMiscFlag::NONE;
-	wiGraphics::GetDevice()->CreateBuffer( &bd, &data, &pageGenVertexBuffer );
+	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &pageGenVertexBuffer );
 	
 	//GGTerrainInitTest();
 
@@ -10514,6 +10518,10 @@ extern "C" void GGTerrain_Draw_ShadowMap( const Frustum* frustum, int cascade, C
 // called from WickedEngine wiRenderer::RefreshEnvProbes()
 extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* frusta, uint32_t frustum_count, CommandList cmd )
 {
+	// DX12: env probe rendering causes deadlock - PSO compilation failure or thread sync issue
+	// TODO: investigate root cause (PSO format mismatch for cubemap render target?)
+	return;
+
 	if (!ggterrain_update_enabled) return;
 	if (!ggterrain_initialised) return;
 
@@ -10527,7 +10535,8 @@ extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* fr
 	device->EventBegin("GGTerrain Draw Env Probe", cmd);
 
 	// environment probe doesn't happen every frame, but it can be expensive when it does
-	auto range = wiProfiler::BeginRangeGPU( "Environment Probe - Terrain", cmd );
+	// DX12: removed GPU profiler range to avoid job-thread deadlock
+	//auto range = wiProfiler::BeginRangeGPU( "Environment Probe - Terrain", cmd );
 		
 	device->BindPipelineState( &psoEnvProbe, cmd );
 
@@ -10615,7 +10624,7 @@ extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* fr
 		}
 	}
 	
-	wiProfiler::EndRange( range );
+	//wiProfiler::EndRange( range ); // DX12: removed (see BeginRangeGPU removal)
 	device->EventEnd(cmd);
 }
 
@@ -10636,19 +10645,34 @@ extern "C" uint32_t GetChunkLodStart(void)
 	return OCCLODSTART;
 }
 
+// Debug accessor for automation harness (extern "C" to escape namespace mangling)
+extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* initFlag, int* drawEn, int* updateEn)
+{
+	*drawCount = g_terrainDrawCallCount;
+	*exitReason = g_terrainDrawLastExitReason;
+	*initFlag = ggterrain_initialised;
+	*drawEn = ggterrain_draw_enabled;
+	*updateEn = ggterrain_update_enabled;
+	return 0;
+}
+
 // must be extern "C" to allow /alternatename linker flag to be set correctly
 // called from WickedEngine RenderPath3D::Render()
 extern "C" void GGTerrain_Draw( const Frustum* frustum, int mode, CommandList cmd )
 {
-	if (!ggterrain_update_enabled) return;
-	if (!ggterrain_initialised) return;
+	extern int g_terrainDrawCallCount;
+	extern int g_terrainDrawLastExitReason;
+	g_terrainDrawCallCount++;
+	if (!ggterrain_update_enabled) { g_terrainDrawLastExitReason = 1; return; }
+	if (!ggterrain_initialised) { g_terrainDrawLastExitReason = 2; return; }
 
 	// must not do any quad rendering in here
-	if ( !ggterrain_initialised ) return;
-	if ( !ggterrain_draw_enabled ) return;
-	if ( !ggterrain.IsValid() ) return;
+	if ( !ggterrain_initialised ) { g_terrainDrawLastExitReason = 2; return; }
+	if ( !ggterrain_draw_enabled ) { g_terrainDrawLastExitReason = 3; return; }
+	if ( !ggterrain.IsValid() ) { g_terrainDrawLastExitReason = 4; return; }
 	if ( mode == 1 && ggterrain_render_wireframe ) return;
 
+	g_terrainDrawLastExitReason = 5;
 	iOccludedTerrainChunks = 0;
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Draw", cmd);

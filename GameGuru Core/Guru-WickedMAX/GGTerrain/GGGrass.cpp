@@ -418,7 +418,7 @@ struct GrassChunk
 			bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
 			//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 			bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferInstances );
+			wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferInstances );
 		}
 
 		return 1;
@@ -946,7 +946,7 @@ void GGGrass_Init()
 	bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
 	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferGrassVertices );
+	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferGrassVertices );
 
 	// index buffer
 	data.data_ptr = g_IndicesGrass;
@@ -954,7 +954,7 @@ void GGGrass_Init()
 	bufferDesc.bind_flags = BindFlag::INDEX_BUFFER;
 	//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 	bufferDesc.misc_flags = ResourceMiscFlag::NONE;
-	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, &data, &bufferGrassIndices );
+	wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferGrassIndices );
 }
 
 int GGGrass_UsingBrush()
@@ -1772,9 +1772,8 @@ extern "C" void GGGrass_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGGrass Prepass Draw", cmd);
-	wiProfiler::range_id range;
-	if ( mode == 0 ) range = wiProfiler::BeginRangeGPU("Z-Prepass - Grass Low", cmd);
-	else return;//range = wiProfiler::BeginRangeGPU("Planar Reflections Z-Prepass - Grass", cmd);
+	// wiProfiler calls removed — they acquire a mutex that deadlocks with job system threads
+	if ( mode != 0 ) return;  // no grass in reflection passes
 		
 	device->BindPipelineState( &psoGrassPrepass, cmd );
 
@@ -1821,8 +1820,6 @@ extern "C" void GGGrass_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	
-	wiProfiler::EndRange( range );
-
 	device->EventEnd(cmd);
 }
 
@@ -1883,9 +1880,8 @@ extern "C" void GGGrass_Draw( const Frustum* frustum, int mode, CommandList cmd 
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGGrass Draw", cmd);
-	wiProfiler::range_id range;
-	if ( mode == 0 ) range = wiProfiler::BeginRangeGPU("Opaque - Grass Low", cmd);
-	else return; //range = wiProfiler::BeginRangeGPU("Planar Reflections - Grass", cmd);
+	// wiProfiler calls removed — they acquire a mutex that deadlocks with job system threads
+	if ( mode != 0 ) return;  // no grass in reflection passes
 		
 	device->BindPipelineState( &psoGrass, cmd );
 
@@ -1933,8 +1929,6 @@ extern "C" void GGGrass_Draw( const Frustum* frustum, int mode, CommandList cmd 
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
 	
-	if (mode == 0) wiProfiler::EndRange( range );
-
 	device->EventEnd(cmd);
 }
 
