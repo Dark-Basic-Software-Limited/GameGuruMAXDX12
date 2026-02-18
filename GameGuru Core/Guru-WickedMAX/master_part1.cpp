@@ -9,10 +9,15 @@ extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphi
 extern "C" void GGTerrain_Draw_Prepass_Reflections(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_Transparent(const wi::primitive::Frustum*, wi::graphics::CommandList);
+extern "C" void GGTerrain_Draw_ShadowMap(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTerrain_Draw_EnvProbe(const wi::primitive::Sphere*, const wi::primitive::Frustum*, uint32_t, wi::graphics::CommandList);
 extern "C" void GGTrees_Draw_Prepass(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
 extern "C" void GGTrees_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTrees_Draw_ShadowMap(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTrees_Draw_EnvProbe(const wi::primitive::Sphere*, const wi::primitive::Frustum*, uint32_t, wi::graphics::CommandList);
 extern "C" void GGGrass_Draw_Prepass(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
 extern "C" void GGGrass_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+// GGGrass_Draw_ShadowMap is currently commented out in GGGrass.cpp
 
 void MasterRenderer::Load()
 {
@@ -118,8 +123,6 @@ void MasterRenderer::Load()
 	ShowWindow(hWnd, SW_MAXIMIZE);
 
 	// Phase 3: Set up custom scene draw callbacks for terrain/trees/grass rendering
-	// TEMPORARILY DISABLED for debugging - uncomment once level loading hang is resolved
-	#if 0
 	customDraw_Prepass = [](const Frustum* frustum, CommandList cmd) {
 		GGTerrain_Draw_Prepass(frustum, cmd);
 		GGTrees_Draw_Prepass(frustum, 0, cmd);
@@ -137,7 +140,17 @@ void MasterRenderer::Load()
 	customDraw_Transparent = [](const Frustum* frustum, CommandList cmd) {
 		GGTerrain_Draw_Transparent(frustum, cmd);
 	};
-	#endif
+
+	// Phase 3: Shadow map and env probe callbacks (in wiRenderer namespace)
+	wi::renderer::customDraw_ShadowMap = [](const Frustum* frustum, int cascade, CommandList cmd) {
+		GGTerrain_Draw_ShadowMap(frustum, cascade, cmd);
+		GGTrees_Draw_ShadowMap(frustum, cascade, cmd);
+		// GGGrass_Draw_ShadowMap is commented out in GGGrass.cpp
+	};
+	wi::renderer::customDraw_EnvProbe = [](const wi::primitive::Sphere* culler, const Frustum* frusta, uint32_t frustum_count, CommandList cmd) {
+		GGTerrain_Draw_EnvProbe(culler, frusta, frustum_count, cmd);
+		GGTrees_Draw_EnvProbe(culler, frusta, frustum_count, cmd);
+	};
 }
 
 void MasterRenderer::Update(float dt)
