@@ -4,6 +4,16 @@
 #include "GGAnimBridge.h"
 #include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
 
+// Phase 3: Forward declarations for GG custom draw functions (terrain/trees/grass)
+extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphics::CommandList);
+extern "C" void GGTerrain_Draw_Prepass_Reflections(const wi::primitive::Frustum*, wi::graphics::CommandList);
+extern "C" void GGTerrain_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTerrain_Draw_Transparent(const wi::primitive::Frustum*, wi::graphics::CommandList);
+extern "C" void GGTrees_Draw_Prepass(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTrees_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGGrass_Draw_Prepass(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGGrass_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+
 void MasterRenderer::Load()
 {
 #ifdef OPTICK_ENABLE
@@ -106,6 +116,28 @@ void MasterRenderer::Load()
 	// force window to maximised view
 	HWND hWnd = GetActiveWindow();
 	ShowWindow(hWnd, SW_MAXIMIZE);
+
+	// Phase 3: Set up custom scene draw callbacks for terrain/trees/grass rendering
+	// TEMPORARILY DISABLED for debugging - uncomment once level loading hang is resolved
+	#if 0
+	customDraw_Prepass = [](const Frustum* frustum, CommandList cmd) {
+		GGTerrain_Draw_Prepass(frustum, cmd);
+		GGTrees_Draw_Prepass(frustum, 0, cmd);
+		GGGrass_Draw_Prepass(frustum, 0, cmd);
+	};
+	customDraw_Prepass_Reflections = [](const Frustum* frustum, CommandList cmd) {
+		GGTerrain_Draw_Prepass_Reflections(frustum, cmd);
+		GGTrees_Draw_Prepass(frustum, 1, cmd);
+	};
+	customDraw_Opaque = [](const Frustum* frustum, int mode, CommandList cmd) {
+		GGTerrain_Draw(frustum, mode, cmd);
+		GGTrees_Draw(frustum, mode, cmd);
+		GGGrass_Draw(frustum, mode, cmd);
+	};
+	customDraw_Transparent = [](const Frustum* frustum, CommandList cmd) {
+		GGTerrain_Draw_Transparent(frustum, cmd);
+	};
+	#endif
 }
 
 void MasterRenderer::Update(float dt)
