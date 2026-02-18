@@ -604,8 +604,8 @@ Texture texDist2;
 int gpu_particles_initialised = 0;
 
 
-void GPUP_LoadTexture( const char* filename, Texture* tex ) 
-{ 
+void GPUP_LoadTexture( const char* filename, Texture* tex )
+{
 	GraphicsDevice* device = wiGraphics::GetDevice();
 
 	int width, height, channels;
@@ -613,17 +613,18 @@ void GPUP_LoadTexture( const char* filename, Texture* tex )
 	strcpy_s( filePath, MAX_PATH, filename );
 	GG_GetRealPath( filePath, 0 );
 	uint8_t* imageData = stbi_load( filePath, &width, &height, &channels, 4 );
+	if ( !imageData )
+	{
+		wi::backlog::post(std::string("GPUP_LoadTexture: failed to load ") + filename, wi::backlog::LogLevel::Error);
+		return;
+	}
 
 	SubresourceData data = {};
 	data.data_ptr = imageData;
 	data.row_pitch = width * 4;
 
 	TextureDesc texDesc = {};
-	texDesc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
-	texDesc.clear.color[0] = 1.0f;
-	texDesc.clear.color[1] = 0.0f;
-	texDesc.clear.color[2] = 0.0f;
-	texDesc.clear.color[3] = 0.0f;
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
 	texDesc.sample_count = 1;
 	texDesc.mip_levels = 1;
 	texDesc.array_size = 1;
@@ -638,20 +639,13 @@ void GPUP_LoadTexture( const char* filename, Texture* tex )
 	stbi_image_free( imageData );
 }
 
-void GPUP_CreateRenderTexture( int width, int height, Texture* tex ) 
+void GPUP_CreateRenderTexture( int width, int height, Texture* tex )
 {
 	GraphicsDevice* device = wiGraphics::GetDevice();
 
-	uint32_t* imageData = new uint32_t[ width * height ];
-	for( int i = 0; i < width * height; i++ ) imageData[i] = 0;
-
-	SubresourceData data = {};
-	data.data_ptr = imageData;
-	data.row_pitch = width * 4;
-
 	TextureDesc texDesc = {};
-	texDesc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
-	texDesc.clear.color[0] = 1.0f;
+	texDesc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE;
+	texDesc.clear.color[0] = 0.0f;
 	texDesc.clear.color[1] = 0.0f;
 	texDesc.clear.color[2] = 0.0f;
 	texDesc.clear.color[3] = 0.0f;
@@ -663,10 +657,8 @@ void GPUP_CreateRenderTexture( int width, int height, Texture* tex )
 	texDesc.width = width;
 	texDesc.height = height;
 
-	device->CreateTexture( &texDesc, &data, tex );
+	device->CreateTexture( &texDesc, nullptr, tex );
 	device->SetName( tex, "renderTex" );
-
-	delete [] imageData;
 }
 
 void GPUP_DeleteTexture( Texture* tex ) 
@@ -1889,16 +1881,25 @@ int gpup_init()
 	gpup_settings.gtimer = 0;
 	gpup_settings.spawnCount = 0;
 
-	// GPU particles are not yet ported to DX12 (texture creation uses incompatible
-	// UNORDERED_ACCESS + clear color flags, and the rendering pipeline needs migration).
-	// Disable until full DX12 port is done.
+	// GPU particles DX12 port: temporarily disabled pending crash investigation.
+	// The CreateBuffer with initial data crashes (wiGraphicsDevice.h:254) — staging allocator
+	// returns null mapped_data. Re-enable once the root cause is identified.
 	{
-		wi::backlog::post("GPU Particles disabled: not yet ported to DX12", wi::backlog::LogLevel::Warning);
+		wi::backlog::post("GPU Particles: DX12 port in progress, temporarily disabled", wi::backlog::LogLevel::Warning);
 		gpu_particles_initialised = 0;
 		return -1;
 	}
 
-	// images	
+	// Load GPU particle shaders
+	wiRenderer::LoadShader( ShaderStage::VS, shaderMainVS, "GPUP_MainVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderMainPS, "GPUP_MainPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::VS, shaderQuadVS, "GPUP_QuadVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderQuadDefaultPS, "QuadDefaultPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderNoisePS, "GPUP_NoisePS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderSpeedPS, "GPUP_SpeedPS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderPosPS, "GPUP_PosPS.cso" );
+
+	// images
 	if ( !GetFileExists("Files/effectbank/common/noise64.png") ) return -1;
 	GPUP_LoadTexture( "Files/effectbank/common/noise64.png", &texNoiseOrig );
 

@@ -509,6 +509,16 @@ void Master::InitializeSecondaries()
 
 void camerahook_domydemostuff(float fX, float fY, float fZ, float fAX, float fAY, float fAZ)
 {
+	// DEBUG: Log first 10 frames of camera position (for diagnosing camera-below-terrain)
+	static int s_camLogCount = 0;
+	if (s_camLogCount < 10)
+	{
+		char dbg[256];
+		sprintf(dbg, "CAM_HOOK[%d]: pos=(%.1f,%.1f,%.1f) ang=(%.1f,%.1f,%.1f)", s_camLogCount, fX, fY, fZ, fAX, fAY, fAZ);
+		timestampactivity(0, dbg);
+		s_camLogCount++;
+	}
+
 	// handle camera positioning in wicked
 	double dMyDegToRad = 3.141592654f/180.0f;
 	fAX *= dMyDegToRad;

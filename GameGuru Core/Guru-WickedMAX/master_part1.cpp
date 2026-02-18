@@ -17,7 +17,9 @@ extern "C" void GGTrees_Draw_ShadowMap(const wi::primitive::Frustum*, int, wi::g
 extern "C" void GGTrees_Draw_EnvProbe(const wi::primitive::Sphere*, const wi::primitive::Frustum*, uint32_t, wi::graphics::CommandList);
 extern "C" void GGGrass_Draw_Prepass(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
 extern "C" void GGGrass_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
-// GGGrass_Draw_ShadowMap is currently commented out in GGGrass.cpp
+extern "C" void GGGrass_Draw_ShadowMap(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTerrain_Draw_Debug(wi::graphics::CommandList);
+extern "C" void GGTerrain_Draw_Overlay(wi::graphics::CommandList);
 
 void MasterRenderer::Load()
 {
@@ -145,11 +147,17 @@ void MasterRenderer::Load()
 	wi::renderer::customDraw_ShadowMap = [](const Frustum* frustum, int cascade, CommandList cmd) {
 		GGTerrain_Draw_ShadowMap(frustum, cascade, cmd);
 		GGTrees_Draw_ShadowMap(frustum, cascade, cmd);
-		// GGGrass_Draw_ShadowMap is commented out in GGGrass.cpp
+		GGGrass_Draw_ShadowMap(frustum, cascade, cmd);
 	};
 	wi::renderer::customDraw_EnvProbe = [](const wi::primitive::Sphere* culler, const Frustum* frusta, uint32_t frustum_count, CommandList cmd) {
 		GGTerrain_Draw_EnvProbe(culler, frusta, frustum_count, cmd);
 		GGTrees_Draw_EnvProbe(culler, frusta, frustum_count, cmd);
+	};
+
+	// Phase 4: Compose overlay/debug callbacks
+	customDraw_Compose = [](CommandList cmd) {
+		GGTerrain_Draw_Debug(cmd);
+		GGTerrain_Draw_Overlay(cmd);
 	};
 }
 

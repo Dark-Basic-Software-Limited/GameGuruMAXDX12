@@ -865,6 +865,18 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			(int)master.masterrenderer.visibility_main.visibleHairs.size());
 	}
 
+	// Camera position and orientation (for diagnosing camera issues)
+	{
+		auto& cam = wiScene::GetCamera();
+		written += _snprintf(result + written, resultSize - written,
+			"CAMERA_EYE: %.1f, %.1f, %.1f\n"
+			"CAMERA_AT: %.3f, %.3f, %.3f\n"
+			"CAMERA_UP: %.3f, %.3f, %.3f\n",
+			cam.Eye.x, cam.Eye.y, cam.Eye.z,
+			cam.At.x, cam.At.y, cam.At.z,
+			cam.Up.x, cam.Up.y, cam.Up.z);
+	}
+
 	// Tab mode (profiler panel state)
 	written += _snprintf(result + written, resultSize - written,
 		"TAB_MODE: %d\n", g.tabmode);

@@ -1665,14 +1665,24 @@ void physics_player_init ( void )
 	}
 
 	//  Player start height (marker or no)
-	t.tbestterrainplayery_f = BT_GetGroundHeight(t.terrain.TerrainID, t.terrain.playerx_f, t.terrain.playerz_f) + t.terrain.adjaboveground_f;
+	float fRawTerrainH = BT_GetGroundHeight(t.terrain.TerrainID, t.terrain.playerx_f, t.terrain.playerz_f);
+	t.tbestterrainplayery_f = fRawTerrainH + t.terrain.adjaboveground_f;
+
+	// DEBUG: Log player start height calculation
+	{
+		char dbg[512];
+		sprintf(dbg, "PLAYER_START: entityY=%.1f terrainH=%.1f adjAbove=%.1f bestY=%.1f pos=(%.1f,%.1f,%.1f)",
+			t.terrain.playery_f, fRawTerrainH, t.terrain.adjaboveground_f, t.tbestterrainplayery_f,
+			t.terrain.playerx_f, t.terrain.playery_f, t.terrain.playerz_f);
+		timestampactivity(0, dbg);
+	}
 
 	//  also ensure ABOVE water Line (  )
-	if (  t.tbestterrainplayery_f<t.terrain.waterliney_f+20+t.terrain.adjaboveground_f ) 
+	if (  t.tbestterrainplayery_f<t.terrain.waterliney_f+20+t.terrain.adjaboveground_f )
 	{
 		t.tbestterrainplayery_f=t.terrain.waterliney_f+20+t.terrain.adjaboveground_f;
 	}
-	if (  t.terrain.playery_f == 0 ) 
+	if (  t.terrain.playery_f == 0 )
 	{
 		t.terrain.playery_f=t.tbestterrainplayery_f;
 	}
@@ -1680,6 +1690,12 @@ void physics_player_init ( void )
 	{
 		t.terrain.playery_f=t.terrain.playery_f+t.terrain.adjaboveground_f;
 		if (  t.terrain.playery_f<t.tbestterrainplayery_f  )  t.terrain.playery_f = t.tbestterrainplayery_f;
+	}
+	// DEBUG: Log final player Y
+	{
+		char dbg[256];
+		sprintf(dbg, "PLAYER_START_FINAL: playery=%.1f", t.terrain.playery_f);
+		timestampactivity(0, dbg);
 	}
 
 	// Select weapon if start marker specifies it

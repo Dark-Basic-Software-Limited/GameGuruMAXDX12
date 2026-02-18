@@ -459,11 +459,9 @@ Shader shaderGrassPrepassVS;
 Shader shaderGrassPrepassPS;
 PipelineState psoGrassPrepass;
 
-/*
 Shader shaderGrassShadowVS;
 Shader shaderGrassShadowPS;
 PipelineState psoGrassShadow;
-*/
 
 Texture texGrass;
 Texture texGrassNormal;
@@ -804,6 +802,9 @@ void GGGrass_Init()
 	wiRenderer::LoadShader( ShaderStage::VS, shaderGrassPrepassVS, "GGGrassPrepassVS.cso" );
 	wiRenderer::LoadShader( ShaderStage::PS, shaderGrassPrepassPS, "GGGrassPrepassPS.cso" );
 
+	wiRenderer::LoadShader( ShaderStage::VS, shaderGrassShadowVS, "GGGrassShadowMapVS.cso" );
+	wiRenderer::LoadShader( ShaderStage::PS, shaderGrassShadowPS, "GGGrassShadowMapPS.cso" );
+
 	GGGrass_LoadTextureDDS("Files/treebank/noise.dds", &texNoise);
 	GGGrass_CreateEmptyTexture(1024, 1024, 9, GGGRASS_NUM_TYPES, Format::BC3_UNORM_SRGB, &texGrass);
 
@@ -897,7 +898,6 @@ void GGGrass_Init()
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	device->CreatePipelineState( &desc, &psoGrassPrepass );
 
-	/*
 	// shadow pipeline state
 	rastState.depth_bias = -1;
 	rastState.slope_scaled_depth_bias = -4.0f;
@@ -911,7 +911,6 @@ void GGGrass_Init()
 	rastState.depth_bias = 0;
 	rastState.depth_clip_enable = true;
 	rastState.slope_scaled_depth_bias = 0;
-	*/
 
 	// samplers
 	SamplerDesc samplerDesc;
@@ -1827,16 +1826,16 @@ extern "C" void GGGrass_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	device->EventEnd(cmd);
 }
 
-/*
 // must be extern "C" to allow /alternatename linker flag to be set correctly
 // called from WickedEngine wiRenderer::DrawShadowmaps()
 extern "C" void GGGrass_Draw_ShadowMap( const Frustum* frustum, int cascade, CommandList cmd )
 {
+	if (!gggrass_initialised) return;
 	if ( !gggrass_global_params.draw_enabled ) return;
 	if ( cascade >= gggrass_global_params.shadow_range ) return;
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
-	device->EventBegin("GGGreass Shadow Draw", cmd);
+	device->EventBegin("GGGrass Shadow Draw", cmd);
 
 	device->BindPipelineState( &psoGrassShadow, cmd );
 
@@ -1871,10 +1870,9 @@ extern "C" void GGGrass_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 		device->BindIndexBuffer( &bufferGrassIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 12, pChunk->numValid, 0, 0, 0, cmd );
 	}
-	
+
 	device->EventEnd(cmd);
 }
-*/
 
 // must be extern "C" to allow /alternatename linker flag to be set correctly
 // called from WickedEngine RenderPath3D::Render()
