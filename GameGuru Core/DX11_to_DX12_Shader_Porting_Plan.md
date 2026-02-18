@@ -1362,6 +1362,41 @@ extern "C" void GGGrass_Draw_Prepass(const wi::primitive::Frustum*, int, wi::gra
 - **PSO compatibility**: GG PSOs were compiled with SM 6.0 + custom root signature. If the root signature doesn't match the one active in the engine's render pass, DX12 will fail with `DXGI_ERROR_DEVICE_REMOVED`. Testing with a single draw call first is essential.
 - **Missing depth writes**: If GG terrain draws into the main color pass but not the depth prepass, objects will render on top of terrain. All three passes (prepass, shadow, main) must be hooked simultaneously.
 
+### 13.9 Phase 3 Implementation (2026-02-18)
+
+**Approach chosen**: Function pointer callbacks in RenderPath3D (Option B variant — no hard linker dependency from engine to game code).
+
+**WickedEngine changes** (commit 9118befe):
+- `wiRenderPath3D.h`: Added 4 function pointer members (`customDraw_Prepass`, `customDraw_Prepass_Reflections`, `customDraw_Opaque`, `customDraw_Transparent`), all nullptr by default
+- `wiRenderPath3D.cpp`: Added 5 hook calls at: depth prepass (after DrawScene), reflection prepass, reflection opaque, main opaque (before DrawSky), transparent (before DrawDebugWorld)
+- `wiGraphicsDevice.h`: SRV 16→64, Sampler 8→16 (Phase 2 committed here)
+- `globals.hlsli`: Root signature SRV 16→64, Sampler 8→16 (Phase 2 committed here)
+
+**GameGuru changes** (commit 8bebfec9):
+- `master_part1.cpp`: Added extern "C" declarations for 8 GG draw functions + lambda callbacks setup in `MasterRenderer::Load()`
+
+**Test results** (7 demos, zero crashes):
+
+| Demo | FPS | Visible Objects | Baseline FPS | Status |
+|------|-----|----------------|-------------|--------|
+| Island Showdown | 29.6-30.2 | 2062 | 27.7-30.4 | PASS (no regression) |
+| Switch Escape | 173 | 397 | 175 | PASS |
+| Trapped | 181 | 32 | 183 | PASS |
+| Escape from Zombie Cellar | 60.0 | 429 | 60 (vsync) | PASS |
+| Jungle Fever | 59.9 | 429 | 56 | PASS |
+| RPG Template | 106.0 | 336 | 98 | PASS |
+| Mystery of Z Island | 49.6 | 42 | 49 | PASS |
+
+**Shadow map and env probe hooks** (commit 0a8ea4fb + b84ff4fe):
+- Added `customDraw_ShadowMap` global function pointer in `wi::renderer` namespace
+- Shadow hook: per-cascade loop with camera CB + viewport setup in `DrawShadowmaps()`
+- Added `customDraw_EnvProbe` global function pointer in `wi::renderer` namespace
+- Env probe hook: constructs Sphere culler + extracts frustums from cubemap cameras in `RefreshEnvProbes()`
+- `GGGrass_Draw_ShadowMap` is skipped (commented out in source)
+
+**Not yet implemented**:
+- Overlay/Debug: `GGTerrain_Draw_Overlay`, `GGTerrain_Draw_Debug` — belong in Compose phase
+
 ### Phase 4: Visual Verification & Optimization
 1. Runtime testing of Tier 3 pixel shaders (PBR lighting, shadows, env probes)
 2. Shadow atlas correctness verification (cascade shadows via new atlas API)
