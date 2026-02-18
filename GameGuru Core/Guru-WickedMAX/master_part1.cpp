@@ -125,7 +125,7 @@ void MasterRenderer::Load()
 	ShowWindow(hWnd, SW_MAXIMIZE);
 
 	// Phase 3: Set up custom scene draw callbacks
-	// Terrain only (trees/grass disabled until PSO issues resolved)
+	// Terrain only (trees/grass disabled — see GRASSISSUE.md for details)
 	customDraw_Prepass = [](const Frustum* frustum, CommandList cmd) {
 		GGTerrain_Draw_Prepass(frustum, cmd);
 	};
@@ -148,6 +148,7 @@ void MasterRenderer::Load()
 		GGTerrain_Draw_Debug(cmd);
 		GGTerrain_Draw_Overlay(cmd);
 	};
+
 }
 
 void MasterRenderer::PreUpdate()

@@ -13,7 +13,7 @@
 #include "wiProfiler.h"
 #include "SimplexNoise.h"
 #include "wiECS.h"
-//#include "Utility/dds.h" // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
+#include "Utility/dds.h"
 
 #include "master.h"
 
@@ -855,6 +855,10 @@ Texture texMaterialMap;
 //#define GGTERRAIN_PAGE_TABLE_DEPTH 32 // must be greater than max numLODLevels + max mip levels (currently 15 + 7)
 #define GGTERRAIN_PAGE_TABLE_DEPTH 22 //PE: We use 9+7 on lowest so reduce it to save VRAM, system only support max 15+7 anyway.
 uint16_t pageTableData[ GGTERRAIN_PAGE_TABLE_DEPTH ][ pagesX * pagesY ];
+bool pageTableArrayDirty = false;
+bool pageTableFinalDirty = false;
+bool materialMapDirty = false;
+
 
 Texture texPagesColorAndMetal; // R8G8B8A8
 Texture texPagesNormalsRoughnessAO; // R8G8 = normals, B8 = roughness, A8 = ambient occlusion
@@ -3568,9 +3572,19 @@ public:
 		GraphicsDevice* device = wiGraphics::GetDevice();
 
 		uint32_t segsPerChunk = ggterrain_local_params.segments_per_chunk;
-		uint32_t stride = (segsPerChunk + 1) * sizeof(float);
+		uint32_t chunkStride = segsPerChunk + 1; // elements per row in chunk data
+		uint32_t LODSize = segsPerChunk * 8;
+		uint32_t numLevels = pLODs->GetNumLevels();
 
-		for( uint32_t lod = 0; lod < pLODs->GetNumLevels(); lod++ )
+		bool anyUpdated = false;
+
+		// Temp buffers for assembling full LOD textures
+		float* heightAssembly = new float[ LODSize * LODSize * numLevels ];
+		uint32_t* normalAssembly = new uint32_t[ LODSize * LODSize * numLevels ];
+		memset( heightAssembly, 0, LODSize * LODSize * numLevels * sizeof(float) );
+		memset( normalAssembly, 0, LODSize * LODSize * numLevels * sizeof(uint32_t) );
+
+		for( uint32_t lod = 0; lod < numLevels; lod++ )
 		{
 			GGTerrainLODLevel* pLevel = &pLODs->pLevels[ lod ];
 			if ( !fullUpdate && pLevel->shiftedX == 0 && pLevel->shiftedZ == 0 && !pLevel->HasRegenerated() ) continue;
@@ -3581,29 +3595,79 @@ public:
 				ggterrain_extra_params.iUpdateGrass = 20;
 			}
 			pLevel->SetRegenerated( 0 );
+			anyUpdated = true;
 
-			Box dstBox;
-			dstBox.front = 0; dstBox.back = 1;
-			for( uint32_t y = 0; y < 8; y++ )
+			float* heightSlice = heightAssembly + lod * LODSize * LODSize;
+			uint32_t* normalSlice = normalAssembly + lod * LODSize * LODSize;
+
+			for( uint32_t cy = 0; cy < 8; cy++ )
 			{
-				for( uint32_t x = 0; x < 8; x++ )
+				for( uint32_t cx = 0; cx < 8; cx++ )
 				{
-					uint32_t index = y * 8 + x;
+					uint32_t chunkIndex = cy * 8 + cx;
+					uint32_t dstX = cx * segsPerChunk;
+					uint32_t dstY = (7 - cy) * segsPerChunk;
 
-					dstBox.left = x * segsPerChunk; 
-					dstBox.right = (x + 1) * segsPerChunk;
-					dstBox.top = (7-y) * segsPerChunk; 
-					dstBox.bottom = (8-y) * segsPerChunk;
+					if ( !pLevel->chunkGrid[ chunkIndex ] ) continue;
+					float* srcHeight = pLevel->chunkGrid[ chunkIndex ]->pHeightMap;
+					uint32_t* srcNormal = pLevel->chunkGrid[ chunkIndex ]->pNormalMap;
 
-					// technically the edges should be increased by 1, but it's currently a nice power of two, and we shouldn't need the final pixel anyway
-					//if ( x == 7 ) dstBox.right++;
-					//if ( y == 0 ) dstBox.bottom++;
-					
-					//device->UpdateTexture( &texLODHeightMapArray, 0, lod, &dstBox, pLevel->chunkGrid[ index ]->pHeightMap, stride, -1 ); // TODO: DX12 - UpdateTexture removed 
-					//device->UpdateTexture( &texLODNormalMapArray, 0, lod, &dstBox, pLevel->chunkGrid[ index ]->pNormalMap, stride, -1 ); // TODO: DX12 - UpdateTexture removed 
+					if ( !srcHeight || !srcNormal ) continue;
+
+					for( uint32_t row = 0; row < segsPerChunk; row++ )
+					{
+						uint32_t dstIndex = (dstY + row) * LODSize + dstX;
+						uint32_t srcIndex = row * chunkStride;
+						memcpy( &heightSlice[dstIndex], &srcHeight[srcIndex], segsPerChunk * sizeof(float) );
+						memcpy( &normalSlice[dstIndex], &srcNormal[srcIndex], segsPerChunk * sizeof(uint32_t) );
+					}
 				}
 			}
 		}
+
+		if ( anyUpdated )
+		{
+			// Build SubresourceData arrays and re-create textures
+			std::vector<SubresourceData> heightInitData( numLevels );
+			std::vector<SubresourceData> normalInitData( numLevels );
+			for( uint32_t lod = 0; lod < numLevels; lod++ )
+			{
+				heightInitData[lod].data_ptr = heightAssembly + lod * LODSize * LODSize;
+				heightInitData[lod].row_pitch = LODSize * sizeof(float);
+				heightInitData[lod].slice_pitch = 0;
+
+				normalInitData[lod].data_ptr = normalAssembly + lod * LODSize * LODSize;
+				normalInitData[lod].row_pitch = LODSize * sizeof(uint32_t);
+				normalInitData[lod].slice_pitch = 0;
+			}
+
+			TextureDesc heightDesc = {};
+			heightDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+			heightDesc.sample_count = 1;
+			heightDesc.mip_levels = 1;
+			heightDesc.array_size = numLevels;
+			heightDesc.format = Format::R32_FLOAT;
+			heightDesc.usage = Usage::DEFAULT;
+			heightDesc.width = LODSize;
+			heightDesc.height = LODSize;
+			device->CreateTexture( &heightDesc, heightInitData.data(), &texLODHeightMapArray );
+			device->SetName( &texLODHeightMapArray, "texLODHeightMapArray" );
+
+			TextureDesc normalDesc = {};
+			normalDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+			normalDesc.sample_count = 1;
+			normalDesc.mip_levels = 1;
+			normalDesc.array_size = numLevels;
+			normalDesc.format = Format::R8G8B8A8_UNORM;
+			normalDesc.usage = Usage::DEFAULT;
+			normalDesc.width = LODSize;
+			normalDesc.height = LODSize;
+			device->CreateTexture( &normalDesc, normalInitData.data(), &texLODNormalMapArray );
+			device->SetName( &texLODNormalMapArray, "texLODNormalMapArray" );
+		}
+
+		delete[] heightAssembly;
+		delete[] normalAssembly;
 	}
 
 	// returns 0 if no intersection point found or if the terrain is currently regenerating, otherwise returns 1
@@ -4193,11 +4257,7 @@ void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
 #endif
 
 	TextureDesc texDesc = {};
-	texDesc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::RENDER_TARGET; // RENDER_TARGET must be set for generating mipmaps
-	texDesc.clear.color[0] = 1.0f;
-	texDesc.clear.color[1] = 0.0f;
-	texDesc.clear.color[2] = 0.0f;
-	texDesc.clear.color[3] = 0.0f;
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
 	texDesc.sample_count = 1;
 	texDesc.mip_levels = 1;
 	texDesc.array_size = 1;
@@ -4205,161 +4265,225 @@ void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
 	texDesc.usage = Usage::DEFAULT;
 	texDesc.width = size;
 	texDesc.height = size;
-	//texDesc.misc_flags = ResourceMiscFlag::GENERATE_MIPMAPS; // TODO: DX12 - GENERATE_MIPMAPS removed
 
-	// to generate mipmaps the texture must be created with MipLevels set to 0 (all) or the desired number of levels
-	// so CreateTexture data can't set a single mip level, use UpdateTexture afterwards instead
-	device->CreateTexture( &texDesc, nullptr, tex );
+	SubresourceData initdata = {};
+	initdata.data_ptr = imageData;
+	initdata.row_pitch = size;
+
+	device->CreateTexture( &texDesc, &initdata, tex );
 	device->SetName( tex, "imageTex" );
-
-	// upload mip level 0 data here
-	uint32_t rowStride = size;
-
-	//device->UpdateTexture( tex, 0, 0, 0, imageData, rowStride, -1 ); // TODO: DX12 - UpdateTexture removed
 	delete [] imageData;
-
-	// generate all mip levels from mip 0
-	//device->GenerateMipmaps( tex, -1 );
 }
 
-void GGTerrain_LoadTexturePNG( const char* filename, Texture* tex ) 
-{ 
+void GGTerrain_LoadTexturePNG( const char* filename, Texture* tex )
+{
 	GraphicsDevice* device = wiGraphics::GetDevice();
-	
+
 	int width, height, channels;
 	char filePath[ MAX_PATH ];
 	strcpy_s( filePath, MAX_PATH, filename );
 	GG_GetRealPath( filePath, 0 );
 	uint8_t* imageData = stbi_load( filePath, &width, &height, &channels, 4 );
-		
+	if ( !imageData ) return;
+
+	// stbi_load with 4 requested channels always returns RGBA
 	TextureDesc texDesc = {};
-	texDesc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::RENDER_TARGET; // RENDER_TARGET must be set for generating mipmaps
-	texDesc.clear.color[0] = 1.0f;
-	texDesc.clear.color[1] = 0.0f;
-	texDesc.clear.color[2] = 0.0f;
-	texDesc.clear.color[3] = 0.0f;
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
 	texDesc.sample_count = 1;
-	texDesc.mip_levels = 0;
+	texDesc.mip_levels = 1;
 	texDesc.array_size = 1;
-	switch( channels )
-	{
-		case 1: texDesc.format = Format::R8_UNORM; break;
-		case 2: texDesc.format = Format::R8G8_UNORM; break;
-		case 3: // fall through
-		case 4: texDesc.format = Format::R8G8B8A8_UNORM; break;
-		default: return; // error
-	}
+	texDesc.format = Format::R8G8B8A8_UNORM;
 	texDesc.usage = Usage::DEFAULT;
 	texDesc.width = width;
 	texDesc.height = height;
-	//texDesc.misc_flags = ResourceMiscFlag::GENERATE_MIPMAPS; // TODO: DX12 - GENERATE_MIPMAPS removed
 
-	// to generate mipmaps the texture must be created with MipLevels set to 0 (all) or the desired number of levels
-	// so CreateTexture data can't set a single mip level, use UpdateTexture afterwards instead
-	device->CreateTexture( &texDesc, nullptr, tex );
+	SubresourceData initdata = {};
+	initdata.data_ptr = imageData;
+	initdata.row_pitch = width * 4;
+
+	device->CreateTexture( &texDesc, &initdata, tex );
 	device->SetName( tex, "imageTex" );
-
-	// upload mip level 0 data here
-	uint32_t rowStride = width * ((channels == 3) ? 4 : channels);
-	//device->UpdateTexture( tex, 0, 0, 0, imageData, rowStride, -1 ); // TODO: DX12 - UpdateTexture removed
 	stbi_image_free( imageData );
-
-	// generate all mip levels from mip 0
-	//device->GenerateMipmaps( tex, -1 ); // TODO: DX12 - GenerateMipmaps removed
 }
 
-// TODO: DX12 - tinyddsloader removed, rewrite DDS loading
-#if 0
-wiGraphics::FORMAT ConvertDDSFormat( tinyddsloader::DDSFile::DXGIFormat format )
+// Convert dds::DXGI_FORMAT to wiGraphics::Format
+static Format ConvertDDSFormat( dds::DXGI_FORMAT ddsFormat )
 {
-	// ... tinyddsloader format conversion table removed ...
-	return FORMAT_UNKNOWN;
+	switch (ddsFormat)
+	{
+	case dds::DXGI_FORMAT_R8G8B8A8_UNORM: return Format::R8G8B8A8_UNORM;
+	case dds::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB: return Format::R8G8B8A8_UNORM_SRGB;
+	case dds::DXGI_FORMAT_B8G8R8A8_UNORM: return Format::B8G8R8A8_UNORM;
+	case dds::DXGI_FORMAT_B8G8R8X8_UNORM: return Format::B8G8R8A8_UNORM;
+	case dds::DXGI_FORMAT_B8G8R8A8_UNORM_SRGB: return Format::B8G8R8A8_UNORM_SRGB;
+	case dds::DXGI_FORMAT_BC1_UNORM: return Format::BC1_UNORM;
+	case dds::DXGI_FORMAT_BC1_UNORM_SRGB: return Format::BC1_UNORM_SRGB;
+	case dds::DXGI_FORMAT_BC2_UNORM: return Format::BC2_UNORM;
+	case dds::DXGI_FORMAT_BC2_UNORM_SRGB: return Format::BC2_UNORM_SRGB;
+	case dds::DXGI_FORMAT_BC3_UNORM: return Format::BC3_UNORM;
+	case dds::DXGI_FORMAT_BC3_UNORM_SRGB: return Format::BC3_UNORM_SRGB;
+	case dds::DXGI_FORMAT_BC4_UNORM: return Format::BC4_UNORM;
+	case dds::DXGI_FORMAT_BC4_SNORM: return Format::BC4_SNORM;
+	case dds::DXGI_FORMAT_BC5_UNORM: return Format::BC5_UNORM;
+	case dds::DXGI_FORMAT_BC5_SNORM: return Format::BC5_SNORM;
+	case dds::DXGI_FORMAT_BC6H_UF16: return Format::BC6H_UF16;
+	case dds::DXGI_FORMAT_BC6H_SF16: return Format::BC6H_SF16;
+	case dds::DXGI_FORMAT_BC7_UNORM: return Format::BC7_UNORM;
+	case dds::DXGI_FORMAT_BC7_UNORM_SRGB: return Format::BC7_UNORM_SRGB;
+	case dds::DXGI_FORMAT_R16_UNORM: return Format::R16_UNORM;
+	case dds::DXGI_FORMAT_R16_FLOAT: return Format::R16_FLOAT;
+	case dds::DXGI_FORMAT_R32_FLOAT: return Format::R32_FLOAT;
+	case dds::DXGI_FORMAT_R8_UNORM: return Format::R8_UNORM;
+	case dds::DXGI_FORMAT_R8G8_UNORM: return Format::R8G8_UNORM;
+	case dds::DXGI_FORMAT_R16G16_FLOAT: return Format::R16G16_FLOAT;
+	case dds::DXGI_FORMAT_R16G16B16A16_FLOAT: return Format::R16G16B16A16_FLOAT;
+	case dds::DXGI_FORMAT_R32G32B32A32_FLOAT: return Format::R32G32B32A32_FLOAT;
+	default: return Format::UNKNOWN;
+	}
 }
 
 void GGTerrain_LoadTextureDDS( const char* filename, Texture* tex )
 {
-	// ... tinyddsloader DDS loading removed ...
-}
-
-bool GGTerrain_LoadTextureDDSIntoSlice_DISABLED(const char* filename, Texture* tex, uint32_t arraySlice, DDSRequirements* requirements, wiGraphics::CommandList cmd, bool bFillAllSlots = false)
-{ 
 	GraphicsDevice* device = wiGraphics::GetDevice();
+
 	char filePath[MAX_PATH];
 	strcpy_s(filePath, MAX_PATH, filename);
 	GG_GetRealPath(filePath, 0);
-	tinyddsloader::DDSFile dds;
-	auto result = dds.Load(filePath);
-	if (result != tinyddsloader::Result::Success) return false;
 
-	#ifdef CUSTOMTEXTURES
-	// If the texture we want to load into the slice does not match the tex array format, convert it
-	if (dds.GetWidth() != requirements->width || dds.GetHeight() != requirements->height || (int)dds.GetFormat() != requirements->format || dds.GetMipCount() <= 1)
+	FILE* file = GG_fopen(filePath, "rb");
+	if (!file) return;
+	fseek(file, 0, SEEK_END);
+	long filesize = ftell(file);
+	fseek(file, 0, SEEK_SET);
+	uint8_t* filedata = new uint8_t[filesize];
+	fread(filedata, 1, filesize, file);
+	fclose(file);
+
+	dds::Header header = dds::read_header(filedata, filesize);
+	if (!header.is_valid()) { delete[] filedata; return; }
+
+	Format format = ConvertDDSFormat(header.format());
+	if (format == Format::UNKNOWN) { delete[] filedata; return; }
+
+	TextureDesc desc = {};
+	desc.bind_flags = BindFlag::SHADER_RESOURCE;
+	desc.width = header.width();
+	desc.height = header.height();
+	desc.mip_levels = header.mip_levels();
+	desc.array_size = header.array_size();
+	desc.format = format;
+	desc.usage = Usage::DEFAULT;
+	desc.sample_count = 1;
+
+	std::vector<SubresourceData> initdata(desc.array_size * desc.mip_levels);
+	uint32_t idx = 0;
+	for (uint32_t slice = 0; slice < desc.array_size; ++slice)
 	{
-		// Only convert textures if already in writable folder, don't want to change any max install or other files
-		if(strstr(filePath, GG_GetWritePath()))
+		for (uint32_t mip = 0; mip < desc.mip_levels; ++mip)
 		{
-			//LB: no such GetDeviceForIMGUI access in DX12
-			//LB: Moreover, the DirectXTex is too old DX11 (we need the latest with DX12 support, which also needs VS2022 - so defer until Wicked Merge complete)
-			//ConvertDDSCompressedFormat((ID3D11Device*)device->GetDeviceForIMGUI(), filePath, requirements->format, requirements->width, requirements->height, filePath);
-			//result = dds.Load(filePath);
-			//if (g_bOneTimeMessage == false)
-			//{
-				bTriggerMessage = true;
-				strcpy(cTriggerMessage, "Conversion to the required BC7 (color), BC5 (normal) and BC1 (surface) will be added soon!");
-				//MessageBoxA(NULL, "", "PNG to DDS Texture Converter", MB_OK);
-			//	g_bOneTimeMessage = true;
-			//}
-			return false;
-		}
-		else
-		{
-			// If we can't convert the file, it cannot be loaded into the tex array
-			return false;
+			initdata[idx].data_ptr = filedata + header.mip_offset(mip, slice);
+			initdata[idx].row_pitch = header.row_pitch(mip);
+			initdata[idx].slice_pitch = header.slice_pitch(mip);
+			idx++;
 		}
 	}
 
-	#endif
-
-	if (bFillAllSlots)
-	{
-		for (uint32_t i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES; i++)
-		{
-			uint32_t maxMip = dds.GetMipCount();
-			if (maxMip > tex->desc.MipLevels) maxMip = tex->desc.MipLevels;
-			std::vector<SubresourceData> InitData;
-			for (uint32_t mip = 0; mip < maxMip; ++mip)
-			{
-				auto imageData = dds.GetImageData(mip, 0);
-				device->UpdateTexture(tex, mip, i, 0, imageData->m_mem, imageData->m_memPitch, cmd);
-			}
-			break;
-		}
-	}
-	else
-	{
-		uint32_t maxMip = dds.GetMipCount();
-		if (maxMip > tex->desc.MipLevels) maxMip = tex->desc.MipLevels;
-		std::vector<SubresourceData> InitData;
-		for (uint32_t mip = 0; mip < maxMip; ++mip)
-		{
-			auto imageData = dds.GetImageData(mip, 0);
-			device->UpdateTexture(tex, mip, arraySlice, 0, imageData->m_mem, imageData->m_memPitch, cmd);
-		}
-	}
-	return true;
-}
-#endif
-
-// TODO: DX12 - tinyddsloader removed, stub functions until DDS loading is rewritten
-void GGTerrain_LoadTextureDDS( const char* filename, Texture* tex )
-{
-	// stub - DDS loading disabled
+	device->CreateTexture(&desc, initdata.data(), tex);
+	device->SetName(tex, "ddsTex");
+	delete[] filedata;
 }
 
 bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint32_t arraySlice, DDSRequirements* requirements, wiGraphics::CommandList cmd, bool bFillAllSlots = false)
 {
-	// stub - DDS loading disabled
-	return false;
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
+	char filePath[MAX_PATH];
+	strcpy_s(filePath, MAX_PATH, filename);
+	GG_GetRealPath(filePath, 0);
+
+	FILE* file = GG_fopen(filePath, "rb");
+	if (!file) return false;
+	fseek(file, 0, SEEK_END);
+	long filesize = ftell(file);
+	fseek(file, 0, SEEK_SET);
+	uint8_t* filedata = new uint8_t[filesize];
+	fread(filedata, 1, filesize, file);
+	fclose(file);
+
+	dds::Header header = dds::read_header(filedata, filesize);
+	if (!header.is_valid()) { delete[] filedata; return false; }
+
+	Format format = ConvertDDSFormat(header.format());
+	if (format == Format::UNKNOWN) { delete[] filedata; return false; }
+
+#ifdef CUSTOMTEXTURES
+	// Validate DDS matches the expected texture array format
+	if ((int)header.width() != requirements->width || (int)header.height() != requirements->height || header.mip_levels() <= 1)
+	{
+		if (strstr(filePath, GG_GetWritePath()))
+		{
+			bTriggerMessage = true;
+			strcpy(cTriggerMessage, "Conversion to the required BC7 (color), BC5 (normal) and BC1 (surface) will be added soon!");
+			delete[] filedata;
+			return false;
+		}
+		else
+		{
+			delete[] filedata;
+			return false;
+		}
+	}
+#endif
+
+	// Create a staging texture from the DDS data (single slice)
+	TextureDesc stagingDesc = {};
+	stagingDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	stagingDesc.width = header.width();
+	stagingDesc.height = header.height();
+	stagingDesc.mip_levels = header.mip_levels();
+	stagingDesc.array_size = 1;
+	stagingDesc.format = format;
+	stagingDesc.usage = Usage::DEFAULT;
+	stagingDesc.sample_count = 1;
+
+	uint32_t maxMip = header.mip_levels();
+	if (maxMip > tex->desc.mip_levels) maxMip = tex->desc.mip_levels;
+
+	std::vector<SubresourceData> initdata(maxMip);
+	for (uint32_t mip = 0; mip < maxMip; ++mip)
+	{
+		initdata[mip].data_ptr = filedata + header.mip_offset(mip, 0);
+		initdata[mip].row_pitch = header.row_pitch(mip);
+		initdata[mip].slice_pitch = header.slice_pitch(mip);
+	}
+
+	stagingDesc.mip_levels = maxMip;
+
+	// Staging texture must survive until the GPU finishes executing the copy commands.
+	// CopyTexture records raw resource pointers without AddRef.
+	Texture stagingTex;
+	device->CreateTexture(&stagingDesc, initdata.data(), &stagingTex);
+	// Copy each mip from staging texture into the target array slice(s)
+	if (bFillAllSlots)
+	{
+		for (uint32_t i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES; i++)
+		{
+			for (uint32_t mip = 0; mip < maxMip; ++mip)
+			{
+				device->CopyTexture(tex, 0, 0, 0, mip, i, &stagingTex, mip, 0, cmd);
+			}
+		}
+	}
+	else
+	{
+		for (uint32_t mip = 0; mip < maxMip; ++mip)
+		{
+			device->CopyTexture(tex, 0, 0, 0, mip, arraySlice, &stagingTex, mip, 0, cmd);
+		}
+	}
+
+	delete[] filedata;
+	return true;
 }
 
 // compress normals with BC5 (2 channel greyscale)
@@ -5127,7 +5251,96 @@ void GGTerrain_CreateEmptyTexture( int width, int height, int mipLevels, int lev
 	device->SetName( tex, "tex" );
 }
 
-void GGTerrain_CreateCPUReadTexture( int width, int height, Format format, Texture* tex ) 
+// Re-create texPageTableArray from CPU data (one array slice per LOD level except the last)
+void GGTerrain_UploadPageTableArray()
+{
+	GraphicsDevice* device = wiGraphics::GetDevice();
+	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
+	if (!pCurrLODs) return;
+	uint32_t numLODLevels = pCurrLODs->GetNumLevels();
+	if (numLODLevels < 2) return;
+	uint32_t numSlices = numLODLevels - 1;
+
+	std::vector<SubresourceData> initdata(numSlices);
+	for (uint32_t slice = 0; slice < numSlices; slice++)
+	{
+		initdata[slice].data_ptr = &pageTableData[slice][0];
+		initdata[slice].row_pitch = pagesX * sizeof(uint16_t);
+		initdata[slice].slice_pitch = 0;
+	}
+
+	TextureDesc texDesc = {};
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = numSlices;
+	texDesc.format = Format::R16_UNORM;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = pagesX;
+	texDesc.height = pagesY;
+
+	device->CreateTexture(&texDesc, initdata.data(), &texPageTableArray);
+	device->SetName(&texPageTableArray, "texPageTableArray");
+}
+
+// Re-create texPageTableFinal from CPU data (single slice with multiple mip levels)
+void GGTerrain_UploadPageTableFinal()
+{
+	GraphicsDevice* device = wiGraphics::GetDevice();
+	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
+	uint32_t numLODLevels = pCurrLODs ? pCurrLODs->GetNumLevels() : 0;
+
+	// Use slot 0 when LODs not yet initialized (all data is zeroed anyway)
+	uint32_t baseSlot = (numLODLevels > 0) ? (numLODLevels - 1) : 0;
+
+	SubresourceData initdata[GGTERRAIN_MAX_PAGE_TABLE_MIP];
+	for (uint32_t mip = 0; mip < GGTERRAIN_MAX_PAGE_TABLE_MIP; mip++)
+	{
+		uint32_t mipWidth = pagesX >> mip;
+		initdata[mip].data_ptr = &pageTableData[baseSlot + mip][0];
+		initdata[mip].row_pitch = mipWidth * sizeof(uint16_t);
+		initdata[mip].slice_pitch = 0;
+	}
+
+	TextureDesc texDesc = {};
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = GGTERRAIN_MAX_PAGE_TABLE_MIP;
+	texDesc.array_size = 1;
+	texDesc.format = Format::R16_UNORM;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = pagesX;
+	texDesc.height = pagesY;
+
+	device->CreateTexture(&texDesc, initdata, &texPageTableFinal);
+	device->SetName(&texPageTableFinal, "texPageTableFinal");
+}
+
+// Re-create texMaterialMap from CPU data
+void GGTerrain_UploadMaterialMap()
+{
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
+	SubresourceData initdata = {};
+	initdata.data_ptr = pMaterialMap;
+	initdata.row_pitch = GGTERRAIN_MATERIALMAP_SIZE;
+	initdata.slice_pitch = 0;
+
+	TextureDesc texDesc = {};
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = 1;
+	texDesc.format = Format::R8_UNORM;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = GGTERRAIN_MATERIALMAP_SIZE;
+	texDesc.height = GGTERRAIN_MATERIALMAP_SIZE;
+
+	device->CreateTexture(&texDesc, &initdata, &texMaterialMap);
+	device->SetName(&texMaterialMap, "texMaterialMap");
+}
+
+void GGTerrain_CreateCPUReadTexture( int width, int height, Format format, Texture* tex )
 {
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	
@@ -6713,8 +6926,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 		}
 	}
 	*/
-	// TODO: DX12 - UpdateTexture removed
-	//device->UpdateTexture( &texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1 );
+	//GGTerrain_UploadMaterialMap(); // DISABLED FOR CRASH TEST
 
 	ggterrain_flat_areas_array_size = 4;
 	ggterrain_flat_areas = new GGTerrainFlatArea[ ggterrain_flat_areas_array_size ];
@@ -6765,13 +6977,7 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	
 	// fill final page table with everything pointing to page 0
 	memset( pageTableData, 0, GGTERRAIN_PAGE_TABLE_DEPTH*pagesX*pagesY*sizeof(uint16_t) ); // default everything to 0 (invalid page)
-	uint32_t stride = pagesX * sizeof(uint16_t); 
-	for( uint32_t mipLevel = 0; mipLevel < GGTERRAIN_MAX_PAGE_TABLE_MIP; mipLevel++ ) // not a full mip stack
-	{
-		// TODO: DX12 - UpdateTexture removed
-		//device->UpdateTexture( &texPageTableFinal, mipLevel, 0, 0, pageTableData, stride, -1 );
-		stride /= 2;
-	}
+	GGTerrain_UploadPageTableFinal();
 
 	/*
 	// fill physical texture with demo pages
@@ -7624,15 +7830,13 @@ int GGTerrain_GeneratePage( PageEntry* pPage )
 	if ( ggterrain.IsHighDetail( detailLevel ) )
 	{
 		pageTableData[ detailLevel ][ virtOffsetY * pagesX + virtOffsetX ] = pixel;
-		// TODO: DX12 - UpdateTexture removed
-		//device->UpdateTexture( &texPageTableArray, 0, detailLevel, &dstBox, &pixel, 0, -1 );
+		pageTableArrayDirty = true;
 	}
 	else
 	{
 		uint32_t mipLevel = ggterrain.ConvertToMipLevel( detailLevel );
 		pageTableData[ detailLevel ][ virtOffsetY * (pagesX >> mipLevel) + virtOffsetX ] = pixel;
-		// TODO: DX12 - UpdateTexture removed
-		//device->UpdateTexture( &texPageTableFinal, mipLevel, 0, &dstBox, &pixel, 0, -1 );
+		pageTableFinalDirty = true;
 	}
 
 	pageGenerationList.AddItem( pPage );
@@ -7666,24 +7870,10 @@ void GGTerrain_CheckPageShift()
 			}
 		}
 
-		// page table array texture, one level per LOD, except the last LOD level which is mipmapped
-		GGTerrain_CreateEmptyTexture( pagesX, pagesY, 1, numLODLevels-1, Format::R16_UNORM, &texPageTableArray );
-
-		// clear page tables
+		// clear page tables and upload
 		memset( pageTableData, 0, GGTERRAIN_PAGE_TABLE_DEPTH*pagesX*pagesY*sizeof(uint16_t) ); // default everything to 0 (invalid page)
-		uint32_t stride = pagesX * sizeof(uint16_t); 
-		for( uint32_t level = 0; level < numLODLevels-1; level++ )
-		{
-			// TODO: DX12 - UpdateTexture removed
-			//device->UpdateTexture( &texPageTableArray, 0, level, 0, pageTableData, stride, -1 );
-		}
-
-		for( uint32_t mipLevel = 0; mipLevel < GGTERRAIN_MAX_PAGE_TABLE_MIP; mipLevel++ ) // not a full mip stack
-		{
-			// TODO: DX12 - UpdateTexture removed
-			//device->UpdateTexture( &texPageTableFinal, mipLevel, 0, 0, pageTableData, stride, -1 );
-			stride /= 2;
-		}
+		GGTerrain_UploadPageTableArray();
+		GGTerrain_UploadPageTableFinal();
 		
 		// generate commonly needed physical texture pages, at least the 16 4x4 level pages must be generated
 		uint32_t detailLevel = (numLODLevels - 1) + GGTERRAIN_MAX_PAGE_TABLE_MIP - 1; // lowest detail level
@@ -7813,10 +8003,8 @@ void GGTerrain_CheckPageShift()
 			}
 
 			memcpy( &pageTableData[ level ], newPageData, pagesX*pagesY*sizeof(uint16_t) );
-			uint32_t stride = pagesX * sizeof(uint16_t);
-			// TODO: DX12 - UpdateTexture removed
-			//device->UpdateTexture( &texPageTableArray, 0, level, 0, &pageTableData[ level ], stride, -1 );
 		}
+		GGTerrain_UploadPageTableArray();
 
 		// shift final mipmapped page table texture
 		int shiftX = pCurrLODs->pLevels[ numLODLevels-1 ].shiftedX;
@@ -7876,11 +8064,9 @@ void GGTerrain_CheckPageShift()
 				}
 
 				memcpy( &pageTableData[ pageLevel ], newPageData, mippedPagesX*mippedPagesY*sizeof(uint16_t) );
-				uint32_t stride = mippedPagesX * sizeof(uint16_t);
-				// TODO: DX12 - UpdateTexture removed
-				//device->UpdateTexture( &texPageTableFinal, level, 0, 0, &pageTableData[ pageLevel ], stride, -1 );
 			}
-						
+			GGTerrain_UploadPageTableFinal();
+
 			// generate any new 4x4 level pages
 			uint32_t detailLevel = (numLODLevels - 1) + GGTERRAIN_MAX_PAGE_TABLE_MIP - 1; // lowest detail level
 			for( int y = 0; y < 4; y++ )
@@ -8099,15 +8285,13 @@ void GGTerrain_CheckReadBack()
 				if ( ggterrain.IsHighDetail( detailLevel ) )
 				{
 					pageTableData[ detailLevel ][ virtOffsetY * pagesX + virtOffsetX ] = pixel;
-					// TODO: DX12 - UpdateTexture removed
-					//device->UpdateTexture( &texPageTableArray, 0, detailLevel, &dstBox, &pixel, 0, -1 );
+					pageTableArrayDirty = true;
 				}
 				else
 				{
 					uint32_t mipLevel = ggterrain.ConvertToMipLevel( detailLevel );
 					pageTableData[ detailLevel ][ virtOffsetY * (pagesX >> mipLevel) + virtOffsetX ] = pixel;
-					// TODO: DX12 - UpdateTexture removed
-					//device->UpdateTexture( &texPageTableFinal, mipLevel, 0, &dstBox, &pixel, 0, -1 );
+					pageTableFinalDirty = true;
 				}
 			}
 
@@ -8935,8 +9119,7 @@ void GGTerrain_Update_Painting( float pickX, float pickY, float pickZ )
 				}
 			}
 
-			// TODO: DX12 - UpdateTexture removed
-			//wiGraphics::GetDevice()->UpdateTexture( &texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1 );
+			materialMapDirty = true;
 
 			float realRadius = ggterrain_local_render_params2.brushSize + 50;
 			GGTerrain_InvalidateRegion( pickX - realRadius, pickZ - realRadius, pickX + realRadius, pickZ + realRadius, GGTERRAIN_INVALIDATE_TEXTURES );
@@ -9854,8 +10037,15 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 	{
 		// CPU only side of the read back, GPU side is done in prepass render
 		GGTerrain_CheckPageShift();
-		GGTerrain_CheckReadBack(); 
+		GGTerrain_CheckReadBack();
 	}
+
+	// Flush dirty page table textures here (during Update, outside any render pass).
+	// CreateTexture uses the DX12 CopyAllocator which blocks the CPU thread — must not
+	// be called inside a WickedEngine render pass or it can crash the DX12 driver.
+	if (pageTableArrayDirty) { GGTerrain_UploadPageTableArray(); pageTableArrayDirty = false; }
+	if (pageTableFinalDirty) { GGTerrain_UploadPageTableFinal(); pageTableFinalDirty = false; }
+	if (materialMapDirty) { GGTerrain_UploadMaterialMap(); materialMapDirty = false; }
 
 	for( int i = 0; i < (int)pageRefreshList.NumItems(); i++ )
 	{
@@ -10149,8 +10339,7 @@ int GGTerrain_SetPaintData( uint32_t size, uint8_t* data, sUndoSysEventTerrainPa
 		memcpy(pMaterialMap, data, size1);
 
 		//PE: Was needed so we can invalidate region and clear old textures.
-		// TODO: DX12 - UpdateTexture removed
-		//wiGraphics::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
+		GGTerrain_UploadMaterialMap();
 
 #ifdef ONLYLOADWHENUSED
 		bCheckForNewTerrainTextures = true;
@@ -10186,8 +10375,7 @@ int GGTerrain_SetPaintData( uint32_t size, uint8_t* data, sUndoSysEventTerrainPa
 	realMaxZ *= ggterrain_local_render_params2.editable_size;
 
 	GGTerrain_InvalidateRegion(realMinX, realMinZ, realMaxX, realMaxZ, GGTERRAIN_INVALIDATE_ALL);
-	// TODO: DX12 - UpdateTexture removed
-	//wiGraphics::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
+	GGTerrain_UploadMaterialMap();
 
 	return 1;
 #endif
@@ -10197,8 +10385,7 @@ int GGTerrain_SetPaintData( uint32_t size, uint8_t* data, sUndoSysEventTerrainPa
 void GGTerrain_ResetPaintData()
 {
 	memset( pMaterialMap, 0, GGTERRAIN_MATERIALMAP_SIZE * GGTERRAIN_MATERIALMAP_SIZE );
-	// TODO: DX12 - UpdateTexture removed
-	//wiGraphics::GetDevice()->UpdateTexture(&texMaterialMap, 0, 0, NULL, pMaterialMap, GGTERRAIN_MATERIALMAP_SIZE, -1);
+	GGTerrain_UploadMaterialMap();
 
 	GGTerrain_InvalidateEverything( GGTERRAIN_INVALIDATE_TEXTURES );
 }
