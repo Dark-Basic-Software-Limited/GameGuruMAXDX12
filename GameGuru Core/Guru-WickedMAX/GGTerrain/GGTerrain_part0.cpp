@@ -10079,8 +10079,9 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 					if ( cpuSeedMip < 3 ) // mips below 3 are too large (64x64+)
 					{
 						// Transition to Phase 2: array LOD levels
+						// Start from outermost LOD and work inward so coarse coverage is established first
 						cpuSeedMip = 100;
-						cpuSeedLod = 0;
+						cpuSeedLod = (int)numLODLevels - 2;
 						cpuSeedLodY = 0;
 					}
 				}
@@ -10089,18 +10090,30 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 			// Phase 2: Generate camera-centered pages at each array LOD level.
 			// Each LOD level has a 256x256 page grid with the camera at center (128,128).
 			// Generate a grid of pages around the center, spreading across multiple frames.
-			while ( cpuSeedMip == 100 && cpuSeedLod < (int)numLODLevels - 1 && pagesThisFrame < maxPerFrame )
+			// Iterate from outermost LOD inward so coarse coverage is established first,
+			// ensuring smooth mip transitions instead of hard seams.
+			while ( cpuSeedMip == 100 && cpuSeedLod >= 0 && pagesThisFrame < maxPerFrame )
 			{
 				uint32_t detailLevel = (uint32_t)cpuSeedLod;
-				// Radius increases with LOD level (higher LODs cover larger world area)
-				uint32_t radius = 6 + (uint32_t)cpuSeedLod * 2;
-				if ( radius > 16 ) radius = 16;
+				// Inner LODs get larger radii (more fine-detail pages near camera),
+				// outer LODs get smaller radii (each page covers more world area).
+				// World coverage still grows with LOD since page size doubles per level.
+				uint32_t radius = (cpuSeedLod < 14) ? (14 - (uint32_t)cpuSeedLod) : 6;
+				if ( radius < 6 ) radius = 6;
 
-				uint32_t centerUV = pagesX / 2; // 128
-				uint32_t startX = (centerUV > radius) ? centerUV - radius : 0;
-				uint32_t startY = (centerUV > radius) ? centerUV - radius : 0;
-				uint32_t endX = centerUV + radius;
-				uint32_t endY = centerUV + radius;
+				// Compute camera's actual page-table coordinate for this LOD level.
+				// The LOD center snaps to chunk boundaries, so the camera can be
+				// up to ~40 pages from (128,128). We must center detail on the camera.
+				float LODHalfSize = ggterrain_local_params.segments_per_chunk * pCurrLODs->pLevels[ detailLevel ].segSize * 4;
+				float LODSize = LODHalfSize * 2.0f;
+				uint32_t camPageX = (uint32_t)((playerX - pCurrLODs->pLevels[ detailLevel ].centerX + LODHalfSize) / LODSize * pagesX);
+				uint32_t camPageY = (uint32_t)((1.0f - (playerZ - pCurrLODs->pLevels[ detailLevel ].centerZ + LODHalfSize) / LODSize) * pagesY);
+				if ( camPageX >= pagesX ) camPageX = pagesX - 1;
+				if ( camPageY >= pagesY ) camPageY = pagesY - 1;
+				uint32_t startX = (camPageX > radius) ? camPageX - radius : 0;
+				uint32_t startY = (camPageY > radius) ? camPageY - radius : 0;
+				uint32_t endX = camPageX + radius;
+				uint32_t endY = camPageY + radius;
 				if ( endX > pagesX ) endX = pagesX;
 				if ( endY > pagesY ) endY = pagesY;
 				uint32_t height = endY - startY;
@@ -10124,12 +10137,12 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 
 				if ( cpuSeedLodY >= height )
 				{
-					cpuSeedLod++;
+					cpuSeedLod--;
 					cpuSeedLodY = 0;
 				}
 			}
 
-			if ( cpuSeedMip == 100 && cpuSeedLod >= (int)numLODLevels - 1 )
+			if ( cpuSeedMip == 100 && cpuSeedLod < 0 )
 			{
 				cpuSeedMip = -2; // all phases complete
 			}
