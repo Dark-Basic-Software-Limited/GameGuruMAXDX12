@@ -72,6 +72,54 @@ When replacing an image at an existing ID (e.g., storyboard project switch), you
 
 This is required because DX12 has 2 frames in flight (`NUM_FRAMES_IN_FLIGHT = 2`). The GPU may still be executing draw commands from a previous frame that reference the texture. Freeing the `ID3D12Resource` while in-flight causes `DXGI_ERROR_DEVICE_REMOVED` (fixed in commit c8ec1739).
 
+## DX12 Terrain Virtual Texture System
+
+The terrain uses a virtual texture system with a physical page atlas and a multi-level page table.
+
+### Architecture
+
+| Component | Description | Location |
+|-----------|-------------|----------|
+| `texPageTableArray` | 2D texture array, `numLODLevels - 1` slices (default 8), each 256x256. One slice per LOD level for fine-detail pages | `GGTerrain_part0.cpp:846` |
+| `texPageTableFinal` | Single 256x256 texture with 6 mip levels (256x256 down to 8x8). Coarsest LOD level | `GGTerrain_part0.cpp:847` |
+| Physical atlas | 70x70 = 4900 pages (4899 usable) | `GGTerrainPageSettings.h:43-44` |
+| Page budget | 128 pages/frame (`GGTERRAIN_REPLACEMENT_PAGE_MAX`) | `GGTerrain_part0.cpp:893` |
+
+### GPU readback is disabled in DX12
+
+The GPU readback feedback loop (`customDraw_AfterPrepass` → `GGTerrain_VirtualTexReadBack`) is commented out at `master_part1.cpp:156-158` because the DX12 prepass only has 1 color render target. `readBackValid` is permanently 0.
+
+### CPU fallback page generation (sole mechanism in DX12)
+
+Located at `GGTerrain_part0.cpp:10037-10142`. Runs in two phases across multiple frames:
+
+**Phase 1** (lines 10053-10088): Fills final page table mip levels 4 and 3 (coarse base coverage). Mip 5 (8x8) is filled during initial `ShouldRegeneratePages()`. Consumes ~1344 pages total.
+
+**Phase 2** (lines 10090-10135): Generates camera-centered pages at each array LOD level. Key design decisions:
+- **Iterates outermost LOD first** (LOD 7→0) so coarse coverage is established before fine detail, preventing multi-level mip jumps at boundaries
+- **Inner LODs get larger radii**: formula `14 - LOD` (min 6). Inner LODs need more pages for fine detail; outer LODs need fewer because each page covers more world area
+- **Centers on camera's actual page-table coordinate**, not the fixed grid center (128,128). Each LOD level's grid center snaps to chunk boundaries and can be up to ~40 pages offset from the camera
+
+### Critical: page-table ↔ world coordinate mapping
+
+Each LOD level's page table maps to world space via:
+```
+LODHalfSize = segments_per_chunk * segSize * 4
+page_x = (worldX - centerX + LODHalfSize) / (LODHalfSize * 2) * 256
+page_y = (1.0 - (worldZ - centerZ + LODHalfSize) / (LODHalfSize * 2)) * 256
+```
+The shader (`GGTerrainVirtualPBR_PS.hlsl:77-110`) uses `terrain_LOD[level].x/z/size` set at `GGTerrain_part0.cpp:9788-9790`. When a page is missing (entry = 0), the shader increments `detailLevel` and tries the next coarser LOD.
+
+### Key source files
+
+| File | Content |
+|------|---------|
+| `Guru-WickedMAX/GGTerrain/GGTerrain_part0.cpp` | Page table management, CPU fallback generation, LOD level management |
+| `Guru-WickedMAX/GGTerrain/GGTerrainPageSettings.h` | Atlas dimensions, page table constants |
+| `Guru-WickedMAX/GGTerrain/GGTerrain.h` | LOD level count, segment size, segments per chunk |
+| `Guru-WickedMAX/GGTerrain/Shaders/GGTerrainVirtualPBR_PS.hlsl` | Pixel shader page table lookup |
+| `Guru-WickedMAX/master_part1.cpp:152-158` | GPU readback disabled (commented out) |
+
 ## Third-Party Dependencies
 - **WickedEngineDX12** is located at `../WickedEngineDX12` (sibling folder at `D:\max\WickedEngineDX12`)
 - This is the rendering engine the project depends on
