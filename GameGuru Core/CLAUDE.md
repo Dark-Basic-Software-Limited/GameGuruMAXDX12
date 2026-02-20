@@ -1,5 +1,11 @@
 # GameGuruWickedMAX - Claude Code Instructions
 
+## Session Start
+- **Always read `WETEST.md` at the start of every session** before executing any commands.
+- If asked to "run MAX" or "launch MAX", execute the **Execution Pattern** from WETEST.md steps 1-3 verbatim. Use the exact bash commands shown — do NOT substitute with `cmd`, `dir`, or any other commands. Do NOT verify paths, check if the EXE exists, or build first. Just run the steps. If the launch fails, STOP and report the error — do not retry with alternative commands.
+- For all other tasks (testing, building, debugging, etc.), work autonomously as normal — use judgment, retry, and problem-solve without stopping to ask.
+- Do NOT build or compile unless explicitly told to.
+
 ## Project Overview
 This is a large C++ Windows x64 project (game engine) built with MSVC.
 Solution file: `GameGuruWickedMAX.sln`
@@ -71,6 +77,7 @@ This is required because DX12 has 2 frames in flight (`NUM_FRAMES_IN_FLIGHT = 2`
 - This is the rendering engine the project depends on
 - Reference this repo when resolving includes, engine API calls, or tracking down type definitions
 - Do NOT modify files in WickedEngineDX12 unless explicitly asked
+- **Building WickedEngine**: `build_wicked.bat` defaults to **Debug** if no argument is passed. GameGuru Release links against the Release `.lib`, so always pass `Release` explicitly: `cmd //C "D:\\max\\WickedEngineDX12\\build_wicked.bat Release"`. After rebuilding WickedEngine, do a **clean rebuild** of GameGuru (`build.bat Release rebuild`) — incremental builds may not detect the `.lib` change and skip relinking.
 
 ## File Editing Rules
 
