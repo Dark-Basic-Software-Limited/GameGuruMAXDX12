@@ -20,6 +20,7 @@ extern "C" void GGGrass_Draw(const wi::primitive::Frustum*, int, wi::graphics::C
 extern "C" void GGGrass_Draw_ShadowMap(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_Debug(wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_Overlay(wi::graphics::CommandList);
+extern "C" void GGTerrain_VirtualTexReadBack(const wi::graphics::Texture&, uint32_t, wi::graphics::CommandList);
 
 void MasterRenderer::Load()
 {
@@ -148,6 +149,13 @@ void MasterRenderer::Load()
 		GGTerrain_Draw_Debug(cmd);
 		GGTerrain_Draw_Overlay(cmd);
 	};
+	// TODO: Enable when the prepass has a second RT for terrain page readback (SV_TARGET1).
+	// Currently the prepass only has rtPrimitiveID_render at SV_TARGET0, so terrain page IDs
+	// written to SV_TARGET1 are discarded. Reading rtPrimitiveID_render would produce garbage.
+	// The CPU-based progressive page seeding (in GGTerrain_Update) provides the fallback.
+	//customDraw_AfterPrepass = [](const Texture& texReadBack, uint32_t sampleCount, CommandList cmd) {
+	//	GGTerrain_VirtualTexReadBack(texReadBack, sampleCount, cmd);
+	//};
 
 }
 

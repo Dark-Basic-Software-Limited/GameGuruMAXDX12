@@ -868,6 +868,12 @@ Texture texReadBackStaging[ NUM_READ_BACK_TEXTURES ];
 uint32_t currReadBackTex = 0;
 uint32_t readBackValid = 0;
 
+// DX12: CPU-based progressive page seeding (replaces GPU readback when unavailable)
+int cpuSeedMip = -1; // final page table mip being generated (-1=needs reset, -2=done)
+uint32_t cpuSeedY = 0; // current Y row within the mip level
+int cpuSeedLod = 0; // current array LOD level being seeded
+uint32_t cpuSeedLodY = 0; // current Y row within the array LOD seeding
+
 // page generator variables
 RenderPass renderPassPhysicalTex;
 RenderPass renderPassPhysicalTexMip;
@@ -7855,6 +7861,10 @@ void GGTerrain_CheckPageShift()
 		pageGenerationList.Clear();
 		readBackValid = 0;
 		currReadBackTex = 0;
+		cpuSeedMip = -1; // reset progressive page generation
+		cpuSeedY = 0;
+		cpuSeedLod = 0;
+		cpuSeedLodY = 0;
 
 		// wipe out page memory and start again
 		pagesFree.Clear();
@@ -7875,18 +7885,27 @@ void GGTerrain_CheckPageShift()
 		GGTerrain_UploadPageTableArray();
 		GGTerrain_UploadPageTableFinal();
 		
-		// generate commonly needed physical texture pages, at least the 16 4x4 level pages must be generated
-		uint32_t detailLevel = (numLODLevels - 1) + GGTERRAIN_MAX_PAGE_TABLE_MIP - 1; // lowest detail level
-		for( int y = 0; y < 4; y++ )
+		// Generate pages at ALL mip levels of the final page table (lowest detail first).
+		// Without the GPU readback pipeline (disabled in DX12), this is the only way to
+		// populate the page table. Generate from lowest mip (8x8) up to highest that fits
+		// in the per-frame generation limit (GGTERRAIN_REPLACEMENT_PAGE_MAX = 128).
+		for( int mip = GGTERRAIN_MAX_PAGE_TABLE_MIP - 1; mip >= 0; mip-- )
 		{
-			for( int x = 0; x < 4; x++ )
+			uint32_t detailLevel = (numLODLevels - 1) + mip;
+			uint32_t mipSize = pagesX >> mip; // 8, 16, 32, 64, 128, 256
+			if ( mipSize * mipSize > pagesFree.NumItems() ) break; // not enough free pages
+			if ( pageGenerationList.NumItems() + mipSize * mipSize > GGTERRAIN_REPLACEMENT_PAGE_MAX ) break;
+			for( uint32_t y = 0; y < mipSize; y++ )
 			{
-				PageEntry* pPage = pagesFree.PopItem();
-				assert( pPage );
+				for( uint32_t x = 0; x < mipSize; x++ )
+				{
+					PageEntry* pPage = pagesFree.PopItem();
+					if ( !pPage ) break;
 
-				uint32_t identifier = ((detailLevel + 1) << 16) | (y << 8) | x;
-				pPage->Setup( identifier );
-				GGTerrain_GeneratePage( pPage );
+					uint32_t identifier = ((detailLevel + 1) << 16) | (y << 8) | x;
+					pPage->Setup( identifier );
+					GGTerrain_GeneratePage( pPage );
+				}
 			}
 		}
 	}
@@ -7895,6 +7914,10 @@ void GGTerrain_CheckPageShift()
 		pageGenerationList.Clear();
 		readBackValid = 0;
 		currReadBackTex = 0;
+		cpuSeedMip = -1; // reset progressive page generation
+		cpuSeedY = 0;
+		cpuSeedLod = 0;
+		cpuSeedLodY = 0;
 
 		// shift page memory
 		for( uint32_t y = 0; y < physPagesY; y++ )
@@ -8109,33 +8132,26 @@ void GGTerrain_CheckReadBack()
 		auto range = wiProfiler::BeginRangeCPU( "Max - Terrain Read Back Collect" );
 		
 		pagesNeeded.Setup( texWidth, texHeight );
-		
-		// TODO: DX12 - Mapping/Map/Unmap removed from GraphicsDevice
-		/*
-		Mapping mapping;
-		mapping._flags = Mapping::FLAG_READ;
-		mapping.size = texWidth * texHeight * sizeof(uint32_t);
-		device->Map( &texReadBackStaging[currReadBackTex], &mapping );
 
-		if ( !mapping.data )
+		// DX12: READBACK textures are persistently mapped at creation time.
+		// Use mapped_data directly instead of the old Map/Unmap API.
+		const Texture& stagingTex = texReadBackStaging[currReadBackTex];
+		if ( !stagingTex.mapped_data || stagingTex.mapped_subresource_count == 0 )
 		{
 			wiProfiler::EndRange( range );
 			wiProfiler::EndRange( rangeTotal );
 			return;
 		}
 
-		uint32_t pitch = mapping.rowpitch / sizeof(uint32_t);
-
-		#ifdef PEOPTIMIZING
-		//PE: OPT1 No need to update all pages each frame. Moving camera from Lod to Lod takes many frames.
-		//PE: This reduce the sort that are really the most slow part of the terrain system and done each frame.
+		uint32_t pitch = (uint32_t)(stagingTex.mapped_subresources[0].row_pitch / sizeof(uint32_t));
 
 		static uint32_t iFrameCount = 0;
 		for (uint32_t y = 0; y < texHeight; y++)
 		{
 			uint32_t index = y * pitch;
-			uint32_t* dataPtr = ((uint32_t*)mapping.data) + index;
+			uint32_t* dataPtr = ((uint32_t*)stagingTex.mapped_data) + index;
 
+			// Only process every 7th row per frame to reduce CPU cost
 			if ((y + iFrameCount) % 7 == 0)
 			{
 				for (uint32_t x = 0; x < texWidth; x++)
@@ -8150,27 +8166,6 @@ void GGTerrain_CheckReadBack()
 			}
 		}
 		iFrameCount++;
-
-#else
-		for( uint32_t y = 0; y < texHeight; y++ )
-		{
-			uint32_t index = y * pitch;
-			uint32_t* dataPtr = ((uint32_t*)mapping.data) + index;
-
-			for( uint32_t x = 0; x < texWidth; x++ )
-			{
-				uint32_t value = *dataPtr;
-				dataPtr++;
-
-				// value format: [0-7]=virtLocationX, [8-15]=virtLocationY, [16-20]=mipLevel (mipLevel 1 is higest detail, 0 is invalid)
-				if ( value == 0 ) continue; // undrawn areas of texture
-
-				pagesNeeded.AddNeededPage( value );
-			}
-		}
-#endif
-		device->Unmap( &texReadBackStaging[currReadBackTex] );
-		*/
 
 		wiProfiler::EndRange( range );
 		range = wiProfiler::BeginRangeCPU( "Max - Terrain Read Back Sort" );
@@ -10038,6 +10033,108 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		// CPU only side of the read back, GPU side is done in prepass render
 		GGTerrain_CheckPageShift();
 		GGTerrain_CheckReadBack();
+
+		// DX12: CPU-based progressive page generation when GPU readback is not available.
+		// Phase 1: Fill final page table mips (ensures full terrain coverage at low detail).
+		// Phase 2: Generate camera-centered pages at array LOD levels (adds detail near camera).
+		if ( !readBackValid && pageGenerationList.NumItems() < GGTERRAIN_REPLACEMENT_PAGE_MAX )
+		{
+			uint32_t numLODLevels = pCurrLODs->GetNumLevels();
+			uint32_t pagesThisFrame = 0;
+			uint32_t maxPerFrame = GGTERRAIN_REPLACEMENT_PAGE_MAX - pageGenerationList.NumItems();
+
+			// Initialize state on first entry
+			if ( cpuSeedMip == -1 )
+			{
+				cpuSeedMip = GGTERRAIN_MAX_PAGE_TABLE_MIP - 2; // start with final mip levels
+				cpuSeedY = 0;
+			}
+
+			// Phase 1: Fill final page table mip levels (mip 4 down to mip 3).
+			// Mip 5 (8x8=64) is already filled during initial page generation.
+			// This ensures full terrain coverage at low detail before adding high-detail pages.
+			while ( cpuSeedMip >= 0 && cpuSeedMip < 100 && pagesThisFrame < maxPerFrame )
+			{
+				uint32_t detailLevel = (numLODLevels - 1) + cpuSeedMip;
+				uint32_t mipSize = pagesX >> cpuSeedMip;
+
+				for( ; cpuSeedY < mipSize && pagesThisFrame < maxPerFrame; cpuSeedY++ )
+				{
+					for( uint32_t x = 0; x < mipSize && pagesThisFrame < maxPerFrame; x++ )
+					{
+						PageEntry* pPage = pagesFree.PopItem();
+						if ( !pPage ) { cpuSeedMip = -2; goto cpu_seed_done; }
+
+						uint32_t identifier = ((detailLevel + 1) << 16) | (cpuSeedY << 8) | x;
+						pPage->Setup( identifier );
+						GGTerrain_GeneratePage( pPage );
+						pagesThisFrame++;
+					}
+				}
+
+				if ( cpuSeedY >= mipSize )
+				{
+					cpuSeedMip--;
+					cpuSeedY = 0;
+					if ( cpuSeedMip < 3 ) // mips below 3 are too large (64x64+)
+					{
+						// Transition to Phase 2: array LOD levels
+						cpuSeedMip = 100;
+						cpuSeedLod = 0;
+						cpuSeedLodY = 0;
+					}
+				}
+			}
+
+			// Phase 2: Generate camera-centered pages at each array LOD level.
+			// Each LOD level has a 256x256 page grid with the camera at center (128,128).
+			// Generate a grid of pages around the center, spreading across multiple frames.
+			while ( cpuSeedMip == 100 && cpuSeedLod < (int)numLODLevels - 1 && pagesThisFrame < maxPerFrame )
+			{
+				uint32_t detailLevel = (uint32_t)cpuSeedLod;
+				// Radius increases with LOD level (higher LODs cover larger world area)
+				uint32_t radius = 6 + (uint32_t)cpuSeedLod * 2;
+				if ( radius > 16 ) radius = 16;
+
+				uint32_t centerUV = pagesX / 2; // 128
+				uint32_t startX = (centerUV > radius) ? centerUV - radius : 0;
+				uint32_t startY = (centerUV > radius) ? centerUV - radius : 0;
+				uint32_t endX = centerUV + radius;
+				uint32_t endY = centerUV + radius;
+				if ( endX > pagesX ) endX = pagesX;
+				if ( endY > pagesY ) endY = pagesY;
+				uint32_t height = endY - startY;
+
+				for( ; cpuSeedLodY < height && pagesThisFrame < maxPerFrame; cpuSeedLodY++ )
+				{
+					uint32_t y = startY + cpuSeedLodY;
+					for( uint32_t x = startX; x < endX && pagesThisFrame < maxPerFrame; x++ )
+					{
+						if ( pageTableData[ detailLevel ][ y * pagesX + x ] != 0 ) continue;
+
+						PageEntry* pPage = pagesFree.PopItem();
+						if ( !pPage ) goto cpu_seed_done; // atlas full
+
+						uint32_t identifier = ((detailLevel + 1) << 16) | (y << 8) | x;
+						pPage->Setup( identifier );
+						GGTerrain_GeneratePage( pPage );
+						pagesThisFrame++;
+					}
+				}
+
+				if ( cpuSeedLodY >= height )
+				{
+					cpuSeedLod++;
+					cpuSeedLodY = 0;
+				}
+			}
+
+			if ( cpuSeedMip == 100 && cpuSeedLod >= (int)numLODLevels - 1 )
+			{
+				cpuSeedMip = -2; // all phases complete
+			}
+			cpu_seed_done:;
+		}
 	}
 
 	// Flush dirty page table textures here (during Update, outside any render pass).
@@ -10455,7 +10552,7 @@ int GGTerrain_GetMaterialIndex( float x, float z )
 
 // must be extern "C" to allow /alternatename linker flag to be set correctly
 // called from WickedEngine RenderPath3D::Render()
-extern "C" void GGTerrain_VirtualTexReadBack( Texture texReadBack, uint32_t sampleCount, wiGraphics::CommandList cmd )
+extern "C" void GGTerrain_VirtualTexReadBack( const Texture& texReadBack, uint32_t sampleCount, wiGraphics::CommandList cmd )
 {
 	if (!ggterrain_update_enabled) return;
 	if (!ggterrain_initialised) return;
