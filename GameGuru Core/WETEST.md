@@ -32,10 +32,10 @@ Do NOT use Debug builds for testing. Debug builds output to `Build/Debug/` and t
 
 ```bash
 # Force kill is the most reliable way to quit (note: //IM with double slashes for MSYS bash)
-taskkill.exe //IM GameGuruMAX.exe //F
+taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true
 
 # Check if running
-tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT RUNNING"
+tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT RUNNING"; true
 ```
 
 **Note**: Prefer `taskkill` over the `QUIT` harness command. The `QUIT` command can fail to be consumed if the app is in a state where the harness isn't polling (e.g., during level loads). `taskkill` always works.
@@ -479,16 +479,21 @@ When the PC resets or the display driver recovers, the crash log may show the *s
 5. **The correct working build command is:**
 
 ```bash
-cmd //C "D:\\max\\WickedEngineDX12\\build_wicked.bat" 2>&1 | tail -20
+cmd //C "D:\\max\\WickedEngineDX12\\build_wicked.bat Release" 2>&1 | tail -20
 ```
+
+**CRITICAL**: Always pass `Release` explicitly. The script defaults to **Debug** if no argument is given, and GameGuru Release links against the Release `.lib`. After rebuilding WickedEngine, do a **clean rebuild** of GameGuru (`build.bat Release rebuild`) — incremental builds may not detect the `.lib` change and skip relinking.
 
 Where `build_wicked.bat` contains:
 
 ```batch
 @echo off
+SET CONFIG=%1
+IF "%CONFIG%"=="" SET CONFIG=Debug
 cd /D "D:\max\WickedEngineDX12"
 call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 >nul 2>&1
-msbuild "D:\max\WickedEngineDX12\WickedEngine.sln" /p:Configuration=Release /p:Platform=x64 /t:WickedEngine_Windows /m /verbosity:minimal
+echo Building WickedEngine_Windows %CONFIG% x64...
+msbuild "D:\max\WickedEngineDX12\WickedEngine.sln" /p:Configuration=%CONFIG% /p:Platform=x64 /t:WickedEngine_Windows /m /verbosity:minimal
 ```
 
 6. **Use `| tail -20` on build commands** to avoid flooding the context window with thousands of lines of compiler output. If the build fails, use `| tail -40` or grep for "error" to find the issue.
@@ -766,7 +771,7 @@ cat "$RESULTS_FILE"
 
 ```bash
 # 1. Kill any running instance
-taskkill.exe //IM GameGuruMAX.exe //F
+taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true
 
 # 2. Launch fresh
 D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
@@ -784,7 +789,7 @@ bash "$D/run_all_tests.sh"
 # 5. Check progress every 2-4 minutes by tailing the background output file
 
 # 6. After completion, kill the app
-taskkill.exe //IM GameGuruMAX.exe //F
+taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true
 ```
 
 ### Per-Demo Flow (what the script does for each demo)
