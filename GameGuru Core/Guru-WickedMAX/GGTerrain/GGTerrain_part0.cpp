@@ -4196,8 +4196,10 @@ int g_terrainDrawLastExitReason = 0; // 0=never called, 1=update_disabled, 2=not
 int ggterrain_render_wireframe = 0;
 int ggterrain_render_debug = 0;
 int ggterrain_render_reference = 0;
+int ggterrain_show_grass_map = 0;
+int ggterrain_show_tree_map = 0;
 
-void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size ) 
+void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
 { 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 
@@ -9716,6 +9718,8 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		// excellent, we see the old terrain raw data as is :)
 		//if ( GGTerrain_GetKeyPressed( GGKEY_R ) ) ggterrain_render_reference = 1 - ggterrain_render_reference;
 		ggterrain_render_reference = 1;
+		ggterrain_show_grass_map = 1;
+		ggterrain_show_tree_map = 1;
 
 		/* hidden key functionality and undocumented feature
 		if (pref.iTerrainDebugMode)
@@ -9826,6 +9830,8 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 	terrainConstantData.terrain_detailScale = 1.0f / (detailScale * ggterrain_global_render_params2.detailScale);
 	terrainConstantData.terrain_flags = ggterrain_local_render_params.flags | ggterrain_local_render_params2.flags2;
 	if ( ggterrain_render_reference ) terrainConstantData.terrain_flags |= GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR;
+	if ( ggterrain_show_grass_map ) terrainConstantData.terrain_flags |= GGTERRAIN_SHADER_FLAG2_SHOW_GRASS_MAP;
+	if ( ggterrain_show_tree_map ) terrainConstantData.terrain_flags |= GGTERRAIN_SHADER_FLAG2_SHOW_TREE_MAP;
 
 	bool hideBrush = false;
 	if (!Get_Spray_Mode_On())
@@ -10997,7 +11003,9 @@ extern "C" void GGTerrain_Draw( const Frustum* frustum, int mode, CommandList cm
 	device->BindResource( &texPageTableArray, 53, cmd );
 	device->BindResource( &texPageTableFinal, 54, cmd );
 	device->BindResource( &texMaterialMap, 55, cmd );
-	
+	GGGrass_BindGrassMap( 56, cmd );
+	GGTrees_BindTreeMap( 57, cmd );
+
 #if (GGTERRAIN_TEXTURE_FILTERING == GGTERRAIN_TEXTURE_FILTERING_TRILINEAR)
 	device->BindSampler( &samplerTrilinearWrap, 1, cmd );
 #else

@@ -327,6 +327,76 @@ GPUBuffer bufferInstancesHighEnvProbe[ numTreeTypes ];
 InstanceTree pAllTrees[ numTotalTrees ] = { 0 };
 UnorderedArray<uint32_t> pInvisibleTrees;
 
+// Tree map for reference visualization (same size as grass/material maps)
+#define GGTREES_MAP_SIZE 4096
+uint8_t pTreeMap[ GGTREES_MAP_SIZE * GGTREES_MAP_SIZE ] = { 0 };
+Texture texTreeMap;
+
+void GGTrees_RasterizeTreeMap()
+{
+	memset( pTreeMap, 0, GGTREES_MAP_SIZE * GGTREES_MAP_SIZE );
+
+	float editSize = ggterrain_global_render_params2.editable_size;
+	float invEditSize = 1.0f / editSize;
+
+	for ( uint32_t i = 0; i < numTotalTrees; i++ )
+	{
+		InstanceTree* pTree = &pAllTrees[ i ];
+		if ( !pTree->IsVisible() || pTree->IsInvalid() ) continue;
+
+		float u = pTree->x * invEditSize * 0.5f + 0.5f;
+		float v = pTree->z * invEditSize * 0.5f + 0.5f;
+		if ( u < 0 || u >= 1 || v < 0 || v >= 1 ) continue;
+
+		int cx = (int)(u * GGTREES_MAP_SIZE);
+		int cy = (int)(v * GGTREES_MAP_SIZE);
+		uint8_t value = (uint8_t)(pTree->GetType() + 1);
+
+		// Stamp a small circle (radius 3 pixels) so trees are visible
+		int radius = 3;
+		for ( int dy = -radius; dy <= radius; dy++ )
+		{
+			for ( int dx = -radius; dx <= radius; dx++ )
+			{
+				if ( dx*dx + dy*dy > radius*radius ) continue;
+				int px = cx + dx;
+				int py = cy + dy;
+				if ( px < 0 || px >= GGTREES_MAP_SIZE || py < 0 || py >= GGTREES_MAP_SIZE ) continue;
+				pTreeMap[ py * GGTREES_MAP_SIZE + px ] = value;
+			}
+		}
+	}
+}
+
+void GGTrees_UploadTreeMap()
+{
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
+	SubresourceData initdata = {};
+	initdata.data_ptr = pTreeMap;
+	initdata.row_pitch = GGTREES_MAP_SIZE;
+	initdata.slice_pitch = 0;
+
+	TextureDesc texDesc = {};
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = 1;
+	texDesc.format = Format::R8_UNORM;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = GGTREES_MAP_SIZE;
+	texDesc.height = GGTREES_MAP_SIZE;
+
+	device->CreateTexture( &texDesc, &initdata, &texTreeMap );
+	device->SetName( &texTreeMap, "texTreeMap" );
+}
+
+void GGTrees_BindTreeMap( int slot, CommandList cmd )
+{
+	GraphicsDevice* device = wiGraphics::GetDevice();
+	device->BindResource( &texTreeMap, slot, cmd );
+}
+
 struct TreeChunk
 {
 	UnorderedArray<InstanceTree*> pInstances;
@@ -1112,6 +1182,8 @@ void GGTrees_Init()
 	}
 
 	GGTrees_RepopulateInstances();
+	GGTrees_RasterizeTreeMap();
+	GGTrees_UploadTreeMap();
 
 	// raster state
 	RasterizerState rastState = {};
@@ -1612,6 +1684,8 @@ int GGTrees_SetData( float* data )
 	last_paint_tree_bitfield = -1;
 #endif
 	GGTrees_UpdateInstances( 1 );
+	GGTrees_RasterizeTreeMap();
+	GGTrees_UploadTreeMap();
 	return 1;
 }
 

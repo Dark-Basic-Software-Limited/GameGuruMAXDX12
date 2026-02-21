@@ -470,6 +470,36 @@ Sampler samplerTrilinearClamp;
 Sampler samplerTrilinearWrap;
 Sampler samplerPointWrap;
 
+void GGGrass_UploadGrassMap()
+{
+	if ( !pGrassMap ) return;
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
+	SubresourceData initdata = {};
+	initdata.data_ptr = pGrassMap;
+	initdata.row_pitch = GGGRASS_MAP_SIZE;
+	initdata.slice_pitch = 0;
+
+	TextureDesc texDesc = {};
+	texDesc.bind_flags = BindFlag::SHADER_RESOURCE;
+	texDesc.sample_count = 1;
+	texDesc.mip_levels = 1;
+	texDesc.array_size = 1;
+	texDesc.format = Format::R8_UNORM;
+	texDesc.usage = Usage::DEFAULT;
+	texDesc.width = GGGRASS_MAP_SIZE;
+	texDesc.height = GGGRASS_MAP_SIZE;
+
+	device->CreateTexture( &texDesc, &initdata, &texGrassMap );
+	device->SetName( &texGrassMap, "texGrassMap" );
+}
+
+void GGGrass_BindGrassMap( int slot, CommandList cmd )
+{
+	GraphicsDevice* device = wiGraphics::GetDevice();
+	device->BindResource( &texGrassMap, slot, cmd );
+}
+
 // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
 #if 0
 wiGraphics::FORMAT ConvertDDSFormat( tinyddsloader::DDSFile::DXGIFormat format )
@@ -824,7 +854,7 @@ void GGGrass_Init()
 	pGrassMap = new uint8_t[ GGGRASS_MAP_SIZE * GGGRASS_MAP_SIZE ];
 	memset( pGrassMap, 1, GGGRASS_MAP_SIZE * GGGRASS_MAP_SIZE );
 
-	//GGGrass_CreateEmptyTexture( 4096, 4096, 1, 1, FORMAT_R8_UNORM, &texGrassMap );
+	GGGrass_UploadGrassMap();
 	
 	for( uint32_t i = 0; i < numGrassChunks; i++ )
 	{
@@ -1178,7 +1208,7 @@ int GGGrass_SetData( uint32_t size, uint8_t* data, sUndoSysEventGrass* pEvent)
 		if (size1 != size) return 0;
 		memcpy(pGrassMap, data, size1);
 
-		//wiGraphics::GetDevice()->UpdateTexture(&texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1);
+		GGGrass_UploadGrassMap();
 #ifdef ONLYLOADWHENUSED
 		for (uint32_t y = 0; y < GGGRASS_MAP_SIZE; y++)
 		{
@@ -1337,7 +1367,7 @@ void GGGrass_UpdateFlatArea( int mode, int type, float posX, float posZ, float s
 			}
 		}
 
-		//wiGraphics::GetDevice()->UpdateTexture( &texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1 );
+		GGGrass_UploadGrassMap();
 	}
 
 	GGGrass_UpdateInstances();
@@ -1562,7 +1592,7 @@ void GGGrass_Update_Painting( RAY ray )
 				}
 			}
 
-			//wiGraphics::GetDevice()->UpdateTexture( &texGrassMap, 0, 0, NULL, pGrassMap, GGGRASS_MAP_SIZE, -1 );
+			GGGrass_UploadGrassMap();
 		}
 
 		GGGrass_UpdateInstances();

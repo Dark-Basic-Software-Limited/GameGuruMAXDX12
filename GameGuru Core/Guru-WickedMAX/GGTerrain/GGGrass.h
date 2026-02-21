@@ -58,6 +58,7 @@ namespace GGGrass
 	void GGGrass_Update_Painting( RAY ray );
 	int GGGrass_UsingBrush();
 	void GGGrass_BindGrassArray( uint32_t slot, wiGraphics::CommandList cmd );
+	void GGGrass_BindGrassMap( int slot, wiGraphics::CommandList cmd );
 
 	const char* GGGrass_GetTextureFilename( uint32_t matIndex, uint32_t grassIndex );
 	const char* GGGrass_GetTextureShortName( uint32_t matIndex, uint32_t grassIndex );

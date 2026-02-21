@@ -5,6 +5,8 @@ Texture2D texNormalRoughnessAO   : register( t51 );
 Texture2DArray<float> texPageTableArray : register( t53 );
 Texture2D<float> texPageTableFinal      : register( t54 );
 Texture2D<float> texMaterialMap          : register( t55 );
+Texture2D<float> texGrassMap             : register( t56 );
+Texture2D<float> texTreeMap              : register( t57 );
 
 SamplerState sampler1            : register( s1 );
 
@@ -142,6 +144,33 @@ GBuffer main( PixelIn IN )
 		// Apply simple ambient so terrain shape is visible
 		float ambient = saturate( dot(IN.normal, float3(0, 1, 0)) * 0.5 + 0.5 );
 		refColor *= ambient;
+
+		// Grass map overlay
+		if ( terrain_flags & GGTERRAIN_SHADER_FLAG2_SHOW_GRASS_MAP )
+		{
+			float2 vegUV = IN.worldPos.xz / terrain_mapEditSize * 0.5 + 0.5;
+			float grassSample = texGrassMap.SampleLevel( sampler1, vegUV, 0 );
+			uint grassType = (uint)(grassSample * 255.0);
+			if ( grassType > 0 )
+			{
+				float3 grassColor = referenceColors[grassType & 31] * float3(0.5, 1.0, 0.5);
+				grassColor *= ambient;
+				refColor = lerp( refColor, grassColor, 0.7 );
+			}
+		}
+
+		// Tree map overlay
+		if ( terrain_flags & GGTERRAIN_SHADER_FLAG2_SHOW_TREE_MAP )
+		{
+			float2 vegUV = IN.worldPos.xz / terrain_mapEditSize * 0.5 + 0.5;
+			float treeSample = texTreeMap.SampleLevel( sampler1, vegUV, 0 );
+			uint treeType = (uint)(treeSample * 255.0);
+			if ( treeType > 0 )
+			{
+				float3 treeColor = referenceColors[treeType & 31] * ambient;
+				refColor = treeColor;
+			}
+		}
 
 		float4 color = float4( refColor, 1 );
 

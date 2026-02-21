@@ -96,6 +96,8 @@ namespace GGTrees
 	const char* GGTrees_GetTextureName( uint32_t index );
 	float GGTrees_GetImageScale( uint32_t index );
 
+	void GGTrees_BindTreeMap( int slot, wiGraphics::CommandList cmd );
+
 	void GGTrees_UpdateFlatArea( int mode, int type, float x, float z, float sx, float sz, float angle );
 	void GGTrees_RestoreAllFlattened();
 
