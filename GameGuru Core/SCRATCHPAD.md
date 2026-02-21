@@ -211,3 +211,33 @@ Given the constraints discovered, viable approaches must ensure that every page'
 **Option D (Unified height map)**: Create a single global height map at fixed resolution (independent of LOD centers), updated when terrain is sculpted. All LOD levels sample the same height data, just at different effective resolutions via bilinear filtering. This makes height sampling deterministic per world position regardless of camera.
 
 **Option E (Accept the seam, minimize it)**: Keep `heightLevel = detailLevel` but reduce the visual impact by ensuring LOD height maps produce more consistent results. For example, generate coarse LOD height maps by downsampling from the finest LOD rather than independently evaluating terrain height. This won't eliminate the seam but should reduce the material discrepancy between adjacent LOD levels.
+
+---
+
+## Decision: Port to New Wicked Engine Terrain System (2026-02-21)
+
+### Why we're abandoning virtual texture fixes
+
+The LOD seam issue is **architectural** — the virtual texture system bakes material content into pages using LOD-specific height maps, and the page shift mechanism requires camera-independent content. These constraints are fundamentally incompatible. All attempted fixes (heightLevel=0, heightLevel cap, removing mesh LOD clamp) either broke distant terrain or introduced camera-dependent artifacts after page shifts. See "Failed Fix Attempts" above.
+
+### New approach
+
+Port the terrain rendering to the **new Wicked Engine DX12 terrain system** instead of continuing to patch the old virtual texture pipeline. The new engine terrain handles LOD transitions natively without a custom page-based virtual texture system.
+
+### Reference Color Mode — Validation Tool for Port
+
+Implemented a "reference color" rendering mode (`GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR`, 0x0080) that completely bypasses the virtual texture system and renders the terrain's raw material data as flat colors. This serves as the **ground truth** for validating the new terrain system during the port.
+
+**What it shows**: Each material index maps to a unique flat color from a 32-entry palette. Unpainted areas derive their material from the same height/slope layer rules used by the page gen shader, but using mesh vertex data (`IN.worldPos.y`, `IN.normal.y`) instead of LOD height maps — so it's consistent at every distance.
+
+**Toggle**: `R` key when `pref.iTerrainDebugMode` is active.
+
+**Confirmed working**: 2026-02-21. Terrain paint data is visible as flat colors, no LOD seams at any distance.
+
+**Files modified**:
+- `GGTerrainConstants.hlsli` — added flag define
+- `GGTerrainVirtualPBR_PS.hlsl` — texMaterialMap binding (t55), 32-color palette, early-out block with material map sampling + height/slope fallback + ambient lighting + editor overlays
+- `GGTerrain_part0.cpp` — toggle variable, R key binding, flag bit OR, texMaterialMap bind in main draw
+- `GGTerrain.h` — extern for toggle variable
+
+**Use during port**: Run both the old terrain (reference color mode) and new Wicked Engine terrain side-by-side. Compare material assignments at matching world positions to verify the port preserves painted data, height-based layers, and slope-based layers correctly.

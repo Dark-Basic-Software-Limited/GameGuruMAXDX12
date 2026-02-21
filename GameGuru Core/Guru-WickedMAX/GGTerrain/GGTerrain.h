@@ -250,6 +250,7 @@ extern GGTerrainParams ggterrain_global_params;
 extern GGTerrainRenderParams ggterrain_global_render_params;
 extern GGTerrainRenderParams2 ggterrain_global_render_params2;
 extern int ggterrain_draw_enabled;
+extern int ggterrain_render_reference;
 
 int GGTerrain_Init( wiGraphics::CommandList cmd);
 void GGTerrain_WindowResized();

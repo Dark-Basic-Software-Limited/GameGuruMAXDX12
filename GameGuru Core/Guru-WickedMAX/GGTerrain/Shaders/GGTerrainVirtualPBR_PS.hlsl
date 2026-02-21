@@ -4,6 +4,7 @@ Texture2D texNormalRoughnessAO   : register( t51 );
 							     
 Texture2DArray<float> texPageTableArray : register( t53 );
 Texture2D<float> texPageTableFinal      : register( t54 );
+Texture2D<float> texMaterialMap          : register( t55 );
 
 SamplerState sampler1            : register( s1 );
 
@@ -57,6 +58,42 @@ struct GBuffer
 	float4 g1 : SV_TARGET1;	/*FORMAT_R8G8B8A8_FLOAT*/
 };
 
+// Reference color palette: 32 distinctive flat colors for material visualization
+static const float3 referenceColors[32] = {
+	float3( 0.18, 0.55, 0.15 ),  //  0: dark green (base/grass)
+	float3( 0.95, 0.85, 0.25 ),  //  1: yellow (sand)
+	float3( 0.76, 0.70, 0.50 ),  //  2: tan/khaki (sandy rock)
+	float3( 0.10, 0.40, 0.10 ),  //  3: forest green (dense vegetation)
+	float3( 0.55, 0.55, 0.55 ),  //  4: grey (rock/cliff)
+	float3( 0.90, 0.30, 0.10 ),  //  5: red-orange
+	float3( 0.20, 0.60, 0.85 ),  //  6: sky blue
+	float3( 0.80, 0.20, 0.60 ),  //  7: magenta
+	float3( 0.95, 0.60, 0.10 ),  //  8: orange
+	float3( 0.30, 0.80, 0.70 ),  //  9: teal
+	float3( 0.70, 0.10, 0.10 ),  // 10: dark red
+	float3( 0.50, 0.85, 0.20 ),  // 11: lime green
+	float3( 0.35, 0.20, 0.70 ),  // 12: purple
+	float3( 0.90, 0.75, 0.55 ),  // 13: peach
+	float3( 0.10, 0.35, 0.55 ),  // 14: navy
+	float3( 0.85, 0.85, 0.10 ),  // 15: bright yellow
+	float3( 0.60, 0.30, 0.15 ),  // 16: brown
+	float3( 0.40, 0.80, 0.40 ),  // 17: medium green
+	float3( 0.75, 0.45, 0.75 ),  // 18: orchid
+	float3( 0.25, 0.65, 0.45 ),  // 19: sea green
+	float3( 0.90, 0.45, 0.45 ),  // 20: salmon
+	float3( 0.45, 0.45, 0.80 ),  // 21: slate blue
+	float3( 0.80, 0.65, 0.20 ),  // 22: goldenrod
+	float3( 0.55, 0.85, 0.85 ),  // 23: light cyan
+	float3( 0.85, 0.35, 0.35 ),  // 24: indian red
+	float3( 0.35, 0.70, 0.20 ),  // 25: olive green
+	float3( 0.65, 0.20, 0.45 ),  // 26: dark magenta
+	float3( 0.95, 0.70, 0.40 ),  // 27: sandy brown
+	float3( 0.20, 0.50, 0.70 ),  // 28: steel blue
+	float3( 0.70, 0.70, 0.30 ),  // 29: dark khaki
+	float3( 0.50, 0.30, 0.50 ),  // 30: plum
+	float3( 0.80, 0.80, 0.80 ),  // 31: light grey
+};
+
 // virtual texture variables
 static const float2 virtToPageSize = float2( pageSize / physTexSizeX, pageSize / physTexSizeY );
 static const float2 texelOffset = float2( pagePaddingLeft / physTexSizeX, pagePaddingLeft / physTexSizeY );
@@ -64,7 +101,90 @@ static const float2 texelOffset = float2( pagePaddingLeft / physTexSizeX, pagePa
 GBuffer main( PixelIn IN )
 {
 	GBuffer output;
-	
+
+	// Reference color mode: bypass virtual texture, show flat material colors
+	if ( terrain_flags & GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR )
+	{
+		// Sample material map using world position
+		float2 matUV = IN.worldPos.xz / terrain_mapEditSize * 0.5 + 0.5;
+		float matSample = texMaterialMap.SampleLevel( sampler1, matUV, 0 );
+		uint matIndex = (uint)(matSample * 255.0);
+
+		// If unpainted (0), determine material from height/slope layer rules
+		if ( matIndex == 0 )
+		{
+			float height = IN.worldPos.y;
+			matIndex = terrain_baseLayerMaterial & 0xFF;
+
+			// Height layers (same logic as page gen shader)
+			for ( int i = 0; i < 5; i++ )
+			{
+				float t = clamp( (height - terrain_layers[i].start) * terrain_layers[i].transition, 0.0, 1.0 );
+				if ( t >= 1 ) matIndex = terrain_layers[i].material & 0xFF;
+			}
+
+			// Slope layers
+			float normaly = 1 - abs(IN.normal.y);
+			for ( int j = 0; j < 2; j++ )
+			{
+				float t = clamp( (normaly - terrain_slopes[j].start) * terrain_slopes[j].transition, 0.0, 1.0 );
+				if ( t >= 1 ) matIndex = terrain_slopes[j].material & 0xFF;
+			}
+		}
+		else
+		{
+			matIndex = matIndex - 1; // convert from 1-based to 0-based
+		}
+
+		// Look up flat color from palette
+		float3 refColor = referenceColors[matIndex & 31];
+
+		// Apply simple ambient so terrain shape is visible
+		float ambient = saturate( dot(IN.normal, float3(0, 1, 0)) * 0.5 + 0.5 );
+		refColor *= ambient;
+
+		float4 color = float4( refColor, 1 );
+
+		// Editor overlays (brush circle, map border) still apply
+		if ( terrain_flags & GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE )
+		{
+			float3 editColor = float3( 244.0/255.0, 239.0/255.0, 38.0/255.0 );
+			float editX = (IN.worldPos.x / terrain_mapEditSize) * 0.5 + 0.5;
+			float editZ = (IN.worldPos.z / terrain_mapEditSize) * 0.5 + 0.5;
+
+			if ( editX >= 0 && editX <= 1 && editZ >= 0 && editZ <= 1 )
+			{
+				float fade = editX + editZ;
+				fade = sin( fade * 150 + g_xFrame_Time*2 ) * 0.5 + 0.5;
+				fade = step( fade, 0.5 );
+				if ( editX > 0.004 && editX < 0.996 && editZ > 0.004 && editZ < 0.996 ) fade = 0;
+				color.rgb = lerp( color.rgb, editColor, fade );
+			}
+		}
+
+		if ( (terrain_flags & GGTERRAIN_SHADER_FLAG2_SHOW_BRUSH_SIZE) && !any(g_xCamera_ClipPlane) )
+		{
+			float3 brushColor = float3( 37.0/255.0, 245.0/255.0, 43.0/255.0 );
+			float2 brushPos = IN.worldPos.xz - terrain_mouseHit.xy;
+			float sqrDist = dot( brushPos, brushPos );
+			float border = terrain_brushSize * 0.02;
+			if ( border > 20 ) border = 20;
+			if ( border < 1 ) border = 1;
+			float minDist = terrain_brushSize - border;
+			float maxDist = terrain_brushSize + border;
+
+			if ( sqrDist < maxDist*maxDist && sqrDist > minDist*minDist )
+			{
+				color.rgb = brushColor;
+			}
+		}
+
+		color = max( 0, color );
+		output.g0 = float4( color.rgb, 1 );
+		output.g1 = float4( IN.normal * 0.5f + 0.5f, 1 );
+		return output;
+	}
+
 	// page table look up
 	int maxLevel = terrain_numLODLevels - 1; 
 	int detailLevel = texPageTableFinal.CalculateLevelOfDetailUnclamped( sampler1, IN.uv );

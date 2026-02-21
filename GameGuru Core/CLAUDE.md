@@ -72,52 +72,43 @@ When replacing an image at an existing ID (e.g., storyboard project switch), you
 
 This is required because DX12 has 2 frames in flight (`NUM_FRAMES_IN_FLIGHT = 2`). The GPU may still be executing draw commands from a previous frame that reference the texture. Freeing the `ID3D12Resource` while in-flight causes `DXGI_ERROR_DEVICE_REMOVED` (fixed in commit c8ec1739).
 
-## DX12 Terrain Virtual Texture System
+## Terrain System — Porting to New Wicked Engine Terrain
 
-The terrain uses a virtual texture system with a physical page atlas and a multi-level page table.
+### Current status
 
-### Architecture
+The existing terrain uses a custom virtual texture system with known, unfixable LOD seam artifacts (see `SCRATCHPAD.md` for failed fix attempts). The plan is to **port to the new Wicked Engine DX12 terrain system** rather than continue fixing the old virtual texture pipeline.
 
-| Component | Description | Location |
-|-----------|-------------|----------|
-| `texPageTableArray` | 2D texture array, `numLODLevels - 1` slices (default 8), each 256x256. One slice per LOD level for fine-detail pages | `GGTerrain_part0.cpp:846` |
-| `texPageTableFinal` | Single 256x256 texture with 6 mip levels (256x256 down to 8x8). Coarsest LOD level | `GGTerrain_part0.cpp:847` |
-| Physical atlas | 70x70 = 4900 pages (4899 usable) | `GGTerrainPageSettings.h:43-44` |
-| Page budget | 128 pages/frame (`GGTERRAIN_REPLACEMENT_PAGE_MAX`) | `GGTerrain_part0.cpp:893` |
+### Reference Color Rendering Mode
 
-### GPU readback is disabled in DX12
+A debug visualization mode that bypasses the entire virtual texture system and shows flat material colors directly from the terrain's paint data. This is the primary validation tool for the terrain port — it shows exactly what materials are painted where, independent of any LOD or virtual texture state.
 
-The GPU readback feedback loop (`customDraw_AfterPrepass` → `GGTerrain_VirtualTexReadBack`) is commented out at `master_part1.cpp:156-158` because the DX12 prepass only has 1 color render target. `readBackValid` is permanently 0.
+**Toggle**: Press `R` key when `pref.iTerrainDebugMode` is enabled (inside the commented-out debug key block in `GGTerrain_part0.cpp`).
 
-### CPU fallback page generation (sole mechanism in DX12)
+**How it works**:
+- Flag: `GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR` (0x0080) in `GGTerrainConstants.hlsli`
+- C++ toggle: `ggterrain_render_reference` in `GGTerrain_part0.cpp:4198`
+- Shader early-out in `GGTerrainVirtualPBR_PS.hlsl:106-186` — before any page table lookup
+- Samples `texMaterialMap` (4096x4096, register t55) directly using world position
+- For unpainted areas (materialMap == 0): derives material from height/slope layer rules using `IN.worldPos.y` and `IN.normal.y` from the mesh vertex (consistent at all distances)
+- For painted areas: converts 1-based material index to 0-based and looks up a 32-color palette
+- Applies basic ambient lighting (half-lambert with up vector) so terrain shape is visible
+- Editor overlays (brush circle, map border) still render on top
 
-Located at `GGTerrain_part0.cpp:10037-10142`. Runs in two phases across multiple frames:
+**Why it has no LOD seams**: Height comes from the mesh vertex (`IN.worldPos.y`), not LOD height maps. The material map is a single global texture with fixed world mapping. Nothing LOD-dependent touches the output.
 
-**Phase 1** (lines 10053-10088): Fills final page table mip levels 4 and 3 (coarse base coverage). Mip 5 (8x8) is filled during initial `ShouldRegeneratePages()`. Consumes ~1344 pages total.
+**Use during port**: Compare reference color output against the new Wicked Engine terrain's material assignments to verify that heights, slopes, and painted materials align correctly.
 
-**Phase 2** (lines 10090-10135): Generates camera-centered pages at each array LOD level. Key design decisions:
-- **Iterates outermost LOD first** (LOD 7→0) so coarse coverage is established before fine detail, preventing multi-level mip jumps at boundaries
-- **Inner LODs get larger radii**: formula `14 - LOD` (min 6). Inner LODs need more pages for fine detail; outer LODs need fewer because each page covers more world area
-- **Centers on camera's actual page-table coordinate**, not the fixed grid center (128,128). Each LOD level's grid center snaps to chunk boundaries and can be up to ~40 pages offset from the camera
+### Legacy virtual texture system (to be replaced)
 
-### Critical: page-table ↔ world coordinate mapping
-
-Each LOD level's page table maps to world space via:
-```
-LODHalfSize = segments_per_chunk * segSize * 4
-page_x = (worldX - centerX + LODHalfSize) / (LODHalfSize * 2) * 256
-page_y = (1.0 - (worldZ - centerZ + LODHalfSize) / (LODHalfSize * 2)) * 256
-```
-The shader (`GGTerrainVirtualPBR_PS.hlsl:77-110`) uses `terrain_LOD[level].x/z/size` set at `GGTerrain_part0.cpp:9788-9790`. When a page is missing (entry = 0), the shader increments `detailLevel` and tries the next coarser LOD.
-
-### Key source files
+The old system is documented in `SCRATCHPAD.md` along with the investigation into its unfixable LOD seam artifacts. Key files for reference during port:
 
 | File | Content |
 |------|---------|
 | `Guru-WickedMAX/GGTerrain/GGTerrain_part0.cpp` | Page table management, CPU fallback generation, LOD level management |
 | `Guru-WickedMAX/GGTerrain/GGTerrainPageSettings.h` | Atlas dimensions, page table constants |
-| `Guru-WickedMAX/GGTerrain/GGTerrain.h` | LOD level count, segment size, segments per chunk |
-| `Guru-WickedMAX/GGTerrain/Shaders/GGTerrainVirtualPBR_PS.hlsl` | Pixel shader page table lookup |
+| `Guru-WickedMAX/GGTerrain/GGTerrain.h` | LOD level count, segment size, segments per chunk, extern for `ggterrain_render_reference` |
+| `Guru-WickedMAX/GGTerrain/Shaders/GGTerrainVirtualPBR_PS.hlsl` | Pixel shader — page table lookup + reference color mode |
+| `Guru-WickedMAX/GGTerrain/Shaders/GGTerrainConstants.hlsli` | Shader flags including `GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR` |
 | `Guru-WickedMAX/master_part1.cpp:152-158` | GPU readback disabled (commented out) |
 
 ## Third-Party Dependencies

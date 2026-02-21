@@ -4195,6 +4195,7 @@ int g_terrainDrawLastExitReason = 0; // 0=never called, 1=update_disabled, 2=not
 
 int ggterrain_render_wireframe = 0;
 int ggterrain_render_debug = 0;
+int ggterrain_render_reference = 0;
 
 void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size ) 
 { 
@@ -9711,6 +9712,11 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		GGTerrain_CheckKeys();
 
 		if (GGTerrain_GetKeyPressed(GGKEY_ESCAPE)) GGTerrain_CancelRamp();
+
+		// excellent, we see the old terrain raw data as is :)
+		//if ( GGTerrain_GetKeyPressed( GGKEY_R ) ) ggterrain_render_reference = 1 - ggterrain_render_reference;
+		ggterrain_render_reference = 1;
+
 		/* hidden key functionality and undocumented feature
 		if (pref.iTerrainDebugMode)
 		{
@@ -9718,6 +9724,7 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 			if ( GGTerrain_GetKeyPressed( GGKEY_Z ) && !GGTerrain_GetKeyPressed(GGKEY_CONTROL)) gggrass_global_params.draw_enabled = 1 - gggrass_global_params.draw_enabled;
 			if ( GGTerrain_GetKeyPressed( GGKEY_J ) ) ggterrain_render_wireframe = 1 - ggterrain_render_wireframe;
 			if ( GGTerrain_GetKeyPressed( GGKEY_Y ) && !GGTerrain_GetKeyPressed(GGKEY_CONTROL)) ggterrain_render_debug = 1 - ggterrain_render_debug;
+			if ( GGTerrain_GetKeyPressed( GGKEY_R ) ) ggterrain_render_reference = 1 - ggterrain_render_reference;
 			if ( GGTerrain_GetKeyPressed( GGKEY_U ) ) ggterrain_update_enabled = 1 - ggterrain_update_enabled;
 			//if ( GGTerrain_GetKeyPressed( GGKEY_E ) ) wiRenderer::SetToDrawDebugEnvProbes( !wiRenderer::GetToDrawDebugEnvProbes() );
 			// increase/decrease LOD
@@ -9818,6 +9825,7 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 	
 	terrainConstantData.terrain_detailScale = 1.0f / (detailScale * ggterrain_global_render_params2.detailScale);
 	terrainConstantData.terrain_flags = ggterrain_local_render_params.flags | ggterrain_local_render_params2.flags2;
+	if ( ggterrain_render_reference ) terrainConstantData.terrain_flags |= GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR;
 
 	bool hideBrush = false;
 	if (!Get_Spray_Mode_On())
@@ -10973,7 +10981,7 @@ extern "C" void GGTerrain_Draw( const Frustum* frustum, int mode, CommandList cm
 	iOccludedTerrainChunks = 0;
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTerrain Draw", cmd);
-		
+
 	if ( ggterrain_render_wireframe ) device->BindPipelineState( &psoMainWire, cmd );
 	else device->BindPipelineState( &psoMain, cmd );
 
@@ -10985,9 +10993,10 @@ extern "C" void GGTerrain_Draw( const Frustum* frustum, int mode, CommandList cm
 	// bind texture and sampler
 	device->BindResource( &texPagesColorAndMetal, 50, cmd );
 	device->BindResource( &texPagesNormalsRoughnessAO, 51, cmd );
-	
+
 	device->BindResource( &texPageTableArray, 53, cmd );
 	device->BindResource( &texPageTableFinal, 54, cmd );
+	device->BindResource( &texMaterialMap, 55, cmd );
 	
 #if (GGTERRAIN_TEXTURE_FILTERING == GGTERRAIN_TEXTURE_FILTERING_TRILINEAR)
 	device->BindSampler( &samplerTrilinearWrap, 1, cmd );
