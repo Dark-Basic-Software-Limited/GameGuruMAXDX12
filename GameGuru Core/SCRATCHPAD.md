@@ -159,3 +159,55 @@ The anti-tiling mask UVs in the page gen VS (`GGTerrainPageGenVS.hlsl:36`) are:
 OUT.uv3 = IN.uv * 390 * terrain_maskScale;
 ```
 `IN.uv` is the texture tiling UV, which depends on `pageTiling` (varies with `detailLevel` via `tilingScale`). At LOD boundaries, the mask rotation pattern changes, causing the same material to appear slightly different on each side. This is cosmetic (not wrong material selection) but compounds the visual seam from the height issue.
+
+---
+
+## Failed Fix Attempts and Lessons Learned (2026-02-21)
+
+### Critical Constraint Discovered: Page Content Must Be Camera-Independent
+
+The page shift mechanism (`ShouldShiftPages()` at `GGTerrain_part0.cpp:7916-8095`) shifts page table entries when the camera moves but **preserves the physical atlas page content** without regeneration. This means any page's baked material content must be **deterministic** — it must depend only on the page's own LOD level and virtual coordinates, never on the camera position. Any fix that makes `heightLevel` selection depend on camera position (even indirectly via LOD center offsets) will produce stale/inconsistent material content after camera movement.
+
+### Attempt 1: `heightLevel = 0` (Option A — force finest height map)
+
+**Change**: In `GGTerrain_DrawPages()`, set `heightLevel = 0` instead of `heightLevel = detailLevel` for both mip 0 and mip 1 passes.
+
+**Result**: Near terrain looked better (consistent materials at nearby LOD boundaries). But after moving to the map edge and returning, distant terrain had wrong materials at coarser mip levels.
+
+**Why it failed**: LOD 0's height map only covers 4096 units centered on the camera. For pages at LOD 3+ (covering 32768+ units), the do-while UV coverage loop bumps `heightLevel` up to a level that covers the page's world area. But which level it bumps to depends on the camera position (because each LOD's center tracks the camera). So the same page at the same virtual coordinate could get `heightLevel = 3` when the camera is at position A but `heightLevel = 4` when the camera is at position B. After page shift, the old content (baked with heightLevel 3) is reused in a position where heightLevel 4 would be selected, creating material mismatches.
+
+### Attempt 2: `min(detailLevel, 2)` cap
+
+**Change**: Capped heightLevel at 2 instead of using detailLevel directly. `heightLevel = min(detailLevel, 2)` for mip 0, `min(detailLevel + 1, 2)` for mip 1.
+
+**Result**: Slightly better than attempt 1, but same corruption pattern appeared after moving to the map edge and returning — visible as a "patchwork of misaligned square tiles" with completely wrong per-tile material assignments.
+
+**Why it failed**: Same root cause as attempt 1. LOD 3+ pages start the do-while loop at heightLevel 2, but LOD 2's height map (covering 16384 units) still doesn't cover distant pages. The loop bumps to heightLevel 3, 4, etc. based on camera position → camera-dependent → breaks on page shift.
+
+### Attempt 3: Remove mesh LOD clamp in render shader
+
+**Change**: Reverted all C++ changes. Changed `GGTerrainVirtualPBR_PS.hlsl:71` from `max(detailLevel, IN.lodLevel)` to `max(detailLevel, (int)terrain_detailLimit)`, removing the constraint that ties page selection to mesh LOD.
+
+**Rationale**: If coarse mesh chunks could look up fine LOD pages (which share height data with nearby fine pages), the material seams at LOD boundaries would disappear because all visible pixels would use pages from similar LOD levels.
+
+**Result**: Distant terrain textures were severely broken. Near-camera corruption also appeared after camera movement.
+
+**Why it failed**: Without the mesh LOD clamp, distant terrain pixels search through many empty fine LOD page table entries (which were never generated for those world positions at fine LOD). The search loop either finds no page or finds an incorrect one, producing visual garbage. The clamp exists specifically to prevent coarse mesh chunks from requesting pages that don't exist at fine LOD levels.
+
+### Key Takeaways
+
+1. **The do-while UV coverage loop makes heightLevel camera-dependent** whenever it has to bump from the starting level. The loop checks whether the page's world coordinates fall within a given LOD's height map coverage, but that coverage area is centered on the camera. Any starting heightLevel below detailLevel will trigger the loop for distant pages, introducing camera-dependency.
+
+2. **`max(detailLevel, IN.lodLevel)` in the render shader is load-bearing** — it prevents coarse mesh chunks from requesting fine LOD pages that don't exist, which would cause search failures and visual artifacts.
+
+3. **The root problem is architectural**: height maps are LOD-specific and camera-centered, material selection happens per-page using those height maps, and the page shift system assumes content is position-independent. These three design decisions are fundamentally incompatible when heightLevel ≠ detailLevel.
+
+### Remaining Fix Approaches
+
+Given the constraints discovered, viable approaches must ensure that every page's material content is fully determined by (detailLevel, virtual_page_x, virtual_page_y) with NO dependency on camera position:
+
+**Option C (Pre-computed material texture)**: A single camera-independent texture mapping world XZ → material blend factors. Generated once from the finest height data available globally (not LOD-specific). The page gen shader reads this instead of sampling LOD height maps. This completely decouples material selection from LOD.
+
+**Option D (Unified height map)**: Create a single global height map at fixed resolution (independent of LOD centers), updated when terrain is sculpted. All LOD levels sample the same height data, just at different effective resolutions via bilinear filtering. This makes height sampling deterministic per world position regardless of camera.
+
+**Option E (Accept the seam, minimize it)**: Keep `heightLevel = detailLevel` but reduce the visual impact by ensuring LOD height maps produce more consistent results. For example, generate coarse LOD height maps by downsampling from the finest LOD rather than independently evaluating terrain height. This won't eliminate the seam but should reduce the material discrepancy between adjacent LOD levels.
