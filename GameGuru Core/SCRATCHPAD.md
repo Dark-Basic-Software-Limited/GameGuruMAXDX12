@@ -241,3 +241,45 @@ Implemented a "reference color" rendering mode (`GGTERRAIN_SHADER_FLAG2_REFERENC
 - `GGTerrain.h` — extern for toggle variable
 
 **Use during port**: Run both the old terrain (reference color mode) and new Wicked Engine terrain side-by-side. Compare material assignments at matching world positions to verify the port preserves painted data, height-based layers, and slope-based layers correctly.
+
+---
+
+## Grass & Tree Reference Visualization (2026-02-21)
+
+### What was implemented
+
+Added grass map and tree position overlays to the existing terrain reference color view. This completes the "reference visualization" toolset — we can now see **all** painted terrain data (materials, grass, trees) as flat colors on the terrain surface, independent of the virtual texture system.
+
+### Grass overlay
+
+The grass placement data (`pGrassMap`, 4096x4096 uint8 array in `GGGrass.cpp`) was already maintained on the CPU but never uploaded to the GPU in DX12 mode — the `texGrassMap` creation and all `UpdateTexture` calls were commented out. The old `UpdateTexture` API no longer exists in this WickedEngine version, so we replaced it with `GGGrass_UploadGrassMap()` which re-creates the texture via `CreateTexture` with `SubresourceData` (same pattern as `GGTerrain_UploadMaterialMap()`).
+
+Uploads happen at: init, level load (`GGGrass_SetData`), flat area updates, and paint brush strokes.
+
+### Tree overlay
+
+No spatial texture existed for trees — they're stored as 400,000 `InstanceTree` structs with world positions. Created `GGTrees_RasterizeTreeMap()` which iterates all visible/valid trees and stamps 3-pixel-radius circles (value = tree type + 1) into a new `pTreeMap[4096*4096]` array, then uploads as `texTreeMap`.
+
+Rasterization runs at init (after `GGTrees_RepopulateInstances`) and after level load (`GGTrees_SetData`). Not triggered during paint operations — tree painting would need a re-rasterize call for live preview, but for port validation the level-load snapshot is sufficient.
+
+### Shader integration
+
+Both textures are bound in `GGTerrain_Draw()` at slots t56 (grass) and t57 (tree), sampled in the reference color block of `GGTerrainVirtualPBR_PS.hlsl`:
+- Grass: green-tinted palette color, 70% lerp over terrain material color
+- Tree: full palette color replacement (trees are distinct points, not area fills)
+
+All three overlays (material + grass + tree) are currently hardcoded on via `ggterrain_render_reference = 1`, `ggterrain_show_grass_map = 1`, `ggterrain_show_tree_map = 1`.
+
+### Visual confirmation
+
+Tested with demo levels. Grass shows as green-tinted patterns across the terrain matching spray-painted areas. Trees show as colored dots at each tree position. Different types display as different colors from the 32-entry reference palette.
+
+### Note on grass map values
+
+The grass map byte format is: bits 0-6 = grass type (0 = no grass, 1 = auto/default, 2+ = specific grass texture index), bit 7 (0x80) = flattened flag. The GPU texture contains the raw byte value, so flattened areas (0x80 set) will appear as high type numbers in the shader (type 128+). This doesn't affect port validation since the flattened flag is a runtime state, not painted data.
+
+### Next steps
+
+- Port terrain rendering to new Wicked Engine terrain system
+- Use all three reference overlays to validate that the new system correctly reproduces: material layer assignments (height/slope rules + painted overrides), grass placement and types, tree positions and types
+- Once port is validated, the reference visualization can be removed or kept as a debug tool

@@ -80,14 +80,12 @@ The existing terrain uses a custom virtual texture system with known, unfixable 
 
 ### Reference Color Rendering Mode
 
-A debug visualization mode that bypasses the entire virtual texture system and shows flat material colors directly from the terrain's paint data. This is the primary validation tool for the terrain port — it shows exactly what materials are painted where, independent of any LOD or virtual texture state.
-
-**Toggle**: Press `R` key when `pref.iTerrainDebugMode` is enabled (inside the commented-out debug key block in `GGTerrain_part0.cpp`).
+A debug visualization mode that bypasses the entire virtual texture system and shows flat material colors directly from the terrain's paint data. This is the primary validation tool for the terrain port — it shows exactly what materials are painted where, independent of any LOD or virtual texture state. Currently hardcoded on (`ggterrain_render_reference = 1`).
 
 **How it works**:
 - Flag: `GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR` (0x0080) in `GGTerrainConstants.hlsli`
-- C++ toggle: `ggterrain_render_reference` in `GGTerrain_part0.cpp:4198`
-- Shader early-out in `GGTerrainVirtualPBR_PS.hlsl:106-186` — before any page table lookup
+- C++ toggle: `ggterrain_render_reference` in `GGTerrain_part0.cpp:4198` (hardcoded on)
+- Shader early-out in `GGTerrainVirtualPBR_PS.hlsl` — before any page table lookup
 - Samples `texMaterialMap` (4096x4096, register t55) directly using world position
 - For unpainted areas (materialMap == 0): derives material from height/slope layer rules using `IN.worldPos.y` and `IN.normal.y` from the mesh vertex (consistent at all distances)
 - For painted areas: converts 1-based material index to 0-based and looks up a 32-color palette
@@ -96,7 +94,32 @@ A debug visualization mode that bypasses the entire virtual texture system and s
 
 **Why it has no LOD seams**: Height comes from the mesh vertex (`IN.worldPos.y`), not LOD height maps. The material map is a single global texture with fixed world mapping. Nothing LOD-dependent touches the output.
 
-**Use during port**: Compare reference color output against the new Wicked Engine terrain's material assignments to verify that heights, slopes, and painted materials align correctly.
+### Grass & Tree Reference Overlays
+
+Layered on top of the reference color terrain view, showing where vegetation is placed. Both are currently hardcoded on alongside reference color mode.
+
+**Grass overlay** (`GGTERRAIN_SHADER_FLAG2_SHOW_GRASS_MAP`, 0x0100):
+- Source data: `pGrassMap` — a 4096x4096 `uint8_t` array in `GGGrass.cpp` (each byte = grass type, bit 0x80 = flattened flag)
+- GPU texture: `texGrassMap` (R8_UNORM, register t56), uploaded via `GGGrass_UploadGrassMap()` which re-creates the texture from CPU data
+- Upload triggers: init, `GGGrass_SetData()` (level load), `GGGrass_UpdateFlatArea()`, `GGGrass_Update_Painting()` (brush strokes)
+- Shader: samples grass map at `worldPos.xz / terrain_mapEditSize * 0.5 + 0.5`, non-zero values tinted green via `referenceColors[type & 31] * float3(0.5, 1.0, 0.5)`, blended 70% over terrain color
+- Visual: green-tinted patterns showing grass type distribution across the terrain
+
+**Tree overlay** (`GGTERRAIN_SHADER_FLAG2_SHOW_TREE_MAP`, 0x0200):
+- Source data: `pAllTrees[400000]` — `InstanceTree` structs with world positions and type IDs in `GGTrees_part0.cpp`
+- CPU rasterization: `GGTrees_RasterizeTreeMap()` iterates all visible/valid trees, stamps 3-pixel-radius circles into `pTreeMap[4096*4096]` with value = tree type + 1
+- GPU texture: `texTreeMap` (R8_UNORM, register t57), uploaded via `GGTrees_UploadTreeMap()`
+- Upload triggers: after `GGTrees_RepopulateInstances()` (init), after `GGTrees_SetData()` (level load)
+- Shader: samples tree map, non-zero values shown as solid `referenceColors[type & 31]` (full replacement, not blended)
+- Visual: colored dots at each tree position, color = tree type
+
+**Use during port**: Compare all three overlays (material + grass + tree) against the new Wicked Engine terrain to verify that the port preserves all painted vegetation data alongside terrain materials.
+
+| Overlay | Texture | Slot | Flag | Source |
+|---------|---------|------|------|--------|
+| Material | `texMaterialMap` | t55 | 0x0080 | `pMaterialMap` (terrain paint) |
+| Grass | `texGrassMap` | t56 | 0x0100 | `pGrassMap` (grass paint) |
+| Tree | `texTreeMap` | t57 | 0x0200 | `pAllTrees` (rasterized) |
 
 ### Legacy virtual texture system (to be replaced)
 
@@ -104,11 +127,13 @@ The old system is documented in `SCRATCHPAD.md` along with the investigation int
 
 | File | Content |
 |------|---------|
-| `Guru-WickedMAX/GGTerrain/GGTerrain_part0.cpp` | Page table management, CPU fallback generation, LOD level management |
+| `Guru-WickedMAX/GGTerrain/GGTerrain_part0.cpp` | Page table management, CPU fallback generation, LOD level management, reference color flags |
 | `Guru-WickedMAX/GGTerrain/GGTerrainPageSettings.h` | Atlas dimensions, page table constants |
 | `Guru-WickedMAX/GGTerrain/GGTerrain.h` | LOD level count, segment size, segments per chunk, extern for `ggterrain_render_reference` |
-| `Guru-WickedMAX/GGTerrain/Shaders/GGTerrainVirtualPBR_PS.hlsl` | Pixel shader — page table lookup + reference color mode |
-| `Guru-WickedMAX/GGTerrain/Shaders/GGTerrainConstants.hlsli` | Shader flags including `GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR` |
+| `Guru-WickedMAX/GGTerrain/Shaders/GGTerrainVirtualPBR_PS.hlsl` | Pixel shader — page table lookup + reference color mode + grass/tree overlays |
+| `Guru-WickedMAX/GGTerrain/Shaders/GGTerrainConstants.hlsli` | Shader flags for reference color, grass map, tree map |
+| `Guru-WickedMAX/GGTerrain/GGGrass.cpp` | Grass map CPU data (`pGrassMap`), GPU upload (`GGGrass_UploadGrassMap`), bind function |
+| `Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp` | Tree data (`pAllTrees`), tree map rasterization/upload (`GGTrees_RasterizeTreeMap`), bind function |
 | `Guru-WickedMAX/master_part1.cpp:152-158` | GPU readback disabled (commented out) |
 
 ## Third-Party Dependencies
