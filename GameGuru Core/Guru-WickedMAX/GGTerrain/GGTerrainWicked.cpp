@@ -212,7 +212,7 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 	int mapRes = GGTerrain::GGTerrain_GetMaterialMapResolution();
 	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
 	float editableSizeRcp = (editableSize > 0.0f) ? (1.0f / editableSize) : 0.0f;
-	float halfEdit = editableSize * 0.5f;
+	// editableSize is already the half-size (area goes from -editableSize to +editableSize)
 	float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
 	auto& scene = wi::scene::GetScene();
 
@@ -244,8 +244,8 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		// Skip chunks outside editable area (no paint data there)
 		float chunkCenterX = cx * chunkStride;
 		float chunkCenterZ = cz * chunkStride;
-		if (chunkCenterX < -halfEdit || chunkCenterX > halfEdit ||
-			chunkCenterZ < -halfEdit || chunkCenterZ > halfEdit)
+		if (chunkCenterX < -editableSize || chunkCenterX > editableSize ||
+			chunkCenterZ < -editableSize || chunkCenterZ > editableSize)
 		{
 			processedChunkKeys.insert(key);
 			continue;
