@@ -331,6 +331,47 @@ Build `materialToSlot[32]` lookup table mapping GG material index -> Wicked blen
 - Unpainted areas should still use automatic rules
 - Toggle back: reference color mode confirms same paint data
 
+### Phase 3 Implementation Notes (from Phase 2 experience)
+
+#### Current architecture to build on
+
+- `GGTerrainWicked.cpp` is 220 lines, clean. The post-process loop goes in `GGTerrainWicked_Update()` after `Generation_Update(camera)`.
+- `SetupTerrainMaterial()` already handles loading any GG material by 0-based index. Reuse it for painted material entities.
+- `wickedTerrainExeDir` (static string) has the EXE directory for building texture paths. Already used by `SetupTerrainMaterial()`.
+- Terrain is accessed via `GetWickedTerrain()` which returns `wi::terrain::Terrain*` from the scene's component manager.
+- `Generation_Restart()` deep-copies materials — must be called after adding new materialEntities for painted materials.
+
+#### Critical lessons from Phase 2
+
+1. **`CreateRenderData()` + `SetTextureStreamingDisabled(true)` is mandatory** before `Generation_Restart()`. Without it, textures aren't loaded when `Generation_Update()` checks `resource.IsValid()` → VT pipeline stays off → white terrain.
+2. **`Component_Attach(materialEntity, terrainEntity)` is required** for each material entity.
+3. **The VT system must NOT be bypassed** — it handles texture blending via compute shader. Our job is to provide correct materials and blendmap weights; the VT system does the rest.
+4. **Take incremental steps** — the Phase 2 approach of small verifiable changes worked well. Do the same for Phase 3: first just detect painted chunks and log counts, then override blendmaps, then verify visually.
+
+#### Key data access patterns
+
+- `pMaterialMap` — declared in `GGTerrain_part0.cpp`, need to extern or expose via a function. 4096x4096 `uint8_t` array, value 0 = unpainted, 1-32 = material index (1-based).
+- `ggterrain_global_render_params.mapEditSize` or equivalent — the world-space size of the editable terrain area. Needed for UV mapping: `u = (worldX / editSize) * 0.5 + 0.5`.
+- `GGTerrain_CheckMaterialUsed()` at `GGTerrain_part0.cpp:11525` — scans `pMaterialMap` and returns which material indices are in use. Call once at setup time.
+
+#### Wicked Engine API to verify before coding
+
+Before writing the post-process loop, verify these members are accessible:
+- `terrain->chunks` — `unordered_map<Chunk, ChunkData>`, iterable with structured bindings
+- `chunk_data.blendmap_layers` — `vector<BlendmapLayer>`, each has `pixels` vector
+- `chunk_data.enable_blendmap_layer(index)` — extends blendmap_layers if needed
+- `terrain->CreateChunkRegionTexture(chunk_data)` — re-uploads blendmap GPU texture
+- `chunk_data.position` — world position of chunk origin
+- Mesh vertex positions — `scene.meshes.GetComponent(chunk_data.entity)->vertex_positions`
+
+#### Chunk generation threading concern
+
+`Generation_Update()` runs chunk generation on background threads. The post-process loop runs on the main thread AFTER `Generation_Update()` returns, but newly-generated chunks may still be in flight. Need to verify whether `chunks` map is safe to iterate after `Generation_Update()`, or if we need to use `chunk_data.vt` state to detect fully-generated chunks.
+
+#### materialEntities beyond slot 3
+
+Phase 2 uses `materialEntities[0-3]` (the 4 auto-material slots). For painted materials, we need additional entities. The `materialEntities` member is a fixed array (`wi::ecs::Entity materialEntities[MATERIAL_COUNT]`) where `MATERIAL_COUNT = 4`. If Wicked Engine doesn't support more than 4 material entities natively, we may need to use the spline material system (`chunk_data.blendmap_layers` can have N layers, each referencing a material beyond slot 3 via `enable_blendmap_layer(index)`). **Verify this in wiTerrain.h before implementing.**
+
 ---
 
 ## Phase 4: Grass via HairParticleSystem
