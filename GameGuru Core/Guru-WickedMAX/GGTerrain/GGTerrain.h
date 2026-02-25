@@ -300,6 +300,8 @@ int GGTerrain_SetPaintData( uint32_t size, uint8_t* data, sUndoSysEventTerrainPa
 void GGTerrain_ResetPaintData();
 
 int GGTerrain_GetMaterialIndex( float x, float z ); // returns an index between 0 and 31 inclusive for the material closest to the given point
+const uint8_t* GGTerrain_GetMaterialMapPtr(); // raw pointer to 4096x4096 material map (0=unpainted, 1-32=material)
+int GGTerrain_GetMaterialMapResolution(); // returns GGTERRAIN_MATERIALMAP_SIZE (4096)
 
 int GGTerrain_GetPagesNeeded();
 int GGTerrain_GetPagesActive();

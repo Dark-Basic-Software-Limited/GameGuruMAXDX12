@@ -10589,6 +10589,16 @@ int GGTerrain_GetMaterialIndex( float x, float z )
 	return ggterrain_local_render_params.baseLayerMaterial & 0xFF;
 }
 
+const uint8_t* GGTerrain_GetMaterialMapPtr()
+{
+	return pMaterialMap;
+}
+
+int GGTerrain_GetMaterialMapResolution()
+{
+	return GGTERRAIN_MATERIALMAP_SIZE;
+}
+
 // must be extern "C" to allow /alternatename linker flag to be set correctly
 // called from WickedEngine RenderPath3D::Render()
 extern "C" void GGTerrain_VirtualTexReadBack( const Texture& texReadBack, uint32_t sampleCount, wiGraphics::CommandList cmd )

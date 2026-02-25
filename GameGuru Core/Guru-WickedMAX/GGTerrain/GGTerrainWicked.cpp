@@ -9,6 +9,35 @@ static bool wickedTerrainInitialised = false;
 static bool wickedTerrainMaterialsSetup = false;
 static std::string wickedTerrainExeDir;  // EXE directory for resolving texture paths
 
+// Phase 3: Painted material support
+static int materialToSlot[GGTERRAIN_MAX_SOURCE_TEXTURES]; // GG 0-based mat index -> Wicked blendmap layer index
+static int maxPaintedSlot = -1;                            // highest blendmap layer used by any painted material
+
+// Debug hack: distinct color per material index for painted area visualization
+// Packed RGBA: R | (G<<8) | (B<<16) | (A<<24) — matches wi::Color layout
+static uint32_t GetMaterialDebugColor(int matIndex)
+{
+	static const uint32_t colors[16] = {
+		0xFF0000FF, // 0: red
+		0xFF00FF00, // 1: green
+		0xFFFF0000, // 2: blue
+		0xFF00FFFF, // 3: yellow
+		0xFFFF00FF, // 4: magenta
+		0xFFFFFF00, // 5: cyan
+		0xFF0080FF, // 6: orange
+		0xFF80FF00, // 7: lime
+		0xFFFF0080, // 8: violet
+		0xFF80FF80, // 9: light green
+		0xFF8080FF, // 10: light red
+		0xFFFF8000, // 11: teal
+		0xFF0040C0, // 12: dark orange
+		0xFF40FF40, // 13: bright green
+		0xFFC040FF, // 14: purple
+		0xFF40C0FF, // 15: gold
+	};
+	return colors[matIndex & 15];
+}
+
 // Helper to get the terrain component from the scene (registered, not static)
 static wi::terrain::Terrain* GetWickedTerrain()
 {
@@ -125,12 +154,63 @@ static void SetupWickedTerrainMaterials()
 	terrain->region2 = 2.0f;   // low altitude (GG's low layer is at positive heights, poor Wicked mapping)
 	terrain->region3 = 1.0f;   // high altitude (tighter than default for visible mountain material)
 
-	// Restart generation to pick up the new materials
+	// Phase 3: Initialize materialToSlot lookup — maps GG 0-based material index to Wicked blendmap layer
+	for (int i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES; i++)
+		materialToSlot[i] = -1;
+
+	// Map the 4 auto materials to their fixed slots (0-3)
+	materialToSlot[baseMat] = wi::terrain::MATERIAL_BASE;
+	materialToSlot[slopeMat] = wi::terrain::MATERIAL_SLOPE;
+	materialToSlot[lowMat] = wi::terrain::MATERIAL_LOW_ALTITUDE;
+	materialToSlot[highMat] = wi::terrain::MATERIAL_HIGH_ALTITUDE;
+	maxPaintedSlot = wi::terrain::MATERIAL_HIGH_ALTITUDE;  // 3
+
+	// Scan material map for unique painted materials not already in auto slots
+	const uint8_t* matMap = GGTerrain::GGTerrain_GetMaterialMapPtr();
+	int mapRes = GGTerrain::GGTerrain_GetMaterialMapResolution();
+	int numExtraMaterials = 0;
+
+	if (matMap && mapRes > 0)
+	{
+		bool usedMaterials[GGTERRAIN_MAX_SOURCE_TEXTURES] = {};
+		for (int i = 0; i < mapRes * mapRes; i++)
+		{
+			uint8_t val = matMap[i];
+			if (val > 0 && val <= GGTERRAIN_MAX_SOURCE_TEXTURES)
+				usedMaterials[val - 1] = true;
+		}
+
+		// Create material entities for painted materials beyond the 4 auto slots
+		for (int i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES; i++)
+		{
+			if (usedMaterials[i] && materialToSlot[i] < 0)
+			{
+				int newSlot = wi::terrain::MATERIAL_COUNT + numExtraMaterials;
+				materialToSlot[i] = newSlot;
+
+				// Extend materialEntities vector if needed
+				while ((int)terrain->materialEntities.size() <= newSlot)
+					terrain->materialEntities.push_back(wi::ecs::INVALID_ENTITY);
+
+				terrain->materialEntities[newSlot] = wi::ecs::CreateEntity();
+				scene.Component_Attach(terrain->materialEntities[newSlot], wickedTerrainEntity);
+				SetupTerrainMaterial(scene, terrain->materialEntities[newSlot], i);
+
+				if (newSlot > maxPaintedSlot)
+					maxPaintedSlot = newSlot;
+				numExtraMaterials++;
+			}
+		}
+	}
+
+	// Restart generation to pick up all materials (auto + painted)
 	// Generation_Restart() deep-copies the materials internally
 	terrain->Generation_Restart();
 	wickedTerrainMaterialsSetup = true;
 
-	wi::backlog::post("GGTerrainWicked: materials setup complete, Generation_Restart called");
+	wi::backlog::post(std::string("GGTerrainWicked: materials setup complete (" +
+		std::to_string(numExtraMaterials) + " extra painted materials, maxSlot=" +
+		std::to_string(maxPaintedSlot) + ")").c_str());
 }
 
 namespace GGTerrain
@@ -184,9 +264,77 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		SetupWickedTerrainMaterials();
 	}
 
-	// Let the VT system run normally — it creates the atlas, blends materials
-	// via compute shader, and assigns atlas textures to chunk materials
+	// Let the VT system run — generates chunks, creates atlas, blends materials
 	terrain->Generation_Update(camera);
+
+	// Phase 3: Debug — per-vertex painted material colors.
+	// Runs AFTER Generation_Update so newly generated chunks are available.
+	// Iterates scene components (main-thread safe) instead of terrain->chunks.
+	const uint8_t* matMap = GGTerrain::GGTerrain_GetMaterialMapPtr();
+	if (matMap && wickedTerrainMaterialsSetup)
+	{
+		auto& scene = wi::scene::GetScene();
+		int mapRes = GGTerrain::GGTerrain_GetMaterialMapResolution();
+		float editableSize = GGTerrain::GGTerrain_GetEditableSize();
+		float editableSizeRcp = (editableSize > 0.0f) ? (1.0f / editableSize) : 0.0f;
+
+		for (size_t oi = 0; oi < scene.objects.GetCount(); oi++)
+		{
+			wi::scene::ObjectComponent& obj = scene.objects[oi];
+			wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(obj.meshID);
+			if (!mesh) continue;
+			if (mesh->vertex_positions.size() != wi::terrain::vertexCount) continue;
+
+			// Skip already-processed chunks (vertex_colors populated on first pass)
+			if (!mesh->vertex_colors.empty()) continue;
+
+			wi::ecs::Entity entity = scene.objects.GetEntity(oi);
+			const wi::scene::TransformComponent* transform = scene.transforms.GetComponent(entity);
+			if (!transform) continue;
+
+			// Transform local vertex positions to world space using chunk's world matrix
+			XMMATRIX worldMatrix = XMLoadFloat4x4(&transform->world);
+
+			size_t vertCount = mesh->vertex_positions.size();
+			mesh->vertex_colors.resize(vertCount);
+
+			for (size_t vi = 0; vi < vertCount; vi++)
+			{
+				XMFLOAT3 localPos = mesh->vertex_positions[vi];
+				XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&localPos), worldMatrix);
+				XMFLOAT3 worldPos;
+				XMStoreFloat3(&worldPos, wp);
+
+				float mapU = worldPos.x * editableSizeRcp * 0.5f + 0.5f;
+				float mapV = worldPos.z * editableSizeRcp * 0.5f + 0.5f;
+				int mapX = (int)(mapU * mapRes);
+				int mapZ = (int)(mapV * mapRes);
+
+				uint32_t color = 0xFFFFFFFF; // white = unpainted
+				if (mapX >= 0 && mapX < mapRes && mapZ >= 0 && mapZ < mapRes)
+				{
+					uint8_t matVal = matMap[mapZ * mapRes + mapX];
+					if (matVal > 0 && matVal <= GGTERRAIN_MAX_SOURCE_TEXTURES)
+						color = GetMaterialDebugColor(matVal - 1);
+				}
+				mesh->vertex_colors[vi] = color;
+			}
+
+			// Upload vertex colors to GPU
+			mesh->CreateRenderData();
+
+			// Enable vertex colors on the chunk's material so the shader uses them
+			if (!mesh->subsets.empty())
+			{
+				wi::scene::MaterialComponent* mat = scene.materials.GetComponent(mesh->subsets[0].materialID);
+				if (mat && !mat->IsUsingVertexColors())
+					mat->SetUseVertexColors(true);
+			}
+
+			// Reset per-object color to white (clean slate for vertex color visualization)
+			obj.color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		}
+	}
 }
 
 void GGTerrainWicked_Shutdown()
@@ -215,6 +363,7 @@ void GGTerrainWicked_Shutdown()
 	}
 	wickedTerrainInitialised = false;
 	wickedTerrainMaterialsSetup = false;
+	maxPaintedSlot = -1;
 }
 
 } // namespace GGTerrain

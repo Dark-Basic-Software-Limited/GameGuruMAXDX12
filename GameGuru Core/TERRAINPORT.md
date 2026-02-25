@@ -370,7 +370,55 @@ Before writing the post-process loop, verify these members are accessible:
 
 #### materialEntities beyond slot 3
 
-Phase 2 uses `materialEntities[0-3]` (the 4 auto-material slots). For painted materials, we need additional entities. The `materialEntities` member is a fixed array (`wi::ecs::Entity materialEntities[MATERIAL_COUNT]`) where `MATERIAL_COUNT = 4`. If Wicked Engine doesn't support more than 4 material entities natively, we may need to use the spline material system (`chunk_data.blendmap_layers` can have N layers, each referencing a material beyond slot 3 via `enable_blendmap_layer(index)`). **Verify this in wiTerrain.h before implementing.**
+**RESOLVED**: `materialEntities` is a `wi::vector<wi::ecs::Entity>` (dynamic vector, NOT a fixed array). Can be extended beyond 4 with `push_back()`. `Generation_Restart()` saves and restores all entries (not just 0-3). The resize to `MATERIAL_COUNT=4` only happens in the Terrain constructor, not in `Generation_Restart()`.
+
+### Phase 3 Progress (2026-02-25)
+
+**Status**: IN PROGRESS — debug visualization of painted materials on Wicked terrain.
+
+#### Approach evolution
+
+The initial approach (blendmap_layers post-processing via terrain->chunks iteration) was abandoned due to thread-safety issues — `terrain->chunks` is an unordered_map modified concurrently by the generator thread, causing access violations during iteration.
+
+The current approach uses **scene component iteration** (thread-safe) to find terrain chunks and apply debug visualization. Two methods have been tested:
+
+1. **Per-object color tinting** (ObjectComponent::color) — WORKS, confirmed visible. Sets one color per chunk by sampling the material map at the chunk center. Too coarse (one color per ~512-unit chunk), but proves the pipeline.
+
+2. **Per-vertex color tinting** (mesh->vertex_colors + CreateRenderData) — Current implementation. Populates vertex_colors by sampling the material map at each vertex world position (4489 vertices per chunk), calls CreateRenderData() to upload to GPU, and enables SetUseVertexColors(true) on the chunk material. **Not yet visually verified** — needs testing.
+
+#### What's implemented
+
+1. **Material map accessors** in `GGTerrain_part0.cpp` / `GGTerrain.h`:
+   - `GGTerrain_GetMaterialMapPtr()` — raw `const uint8_t*` to 4096x4096 material map
+   - `GGTerrain_GetMaterialMapResolution()` — returns 4096
+
+2. **Painted material scanning** in `SetupWickedTerrainMaterials()`:
+   - Scans material map for unique material indices, creates materialEntities at slots 4+
+   - Builds `materialToSlot[32]` lookup (GG mat index → Wicked blendmap layer)
+
+3. **Per-vertex debug coloring** in `GGTerrainWicked_Update()` after `Generation_Update()`:
+   - Iterates `scene.objects` → finds terrain chunks via `mesh->vertex_positions.size() == 4489`
+   - Skips already-processed chunks (`vertex_colors.empty()` check)
+   - Transforms each vertex to world space via `transform->world` matrix
+   - Samples material map at world XZ, assigns 16-color debug palette
+   - Calls `mesh->CreateRenderData()` to upload vertex colors to GPU
+   - Enables `SetUseVertexColors(true)` on chunk material
+
+#### Key technical findings
+
+- **Thread-safe chunk iteration**: Use `scene.objects` (modified only on main thread via `scene.Merge()`) instead of `terrain->chunks` (modified concurrently by generator).
+- **Terrain chunk identification**: `mesh->vertex_positions.size() == wi::terrain::vertexCount` (4489).
+- **Vertex color support**: Wicked shader multiplies vertex color with base color when `material.IsUsingVertexColors()` is true. Format is R8G8B8A8_UNORM (uint32_t packed as 0xAABBGGRR).
+- **materialEntities is a dynamic vector**, extensible with `push_back()`. `Generation_Restart()` preserves all entries.
+
+#### Planned next steps
+
+1. Visually verify the per-vertex coloring in Release build (first proper test)
+2. If vertex colors render correctly, compare against old terrain reference color mode
+3. If CreateRenderData() causes issues, explore alternatives:
+   - Texture-based approach: create a global debug color texture and override chunk material basecolor
+   - Per-chunk blendmap injection via the VT pipeline
+4. Once debug visualization matches old terrain, move to actual material blending (blendmap layers)
 
 ---
 
