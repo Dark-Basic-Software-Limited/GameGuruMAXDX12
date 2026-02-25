@@ -4198,6 +4198,7 @@ int ggterrain_render_debug = 0;
 int ggterrain_render_reference = 0;
 int ggterrain_show_grass_map = 0;
 int ggterrain_show_tree_map = 0;
+int ggterrain_use_wicked_terrain = 0;
 
 void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
 { 
@@ -9721,6 +9722,9 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		ggterrain_show_grass_map = 1;
 		ggterrain_show_tree_map = 1;
 
+		// Y key toggles between old terrain and new Wicked Engine terrain
+		if (GGTerrain_GetKeyPressed(GGKEY_Y)) ggterrain_use_wicked_terrain = 1 - ggterrain_use_wicked_terrain;
+
 		/* hidden key functionality and undocumented feature
 		if (pref.iTerrainDebugMode)
 		{
@@ -9787,6 +9791,9 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		}
 	}
 	terrainlock.unlock();
+
+	// When wicked terrain is active, skip all virtual texture page management and old shader constants
+	if (ggterrain_use_wicked_terrain) return;
 
 	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
 	GGTerrainLODSet* pNewLODs = ggterrain.GetNewLODs();
@@ -10263,6 +10270,11 @@ int GGTerrain_GetHeight( float x, float z, float* outHeight, int accurateButSlow
 		else *outHeight = heightNoFlat;
 		return 1;
 	}
+}
+
+float GGTerrain_CalculateHeight( float x, float z )
+{
+	return GGTerrainChunk::CalculateHeightWithHeightmap( x, z, 1 );
 }
 
 int GGTerrain_GetNormal( float x, float z, float* outNx, float* outNy, float* outNz )

@@ -212,6 +212,49 @@ wickedTerrain.region3 = /* derived from layerStartHeight[2] */;
 - Low areas show low-altitude material, steep areas show slope material, etc.
 - Transitions won't be pixel-identical (different blending math) but should be similar
 
+### Phase 2 Progress (2026-02-25)
+
+**Status**: Texture loading confirmed, single-texture rendering working. Virtual texture system understood and bypassed.
+
+#### What was done
+
+1. **Material entity setup implemented** (`SetupWickedTerrainMaterials`): Creates 4 material entities from GG render params, loads `Color.dds` and `Normal.dds` via `wi::resourcemanager::Load()`, calls `CreateRenderData()` with streaming disabled for synchronous load. Backlog messages confirm load success/failure.
+
+2. **Texture loading verified**: Loaded `Files/terraintextures/mat1/Color.dds` and rendered it as a 256x256 debug quad in the top-left corner via `wi::image::Draw()` in the Compose pass (`GGTerrainWicked_DebugDraw`). Visually confirmed the texture is in GPU memory.
+
+3. **Direct chunk material override**: After `Generation_Update()`, iterate all `terrain->chunks` and force the loaded texture onto each chunk's `MaterialComponent::BASECOLORMAP` slot, resetting `texMulAdd` to identity and clearing sparse descriptors.
+
+4. **Virtual texture system conflict discovered and resolved**:
+   - **Problem**: Terrain rendered white initially, then when camera moved, the forced texture was overwritten by small white tiles with shadow-like patterns (VT compute shader writing atlas tiles into the shared tile pool).
+   - **Root cause**: Wicked's terrain VT system computes a local `virtual_texture_any` flag each frame in `Generation_Update()` by checking if `materialEntities[0-3]` have valid textures. When true, `UpdateVirtualTexturesCPU()` overwrites chunk material textures with the sparse atlas texture + `SetTextureVirtual()` bindings. The GPU compute shader then writes into the shared `tile_pool` buffer, corrupting whatever texture was previously assigned.
+   - **Fix**: Clear all textures from `materialEntities[0-3]` BEFORE `Generation_Update()` each frame. This makes `virtual_texture_any = false`, completely disabling the VT atlas/compute pipeline. Then set our texture on chunk materials AFTER `Generation_Update()` returns — they persist without being overwritten.
+
+#### Key discovery: Wicked terrain VT architecture
+
+| Component | Role | Impact |
+|-----------|------|--------|
+| `materialEntities[0-3]` | Source materials checked for `virtual_texture_any` | Must have NO textures to disable VT |
+| `atlas.maps[0].texture` | Sparse SRV (BC1) for rendering | Shared with `texture_raw_block` via `tile_pool` |
+| `atlas.maps[0].texture_raw_block` | Sparse UAV (R32G32B32A32_UINT) for compute write | VT update shader writes here |
+| `atlas.tile_pool` | Single shared GPU buffer for all atlas maps | All read/write goes through this |
+| `UpdateVirtualTexturesCPU()` | Runs every frame if `virtual_texture_any` | Overwrites chunk material texture slots |
+| `UpdateVirtualTexturesGPU()` | Compute shader dispatches | Writes blended material tiles into atlas |
+| `virtual_texture_any` | Local variable in `Generation_Update()` | Cannot be set externally; only controlled via materialEntities |
+
+#### Current state (TEMP hacks in place)
+
+- `baseMat` hardcoded to 0 (mat1) for testing — all terrain chunks show mat1/Color.dds
+- Debug quad renders mat1 texture in top-left corner of screen
+- VT system disabled by clearing materialEntities textures each frame
+- Terrain renders with the forced texture stably across camera movement
+
+#### Next steps
+
+- Remove debug quad and hardcoded mat1 override
+- Restore correct 4-material loading from GG render params
+- Investigate whether to use VT system properly (load textures into materialEntities, let VT blend them) or bypass VT and assign textures directly to chunk materials
+- Map GG height/slope layer thresholds to Wicked region1/2/3 parameters
+
 ---
 
 ## Phase 3: Painted Material Support via N-Layer Blendmaps

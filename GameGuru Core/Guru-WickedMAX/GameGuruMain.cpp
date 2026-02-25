@@ -10,6 +10,7 @@
 #include "gameguru.h"
 #include "GPUParticles.h"
 #include "GGTerrain/GGTerrain.h"
+#include "GGTerrain/GGTerrainWicked.h"
 #include "GGTerrain/GGTrees.h"
 #include "GGTerrain/GGGrass.h"
 #include "tracers/TracerManager.h"
@@ -166,6 +167,8 @@ bool GuruLoopLogic ( void )
 					timestampactivity(0, "GGTerrain::GGTerrain_Init();");
 					wiGraphics::CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
 					GGTerrain::GGTerrain_Init(cmd);
+					timestampactivity(0, "GGTerrainWicked_Init");
+					GGTerrain::GGTerrainWicked_Init();
 					timestampactivity(0, "GGTrees::GGTrees_Init();");
 					GGTrees::GGTrees_Init();
 					timestampactivity(0, "GGGrass::GGGrass_Init();");

@@ -251,6 +251,7 @@ extern GGTerrainRenderParams ggterrain_global_render_params;
 extern GGTerrainRenderParams2 ggterrain_global_render_params2;
 extern int ggterrain_draw_enabled;
 extern int ggterrain_render_reference;
+extern int ggterrain_use_wicked_terrain;
 
 int GGTerrain_Init( wiGraphics::CommandList cmd);
 void GGTerrain_WindowResized();
@@ -275,6 +276,7 @@ int GGTerrain_IsReady();
 
 int GGTerrain_RayCast( RAY pickRay, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint32_t* lodLevel, int includeFlatAreas=1 );
 int GGTerrain_GetHeight( float x, float z, float* outHeight, int accurateButSlow=0, int includeFlatAreas=1 );
+float GGTerrain_CalculateHeight( float x, float z ); // Direct height calc from heightmap+fractal+sculpt+flat areas, no chunk/LOD needed
 int GGTerrain_GetNormal( float x, float z, float* outNx, float* outNy, float* outNz );
 
 void GGTerrain_CancelRamp();

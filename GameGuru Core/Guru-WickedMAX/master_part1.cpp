@@ -3,6 +3,7 @@
 //
 #include "GGAnimBridge.h"
 #include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
+#include "GGTerrain/GGTerrainWicked.h"
 
 // Phase 3: Forward declarations for GG custom draw functions (terrain/trees/grass)
 extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphics::CommandList);
@@ -127,25 +128,33 @@ void MasterRenderer::Load()
 
 	// Phase 3: Set up custom scene draw callbacks
 	// Terrain only (trees/grass disabled — see GRASSISSUE.md for details)
+	// When ggterrain_use_wicked_terrain is active, all callbacks return early
 	customDraw_Prepass = [](const Frustum* frustum, CommandList cmd) {
+		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Prepass(frustum, cmd);
 	};
 	customDraw_Prepass_Reflections = [](const Frustum* frustum, CommandList cmd) {
+		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Prepass_Reflections(frustum, cmd);
 	};
 	customDraw_Opaque = [](const Frustum* frustum, int mode, CommandList cmd) {
+		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw(frustum, mode, cmd);
 	};
 	customDraw_Transparent = [](const Frustum* frustum, CommandList cmd) {
+		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Transparent(frustum, cmd);
 	};
 	wi::renderer::customDraw_ShadowMap = [](const Frustum* frustum, int cascade, CommandList cmd) {
+		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_ShadowMap(frustum, cascade, cmd);
 	};
 	wi::renderer::customDraw_EnvProbe = [](const wi::primitive::Sphere* culler, const Frustum* frusta, uint32_t frustum_count, CommandList cmd) {
+		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_EnvProbe(culler, frusta, frustum_count, cmd);
 	};
 	customDraw_Compose = [](CommandList cmd) {
+		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Debug(cmd);
 		GGTerrain_Draw_Overlay(cmd);
 	};
@@ -198,6 +207,15 @@ void MasterRenderer::Update(float dt)
 				auto range3 = wiProfiler::BeginRangeCPU("Update - Terrain");
 				extern bool bImGuiRenderTargetFocus;
 				GGTerrain_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
+				if (ggterrain_use_wicked_terrain)
+				{
+					ggterrain_draw_enabled = 0;  // suppress all old draw callbacks
+					GGTerrainWicked_Update(camera);
+				}
+				else
+				{
+					ggterrain_draw_enabled = 1;
+				}
 				if (g_iDisableTerrainSystem == 0)
 				{
 					GGTrees_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
@@ -425,6 +443,9 @@ void MasterRenderer::Compose(CommandList cmd) const
 	wi::profiler::DisableDrawForThisFrame();
 
 	__super::Compose(cmd);
+
+	// TEMP: Debug draw mat1 texture quad to verify texture loading
+	GGTerrain::GGTerrainWicked_DebugDraw(cmd);
 
 	// DX12: Render splash screen AFTER normal compose (drawn on top with opaque blend).
 	// Moved from Master::Update where it created a separate render pass that was

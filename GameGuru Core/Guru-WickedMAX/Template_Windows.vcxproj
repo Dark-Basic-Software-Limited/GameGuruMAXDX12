@@ -663,6 +663,7 @@
     <ClInclude Include="GGTerrain\GGGrass.h" />
     <ClInclude Include="GGTerrain\GGTerrain.h" />
     <ClInclude Include="GGTerrain\GGTerrainFile.h" />
+    <ClInclude Include="GGTerrain\GGTerrainWicked.h" />
     <ClInclude Include="GGTerrain\GGTerrainPageSettings.h" />
     <ClInclude Include="GGTerrain\GGTrees.h" />
     <ClInclude Include="GGTerrain\JSONElement.h" />
@@ -855,6 +856,7 @@
     <ClCompile Include="GGTerrain\GGGrass.cpp" />
     <ClCompile Include="GGTerrain\GGTerrain.cpp" />
     <ClCompile Include="GGTerrain\GGTerrainFile.cpp" />
+    <ClCompile Include="GGTerrain\GGTerrainWicked.cpp" />
     <ClCompile Include="GGTerrain\GGTrees.cpp" />
     <ClCompile Include="GGTerrain\JSONElement.cpp" />
     <ClCompile Include="GGTerrain\SimplexNoise.cpp" />
