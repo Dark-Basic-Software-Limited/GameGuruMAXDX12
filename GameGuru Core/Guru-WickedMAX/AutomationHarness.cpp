@@ -959,6 +959,88 @@ static void Cmd_PressEscape(char* result, int resultSize)
 	result[resultSize - 1] = 0;
 }
 
+static int AutoHarness_ParseKeyName(const char* name)
+{
+	if (!name || !name[0]) return -1;
+
+	// Single character: A-Z, 0-9
+	if (name[1] == 0)
+	{
+		char c = name[0];
+		if (c >= 'a' && c <= 'z') return 0x41 + (c - 'a');
+		if (c >= 'A' && c <= 'Z') return 0x41 + (c - 'A');
+		if (c >= '0' && c <= '9') return 0x30 + (c - '0');
+		return -1;
+	}
+
+	// Named keys (case-insensitive)
+	if (_stricmp(name, "ESCAPE") == 0) return 0x1B;
+	if (_stricmp(name, "ESC") == 0) return 0x1B;
+	if (_stricmp(name, "ENTER") == 0) return 0x0D;
+	if (_stricmp(name, "RETURN") == 0) return 0x0D;
+	if (_stricmp(name, "SPACE") == 0) return 0x20;
+	if (_stricmp(name, "TAB") == 0) return 0x09;
+	if (_stricmp(name, "BACKSPACE") == 0) return 0x08;
+	if (_stricmp(name, "DELETE") == 0) return 0x2E;
+	if (_stricmp(name, "INSERT") == 0) return 0x2D;
+	if (_stricmp(name, "HOME") == 0) return 0x24;
+	if (_stricmp(name, "END") == 0) return 0x23;
+	if (_stricmp(name, "PAGEUP") == 0) return 0x21;
+	if (_stricmp(name, "PAGEDOWN") == 0) return 0x22;
+	if (_stricmp(name, "LEFT") == 0) return 0x25;
+	if (_stricmp(name, "UP") == 0) return 0x26;
+	if (_stricmp(name, "RIGHT") == 0) return 0x27;
+	if (_stricmp(name, "DOWN") == 0) return 0x28;
+	if (_stricmp(name, "SHIFT") == 0) return 0x10;
+	if (_stricmp(name, "CONTROL") == 0) return 0x11;
+	if (_stricmp(name, "CTRL") == 0) return 0x11;
+	if (_stricmp(name, "ALT") == 0) return 0x12;
+
+	// Function keys F1-F12
+	if ((name[0] == 'F' || name[0] == 'f') && name[1] >= '1' && name[1] <= '9')
+	{
+		int fnum = atoi(name + 1);
+		if (fnum >= 1 && fnum <= 12) return 0x70 + (fnum - 1);
+	}
+
+	return -1;
+}
+
+static void Cmd_PressKey(const char* arg, char* result, int resultSize)
+{
+	if (!arg || !arg[0])
+	{
+		_snprintf(result, resultSize, "ERROR: PRESS_KEY requires a key name (e.g. PRESS_KEY Y, PRESS_KEY F1, PRESS_KEY ESCAPE)");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	if (!g_pGlob || !g_pGlob->hWnd)
+	{
+		_snprintf(result, resultSize, "ERROR: No window handle available");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	int vk = AutoHarness_ParseKeyName(arg);
+	if (vk < 0)
+	{
+		_snprintf(result, resultSize, "ERROR: Unknown key name '%s'. Use A-Z, 0-9, F1-F12, ESCAPE, ENTER, SPACE, TAB, SHIFT, CONTROL, ALT, arrows, etc.", arg);
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	// Post WM_KEYDOWN then WM_KEYUP to the main window
+	UINT scanCode = MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+	LPARAM lParamDown = (1 /*repeat=1*/) | (scanCode << 16);
+	LPARAM lParamUp = (1 /*repeat=1*/) | (scanCode << 16) | (1 << 30) | (1 << 31);
+	PostMessage(g_pGlob->hWnd, WM_KEYDOWN, (WPARAM)vk, lParamDown);
+	PostMessage(g_pGlob->hWnd, WM_KEYUP, (WPARAM)vk, lParamUp);
+
+	_snprintf(result, resultSize, "OK: Pressed key '%s' (VK=0x%02X)", arg, vk);
+	result[resultSize - 1] = 0;
+}
+
 static void Cmd_Quit(char* result, int resultSize)
 {
 	_snprintf(result, resultSize, "OK: Quitting application");
@@ -1372,6 +1454,10 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "PRESS_ESCAPE") == 0)
 	{
 		Cmd_PressEscape(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "PRESS_KEY") == 0)
+	{
+		Cmd_PressKey(arg, result, sizeof(result));
 	}
 	else if (_stricmp(cmd, "LIST_ENTITIES") == 0)
 	{

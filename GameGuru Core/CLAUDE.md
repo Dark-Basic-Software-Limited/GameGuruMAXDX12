@@ -40,7 +40,7 @@ Invoke `build.bat` using its full quoted path (required because the project root
 - See `WETEST.md` for full documentation of the file-based automation harness
 - **Source**: `Guru-WickedMAX/AutomationHarness.cpp` — command/response via `auto_command.txt` / `auto_result.txt` in the EXE directory
 - **EXE directory**: `D:\DEV\BUILD\GameGuru Wicked MAX Build Area\Max`
-- **Key commands**: `GET_STATE`, `NAVIGATE`, `CLICK`, `CLICK_NODE`, `SELECT_DEMO`, `GET_PERF_DATA`, `SCREENSHOT`, `PRESS_ESCAPE`
+- **Key commands**: `GET_STATE`, `NAVIGATE`, `CLICK`, `CLICK_NODE`, `SELECT_DEMO`, `GET_PERF_DATA`, `SCREENSHOT`, `PRESS_KEY`, `PRESS_ESCAPE`
 - **CLICK targets**: `play_game`, `edit_game`, `test_level`, `add_level`, `load_level`, `exit_screen_editor`
 - **CLICK_NODE**: works with level nodes (loads into editor), screen/splash nodes (opens screen editor)
 - **Crash diagnosis**: check `Guru-Crash.log` in the EXE directory for crash source file and line number
