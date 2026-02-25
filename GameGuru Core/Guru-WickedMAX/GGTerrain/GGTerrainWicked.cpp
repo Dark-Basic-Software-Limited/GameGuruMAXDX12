@@ -3,6 +3,8 @@
 #include "../../../../WickedEngineDX12/WickedEngine/wiTerrain.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiResourceManager.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiHelper.h"
+#include <unordered_set>
+#include <cmath>
 
 static wi::ecs::Entity wickedTerrainEntity = wi::ecs::INVALID_ENTITY;
 static bool wickedTerrainInitialised = false;
@@ -13,29 +15,12 @@ static std::string wickedTerrainExeDir;  // EXE directory for resolving texture 
 static int materialToSlot[GGTERRAIN_MAX_SOURCE_TEXTURES]; // GG 0-based mat index -> Wicked blendmap layer index
 static int maxPaintedSlot = -1;                            // highest blendmap layer used by any painted material
 
-// Debug hack: distinct color per material index for painted area visualization
-// Packed RGBA: R | (G<<8) | (B<<16) | (A<<24) — matches wi::Color layout
-static uint32_t GetMaterialDebugColor(int matIndex)
+// Phase 3: Blendmap state tracking — which chunks have had painted weights applied
+static std::unordered_set<uint64_t> processedChunkKeys;
+
+static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
-	static const uint32_t colors[16] = {
-		0xFF0000FF, // 0: red
-		0xFF00FF00, // 1: green
-		0xFFFF0000, // 2: blue
-		0xFF00FFFF, // 3: yellow
-		0xFFFF00FF, // 4: magenta
-		0xFFFFFF00, // 5: cyan
-		0xFF0080FF, // 6: orange
-		0xFF80FF00, // 7: lime
-		0xFFFF0080, // 8: violet
-		0xFF80FF80, // 9: light green
-		0xFF8080FF, // 10: light red
-		0xFFFF8000, // 11: teal
-		0xFF0040C0, // 12: dark orange
-		0xFF40FF40, // 13: bright green
-		0xFFC040FF, // 14: purple
-		0xFF40C0FF, // 15: gold
-	};
-	return colors[matIndex & 15];
+	return ((uint64_t)(uint32_t)cx << 32) | (uint64_t)(uint32_t)cz;
 }
 
 // Helper to get the terrain component from the scene (registered, not static)
@@ -203,6 +188,9 @@ static void SetupWickedTerrainMaterials()
 		}
 	}
 
+	// Reset blendmap tracking so all chunks get reprocessed with new materials
+	processedChunkKeys.clear();
+
 	// Restart generation to pick up all materials (auto + painted)
 	// Generation_Restart() deep-copies the materials internally
 	terrain->Generation_Restart();
@@ -211,6 +199,153 @@ static void SetupWickedTerrainMaterials()
 	wi::backlog::post(std::string("GGTerrainWicked: materials setup complete (" +
 		std::to_string(numExtraMaterials) + " extra painted materials, maxSlot=" +
 		std::to_string(maxPaintedSlot) + ")").c_str());
+}
+
+// Phase 3: Process terrain chunks for painted material blendmaps.
+// Iterates scene.objects (main-thread safe) to find terrain chunks, then
+// cancels generation once for safe chunk data access and processes the batch.
+static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
+{
+	const uint8_t* matMap = GGTerrain::GGTerrain_GetMaterialMapPtr();
+	if (!matMap) return;
+
+	int mapRes = GGTerrain::GGTerrain_GetMaterialMapResolution();
+	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
+	float editableSizeRcp = (editableSize > 0.0f) ? (1.0f / editableSize) : 0.0f;
+	float halfEdit = editableSize * 0.5f;
+	float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+	auto& scene = wi::scene::GetScene();
+
+	// Phase 1: Scan scene.objects (main-thread safe) to collect unprocessed terrain chunks
+	struct PendingChunk {
+		wi::ecs::Entity entity;
+		int32_t cx, cz;
+		wi::scene::MeshComponent* mesh;
+		const wi::scene::TransformComponent* transform;
+	};
+	wi::vector<PendingChunk> pending;
+
+	for (size_t oi = 0; oi < scene.objects.GetCount(); oi++)
+	{
+		wi::scene::ObjectComponent& obj = scene.objects[oi];
+		wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(obj.meshID);
+		if (!mesh || mesh->vertex_positions.size() != wi::terrain::vertexCount) continue;
+
+		wi::ecs::Entity entity = scene.objects.GetEntity(oi);
+		const wi::scene::TransformComponent* transform = scene.transforms.GetComponent(entity);
+		if (!transform) continue;
+
+		int32_t cx = (int32_t)std::round(transform->world._41 / chunkStride);
+		int32_t cz = (int32_t)std::round(transform->world._43 / chunkStride);
+		uint64_t key = MakeChunkKey(cx, cz);
+
+		if (processedChunkKeys.count(key)) continue;
+
+		// Skip chunks outside editable area (no paint data there)
+		float chunkCenterX = cx * chunkStride;
+		float chunkCenterZ = cz * chunkStride;
+		if (chunkCenterX < -halfEdit || chunkCenterX > halfEdit ||
+			chunkCenterZ < -halfEdit || chunkCenterZ > halfEdit)
+		{
+			processedChunkKeys.insert(key);
+			continue;
+		}
+
+		pending.push_back({ entity, cx, cz, mesh, transform });
+	}
+
+	if (pending.empty()) return;
+
+	// Phase 2: Cancel generation for safe chunk data access, then process the batch
+	terrain->Generation_Cancel();
+
+	int chunksModified = 0;
+
+	for (auto& pc : pending)
+	{
+		uint64_t key = MakeChunkKey(pc.cx, pc.cz);
+		processedChunkKeys.insert(key);
+
+		// Find chunk data by iterating terrain->chunks (safe after Generation_Cancel)
+		wi::terrain::ChunkData* chunk_data = nullptr;
+		for (auto& [chunk, cd] : terrain->chunks)
+		{
+			if (cd.entity == pc.entity) { chunk_data = &cd; break; }
+		}
+		if (!chunk_data) continue;
+
+		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.transform->world);
+
+		// First pass: check if any vertex is painted
+		bool hasPainted = false;
+		for (size_t vi = 0; vi < wi::terrain::vertexCount && !hasPainted; vi++)
+		{
+			XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), worldMatrix);
+			XMFLOAT3 worldPos;
+			XMStoreFloat3(&worldPos, wp);
+
+			float mapU = worldPos.x * editableSizeRcp * 0.5f + 0.5f;
+			float mapV = worldPos.z * editableSizeRcp * 0.5f + 0.5f;
+			int mapX = (int)(mapU * mapRes);
+			int mapZ = (int)(mapV * mapRes);
+
+			if (mapX >= 0 && mapX < mapRes && mapZ >= 0 && mapZ < mapRes)
+			{
+				uint8_t matVal = matMap[mapZ * mapRes + mapX];
+				if (matVal > 0 && matVal <= GGTERRAIN_MAX_SOURCE_TEXTURES && materialToSlot[matVal - 1] >= 0)
+					hasPainted = true;
+			}
+		}
+
+		if (!hasPainted) continue;
+
+		// Ensure all blendmap layers exist up to maxPaintedSlot
+		for (int i = 0; i <= maxPaintedSlot; i++)
+			chunk_data->enable_blendmap_layer(i);
+
+		// Second pass: write painted weights into blendmap layers
+		for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
+		{
+			XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), worldMatrix);
+			XMFLOAT3 worldPos;
+			XMStoreFloat3(&worldPos, wp);
+
+			float mapU = worldPos.x * editableSizeRcp * 0.5f + 0.5f;
+			float mapV = worldPos.z * editableSizeRcp * 0.5f + 0.5f;
+			int mapX = (int)(mapU * mapRes);
+			int mapZ = (int)(mapV * mapRes);
+
+			if (mapX < 0 || mapX >= mapRes || mapZ < 0 || mapZ >= mapRes)
+				continue;
+
+			uint8_t matVal = matMap[mapZ * mapRes + mapX];
+			if (matVal == 0 || matVal > GGTERRAIN_MAX_SOURCE_TEXTURES)
+				continue;
+
+			int slot = materialToSlot[matVal - 1];
+			if (slot < 0 || slot >= (int)chunk_data->blendmap_layers.size())
+				continue;
+
+			// Zero all layers at this vertex, then set painted layer to full weight
+			for (size_t li = 0; li < chunk_data->blendmap_layers.size(); li++)
+				chunk_data->blendmap_layers[li].pixels[vi] = 0;
+			chunk_data->blendmap_layers[slot].pixels[vi] = 255;
+		}
+
+		// Invalidate GPU blendmap texture and VT to trigger re-blend
+		chunk_data->blendmap = {};
+		terrain->CreateChunkRegionTexture(*chunk_data);
+		if (chunk_data->vt)
+			chunk_data->vt->invalidate();
+
+		chunksModified++;
+	}
+
+	if (chunksModified > 0)
+	{
+		wi::backlog::post(std::string("GGTerrainWicked: painted blendmaps on " +
+			std::to_string(chunksModified) + " chunks").c_str());
+	}
 }
 
 namespace GGTerrain
@@ -267,73 +402,12 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// Let the VT system run — generates chunks, creates atlas, blends materials
 	terrain->Generation_Update(camera);
 
-	// Phase 3: Debug — per-vertex painted material colors.
-	// Runs AFTER Generation_Update so newly generated chunks are available.
-	// Iterates scene components (main-thread safe) instead of terrain->chunks.
-	const uint8_t* matMap = GGTerrain::GGTerrain_GetMaterialMapPtr();
-	if (matMap && wickedTerrainMaterialsSetup)
+	// Phase 3: Process newly-generated terrain chunks for painted material blendmaps.
+	// Scans scene.objects for terrain chunks not yet processed, cancels generation
+	// once for safe access, then writes blendmap weights from pMaterialMap.
+	if (wickedTerrainMaterialsSetup && maxPaintedSlot >= 0)
 	{
-		auto& scene = wi::scene::GetScene();
-		int mapRes = GGTerrain::GGTerrain_GetMaterialMapResolution();
-		float editableSize = GGTerrain::GGTerrain_GetEditableSize();
-		float editableSizeRcp = (editableSize > 0.0f) ? (1.0f / editableSize) : 0.0f;
-
-		for (size_t oi = 0; oi < scene.objects.GetCount(); oi++)
-		{
-			wi::scene::ObjectComponent& obj = scene.objects[oi];
-			wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(obj.meshID);
-			if (!mesh) continue;
-			if (mesh->vertex_positions.size() != wi::terrain::vertexCount) continue;
-
-			// Skip already-processed chunks (vertex_colors populated on first pass)
-			if (!mesh->vertex_colors.empty()) continue;
-
-			wi::ecs::Entity entity = scene.objects.GetEntity(oi);
-			const wi::scene::TransformComponent* transform = scene.transforms.GetComponent(entity);
-			if (!transform) continue;
-
-			// Transform local vertex positions to world space using chunk's world matrix
-			XMMATRIX worldMatrix = XMLoadFloat4x4(&transform->world);
-
-			size_t vertCount = mesh->vertex_positions.size();
-			mesh->vertex_colors.resize(vertCount);
-
-			for (size_t vi = 0; vi < vertCount; vi++)
-			{
-				XMFLOAT3 localPos = mesh->vertex_positions[vi];
-				XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&localPos), worldMatrix);
-				XMFLOAT3 worldPos;
-				XMStoreFloat3(&worldPos, wp);
-
-				float mapU = worldPos.x * editableSizeRcp * 0.5f + 0.5f;
-				float mapV = worldPos.z * editableSizeRcp * 0.5f + 0.5f;
-				int mapX = (int)(mapU * mapRes);
-				int mapZ = (int)(mapV * mapRes);
-
-				uint32_t color = 0xFFFFFFFF; // white = unpainted
-				if (mapX >= 0 && mapX < mapRes && mapZ >= 0 && mapZ < mapRes)
-				{
-					uint8_t matVal = matMap[mapZ * mapRes + mapX];
-					if (matVal > 0 && matVal <= GGTERRAIN_MAX_SOURCE_TEXTURES)
-						color = GetMaterialDebugColor(matVal - 1);
-				}
-				mesh->vertex_colors[vi] = color;
-			}
-
-			// Upload vertex colors to GPU
-			mesh->CreateRenderData();
-
-			// Enable vertex colors on the chunk's material so the shader uses them
-			if (!mesh->subsets.empty())
-			{
-				wi::scene::MaterialComponent* mat = scene.materials.GetComponent(mesh->subsets[0].materialID);
-				if (mat && !mat->IsUsingVertexColors())
-					mat->SetUseVertexColors(true);
-			}
-
-			// Reset per-object color to white (clean slate for vertex color visualization)
-			obj.color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		}
+		ProcessPaintedChunkBlendmaps(terrain);
 	}
 }
 
@@ -364,6 +438,16 @@ void GGTerrainWicked_Shutdown()
 	wickedTerrainInitialised = false;
 	wickedTerrainMaterialsSetup = false;
 	maxPaintedSlot = -1;
+	processedChunkKeys.clear();
+}
+
+void GGTerrainWicked_OnPaintDataChanged()
+{
+	// Called when pMaterialMap is updated (level load or paint brush).
+	// Resets material setup so it re-scans on the next update frame.
+	if (!wickedTerrainInitialised) return;
+	wickedTerrainMaterialsSetup = false;
+	processedChunkKeys.clear();
 }
 
 } // namespace GGTerrain

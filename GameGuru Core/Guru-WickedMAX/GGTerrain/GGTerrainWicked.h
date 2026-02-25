@@ -8,6 +8,7 @@ namespace GGTerrain
 	void GGTerrainWicked_Init();
 	void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera);
 	void GGTerrainWicked_Shutdown();
+	void GGTerrainWicked_OnPaintDataChanged();
 }
 
 #endif

@@ -32,6 +32,7 @@ extern void timestampactivity (int i, char* desc_s);
 #include "GGThread.h"
 using namespace GGThread;
 #include "GGTerrain.h"
+#include "GGTerrainWicked.h"
 #include "GGTerrainPageSettings.h"
 #include "JSONElement.h"
 
@@ -10473,6 +10474,9 @@ int GGTerrain_SetPaintData( uint32_t size, uint8_t* data, sUndoSysEventTerrainPa
 
 		if (size1 != size) return 0;
 		memcpy(pMaterialMap, data, size1);
+
+		// Notify Wicked terrain to re-scan painted materials
+		GGTerrainWicked_OnPaintDataChanged();
 
 		//PE: Was needed so we can invalidate region and clear old textures.
 		GGTerrain_UploadMaterialMap();

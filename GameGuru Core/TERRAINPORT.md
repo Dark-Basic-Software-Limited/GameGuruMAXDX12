@@ -374,51 +374,66 @@ Before writing the post-process loop, verify these members are accessible:
 
 ### Phase 3 Progress (2026-02-25)
 
-**Status**: MILESTONE VERIFIED — per-vertex debug visualization confirms paint data correctly aligned on Wicked terrain.
+**Status**: BLENDMAP APPROACH WORKING — painted materials render as PBR textures through the Wicked VT pipeline.
 
 #### Approach evolution
 
-The initial approach (blendmap_layers post-processing via terrain->chunks iteration) was abandoned due to thread-safety issues — `terrain->chunks` is an unordered_map modified concurrently by the generator thread, causing access violations during iteration.
+1. **Direct terrain->chunks iteration** — abandoned due to thread-safety (concurrent modification by generator).
+2. **Per-vertex debug coloring** — verified paint data alignment with 16-color palette on vertex colors.
+3. **Blendmap layer injection** (current) — writes painted material weights into Wicked's `blendmap_layers` per chunk, letting the VT compute shader blend the actual PBR textures.
 
-The current approach uses **scene component iteration** (thread-safe) to find terrain chunks and apply debug visualization. Two methods have been tested:
+#### Architecture
 
-1. **Per-object color tinting** (ObjectComponent::color) — WORKS, confirmed visible. Sets one color per chunk by sampling the material map at the chunk center. Too coarse (one color per ~512-unit chunk), but proves the pipeline.
+Two-phase approach in `ProcessPaintedChunkBlendmaps()`:
 
-2. **Per-vertex color tinting** (mesh->vertex_colors + CreateRenderData) — VERIFIED WORKING. Populates vertex_colors by sampling the material map at each vertex world position (4489 vertices per chunk), calls CreateRenderData() to upload to GPU, and enables SetUseVertexColors(true) on the chunk material. Paint data confirmed correctly aligned with terrain geometry (tested Island Showdown, 2026-02-25).
+**Phase 1** (main-thread safe): Iterates `scene.objects` to find terrain chunks not yet processed. Identifies chunks inside the editable area (±editableSize/2 from origin) and collects them as `PendingChunk` entries.
+
+**Phase 2** (after `Generation_Cancel()`): For each pending chunk, finds its `ChunkData` in `terrain->chunks` by entity match, then writes blendmap weights from `pMaterialMap`. At each painted vertex, zeros all layers and sets the painted layer to 255.
 
 #### What's implemented
 
-1. **Material map accessors** in `GGTerrain_part0.cpp` / `GGTerrain.h`:
+1. **Material map accessors** (`GGTerrain_part0.cpp` / `GGTerrain.h`):
    - `GGTerrain_GetMaterialMapPtr()` — raw `const uint8_t*` to 4096x4096 material map
    - `GGTerrain_GetMaterialMapResolution()` — returns 4096
+   - `GGTerrain_GetEditableSize()` — world-space size of editable terrain area
 
-2. **Painted material scanning** in `SetupWickedTerrainMaterials()`:
+2. **Paint data change notification** (`GGTerrainWicked_OnPaintDataChanged()`):
+   - Called from `GGTerrain_SetPaintData()` when level loads paint data
+   - Resets `wickedTerrainMaterialsSetup` and `processedChunkKeys` to re-scan
+
+3. **Painted material scanning** in `SetupWickedTerrainMaterials()`:
    - Scans material map for unique material indices, creates materialEntities at slots 4+
    - Builds `materialToSlot[32]` lookup (GG mat index → Wicked blendmap layer)
+   - Island Showdown: 9 extra painted materials, 13 total, 5M painted pixels
 
-3. **Per-vertex debug coloring** in `GGTerrainWicked_Update()` after `Generation_Update()`:
-   - Iterates `scene.objects` → finds terrain chunks via `mesh->vertex_positions.size() == 4489`
-   - Skips already-processed chunks (`vertex_colors.empty()` check)
-   - Transforms each vertex to world space via `transform->world` matrix
-   - Samples material map at world XZ, assigns 16-color debug palette
-   - Calls `mesh->CreateRenderData()` to upload vertex colors to GPU
-   - Enables `SetUseVertexColors(true)` on chunk material
+4. **Blendmap injection** in `ProcessPaintedChunkBlendmaps()`:
+   - Scans `scene.objects` for unprocessed terrain chunks inside editable area
+   - Calls `Generation_Cancel()` once per batch for safe `terrain->chunks` access
+   - Writes per-vertex blendmap weights from material map sampling
+   - Invalidates chunk blendmap texture + VT to trigger re-blend
+   - Island Showdown: 143 chunks modified with painted materials
+
+#### Key bugs found and fixed
+
+1. **Early material scan** — `SetupWickedTerrainMaterials()` ran before level load, finding empty material map. Fixed by adding `GGTerrainWicked_OnPaintDataChanged()` callback from `GGTerrain_SetPaintData()`.
+
+2. **Premature processed marking** — chunks marked as processed before validity checks passed (obj component not yet merged from generator). Fixed by deferring `processedChunkKeys.insert()` until after all validity checks pass.
+
+3. **Per-frame Generation_Cancel()** — old code iterated `terrain->chunks` directly, calling `Generation_Cancel()` every frame. This prevented distant chunks from generating. Fixed by collecting pending chunks via `scene.objects` first, then canceling once per batch.
 
 #### Key technical findings
 
-- **Thread-safe chunk iteration**: Use `scene.objects` (modified only on main thread via `scene.Merge()`) instead of `terrain->chunks` (modified concurrently by generator).
+- **Thread-safe chunk detection**: `scene.objects` (main-thread only) for detection, `terrain->chunks` (after Cancel) for modification.
 - **Terrain chunk identification**: `mesh->vertex_positions.size() == wi::terrain::vertexCount` (4489).
-- **Vertex color support**: Wicked shader multiplies vertex color with base color when `material.IsUsingVertexColors()` is true. Format is R8G8B8A8_UNORM (uint32_t packed as 0xAABBGGRR).
 - **materialEntities is a dynamic vector**, extensible with `push_back()`. `Generation_Restart()` preserves all entries.
+- **VT invalidation after blendmap write**: `chunk_data.blendmap = {}; terrain->CreateChunkRegionTexture(chunk_data); chunk_data.vt->invalidate();`
+- **Chunk data lookup by entity**: After `Generation_Cancel()`, iterate `terrain->chunks` to find `ChunkData` matching the entity from `scene.objects`.
 
-#### Planned next steps
+#### Known limitations
 
-1. Visually verify the per-vertex coloring in Release build (first proper test)
-2. If vertex colors render correctly, compare against old terrain reference color mode
-3. If CreateRenderData() causes issues, explore alternatives:
-   - Texture-based approach: create a global debug color texture and override chunk material basecolor
-   - Per-chunk blendmap injection via the VT pipeline
-4. Once debug visualization matches old terrain, move to actual material blending (blendmap layers)
+- Painted material blending is all-or-nothing per vertex (255 on painted layer, 0 on all others). No smooth transitions at paint boundaries.
+- `Generation_Cancel()` causes a brief generation pause each time new painted chunks appear. Self-corrects on next `Generation_Update()`.
+- Region params (slope/altitude) for auto materials are approximate mappings from GG's independent thresholds.
 
 ---
 
