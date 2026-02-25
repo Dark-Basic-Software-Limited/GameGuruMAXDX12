@@ -214,46 +214,56 @@ wickedTerrain.region3 = /* derived from layerStartHeight[2] */;
 
 ### Phase 2 Progress (2026-02-25)
 
-**Status**: Texture loading confirmed, single-texture rendering working. Virtual texture system understood and bypassed.
+**Status**: COMPLETE — 4-layer material rendering working via Wicked Engine's virtual texture pipeline.
 
 #### What was done
 
-1. **Material entity setup implemented** (`SetupWickedTerrainMaterials`): Creates 4 material entities from GG render params, loads `Color.dds` and `Normal.dds` via `wi::resourcemanager::Load()`, calls `CreateRenderData()` with streaming disabled for synchronous load. Backlog messages confirm load success/failure.
+1. **Material entity setup** (`SetupWickedTerrainMaterials`): Creates 4 material entities from GG render params, attaches them to the terrain entity, loads `Color.dds` and `Normal.dds` for each. Uses `SetTextureStreamingDisabled(true)` + `CreateRenderData()` for synchronous texture loading before `Generation_Restart()`.
 
-2. **Texture loading verified**: Loaded `Files/terraintextures/mat1/Color.dds` and rendered it as a 256x256 debug quad in the top-left corner via `wi::image::Draw()` in the Compose pass (`GGTerrainWicked_DebugDraw`). Visually confirmed the texture is in GPU memory.
+2. **Virtual texture pipeline working correctly**: The VT system runs as designed — `Generation_Update()` detects valid textures on `materialEntities[0-3]`, runs `UpdateVirtualTexturesCPU/GPU`, and the compute shader blends materials into the sparse atlas based on slope/altitude blendmaps. No bypass hacks needed.
 
-3. **Direct chunk material override**: After `Generation_Update()`, iterate all `terrain->chunks` and force the loaded texture onto each chunk's `MaterialComponent::BASECOLORMAP` slot, resetting `texMulAdd` to identity and clearing sparse descriptors.
+3. **Correct material indices from GG render params**: Base=mat18 (baseMat=17), Slope=mat5 (slopeMat=4), LowAlt=mat3 (lowMat=2), HighAlt=mat21 (highMat=20). Multiple distinct textures visible on terrain surface, blending by height and slope.
 
-4. **Virtual texture system conflict discovered and resolved**:
-   - **Problem**: Terrain rendered white initially, then when camera moved, the forced texture was overwritten by small white tiles with shadow-like patterns (VT compute shader writing atlas tiles into the shared tile pool).
-   - **Root cause**: Wicked's terrain VT system computes a local `virtual_texture_any` flag each frame in `Generation_Update()` by checking if `materialEntities[0-3]` have valid textures. When true, `UpdateVirtualTexturesCPU()` overwrites chunk material textures with the sparse atlas texture + `SetTextureVirtual()` bindings. The GPU compute shader then writes into the shared `tile_pool` buffer, corrupting whatever texture was previously assigned.
-   - **Fix**: Clear all textures from `materialEntities[0-3]` BEFORE `Generation_Update()` each frame. This makes `virtual_texture_any = false`, completely disabling the VT atlas/compute pipeline. Then set our texture on chunk materials AFTER `Generation_Update()` returns — they persist without being overwritten.
+4. **Region parameters set**: `region1=1.0` (slope), `region2=2.0` (low altitude), `region3=8.0` (high altitude) — placeholder values, need tuning to match GG's blending.
 
-#### Key discovery: Wicked terrain VT architecture
+#### Key discoveries
 
-| Component | Role | Impact |
-|-----------|------|--------|
-| `materialEntities[0-3]` | Source materials checked for `virtual_texture_any` | Must have NO textures to disable VT |
-| `atlas.maps[0].texture` | Sparse SRV (BC1) for rendering | Shared with `texture_raw_block` via `tile_pool` |
-| `atlas.maps[0].texture_raw_block` | Sparse UAV (R32G32B32A32_UINT) for compute write | VT update shader writes here |
-| `atlas.tile_pool` | Single shared GPU buffer for all atlas maps | All read/write goes through this |
-| `UpdateVirtualTexturesCPU()` | Runs every frame if `virtual_texture_any` | Overwrites chunk material texture slots |
-| `UpdateVirtualTexturesGPU()` | Compute shader dispatches | Writes blended material tiles into atlas |
-| `virtual_texture_any` | Local variable in `Generation_Update()` | Cannot be set externally; only controlled via materialEntities |
+1. **`CreateRenderData()` is required**: Unlike the Wicked Editor (which lets textures load lazily across frames), our code calls `Generation_Restart()` on the same frame as material setup. `Generation_Update()` checks `resource.IsValid()` immediately to compute `virtual_texture_any`. Without `CreateRenderData()`, textures aren't loaded yet and the VT pipeline stays disabled → white terrain.
 
-#### Current state (TEMP hacks in place)
+2. **Absolute paths required for texture loading**: `wi::resourcemanager::Load()` doesn't resolve relative paths from the game's working directory. Relative paths like `"Files/terraintextures/mat1/Color.dds"` fail silently. Absolute paths like `"D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/Files/terraintextures/mat1/Color.dds"` work. This needs a proper fix (derive path from EXE location or set resource manager root).
 
-- `baseMat` hardcoded to 0 (mat1) for testing — all terrain chunks show mat1/Color.dds
-- Debug quad renders mat1 texture in top-left corner of screen
-- VT system disabled by clearing materialEntities textures each frame
-- Terrain renders with the forced texture stably across camera movement
+3. **Material setup must happen before `Generation_Restart()`**: The restart deep-copies `MaterialComponent` data (including resource shared_ptrs) into internal storage. Materials configured after restart are ignored until the next restart.
 
-#### Next steps
+4. **`Component_Attach` required**: Material entities must be attached to the terrain entity (`scene.Component_Attach(materialEntities[i], terrainEntity)`) following the Wicked Editor pattern.
 
-- Remove debug quad and hardcoded mat1 override
-- Restore correct 4-material loading from GG render params
-- Investigate whether to use VT system properly (load textures into materialEntities, let VT blend them) or bypass VT and assign textures directly to chunk materials
-- Map GG height/slope layer thresholds to Wicked region1/2/3 parameters
+#### Diagnostic confirmed (terrain_diag.txt at frame 120)
+
+```
+matEntity[0] color=VALID normal=VALID name=.../mat18/Color.dds
+matEntity[1] color=VALID normal=VALID name=.../mat5/Color.dds
+matEntity[2] color=VALID normal=VALID name=.../mat3/Color.dds
+matEntity[3] color=VALID normal=VALID name=.../mat21/Color.dds
+chunk[0] hasColorTex=YES texMulAdd=(0.016,0.016,0.177,0.983)
+chunk[1] hasColorTex=YES texMulAdd=(0.016,0.016,0.532,0.983)
+totalChunks=59
+```
+
+All 4 material textures valid, chunks have VT atlas textures assigned with correct texMulAdd coordinates.
+
+#### Current state (cleanup needed)
+
+- **TEMP: Absolute paths** — texture paths hardcoded to `D:/DEV/BUILD/...`, needs proper relative path resolution
+- **TEMP: Debug quad** — `GGTerrainWicked_DebugDraw` renders mat1/Color.dds at top-left, can be removed
+- **TEMP: Diagnostic code** — writes `terrain_diag.txt` at frame 120, can be removed
+- **Surface maps disabled** — `SURFACEMAP` (roughness/metalness) commented out pending channel convention check
+
+#### Next steps (Phase 2 cleanup)
+
+- Fix texture path resolution (derive from EXE directory or use `wi::helper::GetCurrentPath()`)
+- Remove debug quad and diagnostic code
+- Enable surface maps after verifying DDS channel layout matches Wicked's convention
+- Tune region1/2/3 to match GG's height/slope layer thresholds
+- Then proceed to Phase 3 (painted material support via N-layer blendmaps)
 
 ---
 

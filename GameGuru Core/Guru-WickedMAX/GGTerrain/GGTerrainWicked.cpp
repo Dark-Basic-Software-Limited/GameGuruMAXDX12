@@ -43,7 +43,9 @@ struct GGHeightModifier : public wi::terrain::Modifier
 
 static std::shared_ptr<GGHeightModifier> heightModifier;
 
-// Helper: set up a terrain material entity with PBR textures from a GG material folder
+// Helper: set up a terrain material entity following the Wicked Editor pattern.
+// Sets texture names and material properties — does NOT call CreateRenderData().
+// The engine loads textures lazily during Generation_Update/render.
 static void SetupTerrainMaterial(wi::scene::Scene& scene, wi::ecs::Entity entity, int ggMatIndex)
 {
 	using namespace wi::scene;
@@ -52,39 +54,36 @@ static void SetupTerrainMaterial(wi::scene::Scene& scene, wi::ecs::Entity entity
 	int folderNum = (ggMatIndex & 0xFF) + 1;
 
 	char colorPath[256], normalPath[256], surfacePath[256];
-	sprintf_s(colorPath, "Files/terraintextures/mat%d/Color.dds", folderNum);
-	sprintf_s(normalPath, "Files/terraintextures/mat%d/Normal.dds", folderNum);
-	sprintf_s(surfacePath, "Files/terraintextures/mat%d/Surface.dds", folderNum);
+	sprintf_s(colorPath, "D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/Files/terraintextures/mat%d/Color.dds", folderNum);
+	sprintf_s(normalPath, "D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/Files/terraintextures/mat%d/Normal.dds", folderNum);
+	sprintf_s(surfacePath, "D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/Files/terraintextures/mat%d/Surface.dds", folderNum);
 
 	MaterialComponent* mat = scene.materials.GetComponent(entity);
 	if (!mat)
 	{
 		mat = &scene.materials.Create(entity);
 	}
+
+	// Set texture names — engine will load them during its normal processing
 	mat->textures[MaterialComponent::BASECOLORMAP].name = colorPath;
 	mat->textures[MaterialComponent::NORMALMAP].name = normalPath;
-	// Skip surface map for now — GG terrain Surface.dds may use different channel convention
+	// Surface map commented out for now — GG terrain Surface.dds may use different channel convention
 	//mat->textures[MaterialComponent::SURFACEMAP].name = surfacePath;
-	// Set sensible PBR defaults for terrain (non-metallic, rough)
+
+	// PBR defaults matching Wicked Editor terrain presets
 	mat->SetRoughness(1.0f);
 	mat->SetMetalness(0.0f);
-	mat->SetReflectance(0.04f);
-	// Disable streaming so textures load synchronously (virtual_texture_any check needs IsValid() immediately)
-	mat->SetTextureStreamingDisabled(true);
-	mat->SetDirty(true);
-	mat->CreateRenderData();
+	mat->SetReflectance(0.005f);
 
-	// Verify textures loaded successfully
-	bool colorLoaded = mat->textures[MaterialComponent::BASECOLORMAP].resource.IsValid();
-	bool normalLoaded = mat->textures[MaterialComponent::NORMALMAP].resource.IsValid();
-	wi::backlog::post(std::string("GGTerrainWicked: mat") + std::to_string(folderNum) +
-		" color=" + (colorLoaded ? "OK" : "FAILED") +
-		" normal=" + (normalLoaded ? "OK" : "FAILED") +
-		" path=" + colorPath);
+	// Disable streaming and force-load textures now so they're valid before Generation_Restart().
+	// Without this, the engine won't load from names until a later frame, but Generation_Update()
+	// checks resource.IsValid() immediately to decide virtual_texture_any.
+	mat->SetTextureStreamingDisabled(true);
+	mat->CreateRenderData();
 }
 
 // Phase 2: Set up 4-layer terrain materials from GG render params
-// Called lazily on first toggle (after level load, so params are correct)
+// Called lazily on first update (after level load, so params are correct)
 static void SetupWickedTerrainMaterials()
 {
 	wi::terrain::Terrain* terrain = GetWickedTerrain();
@@ -93,13 +92,12 @@ static void SetupWickedTerrainMaterials()
 	auto& scene = wi::scene::GetScene();
 
 	// Read material indices from GG render params
-	// TEMP: Force base material to mat1 (ggMatIndex=0 -> folderNum=1) to verify texture loading
-	int baseMat = 0; // was: GGTerrain::ggterrain_global_render_params.baseLayerMaterial & 0xFF;
+	int baseMat = GGTerrain::ggterrain_global_render_params.baseLayerMaterial & 0xFF;
 	int slopeMat = GGTerrain::ggterrain_global_render_params.slopeMatIndex[0] & 0xFF;
 	int lowMat = GGTerrain::ggterrain_global_render_params.layerMatIndex[0] & 0xFF;
 	int highMat = GGTerrain::ggterrain_global_render_params.layerMatIndex[2] & 0xFF;
 
-	// Create material entities and load textures
+	// Create material entities and attach to terrain (following Wicked Editor pattern)
 	for (int i = 0; i < wi::terrain::MATERIAL_COUNT; i++)
 	{
 		if (terrain->materialEntities[i] == wi::ecs::INVALID_ENTITY)
@@ -109,22 +107,23 @@ static void SetupWickedTerrainMaterials()
 		scene.Component_Attach(terrain->materialEntities[i], wickedTerrainEntity);
 	}
 
+	// Configure each material with texture names and properties
 	SetupTerrainMaterial(scene, terrain->materialEntities[wi::terrain::MATERIAL_BASE], baseMat);
 	SetupTerrainMaterial(scene, terrain->materialEntities[wi::terrain::MATERIAL_SLOPE], slopeMat);
 	SetupTerrainMaterial(scene, terrain->materialEntities[wi::terrain::MATERIAL_LOW_ALTITUDE], lowMat);
 	SetupTerrainMaterial(scene, terrain->materialEntities[wi::terrain::MATERIAL_HIGH_ALTITUDE], highMat);
 
 	// Region parameters control height/slope-based material blending
-	// region1: slope sharpness (smoothstep over slope_amount = 1-normal.y)
-	// region2: low-altitude sharpness (smoothstep over InverseLerp(0, bottomLevel, height))
-	// region3: high-altitude sharpness (smoothstep over InverseLerp(0, topLevel, height))
 	terrain->region1 = 1.0f;   // slope transition width
 	terrain->region2 = 2.0f;   // low altitude transition
 	terrain->region3 = 8.0f;   // high altitude transition
 
 	// Restart generation to pick up the new materials
+	// Generation_Restart() deep-copies the materials internally
 	terrain->Generation_Restart();
 	wickedTerrainMaterialsSetup = true;
+
+	wi::backlog::post("GGTerrainWicked: materials setup complete, Generation_Restart called");
 }
 
 namespace GGTerrain
@@ -172,51 +171,45 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		SetupWickedTerrainMaterials();
 	}
 
-	// TEMP HACK: Disable virtual texture system by clearing materialEntities textures
-	// before Generation_Update(). This makes virtual_texture_any=false inside Wicked,
-	// so the VT atlas/compute pipeline is completely skipped.
-	{
-		auto& scene = wi::scene::GetScene();
-		for (int i = 0; i < wi::terrain::MATERIAL_COUNT; i++)
-		{
-			if (terrain->materialEntities[i] != wi::ecs::INVALID_ENTITY)
-			{
-				wi::scene::MaterialComponent* mat = scene.materials.GetComponent(terrain->materialEntities[i]);
-				if (mat)
-				{
-					for (int slot = 0; slot < (int)wi::scene::MaterialComponent::TEXTURESLOT_COUNT; slot++)
-						mat->textures[slot].resource = {};
-				}
-			}
-		}
-	}
-
+	// Let the VT system run normally — it creates the atlas, blends materials
+	// via compute shader, and assigns atlas textures to chunk materials
 	terrain->Generation_Update(camera);
 
-	// TEMP HACK: Force mat1/Color.dds onto every terrain chunk's material
-	// With VT disabled above, these textures won't be overwritten by the atlas system
+	// DIAGNOSTIC: Write material and chunk state to file once
 	{
-		static wi::Resource forcedTex;
-		if (!forcedTex.IsValid())
+		static int diagFrame = 0;
+		diagFrame++;
+		if (diagFrame == 120)
 		{
-			forcedTex = wi::resourcemanager::Load("Files/terraintextures/mat1/Color.dds");
-		}
-		if (forcedTex.IsValid())
-		{
-			auto& scene = wi::scene::GetScene();
-			for (auto& [chunk, chunk_data] : terrain->chunks)
+			FILE* f = nullptr;
+			fopen_s(&f, "terrain_diag.txt", "w");
+			if (f)
 			{
-				wi::scene::MaterialComponent* mat = scene.materials.GetComponent(chunk_data.entity);
-				if (!mat) continue;
-
-				// Set our texture directly on the chunk material
-				mat->textures[wi::scene::MaterialComponent::BASECOLORMAP].resource = forcedTex;
-				mat->textures[wi::scene::MaterialComponent::BASECOLORMAP].sparse_residencymap_descriptor = -1;
-				mat->textures[wi::scene::MaterialComponent::BASECOLORMAP].sparse_feedbackmap_descriptor = -1;
-
-				// Reset UV transform to identity so texture tiles normally
-				mat->texMulAdd = XMFLOAT4(1, 1, 0, 0);
-				mat->SetDirty(true);
+				auto& scene = wi::scene::GetScene();
+				for (int i = 0; i < wi::terrain::MATERIAL_COUNT; i++)
+				{
+					wi::scene::MaterialComponent* mat = scene.materials.GetComponent(terrain->materialEntities[i]);
+					bool hasColor = mat && mat->textures[wi::scene::MaterialComponent::BASECOLORMAP].resource.IsValid();
+					bool hasNormal = mat && mat->textures[wi::scene::MaterialComponent::NORMALMAP].resource.IsValid();
+					fprintf(f, "matEntity[%d] color=%s normal=%s name=%s\n", i,
+						hasColor ? "VALID" : "NONE", hasNormal ? "VALID" : "NONE",
+						mat ? mat->textures[wi::scene::MaterialComponent::BASECOLORMAP].name.c_str() : "NULL");
+				}
+				int chunkCount = 0;
+				for (auto& [chunk, chunk_data] : terrain->chunks)
+				{
+					wi::scene::MaterialComponent* cmat = scene.materials.GetComponent(chunk_data.entity);
+					if (cmat)
+					{
+						bool chunkHasColor = cmat->textures[wi::scene::MaterialComponent::BASECOLORMAP].resource.IsValid();
+						fprintf(f, "chunk[%d] hasColorTex=%s texMulAdd=(%.3f,%.3f,%.3f,%.3f)\n",
+							chunkCount, chunkHasColor ? "YES" : "NO",
+							cmat->texMulAdd.x, cmat->texMulAdd.y, cmat->texMulAdd.z, cmat->texMulAdd.w);
+					}
+					if (++chunkCount >= 3) break;
+				}
+				fprintf(f, "totalChunks=%zu\n", terrain->chunks.size());
+				fclose(f);
 			}
 		}
 	}
