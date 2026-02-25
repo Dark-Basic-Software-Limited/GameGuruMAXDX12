@@ -444,9 +444,6 @@ void MasterRenderer::Compose(CommandList cmd) const
 
 	__super::Compose(cmd);
 
-	// TEMP: Debug draw mat1 texture quad to verify texture loading
-	GGTerrain::GGTerrainWicked_DebugDraw(cmd);
-
 	// DX12: Render splash screen AFTER normal compose (drawn on top with opaque blend).
 	// Moved from Master::Update where it created a separate render pass that was
 	// immediately cleared by Application::Run's own render pass.

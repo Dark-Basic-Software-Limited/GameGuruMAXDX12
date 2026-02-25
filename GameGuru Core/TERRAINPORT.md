@@ -224,13 +224,13 @@ wickedTerrain.region3 = /* derived from layerStartHeight[2] */;
 
 3. **Correct material indices from GG render params**: Base=mat18 (baseMat=17), Slope=mat5 (slopeMat=4), LowAlt=mat3 (lowMat=2), HighAlt=mat21 (highMat=20). Multiple distinct textures visible on terrain surface, blending by height and slope.
 
-4. **Region parameters set**: `region1=1.0` (slope), `region2=2.0` (low altitude), `region3=8.0` (high altitude) — placeholder values, need tuning to match GG's blending.
+4. **Region parameters derived from GG params**: `region1 = slopeEnd[0]` (0.4), `region2 = 2.0` (low altitude — poor mapping since GG's low layer uses positive heights), `region3 = 1.0` (high altitude — tighter transition for visible mountain material).
 
 #### Key discoveries
 
 1. **`CreateRenderData()` is required**: Unlike the Wicked Editor (which lets textures load lazily across frames), our code calls `Generation_Restart()` on the same frame as material setup. `Generation_Update()` checks `resource.IsValid()` immediately to compute `virtual_texture_any`. Without `CreateRenderData()`, textures aren't loaded yet and the VT pipeline stays disabled → white terrain.
 
-2. **Absolute paths required for texture loading**: `wi::resourcemanager::Load()` doesn't resolve relative paths from the game's working directory. Relative paths like `"Files/terraintextures/mat1/Color.dds"` fail silently. Absolute paths like `"D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/Files/terraintextures/mat1/Color.dds"` work. This needs a proper fix (derive path from EXE location or set resource manager root).
+2. **Texture path resolution via EXE directory**: `wi::resourcemanager::Load()` resolves relative to CWD, which changes during the game lifecycle. Fixed by using `wi::helper::GetDirectoryFromPath(wi::helper::GetExecutablePath())` at init time to build absolute paths from the EXE directory, which is CWD-independent.
 
 3. **Material setup must happen before `Generation_Restart()`**: The restart deep-copies `MaterialComponent` data (including resource shared_ptrs) into internal storage. Materials configured after restart are ignored until the next restart.
 
@@ -250,20 +250,18 @@ totalChunks=59
 
 All 4 material textures valid, chunks have VT atlas textures assigned with correct texMulAdd coordinates.
 
-#### Current state (cleanup needed)
+#### Phase 2 cleanup (completed)
 
-- **TEMP: Absolute paths** — texture paths hardcoded to `D:/DEV/BUILD/...`, needs proper relative path resolution
-- **TEMP: Debug quad** — `GGTerrainWicked_DebugDraw` renders mat1/Color.dds at top-left, can be removed
-- **TEMP: Diagnostic code** — writes `terrain_diag.txt` at frame 120, can be removed
-- **Surface maps disabled** — `SURFACEMAP` (roughness/metalness) commented out pending channel convention check
+- Texture paths now use EXE directory (`wi::helper::GetExecutablePath()`) — CWD-independent
+- Debug quad (`GGTerrainWicked_DebugDraw`) removed from code and Compose callback
+- Diagnostic code (terrain_diag.txt writer) removed
+- Surface maps enabled — GG Surface.dds uses R=AO, G=Roughness, B=Metalness, A=255 which matches Wicked's SURFACEMAP convention (A=255 means reflectance multiplier is 1.0)
+- Region params derived from GG render params where possible (slope from `slopeEnd[0]`)
 
-#### Next steps (Phase 2 cleanup)
+#### Known limitations (acceptable for Phase 2)
 
-- Fix texture path resolution (derive from EXE directory or use `wi::helper::GetCurrentPath()`)
-- Remove debug quad and diagnostic code
-- Enable surface maps after verifying DDS channel layout matches Wicked's convention
-- Tune region1/2/3 to match GG's height/slope layer thresholds
-- Then proceed to Phase 3 (painted material support via N-layer blendmaps)
+- Region2/3 (altitude blending) can't exactly match GG's independent start/end thresholds — Wicked uses smoothstep from 0, while GG uses per-layer start/end heights
+- Blending transitions use cubic Hermite (Wicked) vs linear clamp (GG) — visually similar but not pixel-identical
 
 ---
 
