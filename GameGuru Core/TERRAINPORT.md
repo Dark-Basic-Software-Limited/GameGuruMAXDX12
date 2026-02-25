@@ -417,18 +417,20 @@ Two-phase approach in `ProcessPaintedChunkBlendmaps()`:
 
 1. **Early material scan** — `SetupWickedTerrainMaterials()` ran before level load, finding empty material map. Fixed by adding `GGTerrainWicked_OnPaintDataChanged()` callback from `GGTerrain_SetPaintData()`.
 
-2. **Premature processed marking** — chunks marked as processed before validity checks passed (obj component not yet merged from generator). Fixed by deferring `processedChunkKeys.insert()` until after all validity checks pass.
+2. **Premature processed marking** — chunks marked as processed before validity checks passed (obj component not yet merged from generator). Fixed by deferring `processedChunkKeys.insert()` until after all validity checks pass. Additionally fixed entity-lookup failure case: `processedChunkKeys.insert()` was before the `chunk_data` null check, permanently marking chunks as processed when `terrain->chunks` entity lookup failed.
 
 3. **Per-frame Generation_Cancel()** — old code iterated `terrain->chunks` directly, calling `Generation_Cancel()` every frame. This prevented distant chunks from generating. Fixed by collecting pending chunks via `scene.objects` first, then canceling once per batch.
 
 4. **Editable area bounds quartered** — `GGTerrain_GetEditableSize()` returns the half-size (center to edge), but the bounds check was using `halfEdit = editableSize * 0.5f`, quartering the actual area. Paint data only appeared in a small central square. Fixed by using `editableSize` directly as the half-extent (editable area goes from `-editableSize` to `+editableSize`).
+
+5. **VT re-rendering pipeline stall** — `ProcessPaintedChunkBlendmaps()` ran AFTER `Generation_Update()`, so blendmap modifications and `vt->invalidate()` triggered a multi-frame VT re-init pipeline (reset resolution → re-allocate via GPU feedback → re-render tiles). With 143 chunks invalidated simultaneously, distant chunks stayed at default textures until camera moved closer and reprioritized them. Fixed by moving `ProcessPaintedChunkBlendmaps()` to BEFORE `Generation_Update()`, so the VT CPU update inside `Generation_Update()` sees invalidations immediately and schedules tile re-renders with correct blendmap data on the same frame.
 
 #### Key technical findings
 
 - **Thread-safe chunk detection**: `scene.objects` (main-thread only) for detection, `terrain->chunks` (after Cancel) for modification.
 - **Terrain chunk identification**: `mesh->vertex_positions.size() == wi::terrain::vertexCount` (4489).
 - **materialEntities is a dynamic vector**, extensible with `push_back()`. `Generation_Restart()` preserves all entries.
-- **VT invalidation after blendmap write**: `chunk_data.blendmap = {}; terrain->CreateChunkRegionTexture(chunk_data); chunk_data.vt->invalidate();`
+- **VT invalidation after blendmap write**: `chunk_data.blendmap = {}; terrain->CreateChunkRegionTexture(chunk_data); chunk_data.vt->invalidate();` — must run BEFORE `Generation_Update()` so VT CPU update picks up the invalidation on the same frame.
 - **`GGTerrain_GetEditableSize()` returns HALF-size**: The value is the distance from center to edge (e.g., 9842.5 for Island Showdown). The editable area extends from `-editableSize` to `+editableSize`. Do NOT halve it again. The shader uses the same convention: `matUV = worldPos.xz / terrain_mapEditSize * 0.5 + 0.5`.
 - **Chunk data lookup by entity**: After `Generation_Cancel()`, iterate `terrain->chunks` to find `ChunkData` matching the entity from `scene.objects`.
 
@@ -440,7 +442,7 @@ Two-phase approach in `ProcessPaintedChunkBlendmaps()`:
 
 #### Known visual issues (to fix before Phase 4)
 
-User has confirmed the blendmap painting + textures are working across the full terrain. Visual issues remain to be catalogued and addressed in a follow-up pass. These were noted but not yet investigated after the bounds fix.
+User has confirmed the blendmap painting + textures are working across the full terrain. Initial load chunk persistence fixed (VT pipeline stall + processedChunkKeys bug). Remaining visual issues being catalogued and addressed incrementally.
 
 ---
 

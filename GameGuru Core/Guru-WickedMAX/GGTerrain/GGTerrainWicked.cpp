@@ -264,7 +264,6 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 	for (auto& pc : pending)
 	{
 		uint64_t key = MakeChunkKey(pc.cx, pc.cz);
-		processedChunkKeys.insert(key);
 
 		// Find chunk data by iterating terrain->chunks (safe after Generation_Cancel)
 		wi::terrain::ChunkData* chunk_data = nullptr;
@@ -272,7 +271,10 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		{
 			if (cd.entity == pc.entity) { chunk_data = &cd; break; }
 		}
-		if (!chunk_data) continue;
+		if (!chunk_data) continue;  // Don't mark as processed — retry next frame
+
+		// Mark as processed only after confirming chunk_data exists
+		processedChunkKeys.insert(key);
 
 		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.transform->world);
 
@@ -399,16 +401,20 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		SetupWickedTerrainMaterials();
 	}
 
-	// Let the VT system run — generates chunks, creates atlas, blends materials
-	terrain->Generation_Update(camera);
-
-	// Phase 3: Process newly-generated terrain chunks for painted material blendmaps.
-	// Scans scene.objects for terrain chunks not yet processed, cancels generation
-	// once for safe access, then writes blendmap weights from pMaterialMap.
+	// Phase 3: Process terrain chunks for painted material blendmaps BEFORE Generation_Update.
+	// This ensures that when we invalidate a chunk's VT, the VT CPU update inside
+	// Generation_Update() sees the invalidation immediately and schedules tile re-renders
+	// using the correct blendmap data on the same frame. Processing after Generation_Update
+	// causes a multi-frame VT re-init pipeline that leaves some chunks showing default
+	// textures until the camera moves close enough to reprioritize them.
 	if (wickedTerrainMaterialsSetup && maxPaintedSlot >= 0)
 	{
 		ProcessPaintedChunkBlendmaps(terrain);
 	}
+
+	// Let the VT system run — generates chunks, creates atlas, blends materials.
+	// VT CPU update here sees any VT invalidations from ProcessPaintedChunkBlendmaps above.
+	terrain->Generation_Update(camera);
 }
 
 void GGTerrainWicked_Shutdown()
