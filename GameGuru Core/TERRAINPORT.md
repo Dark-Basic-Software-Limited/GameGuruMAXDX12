@@ -374,7 +374,7 @@ Before writing the post-process loop, verify these members are accessible:
 
 ### Phase 3 Progress (2026-02-25)
 
-**Status**: BLENDMAP APPROACH WORKING — painted materials render as PBR textures through the Wicked VT pipeline.
+**Status**: MILESTONE COMPLETE — painted materials render as PBR textures across the full editable terrain through the Wicked VT pipeline. Known visual issues remain (see below) to be addressed before moving to Phase 4.
 
 #### Approach evolution
 
@@ -386,7 +386,7 @@ Before writing the post-process loop, verify these members are accessible:
 
 Two-phase approach in `ProcessPaintedChunkBlendmaps()`:
 
-**Phase 1** (main-thread safe): Iterates `scene.objects` to find terrain chunks not yet processed. Identifies chunks inside the editable area (±editableSize/2 from origin) and collects them as `PendingChunk` entries.
+**Phase 1** (main-thread safe): Iterates `scene.objects` to find terrain chunks not yet processed. Identifies chunks inside the editable area (±editableSize from origin, where editableSize is already the half-width) and collects them as `PendingChunk` entries.
 
 **Phase 2** (after `Generation_Cancel()`): For each pending chunk, finds its `ChunkData` in `terrain->chunks` by entity match, then writes blendmap weights from `pMaterialMap`. At each painted vertex, zeros all layers and sets the painted layer to 255.
 
@@ -421,12 +421,15 @@ Two-phase approach in `ProcessPaintedChunkBlendmaps()`:
 
 3. **Per-frame Generation_Cancel()** — old code iterated `terrain->chunks` directly, calling `Generation_Cancel()` every frame. This prevented distant chunks from generating. Fixed by collecting pending chunks via `scene.objects` first, then canceling once per batch.
 
+4. **Editable area bounds quartered** — `GGTerrain_GetEditableSize()` returns the half-size (center to edge), but the bounds check was using `halfEdit = editableSize * 0.5f`, quartering the actual area. Paint data only appeared in a small central square. Fixed by using `editableSize` directly as the half-extent (editable area goes from `-editableSize` to `+editableSize`).
+
 #### Key technical findings
 
 - **Thread-safe chunk detection**: `scene.objects` (main-thread only) for detection, `terrain->chunks` (after Cancel) for modification.
 - **Terrain chunk identification**: `mesh->vertex_positions.size() == wi::terrain::vertexCount` (4489).
 - **materialEntities is a dynamic vector**, extensible with `push_back()`. `Generation_Restart()` preserves all entries.
 - **VT invalidation after blendmap write**: `chunk_data.blendmap = {}; terrain->CreateChunkRegionTexture(chunk_data); chunk_data.vt->invalidate();`
+- **`GGTerrain_GetEditableSize()` returns HALF-size**: The value is the distance from center to edge (e.g., 9842.5 for Island Showdown). The editable area extends from `-editableSize` to `+editableSize`. Do NOT halve it again. The shader uses the same convention: `matUV = worldPos.xz / terrain_mapEditSize * 0.5 + 0.5`.
 - **Chunk data lookup by entity**: After `Generation_Cancel()`, iterate `terrain->chunks` to find `ChunkData` matching the entity from `scene.objects`.
 
 #### Known limitations
@@ -434,6 +437,10 @@ Two-phase approach in `ProcessPaintedChunkBlendmaps()`:
 - Painted material blending is all-or-nothing per vertex (255 on painted layer, 0 on all others). No smooth transitions at paint boundaries.
 - `Generation_Cancel()` causes a brief generation pause each time new painted chunks appear. Self-corrects on next `Generation_Update()`.
 - Region params (slope/altitude) for auto materials are approximate mappings from GG's independent thresholds.
+
+#### Known visual issues (to fix before Phase 4)
+
+User has confirmed the blendmap painting + textures are working across the full terrain. Visual issues remain to be catalogued and addressed in a follow-up pass. These were noted but not yet investigated after the bounds fix.
 
 ---
 
