@@ -374,7 +374,7 @@ Before writing the post-process loop, verify these members are accessible:
 
 ### Phase 3 Progress (2026-02-25)
 
-**Status**: IN PROGRESS — debug visualization of painted materials on Wicked terrain.
+**Status**: MILESTONE VERIFIED — per-vertex debug visualization confirms paint data correctly aligned on Wicked terrain.
 
 #### Approach evolution
 
@@ -384,7 +384,7 @@ The current approach uses **scene component iteration** (thread-safe) to find te
 
 1. **Per-object color tinting** (ObjectComponent::color) — WORKS, confirmed visible. Sets one color per chunk by sampling the material map at the chunk center. Too coarse (one color per ~512-unit chunk), but proves the pipeline.
 
-2. **Per-vertex color tinting** (mesh->vertex_colors + CreateRenderData) — Current implementation. Populates vertex_colors by sampling the material map at each vertex world position (4489 vertices per chunk), calls CreateRenderData() to upload to GPU, and enables SetUseVertexColors(true) on the chunk material. **Not yet visually verified** — needs testing.
+2. **Per-vertex color tinting** (mesh->vertex_colors + CreateRenderData) — VERIFIED WORKING. Populates vertex_colors by sampling the material map at each vertex world position (4489 vertices per chunk), calls CreateRenderData() to upload to GPU, and enables SetUseVertexColors(true) on the chunk material. Paint data confirmed correctly aligned with terrain geometry (tested Island Showdown, 2026-02-25).
 
 #### What's implemented
 
