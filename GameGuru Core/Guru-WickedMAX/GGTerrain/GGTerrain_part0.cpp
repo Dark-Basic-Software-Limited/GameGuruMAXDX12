@@ -4199,7 +4199,7 @@ int ggterrain_render_debug = 0;
 int ggterrain_render_reference = 0;
 int ggterrain_show_grass_map = 0;
 int ggterrain_show_tree_map = 0;
-int ggterrain_use_wicked_terrain = 0;
+int ggterrain_use_wicked_terrain = 1;
 
 void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
 { 
