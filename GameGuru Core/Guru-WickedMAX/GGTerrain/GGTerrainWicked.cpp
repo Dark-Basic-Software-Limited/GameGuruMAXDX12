@@ -4,6 +4,7 @@
 #include "../../../../WickedEngineDX12/WickedEngine/wiResourceManager.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiHelper.h"
 #include <unordered_set>
+#include <unordered_map>
 #include <cmath>
 
 static wi::ecs::Entity wickedTerrainEntity = wi::ecs::INVALID_ENTITY;
@@ -17,6 +18,10 @@ static int maxPaintedSlot = -1;                            // highest blendmap l
 
 // Phase 3: Blendmap state tracking — which chunks have had painted weights applied
 static std::unordered_set<uint64_t> processedChunkKeys;
+// Track which entity was at each grid key when we last painted it.
+// When Wicked removes a distant chunk and regenerates it on camera return,
+// the new chunk has a different entity ID — we detect this and repaint.
+static std::unordered_map<uint64_t, wi::ecs::Entity> chunkKeyToEntity;
 
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
@@ -190,6 +195,7 @@ static void SetupWickedTerrainMaterials()
 
 	// Reset blendmap tracking so all chunks get reprocessed with new materials
 	processedChunkKeys.clear();
+	chunkKeyToEntity.clear();
 
 	// Restart generation to pick up all materials (auto + painted)
 	// Generation_Restart() deep-copies the materials internally
@@ -239,13 +245,31 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		int32_t cz = (int32_t)std::round(transform->world._43 / chunkStride);
 		uint64_t key = MakeChunkKey(cx, cz);
 
-		if (processedChunkKeys.count(key)) continue;
-
-		// Skip chunks outside editable area (no paint data there)
+		// Check if chunk center is within editable area
 		float chunkCenterX = cx * chunkStride;
 		float chunkCenterZ = cz * chunkStride;
-		if (chunkCenterX < -editableSize || chunkCenterX > editableSize ||
-			chunkCenterZ < -editableSize || chunkCenterZ > editableSize)
+		bool inEditable = (chunkCenterX >= -editableSize && chunkCenterX <= editableSize &&
+			chunkCenterZ >= -editableSize && chunkCenterZ <= editableSize);
+
+		if (processedChunkKeys.count(key))
+		{
+			// Check if the chunk was removed and recreated (new entity at same position).
+			// Wicked Engine removes distant chunks and regenerates them on camera return.
+			auto it = chunkKeyToEntity.find(key);
+			if (it != chunkKeyToEntity.end() && it->second != entity)
+			{
+				// Entity changed — chunk was recreated, needs repainting
+				processedChunkKeys.erase(key);
+				chunkKeyToEntity.erase(it);
+			}
+			else
+			{
+				continue;
+			}
+		}
+
+		// Skip chunks outside editable area (no paint data there)
+		if (!inEditable)
 		{
 			processedChunkKeys.insert(key);
 			continue;
@@ -273,8 +297,14 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		}
 		if (!chunk_data) continue;  // Don't mark as processed — retry next frame
 
+		// Skip chunks whose blendmap hasn't been generated yet by the pipeline.
+		// Painting before generation completes would be overwritten by the default
+		// height/slope blending stage. Retry next frame when generation is done.
+		if (chunk_data->blendmap_layers.empty()) continue;
+
 		// Mark as processed only after confirming chunk_data exists
 		processedChunkKeys.insert(key);
+		chunkKeyToEntity[key] = pc.entity;
 
 		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.transform->world);
 
@@ -401,20 +431,18 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		SetupWickedTerrainMaterials();
 	}
 
-	// Phase 3: Process terrain chunks for painted material blendmaps BEFORE Generation_Update.
-	// This ensures that when we invalidate a chunk's VT, the VT CPU update inside
-	// Generation_Update() sees the invalidation immediately and schedules tile re-renders
-	// using the correct blendmap data on the same frame. Processing after Generation_Update
-	// causes a multi-frame VT re-init pipeline that leaves some chunks showing default
-	// textures until the camera moves close enough to reprioritize them.
+	// Let the VT system run — generates chunks, creates atlas, blends materials.
+	terrain->Generation_Update(camera);
+
+	// Phase 3: Process terrain chunks for painted material blendmaps AFTER Generation_Update.
+	// Must run after so the generation pipeline has finished creating default blendmaps for
+	// new/regenerated chunks. Painting before generation completes gets overwritten by the
+	// height/slope blending stage. Our VT invalidation is picked up on the next frame's
+	// Generation_Update (1-frame delay, but avoids permanent corruption from race condition).
 	if (wickedTerrainMaterialsSetup && maxPaintedSlot >= 0)
 	{
 		ProcessPaintedChunkBlendmaps(terrain);
 	}
-
-	// Let the VT system run — generates chunks, creates atlas, blends materials.
-	// VT CPU update here sees any VT invalidations from ProcessPaintedChunkBlendmaps above.
-	terrain->Generation_Update(camera);
 }
 
 void GGTerrainWicked_Shutdown()
@@ -445,15 +473,37 @@ void GGTerrainWicked_Shutdown()
 	wickedTerrainMaterialsSetup = false;
 	maxPaintedSlot = -1;
 	processedChunkKeys.clear();
+	chunkKeyToEntity.clear();
 }
 
 void GGTerrainWicked_OnPaintDataChanged()
 {
 	// Called when pMaterialMap is updated (level load or paint brush).
-	// Resets material setup so it re-scans on the next update frame.
 	if (!wickedTerrainInitialised) return;
-	wickedTerrainMaterialsSetup = false;
+
+	// Always clear so chunks get repainted with fresh pixel data
 	processedChunkKeys.clear();
+	chunkKeyToEntity.clear();
+
+	// If materials aren't set up yet, nothing more to do (pending first setup)
+	if (!wickedTerrainMaterialsSetup) return;
+
+	// Check if paint data contains materials not yet in our slot mapping
+	const uint8_t* matMap = GGTerrain::GGTerrain_GetMaterialMapPtr();
+	int mapRes = GGTerrain::GGTerrain_GetMaterialMapResolution();
+	if (!matMap || mapRes <= 0) return;
+
+	bool needsNewMaterials = false;
+	for (int i = 0; i < mapRes * mapRes && !needsNewMaterials; i++)
+	{
+		uint8_t val = matMap[i];
+		if (val > 0 && val <= GGTERRAIN_MAX_SOURCE_TEXTURES)
+			if (materialToSlot[val - 1] < 0)
+				needsNewMaterials = true;
+	}
+
+	if (needsNewMaterials)
+		wickedTerrainMaterialsSetup = false; // Will trigger full re-setup + restart
 }
 
 } // namespace GGTerrain

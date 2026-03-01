@@ -423,14 +423,26 @@ Two-phase approach in `ProcessPaintedChunkBlendmaps()`:
 
 4. **Editable area bounds quartered** — `GGTerrain_GetEditableSize()` returns the half-size (center to edge), but the bounds check was using `halfEdit = editableSize * 0.5f`, quartering the actual area. Paint data only appeared in a small central square. Fixed by using `editableSize` directly as the half-extent (editable area goes from `-editableSize` to `+editableSize`).
 
-5. **VT re-rendering pipeline stall** — `ProcessPaintedChunkBlendmaps()` ran AFTER `Generation_Update()`, so blendmap modifications and `vt->invalidate()` triggered a multi-frame VT re-init pipeline (reset resolution → re-allocate via GPU feedback → re-render tiles). With 143 chunks invalidated simultaneously, distant chunks stayed at default textures until camera moved closer and reprioritized them. Fixed by moving `ProcessPaintedChunkBlendmaps()` to BEFORE `Generation_Update()`, so the VT CPU update inside `Generation_Update()` sees invalidations immediately and schedules tile re-renders with correct blendmap data on the same frame.
+5. **VT re-rendering pipeline stall** (initial investigation) — `ProcessPaintedChunkBlendmaps()` ran AFTER `Generation_Update()`, so blendmap modifications triggered a multi-frame VT re-init pipeline. Moved to BEFORE as an initial fix, but this introduced the generation-overwrite race condition (see bug #7). **Superseded by bug #7 fix.**
+
+6. **Spurious `OnPaintDataChanged()` causing full restart** (2026-03-01) — `OnPaintDataChanged()` unconditionally set `wickedTerrainMaterialsSetup = false`, which triggered `SetupWickedTerrainMaterials()` → `Generation_Restart()` on the next frame, destroying all correctly-painted chunks. This happened during camera excursions when deferred level-load events fired with temporarily-empty paint data (0 extra materials). Fixed by making `OnPaintDataChanged()` smart: it always clears `processedChunkKeys` (so chunks get repainted), but only sets `wickedTerrainMaterialsSetup = false` if the paint data contains material indices not already in `materialToSlot`. If the material set is unchanged, chunks just get repainted — no restart, no destruction.
+
+7. **Camera excursion texture corruption — generation-overwrite race + stale processedChunkKeys** (2026-03-01) — Two interacting bugs caused painted terrain textures to corrupt after moving the camera to extremities and returning:
+
+   **Bug A: Stale processedChunkKeys after chunk recreation.** Wicked Engine removes distant chunks when the camera moves away (`SetRemovalEnabled(true)`). When the camera returns, new chunks are generated at the same grid positions but with new entity IDs. `processedChunkKeys` still contained the old keys, so new chunks were skipped and never painted. Fixed by adding `chunkKeyToEntity` tracking — a `std::unordered_map<uint64_t, wi::ecs::Entity>` that records which entity was at each grid key when last painted. On each scan, if a key is in `processedChunkKeys` but the current entity differs from `chunkKeyToEntity`, the key is evicted and the chunk is re-queued for painting.
+
+   **Bug B: Generation pipeline overwriting painted blendmaps.** With `ProcessPaintedChunkBlendmaps()` running BEFORE `Generation_Update()`, newly-detected chunks that hadn't completed their generation pipeline would get painted, then immediately overwritten by the generation pipeline's default height/slope blending stage during the same frame's `Generation_Update()`. This created a checkerboard corruption pattern (alternating painted/unpainted chunks depending on which generation stage each chunk was in). Fixed by moving `ProcessPaintedChunkBlendmaps()` to AFTER `Generation_Update()`, plus adding a blendmap readiness check (`chunk_data->blendmap_layers.empty()` → skip, retry next frame). This ensures we only paint chunks whose generation pipeline has completed blendmap creation, so our painted data is the final state. VT invalidation is picked up on the next frame's `Generation_Update()` (1-frame delay, imperceptible vs permanent corruption).
+
+   **Combined fix summary**: `OnPaintDataChanged()` is smart (no spurious restarts) + entity tracking detects chunk recreation + painting runs after generation + blendmap readiness check prevents painting incomplete chunks.
 
 #### Key technical findings
 
 - **Thread-safe chunk detection**: `scene.objects` (main-thread only) for detection, `terrain->chunks` (after Cancel) for modification.
 - **Terrain chunk identification**: `mesh->vertex_positions.size() == wi::terrain::vertexCount` (4489).
 - **materialEntities is a dynamic vector**, extensible with `push_back()`. `Generation_Restart()` preserves all entries.
-- **VT invalidation after blendmap write**: `chunk_data.blendmap = {}; terrain->CreateChunkRegionTexture(chunk_data); chunk_data.vt->invalidate();` — must run BEFORE `Generation_Update()` so VT CPU update picks up the invalidation on the same frame.
+- **ProcessPaintedChunkBlendmaps() must run AFTER Generation_Update()**: Painting before generation completes gets overwritten by the default blending stage. Painting after ensures our blendmap data is the final state. VT invalidation from painting is picked up on the next frame's `Generation_Update()` (1-frame delay, imperceptible).
+- **Chunk recreation detection via entity tracking**: `chunkKeyToEntity` map records which entity occupied each grid key. When Wicked removes distant chunks and regenerates them with new entity IDs, the mismatch triggers repainting.
+- **Blendmap readiness check**: Skip chunks where `blendmap_layers.empty()` — generation hasn't created the default blendmap data yet. Don't mark as processed; retry next frame.
 - **`GGTerrain_GetEditableSize()` returns HALF-size**: The value is the distance from center to edge (e.g., 9842.5 for Island Showdown). The editable area extends from `-editableSize` to `+editableSize`. Do NOT halve it again. The shader uses the same convention: `matUV = worldPos.xz / terrain_mapEditSize * 0.5 + 0.5`.
 - **Chunk data lookup by entity**: After `Generation_Cancel()`, iterate `terrain->chunks` to find `ChunkData` matching the entity from `scene.objects`.
 
@@ -442,7 +454,7 @@ Two-phase approach in `ProcessPaintedChunkBlendmaps()`:
 
 #### Known visual issues (to fix before Phase 4)
 
-User has confirmed the blendmap painting + textures are working across the full terrain. Initial load chunk persistence fixed (VT pipeline stall + processedChunkKeys bug). Remaining visual issues being catalogued and addressed incrementally.
+User has confirmed the blendmap painting + textures are working across the full terrain. Camera excursion corruption fixed (2026-03-01). Remaining visual issues being catalogued and addressed incrementally.
 
 ---
 
