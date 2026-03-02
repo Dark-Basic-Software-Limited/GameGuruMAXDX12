@@ -3,6 +3,7 @@
 #include "../../../../WickedEngineDX12/WickedEngine/wiTerrain.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiResourceManager.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiHelper.h"
+#include "../../../../WickedEngineDX12/WickedEngine/wiRenderer.h"
 #include <unordered_set>
 #include <unordered_map>
 #include <cmath>
@@ -403,8 +404,8 @@ void GGTerrainWicked_Init()
 	terrain.SetRemovalEnabled(true);
 	terrain.SetGrassEnabled(false);       // Phase 0: no grass yet
 	terrain.SetPhysicsEnabled(false);      // keep Bullet physics from old terrain
-	terrain.chunk_scale = 8.0f;            // ~512 units/chunk, similar to old terrain
-	terrain.generation = 100;              // cover ~52800 units each direction
+	terrain.chunk_scale = 40.0f;           // ~2640 units/chunk, matches Wicked 1m scale
+	terrain.generation = 20;               // cover ~52800 units each direction
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;
 
@@ -424,6 +425,18 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	if (!wickedTerrainInitialised) return;
 	wi::terrain::Terrain* terrain = GetWickedTerrain();
 	if (!terrain) return;
+
+	// U key: toggle wireframe overlay for terrain chunk visualization
+	extern bool GGTerrain_GetKeyPressed(uint8_t key);
+	static int wickedWireframeMode = 0;
+	if (GGTerrain_GetKeyPressed(0x55)) // GGKEY_U
+	{
+		wickedWireframeMode = 1 - wickedWireframeMode;
+		if (wickedWireframeMode)
+			wi::renderer::SetWireframeMode(wi::renderer::WIREFRAME_OVERLAY);
+		else
+			wi::renderer::SetWireframeMode(wi::renderer::WIREFRAME_DISABLED);
+	}
 
 	// Phase 2: Lazy material setup on first update (after level load has set render params)
 	if (!wickedTerrainMaterialsSetup)
