@@ -404,8 +404,8 @@ void GGTerrainWicked_Init()
 	terrain.SetRemovalEnabled(true);
 	terrain.SetGrassEnabled(false);       // Phase 0: no grass yet
 	terrain.SetPhysicsEnabled(false);      // keep Bullet physics from old terrain
-	terrain.chunk_scale = 40.0f;           // ~2640 units/chunk, matches Wicked 1m scale
-	terrain.generation = 20;               // cover ~52800 units each direction
+	terrain.chunk_scale = 80.0f;           // ~5280 units/chunk, reduces distant popping
+	terrain.generation = 10;               // cover ~52800 units each direction
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;
 
