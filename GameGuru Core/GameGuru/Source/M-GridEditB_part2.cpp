@@ -1173,16 +1173,25 @@ static void DisplayPerformanceData(bool* p_open)
 		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 		ImGui::Separator();
 
-		// highlight or regular
-		bool bRegularDebugPrintout = false;
-		if (bRegularDebugPrintout)
+		// DIAGNOSTIC: show raw profiler text with stats to diagnose cascading duplicates
 		{
+			static int s_dispCallCount = 0;
+			s_dispCallCount++;
 			std::string profiler_data = wi::profiler::GetTextData();
-			ImGui::Text(profiler_data.c_str());
-		}
-		else
-		{
-			DrawProfilerDataColored_FirstMsOnly();
+			int numNewlines = 0, numGPU = 0, numCPU = 0;
+			for (size_t i = 0; i < profiler_data.size(); i++)
+			{
+				if (profiler_data[i] == '\n') numNewlines++;
+				if (i == 0 || profiler_data[i-1] == '\n')
+				{
+					if (profiler_data.compare(i, 9, "GPU Frame") == 0) numGPU++;
+					if (profiler_data.compare(i, 9, "CPU Frame") == 0) numCPU++;
+				}
+			}
+			ImGui::Text("DIAG: call#%d len=%d lines=%d CPU=%d GPU=%d", s_dispCallCount, (int)profiler_data.size(), numNewlines, numCPU, numGPU);
+			ImGui::Separator();
+			// Show the raw profiler text to see if GetTextData itself produces cascading
+			ImGui::TextUnformatted(profiler_data.c_str());
 		}
 
 		ImGui::Separator();
