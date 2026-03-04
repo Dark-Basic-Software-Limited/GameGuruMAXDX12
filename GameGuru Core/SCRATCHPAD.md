@@ -1,10 +1,32 @@
 # SCRATCHPAD — Terrain System Port
 
-## Current State (2026-02-21)
+## Current State (2026-03-03)
 
-The old virtual texture terrain pipeline has an **architectural LOD seam bug** that cannot be fixed without fundamental redesign. We are **porting terrain rendering to the new Wicked Engine DX12 terrain system** instead.
+The terrain port to the **Wicked Engine DX12 terrain system** is well underway. **Phases 0–3 are complete**, with painted PBR materials rendering across the full terrain through Wicked's virtual texture pipeline. The new terrain is now the **default** (Y key toggles back to old terrain). Chunk scale tuning has nearly eliminated visible chunk generation popping.
 
-### Why the old system is unfixable
+### Completed Milestones (last week: 2026-02-25 → 2026-03-02)
+
+| Date | Milestone | Key Commits |
+|------|-----------|-------------|
+| 2026-02-25 | **Phase 2 complete**: 4-layer auto materials (base/slope/low-alt/high-alt) via Wicked VT pipeline | `1d403a5f`, `d7eeee94` |
+| 2026-02-25 | **Phase 3 complete**: Painted materials (N-layer blendmap injection), verified on Island Showdown (9 extra mats, 143 chunks) | `76b5336d` → `b7f81afc`, `bd8ad61a` |
+| 2026-02-25 | Default to new Wicked terrain, Y key toggles old | `20dba693` |
+| 2026-02-25 | PRESS_KEY automation harness command | `92389774` |
+| 2026-03-01 | **Camera excursion fix**: 3 interacting bugs (spurious restart, stale chunk keys, generation-overwrite race) | `5d647db6` |
+| 2026-03-02 | **Chunk scale tuning**: 8 → 40 → 80, near-invisible generation popping, U key wireframe debug | `c23aae39`, `4253914f` |
+
+### What's Working Now
+
+- **Height/slope auto-materials**: 4 PBR texture layers blend by slope/altitude via Wicked's VT compute shader
+- **Painted materials**: Up to 32 unique materials, blendmap-injected per-vertex into Wicked chunks after generation
+- **Camera excursion stability**: Entity tracking detects chunk recreation, smart OnPaintDataChanged avoids spurious restarts, painting runs after generation to prevent overwrite race
+- **Chunk scale**: `chunk_scale=80` (~5280 units/chunk, ~132m), `generation=10` — fewer large chunks = less popping + better performance
+- **Debug tools**: Y key toggles old/new terrain, U key wireframe overlay, reference color mode still available on old terrain
+- **All 19 demo levels**: Confirmed working with new terrain (tested through automation harness)
+
+---
+
+## Why the Old System is Unfixable
 
 The virtual texture system bakes material content into atlas pages using LOD-specific height maps (512×512 each, camera-centered, doubling coverage per level). Material selection (sand/grass/rock) depends on sampled height, so pages at different LOD levels bake different materials for the same world position. The page shift mechanism preserves page content across camera moves without regeneration, requiring content to be camera-independent — but the height map coverage is camera-centered. These constraints are fundamentally incompatible. Three fix attempts all failed:
 
@@ -16,9 +38,9 @@ Full investigation details preserved in git history.
 
 ---
 
-## Reference Visualization (Working)
+## Reference Visualization (Working — Old Terrain Debug Tool)
 
-A flat-color debug rendering mode bypasses the virtual texture system entirely and displays raw terrain data directly. This is the **ground truth** for validating the new terrain system during the port.
+A flat-color debug rendering mode bypasses the virtual texture system entirely and displays raw terrain data directly. Still available as a validation tool when toggled to old terrain (Y key).
 
 ### Three overlays, all confirmed working
 
@@ -28,58 +50,88 @@ A flat-color debug rendering mode bypasses the virtual texture system entirely a
 | **Grass** | `pGrassMap` (4096×4096 uint8, bits 0-6 = type, bit 7 = flattened) | t56 | Green-tinted palette over terrain color, 70% lerp |
 | **Tree** | `pTreeMap` (4096×4096 uint8, rasterized from `InstanceTree` positions, 3px radius circles, value = type+1) | t57 | Full palette color replacement at tree positions |
 
-### Toggle
+---
 
-`ggterrain_render_reference = 1` with `pref.iTerrainDebugMode` active, `R` key. Grass and tree overlays hardcoded on via `ggterrain_show_grass_map = 1`, `ggterrain_show_tree_map = 1`.
+## Key Technical Patterns Established
 
-### Key implementation details
+### Two-phase chunk processing (Phase 3)
+1. **Scan phase** (main-thread safe): Iterate `scene.objects` to find terrain chunks not yet processed
+2. **Modify phase** (after `Generation_Cancel()`): Access `terrain->chunks` to write blendmap data
 
-- **Material fallback**: Unpainted areas use height (`IN.worldPos.y`) and slope (`IN.normal.y`) layer rules — same logic as page gen shader but from mesh vertices, so no LOD dependency
-- **Grass map upload**: `GGGrass_UploadGrassMap()` re-creates texture via `CreateTexture` + `SubresourceData` (old `UpdateTexture` API gone in this Wicked version). Uploads at: init, level load, flat area updates, paint brush strokes
-- **Tree map rasterization**: `GGTrees_RasterizeTreeMap()` iterates all visible/valid `InstanceTree` structs → stamps into `pTreeMap` → uploads. Runs at init and level load only (no live paint update yet)
+### Critical ordering: Paint AFTER Generation_Update()
+`ProcessPaintedChunkBlendmaps()` must run AFTER `Generation_Update()`. Painting before generation means the default blending stage overwrites our blendmaps. VT invalidation from painting is picked up on the next frame (imperceptible 1-frame delay).
 
-### Files modified for reference viz
+### Chunk recreation detection
+`chunkKeyToEntity` map tracks which entity occupied each grid key. When Wicked removes distant chunks and regenerates with new entity IDs, the mismatch triggers repainting.
 
-| File | What |
-|---|---|
-| `GGTerrainConstants.hlsli` | `GGTERRAIN_SHADER_FLAG2_REFERENCE_COLOR` (0x0080) |
-| `GGTerrainVirtualPBR_PS.hlsl` | Material map sampling (t55), grass (t56), tree (t57), 32-color palette, early-out block with ambient + editor overlays |
-| `GGTerrain_part0.cpp` | Toggle variable, R key binding, flag bit, texture binds (t55/t56/t57) in main draw |
-| `GGTerrain.h` | Extern for toggle variable |
-| `GGGrass.cpp` | `GGGrass_UploadGrassMap()` implementation and call sites |
-| `GGTrees.cpp` | `pTreeMap` array, `GGTrees_RasterizeTreeMap()`, `texTreeMap` creation/upload |
+### Smart OnPaintDataChanged
+Always clears `processedChunkKeys` (forces repaint), but only triggers `Generation_Restart()` if paint data contains material indices not already in `materialToSlot`. Prevents spurious restarts from deferred events.
+
+### editableSize is already half-size
+`GGTerrain_GetEditableSize()` returns the distance from center to edge (e.g., 9842.5 for Island Showdown). Editable area extends from `-editableSize` to `+editableSize`. Do NOT halve again.
 
 ---
 
-## Next Step: Port to New Wicked Engine Terrain System
+## Next Steps
 
-### Goal
+### Phase 4: Grass via Wicked Engine HairParticleSystem
+**Goal**: Grass renders through Wicked Engine, placed from GameGuru's `pGrassMap`.
 
-Replace the old virtual texture terrain rendering with the new Wicked Engine DX12 terrain system. The new system handles LOD transitions natively without a custom page-based pipeline.
+- Enable `wickedTerrain.SetGrassEnabled(true)` with tuned `grass_properties`
+- Override `chunk_data.grass.vertex_lengths` from `pGrassMap` in the same post-process loop as Phase 3
+- Call `chunk_data.grass.CreateFromMesh(*mesh)` to regenerate grass particles
+- Flattened areas (bit 0x80) get length=0, unpainted areas get length=0
+- 46 grass types collapse to 1 visual type initially (Wicked has one grass material per terrain)
 
-### Validation plan
+### Phase 5: Colored Cylinder Trees
+**Goal**: Tree positions visualized as colored cylinders on the new terrain.
 
-Run old terrain (reference color mode) and new Wicked Engine terrain side-by-side. Compare at matching world positions to verify the port preserves:
+- Create shared cylinder MeshComponent, entity pool (~10000)
+- Iterate `pAllTrees[]`, place cylinders at tree positions with type-based colors
+- Can be done in parallel with Phase 4
 
-1. **Material layer assignments** — height-based rules, slope-based rules, and painted overrides all match
-2. **Grass placement** — positions, types, and flattened state reproduced correctly
-3. **Tree positions** — locations and type indices match
+### Phase 6: Sculpt/Paint Invalidation Bridge
+**Goal**: Editor sculpting and painting update the Wicked terrain in real-time.
 
-### Answers to port questions
+- Hook `GGTerrain_InvalidateRegion()` → mark affected Wicked chunks as `invalidated = true`
+- Clear from `processedChunkKeys` so they get re-processed with updated data
+- Requires Phase 3 (already complete)
 
-**1. Material/texture layer blending (height & slope rules)**
-The Wicked Engine repo is connected to the project. Use the new engine's terrain source directly to determine how to apply material/texture layer blending and map the existing height-based and slope-based layer rules onto it. The repo is the reference for how the new system exposes blending.
+### Future Work (Post-Phase 6)
+- Replace cylinder trees with real LOD-based tree models (and eventually rocks)
+- Grass variety — map GG's 46 grass types to different visual appearances
+- Strip old virtual texture page generation code once port is fully validated
+- Smooth blending at paint boundaries (currently all-or-nothing per vertex)
 
-**2. Feeding painted material data into the new pipeline**
-Same approach — the Wicked Engine repo will show how the new terrain material pipeline accepts input. Map `texMaterialMap` (the existing painted material index texture) into whatever mechanism the new system provides.
+---
 
-**3. Grass: adopt Wicked Engine's grass system**
-The new Wicked Engine has its own grass system which is significantly better and should be adopted for rendering. The existing `GGGrass` system keeps its data structures and painting functions (brush tools, `pGrassMap`, type/flatten logic), but the actual rendering of grass geometry switches to the new Wicked Engine methods. Data flows: `pGrassMap` → new engine grass placement, existing paint tools → `pGrassMap` → upload to new engine.
+## Phase Completion Status
 
-**4. Trees: placeholder cylinders for this phase**
-The tree system (`InstanceTree` structs with world positions) is confirmed independent of the terrain rendering pipeline — no coupling to old virtual texture UVs or page system. The new Wicked Engine does not have native tree support. For this phase, render **coloured cylinders** at each tree position to represent placement and scale, with colour denoting tree type. Future phases will replace cylinders with real LOD-based tree models, and eventually rocks.
+```
+Phase 0: Toggle + Empty Terrain          ✓ COMPLETE
+Phase 1: Heightmap Feed                  ✓ COMPLETE
+Phase 2: 4-Layer Auto Materials          ✓ COMPLETE (2026-02-25)
+Phase 3: Painted Materials (N-layer)     ✓ COMPLETE (2026-02-25, excursion fix 2026-03-01)
+Phase 4: Grass via HairParticleSystem    → NEXT
+Phase 5: Colored Cylinder Trees          → NEXT (parallel with Phase 4)
+Phase 6: Sculpt/Paint Invalidation       → NEXT (requires Phase 3 ✓)
+```
 
-### After port is validated
+---
 
-- Reference visualization can be removed or kept as a permanent debug tool
-- Old virtual texture page generation code can be stripped out
+## Critical Files Reference
+
+All modifications are GameGuru-side only. **Zero Wicked Engine files are modified.**
+
+| File | Role in Port |
+|---|---|
+| `Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp` | All Wicked terrain wrapper code: init, update, material setup, blendmap injection |
+| `Guru-WickedMAX/GGTerrain/GGTerrainWicked.h` | Header for above |
+| `Guru-WickedMAX/GGTerrain/GGTerrain_part0.cpp` | Toggle var, skip virtual tex, material map accessors, OnPaintDataChanged callback |
+| `Guru-WickedMAX/GGTerrain/GGTerrain.h` | Toggle extern, accessor declarations |
+| `Guru-WickedMAX/master_part1.cpp` | Draw callback gating, update loop integration |
+| `Guru-WickedMAX/GameGuruMain.cpp` | Init call |
+| `Guru-WickedMAX/GGTerrain/GGGrass.cpp` | pGrassMap data (Phase 4 will read this) |
+| `Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp` | pAllTrees data (Phase 5 will read this) |
+
+Full architectural details in `TERRAINPORT.md`.

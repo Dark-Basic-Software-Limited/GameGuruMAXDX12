@@ -11,6 +11,9 @@
 using namespace wi::scene;
 using namespace wi::ecs;
 
+extern bool bEnableAnimationCulling;
+extern bool bEnable30FpsAnimations;
+
 // --- Internal storage ---
 
 // P4: Map from secondary anim entity -> primary anim entity
@@ -24,6 +27,9 @@ static std::unordered_map<Entity, Entity> g_AnimObjectMap;
 
 // P9: Global frame counter for alternating-frame throttle
 static uint32_t g_iAnimFrameCounter = 0;
+
+// P8: Track animations temporarily paused for culling (restored in PostUpdate)
+static std::vector<wi::ecs::Entity> g_CullPausedAnims;
 
 // Bip01 X/Z zeroing: saved original keyframe values per AnimationDataComponent entity
 struct SavedBip01XZ
@@ -143,6 +149,11 @@ void GGAnimBridge_SetAnimObjectLink(Entity animEntity, Entity objectEntity)
 {
 	if (animEntity != INVALID_ENTITY && objectEntity != INVALID_ENTITY)
 		g_AnimObjectMap[animEntity] = objectEntity;
+}
+
+void GGAnimBridge_ClearAnimObjectLink(Entity animEntity)
+{
+	g_AnimObjectMap.erase(animEntity);
 }
 
 
@@ -429,31 +440,35 @@ void GGAnimBridge_PreUpdate(Scene* scene, float dt)
 		}
 
 		// P8: Pause animations for culled/occluded objects
-		auto itObj = g_AnimObjectMap.find(animEntity);
-		if (itObj != g_AnimObjectMap.end())
+		if (bEnableAnimationCulling || bEnable30FpsAnimations)
 		{
-			ObjectComponent* obj = scene->objects.GetComponent(itObj->second);
-			if (obj != nullptr)
+			auto itObj = g_AnimObjectMap.find(animEntity);
+			if (itObj != g_AnimObjectMap.end())
 			{
-				// Skip animation if object is not visible (but don't interfere with
-				// animations that the game logic has explicitly stopped)
-				if (anim.IsPlaying())
+				ObjectComponent* obj = scene->objects.GetComponent(itObj->second);
+				if (obj != nullptr && anim.IsPlaying())
 				{
-					// P9: 30fps throttle -- skip every other frame per animation
-					bool bThrottle = ((g_iAnimFrameCounter + (uint32_t)i) % 2) != 0;
+					bool bShouldCull = false;
 
-					// If culled/occluded, always skip; if visible, apply throttle
-					if (!obj->IsRenderable())
+					// Occlusion/visibility culling
+					if (bEnableAnimationCulling && !obj->IsRenderable())
 					{
-						// Fully culled -- skip this frame by not advancing timer.
-						// We don't pause (which resets state), just skip the update
-						// by temporarily matching last_update_time.
-						anim.last_update_time = anim.timer;
+						bShouldCull = true;
 					}
-					else if (bThrottle)
+					// 30fps throttle: skip every other frame
+					else if (bEnable30FpsAnimations)
 					{
-						// Visible but throttled this frame
+						if (((g_iAnimFrameCounter + (uint32_t)i) % 2) != 0)
+							bShouldCull = true;
+					}
+
+					if (bShouldCull)
+					{
+						// Temporarily pause + match timer so Wicked's skip triggers:
+						//   !IsPlaying() && last_update_time == timer -> skip
+						anim.Pause();
 						anim.last_update_time = anim.timer;
+						g_CullPausedAnims.push_back(animEntity);
 					}
 				}
 			}
@@ -469,6 +484,15 @@ void GGAnimBridge_PreUpdate(Scene* scene, float dt)
 
 void GGAnimBridge_PostUpdate(Scene* scene)
 {
+	// P8: Restore animations that were temporarily paused for culling
+	for (Entity animEntity : g_CullPausedAnims)
+	{
+		AnimationComponent* anim = scene->animations.GetComponent(animEntity);
+		if (anim != nullptr)
+			anim->Play();
+	}
+	g_CullPausedAnims.clear();
+
 	// P5: Apply preframe bone overrides after animation has run
 	// Note: Mode 1 (additive head/spine) is now handled via keyframe modification
 	// in GGAnimBridge_ApplyAdditiveRotation, which runs before Scene::Update so the

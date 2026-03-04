@@ -4,9 +4,18 @@
 #include "../../../../WickedEngineDX12/WickedEngine/wiResourceManager.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiHelper.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiRenderer.h"
+#include "../../../../WickedEngineDX12/WickedEngine/wiProfiler.h"
+#include "../../../../WickedEngineDX12/WickedEngine/wiRenderPath3D.h"
 #include <unordered_set>
 #include <unordered_map>
 #include <cmath>
+#include <cstdio>
+
+// Performance profiling: accessor functions defined in master_part0.cpp / master_part1.cpp
+extern wi::RenderPath3D* GGPerf_GetRenderPath();
+extern wi::scene::LightComponent* GGPerf_GetSunLight();
+extern wi::scene::WeatherComponent& GGPerf_GetWeather();
+extern std::string GGPerf_GetCachedProfilerText();
 
 static wi::ecs::Entity wickedTerrainEntity = wi::ecs::INVALID_ENTITY;
 static bool wickedTerrainInitialised = false;
@@ -381,6 +390,7 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 	}
 }
 
+
 namespace GGTerrain
 {
 
@@ -437,6 +447,157 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		else
 			wi::renderer::SetWireframeMode(wi::renderer::WIREFRAME_DISABLED);
 	}
+
+	// I key: toggle normal visualization
+	static int wickedNormalVisMode = 0;
+	if (GGTerrain_GetKeyPressed(0x49)) // GGKEY_I
+	{
+		wickedNormalVisMode = 1 - wickedNormalVisMode;
+		wi::renderer::SetDebugNormalVis(wickedNormalVisMode != 0);
+	}
+
+	// O key: toggle terrain rendering on/off
+	static bool wickedTerrainHidden = false;
+	if (GGTerrain_GetKeyPressed(0x4F)) // GGKEY_O
+	{
+		wickedTerrainHidden = !wickedTerrainHidden;
+		if (wickedTerrainHidden)
+		{
+			// Hide all existing chunks and stop VT GPU work
+			for (auto& [chunk, chunk_data] : terrain->chunks)
+			{
+				if (chunk_data.entity != wi::ecs::INVALID_ENTITY)
+				{
+					wi::scene::ObjectComponent* obj = terrain->scene->objects.GetComponent(chunk_data.entity);
+					if (obj) obj->SetRenderable(false);
+				}
+			}
+			terrain->virtual_textures_in_use.clear();
+		}
+		else
+		{
+			// Re-show all chunks — Generation_Update will resume next frame
+			for (auto& [chunk, chunk_data] : terrain->chunks)
+			{
+				if (chunk_data.entity != wi::ecs::INVALID_ENTITY)
+				{
+					wi::scene::ObjectComponent* obj = terrain->scene->objects.GetComponent(chunk_data.entity);
+					if (obj) obj->SetRenderable(true);
+				}
+			}
+		}
+	}
+
+	// P key: toggle profiler and dump to file when disabling
+	static bool perfProfilerEnabled = false;
+	if (GGTerrain_GetKeyPressed(0x50)) // VK_P
+	{
+		perfProfilerEnabled = !perfProfilerEnabled;
+		wi::profiler::SetEnabled(perfProfilerEnabled);
+		if (perfProfilerEnabled)
+		{
+			wi::backlog::post("[Perf] Profiler ENABLED — press P again to dump and disable");
+		}
+		else
+		{
+			std::string profText = GGPerf_GetCachedProfilerText();
+			if (!profText.empty())
+			{
+				std::string dumpPath = wickedTerrainExeDir + "/terrain_perf.log";
+				FILE* f = nullptr;
+				fopen_s(&f, dumpPath.c_str(), "w");
+				if (f) { fputs(profText.c_str(), f); fclose(f); }
+				wi::backlog::post("[Perf] Profiler DISABLED — dumped to terrain_perf.log");
+			}
+			else
+			{
+				wi::backlog::post("[Perf] Profiler DISABLED — no data to dump");
+			}
+		}
+	}
+
+	// 1 key: toggle shadows
+	static int perfShadowsOff = 0;
+	if (GGTerrain_GetKeyPressed(0x31)) // VK_1
+	{
+		perfShadowsOff = 1 - perfShadowsOff;
+		wi::RenderPath3D* rp = GGPerf_GetRenderPath();
+		if (rp) rp->setShadowsEnabled(!perfShadowsOff);
+		wi::backlog::post(perfShadowsOff ? "[Perf] Shadows OFF" : "[Perf] Shadows ON");
+	}
+
+	// 2 key: toggle AO
+	static int perfAOOff = 0;
+	if (GGTerrain_GetKeyPressed(0x32)) // VK_2
+	{
+		perfAOOff = 1 - perfAOOff;
+		wi::RenderPath3D* rp = GGPerf_GetRenderPath();
+		if (rp) rp->setAO(perfAOOff ? wi::RenderPath3D::AO_DISABLED : wi::RenderPath3D::AO_MSAO);
+		wi::backlog::post(perfAOOff ? "[Perf] AO OFF" : "[Perf] AO ON (MSAO)");
+	}
+
+	// 3 key: toggle bloom
+	static int perfBloomOff = 0;
+	if (GGTerrain_GetKeyPressed(0x33)) // VK_3
+	{
+		perfBloomOff = 1 - perfBloomOff;
+		wi::RenderPath3D* rp = GGPerf_GetRenderPath();
+		if (rp) rp->setBloomEnabled(!perfBloomOff);
+		wi::backlog::post(perfBloomOff ? "[Perf] Bloom OFF" : "[Perf] Bloom ON");
+	}
+
+	// 4 key: toggle volumetric clouds
+	static int perfCloudsOff = 0;
+	if (GGTerrain_GetKeyPressed(0x34)) // VK_4
+	{
+		perfCloudsOff = 1 - perfCloudsOff;
+		auto& weather = GGPerf_GetWeather();
+		weather.SetVolumetricClouds(!perfCloudsOff);
+		wi::backlog::post(perfCloudsOff ? "[Perf] Volumetric Clouds OFF" : "[Perf] Volumetric Clouds ON");
+	}
+
+	// 5 key: toggle realistic sky
+	static int perfSkyOff = 0;
+	if (GGTerrain_GetKeyPressed(0x35)) // VK_5
+	{
+		perfSkyOff = 1 - perfSkyOff;
+		auto& weather = GGPerf_GetWeather();
+		weather.SetRealisticSky(!perfSkyOff);
+		wi::backlog::post(perfSkyOff ? "[Perf] Realistic Sky OFF" : "[Perf] Realistic Sky ON");
+	}
+
+	// 6 key: toggle light shafts
+	static int perfLightShaftsOff = 0;
+	if (GGTerrain_GetKeyPressed(0x36)) // VK_6
+	{
+		perfLightShaftsOff = 1 - perfLightShaftsOff;
+		wi::RenderPath3D* rp = GGPerf_GetRenderPath();
+		if (rp) rp->setLightShaftsEnabled(!perfLightShaftsOff);
+		wi::backlog::post(perfLightShaftsOff ? "[Perf] Light Shafts OFF" : "[Perf] Light Shafts ON");
+	}
+
+	// 7 key: toggle reflections
+	static int perfReflectionsOff = 0;
+	if (GGTerrain_GetKeyPressed(0x37)) // VK_7
+	{
+		perfReflectionsOff = 1 - perfReflectionsOff;
+		wi::RenderPath3D* rp = GGPerf_GetRenderPath();
+		if (rp) rp->setReflectionsEnabled(!perfReflectionsOff);
+		wi::backlog::post(perfReflectionsOff ? "[Perf] Reflections OFF" : "[Perf] Reflections ON");
+	}
+
+	// 8 key: toggle volumetric lights on sun
+	static int perfVolLightsOff = 0;
+	if (GGTerrain_GetKeyPressed(0x38)) // VK_8
+	{
+		perfVolLightsOff = 1 - perfVolLightsOff;
+		wi::scene::LightComponent* lightSun = GGPerf_GetSunLight();
+		if (lightSun) lightSun->SetVolumetricsEnabled(!perfVolLightsOff);
+		wi::backlog::post(perfVolLightsOff ? "[Perf] Sun Volumetrics OFF" : "[Perf] Sun Volumetrics ON");
+	}
+
+	// Skip all terrain work when hidden (Generation_Update, VT CPU/GPU, blendmap painting)
+	if (wickedTerrainHidden) return;
 
 	// Phase 2: Lazy material setup on first update (after level load has set render params)
 	if (!wickedTerrainMaterialsSetup)

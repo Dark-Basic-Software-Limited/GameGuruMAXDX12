@@ -1939,3 +1939,19 @@ void Master::DeleteAllOldDBPDATAFolders(void)
 	}
 }
 
+// Performance profiling accessors — called from GGTerrainWicked.cpp toggle keys
+RenderPath3D* GGPerf_GetRenderPath()
+{
+	return master_renderer;
+}
+
+LightComponent* GGPerf_GetSunLight()
+{
+	return wiScene::GetScene().lights.GetComponent(g_entitySunLight);
+}
+
+WeatherComponent& GGPerf_GetWeather()
+{
+	return wiScene::GetScene().weather;
+}
+

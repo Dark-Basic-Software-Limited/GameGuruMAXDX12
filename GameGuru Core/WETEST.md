@@ -67,8 +67,11 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `GET_ENTITY` | `<index>` | Detailed dump of one entity: position, rotation, scale, profile, light data, infinilight linkage, and WickedEngine cross-reference |
 | `LIST_LIGHTS` | (none) | Full light pipeline debug dump: all infinilights with entity linkage, position, range, color, and WickedEngine LightComponent state |
 | `TOGGLE_PROFILER` | (none) | Cycles the in-game TAB mode (0=normal, 1=visuals panel, 2=performance panel). Game state only |
+| `ENABLE_PROFILER` | (none) | Enables Wicked Engine profiler for data collection. Sets both `bProfilerEnable` and `wi::profiler::SetEnabled(true)`. Data appears in `GET_PERF_DATA` after ~1s. **Warning: profiler adds massive overhead** (FPS drops ~75%) — enable briefly, collect data, then disable |
+| `DISABLE_PROFILER` | (none) | Disables Wicked Engine profiler. Clears both `bProfilerEnable` and `wi::profiler::SetEnabled(false)` |
+| `GET_PROFILER_STATUS` | (none) | Diagnostic: returns profiler internal state (ENABLED_REQUEST, ENABLED, IsEnabled, CPU/GPU frame times) without modifying anything |
 | `PRESS_ESCAPE` | (none) | Exits test game back to editor (sets gameloop/levelloop/masterloop=0). Game state only |
-| `PRESS_KEY` | `<key name>` | Simulate a keypress (WM_KEYDOWN + WM_KEYUP). Accepts A-Z, 0-9, F1-F12, ESCAPE, ENTER, SPACE, TAB, SHIFT, CONTROL, ALT, arrow keys, etc. Works in any state |
+| `PRESS_KEY` | `<key name>` | Simulate a keypress (WM_KEYDOWN + WM_KEYUP). Accepts A-Z, 0-9, F1-F12, ESCAPE, ENTER, SPACE, TAB, SHIFT, CONTROL, ALT, arrow keys, etc. Works in any state. In editor mode, also injects into the terrain key system via `g_autoHarnessInjectedKey` (bypasses the `bImGuiGotFocus` gate) |
 | `QUIT` | (none) | Gracefully close the application |
 
 ## Application States
@@ -168,6 +171,27 @@ TAB_MODE: 0
 ```
 
 **Note**: SYSTEM_MEM_MB is process working set from Windows, not free RAM. VRAM_MB is dedicated GPU memory usage from DXGI. VISIBLE_* counts change per frame based on camera frustum culling.
+
+When the profiler is enabled (via `ENABLE_PROFILER`), additional fields appear:
+
+```
+CPU_FRAME_MS: 35.30
+GPU_FRAME_MS: 7.50
+PROFILER_DATA:
+CPU Frame: 35.30 ms
+	Update - Logic: 19.83 ms
+	Render: 1.74 ms
+	Shadowmap Rendering: 0.95 ms
+	Update - Wicked: 12.60 ms
+	Animations (2x): 10.90 ms
+	...
+GPU Frame: 7.50 ms
+	Opaque Scene: 2.91 ms
+	Z-Prepass: 1.12 ms
+	...
+```
+
+**Profiler usage pattern**: Send `ENABLE_PROFILER`, wait 3-5 seconds for averages to stabilize, send `GET_PERF_DATA` to read the breakdown, then send `DISABLE_PROFILER` to restore full FPS.
 
 ## TOGGLE_PROFILER (Game State)
 
@@ -409,6 +433,97 @@ t=0; while [ $t -lt 60 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_resul
 | After CLICK_NODE (level load) | 10s | Synchronous load, harness unresponsive during load |
 
 **Tested**: Launch to editor in ~34 seconds total (2026-02-15).
+
+## Performance Testing: TESTPRO1 Island Level
+
+For performance profiling work, use the **TESTPRO1** project (a user project on the **My Games** tab) and its **island level node**. TESTPRO1 is the default project MAX opens into on launch — no `SELECT_DEMO` or tab navigation needed.
+
+### Why TESTPRO1 Island Level
+
+Island Showdown (via Demo Games) is the largest/most demanding demo but requires `SELECT_DEMO` + tab switching. TESTPRO1's island level is the preferred performance testing target because:
+- It's the default project on launch (no hub navigation needed)
+- It has a large island terrain level suitable for profiling terrain, rendering, and animation costs
+- Faster to reach from cold launch
+
+### Sequence: Launch -> TESTPRO1 Storyboard -> Island Level -> Editor
+
+```bash
+D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
+
+# 1. Launch the app (background) — opens to hub with TESTPRO1 selected on My Games tab
+cd "$D" && ./GameGuruMAX.exe &
+
+# 2. Wait for hub
+sleep 3
+rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
+t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+# Expected: STATE: hub / TAB: my_games
+
+# 3. Edit Game (hub -> storyboard) — TESTPRO1 is already selected by default
+sleep 2
+rm -f "$D/auto_result.txt"; echo "CLICK edit_game" > "$D/auto_command.txt"
+t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+
+# 4. Confirm storyboard and discover level nodes
+sleep 5
+rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
+t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+# Expected: STATE: storyboard / PROJECT: TESTPRO1 / NODES(...): ... look for type=level with "island" in title
+
+# 5. Click the island level node (use the title from GET_STATE output, case-insensitive)
+rm -f "$D/auto_result.txt"; echo "CLICK_NODE island" > "$D/auto_command.txt"
+t=0; while [ $t -lt 15 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+
+# 6. Wait for level load (island levels are large, use long timeout)
+sleep 15
+rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
+t=0; while [ $t -lt 60 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+# If still loading, wait more
+# Expected: STATE: editor
+```
+
+### Performance Data Collection (from editor or test game)
+
+```bash
+D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
+
+# Baseline FPS (no profiler overhead)
+rm -f "$D/auto_result.txt"; echo "GET_PERF_DATA" > "$D/auto_command.txt"
+t=0; while [ $t -lt 10 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+
+# Full profiler breakdown (WARNING: ~75% FPS drop while enabled)
+rm -f "$D/auto_result.txt"; echo "ENABLE_PROFILER" > "$D/auto_command.txt"
+t=0; while [ $t -lt 10 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+
+# Wait for profiler averages to stabilize
+sleep 5
+
+# Collect profiler data
+rm -f "$D/auto_result.txt"; echo "GET_PERF_DATA" > "$D/auto_command.txt"
+t=0; while [ $t -lt 10 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+
+# Disable profiler to restore full FPS
+rm -f "$D/auto_result.txt"; echo "DISABLE_PROFILER" > "$D/auto_command.txt"
+t=0; while [ $t -lt 10 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+```
+
+### Feature Toggle Keys (use via PRESS_KEY in editor mode)
+
+| Key | Feature | Notes |
+|-----|---------|-------|
+| O | Terrain on/off | ~30 FPS impact |
+| P | Profiler toggle + file dump | |
+| U | Wireframe overlay | |
+| 1 | Shadows on/off | **Largest impact** (~+30 FPS) |
+| 2 | AO on/off | Minor (~+4 FPS) |
+| 3 | Bloom on/off | Negligible |
+| 4 | Volumetric Clouds on/off | Minor (~+3 FPS) |
+| 5 | Realistic Sky on/off | Negligible |
+| 6 | Light Shafts on/off | Negligible |
+| 7 | Reflections on/off | Minor (~+5 FPS) |
+| 8 | Volumetric Lights on/off | Negligible |
+
+See `PERFORMANCE.md` for full profiler dumps, A/B test results, and optimization analysis.
 
 ## Crash Diagnosis Using Log Files
 
@@ -910,6 +1025,23 @@ Post Phase 3 render pipeline integration (commits 9118befe, 0a8ea4fb, 8bebfec9, 
 | 12 | Jungle Fever | 102.4 | 100.9 |
 | 13 | RPG Template | 110.9 | 107.8 |
 | 14 | The Mystery of Z Island | 54.0 | 50.6 |
+
+## PRESS_KEY in Editor Mode — Architecture Note
+
+In editor mode, ImGui always has focus (`bImGuiGotFocus == true`), which gates the `GGTerrain_CheckKeys()` function. This means terrain debug keys (P, O, U, I, 1-8) cannot be detected via the normal `ImGui::GetIO().KeysDown[]` path.
+
+**Solution**: `PRESS_KEY` sets `g_autoHarnessInjectedKey` (global int in AutomationHarness.cpp). This is consumed OUTSIDE the `bImGuiGotFocus` gate in `GGTerrain_CheckKeys()` (`GGTerrain_part0.cpp`), which directly sets `ggterrain_key_pressed[]` and `ggterrain_key_state[]`. A one-frame clear mechanism (`s_clearInjectedKeyNextFrame`) prevents the pressed flag from persisting forever.
+
+**Key files**: `AutomationHarness.cpp` (sets `g_autoHarnessInjectedKey`), `GGTerrain_part0.cpp` (consumes it outside the `bImGuiGotFocus` block in `GGTerrain_CheckKeys()`).
+
+## Profiler Architecture — Critical Knowledge
+
+The Wicked Engine profiler has TWO layers of enable control:
+
+1. **`wi::profiler::SetEnabled(true/false)`** — Sets `ENABLED_REQUEST` in `wiProfiler.cpp`. Synced to `ENABLED` on the next `BeginFrame()`.
+2. **`bProfilerEnable`** (GameGuru, `M-GridEdit_part0.cpp:147`) — A GameGuru-level flag. **Every frame in editor mode**, `M-GridEditB_part3.cpp:75-78` checks this flag and actively calls `wi::profiler::SetEnabled(false)` if it's false.
+
+**Critical**: You MUST set `bProfilerEnable = true` alongside `wi::profiler::SetEnabled(true)`, or the editor code will immediately disable the profiler on the next frame. The `ENABLE_PROFILER` harness command does both.
 
 ## Notes
 

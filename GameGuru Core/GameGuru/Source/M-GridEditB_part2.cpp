@@ -1020,12 +1020,53 @@ static bool FirstMsOverThreshold(const char* line_begin, const char* line_end, f
 	return v > threshold_ms;
 }
 
+// Known children of "Update - Wicked" (ranges created inside Scene::Update / RenderPath3D::Update)
+static const char* s_WickedChildren[] = {
+	"Animations", "Animation Dependencies", "Frustum Culling", "Physics",
+	"Procedural Animations", "Script Components", "Spring Dependencies",
+	"Spline Update", "Input", "GUI Update", "Update Buffers (CPU)",
+	"Shadowmap packing", "Shadowmap Rendering",
+};
+
+// Known children of "Render"
+static const char* s_RenderChildren[] = {
+	"Shadowmap Rendering", "Shadowmap packing",
+};
+
+static bool IsChildOf(const char* name, const char** list, int count)
+{
+	for (int i = 0; i < count; i++)
+		if (strcmp(name, list[i]) == 0) return true;
+	return false;
+}
+
+// Extract the entry name from a profiler line like "\tName: X.XX ms" or "\tName (2x): X.XX ms"
+// Returns empty string if not a valid entry line.
+static std::string ExtractEntryName(const char* lineBegin, const char* lineEnd)
+{
+	if (lineEnd <= lineBegin || *lineBegin != '\t') return "";
+	const char* content = lineBegin + 1; // skip tab
+	// find last ':'
+	const char* lastColon = nullptr;
+	for (const char* p = lineEnd - 1; p >= content; --p)
+	{
+		if (*p == ':') { lastColon = p; break; }
+	}
+	if (!lastColon) return "";
+	// name is from content to lastColon, strip hit count " (Nx)"
+	std::string name(content, lastColon);
+	size_t parenPos = name.rfind(" (");
+	if (parenPos != std::string::npos) name = name.substr(0, parenPos);
+	return name;
+}
+
 void DrawProfilerDataColored_FirstMsOnly()
 {
 	const std::string profiler_data = wi::profiler::GetTextData();
 
 	const ImVec4 white = ImVec4(1, 1, 1, 1);
 	const ImVec4 yellow = ImVec4(1, 1, 0, 1);
+	const ImVec4 grey = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
 
 	const char* text = profiler_data.c_str();
 	const char* line_begin = text;
@@ -1038,10 +1079,58 @@ void DrawProfilerDataColored_FirstMsOnly()
 
 			if (line_end > line_begin)
 			{
-				const bool slow = FirstMsOverThreshold(line_begin, line_end, 1.0f);
+				std::string entryName = ExtractEntryName(line_begin, line_end);
 
+				// Skip the "Update" parent scope (it wraps everything and confuses the display)
+				if (entryName == "Update")
+				{
+					if (*p == '\0') break;
+					line_begin = p + 1;
+					continue;
+				}
+
+				// Determine indentation based on hierarchy
+				int indent = 0;
+				if (line_begin[0] == '\t') // is a child entry (has tab prefix)
+				{
+					indent = 1; // default: one level under CPU/GPU Frame header
+
+					// "Update - Logic - X" entries are grandchildren (show under Update - Logic)
+					if (entryName.find("Update - Logic - ") == 0)
+						indent = 2;
+					// Known Wicked-internal entries are children of Update - Wicked
+					else if (IsChildOf(entryName.c_str(), s_WickedChildren, _countof(s_WickedChildren)))
+						indent = 2;
+				}
+
+				// Build display line with indentation
+				const char* displayStart = line_begin;
+				if (line_begin[0] == '\t') displayStart++; // skip original tab
+
+				// Shorten "Update - Logic - X" to just "X"
+				std::string displayLine;
+				if (indent == 2 && entryName.find("Update - Logic - ") == 0)
+				{
+					// Replace "Update - Logic - AI: 6.97 ms" with "AI: 6.97 ms"
+					std::string shortName = entryName.substr(17); // skip "Update - Logic - "
+					const char* colonPos = strstr(displayStart, ":");
+					if (colonPos)
+						displayLine = shortName + std::string(colonPos);
+					else
+						displayLine = std::string(displayStart);
+				}
+				else
+				{
+					displayLine = std::string(displayStart);
+				}
+
+				// Add indentation prefix
+				const char* indentStr = (indent >= 2) ? "    " : (indent == 1) ? "  " : "";
+				std::string finalLine = std::string(indentStr) + displayLine;
+
+				const bool slow = FirstMsOverThreshold(finalLine.c_str(), finalLine.c_str() + finalLine.size(), 1.0f);
 				ImGui::PushStyleColor(ImGuiCol_Text, slow ? yellow : white);
-				ImGui::TextUnformatted(line_begin, line_end);
+				ImGui::TextUnformatted(finalLine.c_str());
 				ImGui::PopStyleColor();
 			}
 			else

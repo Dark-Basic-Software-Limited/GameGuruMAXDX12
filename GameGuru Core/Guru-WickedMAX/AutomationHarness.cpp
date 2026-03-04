@@ -23,6 +23,12 @@ extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* 
 #include "wiApplication.h"
 #include "wiScene.h"
 
+// Direct access to profiler internals for diagnostics
+namespace wi::profiler {
+	extern bool ENABLED;
+	extern bool ENABLED_REQUEST;
+}
+
 // The global Master instance
 extern Master master;
 
@@ -92,6 +98,13 @@ static bool s_initialized = false;
 // Set to true once the harness processes its first command.
 // Keeps app running even when window loses focus, so automation works while alt-tabbed.
 bool g_bAutomationActive = false;
+
+// Deferred key-up: hold key down for 2 frames so per-frame sampling detects the press
+static int s_pendingKeyUpVK = 0;     // virtual key code waiting for key-up
+static int s_pendingKeyUpFrames = 0; // frames remaining before sending WM_KEYUP
+
+// Injected key press for terrain key system — consumed by GGTerrainWicked_Update()
+int g_autoHarnessInjectedKey = 0; // VK code of key to inject, 0 = none
 
 static void AutoHarness_InitPaths(void)
 {
@@ -907,7 +920,11 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"GPU_FRAME_MS: %.2f\n",
 			cpuMs, gpuMs);
 
-		std::string profText = wi::profiler::GetTextData();
+		// Use cached text from Compose() which captures all GPU sub-ranges.
+		// GetTextData() called here during Update would miss GPU ranges
+		// because BeginFrame() clears in_use before Render creates them.
+		extern std::string GGPerf_GetCachedProfilerText();
+		std::string profText = GGPerf_GetCachedProfilerText();
 		if (!profText.empty() && written + (int)profText.size() < resultSize - 32)
 		{
 			written += _snprintf(result + written, resultSize - written,
@@ -1030,12 +1047,26 @@ static void Cmd_PressKey(const char* arg, char* result, int resultSize)
 		return;
 	}
 
-	// Post WM_KEYDOWN then WM_KEYUP to the main window
+	// Post WM_KEYDOWN to the main window for the game's own input handling
 	UINT scanCode = MapVirtualKey(vk, MAPVK_VK_TO_VSC);
 	LPARAM lParamDown = (1 /*repeat=1*/) | (scanCode << 16);
-	LPARAM lParamUp = (1 /*repeat=1*/) | (scanCode << 16) | (1 << 30) | (1 << 31);
 	PostMessage(g_pGlob->hWnd, WM_KEYDOWN, (WPARAM)vk, lParamDown);
-	PostMessage(g_pGlob->hWnd, WM_KEYUP, (WPARAM)vk, lParamUp);
+
+	// Also set ImGui key state directly — during test game mode, the ImGui WndProc
+	// handler is bypassed so WM_KEYDOWN never reaches io.KeysDown[]. This ensures
+	// terrain key sampling (GGTerrain_CheckKeys) detects the press.
+	if (vk < 256)
+		ImGui::GetIO().KeysDown[vk] = true;
+
+	// Set injected key for terrain key system — in editor mode, the timing
+	// between harness execution and GGTerrain_CheckKeys() can cause the rising
+	// edge detection to miss the press from io.KeysDown[] alone.
+	// GGTerrainWicked_Update() consumes this and clears it.
+	extern int g_autoHarnessInjectedKey;
+	g_autoHarnessInjectedKey = vk;
+
+	s_pendingKeyUpVK = vk;
+	s_pendingKeyUpFrames = 2;
 
 	_snprintf(result, resultSize, "OK: Pressed key '%s' (VK=0x%02X)", arg, vk);
 	result[resultSize - 1] = 0;
@@ -1344,6 +1375,21 @@ void AutoHarness_CheckForCommand(void)
 		s_initialized = true;
 	}
 
+	// Process deferred key-up: send WM_KEYUP after key was held down for enough frames
+	if (s_pendingKeyUpVK != 0 && g_pGlob && g_pGlob->hWnd)
+	{
+		s_pendingKeyUpFrames--;
+		if (s_pendingKeyUpFrames <= 0)
+		{
+			UINT scanCode = MapVirtualKey(s_pendingKeyUpVK, MAPVK_VK_TO_VSC);
+			LPARAM lParamUp = (1) | (scanCode << 16) | (1 << 30) | (1 << 31);
+			PostMessage(g_pGlob->hWnd, WM_KEYUP, (WPARAM)s_pendingKeyUpVK, lParamUp);
+			if (s_pendingKeyUpVK < 256)
+				ImGui::GetIO().KeysDown[s_pendingKeyUpVK] = false;
+			s_pendingKeyUpVK = 0;
+		}
+	}
+
 	// Fast check: does the command file exist?
 	DWORD attr = GetFileAttributesA(s_cmdPath);
 	if (attr == INVALID_FILE_ATTRIBUTES)
@@ -1470,6 +1516,34 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "LIST_LIGHTS") == 0)
 	{
 		Cmd_ListLights(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "ENABLE_PROFILER") == 0)
+	{
+		// Must set bProfilerEnable too — M-GridEditB_part3.cpp actively disables the
+		// profiler every frame in editor mode if bProfilerEnable is false
+		extern bool bProfilerEnable;
+		bProfilerEnable = true;
+		wi::profiler::SetEnabled(true);
+		_snprintf(result, sizeof(result), "OK: Profiler enabled (bProfilerEnable=true, SetEnabled=true)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DISABLE_PROFILER") == 0)
+	{
+		extern bool bProfilerEnable;
+		bProfilerEnable = false;
+		wi::profiler::SetEnabled(false);
+		_snprintf(result, sizeof(result), "OK: Profiler disabled");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "GET_PROFILER_STATUS") == 0)
+	{
+		_snprintf(result, sizeof(result),
+			"OK: REQ=%d EN=%d IsEnabled=%d CPU=%.2f GPU=%.2f",
+			wi::profiler::ENABLED_REQUEST?1:0, wi::profiler::ENABLED?1:0,
+			wi::profiler::IsEnabled()?1:0,
+			wi::profiler::GetCPUFrameTime(),
+			wi::profiler::GetGPUFrameTime());
+		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "QUIT") == 0)
 	{

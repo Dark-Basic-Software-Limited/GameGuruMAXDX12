@@ -4,6 +4,13 @@
 #include "GGAnimBridge.h"
 #include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
 #include "GGTerrain/GGTerrainWicked.h"
+#include "wiProfiler.h"
+
+// Cached profiler text — updated in Compose() when GPU ranges are active.
+// GetTextData() called during Update misses GPU sub-ranges because BeginFrame()
+// clears in_use before Render creates GPU ranges. Capturing in Compose() gets all ranges.
+static std::string g_cachedProfilerText;
+std::string GGPerf_GetCachedProfilerText() { return g_cachedProfilerText; }
 
 // Phase 3: Forward declarations for GG custom draw functions (terrain/trees/grass)
 extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphics::CommandList);
@@ -441,6 +448,11 @@ void MasterRenderer::Compose(CommandList cmd) const
 	// which can return an invalid allocation, causing an access violation and GPU TDR.
 	// Profiler timing data is still collected normally; use GetTextData() to read it safely.
 	wi::profiler::DisableDrawForThisFrame();
+
+	// Cache profiler text during Compose when all GPU ranges are active.
+	// GetTextData() called during Update would miss GPU sub-ranges.
+	if (wi::profiler::IsEnabled())
+		g_cachedProfilerText = wi::profiler::GetTextData();
 
 	__super::Compose(cmd);
 

@@ -175,6 +175,9 @@ extern cstr g_DeferTextureUpdateCurrentFolder_s;
 extern std::vector<std::string> g_DeferTextureUpdate;
 extern std::vector<int> g_DeferTextureUpdateIncompatibleTextures;
 
+// Automation harness injected key — defined in AutomationHarness.cpp, consumed by GGTerrain_CheckKeys()
+extern int g_autoHarnessInjectedKey;
+
 namespace GGTerrain
 {
 
@@ -218,7 +221,7 @@ DDSRequirements surfaceDDS;
 
 void GGTerrain_CheckKeys()
 {
-	ImGuiIO& io = ImGui::GetIO(); 
+	ImGuiIO& io = ImGui::GetIO();
 
 	for( int i = 0; i < 256; i++ )
 	{
@@ -9768,6 +9771,26 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 			}
 		}
 		*/
+	}
+
+	// Consume automation harness injected key (PRESS_KEY command).
+	// This runs OUTSIDE the bImGuiGotFocus gate because in editor mode ImGui always
+	// has focus, which skips GGTerrain_CheckKeys(). The injected key sets the pressed
+	// flag directly so GGTerrainWicked_Update() (called next) can read it.
+	// Clear last frame's inject first so the pressed flag is only true for one frame.
+	static int s_clearInjectedKeyNextFrame = -1;
+	if (s_clearInjectedKeyNextFrame >= 0 && s_clearInjectedKeyNextFrame < 256)
+	{
+		ggterrain_key_pressed[s_clearInjectedKeyNextFrame] = false;
+		ggterrain_key_state[s_clearInjectedKeyNextFrame] = false;
+		s_clearInjectedKeyNextFrame = -1;
+	}
+	if (::g_autoHarnessInjectedKey > 0 && ::g_autoHarnessInjectedKey < 256 && ggterrain_initialised)
+	{
+		ggterrain_key_pressed[::g_autoHarnessInjectedKey] = true;
+		ggterrain_key_state[::g_autoHarnessInjectedKey] = true;
+		s_clearInjectedKeyNextFrame = ::g_autoHarnessInjectedKey;
+		::g_autoHarnessInjectedKey = 0;
 	}
 
 	// Environmental Light Probe System

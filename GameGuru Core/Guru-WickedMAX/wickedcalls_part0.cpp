@@ -125,7 +125,7 @@ uint32_t iCulledAnimations = 0;
 uint32_t iRenderedPointShadows = 0;
 uint32_t iRenderedSpotShadows = 0;
 
-bool bEnable30FpsAnimations = false;
+bool bEnable30FpsAnimations = true;
 bool bEnableTerrainChunkCulling = true;
 bool bEnablePointShadowCulling = true;
 bool bEnableDelayPointShadow = false;
@@ -917,6 +917,7 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 			// clear any old wicked animation components (in case of a refresh)
 			if (pAnimSet->wickedanimentityindex > 0)
 			{
+				GGAnimBridge_ClearAnimObjectLink(pAnimSet->wickedanimentityindex);
 				AnimationComponent* animationcomponent = pScene->animations.GetComponent( pAnimSet->wickedanimentityindex );
 				if (animationcomponent)
 				{
@@ -1166,6 +1167,19 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 
 		// bridge: create AnimationDataComponent entities, set GG defaults
 		GGAnimBridge_OnLoadObject(pScene, pAnimSet->wickedanimentityindex);
+
+		// P8: Link animation entity to an ObjectComponent for visibility culling
+		if (pstate && pAnimSet->wickedanimentityindex > 0)
+		{
+			for (auto& pair : pstate->entityMeshMap)
+			{
+				if (pScene->objects.GetComponent(pair.second) != nullptr)
+				{
+					GGAnimBridge_SetAnimObjectLink(pAnimSet->wickedanimentityindex, pair.second);
+					break;
+				}
+			}
+		}
 		}
 	}
 }
@@ -1676,6 +1690,7 @@ void WickedCall_RemoveObject( sObject* pObject )
 			{
 				if (pAnimSet->wickedanimentityindex > 0)
 				{				
+					GGAnimBridge_ClearAnimObjectLink(pAnimSet->wickedanimentityindex);
 					AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent( pAnimSet->wickedanimentityindex );
 					if (animationcomponent)
 					{
