@@ -37,6 +37,9 @@ void MasterRenderer::Load()
 #endif
 	__super::Load();
 
+	// switch OFF JOLT (for now)
+	wi::physics::SetEnabled(false);
+
 	// remove VSYNC cap
 	wiEvent::SetVSync( false );
 
@@ -65,7 +68,7 @@ void MasterRenderer::Load()
 	setSnowOpacity(1.0);
 	setSnowOffset(0.0);
 	#endif
-	setBloomEnabled ( true );
+	setBloomEnabled ( true ); 
 	setShadowsEnabled ( true );
 	wiRenderer::SetTessellationEnabled(false); //PE: Tessellation dont work like this it has to be set per mesh, so have never worked.
 	setLightShaftsEnabled ( true );
@@ -189,7 +192,7 @@ void MasterRenderer::Update(float dt)
 		OPTICK_EVENT("GuruLoopLogic");
 #endif
 		// regular update mode
-		auto range = wiProfiler::BeginRangeCPU("Update - Logic");
+		auto range = wiProfiler::BeginRangeCPU("Update - Logic (Total)");
 		bool bFullyInitialised = GuruLoopLogic();
 		wiProfiler::EndRange(range);
 
@@ -260,7 +263,7 @@ void MasterRenderer::Update(float dt)
 	GGAnimBridge_PreUpdate(&wiScene::GetScene(), dt);
 
 	// super update
-	auto range2 = wiProfiler::BeginRangeCPU("Update - Wicked");
+	auto range2 = wiProfiler::BeginRangeCPU("Update - Wicked (Total)");
 	__super::Update(dt);
 	wiProfiler::EndRange(range2);
 }

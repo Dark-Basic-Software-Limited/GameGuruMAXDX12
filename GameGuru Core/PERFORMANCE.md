@@ -1005,3 +1005,57 @@ Priority 3 (GameGuru-side animation culling) has been implemented using Option A
 ### Remaining priorities
 
 Priorities 1 (cache dependency scan) and 2 (keyframe search caching) require **WickedEngine-side changes** and would save an additional ~17-20 ms estimated. With those, Update-Wicked could reach ~3 ms (matching DX11's 2.57 ms).
+
+---
+
+## Phase 10: Performance Panel Display Bug Investigation
+
+### Problem
+
+The "Performance data" ImGui panel shows cascading/staircase duplicate entries. Instead of a clean list of CPU and GPU profiler entries, the panel displays:
+- 1 CPU Frame header + entries
+- Then 5-6 repeated GPU Frame headers, each with progressively fewer CPU-named entries
+
+See `PerformanceDataPanel.jpg` in the repo root for the visual artifact.
+
+### Investigation findings
+
+**Clean data from harness**: `GET_PERF_DATA` (which reads `g_cachedProfilerText` set during `Compose()`) returns **correct, non-duplicated** profiler data. 1 CPU Frame + 1 GPU Frame header, ~28 CPU entries, ~24 GPU entries.
+
+**Display call path**:
+```
+game_main_loop() → sliders_loop() → tab_tab_visuals(iPage, 1)
+  → DisplayPerformanceData() → DrawProfilerDataColored_FirstMsOnly()
+    → wi::profiler::GetTextData()  ← called during Update(), not Compose()
+```
+
+**Eliminated causes**:
+- Multiple `DisplayPerformanceData` calls per frame — confirmed only 1 call via single `sliders_loop()` call
+- Duplicate ImGui window IDs — unique ID `"Performance data##DisplayPerformanceData"`
+- `wi::profiler::DrawData()` overlay — properly suppressed via `DisableDrawForThisFrame()` in `MasterRenderer::Compose()`
+- Editor call path conflict — editor loop returns early during test game mode
+
+**Primary suspect: Thread-unsafe `GetTextData()` iteration**
+
+`GetTextData()` (`wiProfiler.cpp:686`) iterates the `ranges` flat_hash_map (`ska::flat_hash_map<size_t, Range>`) **without acquiring the profiler mutex**, while `BeginRangeCPU()` (line 203) **does acquire the lock** and can insert into/rehash the map from other threads. During `Update()`, profiler ranges are actively being started/ended by the engine.
+
+The harness data is clean because `g_cachedProfilerText` is captured during `Compose()` (end of frame, all ranges complete). The display data is captured during `Update()` (mid-frame, ranges actively being modified).
+
+**Secondary issue**: The `entryName == "Update"` skip in `DrawProfilerDataColored_FirstMsOnly()` doesn't appear to work in the screenshot, despite the `ExtractEntryName` logic looking correct.
+
+### Diagnostic deployed (commit 5233fb3c)
+
+Replaced `DrawProfilerDataColored_FirstMsOnly()` with raw `GetTextData()` display + a DIAG stats line showing:
+- Call count (increments each invocation)
+- Text length
+- Line count
+- CPU Frame header count
+- GPU Frame header count
+
+If the raw text shows `CPU=1 GPU=1`, the bug is in `DrawProfilerDataColored_FirstMsOnly()`. If it shows `GPU>1`, the bug is in `GetTextData()` (thread safety).
+
+### Next steps
+
+1. Check the DIAG output to determine which layer produces the cascading
+2. If `GetTextData()` thread issue confirmed: either add mutex locking to `GetTextData()`, or cache the text during `Compose()` and reuse it during `Update()` (similar to the harness approach)
+3. Remove diagnostic code after fix is verified

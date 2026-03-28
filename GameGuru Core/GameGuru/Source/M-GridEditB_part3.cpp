@@ -1445,6 +1445,13 @@ void Wicked_Update_Cloud(void* visual)
 void Wicked_Update_Visuals(void *voidvisual)
 {
 	visualstype* visuals = (visualstype *) voidvisual;
+
+	// prevent this being called if visual not initialised
+	if (visuals->CameraNEAR_f == 0 && visuals->CameraFAR_f == 0)
+	{
+		return;
+	}
+
 	wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 	if (weather)
 	{

@@ -585,6 +585,9 @@
     <ClInclude Include="CrashLogger.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="AutomationHarness.h" />
+    <ClInclude Include="GGTerrain\GGTerrainWicked.h" />
+    <ClInclude Include="GGAnimBridge.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -1018,6 +1021,18 @@
     <ClCompile Include="..\GameGuru\Source\M-DAINew.cpp">
       <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
     </ClCompile>
+    <ClCompile Include="..\GameGuru\Imgui\imgui_gg_dx12_bridge.cpp" />
+    <ClCompile Include="AutomationHarness.cpp" />
+    <ClCompile Include="GGTerrain\GGTerrainWicked.cpp" />
+    <ClCompile Include="GGAnimBridge.cpp" />
+    <ClCompile Include="photon_stubs.cpp" />
+    <ClCompile Include="linker_stubs.cpp" />
+    <ClCompile Include="..\GameGuru\Source\MapEditor.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GameGuru\Source\M-RealSense.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico">
@@ -1231,33 +1246,6 @@
     <FxCompile Include="tracers\BulletTracerPS.hlsl">
       <Filter>GGTerrain\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\objectPS_hologram2.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\objectVS_common_tree.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\objectVS_prepass_trees.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\shadowVS_alphatest_tree.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\objectPS_transparent_glass.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\objectPS_custom_water.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\objectPS_grid.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\damageBloodPS.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
-    <FxCompile Include="GGTerrain\CustomShaders\damageBloodVS.hlsl">
-      <Filter>CustomShaders</Filter>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="GGTerrain\Shaders\PBR\brdf.hlsli">
@@ -1292,6 +1280,339 @@
     </None>
     <None Include="GGTerrain\CustomShaders\objectHF.hlsli">
       <Filter>CustomShaders</Filter>
+    </None>
+    <None Include="GGTerrain\CustomShaders\damageBloodPS.hlsl" />
+    <None Include="GGTerrain\CustomShaders\damageBloodVS.hlsl" />
+    <None Include="GGTerrain\CustomShaders\objectPS_custom_water.hlsl" />
+    <None Include="GGTerrain\CustomShaders\objectPS_grid.hlsl" />
+    <None Include="GGTerrain\CustomShaders\objectPS_hologram2.hlsl" />
+    <None Include="GGTerrain\CustomShaders\objectPS_transparent_glass.hlsl" />
+    <None Include="GGTerrain\CustomShaders\objectVS_common_tree.hlsl" />
+    <None Include="GGTerrain\CustomShaders\objectVS_prepass_trees.hlsl" />
+    <None Include="GGTerrain\CustomShaders\shadowVS_alphatest_tree.hlsl" />
+    <None Include="..\GameGuru\Source\vc140.pdb">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\Common_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\Common_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\Common_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\Common_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\G-Entity_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\G-Entity_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\G-Entity_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\G-Entity_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\G-Gun_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\G-Gun_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\G-Gun_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\G-Gun_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-CharacterCreatorPlus_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-CharacterCreatorPlus_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-CharacterCreatorPlus_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-CharacterCreatorPlus_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-DAINew_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-DAINew_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-EBE_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-EBE_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-EBE_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Entity_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Entity_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Entity_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Entity_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Entity_part4.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Entity_part5.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Game_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Game_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Game_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Game_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part4.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part5.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part6.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part7.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEdit_part8.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part4.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part5.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part6.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part7.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part8.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part9.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part10.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part11.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part12.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part13.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part14.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part15.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part16.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part17.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part18.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part19.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part20.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part21.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part22.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part23.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-GridEditB_part24.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Gun_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Gun_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Importer_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Importer_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Importer_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Importer_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Importer_part4.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Importer_part5.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Importer_part6.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Importer_part7.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-LUA-Entity_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-LUA-Entity_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-MapFile_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-MapFile_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-MapFile_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-MapFile_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-MPPhoton_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-MPPhoton_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-MPPhoton_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-MPPhoton_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Physics_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Physics_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-TerrainNew_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-TerrainNew_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-TerrainNew_part2.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-TerrainNew_part3.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-TerrainNew_part4.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-TerrainNew_part5.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-TerrainNew_part6.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Titles_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Titles_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Visuals_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-Visuals_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-WelcomeSystem_part0.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="..\GameGuru\Source\M-WelcomeSystem_part1.cpp">
+      <Filter>GameGuruEngine\GameGuruSourceCode</Filter>
+    </None>
+    <None Include="master_part0.cpp">
+      <Filter>Code</Filter>
+    </None>
+    <None Include="master_part1.cpp">
+      <Filter>Code</Filter>
+    </None>
+    <None Include="wickedcalls_part0.cpp">
+      <Filter>Code</Filter>
+    </None>
+    <None Include="wickedcalls_part1.cpp">
+      <Filter>Code</Filter>
+    </None>
+    <None Include="wickedcalls_part2.cpp">
+      <Filter>Code</Filter>
+    </None>
+    <None Include="wickedcalls_part3.cpp">
+      <Filter>Code</Filter>
+    </None>
+    <None Include="wickedcalls_part4.cpp">
+      <Filter>Code</Filter>
     </None>
   </ItemGroup>
 </Project>

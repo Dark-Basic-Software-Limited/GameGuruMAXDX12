@@ -779,12 +779,13 @@
 		{
 			// regular brass
 			if (t.num == 0)  t.num = 1;
+			t.brass_s = "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"; // insane fix for debug build
 			t.brass_s = "";
 			t.brass_s = t.brass_s + "gamecore\\brass\\brass";
-			t.brass_s += Str(t.num);
-			t.brass_s += "\\brass";
-			t.brass_s += Str(t.num);
-			t.brass_s += ".x";
+			t.brass_s = t.brass_s + Str(t.num);
+			t.brass_s = t.brass_s + "\\brass";
+			t.brass_s = t.brass_s + Str(t.num);
+			t.brass_s = t.brass_s + ".x";
 			t.brassobj = loadbrass(t.brass_s.Get());
 			if (t.brassobj == 0)
 			{

@@ -1070,7 +1070,11 @@ void WickedCall_RotateLimb(sObject* pObject, sFrame* pFrame, float fAX, float fA
 						XMFLOAT4 rot;
 						XMStoreFloat4(&rot, XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ)));
 						int rotSamplerIdx = pAnimationChannel->samplerIndex;
-						GGAnimBridge_ApplyAdditiveRotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx, rot);
+
+						////
+						////This caused slowdown due to animbridge store/alter/restore antics!!!
+						////GGAnimBridge_ApplyAdditiveRotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx, rot);
+						////
 					}
 				}
 			}

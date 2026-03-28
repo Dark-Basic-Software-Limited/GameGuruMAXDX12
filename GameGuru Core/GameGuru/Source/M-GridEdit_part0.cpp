@@ -1456,6 +1456,9 @@ bool commonexecutable_loop_for_game(void)
 	OPTICK_EVENT();
 #endif
 
+	// cannot proceed until we have visual data
+	if (t.visuals.CameraNEAR_f == 0 && t.visuals.CameraFAR_f == 0) return false;
+
 	//PE: Support delayed terrain update in standalone.
 	extern int iTriggerInvalidateAfterFrames;
 

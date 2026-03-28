@@ -322,6 +322,10 @@ void Master::InitializeSecondaries()
 	infoDisplay.fpsinfo = false;// true;
 	infoDisplay.resolution = false;// true;
 	master_renderer = &masterrenderer;
+
+	// why did I need to add this when VSC compiles and runs fine without it?? 2026 vs 2022 perhaps?
+	masterrenderer.init(canvas);  // pass Master's valid canvas first!
+
 	masterrenderer.Load();
 	masterrenderer.setMSAASampleCount(1);
 	ActivatePath(&masterrenderer);
@@ -1512,7 +1516,7 @@ void Master::RunCustom()
 		}
 
 		// regular logic loop (stripped out render aspects)
-		auto range = wiProfiler::BeginRangeCPU("Update - Logic");
+		auto range = wiProfiler::BeginRangeCPU("Update - Logic (Total)");
 		bool bFullyInitialised = GuruLoopLogic();
 		wiProfiler::EndRange(range);
 

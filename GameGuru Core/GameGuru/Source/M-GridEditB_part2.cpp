@@ -1044,8 +1044,15 @@ static bool IsChildOf(const char* name, const char** list, int count)
 // Returns empty string if not a valid entry line.
 static std::string ExtractEntryName(const char* lineBegin, const char* lineEnd)
 {
-	if (lineEnd <= lineBegin || *lineBegin != '\t') return "";
-	const char* content = lineBegin + 1; // skip tab
+	//if (lineEnd <= lineBegin || *lineBegin != '\t') return "";
+	//const char* content = lineBegin + 1; // skip tab
+	if (lineEnd <= lineBegin ) return "";
+	const char* content = lineBegin;
+	if (*lineBegin == '\t')
+	{
+		content = lineBegin + 1; // skip tab
+	}
+
 	// find last ':'
 	const char* lastColon = nullptr;
 	for (const char* p = lineEnd - 1; p >= content; --p)
@@ -1062,7 +1069,9 @@ static std::string ExtractEntryName(const char* lineBegin, const char* lineEnd)
 
 void DrawProfilerDataColored_FirstMsOnly()
 {
-	const std::string profiler_data = wi::profiler::GetTextData();
+	// we do not want to miss sub-ranges do we :)
+	extern std::string GGPerf_GetCachedProfilerText();
+	const std::string profiler_data = GGPerf_GetCachedProfilerText();// wi::profiler::GetTextData();
 
 	const ImVec4 white = ImVec4(1, 1, 1, 1);
 	const ImVec4 yellow = ImVec4(1, 1, 0, 1);
@@ -1079,12 +1088,12 @@ void DrawProfilerDataColored_FirstMsOnly()
 
 			if (line_end > line_begin)
 			{
+				// line item name
 				std::string entryName = ExtractEntryName(line_begin, line_end);
 
-				// Skip the "Update" parent scope (it wraps everything and confuses the display)
+				// skip the double-counting update range item!
 				if (entryName == "Update")
 				{
-					if (*p == '\0') break;
 					line_begin = p + 1;
 					continue;
 				}
@@ -1092,37 +1101,15 @@ void DrawProfilerDataColored_FirstMsOnly()
 				// Determine indentation based on hierarchy
 				int indent = 0;
 				if (line_begin[0] == '\t') // is a child entry (has tab prefix)
-				{
 					indent = 1; // default: one level under CPU/GPU Frame header
-
-					// "Update - Logic - X" entries are grandchildren (show under Update - Logic)
-					if (entryName.find("Update - Logic - ") == 0)
-						indent = 2;
-					// Known Wicked-internal entries are children of Update - Wicked
-					else if (IsChildOf(entryName.c_str(), s_WickedChildren, _countof(s_WickedChildren)))
-						indent = 2;
-				}
 
 				// Build display line with indentation
 				const char* displayStart = line_begin;
 				if (line_begin[0] == '\t') displayStart++; // skip original tab
-
-				// Shorten "Update - Logic - X" to just "X"
 				std::string displayLine;
-				if (indent == 2 && entryName.find("Update - Logic - ") == 0)
-				{
-					// Replace "Update - Logic - AI: 6.97 ms" with "AI: 6.97 ms"
-					std::string shortName = entryName.substr(17); // skip "Update - Logic - "
-					const char* colonPos = strstr(displayStart, ":");
-					if (colonPos)
-						displayLine = shortName + std::string(colonPos);
-					else
-						displayLine = std::string(displayStart);
-				}
-				else
-				{
-					displayLine = std::string(displayStart);
-				}
+				displayLine = std::string(displayStart);
+				int iEndOfLineCount = p - displayStart;
+				displayLine[iEndOfLineCount] = 0;
 
 				// Add indentation prefix
 				const char* indentStr = (indent >= 2) ? "    " : (indent == 1) ? "  " : "";
@@ -1146,6 +1133,7 @@ void DrawProfilerDataColored_FirstMsOnly()
 	}
 }
 
+// My own performance panel
 static void DisplayPerformanceData(bool* p_open)
 {
 	const float DISTANCE = 10.0f;
@@ -1170,75 +1158,18 @@ static void DisplayPerformanceData(bool* p_open)
 	{
 		// draw performance data info
 		ImGui::SetWindowFontScale(1.0);
-		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+		ImGui::Text("FPS: %.1f (DirectX 12)", ImGui::GetIO().Framerate);
 		ImGui::Separator();
 
-		// DIAGNOSTIC: show raw profiler text with stats to diagnose cascading duplicates
-		{
-			static int s_dispCallCount = 0;
-			s_dispCallCount++;
-			std::string profiler_data = wi::profiler::GetTextData();
-			int numNewlines = 0, numGPU = 0, numCPU = 0;
-			for (size_t i = 0; i < profiler_data.size(); i++)
-			{
-				if (profiler_data[i] == '\n') numNewlines++;
-				if (i == 0 || profiler_data[i-1] == '\n')
-				{
-					if (profiler_data.compare(i, 9, "GPU Frame") == 0) numGPU++;
-					if (profiler_data.compare(i, 9, "CPU Frame") == 0) numCPU++;
-				}
-			}
-			ImGui::Text("DIAG: call#%d len=%d lines=%d CPU=%d GPU=%d", s_dispCallCount, (int)profiler_data.size(), numNewlines, numCPU, numGPU);
-			ImGui::Separator();
-			// Show the raw profiler text to see if GetTextData itself produces cascading
-			ImGui::TextUnformatted(profiler_data.c_str());
-		}
+		// coloured performance metrics!
+		DrawProfilerDataColored_FirstMsOnly();
 
+		// end of panel
 		ImGui::Separator();
 		ImGui::Text("");
 	}
 	ImGui::End();
 }
-
-/* simplified for DX12 working test
-static void DisplayPerformanceData(bool* p_open)
-{
-	const float DISTANCE = 10.0f;
-	static int corner = 0;
-	ImGuiIO& io = ImGui::GetIO();
-	if (corner != -1)
-	{
-		ImGuiViewport* viewport = ImGui::GetMainViewport();
-		ImVec2 window_pos = ImVec2((corner & 1) ? (viewport->Pos.x + viewport->Size.x - DISTANCE) : (viewport->Pos.x + DISTANCE), (corner & 2) ? (viewport->Pos.y + viewport->Size.y - DISTANCE) : (viewport->Pos.y + DISTANCE));
-		ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
-		ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-	}
-	ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
-	if (ImGui::Begin("##DisplayPerformanceData", p_open, (corner != -1 ? ImGuiWindowFlags_NoMove : 0) | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
-	{
-		ImGui::Text("Performance data\n");
-		ImGui::Separator();
-
-		float cpuFrameMs = wi::profiler::GetCPUFrameTime();
-		float gpuFrameMs = wi::profiler::GetGPUFrameTime();
-
-		ImGui::Text("FPS: %.1f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
-		ImGui::Text("CPU Frame: %.2f ms", cpuFrameMs);
-		ImGui::Text("GPU Frame: %.2f ms", gpuFrameMs);
-
-		ImGui::Separator();
-
-		std::string profiler_data = wi::profiler::GetTextData();
-		if (!profiler_data.empty())
-			ImGui::TextUnformatted(profiler_data.c_str());
-		else
-			ImGui::TextDisabled("Profiler collecting data...");
-
-		ImGui::Separator();
-	}
-	ImGui::End();
-}
-*/
 
 void imgui_Customize_Water(int mode);
 

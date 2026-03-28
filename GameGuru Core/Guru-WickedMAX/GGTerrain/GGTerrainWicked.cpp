@@ -453,7 +453,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	if (GGTerrain_GetKeyPressed(0x49)) // GGKEY_I
 	{
 		wickedNormalVisMode = 1 - wickedNormalVisMode;
-		wi::renderer::SetDebugNormalVis(wickedNormalVisMode != 0);
+		wi::renderer::SetDebugNormalVis(wickedNormalVisMode != 0); // VS could not find this!!
 	}
 
 	// O key: toggle terrain rendering on/off

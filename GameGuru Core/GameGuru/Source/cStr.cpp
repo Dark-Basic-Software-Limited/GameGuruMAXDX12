@@ -177,7 +177,7 @@ cStr& cStr::operator += (const cStr& other)
 	if (new_size >= m_capacity)
 	{
 		// Need to reallocate! Let's grow the capacity.
-		int new_capacity = new_size + 1;
+		int new_capacity = new_size + 2;// 1;
 		char* newstring = new char[new_capacity];
 		strcpy(newstring, m_pString);
 		delete[] m_pString;
