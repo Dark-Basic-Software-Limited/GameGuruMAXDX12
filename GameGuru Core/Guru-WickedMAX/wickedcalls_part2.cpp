@@ -956,7 +956,7 @@ void WickedCall_GlueObjectToObject(sObject* pObjectToGlue, sObject* pParentObjec
 											AnimationComponent* parentanimationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 											if (parentanimationcomponent)
 											{
-												GGAnimBridge_SetPrimaryAnimSync(animentity, parentanimentity);
+												////GGAnimBridge_SetPrimaryAnimSync(animentity, parentanimentity);
 											}
 										}
 									}
@@ -964,7 +964,7 @@ void WickedCall_GlueObjectToObject(sObject* pObjectToGlue, sObject* pParentObjec
 								else
 								{
 									// unsync child from parent
-									GGAnimBridge_ClearPrimaryAnimSync(animentity);
+									////GGAnimBridge_ClearPrimaryAnimSync(animentity);
 								}
 							}
 						}
@@ -993,7 +993,7 @@ void WickedCall_UnGlueObjectToObject(sObject* pObjectToUnGlue)
 					AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 					if (animationcomponent)
 					{
-						GGAnimBridge_ClearPrimaryAnimSync(animentity);
+						////GGAnimBridge_ClearPrimaryAnimSync(animentity);
 					}
 				}
 			}
@@ -1067,14 +1067,12 @@ void WickedCall_RotateLimb(sObject* pObject, sFrame* pFrame, float fAX, float fA
 						// Modify rotation keyframes directly so the animation system
 						// evaluates them and the armature picks up the result in the
 						// normal single pass (no PostUpdate re-run needed).
-						XMFLOAT4 rot;
-						XMStoreFloat4(&rot, XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ)));
-						int rotSamplerIdx = pAnimationChannel->samplerIndex;
-
-						////
-						////This caused slowdown due to animbridge store/alter/restore antics!!!
+						////XMFLOAT4 rot;
+						////XMStoreFloat4(&rot, XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ)));
+						////int rotSamplerIdx = pAnimationChannel->samplerIndex;
 						////GGAnimBridge_ApplyAdditiveRotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx, rot);
-						////
+						pAnimationChannel->iUsePreFrame = 1;
+						pAnimationChannel->qPreFrameRotation = XMQuaternionRotationRollPitchYaw(GGToRadian(fAX), GGToRadian(fAY), GGToRadian(fAZ));
 					}
 				}
 			}
@@ -1162,10 +1160,8 @@ void WickedCall_OverrideLimbWithCombined(sObject* pObject, sFrame* pFrame, bool 
 						XMStoreFloat4(&currentRot, XMQuaternionRotationMatrix(XMLoadFloat4x4(&mat44)));
 						XMFLOAT3 trans(pFrame->matCombined._41, pFrame->matCombined._42, pFrame->matCombined._43);
 
-						GGAnimBridge_SetPreFrame(pAnimationChannelPos->target, 2, 1.0f,
-							trans, XMFLOAT4(0, 0, 0, 1), XMFLOAT3(1, 1, 1));
-						GGAnimBridge_SetPreFrame(pAnimationChannelRot->target, 2, 1.0f,
-							XMFLOAT3(0, 0, 0), currentRot, XMFLOAT3(1, 1, 1));
+						////GGAnimBridge_SetPreFrame(pAnimationChannelPos->target, 2, 1.0f,	trans, XMFLOAT4(0, 0, 0, 1), XMFLOAT3(1, 1, 1));
+						////GGAnimBridge_SetPreFrame(pAnimationChannelRot->target, 2, 1.0f,	XMFLOAT3(0, 0, 0), currentRot, XMFLOAT3(1, 1, 1));
 					}
 				}
 			}
@@ -1189,8 +1185,8 @@ void WickedCall_OverrideLimbOff(sObject* pObject, sFrame* pFrame)
 				{
 					AnimationComponent::AnimationChannel* pAnimationChannelPos = &animationcomponent->channels[iIndexPos];
 					AnimationComponent::AnimationChannel* pAnimationChannelRot = &animationcomponent->channels[iIndexRot];
-					if (pAnimationChannelPos) GGAnimBridge_ClearPreFrame(pAnimationChannelPos->target);
-					if (pAnimationChannelRot) GGAnimBridge_ClearPreFrame(pAnimationChannelRot->target);
+					////if (pAnimationChannelPos) GGAnimBridge_ClearPreFrame(pAnimationChannelPos->target);
+					////if (pAnimationChannelRot) GGAnimBridge_ClearPreFrame(pAnimationChannelRot->target);
 				}
 			}
 		}
@@ -1215,11 +1211,43 @@ void WickedCall_SetBip01Position(sObject* pObject, sFrame* pFrame, int iUseMode,
 					{
 						if (iUseMode == 3)
 						{
+							pAnimationChannel->iUsePreFrame = 3;
+							pAnimationChannel->vPreFrameTranslation = XMVectorSet(0, 0, 0, 0);
+						}
+						else
+						{
+							pAnimationChannel->iUsePreFrame = 0;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void WickedCall_SetBip01PositionDX12(sObject* pObject, sFrame* pFrame, int iUseMode, float fX, float fZ)
+{
+	if (pFrame->pAnimRef)
+	{
+		if (pObject->pAnimationSet)
+		{
+			uint64_t wickedanimationindex = pObject->pAnimationSet->wickedanimentityindex;
+			AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(wickedanimationindex);
+			if (animationcomponent)
+			{
+				int iIndexPos = pFrame->pAnimRef->wickedanimationchannel[0];
+				if (iIndexPos >= 0)//&& iIndexPos < animationcomponent->channels.size() )
+				{
+					AnimationComponent::AnimationChannel* pAnimationChannel = &animationcomponent->channels[iIndexPos];
+					if (pAnimationChannel)
+					{
+						if (iUseMode == 3)
+						{
 							// Zero Bip01 X/Z in the animation keyframe data itself so the
 							// engine's normal pipeline produces (0, Y, 0). This prevents
 							// double-movement (root motion extraction + bone animation drift).
 							int samplerIdx = pAnimationChannel->samplerIndex;
-							GGAnimBridge_ZeroBip01TranslationXZ(&wiScene::GetScene(), wickedanimationindex, samplerIdx);
+							////GGAnimBridge_ZeroBip01TranslationXZ(&wiScene::GetScene(), wickedanimationindex, samplerIdx);
 
 							// Freeze Bip01 rotation keyframes to the first keyframe's value
 							// so all animation sections produce the same rotation. Capture the
@@ -1234,18 +1262,17 @@ void WickedCall_SetBip01Position(sObject* pObject, sFrame* pFrame, int iUseMode,
 								if (pRotChannel)
 								{
 									int rotSamplerIdx = pRotChannel->samplerIndex;
-									GGAnimBridge_ZeroBip01Rotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx, &baseRotation);
+									////GGAnimBridge_ZeroBip01Rotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx, &baseRotation);
 								}
 							}
 
-							GGAnimBridge_SetPreFrame(pAnimationChannel->target, 3, 1.0f,
-								XMFLOAT3(0, 0, 0), baseRotation, XMFLOAT3(1, 1, 1));
+							////GGAnimBridge_SetPreFrame(pAnimationChannel->target, 3, 1.0f, XMFLOAT3(0, 0, 0), baseRotation, XMFLOAT3(1, 1, 1));
 						}
 						else
 						{
 							// Restore original Bip01 X/Z keyframe data
 							int samplerIdx = pAnimationChannel->samplerIndex;
-							GGAnimBridge_RestoreBip01TranslationXZ(&wiScene::GetScene(), wickedanimationindex, samplerIdx);
+							////GGAnimBridge_RestoreBip01TranslationXZ(&wiScene::GetScene(), wickedanimationindex, samplerIdx);
 
 							// Restore original Bip01 rotation keyframe data
 							int iIndexRot = pFrame->pAnimRef->wickedanimationchannel[1];
@@ -1255,11 +1282,11 @@ void WickedCall_SetBip01Position(sObject* pObject, sFrame* pFrame, int iUseMode,
 								if (pRotChannel)
 								{
 									int rotSamplerIdx = pRotChannel->samplerIndex;
-									GGAnimBridge_RestoreBip01Rotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx);
+									/////GGAnimBridge_RestoreBip01Rotation(&wiScene::GetScene(), wickedanimationindex, rotSamplerIdx);
 								}
 							}
 
-							GGAnimBridge_ClearPreFrame(pAnimationChannel->target);
+							/////GGAnimBridge_ClearPreFrame(pAnimationChannel->target);
 						}
 					}
 				}
@@ -1288,12 +1315,11 @@ void WickedCall_SetBip01Rotation(sObject* pObject, sFrame* pFrame, int iUseMode,
 						{
 							XMFLOAT4 rot;
 							XMStoreFloat4(&rot, XMQuaternionRotationRollPitchYaw(0, 0, 0));
-							GGAnimBridge_SetPreFrame(pAnimationChannel->target, iUseMode, 1.0f,
-								XMFLOAT3(0, 0, 0), rot, XMFLOAT3(1, 1, 1));
+							////GGAnimBridge_SetPreFrame(pAnimationChannel->target, iUseMode, 1.0f,	XMFLOAT3(0, 0, 0), rot, XMFLOAT3(1, 1, 1));
 						}
 						else
 						{
-							GGAnimBridge_ClearPreFrame(pAnimationChannel->target);
+							////GGAnimBridge_ClearPreFrame(pAnimationChannel->target);
 						}
 					}
 				}
@@ -1395,8 +1421,7 @@ void WickedCall_SetObjectPreFrames(sObject* pObject, LPSTR pParentFrameName, flo
 									rot = ((const XMFLOAT4*)animationdata->keyframe_data.data())[keyLeft];
 								if (i == 2)
 									scl = ((const XMFLOAT3*)animationdata->keyframe_data.data())[keyLeft];
-								GGAnimBridge_SetPreFrame(pAnimationChannel->target, iPreFrameMode, fSmooth,
-									trans, rot, scl);
+								////GGAnimBridge_SetPreFrame(pAnimationChannel->target, iPreFrameMode, fSmooth,	trans, rot, scl);
 							}
 						}
 					}

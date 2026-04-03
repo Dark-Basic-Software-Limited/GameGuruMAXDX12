@@ -260,7 +260,7 @@ void MasterRenderer::Update(float dt)
 	if (dt > (1.0f / 30.0f)) dt = 1.0f / 30.0f;
 
 	// animation bridge pre-hook (before scene->Update runs animations)
-	GGAnimBridge_PreUpdate(&wiScene::GetScene(), dt);
+	////GGAnimBridge_PreUpdate(&wiScene::GetScene(), dt);
 
 	// super update
 	auto range2 = wiProfiler::BeginRangeCPU("Update - Wicked (Total)");
@@ -270,7 +270,7 @@ void MasterRenderer::Update(float dt)
 
 void MasterRenderer::PostUpdate()
 {
-	GGAnimBridge_PostUpdate(&wiScene::GetScene());
+	////GGAnimBridge_PostUpdate(&wiScene::GetScene());
 	__super::PostUpdate();
 }
 

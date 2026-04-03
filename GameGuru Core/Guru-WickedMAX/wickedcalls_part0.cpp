@@ -897,8 +897,360 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 	if (pFrame->pSibling) WickedCall_LoadNode(pFrame->pSibling, parent, root, state);
 }
 
-
 void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
+{
+	// get true pointer to loader state
+	WickedLoaderState* pstate = (WickedLoaderState*)pstateptr;
+
+	// current scene and root frame
+	wiScene::Scene* pScene = &wiScene::GetScene();
+	sFrame* pRootFrame = pObject->pFrame;
+
+	// for objects that have animation data, create equivilant for wicked engine
+	if (pObject->pAnimationSet)
+	{
+		// go through [first] animation set[s]
+		sAnimationSet* pAnimSet = pObject->pAnimationSet;
+		{
+			// clear any old wicked animation components (in case of a refresh)
+			if (pAnimSet->wickedanimentityindex > 0)
+			{
+				AnimationComponent* animationcomponent = pScene->animations.GetComponent(pAnimSet->wickedanimentityindex);
+				if (animationcomponent)
+				{
+					for (int i = 0; i < animationcomponent->samplers.size(); i++)
+					{
+						wiScene::GetScene().Entity_Remove(animationcomponent->samplers[i].data);
+					}
+				}
+				wiScene::GetScene().Entity_Remove(pAnimSet->wickedanimentityindex);
+				pAnimSet->wickedanimentityindex = 0;
+			}
+
+			// for each animation, create wicked animation component
+			Entity animentity = CreateEntity();
+			pScene->names.Create(animentity) = pAnimSet->szName;
+			AnimationComponent& animationcomponent = pScene->animations.Create(animentity);
+			pAnimSet->wickedanimentityindex = animentity;
+
+			animationcomponent.objectIndex = 0;
+			if (pstate->entityMeshMap.size() > 0)
+			{
+				//PE: TODO better way to indentify supported animation culling objects needed ?
+				DWORD objid = pObject->dwObjectNumber;
+				int masterId = -1;
+				if (t.tupdatee > 0)
+				{
+					if (t.tupdatee < g.entityelementlist)
+						masterId = t.entityelement[t.tupdatee].bankindex;
+				}
+				if (masterId < 1 && objid > 70000)
+				{
+					//PE: Locate object.
+					for (int i = 0; i < g.entityelementlist; i++)
+					{
+						if (t.entityelement[i].obj == objid)
+						{
+							masterId = t.entityelement[i].bankindex;
+							break;
+						}
+					}
+				}
+				else if (masterId < 1 && objid > 50000 && objid < 60000)
+				{
+					masterId = objid - 50000;
+				}
+				if (masterId > 0)
+				{
+					if (masterId > 0 && masterId < t.entityprofile.size())
+					{
+						if (t.entityprofile[masterId].ischaracter && (pstate->entityMeshMap.size() >= 4 && pstate->entityMeshMap.size() <= 6))
+						{
+							//PE: CCP Map all animations to first mesh for culling.
+							animationcomponent.objectIndex = pstate->entityMeshMap.begin()->second;
+						}
+					}
+				}
+				if (animationcomponent.objectIndex == 0 && objid != 50000)
+				{
+					//PE: Only 1 mesh for culling will work.
+					if (pstate->entityMeshMap.size() == 1)
+					{
+						animationcomponent.objectIndex = pstate->entityMeshMap.begin()->second;
+					}
+					else
+					{
+						//PE: Check for LOD and hidden meshes.
+						int iTotalVisible = 0;
+						int iVisibleIndex = 0;
+						for (std::unordered_map<int, Entity>::iterator it = pstate->entityMeshMap.begin(); it != pstate->entityMeshMap.end(); ++it)
+						{
+							ObjectComponent* object = wiScene::GetScene().objects.GetComponent(it->second);
+							NameComponent* name = wiScene::GetScene().names.GetComponent(it->second);
+							bool bThisLODWillBeHidden = false;
+							if (name && pestrcasestr(name->name.c_str(), "LOD_") && !pestrcasestr(name->name.c_str(), "LOD_0"))
+								bThisLODWillBeHidden = true;
+							if (object)
+							{
+								if (!bThisLODWillBeHidden && object->IsRenderable())
+								{
+									iTotalVisible++;
+									iVisibleIndex = it->second;
+								}
+							}
+						}
+						if (iTotalVisible == 1 && iVisibleIndex > 0)
+						{
+							animationcomponent.objectIndex = iVisibleIndex;
+						}
+					}
+				}
+			}
+			// increases as add more anim data (all goes into the above animationcomponent)
+			int iSamplerAndChannelCount = 0;
+
+			// go through all animations in this set
+			sAnimation* pAnim = pAnimSet->pAnimation;
+			while (pAnim != NULL)
+			{
+				//PE: Wicked - Support Matrix animations. convert to pPositionKeys,pRotateKeys,pScaleKeys
+				if (pAnim->dwNumMatrixKeys > 0) //&& pAnim->dwNumPositionKeys == 0 && pAnim->dwNumRotateKeys == 0 && pAnim->dwNumScaleKeys == 0)
+				{
+					// supports appending matrix data to blank or populated pos/rot/scl keys
+					DWORD dwNumKeys = pAnim->dwNumMatrixKeys;
+					sPositionKey* pPosKeys = new sPositionKey[dwNumKeys];
+					sRotateKey* pRotKeys = new sRotateKey[dwNumKeys];
+					sScaleKey* pSclKeys = new sScaleKey[dwNumKeys];
+
+					// unpack matrix date.
+					for (size_t j = 0; j < dwNumKeys; ++j)
+					{
+						float fTime = pAnim->pMatrixKeys[j].dwTime;
+						GGMATRIX mMat = pAnim->pMatrixKeys[j].matMatrix;
+						XMFLOAT4X4 tmatrix;
+						tmatrix._11 = mMat._11;	tmatrix._12 = mMat._12;	tmatrix._13 = mMat._13;	tmatrix._14 = mMat._14;
+						tmatrix._21 = mMat._21;	tmatrix._22 = mMat._22;	tmatrix._23 = mMat._23;	tmatrix._24 = mMat._24;
+						tmatrix._31 = mMat._31;	tmatrix._32 = mMat._32;	tmatrix._33 = mMat._33;	tmatrix._34 = mMat._34;
+						tmatrix._41 = mMat._41;	tmatrix._42 = mMat._42;	tmatrix._43 = mMat._43;	tmatrix._44 = mMat._44;
+						XMVECTOR S, R, T;
+						XMMatrixDecompose(&S, &R, &T, XMLoadFloat4x4(&tmatrix));
+						XMFLOAT3 vpos;
+						XMStoreFloat3(&vpos, T);
+						XMFLOAT4 vrot;
+						XMStoreFloat4(&vrot, R);
+						XMFLOAT3 vscale;
+						XMStoreFloat3(&vscale, S);
+						pPosKeys[j].dwTime = fTime;
+						pRotKeys[j].dwTime = fTime;
+						pSclKeys[j].dwTime = fTime;
+						pPosKeys[j].vecPos.x = vpos.x;
+						pPosKeys[j].vecPos.y = vpos.y;
+						pPosKeys[j].vecPos.z = vpos.z;
+						pRotKeys[j].Quaternion.x = vrot.x;
+						pRotKeys[j].Quaternion.y = vrot.y;
+						pRotKeys[j].Quaternion.z = vrot.z;
+						pRotKeys[j].Quaternion.w = vrot.w;
+						pSclKeys[j].vecScale.x = vscale.x;
+						pSclKeys[j].vecScale.y = vscale.y;
+						pSclKeys[j].vecScale.z = vscale.z;
+					}
+
+					// remove matrix keys
+					SAFE_DELETE(pAnim->pMatrixKeys);
+					pAnim->dwNumMatrixKeys = 0;
+
+					// set the anim ptrs
+					sPositionKey* pNewPosKeys = new sPositionKey[pAnim->dwNumPositionKeys + dwNumKeys];
+					sRotateKey* pNewRotKeys = new sRotateKey[pAnim->dwNumRotateKeys + dwNumKeys];
+					sScaleKey* pNewSclKeys = new sScaleKey[pAnim->dwNumScaleKeys + dwNumKeys];
+
+					// append new keys to whole
+					if (pAnim->dwNumPositionKeys > 0) memcpy(pNewPosKeys, pAnim->pPositionKeys, sizeof(sPositionKey) * pAnim->dwNumPositionKeys);
+					memcpy((char*)pNewPosKeys + (sizeof(sPositionKey) * pAnim->dwNumPositionKeys), pPosKeys, sizeof(sPositionKey) * dwNumKeys);
+					if (pAnim->dwNumRotateKeys > 0) memcpy(pNewRotKeys, pAnim->pRotateKeys, sizeof(sRotateKey) * pAnim->dwNumRotateKeys);
+					memcpy((char*)pNewRotKeys + (sizeof(sRotateKey) * pAnim->dwNumRotateKeys), pRotKeys, sizeof(sRotateKey) * dwNumKeys);
+					if (pAnim->dwNumScaleKeys > 0) memcpy(pNewSclKeys, pAnim->pScaleKeys, sizeof(sScaleKey) * pAnim->dwNumScaleKeys);
+					memcpy((char*)pNewSclKeys + (sizeof(sScaleKey) * pAnim->dwNumScaleKeys), pSclKeys, sizeof(sScaleKey) * dwNumKeys);
+
+					// set the new anim ptrs
+					SAFE_DELETE(pAnim->pPositionKeys);
+					SAFE_DELETE(pAnim->pRotateKeys);
+					SAFE_DELETE(pAnim->pScaleKeys);
+					pAnim->pPositionKeys = pNewPosKeys;
+					pAnim->pRotateKeys = pNewRotKeys;
+					pAnim->pScaleKeys = pNewSclKeys;
+					pAnim->dwNumPositionKeys += dwNumKeys;
+					pAnim->dwNumRotateKeys += dwNumKeys;
+					pAnim->dwNumScaleKeys += dwNumKeys;
+
+					// free resources
+					SAFE_DELETE(pPosKeys);
+					SAFE_DELETE(pRotKeys);
+					SAFE_DELETE(pSclKeys);
+				}
+
+				// new anim means new frame with anim data to consider)
+				int iOffset = iSamplerAndChannelCount;
+
+				// work out how many samplers/channels are needed
+
+				//PE: OPTIMIZING No need to process scale keys if not used. (RunAnimationUpdateSystem is slow). most anim dont use scale.
+				bool bGotScale = false;
+				if (pAnim->dwNumScaleKeys > 0)
+				{
+					for (size_t j = 0; j < pAnim->dwNumScaleKeys; ++j)
+					{
+						XMFLOAT3 vec3;
+						vec3.x = pAnim->pScaleKeys[j].vecScale.x;
+						vec3.y = pAnim->pScaleKeys[j].vecScale.y;
+						vec3.z = pAnim->pScaleKeys[j].vecScale.z;
+						if (vec3.x != 1.0f || vec3.y != 1.0f || vec3.z != 1.0f)
+						{
+							bGotScale = true;
+							break;
+						}
+					}
+				}
+
+				bool bSamplerChannelsMask[3];
+				bSamplerChannelsMask[0] = false;
+				bSamplerChannelsMask[1] = false;
+				bSamplerChannelsMask[2] = false;
+				int iSamplerChannelsNeeded = 0;
+				if (pAnim->dwNumPositionKeys > 0) { iSamplerChannelsNeeded++; bSamplerChannelsMask[0] = true; }
+				if (pAnim->dwNumRotateKeys > 0) { iSamplerChannelsNeeded++; bSamplerChannelsMask[1] = true; }
+				if (bGotScale && pAnim->dwNumScaleKeys > 0) { iSamplerChannelsNeeded++; bSamplerChannelsMask[2] = true; }
+				iSamplerAndChannelCount += iSamplerChannelsNeeded;
+
+				// calculate size of samplers (to hold raw data)
+				animationcomponent.samplers.resize(iSamplerAndChannelCount);
+				int iSamplerOffset = iOffset;
+				for (int i = 0; i < 3; i++)
+				{
+					if (bSamplerChannelsMask[i] == true)
+					{
+						animationcomponent.samplers[iSamplerOffset].mode = AnimationComponent::AnimationSampler::Mode::LINEAR;
+						int count = 0;
+						if (i == 0) count = pAnim->dwNumPositionKeys;
+						if (i == 1) count = pAnim->dwNumRotateKeys;
+						if (i == 2) count = pAnim->dwNumScaleKeys;
+						animationcomponent.samplers[iSamplerOffset].backwards_compatibility_data.keyframe_times.resize(count);
+						for (size_t j = 0; j < count; ++j)
+						{
+							float time = 0.0f;
+							if (i == 0) time = (float)pAnim->pPositionKeys[j].dwTime;
+							if (i == 1) time = (float)pAnim->pRotateKeys[j].dwTime;
+							if (i == 2) time = (float)pAnim->pScaleKeys[j].dwTime;
+							animationcomponent.samplers[iSamplerOffset].backwards_compatibility_data.keyframe_times[j] = time;
+							animationcomponent.start = min(animationcomponent.start, time);
+							animationcomponent.end = max(animationcomponent.end, time);
+						}
+						if (i == 1)
+						{
+							// rotation
+							animationcomponent.samplers[iSamplerOffset].backwards_compatibility_data.keyframe_data.resize(count * 4);
+							for (size_t j = 0; j < count; ++j)
+							{
+								XMFLOAT4 rot;
+								rot.x = pAnim->pRotateKeys[j].Quaternion.x;
+								rot.y = pAnim->pRotateKeys[j].Quaternion.y;
+								rot.z = pAnim->pRotateKeys[j].Quaternion.z;
+								rot.w = pAnim->pRotateKeys[j].Quaternion.w;
+								((XMFLOAT4*)animationcomponent.samplers[iSamplerOffset].backwards_compatibility_data.keyframe_data.data())[j] = rot;
+							}
+						}
+						else
+						{
+							// position or scale
+							animationcomponent.samplers[iSamplerOffset].backwards_compatibility_data.keyframe_data.resize(count * 3);
+							for (size_t j = 0; j < count; ++j)
+							{
+								XMFLOAT3 vec3;
+								if (i == 0)
+								{
+									vec3.x = pAnim->pPositionKeys[j].vecPos.x;
+									vec3.y = pAnim->pPositionKeys[j].vecPos.y;
+									vec3.z = pAnim->pPositionKeys[j].vecPos.z;
+								}
+								else
+								{
+									vec3.x = pAnim->pScaleKeys[j].vecScale.x;
+									vec3.y = pAnim->pScaleKeys[j].vecScale.y;
+									vec3.z = pAnim->pScaleKeys[j].vecScale.z;
+								}
+								((XMFLOAT3*)animationcomponent.samplers[iSamplerOffset].backwards_compatibility_data.keyframe_data.data())[j] = vec3;
+							}
+						}
+						iSamplerOffset++;
+					}
+				}
+
+				// calculate size of channels (to direct anim data to target)
+				animationcomponent.channels.resize(iSamplerAndChannelCount);
+				int iChannelOffset = iOffset;
+				for (size_t i = 0; i < 3; ++i)
+				{
+					if (bSamplerChannelsMask[i] == true)
+					{
+						//PE: All channels MUST have a target , or wicked will crash.
+						//PE: Target is used to get the transform
+						sFrame* pFrameMustSet = pAnim->pFrame;
+						if (!pFrameMustSet)
+						{
+							// if pframe not found assume animation is for pRootFrame
+							pFrameMustSet = pRootFrame;
+						}
+						if (pFrameMustSet)
+						{
+							// set the target, samplerindex and type for this channel item
+							int iFrameIndexForThisAnim = pFrameMustSet->iID;
+							wiECS::Entity thisTarget = wiECS::INVALID_ENTITY;
+							if (pstate) thisTarget = pstate->entityMap[iFrameIndexForThisAnim];
+							animationcomponent.channels[iChannelOffset].target = thisTarget;
+							animationcomponent.channels[iChannelOffset].samplerIndex = (uint32_t)iChannelOffset;
+							if (i == 0) animationcomponent.channels[iChannelOffset].path = AnimationComponent::AnimationChannel::Path::TRANSLATION;
+							if (i == 1) animationcomponent.channels[iChannelOffset].path = AnimationComponent::AnimationChannel::Path::ROTATION;
+							if (i == 2) animationcomponent.channels[iChannelOffset].path = AnimationComponent::AnimationChannel::Path::SCALE;
+
+							// new features of the wicked animation system
+							animationcomponent.channels[iChannelOffset].iUsePreFrame = 0;
+							animationcomponent.channels[iChannelOffset].vPreFrameScale = XMVectorSet(1, 1, 1, 0);
+							animationcomponent.channels[iChannelOffset].qPreFrameRotation = XMQuaternionRotationRollPitchYaw(0, 0, 0);
+							animationcomponent.channels[iChannelOffset].vPreFrameTranslation = XMVectorSet(0, 0, 0, 0);
+							int iThisSamplerOffset = animationcomponent.channels[iChannelOffset].samplerIndex;
+
+							// finally store channel and sampler offsets for this animation item
+							pAnim->wickedanimationchannel[i] = iChannelOffset;
+							pAnim->wickedanimationsampler[i] = iThisSamplerOffset;
+
+							// next channel
+							iChannelOffset++;
+						}
+					}
+				}
+
+				//GGMAX - backwards-compatibility mode (could not go in wiScene.cpp with latest Wicked)
+				for (const AnimationComponent::AnimationChannel& channel : animationcomponent.channels)
+				{
+					AnimationComponent::AnimationSampler& sampler = animationcomponent.samplers[channel.samplerIndex];
+					if (sampler.data == INVALID_ENTITY)
+					{
+						sampler.data = CreateEntity();
+						pScene->animation_datas.Create(sampler.data) = sampler.backwards_compatibility_data;
+						sampler.backwards_compatibility_data.keyframe_times.clear();
+						sampler.backwards_compatibility_data.keyframe_data.clear();
+					}
+				}
+
+				// next animation
+				pAnim = pAnim->pNext;
+			}
+		}
+	}
+}
+
+/* removing anim bridge for performance work
+void WickedCall_RefreshObjectAnimationsDX12(sObject* pObject, void* pstateptr)
 {
 	// get true pointer to loader state
 	WickedLoaderState* pstate = (WickedLoaderState*)pstateptr;
@@ -1183,6 +1535,7 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 		}
 	}
 }
+*/
 
 void WickedCall_AddObject ( sObject* pObject )
 {
@@ -1469,7 +1822,7 @@ void WickedCall_CheckAnimationDone(sObject* pObject)
 						//PE: Must make sure we are set at the last frame.
 						//PE: Fix - https://thegamecreators.teamwork.com/index.cfm#/tasks/21003817?c=10406263 ,
 						animationcomponent->timer = fEndFrame;
-						GGAnimBridge_SetUpdateOnce(animationcomponent);
+						////GGAnimBridge_SetUpdateOnce(animationcomponent);
 					}
 				}
 			}
@@ -1546,7 +1899,7 @@ void WickedCall_InstantObjectFrameUpdate(sObject* pObject)
 		AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
 		if (animationcomponent)
 		{
-			GGAnimBridge_SetUpdateOnce(animationcomponent);
+			////GGAnimBridge_SetUpdateOnce(animationcomponent);
 			animationcomponent->amount = 1;
 		}
 	}
@@ -1595,7 +1948,7 @@ void WickedCall_SetObjectFrame(sObject* pObject, float fFrame)
 				animationcomponent->SetLooped(false);
 				animationcomponent->Stop();
 				animationcomponent->timer = fFrame;
-				GGAnimBridge_SetUpdateOnce(animationcomponent);
+				////GGAnimBridge_SetUpdateOnce(animationcomponent);
 			}
 		}
 	}
@@ -1613,7 +1966,7 @@ void WickedCall_SetObjectFrameEx(sObject* pObject, float fFrame)
 			if (animationcomponent)
 			{
 				animationcomponent->timer = fFrame;
-				GGAnimBridge_SetUpdateOnce(animationcomponent);
+				////GGAnimBridge_SetUpdateOnce(animationcomponent);
 			}
 		}
 	}
@@ -1690,7 +2043,7 @@ void WickedCall_RemoveObject( sObject* pObject )
 			{
 				if (pAnimSet->wickedanimentityindex > 0)
 				{				
-					GGAnimBridge_ClearAnimObjectLink(pAnimSet->wickedanimentityindex);
+					////GGAnimBridge_ClearAnimObjectLink(pAnimSet->wickedanimentityindex);
 					AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent( pAnimSet->wickedanimentityindex );
 					if (animationcomponent)
 					{
