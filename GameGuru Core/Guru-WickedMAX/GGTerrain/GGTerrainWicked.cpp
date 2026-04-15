@@ -414,8 +414,9 @@ void GGTerrainWicked_Init()
 	terrain.SetRemovalEnabled(true);
 	terrain.SetGrassEnabled(false);       // Phase 0: no grass yet
 	terrain.SetPhysicsEnabled(false);      // keep Bullet physics from old terrain
-	terrain.chunk_scale = 80.0f;           // ~5280 units/chunk, reduces distant popping
-	terrain.generation = 10;               // cover ~52800 units each direction
+	terrain.chunk_scale = 80.0f;          // ~10560 units/chunk; high-res ring now ~535m (was ~268m at 80)
+	terrain.generation = 14;               // cover ~147840 units each direction, more lead for fast camera movement
+	terrain.lod_bias = 0.0f;              // hold higher mesh LOD one step further out (inch-scale world)
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;
 

@@ -44,4 +44,33 @@
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="DarkLUA_part0.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="DarkLUA_part1.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="DarkLUA_part2.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="DarkLUA_part3.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="DarkLUA_part4.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="DarkLUA_part5.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="DarkLUA_part6.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="DarkLUA_part7.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="DarkLUA_part8.cpp">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>
