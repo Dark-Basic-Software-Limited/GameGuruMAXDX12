@@ -1,5 +1,6 @@
 #include "GGTerrain.h"
 #include "GGTerrainWicked.h"
+#include "GGGrass.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiTerrain.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiResourceManager.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiHelper.h"
@@ -10,6 +11,7 @@
 #include <unordered_map>
 #include <cmath>
 #include <cstdio>
+#include <utility>
 
 // Performance profiling: accessor functions defined in master_part0.cpp / master_part1.cpp
 extern wi::RenderPath3D* GGPerf_GetRenderPath();
@@ -32,6 +34,18 @@ static std::unordered_set<uint64_t> processedChunkKeys;
 // When Wicked removes a distant chunk and regenerates it on camera return,
 // the new chunk has a different entity ID — we detect this and repaint.
 static std::unordered_map<uint64_t, wi::ecs::Entity> chunkKeyToEntity;
+
+// Grass: a custom per-chunk HairParticleSystem grown from GG's painted grass map (pGrassMap).
+// Wicked's built-in terrain grass stays disabled (it places grass from material regions, not our
+// grass map). We reuse the HairParticleSystem class but drive placement/lifecycle ourselves,
+// mirroring the ProcessPaintedChunkBlendmaps pattern.
+static bool wickedGrassSetup = false;
+static bool wickedGrassEnabled = true; // G key toggles grass visibility/creation
+static wi::scene::MaterialComponent grassMaterial;
+static wi::HairParticleSystem grassTemplate;
+static std::unordered_set<uint64_t> grassProcessedKeys;
+static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity; // chunk entity when grass was built
+static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToGrassEntity; // grass entity we created per chunk
 
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
@@ -391,6 +405,179 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 }
 
 
+// Build the grass material (alpha-tested billboard) and the appearance template once.
+// Lazy: needs wickedTerrainExeDir (set in Init) and the graphics device for CreateRenderData.
+static void SetupWickedGrass()
+{
+	using namespace wi::scene;
+
+	// Wicked's sample grass blade texture, copied into the EXE Files dir (CWD-independent path).
+	char grassTexPath[512];
+	sprintf_s(grassTexPath, "%s/Files/terraintextures/grass/grassparticle.png", wickedTerrainExeDir.c_str());
+
+	grassMaterial = MaterialComponent();
+	grassMaterial.textures[MaterialComponent::BASECOLORMAP].name = grassTexPath;
+	grassMaterial.SetAlphaRef(0.5f);     // alpha cutout for the blade silhouette
+	grassMaterial.SetDoubleSided(true);
+	grassMaterial.SetRoughness(1.0f);
+	grassMaterial.SetMetalness(0.0f);
+	grassMaterial.SetReflectance(0.02f);
+	grassMaterial.SetCastShadow(false);
+	grassMaterial.SetTextureStreamingDisabled(true);
+	grassMaterial.CreateRenderData();
+
+	// Appearance defaults — inch-scale world (1 unit = 1 inch).
+	grassTemplate = wi::HairParticleSystem();
+	grassTemplate.length = 36.0f;        // ~3 ft blades
+	grassTemplate.width = 8.0f;
+	grassTemplate.segmentCount = 1;
+	grassTemplate.billboardCount = 1;
+	grassTemplate.randomness = 0.35f;
+	grassTemplate.stiffness = 0.6f;
+	grassTemplate.uniformity = 0.7f;
+	grassTemplate.viewDistance = 5000.0f; // ~400 ft render-cull distance
+
+	wickedGrassSetup = true;
+}
+
+// Grow grass on terrain chunks from GG's painted grass map. Mirrors ProcessPaintedChunkBlendmaps:
+// scan scene.objects for chunk meshes, sample the grass map per vertex into vertex_lengths, and
+// create a HairParticleSystem entity parented to the chunk. Recursive Entity_Remove cleans grass
+// up when Wicked culls the chunk; chunk regeneration is detected via entity-id change and rebuilt.
+static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
+{
+	auto& scene = wi::scene::GetScene();
+	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
+	float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+
+	struct PendingGrass {
+		wi::ecs::Entity entity;
+		uint64_t key;
+		wi::scene::MeshComponent* mesh;
+		XMFLOAT4X4 world;
+	};
+	wi::vector<PendingGrass> pending;
+
+	// Phase 1: scan scene.objects (main-thread safe) for terrain chunks needing grass.
+	for (size_t oi = 0; oi < scene.objects.GetCount(); oi++)
+	{
+		wi::scene::ObjectComponent& obj = scene.objects[oi];
+		wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(obj.meshID);
+		if (!mesh || mesh->vertex_positions.size() != wi::terrain::vertexCount) continue;
+
+		wi::ecs::Entity entity = scene.objects.GetEntity(oi);
+		const wi::scene::TransformComponent* transform = scene.transforms.GetComponent(entity);
+		if (!transform) continue;
+
+		int32_t cx = (int32_t)std::round(transform->world._41 / chunkStride);
+		int32_t cz = (int32_t)std::round(transform->world._43 / chunkStride);
+		uint64_t key = MakeChunkKey(cx, cz);
+
+		float chunkCenterX = cx * chunkStride;
+		float chunkCenterZ = cz * chunkStride;
+		bool inEditable = (chunkCenterX >= -editableSize && chunkCenterX <= editableSize &&
+			chunkCenterZ >= -editableSize && chunkCenterZ <= editableSize);
+
+		if (grassProcessedKeys.count(key))
+		{
+			auto it = grassChunkKeyToChunkEntity.find(key);
+			if (it != grassChunkKeyToChunkEntity.end() && it->second != entity)
+			{
+				// Chunk regenerated with a new entity id. Its grass child was auto-removed with the
+				// old chunk (recursive Entity_Remove); remove defensively if it somehow survives.
+				auto git = grassChunkKeyToGrassEntity.find(key);
+				if (git != grassChunkKeyToGrassEntity.end())
+				{
+					if (scene.hairs.GetComponent(git->second))
+						scene.Entity_Remove(git->second);
+					grassChunkKeyToGrassEntity.erase(git);
+				}
+				grassProcessedKeys.erase(key);
+				grassChunkKeyToChunkEntity.erase(it);
+			}
+			else
+			{
+				continue;
+			}
+		}
+
+		if (!inEditable)
+		{
+			grassProcessedKeys.insert(key);
+			continue;
+		}
+
+		// Capture the world matrix by value (a transform pointer would be invalidated when we
+		// create transform components for grass entities in Phase 2).
+		pending.push_back({ entity, key, mesh, transform->world });
+	}
+
+	if (pending.empty()) return;
+
+	// Generation cancelled below = safe window to create scene entities (no generator-thread race).
+	terrain->Generation_Cancel();
+
+	int grassChunksCreated = 0;
+
+	// Phase 2: create a grass HairParticleSystem per chunk that has painted grass.
+	for (auto& pc : pending)
+	{
+		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.world);
+
+		wi::vector<float> vertex_lengths;
+		vertex_lengths.resize(wi::terrain::vertexCount); // zero-initialised: no grass by default
+		uint32_t grassyVerts = 0;
+		for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
+		{
+			XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), worldMatrix);
+			XMFLOAT3 worldPos;
+			XMStoreFloat3(&worldPos, wp);
+			if (GGGrass::GGGrass_GetGrassMap(worldPos.x, worldPos.z) != 0)
+			{
+				vertex_lengths[vi] = 1.0f;
+				grassyVerts++;
+			}
+		}
+
+		// Mark processed even when empty so bare chunks aren't rescanned every frame.
+		grassProcessedKeys.insert(pc.key);
+		grassChunkKeyToChunkEntity[pc.key] = pc.entity;
+
+		if (grassyVerts == 0) continue;
+
+		wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
+		wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
+		hair = grassTemplate;
+		hair.meshID = pc.entity; // object/mesh/transform share one entity for terrain chunks
+		hair.vertex_lengths = std::move(vertex_lengths);
+
+		// Vertex spacing is ~chunk_scale (80 units ~= 2m), so each grassy vertex covers ~4m^2.
+		// bladesPerVertex / 4 ~= blades per m^2. 128 -> ~32 blades/m^2 (visible but not GPU-heavy).
+		const uint32_t bladesPerVertex = 128;
+		const uint32_t maxStrands = 600000;
+		uint32_t strands = grassyVerts * bladesPerVertex;
+		if (strands > maxStrands) strands = maxStrands;
+		hair.strandCount = strands;
+
+		hair.CreateFromMesh(*pc.mesh);
+		hair.CreateRenderData();
+
+		scene.materials.Create(grassEntity) = grassMaterial;
+		scene.transforms.Create(grassEntity);
+		scene.Component_Attach(grassEntity, pc.entity, true); // inherit chunk transform; recursive cleanup
+
+		grassChunkKeyToGrassEntity[pc.key] = grassEntity;
+		grassChunksCreated++;
+	}
+
+	if (grassChunksCreated > 0)
+	{
+		wi::backlog::post(std::string("GGTerrainWicked: created grass on " +
+			std::to_string(grassChunksCreated) + " chunks").c_str());
+	}
+}
+
+
 namespace GGTerrain
 {
 
@@ -597,6 +784,20 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		wi::backlog::post(perfVolLightsOff ? "[Perf] Sun Volumetrics OFF" : "[Perf] Sun Volumetrics ON");
 	}
 
+	// G key: toggle grass on/off (A/B + perf). Hides existing grass via layerMask and pauses new
+	// grass creation; re-enabling shows it again and resumes creation for any new chunks.
+	if (GGTerrain_GetKeyPressed(0x47)) // GGKEY_G
+	{
+		wickedGrassEnabled = !wickedGrassEnabled;
+		auto& gscene = wi::scene::GetScene();
+		for (auto& kv : grassChunkKeyToGrassEntity)
+		{
+			wi::HairParticleSystem* hair = gscene.hairs.GetComponent(kv.second);
+			if (hair) hair->layerMask = wickedGrassEnabled ? ~0u : 0u;
+		}
+		wi::backlog::post(wickedGrassEnabled ? "[Grass] ON" : "[Grass] OFF");
+	}
+
 	// Skip all terrain work when hidden (Generation_Update, VT CPU/GPU, blendmap painting)
 	if (wickedTerrainHidden) return;
 
@@ -617,6 +818,17 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	if (wickedTerrainMaterialsSetup && maxPaintedSlot >= 0)
 	{
 		ProcessPaintedChunkBlendmaps(terrain);
+	}
+
+	// Grass: set up the material/template once, then grow grass on chunks from the painted grass
+	// map. Runs after blendmap processing (generation already cancelled = safe to add entities).
+	if (!wickedGrassSetup)
+	{
+		SetupWickedGrass();
+	}
+	if (wickedGrassEnabled)
+	{
+		ProcessGrassChunks(terrain);
 	}
 }
 

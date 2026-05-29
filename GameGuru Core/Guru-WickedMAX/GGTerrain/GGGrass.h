@@ -60,6 +60,9 @@ namespace GGGrass
 	void GGGrass_BindGrassArray( uint32_t slot, wiGraphics::CommandList cmd );
 	void GGGrass_BindGrassMap( int slot, wiGraphics::CommandList cmd );
 
+	// Painted grass type at world (x,z): 0 = none/flattened, else grass type id. Drives grass placement.
+	uint32_t GGGrass_GetGrassMap( float x, float z );
+
 	const char* GGGrass_GetTextureFilename( uint32_t matIndex, uint32_t grassIndex );
 	const char* GGGrass_GetTextureShortName( uint32_t matIndex, uint32_t grassIndex );
 
