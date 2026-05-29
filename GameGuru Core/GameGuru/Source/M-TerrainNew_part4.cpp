@@ -289,14 +289,7 @@
 			}
 			ImGui::PopItemWidth();
 
-			ImGui::SameLine();
-			ImGui::PushItemWidth((float)dir_width);
-			if (ImGui::SliderFloat("##Wind Direction Y", &t.visuals.wind_direction_y, -20.0f, 20.0f, "%.1f"))
-			{
-				t.gamevisuals.wind_direction_y = t.visuals.wind_direction_y;
-				bUpdatePPWeather = true;
-			}
-			ImGui::PopItemWidth();
+			// Wind Direction Y (vertical) removed from UI and forced to 0 at apply: vertical wind flings tiny grass blades up/down.
 
 			ImGui::SameLine();
 			ImGui::PushItemWidth((float)dir_width);
@@ -358,7 +351,7 @@
 				if (weather)
 				{
 					//weather->pp_voxel_steps = t.visuals.voxel_steps; // REMOVED
-					weather->windDirection = XMFLOAT3(t.visuals.wind_direction_x, t.visuals.wind_direction_y, t.visuals.wind_direction_z);
+					weather->windDirection = XMFLOAT3(t.visuals.wind_direction_x, 0.0f, t.visuals.wind_direction_z);
 					weather->windSpeed = t.visuals.wind_speed;
 					weather->windWaveSize = t.visuals.pp_size;
 					//weather->pp_alpha = t.visuals.pp_alpha; // REMOVED

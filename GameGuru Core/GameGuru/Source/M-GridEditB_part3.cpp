@@ -1502,7 +1502,7 @@ void Wicked_Update_Visuals(void *voidvisual)
 		}
 
 		//weather->pp_voxel_steps = visuals->voxel_steps; // REMOVED
-		weather->windDirection = XMFLOAT3(visuals->wind_direction_x, visuals->wind_direction_y, visuals->wind_direction_z);
+		weather->windDirection = XMFLOAT3(visuals->wind_direction_x, 0.0f, visuals->wind_direction_z);
 		weather->windSpeed = visuals->wind_speed;
 		weather->windWaveSize = visuals->pp_size;
 		//weather->pp_alpha = visuals->pp_alpha; // REMOVED

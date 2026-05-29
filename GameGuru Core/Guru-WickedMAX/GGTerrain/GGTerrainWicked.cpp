@@ -411,9 +411,43 @@ static void SetupWickedGrass()
 {
 	using namespace wi::scene;
 
-	// Wicked's sample grass blade texture, copied into the EXE Files dir (CWD-independent path).
+	// Lift Wicked's authored grass atlas (the varied wheat / seed-head / fine-grass blades from the
+	// promo) out of grass.wiscene: load it into a throwaway scene and copy just the grass atlas_rects
+	// (pure UV data) + blade counts. We build our own material below, so nothing depends on the temp
+	// scene's resources after this block.
+	wi::vector<wi::HairParticleSystem::AtlasRect> atlasRects;
+	uint32_t atlasBillboards = 1;
+	float atlasUniformity = 0.7f;
+	{
+		char wiscenePath[512];
+		sprintf_s(wiscenePath, "%s/Files/terraintextures/grass/grass.wiscene", wickedTerrainExeDir.c_str());
+		Scene tempScene;
+		wi::scene::LoadModel(tempScene, wiscenePath);
+		auto take = [&](const wi::HairParticleSystem& h) {
+			if (atlasRects.empty() && !h.atlas_rects.empty()) {
+				atlasRects = h.atlas_rects;
+				uint32_t bb = h.billboardCount;
+				if (bb < 1) bb = 1; if (bb > 2) bb = 2;  // cap billboards to bound GPU memory across chunks
+				atlasBillboards = bb;
+				atlasUniformity = h.uniformity;
+			}
+		};
+		for (size_t i = 0; i < tempScene.terrains.GetCount(); i++) take(tempScene.terrains[i].grass_properties);
+		for (size_t i = 0; i < tempScene.hairs.GetCount(); i++) take(tempScene.hairs[i]);
+	}
+	const bool haveAtlas = !atlasRects.empty();
+
+	// Diagnostic so we can confirm the atlas was found without a debugger.
+	{
+		std::string logPath = wickedTerrainExeDir + "/grass_setup.log";
+		FILE* f = nullptr; fopen_s(&f, logPath.c_str(), "w");
+		if (f) { fprintf(f, "atlas_rects=%zu haveAtlas=%d\n", atlasRects.size(), (int)haveAtlas); fclose(f); }
+	}
+
+	// Texture: the multi-sprite atlas when we have rects to index it, else the single-tuft fallback.
 	char grassTexPath[512];
-	sprintf_s(grassTexPath, "%s/Files/terraintextures/grass/grassparticle.png", wickedTerrainExeDir.c_str());
+	sprintf_s(grassTexPath, "%s/Files/terraintextures/grass/%s", wickedTerrainExeDir.c_str(),
+		haveAtlas ? "grassparticle.png" : "grassbb.png");
 
 	grassMaterial = MaterialComponent();
 	grassMaterial.textures[MaterialComponent::BASECOLORMAP].name = grassTexPath;
@@ -422,20 +456,36 @@ static void SetupWickedGrass()
 	grassMaterial.SetRoughness(1.0f);
 	grassMaterial.SetMetalness(0.0f);
 	grassMaterial.SetReflectance(0.02f);
+	// Green subsurface/translucency so back-lit blades glow softly instead of going dark.
+	grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(0.35f, 0.6f, 0.2f));
+	grassMaterial.SetSubsurfaceScatteringAmount(1.0f);
 	grassMaterial.SetCastShadow(false);
 	grassMaterial.SetTextureStreamingDisabled(true);
 	grassMaterial.CreateRenderData();
 
-	// Appearance defaults — inch-scale world (1 unit = 1 inch).
 	grassTemplate = wi::HairParticleSystem();
-	grassTemplate.length = 36.0f;        // ~3 ft blades
-	grassTemplate.width = 8.0f;
-	grassTemplate.segmentCount = 1;
-	grassTemplate.billboardCount = 1;
+	if (haveAtlas)
+	{
+		grassTemplate.atlas_rects = atlasRects;   // each strand randomly picks a sprite -> natural variety
+		grassTemplate.billboardCount = atlasBillboards;
+		grassTemplate.uniformity = atlasUniformity;
+		grassTemplate.length = 8.0f;              // proportional to terrain (60 was ~6ft, way too big)
+		grassTemplate.width = 3.0f;
+	}
+	else
+	{
+		grassTemplate.billboardCount = 1;
+		grassTemplate.uniformity = 0.7f;
+		grassTemplate.length = 9.0f;
+		grassTemplate.width = 2.0f;
+	}
+	grassTemplate.segmentCount = 1;               // single segment keeps GPU memory bounded across chunks
 	grassTemplate.randomness = 0.35f;
-	grassTemplate.stiffness = 0.6f;
-	grassTemplate.uniformity = 0.7f;
-	grassTemplate.viewDistance = 5000.0f; // ~400 ft render-cull distance
+	// Keep stiffness LOW: high stiffness (tried 50) drove the hair sim into degenerate geometry that
+	// crashed the GPU driver. Grass sways with the level's (now horizontal-only) wind instead.
+	grassTemplate.stiffness = 1.0f;
+	grassTemplate.drag = 0.2f;
+	grassTemplate.viewDistance = 5000.0f;         // ~400 ft render-cull distance
 
 	wickedGrassSetup = true;
 }
