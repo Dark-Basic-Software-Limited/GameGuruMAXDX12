@@ -1505,6 +1505,21 @@ void AutoHarness_CheckForCommand(void)
 	{
 		Cmd_PressKey(arg, result, sizeof(result));
 	}
+	else if (_stricmp(cmd, "SET_GRASS") == 0)
+	{
+		char gp[64] = { 0 }; float gv = 0.0f;
+		if (sscanf_s(arg, "%63s %f", gp, (unsigned)sizeof(gp), &gv) == 2)
+		{
+			extern void GGTerrainWicked_SetGrassParam(const char* param, float value);
+			GGTerrainWicked_SetGrassParam(gp, gv);
+			_snprintf(result, sizeof(result), "OK: SET_GRASS %s = %.3f", gp, gv);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_GRASS needs <param> <value> (length|width|stiffness|drag|blades|maxstrands|segments|billboards|viewdist|sss|alpha|tintr|tintg|tintb|sssr|sssg|sssb)");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "LIST_ENTITIES") == 0)
 	{
 		Cmd_ListEntities(arg, result, sizeof(result));

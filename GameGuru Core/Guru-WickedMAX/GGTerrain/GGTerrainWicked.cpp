@@ -46,6 +46,21 @@ static wi::HairParticleSystem grassTemplate;
 static std::unordered_set<uint64_t> grassProcessedKeys;
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity; // chunk entity when grass was built
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToGrassEntity; // grass entity we created per chunk
+// Runtime-tunable grass density + a deferred-rebuild flag (driven by the SET_GRASS automation command).
+// Per-chunk grass density. A fully-grassy chunk has ~4489 verts; bladesPerVertex strands each, capped
+// by maxStrands. 128 blades x ~tens of grassy chunks across a large painted field exhausted VRAM
+// (FPS bled to ~14 over 10-15s as chunks streamed in, then the driver faulted). Keep this conservative;
+// raise live via SET_GRASS blades while watching FPS. ~24 -> ~6 blades/m^2 (4489*24=~108k < cap).
+static uint32_t g_grassBladesPerVertex = 24;
+static uint32_t g_grassMaxStrands = 120000;
+static bool g_grassRebuildRequested = false;
+// Atlas sprite selection. The authored atlas mixes short green tufts with tall wheat/seed-head
+// stalks; rect[2] (centre stalk) and rect[3] (tall golden feathery) are the wheat sprites, so the
+// field defaults to those (set in SetupWickedGrass). -1 = template set (wheat); 0..N-1 = isolate one
+// authored rect for live A/B via SET_GRASS atlasrect. This selection is crash-neutral (it changes UVs
+// per strand, not strand counts) — the VRAM crash was purely density, capped above.
+static int g_grassAtlasRectIndex = -1;
+static wi::vector<wi::HairParticleSystem::AtlasRect> g_grassAtlasFull; // full authored list for live A/B
 
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
@@ -443,12 +458,30 @@ static void SetupWickedGrass()
 		for (size_t i = 0; i < tempScene.hairs.GetCount(); i++) take(tempScene.hairs[i]);
 	}
 	const bool haveAtlas = !atlasRects.empty();
+	g_grassAtlasFull = atlasRects;   // keep the full authored list for live single-rect A/B
 
-	// Diagnostic so we can confirm the atlas was found without a debugger.
+	// Diagnostic: confirm the atlas was found and map each rect's UV sub-region to its sprite.
 	{
 		std::string logPath = wickedTerrainExeDir + "/grass_setup.log";
 		FILE* f = nullptr; fopen_s(&f, logPath.c_str(), "w");
-		if (f) { fprintf(f, "atlas_rects=%zu haveAtlas=%d\n", atlasRects.size(), (int)haveAtlas); fclose(f); }
+		if (f) {
+			fprintf(f, "atlas_rects=%zu haveAtlas=%d\n", atlasRects.size(), (int)haveAtlas);
+			for (size_t i = 0; i < atlasRects.size(); i++)
+				fprintf(f, "  rect[%zu] mul=(%.4f,%.4f) add=(%.4f,%.4f) size=%.3f\n",
+					i, atlasRects[i].texMulAdd.x, atlasRects[i].texMulAdd.y,
+					atlasRects[i].texMulAdd.z, atlasRects[i].texMulAdd.w, atlasRects[i].size);
+			fclose(f);
+		}
+	}
+
+	// Default the field to the tall golden feathery wheat sprite (rect[3]) for the promo look,
+	// instead of the mixed green tufts. (rect[2] is the greener centre stalk; switch live via
+	// SET_GRASS atlasrect if more variety is wanted.) Fall back to all if fewer rects.
+	if (atlasRects.size() >= 4)
+	{
+		wi::vector<wi::HairParticleSystem::AtlasRect> wheat;
+		wheat.push_back(atlasRects[3]);
+		atlasRects = wheat;
 	}
 
 	// Texture: the multi-sprite atlas when we have rects to index it, else the single-tuft fallback.
@@ -463,8 +496,11 @@ static void SetupWickedGrass()
 	grassMaterial.SetRoughness(1.0f);
 	grassMaterial.SetMetalness(0.0f);
 	grassMaterial.SetReflectance(0.02f);
-	// Green subsurface/translucency so back-lit blades glow softly instead of going dark.
-	grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(0.35f, 0.6f, 0.2f));
+	// Warm tint + golden translucency push the green-toned atlas toward golden wheat (the
+	// grassparticle.png sprites are green; there is no dedicated wheat texture in the assets, so the
+	// wheat colour is achieved here in the material). Tunable live via SET_GRASS tint*/sss*.
+	grassMaterial.baseColor = XMFLOAT4(1.0f, 0.52f, 0.16f, 1.0f);
+	grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(1.0f, 0.32f, 0.04f));
 	grassMaterial.SetSubsurfaceScatteringAmount(1.0f);
 	grassMaterial.SetCastShadow(false);
 	grassMaterial.SetTextureStreamingDisabled(true);
@@ -488,10 +524,12 @@ static void SetupWickedGrass()
 	}
 	grassTemplate.segmentCount = 1;               // single segment keeps GPU memory bounded across chunks
 	grassTemplate.randomness = 0.35f;
-	// Keep stiffness LOW: high stiffness (tried 50) drove the hair sim into degenerate geometry that
-	// crashed the GPU driver. Grass sways with the level's (now horizontal-only) wind instead.
-	grassTemplate.stiffness = 1.0f;
-	grassTemplate.drag = 0.2f;
+	// Moderate stiffness keeps blades fairly upright so they don't twist/foreshorten and flip in the
+	// wind (the billboards orient along the bending strand, so a low-stiffness blade that leans far
+	// rotates toward edge-on and looks wrong). Stay well under ~50 though — that drove the hair sim
+	// into degenerate geometry that crashed the GPU driver; stiffness 9 was confirmed safe.
+	grassTemplate.stiffness = 9.0f;      // upright enough to stop the wind-driven twist/flip (confirmed safe)
+	grassTemplate.drag = 0.5f;           // dampen the sway so it settles instead of whipping
 	grassTemplate.viewDistance = 5000.0f;         // ~400 ft render-cull distance
 
 	wickedGrassSetup = true;
@@ -605,13 +643,16 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
 		wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
 		wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
 		hair = grassTemplate;
+		// Live single-sprite A/B: isolate one authored rect when requested (SET_GRASS atlasrect N).
+		if (g_grassAtlasRectIndex >= 0 && g_grassAtlasRectIndex < (int)g_grassAtlasFull.size())
+			hair.atlas_rects = { g_grassAtlasFull[g_grassAtlasRectIndex] };
 		hair.meshID = pc.entity; // object/mesh/transform share one entity for terrain chunks
 		hair.vertex_lengths = std::move(vertex_lengths);
 
 		// Vertex spacing is ~chunk_scale (80 units ~= 2m), so each grassy vertex covers ~4m^2.
 		// bladesPerVertex / 4 ~= blades per m^2. 128 -> ~32 blades/m^2 (visible but not GPU-heavy).
-		const uint32_t bladesPerVertex = 128;
-		const uint32_t maxStrands = 600000;
+		const uint32_t bladesPerVertex = g_grassBladesPerVertex;
+		const uint32_t maxStrands = g_grassMaxStrands;
 		uint32_t strands = grassyVerts * bladesPerVertex;
 		if (strands > maxStrands) strands = maxStrands;
 		hair.strandCount = strands;
@@ -632,6 +673,50 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
 		wi::backlog::post(std::string("GGTerrainWicked: created grass on " +
 			std::to_string(grassChunksCreated) + " chunks").c_str());
 	}
+}
+
+
+// Remove all current grass entities and clear tracking so ProcessGrassChunks rebuilds them next
+// frame with the updated template/material (used after a live param change via SET_GRASS).
+static void ForceGrassRebuild()
+{
+	wi::terrain::Terrain* terrain = GetWickedTerrain();
+	if (terrain) terrain->Generation_Cancel();   // make scene mutation safe (no generator-thread race)
+	auto& scene = wi::scene::GetScene();
+	for (auto& kv : grassChunkKeyToGrassEntity)
+	{
+		if (scene.hairs.GetComponent(kv.second))
+			scene.Entity_Remove(kv.second);
+	}
+	grassChunkKeyToGrassEntity.clear();
+	grassProcessedKeys.clear();
+	grassChunkKeyToChunkEntity.clear();
+}
+
+// Runtime grass tuning, driven by the SET_GRASS automation command. Updates the template/material
+// then requests a deferred rebuild (applied next GGTerrainWicked_Update on the main thread).
+void GGTerrainWicked_SetGrassParam(const char* param, float value)
+{
+	std::string p = param ? param : "";
+	if      (p == "length")     grassTemplate.length = value;
+	else if (p == "width")      grassTemplate.width = value;
+	else if (p == "stiffness")  grassTemplate.stiffness = value;
+	else if (p == "drag")       grassTemplate.drag = value;
+	else if (p == "viewdist")   grassTemplate.viewDistance = value;
+	else if (p == "segments")   grassTemplate.segmentCount = (uint32_t)(value < 1.0f ? 1.0f : value);
+	else if (p == "billboards") grassTemplate.billboardCount = (uint32_t)(value < 1.0f ? 1.0f : value);
+	else if (p == "blades")     g_grassBladesPerVertex = (uint32_t)(value < 1.0f ? 1.0f : value);
+	else if (p == "maxstrands") g_grassMaxStrands = (uint32_t)(value < 1.0f ? 1.0f : value);
+	else if (p == "atlasrect")  g_grassAtlasRectIndex = (int)value;   // -1 = wheat default; 0..N-1 = isolate one
+	else if (p == "sss")        grassMaterial.SetSubsurfaceScatteringAmount(value);
+	else if (p == "alpha")      grassMaterial.SetAlphaRef(value);
+	else if (p == "tintr")    { grassMaterial.baseColor.x = value; grassMaterial.SetDirty(); }
+	else if (p == "tintg")    { grassMaterial.baseColor.y = value; grassMaterial.SetDirty(); }
+	else if (p == "tintb")    { grassMaterial.baseColor.z = value; grassMaterial.SetDirty(); }
+	else if (p == "sssr")       grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(value, grassMaterial.subsurfaceScattering.y, grassMaterial.subsurfaceScattering.z));
+	else if (p == "sssg")       grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(grassMaterial.subsurfaceScattering.x, value, grassMaterial.subsurfaceScattering.z));
+	else if (p == "sssb")       grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(grassMaterial.subsurfaceScattering.x, grassMaterial.subsurfaceScattering.y, value));
+	g_grassRebuildRequested = true;
 }
 
 
@@ -885,6 +970,11 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	}
 	if (wickedGrassEnabled)
 	{
+		if (g_grassRebuildRequested)
+		{
+			ForceGrassRebuild();
+			g_grassRebuildRequested = false;
+		}
 		ProcessGrassChunks(terrain);
 	}
 }

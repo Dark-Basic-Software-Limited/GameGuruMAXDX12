@@ -275,6 +275,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				extern bool bExport_Standalone_Window;
 				if (bExport_Standalone_Window == true) bKeepActiveEvenInBackground = true;
 				extern bool g_bAutomationActive;
+				// Automation focus-bypass: a queued harness command re-activates the app
+				// so the loop ticks and the harness can process it while the window is
+				// unfocused / behind another app (e.g. driving SET_GRASS during testing).
+				if (!g_bAutomationActive)
+				{
+					static char s_autoCmdPath[MAX_PATH] = { 0 };
+					if (s_autoCmdPath[0] == 0)
+					{
+						GetModuleFileNameA(NULL, s_autoCmdPath, MAX_PATH);
+						char* pSlash = strrchr(s_autoCmdPath, '\\');
+						if (pSlash) strcpy(pSlash + 1, "auto_command.txt");
+					}
+					if (s_autoCmdPath[0] != 0 && GetFileAttributesA(s_autoCmdPath) != INVALID_FILE_ATTRIBUTES)
+						g_bAutomationActive = true;
+				}
 				if (g_bAutomationActive) bKeepActiveEvenInBackground = true;
 				if (bKeepActiveEvenInBackground == true)
 				{
