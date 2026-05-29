@@ -411,6 +411,13 @@ static void SetupWickedGrass()
 {
 	using namespace wi::scene;
 
+	// REQUIRED RUNTIME ASSETS (not committed to the repo — must be deployed into the EXE's
+	// Files/terraintextures/grass/ folder, or the grass will not render):
+	//   grassparticle.png : wheat/grass blade atlas (basecolor texture)
+	//   grass.wiscene      : source of the atlas rects (loaded below to lift them)
+	//   grassbb.png        : single-tuft fallback used if the atlas can't be read
+	// Originals live in WickedEngineDX12/Content/terrain/ and /models/.
+
 	// Lift Wicked's authored grass atlas (the varied wheat / seed-head / fine-grass blades from the
 	// promo) out of grass.wiscene: load it into a throwaway scene and copy just the grass atlas_rects
 	// (pure UV data) + blade counts. We build our own material below, so nothing depends on the temp
