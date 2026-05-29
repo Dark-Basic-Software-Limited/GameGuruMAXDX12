@@ -43,16 +43,17 @@ static bool wickedGrassSetup = false;
 static bool wickedGrassEnabled = true; // G key toggles grass visibility/creation
 static wi::scene::MaterialComponent grassMaterial;
 static wi::HairParticleSystem grassTemplate;
-static std::unordered_set<uint64_t> grassProcessedKeys;
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity; // chunk entity when grass was built
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToGrassEntity; // grass entity we created per chunk
-// Runtime-tunable grass density + a deferred-rebuild flag (driven by the SET_GRASS automation command).
-// Per-chunk grass density. A fully-grassy chunk has ~4489 verts; bladesPerVertex strands each, capped
-// by maxStrands. 128 blades x ~tens of grassy chunks across a large painted field exhausted VRAM
-// (FPS bled to ~14 over 10-15s as chunks streamed in, then the driver faulted). Keep this conservative;
-// raise live via SET_GRASS blades while watching FPS. ~24 -> ~6 blades/m^2 (4489*24=~108k < cap).
-static uint32_t g_grassBladesPerVertex = 24;
-static uint32_t g_grassMaxStrands = 120000;
+static std::unordered_map<uint64_t, int> grassChunkKeyToTier;                    // current LOD tier per chunk
+// Distance-LOD grass density (driven live by the SET_GRASS automation command).
+// bladesPerVertex is the NEAR-tier density; mid/far tiers scale it down and grass stops past
+// lodChunks chunk-distances from the camera. Only the near chunks are dense, so total strands stay
+// bounded — VRAM-safe even during the load burst that previously crashed the driver (full density
+// across many streaming chunks). A fully-grassy chunk has ~4489 verts; strands = grassyVerts*blades.
+static uint32_t g_grassBladesPerVertex = 120;  // near-tier blades/vertex (LOD keeps total bounded)
+static uint32_t g_grassMaxStrands = 350000;    // per-chunk strand cap
+static float    g_grassLODChunks = 2.5f;       // grass radius in chunk-distances (beyond = bare)
 static bool g_grassRebuildRequested = false;
 // Atlas sprite selection. The authored atlas mixes short green tufts with tall wheat/seed-head
 // stalks; rect[2] (centre stalk) and rect[3] (tall golden feathery) are the wheat sprites, so the
@@ -474,15 +475,8 @@ static void SetupWickedGrass()
 		}
 	}
 
-	// Default the field to the tall golden feathery wheat sprite (rect[3]) for the promo look,
-	// instead of the mixed green tufts. (rect[2] is the greener centre stalk; switch live via
-	// SET_GRASS atlasrect if more variety is wanted.) Fall back to all if fewer rects.
-	if (atlasRects.size() >= 4)
-	{
-		wi::vector<wi::HairParticleSystem::AtlasRect> wheat;
-		wheat.push_back(atlasRects[3]);
-		atlasRects = wheat;
-	}
+	// Use the FULL authored atlas (green tufts + wheat/seed-head sprites) for a natural green meadow
+	// with tan tips, like the promo. (Single sprites can still be isolated live via SET_GRASS atlasrect.)
 
 	// Texture: the multi-sprite atlas when we have rects to index it, else the single-tuft fallback.
 	char grassTexPath[512];
@@ -496,11 +490,10 @@ static void SetupWickedGrass()
 	grassMaterial.SetRoughness(1.0f);
 	grassMaterial.SetMetalness(0.0f);
 	grassMaterial.SetReflectance(0.02f);
-	// Warm tint + golden translucency push the green-toned atlas toward golden wheat (the
-	// grassparticle.png sprites are green; there is no dedicated wheat texture in the assets, so the
-	// wheat colour is achieved here in the material). Tunable live via SET_GRASS tint*/sss*.
-	grassMaterial.baseColor = XMFLOAT4(1.0f, 0.52f, 0.16f, 1.0f);
-	grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(1.0f, 0.32f, 0.04f));
+	// Natural green grass: green subsurface so back-lit blades glow softly instead of going dark.
+	// (A warm/golden look is still reachable live via SET_GRASS tint*/sss*; the promo grass is green
+	// with tan tips, which comes from the atlas sprites themselves.)
+	grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(0.35f, 0.6f, 0.2f));
 	grassMaterial.SetSubsurfaceScatteringAmount(1.0f);
 	grassMaterial.SetCastShadow(false);
 	grassMaterial.SetTextureStreamingDisabled(true);
@@ -512,8 +505,8 @@ static void SetupWickedGrass()
 		grassTemplate.atlas_rects = atlasRects;   // each strand randomly picks a sprite -> natural variety
 		grassTemplate.billboardCount = atlasBillboards;
 		grassTemplate.uniformity = atlasUniformity;
-		grassTemplate.length = 8.0f;              // proportional to terrain (60 was ~6ft, way too big)
-		grassTemplate.width = 3.0f;
+		grassTemplate.length = 12.0f;             // medium meadow height
+		grassTemplate.width = 1.2f;               // fine blades (promo grass is thin, not coarse)
 	}
 	else
 	{
@@ -535,11 +528,24 @@ static void SetupWickedGrass()
 	wickedGrassSetup = true;
 }
 
-// Grow grass on terrain chunks from GG's painted grass map. Mirrors ProcessPaintedChunkBlendmaps:
-// scan scene.objects for chunk meshes, sample the grass map per vertex into vertex_lengths, and
-// create a HairParticleSystem entity parented to the chunk. Recursive Entity_Remove cleans grass
-// up when Wicked culls the chunk; chunk regeneration is detected via entity-id change and rebuilt.
-static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
+// Distance-LOD grass: dense fine grass on the chunks nearest the camera, thinning with distance and
+// stopping past g_grassLODChunks. Concentrating strands near the camera (and dropping them far) keeps
+// the total bounded — the trick native grass uses — so VRAM stays safe even during the load burst.
+// Placement still follows GG's painted grass map; chunks crossing a tier boundary (or regenerated by
+// the terrain) are rebuilt at the new density. All scene mutation is deferred to after Generation_Cancel.
+static int GrassTierForRingDist(float ringDist)
+{
+	if (ringDist <= 1.0f) return 3;              // near: full density
+	if (ringDist <= 1.7f) return 2;              // mid
+	if (ringDist <= g_grassLODChunks) return 1;  // far: sparse
+	return 0;                                     // beyond: no grass
+}
+static float GrassTierDensityScale(int tier)
+{
+	switch (tier) { case 3: return 1.00f; case 2: return 0.18f; case 1: return 0.05f; default: return 0.0f; }
+}
+
+static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& cameraPos)
 {
 	auto& scene = wi::scene::GetScene();
 	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
@@ -550,10 +556,13 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
 		uint64_t key;
 		wi::scene::MeshComponent* mesh;
 		XMFLOAT4X4 world;
+		int tier;
+		wi::ecs::Entity oldGrass; // existing grass entity to remove first (INVALID if none)
 	};
 	wi::vector<PendingGrass> pending;
 
-	// Phase 1: scan scene.objects (main-thread safe) for terrain chunks needing grass.
+	// Phase 1 (read-only): pick each chunk's target LOD tier from camera distance; queue chunks whose
+	// tier (or chunk entity) changed. No scene/map mutation here — the generator thread may be running.
 	for (size_t oi = 0; oi < scene.objects.GetCount(); oi++)
 	{
 		wi::scene::ObjectComponent& obj = scene.objects[oi];
@@ -573,54 +582,45 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
 		bool inEditable = (chunkCenterX >= -editableSize && chunkCenterX <= editableSize &&
 			chunkCenterZ >= -editableSize && chunkCenterZ <= editableSize);
 
-		if (grassProcessedKeys.count(key))
-		{
-			auto it = grassChunkKeyToChunkEntity.find(key);
-			if (it != grassChunkKeyToChunkEntity.end() && it->second != entity)
-			{
-				// Chunk regenerated with a new entity id. Its grass child was auto-removed with the
-				// old chunk (recursive Entity_Remove); remove defensively if it somehow survives.
-				auto git = grassChunkKeyToGrassEntity.find(key);
-				if (git != grassChunkKeyToGrassEntity.end())
-				{
-					if (scene.hairs.GetComponent(git->second))
-						scene.Entity_Remove(git->second);
-					grassChunkKeyToGrassEntity.erase(git);
-				}
-				grassProcessedKeys.erase(key);
-				grassChunkKeyToChunkEntity.erase(it);
-			}
-			else
-			{
-				continue;
-			}
-		}
+		float dx = chunkCenterX - cameraPos.x;
+		float dz = chunkCenterZ - cameraPos.z;
+		float ringDist = sqrtf(dx * dx + dz * dz) / chunkStride;
+		int targetTier = inEditable ? GrassTierForRingDist(ringDist) : 0;
 
-		if (!inEditable)
-		{
-			grassProcessedKeys.insert(key);
-			continue;
-		}
+		auto entIt = grassChunkKeyToChunkEntity.find(key);
+		bool entityChanged = (entIt != grassChunkKeyToChunkEntity.end() && entIt->second != entity);
+		auto tierIt = grassChunkKeyToTier.find(key);
+		int currentTier = (tierIt != grassChunkKeyToTier.end()) ? tierIt->second : -1;
+		if (!entityChanged && currentTier == targetTier) continue; // already correct for this chunk
+
+		auto git = grassChunkKeyToGrassEntity.find(key);
+		wi::ecs::Entity oldGrass = (git != grassChunkKeyToGrassEntity.end()) ? git->second : wi::ecs::INVALID_ENTITY;
 
 		// Capture the world matrix by value (a transform pointer would be invalidated when we
 		// create transform components for grass entities in Phase 2).
-		pending.push_back({ entity, key, mesh, transform->world });
+		pending.push_back({ entity, key, mesh, transform->world, targetTier, oldGrass });
 	}
 
 	if (pending.empty()) return;
 
-	// Generation cancelled below = safe window to create scene entities (no generator-thread race).
+	// Generation cancelled = safe window to mutate the scene (no generator-thread race).
 	terrain->Generation_Cancel();
 
-	int grassChunksCreated = 0;
-
-	// Phase 2: create a grass HairParticleSystem per chunk that has painted grass.
+	// Phase 2: apply removals + (re)creations and update tracking.
 	for (auto& pc : pending)
 	{
-		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.world);
+		if (pc.oldGrass != wi::ecs::INVALID_ENTITY)
+		{
+			if (scene.hairs.GetComponent(pc.oldGrass)) scene.Entity_Remove(pc.oldGrass);
+			grassChunkKeyToGrassEntity.erase(pc.key);
+		}
+		grassChunkKeyToChunkEntity[pc.key] = pc.entity;
+		grassChunkKeyToTier[pc.key] = pc.tier;
+		if (pc.tier == 0) continue; // bare at this distance / outside editable area
 
+		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.world);
 		wi::vector<float> vertex_lengths;
-		vertex_lengths.resize(wi::terrain::vertexCount); // zero-initialised: no grass by default
+		vertex_lengths.resize(wi::terrain::vertexCount); // zero = no grass at that vertex
 		uint32_t grassyVerts = 0;
 		for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
 		{
@@ -633,12 +633,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
 				grassyVerts++;
 			}
 		}
-
-		// Mark processed even when empty so bare chunks aren't rescanned every frame.
-		grassProcessedKeys.insert(pc.key);
-		grassChunkKeyToChunkEntity[pc.key] = pc.entity;
-
-		if (grassyVerts == 0) continue;
+		if (grassyVerts == 0) continue; // tier recorded above; no painted grass in this chunk
 
 		wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
 		wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
@@ -649,12 +644,11 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
 		hair.meshID = pc.entity; // object/mesh/transform share one entity for terrain chunks
 		hair.vertex_lengths = std::move(vertex_lengths);
 
-		// Vertex spacing is ~chunk_scale (80 units ~= 2m), so each grassy vertex covers ~4m^2.
-		// bladesPerVertex / 4 ~= blades per m^2. 128 -> ~32 blades/m^2 (visible but not GPU-heavy).
-		const uint32_t bladesPerVertex = g_grassBladesPerVertex;
-		const uint32_t maxStrands = g_grassMaxStrands;
-		uint32_t strands = grassyVerts * bladesPerVertex;
-		if (strands > maxStrands) strands = maxStrands;
+		// Near tier uses full g_grassBladesPerVertex; mid/far scale down. Per-chunk cap bounds VRAM.
+		uint32_t blades = (uint32_t)(g_grassBladesPerVertex * GrassTierDensityScale(pc.tier) + 0.5f);
+		if (blades < 1) blades = 1;
+		uint32_t strands = grassyVerts * blades;
+		if (strands > g_grassMaxStrands) strands = g_grassMaxStrands;
 		hair.strandCount = strands;
 
 		hair.CreateFromMesh(*pc.mesh);
@@ -665,13 +659,6 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain)
 		scene.Component_Attach(grassEntity, pc.entity, true); // inherit chunk transform; recursive cleanup
 
 		grassChunkKeyToGrassEntity[pc.key] = grassEntity;
-		grassChunksCreated++;
-	}
-
-	if (grassChunksCreated > 0)
-	{
-		wi::backlog::post(std::string("GGTerrainWicked: created grass on " +
-			std::to_string(grassChunksCreated) + " chunks").c_str());
 	}
 }
 
@@ -689,7 +676,7 @@ static void ForceGrassRebuild()
 			scene.Entity_Remove(kv.second);
 	}
 	grassChunkKeyToGrassEntity.clear();
-	grassProcessedKeys.clear();
+	grassChunkKeyToTier.clear();
 	grassChunkKeyToChunkEntity.clear();
 }
 
@@ -707,7 +694,8 @@ void GGTerrainWicked_SetGrassParam(const char* param, float value)
 	else if (p == "billboards") grassTemplate.billboardCount = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "blades")     g_grassBladesPerVertex = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "maxstrands") g_grassMaxStrands = (uint32_t)(value < 1.0f ? 1.0f : value);
-	else if (p == "atlasrect")  g_grassAtlasRectIndex = (int)value;   // -1 = wheat default; 0..N-1 = isolate one
+	else if (p == "lodchunks")  g_grassLODChunks = value;             // grass radius in chunk-distances
+	else if (p == "atlasrect")  g_grassAtlasRectIndex = (int)value;   // -1 = full atlas; 0..N-1 = isolate one
 	else if (p == "sss")        grassMaterial.SetSubsurfaceScatteringAmount(value);
 	else if (p == "alpha")      grassMaterial.SetAlphaRef(value);
 	else if (p == "tintr")    { grassMaterial.baseColor.x = value; grassMaterial.SetDirty(); }
@@ -975,7 +963,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 			ForceGrassRebuild();
 			g_grassRebuildRequested = false;
 		}
-		ProcessGrassChunks(terrain);
+		ProcessGrassChunks(terrain, camera.Eye);
 	}
 }
 
