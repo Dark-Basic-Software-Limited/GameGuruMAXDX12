@@ -1,5 +1,19 @@
 # Performance Profiling & Optimization Plan
 
+## Status Summary (as of 2026-05-27)
+
+| Phase | Topic | Status |
+|---|---|---|
+| 1–2 | Profiler enablement + scene baseline | ✓ COMPLETE |
+| 3 | A/B feature-toggle measurements (shadows = +30 FPS, etc.) | ✓ COMPLETE |
+| 4–5 | DX11 vs DX12 comparative measurements | ✓ COMPLETE |
+| 6–7 | Animation system deep-dive — root causes identified | ✓ COMPLETE |
+| 8 | Engine-side animation caching (ScanAnimationDependencies, keyframe search) | PLANNED — see "Active Performance Targets" below |
+| 9 | Animation culling via `GGAnimBridge` pause/play | ✓ COMPLETE (`039ee1da`, `89873913`) — Update-Wicked 25.81→11.36 ms (−56%), FPS 27→36 (+33%) |
+| 10 | Performance Data panel cascading-duplicates display bug | ✓ RESOLVED (`c4d81543`) — diagnostic from `5233fb3c` no longer needed |
+
+The next perf focus is the **Active Performance Targets** listed near the end of this document.
+
 ## Problem Statement
 
 The same scene renders at **~135 FPS** in the new DX12 Wicked Engine build vs **~450 FPS** in the old DX11 build (which also included trees and grass). That's a **3.3x slowdown**.
@@ -1054,8 +1068,38 @@ Replaced `DrawProfilerDataColored_FirstMsOnly()` with raw `GetTextData()` displa
 
 If the raw text shows `CPU=1 GPU=1`, the bug is in `DrawProfilerDataColored_FirstMsOnly()`. If it shows `GPU>1`, the bug is in `GetTextData()` (thread safety).
 
-### Next steps
+### Resolution (commit `c4d81543`)
 
-1. Check the DIAG output to determine which layer produces the cascading
-2. If `GetTextData()` thread issue confirmed: either add mutex locking to `GetTextData()`, or cache the text during `Compose()` and reuse it during `Update()` (similar to the harness approach)
-3. Remove diagnostic code after fix is verified
+Phase 10 resolved. See commit `c4d81543` ("FIxed Performance Data Panel") for the chosen fix. The diagnostic deployed in `5233fb3c` is no longer needed for this issue and can be removed if not useful for future investigations.
+
+---
+
+## Active Performance Targets
+
+These are the remaining optimization opportunities surfaced by Phases 6–9. Each is a candidate for the upcoming perf-tuning pass.
+
+### 1. ScanAnimationDependencies caching (~12 ms potential, engine-side)
+
+Phase 6 / Phase 7 analysis identified `ScanAnimationDependencies` running every frame with O(N²) cost over the full animation set. Caching the dependency map (invalidate only when animation set changes) should reclaim ~12 ms.
+
+This change lives in `WickedEngineDX12` (engine side), not GameGuru. Per the no-engine-modifications convention used during the terrain port, this either requires:
+- Working with the Wicked Engine upstream / sibling project, or
+- A GameGuru-side wrapper that pre-computes and pushes the cached dependency map before `Update()`
+
+### 2. Keyframe search caching (~5–8 ms potential, engine-side)
+
+DX12 regressed to linear scan over keyframes; DX11 had a cached search. Same engine-side caveat as above.
+
+### 3. AI cost gap — DX11 0.27 ms vs DX12 6.54 ms (24× slower)
+
+Separate investigation needed. Not addressed by Phase 6–9. Likely candidates: pathfinding rebuild frequency, AI script polling cadence, or an unintentionally expensive query inside the AI tick.
+
+### 4. Verify Phase 9 culling holds with Phase 4 grass + Phase 5 trees enabled
+
+When grass and tree systems come online they will add new per-frame work. Re-measure Update-Wicked / GPU-Frame after Phase 4 and Phase 5 land, and confirm the 36 FPS floor doesn't regress.
+
+### Reference: how to measure
+
+- Inject `ENABLE_PROFILER` via automation harness (also sets `bProfilerEnable = true`, see CLAUDE.md profiler section)
+- Read via `GET_PERF_DATA` — returns `g_cachedProfilerText` snapshot from end-of-frame (`master_part1.cpp` cache)
+- Disable promptly afterward; profiler overhead is ~75% FPS drop

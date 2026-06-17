@@ -10,6 +10,16 @@
 This is a large C++ Windows x64 project (game engine) built with MSVC.
 Solution file: `GameGuruWickedMAX.sln`
 
+## Active Work (as of 2026-05-27)
+
+Terrain port to Wicked Engine is in steady state through Phase 3 (painted PBR materials working). Three tracks are now active:
+
+- **Phase 4 — Grass**: enable `wickedTerrain.SetGrassEnabled(true)` and feed Wicked's `chunk_data.grass.vertex_lengths` from GG's `pGrassMap` (`Guru-WickedMAX/GGTerrain/GGGrass.cpp`). Entry points in `SCRATCHPAD.md` "Next Steps".
+- **Phase 5 — Trees**: colored-cylinder placeholders driven from `pAllTrees[]` (`Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp`); LOD tree meshes are post-Phase-6 work.
+- **Performance tuning**: pursue the four items in `PERFORMANCE.md` → "Active Performance Targets" — engine-side animation caching (~17–20 ms potential), AI cost gap (24× DX11→DX12), and post-Phase-4/5 regression check.
+
+`SCRATCHPAD.md` is the living roadmap; `TERRAINPORT.md` is the architectural reference; `PERFORMANCE.md` carries the perf history and active targets.
+
 ## Build Commands
 Invoke `build.bat` using its full quoted path (required because the project root contains a space):
 

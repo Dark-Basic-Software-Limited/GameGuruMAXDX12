@@ -648,3 +648,18 @@ All modifications are GameGuru-side only. **Zero Wicked Engine files are modifie
 |---|---|
 | `wiTerrain.h` | `Terrain` struct, `ChunkData`, `Modifier`, `Chunk`, `BlendmapLayer` — all public |
 | `wiTerrain.cpp` | `Generation_Update()`, `CreateChunkRegionTexture()` — called via public API |
+
+---
+
+## Post-Phase 3 Updates
+
+This file describes the original Phase 0–6 architectural plan. For **current phase status, recent commits, and the next active steps**, see `SCRATCHPAD.md` — that is the living roadmap document.
+
+Notable post-Phase-3 work not captured in the sections above:
+
+- **2026-03-01** (`5d647db6`) — Camera excursion corruption fix. Three interacting bugs in the post-process pipeline: spurious `Generation_Restart` from `OnPaintDataChanged`, stale `processedChunkKeys` after Wicked chunk-recreation, and a generation-overwrite race where painting before `Generation_Update()` was clobbered by the default blending stage. Solved via `chunkKeyToEntity` tracking, smart restart-skip when paint data adds no new materials, and reordering painting to run AFTER `Generation_Update()`.
+- **2026-03-02** (`c23aae39`, `4253914f`) — Chunk-scale tuning. Wicked uses 1 unit = 1 m, GG uses 1 unit = 1 inch. Final `chunk_scale = 80` (~132 m / chunk) with `generation = 10` virtually eliminates visible chunk-generation popping with a significant perf boost.
+- **2026-03-04** (`039ee1da`, `89873913`) — Animation culling (`GGAnimBridge`). Pause/play culling drops Update-Wicked from 25.81 ms to 11.36 ms (−56%). Not strictly terrain work but unblocks framerate budget for Phase 4 grass.
+- **2026-05-27** (`c6474e94`) — Small `GGTerrainWicked.cpp` tweak ("Terrain Texture Transition", +5 lines) and DarkLUA vcxproj addition. Minor refinement, full scope in git diff.
+
+Active next phases (Grass / Trees / Sculpt-Invalidation) are unchanged from the original plan — see `SCRATCHPAD.md` "Next Steps" sections for the up-to-date entry points.

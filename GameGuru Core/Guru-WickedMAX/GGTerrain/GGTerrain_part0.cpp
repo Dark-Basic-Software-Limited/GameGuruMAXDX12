@@ -4199,9 +4199,9 @@ int g_terrainDrawLastExitReason = 0; // 0=never called, 1=update_disabled, 2=not
 
 int ggterrain_render_wireframe = 0;
 int ggterrain_render_debug = 0;
-int ggterrain_render_reference = 0;
-int ggterrain_show_grass_map = 0;
-int ggterrain_show_tree_map = 0;
+int ggterrain_render_reference = 1;
+int ggterrain_show_grass_map = 1;
+int ggterrain_show_tree_map = 1;
 int ggterrain_use_wicked_terrain = 1;
 
 void GGTerrain_CreateFractalTexture( Texture* tex, uint32_t size )
@@ -9720,57 +9720,21 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 
 		if (GGTerrain_GetKeyPressed(GGKEY_ESCAPE)) GGTerrain_CancelRamp();
 
-		// excellent, we see the old terrain raw data as is :)
-		//if ( GGTerrain_GetKeyPressed( GGKEY_R ) ) ggterrain_render_reference = 1 - ggterrain_render_reference;
-		ggterrain_render_reference = 1;
-		ggterrain_show_grass_map = 1;
-		ggterrain_show_tree_map = 1;
-
 		// Y key toggles between old terrain and new Wicked Engine terrain
 		if (GGTerrain_GetKeyPressed(GGKEY_Y)) ggterrain_use_wicked_terrain = 1 - ggterrain_use_wicked_terrain;
 
-		/* hidden key functionality and undocumented feature
-		if (pref.iTerrainDebugMode)
-		{
-			if ( GGTerrain_GetKeyPressed( GGKEY_Q ) ) ggtrees_global_params.draw_enabled = 1 - ggtrees_global_params.draw_enabled;
-			if ( GGTerrain_GetKeyPressed( GGKEY_Z ) && !GGTerrain_GetKeyPressed(GGKEY_CONTROL)) gggrass_global_params.draw_enabled = 1 - gggrass_global_params.draw_enabled;
-			if ( GGTerrain_GetKeyPressed( GGKEY_J ) ) ggterrain_render_wireframe = 1 - ggterrain_render_wireframe;
-			if ( GGTerrain_GetKeyPressed( GGKEY_Y ) && !GGTerrain_GetKeyPressed(GGKEY_CONTROL)) ggterrain_render_debug = 1 - ggterrain_render_debug;
-			if ( GGTerrain_GetKeyPressed( GGKEY_R ) ) ggterrain_render_reference = 1 - ggterrain_render_reference;
-			if ( GGTerrain_GetKeyPressed( GGKEY_U ) ) ggterrain_update_enabled = 1 - ggterrain_update_enabled;
-			//if ( GGTerrain_GetKeyPressed( GGKEY_E ) ) wiRenderer::SetToDrawDebugEnvProbes( !wiRenderer::GetToDrawDebugEnvProbes() );
-			// increase/decrease LOD
-			if (GGTerrain_GetKeyPressed(GGKEY_O))
-			{
-				if (ggterrain_global_params.lod_levels < 16)
-				{
-					ggterrain_global_params.lod_levels++;
-				}
-			}
-			if (GGTerrain_GetKeyPressed(GGKEY_L))
-			{
-				if (ggterrain_global_params.lod_levels > 1)
-				{
-					ggterrain_global_params.lod_levels--;
-				}
-			}
-			// increase/decrease num segments
-			if (GGTerrain_GetKeyPressed(GGKEY_I))
-			{
-				if (ggterrain_global_params.segments_per_chunk < 128)
-				{
-					ggterrain_global_params.segments_per_chunk *= 2;
-				}
-			}
-			if (GGTerrain_GetKeyPressed(GGKEY_K))
-			{
-				if (ggterrain_global_params.segments_per_chunk > 1)
-				{
-					ggterrain_global_params.segments_per_chunk /= 2;
-				}
-			}
-		}
-		*/
+		// Terrain debug-visualization toggles. Defaults on; see GGTerrain_part0.cpp:4202.
+		// (Old Y/U bindings dropped: Y now toggles wicked terrain above, U toggles wireframe in GGTerrainWicked_Update.)
+		if ( GGTerrain_GetKeyPressed( GGKEY_R ) ) ggterrain_render_reference = 1 - ggterrain_render_reference;
+		if ( GGTerrain_GetKeyPressed( GGKEY_G ) ) ggterrain_show_grass_map = 1 - ggterrain_show_grass_map;
+		if ( GGTerrain_GetKeyPressed( GGKEY_T ) ) ggterrain_show_tree_map = 1 - ggterrain_show_tree_map;
+		if ( GGTerrain_GetKeyPressed( GGKEY_Q ) ) ggtrees_global_params.draw_enabled = 1 - ggtrees_global_params.draw_enabled;
+		if ( GGTerrain_GetKeyPressed( GGKEY_Z ) && !GGTerrain_GetKeyPressed(GGKEY_CONTROL)) gggrass_global_params.draw_enabled = 1 - gggrass_global_params.draw_enabled;
+		if ( GGTerrain_GetKeyPressed( GGKEY_J ) ) ggterrain_render_wireframe = 1 - ggterrain_render_wireframe;
+		if (GGTerrain_GetKeyPressed(GGKEY_O)) { if (ggterrain_global_params.lod_levels < 16) ggterrain_global_params.lod_levels++; }
+		if (GGTerrain_GetKeyPressed(GGKEY_L)) { if (ggterrain_global_params.lod_levels > 1) ggterrain_global_params.lod_levels--; }
+		if (GGTerrain_GetKeyPressed(GGKEY_I)) { if (ggterrain_global_params.segments_per_chunk < 128) ggterrain_global_params.segments_per_chunk *= 2; }
+		if (GGTerrain_GetKeyPressed(GGKEY_K)) { if (ggterrain_global_params.segments_per_chunk > 1) ggterrain_global_params.segments_per_chunk /= 2; }
 	}
 
 	// Consume automation harness injected key (PRESS_KEY command).
