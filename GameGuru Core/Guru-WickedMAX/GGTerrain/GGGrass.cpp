@@ -3,6 +3,8 @@
 
 #include "GGGrass.h"
 
+#include <unordered_set>
+
 #include "WickedEngine.h"
 #include "wiRenderer.h"
 #include "wiProfiler.h"
@@ -271,78 +273,77 @@ const GrassTypeInfo* GGGrass_GetTypeInfo( uint32_t typeIdx )
 	return reinterpret_cast<const GrassTypeInfo*>( &grassFiles[ typeIdx ] );
 }
 
-// Set by GGGrass_Update_Painting after writing pGrassMap so the Wicked grass renderer knows to
-// rebuild affected chunks. The accompanying AABB lets the consumer invalidate ONLY intersecting
-// chunks (a 34-inch brush only touches 1-2 chunks of ~5280 inches each). Take-and-clear semantics.
-static bool  gggrass_map_dirty = false;
-static float gggrass_dirty_minX = 0.0f;
-static float gggrass_dirty_minZ = 0.0f;
-static float gggrass_dirty_maxX = 0.0f;
-static float gggrass_dirty_maxZ = 0.0f;
+// Set by GGGrass_Update_Painting whenever pGrassMap cells inside a brush footprint may have been
+// written. Tracks the set of chunk keys (cx<<32|cz) the painted area covers. The Wicked grass
+// renderer drains this every frame and only rebuilds the listed chunks — previously we kept one
+// bounding rect for the whole stroke, which invalidated every chunk the cursor swept over (so
+// distant patches reseeded even though their grass map cells were unchanged).
+static float                       gggrass_chunk_stride = 0.0f;
+static std::unordered_set<uint64_t> gggrass_dirty_chunks;
 
-bool GGGrass_TakeMapDirty( float* outMinX, float* outMinZ, float* outMaxX, float* outMaxZ )
+void GGGrass_SetChunkStride( float strideInUnits )
 {
-	if ( !gggrass_map_dirty ) return false;
-	if ( outMinX ) *outMinX = gggrass_dirty_minX;
-	if ( outMinZ ) *outMinZ = gggrass_dirty_minZ;
-	if ( outMaxX ) *outMaxX = gggrass_dirty_maxX;
-	if ( outMaxZ ) *outMaxZ = gggrass_dirty_maxZ;
-	gggrass_map_dirty = false;
+	gggrass_chunk_stride = strideInUnits;
+}
+
+bool GGGrass_TakeDirtyChunks( wi::vector<uint64_t>& out )
+{
+	if ( gggrass_dirty_chunks.empty() ) return false;
+	out.reserve( out.size() + gggrass_dirty_chunks.size() );
+	for ( uint64_t k : gggrass_dirty_chunks ) out.push_back( k );
+	gggrass_dirty_chunks.clear();
 	return true;
 }
 
-// Helper: union the brush AABB into the pending dirty rect (or start a new one).
+// Mid-stroke throttle: every paint frame the brush footprint adds chunk keys to the *pending*
+// set. The pending set is moved into the public *dirty* set every 6 frames (and on stroke
+// release), which gives ~10 Hz visible paint feedback at 60 fps without thrashing the Wicked
+// grass rebuilder every frame.
+static bool                         gggrass_stroke_in_progress = false;
+static int                          gggrass_stroke_frames_since_drain = 0;
+static std::unordered_set<uint64_t> gggrass_pending_chunks;
+
+// Helper: insert every chunk-key that intersects the supplied world-XZ AABB into the pending set.
+// Chunk centers sit on the integer grid `cx*stride`, so a chunk overlaps a rect when
+// `cx*stride ± stride/2` straddles the rect bounds. We sweep with a 1-cell margin as a generous
+// safety bound — a typical 34-inch brush at a chunk boundary touches at most 4 chunks, far
+// cheaper than the old stroke-bbox sweep that touched every chunk the cursor passed over.
 static void GGGrass_MarkPaintedRect( float minX, float minZ, float maxX, float maxZ )
 {
-	if ( gggrass_map_dirty )
+	if ( gggrass_chunk_stride <= 0.0f ) return; // GGTerrainWicked hasn't told us the stride yet
+	float inv = 1.0f / gggrass_chunk_stride;
+	int32_t cxMin = (int32_t)floorf( minX * inv ) - 1;
+	int32_t cxMax = (int32_t)floorf( maxX * inv ) + 1;
+	int32_t czMin = (int32_t)floorf( minZ * inv ) - 1;
+	int32_t czMax = (int32_t)floorf( maxZ * inv ) + 1;
+	float half = gggrass_chunk_stride * 0.5f;
+	for ( int32_t cx = cxMin; cx <= cxMax; cx++ )
 	{
-		if ( minX < gggrass_dirty_minX ) gggrass_dirty_minX = minX;
-		if ( minZ < gggrass_dirty_minZ ) gggrass_dirty_minZ = minZ;
-		if ( maxX > gggrass_dirty_maxX ) gggrass_dirty_maxX = maxX;
-		if ( maxZ > gggrass_dirty_maxZ ) gggrass_dirty_maxZ = maxZ;
-	}
-	else
-	{
-		gggrass_dirty_minX = minX;
-		gggrass_dirty_minZ = minZ;
-		gggrass_dirty_maxX = maxX;
-		gggrass_dirty_maxZ = maxZ;
-		gggrass_map_dirty = true;
+		float cxCenter = cx * gggrass_chunk_stride;
+		if ( cxCenter + half < minX || cxCenter - half > maxX ) continue;
+		for ( int32_t cz = czMin; cz <= czMax; cz++ )
+		{
+			float czCenter = cz * gggrass_chunk_stride;
+			if ( czCenter + half < minZ || czCenter - half > maxZ ) continue;
+			uint64_t key = ( (uint64_t)(uint32_t)cx << 32 ) | (uint64_t)(uint32_t)cz;
+			gggrass_pending_chunks.insert( key );
+		}
 	}
 }
 
-// Mid-stroke throttle: accumulate the brush AABB across paint frames and only publish to the
-// Wicked-side dirty flag every N frames (and on stroke release). Without this, every paint frame
-// triggers a Generation_Cancel which leaks 1-2 terrain chunks each cycle (see the [Paint] diag).
-static bool  gggrass_stroke_in_progress = false;
-static float gggrass_stroke_minX = 0.0f, gggrass_stroke_minZ = 0.0f;
-static float gggrass_stroke_maxX = 0.0f, gggrass_stroke_maxZ = 0.0f;
-static int   gggrass_stroke_frames_since_drain = 0;
-
 static void GGGrass_AccumStrokeRect( float minX, float minZ, float maxX, float maxZ )
 {
-	if ( !gggrass_stroke_in_progress )
-	{
-		gggrass_stroke_minX = minX;
-		gggrass_stroke_minZ = minZ;
-		gggrass_stroke_maxX = maxX;
-		gggrass_stroke_maxZ = maxZ;
-		gggrass_stroke_in_progress = true;
-	}
-	else
-	{
-		if ( minX < gggrass_stroke_minX ) gggrass_stroke_minX = minX;
-		if ( minZ < gggrass_stroke_minZ ) gggrass_stroke_minZ = minZ;
-		if ( maxX > gggrass_stroke_maxX ) gggrass_stroke_maxX = maxX;
-		if ( maxZ > gggrass_stroke_maxZ ) gggrass_stroke_maxZ = maxZ;
-	}
+	gggrass_stroke_in_progress = true;
+	GGGrass_MarkPaintedRect( minX, minZ, maxX, maxZ );
 }
 
 static void GGGrass_PublishStrokeRect()
 {
-	if ( !gggrass_stroke_in_progress ) return;
-	GGGrass_MarkPaintedRect( gggrass_stroke_minX, gggrass_stroke_minZ,
-		gggrass_stroke_maxX, gggrass_stroke_maxZ );
+	if ( !gggrass_pending_chunks.empty() )
+	{
+		for ( uint64_t k : gggrass_pending_chunks ) gggrass_dirty_chunks.insert( k );
+		gggrass_pending_chunks.clear();
+	}
 	gggrass_stroke_in_progress = false;
 	gggrass_stroke_frames_since_drain = 0;
 }

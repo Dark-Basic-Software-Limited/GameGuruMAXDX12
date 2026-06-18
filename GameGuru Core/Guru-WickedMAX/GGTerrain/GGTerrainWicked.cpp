@@ -757,6 +757,14 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			if (blades < 1) blades = 1;
 			uint32_t strands = vertsPerType[t] * blades;
 			if (strands > perTypeStrandCap) strands = perTypeStrandCap;
+			// Round strandCount up to a stable bucket. The simulate CS seeds each strand's
+			// placement with `rng.init(uint2(xHairRandomSeed, strand_index))`, so any change to
+			// strandCount re-rolls every blade's position even when only a handful of new vertices
+			// were painted. Bucketing keeps strandCount constant across small map edits, so the
+			// already-painted blades stay put and only the newly-painted vertices fill in.
+			constexpr uint32_t STRAND_BUCKET = 256;
+			strands = ((strands + STRAND_BUCKET - 1) / STRAND_BUCKET) * STRAND_BUCKET;
+			if (strands > perTypeStrandCap) strands = perTypeStrandCap;
 			hair.strandCount = strands;
 
 			hair.CreateFromMesh(*pc.mesh);
@@ -1152,22 +1160,18 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	{
 		// Editor paint mutates pGrassMap via GGGrass_Update_Painting. The Wicked grass renderer
 		// caches per-chunk hair entities and only rebuilds them on tier/entity changes — so it
-		// can't notice a paint stroke on its own. Take-and-clear the painted AABB and invalidate
-		// only the chunks that overlap it, then ProcessGrassChunks rebuilds those.
-		float dminX, dminZ, dmaxX, dmaxZ;
-		if (GGGrass::GGGrass_TakeMapDirty(&dminX, &dminZ, &dmaxX, &dmaxZ))
+		// can't notice a paint stroke on its own. GGGrass tracks the *set* of chunk keys the
+		// brush footprint touched (not the bounding box of the whole stroke), so we only erase
+		// tier records for chunks the user actually painted into. Chunks the cursor merely passed
+		// over without writing keep their grass intact and don't reshuffle.
+		float gridChunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+		GGGrass::GGGrass_SetChunkStride(gridChunkStride);
+		static wi::vector<uint64_t> dirtyChunks; // reused across frames; cleared per drain
+		dirtyChunks.clear();
+		if (GGGrass::GGGrass_TakeDirtyChunks(dirtyChunks))
 		{
-			float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
-			float halfChunk = chunkStride * 0.5f;
-			for (auto& kv : grassChunkKeyToChunkEntity)
+			for (uint64_t key : dirtyChunks)
 			{
-				uint64_t key = kv.first;
-				int32_t cx = (int32_t)(uint32_t)(key >> 32);
-				int32_t cz = (int32_t)(uint32_t)(key & 0xFFFFFFFFull);
-				float chunkCenterX = cx * chunkStride;
-				float chunkCenterZ = cz * chunkStride;
-				if (chunkCenterX + halfChunk < dminX || chunkCenterX - halfChunk > dmaxX) continue;
-				if (chunkCenterZ + halfChunk < dminZ || chunkCenterZ - halfChunk > dmaxZ) continue;
 				// Erase the tier record so ProcessGrassChunks sees a tier change and rebuilds it.
 				grassChunkKeyToTier.erase(key);
 			}

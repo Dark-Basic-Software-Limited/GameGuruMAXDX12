@@ -77,12 +77,18 @@ namespace GGGrass
 	uint32_t GGGrass_GetNumTypes();                            // 46
 	const GrassTypeInfo* GGGrass_GetTypeInfo( uint32_t typeIdx ); // nullptr if out of range
 
-	// Returns true and outputs the world-XZ AABB of cells painted since the last call. Out params
-	// are ignored if null. Take-and-clear semantics — the Wicked grass renderer drains this once
-	// per frame and uses the AABB to invalidate ONLY the chunks that intersect the painted area,
-	// instead of rebuilding everything. Returns false (and leaves outs untouched) if no edit
-	// happened since the previous drain.
-	bool GGGrass_TakeMapDirty( float* outMinX, float* outMinZ, float* outMaxX, float* outMaxZ );
+	// Wicked terrain tells us its chunk world-stride (chunk_width-1 * chunk_scale) so we can bucket
+	// painted cells directly into chunk keys. Must be called before any paint event for the keys to
+	// be useful; zero stride disables key bucketing (the chunk set stays empty).
+	void GGGrass_SetChunkStride( float strideInUnits );
+
+	// Drain the set of chunk keys dirtied since the previous call. Keys are encoded as
+	// ((uint32_t)cx << 32) | (uint32_t)cz, matching GGTerrainWicked's grassChunkKeyToChunkEntity
+	// indexing. Take-and-clear semantics — the Wicked grass renderer drains this every frame and
+	// invalidates only the listed chunks instead of every chunk in the brush stroke's bounding box.
+	// Returns true and appends to `out` if there were any keys; returns false and leaves `out`
+	// untouched otherwise.
+	bool GGGrass_TakeDirtyChunks( wi::vector<uint64_t>& out );
 
 	// True while the user is mid-stroke painting grass. The Wicked side uses this to suppress
 	// terrain Generation_Update during the stroke — running it every frame while paint pumps the
