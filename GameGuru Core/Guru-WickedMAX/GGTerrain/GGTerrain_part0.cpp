@@ -9780,8 +9780,27 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 	}
 	terrainlock.unlock();
 
-	// When wicked terrain is active, skip all virtual texture page management and old shader constants
-	if (ggterrain_use_wicked_terrain) return;
+	// Wicked-terrain brush cursor: the legacy editor pick + circle code below is skipped when Wicked
+	// is active, so we need our own minimal pick → SetBrushCursor pass before the early return. The
+	// raycast hits the same heightmap data the legacy code uses.
+	if (ggterrain_use_wicked_terrain)
+	{
+		wiInput::MouseState mouseStateW = wiInput::GetMouseState();
+		RAY pickRayW = wiRenderer::GetPickRay((long)mouseStateW.position.x, (long)mouseStateW.position.y, master.masterrenderer);
+		float pickXW = 0, pickYW = 0, pickZW = 0;
+		int includeFlatAreasW = 1;
+		if (ggterrain_extra_params.edit_mode == 5 || ggterrain_extra_params.edit_mode == 6) includeFlatAreasW = 0;
+		int pickHitW = GGTerrain_RayCast(pickRayW, &pickXW, &pickYW, &pickZW, 0, 0, 0, 0, includeFlatAreasW);
+
+		bool brushVisibleW = pickHitW && !bImGuiGotFocus &&
+			ggterrain_extra_params.edit_mode != GGTERRAIN_EDIT_NONE;
+		float brushSizeW = ggterrain_local_render_params2.brushSize;
+		if (ggterrain_extra_params.sculpt_mode == GGTERRAIN_SCULPT_PICK) brushSizeW = 100.0f;
+		if (ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_TREES &&
+			ggtrees_global_params.paint_mode == GGTREES_PAINT_ADD) brushSizeW = 25.0f;
+		GGTerrainWicked_SetBrushCursor(brushVisibleW, pickXW, pickYW, pickZW, brushSizeW);
+		return;
+	}
 
 	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
 	GGTerrainLODSet* pNewLODs = ggterrain.GetNewLODs();
@@ -9992,6 +10011,7 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		#else
 		terrainConstantData.terrain_brushSize = 0;
 		#endif
+
 		
 		// ramp world matrix
 		if ( ggterrain_extra_params.sculpt_mode == GGTERRAIN_SCULPT_RAMP )

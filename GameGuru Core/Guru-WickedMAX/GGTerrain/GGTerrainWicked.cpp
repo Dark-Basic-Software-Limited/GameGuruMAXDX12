@@ -60,6 +60,13 @@ static uint32_t g_grassMaxStrands = 350000;    // per-chunk strand cap (split ac
 static float    g_grassLODChunks = 2.5f;       // grass radius in chunk-distances (beyond = bare)
 static bool g_grassRebuildRequested = false;
 
+// Brush cursor: a single DecalComponent entity that projects Files/editors/gfx/brush_ring.png down
+// onto whatever's below it (terrain). Mirrors the legacy GG terrain-shader procedural circle.
+// The entity is created lazily on first SetBrushCursor call (needs wickedTerrainExeDir + device).
+// Hidden by zeroing the material baseColor alpha; the entity stays in the scene for reuse.
+static wi::ecs::Entity g_brushCursorEntity = wi::ecs::INVALID_ENTITY;
+static bool            g_brushCursorSetup = false;
+
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
 	return ((uint64_t)(uint32_t)cx << 32) | (uint64_t)(uint32_t)cz;
@@ -814,8 +821,68 @@ void GGTerrainWicked_SetGrassParam(const char* param, float value)
 }
 
 
+// Lazily build the brush-cursor decal entity (material + texture + decal + transform). One-time;
+// reused every frame thereafter. Texture is the procedurally-generated 1024-px brush_ring.png.
+static void SetupBrushCursor()
+{
+	if (g_brushCursorSetup) return;
+	if (wickedTerrainExeDir.empty()) return; // wait for Init() to capture the EXE dir
+	using namespace wi::scene;
+	auto& scene = wi::scene::GetScene();
+
+	g_brushCursorEntity = wi::ecs::CreateEntity();
+
+	char texPath[512];
+	sprintf_s(texPath, "%s/Files/editors/gfx/brush_ring.png", wickedTerrainExeDir.c_str());
+
+	MaterialComponent& mat = scene.materials.Create(g_brushCursorEntity);
+	mat.textures[MaterialComponent::BASECOLORMAP].name = texPath;
+	mat.baseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f); // start hidden via alpha multiplier
+	mat.SetCastShadow(false);
+	mat.SetTextureStreamingDisabled(true);
+	mat.CreateRenderData();
+
+	TransformComponent& tx = scene.transforms.Create(g_brushCursorEntity);
+	// Wicked decals project along local -Z. Rotate the entity -90 deg around X so its local -Z axis
+	// points to world -Y (straight down into the terrain).
+	XMVECTOR rot = XMQuaternionRotationAxis(XMVectorSet(1, 0, 0, 0), -XM_PIDIV2);
+	XMStoreFloat4(&tx.rotation_local, rot);
+	tx.SetDirty();
+
+	DecalComponent& decal = scene.decals.Create(g_brushCursorEntity);
+	decal.color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f); // material baseColor multiplies texture; this is multiplied in
+	decal.SetBaseColorOnlyAlpha(false);             // RGBA from texture (we want the green to come through)
+
+	g_brushCursorSetup = true;
+}
+
+
 namespace GGTerrain
 {
+
+void GGTerrainWicked_SetBrushCursor(bool visible, float x, float y, float z, float size)
+{
+	SetupBrushCursor();
+	if (!g_brushCursorSetup) return;
+
+	auto& scene = wi::scene::GetScene();
+	auto* tx = scene.transforms.GetComponent(g_brushCursorEntity);
+	auto* mat = scene.materials.GetComponent(g_brushCursorEntity);
+	if (!tx || !mat) return;
+
+	if (visible && size > 0.0f)
+	{
+		tx->translation_local = XMFLOAT3(x, y, z);
+		tx->scale_local = XMFLOAT3(size, size, size);
+		tx->SetDirty();
+		mat->baseColor.w = 1.0f;
+	}
+	else
+	{
+		mat->baseColor.w = 0.0f;
+	}
+	mat->SetDirty();
+}
 
 void GGTerrainWicked_Init()
 {
