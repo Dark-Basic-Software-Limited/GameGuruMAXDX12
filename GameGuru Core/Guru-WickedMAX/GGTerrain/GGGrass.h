@@ -77,6 +77,18 @@ namespace GGGrass
 	uint32_t GGGrass_GetNumTypes();                            // 46
 	const GrassTypeInfo* GGGrass_GetTypeInfo( uint32_t typeIdx ); // nullptr if out of range
 
+	// Returns true and outputs the world-XZ AABB of cells painted since the last call. Out params
+	// are ignored if null. Take-and-clear semantics — the Wicked grass renderer drains this once
+	// per frame and uses the AABB to invalidate ONLY the chunks that intersect the painted area,
+	// instead of rebuilding everything. Returns false (and leaves outs untouched) if no edit
+	// happened since the previous drain.
+	bool GGGrass_TakeMapDirty( float* outMinX, float* outMinZ, float* outMaxX, float* outMaxZ );
+
+	// True while the user is mid-stroke painting grass. The Wicked side uses this to suppress
+	// terrain Generation_Update during the stroke — running it every frame while paint pumps the
+	// editor was driving terrain chunk count up by ~65/sec, killing FPS.
+	bool GGGrass_IsPaintStrokeActive();
+
 	void GGGrass_SetPerformanceMode( uint32_t mode );
 
 	void GGGrass_AddAll();

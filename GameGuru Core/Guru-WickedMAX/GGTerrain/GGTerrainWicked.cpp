@@ -667,6 +667,18 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		wi::vector<wi::ecs::Entity> oldGrass;
 		if (git != grassChunkKeyToGrassEntities.end()) oldGrass = git->second;
 
+		// Chunks that need NO scene mutation (no old grass to remove AND new tier wants no grass)
+		// are recorded inline without going through Phase 2. This avoids triggering
+		// Generation_Cancel for the common case of Wicked discovering a new far chunk during its
+		// background streaming — each Cancel interrupts Wicked's own chunk-removal pass, leaving
+		// stale chunks in scene.objects, and during paint the chunk count was growing at ~65/sec.
+		if (oldGrass.empty() && targetTier == 0)
+		{
+			grassChunkKeyToChunkEntity[key] = entity;
+			grassChunkKeyToTier[key] = targetTier;
+			continue;
+		}
+
 		// Capture the world matrix by value (a transform pointer would be invalidated when we
 		// create transform components for grass entities in Phase 2).
 		pending.push_back({ entity, key, mesh, transform->world, targetTier, std::move(oldGrass) });
@@ -1134,6 +1146,29 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	}
 	if (wickedGrassEnabled)
 	{
+		// Editor paint mutates pGrassMap via GGGrass_Update_Painting. The Wicked grass renderer
+		// caches per-chunk hair entities and only rebuilds them on tier/entity changes — so it
+		// can't notice a paint stroke on its own. Take-and-clear the painted AABB and invalidate
+		// only the chunks that overlap it, then ProcessGrassChunks rebuilds those.
+		float dminX, dminZ, dmaxX, dmaxZ;
+		if (GGGrass::GGGrass_TakeMapDirty(&dminX, &dminZ, &dmaxX, &dmaxZ))
+		{
+			float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+			float halfChunk = chunkStride * 0.5f;
+			for (auto& kv : grassChunkKeyToChunkEntity)
+			{
+				uint64_t key = kv.first;
+				int32_t cx = (int32_t)(uint32_t)(key >> 32);
+				int32_t cz = (int32_t)(uint32_t)(key & 0xFFFFFFFFull);
+				float chunkCenterX = cx * chunkStride;
+				float chunkCenterZ = cz * chunkStride;
+				if (chunkCenterX + halfChunk < dminX || chunkCenterX - halfChunk > dmaxX) continue;
+				if (chunkCenterZ + halfChunk < dminZ || chunkCenterZ - halfChunk > dmaxZ) continue;
+				// Erase the tier record so ProcessGrassChunks sees a tier change and rebuilds it.
+				grassChunkKeyToTier.erase(key);
+			}
+		}
+		// SET_GRASS knob changes still flow through the full-rebuild path.
 		if (g_grassRebuildRequested)
 		{
 			ForceGrassRebuild();

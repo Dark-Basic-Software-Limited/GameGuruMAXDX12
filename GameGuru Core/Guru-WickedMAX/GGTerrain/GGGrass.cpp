@@ -271,6 +271,87 @@ const GrassTypeInfo* GGGrass_GetTypeInfo( uint32_t typeIdx )
 	return reinterpret_cast<const GrassTypeInfo*>( &grassFiles[ typeIdx ] );
 }
 
+// Set by GGGrass_Update_Painting after writing pGrassMap so the Wicked grass renderer knows to
+// rebuild affected chunks. The accompanying AABB lets the consumer invalidate ONLY intersecting
+// chunks (a 34-inch brush only touches 1-2 chunks of ~5280 inches each). Take-and-clear semantics.
+static bool  gggrass_map_dirty = false;
+static float gggrass_dirty_minX = 0.0f;
+static float gggrass_dirty_minZ = 0.0f;
+static float gggrass_dirty_maxX = 0.0f;
+static float gggrass_dirty_maxZ = 0.0f;
+
+bool GGGrass_TakeMapDirty( float* outMinX, float* outMinZ, float* outMaxX, float* outMaxZ )
+{
+	if ( !gggrass_map_dirty ) return false;
+	if ( outMinX ) *outMinX = gggrass_dirty_minX;
+	if ( outMinZ ) *outMinZ = gggrass_dirty_minZ;
+	if ( outMaxX ) *outMaxX = gggrass_dirty_maxX;
+	if ( outMaxZ ) *outMaxZ = gggrass_dirty_maxZ;
+	gggrass_map_dirty = false;
+	return true;
+}
+
+// Helper: union the brush AABB into the pending dirty rect (or start a new one).
+static void GGGrass_MarkPaintedRect( float minX, float minZ, float maxX, float maxZ )
+{
+	if ( gggrass_map_dirty )
+	{
+		if ( minX < gggrass_dirty_minX ) gggrass_dirty_minX = minX;
+		if ( minZ < gggrass_dirty_minZ ) gggrass_dirty_minZ = minZ;
+		if ( maxX > gggrass_dirty_maxX ) gggrass_dirty_maxX = maxX;
+		if ( maxZ > gggrass_dirty_maxZ ) gggrass_dirty_maxZ = maxZ;
+	}
+	else
+	{
+		gggrass_dirty_minX = minX;
+		gggrass_dirty_minZ = minZ;
+		gggrass_dirty_maxX = maxX;
+		gggrass_dirty_maxZ = maxZ;
+		gggrass_map_dirty = true;
+	}
+}
+
+// Mid-stroke throttle: accumulate the brush AABB across paint frames and only publish to the
+// Wicked-side dirty flag every N frames (and on stroke release). Without this, every paint frame
+// triggers a Generation_Cancel which leaks 1-2 terrain chunks each cycle (see the [Paint] diag).
+static bool  gggrass_stroke_in_progress = false;
+static float gggrass_stroke_minX = 0.0f, gggrass_stroke_minZ = 0.0f;
+static float gggrass_stroke_maxX = 0.0f, gggrass_stroke_maxZ = 0.0f;
+static int   gggrass_stroke_frames_since_drain = 0;
+
+static void GGGrass_AccumStrokeRect( float minX, float minZ, float maxX, float maxZ )
+{
+	if ( !gggrass_stroke_in_progress )
+	{
+		gggrass_stroke_minX = minX;
+		gggrass_stroke_minZ = minZ;
+		gggrass_stroke_maxX = maxX;
+		gggrass_stroke_maxZ = maxZ;
+		gggrass_stroke_in_progress = true;
+	}
+	else
+	{
+		if ( minX < gggrass_stroke_minX ) gggrass_stroke_minX = minX;
+		if ( minZ < gggrass_stroke_minZ ) gggrass_stroke_minZ = minZ;
+		if ( maxX > gggrass_stroke_maxX ) gggrass_stroke_maxX = maxX;
+		if ( maxZ > gggrass_stroke_maxZ ) gggrass_stroke_maxZ = maxZ;
+	}
+}
+
+static void GGGrass_PublishStrokeRect()
+{
+	if ( !gggrass_stroke_in_progress ) return;
+	GGGrass_MarkPaintedRect( gggrass_stroke_minX, gggrass_stroke_minZ,
+		gggrass_stroke_maxX, gggrass_stroke_maxZ );
+	gggrass_stroke_in_progress = false;
+	gggrass_stroke_frames_since_drain = 0;
+}
+
+bool GGGrass_IsPaintStrokeActive()
+{
+	return gggrass_internal_params.mouseLeftState != 0;
+}
+
 int grassGridOffsetX = 0;
 int grassGridOffsetZ = 0;
 
@@ -1606,10 +1687,33 @@ void GGGrass_Update_Painting( RAY ray )
 				}
 			}
 
-			GGGrass_UploadGrassMap();
+			// Accumulate the brush AABB into the in-progress stroke. Publish to the Wicked-side
+			// dirty flag every 6 paint frames (~10x/sec at 60 fps) so the user sees responsive
+			// mid-stroke updates, and again at stroke end. The 16 MB GPU upload feeds the legacy
+			// GG grass shader only — Wicked-mode grass reads pGrassMap directly — so we skip it
+			// mid-stroke in Wicked mode (still happens once at stroke release).
+			float bs = ggterrain_global_render_params2.brushSize;
+			GGGrass_AccumStrokeRect( pickX - bs, pickZ - bs, pickX + bs, pickZ + bs );
+			gggrass_stroke_frames_since_drain++;
+			if ( gggrass_stroke_frames_since_drain >= 6 )
+			{
+				if ( !ggterrain_use_wicked_terrain )
+				{
+					GGGrass_UploadGrassMap();
+				}
+				GGGrass_PublishStrokeRect();
+			}
 		}
 
-		GGGrass_UpdateInstances();
+		// GGGrass_UpdateInstances regenerates 64 * 6250 = 400000 random instances each call, every
+		// one of them acquiring terrainlock twice (GetNormal + GetHeight). It feeds the LEGACY GG
+		// grass shader. In Wicked mode that shader renders nothing, so this is pure overhead — and
+		// the more painted cells exist the more full-pipeline iterations run, which compounded into
+		// a 70->12 FPS drop during a 20 sec paint hold. Skip when Wicked is active.
+		if (!ggterrain_use_wicked_terrain)
+		{
+			GGGrass_UpdateInstances();
+		}
 	}
 
 #ifdef GGGRASS_UNDOREDO
@@ -1621,6 +1725,17 @@ void GGGrass_Update_Painting( RAY ray )
 		GGGrass_CreateUndoRedoAction(eUndoSys_Terrain_Grass, eUndoSys_UndoList, true);
 	}
 #endif
+
+	// Stroke ended — upload the final grass map to the legacy GPU texture and flush the accumulated
+	// paint rect so the user sees the final result.
+	if ( gggrass_internal_params.mouseLeftReleased )
+	{
+		if ( gggrass_stroke_in_progress )
+		{
+			GGGrass_UploadGrassMap();
+		}
+		GGGrass_PublishStrokeRect();
+	}
 }
 
 
