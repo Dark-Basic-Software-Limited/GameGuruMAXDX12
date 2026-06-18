@@ -761,7 +761,10 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			// placement with `rng.init(uint2(xHairRandomSeed, strand_index))`, so any change to
 			// strandCount re-rolls every blade's position even when only a handful of new vertices
 			// were painted. Bucketing keeps strandCount constant across small map edits, so the
-			// already-painted blades stay put and only the newly-painted vertices fill in.
+			// already-painted blades stay put within the bucket and only the newly-painted vertices
+			// fill in. (Triangle-list changes still reshuffle blades inside the painted chunk; a
+			// shader-side fix in Wicked's hairparticle_simulateCS would be needed to eliminate the
+			// residual within-chunk shuffle.)
 			constexpr uint32_t STRAND_BUCKET = 256;
 			strands = ((strands + STRAND_BUCKET - 1) / STRAND_BUCKET) * STRAND_BUCKET;
 			if (strands > perTypeStrandCap) strands = perTypeStrandCap;
@@ -849,10 +852,22 @@ void GGTerrainWicked_SetGrassParam(const char* param, float value)
 // reused every frame thereafter. Texture is the procedurally-generated 1024-px brush_ring.png.
 static void SetupBrushCursor()
 {
-	if (g_brushCursorSetup) return;
-	if (wickedTerrainExeDir.empty()) return; // wait for Init() to capture the EXE dir
 	using namespace wi::scene;
 	auto& scene = wi::scene::GetScene();
+
+	// Resilience: scene wipes on level load destroy our entity even though our static flag stays
+	// true. Verify all three components still exist; if not, treat this as a re-init and rebuild.
+	if (g_brushCursorSetup)
+	{
+		if (scene.materials.GetComponent(g_brushCursorEntity) &&
+			scene.transforms.GetComponent(g_brushCursorEntity) &&
+			scene.decals.GetComponent(g_brushCursorEntity))
+		{
+			return;
+		}
+		g_brushCursorSetup = false;
+	}
+	if (wickedTerrainExeDir.empty()) return; // wait for Init() to capture the EXE dir
 
 	g_brushCursorEntity = wi::ecs::CreateEntity();
 
@@ -892,7 +907,13 @@ void GGTerrainWicked_SetBrushCursor(bool visible, float x, float y, float z, flo
 	auto& scene = wi::scene::GetScene();
 	auto* tx = scene.transforms.GetComponent(g_brushCursorEntity);
 	auto* mat = scene.materials.GetComponent(g_brushCursorEntity);
-	if (!tx || !mat) return;
+	if (!tx || !mat)
+	{
+		// Component lookup failed — entity got wiped between SetupBrushCursor and here. Force the
+		// next frame's SetupBrushCursor to rebuild from scratch instead of silently failing forever.
+		g_brushCursorSetup = false;
+		return;
+	}
 
 	if (visible && size > 0.0f)
 	{
