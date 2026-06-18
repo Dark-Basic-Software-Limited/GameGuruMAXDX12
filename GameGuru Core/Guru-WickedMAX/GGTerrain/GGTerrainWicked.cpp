@@ -562,8 +562,12 @@ static void BuildGrassAppearance()
 			a.stiffness = 12.0f;   // stems hold their shape
 			break;
 		case GCAT_FLOWER:
-			a.length = 18.0f * sf;
-			a.width = 5.0f;        // small but wider so the petal disc reads
+			// Wicked's hair width is a multiplier on length (rendered width = width * aspect *
+			// length). DX11 reference shows individual wildflowers with tall stems peeking above
+			// the grass — to match that "tall thin stalk + bloom on top" silhouette, length needs
+			// to be similar to grass height and width has to be small.
+			a.length = 60.0f * sf;
+			a.width = 1.0f;
 			a.billboardCount = 2;
 			a.viewDistance = 2500.0f; // tiny feature — cull earlier to save fill
 			break;
