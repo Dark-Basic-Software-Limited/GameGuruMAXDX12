@@ -66,6 +66,17 @@ namespace GGGrass
 	const char* GGGrass_GetTextureFilename( uint32_t matIndex, uint32_t grassIndex );
 	const char* GGGrass_GetTextureShortName( uint32_t matIndex, uint32_t grassIndex );
 
+	// Per-type metadata accessor for the Wicked grass renderer (read-only).
+	struct GrassTypeInfo
+	{
+		const char* filename;     // DDS in Files/grassbank/
+		const char* shortname;    // palette label
+		float       scaleFactor;  // _SF_x.xx encoded in the filename
+		uint32_t    material;     // source terrain material the sprite was authored for (0 = any)
+	};
+	uint32_t GGGrass_GetNumTypes();                            // 46
+	const GrassTypeInfo* GGGrass_GetTypeInfo( uint32_t typeIdx ); // nullptr if out of range
+
 	void GGGrass_SetPerformanceMode( uint32_t mode );
 
 	void GGGrass_AddAll();

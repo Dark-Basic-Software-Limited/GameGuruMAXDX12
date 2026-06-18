@@ -257,6 +257,20 @@ const char* GGGrass_GetTextureShortName( uint32_t matIndex, uint32_t grassIndex 
 	return grassFiles[ index ].shortname;
 }
 
+uint32_t GGGrass_GetNumTypes()
+{
+	return GGGRASS_NUM_TYPES;
+}
+
+const GrassTypeInfo* GGGrass_GetTypeInfo( uint32_t typeIdx )
+{
+	if ( typeIdx >= GGGRASS_NUM_TYPES ) return nullptr;
+	// GrassFile and GrassTypeInfo are layout-compatible (same field order/types);
+	// reinterpret keeps the call zero-copy and avoids dragging GrassFile into the header.
+	static_assert( sizeof(GrassFile) == sizeof(GrassTypeInfo), "GrassFile and GrassTypeInfo must match" );
+	return reinterpret_cast<const GrassTypeInfo*>( &grassFiles[ typeIdx ] );
+}
+
 int grassGridOffsetX = 0;
 int grassGridOffsetZ = 0;
 

@@ -39,12 +39,16 @@ static std::unordered_map<uint64_t, wi::ecs::Entity> chunkKeyToEntity;
 // Wicked's built-in terrain grass stays disabled (it places grass from material regions, not our
 // grass map). We reuse the HairParticleSystem class but drive placement/lifecycle ourselves,
 // mirroring the ProcessPaintedChunkBlendmaps pattern.
+//
+// Per painted grass type, one cached MaterialComponent (g_grassMaterials[]) and one appearance
+// template (g_grassAppearance[]) drive the look. A chunk with N painted grass types spawns N
+// HairParticleSystem entities, each masked to just its own vertices via vertex_lengths.
 static bool wickedGrassSetup = false;
 static bool wickedGrassEnabled = true; // G key toggles grass visibility/creation
-static wi::scene::MaterialComponent grassMaterial;
-static wi::HairParticleSystem grassTemplate;
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity; // chunk entity when grass was built
-static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToGrassEntity; // grass entity we created per chunk
+// One chunk may now own several grass entities (one per painted grass-type bucket), so we track them
+// as a vector. Empty vector means we recorded the chunk but no painted grass landed in it.
+static std::unordered_map<uint64_t, wi::vector<wi::ecs::Entity>> grassChunkKeyToGrassEntities;
 static std::unordered_map<uint64_t, int> grassChunkKeyToTier;                    // current LOD tier per chunk
 // Distance-LOD grass density (driven live by the SET_GRASS automation command).
 // bladesPerVertex is the NEAR-tier density; mid/far tiers scale it down and grass stops past
@@ -52,16 +56,9 @@ static std::unordered_map<uint64_t, int> grassChunkKeyToTier;                   
 // bounded — VRAM-safe even during the load burst that previously crashed the driver (full density
 // across many streaming chunks). A fully-grassy chunk has ~4489 verts; strands = grassyVerts*blades.
 static uint32_t g_grassBladesPerVertex = 120;  // near-tier blades/vertex (LOD keeps total bounded)
-static uint32_t g_grassMaxStrands = 350000;    // per-chunk strand cap
+static uint32_t g_grassMaxStrands = 350000;    // per-chunk strand cap (split across used types)
 static float    g_grassLODChunks = 2.5f;       // grass radius in chunk-distances (beyond = bare)
 static bool g_grassRebuildRequested = false;
-// Atlas sprite selection. The authored atlas mixes short green tufts with tall wheat/seed-head
-// stalks; rect[2] (centre stalk) and rect[3] (tall golden feathery) are the wheat sprites, so the
-// field defaults to those (set in SetupWickedGrass). -1 = template set (wheat); 0..N-1 = isolate one
-// authored rect for live A/B via SET_GRASS atlasrect. This selection is crash-neutral (it changes UVs
-// per strand, not strand counts) — the VRAM crash was purely density, capped above.
-static int g_grassAtlasRectIndex = -1;
-static wi::vector<wi::HairParticleSystem::AtlasRect> g_grassAtlasFull; // full authored list for live A/B
 
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
@@ -421,110 +418,173 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 }
 
 
-// Build the grass material (alpha-tested billboard) and the appearance template once.
-// Lazy: needs wickedTerrainExeDir (set in Init) and the graphics device for CreateRenderData.
-static void SetupWickedGrass()
+// Per-grass-type material cache. One MaterialComponent per entry in GGGrass::grassFiles[] (the 46
+// DDS files in Files/grassbank/). Each material is built lazily the first time we see its type id
+// in ProcessGrassChunks, so a level that uses 3 grass types pays for 3 DDS loads, not 46.
+static wi::scene::MaterialComponent g_grassMaterials[GGGRASS_NUM_TYPES];
+static bool                         g_grassMaterialReady[GGGRASS_NUM_TYPES] = {};
+
+// Build one cached grass material from Files/grassbank/<filename>. Returns nullptr on bad index.
+// Kelp/seaweed sprites have authored _normal.dds siblings; we wire those in when present.
+static wi::scene::MaterialComponent* BuildGrassMaterial(uint32_t typeIdx)
 {
-	using namespace wi::scene;
+	if (typeIdx >= GGGRASS_NUM_TYPES) return nullptr;
+	if (g_grassMaterialReady[typeIdx]) return &g_grassMaterials[typeIdx];
 
-	// REQUIRED RUNTIME ASSETS (not committed to the repo — must be deployed into the EXE's
-	// Files/terraintextures/grass/ folder, or the grass will not render):
-	//   grassparticle.png : wheat/grass blade atlas (basecolor texture)
-	//   grass.wiscene      : source of the atlas rects (loaded below to lift them)
-	//   grassbb.png        : single-tuft fallback used if the atlas can't be read
-	// Originals live in WickedEngineDX12/Content/terrain/ and /models/.
+	const GGGrass::GrassTypeInfo* info = GGGrass::GGGrass_GetTypeInfo(typeIdx);
+	if (!info || !info->filename) return nullptr;
 
-	// Lift Wicked's authored grass atlas (the varied wheat / seed-head / fine-grass blades from the
-	// promo) out of grass.wiscene: load it into a throwaway scene and copy just the grass atlas_rects
-	// (pure UV data) + blade counts. We build our own material below, so nothing depends on the temp
-	// scene's resources after this block.
-	wi::vector<wi::HairParticleSystem::AtlasRect> atlasRects;
-	uint32_t atlasBillboards = 1;
-	float atlasUniformity = 0.7f;
+	char colorPath[512];
+	sprintf_s(colorPath, "%s/Files/grassbank/%s", wickedTerrainExeDir.c_str(), info->filename);
+
+	// Build a normal-map path if the sprite name ends in "_color.dds" (kelp/seaweed convention).
+	// Otherwise leave normals unset — the alpha-cutout blade silhouette doesn't need them.
+	char normalPath[512] = {0};
+	bool haveNormal = false;
+	const char* colorSuffix = strstr(info->filename, "_color.dds");
+	if (colorSuffix)
 	{
-		char wiscenePath[512];
-		sprintf_s(wiscenePath, "%s/Files/terraintextures/grass/grass.wiscene", wickedTerrainExeDir.c_str());
-		Scene tempScene;
-		wi::scene::LoadModel(tempScene, wiscenePath);
-		auto take = [&](const wi::HairParticleSystem& h) {
-			if (atlasRects.empty() && !h.atlas_rects.empty()) {
-				atlasRects = h.atlas_rects;
-				uint32_t bb = h.billboardCount;
-				if (bb < 1) bb = 1; if (bb > 2) bb = 2;  // cap billboards to bound GPU memory across chunks
-				atlasBillboards = bb;
-				atlasUniformity = h.uniformity;
-			}
-		};
-		for (size_t i = 0; i < tempScene.terrains.GetCount(); i++) take(tempScene.terrains[i].grass_properties);
-		for (size_t i = 0; i < tempScene.hairs.GetCount(); i++) take(tempScene.hairs[i]);
-	}
-	const bool haveAtlas = !atlasRects.empty();
-	g_grassAtlasFull = atlasRects;   // keep the full authored list for live single-rect A/B
-
-	// Diagnostic: confirm the atlas was found and map each rect's UV sub-region to its sprite.
-	{
-		std::string logPath = wickedTerrainExeDir + "/grass_setup.log";
-		FILE* f = nullptr; fopen_s(&f, logPath.c_str(), "w");
-		if (f) {
-			fprintf(f, "atlas_rects=%zu haveAtlas=%d\n", atlasRects.size(), (int)haveAtlas);
-			for (size_t i = 0; i < atlasRects.size(); i++)
-				fprintf(f, "  rect[%zu] mul=(%.4f,%.4f) add=(%.4f,%.4f) size=%.3f\n",
-					i, atlasRects[i].texMulAdd.x, atlasRects[i].texMulAdd.y,
-					atlasRects[i].texMulAdd.z, atlasRects[i].texMulAdd.w, atlasRects[i].size);
-			fclose(f);
+		size_t prefixLen = (size_t)(colorSuffix - info->filename);
+		char normalName[256];
+		if (prefixLen < sizeof(normalName) - 16)
+		{
+			memcpy(normalName, info->filename, prefixLen);
+			memcpy(normalName + prefixLen, "_normal.dds", 12); // includes NUL
+			sprintf_s(normalPath, "%s/Files/grassbank/%s", wickedTerrainExeDir.c_str(), normalName);
+			haveNormal = true;
 		}
 	}
 
-	// Use the FULL authored atlas (green tufts + wheat/seed-head sprites) for a natural green meadow
-	// with tan tips, like the promo. (Single sprites can still be isolated live via SET_GRASS atlasrect.)
+	wi::scene::MaterialComponent& mat = g_grassMaterials[typeIdx];
+	mat = wi::scene::MaterialComponent();
+	mat.textures[wi::scene::MaterialComponent::BASECOLORMAP].name = colorPath;
+	if (haveNormal)
+		mat.textures[wi::scene::MaterialComponent::NORMALMAP].name = normalPath;
+	mat.SetAlphaRef(0.5f);          // alpha cutout for the blade silhouette
+	mat.SetDoubleSided(true);
+	mat.SetRoughness(1.0f);
+	mat.SetMetalness(0.0f);
+	mat.SetReflectance(0.02f);
+	// Green subsurface keeps back-lit blades softly translucent instead of going dark.
+	mat.SetSubsurfaceScatteringColor(XMFLOAT3(0.35f, 0.6f, 0.2f));
+	mat.SetSubsurfaceScatteringAmount(1.0f);
+	mat.SetCastShadow(false);
+	mat.SetTextureStreamingDisabled(true);
+	mat.CreateRenderData();
 
-	// Texture: the multi-sprite atlas when we have rects to index it, else the single-tuft fallback.
-	char grassTexPath[512];
-	sprintf_s(grassTexPath, "%s/Files/terraintextures/grass/%s", wickedTerrainExeDir.c_str(),
-		haveAtlas ? "grassparticle.png" : "grassbb.png");
+	g_grassMaterialReady[typeIdx] = true;
+	return &mat;
+}
 
-	grassMaterial = MaterialComponent();
-	grassMaterial.textures[MaterialComponent::BASECOLORMAP].name = grassTexPath;
-	grassMaterial.SetAlphaRef(0.5f);     // alpha cutout for the blade silhouette
-	grassMaterial.SetDoubleSided(true);
-	grassMaterial.SetRoughness(1.0f);
-	grassMaterial.SetMetalness(0.0f);
-	grassMaterial.SetReflectance(0.02f);
-	// Natural green grass: green subsurface so back-lit blades glow softly instead of going dark.
-	// (A warm/golden look is still reachable live via SET_GRASS tint*/sss*; the promo grass is green
-	// with tan tips, which comes from the atlas sprites themselves.)
-	grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(0.35f, 0.6f, 0.2f));
-	grassMaterial.SetSubsurfaceScatteringAmount(1.0f);
-	grassMaterial.SetCastShadow(false);
-	grassMaterial.SetTextureStreamingDisabled(true);
-	grassMaterial.CreateRenderData();
+// Per-grass-type appearance templates (length / width / billboards / stiffness etc.).
+// Copied onto each spawned HairParticleSystem so the strand placement / mesh / strand-count are
+// per-chunk but the look-and-feel comes from the type table.
+static wi::HairParticleSystem g_grassAppearance[GGGRASS_NUM_TYPES];
+static bool                   g_grassAppearanceReady = false;
 
-	grassTemplate = wi::HairParticleSystem();
-	if (haveAtlas)
+// 8 categories spanning the 46 entries in GGGrass::grassFiles[].
+// Boundaries kept in lockstep with that table — change one, change both.
+enum GrassCategory { GCAT_COURSE, GCAT_SHORT, GCAT_TALL, GCAT_WILD, GCAT_WEED, GCAT_FLOWER, GCAT_KELP, GCAT_SEAWEED };
+
+static GrassCategory CategoryFor(uint32_t typeIdx)
+{
+	if (typeIdx <= 6)  return GCAT_COURSE;   // 0..6   course grass mat1..mat30
+	if (typeIdx <= 13) return GCAT_SHORT;    // 7..13  short  grass mat1..mat30
+	if (typeIdx <= 20) return GCAT_TALL;     // 14..20 tall   grass mat1..mat30
+	if (typeIdx <= 27) return GCAT_WILD;     // 21..27 wild   grass mat1..mat30
+	if (typeIdx <= 36) return GCAT_WEED;     // 28..36 weeds 1..9
+	if (typeIdx <= 39) return GCAT_FLOWER;   // 37..39 red / white / yellow flowers
+	if (typeIdx <= 42) return GCAT_KELP;     // 40..42 kelp 1..3
+	return GCAT_SEAWEED;                     // 43..45 seaweed 1..3
+}
+
+// Fill g_grassAppearance from the per-type GGGrass metadata + category defaults.
+// scaleFactor (from the _SF_x.xx filename suffix) scales blade length so e.g. "short grass" really
+// renders shorter than "tall grass". Width / stiffness / billboard count come from the category.
+static void BuildGrassAppearance()
+{
+	if (g_grassAppearanceReady) return;
+	uint32_t numTypes = GGGrass::GGGrass_GetNumTypes();
+	if (numTypes > GGGRASS_NUM_TYPES) numTypes = GGGRASS_NUM_TYPES;
+
+	for (uint32_t t = 0; t < numTypes; t++)
 	{
-		grassTemplate.atlas_rects = atlasRects;   // each strand randomly picks a sprite -> natural variety
-		grassTemplate.billboardCount = atlasBillboards;
-		grassTemplate.uniformity = atlasUniformity;
-		grassTemplate.length = 12.0f;             // medium meadow height
-		grassTemplate.width = 1.2f;               // fine blades (promo grass is thin, not coarse)
-	}
-	else
-	{
-		grassTemplate.billboardCount = 1;
-		grassTemplate.uniformity = 0.7f;
-		grassTemplate.length = 9.0f;
-		grassTemplate.width = 2.0f;
-	}
-	grassTemplate.segmentCount = 1;               // single segment keeps GPU memory bounded across chunks
-	grassTemplate.randomness = 0.35f;
-	// Moderate stiffness keeps blades fairly upright so they don't twist/foreshorten and flip in the
-	// wind (the billboards orient along the bending strand, so a low-stiffness blade that leans far
-	// rotates toward edge-on and looks wrong). Stay well under ~50 though — that drove the hair sim
-	// into degenerate geometry that crashed the GPU driver; stiffness 9 was confirmed safe.
-	grassTemplate.stiffness = 9.0f;      // upright enough to stop the wind-driven twist/flip (confirmed safe)
-	grassTemplate.drag = 0.5f;           // dampen the sway so it settles instead of whipping
-	grassTemplate.viewDistance = 5000.0f;         // ~400 ft render-cull distance
+		const GGGrass::GrassTypeInfo* info = GGGrass::GGGrass_GetTypeInfo(t);
+		float sf = info ? info->scaleFactor : 1.0f;
+		if (sf <= 0.01f) sf = 1.0f;
 
+		wi::HairParticleSystem& a = g_grassAppearance[t];
+		a = wi::HairParticleSystem();
+		a.segmentCount = 1;        // single segment keeps GPU memory bounded across chunks
+		a.randomness = 0.35f;
+		a.stiffness = 9.0f;        // upright enough to dodge the wind-driven twist/flip (confirmed safe)
+		a.drag = 0.5f;
+		a.viewDistance = 5000.0f;  // ~400 ft cull; tightened below for small features (flowers etc.)
+		a.atlas_rects.clear();     // each material is a single-sprite DDS — no atlas
+		a.uniformity = 1.0f;
+
+		switch (CategoryFor(t))
+		{
+		case GCAT_COURSE:
+			a.length = 14.0f * sf;
+			a.width = 1.4f;
+			a.billboardCount = 2;
+			break;
+		case GCAT_SHORT:
+			a.length = 8.0f * sf;
+			a.width = 1.3f;
+			a.billboardCount = 2;
+			break;
+		case GCAT_TALL:
+			a.length = 22.0f * sf;
+			a.width = 1.4f;
+			a.billboardCount = 2;
+			break;
+		case GCAT_WILD:
+			a.length = 12.0f * sf;
+			a.width = 1.3f;
+			a.billboardCount = 2;
+			break;
+		case GCAT_WEED:
+			a.length = 14.0f * sf;
+			a.width = 1.2f;
+			a.billboardCount = 1;  // weeds/stems read better as flat billboards
+			a.stiffness = 12.0f;   // stems hold their shape
+			break;
+		case GCAT_FLOWER:
+			a.length = 9.0f * sf;
+			a.width = 2.5f;        // small but wider so the petal disc reads
+			a.billboardCount = 2;
+			a.viewDistance = 2500.0f; // tiny feature — cull earlier to save fill
+			break;
+		case GCAT_KELP:
+			a.length = 30.0f * sf;
+			a.width = 4.0f;
+			a.billboardCount = 1;
+			a.stiffness = 4.0f;    // sways with current
+			a.drag = 0.8f;
+			break;
+		case GCAT_SEAWEED:
+			a.length = 45.0f * sf;
+			a.width = 2.5f;
+			a.billboardCount = 1;
+			a.stiffness = 3.0f;
+			a.drag = 0.9f;
+			break;
+		}
+	}
+	g_grassAppearanceReady = true;
+}
+
+// Populate the per-type appearance templates (one per entry in GGGrass::grassFiles[]). Materials
+// are built lazily on first sighting (see BuildGrassMaterial), so no DDS is loaded until a chunk
+// actually paints that type.
+//
+// Runtime assets: Files/grassbank/*.dds — already shipped as part of the GameGuru asset pack.
+// Nothing else to deploy.
+static void SetupWickedGrass()
+{
+	BuildGrassAppearance();
 	wickedGrassSetup = true;
 }
 
@@ -557,7 +617,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		wi::scene::MeshComponent* mesh;
 		XMFLOAT4X4 world;
 		int tier;
-		wi::ecs::Entity oldGrass; // existing grass entity to remove first (INVALID if none)
+		wi::vector<wi::ecs::Entity> oldGrass; // existing grass entities to remove first
 	};
 	wi::vector<PendingGrass> pending;
 
@@ -593,12 +653,13 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		int currentTier = (tierIt != grassChunkKeyToTier.end()) ? tierIt->second : -1;
 		if (!entityChanged && currentTier == targetTier) continue; // already correct for this chunk
 
-		auto git = grassChunkKeyToGrassEntity.find(key);
-		wi::ecs::Entity oldGrass = (git != grassChunkKeyToGrassEntity.end()) ? git->second : wi::ecs::INVALID_ENTITY;
+		auto git = grassChunkKeyToGrassEntities.find(key);
+		wi::vector<wi::ecs::Entity> oldGrass;
+		if (git != grassChunkKeyToGrassEntities.end()) oldGrass = git->second;
 
 		// Capture the world matrix by value (a transform pointer would be invalidated when we
 		// create transform components for grass entities in Phase 2).
-		pending.push_back({ entity, key, mesh, transform->world, targetTier, oldGrass });
+		pending.push_back({ entity, key, mesh, transform->world, targetTier, std::move(oldGrass) });
 	}
 
 	if (pending.empty()) return;
@@ -609,56 +670,80 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	// Phase 2: apply removals + (re)creations and update tracking.
 	for (auto& pc : pending)
 	{
-		if (pc.oldGrass != wi::ecs::INVALID_ENTITY)
+		for (auto e : pc.oldGrass)
 		{
-			if (scene.hairs.GetComponent(pc.oldGrass)) scene.Entity_Remove(pc.oldGrass);
-			grassChunkKeyToGrassEntity.erase(pc.key);
+			if (scene.hairs.GetComponent(e)) scene.Entity_Remove(e);
 		}
+		grassChunkKeyToGrassEntities.erase(pc.key);
 		grassChunkKeyToChunkEntity[pc.key] = pc.entity;
 		grassChunkKeyToTier[pc.key] = pc.tier;
 		if (pc.tier == 0) continue; // bare at this distance / outside editable area
 
+		// Bucket each grassy vertex by its painted type id (value-2 from the grass map; value 1
+		// "default paint" is aliased to type 0 — Course Grass mat1 — for backwards-compat with
+		// legacy levels). vertexType[vi] = 0xFF means "no grass at this vertex".
 		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.world);
-		wi::vector<float> vertex_lengths;
-		vertex_lengths.resize(wi::terrain::vertexCount); // zero = no grass at that vertex
-		uint32_t grassyVerts = 0;
+		static_assert(GGGRASS_NUM_TYPES <= 254, "vertexType uses 0xFF as sentinel");
+		uint8_t vertexType[wi::terrain::vertexCount];
+		uint32_t vertsPerType[GGGRASS_NUM_TYPES] = {};
+		uint32_t totalGrassyVerts = 0;
+		uint32_t typesUsed = 0;
+		bool typeSeen[GGGRASS_NUM_TYPES] = {};
 		for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
 		{
 			XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), worldMatrix);
 			XMFLOAT3 worldPos;
 			XMStoreFloat3(&worldPos, wp);
-			if (GGGrass::GGGrass_GetGrassMap(worldPos.x, worldPos.z) != 0)
-			{
-				vertex_lengths[vi] = 1.0f;
-				grassyVerts++;
-			}
+			uint32_t mapVal = GGGrass::GGGrass_GetGrassMap(worldPos.x, worldPos.z);
+			if (mapVal == 0) { vertexType[vi] = 0xFF; continue; }
+			uint32_t typeIdx = (mapVal >= 2) ? (mapVal - 2) : 0; // value 1 -> Course Grass mat1
+			if (typeIdx >= GGGRASS_NUM_TYPES) { vertexType[vi] = 0xFF; continue; }
+			vertexType[vi] = (uint8_t)typeIdx;
+			vertsPerType[typeIdx]++;
+			totalGrassyVerts++;
+			if (!typeSeen[typeIdx]) { typeSeen[typeIdx] = true; typesUsed++; }
 		}
-		if (grassyVerts == 0) continue; // tier recorded above; no painted grass in this chunk
+		if (totalGrassyVerts == 0) continue; // tier recorded above; no painted grass in this chunk
 
-		wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
-		wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
-		hair = grassTemplate;
-		// Live single-sprite A/B: isolate one authored rect when requested (SET_GRASS atlasrect N).
-		if (g_grassAtlasRectIndex >= 0 && g_grassAtlasRectIndex < (int)g_grassAtlasFull.size())
-			hair.atlas_rects = { g_grassAtlasFull[g_grassAtlasRectIndex] };
-		hair.meshID = pc.entity; // object/mesh/transform share one entity for terrain chunks
-		hair.vertex_lengths = std::move(vertex_lengths);
+		// Per-entity strand cap = total cap / numUsedTypes so a 3-type chunk doesn't triple-spend VRAM.
+		uint32_t perTypeStrandCap = (typesUsed > 0) ? (g_grassMaxStrands / typesUsed) : g_grassMaxStrands;
 
-		// Near tier uses full g_grassBladesPerVertex; mid/far scale down. Per-chunk cap bounds VRAM.
-		uint32_t blades = (uint32_t)(g_grassBladesPerVertex * GrassTierDensityScale(pc.tier) + 0.5f);
-		if (blades < 1) blades = 1;
-		uint32_t strands = grassyVerts * blades;
-		if (strands > g_grassMaxStrands) strands = g_grassMaxStrands;
-		hair.strandCount = strands;
+		wi::vector<wi::ecs::Entity> spawnedHere;
+		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+		{
+			if (!typeSeen[t]) continue;
 
-		hair.CreateFromMesh(*pc.mesh);
-		hair.CreateRenderData();
+			wi::scene::MaterialComponent* mat = BuildGrassMaterial(t);
+			if (!mat) continue;
 
-		scene.materials.Create(grassEntity) = grassMaterial;
-		scene.transforms.Create(grassEntity);
-		scene.Component_Attach(grassEntity, pc.entity, true); // inherit chunk transform; recursive cleanup
+			wi::vector<float> vertex_lengths;
+			vertex_lengths.resize(wi::terrain::vertexCount);
+			for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
+				vertex_lengths[vi] = (vertexType[vi] == t) ? 1.0f : 0.0f;
 
-		grassChunkKeyToGrassEntity[pc.key] = grassEntity;
+			wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
+			wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
+			hair = g_grassAppearance[t];   // per-type look (length/width/billboards/stiffness)
+			hair.meshID = pc.entity;
+			hair.vertex_lengths = std::move(vertex_lengths);
+
+			uint32_t blades = (uint32_t)(g_grassBladesPerVertex * GrassTierDensityScale(pc.tier) + 0.5f);
+			if (blades < 1) blades = 1;
+			uint32_t strands = vertsPerType[t] * blades;
+			if (strands > perTypeStrandCap) strands = perTypeStrandCap;
+			hair.strandCount = strands;
+
+			hair.CreateFromMesh(*pc.mesh);
+			hair.CreateRenderData();
+
+			scene.materials.Create(grassEntity) = *mat;
+			scene.transforms.Create(grassEntity);
+			scene.Component_Attach(grassEntity, pc.entity, true); // inherit chunk transform
+
+			spawnedHere.push_back(grassEntity);
+		}
+		if (!spawnedHere.empty())
+			grassChunkKeyToGrassEntities[pc.key] = std::move(spawnedHere);
 	}
 }
 
@@ -670,40 +755,50 @@ static void ForceGrassRebuild()
 	wi::terrain::Terrain* terrain = GetWickedTerrain();
 	if (terrain) terrain->Generation_Cancel();   // make scene mutation safe (no generator-thread race)
 	auto& scene = wi::scene::GetScene();
-	for (auto& kv : grassChunkKeyToGrassEntity)
+	for (auto& kv : grassChunkKeyToGrassEntities)
 	{
-		if (scene.hairs.GetComponent(kv.second))
-			scene.Entity_Remove(kv.second);
+		for (auto e : kv.second)
+		{
+			if (scene.hairs.GetComponent(e))
+				scene.Entity_Remove(e);
+		}
 	}
-	grassChunkKeyToGrassEntity.clear();
+	grassChunkKeyToGrassEntities.clear();
 	grassChunkKeyToTier.clear();
 	grassChunkKeyToChunkEntity.clear();
 }
 
-// Runtime grass tuning, driven by the SET_GRASS automation command. Updates the template/material
-// then requests a deferred rebuild (applied next GGTerrainWicked_Update on the main thread).
+// Runtime grass tuning, driven by the SET_GRASS automation command. Now that each grass type has
+// its own appearance template and material, the tuning knobs apply uniformly across all types
+// (multiplicative for sizes, replacement for material props). A deferred rebuild applies them.
 void GGTerrainWicked_SetGrassParam(const char* param, float value)
 {
 	std::string p = param ? param : "";
-	if      (p == "length")     grassTemplate.length = value;
-	else if (p == "width")      grassTemplate.width = value;
-	else if (p == "stiffness")  grassTemplate.stiffness = value;
-	else if (p == "drag")       grassTemplate.drag = value;
-	else if (p == "viewdist")   grassTemplate.viewDistance = value;
-	else if (p == "segments")   grassTemplate.segmentCount = (uint32_t)(value < 1.0f ? 1.0f : value);
-	else if (p == "billboards") grassTemplate.billboardCount = (uint32_t)(value < 1.0f ? 1.0f : value);
+	auto forAllAppearance = [&](auto fn) {
+		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++) fn(g_grassAppearance[t]);
+	};
+	auto forAllMaterials = [&](auto fn) {
+		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+			if (g_grassMaterialReady[t]) fn(g_grassMaterials[t]);
+	};
+	if      (p == "length")     forAllAppearance([&](wi::HairParticleSystem& h){ h.length = value; });
+	else if (p == "width")      forAllAppearance([&](wi::HairParticleSystem& h){ h.width = value; });
+	else if (p == "stiffness")  forAllAppearance([&](wi::HairParticleSystem& h){ h.stiffness = value; });
+	else if (p == "drag")       forAllAppearance([&](wi::HairParticleSystem& h){ h.drag = value; });
+	else if (p == "viewdist")   forAllAppearance([&](wi::HairParticleSystem& h){ h.viewDistance = value; });
+	else if (p == "segments")   forAllAppearance([&](wi::HairParticleSystem& h){ h.segmentCount = (uint32_t)(value < 1.0f ? 1.0f : value); });
+	else if (p == "billboards") forAllAppearance([&](wi::HairParticleSystem& h){ h.billboardCount = (uint32_t)(value < 1.0f ? 1.0f : value); });
 	else if (p == "blades")     g_grassBladesPerVertex = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "maxstrands") g_grassMaxStrands = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "lodchunks")  g_grassLODChunks = value;             // grass radius in chunk-distances
-	else if (p == "atlasrect")  g_grassAtlasRectIndex = (int)value;   // -1 = full atlas; 0..N-1 = isolate one
-	else if (p == "sss")        grassMaterial.SetSubsurfaceScatteringAmount(value);
-	else if (p == "alpha")      grassMaterial.SetAlphaRef(value);
-	else if (p == "tintr")    { grassMaterial.baseColor.x = value; grassMaterial.SetDirty(); }
-	else if (p == "tintg")    { grassMaterial.baseColor.y = value; grassMaterial.SetDirty(); }
-	else if (p == "tintb")    { grassMaterial.baseColor.z = value; grassMaterial.SetDirty(); }
-	else if (p == "sssr")       grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(value, grassMaterial.subsurfaceScattering.y, grassMaterial.subsurfaceScattering.z));
-	else if (p == "sssg")       grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(grassMaterial.subsurfaceScattering.x, value, grassMaterial.subsurfaceScattering.z));
-	else if (p == "sssb")       grassMaterial.SetSubsurfaceScatteringColor(XMFLOAT3(grassMaterial.subsurfaceScattering.x, grassMaterial.subsurfaceScattering.y, value));
+	else if (p == "sss")        forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetSubsurfaceScatteringAmount(value); });
+	else if (p == "alpha")      forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetAlphaRef(value); });
+	else if (p == "tintr")      forAllMaterials([&](wi::scene::MaterialComponent& m){ m.baseColor.x = value; m.SetDirty(); });
+	else if (p == "tintg")      forAllMaterials([&](wi::scene::MaterialComponent& m){ m.baseColor.y = value; m.SetDirty(); });
+	else if (p == "tintb")      forAllMaterials([&](wi::scene::MaterialComponent& m){ m.baseColor.z = value; m.SetDirty(); });
+	else if (p == "sssr")       forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetSubsurfaceScatteringColor(XMFLOAT3(value, m.subsurfaceScattering.y, m.subsurfaceScattering.z)); });
+	else if (p == "sssg")       forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetSubsurfaceScatteringColor(XMFLOAT3(m.subsurfaceScattering.x, value, m.subsurfaceScattering.z)); });
+	else if (p == "sssb")       forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetSubsurfaceScatteringColor(XMFLOAT3(m.subsurfaceScattering.x, m.subsurfaceScattering.y, value)); });
 	g_grassRebuildRequested = true;
 }
 
@@ -920,10 +1015,13 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	{
 		wickedGrassEnabled = !wickedGrassEnabled;
 		auto& gscene = wi::scene::GetScene();
-		for (auto& kv : grassChunkKeyToGrassEntity)
+		for (auto& kv : grassChunkKeyToGrassEntities)
 		{
-			wi::HairParticleSystem* hair = gscene.hairs.GetComponent(kv.second);
-			if (hair) hair->layerMask = wickedGrassEnabled ? ~0u : 0u;
+			for (auto e : kv.second)
+			{
+				wi::HairParticleSystem* hair = gscene.hairs.GetComponent(e);
+				if (hair) hair->layerMask = wickedGrassEnabled ? ~0u : 0u;
+			}
 		}
 		wi::backlog::post(wickedGrassEnabled ? "[Grass] ON" : "[Grass] OFF");
 	}
