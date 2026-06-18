@@ -1,8 +1,8 @@
 # SCRATCHPAD — Terrain System Port
 
-## Current State (2026-05-27)
+## Current State (2026-06-18)
 
-The terrain port to the **Wicked Engine DX12 terrain system** is well underway. **Phases 0–3 are complete**, with painted PBR materials rendering across the full terrain through Wicked's virtual texture pipeline. The new terrain is now the **default** (Y key toggles back to old terrain). Chunk scale tuning has nearly eliminated visible chunk generation popping. Animation performance fix and Performance Data panel display bug were resolved in the most recent cluster of work.
+The terrain port to the **Wicked Engine DX12 terrain system** is well underway. **Phases 0–4 are complete**, with painted PBR materials rendering across the full terrain and **3D grass rendering through Wicked Engine's `HairParticleSystem`**, placed from GameGuru's painted grass map (`pGrassMap`). The new terrain is now the **default** (Y key toggles back to old terrain).
 
 **This file is the living roadmap.** `TERRAINPORT.md` is the architectural reference (set during Phase 0 design); refer here for the current phase status.
 
@@ -20,6 +20,7 @@ The terrain port to the **Wicked Engine DX12 terrain system** is well underway. 
 | 2026-03-04 | **Animation System Fix**: pause/play culling via `GGAnimBridge_PreUpdate/PostUpdate` — Update-Wicked 25.81→11.36ms (−56%), FPS 27→36 (+33%) | `039ee1da`, `89873913` |
 | 2026-03-04 | **Performance Data panel cascading-duplicates bug fixed** (resolves PERFORMANCE.md Phase 10) | `c4d81543` |
 | 2026-05-27 | **Terrain Texture Transition** — small `GGTerrainWicked.cpp` tweak + DarkLUA vcxproj addition | `c6474e94` |
+| 2026-05-29 | **Phase 4 complete**: 3D grass via Wicked `HairParticleSystem`, per-chunk placement from `pGrassMap`, distance-LOD chunks, natural green meadow look. Work originally lived only on `claude/frosty-ritchie-f7efe6` and was recovered via cherry-pick on 2026-06-17 after my mirror-overwrite incident destroyed the uncommitted local copy (see [feedback_check_main_repo_status.md](../../../../leeba/.claude/projects/D--max-GameGuruMAXDX12/memory/feedback_check_main_repo_status.md)). | `5070b264`, `f3d6dd92`, `a7fc7618`, `29c979ed`, `c84225e9` |
 
 ### What's Working Now
 
@@ -118,11 +119,23 @@ Phase 0: Toggle + Empty Terrain          ✓ COMPLETE
 Phase 1: Heightmap Feed                  ✓ COMPLETE
 Phase 2: 4-Layer Auto Materials          ✓ COMPLETE (2026-02-25)
 Phase 3: Painted Materials (N-layer)     ✓ COMPLETE (2026-02-25, excursion fix 2026-03-01)
-Phase 4: Grass via HairParticleSystem    ← ACTIVE   first step: enable SetGrassEnabled(true) + override chunk_data.grass.vertex_lengths from pGrassMap
+Phase 4: Grass via HairParticleSystem    ✓ COMPLETE (2026-05-29; recovered to main 2026-06-17)
 Phase 5: Colored Cylinder Trees          ← ACTIVE   first step: shared cylinder MeshComponent + entity pool, iterate pAllTrees[]
 Phase 6: Sculpt/Paint Invalidation       ← ACTIVE   first step: hook GGTerrain_InvalidateRegion() → mark Wicked chunks invalidated + clear from processedChunkKeys
+Phase 4+: Grass rendering improvements   ← NEXT     improve Wicked grass look/behavior (subsurface tuning, density, wind, atlas variety, paint integration). See "Phase 4 Notes" below
 Perf:    Animation engine-side caching   ← ACTIVE   first step: PERFORMANCE.md "Active Performance Targets" — ScanAnimationDependencies + keyframe search
 ```
+
+## Phase 4 Notes (Grass — what's in vs what's not)
+
+**What's rendering**: Wicked Engine `HairParticleSystem` instances created per-chunk in `ProcessGrassChunks` (GGTerrainWicked.cpp). Placement reads `pGrassMap` via `GGGrass_GetGrassMap(x, z)`. Distance-LOD chunks keep VRAM safe (near chunks dense, far chunks scaled or none past `g_grassLODChunks`). Material/appearance template set up in `SetupWickedGrass`. SET_GRASS automation command exposed for live tuning.
+
+**What's effectively dead**: the OLD GGGrass.cpp `GGGrass_Draw*` callbacks. They still exist and run every frame (`extern "C"` hooked into Wicked via alternate-name linkage) but produce no visible output — the new system has taken over visually. `gggrass_global_params.draw_enabled` (Z key) toggles them but no visible change. Keep them around for now — `pGrassMap` data layer is still authoritative, and painting tools depend on `GGGrass_Update`. Defer "delete old grass code" until Wicked grass is fully tuned and we're sure nothing else references the old draw path.
+
+**Improvements to consider** (future passes):
+- Per-grass-type appearance (current is single visual; GG paints up to 46 grass types into pGrassMap but we render one look)
+- Tighter subsurface / wind tuning to match user expectations
+- Paint-brush integration with the new system (currently the OLD GGGrass_Update_Painting writes to pGrassMap and the new system picks it up next chunk gen, but UX may not be smooth)
 
 ---
 
@@ -138,7 +151,7 @@ All modifications are GameGuru-side only. **Zero Wicked Engine files are modifie
 | `Guru-WickedMAX/GGTerrain/GGTerrain.h` | Toggle extern, accessor declarations |
 | `Guru-WickedMAX/master_part1.cpp` | Draw callback gating, update loop integration |
 | `Guru-WickedMAX/GameGuruMain.cpp` | Init call |
-| `Guru-WickedMAX/GGTerrain/GGGrass.cpp` | pGrassMap data (Phase 4 will read this) |
+| `Guru-WickedMAX/GGTerrain/GGGrass.cpp` | pGrassMap data layer (read by `ProcessGrassChunks`); OLD draw callbacks still present but produce no visible output |
 | `Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp` | pAllTrees data (Phase 5 will read this) |
 
 Full architectural details in `TERRAINPORT.md`.

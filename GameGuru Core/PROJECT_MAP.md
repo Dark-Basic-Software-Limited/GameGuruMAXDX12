@@ -249,9 +249,9 @@ The project uses the backwards compatibility layer (`WICKEDENGINE_BACKWARDS_COMP
 | `wickedcalls_part3.cpp` | `wiRenderer::GetPickRay`, `wiScene::Pick_OLD`, ray casting |
 | `wickedcalls_part4.cpp` | `wiScene::EmitterComponent`, `wiEmittedParticle` (particle emitters) |
 | `GGTerrain/GGTerrain_part0-1.cpp` | `wiGraphicsDevice`, `wiScene::CameraComponent`, `wiRenderer` |
-| `GGTerrain/GGTerrainWicked.cpp/.h` | `wi::terrain::Terrain`, `ChunkData`, `BlendmapLayer`, custom `Modifier` — Phase 0–3 port of terrain to Wicked Engine native pipeline. `SCRATCHPAD.md` is the living roadmap |
+| `GGTerrain/GGTerrainWicked.cpp/.h` | `wi::terrain::Terrain`, `ChunkData`, `BlendmapLayer`, custom `Modifier`, **`wi::HairParticleSystem`** — Phase 0–4 port of terrain + grass to Wicked Engine native pipeline. `ProcessGrassChunks` + `SetupWickedGrass` host the Phase 4 grass rendering. `SCRATCHPAD.md` is the living roadmap |
 | `GGTerrain/GGTrees_part0-1.cpp` | `wiScene::GetCamera`, `wiRenderer`, `AnimationComponent` |
-| `GGTerrain/GGGrass.cpp/.h` | `wiGraphicsDevice`, `wiScene`, `wiRenderer` |
+| `GGTerrain/GGGrass.cpp/.h` | `wiGraphicsDevice`, `wiScene`, `wiRenderer` — pGrassMap data layer (still authoritative for paint data); OLD billboard-grass draw callbacks remain but produce no visible output post-Phase-4 |
 | `GGAnimBridge.cpp/.h` | `wiScene::AnimationComponent` Pause/Play — Phase 9 animation culling (visibility check + 30 fps half-rate throttle). PreUpdate culls, PostUpdate restores. Update-Wicked −56%, FPS +33% |
 | `GPUParticles_part0.cpp` | `wiScene`, `wiEmittedParticle`, `TransformComponent` |
 | `tracers/TracerManager.cpp` | `wiGraphics::CommandList`, `wiRenderer`, Pipeline State Objects |

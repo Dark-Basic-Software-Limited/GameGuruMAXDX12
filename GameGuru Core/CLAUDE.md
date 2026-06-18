@@ -10,13 +10,14 @@
 This is a large C++ Windows x64 project (game engine) built with MSVC.
 Solution file: `GameGuruWickedMAX.sln`
 
-## Active Work (as of 2026-05-27)
+## Active Work (as of 2026-06-18)
 
-Terrain port to Wicked Engine is in steady state through Phase 3 (painted PBR materials working). Three tracks are now active:
+Terrain port to Wicked Engine is in steady state through **Phase 4** (Wicked `HairParticleSystem` grass placed from GG's painted grass map, recovered to main on 2026-06-17). Active tracks:
 
-- **Phase 4 — Grass**: enable `wickedTerrain.SetGrassEnabled(true)` and feed Wicked's `chunk_data.grass.vertex_lengths` from GG's `pGrassMap` (`Guru-WickedMAX/GGTerrain/GGGrass.cpp`). Entry points in `SCRATCHPAD.md` "Next Steps".
+- **Phase 4+ — Grass improvements**: the rendering works but appearance/density/wind can be tuned further. Implementation lives in `Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp` (`SetupWickedGrass`, `ProcessGrassChunks`). The OLD `GGGrass_Draw*` callbacks are effectively dead in runtime (Z key toggles them with no visible effect) but the data layer (`pGrassMap`) is still authoritative.
 - **Phase 5 — Trees**: colored-cylinder placeholders driven from `pAllTrees[]` (`Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp`); LOD tree meshes are post-Phase-6 work.
-- **Performance tuning**: pursue the four items in `PERFORMANCE.md` → "Active Performance Targets" — engine-side animation caching (~17–20 ms potential), AI cost gap (24× DX11→DX12), and post-Phase-4/5 regression check.
+- **Phase 6 — Sculpt/Paint Invalidation**: hook `GGTerrain_InvalidateRegion()` → mark Wicked chunks invalidated + clear from `processedChunkKeys`.
+- **Performance tuning**: pursue the items in `PERFORMANCE.md` → "Active Performance Targets" — engine-side animation caching (~17–20 ms potential) and the AI cost gap (24× DX11→DX12).
 
 `SCRATCHPAD.md` is the living roadmap; `TERRAINPORT.md` is the architectural reference; `PERFORMANCE.md` carries the perf history and active targets.
 
