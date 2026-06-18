@@ -14,7 +14,7 @@ Solution file: `GameGuruWickedMAX.sln`
 
 Terrain port to Wicked Engine is in steady state through **Phase 4** (Wicked `HairParticleSystem` grass placed from GG's painted grass map, recovered to main on 2026-06-17). Active tracks:
 
-- **Phase 4+ — Grass improvements**: the rendering works but appearance/density/wind can be tuned further. Implementation lives in `Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp` (`SetupWickedGrass`, `ProcessGrassChunks`). The OLD `GGGrass_Draw*` callbacks are effectively dead in runtime (Z key toggles them with no visible effect) but the data layer (`pGrassMap`) is still authoritative.
+- **Phase 4+ — Grass improvements**: the rendering works AND the long-standing chaotic-orientation bug is now fixed (2026-06-18) via two Wicked-side bug fixes documented in [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md). Remaining improvements are cosmetic: subsurface tuning, per-grass-type appearance, atlas variety, paint UX. Implementation lives in `Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp` (`SetupWickedGrass`, `ProcessGrassChunks`). The OLD `GGGrass_Draw*` callbacks are effectively dead in runtime (Z key toggles them with no visible effect) but the data layer (`pGrassMap`) is still authoritative.
 - **Phase 5 — Trees**: colored-cylinder placeholders driven from `pAllTrees[]` (`Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp`); LOD tree meshes are post-Phase-6 work.
 - **Phase 6 — Sculpt/Paint Invalidation**: hook `GGTerrain_InvalidateRegion()` → mark Wicked chunks invalidated + clear from `processedChunkKeys`.
 - **Performance tuning**: pursue the items in `PERFORMANCE.md` → "Active Performance Targets" — engine-side animation caching (~17–20 ms potential) and the AI cost gap (24× DX11→DX12).

@@ -21,6 +21,7 @@ The terrain port to the **Wicked Engine DX12 terrain system** is well underway. 
 | 2026-03-04 | **Performance Data panel cascading-duplicates bug fixed** (resolves PERFORMANCE.md Phase 10) | `c4d81543` |
 | 2026-05-27 | **Terrain Texture Transition** — small `GGTerrainWicked.cpp` tweak + DarkLUA vcxproj addition | `c6474e94` |
 | 2026-05-29 | **Phase 4 complete**: 3D grass via Wicked `HairParticleSystem`, per-chunk placement from `pGrassMap`, distance-LOD chunks, natural green meadow look. Work originally lived only on `claude/frosty-ritchie-f7efe6` and was recovered via cherry-pick on 2026-06-17 after my mirror-overwrite incident destroyed the uncommitted local copy (see [feedback_check_main_repo_status.md](../../../../leeba/.claude/projects/D--max-GameGuruMAXDX12/memory/feedback_check_main_repo_status.md)). | `5070b264`, `f3d6dd92`, `a7fc7618`, `29c979ed`, `c84225e9` |
+| 2026-06-18 | **Grass orientation fixed**: blades had been leaning chaotically on slopes. Two **Wicked Engine** bugs found, both exposed by our `Terrain.chunk_scale = 80`: (1.1) `wiTerrain.cpp` cross-product used a bare `+ 1` for the horizontal step instead of `+ chunk_scale`, amplifying slope by 80× and giving near-horizontal stored vertex normals; (1.2) `HairParticleSystem` consumes stored per-vertex normals that are computed from a fixed `(V, V+x, V+z)` reference triangle which doesn't match the actual mesh triangulation, so even with 1.1 fixed the grass simulate CS got chaotic normals. Fix 1.1 applied to `wiTerrain.cpp`; fix 1.2 applied as in-shader face-normal recompute in `hairparticle_simulateCS.hlsl`. Both documented in [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md) for upstream brief. | Wicked: `wiTerrain.cpp`, `hairparticle_simulateCS.hlsl` |
 
 ### What's Working Now
 
@@ -122,7 +123,7 @@ Phase 3: Painted Materials (N-layer)     ✓ COMPLETE (2026-02-25, excursion fix
 Phase 4: Grass via HairParticleSystem    ✓ COMPLETE (2026-05-29; recovered to main 2026-06-17)
 Phase 5: Colored Cylinder Trees          ← ACTIVE   first step: shared cylinder MeshComponent + entity pool, iterate pAllTrees[]
 Phase 6: Sculpt/Paint Invalidation       ← ACTIVE   first step: hook GGTerrain_InvalidateRegion() → mark Wicked chunks invalidated + clear from processedChunkKeys
-Phase 4+: Grass rendering improvements   ← NEXT     improve Wicked grass look/behavior (subsurface tuning, density, wind, atlas variety, paint integration). See "Phase 4 Notes" below
+Phase 4+: Grass rendering improvements   ← NEXT     orientation fix landed 2026-06-18 (see Wicked changes 1.1/1.2). Remaining: subsurface, density, atlas variety, paint UX. See "Phase 4 Notes" below
 Perf:    Animation engine-side caching   ← ACTIVE   first step: PERFORMANCE.md "Active Performance Targets" — ScanAnimationDependencies + keyframe search
 ```
 
@@ -141,7 +142,7 @@ Perf:    Animation engine-side caching   ← ACTIVE   first step: PERFORMANCE.md
 
 ## Critical Files Reference
 
-All modifications are GameGuru-side only. **Zero Wicked Engine files are modified.**
+All GameGuru Core modifications are GG-side only. Wicked Engine changes are tracked separately in [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md) — currently two genuine bug fixes (chunk_scale normal spacing + HairParticleSystem face-normal recompute) ready for upstream brief.
 
 | File | Role in Port |
 |---|---|
