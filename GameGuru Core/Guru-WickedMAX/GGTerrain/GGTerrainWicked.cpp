@@ -523,50 +523,53 @@ static void BuildGrassAppearance()
 		a.atlas_rects.clear();     // each material is a single-sprite DDS — no atlas
 		a.uniformity = 1.0f;
 
+		// Base sizes doubled across the board to match DX11 parity (DX11 grass appeared twice as
+		// large side-by-side). Length AND width are doubled so blades stay proportional rather than
+		// becoming spaghetti-thin.
 		switch (CategoryFor(t))
 		{
 		case GCAT_COURSE:
-			a.length = 14.0f * sf;
-			a.width = 1.4f;
+			a.length = 28.0f * sf;
+			a.width = 2.8f;
 			a.billboardCount = 2;
 			break;
 		case GCAT_SHORT:
-			a.length = 8.0f * sf;
-			a.width = 1.3f;
+			a.length = 16.0f * sf;
+			a.width = 2.6f;
 			a.billboardCount = 2;
 			break;
 		case GCAT_TALL:
-			a.length = 22.0f * sf;
-			a.width = 1.4f;
+			a.length = 44.0f * sf;
+			a.width = 2.8f;
 			a.billboardCount = 2;
 			break;
 		case GCAT_WILD:
-			a.length = 12.0f * sf;
-			a.width = 1.3f;
+			a.length = 24.0f * sf;
+			a.width = 2.6f;
 			a.billboardCount = 2;
 			break;
 		case GCAT_WEED:
-			a.length = 14.0f * sf;
-			a.width = 1.2f;
+			a.length = 28.0f * sf;
+			a.width = 2.4f;
 			a.billboardCount = 1;  // weeds/stems read better as flat billboards
 			a.stiffness = 12.0f;   // stems hold their shape
 			break;
 		case GCAT_FLOWER:
-			a.length = 9.0f * sf;
-			a.width = 2.5f;        // small but wider so the petal disc reads
+			a.length = 18.0f * sf;
+			a.width = 5.0f;        // small but wider so the petal disc reads
 			a.billboardCount = 2;
 			a.viewDistance = 2500.0f; // tiny feature — cull earlier to save fill
 			break;
 		case GCAT_KELP:
-			a.length = 30.0f * sf;
-			a.width = 4.0f;
+			a.length = 60.0f * sf;
+			a.width = 8.0f;
 			a.billboardCount = 1;
 			a.stiffness = 4.0f;    // sways with current
 			a.drag = 0.8f;
 			break;
 		case GCAT_SEAWEED:
-			a.length = 45.0f * sf;
-			a.width = 2.5f;
+			a.length = 90.0f * sf;
+			a.width = 5.0f;
 			a.billboardCount = 1;
 			a.stiffness = 3.0f;
 			a.drag = 0.9f;
@@ -734,6 +737,14 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			hair.strandCount = strands;
 
 			hair.CreateFromMesh(*pc.mesh);
+			// CreateFromMesh picks R16G16B16A16_UNORM for static (non-skinned) base meshes — terrain
+			// chunks are static, so we'd get UNORM by default. The simulate CS then remaps each frame's
+			// per-strand position to UNORM across the WHOLE hair-system AABB (≈5280×5280 inch for a
+			// chunk), which gives a quantization step of ~0.08 inch. Micro-sway (~1-2 inch tip motion)
+			// crosses only ~12-25 steps, producing the visibly choppy "fixed-point" look. Force the
+			// position buffer to full FP32 so smooth sway stays smooth. Costs ~2× position-buffer
+			// VRAM, bounded by the per-chunk strand cap.
+			hair.position_format = wi::graphics::Format::R32G32B32A32_FLOAT;
 			hair.CreateRenderData();
 
 			scene.materials.Create(grassEntity) = *mat;
