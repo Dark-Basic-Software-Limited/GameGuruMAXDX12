@@ -67,6 +67,13 @@ namespace GGGrass
 	// is stable but the texture contents change every paint stroke (~10 Hz).
 	const wi::graphics::Texture* GGGrass_GetMapTexture();
 
+	// Stage B.4: scan grass-map cells in [minX..maxX] x [minZ..maxZ] world XZ. Sets
+	// typesSeen[t] = true for each painted (non-flattened) cell whose type maps to t (0-based,
+	// matching GGGrass type indices). Caller passes a GGGRASS_NUM_TYPES-element bool array.
+	// Used by the Wicked-side hair-entity manager to decide which per-(chunk, type) entities
+	// to create/destroy; per-cell visibility WITHIN the chunk is handled in the simulate CS.
+	void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen );
+
 	// Painted grass type at world (x,z): 0 = none/flattened, else grass type id. Drives grass placement.
 	uint32_t GGGrass_GetGrassMap( float x, float z );
 

@@ -734,120 +734,41 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		grassChunkKeyToTier[pc.key] = pc.tier;
 		if (pc.tier == 0) continue; // bare at this distance / outside editable area
 
-		// Bucket each grassy vertex by its painted type id (value-2 from the grass map; value 1
-		// "default paint" is aliased to type 0 — Course Grass mat1 — for backwards-compat with
-		// legacy levels). vertexType[vi] = 0xFF means "no grass at this vertex".
-		//
-		// Multi-sample the grass map across each vertex's ~Voronoi cell (±half_chunk_scale around
-		// its world XZ) rather than a single point sample at the vertex centre. At chunk_scale=80
-		// the terrain vertices sit 80 inches apart while a grass-map cell is ~4.8 inches and the
-		// minimum brush radius is 15. A point sample only registers when the brush blob happens
-		// to land exactly under a vertex (~11% of the area), so small-brush paint clicks looked
-		// invisible to the user — they had to keep brushing until they hit a vertex's exact spot.
-		// The 7×7 grid covers the full 80×80 influence area with a ~13-inch step, small enough
-		// that even a 15-radius brush always overlaps at least one sample.
-		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.world);
-		static_assert(GGGRASS_NUM_TYPES <= 254, "vertexType uses 0xFF as sentinel");
-		uint8_t vertexType[wi::terrain::vertexCount];
-		// Per-vertex coverage fraction (painted samples / total samples in Voronoi cell). Used as
-		// the vertex_length when rendering — small brushes that cover only a few of the vertex's
-		// samples produce a low vertex_length, which bary-interpolates to short strand_length
-		// across surrounding triangles, which makes the visible blade patch shrink to roughly the
-		// brush footprint instead of spreading across the full ~80-inch Voronoi cell. Dense
-		// painting fills more samples → coverage approaches 1.0 → full blade length → standard
-		// patch coverage. Smooth transition from "tuft" to "full grass" as the user paints more.
-		float vertexCoverage[wi::terrain::vertexCount];
-		bool typeSeen[GGGRASS_NUM_TYPES] = {};
-		const float halfChunkScale = terrain->chunk_scale * 0.5f;
-		constexpr int SAMPLES_PER_AXIS = 7;
-		constexpr float TOTAL_SAMPLES = float(SAMPLES_PER_AXIS * SAMPLES_PER_AXIS);
-		// Floor on the scaled vertex_length so a single-sample hit still produces a visible blade
-		// (1/49 ≈ 0.02 would render strands ~2% of full length — invisible). 0.15 gives the
-		// smallest brush a faint-but-visible tuft.
-		constexpr float MIN_VERTEX_LENGTH = 0.15f;
-		const float sampleStep = (halfChunkScale * 2.0f) / (SAMPLES_PER_AXIS - 1);
-		for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
-		{
-			XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), worldMatrix);
-			XMFLOAT3 worldPos;
-			XMStoreFloat3(&worldPos, wp);
-			// Closest painted sample wins for type pick; total painted-sample count drives the
-			// vertex_length scaling.
-			uint32_t mapVal = 0;
-			float bestDistSq = halfChunkScale * halfChunkScale * 4.0f;
-			int paintedSamples = 0;
-			for (int sx = 0; sx < SAMPLES_PER_AXIS; sx++)
-			{
-				float offX = -halfChunkScale + sampleStep * sx;
-				for (int sz = 0; sz < SAMPLES_PER_AXIS; sz++)
-				{
-					float offZ = -halfChunkScale + sampleStep * sz;
-					uint32_t sampleVal = GGGrass::GGGrass_GetGrassMap(worldPos.x + offX, worldPos.z + offZ);
-					if (sampleVal == 0) continue;
-					paintedSamples++;
-					float distSq = offX * offX + offZ * offZ;
-					if (distSq < bestDistSq)
-					{
-						bestDistSq = distSq;
-						mapVal = sampleVal;
-					}
-				}
-			}
-			if (mapVal == 0) { vertexType[vi] = 0xFF; vertexCoverage[vi] = 0.0f; continue; }
-			uint32_t typeIdx = (mapVal >= 2) ? (mapVal - 2) : 0; // value 1 -> Course Grass mat1
-			if (typeIdx >= GGGRASS_NUM_TYPES) { vertexType[vi] = 0xFF; vertexCoverage[vi] = 0.0f; continue; }
-			vertexType[vi] = (uint8_t)typeIdx;
-			float cov = (float)paintedSamples / TOTAL_SAMPLES;
-			if (cov < MIN_VERTEX_LENGTH) cov = MIN_VERTEX_LENGTH;
-			if (cov > 1.0f) cov = 1.0f;
-			vertexCoverage[vi] = cov;
-			typeSeen[typeIdx] = true;
-		}
+		// Stage B.4: per-cell visibility is the simulate CS's job (Option B sample at the strand's
+		// world XZ). C++ only needs to know which per-(chunk, type) hair entities should exist.
+		// A single scan of the chunk's world-AABB grass-map cells gives us that — no per-vertex
+		// multi-sample, no coverage scaling, no vertex_lengths restamp on paint.
+		bool typesSeen[GGGRASS_NUM_TYPES] = {};
+		const float halfChunkWorld = chunkStride * 0.5f;
+		GGGrass::GGGrass_ScanRegion(
+			pc.world._41 - halfChunkWorld, pc.world._43 - halfChunkWorld,
+			pc.world._41 + halfChunkWorld, pc.world._43 + halfChunkWorld,
+			typesSeen );
 
-		// For each grass type: UPDATE the existing per-(chunk, type) hair entity in place
-		// (preserves strand positions and the per-strand simulation tail state) or CREATE one if
-		// we've never seen this type in this chunk before. Stage 2 — entities persist across paint
-		// events, so blade BASES and TIPS both hold still during a stroke; only newly-painted /
-		// newly-erased vertices fade in / out via the bary-interpolated strand_length.
 		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
 		{
 			wi::ecs::Entity existing = existingEntities.perType[t];
-			wi::HairParticleSystem* existingHair = (existing != wi::ecs::INVALID_ENTITY)
-				? scene.hairs.GetComponent(existing) : nullptr;
 
-			if (existingHair)
+			if (existing != wi::ecs::INVALID_ENTITY)
 			{
-				// UPDATE in place: restamp vertex_lengths from the current paint state and push
-				// just the length buffer to the GPU. UpdateVertexLengthsBuffer (Stage 3, local
-				// Wicked patch) leaves generalBuffer / simulation_view intact, so each strand's
-				// prevTail/currentTail simulation state survives and the wind animation keeps
-				// flowing across the update — no per-paint-event settling pop.
-				bool anyChanged = false;
-				for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
-				{
-					float want = (typeSeen[t] && vertexType[vi] == t) ? vertexCoverage[vi] : 0.0f;
-					if (existingHair->vertex_lengths[vi] != want)
-					{
-						existingHair->vertex_lengths[vi] = want;
-						anyChanged = true;
-					}
-				}
-				if (anyChanged) existingHair->UpdateVertexLengthsBuffer();
+				if (typesSeen[t]) continue; // entity already here, type still painted — done
+				// Type erased from this chunk — drop its entity so the simulate CS isn't dispatching
+				// strands that will all be culled to zero length by the shader visibility check.
+				if (scene.hairs.GetComponent(existing))
+					scene.Entity_Remove(existing);
+				existingEntities.perType[t] = wi::ecs::INVALID_ENTITY;
 				continue;
 			}
 
-			// CREATE: first paint of this type in this chunk (or full reset path).
-			if (!typeSeen[t]) continue;
+			if (!typesSeen[t]) continue;
 
+			// CREATE: first paint of this type in this chunk (or full reset path).
 			wi::scene::MaterialComponent* mat = BuildGrassMaterial(t);
 			if (!mat) continue;
 
-			// Pre-fill vertex_lengths with 1.0 so CreateFromMesh includes EVERY chunk triangle in
-			// the index buffer (triangleCount = constant = (chunk_width-1)² × 2 = 8192). Restamp
-			// with the real paint mask AFTER CreateFromMesh — strands whose triangle interpolates
-			// to length 0 from unpainted vertices render invisibly. Net effect: each strand's
-			// (rng-picked) triangle is invariant across paint events; existing blades never
-			// reshuffle when paint adds/removes vertices in the chunk.
+			// vertex_lengths = all 1.0 forever. CreateFromMesh keeps every chunk triangle in the
+			// index buffer (triangleCount = constant); the per-strand shader sample (Stage B.3) is
+			// the sole visibility authority. Paint events do not touch this entity again.
 			wi::vector<float> vertex_lengths;
 			vertex_lengths.resize(wi::terrain::vertexCount, 1.0f);
 
@@ -867,28 +788,17 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			hair.grass_map_origin_z = 0.0f;
 			hair.grass_visibility_texture = GGGrass::GGGrass_GetMapTexture();
 
-			// Fixed strand count per tier — independent of paint state AND of typesUsed, so
-			// neither painting new vertices nor adding a new type into the chunk perturbs an
-			// existing entity's strandCount. Density stays consistent throughout a stroke
-			// instead of ramping up as vertices accumulate. Strands distribute uniformly over the
-			// chunk's full triangulation; visible density tracks the painted-area fraction.
+			// Fixed strand count per tier — independent of paint state, so painting a new type
+			// into the chunk never perturbs an existing entity's strandCount.
 			constexpr uint32_t STAGE1_STRANDS_PER_TIER = 100000;
 			uint32_t strands = (uint32_t)(STAGE1_STRANDS_PER_TIER * GrassTierDensityScale(pc.tier) + 0.5f);
 			if (strands < 1024) strands = 1024;
 			hair.strandCount = strands;
 
 			hair.CreateFromMesh(*pc.mesh);
-			// Restamp the actual paint mask + coverage scaling now that the index buffer is built.
-			// CreateRenderData below uploads this as the per-vertex length buffer the simulate CS
-			// bary-interpolates to get each strand's visible length.
-			for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
-				hair.vertex_lengths[vi] = (vertexType[vi] == t) ? vertexCoverage[vi] : 0.0f;
-			// CreateFromMesh picks R16G16B16A16_UNORM for static (non-skinned) base meshes — terrain
-			// chunks are static, so we'd get UNORM by default. The simulate CS then remaps each frame's
-			// per-strand position to UNORM across the WHOLE hair-system AABB (≈5280×5280 inch for a
-			// chunk), which gives a quantization step of ~0.08 inch. Micro-sway (~1-2 inch tip motion)
-			// crosses only ~12-25 steps, producing the visibly choppy "fixed-point" look. Force the
-			// position buffer to full FP32 so smooth sway stays smooth.
+			// Force FP32 position buffer (CreateFromMesh defaults to R16G16B16A16_UNORM for static
+			// base meshes; the resulting ~0.08-inch quantization step over a 5280-inch chunk AABB
+			// shows up as visibly choppy micro-sway on slow-moving tips).
 			hair.position_format = wi::graphics::Format::R32G32B32A32_FLOAT;
 			hair.CreateRenderData();
 

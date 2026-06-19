@@ -601,6 +601,41 @@ const wi::graphics::Texture* GGGrass_GetMapTexture()
 	return &texGrassMap;
 }
 
+void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen )
+{
+	if ( !gggrass_initialised || !pGrassMap || !typesSeen ) return;
+
+	const float invWorld = 0.5f / ggterrain_global_render_params2.editable_size;
+	auto worldToCell = [&]( float w ) -> int {
+		float f = ( w * invWorld + 0.5f ) * GGGRASS_MAP_SIZE;
+		return (int)floorf( f );
+	};
+
+	int x0 = worldToCell( minX );
+	int x1 = worldToCell( maxX );
+	int z0 = worldToCell( minZ );
+	int z1 = worldToCell( maxZ );
+
+	if ( x0 < 0 ) x0 = 0;
+	if ( z0 < 0 ) z0 = 0;
+	if ( x1 >= GGGRASS_MAP_SIZE ) x1 = GGGRASS_MAP_SIZE - 1;
+	if ( z1 >= GGGRASS_MAP_SIZE ) z1 = GGGRASS_MAP_SIZE - 1;
+	if ( x1 < x0 || z1 < z0 ) return;
+
+	for ( int z = z0; z <= z1; z++ )
+	{
+		const uint8_t* row = &pGrassMap[ z * GGGRASS_MAP_SIZE ];
+		for ( int x = x0; x <= x1; x++ )
+		{
+			uint8_t v = row[ x ];
+			if ( v == 0 || ( v & 0x80 ) ) continue; // empty or flattened
+			uint8_t encoded = v & 0x7F;
+			uint32_t typeIdx = ( encoded >= 2 ) ? (uint32_t)( encoded - 2 ) : 0u; // mirror C++ side
+			if ( typeIdx < GGGRASS_NUM_TYPES ) typesSeen[ typeIdx ] = true;
+		}
+	}
+}
+
 // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
 #if 0
 wiGraphics::FORMAT ConvertDDSFormat( tinyddsloader::DDSFile::DXGIFormat format )
