@@ -731,9 +731,6 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		}
 		if (totalGrassyVerts == 0) continue; // tier recorded above; no painted grass in this chunk
 
-		// Per-entity strand cap = total cap / numUsedTypes so a 3-type chunk doesn't triple-spend VRAM.
-		uint32_t perTypeStrandCap = (typesUsed > 0) ? (g_grassMaxStrands / typesUsed) : g_grassMaxStrands;
-
 		wi::vector<wi::ecs::Entity> spawnedHere;
 		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
 		{
@@ -742,10 +739,15 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			wi::scene::MaterialComponent* mat = BuildGrassMaterial(t);
 			if (!mat) continue;
 
+			// === Stage 1: triangle-list stability ===
+			// Pre-fill vertex_lengths with 1.0 so CreateFromMesh includes EVERY chunk triangle in
+			// the index buffer (triangleCount = constant = (chunk_width-1)² × 2 = 8192). Restamp
+			// with the real paint mask AFTER CreateFromMesh — strands whose triangle interpolates
+			// to length 0 from unpainted vertices render invisibly. Net effect: each strand's
+			// (rng-picked) triangle is invariant across paint events; existing blades never
+			// reshuffle when paint adds/removes vertices in the chunk.
 			wi::vector<float> vertex_lengths;
-			vertex_lengths.resize(wi::terrain::vertexCount);
-			for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
-				vertex_lengths[vi] = (vertexType[vi] == t) ? 1.0f : 0.0f;
+			vertex_lengths.resize(wi::terrain::vertexCount, 1.0f);
 
 			wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
 			wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
@@ -753,24 +755,26 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			hair.meshID = pc.entity;
 			hair.vertex_lengths = std::move(vertex_lengths);
 
-			uint32_t blades = (uint32_t)(g_grassBladesPerVertex * GrassTierDensityScale(pc.tier) + 0.5f);
-			if (blades < 1) blades = 1;
-			uint32_t strands = vertsPerType[t] * blades;
-			if (strands > perTypeStrandCap) strands = perTypeStrandCap;
-			// Round strandCount up to a stable bucket. The simulate CS seeds each strand's
-			// placement with `rng.init(uint2(xHairRandomSeed, strand_index))`, so any change to
-			// strandCount re-rolls every blade's position even when only a handful of new vertices
-			// were painted. Bucketing keeps strandCount constant across small map edits, so the
-			// already-painted blades stay put within the bucket and only the newly-painted vertices
-			// fill in. (Triangle-list changes still reshuffle blades inside the painted chunk; a
-			// shader-side fix in Wicked's hairparticle_simulateCS would be needed to eliminate the
-			// residual within-chunk shuffle.)
-			constexpr uint32_t STRAND_BUCKET = 256;
-			strands = ((strands + STRAND_BUCKET - 1) / STRAND_BUCKET) * STRAND_BUCKET;
-			if (strands > perTypeStrandCap) strands = perTypeStrandCap;
+			// Fixed strand count per tier — independent of paint state AND of typesUsed, so
+			// neither painting new vertices nor adding a new type into the chunk perturbs an
+			// existing entity's strandCount. Density stays consistent throughout a stroke
+			// instead of ramping up as vertices accumulate. Strands distribute uniformly over the
+			// chunk's full triangulation; visible density tracks the painted-area fraction.
+			//
+			// 100 000 starting point — about 75 MB VRAM per hair entity (FP32 positions). Tunable
+			// here if the user reports too sparse / too dense; a SET_GRASS knob could expose it
+			// later.
+			constexpr uint32_t STAGE1_STRANDS_PER_TIER = 100000;
+			uint32_t strands = (uint32_t)(STAGE1_STRANDS_PER_TIER * GrassTierDensityScale(pc.tier) + 0.5f);
+			if (strands < 1024) strands = 1024;
 			hair.strandCount = strands;
 
 			hair.CreateFromMesh(*pc.mesh);
+			// Restamp the actual paint mask now that the index buffer is built. CreateRenderData
+			// below uploads this as the per-vertex length buffer the simulate CS bary-interpolates
+			// to get each strand's visible length.
+			for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
+				hair.vertex_lengths[vi] = (vertexType[vi] == t) ? 1.0f : 0.0f;
 			// CreateFromMesh picks R16G16B16A16_UNORM for static (non-skinned) base meshes — terrain
 			// chunks are static, so we'd get UNORM by default. The simulate CS then remaps each frame's
 			// per-strand position to UNORM across the WHOLE hair-system AABB (≈5280×5280 inch for a
