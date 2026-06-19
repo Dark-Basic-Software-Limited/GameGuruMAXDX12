@@ -46,9 +46,19 @@ static std::unordered_map<uint64_t, wi::ecs::Entity> chunkKeyToEntity;
 static bool wickedGrassSetup = false;
 static bool wickedGrassEnabled = true; // G key toggles grass visibility/creation
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity; // chunk entity when grass was built
-// One chunk may now own several grass entities (one per painted grass-type bucket), so we track them
-// as a vector. Empty vector means we recorded the chunk but no painted grass landed in it.
-static std::unordered_map<uint64_t, wi::vector<wi::ecs::Entity>> grassChunkKeyToGrassEntities;
+// Per-chunk per-type hair entity tracking. Each chunk-type slot is INVALID_ENTITY until first paint
+// of that type in that chunk; after that the same entity is reused across paint events (Stage 2 —
+// vertex_lengths is restamped in place instead of removing + recreating the entity, so existing
+// strand positions hold rock-still during paint instead of regenerating their per-frame tail state).
+struct ChunkGrassEntities
+{
+	wi::ecs::Entity perType[GGGRASS_NUM_TYPES];
+	ChunkGrassEntities()
+	{
+		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++) perType[t] = wi::ecs::INVALID_ENTITY;
+	}
+};
+static std::unordered_map<uint64_t, ChunkGrassEntities> grassChunkKeyToGrassEntities;
 static std::unordered_map<uint64_t, int> grassChunkKeyToTier;                    // current LOD tier per chunk
 // Distance-LOD grass density (driven live by the SET_GRASS automation command).
 // bladesPerVertex is the NEAR-tier density; mid/far tiers scale it down and grass stops past
@@ -631,7 +641,9 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		wi::scene::MeshComponent* mesh;
 		XMFLOAT4X4 world;
 		int tier;
-		wi::vector<wi::ecs::Entity> oldGrass; // existing grass entities to remove first
+		bool fullReset; // true when Wicked recycled the chunk; existing hair entities reference a
+		                // gone mesh and must be removed before recreate. False = paint update path
+		                // where we reuse existing entities (Stage 2).
 	};
 	wi::vector<PendingGrass> pending;
 
@@ -668,15 +680,21 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		if (!entityChanged && currentTier == targetTier) continue; // already correct for this chunk
 
 		auto git = grassChunkKeyToGrassEntities.find(key);
-		wi::vector<wi::ecs::Entity> oldGrass;
-		if (git != grassChunkKeyToGrassEntities.end()) oldGrass = git->second;
+		bool hasExistingEntities = false;
+		if (git != grassChunkKeyToGrassEntities.end())
+		{
+			for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+			{
+				if (git->second.perType[t] != wi::ecs::INVALID_ENTITY) { hasExistingEntities = true; break; }
+			}
+		}
 
 		// Chunks that need NO scene mutation (no old grass to remove AND new tier wants no grass)
 		// are recorded inline without going through Phase 2. This avoids triggering
 		// Generation_Cancel for the common case of Wicked discovering a new far chunk during its
 		// background streaming — each Cancel interrupts Wicked's own chunk-removal pass, leaving
 		// stale chunks in scene.objects, and during paint the chunk count was growing at ~65/sec.
-		if (oldGrass.empty() && targetTier == 0)
+		if (!hasExistingEntities && targetTier == 0)
 		{
 			grassChunkKeyToChunkEntity[key] = entity;
 			grassChunkKeyToTier[key] = targetTier;
@@ -685,7 +703,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 
 		// Capture the world matrix by value (a transform pointer would be invalidated when we
 		// create transform components for grass entities in Phase 2).
-		pending.push_back({ entity, key, mesh, transform->world, targetTier, std::move(oldGrass) });
+		pending.push_back({ entity, key, mesh, transform->world, targetTier, entityChanged });
 	}
 
 	if (pending.empty()) return;
@@ -696,11 +714,22 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	// Phase 2: apply removals + (re)creations and update tracking.
 	for (auto& pc : pending)
 	{
-		for (auto e : pc.oldGrass)
+		ChunkGrassEntities& existingEntities = grassChunkKeyToGrassEntities[pc.key]; // default-construct if first time
+
+		// Full reset paths: Wicked recycled the chunk (old hair entities reference a vanished
+		// mesh) OR the chunk's new tier is 0 (bare — no grass should render here at all). Both
+		// drop every per-type entity for this chunk so we start clean.
+		if (pc.fullReset || pc.tier == 0)
 		{
-			if (scene.hairs.GetComponent(e)) scene.Entity_Remove(e);
+			for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+			{
+				wi::ecs::Entity e = existingEntities.perType[t];
+				if (e != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(e))
+					scene.Entity_Remove(e);
+				existingEntities.perType[t] = wi::ecs::INVALID_ENTITY;
+			}
 		}
-		grassChunkKeyToGrassEntities.erase(pc.key);
+
 		grassChunkKeyToChunkEntity[pc.key] = pc.entity;
 		grassChunkKeyToTier[pc.key] = pc.tier;
 		if (pc.tier == 0) continue; // bare at this distance / outside editable area
@@ -711,9 +740,6 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.world);
 		static_assert(GGGRASS_NUM_TYPES <= 254, "vertexType uses 0xFF as sentinel");
 		uint8_t vertexType[wi::terrain::vertexCount];
-		uint32_t vertsPerType[GGGRASS_NUM_TYPES] = {};
-		uint32_t totalGrassyVerts = 0;
-		uint32_t typesUsed = 0;
 		bool typeSeen[GGGRASS_NUM_TYPES] = {};
 		for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
 		{
@@ -725,21 +751,47 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			uint32_t typeIdx = (mapVal >= 2) ? (mapVal - 2) : 0; // value 1 -> Course Grass mat1
 			if (typeIdx >= GGGRASS_NUM_TYPES) { vertexType[vi] = 0xFF; continue; }
 			vertexType[vi] = (uint8_t)typeIdx;
-			vertsPerType[typeIdx]++;
-			totalGrassyVerts++;
-			if (!typeSeen[typeIdx]) { typeSeen[typeIdx] = true; typesUsed++; }
+			typeSeen[typeIdx] = true;
 		}
-		if (totalGrassyVerts == 0) continue; // tier recorded above; no painted grass in this chunk
 
-		wi::vector<wi::ecs::Entity> spawnedHere;
+		// For each grass type: UPDATE the existing per-(chunk, type) hair entity in place
+		// (preserves strand positions and the per-strand simulation tail state) or CREATE one if
+		// we've never seen this type in this chunk before. Stage 2 — entities persist across paint
+		// events, so blade BASES and TIPS both hold still during a stroke; only newly-painted /
+		// newly-erased vertices fade in / out via the bary-interpolated strand_length.
 		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
 		{
+			wi::ecs::Entity existing = existingEntities.perType[t];
+			wi::HairParticleSystem* existingHair = (existing != wi::ecs::INVALID_ENTITY)
+				? scene.hairs.GetComponent(existing) : nullptr;
+
+			if (existingHair)
+			{
+				// UPDATE in place: restamp vertex_lengths from the current paint state and push
+				// just the length buffer to the GPU. UpdateVertexLengthsBuffer (Stage 3, local
+				// Wicked patch) leaves generalBuffer / simulation_view intact, so each strand's
+				// prevTail/currentTail simulation state survives and the wind animation keeps
+				// flowing across the update — no per-paint-event settling pop.
+				bool anyChanged = false;
+				for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
+				{
+					float want = (typeSeen[t] && vertexType[vi] == t) ? 1.0f : 0.0f;
+					if (existingHair->vertex_lengths[vi] != want)
+					{
+						existingHair->vertex_lengths[vi] = want;
+						anyChanged = true;
+					}
+				}
+				if (anyChanged) existingHair->UpdateVertexLengthsBuffer();
+				continue;
+			}
+
+			// CREATE: first paint of this type in this chunk (or full reset path).
 			if (!typeSeen[t]) continue;
 
 			wi::scene::MaterialComponent* mat = BuildGrassMaterial(t);
 			if (!mat) continue;
 
-			// === Stage 1: triangle-list stability ===
 			// Pre-fill vertex_lengths with 1.0 so CreateFromMesh includes EVERY chunk triangle in
 			// the index buffer (triangleCount = constant = (chunk_width-1)² × 2 = 8192). Restamp
 			// with the real paint mask AFTER CreateFromMesh — strands whose triangle interpolates
@@ -760,10 +812,6 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			// existing entity's strandCount. Density stays consistent throughout a stroke
 			// instead of ramping up as vertices accumulate. Strands distribute uniformly over the
 			// chunk's full triangulation; visible density tracks the painted-area fraction.
-			//
-			// 100 000 starting point — about 75 MB VRAM per hair entity (FP32 positions). Tunable
-			// here if the user reports too sparse / too dense; a SET_GRASS knob could expose it
-			// later.
 			constexpr uint32_t STAGE1_STRANDS_PER_TIER = 100000;
 			uint32_t strands = (uint32_t)(STAGE1_STRANDS_PER_TIER * GrassTierDensityScale(pc.tier) + 0.5f);
 			if (strands < 1024) strands = 1024;
@@ -780,8 +828,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			// per-strand position to UNORM across the WHOLE hair-system AABB (≈5280×5280 inch for a
 			// chunk), which gives a quantization step of ~0.08 inch. Micro-sway (~1-2 inch tip motion)
 			// crosses only ~12-25 steps, producing the visibly choppy "fixed-point" look. Force the
-			// position buffer to full FP32 so smooth sway stays smooth. Costs ~2× position-buffer
-			// VRAM, bounded by the per-chunk strand cap.
+			// position buffer to full FP32 so smooth sway stays smooth.
 			hair.position_format = wi::graphics::Format::R32G32B32A32_FLOAT;
 			hair.CreateRenderData();
 
@@ -789,10 +836,8 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			scene.transforms.Create(grassEntity);
 			scene.Component_Attach(grassEntity, pc.entity, true); // inherit chunk transform
 
-			spawnedHere.push_back(grassEntity);
+			existingEntities.perType[t] = grassEntity;
 		}
-		if (!spawnedHere.empty())
-			grassChunkKeyToGrassEntities[pc.key] = std::move(spawnedHere);
 	}
 }
 
@@ -806,9 +851,10 @@ static void ForceGrassRebuild()
 	auto& scene = wi::scene::GetScene();
 	for (auto& kv : grassChunkKeyToGrassEntities)
 	{
-		for (auto e : kv.second)
+		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
 		{
-			if (scene.hairs.GetComponent(e))
+			wi::ecs::Entity e = kv.second.perType[t];
+			if (e != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(e))
 				scene.Entity_Remove(e);
 		}
 	}
@@ -1144,8 +1190,10 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		auto& gscene = wi::scene::GetScene();
 		for (auto& kv : grassChunkKeyToGrassEntities)
 		{
-			for (auto e : kv.second)
+			for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
 			{
+				wi::ecs::Entity e = kv.second.perType[t];
+				if (e == wi::ecs::INVALID_ENTITY) continue;
 				wi::HairParticleSystem* hair = gscene.hairs.GetComponent(e);
 				if (hair) hair->layerMask = wickedGrassEnabled ? ~0u : 0u;
 			}

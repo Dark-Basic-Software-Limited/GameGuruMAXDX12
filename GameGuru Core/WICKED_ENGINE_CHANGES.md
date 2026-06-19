@@ -17,6 +17,44 @@ control even if the Wicked clone is reset or re-cloned.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.3 HairParticleSystem has no targeted vertex_lengths update — `CreateRenderData` is destructive
+
+**Files:** `WickedEngine/wiHairParticle.h`, `WickedEngine/wiHairParticle.cpp`
+**Date diagnosed:** 2026-06-19
+
+#### Symptom in GameGuru MAX
+
+When the player paints grass, each affected chunk's hair entity needs
+the per-vertex paint mask refreshed on the GPU. Wicked's only existing
+upload path is `CreateRenderData()`, which calls `DeleteRenderData()`
+first — destroying `generalBuffer` (the suballocated GPU memory that
+hosts `simulation_view`, `vb_pos[0/1]`, `vb_nor`, …) and setting
+`regenerate_frame = true`. The next simulate-CS dispatch sees garbage
+`prevTail` / `currentTail` plus the regenerate flag and snaps every
+strand's animated tip to the rest position for one frame. Result: a
+visible "settling pop" on the wind animation every time we update
+paint mask, even when nothing about strand count, mesh, or index list
+has changed.
+
+#### Fix (this entry)
+
+Add a public method `HairParticleSystem::UpdateVertexLengthsBuffer()`
+that recreates **only** the `vertexBuffer_length` GPU buffer from the
+current `vertex_lengths` data. It leaves every other resource alone:
+`generalBuffer`, `simulation_view`, `vb_pos[0/1]`, `vb_nor`, `vb_uvs`,
+`wetmap`, `ib_culled`, `prim_view`, `indirect_view`,
+`vb_pos_raytracing`, `indexBuffer`, `BLAS`, `regenerate_frame`,
+`_flags`. The simulate CS rebinds `vertexBuffer_length` per dispatch
+(`wiHairParticle.cpp` ~line 560), so the next frame's dispatch picks
+up the new buffer automatically and per-strand simulation state stays
+alive across the update.
+
+Falls back to a full `CreateRenderData()` call if `generalBuffer`
+isn't valid yet (caller skipped initial setup), so misuse is safe.
+
+This is genuinely useful upstream — any caller that needs to mutate
+the paint mask on a live hair system gets free animation continuity.
+
 ### 1.2 HairParticleSystem reads stored vertex normals that don't match the mesh triangulation
 
 **File:** `WickedEngine/shaders/hairparticle_simulateCS.hlsl`
@@ -194,6 +232,7 @@ modified, both genuine bug fixes.
 |---|---|---|
 | 1.1 Terrain chunk normal fix | applied 2026-06-18 in Wicked commit `6068a1bb`, lib rebuilt | candidate for upstream PR |
 | 1.2 HairParticleSystem face-normal override | applied 2026-06-18 in Wicked commit `5329fc8b`, shader auto-recompiles | candidate for upstream PR; long-term Wicked fix is to average vertex normals properly |
+| 1.3 HairParticleSystem UpdateVertexLengthsBuffer | applied 2026-06-19, lib rebuilt | candidate for upstream PR — pure addition, no behavioural change for existing callers |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
