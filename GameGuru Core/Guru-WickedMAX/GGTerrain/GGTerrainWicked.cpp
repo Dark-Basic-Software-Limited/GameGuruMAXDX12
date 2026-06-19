@@ -540,57 +540,64 @@ static void BuildGrassAppearance()
 		a.atlas_rects.clear();     // each material is a single-sprite DDS — no atlas
 		a.uniformity = 1.0f;
 
-		// Base sizes doubled across the board to match DX11 parity (DX11 grass appeared twice as
-		// large side-by-side). Length AND width are doubled so blades stay proportional rather than
-		// becoming spaghetti-thin.
+		// Stage B.5: match DX11's posOrig formula — posOrig.x *= scaleFactor (legacy GGGrassVS.hlsl
+		// line 45) — so SF drives WIDTH per type, not length. Length is anchored to DX11's uniform
+		// grass_scale = 40 with a category factor for short/tall variation. Within-category visual
+		// differences (e.g. course mat1 vs course mat3) are then purely texture-content driven,
+		// which is what DX11 also shows.
+		//
+		// Effective rendered blade in Wicked:
+		//   quad width  = hair.width * (texW / texH) * hair.length
+		//   quad height = hair.length
+		// With width = sf, length = ~40, and roughly-square DDS textures, that's ≈ 40*sf wide by
+		// 40 tall — same numeric shape as DX11's `IN.position * grass_scale * SF`.
 		switch (CategoryFor(t))
 		{
 		case GCAT_COURSE:
-			a.length = 28.0f * sf;
-			a.width = 2.8f;
+			a.length = 40.0f;       // 1.0 × DX11 grass_scale
+			a.width = sf;           // SF=1.15
 			a.billboardCount = 2;
 			break;
 		case GCAT_SHORT:
-			a.length = 16.0f * sf;
-			a.width = 2.6f;
+			a.length = 30.0f;       // 0.75 ×
+			a.width = sf;           // SF=1.4 (wider stubby blade)
 			a.billboardCount = 2;
 			break;
 		case GCAT_TALL:
-			a.length = 44.0f * sf;
-			a.width = 2.8f;
+			a.length = 56.0f;       // 1.4 ×
+			a.width = sf;           // SF=0.87 (narrower tall blade)
 			a.billboardCount = 2;
 			break;
 		case GCAT_WILD:
-			a.length = 24.0f * sf;
-			a.width = 2.6f;
+			a.length = 35.0f;       // 0.875 ×
+			a.width = sf;           // SF=1.17
 			a.billboardCount = 2;
 			break;
 		case GCAT_WEED:
-			a.length = 28.0f * sf;
-			a.width = 2.4f;
-			a.billboardCount = 1;  // weeds/stems read better as flat billboards
-			a.stiffness = 12.0f;   // stems hold their shape
+			// Weed SF values are smaller (0.35..1.0) — scale up to keep stems visible.
+			a.length = 40.0f;
+			a.width = sf * 2.0f;
+			a.billboardCount = 1;
+			a.stiffness = 12.0f;
 			break;
 		case GCAT_FLOWER:
-			// Wicked's hair width is a multiplier on length (rendered width = width * aspect *
-			// length). DX11 reference shows individual wildflowers with tall stems peeking above
-			// the grass — to match that "tall thin stalk + bloom on top" silhouette, length needs
-			// to be similar to grass height and width has to be small.
-			a.length = 60.0f * sf;
-			a.width = 1.0f;
+			// Flowers all have SF=0.5; multiplied by 2 gives width 1.0 — matches the prior
+			// "thin tall stalk" silhouette that the DX11 reference shows for wildflowers.
+			a.length = 65.0f;
+			a.width = sf * 2.0f;
 			a.billboardCount = 2;
-			a.viewDistance = 2500.0f; // tiny feature — cull earlier to save fill
+			a.viewDistance = 2500.0f;
 			break;
 		case GCAT_KELP:
-			a.length = 60.0f * sf;
-			a.width = 8.0f;
+			a.length = 75.0f;
+			a.width = sf * 6.0f;    // SF=0.47 → width=2.82 (broad submerged leaves)
 			a.billboardCount = 1;
-			a.stiffness = 4.0f;    // sways with current
+			a.stiffness = 4.0f;
 			a.drag = 0.8f;
 			break;
 		case GCAT_SEAWEED:
-			a.length = 90.0f * sf;
-			a.width = 5.0f;
+			a.length = 110.0f;
+			a.width = sf * 4.0f;    // SF=0.7..0.9 → width=2.8..3.6
 			a.billboardCount = 1;
 			a.stiffness = 3.0f;
 			a.drag = 0.9f;
