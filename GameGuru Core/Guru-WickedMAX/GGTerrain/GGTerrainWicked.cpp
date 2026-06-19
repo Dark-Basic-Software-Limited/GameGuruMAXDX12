@@ -67,7 +67,10 @@ static std::unordered_map<uint64_t, int> grassChunkKeyToTier;                   
 // across many streaming chunks). A fully-grassy chunk has ~4489 verts; strands = grassyVerts*blades.
 static uint32_t g_grassBladesPerVertex = 120;  // near-tier blades/vertex (LOD keeps total bounded)
 static uint32_t g_grassMaxStrands = 350000;    // per-chunk strand cap (split across used types)
-static float    g_grassLODChunks = 2.5f;       // grass radius in chunk-distances (beyond = bare)
+// Manual outer-ring override in chunk-distances, used by the SET_GRASS lodchunks automation key
+// when non-zero. Otherwise the outer ring is derived from gggrass_global_params.lod_dist
+// (the editor's Grass Draw Distance slider). Zero = follow slider.
+static float    g_grassLODChunksOverride = 0.0f;
 static bool g_grassRebuildRequested = false;
 
 // Brush cursor: a single DecalComponent entity that projects Files/editors/gfx/brush_ring.png down
@@ -536,9 +539,11 @@ static void BuildGrassAppearance()
 		a.randomness = 0.35f;
 		a.stiffness = 9.0f;        // upright enough to dodge the wind-driven twist/flip (confirmed safe)
 		a.drag = 0.5f;
-		a.viewDistance = 5000.0f;  // ~400 ft cull; tightened below for small features (flowers etc.)
 		a.atlas_rects.clear();     // each material is a single-sprite DDS — no atlas
 		a.uniformity = 1.0f;
+		// Sane default; ApplyGrassDrawDistance() (called below + on every slider change) overwrites
+		// from gggrass_global_params.lod_dist so this only matters for the first-frame create window.
+		a.viewDistance = 5000.0f;
 
 		// Stage B.5: match DX11's posOrig formula — posOrig.x *= scaleFactor (legacy GGGrassVS.hlsl
 		// line 45) — so SF drives WIDTH per type, not length. Length is anchored to DX11's uniform
@@ -581,12 +586,16 @@ static void BuildGrassAppearance()
 			a.stiffness = 12.0f;
 			break;
 		case GCAT_FLOWER:
-			// Flowers all have SF=0.5; multiplied by 2 gives width 1.0 — matches the prior
-			// "thin tall stalk" silhouette that the DX11 reference shows for wildflowers.
-			a.length = 65.0f;
+			// DX11 parity: same length as Course Grass (grass_scale = 40). DX11 reference shows
+			// flowers at waist height, not shoulder — the prior 65 here was over-reach (I bumped
+			// flowers tall thinking they needed stalks, but the texture itself already conveys the
+			// tall-thin silhouette inside the canvas). Flowers all have SF=0.5; width = sf*2 = 1.0
+			// keeps the thin look without the prior height-hack.
+			a.length = 40.0f;
 			a.width = sf * 2.0f;
 			a.billboardCount = 2;
-			a.viewDistance = 2500.0f;
+			// viewDistance: ApplyGrassDrawDistance() halves the slider value for FLOWER (tiny features
+			// benefit from earlier cull). No per-case assignment needed.
 			break;
 		case GCAT_KELP:
 			a.length = 75.0f;
@@ -613,22 +622,63 @@ static void BuildGrassAppearance()
 //
 // Runtime assets: Files/grassbank/*.dds — already shipped as part of the GameGuru asset pack.
 // Nothing else to deploy.
+// Tracks last-applied Grass Draw Distance slider value so we can detect changes per frame and push
+// the new viewDistance to live hair entities. -1 forces a sync on first call after setup.
+static float g_grassPrevSliderInches = -1.0f;
+
+// Sync the editor's Grass Draw Distance slider into per-entity viewDistance. Called after
+// BuildGrassAppearance and from GGTerrainWicked_Update whenever the slider changes — so dragging
+// the slider in the editor pulls every existing grass entity's cull radius along with it instead
+// of waiting for chunks to be recreated.
+static void ApplyGrassDrawDistance()
+{
+	// Per-strand visibility cull. Matches the DX11 grassRadius semantic (lod_dist + 2500), so the
+	// slider directly represents "visible grass radius in inches above 2500". outerC in
+	// ProcessGrassChunks always sits 1 chunk past this so chunks are created with their near edges
+	// outside the cull — strands fade in gradually instead of whole chunks popping.
+	const float viewDistInches = GGGrass::gggrass_global_params.lod_dist + 2500.0f;
+	for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+	{
+		// Flowers cull at half the radius — tiny features that don't read past mid-distance.
+		float vd = (CategoryFor(t) == GCAT_FLOWER) ? viewDistInches * 0.5f : viewDistInches;
+		g_grassAppearance[t].viewDistance = vd;
+	}
+	// Push to live entities (those already created on prior frames). New CREATEs pick up the
+	// updated template directly.
+	auto& scene = wi::scene::GetScene();
+	for (size_t hi = 0; hi < scene.hairs.GetCount(); hi++)
+	{
+		wi::HairParticleSystem& h = scene.hairs[hi];
+		if (h.grass_type == 0) continue;                  // not a GG grass entity (upstream hair)
+		uint32_t typeIdx = h.grass_type - 1;
+		if (typeIdx >= GGGRASS_NUM_TYPES) continue;
+		h.viewDistance = g_grassAppearance[typeIdx].viewDistance;
+	}
+	g_grassPrevSliderInches = GGGrass::gggrass_global_params.lod_dist;
+}
+
 static void SetupWickedGrass()
 {
 	BuildGrassAppearance();
+	ApplyGrassDrawDistance();
 	wickedGrassSetup = true;
 }
 
 // Distance-LOD grass: dense fine grass on the chunks nearest the camera, thinning with distance and
-// stopping past g_grassLODChunks. Concentrating strands near the camera (and dropping them far) keeps
+// stopping past the outer ring. Concentrating strands near the camera (and dropping them far) keeps
 // the total bounded — the trick native grass uses — so VRAM stays safe even during the load burst.
 // Placement still follows GG's painted grass map; chunks crossing a tier boundary (or regenerated by
 // the terrain) are rebuilt at the new density. All scene mutation is deferred to after Generation_Cancel.
-static int GrassTierForRingDist(float ringDist)
+//
+// The outer-ring radius `outerC` is driven at runtime from the editor's Grass Draw Distance slider
+// (gggrass_global_params.lod_dist, in inches) converted to chunk-distances. Near/mid boundaries
+// scale proportionally so cutting the slider tight pulls all tiers in together, and extending it
+// pushes them all out.
+static int GrassTierForRingDist(float ringDist, float nearC, float midC, float outerC)
 {
-	if (ringDist <= 1.0f) return 3;              // near: full density
-	if (ringDist <= 1.7f) return 2;              // mid
-	if (ringDist <= g_grassLODChunks) return 1;  // far: sparse
+	if (ringDist <= nearC) return 3;             // near: full density
+	if (ringDist <= midC)  return 2;             // mid
+	if (ringDist <= outerC) return 1;            // far: sparse
 	return 0;                                     // beyond: no grass
 }
 static float GrassTierDensityScale(int tier)
@@ -641,6 +691,23 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	auto& scene = wi::scene::GetScene();
 	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
 	float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+
+	// LOD ring vs per-strand cull — these MUST be decoupled, or chunk pop-in happens.
+	// viewDistInches is the per-strand binary visibility cull (matches DX11 grassRadius =
+	// lod_dist + GGGRASS_LOD_TRANSITION). outerC is the chunk-entity-creation ring, which is
+	// always 1 chunk PAST viewDistInches — so when a chunk's center first crosses outerC, its
+	// near edge is still chunkStride/2 past viewDistInches, meaning none of its strands are
+	// eligible to render yet. As the camera approaches, strands fade in one-by-one as each
+	// crosses the per-strand cull threshold. No more whole-chunk pop-in.
+	//
+	// Tier 3 (full density) and tier 2 (mid) keep their canonical 1.0 / 1.7 chunk boundaries
+	// clamped DOWN to outerC. SET_GRASS "lodchunks" hard-overrides via g_grassLODChunksOverride.
+	const float viewDistInches = GGGrass::gggrass_global_params.lod_dist + 2500.0f;
+	const float outerC = (g_grassLODChunksOverride > 0.0f)
+		? g_grassLODChunksOverride
+		: std::max(0.5f, viewDistInches / chunkStride + 1.0f);
+	const float midC   = std::min(1.7f, outerC);
+	const float nearC  = std::min(1.0f, outerC);
 
 	struct PendingGrass {
 		wi::ecs::Entity entity;
@@ -678,12 +745,30 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		float dx = chunkCenterX - cameraPos.x;
 		float dz = chunkCenterZ - cameraPos.z;
 		float ringDist = sqrtf(dx * dx + dz * dz) / chunkStride;
-		int targetTier = inEditable ? GrassTierForRingDist(ringDist) : 0;
+		int targetTier_raw = inEditable ? GrassTierForRingDist(ringDist, nearC, midC, outerC) : 0;
 
 		auto entIt = grassChunkKeyToChunkEntity.find(key);
 		bool entityChanged = (entIt != grassChunkKeyToChunkEntity.end() && entIt->second != entity);
 		auto tierIt = grassChunkKeyToTier.find(key);
 		int currentTier = (tierIt != grassChunkKeyToTier.end()) ? tierIt->second : -1;
+
+		// Hysteresis: chunks that already have grass at a higher tier keep it until the camera moves
+		// substantially past the LOD boundary. Without this, small camera nudges (the user wobbling
+		// the view, or stepping across a chunk edge) drop grass in/out as ringDist crosses tier
+		// boundaries. 0.5 chunk-distance buffer = ~2560 inches of camera slop before tier downgrade
+		// — invisible to the user but eliminates pop-out. Only applies on DOWNGRADES; upgrades
+		// always take effect immediately so painted grass shows up the moment the camera nears it.
+		int targetTier = targetTier_raw;
+		if (currentTier > targetTier_raw && currentTier > 0)
+		{
+			constexpr float HYS_MARGIN = 0.5f;
+			bool keep = false;
+			if (currentTier == 3 && ringDist <= nearC + HYS_MARGIN) keep = true;
+			else if (currentTier == 2 && ringDist <= midC + HYS_MARGIN) keep = true;
+			else if (currentTier == 1 && ringDist <= outerC + HYS_MARGIN) keep = true;
+			if (keep) targetTier = currentTier;
+		}
+
 		if (!entityChanged && currentTier == targetTier) continue; // already correct for this chunk
 
 		auto git = grassChunkKeyToGrassEntities.find(key);
@@ -708,9 +793,16 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			continue;
 		}
 
+		// Force a fullReset when the tier itself is changing on a chunk that still has hair entities.
+		// Without this, an existing chunk that upgrades from tier 1 (5000 strands) to tier 3 (100000
+		// strands) keeps its old low-density entities — the existing-entity branch in Phase 2 only
+		// updates vertex_lengths, not strandCount, so the visible density stays stuck at the lower
+		// tier even after the chunk re-enters the dense ring.
+		bool tierChanged = (currentTier > 0 && currentTier != targetTier && hasExistingEntities);
+
 		// Capture the world matrix by value (a transform pointer would be invalidated when we
 		// create transform components for grass entities in Phase 2).
-		pending.push_back({ entity, key, mesh, transform->world, targetTier, entityChanged });
+		pending.push_back({ entity, key, mesh, transform->world, targetTier, entityChanged || tierChanged });
 	}
 
 	if (pending.empty()) return;
@@ -862,7 +954,7 @@ void GGTerrainWicked_SetGrassParam(const char* param, float value)
 	else if (p == "billboards") forAllAppearance([&](wi::HairParticleSystem& h){ h.billboardCount = (uint32_t)(value < 1.0f ? 1.0f : value); });
 	else if (p == "blades")     g_grassBladesPerVertex = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "maxstrands") g_grassMaxStrands = (uint32_t)(value < 1.0f ? 1.0f : value);
-	else if (p == "lodchunks")  g_grassLODChunks = value;             // grass radius in chunk-distances
+	else if (p == "lodchunks")  g_grassLODChunksOverride = value;     // hard override outer ring (0 = follow slider)
 	else if (p == "sss")        forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetSubsurfaceScatteringAmount(value); });
 	else if (p == "alpha")      forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetAlphaRef(value); });
 	else if (p == "tintr")      forAllMaterials([&](wi::scene::MaterialComponent& m){ m.baseColor.x = value; m.SetDirty(); });
@@ -1205,6 +1297,13 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	if (!wickedGrassSetup)
 	{
 		SetupWickedGrass();
+	}
+	// Grass Draw Distance slider → per-entity viewDistance. Detect slider movement and sync every
+	// live grass entity in one pass so dragging the slider in the editor pulls every cull radius
+	// along with it (rather than waiting for chunks to be rebuilt on camera move).
+	if (GGGrass::gggrass_global_params.lod_dist != g_grassPrevSliderInches)
+	{
+		ApplyGrassDrawDistance();
 	}
 	if (wickedGrassEnabled)
 	{

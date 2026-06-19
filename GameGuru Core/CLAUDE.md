@@ -10,11 +10,11 @@
 This is a large C++ Windows x64 project (game engine) built with MSVC.
 Solution file: `GameGuruWickedMAX.sln`
 
-## Active Work (as of 2026-06-18)
+## Active Work (as of 2026-06-19)
 
-Terrain port to Wicked Engine is in steady state through **Phase 4** (Wicked `HairParticleSystem` grass placed from GG's painted grass map, recovered to main on 2026-06-17). Active tracks:
+Terrain port to Wicked Engine is in steady state through **Phase 4 + the Stage 3 Option B arc** (Wicked `HairParticleSystem` grass placed from GG's painted grass map; per-strand visibility, DX11-parity sizing, slider wired). Active tracks:
 
-- **Phase 4+ — Grass complete in editor**: orientation fix (2026-06-18, Wicked-side, see [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md)), per-grass-type DDS textures, 2× size for DX11 parity, FP32 sway, brush ring cursor, **and grass paint now works** — left-click-drag writes `pGrassMap` and the Wicked renderer rebuilds affected chunks ~10×/sec. The legacy `GGGrass_UpdateInstances` (which feeds a shader that renders nothing in Wicked mode) was the FPS killer during long paint strokes — gated off in Wicked mode. Phase 4 is now a wrap. **Phase 5 next**: trees / colored cylinder placeholders driven from `pAllTrees[]`.
+- **Phase 4+ — Grass complete in editor + Option B**: orientation fix (2026-06-18, Wicked-side, see [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md) entries 1.1-1.4), per-grass-type DDS textures, FP32 sway, brush ring cursor, grass paint live (left-click-drag writes `pGrassMap`, Wicked renderer rebuilds affected chunks ~10×/sec). **Stage 3 Option B** (2026-06-19): per-strand grass-map sampling in `hairparticle_simulateCS.hlsl` — each blade checks the paint mask at its own world XZ instead of relying on bary-interpolated vertex_lengths, so brush footprint == grass footprint with no ~4× amplification. **Stage B.5** anchors blade lengths to DX11 `grass_scale = 40` and applies the `_SF_x.xx` scaleFactor to width per the legacy `GGGrassVS.hlsl:45` formula. **Stage B.6** wires the editor's **Grass Draw Distance** slider (previously a no-op vestige of the legacy path) into both per-strand `viewDistance` and the chunk-entity outer ring, with the outer ring kept 1 chunk further out so strands fade in one-by-one as the camera approaches instead of whole chunks popping. **Phase 5 next**: trees / colored cylinder placeholders driven from `pAllTrees[]`.
 - **Phase 5 — Trees**: colored-cylinder placeholders driven from `pAllTrees[]` (`Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp`); LOD tree meshes are post-Phase-6 work.
 - **Phase 6 — Sculpt/Paint Invalidation**: hook `GGTerrain_InvalidateRegion()` → mark Wicked chunks invalidated + clear from `processedChunkKeys`.
 - **Performance tuning**: pursue the items in `PERFORMANCE.md` → "Active Performance Targets" — engine-side animation caching (~17–20 ms potential) and the AI cost gap (24× DX11→DX12).
