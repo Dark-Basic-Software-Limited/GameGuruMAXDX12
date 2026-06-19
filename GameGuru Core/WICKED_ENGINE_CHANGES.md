@@ -17,6 +17,64 @@ control even if the Wicked clone is reset or re-cloned.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.4 HairParticleSystem: per-strand visibility from an external paint mask (Stage 3 Option B)
+
+**Files:**
+- `WickedEngine/shaders/ShaderInterop_HairParticle.h` (CB field additions)
+- `WickedEngine/shaders/hairparticle_simulateCS.hlsl` (SRV declaration + sample)
+- `WickedEngine/wiHairParticle.h` (public field additions)
+- `WickedEngine/wiHairParticle.cpp` (placeholder texture + CB write + SRV bind)
+
+**Date:** 2026-06-19
+
+#### Use case in GameGuru MAX
+
+Grass is placed per-chunk over a `wi::HairParticleSystem` whose strand
+positions are derived from random barycentric coordinates on the chunk
+mesh's triangulation. With paint-mask gating only at the vertex level
+(via `vertex_lengths`), every triangle that *contains any painted
+vertex* gets strands distributed across its FULL surface — producing
+a roughly 4×-brush-wide footprint when the brush is small (~30 in) but
+the vertex grid is coarse (~80 in spacing at `chunk_scale = 80`).
+
+To match the DX11 grass behaviour where a brush blob renders blades
+ONLY inside the painted footprint, each strand needs to check the
+paint mask at *its own* world XZ, not just at the triangle vertices.
+
+#### Mechanism
+
+The upstream `HairParticleCB` is extended with one 16-byte row carrying
+the world-space-to-UV transform for an external paint mask plus a
+"which type does this hair entity represent" tag:
+
+```hlsl
+uint  xHairGrassType;            // 1..N = active; 0 = disabled (upstream behavior)
+float xHairGrassMapInvWorldSize; // 1.0 / world extent (matches GG_GetGrassMap CPU formula)
+float xHairGrassMapOriginX;      // world XZ of map center (0 for centered maps)
+float xHairGrassMapOriginZ;
+```
+
+A new SRV slot (`Texture2D<float> texHairGrassMap : register(t4)`) is
+declared in the simulate CS. `HairParticleSystem` gains mirroring
+public fields (`grass_type`, `grass_map_inv_world_size`,
+`grass_map_origin_x/z`, `grass_visibility_texture`). When the caller
+sets `grass_type` to a non-zero value, the simulate CS samples the
+mask at the strand's world XZ and zeros `strand_length` if the cell
+encodes a different type. A 1×1 zero-init placeholder bound by
+default keeps DX12 validation happy for non-GG hair entities, which
+leave `grass_type` at 0 and never reach the sample branch.
+
+#### Why this is genuinely useful upstream
+
+Any caller that wants per-strand visibility against an external mask
+gets it for free with a CB write + one SRV bind. The default of
+`grass_type = 0` makes the feature a pure no-op for existing usage —
+no shader branch is taken, no perf cost. The R8_UNORM byte decode in
+the shader is GG-specific (`flattened | type-with-+2-offset`), but
+the *mechanism* — passing a typed paint mask plus a world-XZ-to-UV
+transform into the simulate CS — generalises directly to other use
+cases (e.g. lawn mowing, footprint trails, multi-zone variation).
+
 ### 1.3 HairParticleSystem has no targeted vertex_lengths update — `CreateRenderData` is destructive
 
 **Files:** `WickedEngine/wiHairParticle.h`, `WickedEngine/wiHairParticle.cpp`
@@ -233,6 +291,7 @@ modified, both genuine bug fixes.
 | 1.1 Terrain chunk normal fix | applied 2026-06-18 in Wicked commit `6068a1bb`, lib rebuilt | candidate for upstream PR |
 | 1.2 HairParticleSystem face-normal override | applied 2026-06-18 in Wicked commit `5329fc8b`, shader auto-recompiles | candidate for upstream PR; long-term Wicked fix is to average vertex normals properly |
 | 1.3 HairParticleSystem UpdateVertexLengthsBuffer | applied 2026-06-19, lib rebuilt | candidate for upstream PR — pure addition, no behavioural change for existing callers |
+| 1.4 HairParticleSystem external paint mask (Option B) | applied 2026-06-19, lib + shaders rebuilt | candidate for upstream PR — `grass_type == 0` default means zero behavior change for existing callers; adds general-purpose per-strand visibility hook |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
