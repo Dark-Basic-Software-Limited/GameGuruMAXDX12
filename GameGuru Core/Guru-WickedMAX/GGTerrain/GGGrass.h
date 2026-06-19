@@ -60,6 +60,13 @@ namespace GGGrass
 	void GGGrass_BindGrassArray( uint32_t slot, wiGraphics::CommandList cmd );
 	void GGGrass_BindGrassMap( int slot, wiGraphics::CommandList cmd );
 
+	// Stage 3 Option B: lets the Wicked hair simulate CS sample the GG paint mask per-strand
+	// so blade visibility matches the painted footprint. Returns nullptr until the first
+	// GGGrass_UploadGrassMap() (init time). The handle stays valid for the lifetime of the
+	// grass system; the underlying GPU texture is recreated by each upload, so the *pointer*
+	// is stable but the texture contents change every paint stroke (~10 Hz).
+	const wi::graphics::Texture* GGGrass_GetMapTexture();
+
 	// Painted grass type at world (x,z): 0 = none/flattened, else grass type id. Drives grass placement.
 	uint32_t GGGrass_GetGrassMap( float x, float z );
 

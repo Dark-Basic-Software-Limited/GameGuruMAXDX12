@@ -596,6 +596,11 @@ void GGGrass_BindGrassMap( int slot, CommandList cmd )
 	device->BindResource( &texGrassMap, slot, cmd );
 }
 
+const wi::graphics::Texture* GGGrass_GetMapTexture()
+{
+	return &texGrassMap;
+}
+
 // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
 #if 0
 wiGraphics::FORMAT ConvertDDSFormat( tinyddsloader::DDSFile::DXGIFormat format )
@@ -1690,18 +1695,15 @@ void GGGrass_Update_Painting( RAY ray )
 
 			// Accumulate the brush AABB into the in-progress stroke. Publish to the Wicked-side
 			// dirty flag every 6 paint frames (~10x/sec at 60 fps) so the user sees responsive
-			// mid-stroke updates, and again at stroke end. The 16 MB GPU upload feeds the legacy
-			// GG grass shader only — Wicked-mode grass reads pGrassMap directly — so we skip it
-			// mid-stroke in Wicked mode (still happens once at stroke release).
+			// mid-stroke updates, and again at stroke end. Stage 3 Option B: Wicked-mode grass
+			// now reads the GPU texGrassMap per-strand in the hair simulate CS, so we must
+			// refresh it mid-stroke in BOTH modes. 16 MB upload @ 10 Hz = ~160 MB/s — negligible.
 			float bs = ggterrain_global_render_params2.brushSize;
 			GGGrass_AccumStrokeRect( pickX - bs, pickZ - bs, pickX + bs, pickZ + bs );
 			gggrass_stroke_frames_since_drain++;
 			if ( gggrass_stroke_frames_since_drain >= 6 )
 			{
-				if ( !ggterrain_use_wicked_terrain )
-				{
-					GGGrass_UploadGrassMap();
-				}
+				GGGrass_UploadGrassMap();
 				GGGrass_PublishStrokeRect();
 			}
 		}
