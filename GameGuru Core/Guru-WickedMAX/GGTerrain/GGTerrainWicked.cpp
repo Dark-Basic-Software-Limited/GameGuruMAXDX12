@@ -579,34 +579,39 @@ static void BuildGrassAppearance()
 			a.billboardCount = 2;
 			break;
 		case GCAT_WEED:
-			// Weed SF values are smaller (0.35..1.0) — scale up to keep stems visible.
+			// DX11 parity: length = grass_scale = 40, width = sf. Prior sf*2 was overreach — the
+			// DDS texture already conveys the stem shape at the SF value the artist encoded.
 			a.length = 40.0f;
-			a.width = sf * 2.0f;
+			a.width = sf;
 			a.billboardCount = 1;
 			a.stiffness = 12.0f;
 			break;
 		case GCAT_FLOWER:
-			// DX11 parity: same length as Course Grass (grass_scale = 40). DX11 reference shows
-			// flowers at waist height, not shoulder — the prior 65 here was over-reach (I bumped
-			// flowers tall thinking they needed stalks, but the texture itself already conveys the
-			// tall-thin silhouette inside the canvas). Flowers all have SF=0.5; width = sf*2 = 1.0
-			// keeps the thin look without the prior height-hack.
+			// DX11 parity: length = grass_scale = 40, width = sf. Same rationale as Weed —
+			// texture-content variance replaces the prior width-multiplier hack.
 			a.length = 40.0f;
-			a.width = sf * 2.0f;
+			a.width = sf;
 			a.billboardCount = 2;
 			// viewDistance: ApplyGrassDrawDistance() halves the slider value for FLOWER (tiny features
 			// benefit from earlier cull). No per-case assignment needed.
 			break;
 		case GCAT_KELP:
-			a.length = 75.0f;
-			a.width = sf * 6.0f;    // SF=0.47 → width=2.82 (broad submerged leaves)
+			// DX11 parity: same length as Course Grass (grass_scale = 40) with SF applied to width
+			// only (matches legacy GGGrassVS.hlsl line 45: posOrig.x *= scaleFactor). Previous
+			// length=75 + width=sf*6 was pure overreach — the kelp DDS itself already conveys the
+			// broad-blade silhouette at length=40, and multiplying width by 6 gave ~10-ft towering
+			// plants that tanked FPS via overdraw.
+			a.length = 40.0f;
+			a.width = sf;           // SF=0.47 -> thin narrow kelp blade
 			a.billboardCount = 1;
 			a.stiffness = 4.0f;
 			a.drag = 0.8f;
 			break;
 		case GCAT_SEAWEED:
-			a.length = 110.0f;
-			a.width = sf * 4.0f;    // SF=0.7..0.9 → width=2.8..3.6
+			// DX11 parity: same length as Course Grass, SF -> width only. Prior length=110 +
+			// width=sf*4 was double overreach.
+			a.length = 40.0f;
+			a.width = sf;           // SF=0.7..0.9
 			a.billboardCount = 1;
 			a.stiffness = 3.0f;
 			a.drag = 0.9f;
