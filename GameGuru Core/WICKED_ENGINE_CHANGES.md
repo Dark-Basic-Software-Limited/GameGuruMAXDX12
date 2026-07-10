@@ -17,6 +17,88 @@ control even if the Wicked clone is reset or re-cloned.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.5 HairParticleSystem: per-strand slope + altitude filters for grass entities
+
+**Files:**
+- `WickedEngine/shaders/hairparticle_simulateCS.hlsl` (two extra branches inside the existing `xHairGrassType != 0u` block)
+- `WickedEngine/shaders/ShaderInterop_HairParticle.h` (5 new floats + 3 padding on the CB for the altitude cutoffs)
+- `WickedEngine/wiHairParticle.h` (5 mirror fields on `HairParticleSystem`)
+- `WickedEngine/wiHairParticle.cpp` (copy mirror fields into the CB alongside the Option B fields)
+
+**Date:** 2026-07-10
+
+#### Use case in GameGuru MAX
+
+DX11 filtered grass instances by terrain normal — `GGGrass_UpdateInstances`
+skipped instances whose sampled `ny < 0.7` (≈45°), so no grass grew on
+cliff faces or steep mountain flanks. In Wicked mode `UpdateInstances`
+is gated off (perf), and reproducing the same filter on the CPU turns
+out to be structurally hopeless:
+
+- The DX11 normal map is stored at per-chunk texel resolution (hundreds
+  of world units per texel), so a per-cell scan of the grass map (~4.8
+  units per cell on a typical island level) reads bilinearly-averaged
+  false-flat values along cliff edges.
+- Computing a local slope from three `GGTerrain_GetHeight` samples per
+  cell fixes the resolution mismatch but doesn't fix the placement
+  mismatch: a strand belonging to a *flat* paint cell can still land on
+  the adjacent *cliff* triangle via the hair system's random-barycentric
+  distribution, so the "grass right on the cliff edge" case survives.
+
+#### Mechanism
+
+The correct filter is per-strand, using the exact face normal of the
+triangle the strand sits on. Fix 1.2 already computes that face normal
+in-shader (from three vertex positions, replacing the stored per-vertex
+normal that was invalid at `chunk_scale > 1`). The value is available
+in `target` at the point where the paint mask check runs, so the slope
+filter is a single extra branch inside the existing `xHairGrassType != 0u`
+block:
+
+```hlsl
+if (target.y < (half)0.7)
+{
+    strand_length = 0;
+}
+```
+
+Cliffs go strand-by-strand grass-free at exact triangle granularity.
+Gentle slopes keep their grass. No paint cells are mutated, so a later
+sculpt that flattens a cliff face doesn't require repainting.
+
+#### Companion: per-strand altitude filter (added same day)
+
+Same design, same gate — an altitude band drives the visibility of each
+strand based on its world Y (`base.y`, which for terrain-mounted grass IS
+the terrain height at that XZ). Above-water and underwater use disjoint
+`[min, max]` pairs, selected by a comparison against a water plane. The
+CB row layout:
+
+```hlsl
+float xHairGrassWaterHeight;
+float xHairGrassMinHeight;
+float xHairGrassMaxHeight;
+float xHairGrassMinHeightUnderwater;
+float xHairGrassMaxHeightUnderwater;
+```
+
+Defaults span the full range on the C++ side (`grass_min_height = -1e30f`,
+`grass_max_height = 1e30f`, likewise for the underwater pair) so callers
+who don't set them get "no filter" — zero behavioral change out of the
+box. The shader branch sits inside the existing `xHairGrassType != 0u`
+gate so upstream Wicked hair (`grass_type == 0`) still bypasses it.
+
+#### Why this is genuinely useful upstream
+
+The check runs only when `xHairGrassType != 0u` — so upstream callers
+that don't opt into the grass-type feature see zero behavior change.
+Callers that DO use the grass-type hook (Option B / entry 1.4) get an
+extra "filter strands by triangle slope" tool for free. Handy for any
+system that wants to place vegetation on terrain-shaped meshes without
+manual cliff masking. The threshold is currently hardcoded at 0.7 to
+match DX11; a runtime constant would be a small extension if configurability
+is needed later.
+
 ### 1.4 HairParticleSystem: per-strand visibility from an external paint mask (Stage 3 Option B)
 
 **Files:**
@@ -292,6 +374,7 @@ modified, both genuine bug fixes.
 | 1.2 HairParticleSystem face-normal override | applied 2026-06-18 in Wicked commit `5329fc8b`, shader auto-recompiles | candidate for upstream PR; long-term Wicked fix is to average vertex normals properly |
 | 1.3 HairParticleSystem UpdateVertexLengthsBuffer | applied 2026-06-19, lib rebuilt | candidate for upstream PR — pure addition, no behavioural change for existing callers |
 | 1.4 HairParticleSystem external paint mask (Option B) | applied 2026-06-19, lib + shaders rebuilt | candidate for upstream PR — `grass_type == 0` default means zero behavior change for existing callers; adds general-purpose per-strand visibility hook |
+| 1.5 HairParticleSystem per-strand slope + altitude filters | applied 2026-07-10, lib + shaders rebuilt | candidate for upstream PR — both gated on `xHairGrassType != 0u`, zero effect on non-GG hair; slope reuses the face-normal fix 1.2 already computes, altitude adds 5 CB floats with permissive defaults |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

@@ -550,6 +550,12 @@ static GrassCategory CategoryFor(uint32_t typeIdx)
 // Fill g_grassAppearance from the per-type GGGrass metadata + category defaults.
 // scaleFactor (from the _SF_x.xx filename suffix) scales blade length so e.g. "short grass" really
 // renders shorter than "tall grass". Width / stiffness / billboard count come from the category.
+// Per-type baseline blade length (units). Populated at the end of BuildGrassAppearance from
+// whatever category-specific value each type ended up with; ApplyGrassScale reads this and
+// writes `a.length = baseline * (slider / GGGRASS_SCALE)` so the Grass Scale slider linearly
+// scales every blade uniformly, matching DX11's `IN.position * grass_scale` in GGGrassVS.hlsl.
+static float g_grassBaseLength[GGGRASS_TOTAL_REAL_TYPES] = {};
+
 static void BuildGrassAppearance()
 {
 	if (g_grassAppearanceReady) return;
@@ -685,6 +691,17 @@ static void BuildGrassAppearance()
 		a.billboardCount = 2;
 	}
 
+	// Snapshot the per-type baseline length AFTER all category tweaks have landed. ApplyGrassScale
+	// reads from this array and writes `a.length = baseline * (slider / 40)`; every subsequent
+	// BuildGrassAppearance call refreshes the snapshot so custom-slot rebuilds pick up their own
+	// baseline before scaling is applied. Since quad width in the hair simulate CS is proportional
+	// to length (`quad_width = hair.width * xHairAspect * hair.length`), scaling length alone gives
+	// uniform blade scaling — matches DX11's `IN.position * grass_scale` in GGGrassVS.
+	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+	{
+		g_grassBaseLength[t] = g_grassAppearance[t].length;
+	}
+
 	g_grassAppearanceReady = true;
 }
 
@@ -729,10 +746,74 @@ static void ApplyGrassDrawDistance()
 	g_grassPrevSliderInches = GGGrass::gggrass_global_params.lod_dist;
 }
 
+// Sync the editor's Grass Start/End Altitude sliders (and their underwater siblings + the water
+// height) into per-entity CB values that the hair simulate CS reads for the altitude filter added
+// alongside the slope filter (WICKED_ENGINE_CHANGES.md entry 1.5). Called after
+// BuildGrassAppearance and from GGTerrainWicked_Update every frame — dragging any of the four
+// sliders (or moving the water plane) pulls every existing grass entity's altitude band along
+// live, without waiting for chunks to be recreated.
+static void ApplyGrassAltitude()
+{
+	const float minH   = GGGrass::gggrass_global_params.min_height;
+	const float maxH   = GGGrass::gggrass_global_params.max_height;
+	const float minHU  = GGGrass::gggrass_global_params.min_height_underwater;
+	const float maxHU  = GGGrass::gggrass_global_params.max_height_underwater;
+	const float waterH = GGGrass::GGGrass_GetDefaultWaterHeight();
+
+	// Update templates so newly created entities pick up current values on CREATE.
+	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+	{
+		g_grassAppearance[t].grass_water_height           = waterH;
+		g_grassAppearance[t].grass_min_height             = minH;
+		g_grassAppearance[t].grass_max_height             = maxH;
+		g_grassAppearance[t].grass_min_height_underwater  = minHU;
+		g_grassAppearance[t].grass_max_height_underwater  = maxHU;
+	}
+	// Push to live entities so slider drags apply immediately.
+	auto& scene = wi::scene::GetScene();
+	for (size_t hi = 0; hi < scene.hairs.GetCount(); hi++)
+	{
+		wi::HairParticleSystem& h = scene.hairs[hi];
+		if (h.grass_type == 0) continue;               // upstream Wicked hair — leave alone
+		h.grass_water_height          = waterH;
+		h.grass_min_height            = minH;
+		h.grass_max_height            = maxH;
+		h.grass_min_height_underwater = minHU;
+		h.grass_max_height_underwater = maxHU;
+	}
+}
+
+// Sync the editor's Grass Scale slider into per-entity `length`. Slider value 40 maps 1:1 to the
+// per-category baseline set in BuildGrassAppearance (Course=40, Short=30, Tall=56, Wild=35,
+// weed/flower/kelp/seaweed = 40 each). Slider 80 = 2× baseline, slider 20 = 0.5× baseline. Called
+// after BuildGrassAppearance (so the baselines are captured) and every frame from
+// GGTerrainWicked_Update so slider drags apply live without waiting for chunks to be rebuilt.
+static void ApplyGrassScale()
+{
+	const float sliderScale = GGGrass::gggrass_global_params.grass_scale;
+	constexpr float baselineSlider = 40.0f; // GGGRASS_SCALE from GGGrassConstants.hlsli
+	const float mult = sliderScale / baselineSlider;
+	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+	{
+		g_grassAppearance[t].length = g_grassBaseLength[t] * mult;
+	}
+	auto& scene = wi::scene::GetScene();
+	for (size_t hi = 0; hi < scene.hairs.GetCount(); hi++)
+	{
+		wi::HairParticleSystem& h = scene.hairs[hi];
+		if (h.grass_type == 0) continue;               // upstream Wicked hair — leave alone
+		uint32_t typeIdx = h.grass_type - 1;
+		if (typeIdx >= GGGRASS_TOTAL_REAL_TYPES) continue;
+		h.length = g_grassAppearance[typeIdx].length;
+	}
+}
+
 static void SetupWickedGrass()
 {
 	BuildGrassAppearance();
 	ApplyGrassDrawDistance();
+	ApplyGrassAltitude();
+	ApplyGrassScale();
 	wickedGrassSetup = true;
 }
 
@@ -979,6 +1060,18 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 
 			existingEntities.perType[t] = grassEntity;
 		}
+	}
+
+	// Step 1 auto-resolve (see SCRATCHPAD "Advanced Grass Settings — DX11 Baseline Port Plan"):
+	// GGGrass_ScanRegion rewrites any encoded==1 cells with a real_type resolved from terrain
+	// height/material. If any cell was rewritten, the R8_UNORM texGrassMap on the GPU still holds
+	// the pre-resolve byte, so the hair simulate CS (Option B mask check) will keep matching only
+	// Course Grass entities until we re-upload. Fold that into a single 16 MB upload per frame
+	// regardless of how many chunks resolved — the paint stroke path already uses this cadence
+	// (~10 Hz) without measurable overhead.
+	if ( GGGrass::GGGrass_TakePendingMapUpload() )
+	{
+		GGGrass::GGGrass_UploadGrassMap();
 	}
 }
 
@@ -1427,6 +1520,17 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	{
 		ApplyGrassDrawDistance();
 	}
+
+	// Grass Start/End Altitude sliders (+ underwater pair + water plane) → per-entity CB values
+	// consumed by the hair simulate CS altitude filter. Unconditional every frame — 4 float
+	// compares per entity is well under the noise floor next to the CB upload the shader path
+	// already does, and skipping the sync when values look unchanged would miss water-plane
+	// drift and edge cases where the entities were re-created since the last sync.
+	ApplyGrassAltitude();
+
+	// Grass Scale slider → per-entity `length`. Same rationale as the altitude sync: cheaper to
+	// always push than to track a "did the slider move?" flag and get it wrong on re-creation.
+	ApplyGrassScale();
 	if (wickedGrassEnabled)
 	{
 		// Editor paint mutates pGrassMap via GGGrass_Update_Painting. The Wicked grass renderer
@@ -1447,8 +1551,13 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 				grassChunkKeyToTier.erase(key);
 			}
 		}
-		// SET_GRASS knob changes still flow through the full-rebuild path.
-		if (g_grassRebuildRequested)
+		// SET_GRASS knob changes still flow through the full-rebuild path. Populate/Clear
+		// Vegetation buttons (GGGrass_AddAll / GGGrass_RemoveAll) also raise this signal —
+		// they rewrite pGrassMap in bulk, which the per-chunk paint-invalidation pipeline
+		// never sees. Note TakeFullRebuildPending is take-and-clear, so we consume it every
+		// frame regardless of g_grassRebuildRequested's state.
+		bool bulkMapRewrite = GGGrass::GGGrass_TakeFullRebuildPending();
+		if (g_grassRebuildRequested || bulkMapRewrite)
 		{
 			ForceGrassRebuild();
 			g_grassRebuildRequested = false;

@@ -79,6 +79,12 @@ namespace GGGrass
 	void GGGrass_BindGrassArray( uint32_t slot, wiGraphics::CommandList cmd );
 	void GGGrass_BindGrassMap( int slot, wiGraphics::CommandList cmd );
 
+	// (Re)create texGrassMap from the current pGrassMap contents. Called by the paint stroke path
+	// (~10 Hz mid-stroke + on release) and by GGGrass_ScanRegion's auto-resolve consumer whenever
+	// pGrassMap has been rewritten out-of-band. 16 MB upload — cheap enough at editor cadence but
+	// callers should batch (one call per frame, not per-cell).
+	void GGGrass_UploadGrassMap();
+
 	// Stage 3 Option B: lets the Wicked hair simulate CS sample the GG paint mask per-strand
 	// so blade visibility matches the painted footprint. Returns nullptr until the first
 	// GGGrass_UploadGrassMap() (init time). The handle stays valid for the lifetime of the
@@ -92,7 +98,30 @@ namespace GGGrass
 	// stock (0..45) + custom (46..GGGRASS_CUSTOM_REAL_TYPE_BASE + numCustomSlots - 1).
 	// Used by the Wicked-side hair-entity manager to decide which per-(chunk, type) entities
 	// to create/destroy; per-cell visibility WITHIN the chunk is handled in the simulate CS.
+	//
+	// Also performs the DX11 GGGrass_UpdateInstances "auto-resolve" step for encoded value 1:
+	// cells painted with Match Terrain Color get rewritten in-place with a terrain-appropriate
+	// real_type (seaweed 43 if underwater, else GGGrass_GetRealIndex(material_at_cell, 0)).
+	// If any cell is rewritten, GGGrass_TakePendingMapUpload() will return true so the caller
+	// can schedule a texGrassMap re-upload once per frame.
 	void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen );
+
+	// Take-and-clear: true if ScanRegion rewrote at least one pGrassMap cell since the last call.
+	// The Wicked hair simulate CS samples texGrassMap for per-strand visibility, so any in-place
+	// rewrite must be followed by a GGGrass_UploadGrassMap() or the shader keeps sampling stale
+	// pre-resolve bytes.
+	bool GGGrass_TakePendingMapUpload();
+
+	// Take-and-clear: true if pGrassMap has been rewritten wholesale (e.g. by GGGrass_AddAll or
+	// GGGrass_RemoveAll) since the last call. The Wicked-side hair entity cache is per-chunk and
+	// won't notice a bulk write on its own — it needs to drop every existing entity and rebuild
+	// from the new map. Consumer should call ForceGrassRebuild() (or equivalent) on true.
+	bool GGGrass_TakeFullRebuildPending();
+
+	// Global default water height (`g.gdefaultwaterheight`). Cheap accessor exposed here so the
+	// Wicked-side grass altitude sync can pick it up without pulling GameGuru globals into
+	// Guru-WickedMAX. Value changes with the water slider in the editor.
+	float GGGrass_GetDefaultWaterHeight();
 
 	// Stage B.9: register a custom palette slot's DDS filename. Called by the editor UI when the
 	// user adds a new grass via "Add New Grass" or when a level loads with custom slots defined

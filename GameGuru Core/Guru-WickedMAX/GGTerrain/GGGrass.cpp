@@ -634,14 +634,27 @@ bool GGGrass_TakeCustomSlotsDirty()
 	return true;
 }
 
+// Set by GGGrass_ScanRegion when it rewrites at least one pGrassMap cell during auto-resolve.
+// GGGrass_TakePendingMapUpload() returns and clears this. The Wicked-side ProcessGrassChunks
+// polls once per frame after its per-chunk scan pass and fires a single GGGrass_UploadGrassMap()
+// if set — one 16 MB upload amortized across every chunk resolved that frame.
+static bool s_gggrass_map_upload_pending = false;
+
 void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen )
 {
 	if ( !gggrass_initialised || !pGrassMap || !typesSeen ) return;
 
-	const float invWorld = 0.5f / ggterrain_global_render_params2.editable_size;
+	const float editableSize = ggterrain_global_render_params2.editable_size;
+	const float invWorld = 0.5f / editableSize;
 	auto worldToCell = [&]( float w ) -> int {
 		float f = ( w * invWorld + 0.5f ) * GGGRASS_MAP_SIZE;
 		return (int)floorf( f );
+	};
+	// Inverse of worldToCell for the cell CENTER (SetGrassMap truncates worldToCell so
+	// cell c covers [worldMin, worldMax); the center is c + 0.5 in cell space).
+	const float cellToWorldScale = 2.0f * editableSize / (float)GGGRASS_MAP_SIZE;
+	auto cellCenterToWorld = [&]( int c ) -> float {
+		return ( (float)c + 0.5f ) * cellToWorldScale - editableSize;
 	};
 
 	int x0 = worldToCell( minX );
@@ -657,18 +670,84 @@ void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* t
 
 	for ( int z = z0; z <= z1; z++ )
 	{
-		const uint8_t* row = &pGrassMap[ z * GGGRASS_MAP_SIZE ];
+		uint8_t* row = &pGrassMap[ z * GGGRASS_MAP_SIZE ];
 		for ( int x = x0; x <= x1; x++ )
 		{
 			uint8_t v = row[ x ];
 			if ( v == 0 || ( v & 0x80 ) ) continue; // empty or flattened
 			uint8_t encoded = v & 0x7F;
+
+			// DX11-parity auto-resolve for Match Terrain Color paint: brush leaves value 1 in
+			// the cell as an "unresolved" marker and the legacy GGGrass_UpdateInstances step
+			// used to rewrite each such cell with a terrain-appropriate real_type on its next
+			// pass. UpdateInstances is gated OFF in Wicked mode (perf), so we do the resolve
+			// here — cheap because it only fires for encoded == 1, and the in-place rewrite
+			// prevents subsequent scans / .fpm save from ever seeing the placeholder again.
+			// The resolved byte encoding matches the existing paint path: real_type + 2.
+			//
+			// Slope filtering (grass on cliffs) is handled per-strand in the Wicked hair
+			// simulate CS, not here — see WICKED_ENGINE_CHANGES.md entry 1.5. Filtering at
+			// grass-map cell resolution against the coarse DX11 normal map produced ragged
+			// cliff edges (~4.8 unit cell vs. hundreds-of-units per normal-map texel), and
+			// filtering at cell resolution against locally-computed heights still left flat
+			// cells adjacent to cliffs contributing strands that landed on the cliff triangle.
+			// Per-strand shader filtering picks up the exact face normal of the triangle each
+			// strand sits on, so a strand on a cliff-face triangle vanishes regardless of
+			// which paint cell it belongs to.
+			if ( encoded == 1 )
+			{
+				const float worldX = cellCenterToWorld( x );
+				const float worldZ = cellCenterToWorld( z );
+				float height;
+				if ( !GGTerrain_GetHeight( worldX, worldZ, &height ) ) continue;
+
+				uint32_t realType;
+				if ( g.gdefaultwaterheight > height )
+				{
+					realType = 43;   // seaweed 1
+				}
+				else
+				{
+					int material = GGTerrain_GetMaterialIndex( worldX, worldZ );
+					realType = GGGrass_GetRealIndex( (uint32_t)material, 0u );
+				}
+				if ( realType >= GGGRASS_NUM_TYPES ) realType = 0;
+
+				row[ x ] = (uint8_t)( realType + 2 );
+				encoded = row[ x ];
+				s_gggrass_map_upload_pending = true;
+			}
+
 			uint32_t typeIdx = ( encoded >= 2 ) ? (uint32_t)( encoded - 2 ) : 0u; // mirror C++ side
 			// Stage B.9: typesSeen array is sized to GGGRASS_TOTAL_REAL_TYPES on the Wicked side to
 			// hold stock (0..45) + custom (46..GGGRASS_TOTAL_REAL_TYPES-1) real_type indices.
 			if ( typeIdx < GGGRASS_TOTAL_REAL_TYPES ) typesSeen[ typeIdx ] = true;
 		}
 	}
+}
+
+bool GGGrass_TakePendingMapUpload()
+{
+	if ( !s_gggrass_map_upload_pending ) return false;
+	s_gggrass_map_upload_pending = false;
+	return true;
+}
+
+// Set by bulk pGrassMap writers (GGGrass_AddAll, GGGrass_RemoveAll) so the Wicked hair entity
+// cache — which is per-chunk and blind to non-paint writes — can be flushed and rebuilt from
+// the new map contents.
+static bool s_gggrass_full_rebuild_pending = false;
+
+bool GGGrass_TakeFullRebuildPending()
+{
+	if ( !s_gggrass_full_rebuild_pending ) return false;
+	s_gggrass_full_rebuild_pending = false;
+	return true;
+}
+
+float GGGrass_GetDefaultWaterHeight()
+{
+	return g.gdefaultwaterheight;
 }
 
 // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
@@ -1320,6 +1399,13 @@ void GGGrass_AddAll()
 	}
 
 	ggterrain_extra_params.iUpdateGrass = 5;
+
+	// Wicked mode: pGrassMap has been rewritten wholesale, but the hair entity cache is per-chunk
+	// and won't notice on its own — and the R8_UNORM texGrassMap on the GPU still holds the pre-fill
+	// bytes. Push both signals so the Wicked side re-uploads the texture (Option B CS visibility
+	// check) and drops every existing entity so ProcessGrassChunks recreates them from the new map.
+	GGGrass_UploadGrassMap();
+	s_gggrass_full_rebuild_pending = true;
 }
 
 void GGGrass_RemoveAll()
@@ -1335,6 +1421,13 @@ void GGGrass_RemoveAll()
 	}
 
 	GGGrass_UpdateInstances();
+
+	// Wicked mode: same story as GGGrass_AddAll — bulk pGrassMap write that the paint-stroke
+	// dirty-chunk pipeline never sees. Upload the cleared bytes so the CS visibility check
+	// hides every strand, and drop every hair entity so the scene is genuinely empty (not just
+	// visually empty with dormant strand geometry still consuming VRAM).
+	GGGrass_UploadGrassMap();
+	s_gggrass_full_rebuild_pending = true;
 }
 
 void GGGrass_RestoreAll()
