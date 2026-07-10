@@ -4,6 +4,7 @@
 #include "GGGrass.h"
 
 #include <unordered_set>
+#include <string>
 
 #include "WickedEngine.h"
 #include "wiRenderer.h"
@@ -601,6 +602,38 @@ const wi::graphics::Texture* GGGrass_GetMapTexture()
 	return &texGrassMap;
 }
 
+// Stage B.9: custom-slot registry. Palette slots 22..(GGGRASS_MAX_PALETTE_SLOTS-1) hold user-added
+// DDS filenames (relative to Files/, matches t.visuals.sGrassTextures[] storage). The Wicked
+// appearance builder reads back via GGGrass_GetCustomSlotFilename() when it constructs
+// g_grassAppearance[real_type] for real_type >= GGGRASS_CUSTOM_REAL_TYPE_BASE.
+static std::string g_customSlotFilenames[GGGRASS_MAX_PALETTE_SLOTS];
+static bool        g_customSlotsDirty = false;
+
+void GGGrass_SetCustomSlotFilename( int slot, const char* filename )
+{
+	if ( slot < GGGRASS_CUSTOM_SLOT_BASE || slot >= GGGRASS_MAX_PALETTE_SLOTS ) return;
+	std::string nv = ( filename && filename[0] ) ? filename : "";
+	if ( g_customSlotFilenames[slot] != nv )
+	{
+		g_customSlotFilenames[slot] = nv;
+		g_customSlotsDirty = true;
+	}
+}
+
+const char* GGGrass_GetCustomSlotFilename( int slot )
+{
+	if ( slot < GGGRASS_CUSTOM_SLOT_BASE || slot >= GGGRASS_MAX_PALETTE_SLOTS ) return nullptr;
+	if ( g_customSlotFilenames[slot].empty() ) return nullptr;
+	return g_customSlotFilenames[slot].c_str();
+}
+
+bool GGGrass_TakeCustomSlotsDirty()
+{
+	if ( !g_customSlotsDirty ) return false;
+	g_customSlotsDirty = false;
+	return true;
+}
+
 void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen )
 {
 	if ( !gggrass_initialised || !pGrassMap || !typesSeen ) return;
@@ -631,7 +664,9 @@ void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* t
 			if ( v == 0 || ( v & 0x80 ) ) continue; // empty or flattened
 			uint8_t encoded = v & 0x7F;
 			uint32_t typeIdx = ( encoded >= 2 ) ? (uint32_t)( encoded - 2 ) : 0u; // mirror C++ side
-			if ( typeIdx < GGGRASS_NUM_TYPES ) typesSeen[ typeIdx ] = true;
+			// Stage B.9: typesSeen array is sized to GGGRASS_TOTAL_REAL_TYPES on the Wicked side to
+			// hold stock (0..45) + custom (46..GGGRASS_TOTAL_REAL_TYPES-1) real_type indices.
+			if ( typeIdx < GGGRASS_TOTAL_REAL_TYPES ) typesSeen[ typeIdx ] = true;
 		}
 	}
 }
@@ -1571,7 +1606,7 @@ void GGGrass_Update_Painting( RAY ray )
 
 		uint32_t numTypes = 0;
 		uint64_t values = gggrass_global_params.paint_type;
-		for( uint32_t i = 0; i < GGGRASS_NUM_SELECTABLE_TYPES; i++ )
+		for( uint32_t i = 0; i < GGGRASS_MAX_PALETTE_SLOTS; i++ )
 		{
 			if ( values & 1 ) numTypes++;
 			values >>= 1;
@@ -1673,38 +1708,54 @@ void GGGrass_Update_Painting( RAY ray )
 										type %= numTypes;
 										uint32_t count = 0;
 										uint64_t values = gggrass_global_params.paint_type;
-										for( uint32_t i = 0; i < GGGRASS_NUM_SELECTABLE_TYPES; i++ )
+										// Stage B.9: iterate the full palette (stock 0..21 + custom
+										// 22..GGGRASS_MAX_PALETTE_SLOTS-1). Custom slots skip the
+										// grassMaterialTypes lookup and encode directly: real_type =
+										// slot + 24 so byte = slot + 26 stays disjoint from stock
+										// bytes (0..47) and below the 0x80 flatten bit.
+										for( uint32_t i = 0; i < GGGRASS_MAX_PALETTE_SLOTS; i++ )
 										{
-											if ( values & 1 ) 
+											if ( values & 1 )
 											{
 												if ( count == type )
 												{
-													uint32_t currMat = gggrass_global_params.paint_material;
 													uint32_t realIndex = 0;
-													if ( currMat > 0 ) 
+													if ( i >= GGGRASS_CUSTOM_SLOT_BASE )
 													{
-														// don't match, use material 0
-														realIndex = GGGrass_GetRealIndex( 0, i );
+														// Custom slot: direct real_type encoding.
+														realIndex = (uint32_t)i + 24;
 													}
 													else
 													{
-														// match terrain material
-														float fX = (float) x;
-														fX = fX / GGGRASS_MAP_SIZE;
-														fX = fX * 2 - 1;
-														fX = fX * ggterrain_global_render_params2.editable_size;
+														// Stock slot: existing terrain-material variant lookup.
+														uint32_t currMat = gggrass_global_params.paint_material;
+														if ( currMat > 0 )
+														{
+															// don't match, use material 0
+															realIndex = GGGrass_GetRealIndex( 0, i );
+														}
+														else
+														{
+															// match terrain material
+															float fX = (float) x;
+															fX = fX / GGGRASS_MAP_SIZE;
+															fX = fX * 2 - 1;
+															fX = fX * ggterrain_global_render_params2.editable_size;
 
-														float fZ = (float) y;
-														fZ = fZ / GGGRASS_MAP_SIZE;
-														fZ = fZ * 2 - 1;
-														fZ = fZ * ggterrain_global_render_params2.editable_size;
-								
-														int material = GGTerrain_GetMaterialIndex( fX, fZ );
-														realIndex = GGGrass_GetRealIndex( material, i );
+															float fZ = (float) y;
+															fZ = fZ / GGGRASS_MAP_SIZE;
+															fZ = fZ * 2 - 1;
+															fZ = fZ * ggterrain_global_render_params2.editable_size;
+
+															int material = GGTerrain_GetMaterialIndex( fX, fZ );
+															realIndex = GGGrass_GetRealIndex( material, i );
+														}
 													}
 
-													if ( realIndex >= GGGRASS_NUM_TYPES ) realIndex = 0;
-													else realIndex += 2;
+													// Byte encoding: 0/1 reserved, 2+ = real_type + 2, bit 7 = flattened.
+													// Cap defensively at 125 (max real_type) so we never set the flatten bit accidentally.
+													if ( realIndex > 125 ) realIndex = 0;
+													realIndex += 2;
 
 													//pGrassMap[ index ] &= 0x80; // keep flattened state
 													pGrassMap[ index ] = 0; // allow painting in flattened areas

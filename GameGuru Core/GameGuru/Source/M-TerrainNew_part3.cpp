@@ -943,7 +943,8 @@ void imgui_Customize_Vegetation_v3(int mode)
 		if (iDeleteAllGrassTextures)
 		{
 			iDeleteAllGrassTextures = false;
-			for (int iL = 0; iL < GGGRASS_NUM_SELECTABLE_TYPES; iL++) {
+			// Stage B.9: iterate all palette slots (stock + custom) so custom images get cleared too.
+			for (int iL = 0; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++) {
 				if (ImageExist(t.terrain.imagestartindex + 180 + iL))
 					DeleteImage(t.terrain.imagestartindex + 180 + iL);
 			}
@@ -970,9 +971,21 @@ void imgui_Customize_Vegetation_v3(int mode)
 			bInitNewGrassSystem = false;
 		}
 
-		// find last slot used
+		// Stage B.9: sync sGrassTextures[custom slots] -> Wicked's custom-slot registry every frame.
+		// Cheap (compares std::string against stored value; only flags dirty on actual change). Handles:
+		//   - Level load with custom entries populated from .fpm — Wicked wouldn't otherwise know
+		//     about them until the user re-added.
+		//   - Edge case where sGrassTextures got cleared by save/load without going through the
+		//     Delete button — Wicked syncs the empty state too.
+		for (int iL = GGGRASS_CUSTOM_SLOT_BASE; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++)
+		{
+			const char* cur = t.visuals.sGrassTextures[iL].Get();
+			GGGrass_SetCustomSlotFilename(iL, (cur && cur[0]) ? cur : nullptr);
+		}
+
+		// find last slot used (iterates the full palette so custom slots contribute to the last-used index)
 		int iLastSlotUsed = 0;
-		for (int iL = 0; iL < GGGRASS_NUM_SELECTABLE_TYPES; iL++)
+		for (int iL = 0; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++)
 			if (t.visuals.sGrassTextures[iL] != "")
 				if (ImageExist(t.terrain.imagestartindex + 180 + iL))
 					iLastSlotUsed = iL;
@@ -989,7 +1002,7 @@ void imgui_Customize_Vegetation_v3(int mode)
 			bool bActive;
 			ImRect image_bb;
 		} draw_selections[128];
-		for (int iL = 0; iL < GGGRASS_NUM_SELECTABLE_TYPES; iL++) draw_selections[iL].bActive = false;
+		for (int iL = 0; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++) draw_selections[iL].bActive = false;
 
 		//Child
 		static float fContentHeight = 0;
@@ -1015,7 +1028,10 @@ void imgui_Customize_Vegetation_v3(int mode)
 
 		float curposy = ImGui::GetCursorPosY();
 		uint64_t values = gggrass_global_params.paint_type;
-		for (int iL = 0; iL < GGGRASS_NUM_SELECTABLE_TYPES; iL++)
+		// Stage B.9: iterate the full palette (stock 0..21 + custom 22..GGGRASS_MAX_PALETTE_SLOTS-1).
+		// Empty slots (sGrassTextures[iL] == "") are skipped by the outer sanity check inside the loop,
+		// so custom slots that haven't been populated yet don't draw.
+		for (int iL = 0; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++)
 		{
 			uint64_t mask = 1ULL << iL;
 			if (t.visuals.sGrassTextures[iL] != "")
@@ -1171,7 +1187,7 @@ void imgui_Customize_Vegetation_v3(int mode)
 		
 		child_begin -= ImVec2(ImGui::GetScrollX(), ImGui::GetScrollY());
 		ImRect cliprect = ImRect(ImGui::GetWindowPos() + child_begin, ImGui::GetWindowPos() + child_begin + ImVec2(ImGui::GetWindowContentRegionWidth(), fContentHeight));
-		for (int iL = 0; iL < 32; iL++)
+		for (int iL = 0; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++)
 		{
 			if (draw_selections[iL].bActive)
 			{
@@ -1188,6 +1204,129 @@ void imgui_Customize_Vegetation_v3(int mode)
 		ImGui::Columns(1);
 		ImGui::Indent(10);
 
+		// Stage B.9: Add New Grass / Delete Grass buttons — expose custom palette slots to end users.
+		// Stock slots (0..21) are protected from deletion; custom slots (22..GGGRASS_MAX_PALETTE_SLOTS-1)
+		// can be populated via file dialog and cleared via Delete. Selected-for-paint slots highlight
+		// through bCurrentGrassTextureForPaint[].
+		{
+			int iSelectedSlot = -1;
+			int iSelectedCount = 0;
+			for (int iL = 0; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++)
+			{
+				if (bCurrentGrassTextureForPaint[iL])
+				{
+					iSelectedSlot = iL;
+					iSelectedCount++;
+				}
+			}
+			int iCustomCount = 0;
+			int iFirstEmptyCustom = -1;
+			for (int iL = GGGRASS_CUSTOM_SLOT_BASE; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++)
+			{
+				if (t.visuals.sGrassTextures[iL] != "")
+					iCustomCount++;
+				else if (iFirstEmptyCustom < 0)
+					iFirstEmptyCustom = iL;
+			}
+			bool canAdd = (iFirstEmptyCustom >= 0);
+			bool canDelete = (iSelectedCount == 1 && iSelectedSlot >= GGGRASS_CUSTOM_SLOT_BASE);
+
+			float w = ImGui::GetContentRegionAvail().x;
+			float but_gadget_size = ImGui::GetFontSize() * 8.5f;
+			float total_w = but_gadget_size * 2.0f + 6.0f;
+			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5f) - (total_w * 0.5f), 0.0f));
+
+			// Buttons don't gray out (older ImGui in this project has no BeginDisabled/EndDisabled);
+			// instead they gate on canAdd/canDelete inside their handler and the tooltip explains
+			// why the click was a no-op.
+			if (ImGui::StyleButton("Add New Grass##AddCustomGrass", ImVec2(but_gadget_size, 0)))
+			{
+				if (canAdd)
+				{
+					// Open a file dialog and let the user pick a DDS from Files/grassbank/ (or elsewhere
+					// under Files/). We store the path RELATIVE to the game's root dir so save/load into
+					// .fpm survives; GGGrass_SetCustomSlotFilename holds it for the Wicked renderer.
+					cStr sGrassTextureFolder = g.rootdir_s + "grassbank\\";
+					cStr tOldDir = GetDir();
+					char* cFileSelected = (char*)noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "DDS\0*.dds\0\0\0", sGrassTextureFolder.Get(), NULL);
+					SetDir(tOldDir.Get());
+					if (cFileSelected && strlen(cFileSelected) > 0 && iFirstEmptyCustom >= 0)
+					{
+						char* relonly = (char*)pestrcasestr(cFileSelected, g.rootdir_s.Get());
+						cStr relPath;
+						if (relonly) relPath = cFileSelected + g.rootdir_s.Len();
+						else         relPath = cFileSelected;
+						// Strip "Files/" prefix (case-insensitive) if present — sGrassTextures stores paths
+						// relative to Files/ (matches stock convention "grassbank/foo.dds").
+						const char* p = relPath.Get();
+						if (p && strlen(p) > 6)
+						{
+							if ((p[0]=='F'||p[0]=='f') && (p[1]=='i'||p[1]=='I') && (p[2]=='l'||p[2]=='L') &&
+							    (p[3]=='e'||p[3]=='E') && (p[4]=='s'||p[4]=='S') && (p[5]=='/' || p[5]=='\\'))
+							{
+								relPath = (char*)(p + 6);
+							}
+						}
+
+						t.visuals.sGrassTextures[iFirstEmptyCustom] = relPath;
+						t.gamevisuals.sGrassTextures[iFirstEmptyCustom] = relPath;
+
+						// Derive a short display name from the filename stem.
+						cStr shortName = relPath;
+						const char* sp = shortName.Get();
+						const char* lastSlash = nullptr;
+						for (const char* q = sp; *q; ++q) { if (*q == '/' || *q == '\\') lastSlash = q + 1; }
+						if (lastSlash) shortName = (char*)lastSlash;
+						t.visuals.sGrassTexturesName[iFirstEmptyCustom] = shortName;
+						t.gamevisuals.sGrassTexturesName[iFirstEmptyCustom] = shortName;
+
+						GGGrass_SetCustomSlotFilename(iFirstEmptyCustom, relPath.Get());
+						bCurrentGrassTextureForPaint[iFirstEmptyCustom] = true; // auto-select the newly added
+						bUpdateGrassMaterials = true;
+						g.projectmodified = 1;
+					}
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				if (canAdd) ImGui::SetTooltip("Pick a DDS file to add as a new custom grass texture");
+				else        ImGui::SetTooltip("All %d custom grass slots are full", GGGRASS_MAX_PALETTE_SLOTS - GGGRASS_CUSTOM_SLOT_BASE);
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::StyleButton("Delete Grass##DeleteCustomGrass", ImVec2(but_gadget_size, 0)))
+			{
+				if (canDelete && iSelectedSlot >= GGGRASS_CUSTOM_SLOT_BASE)
+				{
+					// Queue image slot for deletion via existing plumbing.
+					if (ImageExist(t.terrain.imagestartindex + 180 + iSelectedSlot))
+						iDeleteSingleGrassTextures = t.terrain.imagestartindex + 180 + iSelectedSlot;
+
+					t.visuals.sGrassTextures[iSelectedSlot] = "";
+					t.visuals.sGrassTexturesName[iSelectedSlot] = "";
+					t.gamevisuals.sGrassTextures[iSelectedSlot] = "";
+					t.gamevisuals.sGrassTexturesName[iSelectedSlot] = "";
+					sGrassTexturesID[iSelectedSlot] = 0;
+					bCurrentGrassTextureForPaint[iSelectedSlot] = false;
+					// Clear the corresponding bit in paint_type so the paint code won't try to encode it.
+					gggrass_global_params.paint_type &= ~(1ULL << iSelectedSlot);
+
+					GGGrass_SetCustomSlotFilename(iSelectedSlot, nullptr);
+					bUpdateGrassMaterials = true;
+					g.projectmodified = 1;
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				if (canDelete)                         ImGui::SetTooltip("Delete the selected custom grass texture");
+				else if (iSelectedCount == 0)          ImGui::SetTooltip("Select exactly one custom grass texture to delete");
+				else if (iSelectedCount > 1)           ImGui::SetTooltip("Select exactly ONE custom grass texture to delete (currently %d selected)", iSelectedCount);
+				else                                   ImGui::SetTooltip("Stock grass textures (first %d slots) cannot be deleted", GGGRASS_CUSTOM_SLOT_BASE);
+			}
+
+			ImGui::Text("Custom: %d / %d", iCustomCount, GGGRASS_MAX_PALETTE_SLOTS - GGGRASS_CUSTOM_SLOT_BASE);
+		}
 
 		if (bUpdateGrassMaterials)
 		{

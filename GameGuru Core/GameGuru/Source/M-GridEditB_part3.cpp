@@ -1452,6 +1452,18 @@ void Wicked_Update_Visuals(void *voidvisual)
 		return;
 	}
 
+	// Stage B.9: sync custom grass palette slots (22..GGGRASS_MAX_PALETTE_SLOTS-1) into the
+	// GGGrass custom-slot registry. Runs on every level load (via M-MapFile) and any subsequent
+	// visuals update, so custom grass renders immediately when a level opens — no need to first
+	// enter vegetation editing mode. GGGrass_SetCustomSlotFilename is idempotent (compares against
+	// stored value and only flags dirty on actual change), so calling this on non-load updates is
+	// a cheap no-op if nothing changed.
+	for (int iL = GGGRASS_CUSTOM_SLOT_BASE; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++)
+	{
+		const char* cur = visuals->sGrassTextures[iL].Get();
+		GGGrass_SetCustomSlotFilename(iL, (cur && cur[0]) ? cur : nullptr);
+	}
+
 	wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 	if (weather)
 	{

@@ -52,10 +52,10 @@ static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity;
 // strand positions hold rock-still during paint instead of regenerating their per-frame tail state).
 struct ChunkGrassEntities
 {
-	wi::ecs::Entity perType[GGGRASS_NUM_TYPES];
+	wi::ecs::Entity perType[GGGRASS_TOTAL_REAL_TYPES];
 	ChunkGrassEntities()
 	{
-		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++) perType[t] = wi::ecs::INVALID_ENTITY;
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++) perType[t] = wi::ecs::INVALID_ENTITY;
 	}
 };
 static std::unordered_map<uint64_t, ChunkGrassEntities> grassChunkKeyToGrassEntities;
@@ -441,36 +441,65 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 // Per-grass-type material cache. One MaterialComponent per entry in GGGrass::grassFiles[] (the 46
 // DDS files in Files/grassbank/). Each material is built lazily the first time we see its type id
 // in ProcessGrassChunks, so a level that uses 3 grass types pays for 3 DDS loads, not 46.
-static wi::scene::MaterialComponent g_grassMaterials[GGGRASS_NUM_TYPES];
-static bool                         g_grassMaterialReady[GGGRASS_NUM_TYPES] = {};
+static wi::scene::MaterialComponent g_grassMaterials[GGGRASS_TOTAL_REAL_TYPES];
+static bool                         g_grassMaterialReady[GGGRASS_TOTAL_REAL_TYPES] = {};
 
 // Build one cached grass material from Files/grassbank/<filename>. Returns nullptr on bad index.
 // Kelp/seaweed sprites have authored _normal.dds siblings; we wire those in when present.
 static wi::scene::MaterialComponent* BuildGrassMaterial(uint32_t typeIdx)
 {
-	if (typeIdx >= GGGRASS_NUM_TYPES) return nullptr;
+	if (typeIdx >= GGGRASS_TOTAL_REAL_TYPES) return nullptr;
 	if (g_grassMaterialReady[typeIdx]) return &g_grassMaterials[typeIdx];
 
-	const GGGrass::GrassTypeInfo* info = GGGrass::GGGrass_GetTypeInfo(typeIdx);
-	if (!info || !info->filename) return nullptr;
+	// Stage B.9: dispatch between stock (typeIdx < GGGRASS_CUSTOM_REAL_TYPE_BASE) and custom
+	// (typeIdx >= base). Stock reads the DDS path from the built-in grassFiles[] table via
+	// GGGrass_GetTypeInfo; custom reads the user-registered filename via GGGrass_GetCustomSlotFilename
+	// (slot = typeIdx - 24, matching the paint-side encoding).
+	const char* dds_relpath = nullptr;
+	bool isCustom = (typeIdx >= (uint32_t)GGGRASS_CUSTOM_REAL_TYPE_BASE);
+	if (isCustom)
+	{
+		int slot = (int)typeIdx - 24;
+		dds_relpath = GGGrass::GGGrass_GetCustomSlotFilename(slot);
+		if (!dds_relpath || !dds_relpath[0]) return nullptr;
+	}
+	else
+	{
+		const GGGrass::GrassTypeInfo* info = GGGrass::GGGrass_GetTypeInfo(typeIdx);
+		if (!info || !info->filename) return nullptr;
+		dds_relpath = info->filename;
+	}
 
+	// Stock paths are just the DDS filename (relative to Files/grassbank/); custom paths from
+	// sGrassTextures[] are relative to Files/ (e.g. "grassbank/foo.dds" or "user/mygrass.dds").
+	// Both variants live under Files/ so we build the absolute path off the EXE-dir + Files/.
 	char colorPath[512];
-	sprintf_s(colorPath, "%s/Files/grassbank/%s", wickedTerrainExeDir.c_str(), info->filename);
+	if (isCustom)
+		sprintf_s(colorPath, "%s/Files/%s", wickedTerrainExeDir.c_str(), dds_relpath);
+	else
+		sprintf_s(colorPath, "%s/Files/grassbank/%s", wickedTerrainExeDir.c_str(), dds_relpath);
+
+	// info is only used by stock for the normal-map sibling detection below.
+	const GGGrass::GrassTypeInfo* info = isCustom ? nullptr : GGGrass::GGGrass_GetTypeInfo(typeIdx);
+	const char* nrmSrcName = isCustom ? dds_relpath : (info ? info->filename : nullptr);
 
 	// Build a normal-map path if the sprite name ends in "_color.dds" (kelp/seaweed convention).
 	// Otherwise leave normals unset — the alpha-cutout blade silhouette doesn't need them.
 	char normalPath[512] = {0};
 	bool haveNormal = false;
-	const char* colorSuffix = strstr(info->filename, "_color.dds");
+	const char* colorSuffix = nrmSrcName ? strstr(nrmSrcName, "_color.dds") : nullptr;
 	if (colorSuffix)
 	{
-		size_t prefixLen = (size_t)(colorSuffix - info->filename);
+		size_t prefixLen = (size_t)(colorSuffix - nrmSrcName);
 		char normalName[256];
 		if (prefixLen < sizeof(normalName) - 16)
 		{
-			memcpy(normalName, info->filename, prefixLen);
+			memcpy(normalName, nrmSrcName, prefixLen);
 			memcpy(normalName + prefixLen, "_normal.dds", 12); // includes NUL
-			sprintf_s(normalPath, "%s/Files/grassbank/%s", wickedTerrainExeDir.c_str(), normalName);
+			if (isCustom)
+				sprintf_s(normalPath, "%s/Files/%s", wickedTerrainExeDir.c_str(), normalName);
+			else
+				sprintf_s(normalPath, "%s/Files/grassbank/%s", wickedTerrainExeDir.c_str(), normalName);
 			haveNormal = true;
 		}
 	}
@@ -499,7 +528,7 @@ static wi::scene::MaterialComponent* BuildGrassMaterial(uint32_t typeIdx)
 // Per-grass-type appearance templates (length / width / billboards / stiffness etc.).
 // Copied onto each spawned HairParticleSystem so the strand placement / mesh / strand-count are
 // per-chunk but the look-and-feel comes from the type table.
-static wi::HairParticleSystem g_grassAppearance[GGGRASS_NUM_TYPES];
+static wi::HairParticleSystem g_grassAppearance[GGGRASS_TOTAL_REAL_TYPES];
 static bool                   g_grassAppearanceReady = false;
 
 // 8 categories spanning the 46 entries in GGGrass::grassFiles[].
@@ -525,7 +554,7 @@ static void BuildGrassAppearance()
 {
 	if (g_grassAppearanceReady) return;
 	uint32_t numTypes = GGGrass::GGGrass_GetNumTypes();
-	if (numTypes > GGGRASS_NUM_TYPES) numTypes = GGGRASS_NUM_TYPES;
+	if (numTypes > GGGRASS_TOTAL_REAL_TYPES) numTypes = GGGRASS_TOTAL_REAL_TYPES;
 
 	for (uint32_t t = 0; t < numTypes; t++)
 	{
@@ -618,6 +647,44 @@ static void BuildGrassAppearance()
 			break;
 		}
 	}
+
+	// Stage B.9: custom palette slots (22..GGGRASS_MAX_PALETTE_SLOTS-1) map to real_types
+	// (GGGRASS_CUSTOM_REAL_TYPE_BASE..). Each active slot gets an appearance built with a
+	// default category (GCAT_WILD — medium blade, generic look) so it renders as reasonable
+	// grass without requiring the user to specify per-slot tuning yet. SF is parsed from the
+	// filename's "_SF_x.xx" suffix if present (matching the stock file convention); else 1.0.
+	for (int slot = GGGRASS_CUSTOM_SLOT_BASE; slot < GGGRASS_MAX_PALETTE_SLOTS; slot++)
+	{
+		const char* fn = GGGrass::GGGrass_GetCustomSlotFilename(slot);
+		if (!fn || !fn[0]) continue;
+		uint32_t realType = (uint32_t)slot + 24;
+		if (realType >= GGGRASS_TOTAL_REAL_TYPES) continue; // defensive
+
+		// Parse SF from filename ("_SF_x.xx" suffix). Fall back to 1.0 if absent.
+		float sf = 1.0f;
+		{
+			const char* p = strstr(fn, "_SF_");
+			if (p)
+			{
+				float parsed = (float)atof(p + 4);
+				if (parsed > 0.01f) sf = parsed;
+			}
+		}
+
+		wi::HairParticleSystem& a = g_grassAppearance[realType];
+		a = wi::HairParticleSystem();
+		a.segmentCount = 1;
+		a.randomness = 0.35f;
+		a.stiffness = 9.0f;
+		a.drag = 0.5f;
+		a.atlas_rects.clear();
+		a.uniformity = 1.0f;
+		a.viewDistance = 5000.0f;   // overwritten by ApplyGrassDrawDistance() below + on slider drag
+		a.length = 40.0f;           // DX11 grass_scale baseline (Course-Grass-equivalent height)
+		a.width = sf;               // matches DX11 posOrig.x *= scaleFactor mapping
+		a.billboardCount = 2;
+	}
+
 	g_grassAppearanceReady = true;
 }
 
@@ -642,7 +709,7 @@ static void ApplyGrassDrawDistance()
 	// ProcessGrassChunks always sits 1 chunk past this so chunks are created with their near edges
 	// outside the cull — strands fade in gradually instead of whole chunks popping.
 	const float viewDistInches = GGGrass::gggrass_global_params.lod_dist + 2500.0f;
-	for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 	{
 		// Flowers cull at half the radius — tiny features that don't read past mid-distance.
 		float vd = (CategoryFor(t) == GCAT_FLOWER) ? viewDistInches * 0.5f : viewDistInches;
@@ -656,7 +723,7 @@ static void ApplyGrassDrawDistance()
 		wi::HairParticleSystem& h = scene.hairs[hi];
 		if (h.grass_type == 0) continue;                  // not a GG grass entity (upstream hair)
 		uint32_t typeIdx = h.grass_type - 1;
-		if (typeIdx >= GGGRASS_NUM_TYPES) continue;
+		if (typeIdx >= GGGRASS_TOTAL_REAL_TYPES) continue;
 		h.viewDistance = g_grassAppearance[typeIdx].viewDistance;
 	}
 	g_grassPrevSliderInches = GGGrass::gggrass_global_params.lod_dist;
@@ -780,7 +847,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		bool hasExistingEntities = false;
 		if (git != grassChunkKeyToGrassEntities.end())
 		{
-			for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+			for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 			{
 				if (git->second.perType[t] != wi::ecs::INVALID_ENTITY) { hasExistingEntities = true; break; }
 			}
@@ -825,7 +892,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		// drop every per-type entity for this chunk so we start clean.
 		if (pc.fullReset || pc.tier == 0)
 		{
-			for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+			for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 			{
 				wi::ecs::Entity e = existingEntities.perType[t];
 				if (e != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(e))
@@ -842,14 +909,14 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		// world XZ). C++ only needs to know which per-(chunk, type) hair entities should exist.
 		// A single scan of the chunk's world-AABB grass-map cells gives us that — no per-vertex
 		// multi-sample, no coverage scaling, no vertex_lengths restamp on paint.
-		bool typesSeen[GGGRASS_NUM_TYPES] = {};
+		bool typesSeen[GGGRASS_TOTAL_REAL_TYPES] = {};
 		const float halfChunkWorld = chunkStride * 0.5f;
 		GGGrass::GGGrass_ScanRegion(
 			pc.world._41 - halfChunkWorld, pc.world._43 - halfChunkWorld,
 			pc.world._41 + halfChunkWorld, pc.world._43 + halfChunkWorld,
 			typesSeen );
 
-		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 		{
 			wi::ecs::Entity existing = existingEntities.perType[t];
 
@@ -925,7 +992,7 @@ static void ForceGrassRebuild()
 	auto& scene = wi::scene::GetScene();
 	for (auto& kv : grassChunkKeyToGrassEntities)
 	{
-		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 		{
 			wi::ecs::Entity e = kv.second.perType[t];
 			if (e != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(e))
@@ -944,10 +1011,10 @@ void GGTerrainWicked_SetGrassParam(const char* param, float value)
 {
 	std::string p = param ? param : "";
 	auto forAllAppearance = [&](auto fn) {
-		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++) fn(g_grassAppearance[t]);
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++) fn(g_grassAppearance[t]);
 	};
 	auto forAllMaterials = [&](auto fn) {
-		for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 			if (g_grassMaterialReady[t]) fn(g_grassMaterials[t]);
 	};
 	if      (p == "length")     forAllAppearance([&](wi::HairParticleSystem& h){ h.length = value; });
@@ -1264,7 +1331,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		auto& gscene = wi::scene::GetScene();
 		for (auto& kv : grassChunkKeyToGrassEntities)
 		{
-			for (uint32_t t = 0; t < GGGRASS_NUM_TYPES; t++)
+			for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 			{
 				wi::ecs::Entity e = kv.second.perType[t];
 				if (e == wi::ecs::INVALID_ENTITY) continue;
@@ -1303,6 +1370,56 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	{
 		SetupWickedGrass();
 	}
+	// Stage B.9: custom palette slot registered/cleared by the editor UI ("Add New Grass" /
+	// "Delete Grass"). Rebuild the appearance templates + clear cached materials for custom
+	// real_types so BuildGrassMaterial re-loads DDS on next lookup.
+	//
+	// Also blast grassChunkKeyToTier so ProcessGrassChunks re-visits every chunk on the next pass.
+	// This fixes two related bugs:
+	//   1. Delete + re-add with a DIFFERENT DDS on the same slot — existing hair entities cache a
+	//      snapshot of the OLD MaterialComponent, which persists even after we clear the material-
+	//      ready flag. Forcing a chunk-tier re-eval triggers the tier-change branch (fullReset =
+	//      true) so entities get destroyed and recreated with the fresh material.
+	//   2. Level reload where ProcessGrassChunks runs on frame N BEFORE the palette-sync (which is
+	//      in the ImGui render at end-of-frame). Frame N tries to build the custom material with a
+	//      null filename (sync not yet run), fails silently, but still records the chunk's tier —
+	//      frame N+1's dirty poll rebuilds appearances but the chunks stay skipped because their
+	//      tier hasn't changed. Clearing tier tracking forces the re-visit.
+	if (GGGrass::GGGrass_TakeCustomSlotsDirty())
+	{
+		g_grassAppearanceReady = false;
+		for (uint32_t t = GGGRASS_CUSTOM_REAL_TYPE_BASE; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+			g_grassMaterialReady[t] = false;
+		BuildGrassAppearance();
+		ApplyGrassDrawDistance(); // sync viewDistance onto the newly-built custom appearances
+
+		// Invalidate all chunk tier tracking + delete any existing hair entities for CUSTOM
+		// real_types across every tracked chunk. Two-step because Phase 2's existing-entity branch
+		// short-circuits on "type still painted, entity exists" — so if we only cleared the tier
+		// map, existing entities would survive and keep their OLD material snapshot even after the
+		// slot's DDS changed. Removing the custom entities here forces Phase 2 to hit the CREATE
+		// branch, which calls BuildGrassMaterial with the freshly-registered filename.
+		//
+		// Stock entities (real_type 0..45) are left alone — their DDS never changed.
+		grassChunkKeyToTier.clear();
+		{
+			auto& scene = wi::scene::GetScene();
+			for (auto& kv : grassChunkKeyToGrassEntities)
+			{
+				for (uint32_t t = GGGRASS_CUSTOM_REAL_TYPE_BASE; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+				{
+					wi::ecs::Entity e = kv.second.perType[t];
+					if (e != wi::ecs::INVALID_ENTITY)
+					{
+						if (scene.hairs.GetComponent(e))
+							scene.Entity_Remove(e);
+						kv.second.perType[t] = wi::ecs::INVALID_ENTITY;
+					}
+				}
+			}
+		}
+	}
+
 	// Grass Draw Distance slider → per-entity viewDistance. Detect slider movement and sync every
 	// live grass entity in one pass so dragging the slider in the editor pulls every cull radius
 	// along with it (rather than waiting for chunks to be rebuilt on camera move).

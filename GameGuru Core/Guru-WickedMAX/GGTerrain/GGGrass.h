@@ -14,6 +14,25 @@
 
 #define GGGRASS_INITIAL_LOD_DIST 1500
 
+// Total palette slot budget: 22 stock (0..21) + up to 42 custom (22..63) = 64. The 64 cap is
+// tied to gggrass_global_params.paint_type being a uint64_t bitmask (1 bit per selected palette
+// slot). Widening paint_type to uint64_t[2] would let this grow to 128 (matches Types.h
+// sGrassTextures[128] cap) — future work. Byte-encoding limit is 125 real_types either way.
+// Custom slot i maps to real_type = i + 24 so byte = i + 26. At slot 63, byte = 89 — well below
+// the 0x80 flatten flag.
+#define GGGRASS_MAX_PALETTE_SLOTS 64
+
+// Real type index reserved for the first custom slot. Custom slot i (>=22) maps to real_type = i + 24.
+// Chosen so real_types 0..45 stay reserved for the stock grassFiles[] table entries with no risk of
+// collision if custom is painted in the same chunk as stock.
+#define GGGRASS_CUSTOM_REAL_TYPE_BASE 46
+#define GGGRASS_CUSTOM_SLOT_BASE      22
+
+// Total real_type index space that Wicked-side arrays must cover: 46 stock + (max_slots - stock_slots)
+// custom = 46 + 42 = 88 at cap 64 slots. Wicked appearance / material / per-chunk-entity arrays are
+// sized to this so a custom slot's real_type never lands out-of-range.
+#define GGGRASS_TOTAL_REAL_TYPES ( GGGRASS_CUSTOM_REAL_TYPE_BASE + ( GGGRASS_MAX_PALETTE_SLOTS - GGGRASS_CUSTOM_SLOT_BASE ) )
+
 struct sUndoSysEventGrass;
 
 namespace GGGrass
@@ -69,10 +88,28 @@ namespace GGGrass
 
 	// Stage B.4: scan grass-map cells in [minX..maxX] x [minZ..maxZ] world XZ. Sets
 	// typesSeen[t] = true for each painted (non-flattened) cell whose type maps to t (0-based,
-	// matching GGGrass type indices). Caller passes a GGGRASS_NUM_TYPES-element bool array.
+	// matching GGGrass type indices). Caller passes a bool array sized to hold all real_types —
+	// stock (0..45) + custom (46..GGGRASS_CUSTOM_REAL_TYPE_BASE + numCustomSlots - 1).
 	// Used by the Wicked-side hair-entity manager to decide which per-(chunk, type) entities
 	// to create/destroy; per-cell visibility WITHIN the chunk is handled in the simulate CS.
 	void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen );
+
+	// Stage B.9: register a custom palette slot's DDS filename. Called by the editor UI when the
+	// user adds a new grass via "Add New Grass" or when a level loads with custom slots defined
+	// in .fpm. slot must be in [GGGRASS_CUSTOM_SLOT_BASE, GGGRASS_MAX_PALETTE_SLOTS). filename is
+	// relative to Files/ (matches the storage in t.visuals.sGrassTextures[]). Pass nullptr or ""
+	// to CLEAR a slot ("Delete Grass" button).
+	void GGGrass_SetCustomSlotFilename( int slot, const char* filename );
+
+	// Return the DDS filename registered for a custom slot, or nullptr if the slot is empty or
+	// out of range. Used by the Wicked appearance builder to load the custom DDS on demand.
+	const char* GGGrass_GetCustomSlotFilename( int slot );
+
+	// True if any custom slot's filename has been registered/cleared since the last call —
+	// take-and-clear. The Wicked side polls this each frame and rebuilds the affected appearance/
+	// material when set (drop-in replacement for the existing bUpdateGrassMaterials signal but
+	// scoped to just the custom-slot changes).
+	bool GGGrass_TakeCustomSlotsDirty();
 
 	// Painted grass type at world (x,z): 0 = none/flattened, else grass type id. Drives grass placement.
 	uint32_t GGGrass_GetGrassMap( float x, float z );
