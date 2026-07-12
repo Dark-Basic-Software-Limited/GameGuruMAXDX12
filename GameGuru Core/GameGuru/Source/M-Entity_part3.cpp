@@ -901,7 +901,16 @@ void c_entity_loadelementsdata ( void )
 		// can change field values here if updates to engine move vital resources
 		// MAY2025 - moved all default animation files to animations\set folder so can centrally
 		// add new animations and all existing and new characters/logic can take advantage of new ones
-		for (t.e = 1; t.e <= g.entityelementlist; t.e++)
+		// DX12 PORT GUARD: this loop must not run if the version check above failed — the
+		// allocation block on lines 47-56 is skipped when versionnumberload > versionnumbersupported,
+		// so entityelementlist is a bogus value from the newer file and t.entityelement is still
+		// sized for the previous level. Loading TESTPROJ1 saved by production DX11 GameGuru MAX
+		// (which writes a higher .ele version than the DX12 port supports) crashed here with
+		// access violation. Guard is defensive: also bounds against entityelementmax in case
+		// any other path leaves the two counters desynced. Root-cause fix (bump
+		// versionnumbersupported / handle the newer file layout) is deferred — see
+		// SCRATCHPAD.md "Level file version compatibility (DX11 -> DX12)".
+		for (t.e = 1; t.failedtoload == 0 && t.e <= g.entityelementlist && t.e <= g.entityelementmax; t.e++)
 		{
 			if (t.entityelement[t.e].bankindex>0)
 			{
