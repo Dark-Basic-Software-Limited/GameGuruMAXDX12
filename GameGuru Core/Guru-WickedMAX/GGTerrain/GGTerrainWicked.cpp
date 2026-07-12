@@ -1,6 +1,7 @@
 #include "GGTerrain.h"
 #include "GGTerrainWicked.h"
 #include "GGGrass.h"
+#include "GGTrees.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiTerrain.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiResourceManager.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiHelper.h"
@@ -1248,6 +1249,10 @@ void GGTerrainWicked_Init()
 	terrain.Generation_Restart();
 	wickedTerrainInitialised = true;
 	wickedTerrainMaterialsSetup = false;
+
+	// Phase 5: Reset the cylinder-tree pool state. Actual setup is lazy on the
+	// first WickedUpdate call so pAllTrees[] has been populated by the level load.
+	GGTrees::GGTrees_WickedInit();
 }
 
 void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
@@ -1564,6 +1569,11 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		}
 		ProcessGrassChunks(terrain, camera.Eye);
 	}
+
+	// Phase 5: Colored cylinder tree placeholders. Independent of terrain chunk
+	// lifecycle — one shared cylinder mesh + a fixed pool of ObjectComponents
+	// repositioned from pAllTrees[] each frame. Real LOD tree meshes come later.
+	GGTrees::GGTrees_WickedUpdate();
 }
 
 void GGTerrainWicked_Shutdown()
@@ -1595,6 +1605,9 @@ void GGTerrainWicked_Shutdown()
 	maxPaintedSlot = -1;
 	processedChunkKeys.clear();
 	chunkKeyToEntity.clear();
+
+	// Phase 5: tear down the tree pool alongside the terrain.
+	GGTrees::GGTrees_WickedShutdown();
 }
 
 void GGTerrainWicked_OnPaintDataChanged()

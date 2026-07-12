@@ -102,6 +102,12 @@ namespace GGTrees
 	void GGTrees_RestoreAllFlattened();
 
 	bool GGTrees_GetDefaultDataV2(char *filename);
+
+	// Phase 5: Colored cylinder tree placeholders on the new Wicked terrain.
+	// Setup is lazy (first WickedUpdate call) so it happens after the scene is live.
+	void GGTrees_WickedInit();
+	void GGTrees_WickedUpdate();
+	void GGTrees_WickedShutdown();
 }
 
 #endif // _H_GGTREES
