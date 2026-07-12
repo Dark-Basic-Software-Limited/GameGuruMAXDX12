@@ -1,24 +1,20 @@
-// GGTrees_part2.cpp — Phase 5 Stage 2: Real trunk meshes on the new Wicked
-// Engine terrain. Retires the Stage 1 cylinder placeholder in favour of the
-// authored DX11 trunk geometry + trunk textures baked into TreeMeshes/*_trunk_*.h.
+// GGTrees_part2.cpp — Phase 5 Stage 3: Trunks + alpha-tested leaves on the
+// new Wicked Engine terrain. Each per-type MeshComponent now carries TWO
+// subsets: subset[0] = trunk (opaque PBR bark texture),
+// subset[1] = branches (alpha-tested leaf texture, double-sided). One shared
+// ObjectComponent per pool slot draws both.
 //
-// One shared MeshComponent + MaterialComponent per tree type (38 total); a
-// fixed 10000-slot ObjectComponent pool swaps meshID every frame to match
-// pTree->GetType(). Branches, wind, and billboards come in later stages.
+// Grown from `pAllTrees[]` (positions/type/scale set by the DX11-era GGTrees
+// data pipeline). Real LOD variants, wind sway, and distance billboards come
+// in later stages.
 //
-// Coordinate space: TreeMeshHigh vertex positions are authored in world inches
-// (a pine trunk spans roughly -20..+20 x/z with authored height ~512" ≈ 13m at
-// scale 1.0). Per-tree TransformComponent applies a UNIFORM scale of
-// pTree->GetScaleFloat() (~0.5–1.5) plus a translate to pTree->x/y/z — pTree->y
-// is already terrain-height minus the DX11 slope adjustment (see
-// GGTrees_UpdateInstances), so trunks sit correctly on the terrain.
-//
-// Normals: TreeMeshHigh stores the normal packed as R8G8B8A8_UNORM in the uint32
-// `normal` field. DX11's input layout at GGTrees_part0.cpp:1231 confirms this.
-// Unpack via byte/127.5 - 1.0 to recover [-1,1] per component.
+// Vertex format (both trunk and branch meshes):
+// `VertexTreeHigh` = pos (3xfloat) + packed uint32 normal (R8G8B8A8_UNORM)
+// + UV (2xfloat). DX11 input layout at GGTrees_part0.cpp:1231 confirms it.
 //
 // Included by GGTrees.cpp unity build; lives inside `namespace GGTrees` so
-// pAllTrees / numTotalTrees / InstanceTree / g_GGTrees resolve without qualification.
+// pAllTrees / numTotalTrees / InstanceTree / g_GGTrees resolve without
+// qualification.
 
 namespace GGTrees
 {
@@ -33,35 +29,35 @@ static constexpr uint32_t GG_TREE_TYPES      = 38;
 static bool             g_wickedTreesSetup   = false;
 static std::string      g_treesExeDir;
 
-// Per-tree-type shared assets.
-static wi::ecs::Entity  g_treeTrunkMeshEntity[     GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
-static wi::ecs::Entity  g_treeTrunkMaterialEntity[ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
+// Per-tree-type shared assets. Trunk always present (typewise), branches
+// nullable — a few tree types (dead pine tree in LOD0) have branches == null;
+// those meshes get only subset[0].
+static wi::ecs::Entity  g_treeMeshEntity            [ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
+static wi::ecs::Entity  g_treeTrunkMaterialEntity   [ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
+static wi::ecs::Entity  g_treeBranchesMaterialEntity[ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
 
 // Fixed pool of ObjectComponents. meshID is (re)assigned every frame based on
 // which tree type the slot represents.
 static wi::ecs::Entity  g_treePoolEntities[ GG_TREE_POOL_SIZE ] = { wi::ecs::INVALID_ENTITY };
 
-// Build a Wicked MeshComponent from a TreeMeshHigh (DX11 authored trunk mesh).
-// Converts VertexTreeHigh (pos + packed uint32 normal + UV) into
-// vertex_positions / vertex_normals / vertex_uvset_0, and uint16 indices into
-// uint32. Attaches the given material as the single subset.
-static wi::ecs::Entity BuildTrunkMesh( const TreeMeshHigh* tm, wi::ecs::Entity materialEntity )
+// Append a TreeMeshHigh's verts to the given mesh, unpacking the packed
+// R8G8B8A8_UNORM normal to XMFLOAT3 in [-1,1]. Returns the vertex-index offset
+// to add to this part's indices when they get merged.
+static uint32_t AppendTreeVerts( wi::scene::MeshComponent& mesh, const TreeMeshHigh* tm )
 {
-	auto& scene = wi::scene::GetScene();
+	uint32_t baseVertex = (uint32_t)mesh.vertex_positions.size();
 
-	wi::ecs::Entity meshEntity = wi::ecs::CreateEntity();
-	wi::scene::MeshComponent& mesh = scene.meshes.Create( meshEntity );
+	mesh.vertex_positions.reserve( baseVertex + tm->numVertices );
+	mesh.vertex_normals  .reserve( baseVertex + tm->numVertices );
+	mesh.vertex_uvset_0  .reserve( baseVertex + tm->numVertices );
 
-	mesh.vertex_positions.reserve( tm->numVertices );
-	mesh.vertex_normals  .reserve( tm->numVertices );
-	mesh.vertex_uvset_0  .reserve( tm->numVertices );
 	for ( uint32_t v = 0; v < tm->numVertices; v++ )
 	{
 		const VertexTreeHigh& src = tm->pVertices[ v ];
 		mesh.vertex_positions.push_back( XMFLOAT3( src.x, src.y, src.z ) );
 
-		// R8G8B8A8_UNORM normal → XMFLOAT3 in [-1,1]. Little-endian byte order
-		// matches DX11 input layout at GGTrees_part0.cpp:1231.
+		// Little-endian byte order matches DX11 input layout at
+		// GGTrees_part0.cpp:1231 (R8G8B8A8_UNORM).
 		uint32_t n = src.normal;
 		float nx = ( (float)( ( n >>  0 ) & 0xFF ) ) / 127.5f - 1.0f;
 		float ny = ( (float)( ( n >>  8 ) & 0xFF ) ) / 127.5f - 1.0f;
@@ -71,24 +67,70 @@ static wi::ecs::Entity BuildTrunkMesh( const TreeMeshHigh* tm, wi::ecs::Entity m
 		mesh.vertex_uvset_0.push_back( XMFLOAT2( src.u, src.v ) );
 	}
 
-	mesh.indices.reserve( tm->numIndices );
+	return baseVertex;
+}
+
+// Append a TreeMeshHigh's indices to the given mesh, shifting each by
+// `vertexBaseOffset` so branch indices point at the branch vert range that was
+// appended after the trunk verts. Returns the number of indices appended.
+static uint32_t AppendTreeIndices( wi::scene::MeshComponent& mesh,
+	const TreeMeshHigh* tm, uint32_t vertexBaseOffset )
+{
+	uint32_t startIndex = (uint32_t)mesh.indices.size();
+	mesh.indices.reserve( startIndex + tm->numIndices );
 	for ( uint32_t i = 0; i < tm->numIndices; i++ )
-		mesh.indices.push_back( (uint32_t)tm->pIndices[ i ] );
+		mesh.indices.push_back( vertexBaseOffset + (uint32_t)tm->pIndices[ i ] );
+	return tm->numIndices;
+}
 
-	wi::scene::MeshComponent::MeshSubset subset;
-	subset.materialID  = materialEntity;
-	subset.indexOffset = 0;
-	subset.indexCount  = tm->numIndices;
-	mesh.subsets.push_back( subset );
+// Build the merged trunk+branches MeshComponent for one tree type. Trunk goes
+// in as subset[0] with the trunk (opaque bark) material. Branches, if non-null,
+// go in as subset[1] with the leaf (alpha-tested, double-sided) material —
+// their indices are re-offset to point at their own vert range.
+static wi::ecs::Entity BuildTreeMesh(
+	const TreeMeshHigh* trunk, wi::ecs::Entity trunkMaterial,
+	const TreeMeshHigh* branches, wi::ecs::Entity branchesMaterial )
+{
+	auto& scene = wi::scene::GetScene();
+
+	wi::ecs::Entity meshEntity = wi::ecs::CreateEntity();
+	wi::scene::MeshComponent& mesh = scene.meshes.Create( meshEntity );
+
+	// Trunk verts first (base offset 0), then trunk indices, then subset[0].
+	AppendTreeVerts( mesh, trunk );
+	uint32_t trunkIndexCount = AppendTreeIndices( mesh, trunk, 0 );
+
+	wi::scene::MeshComponent::MeshSubset trunkSubset;
+	trunkSubset.materialID  = trunkMaterial;
+	trunkSubset.indexOffset = 0;
+	trunkSubset.indexCount  = trunkIndexCount;
+	mesh.subsets.push_back( trunkSubset );
+
+	// Branches (optional) — verts appended after trunk's vert range so we can
+	// reuse the same vertex/index buffers. Branch indices get shifted by
+	// trunkNumVerts on the append. Subset[1] slices the tail of `mesh.indices`.
+	if ( branches != nullptr )
+	{
+		uint32_t branchBaseVertex   = (uint32_t)mesh.vertex_positions.size();
+		AppendTreeVerts  ( mesh, branches );
+		uint32_t branchIndexOffset  = (uint32_t)mesh.indices.size();
+		uint32_t branchIndexCount   = AppendTreeIndices( mesh, branches, branchBaseVertex );
+
+		wi::scene::MeshComponent::MeshSubset branchSubset;
+		branchSubset.materialID  = branchesMaterial;
+		branchSubset.indexOffset = branchIndexOffset;
+		branchSubset.indexCount  = branchIndexCount;
+		mesh.subsets.push_back( branchSubset );
+	}
+
 	mesh.CreateRenderData();
-
 	return meshEntity;
 }
 
-// Build a PBR MaterialComponent that samples the trunk DDS as basecolor.
-// Trees are matte bark — roughness 1.0, metalness 0, low reflectance. Same
-// pattern SetupTerrainMaterial (GGTerrainWicked.cpp) uses for terrain layers.
-static wi::ecs::Entity BuildTrunkMaterial( const char* textureName )
+// Build a PBR MaterialComponent that samples one tree DDS as basecolor.
+// `isBranches` = true switches to alpha-tested + double-sided leaves. Trunks
+// stay opaque + single-sided (BACK-face culled).
+static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranches )
 {
 	auto& scene = wi::scene::GetScene();
 
@@ -98,11 +140,21 @@ static wi::ecs::Entity BuildTrunkMaterial( const char* textureName )
 	mat.SetBaseColor ( XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f ) );
 	mat.SetRoughness ( 1.0f );
 	mat.SetMetalness ( 0.0f );
-	mat.SetReflectance( 0.005f );
+	mat.SetReflectance( 0.02f );
 
 	char colorPath[ 512 ];
 	sprintf_s( colorPath, "%s/Files/treebank/textures/%s", g_treesExeDir.c_str(), textureName );
 	mat.textures[ wi::scene::MaterialComponent::BASECOLORMAP ].name = colorPath;
+
+	if ( isBranches )
+	{
+		// Alpha-tested leaves — cut out background between the leaf silhouettes
+		// via the basecolor DDS's alpha channel. 0.5 is the standard foliage
+		// cutoff (see Wicked's alphaRef semantics — anything < 1.0-1/256 counts
+		// as alpha-test enabled). Double-sided so leaves show from both sides.
+		mat.SetAlphaRef   ( 0.5f );
+		mat.SetDoubleSided( true );
+	}
 
 	mat.SetTextureStreamingDisabled( true );
 	mat.CreateRenderData();
@@ -112,25 +164,32 @@ static wi::ecs::Entity BuildTrunkMaterial( const char* textureName )
 
 static void GGTrees_WickedSetup()
 {
-	// Capture EXE directory once — trunk DDS lookups need CWD-independent paths.
+	// Capture EXE directory once — DDS lookups need CWD-independent paths.
 	g_treesExeDir = wi::helper::GetDirectoryFromPath( wi::helper::GetExecutablePath() );
 	if ( !g_treesExeDir.empty() && ( g_treesExeDir.back() == '/' || g_treesExeDir.back() == '\\' ) )
 		g_treesExeDir.pop_back();
 
 	auto& scene = wi::scene::GetScene();
 
-	// Build one MeshComponent + MaterialComponent per tree type. Types with a
-	// null trunk pointer (none currently in LOD0, but the field is nullable so
-	// we handle it defensively) leave their slot at INVALID_ENTITY — the update
-	// loop skips slots that resolve to no mesh.
-	uint32_t typesBuilt = 0;
+	uint32_t typesBuilt = 0, branchesBuilt = 0;
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
 		const GGTree& tree = g_GGTrees[ t ];
 		if ( !tree.trunk ) continue;
 
-		g_treeTrunkMaterialEntity[ t ] = BuildTrunkMaterial( tree.trunk->textureName );
-		g_treeTrunkMeshEntity    [ t ] = BuildTrunkMesh( tree.trunk, g_treeTrunkMaterialEntity[ t ] );
+		g_treeTrunkMaterialEntity[ t ] = BuildTreeMaterial( tree.trunk->textureName, false );
+
+		wi::ecs::Entity branchesMat = wi::ecs::INVALID_ENTITY;
+		if ( tree.branches )
+		{
+			branchesMat = BuildTreeMaterial( tree.branches->textureName, true );
+			g_treeBranchesMaterialEntity[ t ] = branchesMat;
+			branchesBuilt++;
+		}
+
+		g_treeMeshEntity[ t ] = BuildTreeMesh(
+			tree.trunk,    g_treeTrunkMaterialEntity[ t ],
+			tree.branches, branchesMat );
 		typesBuilt++;
 	}
 
@@ -147,8 +206,9 @@ static void GGTrees_WickedSetup()
 	}
 
 	g_wickedTreesSetup = true;
-	wi::backlog::post( ( "GGTrees: real trunk meshes ready ("
-		+ std::to_string( typesBuilt ) + " types, "
+	wi::backlog::post( ( "GGTrees: real tree meshes ready ("
+		+ std::to_string( typesBuilt )    + " trunks, "
+		+ std::to_string( branchesBuilt ) + " with branches, "
 		+ std::to_string( GG_TREE_POOL_SIZE ) + " pool slots)" ).c_str() );
 }
 
@@ -159,8 +219,9 @@ void GGTrees_WickedInit()
 	g_wickedTreesSetup = false;
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
-		g_treeTrunkMeshEntity    [ t ] = wi::ecs::INVALID_ENTITY;
-		g_treeTrunkMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeMeshEntity            [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeTrunkMaterialEntity   [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeBranchesMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
 	}
 	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
@@ -183,18 +244,18 @@ void GGTrees_WickedUpdate()
 
 		uint32_t type = (uint32_t)pTree->GetType();
 		if ( type >= GG_TREE_TYPES ) continue;
-		wi::ecs::Entity trunkMesh = g_treeTrunkMeshEntity[ type ];
-		if ( trunkMesh == wi::ecs::INVALID_ENTITY ) continue;
+		wi::ecs::Entity treeMesh = g_treeMeshEntity[ type ];
+		if ( treeMesh == wi::ecs::INVALID_ENTITY ) continue;
 
 		wi::ecs::Entity e = g_treePoolEntities[ poolIndex ];
 		wi::scene::ObjectComponent*     obj   = scene.objects   .GetComponent( e );
 		wi::scene::TransformComponent*  xform = scene.transforms.GetComponent( e );
 		if ( !obj || !xform ) { poolIndex++; continue; }
 
-		// Swap in this tree's mesh for the pool slot. Wicked's per-object AABB
-		// derives from mesh AABB × transform, so culling picks this up
-		// automatically on the next scene update.
-		obj->meshID = trunkMesh;
+		// Swap in this tree's merged trunk+branches mesh for the pool slot.
+		// Wicked's per-object AABB derives from mesh AABB * transform, so
+		// culling picks this up automatically on the next scene update.
+		obj->meshID = treeMesh;
 		obj->SetRenderable( true );
 
 		float scale = pTree->GetScaleFloat();  // ~0.5–1.5
@@ -229,10 +290,12 @@ void GGTrees_WickedShutdown()
 	}
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
-		if ( g_treeTrunkMeshEntity    [ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeTrunkMeshEntity    [ t ] );
-		if ( g_treeTrunkMaterialEntity[ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeTrunkMaterialEntity[ t ] );
-		g_treeTrunkMeshEntity    [ t ] = wi::ecs::INVALID_ENTITY;
-		g_treeTrunkMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
+		if ( g_treeMeshEntity            [ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeMeshEntity            [ t ] );
+		if ( g_treeTrunkMaterialEntity   [ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeTrunkMaterialEntity   [ t ] );
+		if ( g_treeBranchesMaterialEntity[ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeBranchesMaterialEntity[ t ] );
+		g_treeMeshEntity            [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeTrunkMaterialEntity   [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeBranchesMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
 	}
 	g_wickedTreesSetup = false;
 }
