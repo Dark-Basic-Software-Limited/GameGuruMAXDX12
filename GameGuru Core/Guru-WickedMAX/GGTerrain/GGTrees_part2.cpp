@@ -20,8 +20,12 @@ namespace GGTrees
 {
 
 // Pool caps visible-tree draws per frame. numTotalTrees is 400000 but most are
-// invisible in any typical level.
-static constexpr uint32_t GG_TREE_POOL_SIZE  = 10000;
+// invisible in any typical level; on TESTPRO1 island (2026-07-12 A/B against
+// DX11) the visible-tree count is somewhere well past 10000, so bumped from
+// the original Stage-1 cap. Wicked auto-instances ObjectComponents that share
+// a meshID (we only have 38 unique tree meshes) so the extra cost per slot
+// is per-object CPU work + one TransformComponent, not GPU draw calls.
+static constexpr uint32_t GG_TREE_POOL_SIZE  = 100000;
 // Hardcoded here to keep this file free of the HLSL-flavoured numTreeTypes
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
