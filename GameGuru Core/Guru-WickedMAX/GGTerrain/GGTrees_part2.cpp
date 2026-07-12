@@ -19,16 +19,25 @@
 namespace GGTrees
 {
 
-// Pool caps visible-tree draws per frame. numTotalTrees is 400000 but most are
-// invisible in any typical level; on TESTPRO1 island (2026-07-12 A/B against
-// DX11) the visible-tree count is somewhere well past 10000, so bumped from
-// the original Stage-1 cap. Wicked auto-instances ObjectComponents that share
-// a meshID (we only have 38 unique tree meshes) so the extra cost per slot
-// is per-object CPU work + one TransformComponent, not GPU draw calls.
-static constexpr uint32_t GG_TREE_POOL_SIZE  = 100000;
+// Pool caps visible-tree draws per frame. numTotalTrees is 400000 but most
+// are invisible in any typical level. The DX11 A/B baseline on TESTPRO1
+// (2026-07-12) shows the level has tens of thousands of visible trees; a
+// 100000 pool caught them all at FPS 10, a 10000 pool caught only foreground
+// at FPS 27. 30000 is a workable-editor compromise until Stage 4 billboards
+// let far trees cost near-nothing.
+static constexpr uint32_t GG_TREE_POOL_SIZE  = 30000;
 // Hardcoded here to keep this file free of the HLSL-flavoured numTreeTypes
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
+
+// Distance (world inches, 1"=1 unit) at which a tree switches from the full
+// trunk+branches MeshComponent to a Wicked ImpostorComponent billboard. Wicked
+// captures 36 angles around Y for each mesh into a shared atlas (impostorTextureDim
+// = 128 per angle in wiScene.h); the far renderer picks the closest angle and
+// draws a camera-facing quad. 2000 inches ≈ 50 m — anything past a mid-ground
+// clearing becomes a billboard, matching the visual density of DX11's
+// mountain-distance impostor path.
+static constexpr float    GG_TREE_IMPOSTOR_SWAP_IN = 2000.0f;
 
 static bool             g_wickedTreesSetup   = false;
 static std::string      g_treesExeDir;
@@ -194,6 +203,17 @@ static void GGTrees_WickedSetup()
 		g_treeMeshEntity[ t ] = BuildTreeMesh(
 			tree.trunk,    g_treeTrunkMaterialEntity[ t ],
 			tree.branches, branchesMat );
+
+		// Stage 4: attach an ImpostorComponent to the mesh entity. Wicked's
+		// scene update spots the impostor, bakes the mesh from 36 angles into
+		// its shared impostorArray texture, and clamps each rendering
+		// ObjectComponent's fadeDistance to swapInDistance (see wiScene.cpp
+		// line 4675-4679). Past that distance the object draws as a
+		// camera-facing quad from the atlas — near zero vertex cost per far
+		// tree. No per-frame CPU work from us.
+		wi::scene::ImpostorComponent& impostor = scene.impostors.Create( g_treeMeshEntity[ t ] );
+		impostor.swapInDistance = GG_TREE_IMPOSTOR_SWAP_IN;
+
 		typesBuilt++;
 	}
 
