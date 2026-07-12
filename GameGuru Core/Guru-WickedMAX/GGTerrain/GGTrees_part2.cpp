@@ -53,6 +53,17 @@ static wi::ecs::Entity  g_treeBranchesMaterialEntity[ GG_TREE_TYPES ] = { wi::ec
 // which tree type the slot represents.
 static wi::ecs::Entity  g_treePoolEntities[ GG_TREE_POOL_SIZE ] = { wi::ecs::INVALID_ENTITY };
 
+// Impostor atlas re-capture countdown. The bake happens the first frame the
+// impostor is dirty — but our per-type branch materials are still uploading
+// their DDS textures that same frame, so the capture pixel shader's
+// material.textures[BASECOLORMAP].IsValid() branch returns false and the
+// shader falls back to color = 1 (opaque white). Result: bright white
+// tree-shaped blobs on distant hills. Countdown re-dirties the impostors for
+// N frames after setup, giving textures time to become resident and forcing
+// re-capture with the real leaf colours. Cleared on shutdown.
+static uint32_t         g_impostorRecaptureFrames = 0;
+static constexpr uint32_t GG_TREE_IMPOSTOR_RECAPTURE_FRAMES = 30;
+
 // Append a TreeMeshHigh's verts to the given mesh, unpacking the packed
 // R8G8B8A8_UNORM normal to XMFLOAT3 in [-1,1]. Returns the vertex-index offset
 // to add to this part's indices when they get merged.
@@ -143,6 +154,16 @@ static wi::ecs::Entity BuildTreeMesh(
 // Build a PBR MaterialComponent that samples one tree DDS as basecolor.
 // `isBranches` = true switches to alpha-tested + double-sided leaves. Trunks
 // stay opaque + single-sided (BACK-face culled).
+//
+// Branches use a dark-green baseColor rather than white. Rationale: the near-
+// detail render samples the leaf DDS at full res so the tint is barely
+// visible over the real texture colour. But Wicked's impostor capture
+// (captureImpostorPS.hlsl) falls back to `color = 1` when the material's
+// BASECOLORMAP resource isn't valid yet — and then multiplies by input.color
+// which folds in material.baseColor. So a green baseColor gives us green
+// impostor blobs on distant trees even when the atlas capture races the DDS
+// upload. Trunks stay white — bark texture is always available in time,
+// and any bark-tint on the trunks would corrupt the near-detail render.
 static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranches )
 {
 	auto& scene = wi::scene::GetScene();
@@ -150,7 +171,10 @@ static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranch
 	wi::ecs::Entity matEntity = wi::ecs::CreateEntity();
 	wi::scene::MaterialComponent& mat = scene.materials.Create( matEntity );
 
-	mat.SetBaseColor ( XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	if ( isBranches )
+		mat.SetBaseColor( XMFLOAT4( 0.20f, 0.45f, 0.15f, 1.0f ) ); // dark canopy green
+	else
+		mat.SetBaseColor( XMFLOAT4( 1.0f,  1.0f,  1.0f,  1.0f ) );
 	mat.SetRoughness ( 1.0f );
 	mat.SetMetalness ( 0.0f );
 	mat.SetReflectance( 0.02f );
@@ -229,6 +253,10 @@ static void GGTrees_WickedSetup()
 		g_treePoolEntities[ i ] = e;
 	}
 
+	// Arm the impostor re-capture countdown so we bake the atlas again once
+	// the branches DDS finishes uploading (see comment on the constant).
+	g_impostorRecaptureFrames = GG_TREE_IMPOSTOR_RECAPTURE_FRAMES;
+
 	g_wickedTreesSetup = true;
 	wi::backlog::post( ( "GGTrees: real tree meshes ready ("
 		+ std::to_string( typesBuilt )    + " trunks, "
@@ -259,6 +287,20 @@ void GGTrees_WickedUpdate()
 	}
 
 	auto& scene = wi::scene::GetScene();
+
+	// Keep the impostor atlas dirty for the first N frames so Wicked recaptures
+	// once the branch DDS textures have finished uploading — otherwise the
+	// initial bake writes opaque-white leaf blobs (see comment on the constant).
+	if ( g_impostorRecaptureFrames > 0 )
+	{
+		for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
+		{
+			if ( g_treeMeshEntity[ t ] == wi::ecs::INVALID_ENTITY ) continue;
+			wi::scene::ImpostorComponent* imp = scene.impostors.GetComponent( g_treeMeshEntity[ t ] );
+			if ( imp ) imp->SetDirty();
+		}
+		g_impostorRecaptureFrames--;
+	}
 
 	uint32_t poolIndex = 0;
 	for ( uint32_t i = 0; i < numTotalTrees && poolIndex < GG_TREE_POOL_SIZE; i++ )
@@ -322,6 +364,7 @@ void GGTrees_WickedShutdown()
 		g_treeBranchesMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
 	}
 	g_wickedTreesSetup = false;
+	g_impostorRecaptureFrames = 0;
 }
 
 } // namespace GGTrees
