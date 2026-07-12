@@ -60,6 +60,9 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `CLICK_NODE` | `<node title>` | Click a storyboard node by title (case-insensitive). Level nodes load into editor, screen/splash nodes open the screen editor |
 | `SELECT_DEMO` | `<demo name>` | Select a demo by display name (case-insensitive) |
 | `LIST_DEMOS` | (none) | List all available demo games |
+| `LIST_PROJECTS` | (none) | List My Games projects (from `projectbank_list`). Populated when the hub renders — call `GET_STATE` first if empty |
+| `OPEN_PROJECT` | `<project name>` | Open a My Games project by name (case-insensitive). From hub only. Storyboard renders on next frame — poll `GET_STATE` |
+| `CLICK_ONLY_LEVEL` | (none) | Load the first storyboard level node with a level file assigned. Storyboard only. Convenience for single-level projects (TESTPRO1 pattern) — no need to know the level's title |
 | `WAIT` | `<milliseconds>` | Sleep up to 30000ms, then return state |
 | `SCREENSHOT` | (none) | Capture screenshot to `auto_screenshot.*` |
 | `GET_PERF_DATA` | (none) | Returns FPS, frame time, memory, VRAM, GPU adapter, scene counts, and visibility counts. Works in any state |
@@ -434,53 +437,72 @@ t=0; while [ $t -lt 60 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_resul
 
 **Tested**: Launch to editor in ~34 seconds total (2026-02-15).
 
-## Performance Testing: TESTPRO1 Island Level
+## Performance / Baseline Testing: TESTPRO1 Island Level
 
-For performance profiling work, use the **TESTPRO1** project (a user project on the **My Games** tab) and its **island level node**. TESTPRO1 is the default project MAX opens into on launch — no `SELECT_DEMO` or tab navigation needed.
+For performance profiling AND for the DX11-vs-DX12 visual A/B (see `SCRATCHPAD.md` — the island scene has a saved camera baseline), use the **TESTPRO1** project (a user project on the **My Games** tab) and its **island level node**.
 
 ### Why TESTPRO1 Island Level
 
-Island Showdown (via Demo Games) is the largest/most demanding demo but requires `SELECT_DEMO` + tab switching. TESTPRO1's island level is the preferred performance testing target because:
-- It's the default project on launch (no hub navigation needed)
-- It has a large island terrain level suitable for profiling terrain, rendering, and animation costs
-- Faster to reach from cold launch
+- Single-level project (only one `type=level` storyboard node → `CLICK_ONLY_LEVEL` works without knowing the title)
+- Large island terrain — good coverage of terrain/tree/grass/lighting paths
+- Saved camera baseline in the .fpm — repeatable framing without harness camera commands
+- Fills quickly from cold launch (no `SELECT_DEMO`, no tab-navigating a huge demo list)
 
-### Sequence: Launch -> TESTPRO1 Storyboard -> Island Level -> Editor
+### Sequence: Launch → TESTPRO1 → Island → Editor (fully autonomous)
+
+Prior versions of this sequence tried `CLICK edit_game` for My Games projects — that path silently no-ops because it needs `bProjectExistsAndValidToUse` which is only set by an in-app mouse click. Use `OPEN_PROJECT` instead (added 2026-07-12):
 
 ```bash
 D="D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
 
-# 1. Launch the app (background) — opens to hub with TESTPRO1 selected on My Games tab
-cd "$D" && ./GameGuruMAX.exe &
+send_cmd() {
+  rm -f "$D/auto_result.txt"
+  echo "$1" > "$D/auto_command.txt"
+  local t=0
+  local timeout=${2:-30}
+  while [ $t -lt $timeout ]; do
+    if [ -f "$D/auto_result.txt" ]; then cat "$D/auto_result.txt"; return 0; fi
+    sleep 1; t=$((t+1))
+  done
+  echo "TIMEOUT: $1"; return 1
+}
 
-# 2. Wait for hub
-sleep 3
-rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
-t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+# 1. Kill any existing MAX (must be closed before re-launch OR before build)
+taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true
+sleep 2
+
+# 2. Launch (background)
+cd "$D" && ./GameGuruMAX.exe &
+sleep 8
+
+# 3. Confirm hub (welcome screen rendered → projectbank_list populated)
+send_cmd "GET_STATE" 30
 # Expected: STATE: hub / TAB: my_games
 
-# 3. Edit Game (hub -> storyboard) — TESTPRO1 is already selected by default
-sleep 2
-rm -f "$D/auto_result.txt"; echo "CLICK edit_game" > "$D/auto_command.txt"
-t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+# 4. Open TESTPRO1 — sets TriggerLoadGameProject + toggles bStoryboardWindow;
+#    process_storeboard picks it up on the next frame
+send_cmd "OPEN_PROJECT TESTPRO1" 15
 
-# 4. Confirm storyboard and discover level nodes
-sleep 5
-rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
-t=0; while [ $t -lt 30 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
-# Expected: STATE: storyboard / PROJECT: TESTPRO1 / NODES(...): ... look for type=level with "island" in title
+# 5. Wait for storyboard render, verify it loaded
+sleep 6
+send_cmd "GET_STATE" 30
+# Expected: STATE: storyboard / PROJECT: TESTPRO1 / NODES(...) includes island
 
-# 5. Click the island level node (use the title from GET_STATE output, case-insensitive)
-rm -f "$D/auto_result.txt"; echo "CLICK_NODE island" > "$D/auto_command.txt"
-t=0; while [ $t -lt 15 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
+# 6. Click the (only) level node — no need to know its title
+send_cmd "CLICK_ONLY_LEVEL" 15
 
-# 6. Wait for level load (island levels are large, use long timeout)
-sleep 15
-rm -f "$D/auto_result.txt"; echo "GET_STATE" > "$D/auto_command.txt"
-t=0; while [ $t -lt 60 ]; do [ -f "$D/auto_result.txt" ] && { cat "$D/auto_result.txt"; break; }; sleep 1; t=$((t+1)); done
-# If still loading, wait more
+# 7. Wait for editor state (island load is slow, use 25s + 60s poll)
+sleep 25
+send_cmd "GET_STATE" 60
 # Expected: STATE: editor
+
+# 8. Settle then screenshot
+sleep 8
+send_cmd "SCREENSHOT" 15
+# Screenshot lands under Files/screenshots/sc_*.png (timestamped filename)
 ```
+
+**Verified 2026-07-12**: full sequence completes in ~50 seconds from kill-and-launch to screenshot on disk. `island.fpm` (v342 map.ele) loads through the pre-release entity-load version guard — entity props silently absent, but terrain / trees / grass / paint all render.
 
 ### Performance Data Collection (from editor or test game)
 

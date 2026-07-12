@@ -77,6 +77,12 @@ float GetTotalVramUsage(void);
 extern std::vector<sLibraryList> g_LibraryFileList;
 extern bool bTriggerEditDemoGame;
 
+// My Games projects list (populated by GetProjectList("projectbank\\", ...) whenever the
+// hub renders; see M-GridEditB_part16.cpp:627). One string per user project folder.
+#include <vector>
+#include <string>
+extern std::vector<std::string> projectbank_list;
+
 // Storyboard data (StoryboardStruct defined in imgui_gg_dx11.h, included via M-GridEditB.h)
 extern StoryboardStruct Storyboard;
 
@@ -576,6 +582,137 @@ static void Cmd_SelectDemo(const char* demoName, char* result, int resultSize)
 	}
 
 	_snprintf(result, resultSize, "ERROR: Demo '%s' not found in library (%d demos loaded)", demoName, (int)g_LibraryFileList.size());
+	result[resultSize - 1] = 0;
+}
+
+// ---------------------------------------------------------------------------
+// My Games project handlers
+// ---------------------------------------------------------------------------
+// The My Games tab drives a different code path than demo_games. When the user
+// double-clicks a project card at M-GridEditB_part16.cpp:1044, the handler sets
+// TriggerLoadGameProject + toggles bWelcomeScreen_Window / bStoryboardWindow.
+// process_storeboard() then picks up TriggerLoadGameProject at
+// M-GridEditB_part19.cpp:202 and calls load_storyboard() on the next frame.
+// We replicate that here — see project memory "harness-open-my-games".
+
+static void Cmd_ListProjects(char* result, int resultSize)
+{
+	int written = _snprintf(result, resultSize, "PROJECT_COUNT: %d\n", (int)projectbank_list.size());
+	if (projectbank_list.empty())
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"NOTE: list not yet populated — call GET_STATE after the hub has rendered at least once\n");
+	}
+	for (int i = 0; i < (int)projectbank_list.size() && written < resultSize - 128; i++)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"  [%d] %s\n", i, projectbank_list[i].c_str());
+	}
+	result[resultSize - 1] = 0;
+}
+
+static void Cmd_OpenProject(const char* projectName, char* result, int resultSize)
+{
+	if (!projectName || !projectName[0])
+	{
+		_snprintf(result, resultSize, "ERROR: OPEN_PROJECT requires a project name argument");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	if (!bWelcomeScreen_Window)
+	{
+		_snprintf(result, resultSize, "ERROR: OPEN_PROJECT must be run from hub (welcome screen not visible)");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	if (projectbank_list.empty())
+	{
+		_snprintf(result, resultSize,
+			"ERROR: projectbank_list is empty — the hub renderer populates it on first frame; try GET_STATE once then retry");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	// Case-insensitive name match against the projectbank folder list.
+	int foundIndex = -1;
+	for (int i = 0; i < (int)projectbank_list.size(); i++)
+	{
+		if (_stricmp(projectbank_list[i].c_str(), projectName) == 0)
+		{
+			foundIndex = i;
+			break;
+		}
+	}
+
+	if (foundIndex < 0)
+	{
+		int written = _snprintf(result, resultSize,
+			"ERROR: project '%s' not found (%d available):", projectName, (int)projectbank_list.size());
+		for (int i = 0; i < (int)projectbank_list.size() && written < resultSize - 64; i++)
+		{
+			written += _snprintf(result + written, resultSize - written, " '%s'", projectbank_list[i].c_str());
+		}
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	// Copy the resolved name into a static buffer so TriggerLoadGameProject (cstr) has a
+	// stable const char* to consume even if projectbank_list re-sorts before the next
+	// frame's process_storeboard() picks up the trigger.
+	static char s_openProjectName[260];
+	strncpy(s_openProjectName, projectbank_list[foundIndex].c_str(), sizeof(s_openProjectName) - 1);
+	s_openProjectName[sizeof(s_openProjectName) - 1] = 0;
+
+	// Replicate the double-click handler at M-GridEditB_part16.cpp:1121:
+	//   TriggerLoadGameProject = <name>;
+	//   bWelcomeScreen_Window = false;
+	//   bStoryboardWindow = true;
+	TriggerLoadGameProject = s_openProjectName;
+	bWelcomeScreen_Window = false;
+	bStoryboardWindow = true;
+
+	_snprintf(result, resultSize,
+		"OK: Opening project '%s' (index %d of %d) — storyboard will render on next frame",
+		s_openProjectName, foundIndex, (int)projectbank_list.size());
+	result[resultSize - 1] = 0;
+}
+
+// Convenience: click the FIRST storyboard node whose type=level and level_name
+// is non-empty. TESTPROJ1 style — one level, don't want to require the caller
+// to know its exact title.
+static void Cmd_ClickOnlyLevel(char* result, int resultSize)
+{
+	if (!bStoryboardWindow)
+	{
+		_snprintf(result, resultSize, "ERROR: CLICK_ONLY_LEVEL must be run from storyboard view");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	for (int i = 0; i < STORYBOARD_MAXNODES; i++)
+	{
+		if (!Storyboard.Nodes[i].used) continue;
+		const StoryboardNodesStruct& n = Storyboard.Nodes[i];
+		if (n.type != STORYBOARD_TYPE_LEVEL) continue;
+		if (strlen(n.level_name) == 0) continue;
+
+		// Mirror Cmd_ClickNode's level-load path.
+		strcpy(cDirectOpen, n.level_name);
+		iLaunchAfterSync = 7;
+		iSkibFramesBeforeLaunch = 5;
+		bCloseStoryboardAfterLoad = true;
+		iLevelEditorFromStoryboardID = i;
+
+		_snprintf(result, resultSize,
+			"OK: Loading first level node '%s' (file: %s, index: %d)",
+			n.title, n.level_name, i);
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	_snprintf(result, resultSize, "ERROR: No level node with an assigned level file found in storyboard");
 	result[resultSize - 1] = 0;
 }
 
@@ -1488,6 +1625,18 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "SELECT_DEMO") == 0)
 	{
 		Cmd_SelectDemo(arg, result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "LIST_PROJECTS") == 0)
+	{
+		Cmd_ListProjects(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "OPEN_PROJECT") == 0)
+	{
+		Cmd_OpenProject(arg, result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "CLICK_ONLY_LEVEL") == 0)
+	{
+		Cmd_ClickOnlyLevel(result, sizeof(result));
 	}
 	else if (_stricmp(cmd, "GET_PERF_DATA") == 0)
 	{
