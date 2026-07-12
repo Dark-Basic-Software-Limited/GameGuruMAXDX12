@@ -1,162 +1,167 @@
-// GGTrees_part2.cpp — Phase 5: Colored cylinder tree placeholders on the new
-// Wicked Engine terrain. Grown from `pAllTrees[]` (positions/type/scale set by
-// the DX11-era GGTrees data pipeline) via a shared cylinder MeshComponent + a
-// small fixed pool of ObjectComponents. Real LOD tree meshes come post-Phase-6.
+// GGTrees_part2.cpp — Phase 5 Stage 2: Real trunk meshes on the new Wicked
+// Engine terrain. Retires the Stage 1 cylinder placeholder in favour of the
+// authored DX11 trunk geometry + trunk textures baked into TreeMeshes/*_trunk_*.h.
 //
-// Colors match the tree reference overlay (`referenceColors[32]` in
-// GGTerrainVirtualPBR_PS.hlsl) so each cylinder lines up in hue with the
-// 3-pixel dot the overlay stamps at the same tree position — one glance at
-// the terrain confirms placement + type correspondence.
+// One shared MeshComponent + MaterialComponent per tree type (38 total); a
+// fixed 10000-slot ObjectComponent pool swaps meshID every frame to match
+// pTree->GetType(). Branches, wind, and billboards come in later stages.
+//
+// Coordinate space: TreeMeshHigh vertex positions are authored in world inches
+// (a pine trunk spans roughly -20..+20 x/z with authored height ~512" ≈ 13m at
+// scale 1.0). Per-tree TransformComponent applies a UNIFORM scale of
+// pTree->GetScaleFloat() (~0.5–1.5) plus a translate to pTree->x/y/z — pTree->y
+// is already terrain-height minus the DX11 slope adjustment (see
+// GGTrees_UpdateInstances), so trunks sit correctly on the terrain.
+//
+// Normals: TreeMeshHigh stores the normal packed as R8G8B8A8_UNORM in the uint32
+// `normal` field. DX11's input layout at GGTrees_part0.cpp:1231 confirms this.
+// Unpack via byte/127.5 - 1.0 to recover [-1,1] per component.
 //
 // Included by GGTrees.cpp unity build; lives inside `namespace GGTrees` so
-// pAllTrees / numTotalTrees / InstanceTree resolve without qualification.
+// pAllTrees / numTotalTrees / InstanceTree / g_GGTrees resolve without qualification.
 
 namespace GGTrees
 {
 
-// Pool size caps the number of visible-tree cylinders per frame. pAllTrees[]
-// is 400000 but visible trees in a typical level are well under this cap.
+// Pool caps visible-tree draws per frame. numTotalTrees is 400000 but most are
+// invisible in any typical level.
 static constexpr uint32_t GG_TREE_POOL_SIZE  = 10000;
-static constexpr uint32_t GG_TREE_CYL_SIDES  = 12;
+// Hardcoded here to keep this file free of the HLSL-flavoured numTreeTypes
+// constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
+static constexpr uint32_t GG_TREE_TYPES      = 38;
 
-// Trunk dimensions in world inches (GG uses 1 unit = 1 inch, so 30" ≈ 0.75 m
-// radius and 400" ≈ 10 m height at scale 1.0). Multiplied by pTree->GetScaleFloat()
-// per tree (typically 0.5–1.5).
-static constexpr float GG_TREE_TRUNK_RADIUS  = 30.0f;
-static constexpr float GG_TREE_TRUNK_HEIGHT  = 400.0f;
+static bool             g_wickedTreesSetup   = false;
+static std::string      g_treesExeDir;
 
-// Same 32-color palette used by the reference-overlay pixel shader
-// (GGTerrainVirtualPBR_PS.hlsl:referenceColors). Type index masked with 31
-// matches the shader — types 32..37 alias back to 0..5, which is fine as long
-// as the cylinders line up in hue with the overlay dots.
-static const XMFLOAT4 g_treeReferenceColors[ 32 ] =
-{
-	{ 0.18f, 0.55f, 0.15f, 1.0f },  //  0
-	{ 0.95f, 0.85f, 0.25f, 1.0f },  //  1
-	{ 0.76f, 0.70f, 0.50f, 1.0f },  //  2
-	{ 0.10f, 0.40f, 0.10f, 1.0f },  //  3
-	{ 0.55f, 0.55f, 0.55f, 1.0f },  //  4
-	{ 0.90f, 0.30f, 0.10f, 1.0f },  //  5
-	{ 0.20f, 0.60f, 0.85f, 1.0f },  //  6
-	{ 0.80f, 0.20f, 0.60f, 1.0f },  //  7
-	{ 0.95f, 0.60f, 0.10f, 1.0f },  //  8
-	{ 0.30f, 0.80f, 0.70f, 1.0f },  //  9
-	{ 0.70f, 0.10f, 0.10f, 1.0f },  // 10
-	{ 0.50f, 0.85f, 0.20f, 1.0f },  // 11
-	{ 0.35f, 0.20f, 0.70f, 1.0f },  // 12
-	{ 0.90f, 0.75f, 0.55f, 1.0f },  // 13
-	{ 0.10f, 0.35f, 0.55f, 1.0f },  // 14
-	{ 0.85f, 0.85f, 0.10f, 1.0f },  // 15
-	{ 0.60f, 0.30f, 0.15f, 1.0f },  // 16
-	{ 0.40f, 0.80f, 0.40f, 1.0f },  // 17
-	{ 0.75f, 0.45f, 0.75f, 1.0f },  // 18
-	{ 0.25f, 0.65f, 0.45f, 1.0f },  // 19
-	{ 0.90f, 0.45f, 0.45f, 1.0f },  // 20
-	{ 0.45f, 0.45f, 0.80f, 1.0f },  // 21
-	{ 0.80f, 0.65f, 0.20f, 1.0f },  // 22
-	{ 0.55f, 0.85f, 0.85f, 1.0f },  // 23
-	{ 0.85f, 0.35f, 0.35f, 1.0f },  // 24
-	{ 0.35f, 0.70f, 0.20f, 1.0f },  // 25
-	{ 0.65f, 0.20f, 0.45f, 1.0f },  // 26
-	{ 0.95f, 0.70f, 0.40f, 1.0f },  // 27
-	{ 0.20f, 0.50f, 0.70f, 1.0f },  // 28
-	{ 0.70f, 0.70f, 0.30f, 1.0f },  // 29
-	{ 0.50f, 0.30f, 0.50f, 1.0f },  // 30
-	{ 0.80f, 0.80f, 0.80f, 1.0f },  // 31
-};
+// Per-tree-type shared assets.
+static wi::ecs::Entity  g_treeTrunkMeshEntity[     GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
+static wi::ecs::Entity  g_treeTrunkMaterialEntity[ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
 
-static bool             g_wickedTreesSetup    = false;
-static wi::ecs::Entity  g_treeMeshEntity      = wi::ecs::INVALID_ENTITY;
-static wi::ecs::Entity  g_treeMaterialEntity  = wi::ecs::INVALID_ENTITY;
+// Fixed pool of ObjectComponents. meshID is (re)assigned every frame based on
+// which tree type the slot represents.
 static wi::ecs::Entity  g_treePoolEntities[ GG_TREE_POOL_SIZE ] = { wi::ecs::INVALID_ENTITY };
 
-static void GGTrees_WickedSetup()
+// Build a Wicked MeshComponent from a TreeMeshHigh (DX11 authored trunk mesh).
+// Converts VertexTreeHigh (pos + packed uint32 normal + UV) into
+// vertex_positions / vertex_normals / vertex_uvset_0, and uint16 indices into
+// uint32. Attaches the given material as the single subset.
+static wi::ecs::Entity BuildTrunkMesh( const TreeMeshHigh* tm, wi::ecs::Entity materialEntity )
 {
 	auto& scene = wi::scene::GetScene();
 
-	// --- (1) Shared cylinder mesh --------------------------------------------------
-	// Unit cylinder: base ring at Y=0, top ring at Y=1, radius=1. Per-tree
-	// TransformComponent supplies the real world dimensions via non-uniform scale.
-	// Side walls only (no caps) — cheaper, and trees are only ever viewed from the
-	// side. Radial per-vertex normals so lighting reads round even at 12 segments.
-	g_treeMeshEntity = wi::ecs::CreateEntity();
-	wi::scene::MeshComponent& mesh = scene.meshes.Create( g_treeMeshEntity );
+	wi::ecs::Entity meshEntity = wi::ecs::CreateEntity();
+	wi::scene::MeshComponent& mesh = scene.meshes.Create( meshEntity );
 
-	mesh.vertex_positions.reserve( GG_TREE_CYL_SIDES * 2 );
-	mesh.vertex_normals  .reserve( GG_TREE_CYL_SIDES * 2 );
-	for ( uint32_t i = 0; i < GG_TREE_CYL_SIDES; i++ )
+	mesh.vertex_positions.reserve( tm->numVertices );
+	mesh.vertex_normals  .reserve( tm->numVertices );
+	mesh.vertex_uvset_0  .reserve( tm->numVertices );
+	for ( uint32_t v = 0; v < tm->numVertices; v++ )
 	{
-		float theta = ( (float)i / (float)GG_TREE_CYL_SIDES ) * 6.28318530718f;
-		float cx = cosf( theta );
-		float sz = sinf( theta );
-		// Bottom ring, then top ring — interleaved so a side quad is 4
-		// consecutive verts around the cylinder.
-		mesh.vertex_positions.push_back( XMFLOAT3( cx, 0.0f, sz ) );
-		mesh.vertex_normals  .push_back( XMFLOAT3( cx, 0.0f, sz ) );
-		mesh.vertex_positions.push_back( XMFLOAT3( cx, 1.0f, sz ) );
-		mesh.vertex_normals  .push_back( XMFLOAT3( cx, 0.0f, sz ) );
+		const VertexTreeHigh& src = tm->pVertices[ v ];
+		mesh.vertex_positions.push_back( XMFLOAT3( src.x, src.y, src.z ) );
+
+		// R8G8B8A8_UNORM normal → XMFLOAT3 in [-1,1]. Little-endian byte order
+		// matches DX11 input layout at GGTrees_part0.cpp:1231.
+		uint32_t n = src.normal;
+		float nx = ( (float)( ( n >>  0 ) & 0xFF ) ) / 127.5f - 1.0f;
+		float ny = ( (float)( ( n >>  8 ) & 0xFF ) ) / 127.5f - 1.0f;
+		float nz = ( (float)( ( n >> 16 ) & 0xFF ) ) / 127.5f - 1.0f;
+		mesh.vertex_normals.push_back( XMFLOAT3( nx, ny, nz ) );
+
+		mesh.vertex_uvset_0.push_back( XMFLOAT2( src.u, src.v ) );
 	}
 
-	mesh.indices.reserve( GG_TREE_CYL_SIDES * 6 );
-	for ( uint32_t i = 0; i < GG_TREE_CYL_SIDES; i++ )
-	{
-		uint32_t i0 = ( i * 2 );
-		uint32_t i1 = ( i * 2 ) + 1;
-		uint32_t i2 = ( ( ( i + 1 ) % GG_TREE_CYL_SIDES ) * 2 );
-		uint32_t i3 = ( ( ( i + 1 ) % GG_TREE_CYL_SIDES ) * 2 ) + 1;
-		// Two triangles per side quad. CCW winding when viewed from outside.
-		mesh.indices.push_back( i0 ); mesh.indices.push_back( i1 ); mesh.indices.push_back( i3 );
-		mesh.indices.push_back( i0 ); mesh.indices.push_back( i3 ); mesh.indices.push_back( i2 );
-	}
+	mesh.indices.reserve( tm->numIndices );
+	for ( uint32_t i = 0; i < tm->numIndices; i++ )
+		mesh.indices.push_back( (uint32_t)tm->pIndices[ i ] );
 
-	// --- (2) Shared material -------------------------------------------------------
-	// Plain white PBR base — per-tree tint comes from ObjectComponent.color, which
-	// multiplies the baseColor in the fragment shader. This keeps one material for
-	// the whole pool while still giving each cylinder its own type-coded color.
-	g_treeMaterialEntity = wi::ecs::CreateEntity();
-	wi::scene::MaterialComponent& mat = scene.materials.Create( g_treeMaterialEntity );
-	mat.SetBaseColor( XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f ) );
-	mat.SetRoughness( 1.0f );
-	mat.SetMetalness( 0.0f );
-	mat.SetReflectance( 0.02f );
-	mat.CreateRenderData();
-
-	// --- (3) One subset covering the whole cylinder --------------------------------
 	wi::scene::MeshComponent::MeshSubset subset;
-	subset.materialID  = g_treeMaterialEntity;
+	subset.materialID  = materialEntity;
 	subset.indexOffset = 0;
-	subset.indexCount  = (uint32_t)mesh.indices.size();
+	subset.indexCount  = tm->numIndices;
 	mesh.subsets.push_back( subset );
 	mesh.CreateRenderData();
 
-	// --- (4) Entity pool ----------------------------------------------------------
-	// Each slot has its own ObjectComponent (points at the shared mesh) and its own
-	// TransformComponent (per-frame position/scale). Starts hidden until the update
-	// loop assigns it to a tree this frame.
+	return meshEntity;
+}
+
+// Build a PBR MaterialComponent that samples the trunk DDS as basecolor.
+// Trees are matte bark — roughness 1.0, metalness 0, low reflectance. Same
+// pattern SetupTerrainMaterial (GGTerrainWicked.cpp) uses for terrain layers.
+static wi::ecs::Entity BuildTrunkMaterial( const char* textureName )
+{
+	auto& scene = wi::scene::GetScene();
+
+	wi::ecs::Entity matEntity = wi::ecs::CreateEntity();
+	wi::scene::MaterialComponent& mat = scene.materials.Create( matEntity );
+
+	mat.SetBaseColor ( XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	mat.SetRoughness ( 1.0f );
+	mat.SetMetalness ( 0.0f );
+	mat.SetReflectance( 0.005f );
+
+	char colorPath[ 512 ];
+	sprintf_s( colorPath, "%s/Files/treebank/textures/%s", g_treesExeDir.c_str(), textureName );
+	mat.textures[ wi::scene::MaterialComponent::BASECOLORMAP ].name = colorPath;
+
+	mat.SetTextureStreamingDisabled( true );
+	mat.CreateRenderData();
+
+	return matEntity;
+}
+
+static void GGTrees_WickedSetup()
+{
+	// Capture EXE directory once — trunk DDS lookups need CWD-independent paths.
+	g_treesExeDir = wi::helper::GetDirectoryFromPath( wi::helper::GetExecutablePath() );
+	if ( !g_treesExeDir.empty() && ( g_treesExeDir.back() == '/' || g_treesExeDir.back() == '\\' ) )
+		g_treesExeDir.pop_back();
+
+	auto& scene = wi::scene::GetScene();
+
+	// Build one MeshComponent + MaterialComponent per tree type. Types with a
+	// null trunk pointer (none currently in LOD0, but the field is nullable so
+	// we handle it defensively) leave their slot at INVALID_ENTITY — the update
+	// loop skips slots that resolve to no mesh.
+	uint32_t typesBuilt = 0;
+	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
+	{
+		const GGTree& tree = g_GGTrees[ t ];
+		if ( !tree.trunk ) continue;
+
+		g_treeTrunkMaterialEntity[ t ] = BuildTrunkMaterial( tree.trunk->textureName );
+		g_treeTrunkMeshEntity    [ t ] = BuildTrunkMesh( tree.trunk, g_treeTrunkMaterialEntity[ t ] );
+		typesBuilt++;
+	}
+
+	// Entity pool. Each slot has an ObjectComponent (meshID assigned per frame)
+	// and a TransformComponent (position/scale per frame). Starts hidden until
+	// the update loop finds it a tree to represent.
 	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
 	{
 		wi::ecs::Entity e = wi::ecs::CreateEntity();
 		wi::scene::ObjectComponent& obj = scene.objects.Create( e );
-		obj.meshID = g_treeMeshEntity;
 		obj.SetRenderable( false );
 		scene.transforms.Create( e );
 		g_treePoolEntities[ i ] = e;
 	}
 
 	g_wickedTreesSetup = true;
-	wi::backlog::post( ( "GGTrees: wicked cylinder pool ready ("
-		+ std::to_string( GG_TREE_POOL_SIZE ) + " slots, " + std::to_string( GG_TREE_CYL_SIDES )
-		+ "-sided cylinder)" ).c_str() );
+	wi::backlog::post( ( "GGTrees: real trunk meshes ready ("
+		+ std::to_string( typesBuilt ) + " types, "
+		+ std::to_string( GG_TREE_POOL_SIZE ) + " pool slots)" ).c_str() );
 }
 
 void GGTrees_WickedInit()
 {
-	// Nothing eager here — the setup path needs the scene to be live and MSAA-free
-	// (same phase requirement as SetupWickedGrass / SetupWickedTerrainMaterials).
-	// Lazy first-touch in GGTrees_WickedUpdate keeps ordering safe.
-	g_wickedTreesSetup   = false;
-	g_treeMeshEntity     = wi::ecs::INVALID_ENTITY;
-	g_treeMaterialEntity = wi::ecs::INVALID_ENTITY;
+	// Lazy setup on first update — same phase ordering as SetupWickedGrass /
+	// SetupWickedTerrainMaterials. State reset here only.
+	g_wickedTreesSetup = false;
+	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
+	{
+		g_treeTrunkMeshEntity    [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeTrunkMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
+	}
 	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
 }
@@ -176,29 +181,32 @@ void GGTrees_WickedUpdate()
 		InstanceTree* pTree = &pAllTrees[ i ];
 		if ( !pTree->IsVisible() || pTree->IsInvalid() || pTree->IsFlattened() ) continue;
 
+		uint32_t type = (uint32_t)pTree->GetType();
+		if ( type >= GG_TREE_TYPES ) continue;
+		wi::ecs::Entity trunkMesh = g_treeTrunkMeshEntity[ type ];
+		if ( trunkMesh == wi::ecs::INVALID_ENTITY ) continue;
+
 		wi::ecs::Entity e = g_treePoolEntities[ poolIndex ];
 		wi::scene::ObjectComponent*     obj   = scene.objects   .GetComponent( e );
 		wi::scene::TransformComponent*  xform = scene.transforms.GetComponent( e );
 		if ( !obj || !xform ) { poolIndex++; continue; }
 
-		float treeScale = pTree->GetScaleFloat();  // ~0.5–1.5
+		// Swap in this tree's mesh for the pool slot. Wicked's per-object AABB
+		// derives from mesh AABB × transform, so culling picks this up
+		// automatically on the next scene update.
+		obj->meshID = trunkMesh;
+		obj->SetRenderable( true );
+
+		float scale = pTree->GetScaleFloat();  // ~0.5–1.5
 		xform->ClearTransform();
-		xform->Scale( XMFLOAT3(
-			GG_TREE_TRUNK_RADIUS * treeScale,
-			GG_TREE_TRUNK_HEIGHT * treeScale,
-			GG_TREE_TRUNK_RADIUS * treeScale ) );
+		xform->Scale    ( XMFLOAT3( scale, scale, scale ) );
 		xform->Translate( XMFLOAT3( pTree->x, pTree->y, pTree->z ) );
 		xform->UpdateTransform();
-
-		int type = pTree->GetType();
-		obj->color = g_treeReferenceColors[ type & 31 ];
-		obj->SetRenderable( true );
 
 		poolIndex++;
 	}
 
-	// Hide any pool slots we didn't fill this frame — leftover from previous
-	// frame's larger tree count, or from a level with fewer trees than the cap.
+	// Hide any pool slots we didn't fill this frame.
 	for ( uint32_t i = poolIndex; i < GG_TREE_POOL_SIZE; i++ )
 	{
 		wi::ecs::Entity e = g_treePoolEntities[ i ];
@@ -219,11 +227,14 @@ void GGTrees_WickedShutdown()
 		if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
 	}
-	if ( g_treeMeshEntity     != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeMeshEntity );
-	if ( g_treeMaterialEntity != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeMaterialEntity );
-	g_treeMeshEntity     = wi::ecs::INVALID_ENTITY;
-	g_treeMaterialEntity = wi::ecs::INVALID_ENTITY;
-	g_wickedTreesSetup   = false;
+	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
+	{
+		if ( g_treeTrunkMeshEntity    [ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeTrunkMeshEntity    [ t ] );
+		if ( g_treeTrunkMaterialEntity[ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeTrunkMaterialEntity[ t ] );
+		g_treeTrunkMeshEntity    [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeTrunkMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
+	}
+	g_wickedTreesSetup = false;
 }
 
 } // namespace GGTrees
