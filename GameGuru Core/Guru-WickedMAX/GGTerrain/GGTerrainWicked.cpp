@@ -29,6 +29,15 @@ static std::string wickedTerrainExeDir;  // EXE directory for resolving texture 
 static int materialToSlot[GGTERRAIN_MAX_SOURCE_TEXTURES]; // GG 0-based mat index -> Wicked blendmap layer index
 static int maxPaintedSlot = -1;                            // highest blendmap layer used by any painted material
 
+// Path A: DX11-style CPU-computed blend weights (per-vertex) that override Wicked's built-in
+// smoothstep-based region weights. Wicked's 4-slot (base/slope/low/high) blend can't reproduce
+// GG's per-layer height ramps (see project_terrain_texture_mismatch.md). This system runs after
+// Generation_Update and rewrites blendmap_layers[0..maxAutoBlendSlot] to match GG's DX11 shader
+// logic exactly, giving mountains their green mid-altitude material instead of grey rock bleed.
+static int g_layer1MaterialSlot = -1;                             // Extra slot for layer[1] material (GG mat 0 by default)
+static std::unordered_set<uint64_t> dx11BlendProcessedKeys;       // Chunks already given DX11-shape auto weights
+static std::unordered_map<uint64_t, wi::ecs::Entity> dx11BlendChunkKeyToEntity;
+
 // Phase 3: Blendmap state tracking — which chunks have had painted weights applied
 static std::unordered_set<uint64_t> processedChunkKeys;
 // Track which entity was at each grid key when we last painted it.
@@ -198,9 +207,12 @@ static void SetupWickedTerrainMaterials()
 	//   high_alt = InverseLerp(0, topLevel, height) — increases as height goes above 0
 	// GG uses independent start/end thresholds per layer which don't map exactly, so these
 	// are approximate mappings that give visually similar results.
-	terrain->region1 = GGTerrain::ggterrain_global_render_params.slopeEnd[0];  // slope transition
-	terrain->region2 = 2.0f;   // low altitude (GG's low layer is at positive heights, poor Wicked mapping)
-	terrain->region3 = 1.0f;   // high altitude (tighter than default for visible mountain material)
+	// Wicked's built-in slope/altitude weights are overwritten every frame by
+	// ApplyDX11StyleAutoBlend below; these region values are left at safe defaults so any
+	// vertex the DX11 override misses (should be none) still gets a plausible base blend.
+	terrain->region1 = GGTerrain::ggterrain_global_render_params.slopeEnd[0];
+	terrain->region2 = 2.0f;
+	terrain->region3 = 1.0f;
 
 	// Phase 3: Initialize materialToSlot lookup — maps GG 0-based material index to Wicked blendmap layer
 	for (int i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES; i++)
@@ -213,10 +225,35 @@ static void SetupWickedTerrainMaterials()
 	materialToSlot[highMat] = wi::terrain::MATERIAL_HIGH_ALTITUDE;
 	maxPaintedSlot = wi::terrain::MATERIAL_HIGH_ALTITUDE;  // 3
 
+	// Path A: register GG layer[1]'s material as slot 4 so the CPU-computed DX11 blend can
+	// place its weight there. This is the "mid altitude" band material (heights 180-360 in
+	// TESTPRO1 island) that DX11 fully REPLACES base with above height 360 — Wicked's 4-slot
+	// auto blend has no equivalent. Skip if the layer[1] material already occupies one of
+	// the 4 auto slots (nothing to add).
+	int layer1Mat = GGTerrain::ggterrain_global_render_params.layerMatIndex[1] & 0xFF;
+	g_layer1MaterialSlot = -1;
+	int numExtraMaterials = 0;
+	if (materialToSlot[layer1Mat] < 0)
+	{
+		int newSlot = wi::terrain::MATERIAL_COUNT;  // 4
+		materialToSlot[layer1Mat] = newSlot;
+		while ((int)terrain->materialEntities.size() <= newSlot)
+			terrain->materialEntities.push_back(wi::ecs::INVALID_ENTITY);
+		terrain->materialEntities[newSlot] = wi::ecs::CreateEntity();
+		scene.Component_Attach(terrain->materialEntities[newSlot], wickedTerrainEntity);
+		SetupTerrainMaterial(scene, terrain->materialEntities[newSlot], layer1Mat);
+		maxPaintedSlot = newSlot;
+		g_layer1MaterialSlot = newSlot;
+		numExtraMaterials = 1;
+	}
+	else
+	{
+		g_layer1MaterialSlot = materialToSlot[layer1Mat];
+	}
+
 	// Scan material map for unique painted materials not already in auto slots
 	const uint8_t* matMap = GGTerrain::GGTerrain_GetMaterialMapPtr();
 	int mapRes = GGTerrain::GGTerrain_GetMaterialMapResolution();
-	int numExtraMaterials = 0;
 
 	if (matMap && mapRes > 0)
 	{
@@ -254,6 +291,8 @@ static void SetupWickedTerrainMaterials()
 	// Reset blendmap tracking so all chunks get reprocessed with new materials
 	processedChunkKeys.clear();
 	chunkKeyToEntity.clear();
+	dx11BlendProcessedKeys.clear();
+	dx11BlendChunkKeyToEntity.clear();
 
 	// Restart generation to pick up all materials (auto + painted)
 	// Generation_Restart() deep-copies the materials internally
@@ -263,6 +302,194 @@ static void SetupWickedTerrainMaterials()
 	wi::backlog::post(std::string("GGTerrainWicked: materials setup complete (" +
 		std::to_string(numExtraMaterials) + " extra painted materials, maxSlot=" +
 		std::to_string(maxPaintedSlot) + ")").c_str());
+}
+
+// Path A: recompute per-vertex blendmap weights using DX11's terrain shader formula,
+// replacing Wicked's built-in smoothstep(0, regionN, x) blend that we can't reproduce with a
+// single scalar threshold. See project_terrain_texture_mismatch.md for the analysis.
+//
+// DX11 formula (from GGTerrainPageGenPS.hlsl:216-246):
+//   finalSurface = base
+//   for i in 0..5:
+//     t = clamp((height - layer[i].start) / (layer[i].end - layer[i].start), 0, 1)
+//     if t >= 1: finalSurface = REPLACE with layer[i]
+//     elif t > 0: finalSurface = LERP(finalSurface, layer[i], t)
+//   normaly = 1 - abs(normal.y)
+//   for i in 0..2:
+//     t = clamp((normaly - slope[i].start) / (slope[i].end - slope[i].start), 0, 1)
+//     if t >= 1: finalSurface = REPLACE with slope[i]
+//     elif t > 0: finalSurface = LERP(finalSurface, slope[i], t)
+//
+// Translated to Wicked's weight system: track (w_base, w_slope, w_low, w_high, w_layer1)
+// and apply each layer/slope as a proportional replace: all_weights *= (1-t), target += t.
+// Runs BEFORE ProcessPaintedChunkBlendmaps so painted materials still override correctly.
+static void ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
+{
+	if (!terrain) return;
+	auto& scene = wi::scene::GetScene();
+	const auto& rp = GGTerrain::ggterrain_global_render_params;
+	float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+
+	// Pre-compute reciprocal widths of layer/slope ramps.
+	float layerRcpWidth[5];
+	float layerStart[5];
+	for (int i = 0; i < 5; i++)
+	{
+		layerStart[i] = rp.layerStartHeight[i];
+		float w = rp.layerEndHeight[i] - rp.layerStartHeight[i];
+		layerRcpWidth[i] = (w > 0.001f) ? (1.0f / w) : 0.0f;
+	}
+	float slopeRcpWidth[2];
+	float slopeStart[2];
+	for (int i = 0; i < 2; i++)
+	{
+		slopeStart[i] = rp.slopeStart[i];
+		float w = rp.slopeEnd[i] - rp.slopeStart[i];
+		slopeRcpWidth[i] = (w > 0.001f) ? (1.0f / w) : 0.0f;
+	}
+
+	// Which Wicked slots each GG material family lands in.
+	int baseSlot  = wi::terrain::MATERIAL_BASE;           // baseLayerMaterial (typically mat 17 grass)
+	int slopeSlot = wi::terrain::MATERIAL_SLOPE;          // slopeMatIndex[0]   (typically mat 4 rock)
+	int lowSlot   = wi::terrain::MATERIAL_LOW_ALTITUDE;   // layerMatIndex[0]   (mat 2 sand on TESTPRO1)
+	int highSlot  = wi::terrain::MATERIAL_HIGH_ALTITUDE;  // layerMatIndex[2]   (mat 20 rock on TESTPRO1)
+	int layer1Slot = g_layer1MaterialSlot;                 // layerMatIndex[1]   (mat 0 mid-material) or -1
+
+	// Phase 1: Scan scene.objects (main-thread safe) to collect chunks that haven't had DX11 blend applied
+	struct PendingChunk {
+		wi::ecs::Entity entity;
+		int32_t cx, cz;
+		wi::scene::MeshComponent* mesh;
+		const wi::scene::TransformComponent* transform;
+	};
+	wi::vector<PendingChunk> pending;
+
+	for (size_t oi = 0; oi < scene.objects.GetCount(); oi++)
+	{
+		wi::scene::ObjectComponent& obj = scene.objects[oi];
+		wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(obj.meshID);
+		if (!mesh || mesh->vertex_positions.size() != wi::terrain::vertexCount) continue;
+		if (mesh->vertex_normals.size() != wi::terrain::vertexCount) continue;
+
+		wi::ecs::Entity entity = scene.objects.GetEntity(oi);
+		const wi::scene::TransformComponent* transform = scene.transforms.GetComponent(entity);
+		if (!transform) continue;
+
+		int32_t cx = (int32_t)std::round(transform->world._41 / chunkStride);
+		int32_t cz = (int32_t)std::round(transform->world._43 / chunkStride);
+		uint64_t key = MakeChunkKey(cx, cz);
+
+		if (dx11BlendProcessedKeys.count(key))
+		{
+			// Same regen-detection pattern as ProcessPaintedChunkBlendmaps
+			auto it = dx11BlendChunkKeyToEntity.find(key);
+			if (it != dx11BlendChunkKeyToEntity.end() && it->second != entity)
+			{
+				dx11BlendProcessedKeys.erase(key);
+				dx11BlendChunkKeyToEntity.erase(it);
+			}
+			else continue;
+		}
+
+		pending.push_back({ entity, cx, cz, mesh, transform });
+	}
+
+	if (pending.empty()) return;
+
+	// Phase 2: Cancel generation for safe chunk data access, then rewrite blendmaps
+	terrain->Generation_Cancel();
+
+	int chunksModified = 0;
+	int slotsNeeded = std::max(4, (layer1Slot >= 0 ? layer1Slot + 1 : 4));
+
+	for (auto& pc : pending)
+	{
+		uint64_t key = MakeChunkKey(pc.cx, pc.cz);
+		wi::terrain::ChunkData* chunk_data = nullptr;
+		for (auto& [chunk, cd] : terrain->chunks)
+		{
+			if (cd.entity == pc.entity) { chunk_data = &cd; break; }
+		}
+		if (!chunk_data) continue;
+		if (chunk_data->blendmap_layers.empty()) continue;  // generation not finished yet
+
+		dx11BlendProcessedKeys.insert(key);
+		dx11BlendChunkKeyToEntity[key] = pc.entity;
+
+		// Ensure enough blendmap layers exist for all slots we might write to
+		for (int i = 0; i < slotsNeeded; i++)
+			chunk_data->enable_blendmap_layer(i);
+
+		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.transform->world);
+
+		for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
+		{
+			XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), worldMatrix);
+			XMFLOAT3 worldPos;
+			XMStoreFloat3(&worldPos, wp);
+			float height = worldPos.y;
+
+			const XMFLOAT3& normal = pc.mesh->vertex_normals[vi];
+			float normaly = 1.0f - fabsf(normal.y);
+
+			// Per-slot weight accumulator. We only care about the 5 auto slots; anything else
+			// stays zero and will be overwritten by ProcessPaintedChunkBlendmaps if painted.
+			float w[8] = { 0 };
+			w[baseSlot] = 1.0f;
+
+			// Layer 0: replace/blend at height ramp
+			auto applyLayer = [&](int layerIdx, int targetSlot)
+			{
+				if (layerRcpWidth[layerIdx] == 0.0f) return; // start == end -> unused
+				float t = (height - layerStart[layerIdx]) * layerRcpWidth[layerIdx];
+				if (t <= 0.0f) return;
+				if (t > 1.0f) t = 1.0f;
+				for (int s = 0; s < 8; s++) w[s] *= (1.0f - t);
+				w[targetSlot] += t;
+			};
+			auto applySlope = [&](int slopeIdx, int targetSlot)
+			{
+				if (slopeRcpWidth[slopeIdx] == 0.0f) return;
+				float t = (normaly - slopeStart[slopeIdx]) * slopeRcpWidth[slopeIdx];
+				if (t <= 0.0f) return;
+				if (t > 1.0f) t = 1.0f;
+				for (int s = 0; s < 8; s++) w[s] *= (1.0f - t);
+				w[targetSlot] += t;
+			};
+
+			// DX11 iteration order: all layers, then all slopes.
+			applyLayer(0, lowSlot);
+			if (layer1Slot >= 0) applyLayer(1, layer1Slot);
+			applyLayer(2, highSlot);
+			// layers 3, 4 in TESTPRO1 have start==end (59055 marker) -> no-op via layerRcpWidth==0
+			applyLayer(3, highSlot);
+			applyLayer(4, highSlot);
+			applySlope(0, slopeSlot);
+			applySlope(1, slopeSlot);
+
+			chunk_data->blendmap_layers[baseSlot ].pixels[vi] = (uint8_t)(w[baseSlot ] * 255.0f);
+			chunk_data->blendmap_layers[slopeSlot].pixels[vi] = (uint8_t)(w[slopeSlot] * 255.0f);
+			chunk_data->blendmap_layers[lowSlot  ].pixels[vi] = (uint8_t)(w[lowSlot  ] * 255.0f);
+			chunk_data->blendmap_layers[highSlot ].pixels[vi] = (uint8_t)(w[highSlot ] * 255.0f);
+			if (layer1Slot >= 0 && layer1Slot < (int)chunk_data->blendmap_layers.size())
+				chunk_data->blendmap_layers[layer1Slot].pixels[vi] = (uint8_t)(w[layer1Slot] * 255.0f);
+		}
+
+		// Invalidate GPU blendmap texture and VT to trigger re-blend
+		chunk_data->blendmap = {};
+		terrain->CreateChunkRegionTexture(*chunk_data);
+		if (chunk_data->vt)
+			chunk_data->vt->invalidate();
+
+		chunksModified++;
+	}
+
+	if (chunksModified > 0)
+	{
+		wi::backlog::post(std::string("GGTerrainWicked: DX11-style auto blend on " +
+			std::to_string(chunksModified) + " chunks (layer1Slot=" +
+			std::to_string(layer1Slot) + ")").c_str());
+	}
 }
 
 // Phase 3: Process terrain chunks for painted material blendmaps.
@@ -1451,6 +1678,15 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 
 	// Let the VT system run — generates chunks, creates atlas, blends materials.
 	terrain->Generation_Update(camera);
+
+	// Path A: rewrite the auto material weights (slots 0-4) with DX11-shape blend, then let
+	// the painted-material pass overlay its own weights on painted vertices. Must run AFTER
+	// Generation_Update so blendmap layers exist, and BEFORE ProcessPaintedChunkBlendmaps so
+	// painting still wins on painted cells.
+	if (wickedTerrainMaterialsSetup)
+	{
+		ApplyDX11StyleAutoBlend(terrain);
+	}
 
 	// Phase 3: Process terrain chunks for painted material blendmaps AFTER Generation_Update.
 	// Must run after so the generation pipeline has finished creating default blendmaps for
