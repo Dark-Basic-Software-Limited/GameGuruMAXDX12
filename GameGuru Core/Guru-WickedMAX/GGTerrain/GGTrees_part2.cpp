@@ -34,15 +34,6 @@ static constexpr uint32_t GG_TREE_POOL_SIZE  = 10000;
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
 
-// Distance (world inches, 1"=1 unit) at which a tree switches from the full
-// trunk+branches MeshComponent to a Wicked ImpostorComponent billboard. Wicked
-// captures 36 angles around Y for each mesh into a shared atlas (impostorTextureDim
-// = 128 per angle in wiScene.h); the far renderer picks the closest angle and
-// draws a camera-facing quad. 2000 inches ≈ 50 m — anything past a mid-ground
-// clearing becomes a billboard, matching the visual density of DX11's
-// mountain-distance impostor path.
-static constexpr float    GG_TREE_IMPOSTOR_SWAP_IN = 2000.0f;
-
 static bool             g_wickedTreesSetup   = false;
 static std::string      g_treesExeDir;
 
@@ -154,7 +145,17 @@ static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranch
 	wi::ecs::Entity matEntity = wi::ecs::CreateEntity();
 	wi::scene::MaterialComponent& mat = scene.materials.Create( matEntity );
 
-	mat.SetBaseColor ( XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	// Branches get a dark forest-green base tint that folds into the impostor
+	// atlas capture (captureImpostorPS.hlsl falls back to color = 1 when the
+	// BASECOLORMAP texture isn't ready and then multiplies by input.color,
+	// which carries material.baseColor). Without this the atlas bakes pure
+	// white, and impostorPS's PBR lighting turns those white pixels into
+	// bright sun-lit blobs. Trunks stay white — their bark DDS is usually
+	// loaded by capture time so the atlas gets the real bark colour.
+	if ( isBranches )
+		mat.SetBaseColor( XMFLOAT4( 0.20f, 0.45f, 0.15f, 1.0f ) );
+	else
+		mat.SetBaseColor( XMFLOAT4( 1.0f,  1.0f,  1.0f,  1.0f ) );
 	mat.SetRoughness ( 1.0f );
 	mat.SetMetalness ( 0.0f );
 	mat.SetReflectance( 0.02f );
@@ -208,27 +209,36 @@ static void GGTrees_WickedSetup()
 			tree.trunk,    g_treeTrunkMaterialEntity[ t ],
 			tree.branches, branchesMat );
 
-		// Stage 4: attach an ImpostorComponent to the mesh entity. Wicked's
-		// scene update spots the impostor, bakes the mesh from 36 angles into
-		// its shared impostorArray texture, and clamps each rendering
-		// ObjectComponent's fadeDistance to swapInDistance (see wiScene.cpp
-		// line 4675-4679). Past that distance the object draws as a
-		// camera-facing quad from the atlas — near zero vertex cost per far
-		// tree. No per-frame CPU work from us.
-		wi::scene::ImpostorComponent& impostor = scene.impostors.Create( g_treeMeshEntity[ t ] );
-		impostor.swapInDistance = GG_TREE_IMPOSTOR_SWAP_IN;
-
+		// Stage 4 (deprecated 2026-07-13 evening): no ImpostorComponent.
+		// Wicked's impostor render path (wiRenderer.cpp:7298 RenderImpostors)
+		// draws via a separate DrawIndexedInstancedIndirect that does NOT
+		// respect ObjectComponent::IsNotVisibleInReflections. Result: water
+		// reflection pass drew impostor atlas quads as bright white splats
+		// (edge-alpha pixels sampled from the un-tinted capture). Since our
+		// nearest-N-to-camera pick fills the 10K pool with just the near
+		// trees anyway — the trees past swapInDistance would have been
+		// pixelated dot-scale billboards contributing minimal visual value
+		// for the ECS overhead — we drop the impostor path entirely. Far
+		// trees now just don't render; the pool covers what's visible.
 		typesBuilt++;
 	}
 
 	// Entity pool. Each slot has an ObjectComponent (meshID assigned per frame)
 	// and a TransformComponent (position/scale per frame). Starts hidden until
 	// the update loop finds it a tree to represent.
+	//
+	// SetNotVisibleInReflections(true): trees don't render into planar/water
+	// reflection passes. Prevents Stage 4 impostor billboards from showing up
+	// as bright white squares in the water (Wicked would otherwise render the
+	// impostor atlas quad in the reflection pass same as the main pass).
+	// One-shot flag, persists across every SetRenderable toggle from the
+	// update loop.
 	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
 	{
 		wi::ecs::Entity e = wi::ecs::CreateEntity();
 		wi::scene::ObjectComponent& obj = scene.objects.Create( e );
 		obj.SetRenderable( false );
+		obj.SetNotVisibleInReflections( true );
 		scene.transforms.Create( e );
 		g_treePoolEntities[ i ] = e;
 	}
