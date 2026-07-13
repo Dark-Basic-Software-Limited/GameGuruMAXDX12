@@ -19,13 +19,17 @@
 namespace GGTrees
 {
 
-// Pool caps visible-tree draws per frame. numTotalTrees is 400000 but most
-// are invisible in any typical level. The DX11 A/B baseline on TESTPRO1
-// (2026-07-12) shows the level has tens of thousands of visible trees; a
-// 100000 pool caught them all at FPS 10, a 10000 pool caught only foreground
-// at FPS 27. 30000 is a workable-editor compromise until Stage 4 billboards
-// let far trees cost near-nothing.
-static constexpr uint32_t GG_TREE_POOL_SIZE  = 30000;
+// Pool caps visible-tree ObjectComponents in the scene. Wicked's per-entity
+// ECS overhead is O(N) per frame regardless of what each object rasterizes
+// as (mesh or impostor), so we can't just crank this to numTotalTrees (400K)
+// without tanking FPS. 50K is empirically the ceiling that keeps FPS usable
+// on the DX11 A/B baseline.
+//
+// To ensure the pool is actually spent on the trees the player can see, the
+// update loop does a nearest-N-to-camera pick every frame instead of the
+// first-N-in-array-order (which used to leave the visible area sparse while
+// filling the pool with distant trees). See GGTrees_WickedUpdate.
+static constexpr uint32_t GG_TREE_POOL_SIZE  = 10000;
 // Hardcoded here to keep this file free of the HLSL-flavoured numTreeTypes
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
@@ -52,17 +56,6 @@ static wi::ecs::Entity  g_treeBranchesMaterialEntity[ GG_TREE_TYPES ] = { wi::ec
 // Fixed pool of ObjectComponents. meshID is (re)assigned every frame based on
 // which tree type the slot represents.
 static wi::ecs::Entity  g_treePoolEntities[ GG_TREE_POOL_SIZE ] = { wi::ecs::INVALID_ENTITY };
-
-// Impostor atlas re-capture countdown. The bake happens the first frame the
-// impostor is dirty — but our per-type branch materials are still uploading
-// their DDS textures that same frame, so the capture pixel shader's
-// material.textures[BASECOLORMAP].IsValid() branch returns false and the
-// shader falls back to color = 1 (opaque white). Result: bright white
-// tree-shaped blobs on distant hills. Countdown re-dirties the impostors for
-// N frames after setup, giving textures time to become resident and forcing
-// re-capture with the real leaf colours. Cleared on shutdown.
-static uint32_t         g_impostorRecaptureFrames = 0;
-static constexpr uint32_t GG_TREE_IMPOSTOR_RECAPTURE_FRAMES = 30;
 
 // Append a TreeMeshHigh's verts to the given mesh, unpacking the packed
 // R8G8B8A8_UNORM normal to XMFLOAT3 in [-1,1]. Returns the vertex-index offset
@@ -154,16 +147,6 @@ static wi::ecs::Entity BuildTreeMesh(
 // Build a PBR MaterialComponent that samples one tree DDS as basecolor.
 // `isBranches` = true switches to alpha-tested + double-sided leaves. Trunks
 // stay opaque + single-sided (BACK-face culled).
-//
-// Branches use a dark-green baseColor rather than white. Rationale: the near-
-// detail render samples the leaf DDS at full res so the tint is barely
-// visible over the real texture colour. But Wicked's impostor capture
-// (captureImpostorPS.hlsl) falls back to `color = 1` when the material's
-// BASECOLORMAP resource isn't valid yet — and then multiplies by input.color
-// which folds in material.baseColor. So a green baseColor gives us green
-// impostor blobs on distant trees even when the atlas capture races the DDS
-// upload. Trunks stay white — bark texture is always available in time,
-// and any bark-tint on the trunks would corrupt the near-detail render.
 static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranches )
 {
 	auto& scene = wi::scene::GetScene();
@@ -171,10 +154,7 @@ static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranch
 	wi::ecs::Entity matEntity = wi::ecs::CreateEntity();
 	wi::scene::MaterialComponent& mat = scene.materials.Create( matEntity );
 
-	if ( isBranches )
-		mat.SetBaseColor( XMFLOAT4( 0.20f, 0.45f, 0.15f, 1.0f ) ); // dark canopy green
-	else
-		mat.SetBaseColor( XMFLOAT4( 1.0f,  1.0f,  1.0f,  1.0f ) );
+	mat.SetBaseColor ( XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f ) );
 	mat.SetRoughness ( 1.0f );
 	mat.SetMetalness ( 0.0f );
 	mat.SetReflectance( 0.02f );
@@ -253,10 +233,6 @@ static void GGTrees_WickedSetup()
 		g_treePoolEntities[ i ] = e;
 	}
 
-	// Arm the impostor re-capture countdown so we bake the atlas again once
-	// the branches DDS finishes uploading (see comment on the constant).
-	g_impostorRecaptureFrames = GG_TREE_IMPOSTOR_RECAPTURE_FRAMES;
-
 	g_wickedTreesSetup = true;
 	wi::backlog::post( ( "GGTrees: real tree meshes ready ("
 		+ std::to_string( typesBuilt )    + " trunks, "
@@ -288,35 +264,57 @@ void GGTrees_WickedUpdate()
 
 	auto& scene = wi::scene::GetScene();
 
-	// Keep the impostor atlas dirty for the first N frames so Wicked recaptures
-	// once the branch DDS textures have finished uploading — otherwise the
-	// initial bake writes opaque-white leaf blobs (see comment on the constant).
-	if ( g_impostorRecaptureFrames > 0 )
-	{
-		for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
-		{
-			if ( g_treeMeshEntity[ t ] == wi::ecs::INVALID_ENTITY ) continue;
-			wi::scene::ImpostorComponent* imp = scene.impostors.GetComponent( g_treeMeshEntity[ t ] );
-			if ( imp ) imp->SetDirty();
-		}
-		g_impostorRecaptureFrames--;
-	}
+	// Camera position — used to pick the nearest N trees to spend the pool on.
+	// XZ-only distance is sufficient: trees are all ~ground-level, and vertical
+	// distance would distort priority when the camera flies above the terrain.
+	const wi::scene::CameraComponent& camera = wi::scene::GetCamera();
+	const float camX = camera.Eye.x;
+	const float camZ = camera.Eye.z;
 
-	uint32_t poolIndex = 0;
-	for ( uint32_t i = 0; i < numTotalTrees && poolIndex < GG_TREE_POOL_SIZE; i++ )
+	// Candidate list — index into pAllTrees + squared XZ distance to camera.
+	// Static + clear() keeps the allocated capacity across frames.
+	struct TreeCandidate { uint32_t idx; float dist2; };
+	static std::vector<TreeCandidate> candidates;
+	if ( candidates.capacity() < numTotalTrees ) candidates.reserve( numTotalTrees );
+	candidates.clear();
+
+	for ( uint32_t i = 0; i < numTotalTrees; i++ )
 	{
 		InstanceTree* pTree = &pAllTrees[ i ];
 		if ( !pTree->IsVisible() || pTree->IsInvalid() || pTree->IsFlattened() ) continue;
 
 		uint32_t type = (uint32_t)pTree->GetType();
 		if ( type >= GG_TREE_TYPES ) continue;
-		wi::ecs::Entity treeMesh = g_treeMeshEntity[ type ];
-		if ( treeMesh == wi::ecs::INVALID_ENTITY ) continue;
+		if ( g_treeMeshEntity[ type ] == wi::ecs::INVALID_ENTITY ) continue;
 
-		wi::ecs::Entity e = g_treePoolEntities[ poolIndex ];
+		float dx = pTree->x - camX;
+		float dz = pTree->z - camZ;
+		candidates.push_back( { i, dx * dx + dz * dz } );
+	}
+
+	// Partial-sort: put the N closest at the front, don't care about the rest.
+	// nth_element is O(N) on average — much cheaper than a full sort.
+	size_t poolFill = candidates.size();
+	if ( poolFill > GG_TREE_POOL_SIZE )
+	{
+		std::nth_element(
+			candidates.begin(),
+			candidates.begin() + GG_TREE_POOL_SIZE,
+			candidates.end(),
+			[]( const TreeCandidate& a, const TreeCandidate& b ) { return a.dist2 < b.dist2; } );
+		poolFill = GG_TREE_POOL_SIZE;
+	}
+
+	for ( size_t k = 0; k < poolFill; k++ )
+	{
+		InstanceTree* pTree = &pAllTrees[ candidates[ k ].idx ];
+		uint32_t type = (uint32_t)pTree->GetType();
+		wi::ecs::Entity treeMesh = g_treeMeshEntity[ type ];
+
+		wi::ecs::Entity e = g_treePoolEntities[ k ];
 		wi::scene::ObjectComponent*     obj   = scene.objects   .GetComponent( e );
 		wi::scene::TransformComponent*  xform = scene.transforms.GetComponent( e );
-		if ( !obj || !xform ) { poolIndex++; continue; }
+		if ( !obj || !xform ) continue;
 
 		// Swap in this tree's merged trunk+branches mesh for the pool slot.
 		// Wicked's per-object AABB derives from mesh AABB * transform, so
@@ -329,14 +327,12 @@ void GGTrees_WickedUpdate()
 		xform->Scale    ( XMFLOAT3( scale, scale, scale ) );
 		xform->Translate( XMFLOAT3( pTree->x, pTree->y, pTree->z ) );
 		xform->UpdateTransform();
-
-		poolIndex++;
 	}
 
 	// Hide any pool slots we didn't fill this frame.
-	for ( uint32_t i = poolIndex; i < GG_TREE_POOL_SIZE; i++ )
+	for ( size_t k = poolFill; k < GG_TREE_POOL_SIZE; k++ )
 	{
-		wi::ecs::Entity e = g_treePoolEntities[ i ];
+		wi::ecs::Entity e = g_treePoolEntities[ k ];
 		if ( e == wi::ecs::INVALID_ENTITY ) break;
 		wi::scene::ObjectComponent* obj = scene.objects.GetComponent( e );
 		if ( obj ) obj->SetRenderable( false );
@@ -364,7 +360,6 @@ void GGTrees_WickedShutdown()
 		g_treeBranchesMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
 	}
 	g_wickedTreesSetup = false;
-	g_impostorRecaptureFrames = 0;
 }
 
 } // namespace GGTrees
