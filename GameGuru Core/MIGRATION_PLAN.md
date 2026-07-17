@@ -1,5 +1,7 @@
 # DX12 Migration Plan - GameGuruWickedMAX
 
+> HISTORICAL record of the Feb 2026 DX12 migration. Deferred items recorded here (5 custom ImGui pixel shaders, multi-viewport, OpenXR VR path) are now tracked in SCRATCHPAD.md → Tech Debt.
+
 **Created:** 2026-02-14
 **Baseline Tag:** `dx11-final`
 **Reference:** See `DX12_AUDIT.md` for detailed API usage analysis

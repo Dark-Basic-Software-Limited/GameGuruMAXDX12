@@ -21,8 +21,10 @@ GameGuruMAX has a built-in file-based automation harness (`AutomationHarness.cpp
 Always build **Release** — the Release configuration outputs directly to the runtime EXE directory, no manual copy needed:
 
 ```bash
-"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Release
+cd "D:/max/GameGuruMAXDX12/GameGuru Core" && ./build.bat Release
 ```
+
+The cwd MUST be `GameGuru Core` when the .bat runs — build.bat uses relative paths (`GameGuruWickedMAX.sln`) and MSBuild silently fails ("Project file does not exist") if invoked from any other directory.
 
 **IMPORTANT**: The app must NOT be running when you build — the linker cannot overwrite the exe while it's locked. Quit the app first (via `QUIT` command or force kill), then build.
 
@@ -75,6 +77,7 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `GET_PROFILER_STATUS` | (none) | Diagnostic: returns profiler internal state (ENABLED_REQUEST, ENABLED, IsEnabled, CPU/GPU frame times) without modifying anything |
 | `PRESS_ESCAPE` | (none) | Exits test game back to editor (sets gameloop/levelloop/masterloop=0). Game state only |
 | `PRESS_KEY` | `<key name>` | Simulate a keypress (WM_KEYDOWN + WM_KEYUP). Accepts A-Z, 0-9, F1-F12, ESCAPE, ENTER, SPACE, TAB, SHIFT, CONTROL, ALT, arrow keys, etc. Works in any state. In editor mode, also injects into the terrain key system via `g_autoHarnessInjectedKey` (bypasses the `bImGuiGotFocus` gate) |
+| `SET_GRASS` | `<param> <value>` | Live-tune the Wicked grass path. Params: length, width, stiffness, drag, blades, maxstrands, segments, billboards, viewdist, sss, alpha, tintr, tintg, tintb, sssr, sssg, sssb (impl: AutomationHarness.cpp ~line 1657) |
 | `QUIT` | (none) | Gracefully close the application |
 
 ## Application States
@@ -339,6 +342,8 @@ Key identification: `entityprofile[bankindex].ismarker == 2` marks a light entit
 | `WickedEngine/wiScene_Components.h` | `LightComponent` (line 1321) | WickedEngine light: `intensity` (candela for point/spot, lux for directional), `range`, `color`, `type`, shadow flags |
 
 ### Open Issue: Point Light Intensity Still Too Dim (2026-02-16)
+
+> STATUS UNVERIFIED as of 2026-07-17 — five months old; confirm with the user whether the 600cd/6000cd mapping was accepted as final.
 
 **Status**: First fix applied (`BackCompatSetEnergy(30)`) raised intensity from 30cd to 600cd for point lights and 6000cd for spots. Scene is brighter but still darker than expected. Further investigation needed.
 

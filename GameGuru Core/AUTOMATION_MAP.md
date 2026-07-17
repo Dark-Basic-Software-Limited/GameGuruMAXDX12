@@ -1,5 +1,7 @@
 # Automation Map - UI State Flags and Control Variables
 
+> Design-time internals notes (Feb 2026) for extending the harness — line numbers have drifted; see WETEST.md for the current, verified command surface.
+
 ## App State Machine
 
 The app has a clear state hierarchy:

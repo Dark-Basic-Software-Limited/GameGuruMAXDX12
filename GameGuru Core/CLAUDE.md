@@ -10,26 +10,26 @@
 This is a large C++ Windows x64 project (game engine) built with MSVC.
 Solution file: `GameGuruWickedMAX.sln`
 
-## Active Work (as of 2026-06-19)
+## Active Work (as of 2026-07-17)
 
-Terrain port to Wicked Engine is in steady state through **Phase 4 + the Stage 3 Option B arc** (Wicked `HairParticleSystem` grass placed from GG's painted grass map; per-strand visibility, DX11-parity sizing, slider wired). Active tracks:
-
-- **Phase 4+ — Grass complete + community customization + Advanced Settings**: orientation fix (Wicked-side, [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md) entries 1.1-1.5), per-grass-type DDS textures, FP32 sway, brush ring cursor, grass paint live. **Stage 3 Option B** per-strand grass-map sampling in `hairparticle_simulateCS.hlsl` (brush footprint == grass footprint). **Stages B.5–B.8** — DX11-parity blade sizing, live Grass Draw Distance slider, LOD ring decoupling, category cleanup. **Stage B.9** — custom grass palette (22 stock + 42 custom slots, `.fpm` persistence). **Stage B.10 (this track)** — Advanced Grass Settings wired to the Wicked path via DX11-baseline port: (1) Match Terrain Color auto-resolve for painted `1` cells (material lookup or seaweed underwater) done inline in `GGGrass_ScanRegion`; (2) Populate / Clear Vegetation buttons propagate through the Wicked cache via new `GGGrass_TakeFullRebuildPending()` + `GGGrass_UploadGrassMap()`; (3-4) per-strand **slope + altitude filters** in the compute shader gated on `xHairGrassType != 0u` — reuses the face normal fix 1.2 already computes, adds 5 CB floats for the altitude cutoffs with defaults spanning `[-1e30, +1e30]` = "no filter" for upstream; (5) live **Grass Scale** slider drives `appearance[t].length = baseline * (slider / 40)` on both templates and existing entities every frame. All four Advanced Sliders now respond live; Populate + Clear both work end-to-end. Next community-facing tracks: **advanced per-category / per-slot tuning UI** (deferred from B.9). Otherwise: **Phase 5** — trees / colored cylinder placeholders driven from `pAllTrees[]`.
-- **Phase 5 — Trees**: colored-cylinder placeholders driven from `pAllTrees[]` (`Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp`); LOD tree meshes are post-Phase-6 work.
-- **Phase 6 — Sculpt/Paint Invalidation**: hook `GGTerrain_InvalidateRegion()` → mark Wicked chunks invalidated + clear from `processedChunkKeys`.
-- **Performance tuning**: pursue the items in `PERFORMANCE.md` → "Active Performance Targets" — engine-side animation caching (~17–20 ms potential) and the AI cost gap (24× DX11→DX12).
+- **Grass — COMPLETE through Stage B.10** (commit `6cebb745`): Advanced Grass Settings wired, Populate/Clear fixed, per-strand slope/altitude filters, custom palette slots (B.9), DX11-parity sizing and live sliders.
+- **Trees — Phase 5 Stage 4.3 DONE** (commits `18a95978`, `2e0ad1ef`): real trunk/leaf meshes, 10,000-entity `ObjectComponent` pool, nearest-N-to-camera pick per frame. Wicked `ImpostorComponent` is **RETIRED** — its render path ignores `IsNotVisibleInReflections` and baked white. Open tree items: measure DX11 A/B horizon delta, then possibly hand-rolled billboards from GG's authored `*_BB_SF_*_color.dds`; tree types >= 38 unported; wind sway.
+- **Terrain — DX11 colour parity** via CPU-side `ApplyDX11StyleAutoBlend` (commit `42e927b8`).
+- **Next major phase — Performance**: pursue `PERFORMANCE.md` → "Active Performance Targets".
 
 `SCRATCHPAD.md` is the living roadmap; `TERRAINPORT.md` is the architectural reference; `PERFORMANCE.md` carries the perf history and active targets.
 
 ## Build Commands
-Invoke `build.bat` using its full quoted path (required because the project root contains a space):
+Always `cd` into `GameGuru Core` first, then invoke `build.bat` (bash form):
 
 ```
-"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Debug          # Build Debug x64
-"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Release        # Build Release x64
-"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Debug rebuild  # Clean rebuild Debug x64
-"D:/max/GameGuruMAXDX12/GameGuru Core/build.bat" Release rebuild # Clean rebuild Release x64
+cd "D:/max/GameGuruMAXDX12/GameGuru Core" && ./build.bat Release          # Build Release x64
+cd "D:/max/GameGuruMAXDX12/GameGuru Core" && ./build.bat Debug            # Build Debug x64
+cd "D:/max/GameGuruMAXDX12/GameGuru Core" && ./build.bat Release rebuild  # Clean rebuild Release x64
+cd "D:/max/GameGuruMAXDX12/GameGuru Core" && ./build.bat Debug rebuild    # Clean rebuild Debug x64
 ```
+
+**Warning**: `build.bat` uses a RELATIVE solution path with no `cd /D`, so the cwd MUST be `GameGuru Core` when it runs. Invoking it by full path from elsewhere makes MSBuild silently fail with "Project file does not exist".
 
 ## Build System
 - **Compiler**: MSVC v143 (VS 2022 toolset) via Visual Studio 2026 Community
@@ -86,6 +86,8 @@ When replacing an image at an existing ID (e.g., storyboard project switch), you
 This is required because DX12 has 2 frames in flight (`NUM_FRAMES_IN_FLIGHT = 2`). The GPU may still be executing draw commands from a previous frame that reference the texture. Freeing the `ID3D12Resource` while in-flight causes `DXGI_ERROR_DEVICE_REMOVED` (fixed in commit c8ec1739).
 
 ## Terrain System — Porting to New Wicked Engine Terrain
+
+> HISTORICAL (pre-port plan) — the Wicked terrain is now the default path. Architecture record: TERRAINPORT.md; living status: SCRATCHPAD.md.
 
 ### Current status
 

@@ -1,8 +1,10 @@
 # DX11 to DX12 Shader Porting Plan
 
+> HISTORICAL — frozen record of the Feb 2026 shader port. Live tech debt recorded here (GPU particles disabled §10-11, E_INVALIDARG CreateTexture §12) is now tracked in SCRATCHPAD.md Tech Debt.
+
 ## GameGuruMAX Custom Terrain/Vegetation Shaders
 
-**Status:** Phase 1 COMPLETE | Phase 2 COMPLETE | Phase 3-4 TODO (Rendering Integration)
+**Status:** Phase 1 COMPLETE | Phase 2 COMPLETE | Phase 3 COMPLETE 2026-02-18 (see §13.9) | Phase 4 partial
 **Date:** 2026-02-17
 **Scope:** 66 HLSL shaders + 15 header files in `Guru-WickedMAX/GGTerrain/Shaders/`
 
@@ -32,7 +34,7 @@
 - Runtime test: app loads, enters game mode, runs at ~180 FPS (Switch Escape demo)
 - Commits: 9d5b3868 (Phase 2 main), 810ad37b (OverlayVS fix), 80c936f5 (GPU particles fix)
 
-**Phase 3-4 (Rendering Integration) - NOT STARTED:**
+**Phase 3-4 (Rendering Integration) - Phase 3 COMPLETE 2026-02-18 (see §13.9), Phase 4 partial. Original 2026-02-17 notes below:**
 - GG custom draw functions (`GGTerrain_Draw`, `GGGrass_Draw`, `GGTrees_Draw`) are NOT yet
   called from the render pipeline — only `GGTerrain_DrawPages()` is active (page gen shaders)
 - To see visual results from Phase 2, the draw functions must be integrated into

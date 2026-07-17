@@ -1,6 +1,6 @@
 # Performance Profiling & Optimization Plan
 
-## Status Summary (as of 2026-05-27)
+## Status Summary (as of 2026-07-17)
 
 | Phase | Topic | Status |
 |---|---|---|
@@ -1082,9 +1082,7 @@ These are the remaining optimization opportunities surfaced by Phases 6–9. Eac
 
 Phase 6 / Phase 7 analysis identified `ScanAnimationDependencies` running every frame with O(N²) cost over the full animation set. Caching the dependency map (invalidate only when animation set changes) should reclaim ~12 ms.
 
-This change lives in `WickedEngineDX12` (engine side), not GameGuru. Per the no-engine-modifications convention used during the terrain port, this either requires:
-- Working with the Wicked Engine upstream / sibling project, or
-- A GameGuru-side wrapper that pre-computes and pushes the cached dependency map before `Update()`
+Superseded — five Wicked-side changes are already carried locally (WICKED_ENGINE_CHANGES.md 1.1-1.5), so engine-side animation caching is implementable.
 
 ### 2. Keyframe search caching (~5–8 ms potential, engine-side)
 
@@ -1094,9 +1092,17 @@ DX12 regressed to linear scan over keyframes; DX11 had a cached search. Same eng
 
 Separate investigation needed. Not addressed by Phase 6–9. Likely candidates: pathfinding rebuild frequency, AI script polling cadence, or an unintentionally expensive query inside the AI tick.
 
-### 4. Verify Phase 9 culling holds with Phase 4 grass + Phase 5 trees enabled
+### 4. Verify Phase 9 culling holds with Phase 4 grass + Phase 5 trees enabled — NOW DUE
 
-When grass and tree systems come online they will add new per-frame work. Re-measure Update-Wicked / GPU-Frame after Phase 4 and Phase 5 land, and confirm the 36 FPS floor doesn't regress.
+Grass (Stage B.10) and trees (Stage 4.3, 10K nearest-N pool) are now online, adding new per-frame work. Re-measure Update-Wicked / GPU-Frame on TESTPRO1 and re-verify the Phase 9 culling still holds under the new load — confirm the 36 FPS floor doesn't regress.
+
+### 5. Tree pool CPU tax (added 2026-07-17 code audit)
+
+- `GGTrees_WickedUpdate` scans the full 400K-instance array every frame regardless of live tree count
+- `nth_element` runs over up to 400K candidates per frame for the nearest-N pick
+- 10K ECS component lookups + transform rebuilds per frame for the pool slots
+- Unstable slot→tree assignment breaks motion vectors (TAA/motion-blur ghosting) — fix by keying slots to tree index
+- `ApplyDX11StyleAutoBlend` + `ProcessPaintedChunkBlendmaps` scan ALL `scene.objects` per frame with a per-object mesh lookup, inflated by the 10K pool (consider tagging chunk entities instead of the vertex-count heuristic)
 
 ### Reference: how to measure
 

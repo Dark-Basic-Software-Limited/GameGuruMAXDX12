@@ -1,6 +1,6 @@
 # SCRATCHPAD — Terrain System Port
 
-## Current State (2026-06-18)
+## Current State (2026-07-17)
 
 The terrain port to the **Wicked Engine DX12 terrain system** is well underway. **Phases 0–4 are complete**, with painted PBR materials rendering across the full terrain and **3D grass rendering through Wicked Engine's `HairParticleSystem`**, placed from GameGuru's painted grass map (`pGrassMap`). The new terrain is now the **default** (Y key toggles back to old terrain).
 
@@ -34,6 +34,10 @@ The terrain port to the **Wicked Engine DX12 terrain system** is well underway. 
 | 2026-06-19 | **Stage B.8 — kelp/seaweed/weed/flower widths -> pure DX11 mapping** — community-visible regression on the island level: kelp came out as ~10-ft towering magenta plants that tanked FPS from 420 → 15 through overdraw. Same overreach pattern I already fixed for the red flower — hard-coded length past DX11's `grass_scale = 40` baseline plus an arbitrary width multiplier on top of the per-DDS SF value. Full sweep on the remaining categories: kelp length 75→40 + width sf×6→sf, seaweed length 110→40 + width sf×4→sf, flower width sf×2→sf, weed width sf×2→sf. All 8 categories now follow the same pure DX11 mapping: length gives category tier variance, width = scaleFactor from the DDS filename suffix. Within-category size variance is purely texture-content driven, matching what DX11 renders for the same DDS set. | `db6bf3bc` |
 | 2026-06-19 | **Stage B.9 — Custom Grass Palette (community feature)** — the palette was hardcoded to 22 stock slots with no way to add user grass textures. Now supports **22 stock + up to 42 custom** (cap set by the `paint_type` uint64 bitmask; total 64). New "Add New Grass" button opens a DDS file dialog and populates the first empty slot ≥ 22; "Delete Grass" clears the highlighted custom slot; stock slots (0-21) protected from deletion by button gating. Custom entries persist to `.fpm` (existing `M-Visuals` save/load handles slots 22..127 already since `sGrassTextures[128]`). **Byte encoding**: paint code stores stock as `grassMaterialTypes[mat][slot]+2` (existing mat-variant behavior preserved), custom as `slot+26` directly (real_type = slot+24, so stock 0..45 and custom 46..87 stay disjoint). **Wicked side**: appearance/material arrays sized `GGGRASS_TOTAL_REAL_TYPES = 88`, `BuildGrassAppearance` gets a second loop that reads custom-slot filenames via a new `GGGrass_SetCustomSlotFilename`/`GetCustomSlotFilename` registry, `BuildGrassMaterial` dispatches (stock DDS path from `grassFiles[]` table, custom DDS path from `Files/<sGrassTextures[slot]>`). **Level-load timing fix**: sync from `sGrassTextures[]` → `GGGrass_SetCustomSlotFilename` hooked into `Wicked_Update_Visuals` (fires once per level load), NOT just when the vegetation panel renders — so custom grass shows immediately without needing to enter grass mode. **Delete+re-add-with-different-DDS fix**: dirty poll doesn't just clear the material cache; it also actively removes existing hair entities for custom real_types across every tracked chunk (short-circuits Phase 2's "type still painted, entity exists → skip" branch that would otherwise keep the OLD material snapshot). Stock entities are left alone. First community-facing extensibility of the new grass system. | `b6857051` |
 | 2026-07-10 | **Stage B.10 — Advanced Grass Settings wired to the new system (DX11-baseline port)** — the four "View Advanced Settings" controls (Grass Scale, Grass Start/End Altitude, Grass Start/End Altitude Underwater, Match Terrain Color) were all vestiges from the DX11 path. On the DX11 side they gated `GGGrass_UpdateInstances`, but that function is off in Wicked mode (perf gate, commit `1502719b`), so the sliders + the "Populate Vegetation Everywhere" / "Clear All Vegetation" buttons all shipped-but-dead. Ported one by one, back-to-baseline: **(1) Auto-resolve for `pGrassMap` value `1`** — Match Terrain Color paint left `1` in each cell as an "unresolved" marker; DX11 rewrote each cell with a terrain-material-appropriate real_type (or seaweed 43 if underwater) on the next UpdateInstances pass. `GGGrass_ScanRegion` now does the same rewrite inline during its per-chunk scan; a new `s_gggrass_map_upload_pending` flag + `GGGrass_TakePendingMapUpload()` accessor triggers a single R8 texGrassMap re-upload per frame so the Option B compute-shader visibility check picks up the resolved bytes. **(2) Clear/Populate propagate through the Wicked cache** — `GGGrass_RemoveAll` and `GGGrass_AddAll` write pGrassMap in bulk but never touched the per-chunk hair entity cache OR the GPU texture; new `s_gggrass_full_rebuild_pending` flag drives `ForceGrassRebuild()` from `GGTerrainWicked_Update`, and both bulk writers now also fire `GGGrass_UploadGrassMap()`. **(3) Per-strand slope filter** — DX11 filtered at 0.7 normal-Y in `UpdateInstances`; CPU cell-scans against the DX11 normal map produced ragged cliff edges (coarse per-chunk normal texels vs. ~4.8-unit grass cells) and a per-strand distribution can still fling strands from flat cells onto adjacent cliff triangles. Filter moved into `hairparticle_simulateCS.hlsl` on the face normal of the triangle each strand sits on (already computed in-shader as the fix-1.2 grass-orientation workaround). Gated on `xHairGrassType != 0u` so upstream Wicked hair is unaffected. **(4) Per-strand altitude filter** — DX11 gated by height band above and below the water plane; same shader block now compares `base.y` against `xHairGrassMinHeight` / `xHairGrassMaxHeight` (or the underwater pair, selected by `xHairGrassWaterHeight`). Five new floats on `HairParticleCB` with defaults spanning `[-1e30, +1e30]` = "no filter" for upstream callers. `ApplyGrassAltitude()` in GG syncs the CB values from `gggrass_global_params.*` + `g.gdefaultwaterheight` every frame → sliders drag live without clear/repop. **(5) Live Grass Scale slider** — the DX11 legacy VS multiplied `IN.position * grass_scale`; in Wicked, Stage B.5 hard-anchored per-category lengths to the 40 baseline. Now `BuildGrassAppearance` snapshots each type's baseline `length` into `g_grassBaseLength[]`, and `ApplyGrassScale()` writes `appearance[t].length = base * (slider/40)` on templates + live entities every frame. Because the hair CS derives quad width from length (`quad_width = hair.width * xHairAspect * hair.length`), scaling length alone gives DX11-parity uniform blade scaling. **Filter design decisions doc'd in [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md) entry 1.5** — both filters are single branches inside the existing `xHairGrassType != 0u` block, so the whole thing is a candidate upstream-PR delta of ~40 shader lines + 5 CB floats + 5 C++ mirror fields, zero behavioral change for callers that leave `grass_type = 0`. | (this commit) + Wicked `hairparticle_simulateCS.hlsl`, `ShaderInterop_HairParticle.h`, `wiHairParticle.{h,cpp}` |
+| 2026-07-12 | **Harness OPEN_PROJECT + CLICK_ONLY_LEVEL** — autonomous cold-launch → TESTPRO1 → screenshot A/B loop (~50s) | `f5c4866a` |
+| 2026-07-12/13 | **Trees Phase 5 Stages 1-4.2** — cylinders → real trunk/leaf meshes → 10K ObjectComponent pool + nearest-N-to-camera pick | `7a842b78`..`18a95978` |
+| 2026-07-13 | **Terrain grey-mountains fixed** — CPU-side per-vertex DX11-style blend (`ApplyDX11StyleAutoBlend`) | `42e927b8` |
+| 2026-07-13 | **Trees Stage 4.3** — Wicked ImpostorComponent retired (its impostor render path ignores IsNotVisibleInReflections; baked white), SetNotVisibleInReflections on tree pool, water reflections clean | `2e0ad1ef` |
 
 ### What's Working Now
 
@@ -133,7 +137,7 @@ Phase 1: Heightmap Feed                  ✓ COMPLETE
 Phase 2: 4-Layer Auto Materials          ✓ COMPLETE (2026-02-25)
 Phase 3: Painted Materials (N-layer)     ✓ COMPLETE (2026-02-25, excursion fix 2026-03-01)
 Phase 4: Grass via HairParticleSystem    ✓ COMPLETE (2026-05-29; recovered to main 2026-06-17)
-Phase 5: Colored Cylinder Trees          ← ACTIVE   first step: shared cylinder MeshComponent + entity pool, iterate pAllTrees[]
+Phase 5: Trees — Stage 4.3 DONE (real meshes, 10K pool, nearest-N pick, impostors retired). Open: measure DX11 A/B horizon delta (maybe hand-rolled billboards), tree types >= 38, wind sway.
 Phase 6: Sculpt/Paint Invalidation       ← ACTIVE   first step: hook GGTerrain_InvalidateRegion() → mark Wicked chunks invalidated + clear from processedChunkKeys
 Phase 4+: Grass rendering improvements   ← NEXT     orientation fix landed 2026-06-18 (see Wicked changes 1.1/1.2). Remaining: subsurface, density, atlas variety, paint UX. See "Phase 4 Notes" below
 Perf:    Animation engine-side caching   ← ACTIVE   first step: PERFORMANCE.md "Active Performance Targets" — ScanAnimationDependencies + keyframe search
@@ -194,7 +198,7 @@ After steps 1-5, all four Advanced Settings will do what their labels promise, a
 
 ## Critical Files Reference
 
-All GameGuru Core modifications are GG-side only. Wicked Engine changes are tracked separately in [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md) — currently two genuine bug fixes (chunk_scale normal spacing + HairParticleSystem face-normal recompute) ready for upstream brief.
+All GameGuru Core modifications are GG-side only. Wicked Engine changes are tracked separately in [WICKED_ENGINE_CHANGES.md](WICKED_ENGINE_CHANGES.md) — currently five applied changes — see the WICKED_ENGINE_CHANGES.md status table.
 
 | File | Role in Port |
 |---|---|
@@ -208,3 +212,15 @@ All GameGuru Core modifications are GG-side only. Wicked Engine changes are trac
 | `Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp` | pAllTrees data (Phase 5 will read this) |
 
 Full architectural details in `TERRAINPORT.md`.
+
+---
+
+## Tech Debt (living list)
+
+- **GPU particles fully disabled** — `GPUParticles_part0.cpp:1891` unconditional early return; shipping-visible feature gap (from `DX11_to_DX12_Shader_Porting_Plan.md` §10-11)
+- **5 custom ImGui pixel shaders deferred** — blur/nowhite/noalpha/boost25/standard (`MIGRATION_PLAN.md`)
+- **ImGui multi-viewport disabled** (`MIGRATION_PLAN.md`)
+- **OpenXR VR path unmigrated** (`MIGRATION_PLAN.md`)
+- **.ele level version debt** — DX12 reads max v341, production DX11 writes v342, entities silently don't load (crash guard only; `M-Entity_part3.cpp`)
+- **Pre-existing E_INVALIDARG CreateTexture engine errors** (`DX11_to_DX12_Shader_Porting_Plan.md` §12)
+- **Ten unconditional debug hotkeys** U/I/O/P/1-8/G in `GGTerrainWicked_Update` — gate behind a dev flag before release

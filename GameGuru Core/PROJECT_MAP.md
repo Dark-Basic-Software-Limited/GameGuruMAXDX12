@@ -371,6 +371,8 @@ The `GG*` macros from `directx-macros.h` propagate DX11 types into 30+ source fi
 
 ### DX12 Usage
 
+> ADDENDUM 2026-07-17: superseded — ImGui now renders entirely through the DX12 bridge (imgui_gg_dx12_bridge.cpp, ~600 lines of direct DX12; see MIGRATION_PLAN.md Phase 5). The claim that no direct DX12 calls exist outside OPTICK is no longer true. This also updates the Dual-Graphics Architecture description below.
+
 WickedEngine handles all DX12 rendering internally. The GameGuru codebase itself has **no direct DX12 API calls**. DX12 references exist only in:
 - `SDK/OPTICK/src/optick_gpu.d3d12.cpp` (profiler sample)
 - `SDK/OPTICK/samples/WindowsD3D12/` (sample code)

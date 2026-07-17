@@ -1,7 +1,9 @@
 # Wicked Engine Side Changes — Brief for Upstream Author
 
 This document tracks every change we have made to the `WickedEngineDX12`
-clone at `D:\max\WickedEngineDX12` while porting GameGuru MAX to Wicked.
+clone at `D:\max\WickedEngineDX12` while porting GameGuru MAX to Wicked,
+from the point this log began. Engine changes made during the original
+port, before this log existed, are summarised in section 1.0 below.
 
 Two categories:
 
@@ -14,6 +16,22 @@ Tracking the changes here (inside GameGuru Core) so they survive in source
 control even if the Wicked clone is reset or re-cloned.
 
 ---
+
+## 1.0 Pre-existing port-era engine deltas (before this log began)
+
+The clone already carried GG-specific engine modifications from the
+original DX12 port before entry 1.1 was written. Pointers only, not
+full diffs:
+
+- **RenderPath3D `customDraw` function-pointer hooks** — Wicked commit `9118befe`
+- **`customDraw_ShadowMap` / `customDraw_EnvProbe` hooks** — Wicked commits `0a8ea4fb`, `b84ff4fe`
+- **SRV count 16 → 64 + sampler expansion**
+- **`GetDX12Device` / `GetDX12GraphicsCommandList` accessors**
+- **/MTd runtime change**
+
+Full details in MIGRATION_PLAN.md and DX11_to_DX12_Shader_Porting_Plan.md
+§13.9. WITHOUT these, a re-cloned WickedEngineDX12 will not render at
+all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 

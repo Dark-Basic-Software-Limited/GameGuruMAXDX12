@@ -1,3 +1,5 @@
+> HISTORICAL architecture record — living status is in SCRATCHPAD.md.
+
 # Terrain System Port: Old Virtual Texture -> Wicked Engine Terrain
 
 ## Context
@@ -663,5 +665,7 @@ Notable post-Phase-3 work not captured in the sections above:
 - **2026-05-27** (`c6474e94`) — Small `GGTerrainWicked.cpp` tweak ("Terrain Texture Transition", +5 lines) and DarkLUA vcxproj addition. Minor refinement, full scope in git diff.
 - **2026-05-29** (`5070b264`, `f3d6dd92`, `a7fc7618`, `29c979ed`, `c84225e9`) — **Phase 4 complete: Wicked HairParticleSystem grass.** A new `ProcessGrassChunks` pass in `GGTerrainWicked.cpp` mirrors the blendmap pass: per-chunk `wi::HairParticleSystem` entities placed from `pGrassMap` via `GGGrass_GetGrassMap`. `SetupWickedGrass` builds the appearance template (atlas, subsurface, scale). Distance-LOD chunks bound total strand count for VRAM safety (near dense, far scaled or none past `g_grassLODChunks`). Live `SET_GRASS` automation knobs added. Implementation deviates from the original plan ("`SetGrassEnabled(true)` + override `chunk_data.grass.vertex_lengths`") — Wicked's built-in terrain grass wasn't a good fit, so we drove our own per-chunk HairParticleSystem mirroring the blendmap-injection pattern instead.
   - **Recovery note**: these 5 commits originally lived only on `claude/frosty-ritchie-f7efe6` and a local working tree in the main repo. A `cp` overwrite on 2026-06-17 destroyed the working-tree copy, making it look like the work had been lost; the commits on the feature branch were intact and were cherry-picked onto `main`. The lesson is captured in [feedback_check_main_repo_status.md](../../../leeba/.claude/projects/D--max-GameGuruMAXDX12/memory/feedback_check_main_repo_status.md).
+
+**Superseded constraint — "zero Wicked Engine modifications"** (decision #5 above and the Critical Files Reference): this constraint was consciously superseded once genuine engine bugs surfaced that could not be worked around via the public API. Wicked-side deltas are now tracked in `WICKED_ENGINE_CHANGES.md` (five applied as of 2026-07-10), in addition to the earlier shader-port-era engine changes recorded in `MIGRATION_PLAN.md` and `DX11_to_DX12_Shader_Porting_Plan.md` §13.9.
 
 Active next phases (Trees / Sculpt-Invalidation) are unchanged from the original plan — see `SCRATCHPAD.md` "Next Steps" sections for the up-to-date entry points. Phase 4 has a follow-up improvement track ("Phase 4+: Grass rendering improvements" in SCRATCHPAD).
