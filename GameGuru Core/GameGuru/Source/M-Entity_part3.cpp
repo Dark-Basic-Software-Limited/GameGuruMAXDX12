@@ -39,7 +39,15 @@ void c_entity_loadelementsdata ( void )
 				//g.entityelementlist += iElementsInFile;
 			}
 		}
-		if ( t.versionnumberload <= t.versionnumbersupported ) 
+		// DX12 PORT (instrument-trust): always record what entity-file version a
+		// level actually loads, so A/B sessions can grep the log for it.
+		{
+			char pEleVersionMsg[MAX_PATH + 128];
+			sprintf_s(pEleVersionMsg, "entity elements file: %s (version %d, supported max %d, %d elements)",
+				t.elementsfilename_s.Get(), t.versionnumberload, t.versionnumbersupported, iElementsInFile);
+			timestampactivity(0, pEleVersionMsg);
+		}
+		if ( t.versionnumberload <= t.versionnumbersupported )
 		{
 			if (iElementsInFile > 0)//g.entityelementlist>0 )
 			{
@@ -895,6 +903,22 @@ void c_entity_loadelementsdata ( void )
 		else
 		{
 			t.failedtoload=1;
+			// DX12 PORT (instrument-trust): make the version-mismatch drop LOUD.
+			// Without this the level LOOKS loaded (terrain/trees/grass come
+			// through their own files) but every entity is silently missing —
+			// invisibly corrupting DX11-vs-DX12 A/B comparisons. Production DX11
+			// writes .ele v342; this port reads v341 max until the reader is
+			// extended (see SCRATCHPAD.md Tech Debt).
+			char pVersionWarning[MAX_PATH + 256];
+			sprintf_s(pVersionWarning,
+				"ENTITY LOAD SKIPPED: %s is version %d but this build supports max %d - ALL entities in this level are MISSING. Do not trust visual comparisons until the new .ele version is ported.",
+				t.elementsfilename_s.Get(), t.versionnumberload, t.versionnumbersupported);
+			timestampactivity(0, pVersionWarning);
+			extern bool g_bAutomationActive;
+			if (!g_bAutomationActive)
+			{
+				MessageBoxA(NULL, pVersionWarning, "Level Version Mismatch", MB_OK | MB_ICONWARNING);
+			}
 		}
 		c_CloseFile (  1 );
 

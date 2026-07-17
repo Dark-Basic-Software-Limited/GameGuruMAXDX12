@@ -21,9 +21,9 @@ namespace GGTrees
 
 // Pool caps visible-tree ObjectComponents in the scene. Wicked's per-entity
 // ECS overhead is O(N) per frame regardless of what each object rasterizes
-// as (mesh or impostor), so we can't just crank this to numTotalTrees (400K)
-// without tanking FPS. 50K is empirically the ceiling that keeps FPS usable
-// on the DX11 A/B baseline.
+// as, so we can't just crank this to numTotalTrees (400K) without tanking
+// FPS (400K measured 2.6 FPS; 50K workable; 10K comfortable on the DX11
+// A/B baseline — settled 2026-07-13).
 //
 // To ensure the pool is actually spent on the trees the player can see, the
 // update loop does a nearest-N-to-camera pick every frame instead of the
@@ -145,13 +145,13 @@ static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranch
 	wi::ecs::Entity matEntity = wi::ecs::CreateEntity();
 	wi::scene::MaterialComponent& mat = scene.materials.Create( matEntity );
 
-	// Branches get a dark forest-green base tint that folds into the impostor
-	// atlas capture (captureImpostorPS.hlsl falls back to color = 1 when the
-	// BASECOLORMAP texture isn't ready and then multiplies by input.color,
-	// which carries material.baseColor). Without this the atlas bakes pure
-	// white, and impostorPS's PBR lighting turns those white pixels into
-	// bright sun-lit blobs. Trunks stay white — their bark DDS is usually
-	// loaded by capture time so the atlas gets the real bark colour.
+	// Branches carry a dark forest-green baseColor. NOTE (2026-07-17): this is
+	// a PERMANENT tint — Wicked multiplies baseColor with the sampled leaf DDS
+	// at all times in the mesh path, so all foliage renders darkened/greened.
+	// The original rationale (tinting the impostor atlas capture fallback) is
+	// obsolete since ImpostorComponent was retired in Stage 4.3. Kept for now
+	// as a deliberate look choice; if DX11 leaf-colour parity reads off in the
+	// A/B, try (1,1,1,1) here first. Trunks stay white (bark DDS untinted).
 	if ( isBranches )
 		mat.SetBaseColor( XMFLOAT4( 0.20f, 0.45f, 0.15f, 1.0f ) );
 	else

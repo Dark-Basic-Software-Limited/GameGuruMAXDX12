@@ -37,6 +37,8 @@ using namespace wiGraphics;
 
 extern bool bImGuiGotFocus;
 extern wiECS::Entity g_entitySunLight;
+extern bool g_bAutomationActive;
+void timestampactivity(int i, char* desc_s);
 
 extern uint8_t* g_pTerrainSnapshot;
 extern UndoRedoMemory g_TerrainUndoMem;
@@ -1593,6 +1595,7 @@ int GGTrees_SetData( float* data )
 	}
 	pInvisibleTrees.Clear();
 	
+	uint32_t iDroppedCustomTypeTrees = 0;
 	for( uint32_t i = 0; i < numTotalTrees; i++ )
 	{
 		InstanceTree* pInstance = &pAllTrees[ i ];
@@ -1612,6 +1615,9 @@ int GGTrees_SetData( float* data )
 
 			if ( type >= numTreeTypes )
 			{
+				// count only trees the file marked visible — they would have
+				// rendered but for the unported palette type
+				if ( pInstance->IsVisible() ) iDroppedCustomTypeTrees++;
 				pInstance->SetVisible( 0 );
 			}
 			else
@@ -1683,6 +1689,21 @@ int GGTrees_SetData( float* data )
 #ifdef ONLYLOADWHENUSED
 	last_paint_tree_bitfield = -1;
 #endif
+	// DX12 PORT (instrument-trust): levels saved with custom tree palette slots
+	// carry types >= numTreeTypes (38). This port has no meshes for them, so the
+	// loop above hides those instances — warn loudly instead of silently
+	// thinning the forest vs DX11.
+	if ( iDroppedCustomTypeTrees > 0 )
+	{
+		char pDropWarning[256];
+		sprintf_s( pDropWarning, "TREE TYPES DROPPED: %u tree instances use palette types >= %u (custom tree slots not ported to DX12) and will not render",
+			iDroppedCustomTypeTrees, (uint32_t)numTreeTypes );
+		::timestampactivity( 0, pDropWarning );
+		if ( !::g_bAutomationActive )
+		{
+			MessageBoxA( NULL, pDropWarning, "Warning", MB_OK | MB_ICONWARNING );
+		}
+	}
 	GGTrees_UpdateInstances( 1 );
 	GGTrees_RasterizeTreeMap();
 	GGTrees_UploadTreeMap();
