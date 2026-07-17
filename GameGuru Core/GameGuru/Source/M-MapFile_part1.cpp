@@ -1409,6 +1409,7 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 	t.tfile_s = pEleProf->soundset3_s; addtocollection(t.tfile_s.Get());
 	t.tfile_s = pEleProf->soundset5_s; addtocollection(t.tfile_s.Get());
 	t.tfile_s = pEleProf->soundset6_s; addtocollection(t.tfile_s.Get());
+	t.tfile_s = pEleProf->soundset4a_s; addtocollection(t.tfile_s.Get());
 	t.tfile_s = pEleProf->overrideanimset_s; addtocollection(t.tfile_s.Get());
 
 	// lipsync files associated with soundset references
@@ -1418,6 +1419,7 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 	tmpFile_s = pEleProf->soundset3_s; tmpFile_s = cstr(Left(tmpFile_s.Get(), strlen(tmpFile_s.Get()) - 4)) + ".lip"; addtocollection(tmpFile_s.Get());
 	tmpFile_s = pEleProf->soundset5_s; tmpFile_s = cstr(Left(tmpFile_s.Get(), strlen(tmpFile_s.Get()) - 4)) + ".lip"; addtocollection(tmpFile_s.Get());
 	tmpFile_s = pEleProf->soundset6_s; tmpFile_s = cstr(Left(tmpFile_s.Get(), strlen(tmpFile_s.Get()) - 4)) + ".lip"; addtocollection(tmpFile_s.Get());
+	tmpFile_s = pEleProf->soundset4a_s; tmpFile_s = cstr(Left(tmpFile_s.Get(), strlen(tmpFile_s.Get()) - 4)) + ".lip"; addtocollection(tmpFile_s.Get());
 
 	// collectable guns
 	cstr pGunPresent = "";

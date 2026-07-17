@@ -14,7 +14,8 @@ void c_entity_loadelementsdata ( void )
 	// load entity element list
 	t.failedtoload=0;
 	//t.versionnumbersupported = 338;
-	t.versionnumbersupported = 341;
+	//t.versionnumbersupported = 341;
+	t.versionnumbersupported = 342; // v342 adds eleprof.soundset4a_s (Sound4 slot) — matches production DX11
 
 	if ( FileExist(t.elementsfilename_s.Get()) == 1 ) 
 	{
@@ -748,6 +749,10 @@ void c_entity_loadelementsdata ( void )
 					{
 						t.a = c_ReadLong(1); t.entityelement[t.e].eleprof.bUseFPESettings = t.a;
 					}
+					if (t.versionnumberload >= 342)
+					{
+						t.a_s = c_ReadString(1); t.entityelement[t.e].eleprof.soundset4a_s = t.a_s;
+					}
 
 					// get the index of the entity profile
 					t.ttentid=t.entityelement[t.e].bankindex;
@@ -965,7 +970,7 @@ void c_entity_loadelementsdata ( void )
 				// now go through ELEPROF enrties to update any SCRIPTBANK references and SOUNDSET references
 				for (t.e = 1; t.e <= g.entityelementlist; t.e++)
 				{
-					for (t.tcheck = 1; t.tcheck <= 8; t.tcheck++)
+					for (t.tcheck = 1; t.tcheck <= 9; t.tcheck++)
 					{
 						if (t.tcheck == 1)  t.tcheck_s = t.entityelement[t.e].eleprof.aimain_s;
 						if (t.tcheck == 2)  t.tcheck_s = t.entityelement[t.e].eleprof.soundset_s;
@@ -975,6 +980,7 @@ void c_entity_loadelementsdata ( void )
 						if (t.tcheck == 6)  t.tcheck_s = t.entityelement[t.e].eleprof.soundset4_s;
 						if (t.tcheck == 7)  t.tcheck_s = t.entityelement[t.e].eleprof.soundset5_s;
 						if (t.tcheck == 8)  t.tcheck_s = t.entityelement[t.e].eleprof.soundset6_s;
+						if (t.tcheck == 9)  t.tcheck_s = t.entityelement[t.e].eleprof.soundset4a_s;
 						t.ttry_s = "";
 						for (t.nn = 1; t.nn <= Len(t.tcheck_s.Get()); t.nn++)
 						{
@@ -998,6 +1004,7 @@ void c_entity_loadelementsdata ( void )
 								if (t.tcheck == 6) { t.entityelement[t.e].eleprof.soundset4_s = t.replacements_s[t.tt][1]; t.tt = t.treplacementmax + 1; }
 								if (t.tcheck == 7) { t.entityelement[t.e].eleprof.soundset5_s = t.replacements_s[t.tt][1]; t.tt = t.treplacementmax + 1; }
 								if (t.tcheck == 8) { t.entityelement[t.e].eleprof.soundset6_s = t.replacements_s[t.tt][1]; t.tt = t.treplacementmax + 1; }
+								if (t.tcheck == 9) { t.entityelement[t.e].eleprof.soundset4a_s = t.replacements_s[t.tt][1]; t.tt = t.treplacementmax + 1; }
 							}
 						}
 					}

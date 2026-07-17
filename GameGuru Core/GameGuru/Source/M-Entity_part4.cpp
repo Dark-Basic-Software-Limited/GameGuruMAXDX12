@@ -12,7 +12,7 @@
 	g.entityelementlist = temp;
 
 	//  Save entity element list
-	t.versionnumbersave = 341;
+	t.versionnumbersave = 342; // v342 adds eleprof.soundset4a_s — matches production DX11 so saves round-trip both ways
 
 	EntityWriter writer;
 
@@ -581,6 +581,10 @@
 				if (t.versionnumbersave >= 341)
 				{
 					writer.WriteLong(t.entityelement[ent].eleprof.bUseFPESettings);
+				}
+				if (t.versionnumbersave >= 342)
+				{
+					writer.WriteString(t.entityelement[ent].eleprof.soundset4a_s.Get());
 				}
 			}
 		} 
@@ -1425,6 +1429,7 @@ void entity_addentitytomap ( void )
 					t.entityelement[t.te].eleprof.soundset4_s = t.entityelement[t.e].eleprof.soundset4_s;
 					t.entityelement[t.te].eleprof.soundset5_s = t.entityelement[t.e].eleprof.soundset5_s;
 					t.entityelement[t.te].eleprof.soundset6_s = t.entityelement[t.e].eleprof.soundset6_s;
+					t.entityelement[t.te].eleprof.soundset4a_s = t.entityelement[t.e].eleprof.soundset4a_s;
 					t.entityelement[t.te].eleprof.overrideanimset_s = t.entityelement[t.e].eleprof.overrideanimset_s;
 					t.entityelement[t.te].eleprof.strength=t.entityelement[t.e].eleprof.strength;
 					t.entityelement[t.te].eleprof.speed=t.entityelement[t.e].eleprof.speed;

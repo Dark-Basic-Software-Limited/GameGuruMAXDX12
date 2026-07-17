@@ -5929,6 +5929,7 @@ struct entityprofiletype
 	float fDecalFrame;
 	cstr soundset5_s;
 	cstr soundset6_s;
+	cstr soundset4a_s;
 	cstr ammopool_s;
 	CollectableType collectable;
 	int clipcapacity;
@@ -5959,7 +5960,7 @@ struct entityprofiletype
 		 bDecalInit = false;
 		 soundset5_s = "";
 		 soundset6_s = "";
-
+		 soundset4a_s = "";
 		 iThumbnailSmall = 0;
 		 iThumbnailLarge = 0;
 		 ebe.dwTexRefCount = 0;
@@ -6351,6 +6352,7 @@ struct entityeleproftype
 	bool bAutoFlatten;
 	cstr soundset5_s;
 	cstr soundset6_s;
+	cstr soundset4a_s;
 	int iUseSoundVariants;
 	cstr overrideanimset_s;
 	int iSwimSpeed;
@@ -6409,6 +6411,7 @@ struct entityeleproftype
 		iTurnSpeed = 100;
 		soundset5_s = "";
 		soundset6_s = "";
+		soundset4a_s = "";
 		iUseSoundVariants = 1;
 		overrideanimset_s = "";
 		iSwimSpeed = 3;

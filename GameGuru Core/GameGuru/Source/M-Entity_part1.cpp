@@ -406,6 +406,8 @@
 					if (  matched  )  t.entityprofile[t.entid].soundset2_s = t.value_s;
 					cmpStrConst( t_field_s, "soundset3" );
 					if (  matched  )  t.entityprofile[t.entid].soundset3_s = t.value_s;
+					cmpStrConst( t_field_s, "soundset4");
+					if (  matched  )  t.entityprofile[t.entid].soundset4a_s = t.value_s;
 					cmpStrConst( t_field_s, "soundset5");
 					if (  matched  )  t.entityprofile[t.entid].soundset5_s = t.value_s;
 					cmpStrConst( t_field_s, "soundset6");

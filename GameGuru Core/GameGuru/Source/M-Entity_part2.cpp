@@ -319,6 +319,7 @@ void entity_fillgrideleproffromprofile ( void )
 	t.grideleprof.soundset4_s=t.entityprofile[t.entid].soundset4_s;
 	t.grideleprof.soundset5_s=t.entityprofile[t.entid].soundset5_s;
 	t.grideleprof.soundset6_s=t.entityprofile[t.entid].soundset6_s;
+	t.grideleprof.soundset4a_s = t.entityprofile[t.entid].soundset4a_s;
 	t.grideleprof.overrideanimset_s = "";
 
 	//  FPGC - 310710 - decal particle settings
