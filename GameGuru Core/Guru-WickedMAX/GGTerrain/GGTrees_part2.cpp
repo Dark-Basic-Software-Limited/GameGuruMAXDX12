@@ -29,7 +29,7 @@ namespace GGTrees
 // update loop does a nearest-N-to-camera pick every frame instead of the
 // first-N-in-array-order (which used to leave the visible area sparse while
 // filling the pool with distant trees). See GGTrees_WickedUpdate.
-static constexpr uint32_t GG_TREE_POOL_SIZE  = 10000;
+static constexpr uint32_t GG_TREE_POOL_SIZE  = 20000;
 // Hardcoded here to keep this file free of the HLSL-flavoured numTreeTypes
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
@@ -166,7 +166,10 @@ static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranch
 		// via the basecolor DDS's alpha channel. 0.5 is the standard foliage
 		// cutoff (see Wicked's alphaRef semantics — anything < 1.0-1/256 counts
 		// as alpha-test enabled). Double-sided so leaves show from both sides.
-		mat.SetAlphaRef   ( 0.5f );
+		// Wicked semantics: shader clips at (1 - alphaRef), so HIGHER alphaRef
+		// keeps MORE texels. 0.85 = clip below alpha 0.15 — full canopies that
+		// survive mip-averaged alpha at distance, background still cut.
+		mat.SetAlphaRef   ( 0.85f );
 		mat.SetDoubleSided( true );
 	}
 
