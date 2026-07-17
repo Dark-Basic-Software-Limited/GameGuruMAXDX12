@@ -145,17 +145,13 @@ static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranch
 	wi::ecs::Entity matEntity = wi::ecs::CreateEntity();
 	wi::scene::MaterialComponent& mat = scene.materials.Create( matEntity );
 
-	// Branches carry a dark forest-green baseColor. NOTE (2026-07-17): this is
-	// a PERMANENT tint — Wicked multiplies baseColor with the sampled leaf DDS
-	// at all times in the mesh path, so all foliage renders darkened/greened.
-	// The original rationale (tinting the impostor atlas capture fallback) is
-	// obsolete since ImpostorComponent was retired in Stage 4.3. Kept for now
-	// as a deliberate look choice; if DX11 leaf-colour parity reads off in the
-	// A/B, try (1,1,1,1) here first. Trunks stay white (bark DDS untinted).
-	if ( isBranches )
-		mat.SetBaseColor( XMFLOAT4( 0.20f, 0.45f, 0.15f, 1.0f ) );
-	else
-		mat.SetBaseColor( XMFLOAT4( 1.0f,  1.0f,  1.0f,  1.0f ) );
+	// Branches and trunks both use an untinted white baseColor so the leaf DDS
+	// colours pass through exactly as authored — matching DX11, which samples
+	// the same textures with no material tint. (A dark-green branch tint lived
+	// here until 2026-07-17; it was a leftover from the retired impostor-capture
+	// path and turned red autumn leaf textures muddy brown: red x green = dark
+	// brown. Removed after the A/B exposed it — do not reintroduce.)
+	mat.SetBaseColor( XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f ) );
 	mat.SetRoughness ( 1.0f );
 	mat.SetMetalness ( 0.0f );
 	mat.SetReflectance( 0.02f );
