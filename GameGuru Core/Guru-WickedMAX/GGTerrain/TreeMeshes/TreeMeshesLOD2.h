@@ -37,15 +37,15 @@
 #include "pine_branches_LOD2.h"
 #include "scotspine1_trunk_LOD2.h"
 #include "scotspine1_branches_LOD2.h"
-#include "scotspine2_trunk_LOD2.h"
-#include "scotspine2_branches_LOD2.h"
+// #include "scotspine2_trunk_LOD2.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "scotspine2_branches_LOD2.h"  // already included by an earlier LOD table (no include guards in data headers)
 #include "scotspine dead_trunk_LOD2.h"
 #include "snow fir2_trunk_LOD2.h"
 #include "snow fir2_branches_LOD2.h"
 #include "snow fir3_trunk_LOD2.h"
 #include "snow fir3_branches_LOD2.h"
-#include "snow fir_trunk_LOD2.h"
-#include "snow fir_branches_LOD2.h"
+// #include "snow fir_trunk_LOD2.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "snow fir_branches_LOD2.h"  // already included by an earlier LOD table (no include guards in data headers)
 #include "snow pine_trunk_LOD2.h"
 #include "snow pine_branches_LOD2.h"
 #include "snow pine tall2_trunk_LOD2.h"

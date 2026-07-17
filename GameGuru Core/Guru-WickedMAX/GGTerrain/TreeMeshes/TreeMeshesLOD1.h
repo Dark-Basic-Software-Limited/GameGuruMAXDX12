@@ -21,14 +21,14 @@
 #include "jungletree4a_branches_LOD1.h"
 #include "jungletree4b_trunk_LOD1.h"
 #include "jungletree4b_branches_LOD1.h"
-#include "jungletree5a_trunk_LOD1.h"
-#include "jungletree5a_branches_LOD1.h"
+// #include "jungletree5a_trunk_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "jungletree5a_branches_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
 #include "jungletree5b_trunk_LOD1.h"
 #include "jungletree5b_branches_LOD1.h"
-#include "jungletree6a_trunk_LOD1.h"
-#include "jungletree6a_branches_LOD1.h"
-#include "jungletree6b_trunk_LOD1.h"
-#include "jungletree6b_branches_LOD1.h"
+// #include "jungletree6a_trunk_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "jungletree6a_branches_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "jungletree6b_trunk_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "jungletree6b_branches_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
 #include "kentia palm_trunk_LOD1.h"
 #include "kentia palm_branches_LOD1.h"
 #include "palm_trunk_LOD1.h"
@@ -40,18 +40,18 @@
 #include "scotspine2_trunk_LOD1.h"
 #include "scotspine2_branches_LOD1.h"
 #include "scotspine dead_trunk_LOD1.h"
-#include "snow fir2_trunk_LOD1.h"
-#include "snow fir2_branches_LOD1.h"
+// #include "snow fir2_trunk_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "snow fir2_branches_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
 #include "snow fir3_trunk_LOD1.h"
 #include "snow fir3_branches_LOD1.h"
 #include "snow fir_trunk_LOD1.h"
 #include "snow fir_branches_LOD1.h"
 #include "snow pine_trunk_LOD1.h"
 #include "snow pine_branches_LOD1.h"
-#include "snow pine tall2_trunk_LOD1.h"
-#include "snow pine tall2_branches_LOD1.h"
-#include "snow pine tall_trunk_LOD1.h"
-#include "snow pine tall_branches_LOD1.h"
+// #include "snow pine tall2_trunk_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "snow pine tall2_branches_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "snow pine tall_trunk_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
+// #include "snow pine tall_branches_LOD1.h"  // already included by an earlier LOD table (no include guards in data headers)
 #include "sparse pine_trunk_LOD1.h"
 #include "sparse pine_branches_LOD1.h"
 #include "vine tree large_trunk_LOD1.h"

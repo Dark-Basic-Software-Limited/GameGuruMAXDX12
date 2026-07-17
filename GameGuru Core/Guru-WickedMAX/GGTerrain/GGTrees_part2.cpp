@@ -19,6 +19,11 @@
 namespace GGTrees
 {
 
+// LOD1/LOD2 mesh tables (g_GGTreesLOD1/g_GGTreesLOD2, 38 entries each).
+// Included inside namespace GGTrees to match the LOD0 include in part0.
+#include "TreeMeshes/TreeMeshesLOD1.h"
+#include "TreeMeshes/TreeMeshesLOD2.h"
+
 // Pool caps visible-tree ObjectComponents in the scene. Wicked's per-entity
 // ECS overhead is O(N) per frame regardless of what each object rasterizes
 // as, so we can't just crank this to numTotalTrees (400K) without tanking
@@ -34,6 +39,15 @@ static constexpr uint32_t GG_TREE_POOL_SIZE  = 20000;
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
 
+// Mesh LOD distance bands (world inches, 1" = 1 unit). Beyond LOD1_DIST a tree
+// uses the LOD1 mesh, beyond LOD2_DIST the LOD2 mesh (e.g. birch 5156 -> 3448
+// -> 2061 tris). The LOD1/LOD2 tables have existed as assets since the DX11
+// era but were never referenced by ANY engine path (DX11 renders LOD0 +
+// billboards past lod_dist) — this is their first use, so watch the A/B for
+// authoring defects. Compared as squared distances against the nearest-N dist2.
+static constexpr float GG_TREE_LOD1_DIST = 2500.0f;  // ~63 m
+static constexpr float GG_TREE_LOD2_DIST = 7000.0f;  // ~178 m
+
 static bool             g_wickedTreesSetup   = false;
 static std::string      g_treesExeDir;
 
@@ -41,6 +55,12 @@ static std::string      g_treesExeDir;
 // nullable — a few tree types (dead pine tree in LOD0) have branches == null;
 // those meshes get only subset[0].
 static wi::ecs::Entity  g_treeMeshEntity            [ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
+// LOD1/LOD2 mesh variants, sharing the type's materials. Where a variant is
+// missing in the tables, the slot ALIASES the LOD0 entity (never INVALID for a
+// valid type) so the pick loop needs no per-frame guards. Shutdown must skip
+// aliased entries to avoid double Entity_Remove.
+static wi::ecs::Entity  g_treeMeshEntityLOD1        [ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
+static wi::ecs::Entity  g_treeMeshEntityLOD2        [ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
 static wi::ecs::Entity  g_treeTrunkMaterialEntity   [ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
 static wi::ecs::Entity  g_treeBranchesMaterialEntity[ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
 
@@ -208,6 +228,25 @@ static void GGTrees_WickedSetup()
 			tree.trunk,    g_treeTrunkMaterialEntity[ t ],
 			tree.branches, branchesMat );
 
+		// LOD1/LOD2 variants share the type's materials (same texture set, just
+		// decimated geometry). A missing variant aliases the previous LOD so the
+		// per-frame pick never needs a validity check. If a lower LOD has
+		// branches where LOD0 had none, build the branch material on demand.
+		auto buildLodVariant = [&]( const GGTree& lodTree, wi::ecs::Entity fallback ) -> wi::ecs::Entity
+		{
+			if ( !lodTree.trunk ) return fallback;
+			wi::ecs::Entity lodBranchesMat = branchesMat;
+			if ( lodTree.branches && lodBranchesMat == wi::ecs::INVALID_ENTITY )
+			{
+				lodBranchesMat = BuildTreeMaterial( lodTree.branches->textureName, true );
+				g_treeBranchesMaterialEntity[ t ] = lodBranchesMat;
+			}
+			return BuildTreeMesh( lodTree.trunk, g_treeTrunkMaterialEntity[ t ],
+				lodTree.branches, lodBranchesMat );
+		};
+		g_treeMeshEntityLOD1[ t ] = buildLodVariant( g_GGTreesLOD1[ t ], g_treeMeshEntity[ t ] );
+		g_treeMeshEntityLOD2[ t ] = buildLodVariant( g_GGTreesLOD2[ t ], g_treeMeshEntityLOD1[ t ] );
+
 		// Stage 4 (deprecated 2026-07-13 evening): no ImpostorComponent.
 		// Wicked's impostor render path (wiRenderer.cpp:7298 RenderImpostors)
 		// draws via a separate DrawIndexedInstancedIndirect that does NOT
@@ -314,11 +353,17 @@ void GGTrees_WickedUpdate()
 		poolFill = GG_TREE_POOL_SIZE;
 	}
 
+	constexpr float lod1Dist2 = GG_TREE_LOD1_DIST * GG_TREE_LOD1_DIST;
+	constexpr float lod2Dist2 = GG_TREE_LOD2_DIST * GG_TREE_LOD2_DIST;
 	for ( size_t k = 0; k < poolFill; k++ )
 	{
 		InstanceTree* pTree = &pAllTrees[ candidates[ k ].idx ];
 		uint32_t type = (uint32_t)pTree->GetType();
-		wi::ecs::Entity treeMesh = g_treeMeshEntity[ type ];
+		const float d2 = candidates[ k ].dist2;
+		wi::ecs::Entity treeMesh =
+			( d2 < lod1Dist2 ) ? g_treeMeshEntity    [ type ] :
+			( d2 < lod2Dist2 ) ? g_treeMeshEntityLOD1[ type ] :
+			                     g_treeMeshEntityLOD2[ type ];
 
 		wi::ecs::Entity e = g_treePoolEntities[ k ];
 		wi::scene::ObjectComponent*     obj   = scene.objects   .GetComponent( e );
@@ -361,10 +406,18 @@ void GGTrees_WickedShutdown()
 	}
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
+		// LOD1/LOD2 slots may ALIAS a higher LOD's entity (missing variant) —
+		// remove only distinct entities to avoid double Entity_Remove.
+		if ( g_treeMeshEntityLOD2[ t ] != wi::ecs::INVALID_ENTITY && g_treeMeshEntityLOD2[ t ] != g_treeMeshEntityLOD1[ t ] && g_treeMeshEntityLOD2[ t ] != g_treeMeshEntity[ t ] )
+			scene.Entity_Remove( g_treeMeshEntityLOD2[ t ] );
+		if ( g_treeMeshEntityLOD1[ t ] != wi::ecs::INVALID_ENTITY && g_treeMeshEntityLOD1[ t ] != g_treeMeshEntity[ t ] )
+			scene.Entity_Remove( g_treeMeshEntityLOD1[ t ] );
 		if ( g_treeMeshEntity            [ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeMeshEntity            [ t ] );
 		if ( g_treeTrunkMaterialEntity   [ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeTrunkMaterialEntity   [ t ] );
 		if ( g_treeBranchesMaterialEntity[ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeBranchesMaterialEntity[ t ] );
 		g_treeMeshEntity            [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeMeshEntityLOD1        [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeMeshEntityLOD2        [ t ] = wi::ecs::INVALID_ENTITY;
 		g_treeTrunkMaterialEntity   [ t ] = wi::ecs::INVALID_ENTITY;
 		g_treeBranchesMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
 	}
