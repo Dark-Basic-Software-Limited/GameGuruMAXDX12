@@ -35,6 +35,16 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.15 Terrain: preserve blendmap + VT residency across in-place chunk regen
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`Terrain::gg_preserve_blendmap_on_regen`, default false = stock)
+- `WickedEngine/wiTerrain.cpp` (`Generation_Update`: regen branch skips the blendmap_layers resize/overwrite and the GPU `blendmap = {}` reset when the flag is up and the old chunk has usable layers; merge epilogue skips `vt->invalidate()` for removable/regenerated chunks; `UpdateVirtualTexturesCPU`: `gg_material_rebind` detects the freshly-merged bindingless MaterialComponent and re-runs the atlas bind block against the EXISTING vt without `vt.init()`)
+
+**Why:** sculpting in GG regenerates the brush's chunks in place EVERY drag frame. Stock regen (a) overwrites the chunk's blendmap layers with engine-default base/slope/altitude region weights — clobbering GG's DX11-style multi-layer blendmap and flashing wrong textures — and (b) `vt->invalidate()` in the merge epilogue resets the sparse VT's residency, so all tiles re-stream through multi-frame GPU feedback round-trips = chunk-shaped blur/checker for the whole duration of a sculpt drag, healing only after mouse release. With the flag up, only the mesh regenerates; blendmap layers, the GPU blendmap texture and VT residency all survive. The one wrinkle: the merge still replaces the chunk's MaterialComponent with a fresh (bindingless) one — `gg_material_rebind` re-binds it to the surviving vt in the same frame, no reset. GG's blend passes rewrite the weights right after regen anyway (the bridge erases the processed keys), delivered via the 1.13 resident-tile repaint.
+
+**Behaviour:** no stock behaviour change — flag defaults false.
+
 ### 1.14 Terrain: optional generation restart on dirty materials
 
 **Files:**
@@ -576,6 +586,7 @@ modified, both genuine bug fixes.
 | 1.12 Terrain ChunkData::merge_pending stale-mesh flag | applied 2026-07-18, lib rebuilt; **hotfix `df3c10e0` same day: flag only on chunks actually (re)generated** — the spiral visits every chunk every job run and the original unconditional set made GG's blend passes skip the whole map forever (Island Showdown grey terrain) | candidate for upstream PR — passive field, closes the regen-vs-merge window for mesh-baking consumers (GG blendmap passes) |
 | 1.13 VirtualTexture::pending_repaint_blendmap instant refresh | applied 2026-07-18, lib rebuilt | candidate for upstream PR — passive flag; paint strokes visible next frame instead of after seconds of feedback re-streaming |
 | 1.14 Optional generation restart on dirty materials | applied 2026-07-19 (`cbce724d`), lib rebuilt | candidate for upstream PR — default true = stock; GG disables (runtime material registration must not rebuild the island) |
+| 1.15 Preserve blendmap + VT residency on in-place regen | applied 2026-07-19, lib rebuilt | GG-specific (default false = stock) — sculpt-drag chunks keep GG blendmaps and resident tiles; fresh merged material re-bound without vt.init() |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

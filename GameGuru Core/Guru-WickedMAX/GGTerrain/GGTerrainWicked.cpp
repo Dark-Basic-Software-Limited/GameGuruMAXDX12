@@ -1698,6 +1698,12 @@ void GGTerrainWicked_Init()
 	// depending on frame order the restart fired = the 4-5s full-terrain flicker on
 	// the first stroke with each new texture. GG owns the blendmaps; never restart.
 	terrain.generation_restart_on_dirty_materials = false;
+	// Wicked delta 1.15: in-place chunk regen (sculpt drag) keeps GG's blendmap layers,
+	// the GPU blendmap texture AND the virtual-texture residency. Stock behavior rebuilt
+	// engine-default region weights + reset the VT every regen = chunk-shaped blur /
+	// wrong-texture flash for the whole duration of a sculpt drag. GG's blend passes
+	// rewrite the weights right after regen anyway (bridge erases the processed keys).
+	terrain.gg_preserve_blendmap_on_regen = true;
 	terrain.lod_bias = 0.0f;              // hold higher mesh LOD one step further out (inch-scale world)
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;
