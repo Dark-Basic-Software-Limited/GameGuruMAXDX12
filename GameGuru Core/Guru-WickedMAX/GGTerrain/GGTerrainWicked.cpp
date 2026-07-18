@@ -520,8 +520,11 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 			w[baseSlot] = 1.0f;
 
 			// Layer 0: replace/blend at height ramp
+			// (targetSlot bounds guard: the auto slots are 0-4 today, but slot mappings
+			// have grown dynamic — an out-of-range slot must never scribble the stack)
 			auto applyLayer = [&](int layerIdx, int targetSlot)
 			{
+				if (targetSlot < 0 || targetSlot >= 8) return;
 				if (layerRcpWidth[layerIdx] == 0.0f) return; // start == end -> unused
 				float t = (height - layerStart[layerIdx]) * layerRcpWidth[layerIdx];
 				if (t <= 0.0f) return;
@@ -531,6 +534,7 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 			};
 			auto applySlope = [&](int slopeIdx, int targetSlot)
 			{
+				if (targetSlot < 0 || targetSlot >= 8) return;
 				if (slopeRcpWidth[slopeIdx] == 0.0f) return;
 				float t = (normaly - slopeStart[slopeIdx]) * slopeRcpWidth[slopeIdx];
 				if (t <= 0.0f) return;
