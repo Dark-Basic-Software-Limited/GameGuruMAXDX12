@@ -29,6 +29,9 @@ extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* 
 extern uint64_t g_dbgBridgeCalls, g_dbgBridgeChunksMarked, g_dbgBridgeKeysErased,
 	g_dbgAutoBlendChunks, g_dbgPaintBlendChunks;
 extern size_t g_dbgInvalidatedCensus, g_dbgMergePendingCensus;
+extern uint64_t g_dbgAutoSkipNoChunk, g_dbgAutoSkipNoLayers, g_dbgAutoSkipInvalid,
+	g_dbgAutoSkipMergePend, g_dbgAutoPassRuns;
+extern size_t g_dbgAutoLastPending;
 
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
@@ -1067,14 +1070,26 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"TERRAINW_AUTOBLEND_CHUNKS: %llu\n"
 			"TERRAINW_PAINTBLEND_CHUNKS: %llu\n"
 			"TERRAINW_INVALIDATED_NOW: %llu\n"
-			"TERRAINW_MERGEPENDING_NOW: %llu\n",
+			"TERRAINW_MERGEPENDING_NOW: %llu\n"
+			"TERRAINW_AUTO_RUNS: %llu\n"
+			"TERRAINW_AUTO_LASTPENDING: %llu\n"
+			"TERRAINW_AUTO_SKIP_NOCHUNK: %llu\n"
+			"TERRAINW_AUTO_SKIP_NOLAYERS: %llu\n"
+			"TERRAINW_AUTO_SKIP_INVALID: %llu\n"
+			"TERRAINW_AUTO_SKIP_MERGEPEND: %llu\n",
 			(unsigned long long)g_dbgBridgeCalls,
 			(unsigned long long)g_dbgBridgeChunksMarked,
 			(unsigned long long)g_dbgBridgeKeysErased,
 			(unsigned long long)g_dbgAutoBlendChunks,
 			(unsigned long long)g_dbgPaintBlendChunks,
 			(unsigned long long)g_dbgInvalidatedCensus,
-			(unsigned long long)g_dbgMergePendingCensus);
+			(unsigned long long)g_dbgMergePendingCensus,
+			(unsigned long long)g_dbgAutoPassRuns,
+			(unsigned long long)g_dbgAutoLastPending,
+			(unsigned long long)g_dbgAutoSkipNoChunk,
+			(unsigned long long)g_dbgAutoSkipNoLayers,
+			(unsigned long long)g_dbgAutoSkipInvalid,
+			(unsigned long long)g_dbgAutoSkipMergePend);
 	}
 
 	// Tab mode (profiler panel state)

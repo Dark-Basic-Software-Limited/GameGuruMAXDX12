@@ -112,6 +112,12 @@ uint64_t g_dbgAutoBlendChunks = 0;    // chunks processed by ApplyDX11StyleAutoB
 uint64_t g_dbgPaintBlendChunks = 0;   // chunks processed by ProcessPaintedChunkBlendmaps
 size_t   g_dbgInvalidatedCensus = 0;  // chunks with invalidated flag up (last sig loop)
 size_t   g_dbgMergePendingCensus = 0; // chunks with merge_pending up (last sig loop)
+uint64_t g_dbgAutoSkipNoChunk = 0;    // auto pass: entity not found in terrain->chunks
+uint64_t g_dbgAutoSkipNoLayers = 0;   // auto pass: blendmap_layers empty
+uint64_t g_dbgAutoSkipInvalid = 0;    // auto pass: invalidated flag up
+uint64_t g_dbgAutoSkipMergePend = 0;  // auto pass: merge_pending flag up
+uint64_t g_dbgAutoPassRuns = 0;       // auto pass invocations (gate fires)
+size_t   g_dbgAutoLastPending = 0;    // auto pass: pending size on last run
 
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
@@ -432,6 +438,8 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 	}
 	// interactive-scale batch? (a max-size brush spans at most a 4x4 chunk footprint)
 	g_blendRepaintFastPath = caughtUp && pending.size() <= 16;
+	g_dbgAutoPassRuns++;
+	g_dbgAutoLastPending = pending.size();
 
 	// Phase 2: Cancel generation for safe chunk data access, then rewrite blendmaps
 	terrain->Generation_Cancel();
@@ -447,10 +455,10 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 		{
 			if (cd.entity == pc.entity) { chunk_data = &cd; break; }
 		}
-		if (!chunk_data) continue;
-		if (chunk_data->blendmap_layers.empty()) continue;  // generation not finished yet
-		if (chunk_data->invalidated) continue;  // pending regen would discard this work — retry after
-		if (chunk_data->merge_pending) continue;  // regenerated but main-scene mesh still stale — retry after merge
+		if (!chunk_data) { g_dbgAutoSkipNoChunk++; continue; }
+		if (chunk_data->blendmap_layers.empty()) { g_dbgAutoSkipNoLayers++; continue; }  // generation not finished yet
+		if (chunk_data->invalidated) { g_dbgAutoSkipInvalid++; continue; }  // pending regen would discard this work — retry after
+		if (chunk_data->merge_pending) { g_dbgAutoSkipMergePend++; continue; }  // regenerated but main-scene mesh still stale — retry after merge
 
 		dx11BlendProcessedKeys.insert(key);
 		dx11BlendChunkKeyToEntity[key] = pc.entity;
