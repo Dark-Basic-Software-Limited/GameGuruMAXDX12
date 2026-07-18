@@ -199,7 +199,7 @@ struct GGTerrainRenderParams2
 	float textureGamma = 2.2f;
 	float detailScale = 1.0f;
 	uint32_t detailLimit = 0;
-	float brushSize = 500.0f;//way too big for up default start position on terrain 3000.0f;
+	float brushSize = 100.0f; // shared by sculpt/paint/tree/grass brushes (was 500 — too big as a starting size)
 	uint32_t readBackTextureReduction = 4; // don't set less than 4, lower gives better quality when a page covers a low number of pixels, higher gives better performance
 
 	float editable_size = 50000.0f;

@@ -1588,9 +1588,14 @@ void imgui_Customize_Tree_v3(int mode)
 						//9999 halv uv x
 						ImVec2 fill_rect = ImGui::GetWindowPos() + ImGui::GetCursorPos();
 						ImGui::GetCurrentWindow()->DrawList->AddRectFilled(fill_rect, fill_rect + ImVec2(iLargerPreviewIconSize, iLargerPreviewIconSize), ImGui::GetColorU32(ImVec4(0, 0, 0, 1)), 0.0f, ImDrawCornerFlags_None);
-						ImGui::SetCursorPosX(((float)iLargerPreviewIconSize - ((float)iLargerPreviewIconSize*imageScaleX)) * 0.5);
+						// the billboard image is narrower than the cell (imageScaleX) — feed the
+						// centering offset in as frame_padding so the CLICKABLE rect spans the whole
+						// cell (child window clips the vertical overshoot) while the image still
+						// draws centered; a narrow cactus is no longer a pixel-hunt target
+						int iTreeBtnPad = (int)(((float)iLargerPreviewIconSize - ((float)iLargerPreviewIconSize*imageScaleX)) * 0.5f);
+						ImGui::SetCursorPos(ImVec2(0.0f, -(float)iTreeBtnPad));
 
-						if (ImGui::ImgBtn(sTreeTexturesID[iL], ImVec2(iLargerPreviewIconSize*imageScaleX, iLargerPreviewIconSize), ImColor(0, 0, 0, 255), ImColor(255, 255, 255, 255), ImColor(220, 220, 220, 220), ImColor(220, 220, 220, 220),-1,0,0,0))
+						if (ImGui::ImgBtn(sTreeTexturesID[iL], ImVec2(iLargerPreviewIconSize*imageScaleX, iLargerPreviewIconSize), ImColor(0, 0, 0, 255), ImColor(255, 255, 255, 255), ImColor(220, 220, 220, 220), ImColor(220, 220, 220, 220), iTreeBtnPad,0,0,0))
 						{
 							//PE: Toggle
 							if (ggtrees_global_params.paint_tree_bitfield & (1ULL << iL))
