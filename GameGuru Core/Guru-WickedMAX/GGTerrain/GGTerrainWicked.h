@@ -17,6 +17,11 @@ namespace GGTerrain
 	// painted blendmap passes re-run (TEXTURES-only edits skip the mesh regen).
 	void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float maxZ, uint32_t flags);
 
+	// The terrain texture SET changed (Change Texture Folder / ReloadTextures) —
+	// re-create every Wicked terrain material from the new DDS files (full material
+	// re-setup + generation restart on the next update).
+	void GGTerrainWicked_OnTextureSetChanged();
+
 	// Level reveal hold: call Begin at the end of a level load; the editor draws
 	// an opaque cover over the 3D view while IsRevealHeld() returns true. The
 	// hold releases when the legacy heights are ready AND the camera-facing

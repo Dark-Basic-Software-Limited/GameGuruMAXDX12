@@ -1900,6 +1900,7 @@ namespace GGTerrain {
 	extern int ggterrain_initialised;
 	void GGTerrain_Update_Sculpting(float pickX, float pickY, float pickZ);
 	void GGTerrain_Update_Painting(float pickX, float pickY, float pickZ);
+	void GGTerrain_TriggerPaintTextureLoad(void);
 }
 void GGTerrain_CreateUndoRedoAction(int type, int eList, bool bUserAction = true, void* pEventData = nullptr);
 extern int g_iCalculatingChangeBounds;
@@ -1951,6 +1952,9 @@ static void AutoHarness_TerrainEditTick(void)
 		ggterrain_extra_params.edit_mode = GGTERRAIN_EDIT_PAINT;
 		ggterrain_extra_params.paint_material = s_terrainTestMaterial;
 		ggterrain_internal_params.mouseLeftState = 1;
+		// run the same first-use texture-load trigger as the real editor dispatch —
+		// skipping it is how the first-stroke texture-load glitch escaped testing
+		GGTerrain_TriggerPaintTextureLoad();
 		GGTerrain_Update_Painting(s_terrainTestX, y, s_terrainTestZ);
 	}
 	}

@@ -2301,6 +2301,15 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 	if (marked > s_pendingRegenCount) s_pendingRegenCount = marked;
 }
 
+void GGTerrainWicked_OnTextureSetChanged()
+{
+	// Change Texture Folder / ReloadTextures: every material's DDS content changed on
+	// disk — the incremental path can't help here, do the full re-setup + restart so
+	// SetupTerrainMaterial re-loads everything from the new set.
+	if (!wickedTerrainInitialised) return;
+	wickedTerrainMaterialsSetup = false;
+}
+
 void GGTerrainWicked_OnPaintDataChanged()
 {
 	// Called when pMaterialMap is updated (level load or paint brush).

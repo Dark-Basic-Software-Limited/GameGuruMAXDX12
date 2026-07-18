@@ -11694,7 +11694,11 @@ void GGTerrain_ReloadTextures(wiGraphics::CommandList cmd, std::vector<std::stri
 
 	// Can't update the texture here without a command list, so flag it for update later
 	////ggterrain_internal_params.update_material_texture = 1;
-	GGTerrain_InvalidateEverything(GGTERRAIN_INVALIDATE_TEXTURES);
+	// legacy page refresh only — the Wicked side re-creates its materials from the
+	// new texture set via the hook below (full re-setup + restart, correct for an
+	// explicit texture-folder change)
+	GGTerrain_InvalidateEverything(GGTERRAIN_INVALIDATE_TEXTURES | GGTERRAIN_INVALIDATE_NO_WICKED);
+	GGTerrainWicked_OnTextureSetChanged();
 }
 
 #ifdef ONLYLOADWHENUSED
@@ -11781,7 +11785,12 @@ void GGTerrain_CheckMaterialUsed(wiGraphics::CommandList cmd)
 		if (bTextChange)
 		{
 			//PE: update textures.
-			GGTerrain_InvalidateEverything(GGTERRAIN_INVALIDATE_TEXTURES);
+			// LEGACY ONLY: this refreshes the old renderer's texture-array pages after an
+			// on-demand slice upload. The Wicked side loads its material DDS itself
+			// (SetupTerrainMaterial), so bridging this was erasing EVERY chunk's blend
+			// state on the FIRST paint stroke with each texture — the island-wide
+			// blur/checkerboard glitch.
+			GGTerrain_InvalidateEverything(GGTERRAIN_INVALIDATE_TEXTURES | GGTERRAIN_INVALIDATE_NO_WICKED);
 		}
 	}
 }
@@ -11810,6 +11819,23 @@ void GGTerrain_LoadDefaultTextureIntoSlot(int i, char* rootDir, wiGraphics::Comm
 	GGTerrain_LoadTextureDDSIntoSlice(szDstSurfacePath, &texSurfaceArray, i, &surfaceDDS, cmd);
 }
 #endif
+
+// Same first-use texture-load trigger the editor paint dispatch runs before
+// GGTerrain_Update_Painting. Exposed so the automation harness's PAINT_TEST
+// exercises the EXACT real-stroke path — the first-stroke texture-load glitch
+// escaped harness testing precisely because this step was skipped there.
+void GGTerrain_TriggerPaintTextureLoad(void)
+{
+#ifdef ONLYLOADWHENUSED
+	int mat = ggterrain_extra_params.paint_material & 0xff;
+	if (mat > 0 && mat <= GGTERRAIN_MAX_SOURCE_TEXTURES)
+		mat--;
+	if (mat >= 0 && !bTextureUploaded[mat])
+	{
+		bCheckForNewTerrainTextures = true; //PE: Load texture.
+	}
+#endif
+}
 
 } // namespace GGTerrain
 
