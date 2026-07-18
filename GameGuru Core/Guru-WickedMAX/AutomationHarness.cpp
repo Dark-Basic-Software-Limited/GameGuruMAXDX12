@@ -24,6 +24,12 @@ extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* 
 #include "GGTerrain/GGTerrain.h"
 #include "M-UndoSys.h"
 
+// Wicked-terrain blend/bridge diagnostics defined in GGTerrainWicked.cpp (GET_PERF_DATA).
+// Note: they sit at file scope BEFORE that file's namespace GGTerrain opens — global namespace.
+extern uint64_t g_dbgBridgeCalls, g_dbgBridgeChunksMarked, g_dbgBridgeKeysErased,
+	g_dbgAutoBlendChunks, g_dbgPaintBlendChunks;
+extern size_t g_dbgInvalidatedCensus, g_dbgMergePendingCensus;
+
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
 #include "wiGraphicsDevice.h"
@@ -1049,6 +1055,26 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"TERRAIN_DRAW_EN: %d\n"
 			"TERRAIN_UPDATE_EN: %d\n",
 			drawCount, exitReason, initFlag, drawEn, updateEn);
+	}
+
+	// Wicked-terrain blend/bridge diagnostics (cumulative counters + last-frame censuses)
+	{
+		using namespace GGTerrain;
+		written += _snprintf(result + written, resultSize - written,
+			"TERRAINW_BRIDGE_CALLS: %llu\n"
+			"TERRAINW_BRIDGE_MARKED: %llu\n"
+			"TERRAINW_BRIDGE_KEYS_ERASED: %llu\n"
+			"TERRAINW_AUTOBLEND_CHUNKS: %llu\n"
+			"TERRAINW_PAINTBLEND_CHUNKS: %llu\n"
+			"TERRAINW_INVALIDATED_NOW: %llu\n"
+			"TERRAINW_MERGEPENDING_NOW: %llu\n",
+			(unsigned long long)g_dbgBridgeCalls,
+			(unsigned long long)g_dbgBridgeChunksMarked,
+			(unsigned long long)g_dbgBridgeKeysErased,
+			(unsigned long long)g_dbgAutoBlendChunks,
+			(unsigned long long)g_dbgPaintBlendChunks,
+			(unsigned long long)g_dbgInvalidatedCensus,
+			(unsigned long long)g_dbgMergePendingCensus);
 	}
 
 	// Tab mode (profiler panel state)

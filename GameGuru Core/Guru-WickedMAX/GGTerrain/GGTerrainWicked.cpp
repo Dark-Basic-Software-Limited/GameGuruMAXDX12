@@ -96,6 +96,23 @@ static bool            g_brushCursorSetup = false;
 // mass invalidation gets the turbo generation budget on its very first frame.
 static size_t s_pendingRegenCount = 0;
 
+// Blendmap VT refresh mode for the current blend-pass batch. Set by each pass from its
+// pending count: small batches (interactive brush strokes, <= a max-size brush's chunk
+// footprint) use the resident-tile repaint fast path (next-frame visible); big batches
+// (level-load / mass regen streams of 64) use the classic invalidate() so hundreds of
+// chunks don't re-render their entire resident tile sets every frame.
+static bool g_blendRepaintFastPath = false;
+
+// Live diagnostics for GET_PERF_DATA (TERRAIN_DEBUG line) — non-static so the
+// automation harness can extern them. Cheap counters, always on.
+uint64_t g_dbgBridgeCalls = 0;        // GGTerrainWicked_InvalidateRegion invocations
+uint64_t g_dbgBridgeChunksMarked = 0; // chunks marked invalidated by the bridge
+uint64_t g_dbgBridgeKeysErased = 0;   // processed-keys erased by the bridge
+uint64_t g_dbgAutoBlendChunks = 0;    // chunks processed by ApplyDX11StyleAutoBlend
+uint64_t g_dbgPaintBlendChunks = 0;   // chunks processed by ProcessPaintedChunkBlendmaps
+size_t   g_dbgInvalidatedCensus = 0;  // chunks with invalidated flag up (last sig loop)
+size_t   g_dbgMergePendingCensus = 0; // chunks with merge_pending up (last sig loop)
+
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
 	return ((uint64_t)(uint32_t)cx << 32) | (uint64_t)(uint32_t)cz;
@@ -413,6 +430,8 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 		pending.resize(64);
 		caughtUp = false;
 	}
+	// interactive-scale batch? (a max-size brush spans at most a 4x4 chunk footprint)
+	g_blendRepaintFastPath = caughtUp && pending.size() <= 16;
 
 	// Phase 2: Cancel generation for safe chunk data access, then rewrite blendmaps
 	terrain->Generation_Cancel();
@@ -495,15 +514,19 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 				chunk_data->blendmap_layers[layer1Slot].pixels[vi] = (uint8_t)(w[layer1Slot] * 255.0f);
 		}
 
-		// Rebuild the GPU blendmap texture and refresh the VT. Residency-backed (near)
-		// chunks take the repaint fast path — resident tiles re-render next frame with
-		// the new blendmap; a full invalidate() would re-stream the chunk through
-		// several seconds of GPU-feedback round-trips (the visible paint lag).
+		// Rebuild the GPU blendmap texture and refresh the VT. For INTERACTIVE edits,
+		// residency-backed (near) chunks take the repaint fast path — resident tiles
+		// re-render next frame with the new blendmap; a full invalidate() would
+		// re-stream the chunk through several seconds of GPU-feedback round-trips
+		// (the visible paint lag). During the LOAD/mass bulk passes the fast path is
+		// poison: hundreds of chunks per batch, each re-rendering its whole resident
+		// tile set per frame = GPU storm (Island Showdown loaded at 6.7 FPS with the
+		// entire terrain stuck on the default grey blend) — those keep invalidate().
 		chunk_data->blendmap = {};
 		terrain->CreateChunkRegionTexture(*chunk_data);
 		if (chunk_data->vt)
 		{
-			if (chunk_data->vt->residency != nullptr && chunk_data->vt->resolution != 0)
+			if (g_blendRepaintFastPath && chunk_data->vt->residency != nullptr && chunk_data->vt->resolution != 0)
 				chunk_data->vt->pending_repaint_blendmap = true;
 			else
 				chunk_data->vt->invalidate();
@@ -512,6 +535,7 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 		chunksModified++;
 	}
 
+	g_dbgAutoBlendChunks += chunksModified;
 	if (chunksModified > 0)
 	{
 		wi::backlog::post(std::string("GGTerrainWicked: DX11-style auto blend on " +
@@ -602,6 +626,8 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		pending.resize(64);
 		caughtUp = false;
 	}
+	// interactive-scale batch? (a max-size brush spans at most a 4x4 chunk footprint)
+	g_blendRepaintFastPath = caughtUp && pending.size() <= 16;
 
 	// Phase 2: Cancel generation for safe chunk data access, then process the batch
 	terrain->Generation_Cancel();
@@ -689,15 +715,19 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 			chunk_data->blendmap_layers[slot].pixels[vi] = 255;
 		}
 
-		// Rebuild the GPU blendmap texture and refresh the VT. Residency-backed (near)
-		// chunks take the repaint fast path — resident tiles re-render next frame with
-		// the new blendmap; a full invalidate() would re-stream the chunk through
-		// several seconds of GPU-feedback round-trips (the visible paint lag).
+		// Rebuild the GPU blendmap texture and refresh the VT. For INTERACTIVE edits,
+		// residency-backed (near) chunks take the repaint fast path — resident tiles
+		// re-render next frame with the new blendmap; a full invalidate() would
+		// re-stream the chunk through several seconds of GPU-feedback round-trips
+		// (the visible paint lag). During the LOAD/mass bulk passes the fast path is
+		// poison: hundreds of chunks per batch, each re-rendering its whole resident
+		// tile set per frame = GPU storm (Island Showdown loaded at 6.7 FPS with the
+		// entire terrain stuck on the default grey blend) — those keep invalidate().
 		chunk_data->blendmap = {};
 		terrain->CreateChunkRegionTexture(*chunk_data);
 		if (chunk_data->vt)
 		{
-			if (chunk_data->vt->residency != nullptr && chunk_data->vt->resolution != 0)
+			if (g_blendRepaintFastPath && chunk_data->vt->residency != nullptr && chunk_data->vt->resolution != 0)
 				chunk_data->vt->pending_repaint_blendmap = true;
 			else
 				chunk_data->vt->invalidate();
@@ -706,6 +736,7 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		chunksModified++;
 	}
 
+	g_dbgPaintBlendChunks += chunksModified;
 	if (chunksModified > 0)
 	{
 		wi::backlog::post(std::string("GGTerrainWicked: painted blendmaps on " +
@@ -1917,9 +1948,11 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// so a gate that was disabled (e.g. materials not set up yet) still fires once re-enabled.
 	uint64_t chunkSig = (uint64_t)terrain->chunks.size();
 	size_t pendingRegenCensus = 0;
+	size_t mergePendingCensus = 0;
 	for (const auto& [sigChunk, sigCd] : terrain->chunks)
 	{
 		if (sigCd.invalidated) pendingRegenCensus++;
+		if (sigCd.merge_pending) mergePendingCensus++;
 		chunkSig = chunkSig * 1099511628211ull
 			+ (uint64_t)sigCd.entity * 31ull
 			+ (uint64_t)sigCd.blendmap_layers.size()
@@ -1931,6 +1964,8 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 			+ (sigCd.merge_pending ? 0x85EBCA6Bull : 0ull);
 	}
 	s_pendingRegenCount = pendingRegenCensus; // consumed by next frame's massRegen throttle
+	g_dbgInvalidatedCensus = pendingRegenCensus;
+	g_dbgMergePendingCensus = mergePendingCensus;
 
 	// Path A: rewrite the auto material weights (slots 0-4) with DX11-shape blend, then let
 	// the painted-material pass overlay its own weights on painted vertices. Must run AFTER
@@ -2176,6 +2211,7 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 
 	// the generator thread mutates the chunks map — stop it before iterating
 	terrain->Generation_Cancel();
+	g_dbgBridgeCalls++;
 
 	const bool heightsChanged = (flags & GGTERRAIN_INVALIDATE_CHUNKS) != 0;
 	// tight chunk-AABB overlap, padded by one heightmap cell so a brush touching a
@@ -2201,9 +2237,10 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 		// chunk settles; the passes skip chunks still flagged invalidated, and the
 		// invalidated bit is part of chunkSig, so the gates refire when regen completes
 		uint64_t key = MakeChunkKey(chunk.x, chunk.z);
-		processedChunkKeys.erase(key);
+		g_dbgBridgeChunksMarked += heightsChanged ? 1 : 0;
+		g_dbgBridgeKeysErased += processedChunkKeys.erase(key);
 		chunkKeyToEntity.erase(key);
-		dx11BlendProcessedKeys.erase(key);
+		g_dbgBridgeKeysErased += dx11BlendProcessedKeys.erase(key);
 		dx11BlendChunkKeyToEntity.erase(key);
 	}
 	// prime the mass-regen throttle so the first frame after a big invalidation
