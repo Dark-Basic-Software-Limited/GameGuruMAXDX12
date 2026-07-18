@@ -137,6 +137,16 @@ const float treeAreaPerChunk = treeArea / treeSplit;
 
 uint32_t treeHighlighted = 0xFFFFFFFF;
 
+// Dirty stamp for the Wicked tree pool (part2): bumped whenever tree instance
+// data changes so the pool re-runs its nearest-N selection next frame. The
+// paint/spray/erase/flatten paths mutate pAllTrees flags IN PLACE via the
+// setters below (numTotalTrees is a fixed 400K — the count never changes), so
+// the setters bump this on any REAL state change. Change-detected so redundant
+// same-value calls (and hover highlighting, which is excluded entirely) can't
+// retrigger the rescan every frame. Also bumped at GGTrees_UpdateInstances
+// entry, which writes instance heights directly without going through setters.
+static uint32_t g_treeInstanceStamp = 0;
+
 struct InstanceTree
 {
 	float x, y, z;
@@ -144,51 +154,61 @@ struct InstanceTree
 	uint32_t id; // not sent to GPU
 
 	bool IsVisible() { return (data & 0x1) != 0; }
-	void SetVisible( int visible ) 
-	{ 
+	void SetVisible( int visible )
+	{
+		uint32_t old = data;
 		if ( visible ) data |= 0x1;
 		else data &= ~0x1;
+		if ( data != old ) g_treeInstanceStamp++;
 	}
 
 	bool IsUserMoved() { return (data & 0x2) != 0; }
-	void SetUserMoved( int moved ) 
-	{ 
+	void SetUserMoved( int moved )
+	{
 		if ( moved ) data |= 0x2;
 		else data &= ~0x2;
 	}
 
 	bool IsHighlighted() { return (data & 0x4) != 0; }
-	void SetHighlighted( int highlighted ) 
-	{ 
+	void SetHighlighted( int highlighted )
+	{
 		if ( highlighted ) data |= 0x4;
 		else data &= ~0x4;
 	}
 
 	bool IsFlattened() { return (data & 0x8) != 0; }
-	void SetFlattened( int flattened ) 
-	{ 
+	void SetFlattened( int flattened )
+	{
+		uint32_t old = data;
 		if ( flattened ) data |= 0x8;
 		else data &= ~0x8;
+		if ( data != old ) g_treeInstanceStamp++;
 	}
 
 	// invalid if tree is on a slope or underwater
 	bool IsInvalid() { return (data & 0x10) != 0; }
-	void SetInvalid( int invalid ) 
-	{ 
+	void SetInvalid( int invalid )
+	{
+		uint32_t old = data;
 		if ( invalid ) data |= 0x10;
 		else data &= ~0x10;
+		if ( data != old ) g_treeInstanceStamp++;
 	}
 
 	void SetType( uint32_t type )
 	{
 		if ( type >= numTreeTypes ) return;
 		unsigned int mask = (0x3F << 11);
+		uint32_t old = data;
 		data = (data & ~mask) | (type << 11);
+		if ( data != old ) g_treeInstanceStamp++;
 	}
 
 	void SetFlags( uint32_t flags )
 	{
+		uint32_t old = data;
 		data = (data & ~0xFF) | (flags & 0xFF);
+		if ( data != old ) g_treeInstanceStamp++;
 	}
 
 	void SetID( uint32_t newID )
@@ -210,7 +230,9 @@ struct InstanceTree
 	void SetScale( unsigned char scale )
 	{
 		scale >>= 1;
+		uint32_t old = data;
 		data = (data & 0xFF01FFFF) | (scale << 17);
+		if ( data != old ) g_treeInstanceStamp++;
 	}
 
 	unsigned char GetScale()
@@ -984,14 +1006,10 @@ uint32_t GGTrees_GetNumHighDetail()
 	return total;
 }
 
-// Bumped on every instance-data rebuild — the Wicked pool update (part2) uses
-// it as a dirty signal so it can skip its nearest-N re-selection on frames
-// where neither the camera nor the tree data changed.
-static uint32_t g_treeInstanceStamp = 0;
-
 // only call this when tree heights need to be updated, e.g. when the terrain has changed
 int GGTrees_UpdateInstances( int accurate )
 {
+	// heights are written directly (pInstance->y), bypassing the stamped setters
 	g_treeInstanceStamp++;
 	if (!ggtrees_initialised) return 0;
 	if ( !GGTerrain_IsReady() ) return 0;
