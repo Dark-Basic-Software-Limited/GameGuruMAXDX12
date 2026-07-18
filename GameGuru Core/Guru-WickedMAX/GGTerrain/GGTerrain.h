@@ -17,7 +17,11 @@ namespace KMaths
 
 #define GGTERRAIN_INVALIDATE_CHUNKS    0x01
 #define GGTERRAIN_INVALIDATE_TEXTURES  0x02
-#define GGTERRAIN_INVALIDATE_ALL       (GGTERRAIN_INVALIDATE_CHUNKS | GGTERRAIN_INVALIDATE_TEXTURES)  
+#define GGTERRAIN_INVALIDATE_ALL       (GGTERRAIN_INVALIDATE_CHUNKS | GGTERRAIN_INVALIDATE_TEXTURES)
+// legacy-terrain-only invalidation: skip the Wicked chunk bridge. For callers whose
+// Wicked-side work is already handled elsewhere (level-load delayed refresh under the
+// reveal hold, paint reset via SetPaintData) or would run on not-yet-ready heights.
+#define GGTERRAIN_INVALIDATE_NO_WICKED 0x04  
 
 struct sUndoSysEventTerrainSculpt;
 struct sUndoSysEventTerrainPaint;

@@ -1200,7 +1200,9 @@ int iTriggerInvalidateAfterFrames = 0;
 void check_new_terrain_parameters(void)
 {
 	iTriggerInvalidateAfterFrames = 22; //PE: Also Need to be delayed so new terrain data have been updated.
-	GGTerrain::GGTerrain_InvalidateRegion(-1000000.0, -1000000.0, 1000000.0, 1000000.0, GGTERRAIN_INVALIDATE_ALL);
+	// immediate call = legacy only (new heights not read back yet — a Wicked regen here
+	// would bake the OLD heights); the delayed trigger above does the real Wicked rebuild
+	GGTerrain::GGTerrain_InvalidateRegion(-1000000.0, -1000000.0, 1000000.0, 1000000.0, GGTERRAIN_INVALIDATE_ALL | GGTERRAIN_INVALIDATE_NO_WICKED);
 
 }
 

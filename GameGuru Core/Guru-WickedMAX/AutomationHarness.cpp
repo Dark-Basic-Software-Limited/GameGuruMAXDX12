@@ -1856,11 +1856,20 @@ static void AutoHarness_SkinWatchTick(void)
 // chain is exercised without real mouse input. One brush tick per frame.
 namespace GGTerrain {
 	extern GGTerrainInternalParams ggterrain_internal_params;
+	extern int ggterrain_initialised;
 	void GGTerrain_Update_Sculpting(float pickX, float pickY, float pickZ);
 	void GGTerrain_Update_Painting(float pickX, float pickY, float pickZ);
 }
 void GGTerrain_CreateUndoRedoAction(int type, int eList, bool bUserAction = true, void* pEventData = nullptr);
 extern int g_iCalculatingChangeBounds;
+
+// terrain tests only make sense in the level editor with the terrain system live
+static bool AutoHarness_TerrainEditAllowed(void)
+{
+	if (bWelcomeScreen_Window || bStoryboardWindow || bImGuiInTestGame) return false;
+	if (!GGTerrain::ggterrain_initialised) return false;
+	return true;
+}
 
 static int   s_terrainTestFrames = 0;
 static int   s_terrainTestPaint = 0;       // 0 = sculpt run, 1 = paint run
@@ -1875,6 +1884,15 @@ static void AutoHarness_TerrainEditTick(void)
 {
 	using namespace GGTerrain;
 	if (s_terrainTestFrames <= 0) return;
+	if (!AutoHarness_TerrainEditAllowed())
+	{
+		// state changed under us (test game started, level closed) — cut the run short;
+		// fall through with no more apply calls so the end-of-run block below still
+		// finalizes any armed undo and hands the editor its modes back
+		s_terrainTestFrames = 0;
+	}
+	else
+	{
 	s_terrainTestFrames--;
 
 	float y = 0.0f;
@@ -1894,12 +1912,14 @@ static void AutoHarness_TerrainEditTick(void)
 		ggterrain_internal_params.mouseLeftState = 1;
 		GGTerrain_Update_Painting(s_terrainTestX, y, s_terrainTestZ);
 	}
+	}
 
 	if (s_terrainTestFrames <= 0)
 	{
 		// stroke over: finalize the undo action the way the editor release path does,
-		// then hand the editor its modes back
-		if (g_iCalculatingChangeBounds)
+		// then hand the editor its modes back (skip the undo if the terrain went away
+		// under an abandoned run — the snapshot buffers may be gone with it)
+		if (g_iCalculatingChangeBounds && ggterrain_initialised)
 		{
 			g_iCalculatingChangeBounds = 0;
 			GGTerrain_CreateUndoRedoAction(s_terrainTestPaint == 0 ? eUndoSys_Terrain_Sculpt : eUndoSys_Terrain_Paint, eUndoSys_UndoList);
@@ -2105,19 +2125,23 @@ void AutoHarness_CheckForCommand(void)
 			s_bSkinWatch ? "ON" : "OFF", s_skinWatchFrame, (int)s_skinWatchSeen.size());
 		result[sizeof(result) - 1] = 0;
 	}
-	else if (_stricmp(cmd, "UNDO") == 0)
+	else if (_stricmp(cmd, "UNDO") == 0 || _stricmp(cmd, "REDO") == 0)
 	{
-		// same entry point the editor's Ctrl+Z handler uses
-		extern void undosys_undoevent(void);
-		undosys_undoevent();
-		_snprintf(result, sizeof(result), "OK: UNDO performed");
-		result[sizeof(result) - 1] = 0;
-	}
-	else if (_stricmp(cmd, "REDO") == 0)
-	{
-		extern void undosys_redoevent(void);
-		undosys_redoevent();
-		_snprintf(result, sizeof(result), "OK: REDO performed");
+		// route through the editor's own Ctrl+Z/Ctrl+Y handlers — they divert to the
+		// Easy Building Editor's stack when EBE is open and do the selection cleanup.
+		// Editor mode only: an undo fired during test game / storyboard would rewrite
+		// editor state under the running game.
+		if (bWelcomeScreen_Window || bStoryboardWindow || bImGuiInTestGame)
+		{
+			_snprintf(result, sizeof(result), "ERROR: %s only works in the level editor", cmd);
+		}
+		else
+		{
+			extern void editor_undo(void);
+			extern void editor_redo(void);
+			if (_stricmp(cmd, "UNDO") == 0) editor_undo(); else editor_redo();
+			_snprintf(result, sizeof(result), "OK: %s performed", cmd);
+		}
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SCULPT_TEST") == 0)
@@ -2126,7 +2150,19 @@ void AutoHarness_CheckForCommand(void)
 		// at the given position for N frames; mode = GGTERRAIN_SCULPT_* int to override
 		float sx = 0, sz = 0; int sf = 0, sm = GGTERRAIN_SCULPT_RAISE;
 		int got = sscanf_s(arg, "%f %f %d %d", &sx, &sz, &sf, &sm);
-		if (got >= 3 && sf > 0)
+		if (!AutoHarness_TerrainEditAllowed())
+		{
+			_snprintf(result, sizeof(result), "ERROR: SCULPT_TEST needs the level editor with terrain initialised");
+		}
+		else if (s_terrainTestFrames > 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: a terrain test is already running (%d frames left)", s_terrainTestFrames);
+		}
+		else if (g_iCalculatingChangeBounds != 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: a real terrain stroke is in progress — release the mouse first");
+		}
+		else if (got >= 3 && sf > 0)
 		{
 			s_terrainTestSavedEditMode = GGTerrain::ggterrain_extra_params.edit_mode;
 			s_terrainTestSavedSculptMode = GGTerrain::ggterrain_extra_params.sculpt_mode;
@@ -2150,7 +2186,19 @@ void AutoHarness_CheckForCommand(void)
 		// material is the GG source-texture index + 1 (0 erases back to auto materials)
 		float px = 0, pz = 0; int pm = 0, pf = 0;
 		int got = sscanf_s(arg, "%f %f %d %d", &px, &pz, &pm, &pf);
-		if (got == 4 && pf > 0)
+		if (!AutoHarness_TerrainEditAllowed())
+		{
+			_snprintf(result, sizeof(result), "ERROR: PAINT_TEST needs the level editor with terrain initialised");
+		}
+		else if (s_terrainTestFrames > 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: a terrain test is already running (%d frames left)", s_terrainTestFrames);
+		}
+		else if (g_iCalculatingChangeBounds != 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: a real terrain stroke is in progress — release the mouse first");
+		}
+		else if (got == 4 && pf > 0)
 		{
 			s_terrainTestSavedEditMode = GGTerrain::ggterrain_extra_params.edit_mode;
 			s_terrainTestSavedSculptMode = GGTerrain::ggterrain_extra_params.sculpt_mode;

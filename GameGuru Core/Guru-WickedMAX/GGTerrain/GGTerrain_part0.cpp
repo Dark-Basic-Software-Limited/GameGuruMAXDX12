@@ -8318,7 +8318,7 @@ void GGTerrain_InvalidateRegion( float minX, float minZ, float maxX, float maxZ,
 	// Phase 6 bridge: the legacy invalidation below only regenerates the OLD terrain,
 	// which no longer renders in Wicked mode — forward the region so the Wicked chunks
 	// regenerate (heights) / repaint (textures) too
-	if (ggterrain_use_wicked_terrain)
+	if (ggterrain_use_wicked_terrain && !(flags & GGTERRAIN_INVALIDATE_NO_WICKED))
 		GGTerrainWicked_InvalidateRegion( minX, minZ, maxX, maxZ, flags );
 	GGTerrainLODSet* pLODs = ggterrain.GetNewLODs();
 	if ( !pLODs->IsGenerating() ) pLODs = ggterrain.GetCurrentLODs();
@@ -9848,10 +9848,19 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		// sculpt / paint / flat-area dispatch — mirrors the legacy switch below, minus the
 		// legacy-LOD IsGenerating guard (that protected the old regen pipeline; Wicked chunk
 		// regen is race-safe through the invalidation bridge)
+		// s_wickedUndoArmType remembers WHICH system took the shared undo snapshot — the
+		// finalize below must key on that, not on the CURRENT edit_mode: the mode can change
+		// mid-stroke (tool hotkey, or the tools window zeroing edit_mode on hover) and a
+		// mode-gated finalize would leak g_iCalculatingChangeBounds, making the next stroke
+		// of a DIFFERENT type reuse a mismatched snapshot (paint undo writing height bytes
+		// into the material map).
+		static int s_wickedUndoArmType = 0;
 		if (pickHitW && bRenderTargetFocus && !bImGuiGotFocus)
 		{
 			float sizeXW = 1000.0f;
 			float sizeZW = 2000.0f;
+
+			int boundsBeforeW = g_iCalculatingChangeBounds;
 
 			switch (ggterrain_extra_params.edit_mode)
 			{
@@ -9896,18 +9905,29 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 					}
 				} break;
 			}
+
+			// only Update_Sculpting/Update_Painting take the shared snapshot inside this
+			// switch — record which one armed it (grass arms elsewhere and finalizes itself)
+			if (boundsBeforeW == 0 && g_iCalculatingChangeBounds != 0)
+			{
+				if (ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_SCULPT) s_wickedUndoArmType = eUndoSys_Terrain_Sculpt;
+				else if (ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_PAINT) s_wickedUndoArmType = eUndoSys_Terrain_Paint;
+			}
 		}
 
 		#ifdef GGTERRAIN_UNDOREDO
 		// the legacy undo-finalize lives in the skipped tail below — replicate it here for
-		// sculpt/paint strokes (grass creates its own undo action inside GGGrass_Update_Painting)
-		if (ggterrain_internal_params.mouseLeftReleased && g_iCalculatingChangeBounds &&
-			(ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_SCULPT || ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_PAINT))
+		// sculpt/paint strokes, keyed on the ARMING system (see s_wickedUndoArmType above):
+		// it fires on release whatever the current tool is, so mid-stroke mode changes
+		// (tool hotkeys, the tools window zeroing edit_mode on hover) can't leak the
+		// snapshot into the next stroke of a different type (grass creates its own undo
+		// action inside GGGrass_Update_Painting and never sets the arm type)
+		if (ggterrain_internal_params.mouseLeftReleased && g_iCalculatingChangeBounds && s_wickedUndoArmType != 0)
 		{
 			g_iCalculatingChangeBounds = 0;
-			int undoTypeW = (ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_SCULPT) ? eUndoSys_Terrain_Sculpt : eUndoSys_Terrain_Paint;
-			GGTerrain_CreateUndoRedoAction(undoTypeW, eUndoSys_UndoList);
+			GGTerrain_CreateUndoRedoAction(s_wickedUndoArmType, eUndoSys_UndoList);
 		}
+		if (ggterrain_internal_params.mouseLeftReleased) s_wickedUndoArmType = 0;
 		#endif
 
 		bool brushVisibleW = pickHitW && !bImGuiGotFocus &&

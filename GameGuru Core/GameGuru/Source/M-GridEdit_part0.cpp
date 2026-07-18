@@ -1549,7 +1549,13 @@ bool commonexecutable_loop_for_game(void)
 			//PE: Need to do this delayed so terrain update have been updated with new data.
 			//PE: Invalidate everything so custom sculpt data is updated with textures ...
 			//PE: @Paul not sure if there is a better way to do this, but this works :)
-			GGTerrain::GGTerrain_InvalidateRegion(-1000000.0, -1000000.0, 1000000.0, 1000000.0, GGTERRAIN_INVALIDATE_ALL);
+			// While the level-load reveal cover is still up, this refresh is for the
+			// LEGACY terrain only — the Wicked chunks generate gated on heights-ready
+			// and would just be rebuilt twice (doubling the covered build). Mid-session
+			// full invalidations (terrain parameter changes) still reach the bridge.
+			uint32_t invalFlags = GGTERRAIN_INVALIDATE_ALL;
+			if (GGTerrain::GGTerrainWicked_IsRevealHeld()) invalFlags |= GGTERRAIN_INVALIDATE_NO_WICKED;
+			GGTerrain::GGTerrain_InvalidateRegion(-1000000.0, -1000000.0, 1000000.0, 1000000.0, invalFlags);
 		}
 		iTriggerInvalidateAfterFrames--;
 	}

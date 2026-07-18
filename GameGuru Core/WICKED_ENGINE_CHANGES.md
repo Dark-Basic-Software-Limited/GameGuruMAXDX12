@@ -35,6 +35,16 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.12 Terrain ChunkData::merge_pending — stale-mesh window flag
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`ChunkData::merge_pending` field)
+- `WickedEngine/wiTerrain.cpp` (set alongside the `invalidated = false` flip when the generator finishes a chunk; cleared for all chunks right after `MergeFastInternal` in `Generation_Update`)
+
+**Why:** when a chunk is invalidated (spline edit upstream; GG sculpt/paint bridge in the fork), the generator regenerates it in place reusing the entity, but the regenerated mesh only replaces the main-scene mesh at the NEXT `Generation_Update`'s merge. In that window `invalidated` is already false while the main-scene `MeshComponent` is still the pre-regeneration version. Consumers that bake data from the chunk mesh (GG's DX11-style + painted blendmap passes) would read the stale mesh and latch wrong results permanently (entity reuse means entity-churn detection never fires). `merge_pending` brackets the window exactly: set on the generator thread when the chunk's regen completes, cleared on the main thread once the merge lands. Consumers skip chunks with either flag up.
+
+**Behaviour:** no functional change to stock Wicked rendering — the flag is passive unless something reads it.
+
 ### 1.11 Delayed shadow cascades: staggered per-cascade refresh
 
 **Files:**
@@ -545,6 +555,7 @@ modified, both genuine bug fixes.
 | 1.9 Animation/transform hardening (unit-quaternion guards + decompose validation) | applied 2026-07-18 in Wicked commit `a4539a76`, lib rebuilt | candidate for upstream PR — guards only fire on already-corrupt data (zero behaviour change for healthy scenes); tripwire files `anim_garbage.txt`/`applytransform_garbage.txt` appear next to the exe only if a guard fires |
 | 1.10 Ocean foam world-unit scale + intensity knob | applied 2026-07-18 in Wicked commit `da60bfad`, lib rebuilt, shader auto-recompiles | candidate for upstream PR — both params default 1 = stock behaviour; fills existing CB padding so no layout change |
 | 1.11 Delayed shadow cascades (staggered refresh) | applied 2026-07-18 in Wicked commit `38a9e82a`, lib rebuilt, new shadowClearPS shader auto-compiles | candidate for upstream PR — default OFF preserves stock behaviour bit-for-bit; GG enables at sun creation; single-directional-light assumption documented in code |
+| 1.12 Terrain ChunkData::merge_pending stale-mesh flag | applied 2026-07-18, lib rebuilt | candidate for upstream PR — passive field, closes the regen-vs-merge window for mesh-baking consumers (GG blendmap passes) |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

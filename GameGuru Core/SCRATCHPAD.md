@@ -138,7 +138,7 @@ Phase 2: 4-Layer Auto Materials          ✓ COMPLETE (2026-02-25)
 Phase 3: Painted Materials (N-layer)     ✓ COMPLETE (2026-02-25, excursion fix 2026-03-01)
 Phase 4: Grass via HairParticleSystem    ✓ COMPLETE (2026-05-29; recovered to main 2026-06-17)
 Phase 5: Trees — Stage 4.3 DONE (real meshes, 10K pool, nearest-N pick, impostors retired). Open: measure DX11 A/B horizon delta (maybe hand-rolled billboards), tree types >= 38, wind sway.
-Phase 6: Sculpt/Paint Invalidation       ← ACTIVE   first step: hook GGTerrain_InvalidateRegion() → mark Wicked chunks invalidated + clear from processedChunkKeys
+Phase 6: Sculpt/Paint Invalidation       ✓ COMPLETE (2026-07-18, d37342bd) sculpt+paint+undo verified on island beach; GGTerrainWicked_InvalidateRegion + Wicked-mode editor dispatch in GGTerrain_Update
 Phase 4+: Grass rendering improvements   ← NEXT     orientation fix landed 2026-06-18 (see Wicked changes 1.1/1.2). Remaining: subsurface, density, atlas variety, paint UX. See "Phase 4 Notes" below
 Perf:    Animation engine-side caching   ← ACTIVE   first step: PERFORMANCE.md "Active Performance Targets" — ScanAnimationDependencies + keyframe search
 ```

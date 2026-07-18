@@ -1448,7 +1448,9 @@ void reset_terrain_paint_date( void )
 		memset(pNewMap, 0, size);
 		GGTerrain_SetPaintData(size, pNewMap);
 		delete [] pNewMap;
-		GGTerrain::GGTerrain_InvalidateRegion(-1000000.0, -1000000.0, 1000000.0, 1000000.0, GGTERRAIN_INVALIDATE_ALL);
+		// SetPaintData above already triggered the Wicked repaint (OnPaintDataChanged);
+		// heights are untouched, so skip the bridge — a full Wicked mesh regen here is waste
+		GGTerrain::GGTerrain_InvalidateRegion(-1000000.0, -1000000.0, 1000000.0, 1000000.0, GGTERRAIN_INVALIDATE_ALL | GGTERRAIN_INVALIDATE_NO_WICKED);
 		extern int iTriggerInvalidateAfterFrames;
 		iTriggerInvalidateAfterFrames = 20;
 	}

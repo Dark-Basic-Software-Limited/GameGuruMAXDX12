@@ -1580,7 +1580,10 @@ void imgui_Customize_Tree_v3(int mode)
 						//style.WindowPadding
 						ImVec2 oldstyle = ImGui::GetStyle().FramePadding;
 						ImGui::GetStyle().FramePadding = { 1,1 };
-						ImGui::BeginChild(sLabelChild.Get(), content_avail, false, ImGuiWindowFlags_NoScrollbar);
+						// NoScrollWithMouse: the full-cell button's padding makes the cell's content
+						// taller than the child, so without it one wheel notch over a thumbnail
+						// scrolls the CELL (cropping the image for good) instead of the tree list
+						ImGui::BeginChild(sLabelChild.Get(), content_avail, false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 						iLargerPreviewIconSize &= 0xfffe;
 

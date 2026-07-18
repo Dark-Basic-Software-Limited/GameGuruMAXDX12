@@ -91,6 +91,11 @@ static bool g_grassRebuildRequested = false;
 static wi::ecs::Entity g_brushCursorEntity = wi::ecs::INVALID_ENTITY;
 static bool            g_brushCursorSetup = false;
 
+// Census of chunks awaiting in-place regeneration (invalidated flag up). Written by the
+// chunkSig loop each frame and primed directly by GGTerrainWicked_InvalidateRegion so a
+// mass invalidation gets the turbo generation budget on its very first frame.
+static size_t s_pendingRegenCount = 0;
+
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
 	return ((uint64_t)(uint32_t)cx << 32) | (uint64_t)(uint32_t)cz;
@@ -426,6 +431,7 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 		if (!chunk_data) continue;
 		if (chunk_data->blendmap_layers.empty()) continue;  // generation not finished yet
 		if (chunk_data->invalidated) continue;  // pending regen would discard this work — retry after
+		if (chunk_data->merge_pending) continue;  // regenerated but main-scene mesh still stale — retry after merge
 
 		dx11BlendProcessedKeys.insert(key);
 		dx11BlendChunkKeyToEntity[key] = pc.entity;
@@ -611,6 +617,7 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		// height/slope blending stage. Retry next frame when generation is done.
 		if (chunk_data->blendmap_layers.empty()) continue;
 		if (chunk_data->invalidated) continue;  // pending regen would discard this work — retry after
+		if (chunk_data->merge_pending) continue;  // regenerated but main-scene mesh still stale — retry after merge
 
 		// Mark as processed only after confirming chunk_data exists
 		processedChunkKeys.insert(key);
@@ -1843,10 +1850,18 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	}
 	const bool revealHeld = g_revealHoldFrames > 0;
 
+	// Mass in-place regen (terrain parameter change, sculpt reset, full undo restore):
+	// chunks.size() never drops so the initial-build throttles don't engage — detect it
+	// from last frame's pending-regen census (counted in the chunkSig loop below) and
+	// apply the same medicine: fatter generation budget + high-priority pool + blend
+	// passes only every 30th frame (their Generation_Cancel chops the generator).
+	// Small brush edits (a few chunks) stay on the responsive 8ms path.
+	const bool massRegen = s_pendingRegenCount > 32;
+
 	// While the cover is up nobody sees the frame rate — let the generator eat
 	// most of the frame. Otherwise: turbo during the visible initial build,
 	// stock 8ms in normal editing.
-	terrain->generation_time_budget_milliseconds = revealHeld ? 300.0f : (initialBuild ? 150.0f : 8.0f);
+	terrain->generation_time_budget_milliseconds = revealHeld ? 300.0f : (initialBuild ? 150.0f : (massRegen ? 50.0f : 8.0f));
 	// Wicked delta #8: while the CAMERA-FACING cone is still building (~40% of
 	// the ring total covers the cone + near rings), run generation on the HIGH
 	// job pool — the Low pool is THREAD_PRIORITY_LOWEST and gets starved by the
@@ -1854,14 +1869,14 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// Once the cone is done, drop back to polite Low so the off-camera fill
 	// doesn't steal frame time from the editor (measured 40-55 -> 19-43 FPS
 	// during the tail when left on High).
-	terrain->generation_high_priority = revealHeld || (int)terrain->chunks.size() < coneTarget;
+	terrain->generation_high_priority = revealHeld || massRegen || (int)terrain->chunks.size() < coneTarget;
 	static uint32_t s_terrainFrame = 0;
 	s_terrainFrame++;
 	// While the turbo build runs, only interrupt the generator with blendmap
 	// processing every 30th frame — each ApplyDX11StyleAutoBlend/painted pass
 	// calls Generation_Cancel, and doing that per-frame while chunks stream in
 	// was chopping the generator off after 1-2 chunks per launch.
-	const bool blendTickAllowed = !initialBuild || ( s_terrainFrame % 30 ) == 0;
+	const bool blendTickAllowed = !(initialBuild || massRegen) || ( s_terrainFrame % 30 ) == 0;
 
 	// Let the VT system run — generates chunks, creates atlas, blends materials.
 	// CORRECTNESS GATE (2026-07-18): during the initial build, do NOT generate
@@ -1885,16 +1900,21 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// NOTE: each gate keeps its OWN sig cache and only updates it when its work actually runs,
 	// so a gate that was disabled (e.g. materials not set up yet) still fires once re-enabled.
 	uint64_t chunkSig = (uint64_t)terrain->chunks.size();
+	size_t pendingRegenCensus = 0;
 	for (const auto& [sigChunk, sigCd] : terrain->chunks)
 	{
+		if (sigCd.invalidated) pendingRegenCensus++;
 		chunkSig = chunkSig * 1099511628211ull
 			+ (uint64_t)sigCd.entity * 31ull
 			+ (uint64_t)sigCd.blendmap_layers.size()
-			// sculpt invalidation flips this true then regen flips it back — both
-			// transitions must refire the blend gates (the passes skip chunks while
-			// the flag is up, so the second flip is what lets them finish the job)
-			+ (sigCd.invalidated ? 0x9E3779B9ull : 0ull);
+			// sculpt invalidation flips invalidated true, regen swaps it for
+			// merge_pending, the merge clears that — every transition must refire the
+			// blend gates (the passes skip chunks while either flag is up, so the
+			// final clear is what lets them finish the job on the MERGED fresh mesh)
+			+ (sigCd.invalidated ? 0x9E3779B9ull : 0ull)
+			+ (sigCd.merge_pending ? 0x85EBCA6Bull : 0ull);
 	}
+	s_pendingRegenCount = pendingRegenCensus; // consumed by next frame's massRegen throttle
 
 	// Path A: rewrite the auto material weights (slots 0-4) with DX11-shape blend, then let
 	// the painted-material pass overlay its own weights on painted vertices. Must run AFTER
@@ -2126,8 +2146,12 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 	if (terrain->chunks.empty()) return;
 
 	// interactive painting can introduce a material that has no blendmap slot yet —
-	// trip the same full re-setup OnPaintDataChanged uses for level load
-	if (flags & GGTERRAIN_INVALIDATE_TEXTURES)
+	// trip the same full re-setup OnPaintDataChanged uses for level load. Gated on
+	// PAINT mode: sculpt/undo also carry the TEXTURES flag, and with a slot-less
+	// palette selection merely SELECTED (never painted into the map) the re-setup
+	// can never assign it a slot — ungated this became a Generation_Restart
+	// (full chunks.clear) livelock on every sculpt stroke frame.
+	if ((flags & GGTERRAIN_INVALIDATE_TEXTURES) && ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_PAINT)
 	{
 		int paintMat = ggterrain_extra_params.paint_material & 0xff;
 		if (paintMat > 0 && paintMat <= GGTERRAIN_MAX_SOURCE_TEXTURES && materialToSlot[paintMat - 1] < 0)
@@ -2138,17 +2162,24 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 	terrain->Generation_Cancel();
 
 	const bool heightsChanged = (flags & GGTERRAIN_INVALIDATE_CHUNKS) != 0;
+	// tight chunk-AABB overlap, padded by one heightmap cell so a brush touching a
+	// seam also regenerates the neighbour that shares those border vertices. (The
+	// chunk bounding SPHERE is the wrong test here — its half-diagonal radius turns
+	// a 100-unit brush dab into a 3x3 chunk regen, 9x the churn and heal time.)
+	const float chunkStrideW = (float)(wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+	const float chunkHalf = chunkStrideW * 0.5f;
+	const float seamPad = terrain->chunk_scale;
+	size_t marked = 0;
 	for (auto& [chunk, cd] : terrain->chunks)
 	{
 		if (cd.entity == wi::ecs::INVALID_ENTITY) continue;
-		// world-space overlap via the chunk bounding sphere — the radius overshoot
-		// deliberately pulls in edge-sharing neighbours so shared border vertices
-		// regenerate on both sides of a chunk seam
-		if (cd.sphere.center.x + cd.sphere.radius < minX || cd.sphere.center.x - cd.sphere.radius > maxX) continue;
-		if (cd.sphere.center.z + cd.sphere.radius < minZ || cd.sphere.center.z - cd.sphere.radius > maxZ) continue;
+		const float chunkCX = (float)chunk.x * chunkStrideW;
+		const float chunkCZ = (float)chunk.z * chunkStrideW;
+		if (chunkCX + chunkHalf + seamPad < minX || chunkCX - chunkHalf - seamPad > maxX) continue;
+		if (chunkCZ + chunkHalf + seamPad < minZ || chunkCZ - chunkHalf - seamPad > maxZ) continue;
 
 		// Generation_Update regenerates invalidated chunks in place (entity reused)
-		if (heightsChanged) cd.invalidated = true;
+		if (heightsChanged) { cd.invalidated = true; marked++; }
 
 		// forget the blend work on this chunk so both blendmap passes re-run once the
 		// chunk settles; the passes skip chunks still flagged invalidated, and the
@@ -2159,6 +2190,9 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 		dx11BlendProcessedKeys.erase(key);
 		dx11BlendChunkKeyToEntity.erase(key);
 	}
+	// prime the mass-regen throttle so the first frame after a big invalidation
+	// already runs the generator on the turbo budget
+	if (marked > s_pendingRegenCount) s_pendingRegenCount = marked;
 }
 
 void GGTerrainWicked_OnPaintDataChanged()
