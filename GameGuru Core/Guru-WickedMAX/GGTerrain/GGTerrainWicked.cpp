@@ -8,6 +8,7 @@
 #include "../../../../WickedEngineDX12/WickedEngine/wiRenderer.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiProfiler.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiRenderPath3D.h"
+#include "../../../../WickedEngineDX12/WickedEngine/wiTimer.h"
 #include <unordered_set>
 #include <unordered_map>
 #include <cmath>
@@ -1431,8 +1432,82 @@ static void SetupBrushCursor()
 }
 
 
+// GG-side globals — declared at GLOBAL scope (block-scope externs inside
+// namespace GGTerrain mangle namespace-qualified and fail to link). The message
+// pump keeps the window responding while the pregenerate loop blocks at the
+// end of a level load.
+extern bool bKeepWindowsResponding;
+void EmptyMessages(void);
+void timestampactivity(int i, char* desc_s);
+
 namespace GGTerrain
 {
+
+// Synchronously pre-build the chunks the camera can see, bounded by
+// maxMilliseconds. Runs at the END of a level load with the loading screen
+// still up: kicks the generator (turbo budget + high priority + the view-cone
+// order from Wicked delta #7) and waits for the camera-facing chunk set, then
+// runs the blendmap passes so the chunks are correctly coloured on the very
+// first visible frame.
+void GGTerrainWicked_Pregenerate(float camX, float camY, float camZ,
+	float dirX, float dirY, float dirZ, int maxMilliseconds)
+{
+	if (!wickedTerrainInitialised) return;
+	wi::terrain::Terrain* terrain = GetWickedTerrain();
+	if (!terrain) return;
+
+	// Materials must exist before generation produces correctly-textured chunks
+	// (normally set up lazily on the first GGTerrainWicked_Update after load).
+	if (!wickedTerrainMaterialsSetup)
+	{
+		SetupWickedTerrainMaterials();
+	}
+
+	// The real wi camera isn't synced from GG until the first editor frame, so
+	// build a local one from the restored level camera.
+	wi::scene::CameraComponent cam = wi::scene::GetCamera();
+	cam.Eye = XMFLOAT3(camX, camY, camZ);
+	cam.At  = XMFLOAT3(dirX, dirY, dirZ);
+
+	const int genSpan = 2 * terrain->generation + 1;
+	const int expectedChunks = genSpan * genSpan;
+	const int coneTarget = (expectedChunks * 2) / 5;  // matches the in-frame high-priority window
+
+	terrain->generation_time_budget_milliseconds = 150.0f;
+	terrain->generation_high_priority = true;
+
+	wi::Timer timer;
+	int pumpCounter = 0;
+	while (timer.elapsed_milliseconds() < (double)maxMilliseconds &&
+	       (int)terrain->chunks.size() < coneTarget)
+	{
+		terrain->Generation_Update(cam);
+		wi::helper::Sleep(5);
+		if ((++pumpCounter & 15) == 0 && ::bKeepWindowsResponding)
+		{
+			::EmptyMessages();
+		}
+	}
+
+	// Colour everything we just generated before the user sees it. The passes
+	// are batch-capped at 64 chunks — drain until caught up (bounded).
+	if (wickedTerrainMaterialsSetup)
+	{
+		int guard = 32;
+		while (!ApplyDX11StyleAutoBlend(terrain) && guard-- > 0) {}
+		if (maxPaintedSlot >= 0)
+		{
+			guard = 32;
+			while (!ProcessPaintedChunkBlendmaps(terrain) && guard-- > 0) {}
+		}
+	}
+
+	char pregenLog[128];
+	sprintf_s(pregenLog, "GGTerrainWicked_Pregenerate: %d chunks in %d ms",
+		(int)terrain->chunks.size(), (int)timer.elapsed_milliseconds());
+	wi::backlog::post(pregenLog);
+	::timestampactivity(0, pregenLog);
+}
 
 void GGTerrainWicked_SetBrushCursor(bool visible, float x, float y, float z, float size)
 {

@@ -1,4 +1,13 @@
-﻿void gridedit_updatezoomviewvalues ( void )
+﻿// Wicked terrain pregeneration — declared here because this part file has no
+// include path to GGTerrainWicked.h (unity-build part). Definition lives in
+// Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp.
+namespace GGTerrain
+{
+	void GGTerrainWicked_Pregenerate(float camX, float camY, float camZ,
+		float dirX, float dirY, float dirZ, int maxMilliseconds);
+}
+
+void gridedit_updatezoomviewvalues ( void )
 {
 	//  accepts gridentityinzoomview
 	if (  t.gridentityinzoomview>0 ) 
@@ -1194,6 +1203,37 @@ void gridedit_load_map ( void )
 	// call files modify check function and reset file timestamp map
 	extern void CheckExistingFilesModified(bool);
 	CheckExistingFilesModified(true);
+
+	// Pre-build the terrain chunks the restored level camera can see BEFORE the
+	// loading screen dismisses (bounded at 3s; typically ~2s, self-skips if the
+	// chunks already exist). Without this the user watches the radial chunk
+	// construction for the first seconds of every level — DX11 built its
+	// terrain instantly, so this reads as a regression.
+	{
+		extern int iDelayedCameraRestore;
+		char camlog[256];
+		sprintf(camlog, "PREGEN pre: ffc=(%.0f,%.0f,%.0f) ang=(%.1f,%.1f) mode=%d delay=%d",
+			t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f,
+			t.editorfreeflight.c.angx_f, t.editorfreeflight.c.angy_f,
+			t.editorfreeflight.mode, iDelayedCameraRestore);
+		timestampactivity(0, camlog);
+
+		float ax = t.editorfreeflight.c.angx_f * 0.0174533f;
+		float ay = t.editorfreeflight.c.angy_f * 0.0174533f;
+		float dx = sinf(ay) * cosf(ax);
+		float dy = -sinf(ax);
+		float dz = cosf(ay) * cosf(ax);
+		GGTerrain::GGTerrainWicked_Pregenerate(
+			t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f,
+			dx, dy, dz, 3000 );
+
+		sprintf(camlog, "PREGEN post: ffc=(%.0f,%.0f,%.0f) ang=(%.1f,%.1f) mode=%d delay=%d",
+			t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f,
+			t.editorfreeflight.c.angx_f, t.editorfreeflight.c.angy_f,
+			t.editorfreeflight.mode, iDelayedCameraRestore);
+		timestampactivity(0, camlog);
+	}
+
 	TDRTrace("[LOADMAP] gridedit_load_map: EXIT");
 }
 
