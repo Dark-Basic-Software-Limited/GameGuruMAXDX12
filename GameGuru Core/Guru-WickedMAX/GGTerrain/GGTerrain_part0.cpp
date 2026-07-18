@@ -8314,6 +8314,12 @@ void GGTerrain_CheckReadBack()
 void GGTerrain_InvalidateRegion( float minX, float minZ, float maxX, float maxZ, uint32_t flags )
 {
 	if (!ggterrain_initialised) return;
+
+	// Phase 6 bridge: the legacy invalidation below only regenerates the OLD terrain,
+	// which no longer renders in Wicked mode — forward the region so the Wicked chunks
+	// regenerate (heights) / repaint (textures) too
+	if (ggterrain_use_wicked_terrain)
+		GGTerrainWicked_InvalidateRegion( minX, minZ, maxX, maxZ, flags );
 	GGTerrainLODSet* pLODs = ggterrain.GetNewLODs();
 	if ( !pLODs->IsGenerating() ) pLODs = ggterrain.GetCurrentLODs();
 
@@ -9780,17 +9786,129 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 	}
 	terrainlock.unlock();
 
-	// Wicked-terrain brush cursor: the legacy editor pick + circle code below is skipped when Wicked
-	// is active, so we need our own minimal pick → SetBrushCursor pass before the early return. The
-	// raycast hits the same heightmap data the legacy code uses.
+	// Wicked-terrain editor pass: the legacy pick + sculpt/paint dispatch + circle code below is
+	// skipped when Wicked is active, so we run our own copy before the early return. The raycast,
+	// the sculpt/paint apply functions and the mouse-state capture all work on the same CPU
+	// heightmap/material data the legacy path uses — only the visual refresh differs (the
+	// GGTerrainWicked_InvalidateRegion bridge inside GGTerrain_InvalidateRegion).
 	if (ggterrain_use_wicked_terrain)
 	{
+		// full legacy input capture — sculpt/paint dragging depends on the pressed/released
+		// edges (nothing else writes ggterrain_internal_params.mouseLeft*; trees and grass
+		// keep their own copies)
 		wiInput::MouseState mouseStateW = wiInput::GetMouseState();
+		ggterrain_internal_params.mouseLeftState = mouseStateW.left_button_press;
+		ggterrain_internal_params.mouseLeftPressed = (mouseStateW.left_button_press && !ggterrain_internal_params.prevMouseLeft) ? 1 : 0;
+		ggterrain_internal_params.mouseLeftReleased = (!mouseStateW.left_button_press && ggterrain_internal_params.prevMouseLeft) ? 1 : 0;
+		ggterrain_internal_params.prevMouseLeft = mouseStateW.left_button_press ? 1 : 0;
+
 		RAY pickRayW = wiRenderer::GetPickRay((long)mouseStateW.position.x, (long)mouseStateW.position.y, master.masterrenderer);
 		float pickXW = 0, pickYW = 0, pickZW = 0;
 		int includeFlatAreasW = 1;
 		if (ggterrain_extra_params.edit_mode == 5 || ggterrain_extra_params.edit_mode == 6) includeFlatAreasW = 0;
-		int pickHitW = GGTerrain_RayCast(pickRayW, &pickXW, &pickYW, &pickZW, 0, 0, 0, 0, includeFlatAreasW);
+
+		// same pick logic as the legacy path below: while sculpt/paint-dragging, keep to the
+		// plane of the initial hit when looking up-slope so the brush doesn't chase its own edits
+		int pickHitW = 0;
+		if (!ggterrain_internal_params.mouseLeftState || ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_TREES || ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_GRASS)
+		{
+			pickHitW = GGTerrain_RayCast(pickRayW, &pickXW, &pickYW, &pickZW, 0, 0, 0, 0, includeFlatAreasW);
+		}
+		else
+		{
+			if (ggterrain_internal_params.mouseLeftPressed)
+			{
+				// initial mouse press, cast ray with terrain
+				pickHitW = GGTerrain_RayCast(pickRayW, &pickXW, &pickYW, &pickZW, 0, 0, 0, 0, includeFlatAreasW);
+				ggterrain_internal_params.sculpt_pick_y = pickYW;
+			}
+			else
+			{
+				float vy = ggterrain_internal_params.sculpt_pick_y - pickRayW.origin.y;
+				if (vy >= -0.1 || ggterrain_extra_params.edit_pick_mode == 0)
+				{
+					pickHitW = GGTerrain_RayCast(pickRayW, &pickXW, &pickYW, &pickZW, 0, 0, 0, 0, includeFlatAreasW);
+				}
+				else
+				{
+					// subsequent mouse button down, cast ray with plane
+					float dotp = vy * pickRayW.direction.y;
+					if (dotp > 0.000001f)
+					{
+						float dist = (vy*vy) / dotp;
+						pickXW = pickRayW.origin.x + pickRayW.direction.x * dist;
+						pickYW = ggterrain_internal_params.sculpt_pick_y;
+						pickZW = pickRayW.origin.z + pickRayW.direction.z * dist;
+						pickHitW = 1;
+					}
+				}
+			}
+		}
+
+		// sculpt / paint / flat-area dispatch — mirrors the legacy switch below, minus the
+		// legacy-LOD IsGenerating guard (that protected the old regen pipeline; Wicked chunk
+		// regen is race-safe through the invalidation bridge)
+		if (pickHitW && bRenderTargetFocus && !bImGuiGotFocus)
+		{
+			float sizeXW = 1000.0f;
+			float sizeZW = 2000.0f;
+
+			switch (ggterrain_extra_params.edit_mode)
+			{
+				case GGTERRAIN_EDIT_SCULPT:
+				{
+					if (ggterrain_extra_params.sculpt_mode != GGTERRAIN_SCULPT_NONE)
+					{
+						GGTerrain_Update_Sculpting(pickXW, pickYW, pickZW);
+						vLastTerrainPickPosition.x = pickXW;
+						vLastTerrainPickPosition.y = pickYW;
+						vLastTerrainPickPosition.z = pickZW;
+					}
+				} break;
+
+				case GGTERRAIN_EDIT_PAINT:
+				{
+#ifdef ONLYLOADWHENUSED
+					int mat = ggterrain_extra_params.paint_material & 0xff;
+					if (mat > 0 && mat <= GGTERRAIN_MAX_SOURCE_TEXTURES)
+						mat--;
+					if (mat >= 0 && !bTextureUploaded[mat])
+					{
+						bCheckForNewTerrainTextures = true; //PE: Load texture.
+					}
+#endif
+					GGTerrain_Update_Painting(pickXW, pickYW, pickZW);
+				} break;
+
+				case 5:
+				{
+					if (ggterrain_internal_params.mouseLeftPressed)
+					{
+						GGTerrain_AddFlatRect(pickXW, pickZW, sizeXW, sizeZW, ggterrain_extra_params.flat_area_angle);
+					}
+				} break;
+
+				case 6:
+				{
+					if (ggterrain_internal_params.mouseLeftState)
+					{
+						GGTerrain_UpdateFlatArea(1, pickXW, pickZW, ggterrain_extra_params.flat_area_angle, sizeXW, sizeZW);
+					}
+				} break;
+			}
+		}
+
+		#ifdef GGTERRAIN_UNDOREDO
+		// the legacy undo-finalize lives in the skipped tail below — replicate it here for
+		// sculpt/paint strokes (grass creates its own undo action inside GGGrass_Update_Painting)
+		if (ggterrain_internal_params.mouseLeftReleased && g_iCalculatingChangeBounds &&
+			(ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_SCULPT || ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_PAINT))
+		{
+			g_iCalculatingChangeBounds = 0;
+			int undoTypeW = (ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_SCULPT) ? eUndoSys_Terrain_Sculpt : eUndoSys_Terrain_Paint;
+			GGTerrain_CreateUndoRedoAction(undoTypeW, eUndoSys_UndoList);
+		}
+		#endif
 
 		bool brushVisibleW = pickHitW && !bImGuiGotFocus &&
 			ggterrain_extra_params.edit_mode != GGTERRAIN_EDIT_NONE;

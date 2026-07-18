@@ -425,6 +425,7 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 		}
 		if (!chunk_data) continue;
 		if (chunk_data->blendmap_layers.empty()) continue;  // generation not finished yet
+		if (chunk_data->invalidated) continue;  // pending regen would discard this work — retry after
 
 		dx11BlendProcessedKeys.insert(key);
 		dx11BlendChunkKeyToEntity[key] = pc.entity;
@@ -609,6 +610,7 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		// Painting before generation completes would be overwritten by the default
 		// height/slope blending stage. Retry next frame when generation is done.
 		if (chunk_data->blendmap_layers.empty()) continue;
+		if (chunk_data->invalidated) continue;  // pending regen would discard this work — retry after
 
 		// Mark as processed only after confirming chunk_data exists
 		processedChunkKeys.insert(key);
@@ -1887,7 +1889,11 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	{
 		chunkSig = chunkSig * 1099511628211ull
 			+ (uint64_t)sigCd.entity * 31ull
-			+ (uint64_t)sigCd.blendmap_layers.size();
+			+ (uint64_t)sigCd.blendmap_layers.size()
+			// sculpt invalidation flips this true then regen flips it back — both
+			// transitions must refire the blend gates (the passes skip chunks while
+			// the flag is up, so the second flip is what lets them finish the job)
+			+ (sigCd.invalidated ? 0x9E3779B9ull : 0ull);
 	}
 
 	// Path A: rewrite the auto material weights (slots 0-4) with DX11-shape blend, then let
@@ -2105,6 +2111,54 @@ void GGTerrainWicked_Shutdown()
 
 	// Phase 5: tear down the tree pool alongside the terrain.
 	GGTrees::GGTrees_WickedShutdown();
+}
+
+void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float maxZ, uint32_t flags)
+{
+	// Phase 6 bridge: called from GGTerrain_InvalidateRegion when sculpt/paint/undo
+	// modifies the CPU height-edit or material maps. Marks the overlapping chunks for
+	// in-place mesh regeneration (heights) and/or blendmap re-processing (textures).
+	if (!wickedTerrainInitialised) return;
+	wi::terrain::Terrain* terrain = GetWickedTerrain();
+	if (terrain == nullptr) return;
+	// nothing built yet (e.g. the load-time InvalidateEverything calls fire before
+	// generation starts) — skip so we don't Generation_Cancel the initial build
+	if (terrain->chunks.empty()) return;
+
+	// interactive painting can introduce a material that has no blendmap slot yet —
+	// trip the same full re-setup OnPaintDataChanged uses for level load
+	if (flags & GGTERRAIN_INVALIDATE_TEXTURES)
+	{
+		int paintMat = ggterrain_extra_params.paint_material & 0xff;
+		if (paintMat > 0 && paintMat <= GGTERRAIN_MAX_SOURCE_TEXTURES && materialToSlot[paintMat - 1] < 0)
+			wickedTerrainMaterialsSetup = false;
+	}
+
+	// the generator thread mutates the chunks map — stop it before iterating
+	terrain->Generation_Cancel();
+
+	const bool heightsChanged = (flags & GGTERRAIN_INVALIDATE_CHUNKS) != 0;
+	for (auto& [chunk, cd] : terrain->chunks)
+	{
+		if (cd.entity == wi::ecs::INVALID_ENTITY) continue;
+		// world-space overlap via the chunk bounding sphere — the radius overshoot
+		// deliberately pulls in edge-sharing neighbours so shared border vertices
+		// regenerate on both sides of a chunk seam
+		if (cd.sphere.center.x + cd.sphere.radius < minX || cd.sphere.center.x - cd.sphere.radius > maxX) continue;
+		if (cd.sphere.center.z + cd.sphere.radius < minZ || cd.sphere.center.z - cd.sphere.radius > maxZ) continue;
+
+		// Generation_Update regenerates invalidated chunks in place (entity reused)
+		if (heightsChanged) cd.invalidated = true;
+
+		// forget the blend work on this chunk so both blendmap passes re-run once the
+		// chunk settles; the passes skip chunks still flagged invalidated, and the
+		// invalidated bit is part of chunkSig, so the gates refire when regen completes
+		uint64_t key = MakeChunkKey(chunk.x, chunk.z);
+		processedChunkKeys.erase(key);
+		chunkKeyToEntity.erase(key);
+		dx11BlendProcessedKeys.erase(key);
+		dx11BlendChunkKeyToEntity.erase(key);
+	}
 }
 
 void GGTerrainWicked_OnPaintDataChanged()

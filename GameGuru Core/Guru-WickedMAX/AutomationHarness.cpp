@@ -20,6 +20,10 @@ extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* 
 // Tree params for the SET_TREES live-tuning command
 #include "GGTerrain/GGTrees.h"
 
+// Terrain params + undo enums for the SCULPT_TEST / PAINT_TEST commands
+#include "GGTerrain/GGTerrain.h"
+#include "M-UndoSys.h"
+
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
 #include "wiGraphicsDevice.h"
@@ -1846,11 +1850,73 @@ static void AutoHarness_SkinWatchTick(void)
 	}
 }
 
+// ---- SCULPT_TEST / PAINT_TEST: synthetic terrain-edit strokes ----
+// Drives the same GGTerrain_Update_Sculpting/Painting apply functions the editor
+// dispatch calls, so the edit -> InvalidateRegion -> Wicked chunk regen/repaint
+// chain is exercised without real mouse input. One brush tick per frame.
+namespace GGTerrain {
+	extern GGTerrainInternalParams ggterrain_internal_params;
+	void GGTerrain_Update_Sculpting(float pickX, float pickY, float pickZ);
+	void GGTerrain_Update_Painting(float pickX, float pickY, float pickZ);
+}
+void GGTerrain_CreateUndoRedoAction(int type, int eList, bool bUserAction = true, void* pEventData = nullptr);
+extern int g_iCalculatingChangeBounds;
+
+static int   s_terrainTestFrames = 0;
+static int   s_terrainTestPaint = 0;       // 0 = sculpt run, 1 = paint run
+static int   s_terrainTestSculptMode = 0;  // GGTERRAIN_SCULPT_* for sculpt runs
+static float s_terrainTestX = 0.0f, s_terrainTestZ = 0.0f;
+static int   s_terrainTestMaterial = 0;
+static int   s_terrainTestSavedEditMode = 0;
+static int   s_terrainTestSavedSculptMode = 0;
+static int   s_terrainTestSavedPaintMat = 0;
+
+static void AutoHarness_TerrainEditTick(void)
+{
+	using namespace GGTerrain;
+	if (s_terrainTestFrames <= 0) return;
+	s_terrainTestFrames--;
+
+	float y = 0.0f;
+	GGTerrain_GetHeight(s_terrainTestX, s_terrainTestZ, &y);
+
+	if (s_terrainTestPaint == 0)
+	{
+		ggterrain_extra_params.edit_mode = GGTERRAIN_EDIT_SCULPT;
+		ggterrain_extra_params.sculpt_mode = s_terrainTestSculptMode;
+		ggterrain_internal_params.mouseLeftState = 1;   // consumed inside the apply call
+		GGTerrain_Update_Sculpting(s_terrainTestX, y, s_terrainTestZ);
+	}
+	else
+	{
+		ggterrain_extra_params.edit_mode = GGTERRAIN_EDIT_PAINT;
+		ggterrain_extra_params.paint_material = s_terrainTestMaterial;
+		ggterrain_internal_params.mouseLeftState = 1;
+		GGTerrain_Update_Painting(s_terrainTestX, y, s_terrainTestZ);
+	}
+
+	if (s_terrainTestFrames <= 0)
+	{
+		// stroke over: finalize the undo action the way the editor release path does,
+		// then hand the editor its modes back
+		if (g_iCalculatingChangeBounds)
+		{
+			g_iCalculatingChangeBounds = 0;
+			GGTerrain_CreateUndoRedoAction(s_terrainTestPaint == 0 ? eUndoSys_Terrain_Sculpt : eUndoSys_Terrain_Paint, eUndoSys_UndoList);
+		}
+		ggterrain_internal_params.mouseLeftState = 0;
+		ggterrain_extra_params.edit_mode = s_terrainTestSavedEditMode;
+		ggterrain_extra_params.sculpt_mode = s_terrainTestSavedSculptMode;
+		ggterrain_extra_params.paint_material = s_terrainTestSavedPaintMat;
+	}
+}
+
 // ---- Main entry point (called once per tick) ----
 
 void AutoHarness_CheckForCommand(void)
 {
 	AutoHarness_SkinWatchTick();
+	AutoHarness_TerrainEditTick();
 	// Init paths and uptime tracking on first call
 	if (!s_initialized)
 	{
@@ -2037,6 +2103,69 @@ void AutoHarness_CheckForCommand(void)
 		s_bSkinWatch = (arg[0] != '0');
 		_snprintf(result, sizeof(result), "OK: SKIN_WATCH %s (frame=%u seen=%d)",
 			s_bSkinWatch ? "ON" : "OFF", s_skinWatchFrame, (int)s_skinWatchSeen.size());
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "UNDO") == 0)
+	{
+		// same entry point the editor's Ctrl+Z handler uses
+		extern void undosys_undoevent(void);
+		undosys_undoevent();
+		_snprintf(result, sizeof(result), "OK: UNDO performed");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "REDO") == 0)
+	{
+		extern void undosys_redoevent(void);
+		undosys_redoevent();
+		_snprintf(result, sizeof(result), "OK: REDO performed");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SCULPT_TEST") == 0)
+	{
+		// SCULPT_TEST <worldX> <worldZ> <frames> [mode] — synthetic RAISE (default) stroke
+		// at the given position for N frames; mode = GGTERRAIN_SCULPT_* int to override
+		float sx = 0, sz = 0; int sf = 0, sm = GGTERRAIN_SCULPT_RAISE;
+		int got = sscanf_s(arg, "%f %f %d %d", &sx, &sz, &sf, &sm);
+		if (got >= 3 && sf > 0)
+		{
+			s_terrainTestSavedEditMode = GGTerrain::ggterrain_extra_params.edit_mode;
+			s_terrainTestSavedSculptMode = GGTerrain::ggterrain_extra_params.sculpt_mode;
+			s_terrainTestSavedPaintMat = GGTerrain::ggterrain_extra_params.paint_material;
+			s_terrainTestX = sx; s_terrainTestZ = sz;
+			s_terrainTestSculptMode = sm;
+			s_terrainTestPaint = 0;
+			s_terrainTestFrames = sf;
+			_snprintf(result, sizeof(result), "OK: SCULPT_TEST at (%.0f, %.0f) mode %d for %d frames (brushSize=%.0f)",
+				sx, sz, sm, sf, GGTerrain::ggterrain_global_render_params2.brushSize);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SCULPT_TEST needs <worldX> <worldZ> <frames> [sculptmode]");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "PAINT_TEST") == 0)
+	{
+		// PAINT_TEST <worldX> <worldZ> <material> <frames> — synthetic texture-paint stroke;
+		// material is the GG source-texture index + 1 (0 erases back to auto materials)
+		float px = 0, pz = 0; int pm = 0, pf = 0;
+		int got = sscanf_s(arg, "%f %f %d %d", &px, &pz, &pm, &pf);
+		if (got == 4 && pf > 0)
+		{
+			s_terrainTestSavedEditMode = GGTerrain::ggterrain_extra_params.edit_mode;
+			s_terrainTestSavedSculptMode = GGTerrain::ggterrain_extra_params.sculpt_mode;
+			s_terrainTestSavedPaintMat = GGTerrain::ggterrain_extra_params.paint_material;
+			s_terrainTestX = px; s_terrainTestZ = pz;
+			s_terrainTestMaterial = pm;
+			s_terrainTestPaint = 1;
+			s_terrainTestFrames = pf;
+			_snprintf(result, sizeof(result), "OK: PAINT_TEST at (%.0f, %.0f) material %d for %d frames (brushSize=%.0f)",
+				px, pz, pm, pf, GGTerrain::ggterrain_global_render_params2.brushSize);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: PAINT_TEST needs <worldX> <worldZ> <material> <frames>");
+		}
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_TREES") == 0)

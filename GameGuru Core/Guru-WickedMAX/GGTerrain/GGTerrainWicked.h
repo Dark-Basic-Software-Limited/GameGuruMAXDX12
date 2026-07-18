@@ -10,6 +10,13 @@ namespace GGTerrain
 	void GGTerrainWicked_Shutdown();
 	void GGTerrainWicked_OnPaintDataChanged();
 
+	// Phase 6 sculpt/paint bridge: forward a GGTerrain_InvalidateRegion to the Wicked
+	// chunk terrain. flags = GGTERRAIN_INVALIDATE_* — CHUNKS marks overlapping chunks
+	// invalidated (Generation_Update regenerates their meshes in place with the new
+	// heights); any flag also forgets the blend work on those chunks so the auto +
+	// painted blendmap passes re-run (TEXTURES-only edits skip the mesh regen).
+	void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float maxZ, uint32_t flags);
+
 	// Level reveal hold: call Begin at the end of a level load; the editor draws
 	// an opaque cover over the 3D view while IsRevealHeld() returns true. The
 	// hold releases when the legacy heights are ready AND the camera-facing
