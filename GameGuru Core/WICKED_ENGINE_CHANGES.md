@@ -35,6 +35,16 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.13 VirtualTexture::pending_repaint_blendmap — instant blendmap-edit refresh
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`VirtualTexture::pending_repaint_blendmap` flag)
+- `WickedEngine/wiTerrain.cpp` (`UpdateVirtualTexturesCPU`: main-thread blendmap rebind + update-job emits UpdateRequests for every currently RESIDENT tile, then clears the flag)
+
+**Why:** after a terrain paint/blend edit, GG rebuilds the chunk's blendmap texture and previously called `vt->invalidate()` — which resets the sparse VT's residency and re-streams the whole chunk through multi-frame GPU-feedback round-trips. On a 65536-res near chunk that took **4-5 seconds** for the paint stroke to become visible. The new flag keeps residency intact: the blendmap is rebound and all resident tiles are re-rendered in place, so the edit lands on screen the next frame. Far single-tile chunks (no residency) keep using `invalidate()` (cheap for them).
+
+**Behaviour:** no stock behaviour change — the flag is passive unless a consumer sets it.
+
 ### 1.12 Terrain ChunkData::merge_pending — stale-mesh window flag
 
 **Files:**
@@ -556,6 +566,7 @@ modified, both genuine bug fixes.
 | 1.10 Ocean foam world-unit scale + intensity knob | applied 2026-07-18 in Wicked commit `da60bfad`, lib rebuilt, shader auto-recompiles | candidate for upstream PR — both params default 1 = stock behaviour; fills existing CB padding so no layout change |
 | 1.11 Delayed shadow cascades (staggered refresh) | applied 2026-07-18 in Wicked commit `38a9e82a`, lib rebuilt, new shadowClearPS shader auto-compiles | candidate for upstream PR — default OFF preserves stock behaviour bit-for-bit; GG enables at sun creation; single-directional-light assumption documented in code |
 | 1.12 Terrain ChunkData::merge_pending stale-mesh flag | applied 2026-07-18, lib rebuilt | candidate for upstream PR — passive field, closes the regen-vs-merge window for mesh-baking consumers (GG blendmap passes) |
+| 1.13 VirtualTexture::pending_repaint_blendmap instant refresh | applied 2026-07-18, lib rebuilt | candidate for upstream PR — passive flag; paint strokes visible next frame instead of after seconds of feedback re-streaming |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

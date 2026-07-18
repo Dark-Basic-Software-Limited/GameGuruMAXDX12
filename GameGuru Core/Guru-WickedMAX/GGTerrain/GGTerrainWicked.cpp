@@ -495,11 +495,19 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 				chunk_data->blendmap_layers[layer1Slot].pixels[vi] = (uint8_t)(w[layer1Slot] * 255.0f);
 		}
 
-		// Invalidate GPU blendmap texture and VT to trigger re-blend
+		// Rebuild the GPU blendmap texture and refresh the VT. Residency-backed (near)
+		// chunks take the repaint fast path — resident tiles re-render next frame with
+		// the new blendmap; a full invalidate() would re-stream the chunk through
+		// several seconds of GPU-feedback round-trips (the visible paint lag).
 		chunk_data->blendmap = {};
 		terrain->CreateChunkRegionTexture(*chunk_data);
 		if (chunk_data->vt)
-			chunk_data->vt->invalidate();
+		{
+			if (chunk_data->vt->residency != nullptr && chunk_data->vt->resolution != 0)
+				chunk_data->vt->pending_repaint_blendmap = true;
+			else
+				chunk_data->vt->invalidate();
+		}
 
 		chunksModified++;
 	}
@@ -681,11 +689,19 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 			chunk_data->blendmap_layers[slot].pixels[vi] = 255;
 		}
 
-		// Invalidate GPU blendmap texture and VT to trigger re-blend
+		// Rebuild the GPU blendmap texture and refresh the VT. Residency-backed (near)
+		// chunks take the repaint fast path — resident tiles re-render next frame with
+		// the new blendmap; a full invalidate() would re-stream the chunk through
+		// several seconds of GPU-feedback round-trips (the visible paint lag).
 		chunk_data->blendmap = {};
 		terrain->CreateChunkRegionTexture(*chunk_data);
 		if (chunk_data->vt)
-			chunk_data->vt->invalidate();
+		{
+			if (chunk_data->vt->residency != nullptr && chunk_data->vt->resolution != 0)
+				chunk_data->vt->pending_repaint_blendmap = true;
+			else
+				chunk_data->vt->invalidate();
+		}
 
 		chunksModified++;
 	}
