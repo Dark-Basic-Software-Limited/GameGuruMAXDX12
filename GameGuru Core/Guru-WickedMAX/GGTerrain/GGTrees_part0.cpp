@@ -984,9 +984,15 @@ uint32_t GGTrees_GetNumHighDetail()
 	return total;
 }
 
+// Bumped on every instance-data rebuild — the Wicked pool update (part2) uses
+// it as a dirty signal so it can skip its nearest-N re-selection on frames
+// where neither the camera nor the tree data changed.
+static uint32_t g_treeInstanceStamp = 0;
+
 // only call this when tree heights need to be updated, e.g. when the terrain has changed
 int GGTrees_UpdateInstances( int accurate )
 {
+	g_treeInstanceStamp++;
 	if (!ggtrees_initialised) return 0;
 	if ( !GGTerrain_IsReady() ) return 0;
 
@@ -1704,7 +1710,14 @@ int GGTrees_SetData( float* data )
 			MessageBoxA( NULL, pDropWarning, "Warning", MB_OK | MB_ICONWARNING );
 		}
 	}
-	GGTrees_UpdateInstances( 1 );
+	if ( !GGTrees_UpdateInstances( 1 ) )
+	{
+		// Terrain heights may not be ready this early in a level load — arm the
+		// same 5-frame retry backoff GGTrees_Update uses on failure, instead of
+		// leaving instances at Y=0 until terrain LOD regen happens to set
+		// iUpdateTrees for us.
+		ggterrain_extra_params.iUpdateTrees = 5;
+	}
 	GGTrees_RasterizeTreeMap();
 	GGTrees_UploadTreeMap();
 	return 1;
@@ -2138,6 +2151,10 @@ void GGTrees_UpdateFrustumCulling( wiScene::CameraComponent* camera )
 {
 	if (!ggtrees_initialised) return;
 	if (!ggtrees_global_params.draw_enabled) return; //OPT3
+	// Wicked path: culling is done by Wicked on the pool objects; the instance
+	// lists built here feed only the old DX11 draw path (suppressed). The sole
+	// other consumer (GGTrees_GetNumHighDetail) has no callers.
+	if ( ggterrain_use_wicked_terrain ) return;
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
@@ -2309,6 +2326,16 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 			// something changed so adjust tree heights
 			if ( !GGTrees_UpdateInstances( 0 ) ) ggterrain_extra_params.iUpdateTrees = 5;
 		}
+	}
+
+	// Wicked path: trees render via the ObjectComponent pool (GGTrees_WickedUpdate).
+	// Everything below builds shadow instance lists + per-type GPU buffers + tree
+	// constant buffers for the OLD DX11 draw path, which is suppressed when the
+	// wicked terrain is active — skip the dead work (~1ms + per-frame CreateBuffer churn).
+	if ( ggterrain_use_wicked_terrain )
+	{
+		wiProfiler::EndRange( range );
+		return;
 	}
 
 	// find close trees for shadows only, do normal trees in GGTrees_UpdateFrustumCulling()

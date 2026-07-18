@@ -1648,6 +1648,16 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		wi::backlog::post(perfVolLightsOff ? "[Perf] Sun Volumetrics OFF" : "[Perf] Sun Volumetrics ON");
 	}
 
+	// 9 key: toggle global occlusion culling (A/B experiment; tree pool objects are
+	// individually exempt from queries regardless — Wicked delta #6)
+	static int perfOcclusionOff = 0;
+	if (GGTerrain_GetKeyPressed(0x39)) // VK_9
+	{
+		perfOcclusionOff = 1 - perfOcclusionOff;
+		wi::renderer::SetOcclusionCullingEnabled(!perfOcclusionOff);
+		wi::backlog::post(perfOcclusionOff ? "[Perf] Occlusion Culling OFF" : "[Perf] Occlusion Culling ON");
+	}
+
 	// G key: toggle grass on/off (A/B + perf). Hides existing grass via layerMask and pauses new
 	// grass creation; re-enabling shows it again and resumes creation for any new chunks.
 	if (GGTerrain_GetKeyPressed(0x47)) // GGKEY_G
@@ -1677,7 +1687,27 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	}
 
 	// Let the VT system run — generates chunks, creates atlas, blends materials.
-	terrain->Generation_Update(camera);
+	{
+		auto rangeGen = wi::profiler::BeginRangeCPU("TerrainW - Generation_Update");
+		terrain->Generation_Update(camera);
+		wi::profiler::EndRange(rangeGen);
+	}
+
+	// Cheap change signature over the live chunk set (a few hundred entries, vs the 21K-object
+	// scene scans it gates below). Captures chunk create/remove/regen (entity value changes)
+	// AND blendmap arrival on freshly-generated chunks (layers.size() 0 -> N), which is what
+	// lets a gated scan retry chunks it had to skip mid-generation. External invalidations
+	// (paint brush, level load, material setup) clear the processed-key maps instead — each
+	// gate below also compares its map size against the size it recorded after its last run.
+	// NOTE: each gate keeps its OWN sig cache and only updates it when its work actually runs,
+	// so a gate that was disabled (e.g. materials not set up yet) still fires once re-enabled.
+	uint64_t chunkSig = (uint64_t)terrain->chunks.size();
+	for (const auto& [sigChunk, sigCd] : terrain->chunks)
+	{
+		chunkSig = chunkSig * 1099511628211ull
+			+ (uint64_t)sigCd.entity * 31ull
+			+ (uint64_t)sigCd.blendmap_layers.size();
+	}
 
 	// Path A: rewrite the auto material weights (slots 0-4) with DX11-shape blend, then let
 	// the painted-material pass overlay its own weights on painted vertices. Must run AFTER
@@ -1685,7 +1715,16 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// painting still wins on painted cells.
 	if (wickedTerrainMaterialsSetup)
 	{
-		ApplyDX11StyleAutoBlend(terrain);
+		static uint64_t s_autoSig = ~0ull;
+		static size_t   s_autoCount = (size_t)-1;
+		if (s_autoSig != chunkSig || s_autoCount != dx11BlendProcessedKeys.size())
+		{
+			auto rangeAB = wi::profiler::BeginRangeCPU("TerrainW - AutoBlend Scan");
+			ApplyDX11StyleAutoBlend(terrain);
+			wi::profiler::EndRange(rangeAB);
+			s_autoSig = chunkSig;
+			s_autoCount = dx11BlendProcessedKeys.size();
+		}
 	}
 
 	// Phase 3: Process terrain chunks for painted material blendmaps AFTER Generation_Update.
@@ -1695,7 +1734,16 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// Generation_Update (1-frame delay, but avoids permanent corruption from race condition).
 	if (wickedTerrainMaterialsSetup && maxPaintedSlot >= 0)
 	{
-		ProcessPaintedChunkBlendmaps(terrain);
+		static uint64_t s_paintSig = ~0ull;
+		static size_t   s_paintCount = (size_t)-1;
+		if (s_paintSig != chunkSig || s_paintCount != processedChunkKeys.size())
+		{
+			auto rangePB = wi::profiler::BeginRangeCPU("TerrainW - PaintedBlend Scan");
+			ProcessPaintedChunkBlendmaps(terrain);
+			wi::profiler::EndRange(rangePB);
+			s_paintSig = chunkSig;
+			s_paintCount = processedChunkKeys.size();
+		}
 	}
 
 	// Grass: set up the material/template once, then grow grass on chunks from the painted grass
@@ -1719,8 +1767,10 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	//      null filename (sync not yet run), fails silently, but still records the chunk's tier —
 	//      frame N+1's dirty poll rebuilds appearances but the chunks stay skipped because their
 	//      tier hasn't changed. Clearing tier tracking forces the re-visit.
+	bool grassDirty = false;
 	if (GGGrass::GGGrass_TakeCustomSlotsDirty())
 	{
+		grassDirty = true;
 		g_grassAppearanceReady = false;
 		for (uint32_t t = GGGRASS_CUSTOM_REAL_TYPE_BASE; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 			g_grassMaterialReady[t] = false;
@@ -1762,6 +1812,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		ApplyGrassDrawDistance();
 	}
 
+	auto rangeGM = wi::profiler::BeginRangeCPU("TerrainW - Grass Maint");
 	// Grass Start/End Altitude sliders (+ underwater pair + water plane) → per-entity CB values
 	// consumed by the hair simulate CS altitude filter. Unconditional every frame — 4 float
 	// compares per entity is well under the noise floor next to the CB upload the shader path
@@ -1786,6 +1837,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		dirtyChunks.clear();
 		if (GGGrass::GGGrass_TakeDirtyChunks(dirtyChunks))
 		{
+			grassDirty = true;
 			for (uint64_t key : dirtyChunks)
 			{
 				// Erase the tier record so ProcessGrassChunks sees a tier change and rebuilds it.
@@ -1802,14 +1854,34 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		{
 			ForceGrassRebuild();
 			g_grassRebuildRequested = false;
+			grassDirty = true;
 		}
-		ProcessGrassChunks(terrain, camera.Eye);
+		// Gate the chunk pass: tiers are a pure function of camera distance + chunk set +
+		// paint state. Skip unless one of those moved. Cache updates only when the pass
+		// runs, so chunk churn or camera drift during a grass-disabled stretch still
+		// triggers a pass on re-enable.
+		static uint64_t s_grassSig = ~0ull;
+		static float s_grassCamX = 1e30f, s_grassCamZ = 1e30f;
+		const float gdx = camera.Eye.x - s_grassCamX;
+		const float gdz = camera.Eye.z - s_grassCamZ;
+		if (grassDirty || s_grassSig != chunkSig || (gdx * gdx + gdz * gdz) > (8.0f * 8.0f))
+		{
+			ProcessGrassChunks(terrain, camera.Eye);
+			s_grassSig = chunkSig;
+			s_grassCamX = camera.Eye.x;
+			s_grassCamZ = camera.Eye.z;
+		}
 	}
+	wi::profiler::EndRange(rangeGM);
 
 	// Phase 5: Colored cylinder tree placeholders. Independent of terrain chunk
 	// lifecycle — one shared cylinder mesh + a fixed pool of ObjectComponents
 	// repositioned from pAllTrees[] each frame. Real LOD tree meshes come later.
-	GGTrees::GGTrees_WickedUpdate();
+	{
+		auto rangeTP = wi::profiler::BeginRangeCPU("TerrainW - Tree Pool");
+		GGTrees::GGTrees_WickedUpdate();
+		wi::profiler::EndRange(rangeTP);
+	}
 }
 
 void GGTerrainWicked_Shutdown()

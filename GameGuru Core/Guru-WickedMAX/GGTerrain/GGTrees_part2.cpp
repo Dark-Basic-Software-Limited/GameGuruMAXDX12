@@ -277,8 +277,29 @@ static void GGTrees_WickedSetup()
 		wi::scene::ObjectComponent& obj = scene.objects.Create( e );
 		obj.SetRenderable( false );
 		obj.SetNotVisibleInReflections( true );
+		// Perf (Wicked delta #6): tree pool objects opt out of GPU occlusion
+		// queries. 20K query slots + proxy draws cost ~2.5ms CPU + ~1.3ms GPU
+		// per frame on TESTPRO1 and foliage occludes almost nothing. Regular
+		// entities keep occlusion per the level's visuals setting.
+		obj.SetOcclusionQueryDisabled( true );
 		scene.transforms.Create( e );
 		g_treePoolEntities[ i ] = e;
+	}
+
+	if ( typesBuilt == 0 )
+	{
+		// Should be impossible (g_GGTrees is compiled-in static data), but never
+		// latch setup "done" with zero meshes — destroy the pool and let the
+		// next frame retry rather than rendering nothing forever.
+		for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+		{
+			if ( g_treePoolEntities[ i ] != wi::ecs::INVALID_ENTITY )
+			{
+				scene.Entity_Remove( g_treePoolEntities[ i ] );
+				g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
+			}
+		}
+		return;
 	}
 
 	g_wickedTreesSetup = true;
@@ -303,14 +324,128 @@ void GGTrees_WickedInit()
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
 }
 
+// ---------------------------------------------------------------------------
+// Stable slot binding (perf fix 2026-07-18).
+//
+// The pool used to rebind meshID + rebuild the transform of EVERY slot EVERY
+// frame in nth_element order: 20K UpdateTransform calls = ~20ms CPU (measured
+// "TerrainW - Tree Pool" 19.7ms, 48% of the whole frame at the A/B camera).
+// nth_element order is also arbitrary frame to frame, so a pool entity's
+// previous-frame matrix belonged to a DIFFERENT tree — wrong motion vectors,
+// TAA/motion-blur ghosting on every tree.
+//
+// Now a slot stays bound to the same tree until the nearest-N set evicts it.
+// The 400K candidate scan + nth_element still run each frame (cheap), but the
+// bind loop only touches slots whose tree binding, LOD band, or source data
+// actually changed — near-zero component writes with a still camera, and each
+// pool entity keeps a stable identity for motion vectors.
+// ---------------------------------------------------------------------------
+static std::vector<uint32_t> g_slotToTree;       // pool slot -> pAllTrees index, UINT32_MAX = free
+static std::vector<int32_t>  g_treeToSlot;       // pAllTrees index -> pool slot, -1 = unbound
+static std::vector<uint32_t> g_treeDesiredEpoch; // per tree: frame epoch when it last made the nearest-N cut
+static std::vector<uint8_t>  g_treeBand;         // per tree: LOD band, valid when epoch matches current
+struct TreeSlotCache { float x, y, z, scale; uint8_t type, band; };
+static std::vector<TreeSlotCache> g_slotCache;   // per slot: source-data snapshot at bind time
+static uint32_t g_treeEpoch = 0;
+
+static wi::ecs::Entity TreeMeshForBand( uint32_t type, uint8_t band )
+{
+	return ( band == 0 ) ? g_treeMeshEntity    [ type ] :
+	       ( band == 1 ) ? g_treeMeshEntityLOD1[ type ] :
+	                       g_treeMeshEntityLOD2[ type ];
+}
+
+// Bind pool slot -> tree: swap in the merged trunk+branches mesh for the LOD
+// band and rebuild the slot transform. Wicked's per-object AABB derives from
+// mesh AABB * transform, so culling picks the change up on the next scene
+// update. Returns false (mappings untouched) if the tree can't be represented.
+static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeIdx, uint8_t band )
+{
+	InstanceTree* pTree = &pAllTrees[ treeIdx ];
+	uint32_t type = (uint32_t)pTree->GetType();
+	if ( type >= GG_TREE_TYPES ) return false;
+	wi::ecs::Entity treeMesh = TreeMeshForBand( type, band );
+	if ( treeMesh == wi::ecs::INVALID_ENTITY ) return false;
+
+	wi::ecs::Entity e = g_treePoolEntities[ slot ];
+	wi::scene::ObjectComponent*    obj   = scene.objects   .GetComponent( e );
+	wi::scene::TransformComponent* xform = scene.transforms.GetComponent( e );
+	if ( !obj || !xform ) return false;
+
+	obj->meshID = treeMesh;
+	obj->SetRenderable( true );
+	// DX11 parity: tree shadows only render within lod_dist_shadow (default
+	// 2500 = exactly our LOD1 boundary), so only band-0 trees cast. Also a big
+	// perf win — thousands of distant trees stay out of every shadow cascade.
+	obj->SetCastShadow( band == 0 );
+
+	float scale = pTree->GetScaleFloat();  // ~0.5–1.5
+	xform->ClearTransform();
+	xform->Scale    ( XMFLOAT3( scale, scale, scale ) );
+	xform->Translate( XMFLOAT3( pTree->x, pTree->y, pTree->z ) );
+	xform->UpdateTransform();
+
+	g_slotToTree[ slot ]    = treeIdx;
+	g_treeToSlot[ treeIdx ] = (int32_t)slot;
+	g_slotCache [ slot ]    = { pTree->x, pTree->y, pTree->z, scale, (uint8_t)type, band };
+	return true;
+}
+
 void GGTrees_WickedUpdate()
 {
 	if ( !g_wickedTreesSetup )
 	{
 		GGTrees_WickedSetup();
+		if ( !g_wickedTreesSetup ) return;
 	}
 
 	auto& scene = wi::scene::GetScene();
+
+	// Respect the GG-side visibility flags (parity fix: GGTrees_Update hides
+	// trees during terrain regen via hide_until_update/draw_enabled, and the
+	// pool used to ignore that and keep stale trees on screen). While hidden,
+	// park the pool; on re-show force a full rebind because the instance data
+	// (esp. Y heights) was regenerated while we were parked.
+	static bool s_poolParked = false;
+	bool forceRebind = false;
+	if ( !ggtrees_global_params.draw_enabled )
+	{
+		if ( !s_poolParked )
+		{
+			for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+			{
+				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
+				if ( obj ) obj->SetRenderable( false );
+			}
+			s_poolParked = true;
+		}
+		return;
+	}
+	if ( s_poolParked )
+	{
+		s_poolParked = false;
+		forceRebind = true;
+	}
+
+	// (Re)size per-tree state to the live instance array. A count change means
+	// a level load / bulk tree edit — all bets on existing bindings are off.
+	// Slot-vector size mismatch = first run or post-shutdown re-setup (fresh
+	// pool entities, stale bindings).
+	if ( g_treeToSlot.size() != (size_t)numTotalTrees ) forceRebind = true;
+	if ( g_slotToTree.size() != (size_t)GG_TREE_POOL_SIZE ) forceRebind = true;
+	if ( forceRebind )
+	{
+		g_treeToSlot      .assign( numTotalTrees, -1 );
+		g_treeDesiredEpoch.assign( numTotalTrees, 0 );
+		g_treeBand        .assign( numTotalTrees, 0 );
+		g_slotToTree      .assign( GG_TREE_POOL_SIZE, UINT32_MAX );
+		g_slotCache       .resize( GG_TREE_POOL_SIZE );
+		for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+		{
+			wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
+			if ( obj ) obj->SetRenderable( false );
+		}
+	}
 
 	// Camera position — used to pick the nearest N trees to spend the pool on.
 	// XZ-only distance is sufficient: trees are all ~ground-level, and vertical
@@ -318,6 +453,30 @@ void GGTrees_WickedUpdate()
 	const wi::scene::CameraComponent& camera = wi::scene::GetCamera();
 	const float camX = camera.Eye.x;
 	const float camZ = camera.Eye.z;
+
+	// Selection throttle: the 400K candidate scan + nth_element + bind passes
+	// only need to re-run when the answer can change — camera moved (>8 inches,
+	// accumulated against the last SCANNED position so slow drift still lands),
+	// tree data rebuilt (g_treeInstanceStamp bumps in GGTrees_UpdateInstances),
+	// pool state reset, or a slow safety heartbeat for any mutation path that
+	// doesn't announce itself. With a still camera this makes the whole pool
+	// update near-free.
+	static float    s_lastCamX = 1e30f, s_lastCamZ = 1e30f;  // far sentinel -> first frame always scans
+	static uint32_t s_lastInstanceStamp = ~0u;
+	static uint32_t s_heartbeat = 0;
+	{
+		const float mdx = camX - s_lastCamX;
+		const float mdz = camZ - s_lastCamZ;
+		const bool rescan = forceRebind
+			|| s_lastInstanceStamp != g_treeInstanceStamp
+			|| ( mdx * mdx + mdz * mdz ) > ( 8.0f * 8.0f )
+			|| ++s_heartbeat >= 256;
+		if ( !rescan ) return;
+		s_heartbeat = 0;
+		s_lastCamX = camX;
+		s_lastCamZ = camZ;
+		s_lastInstanceStamp = g_treeInstanceStamp;
+	}
 
 	// Candidate list — index into pAllTrees + squared XZ distance to camera.
 	// Static + clear() keeps the allocated capacity across frames.
@@ -353,43 +512,74 @@ void GGTrees_WickedUpdate()
 		poolFill = GG_TREE_POOL_SIZE;
 	}
 
+	// Mark this frame's desired set + LOD band per tree.
 	constexpr float lod1Dist2 = GG_TREE_LOD1_DIST * GG_TREE_LOD1_DIST;
 	constexpr float lod2Dist2 = GG_TREE_LOD2_DIST * GG_TREE_LOD2_DIST;
+	g_treeEpoch++;
 	for ( size_t k = 0; k < poolFill; k++ )
 	{
-		InstanceTree* pTree = &pAllTrees[ candidates[ k ].idx ];
-		uint32_t type = (uint32_t)pTree->GetType();
+		const uint32_t idx = candidates[ k ].idx;
 		const float d2 = candidates[ k ].dist2;
-		wi::ecs::Entity treeMesh =
-			( d2 < lod1Dist2 ) ? g_treeMeshEntity    [ type ] :
-			( d2 < lod2Dist2 ) ? g_treeMeshEntityLOD1[ type ] :
-			                     g_treeMeshEntityLOD2[ type ];
-
-		wi::ecs::Entity e = g_treePoolEntities[ k ];
-		wi::scene::ObjectComponent*     obj   = scene.objects   .GetComponent( e );
-		wi::scene::TransformComponent*  xform = scene.transforms.GetComponent( e );
-		if ( !obj || !xform ) continue;
-
-		// Swap in this tree's merged trunk+branches mesh for the pool slot.
-		// Wicked's per-object AABB derives from mesh AABB * transform, so
-		// culling picks this up automatically on the next scene update.
-		obj->meshID = treeMesh;
-		obj->SetRenderable( true );
-
-		float scale = pTree->GetScaleFloat();  // ~0.5–1.5
-		xform->ClearTransform();
-		xform->Scale    ( XMFLOAT3( scale, scale, scale ) );
-		xform->Translate( XMFLOAT3( pTree->x, pTree->y, pTree->z ) );
-		xform->UpdateTransform();
+		g_treeDesiredEpoch[ idx ] = g_treeEpoch;
+		g_treeBand[ idx ] = ( d2 < lod1Dist2 ) ? 0 : ( d2 < lod2Dist2 ) ? 1 : 2;
 	}
 
-	// Hide any pool slots we didn't fill this frame.
-	for ( size_t k = poolFill; k < GG_TREE_POOL_SIZE; k++ )
+	// Pass A over slots: evict bindings that fell out of the nearest-N set,
+	// keep (and verify) the rest. Kept slots cost a few array reads + float
+	// compares — no component writes unless the tree's data or band changed.
+	static std::vector<uint32_t> freeSlots;
+	if ( freeSlots.capacity() < GG_TREE_POOL_SIZE ) freeSlots.reserve( GG_TREE_POOL_SIZE );
+	freeSlots.clear();
+
+	for ( uint32_t s = 0; s < GG_TREE_POOL_SIZE; s++ )
 	{
-		wi::ecs::Entity e = g_treePoolEntities[ k ];
-		if ( e == wi::ecs::INVALID_ENTITY ) break;
-		wi::scene::ObjectComponent* obj = scene.objects.GetComponent( e );
-		if ( obj ) obj->SetRenderable( false );
+		const uint32_t t = g_slotToTree[ s ];
+		if ( t == UINT32_MAX ) { freeSlots.push_back( s ); continue; }
+
+		bool evict = ( t >= numTotalTrees || g_treeDesiredEpoch[ t ] != g_treeEpoch );
+		if ( !evict )
+		{
+			// Still desired — verify the source data hasn't changed under us
+			// (editor tree move/retype/rescale mutates pAllTrees in place).
+			InstanceTree* pTree = &pAllTrees[ t ];
+			TreeSlotCache& c = g_slotCache[ s ];
+			const uint8_t band = g_treeBand[ t ];
+			const float scale = pTree->GetScaleFloat();
+			if ( c.x != pTree->x || c.y != pTree->y || c.z != pTree->z ||
+			     c.scale != scale || c.type != (uint8_t)pTree->GetType() )
+			{
+				evict = !BindTreeSlot( scene, s, t, band );  // full rebind in place
+			}
+			else if ( c.band != band )
+			{
+				// LOD boundary crossed — mesh swap only, transform unchanged.
+				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ s ] );
+				if ( obj )
+				{
+					obj->meshID = TreeMeshForBand( c.type, band );
+					obj->SetCastShadow( band == 0 );  // shadow radius = LOD1 boundary (DX11 lod_dist_shadow)
+					c.band = band;
+				}
+			}
+		}
+		if ( evict )
+		{
+			wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ s ] );
+			if ( obj ) obj->SetRenderable( false );
+			if ( t < numTotalTrees && g_treeToSlot[ t ] == (int32_t)s ) g_treeToSlot[ t ] = -1;
+			g_slotToTree[ s ] = UINT32_MAX;
+			freeSlots.push_back( s );
+		}
+	}
+
+	// Pass B over the desired set: bind whatever isn't already in a slot.
+	for ( size_t k = 0; k < poolFill && !freeSlots.empty(); k++ )
+	{
+		const uint32_t idx = candidates[ k ].idx;
+		if ( g_treeToSlot[ idx ] >= 0 ) continue;  // kept from a previous frame
+		const uint32_t s = freeSlots.back();
+		if ( BindTreeSlot( scene, s, idx, g_treeBand[ idx ] ) )
+			freeSlots.pop_back();
 	}
 }
 
@@ -404,6 +594,12 @@ void GGTrees_WickedShutdown()
 		if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
 	}
+	// Bindings refer to pool entities that no longer exist — drop them so the
+	// next setup's update pass starts with a force-rebind.
+	g_slotToTree.clear();
+	g_treeToSlot.clear();
+	g_treeDesiredEpoch.clear();
+	g_treeBand.clear();
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
 		// LOD1/LOD2 slots may ALIAS a higher LOD's entity (missing variant) —

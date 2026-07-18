@@ -216,11 +216,15 @@ void MasterRenderer::Update(float dt)
 				extern int g_iDisableTerrainSystem;
 				auto range3 = wiProfiler::BeginRangeCPU("Update - Terrain");
 				extern bool bImGuiRenderTargetFocus;
+				auto rangeT1 = wiProfiler::BeginRangeCPU("Terrain - GG Core");
 				GGTerrain_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
+				wiProfiler::EndRange(rangeT1);
 				if (ggterrain_use_wicked_terrain)
 				{
 					ggterrain_draw_enabled = 0;  // suppress all old draw callbacks
+					auto rangeT2 = wiProfiler::BeginRangeCPU("Terrain - Wicked Bridge");
 					GGTerrainWicked_Update(camera);
+					wiProfiler::EndRange(rangeT2);
 				}
 				else
 				{
@@ -229,8 +233,12 @@ void MasterRenderer::Update(float dt)
 				if (g_iDisableTerrainSystem == 0)
 				{
 					GGTrees_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
+					auto rangeT3 = wiProfiler::BeginRangeCPU("Trees - FrustumCull");
 					GGTrees_UpdateFrustumCulling(&camera);
+					wiProfiler::EndRange(rangeT3);
+					auto rangeT4 = wiProfiler::BeginRangeCPU("Grass - GG Update");
 					GGGrass_Update(&camera, cmd, bImGuiRenderTargetFocus);
+					wiProfiler::EndRange(rangeT4);
 				}
 				wiProfiler::EndRange(range3);
 			}

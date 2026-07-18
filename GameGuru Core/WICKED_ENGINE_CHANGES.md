@@ -35,6 +35,31 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.6 ObjectComponent: per-object opt-out from GPU occlusion queries
+
+**Files:**
+- `WickedEngine/wiScene_Components.h` (`OCCLUSION_QUERY_DISABLED = 1 << 11` flag + `SetOcclusionQueryDisabled` / `IsOcclusionQueryDisabled`)
+- `WickedEngine/wiRenderer.cpp` (frustum-visibility job: flagged objects get `occlusionHistory |= 1` each frame instead of a query allocation)
+
+**Date:** 2026-07-18
+
+#### Use case in GameGuru MAX
+
+The 20K-slot tree pool made per-object occlusion queries a net loss:
+~2.5ms CPU + ~1.3ms GPU per frame of query bookkeeping + proxy-box
+rendering on TESTPRO1, while foliage occludes almost nothing. Globally
+disabling occlusion culling would take the feature away from regular
+entities (and the user-facing `t.visuals.bOcclusionCulling` setting),
+so instead pool objects carry the new flag and are simply always
+treated as visible. Measured on TESTPRO1: "Occlusion Culling" +
+"Occlusion Culling Render" GPU ranges 1.96 + 1.94ms → 0.08 + 0.08ms;
+part of the 24 → 60 FPS editor perf push.
+
+The `occlusionHistory |= 1` write is required: history shifts left every
+frame, so a flagged object that never allocates a query would otherwise
+decay to "occluded" after 32 frames and vanish whenever occlusion
+culling is enabled.
+
 ### 1.5 HairParticleSystem: per-strand slope + altitude filters for grass entities
 
 **Files:**
@@ -393,6 +418,7 @@ modified, both genuine bug fixes.
 | 1.3 HairParticleSystem UpdateVertexLengthsBuffer | applied 2026-06-19, lib rebuilt | candidate for upstream PR — pure addition, no behavioural change for existing callers |
 | 1.4 HairParticleSystem external paint mask (Option B) | applied 2026-06-19, lib + shaders rebuilt | candidate for upstream PR — `grass_type == 0` default means zero behavior change for existing callers; adds general-purpose per-strand visibility hook |
 | 1.5 HairParticleSystem per-strand slope + altitude filters | applied 2026-07-10, lib + shaders rebuilt | candidate for upstream PR — both gated on `xHairGrassType != 0u`, zero effect on non-GG hair; slope reuses the face-normal fix 1.2 already computes, altitude adds 5 CB floats with permissive defaults |
+| 1.6 ObjectComponent occlusion-query opt-out flag | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off, zero behaviour change for existing scenes; new flag consumers must set `occlusionHistory |= 1` semantics (already handled in the visibility job) |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

@@ -206,13 +206,17 @@ bool GuruLoopLogic ( void )
 			timestampactivity(0, (char*)"GuruLoopLogic ELSE branch entered;");
 
 		// regular common loop logic call
+		auto rangeCL = wiProfiler::BeginRangeCPU("Logic - common_loop");
 		common_loop_logic();
+		wiProfiler::EndRange(rangeCL);
 
 		if (loopCount <= 3)
 			timestampactivity(0, (char*)"common_loop_logic returned;");
 
 		// as new wicked engine never uses Sync(), we still need regular update work for sound and animation
+		auto rangeCN = wiProfiler::BeginRangeCPU("Logic - ConstantNonDisplay");
 		ConstantNonDisplayUpdate();
+		wiProfiler::EndRange(rangeCN);
 
 		// normal operations
 		return true;
