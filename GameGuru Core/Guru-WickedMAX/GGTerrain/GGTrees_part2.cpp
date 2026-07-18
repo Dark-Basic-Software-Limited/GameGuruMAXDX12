@@ -282,6 +282,16 @@ static void GGTrees_WickedSetup()
 		// per frame on TESTPRO1 and foliage occludes almost nothing. Regular
 		// entities keep occlusion per the level's visuals setting.
 		obj.SetOcclusionQueryDisabled( true );
+		// Trees skip the FARTHEST cascade (30000-500000): its frustum contains
+		// every pool tree, and at ~150 world units per shadow texel a whole
+		// tree is 1-2 texels — 20K mesh draws for nothing. DX11 used billboard
+		// quads there. Cascades 0-3 (out to 30000, the whole visible island)
+		// still receive tree shadows; terrain casts in all five.
+		// Real tree meshes shadow only cascades 0-2 (out to 7500 world units).
+		// Rendering them into cascade 3 (7500-30000) cost ~11ms CPU + 7ms GPU;
+		// the merged billboard shadow proxies cover the far cascades instead
+		// (DX11's own mesh-near/billboard-far recipe).
+		obj.cascadeMask = 2;
 		scene.transforms.Create( e );
 		g_treePoolEntities[ i ] = e;
 	}
@@ -374,10 +384,11 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 
 	obj->meshID = treeMesh;
 	obj->SetRenderable( true );
-	// DX11 parity: tree shadows only render within lod_dist_shadow (default
-	// 2500 = exactly our LOD1 boundary), so only band-0 trees cast. Also a big
-	// perf win — thousands of distant trees stay out of every shadow cascade.
-	obj->SetCastShadow( band == 0 );
+	// Exact DX11 recipe: detailed MESH shadows only within lod_dist_shadow
+	// (2500 = our band 0); every tree beyond that gets its shadow from the
+	// merged billboard proxies instead. Keeps the near-shadow crispness and
+	// collapses the cascade-2 caster count to the handful of near trees.
+	obj->SetCastShadow( ggtrees_global_params.draw_shadows != 0 && band == 0 );
 
 	float scale = pTree->GetScaleFloat();  // ~0.5–1.5
 	xform->ClearTransform();
@@ -389,6 +400,164 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 	g_treeToSlot[ treeIdx ] = (int32_t)slot;
 	g_slotCache [ slot ]    = { pTree->x, pTree->y, pTree->z, scale, (uint8_t)type, band };
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+// Far tree shadow proxies (DX11 shadow-distance parity, 2026-07-18).
+//
+// Production DX11 gets island-wide tree shadows cheaply: real tree meshes
+// shadow only within lod_dist_shadow, and every tree beyond that renders a
+// BILLBOARD QUAD into the far shadow cascades. Rendering our 20K real meshes
+// into the far cascades instead cost ~11ms CPU + 7ms GPU (cascade 3 alone).
+//
+// So: per tree chunk (16x16 grid), ONE merged static mesh holding two crossed
+// vertical quads per valid tree, textured with the type's authored billboard
+// silhouette DDS (Files/treebank/billboards/*_BB_SF_*_color.dds — the exact
+// same asset DX11 uses), alpha-tested. The objects are shadow-only: invisible
+// to the main camera and reflections, no occlusion queries. Per frame they
+// cost one object each (max 256); the real tree meshes keep cascadeMask=2 so
+// they only shadow the near cascades where their detail shows.
+//
+// Rebuilt as one deferred batch ~0.5s after the last tree edit (same
+// g_treeInstanceStamp signal the pool uses).
+// ---------------------------------------------------------------------------
+static wi::ecs::Entity g_shadowProxyMaterial[ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
+static std::vector<wi::ecs::Entity> g_shadowProxyMeshes;
+static std::vector<wi::ecs::Entity> g_shadowProxyObjects;
+
+static wi::ecs::Entity BuildBillboardShadowMaterial( uint32_t type )
+{
+	auto& scene = wi::scene::GetScene();
+
+	wi::ecs::Entity matEntity = wi::ecs::CreateEntity();
+	wi::scene::MaterialComponent& mat = scene.materials.Create( matEntity );
+
+	mat.SetBaseColor( XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	mat.SetRoughness ( 1.0f );
+	mat.SetMetalness ( 0.0f );
+	mat.SetReflectance( 0.02f );
+
+	char colorPath[ MAX_PATH ];
+	sprintf_s( colorPath, "%s/Files/treebank/billboards/%s",
+		g_treesExeDir.c_str(), g_GGTrees[ type ].billboardFilename );
+	mat.textures[ wi::scene::MaterialComponent::BASECOLORMAP ].name = colorPath;
+
+	// Wicked semantics: shader clips at (1 - alphaRef) — 0.85 keeps texels with
+	// alpha >= 0.15, same cutoff as the leaf materials.
+	mat.SetAlphaRef   ( 0.85f );
+	mat.SetDoubleSided( true );
+	mat.SetTextureStreamingDisabled( true );
+	mat.CreateRenderData();
+	return matEntity;
+}
+
+static void GGTrees_SetShadowProxiesVisible( wi::scene::Scene& scene, bool visible )
+{
+	for ( wi::ecs::Entity e : g_shadowProxyObjects )
+	{
+		wi::scene::ObjectComponent* obj = scene.objects.GetComponent( e );
+		if ( obj ) obj->SetRenderable( visible );
+	}
+}
+
+static void GGTrees_BuildShadowProxies()
+{
+	auto& scene = wi::scene::GetScene();
+
+	// Tear down the previous build (materials are kept and reused).
+	for ( wi::ecs::Entity e : g_shadowProxyObjects ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
+	for ( wi::ecs::Entity e : g_shadowProxyMeshes  ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
+	g_shadowProxyObjects.clear();
+	g_shadowProxyMeshes.clear();
+
+	if ( !ggtrees_global_params.draw_shadows ) return;
+
+	// Per-type instance buckets, reused across chunks to keep allocations warm.
+	static std::vector<InstanceTree*> byType[ GG_TREE_TYPES ];
+
+	for ( uint32_t c = 0; c < numTreeChunks; c++ )
+	{
+		TreeChunk* pChunk = &pTreeChunks[ c ];
+		const uint32_t numInst = pChunk->pInstances.NumItems();
+		if ( numInst == 0 ) continue;
+
+		for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ ) byType[ t ].clear();
+		uint32_t validCount = 0;
+		for ( uint32_t j = 0; j < numInst; j++ )
+		{
+			InstanceTree* p = pChunk->pInstances[ j ];
+			if ( !p->IsVisible() || p->IsInvalid() || p->IsFlattened() ) continue;
+			uint32_t type = (uint32_t)p->GetType();
+			if ( type >= GG_TREE_TYPES ) continue;
+			if ( g_treeMeshEntity[ type ] == wi::ecs::INVALID_ENTITY ) continue;
+			byType[ type ].push_back( p );
+			validCount++;
+		}
+		if ( validCount == 0 ) continue;
+
+		wi::ecs::Entity meshEntity = wi::ecs::CreateEntity();
+		wi::scene::MeshComponent& mesh = scene.meshes.Create( meshEntity );
+		mesh.vertex_positions.reserve( validCount * 8 );
+		mesh.vertex_normals  .reserve( validCount * 8 );
+		mesh.vertex_uvset_0  .reserve( validCount * 8 );
+		mesh.indices         .reserve( validCount * 12 );
+
+		// One quad = 4 verts / 6 indices; uv v=0 at the top of the billboard.
+		auto emitQuad = [&]( const XMFLOAT3& bl, const XMFLOAT3& br,
+			const XMFLOAT3& tr, const XMFLOAT3& tl, const XMFLOAT3& n )
+		{
+			uint32_t base = (uint32_t)mesh.vertex_positions.size();
+			mesh.vertex_positions.push_back( bl ); mesh.vertex_uvset_0.push_back( XMFLOAT2( 0, 1 ) );
+			mesh.vertex_positions.push_back( br ); mesh.vertex_uvset_0.push_back( XMFLOAT2( 1, 1 ) );
+			mesh.vertex_positions.push_back( tr ); mesh.vertex_uvset_0.push_back( XMFLOAT2( 1, 0 ) );
+			mesh.vertex_positions.push_back( tl ); mesh.vertex_uvset_0.push_back( XMFLOAT2( 0, 0 ) );
+			for ( int v = 0; v < 4; v++ ) mesh.vertex_normals.push_back( n );
+			mesh.indices.push_back( base + 0 ); mesh.indices.push_back( base + 1 ); mesh.indices.push_back( base + 2 );
+			mesh.indices.push_back( base + 0 ); mesh.indices.push_back( base + 2 ); mesh.indices.push_back( base + 3 );
+		};
+
+		for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
+		{
+			if ( byType[ t ].empty() ) continue;
+			if ( g_shadowProxyMaterial[ t ] == wi::ecs::INVALID_ENTITY )
+				g_shadowProxyMaterial[ t ] = BuildBillboardShadowMaterial( t );
+
+			uint32_t indexOffset = (uint32_t)mesh.indices.size();
+			for ( InstanceTree* p : byType[ t ] )
+			{
+				const float h = g_GGTrees[ t ].height * p->GetScaleFloat();
+				const float halfW = 0.5f * g_GGTrees[ t ].billboardScaleX * h;
+				const float x = p->x, y = p->y, z = p->z;
+				emitQuad( XMFLOAT3( x - halfW, y, z ), XMFLOAT3( x + halfW, y, z ),
+				          XMFLOAT3( x + halfW, y + h, z ), XMFLOAT3( x - halfW, y + h, z ),
+				          XMFLOAT3( 0, 0, 1 ) );
+				emitQuad( XMFLOAT3( x, y, z - halfW ), XMFLOAT3( x, y, z + halfW ),
+				          XMFLOAT3( x, y + h, z + halfW ), XMFLOAT3( x, y + h, z - halfW ),
+				          XMFLOAT3( 1, 0, 0 ) );
+			}
+
+			wi::scene::MeshComponent::MeshSubset subset;
+			subset.materialID  = g_shadowProxyMaterial[ t ];
+			subset.indexOffset = indexOffset;
+			subset.indexCount  = (uint32_t)mesh.indices.size() - indexOffset;
+			mesh.subsets.push_back( subset );
+		}
+
+		mesh.CreateRenderData();
+
+		wi::ecs::Entity objEntity = wi::ecs::CreateEntity();
+		wi::scene::ObjectComponent& obj = scene.objects.Create( objEntity );
+		obj.meshID = meshEntity;
+		obj.SetRenderable( true );
+		obj.SetCastShadow( true );
+		obj.SetNotVisibleInMainCamera( true );
+		obj.SetNotVisibleInReflections( true );
+		obj.SetOcclusionQueryDisabled( true );
+		scene.transforms.Create( objEntity );  // identity — verts are world-space
+
+		g_shadowProxyMeshes .push_back( meshEntity );
+		g_shadowProxyObjects.push_back( objEntity );
+	}
 }
 
 void GGTrees_WickedUpdate()
@@ -417,6 +586,7 @@ void GGTrees_WickedUpdate()
 				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
 				if ( obj ) obj->SetRenderable( false );
 			}
+			GGTrees_SetShadowProxiesVisible( scene, false );
 			s_poolParked = true;
 		}
 		return;
@@ -425,6 +595,31 @@ void GGTrees_WickedUpdate()
 	{
 		s_poolParked = false;
 		forceRebind = true;
+		GGTrees_SetShadowProxiesVisible( scene, true );
+	}
+
+	// Far-shadow proxy rebuild: deferred ~0.5s after the last tree-data change
+	// so a paint stroke triggers one rebuild, not one per brush dab. Also
+	// re-fires when the user toggles tree shadows (draw_shadows).
+	{
+		static uint32_t s_proxyStamp = ~0u;
+		static int      s_proxyCountdown = -1;
+		static int      s_lastDrawShadows = -1;
+		if ( s_lastDrawShadows != ggtrees_global_params.draw_shadows )
+		{
+			s_lastDrawShadows = ggtrees_global_params.draw_shadows;
+			forceRebind = true;   // refresh per-slot SetCastShadow via rebind
+			s_proxyCountdown = 1;
+		}
+		if ( s_proxyStamp != g_treeInstanceStamp )
+		{
+			s_proxyStamp = g_treeInstanceStamp;
+			s_proxyCountdown = 30;
+		}
+		if ( s_proxyCountdown >= 0 && --s_proxyCountdown < 0 )
+		{
+			GGTrees_BuildShadowProxies();
+		}
 	}
 
 	// (Re)size per-tree state to the live instance array. A count change means
@@ -557,7 +752,7 @@ void GGTrees_WickedUpdate()
 				if ( obj )
 				{
 					obj->meshID = TreeMeshForBand( c.type, band );
-					obj->SetCastShadow( band == 0 );  // shadow radius = LOD1 boundary (DX11 lod_dist_shadow)
+					obj->SetCastShadow( ggtrees_global_params.draw_shadows != 0 && band == 0 );
 					c.band = band;
 				}
 			}
@@ -600,6 +795,20 @@ void GGTrees_WickedShutdown()
 	g_treeToSlot.clear();
 	g_treeDesiredEpoch.clear();
 	g_treeBand.clear();
+
+	// Shadow proxies + their materials go down with the pool.
+	for ( wi::ecs::Entity e : g_shadowProxyObjects ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
+	for ( wi::ecs::Entity e : g_shadowProxyMeshes  ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
+	g_shadowProxyObjects.clear();
+	g_shadowProxyMeshes.clear();
+	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
+	{
+		if ( g_shadowProxyMaterial[ t ] != wi::ecs::INVALID_ENTITY )
+		{
+			scene.Entity_Remove( g_shadowProxyMaterial[ t ] );
+			g_shadowProxyMaterial[ t ] = wi::ecs::INVALID_ENTITY;
+		}
+	}
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
 		// LOD1/LOD2 slots may ALIAS a higher LOD's entity (missing variant) —

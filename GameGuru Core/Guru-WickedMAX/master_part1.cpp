@@ -117,6 +117,10 @@ void MasterRenderer::Load()
 	lightSun->color = XMFLOAT3 ( 1.0, 1.0, 1.0 );
 	lightSun->SetType ( wiScene::LightComponent::DIRECTIONAL );
 	lightSun->SetVolumetricsEnabled( true );
+	// Production DX11 cascade splits in world inches (old engine GGREDUCED block);
+	// stock Wicked default {8,80,800} is ~20m here. Kept in sync by
+	// WickedCall_SetShadowRange whenever the level's visuals apply.
+	lightSun->cascade_distances = { 380.0f, 950.0f, 7500.0f, 30000.0f, 500000.0f };
 
 	// LB: sun needs lens flare texture
 	int iFlareCount = 3;

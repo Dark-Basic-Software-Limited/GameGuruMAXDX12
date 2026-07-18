@@ -1268,6 +1268,22 @@ int WickedCall_GetSkinableVisible(void)
 void WickedCall_SetShadowRange(float ShadowFar)
 {
 	fWickedCallShadowFarPlane = ShadowFar;
+
+	// DX11 parity (2026-07-18): the old engine consumed fWickedCallShadowFarPlane
+	// inside CreateDirLightShadowCams with hand-tuned GGREDUCED cascade splits
+	// (WickedRepo wiRenderer.cpp: 0/380/950/7500/30000/farPlane, 5 cascades).
+	// The new engine ignores that global entirely — cascades come from each
+	// light's cascade_distances, whose stock default {8,80,800} is ~20 metres
+	// in GG's inch-scaled world. That left DX12 shadows stopping just past the
+	// nearest trees. Recreate the production splits on the sun light here —
+	// this is the same choke point production used (visuals apply/level load).
+	wiScene::LightComponent* lightSun = wiScene::GetScene().lights.GetComponent(g_entitySunLight);
+	if (lightSun)
+	{
+		float farCascade = ShadowFar;
+		if (farCascade < 30001.0f) farCascade = 30001.0f;
+		lightSun->cascade_distances = { 380.0f, 950.0f, 7500.0f, 30000.0f, farCascade };
+	}
 }
 
 
