@@ -1793,7 +1793,10 @@ void GGTrees_SetTreePosition( uint32_t treeID, float x, float z )
 
 	pInstance->x = x;
 	pInstance->z = z;
-	
+	// positions bypass the flag setters — announce the change so the Wicked
+	// pool (and its spatial grid) rescan instead of waiting for the heartbeat
+	g_treeInstanceStamp++;
+
 	float height = 0;
 	float ny = 0;
 	GGTerrain_GetHeight( pInstance->x, pInstance->z, &height, 1 );

@@ -2049,6 +2049,7 @@ void AutoHarness_CheckForCommand(void)
 			if (_stricmp(tp, "shadowdist") == 0) GGTrees::ggtrees_global_params.lod_dist_shadow = tv;
 			else if (_stricmp(tp, "shadowrange") == 0) GGTrees::ggtrees_global_params.tree_shadow_range = (int)tv;
 			else if (_stricmp(tp, "drawshadows") == 0) GGTrees::ggtrees_global_params.draw_shadows = (int)tv;
+			else if (_stricmp(tp, "stress") == 0) GGTrees::g_treePoolStressFrames = (int)tv;
 			else known = false;
 			if (known)
 				_snprintf(result, sizeof(result), "OK: SET_TREES %s = %.1f (shadowdist=%.0f shadowrange=%d drawshadows=%d)",

@@ -233,7 +233,10 @@ void GGTrees_PerformUndoRedoAction(int type, void* pEventData, int eList)
 
 		memcpy(&GGTrees::pAllTrees, pEvent->treeData, sizeof(GGTrees::InstanceTree) * GGTrees::numTotalTrees);
 		//memcpy(&GGTrees::pTreeChunks, pEvent->chunkData, sizeof(GGTrees::TreeChunk) * GGTrees::numTreeChunks);
-		
+		// the raw memcpy bypasses every setter — announce the bulk change so the
+		// Wicked pool + spatial grid rebuild instead of waiting for the heartbeat
+		GGTrees::g_treeInstanceStamp++;
+
 		GGTrees::pInvisibleTrees.Clear();
 		for (int i = 0; i < GGTrees::numTotalTrees; i++)
 		{

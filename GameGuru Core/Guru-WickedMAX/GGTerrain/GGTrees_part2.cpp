@@ -319,6 +319,24 @@ static void GGTrees_WickedSetup()
 		+ std::to_string( GG_TREE_POOL_SIZE ) + " pool slots)" ).c_str() );
 }
 
+// Debug/benchmark hook: while > 0, the nearest-N selection re-runs every frame
+// (decremented per frame). Set via the SET_TREES harness command to measure
+// the rescan cost with the profiler — a moving camera does the same thing.
+int g_treePoolStressFrames = 0;
+
+// Spatial grid state (declared here so init/shutdown can invalidate it; the
+// grid itself — rebuild + ring gather — lives with the selection code below).
+// Entries carry their OWN x/z so the ring gather streams the CSR arrays
+// linearly — an index-only payload made the gather deref pAllTrees per tree
+// (random access into an 8MB array = a cache miss each; measured 3.9ms of a
+// 5.2ms rescan). Self-contained entries cut that to a linear ~1MB stream.
+struct TreeGridEntry { float x, z; uint32_t idx; };
+static constexpr uint32_t GG_TREE_GRID_DIM = 128;                        // 128x128 cells over treeArea
+static std::vector<uint32_t>      g_gridCellStart;                       // CSR: cell -> first entry, size DIM*DIM+1
+static std::vector<TreeGridEntry> g_gridEntries;                         // CSR: filtered trees, cell-grouped
+static uint32_t g_gridStamp = ~0u;
+static bool     g_gridValid = false;
+
 void GGTrees_WickedInit()
 {
 	// Lazy setup on first update — same phase ordering as SetupWickedGrass /
@@ -332,6 +350,7 @@ void GGTrees_WickedInit()
 	}
 	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
+	g_gridValid = false;   // spatial grid must not survive an engine restart
 }
 
 // ---------------------------------------------------------------------------
@@ -386,6 +405,76 @@ static wi::ecs::Entity TreeMeshForBand( uint32_t type, uint8_t band )
 	return ( band == 0 ) ? g_treeMeshEntity    [ type ] :
 	       ( band == 1 ) ? g_treeMeshEntityLOD1[ type ] :
 	                       g_treeMeshEntityLOD2[ type ];
+}
+
+// ---------------------------------------------------------------------------
+// Spatial grid over pAllTrees (camera-move rescan fix, 2026-07-18).
+//
+// The nearest-N selection used to stream all 400K instances (~8 MB) through a
+// branchy filter on EVERY camera move >8", then nth_element the ~10^5
+// survivors: ~8-10ms on movement frames (editor flythrough dipped 60 -> 45-55
+// FPS). The grid bins the FILTERED trees once per data change (stamp), and a
+// camera move only ring-gathers cells around the camera until the pool is
+// provably covered — candidates drop from ~10^5 to a few 10^4.
+//
+// CSR layout, rebuilt whole on any g_treeInstanceStamp change (the mutation
+// surface is too wide for incremental updates — one path is a raw memcpy).
+// The heartbeat also invalidates it, so any mutation that fails to announce
+// itself is repaired within 256 frames, same insurance as before. The grid is
+// only a pruning structure: final selection always uses exact per-tree
+// distances, so binning can never misplace a chosen tree.
+// ---------------------------------------------------------------------------
+static inline int TreeGridCoord( float v )
+{
+	int c = (int)( ( v / treeArea + 0.5f ) * (float)GG_TREE_GRID_DIM );
+	return c < 0 ? 0 : c >= (int)GG_TREE_GRID_DIM ? (int)GG_TREE_GRID_DIM - 1 : c;
+}
+
+static void RebuildTreeGrid()
+{
+	const uint32_t numCells = GG_TREE_GRID_DIM * GG_TREE_GRID_DIM;
+	static std::vector<uint32_t> cellCount;
+	cellCount.assign( numCells, 0 );
+	g_gridCellStart.assign( numCells + 1, 0 );
+
+	// The filter matches the candidate loop exactly: every flag it reads is
+	// mutated through a stamped setter, and mesh availability is fixed after
+	// GGTrees_WickedSetup (which has always run by the time we're called).
+	// (InstanceTree accessors are not const-qualified, hence non-const refs.)
+	auto passes = []( InstanceTree& t ) -> bool
+	{
+		if ( !t.IsVisible() || t.IsInvalid() || t.IsFlattened() ) return false;
+		uint32_t type = (uint32_t)t.GetType();
+		if ( type >= GG_TREE_TYPES ) return false;
+		if ( g_treeMeshEntity[ type ] == wi::ecs::INVALID_ENTITY ) return false;
+		return true;
+	};
+
+	for ( uint32_t i = 0; i < numTotalTrees; i++ )
+	{
+		InstanceTree& t = pAllTrees[ i ];
+		if ( !passes( t ) ) continue;
+		cellCount[ TreeGridCoord( t.z ) * GG_TREE_GRID_DIM + TreeGridCoord( t.x ) ]++;
+	}
+
+	uint32_t total = 0;
+	for ( uint32_t c = 0; c < numCells; c++ )
+	{
+		g_gridCellStart[ c ] = total;
+		total += cellCount[ c ];
+	}
+	g_gridCellStart[ numCells ] = total;
+
+	g_gridEntries.resize( total );
+	static std::vector<uint32_t> cellCursor;
+	cellCursor.assign( g_gridCellStart.begin(), g_gridCellStart.end() - 1 );
+	for ( uint32_t i = 0; i < numTotalTrees; i++ )
+	{
+		InstanceTree& t = pAllTrees[ i ];
+		if ( !passes( t ) ) continue;
+		const uint32_t c = TreeGridCoord( t.z ) * GG_TREE_GRID_DIM + TreeGridCoord( t.x );
+		g_gridEntries[ cellCursor[ c ]++ ] = { t.x, t.z, i };
+	}
 }
 
 // Bind pool slot -> tree: swap in the merged trunk+branches mesh for the LOD
@@ -717,43 +806,117 @@ void GGTrees_WickedUpdate()
 	// pool state reset, or a slow safety heartbeat for any mutation path that
 	// doesn't announce itself. With a still camera this makes the whole pool
 	// update near-free.
+	// benchmark hook: emulates a camera-move rescan (no slot-data verify)
+	bool stressRescan = false;
+	if ( g_treePoolStressFrames > 0 ) { g_treePoolStressFrames--; stressRescan = true; }
+
 	static float    s_lastCamX = 1e30f, s_lastCamZ = 1e30f;  // far sentinel -> first frame always scans
 	static uint32_t s_lastInstanceStamp = ~0u;
 	static uint32_t s_heartbeat = 0;
+	// Pure camera-move rescans can trust the slot caches: every data mutation
+	// announces itself via the stamp (or is swept up by the heartbeat), so the
+	// expensive per-slot source-data verify in Pass A only runs on those
+	// triggers — a moving camera pays for band/eviction bookkeeping only.
+	bool verifySlotData = false;
 	{
 		const float mdx = camX - s_lastCamX;
 		const float mdz = camZ - s_lastCamZ;
-		const bool rescan = forceRebind || forceRescan
-			|| s_lastInstanceStamp != g_treeInstanceStamp
+		const bool heartbeat = ++s_heartbeat >= 256;
+		const bool stampChanged = s_lastInstanceStamp != g_treeInstanceStamp;
+		const bool rescan = forceRebind || forceRescan || stampChanged || stressRescan
 			|| ( mdx * mdx + mdz * mdz ) > ( 8.0f * 8.0f )
-			|| ++s_heartbeat >= 256;
+			|| heartbeat;
 		if ( !rescan ) return;
+		verifySlotData = forceRebind || forceRescan || stampChanged || heartbeat;
 		s_heartbeat = 0;
 		s_lastCamX = camX;
 		s_lastCamZ = camZ;
 		s_lastInstanceStamp = g_treeInstanceStamp;
+		// Heartbeat = "a mutation may have happened without announcing itself"
+		// (direct writes that bypass the stamped setters). The grid must not be
+		// trusted either, or a silent position change would poison it forever.
+		if ( heartbeat ) g_gridValid = false;
 	}
+
+	// Keep the spatial grid in step with the instance data.
+	if ( !g_gridValid || g_gridStamp != g_treeInstanceStamp )
+	{
+		auto rangeGrid = wi::profiler::BeginRangeCPU( "TreePool - GridRebuild" );
+		RebuildTreeGrid();
+		g_gridStamp = g_treeInstanceStamp;
+		g_gridValid = true;
+		wi::profiler::EndRange( rangeGrid );
+	}
+	auto rangeGather = wi::profiler::BeginRangeCPU( "TreePool - Gather" );
 
 	// Candidate list — index into pAllTrees + squared XZ distance to camera.
 	// Static + clear() keeps the allocated capacity across frames.
 	struct TreeCandidate { uint32_t idx; float dist2; };
 	static std::vector<TreeCandidate> candidates;
-	if ( candidates.capacity() < numTotalTrees ) candidates.reserve( numTotalTrees );
 	candidates.clear();
 
-	for ( uint32_t i = 0; i < numTotalTrees; i++ )
+	// Ring-gather cells around the camera (Chebyshev rings). The pool fills at
+	// ring r0; one padding ring beyond that and we stop. This is approximate at
+	// the far rim (an exact nearest-N superset needs sqrt2*(r0+1) rings — twice
+	// the gather area): a corner-cell tree can lose its pool place to a
+	// slightly-farther gathered one. Those rim trees are LOD2 at ~6000+ inches
+	// — subpixel — and the error is bounded by one cell (1562"). Measured win:
+	// candidates (and the nth_element input) drop by ~2x vs the exact rule.
 	{
-		InstanceTree* pTree = &pAllTrees[ i ];
-		if ( !pTree->IsVisible() || pTree->IsInvalid() || pTree->IsFlattened() ) continue;
+		const int dim = (int)GG_TREE_GRID_DIM;
+		const int ccx = TreeGridCoord( camX );
+		const int ccz = TreeGridCoord( camZ );
+		const uint32_t totalInGrid = g_gridCellStart[ (size_t)dim * dim ];
 
-		uint32_t type = (uint32_t)pTree->GetType();
-		if ( type >= GG_TREE_TYPES ) continue;
-		if ( g_treeMeshEntity[ type ] == wi::ecs::INVALID_ENTITY ) continue;
+		auto gatherCell = [&]( int cx, int cz )
+		{
+			if ( cx < 0 || cx >= dim || cz < 0 || cz >= dim ) return;
+			const uint32_t c = (uint32_t)cz * GG_TREE_GRID_DIM + (uint32_t)cx;
+			const uint32_t end = g_gridCellStart[ c + 1 ];
+			for ( uint32_t k = g_gridCellStart[ c ]; k < end; k++ )
+			{
+				const TreeGridEntry& e = g_gridEntries[ k ];
+				const float dx = e.x - camX;
+				const float dz = e.z - camZ;
+				candidates.push_back( { e.idx, dx * dx + dz * dz } );
+			}
+		};
 
-		float dx = pTree->x - camX;
-		float dz = pTree->z - camZ;
-		candidates.push_back( { i, dx * dx + dz * dz } );
+		int coveredRing = -1;   // first ring where the pool count was reached
+		for ( int r = 0; r < dim * 2; r++ )
+		{
+			if ( r == 0 )
+			{
+				gatherCell( ccx, ccz );
+			}
+			else
+			{
+				for ( int x = ccx - r; x <= ccx + r; x++ )
+				{
+					gatherCell( x, ccz - r );
+					gatherCell( x, ccz + r );
+				}
+				for ( int z = ccz - r + 1; z <= ccz + r - 1; z++ )
+				{
+					gatherCell( ccx - r, z );
+					gatherCell( ccx + r, z );
+				}
+			}
+			if ( candidates.size() >= (size_t)totalInGrid ) break;   // grid exhausted
+			if ( coveredRing < 0 )
+			{
+				if ( candidates.size() >= (size_t)GG_TREE_POOL_SIZE )
+					coveredRing = r;
+			}
+			else if ( r > coveredRing )
+			{
+				break;   // one padding ring gathered beyond the fill ring
+			}
+		}
 	}
+
+	wi::profiler::EndRange( rangeGather );
+	auto rangeSelect = wi::profiler::BeginRangeCPU( "TreePool - SelectMark" );
 
 	// Partial-sort: put the N closest at the front, don't care about the rest.
 	// nth_element is O(N) on average — much cheaper than a full sort.
@@ -783,6 +946,9 @@ void GGTrees_WickedUpdate()
 		g_treeShadow[ idx ] = ( d2 < shadowDist2 ) ? 1 : 0;
 	}
 
+	wi::profiler::EndRange( rangeSelect );
+	auto rangePass = wi::profiler::BeginRangeCPU( "TreePool - BindPasses" );
+
 	// Pass A over slots: evict bindings that fell out of the nearest-N set,
 	// keep (and verify) the rest. Kept slots cost a few array reads + float
 	// compares — no component writes unless the tree's data or band changed.
@@ -798,14 +964,21 @@ void GGTrees_WickedUpdate()
 		bool evict = ( t >= numTotalTrees || g_treeDesiredEpoch[ t ] != g_treeEpoch );
 		if ( !evict )
 		{
-			// Still desired — verify the source data hasn't changed under us
-			// (editor tree move/retype/rescale mutates pAllTrees in place).
-			InstanceTree* pTree = &pAllTrees[ t ];
 			TreeSlotCache& c = g_slotCache[ s ];
 			const uint8_t band = g_treeBand[ t ];
-			const float scale = pTree->GetScaleFloat();
-			if ( c.x != pTree->x || c.y != pTree->y || c.z != pTree->z ||
-			     c.scale != scale || c.type != (uint8_t)pTree->GetType() )
+			bool dataChanged = false;
+			if ( verifySlotData )
+			{
+				// Verify the source data hasn't changed under us (editor tree
+				// move/retype/rescale mutates pAllTrees in place). Skipped on
+				// pure camera-move rescans — this deref is a cache miss into
+				// the 8MB instance array per kept slot.
+				InstanceTree* pTree = &pAllTrees[ t ];
+				const float scale = pTree->GetScaleFloat();
+				dataChanged = ( c.x != pTree->x || c.y != pTree->y || c.z != pTree->z ||
+				                c.scale != scale || c.type != (uint8_t)pTree->GetType() );
+			}
+			if ( dataChanged )
 			{
 				evict = !BindTreeSlot( scene, s, t, band );  // full rebind in place
 			}
@@ -842,6 +1015,7 @@ void GGTrees_WickedUpdate()
 		if ( BindTreeSlot( scene, s, idx, g_treeBand[ idx ] ) )
 			freeSlots.pop_back();
 	}
+	wi::profiler::EndRange( rangePass );
 }
 
 void GGTrees_WickedShutdown()
@@ -861,6 +1035,8 @@ void GGTrees_WickedShutdown()
 	g_treeToSlot.clear();
 	g_treeDesiredEpoch.clear();
 	g_treeBand.clear();
+	g_treeShadow.clear();
+	g_gridValid = false;   // instance data will be rebuilt for the next level
 
 	// Shadow proxies + their materials go down with the pool.
 	for ( wi::ecs::Entity e : g_shadowProxyObjects ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );

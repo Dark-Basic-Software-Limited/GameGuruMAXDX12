@@ -61,6 +61,7 @@ namespace GGTrees
 	};
 
 	extern GGTreesParams ggtrees_global_params; // modify this anywhere
+	extern int g_treePoolStressFrames; // debug: force pool rescan for N frames (SET_TREES stress)
 
 	extern int ggtrees_draw_enabled;
 
