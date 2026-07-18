@@ -1692,6 +1692,12 @@ void GGTerrainWicked_Init()
 	terrain.chunk_scale = 80.0f;          // ~10560 units/chunk; high-res ring now ~535m (was ~268m at 80)
 	terrain.generation = 14;               // cover ~147840 units each direction, more lead for fast camera movement
 	terrain.generation_view_cone_priority = true; // Wicked delta #7: build the chunks the camera faces first (see WICKED_ENGINE_CHANGES.md 1.7)
+	// Wicked delta 1.14: stock Wicked tears down and rebuilds ALL chunks whenever a
+	// terrain material is dirty (editor convenience). GG registers painted-material
+	// slots at runtime — the freshly-created material is dirty for a frame, and
+	// depending on frame order the restart fired = the 4-5s full-terrain flicker on
+	// the first stroke with each new texture. GG owns the blendmaps; never restart.
+	terrain.generation_restart_on_dirty_materials = false;
 	terrain.lod_bias = 0.0f;              // hold higher mesh LOD one step further out (inch-scale world)
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;

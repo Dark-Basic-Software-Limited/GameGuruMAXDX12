@@ -35,6 +35,14 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.14 Terrain: optional generation restart on dirty materials
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`Terrain::generation_restart_on_dirty_materials`, default true = stock)
+- `WickedEngine/wiTerrain.cpp` (`Generation_Update` material-dirty check guarded by the flag)
+
+**Why:** stock Wicked restarts generation (full chunk teardown + rebuild) whenever any terrain material component is dirty — an editor convenience for material parameter tweaks. GG registers painted-material blendmap slots at RUNTIME (incremental, no restart), and the freshly-created material is dirty for one frame until the scene update launders it. Whether the restart fired depended on frame ordering: real editor paint strokes (GGTerrain_Update runs before GGTerrainWicked_Update in the same frame) hit it; harness strokes did not — a 4-5s full-terrain flicker on the first stroke with each new texture that only reproduced by hand. GG sets the flag false at terrain init: GG owns its blendmaps, material dirt must never rebuild the island.
+
 ### 1.13 VirtualTexture::pending_repaint_blendmap — instant blendmap-edit refresh
 
 **Files:**
@@ -567,6 +575,7 @@ modified, both genuine bug fixes.
 | 1.11 Delayed shadow cascades (staggered refresh) | applied 2026-07-18 in Wicked commit `38a9e82a`, lib rebuilt, new shadowClearPS shader auto-compiles | candidate for upstream PR — default OFF preserves stock behaviour bit-for-bit; GG enables at sun creation; single-directional-light assumption documented in code |
 | 1.12 Terrain ChunkData::merge_pending stale-mesh flag | applied 2026-07-18, lib rebuilt; **hotfix `df3c10e0` same day: flag only on chunks actually (re)generated** — the spiral visits every chunk every job run and the original unconditional set made GG's blend passes skip the whole map forever (Island Showdown grey terrain) | candidate for upstream PR — passive field, closes the regen-vs-merge window for mesh-baking consumers (GG blendmap passes) |
 | 1.13 VirtualTexture::pending_repaint_blendmap instant refresh | applied 2026-07-18, lib rebuilt | candidate for upstream PR — passive flag; paint strokes visible next frame instead of after seconds of feedback re-streaming |
+| 1.14 Optional generation restart on dirty materials | applied 2026-07-19 (`cbce724d`), lib rebuilt | candidate for upstream PR — default true = stock; GG disables (runtime material registration must not rebuild the island) |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
