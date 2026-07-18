@@ -22,7 +22,12 @@ namespace GGTrees
 	{
 		int draw_enabled = 0;
 		int draw_shadows = 1;
-		int tree_shadow_range = 3; // higher values draw tree shadows at greater distance, max=5
+		// Number of shadow cascades that receive tree shadows (0 = none, 5 = all).
+		// DX12 default 5 (DX11 defaulted 3): the merged billboard shadow proxies
+		// make island-wide tree shadows cheap, and the far cascades are what sell
+		// the DX12 look. Quality presets (GGTrees_SetPerformanceMode) still dial
+		// this down on LOW/MED.
+		int tree_shadow_range = 5;
 
 		int paint_mode = GGTREES_PAINT_SPRAY;
 		uint64_t paint_tree_bitfield = 0x00100000; // 1 bit per tree, default pine

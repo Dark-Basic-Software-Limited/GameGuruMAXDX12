@@ -17,6 +17,9 @@
 // Terrain debug accessor (extern "C" from GGTerrain_part0.cpp)
 extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* initFlag, int* drawEn, int* updateEn);
 
+// Tree params for the SET_TREES live-tuning command
+#include "GGTerrain/GGTrees.h"
+
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
 #include "wiGraphicsDevice.h"
@@ -2033,6 +2036,32 @@ void AutoHarness_CheckForCommand(void)
 		s_bSkinWatch = (arg[0] != '0');
 		_snprintf(result, sizeof(result), "OK: SKIN_WATCH %s (frame=%u seen=%d)",
 			s_bSkinWatch ? "ON" : "OFF", s_skinWatchFrame, (int)s_skinWatchSeen.size());
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_TREES") == 0)
+	{
+		// live-tune tree shadow params (mirrors the Terrain Tools debug sliders):
+		// SET_TREES shadowdist|shadowrange|drawshadows <value>
+		char tp[64] = { 0 }; float tv = 0.0f;
+		if (sscanf_s(arg, "%63s %f", tp, (unsigned)sizeof(tp), &tv) == 2)
+		{
+			bool known = true;
+			if (_stricmp(tp, "shadowdist") == 0) GGTrees::ggtrees_global_params.lod_dist_shadow = tv;
+			else if (_stricmp(tp, "shadowrange") == 0) GGTrees::ggtrees_global_params.tree_shadow_range = (int)tv;
+			else if (_stricmp(tp, "drawshadows") == 0) GGTrees::ggtrees_global_params.draw_shadows = (int)tv;
+			else known = false;
+			if (known)
+				_snprintf(result, sizeof(result), "OK: SET_TREES %s = %.1f (shadowdist=%.0f shadowrange=%d drawshadows=%d)",
+					tp, tv, GGTrees::ggtrees_global_params.lod_dist_shadow,
+					GGTrees::ggtrees_global_params.tree_shadow_range,
+					GGTrees::ggtrees_global_params.draw_shadows);
+			else
+				_snprintf(result, sizeof(result), "ERROR: SET_TREES unknown param '%s' (shadowdist|shadowrange|drawshadows)", tp);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_TREES needs <param> <value> (shadowdist|shadowrange|drawshadows)");
+		}
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_OCEAN") == 0)

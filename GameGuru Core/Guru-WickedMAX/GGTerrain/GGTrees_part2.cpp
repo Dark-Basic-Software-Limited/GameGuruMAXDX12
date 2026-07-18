@@ -354,9 +354,32 @@ static std::vector<uint32_t> g_slotToTree;       // pool slot -> pAllTrees index
 static std::vector<int32_t>  g_treeToSlot;       // pAllTrees index -> pool slot, -1 = unbound
 static std::vector<uint32_t> g_treeDesiredEpoch; // per tree: frame epoch when it last made the nearest-N cut
 static std::vector<uint8_t>  g_treeBand;         // per tree: LOD band, valid when epoch matches current
-struct TreeSlotCache { float x, y, z, scale; uint8_t type, band; };
+static std::vector<uint8_t>  g_treeShadow;       // per tree: 1 = within lod_dist_shadow (mesh casts shadow), valid when epoch matches
+struct TreeSlotCache { float x, y, z, scale; uint8_t type, band, shadow; };
 static std::vector<TreeSlotCache> g_slotCache;   // per slot: source-data snapshot at bind time
 static uint32_t g_treeEpoch = 0;
+
+// DX11 tree_shadow_range semantics: number of shadow cascades that receive tree
+// shadows (5 = all, 0 = none). Wicked cascadeMask counts skipped-FARTHEST
+// cascades, so proxy mask = 5 - range. Real tree meshes additionally never go
+// beyond cascade 2 (their detail is wasted there and 20K far casters cost
+// ~11ms CPU + 7ms GPU) -> mesh mask = max(2, 5 - range).
+static uint32_t TreeShadowRangeClamped()
+{
+	int r = ggtrees_global_params.tree_shadow_range;
+	return (uint32_t)( r < 0 ? 0 : r > 5 ? 5 : r );
+}
+static uint32_t TreeProxyCascadeMask() { return 5u - TreeShadowRangeClamped(); }
+static uint32_t TreeMeshCascadeMask()
+{
+	uint32_t skip = 5u - TreeShadowRangeClamped();
+	return skip < 2u ? 2u : skip;
+}
+// range==0 = DX11 "no tree shadows at all" (mesh AND proxy)
+static bool TreeShadowsEnabled()
+{
+	return ggtrees_global_params.draw_shadows != 0 && TreeShadowRangeClamped() > 0u;
+}
 
 static wi::ecs::Entity TreeMeshForBand( uint32_t type, uint8_t band )
 {
@@ -385,10 +408,11 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 	obj->meshID = treeMesh;
 	obj->SetRenderable( true );
 	// Exact DX11 recipe: detailed MESH shadows only within lod_dist_shadow
-	// (2500 = our band 0); every tree beyond that gets its shadow from the
-	// merged billboard proxies instead. Keeps the near-shadow crispness and
-	// collapses the cascade-2 caster count to the handful of near trees.
-	obj->SetCastShadow( ggtrees_global_params.draw_shadows != 0 && band == 0 );
+	// (slider-driven, default 2500); every tree beyond that gets its shadow
+	// from the merged billboard proxies instead. Keeps the near-shadow
+	// crispness and collapses the far-cascade caster count.
+	const uint8_t castShadow = g_treeShadow[ treeIdx ];
+	obj->SetCastShadow( TreeShadowsEnabled() && castShadow != 0 );
 
 	float scale = pTree->GetScaleFloat();  // ~0.5–1.5
 	xform->ClearTransform();
@@ -398,7 +422,7 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 
 	g_slotToTree[ slot ]    = treeIdx;
 	g_treeToSlot[ treeIdx ] = (int32_t)slot;
-	g_slotCache [ slot ]    = { pTree->x, pTree->y, pTree->z, scale, (uint8_t)type, band };
+	g_slotCache [ slot ]    = { pTree->x, pTree->y, pTree->z, scale, (uint8_t)type, band, castShadow };
 	return true;
 }
 
@@ -470,7 +494,7 @@ static void GGTrees_BuildShadowProxies()
 	g_shadowProxyObjects.clear();
 	g_shadowProxyMeshes.clear();
 
-	if ( !ggtrees_global_params.draw_shadows ) return;
+	if ( !TreeShadowsEnabled() ) return;
 
 	// Per-type instance buckets, reused across chunks to keep allocations warm.
 	static std::vector<InstanceTree*> byType[ GG_TREE_TYPES ];
@@ -553,6 +577,7 @@ static void GGTrees_BuildShadowProxies()
 		obj.SetNotVisibleInMainCamera( true );
 		obj.SetNotVisibleInReflections( true );
 		obj.SetOcclusionQueryDisabled( true );
+		obj.cascadeMask = TreeProxyCascadeMask();  // tree_shadow_range slider: how many cascades get tree shadows
 		scene.transforms.Create( objEntity );  // identity — verts are world-space
 
 		g_shadowProxyMeshes .push_back( meshEntity );
@@ -601,6 +626,7 @@ void GGTrees_WickedUpdate()
 	// Far-shadow proxy rebuild: deferred ~0.5s after the last tree-data change
 	// so a paint stroke triggers one rebuild, not one per brush dab. Also
 	// re-fires when the user toggles tree shadows (draw_shadows).
+	bool forceRescan = false;
 	{
 		static uint32_t s_proxyStamp = ~0u;
 		static int      s_proxyCountdown = -1;
@@ -616,6 +642,40 @@ void GGTrees_WickedUpdate()
 			s_proxyStamp = g_treeInstanceStamp;
 			s_proxyCountdown = 30;
 		}
+
+		// "Tree Shadow LOD Distance" slider (Terrain Tools debug panel): a
+		// changed radius re-evaluates each tree's mesh-shadow flag on the next
+		// rescan — no full rebind needed, Pass A applies flag deltas in place.
+		static float s_lastLodDistShadow = -1.0f;
+		if ( s_lastLodDistShadow != ggtrees_global_params.lod_dist_shadow )
+		{
+			s_lastLodDistShadow = ggtrees_global_params.lod_dist_shadow;
+			forceRescan = true;
+		}
+
+		// "Tree Shadow Range" slider: cascade reach. Proxies + pool meshes get
+		// their cascadeMask updated live (cheap component writes), and range 0
+		// means no tree shadows at all (DX11 semantics) -> refresh cast flags.
+		static int s_lastShadowRange = -999;
+		if ( s_lastShadowRange != ggtrees_global_params.tree_shadow_range )
+		{
+			s_lastShadowRange = ggtrees_global_params.tree_shadow_range;
+			const uint32_t proxyMask = TreeProxyCascadeMask();
+			for ( wi::ecs::Entity e : g_shadowProxyObjects )
+			{
+				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( e );
+				if ( obj ) obj->cascadeMask = proxyMask;
+			}
+			const uint32_t meshMask = TreeMeshCascadeMask();
+			for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+			{
+				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
+				if ( obj ) obj->cascadeMask = meshMask;
+			}
+			forceRescan = true;       // re-apply cast flags (range 0 <-> nonzero)
+			s_proxyCountdown = 1;     // rebuild proxies (range 0 tears them down)
+		}
+
 		if ( s_proxyCountdown >= 0 && --s_proxyCountdown < 0 )
 		{
 			GGTrees_BuildShadowProxies();
@@ -633,6 +693,7 @@ void GGTrees_WickedUpdate()
 		g_treeToSlot      .assign( numTotalTrees, -1 );
 		g_treeDesiredEpoch.assign( numTotalTrees, 0 );
 		g_treeBand        .assign( numTotalTrees, 0 );
+		g_treeShadow      .assign( numTotalTrees, 0 );
 		g_slotToTree      .assign( GG_TREE_POOL_SIZE, UINT32_MAX );
 		g_slotCache       .resize( GG_TREE_POOL_SIZE );
 		for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
@@ -662,7 +723,7 @@ void GGTrees_WickedUpdate()
 	{
 		const float mdx = camX - s_lastCamX;
 		const float mdz = camZ - s_lastCamZ;
-		const bool rescan = forceRebind
+		const bool rescan = forceRebind || forceRescan
 			|| s_lastInstanceStamp != g_treeInstanceStamp
 			|| ( mdx * mdx + mdz * mdz ) > ( 8.0f * 8.0f )
 			|| ++s_heartbeat >= 256;
@@ -707,9 +768,11 @@ void GGTrees_WickedUpdate()
 		poolFill = GG_TREE_POOL_SIZE;
 	}
 
-	// Mark this frame's desired set + LOD band per tree.
+	// Mark this frame's desired set + LOD band + mesh-shadow flag per tree.
 	constexpr float lod1Dist2 = GG_TREE_LOD1_DIST * GG_TREE_LOD1_DIST;
 	constexpr float lod2Dist2 = GG_TREE_LOD2_DIST * GG_TREE_LOD2_DIST;
+	const float shadowDist  = ggtrees_global_params.lod_dist_shadow;   // "Tree Shadow LOD Distance" slider
+	const float shadowDist2 = shadowDist * shadowDist;
 	g_treeEpoch++;
 	for ( size_t k = 0; k < poolFill; k++ )
 	{
@@ -717,6 +780,7 @@ void GGTrees_WickedUpdate()
 		const float d2 = candidates[ k ].dist2;
 		g_treeDesiredEpoch[ idx ] = g_treeEpoch;
 		g_treeBand[ idx ] = ( d2 < lod1Dist2 ) ? 0 : ( d2 < lod2Dist2 ) ? 1 : 2;
+		g_treeShadow[ idx ] = ( d2 < shadowDist2 ) ? 1 : 0;
 	}
 
 	// Pass A over slots: evict bindings that fell out of the nearest-N set,
@@ -745,15 +809,17 @@ void GGTrees_WickedUpdate()
 			{
 				evict = !BindTreeSlot( scene, s, t, band );  // full rebind in place
 			}
-			else if ( c.band != band )
+			else if ( c.band != band || c.shadow != g_treeShadow[ t ] )
 			{
-				// LOD boundary crossed — mesh swap only, transform unchanged.
+				// LOD boundary or mesh-shadow boundary crossed — mesh/flag swap
+				// only, transform unchanged.
 				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ s ] );
 				if ( obj )
 				{
 					obj->meshID = TreeMeshForBand( c.type, band );
-					obj->SetCastShadow( ggtrees_global_params.draw_shadows != 0 && band == 0 );
+					obj->SetCastShadow( TreeShadowsEnabled() && g_treeShadow[ t ] != 0 );
 					c.band = band;
+					c.shadow = g_treeShadow[ t ];
 				}
 			}
 		}

@@ -1770,7 +1770,9 @@ void GGTrees_SetPerformanceMode( uint32_t mode )
 		{
 			ggtrees_global_params.lod_dist = 4000.0f;
 			ggtrees_global_params.lod_dist_shadow = 4000.0f;
-			ggtrees_global_params.tree_shadow_range = 4;
+			// DX12: 5 = all cascades (island-wide) — the billboard shadow
+			// proxies make this cheap; matches the editor default in GGTrees.h
+			ggtrees_global_params.tree_shadow_range = 5;
 		} break;
 	}
 }
