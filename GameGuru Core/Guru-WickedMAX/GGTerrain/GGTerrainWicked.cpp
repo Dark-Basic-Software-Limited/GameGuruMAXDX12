@@ -1486,6 +1486,7 @@ void GGTerrainWicked_Init()
 	terrain.SetPhysicsEnabled(false);      // keep Bullet physics from old terrain
 	terrain.chunk_scale = 80.0f;          // ~10560 units/chunk; high-res ring now ~535m (was ~268m at 80)
 	terrain.generation = 14;               // cover ~147840 units each direction, more lead for fast camera movement
+	terrain.generation_view_cone_priority = true; // Wicked delta #7: build the chunks the camera faces first (see WICKED_ENGINE_CHANGES.md 1.7)
 	terrain.lod_bias = 0.0f;              // hold higher mesh LOD one step further out (inch-scale world)
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;
@@ -1726,7 +1727,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	const int genSpan = 2 * terrain->generation + 1;
 	const int expectedChunks = genSpan * genSpan;
 	const bool initialBuild = (int)terrain->chunks.size() < (expectedChunks * 6) / 10;
-	terrain->generation_time_budget_milliseconds = initialBuild ? 100.0f : 8.0f;
+	terrain->generation_time_budget_milliseconds = initialBuild ? 150.0f : 8.0f;
 	static uint32_t s_terrainFrame = 0;
 	s_terrainFrame++;
 	// While the turbo build runs, only interrupt the generator with blendmap

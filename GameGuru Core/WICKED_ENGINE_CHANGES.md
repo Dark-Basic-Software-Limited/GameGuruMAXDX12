@@ -35,6 +35,30 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.7 Terrain: camera view-cone priority for chunk generation
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`bool generation_view_cone_priority = false` on Terrain)
+- `WickedEngine/wiTerrain.cpp` (Generation_Update captures the camera's horizontal look direction; the generation job runs a cone-filtered spiral pre-pass before the normal outward spiral)
+
+**Date:** 2026-07-18
+
+#### Use case in GameGuru MAX
+
+The stock generation spiral is omnidirectional, so after a level load the
+chunks BEHIND the camera build at the same priority as the mountain the
+user is staring at. With the flag enabled, a pre-pass sweeps the same
+spiral restricted to chunks within ~70° of the camera's look direction
+(plus the two rings immediately around the camera), then the normal
+spiral fills the rest. `request_chunk` fast-skips existing chunks, and
+the per-launch time budget makes each job launch resume where the last
+ran out — the job also re-captures the camera each launch, so rotating
+the camera re-aims the priority cone within ~one budget period.
+Combined with a raised `generation_time_budget_milliseconds` during the
+initial build (GG-side), the visible terrain on TESTPRO1 completes ~2-3
+seconds after the editor appears (down from 30+ at stock settings).
+Default false = zero behaviour change for stock scenes.
+
 ### 1.6 ObjectComponent: per-object opt-out from GPU occlusion queries
 
 **Files:**
@@ -419,6 +443,7 @@ modified, both genuine bug fixes.
 | 1.4 HairParticleSystem external paint mask (Option B) | applied 2026-06-19, lib + shaders rebuilt | candidate for upstream PR — `grass_type == 0` default means zero behavior change for existing callers; adds general-purpose per-strand visibility hook |
 | 1.5 HairParticleSystem per-strand slope + altitude filters | applied 2026-07-10, lib + shaders rebuilt | candidate for upstream PR — both gated on `xHairGrassType != 0u`, zero effect on non-GG hair; slope reuses the face-normal fix 1.2 already computes, altitude adds 5 CB floats with permissive defaults |
 | 1.6 ObjectComponent occlusion-query opt-out flag | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off, zero behaviour change for existing scenes; new flag consumers must set `occlusionHistory |= 1` semantics (already handled in the visibility job) |
+| 1.7 Terrain view-cone chunk generation priority | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off; pure generation-ORDER change, the generated content is identical |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
