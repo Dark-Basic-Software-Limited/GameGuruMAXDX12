@@ -35,6 +35,28 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.8 Terrain: optional high-priority generation jobs
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`bool generation_high_priority = false` on Terrain)
+- `WickedEngine/wiTerrain.cpp` (generator workload + per-chunk vertex dispatch contexts pick High vs Low pool from the flag)
+
+**Date:** 2026-07-18
+
+#### Use case in GameGuru MAX
+
+The generation workload AND its per-chunk parallel dispatches run on the
+Low job pool, whose threads are `THREAD_PRIORITY_LOWEST` — the OS starves
+them whenever the CPU is busy, which is precisely the level-load window
+where terrain generation matters most. With the flag on, generation runs
+on the High pool. GG enables it only while the camera-facing cone is
+still building (< 40% of the ring total): combined with deltas 1.7 +
+the GG-side budget turbo, the visible terrain on TESTPRO1 is COMPLETE
+by the time the loading screen dismisses (generation races ahead behind
+the load). Dropped back to Low afterwards — leaving it High during the
+off-camera fill cost the editor 40-55 → 19-43 FPS. Default false =
+stock behaviour.
+
 ### 1.7 Terrain: camera view-cone priority for chunk generation
 
 **Files:**
@@ -444,6 +466,7 @@ modified, both genuine bug fixes.
 | 1.5 HairParticleSystem per-strand slope + altitude filters | applied 2026-07-10, lib + shaders rebuilt | candidate for upstream PR — both gated on `xHairGrassType != 0u`, zero effect on non-GG hair; slope reuses the face-normal fix 1.2 already computes, altitude adds 5 CB floats with permissive defaults |
 | 1.6 ObjectComponent occlusion-query opt-out flag | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off, zero behaviour change for existing scenes; new flag consumers must set `occlusionHistory |= 1` semantics (already handled in the visibility job) |
 | 1.7 Terrain view-cone chunk generation priority | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off; pure generation-ORDER change, the generated content is identical |
+| 1.8 Terrain high-priority generation jobs | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off; burst-scenario knob, GG enables it only while the view cone is incomplete |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

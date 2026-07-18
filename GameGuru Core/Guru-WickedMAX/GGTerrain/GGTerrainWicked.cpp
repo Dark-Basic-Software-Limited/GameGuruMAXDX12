@@ -1728,6 +1728,14 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	const int expectedChunks = genSpan * genSpan;
 	const bool initialBuild = (int)terrain->chunks.size() < (expectedChunks * 6) / 10;
 	terrain->generation_time_budget_milliseconds = initialBuild ? 150.0f : 8.0f;
+	// Wicked delta #8: while the CAMERA-FACING cone is still building (~40% of
+	// the ring total covers the cone + near rings), run generation on the HIGH
+	// job pool — the Low pool is THREAD_PRIORITY_LOWEST and gets starved by the
+	// busy CPU during level load, which was most of the visible build time.
+	// Once the cone is done, drop back to polite Low so the off-camera fill
+	// doesn't steal frame time from the editor (measured 40-55 -> 19-43 FPS
+	// during the tail when left on High).
+	terrain->generation_high_priority = (int)terrain->chunks.size() < (expectedChunks * 2) / 5;
 	static uint32_t s_terrainFrame = 0;
 	s_terrainFrame++;
 	// While the turbo build runs, only interrupt the generator with blendmap
