@@ -333,6 +333,41 @@ static void SetupWickedTerrainMaterials()
 		std::to_string(maxPaintedSlot) + ")").c_str());
 }
 
+// Register a blendmap slot for a material the user just started painting with,
+// WITHOUT the full re-setup + Generation_Restart (that path tears down and rebuilds
+// the entire island — the visible blur/glitch on the first stroke with each new
+// texture). Safe because the VT tile renderer resolves layer materials LIVE from
+// the scene (wiTerrain UpdateVirtualTexturesGPU reads
+// scene->materials.GetIndex(materialEntities[i]) per render) and per-chunk blendmap
+// layers grow on demand when the painted pass writes them. The generator's internal
+// material snapshot only feeds newly-generated chunk DEFAULTS, which our passes
+// overwrite anyway; the next Generation_Restart re-snapshots everything.
+static void RegisterPaintedMaterialSlot(int matIndex)
+{
+	wi::terrain::Terrain* terrain = GetWickedTerrain();
+	if (terrain == nullptr || !wickedTerrainMaterialsSetup)
+	{
+		// no live material set to extend — fall back to the full setup path
+		wickedTerrainMaterialsSetup = false;
+		return;
+	}
+
+	auto& scene = wi::scene::GetScene();
+	int newSlot = (int)terrain->materialEntities.size();
+
+	terrain->materialEntities.push_back(wi::ecs::CreateEntity());
+	scene.Component_Attach(terrain->materialEntities[newSlot], wickedTerrainEntity);
+	SetupTerrainMaterial(scene, terrain->materialEntities[newSlot], matIndex);
+
+	materialToSlot[matIndex] = newSlot;
+	if (newSlot > maxPaintedSlot)
+		maxPaintedSlot = newSlot;
+
+	wi::backlog::post(std::string("GGTerrainWicked: registered painted material " +
+		std::to_string(matIndex) + " -> slot " + std::to_string(newSlot) +
+		" (incremental, no restart)").c_str());
+}
+
 // Path A: recompute per-vertex blendmap weights using DX11's terrain shader formula,
 // replacing Wicked's built-in smoothstep(0, regionN, x) blend that we can't reproduce with a
 // single scalar threshold. See project_terrain_texture_mismatch.md for the analysis.
@@ -2204,22 +2239,28 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 	// generation starts) — skip so we don't Generation_Cancel the initial build
 	if (terrain->chunks.empty()) return;
 
-	// interactive painting can introduce a material that has no blendmap slot yet —
-	// trip the same full re-setup OnPaintDataChanged uses for level load. Gated on
-	// PAINT mode: sculpt/undo also carry the TEXTURES flag, and with a slot-less
-	// palette selection merely SELECTED (never painted into the map) the re-setup
-	// can never assign it a slot — ungated this became a Generation_Restart
-	// (full chunks.clear) livelock on every sculpt stroke frame.
+	// interactive painting can introduce a material that has no blendmap slot yet.
+	// Gated on PAINT mode: sculpt/undo also carry the TEXTURES flag, and with a
+	// slot-less palette selection merely SELECTED (never painted into the map) a
+	// full re-setup could never assign it a slot — ungated this became a
+	// Generation_Restart livelock on every sculpt stroke frame. The slot itself is
+	// registered INCREMENTALLY below (after the cancel) — the full re-setup +
+	// Generation_Restart used previously tore down and rebuilt the whole island on
+	// the first stroke with each new texture (the user-visible blur/glitch).
+	int newPaintSlotMat = -1;
 	if ((flags & GGTERRAIN_INVALIDATE_TEXTURES) && ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_PAINT)
 	{
 		int paintMat = ggterrain_extra_params.paint_material & 0xff;
 		if (paintMat > 0 && paintMat <= GGTERRAIN_MAX_SOURCE_TEXTURES && materialToSlot[paintMat - 1] < 0)
-			wickedTerrainMaterialsSetup = false;
+			newPaintSlotMat = paintMat - 1;
 	}
 
 	// the generator thread mutates the chunks map — stop it before iterating
 	terrain->Generation_Cancel();
 	g_dbgBridgeCalls++;
+
+	if (newPaintSlotMat >= 0)
+		RegisterPaintedMaterialSlot(newPaintSlotMat);
 
 	const bool heightsChanged = (flags & GGTERRAIN_INVALIDATE_CHUNKS) != 0;
 	// tight chunk-AABB overlap, padded by one heightmap cell so a brush touching a
