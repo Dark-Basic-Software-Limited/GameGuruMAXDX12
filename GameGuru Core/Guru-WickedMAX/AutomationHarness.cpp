@@ -1517,10 +1517,336 @@ static void Cmd_ListLights(char* result, int resultSize)
 	result[resultSize - 1] = 0;
 }
 
+// DUMP_SKIN: full armature/skinning/animation report written to auto_skin.txt (no size cap)
+// to diagnose skinned-mesh corruption (the intermittent "exploded parrot" on Island Showdown).
+// Order: skinned objects first (SUSPECT flag when AABB is huge), armature summaries,
+// per-bone detail for suspect/filter-matched armatures, then one line per animation.
+// Optional arg = case-insensitive name filter on skinned-object names (adds those
+// armatures to the detail pass even when not suspect). Summary goes to auto_result.txt.
+static void Cmd_DumpSkin(const char* arg, char* result, int resultSize)
+{
+	wi::scene::Scene* pScene = master.masterrenderer.scene;
+	if (!pScene)
+	{
+		_snprintf(result, resultSize, "ERROR: no scene");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	// report file lives next to auto_result.txt
+	char skinPath[MAX_PATH];
+	strncpy(skinPath, s_rspPath, MAX_PATH);
+	skinPath[MAX_PATH - 1] = 0;
+	char* slash = strrchr(skinPath, '\\');
+	if (!slash) slash = strrchr(skinPath, '/');
+	if (slash) slash[1] = 0; else skinPath[0] = 0;
+	strncat(skinPath, "auto_skin.txt", MAX_PATH - strlen(skinPath) - 1);
+
+	FILE* f = fopen(skinPath, "w");
+	if (!f)
+	{
+		_snprintf(result, resultSize, "ERROR: cannot write %s", skinPath);
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	// --- Pass 1: skinned objects (mesh has armatureID), collect suspects for detail pass ---
+	const float SUSPECT_HALFWIDTH = 5000.0f;
+	std::vector<wi::ecs::Entity> detailArmatures;
+	int skinnedCount = 0, suspectCount = 0;
+	char suspectNames[512] = { 0 };
+
+	for (size_t o = 0; o < pScene->objects.GetCount(); ++o)
+	{
+		wi::scene::ObjectComponent& obj = pScene->objects[o];
+		if (obj.meshID == wi::ecs::INVALID_ENTITY) continue;
+		wi::scene::MeshComponent* mesh = pScene->meshes.GetComponent(obj.meshID);
+		if (!mesh || mesh->armatureID == wi::ecs::INVALID_ENTITY) continue;
+		skinnedCount++;
+
+		wi::ecs::Entity objEntity = pScene->objects.GetEntity(o);
+		wi::scene::NameComponent* name = pScene->names.GetComponent(objEntity);
+		const char* objName = name ? name->name.c_str() : "?";
+
+		bool armaExists = pScene->armatures.GetComponent(mesh->armatureID) != nullptr;
+		const wi::primitive::AABB& aabb = pScene->aabb_objects[o];
+		XMFLOAT3 c = aabb.getCenter(), h = aabb.getHalfWidth();
+
+		bool suspect = (h.x > SUSPECT_HALFWIDTH || h.y > SUSPECT_HALFWIDTH || h.z > SUSPECT_HALFWIDTH) && obj.IsRenderable();
+		bool filtered = (arg && arg[0] && pestrcasestr(objName, arg));
+		if (suspect)
+		{
+			suspectCount++;
+			if (strlen(suspectNames) < sizeof(suspectNames) - 64)
+			{
+				strncat(suspectNames, objName, 48);
+				strncat(suspectNames, " ", 2);
+			}
+		}
+		if ((suspect || filtered) && detailArmatures.size() < 16)
+		{
+			bool have = false;
+			for (auto e : detailArmatures) if (e == mesh->armatureID) have = true;
+			if (!have) detailArmatures.push_back(mesh->armatureID);
+		}
+
+		fprintf(f, "SKINOBJ ent=%llu name='%s' mesh=%llu arma=%llu%s renderable=%d "
+			"aabbC=(%.0f,%.0f,%.0f) aabbH=(%.0f,%.0f,%.0f)%s\n",
+			(unsigned long long)objEntity, objName,
+			(unsigned long long)obj.meshID, (unsigned long long)mesh->armatureID,
+			armaExists ? "" : " ARMA_MISSING!",
+			obj.IsRenderable() ? 1 : 0,
+			c.x, c.y, c.z, h.x, h.y, h.z,
+			suspect ? "  <<< SUSPECT" : "");
+	}
+
+	// --- Pass 2: armature summaries ---
+	fprintf(f, "ARMATURES: %d\n", (int)pScene->armatures.GetCount());
+	for (size_t a = 0; a < pScene->armatures.GetCount(); ++a)
+	{
+		wi::scene::ArmatureComponent& arma = pScene->armatures[a];
+		wi::ecs::Entity armaEntity = pScene->armatures.GetEntity(a);
+
+		int missing = 0, invalid = 0, nans = 0;
+		float minT = FLT_MAX, maxT = -FLT_MAX;
+		for (wi::ecs::Entity boneEntity : arma.boneCollection)
+		{
+			if (boneEntity == wi::ecs::INVALID_ENTITY) { invalid++; continue; }
+			wi::scene::TransformComponent* bone = pScene->transforms.GetComponent(boneEntity);
+			if (!bone) { missing++; continue; }
+			float tx = bone->world._41, ty = bone->world._42, tz = bone->world._43;
+			if (isnan(tx) || isnan(ty) || isnan(tz)) { nans++; continue; }
+			float mag = sqrtf(tx * tx + ty * ty + tz * tz);
+			if (mag < minT) minT = mag;
+			if (mag > maxT) maxT = mag;
+		}
+
+		// boneData = final skin matrices (armature-local); huge translations here = exploded skin
+		float minB = FLT_MAX, maxB = -FLT_MAX;
+		int nanB = 0;
+		for (const auto& bd : arma.boneData)
+		{
+			float tx = bd.mat0.w, ty = bd.mat1.w, tz = bd.mat2.w;
+			if (isnan(tx) || isnan(ty) || isnan(tz)) { nanB++; continue; }
+			float mag = sqrtf(tx * tx + ty * ty + tz * tz);
+			if (mag < minB) minB = mag;
+			if (mag > maxB) maxB = mag;
+		}
+
+		wi::scene::TransformComponent* armaT = pScene->transforms.GetComponent(armaEntity);
+		fprintf(f, "ARM[%d] ent=%llu bones=%d invBind=%d boneData=%d miss=%d inval=%d nan=%d "
+			"|boneW|=%.1f..%.1f |skinT|=%.1f..%.1f nanSkin=%d armaPos=(%.1f,%.1f,%.1f)\n",
+			(int)a, (unsigned long long)armaEntity,
+			(int)arma.boneCollection.size(), (int)arma.inverseBindMatrices.size(), (int)arma.boneData.size(),
+			missing, invalid, nans,
+			minT == FLT_MAX ? 0.0f : minT, maxT == -FLT_MAX ? 0.0f : maxT,
+			minB == FLT_MAX ? 0.0f : minB, maxB == -FLT_MAX ? 0.0f : maxB, nanB,
+			armaT ? armaT->world._41 : 0.0f, armaT ? armaT->world._42 : 0.0f, armaT ? armaT->world._43 : 0.0f);
+	}
+
+	// --- Pass 3: per-bone detail for suspect/filtered armatures ---
+	for (wi::ecs::Entity armaEntity : detailArmatures)
+	{
+		wi::scene::ArmatureComponent* arma = pScene->armatures.GetComponent(armaEntity);
+		if (!arma) { fprintf(f, "DETAIL arma=%llu MISSING\n", (unsigned long long)armaEntity); continue; }
+
+		wi::scene::TransformComponent* armaT = pScene->transforms.GetComponent(armaEntity);
+		wi::scene::HierarchyComponent* armaH = pScene->hierarchy.GetComponent(armaEntity);
+		fprintf(f, "DETAIL arma=%llu parent=%llu world=(%.1f,%.1f,%.1f) bones=%d\n",
+			(unsigned long long)armaEntity,
+			(unsigned long long)(armaH ? armaH->parentID : 0),
+			armaT ? armaT->world._41 : 0.0f, armaT ? armaT->world._42 : 0.0f, armaT ? armaT->world._43 : 0.0f,
+			(int)arma->boneCollection.size());
+
+		for (size_t b = 0; b < arma->boneCollection.size(); ++b)
+		{
+			wi::ecs::Entity boneEntity = arma->boneCollection[b];
+			wi::scene::TransformComponent* bone = pScene->transforms.GetComponent(boneEntity);
+			wi::scene::NameComponent* bname = boneEntity ? pScene->names.GetComponent(boneEntity) : nullptr;
+			wi::scene::HierarchyComponent* bh = boneEntity ? pScene->hierarchy.GetComponent(boneEntity) : nullptr;
+
+			float ibx = 0, iby = 0, ibz = 0;
+			if (b < arma->inverseBindMatrices.size())
+			{
+				ibx = arma->inverseBindMatrices[b]._41; iby = arma->inverseBindMatrices[b]._42; ibz = arma->inverseBindMatrices[b]._43;
+			}
+			float sx = 0, sy = 0, sz = 0;
+			if (b < arma->boneData.size())
+			{
+				sx = arma->boneData[b].mat0.w; sy = arma->boneData[b].mat1.w; sz = arma->boneData[b].mat2.w;
+			}
+
+			if (bone)
+			{
+				fprintf(f, "  B[%d] ent=%llu '%s' parent=%llu W=(%.1f,%.1f,%.1f) L=(%.1f,%.1f,%.1f) "
+					"LR=(%.2f,%.2f,%.2f,%.2f) LS=(%.2f,%.2f,%.2f) IB=(%.1f,%.1f,%.1f) SK=(%.1f,%.1f,%.1f)\n",
+					(int)b, (unsigned long long)boneEntity, bname ? bname->name.c_str() : "?",
+					(unsigned long long)(bh ? bh->parentID : 0),
+					bone->world._41, bone->world._42, bone->world._43,
+					bone->translation_local.x, bone->translation_local.y, bone->translation_local.z,
+					bone->rotation_local.x, bone->rotation_local.y, bone->rotation_local.z, bone->rotation_local.w,
+					bone->scale_local.x, bone->scale_local.y, bone->scale_local.z,
+					ibx, iby, ibz, sx, sy, sz);
+			}
+			else
+			{
+				fprintf(f, "  B[%d] ent=%llu '%s' NO_TRANSFORM IB=(%.1f,%.1f,%.1f) SK=(%.1f,%.1f,%.1f)\n",
+					(int)b, (unsigned long long)boneEntity, bname ? bname->name.c_str() : "?",
+					ibx, iby, ibz, sx, sy, sz);
+			}
+		}
+	}
+
+	// --- Pass 4: animations, compact line each ---
+	fprintf(f, "ANIMATIONS: %d\n", (int)pScene->animations.GetCount());
+	for (size_t i = 0; i < pScene->animations.GetCount(); ++i)
+	{
+		wi::scene::AnimationComponent& anim = pScene->animations[i];
+		wi::ecs::Entity animEntity = pScene->animations.GetEntity(i);
+		wi::scene::NameComponent* name = pScene->names.GetComponent(animEntity);
+
+		int chBadTarget = 0, chNoData = 0;
+		for (const auto& ch : anim.channels)
+		{
+			if (ch.target == wi::ecs::INVALID_ENTITY || !pScene->transforms.GetComponent(ch.target)) chBadTarget++;
+			if (ch.samplerIndex < (int)anim.samplers.size())
+			{
+				if (!pScene->animation_datas.GetComponent(anim.samplers[ch.samplerIndex].data)) chNoData++;
+			}
+		}
+
+		// first valid channel target tells us which hierarchy this anim drives
+		wi::ecs::Entity firstTarget = anim.channels.empty() ? 0 : anim.channels[0].target;
+
+		wi::scene::ObjectComponent* cullObj = pScene->objects.GetComponent(anim.objectIndex);
+		fprintf(f, "ANIM[%d] ent=%llu '%s' play=%d loop=%d t=%.2f s=%.1f e=%.1f amt=%.2f spd=%.1f "
+			"cullObj=%llu(%s) ch=%d badTgt=%d noData=%d tgt0=%llu\n",
+			(int)i, (unsigned long long)animEntity, name ? name->name.c_str() : "?",
+			anim.IsPlaying() ? 1 : 0, anim.IsLooped() ? 1 : 0,
+			anim.timer, anim.start, anim.end, anim.amount, anim.speed,
+			(unsigned long long)anim.objectIndex,
+			cullObj ? (cullObj->IsRenderable() ? "vis" : "HIDDEN") : "none",
+			(int)anim.channels.size(), chBadTarget, chNoData,
+			(unsigned long long)firstTarget);
+	}
+
+	// --- Pass 5: animation keyframe data garbage scan ---
+	// If garbage lives HERE the corruption is baked at load (keyframe build);
+	// if all data is clean yet bone locals are garbage, something writes transforms directly.
+	int dataBad = 0;
+	fprintf(f, "ANIMDATA: %d\n", (int)pScene->animation_datas.GetCount());
+	for (size_t i = 0; i < pScene->animation_datas.GetCount(); ++i)
+	{
+		auto& ad = pScene->animation_datas[i];
+		float maxAbs = 0.0f;
+		int bad = 0, firstBad = -1;
+		for (size_t k = 0; k < ad.keyframe_data.size(); ++k)
+		{
+			float v = ad.keyframe_data[k];
+			if (isnan(v) || fabsf(v) > 1.0e6f)
+			{
+				bad++;
+				if (firstBad < 0) firstBad = (int)k;
+			}
+			else if (fabsf(v) > maxAbs) maxAbs = v < 0 ? -v : v;
+		}
+		float maxTime = ad.keyframe_times.empty() ? 0.0f : ad.keyframe_times.back();
+		if (bad > 0)
+		{
+			dataBad++;
+			fprintf(f, "ANIMDATA[%d] ent=%llu keys=%d data=%d maxT=%.0f BAD=%d firstBad=%d sample=(%g,%g,%g,%g)\n",
+				(int)i, (unsigned long long)pScene->animation_datas.GetEntity(i),
+				(int)ad.keyframe_times.size(), (int)ad.keyframe_data.size(), maxTime, bad, firstBad,
+				firstBad >= 0 && firstBad + 3 < (int)ad.keyframe_data.size() ? ad.keyframe_data[firstBad] : 0.0f,
+				firstBad >= 0 && firstBad + 3 < (int)ad.keyframe_data.size() ? ad.keyframe_data[firstBad + 1] : 0.0f,
+				firstBad >= 0 && firstBad + 3 < (int)ad.keyframe_data.size() ? ad.keyframe_data[firstBad + 2] : 0.0f,
+				firstBad >= 0 && firstBad + 3 < (int)ad.keyframe_data.size() ? ad.keyframe_data[firstBad + 3] : 0.0f);
+		}
+	}
+	fprintf(f, "ANIMDATA_BAD_TOTAL: %d\n", dataBad);
+
+	fclose(f);
+
+	_snprintf(result, resultSize,
+		"OK: DUMP_SKIN wrote %s\nSKINNED_OBJECTS: %d  ARMATURES: %d  ANIMATIONS: %d  BAD_ANIMDATA: %d\nSUSPECTS: %d %s",
+		skinPath, skinnedCount, (int)pScene->armatures.GetCount(), (int)pScene->animations.GetCount(),
+		dataBad, suspectCount, suspectNames);
+	result[resultSize - 1] = 0;
+}
+
+// ---- SKIN_WATCH: per-frame scan for garbage bone rotations (parrot corruption hunt) ----
+// Enabled via the SKIN_WATCH command BEFORE loading a level. Each frame, scans every
+// TransformComponent for a garbage rotation_local (|component| > 1e3 or NaN) and logs
+// the FIRST detection per entity with a frame counter and scene component counts, so the
+// load phase where the write lands can be identified. Output: auto_skinwatch.txt.
+static bool s_bSkinWatch = false;
+static uint32_t s_skinWatchFrame = 0;
+static FILE* s_skinWatchFile = nullptr;
+static std::vector<uint64_t> s_skinWatchSeen;
+
+static void AutoHarness_SkinWatchTick(void)
+{
+	if (!s_bSkinWatch) return;
+	s_skinWatchFrame++;
+	wi::scene::Scene* pScene = master.masterrenderer.scene;
+	if (!pScene) return;
+
+	if (!s_skinWatchFile)
+	{
+		char path[MAX_PATH];
+		strncpy(path, s_rspPath, MAX_PATH);
+		path[MAX_PATH - 1] = 0;
+		char* slash = strrchr(path, '\\');
+		if (!slash) slash = strrchr(path, '/');
+		if (slash) slash[1] = 0; else path[0] = 0;
+		strncat(path, "auto_skinwatch.txt", MAX_PATH - strlen(path) - 1);
+		s_skinWatchFile = fopen(path, "w");
+		if (!s_skinWatchFile) { s_bSkinWatch = false; return; }
+	}
+
+	int newHits = 0;
+	for (size_t i = 0; i < pScene->transforms.GetCount(); ++i)
+	{
+		wi::scene::TransformComponent& tr = pScene->transforms[i];
+		float rx = tr.rotation_local.x, ry = tr.rotation_local.y, rz = tr.rotation_local.z, rw = tr.rotation_local.w;
+		bool bad = isnan(rx) || isnan(ry) || isnan(rz) || isnan(rw) ||
+			fabsf(rx) > 1000.0f || fabsf(ry) > 1000.0f || fabsf(rz) > 1000.0f || fabsf(rw) > 1000.0f;
+		if (!bad) continue;
+
+		uint64_t entity = (uint64_t)pScene->transforms.GetEntity(i);
+		bool seen = false;
+		for (uint64_t e : s_skinWatchSeen) if (e == entity) { seen = true; break; }
+		if (seen) continue;
+		s_skinWatchSeen.push_back(entity);
+		newHits++;
+
+		wi::scene::NameComponent* name = pScene->names.GetComponent((wi::ecs::Entity)entity);
+		fprintf(s_skinWatchFile, "HIT frame=%u ent=%llu '%s' LR=(%g,%g,%g,%g) LS=(%g,%g,%g) LT=(%g,%g,%g) "
+			"[transforms=%d objects=%d armatures=%d anims=%d animdatas=%d]\n",
+			s_skinWatchFrame, (unsigned long long)entity, name ? name->name.c_str() : "?",
+			rx, ry, rz, rw,
+			tr.scale_local.x, tr.scale_local.y, tr.scale_local.z,
+			tr.translation_local.x, tr.translation_local.y, tr.translation_local.z,
+			(int)pScene->transforms.GetCount(), (int)pScene->objects.GetCount(),
+			(int)pScene->armatures.GetCount(), (int)pScene->animations.GetCount(),
+			(int)pScene->animation_datas.GetCount());
+	}
+
+	if (newHits > 0 || (s_skinWatchFrame % 300) == 0)
+	{
+		fprintf(s_skinWatchFile, "TICK frame=%u hits=%d totalSeen=%d transforms=%d objects=%d armatures=%d anims=%d\n",
+			s_skinWatchFrame, newHits, (int)s_skinWatchSeen.size(),
+			(int)pScene->transforms.GetCount(), (int)pScene->objects.GetCount(),
+			(int)pScene->armatures.GetCount(), (int)pScene->animations.GetCount());
+		fflush(s_skinWatchFile);
+	}
+}
+
 // ---- Main entry point (called once per tick) ----
 
 void AutoHarness_CheckForCommand(void)
 {
+	AutoHarness_SkinWatchTick();
 	// Init paths and uptime tracking on first call
 	if (!s_initialized)
 	{
@@ -1697,6 +2023,17 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "LIST_LIGHTS") == 0)
 	{
 		Cmd_ListLights(result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "DUMP_SKIN") == 0)
+	{
+		Cmd_DumpSkin(arg, result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "SKIN_WATCH") == 0)
+	{
+		s_bSkinWatch = (arg[0] != '0');
+		_snprintf(result, sizeof(result), "OK: SKIN_WATCH %s (frame=%u seen=%d)",
+			s_bSkinWatch ? "ON" : "OFF", s_skinWatchFrame, (int)s_skinWatchSeen.size());
+		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "ENABLE_PROFILER") == 0)
 	{

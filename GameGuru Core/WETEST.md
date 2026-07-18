@@ -78,6 +78,8 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `PRESS_ESCAPE` | (none) | Exits test game back to editor (sets gameloop/levelloop/masterloop=0). Game state only |
 | `PRESS_KEY` | `<key name>` | Simulate a keypress (WM_KEYDOWN + WM_KEYUP). Accepts A-Z, 0-9, F1-F12, ESCAPE, ENTER, SPACE, TAB, SHIFT, CONTROL, ALT, arrow keys, etc. Works in any state. In editor mode, also injects into the terrain key system via `g_autoHarnessInjectedKey` (bypasses the `bImGuiGotFocus` gate) |
 | `SET_GRASS` | `<param> <value>` | Live-tune the Wicked grass path. Params: length, width, stiffness, drag, blades, maxstrands, segments, billboards, viewdist, sss, alpha, tintr, tintg, tintb, sssr, sssg, sssb (impl: AutomationHarness.cpp ~line 1657) |
+| `DUMP_SKIN` | (none) or `<name filter>` | Skinned-mesh corruption diagnosis: writes a full report to `auto_skin.txt` (skinned objects with AABBs + SUSPECT flags, armature summaries with bone-world/skin-matrix magnitude ranges, per-bone detail for suspect/filtered armatures, one line per animation, keyframe-data garbage scan). Summary with suspect names goes to `auto_result.txt`. Filter matches Wicked object names (e.g. `galah` = the Island Showdown parrots) |
+| `SKIN_WATCH` | `1` or `0` | Per-frame scan of ALL transforms for garbage local rotations (>1e3 or NaN); logs first detection per entity with a frame counter + scene counts to `auto_skinwatch.txt`. Enable BEFORE loading a level to timestamp when corruption lands. Heartbeat TICK line every 300 frames |
 | `QUIT` | (none) | Gracefully close the application |
 
 ## Application States

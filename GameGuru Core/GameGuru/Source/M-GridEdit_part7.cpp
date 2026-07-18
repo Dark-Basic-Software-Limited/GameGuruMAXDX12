@@ -1214,6 +1214,11 @@ void gridedit_load_map ( void )
 		GGTerrain::GGTerrainWicked_BeginRevealHold();
 	}
 
+	// repair any bone rotations corrupted during the load burst and force one
+	// evaluation of every animation, while the reveal cover still hides the scene
+	// (the intermittent Island Showdown "exploded parrot" fix)
+	WickedCall_SanitizeSkeletons();
+
 	TDRTrace("[LOADMAP] gridedit_load_map: EXIT");
 }
 

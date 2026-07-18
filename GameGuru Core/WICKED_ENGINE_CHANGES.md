@@ -35,6 +35,31 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.9 Animation/transform hardening: unit-quaternion guards + decompose validation
+
+**Files:**
+- `WickedEngine/wiScene_Components.cpp` (`TransformComponent::ApplyTransform` validates the `XMMatrixDecompose` result; on garbage keeps previous rotation/scale, takes translation from the world matrix; tripwire logs a symbolized call stack to `applytransform_garbage.txt`)
+- `WickedEngine/wiScene.cpp` (both rotation write-back sites in `RunAnimationUpdateSystem` enforce a unit quaternion — renormalize, identity for zero/NaN/inf; tripwire logs inputs to `anim_garbage.txt`)
+
+**Date:** 2026-07-18 (Wicked commit `a4539a76`)
+
+#### Use case in GameGuru MAX
+
+Fixes the intermittent "exploded skinned model" corruption (the Island
+Showdown parrots): during level-load bursts, garbage rotations (a valid
+axis scaled by thousands — an unnormalized accumulation) could be baked
+into a few bones' `rotation_local` and persist for the entire session
+whenever that bone's animation never re-evaluated (the stopped/culled
+case), rendering the model as giant coloured sheets across the sky.
+`XMQuaternionSlerp` propagates garbage instead of healing it, and
+`XMMatrixDecompose` on a sheared/torn matrix emits huge quaternion
+components — these guards make the corrupt pose impossible to store or
+propagate. Paired with the GG-side `WickedCall_SanitizeSkeletons()`
+(end of level load: repairs non-unit bone rotations + forces one
+evaluation of every animation under the reveal cover). The tripwire
+files only ever get written when a guard actually fires — if they appear
+next to the exe, the original writer can finally be identified from them.
+
 ### 1.8 Terrain: optional high-priority generation jobs
 
 **Files:**
@@ -467,6 +492,7 @@ modified, both genuine bug fixes.
 | 1.6 ObjectComponent occlusion-query opt-out flag | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off, zero behaviour change for existing scenes; new flag consumers must set `occlusionHistory |= 1` semantics (already handled in the visibility job) |
 | 1.7 Terrain view-cone chunk generation priority | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off; pure generation-ORDER change, the generated content is identical |
 | 1.8 Terrain high-priority generation jobs | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off; burst-scenario knob, GG enables it only while the view cone is incomplete |
+| 1.9 Animation/transform hardening (unit-quaternion guards + decompose validation) | applied 2026-07-18 in Wicked commit `a4539a76`, lib rebuilt | candidate for upstream PR — guards only fire on already-corrupt data (zero behaviour change for healthy scenes); tripwire files `anim_garbage.txt`/`applytransform_garbage.txt` appear next to the exe only if a guard fires |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

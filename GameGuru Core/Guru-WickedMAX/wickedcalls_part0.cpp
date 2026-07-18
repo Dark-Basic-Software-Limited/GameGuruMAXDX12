@@ -863,7 +863,9 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 	// copy the transform from the frame to the scene entity transform
 	TransformComponent& transform = *scene.transforms.GetComponent(entity);
 	transform.scale_local = XMFLOAT3(1, 1, 1);
-	transform.rotation_local = XMFLOAT4(0, 0, 0, 0);
+	// LB: must be the identity QUATERNION (w=1) — a zero quaternion poisons any later
+	// slerp against this transform (slerp cannot blend from a zero-length rotation)
+	transform.rotation_local = XMFLOAT4(0, 0, 0, 1);
 	transform.translation_local = XMFLOAT3(0,0,0);
 	if (bUseFrameMatrix == true)
 	{
@@ -1246,6 +1248,63 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 				pAnim = pAnim->pNext;
 			}
 		}
+	}
+}
+
+void WickedCall_SanitizeSkeletons(void)
+{
+	// Skinned-model corruption safety net (the Island Showdown "exploded parrot" bug):
+	// during heavy level loads a transient fault can bake garbage rotations into a few
+	// bones' local transforms. If those bones' animation never ticks again the garbage
+	// stays for the whole session and the model renders as giant stretched triangles.
+	// Called at the end of level load (under the reveal cover): repair any non-unit bone
+	// rotation, then force one evaluation of every animation so all animated bones snap
+	// to their true current pose before the scene is revealed.
+	wiScene::Scene& scene = wiScene::GetScene();
+
+	int iFixedBones = 0;
+	for (size_t a = 0; a < scene.armatures.GetCount(); ++a)
+	{
+		wiScene::ArmatureComponent& armature = scene.armatures[a];
+		for (Entity boneEntity : armature.boneCollection)
+		{
+			if (boneEntity == wiECS::INVALID_ENTITY) continue;
+			wiScene::TransformComponent* bone = scene.transforms.GetComponent(boneEntity);
+			if (!bone) continue;
+
+			XMFLOAT4& q = bone->rotation_local;
+			float fLenSq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+			if (!(fLenSq > 0.25f && fLenSq < 4.0f)) // NaN fails both comparisons
+			{
+				if (fLenSq > 1e-12f && fLenSq < 1e12f)
+				{
+					float fInv = 1.0f / sqrtf(fLenSq);
+					q.x *= fInv; q.y *= fInv; q.z *= fInv; q.w *= fInv;
+				}
+				else
+				{
+					q = XMFLOAT4(0, 0, 0, 1);
+				}
+				bone->SetDirty();
+				iFixedBones++;
+			}
+		}
+	}
+
+	// force one evaluation of every animation at its current timer. updateonce alone is
+	// NOT enough: the engine still skips stopped animations when last_update_time == timer,
+	// so arm that too (same trick the old GGAnimBridge_SetUpdateOnce used)
+	for (size_t i = 0; i < scene.animations.GetCount(); ++i)
+	{
+		scene.animations[i].updateonce = true;
+		scene.animations[i].last_update_time = scene.animations[i].timer - 1.0f;
+	}
+
+	if (iFixedBones > 0)
+	{
+		char report[128];
+		sprintf_s(report, "WickedCall_SanitizeSkeletons: repaired %d corrupt bone rotations at level load\n", iFixedBones);
+		OutputDebugStringA(report);
 	}
 }
 
