@@ -1124,6 +1124,15 @@ void WickedCall_SetSunDirection(float fAx, float fAy, float fAz)
 	rotationinrads.y = fAy * (3.141592654f / 180.0f);
 	rotationinrads.z = fAz * (3.141592654f / 180.0f);
 	transformSunLight->RotateRollPitchYaw(rotationinrads);
+
+	// a moved sun makes frozen staggered-cascade contents stale; change-latched
+	// because this is called on every visuals apply
+	static float s_lastSunAx = -99999.0f, s_lastSunAy = -99999.0f, s_lastSunAz = -99999.0f;
+	if (fAx != s_lastSunAx || fAy != s_lastSunAy || fAz != s_lastSunAz)
+	{
+		s_lastSunAx = fAx; s_lastSunAy = fAy; s_lastSunAz = fAz;
+		wi::renderer::InvalidateDelayedShadowCascades();
+	}
 }
 
 void WickedCall_SetSunColors(float fRed, float fGreen, float fBlue,float fEnergy,float fFov, float fShadowBias)
@@ -1283,6 +1292,15 @@ void WickedCall_SetShadowRange(float ShadowFar)
 		float farCascade = ShadowFar;
 		if (farCascade < 30001.0f) farCascade = 30001.0f;
 		lightSun->cascade_distances = { 380.0f, 950.0f, 7500.0f, 30000.0f, farCascade };
+
+		// changed splits make frozen staggered-cascade contents stale;
+		// change-latched because this is called on every visuals apply
+		static float s_lastFarCascade = -1.0f;
+		if (farCascade != s_lastFarCascade)
+		{
+			s_lastFarCascade = farCascade;
+			wi::renderer::InvalidateDelayedShadowCascades();
+		}
 	}
 }
 

@@ -129,6 +129,12 @@ void MasterRenderer::Load()
 	// WickedCall_SetShadowRange whenever the level's visuals apply.
 	lightSun->cascade_distances = { 380.0f, 950.0f, 7500.0f, 30000.0f, 500000.0f };
 
+	// Production DX11 parity: staggered cascade refresh (c0 every frame, then
+	// /2 /3 /4 /9) — skipped cascades keep their atlas contents + frozen
+	// matrices; a >64" camera move or any atlas/rect change forces a refresh.
+	// Wicked delta 1.11; the DELAYED_SHADOWS harness command A/Bs it live.
+	wi::renderer::SetDelayedShadowCascadesEnabled( true );
+
 	// LB: sun needs lens flare texture
 	int iFlareCount = 3;
 	lightSun->lensFlareRimTextures.resize(iFlareCount);

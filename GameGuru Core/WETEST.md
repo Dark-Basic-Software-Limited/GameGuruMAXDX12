@@ -82,6 +82,7 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `SKIN_WATCH` | `1` or `0` | Per-frame scan of ALL transforms for garbage local rotations (>1e3 or NaN); logs first detection per entity with a frame counter + scene counts to `auto_skinwatch.txt`. Enable BEFORE loading a level to timestamp when corruption lands. Heartbeat TICK line every 300 frames |
 | `SET_OCEAN` | `<param> <value>` | Live-tune ocean shore/wave foam (applies instantly — the ocean CB refills from oceanParameters every frame). Params: `foamscale` (world-unit scale for the foam math; GG default 0.08, stock-meters would be 1) and `foamamount` (intensity multiplier, GG default 1.3). Backing globals: `g_fWaterFoamUnitScale`/`g_fWaterFoamAmount` in M-GridEditB_part3.cpp |
 | `SET_TREES` | `<param> <value>` | Live-tune tree shadows + pool benchmarking. Params: `shadowdist` (mesh-shadow radius in inches, default 2500 — the "Tree Shadow LOD Distance" slider), `shadowrange` (cascades receiving tree shadows 0-5, default 5 = island-wide — the "Tree Shadow Range" slider), `drawshadows` (0/1), `stress` (force the pool nearest-N rescan for N frames — measures the camera-move cost via the TreePool profiler sub-ranges) |
+| `DELAYED_SHADOWS` | `0` or `1` | A/B the staggered shadow-cascade refresh (Wicked delta 1.11, ON by default). OFF = every cascade renders every frame (stock). Compare `Shadowmap Rendering` CPU/GPU in GET_PERF_DATA with the profiler enabled |
 | `QUIT` | (none) | Gracefully close the application |
 
 ## Application States

@@ -35,6 +35,32 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.11 Delayed shadow cascades: staggered per-cascade refresh
+
+**Files:**
+- `WickedEngine/wiRenderer.h` (`SetDelayedShadowCascadesEnabled` / `GetDelayedShadowCascadesEnabled` / `InvalidateDelayedShadowCascades`)
+- `WickedEngine/wiRenderer.cpp` (cadence + frozen matrices in `UpdatePerFrameData`; `DrawShadowmaps` LoadOp::LOAD + per-rect clear draws + per-cascade skips; `PSO_shadowClear_GG`)
+- `WickedEngine/shaders/shadowClearPS.hlsl` (new — in-renderpass rect clear, paired with screenVS + DSSTYPE_WRITEONLY)
+
+**Date:** 2026-07-18 (Wicked commit `38a9e82a`)
+
+#### Use case in GameGuru MAX
+
+Port of production DX11's "delayed shadows" (`g_bDelayedShadows`, old
+WickedRepo wiRenderer.cpp GGREDUCED blocks): sun cascades refresh at
+60/30/20/15/6.7 fps (c0 every frame, then %2 %3 %4 %9) with the DX11
+load leveler and 64-inch camera-translation override. Skipped cascades
+keep their atlas contents (the atlas is LOADED, and each rect that
+renders clears itself with a scissored draw) and sample with frozen
+matrices. Forced full refresh on: atlas grow/repack, directional rect
+move, sun rotation and cascade-split changes (change-latched GG hooks in
+`WickedCall_SetSunDirection` / `WickedCall_SetShadowRange`), and
+`InvalidateDelayedShadowCascades()`. GG enables it at sun creation
+(master_part1.cpp); the `DELAYED_SHADOWS 0|1` harness command A/Bs it
+live. Measured on TESTPRO1 (static camera): Shadowmap Rendering CPU
+2.32 -> 1.04 ms, GPU 0.62 -> 0.17 ms, visuals unchanged. Default OFF =
+stock behaviour bit-for-bit.
+
 ### 1.10 Ocean: world-unit scale + intensity knob for shore/wave foam
 
 **Files:**
@@ -518,6 +544,7 @@ modified, both genuine bug fixes.
 | 1.8 Terrain high-priority generation jobs | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off; burst-scenario knob, GG enables it only while the view cone is incomplete |
 | 1.9 Animation/transform hardening (unit-quaternion guards + decompose validation) | applied 2026-07-18 in Wicked commit `a4539a76`, lib rebuilt | candidate for upstream PR — guards only fire on already-corrupt data (zero behaviour change for healthy scenes); tripwire files `anim_garbage.txt`/`applytransform_garbage.txt` appear next to the exe only if a guard fires |
 | 1.10 Ocean foam world-unit scale + intensity knob | applied 2026-07-18 in Wicked commit `da60bfad`, lib rebuilt, shader auto-recompiles | candidate for upstream PR — both params default 1 = stock behaviour; fills existing CB padding so no layout change |
+| 1.11 Delayed shadow cascades (staggered refresh) | applied 2026-07-18 in Wicked commit `38a9e82a`, lib rebuilt, new shadowClearPS shader auto-compiles | candidate for upstream PR — default OFF preserves stock behaviour bit-for-bit; GG enables at sun creation; single-directional-light assumption documented in code |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

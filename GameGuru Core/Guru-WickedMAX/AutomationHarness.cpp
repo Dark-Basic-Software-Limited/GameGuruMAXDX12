@@ -25,6 +25,7 @@ extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* 
 #include "wiGraphicsDevice.h"
 #include "wiApplication.h"
 #include "wiScene.h"
+#include "wiRenderer.h"
 
 // Direct access to profiler internals for diagnostics
 namespace wi::profiler {
@@ -2063,6 +2064,14 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_TREES needs <param> <value> (shadowdist|shadowrange|drawshadows)");
 		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DELAYED_SHADOWS") == 0)
+	{
+		bool on = (arg[0] != '0');
+		wi::renderer::SetDelayedShadowCascadesEnabled(on);
+		_snprintf(result, sizeof(result), "OK: DELAYED_SHADOWS %s (staggered cascade refresh %s)",
+			on ? "ON" : "OFF", wi::renderer::GetDelayedShadowCascadesEnabled() ? "enabled" : "disabled");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_OCEAN") == 0)
