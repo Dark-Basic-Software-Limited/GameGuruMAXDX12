@@ -9794,10 +9794,15 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 
 		bool brushVisibleW = pickHitW && !bImGuiGotFocus &&
 			ggterrain_extra_params.edit_mode != GGTERRAIN_EDIT_NONE;
+		// single-tree tools (add/delete/move/scale) target one tree, not a brush area —
+		// the ring only misleads there; spray add/remove keep it
+		if (ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_TREES &&
+			(ggtrees_global_params.paint_mode == GGTREES_PAINT_ADD ||
+			 ggtrees_global_params.paint_mode == GGTREES_PAINT_REMOVE ||
+			 ggtrees_global_params.paint_mode == GGTREES_PAINT_MOVE ||
+			 ggtrees_global_params.paint_mode == GGTREES_PAINT_SCALE)) brushVisibleW = false;
 		float brushSizeW = ggterrain_local_render_params2.brushSize;
 		if (ggterrain_extra_params.sculpt_mode == GGTERRAIN_SCULPT_PICK) brushSizeW = 100.0f;
-		if (ggterrain_extra_params.edit_mode == GGTERRAIN_EDIT_TREES &&
-			ggtrees_global_params.paint_mode == GGTREES_PAINT_ADD) brushSizeW = 25.0f;
 		GGTerrainWicked_SetBrushCursor(brushVisibleW, pickXW, pickYW, pickZW, brushSizeW);
 		return;
 	}

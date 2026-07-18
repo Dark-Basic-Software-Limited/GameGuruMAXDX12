@@ -772,6 +772,16 @@ void WickedCall_DrawObjctBox_Color(sObject* pObject, float r, float g, float b, 
 	WickedCall_DrawObjctBox(pObject, color);
 }
 
+float WickedCall_GetVRAMUsageMB( void )
+{
+	// real usage of THIS process on the device Wicked actually created (D3D12MA
+	// budget) — the legacy DXGI EnumAdapters(0) query can watch the wrong GPU
+	wiGraphics::GraphicsDevice* device = wiGraphics::GetDevice();
+	if ( device == nullptr ) return 0.0f;
+	wiGraphics::GraphicsDevice::MemoryUsage mem = device->GetMemoryUsage();
+	return (float)( mem.usage / (1024.0 * 1024.0) );
+}
+
 void WickedCall_RenderEditorFunctions( void )
 {
 	// if shooter genre mode active, show all logic objects

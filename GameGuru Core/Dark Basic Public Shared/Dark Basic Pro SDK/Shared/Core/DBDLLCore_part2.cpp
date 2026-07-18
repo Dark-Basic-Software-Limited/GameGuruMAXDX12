@@ -3370,10 +3370,12 @@ float GetTotalVramUsage(void)
 	HRESULT hrNonLocal = adapter->QueryVideoMemoryInfo(g_iActiveAdapterNumber, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &nonLocalVideoMemoryInfo);
 	TotalVRam += (float)nonLocalVideoMemoryInfo.CurrentUsage / 1024.0f / 1024.0f;
 
-	//usageInfo.nonLocalUsedMB = (float)nonLocalVideoMemoryInfo.CurrentUsage / 1024.0f / 1024.0f;
-	//usageInfo.nonLocalBudgetMB = (float)nonLocalVideoMemoryInfo.Budget / 1024.0f / 1024.0f;
-	//usageInfo.nonLocalSwappedOutMB = (float)(nonLocalVideoMemoryInfo.Budget - nonLocalVideoMemoryInfo.CurrentUsage) / 1024.0f / 1024.0f;
-	//if (usageInfo.nonLocalSwappedOutMB < 0) usageInfo.nonLocalSwappedOutMB = 0; // Ensure non-negative
+	// the DXGI query above (EnumAdapters(0) + node 0) can watch a different GPU
+	// than the one the Wicked DX12 device actually runs on — prefer the engine's
+	// own D3D12MA figure and keep the DXGI sum only as a fallback
+	float WickedCall_GetVRAMUsageMB(void);
+	float fWickedVRam = WickedCall_GetVRAMUsageMB();
+	if (fWickedVRam > 0.0f) return fWickedVRam;
 
 	return(TotalVRam);
 }
