@@ -1,4 +1,8 @@
-﻿void gridedit_updatezoomviewvalues ( void )
+﻿// Declared here because this unity-build part file has no include path to
+// GGTerrainWicked.h. Definition: Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp.
+namespace GGTerrain { void GGTerrainWicked_BeginRevealHold(); }
+
+void gridedit_updatezoomviewvalues ( void )
 {
 	//  accepts gridentityinzoomview
 	if (  t.gridentityinzoomview>0 ) 
@@ -1200,8 +1204,15 @@ void gridedit_load_map ( void )
 	// finished computing heights (they arrive via GGTerrain_Update readback
 	// over the following frames — the exact reason iDelayedCameraRestore
 	// exists, see editor_loadcfg). Chunks generated here bake WRONG heights
-	// and are never invalidated. Any future pregeneration must wait for the
-	// GG heightmap to be genuinely ready (see GGTerrainWicked_Pregenerate).
+	// and are never invalidated.
+	//
+	// The safe replacement: hold the reveal. The editor covers the 3D view
+	// with a loading overlay while real frames run underneath — heights
+	// arrive, the camera-facing chunks generate correctly, cover drops.
+	if (t.visuals.bEnableEmptyLevelMode == false)
+	{
+		GGTerrain::GGTerrainWicked_BeginRevealHold();
+	}
 
 	TDRTrace("[LOADMAP] gridedit_load_map: EXIT");
 }

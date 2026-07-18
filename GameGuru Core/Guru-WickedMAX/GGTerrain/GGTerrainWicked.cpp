@@ -1443,6 +1443,33 @@ void timestampactivity(int i, char* desc_s);
 namespace GGTerrain
 {
 
+// ---------------------------------------------------------------------------
+// Level reveal hold (2026-07-18). The safe replacement for the reverted
+// synchronous pregeneration: the editor covers the 3D view with a loading
+// overlay while REAL frames run underneath — the legacy terrain finishes its
+// height readback (GGTerrain_IsReady), the generator builds the camera-facing
+// cone with CORRECT heights (deltas 7+8 + boosted budget), and the cover
+// drops the moment the visible chunk set exists. Deadline-capped so a stall
+// can never black-screen the editor.
+// ---------------------------------------------------------------------------
+static int g_revealHoldFrames = 0;
+
+void GGTerrainWicked_BeginRevealHold()
+{
+	if (!wickedTerrainInitialised) return;
+	g_revealHoldFrames = 300;  // ~5s deadline backstop at 60fps
+}
+
+// Queried once per editor frame by the loading-cover draw (M-GridEdit). The
+// deadline ticks HERE (not in GGTerrainWicked_Update) so the cover can never
+// stick if terrain updates stop for any reason.
+bool GGTerrainWicked_IsRevealHeld()
+{
+	if (g_revealHoldFrames <= 0) return false;
+	g_revealHoldFrames--;
+	return g_revealHoldFrames > 0;
+}
+
 // Synchronously pre-build the chunks the camera can see, bounded by
 // maxMilliseconds. Runs at the END of a level load with the loading screen
 // still up: kicks the generator (turbo budget + high priority + the view-cone
@@ -1801,8 +1828,23 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// restarted", so the turbo runs exactly during the initial build.
 	const int genSpan = 2 * terrain->generation + 1;
 	const int expectedChunks = genSpan * genSpan;
+	const int coneTarget = (expectedChunks * 2) / 5;  // cone + near rings ≈ 40% of ring total
 	const bool initialBuild = (int)terrain->chunks.size() < (expectedChunks * 6) / 10;
-	terrain->generation_time_budget_milliseconds = initialBuild ? 150.0f : 8.0f;
+	const bool heightsReady = GGTerrain_IsReady() != 0;
+
+	// Level reveal hold: drop the loading cover the moment the legacy heights
+	// are ready AND the camera-facing chunk set exists. (The deadline backstop
+	// ticks in GGTerrainWicked_IsRevealHeld.)
+	if (g_revealHoldFrames > 0 && heightsReady && (int)terrain->chunks.size() >= coneTarget)
+	{
+		g_revealHoldFrames = 0;
+	}
+	const bool revealHeld = g_revealHoldFrames > 0;
+
+	// While the cover is up nobody sees the frame rate — let the generator eat
+	// most of the frame. Otherwise: turbo during the visible initial build,
+	// stock 8ms in normal editing.
+	terrain->generation_time_budget_milliseconds = revealHeld ? 300.0f : (initialBuild ? 150.0f : 8.0f);
 	// Wicked delta #8: while the CAMERA-FACING cone is still building (~40% of
 	// the ring total covers the cone + near rings), run generation on the HIGH
 	// job pool — the Low pool is THREAD_PRIORITY_LOWEST and gets starved by the
@@ -1810,7 +1852,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// Once the cone is done, drop back to polite Low so the off-camera fill
 	// doesn't steal frame time from the editor (measured 40-55 -> 19-43 FPS
 	// during the tail when left on High).
-	terrain->generation_high_priority = (int)terrain->chunks.size() < (expectedChunks * 2) / 5;
+	terrain->generation_high_priority = revealHeld || (int)terrain->chunks.size() < coneTarget;
 	static uint32_t s_terrainFrame = 0;
 	s_terrainFrame++;
 	// While the turbo build runs, only interrupt the generator with blendmap
@@ -1820,6 +1862,12 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	const bool blendTickAllowed = !initialBuild || ( s_terrainFrame % 30 ) == 0;
 
 	// Let the VT system run — generates chunks, creates atlas, blends materials.
+	// CORRECTNESS GATE (2026-07-18): during the initial build, do NOT generate
+	// until the legacy GG terrain reports its heights ready — chunks generated
+	// from not-yet-read-back heights bake permanently wrong geometry (the
+	// reverted load-time pregeneration bug). Normal editing (initialBuild
+	// false) is unaffected.
+	if (!initialBuild || heightsReady)
 	{
 		auto rangeGen = wi::profiler::BeginRangeCPU("TerrainW - Generation_Update");
 		terrain->Generation_Update(camera);

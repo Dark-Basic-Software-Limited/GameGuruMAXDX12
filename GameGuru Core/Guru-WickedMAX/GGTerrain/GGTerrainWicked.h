@@ -10,6 +10,14 @@ namespace GGTerrain
 	void GGTerrainWicked_Shutdown();
 	void GGTerrainWicked_OnPaintDataChanged();
 
+	// Level reveal hold: call Begin at the end of a level load; the editor draws
+	// an opaque cover over the 3D view while IsRevealHeld() returns true. The
+	// hold releases when the legacy heights are ready AND the camera-facing
+	// chunk set exists (or after a ~5s deadline; the deadline ticks inside
+	// IsRevealHeld so the cover can never stick).
+	void GGTerrainWicked_BeginRevealHold();
+	bool GGTerrainWicked_IsRevealHeld();
+
 	// Synchronously pre-build the terrain chunks the given camera can see, up to
 	// maxMilliseconds. CURRENTLY UNCALLED (2026-07-18): calling this at the end
 	// of a level load baked WRONG heights into every chunk — the legacy GG

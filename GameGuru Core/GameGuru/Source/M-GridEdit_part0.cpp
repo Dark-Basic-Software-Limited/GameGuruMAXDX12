@@ -601,8 +601,38 @@ void set_inputsys_mclick(int value)
 int iTriggerWelcomeSystemStuff = 0;
 int iCountDownToShowQuickStartDialog = 0;
 
+// Declared here because this unity-build part file has no include path to
+// GGTerrainWicked.h. Definition: Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp.
+namespace GGTerrain { bool GGTerrainWicked_IsRevealHeld(); }
+
 void gridedit_triggermessagehandler (bool bForceMessageNoFade)
 {
+	// Level reveal hold: opaque cover over the 3D render target while the
+	// terrain the camera faces finishes building after a level load. Real
+	// frames run underneath (legacy height readback + wicked chunk generation);
+	// the hold releases from GGTerrainWicked_Update when the visible chunk set
+	// exists, or via its internal ~5s deadline.
+	if (GGTerrain::GGTerrainWicked_IsRevealHeld())
+	{
+		ImGuiViewport* holdviewport = ImGui::GetMainViewport();
+		if (holdviewport)
+		{
+			ImDrawList* holddl = ImGui::GetForegroundDrawList(holdviewport);
+			if (holddl)
+			{
+				ImGuiContext& holdg = *GImGui;
+				ImVec2 rtMin = ImVec2(OldrenderTargetPos.x, OldrenderTargetPos.y);
+				ImVec2 rtMax = ImVec2(OldrenderTargetPos.x + OldrenderTargetSize.x, OldrenderTargetPos.y + OldrenderTargetSize.y);
+				holddl->AddRectFilled(rtMin, rtMax, IM_COL32(11, 22, 32, 255));
+				const char* holdmsg = "Loading Level ...";
+				float holdfontscale = 1.25f;
+				ImVec2 holdtextsize = ImGui::CalcTextSize(holdmsg) * holdfontscale;
+				ImVec2 holdtp = ImVec2(rtMin.x + (OldrenderTargetSize.x - holdtextsize.x) * 0.5f, rtMin.y + (OldrenderTargetSize.y - holdtextsize.y) * 0.5f);
+				holddl->AddText(holdg.Font, holdg.FontSize * holdfontscale, holdtp, IM_COL32(200, 210, 220, 255), holdmsg);
+			}
+		}
+	}
+
 	if (!bTriggerMessage && bTriggerSmallMessage && iTriggerMessageFrames > 0)
 	{
 		ImGuiViewport* mainviewport = ImGui::GetMainViewport();
