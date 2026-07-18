@@ -147,6 +147,13 @@ uint32_t treeHighlighted = 0xFFFFFFFF;
 // entry, which writes instance heights directly without going through setters.
 static uint32_t g_treeInstanceStamp = 0;
 
+// Far-shadow proxy dirty marking (defined in part2): the merged billboard
+// shadow meshes are one per tree chunk; setters mark ONLY the owning chunk so
+// a paint/delete stroke rebuilds a handful of chunks instead of all 256 (the
+// full-batch rebuild froze the editor ~2s after every tree edit).
+void GGTrees_MarkProxyChunkDirtyAt( float x, float z );
+void GGTrees_MarkAllProxyChunksDirty();
+
 struct InstanceTree
 {
 	float x, y, z;
@@ -159,7 +166,7 @@ struct InstanceTree
 		uint32_t old = data;
 		if ( visible ) data |= 0x1;
 		else data &= ~0x1;
-		if ( data != old ) g_treeInstanceStamp++;
+		if ( data != old ) { g_treeInstanceStamp++; GGTrees_MarkProxyChunkDirtyAt( x, z ); }
 	}
 
 	bool IsUserMoved() { return (data & 0x2) != 0; }
@@ -182,7 +189,7 @@ struct InstanceTree
 		uint32_t old = data;
 		if ( flattened ) data |= 0x8;
 		else data &= ~0x8;
-		if ( data != old ) g_treeInstanceStamp++;
+		if ( data != old ) { g_treeInstanceStamp++; GGTrees_MarkProxyChunkDirtyAt( x, z ); }
 	}
 
 	// invalid if tree is on a slope or underwater
@@ -192,7 +199,7 @@ struct InstanceTree
 		uint32_t old = data;
 		if ( invalid ) data |= 0x10;
 		else data &= ~0x10;
-		if ( data != old ) g_treeInstanceStamp++;
+		if ( data != old ) { g_treeInstanceStamp++; GGTrees_MarkProxyChunkDirtyAt( x, z ); }
 	}
 
 	void SetType( uint32_t type )
@@ -201,14 +208,14 @@ struct InstanceTree
 		unsigned int mask = (0x3F << 11);
 		uint32_t old = data;
 		data = (data & ~mask) | (type << 11);
-		if ( data != old ) g_treeInstanceStamp++;
+		if ( data != old ) { g_treeInstanceStamp++; GGTrees_MarkProxyChunkDirtyAt( x, z ); }
 	}
 
 	void SetFlags( uint32_t flags )
 	{
 		uint32_t old = data;
 		data = (data & ~0xFF) | (flags & 0xFF);
-		if ( data != old ) g_treeInstanceStamp++;
+		if ( data != old ) { g_treeInstanceStamp++; GGTrees_MarkProxyChunkDirtyAt( x, z ); }
 	}
 
 	void SetID( uint32_t newID )
@@ -232,7 +239,7 @@ struct InstanceTree
 		scale >>= 1;
 		uint32_t old = data;
 		data = (data & 0xFF01FFFF) | (scale << 17);
-		if ( data != old ) g_treeInstanceStamp++;
+		if ( data != old ) { g_treeInstanceStamp++; GGTrees_MarkProxyChunkDirtyAt( x, z ); }
 	}
 
 	unsigned char GetScale()
@@ -1011,6 +1018,7 @@ int GGTrees_UpdateInstances( int accurate )
 {
 	// heights are written directly (pInstance->y), bypassing the stamped setters
 	g_treeInstanceStamp++;
+	GGTrees_MarkAllProxyChunksDirty();   // heights written directly below (bypass setters)
 	if (!ggtrees_initialised) return 0;
 	if ( !GGTerrain_IsReady() ) return 0;
 
@@ -1791,11 +1799,14 @@ void GGTrees_SetTreePosition( uint32_t treeID, float x, float z )
 		pOldChunk->RemoveTree( pInstance );
 	}
 
+	// positions bypass the flag setters — announce the change so the Wicked
+	// pool (and its spatial grid) rescan instead of waiting for the heartbeat;
+	// both the old and new chunk's shadow proxy meshes are now stale
+	GGTrees_MarkProxyChunkDirtyAt( pInstance->x, pInstance->z );
 	pInstance->x = x;
 	pInstance->z = z;
-	// positions bypass the flag setters — announce the change so the Wicked
-	// pool (and its spatial grid) rescan instead of waiting for the heartbeat
 	g_treeInstanceStamp++;
+	GGTrees_MarkProxyChunkDirtyAt( x, z );
 
 	float height = 0;
 	float ny = 0;

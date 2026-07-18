@@ -337,6 +337,17 @@ static std::vector<TreeGridEntry> g_gridEntries;                         // CSR:
 static uint32_t g_gridStamp = ~0u;
 static bool     g_gridValid = false;
 
+// Per-chunk far-shadow proxy state (declared here so init/shutdown can reset
+// it; the builders live with the proxy code below). Rebuilt INCREMENTALLY:
+// tree setters mark only the owning chunk dirty (GGTrees_MarkProxyChunkDirtyAt,
+// forward-declared in part0) and the update loop rebuilds dirty chunks within
+// a small per-frame time budget. The previous all-256-chunks-in-one-frame
+// batch rebuilt every merged mesh on the island after any tree edit — a ~2s
+// editor freeze.
+static std::vector<wi::ecs::Entity> g_chunkProxyMesh;    // size numTreeChunks, INVALID = chunk has no proxy
+static std::vector<wi::ecs::Entity> g_chunkProxyObject;
+static std::vector<uint8_t>         g_chunkProxyDirty;   // pending rebuild per chunk
+
 void GGTrees_WickedInit()
 {
 	// Lazy setup on first update — same phase ordering as SetupWickedGrass /
@@ -351,6 +362,10 @@ void GGTrees_WickedInit()
 	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
 	g_gridValid = false;   // spatial grid must not survive an engine restart
+	// proxy entities belong to the previous scene — forget them, rebuild all
+	g_chunkProxyMesh.clear();
+	g_chunkProxyObject.clear();
+	g_chunkProxyDirty.clear();
 }
 
 // ---------------------------------------------------------------------------
@@ -535,8 +550,21 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 // g_treeInstanceStamp signal the pool uses).
 // ---------------------------------------------------------------------------
 static wi::ecs::Entity g_shadowProxyMaterial[ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
-static std::vector<wi::ecs::Entity> g_shadowProxyMeshes;
-static std::vector<wi::ecs::Entity> g_shadowProxyObjects;
+
+void GGTrees_MarkProxyChunkDirtyAt( float x, float z )
+{
+	if ( g_chunkProxyDirty.size() != (size_t)numTreeChunks ) g_chunkProxyDirty.assign( numTreeChunks, 1 );
+	// same cell mapping as GGTrees_GetChunk (out of range = no chunk, no mark)
+	const int iX = (int)( ( ( x / treeArea ) + 0.5f ) * treeSplit );
+	const int iZ = (int)( ( ( z / treeArea ) + 0.5f ) * treeSplit );
+	if ( iX < 0 || iZ < 0 || iX >= (int)treeSplit || iZ >= (int)treeSplit ) return;
+	g_chunkProxyDirty[ iZ * treeSplit + iX ] = 1;
+}
+
+void GGTrees_MarkAllProxyChunksDirty()
+{
+	g_chunkProxyDirty.assign( numTreeChunks, 1 );
+}
 
 static wi::ecs::Entity BuildBillboardShadowMaterial( uint32_t type )
 {
@@ -566,33 +594,37 @@ static wi::ecs::Entity BuildBillboardShadowMaterial( uint32_t type )
 
 static void GGTrees_SetShadowProxiesVisible( wi::scene::Scene& scene, bool visible )
 {
-	for ( wi::ecs::Entity e : g_shadowProxyObjects )
+	for ( wi::ecs::Entity e : g_chunkProxyObject )
 	{
 		wi::scene::ObjectComponent* obj = scene.objects.GetComponent( e );
 		if ( obj ) obj->SetRenderable( visible );
 	}
 }
 
-static void GGTrees_BuildShadowProxies()
+static void GGTrees_RemoveShadowProxyChunk( wi::scene::Scene& scene, uint32_t c )
+{
+	if ( g_chunkProxyObject[ c ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_chunkProxyObject[ c ] );
+	if ( g_chunkProxyMesh  [ c ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_chunkProxyMesh  [ c ] );
+	g_chunkProxyObject[ c ] = wi::ecs::INVALID_ENTITY;
+	g_chunkProxyMesh  [ c ] = wi::ecs::INVALID_ENTITY;
+}
+
+// Rebuild ONE chunk's merged billboard shadow mesh (materials kept and reused).
+static void GGTrees_BuildShadowProxyChunk( uint32_t c )
 {
 	auto& scene = wi::scene::GetScene();
 
-	// Tear down the previous build (materials are kept and reused).
-	for ( wi::ecs::Entity e : g_shadowProxyObjects ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
-	for ( wi::ecs::Entity e : g_shadowProxyMeshes  ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
-	g_shadowProxyObjects.clear();
-	g_shadowProxyMeshes.clear();
+	GGTrees_RemoveShadowProxyChunk( scene, c );
 
 	if ( !TreeShadowsEnabled() ) return;
 
-	// Per-type instance buckets, reused across chunks to keep allocations warm.
+	// Per-type instance buckets, reused across calls to keep allocations warm.
 	static std::vector<InstanceTree*> byType[ GG_TREE_TYPES ];
 
-	for ( uint32_t c = 0; c < numTreeChunks; c++ )
 	{
 		TreeChunk* pChunk = &pTreeChunks[ c ];
 		const uint32_t numInst = pChunk->pInstances.NumItems();
-		if ( numInst == 0 ) continue;
+		if ( numInst == 0 ) return;
 
 		for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ ) byType[ t ].clear();
 		uint32_t validCount = 0;
@@ -606,7 +638,7 @@ static void GGTrees_BuildShadowProxies()
 			byType[ type ].push_back( p );
 			validCount++;
 		}
-		if ( validCount == 0 ) continue;
+		if ( validCount == 0 ) return;
 
 		wi::ecs::Entity meshEntity = wi::ecs::CreateEntity();
 		wi::scene::MeshComponent& mesh = scene.meshes.Create( meshEntity );
@@ -669,8 +701,8 @@ static void GGTrees_BuildShadowProxies()
 		obj.cascadeMask = TreeProxyCascadeMask();  // tree_shadow_range slider: how many cascades get tree shadows
 		scene.transforms.Create( objEntity );  // identity — verts are world-space
 
-		g_shadowProxyMeshes .push_back( meshEntity );
-		g_shadowProxyObjects.push_back( objEntity );
+		g_chunkProxyMesh  [ c ] = meshEntity;
+		g_chunkProxyObject[ c ] = objEntity;
 	}
 }
 
@@ -712,9 +744,10 @@ void GGTrees_WickedUpdate()
 		GGTrees_SetShadowProxiesVisible( scene, true );
 	}
 
-	// Far-shadow proxy rebuild: deferred ~0.5s after the last tree-data change
-	// so a paint stroke triggers one rebuild, not one per brush dab. Also
-	// re-fires when the user toggles tree shadows (draw_shadows).
+	// Far-shadow proxy upkeep: chunk rebuilds are deferred ~0.5s after the last
+	// tree-data change so a paint stroke batches, then consumed incrementally
+	// under a small per-frame time budget (only DIRTY chunks rebuild — a brush
+	// swath touches a handful; terrain regen / level load dirties all 256).
 	bool forceRescan = false;
 	{
 		static uint32_t s_proxyStamp = ~0u;
@@ -724,12 +757,16 @@ void GGTrees_WickedUpdate()
 		{
 			s_lastDrawShadows = ggtrees_global_params.draw_shadows;
 			forceRebind = true;   // refresh per-slot SetCastShadow via rebind
+			GGTrees_MarkAllProxyChunksDirty();
 			s_proxyCountdown = 1;
 		}
 		if ( s_proxyStamp != g_treeInstanceStamp )
 		{
 			s_proxyStamp = g_treeInstanceStamp;
 			s_proxyCountdown = 30;
+			// data changed before the dirty array existed (fresh session /
+			// post-shutdown) -> everything needs building
+			if ( g_chunkProxyDirty.size() != (size_t)numTreeChunks ) GGTrees_MarkAllProxyChunksDirty();
 		}
 
 		// "Tree Shadow LOD Distance" slider (Terrain Tools debug panel): a
@@ -742,18 +779,21 @@ void GGTrees_WickedUpdate()
 			forceRescan = true;
 		}
 
-		// "Tree Shadow Range" slider: cascade reach. Proxies + pool meshes get
-		// their cascadeMask updated live (cheap component writes), and range 0
-		// means no tree shadows at all (DX11 semantics) -> refresh cast flags.
+		// "Tree Shadow Range" slider: cascade reach. Existing proxies + pool
+		// meshes get their cascadeMask updated live (cheap component writes);
+		// range 0 <-> nonzero also needs proxies torn down/rebuilt and the
+		// per-slot cast flags refreshed (DX11 semantics: range 0 = no tree
+		// shadows at all).
 		static int s_lastShadowRange = -999;
 		if ( s_lastShadowRange != ggtrees_global_params.tree_shadow_range )
 		{
 			s_lastShadowRange = ggtrees_global_params.tree_shadow_range;
 			const uint32_t proxyMask = TreeProxyCascadeMask();
-			for ( wi::ecs::Entity e : g_shadowProxyObjects )
+			bool anyProxy = false;
+			for ( wi::ecs::Entity e : g_chunkProxyObject )
 			{
 				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( e );
-				if ( obj ) obj->cascadeMask = proxyMask;
+				if ( obj ) { obj->cascadeMask = proxyMask; anyProxy = true; }
 			}
 			const uint32_t meshMask = TreeMeshCascadeMask();
 			for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
@@ -761,13 +801,32 @@ void GGTrees_WickedUpdate()
 				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
 				if ( obj ) obj->cascadeMask = meshMask;
 			}
+			if ( !TreeShadowsEnabled() || !anyProxy )
+			{
+				// tear down (range 0) or build from nothing (came from range 0)
+				GGTrees_MarkAllProxyChunksDirty();
+				s_proxyCountdown = 1;
+			}
 			forceRescan = true;       // re-apply cast flags (range 0 <-> nonzero)
-			s_proxyCountdown = 1;     // rebuild proxies (range 0 tears them down)
 		}
 
-		if ( s_proxyCountdown >= 0 && --s_proxyCountdown < 0 )
+		// Consume dirty chunks once the batching countdown has expired.
+		if ( s_proxyCountdown >= 0 ) --s_proxyCountdown;
+		if ( s_proxyCountdown < 0 && g_chunkProxyDirty.size() == (size_t)numTreeChunks )
 		{
-			GGTrees_BuildShadowProxies();
+			if ( g_chunkProxyMesh.size() != (size_t)numTreeChunks )
+			{
+				g_chunkProxyMesh  .assign( numTreeChunks, wi::ecs::INVALID_ENTITY );
+				g_chunkProxyObject.assign( numTreeChunks, wi::ecs::INVALID_ENTITY );
+			}
+			wi::Timer budget;
+			for ( uint32_t c = 0; c < numTreeChunks; c++ )
+			{
+				if ( !g_chunkProxyDirty[ c ] ) continue;
+				g_chunkProxyDirty[ c ] = 0;
+				GGTrees_BuildShadowProxyChunk( c );
+				if ( budget.elapsed_milliseconds() > 3.0 ) break;   // resume next frame
+			}
 		}
 	}
 
@@ -1039,10 +1098,11 @@ void GGTrees_WickedShutdown()
 	g_gridValid = false;   // instance data will be rebuilt for the next level
 
 	// Shadow proxies + their materials go down with the pool.
-	for ( wi::ecs::Entity e : g_shadowProxyObjects ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
-	for ( wi::ecs::Entity e : g_shadowProxyMeshes  ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
-	g_shadowProxyObjects.clear();
-	g_shadowProxyMeshes.clear();
+	for ( wi::ecs::Entity e : g_chunkProxyObject ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
+	for ( wi::ecs::Entity e : g_chunkProxyMesh   ) if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
+	g_chunkProxyObject.clear();
+	g_chunkProxyMesh.clear();
+	g_chunkProxyDirty.clear();
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
 		if ( g_shadowProxyMaterial[ t ] != wi::ecs::INVALID_ENTITY )
