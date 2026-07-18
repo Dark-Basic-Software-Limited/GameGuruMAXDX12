@@ -323,9 +323,11 @@ static void SetupWickedTerrainMaterials()
 // Translated to Wicked's weight system: track (w_base, w_slope, w_low, w_high, w_layer1)
 // and apply each layer/slope as a proportional replace: all_weights *= (1-t), target += t.
 // Runs BEFORE ProcessPaintedChunkBlendmaps so painted materials still override correctly.
-static void ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
+// Returns true when every discovered chunk was processed; false when the batch
+// was capped (call again to drain the backlog).
+static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 {
-	if (!terrain) return;
+	if (!terrain) return true;
 	auto& scene = wi::scene::GetScene();
 	const auto& rp = GGTerrain::ggterrain_global_render_params;
 	float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
@@ -394,7 +396,17 @@ static void ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 		pending.push_back({ entity, cx, cz, mesh, transform });
 	}
 
-	if (pending.empty()) return;
+	if (pending.empty()) return true;
+
+	// Cap the batch so one pass can't stall the frame for hundreds of ms when
+	// the initial build delivers chunks faster than we process them. The gate
+	// keeps calling until we report caught-up.
+	bool caughtUp = true;
+	if (pending.size() > 64)
+	{
+		pending.resize(64);
+		caughtUp = false;
+	}
 
 	// Phase 2: Cancel generation for safe chunk data access, then rewrite blendmaps
 	terrain->Generation_Cancel();
@@ -490,15 +502,17 @@ static void ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 			std::to_string(chunksModified) + " chunks (layer1Slot=" +
 			std::to_string(layer1Slot) + ")").c_str());
 	}
+	return caughtUp;
 }
 
 // Phase 3: Process terrain chunks for painted material blendmaps.
 // Iterates scene.objects (main-thread safe) to find terrain chunks, then
 // cancels generation once for safe chunk data access and processes the batch.
-static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
+// Returns true when every discovered chunk was processed (see AutoBlend).
+static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 {
 	const uint8_t* matMap = GGTerrain::GGTerrain_GetMaterialMapPtr();
-	if (!matMap) return;
+	if (!matMap) return true;
 
 	int mapRes = GGTerrain::GGTerrain_GetMaterialMapResolution();
 	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
@@ -563,7 +577,15 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		pending.push_back({ entity, cx, cz, mesh, transform });
 	}
 
-	if (pending.empty()) return;
+	if (pending.empty()) return true;
+
+	// Same batch cap as ApplyDX11StyleAutoBlend — the gate re-calls until done.
+	bool caughtUp = true;
+	if (pending.size() > 64)
+	{
+		pending.resize(64);
+		caughtUp = false;
+	}
 
 	// Phase 2: Cancel generation for safe chunk data access, then process the batch
 	terrain->Generation_Cancel();
@@ -663,6 +685,7 @@ static void ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		wi::backlog::post(std::string("GGTerrainWicked: painted blendmaps on " +
 			std::to_string(chunksModified) + " chunks").c_str());
 	}
+	return caughtUp;
 }
 
 
@@ -1686,6 +1709,32 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		SetupWickedTerrainMaterials();
 	}
 
+	// Initial-build turbo (2026-07-18): the stock generator thread exits after
+	// generation_time_budget_milliseconds = 8ms per launch, and it checks the
+	// budget after EVERY chunk — with our chunk cost that's ~1 chunk per frame,
+	// so a full build (generation=14 -> 841 chunks) took ~30+ seconds of
+	// visible radial pop-in after level load. While the chunk set is far from
+	// complete (level load / Generation_Restart), give the generator a fat
+	// per-frame budget; normal editing churn (camera movement removes/regens
+	// at most a ring or two, ~100 chunks with removal enabled) stays on the
+	// stock budget so flying has no generation hitches.
+	// NOTE: steady-state chunk count is governed by removal_threshold, NOT the
+	// generation ring total — on TESTPRO1 it settles ~650-700 of the 841 ring
+	// chunks. 60% of the ring total (~504) is comfortably below steady state
+	// (flying churn never sheds that many) and comfortably above "just
+	// restarted", so the turbo runs exactly during the initial build.
+	const int genSpan = 2 * terrain->generation + 1;
+	const int expectedChunks = genSpan * genSpan;
+	const bool initialBuild = (int)terrain->chunks.size() < (expectedChunks * 6) / 10;
+	terrain->generation_time_budget_milliseconds = initialBuild ? 100.0f : 8.0f;
+	static uint32_t s_terrainFrame = 0;
+	s_terrainFrame++;
+	// While the turbo build runs, only interrupt the generator with blendmap
+	// processing every 30th frame — each ApplyDX11StyleAutoBlend/painted pass
+	// calls Generation_Cancel, and doing that per-frame while chunks stream in
+	// was chopping the generator off after 1-2 chunks per launch.
+	const bool blendTickAllowed = !initialBuild || ( s_terrainFrame % 30 ) == 0;
+
 	// Let the VT system run — generates chunks, creates atlas, blends materials.
 	{
 		auto rangeGen = wi::profiler::BeginRangeCPU("TerrainW - Generation_Update");
@@ -1717,13 +1766,18 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	{
 		static uint64_t s_autoSig = ~0ull;
 		static size_t   s_autoCount = (size_t)-1;
-		if (s_autoSig != chunkSig || s_autoCount != dx11BlendProcessedKeys.size())
+		if (blendTickAllowed && (s_autoSig != chunkSig || s_autoCount != dx11BlendProcessedKeys.size()))
 		{
 			auto rangeAB = wi::profiler::BeginRangeCPU("TerrainW - AutoBlend Scan");
-			ApplyDX11StyleAutoBlend(terrain);
+			bool caughtUp = ApplyDX11StyleAutoBlend(terrain);
 			wi::profiler::EndRange(rangeAB);
-			s_autoSig = chunkSig;
-			s_autoCount = dx11BlendProcessedKeys.size();
+			if (caughtUp)
+			{
+				// Only latch when fully processed — a capped (sliced) pass leaves
+				// the cache stale so the gate refires until the backlog drains.
+				s_autoSig = chunkSig;
+				s_autoCount = dx11BlendProcessedKeys.size();
+			}
 		}
 	}
 
@@ -1736,13 +1790,16 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	{
 		static uint64_t s_paintSig = ~0ull;
 		static size_t   s_paintCount = (size_t)-1;
-		if (s_paintSig != chunkSig || s_paintCount != processedChunkKeys.size())
+		if (blendTickAllowed && (s_paintSig != chunkSig || s_paintCount != processedChunkKeys.size()))
 		{
 			auto rangePB = wi::profiler::BeginRangeCPU("TerrainW - PaintedBlend Scan");
-			ProcessPaintedChunkBlendmaps(terrain);
+			bool caughtUp = ProcessPaintedChunkBlendmaps(terrain);
 			wi::profiler::EndRange(rangePB);
-			s_paintSig = chunkSig;
-			s_paintCount = processedChunkKeys.size();
+			if (caughtUp)
+			{
+				s_paintSig = chunkSig;
+				s_paintCount = processedChunkKeys.size();
+			}
 		}
 	}
 
