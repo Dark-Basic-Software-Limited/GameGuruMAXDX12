@@ -11,10 +11,13 @@ namespace GGTerrain
 	void GGTerrainWicked_OnPaintDataChanged();
 
 	// Synchronously pre-build the terrain chunks the given camera can see, up to
-	// maxMilliseconds. Called at the END of a level load, while the loading
-	// screen is still up — so the user never watches the radial chunk
-	// construction (DX11 built its terrain instantly). Direction = camera look
-	// vector; a rough value is fine (the view-cone filter is ~70 degrees wide).
+	// maxMilliseconds. CURRENTLY UNCALLED (2026-07-18): calling this at the end
+	// of a level load baked WRONG heights into every chunk — the legacy GG
+	// terrain computes heights via readback over the FRAMES following the load
+	// (the reason iDelayedCameraRestore waits 240 frames), so no heights exist
+	// yet at load end. Do NOT re-wire this until it is gated on a genuine
+	// heights-ready signal (which requires editor frames to run — i.e. a
+	// hold-the-loading-overlay approach, not a synchronous block).
 	void GGTerrainWicked_Pregenerate(float camX, float camY, float camZ,
 		float dirX, float dirY, float dirZ, int maxMilliseconds);
 

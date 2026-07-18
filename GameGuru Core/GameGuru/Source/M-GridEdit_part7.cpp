@@ -1,13 +1,4 @@
-﻿// Wicked terrain pregeneration — declared here because this part file has no
-// include path to GGTerrainWicked.h (unity-build part). Definition lives in
-// Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp.
-namespace GGTerrain
-{
-	void GGTerrainWicked_Pregenerate(float camX, float camY, float camZ,
-		float dirX, float dirY, float dirZ, int maxMilliseconds);
-}
-
-void gridedit_updatezoomviewvalues ( void )
+﻿void gridedit_updatezoomviewvalues ( void )
 {
 	//  accepts gridentityinzoomview
 	if (  t.gridentityinzoomview>0 ) 
@@ -1204,35 +1195,13 @@ void gridedit_load_map ( void )
 	extern void CheckExistingFilesModified(bool);
 	CheckExistingFilesModified(true);
 
-	// Pre-build the terrain chunks the restored level camera can see BEFORE the
-	// loading screen dismisses (bounded at 3s; typically ~2s, self-skips if the
-	// chunks already exist). Without this the user watches the radial chunk
-	// construction for the first seconds of every level — DX11 built its
-	// terrain instantly, so this reads as a regression.
-	{
-		extern int iDelayedCameraRestore;
-		char camlog[256];
-		sprintf(camlog, "PREGEN pre: ffc=(%.0f,%.0f,%.0f) ang=(%.1f,%.1f) mode=%d delay=%d",
-			t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f,
-			t.editorfreeflight.c.angx_f, t.editorfreeflight.c.angy_f,
-			t.editorfreeflight.mode, iDelayedCameraRestore);
-		timestampactivity(0, camlog);
-
-		float ax = t.editorfreeflight.c.angx_f * 0.0174533f;
-		float ay = t.editorfreeflight.c.angy_f * 0.0174533f;
-		float dx = sinf(ay) * cosf(ax);
-		float dy = -sinf(ax);
-		float dz = cosf(ay) * cosf(ax);
-		GGTerrain::GGTerrainWicked_Pregenerate(
-			t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f,
-			dx, dy, dz, 3000 );
-
-		sprintf(camlog, "PREGEN post: ffc=(%.0f,%.0f,%.0f) ang=(%.1f,%.1f) mode=%d delay=%d",
-			t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f,
-			t.editorfreeflight.c.angx_f, t.editorfreeflight.c.angy_f,
-			t.editorfreeflight.mode, iDelayedCameraRestore);
-		timestampactivity(0, camlog);
-	}
+	// NOTE (2026-07-18): synchronous terrain pregeneration was tried HERE and
+	// REVERTED — at this point in the load the legacy GG terrain has NOT
+	// finished computing heights (they arrive via GGTerrain_Update readback
+	// over the following frames — the exact reason iDelayedCameraRestore
+	// exists, see editor_loadcfg). Chunks generated here bake WRONG heights
+	// and are never invalidated. Any future pregeneration must wait for the
+	// GG heightmap to be genuinely ready (see GGTerrainWicked_Pregenerate).
 
 	TDRTrace("[LOADMAP] gridedit_load_map: EXIT");
 }
