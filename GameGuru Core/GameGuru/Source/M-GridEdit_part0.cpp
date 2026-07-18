@@ -620,15 +620,13 @@ void gridedit_triggermessagehandler (bool bForceMessageNoFade)
 			ImDrawList* holddl = ImGui::GetForegroundDrawList(holdviewport);
 			if (holddl)
 			{
-				ImGuiContext& holdg = *GImGui;
+				// Plain black cover, no text — the storyboard click already showed
+				// "Loading Level ...". +2px at the bottom: the render target
+				// extends slightly below OldrenderTargetSize and leaves a line of
+				// scene pixels visible otherwise (verified pixel-level).
 				ImVec2 rtMin = ImVec2(OldrenderTargetPos.x, OldrenderTargetPos.y);
-				ImVec2 rtMax = ImVec2(OldrenderTargetPos.x + OldrenderTargetSize.x, OldrenderTargetPos.y + OldrenderTargetSize.y);
-				holddl->AddRectFilled(rtMin, rtMax, IM_COL32(11, 22, 32, 255));
-				const char* holdmsg = "Loading Level ...";
-				float holdfontscale = 1.25f;
-				ImVec2 holdtextsize = ImGui::CalcTextSize(holdmsg) * holdfontscale;
-				ImVec2 holdtp = ImVec2(rtMin.x + (OldrenderTargetSize.x - holdtextsize.x) * 0.5f, rtMin.y + (OldrenderTargetSize.y - holdtextsize.y) * 0.5f);
-				holddl->AddText(holdg.Font, holdg.FontSize * holdfontscale, holdtp, IM_COL32(200, 210, 220, 255), holdmsg);
+				ImVec2 rtMax = ImVec2(OldrenderTargetPos.x + OldrenderTargetSize.x, OldrenderTargetPos.y + OldrenderTargetSize.y + 2.0f);
+				holddl->AddRectFilled(rtMin, rtMax, IM_COL32(0, 0, 0, 255));
 			}
 		}
 	}
