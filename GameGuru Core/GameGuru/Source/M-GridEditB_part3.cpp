@@ -1,4 +1,12 @@
-﻿void gridedit_setvsync(bool bLevelVSyncEnabled)
+﻿// Ocean shore/wave foam tunables — Wicked's foam math is tuned for meters, GG is
+// inch-scaled. The pure conversion (0.0254) makes the depth-based shore band so wide
+// that shallow GG beaches drown in white; 0.08 was picked visually on TESTPRO1
+// (bold foam line on the shore + collar around protruding rocks, no milky blanket).
+// foam_amount brightens the result. Live-tunable via the SET_OCEAN harness command.
+float g_fWaterFoamUnitScale = 0.08f;
+float g_fWaterFoamAmount = 1.3f;
+
+void gridedit_setvsync(bool bLevelVSyncEnabled)
 {
 	// ensure only test game and standalones obey VSYNC, editor should always run FULL SPEED
 	extern bool bImGuiInTestGame;
@@ -1562,6 +1570,15 @@ void Wicked_Update_Visuals(void *voidvisual)
 			weather->oceanParameters.choppy_scale = visuals->fWaterChoppyScale;
 			weather->oceanParameters.wave_amplitude = visuals->fWaterWaveAmplitude;
 			weather->oceanParameters.wind_dependency = visuals->fWaterWindDependency;
+
+			// Wicked's shore/wave foam constants are tuned for METERS; GG world units are
+			// inches, so without this conversion the shore foam band is ~40x too thin and
+			// the foam noise repeats every inch (see oceanSurfacePS.hlsl FOAM block).
+			// Tunables (also poked live by the SET_OCEAN harness command).
+			extern float g_fWaterFoamUnitScale;
+			extern float g_fWaterFoamAmount;
+			weather->oceanParameters.foam_unit_scale = g_fWaterFoamUnitScale;
+			weather->oceanParameters.foam_amount = g_fWaterFoamAmount;
 			//weather->oceanParameters.fogMaxDist = visuals->WaterFogMaxDist; // removed from OceanParameters
 			//weather->oceanParameters.fogMinDist = visuals->WaterFogMinDist; // removed from OceanParameters
 			//weather->oceanParameters.fogMinAmount = visuals->WaterFogMinAmount; // removed from OceanParameters

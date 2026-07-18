@@ -2035,6 +2035,38 @@ void AutoHarness_CheckForCommand(void)
 			s_bSkinWatch ? "ON" : "OFF", s_skinWatchFrame, (int)s_skinWatchSeen.size());
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_OCEAN") == 0)
+	{
+		// live-tune ocean foam: SET_OCEAN foamscale|foamamount <value>
+		// (ocean CB refills from oceanParameters every frame, applies instantly)
+		char op[64] = { 0 }; float ov = 0.0f;
+		extern float g_fWaterFoamUnitScale;
+		extern float g_fWaterFoamAmount;
+		extern wi::ecs::Entity g_weatherEntityID;
+		if (sscanf_s(arg, "%63s %f", op, (unsigned)sizeof(op), &ov) == 2)
+		{
+			bool known = true;
+			if (_stricmp(op, "foamscale") == 0) g_fWaterFoamUnitScale = ov;
+			else if (_stricmp(op, "foamamount") == 0) g_fWaterFoamAmount = ov;
+			else known = false;
+			wi::scene::WeatherComponent* weather = wi::scene::GetScene().weathers.GetComponent(g_weatherEntityID);
+			if (weather)
+			{
+				weather->oceanParameters.foam_unit_scale = g_fWaterFoamUnitScale;
+				weather->oceanParameters.foam_amount = g_fWaterFoamAmount;
+			}
+			if (known)
+				_snprintf(result, sizeof(result), "OK: SET_OCEAN %s = %.4f (foamscale=%.4f foamamount=%.2f weather=%s)",
+					op, ov, g_fWaterFoamUnitScale, g_fWaterFoamAmount, weather ? "live" : "MISSING");
+			else
+				_snprintf(result, sizeof(result), "ERROR: SET_OCEAN unknown param '%s' (foamscale|foamamount)", op);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_OCEAN needs <param> <value> (foamscale|foamamount)");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "ENABLE_PROFILER") == 0)
 	{
 		// Must set bProfilerEnable too — M-GridEditB_part3.cpp actively disables the

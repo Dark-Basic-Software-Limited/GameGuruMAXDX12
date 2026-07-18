@@ -35,6 +35,30 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.10 Ocean: world-unit scale + intensity knob for shore/wave foam
+
+**Files:**
+- `WickedEngine/wiOcean.h` (`float foam_unit_scale = 1` + `float foam_amount = 1` on OceanParameters)
+- `WickedEngine/wiOcean.cpp` (`GetOceanCBAtDim` fills the two new CB fields)
+- `WickedEngine/shaders/ShaderInterop_Ocean.h` (CB padding slots become `xOceanFoamUnitScale` / `xOceanFoamAmount`)
+- `WickedEngine/shaders/oceanSurfacePS.hlsl` (FOAM block: depth differences, shallow-water gate and noise positions multiplied by the unit scale; final foam multiplied by the amount)
+
+**Date:** 2026-07-18 (Wicked commit `da60bfad`)
+
+#### Use case in GameGuru MAX
+
+The stock foam math is tuned for meters: shore band `exp(-depth_diff * 2)`,
+wave foam gated on ~10m shallows, foam noise sampled per-meter. GG's world
+is inch-scaled, so the shore foam band was ~40x too thin (a hairline at the
+water's edge) and the noise repeated every inch. GG passes
+`foam_unit_scale = 0.08` and `foam_amount = 1.3` (globals
+`g_fWaterFoamUnitScale` / `g_fWaterFoamAmount` in M-GridEditB_part3.cpp,
+live-tunable via the `SET_OCEAN` harness command). Note 0.08 is deliberately
+NOT the pure inch conversion (0.0254): GG beaches are so shallow that a
+true 1.5m-deep foam band covers a huge horizontal area — 0.08 was picked
+visually on TESTPRO1 (bold shore line + foam collar around protruding
+rocks, no milky blanket). Defaults 1/1 = zero change for stock scenes.
+
 ### 1.9 Animation/transform hardening: unit-quaternion guards + decompose validation
 
 **Files:**
@@ -493,6 +517,7 @@ modified, both genuine bug fixes.
 | 1.7 Terrain view-cone chunk generation priority | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off; pure generation-ORDER change, the generated content is identical |
 | 1.8 Terrain high-priority generation jobs | applied 2026-07-18, lib rebuilt | candidate for upstream PR — flag defaults off; burst-scenario knob, GG enables it only while the view cone is incomplete |
 | 1.9 Animation/transform hardening (unit-quaternion guards + decompose validation) | applied 2026-07-18 in Wicked commit `a4539a76`, lib rebuilt | candidate for upstream PR — guards only fire on already-corrupt data (zero behaviour change for healthy scenes); tripwire files `anim_garbage.txt`/`applytransform_garbage.txt` appear next to the exe only if a guard fires |
+| 1.10 Ocean foam world-unit scale + intensity knob | applied 2026-07-18 in Wicked commit `da60bfad`, lib rebuilt, shader auto-recompiles | candidate for upstream PR — both params default 1 = stock behaviour; fills existing CB padding so no layout change |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

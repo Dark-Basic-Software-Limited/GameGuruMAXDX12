@@ -80,6 +80,7 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `SET_GRASS` | `<param> <value>` | Live-tune the Wicked grass path. Params: length, width, stiffness, drag, blades, maxstrands, segments, billboards, viewdist, sss, alpha, tintr, tintg, tintb, sssr, sssg, sssb (impl: AutomationHarness.cpp ~line 1657) |
 | `DUMP_SKIN` | (none) or `<name filter>` | Skinned-mesh corruption diagnosis: writes a full report to `auto_skin.txt` (skinned objects with AABBs + SUSPECT flags, armature summaries with bone-world/skin-matrix magnitude ranges, per-bone detail for suspect/filtered armatures, one line per animation, keyframe-data garbage scan). Summary with suspect names goes to `auto_result.txt`. Filter matches Wicked object names (e.g. `galah` = the Island Showdown parrots) |
 | `SKIN_WATCH` | `1` or `0` | Per-frame scan of ALL transforms for garbage local rotations (>1e3 or NaN); logs first detection per entity with a frame counter + scene counts to `auto_skinwatch.txt`. Enable BEFORE loading a level to timestamp when corruption lands. Heartbeat TICK line every 300 frames |
+| `SET_OCEAN` | `<param> <value>` | Live-tune ocean shore/wave foam (applies instantly — the ocean CB refills from oceanParameters every frame). Params: `foamscale` (world-unit scale for the foam math; GG default 0.08, stock-meters would be 1) and `foamamount` (intensity multiplier, GG default 1.3). Backing globals: `g_fWaterFoamUnitScale`/`g_fWaterFoamAmount` in M-GridEditB_part3.cpp |
 | `QUIT` | (none) | Gracefully close the application |
 
 ## Application States
