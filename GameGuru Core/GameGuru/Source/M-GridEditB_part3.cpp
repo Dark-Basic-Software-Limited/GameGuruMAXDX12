@@ -1367,18 +1367,43 @@ void Wicked_Update_Shadows(void *voidvisual)
 	//PE: MEM - 1556 : END SetShadowPropsCube                                   S : 360MB V : (4518, 0)
 }
 
+// Map GG's fog settings onto the new engine's exponential fog. The old API's
+// fogEnd was REMOVED in favour of fogDensity — which the port never set, so
+// fogDensity stayed 0 and distance fog was entirely OFF (no atmospheric depth
+// on distant terrain).
+//
+// DX11 reference (GGCommonFunctions.hlsli ApplyFogCustom):
+//   amount = 1 - exp( -4 * (dist - fogMin) / (fogMax - fogMin) )
+//   colour = lerp( skyHorizonColour, FogRGB, FogOpacity )
+// Wicked's exponential fog (fogHF.hlsli) is the same curve with
+// density = 4 / (far - near). NOTE FogOpacity (FogA) only biases the COLOUR
+// in DX11 — it does NOT scale the amount — so the fog colour stays on
+// Wicked's default source: the realistic-sky horizon LUT (= DX11's
+// GetDynamicSkyColor horizon sample), falling back to weather->horizon
+// (= the Horizon/Fog RGB) when the sky is disabled — DX11's other branch.
+// The Horizon/Fog colour still tints the fog indirectly through the sky,
+// same as DX11 with low opacities.
+static void Wicked_ApplyFogModel(wiScene::WeatherComponent* weather, visualstype* visuals)
+{
+	weather->fogStart = visuals->FogNearest_f;
+	float fogNear = visuals->FogNearest_f;
+	float fogFar  = visuals->FogDistance_f;
+	float fogDensity = 0.0f;
+	if (fogFar > fogNear + 1.0f)
+	{
+		fogDensity = 4.0f / (fogFar - fogNear);
+	}
+	weather->fogDensity = fogDensity;
+	weather->SetOverrideFogColor(false);
+}
+
 void Wicked_Update_Fog(void* visual)
 {
 	visualstype* visuals = (visualstype *)visual;
 	wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 	if (weather)
 	{
-		weather->fogStart = visuals->FogNearest_f;
-		//weather->fogEnd = visuals->FogDistance_f; // REMOVED
-		//weather->fogColorAndOpacity.x = visuals->FogR_f / 255.0f; // removed in new WickedEngine API
-		//weather->fogColorAndOpacity.y = visuals->FogG_f / 255.0f; // removed in new WickedEngine API
-		//weather->fogColorAndOpacity.z = visuals->FogB_f / 255.0f; // removed in new WickedEngine API
-		//weather->fogColorAndOpacity.w = visuals->FogA_f; // removed in new WickedEngine API
+		Wicked_ApplyFogModel(weather, visuals);
 		weather->horizon.x = visuals->FogR_f / 255.0f;
 		weather->horizon.y = visuals->FogG_f / 255.0f;
 		weather->horizon.z = visuals->FogB_f / 255.0f;
@@ -1470,12 +1495,7 @@ void Wicked_Update_Visuals(void *voidvisual)
 		weather->ambient.x = visuals->AmbienceRed_f / 255.0;
 		weather->ambient.y = visuals->AmbienceGreen_f / 255.0;
 		weather->ambient.z = visuals->AmbienceBlue_f / 255.0;
-		weather->fogStart = visuals->FogNearest_f;
-		//weather->fogEnd = visuals->FogDistance_f; // REMOVED
-		//weather->fogColorAndOpacity.x = visuals->FogR_f / 255.0f; // removed in new WickedEngine API
-		//weather->fogColorAndOpacity.y = visuals->FogG_f / 255.0f; // removed in new WickedEngine API
-		//weather->fogColorAndOpacity.z = visuals->FogB_f / 255.0f; // removed in new WickedEngine API
-		//weather->fogColorAndOpacity.w = visuals->FogA_f; // removed in new WickedEngine API
+		Wicked_ApplyFogModel(weather, visuals);
 		weather->horizon.x = visuals->FogR_f / 255.0f;
 		weather->horizon.y = visuals->FogG_f / 255.0f;
 		weather->horizon.z = visuals->FogB_f / 255.0f;

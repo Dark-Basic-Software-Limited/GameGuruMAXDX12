@@ -116,7 +116,14 @@ void MasterRenderer::Load()
 	lightSun->direction = XMFLOAT3 ( 0.25, -0.5, 0.25 );
 	lightSun->color = XMFLOAT3 ( 1.0, 1.0, 1.0 );
 	lightSun->SetType ( wiScene::LightComponent::DIRECTIONAL );
-	lightSun->SetVolumetricsEnabled( true );
+	// Sun volumetrics OFF (2026-07-18): the volumetric raymarch scales with fog
+	// density, which was 0 until the fog wiring landed — so this has never been
+	// visible. With fog active it renders god-rays tinted by TRANSPARENT
+	// shadow casters, and the editor's translucent red/green zone markers
+	// painted giant coloured beams across the sky. DX11 shows no sun shafts.
+	// Key 8 (perf toggles) re-enables for experiments; if god-rays are wanted
+	// later, first stop editor markers casting transparent shadows.
+	lightSun->SetVolumetricsEnabled( false );
 	// Production DX11 cascade splits in world inches (old engine GGREDUCED block);
 	// stock Wicked default {8,80,800} is ~20m here. Kept in sync by
 	// WickedCall_SetShadowRange whenever the level's visuals apply.

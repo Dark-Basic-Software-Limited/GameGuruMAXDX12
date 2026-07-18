@@ -1047,6 +1047,23 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	written += _snprintf(result + written, resultSize - written,
 		"TAB_MODE: %d\n", g.tabmode);
 
+	// Fog / atmosphere debug (level visuals + live weather component values)
+	{
+		extern wi::ecs::Entity g_weatherEntityID;
+		wi::scene::WeatherComponent* weather = wi::scene::GetScene().weathers.GetComponent(g_weatherEntityID);
+		written += _snprintf(result + written, resultSize - written,
+			"FOG_VIS: near=%.1f far=%.1f a=%.3f rgb=(%.0f,%.0f,%.0f)\n"
+			"FOG_WEATHER: start=%.1f density=%.8f overrideCol=%d horizon=(%.2f,%.2f,%.2f)\n",
+			t.visuals.FogNearest_f, t.visuals.FogDistance_f, t.visuals.FogA_f,
+			t.visuals.FogR_f, t.visuals.FogG_f, t.visuals.FogB_f,
+			weather ? weather->fogStart : -1.0f,
+			weather ? weather->fogDensity : -1.0f,
+			weather ? (weather->IsOverrideFogColor() ? 1 : 0) : -1,
+			weather ? weather->horizon.x : -1.0f,
+			weather ? weather->horizon.y : -1.0f,
+			weather ? weather->horizon.z : -1.0f);
+	}
+
 	// Profiler timing data (if profiler is enabled)
 	if (wi::profiler::IsEnabled() && written < resultSize - 256)
 	{
