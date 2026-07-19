@@ -35,6 +35,16 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.16 VT repaint flag: main-thread latch (lost-update race fix)
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`VirtualTexture::gg_repaint_blendmap_latched`)
+- `WickedEngine/wiTerrain.cpp` (`UpdateVirtualTexturesCPU`: the main-thread pickup consumes `pending_repaint_blendmap` — clears it, sets the latch, re-binds `vt.blendmap`; the async job's repaint loop consumes the LATCH instead of the live flag)
+
+**Why:** found by adversarial multi-agent review of 1.15 (three independent reviewers converged on it; 8/9 verifiers confirmed against the code). The 1.13 flag had two unsynchronized consumers: the main-thread re-bind (runs inside Generation_Update BEFORE the async `virtual_texture_ctx` job launches) and the job's repaint loop, which blind-cleared the live flag. GG's blend passes run AFTER Generation_Update in the same frame and set the flag while that frame's Low-priority job may still be queued or running (the Low pool is THREAD_PRIORITY_LOWEST and starves under load). If the job consumed a freshly-set flag, it re-rendered tiles against the OLD `vt.blendmap` binding and dropped the request — the edit never landed, and the chunk stayed visually pre-edit until the next edit touched it. Mid-drag the bridge's key-erase re-fires the pass so it self-healed; the FINAL settle of a drag/paint burst had no retry — and 1.15 routes exactly that one-shot settle through this path. Ownership after the fix: game code only SETS the live flag; the main-thread block (previous job already joined at function top) transfers it to the latch; only the job clears the latch. Delivery timing unchanged (next frame).
+
+**Behaviour:** no stock behaviour change — both flags are passive unless a consumer sets them.
+
 ### 1.15 Terrain: preserve blendmap + VT residency across in-place chunk regen
 
 **Files:**
@@ -587,6 +597,7 @@ modified, both genuine bug fixes.
 | 1.13 VirtualTexture::pending_repaint_blendmap instant refresh | applied 2026-07-18, lib rebuilt | candidate for upstream PR — passive flag; paint strokes visible next frame instead of after seconds of feedback re-streaming |
 | 1.14 Optional generation restart on dirty materials | applied 2026-07-19 (`cbce724d`), lib rebuilt | candidate for upstream PR — default true = stock; GG disables (runtime material registration must not rebuild the island) |
 | 1.15 Preserve blendmap + VT residency on in-place regen | applied 2026-07-19, lib rebuilt | GG-specific (default false = stock) — sculpt-drag chunks keep GG blendmaps and resident tiles; fresh merged material re-bound without vt.init() |
+| 1.16 VT repaint flag main-thread latch | applied 2026-07-19, lib rebuilt | race fix for 1.13's flag (found by multi-agent review of 1.15) — async job consumes a main-thread-latched copy, never the live flag |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
