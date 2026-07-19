@@ -3897,6 +3897,7 @@ struct visualstype
 	bool bWaterEnable;
 	float fWaterWaveAmplitude;
 	float fWaterPatchLength;
+	float fWaterCausticSize;
 	float fWaterChoppyScale;
 	float fWaterWindDependency;
 
@@ -4163,6 +4164,7 @@ struct visualstype
 
 		 fWaterWaveAmplitude = 20.0f;
 		 fWaterPatchLength = 40.0f;
+		 fWaterCausticSize = 3.0f;
 		 fWaterChoppyScale = 0.0f;
 		 fWaterWindDependency = 0.0f;
 		 WaterSpeed1 = 0.06f;

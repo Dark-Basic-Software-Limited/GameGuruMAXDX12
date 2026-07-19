@@ -1914,6 +1914,11 @@ void Wicked_Update_Visuals(void *voidvisual)
 	ggCustomFrameStaging.waterFogMin = visuals->WaterFogMinDist;
 	ggCustomFrameStaging.waterFogMax = visuals->WaterFogMaxDist;
 	ggCustomFrameStaging.waterFogMinAmount = visuals->WaterFogMinAmount;
+	// Underwater caustic scale: designer sets a friendly "Caustic Size" (bigger = larger cells);
+	// convert to the shader UV scale (base / size). Guard against 0/uninitialised (old levels).
+	float ggCausticSize = visuals->fWaterCausticSize;
+	if (ggCausticSize < 0.1f) ggCausticSize = 3.0f;
+	ggCustomFrameStaging.causticScale = 0.002f / ggCausticSize;
 	ggCustomFrameStaging.fogOpacity = visuals->FogA_f;
 	ggCustomFrameStaging.fogColor = XMFLOAT3(visuals->FogR_f / 255.0f, visuals->FogG_f / 255.0f, visuals->FogB_f / 255.0f);
 	ggCustomFrameStaging.cloudiness = visuals->SkyCloudiness;

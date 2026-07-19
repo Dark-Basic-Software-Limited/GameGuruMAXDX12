@@ -1792,6 +1792,7 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 	t.visuals.bWaterEnable = t.gamevisuals.bWaterEnable;
 	t.visuals.fWaterWaveAmplitude = t.gamevisuals.fWaterWaveAmplitude;
 	t.visuals.fWaterPatchLength = t.gamevisuals.fWaterPatchLength;
+	t.visuals.fWaterCausticSize = t.gamevisuals.fWaterCausticSize;
 	t.visuals.fWaterChoppyScale = t.gamevisuals.fWaterChoppyScale;
 	t.visuals.fWaterWindDependency = t.gamevisuals.fWaterWindDependency;
 

@@ -1484,6 +1484,16 @@ void imgui_Customize_Water(int mode)
 
 
 			ImGui::PushItemWidth(-10);
+			if (ImGui::SliderFloat("##fWaterCausticSize:", &t.visuals.fWaterCausticSize, 0.5f, 12.0f))
+			{
+				t.gamevisuals.fWaterCausticSize = t.visuals.fWaterCausticSize;
+				Wicked_Update_Visuals((void *)&t.visuals);
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Underwater Caustic Size (bigger = larger light ripples on the seabed)");
+			ImGui::PopItemWidth();
+
+
+			ImGui::PushItemWidth(-10);
 			if (ImGui::SliderFloat("##fWaterChoppyScale:", &t.visuals.fWaterChoppyScale, 0.0f, 10.0f))
 			{
 				t.gamevisuals.fWaterChoppyScale = t.visuals.fWaterChoppyScale;
