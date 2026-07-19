@@ -1864,6 +1864,14 @@ void GGTerrainWicked_Init()
 	// their correct low-res tile while the camera crosses boundaries; residency upgrades
 	// run a few per frame once it holds still.
 	terrain.gg_vt_upgrade_hysteresis = true;
+	// Wicked delta 1.21: expand the VT working set so the island lives entirely inside
+	// the full-resolution zone (stock ring was +/-2 chunks — crossed in milliseconds by
+	// a fast camera, forcing cache re-inits; the residual violent-zoom squares). With
+	// +/-6 the camera never crosses a resolution boundary over the island, and the
+	// removal margin keeps chunks alive across zoom travel (no destroy/recreate churn).
+	// (ring 6 = 169 residency chunks cost ~17 FPS on TESTPRO1; 4 = 49 chunks keeps 50+)
+	terrain.gg_near_ring_dist = 4;
+	terrain.gg_removal_margin = 12;
 	terrain.lod_bias = 0.0f;              // hold higher mesh LOD one step further out (inch-scale world)
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;

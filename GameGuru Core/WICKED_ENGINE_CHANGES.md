@@ -35,6 +35,16 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.21 VT: expanded working set — island-wide full-res zone + removal margin
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`Terrain::gg_near_ring_dist` default 2 = stock; `Terrain::gg_removal_margin` default 0 = stock)
+- `WickedEngine/wiTerrain.cpp` (`required_resolution = dist < gg_near_ring_dist ? max : min`; `removal_threshold = generation + 2 + gg_removal_margin`)
+
+**Why:** the user's "bigger buffer" insight, translated. The residual violent-zoom squares came from the full-resolution zone being only ±2 chunks (~10k inch-units) — a fast camera crosses it in milliseconds, and every crossing is a VT cache re-reference (re-init, residency reset, re-stream) no heuristic can fully hide. The atlas itself cannot grow (16384² is the D3D12 texture-dimension limit) but it never needed to: tile residency is feedback-driven (≈ what's on screen), so widening the zone costs almost no physical tiles — only per-chunk residency structures. GG sets the zone to ±6 chunks: the whole island lives INSIDE it, so camera travel over the island never crosses a resolution boundary and near/correct tiles are never re-referenced — only genuinely new far detail streams in. The removal margin (+12) keeps chunks alive across zoom travel, eliminating destroy/recreate cache flushes.
+
+**Behaviour:** no stock behaviour change — both fields default to stock values.
+
 ### 1.20 VT: tile allocator freeze while the camera is in motion
 
 **Files:**
@@ -644,7 +654,8 @@ modified, both genuine bug fixes.
 | 1.17 gg_generate_blendmap born-correct chunks | applied 2026-07-19, lib rebuilt | GG-specific (null by default) — generator thread fills GG auto+painted weights before the region texture is built; kills the green default-blend flicker on fast camera zooms |
 | 1.18 VT residency upgrade hysteresis | applied 2026-07-19, lib rebuilt | GG-specific (default false = stock) — residency upgrades wait for the camera to settle (10 stable frames), then 4/frame; kills the square sharpness-flicker while zooming |
 | 1.19 VT stale tile-identity release + full freeze-while-moving | applied 2026-07-19, lib rebuilt | part 1 = stock bug, CANDIDATE FOR UPSTREAM PR (dangling last_used pointer → foreign-content squares); part 2 extends 1.18's freeze to downgrades |
-| 1.20 VT tile allocator freeze while camera in motion | applied 2026-07-19, lib rebuilt | no aging + 60-frame recycle threshold mid-motion — visible tiles can never be stolen by the miss flood (delayed feedback keep-alive gaps); the last piece of the violent-zoom squares |
+| 1.20 VT tile allocator freeze while camera in motion | applied 2026-07-19 + same-day hotfix (aging always runs, tail-invalid self-heal) | 60-frame recycle threshold mid-motion — visible tiles can never be stolen by the miss flood |
+| 1.21 VT expanded working set (island-wide full-res zone) | applied 2026-07-19, lib rebuilt | GG-specific (defaults = stock) — gg_near_ring_dist 6 + gg_removal_margin 12: camera travel over the island never crosses a VT resolution boundary; chunks survive zoom travel |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
