@@ -35,6 +35,16 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.18 Terrain: VT residency upgrade hysteresis
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`Terrain::gg_vt_upgrade_hysteresis` + `gg_prev_center_chunk`/`gg_center_stable_frames`)
+- `WickedEngine/wiTerrain.cpp` (`Generation_Update`: center-chunk stability counter; `UpdateVirtualTexturesCPU`: residency UPGRADES (min→max when a chunk enters the dist<2 near ring) deferred until the camera holds one chunk for 10 frames, then budgeted at 4 per frame)
+
+**Why:** the near ring is only ±2 chunks; a fast camera zoom sweeps that boundary across the island and every chunk crossing far→near called `vt.init()` mid-motion — residency reset, tail-mip rendering, detail tiles landing over several GPU-feedback frames = square tiles of mixed sharpness (and the odd recycled tile showing a neighbour's old pixels for a frame) flickering while the camera moved, calming on stop. With hysteresis, crossing chunks keep rendering their existing correct low-res tile (soft, stable); once the camera settles, the ring sharpens over a few frames. Downgrades (frees tile-pool memory), fresh chunks (resolution 0) and unbound-material chunks (in-place regen rebinds) are never deferred.
+
+**Behaviour:** no stock behaviour change — flag defaults false.
+
 ### 1.17 Terrain: gg_generate_blendmap — chunks born with game-correct blendmaps
 
 **Files:**
@@ -609,6 +619,7 @@ modified, both genuine bug fixes.
 | 1.15 Preserve blendmap + VT residency on in-place regen | applied 2026-07-19, lib rebuilt | GG-specific (default false = stock) — sculpt-drag chunks keep GG blendmaps and resident tiles; fresh merged material re-bound without vt.init() |
 | 1.16 VT repaint flag main-thread latch | applied 2026-07-19, lib rebuilt | race fix for 1.13's flag (found by multi-agent review of 1.15) — async job consumes a main-thread-latched copy, never the live flag |
 | 1.17 gg_generate_blendmap born-correct chunks | applied 2026-07-19, lib rebuilt | GG-specific (null by default) — generator thread fills GG auto+painted weights before the region texture is built; kills the green default-blend flicker on fast camera zooms |
+| 1.18 VT residency upgrade hysteresis | applied 2026-07-19, lib rebuilt | GG-specific (default false = stock) — residency upgrades wait for the camera to settle (10 stable frames), then 4/frame; kills the square sharpness-flicker while zooming |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

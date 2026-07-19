@@ -1858,6 +1858,12 @@ void GGTerrainWicked_Init()
 	{
 		return FillChunkBlendmapGG(cd, mesh);
 	};
+	// Wicked delta 1.18: fast camera zooms sweep the dist<2 high-res ring across the
+	// island and every crossing chunk reset its VT residency mid-motion (square tiles of
+	// mixed sharpness flickering until the camera stopped). With hysteresis, chunks keep
+	// their correct low-res tile while the camera crosses boundaries; residency upgrades
+	// run a few per frame once it holds still.
+	terrain.gg_vt_upgrade_hysteresis = true;
 	terrain.lod_bias = 0.0f;              // hold higher mesh LOD one step further out (inch-scale world)
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;
