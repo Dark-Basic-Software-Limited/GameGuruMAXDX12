@@ -495,6 +495,16 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 		if (chunk_data->invalidated) { g_dbgAutoSkipInvalid++; continue; }  // pending regen would discard this work — retry after
 		if (chunk_data->merge_pending) { g_dbgAutoSkipMergePend++; continue; }  // regenerated but main-scene mesh still stale — retry after merge
 
+		if (chunk_data->gg_blendmap_generated)
+		{
+			// Born-correct chunk (delta 1.17): the generator-thread callback already wrote
+			// these exact weights and the GPU texture was built from them — just latch the
+			// key. The flag stays up; only the edit bridge clears it (real edits reprocess).
+			dx11BlendProcessedKeys.insert(key);
+			dx11BlendChunkKeyToEntity[key] = pc.entity;
+			continue;
+		}
+
 		dx11BlendProcessedKeys.insert(key);
 		dx11BlendChunkKeyToEntity[key] = pc.entity;
 
@@ -704,6 +714,9 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 		processedChunkKeys.insert(key);
 		chunkKeyToEntity[key] = pc.entity;
 
+		if (chunk_data->gg_blendmap_generated)
+			continue; // born-correct chunk (delta 1.17): painted weights already included at generation
+
 		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.transform->world);
 
 		// First pass: check if any vertex is painted
@@ -792,6 +805,139 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 	return caughtUp;
 }
 
+
+// Born-correct blendmaps (Wicked delta 1.17): the terrain generator calls this on ITS
+// thread for every freshly generated chunk, right after the vertex data is complete and
+// before the chunk's region texture is built. It fills blendmap_layers with the same
+// DX11-style auto weights + painted overrides the two main-thread passes would compute,
+// so a streamed-in chunk never renders the engine-default region weights (the green
+// default-blend squares that flickered during fast camera zooms while the passes caught
+// up). PURE data path: reads only GG globals, the paint byte map and the chunk's own
+// vertex arrays. Races with a concurrent editor stroke are benign — the stroke's
+// invalidation bridge erases the chunk's keys and clears gg_blendmap_generated, so the
+// passes reprocess it immediately after.
+static bool FillChunkBlendmapGG(wi::terrain::ChunkData& cd, const wi::scene::MeshComponent& mesh)
+{
+	if (!wickedTerrainMaterialsSetup) return false; // level load: bulk passes handle it
+	if (mesh.vertex_positions.size() != wi::terrain::vertexCount) return false;
+	if (mesh.vertex_normals.size() != wi::terrain::vertexCount) return false;
+
+	const auto& rp = GGTerrain::ggterrain_global_render_params;
+
+	// Same ramp precompute as ApplyDX11StyleAutoBlend
+	float layerRcpWidth[5];
+	float layerStart[5];
+	for (int i = 0; i < 5; i++)
+	{
+		layerStart[i] = rp.layerStartHeight[i];
+		float w = rp.layerEndHeight[i] - rp.layerStartHeight[i];
+		layerRcpWidth[i] = (w > 0.001f) ? (1.0f / w) : 0.0f;
+	}
+	float slopeRcpWidth[2];
+	float slopeStart[2];
+	for (int i = 0; i < 2; i++)
+	{
+		slopeStart[i] = rp.slopeStart[i];
+		float w = rp.slopeEnd[i] - rp.slopeStart[i];
+		slopeRcpWidth[i] = (w > 0.001f) ? (1.0f / w) : 0.0f;
+	}
+
+	const int baseSlot   = wi::terrain::MATERIAL_BASE;
+	const int slopeSlot  = wi::terrain::MATERIAL_SLOPE;
+	const int lowSlot    = wi::terrain::MATERIAL_LOW_ALTITUDE;
+	const int highSlot   = wi::terrain::MATERIAL_HIGH_ALTITUDE;
+	const int layer1Slot = g_layer1MaterialSlot;
+	const int slotsNeeded = std::max(4, (layer1Slot >= 0 ? layer1Slot + 1 : 4));
+
+	// Painted-material lookup (may be absent — auto weights only then)
+	const uint8_t* matMap = GGTerrain::GGTerrain_GetMaterialMapPtr();
+	const int mapRes = matMap ? GGTerrain::GGTerrain_GetMaterialMapResolution() : 0;
+	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
+	float editableSizeRcp = (editableSize > 0.0f) ? (1.0f / editableSize) : 0.0f;
+	const int paintTop = maxPaintedSlot;
+
+	const int layersNeeded = std::max(slotsNeeded, paintTop + 1);
+	for (int i = 0; i < layersNeeded; i++)
+		cd.enable_blendmap_layer(i);
+
+	const size_t layerCount = cd.blendmap_layers.size();
+
+	for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
+	{
+		const XMFLOAT3& lp = mesh.vertex_positions[vi];
+		const float worldX = cd.position.x + lp.x;
+		const float worldZ = cd.position.z + lp.z;
+		const float height = cd.position.y + lp.y;
+
+		// Painted vertex wins outright (same rule as ProcessPaintedChunkBlendmaps)
+		if (matMap && mapRes > 0)
+		{
+			float mapU = worldX * editableSizeRcp * 0.5f + 0.5f;
+			float mapV = worldZ * editableSizeRcp * 0.5f + 0.5f;
+			int mapX = (int)(mapU * mapRes);
+			int mapZ = (int)(mapV * mapRes);
+			if (mapX >= 0 && mapX < mapRes && mapZ >= 0 && mapZ < mapRes)
+			{
+				uint8_t matVal = matMap[mapZ * mapRes + mapX];
+				if (matVal > 0 && matVal <= GGTERRAIN_MAX_SOURCE_TEXTURES)
+				{
+					int slot = materialToSlot[matVal - 1];
+					if (slot >= 0 && slot < (int)layerCount)
+					{
+						for (size_t li = 0; li < layerCount; li++)
+							cd.blendmap_layers[li].pixels[vi] = 0;
+						cd.blendmap_layers[slot].pixels[vi] = 255;
+						continue;
+					}
+				}
+			}
+		}
+
+		// DX11-style auto weights (identical math to ApplyDX11StyleAutoBlend)
+		const float normaly = 1.0f - fabsf(mesh.vertex_normals[vi].y);
+		float w[8] = { 0 };
+		w[baseSlot] = 1.0f;
+		auto applyLayer = [&](int layerIdx, int targetSlot)
+		{
+			if (targetSlot < 0 || targetSlot >= 8) return;
+			if (layerRcpWidth[layerIdx] == 0.0f) return;
+			float t = (height - layerStart[layerIdx]) * layerRcpWidth[layerIdx];
+			if (t <= 0.0f) return;
+			if (t > 1.0f) t = 1.0f;
+			for (int s = 0; s < 8; s++) w[s] *= (1.0f - t);
+			w[targetSlot] += t;
+		};
+		auto applySlope = [&](int slopeIdx, int targetSlot)
+		{
+			if (targetSlot < 0 || targetSlot >= 8) return;
+			if (slopeRcpWidth[slopeIdx] == 0.0f) return;
+			float t = (normaly - slopeStart[slopeIdx]) * slopeRcpWidth[slopeIdx];
+			if (t <= 0.0f) return;
+			if (t > 1.0f) t = 1.0f;
+			for (int s = 0; s < 8; s++) w[s] *= (1.0f - t);
+			w[targetSlot] += t;
+		};
+		applyLayer(0, lowSlot);
+		if (layer1Slot >= 0) applyLayer(1, layer1Slot);
+		applyLayer(2, highSlot);
+		applyLayer(3, highSlot);
+		applyLayer(4, highSlot);
+		applySlope(0, slopeSlot);
+		applySlope(1, slopeSlot);
+
+		// Zero any painted layers left over from the engine-default fill, then store
+		for (size_t li = 0; li < layerCount; li++)
+			cd.blendmap_layers[li].pixels[vi] = 0;
+		cd.blendmap_layers[baseSlot ].pixels[vi] = (uint8_t)(w[baseSlot ] * 255.0f);
+		cd.blendmap_layers[slopeSlot].pixels[vi] = (uint8_t)(w[slopeSlot] * 255.0f);
+		cd.blendmap_layers[lowSlot  ].pixels[vi] = (uint8_t)(w[lowSlot  ] * 255.0f);
+		cd.blendmap_layers[highSlot ].pixels[vi] = (uint8_t)(w[highSlot ] * 255.0f);
+		if (layer1Slot >= 0 && layer1Slot < (int)layerCount)
+			cd.blendmap_layers[layer1Slot].pixels[vi] = (uint8_t)(w[layer1Slot] * 255.0f);
+	}
+
+	return true;
+}
 
 // Per-grass-type material cache. One MaterialComponent per entry in GGGrass::grassFiles[] (the 46
 // DDS files in Files/grassbank/). Each material is built lazily the first time we see its type id
@@ -1704,6 +1850,14 @@ void GGTerrainWicked_Init()
 	// wrong-texture flash for the whole duration of a sculpt drag. GG's blend passes
 	// rewrite the weights right after regen anyway (bridge erases the processed keys).
 	terrain.gg_preserve_blendmap_on_regen = true;
+	// Wicked delta 1.17: chunks are born with GG-correct blendmaps — the generator thread
+	// fills auto+painted weights before the region texture is built, so streamed-in chunks
+	// (fast camera zooms re-create removed chunks) never flash the engine-default green
+	// region blend while the main-thread passes catch up. The passes just latch the keys.
+	terrain.gg_generate_blendmap = [](wi::terrain::ChunkData& cd, const wi::scene::MeshComponent& mesh)
+	{
+		return FillChunkBlendmapGG(cd, mesh);
+	};
 	terrain.lod_bias = 0.0f;              // hold higher mesh LOD one step further out (inch-scale world)
 	terrain.bottomLevel = -20000.0f;       // match GG height range
 	terrain.topLevel = 20000.0f;
@@ -2307,6 +2461,7 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 		chunkKeyToEntity.erase(key);
 		g_dbgBridgeKeysErased += dx11BlendProcessedKeys.erase(key);
 		dx11BlendChunkKeyToEntity.erase(key);
+		cd.gg_blendmap_generated = false; // real edit: the passes must reprocess (delta 1.17)
 	}
 	// prime the mass-regen throttle so the first frame after a big invalidation
 	// already runs the generator on the turbo budget

@@ -35,6 +35,16 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.17 Terrain: gg_generate_blendmap — chunks born with game-correct blendmaps
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`Terrain::gg_generate_blendmap` callback + `ChunkData::gg_blendmap_generated`)
+- `WickedEngine/wiTerrain.cpp` (`Generation_Update` regen branch: after the chunk's vertex data completes and before `CreateChunkRegionTexture`, non-preserved chunks call the callback; its success is recorded in `gg_blendmap_generated`)
+
+**Why:** Wicked streams chunks — beyond `removal_threshold` the whole ChunkData is erased, and a fast camera zoom re-creates those chunks from scratch. They were born with the ENGINE-default region weights (grass-heavy `region_base`) and rendered that for at least one frame — several during bursts — until GG's main-thread blend passes rewrote them: chunk-shaped green default-blend squares flickering on sand during quick zooms, calming when the camera stopped. With the callback, the generator thread fills GG's DX11-style auto weights + painted overrides BEFORE the region texture is built, so the first pixel a streamed chunk ever renders is already correct. The game latches `gg_blendmap_generated` chunks in both passes (keys only, no rewrite, no VT churn) and clears the flag from the edit bridge so real edits reprocess. Callback returning false (e.g. GG materials not set up during initial level load) falls back to engine-default weights + the bulk passes — load behavior unchanged.
+
+**Behaviour:** no stock behaviour change — the callback is null by default.
+
 ### 1.16 VT repaint flag: main-thread latch (lost-update race fix)
 
 **Files:**
@@ -598,6 +608,7 @@ modified, both genuine bug fixes.
 | 1.14 Optional generation restart on dirty materials | applied 2026-07-19 (`cbce724d`), lib rebuilt | candidate for upstream PR — default true = stock; GG disables (runtime material registration must not rebuild the island) |
 | 1.15 Preserve blendmap + VT residency on in-place regen | applied 2026-07-19, lib rebuilt | GG-specific (default false = stock) — sculpt-drag chunks keep GG blendmaps and resident tiles; fresh merged material re-bound without vt.init() |
 | 1.16 VT repaint flag main-thread latch | applied 2026-07-19, lib rebuilt | race fix for 1.13's flag (found by multi-agent review of 1.15) — async job consumes a main-thread-latched copy, never the live flag |
+| 1.17 gg_generate_blendmap born-correct chunks | applied 2026-07-19, lib rebuilt | GG-specific (null by default) — generator thread fills GG auto+painted weights before the region texture is built; kills the green default-blend flicker on fast camera zooms |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
