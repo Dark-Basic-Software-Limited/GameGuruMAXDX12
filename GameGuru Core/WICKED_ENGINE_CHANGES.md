@@ -44,6 +44,8 @@ all — this doc alone is not sufficient to restore the clone.
 
 **Behaviour:** gated by `gg_vt_upgrade_hysteresis` (default false = stock; the threshold falls back to stock `>= 1` when the camera is stable or the flag is off).
 
+**HOTFIX (same day):** the first version ALSO froze tile aging (`free_frames++`) while the camera moved — fatal under sustained motion: nothing ever crossed the recycle threshold, the pool starved, chunk inits failed to allocate their tail tiles and (stock has no retry path) the whole terrain degraded to flat untextured squares within ~2 minutes of continuous zooming. Aging now always runs — the 60-frame threshold alone is the protection (visible tiles oscillate at 0-3 frames via keep-alives, unreachable; off-screen tiles keep flowing into the pool). Added `gg_tail_invalid` self-heal: a chunk whose tail-tile allocation failed re-inits automatically once the pool has tiles again (fixes stock's silent no-retry fragility on pool exhaustion too).
+
 ### 1.19 VT: stale tile-identity release + full freeze-while-moving
 
 **Files:**
