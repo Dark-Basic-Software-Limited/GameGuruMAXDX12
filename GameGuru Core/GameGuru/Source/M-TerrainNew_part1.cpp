@@ -1042,6 +1042,16 @@ void imgui_terrain_loop_v3(void)
 						ggterrain_extra_params.iUpdateTrees = 1;
 					}
 
+					// Tree shadow controls (previously stranded in the never-called imgui_terrain_loop_v2()).
+					// Shadow LOD Distance = radius within which trees cast real-mesh shadows (beyond it,
+					// billboard proxies take over). Shadow Range = how many cascades receive tree shadows
+					// (0 = no tree shadows). Both live-update the Wicked tree pool.
+					ImGui::TextCenter("Tree Shadow LOD Distance");
+					ImGui::SliderFloat("##TreeShadowLODDist", &ggtrees_global_params.lod_dist_shadow, 750, 7000);
+
+					ImGui::TextCenter("Tree Shadow Range");
+					ImGui::SliderInt("##TreeShadowRange", &ggtrees_global_params.tree_shadow_range, 0, 5);
+
 					ImGui::TextCenter("Tree Wind");
 					if (ImGui::SliderFloat("##TreeWind", &t.visuals.tree_wind, 0.0f, 1.0f, "%.2f", 1.0f))
 					{
