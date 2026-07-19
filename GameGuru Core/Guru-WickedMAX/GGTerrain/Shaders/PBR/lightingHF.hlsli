@@ -143,7 +143,10 @@ inline void DirectionalLight(in ShaderEntity light, in Surface surface, inout Li
 			}
 
 #ifndef WATER
-            float2 ocean_uv = (surface.P.xz + (surface.P.yy * 0.25)) * 0.0045;
+            // Caustic UV scale tuned for GGMAX's inch-scale world. The stock 0.0045 was
+            // authored for a metre-scale world, so on inch terrain the caustic web repeated
+            // far too tightly (visibly tiled grid). Lower value -> larger, more natural cells.
+            float2 ocean_uv = (surface.P.xz + (surface.P.yy * 0.25)) * 0.0020;
             float water_height = g_xFrame_WaterHeight;
             if ((g_xFrame_Options & OPTION_BIT_WATER_ENABLED) && surface.P.y < water_height)
             {
