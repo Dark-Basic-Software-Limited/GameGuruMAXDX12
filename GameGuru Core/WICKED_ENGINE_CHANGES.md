@@ -35,6 +35,18 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.19 VT: stale tile-identity release + full freeze-while-moving
+
+**Files:**
+- `WickedEngine/wiTerrain.h` (`VirtualTexture::free`: releases `physical_tiles[].last_used` ownership by identity before clearing the tiles vector; 1.18 flag comment updated)
+- `WickedEngine/wiTerrain.cpp` (`UpdateVirtualTexturesCPU`: the 1.18 defer logic now freezes BOTH directions — downgrades as well as upgrades — while the camera is crossing chunk boundaries; when stable, downgrades run immediately and upgrades stay budgeted)
+
+**Why (part 1, the real bug — stock, upstream-worthy):** `PhysicalTile::last_used` stores a raw pointer into the owning `VirtualTexture::tiles` vector and `check_tile_resident` compares by POINTER IDENTITY. `free()` cleared the vector without releasing those back-pointers, and a later `tiles` allocation (fast zoom in/out = min→max→min re-inits with identical vector sizes) frequently reuses the same heap block — the stale `last_used` then matches a brand-new tile by address. Consequences: the page table keeps mappings to physical tiles that were freed and recycled to OTHER chunks, and `request_residency` skips the re-render because the tile "is already resident" — random squares of another chunk's pixels, healing gradually as GPU feedback re-requests. Fixed by nulling matching `last_used` entries in `free()` before `tiles.clear()`.
+
+**Why (part 2):** 1.18 froze only upgrades; downgrades still re-initialized mid-motion, churning the pool and (via part 1) seeding stale identities. Now no VT reference changes at all while the camera is moving — chunks render their existing correct tiles; the ring re-balances only after the camera settles.
+
+**Behaviour:** part 1 is an unconditional correctness fix (stale-identity sampling was never intended); part 2 stays behind `gg_vt_upgrade_hysteresis` (default false = stock).
+
 ### 1.18 Terrain: VT residency upgrade hysteresis
 
 **Files:**
@@ -620,6 +632,7 @@ modified, both genuine bug fixes.
 | 1.16 VT repaint flag main-thread latch | applied 2026-07-19, lib rebuilt | race fix for 1.13's flag (found by multi-agent review of 1.15) — async job consumes a main-thread-latched copy, never the live flag |
 | 1.17 gg_generate_blendmap born-correct chunks | applied 2026-07-19, lib rebuilt | GG-specific (null by default) — generator thread fills GG auto+painted weights before the region texture is built; kills the green default-blend flicker on fast camera zooms |
 | 1.18 VT residency upgrade hysteresis | applied 2026-07-19, lib rebuilt | GG-specific (default false = stock) — residency upgrades wait for the camera to settle (10 stable frames), then 4/frame; kills the square sharpness-flicker while zooming |
+| 1.19 VT stale tile-identity release + full freeze-while-moving | applied 2026-07-19, lib rebuilt | part 1 = stock bug, CANDIDATE FOR UPSTREAM PR (dangling last_used pointer → foreign-content squares); part 2 extends 1.18's freeze to downgrades |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
