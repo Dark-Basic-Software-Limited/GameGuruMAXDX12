@@ -35,6 +35,15 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.20 VT: tile allocator freeze while the camera is in motion
+
+**Files:**
+- `WickedEngine/wiTerrain.cpp` (`UpdateVirtualTexturesCPU`: while `gg_center_stable_frames < 10` — tile aging (free_frames++) suspended; the reusable-tile list only admits tiles unused for 60+ frames (provably off-screen) instead of 1+; the free list entering the chunk loop is filtered the same way so chunk-init tail allocations can't steal either)
+
+**Why:** the final piece of the violent-zoom "random squares". The GPU feedback that keeps a visible tile alive arrives on a 2-3 frame delayed readback; during fast camera moves the keep-alive gaps let STILL-VISIBLE, correct tiles age into the free list, and the flood of misses from newly-visible terrain then steals them — another chunk renders its pixels into a square that was correct and on screen. Now, while the camera is crossing chunk boundaries, nothing recently used can be recycled: correct terrain keeps every tile unconditionally, and newly approached terrain streams from the genuinely stale pool (or stays coarse if it drains — "under construction", exactly the acceptable behavior). Full streaming resumes the moment the camera settles; dropped requests cost nothing since the GPU re-requests missing pages every frame.
+
+**Behaviour:** gated by `gg_vt_upgrade_hysteresis` (default false = stock; the threshold falls back to stock `>= 1` when the camera is stable or the flag is off).
+
 ### 1.19 VT: stale tile-identity release + full freeze-while-moving
 
 **Files:**
@@ -633,6 +642,7 @@ modified, both genuine bug fixes.
 | 1.17 gg_generate_blendmap born-correct chunks | applied 2026-07-19, lib rebuilt | GG-specific (null by default) — generator thread fills GG auto+painted weights before the region texture is built; kills the green default-blend flicker on fast camera zooms |
 | 1.18 VT residency upgrade hysteresis | applied 2026-07-19, lib rebuilt | GG-specific (default false = stock) — residency upgrades wait for the camera to settle (10 stable frames), then 4/frame; kills the square sharpness-flicker while zooming |
 | 1.19 VT stale tile-identity release + full freeze-while-moving | applied 2026-07-19, lib rebuilt | part 1 = stock bug, CANDIDATE FOR UPSTREAM PR (dangling last_used pointer → foreign-content squares); part 2 extends 1.18's freeze to downgrades |
+| 1.20 VT tile allocator freeze while camera in motion | applied 2026-07-19, lib rebuilt | no aging + 60-frame recycle threshold mid-motion — visible tiles can never be stolen by the miss flood (delayed feedback keep-alive gaps); the last piece of the violent-zoom squares |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
