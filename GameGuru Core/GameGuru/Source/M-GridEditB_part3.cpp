@@ -3,6 +3,8 @@
 // that shallow GG beaches drown in white; 0.08 was picked visually on TESTPRO1
 // (bold foam line on the shore + collar around protruding rocks, no milky blanket).
 // foam_amount brightens the result. Live-tunable via the SET_OCEAN harness command.
+// Diagnostic: last Caustic Size the visuals path actually delivered (harness GET_PERF_DATA).
+float g_dbgCausticSizeFromVisuals = -1.0f;
 float g_fWaterFoamUnitScale = 0.08f;
 float g_fWaterFoamAmount = 1.3f;
 
@@ -1579,6 +1581,18 @@ void Wicked_Update_Visuals(void *voidvisual)
 			extern float g_fWaterFoamAmount;
 			weather->oceanParameters.foam_unit_scale = g_fWaterFoamUnitScale;
 			weather->oceanParameters.foam_amount = g_fWaterFoamAmount;
+			// "Caustic Size" slider -> decouples the underwater light-ripple scale from
+			// patch_length (Water Tiling Patch Size), which otherwise drives BOTH the ripple
+			// size and the wave size. scale = 3/size, so the default size 3.0 reproduces the
+			// stock patch-tied look exactly; larger size = larger ripples, waves unaffected.
+			// Measured response curve (patch length held constant): scale 1.0 = fine wavy streaks,
+			// 0.5-0.3 = the large soft blobs, 0.1 = over-stretched and goes locally flat. So keep
+			// the whole slider inside 1.0..0.2 rather than wasting travel past 0.2.
+			float ggCSize = visuals->fWaterCausticSize;
+			if (ggCSize < 1.0f || ggCSize > 10.0f) ggCSize = 3.0f;
+			weather->oceanParameters.caustic_scale = 1.0f / ggCSize;
+			extern float g_dbgCausticSizeFromVisuals;
+			g_dbgCausticSizeFromVisuals = ggCSize;
 			//weather->oceanParameters.fogMaxDist = visuals->WaterFogMaxDist; // removed from OceanParameters
 			//weather->oceanParameters.fogMinDist = visuals->WaterFogMinDist; // removed from OceanParameters
 			//weather->oceanParameters.fogMinAmount = visuals->WaterFogMinAmount; // removed from OceanParameters
@@ -1914,11 +1928,6 @@ void Wicked_Update_Visuals(void *voidvisual)
 	ggCustomFrameStaging.waterFogMin = visuals->WaterFogMinDist;
 	ggCustomFrameStaging.waterFogMax = visuals->WaterFogMaxDist;
 	ggCustomFrameStaging.waterFogMinAmount = visuals->WaterFogMinAmount;
-	// Underwater caustic scale: designer sets a friendly "Caustic Size" (bigger = larger cells);
-	// convert to the shader UV scale (base / size). Guard against 0/uninitialised (old levels).
-	float ggCausticSize = visuals->fWaterCausticSize;
-	if (ggCausticSize < 0.1f) ggCausticSize = 3.0f;
-	ggCustomFrameStaging.causticScale = 0.002f / ggCausticSize;
 	ggCustomFrameStaging.fogOpacity = visuals->FogA_f;
 	ggCustomFrameStaging.fogColor = XMFLOAT3(visuals->FogR_f / 255.0f, visuals->FogG_f / 255.0f, visuals->FogB_f / 255.0f);
 	ggCustomFrameStaging.cloudiness = visuals->SkyCloudiness;

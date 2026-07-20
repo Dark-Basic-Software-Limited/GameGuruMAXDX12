@@ -35,6 +35,20 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.22 Ocean: decouple seabed caustic size from the wave patch size
+
+**Files:**
+- `WickedEngine/shaders/ShaderInterop_Weather.h` (`ShaderOcean::caustic_scale` + 3 pad floats)
+- `WickedEngine/wiOcean.h` (`OceanParameters::caustic_scale` default 1.0 = stock)
+- `WickedEngine/wiScene.cpp` (marshals `ocean.caustic_scale` into `ShaderOcean`, next to `patch_size_rcp`)
+- `WickedEngine/shaders/lightingHF.hlsli` (the `texture_caustics` seabed lookup samples `ocean_uv * ocean.caustic_scale`; the displacement / water-height lookup deliberately keeps the UNscaled `ocean_uv`)
+
+**Why:** the underwater "caustic" light ripples on the sea floor are the `texture_caustics` term inside `light_directional`, sampled at `surface.P.xz * ocean.patch_size_rcp`. Because that UV is tied to `patch_length`, the only in-editor control over caustic size was **Water Tiling Patch Size** — which ALSO drives the wave FFT, so the ripples could not be enlarged without blowing the waves up to absurd size. `caustic_scale` multiplies ONLY the caustic lookup, so ripple size is now independent of wave size. GG drives it from a new Water-panel **"Caustic Size"** slider (`visuals.fWaterCausticSize`, scale = 1/size). Measured, patch length pinned: 1.0 = fine stock speckle, 0.3 = larger cells, 0.1 = broad soft blobs.
+
+**Behaviour:** no stock behaviour change — `caustic_scale` defaults to 1.0, which samples identically to before.
+
+**Diagnostic note (this cost hours):** the terrain's LIVE seabed caustics are in THIS engine `lightingHF.hlsli`, NOT the game copy `GGTerrain/Shaders/PBR/lightingHF.hlsli`. `GGTerrainVirtualPBR_PS.hlsl` comments out `ForwardLighting` and calls `GGTiledLightingWithAmbient` (GGLighting.hlsli), whose `light_directional` resolves here — so the game's `lightingHF.hlsli` is DEAD CODE for terrain. Earlier caustic edits made to the game copy (commits `14b90e0a` / `565f704b`) never ran; a follow-up should strip that dead plumbing (GGCustomFrameCB `causticScale`, GGFrameCompat macro, the game `lightingHF` block).
+
 ### 1.21 VT: expanded working set — island-wide full-res zone + removal margin
 
 **Files:**
@@ -656,6 +670,7 @@ modified, both genuine bug fixes.
 | 1.19 VT stale tile-identity release + full freeze-while-moving | applied 2026-07-19, lib rebuilt | part 1 = stock bug, CANDIDATE FOR UPSTREAM PR (dangling last_used pointer → foreign-content squares); part 2 extends 1.18's freeze to downgrades |
 | 1.20 VT tile allocator freeze while camera in motion | applied 2026-07-19 + same-day hotfix (aging always runs, tail-invalid self-heal) | 60-frame recycle threshold mid-motion — visible tiles can never be stolen by the miss flood |
 | 1.21 VT expanded working set (island-wide full-res zone) | applied 2026-07-19, lib rebuilt | GG-specific (defaults = stock) — gg_near_ring_dist 6 + gg_removal_margin 12: camera travel over the island never crosses a VT resolution boundary; chunks survive zoom travel |
+| 1.22 Ocean caustic size decoupled from patch size | applied 2026-07-20, lib rebuilt | GG-specific (default 1.0 = stock) — new ShaderOcean.caustic_scale scales ONLY the seabed caustic lookup; Water-panel "Caustic Size" slider tunes ripple size without touching the waves |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

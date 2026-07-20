@@ -1677,6 +1677,22 @@ void imgui_Customize_Water_V2(int mode)
 					Wicked_Update_Visuals((void*)&t.visuals);
 					g.projectmodified = 1;
 				}
+				// NOTE: MaxSliderInputFloat is INTEGER-backed (drives a SliderInt from startval..maxval
+				// with ceil() quantisation), and arg6/arg7 are (int startval, float maxval) - NOT a
+				// second min/max pair. It also permanently expands its own max if the value ever
+				// exceeds v_max, caching that in g_SliderData for the session. So: work in tenths
+				// (1..120 == size 0.1..12.0, giving usable 0.1 granularity) and clamp before the call,
+				// otherwise one stray value poisons the slider range until restart.
+				ImGui::TextCenter("Caustic Size");
+				fTmp = t.visuals.fWaterCausticSize * 10.0f;
+				if (fTmp < 10.0f || fTmp > 100.0f) fTmp = 30.0f; // 30 == default size 3.0
+				if (ImGui::MaxSliderInputFloat("##fWaterCausticSize:", &fTmp, 10.0f, 100.0f, "Size of the caustic light ripples cast on the sea floor. Independent of Water Tiling Patch Size, so it does NOT change wave size. 10 = fine stock speckle, 30 = larger cells, 100 = broad soft blobs", 10, 100.0f))
+				{
+					t.visuals.fWaterCausticSize = fTmp * 0.1f;
+					t.gamevisuals.fWaterCausticSize = t.visuals.fWaterCausticSize;
+					Wicked_Update_Visuals((void*)&t.visuals);
+					g.projectmodified = 1;
+				}
 				ImGui::TextCenter("Water Wave Choppiness");
 				fTmp = t.visuals.fWaterChoppyScale * 10.0f;
 				if (ImGui::MaxSliderInputFloat("##fWaterChoppyScale:", &fTmp, 0.0f, 100.0f, "Set Water Wave Choppiness"))

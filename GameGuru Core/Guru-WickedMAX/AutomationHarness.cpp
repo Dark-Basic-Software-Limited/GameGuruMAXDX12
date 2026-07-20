@@ -1047,6 +1047,18 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			cam.Up.x, cam.Up.y, cam.Up.z);
 	}
 
+	// Caustic debug: the actual value being uploaded to GGCustomFrameCB (b4) each frame.
+	// 0 => Wicked_Update_Visuals never populated it; ~0.00067 => default Caustic Size 3.0.
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"CAUSTIC_SCALE: %.4f (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)\n"
+			"CAUSTIC_PATCHLEN: %.2f (drives waves; caustic size is now independent of it)\n"
+			"CAUSTIC_SIZE_FROM_SLIDER: %.2f (what the visuals/slider path delivered; -1 = never ran)\n",
+			wiScene::GetScene().ocean.params.caustic_scale,
+			wiScene::GetScene().ocean.params.patch_length,
+			[]() -> float { extern float g_dbgCausticSizeFromVisuals; return g_dbgCausticSizeFromVisuals; }());
+	}
+
 	// Terrain debug info
 	{
 		int drawCount=0, exitReason=0, initFlag=0, drawEn=0, updateEn=0;
@@ -2307,14 +2319,20 @@ void AutoHarness_CheckForCommand(void)
 		if (sscanf_s(arg, "%63s %f", op, (unsigned)sizeof(op), &ov) == 2)
 		{
 			bool known = true;
+			static float s_harnessCausticScale = -1.0f;
 			if (_stricmp(op, "foamscale") == 0) g_fWaterFoamUnitScale = ov;
 			else if (_stricmp(op, "foamamount") == 0) g_fWaterFoamAmount = ov;
+			else if (_stricmp(op, "causticscale") == 0) s_harnessCausticScale = ov;
 			else known = false;
 			wi::scene::WeatherComponent* weather = wi::scene::GetScene().weathers.GetComponent(g_weatherEntityID);
 			if (weather)
 			{
 				weather->oceanParameters.foam_unit_scale = g_fWaterFoamUnitScale;
 				weather->oceanParameters.foam_amount = g_fWaterFoamAmount;
+				// Live-tune the seabed caustic scale for quick A/B (see SET_OCEAN causticscale).
+				// The Water panel "Caustic Size" slider re-takes control the next time it changes.
+				if (s_harnessCausticScale > 0.0f)
+					weather->oceanParameters.caustic_scale = s_harnessCausticScale;
 			}
 			if (known)
 				_snprintf(result, sizeof(result), "OK: SET_OCEAN %s = %.4f (foamscale=%.4f foamamount=%.2f weather=%s)",

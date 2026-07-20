@@ -1508,7 +1508,7 @@ void visuals_load ( void )
 			
 			t.try_s = "visuals.WaterWaveAmplitude"; if (t.tfield_s == t.try_s)  t.visuals.fWaterWaveAmplitude = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.WaterPatchLength"; if (t.tfield_s == t.try_s)  t.visuals.fWaterPatchLength = ValF(t.tvalue_s.Get());
-			t.try_s = "visuals.WaterCausticSize"; if (t.tfield_s == t.try_s)  t.visuals.fWaterCausticSize = ValF(t.tvalue_s.Get());
+			t.try_s = "visuals.WaterCausticSize"; if (t.tfield_s == t.try_s)  { t.visuals.fWaterCausticSize = ValF(t.tvalue_s.Get()); if (t.visuals.fWaterCausticSize < 1.0f || t.visuals.fWaterCausticSize > 10.0f) t.visuals.fWaterCausticSize = 3.0f; }
 			t.try_s = "visuals.WaterChoppyScale"; if (t.tfield_s == t.try_s)  t.visuals.fWaterChoppyScale = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.WaterWindDependency"; if (t.tfield_s == t.try_s)  t.visuals.fWaterWindDependency = ValF(t.tvalue_s.Get());
 
