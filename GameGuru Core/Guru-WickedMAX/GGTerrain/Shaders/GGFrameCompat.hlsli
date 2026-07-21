@@ -183,7 +183,6 @@
 #define g_xFrame_WaterFogMin              ggCustomFrame.waterFogMin
 #define g_xFrame_WaterFogMax              ggCustomFrame.waterFogMax
 #define g_xFrame_WaterFogMinAmount        ggCustomFrame.waterFogMinAmount
-#define g_xFrame_CausticScale             ggCustomFrame.causticScale
 #define g_xFrame_FogOpacity               ggCustomFrame.fogOpacity
 #define g_xFrame_FogColor                 float4(ggCustomFrame.fogColor, 1.0)
 #define g_xFrame_FogHeightSky             ggCustomFrame.fogHeightSky

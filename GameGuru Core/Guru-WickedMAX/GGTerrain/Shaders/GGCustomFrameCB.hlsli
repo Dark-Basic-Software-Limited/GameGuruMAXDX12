@@ -41,10 +41,7 @@ struct GGCustomFrameData {
 	float     cloudScale;                  // offset 68
 	float     cloudSpeed;                  // offset 72
 	GG_UINT   ggOptions;                   // offset 76 (GG-specific option bits)
-	float     causticScale;                // offset 80 (underwater caustic UV scale; C++ sets base/size from the Water "Caustic Size" slider)
-	float     _causticPad0;                // offset 84
-	float     _causticPad1;                // offset 88
-	float     _causticPad2;                // offset 92 (pad struct to 96 = 6*16)
+	// struct size = 80 bytes (5*16), 16-byte aligned.
 };
 
 #ifdef __cplusplus

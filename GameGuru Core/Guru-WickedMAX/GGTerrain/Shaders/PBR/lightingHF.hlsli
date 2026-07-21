@@ -142,20 +142,12 @@ inline void DirectionalLight(in ShaderEntity light, in Surface surface, inout Li
 				lighting.direct.specular += max(0, lightColor * surfaceToLight.NdotL * BRDF_GetSpecular(surface, surfaceToLight));
 			}
 
-#ifndef WATER
-            // Caustic UV scale is driven by the water component's "Caustic Size" slider
-            // (GGCustomFrameCB.causticScale = base/size, computed C++-side). Bigger size ->
-            // smaller scale -> larger, more natural caustic cells for GGMAX's inch world.
-            float2 ocean_uv = (surface.P.xz + (surface.P.yy * 0.25)) * g_xFrame_CausticScale;
-            float water_height = g_xFrame_WaterHeight;
-            if ((g_xFrame_Options & OPTION_BIT_WATER_ENABLED) && surface.P.y < water_height)
-            {
-                float3 caustic = caustic_pattern(ocean_uv, g_xFrame_Time * 0.65);
-                caustic *= sqr(saturate((water_height - surface.P.y) * 0.0025)); // fade out at shoreline
-                caustic *= lightColor;
-                lighting.indirect.diffuse += caustic;
-            }
-#endif
+            // NOTE: the live seabed caustics are cast by the ENGINE's lightingHF.hlsli
+            // (texture_caustics in its light_directional, tuned by ShaderOcean::caustic_scale
+            // = the Water panel "Caustic Size" slider). The old procedural caustic block that
+            // used to live here was inert in production -- it was gated behind
+            // OPTION_BIT_WATER_ENABLED (bit 22), which aliases the engine's DEBUG_NORMAL_VIS
+            // and is never set in normal use -- so it was removed. Do NOT re-add caustics here.
 
 		}
 
