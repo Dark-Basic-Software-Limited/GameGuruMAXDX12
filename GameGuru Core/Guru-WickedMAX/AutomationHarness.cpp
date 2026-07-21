@@ -2339,9 +2339,11 @@ void AutoHarness_CheckForCommand(void)
 		{
 			bool known = true;
 			static float s_harnessCausticScale = -1.0f;
+				static float s_harnessWaterHeight = -99999.0f;
 			if (_stricmp(op, "foamscale") == 0) g_fWaterFoamUnitScale = ov;
 			else if (_stricmp(op, "foamamount") == 0) g_fWaterFoamAmount = ov;
 			else if (_stricmp(op, "causticscale") == 0) s_harnessCausticScale = ov;
+				else if (_stricmp(op, "waterheight") == 0) s_harnessWaterHeight = ov;
 			else known = false;
 			wi::scene::WeatherComponent* weather = wi::scene::GetScene().weathers.GetComponent(g_weatherEntityID);
 			if (weather)
@@ -2352,12 +2354,17 @@ void AutoHarness_CheckForCommand(void)
 				// The Water panel "Caustic Size" slider re-takes control the next time it changes.
 				if (s_harnessCausticScale > 0.0f)
 					weather->oceanParameters.caustic_scale = s_harnessCausticScale;
+					// Test hook: raise/lower the ocean water line (SET_OCEAN waterheight <y>) to
+					// submerge the editor camera and verify Wicked's underwaterCS post-process. Reset
+					// with the real water line; Wicked_Update_Visuals re-takes control on next change.
+					if (s_harnessWaterHeight > -99998.0f)
+						weather->oceanParameters.waterHeight = s_harnessWaterHeight;
 			}
 			if (known)
 				_snprintf(result, sizeof(result), "OK: SET_OCEAN %s = %.4f (foamscale=%.4f foamamount=%.2f weather=%s)",
 					op, ov, g_fWaterFoamUnitScale, g_fWaterFoamAmount, weather ? "live" : "MISSING");
 			else
-				_snprintf(result, sizeof(result), "ERROR: SET_OCEAN unknown param '%s' (foamscale|foamamount)", op);
+				_snprintf(result, sizeof(result), "ERROR: SET_OCEAN unknown param '%s' (foamscale|foamamount|causticscale|waterheight)", op);
 		}
 		else
 		{

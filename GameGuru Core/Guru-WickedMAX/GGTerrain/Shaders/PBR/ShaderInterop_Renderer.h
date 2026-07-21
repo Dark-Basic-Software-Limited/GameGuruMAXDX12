@@ -23,8 +23,11 @@ static const uint OPTION_BIT_SIMPLE_SKY = 1 << 5;
 // OPTION_BIT_TRANSPARENTSHADOWS_ENABLED: bit 1 is commented out in the new engine
 static const uint OPTION_BIT_TRANSPARENTSHADOWS_ENABLED = 1 << 1;
 
-// OPTION_BIT_WATER_ENABLED: pick unused bit 22 (old was 11 but new uses 11 for DISABLE_ALBEDO_MAPS)
-static const uint OPTION_BIT_WATER_ENABLED = 1 << 22;
+// OPTION_BIT_WATER_ENABLED REMOVED (was 1<<22): the old GG underwater fog it gated is retired —
+// Wicked's underwaterCS owns underwater now. Bit 22 aliases the engine's OPTION_BIT_DEBUG_NORMAL_VIS,
+// so keeping this define let the 'I' debug key accidentally trigger old GG water fog. Do NOT re-add
+// a water bit here; if a GG-owned frame flag is ever needed, use ggCustomFrame.ggOptions (b4), not
+// the engine FrameCB.options. See GGCommonFunctions.hlsli (ApplyFogCustom).
 
 // VoxelGI reflections - not in new engine (voxel system removed)
 static const uint OPTION_BIT_VOXELGI_REFLECTIONS_ENABLED = 1 << 21;

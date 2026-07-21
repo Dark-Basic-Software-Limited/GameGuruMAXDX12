@@ -5,7 +5,12 @@ float3 ApplyFogCustom( float3 pos, float dist, float3 color, float3 viewDir )
 	float3 fogColor = g_xFrame_WaterColor.rgb;
 	float fogMinAmount = 1;
 	
-	if ( (g_xFrame_Options & OPTION_BIT_WATER_ENABLED) && pos.y < g_xFrame_WaterHeight+10 && g_xCamera_CamPos.y < g_xFrame_WaterHeight+15 ) 
+	// Old GG underwater fog RETIRED — Wicked's underwaterCS post-process now owns the underwater
+	// look (fog + colour tint + depth extinction). This branch's gate read OPTION_BIT_WATER_ENABLED
+	// (bit 22), which aliases the engine FrameCB's DEBUG_NORMAL_VIS, so pressing the 'I' debug key
+	// used to accidentally flip old GG underwater fog on alongside the normal-visualisation. Forced
+	// false; the else path (normal interior / realistic-sky distance fog) is the only live branch now.
+	if ( false )
 	{
 		fogMin = g_xFrame_WaterFogMin;
 		fogMax = g_xFrame_WaterFogMax;
