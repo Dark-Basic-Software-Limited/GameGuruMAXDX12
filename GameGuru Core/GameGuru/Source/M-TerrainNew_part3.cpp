@@ -1623,9 +1623,13 @@ void imgui_Customize_Water_V2(int mode)
 			}
 
 			ImGui::TextCenter("Water Base Color");
-			ImVec4 mycolor = ImVec4(t.visuals.WaterRed_f / 255.0, t.visuals.WaterGreen_f / 255.0, t.visuals.WaterBlue_f / 255.0, 1.0);
+			// Preserve the existing alpha (surface transparency) instead of hard-coding 1.0 — otherwise
+			// every colour edit wrote WaterAlpha=255 and the water went fully opaque/solid. The swatch
+			// is shown opaque so it stays visible even when the surface is transparent (alpha low).
+			ImVec4 mycolor = ImVec4(t.visuals.WaterRed_f / 255.0, t.visuals.WaterGreen_f / 255.0, t.visuals.WaterBlue_f / 255.0, t.visuals.WaterAlpha_f / 255.0);
+			ImVec4 myswatch = ImVec4(mycolor.x, mycolor.y, mycolor.z, 1.0);
 
-			bool open_popup = ImGui::ColorButton("##NewV2WickedWaterColor", mycolor, 0, ImVec2(w - 20.0, 0));
+			bool open_popup = ImGui::ColorButton("##NewV2WickedWaterColor", myswatch, 0, ImVec2(w - 20.0, 0));
 			if (open_popup)
 				ImGui::OpenPopup("##pickV2WickedWaterColor");
 			if (ImGui::BeginPopup("##pickV2WickedWaterColor", ImGuiWindowFlags_NoMove))
@@ -1648,6 +1652,36 @@ void imgui_Customize_Water_V2(int mode)
 			ImVec2 vDrawPos = { ImGui::GetCursorScreenPos().x + (ImGui::GetContentRegionAvail().x - 30.0f) ,ImGui::GetCursorScreenPos().y - (ImGui::GetFontSize()*1.5f) - 3.0f };
 			window->DrawList->AddImage((ImTextureID)lpTexture, vDrawPos, vDrawPos + ImVec2(16, 16), ImVec2(0, 0), ImVec2(1, 1), ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Water Color");
+
+			// --- Underwater view (Wicked underwaterCS), decoupled from the surface colour above so
+			// changing Water Base Color no longer forces the surface opaque. These drive how the scene
+			// looks when the camera drops below the water line. ---
+			ImGui::TextCenter("Underwater Color");
+			ImVec4 uwcolor = ImVec4(t.visuals.fUnderwaterColorR / 255.0, t.visuals.fUnderwaterColorG / 255.0, t.visuals.fUnderwaterColorB / 255.0, 1.0);
+			bool uw_open = ImGui::ColorButton("##NewUnderwaterColor", uwcolor, 0, ImVec2(w - 20.0, 0));
+			if (uw_open)
+				ImGui::OpenPopup("##pickUnderwaterColor");
+			if (ImGui::BeginPopup("##pickUnderwaterColor", ImGuiWindowFlags_NoMove))
+			{
+				if (ImGui::ColorPicker3("##pickerUnderwaterColor", (float*)&uwcolor, ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoSmallPreview))
+				{
+					t.gamevisuals.fUnderwaterColorR = t.visuals.fUnderwaterColorR = uwcolor.x * 255.0;
+					t.gamevisuals.fUnderwaterColorG = t.visuals.fUnderwaterColorG = uwcolor.y * 255.0;
+					t.gamevisuals.fUnderwaterColorB = t.visuals.fUnderwaterColorB = uwcolor.z * 255.0;
+					g.projectmodified = 1;
+					Wicked_Update_Visuals((void *)&t.visuals);
+				}
+				ImGui::EndPopup();
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Colour the view fogs toward when the camera is UNDER the water. Independent of the surface Water Base Color, so changing this does not affect how transparent the surface looks from above.");
+
+			ImGui::TextCenter("Underwater Fog");
+			if (ImGui::MaxSliderInputFloat("##fUnderwaterFog:", &t.visuals.fUnderwaterFog, 0.0f, 100.0f, "How quickly the underwater view fogs out with depth. 0 = crystal clear, higher = murkier and shorter view distance. Only affects the view when the camera is below the water line.", 0, 100.0f))
+			{
+				t.gamevisuals.fUnderwaterFog = t.visuals.fUnderwaterFog;
+				Wicked_Update_Visuals((void*)&t.visuals);
+				g.projectmodified = 1;
+			}
 
 			extern void ControlAdvancedSetting(int&, const char*, bool* = nullptr);
 			ControlAdvancedSetting(pref.iEnableAdvancedWater, "Advanced Water Settings");

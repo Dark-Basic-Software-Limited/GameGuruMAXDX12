@@ -1805,6 +1805,10 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 	t.visuals.WaterGreen_f = t.gamevisuals.WaterGreen_f;
 	t.visuals.WaterBlue_f = t.gamevisuals.WaterBlue_f;
 	t.visuals.WaterAlpha_f = t.gamevisuals.WaterAlpha_f;
+	t.visuals.fUnderwaterColorR = t.gamevisuals.fUnderwaterColorR;
+	t.visuals.fUnderwaterColorG = t.gamevisuals.fUnderwaterColorG;
+	t.visuals.fUnderwaterColorB = t.gamevisuals.fUnderwaterColorB;
+	t.visuals.fUnderwaterFog = t.gamevisuals.fUnderwaterFog;
 
 	t.visuals.iTimeOfday = t.gamevisuals.iTimeOfday;
 	t.visuals.SunAngleX = t.gamevisuals.SunAngleX;

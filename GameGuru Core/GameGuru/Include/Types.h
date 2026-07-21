@@ -3898,6 +3898,13 @@ struct visualstype
 	float fWaterWaveAmplitude;
 	float fWaterPatchLength;
 	float fWaterCausticSize;
+	// Underwater view controls (Wicked underwaterCS), decoupled from the surface Water Base Color
+	// so changing the surface colour no longer forces the water opaque. Colour = what the submerged
+	// view fogs toward; Fog = how quickly it fogs with depth (0 = crystal clear).
+	float fUnderwaterColorR;
+	float fUnderwaterColorG;
+	float fUnderwaterColorB;
+	float fUnderwaterFog;
 	float fWaterChoppyScale;
 	float fWaterWindDependency;
 
@@ -4165,6 +4172,10 @@ struct visualstype
 		 fWaterWaveAmplitude = 20.0f;
 		 fWaterPatchLength = 40.0f;
 		 fWaterCausticSize = 3.0f;
+		 fUnderwaterColorR = 5.0f;
+		 fUnderwaterColorG = 40.0f;
+		 fUnderwaterColorB = 60.0f;
+		 fUnderwaterFog = 20.0f;
 		 fWaterChoppyScale = 0.0f;
 		 fWaterWindDependency = 0.0f;
 		 WaterSpeed1 = 0.06f;

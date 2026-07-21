@@ -1593,6 +1593,17 @@ void Wicked_Update_Visuals(void *voidvisual)
 			weather->oceanParameters.caustic_scale = 1.0f / ggCSize;
 			extern float g_dbgCausticSizeFromVisuals;
 			g_dbgCausticSizeFromVisuals = ggCSize;
+
+			// Underwater view (Wicked underwaterCS), DECOUPLED from the surface waterColor above so
+			// changing the Water Base Color no longer forces the surface opaque. Underwater Color =
+			// what the submerged view fogs toward; Underwater Fog (0..100) = how fast it fogs with
+			// depth. density scale is tuned for GG's inch-scale world (see underwaterCS.hlsl).
+			weather->oceanParameters.underwater_color = XMFLOAT4(visuals->fUnderwaterColorR / 255.0f, visuals->fUnderwaterColorG / 255.0f, visuals->fUnderwaterColorB / 255.0f, 1.0f);
+			// Slider 0..100 -> density 0..0.015. Scale tuned on the TESTPRO1 deep-water vista: the
+			// default (fUnderwaterFog 20 -> 0.003) shows the seabed + caustics clearly with a natural
+			// blue depth fade; 0 = crystal clear; ~100 = murky/opaque at depth. Shallow water stays
+			// clearer at the same value (less water to see through), which is physically correct.
+			weather->oceanParameters.underwater_fog_density = visuals->fUnderwaterFog * 0.00015f;
 			//weather->oceanParameters.fogMaxDist = visuals->WaterFogMaxDist; // removed from OceanParameters
 			//weather->oceanParameters.fogMinDist = visuals->WaterFogMinDist; // removed from OceanParameters
 			//weather->oceanParameters.fogMinAmount = visuals->WaterFogMinAmount; // removed from OceanParameters

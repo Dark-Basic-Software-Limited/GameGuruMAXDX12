@@ -280,6 +280,10 @@ void visuals_resetvalues (bool bNewLevel)
 	t.visuals.fWaterWaveAmplitude = 20.0f;
 	t.visuals.fWaterPatchLength = 40.0f;
 	t.visuals.fWaterCausticSize = 3.0f;
+	t.visuals.fUnderwaterColorR = 5.0f;
+	t.visuals.fUnderwaterColorG = 40.0f;
+	t.visuals.fUnderwaterColorB = 60.0f;
+	t.visuals.fUnderwaterFog = 20.0f;
 	t.visuals.fWaterChoppyScale = 0.0f;
 	t.visuals.fWaterWindDependency = 0.0f;
 	t.visuals.WaterSpeed1 = 0.06f;
@@ -888,6 +892,14 @@ void visuals_save ( void )
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.WaterCausticSize=" + Str(t.visuals.fWaterCausticSize);
 	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.UnderwaterColorR=" + Str(t.visuals.fUnderwaterColorR);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.UnderwaterColorG=" + Str(t.visuals.fUnderwaterColorG);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.UnderwaterColorB=" + Str(t.visuals.fUnderwaterColorB);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.UnderwaterFog=" + Str(t.visuals.fUnderwaterFog);
+	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.WaterChoppyScale=" + Str(t.visuals.fWaterChoppyScale);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.WaterWindDependency=" + Str(t.visuals.fWaterWindDependency);
@@ -1170,6 +1182,10 @@ void visuals_load ( void )
 	t.visuals.fWaterWaveAmplitude = 20.0f;
 	t.visuals.fWaterPatchLength = 40.0f;
 	t.visuals.fWaterCausticSize = 3.0f;
+	t.visuals.fUnderwaterColorR = 5.0f;
+	t.visuals.fUnderwaterColorG = 40.0f;
+	t.visuals.fUnderwaterColorB = 60.0f;
+	t.visuals.fUnderwaterFog = 20.0f;
 	t.visuals.fWaterChoppyScale = 0.0f;
 	t.visuals.fWaterWindDependency = 0.0f;
 	t.visuals.WaterSpeed1 = 0.06f;
@@ -1509,6 +1525,10 @@ void visuals_load ( void )
 			t.try_s = "visuals.WaterWaveAmplitude"; if (t.tfield_s == t.try_s)  t.visuals.fWaterWaveAmplitude = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.WaterPatchLength"; if (t.tfield_s == t.try_s)  t.visuals.fWaterPatchLength = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.WaterCausticSize"; if (t.tfield_s == t.try_s)  { t.visuals.fWaterCausticSize = ValF(t.tvalue_s.Get()); if (t.visuals.fWaterCausticSize < 1.0f || t.visuals.fWaterCausticSize > 10.0f) t.visuals.fWaterCausticSize = 3.0f; }
+			t.try_s = "visuals.UnderwaterColorR"; if (t.tfield_s == t.try_s)  t.visuals.fUnderwaterColorR = ValF(t.tvalue_s.Get());
+			t.try_s = "visuals.UnderwaterColorG"; if (t.tfield_s == t.try_s)  t.visuals.fUnderwaterColorG = ValF(t.tvalue_s.Get());
+			t.try_s = "visuals.UnderwaterColorB"; if (t.tfield_s == t.try_s)  t.visuals.fUnderwaterColorB = ValF(t.tvalue_s.Get());
+			t.try_s = "visuals.UnderwaterFog"; if (t.tfield_s == t.try_s)  { t.visuals.fUnderwaterFog = ValF(t.tvalue_s.Get()); if (t.visuals.fUnderwaterFog < 0.0f || t.visuals.fUnderwaterFog > 100.0f) t.visuals.fUnderwaterFog = 20.0f; }
 			t.try_s = "visuals.WaterChoppyScale"; if (t.tfield_s == t.try_s)  t.visuals.fWaterChoppyScale = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.WaterWindDependency"; if (t.tfield_s == t.try_s)  t.visuals.fWaterWindDependency = ValF(t.tvalue_s.Get());
 

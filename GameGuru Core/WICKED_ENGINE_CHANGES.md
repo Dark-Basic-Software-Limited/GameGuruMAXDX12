@@ -35,6 +35,18 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.23 Ocean: decouple the underwater view (fog colour + density) from the water surface
+
+**Files:**
+- `WickedEngine/shaders/ShaderInterop_Weather.h` (`ShaderOcean::underwater_fog_density` reuses the `caustic_pad0` slot; new `ShaderOcean::underwater_color` float4)
+- `WickedEngine/wiOcean.h` (`OceanParameters::underwater_fog_density` default 0 = stock; `underwater_color` default deep blue-green)
+- `WickedEngine/wiScene.cpp` (marshals both into `ShaderOcean`, next to `caustic_scale`)
+- `WickedEngine/shaders/underwaterCS.hlsl` (computes `uw_density`/`uw_color` with a stock fallback; uses them for `waterfog`, `transmittance` and the waterline intersection band instead of `water_color.a`/`water_color.rgb`)
+
+**Why:** the `underwaterCS` post-process (the submerged fog/tint/extinction) took its colour from `water_color.rgb` and its density from `water_color.a` — the SAME values that drive the water SURFACE (`oceanSurfacePS`). So the underwater look could not be tuned independently, and — worse — GameGuru's "Water Base Color" picker, on any edit, wrote `WaterAlpha = 255` (it read the picker alpha as a hard-coded 1.0), which via `water_color.a` turned the surface fully opaque/solid ("lost all transparency"). Decoupling lets the surface keep transparent water while the submerged view fogs to its own colour/distance.
+
+**Behaviour:** no stock behaviour change — `underwater_fog_density` defaults to 0, and the shader then falls back to the original `water_color.a` / `water_color.rgb` path exactly. GG sets density > 0 (from the new **"Underwater Fog"** slider) and **"Underwater Color"** picker, and also fixes the surface picker to preserve alpha so changing the water colour no longer forces it opaque. Density scale tuned on the TESTPRO1 deep-water vista (slider 0..100 -> density 0..0.015; default 20 -> 0.003 shows seabed + caustics with a natural blue depth fade).
+
 ### 1.22 Ocean: decouple seabed caustic size from the wave patch size
 
 **Files:**
@@ -671,6 +683,7 @@ modified, both genuine bug fixes.
 | 1.20 VT tile allocator freeze while camera in motion | applied 2026-07-19 + same-day hotfix (aging always runs, tail-invalid self-heal) | 60-frame recycle threshold mid-motion — visible tiles can never be stolen by the miss flood |
 | 1.21 VT expanded working set (island-wide full-res zone) | applied 2026-07-19, lib rebuilt | GG-specific (defaults = stock) — gg_near_ring_dist 6 + gg_removal_margin 12: camera travel over the island never crosses a VT resolution boundary; chunks survive zoom travel |
 | 1.22 Ocean caustic size decoupled from patch size | applied 2026-07-20, lib rebuilt | GG-specific (default 1.0 = stock) — new ShaderOcean.caustic_scale scales ONLY the seabed caustic lookup; Water-panel "Caustic Size" slider tunes ripple size without touching the waves |
+| 1.23 Ocean underwater fog colour+density decoupled from surface | applied 2026-07-21, lib rebuilt | GG-specific (default density 0 = stock fallback) — new ShaderOcean.underwater_color + underwater_fog_density; Water-panel "Underwater Color" + "Underwater Fog" control the submerged view independently, so the surface can stay transparent when the water colour changes |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
