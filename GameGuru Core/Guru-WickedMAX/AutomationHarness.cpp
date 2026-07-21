@@ -1078,6 +1078,19 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			GGTerrain::GGCustomFrame_GetWaterHeight());
 	}
 
+	// Surface water colour diagnostics: what the ocean SURFACE (oceanSurfacePS) receives. The rgb
+	// is the base/albedo colour, a is the surface opacity (drives refraction fog); extinction is the
+	// per-channel absorption tint. If WATER_ALPHA is ~0 the base colour barely shows from above.
+	{
+		auto& op = wiScene::GetScene().weather.oceanParameters; // what oceanSurfacePS is marshalled from
+		written += _snprintf(result + written, resultSize - written,
+			"WATER_COLOR: %.3f, %.3f, %.3f\n"
+			"WATER_ALPHA: %.3f (surface opacity; ~0 = fully transparent, base colour won't show from above)\n"
+			"WATER_EXTINCTION: %.3f, %.3f, %.3f (absorption tint)\n",
+			op.waterColor.x, op.waterColor.y, op.waterColor.z, op.waterColor.w,
+			op.extinctionColor.x, op.extinctionColor.y, op.extinctionColor.z);
+	}
+
 	// Terrain debug info
 	{
 		int drawCount=0, exitReason=0, initFlag=0, drawEn=0, updateEn=0;
@@ -2341,11 +2354,18 @@ void AutoHarness_CheckForCommand(void)
 			static float s_harnessCausticScale = -1.0f;
 				static float s_harnessWaterHeight = -99999.0f;
 				static float s_harnessUwDensity = -1.0f;
+				static float s_wcR = -1.0f, s_wcG = -1.0f, s_wcB = -1.0f, s_wcA = -1.0f;
+				static float s_wcDepth = -1.0f;
 			if (_stricmp(op, "foamscale") == 0) g_fWaterFoamUnitScale = ov;
 			else if (_stricmp(op, "foamamount") == 0) g_fWaterFoamAmount = ov;
 			else if (_stricmp(op, "causticscale") == 0) s_harnessCausticScale = ov;
 				else if (_stricmp(op, "waterheight") == 0) s_harnessWaterHeight = ov;
 				else if (_stricmp(op, "uwdensity") == 0) s_harnessUwDensity = ov;
+				else if (_stricmp(op, "wcr") == 0) s_wcR = ov;
+				else if (_stricmp(op, "wcg") == 0) s_wcG = ov;
+				else if (_stricmp(op, "wcb") == 0) s_wcB = ov;
+				else if (_stricmp(op, "wca") == 0) s_wcA = ov;
+				else if (_stricmp(op, "wcdepth") == 0) s_wcDepth = ov;
 			else known = false;
 			wi::scene::WeatherComponent* weather = wi::scene::GetScene().weathers.GetComponent(g_weatherEntityID);
 			if (weather)
@@ -2365,6 +2385,13 @@ void AutoHarness_CheckForCommand(void)
 					// a good default against GG's inch scale, then bake into the visuals default.
 					if (s_harnessUwDensity >= 0.0f)
 						weather->oceanParameters.underwater_fog_density = s_harnessUwDensity;
+					// Live-set the surface water base colour (0..1 each) to reproduce/verify the
+					// "Water Base Color doesn't tint from above" issue without the UI picker.
+					if (s_wcR >= 0.0f) weather->oceanParameters.waterColor.x = s_wcR;
+					if (s_wcG >= 0.0f) weather->oceanParameters.waterColor.y = s_wcG;
+					if (s_wcB >= 0.0f) weather->oceanParameters.waterColor.z = s_wcB;
+					if (s_wcA >= 0.0f) weather->oceanParameters.waterColor.w = s_wcA;
+					if (s_wcDepth >= 0.0f) weather->oceanParameters.water_color_depth = s_wcDepth;
 			}
 			if (known)
 				_snprintf(result, sizeof(result), "OK: SET_OCEAN %s = %.4f (foamscale=%.4f foamamount=%.2f weather=%s)",

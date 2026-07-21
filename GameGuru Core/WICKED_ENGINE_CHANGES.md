@@ -35,6 +35,18 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.24 Ocean: "Water Base Color" tints transparent water (depth-based surface tint)
+
+**Files:**
+- `WickedEngine/shaders/ShaderInterop_Ocean.h` (`OceanCB::xOceanWaterColorDepth` + 3 pad floats)
+- `WickedEngine/wiOcean.h` (`OceanParameters::water_color_depth` default 0 = stock)
+- `WickedEngine/wiOcean.cpp` (`GetOceanCBAtDim` fills `xOceanWaterColorDepth` from the param)
+- `WickedEngine/shaders/oceanSurfacePS.hlsl` (lerps `surface.refraction.rgb` toward `xOceanWaterColor.rgb` by `saturate(abs(water_depth) * xOceanWaterColorDepth)`, right after the extinction/transmittance step)
+
+**Why:** on the ocean SURFACE the base colour (`xOceanWaterColor.rgb`) only reaches the eye through opacity — `surface.albedo` blended by `refraction.a = exp(-water_depth * color.a)` and a depth-tinted reflection, all gated by `color.a` (WaterAlpha). GameGuru's water runs at **WaterAlpha 0** (fully transparent, so you can see the seabed), which means the base colour contributes essentially nothing — setting "Water Base Color" to red left the sea unchanged from above. This is the ocean CB used by `oceanSurfacePS` (NOT the `ShaderOcean` in ShaderInterop_Weather.h; that one feeds underwaterCS/lighting). `water_color_depth` tints the see-through refraction toward the base colour with depth, alpha-independent — clear shallows, coloured depths, like real water absorbing light — so the colour is visible on transparent water. Tint scales with the colour's own saturation (a subtle blue tints gently, a bold colour reads strongly).
+
+**Behaviour:** no stock behaviour change — `water_color_depth` defaults to 0, which skips the lerp (`saturate(0) == 0`). GG sets 0.005 (M-GridEditB_part3.cpp) for all water-enabled levels, so existing GG water now shows its base colour with depth (an improvement — most water_color values are sensible blues; a level that relied on the colour being invisible will now show it). Paired with the same commit's picker fix (the Water Base Color picker preserves WaterAlpha instead of forcing 255), so changing the colour no longer forces the surface opaque OR leaves it colourless — it stays transparent AND takes the colour.
+
 ### 1.23 Ocean: decouple the underwater view (fog colour + density) from the water surface
 
 **Files:**
@@ -684,6 +696,7 @@ modified, both genuine bug fixes.
 | 1.21 VT expanded working set (island-wide full-res zone) | applied 2026-07-19, lib rebuilt | GG-specific (defaults = stock) — gg_near_ring_dist 6 + gg_removal_margin 12: camera travel over the island never crosses a VT resolution boundary; chunks survive zoom travel |
 | 1.22 Ocean caustic size decoupled from patch size | applied 2026-07-20, lib rebuilt | GG-specific (default 1.0 = stock) — new ShaderOcean.caustic_scale scales ONLY the seabed caustic lookup; Water-panel "Caustic Size" slider tunes ripple size without touching the waves |
 | 1.23 Ocean underwater fog colour+density decoupled from surface | applied 2026-07-21, lib rebuilt | GG-specific (default density 0 = stock fallback) — new ShaderOcean.underwater_color + underwater_fog_density; Water-panel "Underwater Color" + "Underwater Fog" control the submerged view independently, so the surface can stay transparent when the water colour changes |
+| 1.24 Ocean water base colour tints transparent water (depth) | applied 2026-07-21, lib rebuilt | GG-specific (default 0 = stock) — new OceanCB.xOceanWaterColorDepth; oceanSurfacePS lerps refraction toward the base colour by depth so "Water Base Color" is visible on WaterAlpha-0 water (GG sets 0.005). Fixes "set red, sea didn't change from above" |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |

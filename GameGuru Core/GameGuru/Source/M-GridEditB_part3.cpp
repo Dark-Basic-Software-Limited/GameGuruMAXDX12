@@ -1604,6 +1604,12 @@ void Wicked_Update_Visuals(void *voidvisual)
 			// blue depth fade; 0 = crystal clear; ~100 = murky/opaque at depth. Shallow water stays
 			// clearer at the same value (less water to see through), which is physically correct.
 			weather->oceanParameters.underwater_fog_density = visuals->fUnderwaterFog * 0.00015f;
+			// Make the "Water Base Color" tint the surface with depth even on fully-transparent
+			// water (WaterAlpha 0), so changing the colour is visible from above without forcing the
+			// water opaque. 0.005 tuned on the inch-scale island (delta 1.24): clear turquoise
+			// shallows over the seabed, deepening to the base colour — and it scales with the colour's
+			// own saturation, so a subtle blue tints gently while a bold colour reads strongly.
+			weather->oceanParameters.water_color_depth = 0.005f;
 			//weather->oceanParameters.fogMaxDist = visuals->WaterFogMaxDist; // removed from OceanParameters
 			//weather->oceanParameters.fogMinDist = visuals->WaterFogMinDist; // removed from OceanParameters
 			//weather->oceanParameters.fogMinAmount = visuals->WaterFogMinAmount; // removed from OceanParameters
