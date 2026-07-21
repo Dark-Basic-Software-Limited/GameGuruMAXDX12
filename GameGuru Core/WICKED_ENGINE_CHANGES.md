@@ -35,6 +35,15 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.25 Hair particles: skip billboard-write + physics for non-drawn (culled) strands
+
+**Files:**
+- `WickedEngine/shaders/hairparticle_simulateCS.hlsl` (early-out after the wave-atomic index append: `if (!visible && !regenerate_frame) return;`)
+
+**Why:** the hair/grass simulate compute shader ran the full per-strand billboard vertex writes + physics integration for EVERY strand, even those culled from the draw (distance/frustum) — their output is never referenced by the culled index buffer, so it's pure wasted GPU work. The early-out bails for non-visible strands. The wave-atomic index append above it still runs for every lane (wave-safe), and `regenerate_frame` strands never bail (they must seed sim state + build the static primitive buffer). **Perf/upstream-worthy, not a GG behaviour change.**
+
+**Behaviour:** drawn (visible) strands are byte-identical, so the rendered grass is unchanged; a culled strand's sim state freezes until it re-enters view (imperceptible under low wind, none for a static camera). Measured on the TESTPRO1 editor: grass sim 52.0 → 48.3 ms (the dominant cost is the ~905K simulated strand count itself, which is density-bound). Saves proportional to the off-screen strand fraction — more when zoomed into a small edit area.
+
 ### 1.24 Ocean: "Water Base Color" tints transparent water (depth-based surface tint)
 
 **Files:**

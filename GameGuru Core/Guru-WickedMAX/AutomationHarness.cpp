@@ -1091,6 +1091,29 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			op.extinctionColor.x, op.extinctionColor.y, op.extinctionColor.z);
 	}
 
+	// Hair/grass simulation diagnostics — the hair simulate compute pass dispatches one thread per
+	// STRAND per hair system every frame (regardless of how many are drawn), so total strand count
+	// is the GPU cost driver. Report totals + the per-system params that scale per-strand cost.
+	{
+		auto& sc = wiScene::GetScene();
+		uint64_t totalStrands = 0, maxStrands = 0;
+		uint32_t seg = 0, bb = 0; float vd = 0, len = 0;
+		for (size_t i = 0; i < sc.hairs.GetCount(); i++)
+		{
+			auto& h = sc.hairs[i];
+			totalStrands += h.strandCount;
+			if (h.strandCount > maxStrands) maxStrands = h.strandCount;
+			if (i == 0) { seg = h.segmentCount; bb = h.billboardCount; vd = h.viewDistance; len = h.length; }
+		}
+		written += _snprintf(result + written, resultSize - written,
+			"HAIR_SYSTEMS: %d\n"
+			"HAIR_TOTAL_STRANDS: %llu (one sim thread each, every frame)\n"
+			"HAIR_MAX_STRANDS_PER_SYS: %llu\n"
+			"HAIR_SEG: %u  HAIR_BILLBOARD: %u  HAIR_VIEWDIST: %.0f  HAIR_LEN: %.1f\n",
+			(int)sc.hairs.GetCount(), (unsigned long long)totalStrands, (unsigned long long)maxStrands,
+			seg, bb, vd, len);
+	}
+
 	// Terrain debug info
 	{
 		int drawCount=0, exitReason=0, initFlag=0, drawEn=0, updateEn=0;
