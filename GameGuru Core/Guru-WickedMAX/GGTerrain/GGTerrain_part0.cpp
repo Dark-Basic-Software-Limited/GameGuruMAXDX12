@@ -815,6 +815,10 @@ void GGCustomFrame_Bind( wiGraphics::CommandList cmd )
 	wiGraphics::GetDevice()->BindConstantBuffer(&ggCustomFrameBuffer, 4, cmd);
 }
 
+// Diagnostic accessor: the water height actually uploaded to GGCustomFrameCB (b4) last frame.
+// Used by the harness GET_PERF_DATA WH_* readouts to trace where the GG water line is lost.
+float GGCustomFrame_GetWaterHeight() { return ggCustomFrameStaging.waterHeight; }
+
 Shader shaderMainVS;
 Shader shaderMainPS;
 Shader shaderMainVirtualPS;
@@ -9942,6 +9946,13 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		float brushSizeW = ggterrain_local_render_params2.brushSize;
 		if (ggterrain_extra_params.sculpt_mode == GGTERRAIN_SCULPT_PICK) brushSizeW = 100.0f;
 		GGTerrainWicked_SetBrushCursor(brushVisibleW, pickXW, pickYW, pickZW, brushSizeW);
+
+		// Refresh + upload GGCustomFrameCB (b4) before this early return. In Wicked mode the
+		// legacy tail below (which holds the only other GGCustomFrame_Update call) is skipped,
+		// so without this the CB is never uploaded and every field it carries — waterHeight,
+		// water/fog colour, tree wind, cloud params — reads as zero in the GG terrain/grass/tree
+		// shaders. This mirrors the "run our own copy before the early return" pattern above.
+		GGCustomFrame_Update(cmd);
 		return;
 	}
 

@@ -1059,6 +1059,25 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			[]() -> float { extern float g_dbgCausticSizeFromVisuals; return g_dbgCausticSizeFromVisuals; }());
 	}
 
+	// Water-height trace: the GG water line from source (g.gdefaultwaterheight) through the
+	// weather component and the per-frame blended scene.weather singleton, to the value actually
+	// uploaded to GGCustomFrameCB (b4 -> g_xFrame_WaterHeight in the terrain/grass/tree shaders).
+	// If WH_GGCB diverges from WH_SCENE_WEATHER the b4 upload path is broken (it was, in Wicked
+	// mode, until GGCustomFrame_Update was hooked before the terrain early-return).
+	{
+		extern wi::ecs::Entity g_weatherEntityID;
+		wiScene::WeatherComponent* whComp = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
+		written += _snprintf(result + written, resultSize - written,
+			"WH_GDEFAULT: %.2f (g.gdefaultwaterheight - GG source of truth)\n"
+			"WH_COMPONENT: %.2f (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)\n"
+			"WH_SCENE_WEATHER: %.2f (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)\n"
+			"WH_GGCB: %.2f (actual value uploaded to GGCustomFrameCB b4)\n",
+			g.gdefaultwaterheight,
+			whComp ? whComp->oceanParameters.waterHeight : -99999.0f,
+			wiScene::GetScene().weather.oceanParameters.waterHeight,
+			GGTerrain::GGCustomFrame_GetWaterHeight());
+	}
+
 	// Terrain debug info
 	{
 		int drawCount=0, exitReason=0, initFlag=0, drawEn=0, updateEn=0;

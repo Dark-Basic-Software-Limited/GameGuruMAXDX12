@@ -268,6 +268,7 @@ extern GGCustomFrameData ggCustomFrameStaging;
 void GGCustomFrame_Init();
 void GGCustomFrame_Update( wiGraphics::CommandList cmd );
 void GGCustomFrame_Bind( wiGraphics::CommandList cmd );
+float GGCustomFrame_GetWaterHeight(); // diagnostic: water height uploaded to GGCustomFrameCB last frame
 
 void GGTerrain_ClearEnvProbeList(void);
 void GGTerrain_InstantEnvProbeRefresh(int iCoolDownIndex);
