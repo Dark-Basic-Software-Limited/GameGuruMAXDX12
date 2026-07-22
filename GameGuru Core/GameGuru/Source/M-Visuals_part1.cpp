@@ -748,6 +748,12 @@ void visuals_shaderlevels_update_core (bool bUpdateEngine)
 		if (bUpdateEngine == true)
 		{
 			wiRenderer::SetOcclusionCullingEnabled(t.visuals.bOcclusionCulling);
+			// DX12: the engine's staggered directional cascade refresh (delta 1.11) must follow the
+			// project's Delayed Shadows setting. At HIGHEST quality g_bDelayedShadows=false, so this
+			// disables staggering -> every-frame cascades -> stable shadows (fixes the cliff-shadow
+			// flicker under camera movement). Previously the engine hard-forced staggering on at sun
+			// creation, so the "Delayed Shadows" UI checkbox (point-shadow only) could never turn it off.
+			wiRenderer::SetDelayedShadowCascadesEnabled(g_bDelayedShadows);
 			extern void gridedit_setvsync (bool);
 			gridedit_setvsync(t.visuals.bLevelVSyncEnabled);
 			extern void gridedit_setreflection (bool);

@@ -133,7 +133,11 @@ void MasterRenderer::Load()
 	// /2 /3 /4 /9) — skipped cascades keep their atlas contents + frozen
 	// matrices; a >64" camera move or any atlas/rect change forces a refresh.
 	// Wicked delta 1.11; the DELAYED_SHADOWS harness command A/Bs it live.
-	wi::renderer::SetDelayedShadowCascadesEnabled( true );
+	// Respect the project's Delayed Shadows setting (Graphics & Performance panel): at HIGHEST
+	// quality g_bDelayedShadows=false -> every-frame cascades -> stable shadows (no cliff-shadow
+	// flicker under camera movement). M-Visuals apply + the checkbox keep this in sync live.
+	extern bool g_bDelayedShadows;
+	wi::renderer::SetDelayedShadowCascadesEnabled( g_bDelayedShadows );
 
 	// LB: sun needs lens flare texture
 	int iFlareCount = 3;

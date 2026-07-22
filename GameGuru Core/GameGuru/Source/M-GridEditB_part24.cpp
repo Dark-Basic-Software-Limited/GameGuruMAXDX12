@@ -62,6 +62,10 @@
 		{
 			t.gamevisuals.g_bDelayedShadows = t.visuals.g_bDelayedShadows = g_bDelayedShadows;
 			g.projectmodified = 1;
+			// DX12: actually drive the engine's directional cascade staggering (delta 1.11). OFF =
+			// every-frame cascades = no shadow-lag flicker under camera movement. The point-shadow
+			// booleans below are the legacy DX11 path and do NOT touch the directional cascades.
+			wiRenderer::SetDelayedShadowCascadesEnabled(g_bDelayedShadows);
 			if (g_bDelayedShadows && g_bDelayedShadowsLaptop)
 			{
 				bEnableDelayPointShadow = true;

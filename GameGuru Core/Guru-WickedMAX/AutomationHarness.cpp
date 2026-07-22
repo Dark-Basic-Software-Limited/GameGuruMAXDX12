@@ -1038,6 +1038,13 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			(int)master.masterrenderer.visibility_main.visibleHairs.size());
 	}
 
+	// Delayed (staggered) directional shadow cascades — should follow the project's Delayed Shadows
+	// setting (OFF at HIGHEST quality). ON = staggered refresh (can lag/flicker shadows under camera
+	// movement); OFF = every-frame cascades (stable).
+	written += _snprintf(result + written, resultSize - written,
+		"DELAYED_SHADOWS_ENGINE: %s\n",
+		wi::renderer::GetDelayedShadowCascadesEnabled() ? "ON (staggered)" : "OFF (every-frame)");
+
 	// Camera position and orientation (for diagnosing camera issues)
 	{
 		auto& cam = wiScene::GetCamera();
