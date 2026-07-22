@@ -32,6 +32,9 @@ extern size_t g_dbgInvalidatedCensus, g_dbgMergePendingCensus;
 extern uint64_t g_dbgAutoSkipNoChunk, g_dbgAutoSkipNoLayers, g_dbgAutoSkipInvalid,
 	g_dbgAutoSkipMergePend, g_dbgAutoPassRuns;
 extern size_t g_dbgAutoLastPending;
+// Grass-hair lifecycle diagnostics (shadow-flicker investigation) — global scope in GGTerrainWicked.cpp.
+extern uint64_t g_dbgGrassRecycles, g_dbgGrassFullResets, g_dbgGrassRecreates;
+extern size_t g_dbgGrassDeadMeshNow;
 
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
@@ -1143,7 +1146,11 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"TERRAINW_AUTO_SKIP_NOCHUNK: %llu\n"
 			"TERRAINW_AUTO_SKIP_NOLAYERS: %llu\n"
 			"TERRAINW_AUTO_SKIP_INVALID: %llu\n"
-			"TERRAINW_AUTO_SKIP_MERGEPEND: %llu\n",
+			"TERRAINW_AUTO_SKIP_MERGEPEND: %llu\n"
+			"GRASS_RECYCLES: %llu\n"
+			"GRASS_FULLRESETS: %llu\n"
+			"GRASS_RECREATES: %llu\n"
+			"GRASS_DEADMESH_NOW: %llu\n",
 			(unsigned long long)g_dbgBridgeCalls,
 			(unsigned long long)g_dbgBridgeChunksMarked,
 			(unsigned long long)g_dbgBridgeKeysErased,
@@ -1156,7 +1163,11 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			(unsigned long long)g_dbgAutoSkipNoChunk,
 			(unsigned long long)g_dbgAutoSkipNoLayers,
 			(unsigned long long)g_dbgAutoSkipInvalid,
-			(unsigned long long)g_dbgAutoSkipMergePend);
+			(unsigned long long)g_dbgAutoSkipMergePend,
+			(unsigned long long)g_dbgGrassRecycles,
+			(unsigned long long)g_dbgGrassFullResets,
+			(unsigned long long)g_dbgGrassRecreates,
+			(unsigned long long)g_dbgGrassDeadMeshNow);
 	}
 
 	// Tab mode (profiler panel state)
@@ -2198,6 +2209,62 @@ void AutoHarness_CheckForCommand(void)
 	else if (_stricmp(cmd, "PRESS_KEY") == 0)
 	{
 		Cmd_PressKey(arg, result, sizeof(result));
+	}
+	else if (_stricmp(cmd, "SET_CAMERA") == 0)
+	{
+		// SET_CAMERA <x> <y> <z> [angx angy] — relocate the editor free-flight camera (same state
+		// the editor's own "travel to" writes). Used to force VT/terrain chunk re-streaming so the
+		// shadow-flicker (chunk-recycle) trigger can be reproduced on demand. Editor mode only.
+		float cxp = 0, cyp = 0, czp = 0, cax = 0, cay = 0;
+		int got = sscanf_s(arg, "%f %f %f %f %f", &cxp, &cyp, &czp, &cax, &cay);
+		const char* state = AutoHarness_GetAppState();
+		if (strcmp(state, "editor") != 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_CAMERA only works in the level editor (state: %s)", state);
+		}
+		else if (got < 3)
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_CAMERA needs <x> <y> <z> [angx angy]");
+		}
+		else
+		{
+			t.editorfreeflight.mode = 1; // free-flight so the fields below are applied each frame
+			t.editorfreeflight.c.x_f = cxp;
+			t.editorfreeflight.c.y_f = cyp;
+			t.editorfreeflight.c.z_f = czp;
+			if (got >= 5) { t.editorfreeflight.c.angx_f = cax; t.editorfreeflight.c.angy_f = cay; }
+			t.cx_f = t.editorfreeflight.c.x_f;
+			t.cy_f = t.editorfreeflight.c.z_f;
+			_snprintf(result, sizeof(result), "OK: SET_CAMERA pos=(%.1f,%.1f,%.1f) ang=(%.1f,%.1f)",
+				cxp, cyp, czp, t.editorfreeflight.c.angx_f, t.editorfreeflight.c.angy_f);
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "MOVE_CAMERA") == 0)
+	{
+		// MOVE_CAMERA <dx> <dy> <dz> — offset the editor free-flight camera (force chunk re-stream).
+		float dxp = 0, dyp = 0, dzp = 0;
+		const char* state = AutoHarness_GetAppState();
+		if (strcmp(state, "editor") != 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: MOVE_CAMERA only works in the level editor (state: %s)", state);
+		}
+		else if (sscanf_s(arg, "%f %f %f", &dxp, &dyp, &dzp) != 3)
+		{
+			_snprintf(result, sizeof(result), "ERROR: MOVE_CAMERA needs <dx> <dy> <dz>");
+		}
+		else
+		{
+			t.editorfreeflight.mode = 1;
+			t.editorfreeflight.c.x_f += dxp;
+			t.editorfreeflight.c.y_f += dyp;
+			t.editorfreeflight.c.z_f += dzp;
+			t.cx_f = t.editorfreeflight.c.x_f;
+			t.cy_f = t.editorfreeflight.c.z_f;
+			_snprintf(result, sizeof(result), "OK: MOVE_CAMERA -> (%.1f,%.1f,%.1f)",
+				t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f);
+		}
+		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_GRASS") == 0)
 	{

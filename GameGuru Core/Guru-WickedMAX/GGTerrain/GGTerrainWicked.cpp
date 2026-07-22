@@ -119,6 +119,18 @@ uint64_t g_dbgAutoSkipMergePend = 0;  // auto pass: merge_pending flag up
 uint64_t g_dbgAutoPassRuns = 0;       // auto pass invocations (gate fires)
 size_t   g_dbgAutoLastPending = 0;    // auto pass: pending size on last run
 
+// Grass-hair lifecycle diagnostics for the shadow-flicker investigation (GET_PERF_DATA).
+// Trigger-1 confirmation: when a terrain chunk's scene-object entity is recycled/removed by
+// Wicked streaming, its grass HairParticleSystem's meshID points at a vanished MeshComponent
+// until ProcessGrassChunks re-detects the change and rebuilds. The hair simulate pass silently
+// skips a hair whose meshID mesh is missing (wiRenderer.cpp GetComponent==null), so that chunk's
+// grass — and its shadow (shadow pass reuses the camera-culled hair set) — vanish together for
+// the gap. A slow, state-dependent flicker == chunks cycling through that gap.
+uint64_t g_dbgGrassRecycles    = 0;   // ProcessGrassChunks: chunk-object entity changed (recycle) events
+uint64_t g_dbgGrassFullResets  = 0;   // fullReset removals (old hair torn down before recreate)
+uint64_t g_dbgGrassRecreates   = 0;   // grass hair entities (re)created
+size_t   g_dbgGrassDeadMeshNow = 0;   // live GG-grass hairs whose meshID mesh is GONE this frame (>0 == flicker)
+
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
 	return ((uint64_t)(uint32_t)cx << 32) | (uint64_t)(uint32_t)cz;
@@ -1343,6 +1355,22 @@ static float GrassTierDensityScale(int tier)
 static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& cameraPos)
 {
 	auto& scene = wi::scene::GetScene();
+
+	// Shadow-flicker census (runs every frame, before any early-out): count live GG-grass hair
+	// systems whose emitter chunk mesh is GONE this frame. Such a hair is skipped by the simulate
+	// pass (its grass + shadow disappear) until we rebuild it below. >0 == the flicker is happening.
+	{
+		size_t deadNow = 0;
+		for (size_t hi = 0; hi < scene.hairs.GetCount(); hi++)
+		{
+			const wi::HairParticleSystem& h = scene.hairs[hi];
+			if (h.grass_type == 0) continue; // not a GG grass hair (upstream Wicked hair)
+			if (h.meshID == wi::ecs::INVALID_ENTITY || scene.meshes.GetComponent(h.meshID) == nullptr)
+				deadNow++;
+		}
+		g_dbgGrassDeadMeshNow = deadNow;
+	}
+
 	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
 	float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
 
@@ -1403,6 +1431,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 
 		auto entIt = grassChunkKeyToChunkEntity.find(key);
 		bool entityChanged = (entIt != grassChunkKeyToChunkEntity.end() && entIt->second != entity);
+		if (entityChanged) g_dbgGrassRecycles++; // diag: chunk object entity recycled (flicker trigger)
 		auto tierIt = grassChunkKeyToTier.find(key);
 		int currentTier = (tierIt != grassChunkKeyToTier.end()) ? tierIt->second : -1;
 
@@ -1478,7 +1507,10 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			{
 				wi::ecs::Entity e = existingEntities.perType[t];
 				if (e != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(e))
+				{
 					scene.Entity_Remove(e);
+					g_dbgGrassFullResets++; // diag: old hair torn down (recycle/bare gap)
+				}
 				existingEntities.perType[t] = wi::ecs::INVALID_ENTITY;
 			}
 		}
@@ -1560,6 +1592,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			scene.Component_Attach(grassEntity, pc.entity, true); // inherit chunk transform
 
 			existingEntities.perType[t] = grassEntity;
+			g_dbgGrassRecreates++; // diag: grass hair (re)created
 		}
 	}
 
