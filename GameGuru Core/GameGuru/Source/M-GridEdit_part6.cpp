@@ -946,7 +946,17 @@
 
 								// find where mouse is on the plane we have positioned
 								bool widget_getplanepos(float fActivePosX, float fActivePosY, float fActivePosZ, float* pPlanePosX, float* pPlanePosY, float* pPlanePosZ);
-								bPlanePosRegistered = widget_getplanepos(fActivePosX, fActivePosY, fActivePosZ, &fPlanePosX, &fPlanePosY, &fPlanePosZ);
+								// PERF (Stage P.3): widget_getplanepos() runs a FULL scene update
+								// (WickedCall_UpdateSceneForPick -> wiScene::Update over ~21K objects, ~4ms)
+								// plus a plane pick to resolve the mouse->placement-plane position. That result
+								// is only consumed while actually placing/moving an entity or dragging a gizmo
+								// handle; at idle (nothing on the cursor, no widget grabbed, no mouse button) it
+								// was rebuilding the whole scene every frame for a value nobody used. Gate it on
+								// real placement activity so a parked editor pays nothing.
+								if (t.gridentity != 0 || t.gridentityobj != 0 || bDraggingActive || t.widget.activeObject != 0 || t.inputsys.mclick != 0)
+									bPlanePosRegistered = widget_getplanepos(fActivePosX, fActivePosY, fActivePosZ, &fPlanePosX, &fPlanePosY, &fPlanePosZ);
+								else
+									bPlanePosRegistered = false;
 								if (bPlanePosRegistered == true && bIgnoreFirstPlaneDetectItIsWrong == false)
 								{
 									fPlanePosX -= fHitOffsetX;
@@ -1020,7 +1030,7 @@
 						bool bUseOldYSystem = true;
 
 						bool bDontUsePivot = false;
-						if (iExtractMode == 1) 
+						if (iExtractMode == 1)
 						{ 
 							//0 = find floor, 1 = extracted y value. , 3 = fixed y value.
 							t.gridentityposy_f = fExtractYValue;

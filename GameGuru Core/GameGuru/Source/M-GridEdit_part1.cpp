@@ -70,6 +70,9 @@
 	// special modes used when in test game or standalone game
 	if (commonexecutable_loop_for_game() == true) return;
 
+	// PERF P.3: pre-ImGui housekeeping range (weather particles, IO/style setup, launch state machine).
+	auto clPre = wi::profiler::BeginRangeCPU("CL-PreBlock");
+
 	//PE: Some function require we have a empty imgui , so launch here.
 	extern bool g_bNoSwapchainPresent;
 
@@ -623,8 +626,13 @@
 	//PE: Additional resets, not done in direct input.
 	t.inputsys.doartresize = 0;
 	t.inputsys.dosave = 0; t.inputsys.doopen = 0; t.inputsys.donew = 0; t.inputsys.donewflat = 0; t.inputsys.dosaveas = 0;
-	if (bImGuiFrameState) 
+	wi::profiler::EndRange(clPre); // close CL-PreBlock
+	if (bImGuiFrameState)
 	{
+		// PERF P.3: sub-range instrumentation partitioning the ~5.9ms editor-UI "Logic - common_loop".
+		// All boundaries are at this (2-tab) top level of the bImGuiFrameState block; there are no
+		// returns in this file after line 71, so these sequential ranges are always balanced.
+		auto clSeg = wi::profiler::BeginRangeCPU("CL-Head");
 		// LEELEE disable interaction with main editor if Welcome system is active!
 		if (iTriggerWelcomeSystemStuff != 0)
 		{
@@ -2211,6 +2219,7 @@
 		
 		grideleprof_uniqui_id = 55000; //If using the new properties widgets outside properties window.
 
+		wi::profiler::EndRange(clSeg); clSeg = wi::profiler::BeginRangeCPU("CL-Tutorial");
 		//#######################
 		//#### Tutorial Help ####
 		//#######################
@@ -2830,6 +2839,7 @@
 			Welcome_Screen(); //Also dislay welcome screen behind in new design. to hide 3D editor.
 		}
 
+		wi::profiler::EndRange(clSeg); clSeg = wi::profiler::BeginRangeCPU("CL-Market+Misc");
 		//#############################
 		//#### Market place Window ####
 		//#############################
@@ -3889,6 +3899,7 @@
 			}
 		}
 
+		wi::profiler::EndRange(clSeg); clSeg = wi::profiler::BeginRangeCPU("CL-ObjTools+Settings");
 		//######################
 		//#### Object Tools ####
 		//######################
@@ -6921,6 +6932,7 @@
 		//################################
 
 
+		wi::profiler::EndRange(clSeg); clSeg = wi::profiler::BeginRangeCPU("CL-EntityProps");
 		//###########################
 		//#### Entity Properties ####
 		//###########################
@@ -8482,6 +8494,7 @@
 		// collect an entire list of all relevant filders (entitybank, scriptbank, images, particles, etc)
 		mapeditorexecutable_full_folder_refresh();
 
+		wi::profiler::EndRange(clSeg); clSeg = wi::profiler::BeginRangeCPU("CL-ObjLists");
 		//########################
 		//#### Level Entities ####
 		//########################
@@ -11082,6 +11095,7 @@
 
 		}
 
+		wi::profiler::EndRange(clSeg); clSeg = wi::profiler::BeginRangeCPU("CL-Tail");
 		//################################
 		//#### EBE BUILDER LEFT PANEL ####
 		//################################
@@ -11884,7 +11898,8 @@
 			iBlackoutForFrames--;
 			if(iBlackoutForFrames == 0)
 				g_bNoSwapchainPresent = false;
-				
+
 		}
+		wi::profiler::EndRange(clSeg); // close CL-Tail
 	}
 

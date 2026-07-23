@@ -136,7 +136,7 @@
 	if (pref.iDragCameraMovement && t.ebe.on == 0 && bDragCameraActive) bPickActive = false;
 	if (bPickActive)
 	{
-		input_calculatelocalcursor ();
+		{ auto rP2=wi::profiler::BeginRangeCPU("P2-calclocalcursor"); input_calculatelocalcursor (); wi::profiler::EndRange(rP2); }
 	}
 
 	// Character Creator Plus
@@ -159,7 +159,7 @@
 	else
 	{
 		// Editor Controls
-		editor_constructionselection();
+		{ auto rP2=wi::profiler::BeginRangeCPU("P2-constructsel"); editor_constructionselection(); wi::profiler::EndRange(rP2); }
 
 		if (t.grideditselect != 0)
 		{
@@ -174,13 +174,13 @@
 		}
 		else
 		{
-			editor_mainfunctionality ( );
+			{ auto rP2=wi::profiler::BeginRangeCPU("P2-mainfunc"); editor_mainfunctionality ( ); wi::profiler::EndRange(rP2); }
 			if ( t.grideditselect == 0 ) 
 			{
 				// Terrain controls
 				t.terrain.camx_f=t.cx_f ; t.terrain.camz_f=t.cy_f;
 				t.terrain.zoom_f=t.gridzoom_f*0.12;
-				terrain_editcontrol ( );
+				{ auto rP2=wi::profiler::BeginRangeCPU("P2-terrain_editctl"); terrain_editcontrol ( ); wi::profiler::EndRange(rP2); }
 				if (BackBufferImageID <= 0)
 				{
 					WickedCall_DisplayCubes(true);
@@ -208,25 +208,25 @@
 				else
 				{
 					//  Non-terrain controls
-					gridedit_mapediting ( );
+					{ auto rP2=wi::profiler::BeginRangeCPU("P2-mapediting"); gridedit_mapediting ( ); wi::profiler::EndRange(rP2); }
 				}
 			}
 		}
-		editor_overallfunctionality ( );
+		{ auto rP2=wi::profiler::BeginRangeCPU("P2-overallfunc"); editor_overallfunctionality ( ); wi::profiler::EndRange(rP2); }
 
 		//  Handle visual components
 		editor_detect_invalid_screen ( );
-		editor_visuals ( );
+		{ auto rP2=wi::profiler::BeginRangeCPU("P2-editor_visuals"); editor_visuals ( ); wi::profiler::EndRange(rP2); }
 		
 		//  Ensure entity animations speeds are controlled
 		if(!bExport_Standalone_Window)
-			entity_loopanim ( );
+			{ auto rP2=wi::profiler::BeginRangeCPU("P2-entity_loopanim"); entity_loopanim ( ); wi::profiler::EndRange(rP2); }
 
 		//  Widget control
-		widget_loop ( );
+		{ auto rP2=wi::profiler::BeginRangeCPU("P2-widget_loop"); widget_loop ( ); wi::profiler::EndRange(rP2); }
 
 		//  Ensure lighting is updated as lighting is edited and moved
-		lighting_loop ( );
+		{ auto rP2=wi::profiler::BeginRangeCPU("P2-lighting_loop"); lighting_loop ( ); wi::profiler::EndRange(rP2); }
 
 		//  Only show terrain cursor if in terrain edit mode
 		if (  t.grideditselect == 0 && t.inputsys.mclick != 2 && t.inputsys.mclick != 4 && t.interactive.insidepanel == 0 ) 
@@ -240,7 +240,7 @@
 
 		//  Render terrain elements (shadowupdatepacer as shadow calc is expensive, time slice it)
 		t.terrain.gameplaycamera=0;
-		terrain_waterineditor ( );
+		{ auto rP2=wi::profiler::BeginRangeCPU("P2-waterineditor"); terrain_waterineditor ( ); wi::profiler::EndRange(rP2); }
 
 		// 111115 - keep track of memory between sessions with simpler SYSMEM minus STARTMEM calculation
 		g.gamememactuallyused = SMEMAvailable(1) - g.gamememactuallyusedstart;

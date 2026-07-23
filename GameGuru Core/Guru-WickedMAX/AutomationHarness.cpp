@@ -1142,6 +1142,23 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			drawCount, exitReason, initFlag, drawEn, updateEn);
 	}
 
+	// PERF P.3: per-frame editor entity-pick reuse cache effectiveness (cumulative since launch)
+	{
+		extern int g_pickRealRuns, g_pickCacheHits, g_pickMissMask, g_pickMissRay;
+		written += _snprintf(result + written, resultSize - written,
+			"PICK_REAL_RUNS: %d (scene raycasts actually executed)\n"
+			"PICK_CACHE_HITS: %d (reused - ray unchanged)\n"
+			"PICK_MISS_MASK: %d (miss: layer/output pattern differed)\n"
+			"PICK_MISS_RAY: %d (miss: cursor/camera differed)\n",
+			g_pickRealRuns, g_pickCacheHits, g_pickMissMask, g_pickMissRay);
+	}
+
+	// PERF P.3: editor placement state (tells us which gridedit_mapediting path runs at idle)
+	written += _snprintf(result + written, resultSize - written,
+		"EDIT_STATE: gridentity=%d gridentityobj=%d pickedSection=%d mclick=%d selstage=%d grideditselect=%d\n",
+		t.gridentity, t.gridentityobj, t.widget.pickedSection, t.inputsys.mclick,
+		t.selstage, t.grideditselect);
+
 	// Wicked-terrain blend/bridge diagnostics (cumulative counters + last-frame censuses)
 	{
 		using namespace GGTerrain;

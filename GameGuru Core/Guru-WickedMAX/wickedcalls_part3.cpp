@@ -151,10 +151,82 @@ bool WickedCall_GetPick2_OLD(float fMouseX, float fMouseY, float* pOutX, float* 
 }
 #endif
 
+// PERF P.3 diagnostics: how often the per-frame editor pick actually runs the scene raycast vs
+// reuses the cached result (see cache below). Read via GET_PERF_DATA -> PICK_REAL_RUNS/PICK_CACHE_HITS.
+int g_pickRealRuns = 0;
+int g_pickCacheHits = 0;
+int g_pickMissMask = 0; // miss because layer/output pattern differed from cached (multi-mask thrash)
+int g_pickMissRay  = 0; // miss because the ray inputs (cursor/camera) differed (motion or instability)
+
 bool WickedCall_GetPick(float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
 {
 	XMFLOAT4 currentMouse = wiInput::GetPointer();
-	bool res = WickedCall_GetPick2(currentMouse.x, currentMouse.y, pOutX, pOutY, pOutZ, pNormX, pNormY, pNormZ, pHitEntity, iLayerMask);;
+
+	// PERF (Stage P.3): the level editor calls this pick EVERY FRAME to find the entity under the
+	// cursor (findentitycursorobj -> gridedit_mapediting). The underlying wiScene raycast tests the
+	// whole scene (~21K objects on the island) and is the single biggest editor-CPU cost measured
+	// (~5ms, "P2-mapediting"). The hovered result can only change when the pick RAY changes, i.e. when
+	// the cursor or the camera moves. Memoise on the RAW ray inputs - screen pointer + camera
+	// Eye/At/Up + layer mask + which outputs were requested. (Deliberately NOT the derived pick ray:
+	// CameraComponent::Projection bakes in the per-frame TAA jitter, so the ray oscillates sub-pixel
+	// every frame even when parked and would defeat the cache.) When nothing moved we replay the
+	// cached outputs and skip the raycast entirely; the pick's global hover state (g_hovered_*) is
+	// produced inside GetPick2 which we skip, so it persists unchanged - exactly correct when nothing
+	// moved. Any cursor/camera motion changes the key and re-runs the real pick, so behaviour (and
+	// pixels) are identical to before. Sub-pixel-only differences from TAA jitter are intentionally
+	// ignored (they never change which object is hovered, and dropping them removes edge hover flicker).
+	// Several distinct pick calls happen each frame (different layer masks / requested outputs), so a
+	// single-slot cache thrashes (measured: near-100% mask misses). Keep a small per-key slot table so
+	// every distinct pick keeps its own cached result and hits frame-to-frame while nothing moves.
+	const wiScene::CameraComponent& cam = wiScene::GetCamera();
+	const int ptrMask = (pOutX ? 1 : 0) | (pNormX ? 2 : 0) | (pHitEntity ? 4 : 0);
+	struct PickCacheSlot
+	{
+		bool valid;
+		int  layer, ptr;
+		float mx, my, ex, ey, ez, ax, ay, az, ux, uy, uz;
+		bool res;
+		float ox, oy, oz, nx, ny, nz;
+		uint64_t ent;
+	};
+	static PickCacheSlot slots[8] = {};
+	static int nextSlot = 0;
+
+	// look for a slot that matches this exact pick (mask + requested outputs + ray inputs)
+	for (int i = 0; i < 8; i++)
+	{
+		const PickCacheSlot& s = slots[i];
+		if (!s.valid || s.layer != iLayerMask || s.ptr != ptrMask) continue;
+		if (s.mx == currentMouse.x && s.my == currentMouse.y &&
+			s.ex == cam.Eye.x && s.ey == cam.Eye.y && s.ez == cam.Eye.z &&
+			s.ax == cam.At.x  && s.ay == cam.At.y  && s.az == cam.At.z  &&
+			s.ux == cam.Up.x  && s.uy == cam.Up.y  && s.uz == cam.Up.z)
+		{
+			if (pOutX) *pOutX = s.ox; if (pOutY) *pOutY = s.oy; if (pOutZ) *pOutZ = s.oz;
+			if (pNormX) *pNormX = s.nx; if (pNormY) *pNormY = s.ny; if (pNormZ) *pNormZ = s.nz;
+			if (pHitEntity) *pHitEntity = s.ent;
+			g_pickCacheHits++;
+			return s.res;
+		}
+	}
+	g_pickMissRay++; // reached only when no slot for this key matched the current ray
+
+	g_pickRealRuns++;
+	bool res = WickedCall_GetPick2(currentMouse.x, currentMouse.y, pOutX, pOutY, pOutZ, pNormX, pNormY, pNormZ, pHitEntity, iLayerMask);
+
+	// store into the slot already owning this (mask, output-pattern) if present, else the next round-robin
+	int useIdx = -1;
+	for (int i = 0; i < 8; i++) { if (slots[i].valid && slots[i].layer == iLayerMask && slots[i].ptr == ptrMask) { useIdx = i; break; } }
+	if (useIdx < 0) { useIdx = nextSlot; nextSlot = (nextSlot + 1) & 7; }
+	PickCacheSlot& s = slots[useIdx];
+	s.valid = true; s.layer = iLayerMask; s.ptr = ptrMask; s.res = res;
+	s.mx = currentMouse.x; s.my = currentMouse.y;
+	s.ex = cam.Eye.x; s.ey = cam.Eye.y; s.ez = cam.Eye.z;
+	s.ax = cam.At.x;  s.ay = cam.At.y;  s.az = cam.At.z;
+	s.ux = cam.Up.x;  s.uy = cam.Up.y;  s.uz = cam.Up.z;
+	s.ox = pOutX ? *pOutX : 0; s.oy = pOutY ? *pOutY : 0; s.oz = pOutZ ? *pOutZ : 0;
+	s.nx = pNormX ? *pNormX : 0; s.ny = pNormY ? *pNormY : 0; s.nz = pNormZ ? *pNormZ : 0;
+	s.ent = pHitEntity ? *pHitEntity : 0;
 	return res;
 }
 
