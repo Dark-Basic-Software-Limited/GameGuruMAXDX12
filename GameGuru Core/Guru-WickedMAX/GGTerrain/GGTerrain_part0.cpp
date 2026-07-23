@@ -10980,14 +10980,22 @@ extern "C" void GGTerrain_Draw_ShadowMap( const Frustum* frustum, int cascade, C
 	uint32_t numLODLevels = pCurrLODs->GetNumLevels();
 	uint32_t lowestLevel = 0;
 	
+	// Per-cascade terrain shadow LOD floor. The lighting shader BLENDS adjacent cascades in the
+	// edge-fade band, so if neighbouring cascades include very different finest LOD levels they
+	// cast noticeably different terrain silhouettes there. With delayed (staggered) shadows those
+	// two cascades refresh on different frames and desync, and the boundary blend then oscillates
+	// between the two silhouettes = the "two terrain shapes" cliff-shadow flicker. Keeping the gap
+	// between adjacent cascades to a single LOD level makes the blended silhouettes near-identical
+	// (sub-texel apart at these distances) so the blend has nothing to flip between, while still
+	// coarsening with distance for perf. (Near cascades 0/1 unchanged.)
 	switch ( cascade )
 	{
 		case 0: lowestLevel = 0; break;
 		case 1: lowestLevel = 1; break;
-		case 2: lowestLevel = 3; break;
-		case 3: lowestLevel = 5; break;
-		case 4: lowestLevel = 7; break;
-		case 5: lowestLevel = 9; break;
+		case 2: lowestLevel = 2; break;
+		case 3: lowestLevel = 3; break;
+		case 4: lowestLevel = 4; break;
+		case 5: lowestLevel = 5; break;
 	}
 	if ( lowestLevel >= numLODLevels ) lowestLevel = numLODLevels - 1;
 	
