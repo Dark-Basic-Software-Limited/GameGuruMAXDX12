@@ -1049,6 +1049,18 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	written += _snprintf(result + written, resultSize - written,
 		"SHADOW_LOD_OVERRIDE_ENGINE: %s\n",
 		wi::renderer::IsShadowLODOverrideEnabled() ? "ON (per-cascade LOD, can flicker)" : "OFF (view LOD)");
+	// GG Phase 1 point-light shadow budget (revived iShadowPointMax). GRANTED = local casters that won
+	// an atlas shadow slot this frame; CAPPED = casters denied a slot (rendered fully lit, DX11-style);
+	// RENDERED = local shadows actually re-drawn this frame. Budget -1 => uncapped (stock, all render).
+	{
+		int shGranted = 0, shCapped = 0, shRendered = 0;
+		wi::renderer::GetLocalShadowStats(shGranted, shCapped, shRendered);
+		written += _snprintf(result + written, resultSize - written,
+			"SHADOW_LOCAL_GRANTED: %d\n"
+			"SHADOW_LOCAL_CAPPED: %d\n"
+			"SHADOW_LOCAL_RENDERED: %d\n",
+			shGranted, shCapped, shRendered);
+	}
 
 	// Camera position and orientation (for diagnosing camera issues)
 	{

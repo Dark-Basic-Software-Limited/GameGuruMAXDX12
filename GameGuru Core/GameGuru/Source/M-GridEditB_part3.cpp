@@ -1372,6 +1372,11 @@ void Wicked_Update_Shadows(void *voidvisual)
 			wiRenderer::SetShadowPropsCube(visuals->iShadowPointResolution);
 	}
 
+	// GG Phase 1: revive the (previously discarded) iShadowPointMax cap. Pushed EVERY call
+	// (outside the change-gate above) so a LOWERED cap takes effect immediately. shadowscube is
+	// already the bucketed point-light count clamped to iShadowPointMax (0 when the knob is 0).
+	wiRenderer::SetLocalShadowBudget((visuals->iShadowPointResolution == 0 || visuals->iShadowPointMax == 0) ? 0 : shadowscube);
+
 	if(bForceRefreshLightCount) bForceRefreshLightCount = false;
 
 	//PE: MEM - 1556 : END SetShadowPropsCube                                   S : 360MB V : (4518, 0)
