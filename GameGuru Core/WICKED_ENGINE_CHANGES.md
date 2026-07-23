@@ -192,6 +192,17 @@ all — this doc alone is not sufficient to restore the clone.
 
 **Date:** 2026-07-18 (Wicked commit `38a9e82a`)
 
+**MODIFIED 2026-07-23 (Wicked commit `8c89731b`) — cascade-blend SYNC (fixes terrain-shadow flicker):**
+the original `%2 %3 %4 %9` cadence + load-leveling deliberately DESYNCED cascades 1/2/3. But the lighting
+shader deterministically blends adjacent cascades in the edge-fade band, so a boundary pixel lerps between
+two cascades holding different-frame snapshots — whose silhouettes differ by per-cascade terrain LOD floor
+(GGTerrain_part0.cpp) and by the terrain draw's per-frame `IsGenerating()/IsVisible()` chunk set during VT
+re-stream — producing a "two terrain shapes" flicker even at a static camera. New cadence: cascade 0 every
+frame, cascades 1..N refreshed TOGETHER every other frame, so every far-cascade boundary is always
+self-consistent (still ~halves the staggered cascades' cost). USER-CONFIRMED fix. See
+[[project-shadow-flicker]]. (Also: the DX12 "Delayed Shadows" UI checkbox is now wired to
+`SetDelayedShadowCascadesEnabled` — game `a756c627` — and the shadow LOD override to it too — `d770ed00`.)
+
 #### Use case in GameGuru MAX
 
 Port of production DX11's "delayed shadows" (`g_bDelayedShadows`, old
