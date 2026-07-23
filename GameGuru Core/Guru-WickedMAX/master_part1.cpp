@@ -138,6 +138,12 @@ void MasterRenderer::Load()
 	// flicker under camera movement). M-Visuals apply + the checkbox keep this in sync live.
 	extern bool g_bDelayedShadows;
 	wi::renderer::SetDelayedShadowCascadesEnabled( g_bDelayedShadows );
+	// Shadow LOD override renders each object into the shadow at a per-cascade projected-size LOD
+	// (Wicked default ON) — for the terrain this picks a DIFFERENT, threshold-oscillating LOD mesh
+	// than the visible chunk, so the cast shadow flips between two terrain shapes as the cascade
+	// shifts (the author's own warning: "can result in shadow mismatch"). Tie it to the Delayed
+	// Shadows setting: OFF (highest quality) = shadows use the stable main-view LOD, no flicker.
+	wi::renderer::SetShadowLODOverrideEnabled( g_bDelayedShadows );
 
 	// LB: sun needs lens flare texture
 	int iFlareCount = 3;

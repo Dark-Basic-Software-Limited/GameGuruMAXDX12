@@ -1044,6 +1044,11 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	written += _snprintf(result + written, resultSize - written,
 		"DELAYED_SHADOWS_ENGINE: %s\n",
 		wi::renderer::GetDelayedShadowCascadesEnabled() ? "ON (staggered)" : "OFF (every-frame)");
+	// Shadow LOD override: ON = terrain casts shadows at a per-cascade LOD that can oscillate vs the
+	// visible chunk (the "two terrain shapes" flicker); OFF = shadows use the stable main-view LOD.
+	written += _snprintf(result + written, resultSize - written,
+		"SHADOW_LOD_OVERRIDE_ENGINE: %s\n",
+		wi::renderer::IsShadowLODOverrideEnabled() ? "ON (per-cascade LOD, can flicker)" : "OFF (view LOD)");
 
 	// Camera position and orientation (for diagnosing camera issues)
 	{
@@ -2435,6 +2440,16 @@ void AutoHarness_CheckForCommand(void)
 		wi::renderer::SetDelayedShadowCascadesEnabled(on);
 		_snprintf(result, sizeof(result), "OK: DELAYED_SHADOWS %s (staggered cascade refresh %s)",
 			on ? "ON" : "OFF", wi::renderer::GetDelayedShadowCascadesEnabled() ? "enabled" : "disabled");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SHADOW_LOD_OVERRIDE") == 0)
+	{
+		// A/B the "two terrain shapes" shadow flicker: ON = per-cascade shadow LOD (can oscillate vs
+		// the visible terrain), OFF = shadows use the stable main-view LOD.
+		bool on = (arg[0] != '0');
+		wi::renderer::SetShadowLODOverrideEnabled(on);
+		_snprintf(result, sizeof(result), "OK: SHADOW_LOD_OVERRIDE %s (%s)",
+			on ? "ON" : "OFF", wi::renderer::IsShadowLODOverrideEnabled() ? "per-cascade LOD" : "view LOD");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_OCEAN") == 0)

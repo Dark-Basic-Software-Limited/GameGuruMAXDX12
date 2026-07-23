@@ -66,6 +66,9 @@
 			// every-frame cascades = no shadow-lag flicker under camera movement. The point-shadow
 			// booleans below are the legacy DX11 path and do NOT touch the directional cascades.
 			wiRenderer::SetDelayedShadowCascadesEnabled(g_bDelayedShadows);
+			// Also the shadow LOD override (terrain casts shadows at a threshold-oscillating per-cascade
+			// LOD -> "two terrain shapes" flicker). OFF = shadows use the stable main-view LOD.
+			wiRenderer::SetShadowLODOverrideEnabled(g_bDelayedShadows);
 			if (g_bDelayedShadows && g_bDelayedShadowsLaptop)
 			{
 				bEnableDelayPointShadow = true;

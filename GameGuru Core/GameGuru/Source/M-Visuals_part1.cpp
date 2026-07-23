@@ -754,6 +754,11 @@ void visuals_shaderlevels_update_core (bool bUpdateEngine)
 			// flicker under camera movement). Previously the engine hard-forced staggering on at sun
 			// creation, so the "Delayed Shadows" UI checkbox (point-shadow only) could never turn it off.
 			wiRenderer::SetDelayedShadowCascadesEnabled(g_bDelayedShadows);
+			// Also gate the shadow LOD override (Wicked default ON) — it renders terrain into shadows
+			// at a threshold-oscillating per-cascade LOD independent of the visible chunk, so the cast
+			// shadow flips between two terrain shapes ("shadow mismatch", the author's own warning).
+			// OFF at HIGHEST quality = shadows follow the stable main-view LOD -> no shape flicker.
+			wiRenderer::SetShadowLODOverrideEnabled(g_bDelayedShadows);
 			extern void gridedit_setvsync (bool);
 			gridedit_setvsync(t.visuals.bLevelVSyncEnabled);
 			extern void gridedit_setreflection (bool);
