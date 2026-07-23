@@ -162,6 +162,20 @@ bool WickedCall_GetPick(float* pOutX, float* pOutY, float* pOutZ, float* pNormX,
 {
 	XMFLOAT4 currentMouse = wiInput::GetPointer();
 
+	// CORRECTNESS (Stage P.3): NEVER serve a cached pick while the user is actively interacting
+	// (any mouse button held). Interactive edits read the pick-derived cursor and gate on it CHANGING
+	// each frame: e.g. grass/terrain PAINT (t.tx_f -> t.inputsys.localx_f -> t.terrain.X_f; the paint
+	// only applies when t.terrain.X_f differs from last frame - M-Terrain_part1.cpp), terrain SCULPT
+	// (which also moves the terrain the ray hits, so a replayed hit is stale by construction), and
+	// object dragging. A replayed pick would freeze the cursor and the edit would silently never
+	// register. The cache exists only to save cost at a truly IDLE, parked camera - where no mouse
+	// button is down - so this bypass costs nothing there. This fixes "cannot paint grass".
+	if (wiInput::Down(wiInput::MOUSE_BUTTON_LEFT) || wiInput::Down(wiInput::MOUSE_BUTTON_RIGHT) || wiInput::Down(wiInput::MOUSE_BUTTON_MIDDLE))
+	{
+		g_pickRealRuns++;
+		return WickedCall_GetPick2(currentMouse.x, currentMouse.y, pOutX, pOutY, pOutZ, pNormX, pNormY, pNormZ, pHitEntity, iLayerMask);
+	}
+
 	// PERF (Stage P.3): the level editor calls this pick EVERY FRAME to find the entity under the
 	// cursor (findentitycursorobj -> gridedit_mapediting). The underlying wiScene raycast tests the
 	// whole scene (~21K objects on the island) and is the single biggest editor-CPU cost measured
