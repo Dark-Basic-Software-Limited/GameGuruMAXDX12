@@ -61,5 +61,9 @@ IF ERRORLEVEL 1 (
     echo =============================================
     echo  BUILD SUCCEEDED
     echo =============================================
+    if exist "D:\max\WickedEngineDX12\refresh_shaders.ps1" (
+        echo Refreshing stale engine shader .cso ...
+        powershell -NoProfile -ExecutionPolicy Bypass -File "D:\max\WickedEngineDX12\refresh_shaders.ps1"
+    )
     exit /b 0
 )
