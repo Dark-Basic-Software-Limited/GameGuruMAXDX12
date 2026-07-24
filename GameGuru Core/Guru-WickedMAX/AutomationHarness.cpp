@@ -2448,6 +2448,49 @@ void AutoHarness_CheckForCommand(void)
 			bEnable30FpsAnimations ? 1 : 0, g_animThrottleFarDist);
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_APPARENTSIZE") == 0)
+	{
+		// A/B the apparent-size object cull (delta 1.30). Objects whose world bounding radius / camera
+		// distance falls below the threshold are dropped from the main visible set. Two forms:
+		//   SET_APPARENTSIZE <tangent>          DIRECT override of the tangent (radius/dist cutoff); <0 = restore slider.
+		//   SET_APPARENTSIZE slider <fASize>    exercise the REAL editor-slider path: sets maxApparentSize = fASize/10000
+		//                                       (fASize is the 0.02..2.0 UI value) and clears the direct override, so the
+		//                                       game maps it through g_apparentCullK exactly as moving the slider would.
+		// NOTE: visible/total counts reflect the PRIOR frame (runs before this frame's UpdateVisibility) — screenshot
+		// or re-query after a couple of frames to see the effect.
+		extern float g_apparentCullDirect;
+		extern float g_apparentCullK;
+		extern float maxApparentSize;
+		char sub[64] = { 0 };
+		float v = 0.0f;
+		if (sscanf(arg, "%63s %f", sub, &v) == 2 && _stricmp(sub, "slider") == 0)
+		{
+			// clamp like the editor slider + M-GridEditB_part3 load guard
+			float fA = v; if (fA < 0.02f) fA = 0.02f; if (fA > 2.0f) fA = 2.0f;
+			maxApparentSize = fA / 10000.0f;
+			g_apparentCullDirect = -1.0f;
+			float over = maxApparentSize - 0.000008f;
+			float tangent = (over > 0.0f) ? over * g_apparentCullK : 0.0f;
+			_snprintf(result, sizeof(result),
+				"OK: SET_APPARENTSIZE slider fASize=%.3f -> maxApparentSize=%.7f -> tangent=%.5f (K=%.0f)  visible=%d/%d (prior frame)",
+				fA, maxApparentSize, tangent, g_apparentCullK,
+				(int)master.masterrenderer.visibility_main.visibleObjects.size(),
+				master.masterrenderer.scene ? (int)master.masterrenderer.scene->objects.GetCount() : 0);
+		}
+		else
+		{
+			float tg = -1.0f;
+			int n = sscanf(arg, "%f", &tg);
+			if (n >= 1) g_apparentCullDirect = tg;
+			_snprintf(result, sizeof(result),
+				"OK: SET_APPARENTSIZE tangent=%.5f (%s)  visible=%d/%d (prior frame)",
+				g_apparentCullDirect,
+				(g_apparentCullDirect >= 0.0f) ? "forced override" : "slider mapping restored",
+				(int)master.masterrenderer.visibility_main.visibleObjects.size(),
+				master.masterrenderer.scene ? (int)master.masterrenderer.scene->objects.GetCount() : 0);
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SAVE_LEVEL") == 0)
 	{
 		// Repro lever for the save-crash: runs the same File>Save path (gridedit_save_map).

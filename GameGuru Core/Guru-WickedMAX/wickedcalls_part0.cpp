@@ -133,6 +133,15 @@ bool bEnable30FpsAnimations = true;
 // NOTE: an absolute distance is scene-scale-dependent — this should become a UI slider (or an apparent-
 // size gate, which is scale-invariant). Clamped to <=60000 in MasterRenderer::Update (uint32 dist^2 guard).
 float g_animThrottleFarDist = 2000.0f;
+// GGMAX delta 1.30: apparent-size object cull tuning (consumed by MasterRenderer::Update -> engine
+// wiRenderer::gg_apparent_cull_bits). The editor "Apparent Size" slider stores maxApparentSize
+// (0.000002..0.0002); g_apparentCullK maps the amount ABOVE the 0.000008 default to a radius/distance
+// tangent cutoff. Objects whose world bounding radius / camera distance falls below that cutoff (i.e.
+// render as a distant speck) are dropped from the main visible set. At/below default => 0 (draw
+// everything); sliding right grows the cull. g_apparentCullDirect >= 0 overrides the slider mapping for
+// harness tuning (SET_APPARENTSIZE); < 0 = use the slider.
+float g_apparentCullK = 320.0f;   // slider max (maxApparentSize 0.0002) -> tangent ~0.06 (cull small/distant, keep medium+large)
+float g_apparentCullDirect = -1.0f;
 bool bEnableTerrainChunkCulling = true;
 bool bEnablePointShadowCulling = true;
 bool bEnableDelayPointShadow = false;

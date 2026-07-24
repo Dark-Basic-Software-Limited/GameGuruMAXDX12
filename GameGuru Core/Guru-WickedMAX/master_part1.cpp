@@ -15,6 +15,11 @@ namespace wi { namespace scene {
 	extern std::atomic<uint32_t> gg_anim30fps_frame;
 	extern std::atomic<uint32_t> gg_anim30fps_dist2;
 } }
+// GGMAX delta 1.30: engine-side apparent-size object cull threshold (defined in WickedEngine/wiRenderer.cpp).
+// MasterRenderer::Update drives it per-frame from the editor "Apparent Size" slider (see below).
+namespace wi { namespace renderer {
+	extern std::atomic<uint32_t> gg_apparent_cull_bits;
+} }
 
 // Cached profiler text — updated in Compose() when GPU ranges are active.
 // GetTextData() called during Update misses GPU sub-ranges because BeginFrame()
@@ -320,6 +325,30 @@ void MasterRenderer::Update(float dt)
 		if (fd < 0.0f) fd = 0.0f;
 		if (fd > 60000.0f) fd = 60000.0f;   // guard: dist^2 must fit uint32 (60000^2 = 3.6e9 < 4.29e9)
 		wiScene::gg_anim30fps_dist2.store((uint32_t)(fd * fd), std::memory_order_relaxed);
+	}
+
+	// GGMAX delta 1.30: drive the engine apparent-size object cull from the editor "Apparent Size" slider.
+	// maxApparentSize is the stored slider value (0.000002..0.0002, default 0.000008). Map the amount ABOVE
+	// the default to a radius/distance tangent cutoff (at/below default => 0 = draw everything; slide right
+	// to cull distant specks). g_apparentCullDirect >= 0 overrides for harness tuning. Stored as fixed-point
+	// micro-units (tangent * 1e6) in the uint32 atomic the engine reads.
+	{
+		extern float maxApparentSize;
+		extern float g_apparentCullK;
+		extern float g_apparentCullDirect;
+		float tangent;
+		if (g_apparentCullDirect >= 0.0f)
+		{
+			tangent = g_apparentCullDirect;
+		}
+		else
+		{
+			const float over = maxApparentSize - 0.000008f;   // amount past the default
+			tangent = (over > 0.0f) ? over * g_apparentCullK : 0.0f;
+		}
+		if (tangent < 0.0f) tangent = 0.0f;
+		if (tangent > 0.5f) tangent = 0.5f;   // clamp: never cull objects filling more than ~half the view
+		wiRenderer::gg_apparent_cull_bits.store((uint32_t)(tangent * 1000000.0f + 0.5f), std::memory_order_relaxed);
 	}
 
 	// super update
