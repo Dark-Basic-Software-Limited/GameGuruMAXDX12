@@ -140,6 +140,17 @@
 		{
 			extern uint32_t iCulledPointShadows;
 			extern uint32_t iCulledSpotShadows;
+			// GGMAX DX12: the five per-category cull checkboxes below are DEAD — the Wicked engine now does
+			// this work natively so none of these globals has a live consumer:
+			//   * Object + frustum culling run every frame in UpdateVisibility (that's what the
+			//     "Frustum/Apparent Culled" readout counts).
+			//   * Animation culling is always-on inside RunAnimationUpdateSystem.
+			//   * Terrain chunks are culled by the native SVT terrain.
+			//   * Point/Spot shadow management moved to the local shadow-budget (top-N caster) system.
+			// The PARENT "Occlusion Culling" (engine GPU occlusion queries) is still wired and stays visible;
+			// it does useful work on GPU-bound / occluder-dense levels. Commented out 2026-07-24 — trivially
+			// re-enable a category here if it ever gets a real DX12 consumer.
+#if 0
 			extern bool bEnableTerrainChunkCulling;
 			extern bool bEnablePointShadowCulling;
 			extern bool bEnableSpotShadowCulling;
@@ -193,6 +204,7 @@
 					t.gamevisuals.bOcclusionCulling = t.visuals.bOcclusionCulling = true;
 				}
 			}
+#endif
 
 			wiScene::Scene* pScene = &wiScene::GetScene();
 			if (pScene)
