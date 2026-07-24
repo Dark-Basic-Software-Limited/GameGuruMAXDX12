@@ -2432,6 +2432,22 @@ void AutoHarness_CheckForCommand(void)
 		}
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_ANIM30FPS") == 0)
+	{
+		// A/B the "Lower Animation & LUA Speed" 30fps ANIMATION throttle (delta 1.29). The checkbox global
+		// is mirrored into the engine each frame by MasterRenderer::Update. Args: <0|1 enable> [farDist].
+		// farDist = scene-units distance beyond which on-screen armatures throttle to ~30fps; 0 = throttle
+		// ALL eligible ((b)); >0 = keep near-camera armatures full-rate ((c) distance gate). Omit farDist to keep it.
+		extern bool bEnable30FpsAnimations;
+		extern float g_animThrottleFarDist;
+		int en = -1; float fd = -1.0f;
+		int n = sscanf(arg, "%d %f", &en, &fd);
+		if (n >= 1 && (en == 0 || en == 1)) bEnable30FpsAnimations = (en == 1);
+		if (n >= 2 && fd >= 0.0f) g_animThrottleFarDist = fd;
+		_snprintf(result, sizeof(result), "OK: SET_ANIM30FPS enabled=%d farDist=%.1f (0=throttle all, >0=only beyond)",
+			bEnable30FpsAnimations ? 1 : 0, g_animThrottleFarDist);
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SAVE_LEVEL") == 0)
 	{
 		// Repro lever for the save-crash: runs the same File>Save path (gridedit_save_map).

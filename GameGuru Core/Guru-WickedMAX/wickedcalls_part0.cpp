@@ -126,6 +126,13 @@ uint32_t iRenderedPointShadows = 0;
 uint32_t iRenderedSpotShadows = 0;
 
 bool bEnable30FpsAnimations = true;
+// GGMAX delta 1.29 (c): distance gate for the 30fps animation throttle. Distance in scene units beyond
+// which an on-screen armature is throttled to ~30fps; nearer armatures stay full-rate. 0 = gate off
+// (throttle all eligible = pure (b)). Default 2000 keeps the immediate foreground smooth on a typical
+// editor camera (measured on TESTPRO1: crowd all within ~4000 units; ~1500-2000 spares the near line).
+// NOTE: an absolute distance is scene-scale-dependent — this should become a UI slider (or an apparent-
+// size gate, which is scale-invariant). Clamped to <=60000 in MasterRenderer::Update (uint32 dist^2 guard).
+float g_animThrottleFarDist = 2000.0f;
 bool bEnableTerrainChunkCulling = true;
 bool bEnablePointShadowCulling = true;
 bool bEnableDelayPointShadow = false;

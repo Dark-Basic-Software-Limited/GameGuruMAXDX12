@@ -5,6 +5,16 @@
 #include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
 #include "GGTerrain/GGTerrainWicked.h"
 #include "wiProfiler.h"
+#include <atomic>
+
+// GGMAX delta 1.29: engine-side 30fps animation throttle flags (defined in WickedEngine/wiScene.cpp).
+// MasterRenderer::Update drives these per-frame from the editor "Lower Animation & LUA Speed" checkbox,
+// before __super::Update runs the animation jobs. Replaces the removed GGAnimBridge pre-hook.
+namespace wi { namespace scene {
+	extern std::atomic<uint32_t> gg_anim30fps_enabled;
+	extern std::atomic<uint32_t> gg_anim30fps_frame;
+	extern std::atomic<uint32_t> gg_anim30fps_dist2;
+} }
 
 // Cached profiler text — updated in Compose() when GPU ranges are active.
 // GetTextData() called during Update misses GPU sub-ranges because BeginFrame()
@@ -295,7 +305,22 @@ void MasterRenderer::Update(float dt)
 	if (dt > (1.0f / 30.0f)) dt = 1.0f / 30.0f;
 
 	// animation bridge pre-hook (before scene->Update runs animations)
-	////GGAnimBridge_PreUpdate(&wiScene::GetScene(), dt);
+	////GGAnimBridge_PreUpdate(&wiScene::GetScene(), dt);   // removed 89873913 (too slow); throttle now lives in the engine
+	// GGMAX delta 1.29: drive the engine 30fps animation throttle from the editor "Lower Animation & LUA
+	// Speed" checkbox. Set BEFORE __super::Update (which runs the animation jobs). Parity counter flips each
+	// frame for a deterministic every-other-frame skip. g_animThrottleFarDist = distance (scene units) beyond
+	// which to throttle; 0 = throttle all eligible armatures ((b) behaviour), >0 = only distant ((c) gate).
+	{
+		extern bool bEnable30FpsAnimations;
+		extern float g_animThrottleFarDist;
+		wiScene::gg_anim30fps_enabled.store(bEnable30FpsAnimations ? 1u : 0u, std::memory_order_relaxed);
+		static uint32_t s_ggAnimFrame = 0;
+		wiScene::gg_anim30fps_frame.store(++s_ggAnimFrame, std::memory_order_relaxed);
+		float fd = g_animThrottleFarDist;
+		if (fd < 0.0f) fd = 0.0f;
+		if (fd > 60000.0f) fd = 60000.0f;   // guard: dist^2 must fit uint32 (60000^2 = 3.6e9 < 4.29e9)
+		wiScene::gg_anim30fps_dist2.store((uint32_t)(fd * fd), std::memory_order_relaxed);
+	}
 
 	// super update
 	auto range2 = wiProfiler::BeginRangeCPU("Update - Wicked (Total)");
