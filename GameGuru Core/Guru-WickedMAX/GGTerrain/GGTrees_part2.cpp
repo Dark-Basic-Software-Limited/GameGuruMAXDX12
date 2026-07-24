@@ -34,7 +34,14 @@ namespace GGTrees
 // update loop does a nearest-N-to-camera pick every frame instead of the
 // first-N-in-array-order (which used to leave the visible area sparse while
 // filling the pool with distant trees). See GGTrees_WickedUpdate.
-static constexpr uint32_t GG_TREE_POOL_SIZE  = 20000;
+// Tree pool: renders the nearest-N placed tree instances as real ECS ObjectComponents. EACH pool
+// entity costs per-frame ECS (object/transform update) whether drawn or parked, so the pool size is
+// the dominant editor CPU lever (TESTPRO1 default cam: 20000->2000 pool = 54->76 FPS). GG_TREE_POOL_MAX
+// is the fixed array capacity; g_treePoolSize is the runtime EFFECTIVE count read at pool setup — lower
+// draws fewer/nearer trees but frees a lot of CPU. Change via harness SET_TREES pool <N> (applies on the
+// next level load / pool rebuild). This is a work-reducing quality knob (fewer simultaneous trees).
+static constexpr uint32_t GG_TREE_POOL_MAX = 20000;
+uint32_t g_treePoolSize = 6000; // effective count, clamped to [1, GG_TREE_POOL_MAX] at setup
 // Hardcoded here to keep this file free of the HLSL-flavoured numTreeTypes
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
@@ -66,7 +73,7 @@ static wi::ecs::Entity  g_treeBranchesMaterialEntity[ GG_TREE_TYPES ] = { wi::ec
 
 // Fixed pool of ObjectComponents. meshID is (re)assigned every frame based on
 // which tree type the slot represents.
-static wi::ecs::Entity  g_treePoolEntities[ GG_TREE_POOL_SIZE ] = { wi::ecs::INVALID_ENTITY };
+static wi::ecs::Entity  g_treePoolEntities[ GG_TREE_POOL_MAX ] = { wi::ecs::INVALID_ENTITY };
 
 // Append a TreeMeshHigh's verts to the given mesh, unpacking the packed
 // R8G8B8A8_UNORM normal to XMFLOAT3 in [-1,1]. Returns the vertex-index offset
@@ -271,7 +278,10 @@ static void GGTrees_WickedSetup()
 	// impostor atlas quad in the reflection pass same as the main pass).
 	// One-shot flag, persists across every SetRenderable toggle from the
 	// update loop.
-	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+	// Clamp the runtime pool size to the fixed array capacity (SET_TREES pool <N> can set it).
+	if ( g_treePoolSize < 1u ) g_treePoolSize = 1u;
+	if ( g_treePoolSize > GG_TREE_POOL_MAX ) g_treePoolSize = GG_TREE_POOL_MAX;
+	for ( uint32_t i = 0; i < g_treePoolSize; i++ )
 	{
 		wi::ecs::Entity e = wi::ecs::CreateEntity();
 		wi::scene::ObjectComponent& obj = scene.objects.Create( e );
@@ -301,7 +311,7 @@ static void GGTrees_WickedSetup()
 		// Should be impossible (g_GGTrees is compiled-in static data), but never
 		// latch setup "done" with zero meshes — destroy the pool and let the
 		// next frame retry rather than rendering nothing forever.
-		for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+		for ( uint32_t i = 0; i < g_treePoolSize; i++ )
 		{
 			if ( g_treePoolEntities[ i ] != wi::ecs::INVALID_ENTITY )
 			{
@@ -316,7 +326,7 @@ static void GGTrees_WickedSetup()
 	wi::backlog::post( ( "GGTrees: real tree meshes ready ("
 		+ std::to_string( typesBuilt )    + " trunks, "
 		+ std::to_string( branchesBuilt ) + " with branches, "
-		+ std::to_string( GG_TREE_POOL_SIZE ) + " pool slots)" ).c_str() );
+		+ std::to_string( g_treePoolSize ) + " pool slots)" ).c_str() );
 }
 
 // Debug/benchmark hook: while > 0, the nearest-N selection re-runs every frame
@@ -359,7 +369,7 @@ void GGTrees_WickedInit()
 		g_treeTrunkMaterialEntity   [ t ] = wi::ecs::INVALID_ENTITY;
 		g_treeBranchesMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
 	}
-	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+	for ( uint32_t i = 0; i < GG_TREE_POOL_MAX; i++ )
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
 	g_gridValid = false;   // spatial grid must not survive an engine restart
 	// proxy entities belong to the previous scene — forget them, rebuild all
@@ -727,7 +737,7 @@ void GGTrees_WickedUpdate()
 	{
 		if ( !s_poolParked )
 		{
-			for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+			for ( uint32_t i = 0; i < g_treePoolSize; i++ )
 			{
 				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
 				if ( obj ) obj->SetRenderable( false );
@@ -796,7 +806,7 @@ void GGTrees_WickedUpdate()
 				if ( obj ) { obj->cascadeMask = proxyMask; anyProxy = true; }
 			}
 			const uint32_t meshMask = TreeMeshCascadeMask();
-			for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+			for ( uint32_t i = 0; i < g_treePoolSize; i++ )
 			{
 				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
 				if ( obj ) obj->cascadeMask = meshMask;
@@ -835,16 +845,16 @@ void GGTrees_WickedUpdate()
 	// Slot-vector size mismatch = first run or post-shutdown re-setup (fresh
 	// pool entities, stale bindings).
 	if ( g_treeToSlot.size() != (size_t)numTotalTrees ) forceRebind = true;
-	if ( g_slotToTree.size() != (size_t)GG_TREE_POOL_SIZE ) forceRebind = true;
+	if ( g_slotToTree.size() != (size_t)g_treePoolSize ) forceRebind = true;
 	if ( forceRebind )
 	{
 		g_treeToSlot      .assign( numTotalTrees, -1 );
 		g_treeDesiredEpoch.assign( numTotalTrees, 0 );
 		g_treeBand        .assign( numTotalTrees, 0 );
 		g_treeShadow      .assign( numTotalTrees, 0 );
-		g_slotToTree      .assign( GG_TREE_POOL_SIZE, UINT32_MAX );
-		g_slotCache       .resize( GG_TREE_POOL_SIZE );
-		for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+		g_slotToTree      .assign( g_treePoolSize, UINT32_MAX );
+		g_slotCache       .resize( g_treePoolSize );
+		for ( uint32_t i = 0; i < g_treePoolSize; i++ )
 		{
 			wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
 			if ( obj ) obj->SetRenderable( false );
@@ -964,7 +974,7 @@ void GGTrees_WickedUpdate()
 			if ( candidates.size() >= (size_t)totalInGrid ) break;   // grid exhausted
 			if ( coveredRing < 0 )
 			{
-				if ( candidates.size() >= (size_t)GG_TREE_POOL_SIZE )
+				if ( candidates.size() >= (size_t)g_treePoolSize )
 					coveredRing = r;
 			}
 			else if ( r > coveredRing )
@@ -980,14 +990,14 @@ void GGTrees_WickedUpdate()
 	// Partial-sort: put the N closest at the front, don't care about the rest.
 	// nth_element is O(N) on average — much cheaper than a full sort.
 	size_t poolFill = candidates.size();
-	if ( poolFill > GG_TREE_POOL_SIZE )
+	if ( poolFill > g_treePoolSize )
 	{
 		std::nth_element(
 			candidates.begin(),
-			candidates.begin() + GG_TREE_POOL_SIZE,
+			candidates.begin() + g_treePoolSize,
 			candidates.end(),
 			[]( const TreeCandidate& a, const TreeCandidate& b ) { return a.dist2 < b.dist2; } );
-		poolFill = GG_TREE_POOL_SIZE;
+		poolFill = g_treePoolSize;
 	}
 
 	// Mark this frame's desired set + LOD band + mesh-shadow flag per tree.
@@ -1012,10 +1022,10 @@ void GGTrees_WickedUpdate()
 	// keep (and verify) the rest. Kept slots cost a few array reads + float
 	// compares — no component writes unless the tree's data or band changed.
 	static std::vector<uint32_t> freeSlots;
-	if ( freeSlots.capacity() < GG_TREE_POOL_SIZE ) freeSlots.reserve( GG_TREE_POOL_SIZE );
+	if ( freeSlots.capacity() < g_treePoolSize ) freeSlots.reserve( g_treePoolSize );
 	freeSlots.clear();
 
-	for ( uint32_t s = 0; s < GG_TREE_POOL_SIZE; s++ )
+	for ( uint32_t s = 0; s < g_treePoolSize; s++ )
 	{
 		const uint32_t t = g_slotToTree[ s ];
 		if ( t == UINT32_MAX ) { freeSlots.push_back( s ); continue; }
@@ -1082,7 +1092,7 @@ void GGTrees_WickedShutdown()
 	if ( !g_wickedTreesSetup ) return;
 	auto& scene = wi::scene::GetScene();
 
-	for ( uint32_t i = 0; i < GG_TREE_POOL_SIZE; i++ )
+	for ( uint32_t i = 0; i < g_treePoolSize; i++ )
 	{
 		wi::ecs::Entity e = g_treePoolEntities[ i ];
 		if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );

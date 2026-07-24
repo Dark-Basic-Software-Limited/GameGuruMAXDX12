@@ -62,6 +62,7 @@ namespace GGTrees
 
 	extern GGTreesParams ggtrees_global_params; // modify this anywhere
 	extern int g_treePoolStressFrames; // debug: force pool rescan for N frames (SET_TREES stress)
+	extern uint32_t g_treePoolSize;    // perf knob: effective tree pool size (nearest-N drawn); applies on next pool setup (level reload). Lower = fewer trees + big CPU win.
 
 	extern int ggtrees_draw_enabled;
 

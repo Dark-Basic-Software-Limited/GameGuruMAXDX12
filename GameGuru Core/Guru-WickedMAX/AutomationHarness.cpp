@@ -2371,6 +2371,19 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: SET_REFLECTIONS %s", on ? "ON" : "OFF");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_RESSCALE") == 0)
+	{
+		// GPU lever: render the 3D scene at a fraction of native resolution. RenderPath2D::Update
+		// auto-detects the resolutionScale change and ResizeBuffers() next frame (safe). 1.0 = native;
+		// lower = less GPU pixel work (Z-prepass/opaque/postproc all scale), softer image (FSR can upscale).
+		extern MasterRenderer * master_renderer;
+		float s = (float)atof(arg);
+		if (s < 0.4f) s = 0.4f;
+		if (s > 1.0f) s = 1.0f;
+		if (master_renderer) master_renderer->resolutionScale = s;
+		_snprintf(result, sizeof(result), "OK: SET_RESSCALE %.3f (auto-resizes next frame)", s);
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SAVE_LEVEL") == 0)
 	{
 		// Repro lever for the save-crash: runs the same File>Save path (gridedit_save_map).
@@ -2514,6 +2527,14 @@ void AutoHarness_CheckForCommand(void)
 			else if (_stricmp(tp, "shadowrange") == 0) GGTrees::ggtrees_global_params.tree_shadow_range = (int)tv;
 			else if (_stricmp(tp, "drawshadows") == 0) GGTrees::ggtrees_global_params.draw_shadows = (int)tv;
 			else if (_stricmp(tp, "stress") == 0) GGTrees::g_treePoolStressFrames = (int)tv;
+			else if (_stricmp(tp, "pool") == 0)
+			{
+				// Perf knob: effective tree pool size (nearest-N trees drawn as real ECS objects).
+				// Each pool entity costs per-frame ECS, so this is the dominant editor CPU lever.
+				// Applies on the next pool setup (level reload). Lower = fewer trees + big CPU win.
+				int n = (int)tv; if (n < 1) n = 1; if (n > 20000) n = 20000;
+				GGTrees::g_treePoolSize = (uint32_t)n;
+			}
 			else known = false;
 			if (known)
 				_snprintf(result, sizeof(result), "OK: SET_TREES %s = %.1f (shadowdist=%.0f shadowrange=%d drawshadows=%d)",
