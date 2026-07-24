@@ -1,17 +1,15 @@
 ﻿bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 {
 	int wflags = ImGuiTreeNodeFlags_None;
-	static bool bOCDebug = false;
 	static bool bBoxDebug = false;
-	static int iHiddenObjects = 0;
 	static int iObjects = 0;
 	static int iFrustumCulled = 0;
-	int iSpot = 0, iPoint = 0;
-	int occ = 0;
-	if (bOCDebug && g_iDevToolsOpen >= 1)
+	// "Debug Bounding Box" (dev tools only): draw a yellow world-AABB box around every visible object.
+	// Re-issued every frame the panel is up (wiRenderer's debug-box list drains per frame).
+	if (bBoxDebug && g_iDevToolsOpen >= 1)
 	{
 		int DrawOccludedObjects(bool bDebug, bool bBox = false, int* bHiddenObjects = nullptr, int* spot = nullptr, int* point = nullptr);
-		occ = DrawOccludedObjects(bOCDebug, bBoxDebug, &iHiddenObjects, &iSpot, &iPoint);
+		DrawOccludedObjects(false, true, nullptr, nullptr, nullptr);
 	}
 
 	if (pref.bAutoClosePropertySections && iLastOpenHeader != 16)
@@ -135,14 +133,12 @@
 		if (g_iDevToolsOpen >= 1)
 		{
 			ImGui::SameLine();
-			ImGui::Checkbox("Debug", &bOCDebug);
 			ImGui::Checkbox("Debug Bounding Box", &bBoxDebug);
 		}
 		if (t.visuals.bOcclusionCulling)
 		{
 			extern uint32_t iCulledPointShadows;
 			extern uint32_t iCulledSpotShadows;
-			extern uint32_t iCulledAnimations;
 			extern bool bEnableTerrainChunkCulling;
 			extern bool bEnablePointShadowCulling;
 			extern bool bEnableSpotShadowCulling;
@@ -208,32 +204,13 @@
 				iFrustumCulled = iObjects - iVisible;
 				if (iFrustumCulled < 0) iFrustumCulled = 0;
 			}
-			if (bOCDebug)
-				ImGui::Text("Total Objects: %d Hidden: %d", iObjects, iHiddenObjects);
-			else
-				ImGui::Text("Total Objects: %d", iObjects);
+			ImGui::Text("Total Objects: %d", iObjects);
 			ImGui::Text("Frustum/Apparent Culled: %d", iFrustumCulled);
-			if (bOCDebug)
-				ImGui::Text("Occluded Objects: %d", occ);
-
-			extern uint32_t iOccludedTerrainChunks;
-			if (bOCDebug)
-				ImGui::Text("Occluded Terrain chunks: %d", iOccludedTerrainChunks);
 
 			extern uint32_t iRenderedPointShadows;
 			extern uint32_t iRenderedSpotShadows;
-
-			if (bOCDebug)
-				ImGui::Text("Occluded Point Shadows: (%d) %d r(%d)", iPoint, iCulledPointShadows, iRenderedPointShadows);
-			else
-				ImGui::Text("Occluded Point Shadows: %d r(%d)", iCulledPointShadows, iRenderedPointShadows);
-			if (bOCDebug)
-				ImGui::Text("Occluded Spot Shadows: (%d) %d r(%d)", iSpot, iCulledSpotShadows, iRenderedSpotShadows);
-			else
-				ImGui::Text("Occluded Spot Shadows: %d r(%d)", iCulledSpotShadows, iRenderedSpotShadows);
-
-			if (bOCDebug)
-				ImGui::Text("Culled Animations: %d", iCulledAnimations);
+			ImGui::Text("Occluded Point Shadows: %d r(%d)", iCulledPointShadows, iRenderedPointShadows);
+			ImGui::Text("Occluded Spot Shadows: %d r(%d)", iCulledSpotShadows, iRenderedSpotShadows);
 		}
 
 		extern float maxApparentSize;

@@ -1202,6 +1202,13 @@ int DrawOccludedObjects(bool bDebug,bool bBox, int* iHiddenObjects, int* spot, i
 								{
 									if (bBox)
 									{
+										// GGMAX DX12 REVIVED: draw the object's world-space AABB straight from the engine's
+										// per-frame cull stream (aabb_objects). objects.GetIndex returns INVALID_INDEX (~0ull)
+										// if absent, which fails the size() bound. The old entity-lookup/mesh-fallback block
+										// below is dead (kept as history — aabb_objects lost per-entity lookup + transform_index).
+										size_t oi = wiScene::GetScene().objects.GetIndex(rootEntity);
+										if (oi < wiScene::GetScene().aabb_objects.size())
+											wiRenderer::DrawBox(wiScene::GetScene().aabb_objects[oi], XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
 										//AABB* aabb = wiScene::GetScene().aabb_objects.GetComponent(rootEntity); // aabb_objects is now a plain vector
 									// Entire block disabled: aabb_objects no longer supports entity lookup, transform_index removed
 									/*
