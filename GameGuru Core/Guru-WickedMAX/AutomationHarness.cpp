@@ -2357,6 +2357,20 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: SET_SHADOW_FARCULL %s", on ? "ON" : "OFF");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_REFLECTIONS") == 0)
+	{
+		// A/B lever for the water reflection stabilisation fix. Toggles planar reflections exactly like the
+		// editor "Reflections" checkbox (M-GridEditB_part23). With the engine guard (wiRenderPath3D PreRender),
+		// OFF forces texture_reflection_index=-1 so the ocean PS takes its EnvironmentReflection_Global
+		// fallback (reflect the sky/global probe) instead of sampling the stale reflection texture = garbage.
+		extern MasterRenderer * master_renderer;
+		bool on = (arg[0] != '0');
+		t.visuals.bReflectionsEnabled = on;
+		t.gamevisuals.bReflectionsEnabled = on;
+		if (master_renderer) master_renderer->setReflectionsEnabled(on);
+		_snprintf(result, sizeof(result), "OK: SET_REFLECTIONS %s", on ? "ON" : "OFF");
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SAVE_LEVEL") == 0)
 	{
 		// Repro lever for the save-crash: runs the same File>Save path (gridedit_save_map).

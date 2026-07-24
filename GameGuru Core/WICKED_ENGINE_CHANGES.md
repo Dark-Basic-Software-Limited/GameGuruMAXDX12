@@ -35,6 +35,15 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
+### 1.26 Ocean: env-map reflection fallback when planar reflections are OFF (fix garbage-water corruption)
+
+**Files:**
+- `WickedEngine/wiRenderPath3D.cpp` (`RenderPath3D::PreRender()` — guard the main camera's `texture_reflection_index` / `texture_reflection_depth_index` writes with the SAME condition that gates the planar reflection render below, `getReflectionsEnabled() && visibility_main.IsRequestedPlanarReflections()`; force both to -1 in the else)
+
+**Why:** the DX12 ocean PS (`oceanSurfacePS.hlsl:63`) branches on `texture_reflection_index >= 0` — planar reflection when set, else the stable `EnvironmentReflection_Global` sky/global-probe fallback. But `PreRender` wrote that index UNCONDITIONALLY every frame from `rtReflection_resolved`, with no reflections-enabled guard (unlike the adjacent VXGI-specular field, which IS guarded). When the user unticks "Reflections", `setReflectionsEnabled(false)` frees `rtReflection`/`depthBuffer_Reflection` but NOT `rtReflection_resolved`/`depthBuffer_Reflection_resolved`, so `GetDescriptorIndex` kept returning a valid index >= 0 while the planar render that refills that texture was gated off — the ocean took the planar branch and sampled a stale/uninitialised texture = bright blocky garbage on the water. DX11 never hit this: its ocean sampled a fixed slot and the renderer bound `wiTextureHelper::getTransparent()` when reflections were off — a safety net the DX12 bindless-index rewrite dropped. The guard restores it: the index becomes the -1 sentinel the shader keys on, so the ocean uses its env-map fallback (reflect the sky/probe) — stable and ~free (skips the whole planar scene re-render).
+
+**Behaviour:** reflections ON is byte-identical — the guard condition is the exact same as the planar-render gate, so whenever the mirror is actually rendered the same index is written as before. Reflections OFF now shows env-map water (sky/probe reflection, matching the DX11 look) instead of garbage, AND is cheaper: measured on the TESTPRO1 island editor, OFF 57.9 FPS vs ON 51.3 FPS (skips the planar scene re-render). Also closes a latent case where reflections are enabled but no planar reflection is requested that frame (the index would otherwise point at the stale resolved texture). C++-only — no shader recompile. Fixes the user-reported "unticking reflection corrupts the water". Harness A/B lever: `SET_REFLECTIONS 0|1` (game `AutomationHarness.cpp`).
+
 ### 1.25 Hair particles: skip billboard-write + physics for non-drawn (culled) strands
 
 **Files:**
@@ -717,6 +726,8 @@ modified, both genuine bug fixes.
 | 1.22 Ocean caustic size decoupled from patch size | applied 2026-07-20, lib rebuilt | GG-specific (default 1.0 = stock) — new ShaderOcean.caustic_scale scales ONLY the seabed caustic lookup; Water-panel "Caustic Size" slider tunes ripple size without touching the waves |
 | 1.23 Ocean underwater fog colour+density decoupled from surface | applied 2026-07-21, lib rebuilt | GG-specific (default density 0 = stock fallback) — new ShaderOcean.underwater_color + underwater_fog_density; Water-panel "Underwater Color" + "Underwater Fog" control the submerged view independently, so the surface can stay transparent when the water colour changes |
 | 1.24 Ocean water base colour tints transparent water (depth) | applied 2026-07-21, lib rebuilt | GG-specific (default 0 = stock) — new OceanCB.xOceanWaterColorDepth; oceanSurfacePS lerps refraction toward the base colour by depth so "Water Base Color" is visible on WaterAlpha-0 water (GG sets 0.005). Fixes "set red, sea didn't change from above" |
+| 1.25 Hair particles skip billboard-write + physics for culled strands | applied 2026-07-22 in Wicked commit `3273b651`, lib rebuilt, shader auto-recompiles | candidate for upstream PR — drawn (visible) strands byte-identical; a culled strand's sim freezes until it re-enters view; saves proportional to off-screen strand fraction |
+| 1.26 Ocean env-map reflection fallback when planar reflections off | applied 2026-07-24 in Wicked commit `bf09e448`, lib rebuilt | CANDIDATE FOR UPSTREAM PR — fixes garbage-water when reflections are toggled off (unguarded `texture_reflection_index` left dangling at a stale `rtReflection_resolved`); guard matches the planar-render gate so reflections-ON is byte-identical, OFF uses the existing `EnvironmentReflection_Global` path and skips the planar pass |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
