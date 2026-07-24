@@ -35,7 +35,17 @@ all — this doc alone is not sufficient to restore the clone.
 
 ## 1. Bug fixes (candidates for upstream)
 
-### 1.27 Terrain: raise Wicked SVT terrain anisotropy ×4 → ×8 (fix grazing pixel-swim)
+### 1.28 Terrain: soften SVT mip bias −2.0 → 0.0 (fix mid/long pixel-swim) — supersedes 1.27
+
+**Files:**
+- `WickedEngine/shaders/ShaderInterop_Renderer.h` (`SVT_MIP_BIAS` −2.0 → 0.0)
+- `WickedEngine/wiTerrain.cpp` (revert 1.27's no-op sampler `max_anisotropy` 8 → 4)
+
+**Why:** the terrain is Wicked's virtual-textured (SVT) terrain, which computes its own LOD in software — `virtual_lod = get_lod(dim, ddx(uv), ddy(uv), GetAnisotropy()) + SVT_MIP_BIAS`, then fetches the physical atlas via `SampleLevel(sampler, atlas_uv, 0)` (explicit LOD). Stock Wicked sets `SVT_MIP_BIAS = -2.0` — biasing terrain TWO mip levels sharper than the Nyquist-correct LOD for crispness. That over-sharpening under-samples the ground at mid/long range → it "swims"/shimmers as the camera creeps. **Because the atlas fetch is `SampleLevel` (explicit LOD), the material sampler's anisotropy AND mip_lod_bias are IGNORED — so 1.27's ×4→×8 sampler bump was a confirmed visual no-op (reverted here).** The real terrain LOD lever is `SVT_MIP_BIAS`, which biases the streaming FEEDBACK and the SAMPLE together (in sync). Set to 0.0 = Nyquist-correct: mip-based swim can't occur, near field stays crisp.
+
+**Behaviour:** affects ALL SVT sampling (terrain is GG's only SVT user). 0.0 vs stock −2.0 = terrain ~2 mips softer at a given distance but stable; near field near-correct (crisp). User-tuned on TESTPRO1 (A/B'd −1.0/0.0/+1.0 and a +4.0 extreme that confirmed the lever); picked 0.0. Shared header — a GAME rebuild (or engine relaunch) recompiles the ~375 engine shaders that include it (`refresh_shaders` handles staleness). Tune toward +1.0 for more distance stability (foreground softens too), toward −2.0 for more crispness (swim returns).
+
+### 1.27 Terrain: raise Wicked SVT terrain anisotropy ×4 → ×8 (fix grazing pixel-swim) — REVERTED (no-op, see 1.28)
 
 **Files:**
 - `WickedEngine/wiTerrain.cpp` (the terrain SVT sampler in the material-update loop: `samplerDesc.max_anisotropy = 4` → `8`, assigned to every terrain chunk material's `sampler_descriptor`)
@@ -736,7 +746,8 @@ modified, both genuine bug fixes.
 | 1.23 Ocean underwater fog colour+density decoupled from surface | applied 2026-07-21, lib rebuilt | GG-specific (default density 0 = stock fallback) — new ShaderOcean.underwater_color + underwater_fog_density; Water-panel "Underwater Color" + "Underwater Fog" control the submerged view independently, so the surface can stay transparent when the water colour changes |
 | 1.24 Ocean water base colour tints transparent water (depth) | applied 2026-07-21, lib rebuilt | GG-specific (default 0 = stock) — new OceanCB.xOceanWaterColorDepth; oceanSurfacePS lerps refraction toward the base colour by depth so "Water Base Color" is visible on WaterAlpha-0 water (GG sets 0.005). Fixes "set red, sea didn't change from above" |
 | 1.25 Hair particles skip billboard-write + physics for culled strands | applied 2026-07-22 in Wicked commit `3273b651`, lib rebuilt, shader auto-recompiles | candidate for upstream PR — drawn (visible) strands byte-identical; a culled strand's sim freezes until it re-enters view; saves proportional to off-screen strand fraction |
-| 1.27 Terrain SVT anisotropy ×4 → ×8 (grazing swim) | applied 2026-07-24 in Wicked commit `3a6fc38c`, lib rebuilt | GG value-bump on stock Wicked terrain sampler (wiTerrain.cpp) — the SHIPPING terrain is Wicked's native SVT (GGTerrain custom-draw is gated off, `TERRAIN_DRAW_EN 0`), so the GGTERRAIN_TEXTURE_FILTERING macro is dead; every other surface samples ×16, terrain alone was ×4 → grazing pixel-swim; ×8 fixes the bulk, stays within the 4px SVT tile border. Escalate to ×16 (+wider border) only if needed |
+| 1.28 Terrain SVT mip bias −2.0 → 0.0 (mid/long swim) | applied 2026-07-24, lib rebuilt | GG value-change on stock Wicked `SVT_MIP_BIAS` (ShaderInterop_Renderer.h) — stock −2.0 biases SVT terrain 2 mips SHARPER than correct → mid/long pixel-swim; 0.0 = Nyquist-correct, swim gone, near field stays crisp. This is the REAL terrain-LOD lever (SVT fetches via SampleLevel, so the sampler's aniso/mip-bias are ignored). Also reverts 1.27. Shared header → recompiles ~375 engine shaders |
+| 1.27 Terrain SVT anisotropy ×4 → ×8 (grazing swim) | **REVERTED 2026-07-24 (no-op), superseded by 1.28** — was Wicked commit `3a6fc38c` | The SVT terrain samples via `SampleLevel` (explicit LOD), which ignores the sampler's anisotropy — so the ×4→×8 bump had NO visible effect. Reverted to stock ×4. The real swim fix is the mip bias (1.28). Kept in history as a lesson: confirm the sampling path (Sample vs SampleLevel) before touching sampler state on SVT |
 | 1.26 Ocean env-map reflection fallback when planar reflections off | applied 2026-07-24 in Wicked commit `bf09e448`, lib rebuilt | CANDIDATE FOR UPSTREAM PR — fixes garbage-water when reflections are toggled off (unguarded `texture_reflection_index` left dangling at a stale `rtReflection_resolved`); guard matches the planar-render gate so reflections-ON is byte-identical, OFF uses the existing `EnvironmentReflection_Global` path and skips the planar pass |
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
