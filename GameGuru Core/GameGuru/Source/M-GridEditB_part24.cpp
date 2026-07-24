@@ -138,8 +138,6 @@
 
 		if (t.visuals.bOcclusionCulling)
 		{
-			extern uint32_t iCulledPointShadows;
-			extern uint32_t iCulledSpotShadows;
 			// GGMAX DX12: the five per-category cull checkboxes below are DEAD — the Wicked engine now does
 			// this work natively so none of these globals has a live consumer:
 			//   * Object + frustum culling run every frame in UpdateVisibility (that's what the
@@ -220,10 +218,14 @@
 			ImGui::Text("Total Objects: %d", iObjects);
 			ImGui::Text("Frustum/Apparent Culled: %d", iFrustumCulled);
 
-			extern uint32_t iRenderedPointShadows;
-			extern uint32_t iRenderedSpotShadows;
-			ImGui::Text("Occluded Point Shadows: %d r(%d)", iCulledPointShadows, iRenderedPointShadows);
-			ImGui::Text("Occluded Spot Shadows: %d r(%d)", iCulledSpotShadows, iRenderedSpotShadows);
+			// DX12 fix: the old iCulled*/iRendered* shadow counters were never written (always 0, and the
+			// "occluded shadows" concept is DX11-legacy). Show the REAL local-shadow data instead — per-type
+			// shadow-casting light counts + the local shadow-budget (top-N caster) stats. Reads 0 on levels
+			// with no point/spot lights (e.g. the sun-only island); non-zero on torch/lamp-lit levels.
+			int shGranted = 0, shCapped = 0, shRendered = 0;
+			wiRenderer::GetLocalShadowStats(shGranted, shCapped, shRendered);
+			ImGui::Text("Point Shadow Lights: %d   Spot Shadow Lights: %d", WickedCall_GetCubeShadowLights(false), WickedCall_GetSpotShadowLights(false));
+			ImGui::Text("Local Shadows: %d granted, %d capped, %d rendered", shGranted, shCapped, shRendered);
 		}
 
 		extern float maxApparentSize;
