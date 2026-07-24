@@ -1049,6 +1049,11 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	written += _snprintf(result + written, resultSize - written,
 		"SHADOW_LOD_OVERRIDE_ENGINE: %s\n",
 		wi::renderer::IsShadowLODOverrideEnabled() ? "ON (per-cascade LOD, can flicker)" : "OFF (view LOD)");
+	// Far-cascade caster cull (DX11 parity): ON = objects only shadow into the near cascades (far
+	// cascades render terrain only) - trims the every-other-frame staggered-cascade CPU spike.
+	written += _snprintf(result + written, resultSize - written,
+		"SHADOW_FARCULL_ENGINE: %s\n",
+		wi::renderer::GetShadowFarCascadeCull() ? "ON (near cascades only)" : "OFF (all cascades)");
 	// GG Phase 1 point-light shadow budget (revived iShadowPointMax). GRANTED = local casters that won
 	// an atlas shadow slot this frame; CAPPED = casters denied a slot (rendered fully lit, DX11-style);
 	// RENDERED = local shadows actually re-drawn this frame. Budget -1 => uncapped (stock, all render).
@@ -2342,6 +2347,14 @@ void AutoHarness_CheckForCommand(void)
 		bool on = (arg[0] != '0');
 		wi::renderer::SetLocalShadowCachingEnabled(on);
 		_snprintf(result, sizeof(result), "OK: SET_SHADOW_CACHE %s", on ? "ON" : "OFF");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_SHADOW_FARCULL") == 0)
+	{
+		// A/B toggle for the far-cascade caster cull (DX11 parity). On by default.
+		bool on = (arg[0] != '0');
+		wi::renderer::SetShadowFarCascadeCull(on);
+		_snprintf(result, sizeof(result), "OK: SET_SHADOW_FARCULL %s", on ? "ON" : "OFF");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "LIST_ENTITIES") == 0)
