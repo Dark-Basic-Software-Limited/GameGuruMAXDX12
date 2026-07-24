@@ -1213,6 +1213,22 @@ DARKSDK bool SaveImageCore ( char* szFilename, int iID, int iCompressionMode )
 
 	// determine region of surface to save
 	LPGGSURFACE pTexSurface = NULL;
+	if ( m_imgptr->lpTexture == NULL )
+	{
+		// GG DX12: some images exist (valid image slot) but carry no D3D texture - e.g. certain
+		// smart-object group thumbnails under the Wicked backend. QueryInterface on a null lpTexture
+		// would crash the entire level save (repro: save a level containing smart-object groups).
+		// Skip the save gracefully instead of dereferencing null.
+		#ifdef WICKEDENGINE
+		if (iMaxPasteImageLogs > 0)
+		{
+			char pErr[512]; sprintf(pErr, "SaveImageCore: image %d has no texture, skipped (%s).", iID, szFilename ? szFilename : "");
+			timestampactivity(0, pErr);
+			iMaxPasteImageLogs--;
+		}
+		#endif
+		return false;
+	}
 	m_imgptr->lpTexture->QueryInterface<ID3D11Texture2D>(&pTexSurface);
 	SaveImageCoreAsTexSurface(szFilename, &pTexSurface, iCompressionMode);
 	/*

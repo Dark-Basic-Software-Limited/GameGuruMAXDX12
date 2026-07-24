@@ -2357,6 +2357,23 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: SET_SHADOW_FARCULL %s", on ? "ON" : "OFF");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SAVE_LEVEL") == 0)
+	{
+		// Repro lever for the save-crash: runs the same File>Save path (gridedit_save_map).
+		// If it crashes, this result is never written and auto_command.txt is never consumed.
+		extern void gridedit_save_map(void);
+		const char* state = AutoHarness_GetAppState();
+		if (strcmp(state, "editor") != 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: SAVE_LEVEL only works in the editor (state: %s)", state);
+		}
+		else
+		{
+			gridedit_save_map();
+			_snprintf(result, sizeof(result), "OK: SAVE_LEVEL completed without crashing");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "LIST_ENTITIES") == 0)
 	{
 		Cmd_ListEntities(arg, result, sizeof(result));
