@@ -1042,6 +1042,15 @@ int WickedCall_GetSpotShadowLights(bool bDebug)
 }
 
 
+// Wicked fills visibility_main.visibleObjects during UpdateVisibility() with the scene-object
+// indices that survived main-camera frustum culling. Total objects minus this == frustum-culled.
+// Exposes the real count for the editor "Frustum/Apparent Culled" readout, which the DX12 port
+// had left hardcoded to 0 (GameGuru's legacy CPU frustum cull is gone; Wicked culls internally).
+int WickedCall_GetFrustumVisibleObjects(void)
+{
+	return (int)master.masterrenderer.visibility_main.visibleObjects.size();
+}
+
 void WickedCall_UpdateLight(uint64_t wickedlightindex, float fX, float fY, float fZ, float fAX, float fAY, float fAZ, float fRange, float fSpotRadius, int iColR, int iColG, int iColB, bool bCastShadow)
 {
 	bool bLightScapeHasChangedEnoughForEnvProbeUpdate = false;

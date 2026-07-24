@@ -196,6 +196,7 @@ void WickedCall_UpdateProbes(void);
 int WickedCall_Get2DShadowLights(void);
 int WickedCall_GetCubeShadowLights(bool bDebug);
 int WickedCall_GetSpotShadowLights(bool bDebug);
+int WickedCall_GetFrustumVisibleObjects(void); // # of scene objects surviving main-camera frustum cull this frame
 void WickedCall_SetEditorCameraLight(bool bSwitchOn);
 void WickedCall_SetSpriteBoundBox(bool bShow,float fX1, float fY1,float fX2, float fY2);
 void WickedCall_SetSunDirection(float fAx, float fAy, float fAz);

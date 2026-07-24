@@ -201,7 +201,12 @@
 			if (pScene)
 			{
 				iObjects = pScene->objects.GetCount();
-				iFrustumCulled = 0;
+				// DX12 fix: was hardcoded 0. GameGuru's legacy CPU frustum cull is gone; the live
+				// terrain/object path is Wicked, which frustum-culls into visibility_main.visibleObjects.
+				// Frustum-culled = total scene objects - objects that survived the main-camera frustum.
+				int iVisible = WickedCall_GetFrustumVisibleObjects();
+				iFrustumCulled = iObjects - iVisible;
+				if (iFrustumCulled < 0) iFrustumCulled = 0;
 			}
 			if (bOCDebug)
 				ImGui::Text("Total Objects: %d Hidden: %d", iObjects, iHiddenObjects);

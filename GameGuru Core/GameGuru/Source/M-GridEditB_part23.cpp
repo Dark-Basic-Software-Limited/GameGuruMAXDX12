@@ -1349,7 +1349,9 @@ void tmpdebugfunc(void)
 
 		wiScene::Scene* pScene = &wiScene::GetScene();
 		int iObjects = pScene->objects.GetCount();
-		int iFrustumCulled = 0;
+		// DX12 fix: was hardcoded 0 - show the real main-camera frustum-culled count (Wicked culls internally).
+		int iFrustumCulled = iObjects - WickedCall_GetFrustumVisibleObjects();
+		if (iFrustumCulled < 0) iFrustumCulled = 0;
 		int dc = 0;
 		int iHiddenObjects = 0;
 		int spot = 0, point = 0;
