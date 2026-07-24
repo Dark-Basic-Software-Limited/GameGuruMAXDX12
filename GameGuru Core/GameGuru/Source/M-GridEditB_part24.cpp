@@ -241,6 +241,12 @@
 		ImGui::PopItemWidth();
 
 
+		// LOD Multiplier — HIDDEN 2026-07-25: DEAD in DX12. fLODMultiplier is stored/saved but has NO consumer
+		// (full-tree trace: only writes + save/load; the DX11 consumer lived in the closed engine DLL). Wicked
+		// picks LOD by projected SCREEN SIZE, not a global distance multiplier — Scene::ComputeObjectLODForView
+		// does lod = log2(1/maxScreenDim) + object.lod_bias — so this slider can't drive it as-is. Relying on
+		// the DX12/Wicked LOD system for now; re-add only if we introduce a real global lod_bias consumer.
+#if 0
 		extern float fLODMultiplier;
 		//ImGui::Text("LOD Multiplier");
 		tab_tab_Column_text("LOD Multiplier", fTabColumnWidth);
@@ -253,11 +259,22 @@
 		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Change LOD distance before switching from normal object to LOD");
 		ImGui::PopItemWidth();
+#endif
 
 		extern int g_iUseLODObjects;
 		extern bool bDisableLODLoad;
+		// Disable LOD Load — KEPT: genuinely WIRED in DX12. Drives GameGuru's own LOD path (loads the external
+		// *_lod.dbo substitute model at entity load — M-Entity_part0.cpp:1095 — and gates in-model LOD-frame
+		// selection — M-Entity_part5.cpp:1296). This is GG's LOD system, independent of Wicked's screen-size LOD.
 		ImGui::Checkbox("Disable LOD Load", &bDisableLODLoad);
+		(void)g_iUseLODObjects;
 
+		// "* Use Fastest LOD" children — HIDDEN 2026-07-25: ALL DEAD in DX12. bShadowsLowestLOD / bProbesLowestLOD /
+		// bRaycastLowestLOD / bPhysicsLowestLOD / bReflectionsLowestLOD are stored + saved but have ZERO consumers
+		// (verified by full-tree trace; the DX11 consumers lived in the closed engine DLL). Wicked does shadow/
+		// probe/reflection/physics LOD its own way, so these per-category "force lowest LOD" overrides don't map.
+		// The parent "Disable LOD Load" above stays (it's wired). Re-add a child only when a real DX12 consumer exists.
+#if 0
 		if (g_iUseLODObjects > 0 && !bDisableLODLoad)
 		{
 			extern bool bShadowsLowestLOD;
@@ -313,6 +330,7 @@
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("All reflection rendering is using fastest LOD.");
 			ImGui::PopItemWidth();
 		}
+#endif
 
 		// FSR Mode (FidelityFX Super Resolution)
 		const char* fsr_items_align[] = { "None", "Ultra Quality","Quality", "Balanced", "Performance" };
