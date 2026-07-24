@@ -2384,6 +2384,34 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: SET_RESSCALE %.3f (auto-resizes next frame)", s);
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_FSR") == 0)
+	{
+		// A/B the FSR1 spatial-upscale modes without the ImGui panel (mirrors the Graphics & Performance
+		// combo exactly: resolutionScale -> setFSREnabled -> ResizeBuffers). 0=None 1=UltraQuality 2=Quality
+		// 3=Balanced 4=Performance. Reports internal vs physical res == direct proof the 3D renders smaller;
+		// pair with ENABLE_PROFILER + GET_PERF_DATA to confirm the 'FSR' GPU range appears (Postprocess_FSR).
+		extern MasterRenderer * master_renderer;
+		int mode = atoi(arg);
+		if (mode < 0) mode = 0;
+		if (mode > 4) mode = 4;
+		const float scaleTab[5] = { 1.0f, 1.0f / 1.3f, 1.0f / 1.5f, 1.0f / 1.7f, 1.0f / 2.0f };
+		if (master_renderer)
+		{
+			master_renderer->resolutionScale = scaleTab[mode];
+			master_renderer->setFSREnabled(mode != 0);
+			master_renderer->ResizeBuffers();
+			_snprintf(result, sizeof(result),
+				"OK: SET_FSR mode=%d scale=%.3f fsrEnabled=%d internal=%dx%d physical=%dx%d",
+				mode, scaleTab[mode], master_renderer->getFSREnabled() ? 1 : 0,
+				(int)master_renderer->GetInternalResolution().x, (int)master_renderer->GetInternalResolution().y,
+				(int)master_renderer->GetPhysicalWidth(), (int)master_renderer->GetPhysicalHeight());
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: no master_renderer");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SAVE_LEVEL") == 0)
 	{
 		// Repro lever for the save-crash: runs the same File>Save path (gridedit_save_map).

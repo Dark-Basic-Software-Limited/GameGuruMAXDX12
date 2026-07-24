@@ -335,8 +335,10 @@
 			{
 				// TODO: Set3DResolution removed, use resolutionScale instead
 				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				// TODO: SetFSRScale removed, use setFSR2Preset instead
-				//master.masterrenderer.SetFSRScale(1.3f);
+				// GGREDUCED DX12: FSR1 renders the 3D scene at 1/factor internal res; the engine EASU+RCAS
+				// pass upscales rtFSR to display res. resolutionScale<1.0 is what actually arms Postprocess_FSR
+				// (ResizeBuffers re-invokes setFSREnabled after recomputing internal res).
+				master.masterrenderer.resolutionScale = 1.0f / 1.3f; // Ultra Quality
 				master.masterrenderer.setFSREnabled(true);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -348,8 +350,8 @@
 			{
 				// TODO: Set3DResolution removed, use resolutionScale instead
 				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				// TODO: SetFSRScale removed, use setFSR2Preset instead
-				//master.masterrenderer.SetFSRScale(1.5f);
+				// GGREDUCED DX12: FSR1 internal res = 1/1.5 native; engine EASU+RCAS upscales.
+				master.masterrenderer.resolutionScale = 1.0f / 1.5f; // Quality
 				master.masterrenderer.setFSREnabled(true);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -361,8 +363,8 @@
 			{
 				// TODO: Set3DResolution removed, use resolutionScale instead
 				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				// TODO: SetFSRScale removed, use setFSR2Preset instead
-				//master.masterrenderer.SetFSRScale(1.7f);
+				// GGREDUCED DX12: FSR1 internal res = 1/1.7 native; engine EASU+RCAS upscales.
+				master.masterrenderer.resolutionScale = 1.0f / 1.7f; // Balanced
 				master.masterrenderer.setFSREnabled(true);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -374,8 +376,8 @@
 			{
 				// TODO: Set3DResolution removed, use resolutionScale instead
 				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				// TODO: SetFSRScale removed, use setFSR2Preset instead
-				//master.masterrenderer.SetFSRScale(2.0f);
+				// GGREDUCED DX12: FSR1 internal res = 1/2.0 native; engine EASU+RCAS upscales.
+				master.masterrenderer.resolutionScale = 1.0f / 2.0f; // Performance
 				master.masterrenderer.setFSREnabled(true);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -388,8 +390,8 @@
 				//PE: Disable FSR
 				// TODO: Set3DResolution removed, use resolutionScale instead
 				//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-				// TODO: SetFSRScale removed, use setFSR2Preset instead
-				//master.masterrenderer.SetFSRScale(1.0f);
+				// GGREDUCED DX12: restore native internal resolution and tear down FSR.
+				master.masterrenderer.resolutionScale = 1.0f;
 				master.masterrenderer.setFSREnabled(false);
 				master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 			}

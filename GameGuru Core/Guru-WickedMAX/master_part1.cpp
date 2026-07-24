@@ -335,8 +335,13 @@ void MasterRenderer::ResizeBuffers(void)
 	if (GetDepthStencil() != nullptr)
 	{
 		TextureDesc desc;
-		desc.width = GetPhysicalWidth();
-		desc.height = GetPhysicalHeight();
+		// GGREDUCED DX12/FSR: these outline RTs are bound in renderpass_Outline together with the
+		// internal-res main depth (*GetDepthStencil()). When FSR lowers resolutionScale<1.0 the depth is
+		// smaller than physical, so sizing the RTs at physical res mismatches the pass dimensions (D3D12
+		// DEVICE_DRAW_VIEW_DIMENSION_MISMATCH). Size to internal res instead; Postprocess_Outline later
+		// samples + composites them full-screen, so a smaller source simply upscales.
+		desc.width = GetInternalResolution().x;
+		desc.height = GetInternalResolution().y;
 		desc.sample_count = 1;
 		desc.format = Format::R8_UNORM;
 		desc.bind_flags = BindFlag::RENDER_TARGET | BindFlag::SHADER_RESOURCE;

@@ -1786,8 +1786,9 @@ void Wicked_Update_Visuals(void *voidvisual)
 				{
 					// TODO: Set3DResolution removed, use resolutionScale instead
 					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					// TODO: SetFSRScale removed, use setFSR2Preset instead
-					//master.masterrenderer.SetFSRScale(1.3f);
+					// GGREDUCED DX12: FSR1 renders 3D at 1/factor internal res; engine EASU+RCAS upscales.
+					// Kept in lock-step with the live panel (M-GridEditB_part24.cpp) so saved levels restore identically.
+					master.masterrenderer.resolutionScale = 1.0f / 1.3f; // Ultra Quality
 					master.masterrenderer.setFSREnabled(true);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 					master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -1799,8 +1800,8 @@ void Wicked_Update_Visuals(void *voidvisual)
 				{
 					// TODO: Set3DResolution removed, use resolutionScale instead
 					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					// TODO: SetFSRScale removed, use setFSR2Preset instead
-					//master.masterrenderer.SetFSRScale(1.5f);
+					// GGREDUCED DX12: FSR1 internal res = 1/1.5 native (lock-step with the panel).
+					master.masterrenderer.resolutionScale = 1.0f / 1.5f; // Quality
 					master.masterrenderer.setFSREnabled(true);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 					master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -1812,8 +1813,8 @@ void Wicked_Update_Visuals(void *voidvisual)
 				{
 					// TODO: Set3DResolution removed, use resolutionScale instead
 					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					// TODO: SetFSRScale removed, use setFSR2Preset instead
-					//master.masterrenderer.SetFSRScale(1.7f);
+					// GGREDUCED DX12: FSR1 internal res = 1/1.7 native (lock-step with the panel).
+					master.masterrenderer.resolutionScale = 1.0f / 1.7f; // Balanced
 					master.masterrenderer.setFSREnabled(true);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 					master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -1825,8 +1826,8 @@ void Wicked_Update_Visuals(void *voidvisual)
 				{
 					// TODO: Set3DResolution removed, use resolutionScale instead
 					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					// TODO: SetFSRScale removed, use setFSR2Preset instead
-					//master.masterrenderer.SetFSRScale(2.0f);
+					// GGREDUCED DX12: FSR1 internal res = 1/2.0 native (lock-step with the panel).
+					master.masterrenderer.resolutionScale = 1.0f / 2.0f; // Performance
 					master.masterrenderer.setFSREnabled(true);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 					master.masterrenderer.setFSRSharpness(t.visuals.fFSRSharpness);
@@ -1839,8 +1840,8 @@ void Wicked_Update_Visuals(void *voidvisual)
 					//PE: Disable FSR
 					// TODO: Set3DResolution removed, use resolutionScale instead
 					//master.masterrenderer.Set3DResolution(master.masterrenderer.GetPhysicalWidth(), master.masterrenderer.GetPhysicalHeight(), false);
-					// TODO: SetFSRScale removed, use setFSR2Preset instead
-					//master.masterrenderer.SetFSRScale(1.0f);
+					// GGREDUCED DX12: restore native internal resolution and tear down FSR (lock-step with the panel).
+					master.masterrenderer.resolutionScale = 1.0f;
 					master.masterrenderer.setFSREnabled(false);
 					master.masterrenderer.ResizeBuffers(); //PE: Force resizebuffers.
 				}
