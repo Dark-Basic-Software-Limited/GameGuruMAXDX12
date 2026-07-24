@@ -1376,6 +1376,10 @@ void Wicked_Update_Shadows(void *voidvisual)
 	// (outside the change-gate above) so a LOWERED cap takes effect immediately. shadowscube is
 	// already the bucketed point-light count clamped to iShadowPointMax (0 when the knob is 0).
 	wiRenderer::SetLocalShadowBudget((visuals->iShadowPointResolution == 0 || visuals->iShadowPointMax == 0) ? 0 : shadowscube);
+	// GG Phase 2: cache static local shadows so a bank of static lights (e.g. 16 torches all casting)
+	// is cheap - render each once, reuse its atlas texels until it (or the granted set) changes.
+	// Enabled whenever local shadows are on; the engine falls back to full re-render for moving lights.
+	wiRenderer::SetLocalShadowCachingEnabled(visuals->iShadowPointResolution != 0 && visuals->iShadowPointMax != 0);
 
 	if(bForceRefreshLightCount) bForceRefreshLightCount = false;
 

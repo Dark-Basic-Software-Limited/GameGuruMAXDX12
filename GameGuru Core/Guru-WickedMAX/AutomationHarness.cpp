@@ -1058,8 +1058,10 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		written += _snprintf(result + written, resultSize - written,
 			"SHADOW_LOCAL_GRANTED: %d\n"
 			"SHADOW_LOCAL_CAPPED: %d\n"
-			"SHADOW_LOCAL_RENDERED: %d\n",
-			shGranted, shCapped, shRendered);
+			"SHADOW_LOCAL_RENDERED: %d\n"
+			"SHADOW_LOCAL_CACHE_ENGINE: %s\n",
+			shGranted, shCapped, shRendered,
+			wi::renderer::GetLocalShadowCachingEnabled() ? "ON (static-cache)" : "OFF");
 	}
 
 	// Camera position and orientation (for diagnosing camera issues)
@@ -2320,6 +2322,26 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_GRASS needs <param> <value> (length|width|stiffness|drag|blades|maxstrands|segments|billboards|viewdist|sss|alpha|tintr|tintg|tintb|sssr|sssg|sssb)");
 		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_SHADOW_MAX") == 0)
+	{
+		// Drive the local point-shadow cap for testing the Phase 1/2 budget+cache without the UI. The
+		// game's shadow-props recompute only runs on a visuals-apply, so force the engine budget directly.
+		int n = atoi(arg);
+		if (n < 0) n = 0;
+		t.visuals.iShadowPointMax = n;
+		t.gamevisuals.iShadowPointMax = n;
+		wi::renderer::SetLocalShadowBudget(n); // immediate: GRANTED = min(visible local casters, n)
+		_snprintf(result, sizeof(result), "OK: SET_SHADOW_MAX engine budget forced to %d", n);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_SHADOW_CACHE") == 0)
+	{
+		// A/B toggle for the Phase 2 static-cache (forces the engine flag directly).
+		bool on = (arg[0] != '0');
+		wi::renderer::SetLocalShadowCachingEnabled(on);
+		_snprintf(result, sizeof(result), "OK: SET_SHADOW_CACHE %s", on ? "ON" : "OFF");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "LIST_ENTITIES") == 0)
