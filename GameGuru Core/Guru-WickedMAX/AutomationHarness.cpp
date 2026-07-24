@@ -2412,6 +2412,26 @@ void AutoHarness_CheckForCommand(void)
 		}
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_FSRSHARP") == 0)
+	{
+		// Diagnostic for the panel "FSR Sharpness" slider. Value is FFX RCAS *stops*: 0.0 = MAX sharpening
+		// (linear exp2(0)=1.0), higher = softer (2.0 -> 1/4). RCAS always runs; this only scales strength,
+		// and it's inverted vs intuition. Only visible while an FSR mode is active (rtFSR valid + fsrEnabled).
+		extern MasterRenderer * master_renderer;
+		float sh = (float)atof(arg);
+		if (sh < 0.0f) sh = 0.0f;
+		if (master_renderer)
+		{
+			master_renderer->setFSRSharpness(sh);
+			_snprintf(result, sizeof(result), "OK: SET_FSRSHARP %.3f (RCAS stops; 0=sharpest, higher=softer) fsrEnabled=%d",
+				sh, master_renderer->getFSREnabled() ? 1 : 0);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: no master_renderer");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SAVE_LEVEL") == 0)
 	{
 		// Repro lever for the save-crash: runs the same File>Save path (gridedit_save_map).
