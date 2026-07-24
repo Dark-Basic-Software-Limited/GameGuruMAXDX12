@@ -112,6 +112,12 @@
 		ImGui::PopItemWidth();
 
 		extern bool bEnableObjectCulling;
+		// "Debug Bounding Box" (dev tools only) sits on its own line ABOVE Occlusion Culling, so the
+		// Occlusion Culling checkbox + the sub-tickboxes it reveals below read as one coherent group.
+		if (g_iDevToolsOpen >= 1)
+		{
+			ImGui::Checkbox("Debug Bounding Box", &bBoxDebug);
+		}
 		ImGui::PushItemWidth(-10);
 		if (ImGui::Checkbox("Occlusion Culling##bOcclusionCulling", &t.visuals.bOcclusionCulling))
 		{
@@ -130,11 +136,6 @@
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Occlusion Culling will cull objects behind other object for less drawcalls");
 		ImGui::PopItemWidth();
 
-		if (g_iDevToolsOpen >= 1)
-		{
-			ImGui::SameLine();
-			ImGui::Checkbox("Debug Bounding Box", &bBoxDebug);
-		}
 		if (t.visuals.bOcclusionCulling)
 		{
 			extern uint32_t iCulledPointShadows;
