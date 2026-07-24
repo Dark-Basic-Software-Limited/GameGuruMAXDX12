@@ -140,7 +140,14 @@ float g_animThrottleFarDist = 2000.0f;
 // render as a distant speck) are dropped from the main visible set. At/below default => 0 (draw
 // everything); sliding right grows the cull. g_apparentCullDirect >= 0 overrides the slider mapping for
 // harness tuning (SET_APPARENTSIZE); < 0 = use the slider.
-float g_apparentCullK = 320.0f;   // slider max (maxApparentSize 0.0002) -> tangent ~0.06 (cull small/distant, keep medium+large)
+// Maps the stored "Apparent Size" slider (maxApparentSize) to a radius/distance cull tangent:
+//   tangent = (maxApparentSize - 0.000008) * g_apparentCullK   (see MasterRenderer::Update)
+// Recalibrated 2026-07-25 to K=59 (was 320): the 320 curve was too aggressive — a level saved at
+// slider 1.00 culled at tangent 0.0294. K=59 makes slider 1.00 behave like the old 0.25 (tangent
+// ~0.0054, the value that looked right on TESTPRO1). Levels KEEP their displayed/stored 1.00; only the
+// effective cull is gentler (this is a mapping constant, it never touches saved ApparentSize).
+// Reference points at K=59: slider 0.25->0.0010, 0.5->0.0025, 1.0->0.0054, 1.5->0.0084, 2.0->0.0113.
+float g_apparentCullK = 59.0f;
 float g_apparentCullDirect = -1.0f;
 bool bEnableTerrainChunkCulling = true;
 bool bEnablePointShadowCulling = true;
