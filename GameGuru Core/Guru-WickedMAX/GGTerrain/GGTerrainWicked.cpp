@@ -71,6 +71,19 @@ struct ChunkGrassEntities
 };
 static std::unordered_map<uint64_t, ChunkGrassEntities> grassChunkKeyToGrassEntities;
 static std::unordered_map<uint64_t, int> grassChunkKeyToTier;                    // current LOD tier per chunk
+
+// SETTLE GATE (2026-07-25, load-window grass-flicker fix): frame stamp of each chunk key's last
+// ENTITY change. During the initial build Wicked regenerates every chunk 2-3 times (progressive
+// refinement) — rebuilding the chunk's grass on EVERY regeneration produced ~880 tear-down/regrow
+// pops compressed into the first ~8s of a level load (the user-visible flicker wave; it also
+// re-fires on sculpt-driven regens). Grass REMOVAL on a recycled chunk stays immediate (the old
+// hair entities reference a destroyed mesh) but REGROWTH is deferred until the chunk entity has
+// been stable for GG_GRASS_SETTLE_FRAMES — each chunk now grows its grass exactly once, after its
+// final regeneration. g_grassSettlePending re-arms the gated ProcessGrassChunks pass (every 10th
+// frame) until no deferrals remain, so deferred growth cannot be stranded by the signature gate.
+static std::unordered_map<uint64_t, uint32_t> grassChunkKeyToEntityStamp;
+static bool g_grassSettlePending = false;
+static constexpr uint32_t GG_GRASS_SETTLE_FRAMES = 30;
 // Distance-LOD grass density (driven live by the SET_GRASS automation command).
 // bladesPerVertex is the NEAR-tier density; mid/far tiers scale it down and grass stops past
 // lodChunks chunk-distances from the camera. Only the near chunks are dense, so total strands stay
@@ -1405,6 +1418,13 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 
 	// Phase 1 (read-only): pick each chunk's target LOD tier from camera distance; queue chunks whose
 	// tier (or chunk entity) changed. No scene/map mutation here — the generator thread may be running.
+	const uint32_t nowFrame = (uint32_t)wi::graphics::GetDevice()->GetFrameCount(); // settle gate
+	g_grassSettlePending = false; // re-set below while any chunk is still deferring
+	// Creation budget: when a whole streaming wave settles at once (~300+ chunks at level load),
+	// growing everything in one pass would hang a frame for hundreds of ms. Cap grass GROWTH to a
+	// few chunks per pass; the settle-retry keeps the pass running until the queue drains
+	// (~140 chunks/s => the whole island greens up smoothly over ~2-3s). Removals are uncapped.
+	int creationBudget = 6;
 	for (size_t oi = 0; oi < scene.objects.GetCount(); oi++)
 	{
 		wi::scene::ObjectComponent& obj = scene.objects[oi];
@@ -1430,8 +1450,13 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		int targetTier_raw = inEditable ? GrassTierForRingDist(ringDist, nearC, midC, outerC) : 0;
 
 		auto entIt = grassChunkKeyToChunkEntity.find(key);
-		bool entityChanged = (entIt != grassChunkKeyToChunkEntity.end() && entIt->second != entity);
+		const bool firstSeen = (entIt == grassChunkKeyToChunkEntity.end());
+		bool entityChanged = (!firstSeen && entIt->second != entity);
 		if (entityChanged) g_dbgGrassRecycles++; // diag: chunk object entity recycled (flicker trigger)
+		if (entityChanged || firstSeen)
+		{
+			grassChunkKeyToEntityStamp[key] = nowFrame; // settle gate: chunk entity is churning
+		}
 		auto tierIt = grassChunkKeyToTier.find(key);
 		int currentTier = (tierIt != grassChunkKeyToTier.end()) ? tierIt->second : -1;
 
@@ -1462,6 +1487,36 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			{
 				if (git->second.perType[t] != wi::ecs::INVALID_ENTITY) { hasExistingEntities = true; break; }
 			}
+		}
+
+		// SETTLE GATE: while the chunk's entity is still churning (progressive regeneration during
+		// the initial build, sculpt-driven regens), DEFER growing grass — but still tear down grass
+		// orphaned by a recycle immediately (its mesh entity is gone). Each chunk then grows grass
+		// exactly once, after its final regeneration, instead of popping on every intermediate one.
+		if (targetTier > 0)
+		{
+			auto stampIt = grassChunkKeyToEntityStamp.find(key);
+			const bool settled = (stampIt == grassChunkKeyToEntityStamp.end()) ||
+				((nowFrame - stampIt->second) >= GG_GRASS_SETTLE_FRAMES);
+			if (!settled || creationBudget <= 0)
+			{
+				if (entityChanged && hasExistingEntities)
+				{
+					// remove-only pass: tier 0 + fullReset drops the dead-mesh hair entities and
+					// records the new chunk entity; regrowth happens once the stamp ages out
+					// (or the next budgeted pass picks it up).
+					pending.push_back({ entity, key, mesh, transform->world, 0, true });
+				}
+				else
+				{
+					// nothing to remove — just track the (possibly new) entity, keep/record bare tier
+					grassChunkKeyToChunkEntity[key] = entity;
+					if (currentTier < 0) grassChunkKeyToTier[key] = 0;
+				}
+				g_grassSettlePending = true;
+				continue;
+			}
+			creationBudget--; // this chunk will grow/regrow grass in Phase 2
 		}
 
 		// Chunks that need NO scene mutation (no old grass to remove AND new tier wants no grass)
@@ -2385,12 +2440,16 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		// Gate the chunk pass: tiers are a pure function of camera distance + chunk set +
 		// paint state. Skip unless one of those moved. Cache updates only when the pass
 		// runs, so chunk churn or camera drift during a grass-disabled stretch still
-		// triggers a pass on re-enable.
+		// triggers a pass on re-enable. SETTLE-GATE re-arm: while any chunk deferred its
+		// grass regrowth (entity still churning), retry every 10th frame so deferred growth
+		// can never be stranded by an unchanged signature.
 		static uint64_t s_grassSig = ~0ull;
 		static float s_grassCamX = 1e30f, s_grassCamZ = 1e30f;
+		static uint32_t s_grassSettleTick = 0;
+		const bool settleRetry = g_grassSettlePending && ((++s_grassSettleTick % 3) == 0);
 		const float gdx = camera.Eye.x - s_grassCamX;
 		const float gdz = camera.Eye.z - s_grassCamZ;
-		if (grassDirty || s_grassSig != chunkSig || (gdx * gdx + gdz * gdz) > (8.0f * 8.0f))
+		if (grassDirty || s_grassSig != chunkSig || settleRetry || (gdx * gdx + gdz * gdz) > (8.0f * 8.0f))
 		{
 			ProcessGrassChunks(terrain, camera.Eye);
 			s_grassSig = chunkSig;
