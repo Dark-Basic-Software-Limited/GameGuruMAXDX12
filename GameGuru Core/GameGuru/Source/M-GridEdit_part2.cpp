@@ -219,8 +219,20 @@
 		{ auto rP2=wi::profiler::BeginRangeCPU("P2-editor_visuals"); editor_visuals ( ); wi::profiler::EndRange(rP2); }
 		
 		//  Ensure entity animations speeds are controlled
+		//  PERF 2026-07-25: in the EDITOR this maintenance pass (anim speed sync, decal frames,
+		//  loop windows over every entity element, ~0.6ms) is time-based (g.timeelapsed_f), so
+		//  running it every OTHER frame advances identically — halve the cadence in editor mode
+		//  only (test game keeps every-frame for exact gameplay timing).
 		if(!bExport_Standalone_Window)
-			{ auto rP2=wi::profiler::BeginRangeCPU("P2-entity_loopanim"); entity_loopanim ( ); wi::profiler::EndRange(rP2); }
+		{
+			extern bool bImGuiInTestGame;
+			static uint32_t s_loopanimParity = 0;
+			s_loopanimParity++;
+			if (bImGuiInTestGame || t.game.gameisexe != 0 || (s_loopanimParity & 1) == 0)
+			{
+				auto rP2=wi::profiler::BeginRangeCPU("P2-entity_loopanim"); entity_loopanim ( ); wi::profiler::EndRange(rP2);
+			}
+		}
 
 		//  Widget control
 		{ auto rP2=wi::profiler::BeginRangeCPU("P2-widget_loop"); widget_loop ( ); wi::profiler::EndRange(rP2); }
