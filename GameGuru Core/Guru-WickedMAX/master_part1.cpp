@@ -351,6 +351,16 @@ void MasterRenderer::Update(float dt)
 		wiRenderer::gg_apparent_cull_bits.store((uint32_t)(tangent * 1000000.0f + 0.5f), std::memory_order_relaxed);
 	}
 
+	// GGMAX: "Laptop" delayed-shadow mode = twice as aggressive. When Delayed Shadows + Laptop are both
+	// ticked, hold the far directional cascades for 4 frames instead of 2 (another ~halving of the
+	// staggered-cascade shadow cost). Driven per-frame so panel toggles / level loads all stay in sync;
+	// interval is only consumed when the cascade staggering is actually enabled.
+	{
+		extern bool g_bDelayedShadows;
+		extern bool g_bDelayedShadowsLaptop;
+		wi::renderer::SetDelayedShadowCascadeInterval((g_bDelayedShadows && g_bDelayedShadowsLaptop) ? 4 : 2);
+	}
+
 	// super update
 	auto range2 = wiProfiler::BeginRangeCPU("Update - Wicked (Total)");
 	__super::Update(dt);

@@ -107,7 +107,7 @@
 					pointShadowScaler = 1.0f;
 				}
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Delayed Shadows (Laptop) will make even fever cascade shadow updates and increase your FPS.");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Laptop mode: twice as aggressive as Delayed Shadows - the distant shadow cascades refresh every 4th frame instead of every 2nd, for extra FPS on weaker hardware (a little more shadow lag when the camera moves).");
 		}
 		ImGui::PopItemWidth();
 

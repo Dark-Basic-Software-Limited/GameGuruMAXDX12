@@ -2665,6 +2665,21 @@ void AutoHarness_CheckForCommand(void)
 			on ? "ON" : "OFF", wi::renderer::GetDelayedShadowCascadesEnabled() ? "enabled" : "disabled");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_LAPTOP_SHADOWS") == 0)
+	{
+		// A/B the "Laptop" aggressive delayed-shadow mode: far directional cascades refresh every 4th frame
+		// instead of every 2nd. Forces Delayed Shadows ON and toggles Laptop; MasterRenderer::Update drives
+		// the engine interval per-frame from these globals (reported value may lag one frame).
+		extern bool g_bDelayedShadows;
+		extern bool g_bDelayedShadowsLaptop;
+		bool on = (arg[0] != '0');
+		g_bDelayedShadows = true;
+		g_bDelayedShadowsLaptop = on;
+		wi::renderer::SetDelayedShadowCascadesEnabled(true);
+		_snprintf(result, sizeof(result), "OK: SET_LAPTOP_SHADOWS %s (delayed far-cascade interval now %d frames)",
+			on ? "ON" : "OFF", wi::renderer::GetDelayedShadowCascadeInterval());
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SHADOW_LOD_OVERRIDE") == 0)
 	{
 		// A/B the "two terrain shapes" shadow flicker: ON = per-cascade shadow LOD (can oscillate vs
