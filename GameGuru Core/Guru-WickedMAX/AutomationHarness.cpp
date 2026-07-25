@@ -54,15 +54,23 @@ namespace wi::terrain {
 	extern bool gg_vt_incremental;
 }
 
-// GGMAX 1.36: level-order hierarchy update master switch (wiScene.cpp)
+// GGMAX 1.36/1.41: hierarchy + material-cache master switches (wiScene.cpp)
 namespace wi::scene {
 	extern bool gg_hierarchy_levelorder;
+	extern bool gg_material_cache;
 }
 
 // GGMAX 1.37: hair/grass sim static-skip master switch (wiRenderer.cpp)
 namespace wi::renderer {
 	extern bool gg_hair_sim_static_skip;
 	extern uint32_t gg_hair_sim_wind_interval;
+}
+
+// GGMAX 1.39/1.40: underwater skip + command-list merge switches (wiRenderPath3D.cpp)
+namespace wi {
+	extern bool gg_skip_underwater_above_water;
+	extern bool gg_render_merge_lists;
+	extern float gg_app_submit_present_ms; // 1.32c: submit+present wall time (wiApplication.cpp)
 }
 
 // The global Master instance
@@ -1173,10 +1181,12 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		// GGMAX 1.37 diagnostics: the hair-sim static-skip gate inputs
 		written += _snprintf(result + written, resultSize - written,
 			"WEATHER_WIND: dir=(%.4f, %.4f, %.4f) speed=%.3f randomness=%.3f wavesize=%.3f\n"
-			"HAIRSKIP: %s\n",
+			"HAIRSKIP: %s\n"
+			"APP_SUBMIT_PRESENT_MS: %.2f (queue submits + Present + swapchain pacing, outside CPU-frame span)\n",
 			sc.weather.windDirection.x, sc.weather.windDirection.y, sc.weather.windDirection.z,
 			sc.weather.windSpeed, sc.weather.windRandomness, sc.weather.windWaveSize,
-			wi::renderer::gg_hair_sim_static_skip ? "enabled" : "disabled");
+			wi::renderer::gg_hair_sim_static_skip ? "enabled" : "disabled",
+			wi::gg_app_submit_present_ms);
 	}
 
 	// Terrain debug info
@@ -2732,6 +2742,25 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_ANIMVIS <frames> [neardist]");
 		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_MATCACHE") == 0)
+	{
+		// A/B Wicked delta 1.41: ShaderMaterial recompose cache (recompose only on dirty /
+		// streaming-epoch change / 64-frame heartbeat; memcpy cached otherwise).
+		// 1 = cached (default), 0 = stock full recompose every material every frame.
+		bool on = (arg[0] != '0');
+		wi::scene::gg_material_cache = on;
+		_snprintf(result, sizeof(result), "OK: SET_MATCACHE %s", on ? "ON (cached)" : "OFF (stock recompose)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_MERGELISTS") == 0)
+	{
+		// A/B Wicked delta 1.40: command-list merges (occlusion -> prepass tail;
+		// transparents+postFX -> one list). 1 = merged (default), 0 = stock structure.
+		bool on = (arg[0] != '0');
+		wi::gg_render_merge_lists = on;
+		_snprintf(result, sizeof(result), "OK: SET_MERGELISTS %s", on ? "ON (merged)" : "OFF (stock lists)");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_HAIRSKIP") == 0)
