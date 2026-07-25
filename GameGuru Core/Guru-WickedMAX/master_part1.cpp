@@ -14,6 +14,9 @@ namespace wi { namespace scene {
 	extern std::atomic<uint32_t> gg_anim30fps_enabled;
 	extern std::atomic<uint32_t> gg_anim30fps_frame;
 	extern std::atomic<uint32_t> gg_anim30fps_dist2;
+	// GGMAX delta 1.35: frustum-visibility animation pause (defined in WickedEngine/wiScene.cpp)
+	extern std::atomic<uint32_t> gg_anim_vis_pause_frames;
+	extern std::atomic<uint32_t> gg_anim_vis_pause_neardist2;
 } }
 // GGMAX delta 1.30: engine-side apparent-size object cull threshold (defined in WickedEngine/wiRenderer.cpp).
 // MasterRenderer::Update drives it per-frame from the editor "Apparent Size" slider (see below).
@@ -325,6 +328,20 @@ void MasterRenderer::Update(float dt)
 		if (fd < 0.0f) fd = 0.0f;
 		if (fd > 60000.0f) fd = 60000.0f;   // guard: dist^2 must fit uint32 (60000^2 = 3.6e9 < 4.29e9)
 		wiScene::gg_anim30fps_dist2.store((uint32_t)(fd * fd), std::memory_order_relaxed);
+	}
+
+	// GGMAX delta 1.35: frustum-visibility animation pause — drive the engine knobs per frame.
+	// Objects not passing the main-view cull for N frames stop animation EVALUATION (timers keep
+	// advancing). Near guard protects just-off-frame characters (visible shadows).
+	{
+		extern int g_animVisPauseFrames;
+		extern float g_animVisPauseNearDist;
+		uint32_t vp = (g_animVisPauseFrames < 0) ? 0u : (uint32_t)g_animVisPauseFrames;
+		wiScene::gg_anim_vis_pause_frames.store(vp, std::memory_order_relaxed);
+		float nd = g_animVisPauseNearDist;
+		if (nd < 0.0f) nd = 0.0f;
+		if (nd > 60000.0f) nd = 60000.0f;   // same uint32 dist^2 guard as above
+		wiScene::gg_anim_vis_pause_neardist2.store((uint32_t)(nd * nd), std::memory_order_relaxed);
 	}
 
 	// GGMAX delta 1.30: drive the engine apparent-size object cull from the editor "Apparent Size" slider.

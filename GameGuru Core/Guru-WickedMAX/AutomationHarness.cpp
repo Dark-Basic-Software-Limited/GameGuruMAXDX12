@@ -49,6 +49,16 @@ namespace wi::profiler {
 	extern bool ENABLED_REQUEST;
 }
 
+// GGMAX 1.33: incremental terrain-VT bookkeeping master switch (wiTerrain.cpp)
+namespace wi::terrain {
+	extern bool gg_vt_incremental;
+}
+
+// GGMAX 1.36: level-order hierarchy update master switch (wiScene.cpp)
+namespace wi::scene {
+	extern bool gg_hierarchy_levelorder;
+}
+
 // The global Master instance
 extern Master master;
 
@@ -946,7 +956,14 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	const char* state = AutoHarness_GetAppState();
 
 	// FPS and frame time
-	float fps = ImGui::GetIO().Framerate;
+	// FIX 2026-07-25: guard the ImGui context — a GET_PERF_DATA arriving during startup or
+	// shutdown crashed here (GetIO() derefs the null global context; recurring 0xc0000005 at
+	// this line across several days of Guru-Crash.log entries — the "silent" harness deaths).
+	float fps = 0.0f;
+	if (ImGui::GetCurrentContext() != nullptr)
+	{
+		fps = ImGui::GetIO().Framerate;
+	}
 	float frameTimeMs = (fps > 0.0f) ? (1000.0f / fps) : 0.0f;
 	written += _snprintf(result + written, resultSize - written,
 		"STATE: %s\n"
@@ -1384,7 +1401,7 @@ static void Cmd_PressKey(const char* arg, char* result, int resultSize)
 	// Also set ImGui key state directly — during test game mode, the ImGui WndProc
 	// handler is bypassed so WM_KEYDOWN never reaches io.KeysDown[]. This ensures
 	// terrain key sampling (GGTerrain_CheckKeys) detects the press.
-	if (vk < 256)
+	if (vk < 256 && ImGui::GetCurrentContext() != nullptr) // FIX 2026-07-25: null-context guard
 		ImGui::GetIO().KeysDown[vk] = true;
 
 	// Set injected key for terrain key system — in editor mode, the timing
@@ -2125,7 +2142,7 @@ void AutoHarness_CheckForCommand(void)
 			UINT scanCode = MapVirtualKey(s_pendingKeyUpVK, MAPVK_VK_TO_VSC);
 			LPARAM lParamUp = (1) | (scanCode << 16) | (1 << 30) | (1 << 31);
 			PostMessage(g_pGlob->hWnd, WM_KEYUP, (WPARAM)s_pendingKeyUpVK, lParamUp);
-			if (s_pendingKeyUpVK < 256)
+			if (s_pendingKeyUpVK < 256 && ImGui::GetCurrentContext() != nullptr) // FIX 2026-07-25: null-context guard
 				ImGui::GetIO().KeysDown[s_pendingKeyUpVK] = false;
 			s_pendingKeyUpVK = 0;
 		}
@@ -2678,6 +2695,49 @@ void AutoHarness_CheckForCommand(void)
 		wi::renderer::SetDelayedShadowCascadesEnabled(true);
 		_snprintf(result, sizeof(result), "OK: SET_LAPTOP_SHADOWS %s (delayed far-cascade interval now %d frames)",
 			on ? "ON" : "OFF", wi::renderer::GetDelayedShadowCascadeInterval());
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_ANIMVIS") == 0)
+	{
+		// A/B Wicked delta 1.35: frustum-visibility animation pause.
+		//   SET_ANIMVIS <frames> [neardist]   — pause anims for objects unseen for >frames (0=off);
+		//                                       neardist = never pause within this camera distance.
+		extern int g_animVisPauseFrames;
+		extern float g_animVisPauseNearDist;
+		int vf = 0; float nd = -1.0f;
+		int n = sscanf_s(arg, "%d %f", &vf, &nd);
+		if (n >= 1)
+		{
+			g_animVisPauseFrames = vf;
+			if (n >= 2 && nd >= 0.0f) g_animVisPauseNearDist = nd;
+			_snprintf(result, sizeof(result), "OK: SET_ANIMVIS frames=%d neardist=%.0f (%s)",
+				g_animVisPauseFrames, g_animVisPauseNearDist,
+				g_animVisPauseFrames > 0 ? "pause unseen-object anims" : "OFF");
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_ANIMVIS <frames> [neardist]");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_HIERLO") == 0)
+	{
+		// A/B Wicked delta 1.36: subtree-parallel hierarchy update (one job per root, carry the
+		// world down the chain, one multiply per bone) vs stock per-entity ancestor chain walk.
+		bool on = (arg[0] != '0');
+		wi::scene::gg_hierarchy_levelorder = on;
+		_snprintf(result, sizeof(result), "OK: SET_HIERLO %s", on ? "ON (subtree-parallel)" : "OFF (stock chain walk)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_VTINC") == 0)
+	{
+		// A/B Wicked delta 1.33: incremental terrain-VT bookkeeping (dirty-tracked page-table
+		// uploads + lazy free-list rebuild). 1 = incremental (default), 0 = stock every-frame
+		// full rewrite (the old ~16ms/frame VT job). Applies instantly.
+		bool on = (arg[0] != '0');
+		wi::terrain::gg_vt_incremental = on;
+		_snprintf(result, sizeof(result), "OK: SET_VTINC %s (VT page-table uploads %s)",
+			on ? "ON" : "OFF", on ? "dirty-tracked" : "stock every-frame");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SHADOW_LOD_OVERRIDE") == 0)

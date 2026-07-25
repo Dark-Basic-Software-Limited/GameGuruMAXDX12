@@ -133,6 +133,14 @@ bool bEnable30FpsAnimations = true;
 // NOTE: an absolute distance is scene-scale-dependent — this should become a UI slider (or an apparent-
 // size gate, which is scale-invariant). Clamped to <=60000 in MasterRenderer::Update (uint32 dist^2 guard).
 float g_animThrottleFarDist = 2000.0f;
+// GGMAX delta 1.35: frustum-visibility animation pause (engine wiScene gg_anim_vis_pause_*).
+// Animations whose target object has not passed the MAIN-view frustum cull for
+// g_animVisPauseFrames consecutive frames stop being EVALUATED (timers keep advancing, so they
+// resume in perfect sync on re-entry — same semantics as the long-shipped IsRenderable cull).
+// The near guard never pauses objects within g_animVisPauseNearDist of the camera (protects
+// just-off-frame characters whose shadows can still be on screen). 0 frames = feature off.
+int   g_animVisPauseFrames = 3;
+float g_animVisPauseNearDist = 2000.0f;
 // GGMAX delta 1.30: apparent-size object cull tuning (consumed by MasterRenderer::Update -> engine
 // wiRenderer::gg_apparent_cull_bits). The editor "Apparent Size" slider stores maxApparentSize
 // (0.000002..0.0002); g_apparentCullK maps the amount ABOVE the 0.000008 default to a radius/distance
