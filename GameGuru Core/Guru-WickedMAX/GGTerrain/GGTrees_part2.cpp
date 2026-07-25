@@ -1087,6 +1087,62 @@ void GGTrees_WickedUpdate()
 	wi::profiler::EndRange( rangePass );
 }
 
+// DIAG (2026-07-25 reload-corruption hunt): dump the pool's view of the world + an orphan
+// detector. An "orphan" = a renderable, UNNAMED scene object that is NOT one of the pool
+// entities, NOT a shadow-proxy object, and NOT a grass/chunk child — after an in-place level
+// reload these are the leftover tree objects nobody manages anymore (the "blue palms").
+void GGTrees_DebugDumpPool( const char* path )
+{
+	auto& scene = wi::scene::GetScene();
+	FILE* f = fopen( path, "w" );
+	if ( !f ) return;
+
+	uint32_t slotBound = 0, slotRenderable = 0, slotMissingObj = 0;
+	for ( uint32_t s = 0; s < g_treePoolSize; s++ )
+	{
+		wi::ecs::Entity e = g_treePoolEntities[ s ];
+		if ( e == wi::ecs::INVALID_ENTITY ) continue;
+		wi::scene::ObjectComponent* obj = scene.objects.GetComponent( e );
+		if ( !obj ) { slotMissingObj++; continue; }
+		if ( s < g_slotToTree.size() && g_slotToTree[ s ] != UINT32_MAX ) slotBound++;
+		if ( obj->IsRenderable() ) slotRenderable++;
+	}
+	fprintf( f, "POOL size=%u bound=%u renderable=%u missingObj=%u numTotalTrees=%u types=%u proxyChunks=%zu\n",
+		g_treePoolSize, slotBound, slotRenderable, slotMissingObj, (uint32_t)numTotalTrees,
+		(uint32_t)GG_TREE_TYPES, g_chunkProxyObject.size() );
+
+	// Build a fast lookup of every entity the tree system currently OWNS.
+	static std::vector<wi::ecs::Entity> owned;
+	owned.clear();
+	for ( uint32_t s = 0; s < g_treePoolSize; s++ )
+		if ( g_treePoolEntities[ s ] != wi::ecs::INVALID_ENTITY ) owned.push_back( g_treePoolEntities[ s ] );
+	for ( wi::ecs::Entity e : g_chunkProxyObject ) if ( e != wi::ecs::INVALID_ENTITY ) owned.push_back( e );
+	std::sort( owned.begin(), owned.end() );
+
+	// Orphan scan: renderable, mesh-bound, UNNAMED, parent-less objects not owned by the
+	// tree system. (Level entities, chunks, grass and props all carry names or hierarchy
+	// parents; pool trees are unnamed + parent-less by construction.)
+	int orphans = 0;
+	for ( size_t i = 0; i < scene.objects.GetCount(); ++i )
+	{
+		wi::ecs::Entity e = scene.objects.GetEntity( i );
+		const wi::scene::ObjectComponent& obj = scene.objects[ i ];
+		if ( obj.meshID == wi::ecs::INVALID_ENTITY || !obj.IsRenderable() ) continue;
+		if ( std::binary_search( owned.begin(), owned.end(), e ) ) continue;
+		if ( scene.names.GetComponent( e ) != nullptr ) continue;
+		if ( scene.hierarchy.GetComponent( e ) != nullptr ) continue;
+		const wi::scene::NameComponent* mn = scene.names.GetComponent( obj.meshID );
+		const wi::scene::TransformComponent* tr = scene.transforms.GetComponent( e );
+		orphans++;
+		if ( orphans <= 200 )
+			fprintf( f, "ORPHAN entity=%llu meshID=%llu meshname=\"%s\" pos=(%.0f,%.0f,%.0f)\n",
+				(unsigned long long)e, (unsigned long long)obj.meshID, mn ? mn->name.c_str() : "?",
+				tr ? tr->world._41 : 0.0f, tr ? tr->world._42 : 0.0f, tr ? tr->world._43 : 0.0f );
+	}
+	fprintf( f, "ORPHAN_TOTAL %d\n", orphans );
+	fclose( f );
+}
+
 void GGTrees_WickedShutdown()
 {
 	if ( !g_wickedTreesSetup ) return;

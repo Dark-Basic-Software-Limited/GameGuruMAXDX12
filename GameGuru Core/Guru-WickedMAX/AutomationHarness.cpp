@@ -2329,6 +2329,366 @@ void AutoHarness_CheckForCommand(void)
 		}
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "DUMP_MATERIALS") == 0)
+	{
+		// DUMP_MATERIALS — write every scene MaterialComponent (entity id, name, hierarchy
+		// parent) to materials_dump.txt next to the exe. Diffing dumps taken across in-place
+		// level reloads identifies WHICH materials leak (+3 per reload measured 2026-07-25,
+		// the census fingerprint of the reload-corruption teardown gap).
+		wi::scene::Scene& dmpScene = wi::scene::GetScene();
+		FILE* dmpF = fopen("materials_dump.txt", "w");
+		if (dmpF != nullptr)
+		{
+			for (size_t dmi = 0; dmi < dmpScene.materials.GetCount(); ++dmi)
+			{
+				wi::ecs::Entity dme = dmpScene.materials.GetEntity(dmi);
+				const wi::scene::NameComponent* dmn = dmpScene.names.GetComponent(dme);
+				const wi::scene::HierarchyComponent* dmh = dmpScene.hierarchy.GetComponent(dme);
+				wi::ecs::Entity dmp = (dmh != nullptr) ? dmh->parentID : wi::ecs::INVALID_ENTITY;
+				const wi::scene::NameComponent* dmpn = (dmp != wi::ecs::INVALID_ENTITY) ? dmpScene.names.GetComponent(dmp) : nullptr;
+				fprintf(dmpF, "%llu\t%s\tparent=%llu(%s)\n",
+					(unsigned long long)dme, dmn ? dmn->name.c_str() : "?",
+					(unsigned long long)dmp, dmpn ? dmpn->name.c_str() : "?");
+			}
+			fclose(dmpF);
+			_snprintf(result, sizeof(result), "OK: DUMP_MATERIALS wrote %d materials to materials_dump.txt", (int)dmpScene.materials.GetCount());
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: DUMP_MATERIALS could not open materials_dump.txt");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_ENTITY") == 0)
+	{
+		// DUMP_ENTITY <name-substr> — for every named object whose name contains the substring
+		// (case-insensitive), dump per-subset material texture state: texture name, LIVE
+		// descriptor index of the current texture object, and the CACHED composed
+		// ShaderMaterial descriptor (gg_shader_cache) + validity. A basecolor slot whose
+		// cached descriptor equals the normal map's live descriptor = the "blue tree" mixup.
+		wi::scene::Scene& deScene = wi::scene::GetScene();
+		wi::graphics::GraphicsDevice* deDev = wi::graphics::GetDevice();
+		auto deContains = [](const std::string& hay, const char* needle) -> bool {
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		FILE* deF = fopen("entity_dump.txt", "w");
+		int deMatches = 0;
+		if (deF != nullptr)
+		{
+			for (size_t dei = 0; dei < deScene.objects.GetCount(); ++dei)
+			{
+				wi::ecs::Entity dee = deScene.objects.GetEntity(dei);
+				const wi::scene::NameComponent* den = deScene.names.GetComponent(dee);
+				if (den == nullptr || !deContains(den->name, arg)) continue;
+				const wi::scene::ObjectComponent& deo = deScene.objects[dei];
+				const wi::scene::TransformComponent* det = deScene.transforms.GetComponent(dee);
+				const wi::scene::MeshComponent* dem = deScene.meshes.GetComponent(deo.meshID);
+				deMatches++;
+				if (deMatches > 40) continue;
+				fprintf(deF, "OBJ entity=%llu name=\"%s\" renderable=%d pos=(%.0f,%.0f,%.0f) meshID=%llu subsets=%d\n",
+					(unsigned long long)dee, den->name.c_str(), deo.IsRenderable() ? 1 : 0,
+					det ? det->world._41 : 0.0f, det ? det->world._42 : 0.0f, det ? det->world._43 : 0.0f,
+					(unsigned long long)deo.meshID, dem ? (int)dem->subsets.size() : -1);
+				if (dem == nullptr) continue;
+				for (const auto& des : dem->subsets)
+				{
+					const wi::scene::MaterialComponent* dmat = deScene.materials.GetComponent(des.materialID);
+					if (dmat == nullptr) { fprintf(deF, "  subset mat=%llu MISSING\n", (unsigned long long)des.materialID); continue; }
+					fprintf(deF, "  mat=%llu cacheValid=%d cacheEpoch=%u\n", (unsigned long long)des.materialID,
+						dmat->gg_shader_cache_valid ? 1 : 0, dmat->gg_shader_cache_epoch);
+					static const int deSlots[2] = { wi::scene::MaterialComponent::BASECOLORMAP, wi::scene::MaterialComponent::NORMALMAP };
+					static const char* deSlotNames[2] = { "base", "norm" };
+					for (int dq = 0; dq < 2; dq++)
+					{
+						const auto& dts = dmat->textures[deSlots[dq]];
+						int deLive = -1;
+						if (dts.resource.IsValid())
+							deLive = deDev->GetDescriptorIndex(&dts.resource.GetTexture(), wi::graphics::SubresourceType::SRV);
+						fprintf(deF, "    %s name=\"%s\" resValid=%d liveDesc=%d cachedDesc=%d\n",
+							deSlotNames[dq], dts.name.c_str(), dts.resource.IsValid() ? 1 : 0, deLive,
+							dmat->gg_shader_cache.textures[deSlots[dq]].texture_descriptor);
+					}
+				}
+			}
+			fprintf(deF, "MATCHES %d\n", deMatches);
+			fclose(deF);
+			_snprintf(result, sizeof(result), "OK: DUMP_ENTITY \"%s\" matches=%d -> entity_dump.txt", arg, deMatches);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: DUMP_ENTITY could not open entity_dump.txt");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_ENTITY_VIS") == 0)
+	{
+		// SET_ENTITY_VIS <name-substr> <0|1> — SetRenderable on every named object whose name
+		// contains the substring. Elimination probe: if the blue palms persist with the
+		// verified palm entities hidden, something OUTSIDE the object system draws them.
+		char evName[128] = { 0 }; int evVis = 1;
+		if (sscanf_s(arg, "%127s %d", evName, (unsigned)sizeof(evName), &evVis) == 2)
+		{
+			wi::scene::Scene& evScene = wi::scene::GetScene();
+			auto evContains = [](const std::string& hay, const char* needle) -> bool {
+				std::string h = hay, n = needle;
+				for (auto& c : h) c = (char)tolower((unsigned char)c);
+				for (auto& c : n) c = (char)tolower((unsigned char)c);
+				return h.find(n) != std::string::npos;
+			};
+			int evCount = 0;
+			for (size_t evi = 0; evi < evScene.objects.GetCount(); ++evi)
+			{
+				const wi::scene::NameComponent* evn = evScene.names.GetComponent(evScene.objects.GetEntity(evi));
+				if (evn == nullptr || !evContains(evn->name, evName)) continue;
+				evScene.objects[evi].SetRenderable(evVis != 0);
+				evCount++;
+			}
+			_snprintf(result, sizeof(result), "OK: SET_ENTITY_VIS \"%s\" -> %d on %d objects", evName, evVis, evCount);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_ENTITY_VIS needs <name-substr> <0|1>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "REUPLOAD_ENTITY") == 0)
+	{
+		// REUPLOAD_ENTITY <name-substr> — re-run CreateRenderData() on every matching object's
+		// mesh: recreates the GPU buffers and re-uploads vertex/index content from the intact
+		// CPU copies. Decisive probe: if blue/corrupt entities snap back to normal, the GPU
+		// BUFFER CONTENT was corrupted during the in-place-reload upload storm while all data
+		// structures were correct (upload/copy-queue race).
+		wi::scene::Scene& ruScene = wi::scene::GetScene();
+		auto ruContains = [](const std::string& hay, const char* needle) -> bool {
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		int ruCount = 0;
+		static wi::vector<wi::ecs::Entity> ruDone;
+		ruDone.clear();
+		for (size_t rui = 0; rui < ruScene.objects.GetCount(); ++rui)
+		{
+			const wi::scene::NameComponent* run = ruScene.names.GetComponent(ruScene.objects.GetEntity(rui));
+			if (run == nullptr || !ruContains(run->name, arg)) continue;
+			wi::ecs::Entity ruMeshID = ruScene.objects[rui].meshID;
+			if (ruMeshID == wi::ecs::INVALID_ENTITY) continue;
+			bool ruSeen = false;
+			for (wi::ecs::Entity d : ruDone) if (d == ruMeshID) { ruSeen = true; break; }
+			if (ruSeen) continue;
+			wi::scene::MeshComponent* rum = ruScene.meshes.GetComponent(ruMeshID);
+			if (rum == nullptr) continue;
+			rum->CreateRenderData();
+			ruDone.push_back(ruMeshID);
+			ruCount++;
+		}
+		_snprintf(result, sizeof(result), "OK: REUPLOAD_ENTITY \"%s\" re-uploaded %d meshes", arg, ruCount);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_GEOMETRY") == 0)
+	{
+		// DUMP_GEOMETRY <name-substr> — read back the GPU-consumed ShaderGeometry record at
+		// each matching object's instance geometryOffset and compare: materialIndex vs the
+		// EXPECTED index of the subset's material (wrong index = palm renders with another
+		// material = blue), vertex/index buffer descriptors, uv ranges. The last GPU data
+		// layer not yet verified in the reload-corruption hunt.
+		wi::scene::Scene& dgScene = wi::scene::GetScene();
+		auto dgContains = [](const std::string& hay, const char* needle) -> bool {
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		FILE* dgF = fopen("geometry_dump.txt", "w");
+		int dgMatches = 0;
+		if (dgF != nullptr)
+		{
+			if (dgScene.geometryArrayMapped == nullptr || dgScene.instanceArrayMapped == nullptr)
+			{
+				fprintf(dgF, "mapped arrays NULL (geometry=%p instance=%p)\n",
+					(void*)dgScene.geometryArrayMapped, (void*)dgScene.instanceArrayMapped);
+			}
+			else
+			{
+				for (size_t dgi = 0; dgi < dgScene.objects.GetCount(); ++dgi)
+				{
+					wi::ecs::Entity dge = dgScene.objects.GetEntity(dgi);
+					const wi::scene::NameComponent* dgn = dgScene.names.GetComponent(dge);
+					if (dgn == nullptr || !dgContains(dgn->name, arg)) continue;
+					const wi::scene::ObjectComponent& dgo = dgScene.objects[dgi];
+					if (!dgo.IsRenderable()) continue;
+					const wi::scene::MeshComponent* dgm = dgScene.meshes.GetComponent(dgo.meshID);
+					if (dgm == nullptr || dgm->subsets.empty()) continue;
+					dgMatches++;
+					if (dgMatches > 16) continue;
+					const ShaderMeshInstance& dgsi = dgScene.instanceArrayMapped[dgi];
+					const ShaderGeometry& dgg = dgScene.geometryArrayMapped[dgsi.geometryOffset];
+					const uint32_t dgExpectMat = (uint32_t)dgScene.materials.GetIndex(dgm->subsets[0].materialID);
+					fprintf(dgF, "OBJ entity=%llu name=\"%s\" geoOfs=%u\n", (unsigned long long)dge, dgn->name.c_str(), dgsi.geometryOffset);
+					fprintf(dgF, "  geo materialIndex=%u EXPECTED=%u %s\n", dgg.materialIndex, dgExpectMat,
+						dgg.materialIndex == dgExpectMat ? "MATCH" : "*** MISMATCH ***");
+					if (dgg.materialIndex != dgExpectMat && dgg.materialIndex < dgScene.materials.GetCount())
+					{
+						wi::ecs::Entity dgWrongE = dgScene.materials.GetEntity(dgg.materialIndex);
+						const wi::scene::MaterialComponent* dgWrongM = &dgScene.materials[dgg.materialIndex];
+						const wi::scene::NameComponent* dgWrongN = dgScene.names.GetComponent(dgWrongE);
+						fprintf(dgF, "  ACTUAL material at index: entity=%llu name=\"%s\" basetex=\"%s\"\n",
+							(unsigned long long)dgWrongE, dgWrongN ? dgWrongN->name.c_str() : "?",
+							dgWrongM->textures[wi::scene::MaterialComponent::BASECOLORMAP].name.c_str());
+					}
+					fprintf(dgF, "  geo ib=%d vb_pos=%d vb_uvs=%d vb_nor=%d vb_tan=%d vb_pre=%d idxOfs=%u idxCount=%u flags=%08x\n",
+						dgg.ib, dgg.vb_pos_wind, dgg.vb_uvs, dgg.vb_nor, dgg.vb_tan, dgg.vb_pre,
+						dgg.indexOffset, dgg.indexCount, dgg.flags);
+					fprintf(dgF, "  geo aabb=(%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f) uvmin=(%.2f,%.2f) uvmax=(%.2f,%.2f)\n",
+						dgg.aabb_min.x, dgg.aabb_min.y, dgg.aabb_min.z, dgg.aabb_max.x, dgg.aabb_max.y, dgg.aabb_max.z,
+						dgg.uv_range_min.x, dgg.uv_range_min.y, dgg.uv_range_max.x, dgg.uv_range_max.y);
+				}
+			}
+			fprintf(dgF, "MATCHES %d\n", dgMatches);
+			fclose(dgF);
+			_snprintf(result, sizeof(result), "OK: DUMP_GEOMETRY \"%s\" renderable-matches=%d -> geometry_dump.txt", arg, dgMatches);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: DUMP_GEOMETRY could not open geometry_dump.txt");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_INSTANCE") == 0)
+	{
+		// DUMP_INSTANCE <name-substr> — read back the CPU-written GPU instance record
+		// (ShaderMeshInstance in the mapped upload array) for matching objects and compare
+		// against the components: per-instance color/emissive (blue-tint suspect),
+		// geometryOffset vs the mesh's geometryOffset (wrong-geometry suspect = slabs +
+		// wrong textures), transformRaw vs transform.world. The array holds LAST frame's
+		// values when this runs pre-Update — exactly what the GPU consumed.
+		wi::scene::Scene& diScene = wi::scene::GetScene();
+		auto diContains = [](const std::string& hay, const char* needle) -> bool {
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		FILE* diF = fopen("instance_dump.txt", "w");
+		int diMatches = 0;
+		if (diF != nullptr)
+		{
+			if (diScene.instanceArrayMapped == nullptr)
+			{
+				fprintf(diF, "instanceArrayMapped is NULL\n");
+			}
+			else
+			{
+				for (size_t dii = 0; dii < diScene.objects.GetCount(); ++dii)
+				{
+					wi::ecs::Entity die = diScene.objects.GetEntity(dii);
+					const wi::scene::NameComponent* din = diScene.names.GetComponent(die);
+					if (din == nullptr || !diContains(din->name, arg)) continue;
+					const wi::scene::ObjectComponent& dio = diScene.objects[dii];
+					if (!dio.IsRenderable()) continue;
+					diMatches++;
+					if (diMatches > 24) continue;
+					const wi::scene::TransformComponent* dit = diScene.transforms.GetComponent(die);
+					const wi::scene::MeshComponent* dim = diScene.meshes.GetComponent(dio.meshID);
+					const ShaderMeshInstance& dsi = diScene.instanceArrayMapped[dii];
+					fprintf(diF, "OBJ idx=%zu entity=%llu name=\"%s\" pos=(%.0f,%.0f,%.0f)\n",
+						dii, (unsigned long long)die, din->name.c_str(),
+						dit ? dit->world._41 : 0.0f, dit ? dit->world._42 : 0.0f, dit ? dit->world._43 : 0.0f);
+					fprintf(diF, "  inst uid=%llu layer=%08x flags=%08x color=(%08x,%08x) emissive=(%08x,%08x) rim=(%08x,%08x)\n",
+						(unsigned long long)dsi.uid, dsi.layerMask, dsi.flags, dsi.color.x, dsi.color.y,
+						dsi.emissive.x, dsi.emissive.y, dsi.rimHighlight.x, dsi.rimHighlight.y);
+					fprintf(diF, "  inst geoOfs=%u geoCount=%u baseGeoOfs=%u baseGeoCount=%u  MESH geoOfs=%u subsets=%d lodcount=%u\n",
+						dsi.geometryOffset, dsi.geometryCount, dsi.baseGeometryOffset, dsi.baseGeometryCount,
+						dim ? dim->geometryOffset : ~0u, dim ? (int)dim->subsets.size() : -1,
+						dim ? dim->GetLODCount() : 0);
+					fprintf(diF, "  inst center=(%.0f,%.0f,%.0f) r=%.1f  rawT=(%.0f,%.0f,%.0f) compT=(%.0f,%.0f,%.0f)\n",
+						dsi.center.x, dsi.center.y, dsi.center.z, dsi.radius,
+						dsi.transformRaw.mat0.w, dsi.transformRaw.mat1.w, dsi.transformRaw.mat2.w,
+						dit ? dit->world._41 : 0.0f, dit ? dit->world._42 : 0.0f, dit ? dit->world._43 : 0.0f);
+				}
+			}
+			fprintf(diF, "MATCHES %d\n", diMatches);
+			fclose(diF);
+			_snprintf(result, sizeof(result), "OK: DUMP_INSTANCE \"%s\" renderable-matches=%d -> instance_dump.txt", arg, diMatches);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: DUMP_INSTANCE could not open instance_dump.txt");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_TREEPOOL") == 0)
+	{
+		// DUMP_TREEPOOL — tree pool census + orphan detector (renderable unnamed objects the
+		// tree system no longer owns). Writes treepool_dump.txt (cwd = Files\ after load).
+		GGTrees::GGTrees_DebugDumpPool("treepool_dump.txt");
+		_snprintf(result, sizeof(result), "OK: DUMP_TREEPOOL wrote treepool_dump.txt");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_BROKEN") == 0)
+	{
+		// DUMP_BROKEN — scan every scene ObjectComponent for DANGLING REFERENCES: meshID
+		// that no longer resolves, mesh subsets whose materialID no longer resolves, or a
+		// mesh whose GPU generalBuffer is invalid. Writes broken_dump.txt (cwd = Files\
+		// after level load). Built to identify the orphaned "blue palm" objects in the
+		// in-place-reload corruption hunt (2026-07-25).
+		wi::scene::Scene& brScene = wi::scene::GetScene();
+		FILE* brF = fopen("broken_dump.txt", "w");
+		if (brF != nullptr)
+		{
+			int brMesh = 0, brMat = 0, brBuf = 0;
+			for (size_t bri = 0; bri < brScene.objects.GetCount(); ++bri)
+			{
+				wi::ecs::Entity bre = brScene.objects.GetEntity(bri);
+				const wi::scene::ObjectComponent& bro = brScene.objects[bri];
+				const wi::scene::NameComponent* brn = brScene.names.GetComponent(bre);
+				const wi::scene::TransformComponent* brt = brScene.transforms.GetComponent(bre);
+				float brx = brt ? brt->world._41 : 0, bry = brt ? brt->world._42 : 0, brz = brt ? brt->world._43 : 0;
+				if (bro.meshID == wi::ecs::INVALID_ENTITY) continue; // no mesh bound = legit hidden slot
+				const wi::scene::MeshComponent* brm = brScene.meshes.GetComponent(bro.meshID);
+				if (brm == nullptr)
+				{
+					brMesh++;
+					fprintf(brF, "BROKEN_MESH entity=%llu name=\"%s\" meshID=%llu renderable=%d pos=(%.0f,%.0f,%.0f)\n",
+						(unsigned long long)bre, brn ? brn->name.c_str() : "?", (unsigned long long)bro.meshID,
+						bro.IsRenderable() ? 1 : 0, brx, bry, brz);
+					continue;
+				}
+				if (!brm->generalBuffer.IsValid())
+				{
+					brBuf++;
+					fprintf(brF, "BROKEN_BUFFER entity=%llu name=\"%s\" meshID=%llu renderable=%d pos=(%.0f,%.0f,%.0f)\n",
+						(unsigned long long)bre, brn ? brn->name.c_str() : "?", (unsigned long long)bro.meshID,
+						bro.IsRenderable() ? 1 : 0, brx, bry, brz);
+				}
+				for (const auto& brs : brm->subsets)
+				{
+					if (brs.materialID != wi::ecs::INVALID_ENTITY && brScene.materials.GetComponent(brs.materialID) == nullptr)
+					{
+						brMat++;
+						fprintf(brF, "BROKEN_MATERIAL entity=%llu name=\"%s\" meshID=%llu matID=%llu renderable=%d pos=(%.0f,%.0f,%.0f)\n",
+							(unsigned long long)bre, brn ? brn->name.c_str() : "?", (unsigned long long)bro.meshID,
+							(unsigned long long)brs.materialID, bro.IsRenderable() ? 1 : 0, brx, bry, brz);
+						break;
+					}
+				}
+			}
+			fprintf(brF, "TOTALS objects=%d broken_mesh=%d broken_material=%d broken_buffer=%d\n",
+				(int)brScene.objects.GetCount(), brMesh, brMat, brBuf);
+			fclose(brF);
+			_snprintf(result, sizeof(result), "OK: DUMP_BROKEN objects=%d broken_mesh=%d broken_material=%d broken_buffer=%d",
+				(int)brScene.objects.GetCount(), brMesh, brMat, brBuf);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: DUMP_BROKEN could not open broken_dump.txt");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "MOVE_CAMERA") == 0)
 	{
 		// MOVE_CAMERA <dx> <dy> <dz> — offset the editor free-flight camera (force chunk re-stream).
@@ -2675,6 +3035,14 @@ void AutoHarness_CheckForCommand(void)
 			else if (_stricmp(tp, "shadowrange") == 0) GGTrees::ggtrees_global_params.tree_shadow_range = (int)tv;
 			else if (_stricmp(tp, "drawshadows") == 0) GGTrees::ggtrees_global_params.draw_shadows = (int)tv;
 			else if (_stricmp(tp, "stress") == 0) GGTrees::g_treePoolStressFrames = (int)tv;
+			else if (_stricmp(tp, "draw") == 0)
+			{
+				// Elimination probe (corruption hunt): draw 0 = hide every pool tree + gate the
+				// legacy draw path; draw 1 = re-enable + force a pool rescan to repopulate.
+				GGTrees::ggtrees_draw_enabled = (int)tv;
+				if ((int)tv == 0) GGTrees::GGTrees_HideAll();
+				else GGTrees::g_treePoolStressFrames = 5;
+			}
 			else if (_stricmp(tp, "pool") == 0)
 			{
 				// Perf knob: effective tree pool size (nearest-N trees drawn as real ECS objects).

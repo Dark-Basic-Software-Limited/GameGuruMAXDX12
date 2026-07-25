@@ -97,6 +97,7 @@ namespace GGTrees
 	void GGTrees_RepopulateInstances();
 	int GGTrees_UpdateInstances(int accurate);
 	void GGTrees_HideAll();
+	void GGTrees_DebugDumpPool( const char* path ); // DIAG: pool census + orphan detector (reload-corruption hunt)
 	void GGTrees_DeselectHighlightedTree(void);
 	void GGTrees_LockVisibility();
 
