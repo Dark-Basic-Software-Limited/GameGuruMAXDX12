@@ -1,5 +1,42 @@
 # Performance Profiling & Optimization Plan
 
+## Stage P.5 — 2026-07-25 autonomous deep-optimization session: 53.7 → ~77 FPS (+45%) on the TESTPRO1 temple gate
+
+**The months-old "fixed ~9.5ms Render CPU pole" is SOLVED.** New per-stage/per-job instrumentation
+(Wicked delta 1.32) attributed it in one measurement: the terrain virtual-texture background job ran
+**16.4ms EVERY frame on one worker thread** (14.2ms = an uncached memcpy loop rewriting every resident
+chunk's FULL page table each frame + 2.1ms free-list rebuild+sort), and the render path blocked on it.
+Delta 1.33 (incremental VT bookkeeping: per-VT dirty tracking with steal-victim marking, lazy freesort)
+took it to **0.4ms** — Render CPU 9.72 → 1.71ms, 52 → 62-70 FPS from this alone.
+
+**All deltas landed this session (each with a runtime A/B knob, see WETEST.md):**
+| Delta | What | Measured |
+|---|---|---|
+| 1.33 | Incremental terrain-VT bookkeeping (`SET_VTINC`) | VT job 16.4→0.4ms; 52→62-70 FPS |
+| 1.34 | Dead anim-dependency inserts removed | AnimDeps 0.82→0.00ms |
+| 1.35 | Frustum-visibility animation pause (`SET_ANIMVIS`) | +2 FPS; unseen characters stop evaluating |
+| 1.36 | Subtree-parallel hierarchy update (`SET_HIERLO`) | Scene-S2 4.97→2.22ms; +2-5 FPS |
+| 1.37 | Hair/grass sim static-skip + wind cadence (`SET_HAIRSKIP`) | 70.9↔78.3 FPS A/B; sway alive in slow-mo |
+| 1.38 | Object-update decompose → row lengths | 8722 decomposes/frame removed |
+| 1.39 | Underwater postprocess skip above waterline | −0.15ms GPU |
+| 1.40 | Command-list merges (`SET_MERGELISTS`) | NEUTRAL (kept — less overhead) |
+| 1.41 | ShaderMaterial recompose cache + streaming epoch (`SET_MATCACHE`) | NEUTRAL here (kept — correct, helps material-heavy scenes) |
+| game | Editor entity_loopanim half-rate | Logic - common_loop 1.35→0.71ms |
+| game | Harness ImGui-null-context crash FIX | the recurring silent test-loop deaths |
+
+**Decisive negative results (do not re-chase):** resolutionScale 0.85 ≈ FLAT (the GPU cost is grass
+VERTEX/raster work — 2M strands of billboard quads in prepass+opaque — not pixels); BUFFERCOUNT 2→3
+zero effect (reverted; the frame tail is NOT a fence wait); command-list merges no FPS on this rig.
+
+**The measured frame at session end:** CPU-in-frame ~10.5ms + **App-SubmitPresent tail ~3ms**
+(queue submits + Present on the main thread — new `APP_SUBMIT_PRESENT_MS` harness readout) + GPU ~9.8ms.
+
+**The documented path to 120 FPS (all structural — do SUPERVISED):**
+1. Off-thread `SubmitCommandLists` or submit-batch reduction (the VT copy/compute cross-queue splits) — ~2-3ms.
+2. Grass vertex LOD (strand count / draw distance by distance) — ~1.5-2ms GPU; visual trade to tune.
+3. Update residue: mesh-geometry recompose (S2) + object instance-write staging buffer (S4) — ~1.5-2ms.
+4. Frame pipelining (Update(N+1) overlapped with GPU(N) wait) — the deep one.
+
 ## Status Summary (as of 2026-07-17)
 
 | Phase | Topic | Status |
