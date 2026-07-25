@@ -59,6 +59,12 @@ namespace wi::scene {
 	extern bool gg_hierarchy_levelorder;
 }
 
+// GGMAX 1.37: hair/grass sim static-skip master switch (wiRenderer.cpp)
+namespace wi::renderer {
+	extern bool gg_hair_sim_static_skip;
+	extern uint32_t gg_hair_sim_wind_interval;
+}
+
 // The global Master instance
 extern Master master;
 
@@ -1163,6 +1169,14 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"HAIR_SEG: %u  HAIR_BILLBOARD: %u  HAIR_VIEWDIST: %.0f  HAIR_LEN: %.1f\n",
 			(int)sc.hairs.GetCount(), (unsigned long long)totalStrands, (unsigned long long)maxStrands,
 			seg, bb, vd, len);
+
+		// GGMAX 1.37 diagnostics: the hair-sim static-skip gate inputs
+		written += _snprintf(result + written, resultSize - written,
+			"WEATHER_WIND: dir=(%.4f, %.4f, %.4f) speed=%.3f randomness=%.3f wavesize=%.3f\n"
+			"HAIRSKIP: %s\n",
+			sc.weather.windDirection.x, sc.weather.windDirection.y, sc.weather.windDirection.z,
+			sc.weather.windSpeed, sc.weather.windRandomness, sc.weather.windWaveSize,
+			wi::renderer::gg_hair_sim_static_skip ? "enabled" : "disabled");
 	}
 
 	// Terrain debug info
@@ -2718,6 +2732,22 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_ANIMVIS <frames> [neardist]");
 		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_HAIRSKIP") == 0)
+	{
+		// A/B Wicked delta 1.37: hair/grass sim reduction at a parked camera.
+		//   SET_HAIRSKIP <0|1> [windInterval]
+		// 1 = enabled (default): no wind -> skip the simulate dispatch entirely; wind active ->
+		// simulate every windInterval-th frame (default 4, slow-motion sway). 0 = stock every-frame.
+		int on_i = 0, interval = -1;
+		int n = sscanf_s(arg, "%d %d", &on_i, &interval);
+		bool on = (n >= 1 && on_i != 0);
+		wi::renderer::gg_hair_sim_static_skip = on;
+		if (n >= 2 && interval >= 1)
+			wi::renderer::gg_hair_sim_wind_interval = (uint32_t)interval;
+		_snprintf(result, sizeof(result), "OK: SET_HAIRSKIP %s (wind interval %u)",
+			on ? "ON" : "OFF (stock every-frame sim)", wi::renderer::gg_hair_sim_wind_interval);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_HIERLO") == 0)
