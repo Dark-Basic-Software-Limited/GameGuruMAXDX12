@@ -1961,7 +1961,18 @@ extern "C" void WickedCall_ReloadQuiesceGPU(void)
 
 	wiGraphics::GraphicsDevice* device = wiGraphics::GetDevice();
 	if (device == nullptr) return;
-	uint64_t released = device->FlushDeferredDestroys(); // includes a full-queue WaitForGPU (GGMAX 1.43)
+
+	// GGMAX 1.43 DISABLED 2026-07-26 (suspected device-removal cause, do NOT re-enable
+	// without fixing the frame-boundary problem): gridedit_load_map runs MID-FRAME while
+	// the editor keeps pumping/rendering frames (Sync()/EmptyMessages inside the load).
+	// Force-releasing the entire deferred-destroy backlog there can free resources that
+	// recorded-but-unsubmitted command lists still reference -> GPU executes against dead
+	// memory -> DXGI_ERROR_DEVICE_HUNG / "Device Lost on Present" (user-reported after this
+	// delta shipped; harness repro then crashed 2/2 during load). It also never fixed any
+	// corruption (proven: ~16.5k items drained per reload, artifacts unchanged).
+	// The streaming guard above IS the useful part and stays.
+	const bool gg_enable_deferred_flush = false;
+	uint64_t released = gg_enable_deferred_flush ? device->FlushDeferredDestroys() : 0ull;
 	// Diagnostic marker (corruption hunt): prove the hook ran and show how much it drained.
 	static int s_quiesceCount = 0;
 	s_quiesceCount++;
