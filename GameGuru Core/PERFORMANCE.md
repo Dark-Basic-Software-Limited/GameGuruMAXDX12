@@ -1,5 +1,39 @@
 # Performance Profiling & Optimization Plan
 
+## Stage P.6 — 2026-07-26 autonomous "120 FPS push": the frame is GPU-WALL-BOUND; safe ceiling ≈ 77-80, the rest is mapped
+
+**Headline finding (delta 1.48a phase instrumentation, corrects the P.5 model):** the ~3ms
+"App-SubmitPresent tail" is ~95% the END STALL — the next-buffer frame fence, i.e. the GPU is still
+busy when the CPU finishes. **The TESTPRO1 temple-gate editor frame is GPU-WALL-bound at ~13.6ms**
+(GPU busy ~11.6 w/ profiler + cross-queue latency), CPU wall ~10.5. This retroactively explains the
+P.5 anomalies: BUFFERCOUNT 2→3 flat, resolutionScale flat, hairskip's clean ±1.4ms FPS coupling.
+**Consequence: CPU-side cuts yield ~ZERO FPS on this rig until the GPU wall drops below ~10.5ms.**
+
+**Steady state (6-min settle curve, parked camera): 72 ± 1 FPS.** GPU shares by elimination probe:
+grass draw+sim ~2.0ms, hair sim cadence ~1.7ms (BANNED — 1.37 flicker conviction, needs the queued
+PIX hunt), tree pool ~1.6ms (user's density choice). GPU busy: Opaque 2.73, HairSim 2.69, Z-Prepass
+2.21, Skinning 0.75, SceneMIP 0.54, Occlusion 0.75, UpdateBuffers 0.53, Shadowmap 0.36+1.04(stagger).
+
+**Landed (all knob-gated, see WETEST.md):**
+| Delta | What | Verdict |
+|---|---|---|
+| 1.48a | SubmitCommandLists phase timers + batch/dep counters (`SUBMIT_PHASES_MS`) | instrumentation; found the GPU-wall truth |
+| 1.48b | `SET_SINGLEQUEUE` — everything on graphics, no fences | **NEGATIVE −4.7 FPS** (async overlap is real) — default OFF |
+| 1.48c | `SET_LEANASYNC` — only tiny helper lists on graphics | **NEGATIVE −4 FPS** — default OFF. Submission overhead = dead end on this GPU |
+| 1.49 | Grass strand LOD: 2×/4× far decimation + width compensation (`SET_GRASSLOD`) | **+5 FPS (72.1→77.2)** steady-state ABAB; visually clean at test camera; **default OFF — user's visual call** |
+| game | Terrain idle gate: Generation_Update 1-in-8 when quiescent (`SET_TERRAINIDLE`) | Update-Terrain 0.92→0.09ms, CPU frame −~1.4ms; 0 FPS (GPU-bound) = CPU headroom; default ON |
+
+**Also established:** sculpt+undo grass dropout (SCENE_HAIRS −3 until camera moves) is PRE-EXISTING
+(reproduced with the gate hard-off) — spun off as its own task. `SET_TREES draw 0` is ONE-WAY
+(HideAll mutates source flags; reload restores).
+
+**The honest arithmetic to 120 FPS (8.33ms) from 12.9ms (grass LOD on):** GPU must lose ~4.5ms more —
+hair sim 1.7-2.7 (blocked on the PIX flicker hunt), trees 1.6 (visual trade / impostor work), remaining
+opaque+prepass ~3.5 (structural drawcall/LOD surgery), cross-frame GPU overlap 1-2ms (Wicked's
+end-of-frame all-queue sync forbids it — removing it is a cross-frame resource-race hazard class);
+AND CPU wall 10.5 must drop ≤8.3 (S1 anim 2.2, S4 1.5 — needs deterministic meshlet offsets first,
+VisMain 1.3, RenderWait 1.35 — all structural). None of these fit "safe + unattended".
+
 ## Stage P.5 — 2026-07-25 autonomous deep-optimization session: 53.7 → ~77 FPS (+45%) on the TESTPRO1 temple gate
 
 **The months-old "fixed ~9.5ms Render CPU pole" is SOLVED.** New per-stage/per-job instrumentation

@@ -32,6 +32,9 @@ extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* 
 extern uint64_t g_dbgBridgeCalls, g_dbgBridgeChunksMarked, g_dbgBridgeKeysErased,
 	g_dbgAutoBlendChunks, g_dbgPaintBlendChunks;
 extern size_t g_dbgInvalidatedCensus, g_dbgMergePendingCensus;
+extern bool g_terrainIdleGate;
+extern uint64_t g_dbgIdleGateSkips;
+extern uint32_t g_dbgIdleCalmFrames;
 extern uint64_t g_dbgAutoSkipNoChunk, g_dbgAutoSkipNoLayers, g_dbgAutoSkipInvalid,
 	g_dbgAutoSkipMergePend, g_dbgAutoPassRuns;
 extern size_t g_dbgAutoLastPending;
@@ -71,11 +74,25 @@ namespace wi::renderer {
 	extern uint32_t gg_hair_sim_wind_interval;
 }
 
+// GGMAX 1.49: grass strand LOD knobs (wiHairParticle.cpp)
+namespace wi {
+	extern bool gg_grass_lod;
+	extern float gg_grass_lod_step2_frac, gg_grass_lod_step4_frac, gg_grass_lod_width_boost;
+}
+
 // GGMAX 1.39/1.40: underwater skip + command-list merge switches (wiRenderPath3D.cpp)
 namespace wi {
 	extern bool gg_skip_underwater_above_water;
 	extern bool gg_render_merge_lists;
 	extern float gg_app_submit_present_ms; // 1.32c: submit+present wall time (wiApplication.cpp)
+}
+
+// GGMAX 1.48a/b/c: submit-tail phase attribution + queue-routing switches (wiGraphicsDevice_DX12.cpp)
+namespace wi::graphics {
+	extern float gg_submit_ms_close, gg_submit_ms_fences, gg_submit_ms_present, gg_submit_ms_sync, gg_submit_ms_stall;
+	extern uint32_t gg_submit_lists, gg_submit_batches, gg_submit_deps;
+	extern bool gg_single_queue;
+	extern bool gg_lean_async;
 }
 
 // The global Master instance
@@ -1192,6 +1209,14 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			sc.weather.windSpeed, sc.weather.windRandomness, sc.weather.windWaveSize,
 			wi::renderer::gg_hair_sim_static_skip ? "enabled" : "disabled",
 			wi::gg_app_submit_present_ms);
+
+		// GGMAX 1.48a: submit-tail phase breakdown
+		written += _snprintf(result + written, resultSize - written,
+			"SUBMIT_PHASES_MS: close=%.2f fences=%.2f present=%.2f sync=%.2f stall=%.2f (lists=%u batches=%u deps=%u)\n",
+			wi::graphics::gg_submit_ms_close, wi::graphics::gg_submit_ms_fences,
+			wi::graphics::gg_submit_ms_present, wi::graphics::gg_submit_ms_sync,
+			wi::graphics::gg_submit_ms_stall,
+			wi::graphics::gg_submit_lists, wi::graphics::gg_submit_batches, wi::graphics::gg_submit_deps);
 	}
 
 	// Terrain debug info
@@ -1244,7 +1269,8 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"GRASS_RECYCLES: %llu\n"
 			"GRASS_FULLRESETS: %llu\n"
 			"GRASS_RECREATES: %llu\n"
-			"GRASS_DEADMESH_NOW: %llu\n",
+			"GRASS_DEADMESH_NOW: %llu\n"
+			"TERRAINW_IDLE: gate=%d calm=%u skips=%llu\n",
 			(unsigned long long)g_dbgBridgeCalls,
 			(unsigned long long)g_dbgBridgeChunksMarked,
 			(unsigned long long)g_dbgBridgeKeysErased,
@@ -1261,7 +1287,9 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			(unsigned long long)g_dbgGrassRecycles,
 			(unsigned long long)g_dbgGrassFullResets,
 			(unsigned long long)g_dbgGrassRecreates,
-			(unsigned long long)g_dbgGrassDeadMeshNow);
+			(unsigned long long)g_dbgGrassDeadMeshNow,
+			g_terrainIdleGate ? 1 : 0, g_dbgIdleCalmFrames,
+			(unsigned long long)g_dbgIdleGateSkips);
 	}
 
 	// Tab mode (profiler panel state)
@@ -3663,6 +3691,61 @@ void AutoHarness_CheckForCommand(void)
 		bool on = (arg[0] != '0');
 		wi::gg_render_merge_lists = on;
 		_snprintf(result, sizeof(result), "OK: SET_MERGELISTS %s", on ? "ON (merged)" : "OFF (stock lists)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_TERRAINIDLE") == 0)
+	{
+		// A/B the terrain idle gate: when quiescent (camera parked, no pending chunks/edits)
+		// Generation_Update runs every 8th frame instead of every frame (~0.8ms CPU saved).
+		// 1 = gated (default), 0 = stock every-frame ring scan.
+		bool on = (arg[0] != '0');
+		g_terrainIdleGate = on;
+		_snprintf(result, sizeof(result), "OK: SET_TERRAINIDLE %s", on ? "ON (gated)" : "OFF (every frame)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_GRASSLOD") == 0)
+	{
+		// A/B Wicked delta 1.49: grass strand LOD — beyond step2frac*viewDistance only every
+		// 2nd strand draws, beyond step4frac*viewDistance every 4th; survivors widen by boost
+		// (per step). GG grass systems only. SET_GRASSLOD <0|1> [step2frac step4frac boost]
+		float f2 = 0, f4 = 0, bo = 0;
+		int on = 0;
+		int n = sscanf_s(arg, "%d %f %f %f", &on, &f2, &f4, &bo);
+		if (n >= 1)
+		{
+			wi::gg_grass_lod = (on != 0);
+			if (n >= 2 && f2 > 0) wi::gg_grass_lod_step2_frac = f2;
+			if (n >= 3 && f4 > 0) wi::gg_grass_lod_step4_frac = f4;
+			if (n >= 4 && bo > 0) wi::gg_grass_lod_width_boost = bo;
+			_snprintf(result, sizeof(result), "OK: SET_GRASSLOD %s (step2=%.2f step4=%.2f boost=%.2f x viewdist)",
+				wi::gg_grass_lod ? "ON" : "OFF",
+				wi::gg_grass_lod_step2_frac, wi::gg_grass_lod_step4_frac, wi::gg_grass_lod_width_boost);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_GRASSLOD needs <0|1> [step2frac step4frac boost]");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_LEANASYNC") == 0)
+	{
+		// A/B Wicked delta 1.48c: keep the two big compute lists async but move the four tiny
+		// helper lists (VT copy-pages, ocean sim+readback, VT tile-request+writeback) onto the
+		// graphics queue — cross-queue fence hops 12 -> ~5, the ~1ms async overlap kept.
+		bool on = (arg[0] != '0');
+		wi::graphics::gg_lean_async = on;
+		_snprintf(result, sizeof(result), "OK: SET_LEANASYNC %s", on ? "ON (helper lists on graphics)" : "OFF (stock async queues)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_SINGLEQUEUE") == 0)
+	{
+		// A/B Wicked delta 1.48b: route COMPUTE/COPY command lists onto the GRAPHICS
+		// queue and drop same-queue fence dependencies. Measures how much of the GPU
+		// frame WALL time is cross-queue fence-hop bubbles (submit-tail stall phase).
+		// 0 = stock async queues (default), 1 = single queue.
+		bool on = (arg[0] != '0');
+		wi::graphics::gg_single_queue = on;
+		_snprintf(result, sizeof(result), "OK: SET_SINGLEQUEUE %s", on ? "ON (graphics-only)" : "OFF (stock async queues)");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_HAIRSKIP") == 0)

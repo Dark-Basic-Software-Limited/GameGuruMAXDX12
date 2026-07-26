@@ -132,6 +132,15 @@ uint64_t g_dbgAutoSkipMergePend = 0;  // auto pass: merge_pending flag up
 uint64_t g_dbgAutoPassRuns = 0;       // auto pass invocations (gate fires)
 size_t   g_dbgAutoLastPending = 0;    // auto pass: pending size on last run
 
+// GGMAX terrain idle gate (perf): when the terrain is fully quiescent (camera parked,
+// no pending/invalidated/merge-pending chunks, chunk set stable, no edits) the engine
+// Generation_Update ring scan (~0.9ms/frame) runs only every 8th frame. ANY activity
+// signal restores full rate the same frame. Harness: SET_TERRAINIDLE 0|1.
+bool     g_terrainIdleGate = true;
+uint64_t g_dbgIdleGateSkips = 0;      // Generation_Update calls skipped by the idle gate
+uint32_t g_dbgIdleCalmFrames = 0;     // consecutive quiescent frames (0 = active)
+static bool s_terrainActivityPing = false; // set by edit/paint entry points, consumed in Update
+
 // Grass-hair lifecycle diagnostics for the shadow-flicker investigation (GET_PERF_DATA).
 // Trigger-1 confirmation: when a terrain chunk's scene-object entity is recycled/removed by
 // Wicked streaming, its grass HairParticleSystem's meshID points at a vanished MeshComponent
@@ -2240,6 +2249,31 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// was chopping the generator off after 1-2 chunks per launch.
 	const bool blendTickAllowed = !(initialBuild || massRegen) || ( s_terrainFrame % 30 ) == 0;
 
+	// GGMAX terrain idle gate: quiescence detection. Calm = camera parked AND no build /
+	// reveal / regen / merge activity AND no edit ping AND the chunk-set signature has
+	// been stable (checked in the census loop below, which still runs every frame).
+	// Conservative by construction: any signal resets calm to 0 the same frame, and the
+	// every-8th-frame heartbeat bounds a missed signal's delay to ~110ms of ring scan.
+	{
+		static XMFLOAT3 s_idleLastEye = {}, s_idleLastAt = {};
+		const bool cameraMoved =
+			fabsf(camera.Eye.x - s_idleLastEye.x) > 0.25f ||
+			fabsf(camera.Eye.y - s_idleLastEye.y) > 0.25f ||
+			fabsf(camera.Eye.z - s_idleLastEye.z) > 0.25f ||
+			fabsf(camera.At.x - s_idleLastAt.x) > 0.001f ||
+			fabsf(camera.At.y - s_idleLastAt.y) > 0.001f ||
+			fabsf(camera.At.z - s_idleLastAt.z) > 0.001f;
+		s_idleLastEye = camera.Eye;
+		s_idleLastAt = camera.At;
+		const bool active = cameraMoved || s_terrainActivityPing || initialBuild || revealHeld
+			|| massRegen || !heightsReady || !wickedTerrainMaterialsSetup
+			|| s_pendingRegenCount > 0 || g_dbgMergePendingCensus > 0;
+		s_terrainActivityPing = false;
+		if (active) g_dbgIdleCalmFrames = 0;
+		else if (g_dbgIdleCalmFrames < 0xFFFFFFFEu) g_dbgIdleCalmFrames++;
+	}
+	const bool idleSkipGen = g_terrainIdleGate && g_dbgIdleCalmFrames > 45 && (s_terrainFrame & 7) != 0;
+
 	// Let the VT system run — generates chunks, creates atlas, blends materials.
 	// CORRECTNESS GATE (2026-07-18): during the initial build, do NOT generate
 	// until the legacy GG terrain reports its heights ready — chunks generated
@@ -2248,9 +2282,16 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// false) is unaffected.
 	if (!initialBuild || heightsReady)
 	{
-		auto rangeGen = wi::profiler::BeginRangeCPU("TerrainW - Generation_Update");
-		terrain->Generation_Update(camera);
-		wi::profiler::EndRange(rangeGen);
+		if (!idleSkipGen)
+		{
+			auto rangeGen = wi::profiler::BeginRangeCPU("TerrainW - Generation_Update");
+			terrain->Generation_Update(camera);
+			wi::profiler::EndRange(rangeGen);
+		}
+		else
+		{
+			g_dbgIdleGateSkips++;
+		}
 	}
 
 	// Cheap change signature over the live chunk set (a few hundred entries, vs the 21K-object
@@ -2281,6 +2322,16 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	s_pendingRegenCount = pendingRegenCensus; // consumed by next frame's massRegen throttle
 	g_dbgInvalidatedCensus = pendingRegenCensus;
 	g_dbgMergePendingCensus = mergePendingCensus;
+
+	// GGMAX idle gate: chunk-set churn (create/remove/regen/blendmap arrival) = activity.
+	{
+		static uint64_t s_idleLastChunkSig = ~0ull;
+		if (chunkSig != s_idleLastChunkSig)
+		{
+			g_dbgIdleCalmFrames = 0;
+			s_idleLastChunkSig = chunkSig;
+		}
+	}
 
 	// Path A: rewrite the auto material weights (slots 0-4) with DX11-shape blend, then let
 	// the painted-material pass overlay its own weights on painted vertices. Must run AFTER
@@ -2534,6 +2585,7 @@ void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float 
 	// the generator thread mutates the chunks map — stop it before iterating
 	terrain->Generation_Cancel();
 	g_dbgBridgeCalls++;
+	s_terrainActivityPing = true; // GGMAX idle gate: edits restore full-rate Generation_Update
 
 	if (newPaintSlotMat >= 0)
 		RegisterPaintedMaterialSlot(newPaintSlotMat);
@@ -2581,12 +2633,14 @@ void GGTerrainWicked_OnTextureSetChanged()
 	// SetupTerrainMaterial re-loads everything from the new set.
 	if (!wickedTerrainInitialised) return;
 	wickedTerrainMaterialsSetup = false;
+	s_terrainActivityPing = true; // GGMAX idle gate
 }
 
 void GGTerrainWicked_OnPaintDataChanged()
 {
 	// Called when pMaterialMap is updated (level load or paint brush).
 	if (!wickedTerrainInitialised) return;
+	s_terrainActivityPing = true; // GGMAX idle gate
 
 	// Always clear so chunks get repainted with fresh pixel data
 	processedChunkKeys.clear();
