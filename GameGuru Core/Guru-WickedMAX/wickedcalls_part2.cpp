@@ -1939,3 +1939,43 @@ bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOut
 	return bHitSuccess;
 }
 
+
+// GG reload hardening (2026-07-26, in-place-reload corruption fix): fully quiesce the GPU
+// and flush the entire deferred-destroy backlog. Called from gridedit_load_map right after
+// gridedit_clear_map: the old level just freed thousands of GPU resources while the
+// renderer keeps presenting; letting their heap memory + bindless descriptor slots recycle
+// lazily UNDER the new level's creation storm produced wrong-texture / garbage-vertex
+// draws that worsened with every reload (blue palms, giant slabs — see the 2026-07-25
+// forensic hunt). A cold load never corrupted because it creates into a clean device; this
+// makes an in-place reload start from the same quiesced state. Cost: one GPU drain per
+// level load (~ms — irrelevant next to the load itself).
+#include "wiResourceManager.h" // GGMAX 1.44 reload guard
+
+extern "C" void WickedCall_ReloadQuiesceGPU(void)
+{
+	// GGMAX 1.44 — THE ACTUAL FIX: quiesce the texture-streaming system before the reload
+	// proceeds (join the in-flight streaming job, drop stale pending replacements, pause).
+	// The streaming-off A/B (2026-07-26) proved streaming is the writer of the wrong
+	// texture content; resumed in WickedCall_ReloadQuiesceEnd after the load completes.
+	wi::resourcemanager::GGReloadGuardBegin();
+
+	wiGraphics::GraphicsDevice* device = wiGraphics::GetDevice();
+	if (device == nullptr) return;
+	uint64_t released = device->FlushDeferredDestroys(); // includes a full-queue WaitForGPU (GGMAX 1.43)
+	// Diagnostic marker (corruption hunt): prove the hook ran and show how much it drained.
+	static int s_quiesceCount = 0;
+	s_quiesceCount++;
+	FILE* f = fopen("reload_quiesce.txt", "a");
+	if (f != nullptr)
+	{
+		fprintf(f, "quiesce #%d: released %llu deferred GPU items (streaming guarded)\n", s_quiesceCount, (unsigned long long)released);
+		fclose(f);
+	}
+}
+
+// GGMAX 1.44: resume texture streaming after the level load completed (pairs with the
+// GGReloadGuardBegin inside WickedCall_ReloadQuiesceGPU).
+extern "C" void WickedCall_ReloadQuiesceEnd(void)
+{
+	wi::resourcemanager::GGReloadGuardEnd();
+}

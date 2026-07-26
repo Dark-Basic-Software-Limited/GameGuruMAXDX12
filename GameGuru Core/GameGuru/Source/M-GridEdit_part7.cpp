@@ -1,6 +1,8 @@
 ﻿// Declared here because this unity-build part file has no include path to
 // GGTerrainWicked.h. Definition: Guru-WickedMAX/GGTerrain/GGTerrainWicked.cpp.
 namespace GGTerrain { void GGTerrainWicked_BeginRevealHold(); }
+// Reload hardening (2026-07-26): definition in Guru-WickedMAX/wickedcalls_part2.cpp.
+extern "C" void WickedCall_ReloadQuiesceGPU(void);
 
 void gridedit_updatezoomviewvalues ( void )
 {
@@ -835,6 +837,16 @@ void gridedit_load_map ( void )
 		//  Clear map first
 		TDRTrace("[LOADMAP] gridedit_clear_map");
 		gridedit_clear_map ( );
+
+		// GG reload hardening (2026-07-26): the clear above freed the previous level's GPU
+		// resources into the deferred-destroy queues. Quiesce the GPU and flush that whole
+		// backlog NOW, before any of the new level's resources are created — otherwise the
+		// freed heap memory / bindless descriptor slots recycle lazily under the creation
+		// storm and in-place reloads accumulate wrong-texture / garbage-vertex draws
+		// (the reload corruption: blue palms, giant slabs). Cold loads create into a clean
+		// device and never corrupted; this gives reloads the same starting state.
+		TDRTrace("[LOADMAP] WickedCall_ReloadQuiesceGPU");
+		WickedCall_ReloadQuiesceGPU();
 
 		if (bKeepWindowsResponding)
 			EmptyMessages();

@@ -38,6 +38,8 @@ extern size_t g_dbgGrassDeadMeshNow;
 
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
+#include "wiResourceManager.h" // REUPLOAD_TEXTURE probe (corruption hunt)
+namespace wi { namespace resourcemanager { extern bool gg_streaming_paused; } } // SET_STREAMING probe
 #include "wiGraphicsDevice.h"
 #include "wiApplication.h"
 #include "wiScene.h"
@@ -2452,6 +2454,61 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_ENTITY_VIS needs <name-substr> <0|1>");
 		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_STREAMING") == 0)
+	{
+		// SET_STREAMING <0|1> — pause/resume the engine texture-streaming system (see
+		// wi::resourcemanager::gg_streaming_paused). Corruption-hunt A/B probe: 0 pauses
+		// all min-lod updates, mip stream in/out and texture replacements.
+		int sv = atoi(arg);
+		wi::resourcemanager::gg_streaming_paused = (sv == 0);
+		_snprintf(result, sizeof(result), "OK: SET_STREAMING %d (paused=%d)", sv, sv == 0 ? 1 : 0);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "REUPLOAD_TEXTURE") == 0)
+	{
+		// REUPLOAD_TEXTURE <name-substr> — mark every matching object's material textures
+		// OUTDATED and re-Load them from disk (resource-manager recreate path). Decisive
+		// counterpart of REUPLOAD_ENTITY: if blue entities heal, the TEXTURE CONTENT in GPU
+		// memory was corrupted during the reload upload storm (copy-queue race) while every
+		// descriptor/name stayed correct.
+		wi::scene::Scene& rtScene = wi::scene::GetScene();
+		auto rtContains = [](const std::string& hay, const char* needle) -> bool {
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		int rtCount = 0;
+		static wi::vector<wi::ecs::Entity> rtDone;
+		rtDone.clear();
+		for (size_t rti = 0; rti < rtScene.objects.GetCount(); ++rti)
+		{
+			const wi::scene::NameComponent* rtn = rtScene.names.GetComponent(rtScene.objects.GetEntity(rti));
+			if (rtn == nullptr || !rtContains(rtn->name, arg)) continue;
+			const wi::scene::MeshComponent* rtm = rtScene.meshes.GetComponent(rtScene.objects[rti].meshID);
+			if (rtm == nullptr) continue;
+			for (const auto& rts : rtm->subsets)
+			{
+				wi::scene::MaterialComponent* rmat = rtScene.materials.GetComponent(rts.materialID);
+				if (rmat == nullptr) continue;
+				bool rtSeen = false;
+				for (wi::ecs::Entity d : rtDone) if (d == rts.materialID) { rtSeen = true; break; }
+				if (rtSeen) continue;
+				rtDone.push_back(rts.materialID);
+				for (int rq = 0; rq < wi::scene::MaterialComponent::TEXTURESLOT_COUNT; rq++)
+				{
+					auto& rtex = rmat->textures[rq];
+					if (!rtex.resource.IsValid() || rtex.name.empty()) continue;
+					rtex.resource.SetOutdated();
+					rtex.resource = wi::resourcemanager::Load(rtex.name);
+					rtCount++;
+				}
+				rmat->SetDirty();
+			}
+		}
+		_snprintf(result, sizeof(result), "OK: REUPLOAD_TEXTURE \"%s\" re-loaded %d texture slots", arg, rtCount);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "REUPLOAD_ENTITY") == 0)

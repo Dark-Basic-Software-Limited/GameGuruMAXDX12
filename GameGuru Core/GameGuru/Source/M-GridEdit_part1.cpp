@@ -1,4 +1,9 @@
-﻿void mapeditorexecutable_loop(void)
+﻿// Reload hardening (2026-07-26): resume texture streaming after a level load completes.
+// Definition: Guru-WickedMAX/wickedcalls_part2.cpp (pairs with WickedCall_ReloadQuiesceGPU
+// called inside gridedit_load_map).
+extern "C" void WickedCall_ReloadQuiesceEnd(void);
+
+void mapeditorexecutable_loop(void)
 {
 	// the moment storyboard is used, we can load the rest of the common assets needed for editor and game
 	if (bStoryboardWindow == true || pref.iDisplayWelcomeScreen == 0)
@@ -171,6 +176,7 @@
 				g_bAllowBackwardCompatibleConversion = true;
 				gridedit_load_map();
 				g_bAllowBackwardCompatibleConversion = false;
+				WickedCall_ReloadQuiesceEnd(); // reload hardening: resume texture streaming
 
 				g_EntityClipboard.clear(); //PE: Clear any old copy/paste.
 
