@@ -2209,6 +2209,7 @@ static int      s_verifyChecked = 0;
 static FILE*    s_verifyFile = nullptr;
 static size_t   s_verifyRebuildCursor = (size_t)-1; // phase-2 re-upload budget cursor
 static DWORD    s_verifyPhaseTick = 0;              // watchdog: last phase-change time
+static bool     s_verifyBurst = false;              // "burst" arg: unbudgeted rebuild storm (allocator-race repro)
 
 static void VerifyCaptureRegions(const wi::scene::MeshComponent* mesh, wi::vector<VerifyRegion>& out, bool asB)
 {
@@ -2358,7 +2359,8 @@ static void AutoHarness_VerifyTick(void)
 			// (mass suballocator free+alloc) is exactly the churn that detonates the allocator —
 			// spread them so the tool doesn't out-abuse the bug it hunts.
 			int rebuilt = 0;
-			while (s_verifyRebuildCursor < s_verifyWaveEnd && rebuilt < 48)
+			const int rebuildBudget = s_verifyBurst ? 1000000 : 48; // burst = deliberate one-frame allocator storm (race repro)
+			while (s_verifyRebuildCursor < s_verifyWaveEnd && rebuilt < rebuildBudget)
 			{
 				VerifyTarget& t = s_verifyTargets[s_verifyRebuildCursor];
 				if (!t.skipped)
@@ -2948,6 +2950,18 @@ void AutoHarness_CheckForCommand(void)
 		else
 		{
 			bool vWatch = (_stricmp(cmd, "VERIFY_WATCH") == 0);
+			// Optional trailing "burst" token: rebuild ALL matched meshes in one frame — the
+			// deliberate suballocator churn storm that reproduces the overlap/OOB race.
+			s_verifyBurst = false;
+			{
+				size_t alen = strlen(arg);
+				if (alen >= 5 && _stricmp(arg + alen - 5, "burst") == 0 && (alen == 5 || arg[alen - 6] == ' '))
+				{
+					s_verifyBurst = true;
+					arg[alen - 5] = 0;
+					while (alen > 5 && arg[strlen(arg) - 1] == ' ') arg[strlen(arg) - 1] = 0;
+				}
+			}
 			wi::scene::Scene& vScene = wi::scene::GetScene();
 			auto vContains = [](const std::string& hay, const char* needle) -> bool {
 				std::string h = hay, n = needle;
