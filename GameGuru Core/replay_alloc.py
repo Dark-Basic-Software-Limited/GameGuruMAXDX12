@@ -35,6 +35,10 @@ for idx, ln in enumerate(lines):
     parts = ln.split()
     if not parts:
         continue
+    if parts[0].startswith('#'):  # GGMAX 1.46c sequence prefix
+        parts = parts[1:]
+        if not parts:
+            continue
     op = parts[0]
     if op not in ('A', 'D', 'F', 'R'):
         counts['tripwire:' + op] += 1
