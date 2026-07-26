@@ -13,6 +13,9 @@
 #include <string.h>
 #include <time.h>
 #include <windows.h>
+#include <vector>
+#include <string>
+#include <algorithm> // std::sort (FIND_OBJECT distance ranking)
 
 // Terrain debug accessor (extern "C" from GGTerrain_part0.cpp)
 extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* initFlag, int* drawEn, int* updateEn);
@@ -2145,12 +2148,342 @@ static void AutoHarness_TerrainEditTick(void)
 	}
 }
 
+// ---------------------------------------------------------------------------
+// VERIFY_MESH / VERIFY_WATCH — GPU mesh-buffer content oracle (reload-corruption hunt).
+//
+// All mesh data lives suballocated inside a shared global GPU buffer (see
+// wiScene_Components.cpp CreateRenderData -> SuballocateGPUBuffer), so a suballocator
+// lifecycle race can stomp one mesh's live range with another's upload while every
+// CPU-side record stays correct. These commands detect that without eyes:
+//
+//   VERIFY_MESH <name-substr>  snapshot each matching mesh's generalBuffer bytes,
+//                              CreateRenderData() (re-upload from the intact CPU
+//                              arrays), snapshot again, byte-compare region by region.
+//                              Mismatch = the GPU copy was NOT what the CPU data
+//                              produces = content corruption (now healed as a side
+//                              effect). Meshes with freed CPU arrays are SKIPPED.
+//   VERIFY_WATCH <name-substr> two snapshots ~60 frames apart with NO re-upload —
+//                              any diff means an ACTIVE writer stomped the buffer
+//                              while the scene sat still. Zero side effects.
+//
+// Readback runs through the frame's own command lists (BeginCommandList on this
+// thread joins the current frame submit); data is read 3 frames later when the
+// frame fence guarantees completion. Corrupt meshes only are detailed in
+// Files/verify_mesh.txt; the summary is (re)written to auto_result.txt at the end.
+// ---------------------------------------------------------------------------
+
+struct VerifyRegion
+{
+	const char* name;
+	uint64_t offA;      // offset within generalBuffer at snapshot A
+	uint64_t offB;      // offset at snapshot B (verify mode rebuild may relocate; ~0 = same as A)
+	uint64_t size;
+};
+
+struct VerifyTarget
+{
+	wi::ecs::Entity meshID = wi::ecs::INVALID_ENTITY;
+	std::string label;                  // object/mesh name for the report
+	XMFLOAT3 pos = XMFLOAT3(0, 0, 0);   // one instance's world position (editor cross-ref)
+	uint64_t bufSizeA = 0;
+	uint64_t bufSizeB = 0;
+	wi::vector<VerifyRegion> regions;
+	wi::graphics::GPUBuffer rbA;
+	wi::graphics::GPUBuffer rbB;
+	std::vector<uint8_t> bytesA;
+	bool skipped = false;
+	const char* note = "";
+};
+
+static std::vector<VerifyTarget> s_verifyTargets;
+static int      s_verifyPhase = 0;          // 0 idle, 1 record-A, 2 wait-A, 3 record-B, 4 wait-B+compare
+static int      s_verifyMode = 0;           // 0 = VERIFY (re-upload between snapshots), 1 = WATCH
+static uint64_t s_verifyFrameA = 0;
+static uint64_t s_verifyFrameB = 0;
+static uint64_t s_verifyWatchUntil = 0;     // WATCH: frame to wait for before snapshot B
+static size_t   s_verifyWaveStart = 0;      // current wave = [start, end) into s_verifyTargets
+static size_t   s_verifyWaveEnd = 0;
+static int      s_verifyCorrupt = 0;        // corrupt meshes so far
+static int      s_verifySkipped = 0;
+static int      s_verifyChecked = 0;
+static FILE*    s_verifyFile = nullptr;
+static size_t   s_verifyRebuildCursor = (size_t)-1; // phase-2 re-upload budget cursor
+static DWORD    s_verifyPhaseTick = 0;              // watchdog: last phase-change time
+
+static void VerifyCaptureRegions(const wi::scene::MeshComponent* mesh, wi::vector<VerifyRegion>& out, bool asB)
+{
+	auto add = [&](const char* nm, const wi::scene::MeshComponent::BufferView& v)
+	{
+		if (!v.IsValid() || v.size == 0) return;
+		if (asB)
+		{
+			for (auto& r : out) { if (strcmp(r.name, nm) == 0) { r.offB = v.offset; return; } }
+		}
+		else
+		{
+			VerifyRegion r; r.name = nm; r.offA = v.offset; r.offB = ~0ull; r.size = v.size;
+			out.push_back(r);
+		}
+	};
+	add("ib", mesh->ib);
+	add("vb_pos_wind", mesh->vb_pos_wind);
+	add("vb_nor", mesh->vb_nor);
+	add("vb_tan", mesh->vb_tan);
+	add("vb_uvs", mesh->vb_uvs);
+	add("vb_atl", mesh->vb_atl);
+	add("vb_col", mesh->vb_col);
+	add("vb_bon", mesh->vb_bon);
+}
+
+// Record whole-generalBuffer copies into readback buffers for wave targets. rbField selects A or B.
+static bool VerifyRecordSnapshot(bool snapB)
+{
+	using namespace wi::graphics;
+	GraphicsDevice* device = GetDevice();
+	wi::scene::Scene& scene = wi::scene::GetScene();
+	CommandList cmd;
+	bool began = false;
+	for (size_t i = s_verifyWaveStart; i < s_verifyWaveEnd; i++)
+	{
+		VerifyTarget& t = s_verifyTargets[i];
+		if (t.skipped) continue;
+		wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(t.meshID);
+		if (mesh == nullptr || !mesh->generalBuffer.IsValid())
+		{
+			t.skipped = true; t.note = "mesh gone mid-verify"; continue;
+		}
+		uint64_t bufSize = mesh->generalBuffer.desc.size;
+		if (snapB)
+		{
+			t.bufSizeB = bufSize;
+			VerifyCaptureRegions(mesh, t.regions, true);
+		}
+		else
+		{
+			t.bufSizeA = bufSize;
+			VerifyCaptureRegions(mesh, t.regions, false);
+		}
+		GPUBufferDesc rbd;
+		rbd.size = bufSize;
+		rbd.usage = Usage::READBACK;
+		GPUBuffer& rb = snapB ? t.rbB : t.rbA;
+		if (!device->CreateBuffer(&rbd, nullptr, &rb) || rb.mapped_data == nullptr)
+		{
+			t.skipped = true; t.note = "readback alloc failed"; continue;
+		}
+		if (!began) { cmd = device->BeginCommandList(); began = true; }
+		GPUBarrier pre = GPUBarrier::Buffer(&mesh->generalBuffer, ResourceState::SHADER_RESOURCE, ResourceState::COPY_SRC);
+		device->Barrier(&pre, 1, cmd);
+		device->CopyBuffer(&rb, 0, &mesh->generalBuffer, 0, bufSize, cmd);
+		GPUBarrier post = GPUBarrier::Buffer(&mesh->generalBuffer, ResourceState::COPY_SRC, ResourceState::SHADER_RESOURCE);
+		device->Barrier(&post, 1, cmd);
+	}
+	return began;
+}
+
+static void AutoHarness_VerifyTick(void)
+{
+	using namespace wi::graphics;
+	if (s_verifyPhase == 0) return;
+	GraphicsDevice* device = GetDevice();
+	if (device == nullptr) { s_verifyPhase = 0; return; }
+	uint64_t frame = device->GetFrameCount();
+	wi::scene::Scene& scene = wi::scene::GetScene();
+
+	// Watchdog: a phase stuck >30s (device removed, frame counter frozen) aborts cleanly
+	// instead of leaving the driver polling a result that will never come.
+	static int s_watchLastPhase = 0;
+	static size_t s_watchLastCursor = 0;
+	if (s_verifyPhase != s_watchLastPhase || s_verifyRebuildCursor != s_watchLastCursor)
+	{
+		s_watchLastPhase = s_verifyPhase;
+		s_watchLastCursor = s_verifyRebuildCursor;
+		s_verifyPhaseTick = GetTickCount();
+	}
+	else if (GetTickCount() - s_verifyPhaseTick > 30000)
+	{
+		char aborted[256];
+		_snprintf(aborted, sizeof(aborted), "ERROR: verify ABORTED by watchdog (phase %d stuck 30s, wave %d..%d) — device may be lost",
+			s_verifyPhase, (int)s_verifyWaveStart, (int)s_verifyWaveEnd);
+		aborted[sizeof(aborted) - 1] = 0;
+		if (s_verifyFile) { fprintf(s_verifyFile, "%s\n", aborted); fclose(s_verifyFile); s_verifyFile = nullptr; }
+		AutoHarness_WriteResult(aborted);
+		s_verifyTargets.clear();
+		s_verifyPhase = 0;
+		s_verifyRebuildCursor = (size_t)-1;
+		s_watchLastPhase = 0;
+		return;
+	}
+
+	if (s_verifyPhase == 1)
+	{
+		// Open a new wave: batch targets up to a memory cap so snapshots stay bounded.
+		const uint64_t WAVE_BYTE_CAP = 96ull * 1024ull * 1024ull;
+		uint64_t waveBytes = 0;
+		s_verifyWaveEnd = s_verifyWaveStart;
+		while (s_verifyWaveEnd < s_verifyTargets.size())
+		{
+			VerifyTarget& t = s_verifyTargets[s_verifyWaveEnd];
+			if (!t.skipped)
+			{
+				wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(t.meshID);
+				uint64_t sz = (mesh != nullptr && mesh->generalBuffer.IsValid()) ? mesh->generalBuffer.desc.size : 0;
+				if (waveBytes > 0 && waveBytes + sz > WAVE_BYTE_CAP) break;
+				waveBytes += sz;
+			}
+			s_verifyWaveEnd++;
+		}
+		VerifyRecordSnapshot(false);
+		s_verifyFrameA = frame;
+		s_verifyPhase = 2;
+	}
+	else if (s_verifyPhase == 2)
+	{
+		if (frame < s_verifyFrameA + 3) return; // frame fence: snapshot A complete when N-2 finished
+		if (s_verifyRebuildCursor == (size_t)-1)
+		{
+			for (size_t i = s_verifyWaveStart; i < s_verifyWaveEnd; i++)
+			{
+				VerifyTarget& t = s_verifyTargets[i];
+				if (t.skipped) continue;
+				t.bytesA.resize((size_t)t.bufSizeA);
+				memcpy(t.bytesA.data(), t.rbA.mapped_data, (size_t)t.bufSizeA);
+				t.rbA = {};
+			}
+			s_verifyRebuildCursor = s_verifyWaveStart;
+		}
+		if (s_verifyMode == 0)
+		{
+			// Budget the re-uploads: a single-frame storm of hundreds of CreateRenderData calls
+			// (mass suballocator free+alloc) is exactly the churn that detonates the allocator —
+			// spread them so the tool doesn't out-abuse the bug it hunts.
+			int rebuilt = 0;
+			while (s_verifyRebuildCursor < s_verifyWaveEnd && rebuilt < 48)
+			{
+				VerifyTarget& t = s_verifyTargets[s_verifyRebuildCursor];
+				if (!t.skipped)
+				{
+					wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(t.meshID);
+					if (mesh != nullptr) { mesh->CreateRenderData(); rebuilt++; } // re-upload from intact CPU arrays
+				}
+				s_verifyRebuildCursor++;
+			}
+			if (s_verifyRebuildCursor < s_verifyWaveEnd) return; // continue next tick
+		}
+		s_verifyRebuildCursor = (size_t)-1;
+		s_verifyWatchUntil = s_verifyFrameA + 60;
+		s_verifyPhase = 3;
+	}
+	else if (s_verifyPhase == 3)
+	{
+		if (s_verifyMode == 1 && frame < s_verifyWatchUntil) return; // WATCH: give a writer time to strike
+		VerifyRecordSnapshot(true);
+		s_verifyFrameB = frame;
+		s_verifyPhase = 4;
+	}
+	else if (s_verifyPhase == 4)
+	{
+		if (frame < s_verifyFrameB + 3) return;
+		for (size_t i = s_verifyWaveStart; i < s_verifyWaveEnd; i++)
+		{
+			VerifyTarget& t = s_verifyTargets[i];
+			if (t.skipped)
+			{
+				s_verifySkipped++;
+				if (s_verifyFile) fprintf(s_verifyFile, "SKIP mesh=%u label=\"%s\" pos=(%.0f,%.0f,%.0f) note=%s\n",
+					(unsigned)t.meshID, t.label.c_str(), t.pos.x, t.pos.y, t.pos.z, t.note);
+				continue;
+			}
+			s_verifyChecked++;
+			const uint8_t* bytesB = (const uint8_t*)t.rbB.mapped_data;
+			int corruptRegions = 0;
+			char regionReport[1024];
+			regionReport[0] = 0;
+			for (auto& r : t.regions)
+			{
+				uint64_t offB = (r.offB == ~0ull) ? r.offA : r.offB;
+				if (offB + r.size > t.bufSizeB || r.offA + r.size > t.bytesA.size())
+				{
+					corruptRegions++;
+					_snprintf(regionReport + strlen(regionReport), sizeof(regionReport) - strlen(regionReport) - 1,
+						"  region %s LAYOUT-CHANGED (A off=%llu B off=%llu size=%llu bufB=%llu)\n",
+						r.name, (unsigned long long)r.offA, (unsigned long long)offB,
+						(unsigned long long)r.size, (unsigned long long)t.bufSizeB);
+					continue;
+				}
+				const uint32_t* wa = (const uint32_t*)(t.bytesA.data() + r.offA);
+				const uint32_t* wb = (const uint32_t*)(bytesB + offB);
+				uint64_t words = r.size / 4;
+				uint64_t firstBad = ~0ull, badCount = 0;
+				for (uint64_t w = 0; w < words; w++)
+				{
+					if (wa[w] != wb[w])
+					{
+						if (firstBad == ~0ull) firstBad = w * 4;
+						badCount++;
+					}
+				}
+				if (badCount > 0)
+				{
+					corruptRegions++;
+					uint64_t fb = firstBad / 4;
+					uint32_t a0 = wa[fb], b0 = wb[fb];
+					uint32_t a1 = (fb + 1 < words) ? wa[fb + 1] : 0, b1 = (fb + 1 < words) ? wb[fb + 1] : 0;
+					_snprintf(regionReport + strlen(regionReport), sizeof(regionReport) - strlen(regionReport) - 1,
+						"  region %s CORRUPT first@+0x%llX badwords=%llu/%llu A=%08X %08X B=%08X %08X\n",
+						r.name, (unsigned long long)firstBad, (unsigned long long)badCount, (unsigned long long)words,
+						a0, a1, b0, b1);
+				}
+			}
+			if (corruptRegions > 0)
+			{
+				s_verifyCorrupt++;
+				if (s_verifyFile)
+				{
+					fprintf(s_verifyFile, "MESH %u label=\"%s\" pos=(%.0f,%.0f,%.0f) size=%llu VERDICT=%s\n%s",
+						(unsigned)t.meshID, t.label.c_str(), t.pos.x, t.pos.y, t.pos.z,
+						(unsigned long long)t.bufSizeA,
+						(s_verifyMode == 1) ? "ACTIVE-WRITER" : "CORRUPT-HEALED", regionReport);
+					fflush(s_verifyFile); // progress visible to the external driver mid-run
+				}
+			}
+			t.rbB = {};
+			t.bytesA.clear();
+			t.bytesA.shrink_to_fit();
+		}
+		s_verifyWaveStart = s_verifyWaveEnd;
+		if (s_verifyWaveStart < s_verifyTargets.size())
+		{
+			s_verifyPhase = 1; // next wave
+		}
+		else
+		{
+			char summary[512];
+			_snprintf(summary, sizeof(summary),
+				"OK: %s complete — checked=%d corrupt=%d skipped=%d (of %d targets) -> verify_mesh.txt",
+				(s_verifyMode == 1) ? "VERIFY_WATCH" : "VERIFY_MESH",
+				s_verifyChecked, s_verifyCorrupt, s_verifySkipped, (int)s_verifyTargets.size());
+			summary[sizeof(summary) - 1] = 0;
+			if (s_verifyFile)
+			{
+				fprintf(s_verifyFile, "%s\n", summary);
+				fclose(s_verifyFile);
+				s_verifyFile = nullptr;
+			}
+			AutoHarness_WriteResult(summary); // rewrite auto_result.txt so the driver sees completion
+			s_verifyTargets.clear();
+			s_verifyPhase = 0;
+		}
+	}
+}
+
 // ---- Main entry point (called once per tick) ----
 
 void AutoHarness_CheckForCommand(void)
 {
 	AutoHarness_SkinWatchTick();
 	AutoHarness_TerrainEditTick();
+	AutoHarness_VerifyTick();
 	// Init paths and uptime tracking on first call
 	if (!s_initialized)
 	{
@@ -2545,6 +2878,136 @@ void AutoHarness_CheckForCommand(void)
 		}
 		_snprintf(result, sizeof(result), "OK: REUPLOAD_ENTITY \"%s\" re-uploaded %d meshes", arg, ruCount);
 		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "FIND_OBJECT") == 0)
+	{
+		// FIND_OBJECT <x> <y> <z> [radius=500] — scan every scene object's world transform
+		// for instances near a position (e.g. the editor's Object Tools position readout of a
+		// clicked corrupt object) and print entity/name/mesh links. Bridges the GG instance
+		// list to the Wicked scene without needing to know internal frame names.
+		float fx = 0, fy = 0, fz = 0, fr = 500.0f;
+		int nParsed = sscanf_s(arg, "%f %f %f %f", &fx, &fy, &fz, &fr);
+		if (nParsed >= 3)
+		{
+			wi::scene::Scene& foScene = wi::scene::GetScene();
+			struct FoHit { float dist; wi::ecs::Entity entity; wi::ecs::Entity meshID; const char* name; };
+			std::vector<FoHit> foHits;
+			for (size_t foi = 0; foi < foScene.objects.GetCount(); ++foi)
+			{
+				wi::ecs::Entity foEnt = foScene.objects.GetEntity(foi);
+				const wi::scene::TransformComponent* foTr = foScene.transforms.GetComponent(foEnt);
+				if (foTr == nullptr) continue;
+				float dx = foTr->world._41 - fx, dy = foTr->world._42 - fy, dz = foTr->world._43 - fz;
+				float d = sqrtf(dx * dx + dy * dy + dz * dz);
+				if (d > fr) continue;
+				const wi::scene::NameComponent* foNm = foScene.names.GetComponent(foEnt);
+				foHits.push_back({ d, foEnt, foScene.objects[foi].meshID, foNm ? foNm->name.c_str() : "?" });
+			}
+			std::sort(foHits.begin(), foHits.end(), [](const FoHit& a, const FoHit& b) { return a.dist < b.dist; });
+			FILE* foF = fopen("find_object.txt", "w");
+			int foWritten = 0;
+			for (const FoHit& h : foHits)
+			{
+				if (foF && foWritten < 200)
+				{
+					const wi::scene::NameComponent* foMn = foScene.names.GetComponent(h.meshID);
+					const wi::scene::MeshComponent* foMesh = foScene.meshes.GetComponent(h.meshID);
+					fprintf(foF, "dist=%.0f entity=%u name=\"%s\" mesh=%u meshname=\"%s\" bufsize=%llu cpuverts=%llu\n",
+						h.dist, (unsigned)h.entity, h.name, (unsigned)h.meshID,
+						foMn ? foMn->name.c_str() : "?",
+						foMesh ? (unsigned long long)foMesh->generalBuffer.desc.size : 0ull,
+						foMesh ? (unsigned long long)foMesh->vertex_positions.size() : 0ull);
+					foWritten++;
+				}
+			}
+			if (foF) fclose(foF);
+			int rlen = _snprintf(result, sizeof(result), "OK: FIND_OBJECT (%.0f,%.0f,%.0f) r=%.0f hits=%d -> find_object.txt\n",
+				fx, fy, fz, fr, (int)foHits.size());
+			for (size_t hi = 0; hi < foHits.size() && hi < 8 && rlen > 0 && rlen < (int)sizeof(result) - 200; hi++)
+			{
+				rlen += _snprintf(result + rlen, sizeof(result) - rlen - 1, "  dist=%.0f entity=%u name=\"%s\" mesh=%u\n",
+					foHits[hi].dist, (unsigned)foHits[hi].entity, foHits[hi].name, (unsigned)foHits[hi].meshID);
+			}
+			result[sizeof(result) - 1] = 0;
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: FIND_OBJECT needs <x> <y> <z> [radius]");
+		}
+	}
+	else if (_stricmp(cmd, "VERIFY_MESH") == 0 || _stricmp(cmd, "VERIFY_WATCH") == 0)
+	{
+		// See the oracle block above AutoHarness_VerifyTick for the full design.
+		// VERIFY_MESH <substr>: snapshot -> re-upload -> snapshot -> compare (detect + heal).
+		// VERIFY_WATCH <substr>: snapshot -> wait 60 frames -> snapshot (catch active writer).
+		// Empty substring matches EVERY mesh in the scene.
+		if (s_verifyPhase != 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: a verify is already in progress (phase %d)", s_verifyPhase);
+		}
+		else
+		{
+			bool vWatch = (_stricmp(cmd, "VERIFY_WATCH") == 0);
+			wi::scene::Scene& vScene = wi::scene::GetScene();
+			auto vContains = [](const std::string& hay, const char* needle) -> bool {
+				std::string h = hay, n = needle;
+				for (auto& c : h) c = (char)tolower((unsigned char)c);
+				for (auto& c : n) c = (char)tolower((unsigned char)c);
+				return h.find(n) != std::string::npos;
+			};
+			s_verifyTargets.clear();
+			int vNoCpu = 0;
+			for (size_t vi = 0; vi < vScene.objects.GetCount(); ++vi)
+			{
+				wi::ecs::Entity vEnt = vScene.objects.GetEntity(vi);
+				const wi::scene::NameComponent* vNm = vScene.names.GetComponent(vEnt);
+				if (arg[0] != 0 && (vNm == nullptr || !vContains(vNm->name, arg))) continue;
+				wi::ecs::Entity vMeshID = vScene.objects[vi].meshID;
+				if (vMeshID == wi::ecs::INVALID_ENTITY) continue;
+				bool vSeen = false;
+				for (const VerifyTarget& t : s_verifyTargets) { if (t.meshID == vMeshID) { vSeen = true; break; } }
+				if (vSeen) continue;
+				wi::scene::MeshComponent* vMesh = vScene.meshes.GetComponent(vMeshID);
+				if (vMesh == nullptr || !vMesh->generalBuffer.IsValid()) continue;
+				VerifyTarget t;
+				t.meshID = vMeshID;
+				t.label = vNm ? vNm->name : "?";
+				const wi::scene::TransformComponent* vTr = vScene.transforms.GetComponent(vEnt);
+				if (vTr) t.pos = XMFLOAT3(vTr->world._41, vTr->world._42, vTr->world._43);
+				if (!vWatch && (vMesh->vertex_positions.empty() || vMesh->indices.empty()))
+				{
+					t.skipped = true; t.note = "no CPU arrays (freed after upload) - unverifiable";
+					vNoCpu++;
+				}
+				s_verifyTargets.push_back(std::move(t));
+			}
+			if (s_verifyTargets.empty())
+			{
+				_snprintf(result, sizeof(result), "OK: %s \"%s\" matched 0 meshes", cmd, arg);
+			}
+			else
+			{
+				s_verifyFile = fopen("verify_mesh.txt", "w");
+				if (s_verifyFile)
+				{
+					fprintf(s_verifyFile, "%s \"%s\" targets=%d (corrupt/skip detail only; clean meshes counted in summary)\n",
+						cmd, arg, (int)s_verifyTargets.size());
+					fflush(s_verifyFile);
+				}
+				s_verifyMode = vWatch ? 1 : 0;
+				s_verifyWaveStart = 0;
+				s_verifyWaveEnd = 0;
+				s_verifyCorrupt = 0;
+				s_verifySkipped = 0;
+				s_verifyChecked = 0;
+				s_verifyPhase = 1;
+				_snprintf(result, sizeof(result),
+					"OK: %s started on %d meshes (%d unverifiable, no CPU arrays)%s — final summary rewrites auto_result.txt in a few seconds",
+					cmd, (int)s_verifyTargets.size(), vNoCpu,
+					vWatch ? " [watch: 60-frame window, no re-upload]" : " [verify: re-uploads (heals) as it checks]");
+			}
+			result[sizeof(result) - 1] = 0;
+		}
 	}
 	else if (_stricmp(cmd, "DUMP_GEOMETRY") == 0)
 	{
