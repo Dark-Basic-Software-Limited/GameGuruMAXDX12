@@ -3288,7 +3288,7 @@ void AutoHarness_CheckForCommand(void)
 		}
 		else
 		{
-			_snprintf(result, sizeof(result), "ERROR: SET_GRASS needs <param> <value> (length|width|stiffness|drag|blades|maxstrands|segments|billboards|viewdist|sss|alpha|tintr|tintg|tintb|sssr|sssg|sssb)");
+			_snprintf(result, sizeof(result), "ERROR: SET_GRASS needs <param> <value> (length|width|stiffness|drag|blades|maxstrands|segments|billboards|viewdist|lodchunks|tier3|tier2|sss|alpha|tintr|tintg|tintb|sssr|sssg|sssb)");
 		}
 		result[sizeof(result) - 1] = 0;
 	}
@@ -3717,6 +3717,10 @@ void AutoHarness_CheckForCommand(void)
 			if (n >= 2 && f2 > 0) wi::gg_grass_lod_step2_frac = f2;
 			if (n >= 3 && f4 > 0) wi::gg_grass_lod_step4_frac = f4;
 			if (n >= 4 && bo > 0) wi::gg_grass_lod_width_boost = bo;
+			// AUTO grass tiers follow this knob (1.0/1.7 off, 1.5/2.2 on) — nudge the gated
+			// grass pass so the tier change applies without waiting for a camera move
+			extern bool g_grassPassNudge;
+			g_grassPassNudge = true;
 			_snprintf(result, sizeof(result), "OK: SET_GRASSLOD %s (step2=%.2f step4=%.2f boost=%.2f x viewdist)",
 				wi::gg_grass_lod ? "ON" : "OFF",
 				wi::gg_grass_lod_step2_frac, wi::gg_grass_lod_step4_frac, wi::gg_grass_lod_width_boost);

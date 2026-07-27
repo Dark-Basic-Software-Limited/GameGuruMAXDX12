@@ -11,6 +11,7 @@
 #include "../../../../WickedEngineDX12/WickedEngine/wiTimer.h"
 #include <unordered_set>
 #include <unordered_map>
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <utility>
@@ -95,6 +96,24 @@ static uint32_t g_grassMaxStrands = 350000;    // per-chunk strand cap (split ac
 // when non-zero. Otherwise the outer ring is derived from gggrass_global_params.lod_dist
 // (the editor's Grass Draw Distance slider). Zero = follow slider.
 static float    g_grassLODChunksOverride = 0.0f;
+// Tier-upgrade boundaries in chunk-distances (user-reported 2026-07-27: the tier-3 full-density
+// rebuild at the old 1.0 chunk ≈ 5000 inches was a visible SQUARE POP right in front of the
+// game-mode player — a 5.5x density step applied to a whole chunk in one frame). Pushing the
+// boundaries out measured 72 -> 53 FPS with the strand LOD OFF (2.46M strands), so the pushed
+// values are COUPLED to the LOD opt-in: 0 = AUTO (LOD off -> stock 1.0/1.7; LOD on -> 1.5/2.2,
+// where the strand LOD decimates the added far strands and pays most of the bill). An explicit
+// SET_GRASS tier3/tier2 value always overrides AUTO.
+static float    g_grassTier3Chunks = 0.0f;   // 0 = AUTO; explicit value = full-density ring
+static float    g_grassTier2Chunks = 0.0f;   // 0 = AUTO; explicit value = mid-density ring
+namespace wi { extern bool gg_grass_lod; }   // engine strand-LOD opt-in (wiHairParticle.cpp)
+// Set by SET_GRASSLOD / tier-knob changes so the gated grass pass re-evaluates tiers without
+// waiting for a camera move or chunk churn (consumed by the maintenance block each frame).
+bool g_grassPassNudge = false;
+// While a tier-boundary SHRINK sweep is in flight (LOD toggled off -> AUTO boundaries pull in),
+// the downgrade hysteresis must yield — otherwise its 0.5-chunk anti-wobble margin holds the
+// fat tiers FOREVER at a parked camera (measured: stuck at 2.46M strands / 48 FPS after an
+// OFF toggle). Set alongside the nudge; cleared when a pass completes with nothing demoted.
+static bool g_grassTierShrinkPending = false;
 static bool g_grassRebuildRequested = false;
 
 // Brush cursor: a single DecalComponent entity that projects Files/editors/gfx/brush_ring.png down
@@ -1410,8 +1429,12 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	const float outerC = (g_grassLODChunksOverride > 0.0f)
 		? g_grassLODChunksOverride
 		: std::max(0.5f, viewDistInches / chunkStride + 1.0f);
-	const float midC   = std::min(1.7f, outerC);
-	const float nearC  = std::min(1.0f, outerC);
+	// AUTO tier boundaries follow the strand-LOD opt-in (see g_grassTier3Chunks comment)
+	const bool lodOn = wi::gg_grass_lod;
+	const float tier3C = (g_grassTier3Chunks > 0.0f) ? g_grassTier3Chunks : (lodOn ? 1.5f : 1.0f);
+	const float tier2C = (g_grassTier2Chunks > 0.0f) ? g_grassTier2Chunks : (lodOn ? 2.2f : 1.7f);
+	const float midC   = std::min(tier2C, outerC);
+	const float nearC  = std::min(tier3C, outerC);
 
 	struct PendingGrass {
 		wi::ecs::Entity entity;
@@ -1422,6 +1445,10 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		bool fullReset; // true when Wicked recycled the chunk; existing hair entities reference a
 		                // gone mesh and must be removed before recreate. False = paint update path
 		                // where we reuse existing entities (Stage 2).
+		bool deadMesh;  // fullReset CAUSE split: true = chunk entity recycled (old hair points at a
+		                // vanished mesh — teardown may NOT be deferred); false = live tier change
+		                // (old grass keeps rendering, so deferring the rebuild is invisible).
+		float ringDist; // chunk-center distance from camera in chunk units (creation priority)
 	};
 	wi::vector<PendingGrass> pending;
 
@@ -1476,7 +1503,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		// — invisible to the user but eliminates pop-out. Only applies on DOWNGRADES; upgrades
 		// always take effect immediately so painted grass shows up the moment the camera nears it.
 		int targetTier = targetTier_raw;
-		if (currentTier > targetTier_raw && currentTier > 0)
+		if (!g_grassTierShrinkPending && currentTier > targetTier_raw && currentTier > 0)
 		{
 			constexpr float HYS_MARGIN = 0.5f;
 			bool keep = false;
@@ -1507,14 +1534,14 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			auto stampIt = grassChunkKeyToEntityStamp.find(key);
 			const bool settled = (stampIt == grassChunkKeyToEntityStamp.end()) ||
 				((nowFrame - stampIt->second) >= GG_GRASS_SETTLE_FRAMES);
-			if (!settled || creationBudget <= 0)
+			if (!settled)
 			{
 				if (entityChanged && hasExistingEntities)
 				{
 					// remove-only pass: tier 0 + fullReset drops the dead-mesh hair entities and
 					// records the new chunk entity; regrowth happens once the stamp ages out
 					// (or the next budgeted pass picks it up).
-					pending.push_back({ entity, key, mesh, transform->world, 0, true });
+					pending.push_back({ entity, key, mesh, transform->world, 0, true, true, ringDist });
 				}
 				else
 				{
@@ -1525,7 +1552,8 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 				g_grassSettlePending = true;
 				continue;
 			}
-			creationBudget--; // this chunk will grow/regrow grass in Phase 2
+			// NOTE: the creation budget is applied AFTER the scan now (nearest chunks first) —
+			// see the priority pass below. Settled grow candidates all enter `pending` here.
 		}
 
 		// Chunks that need NO scene mutation (no old grass to remove AND new tier wants no grass)
@@ -1549,7 +1577,56 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 
 		// Capture the world matrix by value (a transform pointer would be invalidated when we
 		// create transform components for grass entities in Phase 2).
-		pending.push_back({ entity, key, mesh, transform->world, targetTier, entityChanged || tierChanged });
+		pending.push_back({ entity, key, mesh, transform->world, targetTier, entityChanged || tierChanged, entityChanged, ringDist });
+	}
+
+	if (pending.empty())
+	{
+		g_grassTierShrinkPending = false; // nothing left to re-tier — shrink sweep complete
+		return;
+	}
+
+	// Priority pass (2026-07-27, user-reported travel flicker): the creation budget used to be
+	// consumed in scene-iteration order, so during travel churn the visible gaps RIGHT IN FRONT
+	// of the player could wait many retry passes while off-screen far chunks regrew first.
+	// Now: sort by camera distance, grow the nearest `creationBudget` chunks this pass, and
+	// demote the rest — dead-mesh chunks still get their (uncapped) teardown immediately,
+	// live-grass tier changes simply keep their old grass until a later pass reaches them.
+	{
+		std::sort(pending.begin(), pending.end(),
+			[](const PendingGrass& a, const PendingGrass& b) { return a.ringDist < b.ringDist; });
+		size_t writeIdx = 0;
+		bool anyDemoted = false;
+		for (size_t i = 0; i < pending.size(); i++)
+		{
+			PendingGrass pc = pending[i];
+			if (pc.tier > 0)
+			{
+				if (creationBudget > 0)
+				{
+					creationBudget--;
+				}
+				else if (pc.deadMesh)
+				{
+					// over budget but the old hair references a vanished mesh — teardown now,
+					// record bare tier so the settle-retry regrows it when its turn comes
+					pc.tier = 0;
+					pc.fullReset = true;
+					anyDemoted = true;
+				}
+				else
+				{
+					// over budget, old grass still valid — skip entirely (keeps rendering at the
+					// old tier; the unchanged tier record refires this chunk on a later pass)
+					anyDemoted = true;
+					continue;
+				}
+			}
+			pending[writeIdx++] = pc;
+		}
+		pending.resize(writeIdx);
+		if (anyDemoted) g_grassSettlePending = true; // re-arms the every-3rd-frame retry pass
+		else g_grassTierShrinkPending = false;       // sweep fit in budget — hysteresis resumes
 	}
 
 	if (pending.empty()) return;
@@ -1718,6 +1795,8 @@ void GGTerrainWicked_SetGrassParam(const char* param, float value)
 	else if (p == "blades")     g_grassBladesPerVertex = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "maxstrands") g_grassMaxStrands = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "lodchunks")  g_grassLODChunksOverride = value;     // hard override outer ring (0 = follow slider)
+	else if (p == "tier3")      g_grassTier3Chunks = std::max(0.5f, value); // full-density ring in chunk-distances
+	else if (p == "tier2")      g_grassTier2Chunks = std::max(0.5f, value); // mid-density ring in chunk-distances
 	else if (p == "sss")        forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetSubsurfaceScatteringAmount(value); });
 	else if (p == "alpha")      forAllMaterials([&](wi::scene::MaterialComponent& m){ m.SetAlphaRef(value); });
 	else if (p == "tintr")      forAllMaterials([&](wi::scene::MaterialComponent& m){ m.baseColor.x = value; m.SetDirty(); });
@@ -2500,8 +2579,13 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		const bool settleRetry = g_grassSettlePending && ((++s_grassSettleTick % 3) == 0);
 		const float gdx = camera.Eye.x - s_grassCamX;
 		const float gdz = camera.Eye.z - s_grassCamZ;
-		if (grassDirty || s_grassSig != chunkSig || settleRetry || (gdx * gdx + gdz * gdz) > (8.0f * 8.0f))
+		if (grassDirty || s_grassSig != chunkSig || settleRetry || g_grassPassNudge || (gdx * gdx + gdz * gdz) > (8.0f * 8.0f))
 		{
+			if (g_grassPassNudge)
+			{
+				g_grassPassNudge = false; // consumed (SET_GRASSLOD toggles re-evaluate AUTO tiers now)
+				g_grassTierShrinkPending = true; // boundaries may have pulled in — let downgrades through
+			}
 			ProcessGrassChunks(terrain, camera.Eye);
 			s_grassSig = chunkSig;
 			s_grassCamX = camera.Eye.x;
