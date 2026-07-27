@@ -28,7 +28,16 @@ history of whichever resource owned that memory. Pairs with the engine-side DRED
      and set the dump output folder.
    - Leave **Hardware crash analysis** checked (adds shader-level SHADER INFO when the crash
      originates in a shader).
-   - SYSTEM → My applications → **Global workflow = "Crash Analysis"**.
+   - In the **Applications** panel on the same CAPTURE tab, set Auto connect + API (e.g.
+     "Existing applications" + "DirectX 12") and make sure GameGuruMAX.exe is in the list.
+     (RDP v3.5 note: older docs say SYSTEM → "Global workflow" — v3.5 moved this; the SYSTEM
+     tab now only holds Device Clocks / Driver Experiments. The CAPTURE Applications panel is
+     the config point.)
+
+**VERIFIED WORKING 2026-07-27 ~23:57 on the dev rig (RDP v3.5.0.18, Windows 10)**: with RDP
+open, launching MAX turns the Crash Analysis page to green **"Status: Capturing"** with the
+GameGuruMAX.exe PID attached. Note: device creation takes ~3.1s in this mode (vs ~0.1s
+normal) — that's the crash-analysis instrumentation loading at startup; runtime cost is small.
 
 ## Capture (each repro attempt)
 
