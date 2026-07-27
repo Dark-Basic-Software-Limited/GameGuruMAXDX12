@@ -72,6 +72,7 @@ namespace wi::scene {
 namespace wi::renderer {
 	extern bool gg_hair_sim_static_skip;
 	extern uint32_t gg_hair_sim_wind_interval;
+	extern bool gg_grass_wetmap; // 1.50: true = stock Wicked ocean/rain wetting on GG grass (dark-on-reveal bug demo)
 }
 
 // GGMAX 1.49: grass strand LOD knobs (wiHairParticle.cpp)
@@ -3750,6 +3751,16 @@ void AutoHarness_CheckForCommand(void)
 		bool on = (arg[0] != '0');
 		wi::graphics::gg_single_queue = on;
 		_snprintf(result, sizeof(result), "OK: SET_SINGLEQUEUE %s", on ? "ON (graphics-only)" : "OFF (stock async queues)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_GRASSWET") == 0)
+	{
+		// A/B Wicked delta 1.50: GG grass wetmap. 0 = force-dry (default; culled strands' zero
+		// positions read as underwater and ratchet to wet~0.8 = near-black on reveal, drying
+		// back over 15-30s). 1 = stock Wicked ocean/rain wetting to reproduce the artifact.
+		bool on = (arg[0] != '0');
+		wi::renderer::gg_grass_wetmap = on;
+		_snprintf(result, sizeof(result), "OK: SET_GRASSWET %s", on ? "ON (stock wetting — dark-on-reveal bug live)" : "OFF (grass force-dried)");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_HAIRSKIP") == 0)
