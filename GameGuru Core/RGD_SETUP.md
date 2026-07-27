@@ -58,6 +58,21 @@ normal) — that's the crash-analysis instrumentation loading at startup; runtim
 - Wicked already names its D3D12 resources and emits PIX markers (`device->EventBegin`),
   which RGD v1.6.3 consumes natively — expect a readable marker tree with zero code changes.
 
+## Overhead tiers (2026-07-28, after the user measured an FPS drop under full capture)
+
+Capture instrumentation slows the frame — which may itself mask a timing-sensitive hang
+(precedent: the 1.47 allocator storm only fired under first-load shader-compile pressure).
+Pick the lightest tier that still answers the question:
+
+1. **Full**: RGD + "Enable hardware crash analysis" ON + DRED — dedicated repro hunts only
+   (shader-level detail; also the ~3s device-creation cost and the biggest FPS hit).
+2. **Standard (recommended daily)**: RGD with hardware crash analysis UNCHECKED + DRED —
+   still captures the execution-marker tree (which draw/dispatch hung) and the page-fault
+   resource timeline; loses only shader-instruction detail. Noticeably cheaper.
+3. **Basic**: RDP closed, DRED only (`dred.txt` present) — a few % cost, every device
+   removal still logged with breadcrumbs + page fault to dred_report.txt.
+4. **Pure FPS testing**: delete `dred.txt` — zero instrumentation; recreate it afterwards.
+
 ## Engine-side DRED (always-on fallback, any machine)
 
 - Arm: empty `dred.txt` next to GameGuruMAX.exe (currently ARMED on the dev rig).
