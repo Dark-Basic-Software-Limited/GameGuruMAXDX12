@@ -68,8 +68,8 @@ namespace wi::scene {
 	extern bool gg_material_cache;
 }
 
-// GGMAX 1.53: terrain VT tiling share-mips live re-tune (GGTerrainWicked.cpp)
-namespace GGTerrain { void GGTerrainWicked_SetTileShare(int k); }
+// GGMAX 1.53b/c: terrain VT tiling cap + hold live re-tune (GGTerrainWicked.cpp)
+namespace GGTerrain { void GGTerrainWicked_SetTileShare(int k, int hold); }
 
 // GGMAX 1.37: hair/grass sim static-skip master switch (wiRenderer.cpp)
 namespace wi::renderer {
@@ -3764,10 +3764,13 @@ void AutoHarness_CheckForCommand(void)
 		// Also sets the terrain texture's world feature size: chunk ~5120in -> cap 8 = ~16m
 		// repeat, 16 = ~8m, 32 = ~4m. 0 = stock (cross-fades start at the camera).
 		// Repaint of resident chunks is queued automatically — visible within a frame or two.
-		int k = atoi(arg);
-		GGTerrain::GGTerrainWicked_SetTileShare(k);
-		_snprintf(result, sizeof(result), "OK: SET_TERRAINTILE %d (%s; repaint queued)",
-			k, k == 0 ? "stock tiling policy" : "repeat cap = world texture scale, transitions pushed out");
+		// SET_TERRAINTILE <cap> [hold]: cap = world texture scale; hold delays the halving
+		// ladder — the first visible scale cross-fade moves ~1.4x further out per +1 hold.
+		int k = 0, hold = -1;
+		int n = sscanf_s(arg, "%d %d", &k, &hold);
+		GGTerrain::GGTerrainWicked_SetTileShare(n >= 1 ? k : 0, hold);
+		_snprintf(result, sizeof(result), "OK: SET_TERRAINTILE cap=%d hold=%d (%s; repaint queued)",
+			k, hold, k == 0 ? "stock tiling policy" : "cap = feature size, hold = handoff distance");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_GRASSWET") == 0)
