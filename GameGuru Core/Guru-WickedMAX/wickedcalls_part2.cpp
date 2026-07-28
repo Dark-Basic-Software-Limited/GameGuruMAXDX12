@@ -1990,3 +1990,17 @@ extern "C" void WickedCall_ReloadQuiesceEnd(void)
 {
 	wi::resourcemanager::GGReloadGuardEnd();
 }
+
+// Engine-native water ripple (replaces the DX11 additive ripple decal): renders into the
+// water surface normal gradient — the same effect Jolt physics bodies spawn on splashdown.
+// The engine default sprite is sized for meter worlds; MAX is inch-scaled, so callers pass
+// a world-unit footprint (~40 = 1m; the sprite then grows and fades over ~1.7s).
+void WickedCall_PutWaterRipple(float fX, float fY, float fZ, float fSize)
+{
+	wiScene::Scene& scene = wiScene::GetScene();
+	scene.PutWaterRipple(XMFLOAT3(fX, fY, fZ));
+	if (!scene.waterRipples.empty())
+	{
+		scene.waterRipples.back().params.siz = XMFLOAT2(fSize, fSize);
+	}
+}

@@ -230,6 +230,7 @@ void WickedCall_SetRenderTargetMouseFocus(bool focus);
 
 void WickedCall_UpdateWaterHeight(float height);
 void WickedCall_UpdateWaterColor(float red, float green, float blue);
+void WickedCall_PutWaterRipple(float fX, float fY, float fZ, float fSize);
 void WickedCall_UpdateTreeWind(float wind);
 
 void WickedCall_RemoveObjectTextures(sObject* pObject);
