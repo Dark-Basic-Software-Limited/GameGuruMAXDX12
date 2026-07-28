@@ -1796,6 +1796,11 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 	t.visuals.iShadowSpotMax = t.gamevisuals.iShadowSpotMax;
 	t.visuals.bTransparentShadows = t.gamevisuals.bTransparentShadows;
 
+	t.visuals.fTreeShadowLODDist = t.gamevisuals.fTreeShadowLODDist;
+	t.visuals.iTreeShadowRange = t.gamevisuals.iTreeShadowRange;
+	GGTrees::ggtrees_global_params.lod_dist_shadow = t.visuals.fTreeShadowLODDist;
+	GGTrees::ggtrees_global_params.tree_shadow_range = t.visuals.iTreeShadowRange;
+
 	t.visuals.iEnvProbeResolution = t.gamevisuals.iEnvProbeResolution;
 	t.visuals.newperformancepresets = t.gamevisuals.newperformancepresets;
 

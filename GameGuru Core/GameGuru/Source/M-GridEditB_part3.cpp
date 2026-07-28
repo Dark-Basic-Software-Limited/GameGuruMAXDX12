@@ -1301,6 +1301,18 @@ void Wicked_Update_Shadows(void *voidvisual)
 	visualstype* visuals = (visualstype *)voidvisual;
 	if (visuals == NULL) visuals = &t.visuals;
 
+	// Tree shadow LOD distance + cascade range live in the level visuals (saved with
+	// the FPM, carried into test game like Transparent Shadows). Visuals are the master
+	// copy — every (re)apply (level load, panel edit, preset change) syncs the tree
+	// module. Guard: a zeroed struct from a legacy path must not silence tree shadows.
+	if (visuals->fTreeShadowLODDist < 1.0f)
+	{
+		visuals->fTreeShadowLODDist = 4000.0f;
+		visuals->iTreeShadowRange = 5;
+	}
+	GGTrees::ggtrees_global_params.lod_dist_shadow = visuals->fTreeShadowLODDist;
+	GGTrees::ggtrees_global_params.tree_shadow_range = visuals->iTreeShadowRange;
+
 	static int total_active_2d_shadows = -1;
 
 	bool bTransparentChanged = false;

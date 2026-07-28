@@ -266,6 +266,9 @@ void visuals_resetvalues (bool bNewLevel)
 	t.visuals.iShadowSpotMax = 8;
 	t.visuals.bTransparentShadows = false;
 
+	t.visuals.fTreeShadowLODDist = 4000.0f;
+	t.visuals.iTreeShadowRange = 5;
+
 	t.visuals.fShadowFarPlane = DEFAULT_FAR_PLANE;
 
 	t.visuals.SkyCloudiness = 0.68f;
@@ -871,6 +874,11 @@ void visuals_save ( void )
 	t.strwork = ""; t.strwork = t.strwork + "visuals.bTransparentShadows=" + Str(t.visuals.bTransparentShadows);
 	WriteString(1, t.strwork.Get());
 
+	t.strwork = ""; t.strwork = t.strwork + "visuals.TreeShadowLODDist=" + Str(t.visuals.fTreeShadowLODDist);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.TreeShadowRange=" + Str(t.visuals.iTreeShadowRange);
+	WriteString(1, t.strwork.Get());
+
 	t.strwork = ""; t.strwork = t.strwork + "visuals.SunAngleX=" + Str(t.visuals.SunAngleX);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.SunAngleY=" + Str(t.visuals.SunAngleY);
@@ -1176,6 +1184,9 @@ void visuals_load ( void )
 	t.visuals.iShadowPointMax = 16;
 	t.visuals.iShadowSpotMax = 8;
 	t.visuals.bTransparentShadows = false;
+
+	t.visuals.fTreeShadowLODDist = 4000.0f;
+	t.visuals.iTreeShadowRange = 5;
 
 	t.visuals.fShadowFarPlane = DEFAULT_FAR_PLANE;
 	t.visuals.bWaterEnable = true;
@@ -1511,7 +1522,10 @@ void visuals_load ( void )
 			t.try_s = "visuals.iShadowSpotMax"; if (t.tfield_s == t.try_s)  t.visuals.iShadowSpotMax = ValF(t.tvalue_s.Get());
 
 			t.try_s = "visuals.bTransparentShadows"; if (t.tfield_s == t.try_s)  t.visuals.bTransparentShadows = ValF(t.tvalue_s.Get());
-			
+
+			t.try_s = "visuals.TreeShadowLODDist"; if (t.tfield_s == t.try_s)  { t.visuals.fTreeShadowLODDist = ValF(t.tvalue_s.Get()); if (t.visuals.fTreeShadowLODDist < 750.0f || t.visuals.fTreeShadowLODDist > 7000.0f) t.visuals.fTreeShadowLODDist = 4000.0f; }
+			t.try_s = "visuals.TreeShadowRange"; if (t.tfield_s == t.try_s)  { t.visuals.iTreeShadowRange = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTreeShadowRange < 0 || t.visuals.iTreeShadowRange > 5) t.visuals.iTreeShadowRange = 5; }
+
 			t.try_s = "visuals.SunAngleX"; if (t.tfield_s == t.try_s)  t.visuals.SunAngleX = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.SunAngleY"; if (t.tfield_s == t.try_s)  t.visuals.SunAngleY = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.SunAngleZ"; if (t.tfield_s == t.try_s)  t.visuals.SunAngleZ = ValF(t.tvalue_s.Get());

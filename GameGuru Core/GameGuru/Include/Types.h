@@ -3888,6 +3888,11 @@ struct visualstype
 	int iShadowSpotMax;
 	bool bTransparentShadows;
 
+	// Tree shadow LOD distance + cascade range: saved with the level and carried into
+	// test game like bTransparentShadows; synced to GGTrees in Wicked_Update_Shadows
+	float fTreeShadowLODDist;
+	int iTreeShadowRange;
+
 	float SunAngleX;
 	float SunAngleY;
 	float SunAngleZ;
@@ -4164,6 +4169,9 @@ struct visualstype
 		 iShadowPointMax = 16;
 		 iShadowSpotMax = 8;
 		 bTransparentShadows = false;
+
+		 fTreeShadowLODDist = 4000.0f;
+		 iTreeShadowRange = 5;
 
 		 fShadowFarPlane = DEFAULT_FAR_PLANE;
 

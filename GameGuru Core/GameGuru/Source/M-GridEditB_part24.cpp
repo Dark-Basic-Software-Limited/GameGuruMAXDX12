@@ -934,16 +934,28 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::Checkbox("Front Shadows Priority", &bShadowsInFrontTakesPriority);
 
 		// Tree shadow controls — MOVED here from the Terrain Tools tree panel (2026-07-28,
-		// user request) so they can be tuned LIVE in test game. Both are change-detected in
-		// GGTrees_part2 and apply on the next tree pass: distance re-evaluates each tree's
-		// mesh-shadow flag in place; range live-updates proxy/pool cascade masks.
+		// user request) so they can be tuned LIVE in test game. Values live in t.visuals
+		// (saved with the level, carried into test game — same mechanism as Transparent
+		// Shadows); on-change they push straight into GGTrees, where GGTrees_part2
+		// change-detects and applies on the next tree pass: distance re-evaluates each
+		// tree's mesh-shadow flag in place; range live-updates proxy/pool cascade masks.
 		ImGui::TextCenter("Tree Shadow LOD Distance");
 		ImGui::PushItemWidth(-10);
-		ImGui::SliderFloat("##setshadow_TreeShadowLODDist", &GGTrees::ggtrees_global_params.lod_dist_shadow, 750, 7000, "%.0f");
+		if (ImGui::SliderFloat("##setshadow_TreeShadowLODDist", &t.visuals.fTreeShadowLODDist, 750, 7000, "%.0f"))
+		{
+			t.gamevisuals.fTreeShadowLODDist = t.visuals.fTreeShadowLODDist;
+			GGTrees::ggtrees_global_params.lod_dist_shadow = t.visuals.fTreeShadowLODDist;
+			bVisualUpdated = true;
+		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Distance where detailed tree mesh shadows hand off to the merged billboard shadow proxies. The tree's own visual LOD switches at 2500 - matching values hides one transition inside the other.");
 
 		ImGui::TextCenter("Tree Shadow Range");
-		ImGui::SliderInt("##setshadow_TreeShadowRange", &GGTrees::ggtrees_global_params.tree_shadow_range, 0, 5);
+		if (ImGui::SliderInt("##setshadow_TreeShadowRange", &t.visuals.iTreeShadowRange, 0, 5))
+		{
+			t.gamevisuals.iTreeShadowRange = t.visuals.iTreeShadowRange;
+			GGTrees::ggtrees_global_params.tree_shadow_range = t.visuals.iTreeShadowRange;
+			bVisualUpdated = true;
+		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "How many shadow cascades receive tree shadows (0 = none, 5 = all cascades / farthest reach).");
 		ImGui::PopItemWidth();
 
