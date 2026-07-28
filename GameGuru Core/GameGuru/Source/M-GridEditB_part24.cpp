@@ -1,4 +1,6 @@
-﻿bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
+﻿#include "GGTerrain\GGTrees.h" // 2026-07-28: tree shadow sliders moved into the Shadows panel (include-guarded, safe in fragment)
+
+bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 {
 	int wflags = ImGuiTreeNodeFlags_None;
 	static bool bBoxDebug = false;
@@ -930,6 +932,20 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 
 		extern bool bShadowsInFrontTakesPriority;
 		ImGui::Checkbox("Front Shadows Priority", &bShadowsInFrontTakesPriority);
+
+		// Tree shadow controls — MOVED here from the Terrain Tools tree panel (2026-07-28,
+		// user request) so they can be tuned LIVE in test game. Both are change-detected in
+		// GGTrees_part2 and apply on the next tree pass: distance re-evaluates each tree's
+		// mesh-shadow flag in place; range live-updates proxy/pool cascade masks.
+		ImGui::TextCenter("Tree Shadow LOD Distance");
+		ImGui::PushItemWidth(-10);
+		ImGui::SliderFloat("##setshadow_TreeShadowLODDist", &GGTrees::ggtrees_global_params.lod_dist_shadow, 750, 7000, "%.0f");
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Distance where detailed tree mesh shadows hand off to the merged billboard shadow proxies. The tree's own visual LOD switches at 2500 - matching values hides one transition inside the other.");
+
+		ImGui::TextCenter("Tree Shadow Range");
+		ImGui::SliderInt("##setshadow_TreeShadowRange", &GGTrees::ggtrees_global_params.tree_shadow_range, 0, 5);
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "How many shadow cascades receive tree shadows (0 = none, 5 = all cascades / farthest reach).");
+		ImGui::PopItemWidth();
 
 		ImGui::Indent(-10);
 	}

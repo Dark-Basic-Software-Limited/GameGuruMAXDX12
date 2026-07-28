@@ -1137,11 +1137,8 @@ void imgui_terrain_loop_v2(void)
 							ImGui::TextCenter("Tree LOD Distance");
 							ImGui::SliderFloat("##TreeLODDist", &ggtrees_global_params.lod_dist, 750, 7000);
 
-							ImGui::TextCenter("Tree Shadow LOD Distance");
-							ImGui::SliderFloat("##TreeShadowLODDist", &ggtrees_global_params.lod_dist_shadow, 750, 7000);
-
-							ImGui::TextCenter("Tree Shadow Range");
-							ImGui::SliderInt("##TreeShadowRange", &ggtrees_global_params.tree_shadow_range, 0, 5);
+							// Tree shadow controls MOVED to the Visuals > Shadows panel
+							// (M-GridEditB_part24, 2026-07-28 user request) — live-tunable in test game.
 
 							ImGui::TextCenter("Tree Paint Mode");
 							ImGui::SliderInt("##TreePaintMode", &ggtrees_global_params.paint_mode, 0, 5);
