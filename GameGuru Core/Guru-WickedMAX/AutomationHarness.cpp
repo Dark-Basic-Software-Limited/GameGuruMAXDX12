@@ -3758,15 +3758,16 @@ void AutoHarness_CheckForCommand(void)
 	}
 	else if (_stricmp(cmd, "SET_TERRAINTILE") == 0)
 	{
-		// Wicked delta 1.53: terrain VT tiling share-mips. Mips 0..K of each chunk region share
-		// mip0's texture repeat count (invisible pure-downsample transitions near the camera);
-		// beyond K the stock repeat-halving anti-tiling resumes for the far field.
-		// 0 = stock (scale cross-fades start right at the camera). Repaint of resident chunks
-		// is queued automatically — the effect shows within a frame or two.
+		// Wicked delta 1.53b: terrain VT tiling repeat CAP. All bake rungs finer than <cap>
+		// repeats-per-chunk collapse to the cap scale (pure downsample chain = invisible
+		// transitions near/mid); rungs at/below the cap keep stock halving (far anti-tiling).
+		// Also sets the terrain texture's world feature size: chunk ~5120in -> cap 8 = ~16m
+		// repeat, 16 = ~8m, 32 = ~4m. 0 = stock (cross-fades start at the camera).
+		// Repaint of resident chunks is queued automatically — visible within a frame or two.
 		int k = atoi(arg);
 		GGTerrain::GGTerrainWicked_SetTileShare(k);
 		_snprintf(result, sizeof(result), "OK: SET_TERRAINTILE %d (%s; repaint queued)",
-			k, k == 0 ? "stock tiling policy" : "near mips share mip0 tiling");
+			k, k == 0 ? "stock tiling policy" : "repeat cap = world texture scale, transitions pushed out");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_GRASSWET") == 0)
