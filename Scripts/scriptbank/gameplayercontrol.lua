@@ -971,7 +971,7 @@ function gameplayercontrol.footfall()
             -- And also trigger ripples in water
             SetGamePlayerControlRippleCount(GetGamePlayerControlRippleCount()+GetTimeElapsed())
             if ( GetGamePlayerControlMovement() ~= 0  ) then SetGamePlayerControlRippleCount(GetGamePlayerControlRippleCount()+(GetTimeElapsed()*4)) end
-            if ( GetGamePlayerControlRippleCount()>20.0 ) then 
+            if ( GetGamePlayerControlRippleCount()>10.0 ) then -- DX12 ripple rate doubled (was 20.0, USER-TUNED 2026-07-28)
                SetGamePlayerControlRippleCount(0.0)
                TriggerWaterRipple(GetPlrObjectPositionX(),GetGamePlayerStateWaterlineY()+0.5,GetPlrObjectPositionZ())
             end
@@ -2133,7 +2133,7 @@ function gameplayercontrol.control()
 				if(camY > GetGamePlayerStateWaterlineY() and swimForce > 0) then
 					
 				g_swimeffects = g_swimeffects + 1
-				if(g_swimeffects == 3) then
+				if(g_swimeffects == 2) then -- DX12 ripple rate up (was 3, USER-TUNED 2026-07-28)
 					TriggerWaterRippleSize(GetPlrObjectPositionX(),GetGamePlayerStateWaterlineY()+1,GetPlrObjectPositionZ(), 40, 40)
 					g_swimeffects = 0
 				end

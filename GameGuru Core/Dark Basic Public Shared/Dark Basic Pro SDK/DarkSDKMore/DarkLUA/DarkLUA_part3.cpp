@@ -1496,8 +1496,9 @@ int TriggerWaterRipple ( lua_State *L )
 	g.decalz=lua_tonumber(L, 3);
 	#ifdef WICKEDENGINE
 	// DX12: engine-native water ripple replaces the old additive ripple decal
+	// (footprint USER-TUNED 2026-07-28: 20 units, half the initial 40)
 	extern void WickedCall_PutWaterRipple(float fX, float fY, float fZ, float fSize);
-	WickedCall_PutWaterRipple(g.decalx, g.decaly, g.decalz, 40.0f);
+	WickedCall_PutWaterRipple(g.decalx, g.decaly, g.decalz, 20.0f);
 	#else
 	decal_triggerwaterripple ( );
 	#endif
@@ -1516,9 +1517,10 @@ int TriggerWaterRippleSize(lua_State *L)
 	t.decalscalemody = lua_tonumber(L, 5);
 	#ifdef WICKEDENGINE
 	// DX12: engine-native water ripple replaces the old additive ripple decal;
-	// the script's x-size argument is reused as the world-unit footprint
+	// the script's x-size argument is reused as the world-unit footprint, halved
+	// (USER-TUNED 2026-07-28) since scripts carry DX11-era sizes
 	extern void WickedCall_PutWaterRipple(float fX, float fY, float fZ, float fSize);
-	WickedCall_PutWaterRipple(g.decalx, g.decaly, g.decalz, (float)t.decalscalemodx);
+	WickedCall_PutWaterRipple(g.decalx, g.decaly, g.decalz, (float)t.decalscalemodx * 0.5f);
 	#else
 	decal_triggerwaterripplesize();
 	#endif
