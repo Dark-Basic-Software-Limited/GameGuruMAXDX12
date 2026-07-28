@@ -2263,6 +2263,62 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		wi::backlog::post(wickedGrassEnabled ? "[Grass] ON" : "[Grass] OFF");
 	}
 
+	// UI AUDIT 2026-07-28 (v2): map boundary via engine debug lines (same visual family as
+	// the object-bounds boxes). The View Options boundary checkboxes flip the legacy
+	// SHOW_MAP_SIZE flags that only the DEAD custom terrain shaders consumed — draw them
+	// for real here. Editable area spans -half..+half around world origin (see the
+	// GGTerrain_GetEditableSize grid math in GGTerrain_part0).
+	{
+		const uint32_t bflags = ggterrain_global_render_params2.flags2;
+		const bool bShow3D = (bflags & GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE_3D) != 0;
+		const bool bShow2D = (bflags & GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE) != 0;
+		if (bShow3D || bShow2D)
+		{
+			const float half = GGTerrain_GetEditableSize(); // returns HALF-size
+			const XMFLOAT4 boundaryColor = XMFLOAT4(1.0f, 0.75f, 0.1f, 1.0f);
+			if (bShow3D)
+			{
+				// tall wire box marking the editable volume (height is visual-only)
+				wi::primitive::AABB box(XMFLOAT3(-half, 0.0f, -half), XMFLOAT3(half, 25000.0f, half));
+				wi::renderer::DrawBox(box, boundaryColor, true);
+			}
+			if (bShow2D)
+			{
+				// ground-hugging boundary ring: sample terrain height along each edge
+				const int segs = 64;
+				const float step = (half * 2.0f) / (float)segs;
+				const float lift = 20.0f; // keep the line just above the surface
+				auto ground = [&](float x, float z) -> float
+				{
+					float h = 0.0f;
+					GGTerrain_GetHeight(x, z, &h);
+					return h + lift;
+				};
+				for (int i = 0; i < segs; i++)
+				{
+					const float a = -half + step * i;
+					const float b = a + step;
+					wi::renderer::RenderableLine line;
+					line.color_start = line.color_end = boundaryColor;
+					// north + south edges
+					line.start = XMFLOAT3(a, ground(a, -half), -half);
+					line.end = XMFLOAT3(b, ground(b, -half), -half);
+					wi::renderer::DrawLine(line, true);
+					line.start = XMFLOAT3(a, ground(a, half), half);
+					line.end = XMFLOAT3(b, ground(b, half), half);
+					wi::renderer::DrawLine(line, true);
+					// west + east edges
+					line.start = XMFLOAT3(-half, ground(-half, a), a);
+					line.end = XMFLOAT3(-half, ground(-half, b), b);
+					wi::renderer::DrawLine(line, true);
+					line.start = XMFLOAT3(half, ground(half, a), a);
+					line.end = XMFLOAT3(half, ground(half, b), b);
+					wi::renderer::DrawLine(line, true);
+				}
+			}
+		}
+	}
+
 	// Skip all terrain work when hidden (Generation_Update, VT CPU/GPU, blendmap painting)
 	if (wickedTerrainHidden) return;
 

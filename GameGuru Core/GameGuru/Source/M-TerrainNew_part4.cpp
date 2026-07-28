@@ -792,22 +792,18 @@ void imgui_Customize_Sky_V2(int mode)
 			WickedCall_UpdateProbes();
 		}
 
-		// UI AUDIT 2026-07-28: "Global Probe Brightness" HIDDEN — its consumer was
-		// EnvironmentProbeComponent::SetBrightness, removed in the new WickedEngine, so the
-		// slider only triggered a probe re-render at unchanged brightness (looked alive, did
-		// nothing). Field/save/load kept; restore if probe brightness gets an engine path back.
-		//ImGui::TextCenter("Global Probe Brightness");
-		//fTmp = t.visuals.fEnvProbeBrightness;
-		//if (ImGui::MaxSliderInputFloat("##HDRI Brightness", &fTmp, 0.01f, 10.0f, "Specify the brightness of the global environment probe"))
-		//{
-		//	t.visuals.fEnvProbeBrightness = fTmp;
-		//	t.gamevisuals.fEnvProbeBrightness = t.visuals.fEnvProbeBrightness;
-		//	Wicked_Update_Visuals((void*)&t.visuals);
-		//	g.projectmodified = 1;
-		//	extern bool g_bLightProbeScaleChanged;
-		//	g_bLightProbeScaleChanged = true;
-		//	WickedCall_UpdateProbes();
-		//}
+		// UI AUDIT 2026-07-28 (v2): "Global Probe Brightness" RESTORED via engine delta 1.55 —
+		// the probe cubemap sample is now scaled at lighting time (no probe re-render needed,
+		// so dragging is smooth and live). Applied through Wicked_Update_Visuals.
+		ImGui::TextCenter("Global Probe Brightness");
+		fTmp = t.visuals.fEnvProbeBrightness;
+		if (ImGui::MaxSliderInputFloat("##HDRI Brightness", &fTmp, 0.01f, 10.0f, "Specify the brightness of the global environment probe"))
+		{
+			t.visuals.fEnvProbeBrightness = fTmp;
+			t.gamevisuals.fEnvProbeBrightness = t.visuals.fEnvProbeBrightness;
+			Wicked_Update_Visuals((void*)&t.visuals);
+			g.projectmodified = 1;
+		}
 
 		if ( !bSimulatedSky || t.visuals.bDisableSkybox )
 		{

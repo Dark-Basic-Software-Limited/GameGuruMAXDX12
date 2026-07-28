@@ -1381,6 +1381,8 @@ void imgui_Customize_Weather(int mode)
 }
 
 
+// UI AUDIT 2026-07-28: DEAD CODE — no call sites (superseded by imgui_Customize_Water_V2).
+// Ready for deletion for hygiene.
 void imgui_Customize_Water(int mode)
 {
 	void tab_tab_Column_text(char *text, float fColumn);

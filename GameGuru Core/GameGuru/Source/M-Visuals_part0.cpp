@@ -1462,13 +1462,13 @@ void visuals_load ( void )
 			t.try_s = "visuals.DelayedShadows"; if (t.tfield_s == t.try_s)  t.visuals.g_bDelayedShadows = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.DelayedShadowsLaptop"; if (t.tfield_s == t.try_s)  t.visuals.g_bDelayedShadowsLaptop = ValF(t.tvalue_s.Get());
 
-			t.try_s = "visuals.EnvProbeBrightness"; if (t.tfield_s == t.try_s)  t.visuals.fEnvProbeBrightness = ValF(t.tvalue_s.Get());
+			t.try_s = "visuals.EnvProbeBrightness"; if (t.tfield_s == t.try_s)  { t.visuals.fEnvProbeBrightness = ValF(t.tvalue_s.Get()); if (t.visuals.fEnvProbeBrightness < 0.01f || t.visuals.fEnvProbeBrightness > 10.0f) t.visuals.fEnvProbeBrightness = 1.0f; }
 
 			t.try_s = "visuals.BloomEnabled"; if (t.tfield_s == t.try_s)  t.visuals.bBloomEnabled = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.BloomThreshold"; if (t.tfield_s == t.try_s)  t.visuals.fsetBloomThreshold = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.ApparentSize"; if (t.tfield_s == t.try_s)  t.visuals.ApparentSize = ValF(t.tvalue_s.Get());
 			
-			t.try_s = "visuals.BloomStrength"; if (t.tfield_s == t.try_s)  t.visuals.fsetBloomStrength = ValF(t.tvalue_s.Get());
+			t.try_s = "visuals.BloomStrength"; if (t.tfield_s == t.try_s)  { t.visuals.fsetBloomStrength = ValF(t.tvalue_s.Get()); if (t.visuals.fsetBloomStrength < 0.1f || t.visuals.fsetBloomStrength > 3.0f) t.visuals.fsetBloomStrength = 1.0f; }
 
 			t.try_s = "visuals.SSREnabled"; if (t.tfield_s == t.try_s)	t.visuals.bSSREnabled = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.ReflectionsEnabled"; if (t.tfield_s == t.try_s)  t.visuals.bReflectionsEnabled = ValF(t.tvalue_s.Get());
@@ -1487,8 +1487,13 @@ void visuals_load ( void )
 			t.try_s = "visuals.AutoExposure"; if (t.tfield_s == t.try_s)  t.visuals.bAutoExposure = ValF(t.tvalue_s.Get());
 			
 			//PE: Who removed gamme ? we need it when restoring saved levels ? it was commented out ?
-			t.try_s = "visuals.Gamma"; if (t.tfield_s == t.try_s)  t.visuals.fGamma = ValF(t.tvalue_s.Get());
-			t.try_s = "visuals.DeSaturate"; if (t.tfield_s == t.try_s)  t.visuals.fDeSaturate = ValF(t.tvalue_s.Get());
+			// PORT TRANSLATE (2026-07-28): Gamma/DeSaturate/BloomStrength/EnvProbeBrightness were
+			// DEAD sliders for the whole DX12 port until engine deltas 1.54/1.55 re-wired them, so
+			// level files can carry way-out values fiddled against a dead control (the TESTPRO1
+			// island shipped Gamma~15 = washed-white scene). Tame implausible values to neutral on
+			// load; sane ranges pass through untouched. Live sliders remain unclamped for tuning.
+			t.try_s = "visuals.Gamma"; if (t.tfield_s == t.try_s)  { t.visuals.fGamma = ValF(t.tvalue_s.Get()); if (t.visuals.fGamma < 0.5f || t.visuals.fGamma > 5.0f) t.visuals.fGamma = 2.2f; }
+			t.try_s = "visuals.DeSaturate"; if (t.tfield_s == t.try_s)  { t.visuals.fDeSaturate = ValF(t.tvalue_s.Get()); if (t.visuals.fDeSaturate < 0.0f || t.visuals.fDeSaturate > 1.0f) t.visuals.fDeSaturate = 1.0f; }
 			
 			t.try_s = "visuals.MSAASampleCount"; if (t.tfield_s == t.try_s)  t.visuals.iMSAASampleCount = ValF(t.tvalue_s.Get());
 

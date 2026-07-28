@@ -1998,6 +1998,9 @@ void mapeditorexecutable_loop(void)
 				ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - fTextSize - 10.0f, ImGui::GetCursorPos().y ));
 				ImGui::Text(statusbar); // t.statusbar_s.Get());
 			}
+			// UI AUDIT 2026-07-28: DEAD CODE — ADDCONTROLSTOSTAUSBAR is never defined; the
+			// Editor Light / Top Down / alignment controls live in the top toolbar instead.
+			// Ready for deletion for hygiene.
 			#ifdef ADDCONTROLSTOSTAUSBAR
 
 			float fTextSize = ImGui::CalcTextSize(t.statusbar_s.Get()).x * 1.05;

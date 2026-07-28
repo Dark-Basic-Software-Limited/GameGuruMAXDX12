@@ -708,6 +708,9 @@ void SetWidgetMode(int mode)
 		} break;
 	}
 }
+// UI AUDIT 2026-07-28: DEAD CODE — the grid-settings gear icon that opened this popup was
+// retired (commented out in DBDLLCore_part0.cpp), so this popup is unreachable; superseded
+// by the always-visible grid settings panel. Ready for deletion for hygiene.
 void GridPopup(ImVec2 wpos)
 {
 	static bool bPopupOpen = false;

@@ -1685,6 +1685,8 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			// UI AUDIT 2026-07-28: "Bloom Strength" HIDDEN — setBloomStrength was removed from
 			// RenderPath3D (new Wicked only exposes threshold + enable, both wired above), so
 			// the slider visibly did nothing. Field/save/load kept for level-file compatibility.
+			// NOTE: an engine delta restoring it (1.54) was attempted and PARKED (pushed value
+			// read wrong in the live path — PIX session needed); see WICKED_ENGINE_CHANGES.md.
 			//if (ImGui::SliderFloat("##WickedsetBloomStrength", &t.visuals.fsetBloomStrength, 0.1f, 3.0f, "%.2f", 1.0f))
 			//{
 			//	t.gamevisuals.fsetBloomStrength = t.visuals.fsetBloomStrength;
@@ -1854,7 +1856,9 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			t.gamevisuals.fGamma = t.visuals.fGamma;
 			// UI AUDIT 2026-07-28: wiRenderer::SetGamma is gone in the new WickedEngine —
 			// approximate with the tonemap brightness offset, neutral at the 2.2 default
-			// (also applied on load in Wicked_Update_Visuals).
+			// (also applied on load in Wicked_Update_Visuals). NOTE: a TRUE pow-curve gamma
+			// (engine delta 1.54) was attempted and PARKED — the pushed exponent read wrong
+			// in the live path, needs a PIX session; see WICKED_ENGINE_CHANGES.md.
 			if (master_renderer) master_renderer->setBrightness((t.visuals.fGamma - 2.2f) * 0.15f);
 			g.projectmodified = 1;
 		}

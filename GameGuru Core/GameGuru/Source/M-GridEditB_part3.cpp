@@ -14,6 +14,10 @@ namespace GGTerrain {
 	void GGTerrainWicked_SetGrassVisible(bool visible);
 	void GGTerrainWicked_SetTerrainVisible(bool visible);
 }
+// GGMAX engine delta 1.55: global env-probe brightness knob (wiScene.cpp).
+namespace wi::scene {
+	extern float gg_envprobe_brightness;
+}
 
 void gridedit_setvsync(bool bLevelVSyncEnabled)
 {
@@ -1905,16 +1909,17 @@ void Wicked_Update_Visuals(void *voidvisual)
 	}
 	g_fGlobalGammaFadeInDest = visuals->fGamma;
 
-	// UI AUDIT 2026-07-28: SetGamma/SetDeSaturate were removed from wi::renderer with the
-	// engine upgrade, leaving both sliders dead. Re-wired onto the tonemap: gamma becomes a
-	// brightness offset (neutral at the 2.2 default); "De Saturate" maps DIRECTLY onto
-	// saturation — despite the name, DX11 semantics are 1 = full color (the default),
-	// 0 = grayscale. Same mapping as the live slider handlers in part23.
+	// UI AUDIT 2026-07-28: apply-on-load for the restored post sliders.
+	// - Gamma: brightness-offset APPROXIMATION, neutral at the 2.2 default (the true pow-curve
+	//   engine delta 1.54 is PARKED — pushed exponent read wrong in the live path, PIX needed).
+	// - De Saturate: tonemap saturation; DX11 semantics are 1 = full color (default), 0 = gray.
+	// - Global Probe Brightness: sample-time multiplier via engine delta 1.55 (1 = stock).
 	if (master_renderer)
 	{
 		master_renderer->setBrightness((visuals->fGamma - 2.2f) * 0.15f);
 		master_renderer->setSaturation(visuals->fDeSaturate);
 	}
+	wi::scene::gg_envprobe_brightness = visuals->fEnvProbeBrightness;
 
 	float fUsedFOV = visuals->CameraFOV_f;
 	if (bImGuiInTestGame == false) fUsedFOV = 45;
