@@ -2002,5 +2002,8 @@ void WickedCall_PutWaterRipple(float fX, float fY, float fZ, float fSize)
 	if (!scene.waterRipples.empty())
 	{
 		scene.waterRipples.back().params.siz = XMFLOAT2(fSize, fSize);
+		// USER-TUNED 2026-07-28: half-strength normal perturbation (engine default 1.0
+		// distorts too hard); opacity scales the additive write into the ripple buffer
+		scene.waterRipples.back().params.opacity = 0.5f;
 	}
 }
