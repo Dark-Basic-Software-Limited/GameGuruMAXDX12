@@ -1323,13 +1323,14 @@ void mapeditorexecutable_loop(void)
 				{
 					CloseAllOpenToolsThatNeedSave();
 					//Storyboard can change levels ... so make sure we ask to save first.
+					// UI AUDIT 2026-07-28: an unconditional bStoryboardWindow=true after this
+					// if-block made Cancel in the save prompt not cancel — removed.
 					int iRet = AskSaveBeforeNewAction();
 					if (iRet != 2)
 					{
 						bStoryboardWindow = true;
+						GGTerrain_CancelRamp();
 					}
-					bStoryboardWindow = true;
-					GGTerrain_CancelRamp();
 				}
 
 				ImGui::EndMenu();
@@ -9978,6 +9979,9 @@ void mapeditorexecutable_loop(void)
 					{
 						gggrass_global_params.draw_enabled = bShow;
 						t.showeditorveg = bShow;
+						// UI AUDIT 2026-07-28: apply immediately (sweeps the live Wicked
+						// grass entities) — same pattern as the Editor Water checkbox.
+						Wicked_Update_Visuals((void*)&t.visuals);
 					}
 
 					// Editor Water.

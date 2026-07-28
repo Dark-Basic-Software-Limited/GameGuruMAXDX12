@@ -1738,31 +1738,33 @@ void imgui_Customize_Water_V2(int mode)
 				}
 
 
-				ImGui::TextCenter("Water Fog Start");
-				if (ImGui::MaxSliderInputFloat("##fWaterFogMinDist", &t.visuals.WaterFogMinDist, 0.0f, 100000.0f, "Closer than this distance under water will have the minimum amount of fog"))
-				{
-					if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMaxDist = t.visuals.WaterFogMinDist;
-					t.gamevisuals.WaterFogMinDist = t.visuals.WaterFogMinDist;
-					Wicked_Update_Visuals((void*)&t.visuals);
-					g.projectmodified = 1;
-				}
-
-				ImGui::TextCenter("Water Fog Maximum");
-				if (ImGui::MaxSliderInputFloat("##fWaterFogMaxDist", &t.visuals.WaterFogMaxDist, 0.0f, 100000.0f, "After this distance under water it will be completely opaque"))
-				{
-					if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMinDist = t.visuals.WaterFogMaxDist;
-					t.gamevisuals.WaterFogMaxDist = t.visuals.WaterFogMaxDist;
-					Wicked_Update_Visuals((void*)&t.visuals);
-					g.projectmodified = 1;
-				}
-
-				ImGui::TextCenter("Water Fog Minimum");
-				if (ImGui::MaxSliderInputFloat("##fWaterFogMinAmount", &t.visuals.WaterFogMinAmount, 0.0f, 1.0f, "The minimum amount of under water fog that will always be present regardless of distance"))
-				{
-					t.gamevisuals.WaterFogMinAmount = t.visuals.WaterFogMinAmount;
-					Wicked_Update_Visuals((void*)&t.visuals);
-					g.projectmodified = 1;
-				}
+				// UI AUDIT 2026-07-28: the three legacy "Water Fog" sliders HIDDEN — the DX11
+				// water-fog distance model they fed is gone; underwater fogging is now driven by
+				// the live "Underwater Fog" slider (underwater_fog_density, GG delta 1.23), so
+				// these visibly did nothing. Fields/save/load kept for level-file compatibility.
+				//ImGui::TextCenter("Water Fog Start");
+				//if (ImGui::MaxSliderInputFloat("##fWaterFogMinDist", &t.visuals.WaterFogMinDist, 0.0f, 100000.0f, "Closer than this distance under water will have the minimum amount of fog"))
+				//{
+				//	if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMaxDist = t.visuals.WaterFogMinDist;
+				//	t.gamevisuals.WaterFogMinDist = t.visuals.WaterFogMinDist;
+				//	Wicked_Update_Visuals((void*)&t.visuals);
+				//	g.projectmodified = 1;
+				//}
+				//ImGui::TextCenter("Water Fog Maximum");
+				//if (ImGui::MaxSliderInputFloat("##fWaterFogMaxDist", &t.visuals.WaterFogMaxDist, 0.0f, 100000.0f, "After this distance under water it will be completely opaque"))
+				//{
+				//	if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMinDist = t.visuals.WaterFogMaxDist;
+				//	t.gamevisuals.WaterFogMaxDist = t.visuals.WaterFogMaxDist;
+				//	Wicked_Update_Visuals((void*)&t.visuals);
+				//	g.projectmodified = 1;
+				//}
+				//ImGui::TextCenter("Water Fog Minimum");
+				//if (ImGui::MaxSliderInputFloat("##fWaterFogMinAmount", &t.visuals.WaterFogMinAmount, 0.0f, 1.0f, "The minimum amount of under water fog that will always be present regardless of distance"))
+				//{
+				//	t.gamevisuals.WaterFogMinAmount = t.visuals.WaterFogMinAmount;
+				//	Wicked_Update_Visuals((void*)&t.visuals);
+				//	g.projectmodified = 1;
+				//}
 			}
 		}
 		ImGui::PopItemWidth();

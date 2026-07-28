@@ -57,6 +57,7 @@ static std::unordered_map<uint64_t, wi::ecs::Entity> chunkKeyToEntity;
 // HairParticleSystem entities, each masked to just its own vertices via vertex_lengths.
 static bool wickedGrassSetup = false;
 static bool wickedGrassEnabled = true; // G key toggles grass visibility/creation
+static bool wickedTerrainHidden = false; // O key / View Options terrain visibility (file-scope so the UI setter and the O-key toggle share state)
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity; // chunk entity when grass was built
 // Per-chunk per-type hair entity tracking. Each chunk-type slot is INVALID_ENTITY until first paint
 // of that type in that chunk; after that the same entity is reused across paint events (Stage 2 —
@@ -2094,8 +2095,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		wi::renderer::SetDebugNormalVis(wickedNormalVisMode != 0); // VS could not find this!!
 	}
 
-	// O key: toggle terrain rendering on/off
-	static bool wickedTerrainHidden = false;
+	// O key: toggle terrain rendering on/off (flag is file-scope, shared with the View Options setter)
 	if (GGTerrain_GetKeyPressed(0x4F)) // GGKEY_O
 	{
 		wickedTerrainHidden = !wickedTerrainHidden;
@@ -2719,6 +2719,44 @@ void GGTerrainWicked_OnTextureSetChanged()
 	if (!wickedTerrainInitialised) return;
 	wickedTerrainMaterialsSetup = false;
 	s_terrainActivityPing = true; // GGMAX idle gate
+}
+
+// UI AUDIT 2026-07-28: real visibility levers for the View Options checkboxes. The legacy
+// gggrass draw_enabled / ggterrain_draw_enabled flags only gate the DEAD custom draw path —
+// shipping grass is Wicked hair entities and shipping terrain is Wicked chunk objects — so
+// these sweep the live entities (identical mechanisms to the G-key / O-key debug toggles).
+void GGTerrainWicked_SetGrassVisible(bool visible)
+{
+	if (wickedGrassEnabled == visible) return;
+	wickedGrassEnabled = visible;
+	auto& gscene = wi::scene::GetScene();
+	for (auto& kv : grassChunkKeyToGrassEntities)
+	{
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+		{
+			wi::ecs::Entity e = kv.second.perType[t];
+			if (e == wi::ecs::INVALID_ENTITY) continue;
+			wi::HairParticleSystem* hair = gscene.hairs.GetComponent(e);
+			if (hair) hair->layerMask = visible ? ~0u : 0u;
+		}
+	}
+}
+
+void GGTerrainWicked_SetTerrainVisible(bool visible)
+{
+	if (wickedTerrainHidden == !visible) return;
+	wickedTerrainHidden = !visible;
+	::wi::terrain::Terrain* terrain = GetWickedTerrain();
+	if (terrain == nullptr || terrain->scene == nullptr) return;
+	for (auto& [chunk, chunk_data] : terrain->chunks)
+	{
+		if (chunk_data.entity != wi::ecs::INVALID_ENTITY)
+		{
+			wi::scene::ObjectComponent* obj = terrain->scene->objects.GetComponent(chunk_data.entity);
+			if (obj) obj->SetRenderable(visible);
+		}
+	}
+	if (!visible) terrain->virtual_textures_in_use.clear();
 }
 
 // GGMAX 1.53: live re-tune of the terrain VT tiling share-mips (see wiTerrain.cpp knob).

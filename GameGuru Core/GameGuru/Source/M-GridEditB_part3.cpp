@@ -8,6 +8,13 @@ float g_dbgCausticSizeFromVisuals = -1.0f;
 float g_fWaterFoamUnitScale = 0.08f;
 float g_fWaterFoamAmount = 1.3f;
 
+// UI AUDIT 2026-07-28: live visibility sweeps for the View Options grass/terrain checkboxes
+// (implemented in GGTerrainWicked.cpp — same mechanisms as the G-key / O-key debug toggles).
+namespace GGTerrain {
+	void GGTerrainWicked_SetGrassVisible(bool visible);
+	void GGTerrainWicked_SetTerrainVisible(bool visible);
+}
+
 void gridedit_setvsync(bool bLevelVSyncEnabled)
 {
 	// ensure only test game and standalones obey VSYNC, editor should always run FULL SPEED
@@ -1894,13 +1901,20 @@ void Wicked_Update_Visuals(void *voidvisual)
 	}
 	else
 	{
-		// TODO: wiRenderer::SetGamma removed in new WickedEngine
-		//wiRenderer::SetGamma(visuals->fGamma);
 		g_fGlobalGammaFadeIn = visuals->fGamma;
 	}
 	g_fGlobalGammaFadeInDest = visuals->fGamma;
 
-	//wiRenderer::SetDeSaturate(visuals->fDeSaturate); // REMOVED
+	// UI AUDIT 2026-07-28: SetGamma/SetDeSaturate were removed from wi::renderer with the
+	// engine upgrade, leaving both sliders dead. Re-wired onto the tonemap: gamma becomes a
+	// brightness offset (neutral at the 2.2 default); "De Saturate" maps DIRECTLY onto
+	// saturation — despite the name, DX11 semantics are 1 = full color (the default),
+	// 0 = grayscale. Same mapping as the live slider handlers in part23.
+	if (master_renderer)
+	{
+		master_renderer->setBrightness((visuals->fGamma - 2.2f) * 0.15f);
+		master_renderer->setSaturation(visuals->fDeSaturate);
+	}
 
 	float fUsedFOV = visuals->CameraFOV_f;
 	if (bImGuiInTestGame == false) fUsedFOV = 45;
@@ -1945,6 +1959,10 @@ void Wicked_Update_Visuals(void *voidvisual)
 	else
 		bSetting = t.visuals.bEndableGrassDrawing;
 	gggrass_global_params.draw_enabled = bSetting;
+	// UI AUDIT 2026-07-28: shipping grass is Wicked hair entities — draw_enabled only gates
+	// the legacy GG path, so the View Options veg checkboxes visibly did nothing. Sweep the
+	// live entities too (same mechanism as the G-key toggle).
+	GGTerrain::GGTerrainWicked_SetGrassVisible(bSetting);
 
 	// can disable terrain drawing in graphics engine
 	if (t.visuals.bEnableEmptyLevelMode == false)
@@ -1952,6 +1970,16 @@ void Wicked_Update_Visuals(void *voidvisual)
 		// can call this to affect some visibles without causing water to flicker
 		Wicked_Update_Visibles(voidvisual);
 		GGTrees::ggtrees_draw_enabled = 1;
+
+		// UI AUDIT 2026-07-28: same story for the View Options terrain checkboxes —
+		// ggterrain_draw_enabled gates dead code; hide the live Wicked chunk objects instead
+		// (same mechanism as the O-key toggle).
+		bool bTerrainVisible;
+		if (t.game.set.ismapeditormode == 1)
+			bTerrainVisible = (t.showeditorterrain < 0) ? (t.visuals.bEndableTerrainDrawing != false) : (t.showeditorterrain != 0);
+		else
+			bTerrainVisible = t.visuals.bEndableTerrainDrawing;
+		GGTerrain::GGTerrainWicked_SetTerrainVisible(bTerrainVisible);
 	}
 	else
 	{

@@ -1682,15 +1682,15 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Threshold is a measure of how bright an object or area must be before the bloom effect is applied");
 
-			if (ImGui::SliderFloat("##WickedsetBloomStrength", &t.visuals.fsetBloomStrength, 0.1f, 3.0f, "%.2f", 1.0f))
-			{
-				t.gamevisuals.fsetBloomStrength = t.visuals.fsetBloomStrength;
-				if (master_renderer) {
-					//master_renderer->setBloomStrength(t.visuals.fsetBloomStrength); // removed from RenderPath3D
-				}
-				g.projectmodified = 1;
-			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Strength is a measure of how strongly the bloom is applied to the scene");
+			// UI AUDIT 2026-07-28: "Bloom Strength" HIDDEN — setBloomStrength was removed from
+			// RenderPath3D (new Wicked only exposes threshold + enable, both wired above), so
+			// the slider visibly did nothing. Field/save/load kept for level-file compatibility.
+			//if (ImGui::SliderFloat("##WickedsetBloomStrength", &t.visuals.fsetBloomStrength, 0.1f, 3.0f, "%.2f", 1.0f))
+			//{
+			//	t.gamevisuals.fsetBloomStrength = t.visuals.fsetBloomStrength;
+			//	g.projectmodified = 1;
+			//}
+			//if (ImGui::IsItemHovered()) ImGui::SetTooltip("Bloom Strength is a measure of how strongly the bloom is applied to the scene");
 
 			ImGui::PopItemWidth();
 		}
@@ -1852,8 +1852,10 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::SliderFloat("##fGamma:", &t.visuals.fGamma, 0.1, 10.0))
 		{
 			t.gamevisuals.fGamma = t.visuals.fGamma;
-			// TODO: wiRenderer::SetGamma removed in new WickedEngine
-			//wiRenderer::SetGamma(t.visuals.fGamma);
+			// UI AUDIT 2026-07-28: wiRenderer::SetGamma is gone in the new WickedEngine —
+			// approximate with the tonemap brightness offset, neutral at the 2.2 default
+			// (also applied on load in Wicked_Update_Visuals).
+			if (master_renderer) master_renderer->setBrightness((t.visuals.fGamma - 2.2f) * 0.15f);
 			g.projectmodified = 1;
 		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Gamma Correction alters how bright colors are perceived");
@@ -1863,10 +1865,12 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::SliderFloat("##fDeSaturate:", &t.visuals.fDeSaturate, 0.0, 1.0))
 		{
 			t.gamevisuals.fDeSaturate = t.visuals.fDeSaturate;
-			//wiRenderer::SetDeSaturate(t.visuals.fDeSaturate); // REMOVED
+			// UI AUDIT 2026-07-28: wiRenderer::SetDeSaturate is gone — map straight onto the
+			// tonemap saturation. DX11 semantics: 1 = full color (default), 0 = grayscale.
+			if (master_renderer) master_renderer->setSaturation(t.visuals.fDeSaturate);
 			g.projectmodified = 1;
 		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("De Saturate colors");
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Color saturation: 1 = full color, 0 = black and white");
 
 		ImGui::PopItemWidth();
 

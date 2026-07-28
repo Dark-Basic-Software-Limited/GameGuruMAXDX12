@@ -253,19 +253,22 @@
 			//PE: Weather wind speed.
 			float iItemWidth = -10;
 			float fWickedStartX = 130;
-			if (ImGui::Checkbox("PP Snow / Dust", &t.visuals.bPPSnow))
-			{
-				t.gamevisuals.bPPSnow = t.visuals.bPPSnow;
-				bUpdatePPWeather = true;
-				if(t.visuals.bPPSnow)
-					bEnableWeather = true;
-			}
-
-			if (ImGui::Checkbox("Disable When Indoor", &t.visuals.bpp_disable_indoor))
-			{
-				t.gamevisuals.bpp_disable_indoor = t.visuals.bpp_disable_indoor;
-				bUpdatePPWeather = true;
-			}
+			// UI AUDIT 2026-07-28: "PP Snow / Dust" + "Disable When Indoor" HIDDEN — the DX11
+			// voxel post-process weather path was removed with the WickedEngine upgrade, so the
+			// checkboxes visibly did nothing. Fields/save/load kept for level-file compatibility.
+			// Restore alongside a Wicked-native snow (weather rain/snow emitter) if wanted.
+			//if (ImGui::Checkbox("PP Snow / Dust", &t.visuals.bPPSnow))
+			//{
+			//	t.gamevisuals.bPPSnow = t.visuals.bPPSnow;
+			//	bUpdatePPWeather = true;
+			//	if(t.visuals.bPPSnow)
+			//		bEnableWeather = true;
+			//}
+			//if (ImGui::Checkbox("Disable When Indoor", &t.visuals.bpp_disable_indoor))
+			//{
+			//	t.gamevisuals.bpp_disable_indoor = t.visuals.bpp_disable_indoor;
+			//	bUpdatePPWeather = true;
+			//}
 
 			ImGui::Text("Wind Speed");
 			ImGui::SameLine(); ImGui::SetCursorPosX(fWickedStartX);
@@ -311,18 +314,22 @@
 			ImGui::PopItemWidth();
 
 
-			ImGui::Text("PP Alpha");
-			ImGui::SameLine(); ImGui::SetCursorPosX(fWickedStartX);
-			ImGui::PushItemWidth((float)iItemWidth);
-			if (ImGui::SliderFloat("##PPpp_alpha", &t.visuals.pp_alpha, 0.0f, 5.0f, "%.2f"))
-			{
-				t.gamevisuals.pp_alpha = t.visuals.pp_alpha;
-				bUpdatePPWeather = true;
-			}
-			ImGui::PopItemWidth();
+			// UI AUDIT 2026-07-28: "PP Alpha" HIDDEN — consumed only by the removed DX11 voxel
+			// weather path (field no longer exists in the new WickedEngine WeatherComponent).
+			//ImGui::Text("PP Alpha");
+			//ImGui::SameLine(); ImGui::SetCursorPosX(fWickedStartX);
+			//ImGui::PushItemWidth((float)iItemWidth);
+			//if (ImGui::SliderFloat("##PPpp_alpha", &t.visuals.pp_alpha, 0.0f, 5.0f, "%.2f"))
+			//{
+			//	t.gamevisuals.pp_alpha = t.visuals.pp_alpha;
+			//	bUpdatePPWeather = true;
+			//}
+			//ImGui::PopItemWidth();
 
 
-			ImGui::Text("PP Size");
+			// UI AUDIT 2026-07-28: relabeled from the cryptic legacy "PP Size" — the value
+			// actually drives weather->windWaveSize (see apply below), so name it that.
+			ImGui::Text("Wind Wave Size");
 			ImGui::SameLine(); ImGui::SetCursorPosX(fWickedStartX);
 			ImGui::PushItemWidth((float)iItemWidth);
 			if (ImGui::SliderFloat("##PPpp_size", &t.visuals.pp_size, 0.0f, 1.1f, "%.2f"))
@@ -330,18 +337,20 @@
 				t.gamevisuals.pp_size = t.visuals.pp_size;
 				bUpdatePPWeather = true;
 			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Size of the wind waves rolling through grass and foliage");
 			ImGui::PopItemWidth();
 
 
-			ImGui::Text("PP Voxel Steps");
-			ImGui::SameLine(); ImGui::SetCursorPosX(fWickedStartX);
-			ImGui::PushItemWidth((float)iItemWidth);
-			if (ImGui::SliderFloat("##voxel_steps", &t.visuals.voxel_steps, 1.0f, 40.0f, "%.0f"))
-			{
-				t.gamevisuals.voxel_steps = t.visuals.voxel_steps;
-				bUpdatePPWeather = true;
-			}
-			ImGui::PopItemWidth();
+			// UI AUDIT 2026-07-28: "PP Voxel Steps" HIDDEN — the voxel PP weather renderer is gone.
+			//ImGui::Text("PP Voxel Steps");
+			//ImGui::SameLine(); ImGui::SetCursorPosX(fWickedStartX);
+			//ImGui::PushItemWidth((float)iItemWidth);
+			//if (ImGui::SliderFloat("##voxel_steps", &t.visuals.voxel_steps, 1.0f, 40.0f, "%.0f"))
+			//{
+			//	t.gamevisuals.voxel_steps = t.visuals.voxel_steps;
+			//	bUpdatePPWeather = true;
+			//}
+			//ImGui::PopItemWidth();
 
 			if (bUpdatePPWeather)
 			{
@@ -783,19 +792,22 @@ void imgui_Customize_Sky_V2(int mode)
 			WickedCall_UpdateProbes();
 		}
 
-		ImGui::TextCenter("Global Probe Brightness");
-		fTmp = t.visuals.fEnvProbeBrightness;
-		if (ImGui::MaxSliderInputFloat("##HDRI Brightness", &fTmp, 0.01f, 10.0f, "Specify the brightness of the global environment probe"))
-		{
-			t.visuals.fEnvProbeBrightness = fTmp;
-			t.gamevisuals.fEnvProbeBrightness = t.visuals.fEnvProbeBrightness;
-			Wicked_Update_Visuals((void*)&t.visuals);
-			g.projectmodified = 1;
-			// when sky type changes, refresh env probes
-			extern bool g_bLightProbeScaleChanged;
-			g_bLightProbeScaleChanged = true;
-			WickedCall_UpdateProbes();
-		}
+		// UI AUDIT 2026-07-28: "Global Probe Brightness" HIDDEN — its consumer was
+		// EnvironmentProbeComponent::SetBrightness, removed in the new WickedEngine, so the
+		// slider only triggered a probe re-render at unchanged brightness (looked alive, did
+		// nothing). Field/save/load kept; restore if probe brightness gets an engine path back.
+		//ImGui::TextCenter("Global Probe Brightness");
+		//fTmp = t.visuals.fEnvProbeBrightness;
+		//if (ImGui::MaxSliderInputFloat("##HDRI Brightness", &fTmp, 0.01f, 10.0f, "Specify the brightness of the global environment probe"))
+		//{
+		//	t.visuals.fEnvProbeBrightness = fTmp;
+		//	t.gamevisuals.fEnvProbeBrightness = t.visuals.fEnvProbeBrightness;
+		//	Wicked_Update_Visuals((void*)&t.visuals);
+		//	g.projectmodified = 1;
+		//	extern bool g_bLightProbeScaleChanged;
+		//	g_bLightProbeScaleChanged = true;
+		//	WickedCall_UpdateProbes();
+		//}
 
 		if ( !bSimulatedSky || t.visuals.bDisableSkybox )
 		{

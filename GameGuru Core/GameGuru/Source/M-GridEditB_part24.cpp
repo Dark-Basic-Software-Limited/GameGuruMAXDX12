@@ -452,7 +452,7 @@ bool AI_Management_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::Checkbox("Show Navigation Debug Visuals", &g_bShowRecastDetourDebugVisuals))
 		{
 		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle whether the navigation system debug visuals should be shown");
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle whether the navigation system debug visuals should be shown (visible in test game, where AI navigation runs)");
 		ImGui::PopItemWidth();
 
 		ImGui::PushItemWidth(-10);
@@ -922,16 +922,21 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose max shadow casters for point lights.");
 		ImGui::PopItemWidth();
 
-		if (ImGui::Checkbox("Transparent shadows", &t.visuals.bTransparentShadows))
-		{
-			t.gamevisuals.bTransparentShadows = t.visuals.bTransparentShadows;
-			bForceRefreshLightCount = true;
-			bVisualUpdated = true;
-		}
-		//ImGui::PopItemWidth(); //PE: This looks wrong, try removing it.
+		// UI AUDIT 2026-07-28: "Transparent shadows" HIDDEN — wiRenderer::SetTransparentShadowsEnabled
+		// was removed in the new WickedEngine (transparent shadow rendering is now unconditional),
+		// so the checkbox only forced a shadow refresh and changed nothing. Field/save/load kept.
+		//if (ImGui::Checkbox("Transparent shadows", &t.visuals.bTransparentShadows))
+		//{
+		//	t.gamevisuals.bTransparentShadows = t.visuals.bTransparentShadows;
+		//	bForceRefreshLightCount = true;
+		//	bVisualUpdated = true;
+		//}
 
-		extern bool bShadowsInFrontTakesPriority;
-		ImGui::Checkbox("Front Shadows Priority", &bShadowsInFrontTakesPriority);
+		// UI AUDIT 2026-07-28: "Front Shadows Priority" HIDDEN — bShadowsInFrontTakesPriority
+		// (wickedcalls_part0.cpp) is written here and read by NOTHING; the checkbox never did
+		// anything on any build. If wanted, the concept could feed the point-shadow budget scoring.
+		//extern bool bShadowsInFrontTakesPriority;
+		//ImGui::Checkbox("Front Shadows Priority", &bShadowsInFrontTakesPriority);
 
 		// Tree shadow controls — MOVED here from the Terrain Tools tree panel (2026-07-28,
 		// user request) so they can be tuned LIVE in test game. Values live in t.visuals
