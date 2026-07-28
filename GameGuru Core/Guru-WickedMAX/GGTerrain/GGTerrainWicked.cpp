@@ -106,6 +106,7 @@ static float    g_grassLODChunksOverride = 0.0f;
 static float    g_grassTier3Chunks = 0.0f;   // 0 = AUTO; explicit value = full-density ring
 static float    g_grassTier2Chunks = 0.0f;   // 0 = AUTO; explicit value = mid-density ring
 namespace wi { extern bool gg_grass_lod; }   // engine strand-LOD opt-in (wiHairParticle.cpp)
+namespace wi::terrain { extern uint32_t gg_terrain_tile_share_mips; } // engine 1.53 VT tiling share-mips (wiTerrain.cpp)
 // Set by SET_GRASSLOD / tier-knob changes so the gated grass pass re-evaluates tiers without
 // waiting for a camera move or chunk churn (consumed by the maintenance block each frame).
 bool g_grassPassNudge = false;
@@ -2718,6 +2719,23 @@ void GGTerrainWicked_OnTextureSetChanged()
 	if (!wickedTerrainInitialised) return;
 	wickedTerrainMaterialsSetup = false;
 	s_terrainActivityPing = true; // GGMAX idle gate
+}
+
+// GGMAX 1.53: live re-tune of the terrain VT tiling share-mips (see wiTerrain.cpp knob).
+// Sets the engine knob, then queues the proven-safe fast repaint (1.13 latch) on every
+// resident chunk VT so the change is visible within a frame or two at the camera;
+// non-resident chunks pick the new policy up as their tiles stream in naturally.
+void GGTerrainWicked_SetTileShare(int k)
+{
+	::wi::terrain::gg_terrain_tile_share_mips = (uint32_t)std::max(0, k);
+	s_terrainActivityPing = true; // GGMAX idle gate — repaint work incoming
+	::wi::terrain::Terrain* terrain = GetWickedTerrain();
+	if (!terrain) return;
+	for (auto& [chunk, cd] : terrain->chunks)
+	{
+		if (cd.vt && cd.vt->residency != nullptr && cd.vt->resolution != 0)
+			cd.vt->pending_repaint_blendmap = true;
+	}
 }
 
 void GGTerrainWicked_OnPaintDataChanged()

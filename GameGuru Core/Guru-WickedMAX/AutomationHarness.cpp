@@ -68,6 +68,9 @@ namespace wi::scene {
 	extern bool gg_material_cache;
 }
 
+// GGMAX 1.53: terrain VT tiling share-mips live re-tune (GGTerrainWicked.cpp)
+namespace GGTerrain { void GGTerrainWicked_SetTileShare(int k); }
+
 // GGMAX 1.37: hair/grass sim static-skip master switch (wiRenderer.cpp)
 namespace wi::renderer {
 	extern bool gg_hair_sim_static_skip;
@@ -3751,6 +3754,19 @@ void AutoHarness_CheckForCommand(void)
 		bool on = (arg[0] != '0');
 		wi::graphics::gg_single_queue = on;
 		_snprintf(result, sizeof(result), "OK: SET_SINGLEQUEUE %s", on ? "ON (graphics-only)" : "OFF (stock async queues)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_TERRAINTILE") == 0)
+	{
+		// Wicked delta 1.53: terrain VT tiling share-mips. Mips 0..K of each chunk region share
+		// mip0's texture repeat count (invisible pure-downsample transitions near the camera);
+		// beyond K the stock repeat-halving anti-tiling resumes for the far field.
+		// 0 = stock (scale cross-fades start right at the camera). Repaint of resident chunks
+		// is queued automatically — the effect shows within a frame or two.
+		int k = atoi(arg);
+		GGTerrain::GGTerrainWicked_SetTileShare(k);
+		_snprintf(result, sizeof(result), "OK: SET_TERRAINTILE %d (%s; repaint queued)",
+			k, k == 0 ? "stock tiling policy" : "near mips share mip0 tiling");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_GRASSWET") == 0)
