@@ -1769,9 +1769,6 @@ void SetGlobalGraphicsSettings( int level ) // 0=lowest, 1=medium, 2=high, 3=ult
 			t.visuals.iShadowPointResolution = 256;
 			t.visuals.iShadowSpotMax = 1;
 			t.visuals.iShadowSpotResolution = 256;
-			// keep in step with GGTrees_SetPerformanceMode (visuals are the master copy)
-			t.visuals.fTreeShadowLODDist = 750.0f;
-			t.visuals.iTreeShadowRange = 2;
 		} break;
 
 		case 1: // medium
@@ -1786,8 +1783,6 @@ void SetGlobalGraphicsSettings( int level ) // 0=lowest, 1=medium, 2=high, 3=ult
 			t.visuals.iShadowPointResolution = 512;
 			t.visuals.iShadowSpotMax = 4;
 			t.visuals.iShadowSpotResolution = 512;
-			t.visuals.fTreeShadowLODDist = 1500.0f;
-			t.visuals.iTreeShadowRange = 3;
 		} break;
 
 		case 2: // high
@@ -1802,8 +1797,6 @@ void SetGlobalGraphicsSettings( int level ) // 0=lowest, 1=medium, 2=high, 3=ult
 			t.visuals.iShadowPointResolution = 512;
 			t.visuals.iShadowSpotMax = 8;
 			t.visuals.iShadowSpotResolution = 512;
-			t.visuals.fTreeShadowLODDist = 4000.0f;
-			t.visuals.iTreeShadowRange = 5;
 		} break;
 
 		case 3: // ultra
@@ -1818,10 +1811,12 @@ void SetGlobalGraphicsSettings( int level ) // 0=lowest, 1=medium, 2=high, 3=ult
 			t.visuals.iShadowPointResolution = 512;
 			t.visuals.iShadowSpotMax = 8;
 			t.visuals.iShadowSpotResolution = 512;
-			t.visuals.fTreeShadowLODDist = 4000.0f;
-			t.visuals.iTreeShadowRange = 5;
 		} break;
 	}
+	// Tree shadow LOD distance + cascade range are deliberately NOT preset-stamped: they
+	// are level-authored (saved in the FPM visuals, tuned in the Shadows panel), and the
+	// Wicked_Update_Visuals below re-asserts t.visuals over whatever
+	// GGTrees_SetPerformanceMode just dialed — authored values survive any quality preset.
 	Wicked_Update_Visuals( &t.visuals );
 }
 

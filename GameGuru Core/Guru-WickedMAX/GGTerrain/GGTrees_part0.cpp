@@ -1751,39 +1751,30 @@ int GGTrees_SetData( float* data )
 
 void GGTrees_SetPerformanceMode( uint32_t mode )
 {
+	// NOTE: lod_dist_shadow / tree_shadow_range are no longer preset-dialed here — they
+	// are level-authored (t.visuals, saved with the FPM, defaults 4000/5) and re-asserted
+	// by Wicked_Update_Shadows right after every SetGlobalGraphicsSettings call, so any
+	// values stamped here would be dead. Only the visual LOD distance scales with preset.
 	switch( mode )
 	{
 		case GGTERRAIN_PERFORMANCE_LOW:
 		{
 			ggtrees_global_params.lod_dist = 1000.0f;
-			ggtrees_global_params.lod_dist_shadow = 750.0f;
-			ggtrees_global_params.tree_shadow_range = 2;
 		} break;
 
 		case GGTERRAIN_PERFORMANCE_MED:
 		{
 			ggtrees_global_params.lod_dist = 2000.0f;
-			ggtrees_global_params.lod_dist_shadow = 1500.0f;
-			ggtrees_global_params.tree_shadow_range = 3;
 		} break;
 
 		case GGTERRAIN_PERFORMANCE_HIGH:
 		{
 			ggtrees_global_params.lod_dist = 3000.0f;
-			// USER-TUNED 2026-07-28 (live test-game walk): 4000/5 gives the best mesh->proxy
-			// shadow transition at acceptable cost — HIGH is the shipping default tier, so it
-			// matches ULTRA here; LOW/MED keep the scaled-down values for weak machines.
-			ggtrees_global_params.lod_dist_shadow = 4000.0f;
-			ggtrees_global_params.tree_shadow_range = 5;
 		} break;
 
 		case GGTERRAIN_PERFORMANCE_ULTRA:
 		{
 			ggtrees_global_params.lod_dist = 4000.0f;
-			ggtrees_global_params.lod_dist_shadow = 4000.0f;
-			// DX12: 5 = all cascades (island-wide) — the billboard shadow
-			// proxies make this cheap; matches the editor default in GGTrees.h
-			ggtrees_global_params.tree_shadow_range = 5;
 		} break;
 	}
 }
