@@ -38,7 +38,7 @@ namespace GGTrees
 		int paint_scale_random_high = 245; // 0 to 100
 
 		float lod_dist = 3000;
-		float lod_dist_shadow = 2500;
+		float lod_dist_shadow = 4000; // USER-TUNED 2026-07-28 (live in test game): best shadow transition, acceptable cost
 
 		int hide_until_update = 0;
 

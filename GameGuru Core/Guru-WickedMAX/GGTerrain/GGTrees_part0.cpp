@@ -1770,8 +1770,11 @@ void GGTrees_SetPerformanceMode( uint32_t mode )
 		case GGTERRAIN_PERFORMANCE_HIGH:
 		{
 			ggtrees_global_params.lod_dist = 3000.0f;
-			ggtrees_global_params.lod_dist_shadow = 2500.0f;
-			ggtrees_global_params.tree_shadow_range = 4;
+			// USER-TUNED 2026-07-28 (live test-game walk): 4000/5 gives the best mesh->proxy
+			// shadow transition at acceptable cost — HIGH is the shipping default tier, so it
+			// matches ULTRA here; LOW/MED keep the scaled-down values for weak machines.
+			ggtrees_global_params.lod_dist_shadow = 4000.0f;
+			ggtrees_global_params.tree_shadow_range = 5;
 		} break;
 
 		case GGTERRAIN_PERFORMANCE_ULTRA:
