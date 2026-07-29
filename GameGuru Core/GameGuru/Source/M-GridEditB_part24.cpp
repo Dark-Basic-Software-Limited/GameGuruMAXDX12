@@ -269,6 +269,7 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		// *_lod.dbo substitute model at entity load — M-Entity_part0.cpp:1095 — and gates in-model LOD-frame
 		// selection — M-Entity_part5.cpp:1296). This is GG's LOD system, independent of Wicked's screen-size LOD.
 		ImGui::Checkbox("Disable LOD Load", &bDisableLODLoad);
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Forces full-detail models by ignoring pre-baked _lod files (debug use, not a performance gain - applies to newly loaded entities only)");
 		(void)g_iUseLODObjects;
 
 		// "* Use Fastest LOD" children — HIDDEN 2026-07-25: ALL DEAD in DX12. bShadowsLowestLOD / bProbesLowestLOD /
