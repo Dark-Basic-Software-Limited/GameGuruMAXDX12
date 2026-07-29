@@ -58,6 +58,7 @@ static std::unordered_map<uint64_t, wi::ecs::Entity> chunkKeyToEntity;
 static bool wickedGrassSetup = false;
 static bool wickedGrassEnabled = true; // G key toggles grass visibility/creation
 static bool wickedTerrainHidden = false; // O key / View Options terrain visibility (file-scope so the UI setter and the O-key toggle share state)
+int g_blendScanInterval = 4; // POST-LOAD DIP FIX 2026-07-29: blend-scan cadence outside initial build (1 = stock every-frame; harness SET_BLENDSCAN)
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity; // chunk entity when grass was built
 // Per-chunk per-type hair entity tracking. Each chunk-type slot is INVALID_ENTITY until first paint
 // of that type in that chunk; after that the same entity is reused across paint events (Stage 2 —
@@ -537,14 +538,19 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 	int chunksModified = 0;
 	int slotsNeeded = std::max(4, (layer1Slot >= 0 ? layer1Slot + 1 : 4));
 
+	// POST-LOAD DIP FIX 2026-07-29: entity -> chunk-data map built once per pass.
+	// The old per-pending linear walk of terrain->chunks was O(pending x chunks)
+	// (64 pending x ~700 chunks every frame at the load-tail peak).
+	std::unordered_map<wi::ecs::Entity, wi::terrain::ChunkData*> entityToChunkData;
+	entityToChunkData.reserve(terrain->chunks.size());
+	for (auto& [chunk, cd] : terrain->chunks) entityToChunkData[cd.entity] = &cd;
+
 	for (auto& pc : pending)
 	{
 		uint64_t key = MakeChunkKey(pc.cx, pc.cz);
 		wi::terrain::ChunkData* chunk_data = nullptr;
-		for (auto& [chunk, cd] : terrain->chunks)
-		{
-			if (cd.entity == pc.entity) { chunk_data = &cd; break; }
-		}
+		auto itCD = entityToChunkData.find(pc.entity);
+		if (itCD != entityToChunkData.end()) chunk_data = itCD->second;
 		if (!chunk_data) { g_dbgAutoSkipNoChunk++; continue; }
 		if (chunk_data->blendmap_layers.empty()) { g_dbgAutoSkipNoLayers++; continue; }  // generation not finished yet
 		if (chunk_data->invalidated) { g_dbgAutoSkipInvalid++; continue; }  // pending regen would discard this work — retry after
@@ -746,16 +752,20 @@ static bool ProcessPaintedChunkBlendmaps(wi::terrain::Terrain* terrain)
 
 	int chunksModified = 0;
 
+	// POST-LOAD DIP FIX 2026-07-29: same entity -> chunk-data map as the auto pass
+	// (was an O(pending x chunks) linear walk per pending chunk).
+	std::unordered_map<wi::ecs::Entity, wi::terrain::ChunkData*> entityToChunkData;
+	entityToChunkData.reserve(terrain->chunks.size());
+	for (auto& [chunk, cd] : terrain->chunks) entityToChunkData[cd.entity] = &cd;
+
 	for (auto& pc : pending)
 	{
 		uint64_t key = MakeChunkKey(pc.cx, pc.cz);
 
-		// Find chunk data by iterating terrain->chunks (safe after Generation_Cancel)
+		// Find chunk data via the pass-local map (safe after Generation_Cancel)
 		wi::terrain::ChunkData* chunk_data = nullptr;
-		for (auto& [chunk, cd] : terrain->chunks)
-		{
-			if (cd.entity == pc.entity) { chunk_data = &cd; break; }
-		}
+		auto itCD = entityToChunkData.find(pc.entity);
+		if (itCD != entityToChunkData.end()) chunk_data = itCD->second;
 		if (!chunk_data) continue;  // Don't mark as processed — retry next frame
 
 		// Skip chunks whose blendmap hasn't been generated yet by the pipeline.
@@ -2383,7 +2393,16 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// processing every 30th frame — each ApplyDX11StyleAutoBlend/painted pass
 	// calls Generation_Cancel, and doing that per-frame while chunks stream in
 	// was chopping the generator off after 1-2 chunks per launch.
-	const bool blendTickAllowed = !(initialBuild || massRegen) || ( s_terrainFrame % 30 ) == 0;
+	// POST-LOAD DIP FIX 2026-07-29: the same problem recurred at full rate once
+	// initialBuild ended (60% of ring) — chunkSig churns every frame until the
+	// ring completes, so both scans ran EVERY frame (profiled 4.7ms + 1.0ms on
+	// Canyon Adventure = the "FPS halves for ~10s after load" dip), and each
+	// pass's Generation_Cancel kept chopping the generator, prolonging the very
+	// churn that re-fired the scans. Pace them to every g_blendScanInterval-th
+	// frame (default 4): worst case +3 frames of paint-stroke latency, and the
+	// build tail drains FASTER because the generator is cancelled 4x less.
+	const int blendEvery = (initialBuild || massRegen) ? 30 : (g_blendScanInterval > 1 ? g_blendScanInterval : 1);
+	const bool blendTickAllowed = (s_terrainFrame % blendEvery) == 0;
 
 	// GGMAX terrain idle gate: quiescence detection. Calm = camera parked AND no build /
 	// reveal / regen / merge activity AND no edit ping AND the chunk-set signature has

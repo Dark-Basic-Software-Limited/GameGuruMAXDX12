@@ -3783,6 +3783,24 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: SET_GRASSWET %s", on ? "ON (stock wetting — dark-on-reveal bug live)" : "OFF (grass force-dried)");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_BLENDSCAN") == 0)
+	{
+		// A/B the post-load dip fix: blend-scan cadence outside initial build.
+		//   SET_BLENDSCAN <1-60>   — 1 = stock every-frame scans (reproduces the
+		//   post-load FPS dip), 4 = default paced.
+		extern int g_blendScanInterval;
+		int n = atoi(arg);
+		if (n >= 1 && n <= 60)
+		{
+			g_blendScanInterval = n;
+			_snprintf(result, sizeof(result), "OK: SET_BLENDSCAN every %d frame(s)%s", n, n == 1 ? " (stock, dip reproducible)" : "");
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_BLENDSCAN <1-60>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SET_LIGHTSHAFTS") == 0)
 	{
 		// A/B the light shafts fix (engine 1.56 sun-mask + DX11 exposure parity 0.18):
