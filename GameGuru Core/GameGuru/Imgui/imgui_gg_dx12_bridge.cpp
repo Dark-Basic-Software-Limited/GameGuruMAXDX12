@@ -16,10 +16,24 @@
 #pragma comment(lib, "d3dcompiler")
 #pragma comment(lib, "d3d12")
 
-// File logger for diagnosing DX12 texture upload issues
+// File logger for diagnosing DX12 texture upload issues.
+// RUNAWAY LOG FIX 2026-07-29: this logged every ImGui draw call of every frame
+// (~12K lines/sec at editor frame rates) through open-append-close I/O and had
+// grown imgui_upload.log to 36 GB since February. Now OPT-IN: create an empty
+// "imgui_upload_debug.txt" in the working directory to re-arm the diagnostics;
+// without it every DX12Log call is a cheap early-out.
 static UINT64 g_DX12LogFrameCount = 0;
 static void DX12Log(const char* fmt, ...)
 {
+    static int s_enabled = -1;
+    if (s_enabled < 0)
+    {
+        FILE* flag = nullptr;
+        fopen_s(&flag, "imgui_upload_debug.txt", "rb");
+        if (flag) { fclose(flag); s_enabled = 1; }
+        else s_enabled = 0;
+    }
+    if (!s_enabled) return;
     FILE* f = nullptr;
     fopen_s(&f, "imgui_upload.log", "a");
     if (!f) return;
