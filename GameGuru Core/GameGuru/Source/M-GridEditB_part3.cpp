@@ -1790,6 +1790,10 @@ void Wicked_Update_Visuals(void *voidvisual)
 
 		//PE: Still need a way to disable light shafts :)
 		master_renderer->setLightShaftsEnabled(visuals->bLightShafts);
+		// PORT TRANSLATE 2026-07-29: DX11 shipped light shafts at hardcoded exposure 0.2 with a
+		// 32-tap blur; new Wicked defaults lightShaftsStrength to 0.5 and marches 64 taps, so the
+		// stock look is ~3x hotter. 0.18 matches the DX11 end-to-end gain (0.2*4.80/5.42).
+		master_renderer->setLightShaftsStrength(0.18f);
 
 		master_renderer->setLensFlareEnabled(visuals->bLensFlare);
 		

@@ -3783,6 +3783,27 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: SET_GRASSWET %s", on ? "ON (stock wetting — dark-on-reveal bug live)" : "OFF (grass force-dried)");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_LIGHTSHAFTS") == 0)
+	{
+		// A/B the light shafts fix (engine 1.56 sun-mask + DX11 exposure parity 0.18):
+		//   SET_LIGHTSHAFTS <0|1> [strength]   — toggle shafts; optional strength override
+		//   (engine "exposure"; DX11 parity = 0.18, upstream Wicked default = 0.5).
+		extern MasterRenderer * master_renderer;
+		int on = 1; float strength = -1.0f;
+		int n = sscanf_s(arg, "%d %f", &on, &strength);
+		if (master_renderer && n >= 1)
+		{
+			master_renderer->setLightShaftsEnabled(on != 0);
+			if (n >= 2 && strength >= 0.0f) master_renderer->setLightShaftsStrength(strength);
+			_snprintf(result, sizeof(result), "OK: SET_LIGHTSHAFTS %s strength=%.3f",
+				on ? "ON" : "OFF", master_renderer->getLightShaftsStrength());
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_LIGHTSHAFTS <0|1> [strength] (master_renderer=%p)", (void*)master_renderer);
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SET_HAIRSKIP") == 0)
 	{
 		// A/B Wicked delta 1.37: hair/grass sim reduction at a parked camera.

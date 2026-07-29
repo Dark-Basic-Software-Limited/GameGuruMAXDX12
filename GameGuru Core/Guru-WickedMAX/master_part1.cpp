@@ -90,6 +90,7 @@ void MasterRenderer::Load()
 	setShadowsEnabled ( true );
 	wiRenderer::SetTessellationEnabled(false); //PE: Tessellation dont work like this it has to be set per mesh, so have never worked.
 	setLightShaftsEnabled ( true );
+	setLightShaftsStrength ( 0.18f ); // PORT TRANSLATE 2026-07-29: DX11 exposure parity (see Wicked_Update_Visuals)
 	setBloomThreshold ( 2.0f );
 	//setBloomStrength( 1.0f );
 
