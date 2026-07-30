@@ -2527,6 +2527,148 @@ static void AutoHarness_VerifyTick(void)
 // Mode 0 (normal shading, flicker visible) marks the start of each loop.
 bool g_tvCycleActive = false;
 
+// DUMP_SOTAN two-frame streamout snapshot state (tangent-w coin-flip byte forensics)
+static std::vector<uint8_t> g_sotanSnapA;
+static std::vector<uint8_t> g_sotanSrcA;
+static wi::ecs::Entity g_sotanMesh = wi::ecs::INVALID_ENTITY;
+static int g_sotanPhase = 0;
+static char g_sotanLabel[160] = { 0 };
+
+static void Sotan_ReadbackBuffer(const wi::graphics::GPUBuffer& buf, std::vector<uint8_t>& out)
+{
+	using namespace wi::graphics;
+	GraphicsDevice* device = GetDevice();
+	GPUBufferDesc rb;
+	rb.size = buf.GetDesc().size;
+	rb.usage = Usage::READBACK;
+	GPUBuffer staging;
+	if (!device->CreateBuffer(&rb, nullptr, &staging)) { out.clear(); return; }
+	CommandList cmd = device->BeginCommandList();
+	device->CopyResource(&staging, &buf, cmd);
+	device->SubmitCommandLists();
+	device->WaitForGPU();
+	out.resize((size_t)rb.size);
+	memcpy(out.data(), staging.mapped_data, (size_t)rb.size);
+}
+
+static void Sotan_Tick(void)
+{
+	if (g_sotanPhase <= 0) return;
+	wi::scene::Scene& scn = wi::scene::GetScene();
+	const wi::scene::MeshComponent* mesh = scn.meshes.GetComponent(g_sotanMesh);
+	if (mesh == nullptr || !mesh->streamoutBuffer.IsValid() || !mesh->so_tan.IsValid()) { g_sotanPhase = 0; return; }
+	if (g_sotanPhase == 1)
+	{
+		Sotan_ReadbackBuffer(mesh->streamoutBuffer, g_sotanSnapA);
+		Sotan_ReadbackBuffer(mesh->generalBuffer, g_sotanSrcA);
+		g_sotanPhase = g_sotanSnapA.empty() ? 0 : 2;
+		return;
+	}
+	// phase 2: snapshot B one frame later, compare, report
+	std::vector<uint8_t> B, srcB;
+	Sotan_ReadbackBuffer(mesh->streamoutBuffer, B);
+	Sotan_ReadbackBuffer(mesh->generalBuffer, srcB);
+	g_sotanPhase = 0;
+	if (B.empty() || B.size() != g_sotanSnapA.size()) return;
+	FILE* f = fopen("sotan_dump.txt", "w");
+	if (f == nullptr) return;
+	const uint64_t tanOfs = mesh->so_tan.offset;
+	const int nverts = (int)(mesh->so_tan.size / 8ull); // R16G16B16A16_FLOAT
+	const uint8_t* A = g_sotanSnapA.data();
+	const uint8_t* Bp = B.data();
+	int wflips = 0, xyzchanged = 0, wgarbage = 0, listed = 0;
+	fprintf(f, "SOTAN %s  buffer=%llu bytes  so_tan ofs=%llu size=%llu verts=%d\n",
+		g_sotanLabel, (unsigned long long)B.size(), (unsigned long long)tanOfs, (unsigned long long)mesh->so_tan.size, nverts);
+	fprintf(f, "views: so_pos ofs=%llu so_pre ofs=%llu so_nor ofs=%llu\n",
+		(unsigned long long)mesh->so_pos.offset, (unsigned long long)mesh->so_pre.offset, (unsigned long long)mesh->so_nor.offset);
+	for (int v = 0; v < nverts; v++)
+	{
+		const uint16_t* ta = (const uint16_t*)(A + tanOfs + (uint64_t)v * 8ull);
+		const uint16_t* tb = (const uint16_t*)(Bp + tanOfs + (uint64_t)v * 8ull);
+		bool wf = ((ta[3] ^ tb[3]) & 0x8000) != 0;
+		bool xyz = (ta[0] != tb[0]) || (ta[1] != tb[1]) || (ta[2] != tb[2]);
+		if (wf) wflips++;
+		if (xyz) xyzchanged++;
+		// legit w halves: +-1.0 = 0x3C00/0xBC00 (allow denorm-ish garbage detection)
+		uint16_t mag = tb[3] & 0x7FFF;
+		if (mag != 0x3C00 && mag != 0x0000) wgarbage++;
+		if (wf && listed < 12)
+		{
+			fprintf(f, "  v%d A(xyzw)=%04x %04x %04x %04x  B=%04x %04x %04x %04x\n",
+				v, ta[0], ta[1], ta[2], ta[3], tb[0], tb[1], tb[2], tb[3]);
+			listed++;
+		}
+	}
+	// contiguity fingerprint of flips: count runs
+	int runs = 0; bool inrun = false;
+	for (int v = 0; v < nverts; v++)
+	{
+		const uint16_t* ta = (const uint16_t*)(A + tanOfs + (uint64_t)v * 8ull);
+		const uint16_t* tb = (const uint16_t*)(Bp + tanOfs + (uint64_t)v * 8ull);
+		bool wf = ((ta[3] ^ tb[3]) & 0x8000) != 0;
+		if (wf && !inrun) { runs++; inrun = true; }
+		else if (!wf) inrun = false;
+	}
+	// w value census (snapshot B): quantization noise vs garbage discriminator
+	{
+		auto halfToFloat = [](uint16_t h) -> float {
+			uint32_t sgn = (h & 0x8000u) << 16; uint32_t exp = (h >> 10) & 0x1F; uint32_t man = h & 0x3FFu;
+			uint32_t f;
+			if (exp == 0) { if (man == 0) f = sgn; else { exp = 127 - 15 + 1; while ((man & 0x400u) == 0) { man <<= 1; exp--; } man &= 0x3FFu; f = sgn | (exp << 23) | (man << 13); } }
+			else if (exp == 31) f = sgn | 0x7F800000u | (man << 13);
+			else f = sgn | ((exp - 15 + 127) << 23) | (man << 13);
+			float out; memcpy(&out, &f, 4); return out;
+		};
+		int histNeg1 = 0, histNearNeg = 0, histNearZero = 0, histNearPos = 0, histPos1 = 0, histWild = 0, printed = 0;
+		fprintf(f, "w census (B): ");
+		for (int v = 0; v < nverts; v++)
+		{
+			const uint16_t* tb = (const uint16_t*)(Bp + tanOfs + (uint64_t)v * 8ull);
+			float wv = halfToFloat(tb[3]);
+			if (wv <= -0.999f && wv >= -1.001f) histNeg1++;
+			else if (wv < -0.5f) histNearNeg++;
+			else if (wv < 0.5f) histNearZero++;
+			else if (wv < 0.999f) histNearPos++;
+			else if (wv <= 1.001f) histPos1++;
+			else histWild++;
+			if (printed < 12 && !(wv == 1.0f || wv == -1.0f || wv == 0.0f))
+			{
+				fprintf(f, "v%d=%.4f(%04x) ", v, wv, tb[3]);
+				printed++;
+			}
+		}
+		fprintf(f, "\nw histogram: [-1]=%d (-1,-0.5)=%d (-0.5,0.5)=%d (0.5,1)=%d [+1]=%d wild=%d\n",
+			histNeg1, histNearNeg, histNearZero, histNearPos, histPos1, histWild);
+	}
+	fprintf(f, "SUMMARY verts=%d w-sign-flips=%d (%.1f%%) in %d contiguous runs; xyz-changed=%d (%.1f%%); w-not-(+-1|0)=%d\n",
+		nverts, wflips, 100.0f * wflips / (nverts > 0 ? nverts : 1), runs, xyzchanged, 100.0f * xyzchanged / (nverts > 0 ? nverts : 1), wgarbage);
+	// SOURCE side: the generalBuffer vb_tan region (R8G8B8A8_SNORM, 4 B/vertex; canonical w byte
+	// = 0x7F/+1, 0x81/-1 (or 0x80), 0x00). Junk here = source poisoned; A!=B = live stomping.
+	if (mesh->vb_tan.IsValid() && !g_sotanSrcA.empty() && srcB.size() == g_sotanSrcA.size())
+	{
+		const uint64_t srcOfs = mesh->vb_tan.offset;
+		const int srcVerts = (int)(mesh->vb_tan.size / 4ull);
+		int srcCanon = 0, srcChanged = 0, srcListed = 0;
+		fprintf(f, "SOURCE vb_tan ofs=%llu size=%llu verts=%d samples: ", (unsigned long long)srcOfs, (unsigned long long)mesh->vb_tan.size, srcVerts);
+		for (int v = 0; v < srcVerts; v++)
+		{
+			const uint8_t* sa = g_sotanSrcA.data() + srcOfs + (uint64_t)v * 4ull;
+			const uint8_t* sb = srcB.data() + srcOfs + (uint64_t)v * 4ull;
+			uint8_t wb = sb[3];
+			if (wb == 0x7F || wb == 0x7E || wb == 0x81 || wb == 0x80 || wb == 0x82 || wb == 0x00) srcCanon++;
+			if (memcmp(sa, sb, 4) != 0) srcChanged++;
+			if (srcListed < 10 && !(wb == 0x7F || wb == 0x7E || wb == 0x81 || wb == 0x80 || wb == 0x82 || wb == 0x00))
+			{
+				fprintf(f, "v%d=%02x%02x%02x%02x ", v, sb[0], sb[1], sb[2], sb[3]);
+				srcListed++;
+			}
+		}
+		fprintf(f, "\nSOURCE SUMMARY: canonical-w=%d/%d (%.1f%%) changed-A-to-B=%d\n",
+			srcCanon, srcVerts, 100.0f * srcCanon / (srcVerts > 0 ? srcVerts : 1), srcChanged);
+	}
+	fclose(f);
+}
+
 void AutoHarness_CheckForCommand(void)
 {
 	if (g_tvCycleActive)
@@ -2539,6 +2681,8 @@ void AutoHarness_CheckForCommand(void)
 			wi::renderer::gg_debugvis = (wi::renderer::gg_debugvis + 1) % 21;
 		}
 	}
+
+	Sotan_Tick(); // DUMP_SOTAN two-frame streamout snapshot
 
 	// consecutive-frame capture (see BURST_FRAMES)
 	if (g_burstFramesRemaining > 0)
@@ -3971,6 +4115,59 @@ void AutoHarness_CheckForCommand(void)
 		else
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_TANGENTVIS <0-22|CYCLE>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_SOTAN") == 0)
+	{
+		// DUMP_SOTAN <name-substr> — byte-level forensics for the tangent-w coin-flip: read back
+		// the first matching skinned mesh's whole streamoutBuffer on TWO consecutive frames and
+		// diff the so_tan region (R16G16B16A16_FLOAT). Reports w-sign flips (count + contiguous
+		// runs = writer fingerprint), xyz churn, and whether w values are legit +-1 halves or
+		// garbage (aliased-memory tell). Writes sotan_dump.txt (exe dir).
+		wi::scene::Scene& soScene = wi::scene::GetScene();
+		auto soContains = [](const std::string& hay, const char* needle) -> bool {
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		g_sotanMesh = wi::ecs::INVALID_ENTITY;
+		{
+			// nearest-to-camera match: the flickering test characters, not the far crowd
+			const XMFLOAT3 soCam = wi::scene::GetCamera().Eye;
+			float soBest = 1e30f;
+			for (size_t soi = 0; soi < soScene.objects.GetCount(); ++soi)
+			{
+				wi::ecs::Entity soe = soScene.objects.GetEntity(soi);
+				const wi::scene::NameComponent* son = soScene.names.GetComponent(soe);
+				if (son == nullptr || !soContains(son->name, arg)) continue;
+				const wi::scene::ObjectComponent& soo = soScene.objects[soi];
+				if (!soo.IsRenderable()) continue;
+				const wi::scene::MeshComponent* som = soScene.meshes.GetComponent(soo.meshID);
+				if (som == nullptr || !som->streamoutBuffer.IsValid() || !som->so_tan.IsValid()) continue;
+				const wi::scene::TransformComponent* sot = soScene.transforms.GetComponent(soe);
+				float dx = sot ? (sot->world._41 - soCam.x) : 1e15f;
+				float dy = sot ? (sot->world._42 - soCam.y) : 1e15f;
+				float dz = sot ? (sot->world._43 - soCam.z) : 1e15f;
+				float d2 = dx * dx + dy * dy + dz * dz;
+				if (d2 < soBest)
+				{
+					soBest = d2;
+					g_sotanMesh = soo.meshID;
+					_snprintf(g_sotanLabel, sizeof(g_sotanLabel), "%s (entity %llu meshID %llu dist %.0f)", son->name.c_str(), (unsigned long long)soe, (unsigned long long)soo.meshID, sqrtf(d2));
+					g_sotanLabel[sizeof(g_sotanLabel) - 1] = 0;
+				}
+			}
+		}
+		if (g_sotanMesh != wi::ecs::INVALID_ENTITY)
+		{
+			g_sotanPhase = 1;
+			_snprintf(result, sizeof(result), "OK: DUMP_SOTAN armed for %s — two-frame capture, read sotan_dump.txt in ~2 frames", g_sotanLabel);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: DUMP_SOTAN no renderable skinned mesh with so_tan matches \"%s\"", arg);
 		}
 		result[sizeof(result) - 1] = 0;
 	}
