@@ -1000,7 +1000,26 @@ void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr)
 						if (t.entityprofile[masterId].ischaracter && (pstate->entityMeshMap.size() >= 4 && pstate->entityMeshMap.size() <= 6))
 						{
 							//PE: CCP Map all animations to first mesh for culling.
-							animationcomponent.objectIndex = pstate->entityMeshMap.begin()->second;
+							//GGMAX 1.61: pick the LARGEST mesh deterministically instead of
+							//unordered_map begin() (arbitrary hash order). This proxy drives the
+							//30fps anim throttle distance gate, the renderable cull and the 1.35
+							//visibility pause — an unlucky pick (eyes/teeth, or a mesh whose object
+							//goes stale) misclassified full-screen characters as throttle-eligible:
+							//half-rate pose stepping that reads as normal-map flicker (user repro).
+							//The body (largest AABB) is the representative choice for all three.
+							wi::ecs::Entity bestEntity = pstate->entityMeshMap.begin()->second;
+							float bestRadius = -1.0f;
+							wiScene::Scene& ccscene = wiScene::GetScene();
+							for (const auto& mm : pstate->entityMeshMap)
+							{
+								const size_t oi = ccscene.objects.GetIndex(mm.second);
+								if (oi < ccscene.aabb_objects.size())
+								{
+									const float r = ccscene.aabb_objects[oi].getRadius();
+									if (r > bestRadius) { bestRadius = r; bestEntity = mm.second; }
+								}
+							}
+							animationcomponent.objectIndex = bestEntity;
 						}
 					}
 				}

@@ -176,6 +176,14 @@ static bool s_initialized = false;
 // Keeps app running even when window loses focus, so automation works while alt-tabbed.
 bool g_bAutomationActive = false;
 
+// BURST_FRAMES: capture N CONSECUTIVE rendered frames (one screenshot per frame) to
+// Files/screenshots/frame_###.png. The per-frame readback stalls the GPU (frame time
+// balloons) but preserves frame-to-frame TEMPORAL structure — the instrument for
+// separating per-frame alternation artifacts (A/B/A/B states) from pose-driven shading
+// changes, which 1-second-apart SCREENSHOT sampling fundamentally cannot distinguish.
+static int g_burstFramesRemaining = 0;
+static int g_burstFrameIndex = 0;
+
 // Deferred key-up: hold key down for 2 frames so per-frame sampling detects the press
 static int s_pendingKeyUpVK = 0;     // virtual key code waiting for key-up
 static int s_pendingKeyUpFrames = 0; // frames remaining before sending WM_KEYUP
@@ -2516,6 +2524,16 @@ static void AutoHarness_VerifyTick(void)
 
 void AutoHarness_CheckForCommand(void)
 {
+	// consecutive-frame capture (see BURST_FRAMES)
+	if (g_burstFramesRemaining > 0)
+	{
+		char burstpath[MAX_PATH];
+		_snprintf(burstpath, sizeof(burstpath), "Files/screenshots/frame_%03d.png", g_burstFrameIndex++);
+		burstpath[sizeof(burstpath) - 1] = 0;
+		wi::helper::screenshot(wi::graphics::GetDevice()->GetBackBuffer(&master.swapChain), burstpath);
+		g_burstFramesRemaining--;
+	}
+
 	AutoHarness_SkinWatchTick();
 	AutoHarness_TerrainEditTick();
 	AutoHarness_VerifyTick();
@@ -3782,6 +3800,24 @@ void AutoHarness_CheckForCommand(void)
 		bool on = (arg[0] != '0');
 		wi::renderer::gg_grass_wetmap = on;
 		_snprintf(result, sizeof(result), "OK: SET_GRASSWET %s", on ? "ON (stock wetting — dark-on-reveal bug live)" : "OFF (grass force-dried)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "BURST_FRAMES") == 0)
+	{
+		// Capture N consecutive rendered frames to Files/screenshots/frame_###.png
+		// (temporal-artifact instrument; frame time balloons during capture from the
+		// per-frame GPU readback — expected).
+		int n = atoi(arg);
+		if (n >= 2 && n <= 120)
+		{
+			g_burstFrameIndex = 0;
+			g_burstFramesRemaining = n;
+			_snprintf(result, sizeof(result), "OK: BURST_FRAMES capturing %d consecutive frames to Files/screenshots/frame_###.png", n);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: BURST_FRAMES <2-120>");
+		}
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_CHARSHADOW") == 0)
