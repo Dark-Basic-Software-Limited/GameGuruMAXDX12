@@ -685,7 +685,18 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 				}
 				if (offsetMap.dwTU[2] > 0)
 				{
-					XMFLOAT4 tan = XMFLOAT4(0, 0, 0, 0);
+					// GGMAX tangent handedness (2026-07-30): DBO tangents carry no w sign (the DBO
+					// converter stores assimp tangents in the BINORMAL-labelled slot, bitangents in
+					// the TANGENT slot, and neither has a handedness float). DX11 left w=0, which the
+					// OLD engine's normalize(cross(T,N)*w) turned into an EFFECTIVE w=-1 on every DBO
+					// mesh (w packed to -0.004, sign survives the normalize). The NEW engine instead
+					// snaps w=0 to +1 (surfaceHF/objectHF: T.w = T.w < 0 ? -1 : 1), silently flipping
+					// the bitangent on every DBO-loaded mesh vs DX11 — normal-map green channel
+					// inverted, so embossed detail lights backwards and appears to SWIM/slide under
+					// skinned animation, amplitude proportional to Normal Strength (zero at 0).
+					// w=-1 restores exact DX11 shading. Meshes without DBO tangents (MikkTSpace
+					// path) always had correct per-vertex w in both engines and are untouched.
+					XMFLOAT4 tan = XMFLOAT4(0, 0, 0, -1.0f);
 					GGVECTOR3 vecTangent = *(GGVECTOR3*)((float*)pDBOMesh->pVertexData + offsetMap.dwTU[2] + (offsetMap.dwSize * v));
 					GGVec3TransformNormal(&vecTangent, &vecTangent, pmatMeshTransform);
 					tan.x = vecTangent.x;

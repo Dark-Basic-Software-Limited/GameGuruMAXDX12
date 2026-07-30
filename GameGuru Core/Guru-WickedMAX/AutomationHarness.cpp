@@ -2811,6 +2811,69 @@ void AutoHarness_CheckForCommand(void)
 		}
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "DUMP_SKINGEO") == 0)
+	{
+		// DUMP_SKINGEO <name-substr> — skinned-tangent pipeline forensics. For every named object
+		// whose name contains the substring, print the CPU-side mesh buffer-view descriptors
+		// (bind-pose vb_nor/vb_tan vs skinned streamout so_nor/so_tan) plus vertex array counts
+		// and armature binding. Diff against DUMP_GEOMETRY's GPU record: geometry.vb_tan ==
+		// so_tan.srv -> pixels lit with SKINNED tangents (correct); == vb_tan.srv -> BIND-POSE
+		// tangents on an animated mesh (normal-map swimming); == -1 -> pixel-shader derivative
+		// fallback (patchy per-quad flicker scaling with normal strength).
+		wi::scene::Scene& sgScene = wi::scene::GetScene();
+		auto sgContains = [](const std::string& hay, const char* needle) -> bool {
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		FILE* sgF = fopen("skingeo_dump.txt", "w");
+		int sgMatches = 0;
+		if (sgF != nullptr)
+		{
+			for (size_t sgi = 0; sgi < sgScene.objects.GetCount(); ++sgi)
+			{
+				wi::ecs::Entity sge = sgScene.objects.GetEntity(sgi);
+				const wi::scene::NameComponent* sgn = sgScene.names.GetComponent(sge);
+				if (sgn == nullptr || !sgContains(sgn->name, arg)) continue;
+				const wi::scene::ObjectComponent& sgo = sgScene.objects[sgi];
+				if (!sgo.IsRenderable()) continue;
+				const wi::scene::MeshComponent* sgm = sgScene.meshes.GetComponent(sgo.meshID);
+				if (sgm == nullptr) continue;
+				sgMatches++;
+				if (sgMatches > 60) continue;
+				const wi::scene::TransformComponent* sgt = sgScene.transforms.GetComponent(sge);
+				fprintf(sgF, "OBJ entity=%llu name=\"%s\" pos=(%.0f,%.0f,%.0f) meshID=%llu armature=%llu\n",
+					(unsigned long long)sge, sgn->name.c_str(),
+					sgt ? sgt->world._41 : 0.0f, sgt ? sgt->world._42 : 0.0f, sgt ? sgt->world._43 : 0.0f,
+					(unsigned long long)sgo.meshID, (unsigned long long)sgm->armatureID);
+				fprintf(sgF, "  counts pos=%d nor=%d tan=%d bon=%d  streamoutValid=%d\n",
+					(int)sgm->vertex_positions.size(), (int)sgm->vertex_normals.size(),
+					(int)sgm->vertex_tangents.size(), (int)sgm->vertex_boneindices.size(),
+					sgm->streamoutBuffer.IsValid() ? 1 : 0);
+				fprintf(sgF, "  bindpose vb_nor=%d vb_tan=%d | skinned so_pos=%d so_nor=%d so_tan=%d\n",
+					sgm->vb_nor.descriptor_srv, sgm->vb_tan.descriptor_srv,
+					sgm->so_pos.descriptor_srv, sgm->so_nor.descriptor_srv, sgm->so_tan.descriptor_srv);
+				const char* sgVerdict = "STATIC (no armature)";
+				if (sgm->armatureID != wi::ecs::INVALID_ENTITY)
+				{
+					if (!sgm->streamoutBuffer.IsValid()) sgVerdict = "BUG: armature but NO streamout buffer";
+					else if (sgm->so_tan.descriptor_srv < 0 && sgm->vb_tan.descriptor_srv >= 0) sgVerdict = "BUG: skinned but so_tan MISSING (bind-pose or fallback tangents)";
+					else if (sgm->vb_tan.descriptor_srv < 0) sgVerdict = "NO TANGENTS AT ALL (derivative fallback)";
+					else sgVerdict = "OK: skinned tangents available";
+				}
+				fprintf(sgF, "  verdict: %s\n", sgVerdict);
+			}
+			fprintf(sgF, "MATCHES %d\n", sgMatches);
+			fclose(sgF);
+			_snprintf(result, sizeof(result), "OK: DUMP_SKINGEO \"%s\" matches=%d -> skingeo_dump.txt", arg, sgMatches);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: DUMP_SKINGEO could not open skingeo_dump.txt");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SET_ENTITY_VIS") == 0)
 	{
 		// SET_ENTITY_VIS <name-substr> <0|1> — SetRenderable on every named object whose name
