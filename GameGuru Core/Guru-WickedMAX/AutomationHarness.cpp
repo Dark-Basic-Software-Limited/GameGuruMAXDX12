@@ -76,6 +76,7 @@ namespace wi::renderer {
 	extern bool gg_hair_sim_static_skip;
 	extern uint32_t gg_hair_sim_wind_interval;
 	extern bool gg_grass_wetmap; // 1.50: true = stock Wicked ocean/rain wetting on GG grass (dark-on-reveal bug demo)
+	extern float gg_shadow_receiver_bias; // 1.57: sun-cascade receiver depth bias (animated self-shadow flicker fix)
 }
 
 // GGMAX 1.49: grass strand LOD knobs (wiHairParticle.cpp)
@@ -3781,6 +3782,25 @@ void AutoHarness_CheckForCommand(void)
 		bool on = (arg[0] != '0');
 		wi::renderer::gg_grass_wetmap = on;
 		_snprintf(result, sizeof(result), "OK: SET_GRASSWET %s", on ? "ON (stock wetting — dark-on-reveal bug live)" : "OFF (grass force-dried)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_SHADOWBIAS") == 0)
+	{
+		// A/B Wicked delta 1.57: receiver-side depth bias for the sun's cascade shadows,
+		// in D16 shadow-atlas ULPs. Cures animated self-shadow flicker (back/neck of an
+		// idling character). 0 = stock hard compare (reproduces the flicker); default 2.
+		float ulps = -1.0f;
+		int n = sscanf_s(arg, "%f", &ulps);
+		if (n >= 1 && ulps >= 0.0f && ulps <= 64.0f)
+		{
+			wi::renderer::gg_shadow_receiver_bias = ulps / 65536.0f;
+			_snprintf(result, sizeof(result), "OK: SET_SHADOWBIAS %.2f ULPs (%.3e NDC)%s",
+				ulps, wi::renderer::gg_shadow_receiver_bias, ulps == 0.0f ? " (stock, flicker reproducible)" : "");
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_SHADOWBIAS <0-64 ulps>");
+		}
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_BLENDSCAN") == 0)
