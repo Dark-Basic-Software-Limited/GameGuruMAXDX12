@@ -4096,7 +4096,12 @@ void AutoHarness_CheckForCommand(void)
 		if (n >= 0 && n <= 3)
 		{
 			g_iCharShadowMax = n;
-			_snprintf(result, sizeof(result), "OK: SET_CHARSHADOW %d (live slots this frame: %d)",
+			// NOTE: the slot list is rebuilt in Master::Update AFTER this command runs, so the
+			// count below reflects the PREVIOUS max for one frame. A "0" right after switching
+			// 0->3 is normal — re-issue the command a frame later for the true count. (This
+			// stale read caused the 2026-07-30 "recreated characters lose their dedicated slot"
+			// false alarm — measured phantom on 2026-07-31, discovery is stateless per frame.)
+			_snprintf(result, sizeof(result), "OK: SET_CHARSHADOW %d (slots last frame: %d — one frame stale after a change, re-query to confirm)",
 				n, (int)wiScene::GetScene().character_dedicated_shadows.size());
 		}
 		else
