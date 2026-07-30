@@ -2870,6 +2870,10 @@ void AutoHarness_CheckForCommand(void)
 				fprintf(sgF, "  bindpose vb_nor=%d vb_tan=%d | skinned so_pos=%d so_nor=%d so_tan=%d\n",
 					sgm->vb_nor.descriptor_srv, sgm->vb_tan.descriptor_srv,
 					sgm->so_pos.descriptor_srv, sgm->so_nor.descriptor_srv, sgm->so_tan.descriptor_srv);
+				fprintf(sgF, "  UAV so_pos=%d so_nor=%d so_tan=%d | offs %llu/%llu/%llu sizes %llu/%llu/%llu\n",
+					sgm->so_pos.descriptor_uav, sgm->so_nor.descriptor_uav, sgm->so_tan.descriptor_uav,
+					(unsigned long long)sgm->so_pos.offset, (unsigned long long)sgm->so_nor.offset, (unsigned long long)sgm->so_tan.offset,
+					(unsigned long long)sgm->so_pos.size, (unsigned long long)sgm->so_nor.size, (unsigned long long)sgm->so_tan.size);
 				const char* sgVerdict = "STATIC (no armature)";
 				if (sgm->armatureID != wi::ecs::INVALID_ENTITY)
 				{
@@ -3967,6 +3971,24 @@ void AutoHarness_CheckForCommand(void)
 		else
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_TANGENTVIS <0-22|CYCLE>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_BINDPOSE_TAN") == 0)
+	{
+		// Engine 1.62c discriminator: 1 = raster tangents come from the BIND-POSE buffer
+		// (skip the skinned so_tan patch in RunMeshUpdateSystem). If the per-load tangent-w
+		// coin-flip (SET_TANGENTVIS 4) dies with this ON, the poisoned stage is the skinned
+		// streamout CONTENT; if it persists, the consumer path. 0 = normal skinned tangents.
+		int bp = -1;
+		if (sscanf_s(arg, "%d", &bp) >= 1 && bp >= 0 && bp <= 1)
+		{
+			wi::renderer::gg_force_bindpose_tangents = (bp != 0);
+			_snprintf(result, sizeof(result), "OK: SET_BINDPOSE_TAN %d (%s)", bp, bp ? "bind-pose tangents" : "skinned streamout tangents");
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_BINDPOSE_TAN <0|1>");
 		}
 		result[sizeof(result) - 1] = 0;
 	}
