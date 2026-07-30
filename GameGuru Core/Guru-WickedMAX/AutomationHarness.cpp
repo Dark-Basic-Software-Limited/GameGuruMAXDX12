@@ -2523,8 +2523,23 @@ static void AutoHarness_VerifyTick(void)
 
 // ---- Main entry point (called once per tick) ----
 
+// SET_TANGENTVIS CYCLE state: auto-advance gg_debugvis 0..20, 3s dwell each.
+// Mode 0 (normal shading, flicker visible) marks the start of each loop.
+bool g_tvCycleActive = false;
+
 void AutoHarness_CheckForCommand(void)
 {
+	if (g_tvCycleActive)
+	{
+		static ULONGLONG tvLastSwitch = 0;
+		ULONGLONG now = GetTickCount64();
+		if (now - tvLastSwitch >= 3000)
+		{
+			tvLastSwitch = now;
+			wi::renderer::gg_debugvis = (wi::renderer::gg_debugvis + 1) % 21;
+		}
+	}
+
 	// consecutive-frame capture (see BURST_FRAMES)
 	if (g_burstFramesRemaining > 0)
 	{
@@ -3930,17 +3945,57 @@ void AutoHarness_CheckForCommand(void)
 		// sample rg. Pair with BURST_FRAMES: if mode-1 colors churn on a near-still pose,
 		// the skinned tangent DATA is per-frame unstable; if stable, the artifact is
 		// downstream (map decode/lighting).
+		extern bool g_tvCycleActive;
 		int mode = -1;
-		int n = sscanf_s(arg, "%d", &mode);
-		if (n >= 1 && mode >= 0 && mode <= 5)
+		if (_strnicmp(arg, "CYCLE", 5) == 0)
 		{
+			// Auto-cycle all modes, 3s dwell each, 0 (normal shading) marks the loop start.
+			g_tvCycleActive = true;
+			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS CYCLE (3s per mode, 0->20, normal shading = loop marker; any SET_TANGENTVIS <n> stops)");
+		}
+		else if (sscanf_s(arg, "%d", &mode) >= 1 && mode >= 0 && mode <= 22)
+		{
+			g_tvCycleActive = false;
 			wi::renderer::gg_debugvis = mode;
-			static const char* tvNames[6] = { "off", "world tangent", "vertex normal", "bumped normal", "handedness", "map sample" };
+			static const char* tvNames[23] = { "off", "world tangent", "vertex normal", "bumped normal", "handedness", "normal-map sample",
+				"basecolor UV raw", "basecolor UV x64 grid", "basecolor tex sample", "final albedo input", "ORM sample",
+				"roughness", "specular F0", "occlusion", "vertex color", "emissive", "world-pos grid",
+				"direct diffuse", "direct specular", "indirect diffuse", "indirect specular",
+				"RAW normal-map texels", "RAW normal-map mip0" };
 			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS %d (%s)", mode, tvNames[mode]);
 		}
 		else
 		{
-			_snprintf(result, sizeof(result), "ERROR: SET_TANGENTVIS <0-5>");
+			_snprintf(result, sizeof(result), "ERROR: SET_TANGENTVIS <0-22|CYCLE>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_NORMSTR") == 0)
+	{
+		// SET_NORMSTR <value> — set normalMapStrength on EVERY scene material that has a
+		// normal map bound. Brute-force A/B lever for the flicker-vs-strength law (the saved
+		// test level carries strength 4 on some characters; no per-entity setter exists in
+		// the harness). Materials are dirtied so the composed cache refreshes.
+		float ns = -1.0f;
+		if (sscanf_s(arg, "%f", &ns) >= 1 && ns >= 0.0f && ns <= 8.0f)
+		{
+			wi::scene::Scene& nsScene = wi::scene::GetScene();
+			int nsCount = 0;
+			for (size_t nsi = 0; nsi < nsScene.materials.GetCount(); ++nsi)
+			{
+				wi::scene::MaterialComponent& nsMat = nsScene.materials[nsi];
+				if (nsMat.textures[wi::scene::MaterialComponent::NORMALMAP].resource.IsValid())
+				{
+					nsMat.normalMapStrength = ns;
+					nsMat.SetDirty();
+					nsCount++;
+				}
+			}
+			_snprintf(result, sizeof(result), "OK: SET_NORMSTR %.2f applied to %d materials with normal maps", ns, nsCount);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_NORMSTR <0-8>");
 		}
 		result[sizeof(result) - 1] = 0;
 	}
