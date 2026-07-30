@@ -77,6 +77,7 @@ namespace wi::renderer {
 	extern uint32_t gg_hair_sim_wind_interval;
 	extern bool gg_grass_wetmap; // 1.50: true = stock Wicked ocean/rain wetting on GG grass (dark-on-reveal bug demo)
 	extern float gg_shadow_receiver_bias; // 1.57: sun-cascade receiver depth bias (animated self-shadow flicker fix)
+	extern int gg_debugvis; // 1.62: tangent-frame visualization mode (SET_TANGENTVIS 0-5)
 }
 
 // GGMAX 1.49: grass strand LOD knobs (wiHairParticle.cpp)
@@ -3917,6 +3918,29 @@ void AutoHarness_CheckForCommand(void)
 		else
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_SHADOWBIAS <0-64 ulps>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_TANGENTVIS") == 0)
+	{
+		// GGMAX 1.62: tangent-frame visualization for skinned normal-map flicker forensics.
+		// Replaces object shading with raw pipeline data (engine objectHF.hlsli early-out):
+		// 0=off, 1=world tangent RGB, 2=interpolated vertex normal RGB, 3=final bumped
+		// normal RGB, 4=tangent handedness (red=-1 green=+1), 5=strength-scaled normal-map
+		// sample rg. Pair with BURST_FRAMES: if mode-1 colors churn on a near-still pose,
+		// the skinned tangent DATA is per-frame unstable; if stable, the artifact is
+		// downstream (map decode/lighting).
+		int mode = -1;
+		int n = sscanf_s(arg, "%d", &mode);
+		if (n >= 1 && mode >= 0 && mode <= 5)
+		{
+			wi::renderer::gg_debugvis = mode;
+			static const char* tvNames[6] = { "off", "world tangent", "vertex normal", "bumped normal", "handedness", "map sample" };
+			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS %d (%s)", mode, tvNames[mode]);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_TANGENTVIS <0-5>");
 		}
 		result[sizeof(result) - 1] = 0;
 	}
