@@ -2642,6 +2642,46 @@ static void Sotan_Tick(void)
 	}
 	fprintf(f, "SUMMARY verts=%d w-sign-flips=%d (%.1f%%) in %d contiguous runs; xyz-changed=%d (%.1f%%); w-not-(+-1|0)=%d\n",
 		nverts, wflips, 100.0f * wflips / (nverts > 0 ? nverts : 1), runs, xyzchanged, 100.0f * xyzchanged / (nverts > 0 ? nverts : 1), wgarbage);
+	// RLE fingerprint of the B-snapshot w lane: block boundaries + values identify the foreign
+	// writer (4096-aligned = heap/page aliasing; 512/64-element groups = dispatch-shaped;
+	// subset-offset-aligned = mesh-structure writer).
+	{
+		fprintf(f, "w RLE (B): ");
+		uint16_t curv = 0xFFFF; int runlen = 0; int printedRuns = 0; int startV = 0;
+		for (int v = 0; v <= nverts && printedRuns < 48; v++)
+		{
+			uint16_t wv = 0xFFFF;
+			if (v < nverts) wv = ((const uint16_t*)(Bp + tanOfs + (uint64_t)v * 8ull))[3];
+			if (wv != curv)
+			{
+				if (runlen > 0)
+				{
+					uint64_t byteofs = tanOfs + (uint64_t)startV * 8ull;
+					fprintf(f, "[v%d+%d w=%04x ofs%%4096=%llu] ", startV, runlen, curv, (unsigned long long)(byteofs % 4096ull));
+					printedRuns++;
+				}
+				curv = wv; runlen = 1; startV = v;
+			}
+			else runlen++;
+		}
+		fprintf(f, "\n");
+	}
+	// so_nor + so_pos w-lane footprint: the CS writes float4(nor,0) and float4(pos,0) — any
+	// nonzero w there = the foreign writer's footprint extends beyond the tan region.
+	{
+		const uint64_t norOfs = mesh->so_nor.offset;
+		const int norVerts = (int)(mesh->so_nor.size / 8ull);
+		int norNonzero = 0;
+		for (int v = 0; v < norVerts; v++)
+			if (((const uint16_t*)(Bp + norOfs + (uint64_t)v * 8ull))[3] != 0) norNonzero++;
+		const uint64_t posOfs = mesh->so_pos.offset;
+		const int posVerts = (int)(mesh->so_pos.size / 16ull);
+		int posNonzero = 0;
+		for (int v = 0; v < posVerts; v++)
+			if (((const uint32_t*)(Bp + posOfs + (uint64_t)v * 16ull))[3] != 0) posNonzero++;
+		fprintf(f, "FOOTPRINT: so_nor w!=0 on %d/%d verts; so_pos w!=0 on %d/%d verts\n",
+			norNonzero, norVerts, posNonzero, posVerts);
+	}
 	// SOURCE side: the generalBuffer vb_tan region (R8G8B8A8_SNORM, 4 B/vertex; canonical w byte
 	// = 0x7F/+1, 0x81/-1 (or 0x80), 0x00). Junk here = source poisoned; A!=B = live stomping.
 	if (mesh->vb_tan.IsValid() && !g_sotanSrcA.empty() && srcB.size() == g_sotanSrcA.size())
@@ -4115,6 +4155,24 @@ void AutoHarness_CheckForCommand(void)
 		else
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_TANGENTVIS <0-22|CYCLE>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_WETMAPS") == 0)
+	{
+		// Engine 1.62e: 0 = skip the whole RefreshWetmaps compute pass (object + hair loops).
+		// Streamout-stomp suspect A/B: wetmap junk values match the captured foreign w data
+		// (small decaying-toward-zero floats). If the mode-4 coin-flip dies with this OFF on
+		// an afflicted load, the wetmap pass is the writer.
+		int wm = -1;
+		if (sscanf_s(arg, "%d", &wm) >= 1 && wm >= 0 && wm <= 1)
+		{
+			wi::renderer::gg_wetmap_updates_enabled = (wm != 0);
+			_snprintf(result, sizeof(result), "OK: SET_WETMAPS %d (%s)", wm, wm ? "wetmap updates ON" : "wetmap updates SKIPPED");
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_WETMAPS <0|1>");
 		}
 		result[sizeof(result) - 1] = 0;
 	}
