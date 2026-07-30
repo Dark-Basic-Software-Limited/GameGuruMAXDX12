@@ -212,6 +212,7 @@ int WickedCall_GetSkinable(void);
 int WickedCall_GetSkinableVisible(void);
 
 void WickedCall_SetShadowRange(float ShadowFar);
+void WickedCall_UpdateCharacterShadows(void); // GGMAX 2026-07-30: per-character dedicated sun shadow slots (nearest-3)
 void WickedCall_SetMeshAlphaRef(sMesh* pMesh, float fAlphaRef);
 void WickedCall_SetObjectAlphaRef(sObject* pObject, float fAlphaRef);
 float WickedCall_GetObjectAlphaRef(sObject* pObject);

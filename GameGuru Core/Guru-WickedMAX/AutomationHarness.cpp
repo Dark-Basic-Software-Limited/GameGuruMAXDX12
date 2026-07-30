@@ -3784,6 +3784,24 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: SET_GRASSWET %s", on ? "ON (stock wetting — dark-on-reveal bug live)" : "OFF (grass force-dried)");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_CHARSHADOW") == 0)
+	{
+		// Per-character dedicated sun shadow slots (nearest-N to camera, hard cap 3 —
+		// 5x2048 sun + 3x2048 dedicated exactly fill the 16384 atlas). 0 = off (stock).
+		extern int g_iCharShadowMax;
+		int n = atoi(arg);
+		if (n >= 0 && n <= 3)
+		{
+			g_iCharShadowMax = n;
+			_snprintf(result, sizeof(result), "OK: SET_CHARSHADOW %d (live slots this frame: %d)",
+				n, (int)wiScene::GetScene().character_dedicated_shadows.size());
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_CHARSHADOW <0-3>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SET_SHADOWBIAS") == 0)
 	{
 		// A/B Wicked delta 1.57: receiver-side depth bias for the sun's cascade shadows,

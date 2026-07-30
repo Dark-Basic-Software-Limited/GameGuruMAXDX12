@@ -2124,3 +2124,76 @@ uint32_t WickedCall_LoadWPE(char* filename)
 	return root;
 }
 #endif // WICKEDPARTICLESYSTEM (continued in wickedcalls_part4.cpp)
+
+#include <algorithm>
+#include <vector>
+
+// GGMAX 2026-07-30: per-character DEDICATED sun shadows.
+// The new Wicked renderer already supports high-res per-character shadow slots: every sphere
+// pushed into scene.character_dedicated_shadows becomes one extra FULL-RES cascade slice
+// fitted tightly around that character (prepended before the 5 sun cascades; sampling and the
+// 1.58 feathered PCF cover it automatically). Upstream drives the list from CharacterComponents,
+// which GG does not use (their controller would fight our entity system), so we fill the vector
+// directly from live GG character elements each frame.
+// MUST run AFTER Scene::Update (which clears the vector) and BEFORE UpdateVisibility — the
+// call site is Master::Update right after __super::Update(dt).
+// CAP: 5x2048 sun cascades + 3x2048 dedicated slots exactly fill the 16384 atlas cap (1.58b);
+// a 4th slot would make the packer silently shrink ALL slices. Nearest-to-camera wins.
+// NOTE (engine interaction): while ANY slot is live the engine disables the delayed-cascade
+// stagger and far-cascade cull for that frame (dedicated slots shift cascade indices).
+int g_iCharShadowMax = 3; // 0 = off (stock); harness SET_CHARSHADOW <0-3>
+void WickedCall_UpdateCharacterShadows(void)
+{
+	wiScene::Scene& scene = wiScene::GetScene();
+	scene.character_dedicated_shadows.clear();
+	if (g_iCharShadowMax <= 0) return;
+	if (g.entityelementlist <= 0) return;
+	if (t.entityelement.size() <= (size_t)g.entityelementlist) return;
+
+	const wi::scene::CameraComponent& cam = wiScene::GetCamera();
+	const bool bInGame = (t.game.set.ismapeditormode == 0);
+
+	struct GGCharShadowCand { float dist2; XMFLOAT3 center; float radius; };
+	static std::vector<GGCharShadowCand> s_cands;
+	s_cands.clear();
+
+	for (int e = 1; e <= g.entityelementlist; e++)
+	{
+		const auto& ee = t.entityelement[e];
+		if (ee.bankindex <= 0 || ee.bankindex >= (int)t.entityprofile.size()) continue;
+		if (t.entityprofile[ee.bankindex].ischaracter != 1) continue;
+		if (ee.eleprof.disableascharacter != 0) continue;
+		if (ee.obj <= 0 || ObjectExist(ee.obj) == 0) continue;
+		if (ee.ishidden != 0) continue;
+		if (ee.ragdollified != 0) continue;
+		if (bInGame)
+		{
+			// editor-placed characters are not "active" until the game runs — only
+			// apply liveness filters in test game / standalone
+			if (ee.active == 0) continue;
+			if (ee.health <= 0) continue;
+		}
+
+		// capsule approximation: human-scale height x profile scale (percent)
+		float fScale = t.entityprofile[ee.bankindex].scale > 0 ? (float)t.entityprofile[ee.bankindex].scale / 100.0f : 1.0f;
+		float fHeight = 72.0f * fScale;
+		if (fHeight < 30.0f) fHeight = 30.0f;
+		if (fHeight > 200.0f) fHeight = 200.0f;
+		const float fRadius = fHeight * 0.5f;
+		const XMFLOAT3 vCenter = XMFLOAT3(ee.x, ee.y + fRadius, ee.z);
+
+		// engine consumes the list as-is, so cull to the live camera here (upstream does the same)
+		if (!cam.frustum.CheckSphere(vCenter, fRadius)) continue;
+
+		const float dx = vCenter.x - cam.Eye.x, dy = vCenter.y - cam.Eye.y, dz = vCenter.z - cam.Eye.z;
+		s_cands.push_back({ dx * dx + dy * dy + dz * dz, vCenter, fRadius });
+	}
+	if (s_cands.empty()) return;
+
+	const int iMax = g_iCharShadowMax > 3 ? 3 : g_iCharShadowMax;
+	std::sort(s_cands.begin(), s_cands.end(), [](const GGCharShadowCand& a, const GGCharShadowCand& b) { return a.dist2 < b.dist2; });
+	for (int i = 0; i < (int)s_cands.size() && i < iMax; i++)
+	{
+		scene.character_dedicated_shadows.push_back(wi::primitive::Sphere(s_cands[i].center, s_cands[i].radius));
+	}
+}

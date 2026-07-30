@@ -632,6 +632,11 @@ void Master::Update(float dt)
 	// super update to keep things ticking along during setup and regular loop
 	__super::Update(dt);
 
+	// GGMAX 2026-07-30: per-character dedicated sun shadows — must fill AFTER Scene::Update
+	// (which clears scene.character_dedicated_shadows) and BEFORE PreRender's UpdateVisibility
+	// packs the shadow atlas. See wickedcalls_part3.cpp.
+	WickedCall_UpdateCharacterShadows();
+
 	// push splash render to end of function FLICKER - MAKE THIS WORK!!!!
 	static bool bCustomSplash = false;
 	wiImageParams fx;
