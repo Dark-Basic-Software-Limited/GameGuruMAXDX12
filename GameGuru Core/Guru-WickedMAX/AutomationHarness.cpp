@@ -4069,6 +4069,86 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: SET_GRASSWET %s", on ? "ON (stock wetting — dark-on-reveal bug live)" : "OFF (grass force-dried)");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_SKYMODE") == 0)
+	{
+		// Sky investigation: drive the Customize Sky combo programmatically.
+		// 0 = Simulated Sky (realistic sky + volumetric clouds), 1 = Sky Box, 2 = None.
+		int sm = -1;
+		if (sscanf_s(arg, "%d", &sm) >= 1 && sm >= 0 && sm <= 2)
+		{
+			extern void gridedit_set_sky_type(int iSkyType);
+			gridedit_set_sky_type(sm);
+			const char* names[] = { "Simulated Sky", "Sky Box", "None" };
+			_snprintf(result, sizeof(result), "OK: SET_SKYMODE %d (%s; skyindex=%d disableSkybox=%d)",
+				sm, names[sm], t.visuals.skyindex, t.visuals.bDisableSkybox ? 1 : 0);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_SKYMODE <0=simulated|1=skybox|2=none>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_VOLCLOUDS") == 0)
+	{
+		// Sky investigation discriminator: toggle ONLY the volumetric cloud pass, leaving
+		// realistic sky and fog untouched. If distant terrain reappears with clouds off,
+		// the cloud composite is what paints over it.
+		int vc = -1;
+		if (sscanf_s(arg, "%d", &vc) >= 1 && vc >= 0 && vc <= 1)
+		{
+			extern wi::ecs::Entity g_weatherEntityID;
+			wi::scene::WeatherComponent* weather = wi::scene::GetScene().weathers.GetComponent(g_weatherEntityID);
+			if (weather)
+			{
+				weather->SetVolumetricClouds(vc != 0);
+				_snprintf(result, sizeof(result), "OK: SET_VOLCLOUDS %d (live-only; next sky-mode change or visuals update restores)", vc);
+			}
+			else
+			{
+				_snprintf(result, sizeof(result), "ERROR: SET_VOLCLOUDS no weather component");
+			}
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_VOLCLOUDS <0|1>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_FOGDENS") == 0)
+	{
+		// Sky investigation discriminator: write weather fogDensity directly (0 = fog fully
+		// off). Negative value = restore the level's fog model from t.visuals. Live-only.
+		float fd = -999.0f;
+		if (sscanf_s(arg, "%f", &fd) >= 1 && fd > -998.0f)
+		{
+			extern wi::ecs::Entity g_weatherEntityID;
+			wi::scene::WeatherComponent* weather = wi::scene::GetScene().weathers.GetComponent(g_weatherEntityID);
+			if (weather)
+			{
+				if (fd < 0.0f)
+				{
+					extern void Wicked_Update_Fog(void* visual);
+					Wicked_Update_Fog((void*)&t.visuals);
+					_snprintf(result, sizeof(result), "OK: SET_FOGDENS restored from visuals (start=%.0f density=%g)",
+						weather->fogStart, weather->fogDensity);
+				}
+				else
+				{
+					weather->fogDensity = fd;
+					_snprintf(result, sizeof(result), "OK: SET_FOGDENS %g (start=%.0f; live-only)", fd, weather->fogStart);
+				}
+			}
+			else
+			{
+				_snprintf(result, sizeof(result), "ERROR: SET_FOGDENS no weather component");
+			}
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_FOGDENS <density|-1=restore>");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "BURST_FRAMES") == 0)
 	{
 		// Capture N consecutive rendered frames to Files/screenshots/frame_###.png

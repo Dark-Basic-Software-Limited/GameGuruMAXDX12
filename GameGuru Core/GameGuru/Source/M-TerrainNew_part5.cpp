@@ -778,13 +778,14 @@ void procedural_new_level(void)
 
 					float fCover = 0.8;
 					weather->volumetricCloudParameters.layerFirst.coverageAmount = fCover * ratio;
+					// SKY FIX 2026-07-31: engine cloud heights are WORLD units (inches), not meters
 					if (fSnapShotModeCameraY + 4000 > t.visuals.SkyCloudHeight)
 					{
-						weather->volumetricCloudParameters.cloudStartHeight = GGTerrain_UnitsToMeters(fSnapShotModeCameraY + 4000);
+						weather->volumetricCloudParameters.cloudStartHeight = fSnapShotModeCameraY + 4000;
 					}
 					else
 					{
-						weather->volumetricCloudParameters.cloudStartHeight = GGTerrain_UnitsToMeters(t.visuals.SkyCloudHeight);
+						weather->volumetricCloudParameters.cloudStartHeight = t.visuals.SkyCloudHeight;
 					}
 
 				}

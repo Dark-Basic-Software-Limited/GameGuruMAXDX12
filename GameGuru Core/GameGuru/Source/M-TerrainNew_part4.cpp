@@ -376,6 +376,89 @@
 	}
 }
 
+// Full sky-type switch (0=Simulated Sky, 1=Sky Box, 2=None) — the exact sequence the
+// Customize Sky combo runs, extracted so the automation harness (SET_SKYMODE) can drive
+// mode changes for A/B testing without the UI.
+void gridedit_set_sky_type(int iSkyType)
+{
+	bool bRunUpdateVisual = false;
+	bool bSimulatedSky = false;
+	if (iSkyType == 0)
+	{
+		t.visuals.skyindex = 0;
+		bSimulatedSky = true;
+		t.gamevisuals.bDisableSkybox = t.visuals.bDisableSkybox = false;
+	}
+	if (iSkyType == 1)
+	{
+		t.visuals.skyindex = 1;
+		bSimulatedSky = false;
+		t.gamevisuals.bDisableSkybox = t.visuals.bDisableSkybox = false;
+	}
+	if (iSkyType == 2)
+	{
+		t.visuals.skyindex = 0;
+		bSimulatedSky = false;
+		t.gamevisuals.bDisableSkybox = t.visuals.bDisableSkybox = true;
+	}
+
+	//NONE only possible with new t.visuals.int
+	extern wiECS::Entity g_weatherEntityID;
+	wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
+	int skyindex = 0;
+	if (t.visuals.bDisableSkybox)
+	{
+		weather->SetRealisticSky(false);
+		weather->SetVolumetricClouds(false);
+	}
+	else if (!bSimulatedSky)
+	{
+		weather->SetRealisticSky(false);
+		weather->SetVolumetricClouds(false);
+		skyindex = 1;
+	}
+	else
+	{
+		weather->SetRealisticSky(true);
+		weather->SetVolumetricClouds(true);
+		t.gamevisuals.iTimeOfday = t.visuals.iTimeOfday;
+		visuals_calcsunanglefromtimeofday(t.gamevisuals.iTimeOfday, &t.gamevisuals.SunAngleX, &t.gamevisuals.SunAngleY, &t.gamevisuals.SunAngleZ);
+		t.visuals.SunAngleX = t.gamevisuals.SunAngleX;
+		t.visuals.SunAngleY = t.gamevisuals.SunAngleY;
+		t.visuals.SunAngleZ = t.gamevisuals.SunAngleZ;
+		bRunUpdateVisual = true;
+	}
+
+	t.visuals.skyindex = skyindex;
+	g.projectmodified = 1;
+	t.visuals.skyindex = skyindex;
+	t.gamevisuals.skyindex = t.visuals.skyindex;
+
+	g.skyindex = t.visuals.skyindex;
+	t.visuals.sky_s = t.skybank_s[g.skyindex];
+	t.gamevisuals.sky_s = t.skybank_s[g.skyindex];
+	t.terrainskyspecinitmode = 0; sky_skyspec_init();
+	t.sky.currenthour_f = 8.0;
+	t.sky.daynightprogress = 0;
+
+	visuals_justshaderupdate();
+
+	// if change sky, regenerate env map
+	t.visuals.refreshskysettingsfromlua = true;
+	cubemap_generateglobalenvmap();
+	t.visuals.refreshskysettingsfromlua = false;
+
+	if (bRunUpdateVisual)
+	{
+		Wicked_Update_Visuals((void *)&t.visuals);
+	}
+
+	// when sky type changes, refresh env probes
+	extern bool g_bLightProbeScaleChanged;
+	g_bLightProbeScaleChanged = true;
+	WickedCall_UpdateProbes();
+}
+
 void imgui_Customize_Sky_V2(int mode)
 {
 	int wflags = ImGuiTreeNodeFlags_DefaultOpen;
@@ -410,82 +493,9 @@ void imgui_Customize_Sky_V2(int mode)
 		const char* sky_combo[] = { "Simulated Sky", "Sky Box" , "None" };
 		if (ImGui::Combo("##Combosky_combo", &iSkyType, sky_combo, IM_ARRAYSIZE(sky_combo)))
 		{
-			bool bRunUpdateVisual = false;
-			if (iSkyType == 0)
-			{
-				t.visuals.skyindex = 0;
-				bSimulatedSky = true;
-				t.gamevisuals.bDisableSkybox = t.visuals.bDisableSkybox = false;
-			}
-			if (iSkyType == 1)
-			{
-				t.visuals.skyindex = 1;
-				bSimulatedSky = false;
-				t.gamevisuals.bDisableSkybox = t.visuals.bDisableSkybox = false;
-			}
-			if (iSkyType == 2)
-			{
-				t.visuals.skyindex = 0;
-				bSimulatedSky = false;
-				t.gamevisuals.bDisableSkybox = t.visuals.bDisableSkybox = true;
-			}
-
-			//NONE only possible with new t.visuals.int
-			extern wiECS::Entity g_weatherEntityID;
-			wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
-			int skyindex = 0;
-			if (t.visuals.bDisableSkybox)
-			{
-				weather->SetRealisticSky(false);
-				weather->SetVolumetricClouds(false);
-			}
-			else if (!bSimulatedSky) 
-			{
-				weather->SetRealisticSky( false );
-				weather->SetVolumetricClouds( false );
-				skyindex = 1;
-			}
-			else 
-			{
-				weather->SetRealisticSky( true );
-				weather->SetVolumetricClouds( true );
-				t.gamevisuals.iTimeOfday = t.visuals.iTimeOfday;
-				visuals_calcsunanglefromtimeofday(t.gamevisuals.iTimeOfday, &t.gamevisuals.SunAngleX, &t.gamevisuals.SunAngleY, &t.gamevisuals.SunAngleZ);
-				t.visuals.SunAngleX = t.gamevisuals.SunAngleX;
-				t.visuals.SunAngleY = t.gamevisuals.SunAngleY;
-				t.visuals.SunAngleZ = t.gamevisuals.SunAngleZ;
-				bRunUpdateVisual = true;
-			}
-
-			t.visuals.skyindex = skyindex;
-			g.projectmodified = 1;
-			current_sky = t.skybank_s[skyindex].Get();//t.terrainstylebank_s[skyindex].Get();
-			t.visuals.skyindex = skyindex;
-			t.gamevisuals.skyindex = t.visuals.skyindex;
-
-			g.skyindex = t.visuals.skyindex;
-			t.visuals.sky_s = t.skybank_s[g.skyindex];
-			t.gamevisuals.sky_s = t.skybank_s[g.skyindex];
-			t.terrainskyspecinitmode = 0; sky_skyspec_init();
-			t.sky.currenthour_f = 8.0;
-			t.sky.daynightprogress = 0;
-
-			visuals_justshaderupdate();
-
-			// if change sky, regenerate env map
-			t.visuals.refreshskysettingsfromlua = true;
-			cubemap_generateglobalenvmap();
-			t.visuals.refreshskysettingsfromlua = false;
-
-			if (bRunUpdateVisual)
-			{
-				Wicked_Update_Visuals((void *)&t.visuals);
-			}
-
-			// when sky type changes, refresh env probes
-			extern bool g_bLightProbeScaleChanged;
-			g_bLightProbeScaleChanged = true;
-			WickedCall_UpdateProbes();
+			gridedit_set_sky_type(iSkyType);
+			bSimulatedSky = (t.visuals.skyindex == 0 && !t.visuals.bDisableSkybox);
+			current_sky = t.skybank_s[t.visuals.skyindex].Get();//t.terrainstylebank_s[skyindex].Get();
 		}
 
 		bool somethingChanged = false;
@@ -830,7 +840,10 @@ void imgui_Customize_Sky_V2(int mode)
 			{
 				t.visuals.SkyCloudCoverage = fTmp * 0.01f;
 				t.gamevisuals.SkyCloudCoverage = t.visuals.SkyCloudCoverage;
-				weather->volumetricCloudParameters.layerFirst.coverageMinimum = t.visuals.SkyCloudCoverage;
+				{ // DX11-era shader used saturate(CoverageMinimum - 1.0) — the UI value is 1-based
+				float ggCovMin = t.visuals.SkyCloudCoverage - 1.0f;
+				if (ggCovMin < 0.0f) ggCovMin = 0.0f; if (ggCovMin > 1.0f) ggCovMin = 1.0f;
+				weather->volumetricCloudParameters.layerFirst.coverageMinimum = ggCovMin; }
 				g.projectmodified = 1;
 				// when sky type changes, refresh env probes
 				extern bool g_bLightProbeScaleChanged;
@@ -844,7 +857,8 @@ void imgui_Customize_Sky_V2(int mode)
 				t.visuals.SkyCloudHeight = GGTerrain_MetersToUnits( cloudHeight );
 				t.gamevisuals.SkyCloudHeight = t.visuals.SkyCloudHeight;
 				//weather->cloudScale = t.visuals.SkyCloudHeight; // REMOVED
-				weather->volumetricCloudParameters.cloudStartHeight = cloudHeight;
+				// SKY FIX 2026-07-31: engine cloud heights are WORLD units (inches), not meters
+				weather->volumetricCloudParameters.cloudStartHeight = t.visuals.SkyCloudHeight;
 				g.projectmodified = 1;
 				// when sky type changes, refresh env probes
 				extern bool g_bLightProbeScaleChanged;
@@ -859,7 +873,8 @@ void imgui_Customize_Sky_V2(int mode)
 				cloudHeight = fTmp * 10.0f;
 				t.visuals.SkyCloudThickness = GGTerrain_MetersToUnits( cloudHeight );
 				t.gamevisuals.SkyCloudThickness = t.visuals.SkyCloudThickness;
-				weather->volumetricCloudParameters.cloudThickness = cloudHeight;
+				// SKY FIX 2026-07-31: engine cloud heights are WORLD units (inches), not meters
+				weather->volumetricCloudParameters.cloudThickness = t.visuals.SkyCloudThickness;
 				g.projectmodified = 1;
 				// when sky type changes, refresh env probes
 				extern bool g_bLightProbeScaleChanged;

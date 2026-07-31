@@ -1410,21 +1410,16 @@ void Wicked_Update_Shadows(void *voidvisual)
 }
 
 // Map GG's fog settings onto the new engine's exponential fog. The old API's
-// fogEnd was REMOVED in favour of fogDensity — which the port never set, so
-// fogDensity stayed 0 and distance fog was entirely OFF (no atmospheric depth
-// on distant terrain).
+// fogEnd was REMOVED in favour of fogDensity — Wicked's exponential fog
+// (fogHF.hlsli) matches the DX11 curve with density = 4 / (far - near).
 //
-// DX11 reference (GGCommonFunctions.hlsli ApplyFogCustom):
-//   amount = 1 - exp( -4 * (dist - fogMin) / (fogMax - fogMin) )
-//   colour = lerp( skyHorizonColour, FogRGB, FogOpacity )
-// Wicked's exponential fog (fogHF.hlsli) is the same curve with
-// density = 4 / (far - near). NOTE FogOpacity (FogA) only biases the COLOUR
-// in DX11 — it does NOT scale the amount — so the fog colour stays on
-// Wicked's default source: the realistic-sky horizon LUT (= DX11's
-// GetDynamicSkyColor horizon sample), falling back to weather->horizon
-// (= the Horizon/Fog RGB) when the sky is disabled — DX11's other branch.
-// The Horizon/Fog colour still tints the fog indirectly through the sky,
-// same as DX11 with low opacities.
+// SKY FIX 2026-07-31 (engine delta 1.65): the fog COLOUR model is now DX11-parity
+// inside fogHF.hlsli — realistic sky fogs toward the per-direction horizon sky
+// sample; skybox/gradient skies treat fog as an opt-in recolor toward the user
+// Horizon/Fog RGB scaled by Fog Opacity (FogA, plumbed below as gg_fog_opacity;
+// 0 = no fog, exactly DX11's "fogColor = own pixel colour" no-op). Previously the
+// engine fogged toward weather->horizon at FULL strength in skybox/None modes,
+// which painted the None-mode Horizon/Fog colour over terrain in Sky Box mode.
 static void Wicked_ApplyFogModel(wiScene::WeatherComponent* weather, visualstype* visuals)
 {
 	weather->fogStart = visuals->FogNearest_f;
@@ -1437,6 +1432,12 @@ static void Wicked_ApplyFogModel(wiScene::WeatherComponent* weather, visualstype
 	}
 	weather->fogDensity = fogDensity;
 	weather->SetOverrideFogColor(false);
+	// DX11 FogA semantics (legacy saves carry 0-255 values; DX11 clamps >2 to 0)
+	float fogA = visuals->FogA_f;
+	if (fogA > 2.0f) fogA = 0.0f;
+	if (fogA < 0.0f) fogA = 0.0f;
+	if (fogA > 1.0f) fogA = 1.0f;
+	weather->gg_fog_opacity = fogA;
 }
 
 void Wicked_Update_Fog(void* visual)
@@ -1489,10 +1490,52 @@ void Wicked_Update_Cloud(void* visual)
 		{
 			weather->volumetricCloudParameters.layerFirst.coverageAmount = visuals->SkyCloudiness;
 			weather->volumetricCloudParameters.layerFirst.windSpeed = visuals->SkyCloudSpeed;
-			weather->volumetricCloudParameters.cloudStartHeight = GGTerrain_UnitsToMeters(visuals->SkyCloudHeight);
-			weather->volumetricCloudParameters.layerFirst.coverageMinimum = visuals->SkyCloudCoverage;
-			weather->volumetricCloudParameters.cloudThickness = GGTerrain_UnitsToMeters(visuals->SkyCloudThickness);
+			// SKY FIX 2026-07-31: the cloud shader works in WORLD units (1 GG unit = 1 inch), not
+			// meters — feeding UnitsToMeters(height) put the cloud deck at ~39 real metres, a ground
+			// fog bank that painted over every distant mountain (the "sky eats the mountains" bug).
+			// Feed raw units, and scale the engine-default marching/render distances (stock values
+			// assume metres) into units too, or the march stops ~39x short of the horizon.
+			weather->volumetricCloudParameters.cloudStartHeight = visuals->SkyCloudHeight;
+			{ // DX11-era shader used saturate(CoverageMinimum - 1.0) — the UI/level value is 1-based
+				float ggCovMin = visuals->SkyCloudCoverage - 1.0f;
+				if (ggCovMin < 0.0f) ggCovMin = 0.0f; if (ggCovMin > 1.0f) ggCovMin = 1.0f;
+				weather->volumetricCloudParameters.layerFirst.coverageMinimum = ggCovMin; }
+			weather->volumetricCloudParameters.cloudThickness = visuals->SkyCloudThickness;
 			weather->volumetricCloudParameters.layerFirst.coverageWindSpeed = visuals->SkyCloudSpeed;
+			weather->volumetricCloudParameters.maxMarchingDistance = GGTerrain_MetersToUnits(30000.0f);
+			// Step density saturates once the marched span reaches this value — keep the stock
+			// 3:1 ratio to shell thickness so a vertical ray through the deck still gets ~32
+			// samples (a raw meter conversion here left it ~2 samples = invisible clouds).
+			{ float ggStepDist = 3.0f * visuals->SkyCloudThickness; weather->volumetricCloudParameters.inverseDistanceStepCount = (ggStepDist > 1000.0f) ? ggStepDist : 1000.0f; }
+			weather->volumetricCloudParameters.renderDistance = GGTerrain_MetersToUnits(70000.0f);
+			weather->volumetricCloudParameters.LODDistance = GGTerrain_MetersToUnits(30000.0f);
+			// SKY FIX 2026-07-31 (cont): the remaining meter-tuned engine defaults, rescaled to
+			// world units. horizonBlendAmount is the critical one: it is a 1/distance fade that
+			// stock-tuned completes at ~80km(m) — in an inch world that is 2 real km, which faded
+			// the entire (correctly raised) cloud deck to nothing. Noise/weather scales are
+			// 1/distance too; skew/curl modifiers and shadow step are distances; wind speeds are
+			// m/s. All scaled once here so the engine's stock look is reproduced at inch scale.
+			{
+				const float M2U = GGTerrain_MetersToUnits(1.0f); // ~39.37 units per meter
+				// extinction is per-distance (1/m): unscaled it makes the deck ~39x too
+				// optically thick = a near-black absorbing layer across the whole sky
+				weather->volumetricCloudParameters.layerFirst.extinctionCoefficient = XMFLOAT3(0.71f * 0.1f / M2U, 0.86f * 0.1f / M2U, 1.0f * 0.1f / M2U);
+				weather->volumetricCloudParameters.layerSecond.extinctionCoefficient = XMFLOAT3(0.71f * 0.01f / M2U, 0.86f * 0.01f / M2U, 1.0f * 0.01f / M2U);
+				weather->volumetricCloudParameters.horizonBlendAmount = 0.0000125f / M2U;
+				weather->volumetricCloudParameters.shadowStepLength = 3000.0f * M2U;
+				weather->volumetricCloudParameters.layerFirst.skewAlongWindDirection = 700.0f * M2U;
+				weather->volumetricCloudParameters.layerFirst.totalNoiseScale = 0.0006f / M2U;
+				weather->volumetricCloudParameters.layerFirst.curlNoiseModifier = 500.0f * M2U;
+				weather->volumetricCloudParameters.layerFirst.skewAlongCoverageWindDirection = 2500.0f * M2U;
+				weather->volumetricCloudParameters.layerFirst.weatherScale = 0.00002f / M2U;
+				weather->volumetricCloudParameters.layerSecond.skewAlongWindDirection = 400.0f * M2U;
+				weather->volumetricCloudParameters.layerSecond.totalNoiseScale = 0.0006f / M2U;
+				weather->volumetricCloudParameters.layerSecond.curlNoiseModifier = 250.0f * M2U;
+				weather->volumetricCloudParameters.layerSecond.weatherScale = 0.000025f / M2U;
+				// cloud drift: UI value is read as meters/sec, world wants units/sec
+				weather->volumetricCloudParameters.layerFirst.windSpeed = visuals->SkyCloudSpeed * M2U;
+				weather->volumetricCloudParameters.layerFirst.coverageWindSpeed = visuals->SkyCloudSpeed * M2U;
+			}
 			weather->SetRealisticSky(true);
 			weather->SetVolumetricClouds(true);
 		}
@@ -1558,10 +1601,47 @@ void Wicked_Update_Visuals(void *voidvisual)
 		{
 			weather->volumetricCloudParameters.layerFirst.coverageAmount = visuals->SkyCloudiness;
 			weather->volumetricCloudParameters.layerFirst.windSpeed = visuals->SkyCloudSpeed;
-			weather->volumetricCloudParameters.cloudStartHeight = GGTerrain_UnitsToMeters( visuals->SkyCloudHeight );
-			weather->volumetricCloudParameters.layerFirst.coverageMinimum = visuals->SkyCloudCoverage;
-			weather->volumetricCloudParameters.cloudThickness = GGTerrain_UnitsToMeters( visuals->SkyCloudThickness );
+			// SKY FIX 2026-07-31: cloud shader distances/heights are WORLD units (inches here),
+			// not meters — see Wicked_Update_Cloud for the full note.
+			weather->volumetricCloudParameters.cloudStartHeight = visuals->SkyCloudHeight;
+			{ // DX11-era shader used saturate(CoverageMinimum - 1.0) — the UI/level value is 1-based
+				float ggCovMin = visuals->SkyCloudCoverage - 1.0f;
+				if (ggCovMin < 0.0f) ggCovMin = 0.0f; if (ggCovMin > 1.0f) ggCovMin = 1.0f;
+				weather->volumetricCloudParameters.layerFirst.coverageMinimum = ggCovMin; }
+			weather->volumetricCloudParameters.cloudThickness = visuals->SkyCloudThickness;
 			weather->volumetricCloudParameters.layerFirst.coverageWindSpeed = visuals->SkyCloudSpeed;
+			weather->volumetricCloudParameters.maxMarchingDistance = GGTerrain_MetersToUnits(30000.0f);
+			// Stock 3:1 ratio to shell thickness — see Wicked_Update_Cloud note.
+			{ float ggStepDist = 3.0f * visuals->SkyCloudThickness; weather->volumetricCloudParameters.inverseDistanceStepCount = (ggStepDist > 1000.0f) ? ggStepDist : 1000.0f; }
+			weather->volumetricCloudParameters.renderDistance = GGTerrain_MetersToUnits(70000.0f);
+			weather->volumetricCloudParameters.LODDistance = GGTerrain_MetersToUnits(30000.0f);
+			// SKY FIX 2026-07-31 (cont): the remaining meter-tuned engine defaults, rescaled to
+			// world units. horizonBlendAmount is the critical one: it is a 1/distance fade that
+			// stock-tuned completes at ~80km(m) — in an inch world that is 2 real km, which faded
+			// the entire (correctly raised) cloud deck to nothing. Noise/weather scales are
+			// 1/distance too; skew/curl modifiers and shadow step are distances; wind speeds are
+			// m/s. All scaled once here so the engine's stock look is reproduced at inch scale.
+			{
+				const float M2U = GGTerrain_MetersToUnits(1.0f); // ~39.37 units per meter
+				// extinction is per-distance (1/m): unscaled it makes the deck ~39x too
+				// optically thick = a near-black absorbing layer across the whole sky
+				weather->volumetricCloudParameters.layerFirst.extinctionCoefficient = XMFLOAT3(0.71f * 0.1f / M2U, 0.86f * 0.1f / M2U, 1.0f * 0.1f / M2U);
+				weather->volumetricCloudParameters.layerSecond.extinctionCoefficient = XMFLOAT3(0.71f * 0.01f / M2U, 0.86f * 0.01f / M2U, 1.0f * 0.01f / M2U);
+				weather->volumetricCloudParameters.horizonBlendAmount = 0.0000125f / M2U;
+				weather->volumetricCloudParameters.shadowStepLength = 3000.0f * M2U;
+				weather->volumetricCloudParameters.layerFirst.skewAlongWindDirection = 700.0f * M2U;
+				weather->volumetricCloudParameters.layerFirst.totalNoiseScale = 0.0006f / M2U;
+				weather->volumetricCloudParameters.layerFirst.curlNoiseModifier = 500.0f * M2U;
+				weather->volumetricCloudParameters.layerFirst.skewAlongCoverageWindDirection = 2500.0f * M2U;
+				weather->volumetricCloudParameters.layerFirst.weatherScale = 0.00002f / M2U;
+				weather->volumetricCloudParameters.layerSecond.skewAlongWindDirection = 400.0f * M2U;
+				weather->volumetricCloudParameters.layerSecond.totalNoiseScale = 0.0006f / M2U;
+				weather->volumetricCloudParameters.layerSecond.curlNoiseModifier = 250.0f * M2U;
+				weather->volumetricCloudParameters.layerSecond.weatherScale = 0.000025f / M2U;
+				// cloud drift: UI value is read as meters/sec, world wants units/sec
+				weather->volumetricCloudParameters.layerFirst.windSpeed = visuals->SkyCloudSpeed * M2U;
+				weather->volumetricCloudParameters.layerFirst.coverageWindSpeed = visuals->SkyCloudSpeed * M2U;
+			}
 			weather->SetRealisticSky(true);
 			weather->SetVolumetricClouds(true);
 		}
