@@ -252,10 +252,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
 	{
+		// GGMAX wall-gap tracer: splits the between-frames void into
+		// [run-end -> loop-top] (return path) vs [loop-top -> runcustom-begin] (PeekMessage+branch)
+		{
+			extern void GGPerf_TraceMark(const char* name);
+			GGPerf_TraceMark("loop-top");
+		}
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
+			// GGMAX wall-gap tracer: in test game every message ALSO runs the legacy
+			// WindowProc — time each dispatch; slow ones (>2ms) get a named ledger mark and
+			// ALL dispatches feed the pump aggregate counters, so gap_trace.txt can tell a
+			// few slow handlers apart from a flood of thousands of fast messages.
+			extern unsigned long long GGPerf_TraceNowUs(void);
+			extern void GGPerf_TraceMarkId(const char* prefix, unsigned int id);
+			extern void GGPerf_TracePumpAccum(unsigned long long us);
+			unsigned long long ggDispatchT0 = GGPerf_TraceNowUs();
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
+			unsigned long long ggDispatchUs = GGPerf_TraceNowUs() - ggDispatchT0;
+			GGPerf_TracePumpAccum(ggDispatchUs);
+			if (ggDispatchUs > 2000)
+				GGPerf_TraceMarkId("wmsg", (unsigned int)msg.message);
 		}
 		else
 		{
@@ -356,8 +374,33 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	return TRUE;
 }
 
+// GGMAX wall-gap tracer: RAII timer catching EVERY WndProc invocation — including
+// inter-thread SendMessage deliveries that execute inside PeekMessage and are invisible
+// to the DispatchMessage-side counters. Slow handlers (>2ms) land in the gap ledger.
+struct GGWndProcTracer
+{
+	unsigned long long t0;
+	unsigned int m;
+	GGWndProcTracer(unsigned int m_) : m(m_)
+	{
+		extern unsigned long long GGPerf_TraceNowUs(void);
+		t0 = GGPerf_TraceNowUs();
+	}
+	~GGWndProcTracer()
+	{
+		extern unsigned long long GGPerf_TraceNowUs(void);
+		extern void GGPerf_TracePumpAccum(unsigned long long us);
+		extern void GGPerf_TraceMarkId(const char* prefix, unsigned int id);
+		unsigned long long dt = GGPerf_TraceNowUs() - t0;
+		GGPerf_TracePumpAccum(dt);
+		if (dt > 2000) GGPerf_TraceMarkId("wproc", m);
+	}
+};
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	GGWndProcTracer ggWndProcTracer((unsigned int)message);
+
 	// special IMGUI message handling
 	#ifdef ENABLEIMGUI
 	extern bool bImGuiInTestGame;

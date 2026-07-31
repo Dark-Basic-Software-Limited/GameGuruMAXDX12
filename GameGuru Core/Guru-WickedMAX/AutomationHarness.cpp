@@ -53,6 +53,10 @@ namespace wi { namespace terrain {
 	extern std::atomic<unsigned long long> gg_dbg_vt_rebuilds, gg_dbg_vt_scan_us, gg_dbg_vt_sort_us,
 		gg_dbg_vt_free, gg_dbg_vt_requests, gg_dbg_vt_reason, gg_dbg_vt_tiles;
 } }
+// GGMAX wall-gap tracer (engine wiProfiler.cpp): frame gaps >100ms dumped to gap_trace.txt
+namespace wi { namespace profiler {
+	extern std::atomic<unsigned long long> gg_trace_gap_count, gg_trace_gap_last_ms;
+} }
 
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
@@ -1351,6 +1355,9 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			wi::terrain::gg_dbg_vt_sort_us.load() / 1000.0, wi::terrain::gg_dbg_vt_free.load(),
 			wi::terrain::gg_dbg_vt_tiles.load(), wi::terrain::gg_dbg_vt_requests.load(),
 			wi::terrain::gg_dbg_vt_reason.load());
+		written += _snprintf(result + written, resultSize - written,
+			"GAPS: count=%llu last_ms=%llu (frame gaps >100ms; ledger in gap_trace.txt)\n",
+			wi::profiler::gg_trace_gap_count.load(), wi::profiler::gg_trace_gap_last_ms.load());
 	}
 
 	// Fog / atmosphere debug (level visuals + live weather component values)

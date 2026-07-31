@@ -1363,6 +1363,10 @@ bool Master::ForceRender(void* rt)
 
 void Master::RunCustom()
 {
+	// GGMAX wall-gap tracer: separates pump time from RunCustom preamble in gap_trace.txt
+	extern void GGPerf_TraceMark(const char* name);
+	GGPerf_TraceMark("runcustom-begin");
+
 	// profiling
 #ifdef OPTICK_ENABLE
 	OPTICK_FRAME("MainThread");

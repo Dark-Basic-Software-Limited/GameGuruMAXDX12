@@ -33,6 +33,17 @@ std::string GGPerf_GetCachedProfilerText() { return g_cachedProfilerText; }
 // GGMAX 1.67: main-camera poly count for the Performance HUD (latched per frame in the engine)
 uint64_t GGPerf_GetPolyCount() { return wi::renderer::GG_GetMainCameraPolyCount(); }
 
+// GGMAX wall-gap tracer bridges for old-namespace files (main.cpp pump timing / master preamble)
+unsigned long long GGPerf_TraceNowUs(void) { return wi::profiler::gg_trace_now_us(); }
+void GGPerf_TraceMarkId(const char* prefix, unsigned int id) { wi::profiler::gg_trace_mark_id(prefix, id); }
+void GGPerf_TraceMark(const char* name) { wi::profiler::gg_trace_mark(name); }
+extern std::atomic<unsigned long long> gg_dbg_pump_dispatches, gg_dbg_pump_us; // wiProfiler.cpp, global namespace
+void GGPerf_TracePumpAccum(unsigned long long us)
+{
+	gg_dbg_pump_dispatches.fetch_add(1, std::memory_order_relaxed);
+	gg_dbg_pump_us.fetch_add(us, std::memory_order_relaxed);
+}
+
 // Phase 3: Forward declarations for GG custom draw functions (terrain/trees/grass)
 extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_Prepass_Reflections(const wi::primitive::Frustum*, wi::graphics::CommandList);
