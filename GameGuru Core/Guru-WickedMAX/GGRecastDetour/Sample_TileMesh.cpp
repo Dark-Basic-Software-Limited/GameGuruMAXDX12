@@ -733,6 +733,35 @@ void Sample_TileMesh::collectSettings(BuildSettings& settings)
 	settings.tileSize = m_tileSize;
 }
 
+// GGMAX navmesh cache: restore a previously built tile set (see Sample_TileMesh.h).
+// Mirrors handleBuild's tail: adopt the navmesh, then re-init the shared nav query.
+bool Sample_TileMesh::loadNavMeshFromFile(const char* path)
+{
+	// Note: Sample_TileMesh.h declares its own (never-defined) loadAll/saveAll that
+	// shadow the implemented Sample:: versions — qualify explicitly.
+	dtNavMesh* mesh = Sample::loadAll(path);
+	if (!mesh)
+		return false;
+
+	dtFreeNavMesh(m_navMesh);
+	m_navMesh = mesh;
+
+	dtStatus status = m_navQuery->init(m_navMesh, 2048);
+	if (dtStatusFailed(status))
+	{
+		dtFreeNavMesh(m_navMesh);
+		m_navMesh = 0;
+		return false;
+	}
+	return true;
+}
+
+void Sample_TileMesh::saveNavMeshToFile(const char* path)
+{
+	if (m_navMesh)
+		Sample::saveAll(path, m_navMesh);
+}
+
 void Sample_TileMesh::buildTile(const float* pos)
 {
 	if (!m_geom) return;

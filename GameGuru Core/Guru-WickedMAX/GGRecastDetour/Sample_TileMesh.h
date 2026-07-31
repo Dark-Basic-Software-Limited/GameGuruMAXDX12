@@ -125,6 +125,12 @@ public:
 	void buildAllTiles();
 	void removeAllTiles();
 
+	// GGMAX navmesh cache (2026-07-31 load-time fix): serialize/restore the fully built
+	// tile set so unchanged levels skip the ~35s multithreaded recast rebuild on every
+	// test-game entry. Wraps the (previously unused) recast-demo saveAll/loadAll.
+	bool loadNavMeshFromFile(const char* path);
+	void saveNavMeshToFile(const char* path);
+
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.
 	Sample_TileMesh(const Sample_TileMesh&);

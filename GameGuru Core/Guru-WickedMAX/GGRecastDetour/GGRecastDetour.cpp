@@ -90,13 +90,81 @@ int GGRecastDetour::buildall (float* pVertices, uint32_t numVertices)
 		{
 			sample->handleSettings();
 
-			// build navmesh
-			ctx.resetLog();
-			if (!sample->handleBuild())
+			// GGMAX navmesh cache (2026-07-31): the full recast rebuild measured 34.5s on
+			// Horseshoe Bend (~70% of "PREPARING TEST LEVEL") and runs on EVERY test-game
+			// entry. The finished tile set is tiny to serialize, so cache it keyed by an
+			// FNV-1a hash of the input vertex soup — any level edit changes the soup,
+			// changes the hash, and misses the cache (self-invalidating; a miss just
+			// rebuilds exactly as before). Cache lives in navcache\<hash>.gnav.
+			char szCachePath[MAX_PATH];
+			szCachePath[0] = 0;
+			bool bLoadedFromCache = false;
+			if (pVertices && numVertices > 0)
 			{
-				// failed
+				unsigned long long h = 1469598103934665603ULL; // FNV-1a 64 offset basis
+				const unsigned char* pBytes = (const unsigned char*)pVertices;
+				const size_t nBytes = (size_t)numVertices * 3 * sizeof(float);
+				for (size_t i = 0; i < nBytes; ++i)
+				{
+					h ^= (unsigned long long)pBytes[i];
+					h *= 1099511628211ULL;
+				}
+				h ^= (unsigned long long)numVertices;
+				h *= 1099511628211ULL;
+				h ^= 20260731ULL; // cache-format version salt — bump to invalidate all
+
+				char szCacheDir[MAX_PATH];
+				strcpy_s(szCacheDir, MAX_PATH, "navcache");
+				GG_GetRealPath(szCacheDir, 1);
+				CreateDirectoryA(szCacheDir, NULL);
+				sprintf_s(szCachePath, MAX_PATH, "%s\\%016llx.gnav", szCacheDir, h);
+
+				bLoadedFromCache = ((Sample_TileMesh*)sample)->loadNavMeshFromFile(szCachePath);
 			}
-			ctx.dumpLog("Build log");
+
+			if (!bLoadedFromCache)
+			{
+				// build navmesh
+				ctx.resetLog();
+				if (!sample->handleBuild())
+				{
+					// failed
+				}
+				ctx.dumpLog("Build log");
+
+				// store for next time; prune the cache dir to the newest 20 files
+				if (szCachePath[0])
+				{
+					((Sample_TileMesh*)sample)->saveNavMeshToFile(szCachePath);
+
+					char szCacheDir[MAX_PATH];
+					strcpy_s(szCacheDir, MAX_PATH, "navcache");
+					GG_GetRealPath(szCacheDir, 1);
+					char szFindSpec[MAX_PATH];
+					sprintf_s(szFindSpec, MAX_PATH, "%s\\*.gnav", szCacheDir);
+					WIN32_FIND_DATAA fd;
+					HANDLE hFind = FindFirstFileA(szFindSpec, &fd);
+					int iCount = 0;
+					FILETIME ftOldest = {};
+					char szOldest[MAX_PATH];
+					szOldest[0] = 0;
+					if (hFind != INVALID_HANDLE_VALUE)
+					{
+						do
+						{
+							iCount++;
+							if (szOldest[0] == 0 || CompareFileTime(&fd.ftLastWriteTime, &ftOldest) < 0)
+							{
+								ftOldest = fd.ftLastWriteTime;
+								sprintf_s(szOldest, MAX_PATH, "%s\\%s", szCacheDir, fd.cFileName);
+							}
+						} while (FindNextFileA(hFind, &fd));
+						FindClose(hFind);
+					}
+					if (iCount > 20 && szOldest[0])
+						DeleteFileA(szOldest);
+				}
+			}
 		}
 	}
 
