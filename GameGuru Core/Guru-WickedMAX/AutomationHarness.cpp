@@ -48,6 +48,11 @@ namespace wi { namespace scene {
 	extern std::atomic<unsigned long long> gg_dbg_isect_calls, gg_dbg_isect_objects,
 		gg_dbg_isect_aabbpass, gg_dbg_isect_tris, gg_dbg_isect_skintris;
 } }
+// GGMAX diag (VT FreeSort hunt): free-list rebuild forensics (engine wiTerrain.cpp)
+namespace wi { namespace terrain {
+	extern std::atomic<unsigned long long> gg_dbg_vt_rebuilds, gg_dbg_vt_scan_us, gg_dbg_vt_sort_us,
+		gg_dbg_vt_free, gg_dbg_vt_requests, gg_dbg_vt_reason, gg_dbg_vt_tiles;
+} }
 
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
@@ -1340,6 +1345,12 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			wi::scene::gg_dbg_isect_calls.load(), wi::scene::gg_dbg_isect_objects.load(),
 			wi::scene::gg_dbg_isect_aabbpass.load(), wi::scene::gg_dbg_isect_tris.load(),
 			wi::scene::gg_dbg_isect_skintris.load());
+		written += _snprintf(result + written, resultSize - written,
+			"VT: rebuilds=%llu scan_ms=%.1f sort_ms=%.1f free=%llu tiles=%llu reqTotal=%llu reasonBits=%llu\n",
+			wi::terrain::gg_dbg_vt_rebuilds.load(), wi::terrain::gg_dbg_vt_scan_us.load() / 1000.0,
+			wi::terrain::gg_dbg_vt_sort_us.load() / 1000.0, wi::terrain::gg_dbg_vt_free.load(),
+			wi::terrain::gg_dbg_vt_tiles.load(), wi::terrain::gg_dbg_vt_requests.load(),
+			wi::terrain::gg_dbg_vt_reason.load());
 	}
 
 	// Fog / atmosphere debug (level visuals + live weather component values)
