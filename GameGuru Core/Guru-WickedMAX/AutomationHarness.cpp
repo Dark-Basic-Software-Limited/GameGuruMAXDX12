@@ -1310,6 +1310,13 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	written += _snprintf(result + written, resultSize - written,
 		"TAB_MODE: %d\n", g.tabmode);
 
+	// GGMAX 1.67: main-camera poly count (always counted, no profiler needed)
+	{
+		extern uint64_t GGPerf_GetPolyCount();
+		written += _snprintf(result + written, resultSize - written,
+			"POLYS: %llu\n", (unsigned long long)GGPerf_GetPolyCount());
+	}
+
 	// Fog / atmosphere debug (level visuals + live weather component values)
 	{
 		extern wi::ecs::Entity g_weatherEntityID;

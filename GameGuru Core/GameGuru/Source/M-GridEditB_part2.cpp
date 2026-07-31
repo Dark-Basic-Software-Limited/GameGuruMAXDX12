@@ -1158,7 +1158,16 @@ static void DisplayPerformanceData(bool* p_open)
 	{
 		// draw performance data info
 		ImGui::SetWindowFontScale(1.0);
-		ImGui::Text("FPS: %.1f (DirectX 12)", ImGui::GetIO().Framerate);
+		extern uint64_t GGPerf_GetPolyCount();
+		const uint64_t polys = GGPerf_GetPolyCount();
+		char polyStr[32];
+		if (polys >= 1000000)
+			sprintf_s(polyStr, "%.1fM", (double)polys / 1000000.0);
+		else if (polys >= 1000)
+			sprintf_s(polyStr, "%uK", (unsigned int)(polys / 1000));
+		else
+			sprintf_s(polyStr, "%u", (unsigned int)polys);
+		ImGui::Text("FPS: %.1f  POLYS: %s (DirectX 12)", ImGui::GetIO().Framerate, polyStr);
 		ImGui::Separator();
 
 		// coloured performance metrics!

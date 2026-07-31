@@ -225,7 +225,10 @@ VISIBLE_ENVPROBES: 4
 VISIBLE_EMITTERS: 0
 VISIBLE_HAIRS: 0
 TAB_MODE: 0
+POLYS: 5329606
 ```
+
+**POLYS** (2026-07-31, engine 1.67): triangles submitted to the main camera color pass (opaque+transparent, once per subset — shadow/prepass/reflection passes excluded) during the last completed frame. Always counted, no profiler needed. Same number the in-game Performance panel shows next to FPS.
 
 **Note**: SYSTEM_MEM_MB is process working set from Windows, not free RAM. VRAM_MB is dedicated GPU memory usage from DXGI. VISIBLE_* counts change per frame based on camera frustum culling.
 
@@ -249,6 +252,8 @@ GPU Frame: 7.50 ms
 ```
 
 **Profiler usage pattern**: Send `ENABLE_PROFILER`, wait 3-5 seconds for averages to stabilize, send `GET_PERF_DATA` to read the breakdown, then send `DISABLE_PROFILER` to restore full FPS.
+
+**Stable row list** (2026-07-31, engine 1.67): `GetTextData()` output is sorted by name and PERSISTENT — once a range name has been seen it stays in the printout forever (0.00 ms on frames it didn't run), so consecutive dumps always have the same row set (it can only grow when a brand-new range fires for the first time). This is what stopped the in-game Performance panel list from "jumping" as conditional ranges (TerrainW - *, RP3D-rec UpdateTex...) came and went. Caches reset when the profiler is toggled.
 
 ## TOGGLE_PROFILER (Game State)
 

@@ -30,6 +30,9 @@ namespace wi { namespace renderer {
 static std::string g_cachedProfilerText;
 std::string GGPerf_GetCachedProfilerText() { return g_cachedProfilerText; }
 
+// GGMAX 1.67: main-camera poly count for the Performance HUD (latched per frame in the engine)
+uint64_t GGPerf_GetPolyCount() { return wi::renderer::GG_GetMainCameraPolyCount(); }
+
 // Phase 3: Forward declarations for GG custom draw functions (terrain/trees/grass)
 extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_Prepass_Reflections(const wi::primitive::Frustum*, wi::graphics::CommandList);
