@@ -1231,6 +1231,11 @@ void gridedit_load_map ( void )
 	// (the intermittent Island Showdown "exploded parrot" fix)
 	WickedCall_SanitizeSkeletons();
 
+	// build CPU BVHs for all static meshes (trees/props/buildings) so LUA
+	// IntersectAll / crosshair raycasts stop brute-forcing every triangle
+	// (the test-game FPS-plummet fix, 2026-07-31) — also under the reveal cover
+	WickedCall_BuildStaticMeshBVHs();
+
 	TDRTrace("[LOADMAP] gridedit_load_map: EXIT");
 }
 

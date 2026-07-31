@@ -42,6 +42,13 @@ extern size_t g_dbgAutoLastPending;
 extern uint64_t g_dbgGrassRecycles, g_dbgGrassFullResets, g_dbgGrassRecreates;
 extern size_t g_dbgGrassDeadMeshNow;
 
+// GGMAX diag (FPS-plummet hunt): Scene::Intersects breakdown counters (engine wiScene.cpp)
+#include <atomic>
+namespace wi { namespace scene {
+	extern std::atomic<unsigned long long> gg_dbg_isect_calls, gg_dbg_isect_objects,
+		gg_dbg_isect_aabbpass, gg_dbg_isect_tris, gg_dbg_isect_skintris;
+} }
+
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
 #include "wiResourceManager.h" // REUPLOAD_TEXTURE probe (corruption hunt)
@@ -1315,6 +1322,24 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		extern uint64_t GGPerf_GetPolyCount();
 		written += _snprintf(result + written, resultSize - written,
 			"POLYS: %llu\n", (unsigned long long)GGPerf_GetPolyCount());
+	}
+
+	// GGMAX diag: cumulative ray-primitive counters for the FPS-plummet hunt.
+	// Values are running totals — diff two dumps (and their t= stamps) for rates.
+	{
+		extern unsigned long long gg_dbg_lua_isect_calls, gg_dbg_lua_isect_us, gg_dbg_lua_isect_mode[4];
+		extern unsigned long long gg_dbg_sentray4_calls, gg_dbg_sentray4_us;
+		written += _snprintf(result + written, resultSize - written,
+			"RAYS: luaIsect=%llu luaIsect_ms=%.1f modes(t/s/p/d)=%llu/%llu/%llu/%llu sentray4=%llu sentray4_ms=%.1f t=%u\n",
+			gg_dbg_lua_isect_calls, gg_dbg_lua_isect_us / 1000.0,
+			gg_dbg_lua_isect_mode[0], gg_dbg_lua_isect_mode[1], gg_dbg_lua_isect_mode[2], gg_dbg_lua_isect_mode[3],
+			gg_dbg_sentray4_calls, gg_dbg_sentray4_us / 1000.0,
+			(unsigned int)timeGetTime());
+		written += _snprintf(result + written, resultSize - written,
+			"RAYS2: isectCalls=%llu objIter=%llu aabbPass=%llu tris=%llu skinTris=%llu\n",
+			wi::scene::gg_dbg_isect_calls.load(), wi::scene::gg_dbg_isect_objects.load(),
+			wi::scene::gg_dbg_isect_aabbpass.load(), wi::scene::gg_dbg_isect_tris.load(),
+			wi::scene::gg_dbg_isect_skintris.load());
 	}
 
 	// Fog / atmosphere debug (level visuals + live weather component values)
@@ -4093,6 +4118,88 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_SKYMODE <0=simulated|1=skybox|2=none>");
 		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "RAY_COST") == 0)
+	{
+		// GGMAX diag: replicate Scene::Intersects' object loop for one ray and tally which
+		// meshes would be triangle-tested (tris, bvh?, skinned?, name). arg = up|down|fwd.
+		wi::scene::Scene& scene = wi::scene::GetScene();
+		wi::scene::CameraComponent& cam = wi::scene::GetCamera();
+		XMFLOAT3 o = cam.Eye;
+		XMFLOAT3 d = XMFLOAT3(0, 1, 0);
+		float fLen = 3000.0f;
+		if (_stricmp(arg, "down") == 0) { d = XMFLOAT3(0, -1, 0); fLen = 300.0f; }
+		else if (_stricmp(arg, "fwd") == 0) { d = cam.At; fLen = 120.0f; }
+		wi::primitive::Ray ray(XMLoadFloat3(&o), XMVector3Normalize(XMLoadFloat3(&d)), 0, fLen);
+		int written2 = _snprintf(result, sizeof(result), "RAY_COST %s from (%.0f,%.0f,%.0f) len %.0f:\n", arg[0] ? arg : "up", o.x, o.y, o.z, fLen);
+		unsigned long long totalTris = 0, totalTrisNoBvh = 0; int hitObjects = 0;
+		const size_t objectCount = std::min(scene.objects.GetCount(), scene.aabb_objects.size());
+		for (size_t i = 0; i < objectCount; ++i)
+		{
+			const wi::primitive::AABB& aabb = scene.aabb_objects[i];
+			if ((GGRENDERLAYERS_NORMAL & aabb.layerMask) == 0) continue;
+			if (!ray.intersects(aabb)) continue;
+			const wi::scene::ObjectComponent& object = scene.objects[i];
+			if (object.meshID == wi::ecs::INVALID_ENTITY) continue;
+			const wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(object.meshID);
+			if (mesh == nullptr) continue;
+			hitObjects++;
+			unsigned long long tris = (unsigned long long)(mesh->indices.size() / 3);
+			totalTris += tris;
+			bool bBvh = mesh->bvh.IsValid();
+			bool bSkin = mesh->IsSkinned() || !mesh->vertex_boneindices.empty();
+			if (!bBvh) totalTrisNoBvh += tris;
+			const wi::scene::NameComponent* nm = scene.names.GetComponent(object.meshID);
+			const wi::scene::NameComponent* no = scene.names.GetComponent(scene.objects.GetEntity(i));
+			if (written2 < (int)sizeof(result) - 256 && (tris > 200 || !bBvh))
+			{
+				written2 += _snprintf(result + written2, sizeof(result) - written2,
+					"  obj=%s mesh=%s tris=%llu bvh=%d skin=%d renderable=%d\n",
+					no ? no->name.c_str() : "?", nm ? nm->name.c_str() : "?",
+					tris, bBvh ? 1 : 0, bSkin ? 1 : 0, object.IsRenderable() ? 1 : 0);
+			}
+		}
+		if (written2 < (int)sizeof(result) - 128)
+			written2 += _snprintf(result + written2, sizeof(result) - written2,
+				"TOTAL: %d objects, %llu tris in path, %llu tris WITHOUT bvh\n", hitObjects, totalTris, totalTrisNoBvh);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "LIST_SKINNED") == 0)
+	{
+		// GGMAX diag: every object whose mesh is skinned/bone-weighted — with its world
+		// AABB — to test the "characters have giant AABBs so every ray pays them" theory.
+		wi::scene::Scene& scene = wi::scene::GetScene();
+		int written2 = _snprintf(result, sizeof(result), "SKINNED OBJECTS:\n");
+		const size_t objectCount = std::min(scene.objects.GetCount(), scene.aabb_objects.size());
+		for (size_t i = 0; i < objectCount; ++i)
+		{
+			const wi::scene::ObjectComponent& object = scene.objects[i];
+			if (object.meshID == wi::ecs::INVALID_ENTITY) continue;
+			const wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(object.meshID);
+			if (mesh == nullptr) continue;
+			if (!mesh->IsSkinned() && mesh->vertex_boneindices.empty()) continue;
+			const wi::primitive::AABB& aabb = scene.aabb_objects[i];
+			XMFLOAT3 mn = aabb.getMin(), mx = aabb.getMax();
+			const wi::scene::NameComponent* no = scene.names.GetComponent(scene.objects.GetEntity(i));
+			if (written2 < (int)sizeof(result) - 256)
+				written2 += _snprintf(result + written2, sizeof(result) - written2,
+					"  %s tris=%llu layer=%08x renderable=%d aabb=(%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)\n",
+					no ? no->name.c_str() : "?", (unsigned long long)(mesh->indices.size() / 3),
+					aabb.layerMask, object.IsRenderable() ? 1 : 0,
+					mn.x, mn.y, mn.z, mx.x, mx.y, mx.z);
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "RUN_LUA") == 0)
+	{
+		// GGMAX diag: execute a lua chunk in the live game lua state. Runs on the main
+		// thread at the harness poll point (top of GuruLoopLogic, before common_loop_logic,
+		// so never mid-script). Use 'return <expr>' to read values back.
+		extern int RunLuaString(char* pCode, char* pResultBuf, int iResultSize);
+		static char luaResult[8192];
+		int rc = RunLuaString(arg, luaResult, sizeof(luaResult));
+		_snprintf(result, sizeof(result), "%s: %s", (rc == 0) ? "OK" : "FAIL", luaResult[0] ? luaResult : "(no result)");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_VOLCLOUDS") == 0)

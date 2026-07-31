@@ -71,6 +71,7 @@ void WickedCall_DeleteImage(std::string pFilenameToLoad);
 // Functions
 void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstate);
 void WickedCall_SanitizeSkeletons(void);
+void WickedCall_BuildStaticMeshBVHs(void);
 void WickedCall_AddObject( sObject* pObject );
 void WickedCall_SetObjectSpeed(sObject* pObject, float fSpeed);
 void WickedCall_CheckAnimationDone(sObject* pObject);

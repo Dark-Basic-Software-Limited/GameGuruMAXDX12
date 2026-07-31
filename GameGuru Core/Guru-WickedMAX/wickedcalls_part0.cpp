@@ -14,6 +14,8 @@
 #include "CFileC.h"
 #include "CImageC.h"
 #include "CCameraC.h"
+#include <unordered_set>
+#include "../../../WickedEngineDX12/WickedEngine/wiTerrain.h"
 
 #include "master.h"
 extern Master master;
@@ -1367,6 +1369,59 @@ void WickedCall_SanitizeSkeletons(void)
 		sprintf_s(report, "WickedCall_SanitizeSkeletons: repaired %d corrupt bone rotations at level load\n", iFixedBones);
 		OutputDebugStringA(report);
 	}
+}
+
+void WickedCall_BuildStaticMeshBVHs(void)
+{
+	// LUA IntersectAll / SentRay4 go through Scene::Intersects which, without a per-mesh
+	// CPU BVH, brute-forces EVERY triangle of every AABB-overlapping mesh (a single
+	// 120-unit line-of-sight ray at the island spawn measured ~26ms: palm LOD0 canopies,
+	// huts, props — three such rays per frame took the whole game to 13 FPS). The DX11
+	// fork solved this with per-subset sub-AABB clusters + lowest-LOD raycasts; the new
+	// engine's native equivalent is MeshComponent::BuildBVH, which Scene::Intersects
+	// already prefers whenever mesh.bvh is valid. Build once at level-load end (under
+	// the reveal cover, same hook as SanitizeSkeletons):
+	// - skinned/softbody meshes SKIPPED (the BVH would be bind-pose; the engine never
+	//   rebuilds it, so leaves go stale under animation)
+	// - terrain chunk meshes SKIPPED (Generation_Update rebuilds their geometry as the
+	//   camera moves -> stale leaf triangle indices = out-of-bounds risk)
+	// - tiny meshes SKIPPED (brute force is already cheap)
+	// KNOWN CAVEAT: a mesh whose geometry is edited in-place after this (EBE building
+	// edits) keeps its stale BVH — picks on it go wrong until reload.
+	DWORD dwStart = timeGetTime();
+	wiScene::Scene& scene = wiScene::GetScene();
+
+	// collect terrain-owned chunk mesh ids
+	std::unordered_set<uint64_t> terrainMeshIDs;
+	for (size_t t = 0; t < scene.terrains.GetCount(); ++t)
+	{
+		const wi::terrain::Terrain& terrain = scene.terrains[t];
+		for (auto& it : terrain.chunks)
+		{
+			const wi::terrain::ChunkData& chunk_data = it.second;
+			if (chunk_data.entity == wiECS::INVALID_ENTITY) continue;
+			const wiScene::ObjectComponent* obj = scene.objects.GetComponent(chunk_data.entity);
+			if (obj && obj->meshID != wiECS::INVALID_ENTITY) terrainMeshIDs.insert((uint64_t)obj->meshID);
+		}
+	}
+
+	int iBuilt = 0, iSkippedSkinned = 0, iSkippedTerrain = 0, iSkippedSmall = 0, iAlready = 0;
+	for (size_t m = 0; m < scene.meshes.GetCount(); ++m)
+	{
+		wiScene::MeshComponent& mesh = scene.meshes[m];
+		Entity meshEntity = scene.meshes.GetEntity(m);
+		if (mesh.bvh.IsValid()) { iAlready++; continue; }
+		if (terrainMeshIDs.find((uint64_t)meshEntity) != terrainMeshIDs.end()) { iSkippedTerrain++; continue; }
+		if (mesh.IsSkinned() || !mesh.vertex_boneindices.empty() || scene.softbodies.Contains(meshEntity)) { iSkippedSkinned++; continue; }
+		if (mesh.indices.size() < 128 * 3) { iSkippedSmall++; continue; }
+		mesh.BuildBVH();
+		iBuilt++;
+	}
+
+	char report[256];
+	sprintf_s(report, "WickedCall_BuildStaticMeshBVHs: built %d mesh BVHs in %u ms (skipped: %d skinned, %d terrain-chunk, %d small, %d already)\n",
+		iBuilt, (unsigned int)(timeGetTime() - dwStart), iSkippedSkinned, iSkippedTerrain, iSkippedSmall, iAlready);
+	OutputDebugStringA(report);
 }
 
 /* removing anim bridge for performance work

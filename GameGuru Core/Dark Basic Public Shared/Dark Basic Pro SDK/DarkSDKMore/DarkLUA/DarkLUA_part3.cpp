@@ -48,6 +48,19 @@ int GetRayCollisionZ ( lua_State *L )
 	return 1;
 }
 
+// GGMAX diag: LUA Intersect* call counters (scripts run on the main thread only; read
+// via harness GET_PERF_DATA "RAYS:" line — running totals, diff two dumps for rates).
+unsigned long long gg_dbg_lua_isect_calls = 0;
+unsigned long long gg_dbg_lua_isect_us = 0;
+unsigned long long gg_dbg_lua_isect_mode[4] = { 0, 0, 0, 0 };
+static unsigned long long gg_dbg_lua_qpc_us(void)
+{
+	LARGE_INTEGER f, c;
+	QueryPerformanceFrequency(&f);
+	QueryPerformanceCounter(&c);
+	return (unsigned long long)((c.QuadPart * 1000000.0) / (double)f.QuadPart);
+}
+
 int IntersectCore (lua_State* L, int iMode)
 {
 	#ifdef OPTICK_ENABLE
@@ -111,6 +124,9 @@ int IntersectCore (lua_State* L, int iMode)
 	}
 
 	// do the expensive ray cast
+	unsigned long long ggT0 = gg_dbg_lua_qpc_us();
+	gg_dbg_lua_isect_calls++;
+	if (iMode >= 0 && iMode <= 3) gg_dbg_lua_isect_mode[iMode]++;
 	int tthitvalue = 0;
 	if ( iIgnoreTerrain == 0 && iLifeInMilliseconds != -1 && ODERayTerrain(fX, fY, fZ, fNewX, fNewY, fNewZ, true) == 1)
 	{
@@ -129,6 +145,7 @@ int IntersectCore (lua_State* L, int iMode)
 	bool bFullWickedAccuracy = true;
 	if (iMode == 2) bFullWickedAccuracy = false;
 	if (tthitvalue == 0 ) tthitvalue = IntersectAllEx(g.entityviewstartobj, g.entityviewendobj, fX, fY, fZ, fNewX, fNewY, fNewZ, iIgnoreObjNo, iMode, iIndexInIntersectDatabase, iLifeInMilliseconds, iIgnorePlayerCapsule, bFullWickedAccuracy);
+	gg_dbg_lua_isect_us += gg_dbg_lua_qpc_us() - ggT0;
 	lua_pushnumber ( L, tthitvalue );
 	return 1;
 }

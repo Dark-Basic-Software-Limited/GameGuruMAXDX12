@@ -426,27 +426,54 @@ bool WickedCall_SentRay2(float originx, float originy, float originz, float dire
 	return false;
 }
 
+// GGMAX diag: SentRay4 (wiScene::Pick) counters for the FPS-plummet hunt — running
+// totals read via harness GET_PERF_DATA "RAYS:" line. Plain adds (worker-thread races
+// only cost a tiny undercount; these are diagnostics).
+unsigned long long gg_dbg_sentray4_calls = 0;
+unsigned long long gg_dbg_sentray4_us = 0;
+static unsigned long long gg_dbg_ray_qpc_us(void)
+{
+	LARGE_INTEGER f, c;
+	QueryPerformanceFrequency(&f);
+	QueryPerformanceCounter(&c);
+	return (unsigned long long)((c.QuadPart * 1000000.0) / (double)f.QuadPart);
+}
+
 bool WickedCall_SentRay4(float originx, float originy, float originz, float directionx, float directiony, float directionz, float fDistanceOfRay, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, DWORD* pdwObjectNumberHit, bool bOpaqueOnly)
 {
 	// ray cast specifically used by game loop to find accurate position of animating objects (performant?)
+	// GGMAX 2026-07-31 FPS-plummet fix: the ray previously had no TMin/TMax, so a
+	// "120 unit" line-of-sight test actually traversed the ENTIRE island to infinity —
+	// Scene::Intersects triangle-tested every hut/tree/character along the line
+	// (~26ms per call; three LUA GetPlrLookingAt calls per frame = 13 FPS). Normalize
+	// the direction (so TMax and the AABB-prune t-scale agree in world units) and cap
+	// the ray at the requested distance.
 	RAY pickRay;
-	XMFLOAT3 direction_inverse;
+	float fDirLen = sqrtf(directionx * directionx + directiony * directiony + directionz * directionz);
+	if (fDirLen < 0.000001f) return false;
+	float fInvLen = 1.0f / fDirLen;
 	pickRay.origin.x = originx;
 	pickRay.origin.y = originy;
 	pickRay.origin.z = originz;
-	pickRay.direction.x = directionx;
-	pickRay.direction.y = directiony;
-	pickRay.direction.z = directionz;
-	XMStoreFloat3(&direction_inverse, XMVectorDivide(XMVectorReplicate(1.0f), XMVectorSet(directionx, directiony, directionz, 1.0f)));
+	pickRay.direction.x = directionx * fInvLen;
+	pickRay.direction.y = directiony * fInvLen;
+	pickRay.direction.z = directionz * fInvLen;
+	XMFLOAT3 direction_inverse;
+	XMStoreFloat3(&direction_inverse, XMVectorDivide(XMVectorReplicate(1.0f), XMVectorSet(pickRay.direction.x, pickRay.direction.y, pickRay.direction.z, 1.0f)));
 	pickRay.direction_inverse = direction_inverse;
+	pickRay.TMin = 0;
+	pickRay.TMax = fDistanceOfRay;
 	uint32_t checkType = RENDERTYPE_ALL;
 	//PE: @Lee we have no checks on transparent objects, we cant shoot glass, no impact effects , no killing pradator ...
 	if (bOpaqueOnly == true) checkType = RENDERTYPE_OPAQUE | RENDERTYPE_TRANSPARENT;
+	unsigned long long ggT0 = gg_dbg_ray_qpc_us();
 #ifdef PICKBVHTHREADED
 	wiScene::PickResult hit = wiScene::Pick(pickRay, checkType, GGRENDERLAYERS_NORMAL);
 #else
 	wiScene::PickResult hit = wiScene::Pick(pickRay, checkType, GGRENDERLAYERS_NORMAL);
 #endif
+	gg_dbg_sentray4_us += gg_dbg_ray_qpc_us() - ggT0;
+	gg_dbg_sentray4_calls++;
 	if (hit.entity > 0)
 	{
 		float fDX = hit.position.x - originx;
@@ -476,20 +503,29 @@ bool WickedCall_SentRay4(float originx, float originy, float originz, float dire
 bool WickedCall_SentRay4_ThreadSafe(float originx, float originy, float originz, float directionx, float directiony, float directionz, float fDistanceOfRay, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, DWORD* pdwObjectNumberHit, bool bOpaqueOnly)
 {
 	// ray cast specifically used by game loop to find accurate position of animating objects (performant?)
+	// GGMAX 2026-07-31: normalized + TMax-capped, same as WickedCall_SentRay4 (see comment there)
 	RAY pickRay;
-	XMFLOAT3 direction_inverse;
+	float fDirLen = sqrtf(directionx * directionx + directiony * directiony + directionz * directionz);
+	if (fDirLen < 0.000001f) return false;
+	float fInvLen = 1.0f / fDirLen;
 	pickRay.origin.x = originx;
 	pickRay.origin.y = originy;
 	pickRay.origin.z = originz;
-	pickRay.direction.x = directionx;
-	pickRay.direction.y = directiony;
-	pickRay.direction.z = directionz;
-	XMStoreFloat3(&direction_inverse, XMVectorDivide(XMVectorReplicate(1.0f), XMVectorSet(directionx, directiony, directionz, 1.0f)));
+	pickRay.direction.x = directionx * fInvLen;
+	pickRay.direction.y = directiony * fInvLen;
+	pickRay.direction.z = directionz * fInvLen;
+	XMFLOAT3 direction_inverse;
+	XMStoreFloat3(&direction_inverse, XMVectorDivide(XMVectorReplicate(1.0f), XMVectorSet(pickRay.direction.x, pickRay.direction.y, pickRay.direction.z, 1.0f)));
 	pickRay.direction_inverse = direction_inverse;
+	pickRay.TMin = 0;
+	pickRay.TMax = fDistanceOfRay;
 	uint32_t checkType = RENDERTYPE_ALL;
 	//PE: @Lee we have no checks on transparent objects, we cant shoot glass, no impact effects , no killing pradator ...
 	if (bOpaqueOnly == true) checkType = RENDERTYPE_OPAQUE | RENDERTYPE_TRANSPARENT;
+	unsigned long long ggT0 = gg_dbg_ray_qpc_us();
 	wiScene::PickResult hit = wiScene::Pick(pickRay, checkType, GGRENDERLAYERS_NORMAL);
+	gg_dbg_sentray4_us += gg_dbg_ray_qpc_us() - ggT0;
+	gg_dbg_sentray4_calls++;
 	if (hit.entity > 0)
 	{
 		float fDX = hit.position.x - originx;

@@ -1951,3 +1951,35 @@ DARKLUA_API void LuaCallSilent()
 
  }
 
+ // GGMAX diag (harness RUN_LUA): execute a lua chunk in the CURRENT game lua state on the
+ // main thread; returns 0 on success and writes tostring() of any results to pResultBuf.
+ DARKLUA_API int RunLuaString ( LPSTR pCode, LPSTR pResultBuf, int iResultSize )
+ {
+	if (pResultBuf && iResultSize > 0) pResultBuf[0] = 0;
+	if (lua2 == NULL)
+	{
+		if (pResultBuf) _snprintf(pResultBuf, iResultSize - 1, "ERROR: no lua state");
+		return -1;
+	}
+	int top = lua_gettop(lua2);
+	int status = luaL_loadstring(lua2, pCode);
+	if (status == 0) status = lua_pcall(lua2, 0, LUA_MULTRET, 0);
+	if (status != 0)
+	{
+		const char* err = lua_tostring(lua2, -1);
+		if (pResultBuf) _snprintf(pResultBuf, iResultSize - 1, "LUA ERROR: %s", err ? err : "(no message)");
+		lua_settop(lua2, top);
+		return -1;
+	}
+	int nres = lua_gettop(lua2) - top;
+	int written = 0;
+	for (int i = 1; i <= nres && pResultBuf; i++)
+	{
+		const char* s = lua_tostring(lua2, top + i); // NULL for tables/functions/nil
+		written += _snprintf(pResultBuf + written, iResultSize - 1 - written, "%s%s", (i > 1) ? " | " : "", s ? s : luaL_typename(lua2, top + i));
+		if (written >= iResultSize - 2) break;
+	}
+	lua_settop(lua2, top);
+	return 0;
+ }
+
