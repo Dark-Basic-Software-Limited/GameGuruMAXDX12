@@ -5,6 +5,7 @@
 #include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
 #include "GGTerrain/GGTerrainWicked.h"
 #include "wiProfiler.h"
+#include "wiTerrain.h" // GGMAX 1.71: gg_svt_atlas_height (setup.ini svtatlasheight)
 #include <atomic>
 
 // GGMAX delta 1.29: engine-side 30fps animation throttle flags (defined in WickedEngine/wiScene.cpp).
@@ -32,6 +33,18 @@ std::string GGPerf_GetCachedProfilerText() { return g_cachedProfilerText; }
 
 // GGMAX 1.67: main-camera poly count for the Performance HUD (latched per frame in the engine)
 uint64_t GGPerf_GetPolyCount() { return wi::renderer::GG_GetMainCameraPolyCount(); }
+
+// GGMAX 1.71: setup.ini `svtatlasheight` bridge. The terrain virtual-texture physical atlas is a
+// fixed cost (16384 tall = a 768 MB tile pool) regardless of how much a level uses, and measured
+// residency is only ~26% of it. Must be set before the atlas is created (first terrain update),
+// which is why it comes from setup.ini rather than a runtime harness command. See VRAM_CENSUS.md.
+void GGSetSVTAtlasHeight(int height)
+{
+	if (height >= 2048 && height <= 16384)
+	{
+		wi::terrain::gg_svt_atlas_height = (uint32_t)height;
+	}
+}
 
 // GGMAX wall-gap tracer bridges for old-namespace files (main.cpp pump timing / master preamble)
 unsigned long long GGPerf_TraceNowUs(void) { return wi::profiler::gg_trace_now_us(); }

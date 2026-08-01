@@ -3273,6 +3273,25 @@ void AutoHarness_CheckForCommand(void)
 		}
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_SVTATLAS") == 0)
+	{
+		// SET_SVTATLAS <height> — terrain SVT physical atlas height (engine 1.71). 16384 =
+		// stock (768 MB tile pool), 8192 = half. Measured tile residency is only ~26% of the
+		// stock atlas on every demo, so this is the lever for that fixed cost. Applies when
+		// the atlas is NEXT created: set it, then load/reload a level.
+		int svtH = atoi(arg);
+		if (svtH >= 2048 && svtH <= 16384)
+		{
+			wi::terrain::gg_svt_atlas_height = (uint32_t)svtH;
+			_snprintf(result, sizeof(result), "OK: SET_SVTATLAS %d (tile pool ~%d MB; load/reload a level to apply)",
+				svtH, (int)((768.0 * svtH) / 16384.0));
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: SET_SVTATLAS needs a height 2048..16384 (stock 16384)");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "DUMP_VRAM") == 0)
 	{
 		// DUMP_VRAM [tag] — full per-resource VRAM census (engine 1.70): every live GPU

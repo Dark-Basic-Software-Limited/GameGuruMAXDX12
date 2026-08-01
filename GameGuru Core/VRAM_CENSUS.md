@@ -106,6 +106,25 @@ the hardware — so no shader change is needed. `CreateRaytracingRenderData` ref
 BLAS from the scratch-sized region. If an RT feature is ever enabled, set the flag **before**
 level load: `CreateRenderData` bakes the buffer layout.
 
+## Measured result of the two fixes (driver-reported VRAM, in-game unless noted)
+
+| Demo | before | after | saved |
+|---|---|---|---|
+| Island Showdown | 8853 MB | 7064 MB | **−1789 MB (−20.2%)** |
+| Horseshoe Bend | 6650 MB | 5352 MB | −1298 MB (−19.5%) |
+| Zombie Cellar (editor) | 5976 MB | 4462 MB | −1513 MB (−25.3%) |
+| Switch Escape | 5968 MB | 4671 MB | −1297 MB (−21.7%) |
+
+Verification per demo: POLYS bit-identical, and the before/after screenshot delta sits at or
+below the animation noise floor. **Always establish that floor before trusting a screenshot
+diff on an animated scene** — two frames 4 s apart in one session on Island Showdown differ by
+5.9% of pixels / mean 3.62 per 765, while before-vs-after differed by mean **2.52**, i.e. less
+than the scene's own churn. Cellar and Horseshoe came in at mean 0.18 and 0.07.
+
+FPS moved only where grass exists, which is exactly what the raytracing-copy fix predicts
+(that buffer was being written every frame): Island Showdown 71.5 → 88.9 in-game and 62.2 →
+76.3 in the editor; Horseshoe Bend, which has no grass systems at all, stayed at 68 → 69.
+
 ## Ranked backlog (not applied)
 
 1. **Grass per-type over-allocation, ~4-5×.** Grass systems are created per (terrain chunk ×
@@ -116,14 +135,24 @@ level load: `CreateRenderData` bakes the buffer layout.
    `CreateFromMesh` already honours — it only emits triangles with non-zero length) *and*
    scaling `strandCount` by coverage; scaling strand count alone thins the grass, because
    uniform placement means f×strands over f×area yields f² surviving.
-2. **Terrain SVT tile pool, 768 MB fixed** (`wiTerrain.cpp`, 16384² × 4 map types, sparse).
-   **Measured residency is the interesting part: `VT:` reports `free` of `tiles=3844` as
-   2758–2954 on every demo tried — Island Showdown, Horseshoe Bend, Zombie Cellar and Switch
-   Escape all settle at roughly 890–1090 resident tiles, ~26% of the atlas.** Halving the
-   atlas height (16384 → 8192) gives 1922 tiles — still ~1.8× the observed peak — and saves
-   **384 MB**. The risk is a level whose working set exceeds it: tiles then evict and
-   re-render, which can show as terrain-detail pop under fast motion. Worth doing behind a
-   knob with a soak on the densest levels; do not ship it unmeasured.
+2. **Terrain SVT tile pool, 768 MB fixed** — *measured, wired to a switch, awaiting your soak.*
+   The atlas is 16384² × 4 sparse map types and its pool is fully committed regardless of use.
+   **Measured residency: `VT:` reports 2758–2954 free of `tiles=3844` on every demo — Island
+   Showdown, Horseshoe Bend, Zombie Cellar and Switch Escape all settle at ~890–1090 resident
+   tiles, about 26% of the atlas.**
+
+   Set **`svtatlasheight=8192` in setup.ini** to halve it (stock 16384; the value must be read
+   before the atlas is created on the first terrain update, which is why it is a setup.ini key
+   and not a harness command — engine `wi::terrain::gg_svt_atlas_height`).
+
+   Measured on Island Showdown at 8192: driver VRAM **7064 → 6664 MB (−400 MB)**, FPS 88.9 →
+   89.0, POLYS bit-identical, resident tiles unchanged at 1076 with 846 still free (44%
+   headroom), and the VT free-list rebuild got cheaper (cumulative sort 157 → 32 ms, scan
+   36 → 10 ms). Terrain crops are visually indistinguishable. **The caveat that stops me
+   shipping it as the default:** the whole-frame pixel delta (20.3% of pixels, mean 4.06/765)
+   sits above the run-to-run noise floor (7.7%, mean 3.19), so something does differ slightly.
+   A static spawn point cannot exercise the real risk anyway — **soak it with fast camera
+   travel across a big level and watch for terrain-detail pop as tiles evict.**
 3. **Transparent shadow atlas, RGBA16F → RGBA8: −80 MB** (Island). Cheap, *but* the alpha
    channel carries a depth value compared against the shadow `cmp`
    (`TRANSPARENT_SHADOWMAP_SECONDARY_DEPTH_CHECK` is defined in `objectHF.hlsli`), so 8-bit

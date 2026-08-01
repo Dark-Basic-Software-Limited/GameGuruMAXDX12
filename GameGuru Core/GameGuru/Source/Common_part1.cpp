@@ -695,6 +695,9 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: dividetexturesize = Divides the size of the loaded textures by this value. Default is 0 for no division.
 					t.tryfield_s = "dividetexturesize"; if (t.field_s == t.tryfield_s) g.gdividetexturesize = t.value1; t.newdividetexturesize = t.value1;
 
+					// DOCDOC: svtatlasheight = Height of the terrain virtual-texture physical atlas (stock 16384). 8192 halves its fixed 768MB tile pool to 384MB. Measured tile residency is only ~26% of the stock atlas, but a smaller atlas evicts sooner under fast travel - see GameGuru Core/VRAM_CENSUS.md.
+					t.tryfield_s = "svtatlasheight"; if (t.field_s == t.tryfield_s) { extern void GGSetSVTAtlasHeight(int); GGSetSVTAtlasHeight(t.value1); }
+
 					// DOCDOC: producelogfiles = Sets whether the editor and game produces .LOG files which time stamp and track events within the engine
 					t.tryfield_s = "producelogfiles"; if (t.field_s == t.tryfield_s)  g.gproducelogfiles = t.value1;
 
