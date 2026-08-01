@@ -197,52 +197,17 @@ numbers above; the visible-range benefit is reasoned from the mechanism (full-de
 7920 → 10560 inches, cull 4000 → 9500 inches) and still wants eyes on a level with grass
 painted into the distance.
 
-## Grass per-type over-allocation — FIXED 2026-08-01 (was backlog #1)
-
-Grass systems are created per (terrain chunk × distinct grass type painted in it). Each one
-used to get a flat `STAGE1_STRANDS_PER_TIER = 100000` strands spread over the **whole** chunk,
-with the simulate CS masking out the ~80% that landed on another type's cells. Five types in
-one chunk therefore cost 5 × 59.5 MB to draw one chunk's worth of grass.
-
-The fix needs **both** halves — either one alone is wrong:
-- Stamp `vertex_lengths` per type (sample the paint map at each chunk-mesh vertex) so
-  `CreateFromMesh` only emits triangles covering that type. It keeps a triangle when ANY of its
-  three vertices is set, so the mask dilates by up to one vertex ring (~80 in) — always in the
-  safe direction.
-- Scale `strandCount` by the **exact kept-triangle fraction**, computed with that same
-  any-vertex rule. Strands are placed uniformly over the kept triangle list
-  (`rng.next_uint(triangleCount)` in the simulate CS), so f × strands over f × area is
-  identical blades per square inch.
-
-Why both: scaling strands *without* restricting triangles yields f² of the original density
-(f× fewer strands, of which only f× land on the type); restricting triangles *without* scaling
-strands raises density by 1/f. Visible blade count is conserved exactly — before `N × f_cell`,
-after `(N × f_tri) × (f_cell / f_tri)`.
-
-Paint needs no new machinery: `GGGrass_TakeDirtyChunks` already erases the tier record for
-chunks the brush wrote into, forcing those grass entities to rebuild — and the rebuild re-runs
-the stamp, so newly painted cells get grass exactly as before.
-
-Kill switch `SET_GRASS coverage 0` (needs a grass rebuild). Measured A/B on The Mystery of
-Z Island, editor, same camera:
-
-| | coverage OFF (old) | coverage ON (new) |
-|---|---|---|
-| strands | 15,876,000 | **3,236,381 (−80%)** |
-| census | 9735 MB | **5390 MB** |
-| driver VRAM | 11,821 MB | **6844 MB (−4977 MB, −42%)** |
-| FPS | 71.4 | **97.3** |
-
-Density was verified numerically rather than by eye: the mean colour of a ground band reads
-R 18.75 / G 16.64 / B 8.37 on the old code and R 19.01 / G 16.55 / B 8.47 on the new — inside
-the variation between two shots of the *same* build (R 19.02 / G 16.54 / B 8.46). An 80%
-density loss would have shifted the ground decisively toward bare terrain. The whole-frame
-pixel delta is large (37%) purely because changing `strandCount` reseeds the per-strand RNG, so
-blades land in different spots: a one-time cosmetic reshuffle, not a thinning.
-
 ## Ranked backlog (not applied)
 
-1. **Terrain SVT tile pool, 768 MB fixed** — *measured, wired to a switch, awaiting your soak.*
+1. **Grass per-type over-allocation, ~4-5×.** Grass systems are created per (terrain chunk ×
+   distinct grass type painted in it), each with a flat `STAGE1_STRANDS_PER_TIER = 100000`
+   strands spread over the *whole* chunk; the shader then masks out the ~80% that land on
+   cells of another type. Five types in one chunk costs 5 × 59.5 MB to draw one chunk of
+   grass. Fixing it properly means stamping per-type `vertex_lengths` (which
+   `CreateFromMesh` already honours — it only emits triangles with non-zero length) *and*
+   scaling `strandCount` by coverage; scaling strand count alone thins the grass, because
+   uniform placement means f×strands over f×area yields f² surviving.
+2. **Terrain SVT tile pool, 768 MB fixed** — *measured, wired to a switch, awaiting your soak.*
    The atlas is 16384² × 4 sparse map types and its pool is fully committed regardless of use.
    **Measured residency: `VT:` reports 2758–2954 free of `tiles=3844` on every demo — Island
    Showdown, Horseshoe Bend, Zombie Cellar and Switch Escape all settle at ~890–1090 resident
@@ -260,14 +225,14 @@ blades land in different spots: a one-time cosmetic reshuffle, not a thinning.
    sits above the run-to-run noise floor (7.7%, mean 3.19), so something does differ slightly.
    A static spawn point cannot exercise the real risk anyway — **soak it with fast camera
    travel across a big level and watch for terrain-detail pop as tiles evict.**
-2. **Transparent shadow atlas, RGBA16F → RGBA8: −80 MB** (Island). Cheap, *but* the alpha
+3. **Transparent shadow atlas, RGBA16F → RGBA8: −80 MB** (Island). Cheap, *but* the alpha
    channel carries a depth value compared against the shadow `cmp`
    (`TRANSPARENT_SHADOWMAP_SECONDARY_DEPTH_CHECK` is defined in `objectHF.hlsli`), so 8-bit
    alpha quantises that test. Verify no MAX material actually renders into it first — if
    none does, any format is safe.
-3. **Suballocator granularity.** Blocks are 256 MB and are only released when *completely*
+4. **Suballocator granularity.** Blocks are 256 MB and are only released when *completely*
    empty, so one pinned allocation can hold a whole block. `SUBALLOC:` reports occupancy.
-4. **`texMaterialMap` / `texGrassMap` / `texTreeMap`** — 3 × 16 MB 4096² R8. The GPU copies
+5. **`texMaterialMap` / `texGrassMap` / `texTreeMap`** — 3 × 16 MB 4096² R8. The GPU copies
    are read only by the dead path (the CPU-side maps are what editing uses).
 
 ## Knobs that do NOT reduce VRAM (measured, so nobody re-chases them)

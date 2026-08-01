@@ -106,11 +106,6 @@ namespace GGGrass
 	// can schedule a texGrassMap re-upload once per frame.
 	void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen );
 
-	// GGMAX 2026-08-01 (grass VRAM): real grass type painted at a world XZ, or -1 for
-	// empty/flattened/out-of-bounds. Used to stamp a per-type vertex mask on the terrain chunk
-	// mesh so a grass entity only emits strands over the cells its own type actually covers.
-	int GGGrass_GetTypeAtWorld( float worldX, float worldZ );
-
 	// Take-and-clear: true if ScanRegion rewrote at least one pGrassMap cell since the last call.
 	// The Wicked hair simulate CS samples texGrassMap for per-strand visibility, so any in-place
 	// rewrite must be followed by a GGGrass_UploadGrassMap() or the shader keeps sampling stale

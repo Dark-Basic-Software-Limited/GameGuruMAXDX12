@@ -640,29 +640,6 @@ bool GGGrass_TakeCustomSlotsDirty()
 // if set — one 16 MB upload amortized across every chunk resolved that frame.
 static bool s_gggrass_map_upload_pending = false;
 
-// GGMAX 2026-08-01 (grass VRAM): point query of the paint map, mirroring ScanRegion's cell
-// math and encoding. Returns the real grass type at this world XZ, or -1 when the cell is
-// empty, flattened or outside the map. Deliberately does NOT auto-resolve encoded==1 (that
-// is ScanRegion's job and involves a map rewrite) — an unresolved cell reports as painted
-// under type 0 there, so here it reports -1 and simply widens nothing.
-int GGGrass_GetTypeAtWorld( float worldX, float worldZ )
-{
-	if ( !gggrass_initialised || !pGrassMap ) return -1;
-
-	const float editableSize = ggterrain_global_render_params2.editable_size;
-	const float invWorld = 0.5f / editableSize;
-	const int x = (int)floorf( ( worldX * invWorld + 0.5f ) * GGGRASS_MAP_SIZE );
-	const int z = (int)floorf( ( worldZ * invWorld + 0.5f ) * GGGRASS_MAP_SIZE );
-	if ( x < 0 || z < 0 || x >= GGGRASS_MAP_SIZE || z >= GGGRASS_MAP_SIZE ) return -1;
-
-	const uint8_t v = pGrassMap[ z * GGGRASS_MAP_SIZE + x ];
-	if ( v == 0 || ( v & 0x80 ) ) return -1;   // empty or flattened
-	const uint8_t encoded = v & 0x7F;
-	if ( encoded < 2 ) return -1;              // 1 == unresolved Match-Terrain-Color marker
-	const uint32_t typeIdx = (uint32_t)( encoded - 2 );
-	return ( typeIdx < GGGRASS_TOTAL_REAL_TYPES ) ? (int)typeIdx : -1;
-}
-
 void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen )
 {
 	if ( !gggrass_initialised || !pGrassMap || !typesSeen ) return;

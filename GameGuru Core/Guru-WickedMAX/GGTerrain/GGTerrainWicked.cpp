@@ -92,18 +92,8 @@ static constexpr uint32_t GG_GRASS_SETTLE_FRAMES = 30;
 // lodChunks chunk-distances from the camera. Only the near chunks are dense, so total strands stay
 // bounded — VRAM-safe even during the load burst that previously crashed the driver (full density
 // across many streaming chunks). A fully-grassy chunk has ~4489 verts; strands = grassyVerts*blades.
-// NOTE (2026-08-01 VRAM census): these two are DEAD — settable via SET_GRASS but never read.
-// The strand count comes from STAGE1_STRANDS_PER_TIER in ProcessGrassChunks. Left in place only
-// because the SET_GRASS keys are documented; do not reason about VRAM from them.
 static uint32_t g_grassBladesPerVertex = 120;  // near-tier blades/vertex (LOD keeps total bounded)
 static uint32_t g_grassMaxStrands = 350000;    // per-chunk strand cap (split across used types)
-// GGMAX 2026-08-01: per-type coverage scaling. Each (chunk x painted grass type) used to get a
-// full 100K-strand allocation spanning the WHOLE chunk, with the shader masking out the ~80% of
-// strands that landed on another type's cells — on Z Island that made grass 51% of all VRAM.
-// With this on, the entity's vertex mask is stamped for its own type and the strand count is
-// scaled by the exact kept-triangle fraction, so blades per square inch are unchanged.
-// Kill switch for A/B: SET_GRASS coverage 0 (needs a grass rebuild to take effect).
-static bool     g_grassCoverageScaling = true;
 // Manual outer-ring override in chunk-distances, used by the SET_GRASS lodchunks automation key
 // when non-zero. Otherwise the outer ring is derived from gggrass_global_params.lod_dist
 // (the editor's Grass Draw Distance slider). Zero = follow slider.
@@ -1742,63 +1732,11 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			wi::scene::MaterialComponent* mat = BuildGrassMaterial(t);
 			if (!mat) continue;
 
-			// vertex_lengths: historically all 1.0 forever, so CreateFromMesh kept EVERY chunk
-			// triangle and the per-strand shader sample was the sole visibility authority. That
-			// is correct but expensive: with N grass types painted in one chunk, each of the N
-			// entities spread a full 100K-strand allocation (59.5 MB) over the whole chunk and
-			// the shader then zeroed the ~80% of strands sitting on another type's cells. On
-			// The Mystery of Z Island that made grass 4.3 GB — 51% of the level's entire VRAM.
-			//
-			// GGMAX 2026-08-01: stamp the mask per type instead. CreateFromMesh keeps a triangle
-			// if ANY of its three vertices is non-zero, so this dilates by up to one vertex ring
-			// (~80 in) — deliberately generous, it can only keep MORE grass than painted.
-			// Strand count is then scaled by the EXACT kept-triangle fraction below, which is
-			// what preserves density: strands land uniformly over the kept triangle list, so
-			// f x strands over f x area is the same blades per square inch as before. Scaling
-			// strands WITHOUT restricting the triangles would thin the grass to f^2 — both
-			// halves are required, and neither alone is safe.
+			// vertex_lengths = all 1.0 forever. CreateFromMesh keeps every chunk triangle in the
+			// index buffer (triangleCount = constant); the per-strand shader sample (Stage B.3) is
+			// the sole visibility authority. Paint events do not touch this entity again.
 			wi::vector<float> vertex_lengths;
-			float keptTriFraction = 1.0f;
-			if (g_grassCoverageScaling && pc.mesh != nullptr && !pc.mesh->vertex_positions.empty())
-			{
-				const size_t vcount = pc.mesh->vertex_positions.size();
-				vertex_lengths.resize(vcount, 0.0f);
-				const XMMATRIX chunkWorld = XMLoadFloat4x4(&pc.world);
-				for (size_t vi = 0; vi < vcount; vi++)
-				{
-					XMVECTOR p = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), chunkWorld);
-					XMFLOAT3 w; XMStoreFloat3(&w, p);
-					if (GGGrass::GGGrass_GetTypeAtWorld(w.x, w.z) == (int)t)
-						vertex_lengths[vi] = 1.0f;
-				}
-
-				// Exact kept-triangle fraction, using CreateFromMesh's own any-vertex rule, so
-				// the strand scale matches the emitter area the engine will actually build.
-				uint32_t triTotal = 0, triKept = 0;
-				uint32_t firstSubset = 0, lastSubset = 0;
-				pc.mesh->GetLODSubsetRange(0, firstSubset, lastSubset);
-				for (uint32_t s = firstSubset; s < lastSubset; ++s)
-				{
-					const wi::scene::MeshComponent::MeshSubset& subset = pc.mesh->subsets[s];
-					for (size_t i = 0; i + 2 < subset.indexCount; i += 3)
-					{
-						const uint32_t i0 = pc.mesh->indices[subset.indexOffset + i + 0];
-						const uint32_t i1 = pc.mesh->indices[subset.indexOffset + i + 1];
-						const uint32_t i2 = pc.mesh->indices[subset.indexOffset + i + 2];
-						triTotal++;
-						if (vertex_lengths[i0] > 0 || vertex_lengths[i1] > 0 || vertex_lengths[i2] > 0)
-							triKept++;
-					}
-				}
-				if (triTotal > 0 && triKept > 0)
-					keptTriFraction = (float)triKept / (float)triTotal;
-				else
-					vertex_lengths.assign(vcount, 1.0f); // nothing resolved — fall back to stock
-			}
-			else
-			{
-				vertex_lengths.resize(wi::terrain::vertexCount, 1.0f);
-			}
+			vertex_lengths.resize(wi::terrain::vertexCount, 1.0f);
 
 			wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
 			wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
@@ -1816,12 +1754,10 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			hair.grass_map_origin_z = 0.0f;
 			hair.grass_visibility_texture = GGGrass::GGGrass_GetMapTexture();
 
-			// Strand count per tier, now scaled by the kept-triangle fraction stamped above so
-			// blades-per-square-inch is unchanged while the allocation tracks the area this type
-			// actually covers. Without the mask this was a flat 100K per (chunk x type).
+			// Fixed strand count per tier — independent of paint state, so painting a new type
+			// into the chunk never perturbs an existing entity's strandCount.
 			constexpr uint32_t STAGE1_STRANDS_PER_TIER = 100000;
-			float strandsF = STAGE1_STRANDS_PER_TIER * GrassTierDensityScale(pc.tier) * keptTriFraction;
-			uint32_t strands = (uint32_t)(strandsF + 0.5f);
+			uint32_t strands = (uint32_t)(STAGE1_STRANDS_PER_TIER * GrassTierDensityScale(pc.tier) + 0.5f);
 			if (strands < 1024) strands = 1024;
 			hair.strandCount = strands;
 
@@ -1899,7 +1835,6 @@ void GGTerrainWicked_SetGrassParam(const char* param, float value)
 	else if (p == "blades")     g_grassBladesPerVertex = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "maxstrands") g_grassMaxStrands = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "drawdist")   GGGrass::gggrass_global_params.lod_dist = value; // the actual editor "Grass Draw Distance" slider (750..7000)
-	else if (p == "coverage")   g_grassCoverageScaling = (value != 0.0f);       // per-type coverage-scaled strands (default 1)
 	else if (p == "lodchunks")  g_grassLODChunksOverride = value;     // hard override outer ring (0 = follow slider)
 	else if (p == "tier3")      g_grassTier3Chunks = std::max(0.5f, value); // full-density ring in chunk-distances
 	else if (p == "tier2")      g_grassTier2Chunks = std::max(0.5f, value); // mid-density ring in chunk-distances
