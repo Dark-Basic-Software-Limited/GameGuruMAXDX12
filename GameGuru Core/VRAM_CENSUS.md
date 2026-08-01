@@ -207,6 +207,38 @@ still the level to worry about, because half of it is one over-allocating system
 
 ## Ranked backlog (not applied)
 
+### CONTENT: 967 single-mip DDS = 5.5 GB that can never stream (measured 2026-08-01)
+
+Scanning all **12,561 DDS under `Files\entitybank`** (`tools/ddsscan.py`): **967 files larger
+than the 64 KB streaming floor have `mipMapCount = 1`, totalling 5,510 MB.** Texture streaming
+cannot touch any of them — the engine rejects single-mip textures outright — so each one sits at
+full size in VRAM for as long as its entity is loaded.
+
+This is much bigger than the earlier "39 files (Aztec Witches)" note, which undercounted badly.
+
+The worst offenders are character skins with **no mip chain at all**:
+
+| Size | Dimensions | File |
+|---|---|---|
+| 64 MB | 4096² | `Aztec Game Kit\Characters\Aztec Priest0.dds` (and `Priest1`) |
+| 64 MB | 4096² | `Bonus Assets\Futuristic Girl0.dds`, `Futuristic Guy0.dds` |
+| 64 MB | 4096² | `indianstrikeforce\charactercreatorplus\isis soldier0.dds`, `loc 10`, `loc shotgun0` |
+| 64 MB | 8192² DXT5 | `junglefever\waterfall 8x8.dds` |
+| 32 MB | 8192×4096 DXT5 | `junglefever\splash 8x8.dds` |
+
+Aztec Game Kit alone therefore carries 128 MB of un-streamable, un-mipped character texture —
+which also explains part of why it is #2 in the VRAM table at 8.1 GB.
+
+Missing mips are not only a VRAM problem: a 4096² texture with no mip chain **aliases and
+shimmers** at any distance, and costs full sampling bandwidth up close and far away alike.
+**Authoring mip chains on these 967 files is a content-side change that needs no code**, and it
+converts 5.5 GB of fixed cost into demand-adaptive streaming. Highest value per effort in the
+whole backlog after grass.
+
+For the full picture the same scan reports the cost of the 1.73 block-alignment fix:
+**4.0 MB across all 12,561 files** (21 files affected, 17 of them 500×500 DXT1). The fix is
+effectively free.
+
 ### THE RETRY: one hair system per chunk (verified feasible 2026-08-01)
 
 **Placement comes out bit-identical — not "statistically equivalent" — which is exactly the
