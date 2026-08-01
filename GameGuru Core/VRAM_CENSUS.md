@@ -125,15 +125,66 @@ FPS moved only where grass exists, which is exactly what the raytracing-copy fix
 (that buffer was being written every frame): Island Showdown 71.5 → 88.9 in-game and 62.2 →
 76.3 in the editor; Horseshoe Bend, which has no grass systems at all, stayed at 68 → 69.
 
-## Where the grass-heavy demos ended up (in game, all three fixes)
+## FAILED ATTEMPT — grass coverage scaling, REVERTED 2026-08-01 (read before retrying)
 
-| Demo | start of 2026-08-01 | after dead-VT + RT-copy | after coverage scaling |
-|---|---|---|---|
-| The Mystery of Z Island | ~12.8 GB (est.) | 10207 MB | **7251 MB** |
-| Jungle Fever | ~9.6 GB (est.) | 7682 MB | **5665 MB** |
-| Island Showdown | 8853 MB | 7064 MB | **5557 MB (−37%)** |
+An attempt at backlog item 1 shipped and was reverted the same day because it **visibly wrecked
+the grass**: dense meadow became "spaced-out bunches" at Grass Density 100. Reverted in game
+`5b768138` / `6f4bde82` / `c25fa958` and engine `2b9b989f`. The numbers it produced were real
+(Z Island 10207 → 7251 MB in game, −29%) — the grass was simply wrong, so they are worthless.
 
-FPS in game rose with each step where grass exists (Z Island 93.5 → 101.4 on the last one).
+**What it did:** stamped `vertex_lengths` per grass type by point-sampling the paint map at each
+chunk-mesh vertex, then scaled `strandCount` by the resulting kept-triangle fraction.
+
+**Why it broke.** Chunk meshes are 67×67 vertices over a 5280-inch chunk — **one sample every
+~80 inches (~2 m)**. The grass paint map is far finer (cells of a few units). Worse, **Match
+Terrain Color** — ticked on ordinary levels — auto-resolves grass type *per cell*, so several
+types interleave at cell resolution. Point-sampling that at 2 m spacing catches only the
+vertices that happen to land on a given type's cells, so the kept-triangle fraction collapses
+far below true coverage, strand count collapses with it, and the shader's per-cell mask is left
+wanting grass in places where no strands were ever allocated. Hence clumps.
+
+The conservation argument (`N × f_cell` before, `(N × f_tri) × (f_cell / f_tri)` after) is
+algebraically fine but **conditional on the mask faithfully representing the painted area** —
+the one thing that was never tested.
+
+### What NOT to do next time
+
+1. **Do not derive grass coverage from per-vertex point samples of the paint map.** Chunk
+   vertices are ~2 m apart and the paint map is far finer. Any mask built that way
+   under-reports coverage, badly, on interleaved paint.
+2. **Do not use a mean-colour / average-brightness proxy as proof that density is unchanged.**
+   It cannot tell "same amount of grass, redistributed into clumps" from "evenly spread grass" —
+   which is precisely the failure that occurred, and precisely why it passed. If placement
+   changes, measure *spatial* statistics (per-tile coverage variance / gap-size distribution),
+   or look at several viewpoints with fresh eyes.
+3. **Do not validate a grass placement change on one camera in one level.** Levels differ
+   enormously: hand-painted single-type regions behave nothing like Match-Terrain-Color
+   interleaving. Test at minimum one of each, at Grass Density 100, close to the camera.
+4. **Do not let a conservation proof stand in for measurement** when it rests on an assumption
+   you have not measured. State the assumption, then go and test *that*.
+5. **Do not change the emitter mask and `strandCount` in one step without checking each
+   independently.** They multiply (f vs f²), so an error in one is easily misread as success.
+6. **Do not conclude "painting still works" from the existence of a rebuild path.** Verify the
+   rendered result after a real stroke, at cell resolution.
+
+### Safer approaches for the retry
+
+- **Conservative (dilated) mask.** Mark a vertex covered if *any* cell of that type lies within
+  its neighbourhood — an area-max, not a point sample. It can only ever keep MORE triangles than
+  needed, so density can never drop; savings then appear exactly where a type occupies a
+  distinct region, which is where the waste actually is. Safe by construction.
+- **One hair system per chunk instead of one per type** (the structural fix). The simulate CS
+  already samples the paint map per strand and knows each strand's cell type; the *only* reason
+  for N systems is N materials/textures. Drive the blade texture from a texture array indexed by
+  that per-strand cell type and one system serves every type in the chunk — a true 1/N saving
+  with zero change to placement or density. Bigger job (material/atlas + shader), no density risk.
+- **Attack bytes per strand, not strand count.** Position data is ~64% of each 59.5 MB system
+  and the raytracing copy is already gone (−20%). `vb_pos[0]/[1]` are forced FP32 for sway
+  quality; a narrower-but-not-16-bit format could halve them without touching placement — mind
+  the choppy-sway history that forced FP32 in the first place.
+- **Build the instrument first.** A per-cell "grass coverage histogram" probe (allocated and
+  drawn strands per region) would have caught this in one run. Any future placement change
+  should be gated on that, not on screenshots.
 
 ## Cross-demo picture after the first two fixes (in-game)
 
@@ -156,14 +207,15 @@ still the level to worry about, because half of it is one over-allocating system
 
 ## Ranked backlog (not applied)
 
-1. **Grass per-type over-allocation, ~4-5×.** Grass systems are created per (terrain chunk ×
-   distinct grass type painted in it), each with a flat `STAGE1_STRANDS_PER_TIER = 100000`
-   strands spread over the *whole* chunk; the shader then masks out the ~80% that land on
-   cells of another type. Five types in one chunk costs 5 × 59.5 MB to draw one chunk of
-   grass. Fixing it properly means stamping per-type `vertex_lengths` (which
-   `CreateFromMesh` already honours — it only emits triangles with non-zero length) *and*
-   scaling `strandCount` by coverage; scaling strand count alone thins the grass, because
-   uniform placement means f×strands over f×area yields f² surviving.
+1. **Grass per-type over-allocation, ~4-5× — still the biggest single item in the game.**
+   Grass systems are created per (terrain chunk × distinct grass type painted in it), each with
+   a flat `STAGE1_STRANDS_PER_TIER = 100000` strands spread over the *whole* chunk; the shader
+   then masks out the ~80% that land on cells of another type. Five types in one chunk costs
+   5 × 59.5 MB to draw one chunk of grass. On The Mystery of Z Island that is **4.3 GB, 51% of
+   the level's entire VRAM**. **One attempt already failed and was reverted — read the FAILED
+   ATTEMPT section above before touching this**, in particular the do-not list and the safer
+   approaches (dilated mask; or one system per chunk with a per-strand texture-array lookup,
+   which carries no density risk at all).
 2. **Terrain SVT tile pool, 768 MB fixed** — *measured, wired to a switch, awaiting your soak.*
    The atlas is 16384² × 4 sparse map types and its pool is fully committed regardless of use.
    **Measured residency: `VT:` reports 2758–2954 free of `tiles=3844` on every demo — Island
