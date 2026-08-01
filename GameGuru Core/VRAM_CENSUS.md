@@ -125,6 +125,25 @@ FPS moved only where grass exists, which is exactly what the raytracing-copy fix
 (that buffer was being written every frame): Island Showdown 71.5 → 88.9 in-game and 62.2 →
 76.3 in the editor; Horseshoe Bend, which has no grass systems at all, stayed at 68 → 69.
 
+## Cross-demo picture on the fixed build (in-game)
+
+| Demo | census | driver | grass buffers | grass share |
+|---|---|---|---|---|
+| The Mystery of Z Island | 8351 MB | **10207 MB** | 4297 MB | **51%** |
+| Jungle Fever | 5765 MB | 7682 MB | 2403 MB | 42% |
+| Island Showdown | 4930 MB | 7064 MB | 1659 MB | 34% |
+| Operation Amazon | 4850 MB | 6632 MB | 963 MB | 20% |
+| Snowy Mountain Stroll | 3449 MB | 5491 MB | 333 MB | 10% |
+| A Grand Canyon Adventure | 3353 MB | 5229 MB | 506 MB | 15% |
+| Horseshoe Bend | 3301 MB | 5352 MB | 0 | 0% |
+| Zombie Cellar | 3083 MB | 4462 MB | 816 MB | 26% |
+| Switch Escape | 2613 MB | 4671 MB | 0 | 0% |
+
+The spread is almost entirely grass. Everything else is now within a few hundred MB of a
+fixed floor (~2.4 GB of engine/terrain machinery + content). **Z Island would have been
+~12.8 GB of driver VRAM before tonight's fixes** — over budget on an 8 GB card — and it is
+still the level to worry about, because half of it is one over-allocating system.
+
 ## Ranked backlog (not applied)
 
 1. **Grass per-type over-allocation, ~4-5×.** Grass systems are created per (terrain chunk ×
