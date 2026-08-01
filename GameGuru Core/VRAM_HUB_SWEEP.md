@@ -93,6 +93,52 @@ draws 74 k in 7.7 GB. Do not use scene complexity as a VRAM proxy — measure.
 | Transparent shadow atlas RGBA8 | −80 to −256 MB | ~−3 GB | verify the alpha-depth test first |
 | Mesh suballocator granularity | −0 to 512 MB | varies | fragmentation-dependent |
 
+## Verification sweep, streaming ON, after the 1.73 fix (2026-08-01 evening)
+
+**All 19 demos reach the editor. Zero crashes, zero `guard_rejects`, `stream_guard.txt` never
+created.** Cold launch per demo, same method as the table above.
+
+Two independent checks that each level genuinely loaded rather than the process merely surviving:
+every driver-VRAM figure lands within **±1.2%** of the pre-fix streaming-on sweep, and the
+per-demo enrolled/resident counters are all populated.
+
+| # | Demo | driver MB | enrolled | resident MB | full MB | reclaimed MB | replaced | guard_rejects |
+|---|---|---|---|---|---|---|---|---|
+| 1 | The Mystery of Z Island | **10086** | 329 | 67.4 | 1284.4 | 1217 | 179 | 0 |
+| 2 | Aztec Game Kit | **8117** | 346 | 195.5 | 1389.3 | 1194 | 111 | 0 |
+| 3 | Jungle Fever | **7714** | 338 | 92.6 | 1508.7 | 1416 | 280 | 0 |
+| 4 | Canyon Offensive | **7001** | 352 | 61.7 | 1126.3 | 1065 | 33 | 0 |
+| 5 | Operation Amazon | **6592** | 199 | 84.2 | 624.2 | 540 | 285 | 0 |
+| 6 | Foggy Forest | **6533** | 293 | 41.2 | 1146.2 | 1105 | 198 | 0 |
+| 7 | RPG Template | **6222** | 132 | 8.7 | 406.3 | 398 | 31 | 0 |
+| 8 | River Raiders | **5703** | 397 | 42.0 | 1213.5 | 1172 | 483 | 0 |
+| 9 | Indian Strike Force | **5626** | 643 | 21.5 | 1493.3 | 1472 | 220 | 0 |
+| 10 | Aztec Game Kit Teaser | **5602** | 257 | 62.4 | 1286.8 | 1224 | 213 | 0 |
+| 11 | Disruption | **5428** | 216 | 47.3 | 511.3 | 464 | 83 | 0 |
+| 12 | Bounty | **5400** | 227 | 39.1 | 862.0 | 823 | 287 | 0 |
+| 13 | Snowy Mountain Stroll | **5324** | 263 | 62.4 | 745.0 | 683 | 162 | 0 |
+| 14 | Horseshoe Bend | **5300** | 383 | 47.5 | 1382.8 | 1335 | 26 | 0 |
+| 15 | Island Showdown | **5240** | 202 | 7.8 | 638.7 | 631 | 152 | 0 |
+| 16 | A Grand Canyon Adventure | **5202** | 136 | 8.9 | 529.2 | 520 | 16 | 0 |
+| 17 | Trapped | **4750** | 116 | 9.7 | 490.8 | 481 | 12 | 0 |
+| 18 | Escape from the Zombie Cellar | **4671** | 152 | 75.7 | 595.8 | 520 | 31 | 0 |
+| 19 | Switch Escape | **4580** | 198 | 76.9 | 481.1 | 404 | 116 | 0 |
+
+**"reclaimed" = `full_mb − resident_mb`**: what the enrolled textures would occupy at full mip
+chains versus what is actually resident. Streaming is holding back **16.7 GB across the hub,
+mean 877 MB per demo**, ranging 398 MB (RPG Template) to 1472 MB (Indian Strike Force).
+
+`replaced` is now in the sane 12–483 range everywhere. Before the no-progress fix, Trapped alone
+read **260,468** — it was rebuilding byte-identical textures every streaming pass.
+
+Also verified in one session: three level loads plus a test-game round trip (the travel-churn
+path the 1.44 reload guard and 1.47 allocator fix exist for) — no crash, `guard_rejects=0`,
+no `resource_hijack.txt`, and **zero `OVERLAP-ALLOC` / `OOB-ALLOC`** in the allocator ledger.
+
+> Reading `alloc_tripwire.txt`: it is a **ledger**, not a fire-only tripwire. It is always
+> non-empty (A/D/R allocate-defer-release lines, easily 100+ MB). Only `OVERLAP-ALLOC` and
+> `OOB-ALLOC` lines indicate a real problem — grep for those, never test the file for emptiness.
+
 ## The sweep found a CRASH, and it was ours — now FIXED (engine 1.73)
 
 **Trapped** and **RPG Template** did not reach the editor. Both died ~15 s into the level load

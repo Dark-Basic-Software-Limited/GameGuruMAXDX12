@@ -5,6 +5,8 @@
 #include <sstream>
 #include <fstream>
 #include <filesystem>
+#include <cstdio>   // _snprintf_s in the SEH-guarded stack walk (no C++ objects allowed there)
+#include <cstring>
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -29,6 +31,90 @@ std::string GetTimestamp()
     return std::string(buffer);
 }
 
+
+// Walk and symbolize the faulting thread's stack into a plain char buffer.
+//
+// Deliberately its own function with NO C++ objects that need unwinding, because that is the
+// only way MSVC will allow __try/__except here. The guard matters: StackWalk64 follows the same
+// stack memory that just caused an access violation, and dbghelp is not guaranteed safe against
+// a corrupted frame chain. If the walk faults we keep whatever frames were already written and
+// still emit the rest of the crash report, instead of losing the report entirely.
+static void WalkStackGuarded(HANDLE process, const CONTEXT* sourceContext, char* out, size_t outSize)
+{
+    __try
+    {
+        CONTEXT walkContext = *sourceContext;
+        STACKFRAME64 frame = {};
+        frame.AddrPC.Offset = walkContext.Rip;
+        frame.AddrPC.Mode = AddrModeFlat;
+        frame.AddrFrame.Offset = walkContext.Rbp;
+        frame.AddrFrame.Mode = AddrModeFlat;
+        frame.AddrStack.Offset = walkContext.Rsp;
+        frame.AddrStack.Mode = AddrModeFlat;
+
+        // SYMBOL_INFO is variable-length: the name is written past the end of the struct.
+        char symbolBuffer[sizeof(SYMBOL_INFO) + 1024] = {};
+        SYMBOL_INFO* symbol = (SYMBOL_INFO*)symbolBuffer;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbol->MaxNameLen = 1023;
+
+        size_t used = 0;
+        for (int depth = 0; depth < 48; ++depth)
+        {
+            if (!StackWalk64(IMAGE_FILE_MACHINE_AMD64, process, GetCurrentThread(),
+                             &frame, &walkContext, NULL,
+                             SymFunctionTableAccess64, SymGetModuleBase64, NULL))
+            {
+                break;
+            }
+            if (frame.AddrPC.Offset == 0)
+                break;
+            if (used + 512 >= outSize)
+                break;
+
+            DWORD64 symDisplacement = 0;
+            const bool haveSym = (SymFromAddr(process, frame.AddrPC.Offset, &symDisplacement, symbol) != FALSE);
+
+            IMAGEHLP_LINE64 frameLine = { 0 };
+            frameLine.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+            DWORD lineDisplacement = 0;
+            const bool haveLine = (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &lineDisplacement, &frameLine) != FALSE);
+
+            int written = _snprintf_s(out + used, outSize - used, _TRUNCATE,
+                "  [%d] 0x%llx  %s",
+                depth, (unsigned long long)frame.AddrPC.Offset,
+                haveSym ? symbol->Name : "<no symbol>");
+            if (written < 0) break;
+            used += (size_t)written;
+
+            if (haveSym)
+            {
+                written = _snprintf_s(out + used, outSize - used, _TRUNCATE,
+                    " + 0x%llx", (unsigned long long)symDisplacement);
+                if (written < 0) break;
+                used += (size_t)written;
+            }
+            if (haveLine)
+            {
+                written = _snprintf_s(out + used, outSize - used, _TRUNCATE,
+                    "  (%s:%lu)", frameLine.FileName, (unsigned long)frameLine.LineNumber);
+                if (written < 0) break;
+                used += (size_t)written;
+            }
+            written = _snprintf_s(out + used, outSize - used, _TRUNCATE, "\r\n");
+            if (written < 0) break;
+            used += (size_t)written;
+        }
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        // Whatever frames made it into `out` are still worth having.
+        const char* note = "  <stack walk faulted - frames above are all that could be recovered>\r\n";
+        size_t len = strlen(out);
+        if (outSize > len + strlen(note) + 1)
+            strcpy_s(out + len, outSize - len, note);
+    }
+}
 
 // Crash handler
 LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
@@ -150,55 +236,13 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     // that gets called from a hundred places.
     log << "---- CALL STACK (faulting thread) ----\r\n";
     {
-        CONTEXT walkContext = *pExceptionInfo->ContextRecord;
-        STACKFRAME64 frame = {};
-        frame.AddrPC.Offset = walkContext.Rip;
-        frame.AddrPC.Mode = AddrModeFlat;
-        frame.AddrFrame.Offset = walkContext.Rbp;
-        frame.AddrFrame.Mode = AddrModeFlat;
-        frame.AddrStack.Offset = walkContext.Rsp;
-        frame.AddrStack.Mode = AddrModeFlat;
-
-        // SYMBOL_INFO is variable-length: the name is written past the end of the struct.
-        char symbolBuffer[sizeof(SYMBOL_INFO) + 1024] = {};
-        SYMBOL_INFO* symbol = (SYMBOL_INFO*)symbolBuffer;
-        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-        symbol->MaxNameLen = 1023;
-
-        for (int depth = 0; depth < 48; ++depth)
-        {
-            if (!StackWalk64(IMAGE_FILE_MACHINE_AMD64, process, GetCurrentThread(),
-                             &frame, &walkContext, NULL,
-                             SymFunctionTableAccess64, SymGetModuleBase64, NULL))
-            {
-                break;
-            }
-            if (frame.AddrPC.Offset == 0)
-            {
-                break;
-            }
-
-            log << "  [" << std::dec << depth << "] 0x" << std::hex << frame.AddrPC.Offset;
-
-            DWORD64 symDisplacement = 0;
-            if (SymFromAddr(process, frame.AddrPC.Offset, &symDisplacement, symbol))
-            {
-                log << "  " << symbol->Name << " + 0x" << std::hex << symDisplacement;
-            }
-            else
-            {
-                log << "  <no symbol>";
-            }
-
-            IMAGEHLP_LINE64 frameLine = { 0 };
-            frameLine.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-            DWORD lineDisplacement = 0;
-            if (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &lineDisplacement, &frameLine))
-            {
-                log << "  (" << frameLine.FileName << ":" << std::dec << frameLine.LineNumber << ")";
-            }
-            log << "\r\n";
-        }
+        // Written into a plain buffer by an SEH-guarded helper (see WalkStackGuarded): the walk
+        // itself dereferences the very stack that just faulted, so it can fault in turn. A crash
+        // handler that crashes produces NO report at all, which is worse than no stack.
+        static char stackText[48 * 512];
+        stackText[0] = 0;
+        WalkStackGuarded(process, pExceptionInfo->ContextRecord, stackText, sizeof(stackText));
+        log << stackText;
     }
     log << "=====================================\r\n";
 
