@@ -32,8 +32,12 @@ Editor, ~30 s after load:
 | FPS | 59.9 (v-synced) |
 | POLYS | 2,714,197 |
 
-Reference screenshot: `tools/reference/BENCHMARK_GOOD_testpro1_grass.png` (kept out of git if
-large — regenerate any time by loading the scene and taking one shot).
+Reference screenshot: `tools/reference/BENCHMARK_GOOD_testpro1_grass.png`.
+
+**Use the EDITOR view for density.** The test-game spawn on this level looks down a bare
+rock/beach slope with no flowers in frame, so it is only good for VRAM/FPS, never for the density
+gate. For the record, test game reads: driver **7506 MB**, census 5449 MB, 46 systems,
+4,600,000 strands, FPS 72.4.
 
 ## The density gate — use this, not your eyes, and not mean colour
 
