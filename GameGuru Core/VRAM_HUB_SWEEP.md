@@ -93,37 +93,54 @@ draws 74 k in 7.7 GB. Do not use scene complexity as a VRAM proxy — measure.
 | Transparent shadow atlas RGBA8 | −80 to −256 MB | ~−3 GB | verify the alpha-depth test first |
 | Mesh suballocator granularity | −0 to 512 MB | varies | fragmentation-dependent |
 
-## The sweep found a CRASH, and it was ours
+## The sweep found a CRASH, and it was ours — now FIXED (engine 1.73)
 
-**Trapped** and **RPG Template** did not reach the editor. Both die ~15 s into the level load
+**Trapped** and **RPG Template** did not reach the editor. Both died ~15 s into the level load
 with an access violation **inside `memcpy`** (`Guru-Crash.log`: `0xc0000005`, vcruntime
-`memcpy.asm`). All 19 demos loaded fine in the 2026-07-31 sweep, so this is a regression from
-today's work.
+`memcpy.asm`). All 19 demos loaded fine in the 2026-07-31 sweep, so it was a regression from the
+texture-streaming enrollment that shipped that morning — A/B'd three times each with
+`SET_TEXSTREAM 0`.
 
-**Proven cause: the texture-streaming enrollment shipped that morning.** A/B, three times each:
-issue `SET_TEXSTREAM 0` before the load and both levels reach the editor normally (Trapped in
-10 s); leave streaming on and both crash every time. The other 17 demos are unaffected either
-way, so it is content-dependent.
+### Root cause: block-alignment in the streaming mip reduction
 
-**Action taken:** `g_bTextureStreamingEnabled` now defaults to **false**. A crash on load in
-shipping demos is worth far more than the ~1.3 GB streaming was saving. Re-enable for
-investigation with `SET_TEXSTREAM 1`; do not restore the default until both levels load clean.
+Both leading suspects were **wrong**. It was not the background streaming thread, and not the
+decrypt/re-encrypt cycle. What settled it was adding a **symbolized stack walk to the crash
+handler** (`CrashLogger.cpp`), which put the fault in the *initial* upload
+(`LoadResourceDirectly` → `CreateTexture`), on the **main thread** — not the streaming job at
+all. A per-load breadcrumb (`SET_TEXSTREAMTRACE 1` → `stream_load.txt`) then named the texture:
 
-First things to check when root-causing: `WickedCall_LoadImage` decrypts the file on disk, reads
-it, then **re-encrypts it**, while the streaming thread re-reads that same file at a mip offset
-seconds later (`wiResourceManager.cpp` `FileRead`) — so a file that was plain DDS at sniff time
-need not be plain when streaming reads it. `container_filesize` is also taken from the in-memory
-buffer length, which need not equal the on-disk size; a short/garbage read there would give the
-replacement `CreateTexture` bad `initdata` and land exactly where the crash is.
+```
+DOOR1_surface.dds | file 500x500 mips 9 fmt DXT1 | upload 250x250 mips 8 mip_offset 1
+```
 
-Their numbers, measured with streaming off (so **not** comparable to the 17 above, which had it
-on and were therefore ~1.3 GB lighter):
+The engine's mip reduction halves width/height with no regard for block-compression alignment.
+**500 is a multiple of 4; 250 is not** — and a BC resource's *top* mip must be block-aligned
+(sub-mips are exempt, which is why the unreduced load always worked). `GetCopyableFootprints`
+refuses such a desc and, rather than failing, writes `0xFFFF..` sentinels into every output.
+Upstream's only guard against that is `rowSizesInBytes[i] > (SIZE_T)-1`, which on a 64-bit build
+compares UINT64 against UINT64_MAX and **can never be true** — so `MemcpySubresource` looped
+`numRows = 4,294,967,295` straight off the end of the file buffer.
 
-| Demo | driver MB | census MB | hair systems | strands | polys | FPS |
-|---|---|---|---|---|---|---|
-| RPG Template | 6687 | 5070 | 51 | 2,786,000 | 3,235,005 | 72.1 |
-| Trapped | 5263 | 3407 | 0 | 0 | 11,209 | 149.1 |
+That explains the content-dependence exactly: only a level holding a BC texture whose dimension
+is 4×odd trips it. Everything else in the hub is power-of-two and halves safely.
 
-**Note for the whole table:** the 17 demos above were measured with streaming ON, which is no
-longer the default. Re-run the sweep after the streaming bug is fixed (or accept that every row
-will read ~1.3 GB higher with it off).
+### The fix
+
+1. **Stop the reduction before it produces a misaligned top mip** — applied to *both* halving
+   sites (the load-time reduction and the stream-out decay). Such textures simply keep a larger
+   base mip; they save no VRAM, which is the right trade for not crashing.
+2. **Bail when no mips could be shed.** Without this the desc is unchanged and the job rebuilds
+   a byte-identical replacement every pass: Trapped read **`replaced=260468`**, and **`12`**
+   after the fix.
+3. **Make the sentinel check actually work** in `wiGraphicsDevice_DX12.cpp`, so no future bad
+   desc can ever be a memory fault again.
+
+`g_bTextureStreamingEnabled` is back to **true**, verified by re-running this whole sweep.
+
+### Instruments this left behind
+
+- **Symbolized crash stacks in `Guru-Crash.log`** — every future crash now names its call chain,
+  the faulting thread (main vs worker), and for an AV the read/write flag, target address and
+  page state. This turned a week-class hunt into one repro.
+- `SET_TEXSTREAMTRACE 1` → `stream_load.txt` + `last_upload.txt` (per-load forensics).
+- `stream_guard.txt` tripwire + `guard_rejects=` on the `STREAM:` line — should always be 0.

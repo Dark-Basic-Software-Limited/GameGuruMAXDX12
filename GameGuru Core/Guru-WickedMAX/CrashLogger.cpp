@@ -13,6 +13,10 @@
 // global we can populate with the current running version to match EXE/PDB pairs
 char g_pCrashVersionINIValue[256] = "Very Early";
 
+// Recorded when the handler is installed (from the main thread), so a crash report can say
+// whether the faulting thread was the frame loop or a background worker.
+DWORD g_dwCrashMainThreadId = 0;
+
 // What time is it
 std::string GetTimestamp()
 {
@@ -95,12 +99,17 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
         l << lineData.FileName << ":" << lineData.LineNumber;
         lineInfo = l.str();
     }
-    SymCleanup(process);
+    // NOTE: SymCleanup deliberately happens AFTER the stack walk below — it used to run here,
+    // which would have torn down the symbol handler the walk depends on.
 
     std::ostringstream log;
     log << "\r\n==== GAMEGURU MAX CRASH DETECTED ====\r\n";
     log << "Time:            " << GetTimestamp() << "\r\n";
     log << "Build:           " << g_pCrashVersionINIValue << "\r\n";
+    // Which thread died matters: a fault on a jobsystem worker points at background work
+    // (texture streaming, terrain generation) rather than anything the frame loop did.
+    log << "Thread id:       " << std::dec << GetCurrentThreadId()
+        << (GetCurrentThreadId() == g_dwCrashMainThreadId ? "  (MAIN THREAD)" : "  (worker thread)") << "\r\n";
     log << "Exception code:  0x" << std::hex << pExceptionInfo->ExceptionRecord->ExceptionCode << "\r\n";
     log << "Module address:  0x" << std::hex << moduleBase << "\r\n";
     log << "Crash address:   0x" << std::hex << crashAddress << "\r\n";
@@ -111,7 +120,89 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     {
         log << "Source Code:     " << lineInfo << "\r\n";
     }
+
+    // An access violation carries which operation failed and at what address. "Crash address"
+    // above is the INSTRUCTION; this is the DATA pointer it tried to touch. For an out-of-bounds
+    // read the two are unrelated, and only this one tells you how far off the end you went.
+    if (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION
+     && pExceptionInfo->ExceptionRecord->NumberParameters >= 2)
+    {
+        const ULONG_PTR opType = pExceptionInfo->ExceptionRecord->ExceptionInformation[0];
+        const ULONG_PTR badAddr = pExceptionInfo->ExceptionRecord->ExceptionInformation[1];
+        const char* opName = (opType == 0) ? "READ" : (opType == 1) ? "WRITE" : (opType == 8) ? "EXECUTE(DEP)" : "UNKNOWN";
+        log << "AV operation:    " << opName << "\r\n";
+        log << "AV address:      0x" << std::hex << (DWORD64)badAddr << "\r\n";
+        // Tell us whether the page is simply unmapped (ran off the end of a heap block) or
+        // mapped-but-protected. Unmapped strongly implies a buffer overrun, not a stale pointer.
+        MEMORY_BASIC_INFORMATION mbi = {};
+        if (VirtualQuery((LPCVOID)badAddr, &mbi, sizeof(mbi)) == sizeof(mbi))
+        {
+            log << "AV page state:   0x" << std::hex << mbi.State << " (0x1000=COMMIT 0x2000=RESERVE 0x10000=FREE)\r\n";
+        }
+        else
+        {
+            log << "AV page state:   unqueryable\r\n";
+        }
+    }
+
+    // Full symbolized call stack of the faulting thread. Without this, a crash inside a CRT
+    // routine like memcpy names the victim and never the caller, which is useless for anything
+    // that gets called from a hundred places.
+    log << "---- CALL STACK (faulting thread) ----\r\n";
+    {
+        CONTEXT walkContext = *pExceptionInfo->ContextRecord;
+        STACKFRAME64 frame = {};
+        frame.AddrPC.Offset = walkContext.Rip;
+        frame.AddrPC.Mode = AddrModeFlat;
+        frame.AddrFrame.Offset = walkContext.Rbp;
+        frame.AddrFrame.Mode = AddrModeFlat;
+        frame.AddrStack.Offset = walkContext.Rsp;
+        frame.AddrStack.Mode = AddrModeFlat;
+
+        // SYMBOL_INFO is variable-length: the name is written past the end of the struct.
+        char symbolBuffer[sizeof(SYMBOL_INFO) + 1024] = {};
+        SYMBOL_INFO* symbol = (SYMBOL_INFO*)symbolBuffer;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbol->MaxNameLen = 1023;
+
+        for (int depth = 0; depth < 48; ++depth)
+        {
+            if (!StackWalk64(IMAGE_FILE_MACHINE_AMD64, process, GetCurrentThread(),
+                             &frame, &walkContext, NULL,
+                             SymFunctionTableAccess64, SymGetModuleBase64, NULL))
+            {
+                break;
+            }
+            if (frame.AddrPC.Offset == 0)
+            {
+                break;
+            }
+
+            log << "  [" << std::dec << depth << "] 0x" << std::hex << frame.AddrPC.Offset;
+
+            DWORD64 symDisplacement = 0;
+            if (SymFromAddr(process, frame.AddrPC.Offset, &symDisplacement, symbol))
+            {
+                log << "  " << symbol->Name << " + 0x" << std::hex << symDisplacement;
+            }
+            else
+            {
+                log << "  <no symbol>";
+            }
+
+            IMAGEHLP_LINE64 frameLine = { 0 };
+            frameLine.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+            DWORD lineDisplacement = 0;
+            if (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &lineDisplacement, &frameLine))
+            {
+                log << "  (" << frameLine.FileName << ":" << std::dec << frameLine.LineNumber << ")";
+            }
+            log << "\r\n";
+        }
+    }
     log << "=====================================\r\n";
+
+    SymCleanup(process);
 
     // Write to log
     HANDLE hFile = CreateFileA(logPath, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -155,6 +246,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
 
 void InitCrashHandler()
 {
+    g_dwCrashMainThreadId = GetCurrentThreadId();
     SetUnhandledExceptionFilter(CrashHandler);
 }
 

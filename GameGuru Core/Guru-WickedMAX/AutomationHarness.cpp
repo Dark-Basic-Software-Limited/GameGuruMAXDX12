@@ -69,7 +69,14 @@ namespace wi { namespace resourcemanager {
 	extern std::atomic<unsigned long long> gg_dbg_stream_job_starts, gg_dbg_stream_job_ends, gg_dbg_stream_busy_skips;
 	extern std::atomic<uint32_t> gg_dbg_stream_dec_req0, gg_dbg_stream_dec_reqlow, gg_dbg_stream_dec_nomips,
 		gg_dbg_stream_dec_cancel, gg_dbg_stream_dec_in, gg_dbg_stream_dec_out, gg_dbg_stream_max_req;
+	// GGMAX 1.73: streaming bounds-guard rejections. Non-zero means the job refused an upload
+	// that would have read past the end of its buffer — details in stream_guard.txt.
+	extern std::atomic<uint32_t> gg_dbg_stream_guard_rejects;
+	// GGMAX 1.73: per-load breadcrumb trace arm switch (harness SET_TEXSTREAMTRACE)
+	extern bool gg_stream_load_trace;
 } }
+// GGMAX 1.73: upload footprint dump arm switch (engine wiGraphicsDevice_DX12.cpp, global scope)
+extern bool gg_upload_trace;
 // GGMAX 1.69: streaming feedback-chain probes (copies -> fb -> req = each link of GPU feedback)
 namespace wi { extern std::atomic<unsigned long long> gg_dbg_stream_req_calls; }
 namespace wi { namespace scene { extern std::atomic<unsigned long long> gg_dbg_stream_fb_hits; } }
@@ -1372,7 +1379,7 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"GAPS: count=%llu last_ms=%llu (frame gaps >100ms; ledger in gap_trace.txt)\n",
 			wi::profiler::gg_trace_gap_count.load(), wi::profiler::gg_trace_gap_last_ms.load());
 		written += _snprintf(result + written, resultSize - written,
-			"STREAM: on=%d enrolled=%u replaced=%u resident_mb=%.1f full_mb=%.1f gpumem_pct=%.1f copies=%llu fb=%llu req=%llu\n",
+			"STREAM: on=%d enrolled=%u replaced=%u resident_mb=%.1f full_mb=%.1f gpumem_pct=%.1f copies=%llu fb=%llu req=%llu guard_rejects=%u\n",
 			g_bTextureStreamingEnabled ? 1 : 0,
 			wi::resourcemanager::gg_dbg_stream_enrolled.load(),
 			wi::resourcemanager::gg_dbg_stream_replaced.load(),
@@ -1381,7 +1388,8 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			wi::resourcemanager::gg_dbg_stream_mem_permille.load() / 10.0,
 			wi::renderer::gg_dbg_stream_copies.load(),
 			wi::scene::gg_dbg_stream_fb_hits.load(),
-			wi::gg_dbg_stream_req_calls.load());
+			wi::gg_dbg_stream_req_calls.load(),
+			wi::resourcemanager::gg_dbg_stream_guard_rejects.load());
 		{
 			// GGMAX 1.70: VRAM census aggregates (full line items via DUMP_VRAM)
 			extern void GG_GetVRAMTotals(unsigned long long*, unsigned long long*, unsigned long long*, unsigned long long*, unsigned int*);
@@ -3334,6 +3342,18 @@ void AutoHarness_CheckForCommand(void)
 		int tsv = atoi(arg);
 		g_bTextureStreamingEnabled = (tsv != 0);
 		_snprintf(result, sizeof(result), "OK: SET_TEXSTREAM %d (affects textures loaded from now on; reload level for full effect)", tsv);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_TEXSTREAMTRACE") == 0)
+	{
+		// SET_TEXSTREAMTRACE <0|1> — GGMAX 1.73 diagnostic. Writes one flushed line per
+		// streaming DDS upload to stream_load.txt (name, file dims/mips, reduced upload dims,
+		// mip_offset, filesize vs bytes the mip chain needs). Expensive; arm it only to hunt a
+		// load-time fault, where the LAST line written names the texture that killed the process.
+		int tstv = atoi(arg);
+		wi::resourcemanager::gg_stream_load_trace = (tstv != 0);
+		gg_upload_trace = (tstv != 0);
+		_snprintf(result, sizeof(result), "OK: SET_TEXSTREAMTRACE %d (per-load trace -> stream_load.txt, upload footprints -> last_upload.txt)", tstv);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "REUPLOAD_TEXTURE") == 0)
