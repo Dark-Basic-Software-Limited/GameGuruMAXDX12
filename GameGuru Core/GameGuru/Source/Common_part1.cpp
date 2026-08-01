@@ -1454,7 +1454,7 @@ void ReloadLensFlareImages (void)
 		if (iFlareChain == 1) fileName = "lensflares\\flare2.jpg";
 		if (iFlareChain == 2) fileName = "lensflares\\flare3.jpg";
 		WickedCall_DeleteImage(fileName);
-		lightSun->lensFlareRimTextures[iFlareChain] = WickedCall_LoadImage(fileName);
+		lightSun->lensFlareRimTextures[iFlareChain] = WickedCall_LoadImage(fileName, IMAGERES_LEVEL, false); // no streaming: lens-flare shader writes no mip feedback
 		lightSun->lensFlareNames[iFlareChain] = fileName;
 	}
 }

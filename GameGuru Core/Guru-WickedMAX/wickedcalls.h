@@ -64,9 +64,18 @@ void WickedCall_FreeAllImagesOfType(eImageResType eType);
 void WickedCall_GetRelativeAfterRoot(std::string pFilename, LPSTR pFullRelativeLocationFilename);
 int WickedCall_FindImageIndexInList(std::string pFilenameToFind, LPSTR pFullRelativeLocationFilename);
 void WickedCall_AddImageToList(wi::Resource image, eImageResType eType, std::string pFilenameRef, int iKbused);
+// GGMAX texture streaming (2026-08-01): material textures stream by default. Pass
+// bAllowStreaming=false for any texture NOT sampled by object/particle shaders
+// (sky, lens flares, HUD/2D) — those never write mip feedback, so streaming would
+// decay them to minimum resolution (permanent blur).
+// NOTE: no default argument here — this header has no include guard and is re-included
+// within single translation units; a repeated default argument is C2572. The 2-arg
+// overload forwards with bAllowStreaming=true (streaming is the default).
+wi::Resource WickedCall_LoadImage(std::string pFilenameToLoad, eImageResType eType, bool bAllowStreaming);
 wi::Resource WickedCall_LoadImage(std::string pFilenameToLoad, eImageResType eType);
 wi::Resource WickedCall_LoadImage(std::string pFilenameToLoad);
 void WickedCall_DeleteImage(std::string pFilenameToLoad);
+extern bool g_bTextureStreamingEnabled; // kill-switch (harness SET_TEXSTREAM); affects loads after change
 
 // Functions
 void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstate);

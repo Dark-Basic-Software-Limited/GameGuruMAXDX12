@@ -332,7 +332,11 @@ void WickedCall_AddImageToList(wiResource image, eImageResType eType, std::strin
 
 int total_mem_from_load = 0;
 bool bCalledFromWickedLoadImage = false;
-wiResource WickedCall_LoadImage(std::string pFilenameToLoadIN, eImageResType eType)
+// GGMAX texture streaming (2026-08-01): entity material textures opt into Wicked mip
+// streaming by default. Kill-switch affects textures loaded AFTER it changes (harness
+// SET_TEXSTREAM; reload the level for full effect).
+bool g_bTextureStreamingEnabled = true;
+wiResource WickedCall_LoadImage(std::string pFilenameToLoadIN, eImageResType eType, bool bAllowStreaming)
 {
 	//PE: Prevent dublicate textures even if using different names.
 	//PE: Scan all our images and make a text file including filename+CRC64 of the file.
@@ -444,6 +448,27 @@ wiResource WickedCall_LoadImage(std::string pFilenameToLoadIN, eImageResType eTy
 			pFilenameToLoad[pFilenameToLoad.length() - 3] = VirtualFilename[strlen(VirtualFilename) - 3];
 		}
 		bCalledFromWickedLoadImage = false;
+
+		// GGMAX texture streaming: the engine's streaming thread re-reads this file at mip
+		// offsets long after this call, so streaming is only safe when the on-disk file is
+		// plain DDS and STAYS that way — sniff the magic BEFORE any decrypt, and exclude
+		// standalone (gameisexe) where the file gets re-encrypted after load. Non-material
+		// callers (sky/lens-flare/HUD) pass bAllowStreaming=false: their shaders never write
+		// mip feedback, so the engine would decay them to the 64KB floor (permanent blur).
+		bool bStreamFromDisk = false;
+		if (g_bTextureStreamingEnabled && bAllowStreaming && t.game.gameisexe == 0)
+		{
+			HANDLE hSniff = GG_CreateFile(VirtualFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+			if (hSniff != INVALID_HANDLE_VALUE)
+			{
+				char magic[4] = { 0, 0, 0, 0 };
+				DWORD dwSniffRead = 0;
+				ReadFile(hSniff, magic, 4, &dwSniffRead, NULL);
+				CloseHandle(hSniff);
+				bStreamFromDisk = (dwSniffRead == 4 && memcmp(magic, "DDS ", 4) == 0);
+			}
+		}
+
 		g_pGlob->Decrypt(VirtualFilename);
 		bDecrypted = true;
 
@@ -467,7 +492,20 @@ wiResource WickedCall_LoadImage(std::string pFilenameToLoadIN, eImageResType eTy
 			if (wiHelper::FileRead(VirtualFilename, data))
 			{
 				wiResourceManager::Flags flag = wiResourceManager::Flags::IMPORT_NORMALMAP;
-				image = wiResourceManager::Load(pFilenameToLoad, flag, data.data(), data.size());
+				if (bStreamFromDisk)
+				{
+					// GGMAX texture streaming: enroll this texture for mip streaming. The engine
+					// uploads a reduced mip chain now and streams the rest in/out on a background
+					// thread from GPU feedback. container = the REAL disk path (can differ from the
+					// cache name for workshop/dds-preferred files) so partial re-reads find the file.
+					// Single-mip/array/3D/<64KB textures are auto-rejected by the engine.
+					flag |= wiResourceManager::Flags::STREAMING;
+					image = wiResourceManager::Load(pFilenameToLoad, flag, data.data(), data.size(), VirtualFilename);
+				}
+				else
+				{
+					image = wiResourceManager::Load(pFilenameToLoad, flag, data.data(), data.size());
+				}
 				data.clear();
 			}
 			if (image.IsValid())
@@ -495,9 +533,14 @@ wiResource WickedCall_LoadImage(std::string pFilenameToLoadIN, eImageResType eTy
 	return image;
 }
 
+wiResource WickedCall_LoadImage(std::string pFilenameToLoad, eImageResType eType)
+{
+	return WickedCall_LoadImage(pFilenameToLoad, eType, true);
+}
+
 wiResource WickedCall_LoadImage(std::string pFilenameToLoad)
 {
-	return WickedCall_LoadImage(pFilenameToLoad, IMAGERES_LEVEL);
+	return WickedCall_LoadImage(pFilenameToLoad, IMAGERES_LEVEL, true);
 }
 
 void WickedCall_DeleteImage(std::string pFilenameToDelete)

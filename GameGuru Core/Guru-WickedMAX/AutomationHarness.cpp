@@ -62,6 +62,19 @@ namespace wi { namespace profiler {
 #include "wiHelper.h"
 #include "wiResourceManager.h" // REUPLOAD_TEXTURE probe (corruption hunt)
 namespace wi { namespace resourcemanager { extern bool gg_streaming_paused; } } // SET_STREAMING probe
+// GGMAX 1.69: texture-streaming observability counters (engine wiResourceManager.cpp)
+namespace wi { namespace resourcemanager {
+	extern std::atomic<uint32_t> gg_dbg_stream_enrolled, gg_dbg_stream_replaced, gg_dbg_stream_mem_permille;
+	extern std::atomic<unsigned long long> gg_dbg_stream_resident_bytes, gg_dbg_stream_full_bytes;
+	extern std::atomic<unsigned long long> gg_dbg_stream_job_starts, gg_dbg_stream_job_ends, gg_dbg_stream_busy_skips;
+	extern std::atomic<uint32_t> gg_dbg_stream_dec_req0, gg_dbg_stream_dec_reqlow, gg_dbg_stream_dec_nomips,
+		gg_dbg_stream_dec_cancel, gg_dbg_stream_dec_in, gg_dbg_stream_dec_out, gg_dbg_stream_max_req;
+} }
+// GGMAX 1.69: streaming feedback-chain probes (copies -> fb -> req = each link of GPU feedback)
+namespace wi { extern std::atomic<unsigned long long> gg_dbg_stream_req_calls; }
+namespace wi { namespace scene { extern std::atomic<unsigned long long> gg_dbg_stream_fb_hits; } }
+namespace wi { namespace renderer { extern std::atomic<unsigned long long> gg_dbg_stream_copies; } }
+extern bool g_bTextureStreamingEnabled; // game-side enrollment kill-switch (wickedcalls_part0.cpp), harness SET_TEXSTREAM
 #include "wiGraphicsDevice.h"
 #include "wiApplication.h"
 #include "wiScene.h"
@@ -1358,6 +1371,31 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		written += _snprintf(result + written, resultSize - written,
 			"GAPS: count=%llu last_ms=%llu (frame gaps >100ms; ledger in gap_trace.txt)\n",
 			wi::profiler::gg_trace_gap_count.load(), wi::profiler::gg_trace_gap_last_ms.load());
+		written += _snprintf(result + written, resultSize - written,
+			"STREAM: on=%d enrolled=%u replaced=%u resident_mb=%.1f full_mb=%.1f gpumem_pct=%.1f copies=%llu fb=%llu req=%llu\n",
+			g_bTextureStreamingEnabled ? 1 : 0,
+			wi::resourcemanager::gg_dbg_stream_enrolled.load(),
+			wi::resourcemanager::gg_dbg_stream_replaced.load(),
+			wi::resourcemanager::gg_dbg_stream_resident_bytes.load() / (1024.0 * 1024.0),
+			wi::resourcemanager::gg_dbg_stream_full_bytes.load() / (1024.0 * 1024.0),
+			wi::resourcemanager::gg_dbg_stream_mem_permille.load() / 10.0,
+			wi::renderer::gg_dbg_stream_copies.load(),
+			wi::scene::gg_dbg_stream_fb_hits.load(),
+			wi::gg_dbg_stream_req_calls.load());
+		written += _snprintf(result + written, resultSize - written,
+			"STREAM2: jobStart=%llu jobEnd=%llu busySkip=%llu\n",
+			wi::resourcemanager::gg_dbg_stream_job_starts.load(),
+			wi::resourcemanager::gg_dbg_stream_job_ends.load(),
+			wi::resourcemanager::gg_dbg_stream_busy_skips.load());
+		written += _snprintf(result + written, resultSize - written,
+			"STREAM3: req0=%u reqLow=%u noMips=%u cancel=%u in=%u out=%u reqMask=0x%X (per-pass census; reqMask=all request magnitudes seen)\n",
+			wi::resourcemanager::gg_dbg_stream_dec_req0.load(),
+			wi::resourcemanager::gg_dbg_stream_dec_reqlow.load(),
+			wi::resourcemanager::gg_dbg_stream_dec_nomips.load(),
+			wi::resourcemanager::gg_dbg_stream_dec_cancel.load(),
+			wi::resourcemanager::gg_dbg_stream_dec_in.load(),
+			wi::resourcemanager::gg_dbg_stream_dec_out.load(),
+			wi::resourcemanager::gg_dbg_stream_max_req.load());
 	}
 
 	// Fog / atmosphere debug (level visuals + live weather component values)
@@ -3167,6 +3205,74 @@ void AutoHarness_CheckForCommand(void)
 		int sv = atoi(arg);
 		wi::resourcemanager::gg_streaming_paused = (sv == 0);
 		_snprintf(result, sizeof(result), "OK: SET_STREAMING %d (paused=%d)", sv, sv == 0 ? 1 : 0);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_STREAM") == 0)
+	{
+		// DUMP_STREAM — texture-streaming ground truth: every scene material's name, its raw
+		// GPU mip-feedback word (textureStreamingFeedbackMapped), and each texture slot's
+		// CURRENT resolution/mips + resource name. Written to stream_dump.txt (exe dir).
+		// The instrument for "which materials actually produce feedback and did their
+		// textures stream up" (2026-08-01 streaming-enable hunt).
+		FILE* sdf = fopen("stream_dump.txt", "w");
+		if (sdf)
+		{
+			wi::scene::Scene& sdScene = wi::scene::GetScene();
+			fprintf(sdf, "materials=%d feedbackMapped=%p\n", (int)sdScene.materials.GetCount(), (const void*)sdScene.textureStreamingFeedbackMapped);
+			int sdFb = 0;
+			for (size_t sdi = 0; sdi < sdScene.materials.GetCount(); ++sdi)
+			{
+				const wi::scene::MaterialComponent& sdMat = sdScene.materials[sdi];
+				uint32_t sdWord = 0;
+				if (sdScene.textureStreamingFeedbackMapped != nullptr)
+					sdWord = sdScene.textureStreamingFeedbackMapped[sdi];
+				// only dump materials with feedback OR with any valid texture (keeps file readable)
+				bool sdAnyTex = false;
+				for (auto& sdSlot : sdMat.textures) { if (sdSlot.resource.IsValid() && sdSlot.resource.GetTexture().IsValid()) { sdAnyTex = true; break; } }
+				if (!sdAnyTex && sdWord == 0) continue;
+				if (sdWord != 0) sdFb++;
+				wi::ecs::Entity sdEnt = sdScene.materials.GetEntity(sdi);
+				const wi::scene::NameComponent* sdName = sdScene.names.GetComponent(sdEnt);
+				fprintf(sdf, "[%4d] fb=0x%08X streamDis=%d \"%s\"\n", (int)sdi, sdWord,
+					sdMat.IsTextureStreamingDisabled() ? 1 : 0,
+					sdName ? sdName->name.c_str() : "?");
+				for (int sdt = 0; sdt < wi::scene::MaterialComponent::TEXTURESLOT_COUNT; ++sdt)
+				{
+					auto& sdSlot = sdMat.textures[sdt];
+					if (!sdSlot.resource.IsValid() || !sdSlot.resource.GetTexture().IsValid()) continue;
+					const wi::graphics::TextureDesc& sdDesc = sdSlot.resource.GetTexture().desc;
+					fprintf(sdf, "    slot%d %ux%u mips=%u uvset=%u %s\n", sdt, sdDesc.width, sdDesc.height,
+						sdDesc.mip_levels, sdSlot.uvset, sdSlot.name.c_str());
+				}
+			}
+			fprintf(sdf, "materialsWithFeedback=%d\n", sdFb);
+			fclose(sdf);
+			_snprintf(result, sizeof(result), "OK: DUMP_STREAM written to stream_dump.txt");
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: DUMP_STREAM could not open stream_dump.txt");
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_STREAM2") == 0)
+	{
+		// DUMP_STREAM2 — engine-side authoritative enrolled-set dump (wi::resourcemanager
+		// resources map: per-resource STREAMING flag, current vs full mip chain, live request).
+		wi::resourcemanager::GG_DumpStreamingResources("stream_resources.txt");
+		_snprintf(result, sizeof(result), "OK: DUMP_STREAM2 written to stream_resources.txt (game CWD = Files dir)");
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_TEXSTREAM") == 0)
+	{
+		// SET_TEXSTREAM <0|1> — texture-streaming ENROLLMENT kill-switch (game-side
+		// g_bTextureStreamingEnabled, default 1). Unlike SET_STREAMING (pause), this gates
+		// whether NEWLY loaded material textures get the STREAMING flag — already-loaded
+		// textures keep their state (resource-manager pins flags per name). For a clean A/B:
+		// SET_TEXSTREAM 0 then reload/reopen the level.
+		int tsv = atoi(arg);
+		g_bTextureStreamingEnabled = (tsv != 0);
+		_snprintf(result, sizeof(result), "OK: SET_TEXSTREAM %d (affects textures loaded from now on; reload level for full effect)", tsv);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "REUPLOAD_TEXTURE") == 0)

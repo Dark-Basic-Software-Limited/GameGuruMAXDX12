@@ -401,7 +401,7 @@ void sky_skyspec_init(bool bResetVisuals)
 				WickedCall_DeleteImage(weather->skyMapName);
 			}
 			weather->skyMapName = pFileToLoad.Get();
-			weather->skyMap = WickedCall_LoadImage(weather->skyMapName);
+			weather->skyMap = WickedCall_LoadImage(weather->skyMapName, IMAGERES_LEVEL, false); // no streaming: sky shaders write no mip feedback (would decay to blur)
 			weather->volumetricCloudParameters.layerFirst.coverageAmount = 0.0f; //PE: This has changed in the new repo, same shader is now used and cloudiness turn it off, so must now be zero.
 			weather->volumetricCloudParameters.layerFirst.windSpeed = 0.0f; //To stop moving lightshaft.
 

@@ -1443,7 +1443,7 @@ void CreateBackdropObject(bool bForceRecreate,cstr newImageFile,cstr fpefile)
 					WickedCall_DeleteImage(weather->skyMapName);
 				}
 				weather->skyMapName = cUseBackbufferCubemap.Get();
-				weather->skyMap = WickedCall_LoadImage(weather->skyMapName);
+				weather->skyMap = WickedCall_LoadImage(weather->skyMapName, IMAGERES_LEVEL, false); // no streaming: sky shaders write no mip feedback (would decay to blur)
 				weather->volumetricCloudParameters.layerFirst.coverageAmount = 0.0f;
 				weather->volumetricCloudParameters.layerFirst.windSpeed = 0.0f;
 
