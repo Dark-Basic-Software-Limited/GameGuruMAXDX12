@@ -1721,6 +1721,25 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			pc.world._41 + halfChunkWorld, pc.world._43 + halfChunkWorld,
 			typesSeen );
 
+		// GGMAX 2026-08-01 (coverage scaling): resolve the painted grass type at every chunk-mesh
+		// vertex ONCE per chunk, not once per (chunk x type). Each type's mask below is then a
+		// plain compare. Lazily filled — chunks with nothing to create never pay for it.
+		static wi::vector<int> s_vertexType; // reused across chunks/frames, single-threaded here
+		bool vertexTypesResolved = false;
+		auto ResolveVertexTypes = [&]() {
+			if (vertexTypesResolved) return;
+			vertexTypesResolved = true;
+			const size_t vcount = pc.mesh->vertex_positions.size();
+			s_vertexType.resize(vcount);
+			const XMMATRIX chunkWorld = XMLoadFloat4x4(&pc.world);
+			for (size_t vi = 0; vi < vcount; vi++)
+			{
+				XMFLOAT3 w;
+				XMStoreFloat3(&w, XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), chunkWorld));
+				s_vertexType[vi] = GGGrass::GGGrass_GetTypeAtWorld(w.x, w.z);
+			}
+		};
+
 		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 		{
 			wi::ecs::Entity existing = existingEntities.perType[t];
@@ -1761,14 +1780,12 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			float keptTriFraction = 1.0f;
 			if (g_grassCoverageScaling && pc.mesh != nullptr && !pc.mesh->vertex_positions.empty())
 			{
+				ResolveVertexTypes();
 				const size_t vcount = pc.mesh->vertex_positions.size();
 				vertex_lengths.resize(vcount, 0.0f);
-				const XMMATRIX chunkWorld = XMLoadFloat4x4(&pc.world);
 				for (size_t vi = 0; vi < vcount; vi++)
 				{
-					XMVECTOR p = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), chunkWorld);
-					XMFLOAT3 w; XMStoreFloat3(&w, p);
-					if (GGGrass::GGGrass_GetTypeAtWorld(w.x, w.z) == (int)t)
+					if (s_vertexType[vi] == (int)t)
 						vertex_lengths[vi] = 1.0f;
 				}
 
