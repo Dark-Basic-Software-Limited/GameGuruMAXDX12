@@ -207,6 +207,57 @@ still the level to worry about, because half of it is one over-allocating system
 
 ## Ranked backlog (not applied)
 
+### THE RETRY: one hair system per chunk (verified feasible 2026-08-01)
+
+**Placement comes out bit-identical — not "statistically equivalent" — which is exactly the
+property the failed attempt lacked.** Proof: every per-type system in a chunk already shares the
+same `randomSeed` (always 1 — never assigned in Guru-WickedMAX), the same emitter mesh and the
+same index list (`vertex_lengths` all-1.0 keeps every triangle), and `strandCount` is per *chunk*,
+not per type. So for a given thread id, strand *i* lands on the identical triangle with identical
+barycentrics in every type's system. A paint cell holds exactly one type, so the surviving sets
+are **disjoint and their union is exactly "strands on painted cells"** — one merged system with
+the same `strandCount` renders precisely those same blades. Corollary: today ~75% of strands in a
+4-type chunk run full physics and then emit degenerate quads; merging deletes that work.
+
+Six things vary per type — `length`, `width`/aspect, `stiffness`, `drag`, `viewDistance` and the
+blade texture — and all fit **without growing any buffer**:
+- Carry the per-strand type in **`vb_nor.w`**: `R8G8B8A8_SNORM`, currently written as constant 0
+  and read by nothing anywhere (127 codes ≥ 88 types). Do *not* use `vb_uvs.zw` — it has a live
+  consumer in `surfaceHF.hlsli` when SSR/SSGI are on.
+- Put the per-type scalars in a `HairParticleCB` table. The CB is ~2272 B against a 64 KB limit;
+  an 88-entry table adds ~2816 B. DX11 shipped exactly this design (`GGGrassConstants.hlsli`
+  `GrassType grass_type[46]`).
+- **No texture array needed.** Store each type's bindless SRV index in that table and sample
+  `bindless_textures_half4[NonUniformResourceIndex(...)]` — reuses the already-loaded per-type
+  textures for zero extra VRAM and no size/format uniformity requirement.
+
+Hazards to respect: `billboardCount` is the one structural difference (2 for most, 1 for
+weed/kelp/seaweed) — take `max` over the types present and suppress extra billboards per strand
+by collapsing them to zero-area quads, so single-type chunks stay byte-identical; patch **all
+four** hair pixel shaders (lit, prepass, prepass-depthonly, shadow) or depth silhouettes come
+from the wrong sprite; keep the frustum-cull radius consistent with per-strand length or tall
+grass pops at chunk edges; and `xHairAspect` folds in the texture aspect ratio, which is 1.0 for
+all 46 stock DDS but not for custom user slots.
+
+**This is mutually exclusive with the reverted coverage scaling** — the identity proof depends on
+every system in a chunk keeping the same `strandCount` and all-1.0 `vertex_lengths`.
+
+Expected on the benchmark: 37 tier-3 systems → ~9, grass 1945 MB → ~500 MB, plus an FPS win.
+Falsifiable prediction to gate on: coverage 9.5 ±0.15 pp, **clumpCV 0.871 ±0.01**, every band
+±0.25 pp — i.e. inside the noise floor. `HAIR_SYSTEMS` and `HAIR_TOTAL_STRANDS` should fall ~4×
+while the *rendered* blade count does not change. Any clumpCV rise at all means the identity
+argument is broken somewhere: stop.
+
+### Free win found alongside it: `texGrass` is 61 MB of never-written, never-read VRAM
+
+`GGGrass.cpp:1089` allocates a 1024² × 46-slice BC3 array, but **every writer is a stub** —
+`GGGrass_LoadTextureDDSIntoSlice` is `{ // stub - DDS loading disabled }` and the real body sits
+under `#if 0` ("TODO: DX12 - tinyddsloader removed"). Its only binder, `GGGrass_BindGrassArray`,
+is called solely from `GGTerrain_DrawPages`, which lives below the Wicked-mode early return —
+i.e. the dead legacy path. Make it lazy behind `GGTerrain_EnsurePageAtlas()` exactly as the
+2026-08-01 dead-VT work did. Independent of everything else and trivially verifiable.
+(Also noted: the grass `NORMALMAP` textures are never sampled by the hair render path.)
+
 1. **Grass per-type over-allocation, ~4-5× — still the biggest single item in the game.**
    Grass systems are created per (terrain chunk × distinct grass type painted in it), each with
    a flat `STAGE1_STRANDS_PER_TIER = 100000` strands spread over the *whole* chunk; the shader

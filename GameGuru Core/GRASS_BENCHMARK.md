@@ -73,6 +73,25 @@ A change is visually clean on this scene only if **all** hold:
 
 Anything that trades coverage for clumping fails even if total coverage matches.
 
+### Proof the gate catches the real regression
+
+The reverted coverage-scaling build was temporarily rebuilt and run against this scene. Every
+metric fails, by 19–27× the thresholds — so this gate would have stopped it before it shipped:
+
+| | GOOD | reverted "optimisation" | verdict |
+|---|---|---|---|
+| coverage | 9.554% | **6.695%** (−2.86 pp) | FAIL (limit ±0.15) |
+| **clumpCV** | 0.870 | **1.144** (+0.274) | **FAIL (limit ±0.01)** |
+| bands near..far | 14.19 14.94 16.83 8.17 3.15 | 8.66 12.55 12.96 4.21 1.76 | FAIL, every band |
+| strands | 4,216,000 | 920,791 (−78%) | — |
+| driver VRAM | 6552 MB | 5081 MB | the "saving" that wasn't |
+
+Note the shape of it: coverage fell 30% *and* clumping rose 31%. The old mean-colour proxy would
+have seen a small average shift and passed; clumpCV is what makes the failure unmissable.
+
+The good build was then restored and re-verified: coverage 9.426, clumpCV 0.873, 4,216,000
+strands, 6552.4 MB — inside the noise band on every metric.
+
 ### Metric sensitivity check (proof it responds)
 
 Shrinking the per-strand cull radius with `SET_GRASS viewdist` moves the far bands and leaves the
