@@ -144,6 +144,49 @@ fixed floor (~2.4 GB of engine/terrain machinery + content). **Z Island would ha
 ~12.8 GB of driver VRAM before tonight's fixes** — over budget on an 8 GB card — and it is
 still the level to worry about, because half of it is one over-allocating system.
 
+## Grass Draw Distance — what was wrong, and what changed (2026-08-01)
+
+User report: moving the slider from 750 to 7000 does not change how far grass renders. It is
+worse than that — measured on Island Showdown with `SET_GRASS drawdist`:
+
+| slider | grass systems | strands | note |
+|---|---|---|---|
+| 750 | 34 | 3.40M | **identical to default — lowering it freed nothing** |
+| 1500 (default) | 34 | 3.40M | |
+| 7000 | 88 | 3.83M | +54 systems, 87 → 56 FPS, screenshots pixel-identical |
+
+Cause: the density rings were hard-coded at 1.5 / 2.2 chunks whatever the slider said. Only
+the per-strand cull radius and the sparse outer shell moved. So lowering the slider could not
+shrink the full-density ring (`nearC = min(1.5, outerC)` and `outerC` never drops below ~1.6),
+and raising it bought 54 extra chunk systems at the 5% / 18% tier densities — about one blade
+per 3.6 m² spread over a 134 m chunk, invisible past 200 m, yet each still costs a full
+simulate dispatch every frame.
+
+Fix (game `GGTerrainWicked.cpp` + engine 1.72 `hairparticle_simulateCS.hlsl`):
+- Both density rings now scale with the slider, **anchored at its default so the shipped 1500
+  look is unchanged** (verified: same 34 systems / 3.40M strands, screenshot delta below the
+  animation noise floor). Clamped to 0.75–2.0 chunks near / up to 3.0 mid.
+- A **graceful fade**: strand length now tapers smoothly to zero across the outer 12% of the
+  draw distance, so blades sink out of view instead of the cull switching them off. Done in the
+  simulate CS so it applies identically to the colour pass, the prepass and shadows, with no
+  alpha blending; it overlaps the existing 20% dither ramp in the vertex shader.
+
+Measured after (Island Showdown, in game):
+
+| slider | strands | driver VRAM | vs default |
+|---|---|---|---|
+| 750 | 1.35M | 5716 MB | **−1139 MB** |
+| 1500 | 3.40M | 6856 MB | unchanged from before the fix |
+| 7000 | 5.36M | 7554 MB | +699 MB, now spent on full-density grass |
+
+**Honest limit of the verification:** I could not produce a screenshot where grass visibly
+extends further at 7000, because on every demo tried (Island Showdown, Jungle Fever) grass is
+painted in near-field patches — a same-setting control diff matched the 750-vs-7000 diff
+exactly, i.e. all of it was grass sway. The resource behaviour is proven by the strand/VRAM
+numbers above; the visible-range benefit is reasoned from the mechanism (full-density ring
+7920 → 10560 inches, cull 4000 → 9500 inches) and still wants eyes on a level with grass
+painted into the distance.
+
 ## Ranked backlog (not applied)
 
 1. **Grass per-type over-allocation, ~4-5×.** Grass systems are created per (terrain chunk ×

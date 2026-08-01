@@ -1443,8 +1443,36 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		: std::max(0.5f, viewDistInches / chunkStride + 1.0f);
 	// AUTO tier boundaries follow the strand-LOD opt-in (see g_grassTier3Chunks comment)
 	const bool lodOn = wi::gg_grass_lod;
-	const float tier3C = (g_grassTier3Chunks > 0.0f) ? g_grassTier3Chunks : (lodOn ? 1.5f : 1.0f);
-	const float tier2C = (g_grassTier2Chunks > 0.0f) ? g_grassTier2Chunks : (lodOn ? 2.2f : 1.7f);
+	float tier3C = (g_grassTier3Chunks > 0.0f) ? g_grassTier3Chunks : (lodOn ? 1.5f : 1.0f);
+	float tier2C = (g_grassTier2Chunks > 0.0f) ? g_grassTier2Chunks : (lodOn ? 2.2f : 1.7f);
+
+	// GGMAX 1.72: make the Grass Draw Distance slider actually move the DENSITY rings.
+	// Before this the rings were pinned at 1.5 / 2.2 chunks whatever the slider said, which
+	// made the control behave badly in BOTH directions (measured on Island Showdown):
+	//   750 vs the 1500 default -> identical 34 systems / 3.40M strands. Lowering it freed
+	//        nothing at all, because nearC = min(1.5, outerC) and outerC never drops below 1.6.
+	//   7000 -> 88 systems (+54) for +0.43M strands, i.e. 54 extra chunk entities at the 5%/18%
+	//        tier densities. That is ~1 blade per 3.6 m^2 spread over a 134 m chunk: invisible
+	//        at 200 m+, yet each one still costs a full simulate dispatch every frame. Measured
+	//        87 -> 56 FPS with two screenshots that are pixel-for-pixel the same view.
+	// Scaling both rings by the slider (relative to its own default, so the shipped look at
+	// 1500 is bit-identical) means a lower setting really does build fewer chunk systems, and a
+	// higher setting spends its budget on FULL-density grass that can actually be seen.
+	// Clamps keep the near ring from exploding at max: the far half of the range is carried by
+	// the mid ring and by the per-strand cull, which is the true visible edge.
+	if (g_grassTier3Chunks <= 0.0f && g_grassTier2Chunks <= 0.0f)
+	{
+		const float defaultViewDistInches = (float)GGGRASS_INITIAL_LOD_DIST + 2500.0f;
+		const float sliderRatio = viewDistInches / defaultViewDistInches;
+		tier3C = std::min(std::max(tier3C * sliderRatio, 0.75f), 2.0f);
+		tier2C = std::min(std::max(tier2C * sliderRatio, tier3C + 0.3f), 3.0f);
+	}
+
+	// The outer (5% density) shell only ever existed to avoid whole-chunk pop-in, but at high
+	// slider values it ran a full chunk-ring past the mid tier and produced nothing a player can
+	// see. Clamping it to the mid ring removes those systems entirely; pop-in stays solved
+	// because the per-strand cull is still inside the last created ring and strands now taper
+	// out over the outer 12% of it (engine 1.72 fade in hairparticle_simulateCS).
 	const float midC   = std::min(tier2C, outerC);
 	const float nearC  = std::min(tier3C, outerC);
 
@@ -1806,6 +1834,7 @@ void GGTerrainWicked_SetGrassParam(const char* param, float value)
 	else if (p == "billboards") forAllAppearance([&](wi::HairParticleSystem& h){ h.billboardCount = (uint32_t)(value < 1.0f ? 1.0f : value); });
 	else if (p == "blades")     g_grassBladesPerVertex = (uint32_t)(value < 1.0f ? 1.0f : value);
 	else if (p == "maxstrands") g_grassMaxStrands = (uint32_t)(value < 1.0f ? 1.0f : value);
+	else if (p == "drawdist")   GGGrass::gggrass_global_params.lod_dist = value; // the actual editor "Grass Draw Distance" slider (750..7000)
 	else if (p == "lodchunks")  g_grassLODChunksOverride = value;     // hard override outer ring (0 = follow slider)
 	else if (p == "tier3")      g_grassTier3Chunks = std::max(0.5f, value); // full-density ring in chunk-distances
 	else if (p == "tier2")      g_grassTier2Chunks = std::max(0.5f, value); // mid-density ring in chunk-distances
