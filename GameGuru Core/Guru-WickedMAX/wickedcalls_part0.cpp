@@ -332,10 +332,23 @@ void WickedCall_AddImageToList(wiResource image, eImageResType eType, std::strin
 
 int total_mem_from_load = 0;
 bool bCalledFromWickedLoadImage = false;
-// GGMAX texture streaming (2026-08-01): entity material textures opt into Wicked mip
-// streaming by default. Kill-switch affects textures loaded AFTER it changes (harness
-// SET_TEXSTREAM; reload the level for full effect).
-bool g_bTextureStreamingEnabled = true;
+// GGMAX texture streaming (2026-08-01): entity material textures opt into Wicked mip streaming.
+//
+// *** DEFAULT DISABLED 2026-08-01 EVENING — IT CRASHES TWO SHIPPING DEMOS ON LOAD. ***
+// The hub sweep found "Trapped" and "RPG Template" dying ~15 s into the level load with an
+// access violation inside memcpy (Guru-Crash.log, 0xc0000005, vcruntime memcpy.asm). Proven to
+// be this feature by A/B: with SET_TEXSTREAM 0 issued before the load, BOTH levels reach the
+// editor normally; with streaming on, both crash every time. Every one of the other 17 demos
+// loads fine either way, so it is content-dependent — most likely the streaming thread's
+// partial re-read of the container file (wiResourceManager.cpp, FileRead at a mip offset) not
+// matching what was uploaded, producing bad initdata sizes for the replacement CreateTexture.
+// Prime suspect to check first: WickedCall_LoadImage decrypts the file on disk, reads it, then
+// RE-ENCRYPTS it (g_pGlob->Encrypt below) — so a file that was plain DDS at sniff time may not
+// be plain when the streaming thread re-reads it seconds later. container_filesize is also set
+// from the in-memory buffer size, which need not equal the on-disk size.
+// Re-enable for investigation with SET_TEXSTREAM 1 (then load a level). Do NOT flip this back
+// to true until Trapped and RPG Template both load clean.
+bool g_bTextureStreamingEnabled = false;
 wiResource WickedCall_LoadImage(std::string pFilenameToLoadIN, eImageResType eType, bool bAllowStreaming)
 {
 	//PE: Prevent dublicate textures even if using different names.

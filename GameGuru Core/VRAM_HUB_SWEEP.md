@@ -93,9 +93,37 @@ draws 74 k in 7.7 GB. Do not use scene complexity as a VRAM proxy — measure.
 | Transparent shadow atlas RGBA8 | −80 to −256 MB | ~−3 GB | verify the alpha-depth test first |
 | Mesh suballocator granularity | −0 to 512 MB | varies | fragmentation-dependent |
 
-## Load failures found by the sweep
+## The sweep found a CRASH, and it was ours
 
-**Trapped** and **RPG Template** did not reach the editor. Both were retried individually; MAX
-was no longer running afterwards, which points at a crash during level load rather than a slow
-load. Diagnosed separately — see the session notes. These two are a correctness bug, not a VRAM
-result, and should be treated as their own issue.
+**Trapped** and **RPG Template** did not reach the editor. Both die ~15 s into the level load
+with an access violation **inside `memcpy`** (`Guru-Crash.log`: `0xc0000005`, vcruntime
+`memcpy.asm`). All 19 demos loaded fine in the 2026-07-31 sweep, so this is a regression from
+today's work.
+
+**Proven cause: the texture-streaming enrollment shipped that morning.** A/B, three times each:
+issue `SET_TEXSTREAM 0` before the load and both levels reach the editor normally (Trapped in
+10 s); leave streaming on and both crash every time. The other 17 demos are unaffected either
+way, so it is content-dependent.
+
+**Action taken:** `g_bTextureStreamingEnabled` now defaults to **false**. A crash on load in
+shipping demos is worth far more than the ~1.3 GB streaming was saving. Re-enable for
+investigation with `SET_TEXSTREAM 1`; do not restore the default until both levels load clean.
+
+First things to check when root-causing: `WickedCall_LoadImage` decrypts the file on disk, reads
+it, then **re-encrypts it**, while the streaming thread re-reads that same file at a mip offset
+seconds later (`wiResourceManager.cpp` `FileRead`) — so a file that was plain DDS at sniff time
+need not be plain when streaming reads it. `container_filesize` is also taken from the in-memory
+buffer length, which need not equal the on-disk size; a short/garbage read there would give the
+replacement `CreateTexture` bad `initdata` and land exactly where the crash is.
+
+Their numbers, measured with streaming off (so **not** comparable to the 17 above, which had it
+on and were therefore ~1.3 GB lighter):
+
+| Demo | driver MB | census MB | hair systems | strands | polys | FPS |
+|---|---|---|---|---|---|---|
+| RPG Template | 6687 | 5070 | 51 | 2,786,000 | 3,235,005 | 72.1 |
+| Trapped | 5263 | 3407 | 0 | 0 | 11,209 | 149.1 |
+
+**Note for the whole table:** the 17 demos above were measured with streaming ON, which is no
+longer the default. Re-run the sweep after the streaming bug is fixed (or accept that every row
+will read ~1.3 GB higher with it off).
