@@ -1382,6 +1382,24 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			wi::renderer::gg_dbg_stream_copies.load(),
 			wi::scene::gg_dbg_stream_fb_hits.load(),
 			wi::gg_dbg_stream_req_calls.load());
+		{
+			// GGMAX 1.70: VRAM census aggregates (full line items via DUMP_VRAM)
+			extern void GG_GetVRAMTotals(unsigned long long*, unsigned long long*, unsigned long long*, unsigned long long*, unsigned int*);
+			unsigned long long vcAll = 0, vcDef = 0, vcUse = 0, vcBud = 0; unsigned int vcCount = 0;
+			GG_GetVRAMTotals(&vcAll, &vcDef, &vcUse, &vcBud, &vcCount);
+			written += _snprintf(result + written, resultSize - written,
+				"VRAM: census_mb=%.1f defaultheap_mb=%.1f resources=%u driver_usage_mb=%.1f driver_budget_mb=%.1f\n",
+				vcAll / (1024.0 * 1024.0), vcDef / (1024.0 * 1024.0), vcCount,
+				vcUse / (1024.0 * 1024.0), vcBud / (1024.0 * 1024.0));
+			// Mesh-data suballocator occupancy: blocks are freed only when fully empty, so
+			// free_mb here is either genuine headroom or fragmentation holding blocks alive.
+			unsigned int sbBlocks = 0; unsigned long long sbTotal = 0, sbFree = 0;
+			wi::renderer::GG_GetSuballocatorStats(&sbBlocks, &sbTotal, &sbFree);
+			written += _snprintf(result + written, resultSize - written,
+				"SUBALLOC: blocks=%u total_mb=%.1f free_mb=%.1f used_mb=%.1f\n",
+				sbBlocks, sbTotal / (1024.0 * 1024.0), sbFree / (1024.0 * 1024.0),
+				(sbTotal - sbFree) / (1024.0 * 1024.0));
+		}
 		written += _snprintf(result + written, resultSize - written,
 			"STREAM2: jobStart=%llu jobEnd=%llu busySkip=%llu\n",
 			wi::resourcemanager::gg_dbg_stream_job_starts.load(),
@@ -3253,6 +3271,30 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: DUMP_STREAM could not open stream_dump.txt");
 		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_VRAM") == 0)
+	{
+		// DUMP_VRAM [tag] — full per-resource VRAM census (engine 1.70): every live GPU
+		// allocation with allocated bytes, dimensions/format/flags and debug name (content
+		// textures carry their file path), sorted largest first, plus a header reconciling
+		// the census against D3D12MA's own accounting and the driver's reported usage.
+		// Written to Files\vram_census[_tag].txt.
+		extern void GG_DumpVRAMCensus(const char* path);
+		char vcPath[MAX_PATH];
+		if (arg && arg[0])
+		{
+			char vcTag[64]; _snprintf(vcTag, sizeof(vcTag), "%s", arg); vcTag[sizeof(vcTag) - 1] = 0;
+			for (char* p = vcTag; *p; ++p) { if (*p == ' ' || *p == '\\' || *p == '/' || *p == ':') *p = '_'; }
+			_snprintf(vcPath, sizeof(vcPath), "vram_census_%s.txt", vcTag);
+		}
+		else
+		{
+			_snprintf(vcPath, sizeof(vcPath), "vram_census.txt");
+		}
+		vcPath[sizeof(vcPath) - 1] = 0;
+		GG_DumpVRAMCensus(vcPath);
+		_snprintf(result, sizeof(result), "OK: DUMP_VRAM written to %s (game CWD = Files dir)", vcPath);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "DUMP_STREAM2") == 0)

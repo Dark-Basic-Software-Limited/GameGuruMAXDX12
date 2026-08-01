@@ -4477,6 +4477,18 @@ bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint3
 
 	stagingDesc.mip_levels = maxMip;
 
+	// GGMAX VRAM (2026-08-01): the destination source-texture arrays are lazily allocated
+	// (GGTerrain_EnsurePageAtlas) because only the dead custom-VT draw path samples them —
+	// the shipping Wicked terrain loads these same DDS files again through the resource
+	// manager for its own material atlas. With the array absent, do the header validation
+	// (callers depend on the true/false result and on the DDSRequirements out-params) but
+	// skip the staging upload + copies. Saves ~427 MB and up to 96 2K texture uploads/level.
+	if (tex == nullptr || !tex->IsValid())
+	{
+		delete[] filedata;
+		return true;
+	}
+
 	// Staging texture must survive until the GPU finishes executing the copy commands.
 	// CopyTexture records raw resource pointers without AddRef.
 	Texture stagingTex;
@@ -5227,6 +5239,75 @@ void GGTerrain_CreateRenderTexture( int width, int height, int mipLevels, Format
 
 	device->CreateTexture( &texDesc, nullptr, tex );
 	device->SetName( tex, "renderTex" );
+}
+
+// GGMAX VRAM (2026-08-01): lazy allocation of GGTerrain's own virtual-texture page cache.
+// The two 9520x9520 physical page textures cost 883.6 MB and are DEAD in the shipping
+// configuration: ggterrain_use_wicked_terrain defaults to 1, GGTerrain_Update returns
+// before GGTerrain_DrawPages (the only thing that renders into them) and every
+// customDraw_* callback in master_part1.cpp early-returns on the same flag, so nothing
+// samples them either. They are only needed if the Y-key debug toggle flips the legacy
+// path live, which calls this from GGTerrain_Update's legacy tail before first use.
+bool ggterrain_page_atlas_created = false;
+void GGTerrain_EnsurePageAtlas()
+{
+	if ( ggterrain_page_atlas_created ) return;
+	ggterrain_page_atlas_created = true;
+
+	GraphicsDevice* device = wiGraphics::GetDevice();
+
+	// trilinear filtering requires 2 pixel border all around on mip 0 and 1 pixel border all around on mip 1
+	// anisotropic x4 filtering requires 4 pixel border all around on mip 0 and 2 pixel border all around on mip 1
+	// anisotropic x8 filtering seems to be fine with 6 pixel border all around on mip 0 and 3 pixel border all around on mip 1, may require more
+	GGTerrain_CreateRenderTexture( physTexSizeX, physTexSizeY, 2, Format::R8G8B8A8_UNORM_SRGB, &texPagesColorAndMetal );
+	GGTerrain_CreateRenderTexture( physTexSizeX, physTexSizeY, 2, Format::R8G8B8A8_UNORM, &texPagesNormalsRoughnessAO );
+
+	// have to create subresource views individually
+	device->CreateSubresource( &texPagesColorAndMetal, SubresourceType::RTV, 0, -1, 0, 1 );
+	device->CreateSubresource( &texPagesColorAndMetal, SubresourceType::RTV, 0, -1, 1, 1 );
+	device->CreateSubresource( &texPagesNormalsRoughnessAO, SubresourceType::RTV, 0, -1, 0, 1 );
+	device->CreateSubresource( &texPagesNormalsRoughnessAO, SubresourceType::RTV, 0, -1, 1, 1 );
+
+	// create render passes for physical texture (attachments hold the Texture BY VALUE,
+	// so these must be built here, after the textures exist)
+	RenderPassDesc renderDesc = {};
+	{
+		RenderPassAttachment att;
+		att.type = RenderPassAttachment::Type::RENDERTARGET;
+		att.loadop = RenderPassAttachment::LoadOp::LOAD;
+		att.texture = texPagesColorAndMetal;
+		att.subresource = 0;
+		renderDesc.attachments.push_back(att);
+	}
+	{
+		RenderPassAttachment att;
+		att.type = RenderPassAttachment::Type::RENDERTARGET;
+		att.loadop = RenderPassAttachment::LoadOp::LOAD;
+		att.texture = texPagesNormalsRoughnessAO;
+		att.subresource = 0;
+		renderDesc.attachments.push_back(att);
+	}
+	device->CreateRenderPass( &renderDesc, &renderPassPhysicalTex );
+
+	// and for the mip level
+	renderDesc.attachments[0].subresource = 1;
+	renderDesc.attachments[1].subresource = 1;
+	device->CreateRenderPass( &renderDesc, &renderPassPhysicalTexMip );
+
+	// Source material arrays the page generator samples (427 MB) — same deal, only the
+	// legacy path reads them. Created empty here; the deferred-reload mechanism below
+	// refills them from the level's terrain textures on the next GGTerrain_Update.
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC7_UNORM_SRGB, &texColorArray );
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC5_UNORM, &texNormalsArray );
+#ifdef GGTERRAIN_USE_SURFACE_TEXTURE
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC1_UNORM, &texSurfaceArray ); // R: occlusion, G: roughness, B: metalness
+#else
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC5_UNORM, &texRoughnessMetalnessArray );
+	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC4_UNORM, &texAOArray );
+#endif
+
+	// ask GGTerrain_Update to reload the level's terrain textures into the arrays we just made
+	g_iDeferTextureUpdateToNow = 2;
 }
 
 void GGTerrain_CreateComputeTexture( int width, int height, Format format, Texture* tex )
@@ -6642,14 +6723,12 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 	
 	//if ( GetFileExists("Files/mipmap_debug.dds") ) GGTerrain_LoadTextureDDS( "Files/mipmap_debug.dds", &texMipmapDebug );
 	GGTerrain_CreateFractalTexture( &texMask, 1024 );
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC7_UNORM_SRGB, &texColorArray );
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC5_UNORM, &texNormalsArray );
-#ifdef GGTERRAIN_USE_SURFACE_TEXTURE
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC1_UNORM, &texSurfaceArray ); // R: occlusion, G: roughness, B: metalness
-#else
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC5_UNORM, &texRoughnessMetalnessArray );
-	GGTerrain_CreateEmptyTexture( 2048, 2048, 10, GGTERRAIN_MAX_SOURCE_TEXTURES, Format::BC4_UNORM, &texAOArray );
-#endif
+	// GGMAX VRAM: the 32-slice source texture arrays (427 MB) are allocated lazily with the
+	// rest of the legacy VT machinery — only GGTerrain's dead custom draw/page-gen samples
+	// them, while the shipping Wicked terrain loads the same terraintextures/matN DDS files
+	// through the resource manager for its own atlas. GGTerrain_LoadTextureDDSIntoSlice
+	// validates-without-uploading while they are absent, so ReloadTextures below still
+	// reports failures/requirements exactly as before.
 
 	colorDDS.format = DXGI_FORMAT_BC7_UNORM;
 	normalDDS.format = DXGI_FORMAT_BC5_UNORM;
@@ -6955,44 +7034,13 @@ int GGTerrain_Init( wiGraphics::CommandList cmd )
 		ggterrain_flat_areas_free.PushItem( i );
 	}
 
-	// physical texture for virtual texture
-	// trilinear filtering requires 2 pixel border all around on mip 0 and 1 pixel border all around on mip 1
-	// anisotropic x4 filtering requires 4 pixel border all around on mip 0 and 2 pixel border all around on mip 1
-	// anisotropic x8 filtering seems to be fine with 6 pixel border all around on mip 0 and 3 pixel border all around on mip 1, may require more
-	GGTerrain_CreateRenderTexture( physTexSizeX, physTexSizeY, 2, Format::R8G8B8A8_UNORM_SRGB, &texPagesColorAndMetal );
-	GGTerrain_CreateRenderTexture( physTexSizeX, physTexSizeY, 2, Format::R8G8B8A8_UNORM, &texPagesNormalsRoughnessAO );
+	// physical page cache for GGTerrain's OWN virtual texture — 883.6 MB, now allocated
+	// LAZILY (GGTerrain_EnsurePageAtlas, called from GGTerrain_Update's legacy tail).
+	// The shipping terrain is Wicked's native path (ggterrain_use_wicked_terrain = 1):
+	// GGTerrain_Update returns before GGTerrain_DrawPages and every custom-draw callback
+	// is gated off in master_part1.cpp, so nothing renders into or samples these textures.
+	// Only the Y-key debug flip to the legacy path pays for them. See VRAM_CENSUS.md.
 
-	// have to create subresource views individually
-	device->CreateSubresource( &texPagesColorAndMetal, SubresourceType::RTV, 0, -1, 0, 1 );
-	device->CreateSubresource( &texPagesColorAndMetal, SubresourceType::RTV, 0, -1, 1, 1 );
-	device->CreateSubresource( &texPagesNormalsRoughnessAO, SubresourceType::RTV, 0, -1, 0, 1 );
-	device->CreateSubresource( &texPagesNormalsRoughnessAO, SubresourceType::RTV, 0, -1, 1, 1 );
-
-	// create render passes for physical texture
-	RenderPassDesc renderDesc = {};
-	{
-		RenderPassAttachment att;
-		att.type = RenderPassAttachment::Type::RENDERTARGET;
-		att.loadop = RenderPassAttachment::LoadOp::LOAD;
-		att.texture = texPagesColorAndMetal;
-		att.subresource = 0;
-		renderDesc.attachments.push_back(att);
-	}
-	{
-		RenderPassAttachment att;
-		att.type = RenderPassAttachment::Type::RENDERTARGET;
-		att.loadop = RenderPassAttachment::LoadOp::LOAD;
-		att.texture = texPagesNormalsRoughnessAO;
-		att.subresource = 0;
-		renderDesc.attachments.push_back(att);
-	}
-	device->CreateRenderPass( &renderDesc, &renderPassPhysicalTex );
-
-	// and for the mip level
-	renderDesc.attachments[0].subresource = 1;
-	renderDesc.attachments[1].subresource = 1;
-	device->CreateRenderPass( &renderDesc, &renderPassPhysicalTexMip );
-	
 	// fill final page table with everything pointing to page 0
 	memset( pageTableData, 0, GGTERRAIN_PAGE_TABLE_DEPTH*pagesX*pagesY*sizeof(uint16_t) ); // default everything to 0 (invalid page)
 	GGTerrain_UploadPageTableFinal();
@@ -7488,6 +7536,7 @@ void GGTerrain_WindowResized()
 void GGTerrain_DrawPages( CommandList cmd )
 {
 	if ( !ggterrain_initialised ) return;
+	if ( !texPagesColorAndMetal.IsValid() ) return; // GGMAX VRAM: page cache is lazily allocated (GGTerrain_EnsurePageAtlas)
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	auto range = wiProfiler::BeginRangeGPU( "Terrain Page Generation", cmd );
@@ -9955,6 +10004,12 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 		GGCustomFrame_Update(cmd);
 		return;
 	}
+
+	// GGMAX VRAM: the legacy GGTerrain virtual-texture path is live from here down (only
+	// reachable via the Y-key toggle above). Materialise its 883.6 MB page cache on demand —
+	// the shipping Wicked-terrain path returned above and never pays for it. This runs
+	// before GGTerrain_DrawPages in the same call, so the atlas exists at first use.
+	GGTerrain_EnsurePageAtlas();
 
 	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
 	GGTerrainLODSet* pNewLODs = ggterrain.GetNewLODs();

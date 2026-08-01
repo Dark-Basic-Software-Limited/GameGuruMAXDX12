@@ -1,0 +1,145 @@
+# VRAM census — where GameGuruMAX DX12 video memory actually goes
+
+Instrument + findings from the 2026-08-01 deep-dive. The census is permanent tooling:
+re-run it any time VRAM is in question.
+
+## The instrument (engine delta 1.70)
+
+`wiGraphicsDevice_DX12.cpp` keeps a live registry of **every D3D12MA-backed allocation**
+(texture / buffer / raytracing structure). Each record carries the allocated byte count,
+the full desc (dimensions, format, mips, array size, bind/misc flags, heap usage) and the
+debug name, filled in when `SetName` arrives — so content textures show their source file
+path and engine internals show their Wicked name. Records are erased in `~Resource_DX12`,
+which is also the pooled-allocator recycle point, so keys can never go stale.
+
+**Validation:** the census total equals D3D12MA's own `CalculateStatistics().Total.Stats.AllocationBytes`
+byte-for-byte on every dump taken so far. Nothing is missed or double counted. Aliased
+resources record 0 bytes (they share a donor's memory) and are flagged; sparse textures
+record 0 (their memory is the tile pool, which is itself counted).
+
+| Command | What it gives you |
+|---|---|
+| `DUMP_VRAM [tag]` | Full per-resource dump, largest first → `Files\vram_census[_tag].txt`. Header reconciles census vs D3D12MA vs driver-reported usage. |
+| `GET_PERF_DATA` → `VRAM:` | census MB, default-heap MB, resource count, driver usage/budget |
+| `GET_PERF_DATA` → `SUBALLOC:` | mesh-data suballocator blocks: total / free / used |
+
+Dump line format (space separated, name last and quoted, so `awk` works):
+`kind bytes w h d mips arr samples fmt bind misc usage alias "name"` — kind is `T`exture,
+`B`uffer or `A`cceleration structure; `usage` 0 = DEFAULT heap (true VRAM), 1 = UPLOAD,
+2 = READBACK. Analysis helpers live in the session scratchpad (`vram_categorize.sh`).
+
+**Read the driver number, not just the census.** `driver_usage` runs ~1.3–2.2 GB above the
+census: D3D12MA block padding (reported separately as `d3d12ma_blocks`), descriptor heaps,
+command allocators, the swapchain, and the PSO cache — none of which are resource
+allocations. PSO count is reported as a proxy (`gg_dbg_pso_creates`).
+
+## Baseline measurements (2026-08-01, 1536x864 internal res)
+
+Census totals, in-game unless noted:
+
+| Demo | census | driver usage |
+|---|---|---|
+| Island Showdown | 6655 MB | 8853 MB |
+| Horseshoe Bend | 4607 MB | 6650 MB |
+| Zombie Cellar (editor) | 4598 MB | 5976 MB |
+
+Island Showdown line items:
+
+| MB | % | Item |
+|---|---|---|
+| 2082 | 31.3 | grass strand buffers (`HairParticleSystem::generalBuffer`) |
+| 887 | 13.3 | **GGTerrain custom-VT physical pages — dead path** |
+| 768 | 11.5 | mesh-data suballocator blocks (256 MB granularity) |
+| 768 | 11.5 | engine terrain SVT tile pool (fixed 16384² × 4 maps, sparse) |
+| 650 | 9.8 | GGTerrain/grass/tree source texture arrays (**427 MB of it dead path**) |
+| 511 | 7.7 | content textures (already mip-streamed, delta 1.69) |
+| 241 | 3.6 | shadow atlases (160 transparent RGBA16F + 81 depth D32) |
+| 168 | 2.5 | terrain chunk blendmaps / wetmaps / heightmaps (841 chunks) |
+| 134 | 2.0 | terrain SVT bookkeeping buffers |
+| 65 | 1.0 | skinned mesh streamout |
+| ~65 | 1.0 | render targets + postFX chain |
+
+**The fixed terrain cost lands on every level regardless of content.** Zombie Cellar is an
+indoor level and still paid 883.6 MB of dead page cache + 768 MB SVT pool + 650 MB source
+arrays + 187 MB chunk/bookkeeping data ≈ **2.5 GB of terrain machinery for a cellar**.
+
+## Fixes applied 2026-08-01
+
+### 1. GGTerrain custom virtual-texture machinery is dead — allocate it lazily (−1.31 GB)
+
+The shipping terrain is Wicked's native SVT path (`ggterrain_use_wicked_terrain = 1`).
+`GGTerrain_Update` returns before `GGTerrain_DrawPages` (the only writer of the page cache),
+and every `customDraw_*` callback registered in `master_part1.cpp` early-returns on the same
+flag — `GGTerrain_Draw_EnvProbe` additionally has an unconditional `return` for a DX12
+deadlock. So nothing renders into or samples:
+
+- `texPagesColorAndMetal` + `texPagesNormalsRoughnessAO` — 9520² RGBA8 ×2 = **883.6 MB**
+- `texColorArray` / `texNormalsArray` / `texSurfaceArray` — 2048² × 32 slices = **427 MB**
+
+Both groups now allocate in `GGTerrain_EnsurePageAtlas()`, called only from
+`GGTerrain_Update`'s legacy tail — i.e. only if the **Y-key debug toggle** flips
+`ggterrain_use_wicked_terrain` at runtime (the sole other writer of that flag; it is not
+settable from setup.ini or a level file). `GGTerrain_DrawPages` also hard-guards on the
+atlas being valid, and the atlas creation re-arms `g_iDeferTextureUpdateToNow` so the
+legacy path repopulates its source arrays on the next update.
+
+`GGTerrain_LoadTextureDDSIntoSlice` validates the DDS header and reports failures exactly as
+before when the destination array is absent, but skips the staging texture and copies —
+so this also removes up to **96 2K texture uploads per level load**.
+
+Note the source textures were resident **twice**: once in these arrays for the dead path,
+once as individual `terraintextures/matN/*.dds` resources that Wicked's terrain bakes into
+its own atlas.
+
+### 2. Grass raytracing position copy is write-only — gate it (−12.2 MB per grass system)
+
+`HairParticleSystem::generalBuffer` packs ten regions; `vb_pos_raytracing` is a **full second
+copy of every strand position** (20% of the allocation) that only the hair BLAS consumes.
+The BLAS is only built when the scene has a TLAS — SurfelGI, DDGI, RT shadows, RTAO, RT
+reflections or a lightmap bake — and MAX enables none of them. On Island Showdown that was
+~0.5 GB of memory written every frame and never read.
+
+Engine flag `wi::gg_hair_raytracing` (default **false**) shrinks the region to a 4-element
+scratch. The simulate CS still writes `vertexBuffer_POS_RT` unconditionally, but it is a
+**typed** buffer UAV (`RWBuffer<float4>`) and out-of-bounds typed-UAV writes are discarded by
+the hardware — so no shader change is needed. `CreateRaytracingRenderData` refuses to build a
+BLAS from the scratch-sized region. If an RT feature is ever enabled, set the flag **before**
+level load: `CreateRenderData` bakes the buffer layout.
+
+## Ranked backlog (not applied)
+
+1. **Grass per-type over-allocation, ~4-5×.** Grass systems are created per (terrain chunk ×
+   distinct grass type painted in it), each with a flat `STAGE1_STRANDS_PER_TIER = 100000`
+   strands spread over the *whole* chunk; the shader then masks out the ~80% that land on
+   cells of another type. Five types in one chunk costs 5 × 59.5 MB to draw one chunk of
+   grass. Fixing it properly means stamping per-type `vertex_lengths` (which
+   `CreateFromMesh` already honours — it only emits triangles with non-zero length) *and*
+   scaling `strandCount` by coverage; scaling strand count alone thins the grass, because
+   uniform placement means f×strands over f×area yields f² surviving.
+2. **Terrain SVT tile pool, 768 MB fixed** (`wiTerrain.cpp`, 16384² × 4 map types, sparse).
+   **Measured residency is the interesting part: `VT:` reports `free` of `tiles=3844` as
+   2758–2954 on every demo tried — Island Showdown, Horseshoe Bend, Zombie Cellar and Switch
+   Escape all settle at roughly 890–1090 resident tiles, ~26% of the atlas.** Halving the
+   atlas height (16384 → 8192) gives 1922 tiles — still ~1.8× the observed peak — and saves
+   **384 MB**. The risk is a level whose working set exceeds it: tiles then evict and
+   re-render, which can show as terrain-detail pop under fast motion. Worth doing behind a
+   knob with a soak on the densest levels; do not ship it unmeasured.
+3. **Transparent shadow atlas, RGBA16F → RGBA8: −80 MB** (Island). Cheap, *but* the alpha
+   channel carries a depth value compared against the shadow `cmp`
+   (`TRANSPARENT_SHADOWMAP_SECONDARY_DEPTH_CHECK` is defined in `objectHF.hlsli`), so 8-bit
+   alpha quantises that test. Verify no MAX material actually renders into it first — if
+   none does, any format is safe.
+4. **Suballocator granularity.** Blocks are 256 MB and are only released when *completely*
+   empty, so one pinned allocation can hold a whole block. `SUBALLOC:` reports occupancy.
+5. **`texMaterialMap` / `texGrassMap` / `texTreeMap`** — 3 × 16 MB 4096² R8. The GPU copies
+   are read only by the dead path (the CPU-side maps are what editing uses).
+
+## Knobs that do NOT reduce VRAM (measured, so nobody re-chases them)
+
+- **Grass Density slider** — hash-thresholds which *cells* get painted. Strand allocation is
+  fixed per tier. Zero VRAM effect.
+- **Grass Draw Distance / vegetation quality preset** — the near (tier-3) ring is pinned at
+  1.5 chunks for every slider value; distance only adds/removes the cheap outer tiers.
+- **`SET_GRASS blades` / `SET_GRASS maxstrands`** — dead settings, written but never read.
+  The comment block above them in `GGTerrainWicked.cpp` describes a model the code no longer
+  uses.
