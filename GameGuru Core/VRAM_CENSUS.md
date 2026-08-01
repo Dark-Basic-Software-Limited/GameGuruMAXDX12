@@ -125,7 +125,17 @@ FPS moved only where grass exists, which is exactly what the raytracing-copy fix
 (that buffer was being written every frame): Island Showdown 71.5 → 88.9 in-game and 62.2 →
 76.3 in the editor; Horseshoe Bend, which has no grass systems at all, stayed at 68 → 69.
 
-## Cross-demo picture on the fixed build (in-game)
+## Where the grass-heavy demos ended up (in game, all three fixes)
+
+| Demo | start of 2026-08-01 | after dead-VT + RT-copy | after coverage scaling |
+|---|---|---|---|
+| The Mystery of Z Island | ~12.8 GB (est.) | 10207 MB | **7251 MB** |
+| Jungle Fever | ~9.6 GB (est.) | 7682 MB | **5665 MB** |
+| Island Showdown | 8853 MB | 7064 MB | **5557 MB (−37%)** |
+
+FPS in game rose with each step where grass exists (Z Island 93.5 → 101.4 on the last one).
+
+## Cross-demo picture after the first two fixes (in-game)
 
 | Demo | census | driver | grass buffers | grass share |
 |---|---|---|---|---|
