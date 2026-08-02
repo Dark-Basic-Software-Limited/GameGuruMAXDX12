@@ -3350,6 +3350,19 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: DUMP_VRAM written to %s (game CWD = Files dir)", vcPath);
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "VRAM_STAGE") == 0)
+	{
+		// VRAM_STAGE <label> — record the driver-reported video memory usage at a named point
+		// (engine 1.77). The resource census cannot see descriptor heaps, pipeline states or
+		// command allocators, and those add up to ~1.4 GB on every level; marking the driver
+		// number at hub / level-loaded / after-play turns that lump into an attribution.
+		// Marks are printed in the STAGE lines of the next DUMP_VRAM.
+		extern void GG_VRAMStage(const char* label);
+		const char* label = (arg && arg[0]) ? arg : "mark";
+		GG_VRAMStage(label);
+		_snprintf(result, sizeof(result), "OK: VRAM_STAGE '%s' recorded (read it in the next DUMP_VRAM)", label);
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "DUMP_STREAM2") == 0)
 	{
 		// DUMP_STREAM2 — engine-side authoritative enrolled-set dump (wi::resourcemanager
