@@ -1,4 +1,4 @@
-# VRAM census — where GameGuruMAX DX12 video memory actually goes
+﻿# VRAM census — where GameGuruMAX DX12 video memory actually goes
 
 Instrument + findings from the 2026-08-01 deep-dive. The census is permanent tooling:
 re-run it any time VRAM is in question.
@@ -206,6 +206,44 @@ fixed floor (~2.4 GB of engine/terrain machinery + content). **Z Island would ha
 still the level to worry about, because half of it is one over-allocating system.
 
 ## Ranked backlog (not applied)
+
+
+## SVT atlas halving — SOAKED 2026-08-02: **8192 FAILS, 12288 is the safe setting**
+
+`svtatlasheight` was carrying "−384 MB × 19, ~7 GB hub-wide, needs a fast-travel soak". The soak
+was run (`tools/svt_soak.sh`, Z Island, 3 laps over 8 waypoints with 5 s dwells so the atlas must
+evict and re-stream). **The old "44-46% tile headroom" note was measured at a STATIC SPAWN and is
+wrong for travel.**
+
+| atlas height | tiles | min free under travel | peak used | headroom | driver VRAM at spawn |
+|---|---|---|---|---|---|
+| 16384 (stock) | 3844 | 1873 | 1971 | 49% | 10150 MB |
+| **12288** | **2852** | **881** | **1971** | **31%** | **9894 MB (−256)** |
+| 8192 | 1922 | **0** | — | **STARVED** | 9702 MB (−449) |
+
+**8192 is not viable.** Peak tile demand under fast travel is **1971**, and the halved atlas only
+has 1922 — it physically cannot hold the working set. `free` hits **0** at the worst waypoint and
+single digits (7, 29, 47, 51) at most others, and the terrain visibly blurs: the lichen speckle
+smears and path edges lose definition.
+
+**12288 is safe and is the recommendation.** Its peak usage is **1971 — identical to stock**,
+which is the key evidence: every tile request was served, so there is no eviction pressure and no
+fallback to lower mips. 881 tiles (31%) still spare at the worst waypoint. Visually it retains
+the crisp ground detail that 8192 loses. **Worth ~192-256 MB on EVERY level (~3.6-4.8 GB
+hub-wide)** — less than the hoped-for 7 GB, but real and on the floor every project pays.
+
+### Measurement trap found here (do not repeat)
+
+Cross-run screenshot diffs **cannot** judge this. Atlas height needs a restart, so each config is
+a separate cold launch, and the pixel diff is then dominated by animation phase (grass sway,
+ocean, lighting settle) — 12288-vs-stock measured 6-57% differing pixels, i.e. the same order as
+the known-bad 8192, purely from animation. **Judge this from the VT telemetry** (`VT: free=` /
+`tiles=` in `GET_PERF_DATA`), where the signal is unambiguous, and use screenshots only for
+eyeball confirmation of a result the telemetry already established.
+
+**Still to do before defaulting it on:** soak 2-3 more terrain-heavy levels (Canyon Offensive,
+Jungle Fever, Aztec Game Kit). Peak demand is content-dependent, and 12288's margin is 31% on
+Z Island — a level with denser terrain paint could need more.
 
 ### CONTENT: 967 single-mip DDS = 5.5 GB that can never stream (measured 2026-08-01)
 
