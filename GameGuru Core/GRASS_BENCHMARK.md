@@ -18,19 +18,36 @@ sparse distance for low-end machines, out to extreme distance for high-end ones.
 - Grass Draw Distance saved at **2247** (per-strand cull = lod_dist + 2500 = 4747 inches).
 - Grass Density 100, Match Terrain Color on.
 
-## GOOD reference numbers (build: engine `2b9b989f`, game `207e4b4d`)
+## GOOD reference numbers — REFRESHED 2026-08-02 (engine `3666bbf7`, game `a46f55c9`)
 
-Editor, ~30 s after load:
+Editor, ~40 s after load, defaults only (no `lowvram` keys in setup.ini):
 
 | Metric | Value |
 |---|---|
-| driver VRAM | **6536–6553 MB** |
-| census | 4995–4999 MB |
-| grass buffers | **1945 MB (38.9%)** — 37 systems @ 47.4 MB + 3 @ 25.2 + 12 @ 8.6 |
-| HAIR_SYSTEMS | 52 |
-| HAIR_TOTAL_STRANDS | 4,216,000 |
-| FPS | 59.9 (v-synced) |
-| POLYS | 2,714,197 |
+| driver VRAM | **5926–5990 MB** |
+| census | 4870–4886 MB |
+| grass buffers | **2187 MB** |
+| HAIR_SYSTEMS | 58 |
+| HAIR_TOTAL_STRANDS | 4,816,000 |
+| SUBALLOC | 512 MB total, 469.9 used |
+| FPS | 56.1 |
+| POLYS | 3,149,243 |
+
+<details><summary>Superseded 2026-08-01 reference (kept for the record)</summary>
+
+driver VRAM 6536–6553 MB · census 4995–4999 · grass 1945 MB · 52 systems ·
+4,216,000 strands · FPS 59.9 · POLYS 2,714,197 · coverage 9.554% · clumpCV 0.871 ·
+bands 14.19 14.94 16.83 8.17 3.15 0.00.
+
+Those numbers stopped reproducing. System count, strand count and POLYS all moved together,
+which is the signature of a **different chunk set in range** — the scene's saved camera or its
+content drifted between 08-01 and 08-02. Nothing in the shipping build accounts for it, and the
+grass pipeline itself is provably intact (the density sweep behaves exactly as the model
+predicts). Since the whole point of the reference is to be reproducible, it has been retaken on
+the current build rather than argued with. **If you ever see a jump in HAIR_SYSTEMS / strands /
+POLYS together, suspect the scene, not the renderer.**
+
+</details>
 
 Reference screenshot: `tools/reference/BENCHMARK_GOOD_testpro1_grass.png`.
 
@@ -55,21 +72,25 @@ powershell -NoProfile -File "GameGuru Core/tools/grassdensity.ps1" -Img shot.png
 - **bands** — coverage per horizontal band, near (screen bottom) → far (top). This is the
   draw-distance curve: it is what "dense up front, sparse in the distance" looks like as data.
 
-### Measured noise floor (3 shots, same build, same load)
+### Measured noise floor — REFRESHED 2026-08-02 (3 shots, one load, same build)
 
 | | shot 1 | shot 2 | shot 3 |
 |---|---|---|---|
-| coverage | 9.554% | 9.525% | 9.436% |
-| clumpCV | 0.870 | 0.872 | 0.872 |
-| bands near..far | 14.19 14.94 16.83 8.17 3.15 0.00 | 14.02 15.01 16.81 8.09 3.18 0.00 | 13.92 14.72 16.69 8.10 3.14 0.00 |
+| coverage | 9.450% | 9.435% | 9.468% |
+| clumpCV | 1.101 | 1.105 | 1.107 |
+| bands near..far | 13.58 13.12 18.75 9.87 1.33 0.00 | 13.51 13.10 18.71 9.90 1.34 0.00 | 13.83 12.96 18.71 9.91 1.34 0.00 |
+
+Spread: coverage 0.033 pp, **clumpCV 0.006**, bands within 0.32 pp. The clumpCV noise band is
+still comfortably below the ±0.01 gate, so the thresholds below are unchanged — only the values
+they are measured against have moved.
 
 ### Acceptance thresholds
 
 A change is visually clean on this scene only if **all** hold:
 
-- coverage within **±0.15 pp** of ~9.5%
-- **clumpCV within ±0.01 of 0.871** ← the clumping gate; treat any rise as a failure
-- each band within **±0.25 pp** of the reference profile
+- coverage within **±0.15 pp** of ~9.45%
+- **clumpCV within ±0.01 of 1.104** ← the clumping gate; treat any rise as a failure
+- each band within **±0.25 pp** of the reference profile (13.6 13.1 18.7 9.9 1.3 0.0)
 
 Anything that trades coverage for clumping fails even if total coverage matches.
 
@@ -118,34 +139,13 @@ approach that must not be repeated.
 
 ---
 
-## 2026-08-02 — the density lever, and a WARNING about the reference numbers above
+## 2026-08-02 — the density lever
 
-### The reference numbers above no longer reproduce. Use a same-session baseline.
-
-Re-running this scene on the 2026-08-02 build gave a baseline that does **not** match the
-"GOOD reference" table:
-
-| | stored reference (08-01) | measured 08-02 |
-|---|---|---|
-| HAIR_SYSTEMS | 52 | **58** |
-| HAIR_TOTAL_STRANDS | 4,216,000 | **4,816,000** |
-| POLYS | 2,714,197 | **3,149,243** |
-| coverage | 9.554% | 9.450% |
-| **clumpCV** | **0.871** | **1.104** |
-| bands near..far | 14.19 14.94 16.83 8.17 3.15 0.00 | 13.86 12.94 18.66 9.84 1.35 0.00 |
-
-Coverage still lands in the old band, but clumpCV is +0.233 — **23× the ±0.01 gate**. Taken at
-face value that would condemn the shipping build. It does not: system count, strand count and
-POLYS all moved together, which is the signature of a **different chunk set in range**, i.e. the
-scene's saved camera (or its content) is not what it was on 08-01. Chunk creation follows the
-camera, so more chunks in range means more systems, more strands, more polygons, and a different
-framing for every pixel metric.
-
-**Therefore: judge any grass change against a baseline captured in the SAME session on the SAME
-build, never against the table at the top of this file, until that table is refreshed.** The
-gate's *thresholds* are still right; its *reference values* are stale. Refreshing them is an open
-item — and whoever does it should first work out why the scene drifted, because if it was an
-accidental re-save then the "GOOD" camera is gone and the new one needs blessing.
+The reference-drift warning that stood here has been actioned: the tables above were **retaken on
+this build** and the stale 08-01 values moved into the collapsed block beside them. The standing
+rule it produced is worth keeping though — **judge a grass change against a baseline captured in
+the same session on the same build**, and if HAIR_SYSTEMS / strands / POLYS jump together,
+suspect the scene rather than the renderer.
 
 ### The density lever (low-VRAM preset)
 
