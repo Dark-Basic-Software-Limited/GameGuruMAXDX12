@@ -112,10 +112,10 @@ a fix that should simply happen.
 |---|---|---|---|
 | A0 | **Legacy grass/tree blade atlases on demand** | **−220** | **SHIPPED + verified** — see below |
 | A1 | Lazy object PSOs | **−633** | **shipped** (`lowvram=1`; consider default-on once hitching is judged) |
-| A2 | Suballocate terrain chunk mesh buffers | −125 | engineering — 64 KB granularity waste, incl. **72 MB of 4-byte empty vertex streams** |
-| A3 | Mesh suballocator granularity 256→128 MB | −128 | engineering — small levels use only ~310 of 512 |
-| A4 | Terrain machinery allocated on demand | −1111 on terrain-free levels | engineering — the cellar pays full terrain cost for an indoor level |
-| A5 | Tessellation + voxelize PSO axes | ~−200 | engineering — needs `SetTessellationEnabled(false)` moved before `LoadShaders` |
+| A2 | Release reset chunk buffers instead of 4-byte stand-ins | **−72** | **SHIPPED + verified** (game `e1b437a4`) |
+| A3 | Mesh suballocator granularity 256→128 MB | **−128 on small levels** | **SHIPPED + verified** (engine `e0287386`) |
+| A4 | Terrain machinery sized to demand | see the SVT section below | **investigated, not shipped** — two costed options, needs a soak |
+| A5 | Tessellation + voxelize PSO axes | **−2304 pipelines (6337→4033)** | **SHIPPED + verified** (engine `e0287386`) |
 
 ### Tier B — user-facing quality dials, real visual trade
 
@@ -183,3 +183,62 @@ coverage 9.458 (ref 9.45), clumpCV 1.102 (ref 1.104, noise ±0.006), bands 13.52
 - **`mesh` (suballocator)** is shared by terrain, trees and entity meshes, so tree *mesh* bytes
   cannot be separated out. Since the pool is near-constant at 512 MB this does not change any
   conclusion, but it is why the TREES column is textures only.
+
+
+## Tier A results so far
+
+Cumulative effect of A0 + A2 + A3 + A5, editor, defaults, against this document's own baseline
+table. POLYS bit-identical on every level, and TESTPRO1 passes the grass density gate at each
+step (final: coverage 9.486, clumpCV 1.103 against a reference of 1.104 ± 0.006):
+
+| Level | audit baseline | after Tier A | saved |
+|---|---|---|---|
+| Switch Escape | 3780 | **3116** | −664 (−17.6 %) |
+| Island Showdown | 4328 | **3841** | −487 (−11.3 %) |
+| Foggy Forest | 5269 | **4701** | −568 (−10.8 %) |
+| TESTPRO1 (benchmark) | 5926–5990 | **5391** | ~−535 |
+
+Eager driver pipelines 6337 → **4033**. Zero 4-byte stand-in buffers and zero legacy `tex` array
+records remain in any census. None of this costs a single pixel — every item was dead weight.
+
+## A4 — the SVT tile pool: findings, and why nothing shipped yet
+
+The pool is **576 MB at the shipping 12288 atlas height**, and it is one `CreateBuffer` sized for
+the *whole* atlas across *four* maps (`wiTerrain.cpp`, `tile_pool_desc.size +=` per map). Two
+independent reductions exist, and they are very different in cost and risk.
+
+### Option 1 — drop the EMISSIVE map. −144 MB, bounded, low risk
+
+`VirtualTextureAtlas` allocates `maps[4]`: basecolor, normal, surface **and emissive**. The pool
+is the sum over all four, so emissive is exactly a quarter of it.
+
+**MAX never uses it.** `GGTerrainWicked.cpp` sets terrain material textures in exactly three
+slots — `BASECOLORMAP` (line 334), `NORMALMAP` (335), `SURFACEMAP` (339). No code path anywhere
+in the game assigns `EMISSIVEMAP` on a terrain material. The engine allocates the fourth map
+unconditionally regardless.
+
+The change is three guarded loops (`wiTerrain.cpp` lines ~1761 creation, ~1843 tile mapping,
+~1925 material binding) plus the update dispatch at ~2350. Roughly 20 lines.
+
+### Option 2 — grow the pool on demand. up to −384 MB, but a real refactor
+
+Measured residency is far below capacity: the indoor cellar peaks at **890 of 2852 tiles** (~180
+MB of the 576). Sizing the pool to demand and growing it in blocks would reclaim most of that on
+light levels while leaving heavy ones untouched.
+
+The obstacle is that `atlas.tile_pool` is a **single** `GPUBuffer`, referenced as one object by
+`SetTextureVirtual(atlas.tile_pool, …)` and by `commands[0].tile_pool`. Supporting several pools
+means tracking which pool backs each tile and threading that through the tile-mapping commands —
+a genuine change to the sparse-residency bookkeeping, not a parameter tweak.
+
+### Why neither shipped in this session
+
+Both touch terrain residency, and the user's instruction was explicitly "the SVT pool **with a
+soak**". A fast-travel soak is what catches tile starvation (the failure mode that killed
+`svtatlasheight=8192`), and it cannot be compressed — the 8192 experiment only failed visibly
+after sustained travel. There was not enough time left to implement, build and soak properly, and
+a half-soaked terrain change is worth less than no change.
+
+**Recommendation: take Option 1 first.** It is bounded, provably dead, worth 144 MB on every
+level, and one full fast-travel soak signs it off. Option 2 is worth more but deserves its own
+session.
