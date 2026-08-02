@@ -123,7 +123,7 @@ a fix that should simply happen.
 |---|---|---|---|---|
 | B1 | **Grass density** | 100 / 75 / 50 | up to −50 % of grass (−2148 on Z Island) | **shipped**, clumpCV-gated, 75 default, do not ship <50 |
 | B2 | **Grass draw distance** | slider, capped | −11 % of grass | **shipped** |
-| B3 | Terrain detail (source arrays 1024²→512²) | 2 steps | −165 | proposed |
+| ~~B3~~ | ~~Terrain detail (source arrays 1024²→512²)~~ | — | — | **withdrawn — those arrays were the dead legacy atlases and are gone entirely in A0** |
 | B4 | Terrain paint resolution (global maps 4096²→2048²) | 2 steps | −49 | proposed |
 | B5 | Shadow resolution (cascades 2048→1024) | existing slider | −60 | wire into the preset |
 | B6 | Texture budget cap by card size | auto | caps content at a target | proposed — matters most on Aztec |
