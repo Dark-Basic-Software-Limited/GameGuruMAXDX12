@@ -1250,6 +1250,20 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			(int)sc.hairs.GetCount(), (unsigned long long)totalStrands, (unsigned long long)maxStrands,
 			seg, bb, vd, len);
 
+		// GGMAX: grass systems per CHUNK. One hair system exists per (chunk x painted type),
+		// so this histogram is exactly the payoff available from merging a chunk's types into
+		// one system: chunks with 1 type save nothing, chunks with N types save (N-1)/N.
+		// Measure this before assuming the merge is worth building.
+		{
+			extern void GGGrass_GetChunkTypeHistogram(unsigned int* histOut, unsigned int histLen,
+				unsigned int* chunksOut, unsigned int* systemsOut);
+			unsigned int hist[9] = {}; unsigned int chunks = 0, systems = 0;
+			GGGrass_GetChunkTypeHistogram(hist, 9, &chunks, &systems);
+			written += _snprintf(result + written, resultSize - written,
+				"GRASS_CHUNKS: chunks=%u systems=%u  types_per_chunk 1:%u 2:%u 3:%u 4:%u 5:%u 6:%u 7:%u 8+:%u  merged_would_be=%u\n",
+				chunks, systems, hist[1], hist[2], hist[3], hist[4], hist[5], hist[6], hist[7], hist[8], chunks);
+		}
+
 		// GGMAX 1.37 diagnostics: the hair-sim static-skip gate inputs
 		written += _snprintf(result + written, resultSize - written,
 			"WEATHER_WIND: dir=(%.4f, %.4f, %.4f) speed=%.3f randomness=%.3f wavesize=%.3f\n"
@@ -3342,6 +3356,18 @@ void AutoHarness_CheckForCommand(void)
 		int tsv = atoi(arg);
 		g_bTextureStreamingEnabled = (tsv != 0);
 		_snprintf(result, sizeof(result), "OK: SET_TEXSTREAM %d (affects textures loaded from now on; reload level for full effect)", tsv);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_GRASSMERGE") == 0)
+	{
+		// SET_GRASSMERGE <0|1> — GGMAX 1.74. 1 builds ONE hair system per terrain chunk covering
+		// every painted grass type (per-strand type resolved in the simulate CS) instead of one
+		// system per (chunk x type). DEFAULT 0 until the TESTPRO1 density gate signs it off.
+		// Grass entities are built at chunk-spawn time, so RELOAD THE LEVEL after flipping this.
+		extern bool gg_grass_merge;
+		int gmv = atoi(arg);
+		gg_grass_merge = (gmv != 0);
+		_snprintf(result, sizeof(result), "OK: SET_GRASSMERGE %d (reload the level — grass entities are built at chunk spawn)", gmv);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_TEXSTREAMTRACE") == 0)

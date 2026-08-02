@@ -239,7 +239,63 @@ For the full picture the same scan reports the cost of the 1.73 block-alignment 
 **4.0 MB across all 12,561 files** (21 files affected, 17 of them 500×500 DXT1). The fix is
 effectively free.
 
-### THE RETRY: one hair system per chunk (verified feasible 2026-08-01)
+### THE RETRY: BUILT 2026-08-02, WORKS, **DEFAULT OFF — FAILS THE DENSITY GATE**
+
+Implemented end to end (engine 1.74 + game). Harness `SET_GRASSMERGE <0|1>`, then reload the
+level. **Default is 0 and must stay 0 until the gate passes.**
+
+**The premise was verified first, and it was better than predicted.** A new
+`GRASS_CHUNKS:` line in `GET_PERF_DATA` reports the per-chunk type histogram:
+
+```
+GRASS_CHUNKS: chunks=5 systems=52  types_per_chunk 7:2 8+:3  merged_would_be=5
+```
+
+Five chunks carry all 52 systems — 7 to ~13 painted types each, so the per-type split was
+allocating and simulating ~10x what it drew, not the 4x the original plan assumed.
+
+**What it delivers (measured on the TESTPRO1 benchmark):**
+
+| metric | per-type (shipped) | merged | delta |
+|---|---|---|---|
+| HAIR_SYSTEMS | 52 | **5** | −90% |
+| HAIR_TOTAL_STRANDS | 4,216,000 | **418,000** | −90% |
+| driver VRAM | 6536 MB | **4969 MB** | **−1567 MB (−24%)** |
+| editor FPS | 60.0 | **75.0** | +25% |
+| POLYS | 2,714,197 | 2,714,197 | identical |
+
+**Why it is not on: the density gate fails.** Coverage **10.96% vs 9.40%** (+1.56 pp against a
+±0.15 limit — 10x over). Bands show near denser and far sparser:
+`17.03 19.03 18.71 8.25 2.67` vs `13.74 14.61 16.72 7.98 3.16`. clumpCV is fine (0.863 vs 0.873),
+so it is NOT the clumping failure mode of the reverted 2026-08-01 attempt — the grass is
+uniformly *too dense*, which the reference screenshots confirm by eye (merged blades read
+shorter and more numerous).
+
+**Hypotheses tested and ELIMINATED — do not re-chase these:**
+1. *Texture aspect dropped from the width term.* `xHairAspect = width x texW/texH`, and the
+   merged path uses per-type `width` alone. **Measured all 52 stock grass DDS: every one is
+   square**, so the aspect factor is 1.0 and this changes nothing.
+2. *Types present in a cell but absent from the chunk scan render in merged mode but not
+   per-type.* Added a `present` flag so absent types are killed exactly as before. **No effect**
+   (10.85 -> 10.96, inside noise), so the scan was already complete.
+3. *Strand-LOD coupling.* This one was REAL and is fixed: the host computes the LOD step
+   distances from the SYSTEM viewDistance, which merged mode sets to the max across types, while
+   GG deliberately halves viewDistance for FLOWER. The shader now rescales per strand to its own
+   type's view distance. Worth 11.19 -> 10.85 pp, but not the whole gap.
+
+**The next step is an INSTRUMENT, not another theory.** Visible strand count should be identical
+by construction (strand i occupies the same position in every per-type system; a cell holds one
+type; so the union of what N systems drew is what the merged one draws). Coverage is 16% higher
+with the same strand count, which means either that identity is false or the blades are bigger.
+**Read back the hair indirect-draw args to get the actual drawn index count per system** and
+compare the two modes. That single number decides count-vs-size and ends the guessing — the same
+lesson that cracked the streaming crash in two builds after hours of wrong theory.
+
+**Safety property, verified:** with the switch off the shipped path is untouched — 52 systems,
+4,216,000 strands, coverage 9.376 / clumpCV 0.873 / bands within 0.1 pp of the pre-change
+baseline. Nothing about the default build changed.
+
+### Original design note (still accurate for the placement argument)
 
 **Placement comes out bit-identical — not "statistically equivalent" — which is exactly the
 property the failed attempt lacked.** Proof: every per-type system in a chunk already shares the

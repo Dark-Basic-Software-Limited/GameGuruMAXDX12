@@ -9,6 +9,8 @@
 #include "../../../../WickedEngineDX12/WickedEngine/wiProfiler.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiRenderPath3D.h"
 #include "../../../../WickedEngineDX12/WickedEngine/wiTimer.h"
+// GGMAX 1.74: GG_HAIR_GRASS_MERGED / GG_HAIR_MAX_GRASS_TYPES for the merged-grass path
+#include "../../../../WickedEngineDX12/WickedEngine/shaders/ShaderInterop_HairParticle.h"
 #include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
@@ -67,6 +69,11 @@ static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity;
 struct ChunkGrassEntities
 {
 	wi::ecs::Entity perType[GGGRASS_TOTAL_REAL_TYPES];
+	// GGMAX 1.74: in merged mode the chunk owns exactly ONE hair entity covering every painted
+	// type, and perType[] stays empty. Kept as a separate slot rather than reusing perType[0] so
+	// the teardown paths and the GRASS_CHUNKS histogram stay unambiguous about which mode built it.
+	wi::ecs::Entity merged = wi::ecs::INVALID_ENTITY;
+	uint64_t mergedTypeMask[2] = { 0, 0 };  // which types the merged entity was built for (88 bits)
 	ChunkGrassEntities()
 	{
 		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++) perType[t] = wi::ecs::INVALID_ENTITY;
@@ -74,6 +81,39 @@ struct ChunkGrassEntities
 };
 static std::unordered_map<uint64_t, ChunkGrassEntities> grassChunkKeyToGrassEntities;
 static std::unordered_map<uint64_t, int> grassChunkKeyToTier;                    // current LOD tier per chunk
+
+// GGMAX: how many distinct grass types are live in each chunk right now. One hair system
+// exists per (chunk x painted type), so this histogram IS the payoff available from merging a
+// chunk's types into a single system — a chunk with 1 type saves nothing, a chunk with N types
+// saves (N-1)/N of its strand buffers and of its wasted degenerate-quad work. Harness
+// GET_PERF_DATA prints it as GRASS_CHUNKS. Measure before assuming the merge pays.
+void GGGrass_GetChunkTypeHistogram(unsigned int* histOut, unsigned int histLen,
+	unsigned int* chunksOut, unsigned int* systemsOut)
+{
+	unsigned int chunks = 0, systems = 0;
+	for (auto& kv : grassChunkKeyToGrassEntities)
+	{
+		unsigned int n = 0;
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+			if (kv.second.perType[t] != wi::ecs::INVALID_ENTITY) n++;
+		unsigned int sys = n;
+		if (kv.second.merged != wi::ecs::INVALID_ENTITY)
+		{
+			// GGMAX 1.74 merged: ONE system covering however many types the mask records.
+			sys += 1;
+			for (int w = 0; w < 2; w++)
+				for (int b = 0; b < 64; b++)
+					if (kv.second.mergedTypeMask[w] & (1ull << b)) n++;
+		}
+		if (n == 0) continue; // chunk record exists but is bare at this distance
+		chunks++;
+		systems += sys;
+		if (histOut != nullptr && histLen > 0)
+			histOut[n < histLen ? n : (histLen - 1)]++;
+	}
+	if (chunksOut) *chunksOut = chunks;
+	if (systemsOut) *systemsOut = systems;
+}
 
 // SETTLE GATE (2026-07-25, load-window grass-flicker fix): frame stamp of each chunk key's last
 // ENTITY change. During the initial build Wicked regenerates every chunk 2-3 times (progressive
@@ -108,6 +148,12 @@ static float    g_grassLODChunksOverride = 0.0f;
 static float    g_grassTier3Chunks = 0.0f;   // 0 = AUTO; explicit value = full-density ring
 static float    g_grassTier2Chunks = 0.0f;   // 0 = AUTO; explicit value = mid-density ring
 namespace wi { extern bool gg_grass_lod; }   // engine strand-LOD opt-in (wiHairParticle.cpp)
+
+// GGMAX 1.74 merged grass opt-in. DEFAULT OFF until the TESTPRO1 density gate signs it off —
+// grass is the one subsystem in this codebase that has already been broken once by an
+// unverified "optimisation", so the shipped path stays the per-type one until measured.
+// Harness SET_GRASSMERGE <0|1> then reload the level (entities are built at chunk-spawn time).
+bool gg_grass_merge = false;
 namespace wi::terrain { extern uint32_t gg_terrain_tile_share_mips, gg_terrain_tile_hold_mips; } // engine 1.53b/c VT tiling cap + hold (wiTerrain.cpp)
 // Set by SET_GRASSLOD / tier-knob changes so the gated grass pass re-evaluates tiers without
 // waiting for a camera move or chunk churn (consumed by the maintenance block each frame).
@@ -1405,6 +1451,157 @@ static float GrassTierDensityScale(int tier)
 	switch (tier) { case 3: return 1.00f; case 2: return 0.18f; case 1: return 0.05f; default: return 0.0f; }
 }
 
+// GGMAX 1.74: build (or keep) the single merged hair entity for one chunk. Everything that
+// decides WHERE a strand goes — emitter mesh, vertex_lengths, strandCount, randomSeed — is
+// identical to the per-type path, which is what makes placement bit-identical rather than
+// merely similar. What changes is that the simulate CS is told to own every type
+// (GG_HAIR_GRASS_MERGED) and handed a table of per-type length/width/stiffness/drag/viewDistance
+// and blade texture, so a strand adopts its cell's type instead of being discarded.
+template <typename PendingGrassT>
+static void ProcessGrassChunkMerged(
+	wi::scene::Scene& scene,
+	const PendingGrassT& pc,
+	ChunkGrassEntities& existingEntities,
+	const bool (&typesSeen)[GGGRASS_TOTAL_REAL_TYPES],
+	float editableSize)
+{
+	// Which types does this chunk need? Also the mask we compare against to decide whether an
+	// existing merged entity is still valid (a newly painted type must appear in the table).
+	uint64_t wantMask[2] = { 0, 0 };
+	uint32_t typeCount = 0;
+	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+	{
+		if (!typesSeen[t]) continue;
+		wantMask[t >> 6] |= (1ull << (t & 63));
+		typeCount++;
+	}
+
+	if (typeCount == 0)
+	{
+		// Chunk has no painted grass left — drop the merged entity if one exists.
+		if (existingEntities.merged != wi::ecs::INVALID_ENTITY)
+		{
+			if (scene.hairs.GetComponent(existingEntities.merged))
+				scene.Entity_Remove(existingEntities.merged);
+			existingEntities.merged = wi::ecs::INVALID_ENTITY;
+			existingEntities.mergedTypeMask[0] = existingEntities.mergedTypeMask[1] = 0;
+		}
+		return;
+	}
+
+	// Existing entity still covers exactly the painted set: nothing to do. Paint that only moves
+	// cells between types already present needs no rebuild at all, because type resolution is
+	// per-strand in the shader and reads the live paint texture.
+	if (existingEntities.merged != wi::ecs::INVALID_ENTITY
+		&& existingEntities.mergedTypeMask[0] == wantMask[0]
+		&& existingEntities.mergedTypeMask[1] == wantMask[1]
+		&& scene.hairs.GetComponent(existingEntities.merged) != nullptr)
+	{
+		return;
+	}
+
+	// Rebuild: the painted type set changed (or this is the first build for the chunk).
+	if (existingEntities.merged != wi::ecs::INVALID_ENTITY)
+	{
+		if (scene.hairs.GetComponent(existingEntities.merged))
+			scene.Entity_Remove(existingEntities.merged);
+		existingEntities.merged = wi::ecs::INVALID_ENTITY;
+	}
+
+	// The merged entity's material is only the fallback / shared surface settings; the per-strand
+	// blade texture comes from the table below. Use the lowest painted type's material so alpha
+	// ref, double-sidedness and subsurface match what the chunk used before.
+	uint32_t firstType = 0;
+	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++) { if (typesSeen[t]) { firstType = t; break; } }
+	wi::scene::MaterialComponent* mat = BuildGrassMaterial(firstType);
+	if (!mat) return;
+
+	wi::vector<float> vertex_lengths;
+	vertex_lengths.resize(wi::terrain::vertexCount, 1.0f);
+
+	wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
+	wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
+	hair = g_grassAppearance[firstType];
+	hair.meshID = pc.entity;
+	hair.vertex_lengths = std::move(vertex_lengths);
+
+	hair.grass_type = GG_HAIR_GRASS_MERGED;
+	hair.grass_map_inv_world_size = 0.5f / editableSize;
+	hair.grass_map_origin_x = 0.0f;
+	hair.grass_map_origin_z = 0.0f;
+	hair.grass_visibility_texture = GGGrass::GGGrass_GetMapTexture();
+
+	// Per-type table. billboardCount and viewDistance also drive buffer sizing / fade on the
+	// SYSTEM, so those take the max across the chunk's types: the stride must be big enough for
+	// the greediest type, and a strand of a smaller type collapses its surplus billboard to zero
+	// area in the CS rather than shortening the stride (which would corrupt later strands).
+	hair.grass_types.resize(GGGRASS_TOTAL_REAL_TYPES);
+	uint32_t maxBillboards = 1;
+	float maxViewDistance = 0.0f;
+	float maxLength = 0.0f;
+	wi::graphics::GraphicsDevice* device = wi::graphics::GetDevice();
+	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+	{
+		if (!typesSeen[t]) continue;
+		const wi::HairParticleSystem& src = g_grassAppearance[t];
+		wi::HairParticleSystem::GrassTypeParams& dst = hair.grass_types[t];
+		dst.length = src.length;
+		// The CS multiplies frame.x by (atlas_rect.aspect * xHairAspect) in the per-type path.
+		// GG grass clears atlas_rects, so that product is just the system's aspect — fold the
+		// per-type width in here so the merged shader can use one number.
+		dst.width = src.width;
+		dst.stiffness = src.stiffness;
+		dst.drag = src.drag;
+		dst.viewDistance = src.viewDistance;
+		dst.billboardCount = src.billboardCount;
+		dst.textureIndex = 0;
+		dst.present = true;   // only scanned types get an entry, matching the per-type build
+
+		// Bindless descriptor for this type's blade DDS, resolved the same way the material
+		// system resolves BASECOLORMAP (SRGB subresource).
+		wi::scene::MaterialComponent* typeMat = BuildGrassMaterial(t);
+		if (typeMat != nullptr)
+		{
+			const wi::scene::MaterialComponent::TextureMap& tex =
+				typeMat->textures[wi::scene::MaterialComponent::BASECOLORMAP];
+			const wi::graphics::GPUResource* res = tex.GetGPUResource();
+			if (res != nullptr)
+			{
+				const int descriptor = device->GetDescriptorIndex(
+					res, wi::graphics::SubresourceType::SRV, tex.resource.GetTextureSRGBSubresource());
+				if (descriptor >= 0) dst.textureIndex = (uint32_t)descriptor;
+			}
+		}
+
+		maxBillboards = std::max(maxBillboards, src.billboardCount);
+		maxViewDistance = std::max(maxViewDistance, src.viewDistance);
+		maxLength = std::max(maxLength, src.length);
+	}
+	hair.billboardCount = maxBillboards;
+	hair.viewDistance = maxViewDistance;
+	hair.length = maxLength;
+
+	// Same strand count as ONE per-type system had. That is the entire saving: the chunk used to
+	// pay this per painted type.
+	constexpr uint32_t STAGE1_STRANDS_PER_TIER = 100000;
+	uint32_t strands = (uint32_t)(STAGE1_STRANDS_PER_TIER * GrassTierDensityScale(pc.tier) + 0.5f);
+	if (strands < 1024) strands = 1024;
+	hair.strandCount = strands;
+
+	hair.CreateFromMesh(*pc.mesh);
+	hair.position_format = wi::graphics::Format::R32G32B32A32_FLOAT;
+	hair.CreateRenderData();
+
+	scene.materials.Create(grassEntity) = *mat;
+	scene.transforms.Create(grassEntity);
+	scene.Component_Attach(grassEntity, pc.entity, true);
+
+	existingEntities.merged = grassEntity;
+	existingEntities.mergedTypeMask[0] = wantMask[0];
+	existingEntities.mergedTypeMask[1] = wantMask[1];
+	g_dbgGrassRecreates++;
+}
+
 static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& cameraPos)
 {
 	auto& scene = wi::scene::GetScene();
@@ -1666,6 +1863,18 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 				}
 				existingEntities.perType[t] = wi::ecs::INVALID_ENTITY;
 			}
+			// GGMAX 1.74: the merged entity lives in its own slot and must be torn down here too,
+			// otherwise a recycled chunk keeps a hair system pointing at a vanished mesh.
+			if (existingEntities.merged != wi::ecs::INVALID_ENTITY)
+			{
+				if (scene.hairs.GetComponent(existingEntities.merged))
+				{
+					scene.Entity_Remove(existingEntities.merged);
+					g_dbgGrassFullResets++;
+				}
+				existingEntities.merged = wi::ecs::INVALID_ENTITY;
+				existingEntities.mergedTypeMask[0] = existingEntities.mergedTypeMask[1] = 0;
+			}
 		}
 
 		grassChunkKeyToChunkEntity[pc.key] = pc.entity;
@@ -1682,6 +1891,20 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			pc.world._41 - halfChunkWorld, pc.world._43 - halfChunkWorld,
 			pc.world._41 + halfChunkWorld, pc.world._43 + halfChunkWorld,
 			typesSeen );
+
+		// GGMAX 1.74 MERGED GRASS: one hair system for the whole chunk instead of one per painted
+		// type. Measured on the benchmark scene, chunks carry 7-8 types each, so the per-type split
+		// allocated ~10x the strand buffers it drew and simulated ~10x the strands — every strand
+		// on another type's cell was still placed, still run through physics, and still emitted a
+		// degenerate zero-area quad. The merged system keeps the SAME strandCount, emitter mesh,
+		// index list and randomSeed, so strand i lands on the identical triangle with identical
+		// barycentrics; a paint cell holds exactly one type, so the union of what the per-type
+		// systems drew is exactly what this one draws. Placement is bit-identical by construction.
+		if (gg_grass_merge)
+		{
+			ProcessGrassChunkMerged(scene, pc, existingEntities, typesSeen, editableSize);
+			continue;
+		}
 
 		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 		{
@@ -1778,6 +2001,9 @@ static void ForceGrassRebuild()
 			if (e != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(e))
 				scene.Entity_Remove(e);
 		}
+		// GGMAX 1.74: merged entity too
+		if (kv.second.merged != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(kv.second.merged))
+			scene.Entity_Remove(kv.second.merged);
 	}
 	grassChunkKeyToGrassEntities.clear();
 	grassChunkKeyToTier.clear();
@@ -2267,6 +2493,12 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 				wi::ecs::Entity e = kv.second.perType[t];
 				if (e == wi::ecs::INVALID_ENTITY) continue;
 				wi::HairParticleSystem* hair = gscene.hairs.GetComponent(e);
+				if (hair) hair->layerMask = wickedGrassEnabled ? ~0u : 0u;
+			}
+			// GGMAX 1.74: merged entity honours the same toggle
+			if (kv.second.merged != wi::ecs::INVALID_ENTITY)
+			{
+				wi::HairParticleSystem* hair = gscene.hairs.GetComponent(kv.second.merged);
 				if (hair) hair->layerMask = wickedGrassEnabled ? ~0u : 0u;
 			}
 		}
@@ -2812,6 +3044,12 @@ void GGTerrainWicked_SetGrassVisible(bool visible)
 			wi::ecs::Entity e = kv.second.perType[t];
 			if (e == wi::ecs::INVALID_ENTITY) continue;
 			wi::HairParticleSystem* hair = gscene.hairs.GetComponent(e);
+			if (hair) hair->layerMask = visible ? ~0u : 0u;
+		}
+		// GGMAX 1.74: merged entity honours the same toggle
+		if (kv.second.merged != wi::ecs::INVALID_ENTITY)
+		{
+			wi::HairParticleSystem* hair = gscene.hairs.GetComponent(kv.second.merged);
 			if (hair) hair->layerMask = visible ? ~0u : 0u;
 		}
 	}
