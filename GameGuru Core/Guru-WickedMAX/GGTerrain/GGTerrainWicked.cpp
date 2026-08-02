@@ -179,6 +179,17 @@ bool gg_grass_merge = false;
 // a level that already asks for less than the cap keeps its own value.
 bool  gg_lowvram = false;
 float gg_lowvram_grass_dist = 750.0f;
+// Uniform strand-count multiplier, 0..1 (setup.ini takes it as a percent). Applied in
+// GrassTierDensityScale — see the reasoning there for why this axis is safe and the mask axis is
+// not. Grass memory is linear in strandCount, so 0.5 here is ~half the grass VRAM.
+//
+// DEFAULT 0.75, measured against the TESTPRO1 clumpCV gate on 2026-08-02. The meadow is
+// over-saturated at full density — strands overlap heavily — so the first quarter is very nearly
+// free: coverage 9.450% -> 9.355% (-0.095 pp, inside the shot-to-shot noise band) and clumpCV
+// 1.104 -> 1.116, for -541 MB of grass buffers on that scene. Below the knee it stops being free:
+// 50% costs -1.47 pp of coverage, and 30% breaks the gate outright (clumpCV +0.25, the same
+// magnitude of failure as the reverted 2026-08-01 build, with visibly bare ground).
+float gg_lowvram_grass_density = 0.75f;
 
 // The effective grass draw distance in inches. Every consumer of lod_dist must go through this,
 // otherwise the per-strand cull and the chunk-creation ring disagree and grass pops in as whole
@@ -1484,7 +1495,28 @@ static int GrassTierForRingDist(float ringDist, float nearC, float midC, float o
 }
 static float GrassTierDensityScale(int tier)
 {
-	switch (tier) { case 3: return 1.00f; case 2: return 0.18f; case 1: return 0.05f; default: return 0.0f; }
+	float s;
+	switch (tier) { case 3: s = 1.00f; break; case 2: s = 0.18f; break; case 1: s = 0.05f; break; default: return 0.0f; }
+
+	// GGMAX low-VRAM preset: uniform strand THINNING. Grass memory is linear in strandCount
+	// (~497 B/strand), so this is the one grass lever with real leverage — the draw-distance cap
+	// only reaches 11% on Z Island because the chunk ring is dominated by its +1-chunk term.
+	//
+	// Why this is safe where the 2026-08-01 attempt was not. That one narrowed the emitter MASK
+	// (vertex_lengths, built from per-vertex point samples of the paint map at ~2 m spacing) and
+	// scaled strandCount by the resulting fraction. The mask under-reported interleaved paint, so
+	// strands bunched into whatever it happened to catch: coverage fell 30% AND clumpCV rose 31%.
+	// This touches strandCount ONLY. The emitter mesh, vertex_lengths and randomSeed are all
+	// untouched, so the same painted region is still sampled uniformly — just with fewer strands.
+	//
+	// Coverage is EXPECTED to fall here; that is precisely the trade a 4 GB preset is buying, and
+	// it is why the usual coverage-parity threshold does not apply. The gate that DOES apply is
+	// clumpCV (tools/grassdensity.ps1, GRASS_BENCHMARK.md): thinning must stay even, never clump.
+	if (gg_lowvram && gg_lowvram_grass_density > 0.0f && gg_lowvram_grass_density < 1.0f)
+	{
+		s *= gg_lowvram_grass_density;
+	}
+	return s;
 }
 
 // GGMAX 1.74: build (or keep) the single merged hair entity for one chunk. Everything that

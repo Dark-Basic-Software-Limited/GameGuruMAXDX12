@@ -71,6 +71,11 @@ void GGSetLowVRAMGrassDist(float inches)
 	extern float gg_lowvram_grass_dist;     // GGTerrainWicked.cpp
 	if (inches > 0.0f) gg_lowvram_grass_dist = inches;
 }
+void GGSetLowVRAMGrassDensity(float scale01)
+{
+	extern float gg_lowvram_grass_density;  // GGTerrainWicked.cpp
+	if (scale01 > 0.0f && scale01 <= 1.0f) gg_lowvram_grass_density = scale01;
+}
 
 // GGMAX wall-gap tracer bridges for old-namespace files (main.cpp pump timing / master preamble)
 unsigned long long GGPerf_TraceNowUs(void) { return wi::profiler::gg_trace_now_us(); }

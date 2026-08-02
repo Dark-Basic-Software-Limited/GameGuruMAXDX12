@@ -114,3 +114,93 @@ The raytracing position copy that used to add another 12.2 MB per system is alre
 **37 tier-3 systems ≈ 9 chunks × ~4 grass types painted per chunk.** That multiplication is the
 target: see the ranked backlog in `VRAM_CENSUS.md`, and the FAILED ATTEMPT section there for the
 approach that must not be repeated.
+
+
+---
+
+## 2026-08-02 — the density lever, and a WARNING about the reference numbers above
+
+### The reference numbers above no longer reproduce. Use a same-session baseline.
+
+Re-running this scene on the 2026-08-02 build gave a baseline that does **not** match the
+"GOOD reference" table:
+
+| | stored reference (08-01) | measured 08-02 |
+|---|---|---|
+| HAIR_SYSTEMS | 52 | **58** |
+| HAIR_TOTAL_STRANDS | 4,216,000 | **4,816,000** |
+| POLYS | 2,714,197 | **3,149,243** |
+| coverage | 9.554% | 9.450% |
+| **clumpCV** | **0.871** | **1.104** |
+| bands near..far | 14.19 14.94 16.83 8.17 3.15 0.00 | 13.86 12.94 18.66 9.84 1.35 0.00 |
+
+Coverage still lands in the old band, but clumpCV is +0.233 — **23× the ±0.01 gate**. Taken at
+face value that would condemn the shipping build. It does not: system count, strand count and
+POLYS all moved together, which is the signature of a **different chunk set in range**, i.e. the
+scene's saved camera (or its content) is not what it was on 08-01. Chunk creation follows the
+camera, so more chunks in range means more systems, more strands, more polygons, and a different
+framing for every pixel metric.
+
+**Therefore: judge any grass change against a baseline captured in the SAME session on the SAME
+build, never against the table at the top of this file, until that table is refreshed.** The
+gate's *thresholds* are still right; its *reference values* are stale. Refreshing them is an open
+item — and whoever does it should first work out why the scene drifted, because if it was an
+accidental re-save then the "GOOD" camera is gone and the new one needs blessing.
+
+### The density lever (low-VRAM preset)
+
+`lowvramgrassdensity` scales `strandCount` uniformly in `GrassTierDensityScale()`. It touches
+**only** the strand count — emitter mesh, `vertex_lengths` paint mask and `randomSeed` are
+untouched, so the same painted region is still sampled uniformly, just with fewer strands. That
+is the whole difference from the reverted 2026-08-01 attempt, which narrowed the *mask* and made
+strands bunch into whatever it caught.
+
+For this lever the gate is read differently on purpose: **coverage is MEANT to fall** (it is a
+4 GB knob), so the ±0.15 pp coverage threshold does not apply. What must not happen is clumping,
+so **clumpCV and the band profile decide pass/fail**.
+
+All four points below, same session, same build, `lowvramgrassdist` pinned unreachable so only
+density varies:
+
+| density | strands | grass buffers | driver VRAM | coverage | clumpCV | bands near..far | FPS | verdict |
+|---|---|---|---|---|---|---|---|---|
+| 100 (baseline) | 4,816,000 | 2187.0 MB | 5990.3 MB | 9.450% | 1.104 | 13.86 12.94 18.66 9.84 1.35 | 56.2 | reference |
+| **75** | 3,612,000 | **1645.6 MB** | **4765.1 MB** | 9.355% | **1.116** | 13.58 12.93 18.83 9.61 1.14 | 60.5 | **PASS — near free** |
+| 50 | 2,408,000 | 1104.5 MB | 4499.4 MB | 7.979% | 1.178 | 10.56 9.81 17.75 8.70 1.00 | 65.3 | PASS — honest trade |
+| 30 | 1,444,800 | 665.7 MB | 3746.2 MB | 5.403% | **1.354** | 8.61 4.51 12.19 6.37 0.68 | 69.9 | **FAIL** |
+
+**75 % is very nearly free** — coverage falls 0.095 pp, inside the shot-to-shot noise band, and
+clumpCV moves 0.012, while grass buffers drop 541 MB and driver VRAM drops 1225 MB. The reason is
+that the meadow is over-saturated at full density: strands overlap so heavily that removing a
+quarter of them barely changes which pixels are covered. Screenshots agree — you would struggle
+to pick d75 from the baseline without an A/B.
+
+**30 % fails**, and fails the same way the reverted build did: clumpCV +0.25 against that build's
++0.274, with band 2 losing 65 % while band 3 loses only 35 % — uneven collapse, not even thinning.
+The screenshot shows visibly bare ground between sparse flowers.
+
+So the preset defaults to **75**, with 50 available for users who need more and are willing to see
+it. **Do not ship below 50** without re-running this table.
+
+### The shipping preset on this scene (`lowvram=1`, nothing else set)
+
+Density 75 **and** the grass draw-distance cap (750, vs the scene's saved 2247) together:
+
+| | baseline | `lowvram=1` | delta |
+|---|---|---|---|
+| driver VRAM | 5989.9 MB | **4765.1 MB** | **−1224.8** |
+| grass buffers | 2187.0 MB | 1645.6 MB | −541.4 |
+| strands | 4,816,000 | 3,612,000 | −25 % |
+| coverage | 9.472% | 9.757% | **+0.285** |
+| **clumpCV** | 1.103 | **1.101** | **−0.002** |
+| bands near..far | 13.87 12.92 18.80 9.83 1.35 | 14.15 12.93 18.95 11.65 0.82 | |
+| FPS | 56.2 | 69.4 | **+13.2** |
+
+clumpCV is flat to within a thousandth — the grass thins evenly, which is the whole point. The
+band profile shows the two levers doing exactly what they should and nothing else: the near three
+bands are unchanged, band 4 *rises* (11.65 vs 9.83) and band 5 falls (0.82 vs 1.35) because the
+shorter per-strand cull pulls the visible edge inward. That is the same signature the
+"metric sensitivity check" section above records for `SET_GRASS viewdist`, so coverage ticking
+*up* is not an anomaly — it is grass being concentrated nearer the camera.
+
+The cost is entirely at distance: on this scene the far band loses about 40 % of its flowers.

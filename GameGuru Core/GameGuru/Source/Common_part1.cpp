@@ -704,6 +704,9 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: lowvramgrassdist = Grass draw distance cap in inches used when lowvram=1. DEFAULT 750, which is the editor Grass Draw Distance slider's own minimum (below it the per-strand fade has no range to work in and grass pops in whole chunks at a time). This is a CAP: a level already asking for less keeps its own value. Ignored when lowvram=0.
 					t.tryfield_s = "lowvramgrassdist"; if (t.field_s == t.tryfield_s) { extern void GGSetLowVRAMGrassDist(float); GGSetLowVRAMGrassDist((float)t.value1); }
 
+					// DOCDOC: lowvramgrassdensity = Grass strand density used when lowvram=1, as a PERCENT of normal. DEFAULT 100 (no thinning). Grass memory is linear in strand count, so 50 is about half the grass video memory - by far the biggest content lever available, since grass is 17.3GB across the demo hub. This thins the grass EVENLY over the same painted area (it changes how many strands are drawn, never where they may go), so the grass gets sparser rather than patchy. Lower values are a deliberate visual trade for fitting a 4GB card. Ignored when lowvram=0.
+					t.tryfield_s = "lowvramgrassdensity"; if (t.field_s == t.tryfield_s) { extern void GGSetLowVRAMGrassDensity(float); GGSetLowVRAMGrassDensity((float)t.value1 * 0.01f); }
+
 					// DOCDOC: producelogfiles = Sets whether the editor and game produces .LOG files which time stamp and track events within the engine
 					t.tryfield_s = "producelogfiles"; if (t.field_s == t.tryfield_s)  g.gproducelogfiles = t.value1;
 
