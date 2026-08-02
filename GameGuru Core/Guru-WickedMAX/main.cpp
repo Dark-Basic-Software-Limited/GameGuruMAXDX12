@@ -227,6 +227,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Set resource paths to Max root folder
 	wiRenderer::SetShaderPath("shaders/");
 
+	// GGMAX Tier A5: MAX has never used tessellation (master_part1.cpp sets this false during
+	// game setup, with the note "Tessellation dont work like this it has to be set per mesh, so
+	// have never worked"). Setting it HERE as well, before the engine starts, is what lets
+	// LoadShaders skip building the tessellation object-PSO variants — by the time master's
+	// setup runs, the pipelines have long since been built. Same ordering lesson as the lazy-PSO
+	// setup.ini key. Harmless duplicate: master_part1 still sets it, and this only moves the
+	// moment the flag becomes false.
+	wiRenderer::SetTessellationEnabled(false);
+
 	//PE: need setup.ini before any logic.
 	void GetSetupIniEarly(void);
 	GetSetupIniEarly();

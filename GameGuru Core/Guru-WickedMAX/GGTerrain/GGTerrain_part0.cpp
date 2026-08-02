@@ -1135,22 +1135,21 @@ public:
 		
 	void Reset()
 	{
-		GraphicsDevice* device = wiGraphics::GetDevice();
-		
-		// clear vertex and index buffers by replacing them with smaller versions
-		GPUBufferDesc bd = {};
-		bd.size =4;
-		bd.bind_flags =BindFlag::VERTEX_BUFFER;
-		//bd.CPUAccessFlags = 0; // removed in DX12 API
-		bd.misc_flags = ResourceMiscFlag::NONE;
-		device->CreateBuffer( &bd, nullptr, &vertexBuffer );
+		// GGMAX Tier A2 (2026-08-02): RELEASE the vertex/index buffers instead of replacing them
+		// with 4-byte stand-ins.
+		//
+		// The old "clear by replacing with smaller versions" looks free but is not: D3D12's
+		// minimum allocation granularity is 64 KB, so every 4-byte buffer cost a full 64 KB. The
+		// census found 576 of each — 576 x 2 x 64 KB = 72 MB of literally nothing, on every level.
+		//
+		// Assigning a default-constructed GPUBuffer drops the last reference and frees the real
+		// allocation, which is what "clear" was always trying to express. A reset chunk holds no
+		// geometry either way, so nothing that could legitimately draw is affected — and the five
+		// consumers of these buffers all live in GGTerrain's own draw path, which every
+		// customDraw_* callback early-returns out of while ggterrain_use_wicked_terrain is set.
+		vertexBuffer = GPUBuffer();
+		indexBuffer = GPUBuffer();
 
-		bd.size =4;
-		bd.bind_flags =BindFlag::INDEX_BUFFER;
-		//bd.CPUAccessFlags = 0; // removed in DX12 API
-		bd.misc_flags = ResourceMiscFlag::NONE;
-		device->CreateBuffer( &bd, nullptr, &indexBuffer );
-		
 		pNextChunk = 0;
 		
 		offsetX = 0;
