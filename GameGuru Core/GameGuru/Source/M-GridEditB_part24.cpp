@@ -924,8 +924,15 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::PopItemWidth();
 
 		// UI AUDIT 2026-07-28: "Transparent shadows" HIDDEN — wiRenderer::SetTransparentShadowsEnabled
-		// was removed in the new WickedEngine (transparent shadow rendering is now unconditional),
-		// so the checkbox only forced a shadow refresh and changed nothing. Field/save/load kept.
+		// was removed in the new WickedEngine, so the checkbox only forced a shadow refresh and
+		// changed nothing. Field/save/load kept.
+		// VRAM FLOOR 2026-08-02 (engine 1.78): the feature is now DROPPED, not merely unexposed.
+		// The transparent shadow atlas was pure floor cost — 160 MB on every level and 512 MB on
+		// Amazon / Foggy Forest / Disruption / Bounty — and measurably bought nothing visible, so
+		// `wi::renderer::gg_transparent_shadows` now defaults false, the atlas is never allocated,
+		// and the shadow pass is depth-only. Do NOT un-hide this checkbox: it would set a field
+		// nothing reads, and re-enabling the feature for real needs a restart (the object shadow
+		// PSOs latch the render-target count at LoadShaders). See GameGuru Core/VRAM_FLOOR.md.
 		//if (ImGui::Checkbox("Transparent shadows", &t.visuals.bTransparentShadows))
 		//{
 		//	t.gamevisuals.bTransparentShadows = t.visuals.bTransparentShadows;
