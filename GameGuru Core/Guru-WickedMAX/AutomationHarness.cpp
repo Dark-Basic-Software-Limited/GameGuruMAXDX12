@@ -3350,6 +3350,29 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: DUMP_VRAM written to %s (game CWD = Files dir)", vcPath);
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_LOWVRAM") == 0)
+	{
+		// SET_LOWVRAM <0|1> [grassdistcap] — the low-VRAM ("fit a 4 GB card") preset, same switch
+		// as setup.ini `lowvram`. Currently caps the grass draw distance, which is the one grass
+		// lever proven to save real memory (~1.14 GB at 750) without touching placement or
+		// density. RELOAD THE LEVEL after flipping: grass entities are built at chunk-spawn time,
+		// so an existing level keeps the systems it already created.
+		// NOTE the lazy-PSO member of the preset cannot be turned on from here — object pipelines
+		// are built once at LoadShaders, long before any harness command lands. Use setup.ini
+		// `lowvram=1` for that half. This command drives the grass cap, which IS runtime-settable.
+		extern bool gg_lowvram;
+		extern float gg_lowvram_grass_dist;
+		char lvp[32] = { 0 }; float lvd = 0.0f;
+		const int got = sscanf_s(arg, "%31s %f", lvp, (unsigned)sizeof(lvp), &lvd);
+		if (got >= 1)
+		{
+			gg_lowvram = (atoi(lvp) != 0);
+			if (got >= 2 && lvd > 0.0f) gg_lowvram_grass_dist = lvd;
+		}
+		_snprintf(result, sizeof(result), "OK: SET_LOWVRAM %d grassdistcap=%.0f (RELOAD the level to rebuild grass)",
+			gg_lowvram ? 1 : 0, gg_lowvram_grass_dist);
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "VRAM_STAGE") == 0)
 	{
 		// VRAM_STAGE <label> — record the driver-reported video memory usage at a named point
@@ -3385,15 +3408,18 @@ void AutoHarness_CheckForCommand(void)
 	}
 	else if (_stricmp(cmd, "SET_TRANSPARENTSHADOWS") == 0)
 	{
-		// SET_TRANSPARENTSHADOWS <0|1> — skip the transparent shadow draws. The atlas is cleared
-		// to (1,1,1,0), so with the draws skipped the tint multiply is a no-op and the secondary
-		// depth check always fails: exactly "feature off". Takes effect on the next frame, no
-		// reload needed. Use it to judge whether the 512 MB RGBA16F atlas earns its memory —
-		// it CANNOT be narrowed to RGBA8, because the measured batch counts show its alpha depth
-		// value is genuinely produced on every hub level and 8 bits would quantise the compare.
+		// SET_TRANSPARENTSHADOWS <0|1> — the transparent shadow feature.
+		// **DEFAULT IS NOW 0 (engine 1.78, dropped by product decision 2026-08-02.)** It answered
+		// its own question: the atlas cost 160 MB on every level and 512 MB on Amazon / Foggy
+		// Forest / Disruption / Bounty, and bought nothing visible. The atlas is no longer
+		// allocated and the shadow pass is depth-only.
+		// Setting 1 at runtime only re-enables the DRAWS and cannot bring the feature back: the
+		// atlas is created (if at all) at shadow-packer resize, and the object shadow PSOs latch
+		// their render-target count at LoadShaders. A real re-enable needs the engine default
+		// flipped and a restart.
 		int tsv = atoi(arg);
 		wi::renderer::gg_transparent_shadows = (tsv != 0);
-		_snprintf(result, sizeof(result), "OK: SET_TRANSPARENTSHADOWS %d (next frame; atlas clear is 1,1,1,0 so off == no tint, no depth accept)", tsv);
+		_snprintf(result, sizeof(result), "OK: SET_TRANSPARENTSHADOWS %d (draws only; atlas is NOT allocated in 1.78 - a real re-enable needs the engine default + restart)", tsv);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_GRASSMERGE") == 0)

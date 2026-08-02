@@ -46,6 +46,23 @@ void GGSetSVTAtlasHeight(int height)
 	}
 }
 
+// GGMAX low-VRAM preset bridge (setup.ini `lowvram`, harness SET_LOWVRAM). One entry point so the
+// preset's members stay in one place — the old-namespace setup.ini reader cannot declare engine
+// namespace externs at block scope, and spraying them through it would rot.
+//
+// Members today:
+//   * grass draw distance cap  (gg_lowvram, GGTerrainWicked.cpp) — content side
+void GGSetLowVRAM(int on)
+{
+	extern bool gg_lowvram;                 // GGTerrainWicked.cpp
+	gg_lowvram = (on != 0);
+}
+void GGSetLowVRAMGrassDist(float inches)
+{
+	extern float gg_lowvram_grass_dist;     // GGTerrainWicked.cpp
+	if (inches > 0.0f) gg_lowvram_grass_dist = inches;
+}
+
 // GGMAX wall-gap tracer bridges for old-namespace files (main.cpp pump timing / master preamble)
 unsigned long long GGPerf_TraceNowUs(void) { return wi::profiler::gg_trace_now_us(); }
 void GGPerf_TraceMarkId(const char* prefix, unsigned int id) { wi::profiler::gg_trace_mark_id(prefix, id); }

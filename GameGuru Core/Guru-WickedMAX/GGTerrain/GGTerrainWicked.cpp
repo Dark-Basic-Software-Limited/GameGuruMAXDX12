@@ -163,6 +163,33 @@ namespace wi { extern bool gg_grass_lod; }   // engine strand-LOD opt-in (wiHair
 // unverified "optimisation", so the shipped path stays the per-type one until measured.
 // Harness SET_GRASSMERGE <0|1> then reload the level (entities are built at chunk-spawn time).
 bool gg_grass_merge = false;
+
+// ============================================================================
+// GGMAX low-VRAM preset (2026-08-02) — the "fit inside a 4 GB card" bundle.
+// setup.ini `lowvram=1`, or harness SET_LOWVRAM. Off = today's behaviour exactly.
+//
+// Grass is the whole content spread: 17.3 GB hub-wide, 4297 MB on Z Island alone, and zero on
+// six demos. No 4 GB preset works without capping it, so the preset's content lever is the grass
+// DRAW DISTANCE, which is the one grass lever already proven to save real memory (~1.14 GB at
+// 750) without touching placement or density — the 2026-08-01 coverage-scaling attempt that DID
+// touch placement had to be reverted for clumping, so this deliberately stays away from that.
+//
+// 750 is the editor slider's own minimum, chosen there because the strand fade needs a range to
+// work in; going below it would reintroduce whole-chunk pop-in. This is a CAP, not an override:
+// a level that already asks for less than the cap keeps its own value.
+bool  gg_lowvram = false;
+float gg_lowvram_grass_dist = 750.0f;
+
+// The effective grass draw distance in inches. Every consumer of lod_dist must go through this,
+// otherwise the per-strand cull and the chunk-creation ring disagree and grass pops in as whole
+// chunks (the exact failure the decoupling comment further down exists to prevent).
+float GGGrass_LodDistEffective()
+{
+	const float slider = GGGrass::gggrass_global_params.lod_dist;
+	if (gg_lowvram && gg_lowvram_grass_dist > 0.0f && slider > gg_lowvram_grass_dist)
+		return gg_lowvram_grass_dist;
+	return slider;
+}
 namespace wi::terrain { extern uint32_t gg_terrain_tile_share_mips, gg_terrain_tile_hold_mips; } // engine 1.53b/c VT tiling cap + hold (wiTerrain.cpp)
 // Set by SET_GRASSLOD / tier-knob changes so the gated grass pass re-evaluates tiers without
 // waiting for a camera move or chunk churn (consumed by the maintenance block each frame).
@@ -1346,7 +1373,7 @@ static void ApplyGrassDrawDistance()
 	// slider directly represents "visible grass radius in inches above 2500". outerC in
 	// ProcessGrassChunks always sits 1 chunk past this so chunks are created with their near edges
 	// outside the cull — strands fade in gradually instead of whole chunks popping.
-	const float viewDistInches = GGGrass::gggrass_global_params.lod_dist + 2500.0f;
+	const float viewDistInches = GGGrass_LodDistEffective() + 2500.0f;
 	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 	{
 		// Flowers cull at half the radius — tiny features that don't read past mid-distance.
@@ -1364,7 +1391,7 @@ static void ApplyGrassDrawDistance()
 		if (typeIdx >= GGGRASS_TOTAL_REAL_TYPES) continue;
 		h.viewDistance = g_grassAppearance[typeIdx].viewDistance;
 	}
-	g_grassPrevSliderInches = GGGrass::gggrass_global_params.lod_dist;
+	g_grassPrevSliderInches = GGGrass_LodDistEffective();
 }
 
 // Sync the editor's Grass Start/End Altitude sliders (and their underwater siblings + the water
@@ -1643,7 +1670,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	//
 	// Tier 3 (full density) and tier 2 (mid) keep their canonical 1.0 / 1.7 chunk boundaries
 	// clamped DOWN to outerC. SET_GRASS "lodchunks" hard-overrides via g_grassLODChunksOverride.
-	const float viewDistInches = GGGrass::gggrass_global_params.lod_dist + 2500.0f;
+	const float viewDistInches = GGGrass_LodDistEffective() + 2500.0f;
 	const float outerC = (g_grassLODChunksOverride > 0.0f)
 		? g_grassLODChunksOverride
 		: std::max(0.5f, viewDistInches / chunkStride + 1.0f);
@@ -2835,7 +2862,9 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// Grass Draw Distance slider → per-entity viewDistance. Detect slider movement and sync every
 	// live grass entity in one pass so dragging the slider in the editor pulls every cull radius
 	// along with it (rather than waiting for chunks to be rebuilt on camera move).
-	if (GGGrass::gggrass_global_params.lod_dist != g_grassPrevSliderInches)
+	// Compare the EFFECTIVE distance, not the raw slider: under the low-VRAM cap the slider can
+	// move without the effective value changing, and re-applying then would be pure churn.
+	if (GGGrass_LodDistEffective() != g_grassPrevSliderInches)
 	{
 		ApplyGrassDrawDistance();
 	}
