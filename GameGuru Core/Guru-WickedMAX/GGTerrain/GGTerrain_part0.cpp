@@ -10010,6 +10010,13 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 	// the shipping Wicked-terrain path returned above and never pays for it. This runs
 	// before GGTerrain_DrawPages in the same call, so the atlas exists at first use.
 	GGTerrain_EnsurePageAtlas();
+	// GGMAX Tier A: same deal for the legacy grass/tree blade atlases (219.8 MB together).
+	// They are created empty, their DDS writers are disabled stubs, and only these legacy draw
+	// paths ever bind them — so they materialise here, with the rest of the legacy machinery.
+	// (Declared at namespace scope near the top of this file: a block-scope `extern` here would
+	// be resolved as GGTerrain::… and fail to link.)
+	GGGrass::GGGrass_EnsureLegacyTexArray();
+	GGTrees::GGTrees_EnsureLegacyTexArrays();
 
 	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
 	GGTerrainLODSet* pNewLODs = ggterrain.GetNewLODs();

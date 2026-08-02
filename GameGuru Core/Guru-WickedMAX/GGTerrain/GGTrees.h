@@ -18,6 +18,9 @@ struct sUndoSysEventTreeMove;
 
 namespace GGTrees
 {
+	// GGMAX Tier A: allocate the dead legacy tree atlases only if the legacy draw path wakes up.
+	void GGTrees_EnsureLegacyTexArrays();
+
 	struct GGTreesParams
 	{
 		int draw_enabled = 0;

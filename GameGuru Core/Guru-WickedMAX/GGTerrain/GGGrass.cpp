@@ -1086,7 +1086,8 @@ void GGGrass_Init()
 	wiRenderer::LoadShader( ShaderStage::PS, shaderGrassShadowPS, "GGGrassShadowMapPS.cso" );
 
 	GGGrass_LoadTextureDDS("Files/treebank/noise.dds", &texNoise);
-	GGGrass_CreateEmptyTexture(1024, 1024, 9, GGGRASS_NUM_TYPES, Format::BC3_UNORM_SRGB, &texGrass);
+	// GGMAX Tier A (2026-08-02): texGrass is NOT created here any more — see
+	// GGGrass_EnsureLegacyTexArray() below for why, and for the on-demand creation.
 
 #ifdef ONLYLOADWHENUSED
 	for (uint32_t i = 0; i < GGGRASS_NUM_TYPES; i++)
@@ -1242,9 +1243,34 @@ int GGGrass_UsingBrush()
 	return true;
 }
 
+// GGMAX Tier A (2026-08-02): the 1024x1024 x GGGRASS_NUM_TYPES blade atlas (63.2 MB) is dead
+// weight on the shipping path, so it is allocated on demand instead of at init.
+//
+// The proof it is dead is three-fold and static:
+//   * it is created EMPTY, and its only writer — GGGrass_LoadTextureDDSIntoSlice — is a no-op
+//     stub ("stub - DDS loading disabled"); the real implementation is inside an `#if 0`,
+//   * its only readers are GGGrass_BindGrassArray (called solely from GGTerrain's own draw) and
+//     GGGrass_Draw_Prepass, and every customDraw_* callback in master_part1.cpp early-returns
+//     while ggterrain_use_wicked_terrain is set — which it is on the shipping path,
+//   * shipping grass renders through Wicked's hair particle system, which samples the per-type
+//     material textures directly, not this atlas.
+//
+// Same treatment and same reasoning as the 1.70 GGTerrain page-atlas fix. Creation is hooked to
+// the legacy path's activation point (the Y-key toggle tail of GGTerrain_Update) so that if the
+// old path is ever switched on at runtime the atlas exists before anything binds it.
+static bool g_grassLegacyTexArrayCreated = false;
+void GGGrass_EnsureLegacyTexArray()
+{
+	if (g_grassLegacyTexArrayCreated) return;
+	if (!gggrass_initialised) return;
+	g_grassLegacyTexArrayCreated = true;
+	GGGrass_CreateEmptyTexture(1024, 1024, 9, GGGRASS_NUM_TYPES, Format::BC3_UNORM_SRGB, &texGrass);
+}
+
 void GGGrass_BindGrassArray( uint32_t slot, wiGraphics::CommandList cmd )
 {
 	if (!gggrass_initialised) return;
+	GGGrass_EnsureLegacyTexArray();
 	wiGraphics::GetDevice()->BindResource( &texGrass, slot, cmd );
 }
 

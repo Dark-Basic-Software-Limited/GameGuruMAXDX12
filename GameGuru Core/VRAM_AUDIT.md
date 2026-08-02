@@ -110,6 +110,7 @@ a fix that should simply happen.
 
 | # | Item | Saving | Status |
 |---|---|---|---|
+| A0 | **Legacy grass/tree blade atlases on demand** | **−220** | **SHIPPED + verified** — see below |
 | A1 | Lazy object PSOs | **−633** | **shipped** (`lowvram=1`; consider default-on once hitching is judged) |
 | A2 | Suballocate terrain chunk mesh buffers | −125 | engineering — 64 KB granularity waste, incl. **72 MB of 4-byte empty vertex streams** |
 | A3 | Mesh suballocator granularity 256→128 MB | −128 | engineering — small levels use only ~310 of 512 |
@@ -140,6 +141,38 @@ Base drops from ≈3299 to roughly **1800–1900 MB**, leaving ~1.6 GB for conte
 That fits every demo except the grass giants (Z Island, Aztec Game Kit, Jungle Fever), which
 would still need density 50 and would then land near 3.5–4.0 GB. **A 4 GB minimum spec is
 reachable, but only if the fixed cost comes down — it cannot be bought with quality dials alone.**
+
+## A0 shipped — and a correction to this document's own naming
+
+The 220 MB bucket labelled **`FLOOR terrain src arrays`** above is **not terrain**. It is five
+legacy blade atlases: `texGrass` (1024² × 46 = 63.2 MB) plus `texTree` / `texBranchesHigh` /
+`texTreeNormal` / `texTreeHigh` (1024² × 38 = 156.6 MB together). They were byte-identical on
+every demo because they are sized from the fixed grass/tree *banks*, not from what a level uses.
+
+They are dead on the shipping path, provably and statically:
+
+- created **empty**, and their only writer (`GGGrass_LoadTextureDDSIntoSlice` /
+  `GGTrees_LoadTextureDDSIntoSlice`) is a **no-op stub** — "stub - DDS loading disabled", with the
+  real implementation sitting inside an `#if 0`;
+- their only readers are `GGGrass_BindGrassArray` (called solely from GGTerrain's own draw),
+  `GGGrass_Draw_Prepass` (declared but never registered) and GGTrees' draw functions — and
+  **every `customDraw_*` callback in `master_part1.cpp` early-returns while
+  `ggterrain_use_wicked_terrain` is set**, which it is;
+- shipping grass renders through Wicked's hair particle system and shipping trees through the
+  Wicked object path, both sampling per-type materials directly.
+
+Now allocated on demand from the same legacy-activation hook as the 1.70 page atlas, so flipping
+the Y-key debug toggle still works. Verified:
+
+| Level | driver before | after | saved | POLYS |
+|---|---|---|---|---|
+| TESTPRO1 | 5926–5990 | **5710.4** | ~216–280 | 3,149,243 identical |
+| Island Showdown | 4328 | **4144.6** | 183 | 4,115,636 identical |
+| Foggy Forest | 5269 | **5036.8** | 232 | 10,195,894 identical |
+
+Zero `tex` array records remain in any census. TESTPRO1 also **passes the density gate**:
+coverage 9.458 (ref 9.45), clumpCV 1.102 (ref 1.104, noise ±0.006), bands 13.52 13.12 18.80 9.93
+1.34 against 13.6 13.1 18.7 9.9 1.3 — inside tolerance on every metric.
 
 ## Caveats on two buckets
 

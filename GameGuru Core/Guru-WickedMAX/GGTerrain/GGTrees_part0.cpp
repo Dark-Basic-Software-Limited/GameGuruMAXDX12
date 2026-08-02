@@ -780,6 +780,29 @@ void GGTrees_LoadTextureDDS( const char* filename, Texture* tex )
 	// stub - DDS loading disabled
 }
 
+// GGMAX Tier A (2026-08-02): the four legacy tree atlases (texTree 52.2 MB, texBranchesHigh
+// 52.2, texTreeNormal 26.1, texTreeHigh 26.1 = 156.6 MB) are allocated on demand rather than at
+// init, for exactly the reasons set out over GGGrass_EnsureLegacyTexArray():
+//   * created EMPTY, and their only writer GGTrees_LoadTextureDDSIntoSlice is a disabled stub,
+//   * their only readers are GGTrees' own draw functions, and every customDraw_* callback in
+//     master_part1.cpp early-returns while ggterrain_use_wicked_terrain is set,
+//   * shipping trees render through the Wicked object path with per-tree materials.
+// Hooked to the legacy path's activation point so the atlases exist before anything binds them.
+void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex );
+static bool g_treesLegacyTexArraysCreated = false;
+void GGTrees_EnsureLegacyTexArrays()
+{
+	if (g_treesLegacyTexArraysCreated) return;
+	if (!ggtrees_initialised) return;
+	g_treesLegacyTexArraysCreated = true;
+	// billboard textures
+	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texTree );
+	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM, &texTreeNormal );
+	// high detail tree textures
+	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM_SRGB, &texTreeHigh );
+	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texBranchesHigh );
+}
+
 void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex )
 {
 	if (!ggtrees_initialised) return;
@@ -1159,13 +1182,9 @@ void GGTrees_Init()
 
 	GGTrees_LoadTextureDDS( "Files/treebank/noise.dds", &texNoise );
 
-	// billboard textures
-	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texTree );
-	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM, &texTreeNormal );
-
-	// high detail tree textures
-	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM_SRGB, &texTreeHigh );
-	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texBranchesHigh );
+	// GGMAX Tier A (2026-08-02): the four 1024x1024 x numTreeTypes atlases (156.6 MB together)
+	// are NOT created here any more — see GGTrees_EnsureLegacyTexArrays() for the reasoning and
+	// the on-demand creation.
 
 #ifdef ONLYLOADWHENUSED
 	for (int i = 0; i < numTreeTypes; i++)

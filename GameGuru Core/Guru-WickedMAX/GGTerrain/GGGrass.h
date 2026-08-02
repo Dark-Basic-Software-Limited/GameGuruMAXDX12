@@ -77,6 +77,8 @@ namespace GGGrass
 	void GGGrass_Update_Painting( RAY ray );
 	int GGGrass_UsingBrush();
 	void GGGrass_BindGrassArray( uint32_t slot, wiGraphics::CommandList cmd );
+	// GGMAX Tier A: allocate the dead legacy blade atlas only if the legacy draw path wakes up.
+	void GGGrass_EnsureLegacyTexArray();
 	void GGGrass_BindGrassMap( int slot, wiGraphics::CommandList cmd );
 
 	// (Re)create texGrassMap from the current pGrassMap contents. Called by the paint stroke path
