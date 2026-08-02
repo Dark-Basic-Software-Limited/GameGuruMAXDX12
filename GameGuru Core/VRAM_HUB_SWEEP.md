@@ -1,97 +1,98 @@
-# VRAM sweep — every hub demo, opening scene
+﻿# VRAM sweep — every hub demo, opening scene
 
-Measured 2026-08-01 on engine `2b9b989f` / game `c51b0d56` (i.e. *after* the dead-VT and
-raytracing-copy fixes, and with the grass coverage change reverted). Each demo gets a **cold
-launch** so its reading is not contaminated by the previous level; level opened in the editor,
-35 s settle, then `GET_PERF_DATA` + `DUMP_VRAM`. Reproduce with the sweep script pattern in
-`tools/` plus `DUMP_VRAM <tag>`.
+**LATEST: 2026-08-02, engine `a6cb310e` / game `8fd09cb7`** (texture streaming ON, merged grass
+default OFF). Cold launch per demo so no reading is contaminated by the previous level; level
+opened in the editor, 35 s settle, then `GET_PERF_DATA` + `DUMP_VRAM`. Reproduce with the sweep
+script pattern in `tools/`. "driver" is what the FPS panel shows as VRam — the number a user feels.
 
-"driver" is what the FPS panel shows as VRam — the number a user actually feels.
+**Range 4644 -> 10023 MB, mean 6060 MB across 19 demos.** All 19 load clean.
 
-## Ranked by driver VRAM
-
-| # | Demo | driver MB | census MB | hair systems | strands | polys | FPS |
-|---|---|---|---|---|---|---|---|
-| 1 | The Mystery of Z Island | **10087** | 8536 | 185 | 12,432,000 | 704,717 | 71.9 |
-| 2 | Aztec Game Kit | **8117** | 6698 | 64 | 4,104,000 | 3,438,876 | 78.0 |
-| 3 | Jungle Fever | **7651** | 5852 | 63 | 6,300,000 | 74,124 | 99.9 |
-| 4 | Canyon Offensive | **7002** | 5310 | 62 | 5,298,000 | 8,816,163 | 59.9 |
-| 5 | Operation Amazon | 6513 | 4832 | 26 | 2,354,000 | 5,496,922 | 86.2 |
-| 6 | Foggy Forest | 6469 | 4920 | 30 | 3,000,000 | 10,195,894 | 59.9 |
-| 7 | River Raiders | 5704 | 4076 | 23 | 1,726,000 | 1,906,072 | 112.4 |
-| 8 | Indian Strike Force | 5690 | 3808 | 0 | 0 | 3,184,527 | 105.7 |
-| 9 | Aztec Game Kit Teaser | 5650 | 4026 | 48 | 2,335,000 | 10,313,511 | 66.0 |
-| 10 | Disruption | 5493 | 3602 | 6 | 436,000 | 4,665,184 | 88.2 |
-| 11 | Bounty | 5384 | 3778 | 0 | 0 | 463,210 | 119.9 |
-| 12 | Snowy Mountain Stroll | 5324 | 3516 | 7 | 700,000 | 81,081 | 131.8 |
-| 13 | Horseshoe Bend | 5284 | 3368 | 0 | 0 | 2,133,269 | 95.7 |
-| 14 | Island Showdown | 5240 | 3644 | 34 | 1,350,000 | 4,115,636 | 66.6 |
-| 15 | A Grand Canyon Adventure | 5139 | 3447 | 48 | 1,942,000 | 2,272,361 | 102.7 |
-| 16 | Escape from the Zombie Cellar | 4671 | 2925 | 0 | 0 | 28,048 | 139.4 |
-| 17 | Switch Escape | 4645 | 2780 | 0 | 0 | 109,358 | 142.6 |
-
-**Trapped** and **RPG Template** never reached the editor — see the failures note at the bottom.
-
-## Category breakdown (MB)
-
-| Demo | grass | SVT pool | mesh alloc | content tex | arrays | shadow-T | chunk maps | other |
+| # | Demo | driver MB | census MB | grass MB | hair sys | strands | polys | FPS |
 |---|---|---|---|---|---|---|---|---|
-| zisland | **4297** | 768 | 512 | 979 | 220 | 384 | 115 | 1261 |
-| jungle | **2403** | 768 | 512 | 595 | 220 | 320 | 168 | 866 |
-| aztec | **1919** | 768 | 1024 | 1114 | 220 | 320 | 115 | 1219 |
-| canyonoff | **1883** | 768 | 512 | 781 | 220 | 160 | 115 | 871 |
-| foggyforest | 1097 | 768 | 512 | 486 | 220 | **512** | 115 | 1210 |
-| aztecteaser | 1041 | 768 | 512 | 478 | 220 | 160 | 115 | 732 |
-| amazon | 963 | 768 | 512 | 754 | 220 | **512** | 115 | 987 |
-| riverraiders | 728 | 768 | 512 | 722 | 220 | 160 | 115 | 851 |
-| island | 602 | 768 | 512 | 452 | 220 | 160 | 168 | 762 |
-| canyonadv | 503 | 768 | 512 | 442 | 220 | 160 | 115 | 727 |
-| snowy | 333 | 768 | 512 | 440 | 220 | 320 | 115 | 808 |
-| disruption | 208 | 768 | 512 | 352 | 220 | **512** | 115 | 915 |
-| indian | 0 | 768 | 512 | 918 | 220 | 256 | 115 | 1018 |
-| horseshoe | 0 | 768 | 768 | 476 | 220 | 160 | 115 | 861 |
-| bounty | 0 | 768 | 512 | 521 | 220 | **512** | 115 | 1130 |
-| cellar | 0 | 768 | 512 | 359 | 220 | 160 | 115 | 791 |
-| switch | 0 | 768 | 512 | 312 | 220 | 160 | 115 | 692 |
+| 1 | **The Mystery of Z Island** | **10023** | 8522 | 4297 | 185 | 12,432,000 | 704,717 | 69.3 |
+| 2 | **Aztec Game Kit** | **8069** | 6693 | 1919 | 64 | 4,104,000 | 3,438,876 | 75.5 |
+| 3 | **Jungle Fever** | **7651** | 5853 | 2403 | 63 | 6,300,000 | 74,124 | 93.0 |
+| 4 | **Canyon Offensive** | **7002** | 5314 | 1883 | 62 | 5,298,000 | 8,816,163 | 58.5 |
+| 5 | Operation Amazon | 6577 | 4844 | 963 | 26 | 2,354,000 | 5,496,922 | 83.3 |
+| 6 | Foggy Forest | 6468 | 4900 | 1097 | 30 | 3,000,000 | 10,195,894 | 58.7 |
+| 7 | RPG Template | 6223 | 4633 | 1330 | 51 | 2,786,000 | 3,235,005 | 72.4 |
+| 8 | River Raiders | 5703 | 4065 | 728 | 23 | 1,726,000 | 1,906,072 | 104.8 |
+| 9 | Indian Strike Force | 5690 | 3809 | 0 | 0 | 0 | 3,184,527 | 99.6 |
+| 10 | Aztec Game Kit Teaser | 5650 | 4024 | 1041 | 48 | 2,335,000 | 10,313,511 | 64.6 |
+| 11 | Disruption | 5509 | 3585 | 208 | 6 | 436,000 | 4,665,184 | 83.9 |
+| 12 | Bounty | 5383 | 3801 | 0 | 0 | 0 | 463,210 | 113.7 |
+| 13 | Snowy Mountain Stroll | 5372 | 3538 | 333 | 7 | 700,000 | 81,081 | 124.1 |
+| 14 | Horseshoe Bend | 5348 | 3376 | 0 | 0 | 0 | 2,133,269 | 94.6 |
+| 15 | Island Showdown | 5192 | 3649 | 602 | 34 | 1,350,000 | 4,115,636 | 64.3 |
+| 16 | A Grand Canyon Adventure | 5139 | 3437 | 503 | 48 | 1,942,000 | 2,272,361 | 95.9 |
+| 17 | Trapped | 4814 | 2969 | 0 | 0 | 0 | 11,209 | 138.1 |
+| 18 | Escape from the Zombie Cellar | 4688 | 2937 | 0 | 0 | 0 | 28,048 | 127.4 |
+| 19 | Switch Escape | 4644 | 2794 | 0 | 0 | 0 | 109,358 | 130.4 |
+
+## Where it goes (MB)
+
+| Demo | grass | SVT pool | mesh alloc | content tex | arrays | shadow-T | shadow-D | chunk maps |
+|---|---|---|---|---|---|---|---|---|
+| The Mystery of Z Island | 4297 | 768 | 512 | 979 | 220 | 384 | 195 | 105 |
+| Aztec Game Kit | 1919 | 768 | 1024 | 1114 | 220 | 320 | 162 | 105 |
+| Jungle Fever | 2403 | 768 | 512 | 595 | 220 | 320 | 162 | 158 |
+| Canyon Offensive | 1883 | 768 | 512 | 781 | 220 | 160 | 81 | 105 |
+| Operation Amazon | 963 | 768 | 512 | 754 | 220 | 512 | 260 | 105 |
+| Foggy Forest | 1097 | 768 | 512 | 486 | 220 | 512 | 260 | 105 |
+| RPG Template | 1330 | 768 | 512 | 587 | 220 | 256 | 130 | 158 |
+| River Raiders | 728 | 768 | 512 | 722 | 220 | 160 | 81 | 105 |
+| Indian Strike Force | 0 | 768 | 512 | 918 | 220 | 256 | 130 | 105 |
+| Aztec Game Kit Teaser | 1041 | 768 | 512 | 478 | 220 | 160 | 81 | 105 |
+| Disruption | 208 | 768 | 512 | 352 | 220 | 512 | 260 | 105 |
+| Bounty | 0 | 768 | 512 | 521 | 220 | 512 | 260 | 105 |
+| Snowy Mountain Stroll | 333 | 768 | 512 | 440 | 220 | 320 | 162 | 105 |
+| Horseshoe Bend | 0 | 768 | 768 | 476 | 220 | 160 | 81 | 105 |
+| Island Showdown | 602 | 768 | 512 | 452 | 220 | 160 | 81 | 158 |
+| A Grand Canyon Adventure | 503 | 768 | 512 | 442 | 220 | 160 | 81 | 105 |
+| Trapped | 0 | 768 | 512 | 509 | 220 | 160 | 81 | 105 |
+| Escape from the Zombie Cellar | 0 | 768 | 512 | 359 | 220 | 160 | 81 | 105 |
+| Switch Escape | 0 | 768 | 512 | 312 | 220 | 160 | 81 | 105 |
+| **HUB TOTAL** | **17308** | 14592 | 10496 | 11278 | 4180 | 5344 | 2713 | 2156 |
 
 ## What the numbers say
 
-**1. There is a hard floor of ~1.6 GB that every level pays, including a cellar.**
-`SVT pool 768 + arrays 220 + chunk maps 115 + mesh allocator 512` is present and *identical* on
-all 17 demos. Switch Escape draws 109 k polys with no grass and still needs 4.6 GB. Attacking
-this floor improves **every** project in the product, not just the heavy ones.
+**1. A ~1.85 GB floor is paid by EVERY level, including an indoor cellar.** SVT pool 768 +
+mesh allocator 512 + source arrays 220 + chunk maps ~106 + SVT bookkeeping ~134, present and
+near-identical on all 19. Switch Escape draws 109 k polys with no grass and still needs 4.6 GB,
+which is why nothing in the hub goes below that. Attacking the floor improves **every** project.
 
-- **SVT tile pool: 768 MB, invariant, on all 17.** Biggest single universal item. Measured
-  residency is only ~26% of the atlas; `svtatlasheight=8192` halves it (−384 MB *per demo*,
-  ~6.5 GB across the hub). Already wired, default off, needs a fast-travel soak.
-- **Source texture arrays: 220 MB, invariant, on all 17.** At least **61 MB of that is
-  `texGrass`, which is never written and never read** (all writers are disabled stubs; the only
-  binder is the dead legacy draw path). That part is free.
-- **Chunk maps: 115 MB** (168 on two) — terrain blend/wet/height maps, 841 chunks.
+**2. Grass is the entire spread: 17.3 GB hub-wide**, 0 on six demos and 4.3 GB on Z Island
+alone. It is the single biggest prize, and the merged-grass work (delta 1.74, default off)
+targets exactly it — Z Island reports 12 chunks carrying all 185 systems at 8+ types each, so
+merging would take 185 -> 12.
 
-**2. Grass is the entire spread between demos.** 0 MB on six of them, 4.3 GB on Z Island. It
-alone explains why #1 is 10 GB and #17 is 4.6 GB. Total across the hub: **~16 GB**. This is the
-single biggest prize and the retry design (one hair system per chunk, bit-identical placement)
-is specified in `VRAM_CENSUS.md`.
+**3. The transparent shadow atlas reaches 512 MB** on Operation Amazon, Foggy Forest, Disruption
+and Bounty (vs 160 elsewhere), and pairs with ~260 MB of depth atlas. On **Bounty that is 772 MB
+of shadow atlas on a level with no grass at all** — proportionally the largest non-grass item in
+the hub. RGBA16F -> RGBA8 halves the transparent half; confirm nothing actually renders into it
+first, because the alpha channel carries a depth value compared against the shadow test.
 
-**3. The transparent shadow atlas is bigger than assumed on several demos** — 512 MB on Foggy
-Forest, Operation Amazon, Disruption and Bounty (vs 160 on Island Showdown; it scales with the
-shadow packer). RGBA16F → RGBA8 halves it, so on those four it is worth **256 MB each**, and it
-applies to levels with no grass at all. Caveat unchanged: the alpha channel carries a depth value
-compared against the shadow test, so confirm nothing actually renders into that atlas first.
+**4. Aztec Game Kit is the content outlier**: 1114 MB of textures and a doubled 1024 MB mesh
+allocator. Its 128 MB of un-mipped 4096-square character skins (see the single-mip DDS audit in
+`VRAM_CENSUS.md`) sit inside that content figure.
 
-**4. Polygons and VRAM are unrelated.** Aztec Teaser draws 10.3 M polys in 5.6 GB; Jungle Fever
-draws 74 k in 7.7 GB. Do not use scene complexity as a VRAM proxy — measure.
+**5. Polygons and VRAM are unrelated.** Aztec Teaser draws 10.3 M polys in 5.7 GB; Jungle Fever
+draws 74 k in 7.7 GB. Measure, never infer VRAM from scene complexity. (The converse also holds —
+see `DEMO_FPS_SWEEP.md`: FPS tracks polygons, not VRAM.)
 
 ## Suggested targeting order
 
 | Target | Per-demo | Hub-wide | Risk |
 |---|---|---|---|
-| Grass one-system-per-chunk | up to −3 GB | ~−10 GB | design proven bit-identical; must pass the `GRASS_BENCHMARK.md` gate |
-| SVT atlas halving | −384 MB × 17 | ~−6.5 GB | needs fast-travel soak; switch already exists |
-| `texGrass` dead array | −61 MB × 17 | ~−1 GB | none — provably never written or read |
+| Grass merged systems (delta 1.74) | up to −3 GB | ~−14 GB | BUILT, default OFF — fails the density gate, see `VRAM_CENSUS.md` |
+| SVT atlas halving (`svtatlasheight=8192`) | −384 MB × 19 | ~−7 GB | needs a fast-travel soak; switch already exists |
 | Transparent shadow atlas RGBA8 | −80 to −256 MB | ~−3 GB | verify the alpha-depth test first |
-| Mesh suballocator granularity | −0 to 512 MB | varies | fragmentation-dependent |
+| Single-mip content DDS (967 files) | varies | ~−5.5 GB resident | content-side, no code |
+| `texGrass` dead array | −61 MB × 19 | ~−1 GB | none — provably never written or read |
+
+---
+
+# Previous sweep (2026-08-01, streaming verification run)
 
 ## Verification sweep, streaming ON, after the 1.73 fix (2026-08-01 evening)
 

@@ -91,13 +91,22 @@ void GGGrass_GetChunkTypeHistogram(unsigned int* histOut, unsigned int histLen,
 	unsigned int* chunksOut, unsigned int* systemsOut)
 {
 	unsigned int chunks = 0, systems = 0;
+	// A slot holding a non-INVALID entity is NOT proof a hair system exists: teardown paths can
+	// remove the entity from the scene while the map record survives, and the map also outlives a
+	// level change. Counting slots alone reported a phantom "chunks=9 systems=19" on all six
+	// grass-free demos in the 2026-08-02 sweep while HAIR_SYSTEMS read 0. Validate every slot
+	// against the live scene so this line can never disagree with HAIR_SYSTEMS again.
+	wi::scene::Scene& scene = wi::scene::GetScene();
+	auto live = [&scene](wi::ecs::Entity e) {
+		return e != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(e) != nullptr;
+	};
 	for (auto& kv : grassChunkKeyToGrassEntities)
 	{
 		unsigned int n = 0;
 		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
-			if (kv.second.perType[t] != wi::ecs::INVALID_ENTITY) n++;
+			if (live(kv.second.perType[t])) n++;
 		unsigned int sys = n;
-		if (kv.second.merged != wi::ecs::INVALID_ENTITY)
+		if (live(kv.second.merged))
 		{
 			// GGMAX 1.74 merged: ONE system covering however many types the mask records.
 			sys += 1;
