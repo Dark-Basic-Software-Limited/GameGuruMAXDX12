@@ -81,6 +81,10 @@ extern bool gg_upload_trace;
 namespace wi { extern std::atomic<unsigned long long> gg_dbg_stream_req_calls; }
 namespace wi { namespace scene { extern std::atomic<unsigned long long> gg_dbg_stream_fb_hits; } }
 namespace wi { namespace renderer { extern std::atomic<unsigned long long> gg_dbg_stream_copies; } }
+// GGMAX: transparent shadow atlas write counter (wiRenderer.cpp). Must be declared at NAMESPACE
+// scope — a block-scope `extern` binds to the global namespace instead and fails to link.
+namespace wi { namespace renderer { extern std::atomic<unsigned long long> gg_dbg_transparent_shadow_batches; } }
+namespace wi { namespace renderer { extern bool gg_transparent_shadows; } } // A/B: is the 512 MB atlas visually load-bearing?
 extern bool g_bTextureStreamingEnabled; // game-side enrollment kill-switch (wickedcalls_part0.cpp), harness SET_TEXSTREAM
 #include "wiGraphicsDevice.h"
 #include "wiApplication.h"
@@ -1404,6 +1408,14 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			wi::scene::gg_dbg_stream_fb_hits.load(),
 			wi::gg_dbg_stream_req_calls.load(),
 			wi::resourcemanager::gg_dbg_stream_guard_rejects.load());
+		// GGMAX: transparent shadow atlas occupancy. batches = objects that reached the
+		// TRANSPARENT|WATER shadow queue since launch. The atlas is RGBA16F sized by the shadow
+		// packer (512 MB on four hub demos); its alpha carries a depth value used by
+		// TRANSPARENT_SHADOWMAP_SECONDARY_DEPTH_CHECK, so the format can only be reduced if this
+		// stays 0. Measure before touching it.
+		written += _snprintf(result + written, resultSize - written,
+			"SHADOWT: transparent_shadow_batches=%llu\n",
+			wi::renderer::gg_dbg_transparent_shadow_batches.load());
 		{
 			// GGMAX 1.70: VRAM census aggregates (full line items via DUMP_VRAM)
 			extern void GG_GetVRAMTotals(unsigned long long*, unsigned long long*, unsigned long long*, unsigned long long*, unsigned int*);
@@ -3356,6 +3368,19 @@ void AutoHarness_CheckForCommand(void)
 		int tsv = atoi(arg);
 		g_bTextureStreamingEnabled = (tsv != 0);
 		_snprintf(result, sizeof(result), "OK: SET_TEXSTREAM %d (affects textures loaded from now on; reload level for full effect)", tsv);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_TRANSPARENTSHADOWS") == 0)
+	{
+		// SET_TRANSPARENTSHADOWS <0|1> — skip the transparent shadow draws. The atlas is cleared
+		// to (1,1,1,0), so with the draws skipped the tint multiply is a no-op and the secondary
+		// depth check always fails: exactly "feature off". Takes effect on the next frame, no
+		// reload needed. Use it to judge whether the 512 MB RGBA16F atlas earns its memory —
+		// it CANNOT be narrowed to RGBA8, because the measured batch counts show its alpha depth
+		// value is genuinely produced on every hub level and 8 bits would quantise the compare.
+		int tsv = atoi(arg);
+		wi::renderer::gg_transparent_shadows = (tsv != 0);
+		_snprintf(result, sizeof(result), "OK: SET_TRANSPARENTSHADOWS %d (next frame; atlas clear is 1,1,1,0 so off == no tint, no depth accept)", tsv);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_GRASSMERGE") == 0)

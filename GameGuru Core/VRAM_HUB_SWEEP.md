@@ -80,13 +80,62 @@ allocator. Its 128 MB of un-mipped 4096-square character skins (see the single-m
 draws 74 k in 7.7 GB. Measure, never infer VRAM from scene complexity. (The converse also holds —
 see `DEMO_FPS_SWEEP.md`: FPS tracks polygons, not VRAM.)
 
+
+## Transparent shadow atlas — RGBA8 REJECTED, but the feature looks visually inert (2026-08-02)
+
+**RGBA8 is NOT safe.** The atlas alpha carries a depth value consumed by
+`TRANSPARENT_SHADOWMAP_SECONDARY_DEPTH_CHECK` (`transparent_shadow.a > cmp` in shadowHF.hlsli),
+and 8 bits would quantise that compare to 256 levels. The standing caveat was "verify the
+alpha-depth test first" — so it was verified, with a counter on every batch reaching the
+`FILTER_TRANSPARENT | FILTER_WATER` shadow queue (harness `SHADOWT:` line):
+
+| Demo | editor | in game |
+|---|---|---|
+| Operation Amazon | 41,212 | 59,305 |
+| Foggy Forest | 24,773 | 33,758 |
+| Disruption | 48,121 | 77,311 |
+| Bounty | 59,222 | **632,167** |
+| Island Showdown | 20,866 | 32,157 |
+
+The atlas is written heavily on **every** level tested, so the depth value is genuinely produced
+and the format cannot be narrowed. There is also no escape hatch: every 4-byte RGBA format has
+8-bit alpha or worse (R10G10B10A2 gives 2). **Do not re-attempt the RGBA8 conversion.**
+
+### The bigger question, and a surprising answer
+
+Since the format cannot shrink, the real question is whether the atlas earns its 512 MB at all.
+`SET_TRANSPARENTSHADOWS <0|1>` skips the draws — the atlas clears to `(1,1,1,0)`, so rgb white
+makes the tint multiply a no-op and alpha 0 makes the depth check always fail, i.e. exactly
+"feature off" with nothing else altered. Same-session A/B, same camera:
+
+| Demo | ON vs OFF | noise floor (ON vs ON, later frame) | verdict |
+|---|---|---|---|
+| Bounty | 0.023% differing, meanAbs 0.031 | 0.021%, 0.022 | at the noise floor |
+| Island Showdown | 16.493%, 1.848 | 16.414%, 1.751 | at the noise floor |
+| Operation Amazon | 3.623%, 0.262 | 5.531%, 0.511 | **BELOW the noise floor** |
+
+**No measurable visual difference on any of the three**, including the two strongest candidates
+(Island Showdown has ocean — `FILTER_WATER` feeds this same queue — and Amazon is dense foliage).
+FPS is unchanged too (115.2/114.3, 64.6/64.4, 85.3/84.5), so the cost is memory and the
+per-frame clear, not draw time.
+
+**The gate was proven before the A/B was trusted**: with it off the batch counter is exactly
+frozen (72276 -> 72276) and climbs again when restored. Without that check the comparison would
+have been worthless, because both screenshots could have had the feature live.
+
+**Implication:** the prize is not RGBA8's half — it is the whole atlas, ~512 MB on four demos and
+~5.3 GB hub-wide. But that is a rendering-feature removal, not a free win, and it is measured on
+3 of 19 demos in the editor only. **Left DEFAULT ON pending a decision plus a full-hub sweep**;
+user content could legitimately use coloured transparent shadows (stained glass, tinted water)
+even where the stock demos do not.
+
 ## Suggested targeting order
 
 | Target | Per-demo | Hub-wide | Risk |
 |---|---|---|---|
 | Grass merged systems (delta 1.74) | up to −3 GB | ~−14 GB | BUILT, default OFF — fails the density gate, see `VRAM_CENSUS.md` |
 | SVT atlas halving (`svtatlasheight=8192`) | −384 MB × 19 | ~−7 GB | needs a fast-travel soak; switch already exists |
-| Transparent shadow atlas RGBA8 | −80 to −256 MB | ~−3 GB | verify the alpha-depth test first |
+| Transparent shadow atlas RGBA8 | — | — | **REJECTED, measured — see below** |
 | Single-mip content DDS (967 files) | varies | ~−5.5 GB resident | content-side, no code |
 | `texGrass` dead array | −61 MB × 19 | ~−1 GB | none — provably never written or read |
 
