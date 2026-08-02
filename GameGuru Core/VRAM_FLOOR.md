@@ -104,7 +104,7 @@ unreachable by construction.
 | Item | MB | Knob today | Reducible by | How |
 |---|---|---|---|---|
 | PSO driver memory (7,496 left) | ~720 | none | ~200 | trim the tessellation + voxelize axes (below) |
-| SVT tile pool | 576 | **`svtatlasheight`** | 288 | 6144 in low-VRAM mode |
+| SVT tile pool | 576 | **`svtatlasheight`** | 0 today | see the correction below |
 | Mesh suballocator blocks | 512 | none | 128 | 128 MB block granularity (only ~311 used) |
 | D3D12MA block padding | 349 | none | — | allocator behaviour |
 | Driver / descriptor heaps / cmd allocators | ~243 | none | — | not ours |
@@ -118,8 +118,26 @@ unreachable by construction.
 | Render targets / postFX | 61 | resolution | 20 | follows internal resolution |
 | Content (even the emptiest demo) | ~310 | streaming | — | already adaptive |
 
-Identified reductions total **~1287 MB → floor ≈ 2.65 GB.** That is a 43 % cut from the
+Identified reductions total **~999 MB → floor ≈ 2.94 GB** (the SVT 288 is struck, see below). That is a 43 % cut from the
 original 4452 MB but still above the 1.5–2.0 GB target, so two structural items matter:
+
+### CORRECTION — the SVT atlas cannot simply be halved again
+
+An earlier draft of this table claimed 288 MB from `svtatlasheight=6144`. That is **wrong** and
+would starve the atlas exactly as 8192 does. Tiles = 62 x floor(height/264):
+
+| height | tiles | vs measured peak demand 1864-2001 |
+|---|---|---|
+| 16384 | 3844 | huge headroom (the old default) |
+| 12288 | 2852 | 30-35 % headroom — the current default |
+| 8192 | 1922 | BELOW Aztec's 2001 peak — starves |
+| 6144 | 1426 | far below demand — starves badly |
+
+So there is no free atlas reduction left. The only way to shrink it further is to reduce the
+tile DEMAND first — raising `SVT_MIP_BIAS` lowers terrain sampling resolution and therefore how
+many tiles a view needs, which is precisely the kind of visual trade a 4 GB preset is allowed to
+make. That pairing (higher mip bias + smaller atlas) needs its own fast-travel soak before it can
+be trusted; do not ship one without the other.
 
 ### The two structural wins that close the gap
 
@@ -162,6 +180,104 @@ almost all of it.
 | 8 | Terrain source arrays 1024²→512² in low mode | 165 MB | low | visible terrain detail trade |
 | 9 | Terrain global maps 4096²→2048² in low mode | 49 MB | low | material/grass/tree paint resolution |
 | 10 | Wetmap opt-out when no rain | 52 MB | low | 841 chunks × wetmap |
+
+## What shipped — the 4 GB preset, built in revertable batches
+
+User direction 2026-08-02: *drop the transparent shadow atlas and remove any UI that enables it,
+cap grass in the preset, and also the lazy PSO — in batches so any one can be reverted.*
+
+### Batch 1 — transparent shadow atlas dropped (engine `8acce73f`, game `81224917`)
+
+Detailed in the WICKED_ENGINE_CHANGES 1.78 row. `gg_transparent_shadows` defaults false, the
+atlas is never allocated, the shadow pass is depth-only, and the object shadow PSOs are built
+with `rt_count = 0` to match. Verified on four demos: POLYS bit-identical, no census record,
+screenshots unchanged. **Island isolated −160 MB; the atlas was 520 MB on Bounty and Foggy
+Forest** (16384x4096 shadow packers). The UI checkbox was already hidden by the July audit.
+
+### Batch 2 — preset scaffold + grass cap
+
+`setup.ini lowvram=1` / `lowvramgrassdist=750`, harness `SET_LOWVRAM`, bridged through
+`GGSetLowVRAM()` in master_part1.cpp so the preset's members stay in one place.
+
+The grass lever is the **draw distance**, applied through a single accessor
+`GGGrass_LodDistEffective()`. Every consumer of `lod_dist` must go through it: the per-strand
+visibility cull and the chunk-creation ring are deliberately decoupled (the ring sits one chunk
+further out so strands fade in individually), and if only one of them saw the cap, grass would
+pop in whole chunks again. 750 is the editor slider's own minimum for that same reason. It is a
+CAP — a level already asking for less keeps its value.
+
+This deliberately does **not** touch placement or density. The 2026-08-01 attempt that did had to
+be reverted for clumping; the post-mortem and its "what not to do next time" list are in
+`VRAM_CENSUS.md` and still apply.
+
+### Batch 3 — lazy object PSOs
+
+`wi::renderer::gg_pso_lazy_object` passes nullptr for `renderpass_info`, putting object pipelines
+on the backend's deferred path: `pso_validate` builds the real `ID3D12PipelineState` at first
+BIND, filling in the live pass's formats and sample count and caching it in `pipelines_global`
+keyed by `{pso, renderpass_hash}`. Only pipelines actually used ever reach the driver. Primitive
+topology is set on that path too, so nothing is lost. The cost is a first-use compile hitch,
+measurable in `gg_dbg_pso_compiles` / `gg_dbg_pso_compile_us`.
+
+**Ordering trap, found by measurement not by reading.** The first attempt wired the flag only
+into `FPSC_LoadSETUPINI`, and it did nothing at all: `pso_creates` stayed at 7496, identical to
+the control, because setup.ini is parsed **after** the engine has already built its pipelines in
+`LoadShaders`. The flag is now also read in `GetSetupIniEarly()`, which `main()` calls before the
+engine starts. This is exactly why the A/B was designed to isolate the two halves — a combined
+test would have shown the grass saving and hidden the fact that batch 3 was inert.
+
+Because of that ordering, **`SET_LOWVRAM` cannot enable the lazy-PSO half** — object pipelines
+are long since built by the time any harness command lands. Use `setup.ini lowvram=1`.
+
+### Measured result of batches 2 + 3
+
+Island Showdown, one binary, three configs, editor, 30 s settle:
+
+| | control | lazy PSOs only | full preset |
+|---|---|---|---|
+| driver VRAM | 4312.7 MB | **3679.8 MB** | 3680.1 MB |
+| eager driver pipelines | 6337 | **1** | 1 |
+| lazy compiles | 22 | 57 | 57 |
+| grass strand buffers | 602.6 MB | 602.6 MB | 602.6 MB |
+| POLYS | 4115636 | 4115636 | 4115636 |
+| FPS | 63.6 | 63.2 | 70.2 |
+
+The Mystery of Z Island (the grassiest demo, where the cap actually bites):
+
+| | control | full preset | delta |
+|---|---|---|---|
+| driver VRAM | 8998.8 MB | 8302.1 MB | **−696.7** |
+| grass strand buffers | 4296.9 MB | 3804.1 MB | **−492.8** |
+| eager driver pipelines | 6337 | 1 | |
+| POLYS | 704717 | 704717 | identical |
+| FPS | 70.4 | 80.4 | **+10.0** |
+
+**Lazy PSOs are the big win and they are free of visual risk**: 57 pipelines is all Island
+Showdown actually binds, against 6337 built eagerly — about 1 %. POLYS bit-identical on both
+levels, FPS flat or better.
+
+**The grass cap is real but modest at 750, and it is worth understanding why.** On Island
+Showdown it does nothing at all (that level already asks for less than the cap). On Z Island it
+takes 493 MB off the strand buffers — 11 %, not the ~1.14 GB the older Grass Draw Distance
+measurement might suggest. The reason is arithmetic: the chunk-creation ring is
+`viewDistInches / chunkStride + 1.0` with `chunkStride ≈ 5040` and `viewDistInches = lod_dist +
+2500`, so the `+1.0` chunk and the `+2500` offset dominate at these distances. Dropping
+lod_dist from ~2000 to 750 moves the ring from ~1.89 chunks to ~1.64 — a small change in area.
+
+So: **the draw-distance cap alone will not deliver the content half of a 4 GB budget.** Getting
+substantially more out of grass means the density/tier levers, which is exactly the territory
+that had to be reverted on 2026-08-01 for clumping — it must go through
+`tools/grassdensity.ps1` and the clumpCV gate, not screenshots.
+
+### How to A/B the two halves apart### How to A/B the two halves apart
+
+    lowvram=1
+    lowvramgrassdist=999999
+
+makes the grass cap inert (no level asks for a million inches) and exercises the lazy-PSO half
+alone. **POLYS must stay bit-identical there** — a drop means a pipeline that was actually needed
+never appeared and `RenderMeshes` skipped the draw. With the cap at 750, POLYS is *expected* to
+fall; that is the grass cap working.
 
 ## Proposed "Low VRAM (4 GB)" preset
 

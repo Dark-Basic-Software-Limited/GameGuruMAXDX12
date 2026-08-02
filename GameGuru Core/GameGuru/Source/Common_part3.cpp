@@ -804,6 +804,39 @@ void LineEx ( int x1, int y1, int x2, int y2 )
 
 void GetSetupIniEarly( void )
 {
+	// GGMAX 1.79: the low-VRAM preset's LAZY OBJECT PSO half has to be decided before the engine
+	// builds its object pipelines in wi::renderer::LoadShaders, and that happens long before
+	// FPSC_LoadSETUPINI runs. Handling the key only there did nothing at all — measured, not
+	// assumed: with `lowvram=1` set, pso_creates stayed at 7496, identical to the control. So the
+	// key is read here too, in main()'s early pass, alongside the standalone keys below.
+	// Deliberately simple parsing: no engine services exist yet, and note `lowvramgrassdist` must
+	// NOT satisfy `lowvram`, so the key is matched exactly rather than by substring (which is why
+	// this does not use the pestrcasestr style of the block below).
+	// The grass-cap half has no such constraint — grass entities are built per chunk at spawn
+	// time, so FPSC_LoadSETUPINI is early enough for it.
+	{
+		FILE* lvf = nullptr;
+		if (fopen_s(&lvf, "setup.ini", "r") == 0 && lvf != nullptr)
+		{
+			char lvline[2048];
+			while (fgets(lvline, sizeof(lvline), lvf))
+			{
+				const char* p = lvline;
+				while (*p == ' ' || *p == '\t') p++;
+				if (_strnicmp(p, "lowvram", 7) != 0) continue;
+				const char* q = p + 7;
+				while (*q == ' ' || *q == '\t') q++;
+				if (*q != '=') continue;                 // "lowvramgrassdist=..." lands here
+				if (atoi(q + 1) != 0)
+				{
+					extern void GGSetLowVRAM(int);
+					GGSetLowVRAM(1);
+				}
+			}
+			fclose(lvf);
+		}
+	}
+
 	//PE: Standalone option to make sure no mem is used by terrain system.
 	char appname[1024];
 	GetModuleFileNameA(g_pGlob->hInstance, appname, 1024);

@@ -52,10 +52,19 @@ void GGSetSVTAtlasHeight(int height)
 //
 // Members today:
 //   * grass draw distance cap  (gg_lowvram, GGTerrainWicked.cpp) — content side
+//   * lazy object PSOs         (wi::renderer::gg_pso_lazy_object) — floor side, −633 MB measured
+//
+// TIMING, measured not assumed: the PSO flag must be set before wi::renderer::LoadShaders builds
+// the object pipelines, and setup.ini's main parse (FPSC_LoadSETUPINI) runs LATER than that — the
+// first attempt wired it only there and it did nothing at all. The key is therefore also read in
+// GetSetupIniEarly(), which main() calls before the engine starts. That is also why SET_LOWVRAM
+// cannot enable this half: no harness command lands early enough.
+// The grass cap has no such constraint; grass entities are built per chunk at spawn time.
 void GGSetLowVRAM(int on)
 {
 	extern bool gg_lowvram;                 // GGTerrainWicked.cpp
 	gg_lowvram = (on != 0);
+	wi::renderer::gg_pso_lazy_object = (on != 0);
 }
 void GGSetLowVRAMGrassDist(float inches)
 {
