@@ -1525,6 +1525,18 @@ static float GrassTierDensityScale(int tier)
 // merely similar. What changes is that the simulate CS is told to own every type
 // (GG_HAIR_GRASS_MERGED) and handed a table of per-type length/width/stiffness/drag/viewDistance
 // and blade texture, so a strand adopts its cell's type instead of being discarded.
+// GGMAX 1.84: merged-grass forensics. `grassmerge=1` produced ZERO hair systems on the resaved
+// TESTPRO1 (HAIR_SYSTEMS 0, 0 MB of grass buffers, coverage 0.02%) instead of the documented
+// 5-systems-too-dense result, and reading the function did not explain it. These counters name
+// which exit it takes. Reported on the GRASS_CHUNKS line together with the LIVE flag value —
+// the mablockmb lesson: an instrument must echo the setting back, not just the effect, or an
+// inert knob reads as a working one.
+unsigned int gg_dbg_merge_calls = 0;      // ProcessGrassChunkMerged entered
+unsigned int gg_dbg_merge_notypes = 0;    // ...and bailed with typeCount == 0
+unsigned int gg_dbg_merge_reused = 0;     // ...existing entity still valid, nothing to do
+unsigned int gg_dbg_merge_nomat = 0;      // ...BuildGrassMaterial returned null
+unsigned int gg_dbg_merge_created = 0;    // ...created a merged hair entity
+
 template <typename PendingGrassT>
 static void ProcessGrassChunkMerged(
 	wi::scene::Scene& scene,
@@ -1533,6 +1545,7 @@ static void ProcessGrassChunkMerged(
 	const bool (&typesSeen)[GGGRASS_TOTAL_REAL_TYPES],
 	float editableSize)
 {
+	gg_dbg_merge_calls++;
 	// Which types does this chunk need? Also the mask we compare against to decide whether an
 	// existing merged entity is still valid (a newly painted type must appear in the table).
 	uint64_t wantMask[2] = { 0, 0 };
@@ -1546,6 +1559,7 @@ static void ProcessGrassChunkMerged(
 
 	if (typeCount == 0)
 	{
+		gg_dbg_merge_notypes++;
 		// Chunk has no painted grass left — drop the merged entity if one exists.
 		if (existingEntities.merged != wi::ecs::INVALID_ENTITY)
 		{
@@ -1565,6 +1579,7 @@ static void ProcessGrassChunkMerged(
 		&& existingEntities.mergedTypeMask[1] == wantMask[1]
 		&& scene.hairs.GetComponent(existingEntities.merged) != nullptr)
 	{
+		gg_dbg_merge_reused++;
 		return;
 	}
 
@@ -1582,11 +1597,12 @@ static void ProcessGrassChunkMerged(
 	uint32_t firstType = 0;
 	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++) { if (typesSeen[t]) { firstType = t; break; } }
 	wi::scene::MaterialComponent* mat = BuildGrassMaterial(firstType);
-	if (!mat) return;
+	if (!mat) { gg_dbg_merge_nomat++; return; }
 
 	wi::vector<float> vertex_lengths;
 	vertex_lengths.resize(wi::terrain::vertexCount, 1.0f);
 
+	gg_dbg_merge_created++;
 	wi::ecs::Entity grassEntity = wi::ecs::CreateEntity();
 	wi::HairParticleSystem& hair = scene.hairs.Create(grassEntity);
 	hair = g_grassAppearance[firstType];

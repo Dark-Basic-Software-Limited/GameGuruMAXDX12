@@ -835,8 +835,14 @@ void GetSetupIniEarly( void )
 				const bool bLowVram = (_strnicmp(p, "lowvram", 7) == 0);
 				const bool bLazyPso = (_strnicmp(p, "lazypso", 7) == 0);
 				const bool bMABlock = (_strnicmp(p, "mablockmb", 9) == 0);
+				// GGMAX: `grassmerge` does not NEED the early pass (grass entities are built at
+				// chunk-spawn time, well after setup.ini's normal parse). It lives here so the
+				// A/B can be two cold launches of one binary instead of a flip-and-reload — the
+				// reload path has its own churn history and must not be inside the measurement.
+				const bool bGrassMg = (_strnicmp(p, "grassmerge", 10) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bMABlock)        iKeyLen = 9;
+				else if (bGrassMg)        iKeyLen = 10;
 				else continue;
 				const char* q = p + iKeyLen;
 				while (*q == ' ' || *q == '\t') q++;
@@ -859,6 +865,11 @@ void GetSetupIniEarly( void )
 					// the allocator is built with the device.
 					extern void GGSetMABlockMB(int);
 					GGSetMABlockMB(iValue);
+				}
+				if (bGrassMg)
+				{
+					extern void GGSetGrassMerge(int);
+					GGSetGrassMerge(iValue);
 				}
 			}
 			fclose(lvf);

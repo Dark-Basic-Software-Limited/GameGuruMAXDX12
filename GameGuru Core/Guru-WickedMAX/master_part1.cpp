@@ -85,6 +85,16 @@ void GGSetMABlockMB(int mb)
 	extern int gg_ma_block_mb;              // wiGraphicsDevice_DX12.cpp, global namespace
 	if (mb >= 0 && mb <= 1024) gg_ma_block_mb = mb;
 }
+
+// GGMAX: merged grass (setup.ini `grassmerge`, harness SET_GRASSMERGE). One hair system per
+// terrain CHUNK instead of one per (chunk x painted type). Still DEFAULT OFF — it fails the
+// TESTPRO1 density gate at coverage 10.96 vs 9.40, which is UNIFORM OVER-density (clumpCV is
+// clean), not the clumping failure of the reverted 2026-08-01 attempt.
+void GGSetGrassMerge(int on)
+{
+	extern bool gg_grass_merge;             // GGTerrainWicked.cpp
+	gg_grass_merge = (on != 0);
+}
 void GGSetLowVRAMGrassDist(float inches)
 {
 	extern float gg_lowvram_grass_dist;     // GGTerrainWicked.cpp

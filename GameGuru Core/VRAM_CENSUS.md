@@ -277,7 +277,51 @@ For the full picture the same scan reports the cost of the 1.73 block-alignment 
 **4.0 MB across all 12,561 files** (21 files affected, 17 of them 500×500 DXT1). The fix is
 effectively free.
 
-### THE RETRY: BUILT 2026-08-02, WORKS, **DEFAULT OFF — FAILS THE DENSITY GATE**
+### ⚠ 2026-08-03 — THE MERGED PATH NO LONGER PRODUCES GRASS AT ALL. The section below is STALE.
+
+Re-measured on the current build (engine `26fcc5c5`) against the resaved TESTPRO1, via a new
+setup.ini key `grassmerge=1` (cold launch, so the reload path is not inside the measurement):
+
+| | grassmerge=0 | grassmerge=1 |
+|---|---|---|
+| HAIR_SYSTEMS | 58 | **0** |
+| grass buffers | 2172.1 MB | **0.0 MB** |
+| driver VRAM | 4965.0 | 2761.7 |
+| coverage | 4.913 % | **0.020 %** |
+| POLYS | 2,652,319 | 2,652,319 (identical — see the POLYS warning in GRASS_BENCHMARK.md) |
+
+**This is not the "uniformly too dense" failure documented below — there is no grass whatsoever.**
+Something regressed between 2026-08-02 and now.
+
+Engine/game 1.84 added `GRASS_MERGE:` to `GET_PERF_DATA` — per-exit counters inside
+`ProcessGrassChunkMerged` plus **the live flag value** (the `mablockmb` lesson: an inert knob and
+a broken feature are indistinguishable from the effect alone). It reads:
+
+```
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9
+             | fullResets=0 recycles=567 recreates=9 deadMeshNow=0
+```
+
+So, established:
+
+- the flag **binds correctly** (`flag=1`) — not an ordering trap this time
+- `ProcessGrassChunkMerged` runs (`calls=9`) and takes **no early exit** (notypes/reused/nomat all 0)
+- it **creates 9 merged hair entities** (`created=9`, `recreates=9`)
+- **the grass code removes none of them** (`fullResets=0`)
+- yet `HAIR_SYSTEMS` is 0, and stays 0 across probes 12 s apart — so they are destroyed once,
+  early, by something outside the grass teardown paths, and the chunk is never re-queued
+
+**Eliminated so far:** parenting is NOT the difference — both the merged path
+(`GGTerrainWicked.cpp:1681`) and the per-type path (`:2052`) do the same
+`Component_Attach(grassEntity, pc.entity, true)`, so child-of-a-recycled-chunk cannot explain why
+only merged dies. `recycles=567` confirms chunk recycling is heavy on this scene, and the
+per-type path survives it.
+
+**Next step is the next instrument, not a theory**: count entity destruction at the source —
+trace who removes these 9 entities (an ECS-level removal hook or a breadcrumb on the merged
+entity IDs), rather than guessing which subsystem it is.
+
+### The 2026-08-02 measurement, kept for the record: BUILT, WORKED, **FAILED THE DENSITY GATE**
 
 Implemented end to end (engine 1.74 + game). Harness `SET_GRASSMERGE <0|1>`, then reload the
 level. **Default is 0 and must stay 0 until the gate passes.**

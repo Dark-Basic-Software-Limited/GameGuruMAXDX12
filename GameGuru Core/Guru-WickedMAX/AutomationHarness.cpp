@@ -1274,6 +1274,22 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			written += _snprintf(result + written, resultSize - written,
 				"GRASS_CHUNKS: chunks=%u systems=%u  types_per_chunk 1:%u 2:%u 3:%u 4:%u 5:%u 6:%u 7:%u 8+:%u  merged_would_be=%u\n",
 				chunks, systems, hist[1], hist[2], hist[3], hist[4], hist[5], hist[6], hist[7], hist[8], chunks);
+			// GGMAX 1.84: which exit ProcessGrassChunkMerged takes, plus the LIVE flag value.
+			// `grassmerge=1` produced zero hair systems and source reading did not explain it.
+			// The flag echo is deliberate — an inert knob and a broken feature look identical
+			// from the effect alone, which is exactly how mablockmb wasted a build cycle.
+			{
+				extern bool gg_grass_merge;
+				extern unsigned int gg_dbg_merge_calls, gg_dbg_merge_notypes, gg_dbg_merge_reused,
+					gg_dbg_merge_nomat, gg_dbg_merge_created;
+				written += _snprintf(result + written, resultSize - written,
+					"GRASS_MERGE: flag=%d calls=%u notypes=%u reused=%u nomat=%u created=%u"
+					" | fullResets=%llu recycles=%llu recreates=%llu deadMeshNow=%llu\n",
+					gg_grass_merge ? 1 : 0, gg_dbg_merge_calls, gg_dbg_merge_notypes,
+					gg_dbg_merge_reused, gg_dbg_merge_nomat, gg_dbg_merge_created,
+					(unsigned long long)g_dbgGrassFullResets, (unsigned long long)g_dbgGrassRecycles,
+					(unsigned long long)g_dbgGrassRecreates, (unsigned long long)g_dbgGrassDeadMeshNow);
+			}
 		}
 
 		// GGMAX 1.37 diagnostics: the hair-sim static-skip gate inputs

@@ -18,7 +18,47 @@ sparse distance for low-end machines, out to extreme distance for high-end ones.
 - Grass Draw Distance saved at **2247** (per-strand cull = lod_dist + 2500 = 4747 inches).
 - Grass Density 100, Match Terrain Color on.
 
-## GOOD reference numbers — REFRESHED 2026-08-02 (engine `3666bbf7`, game `a46f55c9`)
+## ★ CURRENT reference — RESAVED SCENE, 2026-08-03 (engine `26fcc5c5`, game + 1.84 instrument)
+
+Lee repositioned the camera and **resaved TESTPRO1 on 2026-08-03** specifically as the acceptance
+test for merged grass. The new view looks along a flower meadow with dense grass in the near
+field. **Every 08-02 number below is superseded** — the camera moved, so coverage and the band
+profile are completely different.
+
+**Lee's acceptance criterion, in his words:** *"I am happy if the optimization thinned out the
+grass more into the distance but I do not want the result you gave last time which made most of
+the grass everywhere thin right down."*
+
+That is NOT the same as the standard all-bands gate. It means:
+
+- **near bands (1-2) must hold** — this is the close-up density he is protecting
+- **far bands (4-5) are allowed to fall** — distance thinning is a wanted outcome, not a failure
+- **clumpCV must still hold** — redistribution into clumps is a failure in any band
+
+| Metric | Reference (grassmerge=0) |
+|---|---|
+| driver VRAM | **4965.0 MB** (census 4583.0) |
+| grass buffers | **2172.1 MB in 58 systems** |
+| HAIR_SYSTEMS / strands | 58 / **4,816,000** |
+| GRASS_CHUNKS | 5 chunks, 58 systems, `merged_would_be=5` |
+| FPS | 67.2 |
+| POLYS | 2,652,319 |
+| coverage | 4.851 / 4.851 / 4.972 % (mean **4.913**) |
+| clumpCV | 1.080 / 1.088 / 1.080 (mean **1.083**) |
+| bands near..far | 5.18 5.78 9.67 5.80 3.03 0.01 |
+
+**Noise floor on THIS camera is wider than the old one**: coverage spread 0.121 pp (was 0.033),
+clumpCV spread 0.008 (was 0.006). The closer, swaying near-field moves more pixels between
+frames. Judge coverage against ±0.20 pp here, not ±0.15, and take three shots — one is not enough.
+
+### ⚠ POLYS IS NOT A VALID GATE FOR GRASS WORK
+
+Measured 2026-08-03: POLYS is **2,652,319 with 58 grass systems AND with zero grass systems** —
+bit-identical. Hair particles do not reach the main-camera poly counter. POLYS is the acceptance
+test for *pipeline* changes (a missing PSO makes RenderMeshes skip a draw); for grass it proves
+nothing at all. Use HAIR_SYSTEMS + HAIR_TOTAL_STRANDS + the density gate.
+
+## Superseded reference — 2026-08-02 (engine `3666bbf7`, game `a46f55c9`)
 
 Editor, ~40 s after load, defaults only (no `lowvram` keys in setup.ini):
 
