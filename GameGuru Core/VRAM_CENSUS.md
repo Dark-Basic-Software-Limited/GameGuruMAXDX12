@@ -358,7 +358,36 @@ out — a ping-pong bug would show a LOW frame-0→2 diff.
   **11.5–11.7**. **CAVEAT: `HAIR_BILLBOARD` was not read back, so it is not confirmed the live
   systems rebuilt with the new count.** Re-verify before treating this as closed.
 
-**Next candidate, untested: per-strand `gg_resolved_type` instability.** It alone would explain all
+**Eliminated by inspection, no builds spent (record these so nobody re-walks them):**
+- *Uninitialised per-type table.* `wiHairParticle.cpp:625-628` explicitly zero-fills
+  `xHairGrassTypes[t]` for every entry past what the caller supplied, so there is no stale
+  constant-buffer region for a resolved type to index into.
+- *`grass_type` used as an out-of-bounds index.* Both sites that do it
+  (`GGTerrainWicked.cpp:1401` and `:1464`) are guarded with
+  `if (typeIdx >= GGGRASS_TOTAL_REAL_TYPES) continue;`, and merged's sentinel 0xFFFFFFFF fails
+  that test cleanly. **But note the side effect: merged systems are therefore SKIPPED by both
+  live-update loops**, so `viewDistance` and `length` edits — including the shipped low-VRAM
+  draw-distance lever — never reach a merged system. Real gap, separate from the flicker.
+
+**FAILED EXPERIMENT, 2026-08-03 — do not repeat it this way.** Forcing every type's geometry
+parameters uniform (to make type resolution unable to change a strand's shape) was run with
+`SET_GRASS segments 1` and `billboards 2` included. Those two determine the **vertex buffer
+stride**, and pushing them onto live systems updates the component in place without reallocating
+the buffers. Frame-to-frame churn rose to **31.9–33.6** — my own test corrupting the geometry, not
+the bug. The run proves nothing about the flicker.
+
+It did establish two useful things:
+1. **The readback method works and the params DO apply live** — `HAIR_SEG: 1  HAIR_BILLBOARD: 2
+   HAIR_VIEWDIST: 4747` came back changed, which is the verification the earlier billboards test
+   lacked. Always read `HAIR_SEG`/`HAIR_BILLBOARD` back after a `SET_GRASS`.
+2. **`HAIR_LEN` read 63.5 after `SET_GRASS length 260`** — it did not take, or is rescaled
+   somewhere. Unexplained; worth a look on its own.
+3. **A lead worth chasing:** if writing parameters in place on a merged system (without a rebuild)
+   reliably produces exactly this class of per-frame churn, then the question becomes *what in the
+   normal frame loop writes merged systems in place?* The two type-indexed loops skip them — but
+   anything that does not index by type does not.
+
+**Next candidate, still untested: per-strand `gg_resolved_type` instability.** It alone would explain all
 three symptoms — a strand flipping type between frames changes its texture (squares of another
 type's blade), its length/width/viewDistance (appear/disappear), and would re-randomise every
 frame (the flat floor). The instrument is a debug UAV histogram of resolved type per frame: if the
