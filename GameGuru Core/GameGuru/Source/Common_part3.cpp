@@ -814,6 +814,11 @@ void GetSetupIniEarly( void )
 	// this does not use the pestrcasestr style of the block below).
 	// The grass-cap half has no such constraint — grass entities are built per chunk at spawn
 	// time, so FPSC_LoadSETUPINI is early enough for it.
+	//
+	// GGMAX 1.82: `lazypso` joins it here for the same reason. Lazy object PSOs are now DEFAULT
+	// ON for everyone (−633 MB measured, POLYS bit-identical), so this key exists as the revert
+	// switch — `lazypso=0` restores eager pipeline creation. It has to be read in this same early
+	// pass or it would be equally inert.
 	{
 		FILE* lvf = nullptr;
 		if (fopen_s(&lvf, "setup.ini", "r") == 0 && lvf != nullptr)
@@ -823,14 +828,26 @@ void GetSetupIniEarly( void )
 			{
 				const char* p = lvline;
 				while (*p == ' ' || *p == '\t') p++;
-				if (_strnicmp(p, "lowvram", 7) != 0) continue;
+
+				// Both keys are 7 characters; the '=' check is what makes the match exact, so
+				// "lowvramgrassdist=..." cannot satisfy "lowvram".
+				const bool bLowVram = (_strnicmp(p, "lowvram", 7) == 0);
+				const bool bLazyPso = (_strnicmp(p, "lazypso", 7) == 0);
+				if (!bLowVram && !bLazyPso) continue;
 				const char* q = p + 7;
 				while (*q == ' ' || *q == '\t') q++;
 				if (*q != '=') continue;                 // "lowvramgrassdist=..." lands here
-				if (atoi(q + 1) != 0)
+				const int iValue = atoi(q + 1);
+
+				if (bLowVram && iValue != 0)
 				{
 					extern void GGSetLowVRAM(int);
 					GGSetLowVRAM(1);
+				}
+				if (bLazyPso)
+				{
+					extern void GGSetLazyPSO(int);
+					GGSetLazyPSO(iValue);
 				}
 			}
 			fclose(lvf);

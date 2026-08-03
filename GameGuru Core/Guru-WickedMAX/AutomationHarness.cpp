@@ -59,6 +59,12 @@ namespace wi { namespace terrain {
 namespace wi { namespace profiler {
 	extern std::atomic<unsigned long long> gg_trace_gap_count, gg_trace_gap_last_ms;
 } }
+// GGMAX 1.82: worst SINGLE lazy PSO compile since launch (engine wiGraphicsDevice_DX12.cpp,
+// global namespace). Declared at file scope, not inside the function that reads it — a
+// block-scope extern picks up the enclosing namespace and mangles wrongly, which has cost
+// a build cycle before.
+extern std::atomic<unsigned long long> gg_dbg_pso_compile_max_us;
+#include "wiProfiler.h"       // GGMAX 1.82: gg_hitch_reset / gg_hitch_get / GG_HITCH_BUCKETS
 
 // WickedEngine helpers for screenshot and scene interrogation
 #include "wiHelper.h"
@@ -1398,6 +1404,19 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		written += _snprintf(result + written, resultSize - written,
 			"GAPS: count=%llu last_ms=%llu (frame gaps >100ms; ledger in gap_trace.txt)\n",
 			wi::profiler::gg_trace_gap_count.load(), wi::profiler::gg_trace_gap_last_ms.load());
+		// GGMAX 1.82: the hitch histogram (see HITCH_RESET). Every frame is bucketed, so this
+		// catches the 1-30 ms first-use PSO compiles that GAPS (>100ms) and any FPS average both
+		// miss. psoC/psoMs are deltas since the last reset; psoMax is the worst SINGLE compile
+		// since launch, which is the number that decides whether lazy PSOs are felt or not.
+		{
+			unsigned long long hFrames = 0, hOver[GG_HITCH_BUCKETS] = {}, hMaxUs = 0, hTotalUs = 0, hPso = 0, hPsoUs = 0;
+			wi::profiler::gg_hitch_get(&hFrames, hOver, &hMaxUs, &hTotalUs, &hPso, &hPsoUs);
+			written += _snprintf(result + written, resultSize - written,
+				"HITCH: frames=%llu mean_ms=%.2f worst_ms=%.1f over(16.7/25/33/50/100)=%llu/%llu/%llu/%llu/%llu psoC=%llu psoMs=%.1f psoMax_ms=%.1f\n",
+				hFrames, hFrames ? (hTotalUs / 1000.0 / hFrames) : 0.0, hMaxUs / 1000.0,
+				hOver[0], hOver[1], hOver[2], hOver[3], hOver[4],
+				hPso, hPsoUs / 1000.0, gg_dbg_pso_compile_max_us.load() / 1000.0);
+		}
 		written += _snprintf(result + written, resultSize - written,
 			"STREAM: on=%d enrolled=%u replaced=%u resident_mb=%.1f full_mb=%.1f gpumem_pct=%.1f copies=%llu fb=%llu req=%llu guard_rejects=%u\n",
 			g_bTextureStreamingEnabled ? 1 : 0,
@@ -3431,6 +3450,19 @@ void AutoHarness_CheckForCommand(void)
 		if (f) { fprintf(f, "\nframes covered=%u  calls/frame min=%u max=%u\n", framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer); fclose(f); }
 		_snprintf(result, sizeof(result), "OK: DUMP_SCENEUPDATE %u records over %u frames, %u-%u calls/frame -> Files/sceneupdate_dump.txt",
 			n, framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "HITCH_RESET") == 0)
+	{
+		// HITCH_RESET — start a fresh hitch-measurement window (engine 1.82).
+		//
+		// Built to measure the cost of lazy object PSOs, whose stalls are 1-30 ms: too small for
+		// the 100 ms wall-gap tracer to log, and completely hidden by an FPS average. Send this
+		// the moment a level has finished loading, wait, then read the HITCH: line of
+		// GET_PERF_DATA — the window then means "since the level came up" rather than "since
+		// launch", which is the only framing in which the numbers answer the question.
+		wi::profiler::gg_hitch_reset();
+		_snprintf(result, sizeof(result), "OK: HITCH_RESET (frame histogram + PSO compile deltas now measured from here)");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "VRAM_STAGE") == 0)

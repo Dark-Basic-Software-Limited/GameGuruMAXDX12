@@ -269,7 +269,49 @@ substantially more out of grass means the density/tier levers, which is exactly 
 that had to be reverted on 2026-08-01 for clumping — it must go through
 `tools/grassdensity.ps1` and the clumpCV gate, not screenshots.
 
-### How to A/B the two halves apart### How to A/B the two halves apart
+### Batch 3 became the DEFAULT on 2026-08-03 (engine 1.82) — the hitch was measured and isn't there
+
+Lazy PSOs behind `lowvram=1` only reached users who hand-edit setup.ini, so everyone else paid
+~390 MB for pipelines they never bind. The blocker was never the memory case, it was the unmeasured
+first-use compile hitch, and nothing in the build could see it: the wall-gap tracer starts at
+100 ms and an FPS mean smears 26 compiles into nothing. Engine 1.82 added the two things that can:
+`pso_compile_max_ms` (the **worst single** compile — the sum is not what a user feels) and a
+per-frame histogram on the always-on tracer path, read as the `HITCH:` line of `GET_PERF_DATA`
+with `HITCH_RESET` to scope a window.
+
+Five cold runs on TESTPRO1, three windows each:
+
+| | eager (`lazypso=0`) | lazy (default) |
+|---|---|---|
+| driver VRAM, settled | 5947 / 6011 MB | **5556 / 5556 MB** |
+| driver VRAM, travelled | 8535 / 8535 MB | **8143 / 8144 MB** |
+| eager driver pipelines | 4033 | **1** |
+| PSO compiles, whole session | 22 | 48 |
+| PSO compile time, whole session | 5.6-6.3 ms | 14.0-17.0 ms |
+| **worst single compile** | 0.6-0.8 ms | **0.9-1.2 ms** |
+| compiles in the first 25 s of play | 0 | **0** |
+| compiles during 8-waypoint travel | 0 | 5 (1.6 ms) |
+| POLYS settled / travelled | 3165848 / 2669257 | **identical** |
+| launch→hub, launch→editor | 11 s, 39-40 s | 11 s, 38-40 s |
+
+**−392 MB, and the hitch does not exist.** 26 extra compiles totalling ~10 ms across an entire
+session, worst single 1.1 ms — under a tenth of one 60 FPS frame — and all of them land inside a
+level load already dominated by a 13-second stall. The shader bytecode is compiled at startup;
+`pso_validate` only does driver-side assembly with the live pass formats, which is why it is cheap.
+4032 pipelines × 96 KB ≈ 387 MB confirms the arithmetic.
+
+Note the saving is −392 here, not the −633 measured in the 1.79 row: the 1.80 A5 trim had since
+taken eager pipelines from 6337 to 4033, so there was less left to defer. The two do not stack.
+
+**Measurement trap, caught only by repeating the run.** The first A/B showed lazy with 98 frames
+over 25 ms against the control's **1** — which reads as a smoking gun. But the causal counter said
+`psoC=0` for that window in *both* configs, so the compiles could not be the cause. On repeat the
+**control** swung 1 → 87 while lazy went 98 → 101 → 2. Overlapping distributions, pure run variance
+on a scene whose frame time sits near the 25 ms bucket edge — the same ±8 FPS launch-to-launch
+swing already on record for the editor. **One counter reading zero outweighed a plausible-looking
+98× difference.** Do not accept a single A/B pair on this scene without a repeat.
+
+### How to A/B the two halves apart
 
     lowvram=1
     lowvramgrassdist=999999

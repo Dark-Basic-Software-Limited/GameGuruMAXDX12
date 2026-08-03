@@ -111,7 +111,7 @@ a fix that should simply happen.
 | # | Item | Saving | Status |
 |---|---|---|---|
 | A0 | **Legacy grass/tree blade atlases on demand** | **−220** | **SHIPPED + verified** — see below |
-| A1 | Lazy object PSOs | **−633** | **shipped** (`lowvram=1`; consider default-on once hitching is judged) |
+| A1 | Lazy object PSOs | **−392** (was −633 before A5 took eager pipelines 6337→4033) | **SHIPPED DEFAULT-ON 2026-08-03** (engine 1.82). Hitch measured, not assumed: worst single compile **1.1 ms**, zero compiles in the first 25 s of play. Revert = `lazypso=0`. See `VRAM_FLOOR.md` |
 | A2 | Release reset chunk buffers instead of 4-byte stand-ins | **−72** | **SHIPPED + verified** (game `e1b437a4`) |
 | A3 | Mesh suballocator granularity 256→128 MB | **−128 on small levels** | **SHIPPED + verified** (engine `e0287386`) |
 | A4 | Terrain machinery sized to demand | see the SVT section below | **investigated, not shipped** — two costed options, needs a soak |

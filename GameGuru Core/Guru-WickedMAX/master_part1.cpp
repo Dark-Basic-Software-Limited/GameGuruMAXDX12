@@ -51,19 +51,29 @@ void GGSetSVTAtlasHeight(int height)
 // namespace externs at block scope, and spraying them through it would rot.
 //
 // Members today:
-//   * grass draw distance cap  (gg_lowvram, GGTerrainWicked.cpp) — content side
-//   * lazy object PSOs         (wi::renderer::gg_pso_lazy_object) — floor side, −633 MB measured
+//   * grass draw distance cap (gg_lowvram, GGTerrainWicked.cpp)
+//   * grass density scale     (gg_lowvram_grass_density, same file)
 //
-// TIMING, measured not assumed: the PSO flag must be set before wi::renderer::LoadShaders builds
-// the object pipelines, and setup.ini's main parse (FPSC_LoadSETUPINI) runs LATER than that — the
-// first attempt wired it only there and it did nothing at all. The key is therefore also read in
-// GetSetupIniEarly(), which main() calls before the engine starts. That is also why SET_LOWVRAM
-// cannot enable this half: no harness command lands early enough.
-// The grass cap has no such constraint; grass entities are built per chunk at spawn time.
+// GGMAX 1.82: lazy object PSOs USED to be a member of this preset and no longer are. They became
+// the default for everyone, so the preset does not need to switch them on, and — more importantly
+// — leaving the line here would make the outcome depend on the order the two setup.ini keys
+// happen to appear in. `lazypso` is now the single owner of that flag. See GGSetLazyPSO below.
 void GGSetLowVRAM(int on)
 {
 	extern bool gg_lowvram;                 // GGTerrainWicked.cpp
 	gg_lowvram = (on != 0);
+}
+
+// GGMAX 1.82: lazy object PSOs — DEFAULT ON, this is the revert switch (setup.ini `lazypso=0`).
+//
+// TIMING, measured not assumed: the flag must be set before wi::renderer::LoadShaders builds the
+// object pipelines, and setup.ini's main parse (FPSC_LoadSETUPINI) runs LATER than that — the
+// 1.79 attempt wired it only there and it did nothing at all (pso_creates stayed at 7496,
+// identical to the control). It is therefore read in GetSetupIniEarly(), which main() calls
+// before the engine starts. Same reason there is no harness command for it: nothing a harness
+// can send lands early enough. This ordering trap has now bitten three separate features.
+void GGSetLazyPSO(int on)
+{
 	wi::renderer::gg_pso_lazy_object = (on != 0);
 }
 void GGSetLowVRAMGrassDist(float inches)
