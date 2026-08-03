@@ -3371,6 +3371,35 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: DUMP_VRAM written to %s (game CWD = Files dir)", vcPath);
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "DUMP_MAPAD") == 0)
+	{
+		// DUMP_MAPAD [tag] — attribute the D3D12MA block padding (engine 1.83).
+		//
+		// The audit's `pad` column is just `d3d12ma_blocks - d3d12ma_allocated`: 363 MB mean,
+		// 121-601 range, and never once broken down. Three owners with three different fixes —
+		// trailing space in partly-filled 64 MB blocks (fix = smaller blocks), fragmentation
+		// between live allocations (fix = defragmentation), or committed-allocation heap rounding
+		// (not ours at all). Writes a per-heap-type table (block/alloc bytes, unused-range count
+		// and size extremes — a few huge ranges means trailing space, thousands of small ones
+		// means fragmentation) followed by D3D12MA's own detailed JSON map, which gives the
+		// per-block fill ratio no aggregate can. → Files\ma_padding[_tag].txt.
+		extern void GG_DumpMAPadding(const char* path);
+		char mpPath[MAX_PATH];
+		if (arg && arg[0])
+		{
+			char mpTag[64]; _snprintf(mpTag, sizeof(mpTag), "%s", arg); mpTag[sizeof(mpTag) - 1] = 0;
+			for (char* p = mpTag; *p; ++p) { if (*p == ' ' || *p == '\\' || *p == '/' || *p == ':') *p = '_'; }
+			_snprintf(mpPath, sizeof(mpPath), "ma_padding_%s.txt", mpTag);
+		}
+		else
+		{
+			_snprintf(mpPath, sizeof(mpPath), "ma_padding.txt");
+		}
+		mpPath[sizeof(mpPath) - 1] = 0;
+		GG_DumpMAPadding(mpPath);
+		_snprintf(result, sizeof(result), "OK: DUMP_MAPAD written to %s (game CWD = Files dir)", mpPath);
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SET_LOWVRAM") == 0)
 	{
 		// SET_LOWVRAM <0|1> [grassdistcap] — the low-VRAM ("fit a 4 GB card") preset, same switch

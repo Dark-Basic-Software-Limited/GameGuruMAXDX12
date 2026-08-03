@@ -829,12 +829,16 @@ void GetSetupIniEarly( void )
 				const char* p = lvline;
 				while (*p == ' ' || *p == '\t') p++;
 
-				// Both keys are 7 characters; the '=' check is what makes the match exact, so
-				// "lowvramgrassdist=..." cannot satisfy "lowvram".
+				// The '=' check is what makes each match exact, so "lowvramgrassdist=..."
+				// cannot satisfy "lowvram".
+				int iKeyLen = 0;
 				const bool bLowVram = (_strnicmp(p, "lowvram", 7) == 0);
 				const bool bLazyPso = (_strnicmp(p, "lazypso", 7) == 0);
-				if (!bLowVram && !bLazyPso) continue;
-				const char* q = p + 7;
+				const bool bMABlock = (_strnicmp(p, "mablockmb", 9) == 0);
+				if (bLowVram || bLazyPso) iKeyLen = 7;
+				else if (bMABlock)        iKeyLen = 9;
+				else continue;
+				const char* q = p + iKeyLen;
 				while (*q == ' ' || *q == '\t') q++;
 				if (*q != '=') continue;                 // "lowvramgrassdist=..." lands here
 				const int iValue = atoi(q + 1);
@@ -848,6 +852,13 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetLazyPSO(int);
 					GGSetLazyPSO(iValue);
+				}
+				if (bMABlock)
+				{
+					// GGMAX 1.83: D3D12MA block size. Even earlier-binding than the PSO flag —
+					// the allocator is built with the device.
+					extern void GGSetMABlockMB(int);
+					GGSetMABlockMB(iValue);
 				}
 			}
 			fclose(lvf);

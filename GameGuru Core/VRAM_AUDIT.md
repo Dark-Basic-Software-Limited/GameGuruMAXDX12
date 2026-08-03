@@ -13,6 +13,16 @@ All figures MB of driver-reported video memory unless noted. FLOOR = the eight c
 buckets; mesh = the shared suballocator; pad = D3D12MA block padding; nonres = driver-side
 memory no resource census can see (overwhelmingly pipeline state objects).
 
+> **CORRECTION 2026-08-03 — the `pad` and `nonres` columns below are individually wrong.**
+> Both were derived from `d3d12ma_blocks`, which sums video AND system memory (UPLOAD/READBACK
+> staging), while `driver_usage` is video-only. So `pad` charges system-RAM waste to the video
+> budget and `nonres` subtracts system blocks from a video figure, understating it by the same
+> amount. On TESTPRO1 `pad` read 257 MB of which only **152 was video**, and true `nonres` was
+> **483, not 259**. **The `driver` column and every conclusion drawn from the totals are
+> unaffected** — the errors cancel in `pad + nonres`. Engine 1.83 added
+> `d3d12ma_blocks_video` / `d3d12ma_allocated_video` and `tools/vram_audit.sh` now uses them, so
+> a re-run of this table will have correct columns. Detail in `VRAM_FLOOR.md`.
+
 | Demo | driver | FLOOR | mesh | GRASS | TREES | content | misc | pad | nonres | FPS |
 |---|---|---|---|---|---|---|---|---|---|---|
 | The Mystery of Z Island | 8999 | 1613 | 512 | **4297** | 75 | 909 | 548 | 348 | 698 | 69.9 |
@@ -116,6 +126,7 @@ a fix that should simply happen.
 | A3 | Mesh suballocator granularity 256→128 MB | **−128 on small levels** | **SHIPPED + verified** (engine `e0287386`) |
 | A4 | Terrain machinery sized to demand | see the SVT section below | **investigated, not shipped** — two costed options, needs a soak |
 | A5 | Tessellation + voxelize PSO axes | **−2304 pipelines (6337→4033)** | **SHIPPED + verified** (engine `e0287386`) |
+| A6 | **D3D12MA block size 64→16 MB** | **−92 to −140 every level** | **SHIPPED + verified 2026-08-03** (engine 1.83). Padding 104-152 → 11.6 MB, non-resource flat, POLYS bit-identical. Revert `mablockmb=64`. TESTPRO1-only evidence so far |
 
 ### Tier B — user-facing quality dials, real visual trade
 

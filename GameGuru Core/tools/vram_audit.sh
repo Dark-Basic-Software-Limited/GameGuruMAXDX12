@@ -37,11 +37,19 @@ for DEMO in "${DEMOS[@]}"; do
   perf | grep -E "^FPS:|^POLYS:" | tr '\n' ' ' | sed 's/^/  /'; echo
   send "DUMP_VRAM audit_$TAG" 90 >/dev/null; sleep 3
   cp "$D/Files/vram_census_audit_$TAG.txt" "$OUT/" 2>/dev/null || { echo "  NO CENSUS"; continue; }
+  # GGMAX 1.83 — stay inside ONE memory segment. `d3d12ma_blocks` and `census_bytes` both sum
+  # video AND system memory (UPLOAD/READBACK staging lives in system RAM), while `driver_usage`
+  # is video-only. The pre-1.83 form of this line charged system-RAM waste to `padding` and
+  # subtracted system-memory blocks from `nonresource`, understating it by the same amount.
+  # Measured on TESTPRO1: padding read 257 MB but only 152 MB of it was ever video memory.
+  # Use the *_video fields; falls back to the old (mixed) arithmetic on pre-1.83 censuses.
   head -1 "$OUT/vram_census_audit_$TAG.txt" | awk '{for(i=1;i<=NF;i++){split($i,a,"=");v[a[1]]=a[2]}
-    printf "  driver=%.0f blocks=%.0f census=%.0f padding=%.0f nonresource=%.0f psoEager=%s\n",
-    v["driver_usage"]/1048576, v["d3d12ma_blocks"]/1048576, v["census_bytes"]/1048576,
-    (v["d3d12ma_blocks"]-v["census_bytes"])/1048576, (v["driver_usage"]-v["d3d12ma_blocks"])/1048576,
-    v["pso_driver_eager"]}'
+    bv = ("d3d12ma_blocks_video" in v)    ? v["d3d12ma_blocks_video"]    : v["d3d12ma_blocks"];
+    av = ("d3d12ma_allocated_video" in v) ? v["d3d12ma_allocated_video"] : v["census_bytes"];
+    printf "  driver=%.0f blocksVid=%.0f censusVid=%.0f paddingVid=%.0f nonresourceVid=%.0f psoEager=%s%s\n",
+    v["driver_usage"]/1048576, bv/1048576, av/1048576,
+    (bv-av)/1048576, (v["driver_usage"]-bv)/1048576, v["pso_driver_eager"],
+    ("d3d12ma_blocks_video" in v) ? "" : "  (PRE-1.83 census: figures MIX video+system memory)"}'
   awk -f /c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12--claude-worktrees-determined-chebyshev-bf0892/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/audit.awk "$OUT/vram_census_audit_$TAG.txt" | sort | awk -F'|' '{printf "    %-30s %8.1f MB %6d\n",$1,$2,$3}'
 done
 taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true

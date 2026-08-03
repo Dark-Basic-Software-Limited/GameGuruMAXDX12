@@ -311,6 +311,74 @@ on a scene whose frame time sits near the 25 ms bucket edge — the same ±8 FPS
 swing already on record for the editor. **One counter reading zero outweighed a plausible-looking
 98× difference.** Do not accept a single A/B pair on this scene without a repeat.
 
+## The D3D12MA padding, measured at last (2026-08-03, engine 1.83)
+
+The `pad` column of `VRAM_AUDIT.md` — 363 MB mean, 121-601 range — had never been broken down.
+`DUMP_MAPAD` now dumps per-heap-type `CalculateStatistics` plus D3D12MA's own detailed JSON block
+map. Two separate findings came out.
+
+### 1. The column was measuring the wrong memory
+
+`d3d12ma_blocks` and `census_bytes` sum **both memory segments** — L1 video memory and L0 system
+memory, where UPLOAD/READBACK staging lives — while `driver_usage` is **video only**. So:
+
+| | old arithmetic | what it actually was |
+|---|---|---|
+| `padding = blocks − census` | 257 MB | **152 MB video** + 105 MB system RAM |
+| `nonres = driver − blocks` | 259 MB | **483 MB video** (it subtracted system-memory blocks) |
+
+The two errors cancel in the SUM, because the `blocks` term drops out of `pad + nonres`, so the
+audit's "~3.3 GB base cost" conclusion is unaffected — but **neither column on its own meant
+anything**. The census header now carries `d3d12ma_allocated_video` / `d3d12ma_blocks_video`, and
+`tools/vram_audit.sh` uses them (and labels pre-1.83 censuses as mixed).
+
+### 2. Most of the real padding was avoidable — block size 64 → 16 MB
+
+The JSON showed the DEFAULT heap holding **24 pooled 64 MB blocks and 61 committed allocations**.
+Committed allocations pad **exactly zero** — 3688 MB of them including the 576 MB SVT tile pool and
+the 128 MB mesh suballocator blocks. Essentially all the waste sat in **4 sparse blocks**, one of
+them holding just *two* allocations (0.12 MB + 25.25 MB) inside a 64 MB heap.
+
+`PreferredBlockSize` had been left commented out at `CreateAllocator`, so D3D12MA's own 64 MB
+default applied. Measured on TESTPRO1, settled level, repeated:
+
+| block size | video padding | driver total | non-resource | FPS | POLYS |
+|---|---|---|---|---|---|
+| 64 (stock) | 103.8 / 151.7 / 151.8 | 5619.6 | 483.4 | 65.8 | 3165848 |
+| 32 | 129.8 | 5597.8 | 483.4 | 66.0 | 3165848 |
+| **16 (new default)** | **11.5 / 11.6 / 11.6** | **5479.8** | 483.7 | 66.0 | 3165848 |
+| 8 | 1.7 | 5475.3 | 489.1 | 65.6 | 3165848 |
+
+**−92 to −140 MB on every level, and the 41 extra heaps cost nothing** — non-resource driver
+memory moved 483.4 → 483.7. Across hub / level / travel: padding 33→4.9, 152→11.6, 187→81.3.
+16 MB is also *more stable* than the default it replaces (11.5/11.6/11.6 against a 104-168 swing).
+
+- **8 MB is not chosen**: 4.5 MB more total while non-resource starts climbing — the heap-count
+  cost appearing, and the same trade that made 256 MB blocks wrong for the mesh suballocator.
+- **32 being worse than 64 is not a typo.** D3D12MA sends any allocation over *half* a block to
+  its own committed heap, so changing the size reshuffles which resources pool and which do not.
+  The curve is non-monotonic; do not interpolate it, measure the size you want to ship.
+- Revert with setup.ini **`mablockmb=64`**. `mablockmb=0` also means "library default".
+
+### Ordering trap, fourth occurrence — and how it was caught
+
+The knob was first wired through the game's `GetSetupIniEarly()` and was **completely inert**: the
+allocator is built with the device, before `main()` ever reaches that parse. The engine now reads
+the key itself inside `CreateAllocator`, so there is no ordering dependency left to get wrong.
+
+This was caught only because the JSON echoes `PreferredBlockSize` back. The padding numbers had
+*moved* across those runs (104 vs 152 MB) purely from run variance, and without the echo it would
+have read as a modest win from a change that was doing nothing at all. **Have the instrument
+report the setting back to you, not just the effect.**
+
+### What is left, and whether to chase it
+
+At 16 MB the remaining video padding is ~12 MB settled and ~81 MB after heavy travel, the latter
+being genuine fragmentation from load and streaming churn. Recovering that needs
+`Allocator::BeginDefragmentation` and real resource relocation — every bindless descriptor would
+have to be re-pointed. **Not worth it**: it is now a travel-only 80 MB against much larger, safer
+items still open.
+
 ### How to A/B the two halves apart
 
     lowvram=1

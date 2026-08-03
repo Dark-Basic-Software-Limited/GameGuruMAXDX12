@@ -76,6 +76,15 @@ void GGSetLazyPSO(int on)
 {
 	wi::renderer::gg_pso_lazy_object = (on != 0);
 }
+
+// GGMAX 1.83: D3D12MA PreferredBlockSize override (setup.ini `mablockmb`, 0 = library default
+// 64 MB). Same early-parse constraint as the two above, and a harder one — the allocator is
+// created with the device, so nothing later than main()'s early pass can influence it.
+void GGSetMABlockMB(int mb)
+{
+	extern int gg_ma_block_mb;              // wiGraphicsDevice_DX12.cpp, global namespace
+	if (mb >= 0 && mb <= 1024) gg_ma_block_mb = mb;
+}
 void GGSetLowVRAMGrassDist(float inches)
 {
 	extern float gg_lowvram_grass_dist;     // GGTerrainWicked.cpp
