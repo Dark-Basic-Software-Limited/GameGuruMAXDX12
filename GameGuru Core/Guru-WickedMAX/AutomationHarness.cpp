@@ -55,6 +55,10 @@ namespace wi { namespace terrain {
 	extern std::atomic<unsigned long long> gg_dbg_vt_rebuilds, gg_dbg_vt_scan_us, gg_dbg_vt_sort_us,
 		gg_dbg_vt_free, gg_dbg_vt_requests, gg_dbg_vt_reason, gg_dbg_vt_tiles;
 } }
+// GGMAX 1.87: merged-grass type-resolution freeze (flicker probe). Declared at file scope with
+// its real namespace — a block-scope `extern bool` inside the command handler would resolve to
+// the GLOBAL namespace and fail to link, a trap this file has hit before.
+namespace wi { extern bool gg_grass_freeze_type; }
 // GGMAX wall-gap tracer (engine wiProfiler.cpp): frame gaps >100ms dumped to gap_trace.txt
 namespace wi { namespace profiler {
 	extern std::atomic<unsigned long long> gg_trace_gap_count, gg_trace_gap_last_ms;
@@ -3495,6 +3499,23 @@ void AutoHarness_CheckForCommand(void)
 		if (f) { fprintf(f, "\nframes covered=%u  calls/frame min=%u max=%u\n", framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer); fclose(f); }
 		_snprintf(result, sizeof(result), "OK: DUMP_SCENEUPDATE %u records over %u frames, %u-%u calls/frame -> Files/sceneupdate_dump.txt",
 			n, framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_GRASSTYPEFREEZE") == 0)
+	{
+		// SET_GRASSTYPEFREEZE <0|1> — flicker probe (engine 1.87). Applies INSTANTLY, no reload:
+		// it is a constant-buffer flag read by the simulate CS each frame, not a build-time
+		// property. That matters — the earlier SET_GRASS attempt at this question changed
+		// buffer-STRIDE properties on live systems and corrupted the geometry, which invalidated
+		// the whole run.
+		//
+		// 1 = merged strands keep the entity's own type instead of adopting the paint cell's, so
+		// every per-type parameter goes uniform. Density is deliberately WRONG while on; the only
+		// valid reading is the CONSECUTIVE-FRAME diff within this config. If the scene-wide churn
+		// (merged 12.4 vs per-type 0.4 meanAbsDiff) collapses, the flicker IS type resolution.
+		int fz = atoi(arg);
+		wi::gg_grass_freeze_type = (fz != 0);
+		_snprintf(result, sizeof(result), "OK: SET_GRASSTYPEFREEZE %d (instant, no reload; density intentionally wrong while 1)", fz);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "DUMP_HAIRKILL") == 0)

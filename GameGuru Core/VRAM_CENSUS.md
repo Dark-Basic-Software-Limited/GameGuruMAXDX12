@@ -387,7 +387,45 @@ It did establish two useful things:
    normal frame loop writes merged systems in place?* The two type-indexed loops skip them — but
    anything that does not index by type does not.
 
-**Next candidate, still untested: per-strand `gg_resolved_type` instability.** It alone would explain all
+**★ LOCALISED 2026-08-03 (engine 1.87 `c4b3c43c`) — it is the per-strand TYPE-DEPENDENT path.**
+
+`SET_GRASSTYPEFREEZE 1` suppresses merged grass's per-strand type adoption so every per-type
+parameter goes uniform. It is a constant-buffer flag read by the simulate CS each frame, so it
+applies instantly with no reload — deliberately, after the previous attempt corrupted geometry by
+changing buffer-stride properties on live systems.
+
+| consecutive-frame meanAbsDiff, same session, one command apart | |
+|---|---|
+| freeze OFF (normal merged) | **11.97 / 12.15 / 11.90** |
+| freeze ON (type uniform) | **0.21 / 0.17 / 0.22** |
+
+A **~57x collapse**, below even per-type grass's 0.39 baseline.
+
+**This does NOT mean the resolution jitters.** `rng.init(uint2(xHairRandomSeed, DTid.x))` is
+frame-stable and the paint sample is a point `Load` at mip 0, so `gg_resolved_type` is
+deterministic per strand. What the freeze changes is that every strand now uses ONE type's
+parameters. So the culprit is a per-type PARAMETER, not the lookup.
+
+**Eliminated by measurement (all uniform, flicker unchanged at 11.9-12.1):**
+`stiffness`, `drag` (the stateful physics inputs — `hairparticle_simulateCS.hlsl:424-425`),
+`viewDistance`, and `billboardCount`. Also confirmed by reading the shader: the per-strand
+`gg_*` values are used consistently in the simulation, with no system-vs-strand mismatch.
+
+**Remaining suspects, in order:**
+1. **`present`** — `xHairGrassTypes[t].present < 0.5` zeroes `strand_length`
+   (`hairparticle_simulateCS.hlsl` ~line 161). A strand flipping present/absent between frames
+   appears and vanishes, which is exactly the blocky per-frame signature. Strongest candidate.
+2. **`textureIndex`** — the per-type blade DDS. Would explain the *other types' texture* look of
+   the squares in Lee's zoom.
+3. **`length`** — used for the cull sphere radius (`:293`) and `len *= gg_length` (`:337`).
+4. `width` — weak: the workflow verified all 52 stock grass DDS are square, so the missing
+   texture-aspect factor in the merged width term is 1.0.
+
+**Next step: make the freeze SELECTIVE.** One more flag bit per parameter (freeze only `present`,
+only `textureIndex`, only `length`) turns this into three one-command A/Bs in a single session,
+each decisive. The whole-freeze probe already proves the method works.
+
+**Superseded candidate: per-strand `gg_resolved_type` instability.** It alone would explain all
 three symptoms — a strand flipping type between frames changes its texture (squares of another
 type's blade), its length/width/viewDistance (appear/disappear), and would re-randomise every
 frame (the flat floor). The instrument is a debug UAV histogram of resolved type per frame: if the
