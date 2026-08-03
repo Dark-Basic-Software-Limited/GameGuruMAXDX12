@@ -185,6 +185,11 @@ coverage 9.458 (ref 9.45), clumpCV 1.102 (ref 1.104, noise ±0.006), bands 13.52
   conclusion, but it is why the TREES column is textures only.
 
 
+## USER VERDICT 2026-08-02
+
+Tested and approved: **"A Grand Canyon Adventure was great, under 4 GB of VRAM on start and over
+100 FPS."** That level entered this campaign at 4227 MB / 96.6 FPS in the audit table above.
+
 ## Tier A results so far
 
 Cumulative effect of A0 + A2 + A3 + A5, editor, defaults, against this document's own baseline
