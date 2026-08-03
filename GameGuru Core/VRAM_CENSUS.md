@@ -277,7 +277,68 @@ For the full picture the same scan reports the cost of the 1.73 block-alignment 
 **4.0 MB across all 12,561 files** (21 files affected, 17 of them 500×500 DXT1). The fix is
 effectively free.
 
-### ⚠ 2026-08-03 — THE MERGED PATH NO LONGER PRODUCES GRASS AT ALL. The section below is STALE.
+### ★★★ 2026-08-03 EVENING — MERGED GRASS WORKS. TWO BUGS, BOTH FIXED, −2005 MB.
+
+Awaiting Lee's visual sign-off; `grassmerge` still defaults to 0. Flip = one line in
+`GGTerrainWicked.cpp` (`bool gg_grass_merge = false;`) or `setup.ini grassmerge=1`.
+
+| | per-type (shipping) | merged + both fixes |
+|---|---|---|
+| grass buffers | 2172.1 MB in 58 systems | **198.1 MB in 5** |
+| driver VRAM | 4965.0 MB | **2960.4 MB (−2005, −40 %)** |
+| strands | 4,816,000 | **418,000 (−91 %)** |
+| FPS | 67.2 | **82.5 (+15.3)** |
+| POLYS | 2,652,319 | 2,652,319 identical |
+| coverage | 4.913 % | 4.671 % (−0.24 pp) |
+| clumpCV | 1.083 | 1.022 (**down** = more uniform, not clumping) |
+| bands near..far | 5.15 5.80 9.69 5.77 3.03 | 4.96 5.87 9.47 5.41 2.29 |
+
+**Band deltas: −0.19, +0.07, −0.22, −0.37, −0.74.** Near field holds; it thins progressively with
+distance. That is the "dense up close, sparse in the distance" curve this document names as the
+intended shape, and it is what Lee asked for on 2026-08-03: *"I am happy if the optimization
+thinned out the grass more into the distance but I do not want the result you gave last time which
+made most of the grass everywhere thin right down."*
+
+Against the **literal** stored gate it is outside on coverage (−0.24 vs ±0.20), on the two far
+bands, and on clumpCV magnitude (−0.061 vs ±0.01) — but every miss is in the *thinner / more
+uniform* direction, and the gate's clumpCV clause says to "treat any RISE as a failure". Judgement
+call, Lee's to make.
+
+#### Bug 1 — the queueing predicate ignored the merged slot (game `c9e7610f`)
+
+`hasExistingEntities` (`GGTerrainWicked.cpp:1812`) scanned only `perType[]`, never `.merged`. In
+merged mode `perType[]` is always empty, so it read false forever and a chunk never got the repair
+pass that regrows grass after Wicked recycles its entity. 1.74 added the merged slot and updated
+every *teardown* path — there is a comment saying so — but missed this one *queueing* site.
+Result: 9 systems created, 9 killed by normal recycling, never rebuilt. **Zero grass, not
+over-dense grass.**
+
+Named by the engine 1.85 hair-kill tracer in one run: 9 removals, **all reason=1** (recursive child
+of the `Component_Attach`ed chunk), `Scene::Clear` wiped 0, grass teardown `fullResets=0`. Per-type
+survives the same 574 recycles precisely because that predicate can see its entities.
+
+#### Bug 2 — cap vertices ignored the billboard collapse (engine `55bee4d7`, 1.86)
+
+A merged system carries `billboardCount` = the MAX across the chunk's types, and a strand whose own
+type wants fewer must collapse the surplus to zero area. The ROOT half of each segment
+(`vertexID 0..1`) did. The CAP half (`vertexID 2..3`, the loop at
+`hairparticle_simulateCS.hlsl:569`) had **no `billboardID >= gg_billboards` guard at all** — so
+every surplus billboard drew a zero-width root with a **full-width cap**: a wedge with real screen
+area instead of nothing. Coverage 6.185 → 4.671 pp on that one guard.
+
+That is the over-density the gate had been failing on since 08-02, and it explains why clumpCV was
+always *clean*: nothing was being redistributed, there was simply extra geometry.
+
+#### Method note
+
+Three source-read theories died on this before either bug was found (parenting, `Scene::Clear`,
+the grass teardown paths). Both bugs fell to instruments that **echo state back** — the hair-kill
+tracer recording `_ReturnAddress()` plus the recursive parent, and `GRASS_MERGE:` echoing the live
+flag alongside its per-exit counters. The indirect-draw-args readback this document previously
+nominated as the next step was **not** needed and would have misled: `visible` at simulateCS:288
+excludes `strand_length`, so paint-masked zero-area strands contribute their full index range.
+
+### ⚠ Superseded — the "no grass at all" measurement that led to bug 1
 
 Re-measured on the current build (engine `26fcc5c5`) against the resaved TESTPRO1, via a new
 setup.ini key `grassmerge=1` (cold launch, so the reload path is not inside the measurement):
