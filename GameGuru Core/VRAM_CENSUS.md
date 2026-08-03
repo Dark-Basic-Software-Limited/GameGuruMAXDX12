@@ -329,6 +329,44 @@ area instead of nothing. Coverage 6.185 → 4.671 pp on that one guard.
 That is the over-density the gate had been failing on since 08-02, and it explains why clumpCV was
 always *clean*: nothing was being redistributed, there was simply extra geometry.
 
+#### OPEN: scene-wide grass flicker in merged mode (2026-08-03 night)
+
+Lee reported it against a zoomed screenshot: small square patches of what look like other grass
+types' texture inside a blade, moving/vanishing frame to frame, across all grass. **Quantified,
+merged-only:**
+
+| consecutive-frame diff | pixels differing | **meanAbsDiff** |
+|---|---|---|
+| per-type | 6.2–8.3 % | **0.39–0.58** / 765 |
+| merged | 17.5–19.5 % | **12.31–12.49** / 765 |
+
+Same wind, same sway, same camera — **21–32× more per-frame churn**.
+
+**It is a constant noise FLOOR, not alternation and not animation.** Diffing frame 0 against
+1/2/3/4 gives merged 12.31 / 12.57 / 12.55 / 12.94 (flat) while per-type climbs
+0.39 / 0.65 / 0.91 / 1.31 (accumulating, i.e. the grass swaying). A flat floor independent of
+temporal distance means something is **re-randomised every frame**. Double-buffering is therefore
+out — a ping-pong bug would show a LOW frame-0→2 diff.
+
+**Eliminated so far:**
+- *Atlas-rect bleeding* — dead by inspection, no build spent. GG clears `atlas_rects` for every
+  grass appearance (`GGTerrainWicked.cpp:1236/1345`, "each material is a single-sprite DDS — no
+  atlas"), so `wiHairParticle.cpp:576-582` gives every type identity `texMulAdd (1,1,0,0)`, rect
+  count 1. There is no neighbouring tile to bleed from.
+- *Surplus billboard slots* (the leading theory) — `SET_GRASS billboards 1` makes every type want
+  one billboard, so merged's max-across-types stride has no surplus at all. Flicker persists at
+  **11.5–11.7**. **CAVEAT: `HAIR_BILLBOARD` was not read back, so it is not confirmed the live
+  systems rebuilt with the new count.** Re-verify before treating this as closed.
+
+**Next candidate, untested: per-strand `gg_resolved_type` instability.** It alone would explain all
+three symptoms — a strand flipping type between frames changes its texture (squares of another
+type's blade), its length/width/viewDistance (appear/disappear), and would re-randomise every
+frame (the flat floor). The instrument is a debug UAV histogram of resolved type per frame: if the
+counts jitter frame to frame with a static camera, that is the bug.
+
+**Do NOT trust `SET_GRASS <param>` A/Bs without reading the value back** — the same lesson
+`mablockmb` taught. An inert knob and an exonerated theory are indistinguishable.
+
 #### Method note
 
 Three source-read theories died on this before either bug was found (parenting, `Scene::Clear`,
