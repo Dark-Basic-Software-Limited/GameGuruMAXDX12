@@ -106,6 +106,13 @@ void GGSetLowVRAMGrassDensity(float scale01)
 	if (scale01 > 0.0f && scale01 <= 1.0f) gg_lowvram_grass_density = scale01;
 }
 
+// GGMAX 1.85: bridge for the hair-entity destruction tracer (same namespace reason as below).
+unsigned int GG_GetHairKillsBridge(const void** ret, unsigned int* entity, unsigned int* parent,
+	unsigned int* reason, unsigned int* clearcount, unsigned int max_out)
+{
+	return wi::scene::GG_GetHairKills(ret, entity, parent, reason, clearcount, max_out);
+}
+
 // GGMAX 1.81: bridge for the Scene::Update caller tracer. Lives here because the harness is
 // compiled outside the wi::scene namespace and a block-scope extern would mangle wrongly.
 unsigned int GG_GetSceneUpdateCallsBridge(const void** ret, const void** scene,

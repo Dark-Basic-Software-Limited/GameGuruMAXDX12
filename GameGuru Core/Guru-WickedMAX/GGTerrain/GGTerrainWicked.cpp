@@ -1816,6 +1816,21 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			{
 				if (git->second.perType[t] != wi::ecs::INVALID_ENTITY) { hasExistingEntities = true; break; }
 			}
+			// GGMAX 1.85 — THE MERGED-GRASS BUG. In merged mode perType[] is ALWAYS empty (the
+			// chunk's one entity lives in the `merged` slot), so this predicate read false forever
+			// and the chunk never got the repair pass that regrows grass after Wicked recycles it.
+			//
+			// Measured, not reasoned: the hair-kill tracer recorded 9 removals of live hair
+			// entities, ALL of them reason=1 (pulled down as a recursive child of the chunk they
+			// are Component_Attach'ed to), Scene::Clear wiped 0, and the grass code's own teardown
+			// counters read fullResets=0. So the kill is normal chunk recycling — which per-type
+			// grass also suffers 574 times and survives, because THIS line sees its entities and
+			// re-queues the chunk. Merged grass was created 9 times, killed 9 times, and never
+			// rebuilt.
+			//
+			// 1.74 added the `merged` slot and correctly updated every TEARDOWN path (see the
+			// comment at the fullReset branch below) but missed this one QUEUEING predicate.
+			if (git->second.merged != wi::ecs::INVALID_ENTITY) hasExistingEntities = true;
 		}
 
 		// SETTLE GATE: while the chunk's entity is still churning (progressive regeneration during

@@ -3497,6 +3497,53 @@ void AutoHarness_CheckForCommand(void)
 			n, framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer);
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "DUMP_HAIRKILL") == 0)
+	{
+		// DUMP_HAIRKILL — name whatever destroys hair entities (engine 1.85).
+		//
+		// Merged grass creates 9 hair entities (GRASS_MERGE says created=9, no early exit) and
+		// HAIR_SYSTEMS reads 0, with the grass code's own teardown counters at fullResets=0. Two
+		// source-read theories about the killer were already wrong, so this records it: every
+		// Entity_Remove that takes a live hair component captures _ReturnAddress(), symbolized
+		// here with dbghelp (already initialised for the crash logger).
+		//
+		// reason 0 = removed directly. reason 1 = pulled down as a RECURSIVE CHILD, and `parent`
+		// then names the entity that dragged it — which distinguishes "someone removed the grass"
+		// from "someone removed the chunk and the grass went with it".
+		extern unsigned int GG_GetHairKillsBridge(const void**, unsigned int*, unsigned int*,
+			unsigned int*, unsigned int*, unsigned int);
+		const void* rets[128] = {};
+		unsigned int ents[128] = {}, pars[128] = {}, reas[128] = {}, clearCount = 0;
+		const unsigned int n = GG_GetHairKillsBridge(rets, ents, pars, reas, &clearCount, 128);
+
+		HANDLE hProc = GetCurrentProcess();
+		static bool symReady = false;
+		if (!symReady) { SymSetOptions(SYMOPT_DEFERRED_LOADS | SYMOPT_UNDNAME); SymInitialize(hProc, NULL, TRUE); symReady = true; }
+
+		FILE* f = nullptr;
+		fopen_s(&f, "Files\\hairkill_dump.txt", "w");
+		if (f) fprintf(f, "HAIRKILL: %u removals of live hair entities; Scene::Clear wiped %u hair components\n"
+			"reason 0 = direct Entity_Remove, 1 = recursive child of `parent`\n\n", n, clearCount);
+		unsigned int direct = 0, recursed = 0;
+		for (unsigned int i = 0; i < n; ++i)
+		{
+			if (reas[i]) recursed++; else direct++;
+			char buf[sizeof(SYMBOL_INFO) + 256] = {};
+			SYMBOL_INFO* si = (SYMBOL_INFO*)buf;
+			si->SizeOfStruct = sizeof(SYMBOL_INFO); si->MaxNameLen = 255;
+			DWORD64 disp = 0;
+			const char* name = SymFromAddr(hProc, (DWORD64)rets[i], &disp, si) ? si->Name : "<unresolved>";
+			IMAGEHLP_LINE64 line = {}; line.SizeOfStruct = sizeof(line); DWORD ld = 0;
+			const bool okLine = SymGetLineFromAddr64(hProc, (DWORD64)rets[i], &ld, &line) != FALSE;
+			if (f) fprintf(f, "[%3u] entity=%u parent=%u reason=%u  %s+0x%llx  %s:%u\n",
+				i, ents[i], pars[i], reas[i], name, (unsigned long long)disp,
+				okLine ? line.FileName : "?", okLine ? line.LineNumber : 0);
+		}
+		if (f) fclose(f);
+		_snprintf(result, sizeof(result), "OK: DUMP_HAIRKILL %u removals (%u direct, %u recursive-child), Scene::Clear wiped %u -> Files/hairkill_dump.txt",
+			n, direct, recursed, clearCount);
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "HITCH_RESET") == 0)
 	{
 		// HITCH_RESET — start a fresh hitch-measurement window (engine 1.82).
