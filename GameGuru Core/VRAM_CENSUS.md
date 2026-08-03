@@ -696,3 +696,63 @@ not the lookup, not stiffness/drag/viewDistance/billboardCount, not `present`, n
 `textureIndex` (mode 3 collapses to 0.11) → not the descriptor fetch (`NonUniformResourceIndex`
 changed nothing, engine 1.89) → the grasstype VALUE itself churns (mode 16 vs 17 control) → the
 SNORM8 packing above. **Nine mechanisms eliminated; every step measured, none assumed.**
+
+## Flicker hunt — the full failure ledger (2026-08-04)
+
+Merged grass ships at **−2005 MB / +15 FPS**. The flicker is **NOT fixed**. Twelve mechanisms
+eliminated. Recorded in full so none of them is re-walked.
+
+Probe: `SET_GRASSTYPEFREEZE <bitmask>` — 1 whole type path · 2 present · 4 textureIndex · 8 length
+· 16 grasstype visualisation · 32 stable `DTid.x%8` hash instead of the resolved type · 64
+ALWAYSWRITE (suppress the cull early-return). Instant, no reload. Metric: `BURST_FRAMES 5` +
+`tools/imgdiff.ps1` consecutive-frame meanAbsDiff.
+
+**Every mode needs its OWN animation floor.** Textured scene: per-type = 0.22–0.58. Flat-colour
+visualisation: 0.045–0.094 (mode 17). Merged, broken: 12.1. Visualisation, broken: 3.7–4.0.
+
+### Eliminated by measurement
+
+| Suspect | Result |
+|---|---|
+| stiffness + drag | uniform → 11.9–12.1, unchanged |
+| viewDistance | uniform → unchanged |
+| billboardCount | `SET_GRASS billboards 1` → 11.5–11.7 |
+| **present** (top-ranked) | mode 2 → 12.0–12.2. Mode 1 collapsed to 0.27 in the same run, so the probe was live |
+| length | mode 4 → 12.0–12.2 |
+| **missing `NonUniformResourceIndex`** | added → 12.07–12.26. FPS unchanged, so the predicted waterfall never appeared either |
+| **SNORM8 packing in `vb_nor.w`** | moved to UNORM16 `vb_uvs.w` → 11.9–12.2 |
+| **`gg_resolved_type` churning** | stable hash (mode 48) → 3.87–3.95, identical to the real type |
+| **cull early-return leaving slots unwritten** | ALWAYSWRITE (mode 112) → 3.94–4.05 |
+
+### Eliminated by inspection
+
+Atlas-rect bleeding (GG clears `atlas_rects`) · uninitialised per-type table
+(`wiHairParticle.cpp:625-628` zero-fills) · `grass_type` as an OOB index (both sites guarded —
+**but merged systems are therefore skipped by both live-update loops, a real separate gap**) ·
+per-pixel interpolation (`nointerpolation uint`) · provoking-vertex / triangles straddling strands
+(index runs are 3-aligned by construction).
+
+### Invalid experiments — my errors
+
+- `SET_GRASS segments/billboards` pushed onto live systems changes vertex **stride** without a
+  rebuild: churn rose to 31.9–33.6, the test corrupting geometry. **Never change stride live.**
+- `BURST_FRAMES` writes a relative path and the game CWD **is** `Files`, so frames land in
+  `Files/Files/screenshots/`. First capture run silently produced nothing.
+- The first `mablockmb` wiring was inert *and the numbers moved anyway* from run variance — caught
+  only because D3D12MA echoes `PreferredBlockSize` back.
+- `dxc -dumpbin` verification never executed in the `NonUniformResourceIndex` test, so "the fix
+  reached the shader" was inferred, not proven.
+
+### Where it stands
+
+Value written per strand is **stable**; **every slot is written every frame**; readback still
+churns at **~85× its floor**. So the defect is in **which slot the draw reads** — the index path.
+
+**Next (hypothesis, not finding):** `waveOffset` reserves `waveAppendCount *
+gfx_indexcount_per_strand` (visible lanes) while each lane's slot comes from
+`WavePrefixSum(gfx_indexcount_per_strand)`. Correct only if the prefix sum counts visible lanes.
+It sits inside `if (visible)` so HLSL should restrict it to active lanes — if that ever fails,
+lanes write past their wave's reservation into the next wave's, so strands render against another
+strand's index range, re-rolled every frame by wave scheduling. Test: swap in
+`WavePrefixCountBits(visible) * gfx_indexcount_per_strand` behind a mask bit, re-measure mode 48
+against the 0.07 floor.
