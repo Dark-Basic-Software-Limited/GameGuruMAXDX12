@@ -77,6 +77,14 @@ void GGSetLowVRAMGrassDensity(float scale01)
 	if (scale01 > 0.0f && scale01 <= 1.0f) gg_lowvram_grass_density = scale01;
 }
 
+// GGMAX 1.81: bridge for the Scene::Update caller tracer. Lives here because the harness is
+// compiled outside the wi::scene namespace and a block-scope extern would mangle wrongly.
+unsigned int GG_GetSceneUpdateCallsBridge(const void** ret, const void** scene,
+	unsigned long long* frame, float* dt, unsigned int max_out)
+{
+	return wi::scene::GG_GetSceneUpdateCalls(ret, scene, frame, dt, max_out);
+}
+
 // GGMAX wall-gap tracer bridges for old-namespace files (main.cpp pump timing / master preamble)
 unsigned long long GGPerf_TraceNowUs(void) { return wi::profiler::gg_trace_now_us(); }
 void GGPerf_TraceMarkId(const char* prefix, unsigned int id) { wi::profiler::gg_trace_mark_id(prefix, id); }

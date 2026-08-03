@@ -10,6 +10,8 @@
 #include "..\GameGuru\Imgui\imgui.h"
 #include "..\GameGuru\Imgui\imgui_internal.h"
 #include <stdio.h>
+#include <dbghelp.h>          // GGMAX 1.81: symbolize Scene::Update callers (DUMP_SCENEUPDATE)
+#pragma comment(lib, "dbghelp.lib")
 #include <string.h>
 #include <time.h>
 #include <windows.h>
@@ -3374,6 +3376,61 @@ void AutoHarness_CheckForCommand(void)
 		}
 		_snprintf(result, sizeof(result), "OK: SET_LOWVRAM %d grassdistcap=%.0f grassdensity=%.0f%% (RELOAD the level to rebuild grass)",
 			gg_lowvram ? 1 : 0, gg_lowvram_grass_dist, gg_lowvram_grass_density * 100.0f);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_SCENEUPDATE") == 0)
+	{
+		// DUMP_SCENEUPDATE — answer "why do the Scene-S* profiler rows say (3x)?" by NAMING the
+		// callers (engine 1.81). The engine records each Scene::Update's return address, the
+		// Scene instance, the frame and dt; this symbolizes the addresses with dbghelp (already
+		// initialised for the crash logger) and groups them.
+		//
+		// The Scene pointer matters as much as the caller: three updates of ONE scene is
+		// duplicated work, three different scenes updated once each is not.
+		extern unsigned int GG_GetSceneUpdateCallsBridge(const void**, const void**, unsigned long long*, float*, unsigned int);
+		const unsigned int MAXREC = 96;
+		const void* rets[MAXREC]; const void* scenes[MAXREC];
+		unsigned long long frames[MAXREC]; float dts[MAXREC];
+		const unsigned int n = GG_GetSceneUpdateCallsBridge(rets, scenes, frames, dts, MAXREC);
+
+		FILE* f = nullptr;
+		fopen_s(&f, "sceneupdate_dump.txt", "w");
+		HANDLE proc = GetCurrentProcess();
+		SymSetOptions(SymGetOptions() | SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+		SymInitialize(proc, NULL, TRUE); // harmless if already initialised
+
+		if (f) fprintf(f, "Scene::Update calls, oldest first (%u records)\n\n", n);
+		// Per-frame counts, and per-(caller,scene) totals across the captured window.
+		unsigned long long lastFrame = 0; unsigned int perFrame = 0; unsigned int framesSeen = 0;
+		unsigned int minPer = 0xFFFFFFFF, maxPer = 0;
+		for (unsigned int i = 0; i < n; ++i)
+		{
+			char symbuf[sizeof(SYMBOL_INFO) + 512] = {};
+			SYMBOL_INFO* sym = (SYMBOL_INFO*)symbuf;
+			sym->SizeOfStruct = sizeof(SYMBOL_INFO); sym->MaxNameLen = 500;
+			DWORD64 disp = 0;
+			const bool haveSym = SymFromAddr(proc, (DWORD64)rets[i], &disp, sym) != FALSE;
+			IMAGEHLP_LINE64 line = {}; line.SizeOfStruct = sizeof(line); DWORD lineDisp = 0;
+			const bool haveLine = SymGetLineFromAddr64(proc, (DWORD64)rets[i], &lineDisp, &line) != FALSE;
+			if (f)
+			{
+				fprintf(f, "frame %llu  scene=%p  dt=%.4f  ret=%p  %s%s",
+					frames[i], scenes[i], dts[i], rets[i],
+					haveSym ? sym->Name : "<no symbol>", haveSym ? "" : "");
+				if (haveLine) fprintf(f, "  (%s:%lu)", line.FileName, line.LineNumber);
+				fprintf(f, "\n");
+			}
+			if (i == 0 || frames[i] != lastFrame)
+			{
+				if (i != 0) { if (perFrame < minPer) minPer = perFrame; if (perFrame > maxPer) maxPer = perFrame; }
+				lastFrame = frames[i]; perFrame = 0; framesSeen++;
+			}
+			perFrame++;
+		}
+		if (perFrame) { if (perFrame < minPer) minPer = perFrame; if (perFrame > maxPer) maxPer = perFrame; }
+		if (f) { fprintf(f, "\nframes covered=%u  calls/frame min=%u max=%u\n", framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer); fclose(f); }
+		_snprintf(result, sizeof(result), "OK: DUMP_SCENEUPDATE %u records over %u frames, %u-%u calls/frame -> Files/sceneupdate_dump.txt",
+			n, framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "VRAM_STAGE") == 0)
