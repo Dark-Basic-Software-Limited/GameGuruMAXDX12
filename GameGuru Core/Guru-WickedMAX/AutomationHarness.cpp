@@ -58,7 +58,7 @@ namespace wi { namespace terrain {
 // GGMAX 1.87: merged-grass type-resolution freeze (flicker probe). Declared at file scope with
 // its real namespace — a block-scope `extern bool` inside the command handler would resolve to
 // the GLOBAL namespace and fail to link, a trap this file has hit before.
-namespace wi { extern bool gg_grass_freeze_type; }
+namespace wi { extern bool gg_grass_freeze_type; extern int gg_grass_freeze_mode; }
 // GGMAX wall-gap tracer (engine wiProfiler.cpp): frame gaps >100ms dumped to gap_trace.txt
 namespace wi { namespace profiler {
 	extern std::atomic<unsigned long long> gg_trace_gap_count, gg_trace_gap_last_ms;
@@ -3513,9 +3513,25 @@ void AutoHarness_CheckForCommand(void)
 		// every per-type parameter goes uniform. Density is deliberately WRONG while on; the only
 		// valid reading is the CONSECUTIVE-FRAME diff within this config. If the scene-wide churn
 		// (merged 12.4 vs per-type 0.4 meanAbsDiff) collapses, the flicker IS type resolution.
+		// GGMAX 1.88: 0 = off, 1 = freeze the WHOLE type-dependent path, 2 = `present` only,
+		// 3 = textureIndex only, 4 = length only. The selective modes separate the three
+		// suspects the whole-path freeze left standing.
+		// GGMAX 1.91: BITMASK so probes combine. 1=freeze whole type path, 2=present,
+		// 4=textureIndex, 8=length, 16=grasstype visualisation. The control that makes the
+		// visualisation interpretable is 17 (= 1|16): type frozen AND visualised, which is the
+		// pure animation floor for the flat-colour render. 16 alone cannot be read without it.
 		int fz = atoi(arg);
-		wi::gg_grass_freeze_type = (fz != 0);
-		_snprintf(result, sizeof(result), "OK: SET_GRASSTYPEFREEZE %d (instant, no reload; density intentionally wrong while 1)", fz);
+		wi::gg_grass_freeze_type = false;              // superseded by the mask
+		wi::gg_grass_freeze_mode = fz;
+		char fzdesc[128]; fzdesc[0] = 0;
+		if (fz & 1)  strcat(fzdesc, "ALLTYPE ");
+		if (fz & 2)  strcat(fzdesc, "present ");
+		if (fz & 4)  strcat(fzdesc, "texture ");
+		if (fz & 8)  strcat(fzdesc, "length ");
+		if (fz & 16) strcat(fzdesc, "TYPEVIS ");
+		if (fz == 0) strcpy(fzdesc, "off");
+		_snprintf(result, sizeof(result), "OK: SET_GRASSTYPEFREEZE %d [%s] — instant, no reload; density intentionally wrong while non-zero",
+			fz, fzdesc);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "DUMP_HAIRKILL") == 0)

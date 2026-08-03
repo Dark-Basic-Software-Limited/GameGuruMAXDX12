@@ -640,3 +640,59 @@ i.e. the dead legacy path. Make it lazy behind `GGTerrain_EnsurePageAtlas()` exa
 - **`SET_GRASS blades` / `SET_GRASS maxstrands`** — dead settings, written but never read.
   The comment block above them in `GGTerrainWicked.cpp` describes a model the code no longer
   uses.
+
+## ★★★ MERGED-GRASS FLICKER: ROOT CAUSE FOUND 2026-08-04
+
+`hairparticle_simulateCS.hlsl:415` and `:632`:
+
+```hlsl
+vertexBuffer_NOR[v0] = half4(target, gg_merged ? ((gg_resolved_type + 1u) / 127.0) : 0);
+```
+
+`vb_nor` is backed by `MeshComponent::Vertex_NOR` (`wiScene_Components.h:1061`) — **four
+`int8_t`, i.e. R8G8B8A8_SNORM** — and bound with that format at `wiHairParticle.cpp:312-313`.
+
+**The encoding is arithmetically incapable of carrying the payload:**
+
+| | |
+|---|---|
+| SNORM8 quantisation step | 2/255 = **0.0078431** |
+| grass-type spacing written | 1/127 = **0.0078740** |
+
+Adjacent types are **less than one quantisation step apart**, and the 0.4 % mismatch accumulates
+with type index so high indices land on the wrong step outright. Up to
+`GG_HAIR_MAX_GRASS_TYPES = 88` types are being encoded into a channel that cannot represent them
+distinctly — via a `half` intermediate, so **two** lossy conversions before storage. The payload
+also rides in the `.w` of a NORMAL whose xyz sway every frame.
+
+This is the upstream corruption the 1.91 control proved had to exist: the grasstype value
+reaching the PS churns at **55× its own animation floor** (3.75 vs 0.07) while the CS-side resolve
+is provably deterministic. It explains the visual precisely — a strand decoding one step off
+samples the **neighbouring type's** blade texture, which is exactly the coloured squares in the
+report.
+
+### THE FIX IS NOT YET WRITTEN
+
+1. **Preferred:** stop packing type into `vb_nor`. Carry it in a spare component of `vb_uvs`
+   (float4, ample precision) or a dedicated per-strand buffer.
+2. If it must stay in SNORM8: use a spacing that is an exact multiple of 2/255 and cap the
+   representable type count (≈63 types at 2-step spacing).
+
+**Do NOT just change `127.0` to `127.5`.** That corrects the scale but still leaves adjacent types
+one quantum apart with zero margin — the fragility that caused this.
+
+### Acceptance test when fixed
+
+- `SET_GRASSTYPEFREEZE 16` (typevis) must fall from **~3.75 to its ~0.07 animation floor**
+- normal render must fall from **~12.1 to the per-type ~0.22**
+- grass density gate (`tools/grassdensity.ps1`) unmoved, same-session baseline
+- eyeball that multiple distinct blade textures are still present (the `idx == 0` fallback at
+  `hairparticleHF.hlsli` silently collapses everything to one texture and would also read clean)
+
+### The elimination chain that got here
+
+merged-only (21–32× churn) → the type-dependent path (57× collapse, `SET_GRASSTYPEFREEZE 1`) →
+not the lookup, not stiffness/drag/viewDistance/billboardCount, not `present`, not `length` →
+`textureIndex` (mode 3 collapses to 0.11) → not the descriptor fetch (`NonUniformResourceIndex`
+changed nothing, engine 1.89) → the grasstype VALUE itself churns (mode 16 vs 17 control) → the
+SNORM8 packing above. **Nine mechanisms eliminated; every step measured, none assumed.**
