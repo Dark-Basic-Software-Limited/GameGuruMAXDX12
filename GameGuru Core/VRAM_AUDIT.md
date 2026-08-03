@@ -236,6 +236,40 @@ The obstacle is that `atlas.tile_pool` is a **single** `GPUBuffer`, referenced a
 means tracking which pool backs each tile and threading that through the tile-mapping commands —
 a genuine change to the sparse-residency bookkeeping, not a parameter tweak.
 
+### ATTEMPTED 2026-08-02 AND REVERTED — read this before retrying
+
+Option 1 was implemented, built, soaked and **reverted**. Two things came out of it.
+
+**1. The saving is −96 MB, not −144. My "quarter of the pool" arithmetic was wrong.**
+The pool is `sum over maps of (total_tile_count * sparse_page_size)`, and the maps do **not** have
+equal page sizes — BASECOLORMAP and EMISSIVEMAP share the same `case` and are **BC1** (4 bpp),
+while NORMALMAP is **BC5** and SURFACEMAP is **BC3** (8 bpp each). So the pool is
+`X + 2X + 2X + X = 6X = 576` ⇒ `X = 96`. **Emissive is the cheapest map, one sixth of the pool,
+not one quarter.** Measured on Z Island: tile pool 576.0 → **480.0 MB**, and the atlas dropped
+from 8 to 6 sparse textures (3 maps × texture + texture_raw_block), exactly as intended.
+
+**2. It breaks terrain rendering — the whole scene blows out to white.** Confirmed on both
+A Grand Canyon Adventure and The Mystery of Z Island: terrain, objects and sky wash to near-white
+with only faint silhouettes. Not subtle, and not a transient load state.
+
+**The soak itself passed**, which is the important diagnostic detail: three laps of fast travel on
+Z Island gave `MIN_FREE = 881 of 2852` tiles, peak used **1971** — statistically identical to the
+pre-change peak of ~2001. So this is **not** tile starvation and **not** a residency bug. The
+guarded loops did what they were supposed to. It is a *shading* failure.
+
+**Most likely mechanism, NOT yet confirmed:** the four map loops were guarded, but the material
+binding loop was skipped for emissive with a plain `continue`, leaving
+`material->textures[EMISSIVEMAP]` unbound. If the terrain shader reads that slot unconditionally
+and an unbound bindless slot resolves to the engine's default **white** texture, emissive becomes
+full white and is added to every terrain pixel — which is exactly what the screenshots look like.
+
+**Do not retry by guessing.** Next step is an instrument, not another theory: confirm what the
+terrain shader actually samples for a missing emissive slot (`SET_TANGENTVIS 15` renders emissive
+directly — that is the cheapest possible check). Then either bind an explicit 1×1 black texture
+into the emissive slot, or zero the terrain material's emissive colour, and re-verify with
+**screenshots as well as numbers**. The VRAM figures alone looked excellent while the picture was
+destroyed.
+
 ### Why neither shipped in this session
 
 Both touch terrain residency, and the user's instruction was explicitly "the SVT pool **with a
