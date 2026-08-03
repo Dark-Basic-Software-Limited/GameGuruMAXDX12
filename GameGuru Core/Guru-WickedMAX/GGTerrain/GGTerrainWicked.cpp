@@ -162,7 +162,7 @@ namespace wi { extern bool gg_grass_lod; }   // engine strand-LOD opt-in (wiHair
 // grass is the one subsystem in this codebase that has already been broken once by an
 // unverified "optimisation", so the shipped path stays the per-type one until measured.
 // Harness SET_GRASSMERGE <0|1> then reload the level (entities are built at chunk-spawn time).
-bool gg_grass_merge = false;
+bool gg_grass_merge = true;   // GGMAX 1.86: DEFAULT ON (user-approved 2026-08-03). setup.ini grassmerge=0 reverts.
 
 // ============================================================================
 // GGMAX low-VRAM preset (2026-08-02) — the "fit inside a 4 GB card" bundle.
