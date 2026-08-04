@@ -73,7 +73,14 @@ void mapeditorexecutable_loop(void)
 
 	bSmallVideoFrameStart = true;
 	// special modes used when in test game or standalone game
-	if (commonexecutable_loop_for_game() == true) return;
+	// GGMAX 2026-08-05 PERF: this call was the one gap in the "Logic - common_loop" breakdown.
+	// The CL-* ranges start at CL-PreBlock BELOW this line and run to the end of the function,
+	// so everything above was unattributed - which is why the CL-* rows summed to ~0.85 ms of a
+	// 14.54 ms parent and the panel looked like it was lying. Instrument it.
+	auto clGame = wi::profiler::BeginRangeCPU("CL-GameLoop");
+	const bool bGameLoopTookOver = (commonexecutable_loop_for_game() == true);
+	wi::profiler::EndRange(clGame);
+	if (bGameLoopTookOver) return;
 
 	// PERF P.3: pre-ImGui housekeeping range (weather particles, IO/style setup, launch state machine).
 	auto clPre = wi::profiler::BeginRangeCPU("CL-PreBlock");

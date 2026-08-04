@@ -3459,6 +3459,62 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: Game Settings window %s", Game_Settings_Window ? "OPEN" : "CLOSED");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SELECT_ENTITY") == 0)
+	{
+		// SELECT_ENTITY <entity element index | 0 to deselect> - put an entity into the editor's
+		// widget selection, exactly as a viewport click does (M-GridEdit_part6.cpp:1973-1981).
+		// Needed because CLICK only targets named ImGui widgets, so the "an entity is selected"
+		// editor state - which is what costs ~14 ms of common_loop - could not otherwise be
+		// reproduced from the harness.
+		// widget_updatewidgetobject only CLEARS a stale selection; the function that promotes
+		// pickedObject -> activeObject (which is the variable the expensive editor path gates on,
+		// M-GridEdit_part6.cpp:956) is widget_check_for_new_object_selection.
+		void widget_updatewidgetobject(void);
+		void widget_check_for_new_object_selection(void);
+		const int idx = atoi(arg);
+		if (idx <= 0)
+		{
+			t.widget.pickedObject = 0;
+			t.widget.pickedEntityIndex = 0;
+			widget_updatewidgetobject();
+			t.widget.activeObject = 0;
+			_snprintf(result, sizeof(result), "OK: deselected (activeObject=%d)", t.widget.activeObject);
+		}
+		else if (idx >= (int)t.entityelement.size() || t.entityelement[idx].obj <= 0)
+		{
+			_snprintf(result, sizeof(result), "FAIL: entity %d invalid (list=%d)", idx, g.entityelementlist);
+		}
+		else
+		{
+			t.widget.pickedEntityIndex = idx;
+			t.entityelement[idx].editorlock = 0;
+			t.widget.pickedObject = t.entityelement[idx].obj;
+			t.widget.activeObject = 0; // force the promote path to run
+			widget_check_for_new_object_selection();
+			_snprintf(result, sizeof(result), "OK: selected entity %d (obj=%d, activeObject=%d)",
+				idx, t.entityelement[idx].obj, t.widget.activeObject);
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_PROFILER") == 0)
+	{
+		// DUMP_PROFILER - the cached wi::profiler text (captured in Compose so GPU sub-ranges
+		// are present). GET_PROFILER_STATUS only serves this in "game" state; the editor-side
+		// costs need it in "editor" state too.
+		extern std::string GGPerf_GetCachedProfilerText();
+		std::string t2 = GGPerf_GetCachedProfilerText();
+		if (t2.empty())
+		{
+			_snprintf(result, sizeof(result), "EMPTY: profiler not enabled? (wi::profiler::IsEnabled()==%d) - tick 'Enable the 3D Editor Profiler' or use ENABLE_PROFILER",
+				wi::profiler::IsEnabled() ? 1 : 0);
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "CPU_FRAME_MS: %.2f\nGPU_FRAME_MS: %.2f\nPROFILER_DATA:\n%s",
+				wi::profiler::GetCPUFrameTime(), wi::profiler::GetGPUFrameTime(), t2.c_str());
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "SET_PICKUPDATE") == 0)
 	{
 		// SET_PICKUPDATE <0|1|2> - A/B the widget-pick scene refresh.
