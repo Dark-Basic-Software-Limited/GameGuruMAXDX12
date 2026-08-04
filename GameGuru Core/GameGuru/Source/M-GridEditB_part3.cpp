@@ -1335,6 +1335,15 @@ void Wicked_Update_Shadows(void *voidvisual)
 		bTransparentChanged = true;
 	}
 
+	// GGMAX lowvram B5: cap the cascade/spot atlas resolution in the 4GB preset. A CAP like the
+	// grass-dist member — a level asking for less keeps its own value. The 2D atlas share scales
+	// ~quadratically with this, worth ~60-100 MB on the heavier demos at 2048->1024.
+	{
+		extern bool gg_lowvram; // GGTerrainWicked.cpp
+		if (gg_lowvram && visuals->iShadowSpotCascadeResolution > 1024)
+			visuals->iShadowSpotCascadeResolution = 1024;
+	}
+
 	if (old_iShadowSpotCascadeResolution != visuals->iShadowSpotCascadeResolution || bTransparentChanged )
 	{
 		char debug[256];
@@ -1778,7 +1787,13 @@ void Wicked_Update_Visuals(void *voidvisual)
 		master_renderer->setBloomEnabled(visuals->bBloomEnabled);
 		master_renderer->setBloomThreshold(visuals->fsetBloomThreshold);
 		//master_renderer->setBloomStrength(visuals->fsetBloomStrength); // removed from RenderPath3D
-		master_renderer->setSSREnabled(visuals->bSSREnabled);
+		// GGMAX lowvram: SSR off in the 4GB preset — its scratch set (binned_tiles + normals +
+		// roughness + rtSSR + ssrResources) is ~20-25 MB at editor res, and Z Island is the only
+		// hub demo authored with it on. The engine frees everything the frame SSR turns off.
+		{
+			extern bool gg_lowvram; // GGTerrainWicked.cpp
+			master_renderer->setSSREnabled(gg_lowvram ? false : visuals->bSSREnabled);
+		}
 		master_renderer->setReflectionsEnabled(visuals->bReflectionsEnabled);
 		master_renderer->setFXAAEnabled(visuals->bFXAAEnabled);
 		wiRenderer::SetOcclusionCullingEnabled(visuals->bOcclusionCulling);
