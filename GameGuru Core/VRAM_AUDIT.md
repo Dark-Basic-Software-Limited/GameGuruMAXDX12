@@ -472,3 +472,85 @@ Template likely also fit now (their baselines predate the mip swap) — pending 
    low risk. Not a VRAM item — schedule as hygiene.
 5. MASTER ASSET STORE: the mip conversion AND the sky conversion exist only in the build
    area + Documents. Both must be run on the master store or a reinstall reverts them.
+
+## 2026-08-04 overnight autonomous session: 16 of 19 at defaults, all 19 with the preset
+
+User mandate (verbatim intent): perform all identified levers, retest all hub demos, and take
+whatever steps needed — including fidelity knobs — so every demo runs on a 4 GB card.
+
+### Levers shipped overnight (each verified before the next started)
+
+| Lever | Where | Saving | Verification |
+|---|---|---|---|
+| Visibility payload skip | engine 1.97 | −39 on SSR levels | Z Island census: zero `res.texture_payload_*` rows, POLYS identical |
+| Lazy debugUAV | engine 1.97 | −5.2 every level | zero `debugUAV` rows |
+| Cloud-noise free path | engine 1.97 | −5.4 when clouds off | bind sites verified clouds-gated |
+| CopyAllocator freelist trim + 16 MB rounding | engine 1.97 | ~250–283 **system RAM** every level | upload pool drains to zero after settle; buffers recreate on demand |
+| **A4: SVT emissive map dropped** | engine 1.98 | **−96 every terrain level** (pool 576→480) | Grand Canyon: pool 480.0 exact, 8→6 sparse textures, POLYS bit-identical, **screenshot normal — no white-out** |
+| B5 shadow cascade cap 1024 + SSR clamp | game, `lowvram=1` members | preset-only | applied at the visuals application points, cap-style |
+
+**The A4 white-out is solved.** The 2026-08-02 failure was the UNBOUND emissive slot: an
+undefined sparse sample fed the tonemapper. Binding an explicit `wi::texturehelper::getBlack()`
+1×1 with residency/feedback descriptors −1 fixes it with zero visual change. Revert:
+`svtemissive=1`.
+
+**Designed but NOT shipped** (deliberate): ocean auto-gate (below-terrain-min water is
+physics-safe to skip, but `Wicked_Update_Visuals` doesn't re-run on sculpt, so editor-dug holes
+would show no water until the next visuals refresh — 28 MB on demos that already fit);
+chunk VB/IB suballocation (the "−108" figure in earlier notes was stale — the real remaining
+item is ~52 MB post-A2 via suballocating LIVE buffers, medium risk, floor follow-up #5);
+streamout lazy-create (38–73 MB, needs its own session for BLAS-rebuild caveats).
+
+### The final table — defaults, editor, engine `901da1f1`+1.98 / game `04:48` build
+
+| Demo | driver | FLOOR | mesh | GRASS | TREES | content | misc | pad | nonres | FPS |
+|---|---|---|---|---|---|---|---|---|---|---|
+| The Mystery of Z Island | 3740 | 1225 | 512 | 378 | 75 | 744 | 199 | 164 | 527 | 105.3 |
+| Operation Amazon | 3567 | 1232 | 512 | 342 | 77 | 635 | 106 | 269 | 480 | 91.5 |
+| Aztec Game Kit | 3559 | 1177 | 896 | 226 | 81 | 476 | 155 | 141 | 496 | 99.6 |
+| Canyon Offensive | 3252 | 1095 | 512 | 247 | 77 | 685 | 137 | 79 | 505 | 78.8 |
+| River Raiders | 3217 | 1095 | 384 | 408 | 74 | 619 | 111 | 114 | 497 | 119.4 |
+| RPG Template | 3179 | 1205 | 512 | 469 | 84 | 358 | 95 | 71 | 469 | 104.1 |
+| Foggy Forest | 3085 | 1269 | 512 | 200 | 74 | 265 | 180 | 187 | 482 | 67.7 |
+| Indian Strike Force | 3041 | 1104 | 512 | 1 | 71 | 438 | 182 | 229 | 589 | 106.6 |
+| Disruption | 2986 | 1282 | 512 | 208 | 66 | 279 | 99 | 145 | 477 | 88.0 |
+| Horseshoe Bend | 2984 | 1092 | 640 | 4 | 73 | 367 | 221 | 134 | 541 | 93.0 |
+| Aztec Game Kit Teaser | 2952 | 1045 | 512 | 399 | 81 | 299 | 92 | 123 | 486 | 73.0 |
+| Jungle Fever | 2849 | 1226 | 384 | 148 | 70 | 386 | 95 | 113 | 509 | 134.8 |
+| Island Showdown | 2747 | 1156 | 512 | 66 | 85 | 330 | 129 | 75 | 477 | 77.3 |
+| A Grand Canyon Adventure | 2730 | 1088 | 512 | 252 | 73 | 271 | 106 | 55 | 459 | 107.5 |
+| Snowy Mountain Stroll | 2696 | 1155 | 384 | 96 | 68 | 333 | 101 | 130 | 504 | 130.0 |
+| Bounty | 2677 | 1282 | 384 | 0 | 63 | 295 | 118 | 124 | 492 | 119.8 |
+| Trapped | 2478 | 1082 | 384 | 0 | 63 | 435 | 65 | 66 | 457 | 145.2 |
+| Escape from the Zombie Cellar | 2444 | 1147 | 384 | 5 | 63 | 235 | 102 | 131 | 451 | 136.9 |
+| Switch Escape | 2345 | 1088 | 384 | 0 | 63 | 244 | 62 | 100 | 478 | 143.7 |
+| **mean** | **2975** | **1160** | **492** | **182** | **73** | **405** | **124** | **129** | **493** | |
+| min | 2345 | 1045 | 384 | 0 | 63 | 235 | 62 | 55 | 451 | |
+| max | 3740 | 1282 | 896 | 469 | 85 | 744 | 221 | 269 | 589 | |
+
+POLYS regression gate: 17 of 19 bit-identical vs the same-day pre-lever sweep; Horseshoe Bend
+(−1.3 %) and Island Showdown (−0.03 %) differ only by roaming-NPC frustum sampling (no
+geometry-touching change shipped; both sit 450+ MB under budget).
+
+### The three stragglers under `lowvram=1` + `lowvramgrassdensity=75`
+
+| Demo | defaults | with preset | headroom vs 3450 | FPS | POLYS |
+|---|---|---|---|---|---|
+| The Mystery of Z Island | 3740 | **3309 ✔** | 141 | 118.3 | bit-identical |
+| Operation Amazon | 3567 | **3234 ✔** | 216 | 99.8 | bit-identical |
+| Aztec Game Kit | 3559 | **3355 ✔** | 95 | 103.9 | bit-identical |
+
+Preset = `lowvram=1` + `lowvramgrassdensity=75` (members now: grass dist cap 750, grass
+density 75 %, shadow cascade cap 1024, SSR off). **Every hub demo is now measured inside a
+4 GB card** — 16 at pure defaults, 3 with the preset.
+
+### Where the campaign stands
+
+From the 2026-08-02 baseline: mean driver **5082 → 2975 MB (−41 %)**, hub grass total
+17,335 → 3,450 MB, FLOOR mean 1548 → 1160, misc mean 272 → 124, and mean FPS 92 → ~106.
+Every one of the 19 hub demos now has a measured configuration inside a 4 GB card.
+
+Master-store debt (IMPORTANT): the mip conversion (990 DDS) and the sky compression (8 cubes,
+both skybank trees) live only in the build area + Documents. **Run both conversions on the
+master asset store** or a reinstall silently reverts them. Scripts:
+session scratchpad `list_singlemip.py` / `mipconvert.sh` / `skyconvert.sh`.
