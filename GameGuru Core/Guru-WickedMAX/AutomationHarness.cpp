@@ -3522,8 +3522,16 @@ void AutoHarness_CheckForCommand(void)
 			extern bool bPreviewWPE;
 			PreviewWPERoot = root;
 			bPreviewWPE = true;
-			_snprintf(result, sizeof(result), "OK: root=%u handed to RenderPreviewEmitter, emitters now %d",
-				root, (int)wiScene::GetScene().emitters.GetCount());
+			// Park it in front of the camera as well. RenderPreviewEmitter only repositions
+			// when an editor entity is active, so with nothing selected this leaves the effect
+			// where we can actually see it - which is what makes screenshot A/B possible.
+			const wi::scene::CameraComponent& cam = wiScene::GetCamera();
+			float px = cam.Eye.x + cam.At.x * 250.0f;
+			float py = cam.Eye.y + cam.At.y * 250.0f;
+			float pz = cam.Eye.z + cam.At.z * 250.0f;
+			WickedCall_ParticleEffectPosition(root, px, py, pz);
+			_snprintf(result, sizeof(result), "OK: root=%u handed to RenderPreviewEmitter, placed at (%.1f,%.1f,%.1f), emitters now %d",
+				root, px, py, pz, (int)wiScene::GetScene().emitters.GetCount());
 		}
 		result[sizeof(result) - 1] = 0;
 	}
