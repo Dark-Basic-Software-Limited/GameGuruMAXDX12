@@ -24,6 +24,7 @@ extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* 
 
 // Tree params for the SET_TREES live-tuning command
 #include "GGTerrain/GGTrees.h"
+#include "GGTerrain/GGGrass.h" // GGMAX 1.97: SET_GRASSPARAM writes gggrass_global_params
 
 // Terrain params + undo enums for the SCULPT_TEST / PAINT_TEST commands
 #include "GGTerrain/GGTerrain.h"
@@ -4465,6 +4466,31 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: PAINT_TEST needs <worldX> <worldZ> <material> <frames>");
 		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_GRASSPARAM") == 0)
+	{
+		// SET_GRASSPARAM scale|drawdist <value> — write the Grass Scale / Grass Draw Distance
+		// slider globals, exactly what the editor UI writes. The per-frame Apply loops in
+		// GGTerrainWicked push them to live systems (GGMAX 1.97: including MERGED systems'
+		// grass_types[] tables — both sliders were dead on merged grass before that because the
+		// typeIdx guard skipped the merged sentinel). READ THE VALUE BACK via HAIR_VIEWDIST /
+		// HAIR_LEN in GET_PERF_DATA before believing any A/B — the flicker-hunt lesson.
+		char gp[32] = { 0 }; float gv = 0.0f;
+		if (sscanf_s(arg, "%31s %f", gp, (unsigned)sizeof(gp), &gv) == 2)
+		{
+			bool known = true;
+			if (_stricmp(gp, "scale") == 0) GGGrass::gggrass_global_params.grass_scale = gv;
+			else if (_stricmp(gp, "drawdist") == 0) GGGrass::gggrass_global_params.lod_dist = gv;
+			else known = false;
+			if (known)
+				_snprintf(result, sizeof(result), "OK: SET_GRASSPARAM %s = %.1f (scale=%.1f lod_dist=%.0f)",
+					gp, gv, GGGrass::gggrass_global_params.grass_scale, GGGrass::gggrass_global_params.lod_dist);
+			else
+				_snprintf(result, sizeof(result), "ERROR: SET_GRASSPARAM unknown param '%s' (scale|drawdist)", gp);
+		}
+		else
+			_snprintf(result, sizeof(result), "ERROR: SET_GRASSPARAM needs <scale|drawdist> <value>");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_TREES") == 0)

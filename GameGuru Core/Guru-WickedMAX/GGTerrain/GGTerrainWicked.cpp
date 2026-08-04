@@ -1437,6 +1437,25 @@ static void ApplyGrassDrawDistance()
 	{
 		wi::HairParticleSystem& h = scene.hairs[hi];
 		if (h.grass_type == 0) continue;                  // not a GG grass entity (upstream hair)
+		// GGMAX 1.97: merged systems carry per-type values in grass_types[] — the typeIdx guard
+		// below silently skipped them, which is why the Grass Draw Distance slider went dead on
+		// merged grass (and why three SET_GRASS probe rows in the flicker hunt were void).
+		// Refresh the table from the updated templates (keeps the per-category rules, e.g. the
+		// flower half-radius) and restore the merge-build invariant: system viewDistance = max
+		// across PRESENT types (it is the LOD rescale reference and the VS fade radius).
+		if (h.grass_type == GG_HAIR_GRASS_MERGED)
+		{
+			float maxVd = 0.0f;
+			const size_t n = std::min(h.grass_types.size(), (size_t)GGGRASS_TOTAL_REAL_TYPES);
+			for (size_t t = 0; t < n; t++)
+			{
+				h.grass_types[t].viewDistance = g_grassAppearance[t].viewDistance;
+				if (h.grass_types[t].present)
+					maxVd = std::max(maxVd, h.grass_types[t].viewDistance);
+			}
+			if (maxVd > 0.0f) h.viewDistance = maxVd;
+			continue;
+		}
 		uint32_t typeIdx = h.grass_type - 1;
 		if (typeIdx >= GGGRASS_TOTAL_REAL_TYPES) continue;
 		h.viewDistance = g_grassAppearance[typeIdx].viewDistance;
@@ -1500,6 +1519,23 @@ static void ApplyGrassScale()
 	{
 		wi::HairParticleSystem& h = scene.hairs[hi];
 		if (h.grass_type == 0) continue;               // upstream Wicked hair — leave alone
+		// GGMAX 1.97: same merged-system routing as ApplyGrassDrawDistance — the typeIdx guard
+		// skipped merged systems, so the Grass Scale slider was dead on merged grass. Per-type
+		// lengths refresh from the templates (baseline × slider mult, per category); system
+		// length keeps the merge-build max-across-present invariant (CS cull radius source).
+		if (h.grass_type == GG_HAIR_GRASS_MERGED)
+		{
+			float maxLen = 0.0f;
+			const size_t n = std::min(h.grass_types.size(), (size_t)GGGRASS_TOTAL_REAL_TYPES);
+			for (size_t t = 0; t < n; t++)
+			{
+				h.grass_types[t].length = g_grassAppearance[t].length;
+				if (h.grass_types[t].present)
+					maxLen = std::max(maxLen, h.grass_types[t].length);
+			}
+			if (maxLen > 0.0f) h.length = maxLen;
+			continue;
+		}
 		uint32_t typeIdx = h.grass_type - 1;
 		if (typeIdx >= GGGRASS_TOTAL_REAL_TYPES) continue;
 		h.length = g_grassAppearance[typeIdx].length;
