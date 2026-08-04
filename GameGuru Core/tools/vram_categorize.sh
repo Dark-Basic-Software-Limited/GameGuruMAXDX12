@@ -10,7 +10,7 @@ awk 'NR>2 {
   kind=$1; bytes=$2; w=$3; h=$4; arr=$7; fmt=$9;
   cat="Z other";
   if (name ~ /HairParticleSystem/)                         cat="A grass/hair strand buffers (wiHairParticle)";
-  else if (name == "renderTex" && w>=4096)                 cat="B GGTerrain VT physical pages (custom path)";
+  else if (name == "renderTex" && w>=8192)                 cat="B GGTerrain VT physical pages (custom path)";  # real VT pages are 9520 wide; 4096x64 are GPU-particle noise strips
   else if (name == "tex" && w>=1024 && arr>=8)             cat="C GGTerrain/grass/tree source texture ARRAYS";
   else if (name == "GPUSubAllocator")                      cat="D mesh-data suballocator blocks";
   else if (kind=="B" && $11=="0x200" && bytes>100000000)   cat="E engine terrain SVT tile pool (sparse atlas)";

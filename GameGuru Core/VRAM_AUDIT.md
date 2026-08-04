@@ -415,3 +415,60 @@ decompress/recompress round-trip noise, visually invisible.
 - Straggler projection with the content column shrinking 26–47 %: RPG Template (+17) and
   Indian Strike Force (+55) should now fit outright; Operation Amazon (+182, content 677)
   is borderline; Z Island (+617) improves but likely still needs one more lever.
+
+## 2026-08-04 misc-bucket autopsy (Aztec / Z Island / Indian Strike Force) — and two shipped levers
+
+User-directed follow-up on the three stragglers. The census "misc" columns (500–700 MB each)
+were itemised per resource and every family traced to its allocation site (8-agent workflow,
+findings adversarially verified; full detail in the session transcript). What "misc" actually
+was:
+
+| Family | Aztec | Z Island | ISF | Verdict |
+|---|---|---|---|---|
+| CopyAllocator upload pool | 283 | 282 | 283 | **SYSTEM RAM, never video** — pow2 freelist, never trimmed; the 256 MB member was the uncompressed sky cube upload rounded up |
+| Legacy GPU-particle textures | 149 | 46 | 0 | **100 % dead VRAM** — system hard-disabled in DX12 (`gpup_init` returns −1) but `gpup_loadEffectFile` still allocated 5 renderTex + 3-4 imageTex per placed emitter |
+| Sky cubemap (R11G11B10, uncompressed) | 134 | 134 | 134 | content file; BC6H-safe (sky is a read-only SRV, mip 0 only; probes already prove BC6H cubes work) |
+| Skinned streamout | 38 | 57 | 73 | real machinery, created for every rigged mesh at load, never gated on animation — lazy-create lever identified, own session |
+| Z Island visibility payload_0/1 | — | 39 | — | allocated-never-touched when only SSR is on (Z Island is the only demo authored with SSREnabled=1) — engine skip lever identified |
+| Always-on ocean/weather/debugUAV | ~21 | ~21 | ~21 | levers identified, small |
+
+### Shipped this session
+
+1. **GGMAX 1.98 — particle-texture guard** (`GPUParticles_part0.cpp`): one line —
+   `gpup_loadEffectFile` returns −1 while `gpu_particles_initialised == 0`. Every caller
+   already handled −1. Also fixed the `vram_categorize.sh` w≥4096 rule that mis-binned the
+   4096×64 particle noise strips as terrain VT pages.
+2. **Sky cubemap compression** (content, BOTH skybank trees — **the engine loads the
+   DOCUMENTS tree** `…\GameGuruApps\GameGuruMAX\Files\skybank`, the only resource that does):
+   the 7 uncompressed R11G11B10 2048² cubes (clear, cloudy, highcloud, overcast, stormy,
+   sunny, sunset) → **BC6H_UF16** with mips, 134.5 → 33.6 MB VRAM each; dreamnebulamoon
+   (B8G8R8A8 4096², LDR) → **BC7_UNORM** (not BC6H — the engine sRGB-decodes it via the
+   _SRGB subresource, which BC6H cannot provide), 384 → 97 MB. **`night` (already BC7) and
+   `sunrise` (already BC1) untouched — BC6H would have doubled sunrise.** Backups:
+   `D:/max/mipbackup/skybank_documents` + `skybank_buildarea`. Five demos paid the sky tax:
+   the three stragglers plus Foggy Forest and Bounty.
+
+### Measured (same protocol, POLYS bit-identical on all three)
+
+| Demo | before | after | Δ | what landed |
+|---|---|---|---|---|
+| Aztec Game Kit | 3911 | **3671** | −240 | particles −149 (misc 207.8→58.7, exactly the 360 dead textures) + sky −96. Upload pool also −165 **system** RAM — the 256 MB staging buffer is never minted now that the sky upload is 34 MB |
+| The Mystery of Z Island | 4067 | **3859** | −208 | sky −96 + particles −47 + staging −47 (Z Island baseline was pre-mip-swap; its content barely moved, its single-mip population was small) |
+| Indian Strike Force | 3505 | **3121 ✔ FITS** | −384 | sky −96 + the mip swap-in finally measured here (content 718→438) — 329 MB headroom |
+
+Aztec sky bucket 133.5 → 37.5 and ISF's converted sky renders with smooth gradients
+(screenshot check). **Score at pure defaults: 15 of 19 fit**, and Operation Amazon + RPG
+Template likely also fit now (their baselines predate the mip swap) — pending re-census.
+
+### Remaining, ranked for the last two stragglers
+
+1. Aztec (+221): A4 emissive (−96) + dead chunk VB/IB (−108) + B5 shadow slider (−60) close
+   the gap arithmetically. Its mesh pool (896) is content-driven (10 M polys).
+2. Z Island (+409): the payload skip (−39, engine delta: allocate payload_0/1 only when
+   `visibility_shading_in_compute`) + A4 + chunk VB/IB + grass density 75 (−94) ≈ fits.
+3. Streamout lazy-create (38–73 on these three): real but deserves its own session — BLAS
+   rebuild + first-frame motion-vector caveats documented in the transcript.
+4. CopyAllocator freelist trim: ~250 MB **system** RAM per session; engine-side aging,
+   low risk. Not a VRAM item — schedule as hygiene.
+5. MASTER ASSET STORE: the mip conversion AND the sky conversion exist only in the build
+   area + Documents. Both must be run on the master store or a reinstall reverts them.

@@ -1314,9 +1314,15 @@ void gpup_addEmitter( int enr, int selcol )
 
 int gpup_loadEffectFile( const char* fl, float x, float y, float z, float s, float qual, float ps )
 {
+	// While gpup_init() leaves the system disabled (DX12 port pending), loading an effect
+	// would still allocate its 5 renderTex + 3-4 imageTex per emitter — textures nothing can
+	// ever draw (gpup_update/gpup_draw early-return on the same flag). 45 emitters on Aztec
+	// Game Kit = 149 MB of dead VRAM. Every caller already handles -1.
+	if ( !gpu_particles_initialised ) return -1;
+
 	int   tmpint = 0;
-	float tmpfloat = 0;	
-	
+	float tmpfloat = 0;
+
 	//gpup_maxeffects
 	int enr = -1;
 	gpup_settings.emitterCount = 0;
