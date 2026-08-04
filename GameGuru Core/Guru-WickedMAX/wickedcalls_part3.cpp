@@ -1948,6 +1948,7 @@ void WickedCall_SetExposure(float exposure)
 }
 
 #ifdef WICKEDPARTICLESYSTEM
+uint32_t WickedCall_LoadLegacyWPE(const char* filename);   // GGMAX 2.00, defined below
 uint32_t WickedCall_LoadWiSceneDirect(Scene& scene2,char* filename, bool attached, char* changename, char* changenameto)
 {
 #ifdef OPTICK_ENABLE
@@ -2121,9 +2122,475 @@ uint32_t WickedCall_LoadWiScene(char* filename, bool attached, char* changename,
 	OPTICK_EVENT();
 #endif
 
+	// GGMAX 2.00: legacy .PE hook lives HERE because this is the real choke point.
+	// WickedCall_LoadWPE has only three callers (editor preview, weapon trail); the two
+	// paths that actually matter - preload_wicked_particle_effect for decals
+	// (M-Entity_part5.cpp) and WParticleEffectLoad for LUA (DarkLUA_part5.cpp) - both call
+	// WickedCall_LoadWiScene directly. Hooking it here covers all of them, and because the
+	// legacy reader adds its emitters to the live scene, the callers' existing
+	// count_before/count_after root detection keeps working unchanged.
+	{
+		uint32_t legacyRoot = WickedCall_LoadLegacyWPE(filename);
+		if (legacyRoot != 0)
+		{
+			return legacyRoot;
+		}
+	}
+
 	Scene scene2;
 	Entity root = WickedCall_LoadWiSceneDirect(scene2, filename, attached, changename, changenameto);
 	GetScene().Merge(scene2);
+	return root;
+}
+
+// ============================================================================
+// GGMAX 2.00: legacy .PE (WPE) reader.
+//
+// A .PE file is a Wicked scene archive written by the DX11 GameGuru fork, whose
+// __archiveVersion is 5077. Every shipped .PE declares 5076 or 5077. The modern
+// engine's archive ceiling is 93 and it hard-rejects anything higher, so these
+// files could not be opened at all - the whole WPE particle system had been dead
+// since the DX12 port. Rather than move the engine's shared archive version
+// ceiling (which would silently change the meaning of every
+// archive.GetVersion() >= N test across ~40 component serializers), this reads
+// the frozen legacy layout directly and builds the scene through the normal API.
+//
+// The format is documented in GameGuru Core/PARTICLE_SYSTEM_PLAN.md section 4 and
+// cross-checked against tools/particle_forensics/pe_decode.py, which parses all
+// 27 shipped files. Traps worth remembering:
+//   - uint32_t/int are promoted to 8 bytes on disk; bool is 4; strings carry a
+//     length that INCLUDES the null terminator.
+//   - the BLENDMODE enum was renumbered (the fork had ALPHANOZ and FORCEDEPTH at
+//     1 and 2), so blend modes must be mapped, not copied.
+//   - the fork used flag bit 7 for EMIT_PAUSE; upstream now uses bit 7 for
+//     COLLIDERS_DISABLED, so flags must be remapped too.
+// A .PE only ever contains names/layers/transforms/prev_transforms/hierarchy/
+// materials/emitters - the other 16 component managers are always count 0.
+// ============================================================================
+namespace ggwpe
+{
+	struct Reader
+	{
+		const uint8_t* d = nullptr;
+		size_t n = 0;
+		size_t p = 0;
+		bool ok = true;
+
+		bool need(size_t bytes) { if (!ok || p + bytes > n) { ok = false; return false; } return true; }
+		uint64_t u64() { if (!need(8)) return 0; uint64_t v = 0; memcpy(&v, d + p, 8); p += 8; return v; }
+		uint8_t u8() { if (!need(1)) return 0; return d[p++]; }
+		float f32() { if (!need(4)) return 0.0f; float v = 0; memcpy(&v, d + p, 4); p += 4; return v; }
+		bool b32() { if (!need(4)) return false; uint32_t v = 0; memcpy(&v, d + p, 4); p += 4; return v != 0; }
+		XMFLOAT2 f2() { XMFLOAT2 v; v.x = f32(); v.y = f32(); return v; }
+		XMFLOAT3 f3() { XMFLOAT3 v; v.x = f32(); v.y = f32(); v.z = f32(); return v; }
+		XMFLOAT4 f4() { XMFLOAT4 v; v.x = f32(); v.y = f32(); v.z = f32(); v.w = f32(); return v; }
+		std::string str()
+		{
+			uint64_t len = u64();
+			if (len > n || !need((size_t)len)) return std::string();
+			const char* s = (const char*)(d + p);
+			size_t realLen = 0;
+			while (realLen < (size_t)len && s[realLen] != 0) realLen++;
+			std::string out(s, realLen);
+			p += (size_t)len;
+			return out;
+		}
+	};
+
+	struct MatInfo
+	{
+		XMFLOAT4 baseColor = XMFLOAT4(1, 1, 1, 1);
+		XMFLOAT4 emissiveColor = XMFLOAT4(1, 1, 1, 0);
+		uint8_t blendMode = 0;
+		std::string basecolormap;
+		std::string normalmap;
+	};
+
+	struct EmitInfo
+	{
+		uint64_t flags = 0;
+		uint64_t shaderType = 0;
+		uint64_t maxParticles = 1000;
+		float fixedTimestep = -1, size = 1, random_factor = 1, normal_factor = 1;
+		float count = 0, life = 1, random_life = 1, scaleX = 1, scaleY = 1;
+		float rotation = 0, motionBlur = 0, mass = 1;
+		float sph_h = 1, sph_k = 250, sph_p0 = 1, sph_e = 0.018f;
+		uint64_t framesX = 1, framesY = 1, frameCount = 1, frameStart = 0;
+		float frameRate = 0;
+		XMFLOAT3 velocity = {}, gravity = {};
+		float drag = 1, random_color = 0;
+		float restitution = 0.70f, fadein_time = 0.1f, burst_amount = 0, burst_delay = 0;
+		float nfx = 0, nfy = 0, nfz = 0;
+		float normal_random = 1, rotation_random = 0, size_random = 0, spawn_random = 0;
+		float scaling_random = 1, spawn_pause = 0, spawn_pause_random = 0;
+		uint64_t endR = 255, endG = 255, endB = 255;
+		float burst_split = 0, bfx = 0, bfy = 0, bfz = 0;
+		XMFLOAT3 startpos = {};
+		bool findFloor = false;
+		float burst_factor_speed = 1, start_rotation = 0;
+		bool followCamera = false;
+		float random_position = 0, random_position_scale = 1;
+		float distance_sort_bias = 0;
+	};
+
+	// The fork's BLENDMODE had ALPHANOZ=1 and FORCEDEPTH=2 inserted after OPAQUE.
+	static wi::enums::BLENDMODE MapBlendMode(uint8_t legacy)
+	{
+		switch (legacy)
+		{
+		case 0: return wi::enums::BLENDMODE_OPAQUE;      // OPAQUE
+		case 1: return wi::enums::BLENDMODE_ALPHA;       // ALPHANOZ (fork disabled blending; ALPHA is the closest live mode)
+		case 2: return wi::enums::BLENDMODE_OPAQUE;      // FORCEDEPTH
+		case 3: return wi::enums::BLENDMODE_ALPHA;       // ALPHA
+		case 4: return wi::enums::BLENDMODE_PREMULTIPLIED;
+		case 5: return wi::enums::BLENDMODE_ADDITIVE;
+		case 6: return wi::enums::BLENDMODE_MULTIPLY;
+		default: return wi::enums::BLENDMODE_ALPHA;
+		}
+	}
+
+	static void ReadMaterial(Reader& r, uint64_t ver, MatInfo& m)
+	{
+		r.u64();               // _flags
+		r.u8();                // engineStencilRef
+		r.u8();                // userStencilRef
+		m.blendMode = r.u8();  // userBlendMode
+		m.baseColor = r.f4();
+		if (ver >= 25) m.emissiveColor = r.f4();
+		r.f4();                // texMulAdd
+		r.f32(); r.f32(); r.f32();      // roughness, reflectance, metalness
+		r.f32();                        // refraction
+		r.f32(); r.f32(); r.f32();      // normalMapStrength, parallaxOcclusionMapping, alphaRef
+		r.f2();                         // texAnimDirection
+		r.f32(); r.f32();               // texAnimFrameRate, texAnimElapsedTime
+
+		m.basecolormap = r.str();       // BASECOLORMAP
+		r.str();                        // SURFACEMAP
+		m.normalmap = r.str();          // NORMALMAP
+		r.str();                        // DISPLACEMENTMAP
+		if (ver >= 24) r.str();         // EMISSIVEMAP
+		if (ver >= 28)
+		{
+			r.str();                    // OCCLUSIONMAP
+			for (int i = 0; i < 6; i++) r.u64();  // uvsets
+			r.f32();                    // displacementMapping
+		}
+		if (ver >= 48) r.u8();          // shadingRate
+		if (ver >= 50) { r.u64(); r.u64(); }   // shaderType, customShaderID
+		if (ver >= 52 && ver < 54) r.u64();    // subsurfaceProfile
+		if (ver >= 54) r.f4();          // subsurfaceScattering
+		if (ver >= 56) r.f4();          // specularColor
+		if (ver >= 59) { r.f32(); r.str(); r.u64(); }   // transmission + map + uvset
+		if (ver >= 61)
+		{
+			r.f4(); r.f32();            // sheenColor, sheenRoughness
+			r.str(); r.str();           // sheen maps
+			r.u64(); r.u64();           // uvsets
+			r.f32(); r.f32();           // clearcoat, clearcoatRoughness
+			r.str(); r.str(); r.str();  // clearcoat maps
+			r.u64(); r.u64(); r.u64();  // uvsets
+		}
+		if (ver >= 68) { r.str(); r.u64(); }   // SPECULARMAP + uvset
+	}
+
+	static void ReadEmitter(Reader& r, uint64_t ver, EmitInfo& e)
+	{
+		e.flags = r.u64();
+		e.shaderType = r.u64();
+		r.u64();                 // meshID (remapped; shipped .PE never carry meshes)
+		e.maxParticles = r.u64();
+		e.fixedTimestep = r.f32(); e.size = r.f32(); e.random_factor = r.f32();
+		e.normal_factor = r.f32(); e.count = r.f32(); e.life = r.f32(); e.random_life = r.f32();
+		e.scaleX = r.f32(); e.scaleY = r.f32(); e.rotation = r.f32();
+		e.motionBlur = r.f32(); e.mass = r.f32();
+		e.sph_h = r.f32(); e.sph_k = r.f32(); e.sph_p0 = r.f32(); e.sph_e = r.f32();
+		if (ver >= 45)
+		{
+			e.framesX = r.u64(); e.framesY = r.u64(); e.frameCount = r.u64();
+			e.frameStart = r.u64(); e.frameRate = r.f32();
+		}
+		if (ver == 48) r.u8();
+		if (ver >= 64)
+		{
+			e.velocity = r.f3(); e.gravity = r.f3(); e.drag = r.f32(); e.random_color = r.f32();
+		}
+		if (ver >= 5072)
+		{
+			e.restitution = r.f32(); e.fadein_time = r.f32();
+			e.burst_amount = r.f32(); e.burst_delay = r.f32();
+		}
+		if (ver >= 5073) { e.nfx = r.f32(); e.nfy = r.f32(); e.nfz = r.f32(); }
+		if (ver >= 5074)
+		{
+			e.normal_random = r.f32(); e.rotation_random = r.f32(); e.size_random = r.f32();
+			e.spawn_random = r.f32(); e.scaling_random = r.f32();
+			e.spawn_pause = r.f32(); e.spawn_pause_random = r.f32();
+			e.endR = r.u64(); e.endG = r.u64(); e.endB = r.u64();
+			e.burst_split = r.f32();
+			e.bfx = r.f32(); e.bfy = r.f32(); e.bfz = r.f32();
+		}
+		if (ver >= 5075)
+		{
+			e.startpos = r.f3(); e.findFloor = r.b32();
+			e.burst_factor_speed = r.f32(); e.start_rotation = r.f32();
+			e.followCamera = r.b32();
+		}
+		if (ver >= 5076) { e.random_position = r.f32(); e.random_position_scale = r.f32(); }
+		if (ver >= 5077) { e.distance_sort_bias = r.f32(); r.f32(); r.f32(); r.f32(); }
+	}
+}
+
+// Returns the root entity of the loaded effect, or 0 on failure.
+uint32_t WickedCall_LoadLegacyWPE(const char* filename)
+{
+	using namespace ggwpe;
+
+	FILE* f = fopen(filename, "rb");
+	if (!f) return 0;
+	fseek(f, 0, SEEK_END);
+	long fsize = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	if (fsize < 32) { fclose(f); return 0; }
+	std::vector<uint8_t> data((size_t)fsize);
+	size_t got = fread(data.data(), 1, (size_t)fsize, f);
+	fclose(f);
+	if (got != (size_t)fsize) return 0;
+
+	Reader r; r.d = data.data(); r.n = data.size(); r.p = 0;
+
+	const uint64_t ver = r.u64();
+	if (ver < 5000 || ver > 5077) return 0;   // not a legacy GameGuru .PE
+	r.u64();                                  // reserved
+
+	// Source directory, used to key embedded resources exactly as the DX11 loader did.
+	std::string dir = filename;
+	{
+		size_t slash = dir.find_last_of("\\/");
+		dir = (slash == std::string::npos) ? std::string() : dir.substr(0, slash + 1);
+	}
+
+	// Embedded resources (textures baked into the .PE).
+	if (ver >= 63)
+	{
+		uint64_t rescount = r.u64();
+		if (rescount > 4096) return 0;
+		for (uint64_t i = 0; i < rescount && r.ok; i++)
+		{
+			std::string name = r.str();
+			r.u64();                        // flags
+			uint64_t len = r.u64();
+			if (!r.need((size_t)len)) return 0;
+			const uint8_t* blob = r.d + r.p;
+			r.p += (size_t)len;
+			wi::resourcemanager::Load(dir + name, wi::resourcemanager::Flags::NONE, blob, (size_t)len);
+		}
+	}
+	if (!r.ok) return 0;
+
+	// --- component managers, in the DX11 scene order ---
+	struct Ent { uint64_t id; };
+
+	uint64_t cnt = r.u64();                                  // names
+	std::vector<std::string> names(cnt <= 4096 ? (size_t)cnt : 0);
+	if (cnt > 4096) return 0;
+	for (uint64_t i = 0; i < cnt; i++) names[(size_t)i] = r.str();
+	std::vector<uint64_t> nameEnt((size_t)cnt);
+	for (uint64_t i = 0; i < cnt; i++) nameEnt[(size_t)i] = r.u64();
+
+	uint64_t layerCount = r.u64();                           // layers
+	if (layerCount > 4096) return 0;
+	std::vector<uint64_t> layerMask((size_t)layerCount);
+	for (uint64_t i = 0; i < layerCount; i++) layerMask[(size_t)i] = r.u64();
+	std::vector<uint64_t> layerEnt((size_t)layerCount);
+	for (uint64_t i = 0; i < layerCount; i++) layerEnt[(size_t)i] = r.u64();
+
+	uint64_t trCount = r.u64();                              // transforms
+	if (trCount > 4096) return 0;
+	struct TrInfo { XMFLOAT3 scale; XMFLOAT4 rot; XMFLOAT3 tra; };
+	std::vector<TrInfo> trs((size_t)trCount);
+	for (uint64_t i = 0; i < trCount; i++)
+	{
+		r.u64();                                             // _flags
+		trs[(size_t)i].scale = r.f3();
+		trs[(size_t)i].rot = r.f4();
+		trs[(size_t)i].tra = r.f3();
+	}
+	std::vector<uint64_t> trEnt((size_t)trCount);
+	for (uint64_t i = 0; i < trCount; i++) trEnt[(size_t)i] = r.u64();
+
+	uint64_t prevCount = r.u64();                            // prev_transforms (no payload)
+	if (prevCount > 4096) return 0;
+	for (uint64_t i = 0; i < prevCount; i++) r.u64();
+
+	uint64_t hiCount = r.u64();                              // hierarchy
+	if (hiCount > 4096) return 0;
+	std::vector<uint64_t> hiParent((size_t)hiCount);
+	for (uint64_t i = 0; i < hiCount; i++) { hiParent[(size_t)i] = r.u64(); r.u64(); }
+	std::vector<uint64_t> hiEnt((size_t)hiCount);
+	for (uint64_t i = 0; i < hiCount; i++) hiEnt[(size_t)i] = r.u64();
+
+	uint64_t matCount = r.u64();                             // materials
+	if (matCount > 4096) return 0;
+	std::vector<MatInfo> mats((size_t)matCount);
+	for (uint64_t i = 0; i < matCount && r.ok; i++) ReadMaterial(r, ver, mats[(size_t)i]);
+	std::vector<uint64_t> matEnt((size_t)matCount);
+	for (uint64_t i = 0; i < matCount; i++) matEnt[(size_t)i] = r.u64();
+	if (!r.ok) return 0;
+
+	// 16 managers that are always empty in a .PE. If any is non-zero the file is
+	// something we do not understand - bail rather than desynchronise.
+	for (int i = 0; i < 16; i++)
+	{
+		if (r.u64() != 0) return 0;
+	}
+	if (!r.ok) return 0;
+
+	uint64_t emCount = r.u64();                              // emitters
+	if (emCount == 0 || emCount > 64) return 0;
+	std::vector<EmitInfo> ems((size_t)emCount);
+	for (uint64_t i = 0; i < emCount && r.ok; i++) ReadEmitter(r, ver, ems[(size_t)i]);
+	std::vector<uint64_t> emEnt((size_t)emCount);
+	for (uint64_t i = 0; i < emCount; i++) emEnt[(size_t)i] = r.u64();
+	if (!r.ok) return 0;
+
+	// --- build the scene ---
+	Scene& scene = wiScene::GetScene();
+	// Small linear map (a .PE has a handful of entities); avoids pulling <map> in here.
+	std::vector<std::pair<uint64_t, Entity>> remap;
+	auto Resolve = [&](uint64_t oldId) -> Entity
+	{
+		if (oldId == 0) return wiECS::INVALID_ENTITY;
+		for (size_t k = 0; k < remap.size(); k++)
+		{
+			if (remap[k].first == oldId) return remap[k].second;
+		}
+		Entity e = CreateEntity();
+		remap.push_back(std::make_pair(oldId, e));
+		return e;
+	};
+
+	for (size_t i = 0; i < (size_t)cnt; i++)          scene.names.Create(Resolve(nameEnt[i])) = names[i];
+	for (size_t i = 0; i < (size_t)layerCount; i++)   scene.layers.Create(Resolve(layerEnt[i])).layerMask = (uint32_t)layerMask[i];
+	for (size_t i = 0; i < (size_t)trCount; i++)
+	{
+		TransformComponent& t = scene.transforms.Create(Resolve(trEnt[i]));
+		t.scale_local = trs[i].scale;
+		t.rotation_local = trs[i].rot;
+		t.translation_local = trs[i].tra;
+		t.SetDirty();
+		t.UpdateTransform();
+	}
+	for (size_t i = 0; i < (size_t)matCount; i++)
+	{
+		MaterialComponent& m = scene.materials.Create(Resolve(matEnt[i]));
+		m.baseColor = mats[i].baseColor;
+		m.emissiveColor = mats[i].emissiveColor;
+		m.userBlendMode = MapBlendMode(mats[i].blendMode);
+		if (!mats[i].basecolormap.empty())
+		{
+			m.textures[MaterialComponent::BASECOLORMAP].name = dir + mats[i].basecolormap;
+			m.textures[MaterialComponent::BASECOLORMAP].resource =
+				wi::resourcemanager::Load(m.textures[MaterialComponent::BASECOLORMAP].name);
+		}
+		if (!mats[i].normalmap.empty())
+		{
+			m.textures[MaterialComponent::NORMALMAP].name = dir + mats[i].normalmap;
+			m.textures[MaterialComponent::NORMALMAP].resource =
+				wi::resourcemanager::Load(m.textures[MaterialComponent::NORMALMAP].name);
+		}
+		m.SetDirty();
+		m.CreateRenderData();
+	}
+	for (size_t i = 0; i < (size_t)emCount; i++)
+	{
+		const EmitInfo& s = ems[i];
+		wiEmittedParticle& ec = scene.emitters.Create(Resolve(emEnt[i]));
+
+		// Flags: strip the fork's bit 7 (EMIT_PAUSE) so it is not misread as
+		// COLLIDERS_DISABLED, and re-apply it on the modern bit.
+		const bool legacyEmitPause = (s.flags & (1u << 7)) != 0;
+		uint32_t f = (uint32_t)s.flags & ~(1u << 7);
+		if (legacyEmitPause) f |= wiEmittedParticle::FLAG_EMIT_PAUSE;
+		ec._flags = f;
+
+		ec.shaderType = (wiEmittedParticle::PARTICLESHADERTYPE)(s.shaderType > 3 ? 3 : s.shaderType);
+		ec.SetMaxParticleCount((uint32_t)s.maxParticles);
+		ec.FIXED_TIMESTEP = s.fixedTimestep;
+		ec.size = s.size;
+		ec.random_factor = 0.0f;   // the fork ignored this; its independent randomisers below replace it
+		ec.normal_factor = s.normal_factor;
+		ec.count = s.count;
+		ec.life = s.life;
+		ec.random_life = s.random_life;
+		ec.scaleX = s.scaleX;
+		ec.scaleY = s.scaleY;
+		ec.rotation = s.rotation;
+		ec.motionBlurAmount = s.motionBlur;
+		ec.mass = s.mass;
+		ec.SPH_h = s.sph_h; ec.SPH_K = s.sph_k; ec.SPH_p0 = s.sph_p0; ec.SPH_e = s.sph_e;
+		ec.framesX = (uint32_t)(s.framesX < 1 ? 1 : s.framesX);
+		ec.framesY = (uint32_t)(s.framesY < 1 ? 1 : s.framesY);
+		ec.frameCount = (uint32_t)(s.frameCount < 1 ? 1 : s.frameCount);
+		ec.frameStart = (uint32_t)s.frameStart;
+		ec.frameRate = s.frameRate;
+		ec.velocity = s.velocity;
+		ec.gravity = s.gravity;
+		ec.drag = s.drag;
+		ec.random_color = s.random_color;
+		ec.restitution = s.restitution;
+
+		ec.fadein_time = s.fadein_time;
+		ec.endcolor_red = (float)s.endR / 255.0f;
+		ec.endcolor_green = (float)s.endG / 255.0f;
+		ec.endcolor_blue = (float)s.endB / 255.0f;
+		ec.normal_factor_x = s.nfx; ec.normal_factor_y = s.nfy; ec.normal_factor_z = s.nfz;
+		ec.burst_factor_x = s.bfx; ec.burst_factor_y = s.bfy; ec.burst_factor_z = s.bfz;
+		ec.burst_factor_speed = s.burst_factor_speed;
+		ec.normal_random = s.normal_random;
+		ec.rotation_random = s.rotation_random;
+		ec.size_random = s.size_random;
+		ec.scaling_random = s.scaling_random;
+		ec.start_rotation = s.start_rotation;
+		ec.random_position = s.random_position;
+		ec.random_position_scale = s.random_position_scale;
+		ec.startpos = s.startpos;
+		ec.burst_amount = s.burst_amount;
+		ec.burst_split = s.burst_split;
+		ec.burst_delay = s.burst_delay;
+		ec.spawn_random = s.spawn_random;
+		ec.distance_sort_bias = s.distance_sort_bias;
+		ec.bFindFloor = s.findFloor;
+		ec.bFollowCamera = s.followCamera;
+	}
+
+	// Hierarchy, then find the root (an entity that is a parent but never a child).
+	uint32_t root = 0;
+	for (size_t i = 0; i < (size_t)hiCount; i++)
+	{
+		Entity child = Resolve(hiEnt[i]);
+		Entity parent = Resolve(hiParent[i]);
+		if (parent != wiECS::INVALID_ENTITY && child != wiECS::INVALID_ENTITY)
+		{
+			if (!scene.transforms.Contains(parent)) scene.transforms.Create(parent);
+			if (!scene.layers.Contains(parent)) scene.layers.Create(parent).layerMask = ~0u;
+			scene.Component_Attach(child, parent);
+			bool parentIsChild = false;
+			for (size_t j = 0; j < (size_t)hiCount; j++)
+			{
+				if (hiEnt[j] == hiParent[i]) { parentIsChild = true; break; }
+			}
+			if (!parentIsChild) root = (uint32_t)parent;
+		}
+	}
+	if (root == 0 && emCount > 0)
+	{
+		// No hierarchy in the file: synthesise a root so the game gets one handle.
+		Entity newRoot = CreateEntity();
+		scene.transforms.Create(newRoot);
+		scene.layers.Create(newRoot).layerMask = ~0u;
+		for (size_t i = 0; i < (size_t)emCount; i++) scene.Component_Attach(Resolve(emEnt[i]), newRoot);
+		root = (uint32_t)newRoot;
+	}
 	return root;
 }
 
@@ -2136,6 +2603,28 @@ uint32_t WickedCall_LoadWPE(char* filename)
 	char path[MAX_PATH];
 	strcpy(path, filename);
 	GG_GetRealPath(path, 0);
+
+	// GGMAX 2.00: legacy GameGuru .PE files (archive version 5072-5077) cannot be
+	// opened by the modern wiArchive, so read them with the dedicated reader first.
+	{
+		uint32_t legacyRoot = WickedCall_LoadLegacyWPE(path);
+		if (legacyRoot != 0)
+		{
+			// Match the DX11 loader: Restart() + hide the LAST emitter of the effect.
+			// Callers switch it on with emitter action 5 when they want it shown.
+			if (scene.emitters.GetCount() > 0)
+			{
+				Entity em = scene.emitters.GetEntity(scene.emitters.GetCount() - 1);
+				wiEmittedParticle* ec = scene.emitters.GetComponent(em);
+				if (ec)
+				{
+					ec->Restart();
+					ec->SetVisible(false);
+				}
+			}
+			return legacyRoot;
+		}
+	}
 
 	WickedCall_LoadWiScene(path, false, NULL, NULL);
 	uint32_t count_after = scene.emitters.GetCount();

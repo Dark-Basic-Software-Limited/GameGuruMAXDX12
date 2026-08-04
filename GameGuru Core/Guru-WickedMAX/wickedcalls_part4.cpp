@@ -37,24 +37,29 @@ void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root)
 						ec->Restart();
 						break;
 					}
+					// GGMAX 2.00: actions 5-8 restored. They were commented out during the
+					// DX12 API migration because the modern emitter had no equivalents;
+					// the members are back (see wiEmittedParticle.h). Action 6 is the
+					// most-called of all of them - without it editor previews could never
+					// be hidden, and weapon trails (action 7) never stopped emitting.
 					case 5:
 					{
-						//ec->SetVisible(true); // SetVisible not in EmittedParticleSystem
+						ec->SetVisible(true);
 						break;
 					}
 					case 6:
 					{
-						//ec->SetVisible(false); // SetVisible not in EmittedParticleSystem
+						ec->SetVisible(false);
 						break;
 					}
 					case 7:
 					{
-						//ec->SetEmitPaused(true); // SetEmitPaused not in EmittedParticleSystem
+						ec->SetEmitPaused(true);
 						break;
 					}
 					case 8:
 					{
-						//ec->SetEmitPaused(false); // SetEmitPaused not in EmittedParticleSystem
+						ec->SetEmitPaused(false);
 						break;
 					}
 				}
@@ -149,8 +154,9 @@ void WickedCall_UpdateEmitters(void)
 
 		//PE: If bFollowCamera , find InDoor , OutDoor , UnderWater.
 		//PE: bFindFloor ONLY if ec->bFollowCamera
-		//if (ec && (ec->bFindFloor || ec->bFollowCamera)) // bFindFloor/bFollowCamera not in EmittedParticleSystem
-		if (false) // disabled: bFindFloor/bFollowCamera not in EmittedParticleSystem
+		// GGMAX 2.00: restored. This is what makes weather volumes (rain, downpour,
+		// heavy-rain3, dust) track the player instead of sitting where they were placed.
+		if (ec && (ec->bFindFloor || ec->bFollowCamera))
 		{
 			HierarchyComponent* hier = scene.hierarchy.GetComponent(emitter);
 			if (hier)
@@ -158,7 +164,10 @@ void WickedCall_UpdateEmitters(void)
 				if (hier->parentID != wiECS::INVALID_ENTITY)
 				{
 					bool bAlreadySet = false;
-					for (int a = 0; a > parent_used.size(); a++)
+					// GGMAX 2.00: was 'a > parent_used.size()' - the loop never ran, so the
+					// same root could be repositioned once per emitter under it. Bug is
+					// present in the DX11 original too; fixed here now the block is live.
+					for (int a = 0; a < (int)parent_used.size(); a++)
 					{
 						if (parent_used[a] == hier->parentID)
 						{
@@ -173,7 +182,7 @@ void WickedCall_UpdateEmitters(void)
 						if (root_tranform)
 						{
 
-							if (false) //if (ec->bFollowCamera) // bFollowCamera not in EmittedParticleSystem
+							if (ec->bFollowCamera)
 							{
 								float fX, fY, fZ;
 								fX = CameraPositionX();
@@ -184,7 +193,7 @@ void WickedCall_UpdateEmitters(void)
 								root_tranform->Translate(XMFLOAT3(fX, fY, fZ));
 								root_tranform->UpdateTransform();
 							}
-							if (false) //if (ec->bFindFloor && ec->bFollowCamera) // bFindFloor/bFollowCamera not in EmittedParticleSystem
+							if (ec->bFindFloor && ec->bFollowCamera)
 							{
 								float fX = root_tranform->GetPosition().x;
 								float fZ = root_tranform->GetPosition().z;
@@ -300,10 +309,12 @@ uint32_t GetVisibleWEmitters( void )
 	{
 		Entity emitter = scene.emitters.GetEntity(i);
 		wiEmittedParticle& ec = scene.emitters[i];
-		//if (!ec.IsVisible()) // IsVisible not in EmittedParticleSystem
-		//	continue;
-		//if (!ec.IsActive()) // IsActive not in EmittedParticleSystem
-		//	continue;
+		// GGMAX 2.00: restored - this counter was reporting the TOTAL emitter count,
+		// not the visible one, so editor/perf readouts over-reported.
+		if (!ec.IsVisible())
+			continue;
+		if (!ec.IsActive())
+			continue;
 		total_visible++;
 	}
 	return total_visible;

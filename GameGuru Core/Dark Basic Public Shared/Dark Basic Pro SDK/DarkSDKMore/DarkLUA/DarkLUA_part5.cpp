@@ -1189,7 +1189,10 @@ int WParticleEffectVisible(lua_State* L)
 				wiEmittedParticle* ec = scene.emitters.GetComponent(emitter);
 				if (ec)
 				{
-					//ec->SetVisible(bVisible); DX12 discontinued
+					// GGMAX 2.00: restored. All five shipped particle scripts
+					// (scriptbank\particles\wpe_*.lua) drive show/hide through this call,
+					// so while it was a no-op none of them could hide an effect.
+					ec->SetVisible(bVisible);
 				}
 			}
 		}

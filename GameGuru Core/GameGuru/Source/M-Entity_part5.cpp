@@ -134,6 +134,15 @@ bool preload_wicked_particle_effect(newparticletype* pParticle, int decal_id)
 					}
 				}
 			}
+
+			// GGMAX 2026-08-04 (WPE Phase 0a): if nothing was created, say so.
+			// Returning true here left the caller with bWPE still set and emitterid -1, which
+			// skips BOTH the WPE draw and the legacy .arx fallback in decal_load() - so a decal
+			// whose wpe.pe failed to load rendered no effect of either kind. The "false means
+			// fall back to legacy" contract already exists (see the burst-only rejection above),
+			// this just honours it for the load-failed case too.
+			if (pParticle->emitterid == -1)
+				return false;
 		}
 	}
 	return true;
