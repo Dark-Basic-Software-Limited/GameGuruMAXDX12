@@ -698,6 +698,9 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: svtatlasheight = Height of the terrain virtual-texture physical atlas. DEFAULT 12288 (2852 tiles, ~576MB pool); upstream stock is 16384 (3844 tiles, 768MB). Set 16384 to A/B against stock. DO NOT set 8192: a fast-travel soak measured peak demand at 1971 tiles, and 8192 provides only 1922, so the atlas starves (free hits 0) and terrain visibly blurs - see GameGuru Core/VRAM_CENSUS.md.
 					t.tryfield_s = "svtatlasheight"; if (t.field_s == t.tryfield_s) { extern void GGSetSVTAtlasHeight(int); GGSetSVTAtlasHeight(t.value1); }
 
+					// DOCDOC: svtemissive = Set 1 to restore the terrain virtual texture's EMISSIVE map (the stock 4th sparse map). DEFAULT 0: MAX never assigns an emissive texture to any terrain material, so the map and its 96MB pool share are dropped and a 1x1 black is bound in its place - zero visual change. Needs a level reload to take effect.
+					t.tryfield_s = "svtemissive"; if (t.field_s == t.tryfield_s) { extern void GGSetSVTKeepEmissive(int); GGSetSVTKeepEmissive(t.value1); }
+
 					// DOCDOC: lowvram = Low video memory preset, for cards with about 4GB. DEFAULT 0 (off - full DX12 visuals). Set 1 to trade visual reach for video memory so demos fit inside a 4GB card while holding 60 FPS. Currently caps the grass draw distance (see lowvramgrassdist) - grass is by far the largest content cost, 17.3GB across the demo hub. See GameGuru Core/VRAM_FLOOR.md for the full floor analysis and what each knob buys.
 					t.tryfield_s = "lowvram"; if (t.field_s == t.tryfield_s) { extern void GGSetLowVRAM(int); GGSetLowVRAM(t.value1); }
 

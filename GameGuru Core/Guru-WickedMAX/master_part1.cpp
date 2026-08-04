@@ -46,6 +46,12 @@ void GGSetSVTAtlasHeight(int height)
 	}
 }
 
+// GGMAX 1.98 (A4): setup.ini `svtemissive` bridge — 1 restores the stock 4th SVT map.
+void GGSetSVTKeepEmissive(int keep)
+{
+	wi::terrain::gg_svt_keep_emissive = (keep != 0);
+}
+
 // GGMAX low-VRAM preset bridge (setup.ini `lowvram`, harness SET_LOWVRAM). One entry point so the
 // preset's members stay in one place — the old-namespace setup.ini reader cannot declare engine
 // namespace externs at block scope, and spraying them through it would rot.
