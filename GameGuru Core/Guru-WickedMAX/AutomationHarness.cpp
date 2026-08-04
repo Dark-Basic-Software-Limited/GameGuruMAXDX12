@@ -3435,16 +3435,28 @@ void AutoHarness_CheckForCommand(void)
 		extern bool gg_lowvram;
 		extern float gg_lowvram_grass_dist;
 		extern float gg_lowvram_grass_density;
+		extern void GGSetLowVRAM(int); // drives the MACHINE half of the OR; the per-level
+		                               // checkbox (visuals.bLowVRAM) is the other half
 		char lvp[32] = { 0 }; float lvd = 0.0f; float lvden = 0.0f;
 		const int got = sscanf_s(arg, "%31s %f %f", lvp, (unsigned)sizeof(lvp), &lvd, &lvden);
 		if (got >= 1)
 		{
-			gg_lowvram = (atoi(lvp) != 0);
+			GGSetLowVRAM(atoi(lvp));
 			if (got >= 2 && lvd > 0.0f) gg_lowvram_grass_dist = lvd;
 			if (got >= 3 && lvden > 0.0f && lvden <= 100.0f) gg_lowvram_grass_density = lvden * 0.01f;
+			extern void GGApplyVisualsNow();
+			GGApplyVisualsNow(); // SSR + shadow-cap members apply immediately; grass on reload
 		}
 		_snprintf(result, sizeof(result), "OK: SET_LOWVRAM %d grassdistcap=%.0f grassdensity=%.0f%% (RELOAD the level to rebuild grass)",
 			gg_lowvram ? 1 : 0, gg_lowvram_grass_dist, gg_lowvram_grass_density * 100.0f);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SHOW_GAMESETTINGS") == 0)
+	{
+		// SHOW_GAMESETTINGS <0|1> — open/close the Game Settings window (Graphics and
+		// Performance etc.) so panel-level UI can be screenshot-verified by the harness.
+		Game_Settings_Window = (atoi(arg) != 0);
+		_snprintf(result, sizeof(result), "OK: Game Settings window %s", Game_Settings_Window ? "OPEN" : "CLOSED");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "DUMP_SCENEUPDATE") == 0)

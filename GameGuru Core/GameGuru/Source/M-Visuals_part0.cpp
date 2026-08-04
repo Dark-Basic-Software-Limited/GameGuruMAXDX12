@@ -205,6 +205,10 @@ void visuals_resetvalues (bool bNewLevel)
 	t.visuals.bBloomEnabled = true;
 	t.visuals.bLevelVSyncEnabled = true;
 	t.visuals.bOcclusionCulling = false;
+	// GGMAX: reset the per-level Low VRAM flag so a level WITHOUT the field doesn't inherit
+	// the previous level's state (the FPM parse below only fires when the field exists).
+	t.visuals.bLowVRAM = false;
+	{ extern void GGSetLowVRAMLevel(int); GGSetLowVRAMLevel(0); }
 
 	t.visuals.bEnableTerrainChunkCulling = false;
 	t.visuals.bEnablePointShadowCulling = false;
@@ -743,6 +747,9 @@ void visuals_save ( void )
 
 	t.strwork = ""; t.strwork = t.strwork + "visuals.OcclusionCulling=" + Str(t.visuals.bOcclusionCulling);
 	WriteString(1, t.strwork.Get());
+
+	t.strwork = ""; t.strwork = t.strwork + "visuals.LowVRAM=" + Str(t.visuals.bLowVRAM);
+	WriteString(1, t.strwork.Get());
 	
 	t.strwork = ""; t.strwork = t.strwork + "visuals.EnableTerrainChunkCulling=" + Str(t.visuals.bEnableTerrainChunkCulling);
 	WriteString(1, t.strwork.Get());
@@ -1122,6 +1129,10 @@ void visuals_load ( void )
 	t.visuals.bBloomEnabled = true;
 	t.visuals.bLevelVSyncEnabled = true;
 	t.visuals.bOcclusionCulling = false;
+	// GGMAX: reset the per-level Low VRAM flag so a level WITHOUT the field doesn't inherit
+	// the previous level's state (the FPM parse below only fires when the field exists).
+	t.visuals.bLowVRAM = false;
+	{ extern void GGSetLowVRAMLevel(int); GGSetLowVRAMLevel(0); }
 	t.visuals.bEnableTerrainChunkCulling = false;
 	t.visuals.bEnablePointShadowCulling = false;
 	t.visuals.bEnableSpotShadowCulling = false;
@@ -1438,6 +1449,9 @@ void visuals_load ( void )
 			t.try_s = "visuals.LevelVSyncEnabled"; if (t.tfield_s == t.try_s)  t.visuals.bLevelVSyncEnabled = ValF(t.tvalue_s.Get());
 
 			t.try_s = "visuals.OcclusionCulling"; if (t.tfield_s == t.try_s)  t.visuals.bOcclusionCulling = ValF(t.tvalue_s.Get());
+			// GGMAX: apply the per-level Low VRAM flag AT PARSE TIME — grass systems build at
+			// chunk-spawn during level load, so waiting for the visuals-apply pass would miss them.
+			t.try_s = "visuals.LowVRAM"; if (t.tfield_s == t.try_s) { t.visuals.bLowVRAM = ValF(t.tvalue_s.Get()) != 0; extern void GGSetLowVRAMLevel(int); GGSetLowVRAMLevel(t.visuals.bLowVRAM ? 1 : 0); }
 
 			t.try_s = "visuals.EnableTerrainChunkCulling"; if (t.tfield_s == t.try_s)  t.visuals.bEnableTerrainChunkCulling = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.EnablePointShadowCulling"; if (t.tfield_s == t.try_s)  t.visuals.bEnablePointShadowCulling = ValF(t.tvalue_s.Get());

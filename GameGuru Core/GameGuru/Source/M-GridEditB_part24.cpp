@@ -430,6 +430,21 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			ImGui::PopItemWidth();
 		}
 
+		// GGMAX: the 4GB preset as a per-level setting (saved in the FPM). The effective state
+		// is OR'd with the machine-wide setup.ini `lowvram` key — either switch turns it on.
+		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Low VRAM Mode (4GB cards)##bLowVRAM", &t.visuals.bLowVRAM))
+		{
+			t.gamevisuals.bLowVRAM = t.visuals.bLowVRAM;
+			g.projectmodified = 1;
+			extern void GGSetLowVRAMLevel(int);
+			GGSetLowVRAMLevel(t.visuals.bLowVRAM ? 1 : 0);
+			extern void GGApplyVisualsNow();
+			GGApplyVisualsNow(); // SSR + shadow-cap members apply immediately; grass on reload
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Trades visual reach for video memory so this level fits a 4GB graphics card: caps grass draw distance at 750, thins grass density to 75%, caps shadow cascade resolution at 1024 and turns off Screen Space Reflections. Shadow and reflection changes apply immediately; the grass changes apply the next time the level is loaded. Players with small cards can also force this on for ALL levels with lowvram=1 in setup.ini.");
+		ImGui::PopItemWidth();
+
 		// end performance
 		ImGui::Indent(-10);
 	}

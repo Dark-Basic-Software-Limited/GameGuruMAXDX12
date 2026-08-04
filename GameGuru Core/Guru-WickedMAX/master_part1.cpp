@@ -64,10 +64,26 @@ void GGSetSVTKeepEmissive(int keep)
 // the default for everyone, so the preset does not need to switch them on, and — more importantly
 // — leaving the line here would make the outcome depend on the order the two setup.ini keys
 // happen to appear in. `lazypso` is now the single owner of that flag. See GGSetLazyPSO below.
+// GGMAX: the preset has TWO independent switches that OR together into the one effective flag
+// every consumer reads (`gg_lowvram`): the MACHINE switch (setup.ini `lowvram`, for owners of
+// 4 GB cards — applies to every level) and the LEVEL switch (the "Low VRAM Mode" checkbox in
+// Graphics and Performance, saved per-level in the FPM). Either one on = preset on.
+static bool gg_lowvram_machine = false;
+static bool gg_lowvram_level = false;
+static void GGRecomputeLowVRAM()
+{
+	extern bool gg_lowvram;                 // GGTerrainWicked.cpp — the effective flag
+	gg_lowvram = gg_lowvram_machine || gg_lowvram_level;
+}
 void GGSetLowVRAM(int on)
 {
-	extern bool gg_lowvram;                 // GGTerrainWicked.cpp
-	gg_lowvram = (on != 0);
+	gg_lowvram_machine = (on != 0);
+	GGRecomputeLowVRAM();
+}
+void GGSetLowVRAMLevel(int on)
+{
+	gg_lowvram_level = (on != 0);
+	GGRecomputeLowVRAM();
 }
 
 // GGMAX 1.82: lazy object PSOs — DEFAULT ON, this is the revert switch (setup.ini `lazypso=0`).

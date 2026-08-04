@@ -3830,6 +3830,7 @@ struct visualstype
 	cStr ColorGradingLUT;
 	bool bLevelVSyncEnabled;
 	bool bOcclusionCulling;
+	bool bLowVRAM; // GGMAX: per-level 4GB preset (Graphics and Performance panel); OR'd with setup.ini lowvram
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;
 	bool bEnableSpotShadowCulling;
@@ -4298,6 +4299,7 @@ struct visualsdatastoragetype
 	bool bBloomEnabled;
 	bool bLevelVSyncEnabled;
 	bool bOcclusionCulling;
+	bool bLowVRAM; // GGMAX: per-level 4GB preset mirror
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;
 	bool bEnableSpotShadowCulling;

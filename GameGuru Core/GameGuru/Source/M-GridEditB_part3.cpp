@@ -1335,26 +1335,26 @@ void Wicked_Update_Shadows(void *voidvisual)
 		bTransparentChanged = true;
 	}
 
-	// GGMAX lowvram B5: cap the cascade/spot atlas resolution in the 4GB preset. A CAP like the
-	// grass-dist member — a level asking for less keeps its own value. The 2D atlas share scales
-	// ~quadratically with this, worth ~60-100 MB on the heavier demos at 2048->1024.
+	// GGMAX lowvram B5: cap the cascade/spot atlas resolution in the 4GB preset — applied at the
+	// point of USE, never written back into the level's visuals (the Low VRAM checkbox must
+	// round-trip tick/untick, and saving the level must not persist the degraded value). The
+	// change detector keys on the CAPPED value, so a preset flip re-applies on the next
+	// Wicked_Update_Visuals call. Worth ~60-150 MB on the heavier demos at 2048->1024.
+	int ggCascadeRes = visuals->iShadowSpotCascadeResolution;
 	{
-		extern bool gg_lowvram; // GGTerrainWicked.cpp
-		if (gg_lowvram && visuals->iShadowSpotCascadeResolution > 1024)
-			visuals->iShadowSpotCascadeResolution = 1024;
+		extern bool gg_lowvram; // GGTerrainWicked.cpp (effective machine||level flag)
+		if (gg_lowvram && ggCascadeRes > 1024) ggCascadeRes = 1024;
 	}
+	if (visuals->iShadowSpotCascadeResolution > 2048) visuals->iShadowSpotCascadeResolution = 2048; // legacy hard ceiling (pre-existing writeback)
+	if (ggCascadeRes > 2048) ggCascadeRes = 2048;
 
-	if (old_iShadowSpotCascadeResolution != visuals->iShadowSpotCascadeResolution || bTransparentChanged )
+	if (old_iShadowSpotCascadeResolution != ggCascadeRes || bTransparentChanged )
 	{
 		char debug[256];
 		sprintf(debug, "wiRenderer::SetShadowProps2D: 5");
 		timestampactivity(0, debug);
-		if (visuals->iShadowSpotCascadeResolution > 2048) visuals->iShadowSpotCascadeResolution = 2048;
-		old_iShadowSpotCascadeResolution = visuals->iShadowSpotCascadeResolution;
-		if(visuals->iShadowSpotCascadeResolution == 0)
-			wiRenderer::SetShadowProps2D(visuals->iShadowSpotCascadeResolution ); //cascade only now.
-		else
-			wiRenderer::SetShadowProps2D(visuals->iShadowSpotCascadeResolution); //cascade only now.
+		old_iShadowSpotCascadeResolution = ggCascadeRes;
+		wiRenderer::SetShadowProps2D(ggCascadeRes); //cascade only now.
 	}
 
 
@@ -1559,6 +1559,15 @@ void Wicked_Update_Cloud(void* visual)
 		}
 
 	}
+}
+
+// GGMAX: re-apply the editor visuals NOW. Used by the Low VRAM checkbox and SET_LOWVRAM so the
+// preset's immediately-applicable members (SSR off, shadow cascade cap) land without waiting for
+// the next natural visuals refresh. Grass members still need a level reload (chunk-spawn build).
+void GGApplyVisualsNow()
+{
+	extern void Wicked_Update_Visuals(void* voidvisual);
+	Wicked_Update_Visuals((void*)&t.visuals);
 }
 
 void Wicked_Update_Visuals(void *voidvisual)
