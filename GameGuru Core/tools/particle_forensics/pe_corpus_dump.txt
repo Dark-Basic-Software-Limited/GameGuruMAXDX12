@@ -1,0 +1,679 @@
+==============================================================================
+Explosion Burst.pe   (168357 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 2
+       - ..\..\..\ParticleEditorBeta\ParticleEditor\files\tools\particlebank\Additive\scorch_03.png flags=2  88181 bytes
+       - ..\..\..\ParticleEditorBeta\ParticleEditor\files\tools\particlebank\Additive\smoke_04.png flags=2  77863 bytes
+  names          : pe-emitter-Explosion, pe-emitter-Smoke
+  emitter block  : offset 167693, 2 emitter(s), entities [3009, 3010]
+  --- emitter 0 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=6000
+      FIXED_TIMESTEP=-1               size=10.62                      random_factor=1               
+      normal_factor=156.41            count=127                       life=1.47                     
+      random_life=1                   scaleX=10.18                    scaleY=1                      
+      rotation=0.007                  motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, 9, 0)               drag=1                        
+      random_color=3.12               restitution=0.538               fadein_time=0.87              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=54.79         
+      normal_factor_y=184.93          normal_factor_z=34.25           normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=179                endcolor_green=123              endcolor_blue=34              
+      burst_split=0                   burst_factor_x=41.1             burst_factor_y=109.59         
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1.33         start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 1 ---
+      flags=0x20 (HAS_VOLUME)  shader=SOFT_LIGHTING  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=12.23                      random_factor=1               
+      normal_factor=1                 count=40                        life=0.81                     
+      random_life=2.36                scaleX=15                       scaleY=1                      
+      rotation=-0.007                 motionBlurAmount=0.00068        mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0.82, 0, 0)           gravity=(0, 9, 0)               drag=1                        
+      random_color=2.39               restitution=0.671               fadein_time=0.1               
+      burst_amount=26.28              burst_delay=2691.03             normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0.83                spawn_random=0                
+      scaling_random=1.81             spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=14                 endcolor_green=12               endcolor_blue=12              
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=True               
+      burst_factor_speed=3.79         start_rotation=1                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+Steam.pe   (1194 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-Steam
+  emitter block  : offset 834, 1 emitter(s), entities [2997]
+  --- emitter 0 ---
+      flags=0x00 (none)  shader=SOFT_LIGHTING  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=2                          random_factor=1               
+      normal_factor=1                 count=40                        life=1.47                     
+      random_life=1                   scaleX=1                        scaleY=1                      
+      rotation=0                      motionBlurAmount=0.0013603      mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, 9, 0)               drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.19              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=95                 endcolor_green=88               endcolor_blue=88              
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=True               
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+birds.pe   (5440 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 1
+       - birds0_color.png                         flags=2  4205 bytes
+  names          : pe-emitter-Birds
+  emitter block  : offset 5080, 1 emitter(s), entities [3012]
+  --- emitter 0 ---
+      flags=0x20 (HAS_VOLUME)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=10                         random_factor=1               
+      normal_factor=28.21             count=4                         life=16                       
+      random_life=1                   scaleX=1                        scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, -125, 0)           gravity=(0, 30, 0)              drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.55              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=100           
+      normal_factor_y=0               normal_factor_z=100             normal_random=2.64            
+      rotation_random=0               size_random=1.5                 spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=0                  endcolor_green=0                endcolor_blue=0               
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=7.38         start_rotation=1                bFollowCamera=True            
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+burst-explosion2-g.pe   (3860 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-FlipBook, pe-emitter-smokeparticle, pe-emitter-ground, pe-emitter-smokering
+  emitter block  : offset 2588, 4 emitter(s), entities [3446, 3447, 3448, 3449]
+  --- emitter 0 ---
+      flags=0x04 (SORTING)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=100                        random_factor=1.2             
+      normal_factor=90                count=0                         life=0.94                     
+      random_life=1.13                scaleX=2.18                     scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=5                       framesY=5                     
+      frameCount=25                   frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, 0, 0)               drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.1               
+      burst_amount=13.27              burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 1 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=3.4                        random_factor=5               
+      normal_factor=300               count=0                         life=4.6                      
+      random_life=3.89                scaleX=1                        scaleY=1                      
+      rotation=0.013                  motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, -300, 0)            drag=1                        
+      random_color=0                  restitution=0.61                fadein_time=0.1               
+      burst_amount=300                burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=3.19            
+      rotation_random=0               size_random=5                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 2 ---
+      flags=0x20 (HAS_VOLUME)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=8.87                       random_factor=2.31            
+      normal_factor=11.62             count=0                         life=2.37                     
+      random_life=1.76                scaleX=5                        scaleY=1                      
+      rotation=0.013                  motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, 3, 0)               drag=1                        
+      random_color=0                  restitution=0.44                fadein_time=0.17              
+      burst_amount=200                burst_delay=105.63              normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 3 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=8.19                       random_factor=1               
+      normal_factor=1                 count=0                         life=1.04                     
+      random_life=1                   scaleX=10                       scaleY=1                      
+      rotation=0                      motionBlurAmount=5e-06          mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, 0, 0)               drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.1               
+      burst_amount=1000               burst_delay=281.69              normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=600              burst_factor_y=0              
+      burst_factor_z=600              startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+dirt-splash4.pe   (3826 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-d, pe-emitter-d - Copy, pe-emitter-smoke, pe-emitter-smoke - Copy
+  emitter block  : offset 2554, 4 emitter(s), entities [3025, 3026, 3027, 3028]
+  --- emitter 0 ---
+      flags=0x0C (SORTING|DEPTHCOLLISION)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=1.33                       random_factor=1               
+      normal_factor=49.72             count=0                         life=1.57                     
+      random_life=1                   scaleX=1                        scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 300, 0)            gravity=(0, -1000, 0)           drag=1                        
+      random_color=0                  restitution=0.1                 fadein_time=0.25              
+      burst_amount=360                burst_delay=900                 normal_factor_x=30            
+      normal_factor_y=30              normal_factor_z=30              normal_random=1               
+      rotation_random=10              size_random=1.81                spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=0                  endcolor_green=0                endcolor_blue=0               
+      burst_split=6                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 116.4, 0)          bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 1 ---
+      flags=0x08 (DEPTHCOLLISION)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=1.16                       random_factor=1               
+      normal_factor=93.92             count=0                         life=1.32                     
+      random_life=1                   scaleX=1                        scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 300, 0)            gravity=(0, -1200, 0)           drag=1                        
+      random_color=0                  restitution=0.1                 fadein_time=0.16              
+      burst_amount=360                burst_delay=900                 normal_factor_x=70            
+      normal_factor_y=70              normal_factor_z=70              normal_random=1               
+      rotation_random=10              size_random=1.81                spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=27                 endcolor_green=27               endcolor_blue=27              
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 125, 0)            bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 2 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=6.46                       random_factor=1               
+      normal_factor=94.87             count=0                         life=0.71                     
+      random_life=2.78                scaleX=6.69                     scaleY=1                      
+      rotation=0.005                  motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, -30, 0)             drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.3               
+      burst_amount=26.28              burst_delay=900                 normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=56                 endcolor_green=56               endcolor_blue=56              
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 3 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=8.78                       random_factor=1               
+      normal_factor=0                 count=0                         life=2.07                     
+      random_life=1                   scaleX=1                        scaleY=1                      
+      rotation=0.017                  motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, -1000, 0)           drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.51              
+      burst_amount=1                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=139                endcolor_green=139              endcolor_blue=139             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+downpour.pe   (2935 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-r, pe-emitter-r - Copy, pe-emitter-splash
+  emitter block  : offset 1967, 3 emitter(s), entities [3000, 3001, 3002]
+  --- emitter 0 ---
+      flags=0x20 (HAS_VOLUME)  shader=SOFT  MAX_PARTICLES=25000
+      FIXED_TIMESTEP=-1               size=1.32                       random_factor=0               
+      normal_factor=28.21             count=7052                      life=2                        
+      random_life=2                   scaleX=1                        scaleY=1                      
+      rotation=0                      motionBlurAmount=2.43e-05       mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=8                       framesY=8                     
+      frameCount=64                   frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(-4.11, -300, -5.75)    drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.37              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=7                  endcolor_green=15               endcolor_blue=41              
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=True            
+      random_position=0               random_position_scale=1       
+  --- emitter 1 ---
+      flags=0x24 (SORTING|HAS_VOLUME)  shader=SOFT  MAX_PARTICLES=3000
+      FIXED_TIMESTEP=-1               size=30                         random_factor=0               
+      normal_factor=25.64             count=80                        life=4                        
+      random_life=1                   scaleX=30                       scaleY=1                      
+      rotation=0.011                  motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=8                       framesY=8                     
+      frameCount=64                   frameStart=0                    frameRate=7.74                
+      velocity=(0, 0, 0)              gravity=(-4.11, -20, -5.75)     drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.34              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=1                   spawn_random=0                
+      scaling_random=1.81             spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=115                endcolor_green=135              endcolor_blue=135             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=True            
+      random_position=0               random_position_scale=1       
+  --- emitter 2 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=5.88                       random_factor=1               
+      normal_factor=124.31            count=763                       life=1.36                     
+      random_life=1                   scaleX=-1.8                     scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=20                      framesY=4                     
+      frameCount=80                   frameStart=0                    frameRate=0                   
+      velocity=(8.82, 8.82, 10.59)    gravity=(9.41, -20, -12.35)     drag=1                        
+      random_color=0                  restitution=1.003               fadein_time=0.3               
+      burst_amount=0                  burst_delay=0                   normal_factor_x=220.59        
+      normal_factor_y=220.59          normal_factor_z=235.29          normal_random=4.31            
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=22.06            burst_factor_y=51.47          
+      burst_factor_z=58.82            startpos=(426.5, 169.1, 205.9)  bFindFloor=True               
+      burst_factor_speed=1.95         start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+dust devil.pe   (1204 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-Dust Devil
+  emitter block  : offset 844, 1 emitter(s), entities [3001]
+  --- emitter 0 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=4.92                       random_factor=1               
+      normal_factor=1                 count=40                        life=1.67                     
+      random_life=1                   scaleX=12.95                    scaleY=1                      
+      rotation=-0.022                 motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, 9, 0)               drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.1               
+      burst_amount=0                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=89.04           normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=213                endcolor_green=214              endcolor_blue=193             
+      burst_split=0                   burst_factor_x=20.55            burst_factor_y=246.58         
+      burst_factor_z=0                startpos=(75.34, 130.1, 61.64)  bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+firearea.pe   (5366712 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 1
+       - ..\..\..\patreon\ParticleEditor\files\tools\particlebank\flipbook\PE-watercaustic_8x8.png flags=2  5365398 bytes
+  names          : pe-emitter-firearea
+  emitter block  : offset 5366352, 1 emitter(s), entities [3003]
+  --- emitter 0 ---
+      flags=0x20 (HAS_VOLUME)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=9.15                       random_factor=1               
+      normal_factor=1                 count=20                        life=5                        
+      random_life=1                   scaleX=7.41                     scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=8                       framesY=8                     
+      frameCount=64                   frameStart=0                    frameRate=35                  
+      velocity=(0, 0, 0)              gravity=(0, 3.56, 0)            drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.38              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=40                 endcolor_green=4                endcolor_blue=4               
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+heavy-rain3.pe   (49369 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 2
+       - heavy-rain20_color.png                   flags=2  43951 bytes
+       - heavy-rain21_color.png                   flags=2  3253 bytes
+  names          : pe-emitter-r, pe-emitter-r - Copy
+  emitter block  : offset 48705, 2 emitter(s), entities [3006, 3007]
+  --- emitter 0 ---
+      flags=0x20 (HAS_VOLUME)  shader=SOFT  MAX_PARTICLES=25000
+      FIXED_TIMESTEP=-1               size=1.32                       random_factor=0               
+      normal_factor=28.21             count=9494                      life=2                        
+      random_life=2                   scaleX=1                        scaleY=1                      
+      rotation=0                      motionBlurAmount=2.43e-05       mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(-4.11, -300, -5.75)    drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.37              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=109                endcolor_green=109              endcolor_blue=109             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=True            
+      random_position=0               random_position_scale=1       
+  --- emitter 1 ---
+      flags=0x24 (SORTING|HAS_VOLUME)  shader=SOFT  MAX_PARTICLES=3000
+      FIXED_TIMESTEP=-1               size=30                         random_factor=0               
+      normal_factor=25.64             count=80                        life=4                        
+      random_life=1                   scaleX=30                       scaleY=1                      
+      rotation=0.011                  motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(-4.11, -200, -5.75)    drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.34              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=1                   spawn_random=0                
+      scaling_random=1.81             spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=93                 endcolor_green=93               endcolor_blue=93              
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=True            
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+impact_blood_1.pe   (2077 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-d, pe-emitter-d - Copy
+  emitter block  : offset 1413, 2 emitter(s), entities [3006, 3007]
+  --- emitter 0 ---
+      flags=0x08 (DEPTHCOLLISION)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=0.91                       random_factor=1               
+      normal_factor=13.81             count=0                         life=6.83                     
+      random_life=1.11                scaleX=2.28                     scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 20, 0)             gravity=(0, -150, 0)            drag=1                        
+      random_color=0.15               restitution=0.1                 fadein_time=0.1               
+      burst_amount=149.78             burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=117.65          normal_factor_z=0               normal_random=1.39            
+      rotation_random=7.36            size_random=3.06                spawn_random=500              
+      scaling_random=2.92             spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=37                 endcolor_green=0                endcolor_blue=0               
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 1 ---
+      flags=0x0C (SORTING|DEPTHCOLLISION)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=0.5                        random_factor=1               
+      normal_factor=20.51             count=0                         life=7.1                      
+      random_life=1                   scaleX=3.18                     scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 20, 0)             gravity=(0, -150, 0)            drag=1                        
+      random_color=0.36               restitution=0.1                 fadein_time=0.06              
+      burst_amount=112.99             burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=117.65          normal_factor_z=0               normal_random=1.39            
+      rotation_random=7.36            size_random=3.75                spawn_random=700              
+      scaling_random=1.81             spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=37                 endcolor_green=0                endcolor_blue=0               
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+impact_stone_2.pe   (1209 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-impact_wood
+  emitter block  : offset 849, 1 emitter(s), entities [3001]
+  --- emitter 0 ---
+      flags=0x04 (SORTING)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=0.69                       random_factor=1               
+      normal_factor=35.9              count=0                         life=2.5                      
+      random_life=1                   scaleX=1                        scaleY=1                      
+      rotation=0.007                  motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 70, 0)             gravity=(0, -300, 0)            drag=1                        
+      random_color=0                  restitution=0.7                 fadein_time=0.1               
+      burst_amount=97.23              burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=3.33            
+      rotation_random=0               size_random=4.58                spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+impact_water_1.pe   (108448 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 1
+       - water-splash0_color.png                  flags=2  106323 bytes
+  names          : pe-emitter-d, pe-emitter-d - Copy
+  emitter block  : offset 107784, 2 emitter(s), entities [3025, 3026]
+  --- emitter 0 ---
+      flags=0x08 (DEPTHCOLLISION)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=3.23                       random_factor=1               
+      normal_factor=43.59             count=0                         life=1.9                      
+      random_life=1                   scaleX=1.85                     scaleY=1                      
+      rotation=0                      motionBlurAmount=2.4e-05        mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 150, 0)            gravity=(0, -250, 0)            drag=1                        
+      random_color=0                  restitution=0.1                 fadein_time=0.1               
+      burst_amount=78.83              burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=10              size_random=1.81                spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=56                 endcolor_green=61               endcolor_blue=100             
+      burst_split=6                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 1 ---
+      flags=0x08 (DEPTHCOLLISION)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=1.46                       random_factor=1               
+      normal_factor=84.62             count=0                         life=1.9                      
+      random_life=1                   scaleX=1.85                     scaleY=1                      
+      rotation=0                      motionBlurAmount=5.3e-05        mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 200, 0)            gravity=(0, -250, 0)            drag=1                        
+      random_color=0                  restitution=0.1                 fadein_time=0.1               
+      burst_amount=63.07              burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=10              size_random=1.81                spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=56                 endcolor_green=61               endcolor_blue=100             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+toxic.pe   (1194 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-Toxic
+  emitter block  : offset 834, 1 emitter(s), entities [2995]
+  --- emitter 0 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=7.62                       random_factor=1               
+      normal_factor=117.95            count=40                        life=3.6                      
+      random_life=1                   scaleX=15                       scaleY=1                      
+      rotation=0.022                  motionBlurAmount=0.0001168      mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(-1.37, 20, -3.01)      drag=1                        
+      random_color=0                  restitution=1.329               fadein_time=0.59              
+      burst_amount=107.74             burst_delay=0                   normal_factor_x=27.4          
+      normal_factor_y=82.19           normal_factor_z=34.25           normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=13                 endcolor_green=129              endcolor_blue=94              
+      burst_split=0                   burst_factor_x=47.95            burst_factor_y=61.64          
+      burst_factor_z=13.7             startpos=(109.6, 376.7, 54.79)  bFindFloor=False              
+      burst_factor_speed=1            start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
+==============================================================================
+waterleak.pe   (2951 bytes)
+==============================================================================
+  archiveVersion : 5076
+  embedded res   : 0
+  names          : pe-emitter-Waterfall, pe-emitter-splash, pe-emitter-splash - Copy
+  emitter block  : offset 1983, 3 emitter(s), entities [3016, 3017, 3018]
+  --- emitter 0 ---
+      flags=0x20 (HAS_VOLUME)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=11.6                       random_factor=1               
+      normal_factor=27.62             count=353                       life=3.87                     
+      random_life=1                   scaleX=4.83                     scaleY=1                      
+      rotation=0                      motionBlurAmount=0              mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(0, -20, 0)             drag=1                        
+      random_color=0                  restitution=0.334               fadein_time=0.71              
+      burst_amount=0                  burst_delay=0                   normal_factor_x=0             
+      normal_factor_y=0               normal_factor_z=0               normal_random=1               
+      rotation_random=0               size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=15.05        start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 1 ---
+      flags=0x00 (none)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=1.77                       random_factor=1               
+      normal_factor=16.57             count=1099                      life=3.15                     
+      random_life=1                   scaleX=8.13                     scaleY=1                      
+      rotation=0.067                  motionBlurAmount=0.0006923      mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(-18.36, -17.26, -20)   drag=1                        
+      random_color=0                  restitution=0.655               fadein_time=1                 
+      burst_amount=60.44              burst_delay=871.08              normal_factor_x=27.4          
+      normal_factor_y=27.4            normal_factor_z=41.1            normal_random=1               
+      rotation_random=3.75            size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=61.64            burst_factor_y=41.1           
+      burst_factor_z=20.55            startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=8.17         start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+  --- emitter 2 ---
+      flags=0x04 (SORTING)  shader=SOFT  MAX_PARTICLES=1000
+      FIXED_TIMESTEP=-1               size=1.77                       random_factor=1               
+      normal_factor=41.44             count=10944                     life=0.98                     
+      random_life=1                   scaleX=8.13                     scaleY=1                      
+      rotation=0.067                  motionBlurAmount=0.0006923      mass=1                        
+      SPH_h=1                         SPH_K=250                       SPH_p0=1                      
+      SPH_e=0.018                     framesX=1                       framesY=1                     
+      frameCount=1                    frameStart=0                    frameRate=0                   
+      velocity=(0, 0, 0)              gravity=(-18.36, -17.26, -20)   drag=1                        
+      random_color=0                  restitution=0.655               fadein_time=1                 
+      burst_amount=60.44              burst_delay=871.08              normal_factor_x=27.4          
+      normal_factor_y=27.4            normal_factor_z=41.1            normal_random=1               
+      rotation_random=3.75            size_random=0                   spawn_random=0                
+      scaling_random=1                spawn_pause=0                   spawn_pause_random=0          
+      endcolor_red=255                endcolor_green=255              endcolor_blue=255             
+      burst_split=0                   burst_factor_x=0                burst_factor_y=0              
+      burst_factor_z=0                startpos=(0, 0, 0)              bFindFloor=False              
+      burst_factor_speed=8.17         start_rotation=0                bFollowCamera=False           
+      random_position=0               random_position_scale=1       
+
