@@ -394,10 +394,11 @@ Every other census bucket matched the sweep run to within a few MB — the delta
 content-column demotion, exactly the mechanism predicted. Resource *count* is unchanged
 (444/438 content textures in both runs); the streamer simply keeps fewer mips resident.
 
-**The Aztec FPS jump (67.5 → 105.7) is a bonus with a real mechanism**: sampling minified
-single-mip textures destroys texture-cache locality, and Aztec was the hub's worst offender.
-It exceeds the ±8 cross-launch variance by 4×, but treat the exact magnitude as provisional
-until a repeat run.
+**The Aztec FPS jump is real and repeat-confirmed**: 67.5 unmipped → **105.7 / 113.5** across
+two independent mipped launches (driver 3911/3943, content 475.8 MB byte-identical both
+times, POLYS bit-identical all three runs). Mechanism: sampling minified single-mip textures
+destroys texture-cache locality, and Aztec was the hub's worst offender. The mip conversion
+is a ~+40 FPS *performance* fix there on top of the VRAM saving.
 
 Visual spot-checks: Aztec temple interior crisp near and far (screenshot at census), Jungle
 Fever rocks/crates clean. The 8192² `waterfall 8x8.dds` sprite sheet (largest converted file,
