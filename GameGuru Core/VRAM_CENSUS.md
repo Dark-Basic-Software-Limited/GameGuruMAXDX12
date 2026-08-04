@@ -756,3 +756,56 @@ lanes write past their wave's reservation into the next wave's, so strands rende
 strand's index range, re-rolled every frame by wave scheduling. Test: swap in
 `WavePrefixCountBits(visible) * gfx_indexcount_per_strand` behind a mask bit, re-measure mode 48
 against the 0.07 floor.
+
+## FLICKER RESOLVED (2026-08-04, second session) — dxc dropped the NonUniform annotation
+
+**The paragraph above is retracted.** The "index path" conclusion rested on comparing mode 48
+against mode 17's floor — an invalid control (8 high-contrast colours + different density vs one
+colour), and the WavePrefixSum hypothesis failed a differential test already in this ledger: the
+append code is byte-identical and equally exercised in per-type mode, which does not flicker.
+
+**Root cause:** `GGGetGrassTexture` returned a `Texture2D` through an out-param with
+`NonUniformResourceIndex` applied inside the helper (1.89). `dxc -dumpbin` on the SHIPPING
+`hairparticlePS.cso` showed **every `createHandle` with `nonUniformIndex=false`** — dxc drops the
+annotation when a resource handle crosses a function boundary. The divergent Sample was therefore
+still UB: the driver readfirstlaned the descriptor, whole pixel-waves sampled one strand's blade
+texture, re-rolled every frame by wave packing. Square patches, scene-wide, merged-only (per-type
+early-outs to the uniform material texture).
+
+**Fix (engine 1.96):** helper returns the descriptor INDEX; all four hair PS variants sample as
+one expression with the annotation at the subscript. Verified: DXIL `i1 true` present (one per
+variant); plain-control churn 12.0-12.6 → 0.45-0.52 / 0.11-0.15 repeat; FPS 82.0 (was 82.5);
+density gate PASS (coverage 4.72→4.97%, clumpCV 1.02→1.08, near bands unchanged — prepass
+silhouettes now cut from the correct sprite).
+
+**Corrections to the ledger above (each an instrument defect, not a wrong theory):**
+- **Rows 1-3 (stiffness/drag, viewDistance, billboardCount) were VOID, not eliminations** — they
+  used `SET_GRASS` uniform runs, and the live-update loops SKIP merged systems
+  (`GGTerrainWicked.cpp:1401/:1464`), so the knob never landed. Also explains the "unexplained"
+  `HAIR_LEN: 63.5` after `SET_GRASS length 260`. The DO-NOT rule about reading the value back was
+  written in the same file and not applied to its own table.
+- **Row 5 was WRONG in the data**: clean re-measurement gave mode 4 (FREEZE_TEXTURE)
+  **12.0 → 0.30 collapse** and mode 8 (length) unchanged — reversed from what was recorded. The
+  user's own eyes ("freeze 4 looks clean") were right; the ledger was not.
+- **Row 6 (NonUniformResourceIndex "eliminated") was a DEAD PROBE** — the annotation never
+  reached the DXIL, so the null measured nothing. The ledger itself flagged the missing
+  `dxc -dumpbin` verification; that flag was the thread that unravelled the whole thing.
+
+**Failures #13 and #14 from this session (real nulls, kept honest):**
+- #13 texture streaming: paused from second zero → churn unchanged 11.9-12.0 (and blade
+  materials are `SetTextureStreamingDisabled(true)` anyway); STREAM `replaced` frozen during
+  the burst.
+- #14 CB-read scalarization: uniform-index compare-loop resolve (bit 128) → unchanged 12.3.
+- Forced-type ladder (bits 8-15): all 8 painted types individually clean 0.05-0.31 → no single
+  texture's content was at fault; only divergent selection flickered.
+- `DUMP_GRASSTYPES`: captured textureIndex == live re-resolve for every type → no staleness.
+
+**Method rules this hunt adds:**
+1. **A NonUniformResourceIndex fix is unverified until `dxc -dumpbin` shows `i1 true`** on the
+   handle. The annotation silently dies crossing function boundaries; a resource-typed local or
+   out-param is enough to lose it.
+2. **A control must remove ONLY the suspected mechanism.** Mode 17 removed the defect AND the
+   visual sensitivity (one colour vs eight); its floor exonerated nothing.
+3. **The symptom's spatial correlation is evidence.** Scene-wide synchronized flicker demanded a
+   global-per-type variable; all twelve per-strand eliminations could have been skipped by
+   asking "what is shared?" first.

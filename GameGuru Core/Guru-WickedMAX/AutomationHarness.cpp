@@ -3529,9 +3529,53 @@ void AutoHarness_CheckForCommand(void)
 		if (fz & 4)  strcat(fzdesc, "texture ");
 		if (fz & 8)  strcat(fzdesc, "length ");
 		if (fz & 16) strcat(fzdesc, "TYPEVIS ");
+		if (fz & 32) strcat(fzdesc, "STABLETYPE ");
+		if (fz & 64) strcat(fzdesc, "ALWAYSWRITE ");
+		if (fz & 128) strcat(fzdesc, "UNIFORMCB ");
+		// GGMAX 1.95b: bits 8-15 = (forcedType+1) — pin every texture lookup to one type.
+		// SET_GRASSTYPEFREEZE (k+1)*256 forces type k.
+		if ((fz >> 8) & 0xFF)
+		{
+			char fbuf[32];
+			_snprintf(fbuf, sizeof(fbuf), "FORCE_T%d ", ((fz >> 8) & 0xFF) - 1);
+			fbuf[sizeof(fbuf) - 1] = 0;
+			strcat(fzdesc, fbuf);
+		}
 		if (fz == 0) strcpy(fzdesc, "off");
 		_snprintf(result, sizeof(result), "OK: SET_GRASSTYPEFREEZE %d [%s] — instant, no reload; density intentionally wrong while non-zero",
 			fz, fzdesc);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_GRASSTYPES") == 0)
+	{
+		// GGMAX 1.95b flicker bisect: the per-type table as CAPTURED into the first merged hair
+		// systems at build time (textureIndex is a raw bindless descriptor int) vs the LIVE
+		// re-resolve of each built grass material (GGGrass_DumpTypeDescriptors). A captured/live
+		// index mismatch = staleness; a weird LIVE identity (dims/mips/name) = wrong resource.
+		extern void GGGrass_DumpTypeDescriptors(char* outp, int osize);
+		int written = 0;
+		auto& sc = wiScene::GetScene();
+		int printed = 0;
+		for (size_t i = 0; i < sc.hairs.GetCount() && printed < 2; i++)
+		{
+			auto& h = sc.hairs[i];
+			if (h.grass_type != 0xFFFFFFFFu) continue;
+			printed++;
+			written += _snprintf(result + written, sizeof(result) - written,
+				"SYS %d: types=%d strands=%u\n", (int)i, (int)h.grass_types.size(), h.strandCount);
+			for (size_t t = 0; t < h.grass_types.size(); t++)
+			{
+				const auto& gt = h.grass_types[t];
+				if (!gt.present && gt.textureIndex == 0) continue;
+				written += _snprintf(result + written, sizeof(result) - written,
+					"  t%d: texIdx=%u present=%d len=%.1f wid=%.2f bb=%u vd=%.0f\n",
+					(int)t, gt.textureIndex, gt.present ? 1 : 0, gt.length, gt.width,
+					gt.billboardCount, gt.viewDistance);
+				if (written > (int)sizeof(result) - 400) break;
+			}
+		}
+		if (written <= (int)sizeof(result) - 400)
+			GGGrass_DumpTypeDescriptors(result + written, (int)sizeof(result) - written);
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "DUMP_HAIRKILL") == 0)

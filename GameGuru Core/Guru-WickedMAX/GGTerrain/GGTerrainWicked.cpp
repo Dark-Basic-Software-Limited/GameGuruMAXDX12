@@ -1184,6 +1184,45 @@ static wi::scene::MaterialComponent* BuildGrassMaterial(uint32_t typeIdx)
 	return &mat;
 }
 
+// GGMAX 1.95b flicker bisect (harness DUMP_GRASSTYPES): for every grass material already built
+// this session, print the LIVE re-resolved bindless descriptor index + the texture's identity
+// (dims / mips / srgb subresource / source path). Cross-checked against the textureIndex values
+// captured into hair.grass_types at merge-build time: a mismatch = the captured index went stale;
+// a non-blade identity = the capture pointed at the wrong resource from the start. Touches only
+// g_grassMaterialReady slots, so it never loads anything — pure read.
+void GGGrass_DumpTypeDescriptors(char* out, int size)
+{
+	int written = 0;
+	auto* device = wi::graphics::GetDevice();
+	for (uint32_t t = 0; t < (uint32_t)GGGRASS_TOTAL_REAL_TYPES; t++)
+	{
+		if (!g_grassMaterialReady[t]) continue;
+		if (written > size - 220) break;
+		const wi::scene::MaterialComponent::TextureMap& tex =
+			g_grassMaterials[t].textures[wi::scene::MaterialComponent::BASECOLORMAP];
+		const wi::graphics::GPUResource* res = tex.GetGPUResource();
+		int live = -1;
+		uint32_t w = 0, h = 0, mips = 0;
+		if (res != nullptr)
+		{
+			live = device->GetDescriptorIndex(res, wi::graphics::SubresourceType::SRV, tex.resource.GetTextureSRGBSubresource());
+			if (res->IsTexture())
+			{
+				const wi::graphics::TextureDesc& d = ((const wi::graphics::Texture*)res)->GetDesc();
+				w = d.width; h = d.height; mips = d.mip_levels;
+			}
+		}
+		int n = snprintf(out + written, (size_t)(size - written),
+			"LIVE t%u: idx=%d %ux%u mips=%u srgbsub=%d name=%s\n",
+			t, live, w, h, mips,
+			res != nullptr ? tex.resource.GetTextureSRGBSubresource() : -1,
+			tex.name.c_str());
+		if (n < 0) break;
+		written += n;
+	}
+	if (written >= 0 && written < size) out[written] = 0;
+}
+
 // Per-grass-type appearance templates (length / width / billboards / stiffness etc.).
 // Copied onto each spawned HairParticleSystem so the strand placement / mesh / strand-count are
 // per-chunk but the look-and-feel comes from the type table.
