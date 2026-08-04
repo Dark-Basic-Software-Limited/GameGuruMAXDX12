@@ -67,6 +67,7 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `CLICK_ONLY_LEVEL` | (none) | Load the first storyboard level node with a level file assigned. Storyboard only. Convenience for single-level projects (TESTPRO1 pattern) — no need to know the level's title |
 | `WAIT` | `<milliseconds>` | Sleep up to 30000ms, then return state |
 | `SCREENSHOT` | (none) | Capture screenshot to `auto_screenshot.*` |
+| `SHOW_GAMESETTINGS` | `<0\|1>` | Open/close the Game Settings window (Graphics and Performance etc.) for panel screenshot verification |
 | `GET_PERF_DATA` | (none) | Returns FPS, frame time, memory, VRAM, GPU adapter, scene counts, and visibility counts. Works in any state |
 | `LIST_ENTITIES` | (none) or `lights` | Lists all active entities with position, type, and light data. Optional `lights` filter shows only light entities |
 | `GET_ENTITY` | `<index>` | Detailed dump of one entity: position, rotation, scale, profile, light data, infinilight linkage, and WickedEngine cross-reference |
