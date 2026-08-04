@@ -3459,6 +3459,74 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: Game Settings window %s", Game_Settings_Window ? "OPEN" : "CLOSED");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "DUMP_EMITTERS") == 0)
+	{
+		// DUMP_EMITTERS - per-emitter state for WPE particle debugging. Reports the things
+		// that decide whether an effect is on screen: the render gates (visible/active), the
+		// WORLD position (a wrong hierarchy attach shows up here), and the live GPU alive
+		// count, which separates "not simulating" from "simulating but not drawn".
+		wiScene::Scene& sc = wiScene::GetScene();
+		int written = 0;
+		written += _snprintf(result + written, sizeof(result) - written,
+			"EMITTERS: %d\n", (int)sc.emitters.GetCount());
+		for (int i = 0; i < (int)sc.emitters.GetCount() && written < (int)sizeof(result) - 300; i++)
+		{
+			wiEmittedParticle& ec = sc.emitters[i];
+			wi::ecs::Entity e = sc.emitters.GetEntity(i);
+			wiScene::HierarchyComponent* hier = sc.hierarchy.GetComponent(e);
+			wiScene::TransformComponent* tr = sc.transforms.GetComponent(e);
+			wiScene::NameComponent* nm = sc.names.GetComponent(e);
+			wiScene::MaterialComponent* mt = sc.materials.GetComponent(e);
+			float wx = 0, wy = 0, wz = 0;
+			if (tr) { XMFLOAT3 p = tr->GetPosition(); wx = p.x; wy = p.y; wz = p.z; }
+			written += _snprintf(result + written, sizeof(result) - written,
+				"[%d] e=%u par=%u '%s' vis=%d act=%d flags=0x%X cnt=%.2f life=%.2f size=%.2f max=%u "
+				"world=(%.1f,%.1f,%.1f) alive=%u mat=%d blend=%d basecol.a=%.2f tex=%d fadein=%.3f\n",
+				i, (unsigned)e, (unsigned)(hier ? hier->parentID : 0),
+				nm ? nm->name.c_str() : "?",
+				ec.IsVisible() ? 1 : 0, ec.IsActive() ? 1 : 0, ec._flags,
+				ec.count, ec.life, ec.size, ec.GetMaxParticleCount(),
+				wx, wy, wz, ec.statistics.aliveCount,
+				mt ? 1 : 0, mt ? (int)mt->userBlendMode : -1,
+				mt ? mt->baseColor.w : -1.0f,
+				(mt && mt->textures[wiScene::MaterialComponent::BASECOLORMAP].resource.IsValid()) ? 1 : 0,
+				ec.fadein_time);
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "WPE_PREVIEW") == 0)
+	{
+		// WPE_PREVIEW <relative .pe path> - replicate EXACTLY what the editor's Preview
+		// checkbox does (LoadWPE then emitter actions 1=burst, 4=restart, 5=visible), then
+		// park the effect just in front of the camera so it must be on screen if it draws.
+		uint32_t WickedCall_LoadWPE(char* filename);
+		void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
+		bool WickedCall_ParticleEffectPosition(uint32_t root, float fX, float fY, float fZ);
+		char pefile[MAX_PATH];
+		strncpy(pefile, arg, sizeof(pefile) - 1); pefile[sizeof(pefile) - 1] = 0;
+		uint32_t root = WickedCall_LoadWPE(pefile);
+		if (root == 0)
+		{
+			_snprintf(result, sizeof(result), "FAIL: LoadWPE returned 0 for '%s'", pefile);
+		}
+		else
+		{
+			WickedCall_PerformEmitterAction(1, root);
+			WickedCall_PerformEmitterAction(4, root);
+			WickedCall_PerformEmitterAction(5, root);
+			// Hand the effect to the REAL preview path: setting these two globals makes
+			// RenderPreviewEmitter() drive its position every frame from the selected entity,
+			// exactly as ticking the Preview checkbox does. Without this the harness would be
+			// testing a different code path from the one the user reported.
+			extern uint32_t PreviewWPERoot;
+			extern bool bPreviewWPE;
+			PreviewWPERoot = root;
+			bPreviewWPE = true;
+			_snprintf(result, sizeof(result), "OK: root=%u handed to RenderPreviewEmitter, emitters now %d",
+				root, (int)wiScene::GetScene().emitters.GetCount());
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "DUMP_SCENEUPDATE") == 0)
 	{
 		// DUMP_SCENEUPDATE — answer "why do the Scene-S* profiler rows say (3x)?" by NAMING the

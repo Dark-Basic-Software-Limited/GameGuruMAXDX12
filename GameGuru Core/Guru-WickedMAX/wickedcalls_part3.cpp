@@ -2573,7 +2573,10 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 		{
 			if (!scene.transforms.Contains(parent)) scene.transforms.Create(parent);
 			if (!scene.layers.Contains(parent)) scene.layers.Create(parent).layerMask = ~0u;
-			scene.Component_Attach(child, parent);
+			// child_already_in_local_space = TRUE: the transforms we just created came
+			// straight out of the archive and are ALREADY parent-local. The default (false)
+			// would multiply them by inverse(parent.world) a second time.
+			scene.Component_Attach(child, parent, true);
 			bool parentIsChild = false;
 			for (size_t j = 0; j < (size_t)hiCount; j++)
 			{

@@ -740,3 +740,58 @@ Reproduce it verbatim and move on.
 - **SHADER: 14 fields** — concentrated in `emitCS` (~30 lines) and the VS (~23 lines).
 - **CPU: 12 fields** — `UpdateCPU`, plus 2 render-gate lines and 2 sort-site lines.
 - **SKIP: 9 fields** — genuinely dead; porting them would be wasted work and added risk.
+
+---
+
+## Appendix B — implementation landmines found while shipping this (2026-08-04)
+
+Three divergences that are invisible in code review and only show up as "the effect loads,
+simulates, reports visible and active — and you see nothing".
+
+### B.1 `Component_Attach` re-parents the child transform (cost: the whole preview path)
+
+The DX11 loader deserialised `hierarchy` as **raw data** — `parentID` plus `layerMask_bind` —
+and never touched the child's transform. The obvious DX12 equivalent, `scene.Component_Attach(child, parent)`,
+defaults to `child_already_in_local_space = false`, which multiplies the child's local
+transform by `inverse(parent.world)`.
+
+That looks harmless because it cancels out at load time. It does not stay harmless: **the
+`.PE` files carry a leftover authoring position on the root** — `firearea.pe` and `Steam.pe`
+are both at `(330, 241.55, -18265)`, `downpour.pe` at `(-993, 288, -19312)`. So the attach
+baked a `(-330, -241.55, +18265)` offset into the emitter's local transform. Everything looked
+correct until the editor preview repositioned the root onto the selected entity — at which
+point the particles rendered **18,265 units away** and the user saw an empty scene.
+
+**Always pass `child_already_in_local_space = true` when attaching transforms that came
+straight out of an archive.**
+
+### B.2 `Burst(0)` means "fire burst_amount", not "burst zero particles"
+
+DX11 fork:
+```cpp
+void wiEmittedParticle::Burst(int num)
+{
+    if (IsPaused()) return;
+    if (num <= 0) num = burst_amount;   // <-- upstream has no equivalent
+    burst_delay_timer = burst_delay;
+    burst += num;
+}
+```
+Upstream is a plain `burst += num`. The editor preview, `WParticleEffectAction(1)` and the
+weapon/decal paths **all call `Burst(0)`**, so on stock upstream every burst-only effect
+(explosions, blood, impacts — the ones with `count == 0`) fired nothing at all.
+
+### B.3 The emission model is not `emit += count * dt`
+
+The fork's `UpdateCPU` carries a gust/stutter model (`spawn_random` → `randpause`/`randemit`)
+and a fractional burst release (`burst_split`, `burst_delay` in **milliseconds**). Both were
+ported verbatim; with `spawn_random == 0` and `burst_split == 0` they reduce exactly to
+upstream's behaviour, so nothing stock changes. Do not "simplify" them — the shipped effects
+were tuned against these exact curves.
+
+### Diagnosing this class of bug
+
+`DUMP_EMITTERS` (added to the harness) prints, per emitter: the render gates (`vis`/`act`),
+the **world** position, the live GPU `alive` count, and the material's blend mode / basecolor
+alpha / texture validity. That one line separates "not loading" from "not simulating" from
+"simulating somewhere you cannot see" — which is what this bug actually was.
