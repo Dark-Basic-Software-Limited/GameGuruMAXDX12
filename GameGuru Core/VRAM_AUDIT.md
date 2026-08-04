@@ -359,10 +359,10 @@ texture streaming ON. ✔ = fits the ~3450 MB usable budget of a 4 GB card **at 
 The pattern is uniform: **the stragglers are content-texture and misc demos now, not grass
 demos**. Levers in flight / next, in order of expected effect on exactly these five:
 
-1. **Mip-chain the 990 single-mip DDS (5.5 GB of unstreamable source textures)** — conversion
-   done and verified in staging 2026-08-04, swap-in + re-census next. Single-mip textures are
-   pinned at full size forever; with mips the streamer can demote them. Directly attacks the
-   content column on all five stragglers.
+1. **Mip-chain the 990 single-mip DDS (5.5 GB of unstreamable source textures)** — **DONE,
+   swapped in and measured, see the next section.** Single-mip textures are pinned at full
+   size forever; with mips the streamer can demote them. Directly attacks the content column
+   on all five stragglers.
 2. **A4 Option 1, emissive SVT map (−96 floor, every level)** — retry with an explicit 1×1
    black bind; `SET_TANGENTVIS 15` first to confirm what the shader samples (see the A4
    post-mortem above).
@@ -372,3 +372,45 @@ demos**. Levers in flight / next, in order of expected effect on exactly these f
 
 The `lowvram` preset remains the safety net for the stragglers in the meantime: grass density
 is no longer the lever that matters there — a content/texture budget cap (B6) is.
+
+## 2026-08-04 mip swap-in: measured result
+
+990 single-mip DDS under `Files/entitybank` (5511.7 MB — every DDS > 64 KB, 2D, non-array,
+single-mip) converted to full mip chains with DirectXTex texconv 2026.5.8.1, format-preserving
+(`-f` from a header scan; `-dx9` legacy headers except BC7/SRGB), zero failures, dims verified
+identical per file. **Originals preserved in a mirror tree at `D:/max/mipbackup/entitybank/` —
+revert = copy the mirror back.** Mipped files add ~33 % on disk (5.5 → 7.3 GB) but become
+STREAMABLE: the mip streamer can finally demote them, so resident VRAM goes *down*.
+
+Re-census under the identical protocol, same session as the sweep (POLYS **bit-identical** on
+both demos — same scene, same geometry, only the texture files changed):
+
+| Demo | driver before | after | Δ | content before | after | FPS before | after |
+|---|---|---|---|---|---|---|---|
+| Aztec Game Kit | 4375 | **3911** | **−464** | 904 | **476** (−47 %) | 67.5 | **105.7** |
+| Jungle Fever | 3045 | **2917** | −128 | 520 | **387** (−26 %) | 162.1 | 165.5 |
+
+Every other census bucket matched the sweep run to within a few MB — the delta is pure
+content-column demotion, exactly the mechanism predicted. Resource *count* is unchanged
+(444/438 content textures in both runs); the streamer simply keeps fewer mips resident.
+
+**The Aztec FPS jump (67.5 → 105.7) is a bonus with a real mechanism**: sampling minified
+single-mip textures destroys texture-cache locality, and Aztec was the hub's worst offender.
+It exceeds the ±8 cross-launch variance by 4×, but treat the exact magnitude as provisional
+until a repeat run.
+
+Visual spot-checks: Aztec temple interior crisp near and far (screenshot at census), Jungle
+Fever rocks/crates clean. The 8192² `waterfall 8x8.dds` sprite sheet (largest converted file,
+67 MB) was verified by decoding backup vs converted mip 0, since the start camera cannot see
+the waterfall in-editor: **meanAbsDiff 0.36/765, max single-pixel 20/765** — pure BC3
+decompress/recompress round-trip noise, visually invisible.
+
+**Caveats / follow-ups:**
+- **These files are NOT in git.** The build area is the only place the swap exists; a
+  reinstall or asset refresh silently reverts it. The same conversion must be run on the
+  MASTER asset store once the user approves the visual result.
+- Aztec is still +461 over the 3450 budget — its residue is now mesh 896 + misc 694, no
+  longer content. The misc autopsy and A4/chunk-VB/IB floor work are the remaining levers.
+- Straggler projection with the content column shrinking 26–47 %: RPG Template (+17) and
+  Indian Strike Force (+55) should now fit outright; Operation Amazon (+182, content 677)
+  is borderline; Z Island (+617) improves but likely still needs one more lever.
