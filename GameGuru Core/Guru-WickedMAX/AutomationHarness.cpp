@@ -3491,8 +3491,22 @@ void AutoHarness_CheckForCommand(void)
 			t.widget.pickedObject = t.entityelement[idx].obj;
 			t.widget.activeObject = 0; // force the promote path to run
 			widget_check_for_new_object_selection();
-			_snprintf(result, sizeof(result), "OK: selected entity %d (obj=%d, activeObject=%d)",
-				idx, t.entityelement[idx].obj, t.widget.activeObject);
+
+			// Optional second arg "oncursor": also put the entity ON THE CURSOR, which is what
+			// a real viewport click does when pref.iEnableDragDropEntityMode is on
+			// (M-GridEdit_part6.cpp:2322/2338 set t.gridentity + t.gridentityobj). That is a
+			// different and more expensive editor state than widget-selection alone -
+			// input_calculatelocalcursor() then calls WickedCall_GetPick2 DIRECTLY, bypassing
+			// the Perf-P.3 pick cache. Reproducing it is the only way to measure it here.
+			// NOTE: this is a diagnostic state; do not save the level after using it.
+			const char* pSpace = strchr(arg, ' ');
+			if (pSpace && strstr(pSpace, "oncursor"))
+			{
+				t.gridentity = idx;
+				t.gridentityobj = t.entityelement[idx].obj;
+			}
+			_snprintf(result, sizeof(result), "OK: selected entity %d (obj=%d, activeObject=%d, gridentity=%d gridentityobj=%d)",
+				idx, t.entityelement[idx].obj, t.widget.activeObject, t.gridentity, t.gridentityobj);
 		}
 		result[sizeof(result) - 1] = 0;
 	}
