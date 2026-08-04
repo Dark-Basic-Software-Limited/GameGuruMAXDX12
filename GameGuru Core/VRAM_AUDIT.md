@@ -554,3 +554,11 @@ Master-store debt (IMPORTANT): the mip conversion (990 DDS) and the sky compress
 both skybank trees) live only in the build area + Documents. **Run both conversions on the
 master asset store** or a reinstall silently reverts them. Scripts:
 session scratchpad `list_singlemip.py` / `mipconvert.sh` / `skyconvert.sh`.
+
+### A4 soak sign-off (the "with a soak" requirement, closed)
+
+Fast-travel soak on Z Island, 3 laps, shipping 12288 atlas, on the 1.98 build:
+**MIN_FREE_TILES = 881 of 2852 — the identical figure to the pre-A4 2026-08-02 soak.**
+Zero starvation, FPS 106→96 across the eviction laps, lap-3 screenshots show fully
+detailed terrain. A4 is now verified on every axis the original instruction demanded:
+pool −96, residency identical, shading correct, POLYS bit-identical.
