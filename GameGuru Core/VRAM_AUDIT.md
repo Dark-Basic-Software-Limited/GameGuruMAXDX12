@@ -1,5 +1,10 @@
 # VRAM audit — all 19 hub demos, categorised for a low-end knob plan
 
+> **⚡ SUPERSEDED FOR CURRENT NUMBERS — see [2026-08-04 post-merge re-audit](#2026-08-04-post-merge-re-audit)
+> at the bottom.** Merged grass + lazy PSOs + 16 MB blocks landed after this table was taken;
+> mean driver is now **3188 MB (was 5082)** and **14 of 19 demos fit a 4 GB card at pure
+> defaults**. The analysis below remains the reference for bucket definitions and the knob plan.
+
 2026-08-02, engine `3666bbf7` + game `c784d891`. Editor, defaults (no `lowvram` keys), ~35 s
 settle, project identity verified before each load. Raw censuses in the session scratchpad;
 regenerate with `tools/…` + the `audit.awk` categoriser recorded at the bottom of this file.
@@ -292,3 +297,78 @@ a half-soaked terrain change is worth less than no change.
 **Recommendation: take Option 1 first.** It is bounded, provably dead, worth 144 MB on every
 level, and one full fast-travel soak signs it off. Option 2 is worth more but deserves its own
 session.
+
+## 2026-08-04 post-merge re-audit
+
+Engine `0aaab86c` + game `d7b1f1cf` (merged grass default-ON + NURI flicker fix 1.96 + slider
+fix 1.97). Same instrument, same method as the 2026-08-02 table: editor, defaults (no `lowvram`
+keys), ~35 s settle, project identity verified per load, `tools/vram_audit.sh`. Two column
+corrections vs the old table: `pad`/`nonres` are now the **video-only** GGMAX 1.83 fields
+(the old columns mixed system memory — see the CORRECTION note at the top), and defaults now
+include everything shipped since: merged grass, lazy PSOs, D3D12MA 16 MB blocks, A0/A2/A3/A5/A6,
+texture streaming ON. ✔ = fits the ~3450 MB usable budget of a 4 GB card **at pure defaults**.
+
+| Demo | driver | Δ vs 08-02 | FLOOR | mesh | GRASS | TREES | content | misc | pad | nonres | FPS (was) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Aztec Game Kit | **4375** | −2720 | 1273 | 896 | 226 | 81 | 904 | 694 | 177 | 496 | 67.5 (75.2) |
+| The Mystery of Z Island | **4067** | −4932 | 1321 | 512 | 378 | 75 | 776 | 673 | 171 | 527 | 109.7 (69.9) |
+| Operation Amazon | **3632** | −1729 | 1328 | 512 | 342 | 77 | 677 | 268 | 184 | 480 | 104.3 (82.3) |
+| Indian Strike Force | **3505** | −1226 | 1200 | 512 | 1 | 71 | 718 | 572 | 210 | 589 | 118.3 (101.4) |
+| RPG Template | **3467** | −1797 | 1301 | 512 | 469 | 84 | 503 | 172 | 78 | 469 | 118.9 (72.8) |
+| Canyon Offensive | **3412** ✔ | −2726 | 1191 | 512 | 247 | 77 | 704 | 304 | 114 | 505 | 75.8 (57.9) |
+| River Raiders | **3360** ✔ | −1480 | 1191 | 384 | 408 | 74 | 646 | 272 | 125 | 497 | 131.9 (105.0) |
+| Foggy Forest | **3245** ✔ | −2024 | 1365 | 512 | 200 | 74 | 274 | 566 | 132 | 482 | 69.1 (59.2) |
+| Aztec Game Kit Teaser | **3209** ✔ | −1577 | 1141 | 512 | 399 | 81 | 397 | 225 | 98 | 486 | 80.1 (63.8) |
+| Horseshoe Bend | **3144** ✔ | −1341 | 1188 | 640 | 4 | 73 | 400 | 298 | 151 | 541 | 96.0 (95.2) |
+| Disruption | **3082** ✔ | −1131 | 1378 | 512 | 208 | 66 | 286 | 151 | 127 | 478 | 91.8 (85.1) |
+| Jungle Fever | **3045** ✔ | −3646 | 1322 | 384 | 148 | 70 | 520 | 213 | 53 | 509 | 162.1 (93.8) |
+| A Grand Canyon Adventure | **2907** ✔ | −1320 | 1184 | 512 | 252 | 73 | 369 | 165 | 19 | 459 | 97.2 (96.6) |
+| Bounty | **2869** ✔ | −1315 | 1378 | 384 | 0 | 63 | 330 | 510 | 79 | 492 | 137.0 (114.7) |
+| Island Showdown | **2859** ✔ | −1469 | 1252 | 512 | 66 | 85 | 366 | 180 | 30 | 477 | 87.7 (63.5) |
+| Snowy Mountain Stroll | **2824** ✔ | −1524 | 1251 | 384 | 96 | 68 | 371 | 185 | 79 | 504 | 143.1 (123.1) |
+| Trapped | **2590** ✔ | −1360 | 1178 | 384 | 0 | 63 | 446 | 135 | 60 | 457 | 152.9 (132.9) |
+| Escape from the Zombie Cellar | **2508** ✔ | −1363 | 1243 | 384 | 5 | 63 | 259 | 197 | 64 | 450 | 139.4 (126.2) |
+| Switch Escape | **2473** ✔ | −1307 | 1184 | 384 | 0 | 63 | 244 | 145 | 83 | 478 | 164.5 (128.7) |
+| **mean** | **3188** | **−1894** | 1256 | 492 | 182 | 73 | 484 | 312 | 107 | 493 | 113.0 (92.0) |
+
+### What changed
+
+- **14 of 19 demos now fit a 4 GB card at PURE DEFAULTS** — no `lowvram` preset, no quality
+  dial touched. On 2026-08-02 the count was **zero at defaults**, and even the shipped preset
+  only projected 5–6 of 19 with grass density cut to 50.
+- **Grass collapsed as a category: hub total 17,335 → 3,450 MB (−80 %).** Z Island's grass
+  went 4297 → 378. The spread problem this document was written around no longer exists;
+  the remaining spread is content + misc.
+- **Every fixed bucket moved the way the Tier A ledger said it would**: FLOOR mean 1548 → 1256,
+  nonres 836 → 493 (lazy PSOs), pad 363-mixed → 107-video (16 MB blocks), mesh pool now drops
+  to 384 on small levels (128 MB granularity).
+- **FPS came along for free: hub mean 92.0 → 113.0.** Jungle Fever 93.8 → 162.1,
+  Z Island 69.9 → 109.7. Sole decline is Aztec Game Kit (75.2 → 67.5), within the known ±8
+  cross-launch editor variance.
+
+### The remaining five, and what actually moves them
+
+| Demo | over budget by | dominant residue |
+|---|---|---|
+| Aztec Game Kit | +925 | content 904 + mesh 896 + misc 694 |
+| The Mystery of Z Island | +617 | content 776 + misc 673 |
+| Operation Amazon | +182 | content 677 |
+| Indian Strike Force | +55 | content 718 + misc 572 |
+| RPG Template | +17 | noise — effectively fits already |
+
+The pattern is uniform: **the stragglers are content-texture and misc demos now, not grass
+demos**. Levers in flight / next, in order of expected effect on exactly these five:
+
+1. **Mip-chain the 990 single-mip DDS (5.5 GB of unstreamable source textures)** — conversion
+   done and verified in staging 2026-08-04, swap-in + re-census next. Single-mip textures are
+   pinned at full size forever; with mips the streamer can demote them. Directly attacks the
+   content column on all five stragglers.
+2. **A4 Option 1, emissive SVT map (−96 floor, every level)** — retry with an explicit 1×1
+   black bind; `SET_TANGENTVIS 15` first to confirm what the shader samples (see the A4
+   post-mortem above).
+3. **Dead terrain chunk VB/IB (−108 floor)** + **wetmap-on-weather B7 (−52)** + B5/B4.
+4. **Misc autopsy for Aztec/Z Island/ISF** (500–700 MB each; skinned streamout + unnamed +
+   upload) — no lever exists yet because nobody has itemised it since the merge.
+
+The `lowvram` preset remains the safety net for the stragglers in the meantime: grass density
+is no longer the lever that matters there — a content/texture budget cap (B6) is.
