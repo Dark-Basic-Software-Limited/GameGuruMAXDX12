@@ -903,15 +903,23 @@ float WickedGetRoughnessStrength(void)
 		}
 		return t.entityelement[g_iWickedElementId].eleprof.WEMaterial.fRoughness[g_iWickedMeshNumber];
 	}
-	if (t.entityprofile[g_iWickedEntityId].WEMaterial.fRoughness[g_iWickedMeshNumber] >= 0.0) 
+	// GGMAX bug fix (2026-08-04): FPE-sourced roughness — treat an explicit 0.00 as UNSET,
+	// not "perfect mirror". The DX11 Model Importer wrote roughnessStrength as the RAW DCC
+	// material roughness (DX11 M-Importer.cpp:7541/7817), where 0.00 just means the artist
+	// never authored the channel — and the DX11 renderer never consumed the field at all.
+	// 547 shipped FPEs carry roughnessStrength=0.00; honoring it literally made them
+	// glass-smooth mirrors (TESTPRO1 breakables barrels: basecolor washed out by
+	// grazing-angle probe reflections — "incomplete reflection" bug). This value is consumed
+	// ONLY when a surface map loaded (wickedcalls_part1.cpp:305-309) and it MULTIPLIES the
+	// map's roughness channel, so "unset" must be 1.0 — let the authored map drive roughness,
+	// exactly what the 5,580 healthy roughnessStrength=1.00 assets do. The editor material
+	// panel path above still honors an explicit 0 (deliberate user choice); an FPE that
+	// truly wants a mirror can say roughnessStrength=0.01.
+	if (t.entityprofile[g_iWickedEntityId].WEMaterial.fRoughness[g_iWickedMeshNumber] > 0.0f)
 	{
 		return t.entityprofile[g_iWickedEntityId].WEMaterial.fRoughness[g_iWickedMeshNumber];
 	}
-	if (g_iWickedMeshNumber >= 0 && g_iWickedMeshNumber < MAXMESHMATERIALS && t.entityprofile[g_iWickedEntityId].WEMaterial.fRoughness[g_iWickedMeshNumber] >= 0.0) 
-	{
-		return t.entityprofile[g_iWickedEntityId].WEMaterial.fRoughness[g_iWickedMeshNumber];
-	}
-	return 0.2f;
+	return 1.0f;
 }
 float WickedGetMetallnessStrength(void)
 {
