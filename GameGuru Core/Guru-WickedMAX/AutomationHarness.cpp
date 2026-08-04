@@ -3459,6 +3459,40 @@ void AutoHarness_CheckForCommand(void)
 		_snprintf(result, sizeof(result), "OK: Game Settings window %s", Game_Settings_Window ? "OPEN" : "CLOSED");
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "SET_PICKUPDATE") == 0)
+	{
+		// SET_PICKUPDATE <0|1|2> - A/B the widget-pick scene refresh.
+		//   2 = force a full Scene::Update every frame (the pre-fix DX12 behaviour)
+		//   1 = gated (the fix: skip when cursor+camera unchanged and no button held)
+		//   0 = never (diagnostic ceiling; breaks widget dragging)
+		// Mode 2 lets the cost be measured WITHOUT needing an entity selected, because the
+		// call site (widget_getplanepos) is otherwise only reached while something is.
+		extern int g_iPickSceneUpdateMode, g_iPickSceneUpdateRuns, g_iPickSceneUpdateSkips;
+		g_iPickSceneUpdateMode = atoi(arg);
+		g_iPickSceneUpdateRuns = 0;
+		g_iPickSceneUpdateSkips = 0;
+		_snprintf(result, sizeof(result), "OK: pick scene-update mode %d (counters reset)", g_iPickSceneUpdateMode);
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "FORCE_PICKUPDATE") == 0)
+	{
+		// FORCE_PICKUPDATE <n> - run WickedCall_UpdateSceneForPick n times right now and
+		// report the wall time, so the per-call cost can be measured directly instead of
+		// inferred from an FPS delta.
+		void WickedCall_UpdateSceneForPick(void);
+		extern int g_iPickSceneUpdateMode;
+		const int n = std::max(1, std::min(200, atoi(arg)));
+		const int saved = g_iPickSceneUpdateMode;
+		g_iPickSceneUpdateMode = 2; // force real work
+		auto t0 = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < n; i++) WickedCall_UpdateSceneForPick();
+		auto t1 = std::chrono::high_resolution_clock::now();
+		g_iPickSceneUpdateMode = saved;
+		const double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+		_snprintf(result, sizeof(result), "OK: %d full Scene::Update(0) calls took %.2f ms total = %.3f ms each",
+			n, ms, ms / (double)n);
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "DUMP_EMITTERS") == 0)
 	{
 		// DUMP_EMITTERS - per-emitter state for WPE particle debugging. Reports the things

@@ -805,11 +805,76 @@ void WickedCall_UpdateLimbsOfObject(sObject* pObject)
 	}
 }
 
+// GGMAX 2026-08-05: mode for the widget-pick scene refresh below.
+//   1 = gated (default, see the comment in WickedCall_UpdateSceneForPick)
+//   2 = force a full Scene::Update every call (the pre-fix behaviour, for A/B)
+//   0 = never update (diagnostic only - will break widget dragging)
+// Harness: SET_PICKUPDATE <0|1|2>. Read via GET_PERF_DATA -> PICKUPDATE.
+int g_iPickSceneUpdateMode = 1;
+int g_iPickSceneUpdateRuns = 0;
+int g_iPickSceneUpdateSkips = 0;
+
 void WickedCall_UpdateSceneForPick(void)
 {
 	// when position/rot/etc an object, and then need to instantly
 	// cast a ray to pick, need to update scene
 	//PE: Only transform update needed.
+	//
+	// GGMAX 2026-08-05 PERF: the comment above is the DX11 intent - the fork had
+	// Scene::UpdateSceneTransform(0), which ran ONLY the previous-frame-transform and
+	// transform systems (WickedRepo/WickedEngine/wiScene.cpp:1593). Modern Wicked has no
+	// such entry point, so the DX12 migration substituted the FULL Scene::Update(0):
+	// animations, hierarchy, armatures, meshes, materials, objects+AABBs, lights, probes,
+	// decals, emitters, hair, weather, occlusion and TLAS, over the whole scene
+	// (island.fpm = 16,370 transforms / 8,982 objects). It is called every frame from
+	// widget_getplanepos (M-Widget.cpp:390) whenever an entity is selected, and it runs
+	// BEFORE the pick itself, so the Perf-P.3 pick cache cannot save it - the cheap half
+	// was cached and the expensive half was left running unconditionally.
+	//
+	// A partial update is NOT a safe substitute here: the pick raycast tests aabb_objects,
+	// which is produced by RunObjectUpdateSystem, so a transform-only refresh would leave
+	// stale bounds. Instead, skip the whole thing when it provably cannot change anything -
+	// the same correctness rule the pick cache already uses. The only input that moves the
+	// widget plane is the camera (the callers PointObject it at the camera each frame), and
+	// the only thing that moves the pick ray is the cursor. If neither moved and no mouse
+	// button is held, last frame's update already left the scene in exactly this state.
+	// NEVER skip while a button is down: terrain paint/sculpt and object drag all read the
+	// pick-derived cursor and gate on it CHANGING each frame (see the matching note in
+	// WickedCall_GetPick, wickedcalls_part3.cpp:165).
+	if (g_iPickSceneUpdateMode == 0)
+	{
+		g_iPickSceneUpdateSkips++;
+		return;
+	}
+	if (g_iPickSceneUpdateMode == 1)
+	{
+		const bool bInteracting =
+			wiInput::Down(wiInput::MOUSE_BUTTON_LEFT) ||
+			wiInput::Down(wiInput::MOUSE_BUTTON_RIGHT) ||
+			wiInput::Down(wiInput::MOUSE_BUTTON_MIDDLE);
+		if (!bInteracting)
+		{
+			const XMFLOAT4 ptr = wiInput::GetPointer();
+			const wiScene::CameraComponent& cam = wiScene::GetCamera();
+			static bool sHave = false;
+			static float sM[2] = {}, sE[3] = {}, sA[3] = {}, sU[3] = {};
+			if (sHave &&
+				sM[0] == ptr.x && sM[1] == ptr.y &&
+				sE[0] == cam.Eye.x && sE[1] == cam.Eye.y && sE[2] == cam.Eye.z &&
+				sA[0] == cam.At.x && sA[1] == cam.At.y && sA[2] == cam.At.z &&
+				sU[0] == cam.Up.x && sU[1] == cam.Up.y && sU[2] == cam.Up.z)
+			{
+				g_iPickSceneUpdateSkips++;
+				return;
+			}
+			sHave = true;
+			sM[0] = ptr.x; sM[1] = ptr.y;
+			sE[0] = cam.Eye.x; sE[1] = cam.Eye.y; sE[2] = cam.Eye.z;
+			sA[0] = cam.At.x;  sA[1] = cam.At.y;  sA[2] = cam.At.z;
+			sU[0] = cam.Up.x;  sU[1] = cam.Up.y;  sU[2] = cam.Up.z;
+		}
+	}
+	g_iPickSceneUpdateRuns++;
 	wiScene::GetScene().Update(0);
 }
 
