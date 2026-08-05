@@ -2954,6 +2954,21 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "KILL_EMITTERS") == 0)
+	{
+		// DEVICE_HUNG discriminator: remove every EmittedParticleSystem so no particle
+		// simulate dispatches run. If the standalone-play GPU hang stops with emitters
+		// gone, the particle path (simulate CS reads texture_depth_history) is convicted.
+		auto& scene = wi::scene::GetScene();
+		size_t n = scene.emitters.GetCount();
+		while (scene.emitters.GetCount() > 0)
+		{
+			scene.emitters.Remove(scene.emitters.GetEntity(0));
+		}
+		_snprintf(result, resultSize, "OK: removed %u emitters", (unsigned)n);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	return false;
 }
 

@@ -115,28 +115,35 @@ Conclusion: the RECORDED material_index path is exonerated (clamped and the faul
 persists). The hung SVT list may be a VICTIM — DRED's page fault is global, and the
 faulting access can come from other in-flight work on any queue.
 
-**Ranked remaining hypotheses + discriminators (each ~15 min with the soak harness):**
+**Soak run 4 (KILL_EMITTERS discriminator): PARTICLES EXONERATED.** The new harness
+command reported **"removed 0 emitters"** — standalone Aztec play has NO
+EmittedParticleSystems at all — and the hang still fired with the identical signature.
+The WPE-particle hypothesis is dead (and WPE re-enablement is NOT the regression source).
 
-1. **WPE particle simulate CS reading `texture_depth_history`.** The depth-chain targets
-   (`depthBuffer_Copy1` 9×, `rtLinearDepth` 2×) are in the freed-match list of EVERY dump;
-   `emittedparticle_simulateCS.hlsl:197` reads that binding for depth collisions on the
-   compute queue; WPE particles are the newest re-enabled system (2026-08-04/05, deltas
-   2.00-2.02) and Aztec torches emit continuously near spawn. A stale camera CB /
-   texture_depth_index_prev after the game-mode RenderPath re-init would read the FREED
-   old depth buffer. Discriminator: soak with all emitters suppressed (harness command to
-   pause/kill emitters, or preload_wicked_particle_effect force-disable) — if clean,
-   particle path convicted.
-2. **Stale ShaderMaterial texture descriptor surviving the set swap** (terrain material
-   whose texture resource died without the material buffer entry being rewritten).
-   Discriminator: at swap time, walk scene materials and log any whose texture descriptor
-   index matches a just-freed texture.
-3. **Somebody else entirely on the graphics queue** — needs per-queue fault attribution;
-   DRED breadcrumb contexts do not decode on this driver (ANSI and UNICODE embedded
-   markers both tried), so shape-matching is the only naming tool.
+**Timing refinement**: hang dump timestamps vs cycle starts put the fault at **~5-10 s
+after entering the level** (user's original: during LOADING LEVEL itself) — the danger
+window is the load/residency storm, not steady-state play.
+
+**Ranked remaining hypotheses + discriminators:**
+
+1. **Temporal/history reader with a stale `texture_depth_index_prev`** after the
+   game-mode RenderPath re-init (`MasterRenderer::Load` → ResizeBuffers frees the OLD
+   `depthBuffer_Copy1`/`rtLinearDepth` — both appear in the freed-match list of EVERY
+   dump, 11/11). If the first game frames consume a camera CB / bindless index captured
+   pre-resize, any depth-history read (TAA temporal, disocclusion checks) hits the freed
+   target. Discriminator: disable TAA/temporal effects for the standalone session and
+   soak; or force a full temporal-history invalidation after MasterRenderer::Load.
+2. **Stale ShaderMaterial texture descriptor surviving the terrain set swap** (texture
+   died, material buffer entry not rewritten). Discriminator: at swap time, walk scene
+   materials and log any whose descriptor index matches a just-freed texture.
+3. **Graphics-queue faulter with the compute list as victim** — several graphics lists sit
+   at lastCompletedOp=0 in each dump; DRED contexts don't decode on this driver, so
+   shape-matching is the only naming tool.
 
 Note: mat18 + the depth target matching the same fault VA = D3D12MA heap reuse — both
 occupied overlapping VA ranges at different times; the most recent occupant is what the
-faulter believed it was reading.
+faulter believed it was reading. No dump has an ACTIVE object at the fault VA (11/11
+pure use-after-free on unmapped memory).
 
 ## Open items
 
