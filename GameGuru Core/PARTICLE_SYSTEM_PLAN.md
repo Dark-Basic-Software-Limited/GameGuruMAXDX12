@@ -17,6 +17,11 @@ see the status box below. This document remains the reference for what the DX11 
 >   and the 2.00 emitter fields were never added to `EmittedParticleSystem::Serialize`. Clones
 >   1-4 therefore had `burst_amount = 0`, and `Burst(0)` resolves `num = burst_amount` — four of
 >   every five cache slots were silent. Harness `WPE_CLONETEST` is the regression gate.
+> * **`spawn_pause`/`spawn_pause_random` gap ASSESSED (2026-08-05):** the reader parses them
+>   (`wickedcalls_part3.cpp:2327`) but the DX12 emitter has no members, so they are discarded.
+>   **Corpus-checked: every shipped `.PE` (14 particlesbank + 12 decal) has both at 0** — zero
+>   effect on shipped content. Only matters if a user authors a pause-gust effect in the
+>   particle editor; port the two members + UpdateCPU pause phase then (small, self-contained).
 >
 > **Not done:** systematic visual parity against DX11 captures (plan phase 0b/5), and the 19-demo
 > VRAM + FPS re-sweeps. 27 effects now load textures including a 5.4 MB flipbook, and the 4 GB
