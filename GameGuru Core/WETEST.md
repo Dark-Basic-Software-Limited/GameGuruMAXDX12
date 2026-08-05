@@ -315,6 +315,27 @@ echo 'WPE_CLONETEST gamecore\decals\impact\wpe.pe' > "$D/auto_command.txt"
 
 Expect `VERDICT: PASS - all cache clones would emit (0 of 4 clones differ from master)`.
 
+## Selection-Outline Commands
+
+The DX11-style selection outline was restored 2026-08-05 (the DX12 port had the whole
+pipeline but the two engine callback sites were dropped in the API migration — the mask
+pass is now called from `MasterRenderer::Render`, the composite from `customDraw_Compose`).
+Diagnostics, all editor-state:
+
+| Command | Args | Notes |
+|---|---|---|
+| `DUMP_OUTLINE` | (none) | Whole-pipeline state: mode/prefs gates, FEED globals, per-object stencil refs **with positions** (check the position — selecting by index routinely lands on an entity far outside the camera view), per-renderpass ref/total draw counters, mask/composite run counters, plus a same-mesh twin detector. |
+| `DUMP_OUTLINE_RT` | (none) | Saves all three outline mask targets to `Files/outline_rt(.png/_red/_blue)`. |
+| `OUTLINE_MASKTEST` | `<0\|1\|2\|3>` | 0 normal; 1 draw unconditionally (plumbing proof); 2 ENGINE-nibble compare (stencil writes proof); 3 full-byte compare. |
+| `SET_GRIDEDITSELECT` | `<n>` | Force grid edit select mode (5 = entity selection). |
+
+**Testing trap that cost a whole evening:** `SELECT_ENTITY <idx>` selects by entity index,
+NOT by visibility. On TESTPRO1 every entity sits thousands of units from the saved camera,
+and a selected far-away object still ticks the frustum/draw counters while being a
+2-pixel speck — looking exactly like "outline broken". Verify with an entity whose
+DUMP_OUTLINE position is within ~1500 units of the camera aim (Island Showdown's start
+view has the Player Start marker close by). Locked entities highlight BLUE (ref 3), not white.
+
 ## Scene Interrogation Commands
 
 Three commands for inspecting entities, lights, and the full light pipeline at runtime. Works in editor or game state.

@@ -334,6 +334,14 @@ void MasterRenderer::Load()
 		GGTerrain_Draw_EnvProbe(culler, frusta, frustum_count, cmd);
 	};
 	customDraw_Compose = [](CommandList cmd) {
+		// GGMAX 2026-08-05: selection-outline composite. DX11 called this from
+		// RenderPath2D::Compose just before the GUI (fork RenderPath2D.cpp:337); the
+		// clone's customDraw_Compose fires at the same point in the frame
+		// (wiRenderPath3D.cpp Compose, inside the compose render pass). Must run BEFORE
+		// the wicked-terrain early-out - the outline is unrelated to which terrain
+		// path is live.
+		void Wicked_Render_Opaque_Scene(CommandList cmd);
+		Wicked_Render_Opaque_Scene(cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Debug(cmd);
 		GGTerrain_Draw_Overlay(cmd);
@@ -628,6 +636,14 @@ void MasterRenderer::ResizeBuffers(void)
 
 float fGetHighlightThickness(void);
 
+// GGMAX 2026-08-05: outline-pipeline stage counters for DUMP_OUTLINE. The pipeline has
+// four stages that can each silently no-op (feed -> stencil -> mask -> composite);
+// these name which stage ran this session so a dead outline is diagnosable in one dump.
+uint64_t g_dbgOutlineCompositeRuns = 0; // Wicked_Render_Opaque_Scene editor branch executed
+uint64_t g_dbgOutlineMaskRuns = 0;      // RenderOutlineHighlighers mask passes executed
+int g_iOutlineMaskTest = 0;             // harness OUTLINE_MASKTEST: 1 = stencil ALWAYS (draw
+                                        // unconditionally) to split draw-lands vs compare-fails
+
 void Wicked_Render_Opaque_Scene(CommandList cmd)
 {
 	extern bool g_bNo2DRender;
@@ -645,8 +661,11 @@ void Wicked_Render_Opaque_Scene(CommandList cmd)
 
 			wiRenderer::BindCommonResources(cmd);
 			XMFLOAT4 col = XMFLOAT4(0.8f, 0.8f, 0.8f, 0.8f);;
+			// GGMAX 2026-08-05: the fork's Postprocess_Outline left an event open for the
+			// caller to close; the clone's is internally balanced, so the EventEnd calls
+			// that used to follow each Postprocess_Outline are removed (they underflowed
+			// the event stack once this path went live).
 			wiRenderer::Postprocess_Outline(rt_Outline, cmd, 0.1f, 0.8f, col);
-			device->EventEnd(cmd);
 			area = { 0, 0, (float)master.masterrenderer.GetPhysicalWidth(), (float)master.masterrenderer.GetPhysicalHeight() };
 			//device->SetScissorArea(cmd, area);
 		}
@@ -666,20 +685,19 @@ void Wicked_Render_Opaque_Scene(CommandList cmd)
 				//device->SetScissorArea(cmd, area);
 
 			wiRenderer::BindCommonResources(cmd);
+			g_dbgOutlineCompositeRuns++;
 			XMFLOAT4 col = selectionColor;
 			col.w *= 0.65; //opacity;
+			// (EventEnd calls removed - see the note in the test-game branch above)
 			wiRenderer::Postprocess_Outline(rt_Outline, cmd, 0.1f, thickness, col);
-			device->EventEnd(cmd);
 
 			col = selectionColorRed;
 			col.w *= 0.65; //opacity;
 			wiRenderer::Postprocess_Outline(rt_Outline_Red, cmd, 0.1f, thickness, col);
-			device->EventEnd(cmd);
 
 			col = selectionColorBlue;
 			col.w *= 0.65; //opacity;
 			wiRenderer::Postprocess_Outline(rt_Outline_Blue, cmd, 0.1f, thickness, col);
-			device->EventEnd(cmd);
 
 			area = { 0, 0, (float)master.masterrenderer.GetPhysicalWidth(), (float)master.masterrenderer.GetPhysicalHeight() };
 			//device->SetScissorArea(cmd, area);
@@ -766,6 +784,17 @@ void MasterRenderer::Compose(CommandList cmd) const
 void MasterRenderer::Render() const
 {
 	__super::Render();
+
+	// GGMAX 2026-08-05: selection outline RESTORED. In DX11 the engine fork called this
+	// virtual from inside RenderPath3D::Render (fork RenderPath3D.cpp:1630, GGREDUCED
+	// block after RenderPostprocessChain); the DX12 clone never gained that hook, so the
+	// entire outline pipeline - stencil setters, the rt_Outline* mask passes below, the
+	// Postprocess_Outline composite in Wicked_Render_Opaque_Scene, and the settings
+	// checkbox + thickness slider - was fully ported but dead (2026-08-05 audit finding).
+	// No engine hook is needed: the mask function ignores its cmd argument and begins its
+	// OWN command list, so calling it here keeps the ordering guarantee - depth lists
+	// (begun earlier in __super::Render) -> mask list -> compose list (begun later).
+	RenderOutlineHighlighers(CommandList());
 }
 
 // moved into function so we can call it at the right time from within renderpath3D, just before 2D is rendered
@@ -791,6 +820,8 @@ void MasterRenderer::RenderOutlineHighlighers(CommandList cmd) const
 			// Selection outline:
 			if (GetDepthStencil() != nullptr)
 			{
+				extern uint64_t g_dbgOutlineMaskRuns;
+				g_dbgOutlineMaskRuns++;
 				GraphicsDevice* device = wiGraphics::GetDevice();
 				CommandList cmd = device->BeginCommandList();
 
@@ -805,6 +836,17 @@ void MasterRenderer::RenderOutlineHighlighers(CommandList cmd) const
 				fx.enableFullScreen();
 				fx.stencilComp = STENCILMODE::STENCILMODE_EQUAL;
 				fx.stencilRefMode = wi::image::STENCILREFMODE_USER;
+				// diagnostic splits (harness OUTLINE_MASKTEST):
+				//  1 = unconditional draw (proves pass/PSO/RT plumbing, no stencil compare)
+				//  2 = ENGINE-nibble compare vs STENCILREF_DEFAULT (proves whether ANY
+				//      stencil writes land - every drawn object writes engine ref 1)
+				extern int g_iOutlineMaskTest;
+				if (g_iOutlineMaskTest == 1) fx.stencilComp = STENCILMODE::STENCILMODE_DISABLED;
+				if (g_iOutlineMaskTest == 2) fx.stencilRefMode = wi::image::STENCILREFMODE_ENGINE;
+				// 3 = FULL-BYTE compare vs 0x11 (engine DEFAULT | user 1<<4): silhouette
+				// appearing = the buffer DOES hold the user nibble and the USER-mode image
+				// compare is at fault; black = the write side drops the high nibble.
+				if (g_iOutlineMaskTest == 3) fx.stencilRefMode = wi::image::STENCILREFMODE_ALL;
 
 				// Objects outline:
 				{
@@ -812,6 +854,8 @@ void MasterRenderer::RenderOutlineHighlighers(CommandList cmd) const
 					device->RenderPassBegin(&renderpass_Outline, cmd);
 					// Draw solid blocks of selected objects
 					fx.stencilRef = EDITORSTENCILREF_HIGHLIGHT_OBJECT;
+					if (g_iOutlineMaskTest == 3)
+						fx.stencilRef = wi::renderer::CombineStencilrefs(wi::enums::STENCILREF_DEFAULT, (uint8_t)EDITORSTENCILREF_HIGHLIGHT_OBJECT_BLUE); // full-byte engine|user compare sample
 					wiImage::Draw(wiTextureHelper::getWhite(), fx, cmd);
 					device->RenderPassEnd(cmd);
 				}

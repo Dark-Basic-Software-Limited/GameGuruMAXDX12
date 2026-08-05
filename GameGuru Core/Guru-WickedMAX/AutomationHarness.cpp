@@ -2894,6 +2894,159 @@ static void Sotan_Tick(void)
 	fclose(f);
 }
 
+// GGMAX 2026-08-05: outline-pipeline diagnostic commands, hoisted out of the main
+// dispatch chain - the else-if chain hit MSVC C1061 (blocks nested too deeply),
+// since every chain link nests one block deeper. Returns true if cmd was handled.
+static bool AutoHarness_OutlineCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+#define sizeof_result_compat resultSize
+	if (_stricmp(cmd, "DUMP_OUTLINE") == 0)
+	{
+		// DUMP_OUTLINE - name which stage of the selection-outline pipeline is dead.
+		// Stages: FEED (editor globals set from selection) -> STENCIL (objects carrying a
+		// user stencil ref) -> MASK (RenderOutlineHighlighers passes) -> COMPOSITE
+		// (Wicked_Render_Opaque_Scene Postprocess_Outline). Plus every gate the chain
+		// tests: grideditselect==5, prefs checkbox/thickness, depth-stencil presence.
+		extern sObject* g_selected_pobject; extern sObject* g_highlight_pobject;
+		extern sObject* g_selected_editor_object; extern int g_selected_editor_objectID;
+		extern std::vector<int> g_ObjectHighlightList;
+		extern uint64_t g_dbgOutlineCompositeRuns, g_dbgOutlineMaskRuns;
+		int iGetgrideditselect(void);
+		bool bUseEditorOutlineSelection(void);
+		float fGetHighlightThickness(void);
+
+		// count scene objects currently carrying a nonzero user stencil ref (the proof
+		// the STENCIL stage ran - this is what the mask pass keys on), with per-object
+		// detail: ref value, renderable, has-mesh - the write side only matters for
+		// objects that actually draw
+		int stencilObjs = 0;
+		char stencilDetail[640] = {};
+		{
+			auto& sc = wiScene::GetScene();
+			int w = 0;
+			wi::ecs::Entity refMesh = wi::ecs::INVALID_ENTITY;
+			for (size_t i = 0; i < sc.objects.GetCount(); i++)
+			{
+				if (sc.objects[i].userStencilRef != 0)
+				{
+					stencilObjs++;
+					wi::ecs::Entity e = sc.objects.GetEntity(i);
+					if (sc.objects[i].meshID != wi::ecs::INVALID_ENTITY) refMesh = sc.objects[i].meshID;
+					if (w < (int)sizeof(stencilDetail) - 96)
+					{
+						wi::scene::TransformComponent* tr = sc.transforms.GetComponent(e);
+						XMFLOAT3 p = tr ? tr->GetPosition() : XMFLOAT3(0, 0, 0);
+						w += _snprintf(stencilDetail + w, sizeof(stencilDetail) - w,
+							"[e=%u ref=%u rnd=%d mesh=%d pos=(%.0f,%.0f,%.0f)] ",
+							(unsigned)e, (unsigned)sc.objects[i].userStencilRef,
+							sc.objects[i].IsRenderable() ? 1 : 0,
+							sc.objects[i].meshID != wi::ecs::INVALID_ENTITY ? 1 : 0, p.x, p.y, p.z);
+					}
+				}
+			}
+			// TWIN DETECTOR: other renderable objects sharing the ref'd object's MESH -
+			// a co-located unref'd twin wins the depth race and the ref'd copy's stencil
+			// never lands (depth_fail = KEEP)
+			if (refMesh != wi::ecs::INVALID_ENTITY)
+			{
+				w += _snprintf(stencilDetail + w, sizeof(stencilDetail) - w, "| sameMesh: ");
+				for (size_t i = 0; i < sc.objects.GetCount() && w < (int)sizeof(stencilDetail) - 96; i++)
+				{
+					if (sc.objects[i].meshID == refMesh)
+					{
+						wi::ecs::Entity e = sc.objects.GetEntity(i);
+						wi::scene::TransformComponent* tr = sc.transforms.GetComponent(e);
+						XMFLOAT3 p = tr ? tr->GetPosition() : XMFLOAT3(0, 0, 0);
+						w += _snprintf(stencilDetail + w, sizeof(stencilDetail) - w,
+							"[e=%u ref=%u rnd=%d (%.0f,%.0f,%.0f)] ",
+							(unsigned)e, (unsigned)sc.objects[i].userStencilRef,
+							sc.objects[i].IsRenderable() ? 1 : 0, p.x, p.y, p.z);
+					}
+				}
+			}
+		}
+		// draws that actually BOUND a nonzero user stencil ref, per render pass (engine
+		// counter in RenderMeshes) - splits "component carries ref" from "draw wrote it"
+		char passdetail[320] = {};
+		{
+			using namespace wi::enums;
+			extern std::atomic<uint64_t>* GG_GetUserStencilDrawCounters(void);
+			extern std::atomic<uint64_t>* GG_GetTotalDrawCounters(void);
+			std::atomic<uint64_t>* ctr = GG_GetUserStencilDrawCounters();
+			std::atomic<uint64_t>* tot = GG_GetTotalDrawCounters();
+			static const char* names[RENDERPASS_COUNT] = { "main","prepass","prepassDO","envmap","shadow","voxelize","rainblk" };
+			int w = 0;
+			for (int rp = 0; rp < RENDERPASS_COUNT && w < (int)sizeof(passdetail) - 48; rp++)
+				w += _snprintf(passdetail + w, sizeof(passdetail) - w, "%s=%llu/%llu ",
+					names[rp], (unsigned long long)ctr[rp].load(std::memory_order_relaxed),
+					(unsigned long long)tot[rp].load(std::memory_order_relaxed));
+		}
+		_snprintf(result, resultSize,
+			"OUTLINE: grideditselect=%d (need 5)  outlineEnabled=%d thickness=%.2f\n"
+			"FEED: sel_pobject=%d sel_editor=%d (id=%d) highlight=%d listsize=%d\n"
+			"STENCIL: objects_with_userStencilRef=%d %s\n"
+			"STENCIL_DRAWS (ref/total): %s\n"
+			"MASK: runs=%llu   COMPOSITE: runs=%llu\n"
+			"activeObject=%d gridentity=%d testgame=%d",
+			iGetgrideditselect(), bUseEditorOutlineSelection() ? 1 : 0, fGetHighlightThickness(),
+			g_selected_pobject ? 1 : 0, g_selected_editor_object ? 1 : 0, g_selected_editor_objectID,
+			g_highlight_pobject ? 1 : 0, (int)g_ObjectHighlightList.size(),
+			stencilObjs, stencilDetail,
+			passdetail,
+			(unsigned long long)g_dbgOutlineMaskRuns, (unsigned long long)g_dbgOutlineCompositeRuns,
+			t.widget.activeObject, t.gridentity, bImGuiInTestGame ? 1 : 0);
+		result[resultSize - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_OUTLINE_RT") == 0)
+	{
+		// DUMP_OUTLINE_RT - save the outline mask target to a PNG. Splits the remaining
+		// search space in one artifact: black = the stencil/mask stage produces nothing
+		// (stencil bits not landing or the image stencil-test not matching); a white
+		// silhouette of the selected object = mask fine, composite/Postprocess_Outline
+		// side is the problem.
+		extern wiGraphics::Texture rt_Outline, rt_Outline_Red, rt_Outline_Blue;
+		if (!rt_Outline.IsValid())
+		{
+			_snprintf(result, resultSize, "FAIL: rt_Outline not valid");
+		}
+		else
+		{
+			bool ok = wi::helper::saveTextureToFile(rt_Outline, "outline_rt.png");
+			bool okR = rt_Outline_Red.IsValid() && wi::helper::saveTextureToFile(rt_Outline_Red, "outline_rt_red.png");
+			bool okB = rt_Outline_Blue.IsValid() && wi::helper::saveTextureToFile(rt_Outline_Blue, "outline_rt_blue.png");
+			_snprintf(result, resultSize, "%s: rt_Outline %ux%u -> outline_rt(.png/_red/_blue) red=%d blue=%d",
+				ok ? "OK" : "FAIL", rt_Outline.GetDesc().width, rt_Outline.GetDesc().height, okR ? 1 : 0, okB ? 1 : 0);
+		}
+		result[resultSize - 1] = 0;
+	}
+	else if (_stricmp(cmd, "OUTLINE_MASKTEST") == 0)
+	{
+		// OUTLINE_MASKTEST <0|1|2> - 1 = draw UNCONDITIONALLY (stencil compare disabled):
+		// white dump proves the pass/PSO/RT plumbing. 2 = ENGINE-nibble compare: every
+		// drawn object writes engine ref 1, so silhouettes prove stencil WRITES land at
+		// all. 0 = normal USER-nibble compare.
+		extern int g_iOutlineMaskTest;
+		g_iOutlineMaskTest = atoi(arg);
+		_snprintf(result, resultSize, "OK: outline mask test=%d", g_iOutlineMaskTest);
+		result[resultSize - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_GRIDEDITSELECT") == 0)
+	{
+		// SET_GRIDEDITSELECT <n> - force the grid edit select mode (5 = entity selection,
+		// what clicking an entity tool does). Diagnostic for the outline pipeline, whose
+		// feed stage early-outs unless the editor is in mode 5.
+		t.grideditselect = atoi(arg);
+		_snprintf(result, resultSize, "OK: grideditselect=%d", t.grideditselect);
+		result[resultSize - 1] = 0;
+	}
+	else
+	{
+		return false;
+	}
+	return true;
+#undef sizeof_result_compat
+}
+
 void AutoHarness_CheckForCommand(void)
 {
 	if (g_tvCycleActive)
@@ -3512,6 +3665,10 @@ void AutoHarness_CheckForCommand(void)
 				idx, t.entityelement[idx].obj, t.widget.activeObject, t.gridentity, t.gridentityobj);
 		}
 		result[sizeof(result) - 1] = 0;
+	}
+	else if (AutoHarness_OutlineCommands(cmd, arg, result, sizeof(result)))
+	{
+		// handled in the helper (see above the dispatch function)
 	}
 	else if (_stricmp(cmd, "DUMP_PROFILER") == 0)
 	{
