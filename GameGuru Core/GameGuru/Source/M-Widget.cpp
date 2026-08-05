@@ -554,6 +554,10 @@ void widget_loop ( void )
 	}
 	else
 	{
+		// GGMAX 2026-08-05 PERF: partition widget_loop's selected-object branch. Selecting a
+		// Trigger Zone costs 11.07 ms here vs 0.20 ms for a barrel (measured), and P2-widget_loop
+		// was the whole of it - these sub-ranges say WHICH part.
+		auto wlSeg = wi::profiler::BeginRangeCPU("WL-Setup");
 		if ( (!Shooter_Tools_Window_Active && (!pref.iEnableDragDropEntityMode || bTriggerVisibleWidget ) )  && widget_temp_disabled)
 		{
 			widget_temp_disabled = false;
@@ -598,6 +602,7 @@ void widget_loop ( void )
 			RotateObject(g.widgetobjectoffset + 12, ObjectAngleX(t.widget.activeObject), ObjectAngleY(t.widget.activeObject), ObjectAngleZ(t.widget.activeObject));
 		}
 
+		wi::profiler::EndRange(wlSeg); wlSeg = wi::profiler::BeginRangeCPU("WL-PickSection");
 		//  If we havent picked a section of the widget, lets test for it
 		if ( t.widget.pickedSection == 0 )//|| g.fForceYRotationOfRubberBandFromKeyPress > 0.0f )
 		{
@@ -712,6 +717,7 @@ void widget_loop ( void )
 				}
 			}
 		}
+		wi::profiler::EndRange(wlSeg); wlSeg = wi::profiler::BeginRangeCPU("WL-Interact");
 		if ( t.widget.pickedSection == 0 )//&& g.fForceYRotationOfRubberBandFromKeyPress == 0 )
 		{
 			// code done above, needed here to handle g.fForceYRotationOfRubberBandFromKeyPress logic
@@ -1132,21 +1138,53 @@ void widget_loop ( void )
 			}
 		}
 
+		wi::profiler::EndRange(wlSeg); wlSeg = wi::profiler::BeginRangeCPU("WL-Waypoint");
 		// update waypoint object when widget moves entity
 		t.ttte=t.widget.pickedEntityIndex;
 		if ( t.ttte>0 ) 
 		{
 			t.waypointindex=t.entityelement[t.ttte].eleprof.trigger.waypointzoneindex;
-			if ( t.waypointindex>0 ) 
+			if ( t.waypointindex>0 )
 			{
-				// seems when zones are cloned, they copy the waypointzoneindex index, causing corruption
-				waypoint_fixcorruptduplicate(t.ttte); // acts on t.waypointindex
-				t.thisx_f=t.entityelement[t.ttte].x;
-				t.thisy_f=t.entityelement[t.ttte].y;
-				t.thisz_f=t.entityelement[t.ttte].z;
-				waypoint_movetothiscoordinate ( );
+				// GGMAX 2026-08-05 PERF: this block is titled "update waypoint object when widget
+				// MOVES entity", but it ran on EVERY frame that a zone was merely selected.
+				// waypoint_movetothiscoordinate() walks every node of the zone and, with
+				// g_bZonesFollowTerrain on, issues up to TWO BT_GetGroundHeight terrain raycasts
+				// per node, then rebuilds the zone object. Measured on island.fpm: selecting a
+				// Trigger Zone cost 10.91 ms/frame here (FPS 91 -> 50); selecting a barrel cost
+				// 0.00 ms, because a non-zone has no waypointzoneindex and skips the block.
+				// Only redo it when the entity has actually moved - which is what the comment
+				// always said. Always redo it while a mouse button is held, so dragging a zone
+				// (and any node edit made mid-drag) still tracks live, matching the same rule
+				// used by the editor pick cache in wickedcalls_part3.cpp:165.
+				static int sLastE = -1;
+				static float sLastX = 0, sLastY = 0, sLastZ = 0;
+				const bool bInteracting =
+					wiInput::Down(wiInput::MOUSE_BUTTON_LEFT) ||
+					wiInput::Down(wiInput::MOUSE_BUTTON_RIGHT) ||
+					wiInput::Down(wiInput::MOUSE_BUTTON_MIDDLE);
+				const bool bMoved =
+					(sLastE != t.ttte) ||
+					(sLastX != t.entityelement[t.ttte].x) ||
+					(sLastY != t.entityelement[t.ttte].y) ||
+					(sLastZ != t.entityelement[t.ttte].z);
+				if (bMoved || bInteracting)
+				{
+					sLastE = t.ttte;
+					sLastX = t.entityelement[t.ttte].x;
+					sLastY = t.entityelement[t.ttte].y;
+					sLastZ = t.entityelement[t.ttte].z;
+
+					// seems when zones are cloned, they copy the waypointzoneindex index, causing corruption
+					waypoint_fixcorruptduplicate(t.ttte); // acts on t.waypointindex
+					t.thisx_f=t.entityelement[t.ttte].x;
+					t.thisy_f=t.entityelement[t.ttte].y;
+					t.thisz_f=t.entityelement[t.ttte].z;
+					waypoint_movetothiscoordinate ( );
+				}
 			}
 		}
+		wi::profiler::EndRange(wlSeg); // close WL-Waypoint
 	}
 	t.widget.oldMouseClick = t.inputsys.mclick;
 
