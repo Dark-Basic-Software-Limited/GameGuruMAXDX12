@@ -1,6 +1,20 @@
 # WPE Particle System — History, Post-Mortem and Upgrade Plan
 
-**Investigation complete 2026-08-04. No code changed — this document is the plan.**
+**Investigation complete 2026-08-04. Phases 0a-4 IMPLEMENTED and pushed 2026-08-04/05 —
+see the status box below. This document remains the reference for what the DX11 system did.**
+
+> ## STATUS (2026-08-05)
+> **The WPE particle system is live again.** Legacy `.PE` reader + engine delta 2.00/2.00b/2.00c.
+> * `SCENE_EMITTERS` 0 → 95 on TESTPRO1; `Skipped non-Wicked archive` log events 47 → 0.
+> * Editor Preview renders (the effect was loading all along but being placed ~18,000 units away —
+>   `Component_Attach` was re-parenting archive transforms; see Appendix B.1).
+> * Opacity corrected — material alpha was being applied twice (alpha-squared, a 3.03x
+>   under-render). DX11's VS **assigns** the alpha byte rather than multiplying.
+> * `Burst(0)` and the `UpdateCPU` emission model ported verbatim (Appendix B.2/B.3).
+>
+> **Not done:** systematic visual parity against DX11 captures (plan phase 0b/5), and the 19-demo
+> VRAM + FPS re-sweeps. 27 effects now load textures including a 5.4 MB flipbook, and the 4 GB
+> gate was only just met — treat that as a real regression risk before release.
 
 Scope: the **WPE particle system** — effects stored as `.PE` files in `Files\particlesbank\wpe`
 and `Files\gamecore\decals\<name>\wpe.pe`. These are Wicked Engine emitter effects
