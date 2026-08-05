@@ -292,6 +292,29 @@ Cycles `g.tabmode` (0→1→2→0), mirroring the TAB key in test game mode:
 
 Exits test game back to editor by setting `t.game.gameloop=0`, `t.game.levelloop=0`, `t.game.masterloop=0`. This is the same exit path as pressing ESC during a test game (M-Game_part1.cpp line 1523).
 
+## WPE Particle Commands
+
+For the `.PE` effects in `Files\particlesbank\wpe` and `gamecore\decals\*\wpe.pe`. All three
+work in the editor — none of them needs a test game.
+
+| Command | Args | Notes |
+|---|---|---|
+| `DUMP_EMITTERS` | (none) | Per-emitter state: visible/active gates, `_flags`, count/life/size, **world** position (a wrong hierarchy attach shows up here), live GPU `aliveCount`, material blend mode and `baseColor.a`. Separates "not simulating" from "simulating but not drawn". |
+| `WPE_PREVIEW` | `<relative .pe path>` | Loads an effect exactly as the editor's Preview checkbox does and parks it 250 units in front of the camera, so it must be on screen if it draws at all. For screenshot A/B against DX11. |
+| `WPE_CLONETEST` | `<relative .pe path>` | Loads the effect, then `Entity_Duplicate`s its root four times — precisely what `preload_wicked_particle_effect()` does to fill the 5-slot `ready_decals[]` cache — and diffs every GameGuru emitter field of each clone against the master. Prints PASS/FAIL. |
+
+`WPE_CLONETEST` exists because of engine delta 2.01. `Entity_Duplicate` copies an entity by
+**serializing it**, so any field missing from `EmittedParticleSystem::Serialize` silently comes
+back as a struct default in the clone. `burst_amount` defaults to 0 and `Burst(0)` resolves
+`num = burst_amount`, so a clone that lost it occupies a cache slot and emits nothing. Run this
+after touching either the emitter struct or its serializer:
+
+```bash
+echo 'WPE_CLONETEST gamecore\decals\impact\wpe.pe' > "$D/auto_command.txt"
+```
+
+Expect `VERDICT: PASS - all cache clones would emit (0 of 4 clones differ from master)`.
+
 ## Scene Interrogation Commands
 
 Three commands for inspecting entities, lights, and the full light pipeline at runtime. Works in editor or game state.

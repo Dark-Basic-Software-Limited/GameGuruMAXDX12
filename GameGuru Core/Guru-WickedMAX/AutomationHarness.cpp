@@ -3639,6 +3639,100 @@ void AutoHarness_CheckForCommand(void)
 		}
 		result[sizeof(result) - 1] = 0;
 	}
+	else if (_stricmp(cmd, "WPE_CLONETEST") == 0)
+	{
+		// WPE_CLONETEST <relative .pe path> - reproduce, in the editor and without needing a
+		// test game, exactly what preload_wicked_particle_effect() (M-Entity_part5.cpp) does
+		// when it builds its 5-slot ready_decals[] clone cache: load the effect once, then
+		// Scene::Entity_Duplicate() that root for every remaining slot.
+		//
+		// This is the instrument for "rapid fire only ever shows one particle effect at a
+		// time". Entity_Duplicate copies an entity by serializing it, so any emitter field
+		// that EmittedParticleSystem::Serialize does not round-trip comes back as its default
+		// in the clone. burst_amount defaults to 0 and Burst(0) resolves num = burst_amount,
+		// so a clone that lost it emits NOTHING while still occupying a cache slot.
+		//
+		// Prints the master's values against each clone's and reports PASS/FAIL on an exact
+		// match, so the answer does not depend on anyone eyeballing a screenshot.
+		uint32_t WickedCall_LoadWPE(char* filename);
+		char pefile[MAX_PATH];
+		strncpy(pefile, arg, sizeof(pefile) - 1); pefile[sizeof(pefile) - 1] = 0;
+
+		wiScene::Scene& sc = wiScene::GetScene();
+
+		// Same root-from-last-emitter derivation the real preload uses, so this test cannot
+		// pass by taking a different path from the code it is meant to be checking.
+		auto rootOfNewestEmitter = [&sc]() -> uint32_t {
+			if (sc.emitters.GetCount() == 0) return 0;
+			wi::ecs::Entity em = sc.emitters.GetEntity(sc.emitters.GetCount() - 1);
+			wiScene::HierarchyComponent* h = sc.hierarchy.GetComponent(em);
+			return h ? (uint32_t)h->parentID : 0u;
+		};
+		// First emitter under a given root - the one whose fields we compare.
+		auto firstEmitterUnder = [&sc](uint32_t root) -> wiEmittedParticle* {
+			for (int i = 0; i < (int)sc.emitters.GetCount(); i++)
+			{
+				wi::ecs::Entity e = sc.emitters.GetEntity(i);
+				wiScene::HierarchyComponent* h = sc.hierarchy.GetComponent(e);
+				if (h && (uint32_t)h->parentID == root) return &sc.emitters[i];
+			}
+			return nullptr;
+		};
+
+		const uint32_t masterRoot = WickedCall_LoadWPE(pefile);
+		wiEmittedParticle* master = masterRoot ? firstEmitterUnder(masterRoot) : nullptr;
+		if (!master)
+		{
+			_snprintf(result, sizeof(result), "FAIL: could not load '%s' (root=%u)", pefile, masterRoot);
+		}
+		else
+		{
+			// Snapshot by value - sc.emitters can reallocate as duplicates are created, which
+			// would dangle the pointer.
+			const wiEmittedParticle m = *master;
+			int written = 0;
+			written += _snprintf(result + written, sizeof(result) - written,
+				"MASTER root=%u burst_amount=%.3f burst_split=%.3f burst_delay=%.3f spawn_random=%.3f "
+				"fadein=%.3f norm_rand=%.3f scal_rand=%.3f endcol=(%.2f,%.2f,%.2f) count=%.2f life=%.2f\n",
+				masterRoot, m.burst_amount, m.burst_split, m.burst_delay, m.spawn_random,
+				m.fadein_time, m.normal_random, m.scaling_random,
+				m.endcolor_red, m.endcolor_green, m.endcolor_blue, m.count, m.life);
+
+			int failures = 0;
+			for (int c = 1; c <= 4 && written < (int)sizeof(result) - 400; c++)
+			{
+				sc.Entity_Duplicate(masterRoot);
+				const uint32_t cloneRoot = rootOfNewestEmitter();
+				wiEmittedParticle* cl = cloneRoot ? firstEmitterUnder(cloneRoot) : nullptr;
+				if (!cl || cloneRoot == masterRoot)
+				{
+					failures++;
+					written += _snprintf(result + written, sizeof(result) - written,
+						"CLONE%d root=%u NO EMITTER (duplicate did not produce a usable clone)\n", c, cloneRoot);
+					continue;
+				}
+				const bool ok =
+					cl->burst_amount == m.burst_amount && cl->burst_split == m.burst_split &&
+					cl->burst_delay == m.burst_delay && cl->spawn_random == m.spawn_random &&
+					cl->fadein_time == m.fadein_time && cl->normal_random == m.normal_random &&
+					cl->scaling_random == m.scaling_random &&
+					cl->endcolor_red == m.endcolor_red && cl->endcolor_green == m.endcolor_green &&
+					cl->endcolor_blue == m.endcolor_blue;
+				if (!ok) failures++;
+				written += _snprintf(result + written, sizeof(result) - written,
+					"CLONE%d root=%u burst_amount=%.3f burst_split=%.3f burst_delay=%.3f spawn_random=%.3f "
+					"fadein=%.3f norm_rand=%.3f scal_rand=%.3f endcol=(%.2f,%.2f,%.2f) -> %s\n",
+					c, cloneRoot, cl->burst_amount, cl->burst_split, cl->burst_delay, cl->spawn_random,
+					cl->fadein_time, cl->normal_random, cl->scaling_random,
+					cl->endcolor_red, cl->endcolor_green, cl->endcolor_blue,
+					ok ? "MATCH" : "MISMATCH");
+			}
+			written += _snprintf(result + written, sizeof(result) - written,
+				"VERDICT: %s (%d of 4 clones differ from master)\n",
+				failures == 0 ? "PASS - all cache clones would emit" : "FAIL - silent cache slots", failures);
+		}
+		result[sizeof(result) - 1] = 0;
+	}
 	else if (_stricmp(cmd, "DUMP_SCENEUPDATE") == 0)
 	{
 		// DUMP_SCENEUPDATE — answer "why do the Scene-S* profiler rows say (3x)?" by NAMING the
