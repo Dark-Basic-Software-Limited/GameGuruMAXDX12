@@ -1217,3 +1217,28 @@ Soak driver: scratchpad `playgame_soak.sh <cycles> <playsecs>` — per phase (bo
 **DRED**: `dred.txt` next to the exe arms DRED (engine 1.51). With engine 2.03 the report also carries PASS NAMES per breadcrumb op (raw embedded ANSI markers replace PIX3 blobs when armed) — a hang now names the pass, e.g. which SVT compute list stalled.
 
 **Known crash cascade (2026-08-05, pre-2.03)**: initial DEVICE_HUNG during LOADING LEVEL -> relaunch while driver recovering -> silent AV in GraphicsDevice ctor (`CreateCommandQueue` fails, `wi::platform::Exit()` returns, null `SetName`) -> next relaunch AV in `DescriptorAllocator::block_allocate`. Engine 2.03 turns both AVs into clean fatal exits with the DRED report intact.
+
+## Shadow/Light Flicker Commands — added 2026-08-05 (Snowy spot-cone hunt)
+
+- `DUMP_SHADOWRECTS` — packer's final `pack_scale` + every packed light's shadow rect
+  (`ent=<wickedEntity> type=<0 dir|1 point|2 spot> WxH`). Rect/scale INSTABILITY across
+  camera poses = atlas-driven flicker; in the Snowy hunt both were rock-stable, which
+  exonerated the packer and convicted the tile-culling path instead.
+- `SET_LIGHT_LIT <index> <0|1>` — toggle a GG infinilight (writes `t.infinilight[i].islit`
+  AND the Wicked component intensity, save/restore). Isolation protocol: toggle each
+  suspect, screenshot, pixel-diff vs baseline — the owner of a lit pattern is whichever
+  toggle kills it. (Snowy start room: the pattern belonged to LIGHT[24], not the obvious
+  overhead spot LIGHT[21].)
+- `GET_CAMERA` — editor free-flight pose readout (`pos= ang= freeflight=`); pairs with
+  `SET_CAMERA x y z pitch yaw` for exact pose-revisit determinism tests (same pose twice
+  should pixel-diff ~0; a nonzero diff = frame-state-dependent rendering).
+
+**THE BUG this found (game-side, wickedcalls_part3 WickedCall_UpdateLight):** the port
+renamed old-Wicked `LightComponent::fov` (FULL spot cone angle: cone cos = cos(fov/2),
+projection fov = fov) to new-Wicked `outerConeAngle` (HALF angle: cone cos = cos(outer),
+projection = outer*2) WITHOUT halving. Every spot ran at double its authored cone; cones
+authored >=90 deg had zero/negative cone cos => the Forward+ tile-culling bounding sphere
+(r = range*0.5/cos^2) went infinite/mirrored and light presence flipped PER SCREEN TILE
+with camera pose = "shadow flicker on mouselook". Fixed by halving + clamping 1..85 deg.
+NOTE: all spot lights everywhere are now their DX11-authored width (narrower than the
+buggy DX12 look) — expect level lighting to look more directed.

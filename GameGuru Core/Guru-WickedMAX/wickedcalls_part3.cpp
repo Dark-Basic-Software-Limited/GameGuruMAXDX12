@@ -1093,7 +1093,23 @@ void WickedCall_UpdateLight(uint64_t wickedlightindex, float fX, float fY, float
 
 	LightComponent* lightComponent = wiScene::GetScene ( ).lights.GetComponent ( wickedlightindex );
 	lightComponent->SetCastShadow ( bCastShadow );
-	lightComponent->outerConeAngle = GGToRadian(fSpotRadius);
+	// 2026-08-05 SPOT CONE FIX: GG's spot "cone angle" (light.offsetup, FULL angle in
+	// degrees) went into the OLD Wicked's LightComponent::fov, whose semantic WAS the full
+	// angle (old engine: cone cos = cos(fov*0.5), projection fov = fov). New Wicked
+	// replaced fov with outerConeAngle = the HALF angle (cone cos = cos(outer), projection
+	// fov = outer*2); the port renamed WITHOUT halving, so every spot ran at DOUBLE its
+	// authored cone, and any cone authored >=90 made GetConeAngleCos() zero/negative -
+	// which breaks the Forward+ tile-culling cone sphere (r = range*0.5/cos^2: infinite or
+	// mirrored) and the shadow projection (fov = outer*2 >= 180 = degenerate matrix). Seen
+	// as the Snowy Mountain Stroll start-room "shadow flicker on mouselook": the spot's
+	// lighting/shadow dropped per screen tile depending on camera pose. Half it, and clamp
+	// to a valid projection range.
+	{
+		float fHalfConeDeg = fSpotRadius * 0.5f;
+		if (fHalfConeDeg < 1.0f) fHalfConeDeg = 1.0f;
+		if (fHalfConeDeg > 85.0f) fHalfConeDeg = 85.0f;
+		lightComponent->outerConeAngle = GGToRadian(fHalfConeDeg);
+	}
 	lightComponent->color = XMFLOAT3((float)iColR / 255.0f, (float)iColG / 255.0f, (float)iColB / 255.0f);
 
 	// DX12 PBR has two major changes from DX11 that reduce perceived brightness:

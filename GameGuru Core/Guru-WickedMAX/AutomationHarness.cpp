@@ -2926,6 +2926,9 @@ static void Sotan_Tick(void)
 // GGMAX 2026-08-05: standalone-game (PLAY GAME / Guru-Game identity) commands, hoisted
 // helper per the C1061 pattern. Returns true if cmd was handled.
 extern "C" int GGAuto_MapScreenActionName(const char* name); // M-GridEditB_part22.cpp
+namespace wi { namespace renderer {
+	uint32_t GG_GetShadowRects(uint32_t* entities, int* widths, int* heights, int* types, uint32_t maxn, float* scale); // engine 2.06
+} }
 static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "TITLE_CLICK") == 0)
@@ -2950,6 +2953,63 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 				g_iAutoTriggerScreenAction = iAction;
 				_snprintf(result, resultSize, "OK: queued screen action '%s' (%d) for next widget pass", arg, iAction);
 			}
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_LIGHT_LIT") == 0)
+	{
+		// SET_LIGHT_LIT <index> <0|1> — toggle a GG infinilight (flicker hunt: isolate the
+		// light that owns a lit pattern). Writes islit AND zero/restores the Wicked
+		// component intensity so it takes effect regardless of the sync cadence.
+		int li = 0, lit = 1;
+		if (sscanf_s(arg, "%d %d", &li, &lit) == 2 && li >= 1 && li <= g.infinilightmax)
+		{
+			infinilighttype* pL = &t.infinilight[li];
+			pL->islit = lit;
+			wi::scene::Scene* pScene = master.masterrenderer.scene;
+			wi::scene::LightComponent* lc = (pScene && pL->wickedlightindex > 0) ? pScene->lights.GetComponent((wi::ecs::Entity)pL->wickedlightindex) : nullptr;
+			static float s_savedIntensity[1024] = {};
+			if (lc && li < 1024)
+			{
+				if (!lit)
+				{
+					if (s_savedIntensity[li] == 0.0f) s_savedIntensity[li] = lc->intensity;
+					lc->intensity = 0.0f;
+				}
+				else if (s_savedIntensity[li] > 0.0f)
+				{
+					lc->intensity = s_savedIntensity[li];
+					s_savedIntensity[li] = 0.0f;
+				}
+			}
+			_snprintf(result, resultSize, "OK: light[%d] islit=%d wicked=%s", li, lit, lc ? "updated" : "none");
+		}
+		else
+		{
+			_snprintf(result, resultSize, "ERROR: SET_LIGHT_LIT <index 1..%d> <0|1>", g.infinilightmax);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GET_CAMERA") == 0)
+	{
+		_snprintf(result, resultSize, "OK: pos=(%.2f,%.2f,%.2f) ang=(%.2f,%.2f) freeflight=%d",
+			t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f,
+			t.editorfreeflight.c.angx_f, t.editorfreeflight.c.angy_f, t.editorfreeflight.mode);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "DUMP_SHADOWRECTS") == 0)
+	{
+		// Spot-shadow flicker hunt: the packer's final scale + every packed light rect.
+		// A light's rect size changing with camera POSE = the flicker mechanism.
+		uint32_t ents[64]; int ws[64], hs[64], tys[64]; float scale = 0.0f;
+		uint32_t n = wi::renderer::GG_GetShadowRects(ents, ws, hs, tys, 64, &scale);
+		int off = _snprintf(result, resultSize, "OK: pack_scale=%.4f rects=%u\n", scale, n);
+		for (uint32_t i = 0; i < n && off > 0 && off < (int)resultSize - 64; ++i)
+		{
+			off += _snprintf(result + off, resultSize - off, "  ent=%u type=%d %dx%d\n", ents[i], tys[i], ws[i], hs[i]);
 		}
 		result[resultSize - 1] = 0;
 		return true;
