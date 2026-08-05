@@ -355,6 +355,19 @@ static void SetupWickedTerrainMaterials()
 	wi::terrain::Terrain* terrain = GetWickedTerrain();
 	if (!terrain) return;
 
+	// 2026-08-05 DEVICE_HUNG guard (Aztec Teaser PLAY GAME, dred 20:13:19): this re-setup
+	// drops the previous terrain material textures and ends in Generation_Restart (frees
+	// every chunk VT). The SVT "Render Tile Regions" compute pass samples those material
+	// textures bindlessly and its request queue drains over several frames — the DRED dump
+	// caught it hung mid-dispatch on a page fault whose freed-VA matches were
+	// terraintextures/matNN/Normal.dds. Drain the GPU before swapping so nothing in flight
+	// can still sample the outgoing textures. This path only runs on texture-set changes
+	// (level load) and new painted-slot registration, so the stall is invisible.
+	if (wi::graphics::GetDevice() != nullptr)
+	{
+		wi::graphics::GetDevice()->WaitForGPU();
+	}
+
 	auto& scene = wi::scene::GetScene();
 
 	// Read material indices from GG render params
@@ -463,6 +476,25 @@ static void SetupWickedTerrainMaterials()
 				if (newSlot > maxPaintedSlot)
 					maxPaintedSlot = newSlot;
 				numExtraMaterials++;
+			}
+		}
+	}
+
+	// 2026-08-05 DEVICE_HUNG structural fix: a previous material set with MORE painted
+	// materials leaves stale tail slots in materialEntities. Their components/textures die
+	// with the old level, but chunk blendmap arrays still span those layers, so the SVT
+	// tile-render CS resolved GetIndex(dead entity) = SIZE_MAX -> out-of-bounds
+	// ShaderMaterial -> garbage texture descriptor -> GPU page fault (mat18 in every dump).
+	// Truncate to the new set and remove the stale entities (GPU already drained above).
+	{
+		int newSize = wi::terrain::MATERIAL_COUNT + numExtraMaterials;
+		while ((int)terrain->materialEntities.size() > newSize)
+		{
+			wi::ecs::Entity stale = terrain->materialEntities.back();
+			terrain->materialEntities.pop_back();
+			if (stale != wi::ecs::INVALID_ENTITY)
+			{
+				scene.Entity_Remove(stale);
 			}
 		}
 	}
