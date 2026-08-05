@@ -145,6 +145,79 @@ occupied overlapping VA ranges at different times; the most recent occupant is w
 faulter believed it was reading. No dump has an ACTIVE object at the fault VA (11/11
 pure use-after-free on unmapped memory).
 
+## Round A (engine 2.05 depth keep-alive): DEPTH CHAIN EXONERATED
+
+With DRED armed, `RenderPath3D::DeleteGPUResources` retains every generation of
+`depthBuffer_Main/Copy/Copy1/rtLinearDepth` for the process lifetime. Fault STILL fires —
+and the freed-match list changed to **mat5/Color.dds + rtParticleDistortion + Heap** (the
+depth targets can no longer appear since they are never freed). Conclusions:
+
+- The depth-history chain is NOT the faulted resource (hypothesis 1 dead).
+- The freed-match NAMES rotate with allocation layout (mat18 → mat5, depth →
+  rtParticleDistortion) — they are corpses sharing the released D3D12MA heap, not a stable
+  identification. The stable facts remain: an SVT-shaped compute list hung mid-dispatch +
+  a released heap in the ~9.0 GB VA region containing mid-size level-load-freed textures.
+
+## Round B (engine 2.05 leakall.txt): the decisive dichotomy
+
+`leakall.txt` next to the exe makes `AllocationHandler::Update` retain EVERY deferred
+destroy — no VA ever unmaps for the whole session. Two possible verdicts:
+- Hang STOPS → the faulter dereferences a legitimately freed object → bisect classes
+  (content textures / render targets / terrain chunk VT buffers) with targeted keep-alives.
+- Hang PERSISTS → the faulter reads memory that was NEVER mapped → garbage or corrupt
+  descriptor (OOB descriptor index / corrupted ShaderMaterial), a different bug class.
+
+**VERDICT: CLEAN — 3/3 cycles, 60 s play each, zero device removals, zero crashes, and
+even the previously-unexplained silent process deaths vanished** (same fault, different
+presentation). The faulter dereferences a legitimately freed object. Note: intermediate
+attempts were disrupted twice by driver-side AVs inside D3D12CreateDevice when booting
+too soon after a TDR (the soak now waits 25 s after a trapped cycle) — same crash class
+as the user's silent crash #2, but inside the driver where no app guard can reach.
+
+## Round C (leakterraintex.txt): pin ONLY terraintextures/* resources
+
+wiResourceManager pins every resource whose path contains "terraintextures" (the flag
+file gates it). leakall.txt removed. If clean → the faulted resource is NAMED: a terrain
+material DDS freed at the level-load set swap, sampled by the SVT "Render Tile Regions"
+CS (its only consumer). If it hangs → next class (terrain chunk VT buffers).
+
+**VERDICT: CLEAN — 3/3 cycles, 60 s play each, zero traps.**
+
+## ★ THE FAULTED RESOURCE, NAMED ★
+
+**The terrain material source textures — `Files/terraintextures/matNN/{Color,Normal,
+Surface}.dds` — freed at the level-load material set swap.** Reader: their only GPU
+consumer, the SVT **"Render Tile Regions"** compute pass in `Terrain::
+UpdateVirtualTexturesGPU` (matches the hung-list op shape in all 13+ dumps).
+
+Evidence chain (keep-alive bisection):
+1. 13+ dumps: released-heap fault, matNN DDS in every freed-match list.
+2. Round A (depth chain pinned): hang persists → depth exonerated; freed-match names
+   shown to rotate with layout (they are heap corpses, only the DDS class is constant).
+3. Round B (everything pinned): 0 hangs in 6 cycle-equivalents (previously ~85%/cycle).
+4. Round C (ONLY terraintextures pinned, all else freeing): 0 hangs in 3 × 60 s.
+   P(9 consecutive clean cycles | bug active) ≈ 10⁻⁷.
+5. The 2.04 clamp NEVER fired → material indices always valid → the staleness lives in a
+   GPU-side ShaderMaterial texture descriptor still pointing at the freed DDS.
+6. WaitForGPU at the swap did NOT prevent it → the stale descriptor is persistent data
+   surviving a full drain, not an in-flight-work race.
+
+## The ship fix (game `GGTerrainWicked.cpp SetupWickedTerrainMaterials`)
+
+**Double-buffered retention**: before the swap replaces textures, the outgoing set's
+`wi::Resource` handles are moved into a static retention vector that is only released at
+the NEXT set swap. The outgoing DDS can therefore never die mid-play, whatever stale
+descriptor still references it. Cost: one extra material set (~a few MB) kept during
+play; released at the next level load. Final validation: ship config (no diagnostic
+flags), 5-cycle soak — verdict in the addendum below.
+
+Residual engineering note (root-root, non-blocking): WHICH ShaderMaterial entry keeps the
+dead descriptor is still unproven — candidates are the terrain generator's deep-copied
+material snapshot (`Generation_Restart()` "deep-copies the materials internally") writing
+stale entries for newly generated chunks, or an orphaned material entity's buffer slot.
+With retention in place this is unreachable; if desired later, dump ShaderMaterial
+texture descriptor indices vs the retained textures' indices at swap+N frames.
+
 ## Open items
 
 - [ ] `wilog_messagebox` has no automation suppression — modal boxes block the game (not

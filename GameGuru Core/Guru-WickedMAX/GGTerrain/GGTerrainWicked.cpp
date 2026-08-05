@@ -370,6 +370,28 @@ static void SetupWickedTerrainMaterials()
 
 	auto& scene = wi::scene::GetScene();
 
+	// 2026-08-05 DEVICE_HUNG FIX — faulted resource NAMED by keep-alive bisection (see
+	// PLAYGAME_CRASH_2026-08-05.md): the SVT tile-render CS can still sample the OUTGOING
+	// set's DDS textures after this swap through a stale GPU-side ShaderMaterial descriptor
+	// (persists across even a full WaitForGPU — it is data, not in-flight work; pinning
+	// ONLY terraintextures/* resources took the soak from ~85% hang-per-cycle to 0/6).
+	// Retain the outgoing set's Resources until the NEXT set swap so they can never die
+	// mid-play. Cost: one extra material set (~a few MB), released on the next level load.
+	{
+		static wi::vector<wi::Resource> gg_prevMaterialSetRetention;
+		wi::vector<wi::Resource> outgoing;
+		for (size_t i = 0; i < terrain->materialEntities.size(); ++i)
+		{
+			wi::scene::MaterialComponent* m = scene.materials.GetComponent(terrain->materialEntities[i]);
+			if (m == nullptr) continue;
+			for (int t = 0; t < wi::scene::MaterialComponent::TEXTURESLOT_COUNT; ++t)
+			{
+				if (m->textures[t].resource.IsValid()) outgoing.push_back(m->textures[t].resource);
+			}
+		}
+		gg_prevMaterialSetRetention = std::move(outgoing); // the set from TWO swaps ago releases here
+	}
+
 	// Read material indices from GG render params
 	int baseMat = GGTerrain::ggterrain_global_render_params.baseLayerMaterial & 0xFF;
 	int slopeMat = GGTerrain::ggterrain_global_render_params.slopeMatIndex[0] & 0xFF;
