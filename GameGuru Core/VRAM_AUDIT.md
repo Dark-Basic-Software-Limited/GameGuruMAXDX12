@@ -562,3 +562,40 @@ Fast-travel soak on Z Island, 3 laps, shipping 12288 atlas, on the 1.98 build:
 Zero starvation, FPS 106→96 across the eviction laps, lap-3 screenshots show fully
 detailed terrain. A4 is now verified on every axis the original instruction demanded:
 pool −96, residency identical, shading correct, POLYS bit-identical.
+
+## 2026-08-05: WPE particle re-enable — regression check CLOSED, gate holds
+
+The particle re-enable (engine 2.00–2.01) loads 26 `.PE` effects' textures and builds the
+5-clone decal cache **at test-game start** — the tables above are EDITOR state and are
+untouched (no `.PE` loads in the editor; SCENE_EMITTERS stays 0 there).
+
+Same-build A/B in TEST-GAME state, `disablewparticlesystem=1` as the OFF lever, 10/10 runs
+clean (SCENE_EMITTERS 95–98 on / 0 off validated the lever every time):
+
+| demo | FPS on/off | driver on/off (MB) | Δdriver |
+|---|---|---|---|
+| TESTPRO1 | 43.5*/88.2 | 3283 / 3155 | +128 |
+| Z Island | 115.5 / 115.4 | 3665 / 3522 | +143 |
+| Aztec | 83.1 / 84.9 | 3741 / 3661 | +80 |
+| Island Showdown | 95.6 / 95.3 | 3314 / 3154 | +160 |
+| Trapped | 160.8 / 167.4 | 2710 / 2582 | +128 |
+
+**VRAM verdict: particles cost a consistent ~+135 MB in test game. Worst absolute is Aztec
+3741 at pure defaults — still inside 4096 with ~350 MB headroom. The 4 GB gate HOLDS.**
+
+Attribution (per-resource census diff, TESTPRO1 + Z Island agree):
+- **~81 MB: `EmittedParticleSystem` GPU buffers × ~96 emitters** (11 buffer types,
+  ~0.85 MB/emitter, allocated even for paused+invisible cache clones). Lever if ever
+  needed: lazy buffer creation on first burst (hitch risk — measure first) or smaller
+  MAX_PARTICLES for burst-only effects.
+- **~55 MB: `wpe*_color.png` textures load uncompressed** (5.4 MB each). Lever: BC7 like
+  the skybank job. Parity-neutral as-is (DX11 loaded the same PNGs).
+- `statisticsReadbackBuffer` ×2/emitter is READBACK heap = system RAM, not video.
+
+*TESTPRO1's "43 FPS" was a run-order artifact, closed after 3 measurements: it was the
+global FIRST run of the freshly linked build (cold driver/PSO caches; lazypso compiles on
+first use), its OFF partner ran second and warm. A warm re-run reads 84.3 (GPU 7.42 ms,
+all 98 emitters alive=0) and a 90 s timeline is flat 80–86 — within the documented ±8
+launch-to-launch noise. All later A/B pairs ran warm on both sides and show no FPS gap.
+Caveat: no harness run ever triggers the zone's area effect (player never moves), so
+ACTIVE-effect render cost is still unmeasured — it belongs to the user's manual parity pass.
