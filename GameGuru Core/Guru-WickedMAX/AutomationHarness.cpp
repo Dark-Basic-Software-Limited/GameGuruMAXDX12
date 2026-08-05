@@ -3537,11 +3537,21 @@ void AutoHarness_CheckForCommand(void)
 		//   0 = never (diagnostic ceiling; breaks widget dragging)
 		// Mode 2 lets the cost be measured WITHOUT needing an entity selected, because the
 		// call site (widget_getplanepos) is otherwise only reached while something is.
+		// The mode is deliberately sticky for A/B use, but only within [0,2]; anything else
+		// (including "default" or a typo) restores the shipping default of 1 so a stray
+		// auto_command.txt cannot leave the editor in a diagnostic mode indefinitely.
 		extern int g_iPickSceneUpdateMode, g_iPickSceneUpdateRuns, g_iPickSceneUpdateSkips;
-		g_iPickSceneUpdateMode = atoi(arg);
+		// strict parse: only the literal arguments "0", "1", "2" select a mode; anything
+		// else (garbage, "default", empty) restores the shipping default. atoi() would have
+		// mapped garbage to 0 = "never", which silently breaks widget dragging.
+		int reqmode = 1;
+		bool exact = (strcmp(arg, "0") == 0 || strcmp(arg, "1") == 0 || strcmp(arg, "2") == 0);
+		if (exact) reqmode = arg[0] - '0';
+		g_iPickSceneUpdateMode = reqmode;
 		g_iPickSceneUpdateRuns = 0;
 		g_iPickSceneUpdateSkips = 0;
-		_snprintf(result, sizeof(result), "OK: pick scene-update mode %d (counters reset)", g_iPickSceneUpdateMode);
+		_snprintf(result, sizeof(result), "OK: pick scene-update mode %d (counters reset)%s",
+			g_iPickSceneUpdateMode, exact ? "" : " [unrecognized arg -> default 1]");
 		result[sizeof(result) - 1] = 0;
 	}
 	else if (_stricmp(cmd, "FORCE_PICKUPDATE") == 0)
@@ -3699,10 +3709,17 @@ void AutoHarness_CheckForCommand(void)
 				m.endcolor_red, m.endcolor_green, m.endcolor_blue, m.count, m.life);
 
 			int failures = 0;
+			// GGMAX 2.02: track everything this test creates so it can be deleted at the
+			// end - the first version leaked the master + 4 clones (plus their materials)
+			// into the live scene on every invocation.
+			uint32_t createdRoots[5] = { masterRoot, 0, 0, 0, 0 };
+			int createdCount = 1;
 			for (int c = 1; c <= 4 && written < (int)sizeof(result) - 400; c++)
 			{
 				sc.Entity_Duplicate(masterRoot);
 				const uint32_t cloneRoot = rootOfNewestEmitter();
+				if (cloneRoot != 0 && cloneRoot != masterRoot && createdCount < 5)
+					createdRoots[createdCount++] = cloneRoot;
 				wiEmittedParticle* cl = cloneRoot ? firstEmitterUnder(cloneRoot) : nullptr;
 				if (!cl || cloneRoot == masterRoot)
 				{
@@ -3730,6 +3747,17 @@ void AutoHarness_CheckForCommand(void)
 			written += _snprintf(result + written, sizeof(result) - written,
 				"VERDICT: %s (%d of 4 clones differ from master)\n",
 				failures == 0 ? "PASS - all cache clones would emit" : "FAIL - silent cache slots", failures);
+
+			// GGMAX 2.02: clean up - the comparison is done, nothing needs to survive.
+			{
+				void DeleteEmitterEffects(uint32_t root);
+				const int before = (int)sc.emitters.GetCount();
+				for (int k = 0; k < createdCount; k++)
+					if (createdRoots[k] != 0) DeleteEmitterEffects(createdRoots[k]);
+				written += _snprintf(result + written, sizeof(result) - written,
+					"CLEANUP: deleted %d roots, emitters %d -> %d\n",
+					createdCount, before, (int)sc.emitters.GetCount());
+			}
 		}
 		result[sizeof(result) - 1] = 0;
 	}

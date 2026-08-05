@@ -809,7 +809,10 @@ void WickedCall_UpdateLimbsOfObject(sObject* pObject)
 //   1 = gated (default, see the comment in WickedCall_UpdateSceneForPick)
 //   2 = force a full Scene::Update every call (the pre-fix behaviour, for A/B)
 //   0 = never update (diagnostic only - will break widget dragging)
-// Harness: SET_PICKUPDATE <0|1|2>. Read via GET_PERF_DATA -> PICKUPDATE.
+// Harness: SET_PICKUPDATE <0|1|2> (strict; anything else restores 1). The run/skip
+// counters below are reset by SET_PICKUPDATE but are NOT surfaced in GET_PERF_DATA -
+// they exist for debugger inspection only. (An earlier comment claimed a PICKUPDATE
+// line in GET_PERF_DATA that never existed.)
 int g_iPickSceneUpdateMode = 1;
 int g_iPickSceneUpdateRuns = 0;
 int g_iPickSceneUpdateSkips = 0;

@@ -2514,7 +2514,23 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 		ec._flags = f;
 
 		ec.shaderType = (wiEmittedParticle::PARTICLESHADERTYPE)(s.shaderType > 3 ? 3 : s.shaderType);
-		ec.SetMaxParticleCount((uint32_t)s.maxParticles);
+		// GGMAX 2.02: clamp maxParticles - it is a raw uint64 off disk and sizes eleven GPU
+		// buffers plus a synchronous fence-and-recreate. The largest shipped effect requests
+		// 25,000 (downpour/heavy-rain3); 262,144 is ~10x headroom. A corrupt/hostile value
+		// (e.g. 0xFFFF... from a truncated write) otherwise turns into a multi-GB allocation.
+		{
+			uint64_t mp = s.maxParticles;
+			if (mp < 1) mp = 1;
+			if (mp > 262144)
+			{
+				void timestampactivity(int i, char* desc_s);
+				char dbg[MAX_PATH];
+				sprintf(dbg, "WPE: clamped absurd maxParticles %llu -> 262144", (unsigned long long)mp);
+				timestampactivity(0, dbg);
+				mp = 262144;
+			}
+			ec.SetMaxParticleCount((uint32_t)mp);
+		}
 		ec.FIXED_TIMESTEP = s.fixedTimestep;
 		ec.size = s.size;
 		ec.random_factor = 0.0f;   // the fork ignored this; its independent randomisers below replace it
@@ -2571,6 +2587,38 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 		Entity parent = Resolve(hiParent[i]);
 		if (parent != wiECS::INVALID_ENTITY && child != wiECS::INVALID_ENTITY)
 		{
+			// GGMAX 2.02: reject malformed hierarchy rows. A row with child == parent, or
+			// two rows forming a mutual cycle, would create a HierarchyComponent whose
+			// parentID chain never terminates. Component_Attach's only guard is a debug
+			// assert (compiled out of Release), and the engine's stock ancestor walk in
+			// RunHierarchyUpdateSystem has no cycle cap - the next frame's Scene::Update
+			// would spin forever and hang the render thread. Rejecting the row degrades a
+			// corrupt/hand-edited .PE to a mis-parented effect instead of a hard hang.
+			if (child == parent)
+			{
+				void timestampactivity(int i, char* desc_s);
+				char dbg[128]; strcpy(dbg, "WPE: rejected self-parenting hierarchy row in .PE");
+				timestampactivity(0, dbg);
+				continue;
+			}
+			bool closesCycle = false;
+			{
+				Entity walk = parent;
+				for (size_t guard = 0; guard <= (size_t)hiCount; guard++)
+				{
+					HierarchyComponent* h = scene.hierarchy.GetComponent(walk);
+					if (!h || h->parentID == wiECS::INVALID_ENTITY) break;
+					if (h->parentID == child) { closesCycle = true; break; }
+					walk = h->parentID;
+				}
+			}
+			if (closesCycle)
+			{
+				void timestampactivity(int i, char* desc_s);
+				char dbg[128]; strcpy(dbg, "WPE: rejected cyclic hierarchy row in .PE");
+				timestampactivity(0, dbg);
+				continue;
+			}
 			if (!scene.transforms.Contains(parent)) scene.transforms.Create(parent);
 			if (!scene.layers.Contains(parent)) scene.layers.Create(parent).layerMask = ~0u;
 			// child_already_in_local_space = TRUE: the transforms we just created came

@@ -301,7 +301,7 @@ work in the editor — none of them needs a test game.
 |---|---|---|
 | `DUMP_EMITTERS` | (none) | Per-emitter state: visible/active gates, `_flags`, count/life/size, **world** position (a wrong hierarchy attach shows up here), live GPU `aliveCount`, material blend mode and `baseColor.a`. Separates "not simulating" from "simulating but not drawn". |
 | `WPE_PREVIEW` | `<relative .pe path>` | Loads an effect exactly as the editor's Preview checkbox does and parks it 250 units in front of the camera, so it must be on screen if it draws at all. For screenshot A/B against DX11. |
-| `WPE_CLONETEST` | `<relative .pe path>` | Loads the effect, then `Entity_Duplicate`s its root four times — precisely what `preload_wicked_particle_effect()` does to fill the 5-slot `ready_decals[]` cache — and diffs every GameGuru emitter field of each clone against the master. Prints PASS/FAIL. |
+| `WPE_CLONETEST` | `<relative .pe path>` | Loads the effect, then `Entity_Duplicate`s its root four times — precisely what `preload_wicked_particle_effect()` does to fill the 5-slot `ready_decals[]` cache — and diffs every GameGuru emitter field of each clone against the master. Prints PASS/FAIL, then **deletes everything it created** (a `CLEANUP: deleted N roots, emitters A -> B` line confirms; the first version leaked 5 roots per call). |
 
 `WPE_CLONETEST` exists because of engine delta 2.01. `Entity_Duplicate` copies an entity by
 **serializing it**, so any field missing from `EmittedParticleSystem::Serialize` silently comes
