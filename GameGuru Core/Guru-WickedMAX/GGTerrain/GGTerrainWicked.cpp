@@ -267,6 +267,7 @@ uint64_t g_dbgGrassRecycles    = 0;   // ProcessGrassChunks: chunk-object entity
 uint64_t g_dbgGrassFullResets  = 0;   // fullReset removals (old hair torn down before recreate)
 uint64_t g_dbgGrassRecreates   = 0;   // grass hair entities (re)created
 size_t   g_dbgGrassDeadMeshNow = 0;   // live GG-grass hairs whose meshID mesh is GONE this frame (>0 == flicker)
+uint64_t g_dbgGrassExternalKills = 0; // record held only DEAD entities (in-place chunk regen killed them) - repaired + re-queued
 
 static uint64_t MakeChunkKey(int32_t cx, int32_t cz)
 {
@@ -1863,6 +1864,53 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		}
 		auto tierIt = grassChunkKeyToTier.find(key);
 		int currentTier = (tierIt != grassChunkKeyToTier.end()) ? tierIt->second : -1;
+
+		// GGMAX 2026-08-05 THE SCULPT-GRASS FIX: validate that the recorded grass entities
+		// are still ALIVE. Sculpting invalidates chunks and Generation_Update regenerates
+		// them IN PLACE - Scene::Entity_Remove recursively kills the attached grass child
+		// (hair-kill tracer: reason=1, wiScene.cpp:1362) but the chunk comes back under the
+		// SAME entity id, so the 1.85 entityChanged detector never fires. The record then
+		// holds a dead merged entity forever, currentTier == targetTier, and the "already
+		// correct" early-out below skips the chunk for the rest of the session: grass gone
+		// until the level is reloaded (user repro, TESTPRO1 hill: 6 systems -> 5, no regrow
+		// in 45 s, all teardown counters frozen). Same lesson the type histogram already
+		// carries: a map record is NOT proof the hair system exists.
+		// Repair: drop the dead bookkeeping, mark the chunk bare, and STAMP it - continued
+		// sculpt strokes keep re-killing regrown grass, so deferring regrowth to the settle
+		// gate makes grass return exactly once, after the stroke ends.
+		{
+			auto gitCheck = grassChunkKeyToGrassEntities.find(key);
+			if (gitCheck != grassChunkKeyToGrassEntities.end())
+			{
+				bool anyRecorded = false, anyLive = false;
+				for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+				{
+					wi::ecs::Entity e = gitCheck->second.perType[t];
+					if (e != wi::ecs::INVALID_ENTITY)
+					{
+						anyRecorded = true;
+						if (scene.hairs.GetComponent(e) != nullptr) { anyLive = true; break; }
+					}
+				}
+				if (!anyLive && gitCheck->second.merged != wi::ecs::INVALID_ENTITY)
+				{
+					anyRecorded = true;
+					if (scene.hairs.GetComponent(gitCheck->second.merged) != nullptr) anyLive = true;
+				}
+				if (anyRecorded && !anyLive)
+				{
+					for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+						gitCheck->second.perType[t] = wi::ecs::INVALID_ENTITY;
+					gitCheck->second.merged = wi::ecs::INVALID_ENTITY;
+					gitCheck->second.mergedTypeMask[0] = gitCheck->second.mergedTypeMask[1] = 0;
+					grassChunkKeyToTier[key] = 0;                 // bare: the grow path re-queues
+					currentTier = 0;
+					grassChunkKeyToEntityStamp[key] = nowFrame;   // defer regrow until churn settles
+					g_grassSettlePending = true;
+					g_dbgGrassExternalKills++;                    // GET_PERF_DATA: GRASS_EXTKILLS
+				}
+			}
+		}
 
 		// Hysteresis: chunks that already have grass at a higher tier keep it until the camera moves
 		// substantially past the LOD boundary. Without this, small camera nudges (the user wobbling

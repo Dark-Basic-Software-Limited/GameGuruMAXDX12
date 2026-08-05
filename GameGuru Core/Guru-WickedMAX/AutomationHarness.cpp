@@ -44,6 +44,7 @@ extern size_t g_dbgAutoLastPending;
 // Grass-hair lifecycle diagnostics (shadow-flicker investigation) — global scope in GGTerrainWicked.cpp.
 extern uint64_t g_dbgGrassRecycles, g_dbgGrassFullResets, g_dbgGrassRecreates;
 extern size_t g_dbgGrassDeadMeshNow;
+extern uint64_t g_dbgGrassExternalKills; // 2026-08-05 sculpt-grass fix: dead-record repairs
 
 // GGMAX diag (FPS-plummet hunt): Scene::Intersects breakdown counters (engine wiScene.cpp)
 #include <atomic>
@@ -1367,6 +1368,7 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"GRASS_FULLRESETS: %llu\n"
 			"GRASS_RECREATES: %llu\n"
 			"GRASS_DEADMESH_NOW: %llu\n"
+			"GRASS_EXTKILLS: %llu\n"
 			"TERRAINW_IDLE: gate=%d calm=%u skips=%llu\n",
 			(unsigned long long)g_dbgBridgeCalls,
 			(unsigned long long)g_dbgBridgeChunksMarked,
@@ -1385,6 +1387,7 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			(unsigned long long)g_dbgGrassFullResets,
 			(unsigned long long)g_dbgGrassRecreates,
 			(unsigned long long)g_dbgGrassDeadMeshNow,
+			(unsigned long long)g_dbgGrassExternalKills,
 			g_terrainIdleGate ? 1 : 0, g_dbgIdleCalmFrames,
 			(unsigned long long)g_dbgIdleGateSkips);
 	}
