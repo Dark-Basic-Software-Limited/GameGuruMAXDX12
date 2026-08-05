@@ -1203,3 +1203,17 @@ The Wicked Engine profiler has TWO layers of enable control:
 - 19/19 demos passed on 2026-02-18 (Phase 3 render pipeline hooks active, zero regressions)
 - `GET_SCREEN_TEXT` provides full widget/button labels for every storyboard node — use this to verify screen content without screenshots
 - When polling after a level load, use a longer timeout (60s) on the `GET_STATE` poll to account for the synchronous load
+
+## Standalone-Game (PLAY GAME) Commands — added 2026-08-05
+
+Built to replay the user's crash flow: hub -> select demo -> **PLAY GAME** -> title menu -> **START** -> LOADING LEVEL. Key architecture fact: for a project-backed demo, the hub's PLAY GAME button **relaunches GameGuruMAX.exe with `project=2<name>`** (app identity becomes `Guru-Game`, CWD `Files\`) and the hub process EXITS — the harness goes silent for ~10-20 s and then answers from the NEW process (same exe-relative auto_command.txt).
+
+- `CLICK play_game` — now works on the HUB too (previously storyboard-only): sets `bTriggerPlayDemoGame`, consumed by the Play Game button in `Welcome_Screen` exactly like a click. Expect `OK: ... process may relaunch as standalone`, then a dead harness until the standalone boots.
+- `TITLE_CLICK <action>` — presses a storyboard SCREEN widget by ACTION name: `start`, `exit`, `continue`, `back`, `resume`, `leave`. Queues `g_iAutoTriggerScreenAction`, consumed inside `screen_editor`'s widget hit-test loop as if hovered+released (click sound + action dispatch run the user's code path). `start` on the title node = STORYBOARD_ACTIONS_STARTGAME -> level load.
+- `GET_STATE` in the standalone process returns `standalone_title` / `standalone_loading` / `standalone_playing` plus a raw `STANDALONE: titleloop=%d gameloop=%d levelloop=%d masterloop=%d` line.
+
+Soak driver: scratchpad `playgame_soak.sh <cycles> <playsecs>` — per phase (boot-hub / relaunch-title / load / play) it watches THREE traps every poll: `dred_report.txt` growth (device removed; the report is written BEFORE the modal error box, so growth is detectable while the box blocks), `Guru-Crash.log` growth (symbolized AV), and process death. New dred/crash bytes are captured per cycle to `dred_cycleN_phase.txt` / `crash_cycleN_phase.txt`.
+
+**DRED**: `dred.txt` next to the exe arms DRED (engine 1.51). With engine 2.03 the report also carries PASS NAMES per breadcrumb op (raw embedded ANSI markers replace PIX3 blobs when armed) — a hang now names the pass, e.g. which SVT compute list stalled.
+
+**Known crash cascade (2026-08-05, pre-2.03)**: initial DEVICE_HUNG during LOADING LEVEL -> relaunch while driver recovering -> silent AV in GraphicsDevice ctor (`CreateCommandQueue` fails, `wi::platform::Exit()` returns, null `SetName`) -> next relaunch AV in `DescriptorAllocator::block_allocate`. Engine 2.03 turns both AVs into clean fatal exits with the DRED report intact.

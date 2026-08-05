@@ -309,6 +309,16 @@ static const char* AutoHarness_GetAppState(void)
 {
 	if (!g_bNoGGUntilGameGuruMainCalled)
 		return "initializing";
+	// 2026-08-05: standalone game mode (hub PLAY GAME relaunches the exe with project=2,
+	// app identity Guru-Game) — report the title menu / level phases distinctly
+	if (t.game.gameisexe == 1)
+	{
+		if (t.game.titleloop == 1)
+			return "standalone_title";
+		if (t.game.gameloop == 1 || t.game.levelloop == 1)
+			return "standalone_playing";
+		return "standalone_loading";
+	}
 	if (bImGuiInTestGame)
 		return "game";
 	if (bWelcomeScreen_Window)
@@ -458,6 +468,15 @@ static void Cmd_GetState(char* result, int resultSize)
 		state, tabName, panels, uptime);
 	if (written < 0) written = 0;
 
+	// 2026-08-05: raw phase flags for standalone-game soak scripting
+	if (t.game.gameisexe == 1 && written < resultSize - 1)
+	{
+		int w2 = _snprintf(result + written, resultSize - written,
+			"STANDALONE: titleloop=%d gameloop=%d levelloop=%d masterloop=%d\n",
+			(int)t.game.titleloop, (int)t.game.gameloop, (int)t.game.levelloop, (int)t.game.masterloop);
+		if (w2 > 0) written += w2;
+	}
+
 	// Append storyboard details when in storyboard state
 	if (bStoryboardWindow && written < resultSize - 1)
 	{
@@ -548,9 +567,19 @@ static void Cmd_Click(const char* element, char* result, int resultSize)
 			iStoryboardExecuteKey = ' ';
 			_snprintf(result, resultSize, "OK: Triggered Play Game from storyboard");
 		}
+		else if (bWelcomeScreen_Window)
+		{
+			// 2026-08-05: hub PLAY GAME (the button next to EDIT GAME on a selected demo
+			// card). For project-backed demos this RELAUNCHES the exe as a standalone game
+			// (project=2) and THIS process exits — expect the harness to go silent and a
+			// fresh GameGuruMAX.exe (app identity Guru-Game) to appear.
+			extern bool bTriggerPlayDemoGame;
+			bTriggerPlayDemoGame = true;
+			_snprintf(result, resultSize, "OK: Triggered Play Game from hub (demo games); process may relaunch as standalone");
+		}
 		else
 		{
-			_snprintf(result, resultSize, "ERROR: Not in storyboard view, cannot Play Game");
+			_snprintf(result, resultSize, "ERROR: Not in storyboard or hub view, cannot Play Game");
 		}
 		result[resultSize - 1] = 0;
 		return;
@@ -2894,6 +2923,40 @@ static void Sotan_Tick(void)
 	fclose(f);
 }
 
+// GGMAX 2026-08-05: standalone-game (PLAY GAME / Guru-Game identity) commands, hoisted
+// helper per the C1061 pattern. Returns true if cmd was handled.
+extern "C" int GGAuto_MapScreenActionName(const char* name); // M-GridEditB_part22.cpp
+static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "TITLE_CLICK") == 0)
+	{
+		// Press a storyboard screen widget by ACTION name (start/exit/continue/back/
+		// resume/leave) exactly as a mouse click would — the flag is consumed inside
+		// screen_editor's widget loop, so sounds/actions run the user's code path.
+		extern int g_iAutoTriggerScreenAction;
+		if (!arg || !arg[0])
+		{
+			_snprintf(result, resultSize, "ERROR: TITLE_CLICK requires an action name (start/exit/continue/back/resume/leave)");
+		}
+		else
+		{
+			int iAction = GGAuto_MapScreenActionName(arg);
+			if (iAction == 0)
+			{
+				_snprintf(result, resultSize, "ERROR: unknown TITLE_CLICK action '%s'", arg);
+			}
+			else
+			{
+				g_iAutoTriggerScreenAction = iAction;
+				_snprintf(result, resultSize, "OK: queued screen action '%s' (%d) for next widget pass", arg, iAction);
+			}
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	return false;
+}
+
 // GGMAX 2026-08-05: outline-pipeline diagnostic commands, hoisted out of the main
 // dispatch chain - the else-if chain hit MSVC C1061 (blocks nested too deeply),
 // since every chain link nests one block deeper. Returns true if cmd was handled.
@@ -3665,6 +3728,10 @@ void AutoHarness_CheckForCommand(void)
 				idx, t.entityelement[idx].obj, t.widget.activeObject, t.gridentity, t.gridentityobj);
 		}
 		result[sizeof(result) - 1] = 0;
+	}
+	else if (AutoHarness_StandaloneCommands(cmd, arg, result, sizeof(result)))
+	{
+		// handled in the helper (see above the dispatch function)
 	}
 	else if (AutoHarness_OutlineCommands(cmd, arg, result, sizeof(result)))
 	{

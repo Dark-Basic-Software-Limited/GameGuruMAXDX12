@@ -2,6 +2,7 @@
 int iWelcomeVideoID = -1;
 bool bWelcomeVideoMaximized = false;
 bool bTriggerEditDemoGame = false;
+bool bTriggerPlayDemoGame = false; // 2026-08-05: harness CLICK play_game on the hub
 
 cstr ListboxFilesListForWelcomeScreen(char *currentselection, int columns, int iFixedWidth, bool bRemoveExtension, bool bIncludeNone, char *filter, float fbox_height, bool bDisplayDesc,bool bUseFullScreen)
 {

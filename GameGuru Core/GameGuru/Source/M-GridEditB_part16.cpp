@@ -2580,8 +2580,9 @@
 						}
 					}
 					ImGui::PushStyleColor(ImGuiCol_Text, vTextColor);
-					if (ImGui::StyleButton("Play Game", ImVec2(fButWidth, 0)))
+					if (ImGui::StyleButton("Play Game", ImVec2(fButWidth, 0)) || bTriggerPlayDemoGame)
 					{
+						bTriggerPlayDemoGame = false;
 						if (bProjectExistsAndValidToUse == true)
 						{
 							bool bUseProjectName = false;

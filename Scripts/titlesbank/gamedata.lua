@@ -16,6 +16,10 @@ function gamedata.save(slotnumber,uniquename)
 
 	-- save slot file
 	file = io.open("savegames\\gameslot" .. slotnumber .. ".dat", "w")
+	if file == nil then
+		-- folder missing or unwritable; skip the save rather than hit io.close(nil) below
+		return
+	end
 	io.output(file)
 	
 	-- header for game ID (untouched for compatablity )

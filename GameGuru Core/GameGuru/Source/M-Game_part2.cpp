@@ -587,6 +587,10 @@ void game_masterroot_initcode(int iUseVRTest)
 	}
 	g_iActivelyUsingVRNow = iUseVRTest;
 
+	// titlesbank/gamedata.lua writes savegames\gameslotN.dat relative to the Files CWD;
+	// without this folder io.open returns nil and every checkpoint save throws a LUA ERROR
+	if ( PathExist("savegames") == 0 ) MakeDirectory("savegames");
+
 	//  Load all one-off non-graphics assets
 	timestampactivity(0,"_game_oneoff_nongraphics");
 	game_oneoff_nongraphics ( );

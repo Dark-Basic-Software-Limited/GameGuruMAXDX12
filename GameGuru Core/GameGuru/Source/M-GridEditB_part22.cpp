@@ -1,4 +1,18 @@
-﻿int screen_editor(int nodeid, bool standalone, char *screen)
+﻿// 2026-08-05: automation TITLE_CLICK support — pending widget action queued by the
+// harness, consumed by the widget hit-test loop below as if hovered+released
+int g_iAutoTriggerScreenAction = 0;
+extern "C" int GGAuto_MapScreenActionName(const char* name)
+{
+	if (stricmp(name, "start") == 0) return (int)STORYBOARD_ACTIONS_STARTGAME;
+	if (stricmp(name, "exit") == 0) return (int)STORYBOARD_ACTIONS_EXITGAME;
+	if (stricmp(name, "continue") == 0) return (int)STORYBOARD_ACTIONS_CONTINUE;
+	if (stricmp(name, "back") == 0) return (int)STORYBOARD_ACTIONS_BACK;
+	if (stricmp(name, "resume") == 0) return (int)STORYBOARD_ACTIONS_RESUMEGAME;
+	if (stricmp(name, "leave") == 0) return (int)STORYBOARD_ACTIONS_LEAVEGAME;
+	return 0;
+}
+
+int screen_editor(int nodeid, bool standalone, char *screen)
 {
 	extern bool g_bNoGGUntilGameGuruMainCalled;
 	extern int iSpecialLuaReturn;
@@ -1673,6 +1687,16 @@
 							// non VR
 							if (ImGui::IsMouseHoveringRect(rMonitorArea.Min + widget_pos - vLargerGrabArea, rMonitorArea.Min + widget_pos + widget_size + vLargerGrabArea)) bIsPointerHoveringOver = true;
 							if (ImGui::IsMouseReleased(0)) bIsPointerReleased = true;
+						}
+						// 2026-08-05: automation TITLE_CLICK — fire this widget as if hovered+
+						// released when its action matches the queued auto trigger, so click
+						// sound + action dispatch run the user's exact code path
+						if (g_iAutoTriggerScreenAction != 0 &&
+							Storyboard.Nodes[nodeid].widget_action[index] == g_iAutoTriggerScreenAction)
+						{
+							bIsPointerHoveringOver = true;
+							bIsPointerReleased = true;
+							g_iAutoTriggerScreenAction = 0;
 						}
 						if (bIsPointerHoveringOver)
 						{
