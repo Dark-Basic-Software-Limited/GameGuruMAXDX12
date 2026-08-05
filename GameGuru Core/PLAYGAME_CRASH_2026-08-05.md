@@ -211,6 +211,11 @@ descriptor still references it. Cost: one extra material set (~a few MB) kept du
 play; released at the next level load. Final validation: ship config (no diagnostic
 flags), 5-cycle soak — verdict in the addendum below.
 
+**FINAL VALIDATION (ship config, retention fix, no diagnostic flags): 5/5 cycles clean,
+60 s play each — zero device removals, zero crashes, zero silent deaths.** Season total:
+~85% hang-per-cycle before (17+ device removals over ~20 cycles) → **0 failures in 14
+consecutive cycles** across the pinned and fixed builds.
+
 Residual engineering note (root-root, non-blocking): WHICH ShaderMaterial entry keeps the
 dead descriptor is still unproven — candidates are the terrain generator's deep-copied
 material snapshot (`Generation_Restart()` "deep-copies the materials internally") writing
