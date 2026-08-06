@@ -1253,17 +1253,21 @@ Soak driver: scratchpad `playgame_soak.sh <cycles> <playsecs>` — per phase (bo
   Tile tint = culled entity count. Uniform tint across a region = per-tile lists identical.
 - `SET_AO <0|1>` — live AO toggle (AO_MSAO vs AO_DISABLED), same as the VK_2 perf hotkey.
 
-**2026-08-06 "cone-edge shadow blocks" verdict (NOT an engine bug):** the warehouse spot
-hangs UNDER a diamond-mesh catwalk; the "20px screen-aligned shadow tiles" at the cone rim
-are the MESH'S REAL SHADOW fragmenting at the dim edge (projected cell ≈ 20px at that
-camera — coincidence with the 16px-render/20px-display culling tile size). Chain that
-proved it: TILE_DEBUG heatmap + a bucket-fingerprint shader (both: per-tile lists UNIFORM);
-ADVANCED_CULLING off = pixel-identical; SET_AO 0 = step persists; camera nudge = edge moves
-smoothly (world-anchored, NOT screen tiles); budget SET_SHADOW_MAX_SPOT 1 = pattern belongs
-to the overhead spot alone; look-up screenshot = the physical mesh + girder + fixture.
-**Why a POINT light "fixed" it: point cube faces pack TINY here (29×29 and 10×10 px!) — too
-coarse to resolve the mesh, its shadow blurs away. That under-resolution is the real
-engine-side quality gap (2.06 side-finding), not the spot's faithful shadow.**
+**2026-08-06 "screen-tile light divide" — FINAL VERDICT (engine bug, FIXED 2.07g `a229fffe`):
+the user was RIGHT through two wrong verdicts.** fp16 range² overflow (range > 255.9 →
+range² = +INF in half) deleted the attenuation falloff window → un-windowed 1/d² never
+reached zero → the tiled light culling truncated a still-visible contribution at its
+16px-tile boundary = screen-tile-aligned STAIRCASE divides. Spot range 503 showed it;
+point lights < 256 stayed windowed ("point light is clean" was the misleading asymmetry).
+Same overflow also hard-killed big lights at a fixed ~256u circle (dist² → INF). Fixed by
+promoting dist²/range² to float in lightingHF. A/B: 20-luminance one-pixel tile cliff →
+continuous, at BOTH repro poses. The TILE_DEBUG heatmap showing the per-tile count
+staircase along the divide was the decisive instrument. (Earlier partial findings remain
+true: the quatrefoil lattice = the real catwalk-mesh shadow; point cube faces DO pack
+tiny (29×29/10×10 px — task #107); the two "uniform lists" fingerprints were instrument
+bugs.) ⚠ FOLLOW-UP: WickedCall_UpdateLight's intensity compensation (range²×PI/4-based)
+was tuned against the BROKEN un-windowed attenuation — every big-range light now falls
+off correctly (dimmer at the rim than the over-lit broken look); needs an eyes-on pass.
 
 **BUG 2 (2026-08-06, user-proven on TESTPRO2 1-spot/1-point): the Shadow Quantity knobs were
 CROSS-WIRED.** `Wicked_Update_Shadows` computed the spot cap then discarded it (its consumer
