@@ -2968,6 +2968,46 @@ static bool AutoHarness_ShadowBudgetCommands(const char* cmd, const char* arg, c
 		wi::renderer::SetLocalShadowBudget(t.visuals.iShadowSpotMax, n);
 		_snprintf(result, resultSize, "OK: SET_SHADOW_MAX_POINT budget forced to %d (spot stays %d)", n, t.visuals.iShadowSpotMax);
 	}
+	else if (_stricmp(cmd, "SET_SHADOW_RES") == 0)
+	{
+		// 2026-08-06 sun-off coupling hunt: drive one shadow RESOLUTION exactly as the UI
+		// dropdowns do (visuals field + the engine setter), no visuals-apply needed.
+		char which[32] = { 0 };
+		int n = 0;
+		if (sscanf(arg, "%31s %d", which, &n) == 2 && n >= 0)
+		{
+			if (n > 2048) n = 2048;
+			if (_stricmp(which, "sun") == 0)
+			{
+				t.visuals.iShadowSpotCascadeResolution = n;
+				t.gamevisuals.iShadowSpotCascadeResolution = n;
+				wi::renderer::SetShadowProps2D(n);
+				_snprintf(result, resultSize, "OK: SET_SHADOW_RES sun(cascade) = %d", n);
+			}
+			else if (_stricmp(which, "spot") == 0)
+			{
+				t.visuals.iShadowSpotResolution = n;
+				t.gamevisuals.iShadowSpotResolution = n;
+				wi::renderer::SetShadowPropsSpot(n);
+				_snprintf(result, resultSize, "OK: SET_SHADOW_RES spot = %d", n);
+			}
+			else if (_stricmp(which, "point") == 0)
+			{
+				t.visuals.iShadowPointResolution = n;
+				t.gamevisuals.iShadowPointResolution = n;
+				wi::renderer::SetShadowPropsCube(n);
+				_snprintf(result, resultSize, "OK: SET_SHADOW_RES point = %d", n);
+			}
+			else
+			{
+				_snprintf(result, resultSize, "ERROR: SET_SHADOW_RES needs sun|spot|point <res>");
+			}
+		}
+		else
+		{
+			_snprintf(result, resultSize, "ERROR: SET_SHADOW_RES needs sun|spot|point <res>");
+		}
+	}
 	else
 	{
 		return false;

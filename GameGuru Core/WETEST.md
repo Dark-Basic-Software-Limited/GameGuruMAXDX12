@@ -1237,6 +1237,10 @@ Soak driver: scratchpad `playgame_soak.sh <cycles> <playsecs>` — per phase (bo
 - `SET_SHADOW_MAX_SPOT <n>` / `SET_SHADOW_MAX_POINT <n>` — GGMAX 2.07: force ONE type's cap,
   leaving the other at its current visuals value. Since 2.07 the engine budget is split per
   type (spot/rect pool vs point pool), matching the editor's two Shadow Quantity dropdowns.
+- `SET_SHADOW_RES <sun|spot|point> <res>` — drive one Shadow Resolution dropdown exactly as
+  the UI does (visuals field + the engine setter: SetShadowProps2D / SetShadowPropsSpot /
+  SetShadowPropsCube). Built for the Sun=Off coupling hunt (2.07b): pairing it with
+  DUMP_SHADOWRECTS splits "rect not granted" from "rect granted but not rendered" in one step.
 
 **BUG 2 (2026-08-06, user-proven on TESTPRO2 1-spot/1-point): the Shadow Quantity knobs were
 CROSS-WIRED.** `Wicked_Update_Shadows` computed the spot cap then discarded it (its consumer
