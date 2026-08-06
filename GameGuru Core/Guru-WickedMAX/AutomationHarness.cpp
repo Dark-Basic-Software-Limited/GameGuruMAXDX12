@@ -3079,6 +3079,24 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_LIGHT_RADIUS") == 0)
+	{
+		// SET_LIGHT_RADIUS <index> <fullConeDeg> — write the light-list spotlightradius exactly
+		// as the Spotlight Radius slider does; lighting_loop pushes it to Wicked next frame.
+		// Built to repro/verify 2.07c (shadow cache went stale on cone edits: pos/range unchanged).
+		int li = 0; float deg = 0.0f;
+		if (sscanf_s(arg, "%d %f", &li, &deg) == 2 && li >= 1 && li <= g.infinilightmax)
+		{
+			t.infinilight[li].spotlightradius = deg;
+			_snprintf(result, resultSize, "OK: light[%d] spotlightradius=%.1f (lighting_loop re-pushes the cone)", li, deg);
+		}
+		else
+		{
+			_snprintf(result, resultSize, "ERROR: SET_LIGHT_RADIUS <index 1..%d> <degrees>", g.infinilightmax);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "GET_CAMERA") == 0)
 	{
 		_snprintf(result, resultSize, "OK: pos=(%.2f,%.2f,%.2f) ang=(%.2f,%.2f) freeflight=%d",

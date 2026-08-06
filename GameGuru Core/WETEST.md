@@ -1241,6 +1241,10 @@ Soak driver: scratchpad `playgame_soak.sh <cycles> <playsecs>` — per phase (bo
   the UI does (visuals field + the engine setter: SetShadowProps2D / SetShadowPropsSpot /
   SetShadowPropsCube). Built for the Sun=Off coupling hunt (2.07b): pairing it with
   DUMP_SHADOWRECTS splits "rect not granted" from "rect granted but not rendered" in one step.
+- `SET_LIGHT_RADIUS <index> <fullConeDeg>` — write a light-list spotlightradius (2.07c stale
+  shadow-cache hunt). CAVEAT: for map-entity lights the per-frame profile sync can overwrite
+  the light-list value, so the write may not reach the cone — the UI slider is the reliable
+  driver; use SHADOW_LOCAL_RENDERED in GET_PERF_DATA (0 = cache steady) to watch cache churn.
 
 **BUG 2 (2026-08-06, user-proven on TESTPRO2 1-spot/1-point): the Shadow Quantity knobs were
 CROSS-WIRED.** `Wicked_Update_Shadows` computed the spot cap then discarded it (its consumer
