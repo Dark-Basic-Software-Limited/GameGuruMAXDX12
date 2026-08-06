@@ -38,6 +38,12 @@ Aztec Game Kit −4.5 GB, Jungle Fever −4.7 GB. That is the 08-02→08-04 camp
 default, merged grass, lazy PSOs, on-demand legacy atlases) showing up across the whole hub.
 The 4 GB min-spec goal is met by the DEFAULT configuration, not by a fallback path.
 
+**Judge the gate on the IN-GAME figure, not the editor one.** v4 records both for the first time,
+and test-game sits 250–590 MB *above* the editor reading on every demo. Worst cases: Operation
+Amazon **3840 MB**, Aztec Game Kit 3805, River Raiders 3756, Z Island 3730 — all still inside
+4096, but Amazon has only ~256 MB of headroom, so it is the demo to watch when anything adds
+per-level memory. Lightest in game: Switch Escape 2651, Zombie Cellar 2753, Trapped 2806.
+
 ### The limiter is geometry, harder than ever: Spearman −0.95 (polys) vs −0.53 (VRAM)
 
 The 08-01 sweep measured −0.85 / −0.66. Now that VRAM has been cut roughly in half across the
@@ -83,12 +89,21 @@ v4a therefore gates on **FPS recovery**, not text: any sub-20 FPS reading trigge
 the level climbs out (no hub demo runs below 20 in real gameplay), then re-samples. Both the
 widened text pattern and the FPS poll are in `tools/demo_fps_sweep.sh`.
 
-Open question, load-time only: Horseshoe rasterized its navmesh on BOTH runs an hour apart,
-where 08-01 recorded an instant cached start. The cache is alive
-(`Documents\GameGuruApps\GameGuruMAX\Files\navcache`) but sits **exactly at its 20-file cap**
-with 17 of 20 entries written by tonight's two sweeps — so with 19 demos it may simply be
-thrashing its own prune limit, or the vertex-soup hash is not stable across runs. Worth one
-two-visit test.
+**Follow-up, ANSWERED: the navmesh cache was thrashing its own prune cap.** Horseshoe rasterized
+its navmesh on BOTH runs an hour apart, where 08-01 recorded an instant cached start. Two visits
+back to back settled it: with its entry still resident, Horseshoe hit the cache **both times**
+(10 s below 20 FPS = ordinary game-entry cost, no `.gnav` written, nothing evicted). The
+mechanism was never broken — **the cap was 20 files and the hub has 19 demos**, so playing
+through every level evicted each entry with the ~18 writes that followed it, and the next lap
+paid the full ~35 s recast rebuild again. Fixed in `GGRecastDetour.cpp`: prune now bounded by
+**48 files AND 512 MB** (entries measured 0.07–27 MB; 20 of them came to 109 MB), with a guard
+so a level bigger than the byte budget can never prune away its own entry.
+
+⚠ Verification status: the *thrash* is proven (two-visit test above) and the new prune builds
+clean, but the new cap has **not** yet been observed evicting/not-evicting in a live run — the
+discriminating test needs the cache primed to exactly the cap with a guaranteed miss, and the
+first attempt targeted the wrong entry (it deleted the largest `.gnav`, which was not Horseshoe's,
+so the level simply hit its cache and wrote nothing). Re-run before treating the cap as measured.
 
 ### Also measured: the selection-outline idle gate (game-side, this build)
 

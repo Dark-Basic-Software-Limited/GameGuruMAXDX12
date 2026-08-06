@@ -132,37 +132,66 @@ int GGRecastDetour::buildall (float* pVertices, uint32_t numVertices)
 				}
 				ctx.dumpLog("Build log");
 
-				// store for next time; prune the cache dir to the newest 20 files
+				// Store for next time, then prune.
+				//
+				// GGMAX 2026-08-06: the original cap was 20 FILES — smaller than the hub itself
+				// (19 demos), so the cache thrashed: playing through every demo evicted each
+				// level's entry with the ~18 writes that followed it, and the next visit paid the
+				// full recast rebuild again. Measured on Horseshoe Bend (~35 s, and it shows in
+				// game as "RASTERIZING NAVIGATION MESH" at 3 FPS): rebuilt on BOTH 08-06 sweep
+				// runs, yet an immediate revisit with its entry still resident hit the cache and
+				// cost 0 s. So the mechanism was always fine — the cap was just too small to
+				// survive one lap of the hub.
+				//
+				// Now bounded by BOTH a file count and a byte budget, because entries vary wildly
+				// (0.07-27 MB measured; 20 of them came to 109 MB). 48 files holds ~2.5 laps of
+				// the hub, and the size cap keeps a project full of huge levels from filling the
+				// user's Documents folder.
 				if (szCachePath[0])
 				{
 					((Sample_TileMesh*)sample)->saveNavMeshToFile(szCachePath);
+
+					const int kMaxCacheFiles = 48;
+					const ULONGLONG kMaxCacheBytes = 512ull * 1024ull * 1024ull;
 
 					char szCacheDir[MAX_PATH];
 					strcpy_s(szCacheDir, MAX_PATH, "navcache");
 					GG_GetRealPath(szCacheDir, 1);
 					char szFindSpec[MAX_PATH];
 					sprintf_s(szFindSpec, MAX_PATH, "%s\\*.gnav", szCacheDir);
-					WIN32_FIND_DATAA fd;
-					HANDLE hFind = FindFirstFileA(szFindSpec, &fd);
-					int iCount = 0;
-					FILETIME ftOldest = {};
-					char szOldest[MAX_PATH];
-					szOldest[0] = 0;
-					if (hFind != INVALID_HANDLE_VALUE)
+
+					// Delete the oldest entry until BOTH limits are satisfied. Re-scanning each
+					// time keeps this allocation-free; in practice it runs zero or one iteration.
+					for (int iGuard = 0; iGuard < 256; iGuard++)
 					{
-						do
+						WIN32_FIND_DATAA fd;
+						HANDLE hFind = FindFirstFileA(szFindSpec, &fd);
+						int iCount = 0;
+						ULONGLONG ullTotal = 0;
+						FILETIME ftOldest = {};
+						char szOldest[MAX_PATH];
+						szOldest[0] = 0;
+						if (hFind != INVALID_HANDLE_VALUE)
 						{
-							iCount++;
-							if (szOldest[0] == 0 || CompareFileTime(&fd.ftLastWriteTime, &ftOldest) < 0)
+							do
 							{
-								ftOldest = fd.ftLastWriteTime;
-								sprintf_s(szOldest, MAX_PATH, "%s\\%s", szCacheDir, fd.cFileName);
-							}
-						} while (FindNextFileA(hFind, &fd));
-						FindClose(hFind);
-					}
-					if (iCount > 20 && szOldest[0])
+								iCount++;
+								ullTotal += ((ULONGLONG)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+								if (szOldest[0] == 0 || CompareFileTime(&fd.ftLastWriteTime, &ftOldest) < 0)
+								{
+									ftOldest = fd.ftLastWriteTime;
+									sprintf_s(szOldest, MAX_PATH, "%s\\%s", szCacheDir, fd.cFileName);
+								}
+							} while (FindNextFileA(hFind, &fd));
+							FindClose(hFind);
+						}
+						// Never prune down to nothing - a single level bigger than the byte budget
+						// must still keep its own entry, or it would rebuild on every single visit.
+						if (iCount <= 1) break;
+						if (iCount <= kMaxCacheFiles && ullTotal <= kMaxCacheBytes) break;
+						if (szOldest[0] == 0) break;
 						DeleteFileA(szOldest);
+					}
 				}
 			}
 		}
