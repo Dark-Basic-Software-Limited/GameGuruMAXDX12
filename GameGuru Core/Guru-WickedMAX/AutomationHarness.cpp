@@ -2968,6 +2968,44 @@ static bool AutoHarness_ShadowBudgetCommands(const char* cmd, const char* arg, c
 		wi::renderer::SetLocalShadowBudget(t.visuals.iShadowSpotMax, n);
 		_snprintf(result, resultSize, "OK: SET_SHADOW_MAX_POINT budget forced to %d (spot stays %d)", n, t.visuals.iShadowSpotMax);
 	}
+	else if (_stricmp(cmd, "LIST_LIGHTS") == 0)
+	{
+		// Ground-truth dump of every live Wicked LightComponent (cone-edge artifact hunt):
+		// entity, type, pos, dir, range, outer/inner cone (deg), intensity, cast flag.
+		wi::scene::Scene* pScene = master.masterrenderer.scene;
+		int off = _snprintf(result, resultSize, "OK: %d lights\n", (int)pScene->lights.GetCount());
+		for (size_t i = 0; i < pScene->lights.GetCount() && off > 0 && off < (int)resultSize - 160; ++i)
+		{
+			const wi::scene::LightComponent& L = pScene->lights[i];
+			off += _snprintf(result + off, resultSize - off,
+				"  ent=%u t=%d pos=(%.0f,%.0f,%.0f) dir=(%.2f,%.2f,%.2f) rng=%.0f outer=%.1f inner=%.1f int=%.2f cast=%d\n",
+				(uint32_t)pScene->lights.GetEntity(i), (int)L.GetType(),
+				L.position.x, L.position.y, L.position.z,
+				L.direction.x, L.direction.y, L.direction.z,
+				L.GetRange(), L.outerConeAngle * 57.2958f, L.innerConeAngle * 57.2958f,
+				L.intensity, L.IsCastingShadow() ? 1 : 0);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	else if (_stricmp(cmd, "SET_AO") == 0)
+	{
+		// Live AO toggle (same as the VK_2 perf hotkey): 0 = AO_DISABLED, 1 = AO_MSAO.
+		// Added for the cone-edge tile-artifact hunt: MSAO's deinterleaved blocks were the
+		// last tile-quantized suspect after culling/buckets were exonerated empirically.
+		bool on = (arg[0] != '0');
+		master.masterrenderer.setAO(on ? wi::RenderPath3D::AO_MSAO : wi::RenderPath3D::AO_DISABLED);
+		_snprintf(result, resultSize, "OK: SET_AO %s", on ? "MSAO" : "DISABLED");
+	}
+	else if (_stricmp(cmd, "TILE_DEBUG") == 0)
+	{
+		// Per-tile light-culling heatmap overlay (engine debug shader variant). Re-added for
+		// the 2026-08-06 cone-edge tile-dropout hunt: shows each 16px tile's culled entity
+		// count as color — artifact tiles with a different count than neighbors = culling.
+		bool on = (arg[0] != '0');
+		wi::renderer::SetDebugLightCulling(on);
+		_snprintf(result, resultSize, "OK: TILE_DEBUG %s", on ? "ON (per-tile entity heatmap)" : "OFF");
+	}
 	else if (_stricmp(cmd, "SET_SHADOW_RES") == 0)
 	{
 		// 2026-08-06 sun-off coupling hunt: drive one shadow RESOLUTION exactly as the UI

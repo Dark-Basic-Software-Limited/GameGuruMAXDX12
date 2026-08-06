@@ -1245,6 +1245,25 @@ Soak driver: scratchpad `playgame_soak.sh <cycles> <playsecs>` — per phase (bo
   shadow-cache hunt). CAVEAT: for map-entity lights the per-frame profile sync can overwrite
   the light-list value, so the write may not reach the cone — the UI slider is the reliable
   driver; use SHADOW_LOCAL_RENDERED in GET_PERF_DATA (0 = cache steady) to watch cache churn.
+- `LIST_LIGHTS` — ground-truth dump of every LIVE Wicked LightComponent: entity, type
+  (0 dir/1 point/2 spot), pos, dir, range, outer/inner cone DEGREES, intensity, cast flag.
+  NOTE the direction convention: dir points surface→light (a straight-DOWN spot reads
+  dir=(0,+1,0)). THE tool for "which light is this and what is it really set to".
+- `TILE_DEBUG <0|1>` — per-tile light-culling heatmap overlay (engine debug CS variant).
+  Tile tint = culled entity count. Uniform tint across a region = per-tile lists identical.
+- `SET_AO <0|1>` — live AO toggle (AO_MSAO vs AO_DISABLED), same as the VK_2 perf hotkey.
+
+**2026-08-06 "cone-edge shadow blocks" verdict (NOT an engine bug):** the warehouse spot
+hangs UNDER a diamond-mesh catwalk; the "20px screen-aligned shadow tiles" at the cone rim
+are the MESH'S REAL SHADOW fragmenting at the dim edge (projected cell ≈ 20px at that
+camera — coincidence with the 16px-render/20px-display culling tile size). Chain that
+proved it: TILE_DEBUG heatmap + a bucket-fingerprint shader (both: per-tile lists UNIFORM);
+ADVANCED_CULLING off = pixel-identical; SET_AO 0 = step persists; camera nudge = edge moves
+smoothly (world-anchored, NOT screen tiles); budget SET_SHADOW_MAX_SPOT 1 = pattern belongs
+to the overhead spot alone; look-up screenshot = the physical mesh + girder + fixture.
+**Why a POINT light "fixed" it: point cube faces pack TINY here (29×29 and 10×10 px!) — too
+coarse to resolve the mesh, its shadow blurs away. That under-resolution is the real
+engine-side quality gap (2.06 side-finding), not the spot's faithful shadow.**
 
 **BUG 2 (2026-08-06, user-proven on TESTPRO2 1-spot/1-point): the Shadow Quantity knobs were
 CROSS-WIRED.** `Wicked_Update_Shadows` computed the spot cap then discarded it (its consumer
