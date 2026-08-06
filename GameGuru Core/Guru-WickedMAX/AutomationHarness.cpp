@@ -3191,7 +3191,8 @@ static bool AutoHarness_OutlineCommands(const char* cmd, const char* arg, char* 
 		extern sObject* g_selected_pobject; extern sObject* g_highlight_pobject;
 		extern sObject* g_selected_editor_object; extern int g_selected_editor_objectID;
 		extern std::vector<int> g_ObjectHighlightList;
-		extern uint64_t g_dbgOutlineCompositeRuns, g_dbgOutlineMaskRuns;
+		extern uint64_t g_dbgOutlineCompositeRuns, g_dbgOutlineMaskRuns, g_dbgOutlineSkippedFrames;
+		extern int g_iOutlineIdleGate;
 		int iGetgrideditselect(void);
 		bool bUseEditorOutlineSelection(void);
 		float fGetHighlightThickness(void);
@@ -3267,7 +3268,7 @@ static bool AutoHarness_OutlineCommands(const char* cmd, const char* arg, char* 
 			"FEED: sel_pobject=%d sel_editor=%d (id=%d) highlight=%d listsize=%d\n"
 			"STENCIL: objects_with_userStencilRef=%d %s\n"
 			"STENCIL_DRAWS (ref/total): %s\n"
-			"MASK: runs=%llu   COMPOSITE: runs=%llu\n"
+			"MASK: runs=%llu   COMPOSITE: runs=%llu   GATE: idle=%d skipped=%llu\n"
 			"activeObject=%d gridentity=%d testgame=%d",
 			iGetgrideditselect(), bUseEditorOutlineSelection() ? 1 : 0, fGetHighlightThickness(),
 			g_selected_pobject ? 1 : 0, g_selected_editor_object ? 1 : 0, g_selected_editor_objectID,
@@ -3275,6 +3276,7 @@ static bool AutoHarness_OutlineCommands(const char* cmd, const char* arg, char* 
 			stencilObjs, stencilDetail,
 			passdetail,
 			(unsigned long long)g_dbgOutlineMaskRuns, (unsigned long long)g_dbgOutlineCompositeRuns,
+			g_iOutlineIdleGate, (unsigned long long)g_dbgOutlineSkippedFrames,
 			t.widget.activeObject, t.gridentity, bImGuiInTestGame ? 1 : 0);
 		result[resultSize - 1] = 0;
 	}
@@ -3309,6 +3311,19 @@ static bool AutoHarness_OutlineCommands(const char* cmd, const char* arg, char* 
 		extern int g_iOutlineMaskTest;
 		g_iOutlineMaskTest = atoi(arg);
 		_snprintf(result, resultSize, "OK: outline mask test=%d", g_iOutlineMaskTest);
+		result[resultSize - 1] = 0;
+	}
+	else if (_stricmp(cmd, "OUTLINE_GATE") == 0)
+	{
+		// OUTLINE_GATE <0|1> - 1 (default) skips the outline mask + composite passes on
+		// frames where nothing is highlighted; 0 restores the pre-2026-08-06 behaviour of
+		// running all six full-screen passes every frame. Exists so the saving can be
+		// A/B'd in one session: the gate is worth ~1.0-1.7 ms/frame in the editor, which
+		// is 12-17% on the light hub demos.
+		extern int g_iOutlineIdleGate;
+		g_iOutlineIdleGate = atoi(arg);
+		_snprintf(result, resultSize, "OK: outline idle gate=%d (%s)", g_iOutlineIdleGate,
+			g_iOutlineIdleGate ? "skip when nothing highlighted" : "always run");
 		result[resultSize - 1] = 0;
 	}
 	else if (_stricmp(cmd, "SET_GRIDEDITSELECT") == 0)

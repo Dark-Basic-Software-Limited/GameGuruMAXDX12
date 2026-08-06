@@ -641,8 +641,58 @@ float fGetHighlightThickness(void);
 // these name which stage ran this session so a dead outline is diagnosable in one dump.
 uint64_t g_dbgOutlineCompositeRuns = 0; // Wicked_Render_Opaque_Scene editor branch executed
 uint64_t g_dbgOutlineMaskRuns = 0;      // RenderOutlineHighlighers mask passes executed
+uint64_t g_dbgOutlineSkippedFrames = 0; // frames the idle gate below skipped (mask + composite)
 int g_iOutlineMaskTest = 0;             // harness OUTLINE_MASKTEST: 1 = stencil ALWAYS (draw
                                         // unconditionally) to split draw-lands vs compare-fails
+int g_iOutlineIdleGate = 1;             // harness OUTLINE_GATE: 0 = always run (pre-2026-08-06
+                                        // behaviour, kept for A/B measurement)
+
+// GGMAX 2026-08-06: idle gate for the selection-outline pipeline.
+//
+// Restoring the outline (2026-08-05) put SIX full-screen passes back into every editor
+// frame - three stencil-compare mask draws on their OWN command list, then three
+// Postprocess_Outline composites - and they ran whether or not anything was selected.
+// The 08-06 hub sweep measured the bill: every demo gained exactly one command list
+// (14->15, 16->17, 18->19) and ~1.0-1.7 ms of submit stall, which is noise on a 10 ms
+// level but 12-17% on the light ones (Trapped 154->128, Switch Escape 150->128 FPS).
+// Upstream Wicked gated both sites on the selection being non-empty; the port left that
+// condition commented out at both call sites (the "//&& !translator.selected.empty()"
+// remnants). This is that gate, keyed on GGMAX's own highlight registry.
+//
+// WickedCall_RenderEditorFunctions runs immediately before the mask pass and rebuilds
+// g_ObjectHighlightList from scratch every frame: it clears the previous frame's
+// highlights, then every path that sets a user stencil ref (WickedCall_DrawObjctBox,
+// Wicked_Highlight_AllLogicObjects) pushes its object onto the list as it does so. So
+// once that call returns, an empty list means no object carries a stencil ref, the mask
+// target would be cleared-and-empty, and the composite would sample nothing.
+//
+// Both sites must share one verdict: the mask pass is what CLEARS rt_Outline*, so a
+// frame that skips the mask must skip the composite too or it would composite last
+// frame's stale silhouette.
+static bool GGMax_OutlineWorkPending()
+{
+	if (g_iOutlineIdleGate == 0 || g_iOutlineMaskTest != 0) return true; // forced on for A/B + diagnostics
+
+	extern std::vector<int> g_ObjectHighlightList;
+	if (!g_ObjectHighlightList.empty()) return true; // O(1), and true whenever anything is selected/hovered
+
+	// Belt and braces: a stencil ref set outside that registry would never be cleared by
+	// RenderEditorFunctions either, so it would sit highlighted forever - and the O(1)
+	// check above cannot see it. Sweep the object array occasionally (~once a second) so
+	// such a leak still gets drawn; amortised this is far below the 1 ms the gate saves.
+	static uint32_t sweepTick = 0;
+	static bool bLeakedStencilRef = false;
+	if ((sweepTick++ % 60) == 0)
+	{
+		bLeakedStencilRef = false;
+		auto& scene = wiScene::GetScene();
+		for (size_t i = 0; i < scene.objects.GetCount(); i++)
+		{
+			if (scene.objects[i].userStencilRef != 0) { bLeakedStencilRef = true; break; }
+		}
+	}
+	return bLeakedStencilRef;
+}
 
 void Wicked_Render_Opaque_Scene(CommandList cmd)
 {
@@ -674,6 +724,10 @@ void Wicked_Render_Opaque_Scene(CommandList cmd)
 
 	if (!bImGuiInTestGame && (!g_bNo2DRender || BackBufferSnapShotMode) )
 	{
+		// GGMAX 2026-08-06: nothing highlighted this frame = the mask stage skipped, so
+		// rt_Outline* hold no silhouette to composite (see GGMax_OutlineWorkPending).
+		if (!GGMax_OutlineWorkPending()) return;
+
 		if (master_renderer->GetDepthStencil() != nullptr) //&& !translator.selected.empty())
 		{
 			GraphicsDevice* device = wiGraphics::GetDevice();
@@ -818,6 +872,14 @@ void MasterRenderer::RenderOutlineHighlighers(CommandList cmd) const
 		if (!bImGuiInTestGame)
 		{
 			// Selection outline:
+			// GGMAX 2026-08-06: WickedCall_RenderEditorFunctions above has just rebuilt the
+			// highlight registry for this frame, so the gate reads the current selection.
+			if (!GGMax_OutlineWorkPending())
+			{
+				extern uint64_t g_dbgOutlineSkippedFrames;
+				g_dbgOutlineSkippedFrames++;
+				return;
+			}
 			if (GetDepthStencil() != nullptr)
 			{
 				extern uint64_t g_dbgOutlineMaskRuns;

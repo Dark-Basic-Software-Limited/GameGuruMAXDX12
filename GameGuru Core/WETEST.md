@@ -326,7 +326,8 @@ Diagnostics, all editor-state:
 |---|---|---|
 | `DUMP_OUTLINE` | (none) | Whole-pipeline state: mode/prefs gates, FEED globals, per-object stencil refs **with positions** (check the position — selecting by index routinely lands on an entity far outside the camera view), per-renderpass ref/total draw counters, mask/composite run counters, plus a same-mesh twin detector. |
 | `DUMP_OUTLINE_RT` | (none) | Saves all three outline mask targets to `Files/outline_rt(.png/_red/_blue)`. |
-| `OUTLINE_MASKTEST` | `<0\|1\|2\|3>` | 0 normal; 1 draw unconditionally (plumbing proof); 2 ENGINE-nibble compare (stencil writes proof); 3 full-byte compare. |
+| `OUTLINE_MASKTEST` | `<0\|1\|2\|3>` | 0 normal; 1 draw unconditionally (plumbing proof); 2 ENGINE-nibble compare (stencil writes proof); 3 full-byte compare. Any non-zero value also forces the idle gate open. |
+| `OUTLINE_GATE` | `<0\|1>` | 1 (default, 2026-08-06) skips the mask + composite passes on frames where nothing is highlighted; 0 restores the always-run behaviour. `DUMP_OUTLINE` reports `GATE: idle=<n> skipped=<frames>`. Measured on Trapped: **0.055 ms/frame** (148.0 vs 146.8 FPS, one fewer command list — lists 15→14). Small on this rig, but it removes six full-screen passes per idle editor frame, which matters more on a min-spec GPU. |
 | `SET_GRIDEDITSELECT` | `<n>` | Force grid edit select mode (5 = entity selection). |
 
 **Testing trap that cost a whole evening:** `SELECT_ENTITY <idx>` selects by entity index,
@@ -335,6 +336,12 @@ and a selected far-away object still ticks the frustum/draw counters while being
 2-pixel speck — looking exactly like "outline broken". Verify with an entity whose
 DUMP_OUTLINE position is within ~1500 units of the camera aim (Island Showdown's start
 view has the Player Start marker close by). Locked entities highlight BLUE (ref 3), not white.
+The same trap bit again on 2026-08-06: with the idle gate in, `DUMP_OUTLINE_RT` came back
+**black** on a selected entity — not a broken gate, just an off-camera selection writing no
+stencil. Read the position out of `DUMP_OUTLINE` and `SET_CAMERA` to it before believing a
+black mask. The gate's real proof is in the counters: **MASK runs climb while `skipped` holds,
+and MASK == COMPOSITE every frame** (they must stay in lock-step — the mask pass is what clears
+`rt_Outline*`, so a composite without its mask would draw the previous frame's silhouette).
 
 ## Scene Interrogation Commands
 
