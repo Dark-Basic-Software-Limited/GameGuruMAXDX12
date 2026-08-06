@@ -99,11 +99,12 @@ paid the full ~35 s recast rebuild again. Fixed in `GGRecastDetour.cpp`: prune n
 **48 files AND 512 MB** (entries measured 0.07–27 MB; 20 of them came to 109 MB), with a guard
 so a level bigger than the byte budget can never prune away its own entry.
 
-⚠ Verification status: the *thrash* is proven (two-visit test above) and the new prune builds
-clean, but the new cap has **not** yet been observed evicting/not-evicting in a live run — the
-discriminating test needs the cache primed to exactly the cap with a guaranteed miss, and the
-first attempt targeted the wrong entry (it deleted the largest `.gnav`, which was not Horseshoe's,
-so the level simply hit its cache and wrote nothing). Re-run before treating the cap as measured.
+Verified live: stash every real entry aside (so the level under test is a guaranteed miss), prime
+the directory with exactly 20 dummies on staggered timestamps, then enter test-game on Switch
+Escape. Result **21 files, 1 newly written, the oldest dummy untouched** — the old cap would have
+left 20 with that dummy deleted. (First attempt at this test was junk: it guessed the level's
+entry by picking the largest `.gnav`, which belonged to a different demo, so the level hit its
+cache and wrote nothing. Don't guess which hash belongs to which level — stash them all.)
 
 ### Also measured: the selection-outline idle gate (game-side, this build)
 
