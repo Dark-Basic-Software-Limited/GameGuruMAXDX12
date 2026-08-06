@@ -1232,6 +1232,20 @@ Soak driver: scratchpad `playgame_soak.sh <cycles> <playsecs>` — per phase (bo
 - `GET_CAMERA` — editor free-flight pose readout (`pos= ang= freeflight=`); pairs with
   `SET_CAMERA x y z pitch yaw` for exact pose-revisit determinism tests (same pose twice
   should pixel-diff ~0; a nonzero diff = frame-state-dependent rendering).
+- `SET_SHADOW_MAX <n>` — force BOTH local shadow caps (spot+point) in visuals AND the live
+  engine budget; the global local-shadow kill switch (`0` = every spot/point shadow off).
+- `SET_SHADOW_MAX_SPOT <n>` / `SET_SHADOW_MAX_POINT <n>` — GGMAX 2.07: force ONE type's cap,
+  leaving the other at its current visuals value. Since 2.07 the engine budget is split per
+  type (spot/rect pool vs point pool), matching the editor's two Shadow Quantity dropdowns.
+
+**BUG 2 (2026-08-06, user-proven on TESTPRO2 1-spot/1-point): the Shadow Quantity knobs were
+CROSS-WIRED.** `Wicked_Update_Shadows` computed the spot cap then discarded it (its consumer
+`SetShadowPropsSpot2D` was removed in the port) and fed only `iShadowPointMax` into the GG
+Phase 1 local-shadow budget — which gates POINT **and** SPOT/RECT casters in ONE pool. Result:
+spot count dropdown = dead, point count dropdown = controlled spot shadows too. Same port gap
+hid the spot RESOLUTION knob: spot rects sized from `max_shadow_resolution_2D` = the SUN
+cascade resolution. Fixed by GGMAX 2.07 (engine: per-type budgets + `SetShadowPropsSpot`;
+game: pushes both budgets + the spot resolution every visuals apply).
 
 **THE BUG this found (game-side, wickedcalls_part3 WickedCall_UpdateLight):** the port
 renamed old-Wicked `LightComponent::fov` (FULL spot cone angle: cone cos = cos(fov/2),

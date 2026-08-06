@@ -2929,6 +2929,53 @@ extern "C" int GGAuto_MapScreenActionName(const char* name); // M-GridEditB_part
 namespace wi { namespace renderer {
 	uint32_t GG_GetShadowRects(uint32_t* entities, int* widths, int* heights, int* types, uint32_t maxn, float* scale); // engine 2.06
 } }
+// GGMAX 2026-08-06: shadow-budget commands hoisted out of the main dispatch chain —
+// adding SET_SHADOW_MAX_SPOT/_POINT as chain links re-hit MSVC C1061 (every else-if
+// link nests one block deeper). Returns true if cmd was handled.
+static bool AutoHarness_ShadowBudgetCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "SET_SHADOW_MAX") == 0)
+	{
+		// Drive BOTH local shadow caps (spot+point) for testing the Phase 1/2 budget+cache without
+		// the UI (GGMAX 2.07 split the engine budget per type; this stays the global kill switch).
+		// The game's shadow-props recompute only runs on a visuals-apply, so force the engine directly.
+		int n = atoi(arg);
+		if (n < 0) n = 0;
+		t.visuals.iShadowSpotMax = n;
+		t.gamevisuals.iShadowSpotMax = n;
+		t.visuals.iShadowPointMax = n;
+		t.gamevisuals.iShadowPointMax = n;
+		wi::renderer::SetLocalShadowBudget(n, n); // immediate: GRANTED = min(visible casters, n) per type
+		_snprintf(result, resultSize, "OK: SET_SHADOW_MAX spot+point budgets forced to %d", n);
+	}
+	else if (_stricmp(cmd, "SET_SHADOW_MAX_SPOT") == 0)
+	{
+		// GGMAX 2.07: force only the SPOT/RECT shadow cap (point cap untouched).
+		int n = atoi(arg);
+		if (n < 0) n = 0;
+		t.visuals.iShadowSpotMax = n;
+		t.gamevisuals.iShadowSpotMax = n;
+		wi::renderer::SetLocalShadowBudget(n, t.visuals.iShadowPointMax);
+		_snprintf(result, resultSize, "OK: SET_SHADOW_MAX_SPOT budget forced to %d (point stays %d)", n, t.visuals.iShadowPointMax);
+	}
+	else if (_stricmp(cmd, "SET_SHADOW_MAX_POINT") == 0)
+	{
+		// GGMAX 2.07: force only the POINT shadow cap (spot cap untouched).
+		int n = atoi(arg);
+		if (n < 0) n = 0;
+		t.visuals.iShadowPointMax = n;
+		t.gamevisuals.iShadowPointMax = n;
+		wi::renderer::SetLocalShadowBudget(t.visuals.iShadowSpotMax, n);
+		_snprintf(result, resultSize, "OK: SET_SHADOW_MAX_POINT budget forced to %d (spot stays %d)", n, t.visuals.iShadowSpotMax);
+	}
+	else
+	{
+		return false;
+	}
+	result[resultSize - 1] = 0;
+	return true;
+}
+
 static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "TITLE_CLICK") == 0)
@@ -4791,17 +4838,10 @@ void AutoHarness_CheckForCommand(void)
 		}
 		result[sizeof(result) - 1] = 0;
 	}
-	else if (_stricmp(cmd, "SET_SHADOW_MAX") == 0)
+	else if (AutoHarness_ShadowBudgetCommands(cmd, arg, result, sizeof(result)))
 	{
-		// Drive the local point-shadow cap for testing the Phase 1/2 budget+cache without the UI. The
-		// game's shadow-props recompute only runs on a visuals-apply, so force the engine budget directly.
-		int n = atoi(arg);
-		if (n < 0) n = 0;
-		t.visuals.iShadowPointMax = n;
-		t.gamevisuals.iShadowPointMax = n;
-		wi::renderer::SetLocalShadowBudget(n); // immediate: GRANTED = min(visible local casters, n)
-		_snprintf(result, sizeof(result), "OK: SET_SHADOW_MAX engine budget forced to %d", n);
-		result[sizeof(result) - 1] = 0;
+		// SET_SHADOW_MAX / SET_SHADOW_MAX_SPOT / SET_SHADOW_MAX_POINT — handled in the
+		// helper above the dispatch function (hoisted to dodge MSVC C1061)
 	}
 	else if (_stricmp(cmd, "SET_SHADOW_CACHE") == 0)
 	{

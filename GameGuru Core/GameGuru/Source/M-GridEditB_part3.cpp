@@ -1365,17 +1365,20 @@ void Wicked_Update_Shadows(void *voidvisual)
 	else if (shadows <= 12) shadows = 12;
 	else if (shadows <= 16) shadows = 16;
 	if (shadows > visuals->iShadowSpotMax) shadows = visuals->iShadowSpotMax;
-	
-	if (old_iShadowSpotResolution != visuals->iShadowSpotResolution || shadows > total_active_2d_shadows || (bForceRefreshLightCount && shadows != total_active_2d_shadows) || bTransparentChanged)
+
+	// GGMAX 2.07: the spot RESOLUTION knob is live again — its old consumer
+	// (SetShadowPropsSpot2D) was removed in the port, leaving spots to silently ride the
+	// sun cascade resolution. The spot COUNT is applied below via the split budget.
+	if (visuals->iShadowSpotResolution > 2048) visuals->iShadowSpotResolution = 2048;
+	if (old_iShadowSpotResolution != visuals->iShadowSpotResolution || shadows != total_active_2d_shadows)
 	{
 		char debug[256];
-		sprintf(debug, "wiRenderer::SetShadowPropsSpot2D: %d", shadows);
+		sprintf(debug, "wiRenderer::SetShadowPropsSpot: res %d count %d", visuals->iShadowSpotResolution, shadows);
 		timestampactivity(0, debug);
-		total_active_2d_shadows = shadows;
-		if (visuals->iShadowSpotResolution > 2048) visuals->iShadowSpotResolution = 2048;
 		old_iShadowSpotResolution = visuals->iShadowSpotResolution;
-		//wiRenderer::SetShadowPropsSpot2D - REMOVED
+		total_active_2d_shadows = shadows;
 	}
+	wiRenderer::SetShadowPropsSpot(visuals->iShadowSpotResolution);
 
 	//PE: MEM - 1546 : END SetShadowProps2D                                     S:529MB V: (4157,0)     
 	static int total_active_cube_shadows = -1;
@@ -1404,14 +1407,18 @@ void Wicked_Update_Shadows(void *voidvisual)
 			wiRenderer::SetShadowPropsCube(visuals->iShadowPointResolution);
 	}
 
-	// GG Phase 1: revive the (previously discarded) iShadowPointMax cap. Pushed EVERY call
-	// (outside the change-gate above) so a LOWERED cap takes effect immediately. shadowscube is
-	// already the bucketed point-light count clamped to iShadowPointMax (0 when the knob is 0).
-	wiRenderer::SetLocalShadowBudget((visuals->iShadowPointResolution == 0 || visuals->iShadowPointMax == 0) ? 0 : shadowscube);
+	// GG Phase 1 (GGMAX 2.07: SPLIT PER TYPE): each light type's shadow count is capped by its
+	// OWN knob — spots/rects by iShadowSpotMax, points by iShadowPointMax. Before the split one
+	// pool sized from the POINT knob gated both, so the spot count dropdown did nothing and the
+	// point count dropdown turned spot shadows on/off (user-proven on TESTPRO2, 2026-08-06).
+	// Pushed EVERY call (outside the change-gates above) so a LOWERED cap takes effect immediately.
+	int iSpotShadowBudget = (visuals->iShadowSpotResolution == 0 || visuals->iShadowSpotMax == 0) ? 0 : shadows;
+	int iPointShadowBudget = (visuals->iShadowPointResolution == 0 || visuals->iShadowPointMax == 0) ? 0 : shadowscube;
+	wiRenderer::SetLocalShadowBudget(iSpotShadowBudget, iPointShadowBudget);
 	// GG Phase 2: cache static local shadows so a bank of static lights (e.g. 16 torches all casting)
 	// is cheap - render each once, reuse its atlas texels until it (or the granted set) changes.
-	// Enabled whenever local shadows are on; the engine falls back to full re-render for moving lights.
-	wiRenderer::SetLocalShadowCachingEnabled(visuals->iShadowPointResolution != 0 && visuals->iShadowPointMax != 0);
+	// Enabled whenever ANY local shadows are on; the engine falls back to full re-render for moving lights.
+	wiRenderer::SetLocalShadowCachingEnabled(iSpotShadowBudget > 0 || iPointShadowBudget > 0);
 
 	if(bForceRefreshLightCount) bForceRefreshLightCount = false;
 
