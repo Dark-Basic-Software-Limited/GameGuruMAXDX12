@@ -3184,6 +3184,7 @@ namespace GPUParticles {
 	int gpup_debug_dump(char* summary, int summarySize);
 	void gpup_debug_show(int on);
 	void gpup_debug_force_arm(int mode);
+	void gpup_debug_set_sn(float v);
 }
 
 static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
@@ -3332,6 +3333,14 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		// running). Separates "the steam is causing X" from everything else in one flip.
 		GPUParticles::gpup_debug_show(atoi(arg));
 		_snprintf(result, resultSize, "OK: GPUP_SHOW draw=%d", atoi(arg) != 0 ? 1 : 0);
+	}
+	else if (_stricmp(cmd, "GPUP_SET_SN") == 0)
+	{
+		// GPUP_SET_SN <value> — fast-forward the gpup sn clock (hash seed source). The
+		// fp32 hash-degradation bug needed ~50 min to appear; this reaches any magnitude
+		// instantly. Post-fix invariant: the steam look must NOT change with this value.
+		GPUParticles::gpup_debug_set_sn((float)atof(arg));
+		_snprintf(result, resultSize, "OK: GPUP_SET_SN sn=%s", arg ? arg : "0");
 	}
 	else if (_stricmp(cmd, "SET_GPUPARM") == 0)
 	{

@@ -1883,14 +1883,29 @@ void  gpup_doit( int enr, CommandList cmd )
 			if ( gpup_settings.pauser < 1 && gpup_emitter[enr].emitterActive == 1 ) gpup_spawnit( enr, (int) gpup_emitter[enr].spawnint );
 		}
 
-		gpup_emitter[enr].posConstantData.rnd = gpup_settings.sn;
-		
-		gpup_emitter[enr].speedConstantData.rnd = gpup_settings.sn;
+		// GGMAX 2026-08-08 (tasks #120/#121 round 3): sn is the GPU hash SEED for spawn
+		// velocity/rotation randomness, and it grows ~10.4/s forever (DX11 wrapped only at
+		// 1e9). The shader hash is frac(sin(dot(seed, primes~285x))*75633): at sn≈32k
+		// (≈50 min of runtime) the dot reaches 8-9 MILLION, where fp32 ULP is 0.5 — the
+		// mod-2π inside sin() collapses to a handful of distinct values, spawn velocities
+		// degenerate into a few coherent jets, and the steam congeals into the
+		// user-reported whole-screen white-out. Proven by the level-reload experiment:
+		// FRESH emitters inheriting the old clock are instantly broken; GPUP_SHOW 0
+		// restores a normal scene. Mid-degradation (~5-30 min) reads as "bigger, moves
+		// more, glitches" — the residue of the user's earlier report. DX11 carries the
+		// same latent code but sessions rarely idle 50+ min at a particle view (and its
+		// fxc/SM5 sin() path may mask it longer). Fix: the accumulator stays untouched;
+		// the HASH sees a small cyclic seed. Period 256 ≈ 24.6s macro-repeat in
+		// turbulence seeding — imperceptible against ~4s particle lifespans.
+		const float gg_hash_seed = fmodf( gpup_settings.sn, 256.0f );
+		gpup_emitter[enr].posConstantData.rnd = gg_hash_seed;
+
+		gpup_emitter[enr].speedConstantData.rnd = gg_hash_seed;
 		gpup_emitter[enr].speedConstantData.rnd2 = Random2()/65536.0f;
-		
+
 		gpup_emitter[enr].mainVSConstantData.rota.x = gpup_emitter[enr].rotation-0.5f;
 		gpup_emitter[enr].mainVSConstantData.rota.y = gpup_emitter[enr].rotation_variance;
-		gpup_emitter[enr].mainVSConstantData.rota.z = gpup_settings.sn;
+		gpup_emitter[enr].mainVSConstantData.rota.z = gg_hash_seed;
 
 		float rotX = gpup_emitter[enr].emitter_rotation_x * 6.2831853f + gpup_settings.rotsn * (gpup_emitter[enr].emitter_auto_rotation_x - 0.5f);
 		float rotY = gpup_emitter[enr].emitter_rotation_y * 6.2831853f + gpup_settings.rotsn * (gpup_emitter[enr].emitter_auto_rotation_y - 0.5f);
@@ -2698,6 +2713,10 @@ float g_fSlowParticleTime = 1.0f;
 // private to this translation unit, so the dump lives here and the harness calls in blind.
 void gpup_debug_show( int on )        { gg_gpup_draw_enable = (on != 0); }
 void gpup_debug_force_arm( int mode ) { gg_gpup_force_arm = mode; }
+// Fast-forward the sn clock (GPUP_SET_SN) — the hash-degradation bug needed ~50 min of
+// runtime to show; with this the broken magnitude is reachable in one command. With the
+// fmod fix the look must be INVARIANT to this value.
+void gpup_debug_set_sn( float v )     { gpup_settings.sn = v; }
 int gpup_debug_dump( char* summary, int summarySize )
 {
 	FILE* f = nullptr;
