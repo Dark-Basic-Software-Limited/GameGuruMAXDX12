@@ -3178,6 +3178,14 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 // GGMAX 2.08 (hair rendering parity): transparency diagnostics + the live knob for the
 // DX11 double-sided-transparent no-depth-write rule. Hoisted for the same C1061 reason as
 // the helpers above. Returns true if cmd was handled.
+// GGMAX 2026-08-07 (tasks #120/#121): gpup forensics entry points — implemented inside
+// GPUParticles_part0.cpp because the emitter/settings structs are private to that TU.
+namespace GPUParticles {
+	int gpup_debug_dump(char* summary, int summarySize);
+	void gpup_debug_show(int on);
+	void gpup_debug_force_arm(int mode);
+}
+
 static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "DUMP_TRANSPARENTS") == 0)
@@ -3305,6 +3313,34 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		wi::renderer::gg_dx11_light_falloff = (atoi(arg) != 0);
 		_snprintf(result, resultSize, "OK: SET_LIGHTFALLOFF dx11curve=%d",
 			wi::renderer::gg_dx11_light_falloff ? 1 : 0);
+	}
+	else if (_stricmp(cmd, "GPUP_DUMP") == 0)
+	{
+		// GPUP_DUMP — legacy gpup particle forensics (tasks #120/#121). Writes gpup_dump.txt
+		// (settings, cadence counters, per-emitter parsed fields + the GPU-visible constants)
+		// next to the exe; the result line carries the cadence summary. Two dumps N seconds
+		// apart give the effective sim rate: d(time_sum)/N ≈ 66.6/s means 1.0× real time.
+		// max_time is the worst single-step warp — after the dt-cap fix it must stay ≤ 2.23;
+		// larger values mean an uncapped hitch reached the sim (the "particles reset" bug).
+		char sum[512] = {0};
+		GPUParticles::gpup_debug_dump(sum, sizeof(sum));
+		_snprintf(result, resultSize, "OK: GPUP_DUMP %s -> gpup_dump.txt", sum);
+	}
+	else if (_stricmp(cmd, "GPUP_SHOW") == 0)
+	{
+		// GPUP_SHOW <0|1> — attribution lever: 0 skips ALL legacy gpup drawing (sim keeps
+		// running). Separates "the steam is causing X" from everything else in one flip.
+		GPUParticles::gpup_debug_show(atoi(arg));
+		_snprintf(result, resultSize, "OK: GPUP_SHOW draw=%d", atoi(arg) != 0 ? 1 : 0);
+	}
+	else if (_stricmp(cmd, "SET_GPUPARM") == 0)
+	{
+		// SET_GPUPARM <0|1|2> — pin the gpup update arm: 0 = stock FPS-dependent branch,
+		// 1 = force the whole-batch arm, 2 = force the split arm (needs 2+ emitters). The
+		// stock threshold (7.143ms = 140 FPS) sits inside the editor's frame-time band, so
+		// the arm can flip with view FPS; this lever gives a same-FPS look A/B of the arms.
+		GPUParticles::gpup_debug_force_arm(atoi(arg));
+		_snprintf(result, resultSize, "OK: SET_GPUPARM force_arm=%d", atoi(arg));
 	}
 	else
 	{

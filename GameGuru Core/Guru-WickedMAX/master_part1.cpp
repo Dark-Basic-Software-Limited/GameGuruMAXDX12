@@ -409,6 +409,18 @@ void MasterRenderer::Update(float dt)
 #ifdef OPTICK_ENABLE
 		OPTICK_EVENT("GuruLoopLogic");
 #endif
+		// GGMAX 2026-08-07 (task #121): the 1/30s dt cap MOVED UP from below ("P6") so
+		// gpup_update sees it too. DX11 capped deltaTime at 1/30 INSIDE the engine loop
+		// (fork MainComponent.cpp:138, GGREDUCED) before ANY consumer; the DX12 engine
+		// clamps at 0.5s (wiApplication.cpp) and the old cap position was AFTER the
+		// gpup_update call — so a single hitch frame (lazy-PSO compile, SVT upload,
+		// alt-tab) fed the legacy particle sim up to 0.5s = a 33-quantum warp in ONE
+		// tick: particles leapt, mass-aged (bigger via size-over-life) and wrapped
+		// lifetimes = the user-reported "particles reset a little every so often" and
+		// the balloooning steam column. Nothing between here and the old position
+		// consumes dt except gpup_update (terrain/tree/grass updates take camera+cmd).
+		if (dt > (1.0f / 30.0f)) dt = 1.0f / 30.0f;
+
 		// regular update mode
 		auto range = wiProfiler::BeginRangeCPU("Update - Logic (Total)");
 		bool bFullyInitialised = GuruLoopLogic();
@@ -483,6 +495,8 @@ void MasterRenderer::Update(float dt)
 	if (wiBackLog::isActive()) wiBackLog::Toggle();
 
 	// P6: cap delta time to 1/30s to prevent animation jumps after alt-tab or stalls
+	// GGMAX 2026-08-07: cap MOVED to the top of this function (see task #121 comment) so the
+	// legacy gpup particle sim is covered as well; kept here as a no-op re-assert for safety.
 	if (dt > (1.0f / 30.0f)) dt = 1.0f / 30.0f;
 
 	// animation bridge pre-hook (before scene->Update runs animations)

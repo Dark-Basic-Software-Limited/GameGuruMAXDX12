@@ -1,4 +1,4 @@
-﻿//
+//
 // GPUParticles system from AGK
 //
 
@@ -543,6 +543,18 @@ public:
 
 t_gpup_emitter gpup_emitter[ gpup_maxeffects ];
 
+// GGMAX 2026-08-07 parity instruments (task #121) — read by the harness GPUP_DUMP/GPUP_SHOW/
+// SET_GPUPARM commands. The counters prove the sim cadence live: after the dt cap fix,
+// gg_gpup_max_time must never exceed 0.0333/0.015 = 2.22 (it hit up to 33.3 before).
+int gg_gpup_force_arm = 0;          // 0 = stock branch logic; 1 = force whole-batch arm; 2 = force split arm
+int gg_gpup_draw_enable = 1;        // GPUP_SHOW 0|1 — attribution lever: skip all gpup drawing when 0
+uint64_t gg_gpup_doit_calls = 0;    // per-emitter sim steps taken
+double   gg_gpup_time_sum = 0.0;    // sum of the per-step warp multipliers (gpup_settings.time)
+float    gg_gpup_max_time = 0.0f;   // worst single-step warp seen since init
+uint64_t gg_gpup_arm_whole = 0;     // update ticks taken by the whole-batch arm
+uint64_t gg_gpup_arm_split = 0;     // update ticks taken by the split arm
+
+
 // rendering variables
 
 struct VertexQuad
@@ -641,6 +653,11 @@ void GPUP_LoadTexture( const char* filename, Texture* tex )
 	stbi_image_free( imageData );
 }
 
+// GGMAX 2026-08-07 (task #121): DX11 zero-filled these sim render textures at creation;
+// the Feb port dropped the initial data, so texPos/texSpeed/texNoise started as GPU garbage.
+// With the sim renderpasses on LoadOp::DONTCARE, a freshly loaded emitter could draw one or
+// more frames of random packed positions/ages before the first full sim pass overwrote them
+// (contributor to the "particles reset/glitch" report). Restored to DX11 behaviour.
 void GPUP_CreateRenderTexture( int width, int height, Texture* tex )
 {
 	GraphicsDevice* device = wiGraphics::GetDevice();
@@ -659,7 +676,13 @@ void GPUP_CreateRenderTexture( int width, int height, Texture* tex )
 	texDesc.width = width;
 	texDesc.height = height;
 
-	device->CreateTexture( &texDesc, nullptr, tex );
+	// zero initial contents (DX11 parity — see comment above)
+	wi::vector<uint32_t> zeroData;
+	zeroData.resize((size_t)width * (size_t)height, 0u);
+	SubresourceData initData = {};
+	initData.data_ptr = zeroData.data();
+	initData.row_pitch = width * 4;
+	device->CreateTexture( &texDesc, &initData, tex );
 	device->SetName( tex, "renderTex" );
 }
 
@@ -910,6 +933,7 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 {
 	if ( !gpu_particles_initialised ) return;
+	if ( !gg_gpup_draw_enable ) return; // GPUP_SHOW 0 — attribution lever (task #120/#121)
 	// cannot do any quad rendering in here as we are already in a render pass by this point
 	// only render final emitter objects
 
@@ -1676,6 +1700,10 @@ void gpup_spawnit( int enr, int spawnint )
 void  gpup_doit( int enr, CommandList cmd )
 {
 	GraphicsDevice* device = wiGraphics::GetDevice();
+	// GGMAX 2026-08-07 cadence counters (task #121) — see GPUP_DUMP
+	gg_gpup_doit_calls++;
+	gg_gpup_time_sum += gpup_settings.time;
+	if (gpup_settings.time > gg_gpup_max_time) gg_gpup_max_time = gpup_settings.time;
 	float emitter_time = gpup_settings.time * gpup_emitter[enr].emitter_animation_speed;
 
 	gpup_emitter[enr].speedConstantData.warp = emitter_time;
@@ -2664,7 +2692,59 @@ void gpup_setBilinear( int ID, int active )
 
 float g_fSlowParticleTime = 1.0f;
 
+
 // Update the Particles
+// GGMAX 2026-08-07 (tasks #120/#121): harness instruments. The emitter/settings structs are
+// private to this translation unit, so the dump lives here and the harness calls in blind.
+void gpup_debug_show( int on )        { gg_gpup_draw_enable = (on != 0); }
+void gpup_debug_force_arm( int mode ) { gg_gpup_force_arm = mode; }
+int gpup_debug_dump( char* summary, int summarySize )
+{
+	FILE* f = nullptr;
+	fopen_s( &f, "gpup_dump.txt", "w" );
+	int loaded = 0;
+	if ( f )
+	{
+		fprintf( f, "settings: tmr=%.6f gtimer=%.6f time=%.4f split=%d emitterCount=%d sn=%.2f rotsn=%.4f simulOn=%d\n",
+			gpup_settings.tmr, gpup_settings.gtimer, gpup_settings.time, gpup_settings.split,
+			gpup_settings.emitterCount, gpup_settings.sn, gpup_settings.rotsn, gpup_settings.simulOn );
+		fprintf( f, "counters: doit_calls=%llu time_sum=%.2f max_time=%.3f arm_whole=%llu arm_split=%llu force_arm=%d draw_enable=%d agk_time=%.3f\n",
+			(unsigned long long)gg_gpup_doit_calls, gg_gpup_time_sum, gg_gpup_max_time,
+			(unsigned long long)gg_gpup_arm_whole, (unsigned long long)gg_gpup_arm_split,
+			gg_gpup_force_arm, gg_gpup_draw_enable, AGKTimer() );
+		for ( int i = 0; i < gpup_maxeffects; i++ )
+		{
+			if ( gpup_emitter[i].effectLoaded == 0 ) continue;
+			loaded++;
+			fprintf( f, "emitter %d: vis=%d particles=%d blend=%d type=%d lifespan=%.4f(var %.3f) size1=%.4f size2=%.4f sizer=%.4f psize=%.4f gsize=%.3f animspd=%.4f amount=%.4f maxed=%.3f activeT=%.4f pos=(%.1f,%.1f,%.1f)\n",
+				i, gpup_emitter[i].effectVisible, gpup_emitter[i].particles, gpup_emitter[i].blendmode,
+				gpup_emitter[i].emitter_type, gpup_emitter[i].lifespan, gpup_emitter[i].lifespan_variance,
+				gpup_emitter[i].size1, gpup_emitter[i].size2, gpup_emitter[i].sizer, gpup_emitter[i].particleSize,
+				gpup_emitter[i].globalSize, gpup_emitter[i].emitter_animation_speed, gpup_emitter[i].emitter_amount,
+				gpup_emitter[i].maxed, gpup_emitter[i].activeTimer,
+				gpup_emitter[i].globalx[0], gpup_emitter[i].globaly[0], gpup_emitter[i].globalz[0] );
+			fprintf( f, "  gpu-consts: pgrow=(%.5f,%.5f,%.5f) globalsize=%.3f pos.lifespan=(%.2f,%.4f) warp=%.4f gravity=(%.4f,%.4f,%.4f,%.4f)\n",
+				gpup_emitter[i].mainVSConstantData.pgrow.x, gpup_emitter[i].mainVSConstantData.pgrow.y,
+				gpup_emitter[i].mainVSConstantData.pgrow.z, gpup_emitter[i].mainVSConstantData.globalsize.x,
+				gpup_emitter[i].posConstantData.lifespan.x, gpup_emitter[i].posConstantData.lifespan.y,
+				gpup_emitter[i].posConstantData.warp,
+				gpup_emitter[i].speedConstantData.gravity.x, gpup_emitter[i].speedConstantData.gravity.y,
+				gpup_emitter[i].speedConstantData.gravity.z, gpup_emitter[i].speedConstantData.gravity.w );
+		}
+		fclose( f );
+	}
+	if ( summary && summarySize > 0 )
+	{
+		snprintf( summary, summarySize,
+			"loaded=%d steps=%llu time_sum=%.1f max_time=%.3f arm_whole=%llu arm_split=%llu force=%d draw=%d",
+			loaded, (unsigned long long)gg_gpup_doit_calls, gg_gpup_time_sum, gg_gpup_max_time,
+			(unsigned long long)gg_gpup_arm_whole, (unsigned long long)gg_gpup_arm_split,
+			gg_gpup_force_arm, gg_gpup_draw_enable );
+		summary[summarySize - 1] = 0;
+	}
+	return loaded;
+}
+
 void gpup_update( float frameTime, wiGraphics::CommandList cmd )
 {
 	if ( !gpu_particles_initialised ) return;
@@ -2690,7 +2770,14 @@ void gpup_update( float frameTime, wiGraphics::CommandList cmd )
 		gpup_settings.time = gpup_settings.gtimer / 0.015f;
 
 		// will split particle updates across two frames if more than 2 emitters are loaded and fps is high enough
-		if ( gpup_settings.tmr > 0.007143f || gpup_settings.emitterCount < 2 )
+		// GGMAX 2026-08-07 (task #121): SET_GPUPARM harness lever can pin either arm for a
+		// same-FPS A/B — the stock threshold (7.143ms = 140 FPS) sits inside the editor's
+		// normal frame-time band, so the arm can flip-flop with view-dependent FPS.
+		bool gg_whole_arm = ( gpup_settings.tmr > 0.007143f || gpup_settings.emitterCount < 2 );
+		if (gg_gpup_force_arm == 1) gg_whole_arm = true;
+		else if (gg_gpup_force_arm == 2 && gpup_settings.emitterCount >= 2) gg_whole_arm = false;
+		if (gg_whole_arm) gg_gpup_arm_whole++; else gg_gpup_arm_split++;
+		if ( gg_whole_arm )
 		{
 			gpup_settings.activeEffects1 = 0;
 			gpup_settings.activeEffects2 = 0;
