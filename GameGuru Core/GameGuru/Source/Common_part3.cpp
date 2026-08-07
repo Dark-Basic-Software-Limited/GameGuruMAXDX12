@@ -847,10 +847,16 @@ void GetSetupIniEarly( void )
 				// revert is in force from the very first rendered frame, and the harness
 				// SET_HAIRDEPTH command covers the live case.
 				const bool bHairNDW = (_strnicmp(p, "hairnodepthwrite", 16) == 0);
+				// GGMAX 2.09: `weaponforcedepth=0` reverts the first-person weapon depth carve.
+				// Unlike hairnodepthwrite this one DOES want the early pass: it is also read at gun
+				// material setup (WickedCall_SetMeshDisableDepth), which happens well before
+				// FPSC_LoadSETUPINI, and reading it there is what makes the key a true revert rather
+				// than a renderer-only toggle.
+				const bool bWeapFD = (_strnicmp(p, "weaponforcedepth", 16) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bMABlock)        iKeyLen = 9;
 				else if (bGrassMg)        iKeyLen = 10;
-				else if (bHairNDW)        iKeyLen = 16;
+				else if (bHairNDW || bWeapFD) iKeyLen = 16;
 				else continue;
 				const char* q = p + iKeyLen;
 				while (*q == ' ' || *q == '\t') q++;
@@ -883,6 +889,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetHairNoDepthWrite(int);
 					GGSetHairNoDepthWrite(iValue);
+				}
+				if (bWeapFD)
+				{
+					extern void GGSetWeaponForceDepth(int);
+					GGSetWeaponForceDepth(iValue);
 				}
 			}
 			fclose(lvf);

@@ -3203,7 +3203,7 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 			result[resultSize - 1] = 0;
 			return true;
 		}
-		int trObjects = 0, trSubsets = 0, trDoubleSidedTransparent = 0;
+		int trObjects = 0, trSubsets = 0, trDoubleSidedTransparent = 0, trForceDepth = 0;
 		for (size_t toi = 0; toi < trScene.objects.GetCount(); ++toi)
 		{
 			wi::ecs::Entity toe = trScene.objects.GetEntity(toi);
@@ -3236,17 +3236,22 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 				}
 				trSubsets++;
 				if (trTransparent && trDouble) trDoubleSidedTransparent++;
+				if (tmat->IsForceDepth()) trForceDepth++;
+				// GGMAX 2.09: forcedepth wins over the hair rule when both would match, so label it
+				// that way — the two are mutually exclusive in RenderMeshes.
+				const bool trCarve = tmat->IsForceDepth();
 				fprintf(trF,
 					"  mat=%llu blend=%d userblend=%d dsided=%d(mesh=%d,mat=%d) alphaRef=%.3f alphatest=%d "
-					"filt=0x%X%s opacity=%.2f shader=%d base=\"%s\"%s\n",
+					"filt=0x%X%s opacity=%.2f shader=%d forcedepth=%d base=\"%s\"%s\n",
 					(unsigned long long)tos.materialID,
 					(int)tmat->GetBlendMode(), (int)tmat->userBlendMode,
 					trDouble ? 1 : 0, tom->IsDoubleSided() ? 1 : 0, tmat->IsDoubleSided() ? 1 : 0,
 					tmat->alphaRef, tmat->IsAlphaTestEnabled() ? 1 : 0,
 					trFilter, trTransparent ? "(TRANSP)" : "",
-					tmat->baseColor.w, (int)tmat->shaderType,
+					tmat->baseColor.w, (int)tmat->shaderType, trCarve ? 1 : 0,
 					tmat->textures[wi::scene::MaterialComponent::BASECOLORMAP].name.c_str(),
-					(trTransparent && trDouble) ? "   <== hair/leaf parity rule applies" : "");
+					(trCarve && trTransparent) ? "   <== WEAPON depth-carve applies"
+						: ((trTransparent && trDouble) ? "   <== hair/leaf parity rule applies" : ""));
 			}
 		}
 		fprintf(trF, "OBJECTS %d SUBSETS %d DOUBLESIDED_TRANSPARENT %d\n",
@@ -3254,10 +3259,13 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		fclose(trF);
 		_snprintf(result, resultSize,
 			"OK: DUMP_TRANSPARENTS \"%s\" objects=%d subsets=%d doublesided_transparent=%d "
-			"knob=%d nodepthwrite_draws=%llu -> transparents_dump.txt",
+			"hairknob=%d nodepthwrite_draws=%llu | weaponknob=%d forcedepth_mats=%d forcedepth_draws=%llu "
+			"-> transparents_dump.txt",
 			arg ? arg : "", trObjects, trSubsets, trDoubleSidedTransparent,
 			wi::renderer::gg_transparent_doublesided_nodepthwrite ? 1 : 0,
-			(unsigned long long)wi::renderer::GG_GetNoDepthWriteDrawCount());
+			(unsigned long long)wi::renderer::GG_GetNoDepthWriteDrawCount(),
+			wi::renderer::gg_weapon_forcedepth ? 1 : 0, trForceDepth,
+			(unsigned long long)wi::renderer::GG_GetForceDepthDrawCount());
 	}
 	else if (_stricmp(cmd, "SET_HAIRDEPTH") == 0)
 	{
@@ -3270,6 +3278,20 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		_snprintf(result, resultSize, "OK: SET_HAIRDEPTH nodepthwrite=%d (draws so far=%llu)",
 			wi::renderer::gg_transparent_doublesided_nodepthwrite ? 1 : 0,
 			(unsigned long long)wi::renderer::GG_GetNoDepthWriteDrawCount());
+	}
+	else if (_stricmp(cmd, "SET_WEAPONDEPTH") == 0)
+	{
+		// SET_WEAPONDEPTH <0|1> — live A/B for the first-person weapon depth carve.
+		// 1 = DX11 behaviour (back faces stamp the weapon's volume with compare ALWAYS, then the
+		// front faces draw over it, so world geometry cannot clip the weapon), 0 = the DX12 port's
+		// behaviour (ordinary depth test, so a wall the player stands against cuts into the gun).
+		// Selection-time like SET_HAIRDEPTH: both permutations are built at LoadShaders, no reload.
+		// A zero forcedepth_draws with a weapon on screen means the GG_FORCEDEPTH material flag
+		// never reached the renderer — that would be a game-side fault, not a pipeline one.
+		wi::renderer::gg_weapon_forcedepth = (atoi(arg) != 0);
+		_snprintf(result, resultSize, "OK: SET_WEAPONDEPTH forcedepth=%d (carve draws so far=%llu)",
+			wi::renderer::gg_weapon_forcedepth ? 1 : 0,
+			(unsigned long long)wi::renderer::GG_GetForceDepthDrawCount());
 	}
 	else
 	{

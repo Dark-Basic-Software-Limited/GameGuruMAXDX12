@@ -1378,11 +1378,22 @@ void WickedCall_SetMeshTransparent(sMesh* pMesh)
 			wiScene::MaterialComponent* pObjectMaterial = wiScene::GetScene().materials.GetComponent(materialEntity);
 			if (pObjectMaterial)
 			{
+				// GGMAX 2.09: clearing GG_FORCEDEPTH here is DELIBERATE, and it is what reproduces
+				// DX11's semantics. DX11 kept both halves of the state in ONE field (userBlendMode ==
+				// BLENDMODE_FORCEDEPTH), so this function simply overwrote it: LAST WRITER WINS. That
+				// is exactly why the first-person gun carves and the LUA 3D prompt planes do not —
+				// G-Gun_part3.cpp:726-736 calls SetObjectTransparency and then DisableObjectZDepth,
+				// while M-LUA-General.cpp:292 calls DisableObjectZDepth and then SetObjectTransparency
+				// at :390. Splitting the state into a flag + a blend mode would have let the flag
+				// survive this call, and a prompt plane is a single quad whose front faces point AWAY
+				// from the camera: it would stamp depth in the prepass, draw nothing in the main
+				// front-faces-only pass, and leave an unshaded hole. Keep the two writes together.
 				if (pMesh->bTransparency)
 					pObjectMaterial->userBlendMode = BLENDMODE_ALPHA;
 				else
 					pObjectMaterial->userBlendMode = BLENDMODE_OPAQUE;
-				pObjectMaterial->IsDirty();
+				pObjectMaterial->SetForceDepth(false);
+				pObjectMaterial->SetDirty(); // was IsDirty() — a const getter whose result was discarded
 			}
 		}
 	}
@@ -1421,18 +1432,39 @@ void WickedCall_SetMeshDisableDepth(sMesh* pMesh, bool bDisable)
 			wiScene::MaterialComponent* pObjectMaterial = wiScene::GetScene().materials.GetComponent(materialEntity);
 			if (pObjectMaterial)
 			{
-				if (bDisable == true)
+				// GGMAX 2.09: honour the revert switch HERE too, not just in the renderer. Clearing
+				// only the engine bool would leave these materials as plain double-sided transparents
+				// — a third state that is neither DX11 nor pre-2.09 DX12, i.e. not a baseline to
+				// compare against. Reading it here makes `setup.ini weaponforcedepth=0` a true revert.
+				// (The harness `SET_WEAPONDEPTH` flips only the engine half, since materials are set up
+				// once at gun load; it is an A/B lever, not a revert. Documented as such.)
+				if (bDisable == true && wi::renderer::gg_weapon_forcedepth)
 				{
-					pObjectMaterial->userBlendMode = BLENDMODE_OPAQUE; // was BLENDMODE_FORCEDEPTH (REMOVED)
-					pObjectMaterial->shaderType = MaterialComponent::SHADERTYPE_PBR; // was SHADERTYPE_WEAPON (REMOVED)
+					// GGMAX 2.09: restores the DX11 fork's BLENDMODE_FORCEDEPTH behaviour.
+					//
+					// DX11 set userBlendMode = BLENDMODE_FORCEDEPTH here, which did two things at once:
+					// it put the material in the TRANSPARENT pass (any non-OPAQUE blend mode does), and
+					// it selected a pipeline that stamps the mesh's own depth with compare ALWAYS so the
+					// first-person weapon can never be clipped by the wall the player is standing in.
+					// The DX12 port had no FORCEDEPTH blend mode to map to and left this at OPAQUE, which
+					// silently dropped the carve — measured: a crate cut the front half off the pistol.
+					//
+					// Split into the two things it meant: ALPHA for the transparent pass, and the
+					// GG_FORCEDEPTH material flag for the carve (engine 2.09 reads it in RenderMeshes).
+					// SHADERTYPE_WEAPON is still not ported — that was the separate WEAPON_SHADOW
+					// lighting hack, which needs a new object-shader permutation.
+					pObjectMaterial->userBlendMode = BLENDMODE_ALPHA; // was BLENDMODE_FORCEDEPTH
+					pObjectMaterial->shaderType = MaterialComponent::SHADERTYPE_PBR; // was SHADERTYPE_WEAPON (NOT PORTED)
+					pObjectMaterial->SetForceDepth(true);
 					pObjectMaterial->SetDoubleSided(true);
 				}
 				else
 				{
 					pObjectMaterial->userBlendMode = BLENDMODE_OPAQUE;
+					pObjectMaterial->SetForceDepth(false);
 					pObjectMaterial->SetDoubleSided(false);
 				}
-				pObjectMaterial->IsDirty();
+				pObjectMaterial->SetDirty(); // was IsDirty() — a const getter whose result was discarded
 			}
 		}
 	}

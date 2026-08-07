@@ -108,6 +108,18 @@ void GGSetHairNoDepthWrite(int on)
 	wi::renderer::gg_transparent_doublesided_nodepthwrite = (on != 0);
 }
 
+// GGMAX 2.09: first-person weapon depth carve — DEFAULT ON.
+//
+// `setup.ini weaponforcedepth=0` is a TRUE revert: the flag is read both here (renderer selection)
+// and in WickedCall_SetMeshDisableDepth (material setup), so the objects go back to plain opaque
+// single-sided exactly as before 2.09. The harness `SET_WEAPONDEPTH 0|1` flips only the renderer
+// half — gun materials are set up once at load — so it is an A/B lever for the carve itself, NOT a
+// revert to the pre-2.09 baseline. Do not report a SET_WEAPONDEPTH 0 arm as "the old behaviour".
+void GGSetWeaponForceDepth(int on)
+{
+	wi::renderer::gg_weapon_forcedepth = (on != 0);
+}
+
 // GGMAX 1.83: D3D12MA PreferredBlockSize override (setup.ini `mablockmb`, 0 = library default
 // 64 MB). Same early-parse constraint as the two above, and a harder one — the allocator is
 // created with the device, so nothing later than main()'s early pass can influence it.
