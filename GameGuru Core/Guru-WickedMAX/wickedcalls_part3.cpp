@@ -995,7 +995,14 @@ uint64_t WickedCall_AddLight(int iLightType)
 	LightComponent* lightComponent = wiScene::GetScene ( ).lights.GetComponent ( light );
 	lightComponent->_flags = 0;
 	lightComponent->SetType ( (wiScene::LightComponent::LightType)iLightType );
-	lightComponent->BackCompatSetEnergy(60);
+	// GGMAX 2.10: under the DX11 falloff parity curve, intensity is in DX11 energy units and
+	// the DX11 product created every map light at energy 30 (its wickedcalls.cpp:6655).
+	// UpdateLight re-asserts this every push; set it here too so a light is never bright for
+	// the frames before its first lighting_loop update.
+	if (wi::renderer::gg_dx11_light_falloff)
+		lightComponent->intensity = 30.0f;
+	else
+		lightComponent->BackCompatSetEnergy(60);
 	Wicked_Update_Shadows(NULL);
 	return light;
 }
@@ -1112,12 +1119,23 @@ void WickedCall_UpdateLight(uint64_t wickedlightindex, float fX, float fY, float
 	}
 	lightComponent->color = XMFLOAT3((float)iColR / 255.0f, (float)iColG / 255.0f, (float)iColB / 255.0f);
 
-	// DX12 PBR has two major changes from DX11 that reduce perceived brightness:
-	// 1) Inverse-square attenuation (1/d²) — DX11 used simple (1-d²/r²)² with no 1/d²
-	// 2) Lambertian diffuse normalization (1/PI) — DX11 omitted this
-	// Scale intensity with range²×PI/4 to compensate for both factors, targeting
-	// equivalent DX11 brightness at half the light's range.
-	if (fRange > 0.1f)
+	// GGMAX 2.10 LIGHT POWER PARITY: the DX11 product ran EVERY point/spot light at a constant
+	// energy of 30 (set once in WickedCall_AddLight via Entity_CreateLight, DX11
+	// wickedcalls.cpp:6655 — UpdateLight never touched it) and shaded it as
+	// energy*(1-d²/r²)² with NO inverse-square term. Range alone shaped the curve. The engine
+	// now carries that exact curve behind OPTION_BIT_GG_DX11_LIGHT_FALLOFF
+	// (wi::renderer::gg_dx11_light_falloff, lightingHF.hlsli), in which intensity is in DX11
+	// energy units 1:1 — so the DX11 constant passes straight through. The old range²×π/4
+	// heuristic below could never reproduce the SHAPE of the DX11 falloff on upstream's
+	// windowed 1/d² (mid-range flood ~half brightness collapsing into a hot pool at the
+	// source — user-reported vs the DX11 spotshadowtest baseline 2026-08-07), and its premise
+	// was wrong besides: DX11's BRDF_GetDiffuse DID divide by PI (WickedRepo brdf.hlsli:449).
+	// It is kept only as the shader-side revert pair (setup.ini lightfalloff=0).
+	if (wi::renderer::gg_dx11_light_falloff)
+	{
+		lightComponent->intensity = 30.0f; // DX11 energy units under the parity curve
+	}
+	else if (fRange > 0.1f)
 	{
 		float fIntensity = fRange * fRange * 0.785f; // PI/4 ≈ 0.785
 		if (fIntensity < 600.0f) fIntensity = 600.0f;

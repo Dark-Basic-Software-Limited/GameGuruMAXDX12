@@ -3293,6 +3293,19 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 			wi::renderer::gg_weapon_forcedepth ? 1 : 0,
 			(unsigned long long)wi::renderer::GG_GetForceDepthDrawCount());
 	}
+	else if (_stricmp(cmd, "SET_LIGHTFALLOFF") == 0)
+	{
+		// SET_LIGHTFALLOFF <0|1> — live A/B for the GGMAX 2.10 light power parity. 1 = DX11
+		// behaviour (energy 30 × (1-d²/r²)², no inverse-square — broad even flood reaching the
+		// authored range), 0 = the DX12 port's old look (windowed 1/d² with the range²×π/4
+		// intensity heuristic — hot pool at the source). FULLY live in one knob: the shader
+		// branches on a per-frame FrameCB bit AND lighting_loop re-pushes every light's
+		// intensity through WickedCall_UpdateLight each frame, which reads the same bool — so
+		// both halves flip together within a frame. No reload, no early-parse trap.
+		wi::renderer::gg_dx11_light_falloff = (atoi(arg) != 0);
+		_snprintf(result, resultSize, "OK: SET_LIGHTFALLOFF dx11curve=%d",
+			wi::renderer::gg_dx11_light_falloff ? 1 : 0);
+	}
 	else
 	{
 		return false;

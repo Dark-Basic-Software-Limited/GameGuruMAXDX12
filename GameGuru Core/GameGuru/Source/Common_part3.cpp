@@ -853,9 +853,16 @@ void GetSetupIniEarly( void )
 				// FPSC_LoadSETUPINI, and reading it there is what makes the key a true revert rather
 				// than a renderer-only toggle.
 				const bool bWeapFD = (_strnicmp(p, "weaponforcedepth", 16) == 0);
+				// GGMAX 2.10: `lightfalloff=0` reverts the DX11 light power parity (point/spot
+				// lights back to windowed 1/d² + the range²×π/4 intensity heuristic). Does not
+				// strictly NEED the early pass — both the shader bit and the per-frame intensity
+				// push read the live bool — but here it holds from the first rendered frame and
+				// also covers WickedCall_AddLight's creation-time intensity. Live: SET_LIGHTFALLOFF.
+				const bool bLightFO = (_strnicmp(p, "lightfalloff", 12) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bMABlock)        iKeyLen = 9;
 				else if (bGrassMg)        iKeyLen = 10;
+				else if (bLightFO)        iKeyLen = 12;
 				else if (bHairNDW || bWeapFD) iKeyLen = 16;
 				else continue;
 				const char* q = p + iKeyLen;
@@ -894,6 +901,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetWeaponForceDepth(int);
 					GGSetWeaponForceDepth(iValue);
+				}
+				if (bLightFO)
+				{
+					extern void GGSetDX11LightFalloff(int);
+					GGSetDX11LightFalloff(iValue);
 				}
 			}
 			fclose(lvf);
