@@ -120,6 +120,15 @@ void GGSetWeaponForceDepth(int on)
 	wi::renderer::gg_weapon_forcedepth = (on != 0);
 }
 
+// GGMAX 2.10: DX11 light power parity — DEFAULT ON, this is the revert switch
+// (setup.ini `lightfalloff=0`). Fully live like SET_HAIRDEPTH: the shader branches on a
+// per-frame FrameCB bit and lighting_loop re-pushes every light's intensity through
+// WickedCall_UpdateLight each frame, so both halves follow the bool within a frame.
+void GGSetDX11LightFalloff(int on)
+{
+	wi::renderer::gg_dx11_light_falloff = (on != 0);
+}
+
 // GGMAX 1.83: D3D12MA PreferredBlockSize override (setup.ini `mablockmb`, 0 = library default
 // 64 MB). Same early-parse constraint as the two above, and a harder one — the allocator is
 // created with the device, so nothing later than main()'s early pass can influence it.
@@ -343,6 +352,16 @@ void MasterRenderer::Load()
 		GGTerrain_Draw(frustum, mode, cmd);
 	};
 	customDraw_Transparent = [](const Frustum* frustum, CommandList cmd) {
+		// GGMAX 2026-08-07: legacy gpup/.arx particle draw (task #118 — steam columns etc.).
+		// DX11's engine fork drove this from inside RenderPath3D::RenderTransparents
+		// (WickedRepo RenderPath3D.cpp:2010/2027 + the per-object interleave in its
+		// wiRenderer.cpp:3546); none of those hooks exist in the DX12 clone. This callback
+		// fires at the equivalent point — inside the transparent render pass, after the
+		// transparent scene draw, before DrawSoftParticles (wiRenderPath3D.cpp:2435) — so
+		// gpup renders back-to-front among its own effects OVER the scene's transparents
+		// (no per-object interleave; deliberate, see gpup_draw_bydistance's comment).
+		// MUST run before the wicked-terrain early-out, same as the selection outline.
+		GPUParticles::gpup_draw(wiScene::GetCamera(), cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Transparent(frustum, cmd);
 	};

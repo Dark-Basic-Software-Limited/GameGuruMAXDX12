@@ -1120,7 +1120,10 @@ void GGGrass_Init()
 	}
 
 	// raster state
-	RasterizerState rastState = {};
+	// GGMAX 2026-08-07: static — PipelineStateDesc stores POINTERS and the driver PSO
+	// compiles lazily at first draw (same dangling-desc class as the gpup crash; this
+	// path is currently dormant but the landmine is real). See GPUParticles_part0.cpp.
+	static RasterizerState rastState = {};
 	rastState.fill_mode = FillMode::SOLID;
 	rastState.cull_mode = CullMode::NONE;
 	rastState.front_counter_clockwise = true;
@@ -1132,14 +1135,14 @@ void GGGrass_Init()
 	rastState.antialiased_line_enable = false;
 	
 	// depth stencil state
-	DepthStencilState depthStateOpaque = {};
+	static DepthStencilState depthStateOpaque = {};
 	depthStateOpaque.depth_enable = true;
 	depthStateOpaque.depth_func = ComparisonFunc::GREATER_EQUAL;
 	depthStateOpaque.stencil_enable = false;
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	
 	// blend state
-	BlendState blendStateOpaque = {};
+	static BlendState blendStateOpaque = {};
 	blendStateOpaque.render_target[0].blend_enable = false;
 	blendStateOpaque.render_target[0].src_blend = Blend::ONE;
 	blendStateOpaque.render_target[0].dest_blend = Blend::ZERO;
@@ -1152,7 +1155,7 @@ void GGGrass_Init()
 	blendStateOpaque.alpha_to_coverage_enable = true;
 	
 	// input layout
-	InputLayout inputLayout;
+	static InputLayout inputLayout;
 	inputLayout.elements = {
 		{ "POSITION", 0, wiGraphics::Format::R32G32_FLOAT,    0, 0,  InputClassification::PER_VERTEX_DATA },
 		{ "OFFSET",   0, wiGraphics::Format::R32G32B32_FLOAT, 1, 0,  InputClassification::PER_INSTANCE_DATA },

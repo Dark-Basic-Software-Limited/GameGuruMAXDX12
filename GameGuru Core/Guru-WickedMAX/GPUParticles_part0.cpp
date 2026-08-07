@@ -3,6 +3,8 @@
 //
 
 #include <string>
+#include <algorithm>
+#include <functional>
 #include "GPUParticles.h"
 #include "Utility/stb_image.h"
 #include "CFileC.h"
@@ -691,9 +693,14 @@ void GPUParticlesDrawQuad( RenderPass* renderPass, CommandList cmd )
 	device->RenderPassEnd( cmd );
 }
 
-uint32_t g_emitterSorting[256][gpup_maxeffects];
-uint32_t g_emitterSortingDrawCount[256][gpup_maxeffects];
-uint32_t g_emitterCurrentIndex[256];
+// GGMAX 2026-08-07 gpup restore: the DX11 fork indexed these by the integer CommandList to
+// support the per-object transparent interleave (its wiRenderer.cpp:3546 called
+// gpup_draw_bydistance inside the batch loop, potentially on several command lists). The DX12
+// port stubbed everything "CommandList is no longer an integer index". DX12 draws gpup as ONE
+// whole sorted batch per frame from a single command list (customDraw_Transparent hook in
+// master_part1.cpp), so the per-cmd dimension is simply gone — plain per-frame statics.
+uint32_t g_emitterSorting[gpup_maxeffects];
+uint32_t g_emitterCurrentIndex;
 
 extern "C" void gpup_draw_init(const wiScene::CameraComponent & camera, wiGraphics::CommandList cmd)
 {
@@ -701,39 +708,37 @@ extern "C" void gpup_draw_init(const wiScene::CameraComponent & camera, wiGraphi
 	// calculates all needed particles and distances from camera
 	for (size_t i = 0; i < gpup_maxeffects; ++i)
 	{
-		// TODO: CommandList is no longer an integer index
-		//g_emitterSortingDrawCount[cmd][i] = 0;
-		//g_emitterSorting[cmd][i] = 0;
-		//g_emitterSorting[cmd][i] |= (uint32_t)i & 0x0000FFFF;
+		g_emitterSorting[i] = 0;
+		g_emitterSorting[i] |= (uint32_t)i & 0x0000FFFF;
 		if (gpup_emitter[i].effectLoaded == 0 || gpup_emitter[i].effectVisible == 0) continue;
 		XMFLOAT3 emitercenter = XMFLOAT3(gpup_emitter[i].globalx[0], gpup_emitter[i].globaly[0], gpup_emitter[i].globalz[0]);
 		float distance = wiMath::DistanceEstimated(XMFLOAT3(emitercenter.x, camera.Eye.y, emitercenter.z), camera.Eye);
 		gpup_emitter[i].currentdistancefromcamera = distance;
-		// TODO: CommandList is no longer an integer index
-		//g_emitterSorting[cmd][i] |= ((uint32_t)(distance * 10) & 0x0000FFFF) << 16;
+		// DX11-verbatim key: distance decihash in the HIGH 16 bits (wraps past 6553.5 units,
+		// exactly as the DX11 product did), emitter index in the LOW 16.
+		g_emitterSorting[i] |= ((uint32_t)(distance * 10) & 0x0000FFFF) << 16;
 	}
 
 	// now sort so distant particles are first in list
-	// TODO: CommandList is no longer an integer index
-	//std::sort(std::begin(g_emitterSorting[cmd]), std::end(g_emitterSorting[cmd]), std::greater<uint32_t>());
+	std::sort(std::begin(g_emitterSorting), std::end(g_emitterSorting), std::greater<uint32_t>());
 
 	// we start here, being the particle furthest away
-	// TODO: CommandList is no longer an integer index
-	//g_emitterCurrentIndex[cmd] = 0;
+	g_emitterCurrentIndex = 0;
 }
 
 extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wiGraphics::CommandList cmd, float fDistanceFromCamera)
 {
-	// finished rendering particles
-	// TODO: CommandList is no longer an integer index
-	//if (g_emitterCurrentIndex[cmd] == -1 || g_emitterCurrentIndex[cmd] >= gpup_maxeffects)
-	//	return;
+	// GGMAX 2026-08-07 gpup restore: STILL UNCALLED in DX12 — this was the DX11 engine fork's
+	// per-object transparent interleave entry (its wiRenderer.cpp:3546 called it inside the
+	// batch loop so particles sorted BETWEEN transparent meshes: window, particle, window).
+	// The DX12 clone has no such hook; the DX12 path is the whole sorted batch in gpup_draw()
+	// from the customDraw_Transparent callback (master_part1.cpp). If per-object interleave
+	// parity is ever wanted, this body needs the single-dim sort arrays above plus an engine
+	// callback inside RenderMeshes' transparent loop — an engine delta, deliberately not taken.
 	return;
 
 	// is called just before a transparent object is rendered at the specified distance
 	// allowing us to insert the particle rendering as needed (i.e. window, particle, window, window, particle, window)
-	// TODO: CommandList is no longer an integer index
-	//int iThisLoopStart = g_emitterCurrentIndex[cmd];
 	int iThisLoopStart = 0;
 	for (size_t i = iThisLoopStart; i < gpup_maxeffects; ++i)
 	{
@@ -836,9 +841,8 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 
 		gpup_emitter[e].mainPSConstantData.agk_time = AGKTimer();
 
-		device->UpdateBuffer(&mainPSConstants, &gpup_emitter[e].mainPSConstantData, cmd, sizeof(sMainPSConstantData));
-		device->BindConstantBuffer(&mainVSConstants, 0, cmd);
-		device->BindConstantBuffer(&mainPSConstants, 1, cmd);
+		// in-render-pass safe form (see gpup_draw); UpdateBuffer here would remove the device
+		device->BindDynamicConstantBuffer(gpup_emitter[e].mainPSConstantData, 1, cmd);
 
 		int numIndices = 0;
 		const GPUBuffer* vbs[1];
@@ -887,7 +891,7 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 					gpup_emitter[e].mainVSConstantData.World.m[3][1] = 0.0f;
 					gpup_emitter[e].mainVSConstantData.World.m[3][2] = 64.0f * j;
 
-					device->UpdateBuffer(&mainVSConstants, &gpup_emitter[e].mainVSConstantData, cmd, sizeof(sMainVSConstantData));
+					device->BindDynamicConstantBuffer(gpup_emitter[e].mainVSConstantData, 0, cmd);
 
 					device->DrawIndexed(numIndices, 0, 0, cmd);
 				}
@@ -914,9 +918,9 @@ extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 
 	for( size_t i = 0; i < gpup_maxeffects; ++i )
 	{
-		// TODO: CommandList is no longer an integer index
-		//size_t e = g_emitterSorting[cmd][i] & 0x0000FFFF;
-		size_t e = i;
+		// GGMAX 2026-08-07 gpup restore: back-to-front via the sort gpup_draw_init just built
+		// (distance decihash in the high 16 bits, descending — farthest emitter first).
+		size_t e = g_emitterSorting[i] & 0x0000FFFF;
 
 		if ( e < 0 || e >= gpup_maxeffects || gpup_emitter[e].effectLoaded == 0 || gpup_emitter[e].effectVisible == 0 ) continue;
 
@@ -992,11 +996,14 @@ extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 		}
 
 		gpup_emitter[e].mainPSConstantData.agk_time = AGKTimer();
-		
-		device->UpdateBuffer( &mainPSConstants, &gpup_emitter[e].mainPSConstantData, cmd, sizeof(sMainPSConstantData) );
-		
-		device->BindConstantBuffer(&mainVSConstants, 0, cmd );
-		device->BindConstantBuffer(&mainPSConstants, 1, cmd );
+
+		// GGMAX 2026-08-07 DEVICE-REMOVAL FIX: this runs INSIDE the transparent render pass
+		// (customDraw_Transparent). UpdateBuffer records a CopyBuffer — a copy op inside a
+		// D3D12 render pass is an INVALID CALL and removed the device at submit
+		// (DXGI_ERROR_INVALID_CALL on Present). DX11 could UpdateSubresource anywhere; the
+		// modern in-pass idiom is BindDynamicConstantBuffer — transient upload memory, no
+		// copy command recorded. Same change on the per-tile VS constants below.
+		device->BindDynamicConstantBuffer( gpup_emitter[e].mainPSConstantData, 1, cmd );
 
 		int numIndices = 0;
 		const GPUBuffer* vbs[ 1 ];
@@ -1043,7 +1050,8 @@ extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 				gpup_emitter[e].mainVSConstantData.World.m[3][1] = 0.0f;
 				gpup_emitter[e].mainVSConstantData.World.m[3][2] = 64.0f * j;
 
-				device->UpdateBuffer( &mainVSConstants, &gpup_emitter[e].mainVSConstantData, cmd, sizeof(sMainVSConstantData) );
+				// in-pass safe (see mainPS note above); replaces UpdateBuffer+static CB
+				device->BindDynamicConstantBuffer( gpup_emitter[e].mainVSConstantData, 0, cmd );
 
 				device->DrawIndexed( numIndices, 0, 0, cmd );
 			}
@@ -1887,23 +1895,49 @@ int gpup_init()
 	gpup_settings.gtimer = 0;
 	gpup_settings.spawnCount = 0;
 
-	// GPU particles DX12 port: temporarily disabled pending crash investigation.
-	// The CreateBuffer with initial data crashes (wiGraphicsDevice.h:254) — staging allocator
-	// returns null mapped_data. Re-enable once the root cause is identified.
-	{
-		wi::backlog::post("GPU Particles: DX12 port in progress, temporarily disabled", wi::backlog::LogLevel::Warning);
-		gpu_particles_initialised = 0;
-		return -1;
-	}
+	// GGMAX 2026-08-07: RE-ENABLED (task #118 — the legacy .arx system carries every entity
+	// Particles marker, e.g. the spotshadowtest steam columns; nothing else can, the WPE
+	// corpus has no smoke_thick/.arx equivalents). The Feb-17 disable ("CreateBuffer with
+	// initial data crashes — staging allocator returns null mapped_data", commit 80c936f5)
+	// dated from the raw API-migration window; the CreateBuffer-with-initial-data path has
+	// since been the workhorse of every system in the engine (deltas 1.1-2.10) and the buffer
+	// descs below are plain DEFAULT-usage IB/VB/CB creates from compile-time arrays. If this
+	// ever crashes again the CrashLogger's symbolized walk will name it — do not re-disable
+	// wholesale, root-cause it.
+	wi::backlog::post("GPU Particles (gpup/.arx): initialising");
+
+	// GGMAX 2026-08-07: gpup_trace.txt — fopen/fflush per line so the evidence survives a
+	// crash (wi::backlog buffers and loses its tail; the first re-enable run crashed at the
+	// first gpup draw with only a lone D3D12CreateVersionedRootSignatureDeserializer error
+	// flushed, and this trace exists to name the failing stage precisely). The Feb-era commit
+	// 80c936f5 also removed ALL return-value checking from this function — restored below:
+	// any shader/PSO failure now disables the whole system cleanly instead of letting an
+	// empty PipelineState reach BindPipelineState (null internal_state -> AV in pso_validate).
+	FILE* gg_trace = nullptr;
+	fopen_s(&gg_trace, "gpup_trace.txt", "w");
+	#define GPUP_TRACE(...) { if (gg_trace) { fprintf(gg_trace, __VA_ARGS__); fprintf(gg_trace, "\n"); fflush(gg_trace); } }
+	#define GPUP_FAIL(msg) { GPUP_TRACE("FAIL: %s", msg); if (gg_trace) fclose(gg_trace); \
+		wi::backlog::post(std::string("GPU Particles DISABLED: ") + msg, wi::backlog::LogLevel::Error); \
+		gpu_particles_initialised = 0; return -1; }
 
 	// Load GPU particle shaders
-	wiRenderer::LoadShader( ShaderStage::VS, shaderMainVS, "GPUP_MainVS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderMainPS, "GPUP_MainPS.cso" );
-	wiRenderer::LoadShader( ShaderStage::VS, shaderQuadVS, "GPUP_QuadVS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderQuadDefaultPS, "QuadDefaultPS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderNoisePS, "GPUP_NoisePS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderSpeedPS, "GPUP_SpeedPS.cso" );
-	wiRenderer::LoadShader( ShaderStage::PS, shaderPosPS, "GPUP_PosPS.cso" );
+	bool bShadersOK = true;
+	struct { ShaderStage stage; Shader* sh; const char* file; } gg_shaders[] = {
+		{ ShaderStage::VS, &shaderMainVS,       "GPUP_MainVS.cso" },
+		{ ShaderStage::PS, &shaderMainPS,       "GPUP_MainPS.cso" },
+		{ ShaderStage::VS, &shaderQuadVS,       "GPUP_QuadVS.cso" },
+		{ ShaderStage::PS, &shaderQuadDefaultPS,"QuadDefaultPS.cso" },
+		{ ShaderStage::PS, &shaderNoisePS,      "GPUP_NoisePS.cso" },
+		{ ShaderStage::PS, &shaderSpeedPS,      "GPUP_SpeedPS.cso" },
+		{ ShaderStage::PS, &shaderPosPS,        "GPUP_PosPS.cso" },
+	};
+	for (auto& s : gg_shaders)
+	{
+		bool ok = wiRenderer::LoadShader(s.stage, *s.sh, s.file);
+		GPUP_TRACE("LoadShader %-20s ok=%d valid=%d", s.file, ok ? 1 : 0, s.sh->IsValid() ? 1 : 0);
+		if (!ok || !s.sh->IsValid()) bShadersOK = false;
+	}
+	if (!bShadersOK) GPUP_FAIL("one or more shaders failed to load (see lines above)");
 
 	// images
 	if ( !GetFileExists("Files/effectbank/common/noise64.png") ) return -1;
@@ -1913,7 +1947,15 @@ int gpup_init()
 	GPUP_LoadTexture( "Files/effectbank/common/dist2.png", &texDist2 );
 
 	// pipeline state
-	RasterizerState rasterDesc = {};
+	// GGMAX 2026-08-07 THE gpup CRASH FIX: these MUST be static. PipelineStateDesc stores
+	// POINTERS to the state objects and modern Wicked defers the driver PSO compile to the
+	// first draw (pso_validate) — in particular the input layout's SemanticName is kept as a
+	// c_str() into THIS InputLayout (wiGraphicsDevice_DX12.cpp:4865). As stack locals they
+	// died when gpup_init returned, the lazy compile read dangling "POSITION"/"UV" strings,
+	// CreatePipelineState failed and SetPipelineState(nullptr) AV'd in d3d12.dll (0x18c).
+	// Engine PSOs never hit this because wiRenderer's layouts are globals; DX11-era Wicked
+	// created PSOs eagerly so the original stack locals were correct back then.
+	static RasterizerState rasterDesc = {};
 	rasterDesc.fill_mode = FillMode::SOLID;
 	rasterDesc.cull_mode = CullMode::NONE;
 	rasterDesc.front_counter_clockwise = true;
@@ -1924,13 +1966,13 @@ int gpup_init()
 	rasterDesc.multisample_enable = false;
 	rasterDesc.antialiased_line_enable = false;
 	
-	DepthStencilState depthDesc = {};
+	static DepthStencilState depthDesc = {};
 	depthDesc.depth_enable = true;
 	depthDesc.depth_write_mask = DepthWriteMask::ZERO;
 	depthDesc.depth_func = ComparisonFunc::GREATER_EQUAL;
 	depthDesc.stencil_enable = false;
-		
-	BlendState blendDesc = {};
+
+	static BlendState blendDesc = {};
 	blendDesc.render_target[0].blend_enable = true;
 	blendDesc.render_target[0].src_blend = Blend::SRC_ALPHA;
 	blendDesc.render_target[0].dest_blend = Blend::INV_SRC_ALPHA;
@@ -1941,8 +1983,8 @@ int gpup_init()
 	blendDesc.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
 	blendDesc.independent_blend_enable = false;
 	
-	// input layout
-	InputLayout layoutDesc;
+	// input layout (static — SemanticName c_str()s are referenced at first-draw PSO compile)
+	static InputLayout layoutDesc;
 	layoutDesc.elements =
 	{
 		{ "POSITION", 0, wiGraphics::Format::R32G32B32_FLOAT, 0, 0, InputClassification::PER_VERTEX_DATA },
@@ -1960,21 +2002,21 @@ int gpup_init()
 	desc.rs = &rasterDesc;
 	desc.dss = &depthDesc;
 	desc.bs = &blendDesc;
-	device->CreatePipelineState( &desc, &psoAlpha );
+	{ bool ok = device->CreatePipelineState( &desc, &psoAlpha ); GPUP_TRACE("CreatePipelineState psoAlpha ok=%d valid=%d", ok ? 1 : 0, psoAlpha.IsValid() ? 1 : 0); if (!ok || !psoAlpha.IsValid()) GPUP_FAIL("CreatePipelineState psoAlpha"); }
 
 	// additive
 	blendDesc.render_target[0].dest_blend = Blend::ONE;
 	blendDesc.render_target[0].src_blend_alpha = Blend::ZERO;
 	blendDesc.render_target[0].dest_blend_alpha = Blend::ONE;
-	device->CreatePipelineState( &desc, &psoAdd );
+	{ bool ok = device->CreatePipelineState( &desc, &psoAdd ); GPUP_TRACE("CreatePipelineState psoAdd ok=%d valid=%d", ok ? 1 : 0, psoAdd.IsValid() ? 1 : 0); if (!ok || !psoAdd.IsValid()) GPUP_FAIL("CreatePipelineState psoAdd"); }
 
 	// opaque
 	depthDesc.depth_write_mask = DepthWriteMask::ALL;
 	blendDesc.render_target[0].blend_enable = false;
-	device->CreatePipelineState( &desc, &psoOpaque );
+	{ bool ok = device->CreatePipelineState( &desc, &psoOpaque ); GPUP_TRACE("CreatePipelineState psoOpaque ok=%d valid=%d", ok ? 1 : 0, psoOpaque.IsValid() ? 1 : 0); if (!ok || !psoOpaque.IsValid()) GPUP_FAIL("CreatePipelineState psoOpaque"); }
 	
-	// Quad pipeline state
-	InputLayout layoutDescQuad;
+	// Quad pipeline state (static — same first-draw lifetime requirement as layoutDesc)
+	static InputLayout layoutDescQuad;
 	layoutDescQuad.elements =
 	{
 		{ "POSITION", 0, wiGraphics::Format::R32G32_FLOAT, 0, 0, InputClassification::PER_VERTEX_DATA }		
@@ -1984,16 +2026,16 @@ int gpup_init()
 	desc.vs = &shaderQuadVS;
 	desc.ps = &shaderQuadDefaultPS;
 	desc.il = &layoutDescQuad;
-	device->CreatePipelineState( &desc, &psoQuadDefault );
+	{ bool ok = device->CreatePipelineState( &desc, &psoQuadDefault ); GPUP_TRACE("CreatePipelineState psoQuadDefault ok=%d valid=%d", ok ? 1 : 0, psoQuadDefault.IsValid() ? 1 : 0); if (!ok || !psoQuadDefault.IsValid()) GPUP_FAIL("CreatePipelineState psoQuadDefault"); }
 
 	desc.ps = &shaderNoisePS;
-	device->CreatePipelineState( &desc, &psoNoise );
+	{ bool ok = device->CreatePipelineState( &desc, &psoNoise ); GPUP_TRACE("CreatePipelineState psoNoise ok=%d valid=%d", ok ? 1 : 0, psoNoise.IsValid() ? 1 : 0); if (!ok || !psoNoise.IsValid()) GPUP_FAIL("CreatePipelineState psoNoise"); }
 
 	desc.ps = &shaderSpeedPS;
-	device->CreatePipelineState( &desc, &psoSpeed );
+	{ bool ok = device->CreatePipelineState( &desc, &psoSpeed ); GPUP_TRACE("CreatePipelineState psoSpeed ok=%d valid=%d", ok ? 1 : 0, psoSpeed.IsValid() ? 1 : 0); if (!ok || !psoSpeed.IsValid()) GPUP_FAIL("CreatePipelineState psoSpeed"); }
 
 	desc.ps = &shaderPosPS;
-	device->CreatePipelineState( &desc, &psoPos );
+	{ bool ok = device->CreatePipelineState( &desc, &psoPos ); GPUP_TRACE("CreatePipelineState psoPos ok=%d valid=%d", ok ? 1 : 0, psoPos.IsValid() ? 1 : 0); if (!ok || !psoPos.IsValid()) GPUP_FAIL("CreatePipelineState psoPos"); }
 
 	// constant buffers
 	GPUBufferDesc bd = {};
@@ -2002,35 +2044,35 @@ int gpup_init()
 	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &posConstants );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &posConstants ); GPUP_TRACE("CreateBuffer posConstants ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer posConstants"); }
 
 	bd.usage = Usage::DEFAULT;
 	bd.size = sizeof(sSpeedConstantData);
 	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &speedConstants );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &speedConstants ); GPUP_TRACE("CreateBuffer speedConstants ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer speedConstants"); }
 
 	bd.usage = Usage::DEFAULT;
 	bd.size = sizeof(sNoiseConstantData);
 	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &noiseConstants );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &noiseConstants ); GPUP_TRACE("CreateBuffer noiseConstants ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer noiseConstants"); }
 
 	bd.usage = Usage::DEFAULT;
 	bd.size = sizeof(sMainVSConstantData);
 	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &mainVSConstants );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &mainVSConstants ); GPUP_TRACE("CreateBuffer mainVSConstants ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer mainVSConstants"); }
 
 	bd.usage = Usage::DEFAULT;
 	bd.size = sizeof(sMainPSConstantData);
 	bd.bind_flags = BindFlag::CONSTANT_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &mainPSConstants );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, nullptr, &mainPSConstants ); GPUP_TRACE("CreateBuffer mainPSConstants ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer mainPSConstants"); }
 
 	// 1024 index buffer (obj1)
 	mainIndexCountObj1 = 6144;
@@ -2040,13 +2082,13 @@ int gpup_init()
 	bd.bind_flags = BindFlag::INDEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainIndexBufferObj1 );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainIndexBufferObj1 ); GPUP_TRACE("CreateBuffer mainIndexBufferObj1 ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer mainIndexBufferObj1"); }
 
 	// 4096 index buffer (obj0)
 	mainIndexCountObj0 = 24576;
 	data.data_ptr = gpup_4096_indices;
 	bd.size = sizeof(unsigned short) * mainIndexCountObj0;
-	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainIndexBufferObj0 );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainIndexBufferObj0 ); GPUP_TRACE("CreateBuffer mainIndexBufferObj0 ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer mainIndexBufferObj0"); }
 
 	// 1024 vertex buffer (obj1)
 	data.data_ptr = gpup_1024_vertices;
@@ -2054,12 +2096,12 @@ int gpup_init()
 	bd.bind_flags = BindFlag::VERTEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainVertexBufferObj1 );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainVertexBufferObj1 ); GPUP_TRACE("CreateBuffer mainVertexBufferObj1 ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer mainVertexBufferObj1"); }
 
 	// 4096 vertex buffer (obj0)
 	data.data_ptr = gpup_4096_vertices;
 	bd.size = sizeof(GPUP_4096_Vertex) * 16384;
-	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainVertexBufferObj0 );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &mainVertexBufferObj0 ); GPUP_TRACE("CreateBuffer mainVertexBufferObj0 ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer mainVertexBufferObj0"); }
 
 	// quad vertex buffer
 	data.data_ptr = g_VerticesQuad;
@@ -2067,7 +2109,7 @@ int gpup_init()
 	bd.bind_flags = BindFlag::VERTEX_BUFFER;
 	//bd.CPUAccessFlags = 0; // removed
 	//bd.MiscFlags = 0; // removed
-	wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &quadVertexBuffer );
+	{ bool ok = wiGraphics::GetDevice()->CreateBuffer( &bd, data.data_ptr, &quadVertexBuffer ); GPUP_TRACE("CreateBuffer quadVertexBuffer ok=%d", ok ? 1 : 0); if (!ok) GPUP_FAIL("CreateBuffer quadVertexBuffer"); }
 
 	// samplers
 	SamplerDesc samplerDesc = {};
@@ -2082,6 +2124,9 @@ int gpup_init()
 	samplerDesc.address_u = TextureAddressMode::WRAP;
 	samplerDesc.address_v = TextureAddressMode::WRAP;
 	device->CreateSampler( &samplerDesc, &samplerLinearWrap );
+
+	GPUP_TRACE("gpup_init SUCCESS");
+	if (gg_trace) { fclose(gg_trace); gg_trace = nullptr; }
 
 	//InitGPUParticlesTest();
 	
