@@ -99,6 +99,15 @@ void GGSetLazyPSO(int on)
 	wi::renderer::gg_pso_lazy_object = (on != 0);
 }
 
+// GGMAX 2.08: hair/leaf DX11 parity — DEFAULT ON, this is the revert switch
+// (setup.ini `hairnodepthwrite=0`). Unlike GGSetLazyPSO above there is NO ordering trap here:
+// both pipeline permutations are built by LoadShaders either way and the flag is read at
+// draw-call selection time, so it can also be flipped live (harness `SET_HAIRDEPTH 0|1`).
+void GGSetHairNoDepthWrite(int on)
+{
+	wi::renderer::gg_transparent_doublesided_nodepthwrite = (on != 0);
+}
+
 // GGMAX 1.83: D3D12MA PreferredBlockSize override (setup.ini `mablockmb`, 0 = library default
 // 64 MB). Same early-parse constraint as the two above, and a harder one — the allocator is
 // created with the device, so nothing later than main()'s early pass can influence it.

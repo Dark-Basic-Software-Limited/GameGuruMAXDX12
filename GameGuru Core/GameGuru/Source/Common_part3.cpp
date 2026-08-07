@@ -840,9 +840,17 @@ void GetSetupIniEarly( void )
 				// A/B can be two cold launches of one binary instead of a flip-and-reload — the
 				// reload path has its own churn history and must not be inside the measurement.
 				const bool bGrassMg = (_strnicmp(p, "grassmerge", 10) == 0);
+				// GGMAX 2.08: `hairnodepthwrite=0` reverts the DX11 hair/leaf parity rule
+				// (double-sided transparent draws without depth write). Like grassmerge it does
+				// not NEED the early pass — both pipeline permutations are built regardless and
+				// the flag is read at draw-call selection time — but reading it here means the
+				// revert is in force from the very first rendered frame, and the harness
+				// SET_HAIRDEPTH command covers the live case.
+				const bool bHairNDW = (_strnicmp(p, "hairnodepthwrite", 16) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bMABlock)        iKeyLen = 9;
 				else if (bGrassMg)        iKeyLen = 10;
+				else if (bHairNDW)        iKeyLen = 16;
 				else continue;
 				const char* q = p + iKeyLen;
 				while (*q == ' ' || *q == '\t') q++;
@@ -870,6 +878,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetGrassMerge(int);
 					GGSetGrassMerge(iValue);
+				}
+				if (bHairNDW)
+				{
+					extern void GGSetHairNoDepthWrite(int);
+					GGSetHairNoDepthWrite(iValue);
 				}
 			}
 			fclose(lvf);

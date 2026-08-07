@@ -3175,6 +3175,110 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 	return false;
 }
 
+// GGMAX 2.08 (hair rendering parity): transparency diagnostics + the live knob for the
+// DX11 double-sided-transparent no-depth-write rule. Hoisted for the same C1061 reason as
+// the helpers above. Returns true if cmd was handled.
+static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "DUMP_TRANSPARENTS") == 0)
+	{
+		// DUMP_TRANSPARENTS [name-substr] — name the render state of every subset that the
+		// transparent pass will touch. The three fields that decide whether the hair/leaf
+		// parity rule fires are dsided (mesh OR material double-sided), blend (the EFFECTIVE
+		// GetBlendMode, not userBlendMode — a material can be pulled transparent by its
+		// filter mask alone) and filt&TRANSP. A hair material that reports dsided=0 would mean
+		// the depth-write theory is aimed at the wrong axis.
+		wi::scene::Scene& trScene = wi::scene::GetScene();
+		auto trContains = [](const std::string& hay, const char* needle) -> bool {
+			if (needle == nullptr || needle[0] == 0) return true;
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		FILE* trF = fopen("transparents_dump.txt", "w");
+		if (trF == nullptr)
+		{
+			_snprintf(result, resultSize, "ERROR: DUMP_TRANSPARENTS could not open transparents_dump.txt");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		int trObjects = 0, trSubsets = 0, trDoubleSidedTransparent = 0;
+		for (size_t toi = 0; toi < trScene.objects.GetCount(); ++toi)
+		{
+			wi::ecs::Entity toe = trScene.objects.GetEntity(toi);
+			const wi::scene::NameComponent* ton = trScene.names.GetComponent(toe);
+			if (!trContains(ton ? ton->name : std::string(), arg)) continue;
+			const wi::scene::ObjectComponent& too = trScene.objects[toi];
+			const wi::scene::MeshComponent* tom = trScene.meshes.GetComponent(too.meshID);
+			if (tom == nullptr) continue;
+			bool trHeaderWritten = false;
+			for (const auto& tos : tom->subsets)
+			{
+				const wi::scene::MaterialComponent* tmat = trScene.materials.GetComponent(tos.materialID);
+				if (tmat == nullptr) continue;
+				const uint32_t trFilter = tmat->GetFilterMask();
+				const bool trTransparent = (trFilter & wi::enums::FILTER_TRANSPARENT) != 0;
+				const bool trDouble = tom->IsDoubleSided() || tmat->IsDoubleSided();
+				// only the rows that can matter: anything the transparent pass draws, or
+				// anything double-sided (a leaf/hair card that is NOT transparent is worth
+				// seeing too, because it explains a material that the rule will skip).
+				if (!trTransparent && !trDouble) continue;
+				if (!trHeaderWritten)
+				{
+					const wi::scene::TransformComponent* tot = trScene.transforms.GetComponent(toe);
+					fprintf(trF, "OBJ entity=%llu name=\"%s\" pos=(%.0f,%.0f,%.0f) subsets=%d\n",
+						(unsigned long long)toe, ton ? ton->name.c_str() : "?",
+						tot ? tot->world._41 : 0.0f, tot ? tot->world._42 : 0.0f, tot ? tot->world._43 : 0.0f,
+						(int)tom->subsets.size());
+					trHeaderWritten = true;
+					trObjects++;
+				}
+				trSubsets++;
+				if (trTransparent && trDouble) trDoubleSidedTransparent++;
+				fprintf(trF,
+					"  mat=%llu blend=%d userblend=%d dsided=%d(mesh=%d,mat=%d) alphaRef=%.3f alphatest=%d "
+					"filt=0x%X%s opacity=%.2f shader=%d base=\"%s\"%s\n",
+					(unsigned long long)tos.materialID,
+					(int)tmat->GetBlendMode(), (int)tmat->userBlendMode,
+					trDouble ? 1 : 0, tom->IsDoubleSided() ? 1 : 0, tmat->IsDoubleSided() ? 1 : 0,
+					tmat->alphaRef, tmat->IsAlphaTestEnabled() ? 1 : 0,
+					trFilter, trTransparent ? "(TRANSP)" : "",
+					tmat->baseColor.w, (int)tmat->shaderType,
+					tmat->textures[wi::scene::MaterialComponent::BASECOLORMAP].name.c_str(),
+					(trTransparent && trDouble) ? "   <== hair/leaf parity rule applies" : "");
+			}
+		}
+		fprintf(trF, "OBJECTS %d SUBSETS %d DOUBLESIDED_TRANSPARENT %d\n",
+			trObjects, trSubsets, trDoubleSidedTransparent);
+		fclose(trF);
+		_snprintf(result, resultSize,
+			"OK: DUMP_TRANSPARENTS \"%s\" objects=%d subsets=%d doublesided_transparent=%d "
+			"knob=%d nodepthwrite_draws=%llu -> transparents_dump.txt",
+			arg ? arg : "", trObjects, trSubsets, trDoubleSidedTransparent,
+			wi::renderer::gg_transparent_doublesided_nodepthwrite ? 1 : 0,
+			(unsigned long long)wi::renderer::GG_GetNoDepthWriteDrawCount());
+	}
+	else if (_stricmp(cmd, "SET_HAIRDEPTH") == 0)
+	{
+		// SET_HAIRDEPTH <0|1> — live A/B for the hair/leaf parity rule. 1 = DX11 behaviour
+		// (double-sided transparent draws with depth WRITE off, back faces then front faces),
+		// 0 = upstream behaviour (depth write on, back faces then both faces). Both pipeline
+		// permutations are built at LoadShaders, so this needs no shader reload — unlike
+		// lazypso, which has to be set before the engine starts.
+		wi::renderer::gg_transparent_doublesided_nodepthwrite = (atoi(arg) != 0);
+		_snprintf(result, resultSize, "OK: SET_HAIRDEPTH nodepthwrite=%d (draws so far=%llu)",
+			wi::renderer::gg_transparent_doublesided_nodepthwrite ? 1 : 0,
+			(unsigned long long)wi::renderer::GG_GetNoDepthWriteDrawCount());
+	}
+	else
+	{
+		return false;
+	}
+	result[resultSize - 1] = 0;
+	return true;
+}
+
 // GGMAX 2026-08-05: outline-pipeline diagnostic commands, hoisted out of the main
 // dispatch chain - the else-if chain hit MSVC C1061 (blocks nested too deeply),
 // since every chain link nests one block deeper. Returns true if cmd was handled.
@@ -3967,6 +4071,10 @@ void AutoHarness_CheckForCommand(void)
 		// handled in the helper (see above the dispatch function)
 	}
 	else if (AutoHarness_OutlineCommands(cmd, arg, result, sizeof(result)))
+	{
+		// handled in the helper (see above the dispatch function)
+	}
+	else if (AutoHarness_TransparencyCommands(cmd, arg, result, sizeof(result)))
 	{
 		// handled in the helper (see above the dispatch function)
 	}
