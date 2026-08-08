@@ -3185,6 +3185,7 @@ namespace GPUParticles {
 	void gpup_debug_show(int on);
 	void gpup_debug_force_arm(int mode);
 	void gpup_debug_set_sn(float v);
+	void gpup_debug_set_clocks(float sn, float rotsn, float agk_seconds);
 }
 
 static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
@@ -3341,6 +3342,15 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		// instantly. Post-fix invariant: the steam look must NOT change with this value.
 		GPUParticles::gpup_debug_set_sn((float)atof(arg));
 		_snprintf(result, resultSize, "OK: GPUP_SET_SN sn=%s", arg ? arg : "0");
+	}
+	else if (_stricmp(cmd, "GPUP_SET_CLOCKS") == 0)
+	{
+		// GPUP_SET_CLOCKS <sn> <rotsn> <agk_seconds> — inject all three gpup global clocks
+		// at once (the ~55-min white-out bisect: age one clock at a time on a fresh level).
+		float fSn = 0, fRot = 0, fAgk = 0;
+		if (arg) sscanf_s(arg, "%f %f %f", &fSn, &fRot, &fAgk);
+		GPUParticles::gpup_debug_set_clocks(fSn, fRot, fAgk);
+		_snprintf(result, resultSize, "OK: GPUP_SET_CLOCKS sn=%.1f rotsn=%.1f agk=%.1f", fSn, fRot, fAgk);
 	}
 	else if (_stricmp(cmd, "SET_GPUPARM") == 0)
 	{

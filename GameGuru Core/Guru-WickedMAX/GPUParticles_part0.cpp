@@ -2717,6 +2717,17 @@ void gpup_debug_force_arm( int mode ) { gg_gpup_force_arm = mode; }
 // runtime to show; with this the broken magnitude is reachable in one command. With the
 // fmod fix the look must be INVARIANT to this value.
 void gpup_debug_set_sn( float v )     { gpup_settings.sn = v; }
+// GPUP_SET_CLOCKS <sn> <rotsn> <agk_seconds> — full clock injection for bisecting the
+// ~55-min white-out: sn was exonerated (invariance at 500k), leaving rotsn and agk_time
+// (twins at ~1/s). Rebasing the QPC start makes AGKTimer() return agk_seconds from now on.
+void gpup_debug_set_clocks( float sn, float rotsn, float agk_seconds )
+{
+	gpup_settings.sn = sn;
+	gpup_settings.rotsn = rotsn;
+	int64_t i64Now = 0;
+	QueryPerformanceCounter( (LARGE_INTEGER*)&i64Now );
+	i64StartTime = i64Now - (int64_t)( (double)agk_seconds * (double)i64TimeFreq );
+}
 int gpup_debug_dump( char* summary, int summarySize )
 {
 	FILE* f = nullptr;
@@ -2742,6 +2753,14 @@ int gpup_debug_dump( char* summary, int summarySize )
 				gpup_emitter[i].globalSize, gpup_emitter[i].emitter_animation_speed, gpup_emitter[i].emitter_amount,
 				gpup_emitter[i].maxed, gpup_emitter[i].activeTimer,
 				gpup_emitter[i].globalx[0], gpup_emitter[i].globaly[0], gpup_emitter[i].globalz[0] );
+			fprintf( f, "  spawn-gate: emiton=%d active=%d spawnint=%.4f testpos=%d subpos=%d pauser=%d noiseOff=(%.4f,%.4f) zaehler=%.2f spawnpos=(%.1f,%.1f) rnd=%.3f rnd2=%.3f moveit=(%.3f,%.3f,%.3f)\n",
+				gpup_emitter[i].emiton, gpup_emitter[i].emitterActive, gpup_emitter[i].spawnint,
+				gpup_emitter[i].testpos, gpup_getSubPositionCount( i ), gpup_settings.pauser,
+				gpup_emitter[i].noiseOff1, gpup_emitter[i].noiseOff2, gpup_emitter[i].noiseZaehler,
+				gpup_emitter[i].speedConstantData.spawnpos.x, gpup_emitter[i].speedConstantData.spawnpos.y,
+				gpup_emitter[i].speedConstantData.rnd, gpup_emitter[i].speedConstantData.rnd2,
+				gpup_emitter[i].posConstantData.moveit.x, gpup_emitter[i].posConstantData.moveit.y,
+				gpup_emitter[i].posConstantData.moveit.z );
 			fprintf( f, "  gpu-consts: pgrow=(%.5f,%.5f,%.5f) globalsize=%.3f pos.lifespan=(%.2f,%.4f) warp=%.4f gravity=(%.4f,%.4f,%.4f,%.4f)\n",
 				gpup_emitter[i].mainVSConstantData.pgrow.x, gpup_emitter[i].mainVSConstantData.pgrow.y,
 				gpup_emitter[i].mainVSConstantData.pgrow.z, gpup_emitter[i].mainVSConstantData.globalsize.x,
