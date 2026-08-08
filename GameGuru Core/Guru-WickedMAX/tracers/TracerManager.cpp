@@ -395,9 +395,11 @@ namespace Tracers
             cb.g_ScaleV = tracer.scaleV;
 
             uint32_t bindSlot = 2;
-            device->UpdateBuffer(&constantBuffer, &cb, cmd);
-            device->BindConstantBuffer(&constantBuffer, bindSlot, cmd);
-            device->BindConstantBuffer(&constantBuffer, bindSlot, cmd);
+            // GGMAX 2026-08-08: same shared-CB copy race as the gpup sim (task #122) — one
+            // constantBuffer re-copied per tracer between draws with no barriers lets a draw
+            // read a LATER tracer's matrix/tint under GPU overlap. Per-call transient CB
+            // instead (see GPUParticles_part0.cpp noise-pass comment for the full mechanism).
+            device->BindDynamicConstantBuffer(cb, bindSlot, cmd);
             uint32_t tID = tracer.tracerID;
             if (tID > MAXTRACERS + MAXLUATRACERS) tID = 0;
             if (tracerTexture[tID].IsValid())

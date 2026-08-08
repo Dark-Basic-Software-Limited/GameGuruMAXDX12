@@ -135,7 +135,18 @@ VertexOut main( VertexIn IN )
 	OUT.colVarying = texture2.SampleLevel( samplerPoint, float2(0.995-age*0.99, 0.1), 0 ).rgb;
 	OUT.alphaVarying = texture2.SampleLevel( samplerPoint, float2(0.995-age*0.99, 0.5), 0 ).r;
 
+	// GGMAX 2026-08-08 ping bisect (task #122 round 6): padding1 = 4 removes the gradient
+	// texture's influence (flat color/alpha) while the rest of the path stays live. If the
+	// ping dies here, the gradient_1 sample chain (t2 descriptor / age->u mapping) is guilty.
+	if ( padding1 > 3.5 && padding1 < 4.5 )
+	{
+		OUT.colVarying = float3( 1.0, 1.0, 1.0 );
+		OUT.alphaVarying = 0.2;
+	}
+
 	float sizegrad = max( texture2.SampleLevel( samplerPoint, float2(0.995-age*0.99, 0.9), 0 ).r, 0.0039);
+	// padding1 = 5: fixed size gradient (kills the size ramp; age-alive gate kept below)
+	if ( padding1 > 4.5 && padding1 < 5.5 ) sizegrad = 0.5;
 	float sizer = 0.1;
 	float3 posi = 0.0;
 	if ( age>0.00001 ) 
@@ -163,6 +174,9 @@ VertexOut main( VertexIn IN )
 	{
 		float vr = random1( float4( uv2.x, uv2.y*0.3, uv2.x+uv2.y, uv2.y*1.5-uv2.x*0.7 ) );
 		ang = rota.b * (rota.r + vr*rota.g);
+		// GGMAX 2026-08-08 ping bisect (task #122 round 6): padding1 = 3 kills the per-sprite
+		// rotation (ang = sn-driven spin) while everything else stays live.
+		if ( padding1 > 2.5 && padding1 < 3.5 ) ang = 0.0;
 
 		//flawed!
 		//float3 temp = mul(glr, posi) * globalsize + globalpos2;
@@ -343,7 +357,25 @@ VertexOut main( VertexIn IN )
 	// White state + canary1 normal  -> poison is in the bypassed math/texture path.
 	// White state + canary1 broken + canary2 normal -> pool SAMPLING is the victim
 	// (descriptor/uv), since pool CONTENT is proven healthy by readback.
-	if ( padding1 > 0.5 )
+	// padding1 = 8 (task #122 round 7): descriptor-health probe — canary dots whose COLOR is
+	// the gradient_1 sample at a FIXED texel (u=0.3, the SIZE row v=0.9). smoke_thick's size
+	// row is constant 255, so healthy = WHITE dots; any other color = the t2 SRV is not
+	// gradient_1 at that instant (descriptor identity corruption made visible on screen).
+	if ( padding1 > 7.5 )
+	{
+		float3 probe = texture2.SampleLevel( samplerPoint, float2( 0.3, 0.9 ), 0 ).rgb;
+		float3 wp = posi * globalsize + globalpos[0].rgb;
+		float4 cp = mul( ViewProj, float4( wp, 1.0 ) );
+		cp.xy += uvs * 0.012 * cp.w;
+		OUT.finalPos = cp;
+		OUT.alphaVarying = 1.0;
+		OUT.colVarying = probe;
+		OUT.tpVarying = float2( 0.0, 0.0 );
+		OUT.distVarying = float4( 0.0, 0.0, 0.0, 0.0 );
+		if ( age <= 0.00001 ) OUT.finalPos = float4( 0.0, 0.0, -10.0, 1.0 );
+		return OUT;
+	}
+	if ( padding1 > 0.5 && padding1 < 2.5 )
 	{
 		float3 wp;
 		if ( padding1 > 1.5 )

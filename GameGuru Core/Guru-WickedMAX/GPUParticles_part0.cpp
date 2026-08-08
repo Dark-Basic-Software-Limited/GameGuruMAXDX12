@@ -934,6 +934,46 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 
 // must be extern "C" to allow /alternatename linker flag to be set correctly
 // called from WickedEngine RenderPath3D::RenderTransparents()
+// GGMAX 2026-08-08 (task #122 round 5): -1 = draw all; >=0 = draw ONLY that emitter.
+// The 30fps window captures show a plume vanishing within ONE frame while the pool is
+// proven static — soloing names WHOSE draw flips.
+int gg_gpup_solo = -1;
+void gpup_debug_solo( int enr ) { gg_gpup_solo = enr; }
+
+// GGMAX 2026-08-08 (task #122 round 7): force full descriptor re-dirty per gpup draw —
+// see the decoy-bind block in gpup_draw.
+int gg_gpup_rebind = 0;
+void gpup_debug_rebind( int on ) { gg_gpup_rebind = on; }
+
+// GGMAX 2026-08-08 (task #122 round 5d): per-FRAME draw flight recorder. Solo attribution
+// convicted emitter 2's draw alone; every 1Hz instrument shows frozen inputs — so record
+// the draw's actual inputs EVERY RENDERED FRAME (gpup_drawlog.csv in the game CWD =
+// Max/Files). Aligned against a concurrent 30fps window capture, whichever field steps at
+// a ping instant is the driver.
+int gg_gpup_drawlog = 0;
+void gpup_debug_drawlog( int on ) { gg_gpup_drawlog = on; }
+static FILE* gg_drawlog_file = nullptr;
+static void GG_DrawLogLine( size_t e )
+{
+	if ( !gg_gpup_drawlog )
+	{
+		if ( gg_drawlog_file ) { fclose( gg_drawlog_file ); gg_drawlog_file = nullptr; }
+		return;
+	}
+	if ( !gg_drawlog_file )
+		fopen_s( &gg_drawlog_file, "gpup_drawlog.csv", "w" );
+	if ( !gg_drawlog_file ) return;
+	const t_gpup_emitter& em = gpup_emitter[e];
+	fprintf( gg_drawlog_file, "%.4f,%u,%d,%.3f,%.4f,%.5f,%.1f,%.1f,%.4f,%.4f,%.5f,%.5f,%.5f,%d,%.4f\n",
+		AGKTimer(), (unsigned)wiGraphics::GetDevice()->GetFrameCount(), em.currImage,
+		gpup_settings.sn, gpup_settings.time, gpup_settings.gtimer,
+		em.posConstantData.spawnpos.x, em.posConstantData.spawnpos.y,
+		em.posConstantData.warp, em.mainPSConstantData.agk_time,
+		em.mainVSConstantData.rota.x, em.mainVSConstantData.rota.y, em.mainVSConstantData.rota.z,
+		em.blendmode, em.mainPSConstantData.opacity );
+	fflush( gg_drawlog_file );
+}
+
 extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 {
 	if ( !gpu_particles_initialised ) return;
@@ -951,10 +991,12 @@ extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 		size_t e = g_emitterSorting[i] & 0x0000FFFF;
 
 		if ( e < 0 || e >= gpup_maxeffects || gpup_emitter[e].effectLoaded == 0 || gpup_emitter[e].effectVisible == 0 ) continue;
+		if ( gg_gpup_solo >= 0 && (int)e != gg_gpup_solo ) continue; // GPUP_SOLO lever
+		if ( e == 2 ) GG_DrawLogLine( e ); // flight recorder (task #122 round 5d)
 
 		GraphicsDevice* device = wiGraphics::GetDevice();
 		device->EventBegin("GPUParticles Draw", cmd);
-		
+
 		gpup_emitter[e].mainVSConstantData.Proj = camera.Projection;
 		gpup_emitter[e].mainVSConstantData.View = camera.View;
 
@@ -1051,15 +1093,31 @@ extern "C" void gpup_draw( const CameraComponent& camera, CommandList cmd )
 		uint32_t stride = sizeof(GPUP_1024_Vertex); // 3 position + 2 uv
 		device->BindVertexBuffers( vbs, 0, 1, &stride, 0, cmd );
 
+		// GGMAX 2026-08-08 (task #122 round 7): forced descriptor re-dirty. The engine's
+		// BindResource/BindSampler compare-skip leaves a slot's dirty bit clear when the same
+		// object is re-bound — legal only if the previously flushed GPU descriptor table is
+		// still intact. The round-6 bisect convicted the gradient_1 (t2) SAMPLE of flipping
+		// for seconds at a time with content/sampler/CB/uv all exonerated — a stale-table
+		// class. Binding a DECOY object first forces the compare to fail on every slot, so
+		// every draw flushes a freshly copied table. A/B lever: pings dying under REBIND 1
+		// convicts the stale-descriptor path AND doubles as the workaround.
+		if ( gg_gpup_rebind )
+		{
+			for ( uint32_t s = 0; s <= 5; s++ ) device->BindResource( &texNoiseOrig, s, cmd );
+			device->BindSampler( &samplerLinearWrap, 0, cmd );
+			device->BindSampler( &samplerLinear, 1, cmd );
+			device->BindSampler( &samplerPoint, 2, cmd );
+		}
+
 		// bind textures
 		device->BindResource(&gpup_emitter[e].texPos[ gpup_emitter[e].currImage ], 0, cmd );
 		device->BindResource(&gpup_emitter[e].gradient_1, 2, cmd );
 		device->BindResource(&gpup_emitter[e].texSpeed[ gpup_emitter[e].currImage ], 5, cmd );
-		
+
 		device->BindResource(&gpup_emitter[e].imagex, 1, cmd );
 		device->BindResource(&gpup_emitter[e].image1, 3, cmd );
 		device->BindResource(&texDist2, 4, cmd );
-	
+
 		// bind samplers
 		device->BindSampler(&samplerLinear, 0, cmd );
 		device->BindSampler(&samplerPoint, 1, cmd );
@@ -1742,8 +1800,24 @@ void  gpup_doit( int enr, CommandList cmd )
 		noiseConstantData.off.y = gpup_emitter[enr].noiseOff2;
 		noiseConstantData.off.z = gpup_emitter[enr].noiseZaehler/360.0f;
 
-		device->UpdateBuffer( &noiseConstants, &noiseConstantData.off, cmd, sizeof(sNoiseConstantData) );
-		device->BindConstantBuffer(&noiseConstants, 0, cmd );
+		// GGMAX 2026-08-08 ★ ROOT CAUSE of task #122 "the ping" — the shared-CB copy RACE.
+		// The DX11 original updated ONE shared constant buffer per pass type via
+		// UpdateSubresource, whose D3D11 implicit hazard tracking serialized every
+		// copy→draw→copy→draw chain automatically. The port kept the pattern with
+		// UpdateBuffer, which in Wicked DX12 is AllocateGPU + CopyBuffer and — per its own
+		// header comment — "appropriate synchronization is expected" from the CALLER. There
+		// is none here, and D3D12 buffers get implicit state promotion, so no barrier and no
+		// validation error exist anywhere in the chain: the GPU freely overlaps emitter B's
+		// copy with emitter A's still-running sim pass. Every pass could therefore read a
+		// LATER emitter's constants — including their SPAWN WINDOW, so each pool consumed up
+		// to nine foreign windows per tick (~10x the intended churn, measured 2275 slots/s vs
+		// the 227/s cursor). The pool degenerates into one age-synchronized cohort whose
+		// simultaneous death/rebirth is the user-visible whole-cloud "ping" every ~lifespan;
+		// the same race through speedConstants produced the measured cloud-wide velocity
+		// kicks. Fix: per-call transient upload CBs (BindDynamicConstantBuffer) — no shared
+		// destination, no copy, no race — the exact pattern the draw path has used since the
+		// 08-07 device-removal fix. The old shared buffers stay allocated but unused.
+		device->BindDynamicConstantBuffer( noiseConstantData, 0, cmd );
 		device->BindPipelineState( &psoNoise, cmd );
 		device->BindResource(&texNoiseOrig, 0, cmd );
 		GPUParticlesDrawQuad( &gpup_emitter[enr].renderPassNoise, cmd );
@@ -1850,8 +1924,8 @@ void  gpup_doit( int enr, CommandList cmd )
 			int nextImage = 1 - currImage;
 
 			// render speed image
-			device->UpdateBuffer( &speedConstants, &gpup_emitter[enr].speedConstantData, cmd, sizeof(sSpeedConstantData) );
-			device->BindConstantBuffer(&speedConstants, 0, cmd );
+			// GGMAX 2026-08-08: shared-CB race fix (task #122) — see the noise pass comment
+			device->BindDynamicConstantBuffer( gpup_emitter[enr].speedConstantData, 0, cmd );
 			device->BindPipelineState( &psoSpeed, cmd );
 			device->BindResource(&gpup_emitter[enr].texPos[currImage], 0, cmd );
 			device->BindResource(&gpup_emitter[enr].texSpeed[currImage], 1, cmd );
@@ -1862,8 +1936,8 @@ void  gpup_doit( int enr, CommandList cmd )
 			gpup_emitter[enr].posConstantData.agk_time = AGKTimer();
 			
 			// render pos image
-			device->UpdateBuffer( &posConstants, &gpup_emitter[enr].posConstantData, cmd, sizeof(sPosConstantData) );
-			device->BindConstantBuffer(&posConstants, 0, cmd );
+			// GGMAX 2026-08-08: shared-CB race fix (task #122) — see the noise pass comment
+			device->BindDynamicConstantBuffer( gpup_emitter[enr].posConstantData, 0, cmd );
 			device->BindPipelineState( &psoPos, cmd );
 			device->BindResource(&gpup_emitter[enr].texPos[currImage], 0, cmd );
 			device->BindResource(&gpup_emitter[enr].texSpeed[nextImage], 1, cmd );
@@ -2838,6 +2912,93 @@ static void GG_CheckStaticBuffer( FILE* f, const char* label, const GPUBuffer& b
 	fprintf( f, "\n" );
 }
 
+// GGMAX 2026-08-08 (task #122 round 4, USER-REQUESTED): per-particle journey telemetry.
+// Reads back texPos/texSpeed[currImage] and decodes a fixed set of particle slots exactly
+// as MainVS does (fl4unpack quadrants: x at (i,j), y at (i+P,j), z at (i,j+P), age at
+// (i+P,j+P)), appending one CSV row per slot to Files/gpup_track.csv. Sampled at ~1Hz over
+// a minute this gives every tracked particle's age/position/velocity trajectory from
+// emission to death — a mass mid-life position jump, a mass age reset, or an age stall
+// is directly visible in the data instead of inferred from screenshots.
+static double GG_Unpack4( const uint8_t* b )
+{
+	// matches shader fl4unpack: v = byte/255 exactly; dot with (1, 1/255, 1/65025, 1/16581375)
+	return b[0] / 255.0 + b[1] / 65025.0 + b[2] / 16581375.0 + b[3] / 4228250625.0;
+}
+
+int gpup_debug_track( int enr )
+{
+	if ( enr < 0 || enr >= gpup_maxeffects ) return -1;
+	if ( gpup_emitter[enr].effectLoaded == 0 ) return -1;
+	const int P = gpup_emitter[enr].particles;
+	const int dim = P * 2;
+	const int curr = gpup_emitter[enr].currImage;
+	wi::vector<uint8_t> pos, spd;
+	if ( !wi::helper::saveTextureToMemory( gpup_emitter[enr].texPos[curr], pos ) ) return -2;
+	if ( !wi::helper::saveTextureToMemory( gpup_emitter[enr].texSpeed[curr], spd ) ) return -2;
+	if ( (int)pos.size() < dim * dim * 4 || (int)spd.size() < dim * dim * 4 ) return -3;
+
+	FILE* f = nullptr;
+	fopen_s( &f, "gpup_track.csv", "a" );   // game CWD is Max/Files already
+	if ( !f ) return -4;
+	const float t = AGKTimer();
+	// one settings row per call: every clock/warp the event could correlate with
+	fprintf( f, "S,%.3f,%d,%d,%.2f,%.4f,%.4f,%.4f,%.2f,%d\n",
+		t, enr, curr, gpup_settings.sn, gpup_settings.rotsn, gpup_settings.time,
+		gpup_emitter[enr].noiseZaehler, gpup_emitter[enr].spawnint, gpup_emitter[enr].testpos );
+	// 120 fixed pseudo-scattered slots — same slots every call so rows chain into trajectories
+	for ( int si = 0; si < 120; si++ )
+	{
+		const int i = (si * 7) % P;
+		const int j = (si * 11) % P;
+		const uint8_t* px = &pos[((size_t)j * dim + i) * 4];
+		const uint8_t* py = &pos[((size_t)j * dim + i + P) * 4];
+		const uint8_t* pz = &pos[((size_t)(j + P) * dim + i) * 4];
+		const uint8_t* pa = &pos[((size_t)(j + P) * dim + i + P) * 4];
+		const uint8_t* sx = &spd[((size_t)j * dim + i) * 4];
+		const uint8_t* sy = &spd[((size_t)j * dim + i + P) * 4];
+		const uint8_t* sz = &spd[((size_t)(j + P) * dim + i) * 4];
+		fprintf( f, "P,%.3f,%d,%d,%.7f,%.7f,%.7f,%.7f,%.7f,%.7f,%.7f\n",
+			t, enr, si,
+			GG_Unpack4( pa ),                 // age [0,1]
+			GG_Unpack4( px ) - 0.5, GG_Unpack4( py ) - 0.5, GG_Unpack4( pz ) - 0.5,   // pos, emitter units
+			GG_Unpack4( sx ) - 0.5, GG_Unpack4( sy ) - 0.5, GG_Unpack4( sz ) - 0.5 ); // speed
+	}
+	fclose( f );
+	return 120;
+}
+
+// GGMAX 2026-08-08 (task #122 round 7): FULL age-plane snapshot — decode ALL P*P slot ages
+// into one CSV row (t, enr, testpos, a0..a(P*P-1) as 0-255 ints, slot index = j*P+i, matching
+// the shader's fr). Polled across a mass-respawn event, the per-event BIRTH MASK exposes the
+// exact geometry of the over-spawn (comb spacing / column stripes / quadrant blocks), which
+// the 120-slot sampler cannot resolve.
+int gpup_debug_ages( int enr )
+{
+	if ( enr < 0 || enr >= gpup_maxeffects ) return -1;
+	if ( gpup_emitter[enr].effectLoaded == 0 ) return -1;
+	const int P = gpup_emitter[enr].particles;
+	const int dim = P * 2;
+	const int curr = gpup_emitter[enr].currImage;
+	wi::vector<uint8_t> pos;
+	if ( !wi::helper::saveTextureToMemory( gpup_emitter[enr].texPos[curr], pos ) ) return -2;
+	if ( (int)pos.size() < dim * dim * 4 ) return -3;
+	FILE* f = nullptr;
+	fopen_s( &f, "gpup_ages.csv", "a" );
+	if ( !f ) return -4;
+	fprintf( f, "A,%.3f,%d,%d", AGKTimer(), enr, gpup_emitter[enr].testpos );
+	for ( int j = 0; j < P; j++ )
+	{
+		for ( int i = 0; i < P; i++ )
+		{
+			const uint8_t* pa = &pos[((size_t)(j + P) * dim + i + P) * 4];
+			fprintf( f, ",%d", (int)(GG_Unpack4( pa ) * 255.0 + 0.5) );
+		}
+	}
+	fprintf( f, "\n" );
+	fclose( f );
+	return P * P;
+}
+
 // GGMAX 2026-08-08 (task #120): live confirm/refute lever — re-create every process-lifetime
 // gpup GPU resource from its in-exe/PNG source on a BROKEN instance. If the white-out clears,
 // static-resource poisoning is CONFIRMED (and GPUP_DUMP's byte-compare says which one); the
@@ -2888,12 +3049,16 @@ void gpup_debug_regen_textures()
 // 1 = red dots at pool positions (bypasses size/alpha/color/billboard math), 2 = red dots
 // at grid positions (bypasses the pool samples too). Rides the spare padding1/filler
 // constants, so no struct/layout change. New effect loads reset their structs = canary off.
+// Task #122 round 6 — appearance-path bisect modes (full render minus ONE ingredient):
+// 3 = no sprite rotation (ang=0), 4 = no gradient influence (flat color/alpha),
+// 5 = fixed size gradient, 6 = no distortion offset (PS), 7 = base image quadrant only (PS).
 void gpup_debug_canary( int mode )
 {
 	for ( int i = 0; i < gpup_maxeffects; i++ )
 	{
-		gpup_emitter[i].mainVSConstantData.padding1 = (float)mode;
-		gpup_emitter[i].mainPSConstantData.filler = mode > 0 ? 1.0f : 0.0f;
+		gpup_emitter[i].mainVSConstantData.padding1 = (mode <= 5 || mode == 8) ? (float)mode : 0.0f;
+		gpup_emitter[i].mainPSConstantData.filler = (mode == 1 || mode == 2) ? 1.0f : (mode == 8 ? 3.0f : 0.0f);
+		gpup_emitter[i].mainPSConstantData.filler2 = (mode == 6) ? 1.0f : (mode == 7 ? 2.0f : 0.0f);
 	}
 }
 

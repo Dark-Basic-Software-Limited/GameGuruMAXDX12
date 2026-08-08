@@ -32,7 +32,11 @@ cbuffer constants : register( b1 )
 
 float4 main( PixelIn IN ) : SV_TARGET
 {
-	// GGMAX 2026-08-08 white-out canary (task #120): bypass all texture sampling/blend math
+	// GGMAX 2026-08-08 white-out canary (task #120): bypass all texture sampling/blend math.
+	// filler = 3 (task #122 round 7): pass the VS-computed probe color through untextured —
+	// the descriptor-health probe (VS padding1 = 8) puts the raw gradient_1 size-row sample
+	// in colVarying; white dots = healthy t2, any other color = foreign descriptor.
+	if ( filler > 2.5 ) return float4( IN.colVarying, 0.9 );
 	if ( filler > 0.5 ) return float4( 1.0, 0.0, 0.0, 0.7 );
 
 	float2 uv = IN.uv0Varying * 0.5;
@@ -63,25 +67,27 @@ float4 main( PixelIn IN ) : SV_TARGET
 		an = 1.0;
 	}
 
-	if ( IN.tpVarying.x > 0.999999 ) 
+	// GGMAX 2026-08-08 ping bisect (task #122 round 6): filler2 = 2 forces the base image
+	// quadrant (kills the per-slot image selector); filler2 = 1 kills the distortion offset.
+	if ( IN.tpVarying.x > 0.999999 && !(filler2 > 1.5 && filler2 < 2.5) )
 	{
-		if ( IN.tpVarying.x < 2.0 ) 
+		if ( IN.tpVarying.x < 2.0 )
 		{
 			uv += float2(0.5, 0.0);
-		} 
-		else if ( IN.tpVarying.x < 3.0 ) 
+		}
+		else if ( IN.tpVarying.x < 3.0 )
 		{
 			uv += float2(0.0, 0.5);
-		} 
-		else 
+		}
+		else
 		{
 			uv += float2(0.5, 0.5);
 		}
 	}
-	
+
 	float2 uof = 0.0;
 	float4 diss = IN.distVarying;
-	if ( image_count.y > 0.001 ) 
+	if ( image_count.y > 0.001 && !(filler2 > 0.5 && filler2 < 1.5) )
 	{
 		float timeoff = 1.0 + (diss.z * 0.1);
 		float2 uv_temp = uv * 3.2 * (1.0 - diss.x);

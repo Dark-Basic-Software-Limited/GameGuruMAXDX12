@@ -3188,6 +3188,11 @@ namespace GPUParticles {
 	void gpup_debug_set_clocks(float sn, float rotsn, float agk_seconds);
 	void gpup_debug_regen_textures();
 	void gpup_debug_canary(int mode);
+	int gpup_debug_track(int enr);
+	void gpup_debug_solo(int enr);
+	void gpup_debug_drawlog(int on);
+	void gpup_debug_rebind(int on);
+	int gpup_debug_ages(int enr);
 }
 
 static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
@@ -3386,6 +3391,47 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		{
 			_snprintf(result, resultSize, "ERROR: no master_renderer");
 		}
+	}
+	else if (_stricmp(cmd, "GPUP_DRAWLOG") == 0)
+	{
+		// GPUP_DRAWLOG <0|1> — per-frame draw flight recorder for emitter 2 (task #122):
+		// one CSV row per rendered frame (clocks, currImage, spawn window, warp, rota,
+		// blend, opacity) to Files/gpup_drawlog.csv. Correlate with a 30fps window capture.
+		GPUParticles::gpup_debug_drawlog(atoi(arg));
+		_snprintf(result, resultSize, "OK: GPUP_DRAWLOG %d", atoi(arg));
+	}
+	else if (_stricmp(cmd, "GPUP_SOLO") == 0)
+	{
+		// GPUP_SOLO <n|-1> — draw ONLY emitter n (-1 = all). Round-5 attribution: the ping
+		// (one-frame persistent plume vanish with a static pool) follows one emitter's draw.
+		GPUParticles::gpup_debug_solo(atoi(arg));
+		_snprintf(result, resultSize, "OK: GPUP_SOLO %d", atoi(arg));
+	}
+	else if (_stricmp(cmd, "GPUP_AGES") == 0)
+	{
+		// GPUP_AGES <enr> — full age-plane snapshot (all P*P slots) appended to gpup_ages.csv
+		// (task #122 round 7): polled across a mass-respawn event, the birth mask exposes the
+		// over-spawn geometry the 120-slot tracker cannot resolve.
+		int n = GPUParticles::gpup_debug_ages(atoi(arg));
+		_snprintf(result, resultSize, "OK: GPUP_AGES e%d slots=%d -> Files/gpup_ages.csv", atoi(arg), n);
+	}
+	else if (_stricmp(cmd, "GPUP_REBIND") == 0)
+	{
+		// GPUP_REBIND <0|1> — force full descriptor re-dirty per gpup draw via decoy binds
+		// (task #122 round 7): defeats the engine BindResource/BindSampler compare-skip so
+		// every draw flushes a freshly copied descriptor table. Pings dying under 1 convicts
+		// the stale-descriptor-table class named by the round-6 bisect.
+		GPUParticles::gpup_debug_rebind(atoi(arg));
+		_snprintf(result, resultSize, "OK: GPUP_REBIND %d", atoi(arg));
+	}
+	else if (_stricmp(cmd, "GPUP_TRACK") == 0)
+	{
+		// GPUP_TRACK <emitter> — per-particle journey telemetry (task #122 round 4): decode
+		// 120 fixed particle slots (age/pos/speed) from the sim textures into
+		// Files/gpup_track.csv. Called at ~1Hz, rows chain into per-slot trajectories:
+		// mass mid-life jumps, mass age resets, and age stalls are directly visible.
+		int n = GPUParticles::gpup_debug_track(atoi(arg));
+		_snprintf(result, resultSize, "OK: GPUP_TRACK e%d rows=%d -> Files/gpup_track.csv", atoi(arg), n);
 	}
 	else if (_stricmp(cmd, "GPUP_CANARY") == 0)
 	{
