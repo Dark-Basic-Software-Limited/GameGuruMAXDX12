@@ -3354,6 +3354,39 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		GPUParticles::gpup_debug_set_clocks(fSn, fRot, fAgk);
 		_snprintf(result, resultSize, "OK: GPUP_SET_CLOCKS sn=%.1f rotsn=%.1f agk=%.1f", fSn, fRot, fAgk);
 	}
+	else if (_stricmp(cmd, "SET_LENSFLARE") == 0)
+	{
+		// SET_LENSFLARE <0|1> — lens flares draw AFTER the gpup hook in the transparent
+		// pass (task #120: the white-out is a fullscreen ~88%-opacity white overlay; a
+		// flare element stretched fullscreen, its draw poisoned by leftover gpup state,
+		// fits every observation). Toggling this in a live white-out convicts/exonerates.
+		extern MasterRenderer * master_renderer;
+		if (master_renderer)
+		{
+			master_renderer->setLensFlareEnabled(atoi(arg) != 0);
+			_snprintf(result, resultSize, "OK: SET_LENSFLARE %s", atoi(arg) ? "ON" : "OFF");
+		}
+		else
+		{
+			_snprintf(result, resultSize, "ERROR: no master_renderer");
+		}
+	}
+	else if (_stricmp(cmd, "DUMP_SUN") == 0)
+	{
+		// DUMP_SUN — per-stage readback stats of the light-shaft chain (task #120: the steam
+		// white-out IS the shafts contribution; this names the stage that goes white:
+		// sun0 = DrawSun mask, sun2 = downsample, sun1 = radial blur output). Lives in this
+		// helper chain because the main dispatch chain is at the MSVC C1061 nesting limit.
+		extern MasterRenderer * master_renderer;
+		if (master_renderer)
+		{
+			master_renderer->GG_DumpSunChain(result, (int)resultSize);
+		}
+		else
+		{
+			_snprintf(result, resultSize, "ERROR: no master_renderer");
+		}
+	}
 	else if (_stricmp(cmd, "GPUP_CANARY") == 0)
 	{
 		// GPUP_CANARY <0|1|2> — shader debug mode (task #120): 1 = red fixed-size dots at
@@ -6082,22 +6115,6 @@ void AutoHarness_CheckForCommand(void)
 		else
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_LIGHTSHAFTS <0|1> [strength] (master_renderer=%p)", (void*)master_renderer);
-		}
-		result[sizeof(result) - 1] = 0;
-	}
-	else if (_stricmp(cmd, "DUMP_SUN") == 0)
-	{
-		// DUMP_SUN — per-stage readback stats of the light-shaft chain (task #120: the steam
-		// white-out IS the shafts contribution; this names the stage that goes white:
-		// sun0 = DrawSun mask, sun2 = downsample, sun1 = radial blur output).
-		extern MasterRenderer * master_renderer;
-		if (master_renderer)
-		{
-			master_renderer->GG_DumpSunChain(result, (int)sizeof(result));
-		}
-		else
-		{
-			_snprintf(result, sizeof(result), "ERROR: no master_renderer");
 		}
 		result[sizeof(result) - 1] = 0;
 	}
