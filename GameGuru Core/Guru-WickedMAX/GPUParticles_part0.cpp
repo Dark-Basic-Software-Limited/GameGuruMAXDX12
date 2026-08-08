@@ -3045,10 +3045,21 @@ void gpup_update( float frameTime, wiGraphics::CommandList cmd )
 		gpup_settings.time = gpup_settings.gtimer / 0.015f;
 
 		// will split particle updates across two frames if more than 2 emitters are loaded and fps is high enough
-		// GGMAX 2026-08-07 (task #121): SET_GPUPARM harness lever can pin either arm for a
-		// same-FPS A/B — the stock threshold (7.143ms = 140 FPS) sits inside the editor's
-		// normal frame-time band, so the arm can flip-flop with view-dependent FPS.
-		bool gg_whole_arm = ( gpup_settings.tmr > 0.007143f || gpup_settings.emitterCount < 2 );
+		// GGMAX 2026-08-08 (task #122 round 3, USER-REPORTED "provoke the shift every time by
+		// dollying closer/further"): the split arm is RETIRED — whole-batch always. The
+		// interleave was broken since the DBPro era: the split==0 loop has no break, so it
+		// ticks ALL emitters while lastEmitter runs off to 9, and the split==1 frame ticks
+		// NOTHING — yet BOTH frames consume a half-quantum (0.0075*time). Net: the sim
+		// receives HALF of real time whenever the split arm engages. The arm is gated on
+		// frame time < 7.143ms (>140 FPS), which DX11's renderer never sustained — dormant
+		// there for two decades — but the DX12 renderer sits right on that boundary
+		// (116-141 FPS at the spotshadowtest steam pose), so camera distance (overdraw)
+		// flips the steam between full-speed and HALF-SPEED regimes: the user's provokable
+		// shape shift, captured by tracker11 (provoke 3: masked diff 67.5 vs noise 22;
+		// e8 pool alpha 50.8->69.1 across one dolly). Whole-batch for 9-45 emitters is
+		// negligible on 2026 GPUs; behavior is now FPS-invariant. SET_GPUPARM 2 still
+		// forces the (broken, heritage) split arm for A/B archaeology.
+		bool gg_whole_arm = true;
 		if (gg_gpup_force_arm == 1) gg_whole_arm = true;
 		else if (gg_gpup_force_arm == 2 && gpup_settings.emitterCount >= 2) gg_whole_arm = false;
 		if (gg_whole_arm) gg_gpup_arm_whole++; else gg_gpup_arm_split++;
