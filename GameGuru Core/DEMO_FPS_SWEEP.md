@@ -1,5 +1,87 @@
 # Demo FPS sweep — every hub demo, editor + in-game
 
+## 2026-08-08 SWEEP — engine `118e19d8` (2.13) / game `82959a2b` — REGRESSION CHECK, 19/19 CLEAN
+
+Run to answer one question: did the gpup particle campaign and the 2.13 hook-boundary change
+break anything across the hub? Baseline is the 08-07 run (`results_0807`), the last sweep before
+these landed:
+
+- **engine 2.13** state-safe `customDraw_*` hook boundaries — the hub-wide risk, since it adds a
+  camera-CB + common-resource rebind + command-list invalidate after EVERY custom draw, terrain included
+- gpup: seed fix (`8d0c75a7`), split-arm retirement (`039f244d`), shared-CB copy race (`82959a2b`)
+- TracerManager shared-CB fix (same race class)
+
+| Demo | ed 08-07 | ed 08-08 | Δ% | game 08-07 | game 08-08 | Δ% | gVRAM 08-07 | gVRAM 08-08 | POLYS |
+|---|---|---|---|---|---|---|---|---|---|
+| Aztec Game Kit Teaser | 69.7 | 78.8 | +13 | 65.6 | 75.4 | +15 | 3498 | 3466 | identical |
+| Aztec Game Kit | 100.2 | 104.8 | +5 | 78.8 | 79.4 | +1 | 3966 | **3982** | identical |
+| Bounty | 124.3 | 151.2 | +22 | 129.1 | 155.5 | +20 | 2973 | 2973 | identical |
+| Horseshoe Bend | 91.8 | 92.3 | +0 | 70.1 | 68.1 | −3 | 3369 | 3385 | identical |
+| Island Showdown | 78.7 | 88.3 | +12 | 86.5 | 85.0 | −2 | 3362 | 3378 | identical |
+| Operation Amazon | 89.8 | 101.9 | +13 | 104.3 | 108.0 | +4 | 3873 | 3857 | identical |
+| River Raiders | 119.7 | 139.7 | +17 | 95.9 | 96.2 | +0 | 3772 | 3771 | identical |
+| Snowy Mountain Stroll | 132.5 | 140.6 | +6 | 89.0 | 92.2 | +4 | 3164 | 3164 | identical |
+| A Grand Canyon Adventure | 109.8 | 130.7 | +19 | 116.3 | 119.2 | +2 | 3185 | 3187 | identical |
+| Disruption | 89.6 | 102.3 | +14 | 99.7 | 111.6 | +12 | 3315 | 3316 | identical |
+| Foggy Forest | 66.6 | 73.6 | +11 | 75.2 | 85.2 | +13 | 3450 | 3450 | identical |
+| Indian Strike Force | 107.6 | 116.9 | +9 | 95.8 | 95.0 | −1 | 3392 | 3391 | identical |
+| Switch Escape | 143.3 | 176.1 | +23 | 132.5 | 172.2 | +30 | 2714 | 2714 | identical |
+| Canyon Offensive | 77.3 | 89.6 | +16 | 79.7 | 81.4 | +2 | 3712 | 3712 | identical |
+| Escape from the Zombie Cellar | 133.1 | 168.9 | +27 | 60.1 † | 60.0 † | −0 | 2770 | 2769 | identical |
+| Jungle Fever | 134.7 | 163.6 | +22 | 120.0 | 124.1 | +3 | 3233 | 3233 | identical |
+| RPG Template | 103.1 | 119.6 | +16 | 86.2 | 100.6 | +17 | 3660 | 3660 | identical |
+| The Mystery of Z Island | 119.6 | 140.6 | +18 | 110.9 | 107.8 | −3 | 3794 | 3794 | identical |
+| Trapped | 140.9 | 179.9 | +28 | 142.6 | 180.2 | +26 | 2836 | 2820 | identical |
+
+† the in-game column caps at 60 on this demo — a frame cap, not a ceiling.
+
+**19/19 loaded, zero failures, zero crash logs, prep gate 0 s on every demo.** No demo regressed
+outside the noise band; the three small minuses are inside this rig's run-to-run spread.
+
+**POLYS bit-identical on all 19** — the standing acceptance gate for a pipeline change, and the one
+that matters most here, because 2.13 touches every custom draw. Nothing moved.
+
+**4 GB gate holds.** Worst in-game Aztec Game Kit 3982 MB (~114 MB of headroom, still the demo to
+watch), then Operation Amazon 3857. Every delta within ±16 MB = noise, not a footprint change.
+
+### ★ DO NOT BANK THE +16% — it is the ambient-drift signature, not a win we earned
+
+Editor sum +16.1%, game +8.6%, and it is tempting to credit the particle work. Don't. Converted to
+per-frame time the change is a near-**uniform −1.21 ms/frame, sd 0.45**, across all 19 demos —
+independent of level speed, poly count, and *whether the level contains particles at all*. Bounty,
+Trapped and Zombie Cellar carry no gpup content and gained 1.4–1.6 ms exactly like the rest, and
+nothing in these commits removes a fixed cost from a particle-free level. This is the same uniform
+~1.5 ms/frame ambient swing this rig produced on 07-31 in the *negative* direction (and which was
+exonerated as day-drift then). **Read this run as "no regressions", not as a speedup.** Only Switch
+Escape's in-game +30% has a candidate mechanism (split-arm retirement, which halves gpup sim time
+above 140 FPS, and Switch Escape both carries emitters and sits in that band) — and even that is
+confounded by the drift. ★ RULE, restated: editor and in-game absolutes on this rig are only
+comparable within a same-day A/B; cross-run sums carry a ±1.5 ms/frame uniform term.
+
+### Visual pass — 38 screenshots, 19 pairs, zero regressions
+
+Mean-luma + blown-pixel probe (`scratchpad/shotstats.ps1`) over every editor and in-game shot vs the
+08-07 pair: every demo flat, largest move Snowy editor −2.6 luma. That rules out the white-out class
+(#120) and any lighting-character change from the 2.13 rebinds. Ten agents then compared each pair
+directly for missing geometry, corrupt textures and absent emitters: **19 MATCH, 0 REGRESSION, 1 MINOR.**
+
+The MINOR is **Snowy Mountain Stroll**: its editor steam plume is visibly narrower than 08-07's
+(~180 px vs ~350 px envelope), which is also the whole of that −2.6 luma (less bright smoke over a
+dark interior — *darker*, the opposite of the white-out signature). Chased with `GPUP_AGES` rather
+than accepted from stills, across all 10 emitters on the live level:
+
+| emitter | alive | top age bin | foreign births |
+|---|---|---|---|
+| e0 | 3912/4096 (96%) | 25% | 0 |
+| e1–e9 | 471–592 (11–14%) | 7–8% | 0 |
+
+Pool full, age band cleanly staggered (no cohort), **extras = 0 on every emitter**, sim cadence
+0.99× real time, `arm_split=0`, `max_time` 3.199 inside its 3.2 bound. So the thinner plume is the
+corrected spawn cadence, not an under-populated pool — the over-churn leaving. Whether the corrected
+density matches DX11 is still a question only the user's eye settles (task #118).
+
+---
+
 ## 2026-08-06 SWEEP v4 — engine `a229fffe` / game `50ca7c28` (the 2.07g light/shadow build)
 
 **Run TWICE back to back** (22:13 and 23:03) to separate signal from scatter: sum +0.5% between
