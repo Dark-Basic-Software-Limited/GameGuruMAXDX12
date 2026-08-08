@@ -1909,7 +1909,18 @@ void  gpup_doit( int enr, CommandList cmd )
 
 		gpup_emitter[enr].mainVSConstantData.rota.x = gpup_emitter[enr].rotation-0.5f;
 		gpup_emitter[enr].mainVSConstantData.rota.y = gpup_emitter[enr].rotation_variance;
-		gpup_emitter[enr].mainVSConstantData.rota.z = gg_hash_seed;
+		// GGMAX 2026-08-08 round 2 (task #121, USER-REPORTED "positions shift / whole new
+		// shape every so often"): rota.z is NOT a hash seed — MainVS uses it as a MULTIPLIER
+		// on the per-quad rotation angle (ang = rota.b*(rota.r + vr*rota.g); mode 3 rotates a
+		// POSITION offset by it). The fmod above made it ramp for 24.6s then SNAP to zero —
+		// every element re-oriented/re-positioned simultaneously, sometimes reading as a new
+		// particle shape. A continuous-phase consumer must get the RAW clock (DX11-verbatim:
+		// sn grows forever, wraps at 1e9 ≈ every 3 years; fp32 angle quantization at large sn
+		// is sub-visible — ULP(32k) ≈ 0.002 rad — and DX11 shipped years of it). The fmod
+		// stays ONLY on the sim-shader rnd seeds above, which are pure frac(sin(dot())) hash
+		// inputs where magnitude causes fp32 collapse and a wrap is invisible (the hash
+		// stream decorrelates every tick regardless).
+		gpup_emitter[enr].mainVSConstantData.rota.z = gpup_settings.sn;
 
 		float rotX = gpup_emitter[enr].emitter_rotation_x * 6.2831853f + gpup_settings.rotsn * (gpup_emitter[enr].emitter_auto_rotation_x - 0.5f);
 		float rotY = gpup_emitter[enr].emitter_rotation_y * 6.2831853f + gpup_settings.rotsn * (gpup_emitter[enr].emitter_auto_rotation_y - 0.5f);
