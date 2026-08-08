@@ -2767,16 +2767,93 @@ static void GG_DumpTextureStats( FILE* f, const char* label, const Texture& tex 
 		100.0 * sat0 / (double)data.size(), 100.0 * sat255 / (double)data.size() );
 }
 
-// GGMAX 2026-08-08 (task #120): live confirm/refute lever — re-create the two process-lifetime
-// input textures from their PNGs on a BROKEN instance. If the white-out clears, poisoning of
-// these textures is CONFIRMED and the durable fix is simply re-creating them at level load.
-// Old Texture objects are replaced by assignment; the engine's deferred-destroy keeps the old
-// GPU resources alive for in-flight frames, so this is safe from the harness thread.
+// GGMAX 2026-08-08 (task #120 round 2): the motion-arm catch proved the SIM POOLS ARE
+// HEALTHY inside a live white-out (pos/speed readback stats == healthy baseline, input
+// texture CRCs unchanged) while GPUP_SHOW pinned the white on gpup quads — the defect is
+// DRAW-side. By elimination the only process-lifetime draw inputs left are the five static
+// buffers below, uploaded once at init from compile-time arrays. Ground truth lives in the
+// exe, so the GPU copy is verified BYTE-FOR-BYTE and any scribble is fingerprinted (hex
+// window at first diff — the pattern names the scribbler: float positions = a mesh upload,
+// zeros = a clear, etc). No barriers: D3D12 buffer state DECAYS to COMMON between submits
+// and the copy promotes COMMON->COPY_SOURCE implicitly.
+static void GG_CheckStaticBuffer( FILE* f, const char* label, const GPUBuffer& buf,
+	const void* src, size_t srcSize )
+{
+	if ( !buf.IsValid() ) { fprintf( f, "  buf %-10s: INVALID\n", label ); return; }
+	GraphicsDevice* device = wiGraphics::GetDevice();
+	GPUBuffer staging;
+	GPUBufferDesc sd = buf.GetDesc();
+	sd.usage = Usage::READBACK;
+	sd.bind_flags = BindFlag::NONE;
+	sd.misc_flags = ResourceMiscFlag::NONE;
+	if ( !device->CreateBuffer( &sd, nullptr, &staging ) )
+	{
+		fprintf( f, "  buf %-10s: STAGING FAILED\n", label );
+		return;
+	}
+	CommandList cmd = device->BeginCommandList();
+	device->CopyResource( &staging, &buf, cmd );
+	device->SubmitCommandLists();
+	device->WaitForGPU();
+	if ( staging.mapped_data == nullptr )
+	{
+		fprintf( f, "  buf %-10s: NO MAPPED DATA\n", label );
+		return;
+	}
+	const uint8_t* gpu = (const uint8_t*)staging.mapped_data;
+	const uint8_t* ref = (const uint8_t*)src;
+	size_t diffs = 0, first = (size_t)-1, last = 0;
+	for ( size_t i = 0; i < srcSize; i++ )
+	{
+		if ( gpu[i] != ref[i] )
+		{
+			if ( first == (size_t)-1 ) first = i;
+			last = i;
+			diffs++;
+		}
+	}
+	if ( diffs == 0 )
+	{
+		fprintf( f, "  buf %-10s: %zu bytes MATCH source\n", label, srcSize );
+		return;
+	}
+	fprintf( f, "  buf %-10s: *** %zu/%zu bytes DIFFER first=0x%zX last=0x%zX\n",
+		label, diffs, srcSize, first, last );
+	size_t w0 = first > 8 ? first - 8 : 0;
+	fprintf( f, "    got:" );
+	for ( size_t i = w0; i < w0 + 32 && i < srcSize; i++ ) fprintf( f, " %02X", gpu[i] );
+	fprintf( f, "\n    ref:" );
+	for ( size_t i = w0; i < w0 + 32 && i < srcSize; i++ ) fprintf( f, " %02X", ref[i] );
+	fprintf( f, "\n" );
+}
+
+// GGMAX 2026-08-08 (task #120): live confirm/refute lever — re-create every process-lifetime
+// gpup GPU resource from its in-exe/PNG source on a BROKEN instance. If the white-out clears,
+// static-resource poisoning is CONFIRMED (and GPUP_DUMP's byte-compare says which one); the
+// durable fix is then re-creating them at level load. Old objects are replaced by assignment;
+// the engine's deferred-destroy keeps the old GPU resources alive for in-flight frames, so
+// this is safe from the harness thread.
 void gpup_debug_regen_textures()
 {
 	if ( !gpu_particles_initialised ) return;
 	GPUP_LoadTexture( "Files/effectbank/common/noise64.png", &texNoiseOrig );
 	GPUP_LoadTexture( "Files/effectbank/common/dist2.png", &texDist2 );
+
+	GraphicsDevice* device = wiGraphics::GetDevice();
+	GPUBufferDesc bd = {};
+	bd.usage = Usage::DEFAULT;
+	bd.bind_flags = BindFlag::INDEX_BUFFER;
+	bd.size = sizeof(unsigned short) * 6144;
+	device->CreateBuffer( &bd, gpup_1024_indices, &mainIndexBufferObj1 );
+	bd.size = sizeof(unsigned short) * 24576;
+	device->CreateBuffer( &bd, gpup_4096_indices, &mainIndexBufferObj0 );
+	bd.bind_flags = BindFlag::VERTEX_BUFFER;
+	bd.size = sizeof(GPUP_1024_Vertex) * 4096;
+	device->CreateBuffer( &bd, gpup_1024_vertices, &mainVertexBufferObj1 );
+	bd.size = sizeof(GPUP_4096_Vertex) * 16384;
+	device->CreateBuffer( &bd, gpup_4096_vertices, &mainVertexBufferObj0 );
+	bd.size = sizeof(VertexQuad) * 6;
+	device->CreateBuffer( &bd, g_VerticesQuad, &quadVertexBuffer );
 }
 
 int gpup_debug_dump( char* summary, int summarySize )
@@ -2801,6 +2878,18 @@ int gpup_debug_dump( char* summary, int summarySize )
 		// process-lifetime input textures — CRCs are PNG-derived constants; any drift = poisoned
 		GG_DumpTextureStats( f, "noiseOrig", texNoiseOrig );
 		GG_DumpTextureStats( f, "dist2", texDist2 );
+		// process-lifetime static buffers — byte-compared against their in-exe source arrays
+		// (round-2 prime suspects: the sim was proven healthy inside a caught white-out, so
+		// the draw is the victim, and these are its only process-lifetime inputs)
+		GG_CheckStaticBuffer( f, "ib1024", mainIndexBufferObj1, gpup_1024_indices, sizeof(unsigned short) * 6144 );
+		GG_CheckStaticBuffer( f, "ib4096", mainIndexBufferObj0, gpup_4096_indices, sizeof(unsigned short) * 24576 );
+		GG_CheckStaticBuffer( f, "vb1024", mainVertexBufferObj1, gpup_1024_vertices, sizeof(GPUP_1024_Vertex) * 4096 );
+		GG_CheckStaticBuffer( f, "vb4096", mainVertexBufferObj0, gpup_4096_vertices, sizeof(GPUP_4096_Vertex) * 16384 );
+		GG_CheckStaticBuffer( f, "quadvb", quadVertexBuffer, g_VerticesQuad, sizeof(VertexQuad) * 6 );
+		// draw-path CPU globals with compile-time expected values (a scribbled CPU global
+		// would survive level reload exactly like a scribbled GPU resource)
+		fprintf( f, "  draw-globals: ibcount0=%d (exp 24576) ibcount1=%d (exp 6144)\n",
+			mainIndexCountObj0, mainIndexCountObj1 );
 		for ( int i = 0; i < gpup_maxeffects; i++ )
 		{
 			if ( gpup_emitter[i].effectLoaded == 0 ) continue;

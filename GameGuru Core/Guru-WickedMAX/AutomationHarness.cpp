@@ -3360,7 +3360,7 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		// white-out catch, REGEN clearing the screen CONFIRMS input-texture poisoning (and
 		// the durable fix: re-create at level load). No effect on healthy scenes.
 		GPUParticles::gpup_debug_regen_textures();
-		_snprintf(result, resultSize, "OK: GPUP_REGEN noiseOrig+dist2 recreated from PNG");
+		_snprintf(result, resultSize, "OK: GPUP_REGEN noiseOrig+dist2+5 static buffers recreated from source");
 	}
 	else if (_stricmp(cmd, "SET_GPUPARM") == 0)
 	{
