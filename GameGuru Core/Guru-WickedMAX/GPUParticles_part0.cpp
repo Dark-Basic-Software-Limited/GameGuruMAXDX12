@@ -2732,6 +2732,53 @@ void gpup_debug_set_clocks( float sn, float rotsn, float agk_seconds )
 	QueryPerformanceCounter( (LARGE_INTEGER*)&i64Now );
 	i64StartTime = i64Now - (int64_t)( (double)agk_seconds * (double)i64TimeFreq );
 }
+// GGMAX 2026-08-08 (task #120 white-out): GPU-side evidence. Every CPU-visible input to the
+// sim is exonerated (constants byte-identical healthy-vs-broken, clocks cleared by injection
+// in BOTH directions, rings/pools flat) — what remains is texture CONTENT. texNoiseOrig and
+// texDist2 are created ONCE per process (gpup_init) and consumed by every emitter every sim
+// tick; they are the only gpup GPU state that survives a level reload, matching the defect's
+// process-lifetime signature. CRC of noiseOrig/dist2 is load-invariant (sourced from PNGs),
+// so healthy-vs-broken comparison needs no baseline from the same run.
+static void GG_DumpTextureStats( FILE* f, const char* label, const Texture& tex )
+{
+	if ( !tex.IsValid() ) { fprintf( f, "  tex %-10s: INVALID\n", label ); return; }
+	wi::vector<uint8_t> data;
+	if ( !wi::helper::saveTextureToMemory( tex, data ) || data.empty() )
+	{
+		fprintf( f, "  tex %-10s: READBACK FAILED\n", label );
+		return;
+	}
+	uint32_t crc = 0xFFFFFFFFu;
+	uint64_t sum[4] = { 0, 0, 0, 0 };
+	uint64_t sat0 = 0, sat255 = 0;
+	for ( size_t i = 0; i < data.size(); i++ )
+	{
+		uint8_t b = data[i];
+		crc ^= b;
+		for ( int k = 0; k < 8; k++ ) crc = ( crc >> 1 ) ^ ( 0xEDB88320u & ( 0u - ( crc & 1u ) ) );
+		sum[i & 3] += b;
+		if ( b == 0 ) sat0++; else if ( b == 255 ) sat255++;
+	}
+	size_t px = data.size() / 4;
+	fprintf( f, "  tex %-10s: %ux%u crc=%08X mean=(%.1f,%.1f,%.1f,%.1f) sat0=%.1f%% sat255=%.1f%%\n",
+		label, tex.desc.width, tex.desc.height, crc ^ 0xFFFFFFFFu,
+		px ? (double)sum[0] / px : 0.0, px ? (double)sum[1] / px : 0.0,
+		px ? (double)sum[2] / px : 0.0, px ? (double)sum[3] / px : 0.0,
+		100.0 * sat0 / (double)data.size(), 100.0 * sat255 / (double)data.size() );
+}
+
+// GGMAX 2026-08-08 (task #120): live confirm/refute lever — re-create the two process-lifetime
+// input textures from their PNGs on a BROKEN instance. If the white-out clears, poisoning of
+// these textures is CONFIRMED and the durable fix is simply re-creating them at level load.
+// Old Texture objects are replaced by assignment; the engine's deferred-destroy keeps the old
+// GPU resources alive for in-flight frames, so this is safe from the harness thread.
+void gpup_debug_regen_textures()
+{
+	if ( !gpu_particles_initialised ) return;
+	GPUP_LoadTexture( "Files/effectbank/common/noise64.png", &texNoiseOrig );
+	GPUP_LoadTexture( "Files/effectbank/common/dist2.png", &texDist2 );
+}
+
 int gpup_debug_dump( char* summary, int summarySize )
 {
 	FILE* f = nullptr;
@@ -2751,6 +2798,9 @@ int gpup_debug_dump( char* summary, int summarySize )
 			wi::graphics::GG_GetDescriptorRingStats( ringbuf, sizeof(ringbuf) );
 			fprintf( f, "%s\n", ringbuf );
 		}
+		// process-lifetime input textures — CRCs are PNG-derived constants; any drift = poisoned
+		GG_DumpTextureStats( f, "noiseOrig", texNoiseOrig );
+		GG_DumpTextureStats( f, "dist2", texDist2 );
 		for ( int i = 0; i < gpup_maxeffects; i++ )
 		{
 			if ( gpup_emitter[i].effectLoaded == 0 ) continue;
@@ -2777,6 +2827,12 @@ int gpup_debug_dump( char* summary, int summarySize )
 				gpup_emitter[i].posConstantData.warp,
 				gpup_emitter[i].speedConstantData.gravity.x, gpup_emitter[i].speedConstantData.gravity.y,
 				gpup_emitter[i].speedConstantData.gravity.z, gpup_emitter[i].speedConstantData.gravity.w );
+			// per-emitter GPU state: noise regenerates every tick from noiseOrig (stats matter,
+			// crc varies); pos/speed are the live sim ping-pong state (healthy steam keeps
+			// moderate means and low 255-saturation; a poisoned pool shows extreme skew)
+			GG_DumpTextureStats( f, "noise", gpup_emitter[i].texNoise );
+			GG_DumpTextureStats( f, "pos", gpup_emitter[i].texPos[gpup_emitter[i].currImage] );
+			GG_DumpTextureStats( f, "speed", gpup_emitter[i].texSpeed[gpup_emitter[i].currImage] );
 		}
 		fclose( f );
 	}

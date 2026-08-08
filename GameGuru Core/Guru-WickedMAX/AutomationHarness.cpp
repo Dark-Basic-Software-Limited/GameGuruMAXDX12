@@ -3186,6 +3186,7 @@ namespace GPUParticles {
 	void gpup_debug_force_arm(int mode);
 	void gpup_debug_set_sn(float v);
 	void gpup_debug_set_clocks(float sn, float rotsn, float agk_seconds);
+	void gpup_debug_regen_textures();
 }
 
 static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
@@ -3351,6 +3352,15 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		if (arg) sscanf_s(arg, "%f %f %f", &fSn, &fRot, &fAgk);
 		GPUParticles::gpup_debug_set_clocks(fSn, fRot, fAgk);
 		_snprintf(result, resultSize, "OK: GPUP_SET_CLOCKS sn=%.1f rotsn=%.1f agk=%.1f", fSn, fRot, fAgk);
+	}
+	else if (_stricmp(cmd, "GPUP_REGEN") == 0)
+	{
+		// GPUP_REGEN — re-create texNoiseOrig/texDist2 from their PNGs on a LIVE instance
+		// (task #120). These are the only gpup GPU resources with process lifetime; on a
+		// white-out catch, REGEN clearing the screen CONFIRMS input-texture poisoning (and
+		// the durable fix: re-create at level load). No effect on healthy scenes.
+		GPUParticles::gpup_debug_regen_textures();
+		_snprintf(result, resultSize, "OK: GPUP_REGEN noiseOrig+dist2 recreated from PNG");
 	}
 	else if (_stricmp(cmd, "SET_GPUPARM") == 0)
 	{
