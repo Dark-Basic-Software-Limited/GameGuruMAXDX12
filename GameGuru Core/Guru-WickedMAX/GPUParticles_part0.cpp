@@ -23,6 +23,10 @@
 using namespace wiGraphics;
 using namespace wiScene;
 
+// GGMAX 2026-08-08: engine descriptor-ring forensics bridge (white-out hunt) —
+// implemented in wiGraphicsDevice_DX12.cpp, appended to every GPUP_DUMP.
+namespace wi::graphics { void GG_GetDescriptorRingStats(char* buf, int bufsize); }
+
 // Load a GPU Particle shader from Particles/Shaders/ with WickedEngine shaders as include path
 static bool LoadGPUPShader(ShaderStage stage, Shader& shader, const std::string& filename)
 {
@@ -2742,6 +2746,11 @@ int gpup_debug_dump( char* summary, int summarySize )
 			(unsigned long long)gg_gpup_doit_calls, gg_gpup_time_sum, gg_gpup_max_time,
 			(unsigned long long)gg_gpup_arm_whole, (unsigned long long)gg_gpup_arm_split,
 			gg_gpup_force_arm, gg_gpup_draw_enable, AGKTimer() );
+		{
+			char ringbuf[512] = { 0 };
+			wi::graphics::GG_GetDescriptorRingStats( ringbuf, sizeof(ringbuf) );
+			fprintf( f, "%s\n", ringbuf );
+		}
 		for ( int i = 0; i < gpup_maxeffects; i++ )
 		{
 			if ( gpup_emitter[i].effectLoaded == 0 ) continue;
