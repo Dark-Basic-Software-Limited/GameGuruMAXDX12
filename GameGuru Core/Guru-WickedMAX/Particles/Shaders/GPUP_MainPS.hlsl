@@ -32,6 +32,9 @@ cbuffer constants : register( b1 )
 
 float4 main( PixelIn IN ) : SV_TARGET
 {
+	// GGMAX 2026-08-08 white-out canary (task #120): bypass all texture sampling/blend math
+	if ( filler > 0.5 ) return float4( 1.0, 0.0, 0.0, 0.7 );
+
 	float2 uv = IN.uv0Varying * 0.5;
 	float2 uvb = 0.0;
 	float pbl = 0.0;

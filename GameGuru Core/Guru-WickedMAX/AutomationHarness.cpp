@@ -3187,6 +3187,7 @@ namespace GPUParticles {
 	void gpup_debug_set_sn(float v);
 	void gpup_debug_set_clocks(float sn, float rotsn, float agk_seconds);
 	void gpup_debug_regen_textures();
+	void gpup_debug_canary(int mode);
 }
 
 static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
@@ -3352,6 +3353,15 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		if (arg) sscanf_s(arg, "%f %f %f", &fSn, &fRot, &fAgk);
 		GPUParticles::gpup_debug_set_clocks(fSn, fRot, fAgk);
 		_snprintf(result, resultSize, "OK: GPUP_SET_CLOCKS sn=%.1f rotsn=%.1f agk=%.1f", fSn, fRot, fAgk);
+	}
+	else if (_stricmp(cmd, "GPUP_CANARY") == 0)
+	{
+		// GPUP_CANARY <0|1|2> — shader debug mode (task #120): 1 = red fixed-size dots at
+		// pool positions (bypasses size/alpha/color/billboard math), 2 = also bypass the
+		// pool samples (grid positions). In a white-out: canary1 normal = poison in the
+		// bypassed path; canary1 broken + canary2 normal = pool SAMPLING is the victim.
+		GPUParticles::gpup_debug_canary(atoi(arg));
+		_snprintf(result, resultSize, "OK: GPUP_CANARY mode=%d", atoi(arg));
 	}
 	else if (_stricmp(cmd, "GPUP_REGEN") == 0)
 	{
@@ -6072,6 +6082,22 @@ void AutoHarness_CheckForCommand(void)
 		else
 		{
 			_snprintf(result, sizeof(result), "ERROR: SET_LIGHTSHAFTS <0|1> [strength] (master_renderer=%p)", (void*)master_renderer);
+		}
+		result[sizeof(result) - 1] = 0;
+	}
+	else if (_stricmp(cmd, "DUMP_SUN") == 0)
+	{
+		// DUMP_SUN — per-stage readback stats of the light-shaft chain (task #120: the steam
+		// white-out IS the shafts contribution; this names the stage that goes white:
+		// sun0 = DrawSun mask, sun2 = downsample, sun1 = radial blur output).
+		extern MasterRenderer * master_renderer;
+		if (master_renderer)
+		{
+			master_renderer->GG_DumpSunChain(result, (int)sizeof(result));
+		}
+		else
+		{
+			_snprintf(result, sizeof(result), "ERROR: no master_renderer");
 		}
 		result[sizeof(result) - 1] = 0;
 	}

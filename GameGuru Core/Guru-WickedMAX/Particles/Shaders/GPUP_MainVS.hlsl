@@ -334,5 +334,31 @@ VertexOut main( VertexIn IN )
 	}
 	
 	OUT.finalPos = pos2;
+
+	// GGMAX 2026-08-08 white-out canary (task #120): padding1 = 1 renders every ALIVE
+	// particle as a fixed-screen-size red dot at its pool position — bypasses sizer/alpha/
+	// color/gradient sampling and ALL per-mode billboard math (incl. the mode-1
+	// cross(normalize()) that NaNs when the camera stands at the emitter), but KEEPS the
+	// pool position samples. padding1 = 2 bypasses the pool too (grid-derived positions).
+	// White state + canary1 normal  -> poison is in the bypassed math/texture path.
+	// White state + canary1 broken + canary2 normal -> pool SAMPLING is the victim
+	// (descriptor/uv), since pool CONTENT is proven healthy by readback.
+	if ( padding1 > 0.5 )
+	{
+		float3 wp;
+		if ( padding1 > 1.5 )
+			wp = float3( IN.position.x, 0.0, IN.position.z );
+		else
+			wp = posi;
+		wp = wp * globalsize + globalpos[0].rgb;
+		float4 cp = mul( ViewProj, float4( wp, 1.0 ) );
+		cp.xy += uvs * 0.012 * cp.w;
+		OUT.finalPos = cp;
+		OUT.alphaVarying = 1.0;
+		OUT.colVarying = float3( 1.0, 0.0, 0.0 );
+		OUT.tpVarying = float2( 0.0, 0.0 );
+		OUT.distVarying = float4( 0.0, 0.0, 0.0, 0.0 );
+		if ( age <= 0.00001 && padding1 < 1.5 ) OUT.finalPos = float4( 0.0, 0.0, -10.0, 1.0 ); // park dead
+	}
 	return OUT;
 }

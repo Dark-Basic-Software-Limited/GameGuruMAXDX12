@@ -2854,6 +2854,36 @@ void gpup_debug_regen_textures()
 	device->CreateBuffer( &bd, gpup_4096_vertices, &mainVertexBufferObj0 );
 	bd.size = sizeof(VertexQuad) * 6;
 	device->CreateBuffer( &bd, g_VerticesQuad, &quadVertexBuffer );
+
+	// round-3 (task #120): SAMPLERS — the one gpup GPU object class a resource readback
+	// can never validate. The draw reaches every texture THROUGH a sampler descriptor; if
+	// samplerPoint's slot got stomped to LINEAR, the VS's fl4unpack blends packed pool
+	// bytes into garbage positions/ages from a perfectly healthy pool — white screen with
+	// every content check green. Re-creating them allocates fresh descriptor slots; if a
+	// live white-out clears at this REGEN, the sampler/descriptor stomp is CONFIRMED.
+	SamplerDesc samplerDesc = {};
+	samplerDesc.address_u = TextureAddressMode::CLAMP;
+	samplerDesc.address_v = TextureAddressMode::CLAMP;
+	samplerDesc.filter = Filter::MIN_MAG_MIP_POINT;
+	device->CreateSampler( &samplerDesc, &samplerPoint );
+	samplerDesc.filter = Filter::MIN_MAG_MIP_LINEAR;
+	device->CreateSampler( &samplerDesc, &samplerLinear );
+	samplerDesc.address_u = TextureAddressMode::WRAP;
+	samplerDesc.address_v = TextureAddressMode::WRAP;
+	device->CreateSampler( &samplerDesc, &samplerLinearWrap );
+}
+
+// GGMAX 2026-08-08 (task #120): shader canary lever — see GPUP_MainVS.hlsl. mode 0 = off,
+// 1 = red dots at pool positions (bypasses size/alpha/color/billboard math), 2 = red dots
+// at grid positions (bypasses the pool samples too). Rides the spare padding1/filler
+// constants, so no struct/layout change. New effect loads reset their structs = canary off.
+void gpup_debug_canary( int mode )
+{
+	for ( int i = 0; i < gpup_maxeffects; i++ )
+	{
+		gpup_emitter[i].mainVSConstantData.padding1 = (float)mode;
+		gpup_emitter[i].mainPSConstantData.filler = mode > 0 ? 1.0f : 0.0f;
+	}
 }
 
 int gpup_debug_dump( char* summary, int summarySize )
@@ -2916,12 +2946,54 @@ int gpup_debug_dump( char* summary, int summarySize )
 				gpup_emitter[i].posConstantData.warp,
 				gpup_emitter[i].speedConstantData.gravity.x, gpup_emitter[i].speedConstantData.gravity.y,
 				gpup_emitter[i].speedConstantData.gravity.z, gpup_emitter[i].speedConstantData.gravity.w );
+			// FULL draw-constant structs (task #120 round 3): the pre/post-trigger diff came
+			// back clean on everything above, but the PS constants (opacity/clr/moder) and
+			// most VS fields were never printed — a latched multiplier here is exactly the
+			// "identical data, 5x the output" signature. Print everything the draw consumes.
+			fprintf( f, "  ps-consts: clr=(%.4f,%.4f,%.4f) moder=%.4f opacity=%.4f tile=(%.3f,%.3f,%.3f,%.3f) imgcnt=(%.2f,%.2f,%.2f) agk=%.2f\n",
+				gpup_emitter[i].mainPSConstantData.clr.x, gpup_emitter[i].mainPSConstantData.clr.y,
+				gpup_emitter[i].mainPSConstantData.clr.z, gpup_emitter[i].mainPSConstantData.moder,
+				gpup_emitter[i].mainPSConstantData.opacity,
+				gpup_emitter[i].mainPSConstantData.tile.x, gpup_emitter[i].mainPSConstantData.tile.y,
+				gpup_emitter[i].mainPSConstantData.tile.z, gpup_emitter[i].mainPSConstantData.tile.w,
+				gpup_emitter[i].mainPSConstantData.image_count.x, gpup_emitter[i].mainPSConstantData.image_count.y,
+				gpup_emitter[i].mainPSConstantData.image_count.z, gpup_emitter[i].mainPSConstantData.agk_time );
+			fprintf( f, "  vs-consts2: tilex=(%.3f,%.3f,%.3f,%.3f) particles=(%.1f,%.1f,%.1f,%.1f) ppos=(%.2f,%.2f,%.2f) area=(%.2f,%.2f,%.2f) rotat=(%.3f,%.3f,%.3f) rota=(%.3f,%.3f,%.3f) gsize3=(%.3f,%.3f,%.3f) grot=(%.3f,%.3f,%.3f) campos=(%.1f,%.1f,%.1f) gpos0=(%.1f,%.1f,%.1f,%.1f)\n",
+				gpup_emitter[i].mainVSConstantData.tilex.x, gpup_emitter[i].mainVSConstantData.tilex.y,
+				gpup_emitter[i].mainVSConstantData.tilex.z, gpup_emitter[i].mainVSConstantData.tilex.w,
+				gpup_emitter[i].mainVSConstantData.particles.x, gpup_emitter[i].mainVSConstantData.particles.y,
+				gpup_emitter[i].mainVSConstantData.particles.z, gpup_emitter[i].mainVSConstantData.particles.w,
+				gpup_emitter[i].mainVSConstantData.ppos.x, gpup_emitter[i].mainVSConstantData.ppos.y,
+				gpup_emitter[i].mainVSConstantData.ppos.z,
+				gpup_emitter[i].mainVSConstantData.area.x, gpup_emitter[i].mainVSConstantData.area.y,
+				gpup_emitter[i].mainVSConstantData.area.z,
+				gpup_emitter[i].mainVSConstantData.rotat.x, gpup_emitter[i].mainVSConstantData.rotat.y,
+				gpup_emitter[i].mainVSConstantData.rotat.z,
+				gpup_emitter[i].mainVSConstantData.rota.x, gpup_emitter[i].mainVSConstantData.rota.y,
+				gpup_emitter[i].mainVSConstantData.rota.z,
+				gpup_emitter[i].mainVSConstantData.globalsize.x, gpup_emitter[i].mainVSConstantData.globalsize.y,
+				gpup_emitter[i].mainVSConstantData.globalsize.z,
+				gpup_emitter[i].mainVSConstantData.globalrot.x, gpup_emitter[i].mainVSConstantData.globalrot.y,
+				gpup_emitter[i].mainVSConstantData.globalrot.z,
+				gpup_emitter[i].mainVSConstantData.CameraPos.x, gpup_emitter[i].mainVSConstantData.CameraPos.y,
+				gpup_emitter[i].mainVSConstantData.CameraPos.z,
+				gpup_emitter[i].mainVSConstantData.globalpos[0].x, gpup_emitter[i].mainVSConstantData.globalpos[0].y,
+				gpup_emitter[i].mainVSConstantData.globalpos[0].z, gpup_emitter[i].mainVSConstantData.globalpos[0].w );
 			// per-emitter GPU state: noise regenerates every tick from noiseOrig (stats matter,
 			// crc varies); pos/speed are the live sim ping-pong state (healthy steam keeps
 			// moderate means and low 255-saturation; a poisoned pool shows extreme skew)
+			fprintf( f, "  currImage=%d\n", gpup_emitter[i].currImage );
 			GG_DumpTextureStats( f, "noise", gpup_emitter[i].texNoise );
 			GG_DumpTextureStats( f, "pos", gpup_emitter[i].texPos[gpup_emitter[i].currImage] );
 			GG_DumpTextureStats( f, "speed", gpup_emitter[i].texSpeed[gpup_emitter[i].currImage] );
+			// round-3: the LAST un-audited draw inputs — per-effect file textures, static after
+			// load and kept across level reloads by the effect cache. gradient_1 feeds the VS's
+			// per-particle ALPHA + COLOR + SIZE-GRADIENT (alphaVarying/colVarying/sizegrad);
+			// a scribble here = opaque white oversized quads = the exact white-out signature.
+			GG_DumpTextureStats( f, "gradient1", gpup_emitter[i].gradient_1 );
+			GG_DumpTextureStats( f, "imagex", gpup_emitter[i].imagex );
+			GG_DumpTextureStats( f, "image1", gpup_emitter[i].image1 );
+			GG_DumpTextureStats( f, "t_field", gpup_emitter[i].t_field );
 		}
 		fclose( f );
 	}
