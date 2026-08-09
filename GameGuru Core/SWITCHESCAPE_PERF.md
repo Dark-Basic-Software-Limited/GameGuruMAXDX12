@@ -226,23 +226,37 @@ is cross-queue dependency bubble. Both existing queue knobs were retested:
 ⚠ **This INVERTS a documented result.** `PERFORMANCE.md` Stage P.6 records single-queue at
 **−4.7 FPS** on TESTPRO1 and says "submission overhead is a dead end. Do NOT re-chase."
 
-**I expected a light-vs-heavy crossover and tested for it. There isn't one — it wins on both.**
-Island Showdown (heavy hub demo, ~91 FPS editor), same three-arm method:
+**I expected a light-vs-heavy crossover and tested for one. There isn't. Six hub demos, three
+arms each (0/1/0), editor, warm — every single one is positive:**
 
-| level | off | on | delta | stall mean | stall **max** |
-|---|---|---|---|---|---|
-| Switch Escape (light) | 201.4 / 201.1 | 225.3 | **+23.9 (+11.9%)** | 0.90 → 0.42 | — |
-| Island Showdown (heavy) | 91.5 / 91.7 | 95.1 | **+3.5 (+3.8%)** | 2.12 → 1.82 | **3.37 → 6.71** |
+| level | off (A/A2) | on | delta | stall mean | stall **max** | stalled frames |
+|---|---|---|---|---|---|---|
+| **Trapped** | 212.1 / 211.2 | **251.1** | **+39.4 (+18.6%)** | 0.663 → **0.064** | 1.30 → 0.92 ✔ | 98.2% → **22.4%** |
+| **Zombie Cellar** | 193.0 / 194.3 | **219.8** | **+26.1 (+13.5%)** | 0.856 → 0.382 | 1.73 → 1.53 ✔ | 99.3% → 85.0% |
+| **Switch Escape** | 201.4 / 201.1 | **225.3** | **+24.0 (+11.9%)** | 0.90 → 0.42 | — | 99.4% → — |
+| Island Showdown | 91.5 / 91.7 | 95.1 | +3.5 (+3.8%) | 2.12 → 1.82 | 3.37 → **6.71** ✘ | 99.0% → 99.2% |
+| Aztec GK Teaser | 83.3 / 83.6 | 85.9 | +2.4 (+2.9%) | 4.82 → 4.50 | 6.49 → 6.06 ✔ | 99.6% → 99.6% |
+| Foggy Forest | 76.8 / 76.6 | 78.2 | +1.5 (+2.0%) | 4.13 → 4.05 | 6.06 → 5.60 ✔ | 99.6% → 99.7% |
+
+**6/6 gain FPS. 5/6 also improve the worst-case stall.** Drift between the A and A2 control
+arms is ≤1.3 FPS everywhere, so none of these are warm-up artefacts.
+
+★ **The gain scales inversely with GPU load, exactly as the mechanism predicts.** The bubble is
+a roughly fixed per-frame overhead, so it is a large share of a 5 ms frame (+12–19% on levels
+running 190–250 FPS) and a small share of a 12 ms one (+2–4% on levels running 76–95 FPS).
+Trapped is the clearest case: stalled frames collapse from 98.2% to **22.4%** — that level
+stops being fence-bound almost entirely.
 
 So the Stage P.6 "do not re-chase" verdict does **not** reproduce on hub content on today's
 build. It was measured 2026-07-26 on a much older engine and on TESTPRO1 specifically; treat
 it as stale rather than as a law. ★ **RULE: a queue-structure verdict has a shelf life —
-re-measure it after significant renderer changes instead of citing the old number.**
+re-measure it after significant renderer changes instead of citing the old number.** This one
+sat on a double-digit lever for six weeks.
 
-⚠ **But note the worst case gets WORSE on the heavy level: max stall 3.37 → 6.71 ms.** Mean
-improves while the tail doubles, which is exactly the shape that shows up as occasional
-stutter rather than lower average FPS. That alone is reason not to flip the default on two
-levels' evidence.
+⚠ **The one blemish: Island Showdown's max stall went 3.37 → 6.71 ms** while its mean improved.
+It is now 1 of 6 rather than the trend, and a single 6.7 ms frame inside a 22 s window is as
+likely to be a lazy-PSO compile as a systematic tail regression — but it has not been re-checked,
+so it stays on the record as unexplained.
 
 **Default NOT changed.** See §9.
 
@@ -250,22 +264,25 @@ levels' evidence.
 
 ## 9. What would settle the single-queue default (the one job worth doing next)
 
-`SET_SINGLEQUEUE 1` is currently the best FPS lever found, at **+11.9% light / +3.8% heavy
-with no visual change**, but two levels is not a shipping decision. To flip the default:
+`SET_SINGLEQUEUE 1` is the best FPS lever found in this whole study — **+2.0% to +18.6% across
+six hub demos, 6/6 positive, no visual change, and the worst-case stall improves on 5 of 6.**
+On that evidence **I would expect this to become the default**, but I have not flipped it and it
+should not be flipped on six editor-only samples. What remains:
 
-1. **19-demo A/B sweep**, `SET_SINGLEQUEUE` 0/1/0 per demo, editor **and** test-game. The
-   existing `tools/demo_fps_sweep.sh` already does the walk; it needs the three-arm knob loop
-   and a `SET_SUBMITSTATS 1` before each arm. ~60–80 min unattended.
-2. **Gate on the frame-time TAIL, not the mean.** Island Showdown's max stall doubled
-   (3.37 → 6.71 ms) even while its mean improved and its FPS rose. The `HITCH:` line in
-   `GET_PERF_DATA` (`over(16.7/25/33/50/100)`) is the right acceptance test — a change that
-   raises average FPS while adding 33 ms frames is a bad trade in an editor.
-3. **Re-run TESTPRO1**, the one level that produced the −4.7 FPS verdict, on the current
-   engine. If it is still negative, the default stays off and this becomes a documented
-   per-project knob; if it has flipped, the Stage P.6 note is simply stale and the default
-   can move.
+1. **The other 13 demos**, same three-arm protocol. `tools/demo_fps_sweep.sh` already does the
+   walk; it needs the 0/1/0 knob loop plus `SET_SUBMITSTATS 1` before each arm. ~45 min.
+2. **Test-game mode, not just the editor.** Everything measured here is editor-side. Gameplay
+   has a different queue mix (no ImGui, different pass set) and is where users judge FPS.
+3. **A longer window for the tail.** These arms are 22 s. Island Showdown's 6.71 ms max is one
+   frame in ~1850 and could easily be a lazy-PSO compile; a 3-minute arm plus the
+   `HITCH: over(16.7/25/33/50/100)` histogram distinguishes a real tail regression from a
+   warm-up artefact. **Gate the decision on that histogram, not on mean FPS** — a change that
+   lifts average FPS while adding 33 ms frames is a bad trade in an editor.
+4. **Re-run TESTPRO1**, the level that produced the original −4.7 FPS verdict. If it is still
+   negative on the current engine that is a genuine content-dependent exception, and worth
+   understanding before flipping a global.
 
-Until then it is a free +12% for anyone who sets it, and it costs nothing to leave off.
+Until then it is a free +2–19% for anyone who sets it, and it costs nothing to leave off.
 
 ---
 
