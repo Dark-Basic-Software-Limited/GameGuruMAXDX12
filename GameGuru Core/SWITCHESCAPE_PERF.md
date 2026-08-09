@@ -188,6 +188,55 @@ is no free 0.81 ms sitting here; that lead is closed.
 
 ---
 
+## ★★ 8. SOLVED: the level is GPU-FENCE-BOUND, and single-queue is worth +23.9 FPS
+
+§5 asked what absorbs the CPU slack. Engine 2.16's rolling `SUBMIT_STALL_WINDOW` answers it,
+and the earlier snapshot readings of `stall=0.00` were simply sampling luck — the truth is
+the opposite:
+
+| arm | FPS | stall mean | frames stalled |
+|---|---|---|---|
+| A default | 201.0 | **0.893 ms** | **99.4%** |
+| B `SET_RESSCALE 0.5` (less GPU work) | 226.5 | 0.407 ms | 89.0% |
+| C `SET_XINPUT 0` (**+0.25 ms CPU work**) | 201.2 | **0.711 ms** | 98.7% |
+| A2 control | 201.6 | 0.915 ms | 99.4% |
+
+**The CPU waits on the GPU frame fence in 99.4% of frames, for 0.89 ms on average.** Arm C is
+the proof of the mechanism: *adding* 0.25 ms of CPU work back **shrank** the stall by 0.18 ms
+and left FPS unchanged. The slack is real and it is spent waiting on the GPU.
+
+**So Switch Escape's editor frame is GPU-BOUND, not CPU-bound** — which retro-explains every
+zero in §7: `Scene::Update`, XInput, the tree pool and the transparent depth rule are all on
+the wrong side of the wall. The earlier "CPU is the wall" reading came from comparing CPU
+frame 4.58 against the profiler's GPU Frame 3.68, but that GPU number only sums the *named
+passes*; the real GPU wall includes the bubbles between them.
+
+### The win: cross-queue bubbles
+
+~1 ms of the 3.68 ms GPU frame is in no named pass, with `lists=14 batches=12 deps=9`. That
+is cross-queue dependency bubble. Both existing queue knobs were retested:
+
+| knob | off | on | delta | stall mean |
+|---|---|---|---|---|
+| **`SET_SINGLEQUEUE 1`** | 201.4 / 201.1 | **225.3** | **+23.9 FPS (+11.9%)** | 0.90 → **0.42** |
+| `SET_LEANASYNC 1` | 201.3 / 202.2 | 212.8 | +11.1 FPS (+5.5%) | 0.89 → 0.65 |
+
+**Same gain as halving the render resolution, with zero visual change.**
+
+⚠ **This INVERTS a documented result.** `PERFORMANCE.md` Stage P.6 records single-queue at
+**−4.7 FPS** on TESTPRO1 and says "submission overhead is a dead end. Do NOT re-chase." That
+conclusion was correct *for TESTPRO1*, a heavy GPU-bound island — where async overlap earns
+its keep. On a **light** scene the overlap saves little and the 9 dependency splits cost more
+than they save. The old rule was scene-specific and its boundary was never stated; it is now.
+
+★ **RULE: async-queue structure is a scene-load-dependent trade, not a fixed answer.**
+Re-measure it per scene class; a verdict from one heavy level does not generalise to light ones.
+
+**Default NOT changed** — one light level in favour and one heavy level against is not a basis
+for flipping a global. See §9 for what would settle it.
+
+---
+
 ## 7. What the frame is actually made of (the decisive test)
 
 Quartering the shaded pixels is the one lever that moved anything:

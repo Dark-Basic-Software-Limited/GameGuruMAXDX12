@@ -2118,15 +2118,59 @@ void procedural_new_level(void)
 					ggterrain_global_render_params2.editable_size = feditable_size;
 					ImGui::PopItemWidth();
 				}
-				if (iSelectedThemeChoice == 8)
+				// 2026-08-09 (user request): "Disable Level Aspects" used to be gated on
+				// iSelectedThemeChoice == 8, so the ONLY route to the Completely Empty Level switch
+				// was to first pick that one biome theme. It is now unconditional so any level can
+				// toggle it. (Braces kept so the block's scope and closing brace are unchanged.)
 				{
 					if (ImGui::StyleCollapsingHeader("Disable Level Aspects", ImGuiTreeNodeFlags_DefaultOpen))
 					{
+						// Ticking this used to be a ONE-WAY DOOR: it turns off trees, grass, terrain,
+						// water and the edit-area markings and blows the editable area up to 25 km,
+						// but the untick branch only ever put terrain drawing back. That asymmetry was
+						// survivable while the control was buried behind theme 8 (a fresh-empty-project
+						// flow, where there was nothing to lose); now that it is reachable on ANY level
+						// a user can tick it on a finished map and lose five settings with no way back.
+						// So snapshot on the way in and restore on the way out.
+						// NB: these are statics, so a tick that survives a level reload or an app
+						// restart falls back to the old minimal restore — same as the pre-2026-08-09
+						// behaviour, no regression, just no undo across a restart.
+						static bool s_emptySaved = false;
+						static decltype(t.visuals.bEndableTreeDrawing)    s_savTreeDrawing    = 0;
+						static decltype(t.visuals.bEndableGrassDrawing)   s_savGrassDrawing   = 0;
+						static decltype(t.visuals.bEndableTerrainDrawing) s_savTerrainDrawing = 0;
+						static decltype(t.visuals.bWaterEnable)           s_savWaterEnable    = false;
+						static decltype(t.showeditorterrain)              s_savShowTerrain    = 0;
+						static decltype(t.showeditorwater)                s_savShowWater      = false;
+						static decltype(t.showeditortrees)                s_savShowTrees      = false;
+						static decltype(t.showeditorveg)                  s_savShowVeg        = false;
+						static decltype(ggtrees_global_params.draw_enabled) s_savTreesDraw    = false;
+						static decltype(gggrass_global_params.draw_enabled) s_savGrassDraw    = false;
+						static float s_savEditableSize = 0.0f;
+						static bool  s_savShowEditArea = false;
+						static bool  s_savMapSizeFlag  = false;
+
 						bool bCompletelyEmpty = t.gamevisuals.bEnableEmptyLevelMode;
 						if (ImGui::Checkbox("Completely Empty Level", &bCompletelyEmpty))
 						{
 							if (bCompletelyEmpty == true)
 							{
+								// snapshot everything the "everything off" block below overwrites
+								s_savTreeDrawing    = t.visuals.bEndableTreeDrawing;
+								s_savGrassDrawing   = t.visuals.bEndableGrassDrawing;
+								s_savTerrainDrawing = t.visuals.bEndableTerrainDrawing;
+								s_savWaterEnable    = t.visuals.bWaterEnable;
+								s_savShowTerrain    = t.showeditorterrain;
+								s_savShowWater      = t.showeditorwater;
+								s_savShowTrees      = t.showeditortrees;
+								s_savShowVeg        = t.showeditorveg;
+								s_savTreesDraw      = ggtrees_global_params.draw_enabled;
+								s_savGrassDraw      = gggrass_global_params.draw_enabled;
+								s_savEditableSize   = ggterrain_global_render_params2.editable_size;
+								s_savShowEditArea   = bShowEditArea;
+								s_savMapSizeFlag    = (ggterrain_global_render_params2.flags2 & GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE) != 0;
+								s_emptySaved = true;
+
 								// everything off
 								t.gamevisuals.bEndableTreeDrawing = t.visuals.bEndableTreeDrawing = 0;
 								t.gamevisuals.bEndableGrassDrawing = t.visuals.bEndableGrassDrawing = 0;
@@ -2144,8 +2188,27 @@ void procedural_new_level(void)
 								// master flag to activate completely empty mode
 								t.gamevisuals.bEnableEmptyLevelMode = t.visuals.bEnableEmptyLevelMode = true;
 							}
+							else if (s_emptySaved)
+							{
+								// put back exactly what ticking took away
+								t.gamevisuals.bEndableTreeDrawing = t.visuals.bEndableTreeDrawing = s_savTreeDrawing;
+								t.gamevisuals.bEndableGrassDrawing = t.visuals.bEndableGrassDrawing = s_savGrassDrawing;
+								t.showeditorterrain = s_savShowTerrain;
+								t.gamevisuals.bEndableTerrainDrawing = t.visuals.bEndableTerrainDrawing = s_savTerrainDrawing;
+								t.showeditorwater = s_savShowWater;
+								t.gamevisuals.bWaterEnable = t.visuals.bWaterEnable = s_savWaterEnable;
+								t.showeditortrees = s_savShowTrees; ggtrees_global_params.draw_enabled = s_savTreesDraw;
+								t.showeditorveg   = s_savShowVeg;   gggrass_global_params.draw_enabled = s_savGrassDraw;
+								ggterrain_global_render_params2.editable_size = s_savEditableSize;
+								bShowEditArea = s_savShowEditArea;
+								if (s_savMapSizeFlag) ggterrain_global_render_params2.flags2 |= GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE;
+								else                  ggterrain_global_render_params2.flags2 &= ~GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE;
+								s_emptySaved = false;
+								t.gamevisuals.bEnableEmptyLevelMode = t.visuals.bEnableEmptyLevelMode = false;
+							}
 							else
 							{
+								// no snapshot (ticked in an earlier session) — original minimal restore
 								t.showeditorterrain = t.gamevisuals.bEndableTerrainDrawing = t.visuals.bEndableTerrainDrawing = 1;
 								t.gamevisuals.bEnableEmptyLevelMode = t.visuals.bEnableEmptyLevelMode = false;
 							}

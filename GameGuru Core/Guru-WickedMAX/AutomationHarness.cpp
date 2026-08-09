@@ -153,6 +153,12 @@ namespace wi::graphics {
 	extern uint32_t gg_submit_lists, gg_submit_batches, gg_submit_deps;
 	extern bool gg_single_queue;
 	extern bool gg_lean_async;
+	// GGMAX 2.16: rolling stall window — the per-frame values above are last-frame snapshots
+	// and `stall` is variable (0.00 in three Switch Escape captures, 0.38 in a fourth).
+	extern double   gg_stall_sum_ms;
+	extern float    gg_stall_max_ms;
+	extern uint32_t gg_stall_frames, gg_stall_nonzero;
+	void GG_ResetSubmitStats();
 }
 
 // The global Master instance
@@ -1339,7 +1345,12 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 
 		// GGMAX 1.48a: submit-tail phase breakdown
 		written += _snprintf(result + written, resultSize - written,
+			"SUBMIT_STALL_WINDOW: mean=%.3f max=%.2f stalled=%u/%u frames (%.1f%%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line\n"
 			"SUBMIT_PHASES_MS: close=%.2f fences=%.2f present=%.2f sync=%.2f stall=%.2f (lists=%u batches=%u deps=%u)\n",
+			wi::graphics::gg_stall_frames ? (wi::graphics::gg_stall_sum_ms / wi::graphics::gg_stall_frames) : 0.0,
+			wi::graphics::gg_stall_max_ms,
+			wi::graphics::gg_stall_nonzero, wi::graphics::gg_stall_frames,
+			wi::graphics::gg_stall_frames ? (100.0 * wi::graphics::gg_stall_nonzero / wi::graphics::gg_stall_frames) : 0.0,
 			wi::graphics::gg_submit_ms_close, wi::graphics::gg_submit_ms_fences,
 			wi::graphics::gg_submit_ms_present, wi::graphics::gg_submit_ms_sync,
 			wi::graphics::gg_submit_ms_stall,
@@ -3345,6 +3356,16 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		wi::input::xinput::gg_xinput_rescan_frames = (uint32_t)atoi(arg);
 		_snprintf(result, resultSize, "OK: SET_XINPUT rescan_frames=%u (0=stock every-frame poll of all 4 slots)",
 			wi::input::xinput::gg_xinput_rescan_frames);
+	}
+	else if (_stricmp(cmd, "SET_SUBMITSTATS") == 0)
+	{
+		// SET_SUBMITSTATS 1 — GGMAX 2.16, reset the rolling submit-stall window so the next
+		// GET_PERF_DATA's SUBMIT_STALL_WINDOW covers only the arm you are measuring.
+		// Exists because SUBMIT_PHASES_MS is a LAST-FRAME snapshot: on Switch Escape `stall`
+		// read 0.00 three times and 0.38 once, and the 0.00 was used to wrongly exonerate the
+		// GPU fence as the absorber of CPU slack. Call this at the top of every A/B arm.
+		wi::graphics::GG_ResetSubmitStats();
+		_snprintf(result, resultSize, "OK: SET_SUBMITSTATS reset (SUBMIT_STALL_WINDOW now accumulating from this frame)");
 	}
 	else if (_stricmp(cmd, "SET_SCENESERIAL") == 0)
 	{
