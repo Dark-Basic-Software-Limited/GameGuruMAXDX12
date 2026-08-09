@@ -138,8 +138,14 @@ The CPU frame moved only 0.06 ms of the 0.25 removed — i.e. the main thread si
 Ruled out along the way:
 - **Not a frame cap.** The hub runs at exactly **60.0 FPS / 16.68 ms** (vsync), the editor at
   201 — so the editor is genuinely unlocked and 201 is not a limiter.
-- **Not GPU end-of-frame stall.** `SUBMIT_PHASES_MS` reads `stall=0.00`.
 - **Not measurement noise.** Three arms, five samples each, drift +0.2 FPS.
+
+⚠ **The end-of-frame GPU fence stall is NOT ruled out — sample it properly.** Across the four
+`GET_PERF_DATA` captures taken today `SUBMIT_PHASES_MS` read `stall=0.00` three times and
+**`stall=0.38`** once (the last, at default settings after the `SET_HIERLO` A/B), with
+`APP_SUBMIT_PRESENT_MS` 0.32 / 0.45 / 0.36 / **0.67** tracking it. One outlier in four is not
+a conclusion, but it is the right shape for the missing absorber and it is the cheapest thing
+to check next: sample `stall` over many frames per arm rather than reading one snapshot.
 
 So **the ~4.98 ms frame is paced by something other than the sum of main-thread CPU work**,
 and until that pacer is named, every CPU micro-optimisation on this level will measure zero —
@@ -216,8 +222,10 @@ work, and it should not be attempted without first resolving §5 — because on 
 
 ### Ranked next steps
 
-1. **Resolve §5 first — find what absorbs CPU slack.** Instrument `RP3D-RenderWait` (0.30 ms)
-   and the jobsystem waits; until a CPU cut demonstrably converts, no CPU work is worth doing.
+1. **Resolve §5 first — find what absorbs CPU slack.** Start with the cheapest lead: make
+   `SUBMIT_PHASES_MS` report a **mean and max over N frames** instead of a single snapshot,
+   since `stall` read 0.00 three times and 0.38 once today. Then `RP3D-RenderWait` (0.30 ms)
+   and the jobsystem waits. Until a CPU cut demonstrably converts, no CPU work is worth doing.
    This is a prerequisite, not an optimisation.
 2. **`Transparent Scene` 1.12 ms** = 30% of the GPU frame, on a level with 221 transparent
    objects of which **141 are double-sided** (no early-Z, shaded by 16 lights, drawn twice).
