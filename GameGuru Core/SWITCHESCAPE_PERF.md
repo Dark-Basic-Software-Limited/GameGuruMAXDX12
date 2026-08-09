@@ -192,6 +192,7 @@ Quartering the shaded pixels is the one lever that moved anything:
 | `SET_HIERLO` 1 → 0 (fast → stock hierarchy) | 200.9 | 199.7 | −1.2 FPS |
 | `SET_XINPUT` 60 → 0 (0.25 ms of real CPU) | 201.1 | 201.2 | **0.0** |
 | `SET_TREES pool` 6000 → 1 (5999 ECS slots) | 200.8 | 201.5 | 0.0 |
+| `SET_HAIRDEPTH` 1 → 0 (depth write back for 141 dsided transparents) | 201.3 | 201.0 | 0.0 |
 
 Read together: **quartering the pixels buys 0.52 ms of a 4.98 ms frame, and nothing on the
 CPU side buys anything.** So pixel/raster work is a real but minor contributor (~0.7 ms), and
@@ -223,6 +224,10 @@ work, and it should not be attempted without first resolving §5 — because on 
    `DUMP_TRANSPARENTS` shows character `Body` / `new limb` subsets in the transparent pass —
    worth asking whether those assets are authored correctly, since opaque would be far cheaper.
    ⚠ A blend-mode change is a visual change; needs your eye, not my judgement.
+   ⚠ Note the cheap version of this was already tested and is a zero: `SET_HAIRDEPTH 0` puts
+   depth write back on all 141 (halving their overdraw) for **−0.3 FPS**. So the transparent
+   cost is not overdraw from the 2.08 rule; if it is anything it is the per-pixel shading
+   itself, which means an asset/blend-mode question rather than a renderer one.
 3. **`SU-Object` 0.57 ms / `SU-Mesh` 0.29 ms** — the remaining named ECS systems, behind (1).
 4. **`CL-ObjLists` 0.33 ms** — the editor's Level Objects ImGui panel rebuilt every frame for
    7322 objects. An `ImGuiListClipper` would cut most of it. Editor-only, self-contained,
