@@ -18,8 +18,30 @@ PIX hunt), tree pool ~1.6ms (user's density choice). GPU busy: Opaque 2.73, Hair
 | Delta | What | Verdict |
 |---|---|---|
 | 1.48a | SubmitCommandLists phase timers + batch/dep counters (`SUBMIT_PHASES_MS`) | instrumentation; found the GPU-wall truth |
-| 1.48b | `SET_SINGLEQUEUE` — everything on graphics, no fences | **NEGATIVE −4.7 FPS** (async overlap is real) — default OFF |
-| 1.48c | `SET_LEANASYNC` — only tiny helper lists on graphics | **NEGATIVE −4 FPS** — default OFF. Submission overhead = dead end on this GPU |
+| 1.48b | `SET_SINGLEQUEUE` — everything on graphics, no fences | ⚠ **VERDICT STALE — see the 2026-08-09 note below.** Was −4.7 FPS on TESTPRO1 (2026-07-26); now **+11.9% / +3.8%** on hub demos. Default still OFF |
+| 1.48c | `SET_LEANASYNC` — only tiny helper lists on graphics | ⚠ **VERDICT STALE** — was −4 FPS; now **+5.5%** on Switch Escape. Default still OFF |
+
+> ### ⚠ 2026-08-09: the 1.48b/c "submission overhead is a dead end" verdict does NOT hold any more
+> Re-measured on the current engine, three arms per level, no visual change either way:
+>
+> | level | `SET_SINGLEQUEUE` off | on | delta |
+> |---|---|---|---|
+> | Switch Escape (light) | 201.4 / 201.1 | **225.3** | **+23.9 FPS (+11.9%)** |
+> | Island Showdown (heavy) | 91.5 / 91.7 | **95.1** | **+3.5 FPS (+3.8%)** |
+>
+> I expected a light-vs-heavy crossover and tested a heavy level specifically to find it —
+> **there isn't one, it wins on both.** The 2026-07-26 result was TESTPRO1 on a much older
+> engine. ★ **RULE: a queue-structure verdict has a shelf life. Re-measure it after significant
+> renderer changes rather than citing the old number** — this one blocked a +12% lever for six weeks.
+>
+> Root cause of the win: Switch Escape's editor frame is **GPU-FENCE-BOUND** — the CPU waits on
+> the frame fence in **99.4% of frames, mean 0.89 ms** (engine 2.16 `SUBMIT_STALL_WINDOW`), and
+> ~1 ms of the 3.68 ms GPU frame is in no named pass at `lists=14 batches=12 deps=9`, i.e.
+> cross-queue bubble. Collapsing the queues removes it.
+>
+> ⚠ **Default NOT flipped**: Island Showdown's *max* stall got WORSE (3.37 → 6.71 ms) while its
+> mean improved — mean-up/tail-up is the shape of stutter. Full detail and the acceptance test
+> that would settle it: `SWITCHESCAPE_PERF.md` §8–§9.
 | 1.49 | Grass strand LOD: 2×/4× far decimation + width compensation (`SET_GRASSLOD`) | **+5 FPS (72.1→77.2)** steady-state ABAB; visually clean at test camera; **default OFF — user's visual call** |
 | game | Terrain idle gate: Generation_Update 1-in-8 when quiescent (`SET_TERRAINIDLE`) | Update-Terrain 0.92→0.09ms, CPU frame −~1.4ms; 0 FPS (GPU-bound) = CPU headroom; default ON |
 
