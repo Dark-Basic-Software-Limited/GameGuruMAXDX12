@@ -3180,6 +3180,11 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 // the helpers above. Returns true if cmd was handled.
 // GGMAX 2026-08-07 (tasks #120/#121): gpup forensics entry points — implemented inside
 // GPUParticles_part0.cpp because the emitter/settings structs are private to that TU.
+// GGMAX 2.15 perf knobs. Declared here rather than pulling wiXInput.h / adding a wiScene.h
+// export into this TU; both definitions live in the engine and these match them exactly.
+namespace wi::input::xinput { extern uint32_t gg_xinput_rescan_frames; }
+namespace wi::scene         { extern int      gg_scene_serial_profile; }
+
 namespace GPUParticles {
 	int gpup_debug_dump(char* summary, int summarySize);
 	void gpup_debug_show(int on);
@@ -3327,6 +3332,32 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 			wi::renderer::gg_weapon_shadow ? 1 : 0,
 			wi::renderer::gg_weapon_forcedepth ? 1 : 0,
 			(unsigned long long)wi::renderer::GG_GetForceDepthDrawCount());
+	}
+	else if (_stricmp(cmd, "SET_XINPUT") == 0)
+	{
+		// SET_XINPUT <frames> — GGMAX 2.15 gamepad-poll throttle. XInputGetState on an EMPTY
+		// controller slot is a driver round-trip, and stock Wicked polled all four slots every
+		// frame: 0.29 ms of a 4.62 ms editor CPU frame on Switch Escape with no pad attached.
+		// <frames> = how often a known-empty slot is re-probed (staggered, max one per frame).
+		// 0 = stock every-frame polling, for A/B. CONNECTED pads are always polled every frame
+		// at any setting, so this can never add controller latency — the only thing it delays
+		// is noticing a hotplug (by up to <frames> frames).
+		wi::input::xinput::gg_xinput_rescan_frames = (uint32_t)atoi(arg);
+		_snprintf(result, resultSize, "OK: SET_XINPUT rescan_frames=%u (0=stock every-frame poll of all 4 slots)",
+			wi::input::xinput::gg_xinput_rescan_frames);
+	}
+	else if (_stricmp(cmd, "SET_SCENESERIAL") == 0)
+	{
+		// SET_SCENESERIAL <0|1> — GGMAX 2.15 DIAGNOSTIC. Scene::Update's systems only DISPATCH
+		// jobs, so their whole cost lands in the one jobsystem::Wait that closes each stage —
+		// which is why "Scene-S1 0.91 ms" shows only 0.03 ms of named children and no ordinary
+		// profiler range can attribute it. With this on, each instrumented system gets its own
+		// Wait + "SU-<name>" range.
+		// ⚠ Serialising REMOVES cross-system overlap, so the TOTAL frame inflates — compare the
+		// SU-* shares against each other, NEVER the total against a normal frame. Never ship on.
+		wi::scene::gg_scene_serial_profile = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize, "OK: SET_SCENESERIAL %d (diagnostic: serialises Scene::Update systems; totals inflate, shares are real)",
+			wi::scene::gg_scene_serial_profile);
 	}
 	else if (_stricmp(cmd, "SET_LIGHTFALLOFF") == 0)
 	{
