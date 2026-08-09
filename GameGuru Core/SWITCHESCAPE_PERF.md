@@ -224,16 +224,48 @@ is cross-queue dependency bubble. Both existing queue knobs were retested:
 **Same gain as halving the render resolution, with zero visual change.**
 
 ⚠ **This INVERTS a documented result.** `PERFORMANCE.md` Stage P.6 records single-queue at
-**−4.7 FPS** on TESTPRO1 and says "submission overhead is a dead end. Do NOT re-chase." That
-conclusion was correct *for TESTPRO1*, a heavy GPU-bound island — where async overlap earns
-its keep. On a **light** scene the overlap saves little and the 9 dependency splits cost more
-than they save. The old rule was scene-specific and its boundary was never stated; it is now.
+**−4.7 FPS** on TESTPRO1 and says "submission overhead is a dead end. Do NOT re-chase."
 
-★ **RULE: async-queue structure is a scene-load-dependent trade, not a fixed answer.**
-Re-measure it per scene class; a verdict from one heavy level does not generalise to light ones.
+**I expected a light-vs-heavy crossover and tested for it. There isn't one — it wins on both.**
+Island Showdown (heavy hub demo, ~91 FPS editor), same three-arm method:
 
-**Default NOT changed** — one light level in favour and one heavy level against is not a basis
-for flipping a global. See §9 for what would settle it.
+| level | off | on | delta | stall mean | stall **max** |
+|---|---|---|---|---|---|
+| Switch Escape (light) | 201.4 / 201.1 | 225.3 | **+23.9 (+11.9%)** | 0.90 → 0.42 | — |
+| Island Showdown (heavy) | 91.5 / 91.7 | 95.1 | **+3.5 (+3.8%)** | 2.12 → 1.82 | **3.37 → 6.71** |
+
+So the Stage P.6 "do not re-chase" verdict does **not** reproduce on hub content on today's
+build. It was measured 2026-07-26 on a much older engine and on TESTPRO1 specifically; treat
+it as stale rather than as a law. ★ **RULE: a queue-structure verdict has a shelf life —
+re-measure it after significant renderer changes instead of citing the old number.**
+
+⚠ **But note the worst case gets WORSE on the heavy level: max stall 3.37 → 6.71 ms.** Mean
+improves while the tail doubles, which is exactly the shape that shows up as occasional
+stutter rather than lower average FPS. That alone is reason not to flip the default on two
+levels' evidence.
+
+**Default NOT changed.** See §9.
+
+---
+
+## 9. What would settle the single-queue default (the one job worth doing next)
+
+`SET_SINGLEQUEUE 1` is currently the best FPS lever found, at **+11.9% light / +3.8% heavy
+with no visual change**, but two levels is not a shipping decision. To flip the default:
+
+1. **19-demo A/B sweep**, `SET_SINGLEQUEUE` 0/1/0 per demo, editor **and** test-game. The
+   existing `tools/demo_fps_sweep.sh` already does the walk; it needs the three-arm knob loop
+   and a `SET_SUBMITSTATS 1` before each arm. ~60–80 min unattended.
+2. **Gate on the frame-time TAIL, not the mean.** Island Showdown's max stall doubled
+   (3.37 → 6.71 ms) even while its mean improved and its FPS rose. The `HITCH:` line in
+   `GET_PERF_DATA` (`over(16.7/25/33/50/100)`) is the right acceptance test — a change that
+   raises average FPS while adding 33 ms frames is a bad trade in an editor.
+3. **Re-run TESTPRO1**, the one level that produced the −4.7 FPS verdict, on the current
+   engine. If it is still negative, the default stays off and this becomes a documented
+   per-project knob; if it has flipped, the Stage P.6 note is simply stale and the default
+   can move.
+
+Until then it is a free +12% for anyone who sets it, and it costs nothing to leave off.
 
 ---
 
