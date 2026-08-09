@@ -859,10 +859,17 @@ void GetSetupIniEarly( void )
 				// push read the live bool — but here it holds from the first rendered frame and
 				// also covers WickedCall_AddLight's creation-time intensity. Live: SET_LIGHTFALLOFF.
 				const bool bLightFO = (_strnicmp(p, "lightfalloff", 12) == 0);
+				// GGMAX 2.14: `weaponshadow=0` reverts the first-person weapon shadow-position
+				// pull (DX11 SHADERTYPE_WEAPON parity). Like lightfalloff it does not strictly
+				// need the early pass — the shader reads a per-frame FrameCB bit off the live
+				// bool — but reading it here holds it from the first rendered frame.
+				// Live A/B: SET_WEAPONSHADOW. Note "weaponshadow" and "weaponforcedepth" share
+				// a prefix but differ at char 7, so the two _strnicmp tests cannot cross-match.
+				const bool bWeapSH = (_strnicmp(p, "weaponshadow", 12) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bMABlock)        iKeyLen = 9;
 				else if (bGrassMg)        iKeyLen = 10;
-				else if (bLightFO)        iKeyLen = 12;
+				else if (bLightFO || bWeapSH) iKeyLen = 12;
 				else if (bHairNDW || bWeapFD) iKeyLen = 16;
 				else continue;
 				const char* q = p + iKeyLen;
@@ -906,6 +913,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetDX11LightFalloff(int);
 					GGSetDX11LightFalloff(iValue);
+				}
+				if (bWeapSH)
+				{
+					extern void GGSetWeaponShadow(int);
+					GGSetWeaponShadow(iValue);
 				}
 			}
 			fclose(lvf);

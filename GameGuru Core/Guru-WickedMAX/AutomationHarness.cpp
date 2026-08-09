@@ -3310,6 +3310,24 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 			wi::renderer::gg_weapon_forcedepth ? 1 : 0,
 			(unsigned long long)wi::renderer::GG_GetForceDepthDrawCount());
 	}
+	else if (_stricmp(cmd, "SET_WEAPONSHADOW") == 0)
+	{
+		// SET_WEAPONSHADOW <0|1> — live A/B for the first-person weapon SHADOW pull (GGMAX 2.14,
+		// DX11 SHADERTYPE_WEAPON / WEAPON_SHADOW parity; the second half of the 2.09 weapon work).
+		// 1 = DX11 behaviour (each light's shadow lookup uses a position pulled to 1/3 of the camera
+		// distance, so a gun clipping into a wall is not shadowed BY that wall), 0 = the DX12 port's
+		// behaviour (the gun goes dark whenever the player presses against geometry).
+		// Unlike SET_WEAPONDEPTH this is a TRUE revert as well as an A/B: the material bit only
+		// marks "this is a weapon" and the knob drives a per-frame FrameCB bit the shader tests
+		// alongside it, so 0 restores the pre-2.14 look within a frame with no reload.
+		// ⚠ The symptom only appears with the player pressed into geometry, and the harness cannot
+		// drive the player (see the 2.09 notes) — flip this and ask for one walk into a wall.
+		wi::renderer::gg_weapon_shadow = (atoi(arg) != 0);
+		_snprintf(result, resultSize, "OK: SET_WEAPONSHADOW weaponshadow=%d (forcedepth=%d, carve draws=%llu)",
+			wi::renderer::gg_weapon_shadow ? 1 : 0,
+			wi::renderer::gg_weapon_forcedepth ? 1 : 0,
+			(unsigned long long)wi::renderer::GG_GetForceDepthDrawCount());
+	}
 	else if (_stricmp(cmd, "SET_LIGHTFALLOFF") == 0)
 	{
 		// SET_LIGHTFALLOFF <0|1> — live A/B for the GGMAX 2.10 light power parity. 1 = DX11

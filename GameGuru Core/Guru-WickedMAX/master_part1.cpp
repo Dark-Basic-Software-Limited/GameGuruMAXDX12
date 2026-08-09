@@ -129,6 +129,18 @@ void GGSetDX11LightFalloff(int on)
 	wi::renderer::gg_dx11_light_falloff = (on != 0);
 }
 
+// GGMAX 2.14: first-person weapon shadow-position pull — DEFAULT ON (DX11 SHADERTYPE_WEAPON
+// parity, the second half of the 2.09 weapon work).
+//
+// FULLY LIVE, unlike SET_WEAPONDEPTH: the material bit that marks the weapon set is written from
+// the existing GG_FORCEDEPTH flag when the gun loads, and this bool only drives a per-frame
+// FrameCB bit the shader tests alongside it. So both `setup.ini weaponshadow=0` and the harness
+// `SET_WEAPONSHADOW 0|1` land within a frame, and 0 IS the true pre-2.14 behaviour.
+void GGSetWeaponShadow(int on)
+{
+	wi::renderer::gg_weapon_shadow = (on != 0);
+}
+
 // GGMAX 1.83: D3D12MA PreferredBlockSize override (setup.ini `mablockmb`, 0 = library default
 // 64 MB). Same early-parse constraint as the two above, and a harder one — the allocator is
 // created with the device, so nothing later than main()'s early pass can influence it.
