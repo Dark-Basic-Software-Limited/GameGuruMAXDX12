@@ -7695,6 +7695,25 @@ void GGTerrain_DrawPages( CommandList cmd )
 		g_VerticesPageGen[ i ][ 5 ].id = heightLevel | (detailLevel << 4);
 	}
 
+	// GGMAX 2026-08-08 ⚠ LATENT SHARED-BUFFER RACE — dormant only because this path is dead.
+	// This function writes pageGenVertexBuffer TWICE per call with DIFFERENT content (mip 0 here,
+	// mip 1 at the second UpdateBuffer below), with a RenderPass + Draw that reads it as the vertex
+	// stream in between, on the SAME command list, with no barrier. That is exactly the defect
+	// class that produced the particle "ping" (game 82959a2b): DX12's UpdateBuffer is AllocateGPU +
+	// CopyBuffer and the caller owns the synchronisation, so the mip-1 copy may legally land while
+	// the mip-0 draw is still fetching vertices — baking mip-1 UVs into mip-0 pages. It is silent:
+	// buffers get implicit state promotion in D3D12, so the debug layer never complains. DX11 was
+	// safe here because UpdateSubresource carries implicit hazard tracking.
+	// WHY IT CANNOT BITE TODAY: GGTerrain_Update returns at the `if (ggterrain_use_wicked_terrain)`
+	// block (:9846-:10005) before its sole call to GGTerrain_DrawPages (:10418), and that flag
+	// defaults to 1 (:4208, only flipped by the Y-key debug toggle at :9782, which cannot fire in
+	// the editor because ImGui holds focus). Belt and braces: DrawPages also early-outs on
+	// !texPagesColorAndMetal.IsValid() (:7539) and that 883.6 MB atlas is allocated only BELOW the
+	// early return, so on the shipping path it does not exist (see VRAM_CENSUS.md "dead page cache").
+	// ★ IF YOU EVER REVIVE THE LEGACY VT PATH, FIX THIS FIRST. A barrier is not the tidy fix — widen
+	// g_VerticesPageGen to [.][12], write mip 0 into slots 0-5 and mip 1 into 6-11, issue ONE
+	// UpdateBuffer before both passes, and give the second Draw a vertex offset of 6*numPages.
+	// (BindDynamicConstantBuffer, the gpup fix, is not available: this is a vertex buffer.)
 	device->UpdateBuffer( &pageGenVertexBuffer, g_VerticesPageGen, cmd, numPages*sizeof(VertexPageGen)*6 );
 
 	device->RenderPassBegin( &renderPassPhysicalTex, cmd );
@@ -7851,6 +7870,8 @@ void GGTerrain_DrawPages( CommandList cmd )
 		g_VerticesPageGen[ i ][ 5 ].id = heightLevel | (mipDetailLevel << 4);
 	}
 
+	// GGMAX 2026-08-08 ⚠ second half of the latent race documented at the mip-0 UpdateBuffer above:
+	// same destination buffer, different content, no barrier since the mip-0 Draw. Dead path today.
 	device->UpdateBuffer( &pageGenVertexBuffer, g_VerticesPageGen, cmd, numPages*sizeof(VertexPageGen)*6 );
 
 	device->RenderPassBegin( &renderPassPhysicalTexMip, cmd );
