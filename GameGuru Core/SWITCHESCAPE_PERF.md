@@ -262,7 +262,59 @@ so it stays on the record as unexplained.
 
 ---
 
-## 9. What would settle the single-queue default (the one job worth doing next)
+## ★★★ 8b. FULL 19-DEMO SWEEP → DEFAULT FLIPPED ON (engine 2.17)
+
+Criteria were fixed in the sweep script's header **before the data existed**. All three pass.
+
+| # | demo | OFF | ON | delta | drift | tail ON/OFF | POLYS |
+|---|---|---|---|---|---|---|---|
+| 19 | **Trapped** | 210.9 | **246.2** | **+16.7%** | +0.2 | 0 / 0 | same |
+| 13 | **Switch Escape** | 201.7 | **233.5** | **+15.8%** | +0.7 | 0 / 0 | same |
+| 15 | **Zombie Cellar** | 194.7 | **217.8** | **+11.9%** | +0.0 | 0 / 0 | same |
+| 17 | RPG Template | 119.5 | 130.8 | +9.5% | −0.8 | 26 / 24 | same |
+| 16 | Jungle Fever | 167.5 | 178.2 | +6.4% | +3.8 | 0 / 0 | same |
+| 6 | Operation Amazon | 105.9 | 112.3 | +6.0% | −0.7 | 21 / 21 | same |
+| 10 | Disruption | 105.8 | 111.8 | +5.7% | −0.6 | 6 / 2 | same |
+| 14 | Canyon Offensive | 92.9 | 97.2 | +4.6% | −0.3 | 19 / 18 | same |
+| 5 | Island Showdown | 91.0 | 94.9 | +4.2% | +0.1 | 0 / 0 | same |
+| 8 | Snowy Mountain Stroll | 146.3 | 151.3 | +3.4% | +4.4 | 0 / 0 | same |
+| 9 | A Grand Canyon Adventure | 136.8 | 139.9 | +2.3% | −0.3 | 0 / 0 | same |
+| 3 | Bounty | 157.0 | 160.5 | +2.2% | +0.0 | 0 / 1 | same |
+| 7 | River Raiders | 144.6 | 147.6 | +2.1% | +0.2 | 0 / 3 | same |
+| 18 | The Mystery of Z Island | 142.1 | 145.1 | +2.1% | −0.6 | 1 / 1 | same |
+| 1 | Aztec Game Kit Teaser | 83.8 | 85.2 | +1.7% | −0.4 | 17 / 16 | same |
+| 11 | Foggy Forest | 77.0 | 77.9 | +1.2% | +0.6 | 0 / 1 | same |
+| 12 | Indian Strike Force | 116.3 | 117.1 | +0.7% | +0.9 | 18 / 17 | same |
+| 2 | Aztec Game Kit | 109.2 | 109.7 | +0.5% | +2.4 | 22 / 21 | same |
+| 4 | Horseshoe Bend | 96.8 | 96.3 | **−0.5%** | +0.4 | 0 / 2 | same |
+
+**Mean +5.07%, 18/19 positive, 0 failures, 0 deaths.**
+
+- **C1 FPS — PASS.** 18/19 positive (needed ≥16); the single negative is Horseshoe Bend at
+  −0.5%, inside its own +0.4 control drift and far above the −2.0% reject line.
+- **C2 TAIL — PASS.** No demo's over-16.7 ms frame count rose more than 25%. ★ **Island
+  Showdown's 6.71 ms max-stall outlier from the 22 s arms did NOT reproduce** over 40 s
+  (tail 0/0, +4.2%) — it was a lazy-PSO compile, exactly as suspected, not a tail regression.
+  That was the one thing blocking the flip, and it is now resolved with data.
+- **C3 POLYS — PASS.** Bit-identical across all three arms on all 19 demos, i.e. no
+  geometry/visual change. Control drift ≤4.4% everywhere, mostly under 1%.
+
+**Flipped: `gg_single_queue = true` (engine 2.17).**
+Revert: `setup.ini singlequeue=0` (persistent, new in 2.16) or `SET_SINGLEQUEUE 0` (live).
+
+**Method notes worth keeping** (both cost real time today):
+- Arms are **settle-gated**, not fixed-soak — POLYS stable AND FPS within 3% of the previous
+  sample. A fixed 90 s soak had captured one demo's first arm at 3.9 FPS / POLYS 154768 mid-load
+  against a settled 106 FPS / POLYS 3438876, which would have manufactured a fake +96%.
+- The script takes a **PID lockfile**. Three copies once ran concurrently against one MAX
+  (a `nohup` launch that outlived its parent, plus relaunches after a `pkill` that silently does
+  nothing in Git Bash), producing impossible-but-plausible numbers. That data was discarded.
+
+Raw data: `tools/singlequeue_sweep_0809_full.txt`.
+
+---
+
+## 9. ~~What would settle the single-queue default~~ — SETTLED, see §8b
 
 `SET_SINGLEQUEUE 1` is the best FPS lever found in this whole study — **+2.0% to +18.6% across
 six hub demos, 6/6 positive, no visual change, and the worst-case stall improves on 5 of 6.**

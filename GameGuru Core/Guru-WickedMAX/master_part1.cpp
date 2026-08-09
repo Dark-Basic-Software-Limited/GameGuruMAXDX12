@@ -141,6 +141,18 @@ void GGSetWeaponShadow(int on)
 	wi::renderer::gg_weapon_shadow = (on != 0);
 }
 
+// GGMAX 2.16: `setup.ini singlequeue=<0|1>`. Routes COMPUTE/COPY command lists onto the
+// GRAPHICS queue and drops the same-queue fences that then become redundant, removing the
+// cross-queue dependency bubble the editor frame stalls on (SWITCHESCAPE_PERF.md §8).
+// Session-scoped equivalent: harness SET_SINGLEQUEUE. This exists so a project can hold the
+// setting across launches. Read in main()'s early setup.ini pass because command lists start
+// being begun on the first frame.
+namespace wi::graphics { extern bool gg_single_queue; }
+void GGSetSingleQueue(int on)
+{
+	wi::graphics::gg_single_queue = (on != 0);
+}
+
 // GGMAX 1.83: D3D12MA PreferredBlockSize override (setup.ini `mablockmb`, 0 = library default
 // 64 MB). Same early-parse constraint as the two above, and a harder one — the allocator is
 // created with the device, so nothing later than main()'s early pass can influence it.

@@ -866,9 +866,18 @@ void GetSetupIniEarly( void )
 				// Live A/B: SET_WEAPONSHADOW. Note "weaponshadow" and "weaponforcedepth" share
 				// a prefix but differ at char 7, so the two _strnicmp tests cannot cross-match.
 				const bool bWeapSH = (_strnicmp(p, "weaponshadow", 12) == 0);
+				// GGMAX 2.16: `singlequeue=1` routes COMPUTE/COPY command lists onto the GRAPHICS
+				// queue and drops the now-redundant same-queue fences. Measured across the hub it
+				// removes the cross-queue dependency bubble that the editor frame stalls on
+				// (see SWITCHESCAPE_PERF.md §8). Until now the only way to set it was the
+				// session-scoped harness SET_SINGLEQUEUE, so this key is what makes it persistent
+				// for a project. Needs the early pass: the flag is read when command lists are
+				// begun, which starts on the very first frame.
+				const bool bSingleQ = (_strnicmp(p, "singlequeue", 11) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bMABlock)        iKeyLen = 9;
 				else if (bGrassMg)        iKeyLen = 10;
+				else if (bSingleQ)        iKeyLen = 11;
 				else if (bLightFO || bWeapSH) iKeyLen = 12;
 				else if (bHairNDW || bWeapFD) iKeyLen = 16;
 				else continue;
@@ -918,6 +927,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetWeaponShadow(int);
 					GGSetWeaponShadow(iValue);
+				}
+				if (bSingleQ)
+				{
+					extern void GGSetSingleQueue(int);
+					GGSetSingleQueue(iValue);
 				}
 			}
 			fclose(lvf);
