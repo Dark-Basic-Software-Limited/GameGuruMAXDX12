@@ -312,6 +312,47 @@ Revert: `setup.ini singlequeue=0` (persistent, new in 2.16) or `SET_SINGLEQUEUE 
 
 Raw data: `tools/singlequeue_sweep_0809_full.txt`.
 
+### 8c. The two gaps closed: TEST-GAME mode and TESTPRO1
+
+§8b was editor-only, and TESTPRO1 (the level behind the original −4.7 verdict) was untested.
+Both now done, same three-arm protocol, settle-gated.
+
+**Test-game mode** — a different queue mix (no ImGui, different pass set) and where players
+actually judge FPS:
+
+| case | OFF | ON | delta |
+|---|---|---|---|
+| **Trapped** | 193.0 | **235.6** | **+22.1%** |
+| Switch Escape | 178.6 | 189.7 | +6.2% |
+| Foggy Forest | 89.5 | 94.0 | +5.0% |
+| Island Showdown | 87.3 | 88.8 | +1.7% |
+| Horseshoe Bend | 71.0 | 70.9 | −0.1% |
+| Escape from the Zombie Cellar | 60.0 | 59.9 | **not scorable** |
+
+**Mean +5.38% over the 6 scorable cases, nothing worse than −0.1%.** Test-game gains are at
+least as good as the editor's — the win is not an editor artefact.
+
+⚠ **Zombie Cellar is excluded, not counted as neutral.** Test-game honours the per-level VSync
+setting, so a level that can hold the refresh rate reads exactly 60.0 on BOTH arms — that is the
+monitor, not the knob. Counting it as 0% would have diluted the result. It also makes the
+over-16.7 ms counter useless there: a 60 Hz frame *is* 16.67 ms, so it ticks on nearly every
+frame in every arm. ★ **RULE: check for a vsync pin before reading any in-game FPS A/B.**
+
+**TESTPRO1 (editor)** — ★ **NOT a regression. Do not re-raise it without a 5-arm run.**
+A first three-arm pass read **−2.5%** (122.2/122.3 OFF vs 119.2 ON) and looked like a genuine
+content-dependent exception. It did not survive a repeat. Five arms, 0/1/0/1/0, two independent
+ON measurements against three OFF:
+
+```
+OFF 118.4 / 119.3 / 119.6  (mean 119.1)
+ON  119.8 / 118.8          (mean 119.3)      → +0.2%, OFF spread 1.2
+```
+
+The OFF baseline itself moved 122.2 → 119.1 between launches — the same magnitude as the
+"regression", which is what a cross-launch drift artefact looks like. TESTPRO1 is **neutral**.
+
+**Net across everything measured: 26 cases, 0 confirmed regressions.**
+
 ---
 
 ## 9. ~~What would settle the single-queue default~~ — SETTLED, see §8b

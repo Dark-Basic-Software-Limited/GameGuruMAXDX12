@@ -40,7 +40,17 @@ PIX hunt), tree pool ~1.6ms (user's density choice). GPU busy: Opaque 2.73, Hair
 > changes rather than citing the old number** — this one sat on a +5% average (and a +16% best
 > case) for six weeks.
 >
-> Full table, method and the pre-registered pass criteria: `SWITCHESCAPE_PERF.md` §8/§8b.
+> **Also validated in TEST-GAME mode** (different queue mix, no ImGui): mean **+5.38%** over 6
+> scorable cases, best Trapped **+22.1%**, nothing worse than −0.1%. ⚠ Zombie Cellar is excluded
+> because test-game honours the per-level VSync setting and it pins both arms at exactly 60.0 —
+> **check for a vsync pin before reading any in-game FPS A/B.**
+>
+> ★ **TESTPRO1 is NOT an exception.** A first three-arm pass read −2.5% and looked like a real
+> content-dependent regression; a 5-arm repeat (0/1/0/1/0) gave **+0.2%** (OFF 118.4/119.3/119.6
+> vs ON 119.8/118.8). The OFF baseline itself moved 122.2 → 119.1 between launches, i.e. the
+> same magnitude as the "regression". Do not re-raise TESTPRO1 without a 5-arm run.
+>
+> Full tables, method and the pre-registered pass criteria: `SWITCHESCAPE_PERF.md` §8/§8b/§8c.
 > Raw data: `tools/singlequeue_sweep_0809_full.txt`. Revert: `setup.ini singlequeue=0`.
 | 1.49 | Grass strand LOD: 2×/4× far decimation + width compensation (`SET_GRASSLOD`) | **+5 FPS (72.1→77.2)** steady-state ABAB; visually clean at test camera; **default OFF — user's visual call** |
 | game | Terrain idle gate: Generation_Update 1-in-8 when quiescent (`SET_TERRAINIDLE`) | Update-Terrain 0.92→0.09ms, CPU frame −~1.4ms; 0 FPS (GPU-bound) = CPU headroom; default ON |

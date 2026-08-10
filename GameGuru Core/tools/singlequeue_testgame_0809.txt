@@ -1,0 +1,30 @@
+SET_SINGLEQUEUE — test-game mode + TESTPRO1 (2026-08-09, engine 2.17 build)
+Same 3-arm protocol (0/1/0), 40s settle-gated arms. Rows: case|A1(fps|stallmean|stallmax|over16|polys)|B|A2
+
+CASE                                    OFF       ON   DELTA%  DRIFT%  stallOF stallON  POLYS
+-------------------------------------------------------------------------------------------------
+TESTPRO1-editor                       122.2    119.2     -2.5    +0.1    0.276   0.106  same
+Trapped-game                          193.0    235.6    +22.1    +0.1    0.791   0.036  same
+Switch Escape-game                    178.6    189.7     +6.2    +1.1    0.974   0.685  same
+Escape from the Zombie Cellar-game     60.0     59.9    vsync    +0.0    6.604   6.596  same
+Island Showdown-game                   87.3     88.8     +1.7    +0.5    0.001   0.007  same
+Horseshoe Bend-game                    71.0     70.9     -0.1    -0.3    0.001   0.001  same
+Foggy Forest-game                      89.5     94.0     +5.0    +0.6    1.419   0.878  same
+-------------------------------------------------------------------------------------------------
+
+Scorable cases: 6   positive: 4   mean delta: +5.38%
+not scorable (VSYNC-pinned at ~60, both arms): 1 -> Escape from the Zombie Cellar-game
+⚠ regressions worse than -2%: 1 -> TESTPRO1-editor
+
+=== TESTPRO1 5-ARM REPEAT (the -2.5% did NOT reproduce) ===
+15:02:03 OFF: 118.4 119.3 119.6   ON: 119.8 118.8
+TESTPRO1 5-arm: OFF mean 119.1 (118.4/119.3/119.6)  ON mean 119.3 (119.8/118.8)  delta +0.2%  OFF spread 1.2
+
+=== RAW ===
+TESTPRO1-editor|122.2|0.281|1.75|469|3058622|119.2|0.106|4.60|470|3058622|122.3|0.270|1.63|470|3058622
+Trapped-game|192.9|0.764|2.11|617|7921|235.6|0.036|0.96|618|7921|193.1|0.819|1.86|618|7921
+Switch Escape-game|177.7|0.976|5.45|610|95995|189.7|0.685|5.23|610|95995|179.6|0.971|5.38|610|95995
+Escape from the Zombie Cellar-game|60.0|6.590|7.23|5146|19884|59.9|6.596|7.34|6553|19884|60.0|6.617|7.31|7989|19884
+Island Showdown-game|87.1|0.001|0.03|906|3573482|88.8|0.007|2.26|927|3573482|87.5|0.001|0.04|946|3573482
+Horseshoe Bend-game|71.1|0.001|0.03|877|2003608|70.9|0.001|0.02|912|2003608|70.9|0.001|0.01|944|2003608
+Foggy Forest-game|89.3|1.422|2.85|718|7636287|94.0|0.878|8.07|723|7636287|89.8|1.417|2.77|723|7636287
