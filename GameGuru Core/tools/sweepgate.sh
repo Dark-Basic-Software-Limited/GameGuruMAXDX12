@@ -52,11 +52,15 @@ for line in open(res, encoding="utf-8", errors="replace"):
     gm = [num(f[6]), num(f[7]), num(f[8])]
     vram = num(f[10]) if len(f) > 10 else 0.0
     polys = int(num(f[11])) if len(f) > 11 else 0
+    # gvram = test-game VRAM. It runs HIGHER than the editor's (Aztec Game Kit 2026-08-10:
+    # editor 3811.4, game 3962.5), so a gate that only checks the editor column can pass a
+    # build that actually breaches 4 GB in the mode players ship in. Check both.
+    gvram = num(f[12].split("=")[-1]) if len(f) > 12 and "gvram" in f[12] else 0.0
     rows.append(dict(demo=demo, ed=sum(ed)/3 if any(ed) else 0, gstate=gstate,
-                     gm=sum(gm)/3 if any(gm) else 0, vram=vram, polys=polys))
+                     gm=sum(gm)/3 if any(gm) else 0, vram=vram, gvram=gvram, polys=polys))
 
 print("=" * 100)
-print("%-32s %8s %8s %10s %12s  %s" % ("demo","edFPS","gmFPS","VRAM MB","POLYS","gate"))
+print("%-32s %8s %8s %9s %9s %12s  %s" % ("demo","edFPS","gmFPS","edVRAM","gmVRAM","POLYS","gate"))
 print("=" * 100)
 c2 = c3 = c4 = True
 worst_vram = (0, "")
@@ -65,13 +69,15 @@ for r in sorted(rows, key=lambda x: -x["vram"]):
     if ref is None:            g2 = "polys?"
     elif r["polys"] == ref:    g2 = "POLYS_OK"
     else:                      g2 = "POLYS_MISMATCH(ref %d)" % ref; c2 = False
-    g3 = "VRAM_OK" if 0 < r["vram"] < limit else ("VRAM_OVER" if r["vram"] else "vram?")
-    if g3 == "VRAM_OVER": c3 = False
+    over = [n for n, v in (("editor", r["vram"]), ("game", r["gvram"])) if v >= limit]
+    g3 = "VRAM_OVER(%s)" % ",".join(over) if over else ("VRAM_OK" if r["vram"] else "vram?")
+    if over: c3 = False
     g4 = "" if r["gstate"].upper().startswith(("GAME","OK","PLAY")) else " GAME=%s" % r["gstate"]
     if r["gm"] <= 0: c4 = False; g4 += " NO_GAME_FPS"
-    if r["vram"] > worst_vram[0]: worst_vram = (r["vram"], d)
-    print("%-32s %8.1f %8.1f %10.1f %12d  %s %s%s" %
-          (d, r["ed"], r["gm"], r["vram"], r["polys"], g2, g3, g4))
+    peak = max(r["vram"], r["gvram"])
+    if peak > worst_vram[0]: worst_vram = (peak, d + ("/game" if r["gvram"] >= r["vram"] else "/editor"))
+    print("%-32s %8.1f %8.1f %9.1f %9.1f %12d  %s %s%s" %
+          (d, r["ed"], r["gm"], r["vram"], r["gvram"], r["polys"], g2, g3, g4))
 
 print("=" * 100)
 c1 = (len(rows) == 19 and not fails)
@@ -83,7 +89,7 @@ else:
     print("C1 LOAD      PASS  19/19 reached the editor")
 print("C2 GEOMETRY  %s  POLYS identical to the 0809 reference on all %d demos"
       % ("PASS " if c2 else "FAIL ", len(rows)))
-print("C3 VRAM      %s  worst = %.1f MB (%s), limit %.0f, headroom %.1f MB"
+print("C3 VRAM      %s  worst of editor+game = %.1f MB (%s), limit %.0f, headroom %.1f MB"
       % ("PASS " if c3 else "FAIL ", worst_vram[0], worst_vram[1], limit, limit - worst_vram[0]))
 print("C4 GAME      %s  every demo produced in-game FPS past the loading overlays"
       % ("PASS " if c4 else "FAIL "))

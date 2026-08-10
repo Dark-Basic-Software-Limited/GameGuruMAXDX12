@@ -647,6 +647,31 @@ All three demos loaded to the editor and matched the 08-09 sweep's POLYS **exact
 | Trapped | 11209 | 11209 ✔ | 7255 | 159.4 |
 | Switch Escape | 109358 | 109358 ✔ | 7322 | 149.3 |
 
-⚠ Not yet run on this build: the full 19-demo hub sweep and the VRAM 4 GB gate. Three demos is
-a smoke test, not the sweep — **run `tools/singlequeue/sqfull.sh` before treating 2.18 as
-sweep-clean.**
+### 11.6 ★ FULL 19-DEMO SWEEP + VRAM GATE: **CLEAN** (2026-08-10)
+
+`tools/demo_fps_sweep.sh 0810`, scored by `tools/sweepgate.sh` against criteria written into the
+script *before* the run. Raw + scored output: `tools/sweep_0810_2.18.txt`.
+
+| criterion | result |
+|---|---|
+| **C1 LOAD** | **PASS** — 19/19 reached the editor, no crashes, no FAIL_* rows |
+| **C2 GEOMETRY** | **PASS** — POLYS identical to the 0809 reference on **all 19** |
+| **C3 VRAM** | **PASS** — worst of editor+game **3962.5 MB** (Aztec Game Kit, in-game), limit 4096, **133.5 MB headroom**; 0/19 breach in either mode |
+| **C4 GAME** | **PASS** — all 19 reached gameplay past the loading overlays (prep=0s throughout, navmesh cache holding) |
+
+**C2 is the real result here.** For an engine-wide entity→index lookup change, POLYS identity
+across 19 scenes ranging from 11 k to 10.3 M polygons is the proof that no entity ever resolved
+to the wrong component — a mis-resolve would change what is drawn, and the counter would move.
+
+VRAM top five (editor / in-game MB): Aztec Game Kit 3811.4 / **3962.5**, Operation Amazon
+3595.4 / 3868.7, Z Island 3464.9 / 3789.5, River Raiders 3292.4 / 3767.7, Canyon Offensive
+3376.1 / 3708.9. ⚠ **In-game VRAM runs above the editor's on every demo** — a gate that reads
+only the editor column can pass a build that breaches 4 GB in the mode players actually ship.
+`sweepgate.sh` now checks both (it did not on its first version; the miss is recorded here
+because it would have been an easy way to ship a false PASS).
+
+⚠ **FPS was deliberately excluded as a criterion and the data shows why.** Switch Escape's
+editor FPS was read three separate times today on the *same build and same scene*: **142.5,
+149.3, 159.6** — an 11% spread launch-to-launch, on top of a rig that read 201 for the same
+scene on 08-09 at a matched CPU frame. Nothing about the FPS column in this sweep is comparable
+to earlier sweeps; it is recorded for the ranking and the archive, nothing more.
