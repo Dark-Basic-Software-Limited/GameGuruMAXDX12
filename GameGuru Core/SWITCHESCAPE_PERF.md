@@ -30,16 +30,27 @@ below the 3.68 ms GPU wall; after that the GPU has to come down too.
 
 | CPU range | DX11 | DX12 | delta | share of gap |
 |---|---|---|---|---|
-| **Update - Wicked (Scene::Update)** | **0.21** | **2.39** | **+2.18** | **75%** |
+| **`Update - Wicked`** vs **`Scene::Update`** ⚠ see note | **0.21** | **2.39** | **+2.18** | **75%** |
 | Update - Logic | 0.62 | 0.90 | +0.28 | 10% |
 | Compose | 0.04 | 0.24 | +0.20 | 7% |
 | Render | 0.71 | 0.87 | +0.16 | 6% |
 | Update - Terrain | 0.03 | 0.14 | +0.11 | 4% |
 
-**Three quarters of the entire gap is one range: `Scene::Update`.** That is the modern-Wicked
-ECS walking the whole scene every frame. Its stage split is S1 Anim+Transform 0.91,
-S2 Hier+Mesh+Mat 0.79, S4 Object+Light 0.61 — and only 0.03 ms of that has named children,
-which is what §3 is about.
+**Three quarters of the entire gap is one range: `Scene::Update`.** Its stage split is
+S1 Anim+Transform 0.91, S2 Hier+Mesh+Mat 0.79, S4 Object+Light 0.61 — and only 0.03 ms of
+that has named children, which is what §3 is about.
+
+⚠ **NOTE ON THE ROW LABEL (corrected 2026-08-10).** These are two DIFFERENTLY-SCOPED ranges.
+There is **no `Scene::Update` profiler range anywhere in the DX11 engine** — its complete CPU
+range list is `CPU Frame`, `Fixed Update`, `Update`, `Render`, `Compose`, `Physics`,
+`Frustum Culling` plus the game's `Update - *` rows. The 0.21 is the range created at DX11
+game `master.cpp:2171`, which wraps `__super::Update(dt)` = ALL of `RenderPath3D::Update`
+(`WickedRepo/WickedEngine/RenderPath3D.cpp:849`): `CheckUsedTextures`, `RenderPath2D::Update`,
+`scene->Update()` (:866), main-camera frustum culling, `UpdatePerFrameData`, `UpdateCamera`.
+The DX12 2.39 is the sum of the `Scene-S1..S5` stages, i.e. `Scene::Update` alone.
+**The DX11 side is a strict SUPERSET measured at one tenth the cost — so the comparison
+understates the gap rather than inflating it.** DX11's `Scene::Update` proper is some fraction
+of 0.21 and the true delta is ≈2.25–2.30 ms. See §10 for why, verified against both trees.
 
 ### GPU side (becomes the wall once CPU < 3.68)
 
@@ -51,25 +62,41 @@ Scene: 7322 objects / 8437 transforms / **576 visible** / 22 lights (16 visible)
 
 ---
 
-## 2. Refuted: the tree pool is NOT the cost here
+## 2. ~~Refuted: the tree pool is NOT the cost here~~ → ⚠ **THAT A/B WAS INVALID (2026-08-10)**
 
 The obvious suspect was the parked tree pool — `DUMP_TREEPOOL` reports
 `POOL size=6000 bound=0 renderable=0` on a level with no terrain and no trees.
 
-**Measured and refuted.** Fresh load with `SET_TREES pool 0` (pool clamps to 1):
+**What was run, and why it proved nothing:**
 
 | | pool 6000 | pool 1 |
 |---|---|---|
 | FPS | 200.8 | **201.5** |
 | SCENE_OBJECTS | 7322 | **7322** |
 
-Removing 5999 pool slots changed nothing, and `SCENE_OBJECTS` did not move at all — the pool
-entities are not part of that population, and unbound slots (no mesh, not renderable) are
-close to free in the ECS. A lazy-pool change was written and then **reverted** rather than
-shipped on the strength of a benefit that does not exist on this level.
+★★ **`SET_TREES pool N` CANNOT SHRINK AN ALREADY-BUILT POOL. Both arms ran the same 6000
+slots.** The knob writes only `GGTrees::g_treePoolSize` (`AutomationHarness.cpp:5656`). That
+variable is read at pool-build time inside `GGTrees_WickedSetup`, which is latched by
+`g_wickedTreesSetup` (`GGTrees_part2.cpp:721-725`). The latch is cleared in exactly two places:
+- `GGTrees_WickedInit` (`GGTrees_part2.cpp:361`) ← `GGTerrainWicked_Init`, called **ONCE** from
+  `GameGuruMain.cpp:171`, in `g_iInitializationSequence` case 2 — app startup, **not per level**;
+- `GGTrees_WickedShutdown` (`:1146`) ← `GGTerrainWicked_Shutdown`, which has **ZERO callers**
+  anywhere in the source.
 
-⚠ Do not re-chase the tree pool for no-tree levels. (It remains the right lever on *tree*
-levels — that is the separate, already-documented Stage P.4 result.)
+So the pool is built once per process and **never rebuilt, not even on level load**.
+`SCENE_OBJECTS` staying at 7322 is the *proof the knob did nothing* — it is not evidence the
+pool is free. (`GGTrees.h:68` says so in its own comment: "applies on next pool setup (level
+reload)" — which, given the above, never happens.)
+
+⚠ **Also wrong: "the pool entities are not part of that population."** They are. Each slot does
+`scene.objects.Create(e)` **and** `scene.transforms.Create(e)` (`GGTrees_part2.cpp:284-307`), so
+**6000 of the 7322 objects and 6000 of the 8437 transforms ARE the pool**, leaving ~1322 real
+level objects. They get no `HierarchyComponent`, so they cannot reach `SU-Hierarchy`, but they
+are walked by every per-object and per-transform system.
+
+**Status: the tree pool's cost on this level is UNMEASURED, not zero.** To test it you need a
+size knob that applies *before* `GGTerrainWicked_Init` (setup.ini / command line), not the
+runtime harness command. See §10.
 
 ---
 
@@ -434,10 +461,95 @@ work, and it should not be attempted without first resolving §5 — because on 
 
 ### Do-not list
 
-- ⚠ **Do not chase the tree pool on no-tree levels** (§2) — measured zero, twice.
+- ⚠ ~~Do not chase the tree pool on no-tree levels (§2) — measured zero, twice.~~
+  **RETRACTED 2026-08-10 — that A/B tested nothing (dead knob). See §2 and §10.**
 - ⚠ **Do not trust `Input`, `SU-*` or any single CPU range as an FPS lever on this level**
   without an A/B; four separate cuts measured zero.
 - ⚠ **Do not compare a `SET_SCENESERIAL 1` total against a normal frame** — only shares.
 - ⚠ The editor is unlocked but **the hub is vsync-locked to 60.0 FPS** — never benchmark there.
 
 ---
+
+## ★★★ 10. WHY `Scene::Update` IS 11× DX11 — the real answer (2026-08-10)
+
+Read-only comparison across both trees (DX12 `WickedEngineDX12` + this game; DX11 `WickedRepo` +
+`D:\max\GameGuruMAX`). 31 agents, 39 findings, 26 survived adversarial verification; the five
+load-bearing claims below were then re-verified by hand.
+
+### 10.1 The measurement is VALID — the artifact theories are all dead
+
+| Suspected artifact | Verdict |
+|---|---|
+| DX11 reports *self* time, DX12 *inclusive* | **NO.** Both are plain begin→end wall clock, no child subtraction, `ranges` is a flat map in both. DX11 `wiProfiler.cpp:142`; DX12 `wiProfiler.cpp:410`. |
+| Nested ranges deflate DX11's 0.21 | **NO.** Only `Frustum Culling` (`wiRenderer.cpp:4032`) can nest, and inclusive means it is *contained in* the 0.21. DX11's `Physics` range is `#ifndef GGREDUCED` (`wiScene.cpp:1755`) = unreachable. |
+| DX11 skips the scene update | **NO.** `setSceneUpdateEnabled` has one caller in the whole DX11 tree (`RenderPath3D_PathTracing.cpp:149`), so the `true` default holds and `scene->Update()` really runs inside the 0.21. |
+| DX12's 2.39 sums several calls per frame | **NO.** The project's own tracer already settled it: `calls/frame min=1 max=1` (`WICKED_ENGINE_CHANGES.md:811`). |
+
+Only real asymmetry: DX11 CPU rows are a **20-frame moving mean** (`wiProfiler.cpp:157-167`),
+DX12's are the **raw current frame**. That adds variance to DX12, not a 10× bias.
+
+### 10.2 It is NOT the "modern Wicked infrastructure"
+
+Surfel GI, DDGI, VXGI, impostors, TLAS, and every modern component system (Script, Spline,
+Collider, Spring, Character, Expression, Humanoid, Video, Sprite, Font) iterate **empty arrays**
+on this level — `grep -rl` finds zero files in the game creating any of them. Combined: **<0.01 ms**.
+DX11's `Scene::Update` (`WickedRepo/WickedEngine/wiScene.cpp:1720-1789`) runs essentially the
+**same system list** as DX12's. The gap is not new systems.
+
+### 10.3 What it actually is — three causes, in order
+
+**(1) BIGGER N — 82% of the "scene" is empty tree-pool slots.**
+6000 of 7322 objects and 6000 of 8437 transforms are parked pool entities created at app
+startup (`GGTrees_part2.cpp:284-307`), on a level with no terrain and no trees. **DX11 creates
+ZERO ECS entities for trees** — `grep -c 'objects.Create|transforms.Create|CreateEntity'` on
+DX11 `GGTerrain/GGTrees.cpp` returns **0**; it draws via `DrawIndexedInstanced` (:3009/:3025)
+from its own instance buffers. So DX11's scene for this level is ~1322 objects, DX12's is 7322.
+⚠ Unverified on the DX11 side: that build ships no counter. See 10.5.
+
+**(2) THE PORT DROPPED A GAMEGURU ECS OPTIMISATION.**
+DX11 resolves entity→component through a flat sparse array — one bounds test, one load
+(`WickedRepo/WickedEngine/wiECS.h:413`, `GetComponent` :375-382, `Contains` :366-373). That is a
+**GameGuru change**, not upstream ("way faster for larger games… no more lookup.find(entity)").
+DX12 is stock upstream: every `Contains`/`GetComponent` goes through `LOOKUP_BUCKET_HASH`
+(`WickedEngineDX12/WickedEngine/wiECS.h:446`) into a `ska::flat_hash_map` find. Every system
+pays it, on every entity, every frame. **`LOOKUP_SPARSE` is already implemented in the DX12 tree
+at `wiECS.h:486-593` and simply commented out at `:445`.**
+
+**(3) GENUINELY RELOCATED — the GPU scene mirror.** *(this is the "combined work" the user asked about)*
+Modern Wicked builds a persistent bindless GPU description of the whole scene inside
+`Scene::Update`:
+- `wiScene.cpp:332-340` — one `jobsystem::Execute` (**single worker**) blanket-initialising every
+  instance slot: `instanceArraySize` × 256 B ≈ **1.87 MB of single-threaded stores into
+  write-combined UPLOAD memory**, gated only on `dt > 0`;
+- `:5318` — the real per-object 256 B `memcpy`, dispatched over **all** `objects.GetCount()`;
+- `:4743` geometry (per subset), `:4880` material (per material, every frame, no dirty gate).
+
+DX11 did this **at draw time, sized by the culled batch list**: `wiRenderer.cpp:3373`
+(`AllocateGPU` in `RenderMeshes`, 64 B `struct Instance`), materials at `:4918` (dirty-gated
+`UpdateBuffer` inside `UpdateRenderData`), bindless mesh descriptors at `:5389` (gated on
+`dirty_bindless`). All of that is billed to DX11's **`Render`** row, not `Update - Wicked`.
+
+### 10.4 But relocation cannot explain much — the ledger does not balance
+
+1. **DX11's ENTIRE CPU frame is 1.69 ms** and DX12's `Scene::Update` alone is 2.39 ms. There is
+   physically nowhere in DX11's frame for 2.18 ms of "same work, done elsewhere" to hide.
+2. **The credit never appears.** If DX12 had really moved work *out* of Render, its `Render` row
+   should be cheaper. It is **more** expensive — 0.87 vs 0.71 — despite writing 4 B per visible
+   instance (`wiRenderer.cpp:3718`) where DX11 wrote 64.
+
+**Corrected conclusion: essentially the whole delta is real, non-relocated CPU time.** Cutting
+`Scene::Update` will NOT just push cost back into `Render`. The §1 headline number survives —
+only its causal story ("modern-Wicked ECS overhead", §7 verdict) was wrong.
+
+### 10.5 Open, and the cheapest way to close it
+
+| Question | Cheapest measurement |
+|---|---|
+| **Is DX11 walking ~1322 objects or ~7322?** The whole bigger-N bucket rests on this and it is *inferred* — the DX11 build ships no counter. | Print `objects.GetCount()` / `transforms.GetCount()` once/second from DX11 `master.cpp:2171`. **If DX11 also reports ~7322 the bigger-N bucket collapses.** |
+| **What does the hash-vs-sparse lookup cost?** | Flip `wiECS.h:446` → `:445`, rebuild engine, re-read `SU-*`. One line, already-written code. |
+| **What does the tree pool cost?** | A pool-size knob applied *before* `GGTerrainWicked_Init` — the runtime one is dead (§2). |
+| **What does the blanket instance init cost?** `SET_SCENESERIAL` is blind to it (only `GG_SCENE_SYS`-wrapped systems are timed). | A `BeginRangeCPU`/`EndRange` pair around `wiScene.cpp:332-340`. |
+
+⚠ **All of this is still gated by §8: the editor frame is GPU-fence-bound.** A CPU win here is
+worth taking for the engine-wide benefit, but on *this* level it may show ~0 FPS. Judge CPU work
+by the `Scene::Update` / `SU-*` millisecond change, **not** by Switch Escape's FPS.
