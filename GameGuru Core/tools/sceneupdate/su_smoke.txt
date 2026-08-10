@@ -1,3 +1,3 @@
-Island Showdown|fps=69.8|polys=4114598|objects=8850|POLYS_MATCH
-Trapped|fps=159.4|polys=11209|objects=7255|n/a
-Switch Escape|fps=149.3|polys=109358|objects=7322|POLYS_MATCH
+Island Showdown|fps=69.2|polys=4114598|objects=8850|POLYS_MATCH
+Trapped|fps=162.6|polys=11209|objects=1255|n/a
+Switch Escape|fps=149.8|polys=109358|objects=1322|POLYS_MATCH

@@ -41,7 +41,29 @@ namespace GGTrees
 // draws fewer/nearer trees but frees a lot of CPU. Change via harness SET_TREES pool <N> (applies on the
 // next level load / pool rebuild). This is a work-reducing quality knob (fewer simultaneous trees).
 static constexpr uint32_t GG_TREE_POOL_MAX = 20000;
-uint32_t g_treePoolSize = 6000; // effective count, clamped to [1, GG_TREE_POOL_MAX] at setup
+uint32_t g_treePoolSize = 6000; // effective count = the CEILING; slots are created on demand
+
+// GGMAX 2.19 (2026-08-10): LAZY POOL GROWTH.
+// g_treePoolSize is now only the ceiling. g_treePoolBuilt is how many slots actually exist as
+// ECS entities; it starts at 0 and grows on demand, capped per frame, and never shrinks while
+// the pool lives.
+//
+// WHY. Every pool slot is an ObjectComponent + TransformComponent that Scene::Update walks
+// EVERY FRAME whether or not it is bound to a visible tree. Setup used to create all 6000 up
+// front, at app startup, before any level was known — so a level with no terrain and no trees
+// still paid for 6000 objects and 6000 transforms. Measured on Switch Escape: 6000 of its 7322
+// objects and 6000 of its 8437 transforms were parked pool slots, and forcing the pool to 1
+// (setup.ini treepool=1) took a further ~0.13 ms off Scene::Update with SU-Mesh 0.41->0.17,
+// SU-Object 0.57->0.38 and SU-Hierarchy 0.65->0.47. DX11 pays none of this: it creates ZERO ECS
+// entities for trees and draws them with DrawIndexedInstanced from its own instance buffers.
+// See SWITCHESCAPE_PERF.md sections 10.3(1) and 11.3.
+//
+// Growth is driven by poolFill — the nearest-N count the selection pass actually wants this
+// frame — so a treeless level stays at 0 slots forever and a tree level converges to the same
+// pool it always had. The per-frame cap keeps the one-off creation of thousands of entities
+// from landing as a single hitch; it spreads over a few frames during level load instead.
+static uint32_t g_treePoolBuilt = 0;
+static constexpr uint32_t GG_TREE_POOL_GROW_PER_FRAME = 2048;
 // Hardcoded here to keep this file free of the HLSL-flavoured numTreeTypes
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
@@ -279,54 +301,26 @@ static void GGTrees_WickedSetup()
 	// One-shot flag, persists across every SetRenderable toggle from the
 	// update loop.
 	// Clamp the runtime pool size to the fixed array capacity (SET_TREES pool <N> can set it).
+	// GGMAX 2.19: NO slots are created here any more — see GrowTreePool. Setup only decides the
+	// ceiling. A level with no trees never calls GrowTreePool and so costs zero ECS entities.
 	if ( g_treePoolSize < 1u ) g_treePoolSize = 1u;
 	if ( g_treePoolSize > GG_TREE_POOL_MAX ) g_treePoolSize = GG_TREE_POOL_MAX;
-	for ( uint32_t i = 0; i < g_treePoolSize; i++ )
-	{
-		wi::ecs::Entity e = wi::ecs::CreateEntity();
-		wi::scene::ObjectComponent& obj = scene.objects.Create( e );
-		obj.SetRenderable( false );
-		obj.SetNotVisibleInReflections( true );
-		// Perf (Wicked delta #6): tree pool objects opt out of GPU occlusion
-		// queries. 20K query slots + proxy draws cost ~2.5ms CPU + ~1.3ms GPU
-		// per frame on TESTPRO1 and foliage occludes almost nothing. Regular
-		// entities keep occlusion per the level's visuals setting.
-		obj.SetOcclusionQueryDisabled( true );
-		// Trees skip the FARTHEST cascade (30000-500000): its frustum contains
-		// every pool tree, and at ~150 world units per shadow texel a whole
-		// tree is 1-2 texels — 20K mesh draws for nothing. DX11 used billboard
-		// quads there. Cascades 0-3 (out to 30000, the whole visible island)
-		// still receive tree shadows; terrain casts in all five.
-		// Real tree meshes shadow only cascades 0-2 (out to 7500 world units).
-		// Rendering them into cascade 3 (7500-30000) cost ~11ms CPU + 7ms GPU;
-		// the merged billboard shadow proxies cover the far cascades instead
-		// (DX11's own mesh-near/billboard-far recipe).
-		obj.cascadeMask = 2;
-		scene.transforms.Create( e );
-		g_treePoolEntities[ i ] = e;
-	}
+	g_treePoolBuilt = 0;
 
 	if ( typesBuilt == 0 )
 	{
 		// Should be impossible (g_GGTrees is compiled-in static data), but never
-		// latch setup "done" with zero meshes — destroy the pool and let the
-		// next frame retry rather than rendering nothing forever.
-		for ( uint32_t i = 0; i < g_treePoolSize; i++ )
-		{
-			if ( g_treePoolEntities[ i ] != wi::ecs::INVALID_ENTITY )
-			{
-				scene.Entity_Remove( g_treePoolEntities[ i ] );
-				g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
-			}
-		}
+		// latch setup "done" with zero meshes — let the next frame retry rather
+		// than rendering nothing forever. (Nothing to tear down: the pool is empty
+		// until GrowTreePool runs.)
 		return;
 	}
 
 	g_wickedTreesSetup = true;
 	wi::backlog::post( ( "GGTrees: real tree meshes ready ("
 		+ std::to_string( typesBuilt )    + " trunks, "
-		+ std::to_string( branchesBuilt ) + " with branches, "
-		+ std::to_string( g_treePoolSize ) + " pool slots)" ).c_str() );
+		+ std::to_string( branchesBuilt ) + " with branches, pool ceiling "
+		+ std::to_string( g_treePoolSize ) + " slots, grown on demand)" ).c_str() );
 }
 
 // Debug/benchmark hook: while > 0, the nearest-N selection re-runs every frame
@@ -363,6 +357,7 @@ void GGTrees_WickedInit()
 	// Lazy setup on first update — same phase ordering as SetupWickedGrass /
 	// SetupWickedTerrainMaterials. State reset here only.
 	g_wickedTreesSetup = false;
+	g_treePoolBuilt = 0;   // GGMAX 2.19: no slots exist until GrowTreePool is asked for some
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
 		g_treeMeshEntity            [ t ] = wi::ecs::INVALID_ENTITY;
@@ -402,6 +397,48 @@ static std::vector<uint8_t>  g_treeShadow;       // per tree: 1 = within lod_dis
 struct TreeSlotCache { float x, y, z, scale; uint8_t type, band, shadow; };
 static std::vector<TreeSlotCache> g_slotCache;   // per slot: source-data snapshot at bind time
 static uint32_t g_treeEpoch = 0;
+
+// GGMAX 2.19: grow the pool towards `want` slots, capped per frame.
+// Creates exactly what the old eager setup loop created, so a grown slot is indistinguishable
+// from a pre-created one; only the moment of creation changed. Returns nothing — callers read
+// g_treePoolBuilt. Safe to call every frame; it is a no-op once built >= want.
+//
+// The per-slot flags below are the originals and their reasoning is unchanged:
+//  - SetNotVisibleInReflections: trees must not draw into planar/water reflection passes.
+//  - SetOcclusionQueryDisabled (Wicked delta #6): 20K query slots + proxy draws cost ~2.5 ms CPU
+//    + ~1.3 ms GPU per frame on TESTPRO1 and foliage occludes almost nothing.
+//  - cascadeMask = 2: real tree meshes shadow only cascades 0-2 (out to 7500 units). Casting
+//    them into cascade 3 cost ~11 ms CPU + 7 ms GPU; the merged billboard shadow proxies cover
+//    the far cascades instead (DX11's own mesh-near/billboard-far recipe).
+static void GrowTreePool( wi::scene::Scene& scene, uint32_t want )
+{
+	if ( want > g_treePoolSize ) want = g_treePoolSize;
+	if ( want <= g_treePoolBuilt ) return;
+
+	uint32_t target = want;
+	if ( target - g_treePoolBuilt > GG_TREE_POOL_GROW_PER_FRAME )
+		target = g_treePoolBuilt + GG_TREE_POOL_GROW_PER_FRAME;
+
+	for ( uint32_t i = g_treePoolBuilt; i < target; i++ )
+	{
+		wi::ecs::Entity e = wi::ecs::CreateEntity();
+		wi::scene::ObjectComponent& obj = scene.objects.Create( e );
+		obj.SetRenderable( false );
+		obj.SetNotVisibleInReflections( true );
+		obj.SetOcclusionQueryDisabled( true );
+		obj.cascadeMask = 2;
+		scene.transforms.Create( e );
+		g_treePoolEntities[ i ] = e;
+	}
+
+	// Keep the per-slot side arrays exactly in step with the entity count. They are compared
+	// against g_treePoolBuilt every frame to detect a stale pool, so letting them drift would
+	// force a full rebind on every single frame.
+	g_slotToTree.resize( target, UINT32_MAX );
+	g_slotCache .resize( target );
+
+	g_treePoolBuilt = target;
+}
 
 // DX11 tree_shadow_range semantics: number of shadow cascades that receive tree
 // shadows (5 = all, 0 = none). Wicked cascadeMask counts skipped-FARTHEST
@@ -737,7 +774,7 @@ void GGTrees_WickedUpdate()
 	{
 		if ( !s_poolParked )
 		{
-			for ( uint32_t i = 0; i < g_treePoolSize; i++ )
+			for ( uint32_t i = 0; i < g_treePoolBuilt; i++ )
 			{
 				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
 				if ( obj ) obj->SetRenderable( false );
@@ -806,7 +843,7 @@ void GGTrees_WickedUpdate()
 				if ( obj ) { obj->cascadeMask = proxyMask; anyProxy = true; }
 			}
 			const uint32_t meshMask = TreeMeshCascadeMask();
-			for ( uint32_t i = 0; i < g_treePoolSize; i++ )
+			for ( uint32_t i = 0; i < g_treePoolBuilt; i++ )
 			{
 				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
 				if ( obj ) obj->cascadeMask = meshMask;
@@ -845,16 +882,16 @@ void GGTrees_WickedUpdate()
 	// Slot-vector size mismatch = first run or post-shutdown re-setup (fresh
 	// pool entities, stale bindings).
 	if ( g_treeToSlot.size() != (size_t)numTotalTrees ) forceRebind = true;
-	if ( g_slotToTree.size() != (size_t)g_treePoolSize ) forceRebind = true;
+	if ( g_slotToTree.size() != (size_t)g_treePoolBuilt ) forceRebind = true;
 	if ( forceRebind )
 	{
 		g_treeToSlot      .assign( numTotalTrees, -1 );
 		g_treeDesiredEpoch.assign( numTotalTrees, 0 );
 		g_treeBand        .assign( numTotalTrees, 0 );
 		g_treeShadow      .assign( numTotalTrees, 0 );
-		g_slotToTree      .assign( g_treePoolSize, UINT32_MAX );
-		g_slotCache       .resize( g_treePoolSize );
-		for ( uint32_t i = 0; i < g_treePoolSize; i++ )
+		g_slotToTree      .assign( g_treePoolBuilt, UINT32_MAX );
+		g_slotCache       .resize( g_treePoolBuilt );
+		for ( uint32_t i = 0; i < g_treePoolBuilt; i++ )
 		{
 			wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
 			if ( obj ) obj->SetRenderable( false );
@@ -1000,6 +1037,14 @@ void GGTrees_WickedUpdate()
 		poolFill = g_treePoolSize;
 	}
 
+	// GGMAX 2.19: poolFill is how many slots this frame actually WANTS, so it is the demand
+	// signal for lazy growth. A treeless level never gets here with poolFill > 0 and so never
+	// creates a single pool entity; a tree level converges to the same pool it always had,
+	// spread over a few frames by the per-frame cap. Growth is one-way for the pool's lifetime —
+	// slots are only released by GGTrees_WickedShutdown — so a camera that walks away from the
+	// trees does not thrash entity create/destroy.
+	GrowTreePool( scene, (uint32_t)poolFill );
+
 	// Mark this frame's desired set + LOD band + mesh-shadow flag per tree.
 	constexpr float lod1Dist2 = GG_TREE_LOD1_DIST * GG_TREE_LOD1_DIST;
 	constexpr float lod2Dist2 = GG_TREE_LOD2_DIST * GG_TREE_LOD2_DIST;
@@ -1022,10 +1067,10 @@ void GGTrees_WickedUpdate()
 	// keep (and verify) the rest. Kept slots cost a few array reads + float
 	// compares — no component writes unless the tree's data or band changed.
 	static std::vector<uint32_t> freeSlots;
-	if ( freeSlots.capacity() < g_treePoolSize ) freeSlots.reserve( g_treePoolSize );
+	if ( freeSlots.capacity() < g_treePoolBuilt ) freeSlots.reserve( g_treePoolBuilt );
 	freeSlots.clear();
 
-	for ( uint32_t s = 0; s < g_treePoolSize; s++ )
+	for ( uint32_t s = 0; s < g_treePoolBuilt; s++ )
 	{
 		const uint32_t t = g_slotToTree[ s ];
 		if ( t == UINT32_MAX ) { freeSlots.push_back( s ); continue; }
@@ -1098,7 +1143,7 @@ void GGTrees_DebugDumpPool( const char* path )
 	if ( !f ) return;
 
 	uint32_t slotBound = 0, slotRenderable = 0, slotMissingObj = 0;
-	for ( uint32_t s = 0; s < g_treePoolSize; s++ )
+	for ( uint32_t s = 0; s < g_treePoolBuilt; s++ )
 	{
 		wi::ecs::Entity e = g_treePoolEntities[ s ];
 		if ( e == wi::ecs::INVALID_ENTITY ) continue;
@@ -1107,14 +1152,17 @@ void GGTrees_DebugDumpPool( const char* path )
 		if ( s < g_slotToTree.size() && g_slotToTree[ s ] != UINT32_MAX ) slotBound++;
 		if ( obj->IsRenderable() ) slotRenderable++;
 	}
-	fprintf( f, "POOL size=%u bound=%u renderable=%u missingObj=%u numTotalTrees=%u types=%u proxyChunks=%zu\n",
-		g_treePoolSize, slotBound, slotRenderable, slotMissingObj, (uint32_t)numTotalTrees,
+	// GGMAX 2.19: report built AND ceiling. "size" alone used to be the whole story; with lazy
+	// growth `built` is the number that costs per-frame ECS, and built=0 on a treeless level is
+	// the expected, correct reading — not a broken pool.
+	fprintf( f, "POOL built=%u ceiling=%u bound=%u renderable=%u missingObj=%u numTotalTrees=%u types=%u proxyChunks=%zu\n",
+		g_treePoolBuilt, g_treePoolSize, slotBound, slotRenderable, slotMissingObj, (uint32_t)numTotalTrees,
 		(uint32_t)GG_TREE_TYPES, g_chunkProxyObject.size() );
 
 	// Build a fast lookup of every entity the tree system currently OWNS.
 	static std::vector<wi::ecs::Entity> owned;
 	owned.clear();
-	for ( uint32_t s = 0; s < g_treePoolSize; s++ )
+	for ( uint32_t s = 0; s < g_treePoolBuilt; s++ )
 		if ( g_treePoolEntities[ s ] != wi::ecs::INVALID_ENTITY ) owned.push_back( g_treePoolEntities[ s ] );
 	for ( wi::ecs::Entity e : g_chunkProxyObject ) if ( e != wi::ecs::INVALID_ENTITY ) owned.push_back( e );
 	std::sort( owned.begin(), owned.end() );
@@ -1148,12 +1196,15 @@ void GGTrees_WickedShutdown()
 	if ( !g_wickedTreesSetup ) return;
 	auto& scene = wi::scene::GetScene();
 
-	for ( uint32_t i = 0; i < g_treePoolSize; i++ )
+	for ( uint32_t i = 0; i < g_treePoolBuilt; i++ )
 	{
 		wi::ecs::Entity e = g_treePoolEntities[ i ];
 		if ( e != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( e );
 		g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
 	}
+	// GGMAX 2.19: the pool is gone, so the built count must go with it or the next setup would
+	// iterate slots whose entities were just removed.
+	g_treePoolBuilt = 0;
 	// Bindings refer to pool entities that no longer exist — drop them so the
 	// next setup's update pass starts with a force-rebind.
 	g_slotToTree.clear();

@@ -675,3 +675,49 @@ editor FPS was read three separate times today on the *same build and same scene
 149.3, 159.6** — an 11% spread launch-to-launch, on top of a rig that read 201 for the same
 scene on 08-09 at a matched CPU frame. Nothing about the FPS column in this sweep is comparable
 to earlier sweeps; it is recorded for the ranking and the archive, nothing more.
+
+## ★★★ 12. GGMAX 2.19 — LAZY TREE-POOL GROWTH (the §11.3 follow-up, now shipped)
+
+§11.3 measured the parked tree pool with a blunt instrument (`setup.ini treepool=1`, which
+cripples tree levels) and left the real fix scoped but unbuilt. This is it.
+
+### What changed
+`GGTrees_part2.cpp`: `g_treePoolSize` is now only a **ceiling**. A new `g_treePoolBuilt` counts
+slots that actually exist as ECS entities; it starts at 0 and `GrowTreePool()` creates slots on
+demand, driven by `poolFill` — the nearest-N count the selection pass already computes each
+frame. Every loop that walks existing slots (park, cascade refresh, force-rebind, Pass A,
+shutdown, DebugDumpPool) now bounds on `built`; the loops that express *desired* N
+(`nth_element` cap, ring-coverage test) still use the ceiling, because that is what they mean.
+
+Two safeguards:
+- **Per-frame growth cap** (`GG_TREE_POOL_GROW_PER_FRAME = 2048`) so creating thousands of
+  entities lands over a few frames during level load rather than as one hitch.
+- **Growth is one-way for the pool's lifetime** (only `GGTrees_WickedShutdown` releases). A
+  camera walking away from the trees does not thrash entity create/destroy.
+
+### Result — the pool now costs nothing on levels that have no trees
+
+| build | Scene::Update | CPU Frame | SCENE_OBJECTS | POLYS |
+|---|---|---|---|---|
+| 2.17 baseline | 2.412 ms | 4.49 | 7322 | 109358 |
+| 2.18 sparse ECS | 1.750 | 3.93 | 7322 | 109358 |
+| **2.19 + lazy pool** | **1.457** | **3.55** | **1322** | 109358 |
+
+**Cumulative: `Scene::Update` 2.412 → 1.457 ms = −0.955 ms (−40%); CPU frame 4.49 → 3.55.**
+Per-system: SU-Mesh 0.41 → 0.19, SU-Object 0.57 → 0.39, SU-Material 0.19 → 0.12.
+
+★ **`SCENE_OBJECTS` fell 7322 → 1322 with no knob set.** That is the whole point: the level's
+real object count was always ~1322, and the other 6000 were pool slots created at app startup
+before any level was known. The `treepool=` key from §11.3 is now a tuning ceiling rather than
+the only way to avoid the cost.
+
+⚠ **This does NOT change what renders.** POLYS is identical on Switch Escape, and on the
+tree-heavy levels the pool grows exactly as before — see the correctness gate below, where
+POLYS identity on Island Showdown (4,114,598, a scene whose polygon count is dominated by
+trees) is simultaneously the proof that growth works and that nothing regressed.
+
+### Side effect worth knowing
+`SET_TREES pool <N>` is no longer completely dead at runtime. It sets the ceiling, so *raising*
+it now permits further growth on the next frame that wants more slots. **Lowering it still does
+not shrink an existing pool** — slots are only released at shutdown. For a true reduction, use
+`setup.ini treepool=<N>`, which is read before the pool can grow at all.
