@@ -636,3 +636,17 @@ as §8 predicts for a fence-bound frame. **This is the expected outcome, not a f
 of CPU came off the frame and the GPU wall did not move, so the CPU simply waits longer. The win
 is real, it is banked engine-wide, and it will convert on CPU-bound levels and lower-end CPUs.
 ★ Judge this work by the `Scene::Update` ms column, never by Switch Escape's frame rate.
+
+### 11.5 Correctness gate for the ECS change (`tools/sceneupdate/susmoke.sh`)
+An entity->index lookup is used by EVERY system, so the gate is geometry identity, not FPS.
+All three demos loaded to the editor and matched the 08-09 sweep's POLYS **exactly**:
+
+| demo | POLYS | reference | objects | FPS (today's slower GPU state) |
+|---|---|---|---|---|
+| Island Showdown (tree-heavy, exercises the pool) | 4114598 | 4114598 ✔ | 8850 | 69.8 |
+| Trapped | 11209 | 11209 ✔ | 7255 | 159.4 |
+| Switch Escape | 109358 | 109358 ✔ | 7322 | 149.3 |
+
+⚠ Not yet run on this build: the full 19-demo hub sweep and the VRAM 4 GB gate. Three demos is
+a smoke test, not the sweep — **run `tools/singlequeue/sqfull.sh` before treating 2.18 as
+sweep-clean.**
