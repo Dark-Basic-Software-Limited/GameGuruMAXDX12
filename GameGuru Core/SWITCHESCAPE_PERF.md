@@ -753,3 +753,68 @@ produces exactly that pattern — and this rig demonstrably drifts: Switch Escap
 149.3 and 159.6 across three launches of the SAME build earlier in the day. The evidence for
 this work is the direct CPU measurement (`Scene::Update` 2.412 → 1.457 ms with the profiler on),
 not a difference of two noisy FPS columns.
+
+## ★★★ 13. SU-Hierarchy CONFIRMED as load imbalance (engine 2.20 instrument, 2026-08-10)
+
+### 13.1 The DX11 object count — no code change is needed, and none was made
+⚠ `D:\max\GameGuruMAX` and `D:\max\WickedRepo` are **read-only reference sources**, so the
+"print `objects.GetCount()` from DX11 `master.cpp:2171`" plan in §10.5 was **not** carried out —
+it would have meant editing and building that tree.
+
+**It is unnecessary.** The DX11 editor **already prints these numbers**, in the very performance
+panel this whole study started from — `GameGuru/Source/M-GridEdit.cpp:11840-11841` (and the
+identical block at `M-TerrainNew.cpp:10679-10680`), immediately above the
+`wiProfiler::GetProfilerData()` rows:
+
+```cpp
+ImGui::Text("Scene Transforms: %d", (int)pScene->transforms.GetCount());
+ImGui::Text("Scene Hierarchy: %d",  (int)pScene->hierarchy.GetCount());
+```
+
+So the DX11 half of the comparison is a **read**, not a build. DX12 now prints the same two
+quantities under matching labels (`SCENE_TRANSFORMS`, new `SCENE_HIERARCHY`) so the panels line
+up. ⚠ I cannot drive the DX11 editor — it ships no automation harness — so the DX11 values
+still need one human glance at that panel on Switch Escape.
+
+**DX12 on Switch Escape, post-2.19:**
+
+| | DX12 (2.19) | DX11 (read off its perf panel) |
+|---|---|---|
+| Scene objects | **1322** | — |
+| Scene Transforms | **2437** | **?** ← the number to read |
+| Scene Hierarchy | **1995** | **?** |
+
+★ **A cross-check that strongly supports the §10.3(1) bigger-N story:** the pre-lazy-pool build
+reported **8437** transforms and the post-lazy-pool build reports **2437**. 8437 − 2437 = **6000
+exactly** — the tree pool, to the entity. The "6000 of the transforms are parked pool slots"
+claim is now arithmetic rather than inference. What remains unconfirmed is only whether DX11's
+loader produces the same ~2437 for the same level.
+
+### 13.2 ★ SU-Hierarchy is a SCHEDULING problem, not a per-entity cost
+New engine instrument (2.20) harvests the DFS's existing `processed` cycle-guard counter — one
+relaxed CAS and one fetch_add **per root**, nothing in the hot loop — and reports:
+
+```
+HIER: roots=435  maxSubtree=1283  visited=1995  imbalance=0.643
+```
+
+**One subtree walks 1283 of the 1995 nodes — 64.3% of all the work in a single job**, while the
+other 434 jobs split the remaining 36% and then idle at the stage's `Wait`. The fast path
+Dispatches one job per subtree ROOT (`wiScene.cpp`, groupsize 8), so the system's wall clock is
+the biggest single subtree, not the total.
+
+That matches the measured shape exactly: `SU-Hierarchy` **0.47 ms** against `SU-Transform`
+**0.02 ms** over a *larger* N (2437) with zero lookups. The per-node work is not the problem —
+the critical path is.
+
+**Ceiling if it were balanced:** the critical path would fall from 1283 nodes to ~1995/workers.
+On this pool that is roughly 250 nodes, i.e. **~0.47 → ~0.1 ms, a further ~0.35 ms** off
+`Scene::Update`. Treat that as an upper bound, not a promise — DFS carries parent state down the
+chain, so splitting a subtree means either seeding sub-roots with their ancestors' accumulated
+world matrix (cheap: the parent's final world is already computed) or a two-phase level-order
+pass. Both are real engine work and neither is written.
+
+⚠ **NOT ATTEMPTED IN THIS SESSION, deliberately.** The diagnosis is solid and cheap; the fix is
+a change to the transform-propagation order, which is exactly the kind of thing that produces
+subtle one-frame parenting glitches. It deserves its own build + POLYS gate + sweep, not the
+last fifteen minutes of a session.

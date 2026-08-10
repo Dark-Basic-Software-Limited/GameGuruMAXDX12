@@ -1089,6 +1089,11 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 	result[resultSize - 1] = 0;
 }
 
+// GGMAX 2.20: SU-Hierarchy load-balance instrument (see wiScene.cpp).
+namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_max_subtree; }
+namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_visited; }
+namespace wi::scene         { extern uint32_t gg_hier_root_count; }
+
 static void Cmd_GetPerfData(char* result, int resultSize)
 {
 	int written = 0;
@@ -1155,6 +1160,7 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"SCENE_RIGIDBODIES: %d\n"
 			"SCENE_SOFTBODIES: %d\n"
 			"SCENE_SCRIPTS: %d\n"
+			"SCENE_HIERARCHY: %d\n"
 			"SCENE_WEATHERS: %d\n",
 			(int)pScene->objects.GetCount(),
 			(int)pScene->meshes.GetCount(),
@@ -1173,7 +1179,24 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			(int)pScene->rigidbodies.GetCount(),
 			(int)pScene->softbodies.GetCount(),
 			(int)pScene->scripts.GetCount(),
+			(int)pScene->hierarchy.GetCount(),
 			(int)pScene->weathers.GetCount());
+	}
+
+	// GGMAX 2.20: SU-Hierarchy load balance. The fast path Dispatches one job per subtree ROOT,
+	// so the system's wall clock is the LARGEST SINGLE SUBTREE, not the total. imbalance = the
+	// biggest job's share of all nodes walked: near 1.0 means one subtree IS the system and the
+	// other workers idle; near roots^-1 means the work is evenly spread and the shape is right.
+	// This is what decides whether SU-Hierarchy's remaining ~0.6 ms is a scheduling problem or
+	// genuine aggregate per-entity cost. See SWITCHESCAPE_PERF.md §13.
+	if (written < resultSize - 256)
+	{
+		const uint32_t hroots = wi::scene::gg_hier_root_count;
+		const uint32_t hmax   = wi::scene::gg_hier_max_subtree.load(std::memory_order_relaxed);
+		const uint32_t hvis   = wi::scene::gg_hier_visited.load(std::memory_order_relaxed);
+		written += _snprintf(result + written, resultSize - written,
+			"HIER: roots=%u maxSubtree=%u visited=%u imbalance=%.3f\n",
+			hroots, hmax, hvis, hvis ? (double)hmax / (double)hvis : 0.0);
 	}
 
 	// Visibility counts from the main render pass
