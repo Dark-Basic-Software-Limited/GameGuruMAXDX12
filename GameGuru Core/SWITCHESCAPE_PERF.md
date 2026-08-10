@@ -721,3 +721,35 @@ trees) is simultaneously the proof that growth works and that nothing regressed.
 it now permits further growth on the next frame that wants more slots. **Lowering it still does
 not shrink an existing pool** — slots are only released at shutdown. For a true reduction, use
 `setup.ini treepool=<N>`, which is read before the pool can grow at all.
+
+### 12.1 2.19 hub sweep + VRAM gate: **CLEAN** (all 19)
+
+`demo_fps_sweep.sh 0810b`, scored by `tools/sweepgate.sh`. Raw + scored:
+`tools/sweep_0810b_2.19.txt`.
+
+| criterion | result |
+|---|---|
+| **C1 LOAD** | **PASS** — 19/19 reached the editor |
+| **C2 GEOMETRY** | **PASS** — POLYS identical to the 0809 reference on all 19 |
+| **C3 VRAM** | **PASS** — worst of editor+game **3944.8 MB** (Aztec Game Kit in-game), **151.2 MB headroom** (was 133.5 on 2.18) |
+| **C4 GAME** | **PASS** — all 19 reached gameplay |
+
+C2 matters twice over here: it proves the ECS change still resolves every entity correctly, AND
+that lazy growth reaches full pool size wherever trees exist — a pool that failed to grow would
+have collapsed the tree-dominated poly counts (Island Showdown 4,114,598, Foggy Forest
+10,195,894, Canyon Offensive 8,816,163 all unchanged).
+
+**VRAM: essentially unchanged, as expected.** Mean editor delta −19.6 MB, mean in-game +2.4 MB,
+with individual demos swinging ±84 MB in both directions — that is driver-usage noise, not a
+saving. The only *structural* VRAM effect of dropping 6000 objects is the GPU instance array
+(6000 × 256 B ≈ 1.5 MB), and nothing in this table is precise enough to see it. **Do not report
+this as a VRAM win.** Worst case did improve 3962.5 → 3944.8 MB, which is worth having but is
+inside the same noise band.
+
+⚠ **Editor FPS was higher on 16 of 19 demos, and I am NOT claiming that as a result.** A
+consistent sign across demos looks compelling, but these are two sequential whole-sweep runs, so
+any systematic drift in the machine's state between them (thermal, clocks, background load)
+produces exactly that pattern — and this rig demonstrably drifts: Switch Escape read 142.5,
+149.3 and 159.6 across three launches of the SAME build earlier in the day. The evidence for
+this work is the direct CPU measurement (`Scene::Update` 2.412 → 1.457 ms with the profiler on),
+not a difference of two noisy FPS columns.

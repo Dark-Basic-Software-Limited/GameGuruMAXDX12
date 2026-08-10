@@ -94,7 +94,7 @@ print("C3 VRAM      %s  worst of editor+game = %.1f MB (%s), limit %.0f, headroo
 print("C4 GAME      %s  every demo produced in-game FPS past the loading overlays"
       % ("PASS " if c4 else "FAIL "))
 print()
-print("VERDICT: %s" % ("CLEAN - 2.18 passes the release gate" if (c1 and c2 and c3 and c4)
+print("VERDICT: %s" % ("CLEAN - passes the release gate" if (c1 and c2 and c3 and c4)
                        else "NOT CLEAN - see failing criteria above"))
 print()
 print("(FPS columns are for the record only. The rig's GPU state moved between 08-09 and 08-10 -")
