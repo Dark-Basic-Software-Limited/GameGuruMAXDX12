@@ -874,7 +874,18 @@ void GetSetupIniEarly( void )
 				// for a project. Needs the early pass: the flag is read when command lists are
 				// begun, which starts on the very first frame.
 				const bool bSingleQ = (_strnicmp(p, "singlequeue", 11) == 0);
+				// GGMAX 2.18: `treepool=<N>` sets the tree-pool slot count. MUST be read here and
+				// nowhere later: the pool is built once per process by GGTrees_WickedSetup, latched
+				// by g_wickedTreesSetup, whose only reset paths are GGTrees_WickedInit (reached from
+				// GGTerrainWicked_Init, called ONCE from GameGuruMain.cpp init-sequence case 2) and
+				// GGTrees_WickedShutdown (whose caller GGTerrainWicked_Shutdown has ZERO callers).
+				// ⚠ That is exactly why the runtime harness SET_TREES pool knob is a NO-OP after
+				// startup, and why the 2026-08-09 "tree pool costs nothing" A/B measured nothing —
+				// both of its arms ran the same 6000 slots. See SWITCHESCAPE_PERF.md §2 and §10.
+				// GetSetupIniEarly() is called from main.cpp:241, well before that init sequence.
+				const bool bTreePool = (_strnicmp(p, "treepool", 8) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
+				else if (bTreePool)       iKeyLen = 8;
 				else if (bMABlock)        iKeyLen = 9;
 				else if (bGrassMg)        iKeyLen = 10;
 				else if (bSingleQ)        iKeyLen = 11;
@@ -932,6 +943,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetSingleQueue(int);
 					GGSetSingleQueue(iValue);
+				}
+				if (bTreePool)
+				{
+					extern void GGSetTreePool(int);
+					GGSetTreePool(iValue);
 				}
 			}
 			fclose(lvf);

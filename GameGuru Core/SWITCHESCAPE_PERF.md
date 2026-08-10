@@ -553,3 +553,86 @@ only its causal story ("modern-Wicked ECS overhead", §7 verdict) was wrong.
 ⚠ **All of this is still gated by §8: the editor frame is GPU-fence-bound.** A CPU win here is
 worth taking for the engine-wide benefit, but on *this* level it may show ~0 FPS. Judge CPU work
 by the `Scene::Update` / `SU-*` millisecond change, **not** by Switch Escape's FPS.
+
+## ★★★ 11. ACTING ON §10 — engine 2.18: ECS sparse lookup is worth −27% of Scene::Update
+
+Session 2026-08-10. Revert bookmark: tag **`baseline-sceneupdate-20260810`** in BOTH repos
+(game `04b6a3da`, engine `07b616db`).
+
+### Method (why not FPS)
+The editor frame is GPU-fence-bound (§8), so a genuine CPU saving can read 0 FPS. The primary
+metric here is the **`Scene-S1..S5` CPU range sum in ms** with the profiler enabled in every
+arm; FPS and POLYS are recorded but secondary. Scripts: `tools/sceneupdate/sumeasure.sh`
+(single build, 6 samples + `SET_SCENESERIAL` shares) and `suarms.sh` (3-arm within-launch A/B
+of a live knob, which removes cross-launch drift from the knob comparison).
+⚠ **Today's machine was GPU-slower than the 08-09 sweep** — Switch Escape read 142 FPS where
+the sweep read 201. CPU Frame matched (4.49 vs 4.58) and the baseline `Scene::Update` reproduced
+the documented 2.39 almost exactly (2.412), so the CPU side is comparable and the FPS column is
+NOT comparable across days. All conclusions below rest on same-day arms.
+
+### Results
+
+| build / knob | Scene::Update | vs base | CPU Frame | objects | POLYS |
+|---|---|---|---|---|---|
+| baseline (2.17, `LOOKUP_BUCKET_HASH`) | **2.412** | — | 4.49 | 7322 | 109358 |
+| **2.18 `LOOKUP_SPARSE`** | **1.750** | **−0.662 ms (−27.4%)** | 3.93 | 7322 | 109358 |
+| 2.18 + `SET_INSTINIT 1` (parallel blank pass) | 1.765 | +0.015 (+0.9%) | 3.90 | 7322 | 109358 |
+| 2.18 + `setup.ini treepool=1` | ~1.62 median | −0.13 further | 3.51 | **1323** | 109358 |
+
+Per-system shares (`SET_SCENESERIAL 1`; serialised, shares only):
+
+| | base | sparse | sparse + treepool=1 |
+|---|---|---|---|
+| SU-Hierarchy | 0.65 | — | 0.47 |
+| SU-Object | 0.57 | — | 0.38 |
+| SU-Mesh | 0.41 | — | 0.17 |
+| SU-Material | 0.19 | — | 0.12 |
+| SU-Transform | 0.04 | — | 0.03 |
+
+### 11.1 ★ SHIPPED: `LOOKUP_SPARSE` (engine 2.18, `wiECS.h:445`)
+A DX11-parity restoration, not a new idea — see §10.3(2). **−0.662 ms of a 2.412 ms
+`Scene::Update`, and −0.56 ms of the whole CPU frame**, for a one-line change to already-written
+upstream code. Safety was audited before enabling (value-initialising block allocator; erase()
+only reachable for present entities) and then verified by geometry identity, not by eye.
+
+⚠ **It has a build cost.** The extra per-ComponentManager `BlockAllocator` instantiations pushed
+`DarkLUA.cpp` — a 9-part unity TU that also includes the Wicked headers — past the COFF section
+limit (`C1128`), and enlarged Camera's browse-info database past BSCMAKE's `BK1520` limit.
+Fixed with `/bigobj` on DarkLUA (three other projects in the solution already use it) and by
+turning **Release-only** browse info off in Camera. Both are build-flag changes with no codegen
+or semantic effect. **If a future TU hits C1128, add `/bigobj` — do not revert the ECS change.**
+
+### 11.2 REFUTED BY MEASUREMENT: the parallel instance-array blank pass
+§10 flagged `wiScene.cpp:332-340` (1.87 MB of single-threaded write-combined stores per frame)
+as the biggest unnamed occupant of Scene-S1, and it looked compelling: S1 was 1.02 ms with only
+0.07 ms of named children. **Parallelising it is a wash: +0.015 ms (+0.9%), inside noise.**
+The reason was written into the code comment before the test and held: it is a
+`jobsystem::Execute` running *alongside* the parallel Animation/Physics/Transform dispatches, so
+it only shows in wall clock if it is the critical path — and it is not. Kept as an opt-in knob
+(`SET_INSTINIT`, **default 0**) rather than deleted, because it will matter on a scene whose S1
+dispatches are cheaper relative to instanceArraySize. ★ Do not re-raise it as a Switch Escape
+lever without re-measuring.
+
+### 11.3 The tree pool: knob FIXED, cost now MEASURED, default unchanged
+`setup.ini treepool=<N>` (new, GGMAX 2.18) is read in `GetSetupIniEarly()` and therefore lands
+*before* the one-shot `GGTerrainWicked_Init`, which is exactly what the dead runtime knob could
+not do (§2). **Proof it reaches: `SCENE_OBJECTS` 7322 → 1323**, i.e. 5999 of the objects on this
+level really were parked pool slots — settling §10's open question in the affirmative.
+
+Cost on a no-tree level: **~0.13 ms further off `Scene::Update`** on top of the sparse win, and
+a clear drop in every per-object share (`SU-Mesh` 0.41→0.17, `SU-Object` 0.57→0.38,
+`SU-Hierarchy` 0.65→0.47 — the last one despite pool slots holding no `HierarchyComponent`,
+which is consistent with better lookup-table locality once 6000 entities leave the tables).
+
+⚠ **The default is deliberately NOT changed.** `treepool=1` would cripple levels that actually
+have trees; the pool is built once at app startup, before any level is known. The correct fix is
+**lazy pool growth** — create slots on demand as `GGTrees_Update` binds them — which needs the
+~10 `for i < g_treePoolSize` loops in `GGTrees_part2.cpp` re-bounded to an allocated count. That
+is the next real win here and it is now backed by a number instead of a guess.
+
+### 11.4 What did NOT move: FPS
+Switch Escape read 142.5 (base) / 143.5 (sparse + treepool=1) — **~1%, i.e. nothing**, exactly
+as §8 predicts for a fence-bound frame. **This is the expected outcome, not a failure**: 0.9 ms
+of CPU came off the frame and the GPU wall did not move, so the CPU simply waits longer. The win
+is real, it is banked engine-wide, and it will convert on CPU-bound levels and lower-end CPUs.
+★ Judge this work by the `Scene::Update` ms column, never by Switch Escape's frame rate.

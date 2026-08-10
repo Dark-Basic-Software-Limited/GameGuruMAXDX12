@@ -91,6 +91,13 @@
       <DisableSpecificWarnings>4005;4995;4723</DisableSpecificWarnings>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <!-- GGMAX 2.18: /bigobj. DarkLUA.cpp is a 9-part unity TU that also pulls in the Wicked
+           headers, and it sat just under the 65,536-section COFF limit. Enabling LOOKUP_SPARSE
+           in wiECS.h (per-ComponentManager BlockAllocator instantiations) pushed it over:
+           "error C1128: number of sections exceeded object file format limit". /bigobj only
+           raises that limit - no codegen, ABI or semantic effect - and three other projects in
+           this solution already use it (GGWMR, Template_Windows, the OPTICK samples). -->
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <OutputFile>F:\TGCSHARED\fpsc-reloaded\Dark Basic Pro Reloaded\Install\Compiler\plugins-user\DarkLua.dll</OutputFile>

@@ -3195,6 +3195,7 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 // export into this TU; both definitions live in the engine and these match them exactly.
 namespace wi::input::xinput { extern uint32_t gg_xinput_rescan_frames; }
 namespace wi::scene         { extern int      gg_scene_serial_profile; }
+namespace wi::scene         { extern bool     gg_instinit_parallel; }
 
 namespace GPUParticles {
 	int gpup_debug_dump(char* summary, int summarySize);
@@ -3379,6 +3380,19 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 		wi::scene::gg_scene_serial_profile = (atoi(arg) != 0) ? 1 : 0;
 		_snprintf(result, resultSize, "OK: SET_SCENESERIAL %d (diagnostic: serialises Scene::Update systems; totals inflate, shares are real)",
 			wi::scene::gg_scene_serial_profile);
+	}
+	else if (_stricmp(cmd, "SET_INSTINIT") == 0)
+	{
+		// SET_INSTINIT <0|1> — GGMAX 2.18. A/B the parallel instance-array blank pass in
+		// Scene::Update. 0 = stock Wicked (ONE worker memcpys 256 B x instanceArraySize into
+		// write-combined UPLOAD memory every frame — ~1.87 MB on Switch Escape); 1 = the same
+		// writes Dispatch'd across the worker pool. Behaviour-neutral by construction, so the
+		// only thing to watch is the Scene-S1 range: S1 is 1.02 ms there but its named systems
+		// total just 0.07 ms, and this pass is the biggest unnamed occupant of that gap.
+		wi::scene::gg_instinit_parallel = (atoi(arg) != 0);
+		_snprintf(result, resultSize, "OK: SET_INSTINIT %d (%s instance-array blank pass)",
+			wi::scene::gg_instinit_parallel ? 1 : 0,
+			wi::scene::gg_instinit_parallel ? "parallel" : "stock single-worker");
 	}
 	else if (_stricmp(cmd, "SET_LIGHTFALLOFF") == 0)
 	{

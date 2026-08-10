@@ -153,6 +153,23 @@ void GGSetSingleQueue(int on)
 	wi::graphics::gg_single_queue = (on != 0);
 }
 
+// GGMAX 2.18: `setup.ini treepool=<N>` — tree-pool slot count (clamped to [1, GG_TREE_POOL_MAX]
+// at build time). This MUST be an early-pass key, and that is the whole point of it existing:
+// the pool is built exactly once per process inside GGTrees_WickedSetup, latched by
+// g_wickedTreesSetup, and NOTHING clears that latch after startup — GGTrees_WickedInit runs
+// only via GGTerrainWicked_Init (GameGuruMain.cpp init-sequence case 2) and
+// GGTrees_WickedShutdown's only caller GGTerrainWicked_Shutdown has zero callers of its own.
+// So the runtime harness `SET_TREES pool N` cannot shrink an already-built pool: it writes the
+// same variable but arrives after the one read of it. That is why the 2026-08-09 "the tree pool
+// costs nothing" A/B measured nothing at all — both arms ran the identical 6000 slots, and the
+// unchanged SCENE_OBJECTS was the proof, not the refutation. See SWITCHESCAPE_PERF.md §2/§10.
+// On Switch Escape 6000 of the 7322 objects and 6000 of the 8437 transforms ARE these slots.
+namespace GGTrees { extern uint32_t g_treePoolSize; }
+void GGSetTreePool(int n)
+{
+	if (n > 0) GGTrees::g_treePoolSize = (uint32_t)n;
+}
+
 // GGMAX 1.83: D3D12MA PreferredBlockSize override (setup.ini `mablockmb`, 0 = library default
 // 64 MB). Same early-parse constraint as the two above, and a harder one — the allocator is
 // created with the device, so nothing later than main()'s early pass can influence it.

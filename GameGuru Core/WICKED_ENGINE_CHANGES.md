@@ -693,6 +693,59 @@ normalization restores the magnitude). The fix has zero effect when
 
 ---
 
+### 2.18 (2026-08-10) — ECS entity->index lookup: BUCKET_HASH -> SPARSE  ★ −27% of Scene::Update
+
+**File:** `WickedEngine/wiECS.h:445` (one #define; the implementation at `:486-593` is stock
+upstream code that was already present and unused).
+
+**What and why.** This is a **DX11-parity restoration, not a new optimisation.** The DX11 fork
+replaced stock Wicked's hash lookup with a flat sparse array years ago
+(`WickedRepo/WickedEngine/wiECS.h:413`, commit `b40f00a`, "way faster for larger games ... no
+more lookup.find(entity)") and the DX12 port silently reverted to upstream stock. Every
+`Contains()` / `GetComponent()` / `GetIndex()` in every `Scene::Update` system pays the
+difference, on every entity, every frame.
+
+Chose `LOOKUP_SPARSE` over `LOOKUP_STRAIGHT` (the literal DX11 equivalent) because STRAIGHT
+allocates one `size_t` per entity id ever seen in EVERY component manager, and entity ids come
+from a monotonic global counter — a long editing session with create/destroy churn would grow
+every table forever. SPARSE keeps the direct mapping but pages it in 64-entry blocks that are
+freed when they empty.
+
+**Measured** (Switch Escape, editor, profiler on in both arms, `Scene-S1..S5` ms sum):
+`Scene::Update` **2.412 -> 1.750 ms (−0.662, −27.4%)**; CPU Frame 4.49 -> 3.93.
+POLYS bit-identical (109358). FPS unchanged (~142) because that frame is GPU-fence-bound —
+judge this by the ms column, not FPS. Full method + tables: `SWITCHESCAPE_PERF.md` §11.
+
+**Audited before enabling** (this path shipped upstream but was never exercised here):
+`BlockData::Item` defaults to `INVALID_INDEX` and `wi::allocator::BlockAllocator::allocate()`
+placement-news `T()` (value-initialises), so `get()` on an un-inserted slot in a partially
+filled block returns INVALID_INDEX, not garbage; `erase()` dereferences `block_data` without a
+null test but its only callers (`Remove` :303, `Remove_KeepSorted` :326) first check
+`GetIndex() != INVALID_INDEX`, so the block provably exists.
+
+⚠ **BUILD-SIDE COST (game repo, not engine).** The extra per-ComponentManager `BlockAllocator`
+instantiations pushed `DarkLUA.cpp` — a 9-part unity TU that also includes the Wicked headers —
+past the COFF section limit (`C1128`), and enlarged Camera's browse-info database past BSCMAKE's
+`BK1520` limit. Fixed game-side with `/bigobj` on DarkLUA and Release-only browse info off on
+Camera; both are build-flag changes with no codegen effect. **If another TU hits C1128 later,
+add `/bigobj` — do not revert this.**
+
+**Revert:** re-comment `LOOKUP_SPARSE`, uncomment `LOOKUP_BUCKET_HASH`, rebuild the engine. Or
+`git checkout baseline-sceneupdate-20260810`.
+
+### 2.18b — opt-in parallel instance-array blank pass (`SET_INSTINIT`, DEFAULT OFF)
+
+**File:** `WickedEngine/wiScene.cpp` (flag `gg_instinit_parallel`, use site in `Scene::Update`).
+Stock Wicked blanks every instance slot from a single `jobsystem::Execute` — 256 B x
+instanceArraySize of write-combined stores on ONE worker, ~1.87 MB/frame on Switch Escape. The
+opt-in path Dispatches the identical writes across the pool.
+**MEASURED: a wash (+0.015 ms, +0.9%).** It runs alongside the parallel Animation/Physics/
+Transform dispatches and is not the critical path. Kept default-OFF as a documented knob rather
+than deleted, since it should matter where S1's dispatches are cheap relative to
+instanceArraySize. ⚠ Do not re-raise it on Switch Escape without re-measuring.
+
+---
+
 ## 2. Temporary debug overrides (MUST be reverted before any upstream brief)
 
 These are diagnostic edits made during the grass-rendering analysis on
