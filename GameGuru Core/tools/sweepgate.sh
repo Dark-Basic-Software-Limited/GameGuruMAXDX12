@@ -1,0 +1,96 @@
+#!/bin/bash
+# Score a demo_fps_sweep.sh run against the pre-registered release gate.
+#
+# The criteria are written here, in the script, so the verdict cannot be rationalised after
+# seeing the data:
+#   C1 LOAD     every demo reaches the editor (no FAIL_* row, no missing row)
+#   C2 GEOMETRY POLYS identical to the reference sweep on every demo. For an engine-wide ECS
+#               lookup change this IS the correctness proof: a mis-resolved entity->component
+#               would change what gets drawn, and POLYS would move.
+#   C3 VRAM     every demo under 4096 MB driver usage (the shipped 4 GB min-spec gate)
+#   C4 GAME     every demo reaches gameplay past the loading overlays
+#
+# ⚠ FPS IS DELIBERATELY NOT A CRITERION. Editor FPS on this rig swings +-8 between launches and
+# can shift much further between DAYS with GPU power state (2026-08-10 read Switch Escape at 142
+# where 08-09 read 201, at a matched CPU frame). Cross-day FPS deltas are not evidence. FPS is
+# printed for the record and for within-run ranking only.
+#
+# Usage: sweepgate.sh <results_file> [vram_limit_mb]
+set -u
+RES="${1:?usage: sweepgate.sh <results_file> [vram_limit_mb]}"
+LIMIT="${2:-4096}"
+[ -f "$RES" ] || { echo "no such results file: $RES"; exit 2; }
+
+python - "$RES" "$LIMIT" <<'PY'
+import sys, re
+res, limit = sys.argv[1], float(sys.argv[2])
+
+# POLYS reference: tools/singlequeue_sweep_0809_full.txt (same content build).
+REF = {
+ "Aztec Game Kit Teaser":10313511, "Aztec Game Kit":3438876, "Bounty":463210,
+ "Horseshoe Bend":2105365, "Island Showdown":4114598, "Operation Amazon":5496922,
+ "River Raiders":1906072, "Snowy Mountain Stroll":81081, "A Grand Canyon Adventure":2272361,
+ "Disruption":4665184, "Foggy Forest":10195894, "Indian Strike Force":3184527,
+ "Switch Escape":109358, "Canyon Offensive":8816163, "Escape from the Zombie Cellar":28048,
+ "Jungle Fever":74124, "RPG Template":3235005, "The Mystery of Z Island":704717,
+ "Trapped":11209,
+}
+
+rows, fails = [], []
+for line in open(res, encoding="utf-8", errors="replace"):
+    line = line.strip()
+    if not line or "|" not in line: continue
+    f = line.split("|")
+    demo = f[0]
+    if len(f) < 3 or f[1] != "OK":
+        fails.append((demo, f[1] if len(f) > 1 else "MALFORMED")); continue
+    def num(x):
+        try: return float(re.sub(r"[^0-9.]", "", x) or 0)
+        except: return 0.0
+    ed = [num(f[2]), num(f[3]), num(f[4])]
+    gstate = f[5]
+    gm = [num(f[6]), num(f[7]), num(f[8])]
+    vram = num(f[10]) if len(f) > 10 else 0.0
+    polys = int(num(f[11])) if len(f) > 11 else 0
+    rows.append(dict(demo=demo, ed=sum(ed)/3 if any(ed) else 0, gstate=gstate,
+                     gm=sum(gm)/3 if any(gm) else 0, vram=vram, polys=polys))
+
+print("=" * 100)
+print("%-32s %8s %8s %10s %12s  %s" % ("demo","edFPS","gmFPS","VRAM MB","POLYS","gate"))
+print("=" * 100)
+c2 = c3 = c4 = True
+worst_vram = (0, "")
+for r in sorted(rows, key=lambda x: -x["vram"]):
+    d = r["demo"]; ref = REF.get(d)
+    if ref is None:            g2 = "polys?"
+    elif r["polys"] == ref:    g2 = "POLYS_OK"
+    else:                      g2 = "POLYS_MISMATCH(ref %d)" % ref; c2 = False
+    g3 = "VRAM_OK" if 0 < r["vram"] < limit else ("VRAM_OVER" if r["vram"] else "vram?")
+    if g3 == "VRAM_OVER": c3 = False
+    g4 = "" if r["gstate"].upper().startswith(("GAME","OK","PLAY")) else " GAME=%s" % r["gstate"]
+    if r["gm"] <= 0: c4 = False; g4 += " NO_GAME_FPS"
+    if r["vram"] > worst_vram[0]: worst_vram = (r["vram"], d)
+    print("%-32s %8.1f %8.1f %10.1f %12d  %s %s%s" %
+          (d, r["ed"], r["gm"], r["vram"], r["polys"], g2, g3, g4))
+
+print("=" * 100)
+c1 = (len(rows) == 19 and not fails)
+if fails:
+    print("C1 LOAD      FAIL -> " + ", ".join("%s(%s)" % f for f in fails))
+elif len(rows) != 19:
+    print("C1 LOAD      FAIL -> only %d/19 rows present" % len(rows))
+else:
+    print("C1 LOAD      PASS  19/19 reached the editor")
+print("C2 GEOMETRY  %s  POLYS identical to the 0809 reference on all %d demos"
+      % ("PASS " if c2 else "FAIL ", len(rows)))
+print("C3 VRAM      %s  worst = %.1f MB (%s), limit %.0f, headroom %.1f MB"
+      % ("PASS " if c3 else "FAIL ", worst_vram[0], worst_vram[1], limit, limit - worst_vram[0]))
+print("C4 GAME      %s  every demo produced in-game FPS past the loading overlays"
+      % ("PASS " if c4 else "FAIL "))
+print()
+print("VERDICT: %s" % ("CLEAN - 2.18 passes the release gate" if (c1 and c2 and c3 and c4)
+                       else "NOT CLEAN - see failing criteria above"))
+print()
+print("(FPS columns are for the record only. The rig's GPU state moved between 08-09 and 08-10 -")
+print(" Switch Escape read 201 then 142 at a matched CPU frame - so cross-day FPS is not evidence.)")
+PY

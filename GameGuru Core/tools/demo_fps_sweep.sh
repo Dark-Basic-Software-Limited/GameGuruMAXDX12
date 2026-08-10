@@ -22,6 +22,21 @@ START_AT="${2:-0}"
 OUT="/c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12--claude-worktrees-determined-chebyshev-bf0892/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/demo_fps"
 mkdir -p "$OUT/run$TAG" "$OUT/shots$TAG"
 RESULTS="$OUT/results_$TAG.txt"
+
+# ⚠ SINGLE-INSTANCE LOCK (added 2026-08-10; this script predates the rule).
+# On 2026-08-09 three copies of a sweep ran concurrently against one MAX — a nohup'd launch
+# that outlived its parent plus two relaunches after a `pkill` that silently does nothing under
+# Git Bash on Windows. All three drove the SAME auto_command.txt and appended to the SAME log:
+# 40 s arms "completing" 16 s apart, duplicate demo headers, one arm sampled mid-load at 3.9 FPS.
+# None of it was detectable from the numbers alone. Kill strays with `ps -W` + `kill -9`.
+LOCK="$OUT/.demo_fps_sweep.lock"
+if [ -e "$LOCK" ] && kill -0 "$(cat "$LOCK" 2>/dev/null)" 2>/dev/null; then
+  echo "REFUSING TO START: demo_fps_sweep.sh already running as PID $(cat "$LOCK"). Kill it first."
+  exit 3
+fi
+echo $$ > "$LOCK"
+trap 'rm -f "$LOCK"' EXIT INT TERM
+
 [ "$START_AT" == "0" ] && : > "$RESULTS"
 
 send() {
