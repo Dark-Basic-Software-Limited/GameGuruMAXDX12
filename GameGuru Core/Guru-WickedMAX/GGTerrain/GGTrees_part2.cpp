@@ -446,43 +446,6 @@ static void GrowTreePool( wi::scene::Scene& scene, uint32_t want )
 	g_treePoolBuilt = target;
 }
 
-// GGMAX 2.23: destroy every built pool slot and drop all bindings. The inverse of GrowTreePool.
-//
-// Called only from the sustained-park branch of GGTrees_WickedUpdate (see the long comment
-// there) — i.e. the trees are gone for good, which in practice means a level change. It is
-// deliberately NOT called on ordinary camera movement: one-way growth within a level is correct
-// and avoids create/destroy thrash.
-//
-// Scope note: this releases the POOL only. The per-type tree meshes/materials (38 types x 3 LODs
-// = 114 meshes + 70 materials, built once by GGTrees_WickedSetup) are intentionally KEPT, so a
-// later tree level does not pay to rebuild them or re-upload their GPU data. Those are a fixed
-// ~184 entities; the pool is up to 6000 objects PLUS 6000 transforms, which is the part that
-// costs per-frame Scene::Update work.
-//
-// Bindings must die with the slots: g_slotToTree/g_slotCache are indexed BY SLOT and would
-// otherwise describe entities that no longer exist, and g_treeToSlot points back at them. The
-// next GGTrees_WickedUpdate re-derives all of it (the size mismatch it leaves behind is exactly
-// what the forceRebind check keys on).
-static void ReleaseTreePool( wi::scene::Scene& scene )
-{
-	for ( uint32_t i = 0; i < g_treePoolBuilt; i++ )
-	{
-		if ( g_treePoolEntities[ i ] != wi::ecs::INVALID_ENTITY )
-		{
-			scene.Entity_Remove( g_treePoolEntities[ i ] );
-			g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
-		}
-	}
-	g_treePoolBuilt = 0;
-	g_slotToTree.clear();
-	g_slotCache .clear();
-	g_treeToSlot.clear();
-	g_treeDesiredEpoch.clear();
-	g_treeBand  .clear();
-	g_treeShadow.clear();
-	wi::backlog::post( "GGTrees: tree pool released (level has no trees)" );
-}
-
 // DX11 tree_shadow_range semantics: number of shadow cascades that receive tree
 // shadows (5 = all, 0 = none). Wicked cascadeMask counts skipped-FARTHEST
 // cascades, so proxy mask = 5 - range. Real tree meshes additionally never go
@@ -697,6 +660,77 @@ static void GGTrees_RemoveShadowProxyChunk( wi::scene::Scene& scene, uint32_t c 
 	if ( g_chunkProxyMesh  [ c ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_chunkProxyMesh  [ c ] );
 	g_chunkProxyObject[ c ] = wi::ecs::INVALID_ENTITY;
 	g_chunkProxyMesh  [ c ] = wi::ecs::INVALID_ENTITY;
+}
+
+// GGMAX 2.23: destroy every built pool slot and drop all bindings. The inverse of GrowTreePool.
+//
+// Called only from the sustained-park branch of GGTrees_WickedUpdate (see the long comment
+// there) — i.e. the trees are gone for good, which in practice means a level change. It is
+// deliberately NOT called on ordinary camera movement: one-way growth within a level is correct
+// and avoids create/destroy thrash.
+//
+// Scope note: this releases the POOL only. The per-type tree meshes/materials (38 types x 3 LODs
+// = 114 meshes + 70 materials, built once by GGTrees_WickedSetup) are intentionally KEPT, so a
+// later tree level does not pay to rebuild them or re-upload their GPU data. Those are a fixed
+// ~184 entities; the pool is up to 6000 objects PLUS 6000 transforms, which is the part that
+// costs per-frame Scene::Update work.
+//
+// Bindings must die with the slots: g_slotToTree/g_slotCache are indexed BY SLOT and would
+// otherwise describe entities that no longer exist, and g_treeToSlot points back at them. The
+// next GGTrees_WickedUpdate re-derives all of it (the size mismatch it leaves behind is exactly
+// what the forceRebind check keys on).
+static void ReleaseTreePool( wi::scene::Scene& scene )
+{
+	for ( uint32_t i = 0; i < g_treePoolBuilt; i++ )
+	{
+		if ( g_treePoolEntities[ i ] != wi::ecs::INVALID_ENTITY )
+		{
+			scene.Entity_Remove( g_treePoolEntities[ i ] );
+			g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
+		}
+	}
+	g_treePoolBuilt = 0;
+	g_slotToTree.clear();
+	g_slotCache .clear();
+	g_treeToSlot.clear();
+	g_treeDesiredEpoch.clear();
+	g_treeBand  .clear();
+	g_treeShadow.clear();
+
+	// GGMAX 2.23b: the FAR-SHADOW PROXIES go too, and they were the residual leak.
+	//
+	// After 2.23 fixed the 6000-slot pool retention, a treeless level loaded after a tree level
+	// still carried +79 objects, +79 meshes and +17 materials. Named by diffing DUMP_MATERIALS
+	// and DUMP_TREEPOOL across the two load orders: `proxyChunks=0` when loaded FRESH versus
+	// `proxyChunks=256` when loaded AFTER — the merged billboard shadow chunks built for the
+	// PREVIOUS level's trees. GGTrees_SetShadowProxiesVisible only calls SetRenderable(false)
+	// (see just above), so a park hides them and nothing ever removes them; the only teardown
+	// lives in GGTrees_WickedShutdown, whose caller has no callers.
+	//
+	// The arithmetic matched exactly: 79 chunks that actually held trees -> 79 proxy objects +
+	// 79 proxy meshes, and 17 distinct tree types present -> 17 billboard shadow materials.
+	//
+	// They must die with the pool: a proxy describes where the PREVIOUS level's trees cast far
+	// shadows, so keeping it is not just wasted per-frame ECS work, it is stale data. Unlike the
+	// per-type tree meshes/materials (kept deliberately — they are level-independent assets), the
+	// proxies are rebuilt per level from tree data anyway, by the dirty-chunk path.
+	for ( uint32_t c = 0; c < g_chunkProxyObject.size(); c++ )
+	{
+		GGTrees_RemoveShadowProxyChunk( scene, c );
+	}
+	g_chunkProxyObject.clear();
+	g_chunkProxyMesh  .clear();
+	g_chunkProxyDirty .clear();
+	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
+	{
+		if ( g_shadowProxyMaterial[ t ] != wi::ecs::INVALID_ENTITY )
+		{
+			scene.Entity_Remove( g_shadowProxyMaterial[ t ] );
+			g_shadowProxyMaterial[ t ] = wi::ecs::INVALID_ENTITY;
+		}
+	}
+
+	wi::backlog::post( "GGTrees: tree pool + shadow proxies released (level has no trees)" );
 }
 
 // Rebuild ONE chunk's merged billboard shadow mesh (materials kept and reused).

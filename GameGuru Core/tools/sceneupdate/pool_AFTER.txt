@@ -1,0 +1,2 @@
+POOL built=0 ceiling=6000 bound=0 renderable=0 missingObj=0 numTotalTrees=400000 types=38 proxyChunks=256
+ORPHAN_TOTAL 0
