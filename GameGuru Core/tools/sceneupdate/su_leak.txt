@@ -1,0 +1,10 @@
+15:07:03 === ARM FRESH: Switch Escape loaded first in a clean session ===
+15:09:12   [FRESH] SCENE_OBJECTS: 1322 SCENE_MESHES: 1288 SCENE_MATERIALS: 1250 SCENE_TRANSFORMS: 2437 SCENE_HIERARCHY: 1995 POLYS: 109358 
+15:09:12   [FRESH] HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+15:09:12 === ARM AFTER: Island Showdown first, back to hub, then Switch Escape ===
+15:11:22   [decoy=Island Showdown] SCENE_OBJECTS: 8850 SCENE_MESHES: 2410 SCENE_MATERIALS: 2362 SCENE_TRANSFORMS: 15519 SCENE_HIERARCHY: 8037 POLYS: 4114598 
+15:11:22   [decoy=Island Showdown] HIER: roots=1590 maxSubtree=1286 visited=8037 imbalance=0.160
+15:11:22   -> NAVIGATE hub
+15:13:26   [AFTER] SCENE_OBJECTS: 7401 SCENE_MESHES: 1367 SCENE_MATERIALS: 1267 SCENE_TRANSFORMS: 8516 SCENE_HIERARCHY: 1996 POLYS: 109358 
+15:13:26   [AFTER] HIER: roots=436 maxSubtree=1283 visited=1996 imbalance=0.643
+15:13:27 === DONE — compare FRESH vs AFTER; any positive delta is retained population ===

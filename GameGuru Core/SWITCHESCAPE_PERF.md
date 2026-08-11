@@ -994,3 +994,77 @@ DX11 freed 92 meshes on delete-all, DX12 freed 34, and Wicked's `Entity_Remove` 
 not necessarily destroy the `MeshComponent` it referenced. **Cheapest test, zero code:** capture
 `SCENE_*` + `HIER` on a delete-all level and on a freshly created blank level. Identical → no
 leak. Different → that difference IS the leak, and its size.
+
+## ★★★ 17. LEAK CHECK: A REAL ONE, AND IT IS THE TREE POOL (2026-08-11)
+
+§16 suspected a ~75-mesh leak. The probe found something much larger, and it indicts my own 2.19
+design. No harness command deletes all objects, so instead of a delete-all comparison the probe
+loads the SAME level two ways (`tools/sceneupdate/suleak.sh`) — which tests the operation that
+actually happens in use:
+
+| Switch Escape | FRESH (loaded first) | AFTER Island Showdown | delta |
+|---|---|---|---|
+| SCENE_OBJECTS | 1322 | **7401** | **+6079** |
+| SCENE_TRANSFORMS | 2437 | **8516** | **+6079** |
+| SCENE_MESHES | 1288 | 1367 | +79 |
+| SCENE_MATERIALS | 1250 | 1267 | +17 |
+| POLYS | 109358 | 109358 | **0** |
+
+Objects and transforms move in exact lockstep at +6079 and POLYS does not move at all, so none of
+it draws. `DUMP_TREEPOOL` on Switch Escape *after* Island Showdown names it outright:
+
+```
+POOL built=6000 ceiling=6000 bound=6000 renderable=0 numTotalTrees=400000
+```
+
+★★ **The pool is not merely still built — all 6000 slots are still BOUND to the previous level's
+trees, and `numTotalTrees=400000` shows Island Showdown's tree array is still resident.** On a
+level with no trees at all.
+
+⚠ **This is a direct consequence of the 2.19 design, and it caps that win.** GrowTreePool was
+made deliberately one-way ("growth is one-way for the pool's lifetime, so a camera walking away
+does not thrash entity create/destroy") — correct for camera movement, wrong for level changes.
+**It is NOT a regression** (before 2.19 the pool was 6000 on every level unconditionally), but
+the lazy-pool saving only survives until the session visits its first tree level, after which
+every subsequent level pays the full 6000 objects + 6000 transforms again.
+
+**Fix, NOT yet implemented:** release pool slots on LEVEL CHANGE rather than never. Level change
+is a natural, infrequent boundary — nothing like the per-frame thrash the one-way rule was
+protecting against. `GGTrees_WickedShutdown` already does exactly the right teardown and is
+reachable only from `GGTerrainWicked_Shutdown`, which has zero callers; wiring a trim into the
+level-load path is the smallest correct change. Gate it the same way: POLYS identity on a
+tree level, and re-run `suleak.sh` — a fixed build must show FRESH == AFTER.
+
+⚠ The residual +79 meshes / +17 materials is a genuine second, smaller leak (retained mesh
+entities whose objects were removed) and is still unexplained.
+
+## ★★ 18. GGMAX 2.22 — kill the engine's empty per-chunk prop scaffolding
+
+`wi::terrain` creates one empty `props` child entity per chunk within `prop_generation`
+(default 10 → 441) purely to parent scattered props under — and **GameGuru never populates
+`terrain.props`** (grep for `.props` / `Prop` / `props.push_back` across `Guru-WickedMAX`
+returns nothing). So all 441 were childless nodes drawing no pixels, walked every frame.
+
+`terrain.prop_density = 0.0f` at `GGTerrainWicked.cpp:2526`. This both blocks creation (the
+`prop_density > 0` gate at `wiTerrain.cpp:1420`) and retro-deletes any already made (the
+`prop_density_current` mismatch branch at `:936-939`), so it is correct regardless of init order.
+
+| Switch Escape | before | after |
+|---|---|---|
+| SCENE_TRANSFORMS | 2437 | **1996** (−441) |
+| SCENE_HIERARCHY | 1995 | **1554** (−441) |
+| `HIER maxSubtree` | 1283 | **842** (= 1 + 841 chunks, exactly) |
+| `SU-Hierarchy` (serialised) | 0.47 | **0.31** (−34%) |
+| `Scene::Update` | 1.577 | **1.323** (−0.25 ms) |
+| POLYS / objects / meshes | 109358 / 1322 / 1288 | **identical** |
+
+★ `maxSubtree` landing on exactly 842 = 1 + 841 is the model from §16 confirming itself: remove
+the 441 props and the chunk subtree is precisely the chunk group plus its 841 chunks.
+
+⚠ **Honesty on the ms figure:** 1.577 → 1.323 is cross-launch, and launch-to-launch drift on
+this build has been measured at 0.12 ms (1.457 vs 1.577), so the −0.25 ms is about 2× the drift
+— real, but the *structural* evidence is what is certain: −441 transforms, −441 hierarchy and
+maxSubtree 1283 → 842 are exact counts, not statistics.
+
+Correctness gate (POLYS identity, incl. terrain-heavy levels since this touches terrain only):
+Island Showdown 4114598 ✔ · Trapped 11209 ✔ · Switch Escape 109358 ✔, objects unchanged on all.

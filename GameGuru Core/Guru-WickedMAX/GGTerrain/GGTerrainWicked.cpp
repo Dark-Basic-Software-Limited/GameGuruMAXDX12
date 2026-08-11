@@ -2524,6 +2524,25 @@ void GGTerrainWicked_Init()
 	terrain.SetCenterToCamEnabled(true);
 	terrain.SetRemovalEnabled(true);
 	terrain.SetGrassEnabled(false);       // Phase 0: no grass yet
+	// GGMAX 2.22 (2026-08-11): kill the engine's per-chunk PROP scaffolding.
+	//
+	// wi::terrain creates one empty "props" child entity per chunk within prop_generation
+	// (default 10 -> (2*10+1)^2 = 441 of them) purely to parent scattered props under
+	// (wiTerrain.cpp:1420-1425: CreateEntity + transforms.Create + names.Create +
+	// Component_Attach). GameGuru NEVER POPULATES terrain.props — grep for `.props` / Prop /
+	// props.push_back across Guru-WickedMAX returns nothing — so all 441 are childless nodes
+	// that draw no pixels and exist only to be walked.
+	//
+	// Cost they were imposing: 441 TransformComponents + 441 HierarchyComponents, revisited by
+	// RunTransformUpdateSystem and RunHierarchyUpdateSystem EVERY FRAME. On Switch Escape that
+	// is 441 of the 1995 hierarchy nodes (22%), inside the 1283-node chunk subtree that
+	// SU-Hierarchy spends ~0.48 ms walking (SWITCHESCAPE_PERF.md §16).
+	//
+	// prop_density = 0 both blocks creation (the `prop_density > 0` gate at wiTerrain.cpp:1420)
+	// and retro-deletes any already made (the prop_density_current mismatch branch at :936-939),
+	// so it is correct whatever order init happens in. ZERO rendering change by construction:
+	// no props exist to lose. ⚠ If GG ever starts using engine terrain props, remove this line.
+	terrain.prop_density = 0.0f;
 	terrain.SetPhysicsEnabled(false);      // keep Bullet physics from old terrain
 	terrain.chunk_scale = 80.0f;          // ~10560 units/chunk; high-res ring now ~535m (was ~268m at 80)
 	terrain.generation = 14;               // cover ~147840 units each direction, more lead for fast camera movement
