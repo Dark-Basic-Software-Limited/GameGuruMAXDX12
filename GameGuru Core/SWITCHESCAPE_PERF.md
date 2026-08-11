@@ -920,3 +920,77 @@ DX11's panel prints `avg (peak)` per row — its `Update - Wicked: 0.22 ms (0.52
 The CPU gap has also narrowed from the §1 measurement of +2.89 ms to **+1.79 ms**, which is
 consistent with the ~0.95 ms of `Scene::Update` removed by 2.18/2.19 plus the 2.15 XInput fix —
 though across different machine states, so treat that as corroboration, not a measurement.
+
+## ★★★ 16. THE FLOOR IS WICKED'S NATIVE TERRAIN — root-caused (2026-08-11)
+
+§15's "4× meshes" hypothesis (per-limb duplication of level props) is **REFUTED**. The user
+deleted all level objects in both builds and read the panels; subtracting empty from full splits
+the fixed floor from the content:
+
+| | DX11 full/empty/**content** | DX12 full/empty/**content** |
+|---|---|---|
+| Meshes | 316 / 224 / **92** | 1288 / 1254 / **34** |
+| Materials | 317 / 225 / **92** | 1250 / 1216 / **34** |
+| Transforms | 1176 / 573 / **603** | 2437 / 1894 / **543** |
+| Hierarchy | 681 / 300 / **381** | 1995 / 1672 / **323** |
+
+**The content columns are comparable and DX12 is LOWER on all four.** The entire multiplier is
+the empty-level floor: **+1030 meshes, +991 materials, +1321 transforms, +1372 hierarchy.**
+
+### The cause, with an exact independent cross-check
+**DX12 runs Wicked's native `wi::terrain` generator; DX11 has no such thing.** Verified:
+`D:\max\WickedRepo\WickedEngine` contains **no `wiTerrain.cpp/.h`** and its `wiScene.h` has **zero**
+`terrains` references. DX11's terrain is `GGTerrain.cpp` (11,707 lines) drawing a custom clipmap
+from its own buffers — **0 ECS entities**. Same for its trees and grass.
+
+`wi::terrain` mints one full ECS entity per chunk (object + mesh + material + transform, attached
+to a chunk group) and one empty `props_entity` child per near chunk:
+
+| creator | file:line | count | mesh | mat | xform | hier |
+|---|---|---|---|---|---|---|
+| terrain chunk entity | `wiTerrain.cpp:1108/1123/1131/1140` | **841** | 841 | 841 | 841 | 841 |
+| `props_entity` (empty scaffold) | `wiTerrain.cpp:1413-1425` | **441** | 0 | 0 | 441 | 441 |
+| chunk group + surface materials | `wiTerrain.cpp:626-634`, `:593-598` | 5 | 0 | 4 | 0 | 5 |
+| GGTrees LOD library 38×3 | `GGTrees_part2.cpp:241-277` | 114/70 | 114 | 70 | 0 | 0 |
+| brush cursor decal | `GGTerrainWicked.cpp:2347-2366` | 1 | 0 | 1 | 1 | 0 |
+| **accounted** | | | **955** | **916** | **1283** | **1287** |
+| **target** | | | 1030 | 991 | 1321 | 1372 |
+| **unexplained** | | | 75 | 75 | 38 | 85 |
+
+★★ **The counts are pinned by an EXACT cross-check.** `terrain.generation = 14`
+(`GGTerrainWicked.cpp:2529`) → (2·14+1)² = **841**; `prop_generation = 10` (`wiTerrain.h:455`) →
+(2·10+1)² = **441**. So the chunk-group subtree must hold 1 + 841 + 441 = **1283** — and the
+`HIER` instrument built for §13 independently measured **`maxSubtree=1283`**. Two unrelated
+routes to the same number; the model is not a guess.
+
+**Verified as ZERO, do not re-chase:** the tree pool (lazy since 2.19), the 256 tree-chunk shadow
+proxies (`validCount == 0 → return`), engine per-chunk grass (`SetGrassEnabled(false)`,
+`GGTerrainWicked.cpp:2526`, corroborated by `SCENE_HAIRS: 0`), and engine terrain props
+(`terrain.props` never populated). ⚠ GG **merged grass** is 0 only because Switch Escape has
+none — on a grassy level it becomes a first-rank contributor.
+
+### Why this matters more than the raw numbers
+It is a **fixed per-level cost**, so it hurts small levels most — and it is 64% of the hierarchy
+nodes `SU-Hierarchy` walks every frame (1283 of 1995), 441 of which are **empty placeholders
+with no children and no pixels**. It also retro-explains §14: the hierarchy work I tried to
+balance is overwhelmingly terrain scaffolding.
+
+### Ranked, and the top one is nearly free
+1. **`terrain.prop_density = 0`** beside the other params at `GGTerrainWicked.cpp:2526-2531` —
+   **−441 transforms and −441 hierarchy, zero rendering change** (`terrain.props` is never
+   populated, so these nodes draw nothing). Blocks creation at `wiTerrain.cpp:1420` and the
+   existing epsilon branch at `:936-939` retro-deletes any already made. ⚠ Check no load path
+   restores a serialized Terrain over it (`wiTerrain.cpp:2741`). **Best cost:risk on the list.**
+2. **Lazy GGTrees LOD library** — −114 meshes, −70 materials on treeless levels. Same shape as
+   the 2.19 lazy pool. ⚠ `BuildTreeMesh` calls `CreateRenderData()`, so deferring moves 114 GPU
+   buffer creations to first-tree-sighting; prebuild at level load once `pAllTrees[]` is known.
+3. **`terrain.generation` 14 → 12/10** — the ONLY lever that moves the mesh/material columns
+   (−216/−400 of each counter). ⚠ Shortens terrain extent; must go through the DX11 parity
+   baseline and the POLYS gate. Do not ship blind.
+
+### Open
+The ~75-mesh residual is unexplained, and part of it may be a **leak** rather than a design cost:
+DX11 freed 92 meshes on delete-all, DX12 freed 34, and Wicked's `Entity_Remove` on an object does
+not necessarily destroy the `MeshComponent` it referenced. **Cheapest test, zero code:** capture
+`SCENE_*` + `HIER` on a delete-all level and on a freshly created blank level. Identical → no
+leak. Different → that difference IS the leak, and its size.
