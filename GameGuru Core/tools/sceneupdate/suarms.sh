@@ -51,10 +51,13 @@ arm() {
     local s1=$(row "$d" "Scene-S1") s2=$(row "$d" "Scene-S2") s3=$(row "$d" "Scene-S3")
     local s4=$(row "$d" "Scene-S4") s5=$(row "$d" "Scene-S5")
     local cf=$(echo "$d"|grep -m1 '^CPU_FRAME_MS:'|awk '{print $2}')
+    local hi=$(echo "$d"|grep -m1 '^HIER:')
+    local su=$(echo "$d" | grep -m1 -F "SU-Hierarchy" | sed -n 's/.*: *\([0-9.]*\) ms.*//p')
     local pol=$(echo "$d"|grep -m1 '^POLYS:'|awk '{print $2}')
     local t=$(awk -v a="${s1:-0}" -v b="${s2:-0}" -v c="${s3:-0}" -v e="${s4:-0}" -v f="${s5:-0}" 'BEGIN{printf "%.3f",a+b+c+e+f}')
-    say "   S1=$s1 S2=$s2 S4=$s4 SUM=$t CPU=$cf POLYS=$pol"
-    echo "$name $i S1=$s1 S2=$s2 S3=$s3 S4=$s4 S5=$s5 SUM=$t CPU=$cf POLYS=$pol" >> "$RES"
+    say "   S1=$s1 S2=$s2 S4=$s4 SUM=$t CPU=$cf POLYS=$pol SU-Hier=${su:-NA}"
+    say "     $hi"
+    echo "$name $i S1=$s1 S2=$s2 S3=$s3 S4=$s4 S5=$s5 SUM=$t CPU=$cf POLYS=$pol SUHIER=${su:-0} $hi" >> "$RES"
     sums="$sums $t"
   done
   echo "$sums" | awk '{s=0;n=0;for(i=1;i<=NF;i++){s+=$i;n++} if(n)printf "%.3f",s/n}'

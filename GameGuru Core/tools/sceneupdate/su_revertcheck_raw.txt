@@ -1,0 +1,1983 @@
+########## sample 1
+STATE: editor
+FPS: 227.8
+FRAME_TIME_MS: 4.39
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 0.82 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.716 max=34.17 stalled=34201/34609 frames (98.8%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.06 fences=0.05 present=0.08 sync=0.02 stall=0.61 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 66577 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=30268 skips=26914
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4708042
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=34609 mean_ms=5.39 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=34609 fb=1478533 req=4015436 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=33303 jobEnd=33303 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.19
+GPU_FRAME_MS: 4.41
+PROFILER_DATA:
+CPU Frame: 3.18 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.03 ms
+	App-BeginCmdCompose: 0.03 ms
+	App-Input: 0.02 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.02 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.05 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.32 ms
+	CL-ObjTools+Settings: 0.04 ms
+	CL-PreBlock: 0.07 ms
+	CL-Tail: 0.00 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.22 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.14 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.02 ms
+	Input-RawInput: 0.01 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.01 ms
+	Logic - common_loop: 0.77 ms
+	P2-calclocalcursor: 0.01 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.00 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.11 ms
+	P2-mapediting: 0.10 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.00 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.21 ms
+	RP3D-RenderWait: 0.29 ms
+	RP3D-VisMain: 0.09 ms
+	RP3D-VisRefl: 0.04 ms
+	RP3D-rec ComputeFX: 0.12 ms
+	RP3D-rec Occlusion: 0.32 ms
+	RP3D-rec Opaque: 0.06 ms
+	RP3D-rec PostFX: 0.06 ms
+	RP3D-rec PrepareAsync: 0.05 ms
+	RP3D-rec PrepareFrame: 0.13 ms
+	RP3D-rec Prepass: 0.41 ms
+	RP3D-rec Transparent: 0.18 ms
+	RP3D-rec UpdateTex: 0.01 ms
+	Render: 0.65 ms
+	Scene-S1 Anim+Transform: 0.50 ms
+	Scene-S2 Hier+Mesh+Mat: 0.48 ms
+	Scene-S3 Armature+Proc: 0.03 ms
+	Scene-S4 Object+Light: 0.36 ms
+	Scene-S5 Tail+ShaderScene: 0.00 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.01 ms
+	Shadowmap packing: 0.04 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.02 ms
+	Terrain - Wicked Bridge: 0.21 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.00 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 2.53 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 0.81 ms
+	Update - Particles: 0.00 ms
+	Update - Render: 0.03 ms
+	Update - Terrain: 0.23 ms
+	Update - Wicked (Total): 1.37 ms
+	Update Buffers (CPU): 0.03 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.28 ms
+	VT-job Total: 0.39 ms
+	VT-record: 0.02 ms
+
+GPU Frame: 4.41 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.01 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.21 ms
+	Occlusion Culling Render: 0.20 ms
+	Opaque Scene: 0.51 ms
+	Scene MIP Chain: 0.09 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.03 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.18 ms
+	Update Buffers (GPU): 0.20 ms
+	Visibility_Prepare: 0.08 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.11 ms
+########## sample 2
+STATE: editor
+FPS: 228.6
+FRAME_TIME_MS: 4.37
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 0.65 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.689 max=34.17 stalled=35497/35912 frames (98.8%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.07 fences=0.06 present=0.10 sync=0.02 stall=0.40 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 69183 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=31571 skips=28054
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4713757
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=35912 mean_ms=5.35 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=35912 fb=1533259 req=4157463 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=34606 jobEnd=34606 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.33
+GPU_FRAME_MS: 4.40
+PROFILER_DATA:
+CPU Frame: 3.27 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.03 ms
+	App-BeginCmdCompose: 0.01 ms
+	App-Input: 0.03 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.13 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.05 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.33 ms
+	CL-ObjTools+Settings: 0.04 ms
+	CL-PreBlock: 0.07 ms
+	CL-Tail: 0.00 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.22 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.18 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.03 ms
+	Input-RawInput: 0.02 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.02 ms
+	Logic - common_loop: 0.86 ms
+	P2-calclocalcursor: 0.01 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.02 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.12 ms
+	P2-mapediting: 0.06 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.01 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.26 ms
+	RP3D-RenderWait: 0.22 ms
+	RP3D-VisMain: 0.12 ms
+	RP3D-VisRefl: 0.06 ms
+	RP3D-rec ComputeFX: 0.15 ms
+	RP3D-rec Occlusion: 0.23 ms
+	RP3D-rec Opaque: 0.08 ms
+	RP3D-rec PostFX: 0.06 ms
+	RP3D-rec PrepareAsync: 0.08 ms
+	RP3D-rec PrepareFrame: 0.19 ms
+	RP3D-rec Prepass: 0.35 ms
+	RP3D-rec Transparent: 0.18 ms
+	RP3D-rec UpdateTex: 0.02 ms
+	Render: 0.68 ms
+	Scene-S1 Anim+Transform: 0.86 ms
+	Scene-S2 Hier+Mesh+Mat: 0.58 ms
+	Scene-S3 Armature+Proc: 0.04 ms
+	Scene-S4 Object+Light: 0.38 ms
+	Scene-S5 Tail+ShaderScene: 0.00 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.02 ms
+	Shadowmap packing: 0.05 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.01 ms
+	Terrain - Wicked Bridge: 0.21 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.01 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 3.20 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 0.91 ms
+	Update - Particles: 0.00 ms
+	Update - Render: 0.06 ms
+	Update - Terrain: 0.23 ms
+	Update - Wicked (Total): 1.88 ms
+	Update Buffers (CPU): 0.05 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.41 ms
+	VT-job Total: 0.56 ms
+	VT-record: 0.03 ms
+
+GPU Frame: 4.36 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.02 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.23 ms
+	Occlusion Culling Render: 0.22 ms
+	Opaque Scene: 0.51 ms
+	Scene MIP Chain: 0.06 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.03 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.18 ms
+	Update Buffers (GPU): 0.12 ms
+	Visibility_Prepare: 0.11 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.13 ms
+########## sample 3
+STATE: editor
+FPS: 228.0
+FRAME_TIME_MS: 4.39
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 0.79 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.663 max=34.17 stalled=36807/37229 frames (98.9%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.06 fences=0.06 present=0.09 sync=0.02 stall=0.56 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 71817 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=32888 skips=29206
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4719522
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=37229 mean_ms=5.32 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=37229 fb=1588573 req=4301016 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=35923 jobEnd=35923 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.23
+GPU_FRAME_MS: 4.35
+PROFILER_DATA:
+CPU Frame: 3.22 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.03 ms
+	App-BeginCmdCompose: 0.02 ms
+	App-Input: 0.02 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.02 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.05 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.31 ms
+	CL-ObjTools+Settings: 0.04 ms
+	CL-PreBlock: 0.07 ms
+	CL-Tail: 0.00 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.22 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.17 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.02 ms
+	Input-RawInput: 0.01 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.01 ms
+	Logic - common_loop: 0.78 ms
+	P2-calclocalcursor: 0.01 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.00 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.11 ms
+	P2-mapediting: 0.13 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.00 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.20 ms
+	RP3D-RenderWait: 0.27 ms
+	RP3D-VisMain: 0.11 ms
+	RP3D-VisRefl: 0.06 ms
+	RP3D-rec ComputeFX: 0.13 ms
+	RP3D-rec Occlusion: 0.26 ms
+	RP3D-rec Opaque: 0.06 ms
+	RP3D-rec PostFX: 0.08 ms
+	RP3D-rec PrepareAsync: 0.04 ms
+	RP3D-rec PrepareFrame: 0.14 ms
+	RP3D-rec Prepass: 0.38 ms
+	RP3D-rec Transparent: 0.20 ms
+	RP3D-rec UpdateTex: 0.01 ms
+	Render: 0.66 ms
+	Scene-S1 Anim+Transform: 0.47 ms
+	Scene-S2 Hier+Mesh+Mat: 0.53 ms
+	Scene-S3 Armature+Proc: 0.03 ms
+	Scene-S4 Object+Light: 0.36 ms
+	Scene-S5 Tail+ShaderScene: 0.00 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.02 ms
+	Shadowmap packing: 0.05 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.02 ms
+	Terrain - Wicked Bridge: 0.13 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.00 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 2.47 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 0.82 ms
+	Update - Particles: 0.00 ms
+	Update - Render: 0.03 ms
+	Update - Terrain: 0.15 ms
+	Update - Wicked (Total): 1.40 ms
+	Update Buffers (CPU): 0.04 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.32 ms
+	VT-job Total: 0.39 ms
+	VT-record: 0.01 ms
+
+GPU Frame: 4.35 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.01 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.23 ms
+	Occlusion Culling Render: 0.22 ms
+	Opaque Scene: 0.52 ms
+	Scene MIP Chain: 0.06 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.03 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.19 ms
+	Update Buffers (GPU): 0.11 ms
+	Visibility_Prepare: 0.08 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.13 ms
+########## sample 4
+STATE: editor
+FPS: 228.5
+FRAME_TIME_MS: 4.38
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 0.74 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.639 max=34.17 stalled=38110/38534 frames (98.9%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.06 fences=0.06 present=0.10 sync=0.02 stall=0.50 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 74427 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=34193 skips=30348
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4725238
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=38534 mean_ms=5.29 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=38534 fb=1643383 req=4443261 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=37228 jobEnd=37228 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.38
+GPU_FRAME_MS: 4.36
+PROFILER_DATA:
+CPU Frame: 3.34 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.03 ms
+	App-BeginCmdCompose: 0.02 ms
+	App-Input: 0.03 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.14 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.06 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.39 ms
+	CL-ObjTools+Settings: 0.04 ms
+	CL-PreBlock: 0.09 ms
+	CL-Tail: 0.00 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.22 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.16 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.03 ms
+	Input-RawInput: 0.02 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.02 ms
+	Logic - common_loop: 1.03 ms
+	P2-calclocalcursor: 0.02 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.02 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.13 ms
+	P2-mapediting: 0.07 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.00 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.23 ms
+	RP3D-RenderWait: 0.23 ms
+	RP3D-VisMain: 0.11 ms
+	RP3D-VisRefl: 0.05 ms
+	RP3D-rec ComputeFX: 0.10 ms
+	RP3D-rec Occlusion: 0.23 ms
+	RP3D-rec Opaque: 0.07 ms
+	RP3D-rec PostFX: 0.05 ms
+	RP3D-rec PrepareAsync: 0.06 ms
+	RP3D-rec PrepareFrame: 0.17 ms
+	RP3D-rec Prepass: 0.34 ms
+	RP3D-rec Transparent: 0.17 ms
+	RP3D-rec UpdateTex: 0.01 ms
+	Render: 0.65 ms
+	Scene-S1 Anim+Transform: 0.63 ms
+	Scene-S2 Hier+Mesh+Mat: 0.52 ms
+	Scene-S3 Armature+Proc: 0.03 ms
+	Scene-S4 Object+Light: 0.37 ms
+	Scene-S5 Tail+ShaderScene: 0.01 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.02 ms
+	Shadowmap packing: 0.04 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.02 ms
+	Terrain - Wicked Bridge: 0.13 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.00 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 2.95 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 1.08 ms
+	Update - Particles: 0.00 ms
+	Update - Render: 0.03 ms
+	Update - Terrain: 0.15 ms
+	Update - Wicked (Total): 1.58 ms
+	Update Buffers (CPU): 0.04 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.22 ms
+	VT-job Total: 0.40 ms
+	VT-record: 0.02 ms
+
+GPU Frame: 4.36 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.01 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.24 ms
+	Occlusion Culling Render: 0.23 ms
+	Opaque Scene: 0.51 ms
+	Scene MIP Chain: 0.06 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.03 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.18 ms
+	Update Buffers (GPU): 0.11 ms
+	Visibility_Prepare: 0.08 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.13 ms
+########## sample 5
+STATE: editor
+FPS: 227.9
+FRAME_TIME_MS: 4.39
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 0.33 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.617 max=34.17 stalled=39427/39856 frames (98.9%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.07 fences=0.06 present=0.11 sync=0.02 stall=0.07 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 77071 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=35515 skips=31505
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4731028
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=39856 mean_ms=5.26 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=39856 fb=1698907 req=4587359 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=38550 jobEnd=38550 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.32
+GPU_FRAME_MS: 4.38
+PROFILER_DATA:
+CPU Frame: 3.27 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.03 ms
+	App-BeginCmdCompose: 0.01 ms
+	App-Input: 0.02 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.03 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.07 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.35 ms
+	CL-ObjTools+Settings: 0.05 ms
+	CL-PreBlock: 0.11 ms
+	CL-Tail: 0.01 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.23 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.15 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.02 ms
+	Input-RawInput: 0.01 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.02 ms
+	Logic - common_loop: 1.05 ms
+	P2-calclocalcursor: 0.02 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.06 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.13 ms
+	P2-mapediting: 0.18 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.01 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.24 ms
+	RP3D-RenderWait: 0.22 ms
+	RP3D-VisMain: 0.10 ms
+	RP3D-VisRefl: 0.05 ms
+	RP3D-rec ComputeFX: 0.13 ms
+	RP3D-rec Occlusion: 0.24 ms
+	RP3D-rec Opaque: 0.08 ms
+	RP3D-rec PostFX: 0.05 ms
+	RP3D-rec PrepareAsync: 0.06 ms
+	RP3D-rec PrepareFrame: 0.18 ms
+	RP3D-rec Prepass: 0.36 ms
+	RP3D-rec Transparent: 0.18 ms
+	RP3D-rec UpdateTex: 0.02 ms
+	Render: 0.64 ms
+	Scene-S1 Anim+Transform: 0.66 ms
+	Scene-S2 Hier+Mesh+Mat: 0.64 ms
+	Scene-S3 Armature+Proc: 0.04 ms
+	Scene-S4 Object+Light: 0.38 ms
+	Scene-S5 Tail+ShaderScene: 0.00 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.02 ms
+	Shadowmap packing: 0.04 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.02 ms
+	Terrain - Wicked Bridge: 0.14 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.00 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 3.15 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 1.10 ms
+	Update - Particles: 0.00 ms
+	Update - Render: 0.03 ms
+	Update - Terrain: 0.16 ms
+	Update - Wicked (Total): 1.74 ms
+	Update Buffers (CPU): 0.05 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.30 ms
+	VT-job Total: 0.47 ms
+	VT-record: 0.02 ms
+
+GPU Frame: 4.41 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.01 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.24 ms
+	Occlusion Culling Render: 0.23 ms
+	Opaque Scene: 0.51 ms
+	Scene MIP Chain: 0.06 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.03 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.18 ms
+	Update Buffers (GPU): 0.12 ms
+	Visibility_Prepare: 0.08 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.13 ms
+########## sample 6
+STATE: editor
+FPS: 228.2
+FRAME_TIME_MS: 4.38
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 1.26 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.596 max=34.17 stalled=40724/41157 frames (98.9%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.07 fences=0.05 present=0.10 sync=0.02 stall=1.02 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 79673 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=36816 skips=32643
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4736746
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=41157 mean_ms=5.23 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=41157 fb=1753549 req=4729168 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=39851 jobEnd=39851 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.21
+GPU_FRAME_MS: 4.42
+PROFILER_DATA:
+CPU Frame: 3.16 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.02 ms
+	App-BeginCmdCompose: 0.02 ms
+	App-Input: 0.02 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.02 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.05 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.31 ms
+	CL-ObjTools+Settings: 0.04 ms
+	CL-PreBlock: 0.06 ms
+	CL-Tail: 0.00 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.23 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.17 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.02 ms
+	Input-RawInput: 0.01 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.02 ms
+	Logic - common_loop: 0.83 ms
+	P2-calclocalcursor: 0.01 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.00 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.12 ms
+	P2-mapediting: 0.17 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.01 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.34 ms
+	RP3D-RenderWait: 0.25 ms
+	RP3D-VisMain: 0.12 ms
+	RP3D-VisRefl: 0.05 ms
+	RP3D-rec ComputeFX: 0.18 ms
+	RP3D-rec Occlusion: 0.27 ms
+	RP3D-rec Opaque: 0.07 ms
+	RP3D-rec PostFX: 0.06 ms
+	RP3D-rec PrepareAsync: 0.11 ms
+	RP3D-rec PrepareFrame: 0.29 ms
+	RP3D-rec Prepass: 0.39 ms
+	RP3D-rec Transparent: 0.22 ms
+	RP3D-rec UpdateTex: 0.01 ms
+	Render: 0.80 ms
+	Scene-S1 Anim+Transform: 0.56 ms
+	Scene-S2 Hier+Mesh+Mat: 0.57 ms
+	Scene-S3 Armature+Proc: 0.04 ms
+	Scene-S4 Object+Light: 0.39 ms
+	Scene-S5 Tail+ShaderScene: 0.00 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.02 ms
+	Shadowmap packing: 0.05 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.03 ms
+	Terrain - Wicked Bridge: 0.14 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.01 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 2.75 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 0.88 ms
+	Update - Particles: 0.00 ms
+	Update - Render: 0.05 ms
+	Update - Terrain: 0.17 ms
+	Update - Wicked (Total): 1.57 ms
+	Update Buffers (CPU): 0.08 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.33 ms
+	VT-job Total: 0.45 ms
+	VT-record: 0.04 ms
+
+GPU Frame: 4.37 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.04 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.22 ms
+	Occlusion Culling Render: 0.22 ms
+	Opaque Scene: 0.51 ms
+	Scene MIP Chain: 0.06 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.03 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.18 ms
+	Update Buffers (GPU): 0.15 ms
+	Visibility_Prepare: 0.11 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.12 ms
+########## serial sample 1
+STATE: editor
+FPS: 227.4
+FRAME_TIME_MS: 4.40
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 0.49 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.537 max=34.17 stalled=44157/44607 frames (99.0%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.06 fences=0.06 present=0.10 sync=0.02 stall=0.25 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 86573 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=40266 skips=35662
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4751914
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=44607 mean_ms=5.17 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=44607 fb=1898449 req=5105218 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=43301 jobEnd=43301 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.57
+GPU_FRAME_MS: 4.42
+PROFILER_DATA:
+CPU Frame: 3.52 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.03 ms
+	App-BeginCmdCompose: 0.02 ms
+	App-Input: 0.02 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.15 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.06 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.43 ms
+	CL-ObjTools+Settings: 0.04 ms
+	CL-PreBlock: 0.10 ms
+	CL-Tail: 0.00 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.24 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.14 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.02 ms
+	Input-RawInput: 0.01 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.01 ms
+	Logic - common_loop: 1.09 ms
+	P2-calclocalcursor: 0.02 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.00 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.13 ms
+	P2-mapediting: 0.10 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.00 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.26 ms
+	RP3D-RenderWait: 0.23 ms
+	RP3D-VisMain: 0.10 ms
+	RP3D-VisRefl: 0.04 ms
+	RP3D-rec ComputeFX: 0.14 ms
+	RP3D-rec Occlusion: 0.25 ms
+	RP3D-rec Opaque: 0.08 ms
+	RP3D-rec PostFX: 0.06 ms
+	RP3D-rec PrepareAsync: 0.05 ms
+	RP3D-rec PrepareFrame: 0.17 ms
+	RP3D-rec Prepass: 0.37 ms
+	RP3D-rec Transparent: 0.19 ms
+	RP3D-rec UpdateTex: 0.01 ms
+	Render: 0.65 ms
+	SU-Animation: 0.03 ms
+	SU-Hierarchy: 0.48 ms
+	SU-Material: 0.09 ms
+	SU-Mesh: 0.16 ms
+	SU-Object: 0.37 ms
+	SU-Physics: 0.00 ms
+	SU-Transform: 0.03 ms
+	Scene-S1 Anim+Transform: 0.63 ms
+	Scene-S2 Hier+Mesh+Mat: 0.73 ms
+	Scene-S3 Armature+Proc: 0.03 ms
+	Scene-S4 Object+Light: 0.40 ms
+	Scene-S5 Tail+ShaderScene: 0.01 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.01 ms
+	Shadowmap packing: 0.04 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.02 ms
+	Terrain - Wicked Bridge: 0.13 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.00 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 3.24 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 1.15 ms
+	Update - Particles: 0.00 ms
+	Update - Render: 0.03 ms
+	Update - Terrain: 0.15 ms
+	Update - Wicked (Total): 1.79 ms
+	Update Buffers (CPU): 0.04 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.21 ms
+	VT-job Total: 0.30 ms
+	VT-record: 0.02 ms
+
+GPU Frame: 4.40 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.02 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.25 ms
+	Occlusion Culling Render: 0.25 ms
+	Opaque Scene: 0.51 ms
+	Scene MIP Chain: 0.06 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.03 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.18 ms
+	Update Buffers (GPU): 0.19 ms
+	Visibility_Prepare: 0.08 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.11 ms
+########## serial sample 2
+STATE: editor
+FPS: 229.0
+FRAME_TIME_MS: 4.37
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 0.70 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.514 max=34.17 stalled=45438/45906 frames (99.0%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.05 fences=0.06 present=0.10 sync=0.02 stall=0.46 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 89171 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=41565 skips=36799
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4757612
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=45906 mean_ms=5.14 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=45906 fb=1953007 req=5246809 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=44600 jobEnd=44600 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.42
+GPU_FRAME_MS: 4.37
+PROFILER_DATA:
+CPU Frame: 3.40 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.02 ms
+	App-BeginCmdCompose: 0.02 ms
+	App-Input: 0.02 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.02 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.05 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.33 ms
+	CL-ObjTools+Settings: 0.03 ms
+	CL-PreBlock: 0.06 ms
+	CL-Tail: 0.00 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.23 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.14 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.01 ms
+	Input-RawInput: 0.01 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.04 ms
+	Logic - common_loop: 0.82 ms
+	P2-calclocalcursor: 0.01 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.04 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.12 ms
+	P2-mapediting: 0.11 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.00 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.22 ms
+	RP3D-RenderWait: 0.22 ms
+	RP3D-VisMain: 0.09 ms
+	RP3D-VisRefl: 0.05 ms
+	RP3D-rec ComputeFX: 0.13 ms
+	RP3D-rec Occlusion: 0.25 ms
+	RP3D-rec Opaque: 0.07 ms
+	RP3D-rec PostFX: 0.05 ms
+	RP3D-rec PrepareAsync: 0.05 ms
+	RP3D-rec PrepareFrame: 0.14 ms
+	RP3D-rec Prepass: 0.33 ms
+	RP3D-rec Transparent: 0.18 ms
+	RP3D-rec UpdateTex: 0.01 ms
+	Render: 0.59 ms
+	SU-Animation: 0.02 ms
+	SU-Hierarchy: 0.51 ms
+	SU-Material: 0.07 ms
+	SU-Mesh: 0.13 ms
+	SU-Object: 0.35 ms
+	SU-Physics: 0.00 ms
+	SU-Transform: 0.02 ms
+	Scene-S1 Anim+Transform: 0.46 ms
+	Scene-S2 Hier+Mesh+Mat: 0.72 ms
+	Scene-S3 Armature+Proc: 0.03 ms
+	Scene-S4 Object+Light: 0.37 ms
+	Scene-S5 Tail+ShaderScene: 0.00 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.01 ms
+	Shadowmap packing: 0.04 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.02 ms
+	Terrain - Wicked Bridge: 0.14 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.00 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 2.74 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 0.88 ms
+	Update - Particles: 0.00 ms
+	Update - Render: 0.03 ms
+	Update - Terrain: 0.16 ms
+	Update - Wicked (Total): 1.58 ms
+	Update Buffers (CPU): 0.04 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.17 ms
+	VT-job Total: 0.32 ms
+	VT-record: 0.02 ms
+
+GPU Frame: 4.36 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.02 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.22 ms
+	Occlusion Culling Render: 0.21 ms
+	Opaque Scene: 0.51 ms
+	Scene MIP Chain: 0.06 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.04 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.18 ms
+	Update Buffers (GPU): 0.12 ms
+	Visibility_Prepare: 0.11 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.13 ms
+########## serial sample 3
+STATE: editor
+FPS: 228.5
+FRAME_TIME_MS: 4.38
+SYSTEM_MEM_MB: 6210672
+SYSTEM_MEM_GB: 6065.11
+VRAM_MB: 2465.5
+VRAM_GB: 2.41
+GPU_ADAPTER: AMD Radeon RX 9060 XT
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1288
+SCENE_MATERIALS: 1250
+SCENE_LIGHTS: 22
+SCENE_TRANSFORMS: 2437
+SCENE_CAMERAS: 0
+SCENE_EMITTERS: 0
+SCENE_HAIRS: 0
+SCENE_ANIMATIONS: 12
+SCENE_ARMATURES: 33
+SCENE_DECALS: 1
+SCENE_PROBES: 9
+SCENE_SOUNDS: 0
+SCENE_COLLIDERS: 0
+SCENE_RIGIDBODIES: 0
+SCENE_SOFTBODIES: 0
+SCENE_SCRIPTS: 0
+SCENE_HIERARCHY: 1995
+SCENE_WEATHERS: 1
+HIER: roots=435 maxSubtree=1283 visited=1995 imbalance=0.643
+VISIBLE_OBJECTS: 576
+VISIBLE_LIGHTS: 16
+VISIBLE_DECALS: 1
+VISIBLE_ENVPROBES: 6
+VISIBLE_EMITTERS: 0
+VISIBLE_HAIRS: 0
+DELAYED_SHADOWS_ENGINE: ON (staggered)
+SHADOW_LOD_OVERRIDE_ENGINE: ON (per-cascade LOD, can flicker)
+SHADOW_FARCULL_ENGINE: ON (near cascades only)
+SHADOW_LOCAL_GRANTED: 13
+SHADOW_LOCAL_CAPPED: 2
+SHADOW_LOCAL_RENDERED: 0
+SHADOW_LOCAL_CACHE_ENGINE: ON (static-cache)
+CAMERA_EYE: 103.2, 91.0, 183.0
+CAMERA_AT: -0.813, -0.248, -0.528
+CAMERA_UP: -0.208, 0.969, -0.135
+CAUSTIC_SCALE: 1.0000 (ShaderOcean.caustic_scale -> engine lightingHF seabed caustics)
+CAUSTIC_PATCHLEN: 50.00 (drives waves; caustic size is now independent of it)
+CAUSTIC_SIZE_FROM_SLIDER: 3.00 (what the visuals/slider path delivered; -1 = never ran)
+WH_GDEFAULT: -10000.00 (g.gdefaultwaterheight - GG source of truth)
+WH_COMPONENT: -10000.00 (weathers[g_weatherEntityID].oceanParameters.waterHeight - written by Wicked_Update_Visuals)
+WH_SCENE_WEATHER: -10000.00 (scene.weather.oceanParameters.waterHeight - read by GGCustomFrame_Update)
+WH_GGCB: -10000.00 (actual value uploaded to GGCustomFrameCB b4)
+WATER_COLOR: 0.035, 0.082, 0.169
+WATER_ALPHA: 0.000 (surface opacity; ~0 = fully transparent, base colour won't show from above)
+WATER_EXTINCTION: 0.000, 0.900, 1.000 (absorption tint)
+HAIR_SYSTEMS: 0
+HAIR_TOTAL_STRANDS: 0 (one sim thread each, every frame)
+HAIR_MAX_STRANDS_PER_SYS: 0
+HAIR_SEG: 0  HAIR_BILLBOARD: 0  HAIR_VIEWDIST: 0  HAIR_LEN: 0.0
+GRASS_CHUNKS: chunks=0 systems=0  types_per_chunk 1:0 2:0 3:0 4:0 5:0 6:0 7:0 8+:0  merged_would_be=0
+GRASS_MERGE: flag=1 calls=9 notypes=0 reused=0 nomat=0 created=9 | fullResets=0 recycles=0 recreates=9 deadMeshNow=0
+WEATHER_WIND: dir=(1.0000, 0.0000, 1.0000) speed=1.000 randomness=1.000 wavesize=1.000
+HAIRSKIP: disabled
+APP_SUBMIT_PRESENT_MS: 0.54 (queue submits + Present + swapchain pacing, outside CPU-frame span)
+SUBMIT_STALL_WINDOW: mean=1.494 max=34.17 stalled=46726/47217 frames (99.0%) — rolling since SET_SUBMITSTATS 1; the single-frame stall below is a SNAPSHOT and varies, judge from this line
+SUBMIT_PHASES_MS: close=0.06 fences=0.06 present=0.10 sync=0.02 stall=0.31 (lists=15 batches=1 deps=0)
+TERRAIN_DRAW_COUNT: 0
+TERRAIN_DRAW_EXIT: 0
+TERRAIN_INIT: 1
+TERRAIN_DRAW_EN: 0
+TERRAIN_UPDATE_EN: 1
+PICK_REAL_RUNS: 95 (scene raycasts actually executed)
+PICK_CACHE_HITS: 91793 (reused - ray unchanged)
+PICK_MISS_MASK: 0 (miss: layer/output pattern differed)
+PICK_MISS_RAY: 95 (miss: cursor/camera differed)
+EDIT_STATE: gridentity=0 gridentityobj=0 pickedSection=0 mclick=0 selstage=0 grideditselect=5
+TERRAINW_BRIDGE_CALLS: 8
+TERRAINW_BRIDGE_MARKED: 2594
+TERRAINW_BRIDGE_KEYS_ERASED: 2468
+TERRAINW_AUTOBLEND_CHUNKS: 32
+TERRAINW_PAINTBLEND_CHUNKS: 0
+TERRAINW_INVALIDATED_NOW: 0
+TERRAINW_MERGEPENDING_NOW: 0
+TERRAINW_AUTO_RUNS: 346
+TERRAINW_AUTO_LASTPENDING: 2
+TERRAINW_AUTO_SKIP_NOCHUNK: 0
+TERRAINW_AUTO_SKIP_NOLAYERS: 0
+TERRAINW_AUTO_SKIP_INVALID: 2641
+TERRAINW_AUTO_SKIP_MERGEPEND: 4
+GRASS_RECYCLES: 0
+GRASS_FULLRESETS: 0
+GRASS_RECREATES: 9
+GRASS_DEADMESH_NOW: 0
+GRASS_EXTKILLS: 0
+TERRAINW_IDLE: gate=1 calm=42876 skips=37946
+TAB_MODE: 0
+POLYS: 109358
+RAYS: luaIsect=0 luaIsect_ms=0.0 modes(t/s/p/d)=0/0/0/0 sentray4=0 sentray4_ms=0.0 t=4763359
+RAYS2: isectCalls=10 objIter=4015 aabbPass=5 tris=1252 skinTris=0
+VT: rebuilds=843 scan_ms=14.2 sort_ms=64.8 free=1962 tiles=2852 reqTotal=187 reasonBits=30
+GAPS: count=11 last_ms=287 (frame gaps >100ms; ledger in gap_trace.txt)
+HITCH: frames=47217 mean_ms=5.12 worst_ms=5283.8 over(16.7/25/33/50/100)=625/35/27/17/11 psoC=49 psoMs=15.1 psoMax_ms=1.1
+STREAM: on=1 enrolled=202 replaced=129 resident_mb=90.2 full_mb=499.8 gpumem_pct=15.9 copies=47217 fb=2008069 req=5389708 guard_rejects=0
+SHADOWT: transparent_shadow_batches=0
+VRAM: census_mb=1903.0 defaultheap_mb=1833.3 resources=5648 driver_usage_mb=2465.5 driver_budget_mb=15416.5
+SUBALLOC: blocks=3 total_mb=384.0 free_mb=71.1 used_mb=312.9
+STREAM2: jobStart=45911 jobEnd=45911 busySkip=32
+STREAM3: req0=110 reqLow=10 noMips=37 cancel=45 in=0 out=0 reqMask=0xBFC0 (per-pass census; reqMask=all request magnitudes seen)
+FOG_VIS: near=40000.0 far=700000.0 a=0.000 rgb=(140,158,173)
+FOG_WEATHER: start=40000.0 density=0.00000606 overrideCol=0 horizon=(0.55,0.62,0.68)
+CPU_FRAME_MS: 3.53
+GPU_FRAME_MS: 4.36
+PROFILER_DATA:
+CPU Frame: 3.48 ms
+	Animation Dependencies: 0.00 ms
+	Animations: 0.03 ms
+	App-BeginCmdCompose: 0.02 ms
+	App-Input: 0.03 ms
+	App-PreUpdate: 0.00 ms
+	App-ThreadSafeEvents: 0.00 ms
+	CL-EntityProps: 0.19 ms
+	CL-GameLoop: 0.00 ms
+	CL-Head: 0.06 ms
+	CL-Market+Misc: 0.00 ms
+	CL-ObjLists: 0.50 ms
+	CL-ObjTools+Settings: 0.05 ms
+	CL-PreBlock: 0.10 ms
+	CL-Tail: 0.00 ms
+	CL-Tutorial: 0.00 ms
+	Compose: 0.24 ms
+	Fixed Update: 0.00 ms
+	Frustum Culling (2x): 0.14 ms
+	GUI Update: 0.00 ms
+	Grass - GG Update: 0.00 ms
+	Input: 0.03 ms
+	Input-RawInput: 0.02 ms
+	Input-SDL: 0.00 ms
+	Input-XInput: 0.00 ms
+	Logic - ConstantNonDisplay: 0.01 ms
+	Logic - common_loop: 1.17 ms
+	P2-calclocalcursor: 0.02 ms
+	P2-constructsel: 0.00 ms
+	P2-editor_visuals: 0.01 ms
+	P2-entity_loopanim: 0.00 ms
+	P2-lighting_loop: 0.01 ms
+	P2-mainfunc: 0.12 ms
+	P2-mapediting: 0.07 ms
+	P2-overallfunc: 0.00 ms
+	P2-waterineditor: 0.00 ms
+	P2-widget_loop: 0.00 ms
+	Procedural Animations: 0.00 ms
+	RP3D-PerFrameData: 0.01 ms
+	RP3D-RenderSerial: 0.22 ms
+	RP3D-RenderWait: 0.25 ms
+	RP3D-VisMain: 0.09 ms
+	RP3D-VisRefl: 0.05 ms
+	RP3D-rec ComputeFX: 0.14 ms
+	RP3D-rec Occlusion: 0.24 ms
+	RP3D-rec Opaque: 0.08 ms
+	RP3D-rec PostFX: 0.05 ms
+	RP3D-rec PrepareAsync: 0.05 ms
+	RP3D-rec PrepareFrame: 0.18 ms
+	RP3D-rec Prepass: 0.36 ms
+	RP3D-rec Transparent: 0.18 ms
+	RP3D-rec UpdateTex: 0.01 ms
+	Render: 0.64 ms
+	SU-Animation: 0.03 ms
+	SU-Hierarchy: 0.47 ms
+	SU-Material: 0.09 ms
+	SU-Mesh: 0.15 ms
+	SU-Object: 0.32 ms
+	SU-Physics: 0.01 ms
+	SU-Transform: 0.02 ms
+	Scene-S1 Anim+Transform: 0.64 ms
+	Scene-S2 Hier+Mesh+Mat: 0.72 ms
+	Scene-S3 Armature+Proc: 0.03 ms
+	Scene-S4 Object+Light: 0.35 ms
+	Scene-S5 Tail+ShaderScene: 0.00 ms
+	Script Components: 0.00 ms
+	Shadowmap Rendering: 0.02 ms
+	Shadowmap packing: 0.04 ms
+	Spline Update: 0.00 ms
+	Spring Dependencies: 0.00 ms
+	Terrain - GG Core: 0.02 ms
+	Terrain - Wicked Bridge: 0.13 ms
+	TerrainW - Generation_Update: 0.00 ms
+	TerrainW - Grass Maint: 0.00 ms
+	TerrainW - Tree Pool: 0.00 ms
+	Trees - FrustumCull: 0.00 ms
+	Update: 3.35 ms
+	Update - Emitters: 0.00 ms
+	Update - Logic (Total): 1.22 ms
+	Update - Particles: 0.08 ms
+	Update - Render: 0.03 ms
+	Update - Terrain: 0.15 ms
+	Update - Wicked (Total): 1.75 ms
+	Update Buffers (CPU): 0.04 ms
+	VT-WaitInRecord: 0.00 ms
+	VT-job PageBuf: 0.21 ms
+	VT-job Total: 0.33 ms
+	VT-record: 0.02 ms
+
+GPU Frame: 4.36 ms
+	Bloom: 0.03 ms
+	Caustics: 0.00 ms
+	EmittedParticles - Render: 0.00 ms
+	EmittedParticles - Render (Distortion): 0.00 ms
+	Entity Culling: 0.03 ms
+	Environment Probe Refresh: 0.00 ms
+	FXAA: 0.04 ms
+	GUI Background Blur: 0.01 ms
+	MSAO: 0.09 ms
+	Meshlet prepare: 0.00 ms
+	Occlusion Culling: 0.23 ms
+	Occlusion Culling Render: 0.23 ms
+	Opaque Scene: 0.51 ms
+	Scene MIP Chain: 0.06 ms
+	Shadowmap Rendering: 0.00 ms
+	Skinning and Morph: 0.03 ms
+	Terrain - UpdateVirtualTexturesGPU: 0.01 ms
+	Transparent Scene: 0.18 ms
+	Update Buffers (GPU): 0.12 ms
+	Visibility_Prepare: 0.08 ms
+	Wind: 0.01 ms
+	Z-Prepass: 0.13 ms

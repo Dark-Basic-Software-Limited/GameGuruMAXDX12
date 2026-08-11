@@ -818,3 +818,67 @@ pass. Both are real engine work and neither is written.
 a change to the transform-propagation order, which is exactly the kind of thing that produces
 subtle one-frame parenting glitches. It deserves its own build + POLYS gate + sweep, not the
 last fifteen minutes of a session.
+
+## ✗ 14. THE SU-HIERARCHY BALANCE FIX WAS BUILT, MEASURED, AND REJECTED (2026-08-10)
+
+§13 predicted ~0.35 ms from balancing the hierarchy jobs. **It was implemented, it worked
+mechanically and perfectly, and it made `Scene::Update` WORSE. Reverted.**
+
+### What was built (engine 2.21, now reverted)
+`g_hier_split`: any subtree over 128 nodes is expanded into its children — recursively — with
+the nodes above the split points resolved serially in BFS order first. Work items carry their
+own seed (parent's resolved world + layer mask), so a split sub-root is walked by exactly the
+same job body as an original root.
+
+**The mechanism did precisely what it was designed to do:**
+
+| | split OFF | split ON |
+|---|---|---|
+| dispatch items | 435 | **1275** |
+| largest single subtree | 1283 nodes | **13** |
+| **imbalance** | **0.643** | **0.007** |
+| POLYS | 109358 | **109358** (identical, every sample) |
+
+### The result: +0.260 ms WORSE (+16.6%)
+Three arms, within one launch, 10 samples each, on Switch Escape:
+
+| arm | Scene::Update mean | sd | CPU frame |
+|---|---|---|---|
+| A1 split OFF | **1.570** | 0.124 | 3.40 |
+| B split ON | **1.825** | 0.136 | 3.60 |
+| A2 split OFF | **1.560** | 0.183 | 3.38 |
+
+**Knob delta +0.260 ms; A-vs-A2 control drift 0.010 ms.** The regression is 26× the drift —
+this is not noise, it is a real and sizeable loss.
+
+### ★ Why the prediction was wrong — the lesson, and it was already written down
+The ~0.35 ms estimate came from **`SU-Hierarchy` measured under `SET_SCENESERIAL`**. That mode
+**removes cross-system overlap** — WETEST's own row for it says so, and warns "compare the SU-*
+shares against EACH OTHER, never the total against a normal frame." In a normal frame Hierarchy
+is dispatched *alongside* Mesh and Material inside stage S2 and closed by one Wait, so its
+0.47 ms was largely **hidden underneath them**. Shortening a critical path that was not the
+stage's binding constraint buys nothing — while the machinery to shorten it costs:
+- an O(N) subtree-size pass (~4000 hash ops) in the snapshot job that this system **waits on**;
+- a serial work-list build of 1275 items, each carrying a 64-byte matrix by value;
+- ~3× the job count (1275 vs 435) and its dispatch overhead.
+
+★ **RULE: a serialised per-system number is a SHARE, not a saving. Never size a real-frame
+optimisation from a `SET_SCENESERIAL` reading — confirm the system is the stage's critical path
+in a NORMAL frame first.**
+
+### ⚠ A second trap, caught mid-test
+The first A/B computed the subtree sizes **unconditionally**, so the "off" arm paid the new cost
+too — the knob looked nearly free (+0.020 ms) because both arms carried the tax. Gating the size
+pass on the flag turned +0.020 into the true **+0.260**. ★ **When adding a knob, verify the OFF
+path is byte-identical to before, or the A/B measures the wrong thing.**
+
+### Disposition
+**Reverted to 2.20** (engine `b4ea718a`, game `75169d4c`) — the state that is swept, gated and
+tagged `baseline-lazytreepool-20260810`. Nothing default-off was kept: known-worse machinery in
+a hot engine path is a liability, and the A-arms here (1.565) also read above 2.20's 1.457 on
+this level, so the refactor likely taxed the default path as well.
+
+**SU-Hierarchy is therefore CLOSED as a target, not solved.** The imbalance is real and now
+proven harmless on this scene. If it is ever revisited, the prerequisite is a measurement
+showing Hierarchy is the S2 critical path **in a normal frame** — e.g. by shortening Mesh and
+Material first and seeing whether S2 stops falling.
