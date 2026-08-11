@@ -64,6 +64,12 @@ uint32_t g_treePoolSize = 6000; // effective count = the CEILING; slots are crea
 // from landing as a single hitch; it spreads over a few frames during level load instead.
 static uint32_t g_treePoolBuilt = 0;
 static constexpr uint32_t GG_TREE_POOL_GROW_PER_FRAME = 2048;
+// GGMAX 2.23: consecutive parked frames before the pool is released (see the park branch in
+// GGTrees_WickedUpdate). Must comfortably exceed a terrain-regen park, which is brief, while
+// still catching a level change, where the park is permanent. Frame-based rather than
+// time-based deliberately — it is the number of Scene::Update passes we are avoiding, and at
+// any frame rate 600 of them is far longer than a regen and far shorter than a session.
+static constexpr uint32_t GG_TREE_POOL_PARK_RELEASE_FRAMES = 600;
 // Hardcoded here to keep this file free of the HLSL-flavoured numTreeTypes
 // constant from GGTreesConstants.hlsli. Matches the g_GGTrees[38] array length.
 static constexpr uint32_t GG_TREE_TYPES      = 38;
@@ -440,6 +446,43 @@ static void GrowTreePool( wi::scene::Scene& scene, uint32_t want )
 	g_treePoolBuilt = target;
 }
 
+// GGMAX 2.23: destroy every built pool slot and drop all bindings. The inverse of GrowTreePool.
+//
+// Called only from the sustained-park branch of GGTrees_WickedUpdate (see the long comment
+// there) — i.e. the trees are gone for good, which in practice means a level change. It is
+// deliberately NOT called on ordinary camera movement: one-way growth within a level is correct
+// and avoids create/destroy thrash.
+//
+// Scope note: this releases the POOL only. The per-type tree meshes/materials (38 types x 3 LODs
+// = 114 meshes + 70 materials, built once by GGTrees_WickedSetup) are intentionally KEPT, so a
+// later tree level does not pay to rebuild them or re-upload their GPU data. Those are a fixed
+// ~184 entities; the pool is up to 6000 objects PLUS 6000 transforms, which is the part that
+// costs per-frame Scene::Update work.
+//
+// Bindings must die with the slots: g_slotToTree/g_slotCache are indexed BY SLOT and would
+// otherwise describe entities that no longer exist, and g_treeToSlot points back at them. The
+// next GGTrees_WickedUpdate re-derives all of it (the size mismatch it leaves behind is exactly
+// what the forceRebind check keys on).
+static void ReleaseTreePool( wi::scene::Scene& scene )
+{
+	for ( uint32_t i = 0; i < g_treePoolBuilt; i++ )
+	{
+		if ( g_treePoolEntities[ i ] != wi::ecs::INVALID_ENTITY )
+		{
+			scene.Entity_Remove( g_treePoolEntities[ i ] );
+			g_treePoolEntities[ i ] = wi::ecs::INVALID_ENTITY;
+		}
+	}
+	g_treePoolBuilt = 0;
+	g_slotToTree.clear();
+	g_slotCache .clear();
+	g_treeToSlot.clear();
+	g_treeDesiredEpoch.clear();
+	g_treeBand  .clear();
+	g_treeShadow.clear();
+	wi::backlog::post( "GGTrees: tree pool released (level has no trees)" );
+}
+
 // DX11 tree_shadow_range semantics: number of shadow cascades that receive tree
 // shadows (5 = all, 0 = none). Wicked cascadeMask counts skipped-FARTHEST
 // cascades, so proxy mask = 5 - range. Real tree meshes additionally never go
@@ -769,6 +812,7 @@ void GGTrees_WickedUpdate()
 	// park the pool; on re-show force a full rebind because the instance data
 	// (esp. Y heights) was regenerated while we were parked.
 	static bool s_poolParked = false;
+	static uint32_t s_parkedFrames = 0;
 	bool forceRebind = false;
 	if ( !ggtrees_global_params.draw_enabled )
 	{
@@ -781,12 +825,42 @@ void GGTrees_WickedUpdate()
 			}
 			GGTrees_SetShadowProxiesVisible( scene, false );
 			s_poolParked = true;
+			s_parkedFrames = 0;
+		}
+		// GGMAX 2.23 (2026-08-11): RELEASE THE POOL AFTER A SUSTAINED PARK.
+		//
+		// THE BUG THIS FIXES, measured: load Island Showdown (tree level), return to the hub,
+		// load Switch Escape (no trees) and the treeless level carried +6079 objects and +6079
+		// transforms versus loading it first in a clean session. DUMP_TREEPOOL named it:
+		// "POOL built=6000 bound=6000 renderable=0". Invisible (POLYS identical) but walked by
+		// Scene::Update every frame. `bound=6000` is the giveaway that we got here: Pass A
+		// evicts stale bindings, so if bindings survived, Pass A never ran — i.e. the update
+		// took THIS early return and the pool was hidden but never released.
+		//
+		// It is a consequence of 2.19's deliberately one-way GrowTreePool. One-way is right for
+		// camera movement (no create/destroy thrash as you walk away from trees) and wrong for
+		// level changes, where the pool should go back to nothing. NOT a regression — before
+		// 2.19 the pool was 6000 on every level unconditionally — but without this the lazy-pool
+		// saving only survives until the session's first tree level.
+		//
+		// WHY A FRAME THRESHOLD RATHER THAN A LEVEL-CHANGE HOOK: draw_enabled is also cleared
+		// transiently while GGTrees_Update regenerates terrain, and there is no single reliable
+		// "level changed" signal here. A sustained park means the trees are gone for good; a
+		// regen park is short. The threshold only has to separate those two, and releasing a
+		// few seconds late on a treeless level costs nothing — the slots are already invisible.
+		// Regrowth is already handled: unpark below sets forceRebind, and GrowTreePool rebuilds
+		// on demand under its 2048/frame cap.
+		if ( g_treePoolBuilt > 0 && ++s_parkedFrames >= GG_TREE_POOL_PARK_RELEASE_FRAMES )
+		{
+			ReleaseTreePool( scene );
+			s_parkedFrames = 0;
 		}
 		return;
 	}
 	if ( s_poolParked )
 	{
 		s_poolParked = false;
+		s_parkedFrames = 0;
 		forceRebind = true;
 		GGTrees_SetShadowProxiesVisible( scene, true );
 	}

@@ -56,5 +56,18 @@ wait_state "hub" 120 || say "  WARN did not return to hub"
 sleep 4
 enter "$TARGET" && capture "AFTER"
 
+# GGMAX 2.23 gate: after a release, a TREE level must rebuild the pool and still draw its trees.
+# This is the regression the release could plausibly cause, so it is tested in the same session,
+# immediately after the release has happened.
+say "=== ARM REGROW: back to $DECOY after the release — trees must come back ==="
+say "  -> NAVIGATE hub"
+send "NAVIGATE hub" 60 >/dev/null; sleep 12
+wait_state "hub" 120 || say "  WARN did not return to hub"
+sleep 4
+enter "$DECOY" && capture "REGROW=$DECOY"
+send "DUMP_TREEPOOL" 60 >/dev/null; sleep 2
+say "  $(head -1 "$D/Files/treepool_dump.txt" 2>/dev/null)"
+
 taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true
-say "=== DONE — compare FRESH vs AFTER; any positive delta is retained population ==="
+say "=== DONE ==="
+say "  PASS if: AFTER == FRESH (leak gone) AND REGROW POLYS == the decoy's reference (trees back)"
