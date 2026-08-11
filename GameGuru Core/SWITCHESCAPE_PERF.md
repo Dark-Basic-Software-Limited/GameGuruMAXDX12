@@ -1151,3 +1151,54 @@ the saving persists across level changes instead of evaporating at the session's
 **Measured and REJECTED along the way** (recorded so they are not retried): the parallel
 instance-array init (a wash, §11.2) and the SU-Hierarchy load-balance split (worked perfectly,
 made things 16.6% worse, §14).
+
+## ★★ 20. GGMAX 2.23b — the residual level-change leak, named and closed
+
+§19 left +79 objects / +79 meshes / +17 materials retained across a level change. **Named by
+diffing dumps, not by theorising** (`tools/sceneupdate/suleakname.sh`, new):
+
+```
+pool dump, Switch Escape FRESH : proxyChunks=0
+pool dump, Switch Escape AFTER : proxyChunks=256
+all 17 extra materials UNNAMED · ORPHAN_TOTAL 0 in both arms
+```
+
+**It was the merged billboard FAR-SHADOW PROXY chunks built for the previous level's trees.**
+`GGTrees_SetShadowProxiesVisible` only calls `SetRenderable(false)` — a park hides them and
+nothing removes them; the only teardown is in `GGTrees_WickedShutdown`, whose caller has no
+callers. Exactly the same structural gap as the pool itself.
+
+The arithmetic matched to the entity: **79 chunks that actually held trees** → 79 proxy objects
++ 79 proxy meshes; **17 distinct tree types present** → 17 billboard shadow materials.
+
+The two supporting signals mattered as much as the counts: all 17 extra materials were UNNAMED
+and `ORPHAN_TOTAL` was 0 in both arms, which ruled out stray level props and pointed at
+internally-created entities.
+
+**Fix:** `ReleaseTreePool()` also frees every proxy chunk, clears the proxy vectors and removes
+the per-type `g_shadowProxyMaterial` entities. They must go with the pool — a proxy describes
+where the PREVIOUS level's trees cast far shadows, so keeping it is stale data, not just wasted
+ECS work. The per-type tree meshes/materials stay (level-independent assets).
+
+| Switch Escape, FRESH vs AFTER Island Showdown | before 2.23b | after |
+|---|---|---|
+| objects | +79 | **0** |
+| meshes | +79 | **0** |
+| transforms | +79 | **0** |
+| materials | +17 | **+1** |
+| POLYS | identical | identical |
+
+Regrow arm: back to Island Showdown after a release → POLYS 4114598, objects 8850,
+`built=6000 bound=6000 renderable=6000 proxyChunks=256`. Proxies and trees both rebuild.
+
+⚠ The residual **+1 material / +1 hierarchy** is NOT part of this leak — it is the long-known
+player-start marker residue already recorded in WETEST's `DUMP_MATERIALS` row ("known: +3 per
+reload = the start-with-ghost-human marker"). Bounded, pre-existing, deliberately left.
+
+### 20.1 2.23b hub sweep: **CLEAN** (all 19) — the fifth consecutive clean sweep
+`tools/sweep_0811c_2.23b.txt`. C1 19/19 · C2 POLYS identical on all 19 · C3 VRAM worst
+3961.1 MB in-game (**134.9 MB headroom**) · C4 all 19 reached gameplay.
+
+**LEVEL CHANGES ARE NOW CLEAN.** `Scene::Update` 2.412 → 1.323 ms (−45%) on Switch Escape, and
+the saving persists across level changes instead of being handed back at the session's first
+tree level.
