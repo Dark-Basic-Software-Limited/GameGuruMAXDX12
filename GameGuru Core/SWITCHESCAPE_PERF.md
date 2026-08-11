@@ -1202,3 +1202,49 @@ reload = the start-with-ghost-human marker"). Bounded, pre-existing, deliberatel
 **LEVEL CHANGES ARE NOW CLEAN.** `Scene::Update` 2.412 → 1.323 ms (−45%) on Switch Escape, and
 the saving persists across level changes instead of being handed back at the session's first
 tree level.
+
+## ★★★ 21. GGMAX 2.24 — tree-type assets built on demand, per level (and the first REAL VRAM win)
+
+`GGTrees_WickedSetup` built all 38 tree types × 3 LOD meshes + materials at APP STARTUP — 114
+meshes + 70 materials, before any level was known (§16's biggest single non-terrain floor item).
+
+`EnsureTreeType(t)` builds one type on demand. **The driver is the spatial-grid rebuild's
+`passes` filter**, which already walks every tree instance whenever a level's tree data changes,
+so each level realises exactly the types it places, once, at load. `BindTreeSlot` and the
+shadow-proxy build call it as safety nets; setup is now validation only. `ReleaseTreeTypes` runs
+from `ReleaseTreePool`, because per-level assets kept across a level change would be the same
+retention bug as §19/§20.
+
+### Result — and tree levels save too, which the scoped estimate missed
+
+| | meshes | materials | POLYS |
+|---|---|---|---|
+| Switch Escape (treeless) | 1288 → **1174** (−114) | 1250 → **1180** (−70) | identical |
+| Island Showdown (trees) | 2410 → **2344** (−66) | 2362 → **2322** (−40) | **4114598 identical** |
+
+Island Showdown builds **48 of 114 meshes = 16 of the 38 types**. The estimate in §16 was
+"−114 on treeless levels"; the per-level design also saves ~58% of the library on tree levels.
+
+### ★ THE FIRST REAL VRAM WIN OF THIS CAMPAIGN
+
+| 2.23b → 2.24 | mean | median | range | direction |
+|---|---|---|---|---|
+| editor VRAM | **−74.7 MB** | −64.0 | −192 … −15 | **19/19 negative** |
+| in-game VRAM | **−68.8 MB** | −62.5 | −176 … −31 | **19/19 negative** |
+
+Worst-case headroom **134.9 → 183.1 MB** (Aztec GK in-game 3961.1 → 3912.9).
+
+⚠ **Why this one IS a result when §18.1's was not.** The earlier ±84 MB swings were
+BIDIRECTIONAL and had no mechanism, so they were correctly called noise. This is unidirectional
+on all 19 demos in both columns AND has a mechanism — tree meshes carry real GPU geometry, and
+the build now creates 58-100% fewer of them. Sign test alone on 19/19 is decisive; the mechanism
+makes it causal rather than coincidental.
+
+### 21.1 2.24 hub sweep: **CLEAN** — sixth consecutive
+`tools/sweep_0811d_2.24.txt`. C1 19/19 · C2 POLYS identical on all 19 · C3 VRAM worst 3912.9 MB
+in-game (183.1 MB headroom) · C4 all 19 reached gameplay.
+
+⚠ **NOT MEASURED: the load-time hitch.** Moving up to 48 mesh builds (`CreateRenderData` → GPU
+buffers) from app startup into the level-load grid rebuild is uninstrumented. It lands during a
+loading screen and is fewer meshes than it replaced, but it is not proven. **If a load-time hitch
+is ever reported on a tree level, look here first** (`EnsureTreeType` via the `passes` filter).
