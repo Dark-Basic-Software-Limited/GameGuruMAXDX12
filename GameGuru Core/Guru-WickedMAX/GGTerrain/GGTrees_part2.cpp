@@ -234,6 +234,85 @@ static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranch
 	return matEntity;
 }
 
+// GGMAX 2.24 (2026-08-11): build ONE tree type's assets, on demand. Returns false if the type
+// has no trunk in the static tables (nothing can ever be built for it).
+//
+// WHY THIS IS NOW LAZY. Setup used to build ALL 38 types x 3 LOD meshes + their materials up
+// front, at app startup, before any level was known — 114 MeshComponents + 70 MaterialComponents
+// that a level with no trees paid for in full, and that a level using 17 types still paid double
+// for. The empty-level census measured exactly that (SWITCHESCAPE_PERF.md §16). DX11 keeps its
+// tree geometry in plain GPU buffers and creates no ECS entities at all.
+//
+// The driver is the spatial-grid rebuild's `passes` filter, which already walks every tree
+// instance whenever the level's tree data changes. Asking it to ensure the type means each level
+// builds exactly the types it actually places, once, at load — not at app startup, and not the
+// 21 types it never uses. A late first sighting (camera reaches a new area with a new type) costs
+// one type's build mid-frame; that is 3 small meshes, far cheaper than the 114 it replaces.
+static bool EnsureTreeType( uint32_t t )
+{
+	if ( t >= GG_TREE_TYPES ) return false;
+	if ( g_treeMeshEntity[ t ] != wi::ecs::INVALID_ENTITY ) return true;   // already built
+
+	const GGTree& tree = g_GGTrees[ t ];
+	if ( !tree.trunk ) return false;                                        // nothing to build, ever
+
+	g_treeTrunkMaterialEntity[ t ] = BuildTreeMaterial( tree.trunk->textureName, false );
+
+	wi::ecs::Entity branchesMat = wi::ecs::INVALID_ENTITY;
+	if ( tree.branches )
+	{
+		branchesMat = BuildTreeMaterial( tree.branches->textureName, true );
+		g_treeBranchesMaterialEntity[ t ] = branchesMat;
+	}
+
+	g_treeMeshEntity[ t ] = BuildTreeMesh(
+		tree.trunk,    g_treeTrunkMaterialEntity[ t ],
+		tree.branches, branchesMat );
+
+	// LOD1/LOD2 variants share the type's materials (same texture set, just
+	// decimated geometry). A missing variant aliases the previous LOD so the
+	// per-frame pick never needs a validity check. If a lower LOD has
+	// branches where LOD0 had none, build the branch material on demand.
+	auto buildLodVariant = [&]( const GGTree& lodTree, wi::ecs::Entity fallback ) -> wi::ecs::Entity
+	{
+		if ( !lodTree.trunk ) return fallback;
+		wi::ecs::Entity lodBranchesMat = branchesMat;
+		if ( lodTree.branches && lodBranchesMat == wi::ecs::INVALID_ENTITY )
+		{
+			lodBranchesMat = BuildTreeMaterial( lodTree.branches->textureName, true );
+			g_treeBranchesMaterialEntity[ t ] = lodBranchesMat;
+		}
+		return BuildTreeMesh( lodTree.trunk, g_treeTrunkMaterialEntity[ t ],
+			lodTree.branches, lodBranchesMat );
+	};
+	g_treeMeshEntityLOD1[ t ] = buildLodVariant( g_GGTreesLOD1[ t ], g_treeMeshEntity[ t ] );
+	g_treeMeshEntityLOD2[ t ] = buildLodVariant( g_GGTreesLOD2[ t ], g_treeMeshEntityLOD1[ t ] );
+	return true;
+}
+
+// GGMAX 2.24: free every built tree type. Called from ReleaseTreePool, so the type assets go the
+// same way the pool and the shadow proxies do — a treeless level should carry none of the
+// previous level's tree data. LOD1/LOD2 may ALIAS a higher LOD (missing variant), so only
+// distinct entities are removed, exactly as GGTrees_WickedShutdown does.
+static void ReleaseTreeTypes( wi::scene::Scene& scene )
+{
+	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
+	{
+		if ( g_treeMeshEntityLOD2[ t ] != wi::ecs::INVALID_ENTITY && g_treeMeshEntityLOD2[ t ] != g_treeMeshEntityLOD1[ t ] && g_treeMeshEntityLOD2[ t ] != g_treeMeshEntity[ t ] )
+			scene.Entity_Remove( g_treeMeshEntityLOD2[ t ] );
+		if ( g_treeMeshEntityLOD1[ t ] != wi::ecs::INVALID_ENTITY && g_treeMeshEntityLOD1[ t ] != g_treeMeshEntity[ t ] )
+			scene.Entity_Remove( g_treeMeshEntityLOD1[ t ] );
+		if ( g_treeMeshEntity            [ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeMeshEntity            [ t ] );
+		if ( g_treeTrunkMaterialEntity   [ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeTrunkMaterialEntity   [ t ] );
+		if ( g_treeBranchesMaterialEntity[ t ] != wi::ecs::INVALID_ENTITY ) scene.Entity_Remove( g_treeBranchesMaterialEntity[ t ] );
+		g_treeMeshEntity            [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeMeshEntityLOD1        [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeMeshEntityLOD2        [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeTrunkMaterialEntity   [ t ] = wi::ecs::INVALID_ENTITY;
+		g_treeBranchesMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
+	}
+}
+
 static void GGTrees_WickedSetup()
 {
 	// Capture EXE directory once — DDS lookups need CWD-independent paths.
@@ -241,46 +320,16 @@ static void GGTrees_WickedSetup()
 	if ( !g_treesExeDir.empty() && ( g_treesExeDir.back() == '/' || g_treesExeDir.back() == '\\' ) )
 		g_treesExeDir.pop_back();
 
-	auto& scene = wi::scene::GetScene();
 
+	// GGMAX 2.24: NO type assets are built here any more — see EnsureTreeType. Setup only
+	// validates that the compiled-in tables actually contain tree data. `typesBuilt` therefore
+	// counts types that COULD be built, which is what the latch below really wanted to know.
 	uint32_t typesBuilt = 0, branchesBuilt = 0;
 	for ( uint32_t t = 0; t < GG_TREE_TYPES; t++ )
 	{
 		const GGTree& tree = g_GGTrees[ t ];
 		if ( !tree.trunk ) continue;
-
-		g_treeTrunkMaterialEntity[ t ] = BuildTreeMaterial( tree.trunk->textureName, false );
-
-		wi::ecs::Entity branchesMat = wi::ecs::INVALID_ENTITY;
-		if ( tree.branches )
-		{
-			branchesMat = BuildTreeMaterial( tree.branches->textureName, true );
-			g_treeBranchesMaterialEntity[ t ] = branchesMat;
-			branchesBuilt++;
-		}
-
-		g_treeMeshEntity[ t ] = BuildTreeMesh(
-			tree.trunk,    g_treeTrunkMaterialEntity[ t ],
-			tree.branches, branchesMat );
-
-		// LOD1/LOD2 variants share the type's materials (same texture set, just
-		// decimated geometry). A missing variant aliases the previous LOD so the
-		// per-frame pick never needs a validity check. If a lower LOD has
-		// branches where LOD0 had none, build the branch material on demand.
-		auto buildLodVariant = [&]( const GGTree& lodTree, wi::ecs::Entity fallback ) -> wi::ecs::Entity
-		{
-			if ( !lodTree.trunk ) return fallback;
-			wi::ecs::Entity lodBranchesMat = branchesMat;
-			if ( lodTree.branches && lodBranchesMat == wi::ecs::INVALID_ENTITY )
-			{
-				lodBranchesMat = BuildTreeMaterial( lodTree.branches->textureName, true );
-				g_treeBranchesMaterialEntity[ t ] = lodBranchesMat;
-			}
-			return BuildTreeMesh( lodTree.trunk, g_treeTrunkMaterialEntity[ t ],
-				lodTree.branches, lodBranchesMat );
-		};
-		g_treeMeshEntityLOD1[ t ] = buildLodVariant( g_GGTreesLOD1[ t ], g_treeMeshEntity[ t ] );
-		g_treeMeshEntityLOD2[ t ] = buildLodVariant( g_GGTreesLOD2[ t ], g_treeMeshEntityLOD1[ t ] );
+		if ( tree.branches ) branchesBuilt++;
 
 		// Stage 4 (deprecated 2026-07-13 evening): no ImpostorComponent.
 		// Wicked's impostor render path (wiRenderer.cpp:7298 RenderImpostors)
@@ -514,7 +563,10 @@ static void RebuildTreeGrid()
 		if ( !t.IsVisible() || t.IsInvalid() || t.IsFlattened() ) return false;
 		uint32_t type = (uint32_t)t.GetType();
 		if ( type >= GG_TREE_TYPES ) return false;
-		if ( g_treeMeshEntity[ type ] == wi::ecs::INVALID_ENTITY ) return false;
+		// GGMAX 2.24: build this type's assets on first sight instead of testing whether setup
+		// already built all 38. This filter walks every tree instance whenever the level's tree
+		// data changes, so it is the natural place to realise exactly the types the level uses.
+		if ( !EnsureTreeType( type ) ) return false;
 		return true;
 	};
 
@@ -554,6 +606,7 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 	InstanceTree* pTree = &pAllTrees[ treeIdx ];
 	uint32_t type = (uint32_t)pTree->GetType();
 	if ( type >= GG_TREE_TYPES ) return false;
+	if ( !EnsureTreeType( type ) ) return false;   // GGMAX 2.24: safety net; grid build normally did it
 	wi::ecs::Entity treeMesh = TreeMeshForBand( type, band );
 	if ( treeMesh == wi::ecs::INVALID_ENTITY ) return false;
 
@@ -730,7 +783,13 @@ static void ReleaseTreePool( wi::scene::Scene& scene )
 		}
 	}
 
-	wi::backlog::post( "GGTrees: tree pool + shadow proxies released (level has no trees)" );
+	// GGMAX 2.24: the per-type assets go too. Before 2.24 they were built once at startup for all
+	// 38 types and deliberately kept; now they are built per level for only the types that level
+	// uses, so KEEPING them across a level change would be the same retention bug just fixed for
+	// the pool and the proxies. The next tree level rebuilds exactly what it needs at grid-build.
+	ReleaseTreeTypes( scene );
+
+	wi::backlog::post( "GGTrees: tree pool + shadow proxies + type assets released (no trees)" );
 }
 
 // Rebuild ONE chunk's merged billboard shadow mesh (materials kept and reused).
@@ -758,7 +817,7 @@ static void GGTrees_BuildShadowProxyChunk( uint32_t c )
 			if ( !p->IsVisible() || p->IsInvalid() || p->IsFlattened() ) continue;
 			uint32_t type = (uint32_t)p->GetType();
 			if ( type >= GG_TREE_TYPES ) continue;
-			if ( g_treeMeshEntity[ type ] == wi::ecs::INVALID_ENTITY ) continue;
+			if ( !EnsureTreeType( type ) ) continue;   // GGMAX 2.24: proxies need the type's material
 			byType[ type ].push_back( p );
 			validCount++;
 		}

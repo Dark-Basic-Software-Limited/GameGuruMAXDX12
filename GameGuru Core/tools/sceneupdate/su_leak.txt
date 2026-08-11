@@ -1,16 +1,16 @@
-20:04:36 === ARM FRESH: Switch Escape loaded first in a clean session ===
-20:06:45   [FRESH] SCENE_OBJECTS: 1322 SCENE_MESHES: 1288 SCENE_MATERIALS: 1250 SCENE_TRANSFORMS: 1996 SCENE_HIERARCHY: 1554 POLYS: 109358 
-20:06:45   [FRESH] HIER: roots=435 maxSubtree=842 visited=1554 imbalance=0.542
-20:06:45 === ARM AFTER: Island Showdown first, back to hub, then Switch Escape ===
-20:08:55   [decoy=Island Showdown] SCENE_OBJECTS: 8850 SCENE_MESHES: 2410 SCENE_MATERIALS: 2362 SCENE_TRANSFORMS: 15078 SCENE_HIERARCHY: 7596 POLYS: 4114598 
-20:08:55   [decoy=Island Showdown] HIER: roots=1590 maxSubtree=845 visited=7596 imbalance=0.111
-20:08:55   -> NAVIGATE hub
-20:11:00   [AFTER] SCENE_OBJECTS: 1322 SCENE_MESHES: 1288 SCENE_MATERIALS: 1251 SCENE_TRANSFORMS: 1996 SCENE_HIERARCHY: 1555 POLYS: 109358 
-20:11:00   [AFTER] HIER: roots=436 maxSubtree=842 visited=1555 imbalance=0.541
-20:11:01 === ARM REGROW: back to Island Showdown after the release — trees must come back ===
-20:11:01   -> NAVIGATE hub
-20:13:05   [REGROW=Island Showdown] SCENE_OBJECTS: 8850 SCENE_MESHES: 2410 SCENE_MATERIALS: 2362 SCENE_TRANSFORMS: 15078 SCENE_HIERARCHY: 7596 POLYS: 4114598 
-20:13:05   [REGROW=Island Showdown] HIER: roots=1590 maxSubtree=845 visited=7596 imbalance=0.111
-20:13:08   POOL built=6000 ceiling=6000 bound=6000 renderable=6000 missingObj=0 numTotalTrees=400000 types=38 proxyChunks=256
-20:13:08 === DONE ===
-20:13:08   PASS if: AFTER == FRESH (leak gone) AND REGROW POLYS == the decoy's reference (trees back)
+21:14:20 === ARM FRESH: Switch Escape loaded first in a clean session ===
+21:16:30   [FRESH] SCENE_OBJECTS: 1322 SCENE_MESHES: 1174 SCENE_MATERIALS: 1180 SCENE_TRANSFORMS: 1996 SCENE_HIERARCHY: 1554 POLYS: 109358 
+21:16:30   [FRESH] HIER: roots=435 maxSubtree=842 visited=1554 imbalance=0.542
+21:16:30 === ARM AFTER: Island Showdown first, back to hub, then Switch Escape ===
+21:18:40   [decoy=Island Showdown] SCENE_OBJECTS: 8850 SCENE_MESHES: 2344 SCENE_MATERIALS: 2322 SCENE_TRANSFORMS: 15078 SCENE_HIERARCHY: 7596 POLYS: 4114598 
+21:18:40   [decoy=Island Showdown] HIER: roots=1590 maxSubtree=845 visited=7596 imbalance=0.111
+21:18:40   -> NAVIGATE hub
+21:20:44   [AFTER] SCENE_OBJECTS: 1322 SCENE_MESHES: 1174 SCENE_MATERIALS: 1181 SCENE_TRANSFORMS: 1996 SCENE_HIERARCHY: 1555 POLYS: 109358 
+21:20:44   [AFTER] HIER: roots=436 maxSubtree=842 visited=1555 imbalance=0.541
+21:20:44 === ARM REGROW: back to Island Showdown after the release — trees must come back ===
+21:20:44   -> NAVIGATE hub
+21:22:48   [REGROW=Island Showdown] SCENE_OBJECTS: 8850 SCENE_MESHES: 2344 SCENE_MATERIALS: 2322 SCENE_TRANSFORMS: 15078 SCENE_HIERARCHY: 7596 POLYS: 4114598 
+21:22:48   [REGROW=Island Showdown] HIER: roots=1590 maxSubtree=845 visited=7596 imbalance=0.111
+21:22:51   POOL built=6000 ceiling=6000 bound=6000 renderable=6000 missingObj=0 numTotalTrees=400000 types=38 proxyChunks=256
+21:22:51 === DONE ===
+21:22:52   PASS if: AFTER == FRESH (leak gone) AND REGROW POLYS == the decoy's reference (trees back)

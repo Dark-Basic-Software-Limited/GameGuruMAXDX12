@@ -1,0 +1,14 @@
+21:11:16 === Switch Escape ===
+FPS: 154.8
+SCENE_OBJECTS: 1322
+SCENE_MESHES: 1174
+SCENE_TRANSFORMS: 1996
+SCENE_ARMATURES: 33
+SCENE_HIERARCHY: 1554
+HIER: roots=435 maxSubtree=842 visited=1554 imbalance=0.542
+POLYS: 109358
+21:13:31 -- with SET_SCENESERIAL 1 (SU-* shares) --
+21:13:53   SU-Hierarchy=0.30 SU-Transform=0.02 | HIER: roots=435 maxSubtree=842 visited=1554 imbalance=0.542
+21:13:59   SU-Hierarchy=0.33 SU-Transform=0.02 | HIER: roots=435 maxSubtree=842 visited=1554 imbalance=0.542
+21:14:04   SU-Hierarchy=0.29 SU-Transform=0.04 | HIER: roots=435 maxSubtree=842 visited=1554 imbalance=0.542
+21:14:07 === DONE ===
