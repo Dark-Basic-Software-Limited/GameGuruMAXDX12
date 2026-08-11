@@ -1,0 +1,56 @@
+# 19-demo hub sweep on game 33bf08b4 (2.23 tree-pool release) / engine b4ea718a (2.20) — 2026-08-11
+# Scored by tools/sweepgate.sh -> C1..C4 all PASS.
+#
+Aztec Game Kit Teaser|OK|68.9|68.8|69.0|GAME|62.3|61.9|61.6|prep=0s|3091.8|POLYS: 10313511|gvram=3494.3|OK: Loading first level node 'aztec game kit teaser' (file: mapbank\aztec game kit teaser.fpm, index: 7)
+Aztec Game Kit|OK|93.8|94.6|94.0|GAME|87.6|88.5|87.0|prep=0s|3778.7|POLYS: 3438876|gvram=3961.5|OK: Loading first level node 'aztec game kit' (file: mapbank\aztec game kit.fpm, index: 13)
+Bounty|OK|127.0|127.0|127.4|GAME|146.6|146.4|146.9|prep=0s|2735.1|POLYS: 463210|gvram=2967.9|OK: Loading first level node 'bountymap' (file: mapbank\bountymap.fpm, index: 12)
+Horseshoe Bend|OK|122.2|122.0|122.2|GAME|79.5|79.9|80.3|prep=0s|3075.6|POLYS: 2105365|gvram=3364.4|OK: Loading first level node 'horseshoe bend' (file: mapbank\horseshoe bend.fpm, index: 7)
+Island Showdown|OK|79.9|80.3|79.9|GAME|94.4|94.0|94.3|prep=0s|2758.9|POLYS: 4114598|gvram=3374.6|OK: Loading first level node 'island showdown' (file: mapbank\island showdown.fpm, index: 12)
+Operation Amazon|OK|95.9|95.8|95.9|GAME|112.0|110.6|110.3|prep=0s|3548.1|POLYS: 5496922|gvram=3869.2|OK: Loading first level node 'operation amazon' (file: mapbank\operation amazon.fpm, index: 7)
+River Raiders|OK|132.7|133.1|132.9|GAME|101.3|100.1|101.5|prep=0s|3339.5|POLYS: 1906072|gvram=3766.8|OK: Loading first level node 'River Raiders' (file: mapbank\River Raiders.fpm, index: 7)
+Snowy Mountain Stroll|OK|162.9|163.0|162.1|GAME|112.6|113.1|114.4|prep=0s|2770.6|POLYS: 81081|gvram=3159.2|OK: Loading first level node 'Snowy Mountain Stroll' (file: mapbank\Snowy Mountain Stroll.fpm, index: 12)
+A Grand Canyon Adventure|OK|112.1|111.8|112.1|GAME|130.6|130.9|130.6|prep=0s|2805.3|POLYS: 2272361|gvram=3181.6|OK: Loading first level node 'a grand canyon adventure' (file: mapbank\a grand canyon adventure.fpm, index: 7)
+Disruption|OK|95.6|95.6|95.5|GAME|114.1|113.7|113.0|prep=0s|2993.6|POLYS: 4665184|gvram=3306.9|OK: Loading first level node 'Disruption' (file: mapbank\Disruption.fpm, index: 7)
+Foggy Forest|OK|68.5|68.5|68.4|GAME|82.4|82.4|82.3|prep=0s|3089.6|POLYS: 10195894|gvram=3454.2|OK: Loading first level node 'foggy forest' (file: mapbank\foggy forest.fpm, index: 7)
+Indian Strike Force|OK|108.3|108.3|108.5|GAME|109.2|109.0|110.0|prep=0s|3101.5|POLYS: 3184527|gvram=3388.3|OK: Loading first level node 'indian strike force' (file: mapbank\indian strike force.fpm, index: 7)
+Switch Escape|OK|169.9|170.0|169.7|GAME|154.3|155.4|155.1|prep=0s|2482.6|POLYS: 109358|gvram=2709.0|OK: Loading first level node 'switch escape' (file: mapbank\switch escape.fpm, index: 7)
+Canyon Offensive|OK|80.8|80.9|80.4|GAME|82.1|81.9|82.4|prep=0s|3352.8|POLYS: 8816163|gvram=3719.1|OK: Loading first level node 'canyon offensive' (file: mapbank\canyon offensive.fpm, index: 7)
+Escape from the Zombie Cellar|OK|165.8|165.9|165.8|GAME|59.9|59.9|59.9|prep=0s|2566.8|POLYS: 28048|gvram=2763.1|OK: Loading first level node 'zombie cellar demo - level1' (file: mapbank\zombie cellar demo - level1.fpm, index: 12)
+Jungle Fever|OK|138.6|138.0|138.1|GAME|147.7|146.1|148.6|prep=0s|2936.4|POLYS: 74124|gvram=3220.5|OK: Loading first level node 'jungle fever' (file: mapbank\jungle fever.fpm, index: 7)
+RPG Template|OK|112.4|110.3|111.2|GAME|96.6|97.3|97.6|prep=0s|3239.9|POLYS: 3235005|gvram=3657.5|OK: Loading first level node 'RPG Template' (file: mapbank\RPG Template.fpm, index: 14)
+The Mystery of Z Island|OK|119.9|120.0|119.9|GAME|110.9|114.2|110.6|prep=0s|3466.2|POLYS: 704717|gvram=3790.5|OK: Loading first level node 'the mystery of z island 1' (file: mapbank\the mystery of z island 1.fpm, index: 7)
+Trapped|OK|184.6|184.6|184.8|GAME|185.3|185.7|185.8|prep=0s|2567.4|POLYS: 11209|gvram=2814.8|OK: Loading first level node 'trapped' (file: mapbank\trapped.fpm, index: 7)
+
+# ---- scored ----
+====================================================================================================
+demo                                edFPS    gmFPS    edVRAM    gmVRAM        POLYS  gate
+====================================================================================================
+Aztec Game Kit                       94.1     87.7    3778.7    3961.5      3438876  POLYS_OK VRAM_OK
+Operation Amazon                     95.9    111.0    3548.1    3869.2      5496922  POLYS_OK VRAM_OK
+The Mystery of Z Island             119.9    111.9    3466.2    3790.5       704717  POLYS_OK VRAM_OK
+Canyon Offensive                     80.7     82.1    3352.8    3719.1      8816163  POLYS_OK VRAM_OK
+River Raiders                       132.9    101.0    3339.5    3766.8      1906072  POLYS_OK VRAM_OK
+RPG Template                        111.3     97.2    3239.9    3657.5      3235005  POLYS_OK VRAM_OK
+Indian Strike Force                 108.4    109.4    3101.5    3388.3      3184527  POLYS_OK VRAM_OK
+Aztec Game Kit Teaser                68.9     61.9    3091.8    3494.3     10313511  POLYS_OK VRAM_OK
+Foggy Forest                         68.5     82.4    3089.6    3454.2     10195894  POLYS_OK VRAM_OK
+Horseshoe Bend                      122.1     79.9    3075.6    3364.4      2105365  POLYS_OK VRAM_OK
+Disruption                           95.6    113.6    2993.6    3306.9      4665184  POLYS_OK VRAM_OK
+Jungle Fever                        138.2    147.5    2936.4    3220.5        74124  POLYS_OK VRAM_OK
+A Grand Canyon Adventure            112.0    130.7    2805.3    3181.6      2272361  POLYS_OK VRAM_OK
+Snowy Mountain Stroll               162.7    113.4    2770.6    3159.2        81081  POLYS_OK VRAM_OK
+Island Showdown                      80.0     94.2    2758.9    3374.6      4114598  POLYS_OK VRAM_OK
+Bounty                              127.1    146.6    2735.1    2967.9       463210  POLYS_OK VRAM_OK
+Trapped                             184.7    185.6    2567.4    2814.8        11209  POLYS_OK VRAM_OK
+Escape from the Zombie Cellar       165.8     59.9    2566.8    2763.1        28048  POLYS_OK VRAM_OK
+Switch Escape                       169.9    154.9    2482.6    2709.0       109358  POLYS_OK VRAM_OK
+====================================================================================================
+C1 LOAD      PASS  19/19 reached the editor
+C2 GEOMETRY  PASS   POLYS identical to the 0809 reference on all 19 demos
+C3 VRAM      PASS   worst of editor+game = 3961.5 MB (Aztec Game Kit/game), limit 4096, headroom 134.5 MB
+C4 GAME      PASS   every demo produced in-game FPS past the loading overlays
+
+VERDICT: CLEAN - passes the release gate
+
+(FPS columns are for the record only. The rig's GPU state moved between 08-09 and 08-10 -
+ Switch Escape read 201 then 142 at a matched CPU frame - so cross-day FPS is not evidence.)

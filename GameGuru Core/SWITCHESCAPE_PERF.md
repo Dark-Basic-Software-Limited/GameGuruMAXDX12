@@ -1086,3 +1086,68 @@ the established sweep-to-sweep noise band on this measurement is ±84 MB — so 
 certainly noise, not a cost of removing 441 empty entities (which cannot plausibly *add* VRAM).
 **But it is the closest to the 4 GB limit any sweep has run**, so it is recorded rather than
 waved away, and Aztec Game Kit should be watched on the next sweep.
+
+## ★★★ 19. GGMAX 2.23 — tree-pool retention across level change: FIXED
+
+§17 measured the pool surviving a level change (+6079 objects/transforms on a treeless level
+loaded after a tree level). Fixed and verified in both directions.
+
+**Cause.** The `draw_enabled` early-return in `GGTrees_WickedUpdate` hides pool slots and
+returns — it never releases them. `bound=6000` on a treeless level was the diagnostic: Pass A
+evicts stale bindings, so bindings surviving proved Pass A never ran, i.e. the update was taking
+the park branch. Underneath that, 2.19's `GrowTreePool` is deliberately one-way — right for
+camera movement, wrong for level changes.
+
+**Fix.** `ReleaseTreePool()` destroys every built slot and drops all bindings, called from the
+park branch after `GG_TREE_POOL_PARK_RELEASE_FRAMES` (600) consecutive parked frames. A frame
+threshold rather than a level-change hook because `draw_enabled` is ALSO cleared transiently
+during terrain regen and there is no single reliable "level changed" signal at that point; a
+sustained park means the trees are gone for good, a regen park is short, and releasing a few
+seconds late costs nothing because the slots are already invisible. The per-type tree
+meshes/materials (114 + 70) are deliberately KEPT so a later tree level does not rebuild them.
+
+**Verified, both directions, one session** (`tools/sceneupdate/suleak.sh`, now with a regrow arm):
+
+| Switch Escape | before 2.23 | after 2.23 |
+|---|---|---|
+| objects FRESH → AFTER Island Showdown | 1322 → 7401 (**+6079**) | 1322 → **1401** (+79) |
+| transforms | 2437 → 8516 | 1996 → **2075** |
+
+| regrow arm — back to Island Showdown AFTER a release | |
+|---|---|
+| POLYS | **4114598** (exact reference) |
+| objects | 8850 (= fresh load) |
+| pool | `built=6000 bound=6000 renderable=6000` |
+
+The residual +79 objects / +79 meshes / +17 materials is the separate smaller leak, unchanged
+and still unexplained.
+
+⚠ **Correction to §17:** `DUMP_TREEPOOL`'s `numTotalTrees=400000` is a COMPILE-TIME CONSTANT
+(`GGTrees_part0.cpp:131`, the capacity of `pAllTrees[]`) and always reads 400000. It is NOT
+evidence that the previous level's tree data was retained, as §17 implied. The real evidence was
+`built=6000 bound=6000`, which stands.
+
+### 19.1 2.23 hub sweep: **CLEAN** (all 19)
+`tools/sweep_0811b_2.23.txt`. C1 LOAD 19/19 · C2 GEOMETRY POLYS identical on all 19 ·
+C3 VRAM worst 3961.5 MB (Aztec GK in-game), **134.5 MB headroom** · C4 GAME all 19 reached play.
+★ The §18.1 headroom dip (151.2 → 122.6) did NOT persist — it is back to 134.5, confirming it
+was sweep-to-sweep noise rather than a cost of 2.22, exactly as recorded at the time.
+
+---
+
+## THE DAY IN ONE TABLE (2026-08-10 / 11, Switch Escape editor)
+
+| build | change | Scene::Update | swept |
+|---|---|---|---|
+| 2.17 | baseline | 2.412 ms | — |
+| 2.18 | ECS sparse lookup (DX11-parity restoration) | 1.750 | CLEAN |
+| 2.19 | lazy tree-pool growth | 1.457 | CLEAN |
+| 2.22 | kill 441 empty prop scaffolding nodes | **1.323** | CLEAN |
+| 2.23 | release the pool on level change | 1.323 | CLEAN |
+
+**−45% of `Scene::Update`, POLYS bit-identical on all 19 demos at every step**, and after 2.23
+the saving persists across level changes instead of evaporating at the session's first tree level.
+
+**Measured and REJECTED along the way** (recorded so they are not retried): the parallel
+instance-array init (a wash, §11.2) and the SU-Hierarchy load-balance split (worked perfectly,
+made things 16.6% worse, §14).
