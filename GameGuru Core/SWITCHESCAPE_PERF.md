@@ -882,3 +882,41 @@ this level, so the refactor likely taxed the default path as well.
 proven harmless on this scene. If it is ever revisited, the prerequisite is a measurement
 showing Hierarchy is the S2 critical path **in a normal frame** — e.g. by shortening Mesh and
 Material first and seeing whether S2 stops falling.
+
+## ★★★ 15. THE DX11 SCENE POPULATION — READ OFF THE PANEL (2026-08-11, user-supplied)
+
+§13.1 said the DX11 numbers needed one human glance at its performance panel. Here they are,
+both builds on `switch escape.fpm`, DX12 on the post-2.19 build:
+
+| counter | DX11 | DX12 | ratio |
+|---|---|---|---|
+| Scene **Meshes** | **316** | **1288** | **4.08×** |
+| Scene **Materials** | **317** | **1250** | **3.94×** |
+| Scene **Transforms** | **1176** | **2437** | **2.07×** |
+| Scene **Hierarchy** | **681** | **1995** | **2.93×** |
+| CPU Frame | 1.49 ms (peak 3.39) | 3.28 ms | +1.79 |
+| FPS at capture | 337.8 | 219.3 | — |
+
+⚠ **MY PREDICTION WAS WRONG.** §13.1 expected DX11 to report ~2437 transforms — i.e. that once
+the 6000 tree-pool slots were gone, the two engines would be walking the same population. DX11
+reports **1176, less than half**. The tree pool was real and worth removing, but it was **not the
+whole of the bigger-N story** — DX12 still carries ~2× the transforms, ~3× the hierarchy links
+and **~4× the meshes and materials** for the same level, with the pool already excluded.
+
+★ **NEW TOP LEAD, and it is bigger than anything left on the list.** The mesh/material multiplier
+is the striking one. Both engines sit at roughly 1:1 mesh:material (316:317 and 1288:1250), so
+this is not DX12 failing to *share* materials — DX12 simply has ~4× as many mesh entities, each
+bringing its own material. Those two counters feed `SU-Mesh` and `SU-Material` directly, and
+`RunMeshUpdateSystem`/`RunMaterialUpdateSystem` iterate them every frame.
+**Hypothesis to test (NOT yet verified): DX12 creates a MeshComponent per LIMB where DX11 creates
+one per object with subsets, and/or DX11 reuses one MeshComponent across repeated props where
+DX12 clones per placement.** Settle it by dumping mesh names/owners on both sides.
+
+Validity notes: the two screenshots are from different camera positions, but all four counters
+are whole-scene totals and camera-independent, and both title bars read `switch escape.fpm`.
+DX11's panel prints `avg (peak)` per row — its `Update - Wicked: 0.22 ms (0.52 ms)` matches the
+0.21 recorded in §1, confirming that row was the 20-sample average.
+
+The CPU gap has also narrowed from the §1 measurement of +2.89 ms to **+1.79 ms**, which is
+consistent with the ~0.95 ms of `Scene::Update` removed by 2.18/2.19 plus the 2.15 XInput fix —
+though across different machine states, so treat that as corroboration, not a measurement.
