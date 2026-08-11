@@ -1,0 +1,2 @@
+DEMO=A Grand Canyon Adventure gen=12 chunks=625 ringMax=625 chunkU=5280 viewU=63360 viewM=1609 centreToCam=1 mapHalfM=2500 objects=3223 meshes=2493 materials=2518 transforms=8199 hierarchy=5807 polys=2272361
+DEMO=Switch Escape gen=12 chunks=625 ringMax=625 chunkU=5280 viewU=63360 viewM=1609 centreToCam=1 mapHalfM=1270 objects=1106 meshes=958 materials=964 transforms=1780 hierarchy=1338 polys=109358

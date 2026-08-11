@@ -884,10 +884,17 @@ void GetSetupIniEarly( void )
 				// both of its arms ran the same 6000 slots. See SWITCHESCAPE_PERF.md §2 and §10.
 				// GetSetupIniEarly() is called from main.cpp:241, well before that init sequence.
 				const bool bTreePool = (_strnicmp(p, "treepool", 8) == 0);
+				// GGMAX 2.25: `terraingen=<N>` sets wi::terrain's chunk ring radius ((2N+1)^2
+				// chunk entities). Same one-shot binding as treepool and for the same reason: the
+				// terrain is created once by GGTerrainWicked_Init off GameGuruMain.cpp's init
+				// sequence, and nothing re-reads generation afterwards — so a later pass would be
+				// inert. Note "terraingen" and "treepool" are both matched before the '=' test and
+				// differ at char 1, so they cannot cross-match.
+				const bool bTerrGen = (_strnicmp(p, "terraingen", 10) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bTreePool)       iKeyLen = 8;
 				else if (bMABlock)        iKeyLen = 9;
-				else if (bGrassMg)        iKeyLen = 10;
+				else if (bGrassMg || bTerrGen) iKeyLen = 10;
 				else if (bSingleQ)        iKeyLen = 11;
 				else if (bLightFO || bWeapSH) iKeyLen = 12;
 				else if (bHairNDW || bWeapFD) iKeyLen = 16;
@@ -948,6 +955,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetTreePool(int);
 					GGSetTreePool(iValue);
+				}
+				if (bTerrGen)
+				{
+					extern void GGSetTerrainGen(int);
+					GGSetTerrainGen(iValue);
 				}
 			}
 			fclose(lvf);

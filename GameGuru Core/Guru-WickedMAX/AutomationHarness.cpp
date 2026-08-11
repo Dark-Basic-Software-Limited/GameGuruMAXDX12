@@ -1199,6 +1199,37 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			hroots, hmax, hvis, hvis ? (double)hmax / (double)hvis : 0.0);
 	}
 
+	// GGMAX 2.25: wi::terrain chunk ring size — the DX12 entity floor.
+	//
+	// (2*gen+1)^2 chunk entities, each a mesh + material + transform + hierarchy node walked by
+	// Scene::Update every frame; DX11 has none of them (no wiTerrain at all — §16).
+	//
+	// ★ WHAT `gen` ACTUALLY IS: a VIEW DISTANCE, not map coverage. GG sets
+	// SetCenterToCamEnabled(true) (GGTerrainWicked.cpp), and the engine recomputes center_chunk
+	// from camera.Eye every frame (wiTerrain.cpp:776-780) — so the ring FOLLOWS THE CAMERA and
+	// terrain always extends viewM in every direction from wherever the player is.
+	// ⚠⚠ It therefore does NOT matter how big the editable map is: the map can never outrun the
+	// ring. An earlier draft of this line printed `needGen = ceil(mapHalf/chunkU)` and flagged the
+	// two 5 km demos as "cropped" — that was WRONG, it silently assumed an origin-centred ring.
+	// Flying to x=90000 on A Grand Canyon Adventure (2286 m out, past any origin-centred reach)
+	// shows solid ground. Do not reintroduce a coverage metric here.
+	// ⚠ 1 unit = 1 inch; editable_size is the HALF-size. mapHalfM is context only.
+	// ⚠ `chunks` can exceed ringMax after the camera moves: removal lags creation by
+	// removal_threshold = gen + 2 + gg_removal_margin rings, so old chunks linger.
+	if (written < resultSize - 256 && pScene != nullptr && pScene->terrains.GetCount() > 0)
+	{
+		const wi::terrain::Terrain& tr = pScene->terrains[0];
+		const float chunkU = (float)(wi::terrain::chunk_width - 1) * tr.chunk_scale;
+		const float mapHalfU = GGTerrain::ggterrain_global_render_params2.editable_size;
+		const float viewU = (float)tr.generation * chunkU;
+		const int   ringMax = (2 * tr.generation + 1) * (2 * tr.generation + 1);
+		written += _snprintf(result + written, resultSize - written,
+			"TERRAIN_RING: gen=%d chunks=%d ringMax=%d chunkU=%.0f viewU=%.0f viewM=%.0f "
+			"centreToCam=%d mapHalfM=%.0f\n",
+			tr.generation, (int)tr.chunks.size(), ringMax, chunkU,
+			viewU, viewU * 0.0254f, tr.IsCenterToCamEnabled() ? 1 : 0, mapHalfU * 0.0254f);
+	}
+
 	// Visibility counts from the main render pass
 	if (written < resultSize - 256)
 	{

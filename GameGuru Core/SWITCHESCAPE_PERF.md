@@ -1248,3 +1248,202 @@ in-game (183.1 MB headroom) · C4 all 19 reached gameplay.
 buffers) from app startup into the level-load grid rebuild is uninstrumented. It lands during a
 loading screen and is fewer meshes than it replaced, but it is not proven. **If a load-time hitch
 is ever reported on a tree level, look here first** (`EnsureTreeType` via the `passes` filter).
+
+## ★★★ 22. GGMAX 2.25 — the terrain chunk RING, sized against the map for the first time
+
+`terrain.generation` (`GGTerrainWicked.cpp`) is the radius, in chunks, of the wi::terrain ring:
+`(2N+1)^2` chunk entities, each a mesh + material + transform + hierarchy node that
+`Scene::Update` walks every frame. It shipped at **14 = 29x29 = 841 chunks**. §16 named this ring
+as the DX12 entity floor; this section is the first time anyone measured what it is *for*.
+
+**This change is a different KIND from 2.22/2.23/2.24.** Those removed things that drew nothing —
+empty prop scaffolding, a retained tree pool, orphaned shadow proxies — so POLYS *had* to stay
+bit-identical and that was the correctness gate. `generation` is a **draw-distance setting**: the
+outer rings are scenery. So POLYS stops being an identity gate here and becomes the *visibility
+detector* — POLYS unchanged means the rings removed were not drawing at that camera.
+
+### 22.1 The arithmetic nobody had written down
+One chunk spans `(chunk_width-1) * chunk_scale` = `66 * 80` = **5280 units**, so the ring reaches
+`N * 5280`. ⚠ The two source comments at the assignment said "~10560 units/chunk" and "cover
+~147840 units each direction" — both quote the FULL SPAN as a radius, i.e. 2x the truth. Fixed.
+
+**1 unit = 1 inch** (`GGTerrain_MetersToUnits`). New instrument **`TERRAIN_RING`** in
+`GET_PERF_DATA` prints `gen` / `chunks` / `ringMax` / `chunkU` / **`viewM`** / `centreToCam` /
+`mapHalfM`.
+
+★★ **`gen` is a VIEW DISTANCE, not map coverage — and that is the whole point.** GG sets
+`SetCenterToCamEnabled(true)`, and the engine recomputes `center_chunk` from `camera.Eye` every
+frame (`wiTerrain.cpp:776-780`), so **the ring travels with the camera**. Terrain always extends
+`viewM` in every direction from wherever the player is, whatever the map size.
+⚠ See §22.7 — the first version of this instrument got that wrong and it produced a false alarm.
+
+| demo | mapHalf | shipped gen | chunks | viewM |
+|---|---|---|---|---|
+| Island Showdown | 250 m | 14 | 841 = ringMax | 1878 m |
+| Switch Escape | 1270 m (default map) | 14 | 841 = ringMax | 1878 m |
+
+★ Island Showdown's `editable_size` read 9842 against the 9842.5 recorded independently in
+`TERRAINPORT.md:448` — that match is what validated the instrument was reading the right variable.
+
+★ **The full ring is always built.** `chunks == ringMax` on both demos with a parked camera. The
+"settles ~650-700 of the 841" note at `GGTerrainWicked.cpp` initial-build turbo is wrong for a
+parked camera (annotated in place, not deleted — it may still hold for TESTPRO1 after travel).
+A camera that has *moved* can read ABOVE ringMax (898 measured) because removal lags creation by
+`removal_threshold = generation + 2 + gg_removal_margin(12)` rings.
+
+⚠ Because the ring is camera-centred, there is NO arithmetic shortcut for how low `gen` may go.
+The only criterion is whether the shorter horizon is visible — §22.2.
+
+### 22.2 The visual gate — and why the first read of it was worthless
+Four cold-launch arms on Island Showdown (`tools/sceneupdate/ringvisual.sh`, `setup.ini
+terraingen=<N>`), two fixed views each, pixel-diffed with `tools/imgdiff.ps1`.
+
+The first diff said 13.3% of pixels differ at gen 12. **That number meant nothing**: Island
+Showdown has swaying palms, animated water and grass, so two cold launches differ on their own.
+★ The fix is the rule this project already had and nearly skipped again — **take a same-setting
+control**. Two independent gen-14 launches establish the floor:
+
+| view | **noise floor** (gen14 A vs gen14 B) | gen 12 | gen 10 | gen 8 |
+|---|---|---|---|---|
+| default | 16.245% / **1.0765** | 13.274% / **0.5528** | 20.568% / 1.5619 | 20.521% / 1.5901 |
+| horizon | 8.284% / **0.1892** | 2.603% / **0.1018** | 14.199% / 0.3830 | 13.891% / 0.6756 |
+
+(`differing%` / `meanAbsDiff` out of 765.)
+
+★★ **gen 12 is BELOW the noise floor on both views and both metrics** — it differs from run A by
+less than an identical-setting rerun does. That is the strongest available form of "no detectable
+change". **gen 10 is the first step that measurably alters the image** (mean 1.4x the floor on the
+default view, 2.0x on the horizon); gen 8 is 3.6x on the horizon.
+
+Corroborating, from the horizon camera: **POLYS = 19464 bit-identical at gen 14, 12 AND 10**,
+moving only at gen 8 (18192, −6.5%). The two instruments disagree about *where* the cut starts
+(pixels say between 12 and 10, POLYS says between 10 and 8) and both are right — they are
+different cameras. The conservative reading is the pixel one, and it lands on **12**.
+
+⚠ Why gen 10 and gen 8 differ from gen 14 by nearly the SAME amount (20.57/1.562 vs 20.52/1.590)
+rather than progressively: a distant feature sits between the gen-10 reach (1341 m) and the gen-12
+reach (1609 m). Both 10 and 8 lose it; 12 keeps it. That is the mechanism behind the verdict.
+
+### 22.3 Counters — the mechanism, confirmed
+Every ECS counter falls by exactly the ring delta, in lockstep (Island Showdown, horizon camera,
+so absolute values include post-jump chunks):
+
+| gen | chunks | meshes | materials | transforms | hierarchy |
+|---|---|---|---|---|---|
+| 14 | 898 | 2401 | 2385 | 15141 | 7659 |
+| 12 | 674 | 2177 | 2161 | 14917 | 7435 |
+| 10 | 482 | 1985 | 1969 | 14725 | 7243 |
+| 8 | 322 | 1825 | 1809 | 14565 | 7083 |
+
+14 → 12 on a parked camera is **841 → 625 = −216 of every counter**.
+
+### 22.4 Scene::Update cost — one binary, both arms
+`tools/sceneupdate/sugen.sh "Switch Escape" 14 12`, 6 profiler samples per arm, settle-gated.
+
+| arm | chunks | SCENE_MESHES | Scene::Update mean | samples |
+|---|---|---|---|---|
+| gen 14 | 841 = ringMax | 1174 | **1.515 ms** | 1.36–1.67 |
+| gen 12 | 625 = ringMax | 958 | **1.128 ms** | 1.07–1.24 |
+
+**−0.387 ms, −25.5%.** The two sample ranges do NOT overlap, which is what lifts this clear of the
+±2.5% "do not trust a single A/B on this rig" caution.
+
+★ Knob-reaches-the-thing check, done BEFORE reading the timings: `chunks` 841 → 625 is exactly
+`(2N+1)^2`, and `SCENE_MESHES` 1174 → 958 is exactly −216. Both arms are the SAME binary — the
+`terraingen` key varies the ring, so no rebuild sits inside the measurement.
+
+⚠ Today's gen-14 arm reads 1.515 ms where the 2.24 sweep recorded 1.323 ms for the same default.
+That is cross-session drift, not a regression — which is exactly why the −25.5% is quoted from the
+within-session pair and NOT as "1.323 → 1.128".
+
+### 22.5 ⚠ PRE-REGISTERED before the 2.25 hub sweep ran: C2 does not apply as written
+`sweepgate.sh` C2 is "POLYS identical on every demo". **That criterion was written for the ECS
+lookup change**, where POLYS could only move if an entity resolved to the wrong component — a
+pure correctness proof. It is NOT the right gate for a draw-distance change, which can legitimately
+remove drawn far terrain. Recording the amendment here, before the run, so the verdict cannot be
+rationalised afterwards:
+
+- **C2' GEOMETRY** — a POLYS *decrease* is permitted, but every demo that moves must be named and
+  attributed to far-terrain removal. A POLYS *increase* is still an automatic fail (nothing in this
+  change can add geometry). C1/C3/C4 are unchanged.
+- Evidence standard for any demo that moves: the same-setting-control pixel method of §22.2, not an
+  eyeball, and not a bare cross-run screenshot.
+
+### 22.6 2.25 hub sweep — and the coverage finding that matters more than the saving
+`scratchpad/demo_fps/results_0811e_2.25.txt`, scored by `sweepgate.sh` against the C2' amendment
+pre-registered in §22.5.
+
+**C1 LOAD PASS** 19/19 · **C3 VRAM PASS** worst 3772.2 MB in-game (Operation Amazon), **headroom
+183.1 → 323.8 MB** · **C4 GAME PASS** 19/19 reached gameplay.
+
+**C2' GEOMETRY PASS.** 18/19 demos POLYS bit-identical to the reference. One moved, and in the
+permitted direction: **Aztec Game Kit Teaser 10 313 511 → 10 311 639 = −1 872 tris (−0.018%)**.
+(`sweepgate.sh` prints this as a raw C2 FAIL because its criterion is literal identity — that is
+the criterion §22.5 amended in advance, not a verdict rationalised afterwards.)
+
+### ★★★ 22.7 RETRACTED — "two demos have 5 km maps and are CROPPED" was WRONG
+**What I claimed, in this document, before checking it:** `TERRAIN_RING` reported
+`needGen = ceil(mapHalfU / chunkU) = 19` for A Grand Canyon Adventure and Operation Amazon
+(both 5 km maps) against a shipped gen of 12, so the outer ~891 m of their own *editable* map
+supposedly had no terrain under it. It was written up as the headline finding of 2.25 with a
+recommended `clamp(needGen, 12, 14)` fix and a DECISION-NEEDED flag to the user.
+
+**It is false.** `needGen` silently assumed the ring is centred on the WORLD ORIGIN. It is not:
+GG sets `SetCenterToCamEnabled(true)` (`GGTerrainWicked.cpp:2543`) and the engine recomputes
+`center_chunk` from `camera.Eye` every frame (`wiTerrain.cpp:776-780`). **The ring follows the
+camera.** A map can never outrun it, at any size, so nothing was ever cropped — not at gen 12,
+not at gen 14, not at the 5 km slider maximum.
+
+★ **What caught it: refusing to ship the claim on arithmetic.** The finding was already written
+up and flagged to the user when I built `tools/sceneupdate/ringedge.sh` purely to turn the
+inference into a photograph — fly A Grand Canyon Adventure out along +X and look. At **x=90000**
+(2286 m, far past any origin-centred reach) there is **solid ground filling the frame**, and
+`chunks` climbs 625 → 1020 as the ring rebuilds around the moving camera. Both observations are
+flatly inconsistent with a fixed ring, and neither is visible from the maths.
+
+⚠⚠ **THE LESSON, and it is the expensive kind: a derived metric can encode an assumption you
+never consciously made.** Every input to `needGen` was measured correctly — `editable_size` was
+even cross-validated against `TERRAINPORT.md` — and the formula was arithmetically right. The
+defect was one unstated premise about what the ring is centred on. Measuring the inputs harder
+would never have found it; only looking at the thing did.
+★ RULE: **before a derived number becomes a finding, name the assumption that makes the formula
+valid, then test THAT.** Here: "the ring is origin-centred" — one grep of `SetCenterToCamEnabled`
+would have killed it in seconds.
+
+**Consequences, all of them:** the instrument no longer computes `needGen` or `marginM` (it prints
+`viewM` + `centreToCam` instead, with a comment forbidding reintroduction); the `clamp(needGen,
+12, 14)` proposal is withdrawn; there is no decision pending for the user; and the two demos are
+not defective. ⚠ There is genuinely **no map-size constraint on `gen` at all** — the only
+criterion is the visible-horizon test of §22.2, which is what gen 12 was actually cleared by.
+
+### 22.8 Discharging C2' — the one demo whose POLYS moved
+**Aztec Game Kit Teaser, −1 872 tris (−0.018%).** The two dropped rings held distant scenery
+1609-1878 m from the camera.
+
+Whole-frame pixel diff could NOT settle it, and the reason is instructive:
+
+| Aztec, whole frame | noise floor (gen14 A vs B) | gen 12 |
+|---|---|---|
+| default view | 36.483% / **11.0340** | 34.796% / **13.4571** |
+| horizon view | 15.073% / 0.3098 | 4.219% / 0.1100 |
+
+That default-view floor of **mean 11.03** is the highest measured anywhere in this campaign — the
+level is half waving grass. gen 12 reads 13.46: *below* the floor on differing-pixel count but ~22%
+*above* it on mean. One control sample cannot separate that, and it would have been wrong to call
+it either way.
+
+★ **The fix is to diff the region where the effect must appear, not the whole frame.**
+`tools/regiondiff.ps1` (new) restricted to the upper viewport band — sky line + distant hills,
+above the grass:
+
+| Aztec, band 250,105–1283,310 | differing | meanAbsDiff |
+|---|---|---|
+| noise floor (gen14 A vs gen14 B) | 14.209% | **0.3365** |
+| gen 12 | 4.605% | **0.0767** |
+
+**4.4x BELOW the floor** on the only band that could show far-terrain loss. C2' discharged: the
+movement is real, tiny, and produces no detectable change where it would have to be visible.
+
+★★ **RULE — a whole-frame diff is the wrong instrument when the effect is localised and the noise
+is not.** Grass animation is bottom-of-frame; far terrain is top-of-frame. Diffing everything let
+a 0.018% geometry change hide inside an 11.03 mean grass floor. Pick the band first.

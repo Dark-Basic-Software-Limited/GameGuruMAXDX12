@@ -1,0 +1,2 @@
+DEMO=Island Showdown gen=14 chunks=841 ringMax=841 chunkU=5280 reachU=73920 reachM=1878 mapHalfU=9842 mapHalfM=250 needGen=2 marginM=1628 objects=8850 meshes=2344 materials=2322 transforms=15078 hierarchy=7596 polys=4114598
+DEMO=Switch Escape gen=14 chunks=841 ringMax=841 chunkU=5280 reachU=73920 reachM=1878 mapHalfU=50000 mapHalfM=1270 needGen=10 marginM=608 objects=1322 meshes=1174 materials=1180 transforms=1996 hierarchy=1554 polys=109358

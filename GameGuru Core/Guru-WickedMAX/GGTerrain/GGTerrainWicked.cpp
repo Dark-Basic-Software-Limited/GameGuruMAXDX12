@@ -247,6 +247,25 @@ uint64_t g_dbgAutoSkipMergePend = 0;  // auto pass: merge_pending flag up
 uint64_t g_dbgAutoPassRuns = 0;       // auto pass invocations (gate fires)
 size_t   g_dbgAutoLastPending = 0;    // auto pass: pending size on last run
 
+// GGMAX 2.25: `setup.ini terraingen=<N>` overrides wi::terrain's chunk ring radius, whose
+// shipped value is set at GGTerrainWicked_Init (see the terrain.generation assignment). Every
+// ring costs (2N+1)^2 chunk entities, each one a mesh + material + transform + hierarchy node
+// walked by Scene::Update EVERY frame — so this is the single biggest lever on the DX12 entity
+// floor (SWITCHESCAPE_PERF.md §16). Needs the early setup.ini pass: the terrain is created once
+// by GGTerrainWicked_Init, called from GameGuruMain.cpp's init sequence, and nothing re-reads
+// the value afterwards. 0 = leave the built-in default alone.
+// ⚠ Lower is NOT free: the ring radius is what covers the map. See GGTerrainRingCoverage().
+int g_terrainGenOverride = 0;
+void GGSetTerrainGen(int n)
+{
+	// Clamp to the range the engine's chunk LOD/removal maths stays sane over. 2 is below any
+	// usable map; 24 is 49x49 = 2401 chunks, already far past the point of diminishing returns.
+	if (n < 0) n = 0;
+	if (n > 24) n = 24;
+	if (n != 0 && n < 2) n = 2;
+	g_terrainGenOverride = n;
+}
+
 // GGMAX terrain idle gate (perf): when the terrain is fully quiescent (camera parked,
 // no pending/invalidated/merge-pending chunks, chunk set stable, no edits) the engine
 // Generation_Update ring scan (~0.9ms/frame) runs only every 8th frame. ANY activity
@@ -2544,8 +2563,33 @@ void GGTerrainWicked_Init()
 	// no props exist to lose. ⚠ If GG ever starts using engine terrain props, remove this line.
 	terrain.prop_density = 0.0f;
 	terrain.SetPhysicsEnabled(false);      // keep Bullet physics from old terrain
-	terrain.chunk_scale = 80.0f;          // ~10560 units/chunk; high-res ring now ~535m (was ~268m at 80)
-	terrain.generation = 14;               // cover ~147840 units each direction, more lead for fast camera movement
+	terrain.chunk_scale = 80.0f;          // one chunk spans (chunk_width-1)*scale = 66*80 = 5280 units (134m)
+	// Chunk ring radius. (2N+1)^2 chunk entities, each a mesh+material+transform+hierarchy node
+	// that Scene::Update walks every frame — 14 => 29x29 = 841, 12 => 25x25 = 625.
+	//
+	// ⚠ What decides how low this can go is NOT the frame cost — it is TERRAIN VIEW DISTANCE.
+	// Radius = N * 5280 units AROUND THE CAMERA: SetCenterToCamEnabled(true) above means the
+	// engine recentres the ring on camera.Eye every frame (wiTerrain.cpp:776-780), so the ring
+	// travels with the player. N=14 reaches 73920u (1878m), N=12 reaches 63360u (1609m).
+	// ⚠ Because the ring is camera-centred, the editable map size is IRRELEVANT here — a 5 km map
+	// is not "too big" for the ring and nothing gets cropped. (Checked the hard way: an earlier
+	// pass computed needGen from editable_size, called the two 5 km demos cropped, and was WRONG.
+	// Flying to x=90000 on A Grand Canyon Adventure shows solid ground.) The ONLY criterion is
+	// whether the shorter horizon is visible — settle that with the same-setting-control pixel
+	// method in SWITCHESCAPE_PERF.md §22.2, never by arithmetic. Override: setup.ini terraingen=<N>.
+	//
+	// GGMAX 2.25 (2026-08-11): 14 -> 12. 841 -> 625 chunks = -216 of EVERY per-frame ECS counter,
+	// measured Scene::Update 1.515 -> 1.128 ms (-25.5%) on Switch Escape, both arms one binary via
+	// the terraingen key (SWITCHESCAPE_PERF.md §22).
+	//
+	// ★ 12 is the LAST SAFE STEP, not a round number. Verified against a same-setting control —
+	// two independent gen-14 launches, because Island Showdown's palms/water/grass make any two
+	// cold launches differ on their own (the first pixel-diff read 13.3% and meant nothing).
+	// Against that floor gen 12 lands BELOW it on both test views (it differs from a gen-14 run by
+	// LESS than a second gen-14 run does), while gen 10 is 1.4-2.0x the floor and gen 8 is 3.6x.
+	// ⚠ So do NOT "round down a bit more" — 10 measurably shortens the visible horizon.
+	//
+	terrain.generation = (g_terrainGenOverride > 0) ? g_terrainGenOverride : 12;
 	terrain.generation_view_cone_priority = true; // Wicked delta #7: build the chunks the camera faces first (see WICKED_ENGINE_CHANGES.md 1.7)
 	// Wicked delta 1.14: stock Wicked tears down and rebuilds ALL chunks whenever a
 	// terrain material is dirty (editor convenience). GG registers painted-material
@@ -2879,6 +2923,13 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// chunks. 60% of the ring total (~504) is comfortably below steady state
 	// (flying churn never sheds that many) and comfortably above "just
 	// restarted", so the turbo runs exactly during the initial build.
+	// ⚠ MEASURED 2026-08-11 (GGMAX 2.25, TERRAIN_RING in GET_PERF_DATA): with the camera
+	// PARKED after a level load, Island Showdown and Switch Escape both settle at the FULL
+	// 841 = ringMax, not 650-700. The under-count above only happens once the camera has
+	// travelled (removal lags creation by removal_threshold = generation+2+12 rings, so a
+	// moved camera can also read ABOVE ringMax — 898 measured after one SET_CAMERA jump).
+	// Both directions leave the 60% initial-build test correct; do not retune it off the
+	// TESTPRO1 figure alone.
 	const int genSpan = 2 * terrain->generation + 1;
 	const int expectedChunks = genSpan * genSpan;
 	const int coneTarget = (expectedChunks * 2) / 5;  // cone + near rings ≈ 40% of ring total

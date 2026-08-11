@@ -1,0 +1,4 @@
+x=30000 polys=127896 gen=12 chunks=920 ringMax=625 chunkU=5280 reachU=63360 reachM=1609 mapHalfU=98425 mapHalfM=2500 needGen=19 marginM=-891
+x=55000 polys=8712 gen=12 chunks=1020 ringMax=625 chunkU=5280 reachU=63360 reachM=1609 mapHalfU=98425 mapHalfM=2500 needGen=19 marginM=-891
+x=70000 polys=8712 gen=12 chunks=1020 ringMax=625 chunkU=5280 reachU=63360 reachM=1609 mapHalfU=98425 mapHalfM=2500 needGen=19 marginM=-891
+x=90000 polys=8712 gen=12 chunks=1020 ringMax=625 chunkU=5280 reachU=63360 reachM=1609 mapHalfU=98425 mapHalfM=2500 needGen=19 marginM=-891

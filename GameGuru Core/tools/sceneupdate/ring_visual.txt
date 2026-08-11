@@ -1,0 +1,1 @@
+gen=14 gen=14 chunks=898 ringMax=841 chunkU=5280 reachU=73920 reachM=1878 mapHalfU=14217 mapHalfM=361 needGen=3 marginM=1516 objects=8190 meshes=1819 materials=1613 transforms=10641 hierarchy=3454 polys=20696 vram=
