@@ -1068,3 +1068,21 @@ maxSubtree 1283 → 842 are exact counts, not statistics.
 
 Correctness gate (POLYS identity, incl. terrain-heavy levels since this touches terrain only):
 Island Showdown 4114598 ✔ · Trapped 11209 ✔ · Switch Escape 109358 ✔, objects unchanged on all.
+
+### 18.1 2.22 hub sweep + VRAM gate: **CLEAN** (all 19)
+`demo_fps_sweep.sh 0811`, scored by `tools/sweepgate.sh`. Raw + scored:
+`tools/sweep_0811_2.22.txt`.
+
+| criterion | result |
+|---|---|
+| **C1 LOAD** | **PASS** — 19/19 reached the editor |
+| **C2 GEOMETRY** | **PASS** — POLYS identical to the 0809 reference on all 19 |
+| **C3 VRAM** | **PASS** — worst of editor+game 3973.4 MB (Aztec GK in-game), 122.6 MB headroom |
+| **C4 GAME** | **PASS** — all 19 reached gameplay |
+
+⚠ **Worst-case VRAM headroom moved the WRONG way: 151.2 → 122.6 MB** (Aztec GK in-game
+3944.8 → 3973.4). Mean deltas are +16.2 MB editor / −8.3 MB in-game, i.e. both directions, and
+the established sweep-to-sweep noise band on this measurement is ±84 MB — so this is almost
+certainly noise, not a cost of removing 441 empty entities (which cannot plausibly *add* VRAM).
+**But it is the closest to the 4 GB limit any sweep has run**, so it is recorded rather than
+waved away, and Aztec Game Kit should be watched on the next sweep.
