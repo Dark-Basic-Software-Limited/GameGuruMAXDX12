@@ -973,7 +973,27 @@ void decalelement_control ( void )
 					t.decalelement[t.f].framedelay = t.decalelement[t.f].framedelay + (t.decaltimeelapsed_f);
 					if (t.decalelement[t.f].framedelay >= 100)
 					{
-						//PE: No need to stop effect it will end by itself.
+						// GGMAX 2.28 (2026-08-12): STOP EMITTING before abandoning the emitter.
+						//
+						// The original comment here read "No need to stop effect it will end by
+						// itself", and that assumption holds only for a finite burst. A CONTINUOUS
+						// emitter — the impact smoke flume — never ends, so the effect looped
+						// forever; and because the WPE emitters come from a 5-slot round-robin
+						// cache (MAXREADYDECALS, M-Entity_part0.cpp:31) the user could stack
+						// exactly five before the oldest was recycled. Reported from live play.
+						//
+						// Action 7 = SetEmitPaused(true): stops NEW particles but lets the ones
+						// already alive finish their lifetime, so the flume DISSIPATES rather than
+						// being cut off mid-air. Action 2 (pause) or 6 (hide) would both snap it
+						// out of existence.
+						// ⚠ Do NOT delete the emitter — it belongs to the ready_decals cache and
+						// must survive for reuse; deleting strands a cache slot on a dead entity.
+						// ★ Precedent: wickedcalls_part4.cpp:41 records that actions 6/7 were
+						// restored in 2.00 precisely because "weapon trails never stopped
+						// emitting". The decal path was never updated to use them.
+						// See NIGHT_INVESTIGATIONS_2026-08-12.md section A.
+						if (t.decalelement[t.f].newparticle.emitterid > 0)
+							WickedCall_PerformEmitterAction(7, (uint32_t)t.decalelement[t.f].newparticle.emitterid);
 						t.decalelement[t.f].active = 0;
 						t.decalelement[t.f].framedelay = 0;
 						t.decalelement[t.f].newparticle.emitterid = -1;

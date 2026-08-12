@@ -1243,6 +1243,19 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			g_decalBuilt, g_decalPrewarm, (int)g.decalelementmax, g_decalGrowDeferred);
 	}
 
+	// GGMAX 2.28: directional shadow-caster count + the extrusion that produced it.
+	// ★ This pair is the EXECUTED-CHECK for SET_SHADOWEXTRUDE. `casters` MUST move when the
+	// extrusion changes; if it does not, the knob never reached the cull and any timing A/B
+	// beside it is measuring nothing (the §24.2 trap, which cost three gate runs to learn).
+	// ⚠ VISIBLE_OBJECTS is blind to this — it counts CAMERA visibility, not caster selection.
+	if (written < resultSize - 256)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"SHADOW_CASTERS: %u extrude=%.0f\n",
+			wi::renderer::gg_dbg_shadow_casters.load(std::memory_order_relaxed),
+			wi::renderer::gg_shadow_caster_extrude);
+	}
+
 	// Visibility counts from the main render pass
 	if (written < resultSize - 256)
 	{
@@ -3847,6 +3860,27 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		_snprintf(result, resultSize,
 			"OK: DECAL_BURST n=%d pool built %d -> %d (max %d) — read HITCH: for the tail",
 			n, before, g_decalBuilt, (int)g.decalelementmax);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// SET_SHADOWEXTRUDE <units> — GGMAX 2.28, the directional shadow-CASTER culling extrusion.
+	// This is the fix for "the shadow pops away when its caster leaves the camera frustum": stock
+	// Wicked's floor is `min(2000, farPlane) * 0.5` = 1000 units, a metres-scale constant in an
+	// inch-scale world, i.e. only 25 m of caster allowance. 0 restores stock exactly.
+	// ★ Fully live — CreateDirLightShadowCams reads it every frame — so this is a true A/B lever:
+	// stand where a shadow pops, raise it, and watch whether the shadow comes back. That is the
+	// empirical confirmation the diagnosis still needs (NIGHT_INVESTIGATIONS_2026-08-12.md C).
+	// ⚠ Judge the COST on the shadow pass, not FPS: a wider cull adds casters to the NEAR
+	// cascades, which are the expensive ones.
+	if (_stricmp(cmd, "SET_SHADOWEXTRUDE") == 0)
+	{
+		const float v = (float)atof(arg);
+		wi::renderer::gg_shadow_caster_extrude = (v < 0.0f) ? 0.0f : v;
+		_snprintf(result, resultSize,
+			"OK: SET_SHADOWEXTRUDE %.0f units (%.0f m) — 0 = stock 1000u/25m floor",
+			wi::renderer::gg_shadow_caster_extrude,
+			wi::renderer::gg_shadow_caster_extrude * 0.0254f);
 		result[resultSize - 1] = 0;
 		return true;
 	}

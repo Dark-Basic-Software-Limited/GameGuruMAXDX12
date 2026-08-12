@@ -897,11 +897,18 @@ void GetSetupIniEarly( void )
 				// start. ★ Set it to 99 (= decalelementmax-1) to restore the pre-2.27 eager pool
 				// exactly — that is the control arm for the hitch A/B, on one binary.
 				const bool bDecalPW = (_strnicmp(p, "decalprewarm", 12) == 0);
+				// GGMAX 2.28: `shadowextrude=<units>` — directional shadow-CASTER culling
+				// extrusion. 0 restores stock (1000 u = 25 m, a metres-scale constant in an
+				// inch-scale world, which made shadows pop as their casters left view).
+				// Live equivalent: SET_SHADOWEXTRUDE. This key exists so the setting survives a
+				// restart while the fix is still awaiting the user's eye.
+				const bool bShadowEx = (_strnicmp(p, "shadowextrude", 13) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bTreePool)       iKeyLen = 8;
 				else if (bMABlock)        iKeyLen = 9;
 				else if (bGrassMg || bTerrGen) iKeyLen = 10;
 				else if (bDecalPW)        iKeyLen = 12;
+				else if (bShadowEx)       iKeyLen = 13;
 				else if (bSingleQ)        iKeyLen = 11;
 				else if (bLightFO || bWeapSH) iKeyLen = 12;
 				else if (bHairNDW || bWeapFD) iKeyLen = 16;
@@ -972,6 +979,14 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetDecalPrewarm(int);
 					GGSetDecalPrewarm(iValue);
+				}
+				if (bShadowEx)
+				{
+					// Routed through a setter rather than touching wi::renderer directly: this
+					// file does not include wiRenderer.h, and every other key in this block uses
+					// the same extern-setter shape.
+					extern void GGSetShadowExtrude(int);
+					GGSetShadowExtrude(iValue);
 				}
 			}
 			fclose(lvf);

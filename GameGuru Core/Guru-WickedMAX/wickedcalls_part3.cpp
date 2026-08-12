@@ -2807,3 +2807,13 @@ void WickedCall_UpdateCharacterShadows(void)
 		scene.character_dedicated_shadows.push_back(wi::primitive::Sphere(s_cands[i].center, s_cands[i].radius));
 	}
 }
+
+// GGMAX 2.28: setter for the directional shadow-CASTER culling extrusion, so setup.ini
+// `shadowextrude=<units>` can reach the engine global from Common_part3.cpp, which does not
+// include wiRenderer.h. Live equivalent: harness SET_SHADOWEXTRUDE.
+// 0 restores stock (an effective 1000 units = 25 m — a metres-scale constant in an inch-scale
+// world, which is why shadows popped as their casters left the camera frustum).
+void GGSetShadowExtrude(int iUnits)
+{
+	wi::renderer::gg_shadow_caster_extrude = (iUnits < 0) ? 0.0f : (float)iUnits;
+}

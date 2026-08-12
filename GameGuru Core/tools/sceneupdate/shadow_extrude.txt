@@ -1,0 +1,18 @@
+STOCK_1000 sample=1 shadowmap_ms=1.47 856 extrude=0 visible_objects=2917
+STOCK_1000 sample=2 shadowmap_ms=0.68 43 extrude=0 visible_objects=2917
+STOCK_1000 sample=3 shadowmap_ms=0.65 43 extrude=0 visible_objects=2917
+STOCK_1000 sample=4 shadowmap_ms=0.85 43 extrude=0 visible_objects=2917
+STOCK_1000 sample=5 shadowmap_ms=0.89 43 extrude=0 visible_objects=2917
+RESULT STOCK_1000 mean_shadowmap_ms=0.908
+NEW_4000 sample=1 shadowmap_ms=0.83 44 extrude=4000 visible_objects=2917
+NEW_4000 sample=2 shadowmap_ms=0.85 44 extrude=4000 visible_objects=2917
+NEW_4000 sample=3 shadowmap_ms=0.71 44 extrude=4000 visible_objects=2917
+NEW_4000 sample=4 shadowmap_ms=0.87 44 extrude=4000 visible_objects=2917
+NEW_4000 sample=5 shadowmap_ms=1.00 44 extrude=4000 visible_objects=2917
+RESULT NEW_4000 mean_shadowmap_ms=0.852
+STOCK_REPEAT sample=1 shadowmap_ms=1.89 856 extrude=0 visible_objects=2917
+STOCK_REPEAT sample=2 shadowmap_ms=0.75 43 extrude=0 visible_objects=2917
+STOCK_REPEAT sample=3 shadowmap_ms=0.68 43 extrude=0 visible_objects=2917
+STOCK_REPEAT sample=4 shadowmap_ms=0.71 43 extrude=0 visible_objects=2917
+STOCK_REPEAT sample=5 shadowmap_ms=1.55 856 extrude=0 visible_objects=2917
+RESULT STOCK_REPEAT mean_shadowmap_ms=1.116

@@ -1,0 +1,18 @@
+STOCK_1000 sample=1 shadowmap_ms=1.45 visible_objects=2917
+STOCK_1000 sample=2 shadowmap_ms=0.97 visible_objects=2917
+STOCK_1000 sample=3 shadowmap_ms=1.40 visible_objects=2917
+STOCK_1000 sample=4 shadowmap_ms=1.39 visible_objects=2917
+STOCK_1000 sample=5 shadowmap_ms=2.18 visible_objects=2917
+RESULT STOCK_1000 mean_shadowmap_ms=1.478
+NEW_4000 sample=1 shadowmap_ms=0.73 visible_objects=2917
+NEW_4000 sample=2 shadowmap_ms=1.85 visible_objects=2917
+NEW_4000 sample=3 shadowmap_ms=1.18 visible_objects=2917
+NEW_4000 sample=4 shadowmap_ms=0.99 visible_objects=2917
+NEW_4000 sample=5 shadowmap_ms=0.87 visible_objects=2917
+RESULT NEW_4000 mean_shadowmap_ms=1.124
+STOCK_REPEAT sample=1 shadowmap_ms=0.63 visible_objects=2917
+STOCK_REPEAT sample=2 shadowmap_ms=0.71 visible_objects=2917
+STOCK_REPEAT sample=3 shadowmap_ms=0.68 visible_objects=2917
+STOCK_REPEAT sample=4 shadowmap_ms=1.56 visible_objects=2917
+STOCK_REPEAT sample=5 shadowmap_ms=0.70 visible_objects=2917
+RESULT STOCK_REPEAT mean_shadowmap_ms=0.856

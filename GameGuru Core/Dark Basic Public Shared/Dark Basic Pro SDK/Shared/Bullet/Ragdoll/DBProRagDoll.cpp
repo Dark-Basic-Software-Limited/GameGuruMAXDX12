@@ -15,6 +15,17 @@
 #include ".\..\..\Error\CError.h"
 
 //#ifdef WICKEDENGINE DX12
+// GGMAX 2.28: the ragdoll writeback (see the restored call below) needs exactly ONE symbol from
+// the Wicked bridge, so it is forward-declared rather than including wickedcalls.h here.
+// ⚠ Two reasons, both deliberate:
+//   1. The commented include below is WRONG from this directory. It climbs 4 levels, but this
+//      file is in Bullet\Ragdoll\ — one deeper than Bullet\, where the working sibling include
+//      (BulletPhysics_part0.CPP:48) climbs 4 to reach "GameGuru Core". From here it needs 5.
+//   2. wickedcalls.h drags Wicked headers into a Bullet translation unit, where both libraries
+//      define their own math types. Avoiding that is very likely why the port dropped it.
+// sObject / sFrame are already in scope via CObjectsC.h above. The declaration must stay at
+// global scope and byte-match wickedcalls.h:149 or it will not link.
+void WickedCall_OverrideLimbWithCombined(sObject* pObject, sFrame* pFrame, bool bIncludeTranslation);
 //#include ".\..\..\..\..\Guru-WickedMAX\wickedcalls.h"
 //#endif
 
@@ -694,7 +705,14 @@ void DBProRagDoll::Update()
 				{
 					bool bIncludeTranslation = false;
 					if (iF == m_iAnimateFromJoint) bIncludeTranslation = true;
-					//WickedCall_OverrideLimbWithCombined(pObject, pFrame, bIncludeTranslation); DX12
+					// GGMAX 2.28 (2026-08-12): RESTORED. This call is the ragdoll's bone -> visible
+					// limb WRITEBACK, and the DX12 port commented it out (tagged "DX12"), which is
+					// why ragdoll death produced a T-posed character floating in place: Bullet was
+					// simulating a ragdoll nobody could see, while the mesh kept the pose it had
+					// when ragdoll_create() called StopObject. Note the loop above is otherwise a
+					// complete no-op without it — it computes bIncludeTranslation and discards it.
+					// See NIGHT_INVESTIGATIONS_2026-08-12.md section D.
+					WickedCall_OverrideLimbWithCombined(pObject, pFrame, bIncludeTranslation);
 				}
 			}
 		}
