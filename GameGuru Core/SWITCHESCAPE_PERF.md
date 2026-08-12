@@ -1643,3 +1643,19 @@ criterion on the proxy.
 ⚠ **STILL OWED before release: the 19-demo hub sweep.** Every other change this campaign got one;
 this one has had the hitch gate the work was scoped to, and nothing more. POLYS is expected
 identical (hidden pool quads never drew) but that is a prediction, not a measurement.
+
+### 24.5 The 19-demo sweep 2.27 owed — RUN, and the prediction holds
+`tools/sweep_0812_2.27.txt`. **C1 PASS** 19/19 · **C3 PASS** worst 3768.1 MB in-game (Aztec Game
+Kit), headroom **327.9 MB** · **C4 PASS** 19/19 reached gameplay.
+
+**C2: POLYS bit-identical to the 2.25 shipped state on all 19 demos.** `sweepgate.sh` prints one
+mismatch — Aztec Game Kit Teaser 10 311 639 vs "ref" 10 313 511 — but that is **the same −1 872
+already attributed to 2.25's ring change** and cleared in §22.8; the script's C2 reference is the
+stale 0809 sweep, which predates 2.25. Against the correct baseline the deviation is zero:
+Canyon 8 816 163, Foggy Forest 10 195 894, Operation Amazon 5 496 922 … all unchanged.
+
+★ This closes the debt recorded in the 2.27 commit, which said POLYS-identical was *"a prediction,
+not a measurement"*. It is now a measurement, and the prediction was right — expected, since
+hidden pool quads never drew, but expected is not the same as verified.
+⚠ Note for whoever next runs `sweepgate.sh`: **its C2 reference needs re-baselining to 2.25**, or
+it will keep reporting this one demo as a failure forever.
