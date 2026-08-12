@@ -4092,6 +4092,175 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// SET_OCCLUSION <0|1> — GGMAX 2.30. GPU occlusion culling on/off, live.
+	// ⚠ Writes BOTH the engine flag AND t.visuals.bOcclusionCulling, and it must. The Graphics
+	// panel RECONCILES the engine to the visuals value whenever it is open
+	// (M-GridEditB_part24.cpp:134) and the visuals-apply path pushes it again
+	// (M-GridEditB_part3.cpp:1815) — setting only the engine flag would be silently reverted,
+	// which is exactly the "prove the knob REACHES the thing" trap that wasted a session on
+	// SET_TREES. The readback prints both so a divergence is visible immediately.
+	if (_stricmp(cmd, "SET_OCCLUSION") == 0)
+	{
+		const bool on = (atoi(arg) != 0);
+		wi::renderer::SetOcclusionCullingEnabled(on);
+		t.visuals.bOcclusionCulling = on;
+		_snprintf(result, resultSize,
+			"OK: SET_OCCLUSION %d — engine=%d visuals=%d (both written; they must agree)",
+			on ? 1 : 0,
+			wi::renderer::GetOcclusionCullingEnabled() ? 1 : 0,
+			t.visuals.bOcclusionCulling ? 1 : 0);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// WHYNOTDRAWN <name-substr> — GGMAX 2.30, closes backlog #125 ("why did object X not draw?").
+	//
+	// Walks the SAME gates wi::renderer::UpdateVisibility applies when it builds the main
+	// camera's visible set, in the same order, and prints each verdict for every matching
+	// object — then states which gate is the one actually rejecting it.
+	// ★ Built for the invisible collectable pistol on spotshadowtest, where the mesh is absent
+	// from the camera pass while its shadow renders perfectly. Two whole hypotheses (lazy PSO,
+	// apparent-size cull) were eliminated by live A/B before this existed; each cost a rebuild
+	// or a relaunch. This answers the same class of question in one command.
+	// ⚠ `inVisibleSet` is from the PRIOR frame — the harness runs in GuruLoopLogic, ahead of
+	// this frame's UpdateVisibility. Everything else is read live from the scene.
+	if (_stricmp(cmd, "WHYNOTDRAWN") == 0)
+	{
+		if (arg == nullptr || arg[0] == 0)
+		{
+			_snprintf(result, resultSize, "ERROR: WHYNOTDRAWN needs a name substring");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		wi::scene::Scene* sc = master.masterrenderer.scene;
+		if (sc == nullptr)
+		{
+			_snprintf(result, resultSize, "ERROR: no scene");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		extern float g_apparentCullDirect;
+		extern float g_apparentCullK;
+		extern float maxApparentSize;
+		const wi::renderer::Visibility& vis = master.masterrenderer.visibility_main;
+
+		// The tangent the cull will actually use, mapped exactly as master_part1.cpp does.
+		float tangent = 0.0f;
+		if (g_apparentCullDirect >= 0.0f) tangent = g_apparentCullDirect;
+		else { const float over = maxApparentSize - 0.000008f; tangent = (over > 0.0f) ? over * g_apparentCullK : 0.0f; }
+		const float tangentSq = tangent * tangent;
+
+		XMFLOAT3 eye = (vis.camera != nullptr) ? vis.camera->Eye : XMFLOAT3(0, 0, 0);
+
+		// case-insensitive substring, same shape DUMP_INSTANCE uses
+		auto nameHit = [](const std::string& hay, const char* needle) -> bool
+		{
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+
+		FILE* f = fopen("whynotdrawn.txt", "w");
+		int matches = 0;
+		std::string firstVerdict;
+		for (size_t i = 0; i < sc->objects.GetCount(); ++i)
+		{
+			const wi::ecs::Entity ent = sc->objects.GetEntity(i);
+			const wi::scene::NameComponent* nm = sc->names.GetComponent(ent);
+			if (nm == nullptr || nm->name.empty()) continue;
+			if (!nameHit(nm->name, arg)) continue;
+			matches++;
+
+			const wi::scene::ObjectComponent& ob = sc->objects[i];
+			const wi::primitive::AABB& ab = sc->aabb_objects[i];
+			const XMFLOAT3 c = ab.getCenter();
+			const float radius = ab.getRadius();
+			const float distSq = wi::math::DistanceSquared(eye, c);
+			const float dist = sqrtf(distSq);
+
+			const bool layerOk = (ab.layerMask & vis.layerMask) != 0;
+			const bool frustumOk = vis.frustum.CheckBoxFast(ab);
+			const bool apparentCull = (tangentSq > 0.0f) && (distSq > radius * radius)
+				&& (radius * radius < tangentSq * distSq);
+
+			bool occluded = false; uint32_t hist = 0;
+			if (i < sc->occlusion_results_objects.size())
+			{
+				occluded = sc->occlusion_results_objects[i].IsOccluded();
+				hist = sc->occlusion_results_objects[i].occlusionHistory;
+			}
+			const bool occlAllowed = (vis.flags & wi::renderer::Visibility::ALLOW_OCCLUSION_CULLING) != 0
+				&& wi::renderer::GetOcclusionCullingEnabled();
+
+			bool inSet = false;
+			for (size_t v = 0; v < vis.visibleObjects.size(); ++v)
+				if (vis.visibleObjects[v] == (uint32_t)i) { inSet = true; break; }
+
+			// ── DRAW-STAGE gates: being in the visible set is NOT the end of the story. Both of
+			// these use the object's CACHED center/radius, so a corrupt AABB reaches them even
+			// though it sails through every cull above.
+			//   1. DrawScene's queue build   (wiRenderer.cpp:8663) drops the object outright when
+			//      distance-to-centre exceeds fadeDistance + radius.
+			//   2. RenderMeshes' distance FADE (wiRenderer.cpp:4170-4174) skips the draw when the
+			//      dither factor exceeds 0.99. ★ This is the one that is camera-only: the shadow
+			//      pass supplies distance 0, so it can never trigger there — which is exactly the
+			//      "no mesh, perfect shadow" signature.
+			const float objDist = wi::math::Distance(eye, ob.center);
+			const bool distReject = (objDist > ob.fadeDistance + ob.radius);
+			const float ditherFade = (ob.radius > 0.0f)
+				? std::max(0.0f, objDist - ob.fadeDistance) / ob.radius : 0.0f;
+			const float dither = std::max(ob.GetTransparency(), ditherFade);
+			const bool ditherSkip = (dither > 0.99f);
+
+			// First failing gate, in the engine's own order.
+			const char* verdict;
+			if (!ob.IsRenderable())                 verdict = "NOT RENDERABLE (SetRenderable false)";
+			else if (!layerOk)                      verdict = "LAYER MASK excludes it from this view";
+			else if (!frustumOk)                    verdict = "FRUSTUM rejects its AABB";
+			else if (apparentCull)                  verdict = "APPARENT-SIZE CULL (delta 1.30) — too small at this distance";
+			else if (occlAllowed && occluded)       verdict = "OCCLUSION QUERY says occluded (history all-zero)";
+			else if (!inSet)                        verdict = "ABSENT from the prior frame's visible set — look further";
+			else if (distReject)                    verdict = "DRAW-DISTANCE REJECT (wiRenderer.cpp:8663) — dist > fadeDistance + radius";
+			else if (ditherSkip)                    verdict = "DISTANCE-FADE SKIP (wiRenderer.cpp:4170) — dither > 0.99, camera pass ONLY (the shadow pass passes distance 0)";
+			else                                    verdict = "DRAWN (passes every gate; if it is still not on screen the fault is in the pixels, not the plumbing)";
+			if (firstVerdict.empty()) firstVerdict = verdict;
+
+			if (f != nullptr)
+			{
+				fprintf(f, "OBJ idx=%d entity=%llu name=\"%s\"\n", (int)i, (unsigned long long)ent, nm->name.c_str());
+				fprintf(f, "  aabb=(%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f) center=(%.0f,%.0f,%.0f) r=%.1f layer=%08x\n",
+					ab._min.x, ab._min.y, ab._min.z, ab._max.x, ab._max.y, ab._max.z, c.x, c.y, c.z, radius, ab.layerMask);
+				fprintf(f, "  camEye=(%.0f,%.0f,%.0f) distToCenter=%.0f  camInsideAABB=%s\n",
+					eye.x, eye.y, eye.z, dist, ab.intersects(eye) ? "YES(forces visible)" : "no");
+				fprintf(f, "  renderable=%d layerOk=%d frustum=%s apparentCull=%s(tangent=%.5f) occlusion=%s(hist=%08x,allowed=%d) inVisibleSet=%s\n",
+					ob.IsRenderable() ? 1 : 0, layerOk ? 1 : 0,
+					frustumOk ? "PASS" : "REJECT",
+					apparentCull ? "CULLED" : "pass", tangent,
+					occluded ? "OCCLUDED" : "visible", hist, occlAllowed ? 1 : 0,
+					inSet ? "yes" : "NO");
+				fprintf(f, "  objCenter=(%.0f,%.0f,%.0f) objRadius=%.1f fadeDistance=%.1f distToObjCenter=%.0f\n",
+					ob.center.x, ob.center.y, ob.center.z, ob.radius, ob.fadeDistance, objDist);
+				fprintf(f, "  drawReject=%s  dither=%.4f (%s, skip if >0.99)  transparency=%.3f\n",
+					distReject ? "YES(dist > fade+radius)" : "no",
+					dither, ditherSkip ? "SKIPS THE DRAW" : "draws", ob.GetTransparency());
+				fprintf(f, "  VERDICT: %s\n", verdict);
+			}
+		}
+		if (f != nullptr) fclose(f);
+
+		_snprintf(result, resultSize,
+			"OK: WHYNOTDRAWN \"%s\" matches=%d visibleSet=%d/%d tangent=%.5f occlusionEnabled=%d -> Files/whynotdrawn.txt\n"
+			"FIRST VERDICT: %s",
+			arg, matches,
+			(int)vis.visibleObjects.size(), (int)sc->objects.GetCount(),
+			tangent, wi::renderer::GetOcclusionCullingEnabled() ? 1 : 0,
+			matches ? firstVerdict.c_str() : "(no object matched that name)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "DUMP_MESHES") != 0) return false;
 
 	wi::scene::Scene& mc = wi::scene::GetScene();

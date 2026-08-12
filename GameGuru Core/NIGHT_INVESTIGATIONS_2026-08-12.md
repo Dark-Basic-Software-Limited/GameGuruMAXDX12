@@ -522,3 +522,64 @@ the code comment) is right. If the corpse looks stretched or pinned, that is the
   "unstick" a run. Leaked runners truncate and interleave the shared log, and the result reads as
   a plausible failure of the thing under test rather than of the harness. Same lesson as
   2026-08-11, learned again the same way: never remove the lock, kill the runner.
+
+---
+
+# GGMAX 2.30 — the invisible collectable pistol (TESTPRO2 / spotshadowtest)
+
+Shipped: `SET_OCCLUSION <0|1>` and `WHYNOTDRAWN <name-substr>` (closes backlog #125).
+`WHYNOTDRAWN` walks every gate `UpdateVisibility` + `DrawScene` + `RenderMeshes` apply to the main
+camera, in engine order, and names the first one that rejects the object.
+
+## The one hard, reproducible finding: pickups carry a 2 km bounding box
+```
+W_MK19T (pistol)  aabb=(-700,42,153)-(100001,100001,100001) center=(49650,50021,50077) r=86750
+44ammo  (pickup)  center=(50103,50026,49319) r=86926
+candle_holder     center=(-679,48,167)       r=7.9     <- healthy prop
+Rectangle001      center=(-130,7,-413)       r=28.5    <- healthy prop
+```
+Clean class split: every PICKUP is corrupt, every ordinary prop is fine — which is why the level
+shows THREE orphan shadows (pistol + two ammo pickups), not one.
+★ Where the number comes from, arithmetically: `SET_ENTITY_VIS` reports TWO objects named
+`W_MK19T` — the placed pickup, and the hidden library master parked at (100000,100000,100000)
+(`M-Entity_part0.cpp:1468`). Midpoint of those two = (49654,50021,50080), half-diagonal = 86745,
+against measured (49650,50021,50077) / 86750. The placed pickup's bounds are the UNION of itself
+and the parked master. Its transform is untouched (`rawT`==`compT`==true position) — which is
+exactly why the shadow lands correctly.
+
+## ⚠⚠ THE AABB IS NOT THE CAUSE. Four mechanisms proposed, four killed.
+| # | mechanism | killed by |
+|---|---|---|
+| 1 | lazy object PSO | live A/B: `lazypso=0`, still invisible |
+| 2 | apparent-size cull (delta 1.30) | live: `SET_APPARENTSIZE 0`, still invisible. Arithmetic agrees — the cull's own `distSq > radiusSq` guard cannot even be entered when radius≈distance |
+| 3 | occlusion query false-negative | `WHYNOTDRAWN`: `occlusion=visible(hist=ffffffff)`, `inVisibleSet=yes` |
+| 4 | distance-fade dither skip (`wiRenderer.cpp:4170`) | `WHYNOTDRAWN`: `fadeDistance=3.4e38` (FLT_MAX) so dither=0.0000 |
+
+Final state for the pistol: `renderable=1 layerOk=1 frustum=PASS apparentCull=pass
+occlusion=visible inVisibleSet=yes drawReject=no dither=0.0000` — **it passes every CPU gate in
+the engine and is in the camera's visible set, and still does not appear.**
+
+★★ METHOD NOTE WORTH MORE THAN THE RESULT: I announced mechanism 3, then mechanism 4, and the
+instrument killed both within minutes of being built. Both were coherent, both were quantitatively
+consistent with the corrupt AABB, and both were wrong. **A measurement that names the culprit
+class (here: pickups have broken bounds) does not license a story about what that class does
+downstream.** Build the gate-by-gate instrument BEFORE narrating the mechanism, not after.
+
+## Where the fault must now be
+Downstream of the CPU visibility path — inside `RenderMeshes` or in the pixels:
+* a per-SUBSET reject (material filter mask) rather than per-object;
+* a missing PSO VARIANT for `RENDERPASS_MAIN`/`PREPASS` while `RENDERPASS_SHADOW` exists — note
+  this is independent of `lazypso` (a never-built variant is skipped outright);
+* ★ the amplifier: the opaque main pass is depth-compare EQUAL with depth-write OFF
+  (`wiRenderer.cpp:2937-2940`, `:2449`), so losing ONLY the Z-prepass draw yields exactly
+  "no mesh, perfect shadow". The per-OBJECT reject lists of prepass and main are provably
+  identical, so any such loss must be per-subset or per-PSO-variant.
+* ⚠ Still unexplained by any of the above: the click repair. The one draw-level change selection
+  makes is forcing an INSTANCED-BATCH BREAK — and the placed pickup shares mesh 2821 with the
+  parked master, so the two are instancing candidates. That is the next thread to pull.
+
+## Next instrument (do this before theorising again)
+Extend `WHYNOTDRAWN` past the queue into the batch: per-subset filter masks vs the pass filter,
+whether a PSO exists for MAIN/PREPASS/SHADOW for that material's variant, and which instanced
+batch the object landed in (with its instance count and the other members). If the pistol is
+batched with the parked master, that is the answer.
