@@ -3119,8 +3119,16 @@ static bool AutoHarness_ShadowBudgetCommands(const char* cmd, const char* arg, c
 	return true;
 }
 
+// GGMAX 2.26: DUMP_MESHES rides this helper rather than taking its own link in the main
+// dispatch chain. Adding one more `else if` there re-hit MSVC C1061 immediately (every chain
+// link nests a block deeper, and that chain is already at the limit — same trap as the
+// shadow-budget and outline helpers). Delegating from inside an EXISTING link costs no nesting.
+static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* result, size_t resultSize);
+
 static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
+	if (AutoHarness_CensusCommands(cmd, arg, result, resultSize)) return true;
+
 	if (_stricmp(cmd, "TITLE_CLICK") == 0)
 	{
 		// Press a storyboard screen widget by ACTION name (start/exit/continue/back/
@@ -3772,6 +3780,220 @@ static bool AutoHarness_OutlineCommands(const char* cmd, const char* arg, char* 
 	}
 	return true;
 #undef sizeof_result_compat
+}
+
+// GGMAX 2.26: mesh census — NAME the empty-level floor instead of deriving it by subtraction.
+//
+// SWITCHESCAPE_PERF.md §16 attributed the DX12 entity floor by accounting: sum the known
+// creators, subtract from the measured total, call the difference "unexplained" (~75 meshes).
+// That method can say a remainder EXISTS but never what it IS — and a subtraction-derived
+// number is precisely the shape that produced the retracted §22.7 finding. This enumerates
+// every live MeshComponent instead, so the remainder has to identify itself.
+//
+// Two groupings, because floor meshes are mostly UNNAMED:
+//   SIGNATURE (verts/indices/subsets) — generator families cluster exactly regardless of naming.
+//     A wi::terrain chunk is always chunk_width^2 = 67*67 = 4489 vertices, so every chunk
+//     collapses into one row whatever it is called.
+//   NAME — the mesh's own NameComponent, else the referencing object's, else its parent's.
+// ORPHAN = a MeshComponent that NO ObjectComponent references. Those draw nothing and are the
+// leak §16 suspected but could not test ("Wicked's Entity_Remove on an object does not
+// necessarily destroy the MeshComponent it referenced").
+static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "DUMP_MESHES") != 0) return false;
+
+	wi::scene::Scene& mc = wi::scene::GetScene();
+
+	// meshIDs referenced by objects, sorted, so per-mesh ref counting is a binary search
+	// rather than an O(meshes x objects) scan (2400 x 8900 on a full level).
+	std::vector<uint64_t> objMesh;
+	objMesh.reserve(mc.objects.GetCount());
+	for (size_t i = 0; i < mc.objects.GetCount(); ++i)
+		objMesh.push_back((uint64_t)mc.objects[i].meshID);
+	std::sort(objMesh.begin(), objMesh.end());
+
+	// meshID -> index of the first object referencing it, so every mesh can be labelled with its
+	// OWNER's name. This is what makes the census readable: GG names nearly every loaded mesh
+	// "node_mesh" (331 of them on Switch Escape), so the mesh NameComponent alone discriminates
+	// nothing — the object name is the real identity.
+	std::vector<std::pair<uint64_t, size_t>> meshToObj;
+	meshToObj.reserve(mc.objects.GetCount());
+	for (size_t i = 0; i < mc.objects.GetCount(); ++i)
+		meshToObj.push_back(std::make_pair((uint64_t)mc.objects[i].meshID, i));
+	std::sort(meshToObj.begin(), meshToObj.end());
+	auto ownerName = [&](wi::ecs::Entity me) -> std::string
+	{
+		auto it = std::lower_bound(meshToObj.begin(), meshToObj.end(),
+			std::make_pair((uint64_t)me, (size_t)0));
+		if (it == meshToObj.end() || it->first != (uint64_t)me) return std::string();
+		const wi::scene::NameComponent* on = mc.names.GetComponent(mc.objects.GetEntity(it->second));
+		return (on != nullptr) ? on->name : std::string();
+	};
+
+	struct CBucket { std::string key; int count; size_t verts; size_t tris; int orphans; std::vector<std::string> samples; };
+	std::vector<CBucket> sigB, namB;
+	auto bump = [](std::vector<CBucket>& v, const std::string& k, size_t vtx, size_t tri, bool orphan, const std::string& sample)
+	{
+		for (auto& b : v)
+			if (b.key == k)
+			{
+				b.count++; b.verts += vtx; b.tris += tri; b.orphans += orphan ? 1 : 0;
+				if (!sample.empty() && b.samples.size() < 4 &&
+					std::find(b.samples.begin(), b.samples.end(), sample) == b.samples.end())
+					b.samples.push_back(sample);
+				return;
+			}
+		CBucket nb; nb.key = k; nb.count = 1; nb.verts = vtx; nb.tris = tri; nb.orphans = orphan ? 1 : 0;
+		if (!sample.empty()) nb.samples.push_back(sample);
+		v.push_back(nb);
+	};
+
+	int totalOrphans = 0;
+	size_t totalVerts = 0, totalTris = 0;
+	std::vector<std::string> orphanLines;
+
+	for (size_t i = 0; i < mc.meshes.GetCount(); ++i)
+	{
+		const wi::ecs::Entity me = mc.meshes.GetEntity(i);
+		const wi::scene::MeshComponent& m = mc.meshes[i];
+		const size_t vtx = m.vertex_positions.size();
+		const size_t tri = m.indices.size() / 3;
+		totalVerts += vtx; totalTris += tri;
+
+		const bool orphan = !std::binary_search(objMesh.begin(), objMesh.end(), (uint64_t)me);
+		if (orphan) totalOrphans++;
+
+		const std::string owner = ownerName(me);
+
+		char sigKey[128];
+		_snprintf(sigKey, sizeof(sigKey), "v=%-6zu tri=%-7zu subsets=%zu", vtx, tri, m.subsets.size());
+		sigKey[sizeof(sigKey) - 1] = 0;
+		bump(sigB, sigKey, vtx, tri, orphan, owner);
+
+		// OWNER-first, because GG names almost every loaded mesh "node_mesh".
+		std::string nameKey = owner;
+		const wi::scene::NameComponent* mn = mc.names.GetComponent(me);
+		if (nameKey.empty() && mn != nullptr && !mn->name.empty()) nameKey = "[mesh] " + mn->name;
+		if (nameKey.empty())
+		{
+			const wi::scene::HierarchyComponent* h = mc.hierarchy.GetComponent(me);
+			if (h != nullptr)
+			{
+				const wi::scene::NameComponent* pn = mc.names.GetComponent(h->parentID);
+				if (pn != nullptr && !pn->name.empty()) nameKey = "[parent] " + pn->name;
+			}
+		}
+		if (nameKey.empty()) nameKey = orphan ? "<unnamed, ORPHAN>" : "<unnamed>";
+		bump(namB, nameKey, vtx, tri, orphan, (mn != nullptr) ? mn->name : std::string());
+
+		if (orphan && orphanLines.size() < 40)
+		{
+			char ol[256];
+			_snprintf(ol, sizeof(ol), "  entity=%llu v=%zu tri=%zu subsets=%zu name=\"%s\"",
+				(unsigned long long)me, vtx, tri, m.subsets.size(),
+				(mn != nullptr) ? mn->name.c_str() : "");
+			ol[sizeof(ol) - 1] = 0;
+			orphanLines.push_back(ol);
+		}
+	}
+
+	auto byCount = [](const CBucket& a, const CBucket& b) { return a.count > b.count; };
+	std::sort(sigB.begin(), sigB.end(), byCount);
+	std::sort(namB.begin(), namB.end(), byCount);
+
+	FILE* f = fopen("mesh_census.txt", "w");
+	if (f == nullptr)
+	{
+		_snprintf(result, resultSize, "ERROR: DUMP_MESHES could not open Files/mesh_census.txt");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	fprintf(f, "MESH CENSUS (GGMAX 2.26) — enumerate the floor, do not subtract for it\n");
+	fprintf(f, "meshes=%d objects=%d materials=%d transforms=%d hierarchy=%d\n",
+		(int)mc.meshes.GetCount(), (int)mc.objects.GetCount(), (int)mc.materials.GetCount(),
+		(int)mc.transforms.GetCount(), (int)mc.hierarchy.GetCount());
+	fprintf(f, "total verts=%zu  total tris=%zu  ORPHAN meshes (no ObjectComponent refs)=%d\n\n",
+		totalVerts, totalTris, totalOrphans);
+
+	auto samplesOf = [](const CBucket& b) -> std::string
+	{
+		std::string s;
+		for (size_t i = 0; i < b.samples.size(); ++i) { if (i) s += ", "; s += b.samples[i]; }
+		return s;
+	};
+
+	fprintf(f, "== BY GEOMETRY SIGNATURE (generator families cluster here) ==\n");
+	fprintf(f, "%6s %8s %-38s %11s  %s\n", "count", "orphans", "signature", "tris_total", "example owners");
+	for (const auto& b : sigB)
+		fprintf(f, "%6d %8d %-38s %11zu  %s\n", b.count, b.orphans, b.key.c_str(), b.tris, samplesOf(b).c_str());
+
+	fprintf(f, "\n== BY OWNER NAME (referencing object -> mesh -> parent) ==\n");
+	fprintf(f, "%6s %8s %-46s %s\n", "count", "orphans", "owner", "mesh names");
+	for (const auto& b : namB)
+		fprintf(f, "%6d %8d %-46s %s\n", b.count, b.orphans, b.key.c_str(), samplesOf(b).c_str());
+
+	if (!orphanLines.empty())
+	{
+		fprintf(f, "\n== ORPHAN MESHES (first %d) ==\n", (int)orphanLines.size());
+		for (const auto& l : orphanLines) fprintf(f, "%s\n", l.c_str());
+	}
+
+	// DUMP_MESHES <filter> — itemise one family. The histograms say WHAT is numerous; this says
+	// what those things ARE (who owns them, what they hang off, whether they draw, where they sit).
+	// Added to identify the ~110 6-vertex "plane" quads that are the largest non-terrain floor
+	// family and sit at 108/113/110 across three unrelated demos.
+	if (arg != nullptr && arg[0] != 0)
+	{
+		auto ciFind = [](const std::string& hay, const char* needle) -> bool {
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		fprintf(f, "\n== DETAIL for filter \"%s\" ==\n", arg);
+		fprintf(f, "%-10s %-22s %-26s %-10s %-9s %s\n", "entity", "owner", "parent", "renderable", "v/tri", "world pos");
+		int shown = 0, matched = 0;
+		for (size_t i = 0; i < mc.meshes.GetCount(); ++i)
+		{
+			const wi::ecs::Entity me = mc.meshes.GetEntity(i);
+			const std::string owner = ownerName(me);
+			const wi::scene::NameComponent* mn = mc.names.GetComponent(me);
+			const bool hit = ciFind(owner, arg) || (mn != nullptr && ciFind(mn->name, arg));
+			if (!hit) continue;
+			matched++;
+			if (shown >= 60) continue;
+			shown++;
+
+			// owning object -> renderable + transform
+			std::string parent = "-"; std::string rend = "?"; float px = 0, py = 0, pz = 0;
+			auto it = std::lower_bound(meshToObj.begin(), meshToObj.end(), std::make_pair((uint64_t)me, (size_t)0));
+			if (it != meshToObj.end() && it->first == (uint64_t)me)
+			{
+				const wi::ecs::Entity oe = mc.objects.GetEntity(it->second);
+				rend = mc.objects[it->second].IsRenderable() ? "yes" : "NO";
+				const wi::scene::TransformComponent* tr = mc.transforms.GetComponent(oe);
+				if (tr != nullptr) { px = tr->world._41; py = tr->world._42; pz = tr->world._43; }
+				const wi::scene::HierarchyComponent* h = mc.hierarchy.GetComponent(oe);
+				if (h != nullptr)
+				{
+					const wi::scene::NameComponent* pn = mc.names.GetComponent(h->parentID);
+					parent = (pn != nullptr && !pn->name.empty()) ? pn->name : "<unnamed parent>";
+				}
+			}
+			const wi::scene::MeshComponent& m2 = mc.meshes[i];
+			fprintf(f, "%-10llu %-22s %-26s %-10s %zu/%-6zu (%.0f, %.0f, %.0f)\n",
+				(unsigned long long)me, owner.c_str(), parent.c_str(), rend.c_str(),
+				m2.vertex_positions.size(), m2.indices.size() / 3, px, py, pz);
+		}
+		fprintf(f, "matched=%d shown=%d\n", matched, shown);
+	}
+	fclose(f);
+
+	_snprintf(result, resultSize,
+		"OK: DUMP_MESHES -> Files/mesh_census.txt  meshes=%d orphans=%d sigBuckets=%d nameBuckets=%d",
+		(int)mc.meshes.GetCount(), totalOrphans, (int)sigB.size(), (int)namB.size());
+	result[resultSize - 1] = 0;
+	return true;
 }
 
 void AutoHarness_CheckForCommand(void)

@@ -1,0 +1,759 @@
+MESH CENSUS (GGMAX 2.26) — enumerate the floor, do not subtract for it
+meshes=977 objects=1039 materials=983 transforms=2332 hierarchy=2037
+total verts=3144856  total tris=8732470  ORPHAN meshes (no ObjectComponent refs)=0
+
+== BY GEOMETRY SIGNATURE (generator families cluster here) ==
+ count  orphans signature                               tris_total  example owners
+   625        0 v=4489   tri=13278   subsets=7             8298750  chunk_-1_0, chunk_-2_-1, chunk_-1_-1, chunk_0_-1
+   113        0 v=6      tri=2       subsets=1                 226  plane
+    35        0 v=24     tri=12      subsets=1                 420  VR_Controller_Left, VR_Controller_Right, box, sibling frame
+    14        0 v=4      tri=2       subsets=1                  28  sibling frame, Plane003, Plane002
+    10        0 v=20     tri=10      subsets=1                 100  sibling frame
+     9        0 v=4298   tri=7373    subsets=1               66357  zombie_male_body_01
+     9        0 v=1401   tri=2366    subsets=1               21294  zombie_male_legs_01, zombie_male_legs_02
+     9        0 v=1574   tri=2366    subsets=1               21294  Body
+     9        0 v=724    tri=889     subsets=1                8001  new limb
+     9        0 v=1566   tri=2580    subsets=1               23220  zombie_male_feet_01
+     8        0 v=689    tri=646     subsets=1                5168  TubeCap003
+     7        0 v=30     tri=10      subsets=1                  70  mesh
+     6        0 v=24     tri=8       subsets=1                  48  mesh
+     6        0 v=2599   tri=4956    subsets=1               29736  zombie_male_head_04
+     5        0 v=1332   tri=1156    subsets=1                5780  Rectangle001
+     4        0 v=3200   tri=6022    subsets=1               24088  zombie_female_head_01
+     4        0 v=850    tri=1292    subsets=1                5168  zombie_female_feet_01
+     4        0 v=6228   tri=6002    subsets=1               24008  zombie_female_hair_01
+     4        0 v=20     tri=12      subsets=1                  48  SKINDUMMY
+     4        0 v=328    tri=354     subsets=1                1416  M67_Projectile
+     4        0 v=1237   tri=2188    subsets=1                8752  zombie_female_legs_01, zombie_female_legs_03
+     3        0 v=16     tri=28      subsets=1                  84  Cube_001, Cube, Cube_002
+     3        0 v=8      tri=12      subsets=1                  36  Cube_004, Cube_003, Cube_005
+     3        0 v=192    tri=384     subsets=1                1152  Sphere_001, Sphere, Sphere_002
+     3        0 v=16     tri=22      subsets=1                  66  Cube_001, Cube_011, Cube_010
+     3        0 v=169    tri=310     subsets=1                 930  sphere
+     3        0 v=1609   tri=2794    subsets=1                8382  zombie_male_hair_03
+     3        0 v=1125   tri=1880    subsets=1                5640  antique_switch
+     3        0 v=3250   tri=6117    subsets=1               18351  zombie_male_head_01
+     3        0 v=1260   tri=1424    subsets=1                4272  zombie_male_hair_04
+     3        0 v=5310   tri=6600    subsets=1               19800  male_zombie_hair001
+     2        0 v=745    tri=884     subsets=1                1768  
+     2        0 v=140    tri=234     subsets=1                 468  BiomassF_10
+     2        0 v=2692   tri=1552    subsets=1                3104  $dummy_node
+     2        0 v=8392   tri=5936    subsets=1               11872  sibling frame
+     2        0 v=1174   tri=1094    subsets=1                2188  Rectangle006
+     2        0 v=1996   tri=3176    subsets=1                6352  candle_holder
+     2        0 v=11126  tri=7792    subsets=1               15584  sibling frame
+     2        0 v=4318   tri=7402    subsets=1               14804  zombie_female_body_01
+     2        0 v=1009   tri=918     subsets=1                1836  start_marker_with_human
+     2        0 v=991    tri=904     subsets=1                1808  trophy
+     2        0 v=5400   tri=9410    subsets=1               18820  zombie_female_body_06_hoodie
+     2        0 v=8      tri=4       subsets=1                   8  $dummy_node
+     1        0 v=11075  tri=8488    subsets=1                8488  Hair_low_Hair_low_0
+     1        0 v=21355  tri=22160   subsets=1               22160  Dress_low_Dress_low_0
+     1        0 v=1139   tri=916     subsets=1                 916  sibling frame
+     1        0 v=375    tri=224     subsets=1                 224  $dummy_node
+     1        0 v=3813   tri=1271    subsets=1                1271  W_MK19T
+     1        0 v=216    tri=72      subsets=1                  72  44ammo
+     1        0 v=48     tri=24      subsets=1                  24  $dummy_node
+     1        0 v=18     tri=12      subsets=1                  12  sibling frame
+     1        0 v=11584  tri=9332    subsets=1                9332  Body_low_Body_low_0
+     1        0 v=168    tri=110     subsets=1                 110  sibling frame
+     1        0 v=718    tri=516     subsets=1                 516  sibling frame
+     1        0 v=253    tri=136     subsets=1                 136  sibling frame
+     1        0 v=669    tri=435     subsets=1                 435  sibling frame
+     1        0 v=620    tri=456     subsets=1                 456  sibling frame
+     1        0 v=332    tri=268     subsets=1                 268  sibling frame
+     1        0 v=2476   tri=1528    subsets=1                1528  sibling frame
+     1        0 v=30     tri=22      subsets=1                  22  sibling frame
+     1        0 v=1774   tri=1196    subsets=1                1196  $dummy_node
+     1        0 v=341    tri=524     subsets=1                 524  hanging_light001
+     1        0 v=6      tri=4       subsets=1                   4  sibling frame
+     1        0 v=130    tri=76      subsets=1                  76  sibling frame
+     1        0 v=132    tri=80      subsets=1                  80  $dummy_node
+     1        0 v=472    tri=284     subsets=1                 284  $dummy_node
+     1        0 v=2286   tri=2482    subsets=1                2482  Cube.002
+     1        0 v=941    tri=557     subsets=1                 557  sibling frame
+
+== BY OWNER NAME (referencing object -> mesh -> parent) ==
+ count  orphans owner                                          mesh names
+   113        0 plane                                          node_mesh
+    42        0 sibling frame                                  node_mesh
+    24        0 $dummy_node                                    node_mesh
+    13        0 mesh                                           node_mesh
+    13        0 box                                            node_mesh
+     9        0 zombie_male_feet_01                            node_mesh
+     9        0 new limb                                       node_mesh
+     9        0 zombie_male_body_01                            node_mesh
+     9        0 Body                                           node_mesh
+     8        0 TubeCap003                                     node_mesh
+     6        0 zombie_male_head_04                            node_mesh
+     6        0 zombie_male_legs_01                            node_mesh
+     5        0 Rectangle001                                   node_mesh
+     4        0 zombie_female_hair_01                          node_mesh
+     4        0 zombie_female_head_01                          node_mesh
+     4        0 M67_Projectile                                 node_mesh
+     4        0 zombie_female_feet_01                          node_mesh
+     4        0 SKINDUMMY                                      node_mesh
+     3        0 male_zombie_hair001                            node_mesh
+     3        0 zombie_male_hair_04                            node_mesh
+     3        0 zombie_male_hair_03                            node_mesh
+     3        0 antique_switch                                 node_mesh
+     3        0 sphere                                         node_mesh
+     3        0 zombie_male_head_01                            node_mesh
+     3        0 zombie_male_legs_02                            node_mesh
+     2        0 Cube_001                                       node_mesh
+     2        0 Plane002                                       node_mesh
+     2        0 candle_holder                                  node_mesh
+     2        0 zombie_female_body_01                          node_mesh
+     2        0 start_marker_with_human                        node_mesh
+     2        0 trophy                                         node_mesh
+     2        0 zombie_female_legs_03                          node_mesh
+     2        0 zombie_female_body_06_hoodie                   node_mesh
+     2        0 [mesh] node_mesh                               node_mesh
+     2        0 BiomassF_10                                    node_mesh
+     2        0 zombie_female_legs_01                          node_mesh
+     2        0 Rectangle006                                   node_mesh
+     2        0 Plane003                                       node_mesh
+     1        0 VR_Controller_Left                             VR_Controller_Left_mesh
+     1        0 VR_Controller_Right                            VR_Controller_Right_mesh
+     1        0 Cube                                           node_mesh
+     1        0 Cube_002                                       node_mesh
+     1        0 Cube_004                                       node_mesh
+     1        0 Cube_003                                       node_mesh
+     1        0 Cube_005                                       node_mesh
+     1        0 Sphere_001                                     node_mesh
+     1        0 Sphere                                         node_mesh
+     1        0 Sphere_002                                     node_mesh
+     1        0 Cube_011                                       node_mesh
+     1        0 Cube_010                                       node_mesh
+     1        0 W_MK19T                                        node_mesh
+     1        0 Body_low_Body_low_0                            node_mesh
+     1        0 Hair_low_Hair_low_0                            node_mesh
+     1        0 Dress_low_Dress_low_0                          node_mesh
+     1        0 44ammo                                         node_mesh
+     1        0 hanging_light001                               node_mesh
+     1        0 Cube.002                                       node_mesh
+     1        0 chunk_-1_0                                     chunk_-1_0
+     1        0 chunk_-2_-1                                    chunk_-2_-1
+     1        0 chunk_-1_-1                                    chunk_-1_-1
+     1        0 chunk_0_-1                                     chunk_0_-1
+     1        0 chunk_0_0                                      chunk_0_0
+     1        0 chunk_0_1                                      chunk_0_1
+     1        0 chunk_-1_1                                     chunk_-1_1
+     1        0 chunk_-2_1                                     chunk_-2_1
+     1        0 chunk_-2_0                                     chunk_-2_0
+     1        0 chunk_-3_-2                                    chunk_-3_-2
+     1        0 chunk_-2_-2                                    chunk_-2_-2
+     1        0 chunk_-1_-2                                    chunk_-1_-2
+     1        0 chunk_0_-2                                     chunk_0_-2
+     1        0 chunk_1_-2                                     chunk_1_-2
+     1        0 chunk_1_-1                                     chunk_1_-1
+     1        0 chunk_1_0                                      chunk_1_0
+     1        0 chunk_1_1                                      chunk_1_1
+     1        0 chunk_1_2                                      chunk_1_2
+     1        0 chunk_0_2                                      chunk_0_2
+     1        0 chunk_-1_2                                     chunk_-1_2
+     1        0 chunk_-2_2                                     chunk_-2_2
+     1        0 chunk_-3_2                                     chunk_-3_2
+     1        0 chunk_-3_1                                     chunk_-3_1
+     1        0 chunk_-3_0                                     chunk_-3_0
+     1        0 chunk_-3_-1                                    chunk_-3_-1
+     1        0 chunk_0_3                                      chunk_0_3
+     1        0 chunk_-1_3                                     chunk_-1_3
+     1        0 chunk_-2_3                                     chunk_-2_3
+     1        0 chunk_-3_3                                     chunk_-3_3
+     1        0 chunk_-4_3                                     chunk_-4_3
+     1        0 chunk_-4_2                                     chunk_-4_2
+     1        0 chunk_-4_1                                     chunk_-4_1
+     1        0 chunk_-4_0                                     chunk_-4_0
+     1        0 chunk_-4_-1                                    chunk_-4_-1
+     1        0 chunk_0_4                                      chunk_0_4
+     1        0 chunk_-1_4                                     chunk_-1_4
+     1        0 chunk_-2_4                                     chunk_-2_4
+     1        0 chunk_-3_4                                     chunk_-3_4
+     1        0 chunk_-4_4                                     chunk_-4_4
+     1        0 chunk_-5_4                                     chunk_-5_4
+     1        0 chunk_-5_3                                     chunk_-5_3
+     1        0 chunk_-5_2                                     chunk_-5_2
+     1        0 chunk_-5_1                                     chunk_-5_1
+     1        0 chunk_-5_0                                     chunk_-5_0
+     1        0 chunk_-5_-1                                    chunk_-5_-1
+     1        0 chunk_1_5                                      chunk_1_5
+     1        0 chunk_0_5                                      chunk_0_5
+     1        0 chunk_-1_5                                     chunk_-1_5
+     1        0 chunk_-2_5                                     chunk_-2_5
+     1        0 chunk_-3_5                                     chunk_-3_5
+     1        0 chunk_-4_5                                     chunk_-4_5
+     1        0 chunk_-5_5                                     chunk_-5_5
+     1        0 chunk_-6_5                                     chunk_-6_5
+     1        0 chunk_-6_4                                     chunk_-6_4
+     1        0 chunk_-6_3                                     chunk_-6_3
+     1        0 chunk_-6_2                                     chunk_-6_2
+     1        0 chunk_-6_1                                     chunk_-6_1
+     1        0 chunk_-6_0                                     chunk_-6_0
+     1        0 chunk_-6_-1                                    chunk_-6_-1
+     1        0 chunk_-6_-2                                    chunk_-6_-2
+     1        0 chunk_1_6                                      chunk_1_6
+     1        0 chunk_0_6                                      chunk_0_6
+     1        0 chunk_-1_6                                     chunk_-1_6
+     1        0 chunk_-2_6                                     chunk_-2_6
+     1        0 chunk_-3_6                                     chunk_-3_6
+     1        0 chunk_-4_6                                     chunk_-4_6
+     1        0 chunk_-5_6                                     chunk_-5_6
+     1        0 chunk_-6_6                                     chunk_-6_6
+     1        0 chunk_-7_6                                     chunk_-7_6
+     1        0 chunk_-7_5                                     chunk_-7_5
+     1        0 chunk_-7_4                                     chunk_-7_4
+     1        0 chunk_-7_3                                     chunk_-7_3
+     1        0 chunk_-7_2                                     chunk_-7_2
+     1        0 chunk_-7_1                                     chunk_-7_1
+     1        0 chunk_-7_0                                     chunk_-7_0
+     1        0 chunk_-7_-1                                    chunk_-7_-1
+     1        0 chunk_-7_-2                                    chunk_-7_-2
+     1        0 chunk_2_7                                      chunk_2_7
+     1        0 chunk_1_7                                      chunk_1_7
+     1        0 chunk_0_7                                      chunk_0_7
+     1        0 chunk_-1_7                                     chunk_-1_7
+     1        0 chunk_-2_7                                     chunk_-2_7
+     1        0 chunk_-3_7                                     chunk_-3_7
+     1        0 chunk_-4_7                                     chunk_-4_7
+     1        0 chunk_-5_7                                     chunk_-5_7
+     1        0 chunk_-6_7                                     chunk_-6_7
+     1        0 chunk_-7_7                                     chunk_-7_7
+     1        0 chunk_-8_7                                     chunk_-8_7
+     1        0 chunk_-8_6                                     chunk_-8_6
+     1        0 chunk_-8_5                                     chunk_-8_5
+     1        0 chunk_-8_4                                     chunk_-8_4
+     1        0 chunk_-8_3                                     chunk_-8_3
+     1        0 chunk_-8_2                                     chunk_-8_2
+     1        0 chunk_-8_1                                     chunk_-8_1
+     1        0 chunk_-8_0                                     chunk_-8_0
+     1        0 chunk_-8_-1                                    chunk_-8_-1
+     1        0 chunk_-8_-2                                    chunk_-8_-2
+     1        0 chunk_-8_-3                                    chunk_-8_-3
+     1        0 chunk_2_8                                      chunk_2_8
+     1        0 chunk_1_8                                      chunk_1_8
+     1        0 chunk_0_8                                      chunk_0_8
+     1        0 chunk_-1_8                                     chunk_-1_8
+     1        0 chunk_-2_8                                     chunk_-2_8
+     1        0 chunk_-3_8                                     chunk_-3_8
+     1        0 chunk_-4_8                                     chunk_-4_8
+     1        0 chunk_-5_8                                     chunk_-5_8
+     1        0 chunk_-6_8                                     chunk_-6_8
+     1        0 chunk_-7_8                                     chunk_-7_8
+     1        0 chunk_-8_8                                     chunk_-8_8
+     1        0 chunk_-9_8                                     chunk_-9_8
+     1        0 chunk_-9_7                                     chunk_-9_7
+     1        0 chunk_-9_6                                     chunk_-9_6
+     1        0 chunk_-9_5                                     chunk_-9_5
+     1        0 chunk_-9_4                                     chunk_-9_4
+     1        0 chunk_-9_3                                     chunk_-9_3
+     1        0 chunk_-9_2                                     chunk_-9_2
+     1        0 chunk_-9_1                                     chunk_-9_1
+     1        0 chunk_-9_0                                     chunk_-9_0
+     1        0 chunk_-9_-1                                    chunk_-9_-1
+     1        0 chunk_-9_-2                                    chunk_-9_-2
+     1        0 chunk_-9_-3                                    chunk_-9_-3
+     1        0 chunk_3_9                                      chunk_3_9
+     1        0 chunk_2_9                                      chunk_2_9
+     1        0 chunk_1_9                                      chunk_1_9
+     1        0 chunk_0_9                                      chunk_0_9
+     1        0 chunk_-1_9                                     chunk_-1_9
+     1        0 chunk_-2_9                                     chunk_-2_9
+     1        0 chunk_-3_9                                     chunk_-3_9
+     1        0 chunk_-4_9                                     chunk_-4_9
+     1        0 chunk_-5_9                                     chunk_-5_9
+     1        0 chunk_-6_9                                     chunk_-6_9
+     1        0 chunk_-7_9                                     chunk_-7_9
+     1        0 chunk_-8_9                                     chunk_-8_9
+     1        0 chunk_-9_9                                     chunk_-9_9
+     1        0 chunk_-10_9                                    chunk_-10_9
+     1        0 chunk_-10_8                                    chunk_-10_8
+     1        0 chunk_-10_7                                    chunk_-10_7
+     1        0 chunk_-10_6                                    chunk_-10_6
+     1        0 chunk_-10_5                                    chunk_-10_5
+     1        0 chunk_-10_4                                    chunk_-10_4
+     1        0 chunk_-10_3                                    chunk_-10_3
+     1        0 chunk_-10_2                                    chunk_-10_2
+     1        0 chunk_-10_1                                    chunk_-10_1
+     1        0 chunk_-10_0                                    chunk_-10_0
+     1        0 chunk_-10_-1                                   chunk_-10_-1
+     1        0 chunk_-10_-2                                   chunk_-10_-2
+     1        0 chunk_-10_-3                                   chunk_-10_-3
+     1        0 chunk_-10_-4                                   chunk_-10_-4
+     1        0 chunk_3_10                                     chunk_3_10
+     1        0 chunk_2_10                                     chunk_2_10
+     1        0 chunk_1_10                                     chunk_1_10
+     1        0 chunk_0_10                                     chunk_0_10
+     1        0 chunk_-1_10                                    chunk_-1_10
+     1        0 chunk_-2_10                                    chunk_-2_10
+     1        0 chunk_-3_10                                    chunk_-3_10
+     1        0 chunk_-4_10                                    chunk_-4_10
+     1        0 chunk_-5_10                                    chunk_-5_10
+     1        0 chunk_-6_10                                    chunk_-6_10
+     1        0 chunk_-7_10                                    chunk_-7_10
+     1        0 chunk_-8_10                                    chunk_-8_10
+     1        0 chunk_-9_10                                    chunk_-9_10
+     1        0 chunk_-10_10                                   chunk_-10_10
+     1        0 chunk_-11_10                                   chunk_-11_10
+     1        0 chunk_-11_9                                    chunk_-11_9
+     1        0 chunk_-11_8                                    chunk_-11_8
+     1        0 chunk_-11_7                                    chunk_-11_7
+     1        0 chunk_-11_6                                    chunk_-11_6
+     1        0 chunk_-11_5                                    chunk_-11_5
+     1        0 chunk_-11_4                                    chunk_-11_4
+     1        0 chunk_-11_3                                    chunk_-11_3
+     1        0 chunk_-11_2                                    chunk_-11_2
+     1        0 chunk_-11_1                                    chunk_-11_1
+     1        0 chunk_-11_0                                    chunk_-11_0
+     1        0 chunk_-11_-1                                   chunk_-11_-1
+     1        0 chunk_-11_-2                                   chunk_-11_-2
+     1        0 chunk_-11_-3                                   chunk_-11_-3
+     1        0 chunk_-11_-4                                   chunk_-11_-4
+     1        0 chunk_4_11                                     chunk_4_11
+     1        0 chunk_3_11                                     chunk_3_11
+     1        0 chunk_2_11                                     chunk_2_11
+     1        0 chunk_1_11                                     chunk_1_11
+     1        0 chunk_0_11                                     chunk_0_11
+     1        0 chunk_-1_11                                    chunk_-1_11
+     1        0 chunk_-2_11                                    chunk_-2_11
+     1        0 chunk_-3_11                                    chunk_-3_11
+     1        0 chunk_-4_11                                    chunk_-4_11
+     1        0 chunk_-5_11                                    chunk_-5_11
+     1        0 chunk_-6_11                                    chunk_-6_11
+     1        0 chunk_-7_11                                    chunk_-7_11
+     1        0 chunk_-8_11                                    chunk_-8_11
+     1        0 chunk_-9_11                                    chunk_-9_11
+     1        0 chunk_-10_11                                   chunk_-10_11
+     1        0 chunk_-11_11                                   chunk_-11_11
+     1        0 chunk_-12_11                                   chunk_-12_11
+     1        0 chunk_-12_10                                   chunk_-12_10
+     1        0 chunk_-12_9                                    chunk_-12_9
+     1        0 chunk_-12_8                                    chunk_-12_8
+     1        0 chunk_-12_7                                    chunk_-12_7
+     1        0 chunk_-12_6                                    chunk_-12_6
+     1        0 chunk_-12_5                                    chunk_-12_5
+     1        0 chunk_-12_4                                    chunk_-12_4
+     1        0 chunk_-12_3                                    chunk_-12_3
+     1        0 chunk_-12_2                                    chunk_-12_2
+     1        0 chunk_-12_1                                    chunk_-12_1
+     1        0 chunk_-12_0                                    chunk_-12_0
+     1        0 chunk_-12_-1                                   chunk_-12_-1
+     1        0 chunk_-12_-2                                   chunk_-12_-2
+     1        0 chunk_-12_-3                                   chunk_-12_-3
+     1        0 chunk_-12_-4                                   chunk_-12_-4
+     1        0 chunk_4_12                                     chunk_4_12
+     1        0 chunk_3_12                                     chunk_3_12
+     1        0 chunk_2_12                                     chunk_2_12
+     1        0 chunk_1_12                                     chunk_1_12
+     1        0 chunk_0_12                                     chunk_0_12
+     1        0 chunk_-1_12                                    chunk_-1_12
+     1        0 chunk_-2_12                                    chunk_-2_12
+     1        0 chunk_-3_12                                    chunk_-3_12
+     1        0 chunk_-4_12                                    chunk_-4_12
+     1        0 chunk_-5_12                                    chunk_-5_12
+     1        0 chunk_-6_12                                    chunk_-6_12
+     1        0 chunk_-7_12                                    chunk_-7_12
+     1        0 chunk_-8_12                                    chunk_-8_12
+     1        0 chunk_-9_12                                    chunk_-9_12
+     1        0 chunk_-10_12                                   chunk_-10_12
+     1        0 chunk_-11_12                                   chunk_-11_12
+     1        0 chunk_-12_12                                   chunk_-12_12
+     1        0 chunk_-13_12                                   chunk_-13_12
+     1        0 chunk_-13_11                                   chunk_-13_11
+     1        0 chunk_-13_10                                   chunk_-13_10
+     1        0 chunk_-13_9                                    chunk_-13_9
+     1        0 chunk_-13_8                                    chunk_-13_8
+     1        0 chunk_-13_7                                    chunk_-13_7
+     1        0 chunk_-13_6                                    chunk_-13_6
+     1        0 chunk_-13_5                                    chunk_-13_5
+     1        0 chunk_-13_4                                    chunk_-13_4
+     1        0 chunk_-13_3                                    chunk_-13_3
+     1        0 chunk_-13_2                                    chunk_-13_2
+     1        0 chunk_-13_1                                    chunk_-13_1
+     1        0 chunk_-13_0                                    chunk_-13_0
+     1        0 chunk_-13_-1                                   chunk_-13_-1
+     1        0 chunk_-13_-2                                   chunk_-13_-2
+     1        0 chunk_-13_-3                                   chunk_-13_-3
+     1        0 chunk_-13_-4                                   chunk_-13_-4
+     1        0 chunk_-13_-5                                   chunk_-13_-5
+     1        0 chunk_-4_-3                                    chunk_-4_-3
+     1        0 chunk_-3_-3                                    chunk_-3_-3
+     1        0 chunk_-2_-3                                    chunk_-2_-3
+     1        0 chunk_-1_-3                                    chunk_-1_-3
+     1        0 chunk_0_-3                                     chunk_0_-3
+     1        0 chunk_1_-3                                     chunk_1_-3
+     1        0 chunk_2_-3                                     chunk_2_-3
+     1        0 chunk_2_-2                                     chunk_2_-2
+     1        0 chunk_2_-1                                     chunk_2_-1
+     1        0 chunk_2_0                                      chunk_2_0
+     1        0 chunk_2_1                                      chunk_2_1
+     1        0 chunk_2_2                                      chunk_2_2
+     1        0 chunk_2_3                                      chunk_2_3
+     1        0 chunk_1_3                                      chunk_1_3
+     1        0 chunk_-4_-2                                    chunk_-4_-2
+     1        0 chunk_-5_-4                                    chunk_-5_-4
+     1        0 chunk_-4_-4                                    chunk_-4_-4
+     1        0 chunk_-3_-4                                    chunk_-3_-4
+     1        0 chunk_-2_-4                                    chunk_-2_-4
+     1        0 chunk_-1_-4                                    chunk_-1_-4
+     1        0 chunk_0_-4                                     chunk_0_-4
+     1        0 chunk_1_-4                                     chunk_1_-4
+     1        0 chunk_2_-4                                     chunk_2_-4
+     1        0 chunk_3_-4                                     chunk_3_-4
+     1        0 chunk_3_-3                                     chunk_3_-3
+     1        0 chunk_3_-2                                     chunk_3_-2
+     1        0 chunk_3_-1                                     chunk_3_-1
+     1        0 chunk_3_0                                      chunk_3_0
+     1        0 chunk_3_1                                      chunk_3_1
+     1        0 chunk_3_2                                      chunk_3_2
+     1        0 chunk_3_3                                      chunk_3_3
+     1        0 chunk_3_4                                      chunk_3_4
+     1        0 chunk_2_4                                      chunk_2_4
+     1        0 chunk_1_4                                      chunk_1_4
+     1        0 chunk_-5_-2                                    chunk_-5_-2
+     1        0 chunk_-5_-3                                    chunk_-5_-3
+     1        0 chunk_-6_-5                                    chunk_-6_-5
+     1        0 chunk_-5_-5                                    chunk_-5_-5
+     1        0 chunk_-4_-5                                    chunk_-4_-5
+     1        0 chunk_-3_-5                                    chunk_-3_-5
+     1        0 chunk_-2_-5                                    chunk_-2_-5
+     1        0 chunk_-1_-5                                    chunk_-1_-5
+     1        0 chunk_0_-5                                     chunk_0_-5
+     1        0 chunk_1_-5                                     chunk_1_-5
+     1        0 chunk_2_-5                                     chunk_2_-5
+     1        0 chunk_3_-5                                     chunk_3_-5
+     1        0 chunk_4_-5                                     chunk_4_-5
+     1        0 chunk_4_-4                                     chunk_4_-4
+     1        0 chunk_4_-3                                     chunk_4_-3
+     1        0 chunk_4_-2                                     chunk_4_-2
+     1        0 chunk_4_-1                                     chunk_4_-1
+     1        0 chunk_4_0                                      chunk_4_0
+     1        0 chunk_4_1                                      chunk_4_1
+     1        0 chunk_4_2                                      chunk_4_2
+     1        0 chunk_4_3                                      chunk_4_3
+     1        0 chunk_4_4                                      chunk_4_4
+     1        0 chunk_4_5                                      chunk_4_5
+     1        0 chunk_3_5                                      chunk_3_5
+     1        0 chunk_2_5                                      chunk_2_5
+     1        0 chunk_-6_-3                                    chunk_-6_-3
+     1        0 chunk_-6_-4                                    chunk_-6_-4
+     1        0 chunk_-7_-6                                    chunk_-7_-6
+     1        0 chunk_-6_-6                                    chunk_-6_-6
+     1        0 chunk_-5_-6                                    chunk_-5_-6
+     1        0 chunk_-4_-6                                    chunk_-4_-6
+     1        0 chunk_-3_-6                                    chunk_-3_-6
+     1        0 chunk_-2_-6                                    chunk_-2_-6
+     1        0 chunk_-1_-6                                    chunk_-1_-6
+     1        0 chunk_0_-6                                     chunk_0_-6
+     1        0 chunk_1_-6                                     chunk_1_-6
+     1        0 chunk_2_-6                                     chunk_2_-6
+     1        0 chunk_3_-6                                     chunk_3_-6
+     1        0 chunk_4_-6                                     chunk_4_-6
+     1        0 chunk_5_-6                                     chunk_5_-6
+     1        0 chunk_5_-5                                     chunk_5_-5
+     1        0 chunk_5_-4                                     chunk_5_-4
+     1        0 chunk_5_-3                                     chunk_5_-3
+     1        0 chunk_5_-2                                     chunk_5_-2
+     1        0 chunk_5_-1                                     chunk_5_-1
+     1        0 chunk_5_0                                      chunk_5_0
+     1        0 chunk_5_1                                      chunk_5_1
+     1        0 chunk_5_2                                      chunk_5_2
+     1        0 chunk_5_3                                      chunk_5_3
+     1        0 chunk_5_4                                      chunk_5_4
+     1        0 chunk_5_5                                      chunk_5_5
+     1        0 chunk_5_6                                      chunk_5_6
+     1        0 chunk_4_6                                      chunk_4_6
+     1        0 chunk_3_6                                      chunk_3_6
+     1        0 chunk_2_6                                      chunk_2_6
+     1        0 chunk_-7_-3                                    chunk_-7_-3
+     1        0 chunk_-7_-4                                    chunk_-7_-4
+     1        0 chunk_-7_-5                                    chunk_-7_-5
+     1        0 chunk_-8_-7                                    chunk_-8_-7
+     1        0 chunk_-7_-7                                    chunk_-7_-7
+     1        0 chunk_-6_-7                                    chunk_-6_-7
+     1        0 chunk_-5_-7                                    chunk_-5_-7
+     1        0 chunk_-4_-7                                    chunk_-4_-7
+     1        0 chunk_-3_-7                                    chunk_-3_-7
+     1        0 chunk_-2_-7                                    chunk_-2_-7
+     1        0 chunk_-1_-7                                    chunk_-1_-7
+     1        0 chunk_0_-7                                     chunk_0_-7
+     1        0 chunk_1_-7                                     chunk_1_-7
+     1        0 chunk_2_-7                                     chunk_2_-7
+     1        0 chunk_3_-7                                     chunk_3_-7
+     1        0 chunk_4_-7                                     chunk_4_-7
+     1        0 chunk_5_-7                                     chunk_5_-7
+     1        0 chunk_6_-7                                     chunk_6_-7
+     1        0 chunk_6_-6                                     chunk_6_-6
+     1        0 chunk_6_-5                                     chunk_6_-5
+     1        0 chunk_6_-4                                     chunk_6_-4
+     1        0 chunk_6_-3                                     chunk_6_-3
+     1        0 chunk_6_-2                                     chunk_6_-2
+     1        0 chunk_6_-1                                     chunk_6_-1
+     1        0 chunk_6_0                                      chunk_6_0
+     1        0 chunk_6_1                                      chunk_6_1
+     1        0 chunk_6_2                                      chunk_6_2
+     1        0 chunk_6_3                                      chunk_6_3
+     1        0 chunk_6_4                                      chunk_6_4
+     1        0 chunk_6_5                                      chunk_6_5
+     1        0 chunk_6_6                                      chunk_6_6
+     1        0 chunk_6_7                                      chunk_6_7
+     1        0 chunk_5_7                                      chunk_5_7
+     1        0 chunk_4_7                                      chunk_4_7
+     1        0 chunk_3_7                                      chunk_3_7
+     1        0 chunk_-8_-4                                    chunk_-8_-4
+     1        0 chunk_-8_-5                                    chunk_-8_-5
+     1        0 chunk_-8_-6                                    chunk_-8_-6
+     1        0 chunk_-9_-8                                    chunk_-9_-8
+     1        0 chunk_-8_-8                                    chunk_-8_-8
+     1        0 chunk_-7_-8                                    chunk_-7_-8
+     1        0 chunk_-6_-8                                    chunk_-6_-8
+     1        0 chunk_-5_-8                                    chunk_-5_-8
+     1        0 chunk_-4_-8                                    chunk_-4_-8
+     1        0 chunk_-3_-8                                    chunk_-3_-8
+     1        0 chunk_-2_-8                                    chunk_-2_-8
+     1        0 chunk_-1_-8                                    chunk_-1_-8
+     1        0 chunk_0_-8                                     chunk_0_-8
+     1        0 chunk_1_-8                                     chunk_1_-8
+     1        0 chunk_2_-8                                     chunk_2_-8
+     1        0 chunk_3_-8                                     chunk_3_-8
+     1        0 chunk_4_-8                                     chunk_4_-8
+     1        0 chunk_5_-8                                     chunk_5_-8
+     1        0 chunk_6_-8                                     chunk_6_-8
+     1        0 chunk_7_-8                                     chunk_7_-8
+     1        0 chunk_7_-7                                     chunk_7_-7
+     1        0 chunk_7_-6                                     chunk_7_-6
+     1        0 chunk_7_-5                                     chunk_7_-5
+     1        0 chunk_7_-4                                     chunk_7_-4
+     1        0 chunk_7_-3                                     chunk_7_-3
+     1        0 chunk_7_-2                                     chunk_7_-2
+     1        0 chunk_7_-1                                     chunk_7_-1
+     1        0 chunk_7_0                                      chunk_7_0
+     1        0 chunk_7_1                                      chunk_7_1
+     1        0 chunk_7_2                                      chunk_7_2
+     1        0 chunk_7_3                                      chunk_7_3
+     1        0 chunk_7_4                                      chunk_7_4
+     1        0 chunk_7_5                                      chunk_7_5
+     1        0 chunk_7_6                                      chunk_7_6
+     1        0 chunk_7_7                                      chunk_7_7
+     1        0 chunk_7_8                                      chunk_7_8
+     1        0 chunk_6_8                                      chunk_6_8
+     1        0 chunk_5_8                                      chunk_5_8
+     1        0 chunk_4_8                                      chunk_4_8
+     1        0 chunk_3_8                                      chunk_3_8
+     1        0 chunk_-9_-4                                    chunk_-9_-4
+     1        0 chunk_-9_-5                                    chunk_-9_-5
+     1        0 chunk_-9_-6                                    chunk_-9_-6
+     1        0 chunk_-9_-7                                    chunk_-9_-7
+     1        0 chunk_-10_-9                                   chunk_-10_-9
+     1        0 chunk_-9_-9                                    chunk_-9_-9
+     1        0 chunk_-8_-9                                    chunk_-8_-9
+     1        0 chunk_-7_-9                                    chunk_-7_-9
+     1        0 chunk_-6_-9                                    chunk_-6_-9
+     1        0 chunk_-5_-9                                    chunk_-5_-9
+     1        0 chunk_-4_-9                                    chunk_-4_-9
+     1        0 chunk_-3_-9                                    chunk_-3_-9
+     1        0 chunk_-2_-9                                    chunk_-2_-9
+     1        0 chunk_-1_-9                                    chunk_-1_-9
+     1        0 chunk_0_-9                                     chunk_0_-9
+     1        0 chunk_1_-9                                     chunk_1_-9
+     1        0 chunk_2_-9                                     chunk_2_-9
+     1        0 chunk_3_-9                                     chunk_3_-9
+     1        0 chunk_4_-9                                     chunk_4_-9
+     1        0 chunk_5_-9                                     chunk_5_-9
+     1        0 chunk_6_-9                                     chunk_6_-9
+     1        0 chunk_7_-9                                     chunk_7_-9
+     1        0 chunk_8_-9                                     chunk_8_-9
+     1        0 chunk_8_-8                                     chunk_8_-8
+     1        0 chunk_8_-7                                     chunk_8_-7
+     1        0 chunk_8_-6                                     chunk_8_-6
+     1        0 chunk_8_-5                                     chunk_8_-5
+     1        0 chunk_8_-4                                     chunk_8_-4
+     1        0 chunk_8_-3                                     chunk_8_-3
+     1        0 chunk_8_-2                                     chunk_8_-2
+     1        0 chunk_8_-1                                     chunk_8_-1
+     1        0 chunk_8_0                                      chunk_8_0
+     1        0 chunk_8_1                                      chunk_8_1
+     1        0 chunk_8_2                                      chunk_8_2
+     1        0 chunk_8_3                                      chunk_8_3
+     1        0 chunk_8_4                                      chunk_8_4
+     1        0 chunk_8_5                                      chunk_8_5
+     1        0 chunk_8_6                                      chunk_8_6
+     1        0 chunk_8_7                                      chunk_8_7
+     1        0 chunk_8_8                                      chunk_8_8
+     1        0 chunk_8_9                                      chunk_8_9
+     1        0 chunk_7_9                                      chunk_7_9
+     1        0 chunk_6_9                                      chunk_6_9
+     1        0 chunk_5_9                                      chunk_5_9
+     1        0 chunk_4_9                                      chunk_4_9
+     1        0 chunk_-10_-5                                   chunk_-10_-5
+     1        0 chunk_-10_-6                                   chunk_-10_-6
+     1        0 chunk_-10_-7                                   chunk_-10_-7
+     1        0 chunk_-10_-8                                   chunk_-10_-8
+     1        0 chunk_-11_-10                                  chunk_-11_-10
+     1        0 chunk_-10_-10                                  chunk_-10_-10
+     1        0 chunk_-9_-10                                   chunk_-9_-10
+     1        0 chunk_-8_-10                                   chunk_-8_-10
+     1        0 chunk_-7_-10                                   chunk_-7_-10
+     1        0 chunk_-6_-10                                   chunk_-6_-10
+     1        0 chunk_-5_-10                                   chunk_-5_-10
+     1        0 chunk_-4_-10                                   chunk_-4_-10
+     1        0 chunk_-3_-10                                   chunk_-3_-10
+     1        0 chunk_-2_-10                                   chunk_-2_-10
+     1        0 chunk_-1_-10                                   chunk_-1_-10
+     1        0 chunk_0_-10                                    chunk_0_-10
+     1        0 chunk_1_-10                                    chunk_1_-10
+     1        0 chunk_2_-10                                    chunk_2_-10
+     1        0 chunk_3_-10                                    chunk_3_-10
+     1        0 chunk_4_-10                                    chunk_4_-10
+     1        0 chunk_5_-10                                    chunk_5_-10
+     1        0 chunk_6_-10                                    chunk_6_-10
+     1        0 chunk_7_-10                                    chunk_7_-10
+     1        0 chunk_8_-10                                    chunk_8_-10
+     1        0 chunk_9_-10                                    chunk_9_-10
+     1        0 chunk_9_-9                                     chunk_9_-9
+     1        0 chunk_9_-8                                     chunk_9_-8
+     1        0 chunk_9_-7                                     chunk_9_-7
+     1        0 chunk_9_-6                                     chunk_9_-6
+     1        0 chunk_9_-5                                     chunk_9_-5
+     1        0 chunk_9_-4                                     chunk_9_-4
+     1        0 chunk_9_-3                                     chunk_9_-3
+     1        0 chunk_9_-2                                     chunk_9_-2
+     1        0 chunk_9_-1                                     chunk_9_-1
+     1        0 chunk_9_0                                      chunk_9_0
+     1        0 chunk_9_1                                      chunk_9_1
+     1        0 chunk_9_2                                      chunk_9_2
+     1        0 chunk_9_3                                      chunk_9_3
+     1        0 chunk_9_4                                      chunk_9_4
+     1        0 chunk_9_5                                      chunk_9_5
+     1        0 chunk_9_6                                      chunk_9_6
+     1        0 chunk_9_7                                      chunk_9_7
+     1        0 chunk_9_8                                      chunk_9_8
+     1        0 chunk_9_9                                      chunk_9_9
+     1        0 chunk_9_10                                     chunk_9_10
+     1        0 chunk_8_10                                     chunk_8_10
+     1        0 chunk_7_10                                     chunk_7_10
+     1        0 chunk_6_10                                     chunk_6_10
+     1        0 chunk_5_10                                     chunk_5_10
+     1        0 chunk_4_10                                     chunk_4_10
+     1        0 chunk_-11_-5                                   chunk_-11_-5
+     1        0 chunk_-11_-6                                   chunk_-11_-6
+     1        0 chunk_-11_-7                                   chunk_-11_-7
+     1        0 chunk_-11_-8                                   chunk_-11_-8
+     1        0 chunk_-11_-9                                   chunk_-11_-9
+     1        0 chunk_-12_-11                                  chunk_-12_-11
+     1        0 chunk_-11_-11                                  chunk_-11_-11
+     1        0 chunk_-10_-11                                  chunk_-10_-11
+     1        0 chunk_-9_-11                                   chunk_-9_-11
+     1        0 chunk_-8_-11                                   chunk_-8_-11
+     1        0 chunk_-7_-11                                   chunk_-7_-11
+     1        0 chunk_-6_-11                                   chunk_-6_-11
+     1        0 chunk_-5_-11                                   chunk_-5_-11
+     1        0 chunk_-4_-11                                   chunk_-4_-11
+     1        0 chunk_-3_-11                                   chunk_-3_-11
+     1        0 chunk_-2_-11                                   chunk_-2_-11
+     1        0 chunk_-1_-11                                   chunk_-1_-11
+     1        0 chunk_0_-11                                    chunk_0_-11
+     1        0 chunk_1_-11                                    chunk_1_-11
+     1        0 chunk_2_-11                                    chunk_2_-11
+     1        0 chunk_3_-11                                    chunk_3_-11
+     1        0 chunk_4_-11                                    chunk_4_-11
+     1        0 chunk_5_-11                                    chunk_5_-11
+     1        0 chunk_6_-11                                    chunk_6_-11
+     1        0 chunk_7_-11                                    chunk_7_-11
+     1        0 chunk_8_-11                                    chunk_8_-11
+     1        0 chunk_9_-11                                    chunk_9_-11
+     1        0 chunk_10_-11                                   chunk_10_-11
+     1        0 chunk_10_-10                                   chunk_10_-10
+     1        0 chunk_10_-9                                    chunk_10_-9
+     1        0 chunk_10_-8                                    chunk_10_-8
+     1        0 chunk_10_-7                                    chunk_10_-7
+     1        0 chunk_10_-6                                    chunk_10_-6
+     1        0 chunk_10_-5                                    chunk_10_-5
+     1        0 chunk_10_-4                                    chunk_10_-4
+     1        0 chunk_10_-3                                    chunk_10_-3
+     1        0 chunk_10_-2                                    chunk_10_-2
+     1        0 chunk_10_-1                                    chunk_10_-1
+     1        0 chunk_10_0                                     chunk_10_0
+     1        0 chunk_10_1                                     chunk_10_1
+     1        0 chunk_10_2                                     chunk_10_2
+     1        0 chunk_10_3                                     chunk_10_3
+     1        0 chunk_10_4                                     chunk_10_4
+     1        0 chunk_10_5                                     chunk_10_5
+     1        0 chunk_10_6                                     chunk_10_6
+     1        0 chunk_10_7                                     chunk_10_7
+     1        0 chunk_10_8                                     chunk_10_8
+     1        0 chunk_10_9                                     chunk_10_9
+     1        0 chunk_10_10                                    chunk_10_10
+     1        0 chunk_10_11                                    chunk_10_11
+     1        0 chunk_9_11                                     chunk_9_11
+     1        0 chunk_8_11                                     chunk_8_11
+     1        0 chunk_7_11                                     chunk_7_11
+     1        0 chunk_6_11                                     chunk_6_11
+     1        0 chunk_5_11                                     chunk_5_11
+     1        0 chunk_-12_-5                                   chunk_-12_-5
+     1        0 chunk_-12_-6                                   chunk_-12_-6
+     1        0 chunk_-12_-7                                   chunk_-12_-7
+     1        0 chunk_-12_-8                                   chunk_-12_-8
+     1        0 chunk_-12_-9                                   chunk_-12_-9
+     1        0 chunk_-12_-10                                  chunk_-12_-10
+     1        0 chunk_-13_-12                                  chunk_-13_-12
+     1        0 chunk_-12_-12                                  chunk_-12_-12
+     1        0 chunk_-11_-12                                  chunk_-11_-12
+     1        0 chunk_-10_-12                                  chunk_-10_-12
+     1        0 chunk_-9_-12                                   chunk_-9_-12
+     1        0 chunk_-8_-12                                   chunk_-8_-12
+     1        0 chunk_-7_-12                                   chunk_-7_-12
+     1        0 chunk_-6_-12                                   chunk_-6_-12
+     1        0 chunk_-5_-12                                   chunk_-5_-12
+     1        0 chunk_-4_-12                                   chunk_-4_-12
+     1        0 chunk_-3_-12                                   chunk_-3_-12
+     1        0 chunk_-2_-12                                   chunk_-2_-12
+     1        0 chunk_-1_-12                                   chunk_-1_-12
+     1        0 chunk_0_-12                                    chunk_0_-12
+     1        0 chunk_1_-12                                    chunk_1_-12
+     1        0 chunk_2_-12                                    chunk_2_-12
+     1        0 chunk_3_-12                                    chunk_3_-12
+     1        0 chunk_4_-12                                    chunk_4_-12
+     1        0 chunk_5_-12                                    chunk_5_-12
+     1        0 chunk_6_-12                                    chunk_6_-12
+     1        0 chunk_7_-12                                    chunk_7_-12
+     1        0 chunk_8_-12                                    chunk_8_-12
+     1        0 chunk_9_-12                                    chunk_9_-12
+     1        0 chunk_10_-12                                   chunk_10_-12
+     1        0 chunk_11_-12                                   chunk_11_-12
+     1        0 chunk_11_-11                                   chunk_11_-11
+     1        0 chunk_11_-10                                   chunk_11_-10
+     1        0 chunk_11_-9                                    chunk_11_-9
+     1        0 chunk_11_-8                                    chunk_11_-8
+     1        0 chunk_11_-7                                    chunk_11_-7
+     1        0 chunk_11_-6                                    chunk_11_-6
+     1        0 chunk_11_-5                                    chunk_11_-5
+     1        0 chunk_11_-4                                    chunk_11_-4
+     1        0 chunk_11_-3                                    chunk_11_-3
+     1        0 chunk_11_-2                                    chunk_11_-2
+     1        0 chunk_11_-1                                    chunk_11_-1
+     1        0 chunk_11_0                                     chunk_11_0
+     1        0 chunk_11_1                                     chunk_11_1
+     1        0 chunk_11_2                                     chunk_11_2
+     1        0 chunk_11_3                                     chunk_11_3
+     1        0 chunk_11_4                                     chunk_11_4
+     1        0 chunk_11_5                                     chunk_11_5
+     1        0 chunk_11_6                                     chunk_11_6
+     1        0 chunk_11_7                                     chunk_11_7
+     1        0 chunk_11_8                                     chunk_11_8
+     1        0 chunk_11_9                                     chunk_11_9
+     1        0 chunk_11_10                                    chunk_11_10
+     1        0 chunk_11_11                                    chunk_11_11
+     1        0 chunk_11_12                                    chunk_11_12
+     1        0 chunk_10_12                                    chunk_10_12
+     1        0 chunk_9_12                                     chunk_9_12
+     1        0 chunk_8_12                                     chunk_8_12
+     1        0 chunk_7_12                                     chunk_7_12
+     1        0 chunk_6_12                                     chunk_6_12
+     1        0 chunk_5_12                                     chunk_5_12
+     1        0 chunk_-13_-6                                   chunk_-13_-6
+     1        0 chunk_-13_-7                                   chunk_-13_-7
+     1        0 chunk_-13_-8                                   chunk_-13_-8
+     1        0 chunk_-13_-9                                   chunk_-13_-9
+     1        0 chunk_-13_-10                                  chunk_-13_-10
+     1        0 chunk_-13_-11                                  chunk_-13_-11

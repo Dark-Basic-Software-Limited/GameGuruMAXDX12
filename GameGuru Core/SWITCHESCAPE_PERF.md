@@ -1447,3 +1447,80 @@ movement is real, tiny, and produces no detectable change where it would have to
 ★★ **RULE — a whole-frame diff is the wrong instrument when the effect is localised and the noise
 is not.** Grass animation is bottom-of-frame; far terrain is top-of-frame. Diffing everything let
 a 0.018% geometry change hide inside an 11.03 mean grass floor. Pick the band first.
+
+## ★★★ 23. THE "~75 UNEXPLAINED MESHES" — NAMED. It is the decal element pool (2026-08-12)
+
+§16 closed with a residual it could not identify: 955 of 1030 floor meshes attributed, **75
+unexplained**, with a note that some of it might be a leak. This section names it.
+
+### 23.1 Method: enumerate, do not subtract
+§16 attributed by ACCOUNTING — sum the known creators, subtract from the measured total, call the
+difference unexplained. That can prove a remainder exists but never say what it IS, and it is the
+same shape of reasoning that produced the retracted §22.7 finding. New harness command
+**`DUMP_MESHES [filter]`** (GGMAX 2.26) instead walks every live `MeshComponent` and groups it:
+- **by GEOMETRY SIGNATURE** (verts/tris/subsets) — generator families cluster exactly even when
+  unnamed, which matters because GG names nearly every loaded mesh `node_mesh`;
+- **by OWNER** (the referencing object's name — the real identity);
+- **ORPHANs** — meshes no `ObjectComponent` references;
+- `DUMP_MESHES <filter>` then itemises one family with parent, renderable flag and world position.
+⚠ It rides `AutoHarness_StandaloneCommands`; a new link in the main dispatch chain re-hit C1061.
+
+### 23.2 What three demos show
+| | Switch Escape | Trapped | Zombie Cellar |
+|---|---|---|---|
+| meshes | 958 | 977 | 961 |
+| terrain chunks (v=4489) | 625 | 625 | 625 |
+| **`plane` v=6 tri=2** | **108** | **113** | **110** |
+| `Body` / `new limb` (characters) | 17/17 | 9/9 | 22/22 |
+| **ORPHANS** | **0** | **0** | **0** |
+
+★ **ORPHANS = 0 on all three: there is NO mesh leak** on a loaded level. §16's leak hypothesis
+("Entity_Remove on an object may not destroy its MeshComponent") is not supported here — closed.
+★ Mesh COUNT barely moves across three levels whose POLYS differ 10x (109k / 11k / 28k). Mesh
+count is dominated by fixed cost, not content.
+★ The 625 chunks carry **8 298 750 of ~8 600 000 triangles — 96%** of all mesh geometry.
+
+### ★★★ 23.3 The answer: a preallocated pool of 100 hidden decal quads
+`DUMP_MESHES plane` itemised them: **every one is `renderable=NO`, at world (0,0,0), 6 verts /
+2 tris.** Non-renderable placeholders parked at the origin — the same shape as the 441 empty prop
+nodes (2.22) and the retained tree pool (2.23).
+
+`decal_init()`, **`M-Decal.cpp:41-65`**:
+```
+//  Precreate elements as each is unique (UV writing)
+for ( t.f = 1 ; t.f <= g.decalelementmax; t.f++ )
+{ ... MakeObjectPlane (t.tobj, 100, 100); ... HideObject (t.tobj); }
+```
+`g.decalelementmax = 100` (`Common_part0.cpp:1380`, `REDUCEMEMUSE` is defined at `:28`). One hidden
+quad per slot, built at startup, on **every level whether or not a decal is ever placed**. Cost:
+**100 objects + 100 meshes + 100 materials + 100 transforms walked by Scene::Update every frame.**
+The census's 108/113/110 is the 100-slot pool plus a handful of other `MakeObjectPlane` sites
+(gun decals `G-Gun_part2.cpp:1411/1453`, explosions, the EBE tool plane).
+
+★★ **The author had already seen the symptom and could not explain it.** Directly above the pool
+size, `Common_part0.cpp:1378`:
+> `//PE: For now until we found out why wicked use all that "update" time on non visible objects.`
+
+and the value was walked down **499 → 199 → 100** as a workaround. That is this entire campaign's
+root cause, observed from the other end: **Scene::Update walks every ECS entity regardless of
+visibility.** The pool is a textbook instance, and the shrink was treating the symptom.
+
+### 23.4 ⚠ §16's "content = 34" was wrong, and so was its floor
+§16 read content by delete-all: full 1288 meshes, empty 1254, so "content = 34". But the census
+shows Switch Escape carrying hundreds of unmistakable content meshes — `railings1`,
+`CorrugatedRoof2`, `ConcreteWarehouse6`, `WindowFrame2`, `warehouse07`, `zombie_male_body_01`.
+Deleting the objects plainly did not free them, so **1254 was never a floor** — it was the floor
+plus retained content, and every figure derived from it (including the "75") was inflated.
+Cross-demo differential is the sound substitute: families with near-identical counts across
+unrelated levels are the true fixed floor. On that basis the real per-level fixed floor is
+**~625 chunks + ~100 decal quads + ~8 misc + 2 VR controller meshes ≈ 735**, not 1254.
+
+### 23.5 The fix, not yet taken
+Same lever that worked twice already: **lazy pool growth** (2.19 tree pool, 2.24 tree types).
+Allocation is a linear scan for `active == 0` (`M-Decal.cpp:506`) over a fixed array, so slot N's
+object can be created on first use instead of at init, with the 2.19 per-frame growth cap.
+Worth ~100 objects/meshes/materials/transforms per level, on every level.
+⚠ Decals are allocated at RUNTIME (bullet impacts), so growth must be safe mid-frame — this needs
+its own build + POLYS gate + 19-demo sweep, and is deliberately left as a separate change.
+⚠ Do NOT "fix" it by shrinking `decalelementmax` further; that is what the original workaround did
+and it trades decal capacity for frame time.
