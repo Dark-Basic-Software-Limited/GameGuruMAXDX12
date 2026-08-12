@@ -1,13 +1,13 @@
 MESH CENSUS (GGMAX 2.26) — enumerate the floor, do not subtract for it
-meshes=958 objects=1106 materials=964 transforms=1780 hierarchy=1338
-total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)=0
+meshes=882 objects=1030 materials=888 transforms=1628 hierarchy=1262
+total verts=3095890  total tris=8621266  ORPHAN meshes (no ObjectComponent refs)=0
 
 == BY GEOMETRY SIGNATURE (generator families cluster here) ==
  count  orphans signature                               tris_total  example owners
-   625        0 v=4489   tri=13278   subsets=7             8298750  chunk_0_-3, chunk_-1_-1, chunk_0_-1, chunk_1_-1
-   108        0 v=6      tri=2       subsets=1                 216  plane
-    17        0 v=1574   tri=2366    subsets=1               40222  Body
+   625        0 v=4489   tri=13278   subsets=7             8298750  chunk_-2_-3, chunk_-1_-1, chunk_0_-1, chunk_1_-1
+    32        0 v=6      tri=2       subsets=1                  64  plane
     17        0 v=724    tri=889     subsets=1               15113  new limb
+    17        0 v=1574   tri=2366    subsets=1               40222  Body
     16        0 v=24     tri=12      subsets=1                 192  VR_Controller_Left, VR_Controller_Right, box, Red_Brick___Wall
     10        0 v=1963   tri=2472    subsets=1               24720  Sphere009
      7        0 v=30     tri=10      subsets=1                  70  mesh
@@ -15,39 +15,39 @@ total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)
      6        0 v=676    tri=942     subsets=1                5652  d5b
      5        0 v=2852   tri=1932    subsets=1                9660  WarehouseDoorGreen01
      5        0 v=4      tri=2       subsets=1                  10  Plane003, Plane002, polymsh_detached13_AUTO_XSIPOLYCLS.material25
-     4        0 v=204    tri=266     subsets=1                1064  wallplate_plastic
      4        0 v=328    tri=354     subsets=1                1416  M67_Projectile
+     4        0 v=204    tri=266     subsets=1                1064  wallplate_plastic
      4        0 v=497    tri=882     subsets=1                3528  plane_2
      4        0 v=20     tri=12      subsets=1                  48  SKINDUMMY
-     3        0 v=16     tri=28      subsets=1                  84  Cube_001, Cube, Cube_002
-     3        0 v=8      tri=12      subsets=1                  36  Cube_004, Cube_003, Cube_005
-     3        0 v=192    tri=384     subsets=1                1152  Sphere_001, Sphere, Sphere_002
      3        0 v=16     tri=22      subsets=1                  66  Cube_001, Cube_011, Cube_010
-     3        0 v=689    tri=646     subsets=1                1938  TubeCap003
-     3        0 v=2084   tri=1952    subsets=1                5856  trash1
-     3        0 v=1423   tri=2007    subsets=1                6021  big_red_button_MESH
      3        0 v=169    tri=310     subsets=1                 930  sphere
      3        0 v=1332   tri=1156    subsets=1                3468  Rectangle001
      3        0 v=2580   tri=2857    subsets=1                8571  control.002
      3        0 v=1324   tri=1986    subsets=1                5958  lever_MESH
+     3        0 v=689    tri=646     subsets=1                1938  TubeCap003
+     3        0 v=2084   tri=1952    subsets=1                5856  trash1
      3        0 v=414    tri=454     subsets=1                1362  box4
-     2        0 v=1009   tri=918     subsets=1                1836  start_marker_with_human
+     3        0 v=1423   tri=2007    subsets=1                6021  big_red_button_MESH
+     3        0 v=16     tri=28      subsets=1                  84  Cube_001, Cube, Cube_002
+     3        0 v=8      tri=12      subsets=1                  36  Cube_004, Cube_003, Cube_005
+     3        0 v=192    tri=384     subsets=1                1152  Sphere_001, Sphere, Sphere_002
      2        0 v=745    tri=884     subsets=1                1768  
-     2        0 v=424    tri=236     subsets=1                 472  polymsh678
-     2        0 v=991    tri=904     subsets=1                1808  trophy
-     2        0 v=1102   tri=758     subsets=1                1516  21
-     2        0 v=168    tri=108     subsets=1                 216  crate2, crate1
-     2        0 v=2150   tri=2635    subsets=1                5270  trash2
-     2        0 v=341    tri=524     subsets=1                1048  hanging_light001
-     2        0 v=1408   tri=1172    subsets=1                2344  Text002
+     2        0 v=140    tri=234     subsets=1                 468  BiomassF_10
      2        0 v=25     tri=32      subsets=1                  64  Plane001
      2        0 v=456    tri=404     subsets=1                 808  music001
+     2        0 v=991    tri=904     subsets=1                1808  trophy
+     2        0 v=1009   tri=918     subsets=1                1836  start_marker_with_human
      2        0 v=4428   tri=6360    subsets=1               12720  metal_ladder_400
-     2        0 v=140    tri=234     subsets=1                 468  BiomassF_10
+     2        0 v=1408   tri=1172    subsets=1                2344  Text002
+     2        0 v=1102   tri=758     subsets=1                1516  21
+     2        0 v=341    tri=524     subsets=1                1048  hanging_light001
+     2        0 v=168    tri=108     subsets=1                 216  crate2, crate1
+     2        0 v=2150   tri=2635    subsets=1                5270  trash2
+     2        0 v=424    tri=236     subsets=1                 472  polymsh678
      2        0 v=78     tri=48      subsets=1                  96  AtempFLoor1_XSIPOLYCLS.atempfloor, AtempFLoor1_XSIPOLYCLS.material41
      2        0 v=488    tri=326     subsets=1                 652  polymsh, Agreywalls3_XSIPOLYCLS.untitled7
-     1        0 v=3868   tri=4996    subsets=1                4996  Damaged Tower
      1        0 v=50     tri=64      subsets=1                  64  Mesh.008
+     1        0 v=813    tri=1065    subsets=1                1065  Bottle - Closed Juice
      1        0 v=497    tri=526     subsets=1                 526  Pipe_Large_Outlet
      1        0 v=1072   tri=536     subsets=1                 536  Cell Bars End
      1        0 v=54     tri=80      subsets=1                  80  pipe_small_straight
@@ -75,7 +75,7 @@ total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)
      1        0 v=2063   tri=2261    subsets=1                2261  box4
      1        0 v=420    tri=370     subsets=1                 370  box
      1        0 v=160    tri=156     subsets=1                 156  box3
-     1        0 v=813    tri=1065    subsets=1                1065  Bottle - Closed Juice
+     1        0 v=2501   tri=2235    subsets=1                2235  $MergedNode_0
      1        0 v=136    tri=96      subsets=1                  96  Cylinder01
      1        0 v=792    tri=528     subsets=1                 528  polymsh13_XSIPOLYCLS.untitled1
      1        0 v=34749  tri=36264   subsets=1               36264  railings1_XSIPOLYCLS.material30
@@ -93,7 +93,7 @@ total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)
      1        0 v=5744   tri=3123    subsets=1                3123  supportframe1_XSIPOLYCLS.supportframe
      1        0 v=1112   tri=558     subsets=1                 558  Abluewalls1_XSIPOLYCLS.abluewalls
      1        0 v=334    tri=296     subsets=1                 296  Aceiling1_XSIPOLYCLS.aceiling
-     1        0 v=2501   tri=2235    subsets=1                2235  $MergedNode_0
+     1        0 v=3868   tri=4996    subsets=1                4996  Damaged Tower
      1        0 v=568    tri=412     subsets=1                 412  SupportFrame3_XSIPOLYCLS.untitled5
      1        0 v=1121   tri=558     subsets=1                 558  Abluewalls3_XSIPOLYCLS.material47
      1        0 v=5276   tri=2751    subsets=1                2751  polymsh_detached668_AUTO_XSIPOLYCLS.untitled
@@ -103,42 +103,42 @@ total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)
 
 == BY OWNER NAME (referencing object -> mesh -> parent) ==
  count  orphans owner                                          mesh names
-   108        0 plane                                          node_mesh
-    17        0 new limb                                       node_mesh
+    32        0 plane                                          node_mesh
     17        0 Body                                           node_mesh
+    17        0 new limb                                       node_mesh
     14        0 box                                            node_mesh
     10        0 Sphere009                                      node_mesh
      9        0 sphere                                         node_mesh
      7        0 mesh                                           node_mesh
      6        0 d5b                                            node_mesh
      5        0 WarehouseDoorGreen01                           node_mesh
-     4        0 M67_Projectile                                 node_mesh
-     4        0 wallplate_plastic                              node_mesh
-     4        0 SKINDUMMY                                      node_mesh
      4        0 plane_2                                        node_mesh
+     4        0 SKINDUMMY                                      node_mesh
+     4        0 wallplate_plastic                              node_mesh
+     4        0 M67_Projectile                                 node_mesh
      4        0 box4                                           node_mesh
      3        0 big_red_button_MESH                            node_mesh
+     3        0 Rectangle001                                   node_mesh
+     3        0 control.002                                    node_mesh
      3        0 lever_MESH                                     node_mesh
      3        0 TubeCap003                                     node_mesh
      3        0 trash1                                         node_mesh
-     3        0 control.002                                    node_mesh
-     3        0 Rectangle001                                   node_mesh
-     2        0 polymsh678                                     node_mesh
-     2        0 Text002                                        node_mesh
-     2        0 trash2                                         node_mesh
-     2        0 hanging_light001                               node_mesh
      2        0 Plane001                                       node_mesh
+     2        0 Cube_001                                       node_mesh
+     2        0 music001                                       node_mesh
+     2        0 hanging_light001                               node_mesh
+     2        0 start_marker_with_human                        node_mesh
      2        0 21                                             node_mesh
+     2        0 Plane002                                       node_mesh
+     2        0 trash2                                         node_mesh
+     2        0 metal_ladder_400                               node_mesh
      2        0 [mesh] node_mesh                               node_mesh
      2        0 $MergedNode_0                                  node_mesh
      2        0 trophy                                         node_mesh
-     2        0 Plane003                                       node_mesh
      2        0 BiomassF_10                                    node_mesh
-     2        0 start_marker_with_human                        node_mesh
-     2        0 Cube_001                                       node_mesh
-     2        0 music001                                       node_mesh
-     2        0 metal_ladder_400                               node_mesh
-     2        0 Plane002                                       node_mesh
+     2        0 Text002                                        node_mesh
+     2        0 polymsh678                                     node_mesh
+     2        0 Plane003                                       node_mesh
      1        0 VR_Controller_Left                             VR_Controller_Left_mesh
      1        0 VR_Controller_Right                            VR_Controller_Right_mesh
      1        0 Cube                                           node_mesh
@@ -151,11 +151,11 @@ total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)
      1        0 Sphere_002                                     node_mesh
      1        0 Cube_011                                       node_mesh
      1        0 Cube_010                                       node_mesh
-     1        0 Bottle - Closed Juice                          node_mesh
      1        0 pipe_small_elbow                               node_mesh
      1        0 Damaged Tower                                  node_mesh
-     1        0 crate2                                         node_mesh
      1        0 Mesh.008                                       node_mesh
+     1        0 Bottle - Closed Juice                          node_mesh
+     1        0 crate2                                         node_mesh
      1        0 Pipe_Large_Outlet                              node_mesh
      1        0 Cell Bars End                                  node_mesh
      1        0 pipe_small_straight                            node_mesh
@@ -209,7 +209,7 @@ total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)
      1        0 polymsh_detached668_AUTO_XSIPOLYCLS.untitled   node_mesh
      1        0 Roof2_XSIPOLYCLS.untitled8                     node_mesh
      1        0 warehouse07                                    node_mesh
-     1        0 chunk_0_-3                                     chunk_0_-3
+     1        0 chunk_-2_-3                                    chunk_-2_-3
      1        0 chunk_-1_-1                                    chunk_-1_-1
      1        0 chunk_0_-1                                     chunk_0_-1
      1        0 chunk_1_-1                                     chunk_1_-1
@@ -235,9 +235,9 @@ total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)
      1        0 chunk_-2_0                                     chunk_-2_0
      1        0 chunk_-2_-1                                    chunk_-2_-1
      1        0 chunk_-3_-3                                    chunk_-3_-3
-     1        0 chunk_-2_-3                                    chunk_-2_-3
-     1        0 chunk_-1_-3                                    chunk_-1_-3
      1        0 chunk_0_0                                      chunk_0_0
+     1        0 chunk_-1_-3                                    chunk_-1_-3
+     1        0 chunk_0_-3                                     chunk_0_-3
      1        0 chunk_-3_2                                     chunk_-3_2
      1        0 chunk_-3_1                                     chunk_-3_1
      1        0 chunk_-3_0                                     chunk_-3_0
@@ -834,67 +834,3 @@ total verts=3096346  total tris=8621418  ORPHAN meshes (no ObjectComponent refs)
      1        0 chunk_-12_11                                   chunk_-12_11
      1        0 chunk_-12_10                                   chunk_-12_10
      1        0 chunk_-12_9                                    chunk_-12_9
-
-== DETAIL for filter "plane" ==
-entity     owner                  parent                     renderable v/tri     world pos
-120        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-124        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-900        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1020       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1032       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-828        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-896        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1064       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-812        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-836        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-780        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-936        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-976        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1116       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-960        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1184       plane                  <unnamed parent>           NO         6/2      (0, -19000, 0)
-1008       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-820        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1128       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1048       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-872        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-996        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1144       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-984        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1200       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-972        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-844        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1152       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1148       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1270       plane                  <unnamed parent>           NO         6/2      (0, -19000, 0)
-1076       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1168       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1156       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-796        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-968        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-952        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1124       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1000       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1068       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-908        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1080       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1096       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1108       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1016       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1120       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1052       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-2807       plane_2                <unnamed parent>           yes        497/882    (-769, 112, 117)
-1028       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1060       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-924        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-2893       plane_2                <unnamed parent>           yes        497/882    (-1156, 0, -16)
-1004       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-912        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-988        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1188       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-2345       Plane003               <unnamed parent>           yes        4/2      (25, 9, 100)
-932        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1036       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-776        plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-1164       plane                  <unnamed parent>           NO         6/2      (0, 0, 0)
-matched=118 shown=60

@@ -1,0 +1,6 @@
+CONTROL PRE DECALPOOL: built=99 prewarm=99 max=100
+CONTROL POST DECALPOOL: built=99 prewarm=99 max=100 fps=145.4
+CONTROL HITCH: frames=5555 mean_ms=6.88 worst_ms=9.5 over(16.7/25/33/50/100)=0/0/0/0/0 psoC=0 psoMs=0.0 psoMax_ms=1.2
+PREWARM PRE DECALPOOL: built=24 prewarm=24 max=100
+PREWARM POST DECALPOOL: built=99 prewarm=24 max=100 fps=145.3
+PREWARM HITCH: frames=5550 mean_ms=6.88 worst_ms=23.9 over(16.7/25/33/50/100)=1/0/0/0/0 psoC=0 psoMs=0.0 psoMax_ms=0.9

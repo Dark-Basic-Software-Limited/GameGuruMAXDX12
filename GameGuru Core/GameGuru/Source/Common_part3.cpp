@@ -891,10 +891,17 @@ void GetSetupIniEarly( void )
 				// inert. Note "terraingen" and "treepool" are both matched before the '=' test and
 				// differ at char 1, so they cannot cross-match.
 				const bool bTerrGen = (_strnicmp(p, "terraingen", 10) == 0);
+				// GGMAX 2.27: `decalprewarm=<N>` — how many decal pool elements are built at
+				// startup; the rest grow on demand (M-Decal.cpp decal_growto). Needs the early
+				// pass because decal_init() runs from Common_part2.cpp:1292, once, during app
+				// start. ★ Set it to 99 (= decalelementmax-1) to restore the pre-2.27 eager pool
+				// exactly — that is the control arm for the hitch A/B, on one binary.
+				const bool bDecalPW = (_strnicmp(p, "decalprewarm", 12) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bTreePool)       iKeyLen = 8;
 				else if (bMABlock)        iKeyLen = 9;
 				else if (bGrassMg || bTerrGen) iKeyLen = 10;
+				else if (bDecalPW)        iKeyLen = 12;
 				else if (bSingleQ)        iKeyLen = 11;
 				else if (bLightFO || bWeapSH) iKeyLen = 12;
 				else if (bHairNDW || bWeapFD) iKeyLen = 16;
@@ -960,6 +967,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetTerrainGen(int);
 					GGSetTerrainGen(iValue);
+				}
+				if (bDecalPW)
+				{
+					extern void GGSetDecalPrewarm(int);
+					GGSetDecalPrewarm(iValue);
 				}
 			}
 			fclose(lvf);

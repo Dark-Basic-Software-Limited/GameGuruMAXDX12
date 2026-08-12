@@ -26,6 +26,115 @@ extern void newparticle_updateparticleemitter (newparticletype* pParticle, float
 // 
 //  Decal Module
 // 
+// ---------------------------------------------------------------------------
+// GGMAX 2.27: decal element pool = PREWARM + GROW instead of 100 eager objects.
+//
+// decal_init() used to build all g.decalelementmax (=100) elements at startup and HideObject()
+// them. Each is a MakeObjectPlane quad, so the scene carried 100 objects + 100 meshes + 100
+// materials + 100 transforms that draw NOTHING, on every level, whether a decal is ever placed
+// or not — and Scene::Update walks every ECS entity regardless of visibility. The census that
+// found this is SWITCHESCAPE_PERF.md §23; it was the largest non-terrain item in the floor.
+//
+// ★ The original author had already seen the symptom without the cause. Common_part0.cpp:1378:
+//   "//PE: For now until we found out why wicked use all that "update" time on non visible
+//    objects." — and walked the pool 499 -> 199 -> 100 to compensate. This addresses the cause,
+//   so that workaround can eventually be undone rather than deepened.
+//
+// PREWARM rather than pure lazy, deliberately: decals are allocated at RUNTIME from bullet
+// impacts, so a fully lazy pool would move object creation into a firefight. decal_init() is
+// called ONCE at startup (Common_part2.cpp:1292), never per level, so the prewarm is paid during
+// app start where nothing is running — and normal play then never allocates at all.
+// Growth beyond the prewarm happens in batches so a decal BURST (shotgun, explosion) costs a
+// bounded number of grow events rather than one per impact.
+//
+// ⚠ Only the allocator needs to know about unbuilt slots: decal_hide() guards on ObjectExist(),
+// and the two per-frame sweeps (M-Decal.cpp control loop, M-Entity_part4.cpp) both gate on
+// `active == 1`, which an unbuilt slot can never be. Verified before this change.
+// ⚠⚠ GG_DECAL_GROW_PER_FRAME is the load-bearing number, and the first version of this change
+// did not have it. Batching grow CALLS is not enough: a dense burst simply calls the allocator
+// many times in one frame, so 75 slots were still built in a single frame and the pre-registered
+// hitch gate FAILED — worst_ms 9.5 -> 23.9 and one frame over 16.7 ms (§24.2). The tree pool
+// already knew this (GG_TREE_POOL_GROW_PER_FRAME, 2.19): on-demand growth needs a PER-FRAME cap,
+// not a per-call one. Budget resets in decalelement_control(), which runs every frame.
+#define GG_DECAL_GROW_STEP      8   // most slots one allocator call may add
+// ★ MEASURED, do not raise casually: a slot build costs ~1.2 ms — expensive for a 6-vertex quad
+// because the cost is the DBP CreateNewObject path plus a GPU buffer, not the geometry. At 4/frame
+// the gate read worst_ms 8.6 -> 13.4 (+4.8), which breached the +2 ms criterion even though no
+// frame passed 16.7 ms. The excess scales linearly with this number, so it is 2. (§24.2)
+#define GG_DECAL_GROW_PER_FRAME 2   // hard ceiling on slot builds in any single frame
+int g_decalPrewarm = 24;      // slots built at startup; setup.ini decalprewarm=<N>
+int g_decalBuilt   = 0;       // slots 1..g_decalBuilt exist as objects (high-water mark)
+int g_decalGrowBudget = 0;    // slot builds still permitted this frame
+int g_decalGrowDeferred = 0;  // diagnostic: decals dropped because the budget was spent
+void GGSetDecalPrewarm(int n)
+{
+	if (n < 0) n = 0;
+	if (n > 4096) n = 4096;   // clamped again against decalelementmax when applied
+	g_decalPrewarm = n;
+}
+
+// Build ONE pool element. Body lifted verbatim from the old decal_init loop; uses locals rather
+// than the shared t.tobj/t.f so it is safe to call from the middle of the allocator.
+static void decal_buildelement ( int f )
+{
+	int tobj = g.decalelementoffset + f;
+	t.decalelement[f].obj = tobj;
+	t.decalelement[f].uvgridsize = 0;
+	if (  ObjectExist(tobj) == 1  )  DeleteObject (  tobj );
+	MakeObjectPlane (tobj, 100, 100);
+	SetObjectTransparency (  tobj, 6 );
+	SetObjectCollisionOff (  tobj );
+	DisableObjectZWrite (  tobj );
+	SetObjectTextureMode (  tobj,2,0 );
+	SetObjectLight (  tobj,0 );
+	SetObjectCull (  tobj,0 );
+	HideObject (  tobj );
+	sObject* pObject = GetObjectData(tobj);
+	WickedCall_SetObjectCastShadows(pObject, false);
+	WickedCall_SetObjectLightToUnlit(pObject, (int)wiScene::MaterialComponent::SHADERTYPE_UNLIT);
+}
+
+// Raise the built high-water mark to `want`, clamped to the pool ceiling. Slot indices are
+// 1..decalelementmax-1 because the allocator's own `t.d < g.decalelementmax` test has always
+// excluded the last slot — preserved rather than "fixed" so allocation behaviour is unchanged.
+void decal_growto ( int want )
+{
+	int ceiling = g.decalelementmax - 1;
+	if ( want > ceiling ) want = ceiling;
+	for ( int f = g_decalBuilt + 1 ; f <= want ; f++ ) decal_buildelement ( f );
+	if ( want > g_decalBuilt ) g_decalBuilt = want;
+}
+
+// Growth on the RUNTIME path, spread across frames. Returns how many slots were actually added.
+// The prewarm path calls decal_growto directly and is deliberately NOT budgeted: it runs once at
+// app startup where nothing is animating.
+static int decal_growbudgeted ( int want )
+{
+	// ⚠⚠ SELF-REFILLING off the device frame counter, deliberately. The first version refilled
+	// the budget in decalelement_control() — but that tick does NOT run in every app state, and
+	// in the editor it never ran at all, so the budget sat at 0 and the pool could never grow.
+	// The gate then reported "no hitch" while measuring a growth path that never executed
+	// (§24.2). A budget that silently disables the feature when some other function stops
+	// ticking is the wrong shape: decals would just stop appearing. Keyed on the frame instead,
+	// it is correct wherever the allocator is called from.
+	static unsigned long long s_lastFrame = ~0ull;
+	wi::graphics::GraphicsDevice* dev = wi::graphics::GetDevice();
+	const unsigned long long nowFrame = ( dev != nullptr ) ? dev->GetFrameCount() : ( s_lastFrame + 1 );
+	if ( nowFrame != s_lastFrame )
+	{
+		s_lastFrame = nowFrame;
+		g_decalGrowBudget = GG_DECAL_GROW_PER_FRAME;
+	}
+	if ( g_decalGrowBudget <= 0 ) return 0;
+	int room = g_decalBuilt + g_decalGrowBudget;
+	if ( want > room ) want = room;
+	int before = g_decalBuilt;
+	decal_growto ( want );
+	int added = g_decalBuilt - before;
+	g_decalGrowBudget -= added;
+	return added;
+}
+
 void decal_hide ( void )
 {
 	for (t.f = 1; t.f <= g.decalelementmax; t.f++)
@@ -46,23 +155,16 @@ void decal_init ( void )
 	decal_scaninallref ( );
 
 	//  Precreate elements as each is unique (UV writing)
-	for ( t.f = 1 ; t.f<=  g.decalelementmax; t.f++ )
+	//  GGMAX 2.27: only the PREWARM slice, the rest grow on demand (see decal_growto above).
+	//  Every remaining .obj must still be stamped so any code reading decalelement[f].obj on an
+	//  unbuilt slot gets the id it would eventually have rather than a stale 0.
+	for ( t.f = 1 ; t.f <= g.decalelementmax ; t.f++ )
 	{
-		t.tobj=g.decalelementoffset+t.f ; t.decalelement[t.f].obj=t.tobj;
-		t.decalelement[t.f].uvgridsize=0;
-		if (  ObjectExist(t.tobj) == 1  )  DeleteObject (  t.tobj );
-		MakeObjectPlane (t.tobj, 100, 100);
-		SetObjectTransparency (  t.tobj, 6 );
-		SetObjectCollisionOff (  t.tobj );
-		DisableObjectZWrite (  t.tobj );
-		SetObjectTextureMode (  t.tobj,2,0 );
-		SetObjectLight (  t.tobj,0 );
-		SetObjectCull (  t.tobj,0 );
-		HideObject (  t.tobj );
-		sObject* pObject = GetObjectData(t.tobj);
-		WickedCall_SetObjectCastShadows(pObject, false);
-		WickedCall_SetObjectLightToUnlit(pObject, (int)wiScene::MaterialComponent::SHADERTYPE_UNLIT);
+		t.decalelement[t.f].obj = g.decalelementoffset + t.f;
+		t.decalelement[t.f].uvgridsize = 0;
 	}
+	g_decalBuilt = 0;
+	decal_growto ( g_decalPrewarm );
 
 	//  ensure fixed decals available
 	t.decalglobal.splashdecalrippleid=0;
@@ -500,12 +602,35 @@ void decalelement_create ( void )
 	if (  t.tddd>g.decalrange  )  return;
 
 	//  find free decal element
-	t.d = 1 + Rnd(50);
-	for (; t.d <= g.decalelementmax; t.d++)
+	//  GGMAX 2.27: search only the BUILT slice, then grow a batch if it is full. Behaviour is
+	//  preserved on both ends: the random start (spreads reuse so the same quad is not recycled
+	//  every time) is kept but scaled to the built range, and when the pool is genuinely
+	//  exhausted t.d is left >= decalelementmax so the existing test below drops the decal
+	//  exactly as it does today.
 	{
-		if ( t.decalelement[t.d].active == 0 )  break;
+		const int built = g_decalBuilt;
+		int spread = built - 1; if ( spread > 50 ) spread = 50; if ( spread < 0 ) spread = 0;
+		t.d = 1 + Rnd(spread);
+		for (; t.d <= built; t.d++)
+		{
+			if ( t.decalelement[t.d].active == 0 )  break;
+		}
+		if ( t.d > built )
+		{
+			//  No free built slot — grow, but only within this frame's budget. If the budget is
+			//  already spent, DROP this decal (t.d left >= decalelementmax) exactly as the
+			//  pre-2.27 code did when all slots were busy. Dropping the odd decal during an
+			//  extreme burst is self-correcting within a few frames; a 24 ms stall is not.
+			if ( decal_growbudgeted ( built + GG_DECAL_GROW_STEP ) > 0 )
+				t.d = built + 1;
+			else
+			{
+				g_decalGrowDeferred++;
+				t.d = g.decalelementmax;
+			}
+		}
 	}
-	if ( t.d < g.decalelementmax ) 
+	if ( t.d < g.decalelementmax )
 	{
 		bool bReuse = false;
 		if (t.decalelement[t.d].decalid == t.decalid && t.decalelement[t.d].newparticle.emitterid > 0)
@@ -800,6 +925,10 @@ void decalelement_control ( void )
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
+
+	// (GGMAX 2.27: the pool-growth budget is NOT refilled here. It refills off the device frame
+	//  counter inside decal_growbudgeted — this tick does not run in every app state, and relying
+	//  on it disabled growth entirely in the editor. One source of truth; see §24.2.)
 
 	// True camera position (returns tcamerapositionx#,tcamerapositiony#,tcamerapositionz#)
 	entity_gettruecamera ( );

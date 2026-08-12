@@ -1230,6 +1230,19 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			viewU, viewU * 0.0254f, tr.IsCenterToCamEnabled() ? 1 : 0, mapHalfU * 0.0254f);
 	}
 
+	// GGMAX 2.27: decal element pool — prewarm + grow (SWITCHESCAPE_PERF.md §23).
+	// `built` is how many pool quads actually exist as ECS entities (the number that costs
+	// per-frame Scene::Update work); `max` is the ceiling it may grow to. ★ READ THIS BEFORE
+	// TRUSTING ANY decalprewarm A/B — it is the proof the setup.ini key reached the pool, the
+	// same check that exposed the SET_TREES pool no-op (§2).
+	if (written < resultSize - 256)
+	{
+		extern int g_decalBuilt, g_decalPrewarm, g_decalGrowDeferred;
+		written += _snprintf(result + written, resultSize - written,
+			"DECALPOOL: built=%d prewarm=%d max=%d deferred=%d\n",
+			g_decalBuilt, g_decalPrewarm, (int)g.decalelementmax, g_decalGrowDeferred);
+	}
+
 	// Visibility counts from the main render pass
 	if (written < resultSize - 256)
 	{
@@ -3800,6 +3813,44 @@ static bool AutoHarness_OutlineCommands(const char* cmd, const char* arg, char* 
 // necessarily destroy the MeshComponent it referenced").
 static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
+	// DECAL_BURST <n> — place n decals through the REAL allocation path (decalelement_create),
+	// so the 2.27 prewarm+grow pool can be hitch-tested without a player pulling a trigger.
+	// ⚠ This exists because the harness provably cannot drive the player (see the 2.14 walk-test
+	// note), and "does lazy allocation stall a firefight" is exactly the question that needs a
+	// controlled burst rather than an eyeball.
+	// Pair with HITCH_RESET before and the HITCH: line of GET_PERF_DATA after; judge the
+	// histogram TAIL (worst_ms / over-buckets), never mean FPS — a 1-30 ms stall is invisible
+	// in an average, which is the whole reason the hitch instrument exists (engine 1.82).
+	if (_stricmp(cmd, "DECAL_BURST") == 0)
+	{
+		extern void decalelement_create(void);
+		extern int g_decalBuilt;
+		int n = atoi(arg);
+		if (n < 1) n = 25;
+		if (n > 500) n = 500;
+		const int before = g_decalBuilt;
+		// The range gate gets the position vs the gameplay camera; open it wide so the burst
+		// cannot be silently dropped by distance and read as "no hitch".
+		const float savedRange = (float)g.decalrange;
+		g.decalrange = 1000000.0f;
+		const int savedDecalId = t.decalid;
+		if (t.decalid <= 0) t.decalid = 1;
+		for (int i = 0; i < n; i++)
+		{
+			g.decalx = (float)((i % 10) * 12);
+			g.decaly = (float)((i / 10) * 12);
+			g.decalz = (float)((i % 7) * 9);
+			decalelement_create();
+		}
+		g.decalrange = savedRange;
+		t.decalid = savedDecalId;
+		_snprintf(result, resultSize,
+			"OK: DECAL_BURST n=%d pool built %d -> %d (max %d) — read HITCH: for the tail",
+			n, before, g_decalBuilt, (int)g.decalelementmax);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "DUMP_MESHES") != 0) return false;
 
 	wi::scene::Scene& mc = wi::scene::GetScene();

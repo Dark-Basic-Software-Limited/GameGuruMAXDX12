@@ -1524,3 +1524,122 @@ Worth ~100 objects/meshes/materials/transforms per level, on every level.
 its own build + POLYS gate + 19-demo sweep, and is deliberately left as a separate change.
 ⚠ Do NOT "fix" it by shrinking `decalelementmax` further; that is what the original workaround did
 and it trades decal capacity for frame time.
+
+## ★★ 24. GGMAX 2.27 — decal pool: PREWARM + GROW (the §23 fix)
+
+§23 named the largest non-terrain floor item: `decal_init()` built all 100 pool quads at startup
+and hid them, so every level carried 100 objects + meshes + materials + transforms that draw
+nothing. 2.27 builds only a prewarm slice and grows the rest on demand.
+
+**Why prewarm and not pure lazy.** Decals are allocated at RUNTIME from bullet impacts, so a fully
+lazy pool moves object creation into a firefight. `decal_init()` is called **once at app startup**
+(`Common_part2.cpp:1292`), never per level — so the prewarm is paid where nothing is running, and
+normal play then allocates nothing at all. Growth beyond it is batched
+(`GG_DECAL_GROW_STEP = 8`) so a burst costs a bounded number of grow events, not one per impact.
+
+**What the hitch risk is NOT.** The expensive thing in this engine is the lazy-PSO compile
+(1-30 ms), and it is already deferred: `pso_validate` builds the pipeline **at first BIND**
+(`wiRenderer.cpp:208-215`) and hidden objects never bind. The first decal *drawn* has always paid
+that compile — 2.27 does not move it by a frame. What 2.27 adds per slot is a 6-vertex mesh, four
+ECS components and one small GPU buffer. The design also already mutates the mesh per placement
+(`SetObjectUVManually`, `M-Decal.cpp:1024` — the "each is unique (UV writing)" comment), so
+placement was never free.
+
+**Safety, verified before writing the change:** only the allocator can see an unbuilt slot.
+`decal_hide()` guards on `ObjectExist()`; the per-frame control loop and `M-Entity_part4.cpp:1894`
+both gate on `active == 1`, which an unbuilt slot can never be.
+Allocator semantics preserved on both ends: the random start (spreads reuse so the same quad is
+not recycled every time) is kept but scaled to the built range, and when the pool is genuinely
+exhausted `t.d` is left `>= decalelementmax` so the existing test drops the decal exactly as before.
+
+### 24.1 ⚠ PRE-REGISTERED gate criteria (written before the run)
+`tools/sceneupdate/decalhitch.sh`, two cold-launch arms on ONE binary:
+CONTROL `decalprewarm=99` (== the pre-2.27 eager pool) vs PREWARM `decalprewarm=24` (shipping).
+Each: settle → `HITCH_RESET` → 4 x `DECAL_BURST 120` → read `HITCH:`.
+
+- **C1 KNOB REACHES** — pre-burst `DECALPOOL: built=` must DIFFER between arms. Identical means
+  the key never reached the pool and both arms measured the same thing (the §2 `SET_TREES` trap).
+- **C2 GROWTH EXERCISED** — the PREWARM arm's post-burst `built` must exceed its pre-burst `built`.
+  If the pool never grew, the burst did not stress the new path and the run says nothing.
+- **C3 HITCH TAIL** — PREWARM must not add frames to the over-buckets vs CONTROL, and `worst_ms`
+  must not exceed CONTROL's by more than ~2 ms. Both arms run an identical burst, so any excess in
+  PREWARM IS the growth cost. ⚠ Judge the TAIL; a 1-30 ms stall is invisible in mean FPS, which is
+  precisely why the 1.82 hitch instrument exists.
+- **C4 SAVING REAL** — PREWARM `SCENE_OBJECTS`/`SCENE_MESHES` must be ~75 below CONTROL pre-burst.
+
+⚠ Honest limitation: this is a synthetic burst in the EDITOR, denser than real weapon fire, and it
+is a stress test rather than a gameplay sample. That errs conservative (harder than reality),
+which is the right direction for a gate — but it is not a substitute for a play session.
+
+### 24.2 The gate: FOUR runs, three of them failures — and each failure was a real defect
+Every run used the SAME script and the SAME pre-registered criteria (§24.1). Nothing was relaxed
+after seeing data; what changed each time was the implementation, against a NAMED measured cause.
+
+| run | change under test | C2 grew? | CONTROL worst | PREWARM worst | over(16.7) | verdict |
+|---|---|---|---|---|---|---|
+| 1 | batch grow, no per-frame cap | 24 → **99** | 9.5 | **23.9** | **1** | ❌ C3 |
+| 2 | cap 4, budget refilled in `decalelement_control()` | 24 → **24** | 9.0 | 7.8 | 0 | ❌ **C2 — void** |
+| 3 | cap 4, budget self-refills off the frame counter | 24 → 40 | 8.6 | **13.4** (+4.8) | 0 | ❌ C3b |
+| 4 | **cap 2** | 24 → 32 | 7.8 | **8.2 (+0.4)** | 0 | ✅ **PASS** |
+
+**Run 1 — the answer to "will it pause?": YES, as first written.** Batching grow CALLS bounds
+nothing; a dense burst just calls the allocator repeatedly in one frame, so all 75 slots were built
+in a single frame: **worst_ms 9.5 → 23.9, one frame over budget**. The tree pool already knew this
+(`GG_TREE_POOL_GROW_PER_FRAME`, 2.19) — growth needs a PER-FRAME cap, not a per-call one.
+
+★★ **Run 2 is the important one.** It read `worst_ms 7.8, over=0` — a clean pass on every timing
+number — while the pool sat at **built=24 and never grew**. The budget was refilled in
+`decalelement_control()`, which does not tick in the editor, so growth was silently dead and the
+"no hitch" measured a code path that never ran. **C2 ("the pool must actually grow") was added as a
+formality and is the criterion that caught it.** Had C2 not existed this would have shipped with
+growth broken in some app states — and the user-visible symptom would have been decals silently
+not appearing. ★ RULE: **"did the mechanism execute?" is a SEPARATE question from "what did it
+cost?", and the timing numbers look perfectly healthy when the answer to the first is no.**
+Fix: the budget now self-refills off the device frame counter inside `decal_growbudgeted`, so it
+cannot be disabled by another function failing to tick.
+
+**Run 3** priced a slot build at **~1.2 ms** — expensive for a 6-vertex quad, because the cost is
+the DBP `CreateNewObject` path plus a GPU buffer, not the geometry. 4/frame = +4.8 ms worst-frame,
+which breached the +2 ms clause even though no frame passed 16.7 ms. ⚠ Predicted cap 2 would give
+~+2.4 ms; it actually gave **+0.4 ms**, so the relationship is not linear and the cap-4 worst frame
+had coincident work. The prediction was wrong in the favourable direction — recorded because a
+lucky miss is still a miss.
+
+### 24.3 ⚠ What this costs, stated plainly
+- **Decals dropped under an extreme burst.** With the pool below demand the allocator drops rather
+  than stalls: `deferred` 448 (PREWARM) vs 381 (CONTROL) out of 480 requests. That 67-decal
+  difference is the price of the cap. It is self-correcting — the pool grows 2/frame — and real
+  weapon fire is spread over frames where a synthetic 120-in-one-frame burst is not. `deferred=`
+  in `DECALPOOL:` makes it visible rather than silent. ⚠ The CONTROL number also matters: the
+  pre-2.27 build ALREADY dropped 381 of 480: drop-when-full is long-standing, not new.
+- **The saving decays with decal use.** The pool never shrinks, so a level that places many decals
+  climbs back toward 99. This reliably helps the EDITOR (no decals placed — and every
+  Scene::Update measurement in this campaign is an editor measurement) and light-decal play; in a
+  sustained firefight the entities come back. It is NOT "−75 everywhere".
+- **Not a gameplay sample.** A synthetic editor burst, denser than real fire. Conservative, but a
+  play session is still the real test.
+
+### 24.4 C4 — the saving, measured with the §23 census (not inferred from the pool count)
+Fresh launch, no bursts, pool sitting at the prewarm. `DUMP_MESHES` on Switch Escape:
+
+| | eager (pre-2.27) | prewarm 24 | delta |
+|---|---|---|---|
+| meshes | 958 | 882 | **−76** |
+| objects | 1106 | 1030 | **−76** |
+| materials | 964 | 888 | **−76** |
+| transforms | 1780 | 1628 | **−152** |
+| hierarchy | 1338 | 1262 | **−76** |
+| `plane` family (v=6 tri=2) | 108 | **32** | −76 |
+
+★ **transforms fall by 2x the object count** — each DBP object carries a limb/frame transform as
+well as its own, so the per-frame Scene::Update saving is larger than the mesh column implies.
+The residual 32 planes = 24 pool slots + ~8 non-pool `MakeObjectPlane` sites (gun decals,
+explosions, the EBE tool plane), exactly as §23 predicted.
+⚠ C4 was written as "SCENE_OBJECTS/MESHES ~75 below control" and the gate script only captured
+the pool count, which is a proxy. Measured with the census instead rather than passing the
+criterion on the proxy.
+
+**VERDICT: 4/4 pre-registered criteria PASS** (run 4, `GG_DECAL_GROW_PER_FRAME = 2`).
+⚠ **STILL OWED before release: the 19-demo hub sweep.** Every other change this campaign got one;
+this one has had the hitch gate the work was scoped to, and nothing more. POLYS is expected
+identical (hidden pool quads never drew) but that is a prediction, not a measurement.
