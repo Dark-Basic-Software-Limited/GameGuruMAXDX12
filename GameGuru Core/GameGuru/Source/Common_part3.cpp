@@ -903,6 +903,11 @@ void GetSetupIniEarly( void )
 				// Live equivalent: SET_SHADOWEXTRUDE. This key exists so the setting survives a
 				// restart while the fix is still awaiting the user's eye.
 				const bool bShadowEx = (_strnicmp(p, "shadowextrude", 13) == 0);
+				// GGMAX 2.29: `ragdollwriteback=0` restores the 2.28 behaviour where the ragdoll
+				// bone -> mesh writeback runs and applies nothing. Default is 1 (live). Live
+				// equivalent: SET_RAGDOLLWRITEBACK. Same reason as shadowextrude — a one-key revert
+				// that survives a restart while the fix awaits the user's eye.
+				const bool bRagWB = (_strnicmp(p, "ragdollwriteback", 16) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bTreePool)       iKeyLen = 8;
 				else if (bMABlock)        iKeyLen = 9;
@@ -911,7 +916,7 @@ void GetSetupIniEarly( void )
 				else if (bShadowEx)       iKeyLen = 13;
 				else if (bSingleQ)        iKeyLen = 11;
 				else if (bLightFO || bWeapSH) iKeyLen = 12;
-				else if (bHairNDW || bWeapFD) iKeyLen = 16;
+				else if (bHairNDW || bWeapFD || bRagWB) iKeyLen = 16;
 				else continue;
 				const char* q = p + iKeyLen;
 				while (*q == ' ' || *q == '\t') q++;
@@ -987,6 +992,11 @@ void GetSetupIniEarly( void )
 					// the same extern-setter shape.
 					extern void GGSetShadowExtrude(int);
 					GGSetShadowExtrude(iValue);
+				}
+				if (bRagWB)
+				{
+					extern void GGSetRagdollWriteback(int);
+					GGSetRagdollWriteback(iValue);
 				}
 			}
 			fclose(lvf);

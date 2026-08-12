@@ -37,6 +37,21 @@ extern float gSc;
 //Global External variables
 DBProRagDoll* currentDBProRagDoll = NULL;
 
+// GGMAX 2.29 (2026-08-12): DUMP_RAGDOLL instrument — UPDATE stage (stage 2 of 3).
+// Read by the harness DUMP_RAGDOLL command. Plain ints, not atomics: every one of these is
+// written only from DBProRagDoll::Update(), which runs on the game thread inside the Bullet
+// step, and is read by the harness on that same thread.
+// g_rdUpdWriteback is the load-bearing one — it counts calls INTO the Wicked writeback, so
+// "Bullet is simulating but nothing reaches the mesh" and "Bullet is not simulating at all"
+// stop looking identical from outside.
+int g_rdUpdCalls       = 0;  // DBProRagDoll::Update() entered (cumulative)
+int g_rdUpdObj         = 0;  // last object it drove
+int g_rdUpdBones       = 0;  // ragdoll bones in that object
+int g_rdUpdFramesMoved = 0;  // frames flagged as part of bone movement, last update
+int g_rdUpdWriteback   = 0;  // WickedCall_OverrideLimbWithCombined calls issued (cumulative)
+int g_rdUpdAnimateFrom = 0;  // m_iAnimateFromJoint
+int g_rdUpdStillMoving = 0;  // 1 = bones still had velocity, 0 = went static this update
+
 DBProRagDoll::DBProRagDoll(int ragdollID) : BaseItem(ragdollID)
 {
 	//070714 - missing init vars
@@ -602,6 +617,11 @@ void DBProRagDoll::Update()
 	m_bNeedsUpdateForCulling = true;
 	int objectID = m_id;
 	sObject* pObject = GetObjectData(objectID);
+	// GGMAX 2.29: DUMP_RAGDOLL stage 2
+	g_rdUpdCalls++;
+	g_rdUpdObj = objectID;
+	g_rdUpdBones = (int)m_ragDollBoneArray.size();
+	g_rdUpdAnimateFrom = m_iAnimateFromJoint;
 	if (pObject)
 	{
 		// Turn Culling Off
@@ -695,11 +715,17 @@ void DBProRagDoll::Update()
 			sFrame* pFrame = pObject->ppFrameList[iF];
 			pFrame->matCombined = pFrame->matTransformed;
 		}
+		// GGMAX 2.29: how many frames the bones actually claimed this update
+		g_rdUpdFramesMoved = 0;
+		for (int iF = 0; iF < pObject->iFrameCount; iF++)
+			if (pbFramePartOfBoneMovement[iF]) g_rdUpdFramesMoved++;
+
 		// and then give the relative matrices to wicked to animate the object
 		for (int iF = m_iAnimateFromJoint; iF < pObject->iFrameCount; iF++)
 		{
 			if (pbFramePartOfBoneMovement[iF] == true)
 			{
+				g_rdUpdWriteback++; // GGMAX 2.29
 				sFrame* pFrame = pObject->ppFrameList[iF];
 				if (pFrame)
 				{
@@ -716,8 +742,23 @@ void DBProRagDoll::Update()
 				}
 			}
 		}
-		// must keep object playing so modified bones can affect the wicked animation system
-		LoopObject(objectID, 0, 1);
+		// GGMAX 2.29: on DX12 the clip must stay STOPPED, and this is measured, not reasoned.
+		//
+		// The original line — "must keep object playing so modified bones can affect the wicked
+		// animation system" — is a DX11 requirement. There the bone override was a PREFRAME the
+		// engine applied *inside* animation evaluation, so the clip had to be running for the
+		// override to be seen. DX12 has no such hook: the writeback pokes the bone's local
+		// transform directly, and a running clip simply re-samples over it every Scene::Update.
+		// ★ DUMP_RAGDOLL convicted it: with the clip looping, clobbered=225 / survived=0 — every
+		// single time the writeback returned to a bone, its value had been put back, and the
+		// tracked bone read wroteT=(16.79,7.52,8.03) against liveT=(0.70,33.36,2.85).
+		// ⚠ ragdoll_create already calls StopObject at the gate, so NOT re-playing is sufficient;
+		// no extra stop call per update.
+		// The knob keeps the old behaviour reachable: ragdollwriteback=0 restores 2.28 exactly
+		// (dead writeback + looping clip), so the pair can still be A/B'd on one binary.
+		extern int g_ragdollWriteback;
+		if (!g_ragdollWriteback)
+			LoopObject(objectID, 0, 1);
 
 		// moved this out of wicked def as otherwise memory leak in non-MAX builds
 		delete pbFramePartOfBoneMovement;
@@ -725,7 +766,8 @@ void DBProRagDoll::Update()
 	}
 
 	// if overall ragdoll has stopped moving, switch it to static
-	if (bStillMoving == false) 
+	g_rdUpdStillMoving = bStillMoving ? 1 : 0; // GGMAX 2.29
+	if (bStillMoving == false)
 		SetStatic(true);
 }
 

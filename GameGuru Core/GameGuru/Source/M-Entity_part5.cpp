@@ -260,6 +260,17 @@ void newparticle_updateparticleemitter ( newparticletype* pParticle, float fScal
 						root_tranform->UpdateTransform();
 					}
 					WickedCall_PerformEmitterAction(3, iParticleEmitter); //PE: Resume
+					// GGMAX 2.29 (2026-08-12): RESUME EMISSION. Action 3 is SetPaused(false) and
+					// action 8 is SetEmitPaused(false) — two DIFFERENT flags, and neither Restart()
+					// nor Burst() clears FLAG_EMIT_PAUSE (wiEmittedParticle.h:204; only an explicit
+					// SetEmitPaused(false) does). Before 2.29 nothing in the game ever issued action
+					// 8 except the weapon-trail respawn (M-Weapon.cpp:1372), so the moment 2.28
+					// started emit-pausing expired decal emitters (M-Decal.cpp:996) the pause was
+					// permanent: after MAXREADYDECALS (5) impacts of one decal type, every cached
+					// emitter of that type was emit-paused and the effect stopped appearing.
+					// Reported from live play. Fire must clear BOTH pause flags — this is the
+					// same 7/8 pairing the weapon-trail path has always used.
+					WickedCall_PerformEmitterAction(8, iParticleEmitter); //PE: Resume emit
 					WickedCall_PerformEmitterAction(4, iParticleEmitter); //PE: Restart
 					WickedCall_PerformEmitterAction(5, iParticleEmitter); //PE: Visible
 					WickedCall_PerformEmitterAction(1, iParticleEmitter); //PE: Burst All

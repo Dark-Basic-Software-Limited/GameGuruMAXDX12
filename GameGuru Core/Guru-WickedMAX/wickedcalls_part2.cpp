@@ -1199,16 +1199,59 @@ void WickedCall_CalculateQuatFromCombined(sObject* pObject, sFrame* pFrame, GGVE
 	pQuat->w = qRotation.m128_f32[3];
 }
 
+// GGMAX 2.29 (2026-08-12): DUMP_RAGDOLL instrument — WRITEBACK stage (stage 3 of 3).
+// Each counter is one nesting level deeper than the last, so the harness reads off exactly where
+// the writeback stops mattering. ★ g_rdWBApplied is the one that settles it: everything above it
+// can be healthy while it stays 0, because the two GGAnimBridge_SetPreFrame calls that would
+// actually move a bone are commented out (`////`) — as is EVERY other call site of the PreFrame
+// API in this file, even though GGAnimBridge.cpp implements it and consumes it live in PostUpdate.
+int g_rdWBEntered  = 0;  // function called at all
+int g_rdWBAnimRef  = 0;  // pFrame->pAnimRef present
+int g_rdWBAnimSet  = 0;  // pObject->pAnimationSet present
+int g_rdWBAnimComp = 0;  // AnimationComponent found in the scene
+int g_rdWBChannel  = 0;  // animation channels resolved — the apply point is reached
+int g_rdWBApplied  = 0;  // a bone override was actually issued
+int g_rdWBSplitTgt = 0;  // pos/rot channels targeted DIFFERENT entities (see below)
+
+// GGMAX 2.29: what the writeback last WROTE, so DUMP_RAGDOLL can read the same bone back out of
+// the scene and compare. ★ This is the camera-free proof that the pose reaches the mesh — the
+// obvious check (ragdoll someone and screenshot) is void whenever the body is off-camera, which
+// is exactly what the first 2.29 run produced: a 0.018%-different image of an empty room.
+uint64_t g_rdWBLastTarget = 0;
+XMFLOAT3 g_rdWBLastTrans = XMFLOAT3(0, 0, 0);
+XMFLOAT4 g_rdWBLastRot = XMFLOAT4(0, 0, 0, 1);
+
+// ⚠ …and the read-back alone is NOT conclusive when it says HELD. The harness runs inside
+// GuruLoopLogic, i.e. in the same game-logic phase as the Bullet step, so a dump can sample the
+// bone between our write and the next Scene::Update and see its own value regardless of whether
+// the animation system clobbers it a moment later. g_rdWBClobbered closes that hole and is
+// phase-independent: on the NEXT writeback for the same bone, before overwriting it, compare
+// what is there now against what we left last time. A rising count means something restored the
+// bone between writebacks — a still-playing animation clip being the prime suspect
+// (DBProRagDoll::Update ends with LoopObject(objectID,0,1), which keeps the clip running).
+int g_rdWBClobbered = 0;
+int g_rdWBSurvived = 0;
+int g_rdWBTrackedWritten = 0;   // the latched bone has been written at least once
+
+// GGMAX 2.29: ragdoll bone writeback, 1 = live (default), 0 = the 2.28 no-op behaviour.
+// setup.ini `ragdollwriteback=0` / harness SET_RAGDOLLWRITEBACK 0 reverts.
+int g_ragdollWriteback = 1;
+void GGSetRagdollWriteback(int v) { g_ragdollWriteback = (v != 0) ? 1 : 0; }
+
 void WickedCall_OverrideLimbWithCombined(sObject* pObject, sFrame* pFrame, bool bIncludeTranslation)
 {
+	g_rdWBEntered++;
 	if (pFrame->pAnimRef)
 	{
+		g_rdWBAnimRef++;
 		if (pObject->pAnimationSet)
 		{
+			g_rdWBAnimSet++;
 			uint64_t wickedanimationindex = pObject->pAnimationSet->wickedanimentityindex;
 			AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(wickedanimationindex);
 			if (animationcomponent)
 			{
+				g_rdWBAnimComp++;
 				int iIndexPos = pFrame->pAnimRef->wickedanimationchannel[0];
 				int iIndexRot = pFrame->pAnimRef->wickedanimationchannel[1];
 				if (iIndexPos >= 0)//&& iIndexPos < animationcomponent->channels.size() && iIndexRot >= 0 && iIndexRot < animationcomponent->channels.size())
@@ -1217,6 +1260,7 @@ void WickedCall_OverrideLimbWithCombined(sObject* pObject, sFrame* pFrame, bool 
 					AnimationComponent::AnimationChannel* pAnimationChannelRot = &animationcomponent->channels[iIndexRot];
 					if (pAnimationChannelPos && pAnimationChannelRot)
 					{
+						g_rdWBChannel++;
 						// Extract rotation from combined matrix
 						GGMATRIX matCombined = pFrame->matCombined;
 						XMFLOAT4X4 mat44;
@@ -1228,8 +1272,94 @@ void WickedCall_OverrideLimbWithCombined(sObject* pObject, sFrame* pFrame, bool 
 						XMStoreFloat4(&currentRot, XMQuaternionRotationMatrix(XMLoadFloat4x4(&mat44)));
 						XMFLOAT3 trans(pFrame->matCombined._41, pFrame->matCombined._42, pFrame->matCombined._43);
 
-						////GGAnimBridge_SetPreFrame(pAnimationChannelPos->target, 2, 1.0f,	trans, XMFLOAT4(0, 0, 0, 1), XMFLOAT3(1, 1, 1));
-						////GGAnimBridge_SetPreFrame(pAnimationChannelRot->target, 2, 1.0f,	XMFLOAT3(0, 0, 0), currentRot, XMFLOAT3(1, 1, 1));
+						// GGMAX 2.29: ONE call, carrying translation AND rotation together.
+						//
+						// The two disabled lines this replaces were a faithful-looking port of DX11
+						// (wickedcalls.cpp:5055-5082 in the DX11 tree), which sets iUsePreFrame=2 on
+						// the POS channel with the translation and on the ROT channel with the
+						// rotation. That works there because the preframe lived ON THE CHANNEL and
+						// the engine applied each channel down its own path. The DX12 bridge keys
+						// preframes by channel->target — the BONE ENTITY — and both channels of a
+						// bone share one target, so the second call OVERWRITES the first. Enabling
+						// them as written would have applied rotation with an IDENTITY translation
+						// and mode 2 lerps translation, i.e. every ragdoll bone dragged to its
+						// parent's origin. Very possibly why they were commented out rather than
+						// fixed. Merging into a single SetPreFrame restores the DX11 behaviour.
+						// ⚠ That merge is only valid while pos->target == rot->target — so the
+						// instrument COUNTS violations (g_rdWBSplitTgt) instead of trusting it;
+						// a non-zero there in DUMP_RAGDOLL invalidates this call, read it first.
+						// Note bIncludeTranslation is unused, exactly as in DX11: that tree ignores
+						// the parameter too and always writes translation.
+						if (pAnimationChannelPos->target != pAnimationChannelRot->target) g_rdWBSplitTgt++;
+						if (g_ragdollWriteback)
+						{
+							// ★ NOT GGAnimBridge_SetPreFrame — ITS CONSUMER IS DEAD. The bridge
+							// stores preframes in a map that only GGAnimBridge_PostUpdate reads,
+							// and that call is commented out in MasterRenderer::PostUpdate
+							// (master_part1.cpp:617, disabled alongside PreUpdate in 89873913 as
+							// "too slow"). Routing through it applies nothing — a counter would
+							// have read "applied" while the character stayed T-posed, which is
+							// the exact failure mode this instrument exists to expose.
+							// Even alive it would be the wrong hook: PostUpdate runs AFTER
+							// Scene::Update, so the animation system re-samples the bone next
+							// frame before the armature pass ever sees the override.
+							// Writing the bone's LOCAL transform here is correct instead: this
+							// runs inside the Bullet step, in the game-logic phase, so the write
+							// lands before this frame's Scene::Update and the armature picks it
+							// up in the normal single pass.
+							wi::scene::TransformComponent* bone =
+								wiScene::GetScene().transforms.GetComponent(pAnimationChannelRot->target);
+							if (bone != nullptr)
+							{
+								// Phase-independent survival check (see g_rdWBClobbered above):
+								// for the one bone we track, did our value still hold when we
+								// came back to write it again?
+								// ⚠ The tracked bone must be LATCHED. The first cut recorded
+								// "last bone written", which is a different bone every call, so
+								// the comparison never fired and the run reported 0/0 — a
+								// silent, plausible-looking nothing. Latch on first use instead;
+								// the same bone then comes round once per ragdoll update.
+								if (g_rdWBLastTarget == 0)
+									g_rdWBLastTarget = (uint64_t)pAnimationChannelRot->target;
+								const bool bTracked =
+									((uint64_t)pAnimationChannelRot->target == g_rdWBLastTarget);
+								if (bTracked && g_rdWBTrackedWritten)
+								{
+									const float drift =
+										fabsf(bone->rotation_local.x - g_rdWBLastRot.x) +
+										fabsf(bone->rotation_local.y - g_rdWBLastRot.y) +
+										fabsf(bone->rotation_local.z - g_rdWBLastRot.z) +
+										fabsf(bone->rotation_local.w - g_rdWBLastRot.w);
+									if (drift > 0.0005f) g_rdWBClobbered++; else g_rdWBSurvived++;
+								}
+								// Rotation on every bone; translation ONLY on the root joint.
+								// ⚠ This DIVERGES from DX11, deliberately. DX11 wrote the
+								// translation for every bone (and ignored bIncludeTranslation
+								// entirely), but there the value went into a preframe the engine
+								// applied in the animation channel's own space. Here it lands
+								// straight on a Wicked bone local, where the rest-pose offset is
+								// what sets bone LENGTH — pushing a possibly mis-scaled
+								// translation into all 66 bones risks a stretched skeleton, and
+								// a ragdoll pose is carried by rotations anyway. The root still
+								// needs its translation or the body cannot leave its spawn spot,
+								// which is exactly what bIncludeTranslation marks
+								// (DBProRagDoll.cpp: true only when iF == m_iAnimateFromJoint).
+								if (bIncludeTranslation) bone->translation_local = trans;
+								bone->rotation_local = currentRot;
+								bone->SetDirty();
+								g_rdWBApplied++;
+								if (bTracked)
+								{
+									// Record the POST-WRITE state, not `trans` — on a non-root
+									// bone the translation is deliberately left alone, and
+									// comparing against a value we never wrote would report a
+									// false "OVERWRITTEN" on every dump.
+									g_rdWBLastTrans = bone->translation_local;
+									g_rdWBLastRot = currentRot;
+									g_rdWBTrackedWritten = 1;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -1253,8 +1383,15 @@ void WickedCall_OverrideLimbOff(sObject* pObject, sFrame* pFrame)
 				{
 					AnimationComponent::AnimationChannel* pAnimationChannelPos = &animationcomponent->channels[iIndexPos];
 					AnimationComponent::AnimationChannel* pAnimationChannelRot = &animationcomponent->channels[iIndexRot];
-					////if (pAnimationChannelPos) GGAnimBridge_ClearPreFrame(pAnimationChannelPos->target);
-					////if (pAnimationChannelRot) GGAnimBridge_ClearPreFrame(pAnimationChannelRot->target);
+					// GGMAX 2.29: the matching release. Nothing to undo now that the writeback
+					// pokes the bone transform directly instead of parking an override in the
+					// (dead) preframe map — the animation system reclaims the bone as soon as it
+					// evaluates again. Both ClearPreFrame calls stay disabled deliberately: the
+					// map has no live producer and no live consumer, so calling it would only
+					// suggest a mechanism that is not running.
+					// ////if (pAnimationChannelPos) GGAnimBridge_ClearPreFrame(pAnimationChannelPos->target);
+					// ////if (pAnimationChannelRot) GGAnimBridge_ClearPreFrame(pAnimationChannelRot->target);
+					(void)pAnimationChannelPos; (void)pAnimationChannelRot;
 				}
 			}
 		}

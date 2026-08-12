@@ -3885,6 +3885,213 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// GGMAX 2.29: RAGDOLL instruments. Ragdoll death still T-posed after 2.28 restored the
+	// writeback CALL, so the next move had to be an instrument that NAMES the dead stage rather
+	// than a fifth code-reading guess. DUMP_RAGDOLL walks the whole chain end to end:
+	//   CREATE (M-Ragdoll.cpp) -> UPDATE (DBProRagDoll.cpp) -> WRITEBACK (wickedcalls_part2.cpp)
+	// Every counter is raw; the VERDICT line is derived and is printed LAST so it can never
+	// stand in for the numbers above it.
+	// ─────────────────────────────────────────────────────────────────────────────────────────
+	if (_stricmp(cmd, "DUMP_RAGDOLL") == 0)
+	{
+		extern int g_rdCreateCalls, g_rdCreateObj, g_rdCreateFrames, g_rdCreatePelvis,
+			g_rdCreateSpine, g_rdCreateExists, g_rdCreateProduced, g_rdCreateLimbs;
+		extern char g_rdCreatePrefix[16];
+		extern int g_rdUpdCalls, g_rdUpdObj, g_rdUpdBones, g_rdUpdFramesMoved,
+			g_rdUpdWriteback, g_rdUpdAnimateFrom, g_rdUpdStillMoving;
+		extern int g_rdWBEntered, g_rdWBAnimRef, g_rdWBAnimSet, g_rdWBAnimComp,
+			g_rdWBChannel, g_rdWBApplied, g_rdWBSplitTgt, g_ragdollWriteback;
+		extern uint64_t g_rdWBLastTarget;
+		extern XMFLOAT3 g_rdWBLastTrans;
+		extern XMFLOAT4 g_rdWBLastRot;
+		extern int g_rdWBClobbered, g_rdWBSurvived, g_rdWBTrackedWritten;
+
+		// ★ THE CAMERA-FREE PROOF. Read the bone the writeback last wrote straight back out of
+		// the scene: if `live` still matches `wrote`, the pose survived to the point the armature
+		// samples it; if it has drifted back, something (the animation system re-evaluating a
+		// still-playing clip) is overwriting the ragdoll every frame. A screenshot cannot answer
+		// this — the first 2.29 run photographed an empty room because the body was off-camera.
+		char bone[192];
+		{
+			wi::scene::Scene& sc = wi::scene::GetScene();
+			const wi::scene::TransformComponent* bt = (g_rdWBLastTarget != 0)
+				? sc.transforms.GetComponent((wi::ecs::Entity)g_rdWBLastTarget) : nullptr;
+			if (bt == nullptr)
+			{
+				_snprintf(bone, sizeof(bone), "RAGDOLL_BONE: target=%llu (no transform - nothing written yet)",
+					(unsigned long long)g_rdWBLastTarget);
+			}
+			else
+			{
+				const float dt2 =
+					fabsf(bt->translation_local.x - g_rdWBLastTrans.x) +
+					fabsf(bt->translation_local.y - g_rdWBLastTrans.y) +
+					fabsf(bt->translation_local.z - g_rdWBLastTrans.z);
+				const float dr2 =
+					fabsf(bt->rotation_local.x - g_rdWBLastRot.x) +
+					fabsf(bt->rotation_local.y - g_rdWBLastRot.y) +
+					fabsf(bt->rotation_local.z - g_rdWBLastRot.z) +
+					fabsf(bt->rotation_local.w - g_rdWBLastRot.w);
+				_snprintf(bone, sizeof(bone),
+					"RAGDOLL_BONE: target=%llu wroteT=(%.2f,%.2f,%.2f) liveT=(%.2f,%.2f,%.2f) dT=%.4f dR=%.4f %s",
+					(unsigned long long)g_rdWBLastTarget,
+					g_rdWBLastTrans.x, g_rdWBLastTrans.y, g_rdWBLastTrans.z,
+					bt->translation_local.x, bt->translation_local.y, bt->translation_local.z,
+					dt2, dr2, (dt2 + dr2 < 0.001f) ? "HELD" : "OVERWRITTEN");
+			}
+			bone[sizeof(bone) - 1] = 0;
+		}
+
+		// registered ragdolls, straight out of the game's own table
+		char reg[256]; reg[0] = 0; int regCount = 0;
+		for (int i = 0; i <= g.RagdollsMax; i++)
+		{
+			if (t.Ragdolls[i].obj == 0) continue;
+			regCount++;
+			if (strlen(reg) < sizeof(reg) - 16)
+			{
+				char one[24]; _snprintf(one, sizeof(one), "%s%d", reg[0] ? "," : "", t.Ragdolls[i].obj);
+				strncat(reg, one, sizeof(reg) - strlen(reg) - 1);
+			}
+		}
+
+		// Derived — the first stage that is starved. Order matters: each stage can only be
+		// judged once the one feeding it is known to have run.
+		const char* verdict;
+		if (g_rdCreateCalls == 0)
+			verdict = "CREATE NEVER CALLED - the death path never selected ragdoll (check the death option, not the ragdoll code)";
+		else if (g_rdCreateProduced == 0)
+			verdict = "CREATE GATE CLOSED - no pelvis/spine limb match, or a ragdoll already existed";
+		else if (g_rdCreateLimbs == 0)
+			verdict = "NO LIMBS TAGGED - bones exist but no visible limb is bound to them";
+		else if (g_rdUpdCalls == 0)
+			verdict = "BULLET NOT DRIVING - ragdollManager::Update never reached this ragdoll (asleep or unregistered)";
+		else if (g_rdUpdFramesMoved == 0)
+			verdict = "BONES CLAIM NO FRAMES - Update runs but flags no frame as bone-driven";
+		else if (g_rdWBEntered == 0)
+			verdict = "WRITEBACK NEVER CALLED - the loop is running but not reaching the call";
+		else if (g_rdWBAnimRef == 0)  verdict = "WRITEBACK BAILS AT pAnimRef";
+		else if (g_rdWBAnimSet == 0)  verdict = "WRITEBACK BAILS AT pAnimationSet";
+		else if (g_rdWBAnimComp == 0) verdict = "WRITEBACK BAILS AT AnimationComponent lookup";
+		else if (g_rdWBChannel == 0)  verdict = "WRITEBACK BAILS AT channel resolve";
+		else if (g_rdWBApplied == 0)  verdict = "WRITEBACK IS A NO-OP - reaches the apply point and applies nothing (writeback knob off?)";
+		// ⚠ Judge survival by `clobbered` FIRST. The RAGDOLL_BONE read-back can say HELD purely
+		// because the harness samples in the same game-logic phase the write happens in;
+		// `clobbered` is measured at the next writeback and does not care about phase.
+		else if (g_rdWBClobbered > 0 && g_rdWBClobbered >= g_rdWBSurvived)
+			verdict = "POSE CLOBBERED BETWEEN WRITEBACKS - the bone is written every frame and something restores it (a still-playing animation clip is the prime suspect)";
+		else if (strstr(bone, "OVERWRITTEN") != NULL)
+			verdict = "POSE OVERWRITTEN by the time of this dump - see clobbered/survived for which side wins";
+		else verdict = "CHAIN COMPLETE - every stage fired and the bone HELD its ragdoll pose; if it still looks wrong the fault is in the VALUES, not the plumbing";
+
+		_snprintf(result, resultSize,
+			"RAGDOLL_CREATE: calls=%d obj=%d frames=%d prefix=%s pelvis=%d spine=%d existed=%d produced=%d limbsTagged=%d\n"
+			"RAGDOLL_UPDATE: calls=%d obj=%d bones=%d framesMoved=%d animateFrom=%d stillMoving=%d writebackCalls=%d\n"
+			"RAGDOLL_WB: entered=%d animRef=%d animSet=%d animComp=%d channel=%d applied=%d splitTarget=%d knob=%d clobbered=%d survived=%d\n"
+			"%s\n"
+			"RAGDOLL_REG: count=%d objs=[%s] max=%d\n"
+			"RAGDOLL_VERDICT (derived): %s",
+			g_rdCreateCalls, g_rdCreateObj, g_rdCreateFrames, g_rdCreatePrefix[0] ? g_rdCreatePrefix : "-",
+			g_rdCreatePelvis, g_rdCreateSpine, g_rdCreateExists, g_rdCreateProduced, g_rdCreateLimbs,
+			g_rdUpdCalls, g_rdUpdObj, g_rdUpdBones, g_rdUpdFramesMoved, g_rdUpdAnimateFrom,
+			g_rdUpdStillMoving, g_rdUpdWriteback,
+			g_rdWBEntered, g_rdWBAnimRef, g_rdWBAnimSet, g_rdWBAnimComp, g_rdWBChannel,
+			g_rdWBApplied, g_rdWBSplitTgt, g_ragdollWriteback, g_rdWBClobbered, g_rdWBSurvived,
+			bone,
+			regCount, reg, (int)g.RagdollsMax,
+			verdict);
+		result[resultSize - 1] = 0;
+
+		if (_stricmp(arg, "reset") == 0)
+		{
+			g_rdCreateCalls = g_rdCreateProduced = g_rdCreateLimbs = 0;
+			g_rdCreatePelvis = g_rdCreateSpine = -2; g_rdCreateExists = -1; g_rdCreatePrefix[0] = 0;
+			g_rdUpdCalls = g_rdUpdFramesMoved = g_rdUpdWriteback = 0;
+			g_rdWBEntered = g_rdWBAnimRef = g_rdWBAnimSet = g_rdWBAnimComp = 0;
+			g_rdWBChannel = g_rdWBApplied = g_rdWBSplitTgt = 0;
+			g_rdWBClobbered = g_rdWBSurvived = g_rdWBTrackedWritten = 0;
+			g_rdWBLastTarget = 0;
+		}
+		return true;
+	}
+
+	// SET_RAGDOLLWRITEBACK <0|1> — 1 (default) applies ragdoll bone poses to the visible mesh
+	// through the GGAnimBridge preframe path; 0 restores the 2.28 behaviour where the writeback
+	// call runs and does nothing. This is the A/B for "is the writeback what was missing".
+	if (_stricmp(cmd, "SET_RAGDOLLWRITEBACK") == 0)
+	{
+		extern int g_ragdollWriteback;
+		g_ragdollWriteback = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize, "OK: SET_RAGDOLLWRITEBACK %d (0 = 2.28 no-op behaviour)", g_ragdollWriteback);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// RAGDOLL_TEST [entityIndex] — ragdollify a character WITHOUT needing the player to shoot it.
+	// ⚠ The harness provably cannot drive the player (2.14 walk-test note), and the death path
+	// runs deep inside AI state; this reproduces exactly what G-Entity_part1.cpp:722-732 does at
+	// the moment it chooses ragdoll. With no argument it picks the first live character entity.
+	if (_stricmp(cmd, "RAGDOLL_TEST") == 0)
+	{
+		int want = atoi(arg);
+		int picked = 0;
+		if (want > 0 && want <= g.entityelementmax && t.entityelement[want].active > 0)
+		{
+			picked = want;
+		}
+		else
+		{
+			for (int e = 1; e <= g.entityelementmax; e++)
+			{
+				if (t.entityelement[e].active == 0) continue;
+				if (t.entityelement[e].obj <= 0) continue;
+					// Skip anyone already ragdolled, so consecutive calls walk to the NEXT character.
+				// Without this a second RAGDOLL_TEST re-picks the same body, BPhys_RagdollExist
+				// closes the gate, and the second arm of an A/B measures nothing — which is
+				// exactly what the first 2.29 run did (existed=1, every counter frozen).
+				if (t.entityelement[e].ragdollified == 1) continue;
+				// character-ness lives on the PROFILE (bank) record, not the element — the same
+				// t.entityprofile[bankindex] lookup G-Entity uses everywhere.
+				const int bank = t.entityelement[e].bankindex;
+				if (bank <= 0 || t.entityprofile[bank].ischaracter != 1) continue;
+				if (getlimbbyname(t.entityelement[e].obj, (char*)"Bip01_Pelvis") < 0) continue;
+				picked = e; break;
+			}
+		}
+		if (picked == 0)
+		{
+			_snprintf(result, resultSize, "FAIL: RAGDOLL_TEST found no live character entity with a Bip01_Pelvis limb");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		const int obj = t.entityelement[picked].obj;
+		t.ttte = picked;
+		ragdoll_setcollisionmask(t.entityelement[picked].eleprof.colondeath);
+		t.tphye = picked;
+		t.tphyobj = obj;
+		// ⚠ `t.tobj` TOO, and it is not optional. ragdoll_create's pose-extraction loop reads
+		// limb data out of t.tphyobj but writes it back with RotateLimbQuat(t.tobj, ...)
+		// (M-Ragdoll.cpp:195) — an ambient global the real death paths happen to have already
+		// set to the same entity (G-Entity_part1.cpp:30, G-Entity_part2.cpp:79, both checked).
+		// Omitting it here crashed MAX outright in AnglesFromMatrix on the first 2.29 run:
+		// RotateLimbQuat was handed whatever object was last selected.
+		// ★ Not a live bug — but it IS a landmine for any future caller of ragdoll_create.
+		t.tobj = obj;
+		ragdoll_create();
+		t.entityelement[picked].ragdollified = 1;
+		t.entityelement[picked].ragdollifiedforcex_f = 0.8f;
+		t.entityelement[picked].ragdollifiedforcey_f = 0.0f;
+		t.entityelement[picked].ragdollifiedforcez_f = 0.8f;
+		t.entityelement[picked].ragdollifiedforcevalue_f = 0.0f;
+		t.entityelement[picked].ragdollifiedforcelimb = 0;
+		_snprintf(result, resultSize,
+			"OK: RAGDOLL_TEST entity=%d obj=%d — now read DUMP_RAGDOLL (and look at the character)",
+			picked, obj);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "DUMP_MESHES") != 0) return false;
 
 	wi::scene::Scene& mc = wi::scene::GetScene();

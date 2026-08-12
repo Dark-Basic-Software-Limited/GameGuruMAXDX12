@@ -9,6 +9,27 @@
 // Globals
 bool g_bDebugRagdoll = false;// connect debug ragdoll and real object and we are golden :)
 
+// GGMAX 2.29 (2026-08-12): DUMP_RAGDOLL instrument — CREATE stage.
+//
+// Ragdoll death still produced a T-posed floating character AFTER 2.28 restored the
+// OverrideLimbWithCombined writeback call, which means the failure is somewhere else in a
+// four-stage chain, and reading code had already stalled twice. These counters exist so the
+// harness can NAME the dead stage instead of the next fix being another guess:
+//   1 CREATE    (here)                        - was ragdoll_create even reached, and did it bail?
+//   2 UPDATE    (DBProRagDoll.cpp)            - is Bullet driving bones every frame?
+//   3 WRITEBACK (wickedcalls_part2.cpp)       - how deep into the writeback do we get?
+// ⚠ A bail in the branch below leaves the character ANIMATING (the StopObject sits inside the
+// taken branch), so a T-pose actually argues the branch IS entered — record it, don't assume it.
+int g_rdCreateCalls    = 0;   // ragdoll_create() entered
+int g_rdCreateObj      = 0;   // last t.tphyobj it was asked to ragdollify
+int g_rdCreateFrames   = 0;   // that object's frame (bone) count
+int g_rdCreatePelvis   = -2;  // getlimbbyname(<prefix>_Pelvis)  -2 = never looked
+int g_rdCreateSpine    = -2;  // getlimbbyname(<prefix>_Spine)
+int g_rdCreateExists   = -1;  // BPhys_RagdollExist() result at the gate
+int g_rdCreateProduced = 0;   // 1 = the gate opened and a ragdoll was built
+int g_rdCreateLimbs    = 0;   // limbs tagged into bones (limidrecord set count)
+char g_rdCreatePrefix[16] = "";
+
 void ragdoll_init ( void )
 {
 	//  Create Joint Rotations and Limits
@@ -124,6 +145,10 @@ void CalculateCombinedFromQuatsInOriginal(sFrame* pFrame, GGMATRIX* parentMatrix
 
 void ragdoll_create ( void )
 {
+	// GGMAX 2.29: DUMP_RAGDOLL stage 1
+	g_rdCreateCalls++;
+	g_rdCreateObj = t.tphyobj;
+
 	// try different BIP designations (ideally BIP01_)
 	bool bProducedRagdoll = false;
 	for ( int iTryBips = 0; iTryBips < 2; iTryBips++ )
@@ -136,11 +161,19 @@ void ragdoll_create ( void )
 		t.tbip01pelvis=getlimbbyname(t.tphyobj, (pBitPrefix+cstr("_Pelvis")).Get() );
 		t.tbip01spine=getlimbbyname(t.tphyobj, (pBitPrefix+cstr("_Spine")).Get() );
 
+		// GGMAX 2.29: record what the gate actually saw, per prefix attempt
+		g_rdCreatePelvis = t.tbip01pelvis;
+		g_rdCreateSpine  = t.tbip01spine;
+		g_rdCreateExists = BPhys_RagdollExist(t.tphyobj);
+		strncpy ( g_rdCreatePrefix, pBitPrefix.Get(), sizeof(g_rdCreatePrefix)-1 );
+		g_rdCreatePrefix[sizeof(g_rdCreatePrefix)-1] = 0;
+
 		//  receives tphyobj
-		if (  BPhys_RagdollExist(t.tphyobj) == 0 && t.tbip01pelvis >= 0 && t.tbip01spine >= 0 ) 
+		if (  BPhys_RagdollExist(t.tphyobj) == 0 && t.tbip01pelvis >= 0 && t.tbip01spine >= 0 )
 		{
 			// we have what we need for a ragdoll
 			bProducedRagdoll = true;
+			g_rdCreateProduced = 1;
 
 			// StopAnimation ( immediately and record frame )
 			if ( GetPlaying(t.tphyobj) == 1 ) StopObject ( t.tphyobj );
@@ -150,6 +183,7 @@ void ragdoll_create ( void )
 			sObject* pObject = GetObjectData(t.tphyobj);
 			if (pObject)
 			{
+				g_rdCreateFrames = pObject->iFrameCount; // GGMAX 2.29
 				for (int f = 0; f < pObject->iFrameCount; f++)
 				{
 					sFrame* pFrame = pObject->ppFrameList[f];
@@ -533,6 +567,13 @@ void ragdoll_create ( void )
 
 			//  Complete ragdoll creation
 			BPhys_RagDollEnd (  );
+
+			// GGMAX 2.29: how many limbs were actually tagged into bones. A ragdoll that builds
+			// but tags nothing would move Bullet capsules that no visible limb follows — the
+			// same end symptom as a dead writeback, from a different cause. Count before UnDim.
+			g_rdCreateLimbs = 0;
+			for ( t.c = 0 ; t.c < 500 ; t.c++ ) if ( t.limidrecord[t.c] == 1 ) g_rdCreateLimbs++;
+
 			UnDim (  t.limidrecord );
 
 			// ensure never going into the floor!

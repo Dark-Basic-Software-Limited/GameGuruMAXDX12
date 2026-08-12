@@ -418,3 +418,107 @@ that settled §23 and the shadow caster count.
 ## B — parked by the user
 Root cause is upstream in the screen editor. Leads in section B stand; the recommended technique
 (diff screen-editor runtime vs the DX11 tree for `DX12`-tagged comment-outs) is unchanged.
+
+---
+
+# GGMAX 2.29 — the A regression fixed, and D instrumented instead of guessed
+
+## A — FIXED: the fire path now clears BOTH pause flags
+`M-Entity_part5.cpp:262` (the WPE fire/reuse sequence) gains one line:
+
+```
+3 = SetPaused(false)      // was already here
+8 = SetEmitPaused(false)  // GGMAX 2.29 — NEW
+4 = Restart
+5 = SetVisible(true)
+1 = Burst(0)
+```
+
+Verified against the engine before writing it: `Restart()` does **not** touch `FLAG_EMIT_PAUSE`
+(`wiEmittedParticle.h:204` — only an explicit `SetEmitPaused(false)` clears it), and
+`wiEmittedParticle.cpp:398` is the single place the flag is read. So nothing else in the reuse
+sequence could have cleared 2.28's expiry pause, which is why the fifth impact of a decal type
+killed it permanently.
+The expiry `SetEmitPaused(true)` at `M-Decal.cpp:996` is **kept** — that is what makes the flume
+dissipate rather than loop forever, and it is now correctly paired, exactly as the weapon-trail
+path has always paired 7 with 8 (`M-Weapon.cpp:1693` / `:1372`).
+★ Reuse carries `bParticle_Fire = true` and the cached `emitterid` (`M-Decal.cpp:657-664`), so the
+fire block genuinely runs for a recycled emitter — checked, not assumed.
+
+## D — instrumented, and the chain turned out to have THREE more dead links
+`DUMP_RAGDOLL` (2.29) reports every stage: CREATE → UPDATE → WRITEBACK, plus a bone read-back
+and a survival counter. Driven by `RAGDOLL_TEST [entity]`, which ragdolls a character on demand
+because the harness cannot make the player shoot one. Measured on Escape from the Zombie Cellar,
+in test game (ragdolls only update there — `ragdollManager::Update()` runs off the Bullet step).
+
+### The four stages I could not previously verify are ALL alive
+```
+RAGDOLL_CREATE: calls=1 obj=70002 frames=67 prefix=Bip01 pelvis=2 spine=3 existed=0
+                produced=1 limbsTagged=66
+RAGDOLL_UPDATE: calls=322 bones=13 framesMoved=66 animateFrom=1 writebackCalls=20930
+RAGDOLL_WB:     entered=20930 ... channel=13524 applied=13524 splitTarget=0
+```
+So: create IS reached, the Bip01 gate DOES open, 66 limbs are tagged onto 13 bones, Bullet IS
+driving them, and the writeback IS called. Every hypothesis in the 2.28 list was wrong.
+
+### ★ Dead link 2 — the function 2.28 restored the call to was itself hollow
+`WickedCall_OverrideLimbWithCombined` computed the pose and then applied it through two
+`GGAnimBridge_SetPreFrame` lines that were commented out (`////`) — as is **every other
+PreFrame call site in the file**. 2.29 replaces them with a single merged call (DX11 sets the
+POS and ROT channels separately; the DX12 bridge keys preframes by `channel->target`, and both
+channels of a bone share one target, so enabling the two lines as written would have had the
+second overwrite the first — rotation applied with an identity translation, mode 2 lerping every
+bone toward its parent's origin. Probably why they were disabled rather than fixed.)
+`splitTarget=0` on every run confirms the merge is valid.
+
+### ★ Dead link 3 — the preframe CONSUMER is disabled too
+`GGAnimBridge_PostUpdate`, the only reader of that preframe map, is commented out in
+`MasterRenderer::PostUpdate` (`master_part1.cpp:617`, disabled with PreUpdate in 89873913 as
+"too slow"). Routing through the bridge would have applied nothing while the counter happily
+read "applied" — so 2.29 writes the bone's local transform directly from the writeback, which
+runs in the game-logic phase and therefore lands before that frame's `Scene::Update`.
+
+### ★★ Dead link 4 — and the animation clip took the pose straight back
+With the direct write in, the first read-back said **HELD** — and that was an artefact: the
+harness runs inside `GuruLoopLogic`, the same phase as the Bullet step, so the dump was reading
+its own write. The phase-independent counter (compare the tracked bone at the NEXT writeback)
+convicted it:
+```
+clobbered=225 survived=0     wroteT=(16.79,7.52,8.03) vs liveT=(0.70,33.36,2.85)
+```
+Cause: `DBProRagDoll::Update` ends with `LoopObject(objectID, 0, 1)` — "must keep object playing
+so modified bones can affect the wicked animation system". True on DX11, where the override was
+applied *inside* animation evaluation. On DX12 a running clip just re-samples over the bone every
+frame. 2.29 skips that re-play (create already stopped the clip), gated on the same knob.
+
+### Result, same instrument, same scene, same session
+| | clobbered | survived | tracked bone |
+|---|---|---|---|
+| clip looping (2.28 behaviour) | **225** | 0 | dT=47.11 dR=1.59 OVERWRITTEN |
+| clip stopped (2.29) | **0** | **249** | dT=0.0000 dR=0.0000 HELD |
+
+⚠ **What this does NOT prove: that it LOOKS right.** The plumbing now delivers the ragdoll pose
+to the mesh and it survives; whether the resulting pose is correct is the user's eye. A visual
+check could not be automated — the ragdolled body is never in frame at the player spawn,
+`SET_CAMERA` is editor-only (`ERROR: SET_CAMERA only works in the level editor`), and the harness
+cannot drive the player. The first attempt at a screenshot A/B produced two 0.018%-different
+images of an empty cellar, which is not evidence of anything.
+⚠ Also unproven: whether writing translation on the root only (2.29 diverges from DX11 here, see
+the code comment) is right. If the corpse looks stretched or pinned, that is the first suspect.
+
+### Method notes worth keeping
+- ★ **A read-back sampled in the same phase as the write can only ever agree with itself.** HELD
+  was a false pass; the next-writeback comparison is what settled it. Any "did my value stick"
+  check needs to observe from a different phase than the one that wrote it.
+- ⚠ The first version of that counter tracked "the last bone written" — a different bone every
+  call — so it never compared anything and reported a clean-looking `0/0`. Latching one bone
+  fixed it. **A survival counter that never fires looks exactly like a survival counter that
+  always passes.**
+- ⚠ `ragdoll_create` needs the ambient global `t.tobj` set to the same object as `t.tphyobj`: it
+  reads limbs from one and writes them back with `RotateLimbQuat(t.tobj, ...)`. Both live death
+  paths happen to set it (`G-Entity_part1.cpp:30`, `G-Entity_part2.cpp:79` — both checked, NOT a
+  live bug), but omitting it in the harness crashed MAX in `AnglesFromMatrix`.
+- ⚠⚠ **Three runs were lost to overlapping script instances**, after I deleted a lockfile to
+  "unstick" a run. Leaked runners truncate and interleave the shared log, and the result reads as
+  a plausible failure of the thing under test rather than of the harness. Same lesson as
+  2026-08-11, learned again the same way: never remove the lock, kill the runner.
