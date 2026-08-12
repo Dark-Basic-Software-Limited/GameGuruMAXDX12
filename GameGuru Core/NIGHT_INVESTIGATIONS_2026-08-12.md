@@ -358,3 +358,63 @@ meant one of them was doing something unintended.
 ⚠ For C the knob is BOTH the fix and the experiment. If raising it does not stop the pop, the
 diagnosis in section C is wrong and the change should be **reverted, not tuned** — the mechanism
 would be something else entirely.
+
+---
+
+# ★ USER VERIFICATION 2026-08-12 (played the 2.28 build)
+
+| | user's verdict |
+|---|---|
+| **A** | **PARTIAL — fix works, but I introduced a REGRESSION.** "the flume now dissipates after a while but now after I get 5 impacts I do not get any more as though I have used them all up. Other impacts (say stone) work but shooting the ground I only get 5 now." |
+| **C** | ✅ **CONFIRMED FIXED** — "looks good, no surprise shadow pops." The §22.7-style diagnosis held: it really was the metres-in-inches cull constant. |
+| **D** | ❌ **DID NOT WORK** — still broken after the writeback restore. |
+| **B** | Parked by the user: "its root cause is further back in the screen editor." |
+
+## ★★ A REGRESSION — root-caused, my fault, one line to fix
+`SetPaused` and `SetEmitPaused` are **two different flags**, and the reuse path only clears the
+first. The fire/reuse sequence (`M-Entity_part5.cpp:262-265`) is:
+```
+3 = SetPaused(false)  "Resume"
+4 = Restart()
+5 = SetVisible(true)
+1 = Burst(0)
+```
+**There is no action 8 (`SetEmitPaused(false)`) anywhere in that path** — the only action-8 call in
+the whole codebase is `M-Weapon.cpp:1372`, for weapon trails. So my expiry fix sets
+`SetEmitPaused(true)` and *nothing ever clears it*. Once all 5 cached emitters for a decal type
+have each expired once, all 5 are permanently emit-paused → that decal type stops appearing.
+Exactly the report: ground dies at 5 (its cache cycled), stone still works (its cache has not).
+
+**FIX (do this first after the compact):** add `WickedCall_PerformEmitterAction(8, ...)` to the
+fire sequence, before Restart, so a reused emitter is un-emit-paused as well as un-paused.
+⚠ Put it in the FIRE path, not the expiry path — the expiry pause is what makes the flume
+dissipate and must stay.
+★ Lesson: "Resume" (3) reads like it resumes everything and does not. The weapon-trail code knew
+to pair 7 with 8; the decal path did not, and I copied the half that suited me.
+⚠ My hitch/burst gate could never have caught this — `DECAL_BURST` exercises allocation, not the
+emitter state machine across a full expire→reuse cycle. A repro needs N+1 impacts of ONE decal
+type with expiry in between.
+
+## D — still broken; what the restore did and did not prove
+The writeback restore was necessary but not sufficient. It compiled, linked and shipped, so the
+symbol resolves — but the character still T-poses and floats. That eliminates "the call is
+missing" and leaves the stages I never verified:
+1. **Is `ragdoll_create` even reached?** The death path is `G-Entity_part2.cpp:386`, gated on
+   `t.entityprofile[].ragdoll == 1`.
+2. **Does it bail before building anything?** `M-Ragdoll.cpp:140-147` requires
+   `getlimbbyname(obj,"Bip01_Pelvis")` AND `"Bip01_Spine")` to both resolve, trying prefixes
+   `Bip01` then `Bip002`. A DX12 importer that names limbs differently = silent no-ragdoll.
+   ⚠ Note this branch also contains the `StopObject` — so a bail leaves the character animating,
+   NOT T-posed. The observed T-pose therefore suggests the branch IS entered. Worth confirming.
+3. **Is the writeback loop reached?** It is gated on `pbFramePartOfBoneMovement[iF] == true`.
+4. **Does `WickedCall_OverrideLimbWithCombined` do anything on this renderer?** It had ZERO other
+   live callers before this change, so it has never run in DX12. `GGAnimBridge.h:33` lists it as
+   bridge-managed and the animation bridge changed substantially in the port.
+★ **Next move is an instrument, not another guess** — a `DUMP_RAGDOLL` reporting: ragdoll_create
+calls, which prefix matched, pelvis/spine limb ids, bones added, and writeback invocations per
+frame. That names the dead stage in one run instead of bisecting four hypotheses. Same approach
+that settled §23 and the shadow caster count.
+
+## B — parked by the user
+Root cause is upstream in the screen editor. Leads in section B stand; the recommended technique
+(diff screen-editor runtime vs the DX11 tree for `DX12`-tagged comment-outs) is unchanged.
