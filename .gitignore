@@ -65,3 +65,6 @@ How To Run The Wizbang Workshop Updates Checker.txt
 GameGuru Core/UseENCRYPTIONANDSECURITYCODES.bat
 GameGuru Core/UseNONE.bat
 GameGuru Core/CopyBUILDtoSTEAMandUPLOAD.bat
+
+burstshots/frame_*.png
+!burstshots/keep/

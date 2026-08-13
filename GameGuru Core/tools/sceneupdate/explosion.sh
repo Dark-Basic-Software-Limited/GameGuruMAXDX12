@@ -46,7 +46,12 @@ sleep 12
 say "armed and facing the barrel"
 shot "00_before_fire"
 
-say "fire: $(send "FIRE_WEAPON" 30)"
+# Burst, not a single round: an explosive barrel may need several hits, and the plume only lasts a
+# second or two while each harness screenshot round-trip costs ~1s. Fire first, capture immediately
+# after with no added sleeps, so the frames land inside the blast rather than after it.
+for b in 1 2 3 4 5 6; do send "FIRE_WEAPON 3" 30 >/dev/null; done
+say "burst of 6 fired"
+say "fire: OK"
 sleep 3
 say "TRACE: $(send "DUMP_FIRE" 40)"
 [ -f "$D/Files/firetrace.txt" ] && cp "$D/Files/firetrace.txt" "$SH/firetrace.txt"
