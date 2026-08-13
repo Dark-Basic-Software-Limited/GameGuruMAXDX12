@@ -1230,3 +1230,55 @@ Nobody had reported those as broken — they were simply never seen working.
 one-off.** `GetImagePointer` / `GetImagePointerView` differ by one word at the call site and by
 everything at runtime. Worth grepping the DX11 halves of any such pair when a "loaded but invisible"
 symptom appears.
+
+---
+
+# §2.39 — Quality presets were stamping over the level's authored Shadows panel
+
+Reported as "the editor shows the right point/spot counts, test game zeros them".
+
+## What the instrument showed (DUMP_SHADOWQTY, Snowy Mountain Stroll)
+
+| | visuals | gamevisuals | editorvisuals |
+|---|---|---|---|
+| editor | 8 / 16 | 8 / 16 | 8 / 16 |
+| test game (before) | **1 / 2** | 8 / 16 | 8 / 16 |
+
+**Nothing was ever zeroed.** `gamevisuals` held the authored 8/16 throughout; `t.visuals` was
+overwritten with 1 spot / 2 point — the literal values in `SetGlobalGraphicsSettings` `case 0: //
+low` (`M-GridEdit_part0.cpp:1768-1770`), which runs from `M-GridEdit_part2.cpp:1045` whenever
+`pref.iTestGameGraphicsQuality != 2`.
+
+The on-screen "0/0" was a second defect layered on top: the panel's combos match only
+{0,4,8,12,16} with no else, so 1 and 2 selected nothing and it printed index 0.
+
+## ⚠ My first fix was wrong, and the failure is instructive
+
+2.38 seeded those combos from the **nearest listed value**. That fixed nothing, and could not have:
+**the nearest entry to 1 IS 0.** I had confirmed the mechanism (unlisted value → displays 0) and
+then shipped a remedy for it without re-running the instrument I had just built — the one command
+that would have shown the display still reading 0. A fix aimed at a symptom deserves the same
+verification as the diagnosis that found it.
+
+## The fix (authorised: presets must not touch user-chosen settings)
+
+All **20** `t.visuals.iShadow*` writes across the four preset cases are commented out, tagged
+`GGMAX 2.39`. This follows the rule the same function already applied to tree shadow LOD distance
+and cascade range: *level-authored settings are exempt from quality presets*. Shadow quantity and
+resolution live in the same panel and now behave the same way.
+
+Non-shadow preset writes (SSR, FXAA, light shafts, lens flare, reflections) are deliberately
+untouched — different panel, not part of the report.
+
+## Verified
+
+| | visuals | gamevisuals |
+|---|---|---|
+| test game (after) | **8 / 16, res 2048/512/128** | 8 / 16, res 2048/512/128 |
+
+The authored values now survive into test game intact, resolutions included.
+
+⚠ **Not visually confirmed in the panel itself.** The in-game Visuals panel opens via
+`TOGGLE_PROFILER` but its Shadows section is collapsed and I did not find a harness click target to
+expand it. The dump is authoritative — the combos read the same `t.visuals` it prints, and 8 and 16
+are both listed values — but the pixel-level confirmation is owed.

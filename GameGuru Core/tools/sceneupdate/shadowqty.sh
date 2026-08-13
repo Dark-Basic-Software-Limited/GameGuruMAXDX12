@@ -46,5 +46,15 @@ wait_state "game" 240 || say "WARN never reached test game"
 say "state now: $(send "GET_STATE" 30 | head -1)"
 say ""; say "---------- B: TEST GAME ----------"; say "$(send "DUMP_SHADOWQTY" 40)"
 
+# Visual confirmation of the thing actually reported: the on-screen panel. TOGGLE_PROFILER cycles
+# g.tabmode 0->1->2, and mode 1 is the in-game Visuals panel where Shadow Quantity lives.
+# tabmode 1 came up as the PERFORMANCE panel on this build despite the label, so cycle until the
+# Visuals panel (which owns Shadow Quantity) is the one on screen, shooting each step.
+say ""; say "tab1: $(send "TOGGLE_PROFILER" 30)"; sleep 3
+say "tab2: $(send "TOGGLE_PROFILER" 30)"; sleep 4
+R=$(send "SCREENSHOT" 40); sleep 2
+P="${R#OK: Screenshot saved to }"
+if [ "$P" != "$R" ] && [ -f "$P" ]; then cp "$P" "$(dirname "$0")/shadowqty_panel.png"; say "  saved shadowqty_panel.png"; else say "  !! screenshot failed: $R"; fi
+
 say ""; say "DONE — the struct whose numbers differ between A and B is the culprit"
 taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true

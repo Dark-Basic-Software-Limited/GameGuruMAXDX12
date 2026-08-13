@@ -1764,11 +1764,11 @@ void SetGlobalGraphicsSettings( int level ) // 0=lowest, 1=medium, 2=high, 3=ult
 			t.visuals.bLightShafts = false;
 			t.visuals.bLensFlare = false;
 			t.visuals.bReflectionsEnabled = false;
-			t.visuals.iShadowSpotCascadeResolution = 512;
-			t.visuals.iShadowPointMax = 2;
-			t.visuals.iShadowPointResolution = 256;
-			t.visuals.iShadowSpotMax = 1;
-			t.visuals.iShadowSpotResolution = 256;
+			// GGMAX 2.39: t.visuals.iShadowSpotCascadeResolution = 512;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowPointMax = 2;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowPointResolution = 256;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowSpotMax = 1;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowSpotResolution = 256;   <-- preset no longer stamps shadow settings
 		} break;
 
 		case 1: // medium
@@ -1778,11 +1778,11 @@ void SetGlobalGraphicsSettings( int level ) // 0=lowest, 1=medium, 2=high, 3=ult
 			t.visuals.bLightShafts = true;
 			t.visuals.bLensFlare = true;
 			t.visuals.bReflectionsEnabled = true;
-			t.visuals.iShadowSpotCascadeResolution = 1024;
-			t.visuals.iShadowPointMax = 4;
-			t.visuals.iShadowPointResolution = 512;
-			t.visuals.iShadowSpotMax = 4;
-			t.visuals.iShadowSpotResolution = 512;
+			// GGMAX 2.39: t.visuals.iShadowSpotCascadeResolution = 1024;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowPointMax = 4;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowPointResolution = 512;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowSpotMax = 4;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowSpotResolution = 512;   <-- preset no longer stamps shadow settings
 		} break;
 
 		case 2: // high
@@ -1792,11 +1792,11 @@ void SetGlobalGraphicsSettings( int level ) // 0=lowest, 1=medium, 2=high, 3=ult
 			t.visuals.bLightShafts = true;
 			t.visuals.bLensFlare = true;
 			t.visuals.bReflectionsEnabled = true;
-			t.visuals.iShadowSpotCascadeResolution = 2048;
-			t.visuals.iShadowPointMax = 12;
-			t.visuals.iShadowPointResolution = 512;
-			t.visuals.iShadowSpotMax = 8;
-			t.visuals.iShadowSpotResolution = 512;
+			// GGMAX 2.39: t.visuals.iShadowSpotCascadeResolution = 2048;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowPointMax = 12;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowPointResolution = 512;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowSpotMax = 8;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowSpotResolution = 512;   <-- preset no longer stamps shadow settings
 		} break;
 
 		case 3: // ultra
@@ -1806,18 +1806,37 @@ void SetGlobalGraphicsSettings( int level ) // 0=lowest, 1=medium, 2=high, 3=ult
 			t.visuals.bLightShafts = true;
 			t.visuals.bLensFlare = true;
 			t.visuals.bReflectionsEnabled = true;
-			t.visuals.iShadowSpotCascadeResolution = 2048;
-			t.visuals.iShadowPointMax = 16;
-			t.visuals.iShadowPointResolution = 512;
-			t.visuals.iShadowSpotMax = 8;
-			t.visuals.iShadowSpotResolution = 512;
+			// GGMAX 2.39: t.visuals.iShadowSpotCascadeResolution = 2048;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowPointMax = 16;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowPointResolution = 512;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowSpotMax = 8;   <-- preset no longer stamps shadow settings
+			// GGMAX 2.39: t.visuals.iShadowSpotResolution = 512;   <-- preset no longer stamps shadow settings
 		} break;
 	}
 	// Tree shadow LOD distance + cascade range are deliberately NOT preset-stamped: they
 	// are level-authored (saved in the FPM visuals, tuned in the Shadows panel), and the
 	// Wicked_Update_Visuals below re-asserts t.visuals over whatever
 	// GGTrees_SetPerformanceMode just dialed — authored values survive any quality preset.
-	Wicked_Update_Visuals( &t.visuals );
+		// ============================================================================================
+	// GGMAX 2.39: the quality presets NO LONGER STAMP ANY SHADOW SETTING.
+	//
+	// Every t.visuals.iShadow* write in the four cases below is commented out above. They were
+	// overwriting the level's authored Shadows panel the moment a test game started, because
+	// M-GridEdit_part2.cpp:1045 runs this whenever pref.iTestGameGraphicsQuality != 2 (High).
+	// Measured with DUMP_SHADOWQTY on Snowy Mountain Stroll: editor 8 spot / 16 point, test game
+	// 1 / 2 -- the LOW preset's values -- while gamevisuals still held the authored 8 / 16.
+	//
+	// The panel then displayed those as "0/0" because its combos match only {0,4,8,12,16}, and 1
+	// and 2 are in neither list. (Seeding from the nearest listed value does NOT rescue that: the
+	// nearest entry to 1 IS 0, so it still reads zero. The override itself had to go.)
+	//
+	// This follows the rule already established for the two settings directly below: tree shadow
+	// LOD distance and cascade range are level-authored and deliberately exempt from presets.
+	// Shadow quantity and resolution are authored in the same panel and now behave the same way.
+	// The non-shadow preset writes (SSR, FXAA, light shafts, lens flare, reflections) are
+	// untouched -- they are a different panel and were not part of the report.
+	// ============================================================================================
+Wicked_Update_Visuals( &t.visuals );
 }
 
 void mapeditorexecutable_full_folder_refresh(void)
