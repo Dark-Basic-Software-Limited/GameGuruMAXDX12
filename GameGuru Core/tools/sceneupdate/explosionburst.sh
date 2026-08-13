@@ -10,7 +10,10 @@
 # to develop (bullet -> barrel destroy -> explosion spawn), so this lands the window inside it.
 set -u
 D="/d/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
-OUT="$(dirname "$0")"; SH="$OUT/burstshots"; rm -rf "$SH"; mkdir -p "$SH"
+# ⚠ Write to burstshots/latest, and wipe ONLY that. burstshots/ itself holds TRACKED reference
+# captures (keep/ = the 2.43 before-fix frames, after_2.44/ = the fixed ones); an earlier version
+# did `rm -rf burstshots` at startup and silently deleted every one of them.
+OUT="$(dirname "$0")"; SH="$OUT/burstshots/latest"; rm -rf "$SH"; mkdir -p "$SH"
 LOG="$SH/burst.log"
 PROJ="${1:-testpro2}"; N="${2:-120}"
 
