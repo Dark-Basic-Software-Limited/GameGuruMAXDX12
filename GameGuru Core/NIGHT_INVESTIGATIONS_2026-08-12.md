@@ -620,3 +620,71 @@ LOCAL, so every invocation re-zeroed the counters microseconds before printing t
 This is the 2.29 latch bug again in a new costume. **RULE: a counter that is re-zeroed on read is
 indistinguishable from a counter that never fires — and both look like a finding. ALWAYS arm a new
 tracer on a KNOWN-GOOD object first and require it to show non-zero before trusting a zero.**
+
+---
+
+# 2.32 — ★★★ THE PISTOL IS SOLVED: a half-float distance overflowed to infinity
+
+## The chain, every link measured
+1. A placed pickup's world AABB is the UNION of itself and the hidden library master parked at
+   (100000,100000,100000) — arithmetic in the 2.30 section. Its CENTRE therefore sits **86,730
+   units** from the camera while the object itself is 1 m away.
+2. `RenderBatch` stores the queue distance as a **HALF** (`wiRenderer.cpp:474`, `:483`
+   `XMConvertFloatToHalf`). A half's largest finite value is **65504**. 86,730 → **+INF**.
+3. `RenderMeshes` computes `dither = max(transparency, max(0, GetDistance() - fadeDistance) / radius)`
+   (`:4219`). `INF - FLT_MAX` is INF, so dither = INF, `dither > 0.99f` fires, `continue`.
+4. The instance is therefore never counted, `instancedBatch.instanceCount` stays 0, and
+   `batch_flush` returns at its first line. **No error, no warning, no draw.**
+5. The SHADOW pass passes distance 0, so half(0) = 0, dither = 0 — the shadow renders perfectly.
+
+## The measurement that located it
+The 2.32 queue-build tracer made the two halves disagree, and the contradiction was the whole clue:
+```
+PISTOL   MAIN QUEUE seen=4572 ... ADDED=1143      MAIN batches=0    draws=0
+CONTROL  MAIN QUEUE seen=4368 ... ADDED=1092      MAIN batches=1092 draws=1092
+```
+Added to the queue 1143 times,zero batches at the flush. Only one filter sits between those two
+points, and it is the dither.
+
+## Fix and result
+`RenderBatch::Create` now clamps: `XMConvertFloatToHalf(std::min(distance, 65504.0f))`. Clamping
+rather than widening the field keeps RenderBatch at 16 bytes and its `static_assert` intact; an
+object sorting as "65504 away" is harmless.
+| | MAIN batches | MAIN draws | on screen |
+|---|---|---|---|
+| before | 0 | 0 | pistol + 2 ammo pickups missing, shadows present |
+| after | **1088** | **1088** | **all three render** |
+
+## ⚠ Two lessons, both expensive
+★★ **This is the SECOND fp16-range bug on this project** (2.07g was the light-attenuation range²
+overflow). GameGuru is INCH-scale: 65504 units is ~1.66 km and trivially reachable. Upstream
+Wicked is metres, where the same constant is 65 km and effectively infinite. **When porting a
+metres-scale engine to an inch-scale game, every half-precision distance is a range bug waiting
+to happen** — audit them as a class, not one at a time.
+★★ **An instrument that mirrors engine logic must mirror its PRECISION.** WHYNOTDRAWN computed
+the dither in full float and printed `dither=0.0000 → DRAWN` for an object the engine was
+skipping with INF. It agreed with my reasoning rather than with the renderer, and it cost a whole
+extra hypothesis cycle. It now does the half round-trip.
+
+## What is still NOT fixed (deliberately)
+The corrupt AABB itself. The clamp makes the symptom impossible for every object at any distance,
+but pickups still carry a 2 km bounding box, which degrades culling quality (they can never be
+frustum-culled) and would keep biting any other code that trusts object.center/radius.
+★ That is a GAME-side defect in how a placed collectable's bounds absorb the parked master, and
+it is the right next target. It is now cosmetic-to-performance rather than a visible bug.
+
+## Sweep criteria, fixed BEFORE the 2.32 run (tag 0813)
+Amending in writing beforehand, per the C2′ discipline — after the run it is rationalising.
+* **C1 loads** — 19/19 reach editor and test game. Any crash or hang FAILS.
+* **C2″ POLYS — the identity gate is SUSPENDED and replaced, deliberately.** 2.32 makes objects
+  draw that the engine was wrongly skipping, so POLYS may legitimately **INCREASE**. An increase
+  passes only if it is attributable (a demo with pickups/props whose centre distance exceeded
+  65504). A **DECREASE fails** — nothing in 2.32 can remove geometry. Unchanged also passes: most
+  demos have no object far enough out to have overflowed.
+* **C3 VRAM** — both columns under 4096 MB, and no demo more than +100 MB against the 2.25
+  baseline without attribution. Newly-drawn objects cost VRAM only if their materials were not
+  already resident, so a large rise would be a surprise worth chasing.
+* **C4 FPS** — no demo worse than −10% vs the 0806 baseline, judged against the known ±8 FPS
+  launch variance and the lazy-PSO warm-up caveat (levels gain 10-12% by 180 s).
+⚠ The sweepgate C2 reference is still the stale 0809 sweep and will keep flagging Aztec Teaser —
+read its POLYS verdict manually against C2″ above, do not trust its pass/fail line.
