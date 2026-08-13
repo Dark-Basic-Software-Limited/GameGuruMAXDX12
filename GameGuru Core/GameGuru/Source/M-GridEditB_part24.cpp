@@ -893,7 +893,24 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 
 		ImGui::TextCenter("Shadow Quantity");
 		const char* shadow_spot_max_align[] = { "0", "4", "8", "12", "16" };
-		int shadow_cascade_max_current_type_selection = 0;
+		// GGMAX 2.38: the if-chains below match only 0/4/8/12/16 EXACTLY and have no else, so any
+		// other value left the selection at its initialiser 0 and the panel printed "0" — a flat
+		// lie about what the renderer was doing, and worse, touching the combo would then write
+		// that 0 back and really destroy the setting.
+		// This is not hypothetical: SetGlobalGraphicsSettings' LOW preset
+		// (M-GridEdit_part0.cpp:1768-1770) sets iShadowPointMax=2 and iShadowSpotMax=1, neither of
+		// which is in the list. That is exactly the reported "editor shows 8/16, test game shows
+		// 0/0" — measured with DUMP_SHADOWQTY: in test game visuals=1/2 while gamevisuals stayed
+		// 8/16, so the counts were never zeroed, only misreported.
+		// Seed the selection from the NEAREST listed value so the panel can never misreport.
+		auto ggNearestShadowQty = [](int v) -> int
+		{
+			static const int listed[] = { 0, 4, 8, 12, 16 };
+			int best = 0, bestd = abs(v - listed[0]);
+			for (int q = 1; q < 5; ++q) { const int d = abs(v - listed[q]); if (d < bestd) { bestd = d; best = q; } }
+			return best;
+		};
+		int shadow_cascade_max_current_type_selection = ggNearestShadowQty(t.visuals.iShadowSpotMax);
 		if (t.visuals.iShadowSpotMax == 0) shadow_cascade_max_current_type_selection = 0;
 		else if (t.visuals.iShadowSpotMax == 4) shadow_cascade_max_current_type_selection = 1;
 		else if (t.visuals.iShadowSpotMax == 8) shadow_cascade_max_current_type_selection = 2;
@@ -915,7 +932,9 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Choose max shadow casters for spot lights");
 		ImGui::PopItemWidth();
 
-		int shadow_cascade_point_current_type_selection = 0;
+		// GGMAX 2.38: same nearest-value seed as the spot combo above — the LOW preset's
+		// iShadowPointMax=2 is not a listed value and was displaying as "0".
+		int shadow_cascade_point_current_type_selection = ggNearestShadowQty(t.visuals.iShadowPointMax);
 		if (t.visuals.iShadowPointMax == 0) shadow_cascade_point_current_type_selection = 0;
 		else if (t.visuals.iShadowPointMax == 4) shadow_cascade_point_current_type_selection = 1;
 		else if (t.visuals.iShadowPointMax == 8) shadow_cascade_point_current_type_selection = 2;

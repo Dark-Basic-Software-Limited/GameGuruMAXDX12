@@ -4114,6 +4114,35 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// DUMP_SHADOWQTY — GGMAX 2.38. Print the shadow quantity/resolution from ALL THREE visuals
+	// structs at once, plus the app state.
+	//
+	// The bug is "the editor shows 8 spot / 16 point, test game shows 0 / 0". Reading the call
+	// sites did not settle it: visuals <-> gamevisuals are copied BOTH ways, and visuals_save /
+	// visuals_load both handle the fields, so no value is simply missing — something overwrites
+	// one copy later. Which copy, and when, is a question about live state, so print all three
+	// side by side and sample it in the editor and again in test game. The one that differs names
+	// the stage; guessing between three structs and a load sequence does not.
+	if (_stricmp(cmd, "DUMP_SHADOWQTY") == 0)
+	{
+		_snprintf(result, resultSize,
+			"OK: DUMP_SHADOWQTY state=%s\n"
+			"  visuals      spotMax=%d pointMax=%d  res sun=%d spot=%d point=%d\n"
+			"  gamevisuals  spotMax=%d pointMax=%d  res sun=%d spot=%d point=%d   <-- what the GAME uses\n"
+			"  editorvisuals spotMax=%d pointMax=%d res sun=%d spot=%d point=%d\n"
+			"  engine: localShadowCaching=%d",
+			AutoHarness_GetAppState(),
+			t.visuals.iShadowSpotMax, t.visuals.iShadowPointMax,
+			t.visuals.iShadowSpotCascadeResolution, t.visuals.iShadowSpotResolution, t.visuals.iShadowPointResolution,
+			t.gamevisuals.iShadowSpotMax, t.gamevisuals.iShadowPointMax,
+			t.gamevisuals.iShadowSpotCascadeResolution, t.gamevisuals.iShadowSpotResolution, t.gamevisuals.iShadowPointResolution,
+			t.editorvisuals.iShadowSpotMax, t.editorvisuals.iShadowPointMax,
+			t.editorvisuals.iShadowSpotCascadeResolution, t.editorvisuals.iShadowSpotResolution, t.editorvisuals.iShadowPointResolution,
+			wi::renderer::GetLocalShadowCachingEnabled() ? 1 : 0);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// GGMAX 2.36 — drive the SCREEN (HUD) editor from the harness.
 	//   HUD_EDIT [title]        enter the screen editor on that storyboard node (default In-Game HUD)
 	//   HUD_ADD_IMAGE [path]    add an image widget, centred, pointed at path
