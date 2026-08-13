@@ -688,3 +688,25 @@ Amending in writing beforehand, per the C2′ discipline — after the run it is
   launch variance and the lazy-PSO warm-up caveat (levels gain 10-12% by 180 s).
 ⚠ The sweepgate C2 reference is still the stale 0809 sweep and will keep flagging Aztec Teaser —
 read its POLYS verdict manually against C2″ above, do not trust its pass/fail line.
+
+## 2.32b — the fp16 CLASS audit the lesson demanded (read-only, no code changed)
+Having been bitten twice, I swept every `XMConvertFloatToHalf` in the engine for distance-like
+values rather than waiting for the third.
+
+| site | what is packed | worst authored value | headroom to 65504 |
+|---|---|---|---|
+| `wiRenderer.cpp:483` `RenderBatch::Create` | queue sort/fade distance | **86,730 measured** | ★ **OVERFLOWED — fixed in 2.32** |
+| `ShaderInterop_Renderer.h:1017` `SetRange` (light) | light range | authored, editor-bounded | not reached in shipped content |
+| `ShaderInterop_Renderer.h:1017` `SetRange` (env probe) | probe range | **50,000** (`GGTerrain_part0.cpp:7471`, `:9285`, `:9710` `globalrange`) | **only 1.31× — 24% margin** |
+| `:1021/:1025` `SetRadius` / `SetLength` | light radius, capsule length | small by construction | safe |
+| `:1040-1053` direction / cone cos | normalised | ≤1 | safe by construction |
+| `wiMath.h:555/564` pack_half2/3 | UVs, normals, colours | ≤1-ish | safe |
+
+**Verdict: no second live overflow, but the env-probe range sits at 50,000 against a 65,504
+ceiling.** One authoring change — a global probe range raised past ~1.3× — turns that into +INF
+and, unlike the pistol, an INF light/probe range fails LOUD (infinite influence), not silent.
+⚠ I did NOT pre-emptively clamp those packers: they are upstream code, no bug is observed, and
+clamping a legitimately huge value silently changes lighting. Recording the margin is the right
+output; the decision to clamp is the user's.
+★ For the record, the general rule now has a number attached: **in an inch-scale world a half
+tops out at 1.66 km, and 1.66 km is an ordinary distance in a GameGuru level.**
