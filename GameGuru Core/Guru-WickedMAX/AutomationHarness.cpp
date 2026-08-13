@@ -4114,6 +4114,16 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// DUMP_FIRE — GGMAX 2.42. Read the trigger tracer armed by FIRE_WEAPON and name the stage that
+	// stopped the shot. Each verdict branch is a DIFFERENT fault; from outside they all look
+	// identical ("the gun did not fire"), which is exactly why two code-reading guesses failed.
+	if (_stricmp(cmd, "DUMP_FIRE") == 0)
+	{
+		extern void GGFireTraceDump(char* result, int resultSize);
+		GGFireTraceDump(result, resultSize);
+		return true;
+	}
+
 	// FIRE_WEAPON — GGMAX 2.41. Pull the trigger exactly as a left mouse button press would.
 	//
 	// Uses the engine's OWN script-control hook rather than faking input: M-Physics_part1.cpp:218
@@ -4132,10 +4142,22 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		}
 		int holdFrames = 6;
 		if (arg != nullptr && arg[0] != 0) { const int n = atoi(arg); if (n > 0 && n <= 240) holdFrames = n; }
+		// ★ GGMAX 2.42c: THE trigger is t.gunmode = 101, not firingmode.
+		// The tracer proved firingmode never arrives at the gun as 1 even though the hold ran
+		// (holdLeft drained to 0), and DarkLUA_part5.cpp:1599 explains why — the original devs hit
+		// this in 2015 and left the note "seems when in game, this gets ignored so no gunshoot
+		// happens..". Their own Lua FirePlayerWeapon(1) therefore does NOT set firingmode; it does
+		// exactly this, and only firingmode>=2 (zoom) still writes the field.
+		if (t.gunmode < 101) t.gunmode = 101;
 		extern int g_ggFireHoldFrames;
-		g_ggFireHoldFrames = holdFrames;
-		g.playeraction = 1;   // the engine's own script hook too, belt and braces
-		_snprintf(result, resultSize, "OK: FIRE_WEAPON — trigger held for %d frames", holdFrames);
+		g_ggFireHoldFrames = holdFrames;   // retained: harmless, and keeps holdLeft meaningful
+		g.playeraction = 1;
+		// GGMAX 2.42: arm the trigger tracer over a window LONGER than the hold, so the rows show
+		// what happens after the trigger releases too (the edge latch only resolves then).
+		extern void GGFireTraceReset(int frames);
+		GGFireTraceReset(holdFrames + 24);
+		_snprintf(result, resultSize, "OK: FIRE_WEAPON — trigger held for %d frames, tracer armed for %d",
+			holdFrames, holdFrames + 24);
 		result[resultSize - 1] = 0;
 		return true;
 	}

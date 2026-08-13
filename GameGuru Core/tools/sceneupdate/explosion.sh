@@ -47,6 +47,9 @@ say "armed and facing the barrel"
 shot "00_before_fire"
 
 say "fire: $(send "FIRE_WEAPON" 30)"
+sleep 3
+say "TRACE: $(send "DUMP_FIRE" 40)"
+[ -f "$D/Files/firetrace.txt" ] && cp "$D/Files/firetrace.txt" "$SH/firetrace.txt"
 # Capture the blast as fast as the harness round-trips. Each shot is ~1-2s of wall clock, so this
 # samples the plume's life rather than a single instant -- the refraction artifact may only appear
 # on particular frames, and one screenshot could easily miss or misrepresent it.

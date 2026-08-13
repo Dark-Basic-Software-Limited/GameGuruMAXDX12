@@ -220,8 +220,16 @@ void gun_manager ( void )
 	OPTICK_EVENT();
 #endif
 	// exit early if gun system disabled
-	if ( ObjectExist(g.hudbankoffset+5) == 0  ) 
+	if ( ObjectExist(g.hudbankoffset+5) == 0  )
+	{
+		// GGMAX 2.42: the tracer has to see this too. Two FIRE_WEAPON attempts produced no shot,
+		// and "the gun update returned before reading the trigger at all" is a completely
+		// different fault from "it read it and a gate zeroed it" — an instrument that only
+		// samples below this line cannot tell them apart.
+		extern int g_ggFireTraceFrames; extern int g_ggFireTraceEarlyOut;
+		if (g_ggFireTraceFrames > 0) { g_ggFireTraceEarlyOut++; g_ggFireTraceFrames--; }
 		return;
+	}
 
 	// new freeze mode (PLRDISABLE) which stops player attacking
 	t.gunclick=t.player[1].state.firingmode;
@@ -263,7 +271,34 @@ void gun_manager ( void )
 		}
 	}
 
-	// Melee control (for TPP) 
+	// ============================================================================================
+	// GGMAX 2.42: FIRE trigger tracer. Sampled HERE — after every gunclick-zeroing condition above
+	// and before the melee/edge-latch logic below — so one row shows both what the trigger came in
+	// as (firingmode) and what survived the gates (gunclick), plus each gate's own inputs. Armed
+	// by FIRE_WEAPON, read by DUMP_FIRE.
+	// Built because two attempts at pulling the trigger produced no shot and reading the code gave
+	// a plausible story for each: an edge latch, a zeroing gate, the wrong field entirely. A row
+	// per frame decides between them instead of a third guess.
+	// ============================================================================================
+	{
+		extern int g_ggFireTraceFrames;
+		extern void GGFireTraceSample(int firingmode, int gunclick, int gunmode, int pressedtrigger,
+			int mustrelease, int ammo, int gunid, int mefrozen, int lowfps, int hudscreen,
+			int isrunning, int moving, int disablerunshoot);
+		if (g_ggFireTraceFrames > 0)
+		{
+			g_ggFireTraceFrames--;
+			GGFireTraceSample(
+				t.player[1].state.firingmode, t.gunclick, t.gunmode,
+				t.gunandmelee.pressedtrigger, t.gunmustreleasefirst,
+				(g.weaponammoindex + g.ammooffset >= 0) ? t.weaponammo[g.weaponammoindex + g.ammooffset] : -1,
+				t.gunid, g.mefrozen, g.lowfpswarning, t.game.activeStoryboardScreen,
+				t.playercontrol.isrunning, t.player[1].state.moving,
+				(t.gunid > 0) ? g.firemodes[t.gunid][g.firemode].settings.disablerunandshoot : -1);
+		}
+	}
+
+	// Melee control (for TPP)
 	bool bGunshotOverridden = false;
 	if ( t.playercontrol.thirdperson.enabled == 1 ) 
 	{
@@ -1222,3 +1257,94 @@ bool gun_detectandperformquickrepeatattack(void)
 	return bPerformingQuickRepeatAttack;
 }
 
+
+// ================================================================================================
+// GGMAX 2.42: FIRE trigger tracer storage. See the sampler in the gun update above.
+// ================================================================================================
+int g_ggFireTraceFrames = 0;      // frames left to sample (armed by FIRE_WEAPON)
+int g_ggFireTraceEarlyOut = 0;    // frames the gun update returned before ever reading the trigger
+
+struct GGFireTraceRow
+{
+	int firingmode, gunclick, gunmode, pressedtrigger, mustrelease, ammo, gunid;
+	int mefrozen, lowfps, hudscreen, isrunning, moving, disablerunshoot;
+};
+static GGFireTraceRow g_ggFireTrace[240];
+static int g_ggFireTraceCount = 0;
+
+void GGFireTraceReset(int frames)
+{
+	g_ggFireTraceCount = 0;
+	g_ggFireTraceEarlyOut = 0;
+	g_ggFireTraceFrames = frames;
+}
+
+void GGFireTraceSample(int firingmode, int gunclick, int gunmode, int pressedtrigger,
+	int mustrelease, int ammo, int gunid, int mefrozen, int lowfps, int hudscreen,
+	int isrunning, int moving, int disablerunshoot)
+{
+	if (g_ggFireTraceCount >= 240) return;
+	GGFireTraceRow& r = g_ggFireTrace[g_ggFireTraceCount++];
+	r.firingmode = firingmode; r.gunclick = gunclick; r.gunmode = gunmode;
+	r.pressedtrigger = pressedtrigger; r.mustrelease = mustrelease; r.ammo = ammo; r.gunid = gunid;
+	r.mefrozen = mefrozen; r.lowfps = lowfps; r.hudscreen = hudscreen;
+	r.isrunning = isrunning; r.moving = moving; r.disablerunshoot = disablerunshoot;
+}
+
+// Writes Files/firetrace.txt and returns a one-line verdict naming the stage that stopped the shot.
+void GGFireTraceDump(char* result, int resultSize)
+{
+	FILE* f = fopen("firetrace.txt", "w");
+	if (f != NULL)
+	{
+		fprintf(f, "GGMAX 2.42 FIRE trace — %d sampled frames, %d frames the gun update EARLY-OUT\n",
+			g_ggFireTraceCount, g_ggFireTraceEarlyOut);
+		fprintf(f, "%-4s %-5s %-5s %-6s %-8s %-8s %-6s %-4s %-4s %-4s %-4s %-4s %-4s %s\n",
+			"n", "fmode", "click", "gmode", "prsTrig", "mustRel", "ammo", "gid", "froz", "lofps", "hud", "run", "mov", "norunshoot");
+		for (int i = 0; i < g_ggFireTraceCount; ++i)
+		{
+			const GGFireTraceRow& r = g_ggFireTrace[i];
+			fprintf(f, "%-4d %-5d %-5d %-6d %-8d %-8d %-6d %-4d %-4d %-4d %-4d %-4d %-4d %d\n",
+				i, r.firingmode, r.gunclick, r.gunmode, r.pressedtrigger, r.mustrelease, r.ammo,
+				r.gunid, r.mefrozen, r.lowfps, r.hudscreen, r.isrunning, r.moving, r.disablerunshoot);
+		}
+		fclose(f);
+	}
+	// Verdict. Each branch is a DIFFERENT fault, which is the whole point of sampling rather than
+	// reasoning: they all look like "the gun did not fire" from outside.
+	int sawFiringmode = 0, sawClick = 0, ammoStart = -1, ammoEnd = -1;
+	for (int i = 0; i < g_ggFireTraceCount; ++i)
+	{
+		if (g_ggFireTrace[i].firingmode == 1) sawFiringmode++;
+		if (g_ggFireTrace[i].gunclick == 1) sawClick++;
+		if (ammoStart < 0) ammoStart = g_ggFireTrace[i].ammo;
+		ammoEnd = g_ggFireTrace[i].ammo;
+	}
+	const char* verdict;
+	if (g_ggFireTraceCount == 0 && g_ggFireTraceEarlyOut > 0)
+		verdict = "gun update EARLY-OUT every frame (ObjectExist(hudbankoffset+5)==0) — the trigger is never read";
+	else if (g_ggFireTraceCount == 0)
+		verdict = "the gun update never ran at all while armed";
+	else if (sawFiringmode == 0)
+		verdict = "firingmode NEVER reached the gun update as 1 — the hold is not landing where the gun reads it";
+	else if (sawClick == 0)
+		verdict = "firingmode arrived but a gunclick ZEROING GATE killed it — see the froz/lofps/hud/run/mov columns";
+	else if (ammoStart == ammoEnd)
+		verdict = "gunclick survived the gates but NO AMMO WAS CONSUMED — blocked below, in the edge latch or fire logic";
+	else
+		verdict = "SHOT FIRED (ammo decreased)";
+	// GGMAX 2.42b: report the HOLD COUNTER too. When firingmode never arrives as 1 there are two
+	// very different causes, and this number separates them without another build: if the counter
+	// still sits at its armed value, physics_player_gatherkeycontrols (where the hold is applied)
+	// never ran at all; if it drained to 0, the hold DID run and something cleared firingmode
+	// between that function and the gun update.
+	extern int g_ggFireHoldFrames;
+	_snprintf(result, resultSize,
+		"OK: DUMP_FIRE frames=%d earlyOut=%d firingmode1=%d gunclick1=%d ammo %d->%d holdLeft=%d -> Files/firetrace.txt\nVERDICT: %s%s",
+		g_ggFireTraceCount, g_ggFireTraceEarlyOut, sawFiringmode, sawClick, ammoStart, ammoEnd,
+		g_ggFireHoldFrames, verdict,
+		(sawFiringmode == 0 && g_ggFireHoldFrames > 0)
+			? "  >>> HOLD NEVER APPLIED: physics_player_gatherkeycontrols did not run <<<"
+			: ((sawFiringmode == 0) ? "  >>> hold WAS applied (counter drained) but firingmode was cleared before the gun read it <<<" : ""));
+	result[resultSize - 1] = 0;
+}
