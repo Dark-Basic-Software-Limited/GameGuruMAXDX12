@@ -745,3 +745,41 @@ control that proves the mechanism needs a SHARED armature, not merely a skinned 
   violates. Riskier: it is upstream code on the hot path and every skinned object pays the test.
 ⚠ Not urgent now the 2.32 clamp makes the symptom impossible. Remaining cost is culling quality:
 pickups can never be frustum-culled, so they are shaded on every camera in every level.
+
+## 2.32 SWEEP (tag 0813) — partial results at 13/19, scored against the pre-registered criteria
+**C2″ POLYS — the headline, and it is bigger than the pistol.** Against the 2.28 baseline:
+| | demos |
+|---|---|
+| POLYS **increased** | **11** |
+| unchanged | 2 (Aztec Game Kit, Switch Escape) |
+| **decreased (the FAIL condition)** | **0** |
+
+```
+Aztec Game Kit Teaser     10311639 -> 10330135   +18,496  (+0.18%)
+Bounty                      463210 ->   469906    +6,696  (+1.45%)
+Horseshoe Bend             2105365 ->  2168281   +62,916  (+2.99%)
+Island Showdown            4114598 ->  4125704   +11,106  (+0.27%)
+Operation Amazon           5496922 ->  5504271    +7,349  (+0.13%)
+★ River Raiders            1906072 ->  2362345  +456,273 (+23.94%)
+Snowy Mountain Stroll        81081 ->    81369      +288  (+0.36%)
+A Grand Canyon Adventure   2272361 ->  2279506    +7,145  (+0.31%)
+Disruption                 4665184 ->  4677579   +12,395  (+0.27%)
+Foggy Forest              10195894 -> 10220589   +24,695  (+0.24%)
+Indian Strike Force        3184527 ->  3229699   +45,172  (+1.42%)
+```
+★★ **This bug was suppressing real geometry on ELEVEN OF THIRTEEN SHIPPED DEMOS, and had been
+doing so through every previous sweep.** POLYS was bit-stable at those old values across 2.25,
+2.27 and 2.28 — which is exactly why the identity gate never flagged it: the geometry was
+*consistently* missing. **A stable wrong number looks identical to a stable right one.**
+River Raiders at **+23.9%** is the extreme case — nearly a quarter of its geometry was being
+skipped. Attribution is sound: the mechanism is proven live on spotshadowtest, the direction is
+predicted, and nothing in 2.32 can add geometry that was not already in the scene.
+
+**C3 VRAM — PASS so far.** Worst in-game 3752.8 MB (Aztec Game Kit) against the 4096 gate.
+No demo rose more than ~100 MB against 2.28; several fell.
+
+**C4 FPS — PASS on the only side that is trustworthy.** No demo regressed more than 3%
+(worst: Aztec Teaser and Foggy Forest at −3%). ⚠ **Several demos read +10 to +19% and I am NOT
+claiming that as a win** — this rig's documented launch-to-launch swing is ±8 FPS, these are
+cross-launch numbers, and "we draw 24% more geometry and got faster" is not a credible causal
+story. The gate is the downside, and the downside is clean.
