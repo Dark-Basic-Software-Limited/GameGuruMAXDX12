@@ -1,0 +1,30 @@
+== ARM writeback=1 ==
+RAGDOLL_CREATE: calls=0 obj=0 frames=0 prefix=- pelvis=-2 spine=-2 existed=-1 produced=0 limbsTagged=0
+RAGDOLL_UPDATE: calls=0 obj=0 bones=0 framesMoved=0 animateFrom=0 stillMoving=0 writebackCalls=0
+RAGDOLL_WB: entered=0 animRef=0 animSet=0 animComp=0 channel=0 applied=0 splitTarget=0 knob=1 clobbered=0 survived=0
+RAGDOLL_BONE: target=0 (no transform - nothing written yet)
+RAGDOLL_REG: count=0 objs=[] max=0
+RAGDOLL_VERDICT (derived): CREATE NEVER CALLED - the death path never selected ragdoll (check the death option, not the ragdoll code)== ARM writeback=0 ==
+RAGDOLL_CREATE: calls=0 obj=0 frames=0 prefix=- pelvis=-2 spine=-2 existed=-1 produced=0 limbsTagged=0
+RAGDOLL_UPDATE: calls=0 obj=0 bones=0 framesMoved=0 animateFrom=0 stillMoving=0 writebackCalls=0
+RAGDOLL_WB: entered=0 animRef=0 animSet=0 animComp=0 channel=0 applied=0 splitTarget=0 knob=0 clobbered=0 survived=0
+RAGDOLL_BONE: target=0 (no transform - nothing written yet)
+RAGDOLL_REG: count=0 objs=[] max=0
+RAGDOLL_VERDICT (derived): CREATE NEVER CALLED - the death path never selected ragdoll (check the death option, not the ragdoll code)RAGDOLL_CREATE: calls=0 obj=0 frames=0 prefix=- pelvis=-2 spine=-2 existed=-1 produced=0 limbsTagged=0
+RAGDOLL_UPDATE: calls=0 obj=0 bones=0 framesMoved=0 animateFrom=0 stillMoving=0 writebackCalls=0
+RAGDOLL_WB: entered=0 animRef=0 animSet=0 animComp=0 channel=0 applied=0 splitTarget=0 knob=1 clobbered=0 survived=0
+RAGDOLL_BONE: target=0 (no transform - nothing written yet)
+RAGDOLL_REG: count=0 objs=[] max=0
+RAGDOLL_VERDICT (derived): CREATE NEVER CALLED - the death path never selected ragdoll (check the death option, not the ragdoll code)== ARM writeback=1 ==
+RAGDOLL_CREATE: calls=1 obj=70002 frames=67 prefix=Bip01 pelvis=2 spine=3 existed=0 produced=1 limbsTagged=66
+RAGDOLL_UPDATE: calls=215 obj=70002 bones=13 framesMoved=66 animateFrom=1 stillMoving=1 writebackCalls=13975
+RAGDOLL_WB: entered=13975 animRef=9030 animSet=9030 animComp=9030 channel=9030 applied=9030 splitTarget=0 knob=1 clobbered=0 survived=0
+RAGDOLL_BONE: target=2557 wroteT=(4.06,-0.00,6.41) liveT=(4.06,0.00,6.41) dT=0.0000 dR=0.0000 HELD
+RAGDOLL_REG: count=1 objs=[70002] max=0
+RAGDOLL_VERDICT (derived): CHAIN COMPLETE - every stage fired and the bone HELD its ragdoll pose; if it still looks wrong the fault is in the VALUES, not the plumbing== ARM writeback=0 ==
+RAGDOLL_CREATE: calls=2 obj=70304 frames=67 prefix=Bip01 pelvis=2 spine=3 existed=0 produced=1 limbsTagged=66
+RAGDOLL_UPDATE: calls=442 obj=70304 bones=13 framesMoved=66 animateFrom=1 stillMoving=0 writebackCalls=28730
+RAGDOLL_WB: entered=28730 animRef=18564 animSet=18564 animComp=18564 channel=18564 applied=9030 splitTarget=0 knob=0 clobbered=0 survived=0
+RAGDOLL_BONE: target=2557 wroteT=(4.06,-0.00,6.41) liveT=(4.06,0.00,6.41) dT=0.0000 dR=0.0000 HELD
+RAGDOLL_REG: count=2 objs=[70002,70304] max=2
+RAGDOLL_VERDICT (derived): CHAIN COMPLETE - every stage fired and the bone HELD its ragdoll pose; if it still looks wrong the fault is in the VALUES, not the plumbing

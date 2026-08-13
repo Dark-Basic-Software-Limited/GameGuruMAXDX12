@@ -4164,6 +4164,8 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 
 		FILE* f = fopen("whynotdrawn.txt", "w");
 		int matches = 0;
+		int armedMesh = -1;               // GGMAX 2.31: draw tracer armed on the first match
+		const int prevArmed = wi::renderer::gg_dbg_watch_mesh;
 		std::string firstVerdict;
 		for (size_t i = 0; i < sc->objects.GetCount(); ++i)
 		{
@@ -4222,6 +4224,15 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			else if (apparentCull)                  verdict = "APPARENT-SIZE CULL (delta 1.30) — too small at this distance";
 			else if (occlAllowed && occluded)       verdict = "OCCLUSION QUERY says occluded (history all-zero)";
 			else if (!inSet)                        verdict = "ABSENT from the prior frame's visible set — look further";
+			// ── The three DrawScene queue-build rejects that sit BETWEEN visibleObjects and
+			// batch_flush (wiRenderer.cpp:8651-8661). The draw tracer proved the gap is here:
+			// the pistol is in the visible set yet its mesh never reaches a batch.
+			// ★ IsNotVisibleInMainCamera is the shadow-PROXY flag — its entire purpose is
+			// "cast shadows, never draw in the camera", which is the reported symptom verbatim.
+			else if (ob.IsNotVisibleInMainCamera())
+				verdict = "NOT_VISIBLE_IN_MAIN_CAMERA is SET — the shadow-proxy flag: casts shadows, never drawn by the camera, BY DESIGN";
+			else if (ob.IsForeground())             verdict = "IsForeground set — only drawn in the foreground pass";
+			else if (ob.GetFilterMask() == 0)       verdict = "FILTER MASK is 0 — matches no pass";
 			else if (distReject)                    verdict = "DRAW-DISTANCE REJECT (wiRenderer.cpp:8663) — dist > fadeDistance + radius";
 			else if (ditherSkip)                    verdict = "DISTANCE-FADE SKIP (wiRenderer.cpp:4170) — dither > 0.99, camera pass ONLY (the shadow pass passes distance 0)";
 			else                                    verdict = "DRAWN (passes every gate; if it is still not on screen the fault is in the pixels, not the plumbing)";
@@ -4246,17 +4257,87 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 					distReject ? "YES(dist > fade+radius)" : "no",
 					dither, ditherSkip ? "SKIPS THE DRAW" : "draws", ob.GetTransparency());
 				fprintf(f, "  VERDICT: %s\n", verdict);
+
+				// ── DRAW TRACER (GGMAX 2.31). Everything above is CPU-side bookkeeping; this is
+				// what the renderer actually did with the mesh, counted inside batch_flush.
+				// Arm on first match, then re-run the command to read the frames since.
+				// ★ Read MAIN vs SHADOW side by side: draws in SHADOW and none in MAIN is the
+				// exact "no mesh, perfect shadow" signature, and nofilter/nopso say which of the
+				// two silent skips did it.
+				// ★ TWO mesh indices, and they are not the same thing. The renderer keys its
+				// batches on the ObjectComponent's CACHED `mesh_index`; `meshes.GetIndex(meshID)`
+				// is the truth. `mesh_index` is documented valid for ONE FRAME only
+				// (wiScene_Components.h:1229) and is only refreshed inside RunObjectUpdateSystem's
+				// `meshes.Contains(meshID) && transforms.Contains(entity)` guard — so a stale one
+				// sends the draw to the wrong batch key, or nowhere. Print both; watch on the one
+				// the renderer actually uses.
+				const size_t meshIdxTrue = sc->meshes.GetIndex(ob.meshID);
+				const size_t meshIdx = (size_t)ob.mesh_index;
+				// Arm on the first match. ⚠ ZERO THE COUNTERS ONLY WHEN THE WATCHED MESH ACTUALLY
+				// CHANGES. The first cut zeroed them on every invocation — `armedMesh` is a local,
+				// so the read call reset the counters a microsecond before printing them and every
+				// row came back 0. A control object that is plainly on screen printed 0 too, which
+				// is the only reason it was caught. Same family as the 2.29 latch bug: a counter
+				// that is re-zeroed on every read is indistinguishable from a counter that never
+				// fires. ★ Always arm the tracer on a KNOWN-GOOD object first.
+				if (armedMesh < 0 && meshIdx != ~0ull)
+				{
+					armedMesh = (int)meshIdx;
+				}
+				if (armedMesh >= 0 && armedMesh != prevArmed)
+				{
+					for (int rp = 0; rp < wi::enums::RENDERPASS_COUNT; ++rp)
+					{
+						wi::renderer::gg_dbg_watch_batches[rp] = 0;
+						wi::renderer::gg_dbg_watch_instances[rp] = 0;
+						wi::renderer::gg_dbg_watch_nobuffer[rp] = 0;
+						wi::renderer::gg_dbg_watch_subsets[rp] = 0;
+						wi::renderer::gg_dbg_watch_nofilter[rp] = 0;
+						wi::renderer::gg_dbg_watch_nopso[rp] = 0;
+						wi::renderer::gg_dbg_watch_draws[rp] = 0;
+					}
+					wi::renderer::gg_dbg_watch_mesh = armedMesh;
+				}
+				fprintf(f, "  notVisibleInMainCamera=%d foreground=%d filterMask=%08x notInReflections=%d\n",
+					ob.IsNotVisibleInMainCamera() ? 1 : 0, ob.IsForeground() ? 1 : 0,
+					(unsigned)ob.GetFilterMask(), ob.IsNotVisibleInReflections() ? 1 : 0);
+				fprintf(f, "  meshID=%llu  mesh_index(cached,used by the renderer)=%d  GetIndex(meshID)(true)=%d  %s\n",
+					(unsigned long long)ob.meshID, (int)ob.mesh_index, (int)meshIdxTrue,
+					((size_t)ob.mesh_index == meshIdxTrue) ? "AGREE" : "*** MISMATCH — the draw is keyed on a stale index ***");
+				fprintf(f, "  --- draw tracer (watching mesh %d, counts since armed; re-run to read frames) ---\n",
+					(int)meshIdx);
+				static const char* passName[] = { "MAIN", "PREPASS", "PREPASS_DEPTHONLY", "ENVMAP", "SHADOW", "SHADOWCUBE", "VOXELIZE" };
+				for (int rp = 0; rp < wi::enums::RENDERPASS_COUNT; ++rp)
+				{
+					const uint32_t b = wi::renderer::gg_dbg_watch_batches[rp].load(std::memory_order_relaxed);
+					const uint32_t d = wi::renderer::gg_dbg_watch_draws[rp].load(std::memory_order_relaxed);
+					const uint32_t nf = wi::renderer::gg_dbg_watch_nofilter[rp].load(std::memory_order_relaxed);
+					const uint32_t np = wi::renderer::gg_dbg_watch_nopso[rp].load(std::memory_order_relaxed);
+					const uint32_t su = wi::renderer::gg_dbg_watch_subsets[rp].load(std::memory_order_relaxed);
+					const uint32_t inst = wi::renderer::gg_dbg_watch_instances[rp].load(std::memory_order_relaxed);
+					const uint32_t nb = wi::renderer::gg_dbg_watch_nobuffer[rp].load(std::memory_order_relaxed);
+					if (b == 0 && d == 0 && nf == 0 && np == 0) continue;   // pass never touched this mesh
+					fprintf(f, "    %-18s batches=%u instances=%u subsets=%u draws=%u nofilter=%u nopso=%u nobuffer=%u\n",
+						(rp < 7) ? passName[rp] : "?", b, inst, su, d, nf, np, nb);
+				}
 			}
 		}
 		if (f != nullptr) fclose(f);
 
+		// The tracer only has data once a frame has rendered WITH it armed, so the first call on a
+		// new mesh always reads zeros. Say so rather than letting a zero be read as "never drawn".
+		const bool tracerFresh = (armedMesh >= 0 && armedMesh != prevArmed);
 		_snprintf(result, resultSize,
 			"OK: WHYNOTDRAWN \"%s\" matches=%d visibleSet=%d/%d tangent=%.5f occlusionEnabled=%d -> Files/whynotdrawn.txt\n"
-			"FIRST VERDICT: %s",
+			"FIRST VERDICT: %s\n"
+			"DRAW TRACER: %s",
 			arg, matches,
 			(int)vis.visibleObjects.size(), (int)sc->objects.GetCount(),
 			tangent, wi::renderer::GetOcclusionCullingEnabled() ? 1 : 0,
-			matches ? firstVerdict.c_str() : "(no object matched that name)");
+			matches ? firstVerdict.c_str() : "(no object matched that name)",
+			tracerFresh
+				? "ARMED on this mesh just now — counters are ZERO until a frame renders. RE-RUN the command to read them."
+				: (armedMesh >= 0 ? "live (counts are since it was armed)" : "not armed (no mesh)"));
 		result[resultSize - 1] = 0;
 		return true;
 	}

@@ -583,3 +583,40 @@ Extend `WHYNOTDRAWN` past the queue into the batch: per-subset filter masks vs t
 whether a PSO exists for MAIN/PREPASS/SHADOW for that material's variant, and which instanced
 batch the object landed in (with its instance count and the other members). If the pistol is
 batched with the parked master, that is the answer.
+
+## 2.31 — the draw tracer, and how far it narrowed the pistol
+Engine-side per-MESH tracer inside `batch_flush` (`wiRenderer.cpp`), armed by `WHYNOTDRAWN`:
+batches / instances / subsets / draws / nofilter / nopso / nobuffer, per RENDERPASS. Zero cost
+when `gg_dbg_watch_mesh` is -1. Answers "was the draw issued?" from the only place that knows.
+
+| object | MAIN | PREPASS |
+|---|---|---|
+| candle_holder (visible control) | batches=1142 draws=1142 | batches=1142 draws=1142 |
+| **W_MK19T (the pistol)** | **0** | **0** |
+
+Zero batches in EVERY pass — the mesh never reaches `batch_flush` at all. And yet, measured on the
+same frames, the object:
+* is in `visibility_main.visibleObjects` (`inVisibleSet=yes`);
+* passes renderable / layerMask / frustum / apparent-size / occlusion / draw-distance / dither;
+* has `notVisibleInMainCamera=0 foreground=0 filterMask=00000001 notInReflections=0` — byte for
+  byte the same as the control that draws 1142 times;
+* has `mesh_index` (the renderer's batch key) == `meshes.GetIndex(meshID)` == 195, so the tracer
+  is watching the right mesh and the key is not stale.
+
+★ The fault is therefore inside a very small gap: between `renderQueue.add(...)`
+(`wiRenderer.cpp:8668`) and `batch_flush`. Every input on both sides is measured and matches a
+working control. ⚠ NOT CLOSED — do not narrate a mechanism for this gap without measuring it.
+
+### Next step, and it is one counter
+Add a tracer hook at the `renderQueue.add` call itself (count insertions for the watched mesh, per
+pass). That splits the remaining gap in two: if insertions are 0 the object is being dropped by a
+DrawScene reject that is NOT one of the eight already printed; if insertions are non-zero and
+batches are still 0, the loss is in the queue sort/flush and the batch key is a lie.
+
+### ⚠⚠ A SECOND instance of the same instrument bug in one day
+The tracer's first run printed zeros for the pistol. It also printed zeros for a control object
+that was plainly on screen — which is the only reason it was caught. Cause: `armedMesh` was a
+LOCAL, so every invocation re-zeroed the counters microseconds before printing them.
+This is the 2.29 latch bug again in a new costume. **RULE: a counter that is re-zeroed on read is
+indistinguishable from a counter that never fires — and both look like a finding. ALWAYS arm a new
+tracer on a KNOWN-GOOD object first and require it to show non-zero before trusting a zero.**
