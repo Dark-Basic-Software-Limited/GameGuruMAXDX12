@@ -2627,7 +2627,35 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 		ec.random_life = s.random_life;
 		ec.scaleX = s.scaleX;
 		ec.scaleY = s.scaleY;
-		ec.rotation = s.rotation;
+
+		// GGMAX 2.45: rotation UNITS. The fork and the new engine disagree about what the .PE's
+		// two rotation fields mean, so shipped effects spin wrong - in both directions.
+		//
+		//   fork  wiEmittedParticle.cpp:343   cb.xParticleRotation = rotation * XM_PI * 60
+		//         emittedparticleVS.hlsl:27   rotation = lifeLerp * particle.rotationalVelocity
+		//         lifeLerp runs 0..1 across the particle's life, so TOTAL spin over a particle's
+		//         whole life is rotation * PI * 60 radians - independent of how long it lives.
+		//
+		//   now   wiEmittedParticle.cpp:574        cb.xParticleRotation = rotation * XM_PI
+		//         emittedparticle_simulateCS:267   rotation += rotationVelocity * dt
+		//         integrated in radians per SECOND, so total spin is rotation * PI * life.
+		//
+		// The ratio new/fork is life/60. The 6.88 s smoke plume spins 8.7x too slow, the 0.87 s
+		// fireball layer 69x too slow; two thirds of shipped emitters set this. Scaling by
+		// 60/life at load restores the fork's total.
+		//
+		// rotation_random diverges the OTHER way, because the fork never applied its * 60 to it:
+		// emittedparticle_emitCS.hlsl:118 adds the raw value into rotationalVelocity, which the VS
+		// then multiplies by lifeLerp alone. Fork total = the raw value; new total = value * life,
+		// i.e. 1.5-6.9x too FAST. Divide by life.
+		//
+		// ⚠ Exact only at the nominal life. The fork's lifeLerp normalised by each particle's OWN
+		// maxLife, which made its totals life-independent; dt integration is not, so an emitter
+		// with random_life > 0 keeps a spin spread the fork did not have. A CPU-side compensation
+		// cannot remove that - it would take a shader change. Correct on average.
+		const float rotLife = (s.life > 0.01f) ? s.life : 0.01f;
+		ec.rotation = s.rotation * (60.0f / rotLife);
+
 		ec.motionBlurAmount = s.motionBlur;
 		ec.mass = s.mass;
 		ec.SPH_h = s.sph_h; ec.SPH_K = s.sph_k; ec.SPH_p0 = s.sph_p0; ec.SPH_e = s.sph_e;
@@ -2650,7 +2678,7 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 		ec.burst_factor_x = s.bfx; ec.burst_factor_y = s.bfy; ec.burst_factor_z = s.bfz;
 		ec.burst_factor_speed = s.burst_factor_speed;
 		ec.normal_random = s.normal_random;
-		ec.rotation_random = s.rotation_random;
+		ec.rotation_random = s.rotation_random / rotLife;   // GGMAX 2.45 - see the rotation note above
 		ec.size_random = s.size_random;
 		ec.scaling_random = s.scaling_random;
 		ec.start_rotation = s.start_rotation;

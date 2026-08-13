@@ -7,3 +7,9 @@ after_2.44/ AFTER the distortion-slot fix - geometry intact, distortion is
 latest/     scratch output of the most recent explosionburst.sh run (wiped each run).
 
 Repro: ./explosionburst.sh testpro2 120
+
+after_2.45/ AFTER the rotation-unit fixes as well. Effect renders and decays clean
+            (turbulent ~f006 -> moderate ~f020 -> clean by ~f040), no artifacts.
+            NOTE: burst runs are NOT time-aligned to the blast, so frame N of one
+            run is a different phase from frame N of another. Do not read a
+            cross-run frame-N diff as a change in the effect.
