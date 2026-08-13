@@ -4114,6 +4114,32 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// FIRE_WEAPON — GGMAX 2.41. Pull the trigger exactly as a left mouse button press would.
+	//
+	// Uses the engine's OWN script-control hook rather than faking input: M-Physics_part1.cpp:218
+	// switches on g.playeraction and `case 1` sets t.player[1].state.firingmode = 1, which is the
+	// same state a real LMB produces. g.playeraction self-clears at :284 every frame, so one
+	// command is one trigger pull — issue it again for another shot.
+	// Built to study the barrel explosion without a human holding the mouse.
+	if (_stricmp(cmd, "FIRE_WEAPON") == 0)
+	{
+		const char* st = AutoHarness_GetAppState();
+		if (strcmp(st, "game") != 0)
+		{
+			_snprintf(result, resultSize, "ERROR: FIRE_WEAPON only works in test game (state: %s)", st);
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		int holdFrames = 6;
+		if (arg != nullptr && arg[0] != 0) { const int n = atoi(arg); if (n > 0 && n <= 240) holdFrames = n; }
+		extern int g_ggFireHoldFrames;
+		g_ggFireHoldFrames = holdFrames;
+		g.playeraction = 1;   // the engine's own script hook too, belt and braces
+		_snprintf(result, resultSize, "OK: FIRE_WEAPON — trigger held for %d frames", holdFrames);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// DUMP_SHADOWQTY — GGMAX 2.38. Print the shadow quantity/resolution from ALL THREE visuals
 	// structs at once, plus the app state.
 	//

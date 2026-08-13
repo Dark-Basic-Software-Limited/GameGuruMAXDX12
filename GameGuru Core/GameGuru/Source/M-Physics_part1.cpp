@@ -214,8 +214,21 @@
 		g.vrglobals.GGVR_Old_ZposOffset = g.vrglobals.GGVR_ZposOffset;
 	}
 
+	// GGMAX 2.41: harness trigger-hold. FIRE_WEAPON sets this to N and the trigger is held for N
+	// consecutive frames FROM INSIDE this function, which is the only place firingmode is written.
+	// Setting g.playeraction from the harness was not enough on its own: the harness runs at a
+	// different point in the frame, and one frame of firingmode=1 did not produce a shot (measured
+	// -- ammo stayed 30/388 and the barrel survived across 14 captured frames). Applying it here,
+	// held across frames, removes both the ordering question and the single-frame question.
+	extern int g_ggFireHoldFrames;
+	if (g_ggFireHoldFrames > 0)
+	{
+		t.player[1].state.firingmode = 1;
+		g_ggFireHoldFrames--;
+	}
+
 	// Automated actions (script control)
-	switch ( g.playeraction ) 
+	switch ( g.playeraction )
 	{
 		case 1 : t.player[1].state.firingmode = 1; break ;
 		case 2 : t.gunzoommode = 1 ; break ;
@@ -1979,3 +1992,7 @@ int physics_rayintersecttree (float fX, float fY, float fZ, float fToX, float fT
 	}
 	return 0;
 }
+
+// GGMAX 2.41: frames remaining for the harness FIRE_WEAPON trigger-hold (see the consumer at the
+// top of physics_player_gatherkeycontrols, the only writer of state.firingmode).
+int g_ggFireHoldFrames = 0;
