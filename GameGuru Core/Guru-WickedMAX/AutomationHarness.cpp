@@ -4114,6 +4114,40 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// GGMAX 2.36 — drive the SCREEN (HUD) editor from the harness.
+	//   HUD_EDIT [title]        enter the screen editor on that storyboard node (default In-Game HUD)
+	//   HUD_ADD_IMAGE [path]    add an image widget, centred, pointed at path
+	//   HUD_DUMP                report every widget AND whether its image actually loaded
+	// The point of the trio is HUD_DUMP's `exist` column: it calls ImageExist() on the very id the
+	// editor's draw path tests before it can blit (M-GridEditB_part22.cpp:938), so "is the yellow
+	// box empty?" is answered by a number instead of by squinting at a screenshot.
+	if (_stricmp(cmd, "HUD_EDIT") == 0)
+	{
+		extern int GGHudEditScreen(const char* title);
+		const char* title = (arg != nullptr && arg[0] != 0) ? arg : "In-Game HUD";
+		const int node = GGHudEditScreen(title);
+		if (node < 0)
+			_snprintf(result, resultSize, "ERROR: no storyboard node titled \"%s\"", title);
+		else
+			_snprintf(result, resultSize, "OK: HUD_EDIT \"%s\" -> node %d (screen editor open)", title, node);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "HUD_ADD_IMAGE") == 0)
+	{
+		extern int GGHudAddImage(const char* path, char* result, int resultSize);
+		const char* path = (arg != nullptr && arg[0] != 0) ? arg : "imagebank\\hud\\ammo-health-panel.png";
+		GGHudAddImage(path, result, resultSize);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "HUD_DUMP") == 0)
+	{
+		extern void GGHudDumpWidgets(char* result, int resultSize);
+		GGHudDumpWidgets(result, resultSize);
+		return true;
+	}
+
 	// INVALIDATE_LOCALSHADOWS — GGMAX 2.35. Force the cached local shadow atlas to re-render.
 	// This is the EXECUTED-CHECK for the 2.35 fix: after removing a caster, if the stale shadow
 	// vanishes the instant this is issued, the cached atlas was provably what was holding it —

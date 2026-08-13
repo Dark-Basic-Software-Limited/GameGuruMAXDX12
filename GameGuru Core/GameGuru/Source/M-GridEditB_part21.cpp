@@ -1500,3 +1500,106 @@ float screen_editor_scalemod (float fGlobalScaleIn)
 	return fGlobalScaleIn * g.globalhudscale;
 }
 
+
+// ============================================================================================
+// GGMAX 2.36: harness hooks for the SCREEN (HUD) editor.
+//
+// These live here because the screen editor's load-trigger statics (iUpdateWidgetThumbNode /
+// iUpdateWidgetThumbButton, declared static at the top of this file) are not visible anywhere
+// else, and setting the image path WITHOUT tripping them is not what the UI does — it would
+// test a different code path from the one a user exercises.
+// ============================================================================================
+
+// Enter the screen editor on the node with this title (e.g. "In-Game HUD"). Returns nodeid, or -1.
+int GGHudEditScreen(const char* title)
+{
+	extern bool bScreen_Editor_Window;
+	extern int iScreen_Editor_Node;
+	if (title == NULL || title[0] == 0) return -1;
+	for (int i = 0; i < STORYBOARD_MAXNODES; i++)
+	{
+		if (Storyboard.Nodes[i].used != true) continue;
+		if (_stricmp(Storyboard.Nodes[i].title, title) != 0) continue;
+		bScreen_Editor_Window = true;
+		iScreen_Editor_Node = i;
+		return i;
+	}
+	return -1;
+}
+
+// Add an image widget to the screen currently being edited, centre it, and point it at `path`.
+// Mirrors the UI exactly: AddWidgetToScreen (the "Add an image" button) then the path assignment
+// plus the same reload trigger the Select Image control uses. Returns the widget slot, or -1.
+int GGHudAddImage(const char* path, char* result, int resultSize)
+{
+	extern int iScreen_Editor_Node;
+	const int nodeid = iScreen_Editor_Node;
+	if (nodeid < 0 || nodeid >= STORYBOARD_MAXNODES || Storyboard.Nodes[nodeid].used != true)
+	{
+		_snprintf(result, resultSize, "ERROR: not in the screen editor (call HUD_EDIT first)");
+		return -1;
+	}
+	const int slot = AddWidgetToScreen(nodeid, STORYBOARD_WIDGET_IMAGE);
+	if (slot < 0)
+	{
+		_snprintf(result, resultSize, "ERROR: no free widget slot on node %d", nodeid);
+		return -1;
+	}
+	// Centre of the screen editor canvas: widget_pos is a PERCENTAGE (AddWidgetToScreen seeds it
+	// as 200/viewport*100), so 50,50 is the middle regardless of emulated resolution.
+	Storyboard.Nodes[nodeid].widget_pos[slot].x = 50.0f;
+	Storyboard.Nodes[nodeid].widget_pos[slot].y = 50.0f;
+	if (path != NULL && path[0] != 0)
+	{
+		strcpy(Storyboard.Nodes[nodeid].widget_normal_thumb[slot], path);
+		// The same pair the Select Image control trips, so the load takes the user's path.
+		iUpdateWidgetThumbNode = nodeid;
+		iUpdateWidgetThumbButton = slot;
+	}
+	_snprintf(result, resultSize, "OK: HUD_ADD_IMAGE node=%d slot=%d pos=(50,50) path=\"%s\"",
+		nodeid, slot, path ? path : "");
+	return slot;
+}
+
+// Report every widget on the edited screen, and — the point of the exercise — whether the image
+// each one names is ACTUALLY LOADED. `ImageExist(thumb_id)` is precisely what the editor's own
+// draw path tests before it can blit anything (M-GridEditB_part22.cpp:938), so exist=0 means the
+// yellow selection box is empty on screen, with no need to eyeball a screenshot.
+void GGHudDumpWidgets(char* result, int resultSize)
+{
+	extern int iScreen_Editor_Node;
+	const int nodeid = iScreen_Editor_Node;
+	if (nodeid < 0 || nodeid >= STORYBOARD_MAXNODES || Storyboard.Nodes[nodeid].used != true)
+	{
+		_snprintf(result, resultSize, "ERROR: not in the screen editor (call HUD_EDIT first)");
+		return;
+	}
+	FILE* f = fopen("hudwidgets.txt", "w");
+	int used = 0, withPath = 0, loaded = 0;
+	if (f != NULL)
+		fprintf(f, "screen node %d \"%s\"\n%-4s %-6s %-8s %-9s %-6s %-7s %s\n",
+			nodeid, Storyboard.Nodes[nodeid].title,
+			"slot", "type", "pos", "thumb_id", "exist", "size", "path");
+	for (int i = 0; i < STORYBOARD_MAXWIDGETS; i++)
+	{
+		if (Storyboard.Nodes[nodeid].widget_used[i] != 1) continue;
+		used++;
+		const char* p = Storyboard.Nodes[nodeid].widget_normal_thumb[i];
+		const int id = Storyboard.Nodes[nodeid].widget_normal_thumb_id[i];
+		const int exist = (p[0] != 0) ? (ImageExist(id) ? 1 : 0) : -1;
+		if (p[0] != 0) withPath++;
+		if (exist == 1) loaded++;
+		if (f != NULL)
+			fprintf(f, "%-4d %-6d (%3.0f,%3.0f) %-9d %-6s %dx%d  %s\n",
+				i, (int)Storyboard.Nodes[nodeid].widget_type[i],
+				Storyboard.Nodes[nodeid].widget_pos[i].x, Storyboard.Nodes[nodeid].widget_pos[i].y,
+				id, (exist < 0) ? "-" : (exist ? "YES" : "NO"),
+				(exist == 1) ? ImageWidth(id) : 0, (exist == 1) ? ImageHeight(id) : 0, p);
+	}
+	if (f != NULL) fclose(f);
+	_snprintf(result, resultSize,
+		"OK: HUD_DUMP node=%d \"%s\" widgets=%d withPath=%d imagesLOADED=%d -> Files/hudwidgets.txt%s",
+		nodeid, Storyboard.Nodes[nodeid].title, used, withPath, loaded,
+		(withPath > 0 && loaded == 0) ? "  *** every named image FAILED to load — nothing can draw ***" : "");
+	result[resultSize - 1] = 0;
+}

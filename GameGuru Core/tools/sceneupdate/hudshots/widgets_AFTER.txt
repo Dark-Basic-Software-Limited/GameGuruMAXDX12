@@ -1,0 +1,17 @@
+screen node 13 "In-Game HUD"
+slot type   pos      thumb_id  exist  size    path
+0    3      ( 94, 87) 50613     YES    235x139  imagebank\hud\ammo-health-panel.png
+1    3      (  6, 87) 51613     YES    235x139  languagebank\neutral\gamecore\huds\ammohealth\ammo-health-panel.png
+2    2      ( 93, 90) 52613     -      0x0  
+3    2      ( 97, 90) 53613     -      0x0  
+4    2      (  5, 90) 54613     -      0x0  
+5    2      (  9, 90) 55613     -      0x0  
+6    3      (  6, 94) 56613     YES    196x46  languagebank\neutral\gamecore\huds\ammohealth\icon-colt.png
+7    3      (  2, 89) 57613     YES    44x44  languagebank\neutral\gamecore\huds\ammohealth\ammo-icon-handgun.png
+8    3      (  7, 89) 58613     YES    2x40  imagebank\hud\vertical-line.png
+9    3      (  6, 93) 59613     YES    214x12  imagebank\hud\horizontal-line.png
+10   3      ( 95, 89) 60613     YES    2x40  imagebank\hud\vertical-line.png
+11   3      ( 94, 93) 61613     YES    214x12  imagebank\hud\horizontal-line.png
+12   3      ( 90, 89) 62613     YES    44x44  imagebank\hud\health-icon.png
+13   3      ( 59, 19) 63613     YES    1920x1080  imagebank\trapped\about.png
+14   3      ( 50, 50) 64613     YES    235x139  imagebank\hud\ammo-health-panel.png
