@@ -865,3 +865,29 @@ impacts of one decal type with expiry in between — `DECAL_BURST` exercises all
 emitter state machine, and the harness cannot fire a weapon. It is unaffected by anything in
 2.30-2.32 by inspection (all three are render-path only, no emitter code touched), but that is
 reasoning, not measurement. Worth one shot-the-ground check next time MAX is in front of a human.
+
+## 2.32e — in-game verification, and a CORRECTION to my own §2.32d reasoning
+Verified the pistol in TEST GAME (the editor check was not enough for a collectable). Full record:
+```
+aabb=(-700,42,153)-(100001,100001,100001) center=(49650,50021,50077) r=86750
+camEye=(-615,65,59)  frustum=REJECT  dither=0.0000
+batchDistance(2.32-clamped)=65504.0  rawDist=86741  (would have been INF before the clamp)
+VERDICT: FRUSTUM rejects its AABB
+```
+**The fix is confirmed live in-game:** `dither` is 0.0000 where it was INF, so the silent
+fade-skip no longer fires. The object is not drawn at this instant only because the player spawns
+facing away from it — an ORDINARY frustum cull, and the instrument names it as such.
+
+### ⚠ CORRECTION — I overstated the Z Island mechanism in §2.32d
+I wrote that the 2 km AABBs "pass every frustum test, so the pickups are drawn every frame
+regardless of where the camera points". **This measurement refutes that**: a box spanning to
+100001 on every axis was FRUSTUM-REJECTED at the player start. A huge box still fails the frustum
+when it lies entirely to one side of the view cone — which this one does, since it extends from
+z=153 to z=100001 and the camera sits at z=59 looking away.
+**So the proposed cause of Z Island's −8% is NOT established.** What the corrupt AABB actually
+does is make culling INACCURATE in both directions (wrong centre, wrong extent) — not
+unconditionally permissive. The −8% remains an unexplained n=2 observation.
+★ Downgrading it accordingly: the AABB is still worth fixing for correctness, but **"it costs FPS"
+is now unproven, and the claim should not be repeated until someone measures 2.32 against
+2.32-with-the-AABB-fixed.** I made the same mistake here that I made twice earlier tonight —
+narrating a mechanism from a measurement that did not test it.
