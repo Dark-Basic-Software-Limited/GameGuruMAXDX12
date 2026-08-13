@@ -2569,6 +2569,22 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 		// exactly. It is safe to write NORMALMAP here: a SOFT_DISTORTION emitter only ever draws in
 		// the distortion pass, where the shader's normal-map lighting logic is #ifndef'd out, so
 		// this slot has no other consumer.
+		//
+		// Upstream ships this same migration for its own archives - wiScene_Serializers.cpp:2767,
+		// "Fixup old emittedparticle distortion basecolor slot -> normalmap slot", gated on archive
+		// version < 89. A legacy .PE never reaches it: the reader above parses raw bytes because
+		// version 5076/5077 is past the wiArchive ceiling, so this content is the one path that
+		// migration cannot see. Two traps for whoever next diffs this against upstream:
+		//
+		//   1. COPY, do NOT std::move as upstream does. BASECOLORMAP is still read for this emitter
+		//      in the ray-tracing / BVH hit path (surfaceHF.hlsli:588 samples BASECOLORMAP with
+		//      is_emittedparticle already accounted for), so moving it would blank that.
+		//   2. Do NOT "correct" this to CreateRenderData(true). The forced variant calls
+		//      SetOutdated(), which misses the resource cache and re-imports the PNG with
+		//      IMPORT_NORMALMAP - BC5, two channels, alpha pinned to 1. opacity is
+		//      color.a * inputColor.a (emittedparticlePS_soft.hlsl:54), so alpha 1 puts the
+		//      unmasked full-quad rectangle straight back, and corrupts the shared colour texture
+		//      for the SOFT emitter sampling the same file.
 		if (ec.shaderType == wiEmittedParticle::SOFT_DISTORTION)
 		{
 			MaterialComponent* dm = scene.materials.GetComponent(Resolve(emEnt[i]));
