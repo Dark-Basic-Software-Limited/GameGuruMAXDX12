@@ -1002,10 +1002,40 @@ Settled by measurement:
 | Animation throttled on-screen (`wiScene.cpp:2253` — a *centre* distance test, so unprotected) | **NO** | applies only to objects with a running `AnimationComponent`; the affected set is 1-bone pickups with no clip |
 | CC anim-proxy picked wrong (`wickedcalls_part0.cpp:1086`, strict `>` on radius) | **NO** | requires an affected *character*; census shows none |
 
-The two remaining hits are **not reached**: the mesh-shader meshlet culler
-(`objectHF_mesh_shading.hlsli`) and DDGI — both off in this fork. They are worth remembering as
-landmines if either is ever switched on, because the meshlet culler *does* substitute whole-instance
-bounds and can genuinely delete geometry.
+### Audit tally (adversarial)
+
+73 findings across the six domains. Every "invisible" claim and every reached "none" claim — 31 in
+all — was handed to an independent refuter instructed to default to *refuted* when unsure.
+
+| outcome | count |
+|---|---|
+| overturned by refutation | **17** |
+| confirmed invisible | **1** (and it is *not reached*) |
+| confirmed none | 13 |
+| reached perf costs | 25 |
+| not reached | 28 |
+
+★ **Every reached invisible-class claim was refuted**, including all three I had provisionally
+believed: the transparent sort key (downgraded to perf), the animation throttle, and the CC proxy
+picker. The measurement (`TRANSPARENT_OVERFP16 = 0`) and the code argument agreed.
+
+### The single surviving invisible-class claim — planar reflections
+
+`wiRenderer.cpp:4562/4567` builds the mirror plane with `XMPlaneFromPointNormal(object.center, N)`.
+`XMPlaneFromPointNormal` stores `d = -dot(N,P)`, so displacing the centre shifts the plane
+**one-for-one** — and being conservative buys nothing, because a plane derived from a centroid has
+no superset property. The normal stays correct (it comes from the world matrix) but the plane point
+lands ~50,000 units off along it, so the reflection camera ends up outside the scene and the
+reflective surface samples garbage.
+
+**Not reached, and gated by three separate things:** it needs a planar-reflection material *on a
+skinned mesh* (only skinned/dynamic meshes get the armature merge); the GG per-mesh checkbox
+defaults off (`M-Entity_part1.cpp:238`, and the UI itself is labelled `// planar reflections
+(buggy?)`); and in any watered level the ocean **overwrites** the plane afterwards anyway
+(`wiRenderer.cpp:4789-4791`, and GG enables the ocean at `M-GridEditB_part3.cpp:1703`).
+
+⚠ This is the clean illustration of the rule below: it is the one site in `UpdateVisibility` that
+uses the centre as a **position** rather than as a bound, and it is the one claim that survived.
 
 ## The one real cost found: picking
 
@@ -1024,13 +1054,24 @@ fp16 distance overflow, already fixed in 2.32. What remains is a small, bounded 
 opaque pickup props per level**: always LOD 0, never occlusion-culled, admitted to every shadow
 cascade, and defeating the ray TMax cap.
 
-⚠ **It is not harmless either, and the reason is worth keeping.** Three *reached* sites consume the
-**centre as a position**, where the superset argument gives no protection at all — the transparent
-sort key, the animation-throttle distance, and the CC proxy picker. Today none of them fire, but
-each is one content change away: a pickup with a glass scope, a pickup with an idle animation, or a
-character whose meshes ever share a parked master rig. **That last one has already bitten this
-project once** — GGMAX 1.61 fixed a full-screen character stuck at 30 fps animation because its
-proxy pin resolved wrong, which is the same failure this defect would reproduce.
+⚠ **The durable rule this produced** — worth more than the verdict itself:
+
+> **A conservative (superset) bound is safe everywhere it is used AS A BOUND, and unsafe the moment
+> it is used AS A POSITION.** Enlargement is monotone through every frustum, overlap and
+> containment test, so those can only over-include. But a centre fed to a distance comparison, a
+> plane equation, a sort key or a screen projection has no such protection and can fail in the
+> wrong direction.
+
+That rule is what made this auditable: it splits ~73 candidate sites into "provably fine" and "must
+be checked individually", and the one claim that survived refutation (the reflection plane) is
+precisely a centre-as-position site. Any future work on this defect should triage the same way.
+
+The corollary is that the affected population is what keeps the centre-as-position sites dark, and
+population is a **content** property, not a code one. A pickup with a glass scope, a pickup with an
+idle animation, or a character whose meshes ever share a parked master rig would each light one up.
+**The last shape has already bitten this project once** — GGMAX 1.61, a full-screen character stuck
+at 30 fps animation because its proxy pin resolved wrong. `DUMP_BIGAABB` exists so that question can
+be re-answered in two minutes instead of re-derived.
 
 **Recommendation: don't do it now; do it when next touching that code.** The correct form is an
 ownership test at `wiScene.cpp:5233` — merge the armature box only into an instance that actually
