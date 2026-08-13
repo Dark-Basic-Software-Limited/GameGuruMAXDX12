@@ -818,3 +818,34 @@ faster" has no mechanism. The trustworthy half of C4 is the downside, and it is 
 polys (+2.58%), so unlike the positive swings that delta has a plausible mechanism behind it. It
 passes the gate, but it is the only demo where the new geometry may be a real cost. Re-measure
 within a single session before treating it as either real or noise.
+
+## 2.32d — chasing the one FPS number that had a mechanism (Z Island −8%)
+Sixteen demos read FPS *up* and I discarded all of them as cross-launch noise. Z Island read
+**−8% in-game** and also gained 18,155 polys, so it was the only number with a possible cause.
+Method: **repeat launches of the SAME build** — the correct test, since the pre-2.32 "baseline"
+is itself a cross-launch number and cannot be trusted as a reference.
+
+Z Island in-game FPS history (each row is one launch; the three samples inside a row are 4 s apart):
+```
+2.25   95.2 / 95.2 / 95.2      mean  95.2
+2.27  119.6 / 119.8 / 119.8    mean 119.6   <- +25.6% from a DECAL-POOL change. No mechanism.
+2.28   98.1 / 98.0 / 98.0      mean  98.1
+2.32   90.6 / 90.4 / 90.8      mean  90.6
+2.32   86.3 / 88.2 / 88.6      mean  87.7   (repeat, same binary)
+```
+★ Note the shape: **within a launch the three samples agree to 0.4%; between launches the same
+build moves 3%, and across builds with no plausible cause it moved 25.6%.** Tight in-run samples
+are precision, not accuracy — they invite exactly the false confidence that made "2.27 is 25%
+faster" look like a result at the time.
+
+### ⚠ A REAL COST IS PLAUSIBLE HERE, and if so the AABB defect is the cause — not the clamp
+The 2.32 runs sit ~89 against 95-98 before it. If that survives more samples, the mechanism is
+NOT the clamp itself but the **still-unfixed corrupt AABB** (§2.32c): those pickups carry a 2 km
+bounding box, so they pass every frustum test and are now **drawn on every frame regardless of
+where the camera points — including behind it.** Before 2.32 they were skipped entirely by the
+overflowed dither, so the level paid nothing for them.
+★★ **That reframes the AABB fix**: it is not culling hygiene, it is the change that would let
+these objects be culled normally and hand the cost back. Recommended as the next work item.
+⚠ Do NOT read this as "2.32 made Z Island slower and should be reverted" — before 2.32 the level
+was faster because it was **not drawing objects the designer placed**. The correct comparison is
+2.32 versus 2.32-with-the-AABB-fixed, which does not exist yet.
