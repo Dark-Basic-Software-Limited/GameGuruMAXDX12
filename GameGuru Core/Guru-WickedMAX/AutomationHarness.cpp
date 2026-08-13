@@ -4211,8 +4211,20 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			//      "no mesh, perfect shadow" signature.
 			const float objDist = wi::math::Distance(eye, ob.center);
 			const bool distReject = (objDist > ob.fadeDistance + ob.radius);
+			// ⚠⚠ THE DITHER MUST BE COMPUTED ON THE HALF-ROUND-TRIPPED DISTANCE, not the float.
+			// RenderBatch stores distance as a HALF (wiRenderer.cpp:474/483) and RenderMeshes reads
+			// it back through GetDistance(). The first version of this instrument used the raw
+			// float and therefore printed dither=0.0000 — "DRAWN" — for an object the engine was
+			// skipping with dither=INF, because 86,730 overflows a half to infinity. The
+			// instrument agreed with my reasoning instead of with the renderer.
+			// ★ RULE: an instrument that mirrors engine logic must mirror its PRECISION too.
+			// Mirrors RenderBatch::Create exactly, INCLUDING the 2.32 clamp — otherwise the
+			// instrument would keep reporting the pre-fix INF on a build where the engine now
+			// clamps, i.e. lying in the opposite direction.
+			const float batchDist = XMConvertHalfToFloat(XMConvertFloatToHalf(std::min(objDist, 65504.0f)));
+			const bool halfWouldOverflow = (objDist > 65504.0f);
 			const float ditherFade = (ob.radius > 0.0f)
-				? std::max(0.0f, objDist - ob.fadeDistance) / ob.radius : 0.0f;
+				? std::max(0.0f, batchDist - ob.fadeDistance) / ob.radius : 0.0f;
 			const float dither = std::max(ob.GetTransparency(), ditherFade);
 			const bool ditherSkip = (dither > 0.99f);
 
@@ -4256,6 +4268,9 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 				fprintf(f, "  drawReject=%s  dither=%.4f (%s, skip if >0.99)  transparency=%.3f\n",
 					distReject ? "YES(dist > fade+radius)" : "no",
 					dither, ditherSkip ? "SKIPS THE DRAW" : "draws", ob.GetTransparency());
+				fprintf(f, "  batchDistance(half round-trip, 2.32-clamped)=%.1f  rawDist=%.0f %s  [half max 65504]\n",
+					batchDist, objDist,
+					halfWouldOverflow ? "*** would have overflowed the half to INF before the 2.32 clamp ***" : "ok");
 				fprintf(f, "  VERDICT: %s\n", verdict);
 
 				// ── DRAW TRACER (GGMAX 2.31). Everything above is CPU-side bookkeeping; this is
@@ -4295,6 +4310,8 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 						wi::renderer::gg_dbg_watch_nofilter[rp] = 0;
 						wi::renderer::gg_dbg_watch_nopso[rp] = 0;
 						wi::renderer::gg_dbg_watch_draws[rp] = 0;
+						for (int s = 0; s < wi::renderer::GG_Q_COUNT; ++s)
+							wi::renderer::gg_dbg_watch_q[rp][s] = 0;
 					}
 					wi::renderer::gg_dbg_watch_mesh = armedMesh;
 				}
@@ -4316,7 +4333,24 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 					const uint32_t su = wi::renderer::gg_dbg_watch_subsets[rp].load(std::memory_order_relaxed);
 					const uint32_t inst = wi::renderer::gg_dbg_watch_instances[rp].load(std::memory_order_relaxed);
 					const uint32_t nb = wi::renderer::gg_dbg_watch_nobuffer[rp].load(std::memory_order_relaxed);
-					if (b == 0 && d == 0 && nf == 0 && np == 0) continue;   // pass never touched this mesh
+					// GGMAX 2.32: the queue-build half — where the object went between
+					// visibleObjects and the renderQueue.
+					const uint32_t qs = wi::renderer::gg_dbg_watch_q[rp][wi::renderer::GG_Q_SEEN].load(std::memory_order_relaxed);
+					if (qs > 0)
+					{
+						static const char* qn[] = { "seen", "occluded", "notRenderable", "foreground",
+							"notMainCam", "noReflect", "filterMask", "fadeDist", "ADDED" };
+						char qline[220]; qline[0] = 0;
+						for (int s = 0; s < wi::renderer::GG_Q_COUNT; ++s)
+						{
+							const uint32_t v = wi::renderer::gg_dbg_watch_q[rp][s].load(std::memory_order_relaxed);
+							if (v == 0 && s != wi::renderer::GG_Q_SEEN && s != wi::renderer::GG_Q_ADDED) continue;
+							char one[48]; _snprintf(one, sizeof(one), "%s=%u ", qn[s], v);
+							strncat(qline, one, sizeof(qline) - strlen(qline) - 1);
+						}
+						fprintf(f, "    %-18s QUEUE  %s\n", (rp < 7) ? passName[rp] : "?", qline);
+					}
+					if (b == 0 && d == 0 && nf == 0 && np == 0 && qs == 0) continue;   // pass never touched this mesh
 					fprintf(f, "    %-18s batches=%u instances=%u subsets=%u draws=%u nofilter=%u nopso=%u nobuffer=%u\n",
 						(rp < 7) ? passName[rp] : "?", b, inst, su, d, nf, np, nb);
 				}
