@@ -908,10 +908,14 @@ void GetSetupIniEarly( void )
 				// equivalent: SET_RAGDOLLWRITEBACK. Same reason as shadowextrude — a one-key revert
 				// that survives a restart while the fix awaits the user's eye.
 				const bool bRagWB = (_strnicmp(p, "ragdollwriteback", 16) == 0);
+				// GGMAX 2.33: `masterpark=<units>` — where hidden entity MASTERS are parked.
+				// Default 100000 (unchanged). Must be read in this EARLY pass: masters are parked
+				// during entity-profile load, long before FPSC_LoadSETUPINI runs.
+				const bool bMasterPark = (_strnicmp(p, "masterpark", 10) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bTreePool)       iKeyLen = 8;
 				else if (bMABlock)        iKeyLen = 9;
-				else if (bGrassMg || bTerrGen) iKeyLen = 10;
+				else if (bGrassMg || bTerrGen || bMasterPark) iKeyLen = 10;
 				else if (bDecalPW)        iKeyLen = 12;
 				else if (bShadowEx)       iKeyLen = 13;
 				else if (bSingleQ)        iKeyLen = 11;
@@ -997,6 +1001,13 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetRagdollWriteback(int);
 					GGSetRagdollWriteback(iValue);
+				}
+				if (bMasterPark)
+				{
+					// Guarded: a park inside the play area would put invisible template geometry
+					// where gameplay can reach it, and 0 would stack every master on the origin.
+					extern int g_masterParkUnits;
+					if (iValue >= 2000 && iValue <= 100000) g_masterParkUnits = iValue;
 				}
 			}
 			fclose(lvf);

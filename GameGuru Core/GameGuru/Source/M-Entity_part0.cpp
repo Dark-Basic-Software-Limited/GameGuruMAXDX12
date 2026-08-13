@@ -1465,7 +1465,25 @@ bool entity_load (bool bCalledFromLibrary)
 				}
 
 				//  HideObject (  away )
-				PositionObject(t.entobj, 100000, 100000, 100000);
+				// GGMAX 2.33: the park distance is now a knob. DEFAULT 100000 = UNCHANGED.
+				// ⚠ WHY THIS EXISTS, and what it does NOT do. A placed clone shares the master's
+				// MeshComponent, and `wiScene.cpp:5231-5241` merges `armature->aabb` (WORLD space,
+				// resolved from `mesh.armatureID` — a MESH property) into every skinned object's
+				// bounds. Measured on spotshadowtest: the weapon mesh has a ONE-BONE armature
+				// owned by this parked master, so every placed pickup's AABB becomes the union of
+				// itself and this park position — (-700,42,153)-(100001,100001,100001), centre
+				// 86,730 units from the camera. That is what overflowed the fp16 batch distance
+				// and made pickups invisible (fixed engine-side in 2.32).
+				// ★ Lowering this BOUNDS the damage — it does NOT make the bounds correct. The
+				// union is still wrong, just level-scale instead of 100 km-scale. The correct fix
+				// is engine-side: do not merge an armature box into an instance that does not own
+				// that armature's transform. See NIGHT_INVESTIGATIONS_2026-08-12.md §2.32c/§2.33.
+				// ⚠ Default deliberately unchanged: masters are hidden but still present, and
+				// moving every entity master from 100 km out to inside the play area has real
+				// blast radius (ray picks, physics, anything that ignores visibility). Prove it
+				// on a full sweep before flipping the default.
+				extern int g_masterParkUnits;
+				PositionObject(t.entobj, g_masterParkUnits, g_masterParkUnits, g_masterParkUnits);
 
 				//  Set radius of zero allows parent to animate even if outside of frustrum view
 				if (GetNumberOfFrames(t.entobj) > 0)
@@ -1479,7 +1497,9 @@ bool entity_load (bool bCalledFromLibrary)
 		{
 			//  prevent crash when model name wrong/geometry file missing/etc
 			MakeObjectSphere(t.entobj, 1);
-			PositionObject(t.entobj, 100000, 100000, 100000);
+			// GGMAX 2.33: same knob as the sibling park above (default 100000 = unchanged).
+			extern int g_masterParkUnits;
+			PositionObject(t.entobj, g_masterParkUnits, g_masterParkUnits, g_masterParkUnits);
 		}
 
 		//  must hide parent objects

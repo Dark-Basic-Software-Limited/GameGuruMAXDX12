@@ -4315,6 +4315,33 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 					}
 					wi::renderer::gg_dbg_watch_mesh = armedMesh;
 				}
+				// GGMAX 2.33: the ARMATURE the bounds are merged from. `wiScene.cpp:5231-5241`
+				// merges `armature->aabb` (WORLD space) into any object whose MESH IsSkinned() or
+				// IsDynamic(), and resolves it from `mesh.armatureID` — a MESH property, so two
+				// objects sharing a mesh share the armature and therefore the merge.
+				// Printed because the fix for the corrupt pickup bounds depends on which of the
+				// two branches actually fires and on where the armature really sits.
+				{
+					const wi::scene::MeshComponent* mc = sc->meshes.GetComponent(ob.meshID);
+					if (mc == nullptr) fprintf(f, "  mesh: <none>\n");
+					else
+					{
+						fprintf(f, "  mesh: skinned=%d(armatureID=%llu) dynamic=%d  meshAABB=(%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)\n",
+							mc->IsSkinned() ? 1 : 0, (unsigned long long)mc->armatureID,
+							mc->IsDynamic() ? 1 : 0,
+							mc->aabb._min.x, mc->aabb._min.y, mc->aabb._min.z,
+							mc->aabb._max.x, mc->aabb._max.y, mc->aabb._max.z);
+						const wi::scene::ArmatureComponent* arm =
+							(mc->armatureID != wi::ecs::INVALID_ENTITY) ? sc->armatures.GetComponent(mc->armatureID) : nullptr;
+						if (arm != nullptr)
+							fprintf(f, "  armature: bones=%d worldAABB=(%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)  <-- merged into the object bounds\n",
+								(int)arm->boneCollection.size(),
+								arm->aabb._min.x, arm->aabb._min.y, arm->aabb._min.z,
+								arm->aabb._max.x, arm->aabb._max.y, arm->aabb._max.z);
+						else if (mc->armatureID != wi::ecs::INVALID_ENTITY)
+							fprintf(f, "  armature: armatureID set but NO ArmatureComponent found\n");
+					}
+				}
 				fprintf(f, "  notVisibleInMainCamera=%d foreground=%d filterMask=%08x notInReflections=%d\n",
 					ob.IsNotVisibleInMainCamera() ? 1 : 0, ob.IsForeground() ? 1 : 0,
 					(unsigned)ob.GetFilterMask(), ob.IsNotVisibleInReflections() ? 1 : 0);

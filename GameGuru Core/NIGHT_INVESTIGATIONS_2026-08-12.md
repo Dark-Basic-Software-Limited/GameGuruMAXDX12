@@ -891,3 +891,48 @@ unconditionally permissive. The −8% remains an unexplained n=2 observation.
 is now unproven, and the claim should not be repeated until someone measures 2.32 against
 2.32-with-the-AABB-fixed.** I made the same mistake here that I made twice earlier tonight —
 narrating a mechanism from a measurement that did not test it.
+
+---
+
+# 2.33 — the game-side AABB lever (`masterpark`), and why it is DEFAULT-OFF
+
+## What the measurement changed about the recommendation
+§2.32c called the game-side fix "preferred". **That was written before I measured the armature.**
+`WHYNOTDRAWN` now prints it:
+```
+mesh: skinned=1 (armatureID=2810) dynamic=0   meshAABB=(-3,-0,-7)-(3,2,7)
+armature: bones=1  worldAABB=(99999,99999,99999)-(100001,100001,100001)
+```
+A **ONE-BONE** armature, owned by the hidden master parked at 100000, and **shared by every clone**
+(both objects report `meshID=2817`). The mesh's own local box is tiny and correct.
+★ Consequence: **no game-side change can make these bounds correct.** While a master and its clones
+share one mesh — hence one armature — any two instances at different positions get a union. The
+correct fix is engine-side: do not merge an armature's world box into an instance that does not own
+that armature's transform. The game-side lever can only BOUND the damage.
+
+## What shipped
+`setup.ini masterpark=<units>` (2000..100000, **default 100000 = unchanged**) replaces the two
+hard-coded park sites in `M-Entity_part0.cpp`. Read in the EARLY setup.ini pass because masters are
+parked during entity-profile load.
+
+### Measured A/B, one level, same binary
+| arm | object AABB | radius | armature box |
+|---|---|---|---|
+| default (no key) | (-700,42,153)-(100001,100001,100001) | **86750.0** | at 100000 |
+| `masterpark=4000` | (-700,42,153)-(4001,4001,4001) | **3625.8** | at 4000 |
+
+* **The OFF path is byte-identical** to the pre-2.33 reading — the rule that caught a bogus
+  hiersplit A/B once already.
+* **Executed-check passes**: the armature world box actually moved, so the knob reaches the thing.
+* Bogus radius cut **24×**, to 5.5% of the fp16 ceiling instead of 132% of it.
+* ⚠ **Still not correct**: centre reads (1650,2021,2077) against a true ~(-693,42,160). Culling
+  remains inaccurate, just at level scale rather than 100 km scale.
+
+## Why the default was NOT flipped
+Masters are hidden but still present in the scene. Moving every entity master from 100 km out to
+inside the play area has real blast radius — ray picks, physics and anything that ignores
+visibility could now find template geometry. **That needs a 19-demo sweep before it becomes the
+default, and it is a product decision, not a code cleanup.** The knob exists so that sweep can be
+run on one binary.
+★ Order of preference for actually closing this: **engine-side ownership test first**; `masterpark`
+is the mitigation if that proves too invasive.

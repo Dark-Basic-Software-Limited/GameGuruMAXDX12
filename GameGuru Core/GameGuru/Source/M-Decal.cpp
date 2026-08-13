@@ -62,6 +62,13 @@ extern void newparticle_updateparticleemitter (newparticletype* pParticle, float
 // the gate read worst_ms 8.6 -> 13.4 (+4.8), which breached the +2 ms criterion even though no
 // frame passed 16.7 ms. The excess scales linearly with this number, so it is 2. (§24.2)
 #define GG_DECAL_GROW_PER_FRAME 2   // hard ceiling on slot builds in any single frame
+// GGMAX 2.33: how far out hidden ENTITY MASTERS are parked (M-Entity_part0.cpp, two sites).
+// DEFAULT 100000 = the long-standing behaviour, unchanged. setup.ini `masterpark=<units>`.
+// Lowering it BOUNDS the corrupt pickup AABB (a clone shares the master's mesh, and the engine
+// merges that mesh's ONE-BONE armature world box — parked out here — into the clone's bounds).
+// ⚠ It does NOT make the bounds correct; see the long comment at the park site.
+// Lives here purely because this file already hosts the setup.ini-driven game knobs.
+int g_masterParkUnits = 100000;
 int g_decalPrewarm = 24;      // slots built at startup; setup.ini decalprewarm=<N>
 int g_decalBuilt   = 0;       // slots 1..g_decalBuilt exist as objects (high-water mark)
 int g_decalGrowBudget = 0;    // slot builds still permitted this frame
