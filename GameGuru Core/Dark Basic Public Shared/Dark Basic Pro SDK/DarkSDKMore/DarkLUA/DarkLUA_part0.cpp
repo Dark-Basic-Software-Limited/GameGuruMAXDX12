@@ -1433,6 +1433,11 @@ luaMessage** ppLuaMessages = NULL;
 							int store = t.e; t.e = iEntityIndex;
 							entity_lua_collisionon();
 							t.e = store;
+							// GGMAX 2.35: dropping it back into the world is the same problem in
+							// reverse — the pickup returns but the cached atlas has no shadow for
+							// it. Nudge here too, or items would drop shadowless.
+							extern void GGInvalidateLocalShadows();
+							GGInvalidateLocalShadows();
 						}
 					}
 				}
@@ -1454,6 +1459,12 @@ luaMessage** ppLuaMessages = NULL;
 				t.entityelement[iEntityIndex].z -= 999999;
 				t.entityelement[iEntityIndex].eleprof.phyalways = 1;
 				PositionObject(t.entityelement[iEntityIndex].obj, t.entityelement[iEntityIndex].x, t.entityelement[iEntityIndex].y, t.entityelement[iEntityIndex].z);
+				// GGMAX 2.35: collecting TELEPORTS the pickup 999999 units away rather than
+				// hiding it, so its shadow must stop being cast. Refresh the cached local shadow
+				// atlas — user repro: collect the ammo in test-game, its shadow stays on the
+				// table. Same cache hole as the editor delete (M-Entity_part4.cpp).
+				extern void GGInvalidateLocalShadows();
+				GGInvalidateLocalShadows();
 			}
 		}
 	}

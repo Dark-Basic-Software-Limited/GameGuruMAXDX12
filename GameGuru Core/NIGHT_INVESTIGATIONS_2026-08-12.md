@@ -1078,3 +1078,76 @@ ownership test at `wiScene.cpp:5233` — merge the armature box only into an ins
 owns that armature's transform. It must fail **toward merging**, because the dangerous direction is
 skipping a merge for a legitimately animated character that has moved beyond its mesh bind box
 (root motion), which *would* wrongly cull. `masterpark` remains the bounded mitigation.
+
+---
+
+# §2.35 — Deleted/collected object leaves its shadow behind (GAME-SIDE FIX)
+
+User repro: collect the ammo in test-game, or simply **delete it in the level editor**, and its
+shadow stays on the table. The editor half is the important one — it turns a "walk over and press
+E" bug into a one-click one, and it rules out anything specific to the collect path.
+
+## Root cause: a cached shadow atlas whose change-detector cannot see a removal
+
+Local (point/spot) shadow maps are **cached** — re-rendered only when something is detected to have
+changed. The detector is GGMAX 2.07d (`wiRenderer.cpp:5117`), and it finds a caster that **MOVED**,
+by comparing each object's world matrix against last frame's:
+
+```cpp
+if (!object.IsRenderable() || !object.IsCastingShadow()) continue;
+if (memcmp(&mNow, &mPrev, sizeof(XMFLOAT4X4)) == 0) continue; // did not move
+```
+
+Neither line can fire for an object that is **removed**:
+* **Deleted** — it is gone from the objects array, so there is no "now" matrix left to differ from
+  its "prev" one. The loop never even reaches it.
+* **Hidden** — it is skipped outright by the very first guard.
+
+So `changed` stays false, the atlas is not re-rendered, and it keeps the removed object's depth
+**indefinitely**. 2.07d was written for "a box moved under the spot"; removal is the case it does
+not cover.
+
+★ The engine already exported the nudge — `wi::renderer::InvalidateLocalShadows()`
+(`wiRenderer.h:1200`), and `changed = localShadowInvalidate || ...` consumes it. It simply had
+**no caller anywhere in the game**. Nothing ever refreshed the cache on a content change. That is
+the whole defect, and the fix needs no engine change at all.
+
+## The fix (game side only, three call sites)
+
+| site | why |
+|---|---|
+| `M-Entity_part4.cpp` `entity_deleteentityfrommap()` | the single choke point for editor deletes — all 7 delete routes reach it |
+| `DarkLUA_part0.cpp` collect branch | collecting teleports the pickup 999999 units away rather than hiding it |
+| `DarkLUA_part0.cpp` drop-back branch | the same problem in reverse: an item dropped back would return **shadowless** |
+
+Each calls `GGInvalidateLocalShadows()`, a one-line wrapper added to `wickedcalls_part2.cpp`.
+
+## Verified — the causal chain, not just the symptom
+
+Three shots on TESTPRO2, one binary, one session, only the nudge differing:
+
+| shot | ammo | shadow |
+|---|---|---|
+| `01_before` | present | present |
+| `02_removed` | **gone** | **still there** ← the bug, reproduced |
+| `03_nudged` | gone | **gone** |
+
+The **pistol's** shadow is present in all three — the control that proves the nudge cleared a
+*stale* shadow rather than merely blanking the atlas. Shot 3 calls the same engine entry the
+shipped fix calls, so the experiment tests the shipped mechanism and not a lookalike.
+
+⚠ **Two instrument failures on the way here, both worth remembering.** `MOVE_ENTITY` writes the
+Wicked transform directly, and GameGuru re-asserts entity positions in the editor, so the ammo was
+still on the table afterwards — the caster was never actually removed. And the first Trapped run
+compared two screenshots taken from across the room where the pickup is ~4 px wide, which is
+indistinguishable from "nothing happened". **A visual A/B needs the subject legible and an
+executed-check that the arm was actually applied**; the census (`DUMP_BIGAABB`) supplied the
+latter, the user's re-framed TESTPRO2 camera the former.
+
+## Still open
+
+`SetEntityCollectedEx` does not hide a collected entity, it teleports it 999999 units away. It is
+therefore *still a live, renderable, shadow-casting scene member* sitting a million units out, and
+(being a pickup) it carries the corrupt one-bone armature AABB from §2.34, so its bounds now span
+from −999999 to +100000 and contain the whole level. Harmless today given §2.34's findings, but
+"removal by teleport" is a smell worth revisiting if pickups ever misbehave again.

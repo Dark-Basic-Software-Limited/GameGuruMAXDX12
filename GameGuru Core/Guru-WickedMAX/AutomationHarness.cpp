@@ -4114,6 +4114,20 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// INVALIDATE_LOCALSHADOWS — GGMAX 2.35. Force the cached local shadow atlas to re-render.
+	// This is the EXECUTED-CHECK for the 2.35 fix: after removing a caster, if the stale shadow
+	// vanishes the instant this is issued, the cached atlas was provably what was holding it —
+	// which is the whole claim. Calls the same engine entry the fix calls from the delete and
+	// collect paths, so the experiment tests the shipped mechanism and not a lookalike.
+	if (_stricmp(cmd, "INVALIDATE_LOCALSHADOWS") == 0)
+	{
+		extern void GGInvalidateLocalShadows();
+		GGInvalidateLocalShadows();
+		_snprintf(result, resultSize, "OK: INVALIDATE_LOCALSHADOWS — cached local shadows re-render next frame");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// MOVE_ENTITY <name-substr> <dx> <dy> <dz> — GGMAX 2.35. Translate matching objects.
 	//
 	// Exists to REPRODUCE pickup collection without playing the game. `SetEntityCollectedEx`

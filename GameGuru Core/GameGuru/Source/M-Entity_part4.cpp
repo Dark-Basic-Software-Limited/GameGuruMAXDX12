@@ -1510,6 +1510,15 @@ void entity_addentitytomap ( void )
 bool bUpdateObjectList = false;
 void entity_deleteentityfrommap ( void )
 {
+	// GGMAX 2.35: a deleted entity must refresh the CACHED local shadow atlas.
+	// The cache's change detector only spots casters that MOVED (world matrix vs last frame's);
+	// a deleted object leaves the objects array entirely, so nothing remains to compare and the
+	// cache silently keeps its shadow — user repro: delete the ammo in the editor, its shadow
+	// stays on the table. Every editor delete route reaches this one function (7 call sites), so
+	// this is the single place that closes it.
+	extern void GGInvalidateLocalShadows();
+	GGInvalidateLocalShadows();
+
 	bUpdateObjectList = true;
 	//  Entity Type To Delete
 	t.entitymaintype=1;

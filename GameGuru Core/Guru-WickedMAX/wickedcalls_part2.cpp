@@ -2212,3 +2212,20 @@ void WickedCall_PutWaterRipple(float fX, float fY, float fZ, float fSize)
 		scene.waterRipples.back().params.opacity = 0.5f;
 	}
 }
+
+// GGMAX 2.35: force the CACHED local (point/spot) shadow atlas to re-render next frame.
+//
+// Local shadow maps are cached (Phase 2) and only re-rendered when something is detected to have
+// changed. That detector — GGMAX 2.07d, wiRenderer.cpp:5117 — finds a caster that MOVED, by
+// comparing each object's world matrix against last frame's. It cannot possibly see a caster that
+// was DELETED: a removed object is gone from the objects array, so there is no "now" matrix left
+// to differ from its "prev" one, `changed` stays false, and the cached atlas keeps the deleted
+// object's depth forever. That is the "delete the ammo in the editor and its shadow stays" bug,
+// and the same hole covers collecting a pickup in-game.
+// The engine already exports the nudge (wiRenderer.h:1200) — it simply had NO caller anywhere in
+// the game, which is why nothing ever refreshed the cache on a content change. This is the whole
+// fix; no engine change is involved.
+void GGInvalidateLocalShadows()
+{
+	wi::renderer::InvalidateLocalShadows();
+}
