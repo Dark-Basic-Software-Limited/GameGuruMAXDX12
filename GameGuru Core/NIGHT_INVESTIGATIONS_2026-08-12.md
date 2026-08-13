@@ -1282,3 +1282,72 @@ The authored values now survive into test game intact, resolutions included.
 `TOGGLE_PROFILER` but its Shadows section is collapsed and I did not find a harness click target to
 expand it. The dump is authoritative — the combos read the same `t.visuals` it prints, and 8 and 16
 are both listed values — but the pixel-level confirmation is owed.
+
+---
+
+# §2.41–2.43 — Firing the weapon from the harness, and the explosion refraction artifact
+
+## The trigger gate: it is `t.gunmode = 101`, NOT `firingmode`
+
+Two attempts failed before an instrument was built, and both failures came from the same wrong
+assumption:
+
+1. `g.playeraction = 1` — the engine's "Automated actions (script control)" hook
+   (`M-Physics_part1.cpp:218`). Ammo stayed 30/388 across 14 frames.
+2. Holding `t.player[1].state.firingmode = 1` for 6 consecutive frames, applied from *inside*
+   `physics_player_gatherkeycontrols` — the only writer of that field — to remove both the
+   frame-ordering and the single-frame questions. Same result.
+
+**`DUMP_FIRE` (GGMAX 2.42)** settled it in two runs. It samples, per frame inside `gun_manager`
+and *after* every gunclick-zeroing gate: `firingmode`, `gunclick`, `gunmode`, `pressedtrigger`,
+`mustrelease`, ammo, and each gate's own inputs — plus a counter for frames the gun update
+early-outs before reading the trigger at all. It prints a verdict naming the stage, because from
+outside every one of these looks identical.
+
+| run | reading | what it eliminated |
+|---|---|---|
+| 1 | `frames=30 earlyOut=0 firingmode1=0` | the gun update DID run every frame; firingmode never arrived as 1 |
+| 2 | `holdLeft=0` | the hold DID run and drained — so the value was lost *between* the two functions |
+
+★ That pointed at `DarkLUA_part5.cpp:1599`, where the original developers hit this in **2015** and
+left the note: *"seems when in game, this gets ignored so no gunshoot happens.."*. Their own Lua
+`FirePlayerWeapon(1)` therefore does **not** set `firingmode` — it sets **`t.gunmode = 101`**. Only
+`firingmode >= 2` (zoom) still writes the field.
+
+**`firingmode` is an animation input; `gunmode` is the trigger.** `FIRE_WEAPON` now uses that path
+— verified, ammo 29 → 28.
+
+## Capturing the explosion: harness round-trip is too slow, use BURST_FRAMES
+
+`SCREENSHOT` costs ~1s per round-trip and the plume is far shorter, so every frame landed *after*
+the blast: barrels gone, camera thrown at the ceiling by the shockwave. `BURST_FRAMES <n>` writes
+**consecutive rendered frames**, so at ~215 FPS a 120-frame burst covers the whole event with no
+gaps. Order matters — fire FIRST, arm the burst on the very next command, so the window opens
+inside the blast rather than before it. Driver: `tools/sceneupdate/explosionburst.sh`.
+
+⚠ **`BURST_FRAMES` writes its path relative to the GAME'S CWD**, and that CWD is `Max/Files` — so
+frames land in `Max/Files/Files/screenshots/`, not `Max/Files/screenshots/`. The memory rule
+"runtime `fopen` files land in the game's `Files/` CWD" exists for exactly this and I still looked
+in the wrong folder, reporting "0 frames captured" while 85 sat on disk.
+
+## The artifact, on record
+
+Frames kept in `tools/sceneupdate/burstshots/keep/` (`frame_000` pre-blast, `frame_006` and
+`frame_012` mid-plume). What they show, matching the user's report:
+
+* **Hard-edged RECTANGULAR blocks** of smeared and duplicated scene content exactly where the
+  outward-travelling particles are — the table and candle appear stair-stepped and repeated across
+  block boundaries, with large flat regions of stretched wallpaper. Nothing resembles smoke.
+* **FPS collapses ~215 → 49.6** across the blast.
+
+Both are the signature of particles refracting the scene across their **entire quad** with hard
+edges, instead of through a soft textured mask — i.e. the user's suspicion that the refraction
+particles have **no texture bound** in that pass. The FPS collapse is the overdraw cost of many
+quads each sampling the scene colour buffer.
+
+## ▶ NEXT STEP (not started)
+
+Identify which system draws these — **gpup/.arx** (`project_gpup_particles.md`) or **WPE**
+(`project_wpe_particles.md`) — and check whether its material has a null/unbound texture in the
+refraction pass. This is now a targeted question, not a hunt: we know it is the outward particles,
+and `explosionburst.sh` reproduces the capture in one command.
