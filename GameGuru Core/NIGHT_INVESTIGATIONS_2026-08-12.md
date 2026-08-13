@@ -1151,3 +1151,26 @@ therefore *still a live, renderable, shadow-casting scene member* sitting a mill
 (being a pickup) it carries the corrupt one-bone armature AABB from §2.34, so its bounds now span
 from −999999 to +100000 and contain the whole level. Harmless today given §2.34's findings, but
 "removal by teleport" is a smell worth revisiting if pickups ever misbehave again.
+
+## §2.35b — the ammo took a DIFFERENT removal path (follow-up fix)
+
+2.35 fixed the editor delete, but in test-game the ammo shadow survived — and the user supplied the
+observation that named the gap immediately: **collecting the GUN made the ammo's shadow disappear.**
+
+That asymmetry is the whole diagnosis. The nudge works; the ammo simply never reached it:
+
+| pickup | script | removal call | hooked by 2.35? |
+|---|---|---|---|
+| Magnum Pistol | `weapon.lua` | `SetEntityCollected(e,…)` | ✔ yes — so collecting it cleared the stale ammo shadow as a side effect |
+| .44 ammo | `ammo.lua:95` | **`Destroy(e)`** | ✘ no — a completely separate path |
+
+`Destroy(e)` → `entity_lua_destroy()` sets a **deferred** `destroyme = 1`, consumed a frame later at
+`G-Entity_part1.cpp:1059`. The fix hooks the **consumer**, not `entity_lua_destroy`, for two
+reasons: it covers every script that calls `Destroy()` plus explosion triggers, and it cannot fire
+on a request that `entity_lua_destroy` *declines* (`iscollectable == 2` with quantity remaining).
+
+★ **The lesson worth keeping: "collecting a pickup" is not one code path.** I hooked the one the
+weapon used, verified it in the editor, and reported it fixed — the in-game half was a different
+function reached by a different script. When wiring a cross-cutting notification like a cache
+invalidation, enumerate the *removal verbs* (`SetEntityCollected`, `Destroy`, editor delete) rather
+than the user-facing action, or the fix covers whichever one you happened to read first.

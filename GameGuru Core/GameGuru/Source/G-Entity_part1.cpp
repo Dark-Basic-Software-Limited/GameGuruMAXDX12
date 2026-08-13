@@ -1062,6 +1062,18 @@ void entity_loop ( void )
 				t.entityelement[t.e].destroyme = 0;
 				entity_adddestroyevent(t.e);
 
+				// GGMAX 2.35b: a destroyed entity must refresh the CACHED local shadow atlas, or
+				// its shadow outlives it — the cache's change detector only spots casters that
+				// MOVED, and a removed object has no 'now' matrix left to compare against.
+				// 2.35 hooked SetEntityCollected, which is what weapon.lua uses; but ammo.lua
+				// removes itself with Destroy(e) (ammo.lua:95), a separate path — so the ammo
+				// shadow survived while collecting the GUN cleared it. That asymmetry named this
+				// site. Hooking the destroy CONSUMER rather than entity_lua_destroy covers every
+				// script that calls Destroy() plus explosion triggers, and cannot fire on a
+				// request entity_lua_destroy declines (iscollectable==2 with quantity left).
+				extern void GGInvalidateLocalShadows();
+				GGInvalidateLocalShadows();
+
 				// remove entity from game play
 				t.entityelement[t.e].eleprof.phyalways = 0;
 				t.entityelement[t.e].active = 0;
