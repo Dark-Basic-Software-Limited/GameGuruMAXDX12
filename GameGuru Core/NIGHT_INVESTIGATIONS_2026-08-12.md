@@ -1174,3 +1174,59 @@ weapon used, verified it in the editor, and reported it fixed — the in-game ha
 function reached by a different script. When wiring a cross-cutting notification like a cache
 invalidation, enumerate the *removal verbs* (`SetEntityCollected`, `Destroy`, editor delete) rather
 than the user-facing action, or the fix covers whichever one you happened to read first.
+
+---
+
+# §2.37 — No screen-editor image has EVER drawn on DX12 (one-line fix)
+
+User repro: add an image widget to the In-Game HUD, point it at
+`imagebank\hud\ammo-health-panel.png`, and the yellow selection box stays empty.
+
+## The measurement that reframed it
+
+`HUD_DUMP` reported the widget as **`exist=YES 235x139`** — the texture loads fine, and the
+selection box is even *sized* from those dimensions (`M-GridEditB_part22.cpp:938` only reads
+`ImageWidth/Height` when `ImageExist` passes). So the fault was never the path or the load; it was
+the blit. That split — loaded but not drawn — is what made this a five-minute read instead of a
+hunt.
+
+## Root cause: a DX11-only accessor used as the guard
+
+```cpp
+void* lpTexture = GetImagePointer(imgID);   // <-- always NULL on DX12
+if (lpTexture) { ... ImGui::ImgBtn(imgID, widget_size, ...); }
+```
+
+`GetImagePointer` (`CImageC_part1.cpp:236`) returns `m_imgptr->lpTexture`, the **D3D11 texture
+object**. Only its sibling `GetImagePointerView` (`:253-268`) carries the DX12 bridge that lazily
+creates the texture through `ImGui_DX12_GetOrLoadTexture`.
+
+So the guard could never pass. ★ And the irony: the line it guards, `ImgBtn(imgID, ...)`, takes the
+**ID** and resolves it through that same working bridge — which is exactly why the toolbar icons on
+the left of the screen editor have always rendered. **The blit was never broken; only the
+null-check in front of it was.**
+
+Fix — use the DX12-aware accessor, which both tests correctly and warms the texture the blit is
+about to need:
+
+```cpp
+void* lpTexture = (void*)GetImagePointerView(imgID);
+```
+
+One line, one site (`GetImagePointer` had exactly one caller in the whole game layer).
+
+## Verified, and much wider than the reported symptom
+
+| | images drawn on the HUD canvas |
+|---|---|
+| before | **0 of 10** |
+| after | **11 of 11** |
+
+The re-run shows the panel inside the selection box, *and* the ammo/health panels bottom-left and
+bottom-right that had only ever rendered their bare `999999` text, *and* the `about.png` backdrop.
+Nobody had reported those as broken — they were simply never seen working.
+
+★ **The lesson: a paired accessor where only ONE half got the DX12 bridge is a bug template, not a
+one-off.** `GetImagePointer` / `GetImagePointerView` differ by one word at the call site and by
+everything at runtime. Worth grepping the DX11 halves of any such pair when a "loaded but invisible"
+symptom appears.

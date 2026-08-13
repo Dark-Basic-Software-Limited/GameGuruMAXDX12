@@ -1603,7 +1603,18 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 						else
 						{
 							// Display Image
-							void* lpTexture = GetImagePointer(imgID);
+							// GGMAX 2.37: GetImagePointer is a DX11-ONLY accessor — it returns
+							// m_imgptr->lpTexture, the D3D11 texture object, which is ALWAYS NULL
+							// on DX12 (CImageC_part1.cpp:236). Only its sibling
+							// GetImagePointerView carries the DX12 bridge that lazily creates the
+							// texture via ImGui_DX12_GetOrLoadTexture (CImageC_part1.cpp:253-268).
+							// So this guard could never pass and no screen-editor image has ever
+							// drawn on DX12 — while the very next line, ImgBtn(imgID, ...), takes
+							// the ID and resolves it through that same working bridge, which is
+							// why the toolbar icons render fine. The blit was never broken; only
+							// the null-check in front of it was. Using the View accessor both
+							// tests correctly and warms the texture the blit is about to need.
+							void* lpTexture = (void*)GetImagePointerView(imgID);
 							if (lpTexture)
 							{
 								ImGui::SetCursorPos(vMonitorStart + widget_pos);
