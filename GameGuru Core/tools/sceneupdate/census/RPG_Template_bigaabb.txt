@@ -1,0 +1,10 @@
+DUMP_BIGAABB  inflation gate: actualRadius > 2.00 x cleanRadius
+objects(with mesh)=7249  skinned=95  INFLATED=2 (0.0% of all, 2.1% of skinned)
+distinct meshes affected=1  distinct armatures blamed=1
+radius over fp16 max (65504)=2   centre displaced over 65504=2
+worst ratio=9184.2x  worst radius=86208.1
+scene bounds=(-2500000,-500000,-2500000)-(2500000,100512,2500000)
+
+object                       mesh                         ratio      radius      cleanR    displace  bones skin  dyn
+NoNameMat0                   node_mesh                  9184.2x     85917.9         9.4     85909.9      1    1    0
+NoNameMat0                   node_mesh                  8888.7x     86208.1         9.7     86199.2      1    1    0

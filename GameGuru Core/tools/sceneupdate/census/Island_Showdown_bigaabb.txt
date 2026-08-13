@@ -1,0 +1,25 @@
+DUMP_BIGAABB  inflation gate: actualRadius > 2.00 x cleanRadius
+objects(with mesh)=8558  skinned=285  INFLATED=17 (0.2% of all, 6.0% of skinned)
+distinct meshes affected=17  distinct armatures blamed=17
+radius over fp16 max (65504)=5   centre displaced over 65504=5
+worst ratio=29439.6x  worst radius=173208.0
+scene bounds=(-2500000,-99999,-2500000)-(2500000,100770,2500000)
+
+object                       mesh                         ratio      radius      cleanR    displace  bones skin  dyn
+W_M29S                       node_mesh                 29439.6x    173207.4         5.9    173202.1      1    1    0
+W_MK19T                      node_mesh                 22919.0x    173208.0         7.6    173201.7      1    1    0
+MK18_W1                      node_mesh                  4839.6x     87416.2        18.1     87402.1      1    1    0
+W_AR15                       node_mesh                  4074.1x     85422.0        21.0     85405.6      1    1    0
+870_W                        node_mesh                  4034.7x     85967.0        21.3     85948.2      1    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0
+adult_male_head_07_medit     node_mesh                     2.1x        16.1         7.8         8.8     13    1    0

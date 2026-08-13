@@ -4114,6 +4114,142 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// DUMP_BIGAABB [inflationRatio] — GGMAX 2.34. Census of objects whose world AABB is inflated
+	// beyond the box their own mesh actually occupies.
+	//
+	// WHYNOTDRAWN answers "why is THIS object wrong?"; this answers "how much of the level is wrong?",
+	// which is the question that decides whether the engine-side armature fix is worth the risk.
+	// The detector is a RATIO, not a coordinate threshold: it recomputes the clean box the engine
+	// would produce from the mesh alone (mesh.aabb.transform(world), exactly as RunObjectUpdateSystem
+	// does) and compares it to the AABB actually in the scene. That keeps it honest whatever
+	// `masterpark` is set to — a coordinate test would silently stop finding anything the moment
+	// the park point moved closer, and report "fixed" when nothing had been fixed.
+	if (_stricmp(cmd, "DUMP_BIGAABB") == 0)
+	{
+		wi::scene::Scene* sc = master.masterrenderer.scene;
+		if (sc == nullptr)
+		{
+			_snprintf(result, resultSize, "ERROR: no scene");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		float ratioGate = 2.0f;
+		if (arg != nullptr && arg[0] != 0) { const float v = (float)atof(arg); if (v > 1.0f) ratioGate = v; }
+
+		struct BigRec
+		{
+			std::string name; std::string mesh; float ratio; float radius; float cleanRadius;
+			float displace; int bones; int skinned; int dynamic; unsigned long long armature; unsigned filter;
+		};
+		std::vector<BigRec> bad;
+		int total = 0, skinnedTotal = 0, overHalf = 0, displacedOverHalf = 0, transparentInflated = 0, transparentOverHalf = 0;
+		float worstRatio = 0.0f, worstRadius = 0.0f;
+		std::vector<unsigned long long> distinctMesh, distinctArm;
+
+		for (size_t i = 0; i < sc->objects.GetCount(); ++i)
+		{
+			const wi::scene::ObjectComponent& ob = sc->objects[i];
+			if (ob.meshID == wi::ecs::INVALID_ENTITY) continue;
+			total++;
+			const wi::ecs::Entity ent = sc->objects.GetEntity(i);
+			const wi::scene::MeshComponent* mc = sc->meshes.GetComponent(ob.meshID);
+			const wi::scene::TransformComponent* tf = sc->transforms.GetComponent(ent);
+			if (mc == nullptr || tf == nullptr) continue;
+			if (mc->IsSkinned()) skinnedTotal++;
+
+			// The clean box: what the object bounds would be with no armature merge.
+			const XMMATRIX W = XMLoadFloat4x4(&tf->world);
+			const wi::primitive::AABB clean = mc->aabb.transform(W);
+			const wi::primitive::AABB& actual = sc->aabb_objects[i];
+			const float cleanR = clean.getRadius();
+			const float actualR = actual.getRadius();
+			if (cleanR <= 0.0001f) continue;
+			const float ratio = actualR / cleanR;
+			if (ratio <= ratioGate) continue;
+
+			const XMFLOAT3 ca = actual.getCenter(), cc = clean.getCenter();
+			const float displace = sqrtf((ca.x - cc.x) * (ca.x - cc.x) + (ca.y - cc.y) * (ca.y - cc.y) + (ca.z - cc.z) * (ca.z - cc.z));
+			if (actualR > 65504.0f) overHalf++;
+			if (displace > 65504.0f) displacedOverHalf++;
+			if (ratio > worstRatio) worstRatio = ratio;
+			if (actualR > worstRadius) worstRadius = actualR;
+
+			const wi::scene::ArmatureComponent* arm =
+				(mc->armatureID != wi::ecs::INVALID_ENTITY) ? sc->armatures.GetComponent(mc->armatureID) : nullptr;
+			const wi::scene::NameComponent* nm = sc->names.GetComponent(ent);
+			const wi::scene::NameComponent* mn = sc->names.GetComponent(ob.meshID);
+
+			if (std::find(distinctMesh.begin(), distinctMesh.end(), (unsigned long long)ob.meshID) == distinctMesh.end())
+				distinctMesh.push_back((unsigned long long)ob.meshID);
+			if (arm != nullptr && std::find(distinctArm.begin(), distinctArm.end(), (unsigned long long)mc->armatureID) == distinctArm.end())
+				distinctArm.push_back((unsigned long long)mc->armatureID);
+
+			BigRec r;
+			r.name = (nm != nullptr) ? nm->name : "(unnamed)";
+			r.mesh = (mn != nullptr) ? mn->name : "(unnamed mesh)";
+			r.ratio = ratio; r.radius = actualR; r.cleanRadius = cleanR; r.displace = displace;
+			r.bones = (arm != nullptr) ? (int)arm->boneCollection.size() : -1;
+			r.skinned = mc->IsSkinned() ? 1 : 0; r.dynamic = mc->IsDynamic() ? 1 : 0;
+			r.armature = (unsigned long long)mc->armatureID;
+			// The filter mask decides the ONE remaining visible-error exposure. An opaque object
+			// that sorts wrong costs depth-test efficiency and nothing else; a TRANSPARENT one
+			// sorts back-to-front, so a distance pinned at the fp16 ceiling would draw it before
+			// everything else and it would appear behind geometry it should be in front of.
+			r.filter = (unsigned)ob.GetFilterMask();
+			if (r.filter & wi::enums::FILTER_TRANSPARENT)
+			{
+				transparentInflated++;
+				if (actualR > 65504.0f) transparentOverHalf++;
+			}
+			bad.push_back(r);
+		}
+
+		std::sort(bad.begin(), bad.end(), [](const BigRec& a, const BigRec& b) { return a.ratio > b.ratio; });
+
+		FILE* f = fopen("dumpbigaabb.txt", "w");
+		if (f != nullptr)
+		{
+			fprintf(f, "DUMP_BIGAABB  inflation gate: actualRadius > %.2f x cleanRadius\n", ratioGate);
+			fprintf(f, "objects(with mesh)=%d  skinned=%d  INFLATED=%d (%.1f%% of all, %.1f%% of skinned)\n",
+				total, skinnedTotal, (int)bad.size(),
+				total ? (100.0 * bad.size() / total) : 0.0,
+				skinnedTotal ? (100.0 * bad.size() / skinnedTotal) : 0.0);
+			fprintf(f, "distinct meshes affected=%d  distinct armatures blamed=%d\n",
+				(int)distinctMesh.size(), (int)distinctArm.size());
+			fprintf(f, "radius over fp16 max (65504)=%d   centre displaced over 65504=%d\n", overHalf, displacedOverHalf);
+			// The only remaining visible-error exposure. An OPAQUE mis-sort costs depth-test
+			// efficiency; a TRANSPARENT one draws in the wrong order and is visible. What decides
+			// it is not "is any inflated object transparent" but "is any object whose DISTANCE is
+			// pinned at the fp16 ceiling transparent" — a legitimately-merged armature (hair, ~2x)
+			// still has a normal distance and sorts correctly.
+			fprintf(f, "TRANSPARENT among inflated=%d   of which also over-fp16=%d  <-- only the second number can mis-sort\n",
+				transparentInflated, transparentOverHalf);
+			fprintf(f, "worst ratio=%.1fx  worst radius=%.1f\n", worstRatio, worstRadius);
+			fprintf(f, "scene bounds=(%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)\n\n",
+				sc->bounds._min.x, sc->bounds._min.y, sc->bounds._min.z,
+				sc->bounds._max.x, sc->bounds._max.y, sc->bounds._max.z);
+			fprintf(f, "%-28s %-24s %9s %11s %11s %11s %6s %4s %4s %9s %s\n",
+				"object", "mesh", "ratio", "radius", "cleanR", "displace", "bones", "skin", "dyn", "filter", "flags");
+			const int cap = (int)bad.size() < 40 ? (int)bad.size() : 40;
+			for (int i = 0; i < cap; ++i)
+				fprintf(f, "%-28.28s %-24.24s %8.1fx %11.1f %11.1f %11.1f %6d %4d %4d %09x %s%s\n",
+					bad[i].name.c_str(), bad[i].mesh.c_str(), bad[i].ratio, bad[i].radius,
+					bad[i].cleanRadius, bad[i].displace, bad[i].bones, bad[i].skinned, bad[i].dynamic,
+					bad[i].filter,
+					(bad[i].filter & wi::enums::FILTER_TRANSPARENT) ? "TRANSPARENT " : "",
+					(bad[i].radius > 65504.0f) ? "OVER-FP16" : "");
+			if ((int)bad.size() > cap) fprintf(f, "... %d more\n", (int)bad.size() - cap);
+			fclose(f);
+		}
+		_snprintf(result, resultSize,
+			"OK: DUMP_BIGAABB gate=%.1fx objects=%d skinned=%d INFLATED=%d meshes=%d armatures=%d "
+			"overFp16=%d TRANSPARENT=%d TRANSPARENT_OVERFP16=%d worstRatio=%.1fx worstRadius=%.0f -> Files/dumpbigaabb.txt",
+			ratioGate, total, skinnedTotal, (int)bad.size(), (int)distinctMesh.size(),
+			(int)distinctArm.size(), overHalf, transparentInflated, transparentOverHalf, worstRatio, worstRadius);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// WHYNOTDRAWN <name-substr> — GGMAX 2.30, closes backlog #125 ("why did object X not draw?").
 	//
 	// Walks the SAME gates wi::renderer::UpdateVisibility applies when it builds the main

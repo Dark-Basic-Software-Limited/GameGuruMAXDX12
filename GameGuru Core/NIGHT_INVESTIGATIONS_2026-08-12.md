@@ -936,3 +936,104 @@ default, and it is a product decision, not a code cleanup.** The knob exists so 
 run on one binary.
 ★ Order of preference for actually closing this: **engine-side ownership test first**; `masterpark`
 is the mitigation if that proves too invasive.
+
+---
+
+# §2.34 — Is the engine-side AABB fix NECESSARY? (measuring the blast radius)
+
+The 2.33 work answered *how* the bounds go wrong. It never answered the question that decides
+whether to touch upstream code on the hot path: **how much of a real level is affected, and can
+this defect make anything a player would see go wrong?** Both halves are measurable, and neither
+is answerable by reading code, so this section is built on two instruments rather than argument.
+
+## The instrument: `DUMP_BIGAABB [inflationRatio]` (game-side, no engine rebuild)
+
+Walks every object with a mesh, recomputes the **clean** box the engine would produce from the
+mesh alone (`mesh.aabb.transform(world)` — exactly what `RunObjectUpdateSystem` does at
+`wiScene.cpp:5231`), and compares it to the AABB actually in the scene.
+
+★ **The gate is a RATIO, not a coordinate threshold.** A coordinate test ("is any corner near
+100000?") would report *zero affected* the moment `masterpark` moved the park point closer — and
+that zero would read as a fix when nothing had been fixed. The ratio survives any park distance.
+This mattered immediately: it also surfaces **legitimate** armature merges at ~2×, which is how the
+one dangerous claim below got discriminated instead of assumed.
+
+## Result: the defect is real, and it is TINY
+
+| demo | objects | skinned | inflated >2× | over fp16 | distinct meshes |
+|---|---|---|---|---|---|
+| RPG Template | 7249 | 95 | **2** (0.03%) | 2 | 1 |
+| Escape from the Zombie Cellar | 1167 | 70 | **5** (0.4%) | 3 | 4 |
+| Island Showdown | 8558 | 285 | **17** (0.2%) | 5 | 17 |
+| Switch Escape | 1030 | 33 | **0** | 0 | 0 |
+
+Two findings that reframe the problem:
+
+1. **Characters are NOT affected.** 93 of 95 skinned objects in RPG Template are clean. Every
+   truly-corrupt entry is a **1-bone** rig named like a weapon or ammo pickup (`W_MK19T`, `W_M29S`,
+   `W_AR15`, `870_W`, `44ammo`). GameGuru clones a character's mesh+armature per instance, so
+   characters own their armature and the merge is correct for them. Only *shared* prop rigs
+   inherit the parked master's armature.
+2. **The 2.1–2.5× entries are NOT the bug.** `adult_male_head_07`, `zombie_male_facialhair_02` —
+   12–13 bone armatures whose genuine extent slightly exceeds the mesh bind box. That is upstream
+   behaving correctly, and it is exactly what the armature merge exists to do.
+
+So the population is **~2–5 objects per level, all small opaque pickups.**
+
+## Can it make anything invisible? — the consumer audit
+
+Every consumer of an object's AABB / `center` / `radius` was enumerated across six domains
+(visibility, shadows, LOD+sort, fp16 packs, GI/accel-structures, picking+game-layer), then every
+"invisible" and every reached "none" claim was handed to independent refuters.
+
+**The structural answer: a superset box cannot hide anything.** Every frustum / overlap /
+containment test in the reached path (`CheckBoxFast`, `AABB::intersects`, Sphere-vs-AABB) is
+monotone under enlargement — if the true box passes, the union passes. Wrong-direction failures
+can only come from sites that use the **centre as a position** or that **narrow the value**.
+
+Settled by measurement:
+
+| worry | verdict | evidence |
+|---|---|---|
+| Shadow cascade extents widened by a 100 km caster | **NO** | `CreateDirLightShadowCams` builds cascades only from the *camera's* unprojected frustum corners (`wiRenderer.cpp:3491-3501`); casters never contribute |
+| Props stuck at low detail | **NO — opposite** | `lod = clamp(log2(1/maxdim),0,lod_max)`; a huge box projects huge → clamps to **LOD 0, highest detail**, always. Cost, not a visual defect |
+| Whole-scene bounds blown out | **NO** | scene bounds measured **±2,500,000** from the terrain preset — four orders above the 100 km boxes, which are lost in the noise |
+| Transparent objects sorting wrong | **NO** | distance is the primary sort key, so this was the one live risk. Measured: **TRANSPARENT_OVERFP16 = 0**. The only transparent inflated objects are the 2.5× facial-hair (radius 13.4, normal distance, sorts correctly); all three corrupt objects are `filter=0x1`, opaque |
+| Animation throttled on-screen (`wiScene.cpp:2253` — a *centre* distance test, so unprotected) | **NO** | applies only to objects with a running `AnimationComponent`; the affected set is 1-bone pickups with no clip |
+| CC anim-proxy picked wrong (`wickedcalls_part0.cpp:1086`, strict `>` on radius) | **NO** | requires an affected *character*; census shows none |
+
+The two remaining hits are **not reached**: the mesh-shader meshlet culler
+(`objectHF_mesh_shading.hlsli`) and DDGI — both off in this fork. They are worth remembering as
+landmines if either is ever switched on, because the meshlet culler *does* substitute whole-instance
+bounds and can genuinely delete geometry.
+
+## The one real cost found: picking
+
+`AABB::intersects(const Ray&)` early-outs `true` when the ray origin is **inside** the box
+(`wiPrimitive.cpp:152`). The corrupt box spans from the prop out to 100 km, so it **contains the
+camera**, the early-out fires before the slab test, and the candidate is admitted with `tmin` forced
+to 0. That defeats the shipped 2026-07-31 **TMax cap** — the optimisation that took a 120-unit LOS
+ray from 26 ms — for these objects. Bounded by the same census: ~5 extra candidates per ray, each
+then rejected by the exact per-triangle test, so picks stay *correct*, just not free.
+
+## VERDICT
+
+**The engine-side fix is NOT necessary for playability.** No reached mechanism can make geometry
+that should be on screen fail to draw; the one symptom that ever did (the invisible pistol) was the
+fp16 distance overflow, already fixed in 2.32. What remains is a small, bounded tax on **~2–5
+opaque pickup props per level**: always LOD 0, never occlusion-culled, admitted to every shadow
+cascade, and defeating the ray TMax cap.
+
+⚠ **It is not harmless either, and the reason is worth keeping.** Three *reached* sites consume the
+**centre as a position**, where the superset argument gives no protection at all — the transparent
+sort key, the animation-throttle distance, and the CC proxy picker. Today none of them fire, but
+each is one content change away: a pickup with a glass scope, a pickup with an idle animation, or a
+character whose meshes ever share a parked master rig. **That last one has already bitten this
+project once** — GGMAX 1.61 fixed a full-screen character stuck at 30 fps animation because its
+proxy pin resolved wrong, which is the same failure this defect would reproduce.
+
+**Recommendation: don't do it now; do it when next touching that code.** The correct form is an
+ownership test at `wiScene.cpp:5233` — merge the armature box only into an instance that actually
+owns that armature's transform. It must fail **toward merging**, because the dangerous direction is
+skipping a merge for a legitimately animated character that has moved beyond its mesh bind box
+(root motion), which *would* wrongly cull. `masterpark` remains the bounded mitigation.
