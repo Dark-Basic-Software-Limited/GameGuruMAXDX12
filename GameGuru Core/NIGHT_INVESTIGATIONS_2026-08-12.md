@@ -849,3 +849,19 @@ these objects be culled normally and hand the cost back. Recommended as the next
 ⚠ Do NOT read this as "2.32 made Z Island slower and should be reverted" — before 2.32 the level
 was faster because it was **not drawing objects the designer placed**. The correct comparison is
 2.32 versus 2.32-with-the-AABB-fixed, which does not exist yet.
+
+## Regression check — the USER-CONFIRMED fixes re-verified on the 2.32 engine
+The ragdoll and particle fixes were confirmed by the user on the **2.29** build, and the engine has
+changed three times since (2.31 tracer, 2.32 clamp + queue attribution). Re-checked rather than
+assumed:
+```
+RAGDOLL_UPDATE: calls=253 bones=13 framesMoved=66 writebackCalls=16445
+RAGDOLL_WB:     applied=10626 splitTarget=0 clobbered=0 survived=252
+VERDICT: CHAIN COMPLETE — every stage fired and the bone HELD its ragdoll pose
+```
+Identical signature to the 2.29 verification. **D is not regressed by 2.30-2.32.**
+⚠ **A (the particle re-use fix) has no automated repro and was NOT re-verified.** It needs N+1
+impacts of one decal type with expiry in between — `DECAL_BURST` exercises allocation, not the
+emitter state machine, and the harness cannot fire a weapon. It is unaffected by anything in
+2.30-2.32 by inspection (all three are render-path only, no emitter code touched), but that is
+reasoning, not measurement. Worth one shot-the-ground check next time MAX is in front of a human.
