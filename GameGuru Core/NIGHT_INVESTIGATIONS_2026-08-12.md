@@ -710,3 +710,38 @@ clamping a legitimately huge value silently changes lighting. Recording the marg
 output; the decision to clamp is the user's.
 ★ For the record, the general rule now has a number attached: **in an inch-scale world a half
 tops out at 1.66 km, and 1.66 km is an ordinary distance in a GameGuru level.**
+
+## 2.32c — ★ and the corrupt AABB itself is root-caused too (read-only; no code changed)
+`wiScene.cpp:5231-5241`, the object AABB update:
+```cpp
+aabb = mesh.aabb.transform(W);
+if (mesh.IsSkinned() || mesh.IsDynamic())
+{
+    const ArmatureComponent* armature = armatures.GetComponent(mesh.armatureID);
+    if (armature != nullptr)
+        aabb = AABB::Merge(aabb, armature->aabb);      // ← merges a WORLD-SPACE armature box
+}
+```
+The armature is resolved from **`mesh.armatureID` — a property of the MESH, not of the object** —
+and `armature.aabb` is built in WORLD space from bone positions (`wiScene.cpp:4667`).
+
+The placed pickup and the parked library master **share mesh 195** (both are `W_MK19T`; FIND_OBJECT
+reports the same `mesh=2821` for both). They therefore resolve the **same armature**, whose world
+box sits wherever that armature's bones are — at the master's park position
+(100000,100000,100000). So the placed pickup merges a box 100 k units away into its own bounds.
+**That is precisely the measured union**, and it explains the class split exactly: pickups are
+weapon/ammo models and are SKINNED; `candle_holder`, `Rectangle001`, `Cube.002`, `plane` are
+static props and take only the `mesh.aabb.transform(W)` line, which is why their radii are 8-29.
+(`Body` is skinned but reads a correct r=32.7 — its armature is its own and co-located, the
+control that proves the mechanism needs a SHARED armature, not merely a skinned mesh.)
+
+### Two candidate fixes, neither applied — this needs the user's call
+* **Game side (preferred):** stop keeping the library master as a live skinned object parked at
+  100000. Either drop its skinned/dynamic state once it is hidden, or park it somewhere near the
+  play area — parking at, say, (0,-5000,0) caps the union at a few thousand units and can never
+  approach the 65504 half ceiling again.
+* **Engine side:** only merge the armature box when the armature belongs to THIS instance.
+  Upstream assumes one armature per skinned instance, which GG's clone-from-a-parked-master idiom
+  violates. Riskier: it is upstream code on the hot path and every skinned object pays the test.
+⚠ Not urgent now the 2.32 clamp makes the symptom impossible. Remaining cost is culling quality:
+pickups can never be frustum-culled, so they are shaded on every camera in every level.
