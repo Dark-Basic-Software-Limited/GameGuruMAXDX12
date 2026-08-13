@@ -2548,6 +2548,43 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 		ec._flags = f;
 
 		ec.shaderType = (wiEmittedParticle::PARTICLESHADERTYPE)(s.shaderType > 3 ? 3 : s.shaderType);
+
+		// GGMAX 2.44: restore the DX11 distortion contract.
+		//
+		// The fork's distortion pixel shader sampled ONE texture slot, TEXSLOT_ONDEMAND0, and the
+		// fork's renderer bound the material's BASECOLORMAP there (WickedRepo
+		// wiEmittedParticle.cpp:702) - so a distortion emitter distorted through its own animated
+		// colour map. New Wicked moved that slot to NORMALMAP:
+		//     emittedparticlePS_soft.hlsl:9   static const uint SLOT = NORMALMAP;
+		// and every shipped GameGuru .PE carries a colour map only (verified: all six explosion
+		// decals plus splash_large have a SOFT_DISTORTION emitter with normalmap == "").
+		//
+		// With NORMALMAP invalid the shader never samples, so `color` keeps its initialiser of 1.
+		// opacity becomes 1 across the WHOLE quad (no texture mask -> a hard-edged rectangle) and
+		// the distortion vector becomes the constant (1 - 0.5), so every pixel in that rectangle
+		// refracts the scene at one fixed screen-space offset. That is the blocky duplicated-scene
+		// artifact, not a soft textured haze.
+		//
+		// Pointing NORMALMAP at the colour map the author actually supplied reproduces the fork
+		// exactly. It is safe to write NORMALMAP here: a SOFT_DISTORTION emitter only ever draws in
+		// the distortion pass, where the shader's normal-map lighting logic is #ifndef'd out, so
+		// this slot has no other consumer.
+		if (ec.shaderType == wiEmittedParticle::SOFT_DISTORTION)
+		{
+			MaterialComponent* dm = scene.materials.GetComponent(Resolve(emEnt[i]));
+			if (dm != nullptr &&
+				dm->textures[MaterialComponent::NORMALMAP].name.empty() &&
+				!dm->textures[MaterialComponent::BASECOLORMAP].name.empty())
+			{
+				dm->textures[MaterialComponent::NORMALMAP].name =
+					dm->textures[MaterialComponent::BASECOLORMAP].name;
+				dm->textures[MaterialComponent::NORMALMAP].resource =
+					dm->textures[MaterialComponent::BASECOLORMAP].resource;
+				dm->SetDirty();
+				dm->CreateRenderData();
+			}
+		}
+
 		// GGMAX 2.02: clamp maxParticles - it is a raw uint64 off disk and sizes eleven GPU
 		// buffers plus a synchronous fence-and-recreate. The largest shipped effect requests
 		// 25,000 (downpour/heavy-rain3); 262,144 is ~10x headroom. A corrupt/hostile value
