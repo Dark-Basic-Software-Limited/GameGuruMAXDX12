@@ -4114,6 +4114,59 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────
+	// MOVE_ENTITY <name-substr> <dx> <dy> <dz> — GGMAX 2.35. Translate matching objects.
+	//
+	// Exists to REPRODUCE pickup collection without playing the game. `SetEntityCollectedEx`
+	// (DarkLUA_part0.cpp:1452) does not hide a collected entity — it TELEPORTS it by -999999 on
+	// every axis and repositions the object. So `MOVE_ENTITY <name> -999999 -999999 -999999` is
+	// the collect path's exact effect on the scene, drivable from the editor in one command
+	// instead of walking to a table in test-game and pressing E.
+	// Paired with SET_ENTITY_VIS (which hides instead of moving), this separates the two
+	// candidate mechanisms for "the pickup went but its shadow stayed": a MOVED caster (which
+	// GGMAX 2.07d's dynamic-caster test is supposed to catch) versus a HIDDEN one (which that
+	// test skips outright at its `if (!object.IsRenderable()) continue;` guard).
+	if (_stricmp(cmd, "MOVE_ENTITY") == 0)
+	{
+		char mvName[128] = { 0 }; float mdx = 0, mdy = 0, mdz = 0;
+		if (arg == nullptr || sscanf_s(arg, "%127s %f %f %f", mvName, (unsigned)sizeof(mvName), &mdx, &mdy, &mdz) != 4)
+		{
+			_snprintf(result, resultSize, "ERROR: MOVE_ENTITY needs <name-substr> <dx> <dy> <dz>");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		wi::scene::Scene* mvsc = master.masterrenderer.scene;
+		if (mvsc == nullptr)
+		{
+			_snprintf(result, resultSize, "ERROR: no scene");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		auto mvHit = [](const std::string& hay, const char* needle) -> bool
+		{
+			std::string h = hay, n = needle;
+			for (auto& c : h) c = (char)tolower((unsigned char)c);
+			for (auto& c : n) c = (char)tolower((unsigned char)c);
+			return h.find(n) != std::string::npos;
+		};
+		int mvCount = 0; XMFLOAT3 mvLast(0, 0, 0);
+		for (size_t mi = 0; mi < mvsc->objects.GetCount(); ++mi)
+		{
+			const wi::ecs::Entity ment = mvsc->objects.GetEntity(mi);
+			const wi::scene::NameComponent* mn = mvsc->names.GetComponent(ment);
+			if (mn == nullptr || !mvHit(mn->name, mvName)) continue;
+			wi::scene::TransformComponent* mtf = mvsc->transforms.GetComponent(ment);
+			if (mtf == nullptr) continue;
+			mtf->Translate(XMFLOAT3(mdx, mdy, mdz));
+			mtf->UpdateTransform();
+			mvLast = mtf->GetPosition();
+			mvCount++;
+		}
+		_snprintf(result, resultSize, "OK: MOVE_ENTITY \"%s\" by (%.0f,%.0f,%.0f) on %d objects; last now at (%.0f,%.0f,%.0f)",
+			mvName, mdx, mdy, mdz, mvCount, mvLast.x, mvLast.y, mvLast.z);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// DUMP_BIGAABB [inflationRatio] — GGMAX 2.34. Census of objects whose world AABB is inflated
 	// beyond the box their own mesh actually occupies.
 	//

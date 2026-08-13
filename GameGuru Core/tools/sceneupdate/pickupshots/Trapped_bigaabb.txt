@@ -1,0 +1,15 @@
+DUMP_BIGAABB  inflation gate: actualRadius > 2.00 x cleanRadius
+objects(with mesh)=963  skinned=91  INFLATED=6 (0.6% of all, 6.6% of skinned)
+distinct meshes affected=2  distinct armatures blamed=2
+radius over fp16 max (65504)=6   centre displaced over 65504=6
+TRANSPARENT among inflated=0   of which also over-fp16=0  <-- only the second number can mis-sort
+worst ratio=25918.8x  worst radius=86926.0
+scene bounds=(-2500000,-19009,-2500000)-(2500000,100172,2500000)
+
+object                       mesh                         ratio      radius      cleanR    displace  bones skin  dyn    filter flags
+44ammo                       node_mesh                 25918.8x     86748.6         3.3     86745.6      1    1    0 000000001 OVER-FP16
+44ammo                       node_mesh                 20051.6x     86926.0         4.3     86922.1      1    1    0 000000001 OVER-FP16
+44ammo                       node_mesh                 20010.9x     86750.3         4.3     86746.4      1    1    0 000000001 OVER-FP16
+44ammo                       node_mesh                 20010.2x     86747.9         4.3     86744.0      1    1    0 000000001 OVER-FP16
+44ammo                       node_mesh                 20010.0x     86747.1         4.3     86743.2      1    1    0 000000001 OVER-FP16
+W_MK19T                      node_mesh                  8562.7x     86750.0        10.1     86741.2      1    1    0 000000001 OVER-FP16
