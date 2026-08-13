@@ -746,7 +746,7 @@ control that proves the mechanism needs a SHARED armature, not merely a skinned 
 ⚠ Not urgent now the 2.32 clamp makes the symptom impossible. Remaining cost is culling quality:
 pickups can never be frustum-culled, so they are shaded on every camera in every level.
 
-## 2.32 SWEEP (tag 0813) — partial results at 13/19, scored against the pre-registered criteria
+## 2.32 SWEEP (tag 0813) — FINAL, 19/19, scored against the pre-registered criteria
 **C2″ POLYS — the headline, and it is bigger than the pistol.** Against the 2.28 baseline:
 | | demos |
 |---|---|
@@ -783,3 +783,38 @@ No demo rose more than ~100 MB against 2.28; several fell.
 claiming that as a win** — this rig's documented launch-to-launch swing is ±8 FPS, these are
 cross-launch numbers, and "we draw 24% more geometry and got faster" is not a credible causal
 story. The gate is the downside, and the downside is clean.
+
+### FINAL SCORE — all 19 demos, all four criteria PASS
+```
+C1 LOADS   19/19 OK, no crash, no hang
+C2" POLYS  increased=16   unchanged=3   DECREASED=0   (0 is the fail condition)
+C3 VRAM    worst in-game 3752.8 MB (Aztec Game Kit) against the 4096 gate -> PASS
+C4 FPS     worst delta -8% (Z Island in-game) against the -10% gate      -> PASS
+```
+| demo | POLYS delta | % | demo | POLYS delta | % |
+|---|---|---|---|---|---|
+| River Raiders | **+456,273** | **+23.94%** | Canyon Offensive | +21,845 | +0.25% |
+| Horseshoe Bend | +62,916 | +2.99% | Aztec Teaser | +18,496 | +0.18% |
+| Indian Strike Force | +45,172 | +1.42% | Z Island | +18,155 | +2.58% |
+| Foggy Forest | +24,695 | +0.24% | RPG Template | +12,624 | +0.39% |
+| Disruption | +12,395 | +0.27% | Island Showdown | +11,106 | +0.27% |
+| Operation Amazon | +7,349 | +0.13% | A Grand Canyon Adventure | +7,145 | +0.31% |
+| Bounty | +6,696 | +1.45% | Jungle Fever | +2,033 | +2.74% |
+| Trapped | +1,559 | **+13.91%** | Snowy Mountain Stroll | +288 | +0.36% |
+| *unchanged:* Aztec Game Kit, Switch Escape, Zombie Cellar | | | | | |
+
+★★★ **16 of 19 shipped demos were losing geometry to this bug, and had been through every prior
+sweep.** POLYS sat bit-stable at the wrong value across 2.25, 2.27 and 2.28 — which is exactly why
+the identity gate never fired. **A stable wrong number is indistinguishable from a stable right
+one; identity gates prove NO CHANGE, never CORRECTNESS.**
+The three unchanged demos are the control: nothing in 2.32 invents geometry, so a level with no
+object beyond the half ceiling reads identical, and three did.
+
+### ⚠ Honest reading of the FPS column
+Sixteen demos read **+1 to +19%** and I am **not** claiming that. Cross-launch variance on this rig
+is a documented ±8 FPS, these are cross-launch numbers, and "we draw 24% more geometry and got
+faster" has no mechanism. The trustworthy half of C4 is the downside, and it is clean.
+★ **The one number that deserves follow-up is Z Island at −8% in-game** — it also gained 18,155
+polys (+2.58%), so unlike the positive swings that delta has a plausible mechanism behind it. It
+passes the gate, but it is the only demo where the new geometry may be a real cost. Re-measure
+within a single session before treating it as either real or noise.
