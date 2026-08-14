@@ -1066,7 +1066,30 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 		}
 		else if (n.type == STORYBOARD_TYPE_LEVEL)
 		{
-			_snprintf(result, resultSize, "ERROR: Level node '%s' has no level file assigned", n.title);
+			// GGMAX 2.49: an empty level node opens the TERRAIN GENERATOR in the real UI — mirror
+			// the storyboard's own recipe (M-GridEditB_part19.cpp:2629-2659) instead of erroring,
+			// so the generator flow (no-preview + Generate-crash bugs) is drivable headlessly.
+			extern bool bForceKey; extern cstr csForceKey;
+			extern bool bTerrain_Tools_Window; extern bool Entity_Tools_Window;
+			extern bool bProceduralLevelFromStoryboard;
+			extern int iBlackoutForFrames, iWaitForNewLevel, iNewLevelNode;
+			extern char cTriggerMessage[]; extern bool bTriggerMessage;
+			extern void imgui_populatecustombiomes(void);
+			bForceKey = true; csForceKey = "o";
+			bTerrain_Tools_Window = false; Entity_Tools_Window = true;
+			bProceduralLevelFromStoryboard = true;
+			iLaunchAfterSync = 5;
+			iBlackoutForFrames = 5;
+			iSkibFramesBeforeLaunch = 2;
+			iWaitForNewLevel = 10;
+			iNewLevelNode = i;
+			GG_SetWritablesToRoot(true);
+			if (FileExist("thumbbank\\lastnewlevel.jpg")) DeleteAFile("thumbbank\\lastnewlevel.jpg");
+			GG_SetWritablesToRoot(false);
+			strcpy(cTriggerMessage, "Preparing the Terrain Generator. Please wait...");
+			bTriggerMessage = true;
+			imgui_populatecustombiomes();
+			_snprintf(result, resultSize, "OK: node '%s' has no level file — opening the Terrain Generator (storyboard recipe)", n.title);
 		}
 		else if (n.type == STORYBOARD_TYPE_SCREEN || n.type == STORYBOARD_TYPE_SPLASH)
 		{
@@ -4121,6 +4144,42 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	{
 		extern void GGFireTraceDump(char* result, int resultSize);
 		GGFireTraceDump(result, resultSize);
+		return true;
+	}
+
+	// TERRAINGEN_GENERATE — GGMAX 2.49. Press the Terrain Generator's "Generate Terrain and Open
+	// the Level Editor" button headlessly: sets the same two states the button's click block ends
+	// with (M-TerrainNew_part5.cpp:3504-3505, iQuitProceduralLevel countdown + tree reinit).
+	// ⚠ Deliberately SKIPS the button's entity re-banking preamble — this command exists to drive
+	// the crash-fix verification (the crash was in the countdown's screenshot block), not to be a
+	// full substitute for the button.
+	if (_stricmp(cmd, "TERRAINGEN_GENERATE") == 0)
+	{
+		extern bool bProceduralLevel;
+		extern int iQuitProceduralLevel;
+		extern bool bTreeGlobalInit;
+		if (!bProceduralLevel)
+		{
+			_snprintf(result, resultSize, "ERROR: TERRAINGEN_GENERATE — not in the Terrain Generator (bProceduralLevel false)");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		iQuitProceduralLevel = 5;
+		bTreeGlobalInit = false;
+		_snprintf(result, resultSize, "OK: TERRAINGEN_GENERATE — countdown armed (5 frames to the screenshot block)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// TERRAINGEN_STATE — GGMAX 2.49. Report the generator's state for gating scripts.
+	if (_stricmp(cmd, "TERRAINGEN_STATE") == 0)
+	{
+		extern bool bProceduralLevel;
+		extern int iQuitProceduralLevel;
+		extern bool bTriggerTerrainSaveAsWindow;
+		_snprintf(result, resultSize, "OK: TERRAINGEN_STATE procedural=%d quitCountdown=%d saveAsOpen=%d",
+			bProceduralLevel ? 1 : 0, iQuitProceduralLevel, bTriggerTerrainSaveAsWindow ? 1 : 0);
+		result[resultSize - 1] = 0;
 		return true;
 	}
 

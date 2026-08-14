@@ -62,6 +62,15 @@ static void DX12Log(const char* fmt, ...)
 using Microsoft::WRL::ComPtr;
 
 // DX12 state for ImGui rendering
+// GGMAX 2.49: dig-a-hole state shared with the DX11 backend and the game UI. bDigAHoleToHWND
+// and rD3D11DigAHole are set by screens (Terrain Generator) that show the LIVE 3D scene through
+// a hole in an otherwise opaque fullscreen window; bForceRenderEverywhere is toggled by draw
+// callbacks 10/11 (defined in imgui_gg_dx11_part0.cpp, still compiled in this build).
+// D3D11_RECT is `typedef RECT D3D11_RECT`, so the extern below is the same type.
+extern bool bDigAHoleToHWND;
+extern bool bForceRenderEverywhere;
+extern RECT rD3D11DigAHole;
+
 static bool g_ImGuiDX12Initialized = false;
 static ID3D12Device* g_pd3dDevice = nullptr;
 static ID3D12CommandQueue* g_pd3dCommandQueue = nullptr;
@@ -756,6 +765,13 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
 
             if (pcmd->UserCallback != nullptr)
             {
+                // GGMAX 2.49: callbacks 10/11 are the force-render toggles the DX11 backend uses
+                // to let chosen draws (e.g. the Terrain Generator's yellow editable-area overlay)
+                // punch through the dig-a-hole scissors below. They were being skipped with the
+                // other callbacks, which held bForceRenderEverywhere permanently false.
+                if (pcmd->UserCallback == (ImDrawCallback)10) { bForceRenderEverywhere = true;  continue; }
+                if (pcmd->UserCallback == (ImDrawCallback)11) { bForceRenderEverywhere = false; continue; }
+
                 // Phase 5: Custom shader callbacks (blur, nowhite, etc.) are not yet ported to DX12
                 // TODO: Port custom pixel shader variants to DX12
                 if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
@@ -773,16 +789,6 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
             if (!pcmd->TextureId)
                 continue;
 
-            // Apply scissor/clipping rectangle
-            D3D12_RECT r;
-            r.left = (LONG)(pcmd->ClipRect.x - clipOff.x);
-            r.top = (LONG)(pcmd->ClipRect.y - clipOff.y);
-            r.right = (LONG)(pcmd->ClipRect.z - clipOff.x);
-            r.bottom = (LONG)(pcmd->ClipRect.w - clipOff.y);
-            if (r.right <= r.left || r.bottom <= r.top)
-                continue;
-            cmdList->RSSetScissorRects(1, &r);
-
             // Bind texture
             D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = {};
             textureHandle.ptr = (UINT64)pcmd->TextureId;
@@ -798,6 +804,56 @@ void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList)
             }
 
             cmdList->SetGraphicsRootDescriptorTable(1, textureHandle);
+
+            // GGMAX 2.49: dig-a-hole, ported from the DX11 backend (imgui_gg_dx11_part0.cpp:715-767).
+            // The Terrain Generator "preview" is the LIVE 3D scene: the generator window is a
+            // fullscreen OPAQUE ImGui window and the engine scene is composed underneath it —
+            // the preview only exists because the UI draws around a HOLE (rD3D11DigAHole) in
+            // four scissor rects (above / left-of / below / right-of the hole). This backend
+            // used one ClipRect scissor for everything, so the opaque window covered the whole
+            // viewport and the generator showed no terrain at all on DX12.
+            // Faithful to DX11: while the hole is active, draws use the four display-sized rects
+            // INSTEAD of their own ClipRect (panel widgets sit inside the side rects anyway),
+            // and draws between callbacks 10/11 bypass the hole entirely.
+            if (bDigAHoleToHWND && !bForceRenderEverywhere)
+            {
+                D3D12_RECT rAll;
+                rAll.left = (LONG)(drawData->DisplayPos.x - clipOff.x);
+                rAll.top = (LONG)(drawData->DisplayPos.y - clipOff.y);
+                rAll.right = (LONG)(drawData->DisplayPos.x + drawData->DisplaySize.x);
+                rAll.bottom = (LONG)(drawData->DisplayPos.y + drawData->DisplaySize.y);
+                D3D12_RECT hr[4];
+                for (int i = 0; i < 4; i++) hr[i] = rAll;
+                hr[0].bottom = rD3D11DigAHole.top;     // strip above the hole
+                hr[1].top = rD3D11DigAHole.top;        // strip left of the hole
+                hr[1].right = rD3D11DigAHole.left;
+                hr[1].bottom = rD3D11DigAHole.bottom;
+                hr[2].top = rD3D11DigAHole.bottom;     // strip below the hole
+                hr[3].top = rD3D11DigAHole.top;        // strip right of the hole
+                hr[3].left = rD3D11DigAHole.right;
+                hr[3].bottom = rD3D11DigAHole.bottom;
+                for (int i = 0; i < 4; i++)
+                {
+                    if (hr[i].right <= hr[i].left || hr[i].bottom <= hr[i].top)
+                        continue;
+                    cmdList->RSSetScissorRects(1, &hr[i]);
+                    cmdList->DrawIndexedInstanced(pcmd->ElemCount, 1,
+                        pcmd->IdxOffset + globalIdxOffset,
+                        pcmd->VtxOffset + globalVtxOffset, 0);
+                    totalDrawCalls++;
+                }
+                continue;
+            }
+
+            // Apply scissor/clipping rectangle
+            D3D12_RECT r;
+            r.left = (LONG)(pcmd->ClipRect.x - clipOff.x);
+            r.top = (LONG)(pcmd->ClipRect.y - clipOff.y);
+            r.right = (LONG)(pcmd->ClipRect.z - clipOff.x);
+            r.bottom = (LONG)(pcmd->ClipRect.w - clipOff.y);
+            if (r.right <= r.left || r.bottom <= r.top)
+                continue;
+            cmdList->RSSetScissorRects(1, &r);
 
             // Log first few draw calls per frame, then just the count
             if (totalDrawCalls < 3)

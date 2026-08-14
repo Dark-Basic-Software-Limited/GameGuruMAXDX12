@@ -3634,6 +3634,43 @@ void procedural_new_level(void)
 					pBackBuffer = (ID3D11Texture2D *)GetBitmapTexture2D(99);
 					#endif
 
+					// GGMAX 2.49: on DX12 there is no D3D11 backbuffer — the stub above left
+					// pBackBuffer NULL and the GetDesc below was a guaranteed null vtable call:
+					// THE "Generate Terrain and Open the Level Editor" CRASH (Guru-Crash.log
+					// 2026-08-14 02:07:10, AV READ 0x0 at this line, procedural_new_level ->
+					// mapeditorexecutable_loop). Crashing here also meant bTriggerTerrainSaveAsWindow
+					// below never ran, so the generated level was lost. Capture the same
+					// centre-cropped thumbnail through the DX12 path instead (the same helper the
+					// storyboard thumbs use), then skip the dead D3D11 GrabImage machinery.
+					if (pBackBuffer == NULL)
+					{
+						float grabx12 = 1280, graby12 = 720;
+						if (bPopModalTakeMapSnapshot == true) { grabx12 = 800; graby12 = 800; }
+						int iScreenW = GetDisplayWidth();
+						int iScreenH = GetDisplayHeight();
+						if (grabx12 > iScreenW) grabx12 = (float)iScreenW;
+						if (graby12 > iScreenH) graby12 = (float)iScreenH;
+						int iCapX = (int)((iScreenW * 0.5f) - (grabx12 * 0.5f)); if (iCapX < 0) iCapX = 0;
+						int iCapY = (int)((iScreenH * 0.5f) - (graby12 * 0.5f)); if (iCapY < 0) iCapY = 0;
+						char destination[MAX_PATH];
+						strcpy(destination, "thumbbank\\lastnewlevel.jpg");
+						GG_SetWritablesToRoot(true);
+						GG_GetRealPath(destination, 1);
+						GG_SetWritablesToRoot(false);
+						bool bThumbOK = WickedCall_CaptureBackbufferRegionToJPG(iCapX, iCapY, (int)grabx12, (int)graby12, destination);
+						{
+							// Known remainder: this helper shares the "thumbnails don't persist on
+							// DX12" gap with the storyboard thumbs (M-GridEditB_part22.cpp:3700).
+							// The crash fix above does not depend on it — log so the gap is visible.
+							char dbg[MAX_PATH + 64];
+							sprintf(dbg, "TerrainGen thumb capture %s: %s", bThumbOK ? "OK" : "FAILED", destination);
+							timestampactivity(0, dbg);
+						}
+						SetGrabImageMode(0);
+						g_pGlob->pCurrentBitmapSurface = pTmpSurface;
+					}
+					else
+					{
 					g_pGlob->pCurrentBitmapSurface = pBackBuffer;
 					GGSURFACE_DESC ddsd;
 					pBackBuffer->GetDesc(&ddsd);
@@ -3671,6 +3708,7 @@ void procedural_new_level(void)
 						g_bDontUseImageAlpha = false;
 						DeleteImage(STORYBOARD_THUMBS + 400);
 					}
+					} // GGMAX 2.49: end of the D3D11 (pBackBuffer != NULL) branch
 				}
 				#ifndef DIGAHOLE
 				if (ObjectExist(TERRAINGENERATOR_OBJECT)) ShowObject(TERRAINGENERATOR_OBJECT);
