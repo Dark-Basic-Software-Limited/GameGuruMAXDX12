@@ -1435,3 +1435,42 @@ non-null AND CHANGING between polls, percent 5.0→10.5→16.0, playing=1.
   path failure is also modal); assume ANY legacy error path may be a MessageBox.
 - After taskkill, the current run's log is still Guru-Game.log — the -last rename
   only happens on the NEXT launch. Grepping -last reads the WRONG RUN.
+
+## §2.51 SHIPPED (afternoon 08-14, game 56377809) — 2.50's own perf leak, found by Lee's sweep
+
+Lee's requested 19-demo sweep came back with 17/19 demos down 30-50% FPS (editor ~+6 ms,
+game ~+10 ms per frame). The chain that cracked it, in order:
+
+1. probe_one.sh same-binary re-probes read AT/ABOVE baseline (Switch 154.1, Kit 108.2) →
+   I published "transient machine load, binary exonerated". **WRONG** — the re-run sweep
+   REPRODUCED the slow numbers per-demo (Kit 47.9 vs 47.8) while probes stayed fast.
+   ★ Lesson: a passing probe in a DIFFERENT context exonerates nothing; only reproduction
+   under the failing context does. Launch-BIMODAL ≠ time-varying.
+2. ENABLE_PROFILER + GET_PERF_DATA on 6 hunter launches (6/6 slow): CPU 20.5 ms vs GPU 13.1,
+   and ONE range held it all: `Logic - ConstantNonDisplay: 11.70 ms`.
+3. videotrace.txt (the 2.50 unbuffered tracer, still armed): every slow launch had loaded a
+   hub/storyboard tutorial video (`tutorialbank\games\*.mp4`); both fast probes sat exactly
+   in the only gap in the load ledger. 37/37 lines matched the fast/slow record.
+
+Root cause: 2.50 made tutorial videos actually LOAD on DX12 (correct); but the widget
+pauses its video only from its own per-frame draw (iSmallVideoFindFirstFrame countdown),
+so leaving the section within seconds orphans a live MF session — and `iVideoChanged`
+(the new-sample flag) was only ever SET, never consumed, so UpdateAllAnimation re-ran the
+scalar YUY2→RGBA convert + synchronous bridge-texture upload on the SAME stale frame at
+render rate, forever, even after the clip ended.
+
+Fix (both halves independent):
+- CAnimation_part0.cpp: DX12 branch consumes iVideoChanged BEFORE converting → conversion
+  at sample rate (~30 Hz), zero once the session stops. DX11 path untouched.
+- M-GridEditB_part4.cpp + GameGuruMain.cpp: per-entry heartbeat from every drawn tutorial
+  widget; SmallTutorialVideoWatchdog (GuruLoopLogic, every frame) frees any widget slot
+  stale >120 frames (Stop first if playing; logs to videotrace) — guards audio leaks and
+  32-slot exhaustion across storyboard visits.
+
+Verified: pre-fix 6/6 launches slow (48-51 FPS / 20.5 ms CPU); post-fix 4/4 fast
+(90-105 FPS / 7.5-8.1 ms CPU), same recipe, minutes apart.
+
+Side-findings settled by the same evidence: Grand Canyon's "20 FPS in game" sweep row =
+its intro CUTSCENE (videobank introtolevel1.mp4) now genuinely plays — 2.50 working as
+intended, sampled mid-cutscene; Bounty's intro (bountyintrocs.mp4) likewise, ending before
+its samples. The +30-50 MB driver-VRAM drift on slow launches = the live MF session.
