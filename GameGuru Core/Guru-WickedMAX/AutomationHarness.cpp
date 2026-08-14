@@ -4124,6 +4124,48 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// ZOOM_FIRE — GGMAX 2.48. Hold right mouse to zoom, fire mid-hold, keep zoom held after.
+	// Everything goes through the SHIPPED input path (see M-Physics_part1.cpp consumer), so the
+	// shot is fired in a genuine zoomed state — built to reproduce "zoomed firing does no damage".
+	// Args: [zoomframes] [fireat] — defaults 120 and 60 (fire after 60 frames of zoom, hold
+	// remains ~60 more so the shot lands fully zoomed).
+	if (_stricmp(cmd, "ZOOM_FIRE") == 0)
+	{
+		const char* st = AutoHarness_GetAppState();
+		if (strcmp(st, "game") != 0)
+		{
+			_snprintf(result, resultSize, "ERROR: ZOOM_FIRE only works in test game (state: %s)", st);
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		int zoomFrames = 120, fireAt = 60;
+		if (arg != nullptr && arg[0] != 0)
+		{
+			int a = 0, b = 0;
+			if (sscanf(arg, "%d %d", &a, &b) >= 1 && a > 0 && a <= 600) zoomFrames = a;
+			if (b > 0 && b < zoomFrames) fireAt = b;
+		}
+		if (fireAt >= zoomFrames) fireAt = zoomFrames / 2;
+		extern int g_ggZoomHoldFrames, g_ggZoomFireAtFrame;
+		g_ggZoomHoldFrames = zoomFrames;
+		g_ggZoomFireAtFrame = fireAt;
+		_snprintf(result, resultSize, "OK: ZOOM_FIRE — RMB held %d frames, LMB fires at frame %d (shipped Lua input path)",
+			zoomFrames, fireAt);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// DUMP_SHOT — GGMAX 2.48. Read the bullet-ray tracer (one row per fired ray, sampled inside
+	// entity_hasbulletrayhit) and print a verdict: hit entity / terrain / clean miss / SWALLOWED
+	// by an out-of-entity-range object (blockedBy names it; == gunobj means the weapon mesh ate
+	// the shot via the stale aabb.layerMask). Companion to DUMP_FIRE, one stage further down.
+	if (_stricmp(cmd, "DUMP_SHOT") == 0)
+	{
+		extern void GGShotTraceDump(char* result, int resultSize);
+		GGShotTraceDump(result, resultSize);
+		return true;
+	}
+
 	// FIRE_WEAPON — GGMAX 2.41. Pull the trigger exactly as a left mouse button press would.
 	//
 	// Uses the engine's OWN script-control hook rather than faking input: M-Physics_part1.cpp:218

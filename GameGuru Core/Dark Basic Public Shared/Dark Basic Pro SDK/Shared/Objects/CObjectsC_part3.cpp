@@ -1787,6 +1787,11 @@ DARKSDK_DLL int IntersectAllEx ( int iPrimaryStart, int iPrimaryEnd, float fX, f
 			float fDistanceOfRay = GGVec3Length(&vecDir);
 			DWORD dwObjectNumberHit = 0;
 			bool bRes = false;
+			// GGMAX 2.48 diagnostic: when the pick's closest hit is DISCARDED for being outside
+			// the entity range (the else-else below), the caller sees a total miss and cannot
+			// tell it from empty air. Record who swallowed the ray so DUMP_SHOT can name it.
+			extern DWORD g_ggLastRayBlockedBy;
+			g_ggLastRayBlockedBy = 0;
 			#ifdef PICKBVHTHREADED
 			if (bThreadSafe)
 				bRes = WickedCall_SentRay4_ThreadSafe(vecFrom.x, vecFrom.y, vecFrom.z, vecDir.x, vecDir.y, vecDir.z, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true);
@@ -1847,6 +1852,8 @@ DARKSDK_DLL int IntersectAllEx ( int iPrimaryStart, int iPrimaryEnd, float fX, f
 					else
 					{
 						// hit some other non-entity object (weapon, etc)
+						// GGMAX 2.48: this discard is the ray being SWALLOWED - record the culprit
+						g_ggLastRayBlockedBy = dwObjectNumberHit;
 					}
 				}
 				if (iHitValue != 0 && !bThreadSafe)

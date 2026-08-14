@@ -416,10 +416,33 @@ void physics_player_control ( void )
 
 	// Get MouseClick (except when in TAB TAB mode)
 	// Mode 1 = ignore A, C, D buttons of controller
-	if ( g.tabmode < 2 ) 
+	if ( g.tabmode < 2 )
 		t.tmouseclick = control_mouseclick_mode(1);
 	else
 		t.tmouseclick=0;
+
+	// GGMAX 2.48: harness zoom-fire. ZOOM_FIRE holds the RIGHT MOUSE bit for N frames so the
+	// Lua zoom state machine (gameplayercontrol.lua:361-410 reads g_MouseClickControl bit 2,
+	// advances gunzoommode +1/frame to zoomed) runs its SHIPPED path — not a forced state.
+	// Mid-hold it presses the LEFT MOUSE bit for a few frames, which fires through the SHIPPED
+	// path too (gameplayercontrol.lua:199 bit 1 -> SetGamePlayerStateFiringMode(1) -> DarkLUA
+	// sets gunmode 101). ⚠ Do NOT swap this for the 2.41 firingmode hold — the 2.42 tracer
+	// proved that path alone does not fire; the real trigger is the Lua one.
+	// Must live HERE: after t.tmouseclick is assigned for this frame, before Lua reads it.
+	{
+		extern int g_ggZoomHoldFrames, g_ggZoomFireAtFrame, g_ggZoomFireMouseFrames;
+		if (g_ggZoomHoldFrames > 0)
+		{
+			t.tmouseclick |= 2;
+			g_ggZoomHoldFrames--;
+			if (g_ggZoomFireAtFrame > 0)
+			{
+				g_ggZoomFireAtFrame--;
+				if (g_ggZoomFireAtFrame == 0) g_ggZoomFireMouseFrames = 4;
+			}
+		}
+		if (g_ggZoomFireMouseFrames > 0) { t.tmouseclick |= 1; g_ggZoomFireMouseFrames--; }
+	}
 
 	// Set input data for LUA call
 	LuaSetInt ( "g_KeyPressJ", t.plrkeyJ );
@@ -1996,3 +2019,9 @@ int physics_rayintersecttree (float fX, float fY, float fZ, float fToX, float fT
 // GGMAX 2.41: frames remaining for the harness FIRE_WEAPON trigger-hold (see the consumer at the
 // top of physics_player_gatherkeycontrols, the only writer of state.firingmode).
 int g_ggFireHoldFrames = 0;
+
+// GGMAX 2.48: harness ZOOM_FIRE — right-mouse hold frames, when (inside that hold) to fire,
+// and how many frames the left-mouse press lasts once triggered.
+int g_ggZoomHoldFrames = 0;
+int g_ggZoomFireAtFrame = 0;
+int g_ggZoomFireMouseFrames = 0;

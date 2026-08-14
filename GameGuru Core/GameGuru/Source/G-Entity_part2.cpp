@@ -554,6 +554,53 @@ void entity_gettrueplayerpos(void)
 	}
 }
 
+// GGMAX 2.48: SHOT tracer — the trigger tracer (DUMP_FIRE) proves the trigger worked; this one
+// proves what the BULLET RAY did. One row per fired ray, sampled immediately after the hitscan,
+// so a "no damage while zoomed" report can be split into: ray hit an entity / hit terrain /
+// clean miss / SWALLOWED by an out-of-range object (g_ggLastRayBlockedBy names it — the weapon
+// model is the suspect, g_iCurrentGunObj). Ring of 16, always on: it costs a few writes per
+// SHOT, not per frame. Dumped by the DUMP_SHOT harness command.
+DWORD g_ggLastRayBlockedBy = 0;   // written inside IntersectAllEx's discard branch (CObjectsC_part3.cpp)
+extern int g_iCurrentGunObj;
+struct GGShotRow
+{
+	int zoom, gunobj, hit;
+	DWORD blockedBy;
+	float x1, y1, z1, x2, y2, z2;
+	int terrainShortened;
+};
+static GGShotRow g_ggShotRows[16];
+static int g_ggShotCount = 0;
+void GGShotTraceDump(char* result, int resultSize)
+{
+	FILE* f = fopen("shottrace.txt", "w");
+	int swallowed = 0, hits = 0, terrain = 0, misses = 0;
+	DWORD lastBlocker = 0;
+	int n = g_ggShotCount < 16 ? g_ggShotCount : 16;
+	for (int i = 0; i < n; i++)
+	{
+		GGShotRow& r = g_ggShotRows[i];
+		if (r.hit > 0) hits++;
+		else if (r.hit == -1 || r.terrainShortened) terrain++;
+		else if (r.blockedBy != 0) { swallowed++; lastBlocker = r.blockedBy; }
+		else misses++;
+		if (f) fprintf(f, "shot %d: zoom=%d hit=%d blockedBy=%lu gunobj=%d terr=%d ray (%.1f,%.1f,%.1f)->(%.1f,%.1f,%.1f)\n",
+			i, r.zoom, r.hit, (unsigned long)r.blockedBy, r.gunobj, r.terrainShortened,
+			r.x1, r.y1, r.z1, r.x2, r.y2, r.z2);
+	}
+	if (f) fclose(f);
+	const char* verdict = "no shots recorded — fire first (FIRE_WEAPON / ZOOM_FIRE)";
+	if (swallowed > 0) verdict = "RAY SWALLOWED by an out-of-entity-range object — if blockedBy == gunobj, the weapon mesh ate the shot (stale aabb.layerMask)";
+	else if (hits > 0) verdict = "ray HIT an entity — hitscan is working";
+	else if (terrain > 0) verdict = "ray reached TERRAIN only";
+	else if (misses > 0) verdict = "clean miss — ray cast fine, nothing in its path";
+	_snprintf(result, resultSize,
+		"OK: DUMP_SHOT shots=%d hits=%d terrain=%d swallowed=%d misses=%d lastBlocker=%lu -> Files/shottrace.txt\nVERDICT: %s",
+		g_ggShotCount, hits, terrain, swallowed, misses, (unsigned long)lastBlocker, verdict);
+	result[resultSize - 1] = 0;
+	g_ggShotCount = 0;
+}
+
 void entity_hasbulletrayhit(void)
 {
 	// bulletray is x1#,y1#,z1#,x2#,y2#,z2#,bulletrayhit,gunrange#,t.bulletfinalstrengthmod(1),bulletisinfactmeleestrike
@@ -589,7 +636,17 @@ void entity_hasbulletrayhit(void)
 	}
 	bool bFullWickedAccuracy = true;
 	t.thitvalue = IntersectAllEx (g.entityviewstartobj, g.entityviewendobj, t.brayx1_f, t.brayy1_f, t.brayz1_f, t.brayx2_f, t.brayy2_f, t.brayz2_f, 0, 0, 0, 0, 0, bFullWickedAccuracy);
-	if ( t.thitvalue>0 ) 
+	{
+		// GGMAX 2.48 shot tracer sample (see block above entity_hasbulletrayhit)
+		GGShotRow& r = g_ggShotRows[g_ggShotCount % 16];
+		r.zoom = t.gunzoommode; r.gunobj = g_iCurrentGunObj; r.hit = t.thitvalue;
+		r.blockedBy = g_ggLastRayBlockedBy;
+		r.x1 = t.brayx1_f; r.y1 = t.brayy1_f; r.z1 = t.brayz1_f;
+		r.x2 = t.brayx2_f; r.y2 = t.brayy2_f; r.z2 = t.brayz2_f;
+		r.terrainShortened = (t.tttriggerdecalimpact == 10) ? 1 : 0;
+		g_ggShotCount++;
+	}
+	if ( t.thitvalue>0 )
 	{
 		if (t.thitvalue > 0)
 		{

@@ -1642,7 +1642,22 @@ void WickedCall_SetObjectRenderLayer(sObject* pObject,int iLayerMask)
 	//if (pObject->position.bGlued == false && pObject->position.iBeenGluedToBy == 0)
 	if ( pObject->position.iBeenGluedToBy == 0)
 	{
-		// this does not work, cannot seem to set the layermask AFTER you have created the object and merged it with the scene!
+		// GGMAX 2.48: the old note here read "this does not work, cannot seem to set the layermask
+		// AFTER you have created the object and merged it with the scene!" — root-caused at last.
+		// Scene::Intersects (the raycast behind wiScene::Pick) does not test this LIVE
+		// LayerComponent; it tests the CACHED copy in aabb_objects[i].layerMask (engine
+		// wiScene.cpp:7180), and that cache is only rewritten from the live layer during
+		// Scene::Update (wiScene.cpp:5516). So a persistent layer change works from the next
+		// frame on, but the swap-pick-restore pattern (IntersectAllEx excludes the player's gun
+		// and its ignore-object this way, CObjectsC_part3.cpp:1780-1786) happens entirely BETWEEN
+		// updates and was a silent no-op on DX12 — the weapon stayed pickable, and a zoomed shot
+		// (gun pulled onto the camera axis) was swallowed by the player's own weapon mesh:
+		// no damage, no bullet hole, no impact, while ammo/flash/sound all still ran.
+		// DX11's Pick read the live component (WickedRepo wiScene.cpp:4989), which is why the
+		// identical game code worked there. Fix: write the cache through alongside the live
+		// component. Costs a GetIndex per frame entity at SWAP time only — the per-object pick
+		// loop is untouched. Next Scene::Update re-derives the cache from the live layer, so the
+		// two can never drift.
 		for (int iF = 0; iF < pObject->iFrameCount; iF++)
 		{
 			uint64_t objectEntity = pObject->ppFrameList[iF]->wickedobjindex;
@@ -1657,6 +1672,14 @@ void WickedCall_SetObjectRenderLayer(sObject* pObject,int iLayerMask)
 				if (parent != nullptr)
 				{
 					parent->layerMask_bind = iLayerMask;
+				}
+
+				// GGMAX 2.48: write-through to the pick cache (see block comment above)
+				wiScene::Scene& ggScene = wiScene::GetScene();
+				size_t ggObjIdx = ggScene.objects.GetIndex(objectEntity);
+				if (ggObjIdx != ~0ull && ggObjIdx < ggScene.aabb_objects.size())
+				{
+					ggScene.aabb_objects[ggObjIdx].layerMask = (uint32_t)iLayerMask;
 				}
 			}
 		}
