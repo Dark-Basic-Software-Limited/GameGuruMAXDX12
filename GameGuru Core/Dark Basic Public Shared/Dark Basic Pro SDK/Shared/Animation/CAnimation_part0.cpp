@@ -1663,77 +1663,18 @@ DARKSDK void UpdateAllAnimation(void)
 					// Consuming first means a sample landing mid-convert re-arms the flag, so no
 					// frame is dropped. DX11's path below is left exactly as it always behaved.
 					iVideoChanged = 0;
-					static unsigned char* s_ggRGBA = NULL;
-					static size_t s_ggRGBASize = 0;
-					const size_t needed = (size_t)iVideoWidth * iVideoHeight * 4;
-					if (needed > 0 && needed > s_ggRGBASize)
-					{
-						unsigned char* grown = (unsigned char*)realloc(s_ggRGBA, needed);
-						if (grown) { s_ggRGBA = grown; s_ggRGBASize = needed; }
-					}
-					if (s_ggRGBA && s_ggRGBASize >= needed && needed > 0)
-					{
-						Anim[AnimIndex].bStreamingNow = true;
-						unsigned int* pVideoFrameInt = (unsigned int*)pVideoFrame;
-						for ( int y = 0; y < iVideoHeight; y++ )
-						{
-							unsigned int* pThisLinePtr = (unsigned int*)(s_ggRGBA + (size_t)y * iVideoWidth * 4);
-
-							// same source-pitch alignment rule as the D3D11 block below
-							float fMinimumPitchForRow = (iVideoWidth / 2.0f) / 8.0f;
-							if ( fMinimumPitchForRow != (int)fMinimumPitchForRow )
-							{
-								fMinimumPitchForRow = (int)fMinimumPitchForRow + 1;
-							}
-							fMinimumPitchForRow *= 8.0f;
-							uint32_t index = (y * (int)fMinimumPitchForRow);
-
-							for ( int x = 0; x < iVideoWidth/2; x++ )
-							{
-								unsigned int value = pVideoFrameInt[ index ];
-								int iY0 = value & 0xff;
-								int iU = (value >> 8) & 0xff;
-								int iY1 = (value >> 16) & 0xff;
-								int iV = value >> 24;
-								iU -= 128;
-								iV -= 128;
-
-								iY0 -= 16;
-								iY0 *= 298;
-								iY0 += 128;
-								int iRed = (iY0 + iV*409) >> 8;
-								int iGreen = (iY0 - iU*100 - iV*208) >> 8;
-								int iBlue = (iY0 + iU*516) >> 8;
-								if( iRed < 0 ) iRed = 0;
-								if( iGreen < 0 ) iGreen = 0;
-								if( iBlue < 0 ) iBlue = 0;
-								if( iRed > 255 ) iRed = 255;
-								if( iGreen > 255 ) iGreen = 255;
-								if( iBlue > 255 ) iBlue = 255;
-								*(pThisLinePtr+0) = 0xff000000 | (iBlue << 16) | (iGreen << 8) | iRed;
-
-								iY1 -= 16;
-								iY1 *= 298;
-								iY1 += 128;
-								int iRed2 = (iY1 + iV*409) >> 8;
-								int iGreen2 = (iY1 - iU*100 - iV*208) >> 8;
-								int iBlue2 = (iY1 + iU*516) >> 8;
-								if( iRed2 < 0 ) iRed2 = 0;
-								if( iGreen2 < 0 ) iGreen2 = 0;
-								if( iBlue2 < 0 ) iBlue2 = 0;
-								if( iRed2 > 255 ) iRed2 = 255;
-								if( iGreen2 > 255 ) iGreen2 = 255;
-								if( iBlue2 > 255 ) iBlue2 = 255;
-								*(pThisLinePtr+1) = 0xff000000 | (iBlue2 << 16) | (iGreen2 << 8) | iRed2;
-
-								index++;
-								pThisLinePtr += 2;
-							}
-						}
-						void* h = ImGui_DX12_UpdateVideoTexture(GG_DX12_VIDEO_ID_BASE + AnimIndex,
-							s_ggRGBA, iVideoWidth, iVideoHeight);
-						if (h) g_ggDX12VideoHandle[AnimIndex] = h;
-					}
+					// GGMAX 2.52: convert+upload moved into the bridge streaming path
+					// (ImGui_DX12_UpdateVideoTextureYUY2): persistent 4-texture ring +
+					// persistently-mapped upload buffer, parallel YUY2->RGBA straight into the
+					// upload (identical per-pixel math and source-pitch rule, now in the bridge),
+					// one small GPU copy per NEW sample. Replaces the 2.50 texture-per-frame
+					// one-shot (2 allocations + SRV churn + full fence stall per sample = the
+					// cutscene tax: Grand Canyon's intro sampled at 46 FPS in the 0814c sweep).
+					Anim[AnimIndex].bStreamingNow = true;
+					extern void* ImGui_DX12_UpdateVideoTextureYUY2(int videoId, const unsigned char* yuy2, int width, int height);
+					void* h = ImGui_DX12_UpdateVideoTextureYUY2(GG_DX12_VIDEO_ID_BASE + AnimIndex,
+						(const unsigned char*)pVideoFrame, iVideoWidth, iVideoHeight);
+					if (h) g_ggDX12VideoHandle[AnimIndex] = h;
 				}
 				#endif // WMFVIDEO
 

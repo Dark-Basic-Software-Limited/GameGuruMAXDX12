@@ -34,6 +34,13 @@ void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath);
 // defer-deleted. videoId must not collide with image ids (use 0x11DE0000 + anim index).
 void* ImGui_DX12_UpdateVideoTexture(int videoId, const unsigned char* rgba, int width, int height);
 
+// GGMAX 2.52: the streaming replacement for per-frame video duty — takes the RAW YUY2
+// sample (Media Foundation layout, ceil((w/2)/8)*8-uint32 row pitch), converts to RGBA in
+// parallel straight into a persistent upload buffer, and copies into a 4-texture ring.
+// No per-frame allocations, no SRV churn, no deferred deletes. Returns the ring texture's
+// ImTextureID for this frame. ImGui_DX12_RemoveTexture(videoId) tears the ring down.
+void* ImGui_DX12_UpdateVideoTextureYUY2(int videoId, const unsigned char* yuy2, int width, int height);
+
 // Set width/height for an image entry (used during DX12 lazy loading).
 void ImGui_DX12_SetImageSize(int imageId, int width, int height);
 

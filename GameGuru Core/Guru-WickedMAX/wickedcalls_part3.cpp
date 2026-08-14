@@ -2898,3 +2898,16 @@ void GGSetShadowExtrude(int iUnits)
 {
 	wi::renderer::gg_shadow_caster_extrude = (iUnits < 0) ? 0.0f : (float)iUnits;
 }
+
+// GGMAX 2.52: parallel-for shim for the ImGui DX12 bridge's video YUY2->RGBA convert.
+// Lives here because the bridge cannot include wicked headers without risking include-order
+// conflicts with ImGui/d3d12; wickedcalls already compiles against the full engine.
+// Called from the main thread between frames (ConstantNonDisplay) - Dispatch+Wait is the
+// jobsystem's normal foreground use.
+extern "C" void GGVideo_ParallelFor(int jobCount, void(*fn)(int, void*), void* ctx)
+{
+	if (jobCount <= 1) { if (jobCount == 1) fn(0, ctx); return; }
+	wi::jobsystem::context jc;
+	wi::jobsystem::Dispatch(jc, (uint32_t)jobCount, 1, [fn, ctx](wi::jobsystem::JobArgs args) { fn((int)args.jobIndex, ctx); });
+	wi::jobsystem::Wait(jc);
+}

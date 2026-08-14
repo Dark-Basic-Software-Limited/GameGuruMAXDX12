@@ -1213,6 +1213,12 @@ void ImGui_DX12_RemoveTexture(int imageId)
         g_PendingDeletes.push_back(std::move(pd));
         g_TextureCache.erase(it);
     }
+
+    // GGMAX 2.52: a video id may own a streaming ring instead of (or as well as) a cached
+    // texture — same call site tears both down (DB_FreeAnimation and the tutorial watchdog
+    // both come through here). Defined below the ring machinery.
+    extern void ImGui_DX12_RemoveVideoRing(int videoId);
+    ImGui_DX12_RemoveVideoRing(imageId);
 }
 
 // GGMAX 2.50: dynamic texture for VIDEO frames (tutorial videos — CAnimation's Media Foundation
@@ -1239,6 +1245,276 @@ void* ImGui_DX12_UpdateVideoTexture(int videoId, const unsigned char* rgba, int 
     void* result = (void*)cached.GpuHandle.ptr;
     g_TextureCache[videoId] = std::move(cached);
     return result;
+}
+
+// ============================================================================
+// GGMAX 2.52: streaming ring path for video frames — replaces the one-shot
+// path above for the per-frame video case. The one-shot cost per NEW video
+// frame was: 2x CreateCommittedResource + row-copy into a fresh upload buffer
+// + full fence stall + new SRV + deferred delete of the old texture. At 30
+// samples/sec that tax halved the framerate whenever a cutscene played.
+// Here everything persistent is created ONCE per video (4 ring textures, their
+// SRVs, one persistently-mapped upload buffer); each new sample pays only a
+// parallel YUY2->RGBA convert straight into the mapped upload, one small GPU
+// copy and a short fence. Ring size 4 > NUM_FRAMES_IN_FLIGHT(2): a texture is
+// rewritten 4 updates after it was last returned, so no in-flight UI frame can
+// still be sampling it.
+// ============================================================================
+extern void gg_videotrace(const char* msg);                                   // CAnimation's unbuffered tracer
+extern "C" void GGVideo_ParallelFor(int jobCount, void(*fn)(int, void*), void* ctx); // wi::jobsystem shim (wickedcalls_part3.cpp)
+
+#define GG_VIDEO_RING 4
+struct DX12VideoRing
+{
+    int Width = 0, Height = 0;
+    ComPtr<ID3D12Resource> Tex[GG_VIDEO_RING];
+    D3D12_GPU_DESCRIPTOR_HANDLE Gpu[GG_VIDEO_RING] = {};
+    UINT Srv[GG_VIDEO_RING] = {};
+    bool InSrvState[GG_VIDEO_RING] = {};   // false until first copy (created in COPY_DEST)
+    ComPtr<ID3D12Resource> Upload;         // persistent, persistently mapped
+    void* UploadMapped = nullptr;
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT Layout = {};
+    UINT NumRows = 0;
+    int Cursor = 0;
+};
+static std::unordered_map<int, DX12VideoRing> g_VideoRings;
+
+static void ReleaseVideoRing(DX12VideoRing& ring)
+{
+    for (int i = 0; i < GG_VIDEO_RING; i++)
+    {
+        if (ring.Tex[i].Get())
+        {
+            // in-flight UI frames may still sample these — same deferred path as image textures
+            PendingTextureDelete pd;
+            pd.Texture.Resource = std::move(ring.Tex[i]);
+            pd.Texture.GpuHandle = ring.Gpu[i];
+            pd.Texture.SrvSlotIndex = ring.Srv[i];
+            pd.Texture.Width = ring.Width;
+            pd.Texture.Height = ring.Height;
+            pd.FramesRemaining = DEFERRED_DELETE_FRAMES;
+            g_PendingDeletes.push_back(std::move(pd));
+        }
+        ring.Gpu[i] = {};
+        ring.Srv[i] = 0;
+        ring.InSrvState[i] = false;
+    }
+    // the upload buffer is only ever read by the private queue, and every copy from it was
+    // fence-waited to completion before returning — safe to release immediately
+    if (ring.UploadMapped) { ring.Upload->Unmap(0, nullptr); ring.UploadMapped = nullptr; }
+    ring.Upload.Reset();
+    ring.Width = ring.Height = 0;
+    ring.Cursor = 0;
+}
+
+// Row-band YUY2->RGBA conversion job. Per-pixel math is EXACTLY the legacy CAnimation
+// loop (BT.601 16-235, packs 0xff000000|B<<16|G<<8|R = R8G8B8A8 bytes), and the source
+// pitch rule is the same ceil((width/2)/8)*8 uint32s the D3D11 path uses.
+struct GGYuy2Ctx
+{
+    const unsigned int* src;
+    unsigned char* dst;
+    int width, height;
+    int srcPitchInts;
+    UINT dstRowPitch;
+    int rowsPerJob;
+};
+static void GGYuy2ConvertBand(int jobIndex, void* ctxRaw)
+{
+    GGYuy2Ctx* c = (GGYuy2Ctx*)ctxRaw;
+    int y0 = jobIndex * c->rowsPerJob;
+    int y1 = y0 + c->rowsPerJob; if (y1 > c->height) y1 = c->height;
+    for (int y = y0; y < y1; y++)
+    {
+        const unsigned int* srcRow = c->src + (size_t)y * c->srcPitchInts;
+        unsigned int* dstRow = (unsigned int*)(c->dst + (size_t)y * c->dstRowPitch);
+        for (int x = 0; x < c->width / 2; x++)
+        {
+            unsigned int value = srcRow[x];
+            int iY0 = value & 0xff;
+            int iU = (value >> 8) & 0xff;
+            int iY1 = (value >> 16) & 0xff;
+            int iV = value >> 24;
+            iU -= 128;
+            iV -= 128;
+
+            iY0 -= 16; iY0 *= 298; iY0 += 128;
+            int iRed = (iY0 + iV * 409) >> 8;
+            int iGreen = (iY0 - iU * 100 - iV * 208) >> 8;
+            int iBlue = (iY0 + iU * 516) >> 8;
+            if (iRed < 0) iRed = 0; if (iGreen < 0) iGreen = 0; if (iBlue < 0) iBlue = 0;
+            if (iRed > 255) iRed = 255; if (iGreen > 255) iGreen = 255; if (iBlue > 255) iBlue = 255;
+            dstRow[x * 2 + 0] = 0xff000000 | (iBlue << 16) | (iGreen << 8) | iRed;
+
+            iY1 -= 16; iY1 *= 298; iY1 += 128;
+            int iRed2 = (iY1 + iV * 409) >> 8;
+            int iGreen2 = (iY1 - iU * 100 - iV * 208) >> 8;
+            int iBlue2 = (iY1 + iU * 516) >> 8;
+            if (iRed2 < 0) iRed2 = 0; if (iGreen2 < 0) iGreen2 = 0; if (iBlue2 < 0) iBlue2 = 0;
+            if (iRed2 > 255) iRed2 = 255; if (iGreen2 > 255) iGreen2 = 255; if (iBlue2 > 255) iBlue2 = 255;
+            dstRow[x * 2 + 1] = 0xff000000 | (iBlue2 << 16) | (iGreen2 << 8) | iRed2;
+        }
+    }
+}
+
+void* ImGui_DX12_UpdateVideoTextureYUY2(int videoId, const unsigned char* yuy2, int width, int height)
+{
+    if (!g_ImGuiDX12Initialized || g_DeviceRemoved || !yuy2 || width <= 1 || height <= 0)
+        return nullptr;
+
+    DX12VideoRing& ring = g_VideoRings[videoId];
+    if (ring.Width != width || ring.Height != height || !ring.Upload.Get())
+    {
+        ReleaseVideoRing(ring);
+
+        D3D12_HEAP_PROPERTIES heapProps = {};
+        heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+        D3D12_RESOURCE_DESC desc = {};
+        desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        desc.Width = width;
+        desc.Height = height;
+        desc.DepthOrArraySize = 1;
+        desc.MipLevels = 1;
+        desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        desc.SampleDesc.Count = 1;
+        desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+        UINT64 uploadSize = 0;
+        g_pd3dDevice->GetCopyableFootprints(&desc, 0, 1, 0, &ring.Layout, &ring.NumRows, nullptr, &uploadSize);
+
+        bool ok = true;
+        for (int i = 0; i < GG_VIDEO_RING && ok; i++)
+        {
+            if (FAILED(g_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
+                D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&ring.Tex[i])))) { ok = false; break; }
+            D3D12_CPU_DESCRIPTOR_HANDLE srvCpu;
+            if (!AllocSrvSlot(ring.Srv[i], srvCpu, ring.Gpu[i])) { ok = false; break; }
+            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+            srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            srvDesc.Texture2D.MipLevels = 1;
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            g_pd3dDevice->CreateShaderResourceView(ring.Tex[i].Get(), &srvDesc, srvCpu);
+        }
+        if (ok)
+        {
+            D3D12_HEAP_PROPERTIES upProps = {};
+            upProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+            D3D12_RESOURCE_DESC upDesc = {};
+            upDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            upDesc.Width = uploadSize;
+            upDesc.Height = 1;
+            upDesc.DepthOrArraySize = 1;
+            upDesc.MipLevels = 1;
+            upDesc.Format = DXGI_FORMAT_UNKNOWN;
+            upDesc.SampleDesc.Count = 1;
+            upDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            if (FAILED(g_pd3dDevice->CreateCommittedResource(&upProps, D3D12_HEAP_FLAG_NONE, &upDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&ring.Upload)))) ok = false;
+            else
+            {
+                D3D12_RANGE readRange = { 0, 0 };
+                if (FAILED(ring.Upload->Map(0, &readRange, &ring.UploadMapped))) ok = false;
+            }
+        }
+        if (!ok)
+        {
+            ReleaseVideoRing(ring);
+            g_VideoRings.erase(videoId);
+            DX12Log("VIDEO: ring create FAILED for id=%d %dx%d", videoId, width, height);
+            return nullptr;
+        }
+        ring.Width = width;
+        ring.Height = height;
+        DX12Log("VIDEO: ring created for id=%d %dx%d (4 tex + persistent upload)", videoId, width, height);
+    }
+
+    LARGE_INTEGER f, t0, t1, t2;
+    QueryPerformanceFrequency(&f);
+    QueryPerformanceCounter(&t0);
+
+    // parallel convert straight into the mapped upload buffer
+    GGYuy2Ctx ctx;
+    ctx.src = (const unsigned int*)yuy2;
+    ctx.dst = (unsigned char*)ring.UploadMapped + ring.Layout.Offset;
+    ctx.width = width;
+    ctx.height = height;
+    ctx.srcPitchInts = ((width / 2 + 7) / 8) * 8;   // same alignment rule as the D3D11 path
+    ctx.dstRowPitch = ring.Layout.Footprint.RowPitch;
+    int jobs = height / 32; if (jobs < 1) jobs = 1; if (jobs > 16) jobs = 16;
+    ctx.rowsPerJob = (height + jobs - 1) / jobs;
+    GGVideo_ParallelFor(jobs, GGYuy2ConvertBand, &ctx);
+
+    QueryPerformanceCounter(&t1);
+
+    int cur = ring.Cursor;
+    if (ring.InSrvState[cur])
+    {
+        D3D12_RESOURCE_BARRIER toCopy = {};
+        toCopy.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        toCopy.Transition.pResource = ring.Tex[cur].Get();
+        toCopy.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+        toCopy.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+        toCopy.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        g_pUploadCommandList->ResourceBarrier(1, &toCopy);
+    }
+
+    D3D12_TEXTURE_COPY_LOCATION srcLoc = {};
+    srcLoc.pResource = ring.Upload.Get();
+    srcLoc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    srcLoc.PlacedFootprint = ring.Layout;
+    D3D12_TEXTURE_COPY_LOCATION dstLoc = {};
+    dstLoc.pResource = ring.Tex[cur].Get();
+    dstLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dstLoc.SubresourceIndex = 0;
+    g_pUploadCommandList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+
+    D3D12_RESOURCE_BARRIER toSrv = {};
+    toSrv.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    toSrv.Transition.pResource = ring.Tex[cur].Get();
+    toSrv.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+    toSrv.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    toSrv.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    g_pUploadCommandList->ResourceBarrier(1, &toSrv);
+
+    if (!ExecuteUploadAndWait())
+    {
+        g_DeviceRemoved = true;
+        return nullptr;
+    }
+    ring.InSrvState[cur] = true;
+    ring.Cursor = (cur + 1) % GG_VIDEO_RING;
+
+    QueryPerformanceCounter(&t2);
+
+    // permanent low-volume diagnostic: one line per ~30 new samples (~1/sec) while playing
+    static double s_convAcc = 0, s_copyAcc = 0;
+    static int s_nAcc = 0;
+    s_convAcc += (double)(t1.QuadPart - t0.QuadPart) * 1000.0 / f.QuadPart;
+    s_copyAcc += (double)(t2.QuadPart - t1.QuadPart) * 1000.0 / f.QuadPart;
+    if (++s_nAcc >= 30)
+    {
+        char b[160];
+        sprintf_s(b, "vidperf %dx%d convert=%.2fms copy+fence=%.2fms (avg of %d new samples)",
+            width, height, s_convAcc / s_nAcc, s_copyAcc / s_nAcc, s_nAcc);
+        gg_videotrace(b);
+        s_convAcc = s_copyAcc = 0; s_nAcc = 0;
+    }
+
+    return (void*)ring.Gpu[cur].ptr;
+}
+
+// Tear down a video's streaming ring (called from ImGui_DX12_RemoveTexture so the existing
+// DB_FreeAnimation / watchdog call sites cover it without changes).
+void ImGui_DX12_RemoveVideoRing(int videoId)
+{
+    auto it = g_VideoRings.find(videoId);
+    if (it != g_VideoRings.end())
+    {
+        ReleaseVideoRing(it->second);
+        g_VideoRings.erase(it);
+    }
 }
 
 bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight)
