@@ -13,3 +13,6 @@ after_2.45/ AFTER the rotation-unit fixes as well. Effect renders and decays cle
             NOTE: burst runs are NOT time-aligned to the blast, so frame N of one
             run is a different phase from frame N of another. Do not read a
             cross-run frame-N diff as a change in the effect.
+
+after_2.46/ AFTER the engine-side velocity-aligned rotation restore as well.
+            Renders and decays clean (clear by ~f060). Same alignment caveat.

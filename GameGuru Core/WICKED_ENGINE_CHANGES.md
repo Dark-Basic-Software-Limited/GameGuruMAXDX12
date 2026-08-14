@@ -899,6 +899,7 @@ modified, both genuine bug fixes.
 | 2.1 hairparticlePS white | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.2 hairparticle_simulateCS overrides | reverted 2026-06-18 | none — shader back to upstream state |
 | 2.3 hairparticlePS_prepass alpha=1 | reverted 2026-06-18 | none — shader back to upstream state |
+| 2.46 emitted-particle velocity-aligned rotation (`emittedparticle_simulateCS.hlsl` + `emittedparticle_emitCS.hlsl`) | applied 2026-08-14 | **re-apply on upstream pull.** Restores the DX11 fork's `start_rotation` semantics: the fork used it as a SCALE on a per-particle rotation derived from direction of travel (`emittedparticleVS.hlsl:52-58`), new Wicked reinterpreted the same field as a constant initial angle. Gated on `xEmitterFadeinTime >= 0`, the established legacy-.PE discriminator (`wiEmittedParticle.h:156`), so upstream/editor emitters keep upstream behaviour. Paired with the emitCS change that skips seeding the initial angle for those emitters so the value is not applied twice. Two deliberate infidelities-to-clean-code are documented at the site: the float3→float truncation of `tan(normalize(velocity))`, and the column-vector `mul(M, v)` that is the transpose of Wicked's usual convention — both reproduce the fork exactly |
 
 Update this table any time we add, revert, or commit a change to the
 `WickedEngineDX12` clone.
