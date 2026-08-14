@@ -16,3 +16,6 @@ after_2.45/ AFTER the rotation-unit fixes as well. Effect renders and decays cle
 
 after_2.46/ AFTER the engine-side velocity-aligned rotation restore as well.
             Renders and decays clean (clear by ~f060). Same alignment caveat.
+
+after_2.47/ AFTER the positive-only distortion clamp. Measure runs with
+            burstdisturb.py, NOT by eyeballing frame N across runs.
