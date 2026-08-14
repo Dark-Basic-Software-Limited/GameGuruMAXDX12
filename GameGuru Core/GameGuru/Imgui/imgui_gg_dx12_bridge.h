@@ -29,6 +29,11 @@ void ImGui_DX12_RebuildFontTexture();
 // The texture is cached — subsequent calls with the same imageId return the cached handle.
 void* ImGui_DX12_GetOrLoadTexture(int imageId, const char* filepath);
 
+// GGMAX 2.50: upload one decoded VIDEO frame (tight-pitch RGBA8) as a dynamic texture.
+// Returns the new ImTextureID; the previous frame's texture under the same videoId is
+// defer-deleted. videoId must not collide with image ids (use 0x11DE0000 + anim index).
+void* ImGui_DX12_UpdateVideoTexture(int videoId, const unsigned char* rgba, int width, int height);
+
 // Set width/height for an image entry (used during DX12 lazy loading).
 void ImGui_DX12_SetImageSize(int imageId, int width, int height);
 

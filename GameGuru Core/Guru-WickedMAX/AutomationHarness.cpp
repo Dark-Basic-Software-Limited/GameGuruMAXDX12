@@ -4147,6 +4147,52 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// VIDEO_TEST — GGMAX 2.50. Drive the tutorial-video pipeline headlessly: load an .mp4 into a
+	// high anim slot and play it. This exercises the exact chain a thumbnail click uses
+	// (LoadAnimation -> PlayAnimation -> WMF decode -> YUY2 convert -> DX12 bridge upload);
+	// VIDEO_STATUS then reports whether decoded frames are reaching a GPU texture.
+	if (_stricmp(cmd, "VIDEO_TEST") == 0)
+	{
+		if (arg == nullptr || arg[0] == 0)
+		{
+			_snprintf(result, resultSize, "ERROR: VIDEO_TEST needs a video path (relative to Files/)");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		// The 5-arg overload from Dark Basic Public Shared/Include/CAnimation.h:73 is the one the
+		// tutorial widgets use (M-GridEditB_part4.cpp:352); the 2-arg variant is not linked.
+		extern bool LoadAnimation(LPSTR pFilename, int iIndex, int precacheframes, int videodelayedload, int iSilentMode);
+		extern void PlayAnimation(int animindex, int x1, int y1, int x2, int y2);
+		extern void gg_videotrace(const char* msg);
+		gg_videotrace("VIDEO_TEST: calling LoadAnimation");
+		// slot 30: ANIMATIONMAX is only 33 (CAnimation_part0.cpp:44) - slot 60 was silently out of range
+		bool bLoaded = LoadAnimation((LPSTR)arg, 30, 0, 0, 1);   // no delayed load: exercise the full chain now
+		gg_videotrace(bLoaded ? "VIDEO_TEST: LoadAnimation OK, calling PlayAnimation" : "VIDEO_TEST: LoadAnimation FAILED - NOT playing (a dead slot raises a MODAL RunTimeError)");
+		if (bLoaded)
+		{
+			PlayAnimation(30, 0, 0, 320, 180);
+			gg_videotrace("VIDEO_TEST: PlayAnimation returned");
+		}
+		_snprintf(result, resultSize, "OK: VIDEO_TEST load=%d playing '%s' in anim slot 30 — poll VIDEO_STATUS", bLoaded ? 1 : 0, arg);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// VIDEO_STATUS — GGMAX 2.50. The three separable stages: pMediaClip (decode session up),
+	// view handle (a decoded frame reached a GPU texture), percent (the clock advances).
+	if (_stricmp(cmd, "VIDEO_STATUS") == 0)
+	{
+		extern ID3D11ShaderResourceView* GetAnimPointerView(int AnimIndex);
+		extern float GetAnimPercentDone(int AnimIndex);
+		extern int GetVideoPlaying(void);
+		void* view = (void*)GetAnimPointerView(30);
+		_snprintf(result, resultSize, "OK: VIDEO_STATUS view=%p percent=%.1f playing=%d -> %s",
+			view, GetAnimPercentDone(30), GetVideoPlaying(),
+			view ? "FRAMES ARE REACHING THE GPU" : "no frame yet (or load failed)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// TERRAINGEN_GENERATE — GGMAX 2.49. Press the Terrain Generator's "Generate Terrain and Open
 	// the Level Editor" button headlessly: sets the same two states the button's click block ends
 	// with (M-TerrainNew_part5.cpp:3504-3505, iQuitProceduralLevel countdown + tree reinit).

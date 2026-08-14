@@ -1215,6 +1215,32 @@ void ImGui_DX12_RemoveTexture(int imageId)
     }
 }
 
+// GGMAX 2.50: dynamic texture for VIDEO frames (tutorial videos — CAnimation's Media Foundation
+// decode is CPU-side; this is its GPU last mile on DX12). Each call uploads the frame as a NEW
+// texture through the proven one-shot upload (CreateDX12TextureFromPixels waits on the private
+// DIRECT queue, so the data is resident before this frame's UI is recorded) and defer-deletes
+// the PREVIOUS frame's texture via the existing PendingTextureDelete queue — in-flight GPU
+// frames keep sampling the old resource untouched, so there is no cross-queue hazard. The cost
+// (one committed resource per video frame) is fine for tutorial-video duty.
+// videoId must not collide with real image ids — callers use 0x11DE0000 + anim index.
+void* ImGui_DX12_UpdateVideoTexture(int videoId, const unsigned char* rgba, int width, int height)
+{
+    if (!g_ImGuiDX12Initialized || g_DeviceRemoved || !rgba || width <= 0 || height <= 0)
+        return nullptr;
+
+    DX12CachedTexture cached;
+    cached.Width = width;
+    cached.Height = height;
+    if (!CreateDX12TextureFromPixels((unsigned char*)rgba, width, height,
+        cached.Resource, cached.GpuHandle, cached.SrvSlotIndex))
+        return nullptr;
+
+    ImGui_DX12_RemoveTexture(videoId);   // defer-deletes the previous frame's texture
+    void* result = (void*)cached.GpuHandle.ptr;
+    g_TextureCache[videoId] = std::move(cached);
+    return result;
+}
+
 bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight)
 {
     if (!filepath || !filepath[0])

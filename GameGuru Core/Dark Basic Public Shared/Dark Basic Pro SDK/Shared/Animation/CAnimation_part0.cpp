@@ -102,6 +102,10 @@ int iVideoHeight = -1;
 float fVideoPos = -1;
 float fVideoVolume = 100.0f;
 volatile unsigned char *pVideoFrame = 0;
+
+// GGMAX 2.50: forward decl — the unbuffered hang tracer is defined further down with the
+// DX12 video bridge block, but LoadVideo/PlayVideoToImage above it need it too.
+void gg_videotrace(const char* msg);
 //cSpinLock cVideoLock;
 volatile int iVideoChanged = 0;
 class SampleHandler : public ISampleGrabberCB
@@ -484,6 +488,7 @@ void DeleteVideo()
 
 int LoadVideo( const char *szFilename )
 {
+	gg_videotrace("LoadVideo ENTER");
 	if ( g_bMFPlatExists )
 	{
 		if ( g_pVideoSession ) DeleteVideo();
@@ -579,6 +584,7 @@ int LoadVideo( const char *szFilename )
 	}
 
 	fVideoPos = -1;
+	gg_videotrace("LoadVideo EXIT ok");
 	return 1;
 }
 
@@ -642,6 +648,7 @@ void SetVideoVolume( float volume )
 
 void PlayVideoToImage( uint32_t imageID )
 {
+	gg_videotrace("PlayVideoToImage ENTER");
 	if ( strlen(sVideoPath) == 0 ) return;
 	if( g_bMFPlatExists )
 	{
@@ -784,6 +791,7 @@ void PlayVideoToImage( uint32_t imageID )
 				SAFE_RELEASE( pHandler )
 			}
 			
+			gg_videotrace("PlayVideoToImage SetTopology");
 			hr = g_pVideoSession->SetTopology( 0, pTopology );
 			if ( FAILED(hr) ) { Error1( "Failed to set session topology" ); goto failed; }
 
@@ -1116,10 +1124,43 @@ DARKSDK void AnimationDestructor ( void )
 	#endif
 }
 
+// GGMAX 2.50: DX12 video bridge. The Media Foundation decode below is CPU-side (SampleGrabberCB
+// copies each frame into pVideoFrame) — the old blanket `if (m_pD3D == NULL) return FALSE;`
+// guard killed ALL video on DX12 (every tutorial-video click was a silent no-op: the delayed
+// load reported success, then the deferred CoreLoadAnimation failed here, LoadVideo never ran,
+// pMediaClip stayed 0 and the UI kept drawing the thumbnail). Only three things were D3D11-bound:
+// the texture pair created below, the per-frame staging upload in UpdateAllAnimation, and the
+// pointer handed to ImGui. On DX12 those route through the ImGui bridge instead
+// (ImGui_DX12_UpdateVideoTexture); the handle lives in this parallel array — NOT in pTextureRef,
+// which is SAFE_RELEASE'd as a real ID3D11 interface in CoreLoadAnimation/DB_FreeAnimation.
+static void* g_ggDX12VideoHandle[ANIMATIONMAX] = { 0 };
+#define GG_DX12_VIDEO_ID_BASE 0x11DE0000
+
+// GGMAX 2.50 hang forensics: open-append-close per line, so the trail SURVIVES taskkill //F
+// (timestampactivity buffers and loses its tail on a hard kill — proved 03:15, empty log).
+// Lands in the game CWD = Max/Files/videotrace.txt.
+void gg_videotrace(const char* msg)
+{
+	FILE* f = fopen("videotrace.txt", "a");
+	if (f) { fprintf(f, "%lu %s\n", (unsigned long)timeGetTime(), msg); fclose(f); }
+}
+extern void* ImGui_DX12_UpdateVideoTexture(int videoId, const unsigned char* rgba, int width, int height);
+extern void ImGui_DX12_RemoveTexture(int imageId);
+
 BOOL CoreLoadAnimation( int AnimIndex, char* Filename, int precacheframes)
 {
-	// DX12: video playback requires DX11 device which is not available
+	#ifdef WMFVIDEO
+	// GGMAX 2.50: WMF decode needs no device — only the texture creation below does.
+	bool bDX12Video = (m_pD3D == NULL);
+	{
+		char gg_dbg[MAX_PATH + 64];
+		sprintf(gg_dbg, "CoreLoadAnimation ENTER dx12=%d mfplat=%d file=%s", bDX12Video ? 1 : 0, g_bMFPlatExists ? 1 : 0, Filename ? Filename : "(null)");
+		gg_videotrace(gg_dbg);
+	}
+	#else
+	// theora output still writes through the DX11 device
 	if (m_pD3D == NULL) return FALSE;
+	#endif
 
 	// Vars
     HRESULT hr = S_OK;
@@ -1144,6 +1185,22 @@ BOOL CoreLoadAnimation( int AnimIndex, char* Filename, int precacheframes)
 		float tTexHeightPOT = potCeil(fHeight);
 		DXGI_FORMAT chooseTextureFormat = DXGIFORMATR8G8B8A8UNORM;
 		Anim[AnimIndex].TextureFormat = chooseTextureFormat;
+
+		// GGMAX 2.50: DX12 — no D3D11 texture pair; frames upload through the ImGui bridge at
+		// EXACT video size (no POT padding), so the UV clip window is the full texture.
+		if (bDX12Video)
+		{
+			g_ggDX12VideoHandle[AnimIndex] = NULL;   // set on the first decoded frame
+			SAFE_RELEASE(Anim[AnimIndex].pTextureRef);
+			SAFE_RELEASE(Anim[AnimIndex].pTexture);
+			Anim[AnimIndex].ClipU = 1.0f;
+			Anim[AnimIndex].ClipV = 1.0f;
+			Anim[AnimIndex].StreamRect.top = 0;
+			Anim[AnimIndex].StreamRect.left = 0;
+			Anim[AnimIndex].StreamRect.right = fWidth;
+			Anim[AnimIndex].StreamRect.bottom = fHeight;
+			return TRUE;
+		}
 		#else
 		// THEORA 
 		Anim[AnimIndex].pMediaClip->setAutoRestart(false);
@@ -1276,10 +1333,21 @@ DARKSDK BOOL DB_FreeAnimation(int AnimIndex)
 	// Shut down the graph
 	if(Anim[AnimIndex].pMediaClip)
 	{
+		// GGMAX 2.50: on DX12 the "view" is an ImGui bridge descriptor handle, NOT an
+		// ID3D11ShaderResourceView — it must not enter lpBadTexture (a D3D11 pointer list).
+		// Release the bridge texture (deferred, GPU-safe) and clear the handle instead.
+		if (m_pD3D == NULL)
+		{
+			ImGui_DX12_RemoveTexture(GG_DX12_VIDEO_ID_BASE + AnimIndex);
+			g_ggDX12VideoHandle[AnimIndex] = NULL;
+		}
+		else
+		{
 		extern std::vector<ID3D11ShaderResourceView*> lpBadTexture;
 		ID3D11ShaderResourceView* lpVideoTexture = NULL;
 		lpVideoTexture = GetAnimPointerView(AnimIndex);
 		lpBadTexture.push_back(lpVideoTexture);
+		}
 
 		// Release video
 		#ifdef WMFVIDEO
@@ -1525,8 +1593,13 @@ float GetAnimPercentDone(int AnimIndex)
 
 ID3D11ShaderResourceView* GetAnimPointerView(int AnimIndex)
 {
-	if (Anim[AnimIndex].pMediaClip ) 
+	if (Anim[AnimIndex].pMediaClip )
 	{
+		// GGMAX 2.50: on DX12 this returns the ImGui bridge descriptor handle. Every UI call
+		// site treats the return purely as an opaque ImTextureID; only D3D11 code paths (all
+		// gated on pTexture / m_pD3D) ever call COM methods on it. NULL until the first
+		// decoded frame arrives, which the widgets already handle by drawing the thumbnail.
+		if (m_pD3D == NULL) return (ID3D11ShaderResourceView*)g_ggDX12VideoHandle[AnimIndex];
 		return Anim[AnimIndex].pTextureRef;
 	}
 	return NULL;
@@ -1575,6 +1648,88 @@ DARKSDK void UpdateAllAnimation(void)
 				#else
 				theoraplayer::VideoFrame* frame = Anim[AnimIndex].pMediaClip->fetchNextFrame();
 				#endif
+
+				#ifdef WMFVIDEO
+				// GGMAX 2.50: DX12 path — no D3D11 texture exists (pTexture NULL). Run the SAME
+				// YUY2 -> RGBA conversion as the D3D11 block below (identical uint32 packing:
+				// A<<24|B<<16|G<<8|R in little-endian = R,G,B,A bytes = R8G8B8A8), into a
+				// grow-only CPU buffer with TIGHT pitch, then upload via the ImGui bridge.
+				if (frame != NULL && Anim[AnimIndex].pTexture == NULL && m_pD3D == NULL)
+				{
+					static unsigned char* s_ggRGBA = NULL;
+					static size_t s_ggRGBASize = 0;
+					const size_t needed = (size_t)iVideoWidth * iVideoHeight * 4;
+					if (needed > 0 && needed > s_ggRGBASize)
+					{
+						unsigned char* grown = (unsigned char*)realloc(s_ggRGBA, needed);
+						if (grown) { s_ggRGBA = grown; s_ggRGBASize = needed; }
+					}
+					if (s_ggRGBA && s_ggRGBASize >= needed && needed > 0)
+					{
+						Anim[AnimIndex].bStreamingNow = true;
+						unsigned int* pVideoFrameInt = (unsigned int*)pVideoFrame;
+						for ( int y = 0; y < iVideoHeight; y++ )
+						{
+							unsigned int* pThisLinePtr = (unsigned int*)(s_ggRGBA + (size_t)y * iVideoWidth * 4);
+
+							// same source-pitch alignment rule as the D3D11 block below
+							float fMinimumPitchForRow = (iVideoWidth / 2.0f) / 8.0f;
+							if ( fMinimumPitchForRow != (int)fMinimumPitchForRow )
+							{
+								fMinimumPitchForRow = (int)fMinimumPitchForRow + 1;
+							}
+							fMinimumPitchForRow *= 8.0f;
+							uint32_t index = (y * (int)fMinimumPitchForRow);
+
+							for ( int x = 0; x < iVideoWidth/2; x++ )
+							{
+								unsigned int value = pVideoFrameInt[ index ];
+								int iY0 = value & 0xff;
+								int iU = (value >> 8) & 0xff;
+								int iY1 = (value >> 16) & 0xff;
+								int iV = value >> 24;
+								iU -= 128;
+								iV -= 128;
+
+								iY0 -= 16;
+								iY0 *= 298;
+								iY0 += 128;
+								int iRed = (iY0 + iV*409) >> 8;
+								int iGreen = (iY0 - iU*100 - iV*208) >> 8;
+								int iBlue = (iY0 + iU*516) >> 8;
+								if( iRed < 0 ) iRed = 0;
+								if( iGreen < 0 ) iGreen = 0;
+								if( iBlue < 0 ) iBlue = 0;
+								if( iRed > 255 ) iRed = 255;
+								if( iGreen > 255 ) iGreen = 255;
+								if( iBlue > 255 ) iBlue = 255;
+								*(pThisLinePtr+0) = 0xff000000 | (iBlue << 16) | (iGreen << 8) | iRed;
+
+								iY1 -= 16;
+								iY1 *= 298;
+								iY1 += 128;
+								int iRed2 = (iY1 + iV*409) >> 8;
+								int iGreen2 = (iY1 - iU*100 - iV*208) >> 8;
+								int iBlue2 = (iY1 + iU*516) >> 8;
+								if( iRed2 < 0 ) iRed2 = 0;
+								if( iGreen2 < 0 ) iGreen2 = 0;
+								if( iBlue2 < 0 ) iBlue2 = 0;
+								if( iRed2 > 255 ) iRed2 = 255;
+								if( iGreen2 > 255 ) iGreen2 = 255;
+								if( iBlue2 > 255 ) iBlue2 = 255;
+								*(pThisLinePtr+1) = 0xff000000 | (iBlue2 << 16) | (iGreen2 << 8) | iRed2;
+
+								index++;
+								pThisLinePtr += 2;
+							}
+						}
+						void* h = ImGui_DX12_UpdateVideoTexture(GG_DX12_VIDEO_ID_BASE + AnimIndex,
+							s_ggRGBA, iVideoWidth, iVideoHeight);
+						if (h) g_ggDX12VideoHandle[AnimIndex] = h;
+					}
+				}
+				#endif // WMFVIDEO
+
 				if (frame != NULL && Anim[AnimIndex].pTexture )
 				{
 					// NOW we are really streaming
