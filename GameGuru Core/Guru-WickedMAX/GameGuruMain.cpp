@@ -214,6 +214,10 @@ bool GuruLoopLogic ( void )
 			timestampactivity(0, (char*)"common_loop_logic returned;");
 
 		// as new wicked engine never uses Sync(), we still need regular update work for sound and animation
+		// GGMAX 2.51: before pumping video decode, free tutorial-widget videos whose widget is
+		// no longer drawn — an undrawn widget can never pause its own video (see M-GridEditB_part4.cpp)
+		extern void SmallTutorialVideoWatchdog(void);
+		SmallTutorialVideoWatchdog();
 		auto rangeCN = wiProfiler::BeginRangeCPU("Logic - ConstantNonDisplay");
 		ConstantNonDisplayUpdate();
 		wiProfiler::EndRange(rangeCN);

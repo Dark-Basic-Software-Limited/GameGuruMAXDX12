@@ -308,6 +308,16 @@ cstr cSmallVideoDescription = "";
 int iCurrentVideoSectionPlaying = 0;
 int iStopAndFreeThisVideo = -1;
 
+// GGMAX 2.51: a widget video is paused/stopped only by the widget's OWN per-frame draw
+// (the iSmallVideoFindFirstFrame countdown below). Leave the section before that runs —
+// one storyboard click is enough — and the MF session keeps decoding into the editor and
+// test game (~12 ms EVERY frame on DX12: CPU YUY2->RGBA + a new bridge texture per frame;
+// it silently halved a whole 19-demo sweep before it was caught). Each drawn entry stamps
+// a heartbeat; the watchdog frees any still-PLAYING entry whose heartbeat has gone stale.
+// Paused entries are left alone so the legacy resume-on-return behaviour is preserved.
+static unsigned int g_ggTutorialWatchdogFrame = 0;
+static unsigned int g_ggTutorialEntryHeartbeat[MAXTUTORIALS] = { 0 };
+
 void SmallTutorialThumbLoad(int index)
 {
 	if (iSmallVideoThumbnail[index] == 0)
@@ -422,6 +432,37 @@ void SmallTutorialVideoCheckStop(char *tutorial)
 	}
 
 }
+
+// GGMAX 2.51: called once per frame from GuruLoopLogic (GameGuruMain.cpp), every mode.
+// Frees any widget video still PLAYING ~2s after its widget stopped drawing.
+void SmallTutorialVideoWatchdog(void)
+{
+	g_ggTutorialWatchdogFrame++;
+	for (int i = 0; i < MAXTUTORIALS; i++)
+	{
+		if (iSmallVideoSlot[i] > 0 && g_ggTutorialWatchdogFrame - g_ggTutorialEntryHeartbeat[i] > 120)
+		{
+			// Free stale slots in EVERY state, not just playing: a clip that hit EOF (or was
+			// pause-orphaned) leaves the slot occupied — 32 slots, one leak per storyboard
+			// visit, so a long session exhausts them and later widgets get no video at all.
+			if (AnimationExist(iSmallVideoSlot[i]))
+			{
+				extern void gg_videotrace(const char* msg);
+				char tr[256];
+				sprintf(tr, "TutorialVideoWatchdog: freeing orphaned video entry %d (anim slot %d, playing=%d)", i, iSmallVideoSlot[i], AnimationPlaying(iSmallVideoSlot[i]));
+				gg_videotrace(tr);
+				if (AnimationPlaying(iSmallVideoSlot[i])) StopAnimation(iSmallVideoSlot[i]);
+				DeleteAnimation(iSmallVideoSlot[i]);
+				iSmallVideoSlot[i] = 0;
+				bSmallVideoPerccentStart[i] = false;
+				bSmallVideoResumePossible[i] = false;
+				bSmallVideoInit[i] = false;
+				if (i == iStopAndFreeThisVideo) iStopAndFreeThisVideo = -1;
+			}
+		}
+	}
+}
+
 void SmallTutorialVideo(char *tutorial, char* combo_items[], int combo_entries,int iVideoSection, bool bAutoStart)
 {
 	//LB: added lines to exit early
@@ -482,7 +523,11 @@ void SmallTutorialVideo(char *tutorial, char* combo_items[], int combo_entries,i
 			i++;
 		}
 	}
-	
+
+	// GGMAX 2.51: this entry's widget is live on screen this frame — feed its watchdog heartbeat
+	if (iVideoEntry >= 0 && iVideoEntry < MAXTUTORIALS) g_ggTutorialEntryHeartbeat[iVideoEntry] = g_ggTutorialWatchdogFrame;
+	if (iCurrentVideoEntry >= 0 && iCurrentVideoEntry < MAXTUTORIALS) g_ggTutorialEntryHeartbeat[iCurrentVideoEntry] = g_ggTutorialWatchdogFrame;
+
 	if (bSectionHub && iStopAndFreeThisVideo >= 0)
 	{
 		if (iSmallVideoSlot[iStopAndFreeThisVideo] > 0) 

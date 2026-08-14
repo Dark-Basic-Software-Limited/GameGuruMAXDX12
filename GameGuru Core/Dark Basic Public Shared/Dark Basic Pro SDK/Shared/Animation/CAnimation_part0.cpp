@@ -1656,6 +1656,13 @@ DARKSDK void UpdateAllAnimation(void)
 				// grow-only CPU buffer with TIGHT pitch, then upload via the ImGui bridge.
 				if (frame != NULL && Anim[AnimIndex].pTexture == NULL && m_pD3D == NULL)
 				{
+					// GGMAX 2.51: consume the new-sample token BEFORE converting. OnProcessSample
+					// sets it at video rate (~30 Hz) and nothing ever cleared it, so this block —
+					// scalar YUY2->RGBA plus a synchronous bridge-texture upload — was re-running
+					// on the SAME stale frame at render rate (~12 ms EVERY frame at editor FPS).
+					// Consuming first means a sample landing mid-convert re-arms the flag, so no
+					// frame is dropped. DX11's path below is left exactly as it always behaved.
+					iVideoChanged = 0;
 					static unsigned char* s_ggRGBA = NULL;
 					static size_t s_ggRGBASize = 0;
 					const size_t needed = (size_t)iVideoWidth * iVideoHeight * 4;
