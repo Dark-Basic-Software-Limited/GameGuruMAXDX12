@@ -1384,3 +1384,54 @@ DX11's `Pick` tested the LIVE layer (`WickedRepo wiScene.cpp:4989-4994`), so the
 game code worked there. The whole shot path game-side is byte-identical to DX11 —
 three diffs, zero output. `pIgnoreObject` is broken the same way, so AI line-of-sight
 and every other ignore-object raycast is affected too.
+
+## §2.48 SHIPPED — zoomed firing does no damage (game bfadc05f)
+
+The 2.48 root cause above held. Fix is GAME-SIDE: `WickedCall_SetObjectRenderLayer`
+writes the cached `aabb_objects[i].layerMask` through alongside the live LayerComponent
+(`objects.GetIndex` + direct vector write, swap-time cost only). Repairs the gun
+exclusion AND `pIgnoreObject` — AI line-of-sight included.
+
+Proof, same probe pre/post (tools/sceneupdate/zoomfire.sh):
+  pre : zoomed shot hit=0 SWALLOWED-BY=16104, gunobj=16104 (id-for-id the weapon)
+  post: zoomed shot hit=70081, swallowed=0 — the ZOOMED shot detonated the barrels
+Instruments: ZOOM_FIRE (shipped Lua input path — RMB bit 2 zoom hold, LMB bit 1 fire;
+⚠ NOT the 2.41 firingmode hold, which does not fire), DUMP_SHOT (per-ray rows +
+verdict; g_ggLastRayBlockedBy names the swallower from IntersectAllEx's discard branch).
+
+## §2.49 SHIPPED — Terrain Generator preview + Generate crash (game 0dbd984f)
+
+A: preview showed no terrain — the generator "preview" is the LIVE scene through a
+   HOLE in the opaque fullscreen ImGui window; the 4-scissor-strip hole existed only
+   in the DX11 backend. Ported to ImGui_DX12_RenderBridge, including draw callbacks
+   10/11 (bForceRenderEverywhere) that let the yellow editable-area overlay punch
+   through. Verified: generator screenshot shows terrain + overlay + intact panels.
+B: Generate crashed — NULL GetBackBufferForGG stub + forced DIGAHOLE screenshot block
+   = null vtable call at M-TerrainNew_part5.cpp:3639 (matches Lee's own Guru-Crash.log
+   02:07:10 entry exactly), and the crash preceded the Save-As trigger so the level was
+   LOST. Now routes through WickedCall_CaptureBackbufferRegionToJPG and continues.
+   Verified: TERRAINGEN_GENERATE → process alive, saveAsOpen=1.
+   Remainder: the lastnewlevel.jpg capture returns false on DX12 — same gap as the
+   storyboard-thumbs debt; now logged visibly ("TerrainGen thumb capture FAILED").
+Harness: CLICK_NODE now opens the generator for an EMPTY level node (storyboard
+recipe), TERRAINGEN_GENERATE / TERRAINGEN_STATE. Driver: terraingen.sh.
+
+## §2.50 SHIPPED — tutorial videos play on DX12 (game 86eb8dda)
+
+Root cause: blanket `if (m_pD3D == NULL) return FALSE;` in CoreLoadAnimation killed
+ALL video; the WMF decode is CPU-side and never needed the device. Bridged the three
+D3D11 pieces: ImGui_DX12_UpdateVideoTexture (new-texture-per-frame via the proven
+one-shot upload + deferred delete), the YUY2→RGBA conversion into a CPU buffer, and
+GetAnimPointerView returning the bridge handle (parallel array, NEVER pTextureRef —
+that one is SAFE_RELEASE'd as real COM). Verified live: VIDEO_STATUS view handle
+non-null AND CHANGING between polls, percent 5.0→10.5→16.0, playing=1.
+
+★ PROBE POST-MORTEMS (cost three build cycles, worth remembering):
+- timestampactivity BUFFERS and loses its tail under taskkill //F — hang forensics
+  need open-append-close per line (gg_videotrace → Files/videotrace.txt).
+- ANIMATIONMAX is 33. An out-of-range slot fails SILENTLY in LoadAnimation and
+  PlayAnimation on a dead slot raises a MODAL RunTimeError — a headless run reads
+  that as a permanent hang. The modal class of hang has now bitten twice (MF relative
+  path failure is also modal); assume ANY legacy error path may be a MessageBox.
+- After taskkill, the current run's log is still Guru-Game.log — the -last rename
+  only happens on the NEXT launch. Grepping -last reads the WRONG RUN.
