@@ -1474,3 +1474,27 @@ Side-findings settled by the same evidence: Grand Canyon's "20 FPS in game" swee
 its intro CUTSCENE (videobank introtolevel1.mp4) now genuinely plays — 2.50 working as
 intended, sampled mid-cutscene; Bounty's intro (bountyintrocs.mp4) likewise, ending before
 its samples. The +30-50 MB driver-VRAM drift on slow launches = the live MF session.
+
+## §2.52 SHIPPED (evening 08-14, game 0b8f1f8f) — streaming video ring, cutscene 47 → 61 FPS
+
+Lee: "make the cutscene path cheaper too." The 2.50 upload was a one-shot loader on
+per-frame streaming duty: every new sample paid 2x CreateCommittedResource + fresh
+upload buffer + row-copy + full CPU fence stall + new SRV + deferred delete. Replaced
+with ImGui_DX12_UpdateVideoTextureYUY2 (bridge): 4-texture ring + SRVs + persistently
+mapped upload buffer created once per video; YUY2→RGBA converted IN PARALLEL
+(wi::jobsystem via GGVideo_ParallelFor shim in wickedcalls_part3 — the bridge can't
+include wicked headers) straight into the mapped upload; one small copy + short fence
+per NEW sample. Per-pixel math + the ceil((w/2)/8)*8 source-pitch rule byte-identical
+to the legacy loop (now deleted from CAnimation — the bridge is the single copy).
+RemoveTexture tears rings down, so DB_FreeAnimation + the 2.51 watchdog cover cleanup.
+
+Measured (permanent `vidperf` lines in videotrace.txt, one/sec while playing):
+1920x1080 convert=2.7ms copy+fence=2.5ms per new sample at 30 Hz = ~2.6 ms/frame
+amortised. GC intro cutscene 44-49 → 58.6-62.1 FPS; screenshot-verified clean
+colors/pitch; hub tutorial probe passes (handle cycles ring descriptors); editor
+probe normal.
+
+Open observation, NOT chased (diminishing returns for a 30fps movie): during-cutscene
+FPS hovers suspiciously near 60 (58.6-62.1) while the residual video tax is only
+~2.6 ms/frame — if someone later wants cutscenes >60, look for a legacy ~60 Hz pacer
+in the fullscreen video path, not in the upload (that half is now measured cheap).
