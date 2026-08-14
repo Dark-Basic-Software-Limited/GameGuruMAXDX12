@@ -1,5 +1,55 @@
 # Demo FPS sweep — every hub demo, editor + in-game
 
+## 2026-08-14 SWEEP (0814c) — engine `07a192f2` (2.47) / game 2.51 `56377809` — 19/19 CLEAN, and the story of the day
+
+THREE sweeps ran today on what was nominally the same content. The first two were POISONED by a
+2.50 leak and are recorded here only as a warning; 0814c below is the only valid record.
+
+**The leak (fixed as game 2.51):** 2.50 made hub/storyboard tutorial videos load on DX12. The
+widget pauses its video only from its own per-frame draw, so leaving the section within seconds
+orphaned a live MF session — and `iVideoChanged` was never consumed, so UpdateAllAnimation
+re-converted the SAME stale frame every render frame (`Logic - ConstantNonDisplay` 11.70 ms).
+17/19 launches of the first sweep paid ~+6 ms editor / +10 ms game. A same-binary probe pair
+read clean and produced a WRONG "machine load" exoneration — the re-run's per-demo REPRODUCTION
+(Kit 47.9 vs 47.8) was what broke the false story. Crack chain: probe_one.sh -> ENABLE_PROFILER
+(named the range) -> videotrace.txt (37/37 load-lines matched fast/slow). Verify: pre-fix 6/6
+slow launches, post-fix 4/4 fast.
+
+**0814c verdict vs the 08-13 baseline:** 19/19 loaded, zero crashes, POLYS bit-identical on all
+19, 4 GB gate HOLDS (worst in-game Aztec Game Kit 3987.3 — ~109 MB headroom, in line with its
+08-07/08-08 readings). Editor mean +9.3% (every demo -1.3%..+17.8% = the usual ambient cross-run
+term, read as "no regressions", not a win). Game mean -0.1%.
+
+Game-phase rows explained, marked (c) below:
+- **A Grand Canyon Adventure -65%: its intro CUTSCENE (videobank introtolevel1.mp4) now actually
+  plays** — 2.50 working as intended; all three samples landed inside the movie. Presentation,
+  not gameplay. (Post-cutscene rate unmeasured this run.)
+- **Bounty -8.8%: same class** — bountyintrocs.mp4 plays at level start; samples land near it.
+- Operation Amazon game 89.5 vs 106.0: NO video involved (trace-verified). Its game phase has
+  ranged 97-116 across the last week's sweeps; single-run mild outlier, watch item only.
+
+| Demo | ed 08-13 | ed 08-14c | d% | game 08-13 | game 08-14c | d% | gVRAM 08-14c | POLYS |
+|---|---|---|---|---|---|---|---|---|
+| Aztec Game Kit Teaser | 64.5 | 72.6 | +12.5 | 61.7 | 68.5 | +10.9 | 3279.7 | SAME |
+| Aztec Game Kit | 90.9 | 100.4 | +10.5 | 89.2 | 91.0 | +2.0 | 3987.3 | SAME |
+| Bounty (c) | 118.9 | 119.9 | +0.9 | 148.9 | 135.7 | -8.8 | 2895.3 | SAME |
+| Horseshoe Bend | 123.5 | 122.0 | -1.3 | 89.6 | 89.1 | -0.6 | 3277.0 | SAME |
+| Island Showdown | 76.0 | 78.1 | +2.7 | 92.1 | 93.8 | +1.8 | 3159.9 | SAME |
+| Operation Amazon | 86.4 | 89.9 | +4.1 | 106.0 | 89.5 | -15.6 | 3653.7 | SAME |
+| River Raiders | 127.5 | 130.4 | +2.3 | 99.5 | 102.1 | +2.6 | 3568.5 | SAME |
+| Snowy Mountain Stroll | 158.9 | 166.6 | +4.8 | 113.9 | 107.6 | -5.5 | 3042.2 | SAME |
+| A Grand Canyon Adventure (c) | 109.5 | 112.1 | +2.4 | 134.5 | 46.8 | -65.2 | 3142.8 | SAME |
+| Disruption | 82.3 | 92.0 | +11.8 | 98.2 | 91.0 | -7.3 | 3087.2 | SAME |
+| Foggy Forest | 61.5 | 67.2 | +9.3 | 72.7 | 79.8 | +9.8 | 3246.5 | SAME |
+| Indian Strike Force | 92.8 | 109.0 | +17.5 | 96.8 | 111.0 | +14.6 | 3188.1 | SAME |
+| Switch Escape | 153.7 | 173.0 | +12.6 | 141.7 | 151.2 | +6.7 | 2493.6 | SAME |
+| Canyon Offensive | 71.4 | 80.1 | +12.2 | 71.2 | 79.4 | +11.6 | 3502.1 | SAME |
+| Escape from the Zombie Cellar | 145.4 | 168.4 | +15.9 | 59.9 | 59.9 | +0.1 | 2548.0 | SAME |
+| Jungle Fever | 120.2 | 140.4 | +16.7 | 137.5 | 146.4 | +6.5 | 3197.5 | SAME |
+| RPG Template | 98.8 | 108.9 | +10.2 | 87.3 | 93.8 | +7.4 | 3457.3 | SAME |
+| The Mystery of Z Island | 102.0 | 115.4 | +13.1 | 90.6 | 99.5 | +9.8 | 3598.7 | SAME |
+| Trapped | 158.6 | 186.9 | +17.8 | 162.5 | 190.3 | +17.1 | 2616.2 | SAME |
+
 ## 2026-08-08 SWEEP — engine `118e19d8` (2.13) / game `82959a2b` — REGRESSION CHECK, 19/19 CLEAN
 
 Run to answer one question: did the gpup particle campaign and the 2.13 hook-boundary change
