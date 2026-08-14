@@ -1351,3 +1351,36 @@ Identify which system draws these — **gpup/.arx** (`project_gpup_particles.md`
 (`project_wpe_particles.md`) — and check whether its material has a null/unbound texture in the
 refraction pass. This is now a targeted question, not a hunt: we know it is the outward particles,
 and `explosionburst.sh` reproduces the capture in one command.
+
+---
+
+# 2026-08-14 — ★★ KNOWN-GOOD MILESTONE ★★
+
+**Game `ffe4de6b` (main) + engine `07a192f2` (master), both pushed.**
+Lee marked this pairing a GOOD MILESTONE before the overnight autonomous run.
+If anything after this point regresses, THIS is the pairing to bisect against.
+
+State at the milestone:
+- Explosion refraction artifact CLOSED in four steps, all documented in
+  WICKED_ENGINE_CHANGES.md and the burstshots/ README:
+  2.44 distortion NORMALMAP slot (game) · 2.45 rotation units (game) ·
+  2.46 velocity-aligned rotation (engine) · 2.47 positive-only distortion clamp (engine).
+- Zoom-fire no-damage bug ROOT-CAUSED, fix not yet applied (next section).
+- All 2.4x changes still await Lee's eye + a 19-demo sweep.
+
+## §2.48 (in flight) — zoomed firing applies no damage
+
+Root cause, verified in source by me plus a 21-agent adversarial workflow (5 confirmed,
+12 rejected candidates): the gun-exclusion swap in `IntersectAllEx`
+(`CObjectsC_part3.cpp:1780-1786`) sets the LIVE LayerComponent, but the DX12 engine's
+`Scene::Intersects` object pass tests the CACHED `aabb.layerMask`
+(engine `wiScene.cpp:7180`, cache written only during `Scene::Update`, `wiScene.cpp:5516`).
+The swap-pick-restore happens entirely between updates, so the cache never sees it and the
+weapon mesh stays pickable. Zoom pulls the gun onto the camera axis
+(`G-Gun_part1.cpp:69`), the ray starts inside it, `Pick` returns the closest hit = the gun,
+and the out-of-entity-range branch (`CObjectsC_part3.cpp:1806-1810`) reports that as a
+TOTAL MISS. Ammo/flash/sound are upstream of the ray — exactly the reported symptom.
+DX11's `Pick` tested the LIVE layer (`WickedRepo wiScene.cpp:4989-4994`), so the same
+game code worked there. The whole shot path game-side is byte-identical to DX11 —
+three diffs, zero output. `pIgnoreObject` is broken the same way, so AI line-of-sight
+and every other ignore-object raycast is affected too.
