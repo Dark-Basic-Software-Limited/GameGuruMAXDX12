@@ -133,6 +133,7 @@ namespace wi::scene {
 
 // GGMAX 1.53b/c: terrain VT tiling cap + hold live re-tune (GGTerrainWicked.cpp)
 namespace GGTerrain { void GGTerrainWicked_SetTileShare(int k, int hold); }
+namespace GGTerrain { void GGTerrainWicked_GetGrassDebug(int* pWickedEnabled, int* pHairCount, int* pVisibleCount, unsigned long long* pStrandSum); } // GGMAX 2.67
 
 // GGMAX 1.37: hair/grass sim static-skip master switch (wiRenderer.cpp)
 namespace wi::renderer {
@@ -4466,8 +4467,18 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		{
 			sObject* pTGM = GetObjectData(17998);
 			if (pTGM)
-				_snprintf(result + wtb, resultSize - wtb, " | marker=(%.0f,%.0f)",
+				wtb += _snprintf(result + wtb, resultSize - wtb, " | marker=(%.0f,%.0f)",
 					pTGM->position.vecPosition.x, pTGM->position.vecPosition.z);
+		}
+		// GGMAX 2.67: wicked grass state — names the dead stage when "Vegetation looks wrong"
+		// (drawEn = legacy flag the checkbox writes; wOn = the real wicked gate; hairs/vis =
+		// hair systems present/unhidden; strands = total strand count).
+		if (wtb > 0 && wtb < resultSize - 96)
+		{
+			int gOn = 0, gN = 0, gVis = 0; unsigned long long gStrands = 0;
+			GGTerrain::GGTerrainWicked_GetGrassDebug(&gOn, &gN, &gVis, &gStrands);
+			_snprintf(result + wtb, resultSize - wtb, " | grass drawEn=%d wOn=%d hairs=%d vis=%d strands=%llu",
+				GGGrass::gggrass_global_params.draw_enabled, gOn, gN, gVis, gStrands);
 		}
 		result[resultSize - 1] = 0;
 		return true;

@@ -1939,3 +1939,39 @@ no offset commit, no presentation freeze, no snap-back, no re-pin — the 2.65 r
 Verified headlessly: post-release shot shows the view scrolled so the marker lands framed
 where it was grabbed (boundary box fully in frame), terrain chunk-identical across the pan,
 offsets/notify/wipe counters and chunk floor all frozen, marker world pos unchanged.
+
+## §2.67 (08-16 night) — generator Vegetation checkbox live on DX12 + RMB look pins the pointer
+
+Lee's pair after confirming the 2.66 glide: (1) unticking Vegetation left the grass visible;
+(2) right-button camera drags let the pointer drift off the terrain view.
+
+**(1) Vegetation:** the checkbox only wrote gggrass draw_enabled — which gates the DEAD
+legacy draw path. The editor's View Options checkbox learned this exact lesson in the 07-28
+UI audit (M-GridEditB_part3.cpp:2085 → GGTerrainWicked_SetGrassVisible sweeps the live hair
+entities); the generator's copy of the checkbox never got the call. Fix: one line — the
+generator's veg block now drives GGTerrainWicked_SetGrassVisible every frame (early-outs
+when unchanged; the same gate also stops grass CREATION while off, so chunks born hidden
+stay grassless and a re-tick rebuilds).
+
+Verification was a hunt of its own — three false trails before the instrument:
+- The rainforest "grass" band at the shore is TREES; POLYS doesn't count hair strands; and
+  at camera heights above the short grass view distance there are simply NO strands (and
+  none get CREATED — the build radius hugs the camera), so screenshots and POLYS both read
+  "no change" regardless of the toggle. Static terrain shots are bit-identical frame to
+  frame (no TAA in the generator) — a 0.000 diff means "nothing was ever there", not "broken".
+- New instrument closed it: TERRAINGEN_BIOME now prints
+  `grass drawEn/wOn/hairs/vis/strands` (GGTerrainWicked_GetGrassDebug). Ground-level cycle:
+  OFF: hairs=0 → ON: hairs=26 vis=26 strands=912000 → OFF: vis=0 (systems retained) →
+  ON: vis=26. Both directions, no one-way trap; drawEn and wOn flip in lockstep.
+- Note for testers: biome buttons RESET the Trees/Vegetation ticks to the biome profile's
+  defaults (Plains = both OFF by design, M-TerrainNew_part5 biome branches) — grass
+  "disappearing" after a biome click is the profile, not the toggle.
+
+**(2) RMB pointer pin:** classic mouselook — on look-drag start capture the OS cursor + the
+ImGui mouse pos as anchors; each frame consume io.MouseDelta, SetCursorPos back to the
+anchor, and write io.MousePosPrev = anchor so the NEXT frame's delta is measured from the
+anchor (without that fixup every second frame's delta subtracts the previous frame's
+movement). Also fixes the drag dying at the view edge (the branch requires bIsItemHovered).
+Verified: 250 px of synthetic drag → cursor ends exactly at the anchor (ImGui's ~6 px drag
+threshold means the anchor locks a step into the gesture), view rotated, pointer never left
+the view.

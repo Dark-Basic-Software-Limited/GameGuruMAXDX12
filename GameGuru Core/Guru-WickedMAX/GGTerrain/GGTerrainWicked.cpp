@@ -3637,6 +3637,29 @@ void GGTerrainWicked_SetGrassVisible(bool visible)
 	}
 }
 
+// GGMAX 2.67 diagnostic: the wicked grass state in numbers, for the harness. Splits
+// "creation never ran" (hairs=0) from "hidden" (vis<hairs) from "invisible for another
+// reason" (vis=hairs but nothing on screen: altitude filter, scale, draw distance).
+void GGTerrainWicked_GetGrassDebug(int* pWickedEnabled, int* pHairCount, int* pVisibleCount, unsigned long long* pStrandSum)
+{
+	*pWickedEnabled = wickedGrassEnabled ? 1 : 0;
+	*pHairCount = 0; *pVisibleCount = 0; *pStrandSum = 0;
+	auto& gscene = wi::scene::GetScene();
+	for (auto& kv : grassChunkKeyToGrassEntities)
+	{
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES + 1; t++)
+		{
+			wi::ecs::Entity e = (t < GGGRASS_TOTAL_REAL_TYPES) ? kv.second.perType[t] : kv.second.merged;
+			if (e == wi::ecs::INVALID_ENTITY) continue;
+			wi::HairParticleSystem* hair = gscene.hairs.GetComponent(e);
+			if (!hair) continue;
+			(*pHairCount)++;
+			if (hair->layerMask != 0) (*pVisibleCount)++;
+			*pStrandSum += hair->strandCount;
+		}
+	}
+}
+
 void GGTerrainWicked_SetTerrainVisible(bool visible)
 {
 	if (wickedTerrainHidden == !visible) return;

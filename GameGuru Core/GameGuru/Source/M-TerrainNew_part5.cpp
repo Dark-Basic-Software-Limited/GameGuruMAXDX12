@@ -12,6 +12,12 @@ bool bFirstTimeVeg = true;
 static bool  s_bGenOffsetFolded = false;
 static float s_fPreFoldOffsetX = 0.0f;
 static float s_fPreFoldOffsetZ = 0.0f;
+
+// GGMAX 2.67: the generator's Vegetation checkbox needs the REAL grass lever — the legacy
+// gggrass draw_enabled flag only gates the dead custom draw path; shipping grass is Wicked
+// hair entities (the editor's View Options checkbox learned this in the 07-28 UI audit,
+// M-GridEditB_part3.cpp:2085; the generator's copy never did).
+namespace GGTerrain { void GGTerrainWicked_SetGrassVisible(bool visible); }
 #define USEFULLVIEWPORT
 #define DIGAHOLE
 
@@ -912,6 +918,12 @@ void procedural_new_level(void)
 				bool bIsItemHovered = ImGui::IsItemHovered();
 				if (!bTriggerTerrainSaveAsWindow && !bLastSmallVideoPlayerMaximized)
 				{
+					// GGMAX 2.67 (Lee): pin the OS pointer for the whole right-button look —
+					// it used to travel with the drag and drift off the terrain view (which
+					// also killed the look mid-gesture: this branch requires bIsItemHovered).
+					static bool s_bLookPinned = false;
+					static POINT s_ptLookAnchorOS = { 0, 0 };
+					static ImVec2 s_vLookAnchorImGui;
 					#ifndef DIGAHOLE
 					if (ImGui::IsMouseDown(1) && bIsItemHovered && ImGui::IsMouseDragging(1))
 					#else
@@ -928,6 +940,17 @@ void procedural_new_level(void)
 					if (ImGui::IsMouseDown(1) && bIsItemHovered && ImGui::IsMouseDragging(1))
 					#endif
 					{
+						// GGMAX 2.67: classic mouselook pin — consume this frame's delta,
+						// snap the pointer back to the anchor, and make ImGui measure the
+						// NEXT frame's delta from the anchor (MousePosPrev) instead of from
+						// the pre-snap position (without that fixup every second frame's
+						// delta would subtract the previous frame's movement).
+						if (!s_bLookPinned)
+						{
+							s_bLookPinned = true;
+							::GetCursorPos(&s_ptLookAnchorOS);
+							s_vLookAnchorImGui = ImGui::GetMousePos();
+						}
 						float speed = 6.0f;
 						float xdiff = ImGui::GetIO().MouseDelta.x / speed;
 						float ydiff = ImGui::GetIO().MouseDelta.y / speed;
@@ -939,6 +962,12 @@ void procedural_new_level(void)
 						fSnapShotModeCameraAngX = t.editorfreeflight.c.angx_f;
 						fSnapShotModeCameraAngY = t.editorfreeflight.c.angy_f;
 						RotateCamera(fSnapShotModeCameraAngX, fSnapShotModeCameraAngY, 0);
+						::SetCursorPos(s_ptLookAnchorOS.x, s_ptLookAnchorOS.y);
+						ImGui::GetIO().MousePosPrev = s_vLookAnchorImGui;
+					}
+					else
+					{
+						s_bLookPinned = false;
 					}
 					if (!bDraggingActive && !bIs2DViewHovered && ImGui::IsMouseDown(0) && bIsItemHovered && ImGui::IsMouseDragging(0))
 					{
@@ -2922,6 +2951,13 @@ void procedural_new_level(void)
 						{
 							gggrass_global_params.draw_enabled = 0;
 						}
+						// GGMAX 2.67: drive the wicked hair entities too — the flag above only
+						// gates the DEAD legacy draw, so unticking Vegetation visibly did
+						// nothing on DX12. Same sweep the View Options checkbox uses; it
+						// early-outs when unchanged, and it also gates grass CREATION in the
+						// bridge, so chunks generated while hidden stay grassless and a
+						// re-tick rebuilds them.
+						GGTerrain::GGTerrainWicked_SetGrassVisible(t.visuals.bEndableGrassDrawing);
 						ImGui::Indent(-10);
 					}
 
