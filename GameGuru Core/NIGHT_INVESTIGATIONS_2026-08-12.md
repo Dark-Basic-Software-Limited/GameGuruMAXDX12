@@ -1540,3 +1540,13 @@ Verified: generator ovr=1 @ (0,0), 625/625 chunks, preview screenshot correct, G
 flow intact (alive, saveAsOpen=1; lastnewlevel.jpg still the known 2.49 capture debt);
 editor probe ovr=0 at normal FPS (Switch 135.6). Ledger: WICKED_ENGINE_CHANGES.md 2.53
 re-apply-on-pull row.
+
+## §2.54 SHIPPED (08-15, game 85cf2b4c) — generator entry wipes all chunks (Lee's leftover repro)
+
+Lee re-entered the generator and got torn stale geometry. Structural: box-drags change the
+noise offset, but invalidation marks only reach chunks under the GG editable area — ring
+chunks OUTSIDE it keep old-offset geometry forever. Fix: GGTerrainWicked_Update watches the
+bProceduralLevel false→true transition (one site, every entry route) → Generation_Restart +
+blendmap-tracking clears + idle-gate ping. New harness TERRAINGEN_BACK (back arrow minus its
+MODAL confirm) enables the enter→exit→re-enter loop. Verified: re-entry chunks=406 rebuilding
+at +6s → 625 settled, session-2 screenshot fully coherent, 2.53 ovr intact both sessions.
