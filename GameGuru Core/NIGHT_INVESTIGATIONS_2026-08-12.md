@@ -1520,3 +1520,23 @@ opaque movie → GPU ~10 → ~2 ms → cutscene ~95 FPS. Zero visible benefit (t
 whole screen at 30 fps, already rock-steady at ~60) against real regression risk in the
 modal player's other modes (3D-surface videos, VR paths, skip handling). Do it only if a
 future need (battery/thermals on low-end) justifies touching that loop.
+
+## §2.53 SHIPPED (08-15, engine 0230689f + game ebe10a1f) — generator pins the chunk ring to the yellow box
+
+Lee's feature: in the Terrain Generator the chunk ring should generate around the
+editable-area marker, not the camera; every other mode stays camera-centred. Mechanics
+found first: at rest the yellow box ALWAYS sits at GGORIGIN (dragging shifts the terrain
+noise offset under it, then re-centres), so the camera roaming in 3D view was the real
+problem — the ring followed it away from the playable area.
+
+Engine 2.53: three wi::terrain namespace globals substitute for camera.Eye at the ONE
+center_chunk computation; ring/removal/sort all key off center_chunk so everything
+follows. NOT Terrain members (transient UI state must not ride Serialize). Game: the
+generator's marker block sets the override every frame (marker pos = origin at rest,
+follows drag); the bridge force-clears it whenever bProceduralLevel is false and counts
+a state flip as idle-gate activity (the centre jumps). TERRAIN_RING gains ovr/ovrX/ovrZ.
+
+Verified: generator ovr=1 @ (0,0), 625/625 chunks, preview screenshot correct, Generate
+flow intact (alive, saveAsOpen=1; lastnewlevel.jpg still the known 2.49 capture debt);
+editor probe ovr=0 at normal FPS (Switch 135.6). Ledger: WICKED_ENGINE_CHANGES.md 2.53
+re-apply-on-pull row.
