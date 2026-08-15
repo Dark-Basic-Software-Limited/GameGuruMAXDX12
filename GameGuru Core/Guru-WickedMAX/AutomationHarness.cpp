@@ -4288,6 +4288,27 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// MERGE_PROF — GGMAX 2.60. MergeFastInternal cost attribution (the terrain generator's
+	// output merges through it inside Scene-S1 — the ~490ms mega-frame suspect). Cumulative
+	// since launch; per-manager totals name WHICH ComponentManager::Merge carries the cost.
+	if (_stricmp(cmd, "MERGE_PROF") == 0)
+	{
+		using namespace wi::scene;
+		int written2 = _snprintf(result, resultSize,
+			"OK: MERGE_PROF calls=%llu total=%.1fms max=%.1fms |",
+			(unsigned long long)gg_mergeprof_calls,
+			gg_mergeprof_total_us / 1000.0,
+			gg_mergeprof_max_us / 1000.0);
+		for (int i = 0; i < gg_mergeprof_entry_count && written2 < resultSize - 80; ++i)
+		{
+			if (gg_mergeprof_entries[i].us < 1000) continue; // only managers with >=1ms cumulative
+			written2 += _snprintf(result + written2, resultSize - written2, " %s=%.1fms",
+				gg_mergeprof_entries[i].name, gg_mergeprof_entries[i].us / 1000.0);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// TERRAIN_GENPROF [RESET] — GGMAX 2.58. Per-phase chunk-generation cost breakdown
 	// (cumulative engine accumulators; averages are per generated chunk). Answers "what
 	// takes the most time when generating a terrain chunk". ⚠ renderdata is timed inside

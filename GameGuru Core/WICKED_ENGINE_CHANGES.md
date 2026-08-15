@@ -907,5 +907,7 @@ modified, both genuine bug fixes.
 
 | 2.58 chunk-gen profiler + generator BVH skip (`wiTerrain.h/.cpp`) | applied 2026-08-15 | **re-apply on upstream pull.** gg_genprof_* per-phase accumulators inside Generation_Update's chunk bake (dumped by the game's TERRAIN_GENPROF) + `gg_generation_skip_bvh` (default false; the Terrain Generator sets it — SetBVHEnabled's synchronous 8712-triangle CPU BVH build measured at 8.2 of 10.96 ms/chunk = 75% of generation, and generator drag-picks work on the brute-force fallback; generator chunks are wiped on exit so the editor always regenerates WITH BVHs). Verify after re-apply: `TERRAIN_GENPROF` shows bvh≈0 for generator-born chunks |
 
+| 2.60 merge profiler + generator grass skip (`wiScene.h/.cpp`, `wiTerrain.h/.cpp`) | applied 2026-08-15 | **re-apply on upstream pull.** gg_mergeprof_* (per-manager MergeFastInternal timing, MERGE_PROF harness dump) + `gg_generation_skip_grass` (default false; Terrain Generator sets it — skips grass perlin seeding + system creation per chunk; generator chunks are wiped on exit so editor/test game keep grass). Verify after re-apply: generator TERRAIN_GENPROF grass≈0.1, editor grass unchanged |
+
 Update this table any time we add, revert, or commit a change to the
 `WickedEngineDX12` clone.

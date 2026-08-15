@@ -3044,6 +3044,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		// the brute-force fallback); every other mode builds BVHs as always. Mirrored per
 		// frame, and the 2.55 exit wipe regenerates everything WITH BVHs for the editor.
 		wi::terrain::gg_generation_skip_bvh = bProceduralLevel;
+		wi::terrain::gg_generation_skip_grass = bProceduralLevel; // GGMAX 2.60: no grass in the generator (invisible at those distances + known bug there)
 		if (wi::terrain::gg_generation_center_override_enabled != s_lastGenOverride)
 		{
 			s_lastGenOverride = wi::terrain::gg_generation_center_override_enabled;
