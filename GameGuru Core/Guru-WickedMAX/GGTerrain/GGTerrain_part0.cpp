@@ -10535,6 +10535,22 @@ float GGTerrain_CalculateHeight( float x, float z )
 	return GGTerrainChunk::CalculateHeightWithHeightmap( x, z, 1 );
 }
 
+// GGMAX 2.65: commit a Terrain Generator recentre WITHOUT triggering CheckParams'
+// reset machinery. Writing only the global offset (what the old marker-release
+// machine did) makes the next CheckParams see global != local -> legacy ResetChunks
+// + the 2.62 wicked notify -> a full ring wipe and ~5s refill. The generator now
+// keeps the already-generated ring on release and folds the marker distance into
+// the offsets exactly once, at level creation — where BOTH copies must move
+// together: height queries (CalculateHeightWithHeightmap) and the terrain JSON
+// save serialise the LOCAL params, while the editor/UI read the GLOBAL ones.
+void GGTerrain_CommitGeneratorOffset( float fOffsetX, float fOffsetZ )
+{
+	ggterrain_global_params.offset_x = fOffsetX;
+	ggterrain_global_params.offset_z = fOffsetZ;
+	ggterrain_local_params.offset_x = fOffsetX;
+	ggterrain_local_params.offset_z = fOffsetZ;
+}
+
 int GGTerrain_GetNormal( float x, float z, float* outNx, float* outNy, float* outNz )
 {
 	return ggterrain.GetNormal( x, z, outNx, outNy, outNz );

@@ -282,6 +282,7 @@ int GGTerrain_IsReady();
 int GGTerrain_RayCast( RAY pickRay, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint32_t* lodLevel, int includeFlatAreas=1 );
 int GGTerrain_GetHeight( float x, float z, float* outHeight, int accurateButSlow=0, int includeFlatAreas=1 );
 float GGTerrain_CalculateHeight( float x, float z ); // Direct height calc from heightmap+fractal+sculpt+flat areas, no chunk/LOD needed
+void GGTerrain_CommitGeneratorOffset( float fOffsetX, float fOffsetZ ); // GGMAX 2.65: recentre commit that does NOT trip CheckParams (writes global AND local)
 int GGTerrain_GetNormal( float x, float z, float* outNx, float* outNy, float* outNz );
 
 void GGTerrain_CancelRamp();

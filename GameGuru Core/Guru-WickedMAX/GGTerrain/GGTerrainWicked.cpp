@@ -2948,11 +2948,22 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		if (bShow3D || bShow2D)
 		{
 			const float half = GGTerrain_GetEditableSize(); // returns HALF-size
+			// GGMAX 2.65: in the Terrain Generator the editable area follows the MARKER
+			// (releasing a drag no longer recentres the world), and the marker's position
+			// is exactly the generation-center override the generator feeds every frame —
+			// draw the boundary there. Everywhere else the override is auto-cleared and
+			// the box stays on world origin (the editor's real map bounds).
+			float fBoundsCX = 0.0f, fBoundsCZ = 0.0f;
+			if (wi::terrain::gg_generation_center_override_enabled)
+			{
+				fBoundsCX = wi::terrain::gg_generation_center_override_x;
+				fBoundsCZ = wi::terrain::gg_generation_center_override_z;
+			}
 			const XMFLOAT4 boundaryColor = XMFLOAT4(1.0f, 0.75f, 0.1f, 1.0f);
 			if (bShow3D)
 			{
 				// tall wire box marking the editable volume (height is visual-only)
-				wi::primitive::AABB box(XMFLOAT3(-half, 0.0f, -half), XMFLOAT3(half, 25000.0f, half));
+				wi::primitive::AABB box(XMFLOAT3(fBoundsCX - half, 0.0f, fBoundsCZ - half), XMFLOAT3(fBoundsCX + half, 25000.0f, fBoundsCZ + half));
 				wi::renderer::DrawBox(box, boundaryColor, true);
 			}
 			if (bShow2D)
@@ -2961,6 +2972,8 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 				const int segs = 64;
 				const float step = (half * 2.0f) / (float)segs;
 				const float lift = 20.0f; // keep the line just above the surface
+				const float xW = fBoundsCX - half, xE = fBoundsCX + half;
+				const float zN = fBoundsCZ - half, zS = fBoundsCZ + half;
 				auto ground = [&](float x, float z) -> float
 				{
 					float h = 0.0f;
@@ -2969,23 +2982,23 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 				};
 				for (int i = 0; i < segs; i++)
 				{
-					const float a = -half + step * i;
-					const float b = a + step;
+					const float ax = xW + step * i, bx = ax + step;
+					const float az = zN + step * i, bz = az + step;
 					wi::renderer::RenderableLine line;
 					line.color_start = line.color_end = boundaryColor;
 					// north + south edges
-					line.start = XMFLOAT3(a, ground(a, -half), -half);
-					line.end = XMFLOAT3(b, ground(b, -half), -half);
+					line.start = XMFLOAT3(ax, ground(ax, zN), zN);
+					line.end = XMFLOAT3(bx, ground(bx, zN), zN);
 					wi::renderer::DrawLine(line, true);
-					line.start = XMFLOAT3(a, ground(a, half), half);
-					line.end = XMFLOAT3(b, ground(b, half), half);
+					line.start = XMFLOAT3(ax, ground(ax, zS), zS);
+					line.end = XMFLOAT3(bx, ground(bx, zS), zS);
 					wi::renderer::DrawLine(line, true);
 					// west + east edges
-					line.start = XMFLOAT3(-half, ground(-half, a), a);
-					line.end = XMFLOAT3(-half, ground(-half, b), b);
+					line.start = XMFLOAT3(xW, ground(xW, az), az);
+					line.end = XMFLOAT3(xW, ground(xW, bz), bz);
 					wi::renderer::DrawLine(line, true);
-					line.start = XMFLOAT3(half, ground(half, a), a);
-					line.end = XMFLOAT3(half, ground(half, b), b);
+					line.start = XMFLOAT3(xE, ground(xE, az), az);
+					line.end = XMFLOAT3(xE, ground(xE, bz), bz);
 					wi::renderer::DrawLine(line, true);
 				}
 			}

@@ -1872,3 +1872,58 @@ X-layer object". And transparent/no-zdepth UI helper objects may not be scene-pi
 all — hit-test such widgets in screen space.
 Deferred (Lee): after a successful drag the marker shows at the old position for a second
 or two before the terrain regenerates.
+
+## §2.65 (08-15 night) — marker release leaves the terrain alone; recentre folds invisibly
+## into the Generate button (Lee's spec — closes the deferred §2.64 "marker ghost" too)
+
+Lee, after testing 2.64: dragging the marker regenerates the ring at the new spot
+beautifully (the 2.53 gen-center override follows the marker), and holding before release
+even completes the fill — but RELEASING flicked back to the old centre view for a moment
+and then regenerated everything from scratch. "Those last two events I feel are not
+necessary." He's right, and both came from one place: the DX11-era release machine
+(M-TerrainNew_part5, `movecameratotarget` 28-step): pan camera to the marker (steps 27-14),
+write the drag delta into ggterrain_global_params.offset_x/z (step 13 — the world-recentre
+commit), freeze presentation ~400 ms, snap the camera back (step 0), re-pin the marker to
+GGORIGIN. On DX11 the freeze hid a fast synchronous rebuild; on DX12 the offset write
+tripped CheckParams → the 2.62 params notify → full ring wipe + ~5 s refill, and the
+camera snap-back + 10-frame GGORIGIN re-pin were exactly the "flick to the old centre".
+The deferred §2.64 ghost was this same machine seen mid-flight.
+
+**Fix (all game-side):**
+- Release = NOTHING. Machine deleted; `bDraggingActive = false` is the whole handler.
+  `movecameratotarget` survives only as an always-0 guard in a few UI conditions.
+- Marker re-pin is now height-only at its OWN x/z (it used to force GGORIGIN — that was
+  the visible snap). Entry still pins to origin; handle-scale math measures from the
+  marker, not origin.
+- The recentre bookkeeping moved to the ONE place that needs it: the "Generate Terrain and
+  Open the Level Editor" button, BEFORE the player-start placement samples heights at
+  world origin. New `GGTerrain_CommitGeneratorOffset(x,z)` writes global AND local params
+  together, so CheckParams sees no inequality — no notify, no wipe behind the Save-As
+  dialog — while height queries (CalculateHeightWithHeightmap reads LOCAL) and the terrain
+  JSON save (also serialises LOCAL) already evaluate the new centre. Fold:
+  `offset += MetersToOffset(UnitsToMeters(GGORIGIN - marker))` — the exact expression the
+  old step-13 used, fed the marker's resting position (composes across multiple drags).
+- Save-As CANCEL restores the pre-fold offsets through the same quiet commit — the
+  generator session continues exactly as it was (marker off-centre, ring intact).
+- The orange SHOW_MAP_SIZE boundary (engine debug lines since the 07-28 UI audit) now
+  centres on the gen-center override when it's enabled (= the marker, generator only);
+  everywhere else the override is auto-cleared and the box stays on world origin.
+
+**Verified headlessly** (marker265.sh + manual C/D, real cursor):
+- Release: marker stays at (23872,-50926) at +0.5 s/+2 s/+14 s, offsets untouched,
+  notifies/wipes counters frozen, ring chunk count never dipped (min 2167), boundary box
+  riding the marker. Shots pixel-still.
+- Generate: Save-As opens; offsets fold EXACTLY (two sessions, two marker positions:
+  Δ = marker × 0.0254 × 0.0007874 to the print digit), wipes still 0 — the fold is quiet.
+- Cancel: offsets restore to the baseline to the digit, wipes still 0, generator resumes
+  with marker + ring + view intact.
+- Save path (fold → saved level has the chosen terrain at origin + player start on it)
+  rides the same LOCAL-params reads — needs Lee's eye on a real Generate → Save.
+
+**Instrument kept:** IMGUI_PROBE (io.MousePos, hovered/nav window, viewport + Save-As modal
+rects) — built when the modal's Cancel refused two real-cursor clicks. It named the miss in
+one shot: ImGui's client area starts 23 px BELOW the screen top (title bar at 125% DPI;
+disp=1536x801, not x864). ★ Real-cursor probe rule refined: screenshot (x,y) → cursor
+(x, y+23) for CLICKS. X is 1:1. Every earlier "working" click just had a tall target —
+the marker's 28 px hover radius and the 52 px Generate button absorbed the 23 px error;
+the short Cancel button did not. TERRAINGEN_BIOME no-arg dump now also prints marker=(x,z).

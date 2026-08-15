@@ -3,6 +3,15 @@
 extern float fWickedMaxCenterTest;
 bool bTriggerTerrainSaveAsWindow = false;
 bool bFirstTimeVeg = true;
+
+// GGMAX 2.65: releasing the generator marker no longer recentres the world — the
+// drag distance folds into the noise offsets exactly once, in the "Generate Terrain
+// for Level" button handler. These carry the pre-fold offsets so a Save-As CANCEL
+// can put the generator session back exactly as it was (marker still off-centre,
+// ring untouched).
+static bool  s_bGenOffsetFolded = false;
+static float s_fPreFoldOffsetX = 0.0f;
+static float s_fPreFoldOffsetZ = 0.0f;
 #define USEFULLVIEWPORT
 #define DIGAHOLE
 
@@ -102,6 +111,15 @@ void procedural_new_level(void)
 		if (iRet == 1)
 		{
 			//Cancel save as. Restore settings and continue.
+			// GGMAX 2.65: undo the Generate button's offset fold — the generator session
+			// continues with the marker still at its dragged position, so the offsets must
+			// return to the values the visible ring was generated with (global AND local,
+			// again without tripping CheckParams into a ring wipe).
+			if (s_bGenOffsetFolded)
+			{
+				GGTerrain_CommitGeneratorOffset(s_fPreFoldOffsetX, s_fPreFoldOffsetZ);
+				s_bGenOffsetFolded = false;
+			}
 			ggterrain_global_render_params2.flags2 |= GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE;
 			ggterrain_global_render_params2.flags2 |= GGTERRAIN_SHADER_FLAG2_SHOW_MINI_MAP;
 			ggterrain_global_render_params2.flags2 &= ~GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE_3D;
@@ -248,6 +266,7 @@ void procedural_new_level(void)
 			t.editorfreeflight.mode = 1;
 
 			oldflags2 = ggterrain_global_render_params2.flags2;
+			s_bGenOffsetFolded = false; // GGMAX 2.65: fresh generator session, no pending fold
 
 			if (!bPopModalOpenProceduralCameraMode)
 			{
@@ -381,7 +400,12 @@ void procedural_new_level(void)
 				GGTerrainWicked_SetGenCenterOverride(ObjectPositionX(TERRAINGENERATOR_OBJECT), ObjectPositionZ(TERRAINGENERATOR_OBJECT), true);
 			}
 			static float fCursorPosX = 0.0f, fCursorPosY = 0.0f, fCursorPosZ = 0.0f;
-			float fCenterHeight = BT_GetGroundHeight(t.terrain.TerrainID, GGORIGIN_X, GGORIGIN_Z);
+			// GGMAX 2.65: the marker no longer lives at GGORIGIN — releasing a drag leaves
+			// it wherever it was dropped — so height maintenance and the screen-size scale
+			// below work from the marker's own position, not the origin.
+			const float fMarkerPosX = ObjectPositionX(TERRAINGENERATOR_OBJECT);
+			const float fMarkerPosZ = ObjectPositionZ(TERRAINGENERATOR_OBJECT);
+			float fCenterHeight = BT_GetGroundHeight(t.terrain.TerrainID, fMarkerPosX, fMarkerPosZ);
 
 			// GGMAX 2.56: the grab/hover pick ray travels straight THROUGH the right-side
 			// properties panel into the scene behind it — hovering the panel showed the
@@ -421,7 +445,10 @@ void procedural_new_level(void)
 
 			if (!bDraggingActive && iCountToUpdate++ >= 10)
 			{
-				PositionObject(TERRAINGENERATOR_OBJECT, GGORIGIN_X, fCenterHeight + iMoveTerrainObjectHeight, GGORIGIN_Z);
+				// GGMAX 2.65: height-only maintenance (was a forced snap back to GGORIGIN —
+				// that snap was the visible "flick to the old centre" after every release).
+				// Entry still pins the marker to GGORIGIN when the generator opens.
+				PositionObject(TERRAINGENERATOR_OBJECT, fMarkerPosX, fCenterHeight + iMoveTerrainObjectHeight, fMarkerPosZ);
 				iCountToUpdate = 0;
 			}
 			bObjHoverActive = bMouseOnMarker;
@@ -430,9 +457,9 @@ void procedural_new_level(void)
 			//PE: Only scale when moving done.
 			if(movecameratotarget == 0)
 			{
-				float fTDX = GGORIGIN_X - CameraPositionX();
+				float fTDX = fMarkerPosX - CameraPositionX();
 				float fTDY = fCenterHeight - CameraPositionY();
-				float fTDZ = GGORIGIN_Z - CameraPositionZ();
+				float fTDZ = fMarkerPosZ - CameraPositionZ();
 				float fTerrDist = sqrt(fabs(fTDX*fTDX) + fabs(fTDY*fTDY) + fabs(fTDZ*fTDZ));
 				float newscale = fTerrDist / 5000.0f;
 				if (newscale < 0.2) newscale = 0.2;
@@ -450,8 +477,6 @@ void procedural_new_level(void)
 			static float fTerrainHitX, fTerrainHitY, fTerrainHitZ;
 			static float fTerrainStartHitX, fTerrainStartHitY, fTerrainStartHitZ;
 			bool bAreaAlreadyDisplayed = false;
-			static ImVec2 newTargetOffset, newTargetCamera;
-			int iMoveCameraSteps = 28;
 
 			if (ImGui::IsMouseDown(0))
 			{
@@ -556,65 +581,20 @@ void procedural_new_level(void)
 			}
 			else
 			{
-				if (bDraggingActive)
-				{
-					//Move to new position.
-					float offsetX = fTerrainStartHitX - fTerrainHitX;
-					float offsetZ = fTerrainStartHitZ - fTerrainHitZ;
-					movecameratotarget = iMoveCameraSteps;
-
-					newTargetCamera.x = -offsetX;
-					newTargetCamera.y = -offsetZ;
-
-					newTargetOffset.x = ggterrain_global_params.offset_x + GGTerrain_MetersToOffset(GGTerrain_UnitsToMeters(offsetX));
-					newTargetOffset.y = ggterrain_global_params.offset_z + GGTerrain_MetersToOffset(GGTerrain_UnitsToMeters(offsetZ));
-				}
+				// GGMAX 2.65 (Lee's spec): releasing the marker changes NOTHING. The chunk
+				// ring already generated around the marker during the drag (the 2.53
+				// gen-center override follows it every frame), so the DX11-era release
+				// machine that lived here — pan the camera to the marker over 14 steps,
+				// fold the drag delta into the noise offsets, freeze presentation for
+				// ~400ms, then snap the camera back — only produced a flick to the old
+				// centre followed by a full ring wipe + ~5s refill on DX12 (the offset
+				// write tripped CheckParams -> the 2.62 params notify). The recentre
+				// bookkeeping now happens once, invisibly, in the "Generate Terrain for
+				// Level" button handler (see the offset fold there); `movecameratotarget`
+				// survives only as an always-0 guard in a few UI conditions.
 				bDraggingActive = false;
 			}
 			bImGuiGotFocus = true;
-
-			if (movecameratotarget > 0)
-			{
-				iCountToUpdate = 0;
-				extern bool g_bNoSwapchainPresent;
-				static ImVec2 orgCamera, orgObjPosition;
-				movecameratotarget--;
-				if (movecameratotarget > 13)
-				{
-					if (movecameratotarget == iMoveCameraSteps - 1)
-					{
-						orgCamera.x = fSnapShotModeCameraX;
-						orgCamera.y = fSnapShotModeCameraZ;
-					}
-					fSnapShotModeCameraX += (newTargetCamera.x / (float)(iMoveCameraSteps - 12.0));
-					fSnapShotModeCameraZ += (newTargetCamera.y / (float)(iMoveCameraSteps - 12.0));
-
-					if (movecameratotarget == 14)
-					{
-						fSnapShotModeCameraX = newTargetCamera.x + orgCamera.x;
-						fSnapShotModeCameraZ = newTargetCamera.y + orgCamera.y;
-					}
-				}
-				if (movecameratotarget == 13)
-				{
-					ggterrain_global_params.offset_x = newTargetOffset.x;
-					ggterrain_global_params.offset_z = newTargetOffset.y;
-				}
-				//PE: Freeze while terrain is generating.
-				if (movecameratotarget <= 13)
-				{
-					g_bNoSwapchainPresent = true;
-					//PE: No vsync so sleep a bit.
-					Sleep(30); //30: looks like terrain is done with this delay.
-				}
-				if (movecameratotarget == 0)
-				{
-					fSnapShotModeCameraX = orgCamera.x;
-					fSnapShotModeCameraZ = orgCamera.y;
-					g_bNoSwapchainPresent = false;
-					iCountToUpdate = 10; //9
-				}
-			}
 
 			//PE: Always display 3d area using lines if possible.
 			bool b2DPossible = false;
@@ -3405,6 +3385,33 @@ void procedural_new_level(void)
 				ImVec2 texthere = ImGui::GetCursorPos();
 				if (ImGui::StyleButton("##Generate Terrain for Level", ImVec2(fButtonSizeX, ImGui::GetFontSize()*3.0)))
 				{
+					// GGMAX 2.65: commit the marker's resting position as the level centre.
+					// Marker release no longer recentres the world (the ring is already
+					// generated around the marker), so THIS is the one place the drag
+					// distance folds into the noise offsets. Global AND local params move
+					// together (GGTerrain_CommitGeneratorOffset) so CheckParams sees no
+					// change — no ring wipe behind the Save-As dialog — while the height
+					// samples below (player-start placement at world origin) and the level
+					// save (which serialises the LOCAL params) already evaluate the new
+					// centre. Sign per the old release machine: newOffset = offset +
+					// M2O(U2M(startHit - endHit)) with the marker starting at GGORIGIN.
+					// A Save-As CANCEL restores the pre-fold offsets (iRet==1 above).
+					s_bGenOffsetFolded = false;
+					if (ObjectExist(TERRAINGENERATOR_OBJECT))
+					{
+						const float fFoldDX = ObjectPositionX(TERRAINGENERATOR_OBJECT) - GGORIGIN_X;
+						const float fFoldDZ = ObjectPositionZ(TERRAINGENERATOR_OBJECT) - GGORIGIN_Z;
+						if (fabs(fFoldDX) > 1.0f || fabs(fFoldDZ) > 1.0f)
+						{
+							s_fPreFoldOffsetX = ggterrain_global_params.offset_x;
+							s_fPreFoldOffsetZ = ggterrain_global_params.offset_z;
+							GGTerrain_CommitGeneratorOffset(
+								ggterrain_global_params.offset_x + GGTerrain_MetersToOffset(GGTerrain_UnitsToMeters(-fFoldDX)),
+								ggterrain_global_params.offset_z + GGTerrain_MetersToOffset(GGTerrain_UnitsToMeters(-fFoldDZ)));
+							s_bGenOffsetFolded = true;
+						}
+					}
+
 					t.addentityfile_s = "_markers\\Player Start.fpe";
 					if (t.addentityfile_s != "")
 					{

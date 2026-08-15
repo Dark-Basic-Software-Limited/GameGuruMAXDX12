@@ -4443,7 +4443,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			result[resultSize - 1] = 0;
 			return true;
 		}
-		_snprintf(result, resultSize,
+		int wtb = _snprintf(result, resultSize,
 			"OK: TERRAINGEN_BIOME sel=%d ptype=%d seed=%u amp=%.2f offx=%.1f offz=%.1f editsize=%.0f slopemat0=%d treebits=%u | chain cpRuns=%u cpResets=%u notifies=%u matNotifies=%u wipes=%u",
 			g_ggBiomeSelectedMirror,
 			ggterrain_extra_params.iProceduralTerrainType,
@@ -4459,6 +4459,16 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			GGTerrain::gg_dbg_params_notifies,
 			GGTerrain::gg_dbg_material_notifies,
 			GGTerrain::gg_dbg_params_wipes);
+		// GGMAX 2.65: the marker rests wherever the last drag dropped it (release no
+		// longer recentres), so its world position is now state worth reporting — the
+		// Generate-button offset fold is offx/offz += MetersToOffset(UnitsToMeters(-marker)).
+		if (ObjectExist(17998) && wtb > 0 && wtb < resultSize - 64)
+		{
+			sObject* pTGM = GetObjectData(17998);
+			if (pTGM)
+				_snprintf(result + wtb, resultSize - wtb, " | marker=(%.0f,%.0f)",
+					pTGM->position.vecPosition.x, pTGM->position.vecPosition.z);
+		}
 		result[resultSize - 1] = 0;
 		return true;
 	}
@@ -4550,6 +4560,38 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 				w4 += _snprintf(result + w4, resultSize - w4, " | chunk(0,0) MISSING");
 			}
 		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// IMGUI_PROBE — GGMAX 2.65 diagnostic. What ImGui itself sees RIGHT NOW: io.MousePos,
+	// button state, hovered/nav window names, display + main-viewport rects, and (when it
+	// exists) the Save-As modal's rect. Built because a real-cursor click that lands fine
+	// on panel buttons produced NO hover on the Save New Level As modal — this names the
+	// coordinate or routing mismatch instead of guessing at it.
+	if (_stricmp(cmd, "IMGUI_PROBE") == 0)
+	{
+		ImGuiContext* gctx = GImGui;
+		if (!gctx)
+		{
+			_snprintf(result, resultSize, "ERROR: no ImGui context");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuiViewport* vp = ImGui::GetMainViewport();
+		ImGuiWindow* saveas = ImGui::FindWindowByName("Save New Level As##Storyboard");
+		int w6 = _snprintf(result, resultSize,
+			"OK: IMGUI_PROBE mouse=(%.0f,%.0f) down=%d disp=(%.0f,%.0f) vpPos=(%.0f,%.0f) vpSize=(%.0f,%.0f) hovered='%s' nav='%s'",
+			io.MousePos.x, io.MousePos.y, io.MouseDown[0] ? 1 : 0,
+			io.DisplaySize.x, io.DisplaySize.y,
+			vp ? vp->Pos.x : -1.0f, vp ? vp->Pos.y : -1.0f,
+			vp ? vp->Size.x : -1.0f, vp ? vp->Size.y : -1.0f,
+			gctx->HoveredWindow ? gctx->HoveredWindow->Name : "none",
+			gctx->NavWindow ? gctx->NavWindow->Name : "none");
+		if (saveas && w6 > 0 && w6 < resultSize - 128)
+			_snprintf(result + w6, resultSize - w6, " | saveas pos=(%.0f,%.0f) size=(%.0f,%.0f) active=%d",
+				saveas->Pos.x, saveas->Pos.y, saveas->Size.x, saveas->Size.y, saveas->Active ? 1 : 0);
 		result[resultSize - 1] = 0;
 		return true;
 	}
