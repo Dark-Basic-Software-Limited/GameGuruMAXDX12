@@ -2398,6 +2398,18 @@ extern bool bKeepWindowsResponding;
 void EmptyMessages(void);
 void timestampactivity(int i, char* desc_s);
 
+// GGMAX 2.53: game-callable setter for the generation-center override (global scope for the
+// same linkage reason as above). The Terrain Generator calls this every frame it is open,
+// pinning the chunk ring to the editable-area marker; the per-frame auto-clear below reverts
+// to camera-centred generation the moment the generator is no longer the active mode.
+void GGTerrainWicked_SetGenCenterOverride(float fWorldX, float fWorldZ, bool bEnable)
+{
+	wi::terrain::gg_generation_center_override_x = fWorldX;
+	wi::terrain::gg_generation_center_override_z = fWorldZ;
+	wi::terrain::gg_generation_center_override_enabled = bEnable;
+}
+extern bool bProceduralLevel; // GGMAX 2.53: the Terrain Generator mode flag (game global)
+
 namespace GGTerrain
 {
 
@@ -2987,6 +2999,20 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// been stable (checked in the census loop below, which still runs every frame).
 	// Conservative by construction: any signal resets calm to 0 the same frame, and the
 	// every-8th-frame heartbeat bounds a missed signal's delay to ~110ms of ring scan.
+	// GGMAX 2.53: the generation-center override may only live while the Terrain Generator
+	// owns the screen — any other mode reverts to camera-centred generation here, so no
+	// exit path from the generator can leak a pinned ring into the editor or test game.
+	// A state flip jumps the ring centre, so it also counts as activity for the idle gate.
+	{
+		static bool s_lastGenOverride = false;
+		if (!bProceduralLevel && wi::terrain::gg_generation_center_override_enabled)
+			wi::terrain::gg_generation_center_override_enabled = false;
+		if (wi::terrain::gg_generation_center_override_enabled != s_lastGenOverride)
+		{
+			s_lastGenOverride = wi::terrain::gg_generation_center_override_enabled;
+			s_terrainActivityPing = true;
+		}
+	}
 	{
 		static XMFLOAT3 s_idleLastEye = {}, s_idleLastAt = {};
 		const bool cameraMoved =

@@ -1246,11 +1246,16 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		const float mapHalfU = GGTerrain::ggterrain_global_render_params2.editable_size;
 		const float viewU = (float)tr.generation * chunkU;
 		const int   ringMax = (2 * tr.generation + 1) * (2 * tr.generation + 1);
+		// GGMAX 2.53: ovr=1 means the ring is pinned to the Terrain Generator's editable-area
+		// marker (world XZ shown) instead of the camera; must read 0 in every other mode.
 		written += _snprintf(result + written, resultSize - written,
 			"TERRAIN_RING: gen=%d chunks=%d ringMax=%d chunkU=%.0f viewU=%.0f viewM=%.0f "
-			"centreToCam=%d mapHalfM=%.0f\n",
+			"centreToCam=%d mapHalfM=%.0f ovr=%d ovrX=%.0f ovrZ=%.0f\n",
 			tr.generation, (int)tr.chunks.size(), ringMax, chunkU,
-			viewU, viewU * 0.0254f, tr.IsCenterToCamEnabled() ? 1 : 0, mapHalfU * 0.0254f);
+			viewU, viewU * 0.0254f, tr.IsCenterToCamEnabled() ? 1 : 0, mapHalfU * 0.0254f,
+			wi::terrain::gg_generation_center_override_enabled ? 1 : 0,
+			wi::terrain::gg_generation_center_override_x,
+			wi::terrain::gg_generation_center_override_z);
 	}
 
 	// GGMAX 2.27: decal element pool — prewarm + grow (SWITCHESCAPE_PERF.md §23).

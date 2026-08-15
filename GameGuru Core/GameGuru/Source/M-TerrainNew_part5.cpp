@@ -360,6 +360,18 @@ void procedural_new_level(void)
 		{
 			bImGuiGotFocus = false;
 			ShowObject(TERRAINGENERATOR_OBJECT);
+
+			// GGMAX 2.53: pin the terrain chunk ring to the editable-area marker (the yellow
+			// box) while the generator is open — in 3D view the preview camera roams far from
+			// origin and would otherwise drag generated chunks away from the playable area.
+			// At rest the marker sits at GGORIGIN; during a drag it follows the terrain hit,
+			// so the ring tracks wherever the box is. The GGTerrainWicked bridge auto-clears
+			// this whenever bProceduralLevel is false, so every other mode keeps the default
+			// camera-centred generation.
+			{
+				extern void GGTerrainWicked_SetGenCenterOverride(float fWorldX, float fWorldZ, bool bEnable);
+				GGTerrainWicked_SetGenCenterOverride(ObjectPositionX(TERRAINGENERATOR_OBJECT), ObjectPositionZ(TERRAINGENERATOR_OBJECT), true);
+			}
 			static float fCursorPosX = 0.0f, fCursorPosY = 0.0f, fCursorPosZ = 0.0f;
 			float fCenterHeight = BT_GetGroundHeight(t.terrain.TerrainID, GGORIGIN_X, GGORIGIN_Z);
 			if (!bDraggingActive && iCountToUpdate++ >= 10)
