@@ -1597,3 +1597,28 @@ contention + merge-ordering risk) for maybe 28 s → ~12 s. Only if Lee wants it
 ★ Method note: the false-exoneration lesson applied — the first turbo run LOOKED like an
 improvement but the control run is what made the claim (and revealed the counterintuitive
 FPS improvement + the real ceiling).
+
+## §2.58 SHIPPED (08-15, engine 34f4bf29 + game 4ed9d6ad) — chunk cost NAMED: 75% was the pick-BVH
+
+Lee challenged the per-chunk cost ("my DX11 terrain generated near-infinite distance in
+seconds"). Instrument, not theory: per-phase accumulators in the chunk bake + TERRAIN_GENPROF.
+**Answer: 10.96 ms/chunk, of which 8.20 ms (75%) = SetBVHEnabled's SYNCHRONOUS CPU triangle
+BVH (8712 tris)** — a pick-acceleration structure DX11 never built (its picks were analytic
+against the heightmap). The real mesh upload (renderdata) is 1.56 ms; heights 0.51, blendcb
+0.50, regiontex 0.82, grass 0.32, vertex 0.27, physics 0.00. Meshlets exonerated by the 1.77
+ledger note (MESH_SHADER_ALLOWED never on). ⚠ First split hid the BVH inside the renderdata
+bucket — SetBVHEnabled(true) BUILDS synchronously when invalid (wiScene_Components.h:823).
+
+Fix: `gg_generation_skip_bvh` — generator-only (bridge mirrors bProceduralLevel); drag-pick
+rays fall back to brute force (hovergate probe verified); the 2.55 exit wipe means the
+editor always regenerates WITH BVHs. Pregenerate also early-outs when already in-generator.
+Fill: 33 s (start of day) → 24 s; during-fill FPS ~23-28 = the 2.57 budget finally fully
+consumed (Lee's accepted trade); post-fill 83+ recovery; editor probe normal (134.4).
+
+Named, NOT taken (both need their own verified pass):
+1. ~875 chunks/entry still bake WITH BVHs during the flat-level LOAD (before bProceduralLevel
+   flips), then get wiped (~4 s waste + the bvh=2.91 residue in GENPROF). The early flag
+   (bProceduralLevelFromStoryboard) has an UNVERIFIED lifecycle across Generate→editor —
+   suppressing on it risks a BVH-less or terrain-less EDITOR. Trace its resets first.
+2. Fill is now MAIN-THREAD-INTEGRATION bound: halving generator-thread work moved the wall
+   only 28→24 s. Next ceiling = merge + blend passes + VT residency on the main thread.
