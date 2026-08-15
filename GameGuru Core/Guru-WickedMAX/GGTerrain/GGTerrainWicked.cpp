@@ -3012,6 +3012,28 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 			s_lastGenOverride = wi::terrain::gg_generation_center_override_enabled;
 			s_terrainActivityPing = true;
 		}
+
+		// GGMAX 2.54: entering the Terrain Generator = a NEW session — wipe every chunk.
+		// Leftovers were structural, not transient: a previous session's box-drags change
+		// the noise offset, but height-change invalidation marks only reach chunks under
+		// the GG editable area — ring chunks OUTSIDE it keep the old-offset geometry
+		// forever (the torn rim the user screenshotted). Generation_Restart nukes all
+		// chunks + their VTs + the chunk group entity unconditionally (and already joins
+		// the async VT job — the 1.45 use-after-free guard), then the blendmap tracking
+		// must restart too or recoloring skips "already processed" chunk keys. Watching
+		// the bProceduralLevel transition HERE catches every entry route (storyboard
+		// empty node, File > New Level) with one site.
+		static bool s_lastProceduralLevel = false;
+		if (bProceduralLevel && !s_lastProceduralLevel)
+		{
+			terrain->Generation_Restart();
+			processedChunkKeys.clear();
+			chunkKeyToEntity.clear();
+			dx11BlendProcessedKeys.clear();
+			dx11BlendChunkKeyToEntity.clear();
+			s_terrainActivityPing = true;
+		}
+		s_lastProceduralLevel = bProceduralLevel;
 	}
 	{
 		static XMFLOAT3 s_idleLastEye = {}, s_idleLastAt = {};

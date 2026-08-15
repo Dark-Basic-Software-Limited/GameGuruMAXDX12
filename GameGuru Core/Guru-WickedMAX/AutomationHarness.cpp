@@ -4234,6 +4234,26 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// TERRAINGEN_BACK — GGMAX 2.54. Exit the Terrain Generator back to the storyboard: the
+	// same single variable the back arrow's confirmed storyboard route sets
+	// (M-TerrainNew_part5.cpp TOOL_GOBACK handler), minus its askBoxCancel — that is a MODAL
+	// MessageBox a headless run can never answer (the modal-legacy-path rule). Exists to
+	// drive the 2.54 enter→exit→re-enter wipe verification.
+	if (_stricmp(cmd, "TERRAINGEN_BACK") == 0)
+	{
+		extern bool bProceduralLevel;
+		if (!bProceduralLevel)
+		{
+			_snprintf(result, resultSize, "ERROR: TERRAINGEN_BACK — not in the Terrain Generator (bProceduralLevel false)");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		bProceduralLevel = false;
+		_snprintf(result, resultSize, "OK: TERRAINGEN_BACK — bProceduralLevel=false (returning to storyboard)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// ZOOM_FIRE — GGMAX 2.48. Hold right mouse to zoom, fire mid-hold, keep zoom held after.
 	// Everything goes through the SHIPPED input path (see M-Physics_part1.cpp consumer), so the
 	// shot is fired in a genuine zoomed state — built to reproduce "zoomed firing does no damage".
