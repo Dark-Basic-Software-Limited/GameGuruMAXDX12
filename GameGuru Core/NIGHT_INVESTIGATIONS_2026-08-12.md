@@ -1647,3 +1647,27 @@ ordered-insert storms on merge frames (Component_Attach is O(N) memmove per chun
 the main scene's arrays). Two frame species seen: S1-spikes (~490 ms) and merge frames
 (~67 ms, in the TerrainW range). NEXT MOVE: decompose S1's remainder (extend the
 SCENESERIAL coverage or time the Waits separately), then fix per findings.
+
+## §2.60 SHIPPED (08-15 evening, engine ab195c73 + game 64b8e959) — grass out of the generator; merge exonerated; the wall cornered
+
+Lee's grass request measured FIRST: zero live grass systems exist during a generator fill
+(HAIR_SYSTEMS=0 throughout) — grass was never the S1 monster, only ~0.3 ms/chunk of seeding
+(~0.5 s) + his known generator grass bug. gg_generation_skip_grass now zeroes both; editor/
+test game keep grass by construction (exit wipe + per-frame mirror). Verified: grass 0.32→
+0.10, editor 134.8.
+
+S1 decomposition, this round's verdicts:
+- ★ Scene-S1 calls terrain.Generation_Update DIRECTLY (wiScene.cpp S1 block) — the bridge is
+  a SECOND caller. The ring scan runs twice/frame; the idle gate + 2.59 suppression only ever
+  governed the bridge copy. (Single-sourcing = clean-up candidate, ~1 ms/frame everywhere.)
+- Generation_Update early-returns when the workload is busy (IsBusy → return) — no blocking.
+- MERGE EXONERATED by MERGE_PROF: 423 ms TOTAL per fill, max call 5.1 ms (materials 199 +
+  meshes 120). The ~490 ms "S1" profiler readings included SET_SCENESERIAL inflation.
+- Gap tracer (the RIGHT tool, rediscovered): 32 gaps >100 ms per fill, all in `update`, with
+  **texCreates bursts (+4..+22 per gap frame)** — plus one observed 66.8 ms bridge
+  Generation_Update frame. THE REMAINING ~12 s WALL IS NOW CORNERED TO THE VT/REGION-TEXTURE
+  ALLOCATION PATH inside the terrain update. NEXT: time CreateChunkRegionTexture's device
+  calls vs the VT allocation/residency init in the bridge-call remainder, then batch or pool.
+
+Fill unchanged this round (~24 s). Day total: 33 s → ~24 s with editor/test game untouched
+(regression-proven every round: skipbvh/skipgrass flip 0 outside generator, Switch ~134).
