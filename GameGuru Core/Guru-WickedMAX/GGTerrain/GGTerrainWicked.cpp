@@ -2656,6 +2656,20 @@ void GGTerrainWicked_Init()
 	GGTrees::GGTrees_WickedInit();
 }
 
+// GGMAX 2.54/2.55: full chunk wipe — Generation_Restart (frees chunk VTs, clears chunks,
+// removes the chunk group entity, joins the async VT job per the 1.45 guard) PLUS the
+// blendmap-tracking clears, without which recoloring skips "already processed" chunk keys.
+// Used on Terrain Generator entry (fresh session at the wide ring) and exit (reclaim the
+// wide ring — removal alone can never shrink a ring below generation+2+removal_margin).
+static void GGResetTerrainChunks(wi::terrain::Terrain* terrain)
+{
+	terrain->Generation_Restart();
+	processedChunkKeys.clear();
+	chunkKeyToEntity.clear();
+	dx11BlendProcessedKeys.clear();
+	dx11BlendChunkKeyToEntity.clear();
+}
+
 void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 {
 	if (!wickedTerrainInitialised) return;
@@ -3023,14 +3037,30 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		// must restart too or recoloring skips "already processed" chunk keys. Watching
 		// the bProceduralLevel transition HERE catches every entry route (storyboard
 		// empty node, File > New Level) with one site.
+		//
+		// GGMAX 2.55: the generator also gets a WIDER chunk ring — gen 19 (39x39 = 1521
+		// chunks, reach 2548 m) covers the full 5 km editable-area view; the shipping
+		// gen 12 (625) only reaches 1609 m and left the 5 km box half empty. Generator
+		// ONLY: measured cost is +258 MB driver VRAM / ~-12% preview FPS, fine for the
+		// generator's empty scene but not wanted in the editor or test game. The exit
+		// restore needs its own Restart because a ring can never SHRINK on its own —
+		// removal only reclaims past generation+2+removal_margin(12), so 1521 stale
+		// chunks would ride into the editor otherwise. Both exit routes are safe: back
+		// arrow lands in the storyboard (no 3D view, ring rebuilds unseen), Generate
+		// lands in a real level load whose reveal hold covers the rebuild.
 		static bool s_lastProceduralLevel = false;
+		static int s_savedGeneration = 0;
 		if (bProceduralLevel && !s_lastProceduralLevel)
 		{
-			terrain->Generation_Restart();
-			processedChunkKeys.clear();
-			chunkKeyToEntity.clear();
-			dx11BlendProcessedKeys.clear();
-			dx11BlendChunkKeyToEntity.clear();
+			s_savedGeneration = terrain->generation;
+			terrain->generation = 19; // 2.55: set BEFORE the restart so the rebuild targets 1521 immediately
+			GGResetTerrainChunks(terrain);
+			s_terrainActivityPing = true;
+		}
+		if (!bProceduralLevel && s_lastProceduralLevel)
+		{
+			if (s_savedGeneration > 0) terrain->generation = s_savedGeneration; // 2.55: back to the shipping ring
+			GGResetTerrainChunks(terrain);
 			s_terrainActivityPing = true;
 		}
 		s_lastProceduralLevel = bProceduralLevel;
