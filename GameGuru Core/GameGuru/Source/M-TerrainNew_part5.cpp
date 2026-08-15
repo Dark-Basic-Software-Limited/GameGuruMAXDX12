@@ -395,23 +395,36 @@ void procedural_new_level(void)
 				ggMouse.x >= rClipRect.Min.x && ggMouse.x < rClipRect.Max.x &&
 				ggMouse.y >= rClipRect.Min.y && ggMouse.y < rClipRect.Max.y;
 
+			// GGMAX 2.64 (Lee's spec): the tooltip and grab only exist ON THE MARKER HANDLE.
+			// Two dead ends before this shape: (a) the CURSOROBJECT-layer scene pick cannot
+			// exclude terrain chunks (entities without a LayerComponent default to ALL layer
+			// bits) so hit-success fired anywhere over terrain; (b) requiring the hit entity
+			// to be the marker never fired — PICK_AT forensics showed the ray passes straight
+			// through the transparent, z-depth-disabled marker and hits the chunk behind it
+			// (the marker was NEVER pickable on DX12; drags previously worked by accident off
+			// the terrain hit). So test in SCREEN SPACE: the distance-proportional ScaleObject
+			// above keeps the marker's screen size roughly constant, so a fixed pixel radius
+			// around its projected centre IS its footprint.
+			ImVec2 ggMarker2D;
+			bool bMouseOnMarker = false;
+			{
+				ImVec2 Convert3DTo2D(float x, float y, float z);
+				ggMarker2D = Convert3DTo2D(
+					ObjectPositionX(TERRAINGENERATOR_OBJECT),
+					ObjectPositionY(TERRAINGENERATOR_OBJECT),
+					ObjectPositionZ(TERRAINGENERATOR_OBJECT));
+				ggMarker2D += ImGui::GetMainViewport()->Pos;
+				const float fDX = ggMouse.x - ggMarker2D.x;
+				const float fDY = ggMouse.y - ggMarker2D.y;
+				bMouseOnMarker = bMouseInTerrainView && (fDX * fDX + fDY * fDY) <= (28.0f * 28.0f);
+			}
+
 			if (!bDraggingActive && iCountToUpdate++ >= 10)
 			{
 				PositionObject(TERRAINGENERATOR_OBJECT, GGORIGIN_X, fCenterHeight + iMoveTerrainObjectHeight, GGORIGIN_Z);
 				iCountToUpdate = 0;
-				//PE: check hover.
-				int layer = GGRENDERLAYERS_CURSOROBJECT;
-				float fHitX, fHitY, fHitZ;
-				bool bHit = bMouseInTerrainView && WickedCall_GetPick(&fHitX, &fHitY, &fHitZ, NULL, NULL, NULL, NULL, layer);
-				if (bHit)
-				{
-					bObjHoverActive = true;
-				}
-				else
-				{
-					bObjHoverActive = false;
-				}
 			}
+			bObjHoverActive = bMouseOnMarker;
 			if(bDraggingActive) bObjHoverActive = false;
 
 			//PE: Only scale when moving done.
@@ -447,11 +460,20 @@ void procedural_new_level(void)
 					//Setup start values.
 					// GGMAX 2.56: only START a grab from inside the terrain view — the pick
 					// would otherwise fire through the properties panel (see gate above).
-					int layer = GGRENDERLAYERS_CURSOROBJECT;
-					bool bHit = bMouseInTerrainView && WickedCall_GetPick(&fHitOffsetX, &fHitOffsetY, &fHitOffsetZ, NULL, NULL, NULL, NULL, layer);
+					// GGMAX 2.64 (Lee's spec): a drag may only START on the marker handle
+					// itself — clicking bare terrain used to "grab" (the terrain hit counted
+					// as success), teleporting the marker to the click and then snapping it
+					// back when the zero-offset release ran the camera-move machinery. The
+					// marker footprint test is the screen-space one above (the marker is not
+					// scene-pickable on DX12); the world-space grab offset still comes from
+					// the marker's own position.
+					bool bHit = bMouseOnMarker;
 					if (bHit)
 					{
-						layer = GGRENDERLAYERS_TERRAIN;
+						fHitOffsetX = ObjectPositionX(TERRAINGENERATOR_OBJECT);
+						fHitOffsetY = ObjectPositionY(TERRAINGENERATOR_OBJECT);
+						fHitOffsetZ = ObjectPositionZ(TERRAINGENERATOR_OBJECT);
+						int layer = GGRENDERLAYERS_TERRAIN;
 						bool bHitTerrain = WickedCall_GetPick(&fTerrainStartHitX, &fTerrainStartHitY, &fTerrainStartHitZ, NULL, NULL, NULL, NULL, layer);
 						if (bHitTerrain)
 						{

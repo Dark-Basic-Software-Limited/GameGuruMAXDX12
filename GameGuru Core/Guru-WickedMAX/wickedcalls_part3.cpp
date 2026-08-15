@@ -158,6 +158,18 @@ int g_pickCacheHits = 0;
 int g_pickMissMask = 0; // miss because layer/output pattern differed from cached (multi-mask thrash)
 int g_pickMissRay  = 0; // miss because the ray inputs (cursor/camera) differed (motion or instability)
 
+// GGMAX 2.64: does a pick-hit wicked entity belong to the given DBO object number?
+// The wiScene pick's layer mask cannot EXCLUDE terrain chunks — wicked entities without a
+// LayerComponent default to ALL layer bits and pass every mask — so a pick against, e.g.,
+// GGRENDERLAYERS_CURSOROBJECT still "hits" anywhere over terrain. Callers that need
+// "did I hit THIS object" must test the returned entity (Terrain Generator marker grab).
+bool WickedCall_IsEntityOfObject(uint64_t iEntityID, int iObjectNumber)
+{
+	if (iEntityID == 0) return false;
+	sObject* pObject = m_ObjectManager.FindObjectFromWickedObjectEntityID(iEntityID);
+	return (pObject != NULL && (int)pObject->dwObjectNumber == iObjectNumber);
+}
+
 bool WickedCall_GetPick(float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask)
 {
 	XMFLOAT4 currentMouse = wiInput::GetPointer();

@@ -1838,3 +1838,37 @@ blend forensics unchanged (L3=100% onto mat13); swap refill ~5 s.
 page fault when the old texture DIED, and SILENT WRONG RENDERING when retention keeps it
 alive. Anywhere a material's CONTENT is swapped in place under a one-shot GPU consumer
 (VT tile bakes!), prefer FRESH ENTITIES over in-place rewrites.
+
+## §2.64 (08-15 night) — marker grab/tooltip confined to the HANDLE (Lee's spec); the marker
+## was never scene-pickable on DX12
+
+Lee's spec after confirming 2.63c: clicking terrain must do NOTHING (it teleported the marker
+then snapped back), the tooltip must only show over the marker handle, and only a handle-drag
+may move it.
+
+Hunt (two dead ends, each killed by an instrument):
+1. The CURSOROBJECT-layer pick "hit" anywhere — wicked entities without a LayerComponent
+   default to ALL layer bits, so terrain chunks pass every mask. First fix required the hit
+   ENTITY to be the marker (new WickedCall_IsEntityOfObject)…
+2. …which never fired. New PICK_AT harness command (client-coord pick + entity + marker-map
+   + the marker's own frame entities) proved the ray passes straight THROUGH the transparent,
+   z-depth-disabled marker into the chunk behind it — the marker was NEVER pickable on DX12;
+   drags previously "worked" off the terrain hit by accident. (PICK_AT also had to bypass
+   GetPick2's bImGuiGotFocus early-out — harness-time picks are otherwise dead.)
+
+Fix: SCREEN-SPACE footprint test. The distance-proportional ScaleObject keeps the marker's
+screen size ~constant, so a 28 px radius around its Convert3DTo2D-projected centre IS the
+handle. Hover tooltip + drag START both use it; the drag itself still rides the terrain-layer
+pick, and the grab offset now comes from the marker's own position (more stable than the old
+ray-hit point). Click-anywhere teleport: gone (drag can only start on the handle).
+
+Verified: hover bare terrain = no tooltip; hover handle = tooltip beside the marker; click
+bare terrain = marker pixel-identical before/after (+4 s). Instruments kept: PICK_AT,
+WickedCall_IsEntityOfObject.
+
+★ Ledger: the 2.48 layer-cache family gains a THIRD face — layer masks cannot EXCLUDE
+default-layer entities (all-bits), so "pick with mask X hit something" NEVER means "hit an
+X-layer object". And transparent/no-zdepth UI helper objects may not be scene-pickable at
+all — hit-test such widgets in screen space.
+Deferred (Lee): after a successful drag the marker shows at the old position for a second
+or two before the terrain regenerates.

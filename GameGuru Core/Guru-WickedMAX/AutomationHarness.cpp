@@ -4554,6 +4554,50 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// PICK_AT <x> <y> [layerMask] — GGMAX 2.64 diagnostic. Runs the scene pick at the given
+	// client coordinates (same space as SCREENSHOT pixels) and reports hit/position/entity +
+	// whether the entity maps to the Terrain Generator marker object (17998). Built for the
+	// marker-hover hunt: names whether a pick over the marker returns the marker's entity,
+	// a terrain chunk, or nothing.
+	if (_stricmp(cmd, "PICK_AT") == 0)
+	{
+		float px = 0, py = 0; int pmask = GGRENDERLAYERS_CURSOROBJECT;
+		if (sscanf(arg, "%f %f %d", &px, &py, &pmask) < 2)
+		{
+			_snprintf(result, resultSize, "ERROR: PICK_AT wants <x> <y> [layerMask]");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		float ox = 0, oy = 0, oz = 0;
+		uint64_t ent = 0;
+		// GetPick2 early-outs when ImGui owns the mouse — the harness runs at a frame point
+		// where that flag is up (the generator's own hover path clears it during its draw).
+		// Bypass for the measurement, restore after.
+		extern bool bImGuiGotFocus;
+		const bool savedFocus = bImGuiGotFocus;
+		bImGuiGotFocus = false;
+		bool hit = WickedCall_GetPick2(px, py, &ox, &oy, &oz, NULL, NULL, NULL, &ent, pmask);
+		bImGuiGotFocus = savedFocus;
+		int w5 = _snprintf(result, resultSize,
+			"OK: PICK_AT (%.0f,%.0f) mask=%d hit=%d pos=(%.1f,%.1f,%.1f) entity=%llu isMarker17998=%d",
+			px, py, pmask, hit ? 1 : 0, ox, oy, oz,
+			(unsigned long long)ent,
+			WickedCall_IsEntityOfObject(ent, 17998) ? 1 : 0);
+		// also dump the marker object's own frame entities + visibility so a miss can be
+		// classified: mapping bug (hit entity IS in this list) vs unpickable marker (it isn't)
+		if (ObjectExist(17998) && w5 > 0 && w5 < resultSize - 96)
+		{
+			sObject* pM = GetObjectData(17998);
+			w5 += _snprintf(result + w5, resultSize - w5, " | marker frames=%d ents:", pM ? pM->iFrameCount : -1);
+			for (int f = 0; pM && f < pM->iFrameCount && f < 4 && w5 > 0 && w5 < resultSize - 32; f++)
+				w5 += _snprintf(result + w5, resultSize - w5, " %llu",
+					(unsigned long long)(pM->ppFrameList[f] ? pM->ppFrameList[f]->wickedobjindex : 0));
+			if (pM) w5 += _snprintf(result + w5, resultSize - w5, " vis=%d", pM->bVisible ? 1 : 0);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// ZOOM_FIRE — GGMAX 2.48. Hold right mouse to zoom, fire mid-hold, keep zoom held after.
 	// Everything goes through the SHIPPED input path (see M-Physics_part1.cpp consumer), so the
 	// shot is fired in a genuine zoomed state — built to reproduce "zoomed firing does no damage".

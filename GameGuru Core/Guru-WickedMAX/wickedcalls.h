@@ -158,6 +158,11 @@ bool WickedCall_GetPick2_Thread(float fMouseX, float fMouseY, float* pOutX, floa
 bool WickedCall_GetPick2_BVH(float fMouseX, float fMouseY, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask);
 bool WickedCall_GetPick2_OLD(float fMouseX, float fMouseY, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask);
 bool WickedCall_GetPick ( float* pOutX, float* pOutY, float* pOutZ, float* pNormalX, float* pNormalY, float* pNormalZ, uint64_t* pObject, int iLayerMask );
+// GGMAX 2.64: does a pick-hit wicked entity belong to the given DBO object number? The scene
+// pick's layer mask cannot EXCLUDE terrain chunks (entities without a LayerComponent default
+// to ALL layer bits, so they pass every mask) — callers needing "did I hit THIS object" must
+// test the hit entity, not just hit success (Terrain Generator marker grab).
+bool WickedCall_IsEntityOfObject(uint64_t iEntityID, int iObjectNumber);
 bool WickedCall_SentRay(float originx, float originy, float originz, float directionx, float directiony, float directionz, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask);
 bool WickedCall_SentRay2(float originx, float originy, float originz, float directionx, float directiony, float directionz, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, uint64_t* pHitEntity, int iLayerMask);
 bool WickedCall_SentRay3(float originx, float originy, float originz, float directionx, float directiony, float directionz, float fDistanceOfRay, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, DWORD* pdwObjectNumberHit);
