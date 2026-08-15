@@ -4463,6 +4463,97 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// TERRAINGEN_MATS — GGMAX 2.63c diagnostic. What each wicked terrain material slot points
+	// at RIGHT NOW (matN folder from its basecolor texture name) + a histogram of the GG
+	// painted-material map. Built for the stale-centre biome repro: separates STALE TEXTURES
+	// (a slot still resolves to the old biome's matN) from STALE PAINT (pMaterialMap bytes
+	// left over from the old biome — painted indices are ABSOLUTE catalogue slots, so they
+	// resurrect the old look regardless of the new biome's slot materials).
+	if (_stricmp(cmd, "TERRAINGEN_MATS") == 0)
+	{
+		using namespace GGTerrain;
+		auto& scn = wi::scene::GetScene();
+		int w4 = _snprintf(result, resultSize, "OK: TERRAINGEN_MATS slots:");
+		if (scn.terrains.GetCount() > 0)
+		{
+			wi::terrain::Terrain& terr = scn.terrains[0];
+			for (size_t s = 0; s < terr.materialEntities.size() && w4 > 0 && w4 < resultSize - 64; ++s)
+			{
+				wi::scene::MaterialComponent* m = scn.materials.GetComponent(terr.materialEntities[s]);
+				char tail[64] = "-";
+				if (m != nullptr && !m->textures[wi::scene::MaterialComponent::BASECOLORMAP].name.empty())
+				{
+					const std::string& n = m->textures[wi::scene::MaterialComponent::BASECOLORMAP].name;
+					size_t p = n.find("terraintextures/");
+					std::string t = (p != std::string::npos) ? n.substr(p + 16) : n;
+					size_t q = t.find("/Color");
+					if (q != std::string::npos) t = t.substr(0, q);
+					strncpy(tail, t.c_str(), sizeof(tail) - 1); tail[sizeof(tail) - 1] = 0;
+				}
+				w4 += _snprintf(result + w4, resultSize - w4, " s%d=%s", (int)s, tail);
+			}
+		}
+		else
+		{
+			w4 += _snprintf(result + w4, resultSize - w4, " (no wicked terrain)");
+		}
+		{
+			// painted-material map histogram via the public snapshot API (the raw pointer +
+			// size macro live behind the implementation side of GGTerrain.h)
+			const uint32_t total = GGTerrain_GetPaintDataSize();
+			uint8_t* buf = (total > 0) ? new uint8_t[total] : nullptr;
+			if (buf != nullptr && GGTerrain_GetPaintData(buf) == 1 && w4 > 0 && w4 < resultSize - 128)
+			{
+				unsigned int counts[256]; memset(counts, 0, sizeof(counts));
+				unsigned int nz = 0;
+				for (uint32_t i = 0; i < total; ++i)
+				{
+					if (buf[i] > 0) { nz++; counts[buf[i]]++; }
+				}
+				w4 += _snprintf(result + w4, resultSize - w4, " | paintmap nz=%u/%u top:", nz, total);
+				for (int k = 0; k < 3 && w4 > 0 && w4 < resultSize - 32; ++k)
+				{
+					unsigned int best = 0, bi = 0;
+					for (int v = 1; v < 256; ++v) { if (counts[v] > best) { best = counts[v]; bi = (unsigned int)v; } }
+					if (best == 0) break;
+					w4 += _snprintf(result + w4, resultSize - w4, " mat%u=%u", bi, best);
+					counts[bi] = 0;
+				}
+			}
+			else if (w4 > 0 && w4 < resultSize - 32)
+			{
+				w4 += _snprintf(result + w4, resultSize - w4, " | paintmap unavailable");
+			}
+			delete[] buf;
+		}
+		// GGMAX 2.63c: centre-chunk blend forensics — WHICH blendmap layer carries the land
+		// weight (stale-mapping bakes park weight in a layer with no backing material).
+		if (scn.terrains.GetCount() > 0 && w4 > 0 && w4 < resultSize - 160)
+		{
+			wi::terrain::Terrain& terr = scn.terrains[0];
+			wi::terrain::Chunk cc; cc.x = 0; cc.z = 0;
+			auto itc = terr.chunks.find(cc);
+			if (itc != terr.chunks.end())
+			{
+				wi::terrain::ChunkData& cd = itc->second;
+				w4 += _snprintf(result + w4, resultSize - w4, " | chunk(0,0) born=%d layers=%d w:",
+					cd.gg_blendmap_generated ? 1 : 0, (int)cd.blendmap_layers.size());
+				for (size_t li = 0; li < cd.blendmap_layers.size() && li < 8 && w4 > 0 && w4 < resultSize - 24; ++li)
+				{
+					uint64_t sum = 0;
+					for (uint8_t px : cd.blendmap_layers[li].pixels) sum += px;
+					w4 += _snprintf(result + w4, resultSize - w4, " L%d=%llu", (int)li, (unsigned long long)(sum / 1000));
+				}
+			}
+			else
+			{
+				w4 += _snprintf(result + w4, resultSize - w4, " | chunk(0,0) MISSING");
+			}
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// ZOOM_FIRE — GGMAX 2.48. Hold right mouse to zoom, fire mid-hold, keep zoom held after.
 	// Everything goes through the SHIPPED input path (see M-Physics_part1.cpp consumer), so the
 	// shot is fired in a genuine zoomed state — built to reproduce "zoomed firing does no damage".

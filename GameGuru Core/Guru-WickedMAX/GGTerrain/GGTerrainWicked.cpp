@@ -417,14 +417,27 @@ static void SetupWickedTerrainMaterials()
 	int lowMat = GGTerrain::ggterrain_global_render_params.layerMatIndex[0] & 0xFF;
 	int highMat = GGTerrain::ggterrain_global_render_params.layerMatIndex[2] & 0xFF;
 
-	// Create material entities and attach to terrain (following Wicked Editor pattern)
+	// Create material entities and attach to terrain (following Wicked Editor pattern).
+	// GGMAX 2.63c: FRESH entities on every re-setup — REUSING the old entity kept its slot
+	// in the GPU-side ShaderMaterial array, and the SVT tile-render CS reads that data on
+	// its own refresh cadence, so tiles baked in the first seconds after a biome swap
+	// sampled the OUTGOING material set through the stale entries (the 2026-08-05
+	// DEVICE_HUNG post-mortem's exact mechanism, benign-rendering edition: snow swap with
+	// the centre cone baked in rainforest's mat20 olive — blendmaps were PROVEN correct,
+	// L3=100% onto s3=mat13 snow, yet the tile rendered the slot's PREVIOUS material).
+	// A fresh entity gets a fresh array slot resolved at bake time — no staleness window.
+	// The outgoing entities are removed (same idiom as the stale-tail truncation below);
+	// their textures stay alive in gg_prevMaterialSetRetention so in-flight GPU work and
+	// stale descriptors can never fault (the 08-05 crash rule).
 	for (int i = 0; i < wi::terrain::MATERIAL_COUNT; i++)
 	{
-		if (terrain->materialEntities[i] == wi::ecs::INVALID_ENTITY)
-		{
-			terrain->materialEntities[i] = wi::ecs::CreateEntity();
-		}
+		wi::ecs::Entity old = terrain->materialEntities[i];
+		terrain->materialEntities[i] = wi::ecs::CreateEntity();
 		scene.Component_Attach(terrain->materialEntities[i], wickedTerrainEntity);
+		if (old != wi::ecs::INVALID_ENTITY)
+		{
+			scene.Entity_Remove(old);
+		}
 	}
 
 	// Configure each material with texture names and properties

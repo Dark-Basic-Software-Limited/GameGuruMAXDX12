@@ -1801,3 +1801,40 @@ re-resolve indices + reload DDS + blend-key clears + its own Generation_Restart)
 frame's kick. Verified with the two-swap probe (rainforest→desert→snow, Lee's repro shape):
 snow shot fully clean — no stale centre, lakes/slope-rock correct; chain matNotifies=3
 wipes=2 across both swaps. Lee restored TESTPRO2's 'Level 1' node — probe found it first try.
+
+## §2.63c (08-15 night) — the REAL stale-centre mechanism: reused material entities kept
+## stale GPU-side ShaderMaterial data; the tile bake sampled the OLD biome through them
+
+Lee refuted 2.63b (snow still green in the centre). The detective chain that finally named it
+(every step an instrument, no lucky guesses):
+- TERRAINGEN_MATS (new): slot dump proved the re-setup works (s1..s3 = snow mat12/9/13) and
+  the painted-material map is EMPTY — paint theory dead.
+- Time-lapse probe: the green is STATIC at +180 s — not a slow sweep.
+- chunk(0,0) blend forensics (new): born=1, L3=100% — the blendmap is PERFECT, all weight on
+  slot 3 which the CPU says is mat13 snow. Yet it renders olive.
+- Pillow BC7 decode of the material DDS set: the olive = mat20 (68,69,19) — rainforest's HIGH
+  slot material, the PREVIOUS occupant of slot 3. The paint is right, the slot is right, the
+  bake sampled the slot's PREVIOUS material.
+- Fast ring poll: the swap's restart DOES wipe (115→1521 in 5 s) — the green chunks were
+  POST-restart bakes.
+
+**Mechanism:** SetupWickedTerrainMaterials REUSED the 4 auto-slot entities. A reused entity
+keeps its ShaderMaterial array slot, and the SVT tile-render CS reads that GPU-side data on
+its own refresh cadence — tiles baked in the first seconds after the swap sampled the
+OUTGOING set through the stale entries. This is the 2026-08-05 DEVICE_HUNG post-mortem's
+exact mechanism in its benign edition: the 08-05 retention fix keeps the outgoing textures
+ALIVE (no page fault), so the failure became silent wrong rendering. Centre cone bakes first
+(closest-first) → stale window → green; outer chunks bake later → refreshed → white. Lee's
+"the first chunks created" instinct was right from his first screenshot.
+
+**Fix:** fresh entities for the 4 auto slots on EVERY re-setup (same idiom as the 08-05
+stale-tail truncation; outgoing textures still ride gg_prevMaterialSetRetention). Fresh
+entity = fresh array slot resolved at bake time — no staleness window.
+
+**Verified:** snow-from-rainforest at +20 s: white edge to edge including the centre cone;
+blend forensics unchanged (L3=100% onto mat13); swap refill ~5 s.
+
+★ CLASS RULE for the ledger: the 08-05 "stale GPU-side ShaderMaterial" class has TWO faces —
+page fault when the old texture DIED, and SILENT WRONG RENDERING when retention keeps it
+alive. Anywhere a material's CONTENT is swapped in place under a one-shot GPU consumer
+(VT tile bakes!), prefer FRESH ENTITIES over in-place rewrites.
