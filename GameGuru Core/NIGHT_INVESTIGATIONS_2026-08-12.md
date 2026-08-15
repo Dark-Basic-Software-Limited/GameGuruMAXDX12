@@ -1567,3 +1567,15 @@ wipe is hoisted into GGResetTerrainChunks. ⚠ SET_TERRAIN_GEN remains diagnosti
 Verified: entry 1521/1521 + screenshot shows ranges/rivers to the horizon past the yellow
 box; back → storyboard reads gen=12 at exactly 625/625; re-entry 446→1521; 2.53 ovr pin
 held; editor probe gen=12 ovr=0, Switch 135.6 FPS.
+
+## §2.56 SHIPPED (08-15, game addc17ef) — generator grab/hover gated to the terrain view
+
+Lee's repro: hovering the properties panel showed the grab tooltip; clicking there moved
+the marker. The hover pick and drag-start pick cast a 3D ray from the raw cursor — the ray
+passes straight through the ImGui panel into the scene (same blindness class as any pick
+that ignores UI occlusion). Fix: point-in-rect gate on rClipRect (the dig-a-hole preview
+area) for hover + drag START; active drags stay ungated so mid-gesture panel crossings
+don't drop the marker. Verified with real-cursor probes (PowerShell Cursor.Position +
+screenshots): panel hover = no tooltip; marker hover in-view = tooltip alive.
+⚠ Reusable trick: PowerShell can move the REAL cursor for headless hover/UI tests —
+first time the harness suite verified a hover behaviour without a human hand.
