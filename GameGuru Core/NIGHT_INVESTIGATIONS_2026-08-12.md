@@ -1622,3 +1622,28 @@ Named, NOT taken (both need their own verified pass):
    suppressing on it risks a BVH-less or terrain-less EDITOR. Trace its resets first.
 2. Fill is now MAIN-THREAD-INTEGRATION bound: halving generator-thread work moved the wall
    only 28→24 s. Next ceiling = merge + blend passes + VT residency on the main thread.
+
+## §2.59 SHIPPED + the S1 mega-frame lead (08-15 evening, engine 35decb40 + game c6053994)
+
+Lee's target: generator fill 12-15 s. Shipped safely this round:
+- 2.59 entry-pending flag (OWN lifecycle + ~30s auto-heal; never reuse
+  bProceduralLevelFromStoryboard — resets unproven) suppresses load-phase generation,
+  Pregenerate and the reveal hold on generator entry. Entry events 1757 → 1611.
+- Forensic yield of the bvh EVENT counter (engine 2.58b): the residual "bvh leak" was
+  **MAX's STARTUP building a full 625-chunk ring (761 bakes, WITH BVHs) behind the hub**
+  — pure boot-time waste on every launch (~7 s), a SEPARATE finding, untouched. The
+  generator's own chunks bake bvh=0: the 2.58 skip is clean. ⚠ Cumulative-counter trap
+  bit again: per-entry attribution must subtract the startup 761.
+- Regression set green: enter/back/re-enter (skipbvh flips 1→0→1 correctly — the safety
+  property), editor probe 134.1 FPS. TERRAIN_RING now shows pend/skipbvh/procLvl.
+
+State: fill ~20-23 s (33 s at start of day). Generation-thread work is only ~2.6 ms/chunk
+(~4 s total). **THE REMAINING WALL IS QUANTIFIED: ~25-29 recurring ~490 ms Scene-S1
+"Anim+Transform" mega-frames ≈ 12 s of the fill.** SET_SCENESERIAL shows NO SU-* range
+carrying it → the time lives in S1's UNINSTRUMENTED remainder: prime suspects are
+(a) S1's jobsystem Waits starved by the 2.57 HIGH-priority generation dispatches
+(the §33 job-thread trap — waits read as work), and (b) hierarchy/ComponentManager
+ordered-insert storms on merge frames (Component_Attach is O(N) memmove per chunk into
+the main scene's arrays). Two frame species seen: S1-spikes (~490 ms) and merge frames
+(~67 ms, in the TerrainW range). NEXT MOVE: decompose S1's remainder (extend the
+SCENESERIAL coverage or time the Waits separately), then fix per findings.
