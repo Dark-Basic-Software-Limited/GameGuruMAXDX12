@@ -477,6 +477,11 @@ void procedural_new_level(void)
 			static float fTerrainHitX, fTerrainHitY, fTerrainHitZ;
 			static float fTerrainStartHitX, fTerrainStartHitY, fTerrainStartHitZ;
 			bool bAreaAlreadyDisplayed = false;
+			// GGMAX 2.66: camera-glide state (the restored piece of the old release machine).
+			// 16 = the old machine's perceived pan length: it stepped delta/16 per frame for
+			// ~14 frames before the freeze; we spend all 16 on the pan with an exact landing.
+			static ImVec2 newTargetCamera, glideEndCamera;
+			int iMoveCameraSteps = 16;
 
 			if (ImGui::IsMouseDown(0))
 			{
@@ -581,20 +586,52 @@ void procedural_new_level(void)
 			}
 			else
 			{
-				// GGMAX 2.65 (Lee's spec): releasing the marker changes NOTHING. The chunk
+				// GGMAX 2.65 (Lee's spec): releasing the marker keeps the terrain. The chunk
 				// ring already generated around the marker during the drag (the 2.53
-				// gen-center override follows it every frame), so the DX11-era release
-				// machine that lived here — pan the camera to the marker over 14 steps,
-				// fold the drag delta into the noise offsets, freeze presentation for
-				// ~400ms, then snap the camera back — only produced a flick to the old
-				// centre followed by a full ring wipe + ~5s refill on DX12 (the offset
-				// write tripped CheckParams -> the 2.62 params notify). The recentre
-				// bookkeeping now happens once, invisibly, in the "Generate Terrain for
-				// Level" button handler (see the offset fold there); `movecameratotarget`
-				// survives only as an always-0 guard in a few UI conditions.
+				// gen-center override follows it every frame), so the rest of the DX11-era
+				// release machine that lived here — fold the drag delta into the noise
+				// offsets, freeze presentation ~400ms, snap the camera back, re-pin the
+				// marker to GGORIGIN — only produced a flick to the old centre followed by
+				// a full ring wipe + ~5s refill on DX12 (the offset write tripped
+				// CheckParams -> the 2.62 params notify). The recentre bookkeeping now
+				// happens once, invisibly, in the "Generate Terrain for Level" button
+				// handler (see the offset fold there).
+				// GGMAX 2.66 (Lee): the ONE piece of that machine he liked is restored —
+				// the camera glide to the released marker. Pan only: the view scrolls by
+				// the drag delta so the marker lands framed where it was grabbed; no offset
+				// commit, no freeze, no snap-back.
+				if (bDraggingActive)
+				{
+					newTargetCamera.x = ObjectPositionX(TERRAINGENERATOR_OBJECT) - fHitOffsetX;
+					newTargetCamera.y = ObjectPositionZ(TERRAINGENERATOR_OBJECT) - fHitOffsetZ;
+					if (fabs(newTargetCamera.x) > 1.0f || fabs(newTargetCamera.y) > 1.0f)
+					{
+						glideEndCamera.x = fSnapShotModeCameraX + newTargetCamera.x;
+						glideEndCamera.y = fSnapShotModeCameraZ + newTargetCamera.y;
+						movecameratotarget = iMoveCameraSteps;
+					}
+				}
 				bDraggingActive = false;
 			}
 			bImGuiGotFocus = true;
+
+			if (movecameratotarget > 0)
+			{
+				// GGMAX 2.66: the glide — linear pan with an exact landing on the last step
+				// (the old machine stepped delta/16 then jumped; this covers the same
+				// distance at the same speed without the jump).
+				movecameratotarget--;
+				if (movecameratotarget == 0)
+				{
+					fSnapShotModeCameraX = glideEndCamera.x;
+					fSnapShotModeCameraZ = glideEndCamera.y;
+				}
+				else
+				{
+					fSnapShotModeCameraX += newTargetCamera.x / (float)iMoveCameraSteps;
+					fSnapShotModeCameraZ += newTargetCamera.y / (float)iMoveCameraSteps;
+				}
+			}
 
 			//PE: Always display 3d area using lines if possible.
 			bool b2DPossible = false;

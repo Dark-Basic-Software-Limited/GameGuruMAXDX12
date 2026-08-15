@@ -1927,3 +1927,15 @@ disp=1536x801, not x864). ★ Real-cursor probe rule refined: screenshot (x,y) �
 (x, y+23) for CLICKS. X is 1:1. Every earlier "working" click just had a tall target —
 the marker's 28 px hover radius and the 52 px Generate button absorbed the 23 px error;
 the short Cancel button did not. TERRAINGEN_BIOME no-arg dump now also prints marker=(x,z).
+
+## §2.66 (08-15 night) — the camera glide restored (Lee: "a convenient feature I thought")
+
+Lee liked ONE piece of the deleted release machine: the camera slowly scrolling to the new
+marker location on release. Restored as a pan-only glide: on release the drag delta
+(marker-at-release minus marker-at-grab, `fHitOffset*`) feeds the old `movecameratotarget`
+counter — 16 linear steps with an exact landing on the last (the original stepped delta/16
+for ~14 frames then jumped the remainder; same speed, no jump). Nothing else came back:
+no offset commit, no presentation freeze, no snap-back, no re-pin — the 2.65 rules hold.
+Verified headlessly: post-release shot shows the view scrolled so the marker lands framed
+where it was grabbed (boundary box fully in frame), terrain chunk-identical across the pan,
+offsets/notify/wipe counters and chunk floor all frozen, marker world pos unchanged.
