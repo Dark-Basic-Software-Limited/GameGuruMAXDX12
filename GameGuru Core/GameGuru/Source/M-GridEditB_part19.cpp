@@ -2638,6 +2638,8 @@
 									Entity_Tools_Window = true;
 
 									bProceduralLevelFromStoryboard = true;
+									extern bool g_ggTerrainGenEntryPending;
+									g_ggTerrainGenEntryPending = true; // GGMAX 2.59: suppress the throwaway load ring
 									iLaunchAfterSync = 5;
 									iBlackoutForFrames = 5;
 									iSkibFramesBeforeLaunch = 2;

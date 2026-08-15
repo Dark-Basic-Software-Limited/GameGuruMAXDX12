@@ -309,6 +309,12 @@ bool bWelcomeScreen_Init = false;
 std::map<std::string, int> selected_library_fpe;
 bool bProceduralLevel = false;
 bool bProceduralLevelFromStoryboard = false;
+// GGMAX 2.59: set by the Terrain Generator entry recipes BEFORE the flat-level load;
+// the terrain bridge suppresses chunk generation while it is true (that whole ring gets
+// wiped by the 2.54 entry restart anyway) and clears it at the generator handover, the
+// launch resets below, or its own ~30s auto-heal. Owned lifecycle - do NOT reuse
+// bProceduralLevelFromStoryboard for this, its resets are not proven on every route.
+bool g_ggTerrainGenEntryPending = false;
 int iBlackoutForFrames = 0;
 int iBlockRenderingForFrames = 0;
 int iQuitProceduralLevel = false;

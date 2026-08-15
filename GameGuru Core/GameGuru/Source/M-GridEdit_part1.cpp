@@ -1258,6 +1258,7 @@ void mapeditorexecutable_loop(void)
 							void reset_terrain_paint_date(void);
 							reset_terrain_paint_date();
 							bProceduralLevelFromStoryboard = false;
+							{ extern bool g_ggTerrainGenEntryPending; g_ggTerrainGenEntryPending = false; } // GGMAX 2.59
 							iLaunchAfterSync = 5;
 							iSkibFramesBeforeLaunch = 5;
 						}
@@ -1622,6 +1623,7 @@ void mapeditorexecutable_loop(void)
 						CloseAllOpenTools();
 						iLaunchAfterSync = 5;
 						bProceduralLevelFromStoryboard = false;
+							{ extern bool g_ggTerrainGenEntryPending; g_ggTerrainGenEntryPending = false; } // GGMAX 2.59
 						iSkibFramesBeforeLaunch = 5;
 					}
 				}

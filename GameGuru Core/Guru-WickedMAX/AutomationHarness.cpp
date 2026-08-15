@@ -1078,6 +1078,7 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 			bForceKey = true; csForceKey = "o";
 			bTerrain_Tools_Window = false; Entity_Tools_Window = true;
 			bProceduralLevelFromStoryboard = true;
+			{ extern bool g_ggTerrainGenEntryPending; g_ggTerrainGenEntryPending = true; } // GGMAX 2.59: keep in sync with the part19 recipe
 			iLaunchAfterSync = 5;
 			iBlackoutForFrames = 5;
 			iSkibFramesBeforeLaunch = 2;
@@ -1250,12 +1251,15 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		// marker (world XZ shown) instead of the camera; must read 0 in every other mode.
 		written += _snprintf(result + written, resultSize - written,
 			"TERRAIN_RING: gen=%d chunks=%d ringMax=%d chunkU=%.0f viewU=%.0f viewM=%.0f "
-			"centreToCam=%d mapHalfM=%.0f ovr=%d ovrX=%.0f ovrZ=%.0f\n",
+			"centreToCam=%d mapHalfM=%.0f ovr=%d ovrX=%.0f ovrZ=%.0f pend=%d skipbvh=%d procLvl=%d\n",
 			tr.generation, (int)tr.chunks.size(), ringMax, chunkU,
 			viewU, viewU * 0.0254f, tr.IsCenterToCamEnabled() ? 1 : 0, mapHalfU * 0.0254f,
 			wi::terrain::gg_generation_center_override_enabled ? 1 : 0,
 			wi::terrain::gg_generation_center_override_x,
-			wi::terrain::gg_generation_center_override_z);
+			wi::terrain::gg_generation_center_override_z,
+			[]{ extern bool g_ggTerrainGenEntryPending; return g_ggTerrainGenEntryPending ? 1 : 0; }(),
+			wi::terrain::gg_generation_skip_bvh ? 1 : 0,
+			[]{ extern bool bProceduralLevel; return bProceduralLevel ? 1 : 0; }());
 	}
 
 	// GGMAX 2.27: decal element pool — prewarm + grow (SWITCHESCAPE_PERF.md §23).
@@ -4310,13 +4314,14 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		}
 		const double d = (double)n * 1000.0; // us -> avg ms per chunk
 		_snprintf(result, resultSize,
-			"OK: TERRAIN_GENPROF chunks=%llu avg ms/chunk: total=%.2f | heights=%.2f vertex=%.2f renderdata=%.2f(async) bvh=%.2f(async) grass=%.2f blendcb=%.2f regiontex=%.2f physics=%.2f",
+			"OK: TERRAIN_GENPROF chunks=%llu avg ms/chunk: total=%.2f | heights=%.2f vertex=%.2f renderdata=%.2f(async) bvh=%.2f(async,N=%llu) grass=%.2f blendcb=%.2f regiontex=%.2f physics=%.2f",
 			(unsigned long long)n,
 			gg_genprof_total_us.load() / d,
 			gg_genprof_heights_us.load() / d,
 			gg_genprof_vertex_us.load() / d,
 			gg_genprof_renderdata_us.load() / d,
 			gg_genprof_bvh_us.load() / d,
+			(unsigned long long)gg_genprof_bvh_events.load(),
 			gg_genprof_grass_us.load() / d,
 			gg_genprof_blendcb_us.load() / d,
 			gg_genprof_regiontex_us.load() / d,

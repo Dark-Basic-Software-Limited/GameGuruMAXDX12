@@ -2409,6 +2409,7 @@ void GGTerrainWicked_SetGenCenterOverride(float fWorldX, float fWorldZ, bool bEn
 	wi::terrain::gg_generation_center_override_enabled = bEnable;
 }
 extern bool bProceduralLevel; // GGMAX 2.53: the Terrain Generator mode flag (game global)
+extern bool g_ggTerrainGenEntryPending; // GGMAX 2.59: entry recipes set it BEFORE the flat-level load
 
 namespace GGTerrain
 {
@@ -2427,6 +2428,10 @@ static int g_revealHoldFrames = 0;
 void GGTerrainWicked_BeginRevealHold()
 {
 	if (!wickedTerrainInitialised) return;
+	// GGMAX 2.59: a load heading into the Terrain Generator suppresses chunk generation
+	// (the ring would be wiped on arrival), so the cover's early-drop condition can never
+	// trigger - don't arm it, the "Preparing the Terrain Generator" message covers UX.
+	if (g_ggTerrainGenEntryPending) return;
 	g_revealHoldFrames = 300;  // ~5s deadline backstop at 60fps
 }
 
@@ -2456,7 +2461,7 @@ void GGTerrainWicked_Pregenerate(float camX, float camY, float camZ,
 	// 8.2 ms BVH build for nothing (measured as the bvh=2.95 leak in TERRAIN_GENPROF).
 	// (bProceduralLevel resolves to the GLOBAL-scope extern above the namespace — a
 	// block-scope extern here would mangle as GGTerrain:: and fail to link.)
-	if (bProceduralLevel) return;
+	if (bProceduralLevel || g_ggTerrainGenEntryPending) return; // GGMAX 2.59: pending window too
 	wi::terrain::Terrain* terrain = GetWickedTerrain();
 	if (!terrain) return;
 
@@ -3066,10 +3071,25 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		// chunks would ride into the editor otherwise. Both exit routes are safe: back
 		// arrow lands in the storyboard (no 3D view, ring rebuilds unseen), Generate
 		// lands in a real level load whose reveal hold covers the rebuild.
+		// GGMAX 2.59: end of the entry-pending window = the generator has arrived. Also an
+		// auto-heal: if ANY missed route leaves the flag up, force-clear after ~30s so the
+		// editor can never sit generation-suppressed (that failure would be silent + severe).
+		static uint32_t s_pendingFrames = 0;
+		if (g_ggTerrainGenEntryPending)
+		{
+			if (++s_pendingFrames > 1800)
+			{
+				g_ggTerrainGenEntryPending = false;
+				wi::backlog::post("GGTerrainWicked: gen-entry pending flag auto-healed after 1800 frames (a clear route was missed)");
+			}
+		}
+		else s_pendingFrames = 0;
+
 		static bool s_lastProceduralLevel = false;
 		static int s_savedGeneration = 0;
 		if (bProceduralLevel && !s_lastProceduralLevel)
 		{
+			g_ggTerrainGenEntryPending = false; // GGMAX 2.59: handover complete
 			s_savedGeneration = terrain->generation;
 			terrain->generation = 19; // 2.55: set BEFORE the restart so the rebuild targets 1521 immediately
 			GGResetTerrainChunks(terrain);
@@ -3101,7 +3121,10 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		if (active) g_dbgIdleCalmFrames = 0;
 		else if (g_dbgIdleCalmFrames < 0xFFFFFFFEu) g_dbgIdleCalmFrames++;
 	}
-	const bool idleSkipGen = g_terrainIdleGate && g_dbgIdleCalmFrames > 45 && (s_terrainFrame & 7) != 0;
+	// GGMAX 2.59: while a Terrain Generator entry is pending, generate NOTHING - the whole
+	// ring would be wiped by the 2.54 entry restart moments later (measured: ~875 throwaway
+	// chunks per entry, each paying the full bake including the 8.2ms BVH).
+	const bool idleSkipGen = g_ggTerrainGenEntryPending || (g_terrainIdleGate && g_dbgIdleCalmFrames > 45 && (s_terrainFrame & 7) != 0);
 
 	// Let the VT system run — generates chunks, creates atlas, blends materials.
 	// CORRECTNESS GATE (2026-07-18): during the initial build, do NOT generate
