@@ -1579,3 +1579,21 @@ don't drop the marker. Verified with real-cursor probes (PowerShell Cursor.Posit
 screenshots): panel hover = no tooltip; marker hover in-view = tooltip alive.
 ⚠ Reusable trick: PowerShell can move the REAL cursor for headless hover/UI tests —
 first time the harness suite verified a hover behaviour without a human hand.
+
+## §2.57 SHIPPED (08-15, game 382edc08) — generator ring-fill turbo, stash-controlled A/B
+
+Lee offered to trade down to 30 FPS for faster ring fill. Levers: budget 8→20 ms +
+high-priority job pool for the WHOLE fill (old code dropped to Low past the ~600-chunk
+cone). Stash-controlled A/B on the same commit, same probe: **33 s → 28 s (−15%), and FPS
+DURING fill improved 55-62 → 66-83** — the user never pays the offered price because the
+budget is not the limiter: early-phase rates were IDENTICAL at 8 vs 20 ms (160/560 chunks
+at the same ticks) = the async generation pipeline is the ceiling. The whole win is the
+tail, where Low-priority starvation was stretching the work. Zero cost once the ring is
+full (budget only consumed while work exists; post-fill 83.5 both arms).
+
+★ Named constraint, not taken: the next speedup is engine surgery — parallelise the
+generator job's sequential outer chunk loop (multiple chunks in flight; VT allocation
+contention + merge-ordering risk) for maybe 28 s → ~12 s. Only if Lee wants it.
+★ Method note: the false-exoneration lesson applied — the first turbo run LOOKED like an
+improvement but the control run is what made the claim (and revealed the counterintuitive
+FPS improvement + the real ceiling).
