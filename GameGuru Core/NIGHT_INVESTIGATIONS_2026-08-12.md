@@ -1550,3 +1550,20 @@ bProceduralLevel false→true transition (one site, every entry route) → Gener
 blendmap-tracking clears + idle-gate ping. New harness TERRAINGEN_BACK (back arrow minus its
 MODAL confirm) enables the enter→exit→re-enter loop. Verified: re-entry chunks=406 rebuilding
 at +6s → 625 settled, session-2 screenshot fully coherent, 2.53 ovr intact both sessions.
+
+## §2.55 SHIPPED (08-15, game 1648916e) — generator-only wide chunk ring (gen 19, 5 km view)
+
+Lee wanted the full 5 km geography visible while creating a terrain; editor/test game keep
+gen 12 untouched. Cost was MEASURED first (2.54a SET_TERRAIN_GEN A/B, gen 12 vs 19 in the
+generator): +143% chunks but only +258 MB driver VRAM / +387 MB census / ~−12% preview FPS
+(+1.5 ms CPU in Scene::Update, +1.2 ms GPU) — the near-ring high-res VT residency doesn't
+grow, the extra 896 chunks are cheap far-LOD. Ring fill ~20-30 s.
+
+Implementation rides the 2.53/2.54 bProceduralLevel transition watcher: entry saves the
+ring, sets 19 BEFORE the session wipe; exit restores AND wipes again (a ring can never
+shrink on its own — removal only reclaims past generation+2+removal_margin=26). The 2.54
+wipe is hoisted into GGResetTerrainChunks. ⚠ SET_TERRAIN_GEN remains diagnostic-only.
+
+Verified: entry 1521/1521 + screenshot shows ranges/rivers to the horizon past the yellow
+box; back → storyboard reads gen=12 at exactly 625/625; re-entry 446→1521; 2.53 ovr pin
+held; editor probe gen=12 ovr=0, Switch 135.6 FPS.
