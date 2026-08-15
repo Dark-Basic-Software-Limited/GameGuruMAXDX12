@@ -4284,6 +4284,47 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// TERRAIN_GENPROF [RESET] — GGMAX 2.58. Per-phase chunk-generation cost breakdown
+	// (cumulative engine accumulators; averages are per generated chunk). Answers "what
+	// takes the most time when generating a terrain chunk". ⚠ renderdata is timed inside
+	// its async job and OVERLAPS the physics phase — rank consumers by phase, but only
+	// `total` is wall time per chunk on the generator thread.
+	if (_stricmp(cmd, "TERRAIN_GENPROF") == 0)
+	{
+		using namespace wi::terrain;
+		if (arg[0] != 0 && _stricmp(arg, "RESET") == 0)
+		{
+			gg_genprof_heights_us = 0; gg_genprof_vertex_us = 0; gg_genprof_renderdata_us = 0;
+			gg_genprof_grass_us = 0; gg_genprof_blendcb_us = 0; gg_genprof_regiontex_us = 0; gg_genprof_bvh_us = 0;
+			gg_genprof_physics_us = 0; gg_genprof_total_us = 0; gg_genprof_chunks = 0;
+			_snprintf(result, resultSize, "OK: TERRAIN_GENPROF reset");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		const uint64_t n = gg_genprof_chunks.load();
+		if (n == 0)
+		{
+			_snprintf(result, resultSize, "OK: TERRAIN_GENPROF chunks=0 (nothing generated since launch/reset)");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		const double d = (double)n * 1000.0; // us -> avg ms per chunk
+		_snprintf(result, resultSize,
+			"OK: TERRAIN_GENPROF chunks=%llu avg ms/chunk: total=%.2f | heights=%.2f vertex=%.2f renderdata=%.2f(async) bvh=%.2f(async) grass=%.2f blendcb=%.2f regiontex=%.2f physics=%.2f",
+			(unsigned long long)n,
+			gg_genprof_total_us.load() / d,
+			gg_genprof_heights_us.load() / d,
+			gg_genprof_vertex_us.load() / d,
+			gg_genprof_renderdata_us.load() / d,
+			gg_genprof_bvh_us.load() / d,
+			gg_genprof_grass_us.load() / d,
+			gg_genprof_blendcb_us.load() / d,
+			gg_genprof_regiontex_us.load() / d,
+			gg_genprof_physics_us.load() / d);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// ZOOM_FIRE — GGMAX 2.48. Hold right mouse to zoom, fire mid-hold, keep zoom held after.
 	// Everything goes through the SHIPPED input path (see M-Physics_part1.cpp consumer), so the
 	// shot is fired in a genuine zoomed state — built to reproduce "zoomed firing does no damage".

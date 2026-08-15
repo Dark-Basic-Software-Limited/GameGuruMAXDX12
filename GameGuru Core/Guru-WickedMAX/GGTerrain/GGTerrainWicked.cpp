@@ -2450,6 +2450,13 @@ void GGTerrainWicked_Pregenerate(float camX, float camY, float camZ,
 	float dirX, float dirY, float dirZ, int maxMilliseconds)
 {
 	if (!wickedTerrainInitialised) return;
+	// GGMAX 2.58: pointless when entering the Terrain Generator — the 2.54 entry wipe
+	// discards every pregenerated chunk on the first bridge frame anyway, and this pump
+	// runs BEFORE the per-frame skip-bvh mirror so its ~600 cone chunks each paid the
+	// 8.2 ms BVH build for nothing (measured as the bvh=2.95 leak in TERRAIN_GENPROF).
+	// (bProceduralLevel resolves to the GLOBAL-scope extern above the namespace — a
+	// block-scope extern here would mangle as GGTerrain:: and fail to link.)
+	if (bProceduralLevel) return;
 	wi::terrain::Terrain* terrain = GetWickedTerrain();
 	if (!terrain) return;
 
@@ -3028,6 +3035,10 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		static bool s_lastGenOverride = false;
 		if (!bProceduralLevel && wi::terrain::gg_generation_center_override_enabled)
 			wi::terrain::gg_generation_center_override_enabled = false;
+		// GGMAX 2.58: the generator skips the 8.2 ms/chunk pick-BVH build (its drag rays use
+		// the brute-force fallback); every other mode builds BVHs as always. Mirrored per
+		// frame, and the 2.55 exit wipe regenerates everything WITH BVHs for the editor.
+		wi::terrain::gg_generation_skip_bvh = bProceduralLevel;
 		if (wi::terrain::gg_generation_center_override_enabled != s_lastGenOverride)
 		{
 			s_lastGenOverride = wi::terrain::gg_generation_center_override_enabled;
