@@ -374,6 +374,19 @@ void procedural_new_level(void)
 			}
 			static float fCursorPosX = 0.0f, fCursorPosY = 0.0f, fCursorPosZ = 0.0f;
 			float fCenterHeight = BT_GetGroundHeight(t.terrain.TerrainID, GGORIGIN_X, GGORIGIN_Z);
+
+			// GGMAX 2.56: the grab/hover pick ray travels straight THROUGH the right-side
+			// properties panel into the scene behind it — hovering the panel showed the
+			// "grab and move" tooltip and clicking it grabbed the marker. Gate hover and
+			// drag START on the cursor being inside the terrain VIEW (rClipRect, the
+			// dig-a-hole area — static, carries last frame's rect which is fine). An
+			// already-active drag is deliberately NOT gated so the marker is not dropped
+			// when a drag strays over the panel edge mid-gesture.
+			ImVec2 ggMouse = ImGui::GetMousePos();
+			const bool bMouseInTerrainView =
+				ggMouse.x >= rClipRect.Min.x && ggMouse.x < rClipRect.Max.x &&
+				ggMouse.y >= rClipRect.Min.y && ggMouse.y < rClipRect.Max.y;
+
 			if (!bDraggingActive && iCountToUpdate++ >= 10)
 			{
 				PositionObject(TERRAINGENERATOR_OBJECT, GGORIGIN_X, fCenterHeight + iMoveTerrainObjectHeight, GGORIGIN_Z);
@@ -381,7 +394,7 @@ void procedural_new_level(void)
 				//PE: check hover.
 				int layer = GGRENDERLAYERS_CURSOROBJECT;
 				float fHitX, fHitY, fHitZ;
-				bool bHit = WickedCall_GetPick(&fHitX, &fHitY, &fHitZ, NULL, NULL, NULL, NULL, layer);
+				bool bHit = bMouseInTerrainView && WickedCall_GetPick(&fHitX, &fHitY, &fHitZ, NULL, NULL, NULL, NULL, layer);
 				if (bHit)
 				{
 					bObjHoverActive = true;
@@ -424,8 +437,10 @@ void procedural_new_level(void)
 				if (!bDraggingActive)
 				{
 					//Setup start values.
+					// GGMAX 2.56: only START a grab from inside the terrain view — the pick
+					// would otherwise fire through the properties panel (see gate above).
 					int layer = GGRENDERLAYERS_CURSOROBJECT;
-					bool bHit = WickedCall_GetPick(&fHitOffsetX, &fHitOffsetY, &fHitOffsetZ, NULL, NULL, NULL, NULL, layer);
+					bool bHit = bMouseInTerrainView && WickedCall_GetPick(&fHitOffsetX, &fHitOffsetY, &fHitOffsetZ, NULL, NULL, NULL, NULL, layer);
 					if (bHit)
 					{
 						layer = GGRENDERLAYERS_TERRAIN;
