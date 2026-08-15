@@ -1498,3 +1498,25 @@ Open observation, NOT chased (diminishing returns for a 30fps movie): during-cut
 FPS hovers suspiciously near 60 (58.6-62.1) while the residual video tax is only
 ~2.6 ms/frame — if someone later wants cutscenes >60, look for a legacy ~60 Hz pacer
 in the fullscreen video path, not in the upload (that half is now measured cheap).
+
+## §2.52a — the "60 Hz pacer" hunt: THERE IS NO PACER (closed 08-15, no code change)
+
+Hunted per Lee's request. Three independent proofs it does not exist:
+1. A clean cutscene sample read **62.1 FPS** — no 60 Hz cap or vsync ladder can ever exceed 60.
+2. Code: the Lua fullscreen video player (`entity_lua_playvideonoskip`,
+   M-LUA-Entity_part0.cpp:1456) runs a MODAL loop — UpdateAllAnimation → PasteImageRaw →
+   postprocess_preterrain → game_sync() → StartForceRender — with NO Sleep, no timer wait
+   anywhere in it, and `SyncRate(0)` (uncapped) since init. Present stall during the movie
+   is ~1.4 ms (not vsync-blocked).
+3. Arithmetic: profiler during the movie reads CPU 8.4 ms (scene anims 5.0 + video
+   convert/copy ~2.6 amortised) and GPU 10.1 ms (the 3D world still renders under the
+   opaque movie). The modal loop's per-iteration render handshake mostly SERIALISES the
+   two: wall 16.7 ≈ CPU+GPU (18.5) minus ~2 ms overlap. 1000/16.7 = 60 — a numerical
+   coincidence that mimicked a cap. ⚠ Lesson: "suspiciously near 60" needs one sample
+   ABOVE 60 before naming vsync; the 62.1 was sitting in the data all along.
+
+Remaining lever, NOT taken (named constraint): skip the world render beneath a fullscreen
+opaque movie → GPU ~10 → ~2 ms → cutscene ~95 FPS. Zero visible benefit (the movie is the
+whole screen at 30 fps, already rock-steady at ~60) against real regression risk in the
+modal player's other modes (3D-surface videos, VR paths, skip handling). Do it only if a
+future need (battery/thermals on low-end) justifies touching that loop.
