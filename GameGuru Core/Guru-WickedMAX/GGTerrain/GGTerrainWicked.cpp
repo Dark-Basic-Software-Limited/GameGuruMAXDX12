@@ -3169,8 +3169,17 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 					// indices, reloads the DDS set, clears both blend-pass key sets and
 					// ends in its own Generation_Restart (a separate reset here would
 					// double-fill the ring).
+					// GGMAX 2.63b: call it SYNCHRONOUSLY — merely dropping the flag left
+					// a one-frame hole: the setup check runs EARLIER in this function
+					// than this consumption, so this frame's generation kick (below)
+					// still ran on the OLD material snapshot and the first cone chunks
+					// baked their one-shot VT tiles from stale material data (Lee's
+					// snow-with-sand-centre screenshot — same population as the level
+					// load "burst through" cone, which never hits this because setup
+					// always precedes the first kick there).
 					s_ggMaterialsNotifyDirty = false;
 					wickedTerrainMaterialsSetup = false;
+					SetupWickedTerrainMaterials();
 				}
 				else
 				{

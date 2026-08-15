@@ -1782,3 +1782,22 @@ CLICK_NODE's not-found error now LISTS every level node with (EMPTY)/(has-level)
 biome262.sh parses it (falls back to CLICK add_level — RAM-only, probes never save).
 ⚠ Rule sharpened: when Lee messages mid-evening he was JUST TESTING LIVE — check project-file
 mtimes/MAX liveness before taskkill-and-probe cycles; his session state is not yesterday's.
+
+## §2.63b (08-15 late) — Lee's snow-with-sand-centre: a one-frame ordering hole, closed
+
+Lee's screenshot after SNOW: the FIRST-generated cone chunks (centre, around the marker) wore
+the previous biome's textures — and his instinct ("reminds me of the forward chunks we burst
+through when loading a test game") named the population exactly: the closest-first cone.
+
+Mechanism: the 2.63 consumption only DROPPED wickedTerrainMaterialsSetup — but the setup
+check (GGTerrainWicked_Update ~2986) runs EARLIER in the function than the consumption
+(~3160), so the drop wasn't seen until the NEXT frame, and THIS frame's generation kick
+(~3200) still ran on the OLD material snapshot. The first cone chunks baked their one-shot
+VT tiles from stale material data and kept them. Level load never shows this because setup
+always precedes the first kick there (and the reveal cover hides the warm-up).
+
+Fix: the consumption calls SetupWickedTerrainMaterials() SYNCHRONOUSLY (WaitForGPU +
+re-resolve indices + reload DDS + blend-key clears + its own Generation_Restart) before this
+frame's kick. Verified with the two-swap probe (rainforest→desert→snow, Lee's repro shape):
+snow shot fully clean — no stale centre, lakes/slope-rock correct; chain matNotifies=3
+wipes=2 across both swaps. Lee restored TESTPRO2's 'Level 1' node — probe found it first try.
