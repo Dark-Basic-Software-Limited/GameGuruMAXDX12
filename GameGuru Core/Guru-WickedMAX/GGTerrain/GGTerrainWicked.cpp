@@ -2982,7 +2982,12 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// While the cover is up nobody sees the frame rate — let the generator eat
 	// most of the frame. Otherwise: turbo during the visible initial build,
 	// stock 8ms in normal editing.
-	terrain->generation_time_budget_milliseconds = revealHeld ? 300.0f : (initialBuild ? 150.0f : (massRegen ? 50.0f : 8.0f));
+	// GGMAX 2.57: the Terrain Generator (bProceduralLevel) trades FPS for fill speed by
+	// the user's explicit request — 20 ms budget takes the 70-80 FPS preview to ~30 while
+	// chunks are outstanding and costs NOTHING once the ring is full (the budget is only
+	// consumed when generation work exists, so FPS snaps back on completion). massRegen's
+	// 50 ms still wins when a box-drop mass-invalidates inside the generator.
+	terrain->generation_time_budget_milliseconds = revealHeld ? 300.0f : (initialBuild ? 150.0f : (massRegen ? 50.0f : (bProceduralLevel ? 20.0f : 8.0f)));
 	// Wicked delta #8: while the CAMERA-FACING cone is still building (~40% of
 	// the ring total covers the cone + near rings), run generation on the HIGH
 	// job pool — the Low pool is THREAD_PRIORITY_LOWEST and gets starved by the
@@ -2990,7 +2995,9 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// Once the cone is done, drop back to polite Low so the off-camera fill
 	// doesn't steal frame time from the editor (measured 40-55 -> 19-43 FPS
 	// during the tail when left on High).
-	terrain->generation_high_priority = revealHeld || massRegen || (int)terrain->chunks.size() < coneTarget;
+	// GGMAX 2.57: high-priority for the WHOLE generator fill too — the polite-Low tail
+	// rationale protects the editor's frame rate, which the generator has agreed to spend.
+	terrain->generation_high_priority = revealHeld || massRegen || bProceduralLevel || (int)terrain->chunks.size() < coneTarget;
 	static uint32_t s_terrainFrame = 0;
 	s_terrainFrame++;
 	// While the turbo build runs, only interrupt the generator with blendmap
