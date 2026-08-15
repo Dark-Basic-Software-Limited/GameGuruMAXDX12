@@ -4254,6 +4254,36 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	// SET_TERRAIN_GEN <n> — GGMAX 2.54a DIAGNOSTIC. Set the terrain chunk ring radius
+	// (Terrain::generation) live: ring span = (2n+1)^2 chunks, reach = n x 134 m from the
+	// centre. Built to MEASURE the cost of covering a 5 km editable area (gen 19 = 1521
+	// chunks) against the shipping gen 12 (625). The ring refills/shrinks progressively on
+	// the next Generation_Updates; removal threshold adapts (generation + 2 + margin).
+	// ⚠ Diagnostic only — never ship a session with this changed; POLYS/VRAM comparisons
+	// against other runs are invalid while it differs from the default.
+	if (_stricmp(cmd, "SET_TERRAIN_GEN") == 0)
+	{
+		int n = atoi(arg);
+		if (n < 4 || n > 24)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_TERRAIN_GEN needs 4..24 (got '%s'; default 12, 5km coverage = 19)", arg);
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		wi::scene::Scene& ggSc = wi::scene::GetScene();
+		if (ggSc.terrains.GetCount() == 0)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_TERRAIN_GEN — no terrain in scene");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		ggSc.terrains[0].generation = n;
+		_snprintf(result, resultSize, "OK: SET_TERRAIN_GEN %d — ring target %dx%d = %d chunks (watch TERRAIN_RING chunks refill)",
+			n, 2 * n + 1, 2 * n + 1, (2 * n + 1) * (2 * n + 1));
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	// ZOOM_FIRE — GGMAX 2.48. Hold right mouse to zoom, fire mid-hold, keep zoom held after.
 	// Everything goes through the SHIPPED input path (see M-Physics_part1.cpp consumer), so the
 	// shot is fired in a genuine zoomed state — built to reproduce "zoomed firing does no damage".
