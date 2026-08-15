@@ -28,6 +28,13 @@ namespace GGTerrain
 	// (editor/test game/level load keep their existing terrain-rebuild flows).
 	void GGTerrainWicked_NotifyParamsChanged();
 
+	// GGMAX 2.63: ggterrain_global_render_params changed — that struct carries the biome's
+	// MATERIAL SET (baseLayerMaterial/layerMatIndex/slopeMatIndex into terraintextures/matN).
+	// Shares the 2.62 debounce + generator-only consumption; on fire the bridge re-runs the
+	// full material setup (re-resolves indices, reloads DDS, clears blend keys, restarts
+	// generation) instead of a plain geometry wipe.
+	void GGTerrainWicked_NotifyMaterialsChanged();
+
 	// GGMAX 2.62 diagnostics: name the dead link if a biome click doesn't regenerate.
 	// runs = CheckParams entered; resets = its params-changed branch fired; notifies =
 	// NotifyParamsChanged calls; wipes = generator ring wipes actually executed.
@@ -36,6 +43,7 @@ namespace GGTerrain
 	extern uint32_t gg_dbg_checkparams_resets;
 	extern uint32_t gg_dbg_params_notifies;
 	extern uint32_t gg_dbg_params_wipes;
+	extern uint32_t gg_dbg_material_notifies; // GGMAX 2.63
 
 	// Level reveal hold: call Begin at the end of a level load; the editor draws
 	// an opaque cover over the 3D view while IsRevealHeld() returns true. The

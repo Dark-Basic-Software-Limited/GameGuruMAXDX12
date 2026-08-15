@@ -76,9 +76,9 @@ extern std::atomic<unsigned long long> gg_dbg_copywait_us, gg_dbg_copywait_event
 // GGMAX 2.62: Terrain Generator biome click injection + selection mirror (M-TerrainNew_part5.cpp)
 extern int g_ggHarnessBiomeClick;
 extern int g_ggBiomeSelectedMirror;
-// GGMAX 2.62: biome-reaction chain counters (GGTerrainWicked.cpp; this file includes
+// GGMAX 2.62/2.63: biome-reaction chain counters (GGTerrainWicked.cpp; this file includes
 // GGTerrain.h but not GGTerrainWicked.h, so declare them here at file scope)
-namespace GGTerrain { extern uint32_t gg_dbg_checkparams_runs, gg_dbg_checkparams_resets, gg_dbg_params_notifies, gg_dbg_params_wipes; }
+namespace GGTerrain { extern uint32_t gg_dbg_checkparams_runs, gg_dbg_checkparams_resets, gg_dbg_params_notifies, gg_dbg_params_wipes, gg_dbg_material_notifies; }
 #include "wiProfiler.h"       // GGMAX 1.82: gg_hitch_reset / gg_hitch_get / GG_HITCH_BUCKETS
 
 // WickedEngine helpers for screenshot and scene interrogation
@@ -1118,7 +1118,20 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 		return;
 	}
 
-	_snprintf(result, resultSize, "ERROR: Node '%s' not found in storyboard", nodeTitle);
+	// GGMAX 2.63: list the LEVEL nodes that DO exist — a probe hunting a renamed or
+	// level-assigned node gets the answer in one round trip instead of guessing titles
+	// (cost a blind evening round when the user's own session mutated the project).
+	{
+		int written3 = _snprintf(result, resultSize, "ERROR: Node '%s' not found in storyboard. Level nodes:", nodeTitle);
+		for (int i = 0; i < STORYBOARD_MAXNODES && written3 > 0 && written3 < resultSize - 96; i++)
+		{
+			if (!Storyboard.Nodes[i].used) continue;
+			if (Storyboard.Nodes[i].type != STORYBOARD_TYPE_LEVEL) continue;
+			written3 += _snprintf(result + written3, resultSize - written3, " '%s'%s",
+				Storyboard.Nodes[i].title,
+				strlen(Storyboard.Nodes[i].level_name) > 0 ? "(has-level)" : "(EMPTY)");
+		}
+	}
 	result[resultSize - 1] = 0;
 }
 
@@ -4431,7 +4444,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			return true;
 		}
 		_snprintf(result, resultSize,
-			"OK: TERRAINGEN_BIOME sel=%d ptype=%d seed=%u amp=%.2f offx=%.1f offz=%.1f editsize=%.0f slopemat0=%d treebits=%u | chain cpRuns=%u cpResets=%u notifies=%u wipes=%u",
+			"OK: TERRAINGEN_BIOME sel=%d ptype=%d seed=%u amp=%.2f offx=%.1f offz=%.1f editsize=%.0f slopemat0=%d treebits=%u | chain cpRuns=%u cpResets=%u notifies=%u matNotifies=%u wipes=%u",
 			g_ggBiomeSelectedMirror,
 			ggterrain_extra_params.iProceduralTerrainType,
 			(unsigned int)ggterrain_global_params.seed,
@@ -4444,6 +4457,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			GGTerrain::gg_dbg_checkparams_runs,
 			GGTerrain::gg_dbg_checkparams_resets,
 			GGTerrain::gg_dbg_params_notifies,
+			GGTerrain::gg_dbg_material_notifies,
 			GGTerrain::gg_dbg_params_wipes);
 		result[resultSize - 1] = 0;
 		return true;

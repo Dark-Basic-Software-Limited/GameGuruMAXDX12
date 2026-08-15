@@ -1752,3 +1752,33 @@ Enter/back/re-enter guardrail re-run clean.
 probe even when the BUILD FAILED (pipeline status = tail's). Two probes silently ran a stale
 exe and "refuted" a fix that was never in the binary. Gate probes on a real error count from
 the full build log (grep -cE "error C[0-9]+|fatal error|: error LNK").
+
+## §2.63 (08-15 late) — biome TEXTURES follow the click; ★ 2.61 fill + 2.62 heights Lee-CONFIRMED
+
+Lee confirmed 2.61/2.62 ("generates new biomes and the heights look good") and reported the
+texture half: each biome selects its own MATERIAL SET but the textures never changed on DX12.
+
+**Root cause (the 2.62 story's second half):** terrain textures are a global catalogue
+(terraintextures/matN); a biome selects INDICES into it — baseLayerMaterial + layerMatIndex[0..3]
+(from the .dat via LoadSettings) + slopeMatIndex (set by the button) — all living in
+ggterrain_global_render_params, which is watched by CheckParams' SECOND IsEqual branch. That
+branch only refreshed the legacy page cache; the wicked materials resolve the indices ONCE in
+SetupTerrainMaterial, so 2.62's geometry wipe rebuilt desert HEIGHTS under rainforest TEXTURES.
+
+**Fix:** branch 2 now calls GGTerrainWicked_NotifyMaterialsChanged() — shares the 2.62 debounce
++ generator-only consumption; on fire it drops wickedTerrainMaterialsSetup instead of a plain
+wipe. That path re-resolves the indices, reloads the DDS set, clears BOTH blend-pass key sets
+and ends in its own Generation_Restart (a separate reset would double-fill). Chain gained a
+matNotifies counter.
+
+**Verified:** desert click → matNotifies+1, one wipe → full 5 km regenerated with SAND base +
+desert slope rock (before/after shots night-and-day); editor discard proven live on the same
+binary (notify arrived in editor state, wipes stayed 0).
+
+**Probe archaeology this round:** Lee's own interactive session mutated TESTPRO2 (saved 20:16 —
+'Level 1' node consumed/renamed; storyboard now 'Loading Screen'(EMPTY)/'sss'/'spotshadowtest')
+which broke CLICK_NODE 'level 1' and burned two probe rounds on a phantom. Fix that stays:
+CLICK_NODE's not-found error now LISTS every level node with (EMPTY)/(has-level) tags, and
+biome262.sh parses it (falls back to CLICK add_level — RAM-only, probes never save).
+⚠ Rule sharpened: when Lee messages mid-evening he was JUST TESTING LIVE — check project-file
+mtimes/MAX liveness before taskkill-and-probe cycles; his session state is not yesterday's.

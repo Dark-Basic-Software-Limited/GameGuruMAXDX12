@@ -3548,13 +3548,19 @@ public:
 			}
 		}
 
-		if ( !ggterrain_local_render_params.IsEqual( &ggterrain_global_render_params ) ) 
+		if ( !ggterrain_local_render_params.IsEqual( &ggterrain_global_render_params ) )
 		{
 			settingsUpdated = true;
 			ggterrain_extra_params.iUpdateGrass = 2;
 
 			ggterrain_local_render_params.Copy( &ggterrain_global_render_params );
 			iFlags |= GGTERRAIN_FLAG_REGENERATE_PAGES;
+
+			// GGMAX 2.63: render_params carries the biome's MATERIAL SET (baseLayerMaterial/
+			// layerMatIndex/slopeMatIndex). The page regen above is legacy-only — tell the
+			// bridge so wicked materials re-resolve the new indices (generator-only,
+			// debounced consumption; discarded everywhere else).
+			GGTerrainWicked_NotifyMaterialsChanged();
 		}
 
 		if ( !ggterrain_local_render_params2.IsEqual( &ggterrain_global_render_params2 ) ) 

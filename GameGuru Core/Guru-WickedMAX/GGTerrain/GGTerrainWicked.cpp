@@ -2693,18 +2693,34 @@ static void GGResetTerrainChunks(wi::terrain::Terrain* terrain)
 // the 2.54 wipe — its params are what that fill already reads; reacting again would double-fill).
 static int      s_ggParamsNotifyCountdown = -1;      // <0 idle; else bridge frames until the ring wipe
 static uint32_t s_ggFramesSinceRingWipe = 1000000;   // reset by entry/exit/params wipes
+static bool     s_ggMaterialsNotifyDirty = false;    // GGMAX 2.63: render_params (material indices) changed too
 
 // GGMAX 2.62 diagnostics (see header): chain counters read by harness TERRAINGEN_BIOME
 uint32_t gg_dbg_checkparams_runs = 0;
 uint32_t gg_dbg_checkparams_resets = 0;
 uint32_t gg_dbg_params_notifies = 0;
 uint32_t gg_dbg_params_wipes = 0;
+uint32_t gg_dbg_material_notifies = 0; // GGMAX 2.63
 
 void GGTerrainWicked_NotifyParamsChanged()
 {
 	// Re-armed on EVERY change: the wipe fires 20 quiet frames after the LAST one.
 	s_ggParamsNotifyCountdown = 20;
 	gg_dbg_params_notifies++;
+}
+
+void GGTerrainWicked_NotifyMaterialsChanged()
+{
+	// GGMAX 2.63: ggterrain_global_render_params changed — that struct carries the biome's
+	// MATERIAL SET (baseLayerMaterial, layerMatIndex[0..3], slopeMatIndex into the shared
+	// terraintextures/matN catalogue). Wicked materials resolve those indices ONCE in
+	// SetupTerrainMaterial, so a biome click regenerated correct HEIGHTS (2.62) but kept the
+	// old biome's textures. Shares the 2.62 debounce; on fire the consumption drops
+	// wickedTerrainMaterialsSetup instead of a plain wipe — that path re-reads the indices,
+	// reloads the DDS set, clears both blend-pass key sets and ends in Generation_Restart.
+	s_ggParamsNotifyCountdown = 20;
+	s_ggMaterialsNotifyDirty = true;
+	gg_dbg_material_notifies++;
 }
 
 void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
@@ -3142,14 +3158,28 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 			if (!bProceduralLevel || s_ggFramesSinceRingWipe < 60)
 			{
 				s_ggParamsNotifyCountdown = -1;
+				s_ggMaterialsNotifyDirty = false;
 			}
 			else if (--s_ggParamsNotifyCountdown < 0)
 			{
-				GGResetTerrainChunks(terrain);
+				if (s_ggMaterialsNotifyDirty)
+				{
+					// GGMAX 2.63: the biome's MATERIAL SET changed too — full material
+					// re-setup instead of a plain wipe. That path re-resolves the matN
+					// indices, reloads the DDS set, clears both blend-pass key sets and
+					// ends in its own Generation_Restart (a separate reset here would
+					// double-fill the ring).
+					s_ggMaterialsNotifyDirty = false;
+					wickedTerrainMaterialsSetup = false;
+				}
+				else
+				{
+					GGResetTerrainChunks(terrain);
+				}
 				s_ggFramesSinceRingWipe = 0;
 				s_terrainActivityPing = true;
 				gg_dbg_params_wipes++;
-				wi::backlog::post("GGTerrainWicked: generator params changed (biome/slider) - ring wiped for regeneration");
+				wi::backlog::post("GGTerrainWicked: generator params changed (biome/slider) - terrain regeneration triggered");
 			}
 		}
 	}

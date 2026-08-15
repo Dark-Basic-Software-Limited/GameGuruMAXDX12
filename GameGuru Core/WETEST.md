@@ -59,7 +59,7 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `GET_SCREEN_TEXT` | (none) | Detailed dump of all on-screen content: project info, node details, widget labels, connections |
 | `NAVIGATE` | `hub` / `hub.<tab>` / `storyboard` | Switch between hub, hub tabs, or storyboard |
 | `CLICK` | `play_game` / `edit_game` / `test_level` / `add_level` / `load_level` / `exit_screen_editor` | Simulate button clicks (context-dependent) |
-| `CLICK_NODE` | `<node title>` | Click a storyboard node by title (case-insensitive). Level nodes load into editor, screen/splash nodes open the screen editor |
+| `CLICK_NODE` | `<node title>` | Click a storyboard node by title (case-insensitive). Level nodes load into editor, screen/splash nodes open the screen editor. 2.63: a not-found error now LISTS every level node with (EMPTY)/(has-level) — parse it instead of guessing titles |
 | `SELECT_DEMO` | `<demo name>` | Select a demo by display name (case-insensitive) |
 | `LIST_DEMOS` | (none) | List all available demo games |
 | `LIST_PROJECTS` | (none) | List My Games projects (from `projectbank_list`). Populated when the hub renders — call `GET_STATE` first if empty |
