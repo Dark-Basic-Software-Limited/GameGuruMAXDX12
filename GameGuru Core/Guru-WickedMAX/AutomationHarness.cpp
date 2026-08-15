@@ -70,6 +70,9 @@ namespace wi { namespace profiler {
 // block-scope extern picks up the enclosing namespace and mangles wrongly, which has cost
 // a build cycle before.
 extern std::atomic<unsigned long long> gg_dbg_pso_compile_max_us;
+// GGMAX 2.61: CPU-blocking copy-queue waits in CopyAllocator::submit (engine
+// wiGraphicsDevice_DX12.cpp, global namespace — file scope for the same mangling reason).
+extern std::atomic<unsigned long long> gg_dbg_copywait_us, gg_dbg_copywait_events;
 #include "wiProfiler.h"       // GGMAX 1.82: gg_hitch_reset / gg_hitch_get / GG_HITCH_BUCKETS
 
 // WickedEngine helpers for screenshot and scene interrogation
@@ -4321,6 +4324,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		{
 			gg_genprof_heights_us = 0; gg_genprof_vertex_us = 0; gg_genprof_renderdata_us = 0;
 			gg_genprof_grass_us = 0; gg_genprof_blendcb_us = 0; gg_genprof_regiontex_us = 0; gg_genprof_bvh_us = 0;
+			gg_genprof_bvh_events = 0; // GGMAX 2.61: was missing — N read cumulative-since-launch after a reset (cost a false alarm)
 			gg_genprof_physics_us = 0; gg_genprof_total_us = 0; gg_genprof_chunks = 0;
 			_snprintf(result, resultSize, "OK: TERRAIN_GENPROF reset");
 			result[resultSize - 1] = 0;
@@ -4347,6 +4351,44 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			gg_genprof_blendcb_us.load() / d,
 			gg_genprof_regiontex_us.load() / d,
 			gg_genprof_physics_us.load() / d);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// VT_PROF [RESET] — GGMAX 2.61. Main-thread VT/texture allocation attribution (the generator
+	// fill wall). updcpu = whole UpdateVirtualTexturesCPU body per call (wait0 = its entry wait on
+	// last frame's async VT job); vtinit = VirtualTexture::init (INCLUDES nested resinit); resinit
+	// = Residency::init pool misses (~10 device creates, 4 blocking uploads each); regionmain =
+	// main-thread "last minute" CreateChunkRegionTexture actually creating; copywait = device-wide
+	// CPU-blocking copy-queue waits (EVERY with-initdata create pays one, any thread).
+	if (_stricmp(cmd, "VT_PROF") == 0)
+	{
+		using namespace wi::terrain;
+		if (arg[0] != 0 && _stricmp(arg, "RESET") == 0)
+		{
+			gg_vtprof_updatecpu_us = 0; gg_vtprof_updatecpu_calls = 0; gg_vtprof_updatecpu_max_us = 0;
+			gg_vtprof_wait0_us = 0; gg_vtprof_vtinit_us = 0; gg_vtprof_vtinit_events = 0;
+			gg_vtprof_resinit_us = 0; gg_vtprof_resinit_events = 0;
+			gg_vtprof_regionmain_us = 0; gg_vtprof_regionmain_events = 0;
+			gg_dbg_copywait_us = 0; gg_dbg_copywait_events = 0;
+			_snprintf(result, resultSize, "OK: VT_PROF reset");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		_snprintf(result, resultSize,
+			"OK: VT_PROF updcpu calls=%llu tot=%.1fms max=%.1fms wait0=%.1fms | vtinit N=%llu %.1fms | resinit N=%llu %.1fms | regionmain N=%llu %.1fms | copywait N=%llu %.1fms",
+			(unsigned long long)gg_vtprof_updatecpu_calls.load(),
+			gg_vtprof_updatecpu_us.load() / 1000.0,
+			gg_vtprof_updatecpu_max_us.load() / 1000.0,
+			gg_vtprof_wait0_us.load() / 1000.0,
+			(unsigned long long)gg_vtprof_vtinit_events.load(),
+			gg_vtprof_vtinit_us.load() / 1000.0,
+			(unsigned long long)gg_vtprof_resinit_events.load(),
+			gg_vtprof_resinit_us.load() / 1000.0,
+			(unsigned long long)gg_vtprof_regionmain_events.load(),
+			gg_vtprof_regionmain_us.load() / 1000.0,
+			(unsigned long long)::gg_dbg_copywait_events.load(),
+			::gg_dbg_copywait_us.load() / 1000.0);
 		result[resultSize - 1] = 0;
 		return true;
 	}

@@ -1671,3 +1671,53 @@ S1 decomposition, this round's verdicts:
 
 Fill unchanged this round (~24 s). Day total: 33 s → ~24 s with editor/test game untouched
 (regression-proven every round: skipbvh/skipgrass flip 0 outside generator, Switch ~134).
+
+## §2.61 SHIPPED (08-15 evening) — fill 24 s → 13 s: the wall was a BVH HEAL, not VT allocation
+
+§2.60's closing attribution ("VT/region-texture allocation path") was WRONG — published off
+a circumstantial correlation (texCreates bursts on gap frames). This round built the microscope
+first and the microscope said no:
+
+**Instrumentation (all durable):**
+- VT_PROF harness command + gg_vtprof_* atomics: UpdateVirtualTexturesCPU total/max, its
+  entry Wait, VirtualTexture::init, Residency::init (pool misses), main-thread "last minute"
+  CreateChunkRegionTexture creates.
+- gg_dbg_copywait_us/events in CopyAllocator::submit — the null-event SetEventOnCompletion
+  there BLOCKS the calling thread until the copy queue drains (every with-initdata
+  CreateTexture/CreateBuffer pays one). Gap tracer now prints copyWaits/copyWaitMs per gap.
+- gg_trace_mark decomposition of the `update` segment: logic/gpup/ggcore/ggbridge/
+  trees-grass/loop-render/pre-wicked/wicked-upd (master_part1), scn-begin/terrain/s1..s5
+  (wiScene), tg-begin/merge/chunkloop/vtcpu/kick (Generation_Update).
+
+**The refutation:** during a fill, UpdateVirtualTexturesCPU totals 0.36 s (max 5.5 ms/frame),
+residency pool misses = ZERO, main-thread region-texture creates = ZERO, and the recurring
+400–550 ms gap frames carry ~5 ms of copy-wait and ~4 texCreates. Not the VT path. The
+2.60 texCreates correlation came from the handful of early entry frames only.
+
+**The culprit (named by tg-chunkloop marks):** wiTerrain.cpp's per-frame chunk loop carries a
+HEAL — `if (!chunk_mesh->bvh.IsValid()) SetBVHEnabled(true)` — which synchronously builds the
+CPU triangle BVH ON THE MAIN THREAD for any chunk born without one. It silently DEFEATED the
+2.58 generator skip: the 8.2 ms/chunk build never disappeared, it moved from the generation
+thread (parallel) to the main thread (serialized into frames) — ~6 s of 400–550 ms frames per
+fill. That is also why 2.58 "only" bought 28→24 s.
+
+**Fix (one line + comment):** the heal honors gg_generation_skip_bvh. Generator chunks stay
+BVH-less by design (drag picks brute-force; the 2.55 exit wipe regenerates WITH BVHs); every
+other mode keeps the heal — editor/test game byte-identical behavior.
+
+**Measured (filltime3, same recipe):** ring 1521 complete at +13 s (was +24/+25 s), FPS
+DURING fill 82–110 (was 19–24), gap count 25 → 5 (survivors = entry one-offs: logic ~800 ms +
+ggcore ~580 ms + three 170–215 ms first-burst frames, ~2.3 s total, one-time). skipbvh=1
+procLvl=1 live throughout the fill; bvh events N=130 = pre-entry load-ring chunks only.
+Lee's 12–15 s target: MET at 13 s. Day total: 33 s → 13 s.
+
+**Second bug fixed en route:** TERRAIN_GENPROF RESET never zeroed gg_genprof_bvh_events —
+a post-reset read showed N=1159 (cumulative since launch) and nearly relaunched the
+"skip is inert" hunt. The 2.58b cumulative-counter lesson, this time inside my own reset
+handler. RESET now zeroes it.
+
+**Entry one-offs left on the table (~2.3 s, separate class):** the two ~1.1 s entry frames
+(editor logic init + GGTerrain core priming at generator entry) and the first-burst frames
+(trees-grass 165–207 ms, ggbridge 170 ms, copy-wait stacks from the entry texture burst).
+Also still parked: startup 625-ring bake (~7 s of every boot), Generation_Update
+single-sourcing (S1 + bridge both call it; ~1 ms/frame product-wide).

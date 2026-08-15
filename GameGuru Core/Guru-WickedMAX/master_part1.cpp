@@ -466,6 +466,7 @@ void MasterRenderer::Update(float dt)
 		auto range = wiProfiler::BeginRangeCPU("Update - Logic (Total)");
 		bool bFullyInitialised = GuruLoopLogic();
 		wiProfiler::EndRange(range);
+		GGPerf_TraceMark("logic"); // GGMAX 2.61 gap decomposition
 
 		// no further than logic while in splash show mode
 		// DX12: Must NOT return early — __super::Update(dt) must always run so
@@ -480,6 +481,7 @@ void MasterRenderer::Update(float dt)
 			auto range = wiProfiler::BeginRangeCPU("Update - Particles");
 			gpup_update(dt, cmd);
 			wiProfiler::EndRange(range);
+			GGPerf_TraceMark("gpup"); // GGMAX 2.61
 
 			// terrain processing (if used)
 			if (t.visuals.bEnableEmptyLevelMode == false)
@@ -490,12 +492,14 @@ void MasterRenderer::Update(float dt)
 				auto rangeT1 = wiProfiler::BeginRangeCPU("Terrain - GG Core");
 				GGTerrain_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
 				wiProfiler::EndRange(rangeT1);
+				GGPerf_TraceMark("ggcore"); // GGMAX 2.61
 				if (ggterrain_use_wicked_terrain)
 				{
 					ggterrain_draw_enabled = 0;  // suppress all old draw callbacks
 					auto rangeT2 = wiProfiler::BeginRangeCPU("Terrain - Wicked Bridge");
 					GGTerrainWicked_Update(camera);
 					wiProfiler::EndRange(rangeT2);
+					GGPerf_TraceMark("ggbridge"); // GGMAX 2.61
 				}
 				else
 				{
@@ -512,6 +516,7 @@ void MasterRenderer::Update(float dt)
 					wiProfiler::EndRange(rangeT4);
 				}
 				wiProfiler::EndRange(range3);
+				GGPerf_TraceMark("trees-grass"); // GGMAX 2.61
 			}
 			else
 			{
@@ -529,6 +534,7 @@ void MasterRenderer::Update(float dt)
 			auto range2 = wiProfiler::BeginRangeCPU("Update - Render");
 			GuruLoopRender();
 			wiProfiler::EndRange(range2);
+			GGPerf_TraceMark("loop-render"); // GGMAX 2.61
 		}
 	}
 
@@ -608,8 +614,10 @@ void MasterRenderer::Update(float dt)
 
 	// super update
 	auto range2 = wiProfiler::BeginRangeCPU("Update - Wicked (Total)");
+	GGPerf_TraceMark("pre-wicked"); // GGMAX 2.61
 	__super::Update(dt);
 	wiProfiler::EndRange(range2);
+	GGPerf_TraceMark("wicked-upd"); // GGMAX 2.61
 }
 
 void MasterRenderer::PostUpdate()
