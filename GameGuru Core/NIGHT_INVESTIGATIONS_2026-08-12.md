@@ -1721,3 +1721,34 @@ handler. RESET now zeroes it.
 (trees-grass 165–207 ms, ggbridge 170 ms, copy-wait stacks from the entry texture burst).
 Also still parked: startup 625-ring bake (~7 s of every boot), Generation_Update
 single-sourcing (S1 + bridge both call it; ~1 ms/frame product-wide).
+
+## §2.62 (08-15 late) — biome buttons live again on DX12: the reaction was missing, not the click
+
+Lee's repro after confirming 2.61: DESERT does nothing (works on DX11). Built the navigation
+instrument FIRST per his ask: **TERRAINGEN_BIOME [1-7|name]** injects a click through the
+SHIPPED button branch (M-TerrainNew_part5's iRandomThemeChoice lane — the same one the
+startup rainforest auto-click uses), no-arg dumps biome state + the reaction-chain counters.
+
+**Root cause (2.54's leftover class, one layer deeper):** the button handler is byte-identical
+to DX11 and works — probe showed sel/ptype/seed/slopemat/treebits all changing. What's missing
+on DX12 is the REACTION: GGTerrain's CheckParams watcher (GGTerrain_part0 ~3510) detects the
+params change and calls ResetChunks() + noise.reshuffle(seed) — but ResetChunks rebuilds the
+LEGACY chunk system, which is dead code under wicked terrain. On DX11 that reset WAS the
+visible terrain regenerating. The wicked ring was never told.
+
+**Fix:** CheckParams' reset branch now calls GGTerrainWicked_NotifyParamsChanged(); the bridge
+consumes it GENERATOR-ONLY (bProceduralLevel) with a 20-frame debounce (slider drags coalesce)
+and a 60-frames-after-entry-wipe swallow (the entry auto-rainforest click's params are what
+that fill already reads — reacting would double-fill). Editor/test game/level load: notify
+discarded, flows byte-identical. Chain counters (cpRuns/cpResets/notifies/wipes in the
+TERRAINGEN_BIOME readout) prove each link and stay as the debugging instrument.
+
+**Verified:** click desert → wipes=1 within 0.3s → full 5km regenerates as desert (screenshot:
+new height profile, desert.dat values in the panel, no leftovers) — refill faster than the 3s
+polls could catch (mid-session wipe = warm caches; the 13s number is entry-path overhead).
+Enter/back/re-enter guardrail re-run clean.
+
+⚠ Harness lesson that cost two ghost rounds: `./build.bat Release | tail -2 && probe` runs the
+probe even when the BUILD FAILED (pipeline status = tail's). Two probes silently ran a stale
+exe and "refuted" a fix that was never in the binary. Gate probes on a real error count from
+the full build log (grep -cE "error C[0-9]+|fatal error|: error LNK").

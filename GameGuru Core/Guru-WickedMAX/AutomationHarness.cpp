@@ -73,6 +73,12 @@ extern std::atomic<unsigned long long> gg_dbg_pso_compile_max_us;
 // GGMAX 2.61: CPU-blocking copy-queue waits in CopyAllocator::submit (engine
 // wiGraphicsDevice_DX12.cpp, global namespace — file scope for the same mangling reason).
 extern std::atomic<unsigned long long> gg_dbg_copywait_us, gg_dbg_copywait_events;
+// GGMAX 2.62: Terrain Generator biome click injection + selection mirror (M-TerrainNew_part5.cpp)
+extern int g_ggHarnessBiomeClick;
+extern int g_ggBiomeSelectedMirror;
+// GGMAX 2.62: biome-reaction chain counters (GGTerrainWicked.cpp; this file includes
+// GGTerrain.h but not GGTerrainWicked.h, so declare them here at file scope)
+namespace GGTerrain { extern uint32_t gg_dbg_checkparams_runs, gg_dbg_checkparams_resets, gg_dbg_params_notifies, gg_dbg_params_wipes; }
 #include "wiProfiler.h"       // GGMAX 1.82: gg_hitch_reset / gg_hitch_get / GG_HITCH_BUCKETS
 
 // WickedEngine helpers for screenshot and scene interrogation
@@ -4389,6 +4395,56 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			gg_vtprof_regionmain_us.load() / 1000.0,
 			(unsigned long long)::gg_dbg_copywait_events.load(),
 			::gg_dbg_copywait_us.load() / 1000.0);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// TERRAINGEN_BIOME [1-7|plains|desert|forest|snow|canyon|mountain|rainforest] — GGMAX 2.62.
+	// No arg: report the generator's biome state (selection mirror + every param a biome click
+	// mutates that the terrain derives from). With arg: inject a click through the SHIPPED
+	// button branch (M-TerrainNew_part5 iRandomThemeChoice lane) — only works while the
+	// Terrain Generator panel is drawing. Built for the "DESERT does nothing on DX12" hunt.
+	if (_stricmp(cmd, "TERRAINGEN_BIOME") == 0)
+	{
+		using namespace GGTerrain;
+		if (arg[0] != 0)
+		{
+			int choice = 0;
+			if (arg[0] >= '0' && arg[0] <= '9') choice = atoi(arg);
+			else if (_stricmp(arg, "plains") == 0) choice = 1;
+			else if (_stricmp(arg, "desert") == 0) choice = 2;
+			else if (_stricmp(arg, "forest") == 0) choice = 3;
+			else if (_stricmp(arg, "snow") == 0) choice = 4;
+			else if (_stricmp(arg, "canyon") == 0) choice = 5;
+			else if (_stricmp(arg, "mountain") == 0) choice = 6;
+			else if (_stricmp(arg, "rainforest") == 0) choice = 7;
+			if (choice < 1 || choice > 7)
+			{
+				_snprintf(result, resultSize, "ERROR: TERRAINGEN_BIOME wants 1-7 or plains/desert/forest/snow/canyon/mountain/rainforest (got '%s')", arg);
+			}
+			else
+			{
+				g_ggHarnessBiomeClick = choice;
+				_snprintf(result, resultSize, "OK: TERRAINGEN_BIOME click %d queued (consumed on the next generator panel frame)", choice);
+			}
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		_snprintf(result, resultSize,
+			"OK: TERRAINGEN_BIOME sel=%d ptype=%d seed=%u amp=%.2f offx=%.1f offz=%.1f editsize=%.0f slopemat0=%d treebits=%u | chain cpRuns=%u cpResets=%u notifies=%u wipes=%u",
+			g_ggBiomeSelectedMirror,
+			ggterrain_extra_params.iProceduralTerrainType,
+			(unsigned int)ggterrain_global_params.seed,
+			ggterrain_global_params.fractal_initial_amplitude,
+			ggterrain_global_params.offset_x,
+			ggterrain_global_params.offset_z,
+			GGTerrain::ggterrain_global_render_params2.editable_size,
+			(int)(GGTerrain::ggterrain_global_render_params.slopeMatIndex[0] & 0xff),
+			(unsigned int)GGTrees::ggtrees_global_params.paint_tree_bitfield,
+			GGTerrain::gg_dbg_checkparams_runs,
+			GGTerrain::gg_dbg_checkparams_resets,
+			GGTerrain::gg_dbg_params_notifies,
+			GGTerrain::gg_dbg_params_wipes);
 		result[resultSize - 1] = 0;
 		return true;
 	}

@@ -8,6 +8,14 @@ bool bFirstTimeVeg = true;
 
 static inline ImVec2 ImGuiRotation(const ImVec2& v, float cos_a, float sin_a) { return ImVec2(v.x * cos_a - v.y * sin_a, v.x * sin_a + v.y * cos_a); }
 
+// GGMAX 2.62: Terrain Generator biome harness hooks (AutomationHarness TERRAINGEN_BIOME).
+// The click injection feeds the same iRandomThemeChoice lane the startup randomizer uses, so
+// the biome branches run the SHIPPED button path unmodified; the mirror exposes the
+// function-local iSelectedThemeChoice static for harness readback. Global scope on purpose —
+// block-scope externs in this codebase have mangled into the enclosing namespace before.
+int g_ggHarnessBiomeClick = 0;      // 1..7 = Plains..Rainforest; consumed on the next panel frame
+int g_ggBiomeSelectedMirror = 0;    // iSelectedThemeChoice as of the last drawn panel frame
+
 void procedural_new_level(void)
 {
 	bool bUseFullScreen = true;
@@ -1405,6 +1413,17 @@ void procedural_new_level(void)
 						fLastY = -1; //Trigger fog update.
 						iLastTreeGrassSettings = -1;
 					}
+
+					// GGMAX 2.62: harness biome click (TERRAINGEN_BIOME n) — rides the same
+					// iRandomThemeChoice lane as the startup randomizer so the button branches
+					// below execute the shipped path (the user-click-only randomizations are
+					// already gated on iRandomThemeChoice == 0 and stay off, deterministic).
+					if (g_ggHarnessBiomeClick > 0)
+					{
+						iRandomThemeChoice = g_ggHarnessBiomeClick;
+						g_ggHarnessBiomeClick = 0;
+					}
+					g_ggBiomeSelectedMirror = iSelectedThemeChoice;
 
 					ImGui::TextCenter("Default Choices");
 

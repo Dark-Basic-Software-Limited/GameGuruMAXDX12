@@ -2682,6 +2682,31 @@ static void GGResetTerrainChunks(wi::terrain::Terrain* terrain)
 	dx11BlendChunkKeyToEntity.clear();
 }
 
+// GGMAX 2.62: biome/params reaction. GGTerrain's CheckParams detects any
+// ggterrain_global_params change (biome buttons reseed + reload the noise recipe) and resets
+// the LEGACY chunk system + reshuffles the noise — but that system is DEAD CODE under wicked
+// terrain, so the wicked ring kept its old geometry and the biome buttons looked dead (Lee's
+// Desert repro: sel/seed/slopemat all changed, ring never regenerated). CheckParams now calls
+// NotifyParamsChanged; the reaction below is GENERATOR-ONLY (editor/test game/level load keep
+// their existing flows untouched), debounced so slider drags coalesce into one wipe, and
+// swallowed right after an entry/exit wipe (the entry auto-rainforest click lands frames after
+// the 2.54 wipe — its params are what that fill already reads; reacting again would double-fill).
+static int      s_ggParamsNotifyCountdown = -1;      // <0 idle; else bridge frames until the ring wipe
+static uint32_t s_ggFramesSinceRingWipe = 1000000;   // reset by entry/exit/params wipes
+
+// GGMAX 2.62 diagnostics (see header): chain counters read by harness TERRAINGEN_BIOME
+uint32_t gg_dbg_checkparams_runs = 0;
+uint32_t gg_dbg_checkparams_resets = 0;
+uint32_t gg_dbg_params_notifies = 0;
+uint32_t gg_dbg_params_wipes = 0;
+
+void GGTerrainWicked_NotifyParamsChanged()
+{
+	// Re-armed on EVERY change: the wipe fires 20 quiet frames after the LAST one.
+	s_ggParamsNotifyCountdown = 20;
+	gg_dbg_params_notifies++;
+}
+
 void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 {
 	if (!wickedTerrainInitialised) return;
@@ -3012,6 +3037,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	terrain->generation_high_priority = revealHeld || massRegen || bProceduralLevel || (int)terrain->chunks.size() < coneTarget;
 	static uint32_t s_terrainFrame = 0;
 	s_terrainFrame++;
+	if (s_ggFramesSinceRingWipe < 0xFFFFFFFEu) s_ggFramesSinceRingWipe++; // GGMAX 2.62
 	// While the turbo build runs, only interrupt the generator with blendmap
 	// processing every 30th frame — each ApplyDX11StyleAutoBlend/painted pass
 	// calls Generation_Cancel, and doing that per-frame while chunks stream in
@@ -3094,15 +3120,38 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 			s_savedGeneration = terrain->generation;
 			terrain->generation = 19; // 2.55: set BEFORE the restart so the rebuild targets 1521 immediately
 			GGResetTerrainChunks(terrain);
+			s_ggFramesSinceRingWipe = 0; // GGMAX 2.62: swallow the entry auto-click's params notify
 			s_terrainActivityPing = true;
 		}
 		if (!bProceduralLevel && s_lastProceduralLevel)
 		{
 			if (s_savedGeneration > 0) terrain->generation = s_savedGeneration; // 2.55: back to the shipping ring
 			GGResetTerrainChunks(terrain);
+			s_ggFramesSinceRingWipe = 0; // GGMAX 2.62
 			s_terrainActivityPing = true;
 		}
 		s_lastProceduralLevel = bProceduralLevel;
+
+		// GGMAX 2.62: consume a params-change notify (see NotifyParamsChanged above the
+		// function). Generator only; anywhere else the notify is discarded — editor, test
+		// game and level load already own their terrain-rebuild flows and must not gain a
+		// second wipe path. Within 60 frames of an entry/exit wipe the notify is the entry
+		// auto-click's own params landing — that fill already reads them, so discard too.
+		if (s_ggParamsNotifyCountdown >= 0)
+		{
+			if (!bProceduralLevel || s_ggFramesSinceRingWipe < 60)
+			{
+				s_ggParamsNotifyCountdown = -1;
+			}
+			else if (--s_ggParamsNotifyCountdown < 0)
+			{
+				GGResetTerrainChunks(terrain);
+				s_ggFramesSinceRingWipe = 0;
+				s_terrainActivityPing = true;
+				gg_dbg_params_wipes++;
+				wi::backlog::post("GGTerrainWicked: generator params changed (biome/slider) - ring wiped for regeneration");
+			}
+		}
 	}
 	{
 		static XMFLOAT3 s_idleLastEye = {}, s_idleLastAt = {};

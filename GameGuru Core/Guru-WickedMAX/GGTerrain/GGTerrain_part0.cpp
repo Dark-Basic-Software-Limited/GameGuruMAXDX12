@@ -3479,8 +3479,9 @@ public:
 	void CheckParams()
 	{
 		bool settingsUpdated = false;
+		gg_dbg_checkparams_runs++; // GGMAX 2.62 chain diagnostic
 
-		if ( !ggterrain_local_params.IsEqual( &ggterrain_global_params ) ) 
+		if ( !ggterrain_local_params.IsEqual( &ggterrain_global_params ) )
 		{
 			if ( ggterrain_global_params.lod_levels < 1 ) ggterrain_global_params.lod_levels = 1;
 			if ( ggterrain_global_params.lod_levels > 15 ) ggterrain_global_params.lod_levels = 15; // hard limit, design currently assumes 15 will not be exceeded
@@ -3528,15 +3529,22 @@ public:
 				if ( numLODLevels > 1 )
 				{
 					GraphicsDevice* device = wiGraphics::GetDevice();
-	
+
 					// height map and normal map per LOD level
 					// technically LODSize should be increased by 1, but it's currently a nice power of two, and we shouldn't need the final pixel anyway
-					uint32_t LODSize = ggterrain_local_params.segments_per_chunk * 8;  
+					uint32_t LODSize = ggterrain_local_params.segments_per_chunk * 8;
 					GGTerrain_CreateEmptyTexture( LODSize, LODSize, 1, numLODLevels, Format::R32_FLOAT, &texLODHeightMapArray );
 					GGTerrain_CreateEmptyTexture( LODSize, LODSize, 1, numLODLevels, Format::R8G8B8A8_UNORM, &texLODNormalMapArray );
 				}
 
 				iFlags |= GGTERRAIN_FLAG_VALID;
+
+				// GGMAX 2.62: ResetChunks above only rebuilt the LEGACY chunk system — dead
+				// code under wicked terrain, which is why the biome buttons looked dead on
+				// DX12 (params + noise changed, wicked ring never regenerated). Tell the
+				// bridge; it reacts generator-only, debounced (no-op everywhere else).
+				gg_dbg_checkparams_resets++; // GGMAX 2.62 chain diagnostic
+				GGTerrainWicked_NotifyParamsChanged();
 			}
 		}
 

@@ -22,6 +22,21 @@ namespace GGTerrain
 	// re-setup + generation restart on the next update).
 	void GGTerrainWicked_OnTextureSetChanged();
 
+	// GGMAX 2.62: ggterrain_global_params changed (CheckParams fired its reset — biome
+	// button, generator slider, offset drag). The wicked ring reacts GENERATOR-ONLY with a
+	// debounced full wipe + regeneration; in every other mode the notify is discarded
+	// (editor/test game/level load keep their existing terrain-rebuild flows).
+	void GGTerrainWicked_NotifyParamsChanged();
+
+	// GGMAX 2.62 diagnostics: name the dead link if a biome click doesn't regenerate.
+	// runs = CheckParams entered; resets = its params-changed branch fired; notifies =
+	// NotifyParamsChanged calls; wipes = generator ring wipes actually executed.
+	// Defined in GGTerrainWicked.cpp; runs/resets incremented from GGTerrain_part0.
+	extern uint32_t gg_dbg_checkparams_runs;
+	extern uint32_t gg_dbg_checkparams_resets;
+	extern uint32_t gg_dbg_params_notifies;
+	extern uint32_t gg_dbg_params_wipes;
+
 	// Level reveal hold: call Begin at the end of a level load; the editor draws
 	// an opaque cover over the 3D view while IsRevealHeld() returns true. The
 	// hold releases when the legacy heights are ready AND the camera-facing
