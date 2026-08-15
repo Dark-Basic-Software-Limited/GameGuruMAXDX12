@@ -1975,3 +1975,42 @@ movement). Also fixes the drag dying at the view edge (the branch requires bIsIt
 Verified: 250 px of synthetic drag → cursor ends exactly at the anchor (ImGui's ~6 px drag
 threshold means the anchor locks a step into the gesture), view rotated, pointer never left
 the view.
+
+## §2.68 (08-16 night, OPEN — evidence gathered, fix not attempted) — bottom-of-window
+## black band during generator churn (Lee's report: entry + water-slider hold)
+
+Lee's physical screenshots: bottom of the WINDOW (3D view AND panel UI alike) goes black
+below a horizontal line that flickers at varying heights, with a smeared garbage seam at
+the boundary. Triggers: generator entry, and click-holding the Water Height slider
+(his FPS during the hold: 10-24; he also had Editable Area Size at 5.0 Km).
+
+★ Instrument lesson first: the harness SCREENSHOT (backbuffer readback) is BLIND to this
+artifact class — dozens of generator captures all session never showed it. Physical
+CopyFromScreen captures were needed (new blackband.sh probe).
+
+EVIDENCE (all headless, reproduced on demand):
+- Slider hold, stock queues: 37/40 physical frames show the band, height varying 21-161
+  rows, always terminating at the taskbar edge. Entry: 0/90 on my rig (Lee's entry trigger
+  likely needs his 5 Km editable-area setting — heavier entry).
+- SET_SINGLEQUEUE 1: 6/18 frames vs 13/18 stock — REDUCES ~2x but does NOT eliminate.
+  So this is not purely the async-queue split; incidence scales with timing.
+- A backbuffer SCREENSHOT taken mid-hold came back fully BLANK (cleared, nothing composed)
+  — under the churn there exist capture points where the frame is clear-but-unwritten.
+
+READ OF THE APPEARANCE: the presented buffer's lower rows never received this frame's
+composition — black = clear colour, the seam = the write frontier, varying height = how
+far the frame got. A present/scanout that samples a cleared-but-partially-composed buffer
+under very long frames (vsync-off windowed swapchain). The band swallowing the ImGui panel
+too says it is the FINAL swapchain buffer, not a scene pass.
+
+CONTRIBUTING PATHOLOGY (separate, game-side, cheap to fix): holding ANY terrain slider
+runs CheckParams branch 1 EVERY frame → the LEGACY ResetChunks() fires per frame (the 2.62
+wicked notify is debounced; the legacy reset is NOT) — that is why a slider hold runs at
+10 FPS at all. Shrinking hold-frames to normal would make the band rare in practice, but
+it is masking; the present-path gap is the disease.
+
+NEXT (needs engine instrumentation, not attempted at 1am): fence/buffer-index logging at
+Present in wiGraphicsDevice_DX12 SubmitCommandLists (which buffer, which fence value, was
+the compose batch submitted before Present) during a slider hold; then the vsync A/B.
+Probe: blackband.sh (physical-capture loop + band detector). The A/B harness lever
+SET_SINGLEQUEUE is already wired.
