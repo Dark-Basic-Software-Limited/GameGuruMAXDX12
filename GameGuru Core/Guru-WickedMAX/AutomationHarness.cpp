@@ -3371,6 +3371,7 @@ namespace GPUParticles {
 // censuses what geometry sits inside the capture radius of probes[0], so the thing being
 // photographed into the base env map can be NAMED instead of guessed at.
 extern bool g_bLightProbeScaleChanged; // M-GridEdit_part0.cpp — the editor's full probe-refresh path
+int gg_debugprobes_force = 0; // GGMAX 2.74b: SET_DEBUGPROBES sticky override, consumed by lighting_loop (G-Lighting.cpp)
 static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "DUMP_ENVPROBE") == 0)
@@ -3553,6 +3554,21 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		}
 		wi::scene::gg_envprobe_brightness = ebv;
 		_snprintf(result, resultSize, "OK: SET_ENVPROBE_BRIGHTNESS %.3f (1.0=DX12 stock, 0.5=DX11 dielectric damping)", ebv);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_DEBUGPROBES") == 0)
+	{
+		// SET_DEBUGPROBES <0|1> — (2.74b, #155 ball-visualizer hunt) force the engine's debug
+		// env-probe spheres on/off without needing a probe marker picked in the editor
+		// (G-Lighting.cpp:260 flips this on pick; it also re-clears it every frame while no
+		// probe is picked, so pair this with a same-frame screenshot or pick a probe first).
+		int dpOn = 0;
+		if (arg) sscanf_s(arg, "%d", &dpOn);
+		extern int gg_debugprobes_force; // consulted by lighting_loop (G-Lighting.cpp), which otherwise clears the flag every frame
+		gg_debugprobes_force = dpOn;
+		wiRenderer::SetToDrawDebugEnvProbes(dpOn != 0);
+		_snprintf(result, resultSize, "OK: SET_DEBUGPROBES %d", dpOn);
 		result[resultSize - 1] = 0;
 		return true;
 	}

@@ -257,7 +257,15 @@ void lighting_loop(void)
 		}
 	}
 	extern bool bImGuiInTestGame;
-	if (t.widget.pickedEntityIndex > 0 && t.entityprofile[t.entityelement[t.widget.pickedEntityIndex].bankindex].ismarker == 2 && bImGuiInTestGame == false)
+	// GGMAX 2.74b (#155): harness override so the debug probe spheres can be shown without a
+	// picked probe marker (SET_DEBUGPROBES) — the else-branch below otherwise clears the flag
+	// every frame.
+	extern int gg_debugprobes_force;
+	if (gg_debugprobes_force != 0)
+	{
+		wiRenderer::SetToDrawDebugEnvProbes(true);
+	}
+	else if (t.widget.pickedEntityIndex > 0 && t.entityprofile[t.entityelement[t.widget.pickedEntityIndex].bankindex].ismarker == 2 && bImGuiInTestGame == false)
 	{
 		// and only if the light object is a probe
 		if (t.entityprofile[t.entityelement[t.widget.pickedEntityIndex].bankindex].light.fLightHasProbe >= 50)

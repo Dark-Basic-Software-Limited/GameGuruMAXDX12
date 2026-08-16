@@ -2510,3 +2510,34 @@ Lessons pinned in WETEST.md (DUMP_TERRAINSURF row): whole-frame diffs need a tar
 covering frame; dielectric gloss A/Bs need grazing angles; SET_CAMERA yaw must be proven
 to face the target; and Island Showdown is the WRONG level to eyeball sand-roughness
 changes on.
+
+## §2.74b — Lee's re-test: the "circles" are the %probe MARKER BALL's rendering, the cube data is proven clean (08-16 evening, #155)
+
+Lee re-tested after 2.73/2.74 and still saw "circled images in the cube map" when
+clicking-and-holding his env probe. Full forensics chain, all on live dumps:
+
+1. DUMP_ENVPROBE cubes reprojected to LAT-LONG PANORAMAS — global AND local probes are
+   SEAMLESS across every face boundary (sky gradient, horizon and terrain continuous).
+   Capture geometry (per-face FOV/matrices), GGX filter and BC6H store are all healthy.
+   The 2.73 re-bake is live: pool content is current sky.
+2. The engine debug-sphere shader (cubeMapPS.hlsl mirror-ball math) simulated OFFLINE on
+   the dumped data — clean continuous mirror ball, no portholes.
+3. The engine's own debug env-probe sphere rendered IN-GAME (new harness command
+   SET_DEBUGPROBES + gg_debugprobes_force override in lighting_loop, because the editor
+   clears the flag every frame) — clean mirror ball, matches the simulation.
+4. Box-projected (parallax-corrected) sampling simulated for a ball AT the probe centre —
+   also smooth; parallax alone cannot make portholes from clean data.
+
+IDENTIFICATION: the ball Lee inspects is NOT the engine's data visualizer — it is the
+`%probe` MARKER ENTITY (probe.dbo at scale 50, probe.png circuit skin, note the selection
+outline hugging the sphere in his screenshot; status bar "Object: %probe (dynamic)"). On
+DX12 that legacy ball is shaded by the full PBR path — a glossy sphere parked at the exact
+centre of its own probe volume, reflecting its own box-projected capture through a legacy
+cube-patch sphere mesh — and the combination reads as "a circle image per cube face".
+DX11 never showed this because its marker ball never went through modern PBR shading.
+Everything that MATTERS samples the clean data through lightingHF (sand, water, objects).
+
+STATUS: data exonerated with instruments; the remaining item is a LOOK/UX decision for
+Lee — (a) make the %probe marker ball matte so it stops posing as a data viewer, and/or
+(b) enlarge the engine's true debug mirror-ball on probe pick as the accurate DX11-style
+preview. No look change shipped without his call.
