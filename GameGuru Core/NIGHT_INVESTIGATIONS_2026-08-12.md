@@ -2262,3 +2262,7 @@ by concat has the same exposure. When a "file not found"/"slot empty" bug appear
 DX12 with files visibly present, CHECK THE FILENAME BYTES first — the content was never
 the problem here. Registered C functions still push via lua_pushnumber in many places;
 sweep pending (chip).
+
+## §2.70a — ★ Lee CONFIRMED (08-16 ~04:1x): "save and load now work in the standalone"
+Both standalone fixes of the night are user-confirmed closed: 2.69 (boot shows the quiet
+gradient, no debug backlog, no FSR2 errors) and 2.70 (SAVE GAME slots persist and load).
