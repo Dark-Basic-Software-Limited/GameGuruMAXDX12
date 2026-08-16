@@ -116,13 +116,13 @@ int GetIfUsingTABScreen(lua_State* L)
 {
 	int iReturnValue = 0;
 	if (g.tabmode > 0) iReturnValue = 1;
-	lua_pushnumber(L, iReturnValue);
+	lua_pushinteger(L, (lua_Integer)iReturnValue);
 	return 1;
 }
 
 int GetCurrentScreen(lua_State* L)
 {
-	lua_pushnumber(L, t.game.activeStoryboardScreen);
+	lua_pushinteger(L, (lua_Integer)t.game.activeStoryboardScreen);
 	return 1;
 }
 int GetCurrentScreenName(lua_State* L)
@@ -187,7 +187,7 @@ int SetScreenWidgetSelection(lua_State *L)
 			iRet = Storyboard.NodeRadioButtonSelected[nodeid] = iButton; // used by GRAPHICS SETTINGS (1,2,3)
 		}
 	}
-	lua_pushnumber(L, iRet);
+	lua_pushinteger(L, (lua_Integer)iRet);
 	return 1;
 }
 int GetScreenElementsType(lua_State* L)
@@ -226,7 +226,7 @@ int GetScreenElementsType(lua_State* L)
 			}
 		}
 	}
-	lua_pushnumber(L, iQty);
+	lua_pushinteger(L, (lua_Integer)iQty);
 	return 1;
 }
 int GetScreenElementTypeID(lua_State* L)
@@ -277,7 +277,7 @@ int GetScreenElementTypeID(lua_State* L)
 			}
 		}
 	}
-	lua_pushnumber(L, iElementID);
+	lua_pushinteger(L, (lua_Integer)iElementID);
 	return 1;
 }
 int GetScreenElements(lua_State* L)
@@ -316,7 +316,7 @@ int GetScreenElements(lua_State* L)
 			}
 		}
 	}
-	lua_pushnumber(L, iQty);
+	lua_pushinteger(L, (lua_Integer)iQty);
 	return 1;
 }
 int GetScreenElementID(lua_State* L)
@@ -375,7 +375,7 @@ int GetScreenElementID(lua_State* L)
 			}
 		}
 	}
-	lua_pushnumber(L, iElementID);
+	lua_pushinteger(L, (lua_Integer)iElementID);
 	return 1;
 }
 int GetScreenElementImage(lua_State* L)
@@ -391,7 +391,7 @@ int GetScreenElementImage(lua_State* L)
 			iImgID = Storyboard.Nodes[nodeid].widget_normal_thumb_id[iElementID];
 		}
 	}
-	lua_pushnumber(L, iImgID);
+	lua_pushinteger(L, (lua_Integer)iImgID);
 	return 1;
 }
 int GetScreenElementArea(lua_State* L)
@@ -551,7 +551,7 @@ int SetScreenElementColor(lua_State* L)
 int GetCollectionAttributeQuantity(lua_State* L)
 {
 	int iQty = g_collectionLabels.size();
-	lua_pushnumber(L, iQty);
+	lua_pushinteger(L, (lua_Integer)iQty);
 	return 1;
 }
 int GetCollectionAttributeLabel(lua_State* L)
@@ -572,7 +572,7 @@ int GetCollectionAttributeLabel(lua_State* L)
 int GetCollectionItemQuantity(lua_State* L)
 {
 	int iQty = g_collectionList.size();
-	lua_pushnumber(L, iQty);
+	lua_pushinteger(L, (lua_Integer)iQty);
 	return 1;
 }
 int GetCollectionItemAttribute(lua_State* L)
@@ -608,7 +608,7 @@ int GetCollectionItemAttribute(lua_State* L)
 int GetCollectionQuestAttributeQuantity(lua_State* L)
 {
 	int iQty = g_collectionQuestLabels.size();
-	lua_pushnumber(L, iQty);
+	lua_pushinteger(L, (lua_Integer)iQty);
 	return 1;
 }
 int GetCollectionQuestAttributeLabel(lua_State* L)
@@ -627,7 +627,7 @@ int GetCollectionQuestAttributeLabel(lua_State* L)
 int GetCollectionQuestQuantity(lua_State* L)
 {
 	int iQty = g_collectionQuestList.size();
-	lua_pushnumber(L, iQty);
+	lua_pushinteger(L, (lua_Integer)iQty);
 	return 1;
 }
 int GetCollectionQuestAttribute(lua_State* L)
@@ -691,13 +691,13 @@ int MakeInventoryContainer (lua_State* L)
 		containerindex = t.inventoryContainers.size() - 1;
 		t.inventoryContainer[containerindex].clear();
 	}
-	lua_pushnumber(L, containerindex);
+	lua_pushinteger(L, (lua_Integer)containerindex);
 	return 1;
 }
 int GetInventoryTotal(lua_State* L)
 {
 	int iQty = t.inventoryContainers.size();
-	lua_pushnumber(L, iQty);
+	lua_pushinteger(L, (lua_Integer)iQty);
 	return 1;
 }
 int GetInventoryName(lua_State* L)
@@ -723,7 +723,7 @@ int GetInventoryExist(lua_State* L)
 		int bothplayercontainers = FindInventoryIndex(pNameOfInventory);
 		if (bothplayercontainers >= 0) iExist = 1;
 	}
-	lua_pushnumber(L, iExist);
+	lua_pushinteger(L, (lua_Integer)iExist);
 	return 1;
 }
 int GetInventoryQuantity(lua_State* L)
@@ -736,7 +736,7 @@ int GetInventoryQuantity(lua_State* L)
 	{
 		iQty = t.inventoryContainer[bothplayercontainers].size();
 	}
-	lua_pushnumber(L, iQty);
+	lua_pushinteger(L, (lua_Integer)iQty);
 	return 1;
 }
 int GetInventoryItem(lua_State* L)
@@ -753,7 +753,7 @@ int GetInventoryItem(lua_State* L)
 			iCollectionItemID = t.inventoryContainer[bothplayercontainers][iInventoryIndex - 1].collectionID;
 		}
 	}
-	lua_pushnumber(L, iCollectionItemID);
+	lua_pushinteger(L, (lua_Integer)iCollectionItemID);
 	return 1;
 }
 int GetInventoryItemID(lua_State* L)
@@ -770,7 +770,7 @@ int GetInventoryItemID(lua_State* L)
 			iItemEntityID = t.inventoryContainer[bothplayercontainers][iInventoryIndex - 1].e;
 		}
 	}
-	lua_pushnumber(L, iItemEntityID);
+	lua_pushinteger(L, (lua_Integer)iItemEntityID);
 	return 1;
 }
 int GetInventoryItemSlot(lua_State* L)
@@ -787,7 +787,7 @@ int GetInventoryItemSlot(lua_State* L)
 			iItemSlot = t.inventoryContainer[bothplayercontainers][iInventoryIndex - 1].slot;
 		}
 	}
-	lua_pushnumber(L, iItemSlot);
+	lua_pushinteger(L, (lua_Integer)iItemSlot);
 	return 1;
 }
 int SetInventoryItemSlot(lua_State* L)
@@ -1390,32 +1390,32 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 
 	switch ( iDataMode )
 	{
-		case 1 : lua_pushnumber ( L, t.playercontrol.jetpackmode ); break;
+		case 1 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.jetpackmode ); break;
 		case 2 : lua_pushnumber ( L, t.playercontrol.jetpackfuel_f ); break;
-		case 3 : lua_pushnumber ( L, t.playercontrol.jetpackhidden ); break;
-		case 4 : lua_pushnumber ( L, t.playercontrol.jetpackcollected ); break;
-		case 5 : lua_pushnumber ( L, t.playercontrol.soundstartindex ); break;
-		case 6 : lua_pushnumber ( L, t.playercontrol.jetpackparticleemitterindex ); break;
+		case 3 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.jetpackhidden ); break;
+		case 4 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.jetpackcollected ); break;
+		case 5 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.soundstartindex ); break;
+		case 6 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.jetpackparticleemitterindex ); break;
 		case 7 : lua_pushnumber ( L, t.playercontrol.jetpackthrust_f ); break;
-		case 8 : lua_pushnumber ( L, t.playercontrol.startstrength ); break;
-		case 9 : lua_pushnumber ( L, t.playercontrol.isrunning ); break;
+		case 8 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.startstrength ); break;
+		case 9 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.isrunning ); break;
 		case 10 : break;
 		case 11 : lua_pushnumber ( L, t.playercontrol.cx_f ); break;
 		case 12 : lua_pushnumber ( L, t.playercontrol.cy_f ); break;
 		case 13 : lua_pushnumber ( L, t.playercontrol.cz_f ); break;
 		case 14 : lua_pushnumber ( L, t.playercontrol.basespeed_f ); break;
-		case 15 : lua_pushnumber ( L, t.playercontrol.canrun ); break;
+		case 15 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.canrun ); break;
 		case 16 : lua_pushnumber ( L, t.playercontrol.maxspeed_f ); break;
 		case 17 : lua_pushnumber ( L, t.playercontrol.topspeed_f ); break;
-		case 18 : lua_pushnumber ( L, t.playercontrol.movement ); break;
+		case 18 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.movement ); break;
 		case 19 : lua_pushnumber ( L, t.playercontrol.movey_f ); break;
-		case 20 : lua_pushnumber ( L, t.playercontrol.lastmovement ); break;
-		case 21 : lua_pushnumber ( L, t.playercontrol.footfallcount ); break;
+		case 20 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.lastmovement ); break;
+		case 21 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.footfallcount ); break;
 		case 22 : break;
-		case 23 : lua_pushnumber ( L, t.playercontrol.gravityactive ); break;
-		case 24 : lua_pushnumber ( L, t.playercontrol.plrhitfloormaterial ); break;
-		case 25:  lua_pushnumber(L, t.playercontrol.underwater); break;
-		case 26 : lua_pushnumber ( L, t.playercontrol.jumpmode ); break;
+		case 23 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.gravityactive ); break;
+		case 24 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.plrhitfloormaterial ); break;
+		case 25:  lua_pushinteger(L, (lua_Integer)t.playercontrol.underwater); break;
+		case 26 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.jumpmode ); break;
 		case 27 : lua_pushnumber ( L, t.playercontrol.jumpmodecanaffectvelocitycountdown_f ); break;
 		case 28 : lua_pushnumber ( L, t.playercontrol.speed_f ); break;
 		case 29 : lua_pushnumber ( L, t.playercontrol.accel_f ); break;
@@ -1439,22 +1439,22 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 		case 35 : lua_pushnumber ( L, t.playercontrol.pushangle_f ); break;
 		case 36 : lua_pushnumber ( L, t.playercontrol.pushforce_f ); break;
 		case 37 : lua_pushnumber ( L, t.playercontrol.footfallpace_f ); break;
-		case 38 : lua_pushnumber ( L, t.playercontrol.lockatheight ); break;
-		case 39 : lua_pushnumber ( L, t.playercontrol.controlheight ); break;
+		case 38 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.lockatheight ); break;
+		case 39 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.controlheight ); break;
 		case 40 : lua_pushnumber ( L, t.playercontrol.controlheightcooldown ); break;
 		case 41 : lua_pushnumber ( L, t.playercontrol.storemovey ); break;
 		case 42 : break;
-		case 43 : lua_pushnumber ( L, t.playercontrol.hurtfall ); break;
+		case 43 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.hurtfall ); break;
 		case 44 : lua_pushnumber ( L, t.playercontrol.leanoverangle_f ); break;
 		case 45 : lua_pushnumber ( L, t.playercontrol.leanover_f ); break;
 		case 46 : lua_pushnumber ( L, t.playercontrol.camerashake_f ); break;
 		case 47 : lua_pushnumber ( L, t.playercontrol.finalcameraanglex_f ); break;
 		case 48 : lua_pushnumber ( L, t.playercontrol.finalcameraangley_f ); break;
 		case 49 : lua_pushnumber ( L, t.playercontrol.finalcameraanglez_f ); break;
-		case 50 : lua_pushnumber ( L, t.playercontrol.camrightmousemode ); break;
-		case 51 : lua_pushnumber ( L, t.playercontrol.camcollisionsmooth ); break;
+		case 50 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.camrightmousemode ); break;
+		case 51 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.camcollisionsmooth ); break;
 		case 52 : lua_pushnumber ( L, t.playercontrol.camcurrentdistance ); break;
-		case 53 : lua_pushnumber ( L, t.playercontrol.camdofullraycheck ); break;
+		case 53 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.camdofullraycheck ); break;
 		case 54 : lua_pushnumber ( L, t.playercontrol.lastgoodcx_f ); break;
 		case 55 : lua_pushnumber ( L, t.playercontrol.lastgoodcy_f ); break;
 		case 56 : lua_pushnumber ( L, t.playercontrol.lastgoodcz_f ); break;
@@ -1465,93 +1465,93 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 		case 61 : lua_pushnumber ( L, t.playercontrol.flinchcurrentx_f ); break;
 		case 62 : lua_pushnumber ( L, t.playercontrol.flinchcurrenty_f ); break;
 		case 63 : lua_pushnumber ( L, t.playercontrol.flinchcurrentz_f ); break;
-		case 64 : lua_pushnumber ( L, t.playercontrol.footfalltype ); break;
+		case 64 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.footfalltype ); break;
 		case 65 : lua_pushnumber ( L, t.playercontrol.ripplecount_f ); break;
-		case 66 : lua_pushnumber ( L, t.playercontrol.lastfootfallsound ); break;
-		case 67 : lua_pushnumber ( L, t.playercontrol.inwaterstate ); break;
-		case 68 : lua_pushnumber ( L, t.playercontrol.drowntimestamp ); break;
-		case 69 : lua_pushnumber ( L, t.playercontrol.deadtime ); break;
-		case 70 : lua_pushnumber ( L, t.playercontrol.swimtimestamp ); break;
+		case 66 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.lastfootfallsound ); break;
+		case 67 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.inwaterstate ); break;
+		case 68 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.drowntimestamp ); break;
+		case 69 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.deadtime ); break;
+		case 70 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.swimtimestamp ); break;
 		case 71 : lua_pushnumber ( L, t.playercontrol.redDeathFog_f ); break;
 		case 72 : 
 			#ifdef WICKEDENGINE
 			if (t.playercontrol.iPlayHeartBeatSoundOff == 1)
-				lua_pushnumber (L, -1);
+				lua_pushinteger (L, -1);
 			else
-				lua_pushnumber (L, t.playercontrol.heartbeatTimeStamp);
+				lua_pushinteger (L, (lua_Integer)t.playercontrol.heartbeatTimeStamp);
 			#else
-			lua_pushnumber (L, t.playercontrol.heartbeatTimeStamp);
+			lua_pushinteger (L, (lua_Integer)t.playercontrol.heartbeatTimeStamp);
 			#endif
 			break;
-		case 81 : lua_pushnumber ( L, t.playercontrol.thirdperson.enabled ); break;
-		case 82 : lua_pushnumber ( L, t.playercontrol.thirdperson.characterindex ); break;
-		case 83 : lua_pushnumber ( L, t.playercontrol.thirdperson.camerafollow ); break;
+		case 81 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.thirdperson.enabled ); break;
+		case 82 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.thirdperson.characterindex ); break;
+		case 83 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.thirdperson.camerafollow ); break;
 		case 84 : lua_pushnumber ( L, t.playercontrol.thirdperson.camerafocus ); break;
-		case 85 : lua_pushnumber ( L, t.playercontrol.thirdperson.charactere ); break;
+		case 85 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.thirdperson.charactere ); break;
 		case 86 : break;
-		case 87 : lua_pushnumber ( L, t.playercontrol.thirdperson.shotfired ); break;
+		case 87 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.thirdperson.shotfired ); break;
 		case 88 : lua_pushnumber ( L, t.playercontrol.thirdperson.cameradistance ); break;
 		case 89 : lua_pushnumber ( L, t.playercontrol.thirdperson.cameraspeed ); break;
-		case 90 : lua_pushnumber ( L, t.playercontrol.thirdperson.cameralocked ); break;
+		case 90 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.thirdperson.cameralocked ); break;
 		case 91 : lua_pushnumber ( L, t.playercontrol.thirdperson.cameraheight ); break;
-		case 92 : lua_pushnumber ( L, t.playercontrol.thirdperson.camerashoulder ); break;
+		case 92 : lua_pushinteger ( L, (lua_Integer)t.playercontrol.thirdperson.camerashoulder ); break;
 		
 		case 95 : lua_pushnumber(L, t.playercontrol.fFallDamageMultiplier); break;
 		case 96: lua_pushnumber(L, t.playercontrol.fSwimSpeed); break;
 
-		case 99 : lua_pushnumber ( L, g.gxboxcontrollertype ); break;		
-		case 101 : lua_pushnumber ( L, t.gunmode ); break;
-		case 102 : lua_pushnumber ( L, t.player[t.plrid].state.firingmode ); break;
-		case 103 : lua_pushnumber ( L, g.weaponammoindex ); break;
-		case 104 : lua_pushnumber ( L, g.ammooffset ); break;
-		case 105 : lua_pushnumber ( L, g.ggunmeleekey ); break;
-		case 106 : lua_pushnumber ( L, t.player[t.plrid].state.blockingaction ); break;
-		case 107 : lua_pushnumber ( L, t.gunshootnoammo ); break;		
+		case 99 : lua_pushinteger ( L, (lua_Integer)g.gxboxcontrollertype ); break;		
+		case 101 : lua_pushinteger ( L, (lua_Integer)t.gunmode ); break;
+		case 102 : lua_pushinteger ( L, (lua_Integer)t.player[t.plrid].state.firingmode ); break;
+		case 103 : lua_pushinteger ( L, (lua_Integer)g.weaponammoindex ); break;
+		case 104 : lua_pushinteger ( L, (lua_Integer)g.ammooffset ); break;
+		case 105 : lua_pushinteger ( L, (lua_Integer)g.ggunmeleekey ); break;
+		case 106 : lua_pushinteger ( L, (lua_Integer)t.player[t.plrid].state.blockingaction ); break;
+		case 107 : lua_pushinteger ( L, (lua_Integer)t.gunshootnoammo ); break;		
 
 		case 108 :
 			//PE: Now controlled in lua. old (lua_pushnumber(L, g.playerunderwater); )
 			if(t.playercontrol.inwaterstate >= 2)
-				lua_pushnumber ( L, 1 );
+				lua_pushinteger ( L, 1 );
 			else
-				lua_pushnumber(L, 0);
+				lua_pushinteger(L, 0);
 			break;
 
-		case 109 : lua_pushnumber ( L, g.gdisablerightmousehold ); break;		
-		case 110 : lua_pushnumber ( L, g.gxbox ); break;		
-		case 111 : lua_pushnumber ( L, JoystickX() ); break;
-		case 112 : lua_pushnumber ( L, JoystickY() ); break;
-		case 113 : lua_pushnumber ( L, JoystickZ() ); break;
-		case 114 : lua_pushnumber ( L, t.gunzoommode ); break;		
+		case 109 : lua_pushinteger ( L, (lua_Integer)g.gdisablerightmousehold ); break;		
+		case 110 : lua_pushinteger ( L, (lua_Integer)g.gxbox ); break;		
+		case 111 : lua_pushinteger ( L, (lua_Integer)JoystickX() ); break;
+		case 112 : lua_pushinteger ( L, (lua_Integer)JoystickY() ); break;
+		case 113 : lua_pushinteger ( L, (lua_Integer)JoystickZ() ); break;
+		case 114 : lua_pushinteger ( L, (lua_Integer)t.gunzoommode ); break;		
 		case 115 : lua_pushnumber ( L, t.gunzoommag_f ); break;		
-		case 116 : lua_pushnumber ( L, t.gunreloadnoammo ); break;	
-		case 117 : lua_pushnumber ( L, g.plrreloading ); break;	
-		case 118 : lua_pushnumber ( L, g.ggunaltswapkey1 ); break;	
-		case 119 : lua_pushnumber ( L, g.ggunaltswapkey2 ); break;	
-		case 120 : lua_pushnumber ( L, t.weaponkeyselection ); break;	
-		case 121 : lua_pushnumber ( L, t.weaponindex ); break;	
-		case 122 : lua_pushnumber ( L, t.player[t.plrid].command.newweapon ); break;	
-		case 123 : lua_pushnumber ( L, t.gunid ); break;	
-		case 124 : lua_pushnumber ( L, t.gunselectionafterhide ); break;	
-		case 125 : lua_pushnumber ( L, t.gunburst ); break;	
+		case 116 : lua_pushinteger ( L, (lua_Integer)t.gunreloadnoammo ); break;	
+		case 117 : lua_pushinteger ( L, (lua_Integer)g.plrreloading ); break;	
+		case 118 : lua_pushinteger ( L, (lua_Integer)g.ggunaltswapkey1 ); break;	
+		case 119 : lua_pushinteger ( L, (lua_Integer)g.ggunaltswapkey2 ); break;	
+		case 120 : lua_pushinteger ( L, (lua_Integer)t.weaponkeyselection ); break;	
+		case 121 : lua_pushinteger ( L, (lua_Integer)t.weaponindex ); break;	
+		case 122 : lua_pushinteger ( L, (lua_Integer)t.player[t.plrid].command.newweapon ); break;	
+		case 123 : lua_pushinteger ( L, (lua_Integer)t.gunid ); break;	
+		case 124 : lua_pushinteger ( L, (lua_Integer)t.gunselectionafterhide ); break;	
+		case 125 : lua_pushinteger ( L, (lua_Integer)t.gunburst ); break;	
 		case 126 : break;
-		case 127 : lua_pushnumber ( L, JoystickTwistX() ); break;
-		case 128 : lua_pushnumber ( L, JoystickTwistY() ); break;
-		case 129 : lua_pushnumber ( L, JoystickTwistZ() ); break;
-		case 130 : lua_pushnumber ( L, t.plrzoominchange ); break;	
+		case 127 : lua_pushinteger ( L, (lua_Integer)JoystickTwistX() ); break;
+		case 128 : lua_pushinteger ( L, (lua_Integer)JoystickTwistY() ); break;
+		case 129 : lua_pushinteger ( L, (lua_Integer)JoystickTwistZ() ); break;
+		case 130 : lua_pushinteger ( L, (lua_Integer)t.plrzoominchange ); break;	
 		case 131 : lua_pushnumber ( L, t.plrzoomin_f ); break;	
-		case 132 : lua_pushnumber ( L, g.luaactivatemouse ); break;	
+		case 132 : lua_pushinteger ( L, (lua_Integer)g.luaactivatemouse ); break;	
 		case 133 : lua_pushnumber ( L, g.realfov_f ); break;	
-		case 134 : lua_pushnumber ( L, g.gdisablepeeking ); break;	
-		case 135 : lua_pushnumber ( L, t.plrhasfocus ); break;	
-		case 136 : lua_pushnumber ( L, t.game.runasmultiplayer ); break;	
-		case 137 : lua_pushnumber ( L, g.mp.respawnLeft ); break;	
-		case 138 : lua_pushnumber ( L, g.tabmode ); break;	
-		case 139 : lua_pushnumber ( L, g.lowfpswarning ); break;	
+		case 134 : lua_pushinteger ( L, (lua_Integer)g.gdisablepeeking ); break;	
+		case 135 : lua_pushinteger ( L, (lua_Integer)t.plrhasfocus ); break;	
+		case 136 : lua_pushinteger ( L, (lua_Integer)t.game.runasmultiplayer ); break;	
+		case 137 : lua_pushinteger ( L, (lua_Integer)g.mp.respawnLeft ); break;	
+		case 138 : lua_pushinteger ( L, (lua_Integer)g.tabmode ); break;	
+		case 139 : lua_pushinteger ( L, (lua_Integer)g.lowfpswarning ); break;	
 		case 140 : lua_pushnumber ( L, t.visuals.CameraFOV_f ); break;	
 		case 141 : lua_pushnumber ( L, t.visuals.CameraFOVZoomed_f ); break;	
-		case 142 : lua_pushnumber ( L, g.gminvert ); break;	
-		case 143 : lua_pushnumber ( L, t.plrkeySLOWMOTION ); break;	
-		case 144 : lua_pushnumber ( L, g.globals.smoothcamerakeys ); break;	
+		case 142 : lua_pushinteger ( L, (lua_Integer)g.gminvert ); break;	
+		case 143 : lua_pushinteger ( L, (lua_Integer)t.plrkeySLOWMOTION ); break;	
+		case 144 : lua_pushinteger ( L, (lua_Integer)g.globals.smoothcamerakeys ); break;	
 		case 145 : lua_pushnumber ( L, t.cammousemovex_f ); break;	
 		case 146 : lua_pushnumber ( L, t.cammousemovey_f ); break;	
 		case 147 : lua_pushnumber ( L, g.gunRecoilX_f ); break;	
@@ -1564,23 +1564,23 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 		case 154 : lua_pushnumber ( L, t.gunRecoilCorrectAngleX_f ); break;	
 		case 155 : lua_pushnumber ( L, t.camangx_f ); break;	
 		case 156 : lua_pushnumber ( L, t.camangy_f ); break;	
-		case 157 : lua_pushnumber ( L, t.aisystem.playerducking ); break;	
-		case 158 : lua_pushnumber ( L, t.conkit.editmodeactive ); break;	
-		case 159 : lua_pushnumber ( L, t.plrkeySHIFT ); break;	
-		case 160 : lua_pushnumber ( L, t.plrkeySHIFT2 ); break;	
-		case 161 : lua_pushnumber ( L, t.inputsys.keycontrol ); break;	
-		case 162 : lua_pushnumber ( L, t.hardwareinfoglobals.nowater ); break;	
+		case 157 : lua_pushinteger ( L, (lua_Integer)t.aisystem.playerducking ); break;	
+		case 158 : lua_pushinteger ( L, (lua_Integer)t.conkit.editmodeactive ); break;	
+		case 159 : lua_pushinteger ( L, (lua_Integer)t.plrkeySHIFT ); break;	
+		case 160 : lua_pushinteger ( L, (lua_Integer)t.plrkeySHIFT2 ); break;	
+		case 161 : lua_pushinteger ( L, (lua_Integer)t.inputsys.keycontrol ); break;	
+		case 162 : lua_pushinteger ( L, (lua_Integer)t.hardwareinfoglobals.nowater ); break;	
 		case 163 : lua_pushnumber ( L, t.terrain.waterliney_f ); break;	
-		case 164 : lua_pushnumber ( L, g.flashLightKeyEnabled ); break;	
+		case 164 : lua_pushinteger ( L, (lua_Integer)g.flashLightKeyEnabled ); break;	
 		case 165 : lua_pushnumber ( L, t.playerlight.flashlightcontrol_f ); break;	
-		case 166 : lua_pushnumber ( L, t.player[t.plrid].state.moving ); break;	
+		case 166 : lua_pushinteger ( L, (lua_Integer)t.player[t.plrid].state.moving ); break;	
 		case 167 : lua_pushnumber ( L, t.tplayerterrainheight_f ); break;	
 		case 168 : 
 			lua_pushnumber ( L, t.tjetpackverticalmove_f );
 			break;	
-		case 169 : lua_pushnumber ( L, t.terrain.TerrainID ); break;	
-		case 170 : lua_pushnumber ( L, g.globals.enableplrspeedmods ); break;	
-		case 171 : lua_pushnumber ( L, g.globals.riftmode ); break;	
+		case 169 : lua_pushinteger ( L, (lua_Integer)t.terrain.TerrainID ); break;	
+		case 170 : lua_pushinteger ( L, (lua_Integer)g.globals.enableplrspeedmods ); break;	
+		case 171 : lua_pushinteger ( L, (lua_Integer)g.globals.riftmode ); break;	
 		case 172 : lua_pushnumber ( L, t.tplayerx_f ); break;	
 		case 173 : lua_pushnumber ( L, t.tplayery_f ); break;	
 		case 174 : lua_pushnumber ( L, t.tplayerz_f ); break;	
@@ -1597,27 +1597,27 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 		case 185 : lua_pushnumber ( L, t.tshakex_f ); break;	
 		case 186 : lua_pushnumber ( L, t.tshakey_f); break;	
 		case 187 : lua_pushnumber ( L, t.tshakez_f ); break;	
-		case 188 : lua_pushnumber ( L, t.huddamage.immunity ); break;	
-		case 189 : lua_pushnumber ( L, g.charanimindex ); break;				
+		case 188 : lua_pushinteger ( L, (lua_Integer)t.huddamage.immunity ); break;	
+		case 189 : lua_pushinteger ( L, (lua_Integer)g.charanimindex ); break;				
 
 		#ifdef VRTECH
-		case 190 : if ( GGVR_IsHmdPresent() > 0 ) { lua_pushnumber ( L, 1 ); } else { lua_pushnumber ( L, 0 ); } break;
-		case 191 : lua_pushnumber ( L, GGVR_IsHmdPresent() ); break;				
+		case 190 : if ( GGVR_IsHmdPresent() > 0 ) { lua_pushinteger ( L, 1 ); } else { lua_pushinteger ( L, 0 ); } break;
+		case 191 : lua_pushinteger ( L, (lua_Integer)GGVR_IsHmdPresent() ); break;				
 		case 192 : lua_pushnumber ( L, GGVR_BestController_JoyX() ); break;
 		case 193 : lua_pushnumber ( L, GGVR_BestController_JoyY() ); break;
 		case 194 : lua_pushnumber ( L, GGVR_RightController_Trigger() ); break;
-		case 195 : lua_pushnumber ( L, GGVR_RightController_Grip() ); break;
+		case 195 : lua_pushinteger ( L, (lua_Integer)GGVR_RightController_Grip() ); break;
 		case 196 : lua_pushnumber ( L, GGVR_RightController_JoyX() ); break;
 		case 197: lua_pushnumber (L, GGVR_RightController_JoyY()); break;
-		case 198: lua_pushnumber (L, GGVR_RightController_Button1()); break;
-		case 199: lua_pushnumber (L, GGVR_RightController_Button2()); break;
+		case 198: lua_pushinteger (L, (lua_Integer)GGVR_RightController_Button1()); break;
+		case 199: lua_pushinteger (L, (lua_Integer)GGVR_RightController_Button2()); break;
 		case 251 : lua_pushnumber ( L, GGVR_GetBestHandX() ); break;
 		case 252 : lua_pushnumber ( L, GGVR_GetBestHandY() ); break;
 		case 253 : lua_pushnumber ( L, GGVR_GetBestHandZ() ); break;
 		case 254 : lua_pushnumber ( L, GGVR_GetBestHandAngleX() ); break;
 		case 255 : lua_pushnumber ( L, GGVR_GetBestHandAngleY() ); break;
 		case 256 : lua_pushnumber ( L, GGVR_GetBestHandAngleZ() ); break;
-		case 257: lua_pushnumber (L, GGVR_GetLaserGuidedEntityObj(g.entityviewstartobj, g.entityviewendobj)); break;
+		case 257: lua_pushinteger (L, (lua_Integer)GGVR_GetLaserGuidedEntityObj(g.entityviewstartobj, g.entityviewendobj)); break;
 		#else
 		case 190 : 
 		case 191 : 
@@ -1637,35 +1637,35 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 		case 255 : 
 		case 256 : 
 		case 257 : 
-			lua_pushnumber ( L, 0 ); 
+			lua_pushinteger ( L, 0 ); 
 			break;
 		#endif
 
-		case 201: lua_pushnumber (L, t.gun[gunId].settings.ismelee); break;
-		case 202 : lua_pushnumber ( L, t.gun[gunId].settings.alternate       ); break;
-		case 203 : lua_pushnumber ( L, t.gun[gunId].settings.modessharemags  ); break;
-		case 204 : lua_pushnumber ( L, t.gun[gunId].settings.alternateisflak ); break;
-		case 205 : lua_pushnumber ( L, t.gun[gunId].settings.alternateisray  ); break;
+		case 201: lua_pushinteger (L, (lua_Integer)t.gun[gunId].settings.ismelee); break;
+		case 202 : lua_pushinteger ( L, (lua_Integer)t.gun[gunId].settings.alternate       ); break;
+		case 203 : lua_pushinteger ( L, (lua_Integer)t.gun[gunId].settings.modessharemags  ); break;
+		case 204 : lua_pushinteger ( L, (lua_Integer)t.gun[gunId].settings.alternateisflak ); break;
+		case 205 : lua_pushinteger ( L, (lua_Integer)t.gun[gunId].settings.alternateisray  ); break;
 		
 		// 251-260 used above
 
-		case 301 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.reloadqty         ); break;
-		case 302 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.isempty           ); break;
-		case 303 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.jammed            ); break;
+		case 301 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.reloadqty         ); break;
+		case 302 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.isempty           ); break;
+		case 303 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.jammed            ); break;
 		case 304 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.jamchance         ); break;
-		case 305 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.mintimer          ); break;
-		case 306 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.addtimer          ); break;
-		case 307 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.shotsfired        ); break;
-		case 308 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.cooltimer         ); break;
-		case 309 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.overheatafter     ); break;
+		case 305 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.mintimer          ); break;
+		case 306 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.addtimer          ); break;
+		case 307 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.shotsfired        ); break;
+		case 308 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.cooltimer         ); break;
+		case 309 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.overheatafter     ); break;
 		case 310 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.jamchancetime     ); break;
-		case 311 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.cooldown          ); break;
-		case 312 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.nosubmergedfire   ); break;
-		case 313 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.simplezoom        ); break;
-		case 314 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.forcezoomout      ); break;
-		case 315 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.zoommode          ); break;
-		case 316 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.simplezoomanim    ); break;
-		case 317 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.poolindex         ); break;
+		case 311 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.cooldown          ); break;
+		case 312 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.nosubmergedfire   ); break;
+		case 313 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.simplezoom        ); break;
+		case 314 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.forcezoomout      ); break;
+		case 315 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.zoommode          ); break;
+		case 316 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.simplezoomanim    ); break;
+		case 317 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.poolindex         ); break;
 		case 318 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.plrturnspeedmod   ); break;
 		case 319 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.zoomturnspeed     ); break;
 		case 320 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.plrjumpspeedmod   ); break;
@@ -1673,10 +1673,10 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 		case 322 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.plrmovespeedmod   ); break;
 		case 323 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.zoomwalkspeed     ); break;
 		case 324 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.plrreloadspeedmod ); break;
-		case 325 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.hasempty          ); break;
-		case 326 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].action.block.s			   ); break;
-		case 327 : lua_pushnumber ( L, g.firemodes[gunId][fireMode].settings.meleewithrightclick ); break;
-		case 328: lua_pushnumber (L, g.firemodes[gunId][fireMode].settings.blockwithrightclick); break;
+		case 325 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.hasempty          ); break;
+		case 326 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].action.block.s			   ); break;
+		case 327 : lua_pushinteger ( L, (lua_Integer)g.firemodes[gunId][fireMode].settings.meleewithrightclick ); break;
+		case 328: lua_pushinteger (L, (lua_Integer)g.firemodes[gunId][fireMode].settings.blockwithrightclick); break;
 
 		// for extra commands as yet unimagined :)
 		case 401: lua_pushnumber (L, t.playerlight.flashlightcontrol_range_f); break;
@@ -1684,32 +1684,32 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 		case 403: lua_pushnumber (L, t.playerlight.flashlightcontrol_colorR_f); break;
 		case 404: lua_pushnumber (L, t.playerlight.flashlightcontrol_colorG_f); break;
 		case 405: lua_pushnumber (L, t.playerlight.flashlightcontrol_colorB_f); break;
-		case 406: lua_pushnumber (L, t.playerlight.flashlightcontrol_cashshadow); break;
+		case 406: lua_pushinteger (L, (lua_Integer)t.playerlight.flashlightcontrol_cashshadow); break;
 
-		case 501 : lua_pushnumber ( L, t.gunsound[t.gunid][lua_tonumber(L, 1)].soundid1 ); break;
-		case 502 : lua_pushnumber ( L, t.gunsound[t.gunid][lua_tonumber(L, 1)].altsoundid ); break;		
-		case 503 : lua_pushnumber ( L, JoystickHatAngle(lua_tonumber(L, 1)) ); break;
-		case 504 : lua_pushnumber ( L, JoystickFireXL(lua_tonumber(L, 1)) ); break;
+		case 501 : lua_pushinteger ( L, (lua_Integer)t.gunsound[t.gunid][lua_tonumber(L, 1)].soundid1 ); break;
+		case 502 : lua_pushinteger ( L, (lua_Integer)t.gunsound[t.gunid][lua_tonumber(L, 1)].altsoundid ); break;		
+		case 503 : lua_pushinteger ( L, (lua_Integer)JoystickHatAngle(lua_tonumber(L, 1)) ); break;
+		case 504 : lua_pushinteger ( L, (lua_Integer)JoystickFireXL(lua_tonumber(L, 1)) ); break;
 
-		case 601: lua_pushnumber (L, t.player[t.plrid].state.counteredaction); break;
+		case 601: lua_pushinteger (L, (lua_Integer)t.player[t.plrid].state.counteredaction); break;
 			
 		case 701 :	iSrc = lua_tonumber(L, 1);
 					if ( iSrc == 0 )
-						lua_pushnumber ( L, t.charanimstate.playcsi ); 
+						lua_pushinteger ( L, (lua_Integer)t.charanimstate.playcsi );
 					else
-						lua_pushnumber ( L, t.charanimstates[iSrc].playcsi ); 
+						lua_pushinteger ( L, (lua_Integer)t.charanimstates[iSrc].playcsi );
 					break;
 		case 702 :	iSrc = lua_tonumber(L, 1);
 					if ( iSrc == 0 )
-						lua_pushnumber ( L, t.charanimstate.originale ); 
+						lua_pushinteger ( L, (lua_Integer)t.charanimstate.originale );
 					else
-						lua_pushnumber ( L, t.charanimstates[iSrc].originale ); 
+						lua_pushinteger ( L, (lua_Integer)t.charanimstates[iSrc].originale );
 					break;
 		case 703 :	iSrc = lua_tonumber(L, 1);
 					if ( iSrc == 0 )
-						lua_pushnumber ( L, t.charanimstate.obj ); 
+						lua_pushinteger ( L, (lua_Integer)t.charanimstate.obj );
 					else
-						lua_pushnumber ( L, t.charanimstates[iSrc].obj ); 
+						lua_pushinteger ( L, (lua_Integer)t.charanimstates[iSrc].obj );
 					break;
 		case 704 :	iSrc = lua_tonumber(L, 1);
 					if ( iSrc == 0 )
@@ -1719,26 +1719,26 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 					break;
 		case 705 :	iSrc = lua_tonumber(L, 1);
 					if ( iSrc == 0 )
-						lua_pushnumber ( L, t.charanimstate.e ); 
+						lua_pushinteger ( L, (lua_Integer)t.charanimstate.e );
 					else
-						lua_pushnumber ( L, t.charanimstates[iSrc].e ); 
+						lua_pushinteger ( L, (lua_Integer)t.charanimstates[iSrc].e );
 					break;
 
-		case 741 : lua_pushnumber ( L, t.csi_stoodvault[lua_tonumber(L, 1)] ); break;
-		case 751 : lua_pushnumber ( L, t.charseq[lua_tonumber(L, 1)].trigger ); break;
-		case 761 : lua_pushnumber ( L, t.entityelement[lua_tonumber(L, 1)].bankindex ); break;
-		case 762 : lua_pushnumber ( L, t.entityelement[lua_tonumber(L, 1)].obj ); break;
-		case 763 : lua_pushnumber ( L, t.entityelement[lua_tonumber(L, 1)].ragdollified ); break;
+		case 741 : lua_pushinteger ( L, (lua_Integer)t.csi_stoodvault[lua_tonumber(L, 1)] ); break;
+		case 751 : lua_pushinteger ( L, (lua_Integer)t.charseq[lua_tonumber(L, 1)].trigger ); break;
+		case 761 : lua_pushinteger ( L, (lua_Integer)t.entityelement[lua_tonumber(L, 1)].bankindex ); break;
+		case 762 : lua_pushinteger ( L, (lua_Integer)t.entityelement[lua_tonumber(L, 1)].obj ); break;
+		case 763 : lua_pushinteger ( L, (lua_Integer)t.entityelement[lua_tonumber(L, 1)].ragdollified ); break;
 		case 764 : lua_pushnumber ( L, t.entityelement[lua_tonumber(L, 1)].speedmodulator_f ); break;
-		case 801 : lua_pushnumber ( L, t.charanimcontrols[lua_tonumber(L, 1)].leaping ); break;
-		case 802 : lua_pushnumber ( L, t.charanimcontrols[lua_tonumber(L, 1)].moving ); break;
+		case 801 : lua_pushinteger ( L, (lua_Integer)t.charanimcontrols[lua_tonumber(L, 1)].leaping ); break;
+		case 802 : lua_pushinteger ( L, (lua_Integer)t.charanimcontrols[lua_tonumber(L, 1)].moving ); break;
 		case 851 : lua_pushnumber ( L, t.entityprofile[lua_tonumber(L, 1)].fJumpModifier ); break;
-		case 852 : lua_pushnumber ( L, t.entityprofile[lua_tonumber(L, 1)].startofaianim ); break;			
-		case 853 : lua_pushnumber ( L, t.entityprofile[lua_tonumber(L, 1)].jumphold ); break;			
-		case 854 : lua_pushnumber ( L, t.entityprofile[lua_tonumber(L, 1)].jumpresume ); break;			
+		case 852 : lua_pushinteger ( L, (lua_Integer)t.entityprofile[lua_tonumber(L, 1)].startofaianim ); break;			
+		case 853 : lua_pushinteger ( L, (lua_Integer)t.entityprofile[lua_tonumber(L, 1)].jumphold ); break;			
+		case 854 : lua_pushinteger ( L, (lua_Integer)t.entityprofile[lua_tonumber(L, 1)].jumpresume ); break;			
 
-		case 1001 : lua_pushnumber ( L, t.entityanim[lua_tonumber(L, 1)][lua_tonumber(L, 2)].start ); break;
-		case 1002 : lua_pushnumber ( L, t.entityanim[lua_tonumber(L, 1)][lua_tonumber(L, 2)].finish ); break;
+		case 1001 : lua_pushinteger ( L, (lua_Integer)t.entityanim[lua_tonumber(L, 1)][lua_tonumber(L, 2)].start ); break;
+		case 1002 : lua_pushinteger ( L, (lua_Integer)t.entityanim[lua_tonumber(L, 1)][lua_tonumber(L, 2)].finish ); break;
 	}
 	return 1;
 }
@@ -1746,7 +1746,7 @@ int GetPlayerFov (lua_State* L)
 {
 	// to match the SetPlayerFOV command - or you could have used 'g_PlayerFOV'
 	int iPlayerFOVPerc = (((t.visuals.CameraFOV_f * t.visuals.CameraASPECT_f) - 20.0) / 180.0) * 114.0f;// 100.0;
-	lua_pushnumber (L, iPlayerFOVPerc);
+	lua_pushinteger (L, (lua_Integer)iPlayerFOVPerc);
 	return 1;
 }
 int GetPlayerAttacking (lua_State* L)
@@ -1754,7 +1754,7 @@ int GetPlayerAttacking (lua_State* L)
 	int iPlayerIsAttackingNow = 0;
 	if (t.gunmode >= 101 && t.gunmode < 110) iPlayerIsAttackingNow = 1;
 	if(t.gunmode >= 1020 && t.gunmode < 1029 ) iPlayerIsAttackingNow = 1;
-	lua_pushnumber (L, iPlayerIsAttackingNow);
+	lua_pushinteger (L, (lua_Integer)iPlayerIsAttackingNow);
 	return 1;
 }
 int PushPlayer (lua_State* L)

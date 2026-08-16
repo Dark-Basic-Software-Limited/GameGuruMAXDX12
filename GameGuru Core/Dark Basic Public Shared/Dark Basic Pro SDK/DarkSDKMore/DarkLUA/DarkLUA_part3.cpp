@@ -11,7 +11,7 @@
 
 int GetCharacterHitFloor ( lua_State *L )
 {
-	lua_pushnumber ( L, ODEGetCharacterHitFloor() );
+	lua_pushinteger ( L, (lua_Integer)ODEGetCharacterHitFloor() );
 	return 1;
 }
 int GetCharacterFallDistance ( lua_State *L )
@@ -29,7 +29,7 @@ int RayTerrain ( lua_State *L )
 	float fToX = lua_tonumber(L, 4);
 	float fToY = lua_tonumber(L, 5);
 	float fToZ = lua_tonumber(L, 6);
-	lua_pushnumber ( L, ODERayTerrain(fX, fY, fZ, fToX, fToY, fToZ, true) );
+	lua_pushinteger ( L, (lua_Integer)ODERayTerrain(fX, fY, fZ, fToX, fToY, fToZ, true) );
 	return 1;
 }
 int GetRayCollisionX ( lua_State *L )
@@ -118,7 +118,7 @@ int IntersectCore (lua_State* L, int iMode)
 		}
 		else
 		{
-			lua_pushnumber (L, 0);
+			lua_pushinteger (L, 0);
 			return 1;
 		}
 	}
@@ -146,7 +146,7 @@ int IntersectCore (lua_State* L, int iMode)
 	if (iMode == 2) bFullWickedAccuracy = false;
 	if (tthitvalue == 0 ) tthitvalue = IntersectAllEx(g.entityviewstartobj, g.entityviewendobj, fX, fY, fZ, fNewX, fNewY, fNewZ, iIgnoreObjNo, iMode, iIndexInIntersectDatabase, iLifeInMilliseconds, iIgnorePlayerCapsule, bFullWickedAccuracy);
 	gg_dbg_lua_isect_us += gg_dbg_lua_qpc_us() - ggT0;
-	lua_pushnumber ( L, tthitvalue );
+	lua_pushinteger ( L, (lua_Integer)tthitvalue );
 	return 1;
 }
 
@@ -306,7 +306,7 @@ int GetObjectExist ( lua_State *L )
 {
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
-	lua_pushnumber ( L, ObjectExist(lua_tonumber(L, 1)) );
+	lua_pushinteger ( L, (lua_Integer)ObjectExist(lua_tonumber(L, 1)) );
 	return 1;
 }
 
@@ -382,8 +382,8 @@ int GetGunAnimationFramesFromName(lua_State* L)
 		{
 			if (g.firemodes[t.gunid][0].action.startreload.s > 0 && g.firemodes[t.gunid][0].action.startreload.e >= g.firemodes[t.gunid][0].action.startreload.s)
 			{
-				lua_pushnumber(L, g.firemodes[t.gunid][0].action.startreload.s);
-				lua_pushnumber(L, g.firemodes[t.gunid][0].action.startreload.e);
+				lua_pushinteger(L, (lua_Integer)(g.firemodes[t.gunid][0].action.startreload.s));
+				lua_pushinteger(L, (lua_Integer)(g.firemodes[t.gunid][0].action.startreload.e));
 				return 2;
 			}
 		}
@@ -391,8 +391,8 @@ int GetGunAnimationFramesFromName(lua_State* L)
 		{
 			if (g.firemodes[t.gunid][0].action.idle.s > 0 && g.firemodes[t.gunid][0].action.idle.e >= g.firemodes[t.gunid][0].action.idle.s)
 			{
-				lua_pushnumber(L, g.firemodes[t.gunid][0].action.idle.s);
-				lua_pushnumber(L, g.firemodes[t.gunid][0].action.idle.e);
+				lua_pushinteger(L, (lua_Integer)(g.firemodes[t.gunid][0].action.idle.s));
+				lua_pushinteger(L, (lua_Integer)(g.firemodes[t.gunid][0].action.idle.e));
 				return 2;
 			}
 		}
@@ -400,14 +400,14 @@ int GetGunAnimationFramesFromName(lua_State* L)
 		{
 			if (g.firemodes[t.gunid][0].action.start.s > 0 && g.firemodes[t.gunid][0].action.start.e >= g.firemodes[t.gunid][0].action.start.s)
 			{
-				lua_pushnumber(L, g.firemodes[t.gunid][0].action.start.s);
-				lua_pushnumber(L, g.firemodes[t.gunid][0].action.start.e);
+				lua_pushinteger(L, (lua_Integer)(g.firemodes[t.gunid][0].action.start.s));
+				lua_pushinteger(L, (lua_Integer)(g.firemodes[t.gunid][0].action.start.e));
 				return 2;
 			}
 		}
 
-		lua_pushnumber(L, 0);
-		lua_pushnumber(L, 0);
+		lua_pushinteger(L, 0);
+		lua_pushinteger(L, 0);
 	}
 	return 2;
 }
@@ -442,14 +442,14 @@ int GunAnimationPlaying(lua_State* L)
 			if (fOldGunSpeed > 1)
 				gun_SetObjectSpeed(t.currentgunobj, fOldGunSpeed);
 			fOldGunSpeed = 0;
-			lua_pushnumber(L, 0);
+			lua_pushinteger(L, 0);
 			bCustomGunAnimationRunning = false;
 			t.gunmode = 9; //PE: switch to idle.
 			iGunAnimMode = 3;
 		}
 		else
 		{
-			lua_pushnumber(L, 1);
+			lua_pushinteger(L, 1);
 			bCustomGunAnimationRunning = true;
 		}
 
@@ -457,13 +457,13 @@ int GunAnimationPlaying(lua_State* L)
 	else if(iGunAnimMode == 1)
 	{
 		//PE: Looping always playing.
-		lua_pushnumber(L, 1);
+		lua_pushinteger(L, 1);
 		bCustomGunAnimationRunning = true;
 	}
 	else
 	{
 		//PE: Stopped.
-		lua_pushnumber(L, 0);
+		lua_pushinteger(L, 0);
 		bCustomGunAnimationRunning = false;
 	}
 	return 1;
@@ -801,12 +801,12 @@ int GetObjectPosAng( lua_State *L )
 	if ( !ConfirmObjectInstance(iID) )
 	{
 		// seems can be called in LUA when object not exist, so return zeros
-		lua_pushnumber ( L, 0 );
-		lua_pushnumber ( L, 0 );
-		lua_pushnumber ( L, 0 );
-		lua_pushnumber ( L, 0 );
-		lua_pushnumber ( L, 0 );
-		lua_pushnumber ( L, 0 );
+		lua_pushinteger ( L, 0 );
+		lua_pushinteger ( L, 0 );
+		lua_pushinteger ( L, 0 );
+		lua_pushinteger ( L, 0 );
+		lua_pushinteger ( L, 0 );
+		lua_pushinteger ( L, 0 );
 		return 6;
 	}
 	else
@@ -930,7 +930,7 @@ int CreateSingleHinge( lua_State *L )
 		return 0;
 	int iC = ODECreateHingeSingle( iID, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4),
 		                                lua_tonumber(L, 5), lua_tonumber(L, 6), lua_tonumber(L, 7) );
-	lua_pushnumber( L, iC );
+	lua_pushinteger( L, (lua_Integer)iC );
 	return 1;
 }
 int CreateDoubleHinge( lua_State *L )
@@ -945,7 +945,7 @@ int CreateDoubleHinge( lua_State *L )
 	int iC = ODECreateHingeDouble( iIDa, iIDb, lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
 		                                       lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8),
 		                                       lua_tonumber(L, 9), lua_tonumber(L, 10), lua_tonumber(L, 11) );
-	lua_pushnumber( L, iC );
+	lua_pushinteger( L, (lua_Integer)iC );
 	return 1;
 }
 int CreateSingleJoint( lua_State *L )
@@ -957,7 +957,7 @@ int CreateSingleJoint( lua_State *L )
 		return 0;
 
 	int iC = ODECreateJointSingle( iID, lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
-	lua_pushnumber( L, iC );
+	lua_pushinteger( L, (lua_Integer)iC );
 	return 1;
 }
 int CreateDoubleJoint( lua_State *L )
@@ -972,7 +972,7 @@ int CreateDoubleJoint( lua_State *L )
 	int iC = ODECreateJointDouble( iIDa, iIDb, lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5),
 		                                       lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8),
 		                                       lua_tonumber(L, 9) );
-	lua_pushnumber( L, iC );
+	lua_pushinteger( L, (lua_Integer)iC );
 	return 1;
 }
 int CreateSliderDouble( lua_State *L )
@@ -989,7 +989,7 @@ int CreateSliderDouble( lua_State *L )
 		                                        lua_tonumber(L,  9), lua_tonumber(L, 10), lua_tonumber(L, 11),
 		                                        lua_tonumber(L, 12), lua_tonumber(L, 13), lua_tonumber(L, 14),
 		                                        lua_tonumber(L, 15), lua_tonumber(L, 16), lua_tonumber(L, 17) == 1 );
-	lua_pushnumber( L, iC );
+	lua_pushinteger( L, (lua_Integer)iC );
 	return 1;
 }
 int SetSliderLimits(lua_State *L)
@@ -1127,14 +1127,14 @@ int PhysicsRayCast( lua_State *L )
 		// only return dynamic objects
 		if ( ODEGetBodyIsDynamic( iObjHit ) )
 		{
-			lua_pushnumber( L, iObjHit );
+			lua_pushinteger( L, (lua_Integer)iObjHit );
 			lua_pushnumber( L, ODEGetRayCollisionX() );
 			lua_pushnumber( L, ODEGetRayCollisionY() );
 			lua_pushnumber( L, ODEGetRayCollisionZ() );
 			return 4;
 		}
 	}
-	lua_pushnumber( L, 0 );
+	lua_pushinteger( L, 0 );
 	return 1;
 }
 int GetObjectNumCollisions(lua_State *L)
@@ -1144,7 +1144,7 @@ int GetObjectNumCollisions(lua_State *L)
 	int iID = lua_tonumber(L, 1);
 	if (!ConfirmObjectInstance(iID))
 		return 0;
-	lua_pushnumber(L, ODEGetBodyNumCollisions(iID));
+	lua_pushinteger(L, (lua_Integer)ODEGetBodyNumCollisions(iID));
 	return 1;
 }
 int GetObjectCollisionDetails( lua_State *L )
@@ -1159,7 +1159,7 @@ int GetObjectCollisionDetails( lua_State *L )
 	float fX, fY, fZ, fF;
 	if (n == 2) colNum = lua_tonumber(L, 2);
 	ODEGetBodyCollisionDetails( iID, colNum, iColObj, fX, fY, fZ, fF );
-	lua_pushnumber( L, iColObj );
+	lua_pushinteger( L, (lua_Integer)iColObj );
 	lua_pushnumber( L, fX );
 	lua_pushnumber( L, fY );
 	lua_pushnumber( L, fZ );
@@ -1174,7 +1174,7 @@ int GetTerrainNumCollisions( lua_State *L )
 	int iID = lua_tonumber( L, 1 );
 	if ( !ConfirmObjectInstance( iID ) )
 		return 0;
-	lua_pushnumber( L, ODEGetTerrainNumCollisions( iID ) );
+	lua_pushinteger( L, (lua_Integer)ODEGetTerrainNumCollisions( iID ) );
 	return 1;
 }
 int GetTerrainCollisionDetails( lua_State *L )
@@ -1189,7 +1189,7 @@ int GetTerrainCollisionDetails( lua_State *L )
 	float fX, fY, fZ;
 	if (n == 2) colNum = lua_tonumber( L, 2 );
 	ODEGetTerrainCollisionDetails( iID, colNum, iLatest, fX, fY, fZ );
-	lua_pushnumber( L, iLatest );
+	lua_pushinteger( L, (lua_Integer)iLatest );
 	lua_pushnumber( L, fX );
 	lua_pushnumber( L, fY );
 	lua_pushnumber( L, fZ );
@@ -1351,9 +1351,9 @@ int GetLightRGB( lua_State *L )
 
 	if (i > 0 && i <= g.infinilightmax && t.infinilight[i].used == 1)
 	{
-		lua_pushnumber( L, t.infinilight[i].colrgb.r );
-		lua_pushnumber( L, t.infinilight[i].colrgb.g );
-		lua_pushnumber( L, t.infinilight[i].colrgb.b );
+		lua_pushinteger( L, (lua_Integer)(t.infinilight[i].colrgb.r) );
+		lua_pushinteger( L, (lua_Integer)(t.infinilight[i].colrgb.g) );
+		lua_pushinteger( L, (lua_Integer)(t.infinilight[i].colrgb.b) );
 		return 3;
 	}
 	return 0;
@@ -1602,7 +1602,7 @@ int PlayFootfallSound ( lua_State *L )
 		material_triggersound (1);
 	}
 	#endif
-	lua_pushnumber ( L, lastfootfallsound );
+	lua_pushinteger ( L, (lua_Integer)lastfootfallsound );
 	return 1;
 }
 int ResetUnderwaterState ( lua_State *L )
@@ -1918,7 +1918,7 @@ int GetRippleWaterSpeed(lua_State *L)
 int GetWaterEnabled(lua_State* L)
 {
 	lua2 = L;
-	lua_pushnumber(L, t.visuals.bWaterEnable);
+	lua_pushinteger(L, (lua_Integer)(t.visuals.bWaterEnable));
 	return 1;
 }
 #endif
@@ -1927,11 +1927,11 @@ int GetIsTestgame(lua_State *L) {
 	lua2 = L;
 	if ((t.game.gameisexe == 0 || g.gprofileinstandalone == 1) && t.game.runasmultiplayer == 0) 
 	{
-		lua_pushnumber(L, 1);
+		lua_pushinteger(L, 1);
 	}
 	else 
 	{
-		lua_pushnumber(L, 0);
+		lua_pushinteger(L, 0);
 	}
 	return 1;
 }
@@ -1967,11 +1967,11 @@ int GetStoryboardActive(lua_State *L)
 	int iNode = FindLuaScreenNode(pScreenName);
 	if (iNode >= 0 && strlen(Storyboard.gamename) > 0)
 	{
-		lua_pushnumber(L, 1);
+		lua_pushinteger(L, 1);
 	}
 	else
 	{
-		lua_pushnumber(L, 0);
+		lua_pushinteger(L, 0);
 	}
 	return 1;
 }

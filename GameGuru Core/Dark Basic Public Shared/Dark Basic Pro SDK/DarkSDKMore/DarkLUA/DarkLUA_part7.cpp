@@ -1685,7 +1685,7 @@ DARKLUA_API int LuaValidateEntityTable ( int iEntityIndex )
 	lua2 = ppLuaStates[id]->state;
 	int stacktopindex = lua_gettop (lua2);
 	lua_getglobal(lua2, "g_Entity");
-	lua_pushnumber(lua2, iEntityIndex); 
+	lua_pushinteger(lua2, (lua_Integer)iEntityIndex); 
 	lua_gettable(lua2, -2); // g_Entity[e] 
 	lua_pushstring(lua2, "x");
 	if ( lua_istable(lua2,-2) )

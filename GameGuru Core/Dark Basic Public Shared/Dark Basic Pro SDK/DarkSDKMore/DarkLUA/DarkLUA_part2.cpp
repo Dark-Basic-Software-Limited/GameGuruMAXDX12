@@ -114,7 +114,7 @@ int RDGetPathPointCount(lua_State *L)
 	lua2 = L;
 	float thisPoint[3] = { 0, 0, 0 };
 	int iCount = RD_GetPoint_Core(thisPoint,0);
-	lua_pushnumber (L, iCount);
+	lua_pushinteger (L, (lua_Integer)iCount);
 	return 1;
 }
 
@@ -220,7 +220,7 @@ int MoveAndRotateToXYZ (lua_State *L)
 			fDistanceToDest = t.charanimstates[t.tcharanimindex].remainingOverallDistanceToDest_f;
 		}
 	}
-	lua_pushnumber (L, iPointIndex);
+	lua_pushinteger (L, (lua_Integer)iPointIndex);
 	lua_pushnumber (L, fDistanceToDest);
 	return 2;
 }
@@ -252,7 +252,7 @@ int RDIsWithinMesh(lua_State *L)
 		iResult = 1;
 	else
 		iResult = 0;
-	lua_pushnumber (L, iResult);
+	lua_pushinteger (L, (lua_Integer)iResult);
 	return 1;
 }
 
@@ -270,7 +270,7 @@ int RDIsWithinAndOverMesh(lua_State* L)
 		iResult = 1;
 	else
 		iResult = 0;
-	lua_pushnumber (L, iResult);
+	lua_pushinteger (L, (lua_Integer)iResult);
 	return 1;
 }
 
@@ -442,7 +442,7 @@ int GetTokenDropCount(lua_State* L)
 	int n = lua_gettop(L);
 	if (n > 0) return 0;
 	int iTokenDropCount = g_RecastDetour.GetTokenDropCount();
-	lua_pushnumber (L, iTokenDropCount);
+	lua_pushinteger (L, (lua_Integer)iTokenDropCount);
 	return 1;
 }
 int GetTokenDropX(lua_State* L)
@@ -554,7 +554,7 @@ int AdjustPositionToGetLineOfSight (lua_State *L)
 		// easy line of sight, success
 		iFoundLineOfSight = 1;
 	}
-	lua_pushnumber (L, iFoundLineOfSight);
+	lua_pushinteger (L, (lua_Integer)iFoundLineOfSight);
 	lua_pushnumber (L, fX);
 	lua_pushnumber (L, fZ);
 	return 3;
@@ -576,7 +576,7 @@ int SetCharacterMode(lua_State *L)
 		t.entityelement[e].eleprof.disableascharacter = 1 - mode;
 		iSuccess = 1;
 	}
-	lua_pushnumber (L, iSuccess);
+	lua_pushinteger (L, (lua_Integer)iSuccess);
 	return 1;
 }
 
@@ -784,7 +784,7 @@ int LoadImage(lua_State *L)
 	// Not enough params, send 0 result back
 	if ( n < 1 )
 	{
-		lua_pushnumber ( L , 0 );
+		lua_pushinteger ( L , 0 );
 		return 1;
 	}
 
@@ -814,7 +814,7 @@ int LoadImage(lua_State *L)
 		}
 		image_setlegacyimageloading(false);
 	}
-	lua_pushnumber ( L , iID );
+	lua_pushinteger ( L , (lua_Integer)iID );
 	return 1;
 }
 
@@ -823,7 +823,7 @@ int GetImageWidth(lua_State *L)
 	// get LUA param
 	lua2 = L;
 	int n = lua_gettop(L);
-	if ( n < 1 ) { lua_pushnumber ( L , 0 ); return 1; }
+	if ( n < 1 ) { lua_pushinteger ( L , 0 ); return 1; }
 
 	// get image width
 	int iImageID = lua_tointeger(L, 1);
@@ -841,7 +841,7 @@ int GetImageHeight(lua_State *L)
 	// get LUA param
 	lua2 = L;
 	int n = lua_gettop(L);
-	if ( n < 1 ) { lua_pushnumber ( L , 0 ); return 1; }
+	if ( n < 1 ) { lua_pushinteger ( L , 0 ); return 1; }
 
 	// get image width
 	int iImageID = lua_tointeger(L, 1);
@@ -859,7 +859,7 @@ int DeleteSpriteImage(lua_State *L)
 	// get LUA param
 	lua2 = L;
 	int n = lua_gettop(L);
-	if ( n < 1 ) { lua_pushnumber ( L , 0 ); return 1; }
+	if ( n < 1 ) { lua_pushinteger ( L , 0 ); return 1; }
 
 	// get image width
 	int iImageID = lua_tointeger(L, 1);
@@ -870,7 +870,7 @@ int DeleteSpriteImage(lua_State *L)
 	}
 
 	// push return value
-	lua_pushnumber ( L , 1 );
+	lua_pushinteger ( L , 1 );
 
 	// success
 	return 1;
@@ -886,7 +886,7 @@ int CreateSprite(lua_State *L)
 	// Not enough params, send 0 result back
 	if ( n < 1 )
 	{
-		lua_pushnumber ( L , 0 );
+		lua_pushinteger ( L , 0 );
 		return 1;
 	}
 
@@ -904,7 +904,7 @@ int CreateSprite(lua_State *L)
 			}
 		}
 	}
-	lua_pushnumber ( L , iID );
+	lua_pushinteger ( L , (lua_Integer)iID );
 	return 1;
 }
 
@@ -912,7 +912,7 @@ int PasteSprite(lua_State *L)
 {
 	lua2 = L;
 	int n = lua_gettop(L);
-	if ( n < 1 ) { lua_pushnumber ( L , 0 ); return 1; }
+	if ( n < 1 ) { lua_pushinteger ( L , 0 ); return 1; }
 	int iID = lua_tointeger(L, 1);
 	if (iID > 0)
 	{
@@ -925,7 +925,7 @@ int PasteSpritePosition(lua_State *L)
 {
 	lua2 = L;
 	int n = lua_gettop(L);
-	if ( n < 3 ) { lua_pushnumber ( L , 0 ); return 1; }
+	if ( n < 3 ) { lua_pushinteger ( L , 0 ); return 1; }
 	int iID = lua_tointeger(L, 1);
 	if (iID > 0)
 	{
@@ -1444,9 +1444,9 @@ int GetRawSoundData ( lua_State *L, int iDataMode )
 	if ( n < 1 ) return 0;
 	switch ( iDataMode )
 	{
-		case 1 : lua_pushnumber ( L , SoundExist ( lua_tonumber(L, 1) ) ); break;
-		case 2 : lua_pushnumber ( L , SoundPlaying ( lua_tonumber(L, 1) ) ); break;
-		case 3 : lua_pushnumber ( L , t.entityelement[lua_tonumber(L, 1)].soundset ); break;
+		case 1 : lua_pushinteger ( L , (lua_Integer)SoundExist ( lua_tonumber(L, 1) ) ); break;
+		case 2 : lua_pushinteger ( L , (lua_Integer)SoundPlaying ( lua_tonumber(L, 1) ) ); break;
+		case 3 : lua_pushinteger ( L , (lua_Integer)(t.entityelement[lua_tonumber(L, 1)].soundset) ); break;
 	}
 	return 1;
 }
@@ -1473,7 +1473,7 @@ int GetEntityRawSound(lua_State *L)
 	if (iSoundSlot == 4) iRawSoundIndex = t.entityelement[iE].soundset5;
 	if (iSoundSlot == 5) iRawSoundIndex = t.entityelement[iE].soundset5;
 	if (iSoundSlot == 6) iRawSoundIndex = t.entityelement[iE].soundset6;
-	lua_pushnumber ( L , iRawSoundIndex );
+	lua_pushinteger ( L , (lua_Integer)iRawSoundIndex );
 	return 1;
 }
 
@@ -1576,7 +1576,7 @@ int GetCombatMusicTrackPlaying(lua_State *L)
 	{
 		iPlaying = 1;
 	}
-	lua_pushnumber (L, iPlaying);
+	lua_pushinteger (L, (lua_Integer)iPlaying);
 	return 1;
 }
 
@@ -1598,7 +1598,7 @@ int GetSoundMusicMode(lua_State* L)
 	if (n < 1) return 0;
 	extern bool g_bSoundIsMusic[65536];
 	int iSoundIndex = lua_tonumber(L, 1);
-	lua_pushnumber (L, g_bSoundIsMusic[iSoundIndex]);
+	lua_pushinteger (L, (lua_Integer)(g_bSoundIsMusic[iSoundIndex]));
 	return 1;
 }
 
@@ -1643,7 +1643,7 @@ int GetKeyState ( lua_State *L )
 	int n = lua_gettop(L);
 	if ( n < 1 ) return 0;
 	int iKeyValue = lua_tonumber(L, 1);
-	lua_pushnumber ( L, KeyState(g.keymap[iKeyValue]) );
+	lua_pushinteger ( L, (lua_Integer)KeyState(g.keymap[iKeyValue]) );
 	return 1;
 }
 
@@ -1663,32 +1663,32 @@ int SetGlobalTimer (lua_State* L)
 int GetGlobalTimer ( lua_State *L )
 {
 	lua2 = L;
-	lua_pushnumber ( L, MAXTimer() );
+	lua_pushinteger ( L, (lua_Integer)MAXTimer() );
 	return 1;
 }
 
 int MouseMoveX ( lua_State *L )
 {
 	lua2 = L;
-	lua_pushnumber ( L, MouseMoveX() );
+	lua_pushinteger ( L, (lua_Integer)MouseMoveX() );
 	return 1;
 }
 int MouseMoveY ( lua_State *L )
 {
 	lua2 = L;
-	lua_pushnumber ( L, MouseMoveY() );
+	lua_pushinteger ( L, (lua_Integer)MouseMoveY() );
 	return 1;
 }
 int GetDesktopWidth ( lua_State *L )
 {
 	lua2 = L;
-	lua_pushnumber ( L, GetDesktopWidth() );
+	lua_pushinteger ( L, (lua_Integer)GetDesktopWidth() );
 	return 1;
 }
 int GetDesktopHeight ( lua_State *L )
 {
 	lua2 = L;
-	lua_pushnumber ( L, GetDesktopHeight() );
+	lua_pushinteger ( L, (lua_Integer)GetDesktopHeight() );
 	return 1;
 }
 int CurveValue ( lua_State *L )
@@ -1729,13 +1729,13 @@ int PositionMouse ( lua_State *L )
 int GetDynamicCharacterControllerDidJump ( lua_State *L )
 {
 	lua2 = L;
-	lua_pushnumber ( L, ODEGetDynamicCharacterControllerDidJump() );
+	lua_pushinteger ( L, (lua_Integer)ODEGetDynamicCharacterControllerDidJump() );
 	return 1;
 }
 int GetCharacterControllerDucking ( lua_State *L )
 {
 	lua2 = L;
-	lua_pushnumber ( L, ODEGetCharacterControllerDucking(t.aisystem.objectstartindex) );
+	lua_pushinteger ( L, (lua_Integer)ODEGetCharacterControllerDucking(t.aisystem.objectstartindex) );
 	return 1;
 }
 

@@ -162,12 +162,12 @@
 					break;
 				}
 			}
-			lua_pushnumber ( L, iReturnValue );
+			lua_pushinteger ( L, (lua_Integer)iReturnValue );
 		}
 	}
 	else
 	{
-		lua_pushnumber ( L, 0 );
+		lua_pushinteger ( L, 0 );
 	}
 	return 1;
  }
@@ -325,7 +325,7 @@
 	}
 	else
 	{
-		lua_pushnumber (L, 0);
+		lua_pushinteger (L, 0);
 	}
 	return 1;
  }
@@ -375,7 +375,7 @@
 		 }
 	 }
 	 int iCount = g_entitiesinconelist.size();
-	 lua_pushnumber (L, iCount);
+	 lua_pushinteger (L, (lua_Integer)iCount);
 	 return 1;
  }
  int GetEntityWithinCone(lua_State *L)
@@ -390,7 +390,7 @@
 		 iEntityIndex = g_entitiesinconelist[iIndex];
 	 }
 	 // return entity e from list at this index
-	 lua_pushnumber (L, iEntityIndex);
+	 lua_pushinteger (L, (lua_Integer)iEntityIndex);
 	 return 1;
  }
  #endif
@@ -433,7 +433,7 @@
 			 entrytoremove = -1;
 		 }
 	 }
-	 lua_pushnumber (L, iBestE);
+	 lua_pushinteger (L, (lua_Integer)iBestE);
 	 return 1;
  }
  int GetNearestSoundDistance(lua_State *L)
@@ -448,7 +448,7 @@
 	 float getClosestSoundWithinRange (float fX, float fY, float fZ, int iCategory, int* iWhoE);
 	 float fDistance = getClosestSoundWithinRange (fX, fY, fZ, iCategory, &iWhoE);
 	 lua_pushnumber (L, fDistance);
-	 lua_pushnumber (L, iWhoE);
+	 lua_pushinteger (L, (lua_Integer)iWhoE);
 	 return 2;
  }
  int MakeAISound (lua_State *L)
@@ -1858,9 +1858,9 @@ int AIGetEntityHeardSound(lua_State *L )
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
-	lua_pushnumber (L, 0);
+	lua_pushinteger (L, 0);
 #else
-	lua_pushnumber ( L , AIGetEntityHeardSound ( lua_tonumber(L, 1) ) );
+	lua_pushinteger ( L , (lua_Integer)AIGetEntityHeardSound ( lua_tonumber(L, 1) ) );
 #endif
 	return 1;
 }
@@ -1894,15 +1894,15 @@ int AIGetData ( lua_State *L, int iDataMode )
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
-	lua_pushnumber (L, 0);
+	lua_pushinteger (L, 0);
 #else
 	switch ( iDataMode )
 	{
 		case 1 : lua_pushnumber ( L , AIGetEntityAngleY ( lua_tonumber(L, 1) ) ); break;
 		case 2 : if ( t.aisystem.processlogic == 0 )
-					lua_pushnumber ( L , 0 ); 
+					lua_pushinteger ( L , 0 );
 				 else
-					lua_pushnumber ( L , AIGetEntityIsMoving ( lua_tonumber(L, 1) ) ); 
+					lua_pushinteger ( L , (lua_Integer)AIGetEntityIsMoving ( lua_tonumber(L, 1) ) );
 				 break;
 	}
 #endif
@@ -1944,7 +1944,7 @@ int AIGetVisualSetting ( lua_State *L, int iMode )
 		case 18 : lua_pushnumber ( L, t.visuals.MotionIntensity_f ); break;
 		case 19 : lua_pushnumber ( L, t.visuals.DepthOfFieldDistance_f ); break;
 		case 20 : lua_pushnumber ( L, t.visuals.DepthOfFieldIntensity_f ); break;
-		default : lua_pushnumber ( L, 0 ); break;
+		default : lua_pushinteger ( L, 0 ); break;
 	}
 	return 1;
 }

@@ -486,7 +486,7 @@ int CombatControllerLaserGuidedHit(lua_State* L)
 	int iObjToHit = lua_tonumber(L, 1);
 	float fX=0, fY=0, fZ=0;
 	int iHitIt = GGVR_GetLaserGuidedHit (iObjToHit, &fX, &fY, &fZ);
-	lua_pushnumber (L, iHitIt);
+	lua_pushinteger (L, (lua_Integer)iHitIt);
 	lua_pushnumber (L, fX);
 	lua_pushnumber (L, fY);
 	lua_pushnumber (L, fZ);
@@ -516,7 +516,7 @@ int ParticlesGetFreeEmitter ( lua_State *L )
 {
 	lua2 = L;
 	ravey_particles_get_free_emitter ( );
-	lua_pushnumber ( L, t.tResult );
+	lua_pushinteger ( L, (lua_Integer)t.tResult );
 	return 1;
 }
 
@@ -536,7 +536,7 @@ int ParticlesLoadImage(lua_State *L)
 
 	if (iID == -1) return 0;
 
-	lua_pushnumber(L, iID);
+	lua_pushinteger(L, (lua_Integer)iID);
 	return 1;
 }
 
@@ -549,7 +549,7 @@ int ParticlesLoadEffect(lua_State *L)
 	char pFileName[256];
 	strcpy(pFileName, lua_tostring(L, 1));
 
-	lua_pushnumber(L, ravey_particles_load_effect(pFileName, lua_tonumber(L, 2)));
+	lua_pushinteger(L, (lua_Integer)ravey_particles_load_effect(pFileName, lua_tonumber(L, 2)));
 	return 1;
 }
 
@@ -1062,7 +1062,7 @@ int WParticleEffectLoad(lua_State* L)
 	extern int g_iDisableWParticleSystem;
 	if (g_iDisableWParticleSystem == 1)
 	{
-		lua_pushnumber(L, 0);
+		lua_pushinteger(L, 0);
 		return 1;
 	}
 	
@@ -1102,7 +1102,7 @@ int WParticleEffectLoad(lua_State* L)
 	}
 	if (root != 0)
 		vWickedEmitterEffects.push_back(root);
-	lua_pushnumber(L, root);
+	lua_pushinteger(L, (lua_Integer)root);
 	return 1;
 
 }
@@ -1318,8 +1318,8 @@ int GetBulletHit(lua_State* L)
 		lua_pushnumber(L, g.decalx);
 		lua_pushnumber(L, g.decaly);
 		lua_pushnumber(L, g.decalz);
-		lua_pushnumber(L, t.tttriggerdecalimpact);
-		lua_pushnumber(L, t.playercontrol.thirdperson.charactere);
+		lua_pushinteger(L, (lua_Integer)t.tttriggerdecalimpact);
+		lua_pushinteger(L, (lua_Integer)t.playercontrol.thirdperson.charactere);
 		t.tdamagesource = 0;
 		return 5;
 	}
@@ -1799,9 +1799,9 @@ int GetMaterialData(lua_State *L, int mode)
 		int iResultB = 0.0f;
 		if (mode == 0) WickedCall_GetObjectBaseColor(pObject, &iResultR, &iResultG, &iResultB);
 		if (mode == 6) WickedCall_GetObjectEmissiveColor(pObject, &iResultR, &iResultG, &iResultB);
-		lua_pushnumber(L, iResultR);
-		lua_pushnumber(L, iResultG);
-		lua_pushnumber(L, iResultB);
+		lua_pushinteger(L, (lua_Integer)iResultR);
+		lua_pushinteger(L, (lua_Integer)iResultG);
+		lua_pushinteger(L, (lua_Integer)iResultB);
 		return 3;
 	}
 	else
@@ -1926,7 +1926,7 @@ int IsPointWithinZone(lua_State* L)
 			}
 		}
 	}
-	lua_pushnumber(L, iIsInZone);
+	lua_pushinteger(L, (lua_Integer)iIsInZone);
 	return 1;
 }
 

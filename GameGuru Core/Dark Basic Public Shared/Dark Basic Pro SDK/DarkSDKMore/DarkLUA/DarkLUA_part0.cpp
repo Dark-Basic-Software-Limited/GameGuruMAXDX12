@@ -966,7 +966,10 @@ luaMessage** ppLuaMessages = NULL;
 	if ( fDiff > 180.0f ) fDiff -= 360.0f;
 	if ( fDiff < -180.0f ) fDiff += 360.0f;
 	fReturnValue += fDiff*fSmoothFactor;
-	lua_pushinteger ( L, fReturnValue );
+	// GGMAX 2.70c: DELIBERATE deviation from DX11 (which also truncated here via
+	// lua_pushinteger since long before the port) — return the smoothed angle with its
+	// fraction so WrapAngle can actually converge; revert to lua_pushinteger for parity
+	lua_pushnumber ( L, fReturnValue );
 	return 1;
  }
  int GetCameraOverride(lua_State *L) { return RawGetCameraData ( L, 501 ); }
