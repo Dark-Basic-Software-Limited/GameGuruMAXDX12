@@ -2099,3 +2099,28 @@ just ran re-specified all of那些). The snapshot statics hoisted to file scope 
 Verified headlessly (empty268.sh): Empty -> tick Completely Empty = grid GONE (D1 shot,
 marker floating in void) -> tick navmesh box -> click Mountain = full mountain terrain,
 sel=6, ring 1521/1521 rebuilt, editsize back to 50000 (2.5 km), section hidden again.
+
+## §2.68f (08-16 night) — hidden terrain STAYS hidden across chunk rebirth (Lee's fresh-load
+## repro on ssss8.fpm)
+
+Lee: the freshly SAVED empty level was correct, but a fresh LOAD showed the grid again.
+Mechanism: SetTerrainVisible(false)'s hide sweep only reaches chunks that exist at that
+moment. A level load applies visuals early (empty flag -> hide fires with few/no chunks
+alive), then rebuilds the ring — and the engine-side Generation_Update (the Scene-S1
+direct caller, independent of the bridge's wickedTerrainHidden early-out) births new
+chunks RENDERABLE. Nothing re-asserted the hide.
+
+Fix: the bridge's hidden early-out now sweeps any renderable chunk back to non-renderable
+every frame while hidden (~1500 flag checks, empty-mode only).
+
+Verified with a forced rebirth: Empty + tick (void) -> SET_TERRAIN_GEN 21 grew the ring
+1521 -> 1849 WHILE HIDDEN (proving the engine-side generation runs under empty mode) ->
+view stayed void; post-grow shots bit-identical across 5 s (mean diff 0.000).
+
+Noted, not chased tonight:
+- A ~1 px dithered hairline at the far-plane horizon survives in the empty void (contrast
+  ~20/255, only visible contrast-stretched; present BEFORE the rebirth too) — a flat-plane
+  silhouette seam of some far-plane surface, sub-visible at normal viewing.
+- Empty mode still BURNS generation work + VRAM building an invisible ring (1849 chunks!).
+  Real fix = stop generation while hidden; tied to the parked Scene-S1 dual-caller
+  single-sourcing cleanup.

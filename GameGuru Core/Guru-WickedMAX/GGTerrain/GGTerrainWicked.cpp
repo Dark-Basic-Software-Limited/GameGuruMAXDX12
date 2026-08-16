@@ -3006,7 +3006,26 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	}
 
 	// Skip all terrain work when hidden (Generation_Update, VT CPU/GPU, blendmap painting)
-	if (wickedTerrainHidden) return;
+	if (wickedTerrainHidden)
+	{
+		// GGMAX 2.68f (Lee's repro: a freshly LOADED Completely Empty level showed the
+		// grid again): the hide sweep in SetTerrainVisible only reaches chunks that exist
+		// at that moment — a level load rebuilds the ring AFTERWARDS (Scene::Update calls
+		// the engine's Generation_Update directly, independent of this early-out), and
+		// newborn chunks arrive renderable. Re-assert the hide on anything that slipped
+		// in; ~1500 flag checks per frame, only while terrain is hidden.
+		::wi::terrain::Terrain* terrainHidden = GetWickedTerrain();
+		if (terrainHidden != nullptr && terrainHidden->scene != nullptr)
+		{
+			for (auto& [chunkH, cdH] : terrainHidden->chunks)
+			{
+				if (cdH.entity == wi::ecs::INVALID_ENTITY) continue;
+				wi::scene::ObjectComponent* objH = terrainHidden->scene->objects.GetComponent(cdH.entity);
+				if (objH != nullptr && objH->IsRenderable()) objH->SetRenderable(false);
+			}
+		}
+		return;
+	}
 
 	// Phase 2: Lazy material setup on first update (after level load has set render params)
 	if (!wickedTerrainMaterialsSetup)
