@@ -39,6 +39,12 @@ static inline ImVec2 ImGuiRotation(const ImVec2& v, float cos_a, float sin_a) { 
 // block-scope externs in this codebase have mangled into the enclosing namespace before.
 int g_ggHarnessBiomeClick = 0;      // 1..7 = Plains..Rainforest; consumed on the next panel frame
 int g_ggBiomeSelectedMirror = 0;    // iSelectedThemeChoice as of the last drawn panel frame
+// GGMAX 2.68c: the marker's projected screen position (backbuffer coords, updated by the
+// 2.64 footprint block every generator frame). Harness probes need it because the marker's
+// screen Y depends on the ground height at its position — hardcoded grab coordinates
+// silently miss on other seeds and the probe pans the camera instead of dragging.
+float g_ggDbgMarkerScreenX = -1.0f;
+float g_ggDbgMarkerScreenY = -1.0f;
 
 void procedural_new_level(void)
 {
@@ -453,6 +459,8 @@ void procedural_new_level(void)
 					ObjectPositionY(TERRAINGENERATOR_OBJECT),
 					ObjectPositionZ(TERRAINGENERATOR_OBJECT));
 				ggMarker2D += ImGui::GetMainViewport()->Pos;
+				g_ggDbgMarkerScreenX = ggMarker2D.x; // GGMAX 2.68c: published for harness probes
+				g_ggDbgMarkerScreenY = ggMarker2D.y;
 				const float fDX = ggMouse.x - ggMarker2D.x;
 				const float fDY = ggMouse.y - ggMarker2D.y;
 				bMouseOnMarker = bMouseInTerrainView && (fDX * fDX + fDY * fDY) <= (28.0f * 28.0f);
@@ -1155,8 +1163,18 @@ void procedural_new_level(void)
 						{
 							if (fSnapShotModeCameraY > 344000) fSnapShotModeCameraY = 344000; //Hide ugly shadow for now.
 							//PE: Now start up high looking at the editable area.
-							fSnapShotModeCameraX = 73800;
-							fSnapShotModeCameraZ = -74000;
+							// GGMAX 2.68b: frame the MARKER, not the world origin — since 2.65
+							// the marker rests wherever the last drag dropped it (it IS the
+							// chosen centre), so the fixed 3D vantage becomes an OFFSET from
+							// the marker (identical framing when the marker is at origin).
+							float fMkX = GGORIGIN_X, fMkZ = GGORIGIN_Z;
+							if (ObjectExist(TERRAINGENERATOR_OBJECT))
+							{
+								fMkX = ObjectPositionX(TERRAINGENERATOR_OBJECT);
+								fMkZ = ObjectPositionZ(TERRAINGENERATOR_OBJECT);
+							}
+							fSnapShotModeCameraX = fMkX + (73800.0f - (float)GGORIGIN_X);
+							fSnapShotModeCameraZ = fMkZ + (-74000.0f - (float)GGORIGIN_Z);
 							fSnapShotModeCameraY = 51600;
 							fSnapShotModeCameraAngZ = 0.0f;
 							fSnapShotModeCameraAngY = -37;
@@ -1175,8 +1193,16 @@ void procedural_new_level(void)
 							//Reset camera to point at center of edit area.
 							fSnapShotModeCameraY = fTmp * 41000.0f;
 							if (fSnapShotModeCameraY > 344000) fSnapShotModeCameraY = 344000; //Hide ugly shadow for now.
-							fSnapShotModeCameraX = GGORIGIN_X; // +ggterrain_global_params.offset_x; It dont actual move from center.
-							fSnapShotModeCameraZ = GGORIGIN_Z; // +ggterrain_global_params.offset_z;
+							// GGMAX 2.68b: top-down centres on the MARKER (the chosen centre
+							// since 2.65), not the world origin.
+							float fMkX = GGORIGIN_X, fMkZ = GGORIGIN_Z;
+							if (ObjectExist(TERRAINGENERATOR_OBJECT))
+							{
+								fMkX = ObjectPositionX(TERRAINGENERATOR_OBJECT);
+								fMkZ = ObjectPositionZ(TERRAINGENERATOR_OBJECT);
+							}
+							fSnapShotModeCameraX = fMkX;
+							fSnapShotModeCameraZ = fMkZ;
 							fSnapShotModeCameraAngZ = fSnapShotModeCameraAngY = 0.0f;
 							fSnapShotModeCameraAngX = 90.0f; //Look down.
 						}
@@ -2252,10 +2278,14 @@ void procedural_new_level(void)
 					ggterrain_global_render_params2.editable_size = feditable_size;
 					ImGui::PopItemWidth();
 				}
-				// 2026-08-09 (user request): "Disable Level Aspects" used to be gated on
-				// iSelectedThemeChoice == 8, so the ONLY route to the Completely Empty Level switch
-				// was to first pick that one biome theme. It is now unconditional so any level can
-				// toggle it. (Braces kept so the block's scope and closing brace are unchanged.)
+				// 2026-08-09 (user request): "Disable Level Aspects" was ungated from theme 8 so
+				// any level could reach the Completely Empty Level switch.
+				// GGMAX 2.68c (2026-08-16, Lee, SUPERSEDES the above): DX11 parity restored — the
+				// section only shows for the EMPTY biome (iSelectedThemeChoice == 8), exactly as
+				// DX11 M-TerrainNew.cpp:10159 gates it. The 08-09 snapshot/restore machinery
+				// below stays: DX11's untick was a one-way door (only put terrain back); ours
+				// restores everything the tick took away.
+				if (iSelectedThemeChoice == 8)
 				{
 					if (ImGui::StyleCollapsingHeader("Disable Level Aspects", ImGuiTreeNodeFlags_DefaultOpen))
 					{
@@ -2383,8 +2413,15 @@ void procedural_new_level(void)
 							{
 								fSnapShotModeCameraY = fTmp * 41000.0f;
 								if (fSnapShotModeCameraY > 344000) fSnapShotModeCameraY = 344000; //Hide ugly shadow for now.
-								fSnapShotModeCameraX = GGORIGIN_X; // +ggterrain_global_params.offset_x; It dont actual move from center.
-								fSnapShotModeCameraZ = GGORIGIN_Z; // +ggterrain_global_params.offset_z;
+								// GGMAX 2.68b: centre on the MARKER (the chosen centre since 2.65)
+								float fMkX = GGORIGIN_X, fMkZ = GGORIGIN_Z;
+								if (ObjectExist(TERRAINGENERATOR_OBJECT))
+								{
+									fMkX = ObjectPositionX(TERRAINGENERATOR_OBJECT);
+									fMkZ = ObjectPositionZ(TERRAINGENERATOR_OBJECT);
+								}
+								fSnapShotModeCameraX = fMkX;
+								fSnapShotModeCameraZ = fMkZ;
 								fSnapShotModeCameraAngZ = fSnapShotModeCameraAngY = 0.0f;
 								fSnapShotModeCameraAngX = 90.0f; //Look down.
 							}

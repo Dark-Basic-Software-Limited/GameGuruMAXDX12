@@ -4463,12 +4463,18 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		// GGMAX 2.65: the marker rests wherever the last drag dropped it (release no
 		// longer recentres), so its world position is now state worth reporting — the
 		// Generate-button offset fold is offx/offz += MetersToOffset(UnitsToMeters(-marker)).
-		if (ObjectExist(17998) && wtb > 0 && wtb < resultSize - 64)
+		if (ObjectExist(17998) && wtb > 0 && wtb < resultSize - 96)
 		{
 			sObject* pTGM = GetObjectData(17998);
+			// GGMAX 2.68c: markerScr = the marker's PROJECTED screen position (backbuffer
+			// coords, published by the generator's footprint block) — real-cursor probes
+			// must grab THERE (+the title-bar Y offset), never at hardcoded coordinates:
+			// the screen Y depends on the ground height at the marker, which varies by seed.
+			extern float g_ggDbgMarkerScreenX, g_ggDbgMarkerScreenY;
 			if (pTGM)
-				wtb += _snprintf(result + wtb, resultSize - wtb, " | marker=(%.0f,%.0f)",
-					pTGM->position.vecPosition.x, pTGM->position.vecPosition.z);
+				wtb += _snprintf(result + wtb, resultSize - wtb, " | marker=(%.0f,%.0f) markerScr=(%.0f,%.0f)",
+					pTGM->position.vecPosition.x, pTGM->position.vecPosition.z,
+					g_ggDbgMarkerScreenX, g_ggDbgMarkerScreenY);
 		}
 		// GGMAX 2.67: wicked grass state — names the dead stage when "Vegetation looks wrong"
 		// (drawEn = legacy flag the checkbox writes; wOn = the real wicked gate; hairs/vis =

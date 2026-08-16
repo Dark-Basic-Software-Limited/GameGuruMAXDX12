@@ -2038,3 +2038,38 @@ Measured on the same probes as §2.68:
   engine-side fence/Present hunt stays open for a heavy-load day.
 - Settle correctness: slider dragged 13.4 m -> 1500 m and released — one reaction burst
   ~0.25 s later, world correctly submerged, 79 FPS steady after.
+
+## §2.68b (08-16 night) — view-toggle camera presets follow the MARKER (Lee's report)
+
+Since 2.65 the marker legitimately rests away from origin, but the generator's camera
+presets still aimed at fixed world-origin coordinates: toggling top-down/3D after moving
+the marker left it off at the edge of the view. Three sites made marker-relative in
+M-TerrainNew_part5: the 3D-view button (the fixed vantage becomes an OFFSET from the
+marker — identical framing when it sits at origin), the top-down button (centres on the
+marker), and the Editable-Area-Size slider's camera reset (same). Snapshot mode untouched
+(it photographs the real map at origin, correctly). bTriggerStableY already samples at the
+camera. Verified numerically via NEW `markerScr=(x,y)` in the TERRAINGEN_BIOME dump (the
+marker's projected screen position, published by the 2.64 footprint block): after a drag
+to (18819,-61225), top-down put markerScr at (768,400) = exact backbuffer centre, and the
+3D toggle re-framed it at the same spot the release glide had left it.
+★ Probe rule: NEVER hardcode marker grab coordinates — its screen Y depends on the ground
+height at its position (seed-dependent: 384/410/414 across three sessions tonight). Read
+markerScr from the dump. Also: powershell escaping DIES inside `bash -c '...'` one-liners
+(every mouse_event silently failed for one whole probe run) — real-cursor probes must be
+.sh FILES.
+
+## §2.68c (08-16 night) — "Disable Level Aspects" re-gated to the EMPTY biome (DX11 parity)
+
+Lee's spec: only the EMPTY biome should offer the Completely Empty Level machinery. DX11
+confirms (M-TerrainNew.cpp:10159: the whole section sits in `if (iSelectedThemeChoice ==
+8)`). The DX12 copy had that gate until 2026-08-09, when a session removed it by request —
+Lee's instruction tonight supersedes that: gate restored, the 08-09 snapshot/restore
+machinery kept (DX11's untick is a one-way door that only puts terrain back; ours restores
+everything the tick took away). Both checkboxes verified live on the wicked side:
+- Completely Empty Level: its Wicked_Update_Visuals lands in the visuals sync
+  (M-GridEditB_part3) that drives GGTerrainWicked_SetGrassVisible + the terrain-visible
+  lever + bEnableEmptyLevelMode gating — tick AND untick reach the live entities.
+- Do Not Generate Navmesh: live consumer at M-Game_part0.cpp:392 + save/load via
+  visuals.EnableZeroNavMeshMode.
+Verified: Rainforest panel = section ABSENT; click Empty (sel=8, blank grey grid) =
+section PRESENT with both checkboxes.
