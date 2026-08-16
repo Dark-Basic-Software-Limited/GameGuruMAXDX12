@@ -2588,3 +2588,14 @@ the baseline of record; cross-time-of-day FPS comparisons join the known-drift c
 (±8 band documented, tonight demonstrated ~15% on two demos — SAME-SESSION A/Bs only).
 Final state restored: main f3242c8b built, engine 5ee09abc, 11 mats re-lifted (mat2 G
 mean 175.1 verified), mirror originals intact.
+
+## §2.75b — Lee-requested full hub sweep on 2.75: CLEAN (0816b)
+
+19/19 loaded, POLYS bit-identical on all 19, 4 GB gate holds (worst Aztec Game Kit
+3838 MB — down another 14 from the morning), VRAM within ±17 MB per demo. FPS hub-wide
++4.6% editor / +4.1% in-game vs the morning 0816 table. One band-edge flag (Aztec Game
+Kit editor −14%, in-game −5%, VRAM/POLYS identical — the morning table carried the same
+single-cell class). Switch Escape editor measured 163.3 in this run vs 134-137 in the
+mid-evening probes — §2.75a's ambient-drift verdict confirmed in the same night: the
+machine recovered. Full table: DEMO_FPS_SWEEP.md 0816b section; raw
+tools/sweep_0816b_2.75.txt. The day's entire arc (2.73/2.74/2.74b/2.75) is sweep-clean.

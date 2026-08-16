@@ -1,3 +1,19 @@
+# 2026-08-16 EVENING SWEEP (0816b) — 2.73-2.75 ACCEPTANCE — engine 2.75 `5ee09abc` / game `bb4c4712`
+
+Purpose: Lee-requested full-hub confirmation that the day's changes (2.73 probe pool
+re-bake, 2.74 terrain roughness dry-look floor content lift, 2.75 matte probe ball +
+preview sphere) broke nothing. Compared against the same-day 0816 morning table.
+
+VERDICT: **CLEAN. 19/19 loaded, POLYS bit-identical on all 19, 4 GB gate holds with the
+worst case DOWN again (Aztec Game Kit 3852 -> 3838 MB), VRAM within +-17 MB everywhere.**
+FPS hub-wide +4.6% editor / +4.1% in-game vs the morning — net positive, inside the drift
+band. Single flag: Aztec Game Kit editor -14% (97.3 -> 83.9) with its in-game phase -5%
+and VRAM/POLYS identical — the same band-edge single-cell class the morning table itself
+carried (Aztec Teaser -12%), not a regression signature. Several demos UP double digits
+(River Raiders +22%/+16%, Island Showdown +16%/+10%, Operation Amazon +12%/+14%) —
+consistent with §2.75a's finding that today's machine drifted low mid-evening and
+recovered. Raw: tools/sweep_0816b_2.75.txt.
+
 # Demo FPS sweep — every hub demo, editor + in-game
 
 ## 2026-08-16 SWEEP (0816) — THE MILESTONE DDS CONVERSION SWEEP — engine 2.71 `c2c9ef44` / game 2.72 `bfad4185` — 19/19 CLEAN, all gates hold
