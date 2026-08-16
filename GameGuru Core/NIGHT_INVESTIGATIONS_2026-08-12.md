@@ -2219,3 +2219,46 @@ Residue noticed while in there (NOT fixed tonight, chip spawned): standalones ac
 instrument droppings — gpup_trace.txt is written UNCONDITIONALLY at init
 (GPUParticles_part0.cpp ~2049), gap_trace.txt/alloc_tripwire.txt are engine-side. The
 natural gate is the standalone's own setup.ini `producelogfiles=0`.
+
+## §2.70 (08-16 night) — standalone SAVE GAME wrote to a slot no reader could find
+## (Lua 5.4 float filenames)
+
+Lee: standalone SAVE GAME "does not save the game position into the selected slot."
+
+The save was NEVER lost — his slot file sat in Files\savegames complete with position,
+angles and level name. It was named **gameslot1.0.dat**. Every reader — the C++ slot
+lister (M-GridEditB_part22 `gameslot%d.dat`), fillgameslots.lua's integer loop — looks
+for **gameslot1.dat**. Save vanishes into a filename nothing else can see; slots report
+EMPTY PROGRESS SLOT forever.
+
+Root cause is a Lua VERSION regression in the port, not save logic:
+- DX11 DarkLUA embeds **Lua 5.2** — one number type; `1 .. ""` prints `"1"`.
+- DX12 DarkLUA compiles against **WickedEngine's Lua 5.4** — integer/float subtypes;
+  every C++ push used `lua_pushnumber` (float), and a float 1 concats as `"1.0"`.
+
+Two leak paths, both C++ pushes:
+1. Slot number: `DisplayScreen()` returned the clicked widget via `lua_pushnumber(L,
+   iSpecialLuaReturn)` → savegame.lua `gamedata.save(1.0, ...)` → gameslot1.0.dat.
+2. Level state: `LuaPushInt(g_Storyboard_Current_Level)` → global.lua composes
+   `"0-"..storyboardnodeid` → gameslot0-14.0.dat (same disease; the new-game cleanup
+   loop in M-LUA.cpp deletes integer names only, so these also dodge deletion).
+
+Fix (game-only, no engine change):
+- DarkLUA_part8.cpp: LuaSetInt ×2 + LuaPushInt ×2 now `lua_pushinteger` — restores
+  exact DX11 string behavior for every int the game hands to scripts.
+- DarkLUA_part4.cpp: DisplayScreen + DisplayCurrentScreen return `lua_pushinteger`.
+- gamedata.lua (build area + BOTH repo copies GameGuru Core/GameGuru/titlesbank and
+  Scripts/titlesbank): defensive `math.floor` on numeric slotnumber at save AND load
+  entry, so pure-Lua float arithmetic can never mint a float filename either.
+
+Lee's existing TESTPRO2 export: patched gamedata.lua in, renamed his 03:52 save
+gameslot1.0.dat → gameslot1.dat — his save now shows in slot 1 on the OLD exe. A fresh
+export from this build carries everything.
+
+★★ LEDGER RULE (bug class, not one-off): **DX12 runs Lua 5.4, DX11 ran Lua 5.2 — any
+C++ int reaching Lua as a NUMBER prints with ".0" the moment a script concats it into a
+string.** Filenames are where it turns fatal (reader/writer split), but HUD text built
+by concat has the same exposure. When a "file not found"/"slot empty" bug appears under
+DX12 with files visibly present, CHECK THE FILENAME BYTES first — the content was never
+the problem here. Registered C functions still push via lua_pushnumber in many places;
+sweep pending (chip).

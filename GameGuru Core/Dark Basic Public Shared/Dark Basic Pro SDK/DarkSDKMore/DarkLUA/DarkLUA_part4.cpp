@@ -40,17 +40,18 @@ int DisplayScreen(lua_State* L)
 	strcpy(pScreenName, lua_tostring(L, 1));
 	int screen_editor(int nodeid, bool standalone = false, char* screen = NULL);
 	screen_editor(-1, true, pScreenName);
-	lua_pushnumber(L, iSpecialLuaReturn);
+	// GGMAX 2.70: integer subtype — savegame.lua concats this into gameslot<N>.dat
+	lua_pushinteger(L, iSpecialLuaReturn);
 	return 1;
 }
 int DisplayCurrentScreen(lua_State* L)
 {
 	int screen_editor(int nodeid, bool standalone = false, char* screen = NULL);
-	if (t.game.activeStoryboardScreen >= 0) 
+	if (t.game.activeStoryboardScreen >= 0)
 	{
 		screen_editor(t.game.activeStoryboardScreen, true);
 	}
-	lua_pushnumber(L, iSpecialLuaReturn);
+	lua_pushinteger(L, iSpecialLuaReturn);
 	return 1;
 }
 bool g_bEnableGunFireInHUD = false;

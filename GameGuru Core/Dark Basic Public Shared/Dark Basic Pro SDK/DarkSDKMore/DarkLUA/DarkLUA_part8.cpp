@@ -420,7 +420,10 @@
 	}
 
 	lua2 = ppLuaStates[id]->state;
-	lua_pushnumber( lua2, (lua_Number)value );
+	// GGMAX 2.70: Lua 5.4 (this port) splits number into integer/float subtypes; a
+	// float pushed here makes script concats print "1.0" (DX11 was Lua 5.2, printed
+	// "1") — savegame slot files got float names no reader could find
+	lua_pushinteger( lua2, (lua_Integer)value );
 	lua_setglobal( lua2, pString );
 
  }
@@ -443,7 +446,7 @@
 	}
 
 	lua2 = ppLuaStates[id]->state;
-	lua_pushnumber( lua2, (lua_Number)value );
+	lua_pushinteger( lua2, (lua_Integer)value );
 	lua_setglobal( lua2, pString );
 
  }
@@ -464,7 +467,7 @@
 	}
 
 	lua2 = ppLuaStates[id]->state;
-	lua_pushnumber( lua2, (lua_Number)value );
+	lua_pushinteger( lua2, (lua_Integer)value );
 
  }
 
@@ -493,7 +496,7 @@
 	}
 
 	lua2 = ppLuaStates[id]->state;
-	lua_pushnumber( lua2, (lua_Number)value );
+	lua_pushinteger( lua2, (lua_Integer)value );
 
  }
 

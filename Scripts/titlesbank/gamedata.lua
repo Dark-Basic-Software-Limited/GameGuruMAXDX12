@@ -14,6 +14,9 @@ function gamedata.save(slotnumber,uniquename)
 
 	-- g_gamedata_levelstatemode : 0-game save (1+2), 1-level state, 2-player stats
 
+	-- Lua 5.4: a float slot number concats as "1.0" and no reader can find the file
+	if type(slotnumber) == "number" then slotnumber = math.floor(slotnumber + 0.5) end
+
 	-- save slot file
 	file = io.open("savegames\\gameslot" .. slotnumber .. ".dat", "w")
 	if file == nil then
@@ -303,6 +306,9 @@ function gamedata.load(slotnumber)
 		g_EntityExtra[i]['clonedsincelevelstart'] = -1
 		g_EntityExtra[i]['collision'] = nil
 	end
+
+	-- Lua 5.4: a float slot number concats as "1.0" and no reader can find the file
+	if type(slotnumber) == "number" then slotnumber = math.floor(slotnumber + 0.5) end
 
 	-- load game data
 	successful = 0
