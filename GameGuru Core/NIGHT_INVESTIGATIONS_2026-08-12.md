@@ -2014,3 +2014,27 @@ Present in wiGraphicsDevice_DX12 SubmitCommandLists (which buffer, which fence v
 the compose batch submitted before Present) during a slider hold; then the vsync A/B.
 Probe: blackband.sh (physical-capture loop + band detector). The A/B harness lever
 SET_SINGLEQUEUE is already wired.
+
+## §2.68a (08-16 night) — water-slider hold debounced: 4.3 -> 84.5 FPS, band 13/18 -> 0/18
+
+⚠ CORRECTION to §2.68's guess: the profiler REFUTED "legacy ResetChunks every frame" —
+a Max Height slider hold runs at 6 ms / 85 FPS (CheckParams' per-frame branch is cheap on
+this content). The real villain was the WATER slider handler specifically: every change
+during a hold fired `ggterrain_extra_params.iUpdateTrees = 1` (consumer = "Max - Tree
+Update": 152 ms/frame, profiler-named) + `Wicked_Update_Visuals` (~23 ms, the CL-EntityProps
+spike) + ~24 ms knock-on in common_loop = 228 ms frames, 4.3 FPS.
+
+Fix (2.62 settle pattern): the handler's VALUE writes (gdefaultwaterheight / waterliney_f)
+stay immediate; the reactions moved behind a 20-frame countdown re-armed per change, fired
+once from the generator's always-running block (after the fLastY fog sync — bTriggerStableY
+and fLastY are function-local statics, the consumer must sit past both declarations). Both
+the slider AND its numeric InputFloat share the debounce. Time-of-Day combo untouched
+(one-shot).
+
+Measured on the same probes as §2.68:
+- Mid-hold: 228 ms / 4.3 FPS -> 6.14 ms / 84.5 FPS; "Max - Tree Update" 152 -> 0.00 ms.
+- Black band: 13/18 physical frames -> 0/18 (same wiggle geometry). The §2.68 present-path
+  gap still exists underneath — it just no longer gets the >100 ms frames it needs; the
+  engine-side fence/Present hunt stays open for a heavy-load day.
+- Settle correctness: slider dragged 13.4 m -> 1500 m and released — one reaction burst
+  ~0.25 s later, world correctly submerged, 79 FPS steady after.

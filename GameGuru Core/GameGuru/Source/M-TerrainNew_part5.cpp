@@ -13,6 +13,15 @@ static bool  s_bGenOffsetFolded = false;
 static float s_fPreFoldOffsetX = 0.0f;
 static float s_fPreFoldOffsetZ = 0.0f;
 
+// GGMAX 2.68a: the Water Height slider's per-change REACTIONS are debounced. Each change
+// used to fire Wicked_Update_Visuals (~23 ms) + ggterrain_extra_params.iUpdateTrees=1,
+// whose consumer is a FULL tree-pool update ("Max - Tree Update": 152 ms/frame, profiler-
+// measured) — EVERY FRAME of a slider hold, collapsing the generator to 4 FPS and feeding
+// the §2.68 black-band present artifact exactly the long frames it needs. The VALUE writes
+// (gdefaultwaterheight / waterliney_f) stay immediate; the reactions fire ONCE, ~1/3 s
+// after the value settles (the 2.62 notify pattern: countdown re-armed per change).
+static int s_iWaterSettleCountdown = -1;
+
 // GGMAX 2.67: the generator's Vegetation checkbox needs the REAL grass lever — the legacy
 // gggrass draw_enabled flag only gates the dead custom draw path; shipping grass is Wicked
 // hair entities (the editor's View Options checkbox learned this in the 07-28 UI audit,
@@ -870,6 +879,17 @@ void procedural_new_level(void)
 
 				}
 				fLastY = fSnapShotModeCameraY;
+			}
+			// GGMAX 2.68a: water-slider settle — the deferred reactions fire once here,
+			// ~20 frames after the last change (this block always runs while the generator
+			// panel draws; fLastY and bTriggerStableY are in scope at this point).
+			if (s_iWaterSettleCountdown > 0 && --s_iWaterSettleCountdown == 0)
+			{
+				s_iWaterSettleCountdown = -1;
+				Wicked_Update_Visuals((void *)&t.visuals);
+				ggterrain_extra_params.iUpdateTrees = 1;
+				bTriggerStableY = true;
+				fLastY = -1; //Trigger fog update.
 			}
 			#ifndef DIGAHOLE
 			if (ImageExist(iLargePreviewImageID))
@@ -2447,10 +2467,9 @@ void procedural_new_level(void)
 							{
 								g.gdefaultwaterheight = (int)GGTerrain_MetersToUnits(waterHeight);
 								t.terrain.waterliney_f = (float)g.gdefaultwaterheight;
-								Wicked_Update_Visuals((void *)&t.visuals);
-								ggterrain_extra_params.iUpdateTrees = 1;
-								bTriggerStableY = true;
-								fLastY = -1; //Trigger fog update.
+								// GGMAX 2.68a: reactions fire once the value settles (see the
+								// countdown consumer above) — per-frame they cost ~175 ms.
+								s_iWaterSettleCountdown = 20;
 							}
 							if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set Water Height in Meters.");
 							ImGui::PopItemWidth();
@@ -2460,11 +2479,8 @@ void procedural_new_level(void)
 							{
 								g.gdefaultwaterheight = (int)GGTerrain_MetersToUnits(waterHeight);
 								t.terrain.waterliney_f = (float)g.gdefaultwaterheight;
-								Wicked_Update_Visuals((void *)&t.visuals);
-								ggterrain_extra_params.iUpdateTrees = 1;
-								bTriggerStableY = true;
-								fLastY = -1; //Trigger fog update.
-
+								// GGMAX 2.68a: same settle debounce as the slider
+								s_iWaterSettleCountdown = 20;
 							}
 							if (!pref.iTurnOffEditboxTooltip && ImGui::IsItemHovered()) ImGui::SetTooltip("Set Water Height in Meters.");
 							ImGui::PopItemWidth();
