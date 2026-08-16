@@ -1,0 +1,65 @@
+terrain roughness dry-look floor — target G mean 175.0 (mat4), mode=APPLY
+{"file": "mat10\\Surface.dds", "status": "LIFTED", "gmean": 102.7, "lift": 72.3, "fmt": "DXT1", "mips": 12, "new_means": [164.3, 175.4, 0.0, 255.0], "new_mips": 12}
+{"file": "mat11\\Surface.dds", "status": "SKIP-already-dry", "gmean": 234.4}
+{"file": "mat12\\Surface.dds", "status": "SKIP-already-dry", "gmean": 214.6}
+{"file": "mat13\\Surface.dds", "status": "LIFTED", "gmean": 156.2, "lift": 18.8, "fmt": "DXT1", "mips": 12, "new_means": [255.0, 176.2, 0.0, 255.0], "new_mips": 12}
+{"file": "mat14\\Surface.dds", "status": "SKIP-already-dry", "gmean": 206.2}
+{"file": "mat15\\Surface.dds", "status": "SKIP-already-dry", "gmean": 211.1}
+{"file": "mat16\\Surface.dds", "status": "SKIP-already-dry", "gmean": 199.3}
+{"file": "mat17\\Surface.dds", "status": "LIFTED", "gmean": 156.5, "lift": 18.5, "fmt": "DXT1", "mips": 12, "new_means": [220.5, 176.4, 0.0, 255.0], "new_mips": 12}
+{"file": "mat18\\Surface.dds", "status": "SKIP-already-dry", "gmean": 252.1}
+{"file": "mat19\\Surface.dds", "status": "LIFTED", "gmean": 122.1, "lift": 52.9, "fmt": "DXT1", "mips": 12, "new_means": [212.6, 174.6, 0.0, 255.0], "new_mips": 12}
+{"file": "mat1\\Surface.dds", "status": "LIFTED", "gmean": 171.8, "lift": 3.2, "fmt": "DXT1", "mips": 12, "new_means": [235.7, 175.6, 0.0, 255.0], "new_mips": 12}
+{"file": "mat20\\Surface.dds", "status": "LIFTED", "gmean": 154.5, "lift": 20.5, "fmt": "DXT1", "mips": 12, "new_means": [225.5, 174.6, 0.0, 255.0], "new_mips": 12}
+{"file": "mat21\\Surface.dds", "status": "SKIP-already-dry", "gmean": 215.1}
+{"file": "mat22\\Surface.dds", "status": "LIFTED", "gmean": 72.9, "lift": 102.1, "fmt": "DXT1", "mips": 12, "new_means": [206.1, 173.9, 0.0, 255.0], "new_mips": 12}
+{"file": "mat23\\Surface.dds", "status": "SKIP-already-dry", "gmean": 228.0}
+{"file": "mat24\\Surface.dds", "status": "SKIP-already-dry", "gmean": 217.2}
+{"file": "mat25\\Surface.dds", "status": "LIFTED", "gmean": 146.3, "lift": 28.7, "fmt": "DXT1", "mips": 12, "new_means": [226.6, 174.5, 0.0, 255.0], "new_mips": 12}
+{"file": "mat26\\Surface.dds", "status": "SKIP-already-dry", "gmean": 208.3}
+{"file": "mat27\\Surface.dds", "status": "LIFTED", "gmean": 122.1, "lift": 52.9, "fmt": "DXT1", "mips": 12, "new_means": [229.2, 174.7, 0.0, 255.0], "new_mips": 12}
+{"file": "mat28\\Surface.dds", "status": "SKIP-already-dry", "gmean": 240.6}
+{"file": "mat29\\Surface.dds", "status": "SKIP-already-dry", "gmean": 242.1}
+{"file": "mat2\\Surface.dds", "status": "LIFTED", "gmean": 41.4, "lift": 133.6, "fmt": "DXT1", "mips": 12, "new_means": [247.9, 175.1, 0.0, 255.0], "new_mips": 12}
+{"file": "mat30\\Surface.dds", "status": "SKIP-already-dry", "gmean": 202.6}
+{"file": "mat31\\Surface.dds", "status": "LIFTED", "gmean": 33.2, "lift": 141.8, "fmt": "DXT1", "mips": 12, "new_means": [255.0, 174.4, 0.0, 255.0], "new_mips": 12}
+{"file": "mat32\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "mat3\\Surface.dds", "status": "SKIP-already-dry", "gmean": 202.6}
+{"file": "mat4\\Surface.dds", "status": "SKIP-already-dry", "gmean": 175.0}
+{"file": "mat5\\Surface.dds", "status": "SKIP-already-dry", "gmean": 214.8}
+{"file": "mat6\\Surface.dds", "status": "SKIP-already-dry", "gmean": 205.8}
+{"file": "mat7\\Surface.dds", "status": "SKIP-already-dry", "gmean": 213.1}
+{"file": "mat8\\Surface.dds", "status": "SKIP-already-dry", "gmean": 250.0}
+{"file": "mat9\\Surface.dds", "status": "SKIP-already-dry", "gmean": 189.9}
+{"file": "extras\\lowpoly\\mat1\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\mat2\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\mat3\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\mat4\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\mat5\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\mat6\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\mat7\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\mat8\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\mat9\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matA\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matB\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matC\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matD\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matE\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matF\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matG\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matH\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matI\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matJ\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matK\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matL\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matM\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matN\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matO\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matP\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matQ\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matR\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matS\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matT\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matU\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matV\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}
+{"file": "extras\\lowpoly\\matW\\Surface.dds", "status": "SKIP-already-dry", "gmean": 255.0}

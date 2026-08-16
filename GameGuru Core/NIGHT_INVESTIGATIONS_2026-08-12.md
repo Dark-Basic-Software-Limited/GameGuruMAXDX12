@@ -2467,3 +2467,46 @@ centre-high (symmetric sky+distant-terrain dome — closer to what "base env map
 mean, but a global look change); probe format BC6H → RGBA16F to kill the ring banding
 (~+1 MB VRAM per probe, removes a BlockCompress step). Engine untouched this session —
 2.73 is game-side only (GGTerrain_part0.cpp + AutomationHarness.cpp + WETEST.md).
+
+## §2.74 — terrain roughness dry-look floor EXECUTED (Lee-directed), and a false "pipeline disconnect" caught before it shipped (08-16 afternoon, #155)
+
+LEE'S DECISION on the §2.73 sand verdict: keep DX12's true energy, alter the CONTENT —
+"raise the beach sand's roughness toward mat4's value and treat all other terrain
+textures to the same fix"; the shiny originals become the future "maximum energy"
+custom set.
+
+EXECUTED (tools/terrainroughness.py, committed): audit of all 64 terrain Surface.dds
+(32 mats + 32 extras/lowpoly). Rule: any mat with roughness (G) mean below mat4's 175/255
+(0.686) gets an ADDITIVE lift to exactly that mean (additive preserves authored variation;
+a x4-5 multiplicative scale would clamp-distort). 11 mats lifted: mat2 41→175 (the beach
+sand), mat31 33→175, mat22 73→175, mat10 103→175, mat19/mat27 122→175, mat25 146→175,
+mat20 155→175, mat13/mat17 156→175, mat1 172→175. All verified post-encode: G mean on
+target ±3, AO drift ≤0.1, DXT1 + 12 mips preserved. 53 already at/above the floor
+untouched (all lowpoly Surface maps are flat 255). Originals mirrored no-clobber to
+D:\max\mipbackup\terraintextures_buildarea — THAT is the maximum-energy set.
+
+THE VERIFICATION SAGA — a §22.7-class correction, caught in-session: three successive
+whole-frame A/Bs on Island Showdown read as noise (lifted-vs-original, then
+chrome-mat2-vs-original at grazing cameras, then chrome-vs-lifted on a PAINT_TESTed mat2
+patch), and I wrongly concluded "the DX12 terrain pipeline does not consume Surface.dds
+roughness". Instrumenting the actual data killed that claim: DUMP_TERRAINSURF (new
+harness command) dumped the live SVT surface atlas — bake output initially read as the
+constants-fallback signature, but a marker-instrumented CS (temporary engine-shader diag,
+fully reverted, engine repo clean) proved 100% of texels take the SAMPLED path on the
+correct 2048^2 textures. The G≈250 sea is CORRECT CONTENT: Island Showdown's visible
+beaches are mat8/mat18-class sand (authored roughness ~250 — already dry), not mat2; a
+chrome DIELECTRIC patch is invisible top-down (F≈f0≈0.5% at normal incidence); and both
+"grazing" cameras provably faced away from the painted patch. The conclusive test —
+camera INSIDE a painted mat2 patch, 4 yaws, chrome vs lifted — shows 3.4-5.7% of pixels
+changed (noise band all day: 0.1-0.6%): chrome sand carries a visible sky-sheen wash,
+lifted sand reads warm and matte. PIPELINE HEALTHY, LEVER EFFECTIVE.
+
+WHAT THIS MEANS FOR LEE'S BEACH: his level's sand (classic mat2-class) now renders
+dry at DX12's full energy. Levels using mat8/mat18-class sand never looked wet in the
+first place. Revert/max-energy path: copy D:\max\mipbackup\terraintextures_buildarea\*
+back over Files\terraintextures\* (or ship it as the custom set).
+
+Lessons pinned in WETEST.md (DUMP_TERRAINSURF row): whole-frame diffs need a target-
+covering frame; dielectric gloss A/Bs need grazing angles; SET_CAMERA yaw must be proven
+to face the target; and Island Showdown is the WRONG level to eyeball sand-roughness
+changes on.

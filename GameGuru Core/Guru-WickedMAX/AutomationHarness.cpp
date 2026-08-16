@@ -3466,6 +3466,78 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "DUMP_TERRAINSURF") == 0)
+	{
+		// DUMP_TERRAINSURF [x z] — GGMAX 2.74 (#155 pipeline hunt): dump the live SVT atlases
+		// (basecolor + surface) to DDS and the nearest terrain CHUNK material's texture-slot
+		// state. Built because a chrome (roughness 0) terrain Surface.dds provably renders
+		// IDENTICALLY to roughness 0.69 — this instrument splits bake-side from shading-side.
+		float tsx = 0, tsz = 0;
+		if (arg && arg[0]) sscanf_s(arg, "%f %f", &tsx, &tsz);
+		wi::scene::Scene& tsScene = wi::scene::GetScene();
+		if (tsScene.terrains.GetCount() == 0)
+		{
+			_snprintf(result, resultSize, "ERROR: DUMP_TERRAINSURF no wicked terrain");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		wi::terrain::Terrain& tsTerr = tsScene.terrains[0];
+		FILE* tsF = fopen("terrainsurf_dump.txt", "w");
+		int tsSaved = 0;
+		using MC = wi::scene::MaterialComponent;
+		const int tsMaps[2] = { MC::BASECOLORMAP, MC::SURFACEMAP };
+		const char* tsNames[2] = { "terrain_atlas_basecolor.dds", "terrain_atlas_surface.dds" };
+		for (int mi = 0; mi < 2; ++mi)
+		{
+			if (tsTerr.atlas.maps[tsMaps[mi]].texture.IsValid())
+			{
+				bool ok = wi::helper::saveTextureToFile(tsTerr.atlas.maps[tsMaps[mi]].texture, tsNames[mi]);
+				if (tsF) fprintf(tsF, "atlas map %d -> %s %s (%ux%u fmt=%d)\n", tsMaps[mi], tsNames[mi],
+					ok ? "SAVED" : "SAVE-FAILED",
+					tsTerr.atlas.maps[tsMaps[mi]].texture.desc.width, tsTerr.atlas.maps[tsMaps[mi]].texture.desc.height,
+					(int)tsTerr.atlas.maps[tsMaps[mi]].texture.desc.format);
+				if (ok) tsSaved++;
+			}
+			else if (tsF) fprintf(tsF, "atlas map %d INVALID\n", tsMaps[mi]);
+		}
+		// nearest terrain chunk material: objects carrying FILTER_TERRAIN
+		float tsBest = 1e30f; wi::ecs::Entity tsBestEnt = wi::ecs::INVALID_ENTITY;
+		for (size_t oi = 0; oi < tsScene.objects.GetCount(); ++oi)
+		{
+			const wi::scene::ObjectComponent& oo = tsScene.objects[oi];
+			if ((oo.filterMask & wi::enums::FILTER_TERRAIN) == 0) continue;
+			wi::ecs::Entity oe = tsScene.objects.GetEntity(oi);
+			const wi::scene::TransformComponent* ot = tsScene.transforms.GetComponent(oe);
+			if (!ot) continue;
+			float dx = ot->world._41 - tsx, dz = ot->world._43 - tsz;
+			float d = dx * dx + dz * dz;
+			if (d < tsBest) { tsBest = d; tsBestEnt = oe; }
+		}
+		if (tsBestEnt != wi::ecs::INVALID_ENTITY && tsF)
+		{
+			const wi::scene::MaterialComponent* cm = tsScene.materials.GetComponent(tsBestEnt);
+			fprintf(tsF, "nearest chunk entity=%u dist=%.0f material=%s\n", (unsigned)tsBestEnt, sqrtf(tsBest), cm ? "YES" : "NO");
+			if (cm)
+			{
+				wi::graphics::GraphicsDevice* dev = wi::graphics::GetDevice();
+				fprintf(tsF, "  roughness=%.3f metalness=%.3f reflectance=%.3f\n", cm->roughness, cm->metalness, cm->reflectance);
+				for (int t = 0; t < MC::TEXTURESLOT_COUNT; ++t)
+				{
+					if (!cm->textures[t].resource.IsValid() && cm->textures[t].name.empty()) continue;
+					int desc = cm->textures[t].resource.IsValid()
+						? dev->GetDescriptorIndex(&cm->textures[t].resource.GetTexture(), wi::graphics::SubresourceType::SRV) : -1;
+					fprintf(tsF, "  slot %d: valid=%d desc=%d residency=%d feedback=%d lodclamp=%.1f name=\"%s\"\n",
+						t, cm->textures[t].resource.IsValid() ? 1 : 0, desc,
+						cm->textures[t].sparse_residencymap_descriptor, cm->textures[t].sparse_feedbackmap_descriptor,
+						cm->textures[t].lod_clamp, cm->textures[t].name.c_str());
+				}
+			}
+		}
+		if (tsF) fclose(tsF);
+		_snprintf(result, resultSize, "OK: DUMP_TERRAINSURF atlases_saved=%d chunk=%u -> terrainsurf_dump.txt", tsSaved, (unsigned)tsBestEnt);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_ENVPROBE_BRIGHTNESS") == 0)
 	{
 		// SET_ENVPROBE_BRIGHTNESS <f> — live scale on EnvironmentReflection_Global (engine
