@@ -2390,3 +2390,15 @@ gloss response — head 15's actual defect class was BAD roughness, not flat cha
 Full report: tools/surfacescan_report.txt. No content action taken — report only.
 
 19-demo sweep (RUNTAG 0816) launched on the converted tree; results follow as §2.72a.
+
+## §2.72a — the milestone acceptance sweep (0816): ALL GATES HOLD, VRAM DOWN ON ALL 19
+
+Full table in DEMO_FPS_SWEEP.md (2026-08-16 section); raw results tools/sweep_0816_2.72.txt.
+Headline: 19/19 loaded, POLYS bit-identical on all 19 (the texture-only proof), 4 GB gate
+holds with headroom UP (Aztec Game Kit 3987 → 3852, headroom 109 → 244 MB), in-game VRAM
+fell on every demo (−22 to −135 MB). FPS: hub-wide editor −4.6% / game −3.9% = ambient
+drift band; Bounty +16-18% and Grand Canyon in-game +28% improved; Aztec Teaser −12%/−10%
+and ISF game −11% flagged at the band edge for an eyeball, consistent with warm-up
+sampling. The MILESTONE's acceptance criteria are met in full. Streaming remains DEFAULT
+OFF — the tree is now uniformly mip-complete, which is the stated precondition for
+revisiting task #37.

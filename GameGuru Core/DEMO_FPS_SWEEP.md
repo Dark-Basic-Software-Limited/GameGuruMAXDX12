@@ -1,5 +1,46 @@
 # Demo FPS sweep — every hub demo, editor + in-game
 
+## 2026-08-16 SWEEP (0816) — THE MILESTONE DDS CONVERSION SWEEP — engine 2.71 `c2c9ef44` / game 2.72 `bfad4185` — 19/19 CLEAN, all gates hold
+
+Run immediately after the full stock DDS conversion (§2.72 in NIGHT_INVESTIGATIONS: 1641
+files brought to full mip chains, +1431 MB disk, originals mirrored at D:\max\mipbackup).
+This is the acceptance sweep the MILESTONE doc requires, AND the fresh per-demo FPS + VRAM
+readings Lee asked for ahead of the internal tester build. Comparison base: 0814c on 2.51.
+
+**Verdict: 19/19 loaded, zero crashes, POLYS BIT-IDENTICAL on all 19 (texture-only change
+proven), 4 GB gate HOLDS with MORE headroom — and in-game VRAM fell on EVERY demo** (−22 to
+−135 MB; worst case Aztec Game Kit 3987 → 3852, headroom 109 → 244 MB). Hub-wide FPS drift:
+editor −4.6%, game −3.9% — inside the documented ±8-15% ambient cross-run band. Texture
+streaming remains DEFAULT OFF; the conversion is what makes revisiting it possible (task #37).
+
+| Demo | editor FPS | in-game FPS | in-game VRAM MB (Δ vs 0814c) | POLYS |
+|---|---|---|---|---|
+| Aztec Game Kit Teaser | 63.8 | 61.3 | 3239 (−41) | 10330135 |
+| Aztec Game Kit | 97.3 | 84.4 | 3852 (−135) | 3438876 |
+| Bounty | 141.0 | 157.5 | 2841 (−54) | 469906 |
+| Horseshoe Bend | 120.1 | 90.2 | 3190 (−87) | 2168281 |
+| Island Showdown | 77.1 | 94.5 | 3088 (−72) | 4125704 |
+| Operation Amazon | 84.8 | 84.1 | 3583 (−71) | 5504271 |
+| River Raiders | 123.3 | 97.3 | 3498 (−70) | 2362345 |
+| Snowy Mountain Stroll | 156.4 | 102.6 | 2987 (−55) | 81369 |
+| A Grand Canyon Adventure | 104.7 | 60.0 | 3073 (−70) | 2279506 |
+| Disruption | 86.9 | 83.3 | 2975 (−112) | 4677579 |
+| Foggy Forest | 62.5 | 74.8 | 3129 (−117) | 10220589 |
+| Indian Strike Force | 99.4 | 99.3 | 3102 (−86) | 3229699 |
+| Switch Escape | 162.6 | 136.6 | 2455 (−39) | 109358 |
+| Canyon Offensive | 74.1 | 72.9 | 3416 (−86) | 8838008 |
+| Escape from the Zombie Cellar | 162.2 | 59.9 | 2509 (−39) | 28048 |
+| Jungle Fever | 128.4 | 131.8 | 3143 (−55) | 76157 |
+| RPG Template | 104.3 | 86.7 | 3435 (−22) | 3247629 |
+| The Mystery of Z Island | 105.1 | 94.9 | 3499 (−100) | 722872 |
+| Trapped | 176.6 | 179.8 | 2577 (−39) | 12768 |
+
+Notables: Bounty +16-18% and Grand Canyon in-game +28% (46.8 → 60.0) are genuine
+improvements; Aztec Teaser (−12%/−10%) and ISF in-game (−11%) sit at the edge of the drift
+band — worth one eyeball on Lee's rig but consistent with the 08-03 lesson that 30 s soaks
+sample lazy-PSO warm-up. Nothing crosses into regression territory, and the memory story
+(VRAM down everywhere, gate headroom up) is exactly what full mip chains were meant to buy.
+
 ## 2026-08-14 SWEEP (0814c) — engine `07a192f2` (2.47) / game 2.51 `56377809` — 19/19 CLEAN, and the story of the day
 
 THREE sweeps ran today on what was nominally the same content. The first two were POISONED by a
