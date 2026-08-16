@@ -1139,8 +1139,12 @@ static void* g_ggDX12VideoHandle[ANIMATIONMAX] = { 0 };
 // GGMAX 2.50 hang forensics: open-append-close per line, so the trail SURVIVES taskkill //F
 // (timestampactivity buffers and loses its tail on a hard kill — proved 03:15, empty log).
 // Lands in the game CWD = Max/Files/videotrace.txt.
+// GGMAX 2.71: false = no videotrace.txt (standalones run producelogfiles=0; set via
+// GGSetDiagTraceFiles — this file has no game-globals access, hence its own bool)
+bool gg_videotrace_enabled = true;
 void gg_videotrace(const char* msg)
 {
+	if (!gg_videotrace_enabled) return;
 	FILE* f = fopen("videotrace.txt", "a");
 	if (f) { fprintf(f, "%lu %s\n", (unsigned long)timeGetTime(), msg); fclose(f); }
 }

@@ -912,6 +912,13 @@ void GetSetupIniEarly( void )
 				// Default 100000 (unchanged). Must be read in this EARLY pass: masters are parked
 				// during entity-profile load, long before FPSC_LoadSETUPINI runs.
 				const bool bMasterPark = (_strnicmp(p, "masterpark", 10) == 0);
+				// GGMAX 2.71: `producelogfiles=0` (every standalone export's setup.ini) also
+				// gates the ROUTINE diagnostic FILE writers (gpup_trace/gap_trace/videotrace/
+				// reload_quiesce/alloc_tripwire ledger/anim+applytransform garbage tripwires) so
+				// players' folders stay clean. Needs the early pass: the allocator ledger and
+				// gpup_trace fire during engine init, before FPSC_LoadSETUPINI. The '=' check
+				// below keeps "producelogfilesdir=..." from satisfying this key.
+				const bool bProdLog = (_strnicmp(p, "producelogfiles", 15) == 0);
 				if (bLowVram || bLazyPso) iKeyLen = 7;
 				else if (bTreePool)       iKeyLen = 8;
 				else if (bMABlock)        iKeyLen = 9;
@@ -921,6 +928,7 @@ void GetSetupIniEarly( void )
 				else if (bSingleQ)        iKeyLen = 11;
 				else if (bLightFO || bWeapSH) iKeyLen = 12;
 				else if (bHairNDW || bWeapFD || bRagWB) iKeyLen = 16;
+				else if (bProdLog)        iKeyLen = 15;
 				else continue;
 				const char* q = p + iKeyLen;
 				while (*q == ' ' || *q == '\t') q++;
@@ -936,6 +944,11 @@ void GetSetupIniEarly( void )
 				{
 					extern void GGSetLazyPSO(int);
 					GGSetLazyPSO(iValue);
+				}
+				if (bProdLog)
+				{
+					extern void GGSetDiagTraceFiles(int);
+					GGSetDiagTraceFiles(iValue);
 				}
 				if (bMABlock)
 				{

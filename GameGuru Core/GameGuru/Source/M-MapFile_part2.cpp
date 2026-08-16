@@ -389,8 +389,11 @@
 	UnDim (  t.setuparr_s );
 
 	//  Itinery of all files in standalone
-	t.titineryfile_s=t.exepath_s+t.exename_s+"\\contents.txt";
-	SaveArray (  t.titineryfile_s.Get(),t.filecollection_s );
+	// GGMAX 2.71: contents.txt (the export file itinerary) is no longer written into the
+	// standalone folder — nothing in either repo reads it, and it was visible clutter for
+	// players. Restore if external packaging ever needs it:
+	//   t.titineryfile_s=t.exepath_s+t.exename_s+"\\contents.txt";
+	//   SaveArray (  t.titineryfile_s.Get(),t.filecollection_s );
 
 	//  cleanup file array
 	UnDim (  t.filecollection_s );

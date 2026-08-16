@@ -2012,6 +2012,11 @@ void  gpup_doit( int enr, CommandList cmd )
 }
 
 // initialize the system
+// GGMAX 2.71: false = init runs identically but writes no gpup_trace.txt (standalones
+// run producelogfiles=0 — no trace droppings in players' folders; set via GGSetDiagTraceFiles,
+// which GetSetupIniEarly calls before this init runs)
+bool gg_gpup_trace_file = true;
+
 int gpup_init()
 {
 	if ( gpu_particles_initialised ) return 1;
@@ -2046,7 +2051,7 @@ int gpup_init()
 	// any shader/PSO failure now disables the whole system cleanly instead of letting an
 	// empty PipelineState reach BindPipelineState (null internal_state -> AV in pso_validate).
 	FILE* gg_trace = nullptr;
-	fopen_s(&gg_trace, "gpup_trace.txt", "w");
+	if (gg_gpup_trace_file) fopen_s(&gg_trace, "gpup_trace.txt", "w");
 	#define GPUP_TRACE(...) { if (gg_trace) { fprintf(gg_trace, __VA_ARGS__); fprintf(gg_trace, "\n"); fflush(gg_trace); } }
 	#define GPUP_FAIL(msg) { GPUP_TRACE("FAIL: %s", msg); if (gg_trace) fclose(gg_trace); \
 		wi::backlog::post(std::string("GPU Particles DISABLED: ") + msg, wi::backlog::LogLevel::Error); \

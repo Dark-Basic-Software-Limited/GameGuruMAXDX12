@@ -2266,3 +2266,73 @@ sweep pending (chip).
 ## §2.70a — ★ Lee CONFIRMED (08-16 ~04:1x): "save and load now work in the standalone"
 Both standalone fixes of the night are user-confirmed closed: 2.69 (boot shows the quiet
 gradient, no debug backlog, no FSR2 errors) and 2.70 (SAVE GAME slots persist and load).
+
+## §2.70b (08-16 night) — the Lua 5.4 integer sweep: 268 more push sites converted
+
+Follow-through on the 2.70 bug CLASS (chip): every remaining direct `lua_pushnumber` in
+DarkLUA_part0-8 was classified by the STATIC C++ TYPE of its expression — int-typed
+converted to `lua_pushinteger`, float-typed left alone, nothing decided on naming
+convention (the sweep caught convention-breakers both ways: float fields with no `_f`
+suffix like `gunsettingstype.jamchance`, and integral oddballs like `footfallcount`
+(long long) and bool flashlight flags).
+
+Numbers: 611 total sites → 268 converted / 342 left float / 1 comment hit. Verified by
+diff symmetry (268 pushnumber lines removed ↔ 268 pushinteger code lines added; only
+WrapAngle went the other way, see 2.70c) and a float-pattern scan over every added line
+(single hit = ODERayTerrain, whose RETURN is int per BulletPhysics.H:119 — args are the
+floats). Four parallel subagents did the classification; every count reconciled by grep
+before trusting (part4's own tally was off by one — the diff is the truth).
+
+Smoke: editor → testpro2 → spotshadowtest level load, 139 FPS, ZERO Lua errors.
+Pre-existing pushinteger sites (55 in part0 — weapon slots, GetTerrainHeight's
+`lua_pushinteger(L, fReturnHeight)` etc.) were left untouched: they predate the port
+notes and match DX11 behavior.
+
+## §2.70c — WrapAngle returns the smoothed FLOAT now (DELIBERATE DX11 deviation)
+
+Lee's chip asked for `lua_pushnumber` at DarkLUA_part0.cpp:969 (WrapAngle truncated its
+smoothed angle). Verified before changing: DX11's DarkLUA.cpp has the IDENTICAL
+`lua_pushinteger` there, and Lua 5.2 truncated floats through that call the same way —
+so whole-degree WrapAngle is INHERITED behavior on both renderers, not conversion
+fallout. The change is therefore an intent-fix (a smoothing function that can now
+converge below 1°), recorded in-code as a deliberate parity deviation with a one-line
+revert. Watch item: any stock script tuned around the old ±1° stall.
+
+## §2.71 (08-16 night) — producelogfiles=0 now gates the diagnostic trace FILES
+## (standalone folders stay clean)
+
+Lee's chip: standalones accumulate instrument droppings. Full two-repo census first
+(3-agent workflow): 46 game + 21 engine writer sites classified by trigger. The policy
+line drawn: EVERY-RUN/ROUTINE writers gated; on-crash (Guru-Crash.log, crashdump.dmp,
+dred_report.txt), anomaly-only tripwires (gg_pso_fail, resource_hijack, stream_guard,
+corrupt_geometry), engine log.txt (support value, rewritten not accumulated) and all
+~25 harness on-command dumps KEPT everywhere.
+
+Gated (all default TRUE, cleared by GGSetDiagTraceFiles when producelogfiles=0):
+- gpup_trace.txt (GPUParticles_part0.cpp — fresh every launch)
+- reload_quiesce.txt (wickedcalls_part2.cpp — appended EVERY level load, forever)
+- videotrace.txt (CAnimation_part0.cpp — 15 call sites on every video op)
+- alloc_tripwire.txt (engine wiAllocator.h — a PER-ALLOCATION ledger, not fire-only:
+  549 MB accumulated on the dev machine; tracking + graceful reject stay LIVE, only
+  the file is gated)
+- gap_trace.txt (engine wiProfiler.cpp — counters + hitch histogram keep feeding
+  GET_PERF_DATA, only the file is gated)
+- anim_garbage.txt + applytransform_garbage.txt (engine tripwires that fire on STOCK
+  content via parrot load-time shear — sanitizers keep healing, files gated)
+- contents.txt: the export itinerary is no longer written at all (zero readers in
+  either repo; restore lines preserved in the M-MapFile_part2.cpp comment)
+
+Wiring: `producelogfiles` joins GetSetupIniEarly's exact-match key list (iKeyLen 15;
+the '=' test keeps producelogfilesdir from cross-matching) because the allocator ledger
+and gpup_trace fire BEFORE FPSC_LoadSETUPINI — the same ordering trap that bit lazypso
+(1.79/1.82). The normal parse calls GGSetDiagTraceFiles again for consistency. Engine
+delta 2.71 in WICKED_ENGINE_CHANGES.md (re-apply on upstream pull). One linker lesson
+re-learned: GPUParticles_part0.cpp sits ENTIRELY inside `namespace GPUParticles` — the
+bridge extern needed the namespace (2.53 rule, now bitten twice).
+
+VERIFIED both ways on one binary: producelogfiles=1 editor run → traces written
+(gpup_trace fresh); producelogfiles=0 run to hub → 8/8 trace paths ABSENT; setup.ini
+restored. Standalone exports already write producelogfiles=0, so a fresh export goes
+quiet with no further action. NOTE: the automation harness still runs in standalones
+(auto_command.txt watcher) — left as-is deliberately (we drive standalone tests with
+it); flag for Lee whether shipped games should disable it.

@@ -86,6 +86,32 @@ void GGSetLowVRAMLevel(int on)
 	GGRecomputeLowVRAM();
 }
 
+// GGMAX 2.71: the producelogfiles setup.ini key now also gates the ROUTINE diagnostic
+// FILE writers (standalone exports write producelogfiles=0, the editor ships =1), so
+// players' game folders stay clean. Detection/healing and the crash handlers
+// (Guru-Crash.log, crashdump.dmp, dred_report.txt) stay live everywhere — only the
+// trace files are gated. Called from GetSetupIniEarly (before engine init — the same
+// ordering trap as lazypso) and again from FPSC_LoadSETUPINI's normal parse.
+// File-scope namespace-qualified externs per the 2.53 linkage rule.
+namespace wi::allocator { extern bool gg_alloc_tripwire_file; }   // engine wiAllocator.h (inline)
+namespace wi::profiler { void gg_trace_file_enable(bool enable); } // engine wiProfiler.cpp
+extern bool gg_anim_garbage_file;           // engine wiScene.cpp
+extern bool gg_applytransform_garbage_file; // engine wiScene_Components.cpp
+extern bool gg_videotrace_enabled;          // game CAnimation_part0.cpp
+extern bool gg_reload_quiesce_file;         // game wickedcalls_part2.cpp
+namespace GPUParticles { extern bool gg_gpup_trace_file; } // game GPUParticles_part0.cpp (whole file sits in this namespace)
+void GGSetDiagTraceFiles(int on)
+{
+	const bool enable = (on != 0);
+	wi::allocator::gg_alloc_tripwire_file = enable;
+	wi::profiler::gg_trace_file_enable(enable);
+	gg_anim_garbage_file = enable;
+	gg_applytransform_garbage_file = enable;
+	gg_videotrace_enabled = enable;
+	gg_reload_quiesce_file = enable;
+	GPUParticles::gg_gpup_trace_file = enable;
+}
+
 // GGMAX 1.82: lazy object PSOs — DEFAULT ON, this is the revert switch (setup.ini `lazypso=0`).
 //
 // TIMING, measured not assumed: the flag must be set before wi::renderer::LoadShaders builds the

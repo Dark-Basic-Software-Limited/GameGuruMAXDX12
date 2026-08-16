@@ -711,7 +711,7 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "lowvramgrassdensity"; if (t.field_s == t.tryfield_s) { extern void GGSetLowVRAMGrassDensity(float); GGSetLowVRAMGrassDensity((float)t.value1 * 0.01f); }
 
 					// DOCDOC: producelogfiles = Sets whether the editor and game produces .LOG files which time stamp and track events within the engine
-					t.tryfield_s = "producelogfiles"; if (t.field_s == t.tryfield_s)  g.gproducelogfiles = t.value1;
+					t.tryfield_s = "producelogfiles"; if (t.field_s == t.tryfield_s) { g.gproducelogfiles = t.value1; extern void GGSetDiagTraceFiles(int); GGSetDiagTraceFiles(t.value1); }
 
 					// DOCDOC: producelogfilesdir = Set a new folder for where the .LOG files will be saved out. Default is the root folder.
 					t.tryfield_s = "producelogfilesdir"; if (t.field_s == t.tryfield_s)  g.gproducelogfilesdir_s = t.value_s;
