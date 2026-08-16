@@ -2150,6 +2150,7 @@ guarantee — this is the second push-vs-poll failure this week (2.62 CheckParam
 first).
 
 ## §2.68h+i (08-16 night) — THE ssss10 mystery solved: it was never wicked terrain
+## ★ Lee CONFIRMED 03:30: "the empty level now loads invisible on the fresh load"
 
 Lee's re-repro (ssss10 -> spotshadowtest -> ssss10 = grid back) survived 2.68g because the
 visible surface was NEVER the wicked chunks. Instrument chain that cracked it:
