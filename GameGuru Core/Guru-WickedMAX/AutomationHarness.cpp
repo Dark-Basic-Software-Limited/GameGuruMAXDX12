@@ -3563,12 +3563,13 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		// env-probe spheres on/off without needing a probe marker picked in the editor
 		// (G-Lighting.cpp:260 flips this on pick; it also re-clears it every frame while no
 		// probe is picked, so pair this with a same-frame screenshot or pick a probe first).
-		int dpOn = 0;
-		if (arg) sscanf_s(arg, "%d", &dpOn);
+		int dpOn = 0; float dpScale = 0.0f;
+		if (arg) sscanf_s(arg, "%d %f", &dpOn, &dpScale);
 		extern int gg_debugprobes_force; // consulted by lighting_loop (G-Lighting.cpp), which otherwise clears the flag every frame
 		gg_debugprobes_force = dpOn;
+		if (dpScale > 0.0f) wiRenderer::SetDebugEnvProbeSphereScale(dpScale); // 2.75 preview-size knob
 		wiRenderer::SetToDrawDebugEnvProbes(dpOn != 0);
-		_snprintf(result, resultSize, "OK: SET_DEBUGPROBES %d", dpOn);
+		_snprintf(result, resultSize, "OK: SET_DEBUGPROBES %d scale=%.0f", dpOn, dpScale);
 		result[resultSize - 1] = 0;
 		return true;
 	}

@@ -2923,3 +2923,59 @@ extern "C" void GGVideo_ParallelFor(int jobCount, void(*fn)(int, void*), void* c
 	wi::jobsystem::Dispatch(jc, (uint32_t)jobCount, 1, [fn, ctx](wi::jobsystem::JobArgs args) { fn((int)args.jobIndex, ctx); });
 	wi::jobsystem::Wait(jc);
 }
+
+// GGMAX 2.75 (#155): the %probe marker ball must not pretend to be an env-map preview.
+// Under DX12 the legacy probe.dbo ball gets full PBR shading and reflects its own
+// box-projected capture through a legacy cube-patch sphere mesh — the per-face "porthole"
+// look Lee reported (the DATA was proven seamless, see notes SS2.74b). Matte the marker's
+// materials so the only mirror ball at a picked probe is the engine's ACCURATE debug
+// sphere (enlarged via SetDebugEnvProbeSphereScale below). Idempotent; called from the
+// lighting_loop probe-list rebuild so level load and newly placed probes are all covered.
+void WickedCall_MakeObjectEnvMatte(int iObj)
+{
+	if (iObj <= 0 || !ObjectExist(iObj)) return;
+	sObject* pObj = GetObjectData(iObj);
+	if (pObj == NULL) return;
+	auto& scene = wi::scene::GetScene();
+	for (int f = 0; f < pObj->iFrameCount; f++)
+	{
+		if (pObj->ppFrameList[f] == NULL) continue;
+		wi::ecs::Entity objent = (wi::ecs::Entity)pObj->ppFrameList[f]->wickedobjindex;
+		wi::scene::ObjectComponent* oc = scene.objects.GetComponent(objent);
+		if (oc == nullptr) continue;
+		wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(oc->meshID);
+		if (mesh == nullptr) continue;
+		for (auto& sub : mesh->subsets)
+		{
+			wi::scene::MaterialComponent* m = scene.materials.GetComponent(sub.materialID);
+			if (m == nullptr) continue;
+			if (m->roughness >= 1.0f && m->metalness <= 0.0f && m->reflectance <= 0.0f) continue; // already matte
+			m->SetRoughness(1.0f);
+			m->SetMetalness(0.0f);
+			m->SetReflectance(0.0f);
+			m->SetDirty();
+		}
+	}
+}
+
+// GGMAX 2.75 (#155): live world-space radius of an object's largest frame AABB — used to
+// size the engine's debug probe mirror sphere so it fully encloses the marker ball.
+float WickedCall_GetObjectWorldRadius(int iObj)
+{
+	if (iObj <= 0 || !ObjectExist(iObj)) return 0.0f;
+	sObject* pObj = GetObjectData(iObj);
+	if (pObj == NULL) return 0.0f;
+	auto& scene = wi::scene::GetScene();
+	float fBest = 0.0f;
+	for (int f = 0; f < pObj->iFrameCount; f++)
+	{
+		if (pObj->ppFrameList[f] == NULL) continue;
+		wi::ecs::Entity objent = (wi::ecs::Entity)pObj->ppFrameList[f]->wickedobjindex;
+		size_t idx = scene.objects.GetIndex(objent);
+		if (idx >= scene.objects.GetCount() || idx >= scene.aabb_objects.size()) continue;
+		const wi::primitive::AABB& ab = scene.aabb_objects[idx];
+		float r = ab.getRadius();
+		if (r > fBest) fBest = r;
+	}
+	return fBest;
+}

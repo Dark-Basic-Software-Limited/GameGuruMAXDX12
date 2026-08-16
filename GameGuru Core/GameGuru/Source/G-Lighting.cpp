@@ -230,6 +230,13 @@ void lighting_loop(void)
 						float fSY = fLightProbeRangeY;// t.entityelement[ee].scaley;
 						float fSZ = fLightProbeRangeZ;// t.entityelement[ee].scalez;
 						GGTerrain::GGTerrain_AddEnvProbeList(t.entityelement[ee].x, t.entityelement[ee].y, t.entityelement[ee].z, fLightProbeRange, t.entityelement[ee].quatx, t.entityelement[ee].quaty, t.entityelement[ee].quatz, t.entityelement[ee].quatw, fSX, fSY, fSZ, fProbeBrightness);
+
+						// GGMAX 2.75 (#155): matte the marker ball — under DX12 PBR the legacy
+						// probe.dbo sphere reflected its own box-projected capture as per-face
+						// "portholes" and read as a corrupt cube map (data proven clean, SS2.74b).
+						// The accurate preview is the engine debug sphere, enlarged on pick below.
+						extern void WickedCall_MakeObjectEnvMatte(int iObj);
+						WickedCall_MakeObjectEnvMatte(t.entityelement[ee].obj);
 					}
 				}
 			}
@@ -270,6 +277,16 @@ void lighting_loop(void)
 		// and only if the light object is a probe
 		if (t.entityprofile[t.entityelement[t.widget.pickedEntityIndex].bankindex].light.fLightHasProbe >= 50)
 		{
+			// GGMAX 2.75 (#155): size the engine's ACCURATE debug mirror sphere to fully
+			// enclose the (now matte) marker ball, so picking a probe shows a large true
+			// preview of the captured cube (DX11-style). Falls back to 40 units if the
+			// marker's world AABB is not available this frame.
+			extern float WickedCall_GetObjectWorldRadius(int iObj);
+			float fBallRadius = WickedCall_GetObjectWorldRadius(t.entityelement[t.widget.pickedEntityIndex].obj);
+			float fPreviewScale = fBallRadius * 1.15f;
+			if (fPreviewScale < 10.0f) fPreviewScale = 40.0f;
+			if (fPreviewScale > 400.0f) fPreviewScale = 400.0f;
+			wiRenderer::SetDebugEnvProbeSphereScale(fPreviewScale);
 			wiRenderer::SetToDrawDebugEnvProbes(true);
 		}
 	}

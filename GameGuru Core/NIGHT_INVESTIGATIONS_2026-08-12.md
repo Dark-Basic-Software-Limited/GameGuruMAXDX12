@@ -2541,3 +2541,34 @@ STATUS: data exonerated with instruments; the remaining item is a LOOK/UX decisi
 Lee — (a) make the %probe marker ball matte so it stops posing as a data viewer, and/or
 (b) enlarge the engine's true debug mirror-ball on probe pick as the accurate DX11-style
 preview. No look change shipped without his call.
+
+## §2.75 — Lee-directed: matte %probe marker ball + LARGE accurate preview sphere (08-16 evening, #155/#156)
+
+LEE'S DIRECTION on §2.74b: "Yes do both, matte ball plus larger accurate preview sphere."
+
+SHIPPED (engine delta 2.75 + game 2.75):
+1. ENGINE `wi::renderer::SetDebugEnvProbeSphereScale(float)` (`gg_debugprobe_sphere_scale`,
+   default 1.0 = stock): the debug env-probe mirror spheres draw with a game-set scale.
+   WICKED_ENGINE_CHANGES.md row added (re-apply on upstream pull).
+2. GAME matte pass: `WickedCall_MakeObjectEnvMatte(iObj)` (wickedcalls_part3) walks the
+   marker object's frames -> mesh subsets -> materials and forces roughness 1 / metal 0 /
+   reflectance 0 (idempotent, SetDirty). Called from lighting_loop's probe-list rebuild
+   (g_bLightProbeScaleChanged walk) so level load AND newly placed probes are covered.
+3. GAME preview sizing: on probe-marker pick, `WickedCall_GetObjectWorldRadius(iObj)`
+   (live wicked AABB radius over the marker's frames) x 1.15 -> SetDebugEnvProbeSphereScale
+   (fallback 40 if AABB unavailable, clamp 400) then SetToDrawDebugEnvProbes(true).
+   Harness: SET_DEBUGPROBES now takes optional scale.
+
+VERIFIED LIVE (Island Showdown): forced scale-60 preview sphere renders as a big CLEAN
+mirror ball — continuous sky + island reflection, zero portholes (ball/ball_far.png).
+⚠ Camera INSIDE the sphere radius sees nothing (backface cull) — cost one confused shot.
+The matte pass could not be photographed tonight: NO reachable level contains a probe
+marker (scanned every mapbank fpm map.ent — only Lee's spotshadowtest.fpm has one, and
+loose mapbank fpms have no harness loader; TESTPRO1's project203.dat is a custom "Stor"
+container, not a zip; a synthetic My Games/projectbank project does NOT register — the
+hub lists projects from Files\projectbank\<name>\project203.dat only). The matte code is
+15 lines on the proven PICK_AT frame-walk pattern and no-ops without markers (TESTPRO1 +
+Island Showdown load clean). Lee verifies with one glance at his spotshadowtest probe.
+
+BONUS re-verify: TESTPRO1 census shows all 8 pool probes parked at (0, 28215, 0) — the
+2.73 high-park confirmed on a second level.
