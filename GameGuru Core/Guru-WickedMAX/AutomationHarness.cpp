@@ -3347,6 +3347,7 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 namespace wi::input::xinput { extern uint32_t gg_xinput_rescan_frames; }
 namespace wi::scene         { extern int      gg_scene_serial_profile; }
 namespace wi::scene         { extern bool     gg_instinit_parallel; }
+namespace wi::scene         { extern float    gg_envprobe_brightness; } // GGMAX 1.55 knob (wiScene.cpp:46), SET_ENVPROBE_BRIGHTNESS
 
 namespace GPUParticles {
 	int gpup_debug_dump(char* summary, int summarySize);
@@ -3361,6 +3362,143 @@ namespace GPUParticles {
 	void gpup_debug_drawlog(int on);
 	void gpup_debug_rebind(int on);
 	int gpup_debug_ages(int enr);
+}
+
+// GGMAX 2.73 (task #155, "circle image on each cube side"): the base/global environment
+// reflection every shiny surface falls back to is probes[0] = GGTerrain's globalEnvProbe,
+// a 128px capture taken at world (0, terrain-height, 0) — the MAP CORNER. DUMP_ENVPROBE
+// saves every probe cube + the raw sky cube as .dds (decode offline with texconv) and
+// censuses what geometry sits inside the capture radius of probes[0], so the thing being
+// photographed into the base env map can be NAMED instead of guessed at.
+extern bool g_bLightProbeScaleChanged; // M-GridEdit_part0.cpp — the editor's full probe-refresh path
+static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "DUMP_ENVPROBE") == 0)
+	{
+		// DUMP_ENVPROBE [radius=3000] — dump all env probe cubes + sky cube + census of
+		// objects near probes[0] (the global/base env probe).
+		float epRadius = 3000.0f;
+		if (arg && arg[0]) sscanf_s(arg, "%f", &epRadius);
+		wi::scene::Scene& epScene = wi::scene::GetScene();
+		FILE* epF = fopen("envprobe_dump.txt", "w");
+		if (epF == nullptr)
+		{
+			_snprintf(result, resultSize, "ERROR: DUMP_ENVPROBE could not open envprobe_dump.txt");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		int epSaved = 0;
+		float epGX = 0, epGY = 0, epGZ = 0;
+		fprintf(epF, "probes=%d (probes[0] is the global/base env reflection when no local probe covers a pixel)\n",
+			(int)epScene.probes.GetCount());
+		for (size_t epi = 0; epi < epScene.probes.GetCount(); ++epi)
+		{
+			wi::ecs::Entity epe = epScene.probes.GetEntity(epi);
+			const wi::scene::EnvironmentProbeComponent& epp = epScene.probes[epi];
+			const wi::scene::NameComponent* epn = epScene.names.GetComponent(epe);
+			const wi::scene::TransformComponent* ept = epScene.transforms.GetComponent(epe);
+			float px = ept ? ept->world._41 : 0, py = ept ? ept->world._42 : 0, pz = ept ? ept->world._43 : 0;
+			if (epi == 0) { epGX = px; epGY = py; epGZ = pz; }
+			fprintf(epF, "probe[%d] entity=%u name=\"%s\" pos=(%.0f,%.0f,%.0f) range=%.0f res=%u mips=%u dirty=%d render_dirty=%d realtime=%d texfile=\"%s\" texvalid=%d\n",
+				(int)epi, (unsigned)epe, epn ? epn->name.c_str() : "?", px, py, pz,
+				epp.range, epp.texture.IsValid() ? epp.texture.desc.width : 0,
+				epp.texture.IsValid() ? epp.texture.desc.mip_levels : 0,
+				epp.IsDirty() ? 1 : 0, epp.render_dirty ? 1 : 0, epp.IsRealTime() ? 1 : 0,
+				epp.textureName.c_str(), epp.texture.IsValid() ? 1 : 0);
+			if (epp.texture.IsValid() && epSaved < 16)
+			{
+				char epFile[128];
+				_snprintf(epFile, sizeof(epFile), "envprobe_%d_%s.dds", (int)epi, epn ? epn->name.c_str() : "unnamed");
+				epFile[sizeof(epFile) - 1] = 0;
+				for (char* c = epFile; *c; ++c) if (*c == ' ' || *c == '\\' || *c == '/' || *c == ':') *c = '_';
+				bool epOk = wi::helper::saveTextureToFile(epp.texture, epFile);
+				fprintf(epF, "  -> %s %s\n", epFile, epOk ? "SAVED" : "SAVE-FAILED");
+				if (epOk) epSaved++;
+			}
+		}
+		// the raw sky cube (shaderscene.globalenvmap) for comparison — sky backdrop + probe
+		// capture backdrop, sampled only at mip 0 by shaders
+		bool epSkySaved = false;
+		if (epScene.weathers.GetCount() > 0)
+		{
+			const wi::scene::WeatherComponent& epw = epScene.weathers[0];
+			fprintf(epF, "weather.skyMapName=\"%s\" valid=%d\n", epw.skyMapName.c_str(), epw.skyMap.IsValid() ? 1 : 0);
+			if (epw.skyMap.IsValid())
+			{
+				epSkySaved = wi::helper::saveTextureToFile(epw.skyMap.GetTexture(), "envprobe_sky.dds");
+				fprintf(epF, "  -> envprobe_sky.dds %s (desc %ux%u mips=%u fmt=%d)\n",
+					epSkySaved ? "SAVED" : "SAVE-FAILED",
+					epw.skyMap.GetTexture().desc.width, epw.skyMap.GetTexture().desc.height,
+					epw.skyMap.GetTexture().desc.mip_levels, (int)epw.skyMap.GetTexture().desc.format);
+			}
+		}
+		// census: what does probes[0] photograph? Everything within radius of its position.
+		// NOTE: probe rendering culls via the CACHED aabb layerMask (2.48 rule), so print that.
+		struct EpHit { float dist; wi::ecs::Entity entity; const char* name; uint32_t layerMask; uint32_t filterMask; int renderable; };
+		std::vector<EpHit> epHits;
+		const size_t epObjCount = std::min(epScene.objects.GetCount(), epScene.aabb_objects.size());
+		for (size_t eoi = 0; eoi < epObjCount; ++eoi)
+		{
+			wi::ecs::Entity eoe = epScene.objects.GetEntity(eoi);
+			const wi::scene::TransformComponent* eot = epScene.transforms.GetComponent(eoe);
+			if (eot == nullptr) continue;
+			float dx = eot->world._41 - epGX, dy = eot->world._42 - epGY, dz = eot->world._43 - epGZ;
+			float d = sqrtf(dx * dx + dy * dy + dz * dz);
+			if (d > epRadius) continue;
+			const wi::scene::NameComponent* eon = epScene.names.GetComponent(eoe);
+			const wi::scene::ObjectComponent& eoo = epScene.objects[eoi];
+			epHits.push_back({ d, eoe, eon ? eon->name.c_str() : "?",
+				epScene.aabb_objects[eoi].layerMask, eoo.GetFilterMask(), eoo.IsRenderable() ? 1 : 0 });
+		}
+		std::sort(epHits.begin(), epHits.end(), [](const EpHit& a, const EpHit& b) { return a.dist < b.dist; });
+		fprintf(epF, "census: %d objects within %.0f of probes[0] pos (%.0f,%.0f,%.0f) — sorted by distance:\n",
+			(int)epHits.size(), epRadius, epGX, epGY, epGZ);
+		int epWritten = 0;
+		for (const EpHit& h : epHits)
+		{
+			if (epWritten++ >= 300) break;
+			fprintf(epF, "  dist=%.0f entity=%u renderable=%d layerMask=0x%08x filterMask=0x%02x name=\"%s\"\n",
+				h.dist, (unsigned)h.entity, h.renderable, h.layerMask, h.filterMask, h.name);
+		}
+		fclose(epF);
+		_snprintf(result, resultSize, "OK: DUMP_ENVPROBE probes=%d cubes_saved=%d sky_saved=%d census_hits=%d r=%.0f -> envprobe_dump.txt + envprobe_*.dds",
+			(int)epScene.probes.GetCount(), epSaved, epSkySaved ? 1 : 0, (int)epHits.size(), epRadius);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_ENVPROBE_BRIGHTNESS") == 0)
+	{
+		// SET_ENVPROBE_BRIGHTNESS <f> — live scale on EnvironmentReflection_Global (engine
+		// GGMAX 1.55 knob, default 1.0). 0.5 reproduces DX11's dielectric damping
+		// (envColor *= 0.5*metalness+0.5 == 0.5 on metalness-0 surfaces like sand/terrain),
+		// so 1.0 vs 0.5 is the DX12-vs-DX11 reflection-energy A/B on the beach.
+		float ebv = 1.0f;
+		if (arg == nullptr || sscanf_s(arg, "%f", &ebv) != 1)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_ENVPROBE_BRIGHTNESS needs <float>");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		wi::scene::gg_envprobe_brightness = ebv;
+		_snprintf(result, resultSize, "OK: SET_ENVPROBE_BRIGHTNESS %.3f (1.0=DX12 stock, 0.5=DX11 dielectric damping)", ebv);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "REFRESH_ENVPROBE") == 0)
+	{
+		// Trigger the editor-identical full refresh: lighting_loop -> GGTerrain_ClearEnvProbeList
+		// (which zeroes globalEnvProbePos.y, forcing the GLOBAL probe re-render) -> marker re-add.
+		// Also fire WickedCall_UpdateProbes so the 2.73 pool re-bake path runs (same as a sky
+		// change / level load does). Dump before AND after this to separate "stale capture"
+		// from "reproducibly corrupt capture".
+		g_bLightProbeScaleChanged = true;
+		extern void WickedCall_UpdateProbes(void);
+		WickedCall_UpdateProbes();
+		_snprintf(result, resultSize, "OK: REFRESH_ENVPROBE g_bLightProbeScaleChanged + bUpdateProbes set (global + local probes will re-capture over the next frames)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	return false;
 }
 
 static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
@@ -6123,7 +6261,8 @@ void AutoHarness_CheckForCommand(void)
 	{
 		// handled in the helper (see above the dispatch function)
 	}
-	else if (AutoHarness_TransparencyCommands(cmd, arg, result, sizeof(result)))
+	else if (AutoHarness_TransparencyCommands(cmd, arg, result, sizeof(result))
+	      || AutoHarness_EnvProbeCommands(cmd, arg, result, sizeof(result))) // C1061: share the block, don't extend the ladder
 	{
 		// handled in the helper (see above the dispatch function)
 	}

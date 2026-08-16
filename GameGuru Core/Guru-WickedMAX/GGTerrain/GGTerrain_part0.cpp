@@ -9537,8 +9537,12 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 						if (g_bEnvProbeTrackingUpdate[iRealProbeIndex] == false)
 						{
 							// update probe with correct scaling
+							// GGMAX 2.73 (#155): park released slots high in the sky instead of
+							// (-999999)^3 — the SetDirty below re-bakes the cube at the park spot,
+							// and a clean current-sky bake is what flashes on the slot's NEXT
+							// assignment (was: a void-black or stale-twilight cube).
 							pTransform->ClearTransform();
-							localEnvProbePos[iRealProbeIndex] = XMFLOAT3(-999999, -999999, -999999);
+							localEnvProbePos[iRealProbeIndex] = XMFLOAT3(0, ggterrain_local_params.height + 20000.0f, 0);
 							pTransform->Translate(localEnvProbePos[iRealProbeIndex]);
 							pTransform->UpdateTransform();
 							pTransform->SetDirty();
@@ -9716,6 +9720,32 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 		for (int scan = 0; scan < LOCALENVPROBECOUNT; scan++)
 		{
 			g_bEnvProbeTrackingUpdate[scan] = true;
+
+			// GGMAX 2.73 (#155): re-bake the pool probe under the CURRENT sky. Until now the
+			// pool's only bake happened at GGTerrain init, before the level's sun/sky exist —
+			// a twilight cube with a moon-like blob — and that stale cube is the FIRST thing
+			// reflections show whenever a slot is later assigned to a user probe marker (the
+			// 1-2 frame window between re-track and re-capture samples the old content).
+			// Unassigned slots are parked high in the sky first so the bake is clean
+			// current-sky, which is also the least-wrong content for that flash window.
+			EnvironmentProbeComponent* poolprobe = wiScene::GetScene().probes.GetComponent(localEnvProbe[scan]);
+			if (poolprobe)
+			{
+				if (g_iEnvProbeTracking[scan] == 0)
+				{
+					localEnvProbePos[scan] = XMFLOAT3(0, ggterrain_local_params.height + 20000.0f, 0);
+					poolprobe->position = localEnvProbePos[scan];
+					wiScene::TransformComponent* pPoolTransform = wiScene::GetScene().transforms.GetComponent(localEnvProbe[scan]);
+					if (pPoolTransform)
+					{
+						pPoolTransform->ClearTransform();
+						pPoolTransform->Translate(localEnvProbePos[scan]);
+						pPoolTransform->UpdateTransform();
+						pPoolTransform->SetDirty();
+					}
+				}
+				poolprobe->SetDirty();
+			}
 		}
 		ggterrain_extra_params.bUpdateProbes = false;
 	}

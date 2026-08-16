@@ -2402,3 +2402,68 @@ and ISF game −11% flagged at the band edge for an eyeball, consistent with war
 sampling. The MILESTONE's acceptance criteria are met in full. Streaming remains DEFAULT
 OFF — the tree is now uniformly mip-complete, which is the stated precondition for
 revisiting task #37.
+
+## §2.73 — "circle image on each cube side": the base env cube map named, the twilight pool bake fixed (08-16 afternoon, #155)
+
+Lee's afternoon report, two symptoms on the beach test level: (1) dropping an env probe
+and sliding its range briefly shows the BASE env cube map — "a circle image on each cube
+side" — before the local capture takes over; (2) DX12 sand is shinier/wetter than DX11,
+with a vertical reflection band matching that corrupt-looking base map.
+
+FIRST SUSPECT CLEARED: the sky cube files. skybank was converted 08-04 (R11G11B10 →
+BC6H_UF16, 128→32 MB each) — face-by-face and mip-by-mip decode against the D:\max\mipbackup
+originals shows the conversion FAITHFUL, and the originals' mips were already plain box
+filters (never GGX-prefiltered). The sunny down-face "dark ball on radial rays" is IN the
+Feb-2022 source asset. Also irrelevant anyway, see next.
+
+THE ARCHITECTURE (3-agent trace, grep-verified): reflections NEVER sample the skybank
+_cube.dds. `shaderscene.globalenvmap` (the raw sky file) is sampled at MIP 0 only, by the
+sky backdrop + probe-capture backdrop (skyHF.hlsli:185/189). What every shiny surface falls
+back to is `GetScene().globalprobe` = probes[0] = GGTerrain's always-created
+`globalEnvProbe` (GGTerrain_part0.cpp:7485) — a 128px, 4-mip, BC6H capture at world
+(0, terrain-height, 0), GGX-filtered by RefreshEnvProbes. MIP = roughness × 4. "The base
+env cube map" IS this capture. DX11 was the same shape (128px live probe, 8 mips,
+GGX-filtered, slot 0 at the camera) — the raw cube was never a reflection source there
+either.
+
+THE RUNTIME PROOF (new instrument DUMP_ENVPROBE, WETEST.md): on Island Showdown the
+global probe's capture is a plausible sky+island cube (with a faint BC6H banding bullseye
+at the sun position — BC6H terraces a smooth radial halo into concentric rings; DX11's
+probe array was uncompressed and could not band like this). The smoking gun was the 8
+localEnvProbe POOL slots: parked at (0,0,0) range 2, they baked ONCE at GGTerrain init —
+BEFORE any level's sun/sky exist — capturing a dark twilight cube with a moon-like blob
+on +Y. In the editor with no probe markers the tracking system's main branch never runs,
+so that alien bake persists FOREVER (verified: byte-identical after the full editor
+refresh path). When a user adds/edits a probe marker, a pool slot is assigned and there
+is a 1-2 frame window (re-track → re-capture) where reflections sample the OLD cube =
+Lee's flash: dark navy sphere with light circles.
+
+FIX (game-only, 2.73): in the `bUpdateProbes` consumer (GGTerrain_EnvProbeWork), every
+pool slot now gets SetDirty at level load / sky change, and unassigned slots are parked
+HIGH in the sky (terrain height + 20000) first — so the stored bake is always clean
+CURRENT sky, which is also the least-wrong content for the inherent 1-2 frame flash. The
+fade-out park position (-999999)³ got the same treatment (it re-bakes at the park spot; a
+void-black cube was the flash content for reused slots). VERIFIED by re-dump: pool probes
+now sit at (0, 28215, 0) with a current-daylight bake, twilight cube gone.
+
+THE SAND VERDICT (DX11 read-only forensics): DX11 was NOT "correct" — it carried TWO
+deliberate GG-local energy cuts, both with upstream code commented out in place:
+(a) `envColor *= 0.5*metalness + 0.5` at the end of EnvironmentReflection_Global/_Local —
+sand (metalness 0) got exactly HALF the env reflection; (b) crushed grazing fresnel
+`f90 = max(1-roughness^x, f0.r)` replacing upstream's ~1.0 — no wet grazing sheen on rough
+surfaces. DX12 restored stock upstream shading (EnvBRDFApprox, f90=1, no damping) and also
+uses f0 0.005 vs DX11's 0.02. Worked numbers for beach-class sand (mat2, authored roughness
+~0.16 — the content literally says "wet sand"; mat4 is 0.69, mat8 0.98): DX12 env term is
+~1.6-1.7× DX11 at typical view angles. The vertical band Lee circled = the sun-halo feature
+of the global probe capture, smeared vertically by a glossy flat surface — legitimate
+physics made prominent by the restored energy. Levers, in order of fidelity: (1) content —
+raise mat2-class sand roughness toward mat4; (2) `SET_ENVPROBE_BRIGHTNESS 0.5` = exactly
+DX11's dielectric damping on terrain/sand (knob already shipped as engine 1.55; harness
+command added this session); (3) exact DX11 emulation would need the f90 crush too and
+dims ALL rough materials. Lee's call — no look change shipped.
+
+OPTIONS PRESENTED, NOT SHIPPED: move the global capture point from the map corner to
+centre-high (symmetric sky+distant-terrain dome — closer to what "base env map" should
+mean, but a global look change); probe format BC6H → RGBA16F to kill the ring banding
+(~+1 MB VRAM per probe, removes a BlockCompress step). Engine untouched this session —
+2.73 is game-side only (GGTerrain_part0.cpp + AutomationHarness.cpp + WETEST.md).
