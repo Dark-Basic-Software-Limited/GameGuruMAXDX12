@@ -45,6 +45,7 @@ static int s_iWaterSettleCountdown = -1;
 // hair entities (the editor's View Options checkbox learned this in the 07-28 UI audit,
 // M-GridEditB_part3.cpp:2085; the generator's copy never did).
 namespace GGTerrain { void GGTerrainWicked_SetGrassVisible(bool visible); }
+namespace GGTerrain { bool GGTerrainWicked_IsRingComplete(); } // GGMAX 2.68h: gates the Completely Empty tick
 #define USEFULLVIEWPORT
 #define DIGAHOLE
 
@@ -2344,7 +2345,16 @@ void procedural_new_level(void)
 						// GGMAX 2.68d: the snapshot statics moved to FILE scope (above
 						// procedural_new_level) so the biome-click auto-exit can share them.
 						bool bCompletelyEmpty = t.gamevisuals.bEnableEmptyLevelMode;
-						if (ImGui::Checkbox("Completely Empty Level", &bCompletelyEmpty))
+						// GGMAX 2.68h (Lee): ticking mid-fill leaves a half-and-half state —
+						// the tick is LOCKED until the Empty biome's grid ring has finished
+						// generating. Unticking is never locked.
+						const bool bLockEmptyTick = !bCompletelyEmpty && !GGTerrain::GGTerrainWicked_IsRingComplete();
+						if (bLockEmptyTick)
+						{
+							ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+							ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+						}
+						if (ImGui::Checkbox("Completely Empty Level", &bCompletelyEmpty) && !bLockEmptyTick)
 						{
 							if (bCompletelyEmpty == true)
 							{
@@ -2407,7 +2417,13 @@ void procedural_new_level(void)
 							}
 							Wicked_Update_Visuals((void*)&t.visuals);
 						}
-						if (ImGui::IsItemHovered()) ImGui::SetTooltip("Additionally removes terrain, water and related defaults");
+						if (bLockEmptyTick)
+						{
+							ImGui::PopStyleVar();
+							ImGui::PopItemFlag();
+							if (ImGui::IsItemHovered()) ImGui::SetTooltip("Waiting for the grid terrain to finish generating...");
+						}
+						else if (ImGui::IsItemHovered()) ImGui::SetTooltip("Additionally removes terrain, water and related defaults");
 
 						bool bZeroNavMeshMode = t.gamevisuals.bEnableZeroNavMeshMode;
 						if (ImGui::Checkbox("Do Not Generate Navmesh", &bZeroNavMeshMode))

@@ -7,6 +7,7 @@ namespace GGTerrain
 {
 	void GGTerrainWicked_Init();
 	void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera);
+	void GGTerrainWicked_EnforceHidden(); // GGMAX 2.68i: empty-mode sweep for when the main loop SKIPS GGTerrainWicked_Update
 	void GGTerrainWicked_Shutdown();
 	void GGTerrainWicked_OnPaintDataChanged();
 

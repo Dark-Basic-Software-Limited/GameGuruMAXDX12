@@ -2148,3 +2148,40 @@ UNTICK = grid returns immediately (re-show path), editable box + Terrain Size re
 consumer, not pushed through an update function whose call ordering the flows don't
 guarantee — this is the second push-vs-poll failure this week (2.62 CheckParams was the
 first).
+
+## §2.68h+i (08-16 night) — THE ssss10 mystery solved: it was never wicked terrain
+
+Lee's re-repro (ssss10 -> spotshadowtest -> ssss10 = grid back) survived 2.68g because the
+visible surface was NEVER the wicked chunks. Instrument chain that cracked it:
+- emptyV/G/E + hidden added to the TERRAIN_RING dump (2.68h): ALL flags true, hidden=1 —
+  the poll/hide machinery was working, yet the surface rendered.
+- Terrain-mask PICK_AT MISSED the surface; all-mask hit a flat plane at Y=0.0 exactly
+  (the empty biome's flat height), entity id 1021 (created very early).
+- POLYS ~138k = the real terrain genuinely hidden.
+
+MECHANISM: master_part1's terrain block is wrapped in `if (bEnableEmptyLevelMode == false)`
+— and INSIDE that block is the wicked branch that clears ggterrain_draw_enabled EVERY
+frame. In empty mode the whole block is skipped, so the LEGACY GGTerrain draw callbacks run
+with a stale flag (default 1 on a fresh launch) and render the old-path terrain — grey
+checker on Lee's rig, green legacy set on mine, flat at Y=0. "Dead code under wicked" is
+only dead because a live-path line keeps re-killing it every frame; skip that line and the
+corpse gets up. The generator never showed this because its flows keep the block running.
+Also: with GGTerrainWicked_Update skipped, the 2.68f/g newborn-chunk sweep never ran in
+empty levels either (engine-side Generation_Update births renderable chunks regardless).
+
+FIX (2.68i): before the gated block, `if (empty) { ggterrain_draw_enabled = 0;
+GGTerrainWicked_EnforceHidden(); }` — the sweep extracted into a callable so the mode
+enforces both kills even while the bridge update is skipped.
+
+VERIFIED — Lee's exact chain, headless (switch268i.sh, storyboard hops via the editor back
+arrow): ssss10 first load = VOID; spotshadowtest = normal terrain (flags 0/0/0/0, re-show
+path clean); ssss10 again = VOID. Flags flip 1->0->1 in lockstep.
+
+Also in 2.68h: the Completely Empty tick is LOCKED (disabled + tooltip) until the Empty
+biome's grid ring finishes generating (Lee: ticking mid-fill left half-and-half), via new
+GGTerrainWicked_IsRingComplete(); unticking is never locked.
+
+★ Ledger rule (the real lesson): "the legacy path is dead" was TRUE only as an emergent
+property of a per-frame suppression line inside the live path. Any gate that skips the
+live path resurrects the legacy one. When auditing "dead" DX11 code, ask WHO keeps it dead
+and whether every mode runs that keeper.

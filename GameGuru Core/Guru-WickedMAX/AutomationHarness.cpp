@@ -134,6 +134,7 @@ namespace wi::scene {
 // GGMAX 1.53b/c: terrain VT tiling cap + hold live re-tune (GGTerrainWicked.cpp)
 namespace GGTerrain { void GGTerrainWicked_SetTileShare(int k, int hold); }
 namespace GGTerrain { void GGTerrainWicked_GetGrassDebug(int* pWickedEnabled, int* pHairCount, int* pVisibleCount, unsigned long long* pStrandSum); } // GGMAX 2.67
+namespace GGTerrain { bool GGTerrainWicked_IsTerrainHidden(); bool GGTerrainWicked_IsRingComplete(); } // GGMAX 2.68h
 
 // GGMAX 1.37: hair/grass sim static-skip master switch (wiRenderer.cpp)
 namespace wi::renderer {
@@ -1274,7 +1275,8 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		// marker (world XZ shown) instead of the camera; must read 0 in every other mode.
 		written += _snprintf(result + written, resultSize - written,
 			"TERRAIN_RING: gen=%d chunks=%d ringMax=%d chunkU=%.0f viewU=%.0f viewM=%.0f "
-			"centreToCam=%d mapHalfM=%.0f ovr=%d ovrX=%.0f ovrZ=%.0f pend=%d skipbvh=%d procLvl=%d\n",
+			"centreToCam=%d mapHalfM=%.0f ovr=%d ovrX=%.0f ovrZ=%.0f pend=%d skipbvh=%d procLvl=%d "
+			"emptyV=%d emptyG=%d emptyE=%d hidden=%d\n",
 			tr.generation, (int)tr.chunks.size(), ringMax, chunkU,
 			viewU, viewU * 0.0254f, tr.IsCenterToCamEnabled() ? 1 : 0, mapHalfU * 0.0254f,
 			wi::terrain::gg_generation_center_override_enabled ? 1 : 0,
@@ -1282,7 +1284,13 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			wi::terrain::gg_generation_center_override_z,
 			[]{ extern bool g_ggTerrainGenEntryPending; return g_ggTerrainGenEntryPending ? 1 : 0; }(),
 			wi::terrain::gg_generation_skip_bvh ? 1 : 0,
-			[]{ extern bool bProceduralLevel; return bProceduralLevel ? 1 : 0; }());
+			[]{ extern bool bProceduralLevel; return bProceduralLevel ? 1 : 0; }(),
+			// GGMAX 2.68h: the ssss10 storyboard-switch hunt — which COPY of the empty flag
+			// is live after a level switch, and is the bridge actually hiding
+			t.visuals.bEnableEmptyLevelMode ? 1 : 0,
+			t.gamevisuals.bEnableEmptyLevelMode ? 1 : 0,
+			t.editorvisuals.bEnableEmptyLevelMode ? 1 : 0,
+			GGTerrain::GGTerrainWicked_IsTerrainHidden() ? 1 : 0);
 	}
 
 	// GGMAX 2.27: decal element pool — prewarm + grow (SWITCHESCAPE_PERF.md §23).

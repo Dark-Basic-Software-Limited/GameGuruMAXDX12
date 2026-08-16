@@ -3704,6 +3704,39 @@ void GGTerrainWicked_GetGrassDebug(int* pWickedEnabled, int* pHairCount, int* pV
 	}
 }
 
+// GGMAX 2.68i: the sweep as a callable — the main loop SKIPS GGTerrainWicked_Update
+// entirely while bEnableEmptyLevelMode is true (master_part1 gates the whole terrain
+// block), so the in-update sweep never ran in exactly the mode that needs it. The
+// engine-side Generation_Update (Scene::Update) still births renderable chunks there.
+// Sets the swept flag so the re-show path fires when empty mode ends.
+void GGTerrainWicked_EnforceHidden()
+{
+	s_ggEmptyModeSwept = true;
+	::wi::terrain::Terrain* tr = GetWickedTerrain();
+	if (tr == nullptr || tr->scene == nullptr) return;
+	for (auto& [chunkE, cdE] : tr->chunks)
+	{
+		if (cdE.entity == wi::ecs::INVALID_ENTITY) continue;
+		wi::scene::ObjectComponent* objE = tr->scene->objects.GetComponent(cdE.entity);
+		if (objE != nullptr && objE->IsRenderable()) objE->SetRenderable(false);
+	}
+}
+
+// GGMAX 2.68h accessors: the ssss10 storyboard-switch hunt needs the hidden state visible
+// to the harness, and the generator panel gates the Completely Empty tick on ring
+// completion (ticking mid-fill leaves a half-and-half state, Lee's report).
+bool GGTerrainWicked_IsTerrainHidden()
+{
+	return wickedTerrainHidden;
+}
+bool GGTerrainWicked_IsRingComplete()
+{
+	::wi::terrain::Terrain* tr = GetWickedTerrain();
+	if (tr == nullptr) return false;
+	const int ringMax = (2 * tr->generation + 1) * (2 * tr->generation + 1);
+	return (int)tr->chunks.size() >= ringMax;
+}
+
 void GGTerrainWicked_SetTerrainVisible(bool visible)
 {
 	if (wickedTerrainHidden == !visible) return;

@@ -484,6 +484,20 @@ void MasterRenderer::Update(float dt)
 			GGPerf_TraceMark("gpup"); // GGMAX 2.61
 
 			// terrain processing (if used)
+			// GGMAX 2.68i (Lee's ssss10 repro, the REAL mechanism at last): empty mode skips
+			// the whole terrain block below — which is also where the wicked branch clears
+			// ggterrain_draw_enabled EVERY frame. Skipped, the LEGACY terrain draw callbacks
+			// run with a stale flag (default 1 on a fresh launch) and render the old-path
+			// terrain — the "grid is back" was never wicked chunks (terrain-mask pick misses;
+			// hidden=1 all along), it is the legacy render showing through, flat at the empty
+			// biome's height in legacy textures. And with GGTerrainWicked_Update skipped, the
+			// 2.68f/g newborn-chunk sweep never ran here either (engine-side Generation_Update
+			// still births renderable chunks from Scene::Update). Keep BOTH paths dead:
+			if (t.visuals.bEnableEmptyLevelMode == true)
+			{
+				ggterrain_draw_enabled = 0;
+				GGTerrainWicked_EnforceHidden();
+			}
 			if (t.visuals.bEnableEmptyLevelMode == false)
 			{
 				extern int g_iDisableTerrainSystem;
