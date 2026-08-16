@@ -1,6 +1,6 @@
 # ★ MILESTONE (FINAL, POST-MAX): convert every DDS in the stock MAX product
 
-**Status: NOT STARTED — deliberately deferred until MAX itself is finished.**
+**Status: EXECUTED 2026-08-16 (Lee-authorized for the internal tester build) — see NIGHT_INVESTIGATIONS_2026-08-12.md §2.72. Gate: 1617 single-mip -> 0 streamable (1 cube map excluded by protocol); 1641 files converted +1431 MB; head-15 fix folded in; originals mirrored at D:maxmipbackup.**
 **Owner: Lee. Do not start this without him — it is a bulk content mutation.**
 
 This is the last deliverable of the DX12 port, and it is a *content* pass, not a code pass. It is

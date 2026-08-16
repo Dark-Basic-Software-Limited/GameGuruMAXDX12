@@ -2344,3 +2344,49 @@ fresh export. Lee's parting instruction: run the ★ MILESTONE full DDS conversi
 entire Files\ media tree (authorized NOW — internal tester build wanted), then if time
 allows a full 19-demo hub sweep with fresh FPS + VRAM readings for his afternoon return.
 6-hour autonomous window starts here.
+
+## §2.72 (08-16 morning) — ★ MILESTONE EXECUTED: full stock DDS conversion (Lee-authorized
+## for the internal tester build)
+
+Scope per MILESTONE_DDS_CONVERSION.md: the whole Files\ tree, 17,063 DDS scanned.
+
+**Converted: 1641 files, 4058 → 5489 MB on disk (+1431 MB, +35.3% — the documented mip
+overhead), zero unconverted failures.** Protocol = the 08-04 entitybank pass extended:
+format-preserving texconv, per-file mirror backup to D:\max\mipbackup (no-clobber, so
+the 08-04 originals are intact), per-file post-verification (dims/format-family/chain),
+auto-restore from mirror on any failure. Driver: tools/ddsconvert.py (kept in repo).
+
+Three texconv landmines found and encoded into the driver, each worth remembering:
+1. **-m 0 does NOT mean "full chain" for sources that already have partial mips** — it
+   keeps the source's count (only single-mip sources get full chains). 124 first-run
+   "failures" traced to this + the next item; fix = explicit -m <full>.
+2. **-dx9 BC output stops the chain at the 4x4 block floor** (2 levels short of 1x1) —
+   standard for legacy headers, irrelevant to streaming (<4x4 is far under the 64KB
+   floor); the verifier accepts full-2 for BC.
+3. **-dx9 BC on non-power-of-2 dims truncates where mips stop being multiples of 4**
+   (e.g. 1440² dies at mip 5) — those 24 files got a -dx10 retry, which carries the
+   full chain (same header family as our BC7s).
+
+The only non-format-preserving conversions, forced (no lossless mapping exists):
+13 legacy 24bpp Cybernoir gun textures → B8G8R8X8 (the engine already promoted them to
+32bpp at load), 1 D3DFMT_A16B16G16R16 normal → R16G16B16A16_UNORM (identical layout).
+
+**Acceptance gate: single-mip >64KB went 1617 files / 3977 MB → ZERO streamable files.**
+The one listed remainder is dreamnebulamoon_cube.dds — a CUBE map, structurally outside
+the streaming reduction (the engine's shed loop skips cubes), excluded by protocol along
+with 10 other cube/volume assets. 94 pre-existing alignment-blocked files are a
+dimension property (1024x936 etc.), not a chain defect — unchanged by design.
+
+**Female head 15 surface fix folded in** per the doc: FIXED.png → BC3 12 mips, replaced
+in charactercreatorplus (fixes heads 15 AND 15b — shared file), original mirrored. The
+AO channel remains flat-255 (re-bake = authoring, per the README).
+
+**The _surface.dds degenerate-channel rider (tools/surfacescan.py) reframes the doc's
+suspicion**: 5005 of 5022 surface maps have at least one flat channel — flat occlusion
+(1894), flat metalness/reflectance are the CONTENT-WIDE CONVENTION, not defects (a
+wooden prop with constant metalness 0 is correct). The interesting subsets for future
+content QA: 700 all-four-flat pure placeholders and 816 flat-roughness maps (uniform
+gloss response — head 15's actual defect class was BAD roughness, not flat channels).
+Full report: tools/surfacescan_report.txt. No content action taken — report only.
+
+19-demo sweep (RUNTAG 0816) launched on the converted tree; results follow as §2.72a.
