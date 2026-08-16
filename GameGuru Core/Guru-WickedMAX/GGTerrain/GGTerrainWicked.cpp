@@ -60,6 +60,7 @@ static std::unordered_map<uint64_t, wi::ecs::Entity> chunkKeyToEntity;
 static bool wickedGrassSetup = false;
 static bool wickedGrassEnabled = true; // G key toggles grass visibility/creation
 static bool wickedTerrainHidden = false; // O key / View Options terrain visibility (file-scope so the UI setter and the O-key toggle share state)
+static bool s_ggEmptyModeSwept = false;  // GGMAX 2.68g: the empty-mode poll hid chunks while wickedTerrainHidden was false — must re-show when the mode ends
 int g_blendScanInterval = 4; // POST-LOAD DIP FIX 2026-07-29: blend-scan cadence outside initial build (1 = stock every-frame; harness SET_BLENDSCAN)
 static std::unordered_map<uint64_t, wi::ecs::Entity> grassChunkKeyToChunkEntity; // chunk entity when grass was built
 // Per-chunk per-type hair entity tracking. Each chunk-type slot is INVALID_ENTITY until first paint
@@ -2423,6 +2424,7 @@ void GGTerrainWicked_SetGenCenterOverride(float fWorldX, float fWorldZ, bool bEn
 }
 extern bool bProceduralLevel; // GGMAX 2.53: the Terrain Generator mode flag (game global)
 extern bool g_ggTerrainGenEntryPending; // GGMAX 2.59: entry recipes set it BEFORE the flat-level load
+extern bool GGGame_IsEmptyLevelMode(void); // GGMAX 2.68g: t.visuals.bEnableEmptyLevelMode (M-TerrainNew_part4)
 
 namespace GGTerrain
 {
@@ -3006,7 +3008,12 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	}
 
 	// Skip all terrain work when hidden (Generation_Update, VT CPU/GPU, blendmap painting)
-	if (wickedTerrainHidden)
+	// GGMAX 2.68g: Completely Empty Level mode is polled DIRECTLY here — the old wiring
+	// relied on Wicked_Update_Visuals running after the level's visuals were parsed, which
+	// the fpm load path does not guarantee (Lee's ssss9: flag loaded true, collision gone,
+	// grid still rendered because wickedTerrainHidden was never set on that path).
+	const bool bEmptyModeHide = GGGame_IsEmptyLevelMode();
+	if (wickedTerrainHidden || bEmptyModeHide)
 	{
 		// GGMAX 2.68f (Lee's repro: a freshly LOADED Completely Empty level showed the
 		// grid again): the hide sweep in SetTerrainVisible only reaches chunks that exist
@@ -3014,6 +3021,7 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		// the engine's Generation_Update directly, independent of this early-out), and
 		// newborn chunks arrive renderable. Re-assert the hide on anything that slipped
 		// in; ~1500 flag checks per frame, only while terrain is hidden.
+		if (bEmptyModeHide && !wickedTerrainHidden) s_ggEmptyModeSwept = true;
 		::wi::terrain::Terrain* terrainHidden = GetWickedTerrain();
 		if (terrainHidden != nullptr && terrainHidden->scene != nullptr)
 		{
@@ -3025,6 +3033,23 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 			}
 		}
 		return;
+	}
+	// GGMAX 2.68g: empty mode just ended while the UI hide is off — SetTerrainVisible(true)
+	// early-outs in that state (wickedTerrainHidden never flipped), so re-show what the
+	// empty-mode sweep hid. One-shot.
+	if (s_ggEmptyModeSwept)
+	{
+		s_ggEmptyModeSwept = false;
+		::wi::terrain::Terrain* terrainShow = GetWickedTerrain();
+		if (terrainShow != nullptr && terrainShow->scene != nullptr)
+		{
+			for (auto& [chunkS, cdS] : terrainShow->chunks)
+			{
+				if (cdS.entity == wi::ecs::INVALID_ENTITY) continue;
+				wi::scene::ObjectComponent* objS = terrainShow->scene->objects.GetComponent(cdS.entity);
+				if (objS != nullptr && !objS->IsRenderable()) objS->SetRenderable(true);
+			}
+		}
 	}
 
 	// Phase 2: Lazy material setup on first update (after level load has set render params)

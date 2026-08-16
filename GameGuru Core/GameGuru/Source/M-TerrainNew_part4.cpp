@@ -1109,6 +1109,15 @@ void terrain_cursor_nograsscolor ( void ) {}
 void terrain_cursor_off ( void ) {}
 void terrain_renderonly ( void ) {}
 
+// GGMAX 2.68g: the wicked bridge polls this every frame so Completely Empty Level mode is
+// SELF-ENFORCING — the old wiring relied on Wicked_Update_Visuals being called after the
+// level's visuals were parsed, which the fpm load path does not guarantee (Lee's ssss9
+// repro: flag loaded true — collision gone — but the terrain grid still rendered).
+bool GGGame_IsEmptyLevelMode ( void )
+{
+	return t.visuals.bEnableEmptyLevelMode;
+}
+
 float BT_GetGroundHeight ( unsigned long value, float x, float z )
 {
 	extern int g_iDisableTerrainSystem;

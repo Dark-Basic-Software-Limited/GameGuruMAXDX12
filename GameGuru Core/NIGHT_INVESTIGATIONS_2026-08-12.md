@@ -2124,3 +2124,27 @@ Noted, not chased tonight:
 - Empty mode still BURNS generation work + VRAM building an invisible ring (1849 chunks!).
   Real fix = stop generation while hidden; tied to the parked Scene-S1 dual-caller
   single-sourcing cleanup.
+
+## §2.68g (08-16 night) — Completely Empty mode made SELF-ENFORCING (Lee's ssss9 re-repro)
+
+2.68f was not enough: Lee's fresh load of ssss9.fpm still showed the grid. The flag DOES
+serialize (visuals.EnableEmptyLevelMode save/load in M-Visuals_part0; his collision-gone
+observation proves it arrives true) — but the entire hide wiring hung off
+Wicked_Update_Visuals being called AFTER the visuals parse, and the fpm load path does not
+guarantee that ordering, so wickedTerrainHidden was simply never set there. The 2.68f sweep
+keyed off that same flag = also inert on this path.
+
+Fix: the bridge polls the mode DIRECTLY every frame — new game-side accessor
+GGGame_IsEmptyLevelMode() (M-TerrainNew_part4, returns t.visuals.bEnableEmptyLevelMode;
+global-scope extern in the bridge per the 2.53 linkage rule) OR'd into the hidden early-out.
+No call-order dependence left. Symmetry hole closed too: when empty mode ends while the UI
+hide is off, SetTerrainVisible(true) early-outs (wickedTerrainHidden never flipped), so a
+one-shot re-show sweep (s_ggEmptyModeSwept) restores what the empty poll hid — otherwise
+unticking would have left the terrain invisible forever.
+
+Verified (empty268g.sh): tick = void; ring grown 1521 -> 1849 WHILE ticked = still void;
+UNTICK = grid returns immediately (re-show path), editable box + Terrain Size restored.
+★ Ledger rule: a mode flag that must gate a live wicked state should be POLLED by the
+consumer, not pushed through an update function whose call ordering the flows don't
+guarantee — this is the second push-vs-poll failure this week (2.62 CheckParams was the
+first).
