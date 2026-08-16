@@ -121,8 +121,41 @@
 		}
 	}
 
-	// restore to original folder 
+	// GGMAX 2.69: the loop above lists loose FILES only, so the ffx-fsr2 SUBFOLDER
+	// (FSR2 upscaler .cso/.wishadermeta) never shipped — standalones spewed
+	// "shader compile FAILED" over the init screen trying to rebuild from dev paths
 	SetDir ( g.originalrootdir_s.Get() );
+	if ( PathExist("shaders\\ffx-fsr2") == 1 )
+	{
+		t.dest_s = t.exepath_s + t.exename_s + "\\shaders\\ffx-fsr2";
+		if (PathExist(t.dest_s.Get()) == 0) MakeDirectory(t.dest_s.Get());
+		SetDir("shaders\\ffx-fsr2");
+		ChecklistForFiles();
+		for ( int c = 1; c <= ChecklistQuantity(); c++ )
+		{
+			LPSTR pShaderFile = ChecklistString(c);
+			if (stricmp(pShaderFile, ".") != NULL && stricmp(pShaderFile, "..") != NULL)
+			{
+				t.dest_s = t.exepath_s + t.exename_s + "\\shaders\\ffx-fsr2\\" + pShaderFile;
+				if (FileExist(t.dest_s.Get()) == 1) DeleteAFile(t.dest_s.Get());
+				CopyAFile(pShaderFile, t.dest_s.Get());
+			}
+		}
+	}
+
+	// restore to original folder
+	SetDir ( g.originalrootdir_s.Get() );
+
+	// GGMAX 2.69: ship the engine splash next to the standalone exe — without a
+	// splash_screen.png Wicked renders the raw init BACKLOG (debug log text) while
+	// the engine initializes; with it, the player sees the same quiet gradient the
+	// editor shows
+	if ( FileExist("splash_screen.png") == 1 )
+	{
+		t.dest_s = t.exepath_s + t.exename_s + "\\splash_screen.png";
+		if (FileExist(t.dest_s.Get()) == 1) DeleteAFile(t.dest_s.Get());
+		CopyAFile("splash_screen.png", t.dest_s.Get());
+	}
 
 	// Copy steam files (see above)
 	 // No Steam in Photon build

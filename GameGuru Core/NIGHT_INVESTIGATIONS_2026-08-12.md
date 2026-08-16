@@ -2186,3 +2186,36 @@ GGTerrainWicked_IsRingComplete(); unticking is never locked.
 property of a per-frame suppression line inside the live path. Any gate that skips the
 live path resurrects the legacy one. When auditing "dead" DX11 code, ask WHO keeps it dead
 and whether every mode runs that keeper.
+
+## §2.69 (08-16 night) — standalone export: no more debug screen at boot (Lee's TESTPRO2 report)
+
+Lee saved a standalone from testpro2 and the exported game booted showing the raw Wicked
+init BACKLOG — every wi:: init line plus a wall of red "shader compile FAILED:
+shaders/ffx-fsr2/..." errors.
+
+Two packaging holes in `mapfile_savestandalone_stage4` (M-MapFile_part2.cpp), both fixed:
+
+1. **The shaders copy loop lists loose FILES only** — `ChecklistForFiles()` on `shaders/`
+   returned the 834 loose .cso/.wishadermeta but never the `ffx-fsr2` SUBFOLDER (the only
+   subfolder; 16 files). The standalone's FSR2 loads failed and fell back to recompiling
+   from the shader SOURCE dir — an absolute dev path (`D:/max/WickedEngineDX12/...`)
+   glued onto the game's CWD, hence the surreal
+   `My Games/TESTPRO2/D:/max/...` paths in the errors. Fix: explicit second copy pass
+   for `shaders\ffx-fsr2`.
+
+2. **`splash_screen.png` never shipped.** wiApplication.cpp:155-206 is the mechanism: while
+   `wi::initializer` runs, the engine draws `<exe dir>/splash_screen.png` if it exists,
+   ELSE it renders the backlog as text. The editor dir has the png (neutral grey→black
+   gradient, no branding) which is why the editor never shows the debug text; the export
+   never copied it, so standalones got the fallback. Fix: copy it next to the standalone
+   exe.
+
+Both fixes are additive file copies — zero engine change, zero behavior change for the
+editor. Lee's existing TESTPRO2 export was hand-patched with the same two payloads
+(splash png + 16 fsr2 files) so re-running the already-exported exe shows the fix without
+a re-export; the next export does it automatically.
+
+Residue noticed while in there (NOT fixed tonight, chip spawned): standalones accumulate
+instrument droppings — gpup_trace.txt is written UNCONDITIONALLY at init
+(GPUParticles_part0.cpp ~2049), gap_trace.txt/alloc_tripwire.txt are engine-side. The
+natural gate is the standalone's own setup.ini `producelogfiles=0`.
