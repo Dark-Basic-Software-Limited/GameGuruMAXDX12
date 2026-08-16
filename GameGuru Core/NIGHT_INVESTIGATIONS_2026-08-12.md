@@ -2572,3 +2572,19 @@ Island Showdown load clean). Lee verifies with one glance at his spotshadowtest 
 
 BONUS re-verify: TESTPRO1 census shows all 8 pool probes parked at (0, 28215, 0) — the
 2.73 high-park confirmed on a second level.
+
+## §2.75a — evening FPS scare BISECTED TO AMBIENT: 2.73-2.75 code AND 2.74 content both exonerated
+
+Post-2.75 spot-check read Island Showdown 65.6 (morning 0816 sweep: 77.1) and Switch
+Escape 134-137 (morning: 162.6) — repeatable across launches, so not single-run noise.
+Full bisect, all fresh-launch probe_one at the start camera:
+- HEAD code (2.75) + lifted content:      Island 65.6-65.8, Switch 134.4-137.6
+- 2.72 code (checkout c0ec519b) + lifted: Island 65.4,      Switch 128.9-129.8
+- 2.72 code + ORIGINAL textures:          Island 65.5
+Identical within noise across all three => the delta vs the morning is MACHINE/AMBIENT
+(evening state after 25+ MAX launch cycles today), not a regression. Aztec Teaser agreed
+with morning (−3%) throughout. VERDICT: ship state clean; the morning 0816 table remains
+the baseline of record; cross-time-of-day FPS comparisons join the known-drift class
+(±8 band documented, tonight demonstrated ~15% on two demos — SAME-SESSION A/Bs only).
+Final state restored: main f3242c8b built, engine 5ee09abc, 11 mats re-lifted (mat2 G
+mean 175.1 verified), mirror originals intact.
