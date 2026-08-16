@@ -2073,3 +2073,29 @@ everything the tick took away). Both checkboxes verified live on the wicked side
   visuals.EnableZeroNavMeshMode.
 Verified: Rainforest panel = section ABSENT; click Empty (sel=8, blank grey grid) =
 section PRESENT with both checkboxes.
+
+## §2.68d+e (08-16 night) — Empty-mode exit on biome click + the grey grid finally hides
+
+Lee's pair: (d) Empty -> tick both boxes -> click MOUNTAIN = nothing generates; (e) a saved
+Completely Empty level still SHOWS the grey grid in the editor and test game (collision
+correctly gone — heights honor the flag, the visuals did not).
+
+(e) is the 07-28 audit lesson's FOURTH occurrence: Wicked_Update_Visuals' empty-mode branch
+(M-GridEditB_part3) only cleared ggterrain_draw_enabled/ggtrees_draw_enabled — both gate the
+DEAD legacy draw path. One line: the branch now also calls GGTerrainWicked_SetTerrainVisible
+(false) (the live chunk-object sweep; grass was already handled by the unconditional sync
+above it). The normal path re-shows per the usual checkboxes. Same function serves the
+generator, the editor AND test game — verified in the generator: tick -> grid vanishes.
+
+(d): bEnableEmptyLevelMode is a master kill switch and NO biome button cleared it — DX11
+has the same latent trap (only its Empty button resets the flags; DX12's Empty button had
+that parity already). New transition block after the biome buttons: leaving theme 8 with
+empty mode active exits it — clears both master flags (matching the Empty button's own
+reset), restores the editable area the tick blew to 25 km (snapshot if taken this session,
+else the 2.5 km default), re-shows the edit-area markings, consumes the checkbox snapshot
+(its trees/water values would stomp the NEW biome's settings — discarded; the handler that
+just ran re-specified all of那些). The snapshot statics hoisted to file scope for sharing.
+
+Verified headlessly (empty268.sh): Empty -> tick Completely Empty = grid GONE (D1 shot,
+marker floating in void) -> tick navmesh box -> click Mountain = full mountain terrain,
+sel=6, ring 1521/1521 rebuilt, editsize back to 50000 (2.5 km), section hidden again.

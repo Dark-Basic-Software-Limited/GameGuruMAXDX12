@@ -13,6 +13,24 @@ static bool  s_bGenOffsetFolded = false;
 static float s_fPreFoldOffsetX = 0.0f;
 static float s_fPreFoldOffsetZ = 0.0f;
 
+// GGMAX 2.68d: the Completely-Empty-Level snapshot (what the tick overwrites, restored on
+// untick — see the Disable Level Aspects block). File scope so the biome-click auto-exit
+// can consume it too.
+static bool s_emptySaved = false;
+static decltype(t.visuals.bEndableTreeDrawing)    s_savTreeDrawing    = 0;
+static decltype(t.visuals.bEndableGrassDrawing)   s_savGrassDrawing   = 0;
+static decltype(t.visuals.bEndableTerrainDrawing) s_savTerrainDrawing = 0;
+static decltype(t.visuals.bWaterEnable)           s_savWaterEnable    = false;
+static decltype(t.showeditorterrain)              s_savShowTerrain    = 0;
+static decltype(t.showeditorwater)                s_savShowWater      = false;
+static decltype(t.showeditortrees)                s_savShowTrees      = false;
+static decltype(t.showeditorveg)                  s_savShowVeg        = false;
+static decltype(ggtrees_global_params.draw_enabled) s_savTreesDraw    = false;
+static decltype(gggrass_global_params.draw_enabled) s_savGrassDraw    = false;
+static float s_savEditableSize = 0.0f;
+static bool  s_savShowEditArea = false;
+static bool  s_savMapSizeFlag  = false;
+
 // GGMAX 2.68a: the Water Height slider's per-change REACTIONS are debounced. Each change
 // used to fire Wicked_Update_Visuals (~23 ms) + ggterrain_extra_params.iUpdateTrees=1,
 // whose consumer is a FULL tree-pool update ("Max - Tree Update": 152 ms/frame, profiler-
@@ -2278,6 +2296,30 @@ void procedural_new_level(void)
 					ggterrain_global_render_params2.editable_size = feditable_size;
 					ImGui::PopItemWidth();
 				}
+				// GGMAX 2.68d (Lee's repro: Empty -> tick both boxes -> click MOUNTAIN =
+				// nothing generates): bEnableEmptyLevelMode is a master kill switch (heights,
+				// wicked terrain visibility, the Terrain Size section), and no biome button
+				// clears it — DX11 has the same latent trap (only its Empty button resets the
+				// flags). Leaving theme 8 with empty mode active now EXITS it: the biome
+				// handler that just ran re-specified trees/veg/water/terrain, so only what it
+				// does NOT touch is restored here — the two master flags (off, matching the
+				// Empty button's own reset), the editable area the tick blew up to 25 km, and
+				// the edit-area markings. The checkbox snapshot is consumed (its trees/water
+				// values would stomp the NEW biome's settings — discard them).
+				if (iSelectedThemeChoice != 8 && t.visuals.bEnableEmptyLevelMode)
+				{
+					t.gamevisuals.bEnableEmptyLevelMode = t.visuals.bEnableEmptyLevelMode = false;
+					t.gamevisuals.bEnableZeroNavMeshMode = t.visuals.bEnableZeroNavMeshMode = false;
+					if (s_emptySaved && s_savEditableSize > 0.0f)
+						ggterrain_global_render_params2.editable_size = s_savEditableSize;
+					else
+						ggterrain_global_render_params2.editable_size = GGTerrain_MetersToUnits(2.5f / 2.0f) * 1000.0f;
+					bShowEditArea = true;
+					ggterrain_global_render_params2.flags2 |= GGTERRAIN_SHADER_FLAG2_SHOW_MAP_SIZE;
+					s_emptySaved = false;
+					Wicked_Update_Visuals((void *)&t.visuals);
+				}
+
 				// 2026-08-09 (user request): "Disable Level Aspects" was ungated from theme 8 so
 				// any level could reach the Completely Empty Level switch.
 				// GGMAX 2.68c (2026-08-16, Lee, SUPERSEDES the above): DX11 parity restored — the
@@ -2299,21 +2341,8 @@ void procedural_new_level(void)
 						// NB: these are statics, so a tick that survives a level reload or an app
 						// restart falls back to the old minimal restore — same as the pre-2026-08-09
 						// behaviour, no regression, just no undo across a restart.
-						static bool s_emptySaved = false;
-						static decltype(t.visuals.bEndableTreeDrawing)    s_savTreeDrawing    = 0;
-						static decltype(t.visuals.bEndableGrassDrawing)   s_savGrassDrawing   = 0;
-						static decltype(t.visuals.bEndableTerrainDrawing) s_savTerrainDrawing = 0;
-						static decltype(t.visuals.bWaterEnable)           s_savWaterEnable    = false;
-						static decltype(t.showeditorterrain)              s_savShowTerrain    = 0;
-						static decltype(t.showeditorwater)                s_savShowWater      = false;
-						static decltype(t.showeditortrees)                s_savShowTrees      = false;
-						static decltype(t.showeditorveg)                  s_savShowVeg        = false;
-						static decltype(ggtrees_global_params.draw_enabled) s_savTreesDraw    = false;
-						static decltype(gggrass_global_params.draw_enabled) s_savGrassDraw    = false;
-						static float s_savEditableSize = 0.0f;
-						static bool  s_savShowEditArea = false;
-						static bool  s_savMapSizeFlag  = false;
-
+						// GGMAX 2.68d: the snapshot statics moved to FILE scope (above
+						// procedural_new_level) so the biome-click auto-exit can share them.
 						bool bCompletelyEmpty = t.gamevisuals.bEnableEmptyLevelMode;
 						if (ImGui::Checkbox("Completely Empty Level", &bCompletelyEmpty))
 						{

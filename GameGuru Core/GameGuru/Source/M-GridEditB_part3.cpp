@@ -2105,6 +2105,12 @@ void Wicked_Update_Visuals(void *voidvisual)
 	{
 		GGTerrain::ggterrain_draw_enabled = 0;
 		GGTrees::ggtrees_draw_enabled = 0;
+		// GGMAX 2.68e (Lee's repro: Completely Empty Level still showed the grey grid in
+		// the generator, the editor AND test game — collision correctly gone, visuals not):
+		// the two flags above only gate the DEAD legacy draw path (the 07-28 audit lesson,
+		// fourth occurrence) — hide the live wicked chunk objects too. The untick/normal
+		// path is the `if` branch above, which re-shows them per the usual checkboxes.
+		GGTerrain::GGTerrainWicked_SetTerrainVisible(false);
 	}
 
 	// Populate GG custom frame staging data for shader constant buffer (b4)
