@@ -2336,3 +2336,11 @@ restored. Standalone exports already write producelogfiles=0, so a fresh export 
 quiet with no further action. NOTE: the automation harness still runs in standalones
 (auto_command.txt watcher) — left as-is deliberately (we drive standalone tests with
 it); flag for Lee whether shipped games should disable it.
+
+## §2.71a — ★ Lee CONFIRMED (08-16 ~05:0x): "the re-exported standalone folder is clean
+## and save/load still works"
+The full standalone arc 2.69/2.70/2.70b+c/2.71 is user-confirmed closed end-to-end on a
+fresh export. Lee's parting instruction: run the ★ MILESTONE full DDS conversion of the
+entire Files\ media tree (authorized NOW — internal tester build wanted), then if time
+allows a full 19-demo hub sweep with fresh FPS + VRAM readings for his afternoon return.
+6-hour autonomous window starts here.
