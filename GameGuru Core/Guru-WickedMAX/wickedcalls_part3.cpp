@@ -3085,3 +3085,17 @@ void GGSetEnvOnly(float fOn, float fMip)
 // setup.ini `envonly=1` / `envonlymip=<n>` shim (Common_part1 cannot include wicked headers)
 void GGSetEnvOnlyIni(int iOn)   { wi::scene::gg_envonly = (iOn != 0) ? 1.0f : 0.0f; }
 void GGSetEnvOnlyMipIni(int iM) { wi::scene::gg_envonly_mip = (float)iM; }
+
+// GGMAX 2.80 (#157 debug rig): solid-colour global env cube. File-scope namespace declaration
+// per the 2.53 linkage rule.
+namespace wi { namespace scene {
+	extern float gg_envsolid_on; extern float gg_envsolid_r; extern float gg_envsolid_g; extern float gg_envsolid_b;
+} }
+void GGSetEnvSolid(float fOn, float r, float g, float b)
+{
+	wi::scene::gg_envsolid_on = fOn;
+	wi::scene::gg_envsolid_r = r;
+	wi::scene::gg_envsolid_g = g;
+	wi::scene::gg_envsolid_b = b;
+}
+void GGSetEnvSolidIni(int iOn) { wi::scene::gg_envsolid_on = (iOn != 0) ? 1.0f : 0.0f; }

@@ -3598,6 +3598,23 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_ENVSOLID") == 0)
+	{
+		// SET_ENVSOLID <0|1> [r g b] — (2.80, #157) replace EVERY read of the GLOBAL env-probe
+		// cube with a flat colour (default magenta 1 0 1). Both reads are covered: the specular
+		// env reflection (lightingHF EnvironmentReflection_Global) and the ambient term
+		// (GetAmbient, which samples the same cube at its coarsest mip). Nothing on screen can
+		// then be carrying the cube's CONTENT — so any structure that survives is produced
+		// somewhere AFTER the texture read. Colour components are 0..1 floats.
+		float esOn = 0.0f, esR = 1.0f, esG = 0.0f, esB = 1.0f;
+		if (arg) sscanf_s(arg, "%f %f %f %f", &esOn, &esR, &esG, &esB);
+		extern void GGSetEnvSolid(float fOn, float r, float g, float b);
+		GGSetEnvSolid(esOn, esR, esG, esB);
+		_snprintf(result, resultSize, "OK: SET_ENVSOLID %.0f rgb=(%.2f,%.2f,%.2f) — global env cube reads %s",
+			esOn, esR, esG, esB, (esOn > 0.0f) ? "return this FLAT COLOUR (texture bypassed)" : "sample the real cube again");
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_ENVONLY") == 0)
 	{
 		// SET_ENVONLY <0|1> [mip] — (2.79, #157) every opaque object outputs ONLY the global
