@@ -3600,7 +3600,12 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 	}
 	if (_stricmp(cmd, "SET_ENVSOLID") == 0)
 	{
-		// SET_ENVSOLID <0|1> [r g b] — (2.80, #157) replace EVERY read of the GLOBAL env-probe
+		// SET_ENVSOLID <0|1|2> [r g b] — (2.80, #157) replace EVERY read of the GLOBAL env-probe
+		// ★ MODE 2 = SPLIT: each read site gets its OWN colour so the screen becomes a map of
+		//   which site painted which pixel — MAGENTA = specular env reflection, GREEN = ambient,
+		//   BLUE = the parallax-corrected LOCAL path (which the global probe also travels).
+		//   In split mode the fresnel weighting is dropped on the two specular sites so all
+		//   three are comparable on screen; it answers WHICH site, not HOW MUCH.
 		// cube with a flat colour (default magenta 1 0 1). Both reads are covered: the specular
 		// env reflection (lightingHF EnvironmentReflection_Global) and the ambient term
 		// (GetAmbient, which samples the same cube at its coarsest mip). Nothing on screen can

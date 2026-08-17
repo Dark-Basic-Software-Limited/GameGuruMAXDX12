@@ -2802,3 +2802,66 @@ reflections until level reload). Bounded by the radius cap; revisit if it ever b
 ★★ RULE EARNED: "the element's object" is NOT "the entity's geometry". Before trusting any
 per-object treatment on a marker, DUMP the object range around it — GG allocates more than one
 object per marker and the element table names only one of them.
+
+## §2.78-2.80 — the env-map DEBUG RIGS and what they measured (08-17 night → 08-18, #157, Lee-driven)
+
+Lee ran this session; the rigs below exist to serve HIS step-by-step method (known → unknown,
+one contributor at a time). Read §2.80c FIRST if you are about to edit a shader.
+
+### The rigs (all default OFF; setup.ini keys persist across relaunch)
+| rig | live command | setup.ini | what it does |
+|-----|--------------|-----------|--------------|
+| park local probes | `SET_LOCALPROBES 0` | `globalprobeonly=1` | whole level reflects ONLY the global/base cube — the permanent form of dragging Probe Range to glimpse it |
+| move the base capture | `SET_GLOBALPROBE <x> <y> <z>\|rebake\|off` | — | stock captures at the MAP CORNER (0, 8215, 0) on spotshadowtest = 208 m above the corner |
+| env-only object output | `SET_ENVONLY <mode> [mip]` | `envonly=1`, `envonlymip=` | objects output ONLY the cube; modes 1-10 (see WETEST) |
+| solid-colour cube | `SET_ENVSOLID <0\|1\|2> [r g b]` | `envsolid=1` | 1 = every cube read returns a flat colour; 2 = SPLIT, one colour per read site |
+| capture contents | `SET_PROBECAPTURETRACE 1 [r]` | — | names every object entering a probe capture (this is what cracked #157's root cause) |
+
+### What the ladder MEASURED (all same-state A/Bs on Lee's spotshadowtest)
+- **normals are innocent**: cube via shading normal vs FACE normal differs 5% (mean 4.3); the two
+  normals drawn as colour differ 0.13% — the normal map does nothing on this ball, and the field
+  is smooth with no lobes.
+- **fresnel is the big suppressor**: cube x surface.F leaves **10%** overall — 2.7% at the centre,
+  5.0% at the rim. Near-uniform, so it cannot carve discrete shapes.
+- **occlusion is a no-op here**: 98.7% survives; the factor is 1.00 across almost the whole ball.
+- **ambient is a flat wash**: alone it reads 201/255 with std 13 across the entire sphere. It is
+  the SAME cube sampled at `mipcount` (clamps to the last mip = one average colour) plus the flat
+  weather ambient — not a separate texture.
+- **the sky term is flat too**: 220/255, std 7, and 99.7% of ball pixels differ from the cube.
+- **mips behave normally**: detail collapses 11x from mip 0 to mip 1, then softens. ⚠ mip 3 came
+  back pixel-identical to mip 2.
+- ★★ **SPLIT MAP — ownership settled**: on the ball's disc, the global SPECULAR read
+  (`EnvironmentReflection_Global`) owns **100.0%**; ambient **0.0%**; local box-projected 0.1%
+  (the highlight dot). Ambient paints nothing here because it feeds diffuse and the marker ball's
+  albedo is near-black.
+- ★★ **Lee's question answered**: BOTH pixel populations — the whitish gaps AND the detailed
+  circles — come from that one texture read. Split map proves ownership (nothing else paints the
+  ball); the solid-colour test proves the value (both regions changed to the flat colour together;
+  if the gaps came from the sky/ambient/clear colour they would have stayed pale).
+
+### ⚠ A near-miss worth keeping: the THIRD cube read
+An exhaustive census (not a grep) found `EnvironmentReflection_Local` (lightingHF.hlsli:773) also
+serves the GLOBAL cube: probes[0]'s descriptor is written into the probe ENTITY array
+(wiRenderer.cpp:5688) and GGTerrain gives it range 50000, so its OBB covers the level and the
+box-projected path wins for most pixels. It never mentions `GetScene().globalprobe`, so grepping
+that name misses it. Covering only the two obvious reads would have left the cube's content on
+screen and made the whole solid-colour test meaningless.
+
+## §2.80c — ★★ FAILURE TO RECORD: the mip rungs NEVER REACHED THE GPU (2 failed attempts)
+`SET_ENVSOLID 3` (paint the chosen mip index) and `4 <mip>` (force the mip) were written, compiled
+and shipped — and do NOTHING. The ball renders 192/0/155, pixel-identical to the PREVIOUS shader
+version's split magenta, for both modes.
+What was tried and did NOT fix it: (1) engine rebuild + refresh_shaders; (2) a full GAME rebuild
+afterwards. Neither changed `objectPS.cso`'s timestamp (frozen at 23:52:36).
+What is NOT known: **who actually produces the deploy `.cso`**. It is not either build (both left
+the timestamp untouched) and it cannot be a runtime source recompile — `SHADERSOURCEPATH` defaults
+to `../WickedEngine/shaders/` relative to the exe, **that folder does not exist**, and the game
+only ever calls `SetShaderPath("shaders/")`, never `SetShaderSourcePath`.
+★★ RULE (this is the repo's "two shader paths" warning biting again, harder): **a shader edit is
+not live until a DELIBERATE, VISIBLE change proves it.** Add a rung that must obviously alter the
+image, confirm it, and only then trust any measurement from that shader. Earlier results in this
+session are safe because each one visibly changed on command; anything measured from an unverified
+shader edit is worthless.
+NEXT (do this before any further shader rung): find the real producer of the deploy `.cso`
+(likely an offline shader-compiler step with its own output dir + copy rule) and gate on a
+visible-change test.
