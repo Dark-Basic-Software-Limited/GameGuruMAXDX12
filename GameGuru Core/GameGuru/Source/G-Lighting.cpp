@@ -281,6 +281,7 @@ void lighting_loop(void)
 	extern int gg_debugprobes_force;
 	if (gg_debugprobes_force != 0)
 	{
+		wiRenderer::SetDebugEnvProbeFocus(0.0f, 0.0f, 0.0f, 0.0f); // 2.76: harness wants ALL probes
 		wiRenderer::SetToDrawDebugEnvProbes(true);
 	}
 	else if (t.widget.pickedEntityIndex > 0 && t.entityprofile[t.entityelement[t.widget.pickedEntityIndex].bankindex].ismarker == 2 && bImGuiInTestGame == false)
@@ -288,26 +289,40 @@ void lighting_loop(void)
 		// and only if the light object is a probe
 		if (t.entityprofile[t.entityelement[t.widget.pickedEntityIndex].bankindex].light.fLightHasProbe >= 50)
 		{
-			// GGMAX 2.75 (#155): size the engine's ACCURATE debug mirror sphere to fully
-			// enclose the marker ball, so picking a probe shows a large true preview of
-			// the captured cube (DX11-style). Falls back to 40 units if the marker's
-			// world AABB is not available this frame.
-			extern float WickedCall_GetObjectWorldRadius(int iObj);
-			float fBallRadius = WickedCall_GetObjectWorldRadius(t.entityelement[t.widget.pickedEntityIndex].obj);
+			// GGMAX 2.76 (#158): the ACCURATE debug mirror sphere must be a drop-in for the
+			// picked marker ball — picking a probe shows the true captured cube WITHOUT
+			// changing the marker's apparent size. Two 2.75 defects made both balls swell:
+			//   (a) size came from AABB getRadius() = the half-DIAGONAL (sqrt(3) x extent)
+			//       and was then scaled a further 1.15 -> ~2x the ball's visible radius;
+			//   (b) the engine drew a sphere for EVERY probe in the scene, so an untouched
+			//       probe grew too (invisible pre-2.75 because the spheres were 1 unit).
+			// Now: radius = the ball's own world half-extent (x1.02 so the preview cleanly
+			// covers the mesh instead of z-fighting it), and the engine is focused on the
+			// picked marker's position, which is exactly where its probe sits
+			// (GGTerrain_AddEnvProbeList -> probe->position, no offset).
+			int iPickedEle = t.widget.pickedEntityIndex;
+			extern float WickedCall_GetObjectWorldExtent(int iObj);
+			float fBallExtent = WickedCall_GetObjectWorldExtent(t.entityelement[iPickedEle].obj);
 			// GGMAX 2.75c: during pickup/drag the element's own object can collapse while
 			// the DRAG GHOST carries the visible ball — take the larger of the two so the
-			// preview sphere size stays stable through click-hold (was jumping to the 40
-			// fallback mid-hold).
+			// preview sphere size stays stable through click-hold.
 			if (t.gridentityobj > 0)
 			{
-				float fGhostRadius = WickedCall_GetObjectWorldRadius(t.gridentityobj);
-				if (fGhostRadius > fBallRadius) fBallRadius = fGhostRadius;
+				float fGhostExtent = WickedCall_GetObjectWorldExtent(t.gridentityobj);
+				if (fGhostExtent > fBallExtent) fBallExtent = fGhostExtent;
 			}
-			float fPreviewScale = fBallRadius * 1.15f;
-			if (fPreviewScale < 10.0f) fPreviewScale = 40.0f;
-			if (fPreviewScale > 400.0f) fPreviewScale = 400.0f;
-			wiRenderer::SetDebugEnvProbeSphereScale(fPreviewScale);
-			wiRenderer::SetToDrawDebugEnvProbes(true);
+			// 2.76: never jump to a magic fallback mid-hold (2.75 used 40 units and the
+			// preview popped whenever the AABB went missing for a frame) — reuse the last
+			// good size instead, and simply draw nothing until we have one.
+			static float s_fLastGoodBallExtent = 0.0f;
+			if (fBallExtent > 1.0f) s_fLastGoodBallExtent = fBallExtent;
+			else fBallExtent = s_fLastGoodBallExtent;
+			if (fBallExtent > 400.0f) fBallExtent = 400.0f;
+			wiRenderer::SetDebugEnvProbeSphereScale(fBallExtent * 1.02f);
+			float fFocusRadius = fBallExtent * 3.0f;
+			if (fFocusRadius < 100.0f) fFocusRadius = 100.0f;
+			wiRenderer::SetDebugEnvProbeFocus(t.entityelement[iPickedEle].x, t.entityelement[iPickedEle].y, t.entityelement[iPickedEle].z, fFocusRadius);
+			wiRenderer::SetToDrawDebugEnvProbes(fBallExtent > 1.0f);
 		}
 	}
 	else

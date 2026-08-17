@@ -2691,3 +2691,61 @@ editor-only passes; the displayed sphere belonging to a DIFFERENT slot than assu
 
 NEXT PER LEE: park this; tackle the ENV PROBE SIZE CHANGE bug first — Lee has built a
 NEW TEST LEVEL for it.
+
+## §2.76 — ★ FIXED: picking a probe marker resized EVERY probe ball in the level (08-17 evening, #158)
+
+LEE'S REPORT (his TESTPRO2 / spotshadowtest level, two %probe markers on barrels):
+"When I click and release the left mouse button on the left env probe marker, BOTH
+spheres increase in size, that is a bug. They should stay the same size!!"
+
+MY OWN 2.75 CODE, TWO SEPARATE DEFECTS, ONE SYMPTOM:
+
+1. **Size** — `WickedCall_GetObjectWorldRadius` returned `AABB::getRadius()`, which is the
+   half-DIAGONAL of the box (sqrt(3) x the half-extent for a ball's tight box), and
+   G-Lighting scaled it a FURTHER 1.15. 1.732 x 1.15 = 1.99, so the preview sphere drew
+   at ~2x the marker ball's visible radius. Lee's screenshots measure the jump at ~2.05x —
+   the arithmetic and the pixels agree.
+   ★ RULE: "make X the size of Y" wants the HALF-EXTENT. A bounding-sphere radius is
+   sqrt(3) too big for anything box-shaped and sqrt(2) too big in 2D. Both are "radius".
+2. **Every probe** — the engine's `debugEnvProbes` block loops `scene.probes` and draws a
+   mirror sphere for EVERY probe. At the stock unit scale those were 1-unit specks in an
+   inch-scale world, invisible, so nobody ever noticed; the moment 2.75 sized them to the
+   marker ball, picking one probe swelled every probe in the level.
+   ★ RULE: before scaling up something the engine draws for ALL of a class, check the
+   loop — a harmless stock behaviour at scale 1 is a bug at scale 60.
+
+THE FIX (engine delta 2.76 + game 2.76):
+- game `WickedCall_GetObjectWorldExtent` (renamed from ...WorldRadius) = max half-extent
+  of the largest frame AABB; preview scale = extent x 1.02 (just enough to cover the mesh
+  instead of z-fighting it). The 2.75 "fallback 40 units" magic number is GONE — an
+  unavailable AABB now reuses the last good extent (a fallback that differs from the real
+  size IS the size-pop bug in another costume).
+- engine `SetDebugEnvProbeFocus(x,y,z,radius)`: exactly one sphere draws, the probe
+  NEAREST the focus point and only within radius; radius <= 0 keeps the stock all-probes
+  behaviour for the SET_DEBUGPROBES harness override. Game focuses on the picked marker's
+  x/y/z, which is exactly where its probe sits (`GGTerrain_AddEnvProbeList` copies the
+  position into `probe->position`, no offset).
+- ⚠ NEAREST-WINS, not a radius test: round 1 used `radius = max(extent*3, 100)` and BOTH
+  balls still previewed, because Lee's two markers sit **63 units apart** — closer to each
+  other than any sane tolerance. Measured, not guessed: the first build's screenshots
+  showed the bug half-fixed (right size, still both).
+
+VERIFICATION (harness, Lee's own level, elements 1192/1195 = the two %probe markers):
+`SELECT_ENTITY` reproduces the settled pick exactly (it sets `t.widget.pickedEntityIndex`,
+which is what lighting_loop reads). Per-ball changed-pixel measurement vs the unselected
+baseline, same session, ambient control included:
+| case | left ball | right ball |
+|------|-----------|------------|
+| pick left (1192)  | 10806 px changed, silhouette 172x118 | **0 px** (bit-identical) [+61 px = the cyan proxy-box line] |
+| pick right (1195) | **0 px** (bit-identical) | 12429 px changed |
+| deselect x2 (control) | 0 px | 0 px |
+The changed silhouette equals the marker ball's own dome (172 px wide, still occluded by
+the barrel rim exactly as before) — the preview is a drop-in for the ball, not a balloon.
+Untouched probes are now provably untouched.
+
+⚠ Note for the still-open circles hunt (#157): the click-HOLD path is unchanged in spirit —
+during a drag the size still comes from max(element, ghost) extent, and the focus follows
+the element, so once a marker is dragged >100 units from its probe the preview hides until
+release re-places the probe. That is deliberate (the probe has not moved yet), but it does
+mean the hold-time preview can now vanish rather than lag — worth knowing when reading
+Lee's next hold-time report.

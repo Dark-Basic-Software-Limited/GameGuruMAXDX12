@@ -2951,9 +2951,14 @@ void WickedCall_MakeObjectEnvMatte(int iObj)
 	}
 }
 
-// GGMAX 2.75 (#155): live world-space radius of an object's largest frame AABB — used to
-// size the engine's debug probe mirror sphere so it fully encloses the marker ball.
-float WickedCall_GetObjectWorldRadius(int iObj)
+// GGMAX 2.76 (#158): live world-space HALF-EXTENT of an object's largest frame AABB — i.e.
+// the visible radius of a ball-shaped mesh, which is what the debug probe mirror sphere must
+// match so that picking a probe does not change the marker's apparent size.
+// ⚠ This replaces 2.75's WickedCall_GetObjectWorldRadius: AABB::getRadius() returns the
+// half-DIAGONAL (sqrt(3) x the half-extent for a sphere's tight box), so sizing the preview
+// by it — and then scaling a further 1.15 — drew the sphere at ~2x the marker ball. Any
+// "make X the size of Y" job wants the half-extent, never the bounding-sphere radius.
+float WickedCall_GetObjectWorldExtent(int iObj)
 {
 	if (iObj <= 0 || !ObjectExist(iObj)) return 0.0f;
 	sObject* pObj = GetObjectData(iObj);
@@ -2967,7 +2972,10 @@ float WickedCall_GetObjectWorldRadius(int iObj)
 		size_t idx = scene.objects.GetIndex(objent);
 		if (idx >= scene.objects.GetCount() || idx >= scene.aabb_objects.size()) continue;
 		const wi::primitive::AABB& ab = scene.aabb_objects[idx];
-		float r = ab.getRadius();
+		XMFLOAT3 hw = ab.getHalfWidth();
+		float r = hw.x;
+		if (hw.y > r) r = hw.y;
+		if (hw.z > r) r = hw.z;
 		if (r > fBest) fBest = r;
 	}
 	return fBest;
