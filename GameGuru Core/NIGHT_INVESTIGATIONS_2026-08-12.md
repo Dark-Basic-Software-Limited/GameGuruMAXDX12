@@ -2631,3 +2631,23 @@ self-capture gone, the ball's natural glossy look reflects a CLEAN capture again
 Lee's one-glance re-test: reload the level, look at the ball (glossy again, sane
 reflections), click-hold old AND new probes (big preview = clean sky/beach, no circles,
 no near-black).
+
+## §2.75d — the click-hold portholes: the DRAG GHOST was the second self-capture path (08-17 evening, #155 round 4)
+
+Lee's 2.75b re-test: unpicked ball GLOSSY with a CLEAN reflection (so the stored cube is
+clean — the placed-marker exclusion works), but click-and-hold STILL showed the circles,
+plus the preview sphere changed size mid-hold. The differential (settled=clean vs
+hold=portholed) named the second path: click-hold picks the entity up into the editor's
+DRAG-CURSOR GHOST (t.gridentityobj) — a SEPARATE object from the placed marker. Drag
+edits re-capture the probe every frame, and those re-captures photographed the GHOST
+ball from inside; the placed ball's NotVisibleInReflections flag never covered it.
+
+FIX (2.75c, game-only, G-Lighting.cpp): (1) the gridentity block now excludes the ghost
+object from reflections every frame it exists (any dragged entity — a pickup ghost
+should never bake into env captures); (2) the preview-sphere radius takes
+max(element.obj, gridentityobj) world AABB radius — during pickup the element's own
+object collapses, which was tripping the 40-unit fallback and making the sphere jump in
+size mid-hold.
+
+Lee's re-test: click-hold + DRAG the probe — the big preview should stay a clean
+sky/beach mirror through the whole drag, stable size, no circles.

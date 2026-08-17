@@ -203,6 +203,15 @@ void lighting_loop(void)
 		{
 			entity_updateparticleemitterbyID (&t.grideleprof, t.gridentityobj, t.gridentityscalex_f - 100.0f, t.gridentityposx_f, t.gridentityposy_f, t.gridentityposz_f, ObjectAngleX(t.gridentityobj), ObjectAngleY(t.gridentityobj), ObjectAngleZ(t.gridentityobj));
 		}
+
+		// GGMAX 2.75c (#155): the drag-cursor GHOST is a SEPARATE object from the placed
+		// entity — during click-hold of a probe marker the probe re-captures every frame
+		// and was photographing the GHOST ball from inside (the placed ball is excluded
+		// since 2.75b, the ghost was not) => the porthole circles returned exactly and
+		// only while holding. Exclude the ghost from env captures/reflections; applies
+		// to any dragged entity — a pickup ghost should never bake into a probe.
+		extern void WickedCall_MakeObjectEnvMatte(int iObj);
+		WickedCall_MakeObjectEnvMatte(t.gridentityobj);
 	}
 
 	// and detect if light probe scale changes
@@ -285,6 +294,15 @@ void lighting_loop(void)
 			// world AABB is not available this frame.
 			extern float WickedCall_GetObjectWorldRadius(int iObj);
 			float fBallRadius = WickedCall_GetObjectWorldRadius(t.entityelement[t.widget.pickedEntityIndex].obj);
+			// GGMAX 2.75c: during pickup/drag the element's own object can collapse while
+			// the DRAG GHOST carries the visible ball — take the larger of the two so the
+			// preview sphere size stays stable through click-hold (was jumping to the 40
+			// fallback mid-hold).
+			if (t.gridentityobj > 0)
+			{
+				float fGhostRadius = WickedCall_GetObjectWorldRadius(t.gridentityobj);
+				if (fGhostRadius > fBallRadius) fBallRadius = fGhostRadius;
+			}
 			float fPreviewScale = fBallRadius * 1.15f;
 			if (fPreviewScale < 10.0f) fPreviewScale = 40.0f;
 			if (fPreviewScale > 400.0f) fPreviewScale = 400.0f;
