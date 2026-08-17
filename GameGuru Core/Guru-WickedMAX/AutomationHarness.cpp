@@ -3596,6 +3596,72 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "DUMP_OBJENT") == 0)
+	{
+		// DUMP_OBJENT <ggObjectNumber> — (2.77, #157) walk a GG object's frames to its wicked
+		// ObjectComponents and print each one's NOT_VISIBLE_IN_REFLECTIONS / renderable state.
+		// Answers "did my per-object flag actually land on a live component?"
+		// A RANGE may be given (DUMP_OBJENT <start> <end>) — marker elements allocate more than
+		// one GG object, so the ball we care about need not be the element's own obj number.
+		// Range output goes to Files/objent_dump.txt (too big for the result buffer).
+		int doObj = 0, doEnd = 0;
+		if (arg) sscanf_s(arg, "%d %d", &doObj, &doEnd);
+		extern void WickedCall_DumpObjectEnvFlags(int iObj, char* out, size_t outSize);
+		char doBuf[2048] = "";
+		if (doEnd > doObj)
+		{
+			FILE* doF = fopen("objent_dump.txt", "w");
+			int doFound = 0;
+			for (int o = doObj; o <= doEnd; o++)
+			{
+				if (!ObjectExist(o)) continue;
+				doFound++;
+				WickedCall_DumpObjectEnvFlags(o, doBuf, sizeof(doBuf));
+				if (doF) fprintf(doF, "%s\n", doBuf);
+			}
+			if (doF) fclose(doF);
+			_snprintf(result, resultSize, "OK: DUMP_OBJENT range %d..%d — %d objects exist -> Files/objent_dump.txt",
+				doObj, doEnd, doFound);
+		}
+		else
+		{
+			WickedCall_DumpObjectEnvFlags(doObj, doBuf, sizeof(doBuf));
+			_snprintf(result, resultSize, "OK: %s", doBuf);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "DUMP_ENTOBJ") == 0)
+	{
+		// DUMP_ENTOBJ <wickedEntityID> — (2.77, #157) reverse map: which GG object owns this
+		// wicked entity? Pair with the probecapture trace's ent= ids to name what was captured.
+		unsigned long long deEnt = 0;
+		if (arg) sscanf_s(arg, "%llu", &deEnt);
+		extern int WickedCall_ObjectNumberOfEntity(unsigned long long iEntityID);
+		int deObj = WickedCall_ObjectNumberOfEntity(deEnt);
+		_snprintf(result, resultSize, "OK: entity=%llu -> GG object %d%s",
+			deEnt, deObj, (deObj < 0) ? " (NOT owned by any GG object — engine/terrain/tree side)" : "");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_PROBECAPTURETRACE") == 0)
+	{
+		// SET_PROBECAPTURETRACE <0|1> [radius=400] — (2.77, #157) engine appends one block per
+		// env-probe CAPTURE to Files/probecapture.txt: the capture's znear/zfar (inherited from
+		// the MAIN camera — each cube face clips there, so the hidden volume around a probe is a
+		// CUBE of half-width znear) and every object within radius with its exact keep/skip
+		// reason (layer / range sphere / renderable / NOT_VISIBLE_IN_REFLECTIONS). Names what
+		// is being photographed INTO a cube instead of guessing. Leave OFF unless tracing —
+		// it writes a block per capture and captures can run every frame during a marker drag.
+		int pcOn = 0; float pcRadius = 0.0f;
+		if (arg) sscanf_s(arg, "%d %f", &pcOn, &pcRadius);
+		wiRenderer::SetProbeCaptureTrace(pcOn, pcRadius);
+		if (pcOn != 0 && arg && strstr(arg, "reset") == nullptr) remove("probecapture.txt");
+		_snprintf(result, resultSize, "OK: SET_PROBECAPTURETRACE %d radius=%.0f -> Files/probecapture.txt%s",
+			pcOn, pcRadius > 0.0f ? pcRadius : 400.0f, pcOn ? " (file truncated)" : "");
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "REFRESH_ENVPROBE") == 0)
 	{
 		// Trigger the editor-identical full refresh: lighting_loop -> GGTerrain_ClearEnvProbeList

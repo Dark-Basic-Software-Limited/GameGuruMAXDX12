@@ -2749,3 +2749,56 @@ the element, so once a marker is dragged >100 units from its probe the preview h
 release re-places the probe. That is deliberate (the probe has not moved yet), but it does
 mean the hold-time preview can now vanish rather than lag — worth knowing when reading
 Lee's next hold-time report.
+
+## §2.77 — ★★ THE CIRCLES, ROOT-CAUSED AT LAST: a %probe marker is TWO objects and only one was excluded (08-17 late, #157 round 5)
+
+LEE'S LEAD (the one that cracked it): "this could be rendered if a sphere was being rendered
+inside a cube, and the sphere intersects the cube so that only the part of the sphere outside
+of the cube would be rendered." That reading is geometrically exact for an env capture: the
+six cube-face frustums all clip at the SAME near distance, so the volume hidden around a probe
+IS a cube — and anything close enough to straddle it survives only where it pokes out.
+
+★ INSTRUMENT FIRST (the thing four failed rounds lacked): `SET_PROBECAPTURETRACE <0|1> [r]`
+(engine 2.77) appends one block per env-probe CAPTURE to Files/probecapture.txt — the near/far
+the capture used and every object within r with its exact keep/skip reason. First run on Lee's
+spotshadowtest answered two questions at once:
+- znear=3.0 / zfar=500000 (inherited from the MAIN camera, `vis.camera->zNearP`). The cube-clip
+  Lee described is REAL but only 3 units across — not the carve he was seeing.
+- **The marker balls were coming back `norefl=0 RENDERED`** — inside their own probe's capture,
+  which 2.75b was supposed to have stopped.
+
+WHY 2.75b MISSED IT (`DUMP_OBJENT` / `DUMP_ENTOBJ`, added to settle it):
+```
+obj=71184 frames=1 | f0 'sphere' ent=21781 norefl=1   <- element 1192's obj -> excluded
+obj=71185 frames=1 | f0 'root'   ent=21784 norefl=0   <- RENDERED into the capture
+obj=71186 frames=1 | f0 'root'   ent=21786 norefl=0   <- RENDERED into the capture
+obj=71187 frames=1 | f0 'sphere' ent=21789 norefl=1   <- element 1195's obj -> excluded
+```
+**A %probe marker owns TWO GG objects.** The element table points at the inner ball (DBO frame
+'sphere', r=21.7); a SECOND object per marker (frame 'root', r=28.6) sits 19.9 units away with
+the probe INSIDE its bounds, and nothing ever excluded it. Every capture photographed that
+shell's interior. 2.75b was correct and landed correctly — on half the marker.
+
+THE FIX (2.77, game-side): `WickedCall_ExcludeObjectsEnclosingPoint(x,y,z,maxRadius)` called
+from the probe-list rebuild per marker. Exclusion is by GEOMETRY, not object number, because
+the object number was never the invariant: an object that ENCLOSES a probe's origin cannot be
+meaningfully captured by that probe — you are inside it, and it paints the cube with its own
+interior. maxRadius = marker extent x3 (~65 units) keeps this to widget/marker-scale props; a
+room or building that legitimately encloses an interior probe is far larger and stays in.
+
+VERIFIED (same level, same camera, same session type):
+- instrument: all four marker objects now `norefl=1`, and **zero** 'root'/'sphere' objects are
+  RENDERED into any capture (was 2 per capture).
+- visual: the picked probe's preview ball changed by **4420 of 37950 pixels (11.6%)** — the
+  dark band the shell's interior was eating is gone; beach, water and sky are now complete.
+
+⚠ HONEST SCOPE: this is proven for the SETTLED capture. Lee's report is about the CLICK-HOLD
+window; the settled cube was visibly polluted by the same shell, so this is very likely the
+same defect, but only his hold repro can close it. If any corruption survives: arm
+`SET_PROBECAPTURETRACE 1 120` in his live session, hold the X-axis widget, and read
+probecapture.txt — every capture during the hold is now itemised by name and skip reason.
+⚠ The exclusion is sticky for the session (a prop dragged through by a probe stays out of
+reflections until level reload). Bounded by the radius cap; revisit if it ever bites.
+★★ RULE EARNED: "the element's object" is NOT "the entity's geometry". Before trusting any
+per-object treatment on a marker, DUMP the object range around it — GG allocates more than one
+object per marker and the element table names only one of them.

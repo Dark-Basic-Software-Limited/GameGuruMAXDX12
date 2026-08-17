@@ -248,6 +248,21 @@ void lighting_loop(void)
 						// gone the ball's natural glossy look reflects a clean cube again.
 						extern void WickedCall_MakeObjectEnvMatte(int iObj);
 						WickedCall_MakeObjectEnvMatte(t.entityelement[ee].obj);
+
+						// GGMAX 2.77 (#157 ROOT CAUSE, measured with SET_PROBECAPTURETRACE):
+						// the line above only reaches the element's OWN object — the inner
+						// ball (DBO frame 'sphere'). A %probe marker also owns a SECOND
+						// object (frame 'root', larger) that the element table does not
+						// point at, and the probe sits INSIDE it, so every capture
+						// photographed that shell's interior: Lee's "circle image on each
+						// cube side". Exclude by geometry instead of by object number —
+						// anything small enough to be a marker/widget that ENCLOSES the
+						// probe origin cannot be meaningfully captured by that probe.
+						extern int WickedCall_ExcludeObjectsEnclosingPoint(float x, float y, float z, float fMaxRadius);
+						extern float WickedCall_GetObjectWorldExtent(int iObj);
+						float fMarkerExtent = WickedCall_GetObjectWorldExtent(t.entityelement[ee].obj);
+						if (fMarkerExtent < 10.0f) fMarkerExtent = 30.0f;
+						WickedCall_ExcludeObjectsEnclosingPoint(t.entityelement[ee].x, t.entityelement[ee].y, t.entityelement[ee].z, fMarkerExtent * 3.0f);
 					}
 				}
 			}

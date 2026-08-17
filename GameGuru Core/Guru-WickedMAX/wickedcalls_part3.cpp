@@ -2980,3 +2980,85 @@ float WickedCall_GetObjectWorldExtent(int iObj)
 	}
 	return fBest;
 }
+
+// GGMAX 2.77 (#157 forensics): the 2.75b reflection exclusion was measured NOT to be landing
+// (probecapture trace: the %probe marker balls come back norefl=0 and RENDERED inside their
+// own probe's capture). These two name the break in the chain: does the GG object's frame
+// walk reach a live wicked ObjectComponent at all, and which GG object do the entities the
+// engine actually captured belong to?
+void WickedCall_DumpObjectEnvFlags(int iObj, char* out, size_t outSize)
+{
+	if (out == NULL || outSize == 0) return;
+	out[0] = 0;
+	if (iObj <= 0 || !ObjectExist(iObj))
+	{
+		_snprintf(out, outSize, "obj=%d DOES NOT EXIST", iObj);
+		out[outSize - 1] = 0;
+		return;
+	}
+	sObject* pObj = GetObjectData(iObj);
+	if (pObj == NULL)
+	{
+		_snprintf(out, outSize, "obj=%d GetObjectData NULL", iObj);
+		out[outSize - 1] = 0;
+		return;
+	}
+	auto& scene = wi::scene::GetScene();
+	int w = _snprintf(out, outSize, "obj=%d frames=%d rootent=%llu", iObj, pObj->iFrameCount,
+		(unsigned long long)pObj->wickedrootentityindex);
+	for (int f = 0; f < pObj->iFrameCount && w > 0 && w < (int)outSize - 160; f++)
+	{
+		if (pObj->ppFrameList[f] == NULL)
+		{
+			w += _snprintf(out + w, outSize - w, " | f%d NULLFRAME", f);
+			continue;
+		}
+		wi::ecs::Entity objent = (wi::ecs::Entity)pObj->ppFrameList[f]->wickedobjindex;
+		wi::scene::ObjectComponent* oc = scene.objects.GetComponent(objent);
+		w += _snprintf(out + w, outSize - w, " | f%d '%.16s' ent=%llu comp=%d norefl=%d rend=%d",
+			f, pObj->ppFrameList[f]->szName ? pObj->ppFrameList[f]->szName : "?",
+			(unsigned long long)objent, oc ? 1 : 0,
+			oc ? (oc->IsNotVisibleInReflections() ? 1 : 0) : -1,
+			oc ? (oc->IsRenderable() ? 1 : 0) : -1);
+	}
+	out[outSize - 1] = 0;
+}
+
+int WickedCall_ObjectNumberOfEntity(unsigned long long iEntityID)
+{
+	sObject* pObject = m_ObjectManager.FindObjectFromWickedObjectEntityID((uint64_t)iEntityID);
+	return (pObject != NULL) ? (int)pObject->dwObjectNumber : -1;
+}
+
+// GGMAX 2.77 (#157 THE ACTUAL ROOT CAUSE): a %probe marker is TWO GG objects, not one.
+// The element's own obj is the inner ball (DBO frame 'sphere', r~21.7) — that is what 2.75b
+// excluded. A SECOND object per marker (frame 'root', r~28.6) is created outside the element
+// table, sits 19.9 units from the probe with the probe INSIDE its bounds, and kept being
+// photographed into the cube from the inside. That interior — carved by the 6 cube faces'
+// near planes — is Lee's "circle image on each cube side".
+//
+// Excluding it by object number would be a guess, so exclude by GEOMETRY, which is the real
+// rule: an object that ENCLOSES a probe's origin cannot be meaningfully captured by it (you
+// are inside the thing), and it will paint the cube with its own interior. The radius cap
+// keeps this to widget/marker-scale props — a room or building that legitimately encloses an
+// interior probe is far larger and stays in the capture.
+// Returns the number of objects newly excluded (0 on a settled scene = nothing to do).
+int WickedCall_ExcludeObjectsEnclosingPoint(float x, float y, float z, float fMaxRadius)
+{
+	auto& scene = wi::scene::GetScene();
+	int iExcluded = 0;
+	const size_t count = scene.aabb_objects.size();
+	for (size_t i = 0; i < count && i < scene.objects.GetCount(); i++)
+	{
+		const wi::primitive::AABB& ab = scene.aabb_objects[i];
+		if (ab.getRadius() > fMaxRadius) continue;          // rooms/buildings stay visible
+		const XMFLOAT3& mn = ab._min;
+		const XMFLOAT3& mx = ab._max;
+		if (x < mn.x || x > mx.x || y < mn.y || y > mx.y || z < mn.z || z > mx.z) continue;
+		wi::scene::ObjectComponent& oc = scene.objects[i];
+		if (oc.IsNotVisibleInReflections()) continue;       // already excluded (idempotent)
+		oc.SetNotVisibleInReflections(true);
+		iExcluded++;
+	}
+	return iExcluded;
+}
