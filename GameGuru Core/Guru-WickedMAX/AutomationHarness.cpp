@@ -3557,6 +3557,29 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_PROBE_TEST") == 0)
+	{
+		// SET_PROBE_TEST <x> <y> <z> [range=383] [sx sy sz=100] — (2.75b, #155 round 3) drive
+		// the REAL user-probe path without a placed marker: append to g_envProbeList exactly
+		// like a probe marker does (G-Lighting.cpp walk), which activates the tracking system
+		// and captures a pool probe AT the given position. Built to reproduce Lee's corrupt
+		// ground-level (y=4.7) probe capture. Pair with DUMP_ENVPROBE to extract the cube.
+		float ptx = 0, pty = 0, ptz = 0, ptr = 383.0f, psx = 100.0f, psy = 100.0f, psz = 100.0f, pyaw = 0.0f;
+		int got = arg ? sscanf_s(arg, "%f %f %f %f %f %f %f %f", &ptx, &pty, &ptz, &ptr, &psx, &psy, &psz, &pyaw) : 0;
+		if (got < 3)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_PROBE_TEST needs <x> <y> <z> [range] [sx sy sz] [yawdeg]");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		const float pyawrad = pyaw * 3.14159265f / 180.0f;
+		const float pqy = sinf(pyawrad * 0.5f), pqw = cosf(pyawrad * 0.5f);
+		GGTerrain::GGTerrain_AddEnvProbeList(ptx, pty, ptz, ptr, 0, pqy, 0, pqw, psx, psy, psz, 1.0f);
+		_snprintf(result, resultSize, "OK: SET_PROBE_TEST probe listed at (%.0f,%.0f,%.0f) range=%.0f size=(%.0f,%.0f,%.0f) yaw=%.0f — tracking assigns+captures a pool slot over the next frames",
+			ptx, pty, ptz, ptr, psx, psy, psz, pyaw);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_DEBUGPROBES") == 0)
 	{
 		// SET_DEBUGPROBES <0|1> — (2.74b, #155 ball-visualizer hunt) force the engine's debug

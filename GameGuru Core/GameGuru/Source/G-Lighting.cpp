@@ -231,10 +231,12 @@ void lighting_loop(void)
 						float fSZ = fLightProbeRangeZ;// t.entityelement[ee].scalez;
 						GGTerrain::GGTerrain_AddEnvProbeList(t.entityelement[ee].x, t.entityelement[ee].y, t.entityelement[ee].z, fLightProbeRange, t.entityelement[ee].quatx, t.entityelement[ee].quaty, t.entityelement[ee].quatz, t.entityelement[ee].quatw, fSX, fSY, fSZ, fProbeBrightness);
 
-						// GGMAX 2.75 (#155): matte the marker ball — under DX12 PBR the legacy
-						// probe.dbo sphere reflected its own box-projected capture as per-face
-						// "portholes" and read as a corrupt cube map (data proven clean, SS2.74b).
-						// The accurate preview is the engine debug sphere, enlarged on pick below.
+						// GGMAX 2.75b (#155 real root cause): exclude the marker ball from env
+						// captures — the pool probe captures from INSIDE the ball, so without
+						// this the cube map records the ball's own circular openings as
+						// "portholes" (DX11 excluded it via probe userdata; the port lost that).
+						// The 2.75 material-matte treatment is reverted — with self-capture
+						// gone the ball's natural glossy look reflects a clean cube again.
 						extern void WickedCall_MakeObjectEnvMatte(int iObj);
 						WickedCall_MakeObjectEnvMatte(t.entityelement[ee].obj);
 					}
@@ -278,9 +280,9 @@ void lighting_loop(void)
 		if (t.entityprofile[t.entityelement[t.widget.pickedEntityIndex].bankindex].light.fLightHasProbe >= 50)
 		{
 			// GGMAX 2.75 (#155): size the engine's ACCURATE debug mirror sphere to fully
-			// enclose the (now matte) marker ball, so picking a probe shows a large true
-			// preview of the captured cube (DX11-style). Falls back to 40 units if the
-			// marker's world AABB is not available this frame.
+			// enclose the marker ball, so picking a probe shows a large true preview of
+			// the captured cube (DX11-style). Falls back to 40 units if the marker's
+			// world AABB is not available this frame.
 			extern float WickedCall_GetObjectWorldRadius(int iObj);
 			float fBallRadius = WickedCall_GetObjectWorldRadius(t.entityelement[t.widget.pickedEntityIndex].obj);
 			float fPreviewScale = fBallRadius * 1.15f;

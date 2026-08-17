@@ -2924,13 +2924,17 @@ extern "C" void GGVideo_ParallelFor(int jobCount, void(*fn)(int, void*), void* c
 	wi::jobsystem::Wait(jc);
 }
 
-// GGMAX 2.75 (#155): the %probe marker ball must not pretend to be an env-map preview.
-// Under DX12 the legacy probe.dbo ball gets full PBR shading and reflects its own
-// box-projected capture through a legacy cube-patch sphere mesh — the per-face "porthole"
-// look Lee reported (the DATA was proven seamless, see notes SS2.74b). Matte the marker's
-// materials so the only mirror ball at a picked probe is the engine's ACCURATE debug
-// sphere (enlarged via SetDebugEnvProbeSphereScale below). Idempotent; called from the
-// lighting_loop probe-list rebuild so level load and newly placed probes are all covered.
+// GGMAX 2.75b (#155 round 3 — THE REAL ROOT CAUSE): the %probe marker ball was being
+// RENDERED INTO ITS OWN PROBE'S CAPTURE. The pool probe captures from the marker's
+// centre, i.e. from INSIDE the (double-sided, circular-featured) probe.dbo ball — the
+// "circle image on each cube side" Lee kept seeing was the ball's own openings acting as
+// portholes to the world, with its interior as the pale wash. DX11 excluded the marker
+// via probe userdata (see the commented `probe->userdata` fossils in GGTerrain_part0);
+// the DX12 port dropped userdata and with it the exclusion. Wicked's env capture culling
+// honours ObjectComponent::NOT_VISIBLE_IN_REFLECTIONS (wiRenderer RefreshEnvProbes), so
+// mark every frame-object of the marker. The 2.75 material-matte treatment is REVERTED —
+// with self-capture gone the ball's natural glossy look reflects a CLEAN capture again.
+// Idempotent; called from the lighting_loop probe-list rebuild (level load + placement).
 void WickedCall_MakeObjectEnvMatte(int iObj)
 {
 	if (iObj <= 0 || !ObjectExist(iObj)) return;
@@ -2943,18 +2947,7 @@ void WickedCall_MakeObjectEnvMatte(int iObj)
 		wi::ecs::Entity objent = (wi::ecs::Entity)pObj->ppFrameList[f]->wickedobjindex;
 		wi::scene::ObjectComponent* oc = scene.objects.GetComponent(objent);
 		if (oc == nullptr) continue;
-		wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(oc->meshID);
-		if (mesh == nullptr) continue;
-		for (auto& sub : mesh->subsets)
-		{
-			wi::scene::MaterialComponent* m = scene.materials.GetComponent(sub.materialID);
-			if (m == nullptr) continue;
-			if (m->roughness >= 1.0f && m->metalness <= 0.0f && m->reflectance <= 0.0f) continue; // already matte
-			m->SetRoughness(1.0f);
-			m->SetMetalness(0.0f);
-			m->SetReflectance(0.0f);
-			m->SetDirty();
-		}
+		oc->SetNotVisibleInReflections(true);
 	}
 }
 

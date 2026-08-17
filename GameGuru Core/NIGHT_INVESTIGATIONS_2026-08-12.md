@@ -2599,3 +2599,35 @@ single-cell class). Switch Escape editor measured 163.3 in this run vs 134-137 i
 mid-evening probes — §2.75a's ambient-drift verdict confirmed in the same night: the
 machine recovered. Full table: DEMO_FPS_SWEEP.md 0816b section; raw
 tools/sweep_0816b_2.75.txt. The day's entire arc (2.73/2.74/2.74b/2.75) is sweep-clean.
+
+## §2.75c — ★★ THE REAL ROOT CAUSE OF THE CIRCLES: the marker ball was captured INTO its own probe (08-17 evening, #155 round 3)
+
+Lee's re-test on 2.75 broke my §2.74b story open: his OLD probe's cube — viewed through
+the new ACCURATE debug sphere — still showed the portholes (so they are REAL DATA at that
+probe), his NEW probe on the same level captured clean, and the matte marker ball read as
+solid black (probe.png is near-black in linear; reflections were its only bright term).
+
+DIFFERENTIAL that named it: SET_PROBE_TEST (new harness command driving the real
+GGTerrain_AddEnvProbeList path without a marker) captured CLEAN on Island Showdown at
+every suspect parameter — under/at/above terrain height, rotation yaw 47, sizes 100,
+range 383. The ONLY difference between those clean synthetic probes and Lee's marker
+probes: THE MARKER BALL ITSELF. The pool probe captures from the marker's centre — i.e.
+from INSIDE the double-sided (FPE cullmode=1), circular-featured probe.dbo ball — so the
+cube map records the ball's own openings as portholes onto the world with its interior
+as the pale wash. DX11 excluded the marker from probe rendering via probe userdata (the
+`probe->userdata = 255/0` fossils commented "DX12 - userdata removed" in
+GGTerrain_part0.cpp are the amputated mechanism). Old-vs-new probe asymmetry: a NEW
+marker's first capture fires before its ball object is renderable (clean), and Lee's
+"click-hold makes the new probe's preview nearly black" = the RE-capture with the ball
+present (mostly interior).
+
+FIX (2.75b, game-only): WickedCall_MakeObjectEnvMatte now sets
+ObjectComponent::SetNotVisibleInReflections(true) on every frame-object of the marker —
+wiRenderer's RefreshEnvProbes culling honours that flag natively (wiRenderer.cpp:10781),
+restoring the DX11 exclusion. The 2.75 material-matte treatment is REVERTED: with
+self-capture gone, the ball's natural glossy look reflects a CLEAN capture again (fixes
+"the probe sphere is now black"). Pick still shows the enlarged accurate debug sphere.
+
+Lee's one-glance re-test: reload the level, look at the ball (glossy again, sane
+reflections), click-hold old AND new probes (big preview = clean sky/beach, no circles,
+no near-black).
