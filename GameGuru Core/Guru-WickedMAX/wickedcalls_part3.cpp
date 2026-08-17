@@ -3073,3 +3073,15 @@ void GGSetGlobalProbeOnly(int iOn)
 {
 	GGTerrain::GGTerrain_SetLocalProbesDisabled(iOn != 0 ? 1 : 0);
 }
+
+// GGMAX 2.79 (#157 debug rig): env-only object output. File-scope namespace declaration per
+// the 2.53 linkage rule — a block-scope extern would mangle into the global namespace.
+namespace wi { namespace scene { extern float gg_envonly; extern float gg_envonly_mip; } }
+void GGSetEnvOnly(float fOn, float fMip)
+{
+	wi::scene::gg_envonly = fOn;
+	wi::scene::gg_envonly_mip = fMip;
+}
+// setup.ini `envonly=1` / `envonlymip=<n>` shim (Common_part1 cannot include wicked headers)
+void GGSetEnvOnlyIni(int iOn)   { wi::scene::gg_envonly = (iOn != 0) ? 1.0f : 0.0f; }
+void GGSetEnvOnlyMipIni(int iM) { wi::scene::gg_envonly_mip = (float)iM; }

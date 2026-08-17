@@ -3598,6 +3598,24 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_ENVONLY") == 0)
+	{
+		// SET_ENVONLY <0|1> [mip] — (2.79, #157) every opaque object outputs ONLY the global
+		// env-probe cube texel along its mirror reflection vector. Everything else the object
+		// shader computes is discarded: albedo/normal/surface/emissive/AO maps, lightmap,
+		// lights, shadows, SSAO/SSR/GI/decals, fog, aerial perspective, saturation, and the
+		// fresnel + brightness weighting the normal env path applies. What you see IS the cube.
+		// [mip] picks the cube mip (0 = sharpest, 3 = roughest on a 4-mip probe) — worth
+		// stepping through, since a BC6H probe's coarse mips are where ring banding shows.
+		float eoOn = 0.0f, eoMip = 0.0f;
+		if (arg) sscanf_s(arg, "%f %f", &eoOn, &eoMip);
+		extern void GGSetEnvOnly(float on, float mip);
+		GGSetEnvOnly(eoOn, eoMip);
+		_snprintf(result, resultSize, "OK: SET_ENVONLY %.0f mip=%.0f — objects show %s",
+			eoOn, eoMip, (eoOn > 0.0f) ? "ONLY the global env cube (raw texel, no lighting)" : "normal shading");
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_LOCALPROBES") == 0)
 	{
 		// SET_LOCALPROBES <0|1> — (2.78, #157, Lee's ask) 0 parks every local pool probe, so the

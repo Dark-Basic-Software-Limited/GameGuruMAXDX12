@@ -710,6 +710,12 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: lowvramgrassdensity = Grass strand density used when lowvram=1, as a PERCENT of normal. DEFAULT 75 - the value that measurably fits every hub demo inside 4GB (2026-08-04 night audit). Grass memory is linear in strand count, so 50 is about half the grass video memory - by far the biggest content lever available, since grass is 17.3GB across the demo hub. This thins the grass EVENLY over the same painted area (it changes how many strands are drawn, never where they may go), so the grass gets sparser rather than patchy. Lower values are a deliberate visual trade for fitting a 4GB card. Ignored when lowvram=0.
 					t.tryfield_s = "lowvramgrassdensity"; if (t.field_s == t.tryfield_s) { extern void GGSetLowVRAMGrassDensity(float); GGSetLowVRAMGrassDensity((float)t.value1 * 0.01f); }
 
+					// DOCDOC: envonly = DEBUG RIG (#157). 1 makes every opaque object output ONLY the global env-probe cube texel along its mirror reflection vector - no basecolor/normal/surface/emissive/AO maps, no lightmap, no lights or shadows, no SSAO/SSR/GI/decals, no fog and no fresnel or brightness weighting. What is on screen IS the cube. Default 0. Live equivalent: harness SET_ENVONLY.
+					t.tryfield_s = "envonly"; if (t.field_s == t.tryfield_s) { extern void GGSetEnvOnlyIni(int); GGSetEnvOnlyIni(t.value1); }
+
+					// DOCDOC: envonlymip = Which cube mip envonly displays (0 = sharpest). A 128px probe has 4 mips; the coarse ones are where BC6H ring banding shows up. Default 0.
+					t.tryfield_s = "envonlymip"; if (t.field_s == t.tryfield_s) { extern void GGSetEnvOnlyMipIni(int); GGSetEnvOnlyMipIni(t.value1); }
+
 					// DOCDOC: globalprobeonly = DEBUG RIG (#157). 1 parks every local env probe so the whole level - terrain, props and the %probe marker balls - reflects ONLY the global/base env cube. This is the permanent form of dragging a probe's Range slider to glimpse the base map. Survives relaunch and level loads; default 0. Live equivalent: harness SET_LOCALPROBES 0.
 					t.tryfield_s = "globalprobeonly"; if (t.field_s == t.tryfield_s) { extern void GGSetGlobalProbeOnly(int); GGSetGlobalProbeOnly(t.value1); }
 
