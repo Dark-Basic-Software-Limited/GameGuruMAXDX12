@@ -3098,4 +3098,7 @@ void GGSetEnvSolid(float fOn, float r, float g, float b)
 	wi::scene::gg_envsolid_g = g;
 	wi::scene::gg_envsolid_b = b;
 }
-void GGSetEnvSolidIni(int iOn) { wi::scene::gg_envsolid_on = (iOn != 0) ? 1.0f : 0.0f; }
+// 2.81: pass the MODE through — the old bool-ize collapsed every ini mode (2 split / 3-4 mip
+// rungs / 5 face wipe) to 1, which is what sank the 08-17 mip-rung night: a MAX restart
+// mid-test silently demoted mode 3/4 to solid-colour and we blamed the shader deploy.
+void GGSetEnvSolidIni(int iOn) { wi::scene::gg_envsolid_on = (float)iOn; }

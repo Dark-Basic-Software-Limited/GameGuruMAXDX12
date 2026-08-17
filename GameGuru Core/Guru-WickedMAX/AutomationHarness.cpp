@@ -3600,7 +3600,10 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 	}
 	if (_stricmp(cmd, "SET_ENVSOLID") == 0)
 	{
-		// SET_ENVSOLID <0|1|2> [r g b] — (2.80, #157) replace EVERY read of the GLOBAL env-probe
+		// SET_ENVSOLID <0..5> [r g b] — (2.80, #157) replace EVERY read of the GLOBAL env-probe
+		// ★ MODE 5 (2.81, Lee-directed) = +X FACE WIPE: render normally but any cube sample whose
+		//   direction's dominant axis is +X returns BLACK — proves live shader access to the cube.
+		// ★ MODE 3 = paint the chosen mip index as a colour; MODE 4 = force mip to r and sample.
 		// ★ MODE 2 = SPLIT: each read site gets its OWN colour so the screen becomes a map of
 		//   which site painted which pixel — MAGENTA = specular env reflection, GREEN = ambient,
 		//   BLUE = the parallax-corrected LOCAL path (which the global probe also travels).
@@ -3615,8 +3618,14 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		if (arg) sscanf_s(arg, "%f %f %f %f", &esOn, &esR, &esG, &esB);
 		extern void GGSetEnvSolid(float fOn, float r, float g, float b);
 		GGSetEnvSolid(esOn, esR, esG, esB);
-		_snprintf(result, resultSize, "OK: SET_ENVSOLID %.0f rgb=(%.2f,%.2f,%.2f) — global env cube reads %s",
-			esOn, esR, esG, esB, (esOn > 0.0f) ? "return this FLAT COLOUR (texture bypassed)" : "sample the real cube again");
+		_snprintf(result, resultSize, "OK: SET_ENVSOLID %.0f rgb=(%.2f,%.2f,%.2f) — %s",
+			esOn, esR, esG, esB,
+			(esOn >= 5.0f) ? "+X FACE of the env cube WIPED to black, everything else normal (2.81)" :
+			(esOn >= 4.0f) ? "real cube sampled at FORCED mip = r" :
+			(esOn >= 3.0f) ? "mip index painted as colour (red0 green1 blue2 yellow3 white4+)" :
+			(esOn >= 2.0f) ? "SPLIT map: magenta=specular green=ambient blue=local" :
+			(esOn > 0.0f) ? "global env cube reads return this FLAT COLOUR (texture bypassed)" :
+			"global env cube reads sample the real cube again");
 		result[resultSize - 1] = 0;
 		return true;
 	}

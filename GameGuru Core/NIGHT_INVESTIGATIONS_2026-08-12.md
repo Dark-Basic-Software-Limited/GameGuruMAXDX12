@@ -2865,3 +2865,47 @@ shader edit is worthless.
 NEXT (do this before any further shader rung): find the real producer of the deploy `.cso`
 (likely an offline shader-compiler step with its own output dir + copy rule) and gate on a
 visible-change test.
+
+## §2.81 — ★★ +X FACE WIPE VERIFIED LIVE + the §2.80c mystery SOLVED (08-18, Lee-directed)
+Lee's new baseline (spotshadowtest re-saved 08-18 00:1x): stripped-down scene, camera on the ball;
+he proved with the Cloud Coverage slider that the "gap" colour tracks CLOUD content in the env map
+(coverage 80→171→144 shifts the solid gap tone — so the gap = cloud texels, likely a small/deep-mip
+sample). His ask: wipe the cube's +X face to black to PROVE the shader rig touches the exact
+texture on the ball.
+
+### The wipe (SET_ENVSOLID mode 5 / setup.ini envsolid=5)
+`GGEnvWipeFacePX(dir)` in lightingHF.hlsli: mode ≥5 AND dir.x>0 AND |x| dominant → the sample
+returns BLACK; everything else renders normally. Applied at ALL THREE global-cube read sites
+(specular EnvironmentReflection_Global, ambient GetAmbient, parallax-local
+EnvironmentReflection_Local — the §2.80b census sites). VERIFIED: cold launch, no live command —
+setup.ini `envsolid=5` alone — screenshot 00-30-54 shows a clean black quarter on the ball where
+the +X face reflects; horizon circles + cloud speckle elsewhere untouched. **We have live shader
+access to the cube.**
+
+### ★★ §2.80c RETRACTION — the shader pipeline was NEVER broken
+Three facts found this morning overturn the "mip rungs never reached the GPU / .cso producer
+unidentified" verdict:
+1. **The deploy `objectPS.cso` (23:52:36) is NEWER than the last source edit (lightingHF
+   23:49:47).** The runtime recompile DID run and DID pick up the rungs; the "frozen timestamp"
+   after the two rebuilds was correct behaviour (nothing was stale). The producer was never a
+   mystery: wi::shadercompiler runtime recompile, backstopped by refresh_shaders.ps1 — the
+   documented pipeline (memory: project-shader-build-pipeline) working as designed. Proof today:
+   refresh_shaders flagged 152 cso after the 2.81 edit and the 00:28:29 launch recompiled them.
+2. **The real bug was game-side: `GGSetEnvSolidIni` BOOLEAN-IZED the mode** —
+   `(iOn != 0) ? 1 : 0` — so any MAX restart with `envsolid=<mode>` in setup.ini collapsed 2/3/4
+   to mode 1 (flat magenta). Lee restarted MAX mid-test ("I restarted MAX", "That does not look
+   like mode 1") — every observation after that restart was mode 1 wearing mode 3/4's label.
+   On the mirror-ball F≈1, mode-1 magenta ≈ split-mode magenta (192/0/155) — pixel-identical,
+   which is exactly what was measured. Fixed 2.81: ini passes the int through.
+3. The SHADERSOURCEPATH-points-nowhere claim was a red herring — the engine bakes the source
+   path from __FILE__ (SHADER_INTEROP_PATH), it does not need the exe-relative folder.
+The DURABLE RULE from §2.80c stands unchanged — a shader edit is not live until a deliberate
+visible change proves it — 2.81 is that rule executed properly (the wipe IS the visible gate).
+The mip rungs (modes 3/4) are hereby UNBLOCKED: same-session `SET_ENVSOLID 3` / `4 <mip>` after
+this build will run the real code. Engine e179b981's "DO NOT TRUST" body is superseded by this
+section.
+
+### State for Lee's next step
+setup.ini: `globalprobeonly=1`, `envsolid=5` (wipe ON — set 0 to return to the plain baseline),
+`envonly=0`. MAX running, TESTPRO2/spotshadowtest loaded via harness. Revert lever: SET_ENVSOLID 0
+live, or envsolid=0 + relaunch.
