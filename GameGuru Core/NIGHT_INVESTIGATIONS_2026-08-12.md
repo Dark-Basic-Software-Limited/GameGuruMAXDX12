@@ -2651,3 +2651,43 @@ size mid-hold.
 
 Lee's re-test: click-hold + DRAG the probe — the big preview should stay a clean
 sky/beach mirror through the whole drag, stable size, no circles.
+
+## §2.75e — ★ STATUS: THE CLICK-HOLD CIRCLES SURVIVE ALL THREE FIXES — OPEN, PARKED FOR A FRESH ATTACK (08-17 evening, Lee's verdict)
+
+Lee confirms the corrupt circle images STILL show on click-hold after 2.75c. Honest
+ledger of the three failed attempts and what each PROVED:
+
+1. 2.75 matte (f3242c8b): treated the marker ball's shading — WRONG THEORY (the circles
+   are in displayed cube data, proven by the accurate debug sphere showing them).
+   Reverted in 2.75b. Side-finding: ball went solid black (probe.png is near-black in
+   linear; reflections were its only bright term).
+2. 2.75b placed-marker NotVisibleInReflections (8556ec33): PARTIAL truth — the SETTLED
+   capture became clean (Lee's unpicked glossy ball reflects a correct sky/island), but
+   click-hold circles persisted. So marker self-capture WAS one real path, not the whole
+   story.
+3. 2.75c drag-ghost NotVisibleInReflections + stable preview radius (b0ca1e7b): circles
+   STILL present on click-hold per Lee. Ghost-exclusion theory insufficient (or the flag
+   does not stick — the ghost object may be RECREATED after lighting_loop each frame,
+   leaving an unflagged window every re-capture; unverified).
+
+ESTABLISHED FACTS (instrument-backed, do not re-litigate):
+- Settled/stored cubes are CLEAN: panorama reprojection seamless, offline mirror-ball
+  sim clean, engine debug sphere clean on Island Showdown, Lee's own unpicked ball
+  reflection clean after 2.75b.
+- Synthetic probes (SET_PROBE_TEST, no marker ball) capture clean at EVERY suspect
+  parameter: height under/at/above terrain, yaw 47, sizes 100, range 383.
+- The circles appear reproducibly ONLY during click-hold of a probe marker, on Lee's
+  machine, shown by the ACCURATE debug sphere => they exist in whatever cube is
+  displayed at hold time.
+
+THE MISSING DATUM (next attack should START here): DUMP_ENVPROBE **while Lee holds the
+probe** — the harness watcher runs in his live session, so with his MAX open on the
+level, drop DUMP_ENVPROBE into auto_command.txt DURING the hold and decode the exact
+displayed cube. That splits capture-corruption vs display-path in one shot. Candidate
+suspects for the hold window: ghost recreation racing the once-per-frame flag set
+(instrument: log flag state at capture time engine-side); hold-time re-capture including
+editor-only passes; the displayed sphere belonging to a DIFFERENT slot than assumed
+(dump ALL slots during hold and match).
+
+NEXT PER LEE: park this; tackle the ENV PROBE SIZE CHANGE bug first — Lee has built a
+NEW TEST LEVEL for it.
