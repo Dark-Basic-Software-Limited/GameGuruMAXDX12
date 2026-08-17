@@ -3372,6 +3372,8 @@ namespace GPUParticles {
 // photographed into the base env map can be NAMED instead of guessed at.
 extern bool g_bLightProbeScaleChanged; // M-GridEdit_part0.cpp — the editor's full probe-refresh path
 int gg_debugprobes_force = 0; // GGMAX 2.74b: SET_DEBUGPROBES sticky override, consumed by lighting_loop (G-Lighting.cpp)
+// GGMAX 2.78: last SET_GLOBALPROBE point, so `SET_GLOBALPROBE rebake` can re-capture in place
+static float g_fLastGlobalProbeX = 0.0f, g_fLastGlobalProbeY = 0.0f, g_fLastGlobalProbeZ = 0.0f;
 static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "DUMP_ENVPROBE") == 0)
@@ -3593,6 +3595,69 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		if (dpScale > 0.0f) wiRenderer::SetDebugEnvProbeSphereScale(dpScale); // 2.75 preview-size knob
 		wiRenderer::SetToDrawDebugEnvProbes(dpOn != 0);
 		_snprintf(result, resultSize, "OK: SET_DEBUGPROBES %d scale=%.0f", dpOn, dpScale);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_LOCALPROBES") == 0)
+	{
+		// SET_LOCALPROBES <0|1> — (2.78, #157, Lee's ask) 0 parks every local pool probe, so the
+		// whole level — the sand, the rocks, and the %probe marker ball — reflects ONLY the
+		// GLOBAL/base env cube, permanently. This is the held version of dragging Probe Range to
+		// glimpse the base map. 1 restores normal local-probe tracking.
+		int lpOn = 1;
+		if (arg) sscanf_s(arg, "%d", &lpOn);
+		GGTerrain::GGTerrain_SetLocalProbesDisabled(lpOn == 0 ? 1 : 0);
+		_snprintf(result, resultSize, "OK: SET_LOCALPROBES %d — local probes %s; everything now reflects the %s",
+			lpOn, lpOn ? "ACTIVE again" : "PARKED", lpOn ? "nearest local capture as usual" : "GLOBAL/base env cube");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_DEBUGPROBEGLOBAL") == 0)
+	{
+		// SET_DEBUGPROBEGLOBAL <0|1> — (2.78, #157) the picked probe's preview sphere shows the
+		// GLOBAL (base) env cube instead of its own local capture, continuously. Lee's repro for
+		// the base cube was "slide Probe Range and catch it in snatches"; this holds it on screen
+		// so the base env map can actually be studied. Position/size still come from the picked
+		// marker — only the source cube changes.
+		int dgOn = 0;
+		if (arg) sscanf_s(arg, "%d", &dgOn);
+		wiRenderer::SetDebugEnvProbeForceGlobal(dgOn);
+		_snprintf(result, resultSize, "OK: SET_DEBUGPROBEGLOBAL %d — pick a probe marker; its preview sphere now shows the %s cube",
+			dgOn, dgOn ? "GLOBAL/base env" : "probe's own local");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_GLOBALPROBE") == 0)
+	{
+		// SET_GLOBALPROBE <x> <y> <z> | rebake | off — (2.78, #157) park the GLOBAL env probe's
+		// CAPTURE POINT anywhere and re-bake it there. Stock captures at the MAP CORNER
+		// (x=0, z=0) at the biome's flat height — on Lee's island that is (0, 8215, 0), i.e.
+		// 208 m up over the corner, which is why the base cube looks nothing like the level.
+		// `off` restores stock; `rebake` re-captures at the current override point.
+		if (arg && _strnicmp(arg, "off", 3) == 0)
+		{
+			GGTerrain::GGTerrain_SetGlobalProbeOverride(0, 0, 0, 0);
+			_snprintf(result, resultSize, "OK: SET_GLOBALPROBE off — stock map-corner placement restored (takes effect on the next terrain update)");
+		}
+		else if (arg && _strnicmp(arg, "rebake", 6) == 0)
+		{
+			GGTerrain::GGTerrain_SetGlobalProbeOverride(2, g_fLastGlobalProbeX, g_fLastGlobalProbeY, g_fLastGlobalProbeZ);
+			_snprintf(result, resultSize, "OK: SET_GLOBALPROBE rebake at (%.0f,%.0f,%.0f)",
+				g_fLastGlobalProbeX, g_fLastGlobalProbeY, g_fLastGlobalProbeZ);
+		}
+		else
+		{
+			float gx = 0, gy = 0, gz = 0;
+			if (!arg || sscanf_s(arg, "%f %f %f", &gx, &gy, &gz) < 3)
+			{
+				_snprintf(result, resultSize, "ERROR: SET_GLOBALPROBE wants <x> <y> <z>, or 'rebake', or 'off'");
+				result[resultSize - 1] = 0;
+				return true;
+			}
+			g_fLastGlobalProbeX = gx; g_fLastGlobalProbeY = gy; g_fLastGlobalProbeZ = gz;
+			GGTerrain::GGTerrain_SetGlobalProbeOverride(1, gx, gy, gz);
+			_snprintf(result, resultSize, "OK: SET_GLOBALPROBE (%.0f,%.0f,%.0f) — capture point moved + re-bake queued (DUMP_ENVPROBE to confirm)", gx, gy, gz);
+		}
 		result[resultSize - 1] = 0;
 		return true;
 	}
