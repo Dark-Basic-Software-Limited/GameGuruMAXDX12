@@ -3062,3 +3062,14 @@ int WickedCall_ExcludeObjectsEnclosingPoint(float x, float y, float z, float fMa
 	}
 	return iExcluded;
 }
+
+// GGMAX 2.78 (#157 debug rig): setup.ini `globalprobeonly=1` shim. Lives here for the same
+// reason as GGSetShadowExtrude — Common_part1.cpp parses setup.ini but cannot include the
+// GGTerrain headers. Parking the local probes makes the whole level reflect the GLOBAL/base
+// env cube, which is how Lee can study the base map without dragging a Probe Range slider.
+// The flag is a plain global read by GGTerrain_EnvProbeWork every frame, so setting it during
+// the setup.ini parse (before GGTerrain has initialised) is safe and survives level loads.
+void GGSetGlobalProbeOnly(int iOn)
+{
+	GGTerrain::GGTerrain_SetLocalProbesDisabled(iOn != 0 ? 1 : 0);
+}
