@@ -3483,3 +3483,34 @@ the value used?" would have called both "used". The question that separated them
 this last, and who derives it from what?"** Range was a derived attribute all along; treating it
 as an input was the original mistake, and the UI had been promising a behaviour no code
 implemented since the DX11 days.
+
+### §2.90a — 0818b acceptance sweep + pre-alpha dead-control audit
+Full 19-demo editor gate on 2.90: **19/19, POLYS bit-identical, 4 GB gate holds (worst 3586
+MB)**. Table + caveats in `DEMO_FPS_SWEEP.md` §0818b; dead-control audit and alpha
+recommendations in `ALPHA_READINESS_2026-08-18.md`.
+
+⚠ **I nearly published a false regression.** The first comparison used the 0816 baseline and
+showed −13.4% across ALL 19 demos. The tell was the uniformity — a real regression hits the
+demos exercising the changed path, not every demo equally. The control was already on disk:
+the 2.89 gate run at 07:27 the SAME morning, which was itself −11.2% below 0816. 2.90 vs
+that = −2.5% with two demos up. Cross-day FPS baselines are not evidence; this is the second
+time this exact trap has appeared (cf. §2.75a) and the rule is in MEMORY for a reason.
+
+**Dead-control audit — the useful part is what it proves absent.** The 07-28 audit traced
+330 widget bindings to consumers, which catches a *severed* chain but is structurally blind
+to a *clobbered* value — the Probe Range failure mode. So this pass enumerated every field
+`Scene::Update` recomputes each frame and checked GG's writes against that set:
+`probe->range` was the only instance (fixed in 2.90), `light->range` is safe because
+`RunLightUpdateSystem` does not recompute it, and the other nine recomputed fields get
+**zero** writes from the game. The class is closed.
+Empty-body widget scan: 55 raw hits, zero real defects — 14 are the 07-28 hidden set
+(commented out), the rest assign their bound temp through on the next line, and the two
+genuine no-consumer cases are a dev-only Template Window slider and a one-item EBE combo.
+MenuItem scan: 0 unhandled clicks.
+One real find: `WickedCall_Create/Move/DeleteReflectionProbe` are **empty stubs still called
+from 8 sites** (the editor preview "editorProbe" + one per entity) — the DX12 editor preview
+has no reflection probe. Quietly absent feature, not a visible dead button.
+
+⚠ Instrument that FAILED, recorded so it is not repeated: a scan for `t.visuals.*` fields
+with no consumer reported 178 "orphans". All false — the regex matched the ini KEY STRINGS
+(`"visuals.Gamma"`) inside the parser, not C++ member accesses. Discarded, not reported.

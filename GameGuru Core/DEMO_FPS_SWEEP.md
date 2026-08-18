@@ -1,3 +1,61 @@
+# 2026-08-18 SWEEP (0818b) — 2.90 ACCEPTANCE — engine `bde205ad` / game `26482fe6`
+
+Purpose: Lee-requested full-hub confirmation ahead of the first tester alpha, covering the
+2.90 probe-property work (per-probe brightness restored engine-side, Probe Range slider
+removed, fLightHasProbe canonicalised on load). EDITOR phase only.
+
+VERDICT: **CLEAN. 19/19 loaded, zero failures, POLYS bit-identical on all 19, 4 GB gate
+holds (worst editor VRAM 3586 MB, Aztec Game Kit).**
+
+⚠ **Read the FPS columns with the same-day control, not the 0816 one.** Against 0816 this
+table looks like a uniform −13% rout. It is not: the **2.89 gate run at 07:27 THIS MORNING
+— before a line of 2.90 existed — was already −11.2% below 0816**. Isolated properly,
+2.90 evening vs 2.89 morning is **−2.5% hub-wide with two demos UP** (River Raiders +2.7%,
+Indian Strike Force +0.3%), comfortably inside the documented ±8% cross-launch band and
+matching §2.75a's finding that this machine drifts slower as the day goes on. The three
+largest single-cell drops (Aztec Teaser −9.4%, Aztec Game Kit −8.1%, Zombie Cellar −5.7%)
+are the usual band-edge cells, and 2.90 cannot physically cost frame time: it adds one
+float multiply inside `filterEnvMapCS`, which runs only when a probe RE-BAKES, plus one
+float in a push constant that reused an existing padding slot. Allocation-neutral too,
+which is why VRAM is flat.
+
+| Demo | ed 0816 | ed 2.89 am | ed 2.90 pm | pm vs am | ed VRAM MB | POLYS |
+|---|---|---|---|---|---|---|
+| Aztec Game Kit Teaser | 63.8 | 68.1 | 61.7 | -9.4% | 2948 | 10330135 ✓ |
+| Aztec Game Kit | 97.3 | 93.7 | 86.1 | -8.1% | 3586 | 3438876 ✓ |
+| Bounty | 141.0 | 105.7 | 101.9 | -3.6% | 2447 | 469906 ✓ |
+| Horseshoe Bend | 120.1 | 105.1 | 101.8 | -3.1% | 2915 | 2168281 ✓ |
+| Island Showdown | 77.1 | 69.0 | 68.4 | -0.9% | 2630 | 4125704 ✓ |
+| Operation Amazon | 84.8 | 76.9 | 76.5 | -0.5% | 3308 | 5504271 ✓ |
+| River Raiders | 123.3 | 108.8 | 111.7 | +2.7% | 3211 | 2362345 ✓ |
+| Snowy Mountain Stroll | 156.4 | 137.9 | 131.9 | -4.4% | 2690 | 81369 ✓ |
+| A Grand Canyon Adventure | 104.7 | 93.3 | 93.2 | -0.1% | 2677 | 2279506 ✓ |
+| Disruption | 86.9 | 79.4 | 79.1 | -0.4% | 2806 | 4677579 ✓ |
+| Foggy Forest | 62.5 | 60.1 | 59.9 | -0.3% | 2841 | 10220589 ✓ |
+| Indian Strike Force | 99.4 | 89.4 | 89.7 | +0.3% | 2942 | 3229699 ✓ |
+| Switch Escape | 162.6 | 141.1 | 139.1 | -1.4% | 2243 | 109358 ✓ |
+| Canyon Offensive | 74.1 | 68.8 | 68.2 | -0.9% | 3241 | 8838008 ✓ |
+| Escape from the Zombie Cellar | 162.2 | 137.7 | 129.8 | -5.7% | 2278 | 28048 ✓ |
+| Jungle Fever | 128.4 | 112.9 | 110.0 | -2.6% | 2823 | 76157 ✓ |
+| RPG Template | 104.3 | 96.0 | 94.3 | -1.8% | 2967 | 3247629 ✓ |
+| The Mystery of Z Island | 105.1 | 98.4 | 97.9 | -0.5% | 3225 | 722872 ✓ |
+| Trapped | 176.6 | 150.5 | 144.3 | -4.1% | 2327 | 12768 ✓ |
+
+Hub-wide editor FPS: **2.90 evening vs 2.89 THIS MORNING = -2.5%**; 2.89 morning vs 0816 = -11.2%.
+Worst editor VRAM 3586 MB (4 GB gate = 4096) — **HOLDS**. POLYS bit-identical 19/19 (✓).
+Method note: this is the EDITOR phase only (load → settle 30 s → screenshot → 3 FPS
+samples → VRAM), the same shape as the 2.89 gate, which is what makes the same-day
+comparison valid. VRAM here is the editor-phase figure from `GET_PERF_DATA` (the 0816
+table's VRAM column is the IN-GAME phase, so the two are not comparable — do not diff them).
+
+★ Lesson re-learned the hard way, again: **the first table I generated compared against
+0816 and read as a −13.4% regression across all 19 demos.** The tell was uniformity — a
+real regression hits the demos that exercise the changed path, not every demo equally. The
+fix was the control that already existed on disk: this morning's run on the same machine.
+Cross-day FPS baselines are not evidence. (MEMORY: "Editor FPS ±8 between launches —
+within-session A/Bs only".)
+
+
 # 2026-08-16 EVENING SWEEP (0816b) — 2.73-2.75 ACCEPTANCE — engine 2.75 `5ee09abc` / game `bb4c4712`
 
 Purpose: Lee-requested full-hub confirmation that the day's changes (2.73 probe pool
