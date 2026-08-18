@@ -3248,3 +3248,29 @@ did not exist before this build; `SET_PROBEVIEW 1 3` renders the inspection sphe
 blur where `SET_PROBEVIEW 1 0` is sharp — proving the new `MiscCB.g_xColor.x` mip path is live.
 Both confirm the edited shaders actually reached the GPU (⚠ `refresh_shaders.ps1` reported
 "0 stale" on this build — do not take that as evidence either way).
+
+### §2.89 cross-demo look + cost check (editor, same camera per demo, modes 0 / 1 / 3)
+| demo | mode 0 (defect) | mode 1 (fix) | mode 3 (no parallax) |
+|---|---|---|---|
+| spotshadowtest | 77.4 / 77.0 / 77.7 | 77.5 / 77.2 / 77.7 | — |
+| Island Showdown | 66.3 / 66.4 / 66.2 | 66.6 / 66.3 / 66.2 | 66.2 / 66.4 / 66.5 |
+| Switch Escape | 132.3 / 130.6 / 131.8 | 136.9 / 135.6 / 136.2 | 137.6 / 135.7 / 136.2 |
+
+⚠ **Do not read Switch Escape's +4 as a speed-up from the fix.** Mode 0 ran first in each demo,
+straight after the settle, so it absorbs the tail of lazy-PSO warm-up; modes 1 and 3 land within
+0.7 of each other afterwards. Island Showdown and spotshadowtest — where warm-up had finished —
+are dead flat. The honest verdict is **no measurable cost**, not a gain. (Standing rule: editor
+FPS moves ±8 between launches; only within-session, warm-order-matched A/Bs mean anything.)
+
+Island Showdown's whole frame changes by only **1.45 mean / 4.7% of pixels** between mode 0 and
+mode 1, against 8.84 / 18.9% on the shiny ball. The fix is dramatic on reflective surfaces and
+subtle on ordinary diffuse content — no jarring look change on typical demos, which is the
+reassuring shape for a change that touches every level.
+
+("Aztec Teaser" failed SELECT_DEMO in this run — the hub name is "Aztec Game Kit Teaser". Harness
+name mismatch only, not a demo fault.)
+
+### Housekeeping
+`setup.ini` had two orphaned comment lines left over from the reverted `envdir` key (referencing
+the scrapped SET_ENVDIR command). Removed; backup at `setup.ini.bak_2.89`. No probe debug keys
+are set in the ini — 2.89's defaults apply (`probeparallax` = 1 = fixed, `probeview` = 0 = off).
