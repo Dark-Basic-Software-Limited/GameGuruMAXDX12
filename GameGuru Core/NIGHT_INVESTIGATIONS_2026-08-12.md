@@ -3012,3 +3012,76 @@ box chain into the Filtered buffer, so skipping the dispatches ships exactly the
 mips (clouds included — the chain is built after the cloud composite). SET_PROBEMIPS <0|1>
 (0 = BRDF filter with 2.84 fixes) + REFRESH_ENVPROBE to re-bake. wiRenderer.h
 SetEnvProbePlainMips.
+
+## §2.88 — ★★★ FULL REVERT (Lee's call, 05:30 08-18): back to engine 92df06c7 / game a42e6919
+Lee's verdict on the 10-hour env-probe hunt: "a bit of a wash" — reset to the 2.76 pair and
+take a different direction another day. This section is the complete ledger of what is being
+reverted, what was learned, and what deserves RE-APPLICATION on its own merits.
+
+### Reverted deltas (2.77 → 2.87), one line each
+| Delta | What it was | Verdict |
+|---|---|---|
+| 2.77 capture trace + root-shell exclusion | SET_PROBECAPTURETRACE named the marker's 2nd object photographing its interior; geometric exclusion | Real root cause of CAPTURE circles; verified; reverted with the rest |
+| 2.78 SET_LOCALPROBES / SET_GLOBALPROBE / SET_DEBUGPROBEGLOBAL / globalprobeonly | park pool probes, move global capture point, preview forced to global cube | Debug rigs; scrapped |
+| 2.79 env-only ladder (SET_ENVONLY 1-10) | cube + exactly one contributor at a time | Debug rig; scrapped |
+| 2.80/2.80b solid/split/mip modes (SET_ENVSOLID) | flat colour / site-split map / mip rungs | Debug rig; scrapped. Split map measured: ball disc = 100% global specular read |
+| 2.81 +X face wipe + ini int passthrough | proved live shader access to the cube; fixed GGSetEnvSolidIni bool-ize | Debug rig; scrapped |
+| 2.82 direction-peel rungs (SET_ENVDIR 1-4) | box projection / normal map / camera peeled cumulatively; fixed dir terminal | Debug rig; scrapped |
+| 2.83 cardinal lock (SET_ENVDIR 5) | Lee's discriminator — face-centre-only reads | Debug rig; scrapped |
+| 2.84 FilterEnvMap 3-part fix | full-chain filter source + read-aligned roughness ladder + HDR clamp | ★ GENUINE ENGINE FIX — see keepers |
+| 2.85 plain 2x2 box mips (SET_PROBEMIPS) | skip the BRDF prefilter entirely, DX11-style chain | ★ Valid look lever — see keepers |
+| 2.86 forced env mip (SET_ENVMIP) | force one mip at every read, fresh CB row | Debug rig; scrapped |
+| 2.87 marker mirror (metal/gloss/stripped maps, name-hunt for the 'root' shell) | made the %probe ball a true mirror | Cosmetic experiment; scrapped; revealed the portholes are AUTHORED |
+
+### ★ KEEPERS — genuine findings INDEPENDENT of the marker-circle question
+1. **FilterEnvMap is misconfigured for GG's probes (2.84, engine commit b44c3f0e carries the
+   full fix).** Three verified defects affecting EVERY reflective surface in EVERY scene:
+   (a) the filter SOURCE buffer had only the probe's 4 mips while computeLod requests source
+   lods up to ~8 → wide rays clamp to the 16px level → filtered mips collapse toward one
+   value per face; (b) write/read roughness ladder mismatch — filter authored mip i at
+   roughness i/(mips-1) while lightingHF reads MIP = roughness × mipcount → every level ~33%
+   blurrier than the reader assumes; (c) the HDR capture carries a 10-20x blown horizon band
+   (DX11 captured LDR) whose energy floods every wide GGX cone. Evidence preserved: before
+   sheets (bullseye per face), after sheets (side-face CV 0.40→0.65 at mip1), the mip0
+   flawless-mirror ball and mip1 clean-blur ball screenshots. RE-APPLY when reflections
+   quality matters: cherry-pick b44c3f0e (+ d5ce3478 for the plain-mips lever).
+2. **Plain 2x2 box mips (2.85, engine d5ce3478)** — a one-gate DX11-parity option: skip the
+   BRDF prefilter, ship GenerateMipChain's box chain. Kept structure at every level
+   (CV 0.77→0.76 across mips vs the filtered chain's collapse).
+3. **The knowledge set** (no code needed):
+   - The global probe captures at the MAP CORNER + 208 m up → the cube's content IS "island
+     disc + sky wash"; every curved glossy surface faithfully reflects that geography. Any
+     future direction must decide the CAPTURE POSITION POLICY (the DX11 intent — ground at
+     origin + 30 m — is still commented in GGTerrain_part0).
+   - Probe textures ship 4 mips at 128px (GetMipCount min-dimension 16) — remember this when
+     reasoning about roughness→mip behaviour.
+   - probe.dbo is AUTHORED with portholes: shell object 'root' (offset ~20 units) over inner
+     'sphere' — the marker's on-ball circles are the model's own design, seen through PBR
+     optics. A clean preview needs a plain sphere mesh or the shell hidden.
+   - A dielectric shows ~4% of the env reflection head-on (fresnel) — a "mirror ball" preview
+     REQUIRES metalness 1 + roughness 0 + white basecolor (maps stripped), or the env-only
+     debug view. The black-void ball was correct physics, not a broken reflection.
+   - The capture pipeline layers writers per capture: scene → sky → GG terrain customDraw →
+     aerial-perspective CS → volumetric-clouds CS → mips → BRDF filter → BC6H.
+   - Cube face selection is fixed-function inside SampleLevel; diagonals are valid; there is
+     no NaN path for finite directions.
+4. **Bug class lessons re-earned tonight**: ini bool-ize of a mode value silently demotes
+   debug modes across restarts (2.81 class — check BOTH value routes of any knob);
+   ⚠ UNRESOLVED ANOMALY: values 3/4 sent to gg_envsolid rendered as mode 2 on BOTH routes
+   with a fresh cso while 1/2/5 passed — never explained; if similar CB-mode instrumentation
+   returns, budget a readback rung (paint the value) FIRST.
+5. **2.77's root cause is real even though reverted**: env captures photograph the marker's
+   enclosing 'root' shell interior ("circle image on each cube side") — whatever the new
+   direction is, placed-probe captures still need SOME exclusion answer.
+
+### Scrapped harness commands (all added after a42e6919, gone with the revert)
+SET_PROBECAPTURETRACE · DUMP_OBJENT · DUMP_ENTOBJ · SET_LOCALPROBES · SET_DEBUGPROBEGLOBAL ·
+SET_GLOBALPROBE · SET_ENVONLY · SET_ENVSOLID · SET_ENVDIR · SET_PROBEFILTER · SET_PROBEMIPS ·
+SET_ENVMIP. (DUMP_ENVPROBE, REFRESH_ENVPROBE, SET_DEBUGPROBES predate the revert point and
+SURVIVE.) setup.ini debug keys removed: globalprobeonly / envonly / envonlymip / envsolid /
+envdir.
+
+### Revert mechanics
+Tree-restore commits (no history rewrite): game `git checkout a42e6919 -- <code files>`
+keeping the three living docs (this file, WETEST, WICKED_ENGINE_CHANGES) at tip; engine
+`git checkout 92df06c7 -- .`. Both rebuilt and smoke-tested before handover.
