@@ -85,7 +85,7 @@ readings Lee asked for ahead of the internal tester build. Comparison base: 0814
 proven), 4 GB gate HOLDS with MORE headroom — and in-game VRAM fell on EVERY demo** (−22 to
 −135 MB; worst case Aztec Game Kit 3987 → 3852, headroom 109 → 244 MB). Hub-wide FPS drift:
 editor −4.6%, game −3.9% — inside the documented ±8-15% ambient cross-run band. Texture
-streaming remains DEFAULT OFF; the conversion is what makes revisiting it possible (task #37).
+streaming remains DEFAULT OFF; the conversion is what makes revisiting it possible (task #37). **[CORRECTED 2026-08-18: this is WRONG — streaming is and was ON by default; it defaulted 0 for one day (08-01) and was restored the same day by delta 1.73. See STREAMING_STATUS_2026-08-18.md.]**
 
 | Demo | editor FPS | in-game FPS | in-game VRAM MB (Δ vs 0814c) | POLYS |
 |---|---|---|---|---|

@@ -28,6 +28,7 @@ Notably includes `charactercreatorplus\parts\` (85+ surface maps in `Adult Femal
   halving early**. Run it across the tree first to size the job — it produces the work list.
 * Texture streaming is currently **DEFAULT OFF** (task #37) partly because of content-side
   surprises. A clean, uniformly-converted content tree is a precondition for revisiting that.
+  **[CORRECTED 2026-08-18: this is WRONG — streaming is and was ON by default; it defaulted 0 for one day (08-01) and was restored the same day by delta 1.73. See STREAMING_STATUS_2026-08-18.md.]**
 * The VRAM campaign's remaining work is **floor reduction** (`VRAM_FLOOR.md`), and mip-complete,
   properly block-compressed textures are exactly what makes the streaming floor achievable.
 

@@ -2401,7 +2401,7 @@ drift band; Bounty +16-18% and Grand Canyon in-game +28% improved; Aztec Teaser 
 and ISF game −11% flagged at the band edge for an eyeball, consistent with warm-up
 sampling. The MILESTONE's acceptance criteria are met in full. Streaming remains DEFAULT
 OFF — the tree is now uniformly mip-complete, which is the stated precondition for
-revisiting task #37.
+revisiting task #37. **[CORRECTED 2026-08-18: this is WRONG — streaming is and was ON by default; it defaulted 0 for one day (08-01) and was restored the same day by delta 1.73. See STREAMING_STATUS_2026-08-18.md.]**
 
 ## §2.73 — "circle image on each cube side": the base env cube map named, the twilight pool bake fixed (08-16 afternoon, #155)
 

@@ -102,3 +102,35 @@ behaviour, and the 19/19 sweep in `DEMO_FPS_SWEEP.md` §0818b ran with it on.
 | `DUMP_STREAM2` | Engine-side authoritative enrolled set → `Files/stream_resources.txt` (used for this report) |
 | `DUMP_STREAM` | Scene-side per-material feedback + current slot sizes |
 | `SET_TEXSTREAMTRACE 1` | Per-load forensics; expensive, for hunting load faults only |
+
+---
+
+## Additions from the parallel source audit (independently grep-verified)
+
+- **Terrain and trees opt out explicitly**, they are not merely "using SVT instead":
+  `mat.SetTextureStreamingDisabled(true)` at `GGTerrainWicked.cpp:367, 1268, 2389` and
+  `GGTrees_part2.cpp:231, 696`. That keeps object streaming from fighting the SVT path.
+- **The engine has no static/dynamic notion in this path — proven, not assumed.**
+  `ObjectComponent` does carry a `DYNAMIC` bit, but it is set purely from mesh skinning and
+  `wiResourceManager.cpp` contains **zero** references to `ObjectComponent`. The feedback write
+  is per material index — `InterlockedOr(...[materialIndex], wave_mask)`, `globals.hlsli:535`.
+- **Only the forward object pixel shader writes feedback** (`TILEDFORWARD` appears in
+  `objectPS.hlsl` alone). An object seen *only* through the depth prepass or a shadow pass
+  therefore requests nothing and stays at the floor.
+- **Engine auto-rejects** regardless of the flag: single-mip, array, 3D and HDR textures, and
+  anything already at or under the 64 KB floor.
+- Engine-side pause defaults off too: `gg_streaming_paused = false` (`wiResourceManager.cpp:1171`).
+- The 08-01 crash root cause is documented in the comment block at `wickedcalls_part0.cpp:335-349`
+  — a 500x500 DXT1 halved to a block-misaligned 250.
+
+### Stale documentation cleared at the same time
+Three other repo docs still asserted the default-OFF claim and have been annotated in place:
+`DEMO_FPS_SWEEP.md`, `NIGHT_INVESTIGATIONS_2026-08-12.md` (§2.72 tail), and
+`MILESTONE_DDS_CONVERSION.md`. The code is authoritative; those were dated log entries
+repeating the one-day state.
+
+### Not verified — worth a measurement if you want it
+The audit flagged that some `entitybank` DDS files remain **single-mip**, which means they can
+neither stream nor shrink — they sit at full size forever. I did not confirm the count, so
+treat the specific number as unproven. `surfacescan.py` produces the work list, and authoring
+mip chains for those files would both enroll them and cut the floor.
