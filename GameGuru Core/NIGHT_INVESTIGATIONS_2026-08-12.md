@@ -3334,3 +3334,72 @@ reports perf normally on the 2.89 build. **0 failures.** Editor FPS, 3 samples e
 Horseshoe Bend passing at 103.5 is the **second independent** confirmation that its earlier stall
 was environmental, not 2.89. Per-demo screenshots in the run folder; VRAM unchanged by
 construction (the fix allocates nothing — it changes the precision of a few scalar ops).
+
+---
+
+## ★★★ §2.89 BASELINE MILESTONE — env-probe reflections, settled (2026-08-18)
+**This is the anchor point. Read this section alone to know where env probes stand.**
+
+### The defect and the fix
+`EnvironmentReflection_Local` (lightingHF.hlsli) computed the parallax ray-exit `Distance` in
+`half` — `min16float`, real fp16 on this hardware, ceiling **65504** — and that distance is in
+**WORLD units**. It runs half-extent … half-extent×√3, so **any probe OBB over 65504/√3 = 37,820
+units overflows to +INF** outside six ~40° caps around ±X/±Y/±Z. GG's `globalEnvProbe` box is
+**50,000**. Those six surviving caps ARE the circles — not something drawn onto surfaces, but the
+last directions still being computed correctly. Local probe boxes are 1–few hundred units, which
+is the whole reason local reflections always looked clean.
+
+### What ships (Lee-decided default, 08-18)
+**`gg_probeparallax` DEFAULT = 3**: float precision **and no parallax correction against
+level-sized boxes** — the DX11 behaviour. Rationale Lee accepted after seeing the A/B: parallax
+against a box enclosing the entire level models nothing physical; it drags the reflected horizon
+by however far the surface sits from the probe centre (the map origin), making the look
+**position-dependent across a level**. Mode 3 reads the raw reflection vector instead.
+
+| mode | behaviour | status |
+|---|---|---|
+| 0 | stock `half` math | the DEFECT — kept only for A/B |
+| 1 | float precision, parallax kept | precision-only fix, retained for comparison |
+| 2 | float + magenta map of fp16 overflow | diagnostic |
+| **3** | **float + no parallax on level-sized boxes** | **SHIPPING DEFAULT** |
+
+Measured on the marker ball forced onto the global cube: mode 0→1 = 8.48 mean / 17.8% of pixels;
+mode 1→3 = 4.04 / 9.3%; mode 0→3 = 9.80 / 21.0%. Noise floor 0.325.
+⚠ The precision fix still matters at mode 3 for any probe between room-size and the 37,820
+ceiling — mode 3 only bypasses the block for boxes ABOVE it.
+
+### Verification standing behind this milestone
+- Circles **reproduced on demand** (`SET_PROBEONLYGLOBAL 1` + `SET_PROBEPARALLAX 0`) and gone at
+  the default. Signal/noise **27.2×**, two independent A/B pairs agreeing to 0.005.
+- Mode-2 overflow map on the same ball is the clearest artefact: magenta everywhere the fp16
+  math breaks, the surviving dark patches exactly the circles.
+- Predicted from the shader source alone by a numpy mirror-ball sim before the engine was touched.
+- **19/19 hub demos** load, render and report clean. No measurable FPS cost. VRAM cannot move.
+
+### Knobs (all ini keys INT PASSTHROUGH)
+`SET_PROBEPARALLAX 0|1|2|3` (ini `probeparallax`) · `SET_PROBEONLYGLOBAL 0|1` ·
+`SET_GLOBALPROBEBOX <n>` · `SET_PROBEVIEW <mode> [mip] [scale]` (ini `probeview`/`probeviewmip`)
+
+### Durable lessons from this one
+1. **fp16 is THE recurring bug class here** — third instance, second in this same file (2.07g was
+   `half range2` past light range 255.9). Treat any `half` world-space quantity as a bug until
+   measured. ⚠ `ShaderEntity::GetRange()`/`GetRadius()` are fp16 too, so the global probe's
+   authored range of 100,000 reads back to every shader as **+INF**.
+2. **An instrument that bypasses the suspect path can only exonerate it.** The debug probe sphere
+   (`cubeMapPS`) has no Fresnel, no roughness and no parallax — it could never show this defect,
+   and a whole night went into comparing it against the marker ball and concluding "the cube is
+   fine". It was. Ask which stages an instrument actually exercises before trusting a clean result.
+3. **On a live scene, whole-frame screenshot diffs have a 3–5% animation floor.** The box-size
+   threshold sweep drowned in it and proved nothing. What worked: use mode 2 to get an exact mask
+   of the affected pixels, then compare the A/B difference INSIDE vs OUTSIDE that mask.
+4. ⚠ **`TaskStop` kills a script's wrapper, not its process tree.** A stopped sweep relaunched MAX
+   90s later, held the exe, failed two builds with LNK1104 and muddied a hang mid-diagnosis.
+   `ps -W` → find the PGID → `kill -9` every member → confirm zero survivors.
+
+### Still open in env-probe land (NOT part of this milestone)
+- The **2.77 capture defect** is live and real: a placed probe photographs its own enclosing
+  'root' shell ("a circle image on each cube side"). Separate from the read-path bug fixed here.
+- Cherry-pick candidates untouched: engine `b44c3f0e` (FilterEnvMap 3-part quality fix — a genuine
+  IBL defect, just not this bug) and `d5ce3478` (plain 2×2 mips lever).
+- Capture-position policy: the global probe still bakes at the map origin. `SET_GLOBALPROBEBOX`
+  and the DX11 intent (ground + 30 m, still commented in GGTerrain_part0) are the starting points.

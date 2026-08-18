@@ -3640,17 +3640,17 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 	}
 	if (_stricmp(cmd, "SET_PROBEPARALLAX") == 0)
 	{
-		// SET_PROBEPARALLAX <0|1|2|3> — GGMAX 2.89 (#157) env-probe parallax precision.
+		// SET_PROBEPARALLAX <0|1|2|3> — GGMAX 2.89 (#157) env-probe parallax precision/policy.
 		//   0 = stock half (min16float) math — REPRODUCES the circles defect
-		//   1 = float math — the fix (default)
+		//   1 = float math, parallax kept (the precision-only fix)
 		//   2 = float math + MAGENTA wherever the stock half math would overflow fp16
-		//   3 = float math, but skip parallax entirely for level-sized boxes (DX11-style raw
-		//       reflection vector for the global probe) — a design alternative, not the fix
+		//   3 = float math + skip parallax entirely for level-sized boxes (DX11-style raw
+		//       reflection vector for the global probe) — **the shipping DEFAULT**
 		// Why it matters: the parallax ray-exit distance is in WORLD units. fp16 tops out at
 		// 65504, and GG's globalEnvProbe OBB is 50,000 units, so the stock math returns +INF
 		// for every direction outside six ~40 degree caps around the axes. Local probe boxes
 		// are tiny, which is exactly why local reflections always looked clean.
-		int ppMode = 1;
+		int ppMode = 3; // matches the shipping default
 		if (arg) sscanf_s(arg, "%d", &ppMode);
 		wi::scene::gg_probeparallax = ppMode; // engine wiScene.cpp:47
 		// Report the geometry this predicts, so the picture can be checked against the maths.
@@ -3670,7 +3670,7 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		const float ppWorstDist = ppHalfExtent * 1.7320508f; // corner-most exit distance
 		_snprintf(result, resultSize, "OK: SET_PROBEPARALLAX %d (%s) probes[0] box half-extent=%.0f worst-exit=%.0f fp16max=65504 -> %s",
 			ppMode,
-			ppMode == 0 ? "stock half - defect ON" : (ppMode == 1 ? "float - FIXED" : (ppMode == 2 ? "float + magenta overflow map" : "float + no parallax on level-sized boxes")),
+			ppMode == 0 ? "stock half - defect ON" : (ppMode == 1 ? "float, parallax kept" : (ppMode == 2 ? "float + magenta overflow map" : "float + no parallax on level-sized boxes - DEFAULT")),
 			ppHalfExtent, ppWorstDist,
 			ppWorstDist > 65504.0f ? "STOCK MATH OVERFLOWS (circles expected at mode 0)" : "stock math stays in range (no circles even at mode 0)");
 		result[resultSize - 1] = 0;
