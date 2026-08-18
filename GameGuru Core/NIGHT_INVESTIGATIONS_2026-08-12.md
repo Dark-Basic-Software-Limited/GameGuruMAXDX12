@@ -3206,3 +3206,45 @@ Grepped every `half`-typed world-space quantity in `lightingHF` / `shadingHF` / 
   box) and a far-outside surface simply fails `is_saturated` — benign, including when it
   reaches INF against a parked 1-unit pool probe.
 - `shadingHF.hlsli:601` capsule-shadow `half range` is character-scale.
+
+### §2.89 VERIFICATION — live, on Lee's TESTPRO2/spotshadowtest (2026-08-18 07:0x)
+**Reproduced and fixed on the marker ball itself.** `SET_PROBEONLYGLOBAL 1` makes every surface
+read the global cube — the same thing Lee's mouse-drag does by releasing the pool slot — so shot 3
+can be reproduced without touching the mouse.
+
+| | ball region only, 465×465 px |
+|---|---|
+| noise floor (two shots, nothing changed) | **0.325** mean, 1.02% of pixels |
+| repeatability (mode 0 twice) | 0.270 |
+| repeatability (mode 1 twice) | 0.278 |
+| **THE FIX (mode 0 → mode 1)** | **8.839** mean, **18.86%** of pixels |
+| THE FIX, independent second pair | 8.843 mean, 18.87% |
+| **signal / largest control** | **27.2×** |
+| mode 1 (parallax) vs mode 3 (raw R) | 4.145, 9.59% — the design question, a real but smaller change |
+
+Two independent A/B pairs agreeing to 0.005 against a 0.325 floor. Screenshots:
+`G1_ball_global_stockhalf` (Lee's circles, reproduced) → `G2_ball_global_floatfix` (clean).
+
+★ **The single best picture is `G4_ball_global_overflowmap`**: mode 2 on the same ball paints
+magenta wherever the stock maths exceeds 65504, and what survives in dark are EXACTLY the circles.
+The circles were never something drawn onto the ball — they are the last few directions still
+being computed correctly.
+
+**Scene-wide** (whole viewport, mode 2 mask): the overflow covers the terrain, beach, rocks and
+vegetation. The mode0→mode1 difference is **4.38× stronger inside the mask than outside**
+(7.010 vs 1.600). ⚠ **Method note worth keeping**: a naive whole-frame screenshot diff CANNOT
+settle this — live water/foliage/clouds give a 3–5% floor, and the box-size threshold sweep
+(30000/37000/39000/50000 at mode 0, straddling the 37,820 ceiling) came back *inside* that floor
+and proved nothing on its own. The mask test is the valid instrument; the ball-region test is the
+clean one because that region is nearly static.
+
+**Cost: nil.** spotshadowtest 77.4 fps mode 0 vs 77.4 mode 1. Island Showdown 66.3 / 66.4 / 66.3
+for modes 0 / 1 / 3. Island Showdown's whole frame changes by only 1.45 mean (4.7% of pixels) —
+the fix is dramatic on shiny surfaces and subtle on ordinary diffuse content, which is exactly the
+expected shape and means no jarring look change on typical demos.
+
+**Instrument receipts** (the "prove it is live" rule): mode 2 paints magenta — a behaviour that
+did not exist before this build; `SET_PROBEVIEW 1 3` renders the inspection sphere as a uniform
+blur where `SET_PROBEVIEW 1 0` is sharp — proving the new `MiscCB.g_xColor.x` mip path is live.
+Both confirm the edited shaders actually reached the GPU (⚠ `refresh_shaders.ps1` reported
+"0 stale" on this build — do not take that as evidence either way).
