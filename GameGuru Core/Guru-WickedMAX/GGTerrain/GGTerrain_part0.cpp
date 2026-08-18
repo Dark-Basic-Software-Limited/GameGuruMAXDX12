@@ -194,23 +194,6 @@ uint8_t* pHeightMapFlatAreaWeight = 0;
 
 wiECS::Entity globalEnvProbe;
 XMFLOAT3 globalEnvProbePos = { 0, 0, 0 };
-// GGMAX 2.78 (#157 experiment rig): harness override for the GLOBAL env probe's capture point.
-// 0 = stock (map corner at the biome height), 1 = hold at the override position, 2 = re-bake
-// in place on the next update (consumed back to 1). Driven by SET_GLOBALPROBE.
-int gg_globalprobe_override = 0;
-XMFLOAT3 gg_globalprobe_override_pos = { 0, 0, 0 };
-// GGMAX 2.78: when set, every local pool probe is parked out of range so the whole world
-// reflects the GLOBAL/base env cube. Harness SET_LOCALPROBES 0.
-int gg_localprobes_disabled = 0;
-void GGTerrain_SetLocalProbesDisabled(int disabled)
-{
-	gg_localprobes_disabled = disabled;
-}
-void GGTerrain_SetGlobalProbeOverride(int mode, float x, float y, float z)
-{
-	gg_globalprobe_override = mode;
-	gg_globalprobe_override_pos = XMFLOAT3(x, y, z);
-}
 wiECS::Entity localEnvProbe[LOCALENVPROBECOUNT];
 XMFLOAT3 localEnvProbePos[LOCALENVPROBECOUNT];
 uint32_t currLocalEnvProbe = 0;
@@ -9354,32 +9337,6 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 		currLocalEnvProbe = 0;
 	}
 	// find the eight closest env light probes to the player
-	// GGMAX 2.78 (#157, Lee-requested rig): park EVERY local pool probe so nothing in the world
-	// is covered by a local capture and every surface — including the %probe marker ball — falls
-	// back to the GLOBAL/base env cube. This is exactly what Lee reproduces by hand when he drags
-	// a Probe Range slider and catches the base map "in snatches"; this holds it permanently so
-	// the global env map can be looked at. Harness: SET_LOCALPROBES 0 (1 restores).
-	if (gg_localprobes_disabled != 0)
-	{
-		const XMFLOAT3 park = XMFLOAT3(0, ggterrain_local_params.height + 20000.0f, 0);
-		for (int i = 0; i < LOCALENVPROBECOUNT; i++)
-		{
-			g_iEnvProbeTracking[i] = 0;
-			g_bEnvProbeTrackingUpdate[i] = false;
-			EnvironmentProbeComponent* pp = wiScene::GetScene().probes.GetComponent(localEnvProbe[i]);
-			wiScene::TransformComponent* pt = wiScene::GetScene().transforms.GetComponent(localEnvProbe[i]);
-			if (pp == nullptr || pt == nullptr) continue;
-			localEnvProbePos[i] = park;
-			pp->position = park;
-			pp->range = 1;
-			pt->ClearTransform();
-			pt->Translate(park);
-			pt->Scale(XMFLOAT3(1, 1, 1));
-			pt->UpdateTransform();
-			pt->SetDirty();
-		}
-	}
-
 	bool bUseOld2SwapSystem = true;
 	if (g_envProbeList.size() > 0 || bImGuiInTestGame == true)
 	{
@@ -9387,15 +9344,8 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 		bUseOld2SwapSystem = false;
 	}
 
-	// 2.78: with the pool parked (SET_LOCALPROBES 0) neither tracking path may run, or it would
-	// re-assign the slots straight back onto the markers on the very next frame.
-	if (gg_localprobes_disabled != 0)
-	{
-		bUseOld2SwapSystem = false;
-	}
-
 	// New placed probe system or fallback 2-probe swap system
-	if (bUseOld2SwapSystem == false && gg_localprobes_disabled == 0)
+	if (bUseOld2SwapSystem == false)
 	{
 		// special system to createw a delta from movement, and use this to transition the alpha influence of env probes
 		// this solves the issue of camera leaving zones of calc for the env causing a pop in the visual
@@ -9608,7 +9558,7 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 			}
 		}
 	}
-	else if (gg_localprobes_disabled == 0) // 2.78: parked pool must not fall into the old 2-swap path either
+	else
 	{
 #ifdef PEOPTIMIZING
 		static bool bInEditor = false;
@@ -9798,36 +9748,6 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 			}
 		}
 		ggterrain_extra_params.bUpdateProbes = false;
-	}
-
-	// GGMAX 2.78 (#157 experiment rig): let the harness park the GLOBAL env probe's capture
-	// point anywhere and re-bake it there. Stock puts it at the MAP CORNER (x=0, z=0) at the
-	// biome's flat height — note the commented-out original intent right below, which sampled
-	// the ACTUAL ground at the origin and rose 30 m above it. Being able to move it is how we
-	// test whether the base env cube's content is a placement problem.
-	if (gg_globalprobe_override != 0)
-	{
-		EnvironmentProbeComponent* ovprobe = wiScene::GetScene().probes.GetComponent(globalEnvProbe);
-		wiScene::TransformComponent* ovTransform = wiScene::GetScene().transforms.GetComponent(globalEnvProbe);
-		if (ovprobe && ovTransform)
-		{
-			const float ovMoved = fabs(gg_globalprobe_override_pos.x - globalEnvProbePos.x)
-				+ fabs(gg_globalprobe_override_pos.y - globalEnvProbePos.y)
-				+ fabs(gg_globalprobe_override_pos.z - globalEnvProbePos.z);
-			if (ovMoved > 0.01f || gg_globalprobe_override == 2) // 2 = force a re-bake in place
-			{
-				globalEnvProbePos = gg_globalprobe_override_pos;
-				ovprobe->position = globalEnvProbePos;
-				ovprobe->SetDirty();
-				ovTransform->ClearTransform();
-				ovTransform->Translate(globalEnvProbePos);
-				ovTransform->Scale(XMFLOAT3(ovprobe->range, ovprobe->range, ovprobe->range));
-				ovTransform->UpdateTransform();
-				ovTransform->SetDirty();
-				gg_globalprobe_override = 1;
-			}
-		}
-		return; // stock auto-reposition would snap it straight back
 	}
 
 	// handle global probe positioned by globalEnvProbePos

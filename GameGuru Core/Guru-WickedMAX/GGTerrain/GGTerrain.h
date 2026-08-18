@@ -271,12 +271,6 @@ void GGCustomFrame_Bind( wiGraphics::CommandList cmd );
 float GGCustomFrame_GetWaterHeight(); // diagnostic: water height uploaded to GGCustomFrameCB last frame
 
 void GGTerrain_ClearEnvProbeList(void);
-// GGMAX 2.78 (#157): override the GLOBAL env probe's capture point (stock = map corner at the
-// biome height). mode 0 = stock, 1 = hold here, 2 = re-bake in place. Harness: SET_GLOBALPROBE.
-void GGTerrain_SetGlobalProbeOverride(int mode, float x, float y, float z);
-// GGMAX 2.78 (#157): park every local pool probe so the world reflects only the GLOBAL/base
-// env cube — the permanent version of "drag Probe Range and catch it in snatches".
-void GGTerrain_SetLocalProbesDisabled(int disabled);
 void GGTerrain_InstantEnvProbeRefresh(int iCoolDownIndex);
 void GGTerrain_AddEnvProbeList(float x, float y, float z, float range, float quatx, float quaty, float quatz, float quatw, float sx, float sy, float sz, float brightness = 1.0f);
 
