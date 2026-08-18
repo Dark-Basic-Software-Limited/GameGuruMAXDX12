@@ -3629,6 +3629,32 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_ENVDIR") == 0)
+	{
+		// SET_ENVDIR <0-4> [x y z] — (2.82, #157, Lee-directed) DIRECTION-PEEL rungs: remove
+		// the contributors that bend the env-cube sample direction, one at a time (cumulative):
+		//   0 = stock chain (mesh normals -> backface flip -> normal map -> reflect(camera) ->
+		//       box projection on the local path)
+		//   1 = BOX PROJECTION off — the local path samples the raw reflection vector
+		//   2 = + NORMAL MAP off — reflect off the geometric normal (facenormal)
+		//   3 = + CAMERA off — sample the geometric normal itself, no reflect
+		//   4 = FIXED direction [x y z] (default 0 0 1) at EVERY read site — no direction left;
+		//       the whole env term becomes one texel: expect a flat single-colour wash.
+		// Composes with SET_ENVSOLID (wipe/mip/solid operate on the peeled direction).
+		float edMode = 0.0f, edX = 0.0f, edY = 0.0f, edZ = 1.0f;
+		if (arg) sscanf_s(arg, "%f %f %f %f", &edMode, &edX, &edY, &edZ);
+		extern void GGSetEnvDir(float, float, float, float);
+		GGSetEnvDir(edMode, edX, edY, edZ);
+		_snprintf(result, resultSize, "OK: SET_ENVDIR %.0f dir=(%.2f,%.2f,%.2f) — %s",
+			edMode, edX, edY, edZ,
+			(edMode >= 4.0f) ? "FIXED direction at every read site (no direction left)" :
+			(edMode >= 3.0f) ? "+ camera OFF: sampling the geometric normal, no reflect" :
+			(edMode >= 2.0f) ? "+ normal map OFF: reflecting off the geometric normal" :
+			(edMode >= 1.0f) ? "box projection OFF: local path uses the raw reflection vector" :
+			"stock direction chain");
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_ENVONLY") == 0)
 	{
 		// SET_ENVONLY <0|1> [mip] — (2.79, #157) every opaque object outputs ONLY the global

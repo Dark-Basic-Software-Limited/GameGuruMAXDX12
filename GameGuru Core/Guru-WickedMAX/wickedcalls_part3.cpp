@@ -3102,3 +3102,19 @@ void GGSetEnvSolid(float fOn, float r, float g, float b)
 // rungs / 5 face wipe) to 1, which is what sank the 08-17 mip-rung night: a MAX restart
 // mid-test silently demoted mode 3/4 to solid-colour and we blamed the shader deploy.
 void GGSetEnvSolidIni(int iOn) { wi::scene::gg_envsolid_on = (float)iOn; }
+
+// GGMAX 2.82 (#157, Lee-directed): DIRECTION-PEEL rungs — SET_ENVDIR harness command.
+// mode: 0 stock; 1 box projection OFF; 2 + normal map OFF; 3 + camera OFF; 4 FIXED dir xyz.
+namespace wi { namespace scene {
+	extern float gg_envdir_mode; extern float gg_envdir_x; extern float gg_envdir_y; extern float gg_envdir_z;
+} }
+void GGSetEnvDir(float fMode, float x, float y, float z)
+{
+	// zero-vector guard: normalize(0,0,0) in the shader would be NaN — force +Z
+	if (x == 0.0f && y == 0.0f && z == 0.0f) z = 1.0f;
+	wi::scene::gg_envdir_mode = fMode;
+	wi::scene::gg_envdir_x = x;
+	wi::scene::gg_envdir_y = y;
+	wi::scene::gg_envdir_z = z;
+}
+void GGSetEnvDirIni(int iMode) { wi::scene::gg_envdir_mode = (float)iMode; } // int passthrough (2.81 rule)

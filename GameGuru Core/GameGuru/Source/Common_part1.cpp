@@ -711,6 +711,8 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "lowvramgrassdensity"; if (t.field_s == t.tryfield_s) { extern void GGSetLowVRAMGrassDensity(float); GGSetLowVRAMGrassDensity((float)t.value1 * 0.01f); }
 
 					// DOCDOC: envsolid = DEBUG RIG (#157). MODE number, passed through since 2.81: 1 = flat colour replaces every cube read, 2 = split map (magenta specular / green ambient / blue local), 3 = paint mip index, 4 = force mip, 5 = +X face wiped to black (everything else normal). Default 0. Live equivalent: harness SET_ENVSOLID.
+					// DOCDOC: envdir = DEBUG RIG (#157, 2.82). Direction-peel MODE: 1 box projection off, 2 + normal map off, 3 + camera off (sample geometric normal), 4 fixed direction +Z at every read site. Default 0. Live equivalent (with custom xyz): harness SET_ENVDIR.
+					t.tryfield_s = "envdir"; if (t.field_s == t.tryfield_s) { extern void GGSetEnvDirIni(int); GGSetEnvDirIni(t.value1); }
 					t.tryfield_s = "envsolid"; if (t.field_s == t.tryfield_s) { extern void GGSetEnvSolidIni(int); GGSetEnvSolidIni(t.value1); }
 
 					// DOCDOC: envonly = DEBUG RIG (#157). 1 makes every opaque object output ONLY the global env-probe cube texel along its mirror reflection vector - no basecolor/normal/surface/emissive/AO maps, no lightmap, no lights or shadows, no SSAO/SSR/GI/decals, no fog and no fresnel or brightness weighting. What is on screen IS the cube. Default 0. Live equivalent: harness SET_ENVONLY.

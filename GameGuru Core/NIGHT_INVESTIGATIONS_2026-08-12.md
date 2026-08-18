@@ -2909,3 +2909,32 @@ section.
 setup.ini: `globalprobeonly=1`, `envsolid=5` (wipe ON — set 0 to return to the plain baseline),
 `envonly=0`. MAX running, TESTPRO2/spotshadowtest loaded via harness. Revert lever: SET_ENVSOLID 0
 live, or envsolid=0 + relaunch.
+
+## §2.82 — DIRECTION-PEEL rungs (Lee-directed): every bender of the env-read direction, isolated
+Lee's method continues: having proven (§2.81 + the live A/B/C diff) that the cube WRITES are clean
+and the black wipe is read-side, he asked for the direction chain itself — every contributor that
+bends the sample direction, each isolatable, peeled one at a time down to NO direction (a fixed
+vector for all reads → the whole env term becomes one texel).
+
+### The verified chain (what bends the direction, in order)
+1. MESH VERTEX NORMALS — authored smoothing, interpolated (objectHF:567).
+2. BACKFACE FLIP — `if (!is_frontface) nor = -nor` (objectHF:563); the %probe ball is
+   double-sided, so openings show backfaces with mirrored normals.
+3. `facenormal` SNAPSHOT taken here (objectHF:568) — AFTER the flip, BEFORE the normal map:
+   this is the peel point rungs 2/3 use.
+4. NORMAL MAP — `N = lerp(N, mul(bump,TBN), strength)` (objectHF:843, the 1.63 parity site).
+5. CAMERA — `R = -reflect(V, N)` (surfaceHF:280).
+6. BOX PROJECTION — local path only: R rewritten by pixel-position-vs-probe-OBB (lightingHF).
+(Clearcoat/aniso variants alter direction too but the ball's material has neither.)
+MIP is selection not direction (roughness × mipcount) — freeze it with SET_ENVSOLID 4 <mip>.
+
+### The rungs — SET_ENVDIR <0-4> [x y z] (engine 2.82: gg_envdir CB row + GGEnvPeelDirSpec)
+0 stock · 1 box projection OFF (local path samples raw R) · 2 + normal map OFF (reflect off
+facenormal) · 3 + camera OFF (sample facenormal, no reflect) · 4 FIXED xyz (default +Z) at ALL
+sites incl. ambient — no direction left; expected image = flat single-colour env term everywhere.
+Composability: SET_ENVSOLID's wipe/mip/split all operate on the PEELED direction (ggDir), so
+e.g. wipe+rung2 shows "which pixels' GEOMETRIC reflection hits +X". Ini: envdir=<mode> (int
+passthrough per the 2.81 rule; ini fixes dir at +Z, custom xyz is harness-only).
+⚠ What CANNOT be peeled individually at read time: the mesh vertex normals and the backface
+flip — they ARE facenormal. Rung 3→4 removes them together. If a flip-only rung is ever needed
+it requires plumbing is_frontface into Surface (engine change, not taken).
