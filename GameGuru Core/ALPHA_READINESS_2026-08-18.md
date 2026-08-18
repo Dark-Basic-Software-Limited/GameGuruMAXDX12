@@ -109,9 +109,17 @@ be implemented or the calls removed so it stops looking like working code.
 
 **Explicitly NOT recommended before the alpha**
 
-6. **Don't revisit texture streaming (#37).** It is default-OFF because it crashed Trapped
-   and RPG Template. The DDS conversion makes revisiting it *possible*, but an alpha is the
-   wrong moment to re-enable a known crash path.
+6. ~~**Don't revisit texture streaming (#37).** It is default-OFF because it crashed Trapped
+   and RPG Template.~~ **CORRECTION (same day, after Lee asked me to confirm streaming
+   status): this was WRONG and the error was mine.** Texture streaming is **ON by default
+   and has been since 2026-08-01** — `g_bTextureStreamingEnabled = true`
+   (`wickedcalls_part0.cpp:350`), and per WETEST.md it "briefly defaulted 0 on 2026-08-01
+   while the load crash was open, restored the same day by delta 1.73". The crash was fixed
+   (task #47, "verify all 19 demos load clean with streaming ON"), not worked around by
+   disabling the feature. My MEMORY note carried the one-day state as if permanent and I
+   repeated it here without checking. Streaming needs no decision before the alpha — it is
+   already the shipping behaviour and the 19/19 sweep above ran with it on. See
+   `STREAMING_STATUS_2026-08-18.md`.
 7. **Don't chase the hub-wide FPS number.** It is ambient drift; the same-day control proves
    it. Chasing it would burn the alpha window on a non-bug.
 
