@@ -129,8 +129,54 @@ Three other repo docs still asserted the default-OFF claim and have been annotat
 `MILESTONE_DDS_CONVERSION.md`. The code is authoritative; those were dated log entries
 repeating the one-day state.
 
-### Not verified — worth a measurement if you want it
-The audit flagged that some `entitybank` DDS files remain **single-mip**, which means they can
-neither stream nor shrink — they sit at full size forever. I did not confirm the count, so
-treat the specific number as unproven. `surfacescan.py` produces the work list, and authoring
-mip chains for those files would both enroll them and cut the floor.
+### MEASURED — the single-mip claim is REFUTED
+
+Lee asked for the measurement. `tools/ddsscan.py` (a purpose-built scanner that already
+existed for exactly this question) over `Files\entitybank`, **12,561 DDS files**:
+
+```
+full mip chains          :   53491.5 MB
+streamed base (1.73 fix) :     382.8 MB
+--- single-mip >64KB, can NEVER stream (0 files) ---
+  total 0.0 MB locked at full size
+```
+
+**Zero.** There are no single-mip entitybank files above the 64 KB streaming floor. The audit's
+claim of ~39 was wrong, and flagging it as unverified was the right call. The 08-16 DDS
+conversion did the job completely for this tree.
+
+The headline number is worth keeping: entitybank content would be **53.5 GB** fully resident;
+streaming holds the base at **383 MB**. That is roughly a 140x reduction, and it is the
+strongest single argument that the feature is earning its keep.
+
+**What the scan did find — block-alignment stalls (94 files in entitybank, 119 tree-wide).**
+These stop shedding mips early because the next halving would break 4x4 block alignment. Total
+cost across ALL content: **14.1 MB**. Not worth chasing. Largest groups: 72x `1024x936 DXT1`,
+24x `3840x2160 DXT1`, and — pleasingly — 17x `500x500 DXT1`, the exact geometry whose
+misaligned halving caused the 08-01 load crash. The 1.73 alignment rule is what now stops them,
+so those 17 files are the fix visibly doing its job.
+
+**Tree-wide there are 12 single-mip files (405 MB expanded), but none are object content:**
+
+| File(s) | Why it does not matter |
+|---|---|
+| `terrain_atlas_basecolor.dds`, `terrain_atlas_surface.dds` (289 MB on disk) | **Not content — my own `DUMP_TERRAINSURF` debris** from the 08-16 terrain work, sitting in the build folder |
+| `dreamnebulamoon_cube.dds` (16 MB) | A cubemap; the engine excludes cubes from streaming by design |
+| 9x `thumbbank\*512x288.dds` (~5 MB) | UI thumbnails; never sampled by an object shader, so correctly never enrol |
+
+### ⚠ Separate finding for the alpha: 328 MB of diagnostic debris in the build folder
+
+While measuring, the scan walked `D:\DEV\BUILD\...\Max\Files` and found **328 MB of
+tool-generated artifacts** that would be packaged into a tester build:
+
+| Artifact | Files | Size |
+|---|---|---|
+| `terrain_atlas_*.dds` (DUMP_TERRAINSURF) | 2 | 289 MB |
+| `envprobe_*.dds` (DUMP_ENVPROBE) | 10 | 34 MB |
+| `gap_trace.txt` | 1 | 6 MB |
+| `*_dump.txt`, `stream_*.txt`, `vram_census.txt` | 19 | 3 MB |
+
+All of it is mine, from this and previous investigation sessions. None of it is Lee's content,
+and none of it is needed at runtime — but it is sitting in the directory that gets shipped.
+**Recommend clearing it as part of cutting the alpha.** Not deleted unilaterally in case a dump
+is still wanted for reference.
