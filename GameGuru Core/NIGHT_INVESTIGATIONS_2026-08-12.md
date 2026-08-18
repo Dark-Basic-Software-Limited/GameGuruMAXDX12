@@ -3314,3 +3314,23 @@ with `LNK1104`, and it also means the "stall" I was mid-way through diagnosing h
 processes in the picture. Cleanup that actually works: `ps -W`, find the PGID, `kill -9` every
 member of the group, confirm zero survivors, then build. (Same family as the 08-10 leaked-runner
 rule — `pkill` is dead in Git Bash — but the TaskStop wrinkle is new and worth the memory entry.)
+
+### §2.89 ACCEPTANCE GATE — ★ 19/19 CLEAN (2026-08-18 07:27→08:02)
+Re-run end to end after the leaked-runner cleanup. Every hub demo loads, renders, screenshots and
+reports perf normally on the 2.89 build. **0 failures.** Editor FPS, 3 samples each:
+
+| demo | FPS | demo | FPS |
+|---|---|---|---|
+| Aztec Game Kit Teaser | 68.3 / 68.1 / 67.9 | Foggy Forest | 60.1 / 60.2 / 59.9 |
+| Aztec Game Kit | 94.4 / 93.7 / 91.4 | Indian Strike Force | 89.4 / 89.6 / 88.9 |
+| Bounty | 105.7 / 104.6 / 106.0 | Switch Escape | 141.1 / 140.6 / 141.6 |
+| Horseshoe Bend | 103.5 / 105.5 / 105.1 | Canyon Offensive | 68.8 / 68.7 / 68.8 |
+| Island Showdown | 69.3 / 68.9 / 69.0 | Escape from the Zombie Cellar | 137.7 / 137.8 / 137.1 |
+| Operation Amazon | 77.1 / 76.6 / 76.9 | Jungle Fever | 113.2 / 112.7 / 112.9 |
+| River Raiders | 109.5 / 108.8 / 108.6 | RPG Template | 96.7 / 96.0 / 95.9 |
+| Snowy Mountain Stroll | 137.6 / 138.2 / 137.9 | The Mystery of Z Island | 98.4 / 98.3 / 98.5 |
+| A Grand Canyon Adventure | 93.3 / 92.4 / 93.3 | Trapped | 151.3 / 150.4 / 150.5 |
+
+Horseshoe Bend passing at 103.5 is the **second independent** confirmation that its earlier stall
+was environmental, not 2.89. Per-demo screenshots in the run folder; VRAM unchanged by
+construction (the fix allocates nothing — it changes the precision of a few scalar ops).
