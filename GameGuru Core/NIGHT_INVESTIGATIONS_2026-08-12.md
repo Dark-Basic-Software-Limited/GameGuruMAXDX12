@@ -2999,3 +2999,16 @@ executed. Cheapest reliable probe: a rung painting surface.roughness as greyscal
 gg_envsolid entirely.
 State handed back 04:07: envsolid=0 live+ini, envdir=0, envonly=0, globalprobeonly=1 (Lee's
 baseline). The 2.84 filter fixes stand verified regardless (mip0 mirror / mip1 blur / flood dead).
+
+## §2.85 — Lee's verdict on 2.84: NOT SOLD (fish still shows the gap class) → PLAIN MIPS mode
+Lee re-tested with a glossy fish (Bass): the large solid-colour outer-circle gaps persist on
+real content. His call: the 2.84 "FIXED" claim was premature — what stands is the WHAT (the
+prefiltered mip chain). His directive: NEW mode (no reuse of old modes), skip the FilterEnvMap
+BRDF prefilter ENTIRELY and ship the good old 2x2 box-reduction chain, irrespective of
+roughness — the DX11 approach.
+Implementation (engine 2.85): `gg_envprobe_plainmips` DEFAULT 1 gates the FilterEnvMap
+dispatch loop; the CopyResource that precedes it already carries GenerateMipChain's LINEAR
+box chain into the Filtered buffer, so skipping the dispatches ships exactly the DX11-style
+mips (clouds included — the chain is built after the cloud composite). SET_PROBEMIPS <0|1>
+(0 = BRDF filter with 2.84 fixes) + REFRESH_ENVPROBE to re-bake. wiRenderer.h
+SetEnvProbePlainMips.

@@ -3629,6 +3629,21 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_PROBEMIPS") == 0)
+	{
+		// SET_PROBEMIPS <0|1> — (2.85, #157, Lee-directed) 1 = PLAIN MIPS: skip Wicked's BRDF
+		// prefilter entirely and ship the ordinary 2x2 box-reduction chain (the DX11-style
+		// mips — a mip texel is only ever a local average of its own face patch, roughness
+		// plays no part). 0 = BRDF filter (with the 2.84 fixes). DEFAULT 1 per Lee's test.
+		// Applies on the NEXT capture — follow with REFRESH_ENVPROBE to re-bake and see it.
+		int pmOn = 1;
+		if (arg) sscanf_s(arg, "%d", &pmOn);
+		wiRenderer::SetEnvProbePlainMips(pmOn);
+		_snprintf(result, resultSize, "OK: SET_PROBEMIPS %d — %s — REFRESH_ENVPROBE to re-bake",
+			pmOn, (pmOn != 0) ? "PLAIN 2x2 box mips (DX11-style, BRDF filter skipped)" : "BRDF-filtered mips (2.84 fixes)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_PROBEFILTER") == 0)
 	{
 		// SET_PROBEFILTER <hdrclamp> — (2.84, #157 fix 3) clamp HDR samples inside the env
