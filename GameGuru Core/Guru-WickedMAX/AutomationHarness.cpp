@@ -3348,6 +3348,8 @@ namespace wi::input::xinput { extern uint32_t gg_xinput_rescan_frames; }
 namespace wi::scene         { extern int      gg_scene_serial_profile; }
 namespace wi::scene         { extern bool     gg_instinit_parallel; }
 namespace wi::scene         { extern float    gg_envprobe_brightness; } // GGMAX 1.55 knob (wiScene.cpp:46), SET_ENVPROBE_BRIGHTNESS
+namespace wi::scene         { extern int      gg_probeparallax; }       // GGMAX 2.89 knob (wiScene.cpp:47), SET_PROBEPARALLAX
+namespace wi::scene         { extern int      gg_probeonlyglobal; }     // GGMAX 2.89 knob (wiScene.cpp:51), SET_PROBEONLYGLOBAL
 
 namespace GPUParticles {
 	int gpup_debug_dump(char* summary, int summarySize);
@@ -3593,6 +3595,142 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		if (dpScale > 0.0f) wiRenderer::SetDebugEnvProbeSphereScale(dpScale); // 2.75 preview-size knob
 		wiRenderer::SetToDrawDebugEnvProbes(dpOn != 0);
 		_snprintf(result, resultSize, "OK: SET_DEBUGPROBES %d scale=%.0f", dpOn, dpScale);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_PROBEVIEW") == 0)
+	{
+		// SET_PROBEVIEW <mode> [mip] [scale] — GGMAX 2.89 (#157) PROBE INSPECTION MODE.
+		//   mode 0 = off (stock)
+		//   mode 1 = the inspection sphere mirrors the GLOBAL cube (probes[0] = what every
+		//            shader reads as GetScene().globalprobe)
+		//   mode 2 = the same sphere, same pose, mirroring the LOCAL cube instead
+		//   mip    = the level sampled (0 = the raw capture; >0 walks the filtered chain)
+		//   scale  = sphere radius in world units when no probe marker is picked (default 60,
+		//            about a %probe marker ball; a picked marker overrides this every frame)
+		// The sphere is a RAW MIRROR (cubeMapPS: no Fresnel, no roughness, no parallax, no
+		// brightness) so what it shows IS the cube, not the marker's PBR interpretation of it.
+		int pvMode = 0; float pvMip = 0.0f, pvScale = 0.0f;
+		if (arg) sscanf_s(arg, "%d %f %f", &pvMode, &pvMip, &pvScale);
+		wiRenderer::SetProbeView(pvMode, pvMip);
+		if (pvScale > 0.0f) wiRenderer::SetDebugEnvProbeSphereScale(pvScale);
+		else if (pvMode > 0) wiRenderer::SetDebugEnvProbeSphereScale(60.0f);
+		// Receipt: name the cube the mode will actually put on the ball, so a picture is never
+		// trusted without knowing which texture produced it.
+		wi::scene::Scene& pvScene = wi::scene::GetScene();
+		char pvWho[192]; pvWho[0] = 0;
+		if (pvScene.probes.GetCount() > 0)
+		{
+			wi::ecs::Entity pve = pvScene.probes.GetEntity(0);
+			const wi::scene::NameComponent* pvn = pvScene.names.GetComponent(pve);
+			const wi::scene::EnvironmentProbeComponent& pvp = pvScene.probes[0];
+			_snprintf(pvWho, sizeof(pvWho), " global=probes[0] \"%s\" pos=(%.0f,%.0f,%.0f) res=%u mips=%u valid=%d",
+				pvn ? pvn->name.c_str() : "?", pvp.position.x, pvp.position.y, pvp.position.z,
+				pvp.texture.IsValid() ? pvp.texture.desc.width : 0,
+				pvp.texture.IsValid() ? pvp.texture.desc.mip_levels : 0,
+				pvp.texture.IsValid() ? 1 : 0);
+			pvWho[sizeof(pvWho) - 1] = 0;
+		}
+		_snprintf(result, resultSize, "OK: SET_PROBEVIEW mode=%d (%s) mip=%.1f scale=%.0f probes=%d%s",
+			pvMode,
+			pvMode == 0 ? "off" : (pvMode == 1 ? "GLOBAL cube" : "LOCAL cube"),
+			pvMip, pvScale, (int)pvScene.probes.GetCount(), pvWho);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_PROBEPARALLAX") == 0)
+	{
+		// SET_PROBEPARALLAX <0|1|2|3> — GGMAX 2.89 (#157) env-probe parallax precision.
+		//   0 = stock half (min16float) math — REPRODUCES the circles defect
+		//   1 = float math — the fix (default)
+		//   2 = float math + MAGENTA wherever the stock half math would overflow fp16
+		//   3 = float math, but skip parallax entirely for level-sized boxes (DX11-style raw
+		//       reflection vector for the global probe) — a design alternative, not the fix
+		// Why it matters: the parallax ray-exit distance is in WORLD units. fp16 tops out at
+		// 65504, and GG's globalEnvProbe OBB is 50,000 units, so the stock math returns +INF
+		// for every direction outside six ~40 degree caps around the axes. Local probe boxes
+		// are tiny, which is exactly why local reflections always looked clean.
+		int ppMode = 1;
+		if (arg) sscanf_s(arg, "%d", &ppMode);
+		wi::scene::gg_probeparallax = ppMode; // engine wiScene.cpp:47
+		// Report the geometry this predicts, so the picture can be checked against the maths.
+		float ppHalfExtent = 0.0f;
+		wi::scene::Scene& ppScene = wi::scene::GetScene();
+		if (ppScene.probes.GetCount() > 0)
+		{
+			wi::ecs::Entity ppe = ppScene.probes.GetEntity(0);
+			const wi::scene::TransformComponent* ppt = ppScene.transforms.GetComponent(ppe);
+			if (ppt)
+			{
+				// the OBB half-extent is the transform's scale (the probe box is a unit cube)
+				XMFLOAT3 ppScl = ppt->GetScale();
+				ppHalfExtent = std::max(ppScl.x, std::max(ppScl.y, ppScl.z));
+			}
+		}
+		const float ppWorstDist = ppHalfExtent * 1.7320508f; // corner-most exit distance
+		_snprintf(result, resultSize, "OK: SET_PROBEPARALLAX %d (%s) probes[0] box half-extent=%.0f worst-exit=%.0f fp16max=65504 -> %s",
+			ppMode,
+			ppMode == 0 ? "stock half - defect ON" : (ppMode == 1 ? "float - FIXED" : (ppMode == 2 ? "float + magenta overflow map" : "float + no parallax on level-sized boxes")),
+			ppHalfExtent, ppWorstDist,
+			ppWorstDist > 65504.0f ? "STOCK MATH OVERFLOWS (circles expected at mode 0)" : "stock math stays in range (no circles even at mode 0)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_PROBEONLYGLOBAL") == 0)
+	{
+		// SET_PROBEONLYGLOBAL <0|1> — GGMAX 2.89 (#157). 1 = the shader ignores every LOCAL
+		// probe so all surfaces read the GLOBAL cube. This is how the marker ball's circles are
+		// reproduced on demand: the ball normally sits inside its own local probe box (clean),
+		// and only falls through to the global cube while a drag releases the pool slot — which
+		// is exactly the difference between Lee's shot 1 and shot 3. Done shader-side so
+		// GGTerrain's per-frame pool tracking cannot undo it.
+		int ogOn = 0;
+		if (arg) sscanf_s(arg, "%d", &ogOn);
+		wi::scene::gg_probeonlyglobal = ogOn; // engine wiScene.cpp
+		_snprintf(result, resultSize, "OK: SET_PROBEONLYGLOBAL %d (%s)", ogOn,
+			ogOn ? "local probes IGNORED - everything reads the global cube" : "stock local+global blending");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_GLOBALPROBEBOX") == 0)
+	{
+		// SET_GLOBALPROBEBOX <halfextent> — GGMAX 2.89 (#157) threshold experiment. Resize the
+		// GLOBAL probe's parallax OBB live. The fp16 prediction is sharp: with stock half math
+		// (SET_PROBEPARALLAX 0) the circles must vanish below 65504/sqrt(3) = 37820 units and
+		// reappear above it. Nothing else in the pipeline has a threshold at that number, so a
+		// clean switch across it is the proof. Does NOT re-capture the cube — box only.
+		float gbExtent = 0.0f;
+		if (arg) sscanf_s(arg, "%f", &gbExtent);
+		if (gbExtent <= 0.0f)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_GLOBALPROBEBOX needs a positive half-extent (stock global is 50000)");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		wi::scene::Scene& gbScene = wi::scene::GetScene();
+		if (gbScene.probes.GetCount() == 0)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_GLOBALPROBEBOX no probes in scene");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		wi::ecs::Entity gbe = gbScene.probes.GetEntity(0);
+		wi::scene::TransformComponent* gbt = gbScene.transforms.GetComponent(gbe);
+		const wi::scene::EnvironmentProbeComponent& gbp = gbScene.probes[0];
+		if (gbt == nullptr)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_GLOBALPROBEBOX probes[0] has no transform");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		gbt->ClearTransform();
+		gbt->Translate(gbp.position);
+		gbt->Scale(XMFLOAT3(gbExtent, gbExtent, gbExtent));
+		gbt->UpdateTransform();
+		gbt->SetDirty();
+		_snprintf(result, resultSize, "OK: SET_GLOBALPROBEBOX half-extent=%.0f at (%.0f,%.0f,%.0f) worst-exit=%.0f -> stock half math %s",
+			gbExtent, gbp.position.x, gbp.position.y, gbp.position.z, gbExtent * 1.7320508f,
+			gbExtent * 1.7320508f > 65504.0f ? "OVERFLOWS (circles)" : "in range (clean)");
 		result[resultSize - 1] = 0;
 		return true;
 	}

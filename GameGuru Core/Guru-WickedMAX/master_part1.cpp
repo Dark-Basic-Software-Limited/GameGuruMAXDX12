@@ -6,6 +6,7 @@
 #include "GGTerrain/GGTerrainWicked.h"
 #include "wiProfiler.h"
 #include "wiTerrain.h" // GGMAX 1.71: gg_svt_atlas_height (setup.ini svtatlasheight)
+#include "wiRenderer.h" // GGMAX 2.89: SetProbeView (setup.ini probeview / probeviewmip)
 #include <atomic>
 
 // GGMAX delta 1.29: engine-side 30fps animation throttle flags (defined in WickedEngine/wiScene.cpp).
@@ -110,6 +111,30 @@ void GGSetDiagTraceFiles(int on)
 	gg_videotrace_enabled = enable;
 	gg_reload_quiesce_file = enable;
 	GPUParticles::gg_gpup_trace_file = enable;
+}
+
+// GGMAX 2.89 (#157): setup.ini bridge for PROBE INSPECTION MODE (see wiRenderer.h SetProbeView
+// and the SET_PROBEVIEW harness command). Both keys are INT PASSTHROUGH - a mode value must
+// never be bool-ized (that class of bug cost a whole night on 08-17), and the two keys are held
+// separately here so they can appear in the ini in either order without clobbering each other.
+static int s_ggProbeViewMode = 0;
+static float s_ggProbeViewMip = 0.0f;
+void GGSetProbeViewIni(int v)
+{
+	s_ggProbeViewMode = v;
+	wiRenderer::SetProbeView(s_ggProbeViewMode, s_ggProbeViewMip);
+}
+void GGSetProbeViewMipIni(int v)
+{
+	s_ggProbeViewMip = (float)v;
+	wiRenderer::SetProbeView(s_ggProbeViewMode, s_ggProbeViewMip);
+}
+// GGMAX 2.89 (#157): setup.ini bridge for the env-probe parallax precision mode. INT
+// PASSTHROUGH — 0/1/2 are three distinct modes, not a flag (see lightingHF.hlsli).
+namespace wi::scene { extern int gg_probeparallax; } // engine wiScene.cpp:47
+void GGSetProbeParallaxIni(int v)
+{
+	wi::scene::gg_probeparallax = v;
 }
 
 // GGMAX 1.82: lazy object PSOs — DEFAULT ON, this is the revert switch (setup.ini `lazypso=0`).

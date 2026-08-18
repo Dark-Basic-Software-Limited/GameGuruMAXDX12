@@ -710,6 +710,15 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: lowvramgrassdensity = Grass strand density used when lowvram=1, as a PERCENT of normal. DEFAULT 75 - the value that measurably fits every hub demo inside 4GB (2026-08-04 night audit). Grass memory is linear in strand count, so 50 is about half the grass video memory - by far the biggest content lever available, since grass is 17.3GB across the demo hub. This thins the grass EVENLY over the same painted area (it changes how many strands are drawn, never where they may go), so the grass gets sparser rather than patchy. Lower values are a deliberate visual trade for fitting a 4GB card. Ignored when lowvram=0.
 					t.tryfield_s = "lowvramgrassdensity"; if (t.field_s == t.tryfield_s) { extern void GGSetLowVRAMGrassDensity(float); GGSetLowVRAMGrassDensity((float)t.value1 * 0.01f); }
 
+					// DOCDOC: probeview = ENV PROBE INSPECTION MODE (dev diagnostic, default 0 = off). 1 shows the engine's raw-mirror inspection sphere reflecting the GLOBAL env cube (probes[0]); 2 shows the LOCAL cube of the probe at the same spot. Same ball, same pose, same shader - only the cube changes, which is the like-for-like comparison the reflection hunt needs. Pair with probeviewmip.
+					t.tryfield_s = "probeview"; if (t.field_s == t.tryfield_s) { extern void GGSetProbeViewIni(int); GGSetProbeViewIni(t.value1); } // INT passthrough - never bool-ize a mode value
+
+					// DOCDOC: probeviewmip = Mip level the probeview inspection sphere samples (default 0 = the raw unfiltered capture). Higher values walk the filtered mip chain, which is where the BRDF prefilter's artifacts live. Only meaningful when probeview is non-zero.
+					t.tryfield_s = "probeviewmip"; if (t.field_s == t.tryfield_s) { extern void GGSetProbeViewMipIni(int); GGSetProbeViewMipIni(t.value1); } // INT passthrough
+
+					// DOCDOC: probeparallax = Precision of the environment-probe parallax correction. DEFAULT 1 (float). 0 restores the stock half-precision math, which overflows fp16 (max 65504) for any probe box bigger than ~37800 units and puts circular reflection artifacts on every shiny surface - the global probe box is 50000 units, so 0 is the DEFECT setting and exists only for A/B. 2 = float plus a magenta overlay marking every pixel the stock math would have broken.
+					t.tryfield_s = "probeparallax"; if (t.field_s == t.tryfield_s) { extern void GGSetProbeParallaxIni(int); GGSetProbeParallaxIni(t.value1); } // INT passthrough
+
 					// DOCDOC: producelogfiles = Sets whether the editor and game produces .LOG files which time stamp and track events within the engine
 					t.tryfield_s = "producelogfiles"; if (t.field_s == t.tryfield_s) { g.gproducelogfiles = t.value1; extern void GGSetDiagTraceFiles(int); GGSetDiagTraceFiles(t.value1); }
 

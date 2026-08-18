@@ -3085,3 +3085,124 @@ envdir.
 Tree-restore commits (no history rewrite): game `git checkout a42e6919 -- <code files>`
 keeping the three living docs (this file, WETEST, WICKED_ENGINE_CHANGES) at tip; engine
 `git checkout 92df06c7 -- .`. Both rebuilt and smoke-tested before handover.
+
+---
+
+## §2.89 — ★★★ THE CIRCLES, ROOT-CAUSED: fp16 overflow in the env-probe parallax (2026-08-18, overnight)
+
+**One sentence:** `EnvironmentReflection_Local` computes the parallax ray-exit distance in
+`half` (= `min16float` = real fp16 on this hardware, max 65504) in **world units**, so GG's
+50,000-unit `globalEnvProbe` box overflows to `+INF` for every reflection direction outside
+six ~40° caps around the ±X/±Y/±Z axes — and those six surviving caps ARE the circles.
+
+### What Lee's three screenshots actually showed (the observation that cracked it)
+He supplied the decisive A/B without knowing it:
+- **Shot 1** (nothing picked): the %probe marker ball reflects its **local** pool probe →
+  smooth, clean.
+- **Shot 2** (probe picked): the engine's debug inspection sphere → clean panorama. This one
+  is a red herring for the bug: `cubeMapPS` samples the cube as a **raw mirror at mip 0**, no
+  Fresnel, no roughness, **no parallax**. It literally cannot show this defect.
+- **Shot 3** (LMB held, probe update suspended): the same ball, same material, same camera,
+  now falling through to the **global** probe → circles.
+
+Same geometry, same shader, same mip regime, only the probe changed. That killed every
+geometry/normal-map/capture-content theory from §2.77-§2.88 in one step and pointed at the
+one thing that differs between a global and a local probe.
+
+### The one load-bearing difference
+Both probes are created identically (`Entity_CreateEnvironmentProbe`, res 128, 4 mips,
+realtime=0, same capture code path, same read math). They differ in exactly one property:
+
+| | global (`globalEnvProbe`) | local pool probe |
+|---|---|---|
+| OBB half-extent (transform scale) | **50,000** | 1 → a few hundred |
+| `probe.range` | 100,000 | 2 → a few hundred |
+| parallax exit distance | **50,000 … 86,600** | tiny |
+| fp16 ceiling 65,504 | **exceeded** | never approached |
+
+`lightingHF.hlsli` (stock):
+```hlsl
+half3 RayLS = mul((half3x3)probeProjection, surface.R);
+half3 FirstPlaneIntersect  = (1 - clipSpacePos) / RayLS;
+half3 SecondPlaneIntersect = (-1 - clipSpacePos) / RayLS;
+half3 FurthestPlane = max(FirstPlaneIntersect, SecondPlaneIntersect);
+half  Distance = min(FurthestPlane.x, min(FurthestPlane.y, FurthestPlane.z));   // WORLD units
+half3 R_parallaxCorrected = surface.P - probe.position + surface.R * Distance;
+```
+`Distance` = half-extent / max|R.axis|, so it runs 50,000 (ray along an axis) to 86,600 (ray
+into a corner). It stays finite only while `max|R.axis| > 50000/65504 = 0.763`, i.e. inside a
+**40.2° cap around each of the six axes**. Everywhere else → `+INF` → the sampled direction is
+garbage. Threshold for any probe: **half-extent > 65504/√3 = 37,820 units breaks.**
+
+### Why this explains every symptom the hunt collected
+- **Circles**: six finite caps (≈71% of the sphere, overlapping) separated by INF bands around
+  the cube edges/corners = discs of correct reflection in a field of rubbish. A numpy mirror-
+  ball simulation built only from the shader source reproduces Lee's shot 3 (5 visible discs,
+  29.9–36.3% of the ball overflowing) with no engine involved.
+- **Local probes always clean** — their boxes are nowhere near the ceiling.
+- **Mip 0 forcing, plain mips (2.85), and the FilterEnvMap fixes (2.84) never helped** — the
+  corruption is in the *direction*, upstream of every mip decision. Correct diagnosis of the
+  filter defects, wrong defect.
+- **Cube dumps always looked fine** — because they were fine. The write was never the problem.
+- **The "gap" colour tracked the Cloud Coverage slider** — the INF direction lands on a
+  degenerate texel whose colour is sky.
+- **Wiping the +X face black left "yellow" inside the wiped region** — those pixels were never
+  reading +X; they were reading the degenerate direction.
+- **The debug sphere looked perfect all night** — `cubeMapPS` has no parallax. We were
+  repeatedly comparing the one path that cannot show the bug against the one that can.
+
+### The fix (engine 2.89, `lightingHF.hlsli`)
+Promote the parallax intermediates to `float` (and the clearcoat copy of the same block).
+Cost is a handful of scalar ops per probe per pixel; correctness is restored for any box size.
+**This is the third instance of the fp16 range class** in this codebase, and the second in this
+very file — 2.07g was `half range2` overflowing past light range 255.9. Precedent also settles
+the "is `min16float` really 16-bit here?" question: `-enable-16bit-types` is commented out in
+`wiShaderCompiler.cpp:141`, but 2.07g was reproduced, fixed and user-confirmed as a genuine
+fp16 overflow, so min-precision *is* executed at 16 bits on this hardware.
+
+⚠ **Landmine found alongside**: `ShaderEntity::GetRange()` is also fp16 (`SetRange` packs via
+`XMConvertFloatToHalf`), so the global probe's authored range of 100,000 reads back in every
+shader as **+INF**. Nothing depended on it here, but never trust a probe/light range comparison
+in a shader without checking that ceiling first.
+
+### Knobs shipped with it
+| command | ini key | meaning |
+|---|---|---|
+| `SET_PROBEPARALLAX 0` | `probeparallax=0` | stock half math — reproduces the defect on demand |
+| `SET_PROBEPARALLAX 1` | `probeparallax=1` | float math — **the fix, default** |
+| `SET_PROBEPARALLAX 2` | `probeparallax=2` | float + **magenta** on every pixel the stock math would break |
+| `SET_PROBEPARALLAX 3` | `probeparallax=3` | float + skip parallax on level-sized boxes (design alternative, see below) |
+| `SET_GLOBALPROBEBOX <n>` | — | resize the global probe's OBB live (threshold experiment) |
+| `SET_PROBEVIEW <mode> [mip] [scale]` | `probeview` / `probeviewmip` | the inspection sphere (below) |
+
+### PROBE INSPECTION MODE (`SET_PROBEVIEW`) — the requested debug mode
+The engine already had a trustworthy raw-mirror sphere; it was just hard-wired to the *picked*
+probe at *mip 0*. 2.89 re-points it:
+- `1` = mirror the **GLOBAL** cube (`probes[0]`, exactly what shaders read as
+  `GetScene().globalprobe`), `2` = mirror the **LOCAL** cube at the same spot, `0` = stock.
+- `mip` selects the level `cubeMapPS` samples (via `MiscCB.g_xColor.x`), so the filtered chain
+  can be walked on a live cube.
+- Draws exactly one sphere: at the picked marker if there is one, otherwise hovering in front
+  of the camera, so it works from the harness on any scene with no marker picked.
+- Default OFF, zero cost when off.
+Note for future use: this sphere is deliberately **not** a PBR surface and does **not**
+parallax-correct — it shows cube CONTENT. Judging a reflection *defect* needs a real surface.
+
+### Open design question left for Lee (mode 3)
+Should a level-sized "global" probe be parallax-corrected at all? Wicked has no concept of a
+global probe — GG makes `probes[0]` global by convention, and its 50,000-unit box then rides
+the local entity array and wins the blend for every pixel. Parallax against a box that size
+skews the reflection by the surface's offset from the probe centre for no physical gain, and
+DX11 did not do it. Mode 3 reads the raw reflection vector for boxes over 37,820 units (DX11
+behaviour). Mode 1 is the conservative default; mode 3 is one command away for comparison.
+
+### Swept the neighbourhood for the same class (while the fix built)
+Grepped every `half`-typed world-space quantity in `lightingHF` / `shadingHF` / `surfaceHF` /
+`objectHF`. Only one other theoretical exposure, and it is not reachable in practice:
+- `lightingHF.hlsli:217` `half water_depth = water_height - surface.P.y;` — a world-space Y
+  delta. Needs a surface more than 65,504 units below the water plane to overflow; GG levels
+  are ~100,000 units across but nothing sits that deep. Left alone, recorded here.
+- `shadingHF.hlsli:68/320` `half3 clipSpacePos` is normalised box space (|·| ≤ 1 inside the
+  box) and a far-outside surface simply fails `is_saturated` — benign, including when it
+  reaches INF against a parked 1-unit pool probe.
+- `shadingHF.hlsli:601` capsule-shadow `half range` is character-scale.
