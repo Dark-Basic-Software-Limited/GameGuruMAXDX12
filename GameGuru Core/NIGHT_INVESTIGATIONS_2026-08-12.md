@@ -2938,3 +2938,45 @@ passthrough per the 2.81 rule; ini fixes dir at +Z, custom xyz is harness-only).
 ⚠ What CANNOT be peeled individually at read time: the mesh vertex normals and the backface
 flip — they ARE facenormal. Rung 3→4 removes them together. If a flip-only rung is ever needed
 it requires plumbing is_frontface into Surface (engine change, not taken).
+
+## §2.83/§2.84 — ★★★ THE CIRCLES ROOT-CAUSED AND FIXED: FilterEnvMap starvation + HDR flood
+The night's peeling converged: normals smooth (facenormal-as-colour view), direction field
+smooth (R-as-colour view), mip0 faces clean (dump), cube writes clean — then Lee's CARDINAL
+LOCK test (2.83, SET_ENVDIR 5: snap direction to dominant axis = face-centre reads only)
+KILLED the discs, and the per-tile contrast-stretched blowup of mips 1-3 showed the smoking
+gun: A BULLSEYE INSCRIBED IN EVERY FACE of the BRDF-filtered chain. The circles were in the
+cube after all — one mip below the level I had checked.
+
+### Why the ball painted them (the full mechanism)
+The ball's material is rough (2.75 matte) → MIP = roughness×4 lands on the FILTERED levels.
+Face-centre cones return real content (the "circles with detail"); face-edge/wide cones
+returned a heavily-averaged near-single value (the "gaps") whose colour tracked Cloud
+Coverage because it IS a sky average — Lee's "single rogue pixel" deduction, exactly.
+
+### The three 2.84 fixes (engine b44c3f0e)
+1. FULL mip chain on the filter SOURCE buffers (were probe's 4 = GetMipCount(...,16)):
+   computeLod requests source lods ~4-8 for rough levels; with 4 mips EVERY wide ray clamped
+   to the 16px level → filtered mips collapsed toward one value per face.
+2. Roughness ladder aligned to the read: filterRoughness = i/mipcount matching lightingHF's
+   MIP = roughness×mipcount (was i/(mips-1) → 0.33/0.67/1.0 = ~33% over-blur per level).
+   Only the shipped probe mips are filtered (source/filtered buffers carry the full chain so
+   the whole-resource CopyResource stays legal; BlockCompress loops the DST's mip count).
+3. filterHDRClamp (push-constant pad slot reused; default 2.0; SetEnvProbeFilterHDRClamp;
+   harness SET_PROBEFILTER <v>, 0 = stock): the capture carries a 10-20x blown horizon band
+   (DX11 captured LDR — its band clamped at 1.0 by construction); the GGX prefilter spread
+   that energy across every wide cone, flooding filtered mips flat.
+
+### Verified (all same-session, spotshadowtest)
+- Filtered mips keep real structure: side-face CV 0.40→0.65 (mip1), 0.25→0.37 (mip3);
+  -Y foliage crisp at mip1. (+Y retains a ~4% radial ring — likely legit red Horizon/Fog
+  colour bleeding into edge cones; watch, don't chase.)
+- SET_ENVONLY 1 0: ball = FLAWLESS mirror panorama (mip0). SET_ENVONLY 1 1: clean gentle
+  blur, no disc edges. Lee's prediction ("crisp reads + blur-style ring") realized.
+- Normal-shaded ball: much improved (no white flood; gaps now real dark horizon content)
+  but soft discs REMAIN because the 2.75 matte pushes its reads to mips ~3 (16px + BC6H).
+### REMAINING (Lee's call): un-matte the %probe preview ball (revert/flag 2.75's
+WickedCall_MakeObjectEnvMatte in the lighting_loop rebuild) so the preview reads mip0 =
+the flawless mirror. The matte was added when the ball itself was the suspect; that theory
+died tonight. ⚠ ALSO unexplained (parked): live SET_ENVSOLID modes ≥3 rendered as the
+mode-2 split during the 02:39 test (mode 4 forced-mip printed OK but painted split
+magenta 191/0/155) — the ini path works; the live-path w value needs one clean look.

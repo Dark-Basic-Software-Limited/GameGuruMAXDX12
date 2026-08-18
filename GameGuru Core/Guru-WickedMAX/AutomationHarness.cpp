@@ -3629,6 +3629,20 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_PROBEFILTER") == 0)
+	{
+		// SET_PROBEFILTER <hdrclamp> — (2.84, #157 fix 3) clamp HDR samples inside the env
+		// probe BRDF prefilter. Default 2.0 (kills the 10-20x blown horizon band that floods
+		// the filtered mips flat = the disc-bug "gaps"); 0 = off (stock Wicked). Applies on
+		// the NEXT capture — follow with REFRESH_ENVPROBE to re-bake and see it.
+		float pfClamp = 2.0f;
+		if (arg) sscanf_s(arg, "%f", &pfClamp);
+		wiRenderer::SetEnvProbeFilterHDRClamp(pfClamp);
+		_snprintf(result, resultSize, "OK: SET_PROBEFILTER hdrclamp=%.2f %s — REFRESH_ENVPROBE to re-bake",
+			pfClamp, (pfClamp > 0.0f) ? "(band-flood clamp ON)" : "(clamp OFF, stock filter)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_ENVDIR") == 0)
 	{
 		// SET_ENVDIR <0-4> [x y z] — (2.82, #157, Lee-directed) DIRECTION-PEEL rungs: remove
@@ -3640,6 +3654,9 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		//   3 = + CAMERA off — sample the geometric normal itself, no reflect
 		//   4 = FIXED direction [x y z] (default 0 0 1) at EVERY read site — no direction left;
 		//       the whole env term becomes one texel: expect a flat single-colour wash.
+		//   5 = ★ CARDINAL LOCK (2.83, Lee's test): snap the stock direction to its dominant
+		//       axis — every read hits a face CENTRE dead-on. If the discs survive this, the
+		//       differentiator cannot be direction in any form; only the MIP choice remains.
 		// Composes with SET_ENVSOLID (wipe/mip/solid operate on the peeled direction).
 		float edMode = 0.0f, edX = 0.0f, edY = 0.0f, edZ = 1.0f;
 		if (arg) sscanf_s(arg, "%f %f %f %f", &edMode, &edX, &edY, &edZ);
@@ -3647,6 +3664,7 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		GGSetEnvDir(edMode, edX, edY, edZ);
 		_snprintf(result, resultSize, "OK: SET_ENVDIR %.0f dir=(%.2f,%.2f,%.2f) — %s",
 			edMode, edX, edY, edZ,
+			(edMode >= 5.0f) ? "CARDINAL LOCK: direction snapped to dominant axis, face-centre reads only (2.83)" :
 			(edMode >= 4.0f) ? "FIXED direction at every read site (no direction left)" :
 			(edMode >= 3.0f) ? "+ camera OFF: sampling the geometric normal, no reflect" :
 			(edMode >= 2.0f) ? "+ normal map OFF: reflecting off the geometric normal" :
