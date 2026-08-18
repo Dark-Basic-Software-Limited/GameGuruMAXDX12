@@ -2980,3 +2980,22 @@ the flawless mirror. The matte was added when the ball itself was the suspect; t
 died tonight. ⚠ ALSO unexplained (parked): live SET_ENVSOLID modes ≥3 rendered as the
 mode-2 split during the 02:39 test (mode 4 forced-mip printed OK but painted split
 magenta 191/0/155) — the ini path works; the live-path w value needs one clean look.
+
+## §2.84b — ⚠ OPEN INSTRUMENT BUG: SET_ENVSOLID modes 3/4 render as mode 2 (pixel-proven)
+04:03 forensics, one fresh session (2.84 build, objectPS.cso 03:45 > lightingHF 03:05):
+mode 5 → wipe fires (ball black in +X zone) ✓ · mode 2 → split magenta ✓ · mode 1 → flat×F ✓
+· **mode 3 → BIT-IDENTICAL to mode 2** (ball 191/0/155 both) ✗; mode 4 did the same at 02:39.
+Reproduces on BOTH routes (live harness AND setup.ini — the "ini path is reliable" claim from
+the 2.81 post-mortem is hereby RETRACTED) and across two builds. Decisive contradiction: in the
+current shader source NO read site emits magenta at w=3 (specular would paint mip colours,
+local blue, ambient green) — so the VALUE or the READ of gg_envsolid.w is corrupted between
+the C++ globals and the branch test, for the values 3 and 4 specifically while 1/2/5 pass.
+NEXT (fresh head): a readback rung that paints gg_envsolid.w itself as a colour ramp — one
+look names "value corrupted in transit" vs "branch test misbehaving". Until then modes 3/4
+are DEAD; do not use them as instruments.
+CONSEQUENCE: Lee's per-pixel roughness question (do the remaining soft discs on the matte
+ball come from a varying gloss/surface pattern?) is STILL OPEN — the mip-paint view never
+executed. Cheapest reliable probe: a rung painting surface.roughness as greyscale, bypassing
+gg_envsolid entirely.
+State handed back 04:07: envsolid=0 live+ini, envdir=0, envonly=0, globalprobeonly=1 (Lee's
+baseline). The 2.84 filter fixes stand verified regardless (mip0 mirror / mip1 blur / flood dead).
