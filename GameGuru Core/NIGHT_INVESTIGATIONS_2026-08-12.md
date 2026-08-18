@@ -3274,3 +3274,43 @@ name mismatch only, not a demo fault.)
 `setup.ini` had two orphaned comment lines left over from the reverted `envdir` key (referencing
 the scrapped SET_ENVDIR command). Removed; backup at `setup.ini.bak_2.89`. No probe debug keys
 are set in the ini — 2.89's defaults apply (`probeparallax` = 1 = fixed, `probeview` = 0 = off).
+
+### §2.89 acceptance gate — PARTIAL, and the one loose end
+An editor-phase gate over all 19 hub demos was started (load → settle → screenshot → 3 FPS
+samples → DUMP_VRAM each). It got 3/3 clean and then **stalled on Horseshoe Bend**, so the full
+19 is **still owed**:
+
+| demo | editor FPS |
+|---|---|
+| Aztec Game Kit Teaser | 61.8 / 61.5 / 61.5 |
+| Aztec Game Kit | 85.3 / 84.7 / 84.9 |
+| Bounty | 134.2 / 134.2 / 134.4 |
+| Horseshoe Bend | ⚠ stalled (see below) |
+
+Counting the look A/B, **five distinct demos** (those three + Island Showdown + Switch Escape)
+plus spotshadowtest loaded and rendered correctly on 2.89.
+
+⚠ **Horseshoe Bend, honestly stated**: it reached the editor and its SCREENSHOT succeeded — so
+rendering was alive and the level loaded — but the following `GET_PERF_DATA` never returned. MAX
+sat at a 5.8 GB working set and stopped answering the harness. I could not attribute this to the
+2.89 change from that evidence alone. Points against it being 2.89: rendering worked, the
+screenshot came back, and the stall was in the profiler command, not the draw path; Horseshoe
+Bend is also the historical problem child (§ the 07-31 "3.7 FPS" prep-loop saga and the navmesh
+cache work). Points that keep it open: it was not observed before this build **in this session**,
+and no pre-2.89 control was run on that demo. **A retest is the first thing to do** — and if it
+reproduces, the discriminator is already scripted: run `GET_PERF_DATA` with the fix OFF
+(`SET_PROBEPARALLAX 0`) at the same pose; the shader binary is identical between those two modes,
+so a stall in both exonerates 2.89 and a stall in only mode 1 convicts it.
+
+#### Horseshoe Bend: RESOLVED — not 2.89, and the real culprit named
+Retested on the same build. It loaded, screenshotted, and `GET_PERF_DATA` answered three times
+(**102.4 / 98.6 / 103.1 fps**), then twice more with the fix OFF (103.2 / 103.4) and stayed
+responsive to `GET_STATE` afterwards. **No stall, and FPS flat between modes there too.**
+
+The first stall was environmental, and I caused part of it. ⚠ **`TaskStop` kills the wrapper, not
+the script's process tree**: after I stopped the sweep, its shell survived and relaunched MAX 90
+seconds later. That second instance then held `GameGuruMAX.exe` and failed two consecutive builds
+with `LNK1104`, and it also means the "stall" I was mid-way through diagnosing had two MAX
+processes in the picture. Cleanup that actually works: `ps -W`, find the PGID, `kill -9` every
+member of the group, confirm zero survivors, then build. (Same family as the 08-10 leaked-runner
+rule — `pkill` is dead in Git Bash — but the TaskStop wrinkle is new and worth the memory entry.)
