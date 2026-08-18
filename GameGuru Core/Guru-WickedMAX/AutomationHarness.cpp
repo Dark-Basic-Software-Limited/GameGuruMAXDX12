@@ -3559,6 +3559,40 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_PROBEMARKERBRIGHTNESS") == 0)
+	{
+		// SET_PROBEMARKERBRIGHTNESS <f> — (2.90) drive the %probe marker's "Probe Brightness"
+		// panel slider from the harness, on EVERY probe marker in the level. This is the
+		// PER-PROBE knob (eleprof.light.fProbeBrightness -> g_envProbeList[].brightness ->
+		// EnvironmentProbeComponent::filterBrightness, baked into the cube during BRDF mip
+		// filtering) — NOT the global SET_ENVPROBE_BRIGHTNESS shader knob above. Setting it
+		// raises g_bLightProbeScaleChanged, which is exactly what the panel does, so the
+		// probe list rebuilds, SetBrightness self-dirties and the cube re-bakes.
+		float pmb = 1.0f;
+		if (arg == nullptr || sscanf_s(arg, "%f", &pmb) != 1)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_PROBEMARKERBRIGHTNESS needs <float> (panel range 0.01-10)");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		int pmbCount = 0;
+		for (int ee = 1; ee <= g.entityelementlist; ee++)
+		{
+			int pmbEnt = t.entityelement[ee].bankindex;
+			if (pmbEnt > 0 && pmbEnt < (int)t.entityprofile.size() && t.entityprofile[pmbEnt].ismarker == 2)
+			{
+				if (t.entityelement[ee].eleprof.light.fLightHasProbe >= 50.0f)
+				{
+					t.entityelement[ee].eleprof.light.fProbeBrightness = pmb;
+					pmbCount++;
+				}
+			}
+		}
+		g_bLightProbeScaleChanged = true;
+		_snprintf(result, resultSize, "OK: SET_PROBEMARKERBRIGHTNESS %.3f applied to %d probe marker(s); probe list will rebuild and re-bake (1.0 = stock)", pmb, pmbCount);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_PROBE_TEST") == 0)
 	{
 		// SET_PROBE_TEST <x> <y> <z> [range=383] [sx sy sz=100] — (2.75b, #155 round 3) drive

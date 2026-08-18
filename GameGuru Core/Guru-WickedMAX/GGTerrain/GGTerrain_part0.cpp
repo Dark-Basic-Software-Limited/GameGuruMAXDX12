@@ -9496,8 +9496,14 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 							g_bEnvProbeTrackingUpdate[iRealProbeIndex] = false;
 						//}
 
-						// TODO: DX12 - SetBrightness removed from EnvironmentProbeComponent
-						//probe->SetBrightness(g_envProbeList[p].brightness);
+						// GGMAX 2.90: the marker's "Probe Brightness" slider, restored. The DX12
+						// port had dropped EnvironmentProbeComponent::SetBrightness, so this
+						// value travelled all the way from the panel into g_envProbeList and
+						// then died here — the slider moved and nothing happened. The engine
+						// side is back (filterBrightness baked during BRDF mip filtering, as
+						// DX11 did) and SetBrightness self-dirties on change, so moving the
+						// slider forces exactly one re-bake of this probe's cube.
+						probe->SetBrightness(g_envProbeList[p].brightness);
 
 						// update probe with correct scaling
 						pTransform->ClearTransform();
@@ -9766,7 +9772,12 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 		// TODO: DX12 - userdata removed from EnvironmentProbeComponent
 		//probe->userdata = 255;
 		float GetEnvProbeBrightness(void);
-		// TODO: DX12 - SetBrightness removed from EnvironmentProbeComponent
+		// GGMAX 2.90: SetBrightness is back (see the local-probe site above), but the GLOBAL
+		// probe deliberately stays on the 1.55 shader knob instead. The Visuals panel's
+		// "Env Probe Brightness" already drives wi::scene::gg_envprobe_brightness, which
+		// multiplies inside EnvironmentReflection_Global — baking it here TOO would apply
+		// the same slider twice (squared). One owner per knob; the shader-side one also
+		// responds live with no cube re-bake.
 		//probe->SetBrightness(GetEnvProbeBrightness());
 		probe->SetDirty();
 		

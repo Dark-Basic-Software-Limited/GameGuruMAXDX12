@@ -439,21 +439,16 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		//#########################################
 		if (bIsLightProbe == true)
 		{
-			// control base range which is then later scaled XYZ
-			ImGui::TextCenter("Probe Range");
-			ImGui::PushItemWidth(-10);
-			int iLightProbeRange = (int)edit_grideleprof->light.fLightHasProbe;
-			if (ImGui::MaxSliderInputInt("##fLightProbeScaleSimpleInput", &iLightProbeRange, 50, 500, "Specify the internal range of the environment probe, defaults to 50"))
-			{
-				edit_grideleprof->light.fLightHasProbe = iLightProbeRange;
-				g_bLightProbeScaleChanged = true;
-				bLightChanged = true;
-			}
-			ImGui::PopItemWidth();
-
+			// GGMAX 2.90: the "Probe Range" slider is GONE. fLightHasProbe was never a range:
+			// GGTerrain writes it to probe->range, but Scene::RunProbeUpdateSystem recomputes
+			// probe.range from the transform scale every Scene::Update, so the value was
+			// overwritten before anything read it (DX11's engine had the identical line — the
+			// slider was inert there too). The probe volume comes solely from Size X/Y/Z below.
+			// The value survives as what its name always said: the "has a probe" FLAG, tested
+			// as >= 50 in a dozen places. See PROBE_PROPERTIES_2026-08-18.md.
 			ImGui::TextCenter("Probe Size X");
 			ImGui::PushItemWidth(-10);
-			iLightProbeRange = (int)edit_grideleprof->light.fLightHasProbeX;
+			int iLightProbeRange = (int)edit_grideleprof->light.fLightHasProbeX;
 			if (ImGui::MaxSliderInputInt("##fLightProbeScaleXSimpleInput", &iLightProbeRange, 50, 500, "Specify the X dimension of the environment probe"))
 			{
 				edit_grideleprof->light.fLightHasProbeX = iLightProbeRange;

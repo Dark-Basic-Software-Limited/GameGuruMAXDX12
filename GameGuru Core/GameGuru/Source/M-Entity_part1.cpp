@@ -1160,7 +1160,10 @@
 					cmpStrConst( t_field_s, "lightprobescale" );
 					if (matched)
 					{
-						t.entityprofile[t.entid].light.fLightHasProbe = t.value1;
+						// GGMAX 2.90: X/Y/Z keep the .fpe value — they ARE the probe volume.
+						// fLightHasProbe is only the "is a probe" flag (tested >= 50), so it is
+						// canonicalised to 50 rather than mirroring an arbitrary scale.
+						t.entityprofile[t.entid].light.fLightHasProbe = (t.value1 >= 50.0f) ? 50.0f : t.value1;
 						t.entityprofile[t.entid].light.fLightHasProbeX = t.value1;
 						t.entityprofile[t.entid].light.fLightHasProbeY = t.value1;
 						t.entityprofile[t.entid].light.fLightHasProbeZ = t.value1;

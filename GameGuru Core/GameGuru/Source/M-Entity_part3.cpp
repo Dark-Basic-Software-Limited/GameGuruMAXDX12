@@ -459,6 +459,15 @@ void c_entity_loadelementsdata ( void )
 					if (t.versionnumberload >= 315)
 					{
 						t.a = c_ReadLong(1); t.entityelement[t.e].eleprof.light.fLightHasProbe = t.a;
+						// GGMAX 2.90: fLightHasProbe is a FLAG, not a range — every consumer
+						// tests it as >= 50, and the old "Probe Range" slider that wrote 50..500
+						// here could never do anything (Scene::RunProbeUpdateSystem overwrites
+						// probe.range from the transform scale each update). Levels made before
+						// 2.90 carry arbitrary values in that band, so canonicalise them to 50
+						// on load: identical behaviour, one meaning. Values < 50 mean "not a
+						// probe" and are left exactly as they are.
+						if (t.entityelement[t.e].eleprof.light.fLightHasProbe >= 50.0f)
+							t.entityelement[t.e].eleprof.light.fLightHasProbe = 50.0f;
 					}
 					if (t.versionnumberload >= 316)
 					{

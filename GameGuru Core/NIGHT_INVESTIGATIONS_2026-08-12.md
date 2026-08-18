@@ -3403,3 +3403,83 @@ ceiling — mode 3 only bypasses the block for boxes ABOVE it.
   IBL defect, just not this bug) and `d5ce3478` (plain 2×2 mips lever).
 - Capture-position policy: the global probe still bakes at the map origin. `SET_GLOBALPROBEBOX`
   and the DX11 intent (ground + 30 m, still commented in GGTerrain_part0) are the starting points.
+
+---
+
+## §2.90 — Env probe marker properties: Probe Brightness restored, Probe Range removed (2026-08-18)
+
+Lee, after the 2.89 milestone: *"probe range and probe brightness in the properties of the env
+probe do not seem to do anything. Size XYZ works fine as I can see half the fish using the local
+rather than the global env map, but I suspect the other 2 properties do nothing (or nothing
+useful). No code changes just a report thanks."* Then, on reading the report: *"Fix the brightness
+one, restore the DX11 filterBrightness and remove the probe range from the UI. For the probe range
+value internally, you are free to replace any level-set value with one that works better for our
+new DX12 engine."*
+
+Full audit: **`PROBE_PROPERTIES_2026-08-18.md`** (that file is THE authority). Summary:
+
+### Probe Brightness — a DX12 port regression, one line from working
+The value plumbs perfectly from the panel into `g_envProbeList[].brightness` and then dies at
+`GGTerrain_part0.cpp:9500`, a commented-out `//probe->SetBrightness(...)`. Written in one place,
+read in one place, and that one place was commented out. It was commented out because the DX12
+Wicked engine **deleted the feature** — DX11 had `filterBrightness` + `SetBrightness`
+(`WickedRepo` `wiScene.h:1031,1034`), the CB field (`wiRenderer.cpp:9092`) and the shader multiply
+(`filterEnvMapCS.hlsl:43`); DX12 had none of them.
+
+Restored as DX11 designed it — **baked into the cube** during BRDF mip filtering, so zero
+per-pixel cost. `filterBrightness` took the **free padding slot** in `FilterEnvmapPushConstants`,
+so the struct's size and layout are unchanged.
+
+Two deliberate departures from a literal copy:
+- `SetBrightness` **self-dirties, but only on change**. A baked quantity needs a re-capture, and
+  the caller runs on every probe-tracking update — an unconditional `SetDirty()` would re-bake
+  forever. One re-bake per slider move. (`SetDirty()`→`DeleteResource()` is a no-op for GG's
+  runtime-baked probes — it only clears asset-sourced ones — so there is no black-cube flash.)
+- `filterBrightness` is **not serialized**, sitting with `position`/`range`. The source of truth
+  is the .ele's `fProbeBrightness`, and GGTerrain re-pushes it every tracking update.
+
+⚠ **Known gap, inherited from DX11: mip 0.** The filter loop is `i > 0` — mip 0 is a straight
+`CopyResource` of the unfiltered render, so mirror-sharp (roughness ≈ 0) surfaces ignore the
+slider and a roughness-0.1 chrome prop gets a partial effect. Closing it needs a scale pass over
+`envrenderingColorBuffer` mip 0 before `GenerateMipChain`; deliberately not done here.
+
+⚠ **The GLOBAL probe deliberately stays on the 1.55 shader knob.** The Visuals panel's "Env Probe
+Brightness" already drives `gg_envprobe_brightness` inside `EnvironmentReflection_Global`; baking
+it here too would apply the same slider **twice (squared)**. One owner per knob.
+
+### Probe Range — never did anything, in DX11 either
+GG writes `probe->range`, but `Scene::RunProbeUpdateSystem` (`wiScene.cpp:5734`) recomputes
+`probe.range = max(scale.x,y,z) * 2` from the transform on **every** `Scene::Update` — the write is
+clobbered before anything reads it. **The DX11 engine has the identical line**
+(`WickedRepo/wiScene.cpp:4190`), so this was never a port regression; the slider was inert there
+too. The probe volume comes solely from Size X/Y/Z (`pTransform->Scale`), which is exactly why
+Lee's fish responded to XYZ and not to Range. No shader reads a probe's range at all — the only
+GPU consumer is the tile-cull sphere, already derived from the scale.
+
+What the value really is: a **flag, not a magnitude**. `fLightHasProbe` is literally "has probe",
+tested `>= 50` in a dozen places (admit-to-list, `bIsLightProbe`, probe-vs-light branching). The
+slider's own minimum was 50, so every reachable value 50–500 behaved identically.
+
+Shipped: the slider is **removed** from the panel, and the value is **canonicalised to 50 on
+load** (Lee-authorised) at both entry points — `.ele` (`M-Entity_part3.cpp:461`) and `.fpe`
+`lightprobescale` (`M-Entity_part1.cpp:1163`, where **X/Y/Z keep the authored value** because they
+are the real volume). Below 50 means "not a probe" and is untouched.
+
+⚠ If Range is ever revived by multiplying it into the OBB scale: 500 × 500 = half-extent 250,000,
+well past 2.89's 37,820 fp16 parallax ceiling — `probeparallax=3` would silently drop parallax on
+that probe — and it would change every existing level's probe volumes.
+
+### Harness
+`SET_PROBEMARKERBRIGHTNESS <f>` — drives the per-probe slider on every probe marker and raises
+`g_bLightProbeScaleChanged` exactly as the panel does. Distinct from `SET_ENVPROBE_BRIGHTNESS`
+(global, shader-side, no re-bake).
+
+### Durable lesson
+**A knob can be dead in two entirely different ways, and the difference decides the fix.**
+Brightness was a *severed* chain — every stage worked, one line was commented out, so restoring
+the missing engine feature made it work. Range was a *clobbered* value — the write happened, the
+engine simply overwrote it every frame from another source, in BOTH renderers. Grepping for "is
+the value used?" would have called both "used". The question that separated them was **"who writes
+this last, and who derives it from what?"** Range was a derived attribute all along; treating it
+as an input was the original mistake, and the UI had been promising a behaviour no code
+implemented since the DX11 days.
