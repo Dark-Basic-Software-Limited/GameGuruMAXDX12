@@ -1,3 +1,59 @@
+# 2026-08-19 SWEEP (0819) — 2.91 REGRESSION GATE — engine `ace9088a` / game `1d766a63`
+
+Purpose: Lee-requested confirmation that the 2.91 GPU-accounting work broke nothing.
+
+VERDICT: **CLEAN. 19/19 in BOTH passes, zero failures, POLYS bit-identical on all 19 across
+both passes AND against 2.90, 4 GB gate holds (worst editor VRAM 3588 MB). 2.91 is +2.4%
+hub-wide vs yesterday — recovery, not a gain.**
+
+## Method change: TWO passes, so the noise floor is MEASURED not assumed
+
+Yesterday's 0818b table read as a −13.4% rout against a cross-day baseline and was pure
+machine drift. Rather than repeat that, this gate runs **two identical passes back to back on
+the same build**. Pass A vs Pass B is therefore a direct measurement of today's run-to-run
+noise, against which the 2.91-vs-2.90 delta can be judged.
+
+★ **The result is a genuinely useful calibration: |A−B| median 0.8%, mean 0.9%, worst 4.1%.**
+That is an order of magnitude tighter than the "±8% between launches" figure this project has
+been carrying. The ±8 band is the CROSS-DAY band; back-to-back same-session runs are far more
+precise than that. Future A/Bs can trust a ~1% resolution if they are run in one session — and
+must NOT trust anything under ~10% across days.
+
+Also note 2.91 is **zero-cost by construction** in this gate: `BeginRangeGPU` early-returns on
+`!ENABLED`, the profiler defaults off and the sweep never enables it, so the new ranges and the
+Busy/Idle union are dead code here. The game-side snapshot move is gated on `IsEnabled()` too.
+The +2.4% is therefore ambient — and specifically it is RECOVERY: the three biggest gainers
+(Aztec Game Kit +7.0%, Zombie Cellar +6.9%, Trapped +5.9%) are the same cells 0818b flagged as
+band-edge drops. They dropped most yesterday and gained most today, which is the drift
+signature, not a code effect.
+
+| Demo | 2.90 (08-18) | 2.91 A | 2.91 B | A vs B | mean vs 2.90 | VRAM MB | POLYS |
+|---|---|---|---|---|---|---|---|
+| Aztec Game Kit Teaser | 61.7 | 61.7 | 64.2 | +4.1% | +2.0% | 2999 | ✓ |
+| Aztec Game Kit | 86.1 | 92.7 | 91.6 | -1.2% | +7.0% | 3588 | ✓ |
+| Bounty | 101.9 | 102.9 | 103.0 | +0.1% | +1.0% | 2514 | ✓ |
+| Horseshoe Bend | 101.8 | 104.0 | 103.1 | -0.9% | +1.7% | 2981 | ✓ |
+| Island Showdown | 68.4 | 68.7 | 69.0 | +0.4% | +0.7% | 2664 | ✓ |
+| Operation Amazon | 76.5 | 77.2 | 77.7 | +0.6% | +1.2% | 3341 | ✓ |
+| River Raiders | 111.7 | 109.5 | 109.9 | +0.4% | -1.8% | 3230 | ✓ |
+| Snowy Mountain Stroll | 131.9 | 136.1 | 133.7 | -1.8% | +2.3% | 2724 | ✓ |
+| A Grand Canyon Adventure | 93.2 | 95.7 | 96.7 | +1.0% | +3.2% | 2760 | ✓ |
+| Disruption | 79.1 | 79.9 | 80.7 | +1.0% | +1.5% | 2840 | ✓ |
+| Foggy Forest | 59.9 | 60.0 | 59.9 | -0.2% | +0.1% | 2860 | ✓ |
+| Indian Strike Force | 89.7 | 89.9 | 90.0 | +0.1% | +0.3% | 2975 | ✓ |
+| Switch Escape | 139.1 | 142.4 | 141.4 | -0.7% | +2.0% | 2292 | ✓ |
+| Canyon Offensive | 68.2 | 69.1 | 68.4 | -1.0% | +0.8% | 3274 | ✓ |
+| Escape from the Zombie Cellar | 129.8 | 140.0 | 137.5 | -1.8% | +6.9% | 2281 | ✓ |
+| Jungle Fever | 110.0 | 113.9 | 113.7 | -0.2% | +3.5% | 2857 | ✓ |
+| RPG Template | 94.3 | 94.6 | 95.4 | +0.8% | +0.7% | 3049 | ✓ |
+| The Mystery of Z Island | 97.9 | 99.2 | 100.1 | +0.9% | +1.8% | 3260 | ✓ |
+| Trapped | 144.3 | 153.3 | 152.4 | -0.6% | +5.9% | 2346 | ✓ |
+
+**Measured noise floor (same build, back-to-back): |A−B| median 0.8%, mean 0.9%, worst 4.1%.**
+2.91 (mean of A,B) vs 2.90 hub-wide: **+2.4%**. POLYS bit-identical 19/19. Worst editor VRAM 3588 MB — 4 GB gate **HOLDS**.
+Raw: `scratchpad/gate291_A`, `scratchpad/gate291_B`. Editor phase only, same shape as 0818b
+(load → settle 30 s → screenshot → 3 FPS samples → VRAM), which is what makes A/B comparable.
+
 # 2026-08-18 SWEEP (0818b) — 2.90 ACCEPTANCE — engine `bde205ad` / game `26482fe6`
 
 Purpose: Lee-requested full-hub confirmation ahead of the first tester alpha, covering the

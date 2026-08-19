@@ -3567,3 +3567,23 @@ exist before the UI that draws it. That residual is a consistency check, not a d
 former.** Before treating any total as the sum of its breakdown, find the arithmetic that
 produces it. And when summing a breakdown by hand, check for NESTING first — I made exactly the
 double-count error that the new union counter now makes impossible.
+
+### §2.91a — 0819 regression gate: CLEAN, and the noise floor finally measured
+Two identical passes back to back on 2.91 (engine `ace9088a` / game `1d766a63`).
+**19/19 both passes, zero failures, POLYS bit-identical on all 19 across A, B and 2.90,
+worst editor VRAM 3588 MB (4 GB gate holds).** Table in `DEMO_FPS_SWEEP.md` §0819.
+
+★★ **The two-pass design produced a calibration worth keeping: |A−B| median 0.8%, mean 0.9%,
+worst 4.1%.** The project has been carrying "editor FPS ±8 between launches" as the drift band
+and using it to wave away differences. That number is the CROSS-DAY band. Back-to-back
+same-session runs resolve to about **1%** — ten times finer. Practical consequence: an
+in-session A/B can trust a ~2% effect, while a cross-day comparison cannot be trusted below
+~10%. Both halves of that matter; the first was being thrown away, the second is what burned
+me on 0818b.
+
+2.91 vs 2.90 = **+2.4% hub-wide**, i.e. faster. That is NOT a 2.91 effect — 2.91 is zero-cost
+in this gate by construction (`BeginRangeGPU` early-returns on `!ENABLED`, the profiler
+defaults off, the sweep never enables it, and the game-side snapshot move is gated on
+`IsEnabled()`). It is ambient recovery, and the fingerprint proves it: the three biggest
+gainers (Aztec Game Kit +7.0%, Zombie Cellar +6.9%, Trapped +5.9%) are exactly the cells 0818b
+flagged as band-edge DROPS. Same demos, opposite direction, one day apart.
