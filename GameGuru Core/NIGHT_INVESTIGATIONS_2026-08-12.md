@@ -3587,3 +3587,30 @@ defaults off, the sweep never enables it, and the game-side snapshot move is gat
 `IsEnabled()`). It is ambient recovery, and the fingerprint proves it: the three biggest
 gainers (Aztec Game Kit +7.0%, Zombie Cellar +6.9%, Trapped +5.9%) are exactly the cells 0818b
 flagged as band-edge DROPS. Same demos, opposite direction, one day apart.
+
+### §2.92 — the last unranged passes, and the negative result that matters
+Lee: *"add the remaining ranges for the 2D layer and Compose."* Done — `RenderPath2D::Render`,
+`RenderPath2D::Compose`, `RenderPath3D::Compose`. `wiRenderPath2D.cpp` had **zero** profiler
+instrumentation and needed the include adding. All three use scoped ranges rather than explicit
+Begin/End, because these are whole-function wraps with early-return paths and a scoped object
+closes on every exit.
+
+⚠ They **NEST**: `RenderPath3D::Compose` contains `RenderPath2D::Compose` (called at
+`wiRenderPath3D.cpp:2009`) and `Outline` (via customDraw_Compose). Those rows overlap and must
+never be summed — the Busy union handles it, which is exactly why Busy was built as a union.
+
+★ **The measurement refutes my own earlier hypothesis, and that is the useful part.**
+Live on Island Showdown: `RenderPath3D::Compose 0.03`, `RenderPath2D::Compose 0.01`,
+`RenderPath2D::Render 0.00` — **~0.04 ms combined, against a 6.5 ms Idle bucket.** Add the 2.91
+additions (`Postprocess_Tonemap 0.04`, `Transparent Tail 0.01`) and every pass I suspected of
+hiding real cost totals **under 0.1 ms**. I had told Lee my instinct was that unranged work was
+the larger share of the gap. It is not. The gap is overwhelmingly **genuine GPU idle plus
+driver work at RenderPassBegin/End** (CLEAR / STORE / MSAA resolve / barrier drains), neither of
+which any profiler range can ever capture.
+
+Practical consequence: further range-hunting is now a poor use of time. If the ~6.5 ms is ever
+worth attacking it is a *scheduling/pacing* problem (backbuffer acquire with BUFFERCOUNT=2,
+submit pacing), not a missing-instrumentation problem — and a PIX capture is the right next
+instrument, not more ranges.
+
+Panel now (Island Showdown, profiler on): `GPU Frame 15.15 = Busy 8.61 + Idle 6.54`.
