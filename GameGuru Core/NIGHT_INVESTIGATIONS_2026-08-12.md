@@ -3640,3 +3640,38 @@ project's most volatile cell — it was the single biggest GAINER (+7.0%) in the
 ★ **The decisive test was NOT run and should be if this ever matters: revert 2.92, rebuild,
 re-measure Aztec Game Kit in the same session.** Nothing short of a same-build A/B settles a
 5% claim on a demo whose own spread is 5.4%. Flagged rather than closed.
+
+### §2.92b — the Aztec cell: CLOSED by a revert A/B. 2.92 costs exactly nothing.
+Lee asked for the decisive test. Ran it properly: built the pre-2.92 binary (revert
+`74c8f21b` on the two .cpp files — 2.92 touches **no shaders**, so the exe is the only
+differing artifact and an exe-swap A/B is valid), then measured **INTERLEAVED**
+291/292/291/292… four rounds, fresh launch each time, so both builds ride the same thermal
+ramp. Interleaving is the whole point — the prior suspicion was drift, and a
+run-all-A-then-all-B design would have re-created exactly the confound it was meant to test.
+
+| round | 2.91 (reverted) | 2.92 (shipped) | paired Δ |
+|---|---|---|---|
+| 1 | 85.9 | 85.7 | −0.2 |
+| 2 | 86.0 | 85.6 | −0.4 |
+| 3 | 84.3 | 85.6 | +1.3 |
+| 4 | 84.8 | 84.1 | −0.7 |
+| **mean** | **85.25** | **85.25** | **+0.00%** |
+
+**2.92 costs 0.00% — the means match to two decimal places, and the paired deltas alternate
+sign.** Within-build spread was 2.0% (2.91) and 1.9% (2.92), so the ±1.3 excursions are noise.
+
+★★ **The decisive detail is what the REVERTED build did.** 2.91 measured 92.7 / 91.6 at 18:0x
+and 85.9 / 86.0 / 84.3 / 84.8 at 22:2x — the *same binary*, ~7% slower four hours later. The
+−8.2% attributed to 2.92 in the 2.92a gate is present in the build that PREDATES the change.
+It is the machine, conclusively, and no amount of reasoning about `!ENABLED` early-returns
+would have proven that — only the revert did.
+
+Machine left in the shipped state: 2.92 exe installed (byte-verified against the saved copy),
+both repos clean, source never left reverted (restored immediately after the 2.91 build).
+
+### The durable lesson
+**When a single cell exceeds the noise floor, the only closing move is a same-session A/B of
+the two BUILDS — and it must be interleaved.** Mechanistic arguments ("this code can't cost
+time") are a reason to *run* the test, never a substitute for it. And keep a baseline reading
+of the reverted build in the same session: here it was the reverted build's own 7% drop that
+settled the question, not the A-vs-B delta.
