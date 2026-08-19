@@ -3614,3 +3614,29 @@ submit pacing), not a missing-instrumentation problem — and a PIX capture is t
 instrument, not more ranges.
 
 Panel now (Island Showdown, profiler on): `GPU Frame 15.15 = Busy 8.61 + Idle 6.54`.
+
+### §2.92a — 2.92 gate: all hard gates PASS, one cell UNRESOLVED (Aztec Game Kit)
+Single-pass 19-demo gate on 2.92 (engine `74c8f21b`): **19/19 loaded, zero failures, POLYS
+bit-identical on all 19, worst editor VRAM 3586 MB — 4 GB gate holds.** Hub-wide −1.5% vs the
+2.91 A/B mean, median |Δ| 1.0% — at the noise floor measured yesterday (median 0.8%).
+
+⚠ **NOT waved away: Aztec Game Kit read −8.2%, above yesterday's 4.1% worst-case floor.**
+Per the new rule (in-session, trust ~2%), that needed testing rather than an argument, so the
+demo was re-run three times on 2.92:
+
+| | median FPS |
+|---|---|
+| 2.91 A / B | 92.7 / 91.6 — spread **1.2%** |
+| 2.92 gate + 3 repeats | 84.6 / 89.2 / 88.2 / 86.5 — spread **5.4%** |
+
+Mean 92.2 → 87.1 = **−5.5%**. Status: **unresolved, but a real regression is mechanistically
+implausible.** Against it: 2.92 is zero-cost with the profiler off (`ScopedGPUProfiling` →
+`BeginRangeGPU` → `if (!ENABLED || !initialized) return 0;`), the only other change being an
+`#include`; this demo's own within-build spread (5.4%) already exceeds the hub floor; and the
+three repeats decline monotonically (89.2 → 88.2 → 86.5) over ~20 min of continuous running,
+which is the thermal signature, not a code signature. Also note Aztec Game Kit is the
+project's most volatile cell — it was the single biggest GAINER (+7.0%) in the 0819 gate.
+
+★ **The decisive test was NOT run and should be if this ever matters: revert 2.92, rebuild,
+re-measure Aztec Game Kit in the same session.** Nothing short of a same-build A/B settles a
+5% claim on a demo whose own spread is 5.4%. Flagged rather than closed.
