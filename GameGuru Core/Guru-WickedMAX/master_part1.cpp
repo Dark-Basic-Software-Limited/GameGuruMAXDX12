@@ -938,12 +938,21 @@ void MasterRenderer::Compose(CommandList cmd) const
 	// Profiler timing data is still collected normally; use GetTextData() to read it safely.
 	wi::profiler::DisableDrawForThisFrame();
 
-	// Cache profiler text during Compose when all GPU ranges are active.
-	// GetTextData() called during Update would miss GPU sub-ranges.
+	__super::Compose(cmd);
+
+	// GGMAX 2.91: snapshot the profiler text AFTER Compose, not before.
+	// The intent below was always "read it when all GPU ranges are active" — but sitting one
+	// line EARLIER defeated exactly that. GetTextData() skips any range whose in_use is false
+	// (wiProfiler.cpp), and BeginFrame clears in_use every frame, so a range OPENED DURING
+	// Compose was never in_use at read time and could never appear in the panel — permanently
+	// hiding "Outline" (customDraw_Compose -> Wicked_Render_Opaque_Scene), "Terrain - Debug"
+	// and "Terrain - Overlay", all three correctly instrumented the whole time.
+	// ⚠ Anything opened AFTER this point (e.g. the ImGui bridge below) still cannot show a
+	// named row — the text has to exist before the UI that displays it is built. Those costs
+	// are not lost though: the Busy/Idle union in wiProfiler::BeginFrame reads resolved query
+	// results, not the snapshot, so they are still counted in "GPU Busy".
 	if (wi::profiler::IsEnabled())
 		g_cachedProfilerText = wi::profiler::GetTextData();
-
-	__super::Compose(cmd);
 
 	// DX12: Render splash screen AFTER normal compose (drawn on top with opaque blend).
 	// Moved from Master::Update where it created a separate render pass that was
@@ -995,8 +1004,19 @@ void MasterRenderer::Compose(CommandList cmd) const
 				ID3D12GraphicsCommandList* nativeCmdList = dx12Device->GetDX12GraphicsCommandList(cmd);
 				if (nativeCmdList)
 				{
+					// GGMAX 2.91: the whole editor UI draws here and had NO profiler range and
+					// not even a PIX marker — in a docked-panel editor session that is real,
+					// invisible GPU cost. wi::gui's own "GUI Render" range never fires because
+					// GG does not use wi::gui (zero call sites), so nothing covered this.
+					// ⚠ This range CANNOT show a named row: the panel text is snapshotted just
+					// after Compose (above) and must exist before the UI that displays it is
+					// built, so anything opened here is always past the snapshot. It is still
+					// counted in "GPU Busy" — that union is computed in wiProfiler::BeginFrame
+					// from resolved query results, which do not care about snapshot order.
+					auto range_imgui = wi::profiler::BeginRangeGPU("Editor UI (ImGui)", cmd);
 					extern void ImGui_DX12_RenderBridge(ID3D12GraphicsCommandList* cmdList);
 					ImGui_DX12_RenderBridge(nativeCmdList);
+					wi::profiler::EndRange(range_imgui);
 				}
 			}
 		}

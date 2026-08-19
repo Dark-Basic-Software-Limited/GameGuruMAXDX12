@@ -3514,3 +3514,56 @@ has no reflection probe. Quietly absent feature, not a visible dead button.
 ⚠ Instrument that FAILED, recorded so it is not repeated: a scan for `t.visuals.*` fields
 with no consumer reported 178 "orphans". All false — the regex matched the ini KEY STRINGS
 (`"visuals.Gamma"`) inside the parser, not C++ member accesses. Discarded, not reported.
+
+## §2.91 — "the GPU items don't add up": GPU Frame is a SPAN, not a sum (2026-08-19)
+
+Lee: *"the individual items of the GPU performance breakdown does not add up to the millisecond
+total time being taken by the GPU... I would always like to know where my GPU costs are going."*
+
+**They never could add up.** `GPU Frame` is an ordinary range whose begin query rides the frame's
+FIRST command list (`wiProfiler.cpp:326`, cmd from `BeginCommandList` at :388) and whose end query
+is written manually onto the LAST (`:336`, the in-code comment says exactly why). The only
+arithmetic is `range.time = (end - begin) / gpu_frequency` — there is no summation of children
+anywhere. So the header is a **wall-clock span** and structurally contains three things no child
+can: unranged passes, driver work at RenderPassBegin/End (CLEAR / STORE / MSAA resolve / barrier
+drains), and intervals where the GPU had nothing to run. On Lee's screenshot it matched the frame
+period to 0.014 ms (11.150 vs 1000/89.8 = 11.136) — it was reporting frame duration, not workload.
+
+### ⚠ Two things I got wrong first, both corrected by the parallel audit
+1. **I summed the rows and got 5.65 ms. Wrong — `Occlusion Culling` CONTAINS
+   `Occlusion Culling Render`** (`wiRenderPath3D.cpp:1050` scope wraps the call at :1074). One
+   pass counted twice. Correct children ≈ 5.24, gap ≈ 5.91.
+2. **I blamed cross-queue fence bubbles. Wrong** — `gg_single_queue = true`
+   (`wiGraphicsDevice_DX12.cpp:479`) routes COMPUTE/COPY onto graphics and elides same-queue
+   waits, so all 12 intra-frame wait sites collapse. That story is off by default here.
+
+### Shipped (2.91)
+- **`GPU Busy` / `GPU Idle + unranged`** lines. Busy is the **UNION** of child tick intervals,
+  deliberately not a sum — nesting would double-count, and a union is also right if async work
+  ever overlaps again. Idle = Frame − Busy, clamped at 0.
+- Ranges added for **`Postprocess_Tonemap`** (runs unconditionally, full-res ClearUAV + dispatch,
+  had a PIX marker but no range) and the **transparent tail** (everything between the Transparent
+  Scene range closing at `:2469` and `RenderPassEnd` — customDraw_Transparent/gpup, DrawDebugWorld,
+  DrawWireframeOverlay, DrawLightVisualizers, DrawSpritesAndFonts, DrawLensFlares; only
+  DrawSoftParticles was ever measured). ⚠ Explicit Begin/End, not `ScopedGPUProfiling` — the
+  enclosing scope runs well past the pass and a scoped object swallowed the postprocess chain.
+- **Editor UI (ImGui)** range in `master_part1.cpp`. GG never calls `wi::gui::Render` (zero call
+  sites) so the engine's own `GUI Render` range never fired; the whole editor UI was uninstrumented.
+- ★ **The one-line snapshot bug.** `g_cachedProfilerText = GetTextData()` sat immediately BEFORE
+  `__super::Compose(cmd)`, while the comment above it said the point was to read "when all GPU
+  ranges are active". `GetTextData` skips `!in_use` and `BeginFrame` clears `in_use` each frame,
+  so ranges OPENED DURING Compose were never in_use at read time and could never appear —
+  permanently hiding `Outline`, `Terrain - Debug`, `Terrain - Overlay`, all correctly instrumented.
+  Moved one line later.
+
+### Live receipt (Island Showdown, editor, profiler on)
+`GPU Frame 14.62 = Busy 8.47 + Idle 6.15`. Naive sum of the visible rows is 8.90; Busy is 0.43
+lower, which is the nested Occlusion Culling Render (0.54) correctly excluded, offset by ~0.11 of
+`Editor UI (ImGui)` — counted in Busy but with no displayed row, because the text snapshot must
+exist before the UI that draws it. That residual is a consistency check, not a direct measurement.
+
+### Durable lesson
+**A "total" and a "sum of parts" are different claims, and profiler headers are usually the
+former.** Before treating any total as the sum of its breakdown, find the arithmetic that
+produces it. And when summing a breakdown by hand, check for NESTING first — I made exactly the
+double-count error that the new union counter now makes impossible.
