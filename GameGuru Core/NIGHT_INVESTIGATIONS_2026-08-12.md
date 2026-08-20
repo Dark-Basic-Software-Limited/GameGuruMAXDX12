@@ -3675,3 +3675,50 @@ the two BUILDS — and it must be interleaved.** Mechanistic arguments ("this co
 time") are a reason to *run* the test, never a substitute for it. And keep a baseline reading
 of the reverted build in the same session: here it was the reverted build's own 7% drop that
 settled the question, not the A-vs-B delta.
+
+## §2.93 — Build-folder test-script audit: what is mine, what is stale (2026-08-20, Lee asked)
+
+Lee, reading `D:\DEV\BUILD\GameGuru Wicked MAX Build Area\Max`, asked whether scripts like
+`run_all_tests.sh` are needed for ongoing project testing. They are not, and the reason is
+worth recording so the question does not have to be re-answered.
+
+**Inventory of loose scripts in the build root**
+
+| File | Date | Verdict |
+|---|---|---|
+| `run_test.sh` | 2026-02-15 | stale |
+| `run_fps_test.sh` | 2026-02-16 | stale |
+| `run_remaining_tests.sh` | 2026-02-17 | stale |
+| `run_all_tests.sh` | 2026-02-17 | stale |
+| `perf_test.sh` | 2026-03-03 | stale |
+| `dxdiagsystemspecs.bat` | 2021-03-11, 33 bytes | ⚠ **PRODUCT FILE — do not delete** |
+
+**Why none of them are load-bearing**
+
+- All five predate this campaign by ~6 months. They drive the same `auto_command.txt` /
+  `auto_result.txt` harness protocol and iterate the same 19-demo list, so they are very
+  likely earlier-session artifacts — but nothing in the current workflow reads them.
+- **None are git-tracked** (the build directory is not a repo), so deleting them loses no
+  history and no revert path other than the file itself.
+- ★ **Every script this campaign runs is generated fresh into the session scratchpad**
+  (`%LOCALAPPDATA%\Temp\claude\...\scratchpad`) and never written to the build folder. That
+  is deliberate: the build folder is a build **output** and is what gets packaged for
+  testers — anything left there ships.
+
+**They are not dead code, though.** All six harness verbs they call (`NAVIGATE`, `CLICK_NODE`,
+`PRESS_ESCAPE`, `SELECT_DEMO`, `CLICK_ONLY_LEVEL`, `GET_PERF_DATA`) still exist, so
+`run_all_tests.sh` would probably still run. It also covers a phase the current sweeps do not:
+it enters **test-game mode** (`CLICK test_level`) and samples in-game FPS, where the 19-demo
+gate is editor-phase only. Two reasons not to simply keep it where it is: it writes results to
+`/tmp/fps_results.txt` (a Git Bash temp path that evaporates), and it has **no lockfile** —
+exactly the shape that produced the leaked-runner corruption recorded earlier.
+
+**Disposition:** delete the five `.sh`, keep the `.bat`. If the in-game FPS phase is wanted
+back, the right home is `GameGuru Core/tools/` (versioned, lockfiled), not the packaged output
+directory. Not deleted yet — awaiting Lee's go, same protocol as the 328 MB debris clear
+(manifest first, non-recursive, verified after).
+
+### The durable rule
+★ **Never leave working files in the build output directory.** It is packaged, it is not
+version-controlled, and six months later nobody can tell a live test rig from an artefact
+without reading it. Scratchpad for throwaway, `tools/` for anything worth keeping.

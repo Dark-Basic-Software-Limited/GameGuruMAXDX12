@@ -96,6 +96,12 @@ be implemented or the calls removed so it stops looking like working code.
    is live from 2.90. Any level carrying a non-1.0 value will look different in the alpha
    than it did last week. Worth a pass over the shipped demos for probe markers with
    non-default brightness before testers see them.
+3. **Clear the loose test scripts out of the build root** (added 2026-08-20). Five `.sh`
+   files dated 2026-02-15 → 2026-03-03 (`run_test`, `run_fps_test`, `run_remaining_tests`,
+   `run_all_tests`, `perf_test`) sit next to the exe and would ship with the alpha. None are
+   git-tracked, none are used by the current workflow, and all predate this campaign by ~6
+   months. ⚠ `dxdiagsystemspecs.bat` (2021) in the same folder is a genuine product file —
+   keep it. Detail and disposition in notes §2.93.
 
 **Worth considering**
 
