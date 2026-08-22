@@ -5766,6 +5766,23 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		}
 	}
 
+	if (_stricmp(cmd, "SET_ENGINEGENGATE") == 0)
+	{
+		// GGMAX 2.94f: 1 = the terrain idle gate also suppresses the ENGINE's Generation_Update
+		// (wiScene.cpp), which was ungated before 2.94f and walked all 625 chunks every frame
+		// on a parked, settled scene while the bridge's own call skipped 7 frames in 8.
+		// 0 = pre-2.94f behaviour, for the A/B.
+		extern bool gg_engine_gen_gate;
+		gg_engine_gen_gate = (atoi(arg) != 0);
+		_snprintf(result, resultSize,
+			"OK: SET_ENGINEGENGATE %d - live gg_engine_gen_gate=%d (%s). The gate only bites once "
+			"the terrain has been calm >45 frames, and then 7 frames in 8.",
+			atoi(arg), gg_engine_gen_gate ? 1 : 0,
+			gg_engine_gen_gate ? "engine caller gated too (2.94f)" : "engine caller ungated (stock)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_TERRAINBAKE") == 0)
 	{
 		// GGMAX 2.94e: puts every terrain chunk into the exact runtime state Lee's proposed

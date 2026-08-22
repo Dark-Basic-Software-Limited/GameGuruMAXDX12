@@ -202,6 +202,12 @@ bool  gg_no_terrain = false;
 bool  gg_no_trees   = false;
 bool  gg_no_grass   = false;
 bool  gg_no_water   = false;
+
+// GGMAX 2.94f: master switch for extending the terrain idle gate to the ENGINE's own
+// Generation_Update caller (wiScene.cpp). Default ON. Harness SET_ENGINEGENGATE 0|1 exists so
+// the change can be A/B'd in one binary - 0 restores the pre-2.94f behaviour where the engine
+// caller ran every frame regardless of how calm the terrain was.
+bool  gg_engine_gen_gate = true;
 float gg_lowvram_grass_dist = 750.0f;
 // Uniform strand-count multiplier, 0..1 (setup.ini takes it as a percent). Applied in
 // GrassTierDensityScale — see the reasoning there for why this axis is safe and the mask axis is
@@ -2778,6 +2784,11 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// Note the CPU heightmap (GGTerrain_Init) is deliberately left alive - ~91 BT_GetGroundHeight
 	// call sites and the Bullet terrain shape read it. This switch removes the RENDERED terrain.
 	{
+		// GGMAX 2.94f fail-safe: every early return below happens BEFORE the idle gate is
+		// recomputed, so clear the engine-side skip first. Leaving it set from a previous
+		// frame would gate the engine's Generation_Update permanently and terrain would never
+		// generate again.
+		wi::terrain::gg_skip_generation_update = false;
 		static bool s_noTerrainApplied = false;
 		if (gg_no_terrain && !s_noTerrainApplied)
 		{
@@ -3342,6 +3353,12 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// ring would be wiped by the 2.54 entry restart moments later (measured: ~875 throwaway
 	// chunks per entry, each paying the full bake including the 8.2ms BVH).
 	const bool idleSkipGen = g_ggTerrainGenEntryPending || (g_terrainIdleGate && g_dbgIdleCalmFrames > 45 && (s_terrainFrame & 7) != 0);
+	// GGMAX 2.94f: publish the SAME predicate to the engine, which calls Generation_Update a
+	// second time on this frame from Scene::Update. This bridge runs BEFORE __super::Update
+	// (master_part1.cpp), so the value is fresh for that call. Until 2.94f the engine caller
+	// was ungated and walked all 625 chunks every frame on a parked, settled scene while this
+	// one skipped 7 frames in 8 - i.e. the gate was only ever half-applied.
+	wi::terrain::gg_skip_generation_update = idleSkipGen && gg_engine_gen_gate;
 
 	// Let the VT system run — generates chunks, creates atlas, blends materials.
 	// CORRECTNESS GATE (2026-07-18): during the initial build, do NOT generate
