@@ -3951,3 +3951,71 @@ None of this needs an off-switch. Cheapest first:
    neither. Every-Nth-frame should cut it near-proportionally.
 2. **Batch the three clear copies** into one copy from a single combined clear resource.
 3. Fewer resident VTs (ring size / mip bias) reduces it linearly.
+
+## §2.94d — VT tile-request round trip now runs every 4th frame (2026-08-22, Lee: "do option 1")
+
+`wi::terrain::gg_vt_writeback_interval` (default **4**), gated at the wiRenderPath3D.cpp call
+site so the command lists are not even opened on skipped frames. Harness `SET_VTWRITEBACK <n>`;
+1 restores stock every-frame behaviour for A/B.
+
+### ★ Allocate and Writeback MUST share the cadence — gating writeback alone is a BUG
+Lee asked for writeback every 4th frame. Implemented as the PAIR, and that is not scope creep,
+it is correctness: **`WritebackTileRequestsGPU` is what CLEARS feedbackMap, requestBuffer and
+allocationBuffer.** Skip only writeback and `AllocateVirtualTextureTileRequestsGPU` still runs
+its TILEREQUESTS CS every frame, re-deriving requests from an uncleared feedbackMap into an
+uncleared requestBuffer — duplicate requests feeding TILEALLOCATE, with free-tile exhaustion the
+plausible end state. It would also burn Allocate's 1.09 ms/frame producing an allocationBuffer
+that nothing reads 3 frames in 4.
+
+Gating the pair is coherent instead: feedback simply ACCUMULATES over the interval (the object
+shader `InterlockedOr`s into feedbackMap and nothing else touches it), then one allocate pass
+converts the accumulated set and one writeback exports and clears. Each decision sees MORE
+samples, not fewer. `CopyVirtualTexturePageStatusGPU` is deliberately NOT gated — opposite
+direction (CPU page table -> GPU), already incremental via `gg_vt_incremental`, and 0.02 ms.
+
+### MEASURED — interleaved 1/4/1/4/1/4, one binary, profiler on
+| | interval=1 (stock) | interval=4 | saving |
+|---|---|---|---|
+| **TESTPRO2** frame | 9.27 ms | 5.87 ms | **−3.41 ms (−36.7%)** |
+| **TESTPRO2** FPS | 106.1 | 166.4 | **+60.3** |
+| **Aztec teaser** frame | 15.58 ms | 12.30 ms | **−3.28 ms (−21.1%)** |
+| **Aztec teaser** FPS | 63.2 | 80.9 | **+17.7 (+28%)** |
+
+★ The rows corroborate the arithmetic exactly: at interval=1 Aztec reads
+`WritebackTileRequests` 3.34 + `AllocateTileRequests` 1.09 = 4.43 ms, and 3/4 of that is
+3.32 ms against a measured saving of 3.28 ms.
+
+**Nothing is switched off for this. Terrain, trees and grass all still render.** POLYS identical
+at 10,330,135 in both states.
+
+### Visual check — done under the FAILING context, not a parked camera
+A parked screenshot cannot show streaming lag, so the test forces a genuine cold re-stream:
+`SET_CAMERA` 400000 away, settle 8 s, `SET_CAMERA` home, then shoot after a SHORT 2 s settle.
+Two reps per interval.
+
+| | edge energy (texture sharpness) |
+|---|---|
+| rep1 iv=1 | 29.332 |
+| rep1 iv=4 | 29.351 |
+| rep2 iv=1 | 29.310 |
+| rep2 iv=4 | 29.348 |
+
+Spread across all four is 0.041 (0.14%), and iv=4 reads marginally SHARPER than iv=1 in both
+reps — i.e. the between-condition difference is smaller than the within-condition noise.
+Whole-frame mean|diff| was 5.6/6.3 across conditions against same-condition CONTROLS of 4.2/3.0,
+so that channel is dominated by the scene's animation floor and says nothing either way — which
+is exactly why the edge-energy measure is the one quoted.
+
+⚠ HONEST LIMIT: this tests the state 2 s (~160 frames) after a cold re-stream, not the
+sub-200 ms window. The change adds at most 3 frames of feedback->decision latency (~37 ms at
+80 FPS). Lee flying the level fast is still the better judge than any of this.
+
+### Where Aztec now stands
+| | GPU frame | FPS |
+|---|---|---|
+| before today | 15.6 ms | 63 |
+| **VT cadence 4, nothing turned off** | **12.3 ms** | **81** |
+| all four brutal off-switches | 5.85 ms | 167 |
+
+⚠ Not yet gated by the 19-demo sweep. That should run before the alpha, since this changes
+terrain streaming behaviour on every level.

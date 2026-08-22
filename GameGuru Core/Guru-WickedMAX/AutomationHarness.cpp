@@ -132,6 +132,7 @@ namespace wi::profiler {
 // GGMAX 1.33: incremental terrain-VT bookkeeping master switch (wiTerrain.cpp)
 namespace wi::terrain {
 	extern bool gg_vt_incremental;
+	extern int  gg_vt_writeback_interval;   // GGMAX 2.94d
 }
 
 // GGMAX 1.36/1.41: hierarchy + material-cache master switches (wiScene.cpp)
@@ -5763,6 +5764,20 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			result[resultSize - 1] = 0;
 			return true;
 		}
+	}
+
+	if (_stricmp(cmd, "SET_VTWRITEBACK") == 0)
+	{
+		// GGMAX 2.94d: cadence of the terrain VT tile-request round trip, in frames.
+		// 1 = stock every-frame upstream behaviour, 4 = shipped default. A/B this against 1 to
+		// re-measure the saving; the pair (Allocate + Writeback) shares the cadence by design.
+		const int n = atoi(arg);
+		wi::terrain::gg_vt_writeback_interval = (n < 1) ? 1 : n;
+		_snprintf(result, resultSize,
+			"OK: SET_VTWRITEBACK %d - live gg_vt_writeback_interval=%d (1 = every frame / stock)",
+			n, wi::terrain::gg_vt_writeback_interval);
+		result[resultSize - 1] = 0;
+		return true;
 	}
 
 	if (_stricmp(cmd, "DUMP_GPUGAPS") == 0)
