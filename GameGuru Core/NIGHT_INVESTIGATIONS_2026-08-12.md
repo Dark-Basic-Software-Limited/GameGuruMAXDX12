@@ -3868,3 +3868,86 @@ component is exactly what PIX exists for. That is the next instrument; do not gu
 the cached snapshot). Largest CPU movers on terrain removal: `VT-job Total` 0.96 → 0.00,
 `Update - Wicked (Total)` 2.18 → 0.95, `Update Buffers (GPU)` 0.93 → 0.23, `VT-job PageBuf`
 0.45 → 0.00.
+
+## §2.94c — ★★★ THE 4.85 ms ROOT-CAUSED: `WritebackTileRequestsGPU` = 3.96 ms/frame (2026-08-22)
+
+Lee asked for a PIX capture in each state. **PIX is not installed on this machine** (only
+`WinPixEventRuntime.dll`, which emits markers and cannot capture) and a `.wpix` needs the PIX
+GUI to read. Rather than install anything, I built the instrument the data already supported —
+and it answered the question more precisely than a capture would have.
+
+### The gap report (engine 2.94c, harness `DUMP_GPUGAPS`)
+"GPU Idle + unranged" says HOW MUCH dead time a frame holds, never WHERE. But the dead time is
+literally the holes between the measured intervals, and those intervals are already collected
+in raw ticks for the Busy union. So: sort, merge, and report the biggest holes **labelled with
+the range that closed before each one and the range that opens after it**.
+
+First run on TESTPRO2, and it was not subtle — one hole, four times over:
+
+    4.394 ms  after [Opaque Scene]  before [Transparent Tail]      <- terrain ON
+    4.152 ms  after [Opaque Scene]  before [Transparent Tail]
+    5.365 ms  after [Opaque Scene]  before [Transparent Tail]
+    0.078 ms  after [Opaque Scene]  before [Transparent Tail]      <- terrain OFF
+
+The only thing the engine does between those two points that is conditional on terrain is
+`if (scene->terrains.GetCount() > 0)` at wiRenderPath3D.cpp:1873, which opens
+`AllocateVirtualTextureTileRequestsGPU` and `WritebackTileRequestsGPU`.
+
+### ★ It was never idle. It was UNMEASURED WORK.
+All three terrain VT passes carried `device->EventBegin(...)` — a **PIX marker**, which is not
+a profiler range — and no `BeginRangeGPU`. So their GPU time could not appear in any row by
+construction; it fell into the unranged bucket and read as dead space. Added ranges to all
+three. The hole vanished and the accounting closed:
+
+| | before ranges | after ranges |
+|---|---|---|
+| GPU Frame | 9.12 | 9.25 |
+| GPU **Busy** | 3.05 | **7.71** |
+| GPU **Idle + unranged** | **6.08** | **1.54** |
+
+Same frame time; 4.66 ms moved from "idle" into named rows. Measured, TESTPRO2, terrain on:
+
+    TerrainVT - WritebackTileRequests: 3.96 ms   <- THE CULPRIT
+    TerrainVT - AllocateTileRequests:  1.09 ms
+    TerrainVT - CopyPageStatus:        0.02 ms
+    Opaque Scene:                      0.62 ms   <- drawing the entire scene
+    Shadowmap Rendering:               0.00 ms
+
+**`WritebackTileRequestsGPU` costs 3.96 ms/frame — SIX TIMES the cost of drawing the whole
+scene — on a level whose visible content is 26,813 polygons.**
+
+### Why it costs that
+Per virtual texture in use, EVERY FRAME, it issues **four `CopyResource` calls**: the
+allocation-buffer readback, then feedbackMap + requestBuffer + allocationBuffer clears (upstream
+uses copies-from-a-clear-resource because ClearUAV "was having a very bad performance especially
+with DX12" — that comment is still in the source). `TERRAIN_RING` reports **chunks=625**, so
+this is on the order of **2,500 CopyResource calls plus barriers per frame**, purely for
+residency bookkeeping. Fixed cost, independent of scene content — exactly the signature
+measured in 2.94b (~4.85 ms on two levels 9x apart in terrain geometry).
+
+WARNING This is UPSTREAM Wicked code, not a GGMAX port artifact. It bites here because GGMAX
+runs a 625-chunk ring with per-chunk virtual textures.
+
+### Corrections to my own two earlier guesses (both wrong; recorded so neither returns)
+1. 2.94 blamed the cross-queue `WaitCommandList` at wiRenderPath3D.cpp:1876. Wrong.
+2. 2.94b retracted that because `gg_single_queue` is true — right conclusion, and the mechanism
+   is now confirmed: `BeginCommandList` rewrites QUEUE_COMPUTE/QUEUE_COPY to QUEUE_GRAPHICS when
+   `gg_single_queue` (wiGraphicsDevice_DX12.cpp:5951), so the queue-equality test in
+   `WaitCommandList` (:6768) passes and no semaphore is ever created. No fence, no bubble.
+   But that retraction also said the mechanism was unknown and needed PIX. It needed neither —
+   it needed a profiler range around code that had never had one.
+
+### ★★★ The durable rule
+**A PIX/debug marker is NOT a profiler range.** `EventBegin`/`EventEnd` is invisible to
+`wi::profiler`, so any pass instrumented only with markers is guaranteed to land in the
+unranged bucket and read as GPU idle. Before concluding "the GPU is stalling", check whether
+the suspect region is merely UNMEASURED. Sibling: an idle bucket is not evidence of idling — it
+is evidence of an accounting hole, and the gap report is how you find its edges.
+
+### Where this leaves the optimisation (NOT done — Lee's call)
+None of this needs an off-switch. Cheapest first:
+1. **Stop running writeback every frame.** Residency feedback does not need per-frame latency.
+   GGMAX already has `gg_vt_incremental` and a `gg_vt_frozen` hysteresis; this pass is gated by
+   neither. Every-Nth-frame should cut it near-proportionally.
+2. **Batch the three clear copies** into one copy from a single combined clear resource.
+3. Fewer resident VTs (ring size / mip bias) reduces it linearly.

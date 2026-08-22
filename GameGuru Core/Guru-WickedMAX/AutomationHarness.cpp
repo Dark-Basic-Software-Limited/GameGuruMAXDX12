@@ -5765,6 +5765,22 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		}
 	}
 
+	if (_stricmp(cmd, "DUMP_GPUGAPS") == 0)
+	{
+		if (!wi::profiler::IsEnabled())
+		{
+			_snprintf(result, resultSize, "ERROR: DUMP_GPUGAPS needs the profiler - send ENABLE_PROFILER, wait 5s, retry");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		// GGMAX 2.94c: names WHERE the GPU dead time sits. GPU Busy/Idle say how much; this
+		// says between which two ranges. Latest frame only, so read it on a parked camera.
+		const std::string rep = wi::profiler::GetGPUGapReport();
+		_snprintf(result, resultSize, "%s", rep.empty() ? "(no gap data yet - let a frame resolve)" : rep.c_str());
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "GET_GPUMS") == 0)
 	{
 		if (!wi::profiler::IsEnabled())
