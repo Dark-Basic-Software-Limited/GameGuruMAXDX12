@@ -77,6 +77,7 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `SET_TREESOFF` | `0`/`1` | GGMAX 2.94: `ReleaseTreePool` - pool entities, shadow proxies, per-type LOD assets. Also clears `draw_enabled` so tree collision goes with it. Two-way |
 | `SET_GRASSOFF` | `0`/`1` | GGMAX 2.94: removes every grass hair. Two-way - the OFF->ON edge sets `g_grassPassNudge`, without which a parked camera never re-runs `ProcessGrassChunks` and the switch is one-way |
 | `SET_WATEROFF` | `0`/`1` | GGMAX 2.94: ocean off, which also drops the whole planar-reflection pass. Two-way. NOTE measured 0.00 on aztec (that level has no water) - verify on a water level |
+| `SET_ENGINEGENGATE` | `0`/`1` | GGMAX 2.94f: 1 (default) = the terrain idle gate also suppresses the ENGINE's `Generation_Update` (wiScene.cpp), not just the bridge's. 0 = pre-2.94f. Only bites after the terrain has been calm >45 frames, then 7 frames in 8 |
 | `SET_TERRAINBAKE` | `0`/`1`/`<n>` | GGMAX 2.94e: sets `Terrain::gg_near_ring_dist`. **1 = bake-equivalent (0)** - every chunk drops to min_resolution, loses its residency object, is skipped by all four VT GPU passes and binds `sparse_residencymap_descriptor = -1` so the shader takes a plain `tex.Sample`. 0 restores the GGMAX default (4). Measured TESTPRO2 -1.27 ms GPU / +40 FPS. **Re-read the reply after ~20s: `residencyVTs` must be 0 before any timing is trusted** - only Generation_Update performs the downgrade |
 | `SET_TERRAINGEN` | `<n>` | GGMAX 2.94e: chunk-ring radius, ring = (2n+1)^2 chunks. Scales ENTITY count as a proxy for mesh merging. ⚠ **Only sets the override - it does NOT rebuild.** You must then send `SET_TERRAINOFF 1`, wait >=5s, `SET_TERRAINOFF 0`, wait ~30s, and confirm the new count in `TERRAIN_RING`. Setting the flag on and off inside one command means no frame observes it and nothing rebuilds - a whole ladder once ran reporting chunks=625 at every rung |
 | `SET_VTWRITEBACK` | `<frames>` | GGMAX 2.94d: cadence of the terrain VT tile-request round trip. **Default 4**; `1` restores stock every-frame behaviour for an A/B. Allocate + Writeback share the cadence by design - see the notes, gating writeback alone is a bug |
@@ -716,6 +717,8 @@ sleep 8
 send_cmd "SCREENSHOT" 15
 # Screenshot lands under Files/screenshots/sc_*.png (timestamped filename)
 ```
+
+⚠★ **`bc` DOES NOT EXIST in this Git Bash.** A script computing camera offsets with `$(echo "$X + 1000" | bc)` gets an EMPTY string, `SET_CAMERA` silently receives malformed args, the camera never moves, and any "flew around, everything fine" test passes VACUOUSLY. This invalidated a whole safety run on 2026-08-22. Use `awk 'BEGIN{printf "%.1f", a+b}'`, echo the `SET_CAMERA` reply, and read the position back with `GET_CAMERA` before trusting the result.
 
 ⚠★ **`OPEN_PROJECT` only sees MY GAMES projects.** The 19 hub demos (Aztec Game Kit Teaser,
 Switch Escape, ...) are NOT reachable through it - it answers `ERROR: project not found (3

@@ -4119,3 +4119,93 @@ Do NOT write a baker yet. In order:
    game directly.
 3. Only then consider a real bake, and only for the mesh-merge half, at a coarse grid — and
    measure against the culling/LOD loss rather than assuming it is free.
+
+## §2.94f — the terrain idle gate was only HALF applied (2026-08-22)
+
+The GGMAX terrain idle gate (terrain calm >45 frames, then skip 7 frames in 8) gated the
+BRIDGE's `Generation_Update` call. `Scene::Update` calls `Generation_Update` a SECOND time on
+the same frame (wiScene.cpp:180) and that caller was never gated — so on a parked, settled
+scene the full 625-chunk walk still ran every frame: per chunk a frustum test plus four
+component hash lookups, then `UpdateVirtualTexturesCPU` over all of them again.
+
+The bridge already computes the right predicate and runs before `__super::Update` in the same
+frame, so it now publishes it as `wi::terrain::gg_skip_generation_update`.
+★ **CONSUME-AND-CLEAR on the engine side, deliberately.** The flag is a one-shot the bridge
+must re-arm every frame. A sticky `true` — a host without the bridge, a load path, an early
+return added later — would gate generation FOREVER and terrain would never appear. Stock
+every-frame behaviour is the only safe direction for this flag to rot in. The bridge also
+clears it at the top of `GGTerrainWicked_Update`, ahead of every early return.
+
+### MEASURED, TESTPRO2 (profiler rows — see the caveat below on why not frame time)
+| row | stock | gate | delta |
+|---|---|---|---|
+| VT-job Total | 0.870 | **0.000** | −0.870 |
+| VT-job PageBuf | 0.450 | **0.000** | −0.450 |
+| Update - Wicked (Total) | 1.890 | 1.570 | −0.320 |
+| Update | 2.870 | 2.570 | −0.300 |
+| Update Buffers (GPU) | 0.920 | 0.750 | −0.170 |
+
+Gating the engine caller also stops `UpdateVirtualTexturesCPU`, so the async VT job is never
+kicked on gated frames — hence VT-job going to zero.
+
+★★ **Be precise about WHERE the time is.** ~0.30 ms comes off the MAIN thread (matching the
+−0.29 ms CPU frame delta measured for the gate alone). ~1.3 ms is WORKER time. On a dev box
+with spare cores the worker saving barely moves frame time; on the low-core machines this
+campaign is aimed at it is the more valuable half. **Do not quote the 1.3 as a frame-time win.**
+
+⚠ **The CPU frame-time metric could not resolve this** — within-condition spread (A1 4.21 vs
+A2 3.81) was as large as the between-condition delta. The profiler rows could. When an effect
+is ~0.3 ms on a 4 ms frame, measure the ROW you changed, not the frame.
+
+`gg_instinit_parallel` was A/B'd in the same run: −0.16 ms CPU alone, but one rep was faster
+and one a hair slower. **NOT RESOLVED — default stays OFF.** Recording the null, not banking it.
+
+### ⚠⚠ AN INSTRUMENT FAILURE, AND THE CORRECTION IT FORCED
+The first safety test flew the camera to five waypoints and reported "chunks=625, pend=0,
+POLYS identical — no missing chunks". **That test was worthless.** It computed offsets with
+`$(echo "$HX + 120000" | bc)` and **`bc` does not exist in this shell**, so every `SET_CAMERA`
+received a malformed argument and the camera never moved. The test could only ever have
+passed. The same bug invalidated the flight half of the six-demo mini-sweep. The claim was
+already in the 2.94f commit message before it was caught.
+
+★ Sibling of the standing rule that an instrument bypassing the suspect path can only exonerate
+it — here the instrument never reached the path at all. **Log the reply from the thing you
+changed and assert on it.** The redo prints every `SET_CAMERA` reply AND a `GET_CAMERA`
+read-back, which is how it was proven fixed.
+
+### The redone test (awk arithmetic, positions read back and logged)
+Aztec, five real waypoints out to ~7.6 km, gate ON then OFF. Camera Y auto-snapped to terrain
+height (1989 → 7698 → 11328), which independently proves real ground existed out there.
+
+| waypoint | chunks on/off | pend | POLYS on/off |
+|---|---|---|---|
+| home | 625 / 625 | 0 | 10,330,135 / 10,356,401 |
+| +148k,+149k | 725 / 725 | 0 | 219,792 / 212,680 |
+| −202k,+99k | 625 / 625 | 0 | 192,264 / 192,264 |
+| +298k,−251k | 625 / 625 | 0 | 184,920 / 184,920 |
+| home again | 625 / 625 | 0 | 10,356,401 / 10,356,401 |
+
+Identical chunk counts and pend=0 in both states at every waypoint, converging on the same
+POLYS at home. (725 > ringMax is the documented removal lag, not a leak.) **The gate is safe:
+terrain generation behaves the same with it on and off, under real camera movement.**
+
+### Regression mini-sweep (PARKED measurements only — see caveat)
+| demo | FPS | POLYS | chunks | pend |
+|---|---|---|---|---|
+| Aztec Game Kit Teaser | 83.0 | 10,330,135 | 625 | 0 |
+| A Grand Canyon Adventure | 139.3 | 2,279,506 | 625 | 0 |
+| Switch Escape | 250.3 | 109,358 | 625 | 0 |
+| Trapped | 285.0 | 12,768 | 625 | 0 |
+| Jungle Fever | 179.7 | 76,157 | 625 | 0 |
+| RPG Template | 138.3 | 3,247,629 | 625 | 0 |
+
+All six load clean with 2.94d + 2.94f live; 12 screenshots all render real scenes. ⚠ Only the
+PARKED half is valid (the flight half used the broken `bc` path). The full 19-demo gate still
+owes a run before the alpha.
+
+### Held deliberately
+The `gameisexe` gate on the terrain bridge was NOT done. The work a subagent called
+editor-only (the chunkSig census, the blendmap scans) still has to run in a shipped game
+because the chunk ring follows the camera, and an exported build cannot be verified from the
+harness. An unverifiable change to shipping behaviour is not a good trade — it wants Lee's
+call and a real exported-build test.
