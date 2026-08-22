@@ -445,6 +445,65 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Trades visual reach for video memory so this level fits a 4GB graphics card: caps grass draw distance at 750, thins grass density to 75%, caps shadow cascade resolution at 1024 and turns off Screen Space Reflections. Shadow and reflection changes apply immediately; the grass changes apply the next time the level is loaded. Players with small cards can also force this on for ALL levels with lowvram=1 in setup.ini.");
 		ImGui::PopItemWidth();
 
+		// ====================================================================================
+		// GGMAX 2.94: BRUTAL OFF-SWITCHES (Phase 2 performance work).
+		//
+		// These are not "stop drawing it" toggles. Each one removes the subsystem's elements
+		// from the scene entirely, so they stop costing culling, Scene::Update transform/AABB
+		// work, shadow casting, virtual-texture feedback and video memory. A renderable=false
+		// hide leaves every one of those costs behind.
+		//
+		// SESSION-SCOPED on purpose: the state is a global, not a per-level FPM field, so it
+		// survives level loads within a session and never writes anything into the user's
+		// levels. Players on weak cards can set the same four switches machine-wide in
+		// setup.ini (noterrain / notrees / nograss / nowater); either source turns it off.
+		// ====================================================================================
+		{
+			extern bool gg_no_terrain, gg_no_trees, gg_no_grass, gg_no_water;
+			extern void GGSetNoTerrainLevel(int);
+			extern void GGSetNoTreesLevel(int);
+			extern void GGSetNoGrassLevel(int);
+			extern void GGSetNoWaterLevel(int);
+			extern void GGApplyVisualsNow();
+
+			ImGui::Separator();
+			ImGui::TextDisabled("Brutal off-switches (weak GPU)");
+
+			bool bOff;
+			ImGui::PushItemWidth(-10);
+
+			bOff = gg_no_terrain;
+			if (ImGui::Checkbox("Terrain Off##gg_no_terrain", &bOff))
+			{
+				GGSetNoTerrainLevel(bOff ? 1 : 0);
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes the rendered terrain from the scene completely - the chunk entities, their meshes and the whole virtual-texture atlas, not just the draw. Ground height and physics still work, so objects stay where they are and you can still walk around. Biggest saving on open outdoor levels.");
+
+			bOff = gg_no_trees;
+			if (ImGui::Checkbox("Trees Off##gg_no_trees", &bOff))
+			{
+				GGSetNoTreesLevel(bOff ? 1 : 0);
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Releases the whole tree pool, its shadow proxies and the per-type LOD models. Tree collision is switched off with them, so you will not bump into trees you cannot see. Your placed trees are not touched and come back when you untick this.");
+
+			bOff = gg_no_grass;
+			if (ImGui::Checkbox("Grass Off##gg_no_grass", &bOff))
+			{
+				GGSetNoGrassLevel(bOff ? 1 : 0);
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes every blade of grass from the scene, including the per-strand simulation that runs on the graphics card each frame. Your painted grass is kept and reappears when you untick this.");
+
+			bOff = gg_no_water;
+			if (ImGui::Checkbox("Water Off##gg_no_water", &bOff))
+			{
+				GGSetNoWaterLevel(bOff ? 1 : 0);
+				GGApplyVisualsNow();   // ocean teardown happens on the next Scene::Update
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes the water surface and, with it, the reflection pass that redraws the whole scene a second time from the mirrored camera. Usually the single biggest saving of the four on any level that has water.");
+
+			ImGui::PopItemWidth();
+		}
+
 		// end performance
 		ImGui::Indent(-10);
 	}

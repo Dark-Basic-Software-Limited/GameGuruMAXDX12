@@ -3722,3 +3722,96 @@ directory. Not deleted yet — awaiting Lee's go, same protocol as the 328 MB de
 ★ **Never leave working files in the build output directory.** It is packaged, it is not
 version-controlled, and six months later nobody can tell a live test rig from an artefact
 without reading it. Scratchpad for throwaway, `tools/` for anything worth keeping.
+
+## §2.94 — PHASE 2 PERF: the four brutal off-switches, and what they measured (2026-08-22, Lee-directed)
+
+Lee's alpha ran the Aztec demo at 20 FPS on an old AMD card where DX11 managed 50. Brief: add
+"serious off switches" to Graphics and Performance — Terrain / Trees / Grass / Water — that do
+not merely stop drawing but remove the elements from the entity system, and drive the editor
+GPU figure on `aztec game kit teaser` from ~16 ms to under 6 ms. Explicitly: implement first,
+investigate later.
+
+### What shipped
+Four session-scoped effective flags (`gg_no_terrain/_trees/_grass/_water`, GGTerrainWicked.cpp
+next to `gg_lowvram`), each `(machine || level)`: setup.ini `noterrain`/`notrees`/`nograss`/
+`nowater` OR a tick box in the panel. Setters sit beside `GGSetLowVRAM` in master_part1.cpp.
+Harness: `SET_TERRAINOFF`/`SET_TREESOFF`/`SET_GRASSOFF`/`SET_WATEROFF` plus a keyed `GET_GPUMS`.
+
+| switch | mechanism | why not the obvious thing |
+|---|---|---|
+| Water | override `bWaterEnabled` after the editor/game if/else (M-GridEditB_part3.cpp) | NOT `visuals->bWaterEnable = false` — that field is re-derived on every level load and by `wicked_set_water_level`, so the switch would un-stick AND it would overwrite the level's authored setting |
+| Trees | `ReleaseTreePool()` at the top of `GGTrees_WickedUpdate`, plus folding the flag into `draw_enabled` | NOT `GGTrees_HideAll()` — it writes bit 0 of all 400,000 instance data words, which is LEVEL DATA a later save would persist |
+| Grass | `ForceGrassRebuild()` + gate `ProcessGrassChunks` (the only caller of `hairs.Create`) | NOT `GGGrass_RemoveAll()` — it zeroes all 16 MB of `pGrassMap` in place, destroying the level's PAINTED grass |
+| Terrain | `GGTerrainWicked_Shutdown()` — removes the Terrain component, taking `terrains.GetCount()` to 0 | NOT `SetTerrainVisible(false)` — chunks still exist, still pay Scene::Update, still hold the ~576 MB atlas, and `Generation_Update` KEEPS MAKING NEW ONES (the 2.68f note) |
+
+Two latent bugs fixed on the way in, both in code that had never executed:
+`GGTerrainWicked_Shutdown` had ZERO callers, and it called `Generation_Cancel()` (which waits
+only on `generator->workload`) without joining the async VT job — the exact use-after-free the
+GGMAX 1.45 comment in `Generation_Restart` documents. Engine delta 2.94 exposes
+`wi::terrain::gg_WaitVirtualTextureJob()` for it. It also left the three grass tracking maps
+holding entity ids for chunks it had just removed.
+
+### MEASURED, aztec game kit teaser, editor opening view, profiler on throughout
+Baseline reproduces Lee's screenshot exactly (15.6 ms / 63.1 FPS / 10,330,135 polys).
+Each row is a mean of two reads; the ladder returns to baseline between switches.
+
+| stage | GPU frame | GPU busy | GPU idle | CPU | FPS | POLYS |
+|---|---|---|---|---|---|---|
+| baseline (all on) | 15.60 | 9.38 | 6.22 | 6.5 | 63.3 | 10,330,135 |
+| water off | 15.62 | 9.44 | 6.18 | 6.5 | 63.2 | 10,330,135 |
+| grass off | 14.34 | 8.06 | 6.32 | 6.4 | 69.2 | 10,330,135 |
+| trees off | 12.71 | 6.55 | 6.38 | 4.7 | 77.8 | 6,370,501 |
+| **terrain off** | **5.91** | **4.61** | **1.29** | 2.8 | **167.3** | 6,180,925 |
+| all four off | 5.85 | 4.51 | 1.31 | 2.9 | 163.4 | 6,180,925 |
+
+★★ **TARGET MET: 5.85 ms, under the 6 ms goal, at 163-167 FPS against a 190 FPS DX11 reference.**
+
+### ★★★ The finding that matters more than the switches
+**Terrain owns essentially the whole gap, and most of what it owns is NOT shading.**
+Look at the GPU Idle column: 6.2 ms at baseline, **1.3 ms with terrain off**. Roughly 5 ms of
+the "GPU Idle + unranged" bucket that 2.91 exposed — the bucket that shows up in no profiler
+row, which is exactly why Lee's rows never added up — is terrain. Terrain removal is worth
+9.7 ms of a 15.6 ms frame while removing only 4.15 M of 10.33 M polygons, so this is not a
+triangle story.
+
+The mechanism is named in the recon: with `terrains.GetCount() > 0`, wiRenderPath3D opens
+THREE extra per-frame command lists (`CopyVirtualTexturePageStatusGPU` :946,
+`AllocateVirtualTextureTileRequestsGPU` :1880, `WritebackTileRequestsGPU` :1889) and inserts
+`device->WaitCommandList(cmd_allocation_tilerequest, cmd)` at :1876 — a cross-queue dependency
+on the opaque scene, **every frame**. A stall is not work; it can never appear as a range.
+That is the next real optimisation and it does not require giving anything up visually.
+⚠ NOT YET PROVEN — the attribution above is a read of the code plus the Idle delta. Prove it
+with PIX before acting.
+
+### Two implementation traps, both caught by measurement not by reading
+1. ★★ **An edge-triggered teardown latch must be cleared on BOTH edges.** The first grass
+   implementation latched `s_ggNoGrassApplied` inside `if (gg_no_grass)` and never reset it, so
+   the switch was ONE-WAY — and because the ladder alternates, every later reading in that run
+   was silently taken on a grass-free scene. Visible only because the return-to-baseline rows
+   did not return.
+2. ★★ **Clearing the state is not the same as re-running the pass.** Even with the latch fixed
+   grass did not regrow: `ProcessGrassChunks` is gated on
+   `grassDirty || chunkSig changed || settleRetry || g_grassPassNudge || camera moved > 8 units`
+   and a parked camera on a settled level fires none of them. The fix is one line —
+   `g_grassPassNudge = true` on the OFF->ON edge. Confirmed both ways twice: 15.60 -> 14.34 ->
+   15.64 -> 14.18 -> 15.70.
+
+### The wasted first run — worth recording
+The first ladder was driven with `OPEN_PROJECT "Aztec Game Kit Teaser"`, which returned
+`ERROR: project not found (3 available): TESTPRO2 REMOTEY TESTPRO1` — **OPEN_PROJECT only sees
+My Games projects; the 19 hub demos need `SELECT_DEMO` + `CLICK edit_game` + `CLICK_ONLY_LEVEL`
+(the tools/probe_one.sh sequence).** The run completed and produced a full, plausible,
+entirely worthless table taken on the hub's empty scene (POLYS 17,424 against the real level's
+10,330,135). ★ It only failed loudly at the top of the log; every row after that looked fine.
+Gate a measurement on the load having SUCCEEDED, not on the script exiting 0.
+
+### Known limitations (not defects to chase yet)
+- **Water off measured 0.00 on this level** — the aztec teaser has no ocean. The switch is
+  therefore UNVERIFIED here. Its value is the planar-reflection pass (4.37 ms of a 10.06 ms
+  frame on the TESTPRO1 island, PERFORMANCE.md:686-687); verify on a water level.
+- **Terrain off leaves no ground.** It is a measurement instrument and a last-resort user
+  switch, not a shipping default.
+- State is SESSION-scoped by choice: a global, not an FPM field, so it survives level loads
+  within a session and writes nothing into the user's levels. Per-level persistence is a known
+  follow-up (Types.h field + 4 sites in M-Visuals_part0.cpp + the test-game carry-back in
+  M-GridEdit_part2.cpp) and was deliberately deferred.

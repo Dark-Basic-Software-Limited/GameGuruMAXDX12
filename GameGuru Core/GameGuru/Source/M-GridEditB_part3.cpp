@@ -1698,6 +1698,23 @@ void Wicked_Update_Visuals(void *voidvisual)
 		else
 			bWaterEnabled = visuals->bWaterEnable;
 
+		// GGMAX 2.94: "Water Off" brutal off-switch. Overriding HERE, after the if/else, is
+		// deliberate - the editor branch reads t.showeditorwater and the game branch reads
+		// visuals->bWaterEnable, so this is the only single point that covers both. Do NOT
+		// implement this by writing visuals->bWaterEnable = false: that field is re-derived
+		// from the terrain type on every level load (GGTerrainFile.cpp:37) and by
+		// wicked_set_water_level (M-TerrainNew_part4.cpp:1336), so the switch would silently
+		// un-stick, AND it would overwrite the level's authored water setting.
+		//
+		// Turning this off is worth more than the ocean itself: with IsOceanEnabled() false,
+		// wiRenderer.cpp:4774 never sets vis.planar_reflection_visible, so the entire planar
+		// reflection Z-prepass + colour pass stops being recorded. That pair measured 4.37 ms
+		// of a 10.06 ms GPU frame on the TESTPRO1 island (PERFORMANCE.md:686-687).
+		{
+			extern bool gg_no_water;
+			if (gg_no_water) bWaterEnabled = false;
+		}
+
 		if (bWaterEnabled)
 		{
 			weather->SetOceanEnabled(true);
@@ -2070,6 +2087,14 @@ void Wicked_Update_Visuals(void *voidvisual)
 	else
 		bSetting = t.visuals.bEndableTreeDrawing;
 
+	// GGMAX 2.94: fold "Trees Off" into the single point draw_enabled is derived, so the legacy
+	// CPU tree update, the virtual collision cylinders (M-Physics_part0.cpp:521) and the navmesh
+	// tree obstacles all early-out too. Clearing draw_enabled is the CORRECT half of that
+	// trade: leave it set and the player collides with trees that are no longer drawn.
+	{
+		extern bool gg_no_trees;
+		if (gg_no_trees) bSetting = false;
+	}
 	if(ggtrees_global_params.hide_until_update == 0)
 		ggtrees_global_params.draw_enabled = bSetting;
 

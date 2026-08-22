@@ -9785,7 +9785,16 @@ void mapeditorexecutable_loop(void)
 				ImGui::Text("Scene Hierarchy: %d", (int)pScene->hierarchy.GetCount());
 
 				ImGui::Separator();
-				std::string profiler_data = wi::profiler::GetTextData();
+				// GGMAX 2.94: read the CACHED snapshot, not a second live GetTextData().
+				// GetTextData() only accumulates ranges whose in_use is still set, and it
+				// PRINTS-AND-ZEROES the persistent row cache as it goes - so a second caller
+				// in the same frame races the first and one of them renders every row as
+				// 0.00 ms while the headline GPU Frame/Busy lines (which are read directly,
+				// not through that cache) stay correct. That is exactly the symptom seen on
+				// the Performance panel. Same fix already applied to the other panel in
+				// M-GridEditB_part2.cpp:1074.
+				extern std::string GGPerf_GetCachedProfilerText();
+				std::string profiler_data = GGPerf_GetCachedProfilerText();
 				if (!profiler_data.empty())
 					ImGui::TextUnformatted(profiler_data.c_str());
 

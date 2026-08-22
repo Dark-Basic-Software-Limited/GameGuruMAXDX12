@@ -115,9 +115,18 @@ extern bool g_bTextureStreamingEnabled; // game-side enrollment kill-switch (wic
 #include "wiRenderer.h"
 
 // Direct access to profiler internals for diagnostics
+// GGMAX 2.94: brutal off-switch effective flags (GGTerrain/GGTerrainWicked.cpp). Global
+// namespace, but declared at FILE scope so every handler below can read them.
+extern bool gg_no_terrain;
+extern bool gg_no_trees;
+extern bool gg_no_grass;
+extern bool gg_no_water;
+
 namespace wi::profiler {
 	extern bool ENABLED;
 	extern bool ENABLED_REQUEST;
+	extern float gg_gpu_busy_time;   // GGMAX 2.91 - union of the child GPU ranges (wiProfiler.cpp:85)
+	extern float gg_gpu_idle_time;   // GGMAX 2.91 - frame span minus that union
 }
 
 // GGMAX 1.33: incremental terrain-VT bookkeeping master switch (wiTerrain.cpp)
@@ -5718,6 +5727,73 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			tracerFresh
 				? "ARMED on this mesh just now — counters are ZERO until a frame renders. RE-RUN the command to read them."
 				: (armedMesh >= 0 ? "live (counts are since it was armed)" : "not armed (no mesh)"));
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// ========================================================================================
+	// GGMAX 2.94: brutal off-switches + a keyed GPU-milliseconds readout.
+	// FLAT `if (...) return true;` links on purpose - zero nesting depth. Do NOT add these to
+	// the main else-if ladder in AutoHarness_CheckForCommand, which sits at the MSVC C1061
+	// nesting limit and breaks the build if extended.
+	// Replies ECHO A LIVE RE-READ of the flag, never the value passed in - the executed-check
+	// convention that caught the SET_TREES pool no-op.
+	// ========================================================================================
+	{
+		extern void GGSetNoTerrainLevel(int);
+		extern void GGSetNoTreesLevel(int);
+		extern void GGSetNoGrassLevel(int);
+		extern void GGSetNoWaterLevel(int);
+		struct Sw { const char* name; void (*set)(int); bool* live; };
+		static const Sw sws[4] = {
+			{ "SET_TERRAINOFF", GGSetNoTerrainLevel, &gg_no_terrain },
+			{ "SET_TREESOFF",   GGSetNoTreesLevel,   &gg_no_trees   },
+			{ "SET_GRASSOFF",   GGSetNoGrassLevel,   &gg_no_grass   },
+			{ "SET_WATEROFF",   GGSetNoWaterLevel,   &gg_no_water   },
+		};
+		for (int i = 0; i < 4; i++)
+		{
+			if (_stricmp(cmd, sws[i].name) != 0) continue;
+			const int on = (atoi(arg) != 0) ? 1 : 0;   // a missing arg reads 0 = ON (subsystem stays)
+			sws[i].set(on);
+			_snprintf(result, resultSize,
+				"OK: %s %d - live flag now %d. Effect lands on the NEXT frame's update; give it "
+				"a few frames before reading GET_GPUMS (terrain teardown joins the async VT job).",
+				sws[i].name, on, *sws[i].live ? 1 : 0);
+			result[resultSize - 1] = 0;
+			return true;
+		}
+	}
+
+	if (_stricmp(cmd, "GET_GPUMS") == 0)
+	{
+		if (!wi::profiler::IsEnabled())
+		{
+			_snprintf(result, resultSize,
+				"ERROR: GET_GPUMS needs the profiler - send ENABLE_PROFILER, wait 5s, retry");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		extern uint64_t GGPerf_GetPolyCount();
+		const float fps = (ImGui::GetCurrentContext() != nullptr) ? ImGui::GetIO().Framerate : 0.0f;
+		// GPU_BUSY is THE metric, not GPU_FRAME. GPU Frame's begin query rides the frame's first
+		// command list and its end query the last, so on a paced frame it tends to the frame
+		// PERIOD (63.8 fps <-> 15.68 ms is the same number twice). Busy is the union of the
+		// child ranges and is the only one of the three that measures actual GPU work.
+		_snprintf(result, resultSize,
+			"GPU_FRAME_MS: %.3f\n"
+			"GPU_BUSY_MS: %.3f\n"
+			"GPU_IDLE_MS: %.3f\n"
+			"CPU_FRAME_MS: %.3f\n"
+			"FPS: %.1f\n"
+			"POLYS: %llu\n"
+			"OFF: terrain=%d trees=%d grass=%d water=%d\n",
+			wi::profiler::GetGPUFrameTime(),
+			wi::profiler::gg_gpu_busy_time,
+			wi::profiler::gg_gpu_idle_time,
+			wi::profiler::GetCPUFrameTime(),
+			fps, (unsigned long long)GGPerf_GetPolyCount(),
+			gg_no_terrain ? 1 : 0, gg_no_trees ? 1 : 0, gg_no_grass ? 1 : 0, gg_no_water ? 1 : 0);
 		result[resultSize - 1] = 0;
 		return true;
 	}

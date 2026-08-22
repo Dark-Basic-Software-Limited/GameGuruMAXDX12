@@ -73,6 +73,11 @@ tasklist.exe 2>/dev/null | grep -qi "GameGuruMAX" && echo "RUNNING" || echo "NOT
 | `GET_ENTITY` | `<index>` | Detailed dump of one entity: position, rotation, scale, profile, light data, infinilight linkage, and WickedEngine cross-reference |
 | `LIST_LIGHTS` | (none) | Full light pipeline debug dump: all infinilights with entity linkage, position, range, color, and WickedEngine LightComponent state |
 | `TOGGLE_PROFILER` | (none) | Cycles the in-game TAB mode (0=normal, 1=visuals panel, 2=performance panel). Game state only |
+| `SET_TERRAINOFF` | `0`/`1` | GGMAX 2.94 brutal off-switch: removes the wi::terrain Terrain component and its chunks (not a hide - `terrains.GetCount()` goes to 0). Two-way. Biggest single lever measured: 15.6 -> 5.9 ms on aztec |
+| `SET_TREESOFF` | `0`/`1` | GGMAX 2.94: `ReleaseTreePool` - pool entities, shadow proxies, per-type LOD assets. Also clears `draw_enabled` so tree collision goes with it. Two-way |
+| `SET_GRASSOFF` | `0`/`1` | GGMAX 2.94: removes every grass hair. Two-way - the OFF->ON edge sets `g_grassPassNudge`, without which a parked camera never re-runs `ProcessGrassChunks` and the switch is one-way |
+| `SET_WATEROFF` | `0`/`1` | GGMAX 2.94: ocean off, which also drops the whole planar-reflection pass. Two-way. NOTE measured 0.00 on aztec (that level has no water) - verify on a water level |
+| `GET_GPUMS` | (none) | GGMAX 2.94: keyed GPU timings - `GPU_FRAME_MS`, `GPU_BUSY_MS`, `GPU_IDLE_MS`, `CPU_FRAME_MS`, `FPS`, `POLYS`, plus the four OFF flags. Needs `ENABLE_PROFILER` first. **Judge by GPU_BUSY, not GPU_FRAME** - the frame span tends to the frame period on a paced frame |
 | `ENABLE_PROFILER` | (none) | Enables Wicked Engine profiler for data collection. Sets both `bProfilerEnable` and `wi::profiler::SetEnabled(true)`. Data appears in `GET_PERF_DATA` after ~1s. **Warning: profiler adds massive overhead** (FPS drops ~75%) — enable briefly, collect data, then disable |
 | `DISABLE_PROFILER` | (none) | Disables Wicked Engine profiler. Clears both `bProfilerEnable` and `wi::profiler::SetEnabled(false)` |
 | `GET_PROFILER_STATUS` | (none) | Diagnostic: returns profiler internal state (ENABLED_REQUEST, ENABLED, IsEnabled, CPU/GPU frame times) without modifying anything |
@@ -707,6 +712,13 @@ sleep 8
 send_cmd "SCREENSHOT" 15
 # Screenshot lands under Files/screenshots/sc_*.png (timestamped filename)
 ```
+
+⚠★ **`OPEN_PROJECT` only sees MY GAMES projects.** The 19 hub demos (Aztec Game Kit Teaser,
+Switch Escape, ...) are NOT reachable through it - it answers `ERROR: project not found (3
+available): TESTPRO2 REMOTEY TESTPRO1`. Use `SELECT_DEMO <name>` -> `CLICK edit_game` ->
+`CLICK_ONLY_LEVEL` for those (the `tools/probe_one.sh` sequence). On 2026-08-22 a full A/B
+ladder ran to completion on the hub's empty scene because only the FIRST line of the log
+recorded the failure - gate on the load having succeeded, never on the script exiting 0.
 
 **Verified 2026-07-12**: full sequence completes in ~50 seconds from kill-and-launch to screenshot on disk. `island.fpm` (v342 map.ele) loads through the pre-release entity-load version guard — entity props silently absent, but terrain / trees / grass / paint all render.
 

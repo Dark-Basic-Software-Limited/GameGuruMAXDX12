@@ -179,6 +179,29 @@ bool gg_grass_merge = true;   // GGMAX 1.86: DEFAULT ON (user-approved 2026-08-0
 // work in; going below it would reintroduce whole-chunk pop-in. This is a CAP, not an override:
 // a level that already asks for less than the cap keeps its own value.
 bool  gg_lowvram = false;
+
+// ============================================================================
+// GGMAX 2.94 — BRUTAL OFF-SWITCHES (Graphics and Performance panel, Phase 2 perf)
+//
+// These are NOT "stop drawing it" flags. Each one is wired so the subsystem's
+// elements never enter (or are torn out of) the Wicked scene, so they pay no
+// culling, no Scene::Update transform/AABB work, no shadow casting, no virtual
+// texture feedback and no VRAM. A renderable=false hide leaves every one of
+// those costs in place - that mistake is already documented for terrain in the
+// 2.68f comment at GGTerrainWicked.cpp:3021.
+//
+// Each effective flag is (machine || level): setup.ini key OR the panel tick.
+// The OR and the setters live beside GGSetLowVRAM in master_part1.cpp.
+//
+// gg_no_terrain : the wi::terrain::Terrain component + its 625 chunk entities
+// gg_no_trees   : the 20K tree pool + shadow proxies + per-type LOD assets
+// gg_no_grass   : every HairParticleSystem the grass manager emits
+// gg_no_water   : weather ocean, and with it the PLANAR REFLECTION pass
+// ============================================================================
+bool  gg_no_terrain = false;
+bool  gg_no_trees   = false;
+bool  gg_no_grass   = false;
+bool  gg_no_water   = false;
 float gg_lowvram_grass_dist = 750.0f;
 // Uniform strand-count multiplier, 0..1 (setup.ini takes it as a percent). Applied in
 // GrassTierDensityScale — see the reasoning there for why this axis is safe and the mask axis is
@@ -2740,6 +2763,38 @@ void GGTerrainWicked_NotifyMaterialsChanged()
 
 void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 {
+	// GGMAX 2.94: "Terrain Off" brutal off-switch, edge-triggered, placed before every other
+	// early-out so it cannot be shadowed by one.
+	//
+	// This calls the REAL teardown, not GGTerrainWicked_SetTerrainVisible(false). That hide
+	// only clears SetRenderable on the chunk ObjectComponents: the 625 chunks still exist, still
+	// pay transform/hierarchy/AABB/matrix work in Scene::Update, still hold their meshes and
+	// virtual-texture tiles and the whole ~576 MB SVT atlas, and - the killer - Generation_Update
+	// KEEPS MAKING NEW ONES (the 2.68f note at the head of this file). Removing the Terrain
+	// component instead takes terrains.GetCount() to 0, which additionally makes
+	// wiRenderPath3D.cpp skip THREE whole per-frame command lists (CopyVirtualTexturePageStatus,
+	// AllocateVirtualTextureTileRequests, WritebackTileRequests) and drops two cross-queue waits.
+	//
+	// Note the CPU heightmap (GGTerrain_Init) is deliberately left alive - ~91 BT_GetGroundHeight
+	// call sites and the Bullet terrain shape read it. This switch removes the RENDERED terrain.
+	{
+		static bool s_noTerrainApplied = false;
+		if (gg_no_terrain && !s_noTerrainApplied)
+		{
+			GGTerrainWicked_Shutdown();       // clears wickedTerrainInitialised
+			s_noTerrainApplied = true;
+			return;
+		}
+		if (!gg_no_terrain && s_noTerrainApplied)
+		{
+			// Toggling back ON: re-init from scratch. The tree pool comes back with it
+			// (GGTerrainWicked_Init calls GGTrees_WickedInit), but painted grass and blendmaps
+			// re-derive over the next few generation passes, so expect a visible rebuild.
+			s_noTerrainApplied = false;
+			GGTerrainWicked_Init();
+		}
+		if (gg_no_terrain) return;
+	}
 	if (!wickedTerrainInitialised) return;
 	wi::terrain::Terrain* terrain = GetWickedTerrain();
 	if (!terrain) return;
@@ -3156,7 +3211,10 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		// the brute-force fallback); every other mode builds BVHs as always. Mirrored per
 		// frame, and the 2.55 exit wipe regenerates everything WITH BVHs for the editor.
 		wi::terrain::gg_generation_skip_bvh = bProceduralLevel;
-		wi::terrain::gg_generation_skip_grass = bProceduralLevel; // GGMAX 2.60: no grass in the generator (invisible at those distances + known bug there)
+		// GGMAX 2.94: || gg_no_grass - kills the per-vertex perlin sample (4489/chunk) and the
+		// per-chunk CreateFromMesh on the generator thread, which SetGrassEnabled(false) does NOT
+		// reach. Without this the generator still pays for grass the scene will never show.
+		wi::terrain::gg_generation_skip_grass = bProceduralLevel || gg_no_grass; // GGMAX 2.60: no grass in the generator (invisible at those distances + known bug there)
 		if (wi::terrain::gg_generation_center_override_enabled != s_lastGenOverride)
 		{
 			s_lastGenOverride = wi::terrain::gg_generation_center_override_enabled;
@@ -3391,7 +3449,40 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 
 	// Grass: set up the material/template once, then grow grass on chunks from the painted grass
 	// map. Runs after blendmap processing (generation already cancelled = safe to add entities).
-	if (!wickedGrassSetup)
+	// GGMAX 2.94: "Grass Off" brutal off-switch. Edge-triggered teardown then a hard skip of
+	// the whole grass manager. ForceGrassRebuild is the right primitive - it Entity_Remove's
+	// every per-type and merged hair and clears the three tracking maps, which returns the
+	// HairParticleSystem GPU buffers as well as stopping the per-strand simulate dispatch.
+	// NOT GGGrass_RemoveAll(): that zeroes all 16 MB of pGrassMap in place, so the level's
+	// PAINTED grass would be destroyed and the next save would write an empty .gra.
+	// Skipping SetupWickedGrass as well means the grass DDS blades are never even loaded.
+	{
+		// Edge-TRIGGERED both ways. The latch must be declared outside the `if` and cleared on
+		// the OFF->ON edge, or the switch is one-way: measured 2026-08-22, grass stayed gone
+		// after SET_GRASSOFF 0 and every later reading in that ladder was silently taken on a
+		// grass-free scene.
+		static bool s_ggNoGrassApplied = false;
+		if (gg_no_grass && !s_ggNoGrassApplied)
+		{
+			ForceGrassRebuild();          // remove what exists; never rebuilt while the flag holds
+			s_ggNoGrassApplied = true;
+		}
+		else if (!gg_no_grass && s_ggNoGrassApplied)
+		{
+			// Coming back on: clear the tier records so ProcessGrassChunks re-visits every chunk
+			// and regrows. ForceGrassRebuild already cleared the maps on the way out, but a chunk
+			// created WHILE grass was off has a stale tier entry and would be skipped.
+			grassChunkKeyToTier.clear();
+			// ...and NUDGE the pass. ProcessGrassChunks is gated on (grassDirty || chunkSig
+			// changed || settle retry || nudge || camera moved > 8 units). With a parked camera
+			// on a settled level NONE of those fire, so without this the switch is one-way:
+			// measured twice on 2026-08-22 before the nudge was added - grass never came back
+			// and every later reading in the ladder was silently taken on a grass-free scene.
+			g_grassPassNudge = true;
+			s_ggNoGrassApplied = false;
+		}
+	}
+	if (!wickedGrassSetup && !gg_no_grass)
 	{
 		SetupWickedGrass();
 	}
@@ -3468,7 +3559,11 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	// Grass Scale slider → per-entity `length`. Same rationale as the altitude sync: cheaper to
 	// always push than to track a "did the slider move?" flag and get it wrong on re-creation.
 	ApplyGrassScale();
-	if (wickedGrassEnabled)
+	// GGMAX 2.94: && !gg_no_grass - ProcessGrassChunks is the ONLY caller of scene.hairs.Create
+	// for grass, so this one condition is the difference between "grass exists" and "it never
+	// did". ApplyGrassAltitude/ApplyGrassScale above are left unguarded on purpose: they walk
+	// scene.hairs, which is EMPTY once the teardown above has run, so they cost nothing.
+	if (wickedGrassEnabled && !gg_no_grass)
 	{
 		// Editor paint mutates pGrassMap via GGGrass_Update_Painting. The Wicked grass renderer
 		// caches per-chunk hair entities and only rebuilds them on tier/entity changes — so it
@@ -3545,6 +3640,12 @@ void GGTerrainWicked_Shutdown()
 	if (terrain)
 	{
 		terrain->Generation_Cancel();
+		// GGMAX 2.94: Generation_Cancel only waits on generator->workload. The ASYNC VT JOB is a
+		// separate context holding raw VirtualTexture pointers - freeing VTs underneath it is the
+		// use-after-free documented in the GGMAX 1.45 comment in Terrain::Generation_Restart
+		// (travel-churn / level-switch corruption, AMD DEVICE_HUNG). Generation_Restart joins it;
+		// this teardown never did - until 2.94 it had ZERO callers and had never been executed.
+		wi::terrain::gg_WaitVirtualTextureJob();
 		// Remove all chunk entities from the scene
 		for (auto& [chunk, chunk_data] : terrain->chunks)
 		{
@@ -3567,6 +3668,12 @@ void GGTerrainWicked_Shutdown()
 	maxPaintedSlot = -1;
 	processedChunkKeys.clear();
 	chunkKeyToEntity.clear();
+	// GGMAX 2.94: the GRASS tracking maps point at hair entities Component_Attach'ed to the chunks
+	// just removed. Entity_Remove is recursive so the hairs are already gone, but the maps would
+	// still hand dangling entity ids to ProcessGrassChunks on a later re-init.
+	grassChunkKeyToGrassEntities.clear();
+	grassChunkKeyToTier.clear();
+	grassChunkKeyToChunkEntity.clear();
 
 	// Phase 5: tear down the tree pool alongside the terrain.
 	GGTrees::GGTrees_WickedShutdown();

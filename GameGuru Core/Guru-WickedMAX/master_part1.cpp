@@ -87,6 +87,31 @@ void GGSetLowVRAMLevel(int on)
 	GGRecomputeLowVRAM();
 }
 
+// GGMAX 2.94: the four brutal off-switches, same (machine || level) shape as lowvram above.
+// MACHINE = setup.ini (disableterrainall / disabletreesall / disablegrassall / disablewaterall),
+// LEVEL   = the tick boxes in Graphics and Performance. Either one on = the subsystem does not
+// exist. Effective flags are defined in GGTerrain/GGTerrainWicked.cpp next to gg_lowvram.
+//
+// INT PASSTHROUGH: the setters take int, never bool - the 2.89 lesson (an INI bool-ization was
+// the reason a knob looked dead when the pipeline was fine). The (on != 0) inside the setter is
+// the same shape GGSetLowVRAM uses and keeps mode-widening open.
+extern bool gg_no_terrain;   // GGTerrainWicked.cpp - the effective flags
+extern bool gg_no_trees;
+extern bool gg_no_grass;
+extern bool gg_no_water;
+static bool gg_no_terrain_machine = false, gg_no_terrain_level = false;
+static bool gg_no_trees_machine   = false, gg_no_trees_level   = false;
+static bool gg_no_grass_machine   = false, gg_no_grass_level   = false;
+static bool gg_no_water_machine   = false, gg_no_water_level   = false;
+void GGSetNoTerrain     (int on) { gg_no_terrain_machine = (on != 0); gg_no_terrain = gg_no_terrain_machine || gg_no_terrain_level; }
+void GGSetNoTerrainLevel(int on) { gg_no_terrain_level   = (on != 0); gg_no_terrain = gg_no_terrain_machine || gg_no_terrain_level; }
+void GGSetNoTrees       (int on) { gg_no_trees_machine   = (on != 0); gg_no_trees   = gg_no_trees_machine   || gg_no_trees_level;   }
+void GGSetNoTreesLevel  (int on) { gg_no_trees_level     = (on != 0); gg_no_trees   = gg_no_trees_machine   || gg_no_trees_level;   }
+void GGSetNoGrass       (int on) { gg_no_grass_machine   = (on != 0); gg_no_grass   = gg_no_grass_machine   || gg_no_grass_level;   }
+void GGSetNoGrassLevel  (int on) { gg_no_grass_level     = (on != 0); gg_no_grass   = gg_no_grass_machine   || gg_no_grass_level;   }
+void GGSetNoWater       (int on) { gg_no_water_machine   = (on != 0); gg_no_water   = gg_no_water_machine   || gg_no_water_level;   }
+void GGSetNoWaterLevel  (int on) { gg_no_water_level     = (on != 0); gg_no_water   = gg_no_water_machine   || gg_no_water_level;   }
+
 // GGMAX 2.71: the producelogfiles setup.ini key now also gates the ROUTINE diagnostic
 // FILE writers (standalone exports write producelogfiles=0, the editor ships =1), so
 // players' game folders stay clean. Detection/healing and the crash handlers

@@ -16,6 +16,12 @@
 // pAllTrees / numTotalTrees / InstanceTree / g_GGTrees resolve without
 // qualification.
 
+// GGMAX 2.94: the "Trees Off" effective flag lives in the GLOBAL namespace
+// (GGTerrainWicked.cpp). Declared HERE, outside `namespace GGTrees`, on purpose - a
+// block-scope `extern bool gg_no_trees;` written inside the namespace declares
+// GGTrees::gg_no_trees instead and fails to link (LNK2001, the 2.53 linkage rule).
+extern bool gg_no_trees;
+
 namespace GGTrees
 {
 
@@ -891,6 +897,28 @@ static void GGTrees_BuildShadowProxyChunk( uint32_t c )
 
 void GGTrees_WickedUpdate()
 {
+	// GGMAX 2.94: "Trees Off" brutal off-switch. Placed at the very top so it is BOTH arms of
+	// the switch in one guard:
+	//   - set before the first update after a load, GrowTreePool / RebuildTreeGrid /
+	//     EnsureTreeType / BuildShadowProxyChunk are never reached, so not one tree entity,
+	//     mesh, material or GPU buffer is ever created;
+	//   - set on an already-loaded level, ReleaseTreePool tears the whole lot out now instead
+	//     of after the 600-frame park delay.
+	// ReleaseTreePool is the right primitive and is already proven: it removes every pool
+	// entity, every shadow proxy + billboard material, and all per-type LOD assets.
+	// NOT GGTrees_HideAll() - that walks all 400,000 instances writing bit 0 of the instance
+	// data word, which is LEVEL DATA, and a later save would persist the hide.
+	{
+		if ( ::gg_no_trees )
+		{
+			auto& scene = wi::scene::GetScene();
+			// widened past the stock `g_treePoolBuilt > 0` guard: proxies can outlive the pool
+			if ( g_treePoolBuilt > 0 || !g_chunkProxyObject.empty() )
+				ReleaseTreePool( scene );
+			return;
+		}
+	}
+
 	if ( !g_wickedTreesSetup )
 	{
 		GGTrees_WickedSetup();
