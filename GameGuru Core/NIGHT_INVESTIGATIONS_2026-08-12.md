@@ -4019,3 +4019,103 @@ sub-200 ms window. The change adds at most 3 frames of feedback->decision latenc
 
 ⚠ Not yet gated by the 19-demo sweep. That should run before the alpha, since this changes
 terrain streaming behaviour on every level.
+
+## §2.94e — THE TERRAIN BAKE, TESTED WITHOUT WRITING A BAKER (2026-08-22, Lee's proposal)
+
+Lee: bake the final chunk-generated terrain into dumb static meshes with a basic texture,
+dropping dynamic terrain management and VT; he expected the residual ~2 ms CPU + ~2 ms GPU to
+"mostly disappear", since it would be "a few state changes and a few extra draw calls".
+
+★★★ **It turned out the proposal could be TESTED EXACTLY, today, with no baker and no assets.**
+Virtual texturing on a terrain chunk is ONE INTEGER: `sparse_residencymap_descriptor` in the
+material's texture slot (ShaderInterop_Renderer.h:220, set at wiTerrain.cpp:2102/2111). Set
+`Terrain::gg_near_ring_dist = 0` and every chunk takes `min_resolution`, gets NO residency
+object, is therefore skipped by all four VT GPU passes (each opens `if (vt->residency ==
+nullptr) continue;`), and binds with the descriptor at -1 so the pixel shader falls through to
+a plain `tex.Sample`. Same shader, same PSO, no permutation. That IS the proposal's runtime
+state. Harness `SET_TERRAINBAKE 0|1` (0 = GGMAX default 4, 1 = bake-equivalent 0), with an
+executed-check that re-reads `residencyVTs` — confirmed 49 -> **0** -> 49 -> **0**.
+
+### 1. What the residual actually is (TESTPRO2, after 2.94d)
+Terrain ON vs OFF: **GPU frame +3.31 ms, GPU busy +2.02, GPU idle +1.40, CPU +1.78.**
+
+| row | ON | OFF | delta | class |
+|---|---|---|---|---|
+| Update - Wicked (Total) | 2.19 | 0.94 | +1.26 | 625 chunk ENTITIES in Scene::Update |
+| VT-job Total + PageBuf | 0.75 | 0.00 | +0.75 | dynamic VT only |
+| Opaque Scene | 0.73 | 0.12 | +0.61 | drawing terrain |
+| Update Buffers (GPU) | 0.91 | 0.33 | +0.58 | entity/instance upload |
+| Z-Prepass | 0.40 | 0.02 | +0.38 | drawing terrain |
+| Update - Terrain + Wicked Bridge | 0.29 | 0.02 | +0.27 | Generation_Update |
+
+### 2. Is the residual entity-count or pixels? — the chunk-ladder (`SET_TERRAINGEN`)
+Chunk count is (2n+1)^2, so the ring radius scales ENTITY count while barely touching what is
+drawn. This is a direct proxy for "what would merging 625 meshes buy?".
+
+| gen | chunks | POLYS | GPU frame | CPU | cost above terrain-off (GPU / CPU) |
+|---|---|---|---|---|---|
+| 12 | 625 | 506,388 | 5.99 | 4.27 | +3.29 / **+1.72** |
+| 6 | 169 | 475,180 | 5.53 | 3.55 | +2.83 / +0.99 |
+| 3 | 49 | 445,860 | 5.43 | 3.37 | +2.73 / **+0.82** |
+
+★ **Removing 92% of the entities halves the CPU residual (1.72 -> 0.82) and moves GPU busy by
+12% (2.02 -> 1.78), with POLYS essentially unchanged.** So the CPU residual IS an entity-count
+tax; the GPU residual is NOT.
+
+### 3. The bake-equivalent A/B (nearRing 4 vs 0, interleaved, executed-checked)
+| arm | GPU frame | GPU busy | GPU idle | CPU | FPS |
+|---|---|---|---|---|---|
+| stock nearRing=4 | 5.93 | 3.31 | 2.62 | 3.96 | 166.8 |
+| **BAKE-EQUIV nearRing=0** | **4.66** | 3.19 | **1.47** | 4.15 | **207.2** |
+| terrain OFF | 2.62 | 1.24 | 1.38 | 2.18 | 372.1 |
+
+★★ **−1.27 ms GPU frame, +40.4 FPS, from ONE INTEGER.** But read the columns: GPU busy moved
+only −0.11; the entire saving is the idle/unranged bucket (−1.15), i.e. still-unmeasured
+residency work. ⚠ **CPU got 0.19 ms WORSE, not better.**
+
+### ★★★ VERDICT ON THE PROPOSAL — half right, and the halves are separable
+Lee's idea is really TWO independent changes, and they pay off in opposite places:
+
+| | mechanism | measured | verdict |
+|---|---|---|---|
+| **Drop VT / plain texture** | one integer, no baker | **−1.27 ms GPU, +40 FPS**, CPU +0.19 | ★ real, and available TODAY |
+| **Merge 625 chunks -> few meshes** | needs a real baker | **−0.90 ms CPU**, −0.24 GPU busy | ⚠ risky, see below |
+
+- "A few state changes and a few draw calls" — right about the MECHANISM, but the draw calls
+  were never the cost. Chunks do not instance (each has a unique meshID, so every visible chunk
+  is one DrawIndexedInstanced) yet cutting them 12.8x moved GPU busy by 0.24 ms.
+- "2 ms CPU and GPU will mostly disappear" — the GPU half loses 38% (1.27 of 3.31), not most;
+  the remaining 2.05 ms is rasterising terrain, which a bake still has to do. The CPU half gets
+  NOTHING from dropping VT and needs the merge instead.
+- ⚠ **Mesh merging has a real downside**: LOD (7 levels) and frustum culling and occlusion
+  queries are all PER OBJECT. One merged AABB is never occluded, never culled, and pins LOD —
+  so it can draw MORE triangles than today. Merge to a modest grid (say 5x5), never to one mesh.
+
+### Quality cost of the bake-equivalent
+Ground detail (edge energy over the lower 45% of frame) stock 22.561/22.575 vs bake
+22.227/22.186 — a consistent **−1.6%**, about 10x the within-condition spread, so real but
+subtle. ⚠ **Measured on spotshadowtest, a nearly empty scene.** nearRing=0 puts every chunk at
+256 px instead of 2048, so on a painted, textured level with the camera near the ground the
+loss will be considerably more visible than 1.6%. **This needs Lee's eye before it ships.**
+
+### Other findings worth more than the bake (from the parallel code analysis, NOT yet acted on)
+1. ★★ **`GGTerrainWicked_Update` has NO editor/game discriminator.** The Test Game and the
+   exported exe run the full sculpt/paint bridge, the chunkSig census and a SECOND
+   Generation_Update every frame — none of which can do anything in a shipped game. Gating on
+   `t.game.gameisexe` is free CPU in exactly the place Lee cares about, with no visual change.
+2. ★★ **The engine's own `Generation_Update` (wiScene.cpp:180) is UNGATED.** The GGMAX idle gate
+   (GGTerrainWicked.cpp:3344) skips only the BRIDGE call, 7 frames in 8. On a parked, settled
+   scene the full 625-chunk walk still runs every frame via the engine caller.
+3. `gg_instinit_parallel` (harness SET_INSTINIT) defaults OFF and its own comment calls the
+   serial instance-slot init "the largest unnamed cost in Scene-S1".
+4. The SVT atlas is ~480 MB fully committed at boot and held forever — on every level,
+   including indoor ones. Relevant to the 4 GB floor, independent of frame time.
+
+### RECOMMENDATION
+Do NOT write a baker yet. In order:
+1. Lee eyeballs `SET_TERRAINBAKE 1` on a painted level (Aztec). If the ground holds up, ship it
+   as a **low-end preset knob**, not a bake — it is +40 FPS for one integer.
+2. Do the `gameisexe` gate on the terrain bridge. Free, no visual change, targets the exported
+   game directly.
+3. Only then consider a real bake, and only for the mesh-merge half, at a coarse grid — and
+   measure against the culling/LOD loss rather than assuming it is free.

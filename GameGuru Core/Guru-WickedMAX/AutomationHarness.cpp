@@ -5766,6 +5766,71 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		}
 	}
 
+	if (_stricmp(cmd, "SET_TERRAINBAKE") == 0)
+	{
+		// GGMAX 2.94e: puts every terrain chunk into the exact runtime state Lee's proposed
+		// "terrain bake" would produce - WITHOUT writing a baker.
+		//
+		// gg_near_ring_dist is the radius (in chunks) inside which a chunk gets max_resolution
+		// and a RESIDENCY object. Set it to 0 and every chunk takes min_resolution instead,
+		// gets no residency, is therefore skipped by all four VT GPU passes (each opens with
+		// `if (vt->residency == nullptr) continue;`), and has its material bound with
+		// sparse_residencymap_descriptor = -1 (wiTerrain.cpp:2102) so the pixel shader falls
+		// through to a plain tex.Sample. That is "dumb mesh + basic texture", exactly, and it
+		// costs one integer - no shader permutation, no PSO change, no assets.
+		//
+		// arg 0 = restore GGMAX default (4), 1 = bake-equivalent (0), or any explicit radius.
+		wi::scene::Scene& bsc = wi::scene::GetScene();
+		if (bsc.terrains.GetCount() == 0)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_TERRAINBAKE - no terrain in the scene (is Terrain Off set?)");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		wi::terrain::Terrain& btr = bsc.terrains[0];
+		const int m = atoi(arg);
+		btr.gg_near_ring_dist = (m == 1) ? 0 : ((m == 0) ? 4 : m);
+		int resVTs = 0, totVTs = 0;
+		for (const auto* vt : btr.virtual_textures_in_use) { totVTs++; if (vt->residency != nullptr) resVTs++; }
+		_snprintf(result, resultSize,
+			"OK: SET_TERRAINBAKE %d - live gg_near_ring_dist=%d chunks=%d VTs=%d residencyVTs=%d. "
+			"EXECUTED-CHECK: residencyVTs must fall to 0 in bake mode, but only Generation_Update "
+			"performs the downgrade - allow ~20s and RE-READ before trusting any timing.",
+			m, btr.gg_near_ring_dist, (int)btr.chunks.size(), totVTs, resVTs);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	if (_stricmp(cmd, "SET_TERRAINGEN") == 0)
+	{
+		// GGMAX 2.94e: set the chunk-ring radius, then REBUILD the terrain so it takes effect.
+		// terrain.generation is only read inside GGTerrainWicked_Init, so a runtime write to
+		// g_terrainGenOverride alone is inert - the Terrain Off switch's teardown/re-init is
+		// what makes it live. Used as a cheap PROXY for the terrain-bake question: chunk count
+		// is (2n+1)^2, so this scales entity count without writing a baker.
+		// WARNING lower is NOT free - the ring is what gives terrain its view distance.
+		extern void GGSetTerrainGen(int);
+		extern bool gg_no_terrain;
+		extern void GGSetNoTerrainLevel(int);
+		const int n = atoi(arg);
+		GGSetTerrainGen(n);
+		extern int g_terrainGenOverride;
+		const int eff = g_terrainGenOverride ? g_terrainGenOverride : 12;
+		// This command ONLY sets the override. It deliberately does NOT cycle the terrain for
+		// you: the Terrain Off teardown is EDGE-TRIGGERED inside GGTerrainWicked_Update, so
+		// setting the flag on and off inside one harness command means no frame ever observes
+		// it set and nothing rebuilds. Measured 2026-08-22 - a whole gen ladder ran and every
+		// rung reported chunks=625. The caller must send SET_TERRAINOFF 1, WAIT for frames,
+		// then SET_TERRAINOFF 0.
+		_snprintf(result, resultSize,
+			"OK: SET_TERRAINGEN %d - live g_terrainGenOverride=%d (effective gen %d, ring (2n+1)^2 = %d chunks). "
+			"NOT YET LIVE: now send SET_TERRAINOFF 1, wait >=5s, SET_TERRAINOFF 0, wait ~30s for the rebuild. "
+			"Verify with TERRAIN_RING in GET_PERF_DATA before trusting any timing.",
+			n, g_terrainGenOverride, eff, (2 * eff + 1) * (2 * eff + 1));
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_VTWRITEBACK") == 0)
 	{
 		// GGMAX 2.94d: cadence of the terrain VT tile-request round trip, in frames.
