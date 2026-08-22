@@ -3815,3 +3815,56 @@ Gate a measurement on the load having SUCCEEDED, not on the script exiting 0.
   within a session and writes nothing into the user's levels. Per-level persistence is a known
   follow-up (Types.h field + 4 sites in M-Visuals_part0.cpp + the test-game carry-back in
   M-GridEdit_part2.cpp) and was deliberately deferred.
+
+## §2.94b — TESTPRO2 terrain isolation: the ~4.85 ms is FIXED and content-independent (2026-08-22)
+
+Lee saved TESTPRO2 with everything else stripped back and asked for a terrain-only A/B.
+Loaded level: `spotshadowtest.fpm` (the first level node). Interleaved A/B/A/B/A/B on one
+binary, three pairs, profiler on throughout.
+
+⚠ Note the four 2.94 switches are SESSION globals and all read 0 at launch, so whatever
+TESTPRO2 has "switched off" is in the level's own visuals, not these switches. Consistent with
+the poly count: 503,491 with terrain, 26,813 without — i.e. terrain is ~477 K polys, nothing.
+
+| stage | GPU frame | GPU busy | GPU idle | CPU | FPS | POLYS |
+|---|---|---|---|---|---|---|
+| A1 terrain ON  | 9.16 | 3.20 | 5.95 | 4.11 | 107.1 | 503,491 |
+| B1 terrain OFF | 2.45 | 1.26 | 1.20 | 2.27 | 391.5 | 26,813 |
+| A2 terrain ON  | 9.18 | 3.21 | 5.97 | 4.21 | 102.7 | 503,491 |
+| B2 terrain OFF | 2.34 | 1.22 | 1.13 | 2.26 | 391.8 | 26,813 |
+| A3 terrain ON  | 9.26 | 3.21 | 6.04 | 4.37 | 103.4 | 503,491 |
+| B3 terrain OFF | 2.39 | 1.22 | 1.17 | 2.26 | 391.2 | 26,813 |
+| A4 terrain ON  | 9.20 | 3.20 | 6.01 | 4.27 | 103.3 | 503,491 |
+| **mean ON**  | **9.20** | **3.21** | **5.99** | 4.27 | **104.1** | |
+| **mean OFF** | **2.40** | **1.23** | **1.16** | 2.26 | **391.5** | |
+| **delta**    | **−6.80** | **−1.98** | **−4.83** | −2.01 | +287 | |
+
+Within-state spread under 1%. Terrain costs **6.80 ms/frame on a level with 477 K terrain
+polygons and nothing else** — 104 FPS becomes 391 FPS.
+
+### ★★★ The decomposition, now measured on two very different levels
+| | aztec teaser (4.15 M terrain polys) | TESTPRO2 (0.48 M terrain polys) |
+|---|---|---|
+| GPU **busy** delta | −4.77 | −1.98 |
+| GPU **idle** delta | **−4.93** | **−4.83** |
+
+**The busy half scales with terrain geometry. The idle half does not — it is ~4.85 ms on both,
+a 2% spread across a 9× difference in terrain polygons.** So roughly 4.85 ms per frame is a
+FIXED tax that any level with terrain pays regardless of content. At 60 FPS that is 29% of the
+frame budget spent in no measured pass.
+
+### ⚠ CORRECTION to the §2.94 mechanism guess
+§2.94 named the cross-queue `WaitCommandList` at wiRenderPath3D.cpp:1876 as prime suspect.
+That is WEAK: `gg_single_queue = true` (wiGraphicsDevice_DX12.cpp:479) already collapses the
+queues, so there are no cross-queue bubbles to pay. The three extra command lists still exist
+and still serialise, but the specific mechanism is now UNKNOWN. Per-row diffing does not reach
+it either — with terrain on, GPU Busy is 3.17 of a 9.14 ms frame and no GPU row is over 0.93 ms.
+
+A cost that is invisible to every range, fixed in size, and disappears with the Terrain
+component is exactly what PIX exists for. That is the next instrument; do not guess again.
+
+### The profiler row fix is confirmed working
+105 rows parsed with real values in both states (the fix routing M-GridEdit_part1.cpp through
+the cached snapshot). Largest CPU movers on terrain removal: `VT-job Total` 0.96 → 0.00,
+`Update - Wicked (Total)` 2.18 → 0.95, `Update Buffers (GPU)` 0.93 → 0.23, `VT-job PageBuf`
+0.45 → 0.00.
