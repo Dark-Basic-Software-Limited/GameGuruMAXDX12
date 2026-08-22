@@ -1,3 +1,78 @@
+# 2026-08-22 SWEEP (0822) - 2.94d/2.94f GATE - engine `68db4c1b` / game `bfaf4e13`
+
+Purpose: regression gate for the day's two engine changes - 2.94d (VT tile-request round trip
+every 4th frame) and 2.94f (terrain idle gate extended to the engine's Generation_Update).
+
+VERDICT: **PASS 1 CLEAN, 19/19, zero failures, POLYS bit-identical 19/19 vs the 0816 baseline,
+4 GB gate HOLDS (worst editor VRAM 3635 MB). PASS 2 ABORTED after 5 demos - not a code defect,
+a wedged MAX process. See the incident section.**
+
+## Pass 1 (0822a) - editor FPS vs the 2.91 baseline (0819)
+
+| Demo | 2.91 ref | 0822a | delta | VRAM MB | POLYS |
+|---|---|---|---|---|---|
+| Aztec Game Kit Teaser | 63.0 | 83.1 | +32.0% | 3046 | 10,330,135 |
+| Aztec Game Kit | 92.2 | 121.8 | +32.1% | 3635 | 3,438,876 |
+| Bounty | 103.0 | 158.5 | +54.0% | 2639 | 469,906 |
+| Horseshoe Bend | 103.5 | 124.9 | +20.6% | 2981 | 2,168,281 |
+| Island Showdown | 68.8 | 90.3 | +31.1% | 2680 | 4,125,704 |
+| Operation Amazon | 77.5 | 103.8 | +34.0% | 3356 | 5,504,271 |
+| River Raiders | 109.7 | 170.3 | +55.2% | 3228 | 2,362,345 |
+| Snowy Mountain Stroll | 134.9 | 188.9 | +40.1% | 2740 | 81,369 |
+| A Grand Canyon Adventure | 96.2 | 139.4 | +44.9% | 2743 | 2,279,506 |
+| Disruption | 80.3 | 108.3 | +34.9% | 2773 | 4,677,579 |
+| Foggy Forest | 60.0 | 74.6 | +24.4% | 2890 | 10,220,589 |
+| Indian Strike Force | 90.0 | 127.2 | +41.4% | 2990 | 3,229,699 |
+| Switch Escape | 141.9 | 251.1 | +76.9% | 2277 | 109,358 |
+| Canyon Offensive | 68.8 | 91.6 | +33.2% | 3233 | 8,838,008 |
+| Escape from the Zombie Cellar | 138.8 | 244.9 | +76.5% | 2313 | 28,048 |
+| Jungle Fever | 113.8 | 179.2 | +57.5% | 2856 | 76,157 |
+| RPG Template | 95.0 | 140.6 | +48.0% | 3048 | 3,247,629 |
+| The Mystery of Z Island | 99.7 | 147.4 | +48.0% | 3290 | 722,872 |
+| Trapped | 152.9 | 279.5 | +82.9% | 2362 | 12,768 |
+
+**Hub-wide +45.7%.** POLYS bit-identical 19/19 against `results_0816.txt`. Worst editor VRAM
+3635 MB (gate 4096) - HOLDS. Worst IN-GAME VRAM 3947.9 MB on Aztec Game Kit, which is close
+enough to the 4 GB line to be worth watching.
+
+### Is +45.7% believable across days?
+The standing rule says trust nothing under ~10% cross-day. These are 20-83%, far outside the
+drift band, and the SHAPE is the confirmation: **the gains are largest on the CHEAPEST levels.**
+Trapped (12,768 polys) +82.9%, Zombie Cellar (28,048) +76.5%, Switch Escape (109,358) +76.9%,
+against Foggy Forest (10.2 M polys) +24.4% and Aztec Teaser (10.3 M) +32.0%. That is exactly
+what removing a FIXED ~4 ms/frame cost predicts - it is a larger fraction of a cheap frame.
+2.94c measured that fixed cost directly (WritebackTileRequests 3.96 ms on a 26,813-poly scene).
+Mechanism and measurement agree, so this is real, not drift.
+
+## ⚠ INCIDENT: pass 2 aborted - a wedged, unkillable MAX process
+
+Pass 2 completed Aztec Game Kit Teaser and Aztec Game Kit, then every subsequent demo returned
+FAIL_HUB. Diagnosis, in order:
+- Not a crash. `Guru-Crash.log` is dated 2026-08-14 and never changed tonight.
+- Not the build. The identical binary had just completed 19/19 in pass 1.
+- **A MAX instance (PID 23040) from the Aztec Game Kit test-game phase wedged**, holding
+  6.9 GB, still listed by `tasklist`, and would not die: `taskkill //F //PID`, `taskkill //F
+  //IM`, PowerShell `Stop-Process -Force` and `Process.Kill()` all reported success or "no
+  running instance" while the process remained. Almost certainly blocked in a driver call.
+- Every later launch stalled at ~51 MB and never initialised, because the wedged instance held
+  the GPU. That is the FAIL_HUB.
+
+★★ **`taskkill` reporting SUCCESS does not mean the process died, and `ps -W` and `taskkill`
+disagree with each other.** Both lied here in opposite directions. `tasklist //FI "IMAGENAME
+eq ..."` was the only reliable reading. Any sweep that kills-and-relaunches should verify the
+process is GONE with tasklist before launching, not trust the kill's exit status.
+
+⚠ Pass 2's two completed demos DO agree with pass 1 (Aztec Teaser |A-B| 0.4%, Aztec Game Kit
+2.5%, POLYS identical both), which is consistent with the previously measured ~1% same-session
+noise floor - but two demos is not a noise-floor calibration.
+
+## What is still owed
+Pass 2 needs re-running once the machine is clear (the wedged PID may need a reboot). The gate
+is therefore **provisionally clean on one pass**, not the usual two-pass standard.
+
+
+---
+
 # 2026-08-19 SWEEP (0819) — 2.91 REGRESSION GATE — engine `ace9088a` / game `1d766a63`
 
 Purpose: Lee-requested confirmation that the 2.91 GPU-accounting work broke nothing.
