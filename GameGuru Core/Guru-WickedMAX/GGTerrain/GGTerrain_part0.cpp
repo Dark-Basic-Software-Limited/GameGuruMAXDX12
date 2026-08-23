@@ -12011,3 +12011,17 @@ void GGTerrain_TriggerPaintTextureLoad(void)
 
 } // namespace GGTerrain
 
+// GGMAX 2.96: GLOBAL-SCOPE shim so GGTrees can reuse this DDS-into-array-slice loader.
+// Deliberately outside `namespace GGTerrain`: a declaration written inside `namespace GGTrees`
+// mangles to GGTrees::… and fails to link (the 2.53 linkage rule, hit again on this very call).
+// Sizes the validation requirements from the destination texture, which is what the tree
+// billboard atlases need (1024x1024) versus terrain's 2048 default.
+bool GG_LoadDDSIntoTextureSlice( const char* filename, wi::graphics::Texture* tex,
+                                 uint32_t arraySlice, wi::graphics::CommandList cmd )
+{
+	if ( tex == nullptr || !tex->IsValid() ) return false;
+	GGTerrain::DDSRequirements req;
+	req.width  = (int)tex->desc.width;
+	req.height = (int)tex->desc.height;
+	return GGTerrain::GGTerrain_LoadTextureDDSIntoSlice( filename, tex, arraySlice, &req, cmd, false );
+}

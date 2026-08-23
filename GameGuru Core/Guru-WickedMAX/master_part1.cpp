@@ -306,6 +306,7 @@ extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphi
 extern "C" void GGTerrain_Draw_Prepass_Reflections(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
 extern "C" void GGTrees_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList); // GGMAX 2.96 far-tree billboards
+extern "C" void GGTrees_Draw_Prepass(const wi::primitive::Frustum*, int, wi::graphics::CommandList); // GGMAX 2.96
 extern "C" void GGTerrain_Draw_Transparent(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_ShadowMap(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_EnvProbe(const wi::primitive::Sphere*, const wi::primitive::Frustum*, uint32_t, wi::graphics::CommandList);
@@ -458,6 +459,9 @@ void MasterRenderer::Load()
 	// Terrain only (trees/grass disabled — see GRASSISSUE.md for details)
 	// When ggterrain_use_wicked_terrain is active, all callbacks return early
 	customDraw_Prepass = [](const Frustum* frustum, CommandList cmd) {
+		// GGMAX 2.96: the far-tree billboard PREPASS. Required, not optional - the main pass
+		// runs depth_write_mask = ZERO and relies on this to lay the depth down.
+		GGTrees_Draw_Prepass(frustum, 0, cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Prepass(frustum, cmd);
 	};

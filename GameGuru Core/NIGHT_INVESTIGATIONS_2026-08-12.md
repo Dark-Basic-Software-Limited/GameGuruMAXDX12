@@ -4408,3 +4408,70 @@ counters. Nothing changes for anyone until the atlas decision is made.
 ★ Also explains the 2.95b mystery: `SET_FARTREES` reads its counters in the same harness tick it
 sets the flag, one frame before the pass can run — hence `entered=0` on the first read and real
 numbers on the second. The old `proxiesShown=0` was the same instrument artefact, not a bug.
+
+## §2.96b — four layers down, pixels still absent; the binding model is the remaining suspect
+
+Continuing 2.96 after Lee approved the 78.3 MB. Three more layers cleared, one to go.
+
+### Layer 3 CLEARED — the atlas loader now works
+`GGTrees_LoadTextureDDSIntoSlice` was `// stub - DDS loading disabled` because **tinyddsloader
+was removed in the DX12 port** (the same TODO sits over the grass equivalent). Rather than
+re-add a third-party header, it now delegates to `GGTerrain_LoadTextureDDSIntoSlice` — a working
+DX12 implementation of exactly this (parses the header itself, builds a staging texture,
+`CopyTexture`s each mip into the array slice).
+
+Two traps on the way:
+- The terrain loader dereferences `requirements->` unconditionally under `CUSTOMTEXTURES`
+  (which IS defined), so nullptr would crash. It validates width/height, and the billboard
+  atlases are 1024x1024 against terrain's 2048 default — the requirements are now sized from
+  the destination texture.
+- ★ **The 2.53 linkage rule bit again**: `extern bool GGTerrain_LoadTextureDDSIntoSlice(...)`
+  written inside `namespace GGTrees` mangles to `GGTrees::GGTerrain_...` and fails to link.
+  Fixed with a GLOBAL-scope shim `GG_LoadDDSIntoTextureSlice` at the foot of GGTerrain_part0.cpp.
+
+Also: `GGTrees_EnsureLegacyTexArrays` is only reached from GGTerrain_Update's legacy tail, which
+early-returns on the shipping path — so the atlases were never even created. Added
+`GGTrees_EnsureBillboardAtlases`, a one-shot lazy init that creates and fills ONLY texTree +
+texTreeNormal (78.3 MB). The HIGH pair stays absent by design.
+
+**Measured: `atlasSlices=38`.** All 38 tree types upload their billboard DDS.
+
+### Layer 4 CLEARED — the prepass is enabled and hooked
+`GGTrees_Draw_Prepass` carried the same "GPU hang / PSO compilation failure" disable. It is
+**structurally required, not optional**: the main billboard pass runs `depth_write_mask = ZERO`
+precisely because DX11 has the prepass lay the depth down first. Both now run, billboards only.
+
+### ⚠ STILL NO PIXELS — and this is where I stopped
+Current state, every measurement clean:
+
+    BILLBOARD PASS: entered=4396 draws=87 instances=98410 atlasSlices=38
+                    chunksTotal=256 withInstances=256 frustumKilled=169
+    horizon-band screenshot delta: 0.002 mean   (control 0.97)
+
+So: PSOs compile (`gg_pso_fail.txt` is never created), 87 draws issue per frame, 98,410
+instances are submitted, the constant buffer is filled, 38 atlas slices are resident, and the
+prepass runs. Nothing appears.
+
+★ **Four build-test cycles without pixels is past the two-attempt rule, so I stopped guessing.**
+
+### The remaining suspect, and the diagnostic that would settle it
+**The DX11 shaders assume a binding model current Wicked does not provide.** `GGTrees_Draw`
+binds the tree CB at slot 3, resources at 50/51/53 and samplers at 0/1/2, then calls
+`GGCustomFrame_Bind(cmd)` for the camera. Wicked's DX12 root signature is descriptor-heap based
+and those register assignments date from the DX11-era engine. If the view-projection the VS
+reads is garbage, every quad projects off-screen — which fits the evidence exactly: correct
+draw counts, correct instance counts, zero pixels, and no PSO error.
+
+The pso_validate path never logging a failure is itself informative: **the pipeline is fine, so
+this is a DATA or BINDING problem, not a pipeline one.**
+
+NEXT (a bisect, not a guess): make the billboard PS output a solid opaque colour and the VS
+bypass the tree transform, emitting a fixed clip-space quad. If a colour appears, the atlas or
+alpha path is at fault. If nothing appears, it is the transform/binding — and then the register
+mapping in GGTreesVS.hlsl versus Wicked's current root signature is the thing to read.
+
+### State
+Everything is behind `gg_far_tree_pass`, DEFAULT OFF. `SET_FARTREES 0|1` reports draws,
+instances, atlas slices, chunk counts and frustum kills. Nothing changes for anyone.
+The PSO lifetime fix is a genuine repair and is worth keeping regardless of how the rest lands —
+it silently corrupted all 11 tree PSOs.

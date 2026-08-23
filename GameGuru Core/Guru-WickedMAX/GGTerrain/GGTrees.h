@@ -20,6 +20,7 @@ namespace GGTrees
 {
 	extern bool gg_far_tree_pass;   // GGMAX 2.96: DX11-style distant-tree billboard pass
 	extern uint32_t g_ftDrawCalls, g_ftInstances, g_ftChunksTotal, g_ftChunksWithIn, g_ftFrustumKills, g_ftEnterCount;
+	extern uint32_t g_ftAtlasSlices;
 	// GGMAX 2.95: far-tree billboard gate diagnostics (harness SET_FARTREES)
 	void GGTrees_GetFarTreeStats(int* proxyCount, int* proxiesShown, int* candidates, int* poolBuilt, int* poolSize, float* cutoffDist2);
 	void GGTrees_GetFarTreeRange(int* validProxies, float* nearestChunk, float* farthestChunk);

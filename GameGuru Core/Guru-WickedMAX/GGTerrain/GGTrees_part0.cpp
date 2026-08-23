@@ -58,6 +58,13 @@ bool bTreeTextureForceUploaded[255];
 uint64_t last_paint_tree_bitfield;
 #endif
 
+// GGMAX 2.96: GGTerrain's DDS-into-array-slice loader, exposed at global scope by the shim at
+// the foot of GGTerrain_part0.cpp. Declared HERE, outside `namespace GGTrees`, on purpose - a
+// declaration written inside the namespace mangles to GGTrees::… and fails to link.
+namespace wi { namespace graphics { struct Texture; struct CommandList; } }
+bool GG_LoadDDSIntoTextureSlice( const char* filename, wi::graphics::Texture* tex,
+                                 uint32_t arraySlice, wi::graphics::CommandList cmd );
+
 namespace GGTrees
 {
 #define GGTREES_UNDOREDO
@@ -839,6 +846,50 @@ void GGTrees_EnsureLegacyTexArrays()
 	GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texBranchesHigh );
 }
 
+// GGMAX 2.96: create + FILL just the two BILLBOARD atlases, for the distant-tree pass.
+//
+// GGTrees_EnsureLegacyTexArrays above is reached only from GGTerrain_Update's legacy tail, which
+// early-returns on the shipping Wicked-terrain path - so on a normal level none of the four
+// atlases exist at all. This is the billboard pass's own lazy init.
+//
+// Deliberately only two of the four: texTree (BC3, 52.2 MB) + texTreeNormal (BC1, 26.1 MB) =
+// 78.3 MB, Lee-approved. The HIGH pair (texTreeHigh + texBranchesHigh, another 78.3 MB) stays
+// absent - near trees render through the Wicked object path with their own per-tree materials
+// and never sample them.
+void GGTrees_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32_t arraySlice ); // fwd
+static bool g_ftAtlasesReady = false;
+uint32_t g_ftAtlasSlices = 0;   // diagnostics: slices actually uploaded
+void GGTrees_EnsureBillboardAtlases()
+{
+	if ( g_ftAtlasesReady ) return;
+	if ( !ggtrees_initialised ) return;
+	g_ftAtlasesReady = true;
+
+	if ( !texTree.IsValid() )
+		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texTree );
+	if ( !texTreeNormal.IsValid() )
+		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM, &texTreeNormal );
+
+	char path[ MAX_PATH ];
+	for ( uint32_t i = 0; i < numTreeTypes; i++ )
+	{
+		if ( !g_GGTrees[ i ].trunk ) continue;   // type not present in this build's tables
+		if ( g_GGTrees[ i ].billboardFilename && g_GGTrees[ i ].billboardFilename[ 0 ] )
+		{
+			strcpy_s( path, "files/treebank/billboards/" );
+			strcat_s( path, g_GGTrees[ i ].billboardFilename );
+			GGTrees_LoadTextureDDSIntoSlice( path, &texTree, i );
+			g_ftAtlasSlices++;
+		}
+		if ( g_GGTrees[ i ].billboardNormalFilename && g_GGTrees[ i ].billboardNormalFilename[ 0 ] )
+		{
+			strcpy_s( path, "files/treebank/billboards/" );
+			strcat_s( path, g_GGTrees[ i ].billboardNormalFilename );
+			GGTrees_LoadTextureDDSIntoSlice( path, &texTreeNormal, i );
+		}
+	}
+}
+
 void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex )
 {
 	if (!ggtrees_initialised) return;
@@ -859,9 +910,21 @@ void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int level
 }
 
 // TODO: DX12 - tinyddsloader removed, stub function until DDS loading is rewritten
+// GGMAX 2.96: was "stub - DDS loading disabled" since tinyddsloader was dropped in the DX12
+// port. With the billboard pass alive the two BILLBOARD atlases have to be filled again, so
+// delegate to GGTerrain's DDS loader, which is a working DX12 implementation of exactly this
+// (parses the header itself, builds a staging texture, CopyTexture's each mip into the array
+// slice). No new loader, no third-party header.
+//
+// Only texTree and texTreeNormal are filled - see GGTrees_FillBillboardAtlases. The HIGH-detail
+// pair (texTreeHigh, texBranchesHigh, 78.3 MB) stays empty on purpose: near trees render through
+// the Wicked object path with their own per-tree materials and never sample these.
 void GGTrees_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32_t arraySlice )
 {
-	// stub - DDS loading disabled
+	if ( !ggtrees_initialised ) return;
+	if ( tex == nullptr || !tex->IsValid() ) return;
+	CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
+	::GG_LoadDDSIntoTextureSlice( filename, tex, arraySlice, cmd );
 }
 
 TreeChunk* GGTrees_GetChunk( float x, float z )
@@ -2756,9 +2819,10 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
 
-	// DISABLED: tree Draw_Prepass causes GPU hang due to PSO compilation failure in DX12
-	// TODO: investigate root signature / render pass format mismatch
-	return;
+	// GGMAX 2.96: same PSO lifetime bug as GGTrees_Draw - fixed by GGTreeCreatePSO.
+	// The prepass is STRUCTURALLY REQUIRED, not optional: the main billboard pass runs with
+	// depth_write_mask = ZERO precisely because DX11 has the prepass lay the depth down first.
+	if ( !gg_far_tree_pass ) return;
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Prepass Draw", cmd);
@@ -2798,6 +2862,10 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		device->BindIndexBuffer( &bufferTreeIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
 	}
+
+	// GGMAX 2.96: billboards only - the Wicked tree pool prepasses its own near meshes.
+	device->EventEnd( cmd );
+	return;
 
 	// only draw high detail in non-reflection passes
 	if ( mode == 0 )
@@ -3141,6 +3209,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	// because the Wicked nearest-N tree pool already draws those as ObjectComponents - running
 	// both would double-draw every near tree.
 	if ( !gg_far_tree_pass ) return;
+	GGTrees_EnsureBillboardAtlases();   // GGMAX 2.96: lazy, one-shot
 	g_ftEnterCount++;
 	g_ftDrawCalls = 0; g_ftInstances = 0; g_ftChunksWithIn = 0; g_ftFrustumKills = 0;
 	g_ftChunksTotal = numTreeChunks;
