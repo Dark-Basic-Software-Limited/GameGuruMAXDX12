@@ -483,6 +483,10 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			if (ImGui::Checkbox("Trees Off##gg_no_trees", &bOff))
 			{
 				GGSetNoTreesLevel(bOff ? 1 : 0);
+				// GGMAX 3.00: re-apply visuals so ggtrees_global_params.draw_enabled is
+				// recomputed now. Without this the legacy tree machinery only noticed the
+				// switch when some OTHER control happened to re-apply visuals.
+				GGApplyVisualsNow();
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Releases the whole tree pool, its shadow proxies and the per-type LOD models. Tree collision is switched off with them, so you will not bump into trees you cannot see. Your placed trees are not touched and come back when you untick this.");
 

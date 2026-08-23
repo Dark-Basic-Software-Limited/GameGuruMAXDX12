@@ -5783,6 +5783,33 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_FASTTERRAIN") == 0)
+	{
+		// GGMAX 3.01 EXPERIMENT: "what would a baked terrain buy?" Combines the two levers that
+		// together approximate one - without writing a baker:
+		//   gg_near_ring_dist = 0  -> every chunk plain tex.Sample, no residency, all four VT
+		//                             GPU passes skipped (2.94e measured this in isolation)
+		//   generation         = N -> (2N+1)^2 chunks instead of 625, i.e. far fewer, bigger
+		//                             scene entities to push through Scene::Update and culling
+		// That is "a dumb floor with one texture" in everything but name. Terrain still provides
+		// ground height, collision, and a surface for trees and grass.
+		// arg = ring radius (3 => 49 chunks). 0 restores stock (gen 12, nearRing 4).
+		wi::scene::Scene& fsc = wi::scene::GetScene();
+		const int n = atoi(arg);
+		extern void GGSetTerrainGen(int);
+		GGSetTerrainGen(n);
+		if (fsc.terrains.GetCount() > 0)
+			fsc.terrains[0].gg_near_ring_dist = (n > 0) ? 0 : 4;
+		_snprintf(result, resultSize,
+			"OK: SET_FASTTERRAIN %d - nearRing=%d, ring will be (2n+1)^2 = %d chunks. "
+			"NOT LIVE YET: send SET_TERRAINOFF 1, wait >=5s, SET_TERRAINOFF 0, wait ~30s for the "
+			"rebuild, then confirm with TERRAIN_RING before trusting any timing.",
+			n, (fsc.terrains.GetCount() > 0) ? fsc.terrains[0].gg_near_ring_dist : -1,
+			(2 * (n ? n : 12) + 1) * (2 * (n ? n : 12) + 1));
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_TREEPOOLCAP") == 0)
 	{
 		// GGMAX 2.97: radius (world units, 1 = 1 inch) beyond which the real-mesh tree pool stops

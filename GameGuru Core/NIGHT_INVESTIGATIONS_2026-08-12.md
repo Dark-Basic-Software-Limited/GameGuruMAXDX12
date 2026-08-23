@@ -4672,3 +4672,54 @@ loaded that nothing uses.**
 slices would show as wrong species), but a level whose types change at runtime (Lua spawning a
 tree type absent at load) would index a slice that was never uploaded. The atlas init is
 one-shot; if runtime type changes are possible this needs a dirty flag.
+
+## §3.00/3.01 — two billboard fixes, and the baked-terrain question ANSWERED (2026-08-24)
+
+### 3.00a — "Trees Off" did not switch the billboards off, and Water Off did
+Lee: *"strangely when Water Off is selected later on, the billboard trees THEN disappear"*.
+Exactly right, and the cause is a one-way dependency: `gg_no_trees` only reaches
+`ggtrees_global_params.draw_enabled` inside `Wicked_Update_Visuals`
+(M-GridEditB_part3.cpp:2095). The Trees Off tick box did not re-apply visuals; the **Water Off**
+tick box calls `GGApplyVisualsNow()`, so ticking water was what finally recomputed the tree
+flag. Two fixes: the billboard passes now test `gg_no_trees` directly (immediate, no dependency
+on a visuals re-apply), and Trees Off calls `GGApplyVisualsNow()` like the water switch does.
+★ A flag that only takes effect when some UNRELATED control happens to re-derive it is a
+clobbered-value bug wearing a different hat.
+
+### 3.00b — trees past the terrain edge, properly this time
+2.98's cull was chunk-granular: it kept any 12,500-unit chunk that merely OVERLAPPED the
+terrain, so trees near a straddling chunk's far edge still stood on nothing. Now exact and
+per-tree, in the vertex shader: `tree_terrainReach` rides in a spare CB float and the VS folds
+`reach - distXZ` into `SV_ClipDistance0` with `min()`, so the water clip plane still applies.
+Zero CPU, per-tree accuracy the CPU cull cannot reach.
+
+### ★★★ 3.01 — IS A BAKED TERRAIN MODE WORTH IT? Yes, about two thirds of it.
+Lee's configuration (trees/grass/water off, terrain on), TESTPRO2, interleaved x2.
+**Identical POLYS in A and B — same terrain, same extent, the only difference is the bake.**
+
+| | GPU frame | GPU busy | CPU | FPS | POLYS |
+|---|---|---|---|---|---|
+| A stock VT terrain | 4.646 / 4.675 | 1.90 | 2.72 | 214.4 / 213.7 | 512,996 |
+| **B bake-equivalent** | **3.502 / 3.492** | 1.82 | 2.65 | **285.2 / 286.2** | 512,996 |
+| C terrain OFF entirely | 2.921 | 1.59 | 2.16 | 341.1 | 375,684 |
+
+Terrain's total remaining cost is **1.74 ms** (4.66 - 2.92). The bake recovers **1.16 ms of
+that, 67%**, for **+72 FPS**. The other third is rasterising the ground, which any floor must pay.
+
+Scaled to Lee's own profiler-off numbers (280 FPS terrain-on, 570 off): a bake should land
+around **425 FPS**, i.e. roughly half the distance to "no terrain at all".
+
+⚠ **A first pass at this measured only 26%** because it also cut the ring from 625 to 49 chunks —
+that draws 70K fewer triangles, so it was "less terrain", not "the same terrain, baked". Holding
+POLYS identical is what makes the 67% trustworthy. Same trap as every content A/B on this project.
+
+Three things that shape what the mode should be:
+1. **GPU busy barely moves** (1.90 -> 1.82). The win is the idle/unranged bucket again - the VT
+   machinery - the same class as 2.94d, not shading.
+2. **CPU barely moves** (2.72 -> 2.65). A bake that also MERGED chunks would cut CPU too, but
+   that is the half 2.94e warned kills per-object LOD, frustum culling and occlusion.
+3. ★ **The performance is already available today** - `SET_TERRAINBAKE 1` is one integer. What a
+   real baker adds is the QUALITY: nearRing=0 drops every chunk to 256 px, so the mode is really
+   "bake a decent ground texture so the cheap path looks acceptable", not "make it fast".
+
+Harness `SET_FASTTERRAIN <ring>` combines both levers (VT off + smaller ring) for further A/Bs.

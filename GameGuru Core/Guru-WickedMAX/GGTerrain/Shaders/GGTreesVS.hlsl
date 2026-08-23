@@ -63,6 +63,17 @@ VertexOut main( VertexIn IN )
 
 	OUT.worldPos = pos.xyz;
 	OUT.clip = dot( pos, g_xCamera_ClipPlane );
+
+	// GGMAX 3.00: clip this tree if it stands beyond where terrain exists. Per-TREE and exact,
+	// where the CPU cull can only work per 12,500-unit chunk - a chunk straddling the terrain
+	// edge kept every tree in it, including the ones over nothing. Folded into SV_ClipDistance0
+	// with min() so the water clip plane above still applies.
+	if ( tree_terrainReach > 0 )
+	{
+		float2 toCam = IN.offset.xz - g_xCamera_CamPos.xz;
+		float  distXZ = sqrt( dot( toCam, toCam ) );
+		OUT.clip = min( OUT.clip, tree_terrainReach - distXZ );
+	}
 	OUT.uv.x = IN.position.x + 0.5;
 	OUT.uv.y = 1 - IN.position.y;
 	OUT.data = IN.data;

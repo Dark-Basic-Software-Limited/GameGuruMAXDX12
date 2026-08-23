@@ -69,6 +69,9 @@ bool GG_LoadDDSIntoTextureSlice( const char* filename, wi::graphics::Texture* te
 // global scope for the same linkage reason as the shim above.
 float GG_GetTerrainViewRadius();
 
+// GGMAX 3.00: the Trees Off effective flag (GGTerrainWicked.cpp). GLOBAL scope on purpose.
+extern bool gg_no_trees;
+
 namespace GGTrees
 {
 #define GGTREES_UNDOREDO
@@ -2719,6 +2722,11 @@ static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, Comma
 
 	treeConstantData.tree_lodDist = ggtrees_global_params.lod_dist;
 	treeConstantData.tree_lodDistShadow = ggtrees_global_params.lod_dist_shadow;
+	{
+		// GGMAX 3.00: 0 means "no terrain / no limit" and the VS then never clips.
+		const float reach = ::GG_GetTerrainViewRadius();
+		treeConstantData.tree_terrainReach = reach;
+	}
 
 	wiGraphics::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
 }
@@ -2906,6 +2914,11 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	// The prepass is STRUCTURALLY REQUIRED, not optional: the main billboard pass runs with
 	// depth_write_mask = ZERO precisely because DX11 has the prepass lay the depth down first.
 	if ( !gg_far_tree_pass ) return;
+	// GGMAX 3.00: honour "Trees Off" HERE, directly. gg_no_trees only reaches
+	// ggtrees_global_params.draw_enabled when Wicked_Update_Visuals re-runs, and the Trees Off
+	// tick box does not trigger that - which is why ticking WATER Off (which does call
+	// GGApplyVisualsNow) was what made the billboards finally vanish. Lee spotted exactly that.
+	if ( ::gg_no_trees ) return;
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Prepass Draw", cmd);
@@ -3302,6 +3315,11 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	// because the Wicked nearest-N tree pool already draws those as ObjectComponents - running
 	// both would double-draw every near tree.
 	if ( !gg_far_tree_pass ) return;
+	// GGMAX 3.00: honour "Trees Off" HERE, directly. gg_no_trees only reaches
+	// ggtrees_global_params.draw_enabled when Wicked_Update_Visuals re-runs, and the Trees Off
+	// tick box does not trigger that - which is why ticking WATER Off (which does call
+	// GGApplyVisualsNow) was what made the billboards finally vanish. Lee spotted exactly that.
+	if ( ::gg_no_trees ) return;
 	if ( !GGTrees_BillboardAtlasesReady() ) return;   // GGMAX 2.97: gate, not init - see the prepass
 	g_ftEnterCount++;
 	g_ftDrawCalls = 0; g_ftInstances = 0; g_ftChunksWithIn = 0; g_ftFrustumKills = 0; g_ftTerrainKills = 0;

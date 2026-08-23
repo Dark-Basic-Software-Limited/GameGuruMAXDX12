@@ -55,7 +55,10 @@ cbuffer TreeCB : register( b3 )
 
 	float    tree_lodDist;
 	float    tree_lodDistShadow;
-	float    tree_padding1;
+	// GGMAX 3.00: how far terrain actually exists from the camera. The chunk-granular CPU cull
+	// keeps any chunk that merely OVERLAPS the terrain, so trees near a straddling chunk's far
+	// edge still drew over nothing. This is the exact per-tree test, done in the VS for free.
+	float    tree_terrainReach;
 	float    tree_padding2;
 };
 
