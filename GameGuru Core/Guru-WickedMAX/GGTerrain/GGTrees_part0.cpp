@@ -748,6 +748,7 @@ uint32_t g_ftChunksWithIn = 0;   // chunks holding at least one instance
 uint32_t g_ftFrustumKills = 0;   // chunks rejected by the frustum test
 uint32_t g_ftEnterCount   = 0;   // times the pass body was entered
 uint32_t g_ftTerrainKills = 0;   // chunks dropped for having no terrain under them
+uint32_t g_ftTypesUsed    = 0;   // GGMAX 2.99: tree types this level actually places
 static float gg_ftTerrainReach2 = 0.0f;
 
 PipelineState psoTrees;
@@ -888,37 +889,62 @@ void GGTrees_EnsureBillboardAtlases()
 	if ( g_ftAtlasesReady ) return;
 	if ( !ggtrees_initialised ) return;
 
+	// GGMAX 2.99: PER-LEVEL SLICES. Previously this allocated 38 array slices in each atlas and
+	// uploaded all 38, regardless of how many tree types the level actually places. Levels
+	// typically use a handful. Now: scan the placed trees, allocate exactly that many slices,
+	// and record each type's slice in the constant buffer so the shader can look it up.
+	// Zero quality cost - it is the same texels, just none of the unused ones.
+	int typeSlice[ numTreeTypes ];
+	for ( uint32_t i = 0; i < numTreeTypes; i++ ) typeSlice[ i ] = -1;
+
+	uint32_t sliceCount = 0;
+	for ( uint32_t c = 0; c < numTreeChunks; c++ )
+	{
+		TreeChunk* pc = &pTreeChunks[ c ];
+		for ( uint32_t j = 0; j < pc->pInstances.NumItems(); j++ )
+		{
+			const uint32_t t = pc->pInstances[ j ]->GetType();
+			if ( t >= numTreeTypes ) continue;
+			if ( typeSlice[ t ] < 0 ) typeSlice[ t ] = (int)sliceCount++;
+		}
+	}
+	g_ftTypesUsed = sliceCount;
+	if ( sliceCount == 0 ) { g_ftAtlasesReady = true; return; }   // treeless level: no atlas at all
+
+	// publish the mapping for the shader (spare CB float; -1 for absent types)
+	for ( uint32_t i = 0; i < numTreeTypes; i++ )
+		treeConstantData.tree_type[ i ].slice = (float)( typeSlice[ i ] < 0 ? 0 : typeSlice[ i ] );
+
 	if ( !texTree.IsValid() )
-		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texTree );
-	// GGMAX 2.98b: RESTORED - dropping it flattened the canopy badly (Lee's side-by-side).
+		GGTrees_CreateEmptyTexture( 1024, 1024, 9, sliceCount, Format::BC3_UNORM_SRGB, &texTree );
 	if ( !texTreeNormal.IsValid() )
-		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM, &texTreeNormal );
+		GGTrees_CreateEmptyTexture( 1024, 1024, 9, sliceCount, Format::BC1_UNORM, &texTreeNormal );
 
 	// The dither/noise source. Both tree pixel shaders sample it; an invalid bind is fatal.
 	if ( !texNoise.IsValid() )
 		GGTrees_LoadTextureDDS( "treebank/noise.dds", &texNoise );   // GG_GetRealPath prepends Files/
 
 	// Flag is set at the END, so a draw can never see half-built atlases.
-	// ONE command list for all 76 slice uploads.
+	// ONE command list for all slice uploads.
 	CommandList upcmd = wiGraphics::GetDevice()->BeginCommandList();
 	char path[ MAX_PATH ];
 	for ( uint32_t i = 0; i < numTreeTypes; i++ )
 	{
-		if ( !g_GGTrees[ i ].trunk ) continue;   // type not present in this build's tables
+		if ( typeSlice[ i ] < 0 ) continue;             // type not placed in this level
+		if ( !g_GGTrees[ i ].trunk ) continue;
+		const uint32_t sl = (uint32_t)typeSlice[ i ];
 		if ( g_GGTrees[ i ].billboardFilename && g_GGTrees[ i ].billboardFilename[ 0 ] )
 		{
 			strcpy_s( path, "treebank/billboards/" );   // GG_GetRealPath already prepends Files/
 			strcat_s( path, g_GGTrees[ i ].billboardFilename );
-			// COUNT SUCCESSES, not calls - the first version counted calls and reported 38
-			// while every upload was silently failing.
-			if ( GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTree, i, upcmd ) ) g_ftAtlasSlices++;
+			if ( GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTree, sl, upcmd ) ) g_ftAtlasSlices++;
 			else if ( g_ftAtlasFailName[0] == 0 ) strcpy_s( g_ftAtlasFailName, path );
 		}
 		if ( g_GGTrees[ i ].billboardNormalFilename && g_GGTrees[ i ].billboardNormalFilename[ 0 ] )
 		{
-			strcpy_s( path, "treebank/billboards/" );   // GG_GetRealPath already prepends Files/
+			strcpy_s( path, "treebank/billboards/" );
 			strcat_s( path, g_GGTrees[ i ].billboardNormalFilename );
-			GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTreeNormal, i, upcmd );   // GGMAX 2.98b
+			GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTreeNormal, sl, upcmd );
 		}
 	}
 	g_ftAtlasesReady = true;   // GGMAX 2.97: only now is it safe for a draw to bind these

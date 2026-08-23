@@ -52,7 +52,7 @@ GBuffer main( PixelIn IN )
 		return dbg;
 	}
 #endif
-	float4 baseColor = texTree.Sample( samplerTrilinearClamp, float3(IN.uv, treeType) );
+	float4 baseColor = texTree.Sample( samplerTrilinearClamp, float3(IN.uv, tree_type[ treeType ].slice) );
 	float alpha = baseColor.a;
 	if ( alpha < 0.3 ) discard;
 	
@@ -97,7 +97,7 @@ GBuffer main( PixelIn IN )
 	//normal.y = 0.7071068;
 	//normal.z = cosAng * 0.7071068;
 
-	float3 normal = texTreeNormal.Sample( samplerTrilinearClamp, float3(IN.uv, treeType) ).rgb;
+	float3 normal = texTreeNormal.Sample( samplerTrilinearClamp, float3(IN.uv, tree_type[ treeType ].slice) ).rgb;
 	normal = normal * 2 - 1;
 	normal.y = abs(normal.y);
 

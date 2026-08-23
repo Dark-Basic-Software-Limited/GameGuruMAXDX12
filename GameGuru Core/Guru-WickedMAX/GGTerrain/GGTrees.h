@@ -21,6 +21,7 @@ namespace GGTrees
 	extern bool gg_far_tree_pass;   // GGMAX 2.96: DX11-style distant-tree billboard pass
 	extern uint32_t g_ftDrawCalls, g_ftInstances, g_ftChunksTotal, g_ftChunksWithIn, g_ftFrustumKills, g_ftEnterCount;
 	extern uint32_t g_ftTerrainKills;
+	extern uint32_t g_ftTypesUsed;
 	extern uint32_t g_ftAtlasSlices;
 	extern float gg_tree_pool_max_dist;   // GGMAX 2.97 pool radius cap
 	extern char g_ftAtlasFailName[];

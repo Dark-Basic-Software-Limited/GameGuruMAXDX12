@@ -4635,3 +4635,40 @@ at the ranges billboards actually occupy.
 2. Halve both atlases to 512x512: 52.2 → 13.0 and 26.1 → 6.5, ~59 MB, keeps per-texel relief.
    A billboard at 600 m is tens of pixels tall, so 512 is still heavily oversampled.
 3. Drop the HIGH-detail pair properly (already absent, but confirm nothing re-creates them).
+
+## §2.99 — ★★★ PER-LEVEL ATLAS SLICES: the VRAM back, at zero quality cost (2026-08-23)
+
+The right way to pay for the billboards. The atlases were allocated with one slice per tree type
+in the BUILD (38) and all 38 uploaded, regardless of how many the level places. Levels use a
+handful.
+
+Now: scan the placed instances for distinct `GetType()`, allocate exactly that many slices, and
+publish each type's slice index to the shader. The index lives in a **spare padding float** in
+the shared `TreeType` CB struct (`GGTreesConstants.hlsli`, one definition for C++ and HLSL), so
+there is no constant-buffer layout change — the three `texTree`/`texTreeNormal` samples just
+index `tree_type[treeType].slice` instead of `treeType`.
+
+**spotshadowtest uses 13 of 38 types.** Atlases 38 → 13 slices: texTree 52.2 → 17.9 MB,
+texTreeNormal 26.1 → 8.9 MB. **51.5 MB saved, and not one texel of quality lost** — it is the
+same images, just none of the unused ones.
+
+### ★★★ The number that was the whole point
+| Aztec Game Kit, IN GAME | MB |
+|---|---|
+| 0822, before any far trees | 3947.9 |
+| 0823, full 38-slice atlas | 4026.6 |
+| 2.98, normal map dropped (reverted) | 4000.1 |
+| **2.99, per-level slices** | **3941.2** |
+
+**Below the pre-billboard baseline, with the normal map restored and the whole distant forest
+rendering.** Headroom against the 4096 gate: 69 MB → **155 MB**. Editor 3746.5 → 3629.1.
+
+★ The lesson worth keeping: the first instinct (drop the normal map) traded 26 MB for a visibly
+worse picture. The right lever was never a quality knob at all — it was that we were uploading
+25 textures the level never asked for. **Before trading quality for memory, check what is being
+loaded that nothing uses.**
+
+⚠ Verify before the next gate: the remap is confirmed correct on spotshadowtest by eye (wrong
+slices would show as wrong species), but a level whose types change at runtime (Lua spawning a
+tree type absent at load) would index a slice that was never uploaded. The atlas init is
+one-shot; if runtime type changes are possible this needs a dirty flag.

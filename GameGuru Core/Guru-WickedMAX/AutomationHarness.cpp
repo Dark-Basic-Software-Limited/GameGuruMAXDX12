@@ -5822,8 +5822,8 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		int vp = 0; float nch = -1.0f, fch = -1.0f;
 		char ftbuf[320];
 		_snprintf(ftbuf, sizeof(ftbuf),
-			"BILLBOARD PASS: entered=%u draws=%u instances=%u atlasOK=%u | chunksTotal=%u withInstances=%u frustumKilled=%u noTerrainKilled=%u | firstFail=%s",
-			GGT2::g_ftEnterCount, GGT2::g_ftDrawCalls, GGT2::g_ftInstances, GGT2::g_ftAtlasSlices,
+			"BILLBOARD PASS: entered=%u draws=%u instances=%u atlasOK=%u/typesUsed=%u | chunksTotal=%u withInstances=%u frustumKilled=%u noTerrainKilled=%u | firstFail=%s",
+			GGT2::g_ftEnterCount, GGT2::g_ftDrawCalls, GGT2::g_ftInstances, GGT2::g_ftAtlasSlices, GGT2::g_ftTypesUsed,
 			GGT2::g_ftChunksTotal, GGT2::g_ftChunksWithIn, GGT2::g_ftFrustumKills, GGT2::g_ftTerrainKills,
 			gg_ftLoadReason[0] ? gg_ftLoadReason : "(none)");
 		ftbuf[sizeof(ftbuf)-1] = 0;

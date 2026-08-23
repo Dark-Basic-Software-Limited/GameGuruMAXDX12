@@ -27,7 +27,12 @@ struct TreeType
 {
 	float scaleX;
 	float scaleY;
-	float padding1;
+	// GGMAX 2.99: ATLAS SLICE for this tree type. The billboard atlases used to be allocated
+	// with one slice per tree type in the build (38) and every slice uploaded, whether the level
+	// used the type or not. They are now sized to the types the level ACTUALLY places, so the
+	// array index is no longer the type index and the shader has to look it up. Reuses a spare
+	// padding float - no CB layout change. -1 = type not present in this level.
+	float slice;
 	float padding2;
 };
 

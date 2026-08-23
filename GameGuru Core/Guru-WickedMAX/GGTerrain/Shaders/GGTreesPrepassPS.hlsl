@@ -30,7 +30,7 @@ Output main( PixelIn IN )
 	uint treeType = GetTreeType( IN.data );
 	uint index = GetTreeVariation( IN.data );
 
-	float alpha = texTree.Sample( samplerTrilinearClamp, float3(IN.uv, treeType) ).a;
+	float alpha = texTree.Sample( samplerTrilinearClamp, float3(IN.uv, tree_type[ treeType ].slice) ).a;
 	if ( alpha < 0.3 ) discard;
 
 	alpha = (alpha - 0.3) / max(fwidth(alpha),0.0001) + 0.5;
