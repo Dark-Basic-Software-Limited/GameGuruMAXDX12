@@ -4475,3 +4475,69 @@ Everything is behind `gg_far_tree_pass`, DEFAULT OFF. `SET_FARTREES 0|1` reports
 instances, atlas slices, chunk counts and frustum kills. Nothing changes for anyone.
 The PSO lifetime fix is a genuine repair and is worth keeping regardless of how the rest lands —
 it silently corrupted all 11 tree PSOs.
+
+## §2.96c — ★★★ BILLBOARD TREES RENDERING. The bisect, and the last two bugs (2026-08-23)
+
+**Done.** The distant forest is back on the DX12 path, through the DX11 design: zero scene
+entities, 87 draw calls, 98,410 billboards per frame.
+
+### The bisect settled it in one run
+Forced the billboard PS to solid magenta, keeping the real transform (the first attempt bypassed
+the transform too and emitted a fixed 1.2x1.2 clip-space quad — 98,410 near-fullscreen quads per
+frame, which took the app down; a lesson in sizing a debug primitive).
+
+Result: **142,544 magenta pixels, 11.6% of frame, zero in both OFF shots.** That single reading
+cleared geometry, transform, camera constants, depth, blend AND the root signature in one go, and
+localised the fault to the texture/alpha path. Worth the build.
+
+### Bug A — the atlas upload used one command list PER SLICE
+`GGTrees_LoadTextureDDSIntoSlice` opened a fresh `BeginCommandList()` for each of 76 slices, from
+inside a draw callback. Now one list for the whole upload, opened once by
+`GGTrees_EnsureBillboardAtlases`.
+
+### ★ Bug B — a DOUBLED PATH PREFIX, and the diagnostic that named it
+`atlasSlices=38` looked like success. It was not: the counter counted CALLS, and the loader's
+bool return was being discarded. Counting SUCCESSES gave `atlasOK=0`, and capturing the reason
+gave it outright:
+
+    fopen FAILED: ...\Max\Files\files\treebank\billboards\birch autumn3_BB_SF_0.8_normal.dds
+
+**`Files\files\`** — `GG_GetRealPath` already prepends `Files/`, and I had passed
+`"files/treebank/billboards/"`. Every one of the 76 uploads failed silently into a blank atlas,
+so every billboard pixel discarded on alpha. Same for `treebank/noise.dds`.
+★ **A count of CALLS is not a count of SUCCESSES, and a bool return you discard is a diagnostic
+you threw away.** `atlasSlices=38` actively misled me for two build cycles.
+
+After the fix: `atlasOK=38  firstFail=(none)`.
+
+### MEASURED, spotshadowtest
+| | OFF | ON |
+|---|---|---|
+| FPS | 216.3 | 201.1 |
+| VRAM | 2.71 GB | 2.88 GB |
+| horizon-band screenshot delta | 0.002 | **10.761 mean, 25.8% of pixels** |
+| sky (upper third) delta | — | 0.025 (unchanged, correct) |
+
+~7% frame cost to restore the entire distant forest, and +0.17 GB against the 78.3 MB of atlas
+predicted. Zero scene entities added.
+
+### Full chain of five layers, for the record
+Every one was individually reasonable and each cited the others:
+1. `GGTrees_Draw` hard-disabled over a "GPU hang / PSO compilation failure" — actually 11 PSOs
+   built from **stack locals** that died when `GGTrees_Init` returned (2.96).
+2. The tree constant buffer skipped as "dead work", leaving per-type scales at zero, so every
+   quad had **zero area** (2.96).
+3. The billboard atlas created empty with its DDS loader a **disabled stub** (tinyddsloader was
+   removed in the port) (2.96b).
+4. The atlas upload using a command list per slice (2.96c).
+5. A doubled `Files/files/` path prefix (2.96c).
+
+### State
+`gg_far_tree_pass` now **DEFAULT ON**; `SET_FARTREES 0` disables. The debug define
+`GGTREES_DEBUG_SOLID` is 0 in both shaders and should be deleted once this settles.
+
+⚠ **NOT YET GATED.** This changes the picture and adds ~78 MB on every terrain level. Owed before
+it can be called shipped: the 19-demo sweep, a VRAM re-check against the 4 GB floor (worst
+in-game was already 3947.9 MB on Aztec Game Kit — that one could now exceed it), and Lee's eye on
+the swap seam, which is currently a hard cut with no dither because the mesh side has no
+far-discard. The pool radius cap from DESIGN_FAR_TREES §3 is the next step.

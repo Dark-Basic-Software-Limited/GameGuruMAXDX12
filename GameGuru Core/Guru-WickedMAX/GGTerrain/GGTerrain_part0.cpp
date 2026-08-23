@@ -12011,6 +12011,8 @@ void GGTerrain_TriggerPaintTextureLoad(void)
 
 } // namespace GGTerrain
 
+char gg_ftLoadReason[ 256 ] = { 0 };   // GGMAX 2.96c: why the last billboard slice load failed
+
 // GGMAX 2.96: GLOBAL-SCOPE shim so GGTrees can reuse this DDS-into-array-slice loader.
 // Deliberately outside `namespace GGTerrain`: a declaration written inside `namespace GGTrees`
 // mangles to GGTrees::… and fails to link (the 2.53 linkage rule, hit again on this very call).
@@ -12019,9 +12021,24 @@ void GGTerrain_TriggerPaintTextureLoad(void)
 bool GG_LoadDDSIntoTextureSlice( const char* filename, wi::graphics::Texture* tex,
                                  uint32_t arraySlice, wi::graphics::CommandList cmd )
 {
-	if ( tex == nullptr || !tex->IsValid() ) return false;
+	if ( tex == nullptr || !tex->IsValid() ) { sprintf_s( gg_ftLoadReason, "dest texture invalid" ); return false; }
+	// GGMAX 2.96c: name the failure instead of returning a bare false. Resolve the path the same
+	// way the loader does and prove the file opens, so a path problem is distinguishable from a
+	// header/format rejection.
+	{
+		char probe[ MAX_PATH ];
+		strcpy_s( probe, MAX_PATH, filename );
+		GG_GetRealPath( probe, 0 );
+		FILE* pf = nullptr;
+		fopen_s( &pf, probe, "rb" );
+		if ( pf == nullptr ) { sprintf_s( gg_ftLoadReason, "fopen FAILED: %.200s", probe ); return false; }
+		fclose( pf );
+		sprintf_s( gg_ftLoadReason, "opened ok, loader rejected: %.180s", probe );
+	}
 	GGTerrain::DDSRequirements req;
 	req.width  = (int)tex->desc.width;
 	req.height = (int)tex->desc.height;
-	return GGTerrain::GGTerrain_LoadTextureDDSIntoSlice( filename, tex, arraySlice, &req, cmd, false );
+	const bool ok = GGTerrain::GGTerrain_LoadTextureDDSIntoSlice( filename, tex, arraySlice, &req, cmd, false );
+	if ( ok ) gg_ftLoadReason[ 0 ] = 0;
+	return ok;
 }
