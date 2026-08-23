@@ -50,6 +50,22 @@ Mitigations, cheapest first: drop `texTreeNormal` (26.1 MB - billboards could us
 or halve the atlas to 512x512 (52.2 -> 13 MB, and 544 of the 625 ring chunks already ship at
 256 px so the quality floor is lower than it sounds).
 
+## 2.98 follow-up: Aztec Game Kit VRAM re-measured after dropping the normal map
+
+| | before 2.98 | after 2.98 | vs pre-billboard |
+|---|---|---|---|
+| editor | 3746.5 | **3656.1** | (3635 on 0822) |
+| **in game** | 4026.6 | **4000.1** | (3947.9 on 0822) |
+
+Dropping `texTreeNormal` returned 26.5 MB in game, exactly its size. **Headroom against the
+4096 gate goes from 69 MB to 96 MB** — better, but still the tightest cell in the hub, and still
+52 MB above the pre-billboard figure because `texTree` itself is 52.2 MB.
+
+The remaining lever is halving the colour atlas to 512x512 (52.2 -> 13 MB, ~39 MB back), which
+would land in-game at roughly 3961 MB — under where it sat before the far trees existed. 544 of
+the 625 ring chunks already ship at 256 px, so the quality floor is lower than the number
+suggests. Not done: it wants Lee's eye on 512 px billboards first.
+
 ## Visual state
 Distant forest restored and matching DX11's arrangement. The swap seam has DX11's noise-dithered
 discard on the billboard side; the mesh side has no matching far-dissolve (our meshes simply stop
