@@ -4541,3 +4541,35 @@ it can be called shipped: the 19-demo sweep, a VRAM re-check against the 4 GB fl
 in-game was already 3947.9 MB on Aztec Game Kit — that one could now exceed it), and Lee's eye on
 the swap seam, which is currently a hard cut with no dither because the mesh side has no
 far-discard. The pool radius cap from DESIGN_FAR_TREES §3 is the next step.
+
+## §2.97 — pool radius cap: −40% triangles, +7% FPS, same picture (2026-08-23)
+
+With billboards live, the real-mesh pool and the billboards were both drawing across a 550 m
+band: the billboard PS discards inside `tree_lodDist` = 3000 units (~76 m, GGTreesPS.hlsl:81 —
+the noise-dithered discard survived the port intact) while the pool reached a measured 24,812
+units (~630 m). Capping the pool is what makes them complementary instead of overlapping.
+
+Cap = `lod_dist + 2 * GGTREES_LOD_TRANSITION` = 4000 units (~102 m), matching DX11, where the
+mesh dissolves out over lod_dist+500..lod_dist+1000. Applied in two places in the gather: a
+per-candidate distance reject, and a `maxRing` bound derived from the cap so a sparse level
+cannot make the ring-gather walk the whole 128x128 grid looking for trees it will never accept.
+`gg_tree_pool_max_dist`: <0 derive (default), 0 uncapped, >0 explicit. Harness SET_TREEPOOLCAP.
+
+### MEASURED, spotshadowtest, interleaved x2
+| cap | FPS | POLYS |
+|---|---|---|
+| 0 (uncapped, pre-2.97) | 203.6 / 203.2 | 506,724 |
+| **−1 (derived, 4000u)** | **218.1 / 218.5** | **304,731** |
+
+**−201,993 triangles (−40%) and +7% FPS, for a visually identical frame** — the screenshots show
+the same forested mountains with no gap or seam at the swap. Those triangles were near-field
+mesh detail the billboards were already covering.
+
+### ⚠ A crash on the way, and the rule it re-taught
+Two AVs in `DescriptorBinder::flush` from `GGTrees_Draw_Prepass` before this landed. Cause:
+`GGTrees_EnsureBillboardAtlases` was creating textures and issuing CopyTexture **inside a draw
+callback on a job thread**, then binding those same textures in the same command list.
+★ **Resource creation belongs on the main thread, never inside a render callback.** Split into
+an INIT (main thread, from GGTrees_Update via the CB update) and a GATE
+(`GGTrees_BillboardAtlasesReady()`, checked by both draw functions). The ready flag is now set
+at the END of the upload, so a draw can never observe half-built atlases.

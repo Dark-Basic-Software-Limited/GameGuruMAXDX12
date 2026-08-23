@@ -872,6 +872,8 @@ void GGTrees_EnsureLegacyTexArrays()
 void GGTrees_LoadTextureDDSIntoSlice( const char* filename, Texture* tex, uint32_t arraySlice ); // fwd
 bool GGTrees_LoadTextureDDSIntoSliceCmd( const char* filename, Texture* tex, uint32_t arraySlice, CommandList cmd ); // fwd
 void GGTrees_LoadTextureDDS( const char* filename, Texture* tex ); // fwd
+bool GGTrees_BillboardAtlasesReady(); // fwd
+void GGTrees_EnsureBillboardAtlases(); // fwd
 static bool g_ftAtlasesReady = false;
 char g_ftAtlasFailName[ MAX_PATH ] = { 0 };   // first path that failed to load
 uint32_t g_ftAtlasSlices = 0;   // diagnostics: slices actually uploaded
@@ -879,7 +881,6 @@ void GGTrees_EnsureBillboardAtlases()
 {
 	if ( g_ftAtlasesReady ) return;
 	if ( !ggtrees_initialised ) return;
-	g_ftAtlasesReady = true;
 
 	if ( !texTree.IsValid() )
 		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texTree );
@@ -890,6 +891,7 @@ void GGTrees_EnsureBillboardAtlases()
 	if ( !texNoise.IsValid() )
 		GGTrees_LoadTextureDDS( "treebank/noise.dds", &texNoise );   // GG_GetRealPath prepends Files/
 
+	// Flag is set at the END, so a draw can never see half-built atlases.
 	// ONE command list for all 76 slice uploads.
 	CommandList upcmd = wiGraphics::GetDevice()->BeginCommandList();
 	char path[ MAX_PATH ];
@@ -912,7 +914,11 @@ void GGTrees_EnsureBillboardAtlases()
 			GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTreeNormal, i, upcmd );
 		}
 	}
+	g_ftAtlasesReady = true;   // GGMAX 2.97: only now is it safe for a draw to bind these
+
 }
+
+bool GGTrees_BillboardAtlasesReady() { return g_ftAtlasesReady; }
 
 void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex )
 {
@@ -2645,6 +2651,7 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 // genuinely dead. Everything here is cheap: 8 sin/cos, one light lookup, numTreeTypes floats.
 static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, CommandList cmd )
 {
+	GGTrees_EnsureBillboardAtlases();   // GGMAX 2.97: MAIN-THREAD one-shot, before any draw binds these
 	float ang = 0.785398f; // (2.0 * pi) / 8.0
 	for( int i = 0; i < 8; i++ )
 	{
@@ -2853,10 +2860,10 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
 
-	// GGMAX 2.96c: the PREPASS runs BEFORE the opaque pass in the frame, so the lazy atlas init
-	// has to happen HERE too. It was only in GGTrees_Draw, so on the very first frame the prepass
-	// bound an invalid texTree and Wicked's DescriptorBinder::flush AV'd on null.
-	GGTrees_EnsureBillboardAtlases();
+	// GGMAX 2.97: atlas readiness is a GATE here, never an init. Creating textures inside a draw
+	// callback (job thread) and binding them in the same command list AV'd in
+	// DescriptorBinder::flush - twice. The init now runs on the MAIN thread from GGTrees_Update.
+	if ( !GGTrees_BillboardAtlasesReady() ) return;
 
 	// GGMAX 2.96: same PSO lifetime bug as GGTrees_Draw - fixed by GGTreeCreatePSO.
 	// The prepass is STRUCTURALLY REQUIRED, not optional: the main billboard pass runs with
@@ -3248,7 +3255,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	// because the Wicked nearest-N tree pool already draws those as ObjectComponents - running
 	// both would double-draw every near tree.
 	if ( !gg_far_tree_pass ) return;
-	GGTrees_EnsureBillboardAtlases();   // GGMAX 2.96: lazy, one-shot
+	if ( !GGTrees_BillboardAtlasesReady() ) return;   // GGMAX 2.97: gate, not init - see the prepass
 	g_ftEnterCount++;
 	g_ftDrawCalls = 0; g_ftInstances = 0; g_ftChunksWithIn = 0; g_ftFrustumKills = 0;
 	g_ftChunksTotal = numTreeChunks;

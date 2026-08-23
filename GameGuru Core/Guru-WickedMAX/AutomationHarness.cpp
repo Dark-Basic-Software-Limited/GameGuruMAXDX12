@@ -5783,6 +5783,28 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_TREEPOOLCAP") == 0)
+	{
+		// GGMAX 2.97: radius (world units, 1 = 1 inch) beyond which the real-mesh tree pool stops
+		// selecting, so the billboards take over cleanly instead of overlapping.
+		//  <0 = derive from lod_dist (lod_dist + 2*500, DX11's arrangement)  [default]
+		//   0 = uncapped, pre-2.97 behaviour
+		//  >0 = explicit radius
+		namespace GGT3 = GGTrees;
+		GGT3::gg_tree_pool_max_dist = (float)atof(arg);
+		_snprintf(result, resultSize,
+			"OK: SET_TREEPOOLCAP %s - live gg_tree_pool_max_dist=%.0f (%s). lod_dist=%.0f, so the "
+			"derived cap is %.0f units. Rebuilds on the next camera move or heartbeat; read POLYS "
+			"and the pool counters to confirm.",
+			arg, GGT3::gg_tree_pool_max_dist,
+			GGT3::gg_tree_pool_max_dist < 0.0f ? "derive from lod_dist"
+				: (GGT3::gg_tree_pool_max_dist == 0.0f ? "UNCAPPED" : "explicit"),
+			GGT3::ggtrees_global_params.lod_dist,
+			GGT3::ggtrees_global_params.lod_dist + 1000.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_FARTREES") == 0)
 	{
 		// GGMAX 2.95: 1 (default) = the merged billboard proxy chunks also draw to the MAIN

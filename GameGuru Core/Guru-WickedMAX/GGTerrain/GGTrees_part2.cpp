@@ -106,6 +106,22 @@ static constexpr uint32_t GG_TREE_TYPES      = 38;
 static constexpr float GG_TREE_LOD1_DIST = 2500.0f;  // ~63 m
 static constexpr float GG_TREE_LOD2_DIST = 7000.0f;  // ~178 m
 
+// GGMAX 2.97: POOL RADIUS CAP. The real-mesh pool must stop where the billboards take over,
+// or the two overlap. DX11's arrangement, which we now match:
+//   billboard PS discards inside            tree_lodDist                     (GGTreesPS.hlsl:81)
+//   mesh dissolves out over  lodDist+500 .. lodDist+1000                     (DX11 GGTreesHighPS)
+// so the mesh is entirely gone by lod_dist + 2*GGTREES_LOD_TRANSITION.
+//
+// Before this cap the pool reached a measured 24,812 units (~630 m) while billboards began at
+// lod_dist = 3000 (~76 m) - a 550 m band with BOTH drawn. Capping also shrinks the pool
+// dramatically: at DX11 distances it holds a few hundred trees rather than 6000, which is a
+// large CPU saving in Scene::Update on top of the visual fix.
+//
+// 0 disables the cap (pre-2.97 behaviour). Harness SET_TREEPOOLCAP <units>.
+static constexpr float GG_TREE_LOD_TRANSITION = 500.0f;   // mirrors GGTREES_LOD_TRANSITION
+float gg_tree_pool_max_dist = -1.0f;   // <0 = derive from lod_dist; 0 = uncapped; >0 = explicit
+static float gg_ftCapDist2 = 0.0f;   // squared cap, refreshed each gather
+
 static bool             g_wickedTreesSetup   = false;
 static std::string      g_treesExeDir;
 
@@ -1256,13 +1272,26 @@ void GGTrees_WickedUpdate()
 				const TreeGridEntry& e = g_gridEntries[ k ];
 				const float dx = e.x - camX;
 				const float dz = e.z - camZ;
-				candidates.push_back( { e.idx, dx * dx + dz * dz } );
+				const float d2 = dx * dx + dz * dz;
+				if ( gg_ftCapDist2 > 0.0f && d2 > gg_ftCapDist2 ) continue;   // GGMAX 2.97
+				candidates.push_back( { e.idx, d2 } );
 			}
 		};
+
+		// GGMAX 2.97: distance cap + a ring bound derived from it, so a sparse level cannot make
+		// the gather walk the whole 128x128 grid looking for trees it will never accept.
+		float capDist = gg_tree_pool_max_dist;
+		if ( capDist < 0.0f ) capDist = ggtrees_global_params.lod_dist + 2.0f * GG_TREE_LOD_TRANSITION;
+		const bool  capOn   = ( capDist > 0.0f );
+		const float capDist2 = capDist * capDist;
+		gg_ftCapDist2 = capOn ? capDist2 : 0.0f;
+		const float cellSize = treeArea / (float)GG_TREE_GRID_DIM;
+		const int   maxRing  = capOn ? ( (int)( capDist / cellSize ) + 2 ) : ( dim * 2 );
 
 		int coveredRing = -1;   // first ring where the pool count was reached
 		for ( int r = 0; r < dim * 2; r++ )
 		{
+			if ( r > maxRing ) break;   // GGMAX 2.97: nothing beyond here can be inside the cap
 			if ( r == 0 )
 			{
 				gatherCell( ccx, ccz );
