@@ -4335,3 +4335,76 @@ double-draws them. DX11 gets this right because its billboard swap is PER TREE, 
    shadow toggle.
 3. Restoring the look needs: build proxies unconditionally, AND a finer-than-chunk gate, AND
    the reflection exclusion kept. That is a real piece of work, not a flag.
+
+## §2.96 — far-tree billboards, steps 1-2: route PROVEN, three dead-code layers found (08-23)
+
+Lee approved steps 1-2 of DESIGN_FAR_TREES.md: prove the customDraw route, then get all chunks
+drawing colour-only. **Step 1 is done. Step 2 is one layer short**, and the reason is a chain of
+three independently-reasonable "this is dead, skip it" decisions that compounded.
+
+### ★ Layer 1 — the PSO failure was a C++ LIFETIME BUG, not a graphics one (FIXED)
+`GGTrees_Draw` opened with a hard `return` and the comment *"DISABLED: tree Draw causes GPU hang
+due to PSO compilation failure in DX12"*.
+
+`GGTrees_Init` built all 11 tree PSOs from **stack locals** — `rastState` (:1242),
+`depthStateOpaque` (:1254), `blendStateOpaque` (:1261), `inputLayout` (:1274),
+`inputLayoutHigh` (:1281). `PipelineStateDesc` stores POINTERS to those, and Wicked's DX12
+backend does not compile at `CreatePipelineState` time — it defers to `pso_validate()` at BIND
+time (wiGraphicsDevice_DX12.cpp:2578). By then the stack frame is long gone, so every PSO was
+compiled from destroyed memory. The engine even ships a logger for this exact failure class
+(`gg_pso_fail.txt`, added for the gpup particle restore).
+
+⚠ A SECOND bug sits in the same block: those locals are **mutated between** the 11 create calls
+(cull_mode, depth_write_mask, alpha_to_coverage flip back and forth). Fixing only the lifetime
+would give all 11 PSOs whatever the LAST write happened to be. Each needs its own copy taken at
+create time. Fixed with `GGTreeCreatePSO`, which snapshots rs/dss/bs/il into per-PSO file-scope
+storage. **Result: pass enabled, no crash, no GPU hang, `gg_pso_fail.txt` never created.**
+
+### ★★ THE ROUTE IS PROVEN
+With the pass on, spotshadowtest:
+
+    BILLBOARD PASS: entered=4457 draws=87 instances=98410
+                    chunksTotal=256 withInstances=256 frustumKilled=169
+
+**87 draw calls submitting 98,410 tree billboards per frame**, 87 + 169 = 256 chunks. Exactly
+DX11's shape (1-256 draws, typically 40-90 for a normal FOV). Zero scene entities. The static
+instance buffers the DX12 build has been maintaining all along are correct and bindable.
+
+### Layer 2 — the constant buffer was skipped as dead work (FIXED)
+`GGTrees_Update` returns early at :2432 under `if (ggterrain_use_wicked_terrain)` with the
+comment *"tree constant buffers for the OLD DX11 draw path... skip the dead work"*. The CB fill
+sits BELOW it, so `tree_type[i].scaleX/scaleY` were never written — **every billboard quad had
+zero area.** That is why the first run submitted 98,410 instances for zero pixels and zero
+measurable cost. Factored into `GGTrees_UpdateBillboardCB`, called on the Wicked path when the
+pass is on.
+
+### ⚠ Layer 3 — THE ATLAS IS EMPTY AND ITS LOADER IS A DISABLED STUB (open)
+GGTrees_part0.cpp:819, GGMAX Tier A (2026-08-02), a VRAM-campaign delta:
+> *the four legacy tree atlases (texTree 52.2 MB, texBranchesHigh 52.2, texTreeNormal 26.1,
+> texTreeHigh 26.1 = 156.6 MB) are allocated on demand rather than at init... created EMPTY, and
+> their only writer `GGTrees_LoadTextureDDSIntoSlice` is a disabled stub, [because] their only
+> readers are GGTrees' own draw functions, and every customDraw_* callback early-returns while
+> ggterrain_use_wicked_terrain is set*
+
+So the billboards now draw, correctly scaled, sampling a **blank fully-transparent atlas**.
+Measured horizon-band screenshot delta: 0.002 mean. Nothing.
+
+**Next step: re-enable `GGTrees_LoadTextureDDSIntoSlice` for the two BILLBOARD atlases.**
+⚠ That costs **78.3 MB VRAM** (texTree 52.2 + texTreeNormal 26.1) — a real 4 GB-floor decision,
+not a free flip. The high-detail pair (78.3 MB more) should stay disabled, since the Wicked pool
+draws near trees with its own per-tree materials.
+
+### The moral
+Each of the three decisions was correct at the time, and each cited the others as justification:
+the draw was dead because the PSO failed, the CB was dead because the draw was dead, the atlas
+was dead because the draw was dead. **Nobody was wrong; the reasoning went round in a circle and
+the feature fell out of the bottom.** When a comment says "this is dead, skip it", check whether
+the thing that killed it is itself a bug.
+
+### State
+`gg_far_tree_pass` DEFAULT OFF, harness `SET_FARTREES 0|1`, which also reports the draw/instance
+counters. Nothing changes for anyone until the atlas decision is made.
+
+★ Also explains the 2.95b mystery: `SET_FARTREES` reads its counters in the same harness tick it
+sets the flag, one frame before the pass can run — hence `entered=0` on the first read and real
+numbers on the second. The old `proxiesShown=0` was the same instrument artefact, not a bug.

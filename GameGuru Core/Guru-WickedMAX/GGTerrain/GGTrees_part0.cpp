@@ -701,6 +701,42 @@ GPUBuffer bufferTreeIndices;
 
 Shader shaderTreesVS;
 Shader shaderTreesPS;
+// ---------------------------------------------------------------------------------------------
+// GGMAX 2.96: PER-PSO PERSISTENT STATE SNAPSHOTS.
+//
+// PipelineStateDesc stores POINTERS to the rasterizer/depth/blend/input-layout objects, and
+// Wicked's DX12 backend does not compile the pipeline at CreatePipelineState time - it defers
+// to pso_validate() at BIND time (wiGraphicsDevice_DX12.cpp:2578). GGTrees_Init built all 11
+// tree PSOs from state objects declared as STACK LOCALS, so by the time anything bound one the
+// desc pointed at destroyed stack memory. That is the "PSO compilation failure in DX12" the
+// disabled GGTrees_Draw blames, and it is why the distant forest has not rendered since the
+// port. The engine even has a logger for this failure class (gg_pso_fail.txt, added for the
+// gpup particle restore).
+//
+// There is a SECOND bug in the same code: the locals are MUTATED between the 11 create calls
+// (cull_mode, depth_write_mask, alpha_to_coverage flip back and forth). Because every desc
+// holds a pointer to the same object, fixing only the lifetime would give all 11 PSOs whatever
+// the LAST write happened to be. So each PSO needs its own copy, taken at create time.
+// ---------------------------------------------------------------------------------------------
+static const uint32_t GGTREE_PSO_MAX = 16;
+static RasterizerState   g_ggtreePsoRS [ GGTREE_PSO_MAX ];
+static DepthStencilState g_ggtreePsoDSS[ GGTREE_PSO_MAX ];
+static BlendState        g_ggtreePsoBS [ GGTREE_PSO_MAX ];
+static InputLayout       g_ggtreePsoIL [ GGTREE_PSO_MAX ];
+static uint32_t          g_ggtreePsoSlot = 0;
+
+// GGMAX 2.96: master switch for the DX11-style distant-tree billboard pass. Default OFF while
+// it is being brought up. Harness SET_FARTREES 0|1.
+bool gg_far_tree_pass = false;
+
+// GGMAX 2.96: why-did-nothing-draw counters for the billboard pass, read by SET_FARTREES.
+uint32_t g_ftDrawCalls    = 0;   // chunks that actually issued a draw
+uint32_t g_ftInstances    = 0;   // total billboard instances submitted
+uint32_t g_ftChunksTotal  = 0;   // numTreeChunks
+uint32_t g_ftChunksWithIn = 0;   // chunks holding at least one instance
+uint32_t g_ftFrustumKills = 0;   // chunks rejected by the frustum test
+uint32_t g_ftEnterCount   = 0;   // times the pass body was entered
+
 PipelineState psoTrees;
 
 Shader shaderTreesPrepassVS;
@@ -1289,6 +1325,23 @@ void GGTrees_Init()
 
 	// pipeline state object
 	PipelineStateDesc desc = {};
+
+	// GGMAX 2.96: snapshot the CURRENT state into persistent storage and repoint desc at it,
+	// so the desc survives this function AND each PSO keeps the state it was created with.
+	auto GGTreeCreatePSO = [&]( PipelineState* out )
+	{
+		const uint32_t slot = g_ggtreePsoSlot++;
+		if ( slot >= GGTREE_PSO_MAX ) { return; }   // never expected; fail closed, not corrupt
+		g_ggtreePsoRS [ slot ] = rastState;
+		g_ggtreePsoDSS[ slot ] = depthStateOpaque;
+		g_ggtreePsoBS [ slot ] = blendStateOpaque;
+		if ( desc.il ) g_ggtreePsoIL[ slot ] = *desc.il;
+		desc.rs  = &g_ggtreePsoRS [ slot ];
+		desc.dss = &g_ggtreePsoDSS[ slot ];
+		desc.bs  = &g_ggtreePsoBS [ slot ];
+		desc.il  = &g_ggtreePsoIL [ slot ];
+		device->CreatePipelineState( &desc, out );
+	};
 	desc.vs = &shaderTreesVS;
 	desc.ps = &shaderTreesPS;
 
@@ -1298,21 +1351,21 @@ void GGTrees_Init()
 	desc.dss = &depthStateOpaque;
 	desc.bs = &blendStateOpaque;
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
-	device->CreatePipelineState( &desc, &psoTrees );
+	GGTreeCreatePSO( &psoTrees );
 
 	rastState.cull_mode = CullMode::BACK;
 	desc.vs = &shaderTreesHighVS;
 	desc.ps = &shaderTreesHighPS;
 	desc.il = &inputLayoutHigh;
 	blendStateOpaque.alpha_to_coverage_enable = false;
-	device->CreatePipelineState( &desc, &psoTreesHigh );
+	GGTreeCreatePSO( &psoTreesHigh );
 
 	rastState.cull_mode = CullMode::NONE;
 	desc.vs = &shaderBranchesHighVS;
 	desc.ps = &shaderBranchesHighPS;
 	desc.il = &inputLayoutHigh;
 	blendStateOpaque.alpha_to_coverage_enable = true;
-	device->CreatePipelineState( &desc, &psoBranchesHigh );
+	GGTreeCreatePSO( &psoBranchesHigh );
 
 	rastState.cull_mode = CullMode::BACK;
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
@@ -1320,35 +1373,35 @@ void GGTrees_Init()
 	desc.ps = &shaderTreesHighEnvProbePS;
 	desc.il = &inputLayoutHigh;
 	blendStateOpaque.alpha_to_coverage_enable = false;
-	device->CreatePipelineState( &desc, &psoTreesHighEnvProbe );
+	GGTreeCreatePSO( &psoTreesHighEnvProbe );
 
 	rastState.cull_mode = CullMode::NONE;
 	desc.vs = &shaderBranchesHighEnvProbeVS;
 	desc.ps = &shaderBranchesHighEnvProbePS;
 	desc.il = &inputLayoutHigh;
 	blendStateOpaque.alpha_to_coverage_enable = true;
-	device->CreatePipelineState( &desc, &psoBranchesHighEnvProbe );
+	GGTreeCreatePSO( &psoBranchesHighEnvProbe );
 
 	// prepass pipeline state
 	desc.vs = &shaderTreesPrepassVS;
 	desc.ps = &shaderTreesPrepassPS;
 	desc.il = &inputLayout;
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
-	device->CreatePipelineState( &desc, &psoTreesPrepass );
+	GGTreeCreatePSO( &psoTreesPrepass );
 
 	rastState.cull_mode = CullMode::BACK;
 	desc.vs = &shaderTreesHighPrepassVS;
 	desc.ps = &shaderTreesHighPrepassPS;
 	desc.il = &inputLayoutHigh;
 	blendStateOpaque.alpha_to_coverage_enable = false;
-	device->CreatePipelineState( &desc, &psoTreesHighPrepass );
+	GGTreeCreatePSO( &psoTreesHighPrepass );
 
 	rastState.cull_mode = CullMode::NONE;
 	desc.vs = &shaderBranchesHighPrepassVS;
 	desc.ps = &shaderBranchesHighPrepassPS;
 	desc.il = &inputLayoutHigh;
 	blendStateOpaque.alpha_to_coverage_enable = true;
-	device->CreatePipelineState( &desc, &psoBranchesHighPrepass );
+	GGTreeCreatePSO( &psoBranchesHighPrepass );
 
 	// shadow pipeline state
 	rastState.depth_bias = -1;
@@ -1359,16 +1412,16 @@ void GGTrees_Init()
 	desc.il = &inputLayout;
 	rastState.depth_clip_enable = false;
 	blendStateOpaque.alpha_to_coverage_enable = false;
-	device->CreatePipelineState( &desc, &psoTreesShadow );
+	GGTreeCreatePSO( &psoTreesShadow );
 	desc.vs = &shaderTreesHighShadowVS;
 	desc.ps = &shaderTreesHighShadowPS;
 	desc.il = &inputLayoutHigh;
 	rastState.cull_mode = CullMode::BACK;
-	device->CreatePipelineState( &desc, &psoTreesHighShadow );
+	GGTreeCreatePSO( &psoTreesHighShadow );
 	desc.vs = &shaderBranchesHighShadowVS;
 	desc.ps = &shaderBranchesHighShadowPS;
 	rastState.cull_mode = CullMode::NONE;
-	device->CreatePipelineState( &desc, &psoBranchesHighShadow );
+	GGTreeCreatePSO( &psoBranchesHighShadow );
 	rastState.depth_bias = 0;
 	rastState.depth_clip_enable = true;
 	rastState.slope_scaled_depth_bias = 0;
@@ -2302,6 +2355,8 @@ void GGTrees_UpdateFrustumCulling( wiScene::CameraComponent* camera )
 	}
 }
 
+static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, CommandList cmd ); // GGMAX 2.96
+
 void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool bRenderTargetFocus )
 {
 	if (!ggtrees_initialised) return;
@@ -2381,6 +2436,15 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 	// wicked terrain is active — skip the dead work (~1ms + per-frame CreateBuffer churn).
 	if ( ggterrain_use_wicked_terrain )
 	{
+		// GGMAX 2.96: the CONSTANT BUFFER is not dead work any more - the distant-tree billboard
+		// pass reads it. Without this the per-type scaleX/scaleY stay zero, so every billboard
+		// quad has zero area: measured 98,410 instances submitted across 87 draws for exactly
+		// zero pixels and zero measurable cost. Fill and upload just the CB, then skip the rest
+		// (the per-type shadow instance buffers and their CreateBuffer churn ARE still dead).
+		if ( gg_far_tree_pass )
+		{
+			GGTrees_UpdateBillboardCB( camX, camY, camZ, cmd );
+		}
 		wiProfiler::EndRange( range );
 		return;
 	}
@@ -2473,7 +2537,17 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 		}
 	}
 
-	// update shader constants buffer
+	// update shader constants buffer (shared with the 2.96 billboard-only path above)
+	GGTrees_UpdateBillboardCB( camX, camY, camZ, cmd );
+
+	wiProfiler::EndRange( range );
+}
+
+// GGMAX 2.96: fills + uploads treeConstantBuffer. Factored out of GGTrees_Update so the
+// billboard pass can get it on the Wicked-terrain path, where the rest of GGTrees_Update is
+// genuinely dead. Everything here is cheap: 8 sin/cos, one light lookup, numTreeTypes floats.
+static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, CommandList cmd )
+{
 	float ang = 0.785398f; // (2.0 * pi) / 8.0
 	for( int i = 0; i < 8; i++ )
 	{
@@ -2510,8 +2584,6 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 	treeConstantData.tree_lodDistShadow = ggtrees_global_params.lod_dist_shadow;
 
 	wiGraphics::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
-
-	wiProfiler::EndRange( range );
 }
 
 void GGTrees_HideAll()
@@ -3060,8 +3132,18 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 {
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
-	// DISABLED: tree Draw causes GPU hang due to PSO compilation failure in DX12
-	return;
+	// GGMAX 2.96: was hard-disabled with "tree Draw causes GPU hang due to PSO compilation
+	// failure in DX12". The PSO failure was a C++ lifetime bug, not a graphics one - every tree
+	// PSO held pointers to stack locals that died when GGTrees_Init returned, and Wicked's DX12
+	// backend only compiles the pipeline at BIND time. Fixed by GGTreeCreatePSO above.
+	//
+	// STEP 1/2 SCOPE: the BILLBOARD pass only. The high-detail mesh section below stays off
+	// because the Wicked nearest-N tree pool already draws those as ObjectComponents - running
+	// both would double-draw every near tree.
+	if ( !gg_far_tree_pass ) return;
+	g_ftEnterCount++;
+	g_ftDrawCalls = 0; g_ftInstances = 0; g_ftChunksWithIn = 0; g_ftFrustumKills = 0;
+	g_ftChunksTotal = numTreeChunks;
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Draw", cmd);
@@ -3091,18 +3173,24 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	{
 		TreeChunk* pChunk = &pTreeChunks[ i ];
 		if ( pChunk->pInstances.NumItems() == 0 ) continue;
+		g_ftChunksWithIn++;
 
 		AABB aabb;
 		pChunk->GetBounds( &aabb );
-		if ( !frustum->CheckBoxFast( aabb ) ) continue;
+		if ( !frustum->CheckBoxFast( aabb ) ) { g_ftFrustumKills++; continue; }
 
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceTreeGPU) };
 		device->BindVertexBuffers( vbs, 1, 1, strides, 0, cmd );
 		device->BindIndexBuffer( &bufferTreeIndices, IndexBufferFormat::UINT16, 0, cmd );
 		device->DrawIndexedInstanced( 6, pChunk->numValid, 0, 0, 0, cmd );
+		g_ftDrawCalls++; g_ftInstances += pChunk->numValid;
 	}
 	
+	// GGMAX 2.96: high-detail meshes are the Wicked tree pool's job now - never draw them here.
+	device->EventEnd( cmd );
+	return;
+
 	// only draw high detail in non-reflection passes
 	if ( mode == 0 )
 	{

@@ -5788,23 +5788,33 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		// GGMAX 2.95: 1 (default) = the merged billboard proxy chunks also draw to the MAIN
 		// camera beyond the nearest-N pool radius, restoring DX11's forested distance.
 		// 0 = pre-2.95 behaviour (shadow-only proxies, bare distant hillsides).
+		// GGMAX 2.96: now drives the DX11-style BILLBOARD PASS (zero ECS, one draw per chunk),
+		// not the abandoned merged-proxy experiment from 2.95b.
+		namespace GGT2 = GGTrees;
 		extern bool gg_trees_far_billboards;
-		gg_trees_far_billboards = (atoi(arg) != 0);
+		GGT2::gg_far_tree_pass = (atoi(arg) != 0);
 		int pc = 0, ps = 0, cand = 0, pb = 0, psz = 0; float cut = -1.0f;
 		namespace GGT = GGTrees;
 		GGT::GGTrees_GetFarTreeStats(&pc, &ps, &cand, &pb, &psz, &cut);
 		int vp = 0; float nch = -1.0f, fch = -1.0f;
+		char ftbuf[320];
+		_snprintf(ftbuf, sizeof(ftbuf),
+			"BILLBOARD PASS: entered=%u draws=%u instances=%u | chunksTotal=%u withInstances=%u frustumKilled=%u",
+			GGT2::g_ftEnterCount, GGT2::g_ftDrawCalls, GGT2::g_ftInstances,
+			GGT2::g_ftChunksTotal, GGT2::g_ftChunksWithIn, GGT2::g_ftFrustumKills);
+		ftbuf[sizeof(ftbuf)-1] = 0;
 		GGT::GGTrees_GetFarTreeRange(&vp, &nch, &fch);
 		_snprintf(result, resultSize,
 			"OK: SET_FARTREES %d - live gg_trees_far_billboards=%d (%s)\n"
 			"proxyChunks=%d validProxies=%d proxiesShown=%d candidates=%d poolBuilt=%d poolSize=%d\n"
 			"cutoffDist=%.0f  validProxyChunkDist: nearest=%.0f farthest=%.0f\n"
+			"%s\n"
 			"READ THIS: cutoffDist -1 means the gather found FEWER trees than the pool holds, so "
 			"every tree is already a real mesh and there is no 'far' for billboards to cover. "
 			"proxyChunks 0 means no billboard proxies were built at all.",
-			atoi(arg), gg_trees_far_billboards ? 1 : 0,
-			gg_trees_far_billboards ? "far billboards VISIBLE" : "shadow-only (bare distance)",
-			pc, vp, ps, cand, pb, psz, (cut >= 0.0f) ? sqrtf(cut) : -1.0f, nch, fch);
+			atoi(arg), GGT2::gg_far_tree_pass ? 1 : 0,
+			GGT2::gg_far_tree_pass ? "billboard PASS ON" : "billboard pass off",
+			pc, vp, ps, cand, pb, psz, (cut >= 0.0f) ? sqrtf(cut) : -1.0f, nch, fch, ftbuf);
 		result[resultSize - 1] = 0;
 		return true;
 	}

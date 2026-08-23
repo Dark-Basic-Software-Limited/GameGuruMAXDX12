@@ -305,6 +305,7 @@ void GGPerf_TracePumpAccum(unsigned long long us)
 extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_Prepass_Reflections(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
+extern "C" void GGTrees_Draw(const wi::primitive::Frustum*, int, wi::graphics::CommandList); // GGMAX 2.96 far-tree billboards
 extern "C" void GGTerrain_Draw_Transparent(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_ShadowMap(const wi::primitive::Frustum*, int, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_EnvProbe(const wi::primitive::Sphere*, const wi::primitive::Frustum*, uint32_t, wi::graphics::CommandList);
@@ -465,6 +466,11 @@ void MasterRenderer::Load()
 		GGTerrain_Draw_Prepass_Reflections(frustum, cmd);
 	};
 	customDraw_Opaque = [](const Frustum* frustum, int mode, CommandList cmd) {
+		// GGMAX 2.96: the distant-tree BILLBOARD pass runs on the shipping Wicked-terrain path,
+		// so it must NOT sit behind ggterrain_use_wicked_terrain like the dead GGTerrain draw
+		// below. Zero scene entities, one DrawIndexedInstanced per visible tree chunk, static
+		// instance buffers the build already maintains. Self-gated on gg_far_tree_pass.
+		GGTrees_Draw(frustum, mode, cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw(frustum, mode, cmd);
 	};
