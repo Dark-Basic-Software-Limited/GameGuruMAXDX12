@@ -22,6 +22,23 @@
 // GGTrees::gg_no_trees instead and fails to link (LNK2001, the 2.53 linkage rule).
 extern bool gg_no_trees;
 
+// GGMAX 2.95: draw the merged billboard proxy chunks to the MAIN CAMERA, not just into the far
+// shadow cascades, so distant hillsides keep their forest. DX11 renders LOD0 + billboards past
+// lod_dist; the DX12 port dropped the impostor path on 2026-07-13 (Wicked's RenderImpostors
+// ignores IsNotVisibleInReflections and splattered white quads into the water reflection) and
+// far trees have simply not rendered since. Lee's DX11-vs-DX12 comparison on spotshadowtest is
+// what surfaced it - the DX11 mountains are forested, the DX12 ones bare.
+//
+// The geometry for this ALREADY SHIPS: GGTrees_BuildShadowProxyChunk builds, per 16x16 tree
+// chunk, one merged mesh of two crossed quads per tree textured with the same billboard DDS
+// DX11 uses. It was withheld from the player by a single SetNotVisibleInMainCamera(true).
+// Default ON; harness SET_FARTREES 0|1 to A/B.
+// DEFAULT OFF: the gate is NOT WORKING YET. With tree shadows on this level reports
+// validProxies=244 and chunks out to 125,516 units against a 24,812 cutoff, yet proxiesShown
+// stays 0 - the show condition never fires and I have not explained why. Shipping it off so
+// the diagnostic is available without changing anyone's picture. Harness SET_FARTREES 1.
+bool gg_trees_far_billboards = false;
+
 namespace GGTrees
 {
 
@@ -663,6 +680,16 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 // ---------------------------------------------------------------------------
 static wi::ecs::Entity g_shadowProxyMaterial[ GG_TREE_TYPES ] = { wi::ecs::INVALID_ENTITY };
 
+// GGMAX 2.95: squared XZ radius the nearest-N pool actually reaches this frame, or -1 when the
+// pool covers every tree. Set in the SelectMark pass, consumed by the far-billboard gate.
+static float g_treePoolCutoffDist2 = -1.0f;
+static uint32_t g_ftProxiesShown = 0;   // GGMAX 2.95 diagnostics for SET_FARTREES
+static uint32_t g_ftProxyCount   = 0;
+static uint32_t g_ftCandidates   = 0;
+static uint32_t g_ftProxyValid   = 0;
+static float    g_ftNearest      = -1.0f;
+static float    g_ftFarthest     = -1.0f;
+
 void GGTrees_MarkProxyChunkDirtyAt( float x, float z )
 {
 	if ( g_chunkProxyDirty.size() != (size_t)numTreeChunks ) g_chunkProxyDirty.assign( numTreeChunks, 1 );
@@ -1100,6 +1127,56 @@ void GGTrees_WickedUpdate()
 	const float camX = camera.Eye.x;
 	const float camZ = camera.Eye.z;
 
+	// GGMAX 2.95: FAR-TREE BILLBOARD GATE. Runs EVERY frame - it sits above the selection
+	// throttle below, which early-returns on a parked camera, and visibility has to track the
+	// camera even when the nearest-N set does not need recomputing.
+	//
+	// Show a chunk's merged billboards to the main camera only when the ENTIRE chunk lies
+	// beyond the radius the real tree meshes reach. Conservative on purpose: the proxy holds a
+	// billboard for EVERY tree in its chunk, including ones the pool is already drawing as real
+	// meshes, so any chunk that straddles the cutoff would double-draw them. Chunks are
+	// treeArea/treeSplit = 12500 units (~317 m) so the straddling ring is one chunk wide.
+	{
+		auto& sceneFT = wi::scene::GetScene();
+		const float chunkSpan = treeArea / (float)treeSplit;
+		uint32_t shownFT = 0, validFT = 0;
+		float nearestFT = 1e30f, farthestFT = 0.0f;
+		for ( uint32_t c = 0; c < (uint32_t)g_chunkProxyObject.size(); c++ )
+		{
+			wi::scene::ObjectComponent* obj = sceneFT.objects.GetComponent( g_chunkProxyObject[ c ] );
+			if ( obj == nullptr ) continue;
+			bool show = false;
+			if ( gg_trees_far_billboards && g_treePoolCutoffDist2 >= 0.0f )
+			{
+				const uint32_t iX = c % treeSplit, iZ = c / treeSplit;
+				const float minX = ( (float)iX / (float)treeSplit - 0.5f ) * treeArea;
+				const float minZ = ( (float)iZ / (float)treeSplit - 0.5f ) * treeArea;
+				// nearest point of the chunk box to the camera, XZ only (same basis as the pool)
+				const float dx = std::max( 0.0f, std::max( minX - camX, camX - ( minX + chunkSpan ) ) );
+				const float dz = std::max( 0.0f, std::max( minZ - camZ, camZ - ( minZ + chunkSpan ) ) );
+				show = ( dx * dx + dz * dz ) >= g_treePoolCutoffDist2;
+			}
+			obj->SetNotVisibleInMainCamera( !show );
+			if ( show ) shownFT++;
+			validFT++;
+			{
+				const uint32_t iXd = c % treeSplit, iZd = c / treeSplit;
+				const float mnX = ( (float)iXd / (float)treeSplit - 0.5f ) * treeArea;
+				const float mnZ = ( (float)iZd / (float)treeSplit - 0.5f ) * treeArea;
+				const float ddx = std::max( 0.0f, std::max( mnX - camX, camX - ( mnX + chunkSpan ) ) );
+				const float ddz = std::max( 0.0f, std::max( mnZ - camZ, camZ - ( mnZ + chunkSpan ) ) );
+				const float nd = sqrtf( ddx * ddx + ddz * ddz );
+				if ( nd < nearestFT ) nearestFT = nd;
+				if ( nd > farthestFT ) farthestFT = nd;
+			}
+		}
+		g_ftProxiesShown = shownFT;
+		g_ftProxyCount   = (uint32_t)g_chunkProxyObject.size();
+		g_ftProxyValid   = validFT;
+		g_ftNearest      = ( validFT > 0 ) ? nearestFT : -1.0f;
+		g_ftFarthest     = ( validFT > 0 ) ? farthestFT : -1.0f;
+	}
+
 	// Selection throttle: the 400K candidate scan + nth_element + bind passes
 	// only need to re-run when the answer can change — camera moved (>8 inches,
 	// accumulated against the last SCANNED position so slow drift still lands),
@@ -1217,6 +1294,7 @@ void GGTrees_WickedUpdate()
 	}
 
 	wi::profiler::EndRange( rangeGather );
+	g_ftCandidates = (uint32_t)candidates.size();   // GGMAX 2.95 diagnostics
 	auto rangeSelect = wi::profiler::BeginRangeCPU( "TreePool - SelectMark" );
 
 	// Partial-sort: put the N closest at the front, don't care about the rest.
@@ -1230,6 +1308,16 @@ void GGTrees_WickedUpdate()
 			candidates.end(),
 			[]( const TreeCandidate& a, const TreeCandidate& b ) { return a.dist2 < b.dist2; } );
 		poolFill = g_treePoolSize;
+		// GGMAX 2.95: after nth_element the element AT g_treePoolSize is in its sorted place and
+		// everything before it is <=, so this IS the exact radius the real tree meshes reach.
+		// Beyond it the pool draws nothing, which is precisely where the billboards must take over.
+		g_treePoolCutoffDist2 = candidates[ g_treePoolSize ].dist2;
+	}
+	else
+	{
+		// Pool is not full: every tree in range is a real mesh, so there is nothing for the
+		// billboards to cover. -1 means "no cutoff" and keeps them hidden.
+		g_treePoolCutoffDist2 = -1.0f;
 	}
 
 	// GGMAX 2.19: poolFill is how many slots this frame actually WANTS, so it is the demand
@@ -1441,6 +1529,29 @@ void GGTrees_WickedShutdown()
 		g_treeBranchesMaterialEntity[ t ] = wi::ecs::INVALID_ENTITY;
 	}
 	g_wickedTreesSetup = false;
+}
+
+
+// GGMAX 2.95: diagnostics for the far-tree billboard gate. Answers the only questions that
+// matter when the gate does not fire: do the proxy chunks even exist, did the candidate gather
+// find more trees than the pool can hold (if not there is no "far" to cover), and how many
+// chunks are currently showing.
+void GGTrees_GetFarTreeStats( int* proxyCount, int* proxiesShown, int* candidates,
+                              int* poolBuilt, int* poolSize, float* cutoffDist2 )
+{
+	if ( proxyCount )   *proxyCount   = (int)g_ftProxyCount;
+	if ( proxiesShown ) *proxiesShown = (int)g_ftProxiesShown;
+	if ( candidates )   *candidates   = (int)g_ftCandidates;
+	if ( poolBuilt )    *poolBuilt    = (int)g_treePoolBuilt;
+	if ( poolSize )     *poolSize     = (int)g_treePoolSize;
+	if ( cutoffDist2 )  *cutoffDist2  = g_treePoolCutoffDist2;
+}
+
+void GGTrees_GetFarTreeRange( int* validProxies, float* nearestChunk, float* farthestChunk )
+{
+	if ( validProxies )  *validProxies  = (int)g_ftProxyValid;
+	if ( nearestChunk )  *nearestChunk  = g_ftNearest;
+	if ( farthestChunk ) *farthestChunk = g_ftFarthest;
 }
 
 } // namespace GGTrees

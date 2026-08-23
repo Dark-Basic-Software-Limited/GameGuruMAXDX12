@@ -4279,3 +4279,59 @@ main camera. Clearing that flag is the experiment.
 Water band brightness, foreground grass density, and overall contrast/colour cast. Several of
 those may simply follow from the sky/time-of-day difference. Worth a camera-matched pair before
 spending effort on them.
+
+## §2.95b — far-tree billboards: the "one flag" fix is WRONG, and the instrument says why (08-23)
+
+Attempted the 2.95 fix (show the merged billboard proxy chunks to the main camera beyond the
+nearest-N pool radius). **It does not work, and the reason is more interesting than the fix.**
+
+### What the diagnostic found (harness SET_FARTREES now reports it)
+On spotshadowtest, as shipped:
+
+    proxyChunks=256  validProxies=0  proxiesShown=0
+    candidates=7775  poolBuilt=6000  poolSize=6000  cutoffDist=24812
+
+★ **validProxies=0 — all 256 proxy slots are INVALID_ENTITY. The billboard geometry is not
+built on this level at all.** There was never anything for a visibility flag to un-hide.
+
+Why: `GGTrees_BuildShadowProxyChunk` is SHADOW infrastructure. It only builds when
+`TreeShadowsEnabled()` is true (`draw_shadows != 0 && TreeShadowRangeClamped() > 0`,
+GGTrees_part2.cpp:534). Sending `SET_TREES shadowrange 4` flips it:
+
+    proxyChunks=256  validProxies=244  proxiesShown=0
+    validProxyChunkDist: nearest=0 farthest=125516
+
+★★ **So the distant-tree billboards exist ONLY when the user has tree shadows switched on.**
+Tying the VISUAL restoration of distant forest to the tree-SHADOW setting is wrong on its face:
+a player who turns tree shadows off would also lose every distant tree. Any real fix has to
+build the merged billboard chunks for their own sake, independent of the shadow toggle.
+
+### ⚠ The gate itself is also still broken, and I could not explain it
+With 244 valid proxies and chunks out to 125,516 units against a cutoff of 24,812, the
+show condition
+`(dx*dx + dz*dz) >= g_treePoolCutoffDist2` should be true for many chunks. `proxiesShown`
+stayed 0 in every reading. Three attempts, no explanation — so by the standing rule
+(two failed attempts means the approach is wrong, not the parameters) I stopped rather than
+keep tuning. **`gg_trees_far_billboards` therefore ships DEFAULT OFF** and changes nobody's
+picture; `SET_FARTREES 1` enables it for whoever picks this up.
+
+Prime suspects for the next person, in order: (a) the gate reads
+`g_treePoolCutoffDist2` on a frame where it is still -1 because it sits ABOVE the selection
+throttle's early return and the ordering is subtler than it looks; (b) something downstream
+re-asserts `SetNotVisibleInMainCamera(true)` after the gate runs — the proxy rebuild at
+:1055-1080 and the park-release path at :945 both touch these objects.
+
+### Second-order problem to solve at the same time
+Even once it fires, the gate is CHUNK-granular: chunks are treeArea/treeSplit = 12,500 units
+(~317 m) and the measured pool radius is 24,812 (~630 m), so only whole chunks past 630 m
+qualify and the straddling ring shows nothing. The proxy holds a billboard for EVERY tree in
+its chunk, including ones the pool already draws as real meshes, so relaxing the rule
+double-draws them. DX11 gets this right because its billboard swap is PER TREE, not per chunk.
+
+### What is genuinely established
+1. Distant trees ARE missing in DX12 and the cause is documented (2.95: the impostor path was
+   dropped 2026-07-13 over a water-reflection bug).
+2. The billboard assets and the merged-chunk builder ship and work — but only under the tree
+   shadow toggle.
+3. Restoring the look needs: build proxies unconditionally, AND a finer-than-chunk gate, AND
+   the reflection exclusion kept. That is a real piece of work, not a flag.

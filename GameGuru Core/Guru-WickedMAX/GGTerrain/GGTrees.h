@@ -18,6 +18,9 @@ struct sUndoSysEventTreeMove;
 
 namespace GGTrees
 {
+	// GGMAX 2.95: far-tree billboard gate diagnostics (harness SET_FARTREES)
+	void GGTrees_GetFarTreeStats(int* proxyCount, int* proxiesShown, int* candidates, int* poolBuilt, int* poolSize, float* cutoffDist2);
+	void GGTrees_GetFarTreeRange(int* validProxies, float* nearestChunk, float* farthestChunk);
 	// GGMAX Tier A: allocate the dead legacy tree atlases only if the legacy draw path wakes up.
 	void GGTrees_EnsureLegacyTexArrays();
 
