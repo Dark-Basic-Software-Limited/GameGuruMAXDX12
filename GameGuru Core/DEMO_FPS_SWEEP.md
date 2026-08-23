@@ -1,3 +1,63 @@
+# 2026-08-23 SWEEP (0823) - FAR-TREE BILLBOARDS + POOL CAP - game `42277a53`
+
+Gate for 2.96 (distant-tree billboards restored) and 2.97 (tree pool radius cap).
+
+VERDICT: **19/19, zero failures, hub-wide +43.1%. ⚠ POLYS deliberately CHANGED on 13 of 19 -
+the standing bit-identical test does not apply to this feature and needs replacing.
+⚠⚠ WORST IN-GAME VRAM 4026.6 MB on Aztec Game Kit - 69 MB under the 4096 gate.**
+
+| Demo | 0822a | 0823 | delta | ed VRAM | POLYS 0822a | POLYS 0823 |
+|---|---|---|---|---|---|---|
+| Aztec Game Kit Teaser | 83.1 | 120.0 | +44.4% | 3042 | 10,330,135 | 6,458,677 |
+| Aztec Game Kit | 121.8 | 160.1 | +31.5% | 3746 | 3,438,876 | 527,382 |
+| Bounty | 158.5 | 227.7 | +43.7% | 2641 | 469,906 | = |
+| Horseshoe Bend | 124.9 | 142.1 | +13.8% | 3123 | 2,168,281 | 1,583,122 |
+| Island Showdown | 90.3 | 139.8 | +54.8% | 2831 | 4,125,704 | 1,655,768 |
+| Operation Amazon | 103.8 | 174.6 | +68.3% | 3419 | 5,504,271 | 507,604 |
+| River Raiders | 170.3 | 264.3 | +55.2% | 3404 | 2,362,345 | 267,366 |
+| Snowy Mountain Stroll | 188.9 | 226.5 | +19.9% | 2835 | 81,369 | = |
+| A Grand Canyon Adventure | 139.4 | 167.8 | +20.3% | 2902 | 2,279,506 | 2,132,292 |
+| Disruption | 108.3 | 177.3 | +63.7% | 2947 | 4,677,579 | 153,309 |
+| **Foggy Forest** | 74.6 | **155.9** | **+109.1%** | 3032 | 10,220,589 | 1,283,316 |
+| Indian Strike Force | 127.2 | 182.6 | +43.5% | 3052 | 3,229,699 | 303,737 |
+| Switch Escape | 251.1 | 318.7 | +26.9% | 2276 | 109,358 | = |
+| Canyon Offensive | 91.6 | 156.3 | +70.7% | 3406 | 8,838,008 | 517,948 |
+| Escape from the Zombie Cellar | 244.9 | 306.9 | +25.3% | 2345 | 28,048 | = |
+| Jungle Fever | 179.2 | 223.4 | +24.7% | 3031 | 76,157 | = |
+| RPG Template | 140.6 | 214.2 | +52.4% | 3174 | 3,247,629 | 552,000 |
+| The Mystery of Z Island | 147.4 | 191.8 | +30.1% | 3384 | 722,872 | 326,002 |
+| Trapped | 279.5 | 335.0 | +19.9% | 2346 | 12,768 | = |
+
+## The shape confirms the mechanism
+The biggest gains are on the demos with the most tree geometry: Foggy Forest +109% (10.2 M ->
+1.28 M polys), Canyon Offensive +71% (8.8 M -> 0.52 M), Operation Amazon +68% (5.5 M -> 0.51 M).
+Levels with no trees to cap are flat: Trapped, Switch Escape, Zombie Cellar, Jungle Fever and
+Snowy Mountain Stroll all show POLYS unchanged and gains in the 20-27% band that is just the
+2.94d/2.94f terrain work already banked. **Six demos have bit-identical POLYS, and all six are
+the treeless ones** - which is exactly the control this table needed.
+
+## ⚠ Two things this gate does NOT clear
+
+**1. POLYS bit-identical is no longer a valid acceptance test for tree work.** It changed on 13
+of 19 by design - the cap removes near-field mesh triangles the billboards now cover. A
+replacement gate is needed: POLYS-excluding-far-trees plus a separate billboard instance count.
+Until then, tree changes have no automatic regression test.
+
+**2. Aztec Game Kit in-game VRAM is 4026.6 MB against a 4096 gate - 69 MB of headroom.**
+It was 3947.9 before today, so the ~78 MB billboard atlas took most of the remaining margin.
+This is the demo to watch and it is the one that would break first on a 4 GB card.
+Mitigations, cheapest first: drop `texTreeNormal` (26.1 MB - billboards could use a flat normal),
+or halve the atlas to 512x512 (52.2 -> 13 MB, and 544 of the 625 ring chunks already ship at
+256 px so the quality floor is lower than it sounds).
+
+## Visual state
+Distant forest restored and matching DX11's arrangement. The swap seam has DX11's noise-dithered
+discard on the billboard side; the mesh side has no matching far-dissolve (our meshes simply stop
+at the pool cap instead), so a hard edge is possible where a near tree passes the cap. Not seen
+in the shots taken so far. **Wants Lee's eye while flying.**
+
+---
+
 # 2026-08-22 SWEEP (0822) - 2.94d/2.94f GATE - engine `68db4c1b` / game `bfaf4e13`
 
 Purpose: regression gate for the day's two engine changes - 2.94d (VT tile-request round trip
