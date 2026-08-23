@@ -890,8 +890,9 @@ void GGTrees_EnsureBillboardAtlases()
 
 	if ( !texTree.IsValid() )
 		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texTree );
-	// GGMAX 2.98: texTreeNormal NOT created - 26.1 MB reclaimed. The billboard PS now uses an
-	// analytic normal instead of sampling it (Aztec Game Kit was 69 MB under the 4 GB gate).
+	// GGMAX 2.98b: RESTORED - dropping it flattened the canopy badly (Lee's side-by-side).
+	if ( !texTreeNormal.IsValid() )
+		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM, &texTreeNormal );
 
 	// The dither/noise source. Both tree pixel shaders sample it; an invalid bind is fatal.
 	if ( !texNoise.IsValid() )
@@ -912,6 +913,12 @@ void GGTrees_EnsureBillboardAtlases()
 			// while every upload was silently failing.
 			if ( GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTree, i, upcmd ) ) g_ftAtlasSlices++;
 			else if ( g_ftAtlasFailName[0] == 0 ) strcpy_s( g_ftAtlasFailName, path );
+		}
+		if ( g_GGTrees[ i ].billboardNormalFilename && g_GGTrees[ i ].billboardNormalFilename[ 0 ] )
+		{
+			strcpy_s( path, "treebank/billboards/" );   // GG_GetRealPath already prepends Files/
+			strcat_s( path, g_GGTrees[ i ].billboardNormalFilename );
+			GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTreeNormal, i, upcmd );   // GGMAX 2.98b
 		}
 	}
 	g_ftAtlasesReady = true;   // GGMAX 2.97: only now is it safe for a draw to bind these
@@ -2888,7 +2895,7 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 
 	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
-	// GGMAX 2.98: texTreeNormal removed (26.1 MB) - the PS uses an analytic normal now.
+	device->BindResource( &texTreeNormal, 53, cmd );
 	device->BindSampler( &samplerBilinearWrap, 0, cmd );
 	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
 	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
@@ -2992,7 +2999,7 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 
 	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
-	// GGMAX 2.98: texTreeNormal removed (26.1 MB) - the PS uses an analytic normal now.
+	device->BindResource( &texTreeNormal, 53, cmd );
 	device->BindSampler( &samplerBilinearWrap, 0, cmd );
 	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
 	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
@@ -3293,7 +3300,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	// bind texture and sampler
 	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
-	// GGMAX 2.98: texTreeNormal removed (26.1 MB) - the PS uses an analytic normal now.
+	device->BindResource( &texTreeNormal, 53, cmd );
 	device->BindSampler( &samplerBilinearWrap, 0, cmd );
 	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
 	device->BindSampler( &samplerTrilinearWrap, 2, cmd );

@@ -4607,3 +4607,31 @@ those removed was a tree floating over nothing. Forest on the real terrain is un
 ⚠ The 4 GB question this was for: Aztec Game Kit in-game was 4026.6 MB against a 4096 gate.
 26 MB comes off the atlas directly; the no-terrain cull does not change VRAM, only draws.
 Needs a re-measure on that demo specifically before the headroom can be called safe.
+
+## §2.98b — normal map RESTORED; the VRAM has to come from somewhere else (2026-08-23)
+
+2.98 swapped the billboard normal map for the analytic normal to reclaim 26.1 MB. Lee's
+side-by-side against DX11 settled it in one look: **the canopy went flat and uniformly bright
+green** where DX11 has real depth and shading variation across the foliage. Reverted — sample,
+declaration, creation, slice loads and all three binds are back. VRAM 2.78 → 2.83 GB on
+spotshadowtest; Aztec in-game goes back to ~4026 MB, 69 MB under the gate.
+
+The terrain-ring cull from 2.98 STAYS (draws 41, instances 42,370, 46 chunks culled) — that part
+was pure win and unrelated.
+
+★ Worth recording as a judgement, not just a revert: **26 MB was not worth that.** The analytic
+normal is a single direction for the whole card, so every leaf on a billboard lights identically
+— which is exactly the "flat cutout" failure mode the design research warned about, and it shows
+at the ranges billboards actually occupy.
+
+### Better VRAM routes, in order of value
+1. ★★ **Load only the tree types the level USES.** The machinery already exists — the
+   ONLYLOADWHENUSED path keys off `ggtrees_global_params.paint_tree_bitfield` and
+   `bTreeTextureUploaded[]`. A level using 6 of 38 types needs 6 slices, not 38. That is up to
+   **~66 MB across both atlases at ZERO quality cost**, far more than the normal map was worth.
+   Note the atlas is still allocated at full array size, so this needs the array sized to the
+   used count (or the slices simply left unwritten, which saves upload but not allocation) —
+   check which before promising the number.
+2. Halve both atlases to 512x512: 52.2 → 13.0 and 26.1 → 6.5, ~59 MB, keeps per-texel relief.
+   A billboard at 600 m is tens of pixels tall, so 512 is still heavily oversampled.
+3. Drop the HIGH-detail pair properly (already absent, but confirm nothing re-creates them).
