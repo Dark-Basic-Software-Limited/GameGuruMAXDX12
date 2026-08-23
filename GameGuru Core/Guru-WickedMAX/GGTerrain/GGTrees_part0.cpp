@@ -65,6 +65,10 @@ namespace wi { namespace graphics { struct Texture; struct CommandList; } }
 bool GG_LoadDDSIntoTextureSlice( const char* filename, wi::graphics::Texture* tex,
                                  uint32_t arraySlice, wi::graphics::CommandList cmd );
 
+// GGMAX 2.98: terrain chunk-ring reach in world units (0 = no terrain / no limit). Declared at
+// global scope for the same linkage reason as the shim above.
+float GG_GetTerrainViewRadius();
+
 namespace GGTrees
 {
 #define GGTREES_UNDOREDO
@@ -743,6 +747,8 @@ uint32_t g_ftChunksTotal  = 0;   // numTreeChunks
 uint32_t g_ftChunksWithIn = 0;   // chunks holding at least one instance
 uint32_t g_ftFrustumKills = 0;   // chunks rejected by the frustum test
 uint32_t g_ftEnterCount   = 0;   // times the pass body was entered
+uint32_t g_ftTerrainKills = 0;   // chunks dropped for having no terrain under them
+static float gg_ftTerrainReach2 = 0.0f;
 
 PipelineState psoTrees;
 
@@ -884,8 +890,8 @@ void GGTrees_EnsureBillboardAtlases()
 
 	if ( !texTree.IsValid() )
 		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC3_UNORM_SRGB, &texTree );
-	if ( !texTreeNormal.IsValid() )
-		GGTrees_CreateEmptyTexture( 1024, 1024, 9, numTreeTypes, Format::BC1_UNORM, &texTreeNormal );
+	// GGMAX 2.98: texTreeNormal NOT created - 26.1 MB reclaimed. The billboard PS now uses an
+	// analytic normal instead of sampling it (Aztec Game Kit was 69 MB under the 4 GB gate).
 
 	// The dither/noise source. Both tree pixel shaders sample it; an invalid bind is fatal.
 	if ( !texNoise.IsValid() )
@@ -906,12 +912,6 @@ void GGTrees_EnsureBillboardAtlases()
 			// while every upload was silently failing.
 			if ( GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTree, i, upcmd ) ) g_ftAtlasSlices++;
 			else if ( g_ftAtlasFailName[0] == 0 ) strcpy_s( g_ftAtlasFailName, path );
-		}
-		if ( g_GGTrees[ i ].billboardNormalFilename && g_GGTrees[ i ].billboardNormalFilename[ 0 ] )
-		{
-			strcpy_s( path, "treebank/billboards/" );   // GG_GetRealPath already prepends Files/
-			strcat_s( path, g_GGTrees[ i ].billboardNormalFilename );
-			GGTrees_LoadTextureDDSIntoSliceCmd( path, &texTreeNormal, i, upcmd );
 		}
 	}
 	g_ftAtlasesReady = true;   // GGMAX 2.97: only now is it safe for a draw to bind these
@@ -2860,6 +2860,10 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	if (!ggtrees_initialised) return;
 	if ( !ggtrees_global_params.draw_enabled ) return;
 
+	{
+		const float reach = ::GG_GetTerrainViewRadius();   // GGMAX 2.98: prepass runs first
+		gg_ftTerrainReach2 = ( reach > 0.0f ) ? ( reach * reach ) : 0.0f;
+	}
 	// GGMAX 2.97: atlas readiness is a GATE here, never an init. Creating textures inside a draw
 	// callback (job thread) and binding them in the same command list AV'd in
 	// DescriptorBinder::flush - twice. The init now runs on the MAIN thread from GGTrees_Update.
@@ -2884,7 +2888,7 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 
 	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
-	device->BindResource( &texTreeNormal, 53, cmd );
+	// GGMAX 2.98: texTreeNormal removed (26.1 MB) - the PS uses an analytic normal now.
 	device->BindSampler( &samplerBilinearWrap, 0, cmd );
 	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
 	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
@@ -2901,6 +2905,16 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 		AABB aabb;
 		pChunk->GetBounds( &aabb );
 		if ( !frustum->CheckBoxFast( aabb ) ) continue;
+		// GGMAX 2.98: must match the colour pass exactly, or the prepass lays depth for trees
+		// the colour pass then skips.
+		if ( gg_ftTerrainReach2 > 0.0f )
+		{
+			const float bdx = std::max( 0.0f, std::max( aabb.getMin().x - treeConstantData.tree_playerPos.x,
+			                                            treeConstantData.tree_playerPos.x - aabb.getMax().x ) );
+			const float bdz = std::max( 0.0f, std::max( aabb.getMin().z - treeConstantData.tree_playerPos.z,
+			                                            treeConstantData.tree_playerPos.z - aabb.getMax().z ) );
+			if ( bdx * bdx + bdz * bdz > gg_ftTerrainReach2 ) continue;
+		}
 
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceTreeGPU) };
@@ -2978,7 +2992,7 @@ extern "C" void GGTrees_Draw_ShadowMap( const Frustum* frustum, int cascade, Com
 
 	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
-	device->BindResource( &texTreeNormal, 53, cmd );
+	// GGMAX 2.98: texTreeNormal removed (26.1 MB) - the PS uses an analytic normal now.
 	device->BindSampler( &samplerBilinearWrap, 0, cmd );
 	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
 	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
@@ -3257,8 +3271,12 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	if ( !gg_far_tree_pass ) return;
 	if ( !GGTrees_BillboardAtlasesReady() ) return;   // GGMAX 2.97: gate, not init - see the prepass
 	g_ftEnterCount++;
-	g_ftDrawCalls = 0; g_ftInstances = 0; g_ftChunksWithIn = 0; g_ftFrustumKills = 0;
+	g_ftDrawCalls = 0; g_ftInstances = 0; g_ftChunksWithIn = 0; g_ftFrustumKills = 0; g_ftTerrainKills = 0;
 	g_ftChunksTotal = numTreeChunks;
+	{
+		const float reach = ::GG_GetTerrainViewRadius();
+		gg_ftTerrainReach2 = ( reach > 0.0f ) ? ( reach * reach ) : 0.0f;
+	}
 
 	GraphicsDevice* device = wiGraphics::GetDevice();
 	device->EventBegin("GGTrees Draw", cmd);
@@ -3275,7 +3293,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	// bind texture and sampler
 	device->BindResource( &texTree, 50, cmd );
 	device->BindResource( &texNoise, 51, cmd );
-	device->BindResource( &texTreeNormal, 53, cmd );
+	// GGMAX 2.98: texTreeNormal removed (26.1 MB) - the PS uses an analytic normal now.
 	device->BindSampler( &samplerBilinearWrap, 0, cmd );
 	device->BindSampler( &samplerTrilinearClamp, 1, cmd );
 	device->BindSampler( &samplerTrilinearWrap, 2, cmd );
@@ -3293,6 +3311,17 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 		AABB aabb;
 		pChunk->GetBounds( &aabb );
 		if ( !frustum->CheckBoxFast( aabb ) ) { g_ftFrustumKills++; continue; }
+		// GGMAX 2.98: never draw billboards past the terrain. The tree grid spans the whole
+		// 200,000-unit area but terrain chunks only exist within generation*chunkU of the
+		// camera, so beyond that the trees stand on nothing.
+		if ( gg_ftTerrainReach2 > 0.0f )
+		{
+			const float bdx = std::max( 0.0f, std::max( aabb.getMin().x - treeConstantData.tree_playerPos.x,
+			                                            treeConstantData.tree_playerPos.x - aabb.getMax().x ) );
+			const float bdz = std::max( 0.0f, std::max( aabb.getMin().z - treeConstantData.tree_playerPos.z,
+			                                            treeConstantData.tree_playerPos.z - aabb.getMax().z ) );
+			if ( bdx * bdx + bdz * bdz > gg_ftTerrainReach2 ) { g_ftTerrainKills++; continue; }
+		}
 
 		const GPUBuffer* vbs[] = { &pChunk->bufferInstances };
 		const uint32_t strides[] = { sizeof(InstanceTreeGPU) };

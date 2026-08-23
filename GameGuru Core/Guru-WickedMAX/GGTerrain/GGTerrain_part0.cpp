@@ -12013,6 +12013,19 @@ void GGTerrain_TriggerPaintTextureLoad(void)
 
 char gg_ftLoadReason[ 256 ] = { 0 };   // GGMAX 2.96c: why the last billboard slice load failed
 
+// GGMAX 2.98: how far the terrain chunk ring actually reaches from the camera, in world units.
+// The tree billboard grid covers the whole 200,000-unit tree area, but terrain only exists
+// inside generation * chunkU around the camera - so past that you get trees standing on
+// nothing. Lee spotted exactly that. Returns 0 when there is no terrain, meaning "no limit".
+float GG_GetTerrainViewRadius()
+{
+	wi::scene::Scene& sc = wi::scene::GetScene();
+	if ( sc.terrains.GetCount() == 0 ) return 0.0f;
+	const wi::terrain::Terrain& tr = sc.terrains[ 0 ];
+	const float chunkU = (float)( wi::terrain::chunk_width - 1 ) * tr.chunk_scale;
+	return (float)tr.generation * chunkU;
+}
+
 // GGMAX 2.96: GLOBAL-SCOPE shim so GGTrees can reuse this DDS-into-array-slice loader.
 // Deliberately outside `namespace GGTerrain`: a declaration written inside `namespace GGTrees`
 // mangles to GGTrees::… and fails to link (the 2.53 linkage rule, hit again on this very call).

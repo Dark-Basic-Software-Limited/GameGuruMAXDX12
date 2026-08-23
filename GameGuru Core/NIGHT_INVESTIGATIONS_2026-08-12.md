@@ -4573,3 +4573,37 @@ callback on a job thread**, then binding those same textures in the same command
 an INIT (main thread, from GGTrees_Update via the CB update) and a GATE
 (`GGTrees_BillboardAtlasesReady()`, checked by both draw functions). The ready flag is now set
 at the END of the upload, so a draw can never observe half-built atlases.
+
+## §2.98 — drop the billboard normal map, and stop drawing trees past the terrain (2026-08-23)
+
+Both from Lee, off a screenshot showing trees marching to the horizon with no ground under them.
+
+### 1. texTreeNormal removed — 26.1 MB back
+The billboard PS sampled a 1024x1024x38 BC1 normal array. Directly above that sample, still in
+the file and commented out, was the analytic billboard normal that shipped before the normal map
+existed. Restored it and deleted the texture: no creation, no 38 DDS slice loads, no bind, no
+declaration. Cost is that distant foliage lights as a smooth card rather than with per-texel
+relief — at billboard range, a fair trade for 26 MB.
+
+### 2. Billboards no longer drawn beyond the terrain chunk ring
+The tree grid spans the whole 200,000-unit (5 km) tree area, but terrain chunks only exist
+within `generation * chunkU` of the camera (12 x 5280 = 63,360 units, ~1609 m) because the ring
+is camera-centred. Past that, billboards were standing on nothing — exactly what Lee's shot
+showed. New global-scope `GG_GetTerrainViewRadius()` reports the live reach; both billboard
+loops reject chunks whose nearest point is beyond it. ★ The prepass carries the IDENTICAL test —
+mismatch there would lay depth for trees the colour pass then skips.
+
+### MEASURED, spotshadowtest
+| | before 2.98 | after |
+|---|---|---|
+| draw calls | 87 | **41** |
+| billboard instances | 98,410 | **42,370** |
+| chunks culled: no terrain | — | **46** |
+| VRAM | 2.88 GB | **2.78 GB** |
+
+41 drawn + 169 frustum-killed + 46 no-terrain = 256 ✓. Instances down 57%, and every one of
+those removed was a tree floating over nothing. Forest on the real terrain is unchanged.
+
+⚠ The 4 GB question this was for: Aztec Game Kit in-game was 4026.6 MB against a 4096 gate.
+26 MB comes off the atlas directly; the no-terrain cull does not change VRAM, only draws.
+Needs a re-measure on that demo specifically before the headroom can be called safe.

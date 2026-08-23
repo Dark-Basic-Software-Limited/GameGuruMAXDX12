@@ -2,7 +2,7 @@
 #include "GGRootSignature.hlsli"
 Texture2DArray texTree : register( t50 );
 Texture2D<float> texNoise : register( t51 );
-Texture2DArray texTreeNormal : register( t53 );
+// GGMAX 2.98: texTreeNormal removed - see the analytic normal in main().
 
 SamplerState samplerBilinearWrap : register( s0 );
 SamplerState samplerTrilinearClamp : register( s1 );
@@ -89,14 +89,16 @@ GBuffer main( PixelIn IN )
 	float sinAng = IN.dir.x;
 	float cosAng = IN.dir.y;
 
-	//float3 normal = float3( 0, 0, 1 );
-	//normal.x = -sinAng * 0.7071068;
-	//normal.y = 0.7071068;
-	//normal.z = cosAng * 0.7071068;
-
-	float3 normal = texTreeNormal.Sample( samplerTrilinearClamp, float3(IN.uv, treeType) ).rgb;
-	normal = normal * 2 - 1;
-	normal.y = abs(normal.y);
+	// GGMAX 2.98: the per-type billboard NORMAL MAP is gone - texTreeNormal was a
+	// 1024x1024x38 BC1 array costing 26.1 MB, and Aztec Game Kit was sitting 69 MB under the
+	// 4 GB in-game gate. Fall back to the analytic billboard normal that shipped here before
+	// the normal map existed (it was still in the file, commented out, directly above).
+	// Cost: distant foliage lights as a smooth card rather than with per-texel relief. At the
+	// ranges billboards are used, that is a fair trade for 26 MB.
+	float3 normal = float3( 0, 0, 1 );
+	normal.x = -sinAng * 0.7071068;
+	normal.y = 0.7071068;
+	normal.z = cosAng * 0.7071068;
 
 	float normX = normal.x * cosAng - normal.z * sinAng;
 	float normZ = -normal.x * sinAng - normal.z * cosAng;
