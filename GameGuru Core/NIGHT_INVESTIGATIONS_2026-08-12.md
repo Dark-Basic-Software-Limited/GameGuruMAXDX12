@@ -4209,3 +4209,73 @@ editor-only (the chunkSig census, the blendmap scans) still has to run in a ship
 because the chunk ring follows the camera, and an exported build cannot be verified from the
 harness. An unverifiable change to shipping behaviour is not a good trade — it wants Lee's
 call and a real exported-build test.
+
+## §2.95 — ★★★ THE MISSING MOUNTAIN TREES: one flag, and a judgement call to revisit (2026-08-23)
+
+Lee supplied a DX11 and a DX12 shot of `spotshadowtest.fpm` and asked what is missing in DX12.
+★ I initially had the two shots the wrong way round and Lee corrected me. The corrected reading:
+
+| | DX11 | DX12 |
+|---|---|---|
+| FPS | 300.3 | 257.8 |
+| Mem | 7.27 | 6.61 |
+| VRam | **4.33** | **2.71** |
+| distant mountains | densely covered in TREES | BARE rock/grass |
+| sky | warm gradient, tan horizon | flat neutral grey |
+
+**What is missing is the distant trees.** In DX11 the mountainsides are forested to the horizon.
+In DX12 they are bare. That single difference is most of the visual gap.
+
+### Root cause — and it is documented in our own source as a deliberate decision
+Two comments in `Guru-WickedMAX/GGTerrain/GGTrees_part2.cpp` tell the whole story.
+
+`:87` — how DX11 does it: *"DX11 renders LOD0 + billboards past lod_dist"*.
+
+`:340-350` — why DX12 does not:
+> *Stage 4 (deprecated 2026-07-13 evening): no ImpostorComponent. Wicked's impostor render path
+> (wiRenderer.cpp:7298 RenderImpostors) draws via a separate DrawIndexedInstancedIndirect that
+> does NOT respect ObjectComponent::IsNotVisibleInReflections. Result: water reflection pass drew
+> impostor atlas quads as bright white splats... we drop the impostor path entirely.* **Far trees
+> now just don't render; the pool covers what's visible.**
+
+The reasoning recorded at the time was that far trees *"would have been pixelated dot-scale
+billboards contributing minimal visual value for the ECS overhead"*.
+★★ **Lee's screenshot is the counter-evidence to that judgement.** On a level with mountains at
+distance they are not minimal value — they are the entire character of the landscape. The call
+was reasonable given a water-reflection bug; it should now be revisited on the evidence.
+
+### ★★★ The fix is likely ONE FLAG, because the geometry already ships
+`GGTrees_BuildShadowProxyChunk` (`:648` onward) already builds, every frame, exactly what is
+needed: per 16x16 tree chunk, ONE merged static mesh of two crossed vertical quads per tree,
+textured with **the exact same billboard silhouette DDS DX11 uses**
+(`Files/treebank/billboards/*_BB_SF_*_color.dds`), alpha-tested, max 256 objects. It is
+renderable and it already draws into the far shadow cascades. It is hidden from the player by
+one line:
+
+    GGTrees_part2.cpp:887   obj.SetNotVisibleInMainCamera( true );
+
+So the distant forest is being built and shadow-cast every frame and then withheld from the
+main camera. Clearing that flag is the experiment.
+
+⚠ Three things to handle before calling it a fix:
+1. **Double-draw near the camera.** The proxy chunk contains a billboard for EVERY tree in the
+   chunk, including ones the pool already draws as real meshes. Needs a distance gate — the
+   proxies are chunk-granular, so gate a chunk's main-camera visibility on it being beyond the
+   pool's coverage.
+2. **Keep `SetNotVisibleInReflections(true)`** (`:888`). The white-splat bug that killed the
+   impostor path was a reflection-pass problem; do not reintroduce it.
+3. Cost is not zero but should be small: up to 256 alpha-tested merged objects, already built,
+   already culled, already occlusion-query-disabled.
+
+### Corrections to what I said from the swapped shots
+- **VRAM: DX12 uses 1.6 GB LESS, not more** (2.71 vs 4.33). My "DX12 exceeds the 4 GB min spec
+  on this level" was exactly backwards — it is DX11 that sits at 4.33 GB. Part of DX12's saving
+  is simply the forest it is not drawing, so expect some of it back when the trees return.
+- **DX12 is ~14% SLOWER while drawing substantially less** (257.8 vs 300.3 FPS). That is a
+  wider gap than the raw FPS suggests and it is the honest headline for this level.
+- The warm gradient sky is **DX11's**; DX12's is the flat grey one.
+
+### Not yet investigated (the shots are NOT camera- or time-matched, so these are unjudged)
+Water band brightness, foreground grass density, and overall contrast/colour cast. Several of
+those may simply follow from the sky/time-of-day difference. Worth a camera-matched pair before
+spending effort on them.
