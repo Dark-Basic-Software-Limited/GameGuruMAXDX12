@@ -716,6 +716,12 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "simplesky"; if (t.field_s == t.tryfield_s) { extern void GGSetSimpleSky(int); GGSetSimpleSky(t.value1); }
 					t.tryfield_s = "noshadows"; if (t.field_s == t.tryfield_s) { extern void GGSetNoShadows(int); GGSetNoShadows(t.value1); }
 
+					// DOCDOC: noocclusion = switch OFF hardware occlusion culling (GGMAX 3.09). DEFAULT 0. This one is an experiment rather than a saving, and it can go either way: occlusion culling exists to SAVE time by not drawing what is hidden, but asking the graphics card those questions is itself work - on Aztec the two occlusion passes measure about half a millisecond a frame. On a weak card looking at an open scene where very little is hidden behind anything, paying that half millisecond buys you nothing and turning it off is faster. Indoors, where whole rooms are hidden, leave it on. Try it both ways on YOUR level.
+					t.tryfield_s = "noocclusion"; if (t.field_s == t.tryfield_s) { extern void GGSetNoOcclusion(int); GGSetNoOcclusion(t.value1); }
+
+					// DOCDOC: particlepct = how many particles to emit, as a PERCENT of what the level asked for (GGMAX 3.09). DEFAULT 100 = untouched. 50 halves every emitter's output, 0 stops them emitting entirely. Existing particles live out their lifetime rather than vanishing, so the effect eases in over a second or so rather than popping. Note this drives the modern particle system only; levels built on the older GameGuru particle effects are not affected by it.
+					t.tryfield_s = "particlepct"; if (t.field_s == t.tryfield_s) { extern void GGSetParticlePct(int); GGSetParticlePct(t.value1); }
+
 					// DOCDOC: treedebugsolid = DEBUG. 1 draws every distant-tree billboard as a flat unlit grey quad - no texture, no alpha cutout, no lighting, no fog - so the raw quad geometry is visible. The LOD dither transition is DELIBERATELY kept, so the mesh->billboard handover still happens and can be watched. DEFAULT 0. Diagnostic only; leave it 0 for any visual or performance testing.
 					t.tryfield_s = "treedebugsolid"; if (t.field_s == t.tryfield_s) { extern void GGSetTreeDebugSolid(int); GGSetTreeDebugSolid(t.value1); }
 

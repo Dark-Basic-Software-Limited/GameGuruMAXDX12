@@ -104,6 +104,7 @@ static bool gg_no_trees_machine   = false, gg_no_trees_level   = false;
 static bool gg_no_grass_machine   = false, gg_no_grass_level   = false;
 static bool gg_no_water_machine   = false, gg_no_water_level   = false;
 extern bool gg_no_postfx, gg_no_ao, gg_simple_sky, gg_no_shadows;   // GGMAX 3.08
+extern bool gg_no_occlusion; extern int gg_particle_pct;             // GGMAX 3.09
 void GGSetNoTerrain     (int on) { gg_no_terrain_machine = (on != 0); gg_no_terrain = gg_no_terrain_machine || gg_no_terrain_level; }
 void GGSetNoTerrainLevel(int on) { gg_no_terrain_level   = (on != 0); gg_no_terrain = gg_no_terrain_machine || gg_no_terrain_level; }
 void GGSetNoTrees       (int on) { gg_no_trees_machine   = (on != 0); gg_no_trees   = gg_no_trees_machine   || gg_no_trees_level;   }
@@ -126,6 +127,14 @@ void GGSetSimpleSky     (int on) { gg_simple_sky_machine = (on != 0); gg_simple_
 void GGSetSimpleSkyLevel(int on) { gg_simple_sky_level   = (on != 0); gg_simple_sky = gg_simple_sky_machine || gg_simple_sky_level; }
 void GGSetNoShadows     (int on) { gg_no_shadows_machine = (on != 0); gg_no_shadows = gg_no_shadows_machine || gg_no_shadows_level; }
 void GGSetNoShadowsLevel(int on) { gg_no_shadows_level   = (on != 0); gg_no_shadows = gg_no_shadows_machine || gg_no_shadows_level; }
+static bool gg_no_occlusion_machine = false, gg_no_occlusion_level = false;
+void GGSetNoOcclusion     (int on) { gg_no_occlusion_machine = (on != 0); gg_no_occlusion = gg_no_occlusion_machine || gg_no_occlusion_level; }
+void GGSetNoOcclusionLevel(int on) { gg_no_occlusion_level   = (on != 0); gg_no_occlusion = gg_no_occlusion_machine || gg_no_occlusion_level; }
+// GGMAX 3.09: percent, INT passthrough. Machine and level take the LOWER (more brutal) of the two.
+static int gg_particle_pct_machine = 100, gg_particle_pct_level = 100;
+static void GGRecalcParticlePct() { gg_particle_pct = (gg_particle_pct_machine < gg_particle_pct_level) ? gg_particle_pct_machine : gg_particle_pct_level; }
+void GGSetParticlePct     (int pct) { if (pct < 0) pct = 0; if (pct > 100) pct = 100; gg_particle_pct_machine = pct; GGRecalcParticlePct(); }
+void GGSetParticlePctLevel(int pct) { if (pct < 0) pct = 0; if (pct > 100) pct = 100; gg_particle_pct_level   = pct; GGRecalcParticlePct(); }
 
 // GGMAX 3.05 DEBUG (not an off-switch): flat unlit grey billboard quads, see GGTreesConstants.hlsli.
 void GGSetTreeDebugSolid(int on) { GGTrees::gg_tree_debug_solid = on; }   // INT passthrough: 0/1/2/3

@@ -5287,3 +5287,80 @@ refresh), so quote **GPU Busy**, not that row.
 ⚠ First test bed was wrong: TESTPRO2 has GPU Busy 2.66 of a 5.32 ms frame and no Shadowmap,
 Bloom, AO or SSR row at all — nothing for these switches to remove. A null result there measured
 the level, not the code.
+
+## 3.09 — Occlusion Culling Off + Particle Density (2026-08-24)
+
+| switch | setup.ini | harness | panel |
+|---|---|---|---|
+| Occlusion Culling Off | `noocclusion` | `SET_OCCLUSIONOFF` | tick |
+| Particle Density % | `particlepct` | `SET_PARTICLEPCT 0..100` | slider |
+
+### Occlusion Culling Off — measured a LOSS, and shipped anyway
+
+Aztec, 3 interleaved passes:
+
+| | GPU busy | FPS |
+|---|---|---|
+| occlusion ON (default) | 4.06 / 3.97 / 4.12 | 146.6 / 147.3 / 146.8 |
+| occlusion OFF | 5.04 / 4.87 / 4.94 | 124.1 / 123.7 / 123.9 |
+
+Turning it off **costs ~0.9 ms and 15% of the frame rate**. The `Occlusion Culling` +
+`Occlusion Culling Render` rows are 0.47 ms, so on this level the queries earn roughly double
+their price. Kept as a switch because the trade genuinely inverts on scenes with little
+overdraw and a weak GPU - but the tooltip and the DOCDOC both say plainly that it is an
+experiment, not a saving, and Aztec is the counter-example.
+
+### Particle Density
+
+Scales `count` (the emit rate) on every Wicked emitter. Writes `base * k`, never `count * k` -
+scaling the live value each frame would decay it to zero within a second. Captures each
+emitter's authored rate the first time it touches it and writes that back at 100%.
+
+⚠ **Implemented, NOT measured.** Aztec's `EmittedParticles - Render` rows are 0.00 ms - the level
+has no meaningful particle load - so there was nothing to measure it against. It needs a
+particle-heavy demo before anyone quotes a number.
+⚠ Wicked emitters ONLY. GG has three particle systems; the legacy gpup/.arx and WPE emitters do
+not respond to this slider.
+
+## 3.10 — two of Lee's ideas that turned out to be ALREADY COVERED
+
+Worth recording so nobody builds them twice.
+
+1. **"Reduce the entire texture resolution across the board... 1024 loaded as 256."**
+   Partly covered *for the editor* by texture streaming, which already streams mips out toward a
+   per-material target. ⚠ But streaming is **editor-only** (`gameisexe == 0`), so it does nothing
+   for the players this brief is aimed at. A real version has to reduce at LOAD time. See the
+   design below - it is worth doing and it is NOT built.
+
+2. **"Simplify the water into a very simple flat plane."**
+   The expensive half is already a shipped control. `getReflectionsEnabled()` gates the planar
+   reflection pass - the one that redraws the whole scene from the mirrored camera - and that is
+   the existing **Reflections** checkbox plus `SET_REFLECTIONS`. What a "simple water" switch
+   would add beyond it is the flat-wave part, and `Ocean - Simulate` measures **0.18 ms**. Not
+   worth a third water control next to Water Off and Reflections.
+
+3. Likewise **render resolution**: the **FSR combo already in Graphics & Performance** drives
+   `resolutionScale` to 1/1.3, 1/1.5, 1/1.7 and 1/2 native. That is the biggest low-spec lever in
+   the product and it predates tonight.
+
+### ★ DESIGNED, NOT BUILT: global texture-detail divide
+
+The right insertion point is `wiResourceManager.cpp` `LoadResourceDirectly`, at `int mip_offset
+= 0;` (line ~511), BEFORE the `Flags::STREAMING` branch. Shrink `desc` and advance `mip_offset`
+by 1 or 2 steps; the upload already reads `header.mip_offset(mip_offset + m, 0)`, so both the
+streaming and the plain path honour it. That makes it work in an EXPORTED GAME, which the
+streaming route cannot.
+
+⚠⚠ Two hazards, both already paid for once in this codebase:
+- **GGMAX 1.73 block alignment.** A BC texture's TOP mip must be a multiple of the 4x4 block.
+  Halving a legal size can produce an illegal one (500 -> 250); D3D12's `GetCopyableFootprints`
+  then returns 0xFFFF.. sentinels and the upload memcpy's four billion rows off the end of the
+  file buffer. That was the "Trapped" and "RPG Template" load crash. Copy the existing guard
+  loop's `format_block_size` check exactly, and stop early rather than produce an illegal size.
+- `initdata` is populated from the header BEFORE `mip_offset` exists, so the subresource array
+  has to be rebuilt (or indexed with the offset) as well as `desc` shrunk.
+
+It is an ENGINE change, so it needs `build_wicked.bat Release` first and a
+`WICKED_ENGINE_CHANGES.md` delta row. Not attempted overnight because getting it wrong re-opens a
+crash that takes out level loading, and default-off is not protection if the default path is
+mis-wired. Deserves a session with the user awake.

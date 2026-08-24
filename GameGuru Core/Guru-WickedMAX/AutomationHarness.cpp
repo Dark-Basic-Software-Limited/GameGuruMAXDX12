@@ -5751,9 +5751,10 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		extern void GGSetNoAOLevel(int);
 		extern void GGSetSimpleSkyLevel(int);
 		extern void GGSetNoShadowsLevel(int);
-		extern bool gg_no_postfx, gg_no_ao, gg_simple_sky, gg_no_shadows;
+		extern void GGSetNoOcclusionLevel(int);
+		extern bool gg_no_postfx, gg_no_ao, gg_simple_sky, gg_no_shadows, gg_no_occlusion;
 		struct Sw { const char* name; void (*set)(int); bool* live; };
-		static const Sw sws[8] = {
+		static const Sw sws[9] = {
 			{ "SET_TERRAINOFF", GGSetNoTerrainLevel, &gg_no_terrain },
 			{ "SET_TREESOFF",   GGSetNoTreesLevel,   &gg_no_trees   },
 			{ "SET_GRASSOFF",   GGSetNoGrassLevel,   &gg_no_grass   },
@@ -5762,8 +5763,9 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			{ "SET_AOOFF",      GGSetNoAOLevel,      &gg_no_ao      },
 			{ "SET_SIMPLESKY",  GGSetSimpleSkyLevel, &gg_simple_sky },
 			{ "SET_SHADOWSOFF", GGSetNoShadowsLevel, &gg_no_shadows },
+			{ "SET_OCCLUSIONOFF", GGSetNoOcclusionLevel, &gg_no_occlusion },
 		};
-		for (int i = 0; i < 8; i++)
+		for (int i = 0; i < 9; i++)
 		{
 			if (_stricmp(cmd, sws[i].name) != 0) continue;
 			const int on = (atoi(arg) != 0) ? 1 : 0;   // a missing arg reads 0 = ON (subsystem stays)
@@ -5839,6 +5841,22 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 				: (GGT3::gg_tree_pool_max_dist == 0.0f ? "UNCAPPED" : "explicit"),
 			GGT3::ggtrees_global_params.lod_dist,
 			GGT3::ggtrees_global_params.lod_dist + 1000.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	if (_stricmp(cmd, "SET_PARTICLEPCT") == 0)
+	{
+		// GGMAX 3.09: emit-rate scale for Wicked emitters, 0..100 percent. 100 = untouched.
+		// ⚠ Wicked emitters ONLY - the legacy gpup/.arx and WPE systems are not affected.
+		extern void GGSetParticlePctLevel(int);
+		extern int gg_particle_pct;
+		GGSetParticlePctLevel(atoi(arg));
+		_snprintf(result, resultSize,
+			"OK: SET_PARTICLEPCT %d - live gg_particle_pct=%d%%. Applies to WICKED emitters only "
+			"(gpup/.arx and WPE untouched). Existing particles live out their lifetime, so give it "
+			"a second before reading; check the EmittedParticles rows.",
+			atoi(arg), gg_particle_pct);
 		result[resultSize - 1] = 0;
 		return true;
 	}

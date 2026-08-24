@@ -533,6 +533,20 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			if (ImGui::Checkbox("Shadows Off##gg_no_shadows", &bOff)) GGSetNoShadowsLevel(bOff ? 1 : 0);
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Switches off every shadow in the level. The scene has to be drawn again from each shadow casting light, so this is usually the biggest single saving here - and the most obvious one to look at. Try the Shadows section first if you only want to soften the cost.");
 
+			// GGMAX 3.09
+			extern bool gg_no_occlusion; extern int gg_particle_pct;
+			extern void GGSetNoOcclusionLevel(int);
+			extern void GGSetParticlePctLevel(int);
+
+			bOff = gg_no_occlusion;
+			if (ImGui::Checkbox("Occlusion Culling Off##gg_no_occlusion", &bOff)) GGSetNoOcclusionLevel(bOff ? 1 : 0);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stops asking the graphics card which objects are hidden behind other objects. This is an experiment rather than a saving and it can go either way: the asking is itself work, so on an open scene where little is hidden it costs more than it saves and turning it off is faster. Indoors, where whole rooms are hidden from you, leave it on. Worth trying both ways on your own level.");
+
+			int pct = gg_particle_pct;
+			ImGui::Text("Particle Density");
+			if (ImGui::SliderInt("##gg_particle_pct", &pct, 0, 100, "%d%%")) GGSetParticlePctLevel(pct);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How many particles to emit, as a percentage of what the level asked for. 50%% halves every smoke plume, spark shower and waterfall; 0%% stops them emitting altogether. Particles already in the air live out their lifetime, so the change eases in over a second rather than popping. Affects the modern particle system only.");
+
 			ImGui::PopItemWidth();
 		}
 

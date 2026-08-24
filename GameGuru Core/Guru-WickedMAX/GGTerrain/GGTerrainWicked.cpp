@@ -223,6 +223,9 @@ bool  gg_no_postfx  = false;   // bloom, DOF, motion blur, shafts, volumetrics, 
 bool  gg_no_ao      = false;   // ambient occlusion pass
 bool  gg_simple_sky = false;   // volumetric clouds + realistic sky -> cheap sky
 bool  gg_no_shadows = false;   // the entire shadow render
+bool  gg_no_occlusion = false; // hardware occlusion QUERIES (they cost to save; on a weak GPU
+                               // the query pass can cost more than the draws it removes - A/B it)
+int   gg_particle_pct = 100;   // emit-rate scale for Wicked emitters, 0..100
 
 void GGApplyLowSpecSwitches()
 {
@@ -316,6 +319,50 @@ void GGApplyLowSpecSwitches()
 		weather.SetRealisticSky(sv.realsky);
 	}
 	s_sky = gg_simple_sky;
+
+	// ---- OCCLUSION QUERIES -----------------------------------------------------------------
+	// Not obviously a win: occlusion culling EXISTS to save time. But the query pass is itself
+	// GPU work (on Aztec `Occlusion Culling` + `Occlusion Culling Render` = 0.53 ms) and on a weak
+	// card with little overdraw it can cost more than the draws it removes. Shipped as an A/B.
+	static bool s_occl = false; static bool sv_occl = true;
+	if ( gg_no_occlusion && !s_occl ) sv_occl = rp->getOcclusionCullingEnabled();
+	if ( gg_no_occlusion )            rp->setOcclusionCullingEnabled(false);
+	else if ( s_occl )                rp->setOcclusionCullingEnabled(sv_occl);
+	s_occl = gg_no_occlusion;
+
+	// ---- PARTICLE DENSITY ------------------------------------------------------------------
+	// Scales the EMIT RATE of every Wicked emitter. Writing base*k (never count*k) keeps it
+	// idempotent - scaling the live value every frame would decay it to zero in a second.
+	// ⚠ GG has THREE particle systems and this is only the Wicked one; the legacy gpup/.arx and
+	// WPE emitters are untouched, so a level built on those will not respond to this slider.
+	{
+		static std::vector< std::pair<wi::ecs::Entity, float> > s_origCount;
+		static int s_prevPct = 100;
+		wi::scene::Scene& scene = wi::scene::GetScene();
+		if ( gg_particle_pct != 100 )
+		{
+			const float k = (float)gg_particle_pct * 0.01f;
+			for ( size_t i = 0; i < scene.emitters.GetCount(); i++ )
+			{
+				const wi::ecs::Entity e = scene.emitters.GetEntity(i);
+				float base = -1.0f;
+				for ( size_t j = 0; j < s_origCount.size(); j++ )
+					if ( s_origCount[j].first == e ) { base = s_origCount[j].second; break; }
+				if ( base < 0.0f ) { base = scene.emitters[i].count; s_origCount.push_back( std::make_pair(e, base) ); }
+				scene.emitters[i].count = base * k;
+			}
+		}
+		else if ( s_prevPct != 100 )
+		{
+			for ( size_t j = 0; j < s_origCount.size(); j++ )
+			{
+				wi::EmittedParticleSystem* em = scene.emitters.GetComponent( s_origCount[j].first );
+				if ( em ) em->count = s_origCount[j].second;   // a stale entity simply no longer resolves
+			}
+			s_origCount.clear();
+		}
+		s_prevPct = gg_particle_pct;
+	}
 }
 
 // GGMAX 2.94f: master switch for extending the terrain idle gate to the ENGINE's own
