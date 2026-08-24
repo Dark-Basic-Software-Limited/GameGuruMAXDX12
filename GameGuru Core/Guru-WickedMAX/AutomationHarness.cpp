@@ -1151,6 +1151,7 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 // GGMAX 2.20: SU-Hierarchy load-balance instrument (see wiScene.cpp).
 namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_max_subtree; }
 namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_visited; }
+namespace wi::scene         { extern uint32_t gg_hier_rebuilds; extern uint32_t gg_hier_skips; extern int gg_hier_cache_snapshot; }   // GGMAX 3.14
 namespace wi::scene         { extern uint32_t gg_hier_root_count; }
 
 static void Cmd_GetPerfData(char* result, int resultSize)
@@ -1254,8 +1255,9 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		const uint32_t hmax   = wi::scene::gg_hier_max_subtree.load(std::memory_order_relaxed);
 		const uint32_t hvis   = wi::scene::gg_hier_visited.load(std::memory_order_relaxed);
 		written += _snprintf(result + written, resultSize - written,
-			"HIER: roots=%u maxSubtree=%u visited=%u imbalance=%.3f\n",
-			hroots, hmax, hvis, hvis ? (double)hmax / (double)hvis : 0.0);
+			"HIER: roots=%u maxSubtree=%u visited=%u imbalance=%.3f rebuilds=%u skips=%u\n",
+			hroots, hmax, hvis, hvis ? (double)hmax / (double)hvis : 0.0,
+			wi::scene::gg_hier_rebuilds, wi::scene::gg_hier_skips);
 	}
 
 	// GGMAX 2.25: wi::terrain chunk ring size — the DX12 entity floor.
@@ -5841,6 +5843,20 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 				: (GGT3::gg_tree_pool_max_dist == 0.0f ? "UNCAPPED" : "explicit"),
 			GGT3::ggtrees_global_params.lod_dist,
 			GGT3::ggtrees_global_params.lod_dist + 1000.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	if (_stricmp(cmd, "SET_HIERCACHE") == 0)
+	{
+		// GGMAX 3.14: 1 (default) = skip the topdown-hierarchy rebuild when the hierarchy has not
+		// changed. 0 = rebuild every frame (pre-3.14 behaviour), for A/B.
+		wi::scene::gg_hier_cache_snapshot = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize,
+			"OK: SET_HIERCACHE %d - %s. Read HIER: rebuilds/skips in GET_PERF_DATA; with it ON and a "
+			"static hierarchy, rebuilds should stop climbing while skips climb.",
+			wi::scene::gg_hier_cache_snapshot,
+			wi::scene::gg_hier_cache_snapshot ? "skipping redundant rebuilds" : "rebuilding EVERY frame");
 		result[resultSize - 1] = 0;
 		return true;
 	}

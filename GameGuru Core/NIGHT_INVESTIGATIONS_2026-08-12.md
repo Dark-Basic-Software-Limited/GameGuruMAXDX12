@@ -5580,3 +5580,74 @@ mis-parented.
 
 ⚠ `CL-GameLoop` reads 0.00 in the editor because the game loop does nothing there — Lee's 3.55 ms
 was in-game. The tree is the same either way; only where the weight sits changes.
+
+---
+
+## 3.14 — drilling Scene-S2: the pole was a rebuild of something already correct (2026-08-24)
+
+Lee: *"drill into Scene-S2 Hier+Mesh+Mat and P2-mainfunc."*
+
+### Naming the pole
+
+`SET_SCENESERIAL 1` (the 2.15 diagnostic: serialises each `Scene::Update` system so each gets its
+own range — totals inflate, shares are real) split Scene-S2 immediately:
+
+| | ms | share |
+|---|---|---|
+| **SU-Hierarchy** | **0.85** | **71%** |
+| SU-Mesh | 0.19 | 16% |
+| SU-Material | 0.16 | 13% |
+
+Shape of the hierarchy on this level: `roots=2694 maxSubtree=632 visited=8774 imbalance=0.072`.
+★ So it is NOT one huge subtree starving the parallel dispatch — 8,774 nodes spread over 2,694
+roots, well balanced. The cost is simply per-node work × 8,774, every frame.
+
+Per node the walk does **three hash lookups** (`transforms.GetComponent`, `layers.GetComponent`,
+`topdown_hierarchy.find`) — ~26,000 per frame — against trivial matrix maths. That is where 0.85 ms
+of an 8-node-deep tree walk goes.
+
+### But the actual fix was upstream of all that
+
+`StartBuildTopDownHierarchy` runs at the head of every `Scene::Update` and **cleared and
+repopulated the entire `topdown_hierarchy` map plus the roots list EVERY FRAME** — another ~8,774
+hash lookups and vector pushes, to reproduce a structure that was already correct.
+
+The consumer already decides whether the snapshot is usable from exactly two values (mutation
+stamp + count). **If that pair is good enough to TRUST the snapshot, it is good enough to skip
+REBUILDING it.** Now it returns early when they match.
+
+⚠ This escalates what the mutation counter must be right about. Previously a missed increment
+self-corrected — the snapshot was rebuilt from live data anyway. Now it would leave a stale
+snapshot. So every mutation site was audited: `Clear`, `MergeFastInternal`, `Entity_Remove`,
+`Component_Attach`, `Component_Detach` all bump it — and the **only** `hierarchy.Create` outside
+them, `wiScene_Serializers.cpp:3025` (deserialize), did **not**. Fixed. (A pure add also moves
+`GetCount()`, which the guard checks, so that one was belt as well as braces.)
+
+### Measured — TESTPRO2 canyon, 3 interleaved passes
+
+| | CPU Frame | FPS |
+|---|---|---|
+| rebuild every frame (pre-3.14) | 6.21 / 6.40 / 5.88 | 149.2 / 147.4 / 150.7 |
+| **skip when unchanged** | 5.72 / 5.84 / 5.71 | **152.7 / 155.1 / 153.1** |
+
+**+3.0% FPS, and every ON sample sits above every OFF sample** — no overlap, which matters because
+the CPU-Frame spread within the OFF condition (0.52) is itself wider than the mean delta (0.40).
+Quote the FPS separation, not the CPU-Frame delta.
+
+Executed-check (`HIER: rebuilds=/skips=`): with the cache off, rebuilds climb ~2,250 per sampling
+interval and skips barely move; with it on, rebuilds climb ~390 while skips climb ~1,670. ★ So
+~80% of rebuilds go away — and the residual is real: ~37% of frames genuinely mutate the
+hierarchy on this level. ⚠ Also note the counters prove `Scene::Update` runs ~3x per frame here
+(≈2 skips per frame), which matches the 1.81 caller-tracer finding.
+
+Harness `SET_HIERCACHE 0|1`, default ON. Engine `e280911e`, delta row filed.
+
+### P2-mainfunc — scoped, NOT drilled
+
+`editor_mainfunctionality()` (M-GridEdit_part4.cpp:1467-1961) is ~500 lines of editor input and UI
+handling, and almost every call in it is conditional (undo, save-as, waypoint drag, panning), so
+reading alone does not say where 0.54 ms/frame goes. It needs the same treatment Scene-S2 got: sub
+-ranges at the top-level block boundaries, then read the panel. ★ NOT attempted in the time left,
+because placing Begin/End pairs across 500 lines of branchy code without verifying every path is
+how you leak a range and corrupt every row after it — and the 3.13 tree printer would show that
+corruption as a mis-parented subtree. Next session's first job.
