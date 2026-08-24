@@ -36,6 +36,10 @@ std::string GGPerf_GetCachedProfilerText() { return g_cachedProfilerText; }
 // intersect-every-node behaviour, for A/B. See M-Waypoint.cpp for why the bound is safe.
 int gg_waypoint_fastreject = 1;
 
+// GGMAX 3.16: entity_loopanim shape counters (see G-Entity_part1.cpp).
+uint32_t gg_elanim_total = 0, gg_elanim_skip_noent = 0, gg_elanim_skip_static = 0, gg_elanim_work = 0;
+int gg_elanim_skipwork = 0;   // GGMAX 3.16 diagnostic, see G-Entity_part1.cpp
+
 // GGMAX 1.67: main-camera poly count for the Performance HUD (latched per frame in the engine)
 uint64_t GGPerf_GetPolyCount() { return wi::renderer::GG_GetMainCameraPolyCount(); }
 

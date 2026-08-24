@@ -1151,6 +1151,7 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 // GGMAX 2.20: SU-Hierarchy load-balance instrument (see wiScene.cpp).
 namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_max_subtree; }
 namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_visited; }
+extern uint32_t gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work;   // GGMAX 3.16
 namespace wi::scene         { extern uint32_t gg_hier_rebuilds; extern uint32_t gg_hier_skips; extern int gg_hier_cache_snapshot; }   // GGMAX 3.14
 namespace wi::scene         { extern uint32_t gg_hier_root_count; }
 
@@ -1258,6 +1259,14 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"HIER: roots=%u maxSubtree=%u visited=%u imbalance=%.3f rebuilds=%u skips=%u\n",
 			hroots, hmax, hvis, hvis ? (double)hmax / (double)hvis : 0.0,
 			wi::scene::gg_hier_rebuilds, wi::scene::gg_hier_skips);
+	}
+
+	// GGMAX 3.16: entity_loopanim shape - is the cost the WORK, or just walking every element?
+	if (written < resultSize - 160)
+	{
+		written += _snprintf(result + written, resultSize - written,
+			"ELANIM: total=%u skipNoEnt=%u skipStatic=%u work=%u\n",
+			gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work);
 	}
 
 	// GGMAX 2.25: wi::terrain chunk ring size — the DX12 entity floor.
@@ -5843,6 +5852,21 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 				: (GGT3::gg_tree_pool_max_dist == 0.0f ? "UNCAPPED" : "explicit"),
 			GGT3::ggtrees_global_params.lod_dist,
 			GGT3::ggtrees_global_params.lod_dist + 1000.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	if (_stricmp(cmd, "SET_ELANIMSKIPWORK") == 0)
+	{
+		// GGMAX 3.16 DIAGNOSTIC. 1 = entity_loopanim bails before the dynamic path, so
+		// P2-entity_loopanim then measures only "walk every element and decide". CHANGES BEHAVIOUR
+		// (animations/decals freeze) - attribution only, never leave it on.
+		extern int gg_elanim_skipwork;
+		gg_elanim_skipwork = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize,
+			"OK: SET_ELANIMSKIPWORK %d - %s. Compare P2-entity_loopanim against ELANIM: work=N.",
+			gg_elanim_skipwork,
+			gg_elanim_skipwork ? "DYNAMIC PATH BYPASSED (diagnostic, anims frozen)" : "normal");
 		result[resultSize - 1] = 0;
 		return true;
 	}

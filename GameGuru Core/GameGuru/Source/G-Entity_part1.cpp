@@ -1307,8 +1307,16 @@ void entity_loopanim ( void )
 	static int currentsynccount = 0;
 	currentsynccount++;
 
+	// GGMAX 3.16 instrument: is this loop expensive because of the WORK it does, or simply
+	// because it walks every entity element every frame and touches two arrays to decide it has
+	// nothing to do? Counters, not profiler ranges - a Begin/End per entity would cost far more
+	// than the thing being measured. Reset each call; read via GET_PERF_DATA "ELANIM:".
+	extern uint32_t gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work;
+	gg_elanim_total = gg_elanim_skip_noent = gg_elanim_skip_static = gg_elanim_work = 0;
+
 	for ( t.e = 1 ; t.e <= g.entityelementlist; t.e++ )
 	{
+		gg_elanim_total++;
 		t.entid = t.entityelement[t.e].bankindex;
 		if (t.entid <= 0)
 		{
@@ -1320,6 +1328,7 @@ void entity_loopanim ( void )
 			}
 			else
 			{
+				gg_elanim_skip_noent++;
 				continue;
 			}
 		}
@@ -1346,9 +1355,15 @@ void entity_loopanim ( void )
 						}
 					}
 				}
+				gg_elanim_skip_static++;
 				continue;
 			}
 		}
+		gg_elanim_work++;
+		// GGMAX 3.16 DIAGNOSTIC ONLY (SET_ELANIMSKIPWORK 1): bail before the dynamic path so the
+		// loop's cost splits into "walking + deciding" vs "the work itself". Changes behaviour -
+		// animations and decals stop updating - so it exists purely to attribute the 0.34 ms.
+		{ extern int gg_elanim_skipwork; if (gg_elanim_skipwork) continue; }
 
 		// NOTE: Determine essential tasks static needs (i.e. plrdist??)
 		// only handle DYNAMIC entities 

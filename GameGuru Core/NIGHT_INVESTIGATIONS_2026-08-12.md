@@ -5715,3 +5715,61 @@ That is a two-minute check with a mouse and it should be done before this is tru
 
 3.14 (hierarchy snapshot) +3.0% and 3.15 (waypoint reject) +6.4%, both measured independently and
 both with clean sample separation.
+
+## 3.16 — P2-entity_loopanim and CL-ObjLists: attributed, not yet fixed (2026-08-24)
+
+### entity_loopanim — the shape
+
+Counters rather than profiler ranges (a Begin/End per entity would cost more than the thing being
+measured). `ELANIM:` now rides `GET_PERF_DATA`:
+
+    total=2241  skipNoEnt=37  skipStatic=1961  work=243
+
+**87.5% of iterations exist only to discover they have nothing to do.** They read `bankindex`,
+`staticflag`, `eleprof.phyalways`, `eleprof.animspeed` out of a very large struct and
+`entityprofile[entid].animspeed` out of a second array at a random index, then `continue`.
+
+### Splitting the 0.34 ms
+
+`SET_ELANIMSKIPWORK 1` bails immediately after the static decision, so the loop measures only
+"walk and decide". Interleaved:
+
+| | P2-entity_loopanim |
+|---|---|
+| full | 0.32 / 0.34 ms |
+| walk + decide only | 0.13 / 0.13 ms |
+
+So **~0.13 ms is the scan over 2,241 elements (38%)** and **~0.20 ms is the dynamic path for just
+243 of them (62%)** — 0.8 µs each, which is ~2,500 cycles per entity and far more than the visible
+array reads justify.
+
+⚠ `ObjectExist` and `GetNumberOfFrames` were the obvious suspects and are NOT the cause — both are
+a bounds check plus an array index in `CObjectsC_part4.cpp`, not map lookups. Checked before
+optimising, which is the only reason that dead end cost a grep instead of a build.
+
+### Why nothing was changed yet
+
+Two candidate fixes, both refused for now with reasons:
+
+1. **Cache a compact "needs work" element list** (the 3.14 pattern) to kill the 0.13 ms scan. The
+   skip decision depends on per-element `animspeed` matching the profile's, which a user can edit
+   at runtime, so the invalidation surface is every entity-property path in the editor. ★ 3.14 was
+   safe to cache because ONE counter already guarded it and I could audit all five mutation sites
+   in minutes. Here I cannot, and the failure mode is animations silently stopping — a bug that
+   would reach Lee as "some things don't animate any more" days later. Not worth it blind.
+2. **Attack the 0.20 ms dynamic path** — needs to know what those 243 entities actually spend
+   2,500 cycles on, which is another instrument-and-build cycle. That is the higher prize and the
+   right next move.
+
+Diagnostics left in, default off: `SET_ELANIMSKIPWORK 0|1` (⚠ changes behaviour — freezes
+animations and decals, attribution only) and the `ELANIM:` counters.
+
+### CL-ObjLists — assessed, deliberately not touched
+
+`CL-ObjLists` spans M-GridEdit_part1.cpp:8516-11128 — **2,600 lines of ImGui** building the Level
+Entities panel, for **0.22 ms**. No `ImGuiListClipper` anywhere in the file, so the standard win
+would be clipping long lists to visible rows.
+
+★ Not attempted: 0.22 ms against 2,600 lines of interactive UI is a poor ratio, and the failure
+mode of getting list virtualisation wrong is broken selection and drag-drop in the editor's most
+used panel. It should be done deliberately, with the panel open and a mouse, not overnight.
