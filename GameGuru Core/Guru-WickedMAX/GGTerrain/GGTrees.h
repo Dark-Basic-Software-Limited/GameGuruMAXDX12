@@ -24,6 +24,7 @@ namespace GGTrees
 	extern uint32_t g_ftTypesUsed;
 	extern uint32_t g_ftAtlasSlices;
 	extern float gg_tree_pool_max_dist;   // GGMAX 2.97 pool radius cap
+	extern float gg_tree_mesh_fade_dist;  // GGMAX 3.03 mesh dissolve-out distance
 	extern char g_ftAtlasFailName[];
 	// GGMAX 2.95: far-tree billboard gate diagnostics (harness SET_FARTREES)
 	void GGTrees_GetFarTreeStats(int* proxyCount, int* proxiesShown, int* candidates, int* poolBuilt, int* poolSize, float* cutoffDist2);

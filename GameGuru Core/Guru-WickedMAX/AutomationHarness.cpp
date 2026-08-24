@@ -5833,6 +5833,35 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_TREEMESHFADE") == 0)
+	{
+		// GGMAX 3.03: distance (world units) at which a real-mesh tree STARTS dissolving out, so it
+		// cross-fades into its billboard instead of popping off at the pool cap. Wicked fades over
+		// [d, d + object.radius] and culls past it (wiRenderer.cpp:4237/8760).
+		//  <0 = derive lod_dist + 500 (DX11's arrangement)  [default]
+		//   0 = no fade, hard pop at the pool cap (pre-3.03)
+		//  >0 = explicit distance
+		// ⚠ applied per pool BIND, so an existing binding keeps its old value until the slot rebinds
+		// - move the camera far enough to churn the pool before reading the result.
+		namespace GGT4 = GGTrees;
+		GGT4::gg_tree_mesh_fade_dist = (float)atof(arg);
+		const float lodd = GGT4::ggtrees_global_params.lod_dist;
+		_snprintf(result, resultSize,
+			"OK: SET_TREEMESHFADE %s - live gg_tree_mesh_fade_dist=%.0f (%s). lod_dist=%.0f: billboards "
+			"dissolve IN over %.0f..%.0f, mesh %s. Pool cap %.0f. "
+			"Applied per pool BIND - churn the pool (fly out past the cap and back) before reading.",
+			arg, GGT4::gg_tree_mesh_fade_dist,
+			GGT4::gg_tree_mesh_fade_dist < 0.0f ? "derive lod_dist+500"
+				: (GGT4::gg_tree_mesh_fade_dist == 0.0f ? "NO FADE (hard pop)" : "explicit"),
+			lodd, lodd, lodd + 500.0f,
+			GGT4::gg_tree_mesh_fade_dist == 0.0f
+				? "does NOT dissolve - hard SetRenderable(false) at the pool cap"
+				: "dissolves OUT ending at the pool cap, starting one object radius before it (>= lod_dist)",
+			GGT4::gg_tree_pool_max_dist > 0.0f ? GGT4::gg_tree_pool_max_dist : lodd + 1000.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_FARTREES") == 0)
 	{
 		// GGMAX 2.95: 1 (default) = the merged billboard proxy chunks also draw to the MAIN

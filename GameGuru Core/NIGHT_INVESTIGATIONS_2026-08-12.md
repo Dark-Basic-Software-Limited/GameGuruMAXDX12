@@ -4777,3 +4777,115 @@ Shape of the work, from what 2.94e-3.02 established:
    That is NOT affordable against the 4 GB floor at the full ring. Either bake only inside a
    radius, or bake at 512, or bake to a shared atlas rather than per-chunk textures.
    ★ DO THIS ARITHMETIC BEFORE WRITING THE BAKER.
+
+---
+
+## 3.03 — the billboard/mesh handover POPPED. Lee spotted it by eye. (2026-08-24)
+
+> *"I was just running the latest MAX and noticed a flicker as the tree transitions from a real
+> tree to its billboard. On closer inspection it looks like the billboard renders at the same time
+> as the real tree, and then the real tree disappears when you move a little further back. Should
+> both real and billboard be rendering at the same time?"*
+
+**Answer: yes, both SHOULD draw at once — for ONE 500-unit band. Ours did it for TWO, and then
+hard-popped.** He described the defect precisely without seeing a line of the code.
+
+### What the bands actually were
+
+DX11 carries the swap in two matched per-pixel discards:
+
+    billboard (GGTreesPS.hlsl:81)        limit = noise*500 + lod_dist
+                                         discard where sqrDist <  limit^2
+    mesh      (DX11 GGTreesHighPS:215)   limit = noise*500 + 500 + lod_dist
+                                         discard where sqrDist >  limit^2
+
+so with lod_dist = 3000:
+
+| distance | DX11 | DX12 before 3.03 |
+|---|---|---|
+| 0 .. 3000 | mesh only | mesh only |
+| 3000 .. 3500 | billboard dissolves IN, mesh solid — **deliberate double-draw** | same ✓ |
+| 3500 .. 4000 | mesh dissolves OUT, billboard solid — **cross-dissolve** | **both solid** ✗ |
+| 4000 | billboard only | mesh **POPS** off (pool cap `SetRenderable(false)`) ✗ |
+
+We had implemented the first half of the handover and not the second. 2.97 gave the pool a hard
+radius cap of `lod_dist + 2*500` = 4000 precisely so the two would stop overlapping, and that was
+right as far as it went — but a cap is a *binary* removal. DX11 never removes anything binarily.
+
+★ The extra 500-unit band where BOTH are fully opaque is also where the shimmer comes from: the
+billboard quad and the mesh occupy the same space, so their fragments z-fight as the camera moves.
+
+### The fix — Wicked already had the feature, our objects were opting out of it
+
+We cannot port DX11's mesh-side discard: our near trees are stock Wicked `ObjectComponent`s on the
+stock object shader, and a custom PSO for them is the large precedent-free job `DESIGN_FAR_TREES.md`
+ruled out (§3, "The one genuinely hard problem"). **We do not need to.** The engine has a
+per-object dithered distance fade already wired end to end:
+
+    ObjectComponent::draw_distance -> object.fadeDistance          wiScene.cpp:5281
+    dither = max(0, batch.GetDistance() - fadeDistance) / radius   wiRenderer.cpp:4237
+    dither > 0.99  -> instance skipped entirely                    wiRenderer.cpp:4238
+    dither > 0     -> forceAlphatestForDithering = 1               wiRenderer.cpp:4243
+    packed 4 bits into ShaderMeshInstancePointer                   ShaderInterop_Renderer.h:846
+    GetDither() -> AlphaToCoverage                                 objectHF.hlsli:1241/1248
+    hard cull past fadeDistance + radius                           wiRenderer.cpp:8760
+
+`draw_distance` defaults to **FLT_MAX**, so every pool tree we have ever created has opted OUT of
+it. Setting it is the entire fix. **Zero engine changes — no WICKED_ENGINE_CHANGES.md row.**
+
+### ★ The subtlety that made it more than a one-liner
+
+Wicked's fade band is `[d, d + object.radius]` and **the width is not tunable** — it is the object's
+own AABB radius, which is the HALF-DIAGONAL (the standing rule), so a big trunk at scale 1.5 runs
+~900 units. A fixed DX11-style start of 3500 would therefore still be ~44% dissolved when the pool
+cap yanks the slot at 4000: a smaller pop, but the same bug.
+
+So `TreeMeshFadeDistance( radius )` works BACKWARDS from the cap instead:
+
+    d = cap - radius*1.1        // 10% margin, our radius estimate ignores transform rotation
+    if ( d > lod_dist + 500 ) d = lod_dist + 500    // small tree: no later than DX11 starts
+    if ( d < lod_dist )       d = lod_dist          // never fade before the billboard has begun
+
+Small trees get DX11's exact 3500 start; big ones start earlier so the dissolve always LANDS on the
+cap. Only a tree with radius > 1000 clamps and keeps a small residual pop.
+
+Applied at `BindTreeSlot` (GGTrees_part2.cpp:726) using `mesh.aabb.getRadius() * scale`, plus a
+placeholder at pool creation. ⚠ **per-BIND, so the knob is not instantly live** — churn the pool
+before reading any A/B.
+
+### Verification
+
+★ **A static screenshot pair cannot show this defect.** A pop is TEMPORAL; the two endpoints are
+the same picture. The A/B frames came out 104 bytes apart and proved nothing — which is itself the
+expected result, not a failure. Sibling of "an instrument that bypasses the suspect path can only
+exonerate it".
+
+The signal that DOES work is POLYS: instances with dither > 0.99 are skipped outright, so the fade
+must show up as fewer triangles. TESTPRO2, interleaved, camera returned home and read back each time
+(400,000 trees, pool built 184 / bound 180 — the 2.97 cap doing its job):
+
+| pass | fade | FPS | frame ms | POLYS |
+|---|---|---|---|---|
+| 1 | OFF (0) | 154.6 | 6.47 | 798,800 |
+| 1 | ON (-1) | 152.0 | 6.58 | **781,927** |
+| 2 | OFF (0) | 154.2 | 6.49 | 798,800 |
+| 2 | ON (-1) | 155.1 | 6.45 | **781,927** |
+
+POLYS bit-identical within each condition across both passes, −16,873 (−2.1%) with the fade on.
+FPS unchanged inside the noise floor (154.4 vs 153.6 mean, spread wider than the delta) — this is a
+correctness fix that happens to be free, not a performance change. Do not quote it as one.
+
+### Honest limits
+
+1. **Not visually confirmed.** The mechanism is proven live; that the POP IS GONE needs Lee's eye
+   or a temporal capture. He found it in seconds by flying, so that is the cheap test.
+2. **16 dither steps, not DX11's continuous per-pixel noise.** `ShaderMeshInstancePointer` packs the
+   dither into 4 bits, so a tree steps through 16 levels across the band (~30 units per step)
+   instead of dissolving smoothly. Far better than binary; not identical to DX11. If the stepping
+   shows, the answer is a wider band, not more bits.
+3. **The 3000..3500 double-draw remains** — by design, DX11 does the same. If z-fight shimmer is
+   still visible there, that is the next thing to look at, and it is a separate defect.
+
+Knob: `gg_tree_mesh_fade_dist` (GGTrees.h). `<0` derive [default], `0` = pre-3.03 hard pop,
+`>0` explicit. Harness `SET_TREEMESHFADE <units>`, hoisted into the SET_TREEPOOLCAP helper chain
+(C1061 rule).

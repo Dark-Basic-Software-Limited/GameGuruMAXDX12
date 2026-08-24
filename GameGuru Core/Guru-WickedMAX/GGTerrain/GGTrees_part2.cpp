@@ -122,6 +122,56 @@ static constexpr float GG_TREE_LOD_TRANSITION = 500.0f;   // mirrors GGTREES_LOD
 float gg_tree_pool_max_dist = -1.0f;   // <0 = derive from lod_dist; 0 = uncapped; >0 = explicit
 static float gg_ftCapDist2 = 0.0f;   // squared cap, refreshed each gather
 
+// GGMAX 3.03: MESH FADE-OUT ACROSS THE HANDOVER BAND.
+// The cap above stops the mesh pool, but it stops it with a BINARY SetRenderable(false) - the
+// tree is 100% there one frame and gone the next. DX11 never pops: its mesh pixel shader carries
+//     limit = noise*500 + 500 + lod_dist;  if ( sqrDist > limit*limit ) discard;
+// (DX11 GGTreesHighPS.hlsl:215) so the mesh DISSOLVES out over lod_dist+500 .. lod_dist+1000,
+// which is exactly the band the billboard has already dissolved IN over lod_dist .. lod_dist+500.
+// One band of honest double-draw, then a cross-dissolve. We had the first half and not the second.
+//
+// We cannot port that discard - our near trees are stock Wicked ObjectComponents on the stock
+// object shader, and a custom PSO for them is the large precedent-free job DESIGN_FAR_TREES.md
+// ruled out. We do not need to: Wicked already has this exact feature per-object.
+// ObjectComponent::draw_distance -> fadeDistance (wiScene.cpp:5281) drives
+//     dither = max(0, batch.GetDistance() - fadeDistance) / radius            (wiRenderer.cpp:4237)
+// with a real dithered alpha-test, and culls outright past fadeDistance + radius
+// (wiRenderer.cpp:8760). Default is FLT_MAX, i.e. every pool tree today opts OUT of it.
+//
+// So the fade band is [fade, fade + object.radius] - width is the tree's own bounding radius
+// rather than DX11's fixed 500, which if anything is nicer (big trees fade over a longer run).
+// ⚠ radius is the AABB HALF-DIAGONAL, so the band is wider than the tree is tall; that is fine
+// here because the billboard is already fully opaque for the whole of it.
+// ⚠ fp16: the engine-side fade math saturates past ~1.66 km. 3500 units = 89 m. Nowhere near.
+//
+// 0 = no fade (pre-3.03 hard pop). <0 = derive lod_dist + GGTREES_LOD_TRANSITION. >0 = explicit.
+// Harness SET_TREEMESHFADE <units>.
+float gg_tree_mesh_fade_dist = -1.0f;
+
+// `radius` is the object's world-space AABB radius - the SAME quantity Wicked divides the dither
+// by (wiScene.cpp:5349), so the fade ends at exactly fadeDistance + radius. Pass 0 when unknown.
+static float TreeMeshFadeDistance( float radius )
+{
+	if ( gg_tree_mesh_fade_dist == 0.0f ) return 1.0e30f;   // effectively FLT_MAX, no overflow on +radius
+	if ( gg_tree_mesh_fade_dist >  0.0f ) return gg_tree_mesh_fade_dist;
+
+	const float lodd     = ggtrees_global_params.lod_dist;
+	const float dx11Start = lodd + GG_TREE_LOD_TRANSITION;   // 3500: DX11's own fade start
+
+	// Resolve the pool cap the same way the gather does, then work BACKWARDS from it. The fade
+	// band is the tree's own radius wide and can be ~900 units on a big trunk, so a fixed 3500
+	// start would still be half-dissolved when the pool hard-drops the slot at 4000 - a smaller
+	// pop, but the same bug. Starting at cap-radius makes the dissolve land exactly on the cap.
+	float cap = gg_tree_pool_max_dist;
+	if ( cap < 0.0f ) cap = lodd + 2.0f * GG_TREE_LOD_TRANSITION;
+	if ( cap <= 0.0f ) return dx11Start;   // pool uncapped: nothing to land on, use DX11's number
+
+	float d = cap - radius * 1.1f;   // 10% margin: our radius estimate ignores transform rotation
+	if ( d > dx11Start ) d = dx11Start;   // small tree - no reason to start later than DX11 does
+	if ( d < lodd ) d = lodd;   // never fade the mesh before the billboard has begun dissolving in
+	return d;
+}
+
 static bool             g_wickedTreesSetup   = false;
 static std::string      g_treesExeDir;
 
@@ -520,6 +570,7 @@ static void GrowTreePool( wi::scene::Scene& scene, uint32_t want )
 		obj.SetRenderable( false );
 		obj.SetNotVisibleInReflections( true );
 		obj.SetOcclusionQueryDisabled( true );
+		obj.draw_distance = TreeMeshFadeDistance( 0.0f );   // GGMAX 3.03: placeholder, BindTreeSlot refines it
 		obj.cascadeMask = 2;
 		scene.transforms.Create( e );
 		g_treePoolEntities[ i ] = e;
@@ -664,6 +715,17 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 	obj->SetCastShadow( TreeShadowsEnabled() && castShadow != 0 );
 
 	float scale = pTree->GetScaleFloat();  // ~0.5–1.5
+
+	// GGMAX 3.03: dissolve the mesh out where the billboard has finished dissolving in, instead of
+	// letting the pool cap hard-drop it. Scaled mesh radius approximates the world AABB radius that
+	// Scene::Update will compute next frame; being one frame stale is harmless (the value only
+	// moves when this slot rebinds to a different-sized tree, and the band is ~500 units wide).
+	{
+		const wi::scene::MeshComponent* mc = scene.meshes.GetComponent( treeMesh );
+		const float meshRadius = mc ? mc->aabb.getRadius() * scale : 0.0f;
+		obj->draw_distance = TreeMeshFadeDistance( meshRadius );
+	}
+
 	xform->ClearTransform();
 	xform->Scale    ( XMFLOAT3( scale, scale, scale ) );
 	xform->Translate( XMFLOAT3( pTree->x, pTree->y, pTree->z ) );
