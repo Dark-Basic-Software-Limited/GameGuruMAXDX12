@@ -5465,3 +5465,18 @@ all worth knowing before anyone tunes it:
 noise) while still changing 6.5% of the screen. Same lesson as 3.08 and 3.11: the level decides
 whether a lever can show. TESTPRO2's VRAM is dominated by the SVT atlas and GG's own atlases,
 which this cannot touch.
+
+### 3.12 safety validation
+
+The new code path re-enters the exact territory of the GGMAX 1.73 load crash, so the two levels
+that crashed then were the ones to test — at Quarter, where the block-alignment guard has to hold:
+
+| level | divide | result |
+|---|---|---|
+| Trapped | 1 (default) | loads, 297.3 FPS, VRAM 2312.7 |
+| Trapped | **4** | **loads**, 295.4 FPS, VRAM 2248.9 |
+| RPG Template | **4** | **loads**, 185.6 FPS, 540,778 polys, VRAM 2853.4 |
+
+Guard holds. Aztec and TESTPRO2 also loaded repeatedly at 1/2/4 during the measurements above.
+⚠ This is not a 19-demo sweep — that is still owed for the whole 3.08–3.12 batch. Everything
+ships default-off, so the un-swept risk is confined to the ON positions.
