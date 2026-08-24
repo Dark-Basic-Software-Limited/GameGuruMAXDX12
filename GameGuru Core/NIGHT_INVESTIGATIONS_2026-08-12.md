@@ -5225,3 +5225,65 @@ sent, no ini key present, same camera:
 | harness w=0 (old look) | 19.2 | 75.7 | 16.36% |
 | harness w=0.5 | 28.3 | 78.2 | 11.25% |
 | **fresh launch, nothing sent** | **28.3** | **78.4** | **11.20%** |
+
+---
+
+## 3.08 — low-spec off-switches, round 2 (2026-08-24, overnight)
+
+Brief: *"further improve performance by adding more brutal off switches... allowed to reduce
+visual contents and reduce fidelity in the pursuit of ultra-low-spec support."*
+
+The 2.94 four remove CONTENT (terrain/trees/grass/water). These remove per-frame RENDERING WORK,
+so they still help on a level with nothing left to strip - an indoor level being the obvious case.
+
+★ Every lever here **already existed and worked**. They were bound to debug KEYBOARD keys 1-9 in
+`GGTerrainWicked_Update` and had never been exposed to a player. This makes them real switches:
+panel tick + `setup.ini` + harness, the same shape as the 2.94 four.
+
+⚠ NOT duplicated: render resolution. The **FSR combo in Graphics & Performance already exists**
+and drives `resolutionScale` down to 1/2 native (None / Ultra Quality / Quality / Balanced /
+Performance). That is the single biggest low-spec lever and it was already there.
+
+| switch | setup.ini | harness |
+|---|---|---|
+| Post Effects Off | `nopostfx` | `SET_POSTFXOFF` |
+| Ambient Occlusion Off | `noao` | `SET_AOOFF` |
+| Simple Sky | `simplesky` | `SET_SIMPLESKY` |
+| Shadows Off | `noshadows` | `SET_SHADOWSOFF` |
+
+### Measured — Aztec Game Kit, editor, camera parked, profiler rows, 2 interleaved passes
+
+| switch | GPU busy | FPS | what vanishes |
+|---|---|---|---|
+| **Shadows Off** | 4.12 → **2.95** (−1.18 ms) | 146.8 → **171.7** (+17%) | `Shadowmap Rendering` |
+| Post Effects Off | 4.12 → 3.94 (−0.17 ms) | +2.4 | `Bloom`, `LightShafts` |
+| Ambient Occlusion Off | −0.09 ms | ~0 | `MSAO` |
+| Simple Sky | ~−0.08 ms | ~0 | nothing — see below |
+
+★ **Shadows Off is the whole story on this level**; the other three are honest but small. Post FX
+is small *here* because Aztec runs only bloom and light shafts — on a level using SSR, depth of
+field or motion blur the same switch removes far more. Simple Sky measures ~0 because Aztec does
+not use volumetric clouds or the realistic sky at all; it needs a level that does before anyone
+claims a number for it.
+
+### ⚠ Two process failures worth keeping
+
+1. **I nearly declared four working switches dead.** Grepping the engine for the member name
+   `shadowsEnabled` found "NOWHERE", and the same for lens flare, chromatic aberration, sharpen
+   and occlusion culling. All five are read through their **ACCESSORS** (`getShadowsEnabled()`)
+   at the call site. Grep the getter, not the field.
+2. **The first restore was one-way.** It force-set things OFF each frame and leaned on
+   `GGApplyVisualsNow()` to put them back on the OFF edge. Measured, that only restored *some*:
+   bloom and light shafts returned, shadows and AO did not, so every later row of the first
+   ladder was taken on a scene that still had shadows off. Now each switch **captures the
+   caller's own value on the ON edge and writes it back on the OFF edge** — which also means we
+   never invent a default: a level that ships with bloom already off keeps it off.
+   ★ The ladder now prints a `\_restored` row after every switch precisely so a one-way latch
+   cannot hide again.
+
+⚠ The `Shadowmap Rendering` row itself swings 0.6–3.4 ms between samples (staggered cascade
+refresh), so quote **GPU Busy**, not that row.
+
+⚠ First test bed was wrong: TESTPRO2 has GPU Busy 2.66 of a 5.32 ms frame and no Shadowmap,
+Bloom, AO or SSR row at all — nothing for these switches to remove. A null result there measured
+the level, not the code.

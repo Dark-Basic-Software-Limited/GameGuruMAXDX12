@@ -5746,14 +5746,24 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		extern void GGSetNoTreesLevel(int);
 		extern void GGSetNoGrassLevel(int);
 		extern void GGSetNoWaterLevel(int);
+		// GGMAX 3.08 round-2 switches join the same table.
+		extern void GGSetNoPostFXLevel(int);
+		extern void GGSetNoAOLevel(int);
+		extern void GGSetSimpleSkyLevel(int);
+		extern void GGSetNoShadowsLevel(int);
+		extern bool gg_no_postfx, gg_no_ao, gg_simple_sky, gg_no_shadows;
 		struct Sw { const char* name; void (*set)(int); bool* live; };
-		static const Sw sws[4] = {
+		static const Sw sws[8] = {
 			{ "SET_TERRAINOFF", GGSetNoTerrainLevel, &gg_no_terrain },
 			{ "SET_TREESOFF",   GGSetNoTreesLevel,   &gg_no_trees   },
 			{ "SET_GRASSOFF",   GGSetNoGrassLevel,   &gg_no_grass   },
 			{ "SET_WATEROFF",   GGSetNoWaterLevel,   &gg_no_water   },
+			{ "SET_POSTFXOFF",  GGSetNoPostFXLevel,  &gg_no_postfx  },
+			{ "SET_AOOFF",      GGSetNoAOLevel,      &gg_no_ao      },
+			{ "SET_SIMPLESKY",  GGSetSimpleSkyLevel, &gg_simple_sky },
+			{ "SET_SHADOWSOFF", GGSetNoShadowsLevel, &gg_no_shadows },
 		};
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 8; i++)
 		{
 			if (_stricmp(cmd, sws[i].name) != 0) continue;
 			const int on = (atoi(arg) != 0) ? 1 : 0;   // a missing arg reads 0 = ON (subsystem stays)

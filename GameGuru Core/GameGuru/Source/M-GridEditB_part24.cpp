@@ -505,6 +505,34 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes the water surface and, with it, the reflection pass that redraws the whole scene a second time from the mirrored camera. Usually the single biggest saving of the four on any level that has water.");
 
+			// ------------------------------------------------------------------------------
+			// GGMAX 3.08: round 2. The four above remove CONTENT; these remove per-frame
+			// RENDERING WORK, so they still help on a level that has no terrain, trees, grass
+			// or water left to strip - an indoor level being the obvious case.
+			// Same session scope and the same setup.ini OR panel arrangement.
+			// ------------------------------------------------------------------------------
+			extern bool gg_no_postfx, gg_no_ao, gg_simple_sky, gg_no_shadows;
+			extern void GGSetNoPostFXLevel(int);
+			extern void GGSetNoAOLevel(int);
+			extern void GGSetSimpleSkyLevel(int);
+			extern void GGSetNoShadowsLevel(int);
+
+			bOff = gg_no_postfx;
+			if (ImGui::Checkbox("Post Effects Off##gg_no_postfx", &bOff)) GGSetNoPostFXLevel(bOff ? 1 : 0);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Switches off the screen effects applied after the scene is drawn: bloom, depth of field, motion blur, light shafts, lens flare, chromatic aberration, sharpening, automatic exposure, volumetric lighting and screen space reflections. Anti-aliasing and colour grading are kept, because they cost almost nothing and the level would look wrong without them. Everything comes back when you untick this.");
+
+			bOff = gg_no_ao;
+			if (ImGui::Checkbox("Ambient Occlusion Off##gg_no_ao", &bOff)) GGSetNoAOLevel(bOff ? 1 : 0);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Switches off the pass that darkens creases and corners where surfaces meet. A full screen pass every frame, so it costs the same whether your level is a cupboard or a continent.");
+
+			bOff = gg_simple_sky;
+			if (ImGui::Checkbox("Simple Sky##gg_simple_sky", &bOff)) GGSetSimpleSkyLevel(bOff ? 1 : 0);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Replaces the volumetric clouds and the physically modelled sky with a cheap painted one. The clouds in particular are ray marched every frame across the whole sky, so this is a large saving outdoors and does nothing at all indoors.");
+
+			bOff = gg_no_shadows;
+			if (ImGui::Checkbox("Shadows Off##gg_no_shadows", &bOff)) GGSetNoShadowsLevel(bOff ? 1 : 0);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Switches off every shadow in the level. The scene has to be drawn again from each shadow casting light, so this is usually the biggest single saving here - and the most obvious one to look at. Try the Shadows section first if you only want to soften the cost.");
+
 			ImGui::PopItemWidth();
 		}
 

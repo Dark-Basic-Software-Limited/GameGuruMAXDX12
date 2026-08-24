@@ -710,6 +710,12 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "nograss";   if (t.field_s == t.tryfield_s) { extern void GGSetNoGrass(int);   GGSetNoGrass(t.value1); }
 					t.tryfield_s = "nowater";   if (t.field_s == t.tryfield_s) { extern void GGSetNoWater(int);   GGSetNoWater(t.value1); }
 
+					// DOCDOC: nopostfx / noao / simplesky / noshadows = the SECOND set of brutal off-switches (GGMAX 3.08), for machines that are still too slow with the first four. DEFAULT 0. Where noterrain/notrees/nograss/nowater remove CONTENT, these remove per-frame RENDERING WORK, so they help on levels that have nothing left to strip - an indoor level, say. nopostfx drops bloom, depth of field, motion blur, light shafts, lens flare, chromatic aberration, sharpening, eye adaption, volumetric lighting and screen space reflections in one go (FXAA and colour grading are deliberately kept - FXAA because the FSR upscaler needs it, colour grading because it is nearly free and defines the level's look). noao drops the ambient occlusion pass. simplesky replaces the volumetric cloud and physically modelled sky with the cheap one. noshadows drops the entire shadow render, which is the most brutal of the four and looks it. All are also per-session tick boxes in Graphics and Performance; either source turns the subsystem off.
+					t.tryfield_s = "nopostfx";  if (t.field_s == t.tryfield_s) { extern void GGSetNoPostFX(int);  GGSetNoPostFX(t.value1); }
+					t.tryfield_s = "noao";      if (t.field_s == t.tryfield_s) { extern void GGSetNoAO(int);      GGSetNoAO(t.value1); }
+					t.tryfield_s = "simplesky"; if (t.field_s == t.tryfield_s) { extern void GGSetSimpleSky(int); GGSetSimpleSky(t.value1); }
+					t.tryfield_s = "noshadows"; if (t.field_s == t.tryfield_s) { extern void GGSetNoShadows(int); GGSetNoShadows(t.value1); }
+
 					// DOCDOC: treedebugsolid = DEBUG. 1 draws every distant-tree billboard as a flat unlit grey quad - no texture, no alpha cutout, no lighting, no fog - so the raw quad geometry is visible. The LOD dither transition is DELIBERATELY kept, so the mesh->billboard handover still happens and can be watched. DEFAULT 0. Diagnostic only; leave it 0 for any visual or performance testing.
 					t.tryfield_s = "treedebugsolid"; if (t.field_s == t.tryfield_s) { extern void GGSetTreeDebugSolid(int); GGSetTreeDebugSolid(t.value1); }
 

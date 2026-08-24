@@ -203,6 +203,121 @@ bool  gg_no_trees   = false;
 bool  gg_no_grass   = false;
 bool  gg_no_water   = false;
 
+// ============================================================================
+// GGMAX 3.08: ULTRA-LOW-SPEC OFF-SWITCHES, ROUND 2.
+//
+// The 2.94 four remove CONTENT. These remove per-frame RENDERING WORK instead, so they help on
+// levels with nothing to strip. Every lever here was already implemented and working - it was
+// bound to a debug KEYBOARD key (GGTerrainWicked_Update's 1-9 handlers) and never exposed to a
+// player. This makes them real switches: panel tick + setup.ini + harness, same shape as 2.94.
+//
+// ★ RULE followed here: each switch only ever FORCES ITS SUBSYSTEM OFF, and never forces
+// anything ON. Re-asserting "on" every frame would CLOBBER whatever the level author chose (the
+// dead-UI-knob failure mode: control -> field -> something re-derives the field every frame).
+// Restoring is done once, on the ON->OFF edge, by re-running the level's own visuals apply.
+//
+// ⚠ NOT duplicated here: render resolution. The FSR combo in Graphics & Performance already
+// drives resolutionScale down to 1/2 native and is the single biggest low-spec lever there is.
+// ============================================================================
+bool  gg_no_postfx  = false;   // bloom, DOF, motion blur, shafts, volumetrics, SSR/SSGI, ...
+bool  gg_no_ao      = false;   // ambient occlusion pass
+bool  gg_simple_sky = false;   // volumetric clouds + realistic sky -> cheap sky
+bool  gg_no_shadows = false;   // the entire shadow render
+
+void GGApplyLowSpecSwitches()
+{
+	wi::RenderPath3D* rp = GGPerf_GetRenderPath();
+	if ( rp == nullptr ) return;
+
+	// ★ CAPTURE-ON-ENTRY, RESTORE-ON-EXIT, per switch. The first version force-set things OFF
+	// every frame and leaned on GGApplyVisualsNow() to put them back on the OFF edge. MEASURED, it
+	// only put SOME back: bloom and light shafts returned, shadows and ambient occlusion did not,
+	// because the visuals apply never writes those two. Every later row of that ladder was then
+	// taken against a scene that still had shadows off - the 2.94 grass latch again, and the
+	// reason this pattern is now spelled out rather than assumed. Remembering the caller's own
+	// value also means we never invent a default: if a level ships with bloom already off, ticking
+	// and unticking the switch leaves it off, which is what the author asked for.
+	struct Saved
+	{
+		bool valid = false;
+		bool bloom, shafts, motionblur, dof, lensflare, chroma, sharpen, eye, vollights, ssr, ssgi, sunvol;
+		bool shadows;
+		wi::RenderPath3D::AO ao;
+		bool clouds, realsky;
+	};
+	static Saved sv;
+	static bool s_postfx = false, s_ao = false, s_sky = false, s_shadows = false;
+
+	wi::scene::LightComponent* sun = GGPerf_GetSunLight();
+	auto& weather = GGPerf_GetWeather();
+
+	// ---- POST EFFECTS ----------------------------------------------------------------------
+	if ( gg_no_postfx && !s_postfx )
+	{
+		sv.bloom      = rp->getBloomEnabled();       sv.shafts   = rp->getLightShaftsEnabled();
+		sv.motionblur = rp->getMotionBlurEnabled();  sv.dof      = rp->getDepthOfFieldEnabled();
+		sv.lensflare  = rp->getLensFlareEnabled();   sv.chroma   = rp->getChromaticAberrationEnabled();
+		sv.sharpen    = rp->getSharpenFilterEnabled(); sv.eye    = rp->getEyeAdaptionEnabled();
+		sv.vollights  = rp->getVolumeLightsEnabled(); sv.ssr     = rp->getSSREnabled();
+		sv.ssgi       = rp->getSSGIEnabled();
+		sv.sunvol     = sun ? sun->IsVolumetricsEnabled() : false;
+		sv.valid = true;
+	}
+	if ( gg_no_postfx )
+	{
+		rp->setBloomEnabled(false);      rp->setLightShaftsEnabled(false);
+		rp->setMotionBlurEnabled(false); rp->setDepthOfFieldEnabled(false);
+		rp->setLensFlareEnabled(false);  rp->setChromaticAberrationEnabled(false);
+		rp->setSharpenFilterEnabled(false); rp->setEyeAdaptionEnabled(false);
+		rp->setVolumeLightsEnabled(false);  rp->setSSREnabled(false);
+		rp->setSSGIEnabled(false);
+		// ⚠ deliberately NOT touched: FXAA (the FSR upscaler needs it) and colour grading (a cheap
+		// LUT lookup that defines the level's authored look). The editor outline pass stays too.
+		if ( sun ) sun->SetVolumetricsEnabled(false);
+	}
+	else if ( s_postfx && sv.valid )
+	{
+		rp->setBloomEnabled(sv.bloom);      rp->setLightShaftsEnabled(sv.shafts);
+		rp->setMotionBlurEnabled(sv.motionblur); rp->setDepthOfFieldEnabled(sv.dof);
+		rp->setLensFlareEnabled(sv.lensflare);   rp->setChromaticAberrationEnabled(sv.chroma);
+		rp->setSharpenFilterEnabled(sv.sharpen); rp->setEyeAdaptionEnabled(sv.eye);
+		rp->setVolumeLightsEnabled(sv.vollights); rp->setSSREnabled(sv.ssr);
+		rp->setSSGIEnabled(sv.ssgi);
+		if ( sun ) sun->SetVolumetricsEnabled(sv.sunvol);
+	}
+	s_postfx = gg_no_postfx;
+
+	// ---- AMBIENT OCCLUSION -----------------------------------------------------------------
+	if ( gg_no_ao && !s_ao ) sv.ao = rp->getAO();
+	if ( gg_no_ao )          rp->setAO( wi::RenderPath3D::AO_DISABLED );
+	else if ( s_ao )         rp->setAO( sv.ao );
+	s_ao = gg_no_ao;
+
+	// ---- SHADOWS ---------------------------------------------------------------------------
+	if ( gg_no_shadows && !s_shadows ) sv.shadows = rp->getShadowsEnabled();
+	if ( gg_no_shadows )               rp->setShadowsEnabled(false);
+	else if ( s_shadows )              rp->setShadowsEnabled(sv.shadows);
+	s_shadows = gg_no_shadows;
+
+	// ---- SKY -------------------------------------------------------------------------------
+	if ( gg_simple_sky && !s_sky )
+	{
+		sv.clouds  = weather.IsVolumetricClouds();
+		sv.realsky = weather.IsRealisticSky();
+	}
+	if ( gg_simple_sky )
+	{
+		weather.SetVolumetricClouds(false);
+		weather.SetRealisticSky(false);
+	}
+	else if ( s_sky )
+	{
+		weather.SetVolumetricClouds(sv.clouds);
+		weather.SetRealisticSky(sv.realsky);
+	}
+	s_sky = gg_simple_sky;
+}
+
 // GGMAX 2.94f: master switch for extending the terrain idle gate to the ENGINE's own
 // Generation_Update caller (wiScene.cpp). Default ON. Harness SET_ENGINEGENGATE 0|1 exists so
 // the change can be A/B'd in one binary - 0 restores the pre-2.94f behaviour where the engine

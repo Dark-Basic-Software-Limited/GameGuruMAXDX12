@@ -103,6 +103,7 @@ static bool gg_no_terrain_machine = false, gg_no_terrain_level = false;
 static bool gg_no_trees_machine   = false, gg_no_trees_level   = false;
 static bool gg_no_grass_machine   = false, gg_no_grass_level   = false;
 static bool gg_no_water_machine   = false, gg_no_water_level   = false;
+extern bool gg_no_postfx, gg_no_ao, gg_simple_sky, gg_no_shadows;   // GGMAX 3.08
 void GGSetNoTerrain     (int on) { gg_no_terrain_machine = (on != 0); gg_no_terrain = gg_no_terrain_machine || gg_no_terrain_level; }
 void GGSetNoTerrainLevel(int on) { gg_no_terrain_level   = (on != 0); gg_no_terrain = gg_no_terrain_machine || gg_no_terrain_level; }
 void GGSetNoTrees       (int on) { gg_no_trees_machine   = (on != 0); gg_no_trees   = gg_no_trees_machine   || gg_no_trees_level;   }
@@ -111,6 +112,20 @@ void GGSetNoGrass       (int on) { gg_no_grass_machine   = (on != 0); gg_no_gras
 void GGSetNoGrassLevel  (int on) { gg_no_grass_level     = (on != 0); gg_no_grass   = gg_no_grass_machine   || gg_no_grass_level;   }
 void GGSetNoWater       (int on) { gg_no_water_machine   = (on != 0); gg_no_water   = gg_no_water_machine   || gg_no_water_level;   }
 void GGSetNoWaterLevel  (int on) { gg_no_water_level     = (on != 0); gg_no_water   = gg_no_water_machine   || gg_no_water_level;   }
+
+// GGMAX 3.08: round-2 low-spec switches. Same machine||level shape as the four above.
+static bool gg_no_postfx_machine  = false, gg_no_postfx_level  = false;
+static bool gg_no_ao_machine      = false, gg_no_ao_level      = false;
+static bool gg_simple_sky_machine = false, gg_simple_sky_level = false;
+static bool gg_no_shadows_machine = false, gg_no_shadows_level = false;
+void GGSetNoPostFX      (int on) { gg_no_postfx_machine  = (on != 0); gg_no_postfx  = gg_no_postfx_machine  || gg_no_postfx_level;  }
+void GGSetNoPostFXLevel (int on) { gg_no_postfx_level    = (on != 0); gg_no_postfx  = gg_no_postfx_machine  || gg_no_postfx_level;  }
+void GGSetNoAO          (int on) { gg_no_ao_machine      = (on != 0); gg_no_ao      = gg_no_ao_machine      || gg_no_ao_level;      }
+void GGSetNoAOLevel     (int on) { gg_no_ao_level        = (on != 0); gg_no_ao      = gg_no_ao_machine      || gg_no_ao_level;      }
+void GGSetSimpleSky     (int on) { gg_simple_sky_machine = (on != 0); gg_simple_sky = gg_simple_sky_machine || gg_simple_sky_level; }
+void GGSetSimpleSkyLevel(int on) { gg_simple_sky_level   = (on != 0); gg_simple_sky = gg_simple_sky_machine || gg_simple_sky_level; }
+void GGSetNoShadows     (int on) { gg_no_shadows_machine = (on != 0); gg_no_shadows = gg_no_shadows_machine || gg_no_shadows_level; }
+void GGSetNoShadowsLevel(int on) { gg_no_shadows_level   = (on != 0); gg_no_shadows = gg_no_shadows_machine || gg_no_shadows_level; }
 
 // GGMAX 3.05 DEBUG (not an off-switch): flat unlit grey billboard quads, see GGTreesConstants.hlsli.
 void GGSetTreeDebugSolid(int on) { GGTrees::gg_tree_debug_solid = on; }   // INT passthrough: 0/1/2/3
@@ -566,6 +581,12 @@ void MasterRenderer::Update(float dt)
 		{
 			// normal update
 			wiScene::CameraComponent &camera = wiScene::GetCamera();
+
+			// GGMAX 3.08: re-assert the low-spec off-switches every frame. Deliberately here and not
+			// in GGTerrainWicked_Update - that one is gated on both bEnableEmptyLevelMode and
+			// ggterrain_use_wicked_terrain, so an indoor or legacy-terrain level would never see it.
+			extern void GGApplyLowSpecSwitches();
+			GGApplyLowSpecSwitches();
 
 			// must be outside a render pass and only called once, even if VR renders twice
 			CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
