@@ -5836,7 +5836,8 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	if (_stricmp(cmd, "SET_TREESHADEWRAP") == 0)
 	{
 		// GGMAX 3.07: 0..1 wrap strength for the SHADED side of distant-tree billboards.
-		// 0 = pre-3.07, bit-identical. Lifts the darks without flattening the normal-map shading
+		// DEFAULT 0.5. 0 = pre-3.07, bit-identical, so it doubles as the A/B control.
+		// Lifts the darks without flattening the normal-map shading
 		// or dimming the lit side. Live next frame (one CB write, no rebind, no pool churn).
 		namespace GGT7 = GGTrees;
 		float w = (float)atof(arg);

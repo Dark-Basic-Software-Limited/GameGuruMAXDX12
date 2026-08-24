@@ -752,7 +752,13 @@ bool gg_tree_prepass_reach = true;
 // GGMAX 3.07: wrap strength for the billboard's shaded side, 0..1. 0 = pre-3.07 behaviour
 // (bit-identical). Lifts the darks without flattening the normal-map shading or dimming the lit
 // side. setup.ini `treeshadewrap` (PERCENT, int), harness SET_TREESHADEWRAP (0..1 float).
-float gg_tree_shade_wrap = 0.0f;
+// DEFAULT 0.5, chosen by Lee at the machine on 2026-08-24 after A/Bing 0 / 0.35 / 0.5 live.
+// ★ 0.6+ starts eating the shading PATTERN rather than lifting it, flattening the tree toward a
+// card - which is the thing the normal map exists to prevent. Treat 0.5 as the top of the range.
+// ⚠ Tuned under a near-overhead morning sun (87/75). Wrap does proportionally more work as the
+// sun drops, so a dusk or overcast level may want less; if that bites, this wants to move to the
+// per-level visuals rather than a machine-wide ini key.
+float gg_tree_shade_wrap = 0.5f;
 int  gg_tree_debug_solid = 0;   // 0 off, 1 grey+dissolve, 2 grey no-discard, 3 red dissolve zone
 
 // GGMAX 2.96: why-did-nothing-draw counters for the billboard pass, read by SET_FARTREES.

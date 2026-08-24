@@ -5200,3 +5200,28 @@ was asked for.
 
 **DEFAULT 0 (off).** Picking the value is an art call and it is Lee's. `setup.ini treeshadewrap`
 (PERCENT int, house rule), harness `SET_TREESHADEWRAP 0..1` (live next frame, no rebind).
+
+### 3.07a — 0.5 shipped as the default (2026-08-24)
+
+Lee A/B'd 0 / 0.35 / 0.5 live at the machine and chose **0.5**. Now the compiled default
+(`gg_tree_shade_wrap = 0.5f`), with `setup.ini treeshadewrap` defaulting to 50 to match.
+
+★ 0 remains bit-identical to pre-3.07, so the off position doubles as the A/B control - keep it
+that way.
+
+⚠ Two boundaries recorded with the value, because a bare number loses them:
+1. **0.6+ starts eating the shading PATTERN** rather than lifting it, flattening the tree toward a
+   card - the exact thing the normal map exists to prevent. 0.5 is the top of the useful range,
+   not a midpoint.
+2. **Tuned under a near-overhead morning sun (87/75).** Wrap does proportionally more work as the
+   sun drops, so a dusk or overcast level may want less. If that bites, the knob wants to move to
+   the PER-LEVEL visuals rather than a machine-wide ini key. Not done - no evidence it bites yet.
+
+Verified the DEFAULT path, not just the harness path (the standing rule). Fresh launch, no command
+sent, no ini key present, same camera:
+
+| | p05 lum | median | % below 40 |
+|---|---|---|---|
+| harness w=0 (old look) | 19.2 | 75.7 | 16.36% |
+| harness w=0.5 | 28.3 | 78.2 | 11.25% |
+| **fresh launch, nothing sent** | **28.3** | **78.4** | **11.20%** |
