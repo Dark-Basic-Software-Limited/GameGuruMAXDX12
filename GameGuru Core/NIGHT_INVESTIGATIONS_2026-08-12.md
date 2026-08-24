@@ -5480,3 +5480,26 @@ that crashed then were the ones to test — at Quarter, where the block-alignmen
 Guard holds. Aztec and TESTPRO2 also loaded repeatedly at 1/2/4 during the measurements above.
 ⚠ This is not a 19-demo sweep — that is still owed for the whole 3.08–3.12 batch. Everything
 ships default-off, so the un-swept risk is confined to the ON positions.
+
+### 3.08–3.12 regression coverage (partial, at DEFAULT settings)
+
+Not the owed 19-demo sweep, but 8 levels loaded clean on the final build with every new switch at
+its default:
+
+| level | FPS | POLYS | VRAM |
+|---|---|---|---|
+| Aztec Game Kit | 143.7 | 522,301 | 3598.1 |
+| Foggy Forest | 136.5 | 1,248,844 | 2915.8 |
+| Operation Amazon | 143.8 | 486,602 | 3369.3 |
+| Snowy Mountain Stroll | 203.5 | 81,369 | 2651.2 |
+| Escape from the Zombie Cellar | 258.3 | 28,048 | 2246.1 |
+| Trapped | 297.3 | 12,768 | 2312.7 |
+| RPG Template (at Quarter) | 185.6 | 540,778 | 2853.4 |
+| TESTPRO2 | 180.3 | — | 2908.3 |
+
+★ Foggy Forest reads 1,248,844 polys against the 0823 sweep's 1.28M — consistent, so the tree work
+underneath is undisturbed.
+
+⚠ **STILL OWED: the full 19-demo sweep** for the 3.08–3.12 batch (and pass 2 of the 0822 gate,
+outstanding since then). Everything in this batch ships default-off/neutral, so the unswept risk
+is confined to the ON positions, but the sweep is the gate and it has not been run.
