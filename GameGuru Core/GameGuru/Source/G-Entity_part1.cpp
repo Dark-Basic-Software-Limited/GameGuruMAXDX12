@@ -1313,6 +1313,8 @@ void entity_loopanim ( void )
 	// than the thing being measured. Reset each call; read via GET_PERF_DATA "ELANIM:".
 	extern uint32_t gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work;
 	gg_elanim_total = gg_elanim_skip_noent = gg_elanim_skip_static = gg_elanim_work = 0;
+	extern uint32_t gg_elanim_ff_entities, gg_elanim_ff_sets;
+	gg_elanim_ff_entities = gg_elanim_ff_sets = 0;
 
 	for ( t.e = 1 ; t.e <= g.entityelementlist; t.e++ )
 	{
@@ -1485,6 +1487,22 @@ void entity_loopanim ( void )
 			t.tobj = t.entityelement[t.e].obj;
 			if (t.tobj > 0)
 			{
+				// GGMAX 3.16 instrument: this footfall scan runs for EVERY dynamic entity, not just
+				// characters, and walks the whole animation-set list each frame. Count how many
+				// entities reach it and how many sets are walked in total.
+				// GGMAX 3.17: this whole block (to the end of the loop body) is FOOTFALL SOUND
+				// detection - it walks the object's entire animation-set list every frame looking
+				// for a step keyframe crossing, and ends in sound_footfallsound(). It sits OUTSIDE
+				// the ischaracter branch above, so every dynamic entity pays it: measured
+				// ffEnt=243 entities and ffSets=2523 set-nodes walked per frame on the canyon
+				// level. Footsteps are a character behaviour, so restrict it to characters.
+				// Knob so the old behaviour is one command away if any non-character turns out to
+				// rely on step markers. SET_ELANIMFFCHARONLY.
+				extern int gg_elanim_ff_charonly;
+				if ( gg_elanim_ff_charonly && t.entityprofile[t.entid].ischaracter == 0 )
+					continue;
+				extern uint32_t gg_elanim_ff_entities, gg_elanim_ff_sets;
+				gg_elanim_ff_entities++;
 				float fCurrentFrame = GetFrame(t.tobj);
 				sObject* pObject = GetObjectData(t.tobj);
 				if (pObject)
@@ -1492,6 +1510,7 @@ void entity_loopanim ( void )
 					sAnimationSet* pAnimSet = pObject->pAnimationSet;
 					while (pAnimSet)
 					{
+						gg_elanim_ff_sets++;
 						int leftorright = 0;
 						int iFootFallKeyFrame = (int)pAnimSet->fAnimSetStep1;
 						float fDistanceFromFrame = fabs(fCurrentFrame - iFootFallKeyFrame);

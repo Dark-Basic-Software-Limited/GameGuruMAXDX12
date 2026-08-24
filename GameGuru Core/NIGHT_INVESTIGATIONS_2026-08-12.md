@@ -5773,3 +5773,45 @@ would be clipping long lists to visible rows.
 ★ Not attempted: 0.22 ms against 2,600 lines of interactive UI is a poor ratio, and the failure
 mode of getting list virtualisation wrong is broken selection and drag-drop in the editor's most
 used panel. It should be done deliberately, with the panel open and a mouse, not overnight.
+
+## 3.17 — the footfall scan: a good theory, measured, and REJECTED (2026-08-24)
+
+Chasing the 0.20 ms dynamic path from §3.16. Lines 1486-1567 of `entity_loopanim` are entirely
+FOOTFALL SOUND detection — per dynamic entity, every frame, `GetFrame` + `GetObjectData` then a
+walk of the object's whole animation-set linked list looking for a step-keyframe crossing, ending
+in `sound_footfallsound()`. ★ And it sits OUTSIDE the `ischaracter` branch above it, so every
+dynamic entity pays it. Counters: **ffEnt=243 entities, ffSets=2523 set-nodes walked per frame.**
+
+Footsteps are a character behaviour, so restricting the scan to characters looked like free money.
+Implemented behind `SET_ELANIMFFCHARONLY` and measured before changing any default:
+
+| | ffEnt | ffSets | CPU Frame | FPS |
+|---|---|---|---|---|
+| every dynamic entity | 243 | 2523 | 6.03 / 5.46 / 5.39 | 158.5 / 160.6 / 155.8 |
+| characters only | 44 | **2508** | 5.67 / 5.66 / 5.60 | 159.7 / 160.3 / 162.1 |
+
+★★★ **`ffSets` barely moved — 2523 to 2508.** The 199 non-character dynamic entities contribute
+about FIFTEEN animation-set nodes between them; they are dynamic but essentially unanimated. The
+whole walk is **44 characters averaging ~57 animation sets each**. CPU Frame means 5.63 vs 5.64 —
+no difference at all.
+
+**So the guard is not a win and is NOT enabled.** `gg_elanim_ff_charonly` defaults 0. It is left in
+because it is the semantically correct guard and one command away if footfall ever gets dearer,
+but shipping it ON would change behaviour for no measured benefit, which is not a trade worth
+making.
+
+⚠ The lesson is the counter pair, not the guard: `ffEnt` alone said "243 entities, restrict it".
+`ffSets` said the entity count was irrelevant. **Count the WORK, not the callers** — had I only
+instrumented entities I would have shipped a behaviour change for nothing.
+
+### Where the remaining ~0.20 ms actually is
+
+2,508 linked-list nodes chased per frame, ~57 per character, each reading `fAnimSetStep1/2/3`. At
+a plausible ~30 ns per pointer chase that is ~0.075 ms of pure cache miss, plus the 243
+`GetFrame`/`GetObjectData` pairs.
+
+★ The real fix is to stop walking a linked list every frame for data that never changes: an object's
+footfall keyframes are fixed when the model loads. A compact per-object array of step frames, built
+once, would collapse the scan to a handful of comparisons. That needs allocation and an
+invalidation story tied to model load, so it is a deliberate piece of work rather than an overnight
+one — but it is the right next move and the measurement above says how much is on the table.

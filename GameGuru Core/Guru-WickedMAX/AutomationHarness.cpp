@@ -1152,6 +1152,7 @@ static void Cmd_ClickNode(const char* nodeTitle, char* result, int resultSize)
 namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_max_subtree; }
 namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_visited; }
 extern uint32_t gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work;   // GGMAX 3.16
+extern uint32_t gg_elanim_ff_entities, gg_elanim_ff_sets;   // GGMAX 3.16
 namespace wi::scene         { extern uint32_t gg_hier_rebuilds; extern uint32_t gg_hier_skips; extern int gg_hier_cache_snapshot; }   // GGMAX 3.14
 namespace wi::scene         { extern uint32_t gg_hier_root_count; }
 
@@ -1265,8 +1266,8 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	if (written < resultSize - 160)
 	{
 		written += _snprintf(result + written, resultSize - written,
-			"ELANIM: total=%u skipNoEnt=%u skipStatic=%u work=%u\n",
-			gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work);
+			"ELANIM: total=%u skipNoEnt=%u skipStatic=%u work=%u ffEnt=%u ffSets=%u\n",
+			gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work, gg_elanim_ff_entities, gg_elanim_ff_sets);
 	}
 
 	// GGMAX 2.25: wi::terrain chunk ring size — the DX12 entity floor.
@@ -5852,6 +5853,20 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 				: (GGT3::gg_tree_pool_max_dist == 0.0f ? "UNCAPPED" : "explicit"),
 			GGT3::ggtrees_global_params.lod_dist,
 			GGT3::ggtrees_global_params.lod_dist + 1000.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	if (_stricmp(cmd, "SET_ELANIMFFCHARONLY") == 0)
+	{
+		// GGMAX 3.17: 1 = only CHARACTERS get the per-frame footfall keyframe scan. 0 = every
+		// dynamic entity does (pre-3.17). Watch ELANIM: ffEnt/ffSets and P2-entity_loopanim.
+		extern int gg_elanim_ff_charonly;
+		gg_elanim_ff_charonly = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize,
+			"OK: SET_ELANIMFFCHARONLY %d - footfall scan %s.",
+			gg_elanim_ff_charonly,
+			gg_elanim_ff_charonly ? "CHARACTERS ONLY" : "every dynamic entity (old behaviour)");
 		result[resultSize - 1] = 0;
 		return true;
 	}
