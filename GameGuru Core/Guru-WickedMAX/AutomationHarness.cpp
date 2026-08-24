@@ -5847,6 +5847,21 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_WAYPOINTFAST") == 0)
+	{
+		// GGMAX 3.15: 1 (default) = skip the per-node engine intersect when the node cannot
+		// possibly be under the cursor. 0 = intersect every waypoint node every frame (pre-3.15).
+		extern int gg_waypoint_fastreject;
+		gg_waypoint_fastreject = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize,
+			"OK: SET_WAYPOINTFAST %d - %s. Watch P2M-T2-SelModes+Keys under P2-mainfunc; it was "
+			"0.61 of 0.62 ms before this.",
+			gg_waypoint_fastreject,
+			gg_waypoint_fastreject ? "analytic reject ON" : "intersecting EVERY node (old behaviour)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_HIERCACHE") == 0)
 	{
 		// GGMAX 3.14: 1 (default) = skip the topdown-hierarchy rebuild when the hierarchy has not

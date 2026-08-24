@@ -1471,6 +1471,11 @@ void editor_mainfunctionality ( void )
 #endif
 
 	//  Rotation of entity
+	// GGMAX 3.15: sub-ranges for P2-mainfunc. The flat 0.54 ms said nothing about WHERE, and
+	// this function is ~500 lines in which almost every call is event driven. Safe to place
+	// by hand: editor_mainfunctionality has ZERO early returns (checked), so no path can skip
+	// an EndRange and leak a row into every sibling after it.
+	auto rP2sel5 = wi::profiler::BeginRangeCPU("P2M-Sel5-EditorMode");
 	if (  t.grideditselect == 5 ) 
 	{
 		bool bAllowRotate = true;
@@ -1500,6 +1505,7 @@ void editor_mainfunctionality ( void )
 			//PE: We dont need t.widget.pickedObject != 0 && to control widget.
 			if(t.widget.pickedEntityIndex > 0 && t.gridentity == 0)
 			{
+				auto rP2pick = wi::profiler::BeginRangeCPU("P2M-Rotate-Picked");
 				// Rotation control of widget controlled entity
 				if ( t.inputsys.domodeterrain == 0 && t.inputsys.domodeentity == 0 ) 
 				{
@@ -1734,9 +1740,11 @@ void editor_mainfunctionality ( void )
 					t.tforcepguppgdnkeys = 1;
 					editor_forceentityfindfloor (false);
 				}
+				wi::profiler::EndRange(rP2pick);
 			}
 			else
 			{
+				auto rP2else = wi::profiler::BeginRangeCPU("P2M-Rotate-NoPick");
 				if (  t.inputsys.domodeterrain == 0 && t.inputsys.domodeentity == 0 ) 
 				{
 					if (t.widget.pickedEntityIndex > 0)
@@ -1795,11 +1803,15 @@ void editor_mainfunctionality ( void )
 				t.gridentityrotatex_f=WrapValue(t.gridentityrotatex_f);
 				t.gridentityrotatey_f=WrapValue(t.gridentityrotatey_f);
 				t.gridentityrotatez_f=WrapValue(t.gridentityrotatez_f);
+				wi::profiler::EndRange(rP2else);
 			}
 		}
 	}
+	wi::profiler::EndRange(rP2sel5);
+	auto rP2tail = wi::profiler::BeginRangeCPU("P2M-Events+Tail");
 
 	//  Load and Save
+	auto rP2t1 = wi::profiler::BeginRangeCPU("P2M-T1-FileEvents");
 	if ( t.inputsys.doload == 1 ) gridedit_load_map ( );
 	if ( t.inputsys.dosave == 1 ) 
 	{
@@ -1846,6 +1858,8 @@ void editor_mainfunctionality ( void )
 
 	//  Manage waypoints on map
 	t.tokay=0;
+	wi::profiler::EndRange(rP2t1);
+	auto rP2t2 = wi::profiler::BeginRangeCPU("P2M-T2-SelModes+Keys");
 	if (  t.grideditselect == 5 ) 
 	{
 		//  entity mode can manipulate waypoint zone style
@@ -1887,6 +1901,8 @@ void editor_mainfunctionality ( void )
 
 	//  Zoom factor (for top down or freeflight+ControlKey ( ) )
 	t.tspecialgridzoomadjustment=0;
+	wi::profiler::EndRange(rP2t2);
+	auto rP2t3 = wi::profiler::BeginRangeCPU("P2M-T3-Camera+Scroll");
 	if (  t.editorfreeflight.mode == 0 || t.tspecialgridzoomadjustment != 0 ) 
 	{
 		if (  ((t.inputsys.dozoomin == 1 && t.inputsys.keypress == 0) || t.tspecialgridzoomadjustment == 1) && t.gridzoom_f>0.3 ) 
@@ -1958,5 +1974,7 @@ void editor_mainfunctionality ( void )
 		MouseLeftDragXZPanning();
 		MouseWheelYPanning();
 	}
+	wi::profiler::EndRange(rP2t3);
+	wi::profiler::EndRange(rP2tail);
 }
 

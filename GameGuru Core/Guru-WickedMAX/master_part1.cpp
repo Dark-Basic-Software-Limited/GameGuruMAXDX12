@@ -32,6 +32,10 @@ namespace wi { namespace renderer {
 static std::string g_cachedProfilerText;
 std::string GGPerf_GetCachedProfilerText() { return g_cachedProfilerText; }
 
+// GGMAX 3.15: analytic pre-reject in waypoint_mousemanage. 1 = on (default), 0 = the old
+// intersect-every-node behaviour, for A/B. See M-Waypoint.cpp for why the bound is safe.
+int gg_waypoint_fastreject = 1;
+
 // GGMAX 1.67: main-camera poly count for the Performance HUD (latched per frame in the engine)
 uint64_t GGPerf_GetPolyCount() { return wi::renderer::GG_GetMainCameraPolyCount(); }
 

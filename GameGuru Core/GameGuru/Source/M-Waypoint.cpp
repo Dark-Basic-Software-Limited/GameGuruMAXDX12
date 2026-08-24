@@ -850,19 +850,52 @@ void waypoint_mousemanage ( void )
 	t.waypointiovercursor=0;
 	t.waypointindexovercursor=0;
 	t.tbest_f=999999 ; t.tbestwaypointindex=0 ; t.tbestwaypointiovercursor=0;
+
+	// GGMAX 3.15: this loop was the single hottest thing in the editor's main function - measured
+	// 0.61 ms of P2-mainfunc's 0.62 ms on the canyon level, every frame, purely to work out which
+	// waypoint node the mouse is hovering. Per NODE it called CameraPositionX/Y/Z (a constant),
+	// re-checked the proxy cube existed, then PositionObject + HideObject + a full engine
+	// IntersectObject ray test.
+	//
+	// Three changes, none of which alter which node is picked:
+	//   1. the camera position is read ONCE, not once per node (it cannot change mid-loop);
+	//   2. the proxy cube is ensured ONCE;
+	//   3. a cheap analytic reject runs first - if the node centre is further from the pick
+	//      SEGMENT than the cube could possibly reach, the intersect cannot hit, so skip it.
+	// (3) is a conservative BOUND, which is the safe direction: MakeObjectCube(25) has a half
+	// extent of 12.5 and therefore a half-diagonal of 12.5*sqrt(3) = 21.7, so 25 as the reject
+	// radius is generous and can only ever admit extra candidates to the exact same test that
+	// decided them before. Never used as a position - only to skip work. Harness SET_WAYPOINTFAST.
+	extern int gg_waypoint_fastreject;
+	t.x1_f = CameraPositionX();
+	t.y1_f = CameraPositionY();
+	t.z1_f = CameraPositionZ();
+	if ( ObjectExist( g.waypointdetectworkobject ) == 0 ) MakeObjectCube ( g.waypointdetectworkobject, 25.0f );
+	const float ggwp_sx = t.x1_f, ggwp_sy = t.y1_f, ggwp_sz = t.z1_f;
+	const float ggwp_dx = fOrigMX - ggwp_sx, ggwp_dy = fOrigMY - ggwp_sy, ggwp_dz = fOrigMZ - ggwp_sz;
+	const float ggwp_len2 = ggwp_dx*ggwp_dx + ggwp_dy*ggwp_dy + ggwp_dz*ggwp_dz;
+	const float ggwp_radius2 = 25.0f * 25.0f;
+
 	for ( t.twaypointindex = 1 ; t.twaypointindex <= g.waypointmax; t.twaypointindex++ )
 	{
 		if ( t.waypoint[t.twaypointindex].count>0 ) 
 		{
 			for ( t.w = t.waypoint[t.twaypointindex].start ; t.w <= t.waypoint[t.twaypointindex].finish; t.w++ )
 			{
-				// do intersect scan to see if we are pointing to this node
-				t.x1_f = CameraPositionX();
-				t.y1_f = CameraPositionY();
-				t.z1_f = CameraPositionZ();
+				if ( gg_waypoint_fastreject && ggwp_len2 > 0.0f )
+				{
+					// closest approach of the node to the pick SEGMENT (clamped, so a node behind
+					// the camera or beyond the cursor is measured to the nearer endpoint)
+					const float px = t.waypointcoord[t.w].x - ggwp_sx;
+					const float py = t.waypointcoord[t.w].y - ggwp_sy;
+					const float pz = t.waypointcoord[t.w].z - ggwp_sz;
+					float tt = ( px*ggwp_dx + py*ggwp_dy + pz*ggwp_dz ) / ggwp_len2;
+					if ( tt < 0.0f ) tt = 0.0f; else if ( tt > 1.0f ) tt = 1.0f;
+					const float cx = px - tt*ggwp_dx, cy = py - tt*ggwp_dy, cz = pz - tt*ggwp_dz;
+					if ( cx*cx + cy*cy + cz*cz > ggwp_radius2 )
+						continue;   // cannot possibly intersect the 25-unit proxy cube
+				}
 
-				// adjust destination vector with bullet inaccuacies
-				if ( ObjectExist( g.waypointdetectworkobject ) == 0 ) MakeObjectCube ( g.waypointdetectworkobject, 25.0f );
 				PositionObject ( g.waypointdetectworkobject, t.waypointcoord[t.w].x, t.waypointcoord[t.w].y, t.waypointcoord[t.w].z );
 				HideObject ( g.waypointdetectworkobject );
 

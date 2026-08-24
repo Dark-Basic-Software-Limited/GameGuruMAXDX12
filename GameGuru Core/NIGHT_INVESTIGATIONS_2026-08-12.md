@@ -5651,3 +5651,67 @@ reading alone does not say where 0.54 ms/frame goes. It needs the same treatment
 because placing Begin/End pairs across 500 lines of branchy code without verifying every path is
 how you leak a range and corrupt every row after it — and the 3.13 tree printer would show that
 corruption as a mis-parented subtree. Next session's first job.
+
+## 3.15 — P2-mainfunc: a per-frame ray-intersect over every waypoint node (2026-08-24)
+
+Sub-ranges added to `editor_mainfunctionality` (safe to place by hand — the function has **zero
+early returns**, checked first, so no path can skip an `EndRange` and leak a row into every
+sibling after it). Balance verified 7 Begins / 7 Ends before building.
+
+### The bisect, in two builds
+
+Split 1 — and it refuted my assumption immediately:
+
+| | ms |
+|---|---|
+| **P2M-Events+Tail** | **0.56** of 0.57 |
+| P2M-Sel5-EditorMode (the 330-line rotation block) | 0.00 |
+
+★ I had written the tail off as "cheap event-driven ifs" and expected the big block to dominate.
+Exactly backwards. Split 2 narrowed it to `P2M-T2-SelModes+Keys` = **0.61 of 0.62 ms**, a 40-line
+block whose only real call is `waypoint_mousemanage()`.
+
+### What it was doing
+
+`t.tokay` is set to 1 whenever you are in entity mode with nothing picked — i.e. essentially every
+frame in the editor. So every frame, for EVERY waypoint node, `waypoint_mousemanage` did:
+
+    CameraPositionX/Y/Z()                 <- a constant, read once per NODE
+    ObjectExist(proxy) / MakeObjectCube   <- re-checked per NODE
+    PositionObject(proxy, node)
+    HideObject(proxy)
+    IntersectObject(proxy, camera -> cursor)   <- a full engine ray test, per NODE
+
+purely to find which node the mouse is hovering.
+
+### The fix
+
+1. camera position read once, not per node (it cannot change mid-loop);
+2. proxy cube ensured once;
+3. ★ a cheap analytic reject first — closest approach of the node to the pick SEGMENT; if that
+   exceeds what the proxy could reach, the intersect cannot hit, so skip it.
+
+(3) is a conservative **BOUND**, which is the safe direction (the standing rule: a superset bound
+is safe as a bound, unsafe as a position). `MakeObjectCube(25)` has half-extent 12.5 and therefore
+a half-diagonal of 21.65; the reject radius is 25, so it is generous and can only ever admit extra
+candidates into the *same* intersect test that decided them before. It is never used as a position.
+
+### Measured — TESTPRO2 canyon, 3 interleaved passes
+
+| | P2M-T2 | P2-mainfunc | CPU Frame | FPS |
+|---|---|---|---|---|
+| intersect every node | 0.57 / 0.54 / 0.54 | 0.56 / 0.59 / 0.55 | 6.01 / 6.78 / 6.04 | 150.6 / 150.5 / 150.1 |
+| **analytic reject** | **0.01 / 0.01 / 0.01** | 0.01 / 0.01 / 0.02 | 5.86 / 5.51 / 5.66 | **163.1 / 155.6 / 161.4** |
+
+**+6.4% FPS**, every ON sample above every OFF sample. The row does not shrink — it disappears.
+
+Harness `SET_WAYPOINTFAST 0|1`, default ON.
+
+⚠ **NOT interactively verified.** The bound is conservative by construction and only skips nodes
+that could not have intersected, but nobody has hovered and clicked a waypoint node on this build.
+That is a two-minute check with a mouse and it should be done before this is trusted in anger.
+
+### Running total for the CPU side on this level
+
+3.14 (hierarchy snapshot) +3.0% and 3.15 (waypoint reject) +6.4%, both measured independently and
+both with clean sample separation.
