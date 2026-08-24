@@ -20,6 +20,7 @@ namespace GGTrees
 {
 	extern bool gg_far_tree_pass;   // GGMAX 2.96: DX11-style distant-tree billboard pass
 	extern bool gg_tree_prepass_reach;    // GGMAX 3.04 diagnostic: prepass honours terrain reach
+	extern bool gg_tree_debug_solid;      // GGMAX 3.05 debug: flat grey billboard quads
 	extern uint32_t g_ftDrawCalls, g_ftInstances, g_ftChunksTotal, g_ftChunksWithIn, g_ftFrustumKills, g_ftEnterCount;
 	extern uint32_t g_ftTerrainKills;
 	extern uint32_t g_ftTypesUsed;

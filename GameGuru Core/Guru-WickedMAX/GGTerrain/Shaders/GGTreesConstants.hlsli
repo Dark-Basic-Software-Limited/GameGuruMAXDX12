@@ -51,7 +51,13 @@ cbuffer TreeCB : register( b3 )
 	TreeType tree_type[ numTreeTypes ];
 	
 	float3   tree_playerPos;
-	uint     tree_padding0;
+	// GGMAX 3.05: DEBUG. 1 = draw every billboard as a flat unlit grey quad - no texture fetch,
+	// no alpha cutout, no lighting, no fog - so the raw quad geometry is visible during the
+	// mesh->billboard handover. The LOD dither discard is DELIBERATELY KEPT so the transition
+	// itself still happens and can be watched. Applied IDENTICALLY in GGTreesPS and
+	// GGTreesPrepassPS: the coverage of the two passes must match or we recreate the 3.04 black.
+	// Spare padding word, no CB layout change.
+	uint     tree_debugSolid;
 
 	float    tree_lodDist;
 	float    tree_lodDistShadow;

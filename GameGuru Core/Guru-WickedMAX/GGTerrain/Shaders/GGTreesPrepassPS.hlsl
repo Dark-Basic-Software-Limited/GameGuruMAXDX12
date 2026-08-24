@@ -30,6 +30,26 @@ Output main( PixelIn IN )
 	uint treeType = GetTreeType( IN.data );
 	uint index = GetTreeVariation( IN.data );
 
+	// GGMAX 3.05: matches GGTreesPS's debug branch EXACTLY. If this pass kept the alpha cutout
+	// while the colour pass drew the whole quad, the two coverages would disagree and we would be
+	// straight back to 3.04's black fringes - in the very build meant to diagnose the flicker.
+	if ( tree_debugSolid )
+	{
+		// identical LOD dither discard to the real path - the handover must still be watchable
+		if ( !any(g_xCamera_ClipPlane) )
+		{
+			float3 dbgV = g_xCamera_CamPos - IN.worldPos;
+			float  dbgD2 = dot( dbgV, dbgV );
+			float  dbgN = texNoise.Sample( samplerBilinearWrap, IN.uv*3 );
+			float  dbgLim = dbgN * GGTREES_LOD_TRANSITION + tree_lodDist;
+			if ( dbgD2 < dbgLim*dbgLim ) discard;
+		}
+		Output dbg;
+		dbg.velocity = float4( 0, 0, 0, 1 );
+		dbg.readback = 0;
+		return dbg;
+	}
+
 	float alpha = texTree.Sample( samplerTrilinearClamp, float3(IN.uv, tree_type[ treeType ].slice) ).a;
 	if ( alpha < 0.3 ) discard;
 

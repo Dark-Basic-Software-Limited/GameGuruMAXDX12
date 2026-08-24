@@ -710,6 +710,9 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "nograss";   if (t.field_s == t.tryfield_s) { extern void GGSetNoGrass(int);   GGSetNoGrass(t.value1); }
 					t.tryfield_s = "nowater";   if (t.field_s == t.tryfield_s) { extern void GGSetNoWater(int);   GGSetNoWater(t.value1); }
 
+					// DOCDOC: treedebugsolid = DEBUG. 1 draws every distant-tree billboard as a flat unlit grey quad - no texture, no alpha cutout, no lighting, no fog - so the raw quad geometry is visible. The LOD dither transition is DELIBERATELY kept, so the mesh->billboard handover still happens and can be watched. DEFAULT 0. Diagnostic only; leave it 0 for any visual or performance testing.
+					t.tryfield_s = "treedebugsolid"; if (t.field_s == t.tryfield_s) { extern void GGSetTreeDebugSolid(int); GGSetTreeDebugSolid(t.value1); }
+
 					// DOCDOC: lowvramgrassdist = Grass draw distance cap in inches used when lowvram=1. DEFAULT 750, which is the editor Grass Draw Distance slider's own minimum (below it the per-strand fade has no range to work in and grass pops in whole chunks at a time). This is a CAP: a level already asking for less keeps its own value. Ignored when lowvram=0.
 					t.tryfield_s = "lowvramgrassdist"; if (t.field_s == t.tryfield_s) { extern void GGSetLowVRAMGrassDist(float); GGSetLowVRAMGrassDist((float)t.value1); }
 

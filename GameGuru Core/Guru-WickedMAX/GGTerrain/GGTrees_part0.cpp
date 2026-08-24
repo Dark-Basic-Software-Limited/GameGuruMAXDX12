@@ -745,6 +745,11 @@ bool gg_far_tree_pass = true;
 // GGMAX 3.04: see GGTreesConstants.hlsli. 1 = prepass honours the terrain-reach clip (correct).
 // 0 reproduces the black-tree defect on demand. Harness SET_TREEPREPASSREACH.
 bool gg_tree_prepass_reach = true;
+// GGMAX 3.05: DEBUG - draw every billboard as a flat unlit grey quad (no texture, no alpha
+// cutout, no lighting, no fog) so the raw quad geometry is visible through the mesh->billboard
+// handover. The LOD dither discard is kept, so the transition still happens. Lee asked for this
+// to eyeball the remaining flicker. setup.ini `treedebugsolid`, harness SET_TREEDEBUGSOLID.
+bool gg_tree_debug_solid = false;
 
 // GGMAX 2.96: why-did-nothing-draw counters for the billboard pass, read by SET_FARTREES.
 uint32_t g_ftDrawCalls    = 0;   // chunks that actually issued a draw
@@ -2731,6 +2736,7 @@ static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, Comma
 		treeConstantData.tree_terrainReach = reach;
 	}
 	treeConstantData.tree_prepassReach = gg_tree_prepass_reach ? 1.0f : 0.0f;   // GGMAX 3.04 diagnostic
+	treeConstantData.tree_debugSolid   = gg_tree_debug_solid  ? 1u : 0u;      // GGMAX 3.05 debug
 
 	wiGraphics::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
 }

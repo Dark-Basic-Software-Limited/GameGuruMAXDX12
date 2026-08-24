@@ -4984,3 +4984,53 @@ it was a transient hitch right after the CB flip. Measure, do not read HUD corne
   land where there is no terrain, so it is probably invisible — but it is the same inconsistency
   and it wants one deliberate look before it is called fine.
 - The 3.03 handover fade is unaffected by this and still needs Lee's eye.
+
+---
+
+## 3.05 — flat grey billboard quads, for eyeballing the handover (2026-08-24)
+
+Lee, after 3.04 fixed the black but the flicker survived:
+
+> *"Before we fix the issue of the billboards not matching the real tree visual, or the flicker,
+> I want to see these billboard quads in the flesh, without any textures applied. Can you make all
+> the billboards a flat grey solid color, I want to perform the transition manually and see the
+> real trees transition out and the grey quads transition in."*
+
+`tree_debugSolid` (the spare CB padding word, no layout change). 1 = every billboard draws as a
+flat unlit mid-grey quad: no texture fetch, no alpha cutout, no lighting, no fog.
+
+★ **The LOD dither discard is deliberately KEPT.** The point is to watch the handover, so the
+quads must still dissolve in over `lod_dist .. +500` exactly as they normally do. Real meshes are
+untouched and still dissolve out via 3.03.
+
+★★ Applied **identically in `GGTreesPS` and `GGTreesPrepassPS`**. Skipping the alpha cutout changes
+the pass's coverage, so putting it in one shader and not the other would have recreated 3.04's
+black fringes *inside the very build meant to diagnose the flicker*. This is the 3.04 lesson being
+applied the same day rather than re-learned.
+
+Note this deliberately re-introduces, as a supported runtime knob, what `GGTREES_DEBUG_SOLID` was
+as a compile-time define before 3.04 deleted it. The define was the right idea and the wrong
+mechanism: it was invisible at runtime, it only touched the colour shaders, and it sat at 0 in the
+tree for two deltas as a live landmine.
+
+Three ways in, all equivalent:
+- `setup.ini` **`treedebugsolid=1`** (documented with a DOCDOC line next to the off-switches)
+- harness **`SET_TREEDEBUGSOLID 0|1`**, live on the next frame, one CB write
+- `GGTrees::gg_tree_debug_solid`, **default false** — the repo ships it OFF
+
+⚠ The INI and LIVE paths were proven equivalent rather than assumed (the standing rule). Same
+camera, ini-only launch vs harness-enabled: 108,800 vs 108,756 grey pixels — 0.04% apart, with
+0.90% of the frame differing, all of it water animation.
+
+⚠ `setup.ini` in the build folder currently carries `treedebugsolid=1` so Lee's build shows grey
+on launch. That is a LOCAL, un-versioned edit; `setup.ini.bak_pre305` sits beside it. Set it to 0
+before any visual or performance testing.
+
+### Standing questions this build should answer
+
+The flicker survived 3.04, so it is a third defect. With textures gone the geometry is naked, and
+the answer should be visible directly:
+
+1. Do quads **appear/disappear** frame to frame? -> LOD dither / pool churn.
+2. Do quads **z-fight the real mesh** in the overlap band? -> the 3000..3500 double-draw.
+3. Do quads **change size or orientation** as the camera creeps? -> the CB rotation or per-type scale.

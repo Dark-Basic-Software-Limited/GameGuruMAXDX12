@@ -42,6 +42,26 @@ GBuffer main( PixelIn IN )
 	uint treeType = GetTreeType( IN.data );
 	uint index = GetTreeVariation( IN.data );
 
+	// GGMAX 3.05: FLAT GREY DEBUG QUADS. No texture fetch, no alpha cutout, no lighting, no fog -
+	// the raw billboard quad, so the mesh->billboard handover can be watched geometrically.
+	// MUST stay coverage-identical to GGTreesPrepassPS's debug branch (3.04 lesson).
+	if ( tree_debugSolid )
+	{
+		// identical LOD dither discard to the real path - the handover must still be watchable
+		if ( !any(g_xCamera_ClipPlane) )
+		{
+			float3 dbgV = g_xCamera_CamPos - IN.worldPos;
+			float  dbgD2 = dot( dbgV, dbgV );
+			float  dbgN = texNoise.Sample( samplerBilinearWrap, IN.uv*3 );
+			float  dbgLim = dbgN * GGTREES_LOD_TRANSITION + tree_lodDist;
+			if ( dbgD2 < dbgLim*dbgLim ) discard;
+		}
+		GBuffer dbg;
+		dbg.g0 = float4( 0.5, 0.5, 0.5, 1.0 );   // flat mid grey, unlit
+		dbg.g1 = float4( 0.5, 0.5, 1.0, 1.0 );   // +Z normal, roughness 1
+		return dbg;
+	}
+
 	float4 baseColor = texTree.Sample( samplerTrilinearClamp, float3(IN.uv, tree_type[ treeType ].slice) );
 	float alpha = baseColor.a;
 	if ( alpha < 0.3 ) discard;

@@ -5833,6 +5833,28 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_TREEDEBUGSOLID") == 0)
+	{
+		// GGMAX 3.05 DEBUG. 1 = every distant-tree billboard draws as a flat unlit grey quad: no
+		// texture fetch, no alpha cutout, no lighting, no fog. The LOD dither discard is KEPT, so
+		// the mesh->billboard handover still happens and can be watched geometrically. Applied
+		// identically in the colour PS and the prepass PS so the two coverages cannot diverge.
+		// 0 = normal rendering (default). Also setup.ini `treedebugsolid`.
+		namespace GGT6 = GGTrees;
+		GGT6::gg_tree_debug_solid = (atoi(arg) != 0);
+		_snprintf(result, resultSize,
+			"OK: SET_TREEDEBUGSOLID %d - billboards draw as %s. Live next frame (one CB write). "
+			"lod_dist=%.0f so quads dissolve IN over %.0f..%.0f; real meshes are UNAFFECTED and still "
+			"dissolve out via 3.03. Set 0 before any visual or performance testing.",
+			GGT6::gg_tree_debug_solid ? 1 : 0,
+			GGT6::gg_tree_debug_solid ? "FLAT GREY QUADS (debug)" : "normal textured billboards",
+			GGT6::ggtrees_global_params.lod_dist,
+			GGT6::ggtrees_global_params.lod_dist,
+			GGT6::ggtrees_global_params.lod_dist + 500.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_TREEPREPASSREACH") == 0)
 	{
 		// GGMAX 3.04 DIAGNOSTIC. 1 (default, correct) = the billboard PREPASS applies the same
