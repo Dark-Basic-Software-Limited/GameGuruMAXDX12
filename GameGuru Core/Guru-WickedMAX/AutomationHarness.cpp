@@ -5845,6 +5845,21 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_OBJCULLDIST") == 0)
+	{
+		// GGMAX 3.11: cap every object's draw distance, in world inches. 0 = off.
+		// Objects that already own a finite draw_distance (the 3.03 tree pool) are left alone.
+		extern void GGSetObjectCullDistLevel(int);
+		extern float gg_object_cull_dist;
+		GGSetObjectCullDistLevel(atoi(arg));
+		_snprintf(result, resultSize,
+			"OK: SET_OBJCULLDIST %d - live gg_object_cull_dist=%.0f units (%.0f m). 0 = off. Objects "
+			"dissolve out over their own radius rather than popping. Watch POLYS and DRAW calls.",
+			atoi(arg), gg_object_cull_dist, gg_object_cull_dist / 39.37f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_PARTICLEPCT") == 0)
 	{
 		// GGMAX 3.09: emit-rate scale for Wicked emitters, 0..100 percent. 100 = untouched.

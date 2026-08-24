@@ -226,6 +226,7 @@ bool  gg_no_shadows = false;   // the entire shadow render
 bool  gg_no_occlusion = false; // hardware occlusion QUERIES (they cost to save; on a weak GPU
                                // the query pass can cost more than the draws it removes - A/B it)
 int   gg_particle_pct = 100;   // emit-rate scale for Wicked emitters, 0..100
+float gg_object_cull_dist = 0.0f; // 0 = off; >0 = cap every object's draw distance (inches)
 
 void GGApplyLowSpecSwitches()
 {
@@ -362,6 +363,52 @@ void GGApplyLowSpecSwitches()
 			s_origCount.clear();
 		}
 		s_prevPct = gg_particle_pct;
+	}
+
+	// ---- OBJECT DETAIL DISTANCE ------------------------------------------------------------
+	// Caps how far away ANY object is still drawn. Uses ObjectComponent::draw_distance, the same
+	// machinery 3.03 used for the tree handover: Wicked dithers the object out over its own
+	// radius and culls it outright past draw_distance + radius (wiRenderer.cpp 4237/8760), so
+	// things fade rather than pop. Default FLT_MAX means almost every object opts out today.
+	//
+	// ★ Objects that ALREADY have a finite draw_distance are skipped, never overwritten. That is
+	// how the 3.03 tree pool keeps ownership of its own fade - capping it here would fight the
+	// billboard handover and reintroduce a pop. It also means restoring is exact: anything we
+	// touched went from FLT_MAX, so FLT_MAX is what it goes back to.
+	{
+		static std::vector<wi::ecs::Entity> s_capped;
+		static float s_prevCull = 0.0f;
+		const float kInfinite = 1.0e30f;
+		wi::scene::Scene& scene = wi::scene::GetScene();
+		if ( gg_object_cull_dist > 0.0f )
+		{
+			// O(n) with an O(1) test - an object already capped fails the >= kInfinite test and is
+			// skipped, so this costs one float compare per object per frame on 5000+ objects.
+			for ( size_t i = 0; i < scene.objects.GetCount(); i++ )
+			{
+				wi::scene::ObjectComponent& o = scene.objects[i];
+				if ( o.draw_distance < kInfinite ) continue;   // owned by someone else (or already ours)
+				o.draw_distance = gg_object_cull_dist;
+				s_capped.push_back( scene.objects.GetEntity(i) );
+			}
+			// a LOWERED cap must also re-tighten the ones we already own
+			if ( gg_object_cull_dist < s_prevCull )
+				for ( size_t j = 0; j < s_capped.size(); j++ )
+				{
+					wi::scene::ObjectComponent* o = scene.objects.GetComponent( s_capped[j] );
+					if ( o ) o->draw_distance = gg_object_cull_dist;
+				}
+		}
+		else if ( s_prevCull > 0.0f )
+		{
+			for ( size_t j = 0; j < s_capped.size(); j++ )
+			{
+				wi::scene::ObjectComponent* o = scene.objects.GetComponent( s_capped[j] );
+				if ( o ) o->draw_distance = std::numeric_limits<float>::max();
+			}
+			s_capped.clear();
+		}
+		s_prevCull = gg_object_cull_dist;
 	}
 }
 

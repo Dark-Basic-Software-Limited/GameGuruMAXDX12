@@ -5364,3 +5364,47 @@ It is an ENGINE change, so it needs `build_wicked.bat Release` first and a
 `WICKED_ENGINE_CHANGES.md` delta row. Not attempted overnight because getting it wrong re-opens a
 crash that takes out level loading, and default-off is not protection if the default path is
 mis-wired. Deserves a session with the user awake.
+
+## 3.11 — Object Detail Distance, and the U-shaped curve (2026-08-24)
+
+`objectculldist` / `SET_OBJCULLDIST <units>` / panel slider. 0 = off. Caps every object's
+`ObjectComponent::draw_distance`, so Wicked dissolves it out over its own radius and culls it
+outright past `draw_distance + radius` - the 3.03 machinery, reused.
+
+★ Objects that ALREADY hold a finite `draw_distance` are skipped, never overwritten. That is how
+the 3.03 tree pool keeps ownership of its handover fade; capping it here would fight the billboard
+swap and put the pop back. It also makes the restore exact: everything we touched came from
+FLT_MAX, so FLT_MAX is what it returns to.
+
+### Measured on Aztec (5,431 objects), 2 interleaved passes
+
+| cull | FPS | GPU busy | POLYS | Shadowmap |
+|---|---|---|---|---|
+| off | 142.7 / 142.0 | 3.96 / 4.16 | 522,301 | 0.76 |
+| 4000 | 144.4 / 148.2 | 3.96 / 3.92 | 522,301 | 0.80 |
+| 2000 | 155.6 / 154.1 | 3.81 / 3.77 | 522,301 | 0.58 |
+| **1000** | 154.6 / **157.1** | 3.72 / **3.67** | 522,301 | **0.40** |
+| 500 | 140.3 / 139.8 | **4.19** | **312,049** | 0.42 |
+
+★★★ **The curve is U-shaped and the bottom is not where you would guess.**
+
+- The win peaks around **1000-2000 units (+9-10% FPS)** and it comes from **shadow casters**, not
+  triangles: `Shadowmap Rendering` halves (0.76 -> 0.40) while POLYS does not move at all. Objects
+  in that band are outside the shadow cascades' interest before they are outside the main view.
+- At **500 units it becomes a NET LOSS** - FPS 142 -> 140 and GPU busy *up* to 4.19 - even though
+  POLYS finally falls 40%. Because a quarter of the screen is then objects mid-dissolve, and
+  Wicked's dither fade is an ALPHA-TESTED path: it costs more per pixel than the opaque draw it
+  replaced. Cull hard enough and you pay more in dithering than you save in geometry.
+
+⚠ **My first ladder measured nothing** (0 / 8000 / 20000 / 40000, all POLYS-identical) and I
+briefly read that as a broken switch. It was a broken TEST: Aztec is compact and 8000 units is
+200 m, well beyond anything in it. The switch proved itself instantly at 500 units (POLYS -40%,
+24% of the screen changed). ★ When a lever does nothing, check its range against the CONTENT
+before checking the code - the same mistake as measuring the 3.08 switches on a level that had no
+shadows, bloom or AO to remove.
+
+### Recommended defaults
+
+Ship at 0 (off). The useful value is level-scale dependent: ~1000-2000 on a compact level like
+Aztec, proportionally more on a sprawling one. Anyone tuning it should watch `Shadowmap Rendering`
+rather than POLYS, and should stop lowering it the moment GPU busy starts rising again.

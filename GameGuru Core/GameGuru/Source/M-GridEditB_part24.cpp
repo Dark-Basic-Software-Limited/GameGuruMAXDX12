@@ -547,6 +547,14 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			if (ImGui::SliderInt("##gg_particle_pct", &pct, 0, 100, "%d%%")) GGSetParticlePctLevel(pct);
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How many particles to emit, as a percentage of what the level asked for. 50%% halves every smoke plume, spark shower and waterfall; 0%% stops them emitting altogether. Particles already in the air live out their lifetime, so the change eases in over a second rather than popping. Affects the modern particle system only.");
 
+			// GGMAX 3.11
+			extern float gg_object_cull_dist;
+			extern void GGSetObjectCullDistLevel(int);
+			int cull = (int)gg_object_cull_dist;
+			ImGui::Text("Object Detail Distance");
+			if (ImGui::SliderInt("##gg_object_cull_dist", &cull, 0, 40000, cull == 0 ? "Off" : "%d")) GGSetObjectCullDistLevel(cull);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How far away objects are still drawn, in world units. Off draws everything however distant it is. 20000 is about 500 metres, 8000 about 200 metres and very aggressive. Objects do not pop out - each dissolves away over roughly its own size - and they come back when you raise it. This is the bluntest control here and on a large outdoor level the most effective, because it removes the draw calls, the triangles and the shadow casting together. Trees keep their own distance system and are not affected.");
+
 			ImGui::PopItemWidth();
 		}
 
