@@ -4889,3 +4889,98 @@ correctness fix that happens to be free, not a performance change. Do not quote 
 Knob: `gg_tree_mesh_fade_dist` (GGTrees.h). `<0` derive [default], `0` = pre-3.03 hard pop,
 `>0` explicit. Harness `SET_TREEMESHFADE <units>`, hoisted into the SET_TREEPOOLCAP helper chain
 (C1061 rule).
+
+---
+
+## 3.04 — the BLACK trees. My bug, from 3.00, and the design doc predicted it. (2026-08-24)
+
+> *"a flicker as the tree transitions... I have saved the test scene at the moment the black is
+> showing on the tree directly in front in the mid distance, and when I move the camera a touch
+> forward, the black disappears to show the tree texture... It feels like acne in that the
+> transition is so flickery/fleeting it feels like zdepth fighting. If these trees are indeed
+> billboards facing the camera, the effect would be as though two quads both facing me, and one
+> was darker and both fighting each other to be the nearest to render."*
+
+Lee's read of the mechanism was almost exactly right, and it is NOT the 3.03 handover pop.
+
+### The defect
+
+3.00 added the per-tree terrain-reach clip (`tree_terrainReach` folded into `SV_ClipDistance0`)
+so a tree standing past the edge of the terrain would not draw over nothing. **I added it to
+`GGTreesVS.hlsl` and not to `GGTreesPrepassVS.hlsl`.**
+
+    prepass VS : no reach test  -> quad drawn, DEPTH + velocity written
+    colour VS  : reach test     -> whole quad CLIPPED, no fragments at all
+
+Depth now says "opaque surface here" so the terrain and sky behind fail the depth test too, and
+nothing ever writes that gbuffer texel. Deferred lighting shades an empty gbuffer **BLACK**.
+
+Everything in Lee's description falls out of that: it is tree-shaped and black; it sits at a
+distance boundary; and **moving forward clears it** because forward reduces `distXZ`, pulling the
+tree back inside reach so the colour pass draws it again. His "two quads, one darker, fighting to
+be nearest" is precisely one quad present in the depth pass and absent from the colour pass.
+
+★★★ `DESIGN_FAR_TREES.md` §6 risk #2, written before a line of this was coded:
+
+> *"The near-discard must be duplicated identically into the prepass. DX11 carries it in five
+> shaders. Miss one and depth is written for fragments the colour pass discards."*
+
+I wrote the risk down, then committed it three deltas later with a DIFFERENT test than the one I
+was watching for. **A documented risk is not a control. It needs a mechanical check.**
+
+### What was ruled out first, and how
+
+Four candidates died before the real one, each on evidence rather than argument:
+
+1. **Prepass/colour PS near-discard mismatch** — read both; byte-for-byte the same maths, and
+   both match DX11. Dead.
+2. **Two billboard systems drawing at once** (the merged proxies from 2.95 + the real pass from
+   2.96) — `gg_trees_far_billboards = false`, proxies are shadow-only. Dead.
+3. **Unfilled atlas mips** — the atlas is created with 9 mips and `maxMip = min(DDS mips, 9)`, so
+   a short DDS chain would leave high mips uninitialised = black at distance, and 2.99 had just
+   rewritten slice upload. Scanned all 76 billboard DDS headers: every one is 1024x1024 with 11
+   mips. All 9 destination mips get written. Dead. (Good theory, wrong. Checking took 2 minutes.)
+4. **Shared-CB race between prepass and opaque** — the 2.00-era bug class. Both `UpdateBuffer`
+   sites are inside `GGTrees_Update`, once per frame, not per pass. Dead.
+
+The fix was then found by **diffing the two vertex shaders** rather than reasoning about them.
+
+### The fix, and the diagnostic that proves it
+
+Prepass VS now carries the identical block. Also deleted `GGTREES_DEBUG_SOLID` from both tree
+shaders — it forced `OUT.clip = 1.0` in the COLOUR VS only, i.e. the mirror image of this same
+bug, armed and waiting for whoever set it to 1.
+
+★ Because this failure mode has now bitten twice, it is kept reproducible on demand:
+`tree_prepassReach` (the spare CB padding float, no layout change), harness
+**`SET_TREEPREPASSREACH 0|1`**. 1 = correct. 0 = defect reproduced, live on the next frame with
+no rebind and no pool churn — so it A/Bs cleanly INSIDE one process at one camera.
+
+Instrument: count near-black pixels in the sky/tree band of the viewport. Same camera, same
+frame, only the prepass clip differs:
+
+| camera Z | defect (0) | fixed (1) |
+|---|---|---|
+| -4806 | 3.647% | 1.851% |
+| -5306 | 3.729% | 1.821% |
+| -5806 | 3.750% | 1.649% |
+| -6306 | 3.876% | 1.612% |
+| -6806 | 3.933% | 1.496% |
+| -7306 | 4.020% | 1.419% |
+
+Total −57.1%. ★ The confirming detail is not the size of the gap but the **opposite trends**: with
+the defect the black GROWS as the camera pulls back (more trees fall beyond the reach), while
+fixed it FALLS (simply less foliage on screen). A generic rendering difference would not do that.
+
+Cost: **nothing**. Interleaved x3 at one camera — FPS 167.7/169.2/171.3 (defect) vs
+169.2/171.2/169.4 (fixed), POLYS **452,328 identical both ways**, because a clip distance kills
+fragments and not geometry. ⚠ A screenshot corner read 87.7 vs 184.1 FPS and I nearly quoted it;
+it was a transient hitch right after the CB flip. Measure, do not read HUD corners.
+
+### Still open
+
+- `GGTreesHighShadowMapVS.hlsl` and `GGTreesHighEnvProbeVS.hlsl` have **no clip output at all**,
+  so trees past the terrain edge still cast shadows and still appear in env probes. Their shadows
+  land where there is no terrain, so it is probably invisible — but it is the same inconsistency
+  and it wants one deliberate look before it is called fine.
+- The 3.03 handover fade is unaffected by this and still needs Lee's eye.

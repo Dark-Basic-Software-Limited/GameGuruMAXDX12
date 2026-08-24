@@ -1,4 +1,3 @@
-#define GGTREES_DEBUG_SOLID 0   // GGMAX 2.96c BISECT - REMOVE WHEN DONE
 #include "GGRootSignature.hlsli"
 Texture2DArray texTree : register( t50 );
 Texture2D<float> texNoise : register( t51 );
@@ -43,15 +42,6 @@ GBuffer main( PixelIn IN )
 	uint treeType = GetTreeType( IN.data );
 	uint index = GetTreeVariation( IN.data );
 
-#if GGTREES_DEBUG_SOLID
-	// GGMAX 2.96c BISECT: solid opaque magenta, no texture fetch, no alpha discard.
-	{
-		GBuffer dbg;
-		dbg.g0 = float4( 1.0, 0.0, 1.0, 1.0 );
-		dbg.g1 = float4( 0.5, 0.5, 1.0, 1.0 );
-		return dbg;
-	}
-#endif
 	float4 baseColor = texTree.Sample( samplerTrilinearClamp, float3(IN.uv, tree_type[ treeType ].slice) );
 	float alpha = baseColor.a;
 	if ( alpha < 0.3 ) discard;

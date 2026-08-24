@@ -5833,6 +5833,25 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_TREEPREPASSREACH") == 0)
+	{
+		// GGMAX 3.04 DIAGNOSTIC. 1 (default, correct) = the billboard PREPASS applies the same
+		// tree_terrainReach clip the colour VS does. 0 reproduces the 3.00-3.03 defect: the prepass
+		// draws quads the colour pass clips away, so depth is written, the gbuffer at those pixels
+		// is never filled, and the tree shades BLACK. Kept as a regression lever because "a
+		// visibility test added to one pass and not its partner" has now bitten this codebase twice.
+		namespace GGT5 = GGTrees;
+		GGT5::gg_tree_prepass_reach = (atoi(arg) != 0);
+		_snprintf(result, resultSize,
+			"OK: SET_TREEPREPASSREACH %d - prepass %s the terrain-reach clip. %s Live next frame "
+			"(one CB write, no rebind, no pool churn needed).",
+			GGT5::gg_tree_prepass_reach ? 1 : 0,
+			GGT5::gg_tree_prepass_reach ? "APPLIES" : "SKIPS",
+			GGT5::gg_tree_prepass_reach ? "Correct." : "DEFECT REPRODUCED: expect black trees past the terrain edge.");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_TREEMESHFADE") == 0)
 	{
 		// GGMAX 3.03: distance (world units) at which a real-mesh tree STARTS dissolving out, so it

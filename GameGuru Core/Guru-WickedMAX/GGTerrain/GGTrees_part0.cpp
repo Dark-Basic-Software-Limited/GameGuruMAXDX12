@@ -742,6 +742,9 @@ static uint32_t          g_ggtreePsoSlot = 0;
 // GGMAX 2.96: master switch for the DX11-style distant-tree billboard pass. Default OFF while
 // it is being brought up. Harness SET_FARTREES 0|1.
 bool gg_far_tree_pass = true;
+// GGMAX 3.04: see GGTreesConstants.hlsli. 1 = prepass honours the terrain-reach clip (correct).
+// 0 reproduces the black-tree defect on demand. Harness SET_TREEPREPASSREACH.
+bool gg_tree_prepass_reach = true;
 
 // GGMAX 2.96: why-did-nothing-draw counters for the billboard pass, read by SET_FARTREES.
 uint32_t g_ftDrawCalls    = 0;   // chunks that actually issued a draw
@@ -2727,6 +2730,7 @@ static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, Comma
 		const float reach = ::GG_GetTerrainViewRadius();
 		treeConstantData.tree_terrainReach = reach;
 	}
+	treeConstantData.tree_prepassReach = gg_tree_prepass_reach ? 1.0f : 0.0f;   // GGMAX 3.04 diagnostic
 
 	wiGraphics::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
 }

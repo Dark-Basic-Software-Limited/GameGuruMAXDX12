@@ -1,5 +1,4 @@
 
-#define GGTREES_DEBUG_SOLID 0   // GGMAX 2.96c BISECT stage A - REMOVE WHEN DONE
 #include "GGRootSignature.hlsli"
 
 /*
@@ -77,14 +76,6 @@ VertexOut main( VertexIn IN )
 	OUT.uv.x = IN.position.x + 0.5;
 	OUT.uv.y = 1 - IN.position.y;
 	OUT.data = IN.data;
-
-#if GGTREES_DEBUG_SOLID
-	// GGMAX 2.96c BISECT stage A: keep the REAL transform (so the quads stay small, distant and
-	// spread out - the earlier fixed-fullscreen-quad version drew 98,410 near-fullscreen quads
-	// per frame and was a guaranteed GPU timeout). Only never-clip, so the clip-plane path
-	// cannot be what hides them.
-	OUT.clip = 1.0;
-#endif
 
     return OUT;
 }

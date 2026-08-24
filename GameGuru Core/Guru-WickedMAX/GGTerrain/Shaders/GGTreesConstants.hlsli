@@ -59,7 +59,12 @@ cbuffer TreeCB : register( b3 )
 	// keeps any chunk that merely OVERLAPS the terrain, so trees near a straddling chunk's far
 	// edge still drew over nothing. This is the exact per-tree test, done in the VS for free.
 	float    tree_terrainReach;
-	float    tree_padding2;
+	// GGMAX 3.04: DIAGNOSTIC. 1 = the PREPASS applies tree_terrainReach too (correct, default).
+	// 0 = prepass skips it, reproducing the 3.00-3.03 defect on demand: depth written for quads
+	// the colour pass clips, gbuffer never filled, tree renders BLACK. Kept because this failure
+	// mode (a visibility test in one pass and not its partner) has now bitten twice. Spare
+	// padding float, no CB layout change.
+	float    tree_prepassReach;
 };
 
 uint GetTreeType( uint data ) { return (data >> 11) & 0x3F; }
