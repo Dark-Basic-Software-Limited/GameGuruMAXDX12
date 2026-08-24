@@ -114,6 +114,8 @@ void GGSetNoWaterLevel  (int on) { gg_no_water_level     = (on != 0); gg_no_wate
 
 // GGMAX 3.05 DEBUG (not an off-switch): flat unlit grey billboard quads, see GGTreesConstants.hlsli.
 void GGSetTreeDebugSolid(int on) { GGTrees::gg_tree_debug_solid = on; }   // INT passthrough: 0/1/2/3
+// GGMAX 3.07: ini gives PERCENT (int passthrough), shader wants 0..1.
+void GGSetTreeShadeWrap(int pct) { GGTrees::gg_tree_shade_wrap = pct * 0.01f; }
 
 // GGMAX 2.71: the producelogfiles setup.ini key now also gates the ROUTINE diagnostic
 // FILE writers (standalone exports write producelogfiles=0, the editor ships =1), so

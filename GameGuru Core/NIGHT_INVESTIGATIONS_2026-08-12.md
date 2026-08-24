@@ -5125,3 +5125,78 @@ the pool. Re-run properly it was flat - but I had already quoted it.
 
 Debug levers kept: `SET_TREEDEBUGSOLID 0..5` (0 off, 1 grey+dissolve, 2 grey no-discard,
 3 red dissolve zone, 4 no depth write, 5 depth test ALWAYS) and `SET_TREEPREPASSREACH`.
+
+---
+
+## 3.07 — billboard shade wrap, and a correction to my own advice (2026-08-24)
+
+> *"I think the billboard light effect is too aggressive as the dark patches are too dark. I like
+> the technique, and we should keep it, but just lessen the severity of when the billboard is in
+> shade. Is that the same knob you just described about the softening?"*
+
+**No - and the knob I had named would have made it WORSE.** In §3.06's write-up I said the dial was
+the `2` in `lerp( dir, normal, 2 )`. Measured on the actual billboard texture under Lee's sun
+(87/75, nearly overhead), lowering it deepens the shade:
+
+| option | mean lit | p10 (dark tail) | % very dark |
+|---|---|---|---|
+| t = 2 (current) | 0.982 | **0.136** | 10.3% |
+| t = 1.5 | 0.681 | 0.042 | 18.0% |
+| t = 1.0 (plain normal map) | 0.383 | 0.000 | 25.7% |
+| normalise N | 0.465 | 0.099 | 13.8% |
+| **wrap the diffuse** | 0.988 | **0.568** | **0.0%** |
+
+★ Why: `normal.y = abs(normal.y)` and `dir` is purely horizontal, so `N.y = t*|n.y|`. The
+extrapolation is the very thing lifting the canopy toward a high sun. Reducing `t` dims the tree
+AND deepens the shadows. I had reasoned about that constant without measuring it.
+
+### First, the technique itself is deliberate - Lee called it correctly
+
+He asked whether the patchiness was intentional, to keep one billboard image plausible from any
+angle. It is, and there are three tells in the shader:
+
+1. `normal.y = abs(normal.y)` - every baked normal forced upward, so the canopy always catches an
+   overhead sun. A tree bake has plenty of downward leaves; someone chose to flip them.
+2. the normals are ROTATED by the billboard's facing angle, so the baked shading spins with the
+   quad and the tree reads as the same lit object from anywhere.
+3. `lerp( dir, normal, 2 )` - `t=2` is extrapolation, deliberately amplifying deviation from the
+   flat quad normal. `t=1` would be the plain map.
+
+Measured, sweeping the sun: the normal-mapped billboard stays 24-69% shaded at EVERY azimuth and
+never goes fully lit or fully black, and halves the brightness swing (0.35 vs 0.71). A flat quad
+flips 0% <-> 100% and goes completely black for half the compass. Exactly Lee's hypothesis.
+
+⚠ Ruled out by measurement, not assumed: mip filtering dragging the normal map's out-of-silhouette
+rainbow facets into the canopy. Averaging shortens normals (|n| 0.92 -> 0.36 by mip 7) without
+biasing them (z mean -0.04 -> -0.07), and as |n| -> 0 the shader's `2n - dir` converges cleanly to
+the flat quad normal. Distance makes it flatter, not patchier.
+
+### The fix: `tree_shadeWrap`
+
+Classic wrap / half-Lambert on the billboard diffuse. The exact term `(N.L + w)/(1 + w)` cannot be
+injected where the light loop lives (`DirectionalLight()` is inside Wicked's lightingHF), but it
+does not need to be: **Wicked never normalises `surface.N`** (`surfaceHF.hlsli update()` only
+saturates roughness), so feeding it
+
+    N' = ( N + w * |N| * L ) / ( 1 + w )
+
+reproduces the wrap term exactly for the sun with |N| carried through unchanged. Entirely inside
+GGTreesPS - no engine change, nothing else in the scene touched. `w = 0` skips the branch, so the
+default is **bit-identical** to pre-3.07.
+
+`GetSunDirection()` points TOWARD the sun (skyHF.hlsli:159 draws the sun disc where the view ray
+matches it), so it is the `L` in `N.L` with no sign flip - checked, not assumed.
+
+In-engine, same camera, forested band:
+
+| wrap | darkest 5% | median | % below 40 |
+|---|---|---|---|
+| 0 | 19.2 | 75.7 | 16.4% |
+| 0.30 | 25.5 | 77.5 | 12.9% |
+| 0.50 | **28.3** | 78.2 | 11.3% |
+
+Darks lift ~47%, median moves 3% - it lifts the shade and leaves the lit side alone, which is what
+was asked for.
+
+**DEFAULT 0 (off).** Picking the value is an art call and it is Lee's. `setup.ini treeshadewrap`
+(PERCENT int, house rule), harness `SET_TREESHADEWRAP 0..1` (live next frame, no rebind).

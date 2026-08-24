@@ -749,6 +749,10 @@ bool gg_tree_prepass_reach = true;
 // cutout, no lighting, no fog) so the raw quad geometry is visible through the mesh->billboard
 // handover. The LOD dither discard is kept, so the transition still happens. Lee asked for this
 // to eyeball the remaining flicker. setup.ini `treedebugsolid`, harness SET_TREEDEBUGSOLID.
+// GGMAX 3.07: wrap strength for the billboard's shaded side, 0..1. 0 = pre-3.07 behaviour
+// (bit-identical). Lifts the darks without flattening the normal-map shading or dimming the lit
+// side. setup.ini `treeshadewrap` (PERCENT, int), harness SET_TREESHADEWRAP (0..1 float).
+float gg_tree_shade_wrap = 0.0f;
 int  gg_tree_debug_solid = 0;   // 0 off, 1 grey+dissolve, 2 grey no-discard, 3 red dissolve zone
 
 // GGMAX 2.96: why-did-nothing-draw counters for the billboard pass, read by SET_FARTREES.
@@ -2769,6 +2773,7 @@ static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, Comma
 	}
 	treeConstantData.tree_prepassReach = gg_tree_prepass_reach ? 1.0f : 0.0f;   // GGMAX 3.04 diagnostic
 	treeConstantData.tree_debugSolid   = (uint32_t)gg_tree_debug_solid;        // GGMAX 3.05 debug mode
+	treeConstantData.tree_shadeWrap    = gg_tree_shade_wrap;                  // GGMAX 3.07
 
 	wiGraphics::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
 }

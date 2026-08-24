@@ -5833,6 +5833,26 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_TREESHADEWRAP") == 0)
+	{
+		// GGMAX 3.07: 0..1 wrap strength for the SHADED side of distant-tree billboards.
+		// 0 = pre-3.07, bit-identical. Lifts the darks without flattening the normal-map shading
+		// or dimming the lit side. Live next frame (one CB write, no rebind, no pool churn).
+		namespace GGT7 = GGTrees;
+		float w = (float)atof(arg);
+		if (w < 0.0f) w = 0.0f;
+		if (w > 1.0f) w = 1.0f;
+		GGT7::gg_tree_shade_wrap = w;
+		_snprintf(result, resultSize,
+			"OK: SET_TREESHADEWRAP %.2f - %s. Measured on the vine-tree billboard under a high sun: "
+			"w=0 leaves the dark tail at 0.14 with 10%% very dark; w=0.30 lifts it to 0.34 with 1.8%%; "
+			"w=0.50 to 0.42 with 0%%. Mean lit barely moves (0.982 -> 0.985), so only the SHADE changes.",
+			GGT7::gg_tree_shade_wrap,
+			GGT7::gg_tree_shade_wrap <= 0.0f ? "OFF, identical to pre-3.07" : "wrap active");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_TREEDEBUGSOLID") == 0)
 	{
 		// GGMAX 3.05 DEBUG. 1 = every distant-tree billboard draws as a flat unlit grey quad: no

@@ -71,6 +71,13 @@ cbuffer TreeCB : register( b3 )
 	// mode (a visibility test in one pass and not its partner) has now bitten twice. Spare
 	// padding float, no CB layout change.
 	float    tree_prepassReach;
+	// GGMAX 3.07: WRAP strength for the billboard's shaded side, 0..1. 0 = untouched (default).
+	// Lifts how dark the shade goes WITHOUT flattening the normal-map technique or dimming the
+	// lit side. Kept as a full float4 register so the C++ struct and the cbuffer stay in step.
+	float    tree_shadeWrap;
+	float    tree_padding3;
+	float    tree_padding4;
+	float    tree_padding5;
 };
 
 uint GetTreeType( uint data ) { return (data >> 11) & 0x3F; }

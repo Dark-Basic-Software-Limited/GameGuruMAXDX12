@@ -125,6 +125,24 @@ GBuffer main( PixelIn IN )
 
 	float3 dir = float3( -sinAng, 0, -cosAng );
 	normal = lerp( dir, normal, 2 );
+
+	// GGMAX 3.07: soften how dark the SHADED side of a billboard goes, keeping the technique.
+	// Lee: "I like the technique, and we should keep it, but just lessen the severity of when the
+	// billboard is in shade."
+	// ★ NOT the lerp constant above - measured, LOWERING that darkens the shade (it is what lifts
+	// the canopy toward a high sun, because normal.y = abs() and dir is purely horizontal, so
+	// N.y = t*|n.y|). t=1.0 took the dark tail from 0.136 to 0.000 and the very-dark share from
+	// 10% to 26%. The right lever is a WRAP (half-Lambert) term on the diffuse.
+	// Wicked never normalises surface.N (surfaceHF.hlsli update() only saturates roughness), so
+	// feeding it (N + w*|N|*L)/(1+w) reproduces the wrap term (N.L + w)/(1+w) EXACTLY for the sun,
+	// carrying |N| through unchanged. w = 0 is therefore bit-identical to the pre-3.07 shader.
+	if ( tree_shadeWrap > 0 )
+	{
+		// GetSunDirection() points TOWARD the sun - skyHF.hlsli:159 draws the sun disc where the
+		// view ray matches it - so it is the L in N.L, no sign flip.
+		const float3 sunL = normalize( g_xFrame_SunDirection );
+		normal = ( normal + tree_shadeWrap * length( normal ) * sunL ) / ( 1.0 + tree_shadeWrap );
+	}
 	
 	/*
 	output.g0 = float4( normal*0.5 + 0.5, 1 );
