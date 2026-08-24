@@ -5503,3 +5503,80 @@ underneath is undisturbed.
 ⚠ **STILL OWED: the full 19-demo sweep** for the 3.08–3.12 batch (and pass 2 of the 0822 gate,
 outstanding since then). Everything in this batch ships default-off/neutral, so the unswept risk
 is confined to the ON positions, but the sweep is the gate and it has not been run.
+
+---
+
+## 3.13 — the CPU panel was double AND triple counting (2026-08-24)
+
+> *"I suspect common_logic is double counting those MS ticks, and I want to make sure the GameLoop
+> is not also triple counting those MS ticks too."*
+
+**Both suspicions correct.** Nothing was mistimed — the panel printed a call TREE as a FLAT,
+alphabetically sorted list, so a parent and its child looked like two independent costs.
+
+### The actual tree, traced through the source
+
+    Update - Logic (Total)          GuruLoopLogic()               master_part1.cpp:604
+    └── Logic - common_loop         common_loop_logic()           GameGuruMain.cpp:209
+        └── CL-GameLoop             commonexecutable_loop_for_game()  M-GridEdit_part1.cpp:80
+            └── game_main_loop()
+                ├── Update - Logic - Physics / LUA / Objects / AI     M-Game_part3.cpp
+        └── CL-PreBlock, CL-Head, CL-ObjLists, ... (siblings of CL-GameLoop)
+    └── Logic - ConstantNonDisplay
+
+Chain verified link by link: `common_loop_logic` calls `mapeditorexecutable_loop`
+(Common_part0.cpp:780), which is where `CL-GameLoop` wraps `commonexecutable_loop_for_game`, which
+reaches `game_main_loop` via `game_masterroot_gameloop_loopcode` (M-Game_part1.cpp:1642).
+
+So on Lee's shots: **3.32 + 3.56 + 3.55 = 10.4 ms of a 7.99 ms frame.** One 3.5 ms cost, printed
+three times at three depths, with nothing to say so.
+
+### The fix — print the tree
+
+`Range` now records `gg_depth` / `gg_parent` / `gg_main_thread` from a **thread_local** stack of
+open CPU ranges, and `GetTextData` prints a DFS tree: indentation, a `[self]` column (parent minus
+its direct children) and a `[worker]` tag. Engine change, delta row filed.
+
+Reads like this now — Lee's preferred shape, kept:
+
+    CPU Frame: 6.19 ms
+      main-thread rows total: 6.82 ms   (+0.63 vs frame - 20-frame averaging skew)
+      (indented rows are INSIDE their parent - only same-indent rows add up)
+      Update: 4.01 ms   [self 0.13]
+        Update - Wicked (Total): 2.06 ms   [self 0.01]
+          Scene-S2 Hier+Mesh+Mat: 0.93 ms
+          Scene-S1 Anim+Transform: 0.59 ms   [self 0.20]
+            Animations: 0.39 ms
+        Update - Logic (Total): 1.61 ms   [self 0.03]
+          Logic - common_loop: 1.56 ms   [self 0.04]
+            P2-mainfunc: 0.54 ms
+            P2-entity_loopanim: 0.32 ms
+            CL-ObjLists: 0.22 ms
+      Render: ...
+      Shadowmap Rendering: 1.97 ms   [worker]
+
+★ The `[self]` column is the useful new number: `Update - Logic (Total)` has **self 0.03** — it is
+pure pass-through, all its time is its children's. That is the honest answer to "is this double
+counting": yes, and now you can see precisely how much of any row is its own work.
+
+### Two traps hit while building it
+
+1. ⚠ **"CPU Frame" is itself a CPU range and opens FIRST on the main thread**, so every
+   main-thread range names it as parent. It is deliberately excluded from the row cache — so
+   treating only empty-parent rows as roots ORPHANED THE ENTIRE MAIN THREAD and the first build
+   printed nothing but worker rows, with `accounted 0.00 ms`. Its children have to be roots.
+2. ⚠ **Every row, CPU Frame included, is a 20-frame rolling average on its own counter.**
+   Independently-averaged children therefore do not sum to exactly the averaged parent; the
+   residual wandered −0.30 → −0.90 → +0.63 between samples. It is reported as a **signed delta
+   named as averaging skew**, not as "unattributed" — a negative "unattributed" would read as
+   exactly the double-count bug this change exists to remove.
+
+### What this does NOT claim
+
+The tree is built from range NAMES, so a range called from two different parents collapses into a
+single row under whichever parent was seen last, while its time includes both call sites. No such
+case is visible in the current output, but it is the failure mode to watch if a row ever looks
+mis-parented.
+
+⚠ `CL-GameLoop` reads 0.00 in the editor because the game loop does nothing there — Lee's 3.55 ms
+was in-game. The tree is the same either way; only where the weight sits changes.
