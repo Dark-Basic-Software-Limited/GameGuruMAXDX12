@@ -749,7 +749,7 @@ bool gg_tree_prepass_reach = true;
 // cutout, no lighting, no fog) so the raw quad geometry is visible through the mesh->billboard
 // handover. The LOD dither discard is kept, so the transition still happens. Lee asked for this
 // to eyeball the remaining flicker. setup.ini `treedebugsolid`, harness SET_TREEDEBUGSOLID.
-bool gg_tree_debug_solid = false;
+int  gg_tree_debug_solid = 0;   // 0 off, 1 grey+dissolve, 2 grey no-discard, 3 red dissolve zone
 
 // GGMAX 2.96: why-did-nothing-draw counters for the billboard pass, read by SET_FARTREES.
 uint32_t g_ftDrawCalls    = 0;   // chunks that actually issued a draw
@@ -767,6 +767,8 @@ PipelineState psoTrees;
 Shader shaderTreesPrepassVS;
 Shader shaderTreesPrepassPS;
 PipelineState psoTreesPrepass;
+PipelineState psoTreesPrepassNoDepth;   // GGMAX 3.06: debug mode 4 - identical, depth_write ZERO
+PipelineState psoTreesDepthAlways;      // GGMAX 3.06: debug mode 5 - colour pass, depth_func ALWAYS
 
 Shader shaderTreesShadowVS;
 Shader shaderTreesShadowPS;
@@ -1500,6 +1502,13 @@ void GGTrees_Init()
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
 	GGTreeCreatePSO( &psoTrees );
 
+	// GGMAX 3.06: same colour PSO with the depth TEST disabled, for debug mode 5. If the black
+	// is fragments being depth-REJECTED (colour VS depth landing behind the separately-compiled
+	// prepass VS depth under GREATER_EQUAL), this clears it while depth writes stay on.
+	depthStateOpaque.depth_func = ComparisonFunc::ALWAYS;
+	GGTreeCreatePSO( &psoTreesDepthAlways );
+	depthStateOpaque.depth_func = ComparisonFunc::GREATER_EQUAL;
+
 	rastState.cull_mode = CullMode::BACK;
 	desc.vs = &shaderTreesHighVS;
 	desc.ps = &shaderTreesHighPS;
@@ -1530,11 +1539,34 @@ void GGTrees_Init()
 	GGTreeCreatePSO( &psoBranchesHighEnvProbe );
 
 	// prepass pipeline state
-	desc.vs = &shaderTreesPrepassVS;
+	// GGMAX 3.06: THE PREPASS USES THE COLOUR PASS'S VERTEX SHADER ON PURPOSE.
+	// psoTrees has depth_write_mask ZERO and depth_func GREATER_EQUAL, so a billboard's colour
+	// fragments only survive if their depth matches the depth THIS prepass wrote. That made the
+	// two passes' vertex maths a correctness contract, and two separate compilations of the same
+	// source do NOT honour it: the quad's camera-facing rotation runs through rsqrt (an
+	// approximate instruction - the source comment even says "approximation"), so a different
+	// instruction schedule moves the quad in WORLD space, not merely one ULP of depth. Fragments
+	// landing behind the prepass depth were rejected, no gbuffer texel was written, and the quad
+	// showed BLACK - view-dependent and flickering, which is exactly how Lee described it.
+	// Sharing the compiled VS makes the depths bit-identical by construction. Legal because the
+	// prepass PS input signature (position/worldPos/clip/uv/data) is an exact SUBSET of this VS's
+	// output - it simply ignores the extra TEXCOORD4 'dir' - and both PSOs use the same
+	// inputLayout. ★ It also permanently retires the 3.04 bug class between these two passes:
+	// a clip or transform added to the VS can no longer reach one pass and not the other.
+	// GGTreesPrepassVS.hlsl is now unused by this PSO; kept only for the shadow/probe variants.
+	desc.vs = &shaderTreesVS;
 	desc.ps = &shaderTreesPrepassPS;
 	desc.il = &inputLayout;
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 	GGTreeCreatePSO( &psoTreesPrepass );
+
+	// GGMAX 3.06: same PSO with depth writes OFF, for debug mode 4. Lee's test: draw every quad
+	// pixel, discard nothing, and write no depth. The billboard COLOUR pso already has
+	// depth_write_mask ZERO, so this prepass is the ONLY thing billboards put in the depth
+	// buffer - swapping this in makes depth the single changing variable.
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
+	GGTreeCreatePSO( &psoTreesPrepassNoDepth );
+	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
 
 	rastState.cull_mode = CullMode::BACK;
 	desc.vs = &shaderTreesHighPrepassVS;
@@ -2736,7 +2768,7 @@ static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, Comma
 		treeConstantData.tree_terrainReach = reach;
 	}
 	treeConstantData.tree_prepassReach = gg_tree_prepass_reach ? 1.0f : 0.0f;   // GGMAX 3.04 diagnostic
-	treeConstantData.tree_debugSolid   = gg_tree_debug_solid  ? 1u : 0u;      // GGMAX 3.05 debug
+	treeConstantData.tree_debugSolid   = (uint32_t)gg_tree_debug_solid;        // GGMAX 3.05 debug mode
 
 	wiGraphics::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
 }
@@ -2935,7 +2967,7 @@ extern "C" void GGTrees_Draw_Prepass( const Frustum* frustum, int mode, CommandL
 	// wiProfiler calls removed — they acquire a mutex that deadlocks with job system threads
 	wiProfiler::range_id range = {};
 
-	device->BindPipelineState( &psoTreesPrepass, cmd );
+	device->BindPipelineState( ( gg_tree_debug_solid == 4 ) ? &psoTreesPrepassNoDepth : &psoTreesPrepass, cmd );   // GGMAX 3.06
 
 	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );
@@ -3344,7 +3376,7 @@ extern "C" void GGTrees_Draw( const Frustum* frustum, int mode, CommandList cmd 
 	// wiProfiler calls removed — they acquire a mutex that deadlocks with job system threads
 	wiProfiler::range_id range = {};
 		
-	device->BindPipelineState( &psoTrees, cmd );
+	device->BindPipelineState( ( gg_tree_debug_solid == 5 ) ? &psoTreesDepthAlways : &psoTrees, cmd );   // GGMAX 3.06
 
 	uint32_t bindSlot = 3;
 	device->BindConstantBuffer( &treeConstantBuffer, bindSlot, cmd );

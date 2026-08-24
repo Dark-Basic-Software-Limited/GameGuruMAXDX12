@@ -113,7 +113,7 @@ void GGSetNoWater       (int on) { gg_no_water_machine   = (on != 0); gg_no_wate
 void GGSetNoWaterLevel  (int on) { gg_no_water_level     = (on != 0); gg_no_water   = gg_no_water_machine   || gg_no_water_level;   }
 
 // GGMAX 3.05 DEBUG (not an off-switch): flat unlit grey billboard quads, see GGTreesConstants.hlsli.
-void GGSetTreeDebugSolid(int on) { GGTrees::gg_tree_debug_solid = (on != 0); }
+void GGSetTreeDebugSolid(int on) { GGTrees::gg_tree_debug_solid = on; }   // INT passthrough: 0/1/2/3
 
 // GGMAX 2.71: the producelogfiles setup.ini key now also gates the ROUTINE diagnostic
 // FILE writers (standalone exports write producelogfiles=0, the editor ships =1), so

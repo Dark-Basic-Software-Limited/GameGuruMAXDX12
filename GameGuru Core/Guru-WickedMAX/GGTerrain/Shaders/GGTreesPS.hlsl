@@ -47,18 +47,25 @@ GBuffer main( PixelIn IN )
 	// MUST stay coverage-identical to GGTreesPrepassPS's debug branch (3.04 lesson).
 	if ( tree_debugSolid )
 	{
-		// identical LOD dither discard to the real path - the handover must still be watchable
+		// Would the LOD dissolve discard this fragment? Computed the same way in the prepass.
+		bool dbgCut = false;
 		if ( !any(g_xCamera_ClipPlane) )
 		{
 			float3 dbgV = g_xCamera_CamPos - IN.worldPos;
 			float  dbgD2 = dot( dbgV, dbgV );
 			float  dbgN = texNoise.Sample( samplerBilinearWrap, IN.uv*3 );
 			float  dbgLim = dbgN * GGTREES_LOD_TRANSITION + tree_lodDist;
-			if ( dbgD2 < dbgLim*dbgLim ) discard;
+			dbgCut = ( dbgD2 < dbgLim*dbgLim );
 		}
+		// mode 1: normal dissolve. mode 2: never discard (solid rectangles - isolates whether the
+		// black is a DISCARD problem at all). mode 3: never discard, paint the would-discard region
+		// RED, so the dissolve zone is visible instead of invisible.
+		if ( tree_debugSolid == 1 && dbgCut ) discard;
+		float3 dbgCol = float3( 0.5, 0.5, 0.5 );
+		if ( tree_debugSolid == 3 && dbgCut ) dbgCol = float3( 1.0, 0.0, 0.0 );
 		GBuffer dbg;
-		dbg.g0 = float4( 0.5, 0.5, 0.5, 1.0 );   // flat mid grey, unlit
-		dbg.g1 = float4( 0.5, 0.5, 1.0, 1.0 );   // +Z normal, roughness 1
+		dbg.g0 = float4( dbgCol, 1.0 );
+		dbg.g1 = float4( 0.5, 0.5, 1.0, 1.0 );
 		return dbg;
 	}
 

@@ -35,8 +35,10 @@ Output main( PixelIn IN )
 	// straight back to 3.04's black fringes - in the very build meant to diagnose the flicker.
 	if ( tree_debugSolid )
 	{
-		// identical LOD dither discard to the real path - the handover must still be watchable
-		if ( !any(g_xCamera_ClipPlane) )
+		// Mode 1 and 3 keep the dissolve so depth matches the colour pass. Mode 2 disables it in
+		// BOTH passes - if the black survives mode 2 then no discard is involved anywhere and the
+		// colour pass is either producing black or being depth-rejected.
+		if ( tree_debugSolid != 2 && tree_debugSolid != 4 && tree_debugSolid != 5 && !any(g_xCamera_ClipPlane) )
 		{
 			float3 dbgV = g_xCamera_CamPos - IN.worldPos;
 			float  dbgD2 = dot( dbgV, dbgV );

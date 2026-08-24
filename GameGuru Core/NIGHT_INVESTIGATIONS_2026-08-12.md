@@ -5034,3 +5034,94 @@ the answer should be visible directly:
 1. Do quads **appear/disappear** frame to frame? -> LOD dither / pool churn.
 2. Do quads **z-fight the real mesh** in the overlap band? -> the 3000..3500 double-draw.
 3. Do quads **change size or orientation** as the camera creeps? -> the CB rotation or per-type scale.
+
+---
+
+## 3.06 — THE FLICKER. Two compilations of the same vertex maths. (2026-08-24)
+
+Lee, after the grey-quad build, cutting through three of my wrong turns:
+
+> *"it is not a tree trunk, not the water line, not other magical unicorns, its the damn quad
+> draw... moving the camera EVER so slightly changes the artifact from no black to black somewhere
+> else, all inside the quad and all related to the billboard rendering draw. Do not speculate
+> outside this framework. MY next test I want YOU to perform is to ALWAYS draw the pixel for the
+> quad, discard nothing and do not write into the depth buffer. My guess will be that the black
+> will disappear."*
+
+**His guess was exactly right, and his framing was the thing that cracked it.** I had wandered off
+into tree trunks, waterlines and mesh fades after the debug build had already proved the answer
+was inside the quad draw.
+
+### The measurements
+
+Debug mode 2 = no discard in either pass. Mode 4 = mode 2 plus the billboard prepass bound to a
+twin PSO with `depth_write_mask ZERO`. Mode 5 = depth writes ON but the colour PSO `depth_func`
+forced to ALWAYS. Same camera throughout:
+
+| mode | prepass depth write | colour depth test | black px | grey px |
+|---|---|---|---|---|
+| 2 | ALL | GREATER_EQUAL | 1779 | 127,575 |
+| 4 (Lee's test) | **ZERO** | GREATER_EQUAL | **0** | 118,539 |
+| 5 | ALL | **ALWAYS** | **0** | 134,141 |
+
+Both ways of breaking the comparison clear it, and mode 5 draws **6,566 MORE grey pixels** than
+mode 2 - those are the fragments that were being thrown away. Conclusive: the billboard colour
+pass fragments were being **depth-rejected against depth written by its own prepass**.
+
+### Root cause
+
+`psoTrees` (colour) is created with `depth_write_mask = ZERO` and `depth_func = GREATER_EQUAL`.
+It writes no depth; it only tests what `psoTreesPrepass` laid down. **That makes the two passes'
+vertex maths a correctness contract.**
+
+The two shaders' position code is *textually identical*. It is still not the same code:
+
+    float invV = rsqrt( diff.x*diff.x + diff.y*diff.y ); // approximation
+
+★★★ `rsqrt` is an APPROXIMATE instruction, and `invV` drives the billboard camera-facing rotation.
+A different instruction schedule in a separate compilation does not shift the result by one ULP of
+depth - it rotates the quad slightly differently, moving it in WORLD space. Under reverse-Z
+GREATER_EQUAL every fragment landing behind the prepass depth is rejected, nothing writes the
+gbuffer, and the quad reads BLACK. `diff` is camera-relative, so which side of the comparison you
+are on changes as the camera moves: hypersensitive, view-dependent, flickering. Lee called it
+z-fighting between two quads on day one. It was, near enough - one quad rasterised twice from two
+slightly different transforms.
+
+### The fix
+
+**The prepass PSO now binds the COLOUR pass compiled vertex shader** (`shaderTreesVS`), so the two
+passes cannot disagree - bit-identical by construction, not by discipline.
+
+Legal because the prepass PS input signature (position/worldPos/clip/uv/data) is an exact SUBSET
+of the colour VS output - it just ignores the extra `TEXCOORD4 dir` - and both PSOs already use
+the same `inputLayout`. `GGTreesPrepassVS.hlsl` is now unused by this PSO.
+
+★★ It also permanently retires the 3.04 bug class between these two passes: a clip or transform
+added to the VS can no longer reach one pass and not the other, because there is only one VS.
+
+### Verification
+
+Exact-black pixels - the artifact wrote literally (0,0,0), an unwritten gbuffer texel, which lit
+foliage never is - swept across camera nudges of 15/30/60/120/240 units, the scale at which Lee
+saw it flip:
+
+| | before | after |
+|---|---|---|
+| debug grey quads | 1218 | **0** at all 6 positions |
+| normal textured billboards | - | **0** at all 6 positions |
+
+⚠ A naive "near-black" threshold reads ~6,000 px on textured billboards and is MEANINGLESS - that
+is real dark foliage. Only exact (0,0,0) separates an unwritten texel from a dark one.
+
+### Method note, for next time
+
+Four candidates died on evidence (terrain reach, mesh fade, discard mismatch, water), but I also
+burned two rounds narrating shapes in a zoomed screenshot - "a trunk", "the waterline" - after the
+mode 1/2/3 table had ALREADY proved the pixel shader was irrelevant (black pixel-identical across
+all three, zero red in mode 3). ★ When an instrument says a whole stage is not involved, believe
+it and move to the next stage; do not go back to reading the picture. And ⚠ one row of that
+bisect was VACUOUS: `SET_TREEMESHFADE` only applies at pool BIND and I read it without churning
+the pool. Re-run properly it was flat - but I had already quoted it.
+
+Debug levers kept: `SET_TREEDEBUGSOLID 0..5` (0 off, 1 grey+dissolve, 2 grey no-discard,
+3 red dissolve zone, 4 no depth write, 5 depth test ALWAYS) and `SET_TREEPREPASSREACH`.

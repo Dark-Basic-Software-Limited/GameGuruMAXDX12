@@ -5841,13 +5841,16 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		// identically in the colour PS and the prepass PS so the two coverages cannot diverge.
 		// 0 = normal rendering (default). Also setup.ini `treedebugsolid`.
 		namespace GGT6 = GGTrees;
-		GGT6::gg_tree_debug_solid = (atoi(arg) != 0);
+		GGT6::gg_tree_debug_solid = atoi(arg);
 		_snprintf(result, resultSize,
 			"OK: SET_TREEDEBUGSOLID %d - billboards draw as %s. Live next frame (one CB write). "
 			"lod_dist=%.0f so quads dissolve IN over %.0f..%.0f; real meshes are UNAFFECTED and still "
 			"dissolve out via 3.03. Set 0 before any visual or performance testing.",
-			GGT6::gg_tree_debug_solid ? 1 : 0,
-			GGT6::gg_tree_debug_solid ? "FLAT GREY QUADS (debug)" : "normal textured billboards",
+			GGT6::gg_tree_debug_solid,
+			GGT6::gg_tree_debug_solid == 0 ? "normal textured billboards"
+				: (GGT6::gg_tree_debug_solid == 1 ? "FLAT GREY QUADS + dissolve"
+				: (GGT6::gg_tree_debug_solid == 2 ? "FLAT GREY QUADS, NO discard in either pass"
+				: "GREY + RED where the dissolve would discard")),
 			GGT6::ggtrees_global_params.lod_dist,
 			GGT6::ggtrees_global_params.lod_dist,
 			GGT6::ggtrees_global_params.lod_dist + 500.0f);
