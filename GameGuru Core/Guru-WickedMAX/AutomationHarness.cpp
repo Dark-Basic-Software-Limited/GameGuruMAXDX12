@@ -132,6 +132,7 @@ namespace wi::profiler {
 // GGMAX 1.33: incremental terrain-VT bookkeeping master switch (wiTerrain.cpp)
 namespace wi::terrain {
 	extern bool gg_vt_incremental;
+	extern uint32_t gg_bake_resolution;   // GGMAX 3.02
 	extern int  gg_vt_writeback_interval;   // GGMAX 2.94d
 }
 
@@ -5892,15 +5893,21 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			return true;
 		}
 		wi::terrain::Terrain& btr = bsc.terrains[0];
-		const int m = atoi(arg);
+		// GGMAX 3.02: second arg = per-chunk texture resolution in bake mode (256 default).
+		// WARNING anything above 256 is more than one tile and brings residency - and therefore
+		// the VT passes - straight back. Measure it; do not assume.
+		int m = 0, bakeRes = 0;
+		sscanf_s(arg, "%d %d", &m, &bakeRes);
+		wi::terrain::gg_bake_resolution = (bakeRes > 0) ? (uint32_t)bakeRes : 0u;
 		btr.gg_near_ring_dist = (m == 1) ? 0 : ((m == 0) ? 4 : m);
 		int resVTs = 0, totVTs = 0;
 		for (const auto* vt : btr.virtual_textures_in_use) { totVTs++; if (vt->residency != nullptr) resVTs++; }
 		_snprintf(result, resultSize,
-			"OK: SET_TERRAINBAKE %d - live gg_near_ring_dist=%d chunks=%d VTs=%d residencyVTs=%d. "
+			"OK: SET_TERRAINBAKE %d (res %u) - live gg_near_ring_dist=%d chunks=%d VTs=%d residencyVTs=%d. "
 			"EXECUTED-CHECK: residencyVTs must fall to 0 in bake mode, but only Generation_Update "
 			"performs the downgrade - allow ~20s and RE-READ before trusting any timing.",
-			m, btr.gg_near_ring_dist, (int)btr.chunks.size(), totVTs, resVTs);
+			m, wi::terrain::gg_bake_resolution ? wi::terrain::gg_bake_resolution : 256u,
+			btr.gg_near_ring_dist, (int)btr.chunks.size(), totVTs, resVTs);
 		result[resultSize - 1] = 0;
 		return true;
 	}

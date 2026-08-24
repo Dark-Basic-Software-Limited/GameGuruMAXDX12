@@ -4723,3 +4723,57 @@ Three things that shape what the mode should be:
    "bake a decent ground texture so the cheap path looks acceptable", not "make it fast".
 
 Harness `SET_FASTTERRAIN <ring>` combines both levers (VT off + smaller ring) for further A/Bs.
+
+## §3.02 — the bake cliff is TILE COUNT, not resolution (2026-08-24)
+
+Lee asked to see the bake at 1024 per chunk. Added `SET_TERRAINBAKE <mode> <res>` and measured
+on TESTPRO2 in his configuration (trees/grass/water off, terrain on), **profiler OFF** so the
+FPS is comparable to the number on his screen, same camera throughout:
+
+| | FPS | vs stock |
+|---|---|---|
+| stock terrain (nearRing 4) | 214.4 / 213.7 | — |
+| **bake @256** | **289.6** | **+35%** |
+| bake @512 | 252.1 | +18% |
+| **bake @1024** | **255.3** | **+19%** |
+
+★★★ **512 and 1024 perform the SAME.** That is the tell, and the code predicts it exactly:
+`VirtualTexture::init` does `if (tile_count > 1) residency = atlas.allocate_residency(...)`
+(wiTerrain.cpp:499). `SVT_TILE_SIZE` is 256, so 256 is a SINGLE tile and needs no residency
+object — which is the entire reason the bake path skips all four VT GPU passes. At 512 (4 tiles)
+residency returns; at 1024 (16 tiles) it is already back, so the extra resolution is nearly free.
+Resource count corroborates: 5,983 at 256 → 11,617 at 1024.
+
+So it is a BINARY choice through this path, not a slider:
+* 256 — one tile, no residency, **+35%**
+* >=512 — residency back, **+19%**, and since 1024 costs no more than 512, take 1024.
+
+### ★ What this proves about a REAL bake
+The +19% ceiling is an artefact of the experiment reusing the VT machinery — **not** a property
+of baking. A genuine baked terrain binds an ORDINARY SRV per chunk, outside the virtual-texture
+system entirely, so it should keep the 256-path's **+35% at any resolution**. That is the next
+experiment and it is the one that settles whether the mode is worth building.
+
+⚠ My stock reads 214 FPS where Lee's screen reads 280 on nominally the same config — the camera
+is not matched (mine is the level default). **Trust the ratios, not the absolutes.** Applied to
+his 280 baseline: bake@1024 ~330 FPS, bake@256 ~378 FPS.
+⚠ The `residencyVTs` field in the SET_TERRAINBAKE reply lags a frame or two (it is read in the
+same harness tick that sets the flag), so the resource count is the more reliable witness here.
+
+## NEXT ACTION (2026-08-24) — plain-SRV baked terrain
+Lee has approved coding it. The goal: keep the +35% AT 1024 by taking the terrain material off
+the VT path entirely.
+
+Shape of the work, from what 2.94e-3.02 established:
+1. VT on a chunk is ONE INTEGER: `sparse_residencymap_descriptor` in the material's texture slot
+   (ShaderInterop_Renderer.h:220; set at wiTerrain.cpp:2102/2111). -1 = plain `tex.Sample`.
+2. So: create a normal Texture2D per chunk at the chosen resolution, write the blended terrain
+   surface into it ONCE, bind it as the material's basecolor SRV with the residency descriptor
+   at -1, and never touch it again.
+3. Source for the bake: the same CPU blend that feeds the VT today
+   (`ApplyDX11StyleAutoBlend` / the blendmap pipeline in GGTerrainWicked.cpp) — the honest
+   source, versus reading back the SVT atlas.
+4. Budget check first: 625 chunks x 1024^2 BC-compressed is roughly 0.5-1 MB each = 300-600 MB.
+   That is NOT affordable against the 4 GB floor at the full ring. Either bake only inside a
+   radius, or bake at 512, or bake to a shared atlas rather than per-chunk textures.
+   ★ DO THIS ARITHMETIC BEFORE WRITING THE BAKER.
