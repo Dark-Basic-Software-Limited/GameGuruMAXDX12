@@ -5845,6 +5845,20 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_TEXTUREDIVIDE") == 0)
+	{
+		// GGMAX 3.12: 1 = full, 2 = half, 4 = quarter. LOAD-TIME ONLY - reload the level to see it.
+		extern void GGSetTextureDivide(int);
+		GGSetTextureDivide(atoi(arg));
+		_snprintf(result, resultSize,
+			"OK: SET_TEXTUREDIVIDE %d - live gg_texture_divide=%d. LOAD-TIME ONLY: textures already "
+			"resident keep their current size, so RELOAD the level before reading VRAM. Streaming is "
+			"disabled for divided textures by design.",
+			atoi(arg), wi::resourcemanager::gg_texture_divide);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_OBJCULLDIST") == 0)
 	{
 		// GGMAX 3.11: cap every object's draw distance, in world inches. 0 = off.

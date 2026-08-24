@@ -555,6 +555,17 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			if (ImGui::SliderInt("##gg_object_cull_dist", &cull, 0, 40000, cull == 0 ? "Off" : "%d")) GGSetObjectCullDistLevel(cull);
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How far away objects are still drawn, in world units. Off draws everything however distant it is. 20000 is about 500 metres, 8000 about 200 metres and very aggressive. Objects do not pop out - each dissolves away over roughly its own size - and they come back when you raise it. This is the bluntest control here and on a large outdoor level the most effective, because it removes the draw calls, the triangles and the shadow casting together. Trees keep their own distance system and are not affected.");
 
+			// GGMAX 3.12: texture detail. LOAD-TIME, so it is a combo rather than a live slider.
+			{
+				extern void GGSetTextureDivide(int);
+				const char* texdiv_items[] = { "Full", "Half", "Quarter" };
+				int cur = (wi::resourcemanager::gg_texture_divide >= 4) ? 2 : ((wi::resourcemanager::gg_texture_divide == 2) ? 1 : 0);
+				ImGui::Text("Texture Detail");
+				if (ImGui::Combo("##gg_texture_divide", &cur, texdiv_items, IM_ARRAYSIZE(texdiv_items)))
+					GGSetTextureDivide(cur == 2 ? 4 : (cur == 1 ? 2 : 1));
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Loads every texture at a fraction of its authored size. Half turns a 1024x1024 into a 512x512, Quarter into a 256x256. This is the one to reach for on a card short of video memory or memory bandwidth: it cuts texture memory about four times at Half and sixteen times at Quarter, and makes every texture read cheaper as well. Surfaces get softer up close, which is the whole trade. It applies as levels LOAD, so choose it and then load your level - what is already in memory keeps the size it came in at.");
+			}
+
 			ImGui::PopItemWidth();
 		}
 

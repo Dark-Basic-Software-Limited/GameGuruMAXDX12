@@ -148,6 +148,17 @@ static void GGRecalcObjCull()
 void GGSetObjectCullDist     (int units) { gg_objcull_machine = (units < 0) ? 0.0f : (float)units; GGRecalcObjCull(); }
 void GGSetObjectCullDistLevel(int units) { gg_objcull_level   = (units < 0) ? 0.0f : (float)units; GGRecalcObjCull(); }
 
+// GGMAX 3.12: global texture-detail divide. 1 = full, 2 = half, 4 = quarter. Lives in the ENGINE
+// (wi::resourcemanager) because it acts inside the DDS loader. Takes effect at LOAD time only -
+// textures already resident keep the size they were created at until the level reloads.
+void GGSetTextureDivide(int d)
+{
+	if (d < 1) d = 1;
+	if (d > 4) d = 4;
+	if (d == 3) d = 2;   // only 1/2/4 are meaningful (whole mip steps)
+	wi::resourcemanager::gg_texture_divide = d;
+}
+
 // GGMAX 3.05 DEBUG (not an off-switch): flat unlit grey billboard quads, see GGTreesConstants.hlsli.
 void GGSetTreeDebugSolid(int on) { GGTrees::gg_tree_debug_solid = on; }   // INT passthrough: 0/1/2/3
 // GGMAX 3.07: ini gives PERCENT (int passthrough), shader wants 0..1.

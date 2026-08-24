@@ -5408,3 +5408,60 @@ shadows, bloom or AO to remove.
 Ship at 0 (off). The useful value is level-scale dependent: ~1000-2000 on a compact level like
 Aztec, proportionally more on a sprawling one. Anyone tuning it should watch `Shadowmap Rendering`
 rather than POLYS, and should stop lowering it the moment GPU busy starts rising again.
+
+## 3.12 — global texture-detail divide (engine `b40fc4d2`)
+
+Lee's flagship idea from the brief: *"reduce the entire texture resolution across the board so
+everything gets divided by 2 or 4 (so a 1024x1024 texture is dynamically loaded as 256x256 for
+faster bandwidth movement)."* Built.
+
+`setup.ini texturedivide` (1/2/4) · harness `SET_TEXTUREDIVIDE` · panel **Texture Detail**
+(Full / Half / Quarter). DEFAULT 1 = off, and the code path is skipped entirely.
+
+### Where it lives, and why there
+
+`wiResourceManager.cpp` `LoadResourceDirectly`, at `int mip_offset = 0;`. `CreateTexture` is
+already called as **`initdata + mip_offset`**, so shrinking `desc` and advancing the offset is the
+entire trick — the subresource array needs no rebuild. Engine change, so it carries a
+`WICKED_ENGINE_CHANGES.md` row. ★ The engine builds in **38 seconds**, which is worth knowing —
+I had been treating an engine change as expensive and deferring it on that basis.
+
+★ **Deliberately a LOAD-TIME reduction, not a streaming target.** Wicked's streaming already walks
+mips down toward a per-material goal — but it is gated **editor-only** (`gameisexe == 0`), so it
+can do nothing for the low-spec players this whole brief is aimed at. A load-time cut runs in an
+exported game.
+
+⚠ Streaming is **disabled for a divided texture** on purpose: the streaming branch records
+`streaming_data.data_offset = header.mip_offset(mip)` for ABSOLUTE mips, which would every one be
+off by `mip_offset`.
+
+⚠⚠ Copies the **GGMAX 1.73 block-alignment guard** verbatim and stops early rather than emit an
+illegal top mip. Halving 500 to 250 makes an invalid BC resource; `GetCopyableFootprints` returns
+0xFFFF.. sentinels and the upload memcpy's four billion rows off the end of the file buffer — the
+"Trapped" and "RPG Template" load crash. An oddly sized texture simply keeps more detail.
+
+### Measured — and the number is smaller than the idea suggests
+
+Aztec Game Kit, editor, fresh launch per setting (which also exercises the ini path):
+
+| | VRAM | FPS |
+|---|---|---|
+| Full | 3598.1 MB | 143.7 |
+| Quarter | **3386.8 MB** (−211 MB) | 148.0 |
+
+−211 MB and +3%. Real, and against Aztec's in-game 3947.9 MB / 155 MB headroom it more than
+doubles the margin — but it is nowhere near the 16x a quarter-size texture implies. Three reasons,
+all worth knowing before anyone tunes it:
+
+1. ★ **The editor was ALREADY streaming those textures down**, and this switch opts divided
+   textures OUT of streaming. The two partly cancel. The exported-game case — streaming off,
+   full-size textures otherwise — should save considerably more. **UNMEASURED: the harness cannot
+   drive an exported build.** That is the number Lee actually cares about and I could not get it.
+2. GG's own loaders bypass `wi::resourcemanager` entirely — the terrain SVT atlas (~480 MB
+   committed at boot on every level), the tree billboard atlases, grass. Untouched by this.
+3. Much of the rest is render targets, shadow atlas and mesh data, which no texture setting moves.
+
+⚠ On TESTPRO2 it measured **nothing** (2908 / 3149 / 2812 MB across 1 / 2 / 4 — non-monotonic
+noise) while still changing 6.5% of the screen. Same lesson as 3.08 and 3.11: the level decides
+whether a lever can show. TESTPRO2's VRAM is dominated by the SVT atlas and GG's own atlases,
+which this cannot touch.
