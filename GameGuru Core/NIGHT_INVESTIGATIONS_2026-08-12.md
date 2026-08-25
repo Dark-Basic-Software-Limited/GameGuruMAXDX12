@@ -6697,3 +6697,65 @@ internals (`arm was 0, last pass saw 2083 entities`) — that ruled out "the pas
 reading and pointed straight at the consume. Same family as `feedback_stale_auto_command`: any
 harness command has to survive being run twice.
 
+---
+
+## §3.22 — skipping the per-entity body for INERT entities (+8.7% CPU frame)
+
+§3.21 established the target: 1983 of TESTPRO2's 2003 running entities have no behaviour at all
+and cost 531 us between them, 65% of the per-entity work, for zero Lua executed.
+
+### ★★★ The obvious suspect was measured first, and it was wrong
+
+`UpdateEntityRT` is a Lua call with **21 pushed arguments**, made per entity per frame and gated on
+`staticflag` — **not** on whether the entity has a behaviour. It looked like the whole answer. A
+third timer around it says: **49.3 us total, 38 refreshes, and 5.6 us of the 531**. Refuted.
+
+The 531 us is ~0.27 us each of diffuse C++ — `ObjectExist` + `GetFrame` + three `ObjectPosition`
+reads, the freeze-distance calc, the waypoint / usekey / animation blocks — times two thousand.
+There is no hot call to fix, only a walk to avoid. ★ Third time this month that instrumenting the
+suspect before touching it changed the plan (§3.17 ffEnt, §3.19 the deadband, this).
+
+### ⚠ Why "no script means skip it" is NOT safe, and what is
+
+The body mirrors the object's position into `entityelement[e].x/y/z`, and **~450 places in the
+scriptbank index `g_Entity` by something other than their own `e`** (`g_Entity[ee]` 113 times,
+`g_Entity[v]` 111, `g_Entity[a]` 92, ...). A script scanning all entities would read a stale mirror.
+
+★ So the predicate is narrowed until its safety is **structural rather than hopeful**: a mirror
+cannot go stale for an entity that **cannot move**. An entity is INERT when all five hold — no
+behaviour, `staticflag != 0`, no waypoint zone (zones publish `plrinzone`), not animating (the
+animation-done detector must keep running), not a character. Every one is a property that cannot
+change while the entity is inert, so an entity qualifies for the whole session or never does.
+
+On TESTPRO2: **1993 have no behaviour, 1962 of those are inert** — the predicate costs 31 entities
+out of 1993 and buys the entire safety argument.
+
+### Measured — interleaved A/B, four rounds, TESTPRO2 in test game
+
+Alternating arm by arm so both ride the same thermal ramp.
+
+| round | `LUA-loop allentities` ON / OFF | `CPU Frame` ON / OFF |
+|---|---|---|
+| 1 | 0.45 / 1.26 ms | 6.48 / 7.24 ms |
+| 2 | 0.60 / 1.20 ms | 6.59 / 7.15 ms |
+| 3 | 0.50 / 1.06 ms | 6.68 / 7.23 ms |
+| 4 | 0.51 / 1.18 ms | 6.57 / 7.22 ms |
+
+**Every paired round favours the skip and the two distributions do not overlap** — ON spans
+[0.45, 0.60], OFF spans [1.06, 1.26]. `LUA-loop allentities` **1.175 → 0.515 ms (−56%)**,
+`Update - Logic - LUA` 1.333 → 0.658 ms, **CPU Frame 7.21 → 6.58 ms = −8.7%**.
+★ Report the paired separation, not the mean delta — here they agree, which is the good case.
+
+### ★★ The invariant, measured rather than argued
+
+`TEST_INERTSKIP` walks every entity the skip would elide and compares the mirrored `x/y/z` against
+the live object position. Six samples over a minute of test game: **1962 entities each time,
+11,772 comparisons, 0 differing, worst drift 0.0000 units.**
+
+That is the claim the whole design rests on, turned into a number. A static entity that turned out
+to move would appear here and **nowhere else in the game would ever tell us**.
+
+⚠ What it does NOT prove: that no OTHER field of a skipped entity matters to someone. The mirror
+is the one the body maintains per frame; `haskey`, `plrinzone` and the animation flag are all
+excluded by the predicate rather than verified. `SET_LOGICSKIP 0` reverts live.
+

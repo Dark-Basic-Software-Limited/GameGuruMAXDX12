@@ -5951,6 +5951,32 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "TEST_INERTSKIP") == 0)
+	{
+		// GGMAX 3.22: prove the invariant the 3.22 skip rests on - an entity that cannot move
+		// cannot have a stale position mirror. Read-only, one shot.
+		extern void GGInertSkip_SelfTest(char*, int);
+		GGInertSkip_SelfTest(result, resultSize);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	if (_stricmp(cmd, "SET_LOGICSKIP") == 0)
+	{
+		// GGMAX 3.22: 1 (default) = skip the per-entity body for INERT entities (no behaviour,
+		// static, no waypoint zone, not animating, not a character). 0 = walk every entity as
+		// before, for A/B. Read the effect in DUMP_LOGICCOST: "skipped as inert" and the drop
+		// in no_behavior_selected.lua total.
+		extern int gg_logic_skip_inert;
+		gg_logic_skip_inert = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize,
+			"OK: SET_LOGICSKIP %d - %s. An inert entity cannot move, so the entityelement x/y/z\nmirror the rest of the engine reads cannot go stale while it is skipped; that is why the\npredicate insists on static rather than merely script-less.",
+			gg_logic_skip_inert,
+			gg_logic_skip_inert ? "skipping inert entities" : "walking every entity (pre-3.22)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "DUMP_LOGICCOST") == 0)
 	{
 		// GGMAX 3.21: where the per-frame LUA logic cost actually goes, aggregated BY SCRIPT.

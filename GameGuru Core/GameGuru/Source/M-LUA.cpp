@@ -829,6 +829,56 @@ LONGLONG g_tableofperformancetimers[TABLEOFPERFORMANCEMAX];
 // SCRIPT, not a top-ten per entity: nine entities at 32us each are not the problem when there are
 // four hundred more below them. gg_logiccost_* aggregates by script name for one armed frame.
 LONGLONG g_tableofluatimers[TABLEOFPERFORMANCEMAX];
+// GGMAX 3.22: a THIRD timer, around the UpdateEntityRT refresh only.
+// 3.21 established that 1985 of TESTPRO2's 2000 running entities execute no Lua at all yet cost
+// 593.8 us. The suspect is this: UpdateEntityRT is a Lua call with 21 pushed arguments, made for
+// every entity whose lua.flagschanged is 1, and it is gated on staticflag - NOT on whether the
+// entity has a behaviour. Before optimising it, measure it. Counting the callers is not counting
+// the work (the 3.17 lesson), and the whole 593.8 us might just as easily be spread thin.
+LONGLONG g_tableofrefreshtimers[TABLEOFPERFORMANCEMAX];
+int g_gg_refreshcount = 0;
+
+// GGMAX 3.22: SKIP THE PER-ENTITY BODY FOR INERT ENTITIES.
+//
+// TESTPRO2 measured 2003 entities running logic, 1983 of them with no behaviour at all, costing
+// 531 us between them - 65% of the per-entity work for entities that execute zero Lua. There is
+// no single hot call in there (UpdateEntityRT, the obvious suspect, measured 5.6 us of that 531 -
+// hypothesis refuted, which is why it was measured first). It is ~0.27 us each of diffuse C++:
+// ObjectExist + GetFrame + three ObjectPosition reads, the freeze-distance calc, and the waypoint
+// / usekey / animation blocks, times two thousand.
+//
+// ⚠ A blanket "no script means skip it" is NOT safe. The body mirrors the object's position into
+// entityelement[e].x/y/z, and ~450 places in the scriptbank index g_Entity by something other
+// than their own e - a script scanning all entities would read a stale mirror.
+//
+// ★ So the predicate is narrower and its safety is structural rather than hopeful: the mirror
+// cannot go stale for an entity that cannot move. STATIC entities are exactly that. Add "no
+// behaviour" (nothing to run), "no waypoint zone" (zones publish plrinzone), "not animating"
+// (the animation-done detector must keep running), and "not a character" (characters are never
+// static, but the AI path is not worth gambling on).
+//
+// Every one of those five is a property that cannot change while the entity is inert, so an
+// entity either qualifies for the whole session or never does.
+int gg_logic_skip_inert = 1;             // SET_LOGICSKIP 0 reverts to the pre-3.22 walk
+int gg_logic_skipped_inert = 0;          // counters, reported by DUMP_LOGICCOST
+int gg_logic_noscript = 0;
+int gg_logic_noscript_static = 0;
+
+// "has no behaviour" - the same test the loop already uses to decide it can skip the LUA CALL
+// (bCanSkipNow), hoisted so it can decide to skip the whole body instead.
+bool gg_entity_has_no_behaviour_pub(int e);
+static bool gg_entity_has_no_behaviour(int e)
+{
+	if (t.entityelement[e].eleprof.aimain != 1) return true;
+	LPSTR pName = t.entityelement[e].eleprof.aimainname_s.Get();
+	if (pName == NULL) return true;
+	const size_t len = strlen(pName);
+	if (len <= 1) return true;
+	if (len == 20 && strcmp(pName, "no_behavior_selected") == 0) return true;
+	if (len == 7  && strcmp(pName, "default") == 0) return true;
+	return false;
+}
+bool gg_entity_has_no_behaviour_pub(int e) { return gg_entity_has_no_behaviour(e); }
 
 #define GG_LOGICCOST_MAXSCRIPTS 96
 struct GGLogicCostScript
@@ -836,8 +886,10 @@ struct GGLogicCostScript
 	char  name[96];
 	LONGLONG luaTicks;
 	LONGLONG allTicks;
+	LONGLONG refreshTicks;   // GGMAX 3.22
 	int   entities;
 	int   ranThisFrame;
+	int   refreshedThisFrame;
 };
 static GGLogicCostScript gg_logiccost[GG_LOGICCOST_MAXSCRIPTS];
 int  gg_logiccost_used = 0;
@@ -863,7 +915,7 @@ static double gg_ticks_to_us(LONGLONG ticks)
 	return (double)ticks * perTick;
 }
 
-static void gg_logiccost_note(int e, LONGLONG allTicks, LONGLONG luaTicks)
+static void gg_logiccost_note(int e, LONGLONG allTicks, LONGLONG luaTicks, LONGLONG refreshTicks)
 {
 	if (gg_logiccost_arm == 0) return;
 	const char* pName = t.entityelement[e].eleprof.aimain_s.Get();
@@ -874,8 +926,10 @@ static void gg_logiccost_note(int e, LONGLONG allTicks, LONGLONG luaTicks)
 		{
 			gg_logiccost[i].luaTicks += luaTicks;
 			gg_logiccost[i].allTicks += allTicks;
+			gg_logiccost[i].refreshTicks += refreshTicks;
 			gg_logiccost[i].entities++;
 			if (luaTicks > 0) gg_logiccost[i].ranThisFrame++;
+			if (refreshTicks > 0) gg_logiccost[i].refreshedThisFrame++;
 			return;
 		}
 	}
@@ -886,13 +940,65 @@ static void gg_logiccost_note(int e, LONGLONG allTicks, LONGLONG luaTicks)
 		r.name[sizeof(r.name) - 1] = 0;
 		r.luaTicks = luaTicks;
 		r.allTicks = allTicks;
+		r.refreshTicks = refreshTicks;
 		r.entities = 1;
 		r.ranThisFrame = (luaTicks > 0) ? 1 : 0;
+		r.refreshedThisFrame = (refreshTicks > 0) ? 1 : 0;
 	}
 }
 #define SWITCHTO30FPSRANGE 1000
 uint32_t LuaFrameCount = 0;
 uint32_t LuaFrameCount2 = 0;
+
+// GGMAX 3.22: SELF-TEST for the inert-entity skip.
+//
+// The whole design rests on ONE invariant: an entity that cannot move cannot have a stale
+// position mirror, so eliding the per-entity body cannot be observed by the ~450 places in the
+// scriptbank that index g_Entity by something other than their own e.
+//
+// That is an argument. This measures it. For every entity the skip WOULD elide, compare the
+// mirrored entityelement x/y/z against the live object position and report the worst drift. A
+// static entity that turns out to move would show up here as a non-zero number, and nothing else
+// in the game would ever tell us.
+//
+// \u2605 Write the test that names the invariant, not the test that reproduces the gesture.
+void GGInertSkip_SelfTest(char* result, int resultSize)
+{
+	extern bool gg_entity_has_no_behaviour_pub(int e);
+	long long checked = 0, moved = 0, noobj = 0;
+	float worst = 0.0f; int worstE = 0;
+	for (int e = 1; e <= g.entityelementlist; e++)
+	{
+		if (e >= TABLEOFPERFORMANCEMAX) break;
+		int thisentid = t.entityelement[e].bankindex;
+		if (thisentid <= 0) continue;
+		if (t.entityelement[e].active == 0) continue;
+		if (!gg_entity_has_no_behaviour_pub(e)) continue;
+		if (t.entityelement[e].staticflag == 0) continue;
+		if (t.entityelement[e].eleprof.trigger.waypointzoneindex != 0) continue;
+		if (t.entityelement[e].lua.animating != 0) continue;
+		if (t.entityprofile[thisentid].ischaracter == 1) continue;
+
+		int obj = t.entityelement[e].obj;
+		if (obj <= 0 || ObjectExist(obj) != 1) { noobj++; continue; }
+		checked++;
+		float dx = ObjectPositionX(obj) - t.entityelement[e].x;
+		float dy = ObjectPositionY(obj) - t.entityelement[e].y;
+		float dz = ObjectPositionZ(obj) - t.entityelement[e].z;
+		float d = sqrtf(dx*dx + dy*dy + dz*dz);
+		if (d > 0.0f) moved++;
+		if (d > worst) { worst = d; worstE = e; }
+	}
+	_snprintf(result, resultSize,
+		"%s: TEST_INERTSKIP - %lld entities the skip would elide, checked against their live object.\n"
+		"  mirror x/y/z differs from the object : %lld   <- must be 0\n"
+		"  worst drift                          : %.4f units (entity %d)\n"
+		"  no object to compare against         : %lld  (skipped, nothing to verify)\n"
+		"  The skip is only sound because a STATIC entity cannot move; this is that claim measured\n"
+		"  rather than argued. A non-zero drift means the predicate is letting a mover through.",
+		(moved == 0) ? "OK" : "FAIL", checked, moved, worst, worstE, noobj);
+	result[resultSize - 1] = 0;
+}
 
 void lua_loop_allentities ( void )
 {
@@ -906,6 +1012,10 @@ void lua_loop_allentities ( void )
 	if (gg_logiccost_arm == 1)
 	{
 		gg_logiccost_used = 0;
+		g_gg_refreshcount = 0;
+		gg_logic_skipped_inert = 0;
+		gg_logic_noscript = 0;
+		gg_logic_noscript_static = 0;
 		gg_logiccost_considered = 0;
 		gg_logiccost_ran = 0;
 		gg_logiccost_alwaysactive = 0;
@@ -923,7 +1033,7 @@ void lua_loop_allentities ( void )
 				continue;
 		}
 		// reset performance measure
-		if ( t.e < TABLEOFPERFORMANCEMAX) { g_tableofperformancetimers[t.e] = 0; g_tableofluatimers[t.e] = 0; }
+		if ( t.e < TABLEOFPERFORMANCEMAX) { g_tableofperformancetimers[t.e] = 0; g_tableofluatimers[t.e] = 0; g_tableofrefreshtimers[t.e] = 0; }
 
 		// this entity
 		int thisentid = t.entityelement[t.e].bankindex;
@@ -959,6 +1069,25 @@ void lua_loop_allentities ( void )
 				}
 			}
 			
+			// GGMAX 3.22: inert-entity skip. Counted even when the skip is off, so the A/B has
+			// the same denominators on both arms and the addressable set is visible either way.
+			const bool bNoBehaviour = gg_entity_has_no_behaviour(t.e);
+			const bool bInert = bNoBehaviour
+				&& t.entityelement[t.e].staticflag != 0
+				&& t.entityelement[t.e].eleprof.trigger.waypointzoneindex == 0
+				&& t.entityelement[t.e].lua.animating == 0
+				&& t.entityprofile[thisentid].ischaracter != 1;
+			if (gg_logiccost_arm == 1)
+			{
+				if (bNoBehaviour) gg_logic_noscript++;
+				if (bInert) gg_logic_noscript_static++;
+			}
+			if (bInert && gg_logic_skip_inert != 0)
+			{
+				if (gg_logiccost_arm == 1) gg_logic_skipped_inert++;
+				continue;
+			}
+
 			// start performance measure
 			if (t.e < TABLEOFPERFORMANCEMAX) g_tableofperformancetimers[t.e] = PerformanceTimer();
 
@@ -1229,6 +1358,8 @@ void lua_loop_allentities ( void )
 						// do not refresh activated and animating as these are set INSIDE LUA!!
 						if ( t.entityelement[t.e].staticflag == 0 && t.entityelement[t.e].lua.firsttime == 2 )
 						{
+							LONGLONG ggRefT0 = PerformanceTimer();   // GGMAX 3.22
+							g_gg_refreshcount++;
 							LuaSetFunction("UpdateEntityRT", 21, 0);
 							LuaPushInt (  t.e );
 							LuaPushInt (  t.tobj );
@@ -1283,6 +1414,7 @@ void lua_loop_allentities ( void )
 							LuaPushString ( pLimbByName );
 							LuaPushInt ( t.entityelement[t.e].detectedlimbhit );
 							LuaCall (  );
+							if (t.e < TABLEOFPERFORMANCEMAX) g_tableofrefreshtimers[t.e] += PerformanceTimer() - ggRefT0;   // GGMAX 3.22
 							t.entityelement[t.e].lua.flagschanged=0;
 						}
 					}
@@ -1360,7 +1492,7 @@ void lua_loop_allentities ( void )
 				g_tableofperformancetimers[t.e] = PerformanceTimer() - g_tableofperformancetimers[t.e];
 
 				// GGMAX 3.21: fold into the per-SCRIPT totals while the numbers are still live
-				gg_logiccost_note(t.e, g_tableofperformancetimers[t.e], g_tableofluatimers[t.e]);
+				gg_logiccost_note(t.e, g_tableofperformancetimers[t.e], g_tableofluatimers[t.e], g_tableofrefreshtimers[t.e]);
 
 				// if extreme, and flagged, stop action and view this naughty script!
 				if (g.gproducelogfiles == 3)
@@ -1394,7 +1526,7 @@ void lua_loop_allentities ( void )
 		int iWorstOffenderE[10];
 		LONGLONG iWorstOffender[10];
 		for (int i = 0; i < 10; i++) { iWorstOffenderE[i] = 0; iWorstOffender[i] = 0; }
-		LONGLONG iGrandTotalAll = 0, iGrandTotalLua = 0;
+		LONGLONG iGrandTotalAll = 0, iGrandTotalLua = 0, iGrandTotalRefresh = 0;
 		for (int e = 1; e <= g.entityelementlist; e++)
 		{
 			if (e < TABLEOFPERFORMANCEMAX)
@@ -1403,9 +1535,11 @@ void lua_loop_allentities ( void )
 				{
 					g_tableofperformancetimers[e] = 0;
 					g_tableofluatimers[e] = 0;
+					g_tableofrefreshtimers[e] = 0;
 				}
 				iGrandTotalAll += g_tableofperformancetimers[e];
 				iGrandTotalLua += g_tableofluatimers[e];
+				iGrandTotalRefresh += g_tableofrefreshtimers[e];
 				if (g_tableofperformancetimers[e] > iWorstOffender[0])
 				{
 					iWorstOffenderE[0] = e;
@@ -1430,10 +1564,18 @@ void lua_loop_allentities ( void )
 			"  entities considered : %d\n"
 			"  ran logic           : %d   (of those, %d only because SetEntityAlwaysActive bypassed the distance gate)\n"
 			"  skipped by distance : %d\n"
-			"  total entity update : %.1f us      total INSIDE lua : %.1f us\n"
-			"  (gate is 750 units for objects, 2000 for characters, never for AlwaysActive)\n\n",
+			"  total entity update : %.1f us\n"
+			"    of which INSIDE lua scripts     : %.1f us\n"
+			"    of which UpdateEntityRT refresh : %.1f us  (%d refreshes - a 21-argument lua call\n"
+			"                                      made per entity per frame, gated on staticflag\n"
+			"                                      and NOT on whether the entity has a behaviour)\n"
+			"  (gate is 750 units for objects, 2000 for characters, never for AlwaysActive)\n"
+			"  no behaviour at all : %d   of those INERT (static, no zone, not animating) : %d\n"
+			"  skipped as inert    : %d   (SET_LOGICSKIP %d)\n\n",
 			gg_logiccost_considered, gg_logiccost_ran, gg_logiccost_alwaysactive, gg_logiccost_gated,
-			gg_ticks_to_us(iGrandTotalAll), gg_ticks_to_us(iGrandTotalLua));
+			gg_ticks_to_us(iGrandTotalAll), gg_ticks_to_us(iGrandTotalLua),
+			gg_ticks_to_us(iGrandTotalRefresh), g_gg_refreshcount,
+			gg_logic_noscript, gg_logic_noscript_static, gg_logic_skipped_inert, gg_logic_skip_inert);
 
 		// --- per SCRIPT, which is the question "where is my 1.1 ms going" actually asks --------
 		for (int i = 0; i < gg_logiccost_used; i++)
@@ -1446,12 +1588,13 @@ void lua_loop_allentities ( void )
 				}
 		w += _snprintf(p + w, cap - w,
 			"BY SCRIPT (all entities running it, this frame), worst first:\n"
-			"      total us   lua us   ran/have  script\n");
+			"      total us   lua us  refresh   ran/have  script\n");
 		for (int i = 0; i < gg_logiccost_used && i < 25 && w < cap - 512; i++)
 		{
 			if (gg_logiccost[i].allTicks <= 0 && gg_logiccost[i].ranThisFrame == 0) continue;
-			w += _snprintf(p + w, cap - w, "   %9.1f %8.1f   %4d/%-4d  %s\n",
+			w += _snprintf(p + w, cap - w, "   %9.1f %8.1f %8.1f   %4d/%-4d  %s\n",
 				gg_ticks_to_us(gg_logiccost[i].allTicks), gg_ticks_to_us(gg_logiccost[i].luaTicks),
+				gg_ticks_to_us(gg_logiccost[i].refreshTicks),
 				gg_logiccost[i].ranThisFrame, gg_logiccost[i].entities, gg_logiccost[i].name);
 		}
 		if (gg_logiccost_used >= GG_LOGICCOST_MAXSCRIPTS)
