@@ -5815,3 +5815,62 @@ footfall keyframes are fixed when the model loads. A compact per-object array of
 once, would collapse the scan to a handful of comparisons. That needs allocation and an
 invalidation story tied to model load, so it is a deliberate piece of work rather than an overnight
 one — but it is the right next move and the measurement above says how much is on the table.
+
+## 3.18 — per-object footfall keyframe cache (2026-08-24)
+
+Acts on §3.17's finding: the footfall detector chased **2,508 linked-list nodes per frame** across
+44 characters (~57 animation sets each) and the only thing it read from each node was three
+floats — `fAnimSetStep1/2/3` — which are **fixed when the model loads**. It was chasing scattered
+pointers every frame to re-read constants.
+
+Now cached into one contiguous `std::vector<float>` per object id, three floats per set, **in list
+order**. ★ Order is load-bearing: `lastfootfallframeindex` is written DURING the walk and read by
+later sets, so reordering or de-duplicating would change which foot fires.
+
+★★ **One copy of the per-set semantics**, driven from either the cached array or a live list walk
+depending on the knob. Two copies would be free to drift apart — which is exactly how 3.04
+happened.
+
+### Validation
+
+Object ids are recycled between levels, so the cache re-verifies every frame from data already in
+hand: the `sObject` pointer, the animation-set HEAD pointer, `fAnimTotalFrames`, and the head
+node's own three step values. Any mismatch rebuilds. **That costs one pointer dereference instead
+of ~57.**
+
+⚠ It is not a cryptographic identity — a different model matching all five values would go
+unnoticed. The failure mode is a wrong or missing FOOTSTEP SOUND: cosmetic, cannot crash, cannot
+corrupt. That is a deliberately different risk calculus from §3.16, where I refused to cache the
+entity-animation skip decision because ITS failure mode was animations silently stopping.
+
+### Measured — TESTPRO2 canyon, interleaved, `SET_ELANIMFFCACHE 0|1`
+
+⚠ The knob's OFF state is the **true pre-3.18 path** — a plain list walk with no cache and no
+vector writes. An earlier version had OFF rebuild the array every frame, which flattered the
+result (0.49 vs 0.33); that was fixed before quoting anything.
+
+| | samples | mean |
+|---|---|---|
+| list walk (pre-3.18) | 0.39 / 0.35 / 0.53 | **0.42 ms** |
+| cached array | 0.22 / 0.22 / 0.23 / 0.25 / 0.24 | **0.23 ms** |
+
+**P2-entity_loopanim −45%.** CPU Frame ~6.20 → ~5.99 (−0.21 ms).
+
+★ The VARIANCE is corroborating evidence, not just the mean: the cached samples sit in a 0.03 ms
+band while the pointer chase scatters over 0.18 ms. That is the signature of replacing scattered
+allocations with a contiguous array, and it is what you would predict before measuring.
+
+⚠ **FPS did not move** (156.5 vs 157.0 — within noise). This camera is not hard CPU-bound, so a
+0.2 ms CPU saving does not surface as frame rate here. Quote the row and the CPU frame; do not
+claim an FPS win from this one.
+
+### Correctness check
+
+★ `ffSets=2523` is **identical in both modes**. If the cached array were short, stale or
+mis-ordered the count would differ, so this is direct evidence the cache reproduces the list
+exactly. Combined with `ffRebuild=0 ffHit=243` steady-state, the cache is being used and is not
+thrashing.
+
+⚠ Footstep AUDIO has not been listened to. The body, ordering and values are identical and the set
+count matches, but nobody has walked a character on this build and heard footsteps. Worth thirty
+seconds in test-game before trusting it.

@@ -1153,6 +1153,7 @@ namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_max_subtree; 
 namespace wi::scene         { extern std::atomic<uint32_t> gg_hier_visited; }
 extern uint32_t gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work;   // GGMAX 3.16
 extern uint32_t gg_elanim_ff_entities, gg_elanim_ff_sets;   // GGMAX 3.16
+extern uint32_t gg_elanim_ff_rebuilds, gg_elanim_ff_hits;   // GGMAX 3.18
 namespace wi::scene         { extern uint32_t gg_hier_rebuilds; extern uint32_t gg_hier_skips; extern int gg_hier_cache_snapshot; }   // GGMAX 3.14
 namespace wi::scene         { extern uint32_t gg_hier_root_count; }
 
@@ -1266,8 +1267,8 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 	if (written < resultSize - 160)
 	{
 		written += _snprintf(result + written, resultSize - written,
-			"ELANIM: total=%u skipNoEnt=%u skipStatic=%u work=%u ffEnt=%u ffSets=%u\n",
-			gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work, gg_elanim_ff_entities, gg_elanim_ff_sets);
+			"ELANIM: total=%u skipNoEnt=%u skipStatic=%u work=%u ffEnt=%u ffSets=%u ffRebuild=%u ffHit=%u\n",
+			gg_elanim_total, gg_elanim_skip_noent, gg_elanim_skip_static, gg_elanim_work, gg_elanim_ff_entities, gg_elanim_ff_sets, gg_elanim_ff_rebuilds, gg_elanim_ff_hits);
 	}
 
 	// GGMAX 2.25: wi::terrain chunk ring size — the DX12 entity floor.
@@ -5853,6 +5854,21 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 				: (GGT3::gg_tree_pool_max_dist == 0.0f ? "UNCAPPED" : "explicit"),
 			GGT3::ggtrees_global_params.lod_dist,
 			GGT3::ggtrees_global_params.lod_dist + 1000.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	if (_stricmp(cmd, "SET_ELANIMFFCACHE") == 0)
+	{
+		// GGMAX 3.18: 1 (default) = read footfall step keyframes from a cached contiguous array.
+		// 0 = walk the animation-set linked list every frame (pre-3.18). Watch ELANIM: ffRebuild
+		// should settle to ~0 and ffHit should equal ffEnt once every object is cached.
+		extern int gg_elanim_ff_cache;
+		gg_elanim_ff_cache = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize,
+			"OK: SET_ELANIMFFCACHE %d - %s.",
+			gg_elanim_ff_cache,
+			gg_elanim_ff_cache ? "cached step array" : "walking the linked list every frame");
 		result[resultSize - 1] = 0;
 		return true;
 	}

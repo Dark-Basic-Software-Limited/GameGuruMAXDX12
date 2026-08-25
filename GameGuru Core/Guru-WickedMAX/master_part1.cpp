@@ -40,6 +40,7 @@ int gg_waypoint_fastreject = 1;
 uint32_t gg_elanim_total = 0, gg_elanim_skip_noent = 0, gg_elanim_skip_static = 0, gg_elanim_work = 0;
 uint32_t gg_elanim_ff_entities = 0, gg_elanim_ff_sets = 0;   // GGMAX 3.16 footfall scan shape
 int gg_elanim_ff_charonly = 0;   // GGMAX 3.17: 1 = footfall scan for characters only
+int gg_elanim_ff_cache = 1;      // GGMAX 3.18: 1 = cached step triples, 0 = walk the list
 int gg_elanim_skipwork = 0;   // GGMAX 3.16 diagnostic, see G-Entity_part1.cpp
 
 // GGMAX 1.67: main-camera poly count for the Performance HUD (latched per frame in the engine)

@@ -1297,6 +1297,38 @@ void entity_loop ( void )
 bool g_bUVDataChangeObjectSeqOnce = false;
 int g_iUVDataChangeObjectSeqE = -1;
 
+// ============================================================================================
+// GGMAX 3.18: PER-OBJECT FOOTFALL KEYFRAME CACHE.
+//
+// entity_loopanim's footfall detector walked the object's ENTIRE animation-set linked list every
+// frame - measured 2,508 nodes/frame across 44 characters (~57 sets each) on the canyon level -
+// and the only thing it read from each node was three floats, fAnimSetStep1/2/3, which are FIXED
+// when the model loads. So it was chasing ~2,500 scattered pointers per frame to re-read constants.
+//
+// This caches those triples into one contiguous array per object. Iteration order is preserved
+// exactly, which matters: `lastfootfallframeindex` is written DURING the walk and read by later
+// sets, so reordering or de-duplicating would change which foot fires.
+//
+// ⚠ VALIDATION. The cache is keyed by object id, and object ids are recycled between levels, so
+// it re-verifies cheaply every frame from data we already have in hand: the sObject pointer, the
+// animation-set HEAD pointer, the object's total frame count, and the head node's own three step
+// values. Any mismatch rebuilds. That costs ONE pointer dereference instead of ~57.
+// It is not a cryptographic identity - a different model that matched all five values would go
+// unnoticed - but the failure mode is a wrong or missing FOOTSTEP SOUND, which is cosmetic and
+// cannot crash or corrupt anything. That is a very different risk from caching transforms.
+// Harness SET_ELANIMFFCACHE 0|1 restores the walk.
+// ============================================================================================
+struct GGFootfallCache
+{
+	const void* obj = nullptr;        // sObject identity
+	const void* head = nullptr;       // animation-set head identity
+	float totalFrames = -1.0f;
+	float headStep[3] = { -1.0f, -1.0f, -1.0f };
+	std::vector<float> steps;         // flattened, 3 per set, in list order
+};
+static std::vector<GGFootfallCache> g_ggFootfallCache;
+uint32_t gg_elanim_ff_rebuilds = 0, gg_elanim_ff_hits = 0;
+
 void entity_loopanim ( void )
 {
 #ifdef OPTICK_ENABLE
@@ -1315,6 +1347,7 @@ void entity_loopanim ( void )
 	gg_elanim_total = gg_elanim_skip_noent = gg_elanim_skip_static = gg_elanim_work = 0;
 	extern uint32_t gg_elanim_ff_entities, gg_elanim_ff_sets;
 	gg_elanim_ff_entities = gg_elanim_ff_sets = 0;
+	gg_elanim_ff_rebuilds = gg_elanim_ff_hits = 0;
 
 	for ( t.e = 1 ; t.e <= g.entityelementlist; t.e++ )
 	{
@@ -1507,12 +1540,65 @@ void entity_loopanim ( void )
 				sObject* pObject = GetObjectData(t.tobj);
 				if (pObject)
 				{
-					sAnimationSet* pAnimSet = pObject->pAnimationSet;
-					while (pAnimSet)
+					// GGMAX 3.18: iterate the cached step triples instead of chasing the list.
+					extern int gg_elanim_ff_cache;
+					sAnimationSet* pHead = pObject->pAnimationSet;
+					if ( (int)g_ggFootfallCache.size() <= t.tobj ) g_ggFootfallCache.resize( t.tobj + 64 );
+					GGFootfallCache& ffc = g_ggFootfallCache[ t.tobj ];
+					const bool ffValid =
+						gg_elanim_ff_cache == 0 ||   // knob off: no cache maintenance at all
+						ffc.obj == (const void*)pObject &&
+						ffc.head == (const void*)pHead &&
+						ffc.totalFrames == pObject->fAnimTotalFrames &&
+						( pHead == nullptr ||
+						  ( ffc.headStep[0] == pHead->fAnimSetStep1 &&
+						    ffc.headStep[1] == pHead->fAnimSetStep2 &&
+						    ffc.headStep[2] == pHead->fAnimSetStep3 ) );
+					if ( !ffValid )
 					{
+						gg_elanim_ff_rebuilds++;
+						ffc.steps.clear();
+						for ( sAnimationSet* pWalk = pHead; pWalk; pWalk = pWalk->pNext )
+						{
+							ffc.steps.push_back( pWalk->fAnimSetStep1 );
+							ffc.steps.push_back( pWalk->fAnimSetStep2 );
+							ffc.steps.push_back( pWalk->fAnimSetStep3 );
+						}
+						ffc.obj = (const void*)pObject;
+						ffc.head = (const void*)pHead;
+						ffc.totalFrames = pObject->fAnimTotalFrames;
+						if ( pHead ) { ffc.headStep[0]=pHead->fAnimSetStep1; ffc.headStep[1]=pHead->fAnimSetStep2; ffc.headStep[2]=pHead->fAnimSetStep3; }
+						else         { ffc.headStep[0]=ffc.headStep[1]=ffc.headStep[2]=-1.0f; }
+					}
+					else if ( gg_elanim_ff_cache ) gg_elanim_ff_hits++;   // only meaningful when the cache is in use
+
+					// ★ ONE copy of the per-set semantics, fed from either source. Two copies would
+					// be free to drift apart, which is precisely how 3.04 happened. With the knob
+					// off this walks the linked list exactly as it did before 3.18 - no cache, no
+					// vector writes - so the A/B compares against what actually shipped.
+					const size_t ffSetCount = gg_elanim_ff_cache ? ( ffc.steps.size() / 3 ) : 0;
+					sAnimationSet* ffWalk = pHead;
+					size_t ffi = 0;
+					while ( gg_elanim_ff_cache ? ( ffi < ffSetCount ) : ( ffWalk != nullptr ) )
+					{
+						float ffStep[3];
+						if ( gg_elanim_ff_cache )
+						{
+							ffStep[0] = ffc.steps[ ffi*3 + 0 ];
+							ffStep[1] = ffc.steps[ ffi*3 + 1 ];
+							ffStep[2] = ffc.steps[ ffi*3 + 2 ];
+							ffi++;
+						}
+						else
+						{
+							ffStep[0] = ffWalk->fAnimSetStep1;
+							ffStep[1] = ffWalk->fAnimSetStep2;
+							ffStep[2] = ffWalk->fAnimSetStep3;
+							ffWalk = ffWalk->pNext;
+						}
 						gg_elanim_ff_sets++;
 						int leftorright = 0;
-						int iFootFallKeyFrame = (int)pAnimSet->fAnimSetStep1;
+						int iFootFallKeyFrame = (int)ffStep[0];
 						float fDistanceFromFrame = fabs(fCurrentFrame - iFootFallKeyFrame);
 						if (iFootFallKeyFrame > 0 && fCurrentFrame >= iFootFallKeyFrame && fDistanceFromFrame < 5.0f && iFootFallKeyFrame != t.entityelement[t.e].lastfootfallframeindex)
 						{
@@ -1522,7 +1608,7 @@ void entity_loopanim ( void )
 						else
 						{
 							// if no luck, try the right foot
-							iFootFallKeyFrame = (int)pAnimSet->fAnimSetStep2;
+							iFootFallKeyFrame = (int)ffStep[1];
 							fDistanceFromFrame = fabs(fCurrentFrame - iFootFallKeyFrame);
 							if (iFootFallKeyFrame > 0 && fCurrentFrame >= iFootFallKeyFrame && fDistanceFromFrame < 5.0f && iFootFallKeyFrame != t.entityelement[t.e].lastfootfallframeindex)
 							{
@@ -1532,7 +1618,7 @@ void entity_loopanim ( void )
 							else
 							{
 								// else try the final step (any one)
-								iFootFallKeyFrame = (int)pAnimSet->fAnimSetStep3;
+								iFootFallKeyFrame = (int)ffStep[2];
 								fDistanceFromFrame = fabs(fCurrentFrame - iFootFallKeyFrame);
 								leftorright = 0;
 							}
@@ -1574,7 +1660,6 @@ void entity_loopanim ( void )
 						}
 
 						// next anim
-						pAnimSet = pAnimSet->pNext;
 					}
 				}
 			}
