@@ -6515,3 +6515,58 @@ The latch runs whether or not the box is ticked, so any row that goes quiet for 
 then runs earns a permanent pin — three separate runs measured 12, 11 and 8 hidden depending on
 how much flying had happened first. That is the price of the pin, and the pin is what makes the
 list stable, so it is the right trade; but it means the number is a range, not a constant.
+
+---
+
+## §3.20b — 0.05 ms shipped, and a 24-second window that had called it wrong
+
+*"try 0.05 anyway, I want to see it"*. `gg_idle_row_ms` default 0.005 → **0.05**.
+
+### ★★★ The longer look reversed my own verdict
+
+§3.20a reported 0.05 as churning — "six distinct layouts over twelve dumps, still climbing" —
+and recommended against it. That reading came from a **24-second** window, and it was wrong about
+the thing that matters.
+
+Watched properly — 90 consecutive dumps, three minutes, camera parked, nothing touched:
+
+| t | rows |
+|---|---|
+| tick | 127 → **71** immediately (56 hidden) |
+| +6 s … +178 s | 71 → **85**, in eleven steps |
+| after flying, then 90 s parked | 93 → **95**, two steps, then **held for 56 s** |
+
+★★ **Every one of the eleven changes was an INSERTION.** +1, +1, +3, +1, +2, +1, +1, +1, +1, +1,
++1 — and not a single removal in three minutes. That is a completely different animal from what I
+called it. The list does not churn; it **grows back monotonically** toward an equilibrium as
+borderline rows cross 0.05 for the first time and earn their pin. **A row you are watching is
+never taken away from under you**; occasionally one appears above it.
+
+That distinction is the whole verdict, and a 24-second window could not see it: over twelve dumps
+"71, 72, 74, 75" looks like wandering, and over ninety it is obviously a curve. ⚠ Third time in
+two days that the sampling window, not the code, was the thing that needed auditing — §3.19's
+12 dumps missed a 1-in-31 re-parent, §3.20a's 25 dumps turned 12 rows into "32", and now this.
+**Before reporting the SHAPE of a behaviour, ask how many periods of it the window contains.**
+
+### Where it lands
+
+`DUMP_IDLEPEAKS` at the end of the session says 32 rows have never once reached 0.05 ms, so the
+equilibrium is **127 − 32 = 95 rows**, and the re-settle phase measured exactly 95. So:
+
+| | rows | vs unticked |
+|---|---|---|
+| unticked | 127 | – |
+| ticked, 0.005 ms (previous default) | 115 | −12 |
+| ticked, 0.05 ms, first moment | 71 | −56 |
+| ticked, 0.05 ms, **settled** | **95** | **−32** |
+
+⚠ The instant 71 is not the honest number to quote — it is the panel before the rows that DO cost
+something have had a chance to prove it. 95 is what it converges to.
+
+⚠ It is not quick from a standing start: still growing at t = 178 s. After the camera had been
+flown about, it re-settled in 32 s and then held. The slow part is rows waiting for the activity
+that exercises them, which is content, not design — and it is why the number differs run to run
+(three earlier runs at 0.005 measured 12 / 11 / 8 hidden for the same reason).
+
+`SET_HIDEIDLEROWS 1 0.005` goes back to the conservative rule without a rebuild; the threshold
+column in `DUMP_IDLEPEAKS` prices any other choice on whatever level is loaded.

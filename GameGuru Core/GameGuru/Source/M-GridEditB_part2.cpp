@@ -1187,9 +1187,10 @@ static void DisplayPerformanceData(bool* p_open)
 		if (ImGui::IsItemHovered())
 		{
 			ImGui::SetTooltip(
-				"Hides rows that have printed 0.00 for about ten seconds.\n"
-				"The moment one shows a real time it comes back and then stays\n"
-				"for the session, so the list does not shift while you read it.");
+				"Hides rows that have not cost 0.05ms for about ten seconds.\n"
+				"The moment one does it comes back and then stays for the session,\n"
+				"so the list only ever grows back - nothing is taken away as you read.\n"
+				"Expect it to keep settling for a minute or two after ticking.");
 		}
 		ImGui::Separator();
 
