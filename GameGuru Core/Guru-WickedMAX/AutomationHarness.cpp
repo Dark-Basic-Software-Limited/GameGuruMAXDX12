@@ -5917,6 +5917,17 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "TEST_ELANIMFFCACHE") == 0)
+	{
+		// GGMAX 3.19: prove the 3.18 footfall keyframe cache reproduces the live animation-set
+		// list element by element and in order. 3.18's own evidence was a matching SET COUNT,
+		// which a short, stale or mis-ordered array can also produce. Read-only.
+		extern void GGFootfall_SelfTest(char*, int);
+		GGFootfall_SelfTest(result, resultSize);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "TEST_WAYPOINTFAST") == 0)
 	{
 		// GGMAX 3.19: prove the 3.15 analytic reject can never skip a node the engine ray test

@@ -6159,3 +6159,49 @@ to the pre-3.15 behaviour in one command if anything ever looks wrong.
 bound is testable offline against the slow path it replaced.** That is cheaper than waiting for
 someone to exercise the UI, it covers far more cases than a human ever would, and it produces a
 margin number — which a click never does.
+
+---
+
+## §3.19c — and the same treatment for the 3.18 footfall cache
+
+3.18 shipped with two caveats of its own. Its validity check is five values (object pointer,
+animation-set head pointer, total frames, and the head's three step keyframes), and the comment
+says outright that it "is not a cryptographic identity — a different model that matched all five
+values would go unnoticed". The evidence offered was `ffSets = 2523` identical in both modes.
+
+★ **A matching COUNT is a weak witness.** A short array, a stale array or a mis-ordered array can
+all total the same. `TEST_ELANIMFFCACHE` walks the LIVE animation-set list for every cached object
+and compares it to the cached array **element by element and in order**, then splits the
+mismatches into the two cases that mean different things:
+
+- **STALE-ACCEPTED** — contents differ AND the runtime validity check would have accepted the
+  cache anyway. This is exactly the failure the 3.18 caveat warns about, and the only number that
+  must be zero.
+- **would-rebuild** — contents differ but the check already disagrees, so the next frame rebuilds.
+  Harmless by construction, and reported separately so the two are never conflated.
+
+Indian Strike Force:
+
+| state | cached objects | step values compared | identical | STALE-ACCEPTED |
+|---|---|---|---|---|
+| editor | 134 | 11,826 | 134 | **0** |
+| test game (characters animating) | 141 | 17,250 | 141 | **0** |
+
+**29,076 step values compared, every one identical, in order, with zero stale-accepted entries** —
+and the second row is the one that counts, because that is the state where characters are actually
+animating and a stale array would be producing wrong footsteps.
+
+⚠ Still not proven: that the resulting SOUND is right. This proves the cache reproduces the data
+the sound logic reads, and 3.18 already drives both modes through one copy of the per-set
+semantics, so a divergence would have to come from the data — which is now measured. Thirty
+seconds of listening in test game remains the last word, and `SET_ELANIMFFCACHE 0` reverts.
+
+### The pattern both of these share
+
+★★★ **A cache or a fast path justified by an invariant can be tested against the thing it
+replaced, offline, without waiting for a human to exercise the UI.** Two debts that had been
+sitting in the owed column — "click a waypoint", "listen for footsteps" — closed in an hour with
+222,750 ray tests and 29,076 value comparisons between them. Both tests also produce a number a
+human never could: the waypoint one reports how much headroom the bound actually has (7.17 units
+of 25), and this one reports how many values it verified rather than merely that nothing looked
+wrong. Write the test that names the invariant, not the test that reproduces the gesture.

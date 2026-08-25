@@ -1329,6 +1329,95 @@ struct GGFootfallCache
 static std::vector<GGFootfallCache> g_ggFootfallCache;
 uint32_t gg_elanim_ff_rebuilds = 0, gg_elanim_ff_hits = 0;
 
+// GGMAX 3.19: SELF-TEST for the 3.18 footfall keyframe cache.
+//
+// 3.18 shipped with two honest caveats. The validity check is five values (object pointer,
+// animation-set head pointer, total frames, and the head's three step keyframes), and the comment
+// says outright that it "is not a cryptographic identity - a different model that matched all five
+// values would go unnoticed". And nobody had listened to a footstep on the build.
+//
+// A count matched in both modes (ffSets 2523) but a count is a weak witness: a short, stale or
+// mis-ordered array can still total the same. This walks the LIVE animation-set list for every
+// cached object and compares it to the cached array element by element, in order, and splits the
+// mismatches into the two cases that mean different things:
+//
+//   STALE-ACCEPTED - the cached contents differ from the live list AND the runtime validity check
+//                    would have accepted the cache anyway. This is the failure the caveat warns
+//                    about, and it is the only number here that must be zero.
+//   WOULD-REBUILD  - the contents differ but the validity check already disagrees, so the next
+//                    frame rebuilds. Harmless by construction; reported so the two are never
+//                    conflated.
+//
+// Editor or test game, one-shot, read-only - it does not touch the cache.
+void GGFootfall_SelfTest(char* result, int resultSize)
+{
+	long long checked = 0, matched = 0, staleAccepted = 0, wouldRebuild = 0, emptyCache = 0;
+	long long valuesCompared = 0;
+	char firstFailure[320]; firstFailure[0] = 0;
+
+	for (size_t obj = 0; obj < g_ggFootfallCache.size(); obj++)
+	{
+		GGFootfallCache& ffc = g_ggFootfallCache[obj];
+		if (ffc.obj == nullptr) { continue; }           // never populated for this slot
+		if (ObjectExist((int)obj) == 0) { continue; }   // object has gone since
+		sObject* pObject = GetObjectData((int)obj);
+		if (pObject == nullptr) continue;
+		checked++;
+
+		sAnimationSet* pHead = pObject->pAnimationSet;
+		if (ffc.steps.empty() && pHead == nullptr) { matched++; emptyCache++; continue; }
+
+		// the runtime's own verdict on this cache entry, reproduced exactly
+		const bool runtimeWouldAccept =
+			ffc.obj == (const void*)pObject &&
+			ffc.head == (const void*)pHead &&
+			ffc.totalFrames == pObject->fAnimTotalFrames &&
+			( pHead == nullptr ||
+			  ( ffc.headStep[0] == pHead->fAnimSetStep1 &&
+			    ffc.headStep[1] == pHead->fAnimSetStep2 &&
+			    ffc.headStep[2] == pHead->fAnimSetStep3 ) );
+
+		// element-by-element against the live list, in order
+		bool contentsMatch = true;
+		size_t i = 0;
+		const char* why = "";
+		for (sAnimationSet* pWalk = pHead; pWalk; pWalk = pWalk->pNext, i++)
+		{
+			if (i * 3 + 2 >= ffc.steps.size()) { contentsMatch = false; why = "cache SHORTER than list"; break; }
+			valuesCompared += 3;
+			if (ffc.steps[i*3+0] != pWalk->fAnimSetStep1 ||
+			    ffc.steps[i*3+1] != pWalk->fAnimSetStep2 ||
+			    ffc.steps[i*3+2] != pWalk->fAnimSetStep3)
+			{ contentsMatch = false; why = "step VALUES differ"; break; }
+		}
+		if (contentsMatch && ffc.steps.size() != i * 3) { contentsMatch = false; why = "cache LONGER than list"; }
+
+		if (contentsMatch) { matched++; continue; }
+		if (runtimeWouldAccept)
+		{
+			staleAccepted++;
+			if (firstFailure[0] == 0)
+			{
+				_snprintf(firstFailure, sizeof(firstFailure),
+					"\n  FIRST STALE-ACCEPTED: object %d, %s (cache holds %d sets, list walks %d).",
+					(int)obj, why, (int)(ffc.steps.size() / 3), (int)i);
+				firstFailure[sizeof(firstFailure) - 1] = 0;
+			}
+		}
+		else wouldRebuild++;
+	}
+
+	_snprintf(result, resultSize,
+		"%s: TEST_ELANIMFFCACHE - %lld cached objects checked, %lld step values compared.\n"
+		"  identical to the live list:                       %lld  (%lld of them empty)\n"
+		"  STALE-ACCEPTED (differs AND cache looks valid):   %lld   <- must be 0\n"
+		"  would-rebuild  (differs but check already fails): %lld   (harmless)\n"
+		"  Element-by-element and in ORDER, so this is stronger than the matching set COUNT.%s",
+		(staleAccepted == 0) ? "OK" : "FAIL",
+		checked, valuesCompared, matched, emptyCache, staleAccepted, wouldRebuild, firstFailure);
+	result[resultSize - 1] = 0;
+}
+
 void entity_loopanim ( void )
 {
 #ifdef OPTICK_ENABLE
