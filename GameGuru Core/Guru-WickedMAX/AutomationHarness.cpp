@@ -5951,22 +5951,47 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "DUMP_IDLEPEAKS") == 0)
+	{
+		// GGMAX 3.20a: what a "hide rows at 0.00" rule can actually reach here. A dump sample
+		// sees one frame in a couple of hundred, so a row crossing the display threshold every
+		// few seconds reads as permanently 0.00 in the sample and is not - that mis-estimate was
+		// 37 rows against a true 11. This reports the PEAK printable time per row over every
+		// frame, plus how many rows each candidate threshold would take.
+		if (!wi::profiler::IsEnabled())
+			_snprintf(result, resultSize, "ERROR: DUMP_IDLEPEAKS needs the profiler - send ENABLE_PROFILER, soak, retry");
+		else
+			_snprintf(result, resultSize, "%s", wi::profiler::gg_GetIdleRowReport().c_str());
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_HIDEIDLEROWS") == 0)
 	{
 		// GGMAX 3.20: the Performance panel's "Hide idle rows" tick box, drivable from here so
 		// the STABILITY of the shortened list can be measured rather than eyeballed - the whole
 		// point of the feature is that the row set holds still, and that is a claim about many
 		// consecutive dumps, not about one screenshot.
-		// ⚠ The hide latch needs ~600 consecutive idle frames before it fires, so a dump taken
-		// immediately after enabling this will report 0 hidden if the profiler was only just
-		// switched on. Leave the level running, then read GET_PERF_DATA.
-		wi::profiler::gg_hide_idle_rows = (atoi(arg) != 0);
+		// ⚠ The hide latch needs ~600 consecutive frames at 0.00 before it fires, so a dump
+		// taken immediately after enabling this will report 0 hidden if the profiler was only
+		// just switched on. Leave the level running, then read GET_PERF_DATA.
+		// GGMAX 3.20a: optional second arg is the ACTIVITY THRESHOLD in ms. Default 0.005 is the
+		// display threshold ("would print 0.00"), which reaches only ~8 rows because most of the
+		// 0.00 rows do cross it briefly. Raise it to turn the control into "hide rows that never
+		// cost anything worth reading" - measured on Canyon, 0.02 takes ~20 and 0.05 takes ~39.
+		int onoff = 0; float thresh = -1.0f;
+		if (sscanf_s(arg, "%d %f", &onoff, &thresh) >= 1)
+		{
+			wi::profiler::gg_hide_idle_rows = (onoff != 0);
+			if (thresh >= 0.0f) wi::profiler::gg_idle_row_ms = thresh;
+		}
 		_snprintf(result, resultSize,
-			"OK: SET_HIDEIDLEROWS %d - %s. %u rows were suppressed on the last panel refresh. "
-			"A row is hidden only after ~600 consecutive frames without EXECUTING (not for "
-			"printing 0.00, which a range running for nanoseconds also does), and one that runs "
-			"again is pinned visible for the session.",
+			"OK: SET_HIDEIDLEROWS %d (threshold %.4f ms) - %s. %u rows were suppressed on the last "
+			"panel refresh. A row is hidden after ~600 consecutive frames below the threshold; the "
+			"moment it crosses it the row comes back and is pinned visible for the session, which is "
+			"what stops the list shifting. Use DUMP_IDLEPEAKS to see what any threshold would take.",
 			wi::profiler::gg_hide_idle_rows ? 1 : 0,
+			wi::profiler::gg_idle_row_ms,
 			wi::profiler::gg_hide_idle_rows ? "idle rows hidden" : "every row shown (3.19 default)",
 			wi::profiler::gg_hidden_row_count);
 		result[resultSize - 1] = 0;

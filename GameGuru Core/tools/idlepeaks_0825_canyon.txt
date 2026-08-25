@@ -1,0 +1,81 @@
+IDLE-ROW PEAKS - the highest ms each row has EVER been about to print, over every frame since the profiler was enabled.
+rows total: 127
+a threshold of ... would hide ... rows:
+   peak < 0.0050 ms : 8
+   peak < 0.0100 ms : 11
+   peak < 0.0200 ms : 13
+   peak < 0.0500 ms : 41
+   peak < 0.1000 ms : 62
+   peak < 0.2000 ms : 71
+the quiet end of the list (peak < 0.20 ms), lowest first:
+   0.0000   TerrainVT - AllocateTileRequests
+   0.0000   TerrainVT - WritebackTileRequests
+   0.0000   EmittedParticles - Render
+   0.0000   Environment Probe Refresh
+   0.0000   EmittedParticles - Render (Distortion)
+   0.0022   Input-SDL
+   0.0027   TreePool - BindPasses
+   0.0032   TreePool - SelectMark
+   0.0063   TreePool - Gather
+   0.0066   GUI Update
+   0.0074   App-ThreadSafeEvents
+   0.0152   RenderPath2D::Compose
+   0.0180   P2-overallfunc
+   0.0215   App-PreUpdate
+   0.0216   P2M-T1-FileEvents
+   0.0220   P2M-Rotate-NoPick
+   0.0224   P2M-T2-SelModes+Keys
+   0.0226   P2-constructsel
+   0.0227   CL-Market+Misc
+   0.0227   Fixed Update
+   0.0227   P2-waterineditor
+   0.0228   CL-Tutorial
+   0.0228   P2M-Sel5-EditorMode
+   0.0236   CL-GameLoop
+   0.0238   P2-widget_loop
+   0.0251   CL-Tail
+   0.0274   Update - Emitters
+   0.0278   Script Components
+   0.0301   Trees - FrustumCull
+   0.0309   Spline Update
+   0.0324   P2M-T3-Camera+Scroll
+   0.0337   P2-lighting_loop
+   0.0355   RenderPath3D::Compose
+   0.0364   P2M-Events+Tail
+   0.0389   Scene-S5 Tail+ShaderScene
+   0.0393   P2-mainfunc
+   0.0434   P2-editor_visuals
+   0.0453   Transparent Scene
+   0.0475   Terrain - GG Core
+   0.0477   TerrainVT - CopyPageStatus
+   0.0494   RenderPath2D::Render
+   0.0510   Meshlet prepare
+   0.0541   P2-mapediting
+   0.0543   Grass - GG Update
+   0.0580   Terrain - UpdateVirtualTexturesGPU
+   0.0598   GUI Background Blur
+   0.0606   LightShafts
+   0.0620   Entity Culling
+   0.0630   Caustics
+   0.0687   Transparent Tail (custom/debug/sprites/flares)
+   0.0760   Bloom
+   0.0813   Postprocess_Tonemap
+   0.0868   Wind
+   0.0890   Scene MIP Chain
+   0.0890   RP3D-rec UpdateTex
+   0.0899   Max - Tree Update
+   0.0910   Update - Particles
+   0.0939   Spring Dependencies
+   0.0939   VT-record
+   0.0972   Logic - ConstantNonDisplay
+   0.0988   FXAA
+   0.0989   Update - Render
+   0.1059   App-BeginCmdCompose
+   0.1071   CL-ObjTools+Settings
+   0.1172   RP3D-PerFrameData
+   0.1312   Shadowmap packing
+   0.1336   Visibility_Prepare
+   0.1406   CL-Head
+   0.1413   MSAO
+   0.1963   RP3D-rec PostFX
+   0.1977   P2-calclocalcursor

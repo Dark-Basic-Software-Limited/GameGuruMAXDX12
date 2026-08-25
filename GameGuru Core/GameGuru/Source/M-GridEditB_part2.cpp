@@ -1175,21 +1175,21 @@ static void DisplayPerformanceData(bool* p_open)
 		ImGui::Text("FPS: %.1f  POLYS: %s (DirectX 12)", ImGui::GetIO().Framerate, polyStr);
 
 		// GGMAX 3.20: 3.19 gave every range a permanent row so the list would stop shifting
-		// while you read it, which cost ~50 rows sitting at 0.00 on a typical level. This wins
-		// the length back for anyone who wants it, WITHOUT the shifting coming back: a row is
-		// only dropped after ~10 seconds of not executing at all, and one that runs again is
-		// pinned visible for the rest of the session. A row that reads 0.00 but is quietly
-		// doing 0.00001 ms of work keeps its slot - the decision is made on whether the range
-		// RAN, never on the printed number, which rounds a live row and a dead one to the same
-		// two decimals. Off by default; the stable full list stays the out-of-the-box view.
+		// while you read it, which cost ~30 rows sitting at 0.00 on a typical level. This wins
+		// the length back WITHOUT the shifting coming back, and the thing that guarantees that
+		// is not the threshold - it is that a hidden row which shows a measurable time again is
+		// pinned visible for the rest of the session. Two position changes per row per session,
+		// maximum. The threshold itself was Lee's call after seeing both measured: hiding only
+		// rows that never EXECUTE removed 3 rows of 127 (29 of the 32 rows printing 0.00 run
+		// every frame doing under five microseconds), so the rule is the printed value.
+		// Off by default; the stable full list stays the out-of-the-box view.
 		ImGui::Checkbox("Hide idle rows", &wi::profiler::gg_hide_idle_rows);
 		if (ImGui::IsItemHovered())
 		{
 			ImGui::SetTooltip(
-				"Hides rows that have not run for about ten seconds.\n"
-				"A row that runs again comes back and then stays for the session,\n"
-				"so the list still does not shift while you read it.\n"
-				"Rows doing tiny amounts of work are kept even though they print 0.00.");
+				"Hides rows that have printed 0.00 for about ten seconds.\n"
+				"The moment one shows a real time it comes back and then stays\n"
+				"for the session, so the list does not shift while you read it.");
 		}
 		ImGui::Separator();
 

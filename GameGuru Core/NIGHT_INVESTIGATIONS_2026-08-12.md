@@ -6424,3 +6424,94 @@ list, and a view preference for a debug panel does not belong in it.
 `SET_HIDEIDLEROWS 0|1` drives it from the harness, which is how the table above was measured —
 the claim is about many consecutive dumps holding still, and that is not something a screenshot
 can carry.
+
+---
+
+## §3.20a — Lee picks the 0.00 rule, and my "32 rows" turns out to be a sampling artefact
+
+Shown the §3.20 numbers, Lee: *"hide them all, use the 0.00 rule"*. So the activity test moves
+from `num_hits > 0` ("did this range execute") to `total_time >= 0.005 ms` ("would this row print
+anything other than 0.00"). One comparison.
+
+★★ Worth being explicit about why that is safe, because it looks like it reverses his first
+instruction and does not. **The stability was never coming from the threshold.** It comes from
+`sticky_show`: a hidden row that shows a measurable time again is pinned visible for the rest of
+the session. That is what caps the feature at two position changes per row per session, and it is
+untouched. The threshold only decides how many rows are candidates.
+
+### ★★★ The number I gave him to decide on was wrong
+
+§3.20 reported "32 rows print 0.00 in all 25 dumps", so the 0.00 rule looked like it would take
+about 32. It took **12**.
+
+The estimate came from 25 dumps two seconds apart. The engine sees **every** frame — roughly
+13,500 of them over the same window — so my sample was one frame in ~540. A row that crosses the
+display threshold once every few seconds reads as permanently 0.00 in that sample and is not.
+
+⚠ **A sparse sample cannot support a "never" claim.** It can show that something happened; it
+cannot show that something never happens, and I used it for the second. Same family as §3.19's
+"one hash across twelve dumps" missing a 1-in-31 event — twice in one day, from opposite ends
+(too few samples to see a rare event; too few samples to rule one out).
+
+So `Hits::peak_time` now records the highest value each row has **ever** been about to print, over
+every frame, and `DUMP_IDLEPEAKS` reports it with a histogram of what any candidate threshold
+would take. That is a number that can be chosen from instead of estimated.
+
+### Measured — A Grand Canyon Adventure
+
+What each threshold could reach (peak over every frame, end of a ~5 minute session):
+
+| threshold | rows it would take |
+|---|---|
+| 0.005 ms (prints 0.00) | 8 |
+| 0.010 ms | 11 |
+| 0.020 ms | 13 |
+| **0.050 ms** | **41** |
+| 0.100 ms | 62 |
+| 0.200 ms | 71 |
+
+Note the cliff between 0.02 and 0.05 — there is nothing useful in between, so the real choice is
+two-way, not a dial.
+
+And what the shipped control actually does, 42 dumps two seconds apart:
+
+| state | dumps | rows | distinct layouts | hidden |
+|---|---|---|---|---|
+| unticked | 10 | 127 every time | **1** | – |
+| ticked, 0.005 ms (**shipped**) | 12 | 115 every time | **1** | 12 every time |
+| ticked, 0.05 ms | 12 | 71 / 72 / 74 / 75 | **6** | 52 → 56, still climbing |
+| unticked again | 8 | 127 every time | **1** | – |
+
+Orphan check exact at both thresholds (rows that vanished = rows reported hidden, 12 and 52).
+Untick restores the set member for member.
+
+★ **12 hidden, not 8**, because the latch is a trailing 600-frame window rather than a
+whole-session peak: it also takes rows that were busy earlier and have since gone quiet. The
+histogram is the floor, not the answer.
+
+### ⚠ Why 0.05 is NOT shipped even though it takes three times as many rows
+
+**It does not hold still.** Six distinct layouts over twelve dumps, row count wandering 71→75, and
+the hidden count still climbing when the phase ended.
+
+That is not a bug, it is arithmetic. Settling costs up to two moves per BORDERLINE row — hide,
+then un-hide-and-pin. At 0.005 there are 8-12 candidates and they sit decisively below the line,
+so the settle is invisible. At 0.05 there are 41, and many of them genuinely cross 0.05 every few
+seconds, so you watch four dozen rows find their places. It converges (toward ~86 rows) but you
+see it converge, and "the list moves while you read it" is the entire thing this work exists to
+stop.
+
+★ So: **the rule Lee chose is also the one that is stable.** 127 → 115 with provably zero
+movement. 0.05 is available and measured — `SET_HIDEIDLEROWS 1 0.05` — and would need the settle
+solved before it could be a default.
+
+⚠ `gg_idle_row_ms` resets every latch when it changes. A `sticky_show` pin was earned under a
+threshold; keeping pins across a change would make raising the threshold appear to do almost
+nothing, because the rows it should newly take are exactly the ones most likely to be pinned
+already.
+
+⚠ One design consequence to know: **the tick box gets less effective the longer a session runs.**
+The latch runs whether or not the box is ticked, so any row that goes quiet for ten seconds and
+then runs earns a permanent pin — three separate runs measured 12, 11 and 8 hidden depending on
+how much flying had happened first. That is the price of the pin, and the pin is what makes the
+list stable, so it is the right trade; but it means the number is a range, not a constant.
