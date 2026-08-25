@@ -5940,11 +5940,13 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		// command's reply, then GET_TEXTUREDIVIDE (or any later reply) to see the count.
 		extern void GGSetTextureDivideLive(int);
 		extern uint32_t gg_texture_divide_rebuilt;
+		extern uint32_t gg_texture_divide_vtrepaints;
 		GGSetTextureDivideLive(atoi(arg));
 		_snprintf(result, resultSize,
 			"OK: SET_TEXTUREDIVIDE %d - live gg_texture_divide=%d. Applies to the CURRENT level on "
 			"the NEXT update, so these numbers are the PREVIOUS apply: rebuilt %u textures, "
-			"skipped %u, %.1f MB -> %.1f MB of texture resource. Send the command a second time to "
+			"skipped %u, %.1f MB -> %.1f MB of texture resource, %u terrain chunk VTs re-baked. "
+			"Send the command a second time to "
 			"read the apply you just asked for. Driver VRAM will not track this closely - the "
 			"allocator keeps freed heaps, and in the editor streaming may already have walked "
 			"these textures below the divided size. GG's tree billboard atlases and grass load "
@@ -5952,7 +5954,8 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			atoi(arg), wi::resourcemanager::gg_texture_divide, gg_texture_divide_rebuilt,
 			wi::resourcemanager::gg_texdivide_skipped.load(),
 			wi::resourcemanager::gg_texdivide_bytes_before.load() / 1048576.0,
-			wi::resourcemanager::gg_texdivide_bytes_after.load() / 1048576.0);
+			wi::resourcemanager::gg_texdivide_bytes_after.load() / 1048576.0,
+			gg_texture_divide_vtrepaints);
 		result[resultSize - 1] = 0;
 		return true;
 	}

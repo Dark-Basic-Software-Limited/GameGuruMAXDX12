@@ -1,3 +1,74 @@
+# 2026-08-25 SWEEP (0825) - 2.98 THROUGH 3.19 - engine `ce9751b8` / game `43ac24a8`
+
+First full 19-demo pass covering everything since the far-tree work: 2.98/2.99 atlas + billboard
+VRAM, 3.00-3.07 the billboard clip / flicker / shade wrap, 3.08-3.12 the low-spec switches,
+3.13-3.18 the CPU campaign, 3.19 the panel and control fixes. The previous full sweep (0823,
+game `42277a53`) predates all of it, and 3.08-3.12 only ever got an 8-demo partial.
+
+## Gate
+
+| criterion | result |
+|---|---|
+| C1 LOAD - every demo reaches the editor | **19/19** PASS |
+| C4 GAME - every demo reaches gameplay | **19/19** PASS |
+| C3 VRAM - every demo under 4096 MB in game | PASS, worst **3976 MB** (Aztec Game Kit), was 4027 |
+| C2 POLYS - identical to 0823 | 8/19 identical, **11/19 LOWER**, all attributed (below) |
+
+FPS is recorded but is NOT a criterion (this rig swings +-8-15% between launches and further
+between days). For the record: editor sum 3884.8 -> 4013.1 (**+3.3%**), in-game sum
+2891.4 -> 3078.2 (**+6.5%**), no demo worse than -0.4% in the editor.
+
+## Per demo
+
+| Demo | ed 0823 | ed 0825 | game 0823 | game 0825 | gVRAM | POLYS 0823 | POLYS 0825 |
+|---|---|---|---|---|---|---|---|
+| Aztec Game Kit Teaser | 120.0 | 129.9 | 112.0 | 125.0 | 3261 | 6,458,677 | 6,454,117 |
+| Aztec Game Kit | 160.1 | 176.2 | 101.1 | 112.0 | **3976** | 527,382 | 522,301 |
+| Bounty | 227.7 | 230.0 | 227.4 | 231.1 | 2840 | 469,906 | 469,906 |
+| Horseshoe Bend | 142.1 | 153.8 | 93.3 | 104.6 | 3203 | 1,583,122 | 1,583,122 |
+| Island Showdown | 139.8 | 139.7 | 132.2 | 144.5 | 3122 | 1,655,768 | 1,655,768 |
+| Operation Amazon | 174.6 | 177.3 | 170.1 | 179.1 | 3594 | 507,604 | 486,602 |
+| River Raiders | 264.3 | 271.0 | 153.1 | 157.1 | 3507 | 267,366 | 258,715 |
+| Snowy Mountain Stroll | 226.5 | 241.1 | 120.5 | 130.7 | 3108 | 81,369 | 81,369 |
+| A Grand Canyon Adventure | 167.8 | 167.5 | 60.0 | 64.3 | 3089 | 2,132,292 | 2,126,818 |
+| Disruption | 177.3 | 181.5 | 151.8 | 160.2 | 2974 | 153,309 | 146,413 |
+| Foggy Forest | 155.9 | 158.0 | 155.5 | 167.8 | 3155 | 1,283,316 | 1,248,844 |
+| Indian Strike Force | 182.6 | 186.8 | 142.6 | 157.9 | 3221 | 303,737 | 297,564 |
+| Switch Escape | 318.7 | 322.9 | 209.2 | 219.3 | 2455 | 109,358 | 109,358 |
+| Canyon Offensive | 156.3 | 166.8 | 119.2 | 135.0 | 3564 | 517,948 | **465,823** |
+| Escape from the Zombie Cellar | 306.9 | 311.2 | 59.9 | 59.9 | 2510 | 28,048 | 28,048 |
+| Jungle Fever | 223.4 | 227.3 | 206.4 | 219.5 | 3136 | 76,157 | 76,157 |
+| RPG Template | 214.2 | 220.2 | 186.6 | 196.5 | 3450 | 552,000 | 540,778 |
+| The Mystery of Z Island | 191.8 | 195.8 | 173.3 | 179.2 | 3516 | 326,002 | 320,624 |
+| Trapped | 335.0 | 356.0 | 317.2 | 334.7 | 2578 | 12,768 | 12,768 |
+
+## Why POLYS moved, and why that is a pass
+
+Every one of the eleven changes is NEGATIVE. Sampling scatter would go both ways, so this is a
+build difference, and four separate by-design tree-culling changes landed between `42277a53` and
+`43ac24a8`:
+
+- **2.98** stop drawing trees past the terrain edge
+- **3.00 / 3.01** the billboard terrain-reach clip (the exact per-tree test, done in the VS)
+- **3.03** the mesh handover fade - `ObjectComponent::draw_distance` on pool trees, so a distant
+  tree mesh is now culled outright instead of drawn behind its own billboard
+- **3.04** the matching prepass clip
+
+Nothing in 3.13-3.19 can touch geometry: it is profiler text formatting, a default-off object cull
+and a default-1 texture divide.
+
+**Determinism was confirmed, not assumed.** Canyon Offensive is the outlier at -10.1%, so it was
+re-probed on a fresh launch: `465,823` on three samples out of three, bit-exact with the sweep.
+POLYS is deterministic per build at a parked camera. The eight unchanged demos corroborate from
+the other side and include tree levels - Horseshoe Bend (1,583,122) and Island Showdown
+(1,655,768) are both bit-identical.
+
+⚠ **0825 IS THE NEW POLYS REFERENCE.** `tools/sweepgate.sh` still carries the 2.32-era table and
+will fail C2 across most of the hub against it. Until that table is re-baselined, score with
+`tools/compare_sweep.sh 0825 <newtag>`.
+
+---
+
 # 2026-08-23 SWEEP (0823) - FAR-TREE BILLBOARDS + POOL CAP - game `42277a53`
 
 Gate for 2.96 (distant-tree billboards restored) and 2.97 (tree pool radius cap).

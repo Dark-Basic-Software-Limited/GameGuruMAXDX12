@@ -6020,8 +6020,98 @@ Visual confirmation: the Quarter screenshot is visibly softer on the ground, the
 vehicle, and the PNG file sizes track the setting monotonically (2,181,967 at Quarter / 2,194,386
 at Half / 2,205,533 at Full) — a blurrier frame compresses smaller.
 
+### The terrain check, and the crop that nearly said the opposite
+
+The first measurement, taken at the level's own start camera, said the terrain did NOT change. A
+crop of pure ground gave edge energy **7.372 (Full) vs 7.343 (Quarter) — −0.4%**, while the whole
+viewport moved −2.1%. Read literally: objects change, terrain does not.
+
+★★ It was the CAMERA, not the terrain. At the start pose the ground runs away at a glancing angle,
+so the sampler is already deep in the mip chain and dropping the top two mips changes nothing that
+is on screen. Pitch down 55° so the frame is near ground at high texel density and the same
+measurement reads **7.3652 → 6.4799, −12%**, with the crop unmistakably softer by eye.
+
+★★★ **A texture-resolution change can only be measured where the texture is sampled near its top
+mip.** Choose the camera before believing the null. This is the "audit the TEST, not the code"
+rule again, in its third distinct costume this month.
+
+Two counters made the result interpretable rather than a guess:
+
+- **`49 terrain chunk VTs re-baked`**, reported by the harness. Without it, "the terrain looks the
+  same" has two causes — the re-bake never ran, or it ran and the tile resolution does not resolve
+  the source top mips — and a screenshot cannot separate them.
+- **Full → Quarter → Full returns a PIXEL-IDENTICAL frame** (mean absolute difference 0.000 across
+  the viewport, PNG within 28 bytes). The round trip is lossless, which is the correctness proof
+  that matters for a control the user will flip back and forth.
+
+Two refinements came out of the same session:
+
+⚠ **The divide clears `Flags::STREAMING`, so feeding the CURRENT flags back into `Load()` on a
+later apply left a texture permanently opted out of streaming even after the user returned to
+Full** — a one-way door nobody asked for. `ResourceInternal` now remembers `gg_flags_predivide`,
+captured the first time a live apply touches it, and every apply re-loads from those.
+
+The apply also `std::move`s the reloaded file data instead of copying it, which matters for the
+`IMPORT_RETAIN_FILEDATA` resources.
+
+### The 19-demo gate — sweep 0825
+
+First full 19-demo pass covering **2.98 → 3.19**; the previous full sweep, 0823, predates the
+billboard/tree work and 3.08–3.12 only ever got an 8-demo partial.
+
+| criterion | result |
+|---|---|
+| C1 LOAD — every demo reaches the editor | **19/19** ✅ |
+| C4 GAME — every demo reaches gameplay | **19/19** ✅ |
+| C3 VRAM — every demo under 4096 MB in game | ✅ worst **3976 MB** (Aztec Game Kit), was 4027 |
+| C2 POLYS — identical to the 0823 reference | 8/19 identical, **11/19 LOWER** — attributed below |
+
+FPS, for the record only (cross-day FPS is not evidence on this rig): editor sum **+3.3%**, in-game
+sum **+6.5%**, no demo worse than −0.4%.
+
+★ **The POLYS movement is attributable and in the safe direction.** Every one of the eleven changes
+is NEGATIVE — noise would scatter both ways. Four separate by-design tree-culling changes landed
+between the 0823 build (`42277a53`) and this one: 2.98 "stop drawing trees past the terrain",
+3.00/3.01 the billboard terrain-reach clip, 3.03 the mesh handover fade (`draw_distance` on pool
+trees, so distant meshes are culled outright), and 3.04 the prepass clip. Nothing in 3.13–3.19 can
+touch geometry at all — it is profiler text, a default-off cull switch and a default-1 texture
+divide.
+
+★★ **Determinism was confirmed rather than assumed.** Canyon Offensive is the outlier at −10.1%
+(517,948 → 465,823), so it was re-probed on a fresh launch: **465,823 three samples out of three**,
+bit-exact with the sweep. POLYS is deterministic per build at a parked camera, so these deltas are
+real build differences, not sampling scatter — and the eight unchanged demos include tree levels
+(Horseshoe Bend 1,583,122 and Island Showdown 1,655,768, both bit-identical) which corroborates it
+from the other side.
+
+| demo | 0823 | 0825 | Δ |
+|---|---|---|---|
+| Aztec Game Kit Teaser | 6,458,677 | 6,454,117 | −0.07% |
+| Aztec Game Kit | 527,382 | 522,301 | −0.96% |
+| Bounty | 469,906 | 469,906 | — |
+| Horseshoe Bend | 1,583,122 | 1,583,122 | — |
+| Island Showdown | 1,655,768 | 1,655,768 | — |
+| Operation Amazon | 507,604 | 486,602 | −4.14% |
+| River Raiders | 267,366 | 258,715 | −3.24% |
+| Snowy Mountain Stroll | 81,369 | 81,369 | — |
+| A Grand Canyon Adventure | 2,132,292 | 2,126,818 | −0.26% |
+| Disruption | 153,309 | 146,413 | −4.50% |
+| Foggy Forest | 1,283,316 | 1,248,844 | −2.69% |
+| Indian Strike Force | 303,737 | 297,564 | −2.03% |
+| Switch Escape | 109,358 | 109,358 | — |
+| Canyon Offensive | 517,948 | 465,823 | **−10.06%** |
+| Escape from the Zombie Cellar | 28,048 | 28,048 | — |
+| Jungle Fever | 76,157 | 76,157 | — |
+| RPG Template | 552,000 | 540,778 | −2.03% |
+| The Mystery of Z Island | 326,002 | 320,624 | −1.65% |
+| Trapped | 12,768 | 12,768 | — |
+
+⚠ **0825 is the new POLYS reference.** `tools/sweepgate.sh` still carries the 2.32-era table and
+will fail C2 on most of the hub against it; use `tools/compare_sweep.sh 0825 <newtag>` instead
+until that table is re-baselined.
+
 ### Knobs
 
 `SET_OBJCULLDIST <units>` (unchanged, now works upwards). `SET_TEXTUREDIVIDE 1|2|4` — the reply
 reports the PREVIOUS apply, because the apply is deferred to the next update; send it twice to read
-the one you just asked for.
+the one you just asked for, including the terrain chunk-VT re-bake count.

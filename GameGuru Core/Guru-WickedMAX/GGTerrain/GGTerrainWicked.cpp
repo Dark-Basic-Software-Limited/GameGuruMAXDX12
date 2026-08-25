@@ -233,6 +233,11 @@ float gg_object_cull_dist = 0.0f; // 0 = off; >0 = cap every object's draw dista
 // GPU drain for nothing. gg_texture_divide_rebuilt is how many textures the last apply changed.
 bool     gg_texture_divide_pending = false;
 uint32_t gg_texture_divide_rebuilt = 0;
+// GGMAX 3.19: how many resident chunk VTs the last apply asked to re-bake. Reported because
+// "the terrain looks the same" has TWO causes and they need telling apart: the re-bake never
+// ran (0 here), or it ran and the baked tile resolution simply does not resolve the source
+// texture's top mips. Without this counter the two are indistinguishable from a screenshot.
+uint32_t gg_texture_divide_vtrepaints = 0;
 
 // GGMAX 3.19: defined further down, inside namespace GGTerrain, where the terrain statics it
 // needs are in scope. (GGApplyLowSpecSwitches itself sits above that namespace.)
@@ -4146,6 +4151,7 @@ void GGTerrainWicked_SetTileShare(int k, int hold)
 // keeps residency and costs a frame or two instead of a full Generation_Restart.
 static void GGTerrainWicked_RepaintAllResidentVT()
 {
+	::gg_texture_divide_vtrepaints = 0;
 	if (!wickedTerrainInitialised) return;
 	s_terrainActivityPing = true; // idle gate - repaint work incoming
 	::wi::terrain::Terrain* terrain = GetWickedTerrain();
@@ -4153,7 +4159,10 @@ static void GGTerrainWicked_RepaintAllResidentVT()
 	for (auto& [chunk, cd] : terrain->chunks)
 	{
 		if (cd.vt && cd.vt->residency != nullptr && cd.vt->resolution != 0)
+		{
 			cd.vt->pending_repaint_blendmap = true;
+			::gg_texture_divide_vtrepaints++;
+		}
 	}
 }
 
