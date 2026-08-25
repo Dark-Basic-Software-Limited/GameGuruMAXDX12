@@ -25,21 +25,34 @@ python - "$RES" "$LIMIT" <<'PY'
 import sys, re
 res, limit = sys.argv[1], float(sys.argv[2])
 
-# POLYS reference: RE-BASELINED 2026-08-13 to the 2.32 sweep (results_0813.txt), which is the
-# first sweep where these numbers are known CORRECT. The previous 0809 reference was stale for
-# 16 of 19 demos, and worse, it was stale in a way no amount of re-running could reveal:
-# GGMAX 2.32 fixed an fp16 distance overflow that had been silently skipping draws, so POLYS
-# had been bit-stable at the WRONG value across the 2.25/2.27/2.28 sweeps.
-# ★★ AN IDENTITY GATE PROVES "NO CHANGE", NEVER "CORRECT". If a change is EXPECTED to alter
-# what gets drawn, amend C2 IN WRITING BEFORE the run (see NIGHT_INVESTIGATIONS_2026-08-12.md
-# for the C2" wording used for 2.32: an increase is allowed if attributable, a decrease fails).
+# POLYS reference: RE-BASELINED 2026-08-25 to sweep 0825 (results_0825.txt), engine `ce9751b8` /
+# game `43ac24a8`. Provenance, because a rebaseline is the one move that can quietly bless a bug:
+#   - The previous reference was the 2.32 sweep (0813). Between it and 0825 the far-tree work
+#     landed - 2.97 the pool cap, 2.98 "stop drawing trees past the terrain", 2.99 atlas slices,
+#     3.00/3.01 the billboard terrain-reach clip, 3.03 the mesh handover fade (draw_distance on
+#     pool trees), 3.04 the matching prepass clip. All six REDUCE drawn geometry by design, so the
+#     0813 table failed C2 on most of the hub and the gate had stopped carrying information.
+#   - Direction: every 0825 change vs the intervening 0823 sweep is NEGATIVE. Scatter would go
+#     both ways, so this is a build difference, and it points the way six by-design culling
+#     changes predict.
+#   - Determinism was CONFIRMED, not assumed: Canyon Offensive, the -10.1% outlier, was re-probed
+#     on a fresh launch and read 465,823 on three samples out of three, bit-exact with the sweep.
+#     Eight demos were bit-identical to 0823 including tree levels (Horseshoe Bend, Island
+#     Showdown), which corroborates from the other side.
+#   - Four demos were re-probed again on game `8a2a9f16` (the 3.19a-c refinements) and came back
+#     bit-identical to the table below.
+# ★★ AN IDENTITY GATE PROVES "NO CHANGE", NEVER "CORRECT". If a change is EXPECTED to alter what
+# gets drawn, amend C2 IN WRITING BEFORE the run (see NIGHT_INVESTIGATIONS_2026-08-12.md for the
+# C2" wording used for 2.32: an increase is allowed if attributable, a decrease fails).
+# ⚠ Anything that touches the tree pool, the billboard handover or a draw_distance will move these
+# numbers again. Say so before running, not after reading.
 REF = {
- "Aztec Game Kit Teaser":10330135, "Aztec Game Kit":3438876, "Bounty":469906,
- "Horseshoe Bend":2168281, "Island Showdown":4125704, "Operation Amazon":5504271,
- "River Raiders":2362345, "Snowy Mountain Stroll":81369, "A Grand Canyon Adventure":2279506,
- "Disruption":4677579, "Foggy Forest":10220589, "Indian Strike Force":3229699,
- "Switch Escape":109358, "Canyon Offensive":8838008, "Escape from the Zombie Cellar":28048,
- "Jungle Fever":76157, "RPG Template":3247629, "The Mystery of Z Island":722872,
+ "Aztec Game Kit Teaser":6454117, "Aztec Game Kit":522301, "Bounty":469906,
+ "Horseshoe Bend":1583122, "Island Showdown":1655768, "Operation Amazon":486602,
+ "River Raiders":258715, "Snowy Mountain Stroll":81369, "A Grand Canyon Adventure":2126818,
+ "Disruption":146413, "Foggy Forest":1248844, "Indian Strike Force":297564,
+ "Switch Escape":109358, "Canyon Offensive":465823, "Escape from the Zombie Cellar":28048,
+ "Jungle Fever":76157, "RPG Template":540778, "The Mystery of Z Island":320624,
  "Trapped":12768,
 }
 
@@ -94,7 +107,7 @@ elif len(rows) != 19:
     print("C1 LOAD      FAIL -> only %d/19 rows present" % len(rows))
 else:
     print("C1 LOAD      PASS  19/19 reached the editor")
-print("C2 GEOMETRY  %s  POLYS identical to the 0813 (2.32) reference on all %d demos"
+print("C2 GEOMETRY  %s  POLYS identical to the 0825 (3.19) reference on all %d demos"
       % ("PASS " if c2 else "FAIL ", len(rows)))
 print("C3 VRAM      %s  worst of editor+game = %.1f MB (%s), limit %.0f, headroom %.1f MB"
       % ("PASS " if c3 else "FAIL ", worst_vram[0], worst_vram[1], limit, limit - worst_vram[0]))
