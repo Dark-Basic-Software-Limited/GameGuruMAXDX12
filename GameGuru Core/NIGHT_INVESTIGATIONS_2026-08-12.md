@@ -6205,3 +6205,100 @@ sitting in the owed column — "click a waypoint", "listen for footsteps" — cl
 human never could: the waypoint one reports how much headroom the bound actually has (7.17 units
 of 25), and this one reports how many values it verified rather than merely that nothing looked
 wrong. Write the test that names the invariant, not the test that reproduces the gesture.
+
+---
+
+## §3.19d — rebaselining the release gate, and why that needed writing down
+
+`tools/sweepgate.sh` carried the 2.32 (0813) POLYS table. Six by-design tree-culling changes have
+landed since — 2.97 pool cap, 2.98 stop drawing trees past the terrain, 2.99 atlas slices,
+3.00/3.01 the billboard terrain-reach clip, 3.03 the mesh handover fade, 3.04 the prepass clip —
+all of which reduce drawn geometry. Against that table C2 failed on most of the hub.
+
+⚠ **A gate that always fails is worse than no gate**, because people stop reading it and the one
+real failure arrives dressed identically to the eleven expected ones.
+
+★ **A rebaseline is the single move that can quietly bless a bug**, so the provenance is written
+into the script itself rather than left in a commit message:
+
+- every 0825 delta against 0823 is NEGATIVE — scatter would go both ways;
+- six changes predict exactly that direction;
+- the −10.1% outlier (Canyon Offensive) was re-probed on a fresh launch and read 465,823 on three
+  samples out of three, bit-exact;
+- eight demos were already bit-identical to 0823, including tree levels (Horseshoe Bend, Island
+  Showdown), which corroborates determinism from the other side;
+- four demos were re-probed again on the current build (`8a2a9f16`, after the 3.19a–c refinements)
+  and matched the new table exactly.
+
+Gate now reads **19/19 on all four criteria, worst VRAM 3975.6 MB, headroom 120.4 MB**. Raw
+results archived as `tools/sweep_0825_3.19.txt`.
+
+⚠ Anything that touches the tree pool, the billboard handover or a `draw_distance` will move these
+numbers again. Amend C2 **in writing before the run**, not after reading it.
+
+---
+
+## §3.19e — manual test crib for the 3.19 batch
+
+Everything below is on game `f9fabe7b` / engine `dfdee264`. Every item has a one-command revert,
+so nothing here needs a rebuild to back out.
+
+### The performance panel
+
+Open it and just watch it for thirty seconds. What changed: rows that used to vanish on the frames
+they did not run now sit at 0.00, siblings are in NAME order rather than cost order, the legend
+line is gone and the total says **Main Thread Total**.
+
+⚠ **The one judgement call for you**: the list is about 50 rows longer, because ~50 rows are
+reporting 0.00 at any moment. That is exactly what was asked for and it is what makes the list
+hold still — but if the extra scrolling costs more than the stability buys, say so and it can
+become a tick box ("hide idle rows") rather than the default.
+
+★ If you miss hottest-first ordering, that is a one-line change back — but read §3.19 first: it
+was measured, and cost order cannot be made stable on 20-frame averages of sub-millisecond work.
+
+### Object Detail Distance
+
+Drag it **up** as well as down; that is the case that was broken. Watch POLYS in the panel. Note
+the curve is U-shaped (§3.11): the win peaks around 1000–2000 and turning it lower than ~500
+becomes a net LOSS because a quarter of the screen ends up mid-dissolve and the dither fade is
+alpha-tested.
+
+### Texture Detail
+
+Choose Quarter and watch the level change under you — no reload. Expect a short pause; it drains
+the GPU and re-creates every DDS.
+
+- ★ Look at the GROUND, close up and looking DOWN. At a glancing angle you will see almost
+  nothing, because the sampler is already deep in the mip chain — that fooled me for an hour.
+- ⚠ **Do not judge it by the VRAM readout.** It can go UP while textures shrink (the allocator
+  keeps freed heaps, and the editor's streaming has usually already gone below the divided size).
+  `SET_TEXTUREDIVIDE 4` twice reports the real numbers in bytes, plus how many chunk VTs re-baked.
+- ⚠ **Half will look like it does nothing useful in the editor** and that is honest: it measured
+  218.8 → 238.3 MB, a small loss, because a divided texture is opted out of streaming. Quarter is
+  far enough down to win anyway (218.8 → 59.6). In an exported game streaming never runs, so Half
+  saves there — unmeasured, the harness cannot drive an exported build.
+
+### The two things I could not test for you
+
+- **Footstep SOUND.** `TEST_ELANIMFFCACHE` proves the cache reproduces the animation-set data the
+  sound logic reads, value by value and in order, in test game with characters animating. It says
+  nothing about whether the resulting sound is right. Thirty seconds in test game settles it.
+  Revert: `SET_ELANIMFFCACHE 0`.
+- **Actually clicking a waypoint.** `TEST_WAYPOINTFAST` proves the analytic reject never excludes
+  a node the engine ray test would have hit (222,750 cases, 0 failures, 7.17 units of margin on a
+  25-unit radius). The rest of the interactive path — mouse to world position to selection to drag
+  — is untested. Revert: `SET_WAYPOINTFAST 0`.
+
+### Reverts, all live
+
+| what | off | notes |
+|---|---|---|
+| waypoint fast reject (3.15) | `SET_WAYPOINTFAST 0` | back to intersecting every node |
+| footfall keyframe cache (3.18) | `SET_ELANIMFFCACHE 0` | back to the list walk |
+| hierarchy snapshot cache (3.14) | `SET_HIERCACHE 0` | back to rebuilding every frame |
+| texture detail (3.12/3.19) | Full in the panel, or `SET_TEXTUREDIVIDE 1` | re-creates at full size |
+| object detail distance (3.11) | slider to Off, or `SET_OBJCULLDIST 0` | exact restore, verified |
+
+The profiler panel changes have no knob — they are presentation only, and reverting them is a
+source edit.
