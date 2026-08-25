@@ -6597,3 +6597,103 @@ frame but missing in another". Four distinct mechanisms were behind it in the en
 something else, and #3 in particular would never have been found by looking at the panel, because
 it fires roughly once every thirty seconds.
 
+---
+
+## §3.21 — where TESTPRO2's Lua logic time actually goes (and it is not the scripts)
+
+Lee, from the Canyon shot: *"the top one is door.lua but there is no door near me... determine why
+they are taking so much performance... suggest possible improvements such as an early exit if the
+object is too far away."*
+
+### The early exit already existed. Two scripts were opting OUT of it.
+
+`M-LUA.cpp` gates per-entity logic by distance already:
+
+| entity | logic runs within |
+|---|---|
+| ordinary object | **750** units |
+| character (`ischaracter == 1`) | **2000** (`MAXFREEZEDISTANCE`) |
+| `phyalways != 0` | **999000**, i.e. never — and it short-circuits the test outright |
+
+★★★ **`SetEntityAlwaysActive(e,1)` sets `phyalways`** (`DarkLUA_part1.cpp:195` → `RawSetEntityData`
+field 22 → `eleprof.phyalways`), and `door.lua` and `door_sliding.lua` both called it unconditionally
+in their init. They were the only two scripts on Lee's list that did, and they were exactly the two
+he had no example of anywhere near him. **Before optimising a script, check whether it opted out of
+a gate that already exists.**
+
+Fixed by moving the call into `*_properties`, where the door's mode is actually known: only a
+switch-operated door (`use_switch == 1` / `door_type == 'Switched'`) can be activated from outside
+750 units. A press-E door cannot be opened remotely at all, and the range slider tops out at 500,
+so it keeps 250 units of headroom. Measured after: **`0 only because SetEntityAlwaysActive bypassed
+the distance gate`**, and door.lua fell to 1.4 us with 0 of its 1 entity running.
+
+### ⚠ The instrument was wrong in four ways, and Lee made a decision on its numbers
+
+1. ★★ **It printed raw QPC TICKS with a "u" suffix.** QPC is 10 MHz here, so every figure was
+   **ten times smaller** than it read — "00321u" was 32 us, not 321. Now converted via
+   `PerformanceFrequency()` and labelled MICROSECONDS.
+2. It printed **nine** rows, not ten (`for (j = 9; j > 0; j--)` never emitted index 0).
+3. The 30000-tick trigger is **3 ms**, and the offender was usually absent from the list because the
+   scan zeroes any entity with `active == 0` — a script that spiked and then deactivated erased its
+   own evidence. Now latched at trigger time.
+4. ★★ **The timer bracketed the whole per-entity update**, not the script: start stamp at :871,
+   delta at :1247, ~380 lines of C++ between. "door.lua = 32 us" was never a statement about
+   door.lua. A second timer now brackets only `LuaSetFunction/PushInt/Call` and both are reported.
+
+### The answer: 2000 entities, of which 1985 have no script at all
+
+`DUMP_LOGICCOST` (new) aggregates one armed frame **by script**, which is the question "where is my
+1.1 ms going" actually asks — a top-ten per entity cannot answer it when there are two thousand.
+
+TESTPRO2 / `spotshadowtest`, test game:
+
+```
+entities considered : 2087
+ran logic           : 2000   (0 only because SetEntityAlwaysActive bypassed the gate)
+skipped by distance : 87
+total entity update : 908.1 us      total INSIDE lua : 169.7 us
+       total us   lua us   ran/have  script
+        593.8      0.0      0/1985  no_behavior_selected.lua
+         85.4     77.5      2/2     people\patrol.lua
+         59.6     49.2      2/2     people\character_attack.lua
+         41.3      4.5     16/16    markers\constantlight.lua
+         40.1     15.7      9/9     markers\FlickerLight.lua
+         26.7     16.3      4/4     objects\door_sliding.lua
+```
+
+And the new stage ranges close the row completely:
+
+```
+Update - Logic - LUA: 1.77 ms
+  LUA-loop allentities: 1.52 ms      <- 86%
+  LUA-loop finish:      0.18 ms
+  LUA-loop begin:       0.06 ms
+```
+
+★★★ **`no_behavior_selected.lua` is 593.8 us — 65% of the timed per-entity work — and ZERO of its
+1985 entities execute any Lua.** Actual script execution across the whole level is 169.7 us, under
+10% of the LUA row. The cost is not the scripts; it is the engine walking two thousand entities,
+nearly all of which do nothing. A further ~0.6 ms of `allentities` sits outside the per-entity
+stamps entirely — the loop preamble, paid per entity before the timer even starts.
+
+★ Corollary for the scripts that DO run: a scripted entity costs ~10× a script-less one even
+before its script executes (constantlight: 16 entities, 41.3 us total, 4.5 us of it Lua). Part of
+that is `t.strwork = cstr(cstr(aimainname) + "_main")` — a heap string concatenation per scripted
+entity per frame — followed by a `strcpy` in `LuaSetFunction` and a by-name global lookup in
+`LuaCall`. Caching the composed name and the function reference per entity is the obvious next win.
+
+⚠ Characters are the thing that scales badly: patrol measured **38.8 us of Lua per character** and
+character_attack 24.6 us, all of it `masterinterpreter` walking behaviour bytecode. Two of each here
+is nothing; forty would be over a millisecond on its own.
+
+### ★★★ A harness command MUST be idempotent
+
+`DUMP_LOGICCOST` first shipped consuming the report on read (return it, then blank it). It **never
+once produced data from a script**, while the identical code lit up Lee's message box perfectly.
+The harness re-executes a command file that is still sitting there, so between the arm call and the
+read call the command ran again by itself, consumed the report, and wrote it to an `auto_result.txt`
+nobody was listening to. ★ The diagnostic that cracked it was making the failure reply state its own
+internals (`arm was 0, last pass saw 2083 entities`) — that ruled out "the pass never ran" in one
+reading and pointed straight at the consume. Same family as `feedback_stale_auto_command`: any
+harness command has to survive being run twice.
+

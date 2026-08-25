@@ -1,4 +1,4 @@
--- Door v30 by Lee and Necrym59
+-- Door v31 by Lee and Necrym59
 -- DESCRIPTION: Open and closes an 'animating' door when the player is within [Range=70(50,500)],
 -- DESCRIPTION: and when triggered will open the door, play <Sound0> and turn collision off after a delay of [DELAY=1000].
 -- DESCRIPTION: When the door is closed, play <Sound1> is played. You can elect to keep the door [Unlocked!=1], and customize the [LockedText$="Door locked. Find key"].
@@ -57,6 +57,13 @@ function door_properties(e, range, delay, unlocked, lockedtext, cannotclose, too
 	door[e]['prompt_display'] = prompt_display or defaultPromptDisplay	
 	door[e]['item_highlight'] = item_highlight or 0
 	door[e]['highlight_icon'] = highlight_icon_imagefile
+	-- GGMAX 3.21: opt out of the 750-unit logic freeze ONLY when the door is switch-operated,
+	-- i.e. when something outside that radius can activate it. See the note in door_init.
+	if door[e]['use_switch'] == 1 then
+		SetEntityAlwaysActive(e,1)
+	else
+		SetEntityAlwaysActive(e,0)
+	end
 end
 
 function door_init(e)
@@ -91,7 +98,15 @@ function door_init(e)
 	tEnt[e] = 0
 	autodelay[e] = math.huge
 	selectobj[e] = 0
-	SetEntityAlwaysActive(e,1)	
+	-- GGMAX 3.21: SetEntityAlwaysActive was called here unconditionally, and it is the reason
+	-- door.lua sat at the top of the logic cost list on a level where the player was nowhere
+	-- near a door. The engine already freezes logic for objects past 750 units
+	-- (M-LUA.cpp, iDistanceForLogicToBeProcessed) - unless phyalways is set, which is exactly
+	-- what SetEntityAlwaysActive sets. Every door in the level was opting out of that gate.
+	-- It is now decided in door_properties, where use_switch is actually known: only a
+	-- SWITCH-operated door has to hear an activation from outside 750 units. A press-E door
+	-- cannot be opened remotely at all, and the range slider tops out at 500, so it has 250
+	-- units of headroom before the gate can affect it.
 end
 
 function door_main(e)

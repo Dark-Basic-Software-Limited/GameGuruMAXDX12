@@ -9,6 +9,7 @@
 
 #ifdef OPTICK_ENABLE
 #include "optick.h"
+#include "wiProfiler.h"   // GGMAX 3.21: lua_loop stage ranges
 #endif
 
 // Externs
@@ -808,6 +809,87 @@ void lua_ensureentityglobalarrayisinitialised ( void )
 #define TABLEOFPERFORMANCEMAX 5000
 int g_iViewPerformanceTimers = 0;
 LONGLONG g_tableofperformancetimers[TABLEOFPERFORMANCEMAX];
+
+// GGMAX 3.21: logic-cost reporting. The old "Top Ten Most Expensive Logic" box was misleading in
+// four separate ways and Lee read a real 32 microseconds as 321. Fixed here:
+//
+//  (1) UNITS. It printed raw QueryPerformanceCounter TICKS with a "u" suffix. QPC is 10 MHz on a
+//      modern Windows box, so every number was TEN TIMES smaller than it read. Now converted with
+//      the actual PerformanceFrequency() and labelled.
+//  (2) It printed NINE rows, not ten - the loop ran j=9 down to j>0 and never emitted index 0.
+//  (3) The 30000-tick (= 3 ms) trigger fired on an entity that was usually ABSENT from the list,
+//      because the scan zeroes any entity with active==0 and a script that spikes then deactivates
+//      erased its own evidence. The offender is now latched at trigger time.
+//  (4) ★★ The timer bracketed the WHOLE per-entity update - coordinate sync, the usekey scan,
+//      animation handling, ~380 lines of C++ - not the script. So "door.lua = 32us" was never a
+//      statement about door.lua. A SECOND timer now brackets just LuaSetFunction/PushInt/Call, and
+//      both numbers are reported, which is the only way to tell a slow script from a slow entity.
+//
+// ★ And the thing the box could never answer - "where is my 1.1 ms going" - needs totals per
+// SCRIPT, not a top-ten per entity: nine entities at 32us each are not the problem when there are
+// four hundred more below them. gg_logiccost_* aggregates by script name for one armed frame.
+LONGLONG g_tableofluatimers[TABLEOFPERFORMANCEMAX];
+
+#define GG_LOGICCOST_MAXSCRIPTS 96
+struct GGLogicCostScript
+{
+	char  name[96];
+	LONGLONG luaTicks;
+	LONGLONG allTicks;
+	int   entities;
+	int   ranThisFrame;
+};
+static GGLogicCostScript gg_logiccost[GG_LOGICCOST_MAXSCRIPTS];
+int  gg_logiccost_used = 0;
+volatile int gg_logiccost_arm = 0;      // 1 = aggregate on the next pass (harness / producelogfiles)
+// GGMAX 3.21: volatile because the harness command handler writes it and the
+// game loop reads it twice per pass with opaque calls in between.
+int  gg_logiccost_considered = 0;        // entities the loop looked at
+static int  gg_logiccost_ran = 0;        // entities that passed the distance gate
+static int  gg_logiccost_alwaysactive = 0; // ... of those, ones that ONLY passed via phyalways
+static int  gg_logiccost_gated = 0;      // entities skipped by the distance gate
+char gg_logiccost_report[16384] = "";    // last completed report, read by DUMP_LOGICCOST
+static int  gg_logiccost_offenderE = 0;  // (3) latched so it cannot vanish from the list
+static LONGLONG gg_logiccost_offenderTicks = 0;
+
+static double gg_ticks_to_us(LONGLONG ticks)
+{
+	static double perTick = 0.0;
+	if (perTick == 0.0)
+	{
+		LONGLONG f = PerformanceFrequency();
+		perTick = (f > 0) ? (1000000.0 / (double)f) : 0.1;
+	}
+	return (double)ticks * perTick;
+}
+
+static void gg_logiccost_note(int e, LONGLONG allTicks, LONGLONG luaTicks)
+{
+	if (gg_logiccost_arm == 0) return;
+	const char* pName = t.entityelement[e].eleprof.aimain_s.Get();
+	if (pName == NULL || pName[0] == 0) pName = "(no script)";
+	for (int i = 0; i < gg_logiccost_used; i++)
+	{
+		if (strcmp(gg_logiccost[i].name, pName) == 0)
+		{
+			gg_logiccost[i].luaTicks += luaTicks;
+			gg_logiccost[i].allTicks += allTicks;
+			gg_logiccost[i].entities++;
+			if (luaTicks > 0) gg_logiccost[i].ranThisFrame++;
+			return;
+		}
+	}
+	if (gg_logiccost_used < GG_LOGICCOST_MAXSCRIPTS)
+	{
+		GGLogicCostScript& r = gg_logiccost[gg_logiccost_used++];
+		strncpy(r.name, pName, sizeof(r.name) - 1);
+		r.name[sizeof(r.name) - 1] = 0;
+		r.luaTicks = luaTicks;
+		r.allTicks = allTicks;
+		r.entities = 1;
+		r.ranThisFrame = (luaTicks > 0) ? 1 : 0;
+	}
+}
 #define SWITCHTO30FPSRANGE 1000
 uint32_t LuaFrameCount = 0;
 uint32_t LuaFrameCount2 = 0;
@@ -820,6 +902,16 @@ void lua_loop_allentities ( void )
 
 	LuaFrameCount++;
 
+	// GGMAX 3.21: start a fresh aggregation pass if one was armed
+	if (gg_logiccost_arm == 1)
+	{
+		gg_logiccost_used = 0;
+		gg_logiccost_considered = 0;
+		gg_logiccost_ran = 0;
+		gg_logiccost_alwaysactive = 0;
+		gg_logiccost_gated = 0;
+	}
+
 	bool bMarkerCount = false;
 	// Go through all entities with active LUA scripts
 	for ( t.e = 1 ; t.e <= g.entityelementlist; t.e++ )
@@ -831,7 +923,7 @@ void lua_loop_allentities ( void )
 				continue;
 		}
 		// reset performance measure
-		if ( t.e < TABLEOFPERFORMANCEMAX) g_tableofperformancetimers[t.e] = 0;
+		if ( t.e < TABLEOFPERFORMANCEMAX) { g_tableofperformancetimers[t.e] = 0; g_tableofluatimers[t.e] = 0; }
 
 		// this entity
 		int thisentid = t.entityelement[t.e].bankindex;
@@ -918,7 +1010,23 @@ void lua_loop_allentities ( void )
 					iDistanceForLogicToBeProcessed = t.maximumnonefreezedistance * 4; //PE: Expand it a bit for zones as they can be large.
 			}
 
-			if (t.entityelement[t.e].plrdist < iDistanceForLogicToBeProcessed || t.entityelement[t.e].eleprof.phyalways != 0 || t.entityelement[t.e].lua.flagschanged == 2)
+			// GGMAX 3.21: count what the distance gate is actually doing, because "where is my
+			// 1.1 ms going" is usually answered by HOW MANY entities ran, not by which one was
+			// worst. An entity that only got through on phyalways is one that SetEntityAlwaysActive
+			// opted out of the gate - that is what put door.lua top of the list with no door in sight.
+			const bool bInRange   = (t.entityelement[t.e].plrdist < iDistanceForLogicToBeProcessed);
+			const bool bRunsLogic = (bInRange || t.entityelement[t.e].eleprof.phyalways != 0 || t.entityelement[t.e].lua.flagschanged == 2);
+			if (gg_logiccost_arm == 1)
+			{
+				gg_logiccost_considered++;
+				if (bRunsLogic)
+				{
+					gg_logiccost_ran++;
+					if (!bInRange && t.entityelement[t.e].eleprof.phyalways != 0) gg_logiccost_alwaysactive++;
+				}
+				else gg_logiccost_gated++;
+			}
+			if (bRunsLogic)
 			{
 				//  If entity is waypoint zone, determine if player inside or outside
 				if (  t.waypointindex>0 ) 
@@ -1224,10 +1332,15 @@ void lua_loop_allentities ( void )
 								}
 								else
 								{
+									// GGMAX 3.21: bracket ONLY the script call. The outer timer covers
+									// the whole per-entity update, so the two together say whether a
+									// row is a slow script or a slow entity.
 									t.strwork = cstr(cstr(t.entityelement[t.e].eleprof.aimainname_s.Get()) + "_main");
+									LONGLONG ggLuaT0 = PerformanceTimer();
 									LuaSetFunction (t.strwork.Get(), 1, 0);
-									LuaPushInt (t.e); 
+									LuaPushInt (t.e);
 									LuaCall ();
+									if (t.e < TABLEOFPERFORMANCEMAX) g_tableofluatimers[t.e] += PerformanceTimer() - ggLuaT0;
 								}
 							}
 						}
@@ -1246,12 +1359,24 @@ void lua_loop_allentities ( void )
 				// record time taken for this entity LUA logic
 				g_tableofperformancetimers[t.e] = PerformanceTimer() - g_tableofperformancetimers[t.e];
 
+				// GGMAX 3.21: fold into the per-SCRIPT totals while the numbers are still live
+				gg_logiccost_note(t.e, g_tableofperformancetimers[t.e], g_tableofluatimers[t.e]);
+
 				// if extreme, and flagged, stop action and view this naughty script!
 				if (g.gproducelogfiles == 3)
 				{
-					int iUAsMillisecond = 30000;
-					if (g_tableofperformancetimers[t.e] > iUAsMillisecond)
+					// 30000 ticks at a 10 MHz QPC is 3 ms, not the 30 ms the old name implied.
+					const LONGLONG iTriggerTicks = 30000;
+					if (g_tableofperformancetimers[t.e] > iTriggerTicks)
 					{
+						// GGMAX 3.21: LATCH the offender. The scan below zeroes any entity that has
+						// since gone inactive, so a script that spikes and then deactivates used to
+						// erase the only evidence of why the box appeared at all.
+						if (g_tableofperformancetimers[t.e] > gg_logiccost_offenderTicks)
+						{
+							gg_logiccost_offenderTicks = g_tableofperformancetimers[t.e];
+							gg_logiccost_offenderE = t.e;
+						}
 						g_iViewPerformanceTimers = 1;
 					}
 				}
@@ -1259,60 +1384,114 @@ void lua_loop_allentities ( void )
 		}
 	}
 
-	// view LUA logic performance per entity
-	if ( g_iViewPerformanceTimers == 1 )
+	// GGMAX 3.21: logic-cost report. Rewritten - see the note by g_tableofluatimers for the four
+	// ways the old one misled. Built into gg_logiccost_report so the harness can read it
+	// (DUMP_LOGICCOST); the MessageBox only appears on the producelogfiles=3 path, because a modal
+	// box on a harness-driven run reads as a hang.
+	if (gg_logiccost_arm == 1)
 	{
-		// Find the top ten worst offenders and list them out
+		// --- top ten entities, by whole-entity cost -------------------------------------------
 		int iWorstOffenderE[10];
 		LONGLONG iWorstOffender[10];
-		for (int i = 0; i < 10; i++)
-		{
-			iWorstOffenderE[i] = 0;
-			iWorstOffender[i] = 0;
-		}
+		for (int i = 0; i < 10; i++) { iWorstOffenderE[i] = 0; iWorstOffender[i] = 0; }
+		LONGLONG iGrandTotalAll = 0, iGrandTotalLua = 0;
 		for (int e = 1; e <= g.entityelementlist; e++)
 		{
 			if (e < TABLEOFPERFORMANCEMAX)
 			{
-				if (t.entityelement[e].active == 0) g_tableofperformancetimers[e] = 0;
+				if (t.entityelement[e].active == 0 && e != gg_logiccost_offenderE)
+				{
+					g_tableofperformancetimers[e] = 0;
+					g_tableofluatimers[e] = 0;
+				}
+				iGrandTotalAll += g_tableofperformancetimers[e];
+				iGrandTotalLua += g_tableofluatimers[e];
 				if (g_tableofperformancetimers[e] > iWorstOffender[0])
 				{
 					iWorstOffenderE[0] = e;
 					iWorstOffender[0] = g_tableofperformancetimers[e];
 					for (int i = 0; i < 10; i++)
-					{
-						for (int j = 0; j < 10; j++)
-						{
-							if (j > i)
+						for (int j = i + 1; j < 10; j++)
+							if (iWorstOffender[i] > iWorstOffender[j])
 							{
-								if (iWorstOffender[i] > iWorstOffender[j])
-								{
-									int iStoreE = iWorstOffenderE[i];
-									LONGLONG iStore = iWorstOffender[i];
-									iWorstOffenderE[i] = iWorstOffenderE[j];
-									iWorstOffender[i] = iWorstOffender[j];
-									iWorstOffenderE[j] = iStoreE;
-									iWorstOffender[j] = iStore;
-								}
+								int iStoreE = iWorstOffenderE[i]; LONGLONG iStore = iWorstOffender[i];
+								iWorstOffenderE[i] = iWorstOffenderE[j]; iWorstOffender[i] = iWorstOffender[j];
+								iWorstOffenderE[j] = iStoreE; iWorstOffender[j] = iStore;
 							}
-						}
-					}
 				}
 			}
 		}
-		char pShowList[10240];
-		strcpy(pShowList, "Top Ten Most Expensive Logic This Cycle:\n\n");
-		for (int j = 9; j > 0; j--)
+
+		char* p = gg_logiccost_report;
+		int cap = (int)sizeof(gg_logiccost_report);
+		int w = 0;
+		w += _snprintf(p + w, cap - w,
+			"LOGIC COST, ONE FRAME  (times are MICROSECONDS - the old box printed raw QPC ticks)\n"
+			"  entities considered : %d\n"
+			"  ran logic           : %d   (of those, %d only because SetEntityAlwaysActive bypassed the distance gate)\n"
+			"  skipped by distance : %d\n"
+			"  total entity update : %.1f us      total INSIDE lua : %.1f us\n"
+			"  (gate is 750 units for objects, 2000 for characters, never for AlwaysActive)\n\n",
+			gg_logiccost_considered, gg_logiccost_ran, gg_logiccost_alwaysactive, gg_logiccost_gated,
+			gg_ticks_to_us(iGrandTotalAll), gg_ticks_to_us(iGrandTotalLua));
+
+		// --- per SCRIPT, which is the question "where is my 1.1 ms going" actually asks --------
+		for (int i = 0; i < gg_logiccost_used; i++)
+			for (int j = i + 1; j < gg_logiccost_used; j++)
+				if (gg_logiccost[j].allTicks > gg_logiccost[i].allTicks)
+				{
+					GGLogicCostScript tmp = gg_logiccost[i];
+					gg_logiccost[i] = gg_logiccost[j];
+					gg_logiccost[j] = tmp;
+				}
+		w += _snprintf(p + w, cap - w,
+			"BY SCRIPT (all entities running it, this frame), worst first:\n"
+			"      total us   lua us   ran/have  script\n");
+		for (int i = 0; i < gg_logiccost_used && i < 25 && w < cap - 512; i++)
+		{
+			if (gg_logiccost[i].allTicks <= 0 && gg_logiccost[i].ranThisFrame == 0) continue;
+			w += _snprintf(p + w, cap - w, "   %9.1f %8.1f   %4d/%-4d  %s\n",
+				gg_ticks_to_us(gg_logiccost[i].allTicks), gg_ticks_to_us(gg_logiccost[i].luaTicks),
+				gg_logiccost[i].ranThisFrame, gg_logiccost[i].entities, gg_logiccost[i].name);
+		}
+		if (gg_logiccost_used >= GG_LOGICCOST_MAXSCRIPTS)
+			w += _snprintf(p + w, cap - w, "   ...script table FULL at %d, some scripts not listed\n", GG_LOGICCOST_MAXSCRIPTS);
+
+		// --- top ten entities ------------------------------------------------------------------
+		w += _snprintf(p + w, cap - w,
+			"\nTOP TEN ENTITIES (whole per-entity update, which is MORE than the script):\n"
+			"      total us   lua us   entity  script\n");
+		for (int j = 9; j >= 0 && w < cap - 512; j--)
 		{
 			int e = iWorstOffenderE[j];
-			char pMeasure[32];
-			sprintf(pMeasure, "%lldu", 100000+iWorstOffender[j]);
-			char pThisLine[1024];
-			sprintf(pThisLine, "%s : %d = %s\n", pMeasure+1, e, t.entityelement[e].eleprof.aimain_s.Get());
-			strcat(pShowList, pThisLine);
+			if (e <= 0) continue;
+			w += _snprintf(p + w, cap - w, "   %9.1f %8.1f   %6d  %s\n",
+				gg_ticks_to_us(iWorstOffender[j]),
+				gg_ticks_to_us((e < TABLEOFPERFORMANCEMAX) ? g_tableofluatimers[e] : 0),
+				e, t.entityelement[e].eleprof.aimain_s.Get());
 		}
-		MessageBoxA(NULL, pShowList, "Logic Performance (auto-triggered using 'producelogfiles=3')", MB_OK);
-		g_iViewPerformanceTimers = 0;
+		if (gg_logiccost_offenderE > 0 && w < cap - 512)
+			w += _snprintf(p + w, cap - w,
+				"\nTRIGGERED BY: entity %d (%s) at %.1f us - latched, because the scan zeroes any\n"
+				"entity that has since gone inactive and this one used to erase its own evidence.\n",
+				gg_logiccost_offenderE, t.entityelement[gg_logiccost_offenderE].eleprof.aimain_s.Get(),
+				gg_ticks_to_us(gg_logiccost_offenderTicks));
+		gg_logiccost_report[cap - 1] = 0;
+
+		gg_logiccost_arm = 0;
+		if (g_iViewPerformanceTimers == 1)
+		{
+			MessageBoxA(NULL, gg_logiccost_report, "Logic Performance (auto-triggered using 'producelogfiles=3')", MB_OK);
+			g_iViewPerformanceTimers = 0;
+			gg_logiccost_offenderE = 0;
+			gg_logiccost_offenderTicks = 0;
+		}
+	}
+	else if (g_iViewPerformanceTimers == 1)
+	{
+		// Triggered part-way through this pass, so the aggregation is incomplete. Arm and report
+		// on the NEXT pass instead of showing a half-filled table.
+		gg_logiccost_arm = 1;
 	}
 }
 //#pragma optimize("", on)
@@ -1348,11 +1527,36 @@ void lua_loop ( void )
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
-	panel_First2DDrawing();
-	lua_loop_begin();
-	lua_loop_allentities();
-	lua_loop_finish();
-	panel_Last2DDrawing();
+	// GGMAX 3.21: split the "Update - Logic - LUA" row into its four stages.
+	// DUMP_LOGICCOST accounts for 678 us of per-entity work on TESTPRO2 while the LUA row reads
+	// 1.05 ms, and "the rest is somewhere else in this row" is not an answer. These four say
+	// where. ★ They are cheap named ranges, not markers - a marker is invisible to wi::profiler
+	// and would have left the same hole (the 2.94c lesson).
+	{
+		auto r = wi::profiler::BeginRangeCPU("LUA-panel First2D");
+		panel_First2DDrawing();
+		wi::profiler::EndRange(r);
+	}
+	{
+		auto r = wi::profiler::BeginRangeCPU("LUA-loop begin");
+		lua_loop_begin();
+		wi::profiler::EndRange(r);
+	}
+	{
+		auto r = wi::profiler::BeginRangeCPU("LUA-loop allentities");
+		lua_loop_allentities();
+		wi::profiler::EndRange(r);
+	}
+	{
+		auto r = wi::profiler::BeginRangeCPU("LUA-loop finish");
+		lua_loop_finish();
+		wi::profiler::EndRange(r);
+	}
+	{
+		auto r = wi::profiler::BeginRangeCPU("LUA-panel Last2D");
+		panel_Last2DDrawing();
+		wi::profiler::EndRange(r);
+	}
 }
 
 void lua_raycastingwork (void)

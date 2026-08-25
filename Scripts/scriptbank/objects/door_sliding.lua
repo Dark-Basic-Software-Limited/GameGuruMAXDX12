@@ -1,4 +1,4 @@
--- Door Sliding v35 - Necrym59 and Lee
+-- Door Sliding v36 - Necrym59 and Lee
 -- DESCRIPTION: Open and close a sliding door. 
 -- DESCRIPTION: [MOVE_ANGLE=0(0,360)] 
 -- DESCRIPTION: [MOVE_DISTANCE=90] 
@@ -89,6 +89,17 @@ function door_sliding_properties( e, move_angle, move_distance, move_delay, move
 		-- this can happen if older level using older script with deranged params
 		door.door_type = 'Auto'
 	end
+	-- GGMAX 3.21: this used to be an unconditional SetEntityAlwaysActive(e,1) in the init, which
+	-- opted every sliding door out of the engine's 750-unit logic freeze - the reason door
+	-- scripts topped the logic cost list with no door anywhere near the player. Only a Switched
+	-- door needs to hear an activation from beyond that radius; Auto opens on proximity and
+	-- Manual needs a key press, and door_range defaults to 100, so both are comfortably inside
+	-- the gate. Decided here rather than in the init because door_type is not known until now.
+	if door.door_type == 'Switched' then
+		SetEntityAlwaysActive(e,1)
+	else
+		SetEntityAlwaysActive(e,0)
+	end
 end 
 
 function door_sliding_init( e )
@@ -122,7 +133,7 @@ function door_sliding_init( e )
 	hl_icon[e] = 0
 	hl_imgwidth[e] = 0
 	hl_imgheight[e] = 0		
-	SetEntityAlwaysActive(e,1)
+	-- GGMAX 3.21: moved to door_sliding_properties and made conditional - see the note there.
 	------------------------------------------------------
 	local door = g_door_sliding[ e ]
 	door.obj = g_Entity[ e ].obj
@@ -183,6 +194,9 @@ function door_sliding_main(e)
 	-- only having a key can unlock a door
 	if g_Entity[e]['haskey'] == 1 then 
 		door.IsUnlocked = true
+	end
+	if g_Entity[e]['haskey'] == 0 then 
+		door.IsUnlocked = false
 	end
 	
 	-- if was spawned at start, and activated here, reset activation so initial activation was just to unlock the door

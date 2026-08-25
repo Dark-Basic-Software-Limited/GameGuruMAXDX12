@@ -5951,6 +5951,46 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "DUMP_LOGICCOST") == 0)
+	{
+		// GGMAX 3.21: where the per-frame LUA logic cost actually goes, aggregated BY SCRIPT.
+		// The producelogfiles=3 box only ever showed a top-ten per ENTITY, which on a level with
+		// hundreds of scripted entities is a rounding error - Lee's Canyon shot listed nine rows
+		// totalling 0.147 ms against a 1.17 ms LUA row.
+		// Two-step by design: this call ARMS a one-frame aggregation, the NEXT call returns it.
+		// Aggregating every frame would mean a strcmp per entity per script per frame.
+		// ⚠ Deliberately does NOT raise the MessageBox the producelogfiles path uses - a modal
+		// box on a harness run reads as a hang.
+		// GGMAX 3.21: IDEMPOTENT ON PURPOSE. The first version consumed the report on read
+		// (returned it, then blanked it) and it never once produced data from a script, while
+		// the same code lit up Lee's message box perfectly. The harness re-executes a command
+		// file that is still sitting there, so between my "arm" call and my "read" call the
+		// command ran again by itself, consumed the report, and wrote it to an auto_result.txt
+		// nobody was listening to - see feedback_stale_auto_command. A harness command must be
+		// safe to run twice. This one now re-arms every call and never clears anything: repeats
+		// are free and the caller just gets the most recent completed frame.
+		extern volatile int gg_logiccost_arm;
+		extern int gg_logiccost_used, gg_logiccost_considered;
+		extern char gg_logiccost_report[16384];
+		const int wasArmed = gg_logiccost_arm;
+		gg_logiccost_arm = 1;                 // always re-arm, so a second call is a fresh frame
+		if (gg_logiccost_report[0] == 0)
+		{
+			_snprintf(result, resultSize,
+				"ARMED: no completed frame yet. Send DUMP_LOGICCOST again in a second.\n"
+				"  (diag: arm was %d, last pass saw %d entities and %d distinct scripts. If arm was\n"
+				"   already 1 and entities is 0, lua_loop_allentities is not running - you are\n"
+				"   probably in the editor, where entity logic does not run.)",
+				wasArmed, gg_logiccost_considered, gg_logiccost_used);
+		}
+		else
+		{
+			_snprintf(result, resultSize, "%s", gg_logiccost_report);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "DUMP_IDLEPEAKS") == 0)
 	{
 		// GGMAX 3.20a: what a "hide rows at 0.00" rule can actually reach here. A dump sample
