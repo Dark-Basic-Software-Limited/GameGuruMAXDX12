@@ -13,6 +13,8 @@
 #include "..\Imgui\imgui_internal.h"
 #include "..\Imgui\imgui_impl_win32.h"
 #include "..\Imgui\imgui_gg_dx11.h"
+#include <vector>   // GGMAX 3.19: waypoint reject self-test
+#include <cmath>
 
 bool bWaypointDrawmode = false;
 int iDrawPoints = 0;
@@ -833,6 +835,145 @@ void waypoint_showallpaths ( void )
 			if (  ObjectExist(t.obj) == 1  )  ShowObject (  t.obj );
 		}
 	}
+}
+
+// GGMAX 3.19: SELF-TEST for the 3.15 analytic waypoint-hover reject.
+//
+// 3.15 replaced a per-node engine ray test with a cheap closest-approach-to-segment reject
+// (P2-mainfunc 0.56 -> 0.01 ms, +6.4% FPS). The reject is a conservative BOUND, and the argument
+// for it is geometric: MakeObjectCube(25) has a half extent of 12.5 and therefore a half-diagonal
+// of 12.5*sqrt(3) = 21.65, so a 25-unit reject radius can only ever admit EXTRA candidates to the
+// same test that decided them before. That is an argument, not evidence, and nobody had hovered a
+// waypoint on this build.
+//
+// This command turns the argument into a measurement. For a spread of pick segments aimed at and
+// around every node, it runs BOTH tests on EVERY node and counts the only outcome that would be a
+// bug: the reject skipping a node the engine intersect would have HIT. It also reports the tightest
+// margin observed, which says how much headroom the 25 actually has rather than how much it should
+// have in theory.
+//
+// Editor-only, one-shot, and it hitches a frame - it is a test command, not a per-frame path.
+void GGWaypoint_SelfTest(int iSamplesPerNode, char* result, int resultSize)
+{
+	// Gather the live nodes first. t.waypoint[] is a sparse set of chains.
+	struct WPNode { float x, y, z; int chain, node; };
+	std::vector<WPNode> nodes;
+	for (int i = 1; i <= g.waypointmax; i++)
+	{
+		if (t.waypoint[i].count <= 0) continue;
+		for (int w = t.waypoint[i].start; w <= t.waypoint[i].finish; w++)
+		{
+			WPNode n;
+			n.x = t.waypointcoord[w].x; n.y = t.waypointcoord[w].y; n.z = t.waypointcoord[w].z;
+			n.chain = i; n.node = w;
+			nodes.push_back(n);
+		}
+	}
+	if (nodes.empty())
+	{
+		_snprintf(result, resultSize,
+			"SKIP: this level has no waypoint nodes, so there is nothing to test. Load a level with "
+			"waypoints (or place a few) and send this again.");
+		result[resultSize - 1] = 0;
+		return;
+	}
+
+	if (ObjectExist(g.waypointdetectworkobject) == 0) MakeObjectCube(g.waypointdetectworkobject, 25.0f);
+
+	const float sx = CameraPositionX(), sy = CameraPositionY(), sz = CameraPositionZ();
+	const float radius2 = 25.0f * 25.0f;
+
+	// Offsets straddle the numbers that matter: 21.65 is the cube's true half-diagonal and 25 is
+	// the reject radius, so a bound that is even slightly too tight shows up between them.
+	static const float kOff[] = { 0.0f, 6.0f, 12.0f, 18.0f, 21.0f, 23.0f, 24.9f, 26.0f, 32.0f };
+	static const int   kOffCount = (int)(sizeof(kOff) / sizeof(kOff[0]));
+
+	// Cap the work: this is O(targets x nodes) engine ray tests.
+	const int kMaxIntersects = 200000;
+	int targetStride = 1;
+	{
+		const long long want = (long long)nodes.size() * (long long)iSamplesPerNode * (long long)nodes.size();
+		while (want / targetStride > kMaxIntersects && targetStride < (int)nodes.size()) targetStride++;
+	}
+
+	long long cases = 0, intersects = 0;
+	long long falseNegatives = 0;   // reject said SKIP, engine said HIT  <- the only real bug
+	long long extraAdmitted = 0;    // reject said KEEP, engine said MISS <- harmless, just work
+	float worstMargin = 1.0e30f;    // smallest (radius - closest approach) over all genuine HITS
+	char firstFailure[256]; firstFailure[0] = 0;
+
+	for (size_t ti = 0; ti < nodes.size(); ti += targetStride)
+	{
+		for (int s = 0; s < iSamplesPerNode; s++)
+		{
+			// aim the pick segment at the node, then at points around it along each axis in turn
+			const int oi = s % kOffCount;
+			const int ax = (s / kOffCount) % 3;
+			float tx = nodes[ti].x, ty = nodes[ti].y, tz = nodes[ti].z;
+			if      (ax == 0) tx += kOff[oi];
+			else if (ax == 1) ty += kOff[oi];
+			else              tz += kOff[oi];
+
+			const float dx = tx - sx, dy = ty - sy, dz = tz - sz;
+			const float len2 = dx*dx + dy*dy + dz*dz;
+			if (len2 <= 0.0f) continue;
+			cases++;
+
+			for (size_t ni = 0; ni < nodes.size(); ni++)
+			{
+				// (a) the analytic reject, character for character as the hover loop runs it
+				const float px = nodes[ni].x - sx, py = nodes[ni].y - sy, pz = nodes[ni].z - sz;
+				float tt = (px*dx + py*dy + pz*dz) / len2;
+				if (tt < 0.0f) tt = 0.0f; else if (tt > 1.0f) tt = 1.0f;
+				const float cx = px - tt*dx, cy = py - tt*dy, cz = pz - tt*dz;
+				const float closest2 = cx*cx + cy*cy + cz*cz;
+				const bool rejected = (closest2 > radius2);
+
+				// (b) the engine test the reject is standing in for
+				PositionObject(g.waypointdetectworkobject, nodes[ni].x, nodes[ni].y, nodes[ni].z);
+				HideObject(g.waypointdetectworkobject);
+				const float dist = IntersectObject(g.waypointdetectworkobject, sx, sy, sz, tx, ty, tz);
+				intersects++;
+				const bool hit = (dist > 0.0f);
+
+				if (hit)
+				{
+					const float margin = 25.0f - sqrtf(closest2);
+					if (margin < worstMargin) worstMargin = margin;
+				}
+				if (rejected && hit)
+				{
+					falseNegatives++;
+					if (firstFailure[0] == 0)
+					{
+						_snprintf(firstFailure, sizeof(firstFailure),
+							" FIRST: chain %d node %d at (%.1f,%.1f,%.1f), closest approach %.2f > 25.00, "
+							"engine hit at %.2f.", nodes[ni].chain, nodes[ni].node,
+							nodes[ni].x, nodes[ni].y, nodes[ni].z, sqrtf(closest2), dist);
+						firstFailure[sizeof(firstFailure) - 1] = 0;
+					}
+				}
+				else if (!rejected && !hit)
+				{
+					extraAdmitted++;
+				}
+			}
+		}
+	}
+
+	_snprintf(result, resultSize,
+		"%s: TEST_WAYPOINTFAST - %lld nodes, %lld pick segments, %lld engine ray tests.\n"
+		"  false negatives (reject SKIPPED a node the engine HIT): %lld   <- must be 0\n"
+		"  extra admitted (reject kept a node the engine missed):  %lld   (harmless, just work)\n"
+		"  tightest margin on a genuine hit: %.2f units of the 25.00 reject radius%s\n"
+		"  camera (%.1f,%.1f,%.1f), target stride %d.%s",
+		(falseNegatives == 0) ? "OK" : "FAIL",
+		(long long)nodes.size(), cases, intersects,
+		falseNegatives, extraAdmitted,
+		(worstMargin > 1.0e29f) ? 0.0f : worstMargin,
+		(worstMargin > 1.0e29f) ? " (no hit was produced - see the note below)" : "",
+		sx, sy, sz, targetStride, firstFailure);
+	result[resultSize - 1] = 0;
 }
 
 void waypoint_mousemanage ( void )

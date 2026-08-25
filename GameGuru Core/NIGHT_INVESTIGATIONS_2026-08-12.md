@@ -6115,3 +6115,47 @@ until that table is re-baselined.
 `SET_OBJCULLDIST <units>` (unchanged, now works upwards). `SET_TEXTUREDIVIDE 1|2|4` — the reply
 reports the PREVIOUS apply, because the apply is deferred to the next update; send it twice to read
 the one you just asked for, including the terrain chunk-VT re-bake count.
+
+---
+
+## §3.19b — closing the 3.15 waypoint debt with a measurement instead of a click
+
+3.15 replaced a per-node engine ray test with an analytic closest-approach-to-segment reject
+(P2-mainfunc 0.56 → 0.01 ms, +6.4% FPS) and shipped with an honest warning attached: *nobody has
+hovered or clicked a waypoint on this build*. The safety argument was geometric —
+`MakeObjectCube(25)` has a half extent of 12.5 and therefore a half-diagonal of 12.5·√3 = 21.65,
+so a 25-unit reject radius can only ever admit EXTRA candidates to the same test that decided them
+before. That is an argument, not evidence, and it had been sitting in the owed column for two days
+waiting on a human with a mouse.
+
+`TEST_WAYPOINTFAST` turns it into a measurement. For a spread of pick segments aimed at and around
+every node in the level, it runs BOTH tests on EVERY node and counts the only outcome that would be
+a bug: **the reject skipping a node the engine intersect would have HIT.** The offsets straddle the
+two numbers that matter (21.65, the cube's true half-diagonal, and 25, the reject radius), so a
+bound even slightly too tight shows up between them.
+
+| level | nodes | pick segments | engine ray tests | false negatives | tightest margin |
+|---|---|---|---|---|---|
+| Indian Strike Force | 30 | 810 | 24,300 | **0** | 7.27 |
+| Canyon Offensive | 210 | 945 | 198,450 | **0** | 7.17 |
+
+**222,750 ray tests, zero cases where the reject excluded a genuine hit.** The tightest margin
+column is the more interesting one: on the furthest-out genuine hit anywhere in either level the
+closest approach was 17.83 units against a 25-unit radius, so the bound is never even approached.
+Theory's worst case is 25 − 21.65 = 3.35 units of headroom (a corner-on hit); the sampled rays
+never found a corner that exactly, which is itself unsurprising.
+
+"Extra admitted" — nodes the reject kept that the engine then missed — came in at 557 and 629.
+That is the expected cost of a conservative bound and confirms the reject is loose rather than
+tight, which is the direction that cannot break a pick.
+
+⚠ **What this does NOT prove.** It closes the specific risk 3.15 introduced — that the analytic
+reject could exclude a node that would have been picked — over a large sample on two levels. It
+says nothing about the rest of the interactive path (mouse → world position → selection → drag).
+A human clicking a waypoint is still the final word on that, and `SET_WAYPOINTFAST 0` still reverts
+to the pre-3.15 behaviour in one command if anything ever looks wrong.
+
+★ The general shape is worth keeping: **when a fast path is justified by a geometric bound, the
+bound is testable offline against the slow path it replaced.** That is cheaper than waiting for
+someone to exercise the UI, it covers far more cases than a human ever would, and it produces a
+margin number — which a click never does.

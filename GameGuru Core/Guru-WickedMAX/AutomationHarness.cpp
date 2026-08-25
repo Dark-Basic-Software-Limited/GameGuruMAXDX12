@@ -5917,6 +5917,29 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "TEST_WAYPOINTFAST") == 0)
+	{
+		// GGMAX 3.19: prove the 3.15 analytic reject can never skip a node the engine ray test
+		// would have hit. The 3.15 argument was geometric (25 > 12.5*sqrt(3) = 21.65) and had
+		// never been exercised, because nobody had hovered a waypoint on this build. Editor only,
+		// one-shot, and it deliberately hitches - it runs both tests on every node.
+		const char* state = AutoHarness_GetAppState();
+		if (strcmp(state, "editor") != 0)
+		{
+			_snprintf(result, resultSize,
+				"ERROR: TEST_WAYPOINTFAST needs the level editor (state: %s)", state);
+		}
+		else
+		{
+			extern void GGWaypoint_SelfTest(int, char*, int);
+			int samples = atoi(arg);
+			if (samples <= 0) samples = 27;   // 9 offsets x 3 axes
+			GGWaypoint_SelfTest(samples, result, resultSize);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_HIERCACHE") == 0)
 	{
 		// GGMAX 3.14: 1 (default) = skip the topdown-hierarchy rebuild when the hierarchy has not
