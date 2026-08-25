@@ -6302,3 +6302,125 @@ the GPU and re-creates every DDS.
 
 The profiler panel changes have no knob — they are presentation only, and reverting them is a
 source edit.
+
+---
+
+## §3.20 — the "hide idle rows" tick box, and the third shifting mechanism it exposed
+
+Lee, after the 3.19 batch: *"The 'hide idle rows' tick box sounds good but make sure that if any
+row item is 0.00 but occasionally 0.00001 (etc) that keep that row as I do NOT want to see
+shifting when I tick this box."*
+
+That is a precise specification and it rules out the obvious implementation. **0.00 is a rounding
+artefact, not a measurement.** The panel prints two decimals, so a range that ran for twelve
+nanoseconds and a range that did not run at all produce the same characters — and those two rows
+want opposite treatment. Anything keyed on the printed value gets it wrong for one of them.
+
+### The latch
+
+Hiding is decided from `num_hits` ("did this range execute at all"), and then only after
+**GG_IDLE_FRAMES = 600 consecutive frames** without a single hit. Any hit inside that window puts
+the counter back to zero, so an occasional row never approaches the threshold.
+
+★ And a hidden row that runs again is **pinned visible for the rest of the session**
+(`sticky_show`). That is what bounds the feature: **two position changes per row per session at
+most** — one to hide, one to un-hide, never again — rather than a row that breathes in and out on
+its own period. It also makes the threshold cheap to get wrong. Too tight costs one flicker, after
+which the row is permanent; too loose only means fewer rows are hidden. There is no setting of it
+that produces the failure Lee described.
+
+The latch is maintained whether or not the box is ticked, so it is already warm when you tick it —
+otherwise ticking would start a ten-second settling period during which the list would, of all
+things, shift.
+
+⚠ Two implementation traps, both of which would have been silent:
+
+- **A hidden parent holding a visible child orphans that child outright.** The print is a DFS and
+  it can only reach a row through its parent, so a visible row under a hidden one would vanish
+  from the panel entirely rather than merely print 0.00. Every ancestor of a visible row is
+  therefore forced visible before printing. (A parent cannot normally be idle while its child
+  runs — the child runs inside it — but "normally" is not a guarantee across worker threads.)
+- **A row that is not printed must still be RESET.** These are accumulators. Skipping the reset
+  would let a hidden row keep adding until it reappeared and printed a total covering every frame
+  it was invisible.
+
+The tree itself (kids / roots / `child_sum`) is built complete and rows are skipped at DFS *push*
+time, so `[self]` stays present and exact either way. Gating the tree on visibility would make
+`[self]` blink out on any parent whose children all went quiet — the bug 3.19 fixed.
+
+### ★★★ What the measurement actually found: a THIRD shifting mechanism
+
+The first run was meant to check stability. It found `Animation Dependencies` at **line 4 on 30
+dumps out of 31, and at line 86 on the other one** — a depth-1 worker-thread root on almost every
+frame, and a depth-4 child of `Scene-S1 Anim+Transform` on one. Every row between those two
+positions moves when it flips.
+
+The cause is 3.13's tree recording: `gg_parent` comes off a **thread_local** stack, so the parent
+is whichever range was open *on the thread that happened to run the job*. Wicked's job system lets
+the calling thread drain its own queue when workers are busy, so an animation job is a worker root
+most frames and a main-thread child occasionally.
+
+★★ **This is Lee's original "rows shift up and down" report, still alive after 3.19.** 3.19 fixed
+rows vanishing (the `num_hits == 0` skip) and siblings trading places (cost ordering); this is a
+third, rarer mechanism, and a twelve-dump window simply did not catch a 1-in-31 event. ⚠ The
+lesson is about the WINDOW, not the fix: "one hash across twelve dumps" was evidence for the two
+mechanisms I had in mind and no evidence at all about a third I had not thought of. 78 dumps is
+what it took to see this one, and it took a check I only wrote because I was testing something
+else.
+
+Fixed by **latching the tree position on first sighting** (`tree_latched`): parent, depth and the
+`[worker]` tag are recorded the first frame a name appears and never re-read.
+
+★ Latching costs nothing in honesty. The row already **sums both call sites into one number** —
+they share a name, so they share a cache entry — so its position was the only thing pretending the
+two were distinguishable. Pinning it makes the position agree with the total.
+
+### Measured — A Grand Canyon Adventure, 78 dumps, two seconds apart
+
+| phase | state | dumps | rows | distinct layouts | hidden |
+|---|---|---|---|---|---|
+| A | unticked, parked | 25 | 127 every time | **1** | – |
+| B | ticked, parked | 20 | 124 every time | **1** | 3 |
+| C | ticked, camera flown to 4 poses | 8 | 127→124→123→125 | 4 | 0→4→2 |
+| E | ticked, parked again | 10 | 125 every time | **1** | 2 |
+| D | unticked again | 15 | 127 every time | **1** | – |
+
+- **Tree-position check: 0 rows changed depth across all 78 dumps.** Before the latch, 1 in 31.
+- **Orphan check**: rows that disappeared = 3 = exactly what the panel reported hidden. Nothing
+  was orphaned.
+- **Safety check**: of the 3 hidden rows, none was ever seen above 0.00 in the 25 unticked dumps.
+- **Restore**: unticking gives back a set identical to A, member for member.
+- **Phase C is the honest part** — flying about, the set moves, then E settles to one layout for
+  ten dumps. Each move is a row's single permitted hide or its single permitted un-hide.
+
+### ⚠ The result Lee needs to hear: the tick box saves THREE ROWS
+
+| | count |
+|---|---|
+| rows in the panel | 127 |
+| printed 0.00 in all 25 dumps | 32 |
+| …of those, genuinely never ran → **hidden** | **3** |
+| …of those, ran but under 0.005 ms → **kept, as specified** | 29 |
+
+The three are `TerrainW - AutoBlend Scan`, `TerrainW - PaintedBlend Scan`, `VT-job FreeSort`. After
+flying around, two.
+
+★★★ **The specification is satisfied exactly and the goal is not.** The panel is long because 29
+of its rows execute every frame doing less than five microseconds — they are alive, so the rule
+Lee gave keeps them, and it must. The feature works; there is simply almost nothing for it to do.
+
+The rule that WOULD shorten the panel is "hide a row that has shown 0.00 continuously", which
+hides 32 instead of 3. ★ It is **equally stable**, and by the same mechanism: `sticky_show` means
+a row that ever registers a measurable time comes back and stays back for the session, which is
+precisely the outcome Lee's instruction was protecting. But it is not what he asked for, and the
+difference between the two is one comparison, so the choice is his and it is recorded here with
+both numbers rather than taken quietly.
+
+⚠ Not persisted. The tick box is session-scoped, which matches the panel (`bStatOpen` is
+re-initialised to true on every call — nothing about this window is remembered). It was
+deliberately NOT given a `setup.ini` knob: that surface is the documented low-spec performance
+list, and a view preference for a debug panel does not belong in it.
+
+`SET_HIDEIDLEROWS 0|1` drives it from the harness, which is how the table above was measured —
+the claim is about many consecutive dumps holding still, and that is not something a screenshot
+can carry.

@@ -1133,6 +1133,11 @@ void DrawProfilerDataColored_FirstMsOnly()
 	}
 }
 
+// GGMAX 3.20: the "Hide idle rows" tick box writes straight into the profiler's print path.
+// Declared here rather than pulling wiProfiler.h into this part-file; a matching redeclaration
+// is harmless if the header is already in scope.
+namespace wi { namespace profiler { extern bool gg_hide_idle_rows; extern unsigned int gg_hidden_row_count; } }
+
 // My own performance panel
 static void DisplayPerformanceData(bool* p_open)
 {
@@ -1168,6 +1173,24 @@ static void DisplayPerformanceData(bool* p_open)
 		else
 			sprintf_s(polyStr, "%u", (unsigned int)polys);
 		ImGui::Text("FPS: %.1f  POLYS: %s (DirectX 12)", ImGui::GetIO().Framerate, polyStr);
+
+		// GGMAX 3.20: 3.19 gave every range a permanent row so the list would stop shifting
+		// while you read it, which cost ~50 rows sitting at 0.00 on a typical level. This wins
+		// the length back for anyone who wants it, WITHOUT the shifting coming back: a row is
+		// only dropped after ~10 seconds of not executing at all, and one that runs again is
+		// pinned visible for the rest of the session. A row that reads 0.00 but is quietly
+		// doing 0.00001 ms of work keeps its slot - the decision is made on whether the range
+		// RAN, never on the printed number, which rounds a live row and a dead one to the same
+		// two decimals. Off by default; the stable full list stays the out-of-the-box view.
+		ImGui::Checkbox("Hide idle rows", &wi::profiler::gg_hide_idle_rows);
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetTooltip(
+				"Hides rows that have not run for about ten seconds.\n"
+				"A row that runs again comes back and then stays for the session,\n"
+				"so the list still does not shift while you read it.\n"
+				"Rows doing tiny amounts of work are kept even though they print 0.00.");
+		}
 		ImGui::Separator();
 
 		// coloured performance metrics!

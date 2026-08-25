@@ -5951,6 +5951,28 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_HIDEIDLEROWS") == 0)
+	{
+		// GGMAX 3.20: the Performance panel's "Hide idle rows" tick box, drivable from here so
+		// the STABILITY of the shortened list can be measured rather than eyeballed - the whole
+		// point of the feature is that the row set holds still, and that is a claim about many
+		// consecutive dumps, not about one screenshot.
+		// ⚠ The hide latch needs ~600 consecutive idle frames before it fires, so a dump taken
+		// immediately after enabling this will report 0 hidden if the profiler was only just
+		// switched on. Leave the level running, then read GET_PERF_DATA.
+		wi::profiler::gg_hide_idle_rows = (atoi(arg) != 0);
+		_snprintf(result, resultSize,
+			"OK: SET_HIDEIDLEROWS %d - %s. %u rows were suppressed on the last panel refresh. "
+			"A row is hidden only after ~600 consecutive frames without EXECUTING (not for "
+			"printing 0.00, which a range running for nanoseconds also does), and one that runs "
+			"again is pinned visible for the session.",
+			wi::profiler::gg_hide_idle_rows ? 1 : 0,
+			wi::profiler::gg_hide_idle_rows ? "idle rows hidden" : "every row shown (3.19 default)",
+			wi::profiler::gg_hidden_row_count);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_HIERCACHE") == 0)
 	{
 		// GGMAX 3.14: 1 (default) = skip the topdown-hierarchy rebuild when the hierarchy has not
