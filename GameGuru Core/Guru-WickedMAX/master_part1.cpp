@@ -160,14 +160,34 @@ void GGSetObjectCullDist     (int units) { gg_objcull_machine = (units < 0) ? 0.
 void GGSetObjectCullDistLevel(int units) { gg_objcull_level   = (units < 0) ? 0.0f : (float)units; GGRecalcObjCull(); }
 
 // GGMAX 3.12: global texture-detail divide. 1 = full, 2 = half, 4 = quarter. Lives in the ENGINE
-// (wi::resourcemanager) because it acts inside the DDS loader. Takes effect at LOAD time only -
-// textures already resident keep the size they were created at until the level reloads.
-void GGSetTextureDivide(int d)
+// (wi::resourcemanager) because it acts inside the DDS loader.
+//
+// GGMAX 3.19: TWO entry points on purpose.
+//   GGSetTextureDivide     - value only. This is the setup.ini path, and it runs before anything
+//                            has loaded, so a live re-create would drain the GPU for nothing.
+//   GGSetTextureDivideLive - value AND a request to re-create what is already resident. This is
+//                            the panel and harness path, where the user is looking at a level and
+//                            expects it to change. The request is only ARMED here; it is consumed
+//                            on the main thread in GGApplyLowSpecSwitches, because it must not run
+//                            inside the ImGui draw call that set it.
+static int GGClampTextureDivide(int d)
 {
 	if (d < 1) d = 1;
 	if (d > 4) d = 4;
 	if (d == 3) d = 2;   // only 1/2/4 are meaningful (whole mip steps)
+	return d;
+}
+void GGSetTextureDivide(int d)
+{
+	wi::resourcemanager::gg_texture_divide = GGClampTextureDivide(d);
+}
+void GGSetTextureDivideLive(int d)
+{
+	extern bool gg_texture_divide_pending;
+	d = GGClampTextureDivide(d);
+	if (wi::resourcemanager::gg_texture_divide == d) return;   // nothing to do, and no GPU drain
 	wi::resourcemanager::gg_texture_divide = d;
+	gg_texture_divide_pending = true;
 }
 
 // GGMAX 3.05 DEBUG (not an off-switch): flat unlit grey billboard quads, see GGTreesConstants.hlsli.

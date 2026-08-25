@@ -227,6 +227,16 @@ bool  gg_no_occlusion = false; // hardware occlusion QUERIES (they cost to save;
                                // the query pass can cost more than the draws it removes - A/B it)
 int   gg_particle_pct = 100;   // emit-rate scale for Wicked emitters, 0..100
 float gg_object_cull_dist = 0.0f; // 0 = off; >0 = cap every object's draw distance (inches)
+// GGMAX 3.19: armed by the panel / harness when Texture Detail changes, consumed once on the
+// main thread in GGApplyLowSpecSwitches below. Deliberately NOT armed by setup.ini - the ini
+// value is already in force by the time anything loads, so a boot-time re-create would be a
+// GPU drain for nothing. gg_texture_divide_rebuilt is how many textures the last apply changed.
+bool     gg_texture_divide_pending = false;
+uint32_t gg_texture_divide_rebuilt = 0;
+
+// GGMAX 3.19: defined further down, inside namespace GGTerrain, where the terrain statics it
+// needs are in scope. (GGApplyLowSpecSwitches itself sits above that namespace.)
+namespace GGTerrain { static void GGTerrainWicked_RepaintAllResidentVT(); }
 
 void GGApplyLowSpecSwitches()
 {
@@ -391,8 +401,14 @@ void GGApplyLowSpecSwitches()
 				o.draw_distance = gg_object_cull_dist;
 				s_capped.push_back( scene.objects.GetEntity(i) );
 			}
-			// a LOWERED cap must also re-tighten the ones we already own
-			if ( gg_object_cull_dist < s_prevCull )
+			// ★ GGMAX 3.19: ANY change to the cap has to be written to the ones we already own,
+			// not just a lowering. This read `< s_prevCull`, so dragging the slider DOWN worked
+			// and dragging it UP did nothing at all: the first loop skips an object that already
+			// has a finite draw_distance (that test is what stops us stealing the tree pool's
+			// fade), so every object we had already capped stayed at the OLD, smaller distance
+			// and the scene never came back. Lee reported it as "only updates when sliding
+			// downwards". A refresh either way is the same one write per owned object.
+			if ( gg_object_cull_dist != s_prevCull )
 				for ( size_t j = 0; j < s_capped.size(); j++ )
 				{
 					wi::scene::ObjectComponent* o = scene.objects.GetComponent( s_capped[j] );
@@ -409,6 +425,24 @@ void GGApplyLowSpecSwitches()
 			s_capped.clear();
 		}
 		s_prevCull = gg_object_cull_dist;
+	}
+
+	// ---- TEXTURE DETAIL ---------------------------------------------------------------------
+	// GGMAX 3.19: 3.12 made the divide act inside the DDS loader, which meant the panel control
+	// only changed the NEXT level you loaded - looked at from the user's chair, it did nothing.
+	// Applied here, on the main thread in the update phase, because the work drains the GPU and
+	// re-creates textures: it must not happen inside the ImGui draw that set the flag.
+	if ( gg_texture_divide_pending )
+	{
+		gg_texture_divide_pending = false;
+		const uint32_t rebuilt = wi::resourcemanager::gg_ApplyTextureDivideLive();
+
+		// ★ The terrain needs a second nudge - see GGTerrainWicked_RepaintAllResidentVT below,
+		// which is where the terrain statics are actually in scope.
+		if ( rebuilt > 0 )
+			GGTerrain::GGTerrainWicked_RepaintAllResidentVT();
+
+		gg_texture_divide_rebuilt = rebuilt;
 	}
 }
 
@@ -4096,6 +4130,24 @@ void GGTerrainWicked_SetTileShare(int k, int hold)
 	::wi::terrain::gg_terrain_tile_share_mips = (uint32_t)std::max(0, k);
 	if (hold >= 0) ::wi::terrain::gg_terrain_tile_hold_mips = (uint32_t)hold; // -1 = keep current
 	s_terrainActivityPing = true; // GGMAX idle gate — repaint work incoming
+	::wi::terrain::Terrain* terrain = GetWickedTerrain();
+	if (!terrain) return;
+	for (auto& [chunk, cd] : terrain->chunks)
+	{
+		if (cd.vt && cd.vt->residency != nullptr && cd.vt->resolution != 0)
+			cd.vt->pending_repaint_blendmap = true;
+	}
+}
+
+// GGMAX 3.19: re-bake every RESIDENT virtual-texture tile from the material textures as they
+// stand right now. Used when Texture Detail re-creates the terrain DDS files underneath a
+// terrain that has already baked them into tiles - without this the ground is the only surface
+// in the level that ignores the setting. Same 1.13 fast-repaint latch SET_TILESHARE uses, so it
+// keeps residency and costs a frame or two instead of a full Generation_Restart.
+static void GGTerrainWicked_RepaintAllResidentVT()
+{
+	if (!wickedTerrainInitialised) return;
+	s_terrainActivityPing = true; // idle gate - repaint work incoming
 	::wi::terrain::Terrain* terrain = GetWickedTerrain();
 	if (!terrain) return;
 	for (auto& [chunk, cd] : terrain->chunks)

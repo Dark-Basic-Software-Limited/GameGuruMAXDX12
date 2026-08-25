@@ -5874,3 +5874,154 @@ thrashing.
 ⚠ Footstep AUDIO has not been listened to. The body, ordering and values are identical and the set
 count matches, but nobody has walked a character on this build and heard footsteps. Worth thirty
 seconds in test-game before trusting it.
+
+---
+
+## §3.19 — the panel that would not sit still, and two controls that only half worked
+
+Lee, 2026-08-25, four separate reports in one message:
+
+1. the performance panel "jumps about as rows are visible in one frame but missing in another
+   causing the rows below to shift up and down"
+2. drop the `(indented rows are INSIDE their parent...)` legend line, it is redundant
+3. rename `main-thread rows total` to **Main Thread Total**
+4. Object Detail Distance "does not change the scene when sliding it upwards, only when sliding
+   downwards or clicking does it update the scene"
+5. Texture Detail "does not seem to change the textures (they should change both terrain textures
+   and object textures in real-time)"
+
+### 1. The rows were being dropped by the tree printer
+
+GGMAX 1.67 made the profiler print cache PERSISTENT for exactly this reason: once a range name has
+been seen it stays in the printout at 0.00 ms on the frames it does not run, so a consumer that
+renders the text as a list gets a fixed row count. 3.13 then rewrote the CPU half as a call tree
+and opened its gather loop with
+
+```cpp
+if (x.second.num_hits == 0)
+    continue;
+```
+
+which re-introduced the exact defect 1.67 existed to prevent — for the CPU rows only, which is why
+the GPU half never misbehaved. A conditionally-executed range (`TerrainW - *`,
+`Planar Reflections`, `RP3D-rec UpdateTex`, ...) vanished on the frames it idled and every row
+below it moved up a line. Removed; zero-hit rows now print at 0.00 ms.
+
+★★ **The second half of "jumps about" was ORDERING, and it needed a different answer.**
+3.13 also sorted every group hottest-first. That reads beautifully in a screenshot and badly in
+motion: these are 20-frame rolling averages of sub-millisecond work and they genuinely swing an
+order of magnitude between reads. `CL-EntityProps` measured **0.02 / 0.03 / 0.13 / 0.15 / 0.23 ms**
+across ten samples taken eight seconds apart. I tried a LATCHED sort key with a 20% deadband first
+— re-key only when the row actually ran and the change cleared the band. Measured: row COUNT went
+stable at 133/133 across ten dumps, but the name-order hash was still different on all ten. No
+deadband survives a 10× swing.
+
+So siblings are now ordered **by name**. It is the one ordering that cannot move, it is what the
+panel did before 3.13, and cost is not lost with it — the panel already paints anything over 1 ms
+yellow, so the expensive rows still find the eye.
+
+**Result, 12 dumps two seconds apart on A Grand Canyon Adventure: 133 rows every time, and ONE
+single name-order hash across all twelve.** 50 of those rows are reporting 0.00.
+
+Also fixed while in there: the `[self ...]` column was gated on `child_sum > 0`, so it blinked out
+whenever a parent's children all idled. It is now gated on the row HAVING children.
+
+### 2 and 3. Legend and label
+
+Legend line deleted. `main-thread rows total:` → `Main Thread Total:`. The signed
+`(+0.38 vs frame - 20-frame averaging skew)` suffix stays — it is the thing that stops a reader
+diagnosing a double-count that is not there.
+
+### 4. Object Detail Distance — a one-character bug
+
+```cpp
+// a LOWERED cap must also re-tighten the ones we already own
+if ( gg_object_cull_dist < s_prevCull )
+```
+
+The scan loop above it deliberately skips any object that already holds a finite `draw_distance` —
+that test is what stops us stealing the 3.03 tree pool's own fade. So once an object had been
+capped, the ONLY path that could ever write it again was this re-tighten, and it only fired
+downwards. Raising the slider changed the global and nothing else. `<` becomes `!=`.
+
+Measured ladder (POLYS is the witness), A Grand Canyon Adventure:
+
+| cull dist | POLYS |
+|---|---|
+| 0 (off) | 2,126,818 |
+| 2000 | 170,307 |
+| 1000 | 128,133 |
+| **4000** | **261,695** ← the case that used to stay at 128,133 |
+| 20000 | 2,057,544 |
+| 40000 | 2,108,114 |
+| 0 (off) | 2,126,818 (exact restore) |
+
+### 5. Texture Detail was working exactly as built, and that was the bug
+
+3.12 shipped the divide inside the DDS loader and documented it as load-time only. From the user's
+chair that is indistinguishable from a dead control, and nobody reads a tooltip that explains why
+the thing they just clicked did nothing.
+
+`wi::resourcemanager::gg_ApplyTextureDivideLive()` re-creates every file-backed DDS at the current
+divide, **in place**. The in-place part is the whole design: `Load()` builds a BRAND NEW
+`ResourceInternal` when it decides a resource is outdated and rebinds the name to it — but every
+material, decal and terrain layer holds a `wi::Resource` to the OLD internal and would never know.
+So `Load()` does the real work (it owns every format, every guard and the divide itself) and the
+result is then TRANSPLANTED into the internal everyone already points at, with the cache entry put
+back. No rebinding, no scene walk. One `gg_streaming_descriptor_epoch` bump — the same counter the
+streaming swap has used since 1.41 — makes every `ShaderMaterial` recompose.
+
+Two safety rules, both paid for earlier in this project:
+- **`WaitForGPU` first.** The 2026-08-05 PLAY GAME device hang was the SVT tile-render compute
+  pass still sampling terrain DDS textures a material swap had just dropped. Same shape of swap.
+- **The outgoing `Texture` objects are held one apply longer.** The device defers destruction
+  anyway, but that hang proved a stale GPU-side descriptor can outlive a full drain.
+
+★ **The terrain needed a second nudge and would otherwise have been the one surface in the level
+that ignored the setting.** Its material DDS files go through the resource manager with everything
+else — but what you SEE is virtual-texture tiles baked from those textures earlier. Fixed with the
+1.13 fast-repaint latch (`pending_repaint_blendmap` on every resident chunk VT), the same one the
+paint brush and `SET_TILESHARE` use: it re-renders resident tiles in place instead of a
+`Generation_Restart`, so the change lands in a frame or two rather than a multi-second ring
+rebuild.
+
+Applied on the main thread in `GGApplyLowSpecSwitches`, never in the ImGui draw that arms it —
+this drains the GPU and destroys textures. Two entry points on purpose: `GGSetTextureDivide`
+(value only, the setup.ini path, which runs before anything is loaded) and
+`GGSetTextureDivideLive` (panel and harness).
+
+★★ **Driver VRAM is the WRONG witness here and I nearly reported a regression on it.** The first
+run read 2709 → 2773 → 3061 MB as the divide went 1 → 4 → 2: monotonically UP. Two confounds,
+neither visible in that number: the allocator keeps freed heaps, and in the EDITOR streaming has
+usually already walked these textures below the divided size. So the function now sums
+`ComputeTextureMemorySizeInBytes` over the descriptors it actually swaps and reports both totals.
+
+**A Grand Canyon Adventure, 242 DDS textures rebuilt, 0 skipped:**
+
+| change | texture resource |
+|---|---|
+| Full → **Quarter** | **218.8 MB → 59.6 MB (−73%)** |
+| Quarter → Full | 59.6 → 200.6 MB (restored) |
+| Full → **Half** | 218.8 → **238.3 MB** ⚠ |
+
+⚠ **Half currently reads as a small LOSS in the editor**, and that is real, not a measurement
+artefact: a divided texture is opted OUT of streaming (3.12, because the streaming branch records
+absolute mip offsets that would all be wrong), and editor streaming had already walked these
+textures below half. Quarter is far enough down to win anyway. In an exported game streaming never
+runs at all (the `gameisexe == 0` gate), so Half saves there — still UNMEASURED, the harness cannot
+drive an exported build. Composing the two features properly (stream down FROM the divided base)
+is the real fix and is not attempted here.
+
+Only `.dds` resources are touched — the divide acts inside the DDS branch of the loader, so
+re-creating a PNG or a font atlas would churn a texture into an identical one. That filter took the
+touched set from 256 to 242 and keeps the UI and the colour-grading LUTs out of it entirely.
+
+Visual confirmation: the Quarter screenshot is visibly softer on the ground, the rock faces and the
+vehicle, and the PNG file sizes track the setting monotonically (2,181,967 at Quarter / 2,194,386
+at Half / 2,205,533 at Full) — a blurrier frame compresses smaller.
+
+### Knobs
+
+`SET_OBJCULLDIST <units>` (unchanged, now works upwards). `SET_TEXTUREDIVIDE 1|2|4` — the reply
+reports the PREVIOUS apply, because the apply is deferred to the next update; send it twice to read
+the one you just asked for.

@@ -5933,14 +5933,26 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 
 	if (_stricmp(cmd, "SET_TEXTUREDIVIDE") == 0)
 	{
-		// GGMAX 3.12: 1 = full, 2 = half, 4 = quarter. LOAD-TIME ONLY - reload the level to see it.
-		extern void GGSetTextureDivide(int);
-		GGSetTextureDivide(atoi(arg));
+		// GGMAX 3.12: 1 = full, 2 = half, 4 = quarter.
+		// GGMAX 3.19: applies LIVE now - the resident textures are re-created at the new size on
+		// the next frame's update, and the terrain's virtual-texture tiles are re-baked with them.
+		// gg_texture_divide_rebuilt reports what the last apply actually touched, so read this
+		// command's reply, then GET_TEXTUREDIVIDE (or any later reply) to see the count.
+		extern void GGSetTextureDivideLive(int);
+		extern uint32_t gg_texture_divide_rebuilt;
+		GGSetTextureDivideLive(atoi(arg));
 		_snprintf(result, resultSize,
-			"OK: SET_TEXTUREDIVIDE %d - live gg_texture_divide=%d. LOAD-TIME ONLY: textures already "
-			"resident keep their current size, so RELOAD the level before reading VRAM. Streaming is "
-			"disabled for divided textures by design.",
-			atoi(arg), wi::resourcemanager::gg_texture_divide);
+			"OK: SET_TEXTUREDIVIDE %d - live gg_texture_divide=%d. Applies to the CURRENT level on "
+			"the NEXT update, so these numbers are the PREVIOUS apply: rebuilt %u textures, "
+			"skipped %u, %.1f MB -> %.1f MB of texture resource. Send the command a second time to "
+			"read the apply you just asked for. Driver VRAM will not track this closely - the "
+			"allocator keeps freed heaps, and in the editor streaming may already have walked "
+			"these textures below the divided size. GG's tree billboard atlases and grass load "
+			"outside the resource manager and are NOT affected.",
+			atoi(arg), wi::resourcemanager::gg_texture_divide, gg_texture_divide_rebuilt,
+			wi::resourcemanager::gg_texdivide_skipped.load(),
+			wi::resourcemanager::gg_texdivide_bytes_before.load() / 1048576.0,
+			wi::resourcemanager::gg_texdivide_bytes_after.load() / 1048576.0);
 		result[resultSize - 1] = 0;
 		return true;
 	}
