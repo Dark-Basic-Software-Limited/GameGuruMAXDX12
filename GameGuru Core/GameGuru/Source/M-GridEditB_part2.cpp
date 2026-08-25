@@ -1182,7 +1182,9 @@ static void DisplayPerformanceData(bool* p_open)
 		// maximum. The threshold itself was Lee's call after seeing both measured: hiding only
 		// rows that never EXECUTE removed 3 rows of 127 (29 of the 32 rows printing 0.00 run
 		// every frame doing under five microseconds), so the rule is the printed value.
-		// Off by default; the stable full list stays the out-of-the-box view.
+		// GGMAX 3.20c: ON by default - Lee reviewed the panel with it ticked and asked for that
+		// to be what everyone gets. Unticking shows every range the profiler knows about, which
+		// is still the right view when hunting something that only runs occasionally.
 		ImGui::Checkbox("Hide idle rows", &wi::profiler::gg_hide_idle_rows);
 		if (ImGui::IsItemHovered())
 		{

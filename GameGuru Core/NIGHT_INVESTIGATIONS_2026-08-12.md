@@ -6570,3 +6570,30 @@ that exercises them, which is content, not design — and it is why the number d
 
 `SET_HIDEIDLEROWS 1 0.005` goes back to the conservative rule without a rebuild; the threshold
 column in `DUMP_IDLEPEAKS` prices any other choice on whatever level is loaded.
+
+---
+
+## §3.20c — "Hide idle rows" is ON by default
+
+Lee, having used the panel with it ticked: *"The performance data panel is now good, thanks. Make
+this the default."* `gg_hide_idle_rows` false → **true**. No mechanism change; the threshold stays
+0.05 ms and everything measured in §3.20b still holds.
+
+What a fresh editor session now shows on A Grand Canyon Adventure: **~71 rows immediately, settling
+to ~95**, against 127 unticked. Unticking is still the right move when hunting something that only
+runs occasionally — a pass that fires once a second is exactly what this hides.
+
+That closes the arc Lee opened five sections ago with "it jumps about as rows are visible in one
+frame but missing in another". Four distinct mechanisms were behind it in the end:
+
+| # | mechanism | § |
+|---|---|---|
+| 1 | tree-gather loop skipped `num_hits == 0` rows, undoing 1.67's persistent cache | 3.19 |
+| 2 | siblings sorted hottest-first on 20-frame averages that swing 10× | 3.19 |
+| 3 | tree POSITION re-read every frame from a `thread_local` parent — one row moved 82 lines on 1 dump in 31 | 3.20 |
+| 4 | (not a defect) the list was simply too long — hence this control | 3.20a–c |
+
+★ Only the first was visible from the bug report. The other three were each found by measuring
+something else, and #3 in particular would never have been found by looking at the panel, because
+it fires roughly once every thirty seconds.
+

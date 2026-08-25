@@ -5992,7 +5992,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			"what stops the list shifting. Use DUMP_IDLEPEAKS to see what any threshold would take.",
 			wi::profiler::gg_hide_idle_rows ? 1 : 0,
 			wi::profiler::gg_idle_row_ms,
-			wi::profiler::gg_hide_idle_rows ? "idle rows hidden" : "every row shown (3.19 default)",
+			wi::profiler::gg_hide_idle_rows ? "idle rows hidden" : "every row shown (the pre-3.20c default)",
 			wi::profiler::gg_hidden_row_count);
 		result[resultSize - 1] = 0;
 		return true;
