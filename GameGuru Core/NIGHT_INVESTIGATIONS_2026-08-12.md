@@ -7370,3 +7370,54 @@ the next move is to widen the frame, not to add a fourth instrument.
 
 **Verified**: TESTPRO2 spotshadowtest draws the plane at 478.3 with the pool floor visible
 through it; Canyon Offensive still toggles ocean on → OFF → on across two cycles.
+
+### ★★★ §3.25g — the Terrain Bake resource cascade, and it was mine
+
+Lee: toggle Terrain Bake a few times and the frame rate collapses and never recovers, while the
+REAL terrain stays on screen. His repro is precise - bake on, wait, off, **let it regenerate out
+to the distant mountain**, on again.
+
+**Cause, introduced by 3.25c the same day.** That change made the bake ALL-OR-NOTHING so a
+partial set could never tear the terrain down and leave holes. Correct intent, wrong placement:
+the rollback happened AFTER the allocation loop. Each attempt created ~625 vertex buffers and
+~625 textures (about **227 MB** at the default resolution), discovered one unready chunk at the
+end, and discarded the lot - **once per frame, unthrottled**.
+
+★ Why it needed "a few toggles": after unticking, the terrain regenerates progressively outward,
+so there is ALWAYS a chunk with `merge_pending` set. The build therefore never completes, the
+retry never stops, and 227 MB a frame goes into a deferred-destruction queue the driver cannot
+drain. **One cause, both his symptoms** - the frame rate collapse AND "I still see the real
+terrain", because `g_ready` never becomes true so the teardown never fires.
+
+**Fix: decide readiness in a pass that allocates nothing.** A read-only scan asks whether every
+chunk is bakeable *before* a single byte is committed; if not, return with nothing to roll back.
+Plus a 30-frame retry throttle, because even a free check does not need running 60 times a second
+while a terrain streams in.
+
+⚠ **And then the give-up cap was REMOVED.** It existed because a failed attempt used to cost
+227 MB. Once failure became free the cap was actively harmful: with the camera moving there is
+always a chunk generating, so flying around for a minute with the switch ticked would exhaust the
+budget and the bake would give up **silently**, leaving the box ticked over live terrain with
+nothing to say why. Retrying forever is cheaper and honest, and the report now prints
+`waiting on: N chunks not bakeable yet` so WAITING is never mistaken for BROKEN.
+
+### ★★ The test that passed was the wrong test
+
+The first cycle test toggled with generous waits and came back clean - four cycles, stable FPS,
+stable VRAM. It proved nothing: every build succeeded in **1 attempt with 0 chunks not ready**,
+so it never entered the failing state at all. A benign result from a test that cannot reach the
+bug is worse than no test, because it reads as confirmation.
+
+The real test moves the CAMERA between toggles to keep chunks generating. Under that:
+
+| | before | after |
+|---|---|---|
+| allocation on a failed attempt | ~227 MB, every frame | **0 KB** |
+| FPS over 8 moving cycles | collapses, no recovery | **109-135, no drift** |
+| VRAM | runs away | stable 2.87-3.19 GB |
+| settled bake | never completes | 625 chunks, 220.5 MB, **267-279 FPS** |
+
+★ Same lesson as §3.20b and §3.19, a third way round: **size the test to the failure, not to the
+feature.** Ask what state the bug needs, and check the test actually reached it - here the giveaway
+was in the instrument's own output, `0 chunks not bakeable yet`, which said plainly that the run
+had never been near the condition.

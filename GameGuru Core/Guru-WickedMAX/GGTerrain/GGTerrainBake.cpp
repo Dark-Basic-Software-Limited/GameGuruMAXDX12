@@ -46,6 +46,9 @@ int  gg_terrain_bake_textures = 0;
 int  gg_terrain_bake_drawcalls = 0;
 int  gg_terrain_bake_culled = 0;
 int  gg_terrain_bake_vram_kb = 0;
+// chunks that were not bakeable on the last readiness pass. Non-zero means the bake is WAITING
+// (terrain still generating), not broken - the distinction Lee's cascade made expensive.
+int  gg_terrain_bake_notready = 0;
 
 // the 2.94 Terrain Off teardown, which this switch reuses verbatim once the bake is ready
 extern bool gg_no_terrain;
@@ -95,6 +98,7 @@ namespace
 	bool g_ready = false;            // meshes AND textures done; terrain may be torn down
 	bool g_buildRequested = false;
 	int  g_buildAttempts = 0;
+	int  g_retryCountdown = 0;
 	bool g_toreDownTerrain = false;   // WE called GGSetNoTerrainLevel(1) and owe a matching (0)
 	bool g_anyDispatchPending = false;
 	char g_report[2048] = "";
@@ -263,6 +267,7 @@ void GGTerrainBake_Clear()
 	g_ready = false;
 	g_buildRequested = false;
 	g_buildAttempts = 0;      // a re-tick gets a fresh budget, not the spent one
+	g_retryCountdown = 0;
 	g_anyDispatchPending = false;
 	gg_terrain_bake_chunks = 0;
 	gg_terrain_bake_textures = 0;
@@ -292,6 +297,31 @@ namespace
 		Scene& scene = wi::scene::GetScene();
 		const int W = wi::terrain::chunk_width;
 		const uint32_t res = (uint32_t)std::max( 32, std::min( 2048, gg_terrain_bake_res ) );
+
+		// ★ READINESS FIRST, ALLOCATION SECOND. This loop touches no GPU memory at all: it only
+		// asks whether every chunk could be baked right now. Getting the answer before allocating
+		// is the whole fix for the 3.25c cascade - the previous order allocated ~227 MB, then
+		// discovered one unready chunk, then discarded it, once per frame, forever.
+		{
+			int notReady = 0;
+			for ( auto& pair : terrain->chunks )
+			{
+				wi::terrain::ChunkData& cd = pair.second;
+				if ( cd.entity == wi::ecs::INVALID_ENTITY ) { notReady++; continue; }
+				if ( cd.merge_pending )                     { notReady++; continue; }
+				if ( !cd.blendmap.IsValid() )               { notReady++; continue; }
+				ObjectComponent* o = scene.objects.GetComponent( cd.entity );
+				if ( o == nullptr )                         { notReady++; continue; }
+				MeshComponent* m = scene.meshes.GetComponent( o->meshID );
+				if ( m == nullptr )                         { notReady++; continue; }
+				if ( m->vertex_positions.size() != (size_t)W * W ||
+				     m->vertex_normals.size()   != (size_t)W * W ||
+				     m->vertex_uvset_0.size()   != (size_t)W * W ) { notReady++; continue; }
+			}
+			gg_terrain_bake_notready = notReady;
+			if ( notReady > 0 )
+				return false;   // nothing allocated, nothing to roll back
+		}
 
 		g_chunks.clear();
 		g_chunks.reserve( terrain->chunks.size() );
@@ -437,9 +467,19 @@ void GGTerrainBake_Update()
 
 	if ( !g_ready && g_chunks.empty() )
 	{
-		// Wanted but not built. Retry every frame - the terrain streams in over several seconds
-		// after a level load, so the first few attempts are expected to find nothing.
-		if ( g_buildAttempts < 3600 )   // ~60 s of frames, then stop asking
+		// Wanted but not built. The terrain streams in over several seconds, so early attempts
+		// are expected to fail - but they are THROTTLED. Retrying a scan of every chunk sixty
+		// times a second buys nothing over twice a second, and the un-throttled version is what
+		// turned a failed build into a per-frame event in the first place.
+		if ( ++g_retryCountdown < 30 ) return;
+		g_retryCountdown = 0;
+		// ⚠ NO GIVE-UP CAP. There was one (120 attempts) back when a failed attempt cost 227 MB of
+		// allocate-and-discard; now a failed attempt is a read-only scan of ~625 chunks twice a
+		// second, which is free. The cap had become actively harmful: with the camera moving there
+		// is ALWAYS a chunk generating, so flying around for a minute with the switch ticked would
+		// exhaust the budget and the bake would give up SILENTLY, leaving the box ticked over live
+		// terrain with nothing to say why. Retrying forever is both cheaper and honest, and the
+		// report says "waiting on N chunks" throughout so waiting is never mistaken for broken.
 		{
 			g_buildAttempts++;
 			if ( BuildFromTerrain() )
@@ -456,10 +496,6 @@ void GGTerrainBake_Update()
 				g_ready = false;
 				return;
 			}
-		}
-		else
-		{
-			return;
 		}
 	}
 
@@ -558,13 +594,14 @@ const char* GGTerrainBake_Report()
 		"  switch            : %d   (shaders %s after %d attempts, ready %d)\n"
 		"  bake resolution   : %u x %u per chunk   (setup.ini terrainbakeres)\n"
 		"  chunks baked      : %d   (meshes)\n"
+		"  waiting on        : %d chunks not bakeable yet, %d build attempts\n"
 		"  chunks textured   : %d   %s\n"
 		"  video memory      : %d KB  (%.1f MB)\n"
 		"  last frame        : %d draw calls, %d frustum-culled\n"
 		"  wicked terrain    : %s\n",
 		gg_terrain_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts, g_ready ? 1 : 0,
 		res, res,
-		(int)g_chunks.size(),
+		(int)g_chunks.size(), gg_terrain_bake_notready, g_buildAttempts,
 		withTex, ( withTex == (int)g_chunks.size() ) ? "" : "<-- MISMATCH, some chunks have no texture",
 		gg_terrain_bake_vram_kb, gg_terrain_bake_vram_kb / 1024.0f,
 		gg_terrain_bake_drawcalls, gg_terrain_bake_culled,
