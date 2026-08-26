@@ -25,9 +25,13 @@
 // The switch itself. Panel tick box "Terrain Bake", setup.ini `terrainbake`, harness
 // SET_TERRAINBAKESWITCH. Drives gg_no_terrain internally once the bake is ready.
 extern bool gg_terrain_bake;
-// Bake resolution per chunk, in pixels per axis. setup.ini `terrainbakeres`. 256 is the shipped
-// default: a chunk spans 66 world units of terrain grid, so 256 gives roughly 4 texels per grid
-// cell. Raising it multiplies video memory by the square, which the report below spells out.
+// Bake resolution per chunk, in pixels per axis. setup.ini `terrainbakeres`, harness
+// SET_BAKERES. **1024 is the shipped default** (Lee's call, 2026-08-26), which is only possible
+// because the per-chunk textures are BC1: measured over 625 chunks the whole bake is 377 MB at
+// 1024, against 2564 MB when it was uncompressed. Frame time is flat across the range - 193 /
+// 197 / 190 FPS at 256 / 512 / 1024 - so this dial buys sharpness with video memory and nothing
+// else. Cost grows with the SQUARE: 84 MB at 256, 142 MB at 512, 377 MB at 1024 (about 67 MB of
+// each is chunk vertex buffers, which do not scale). Drop it on a card short of memory.
 extern int  gg_terrain_bake_res;
 
 // Diagnostics, all read by the harness DUMP_TERRAINBAKE.

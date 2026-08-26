@@ -40,7 +40,7 @@ using namespace wi::scene;
 // public state
 // ---------------------------------------------------------------------------------------------
 bool gg_terrain_bake = false;
-int  gg_terrain_bake_res = 256;
+int  gg_terrain_bake_res = 1024;
 int  gg_terrain_bake_chunks = 0;
 int  gg_terrain_bake_textures = 0;
 int  gg_terrain_bake_drawcalls = 0;
