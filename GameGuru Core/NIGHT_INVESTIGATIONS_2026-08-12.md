@@ -6804,3 +6804,76 @@ cross-day FPS is not evidence. The claim rests on the **same-session interleaved
 four rounds, arms alternating, no overlap between distributions. This sweep's job was C1–C4, and it
 passed all four; the FPS agreement is a corroboration to note and not to lean on.
 
+---
+
+## §3.23 — caching the script name per entity, and NOT caching the function ref
+
+Lee: *"cache the script name and function ref per entity."* The first is done. The second was
+measured and **deliberately not built**, which is the more useful half of this section.
+
+### The name cache — shipped
+
+Every scripted entity rebuilt its function name every frame:
+
+```cpp
+t.strwork = cstr(cstr(t.entityelement[t.e].eleprof.aimainname_s.Get()) + "_main");
+```
+
+Two `cstr` temporaries, a concatenation and a heap allocation, to produce a string that changes
+only when the entity's script does. Now cached per entity in its own array — **not** in
+`t.entityelement`, which rides save/load and has no business holding per-frame scratch.
+
+⚠ The invalidation surface is ONE string: the name is rebuilt whenever the source differs, so a
+runtime script swap (attack → patrol, the case the `LB210325` comment describes) is picked up on
+the next frame, at the cost of one ~20-byte `strcmp` instead of a heap allocation. ★ And the
+failure mode is LOUD by construction — a stale name calls the wrong `_main`, so the behaviour
+visibly changes or stops. Nothing about it can fail quietly.
+
+**Measured, interleaved A/B, four rounds:**
+
+| round | compose ON | compose OFF |
+|---|---|---|
+| 1 | 4.0 us | 30.9 us |
+| 2 | 3.8 us | 32.1 us |
+| 3 | 4.1 us | 33.1 us |
+| 4 | 4.0 us | 30.2 us |
+
+**−87%, ~27 us saved, no overlap between arms.** Correctness: the per-script `ran/have` counts
+are identical in both arms for all sixteen scripts — nothing stopped running, which is what a
+broken name would have done immediately.
+
+⚠⚠ **And 27 us is invisible.** `CPU Frame` across the same eight samples: 6.72/6.72, 6.73/6.66,
+6.71/6.76, 6.71/6.70 — **no separation whatsoever.** 27 us of a 6.7 ms frame is 0.4%, below the
+noise of the row it lives in, let alone the frame. It is kept because it is free, safe and scales
+with scripted-entity count (90 here; a script-heavy level with a thousand would see ~300 us), but
+**it is not a frame-rate win on TESTPRO2 and must not be reported as one.**
+
+### ★★★ The function ref: measured, then NOT built
+
+The plan was to replace `lua_getglobal(lua2, functionName)` — a string intern plus a globals-table
+lookup, per scripted entity per frame — with a cached `luaL_ref` and a `lua_rawgeti`.
+
+A timer around `LuaSetFunction`, which is the call that contains that lookup, says: **5.9 / 5.9 /
+6.4 / 5.6 us with the cache on and 6.2 / 6.3 / 5.9 / 6.8 with it off** — about **6 us total across
+every scripted entity in the level**, ~67 ns each.
+
+So the entire available prize is 6 us, and collecting it means adding a new API to the **DarkLUA
+DLL that every script call in the product goes through**. That is a poor trade and the number says
+so plainly. ★ The measurement took one build; building the ref cache would have taken several and
+bought 0.09% of a frame.
+
+⚠ **A latent trap found while reading that path, worth fixing on its own merits.** `LuaCall()`
+opens with:
+
+```cpp
+for (int c = 0; c < FunctionsWithErrors.size(); c++)
+    if (strcmp(functionName, FunctionsWithErrors[c].fileName) == 0) { ...bail... }
+```
+
+A **linear scan with a strcmp per element, on every Lua call in the game**. The list is empty today
+so it costs nothing — but it only ever grows, and entries are pushed on any script error or missing
+function. **After one bad script, every Lua call in the product pays a strcmp per error entry for
+the rest of the session**, and it never recovers. A hash set, or simply a flag on the entity, would
+remove a cost that scales with how broken the project is. Not fixed here; recorded because it is
+invisible until it bites.
+

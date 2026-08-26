@@ -860,6 +860,57 @@ int g_gg_refreshcount = 0;
 // Every one of those five is a property that cannot change while the entity is inert, so an
 // entity either qualifies for the whole session or never does.
 int gg_logic_skip_inert = 1;             // SET_LOGICSKIP 0 reverts to the pre-3.22 walk
+
+// GGMAX 3.23: cache the composed "<script>_main" function name per entity.
+//
+// Every scripted entity rebuilt it EVERY FRAME with
+//     t.strwork = cstr(cstr(aimainname_s.Get()) + "_main");
+// which is two cstr temporaries, a concatenation and a heap allocation, to produce a string that
+// changes only when the entity's script does. 3.21 measured a scripted entity costing ~10x a
+// script-less one before its script executes, and this is part of that.
+//
+// ★ Stored in its own array rather than in t.entityelement: that struct rides save/load, and a
+// derived per-frame scratch value has no business in a serialised record.
+//
+// ⚠ The invalidation surface is ONE string. The name is rebuilt whenever the source differs, so
+// a script swapped at runtime (attack -> patrol, the case the LB210325 comment describes) is
+// picked up on the next frame. The check costs one strcmp of ~20 bytes against a heap allocation.
+// ⚠ And the failure mode is LOUD by construction - a stale name means calling the wrong _main,
+// i.e. the entity's behaviour visibly changes or stops. Nothing silent. (The 3.16/3.18 rule:
+// judge a cache by what breaks and how loudly.)
+#define GG_MAINFUNC_SRC_MAX  56
+#define GG_MAINFUNC_OUT_MAX  72
+struct GGMainFuncCache
+{
+	char src[GG_MAINFUNC_SRC_MAX];   // the aimainname it was built from
+	char out[GG_MAINFUNC_OUT_MAX];   // "<aimainname>_main"
+};
+static GGMainFuncCache g_mainfunccache[TABLEOFPERFORMANCEMAX];
+int gg_luanamecache = 1;                 // SET_LUANAMECACHE 0 reverts to rebuilding every frame
+LONGLONG g_tableofnametimers[TABLEOFPERFORMANCEMAX];   // cost of producing the name, either way
+LONGLONG g_tableofsetfunctimers[TABLEOFPERFORMANCEMAX]; // cost of LuaSetFunction (the lua_getglobal)
+
+// Returns the "<name>_main" string for this entity, rebuilding only when the script changed.
+// Falls back to the caller's own buffer for names too long to cache, so length is never a
+// correctness question - only a performance one.
+static LPSTR gg_get_main_funcname(int e, cstr& fallback)
+{
+	LPSTR pSrc = t.entityelement[e].eleprof.aimainname_s.Get();
+	if (gg_luanamecache == 0 || e >= TABLEOFPERFORMANCEMAX || pSrc == NULL
+		|| strlen(pSrc) >= GG_MAINFUNC_SRC_MAX)
+	{
+		fallback = cstr(cstr(pSrc) + "_main");
+		return (LPSTR)fallback.Get();
+	}
+	GGMainFuncCache& c = g_mainfunccache[e];
+	if (strcmp(c.src, pSrc) != 0)
+	{
+		strcpy(c.src, pSrc);
+		strcpy(c.out, pSrc);
+		strcat(c.out, "_main");
+	}
+	return (LPSTR)c.out;
+}
 int gg_logic_skipped_inert = 0;          // counters, reported by DUMP_LOGICCOST
 int gg_logic_noscript = 0;
 int gg_logic_noscript_static = 0;
@@ -1033,7 +1084,7 @@ void lua_loop_allentities ( void )
 				continue;
 		}
 		// reset performance measure
-		if ( t.e < TABLEOFPERFORMANCEMAX) { g_tableofperformancetimers[t.e] = 0; g_tableofluatimers[t.e] = 0; g_tableofrefreshtimers[t.e] = 0; }
+		if ( t.e < TABLEOFPERFORMANCEMAX) { g_tableofperformancetimers[t.e] = 0; g_tableofluatimers[t.e] = 0; g_tableofrefreshtimers[t.e] = 0; g_tableofnametimers[t.e] = 0; g_tableofsetfunctimers[t.e] = 0; }
 
 		// this entity
 		int thisentid = t.entityelement[t.e].bankindex;
@@ -1467,12 +1518,22 @@ void lua_loop_allentities ( void )
 									// GGMAX 3.21: bracket ONLY the script call. The outer timer covers
 									// the whole per-entity update, so the two together say whether a
 									// row is a slow script or a slow entity.
-									t.strwork = cstr(cstr(t.entityelement[t.e].eleprof.aimainname_s.Get()) + "_main");
-									LONGLONG ggLuaT0 = PerformanceTimer();
-									LuaSetFunction (t.strwork.Get(), 1, 0);
+									// GGMAX 3.23: the name is now cached per entity, and timed
+									// separately so the cache can be priced rather than assumed.
+									LONGLONG ggNameT0 = PerformanceTimer();
+									LPSTR pMainFunc = gg_get_main_funcname(t.e, t.strwork);
+									LONGLONG ggNameT1 = PerformanceTimer();
+									LuaSetFunction (pMainFunc, 1, 0);
+									LONGLONG ggSetT1 = PerformanceTimer();
 									LuaPushInt (t.e);
 									LuaCall ();
-									if (t.e < TABLEOFPERFORMANCEMAX) g_tableofluatimers[t.e] += PerformanceTimer() - ggLuaT0;
+									LONGLONG ggLuaT1 = PerformanceTimer();
+									if (t.e < TABLEOFPERFORMANCEMAX)
+									{
+										g_tableofnametimers[t.e]    += ggNameT1 - ggNameT0;
+										g_tableofsetfunctimers[t.e] += ggSetT1  - ggNameT1;
+										g_tableofluatimers[t.e]     += ggLuaT1  - ggNameT1;
+									}
 								}
 							}
 						}
@@ -1527,6 +1588,7 @@ void lua_loop_allentities ( void )
 		LONGLONG iWorstOffender[10];
 		for (int i = 0; i < 10; i++) { iWorstOffenderE[i] = 0; iWorstOffender[i] = 0; }
 		LONGLONG iGrandTotalAll = 0, iGrandTotalLua = 0, iGrandTotalRefresh = 0;
+		LONGLONG iGrandTotalName = 0, iGrandTotalSetFunc = 0;
 		for (int e = 1; e <= g.entityelementlist; e++)
 		{
 			if (e < TABLEOFPERFORMANCEMAX)
@@ -1540,6 +1602,8 @@ void lua_loop_allentities ( void )
 				iGrandTotalAll += g_tableofperformancetimers[e];
 				iGrandTotalLua += g_tableofluatimers[e];
 				iGrandTotalRefresh += g_tableofrefreshtimers[e];
+				iGrandTotalName += g_tableofnametimers[e];
+				iGrandTotalSetFunc += g_tableofsetfunctimers[e];
 				if (g_tableofperformancetimers[e] > iWorstOffender[0])
 				{
 					iWorstOffenderE[0] = e;
@@ -1570,11 +1634,14 @@ void lua_loop_allentities ( void )
 			"                                      made per entity per frame, gated on staticflag\n"
 			"                                      and NOT on whether the entity has a behaviour)\n"
 			"  (gate is 750 units for objects, 2000 for characters, never for AlwaysActive)\n"
+			"    of which composing \"<script>_main\" : %.1f us   (SET_LUANAMECACHE %d)\n"
+			"    of which LuaSetFunction/getglobal  : %.1f us\n"
 			"  no behaviour at all : %d   of those INERT (static, no zone, not animating) : %d\n"
 			"  skipped as inert    : %d   (SET_LOGICSKIP %d)\n\n",
 			gg_logiccost_considered, gg_logiccost_ran, gg_logiccost_alwaysactive, gg_logiccost_gated,
 			gg_ticks_to_us(iGrandTotalAll), gg_ticks_to_us(iGrandTotalLua),
 			gg_ticks_to_us(iGrandTotalRefresh), g_gg_refreshcount,
+			gg_ticks_to_us(iGrandTotalName), gg_luanamecache, gg_ticks_to_us(iGrandTotalSetFunc),
 			gg_logic_noscript, gg_logic_noscript_static, gg_logic_skipped_inert, gg_logic_skip_inert);
 
 		// --- per SCRIPT, which is the question "where is my 1.1 ms going" actually asks --------

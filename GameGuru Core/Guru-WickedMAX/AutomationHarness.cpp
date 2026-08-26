@@ -5951,6 +5951,21 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "SET_LUANAMECACHE") == 0)
+	{
+		// GGMAX 3.23: 1 (default) = cache the composed "<script>_main" name per entity.
+		// 0 = rebuild it every frame with a cstr concat, for A/B. DUMP_LOGICCOST reports the
+		// composing cost on its own line either way.
+		extern int gg_luanamecache;
+		gg_luanamecache = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize,
+			"OK: SET_LUANAMECACHE %d - %s. Rebuilt whenever the entity's script name differs, so a\nruntime script swap is picked up next frame; a stale name would call the wrong _main and the\nbehaviour would visibly change, which is the loud failure mode a cache wants.",
+			gg_luanamecache,
+			gg_luanamecache ? "cached per entity" : "rebuilding every frame (pre-3.23)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "TEST_INERTSKIP") == 0)
 	{
 		// GGMAX 3.22: prove the invariant the 3.22 skip rests on - an entity that cannot move
