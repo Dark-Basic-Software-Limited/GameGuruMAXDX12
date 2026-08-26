@@ -7480,3 +7480,59 @@ diagnostic is lost. Nothing read it.
 ★ Method note: the resolution question looked like a rendering question and was a MEMORY
 question. Measuring all three points before touching anything is what showed that - a single
 measurement at 1024 would have read as "works fine" right up until a 4 GB card.
+
+### ★★ §3.25j — two-tier bake resolution (Lee's idea)
+
+*"many of the terrain draws are distant terrain geometry ... 256 is plenty for those, but 256
+(and even 1024) look too low resolution when you are walking over the terrain within your
+immediate play area."*
+
+Exactly right, and the arithmetic backs it: a chunk spans about 5120 world units, so 256 is
+20 units per texel, 1024 is 5, and **4096 is 1.25**. One number for the whole map either wastes
+memory on the horizon or starves the ground underfoot.
+
+Now two tiers: **FAR 256** for everything, **NEAR 4096** for the chunks the player actually
+occupies, with a **hard 512 MB budget** on the near tier.
+
+### ★★★ The play area is a DENSITY measure, not a bounding box
+
+First attempt took the min/max XZ of every placed entity. On TESTPRO2 that returned
+**X -105279..12093 over a terrain spanning -63360..63360** - "the play area is the whole map" -
+because **a bounding box is decided entirely by its outliers**. A handful of entities parked away
+from the built content drags the rectangle across the world, and the memory budget then truncates
+it at an arbitrary 64 chunks with no relation to where anyone walks.
+
+Counting entities PER CHUNK and promoting the densest first has none of that fragility: an
+outlier contributes one entity to one distant chunk and loses to any chunk with real content. It
+also handles a level with several separate built-up areas, which one rectangle cannot express.
+A 3x3 blur spreads the score one chunk outward so the near tier does not end in a hard resolution
+seam at the edge of a cluster - which is precisely where someone standing among the objects looks.
+
+| | bounding box | density |
+|---|---|---|
+| chunks promoted | 64 (budget-capped, arbitrary) | **33 (chose to stop)** |
+| near-tier memory | 512 MB (budget saturated) | **264 MB of 512** |
+| total bake | 594 MB | **347 MB** |
+
+★ **The density version is both better-targeted and cheaper**, and it stopped short of its budget
+rather than being cut off by it - the sign that the measure is selecting rather than truncating.
+
+### The other thing that went wrong, and it is a good rule
+
+The entity scan first found **0 entities**, because it tested `t.entityelement[e].active`.
+`active` is RUNTIME game state (1/2/3/4, set while a game plays) and is 0 for every entity in the
+editor. The editor's own test for "this slot holds a placed object" is simply `bankindex > 0`.
+★ **PLACED-NESS AND ALIVENESS ARE DIFFERENT QUESTIONS**, and a field called `active` answers the
+second one. ⚠ Caught only because the report distinguished "found no entities" from "found
+entities but nothing overlapped" - the first version printed just `0 chunks promoted`, which
+cannot tell those apart. Same lesson as §3.25f: report the fact, not the outcome.
+
+### Result
+
+TESTPRO2, ground-level camera among the huts: the baked terrain is **visually indistinguishable
+from the real terrain**, at 223 FPS against 218 for the real thing, for 347 MB - *less* than the
+uniform-1024 bake (377 MB) it replaces, with sixteen times the texel density where it counts.
+
+Knobs: `terrainbakeres` (far, 256), `terrainbakeresnear` (near, 4096), `terrainbakenearbudget`
+(512 MB); harness `SET_BAKERES`, `SET_BAKERESNEAR`, `SET_BAKENEARBUDGET`. Engine cap raised to
+8192, which BC1 keeps at 32 MB a chunk if anyone wants to spend the budget on fewer, sharper ones.

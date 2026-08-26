@@ -30,6 +30,9 @@
 #include "GGTerrainWicked.h"
 
 #include <vector>
+#include <algorithm>
+#include <unordered_set>
+#include <unordered_map>
 #include <cstdio>
 
 using namespace wi::graphics;
@@ -40,7 +43,28 @@ using namespace wi::scene;
 // public state
 // ---------------------------------------------------------------------------------------------
 bool gg_terrain_bake = false;
-int  gg_terrain_bake_res = 1024;
+// ★★ TWO-TIER RESOLUTION (Lee's idea, 2026-08-26). Most baked chunks are distant scenery seen
+// from inside the play area, where 256 is indistinguishable from 1024; the chunks under the
+// player's feet are the only ones where texel density is obvious. One number for both wastes
+// memory on the horizon and starves the ground you are standing on. So: a FAR resolution for
+// everything, and a NEAR resolution for chunks inside the region the level's objects occupy.
+//
+// A chunk spans about 5120 world units, so:
+//     256  -> 20 units per texel      1024 -> 5 units/texel
+//     4096 -> 1.25 units per texel    8192 -> 0.6 units/texel
+// which is why the near tier is worth four to five doublings over the far one.
+int  gg_terrain_bake_res = 256;          // FAR tier - distant scenery
+int  gg_terrain_bake_res_near = 4096;    // NEAR tier - inside the play area
+// ⚠ HARD MEMORY BUDGET for the near tier, in MB. Without it this feature is unbounded: a level
+// whose objects are spread over the whole map promotes every chunk, and 625 chunks at 4096 is
+// 5 GB. Chunks are promoted NEAREST-FIRST from the centre of the play area until the budget is
+// spent, so the detail lands where the player actually is and the cost cannot run away.
+int  gg_terrain_bake_near_budget_mb = 512;
+int  gg_terrain_bake_near_count = 0;     // chunks actually promoted
+int  gg_terrain_bake_near_kb = 0;        // memory the promoted chunks hold
+int   gg_bake_play_entities = 0;
+float gg_bake_play_minx = 0, gg_bake_play_maxx = 0, gg_bake_play_minz = 0, gg_bake_play_maxz = 0;
+float gg_bake_chunk_minx = 0, gg_bake_chunk_maxx = 0, gg_bake_chunk_minz = 0, gg_bake_chunk_maxz = 0;
 int  gg_terrain_bake_chunks = 0;
 int  gg_terrain_bake_textures = 0;
 int  gg_terrain_bake_drawcalls = 0;
@@ -77,6 +101,7 @@ namespace
 		AABB      aabb;
 		bool      dispatch_pending = false;
 		bool      tex_ready = false;
+		uint32_t  res = 0;            // this chunk's baked texture resolution (near or far tier)
 		// the terrain chunk coordinate this came from, so a rebuild can be matched up
 		int cx = 0, cz = 0;
 	};
@@ -355,6 +380,123 @@ namespace
 			}
 		}
 
+		// ★ THE PLAY AREA: the XZ region the level's placed objects occupy. Lee's framing - the
+		// player spends their time among the objects, so that is where texel density is noticed.
+		// Derived from the entity list rather than from the camera, so the answer is a property
+		// of the LEVEL and does not change as the editor camera wanders.
+		float playMinX = 0, playMaxX = 0, playMinZ = 0, playMaxZ = 0;
+		bool  havePlay = false;
+		gg_bake_play_entities = 0;
+		for ( int e = 1; e <= g.entityelementlist; e++ )
+		{
+			// ⚠ bankindex > 0 is the EDITOR's own test for "this slot holds a placed object"
+			// (M-GridEditB_part1.cpp and friends all use exactly this). `active` is RUNTIME game
+			// state - 1/2/3/4 with meanings set while a game is playing - and is 0 for every
+			// entity in the editor, so testing it found zero entities and the whole play area
+			// collapsed to nothing. Placed-ness and aliveness are different questions.
+			if ( t.entityelement[e].bankindex <= 0 ) continue;
+			const float ex = t.entityelement[e].x;
+			const float ez = t.entityelement[e].z;
+			gg_bake_play_entities++;
+			if ( !havePlay ) { playMinX = playMaxX = ex; playMinZ = playMaxZ = ez; havePlay = true; }
+			else
+			{
+				playMinX = std::min( playMinX, ex ); playMaxX = std::max( playMaxX, ex );
+				playMinZ = std::min( playMinZ, ez ); playMaxZ = std::max( playMaxZ, ez );
+			}
+		}
+		// A margin of one chunk, so standing at the very edge of the placed content still has
+		// high-detail ground ahead rather than a visible resolution seam at your feet.
+		const float chunkU = (float)( W - 1 ) * terrain->chunk_scale;
+		if ( havePlay )
+		{
+			playMinX -= chunkU; playMaxX += chunkU;
+			playMinZ -= chunkU; playMaxZ += chunkU;
+		}
+		const float playCX = ( playMinX + playMaxX ) * 0.5f;
+		const float playCZ = ( playMinZ + playMaxZ ) * 0.5f;
+		gg_bake_play_minx = playMinX; gg_bake_play_maxx = playMaxX;
+		gg_bake_play_minz = playMinZ; gg_bake_play_maxz = playMaxZ;
+		{
+			// the terrain's own XZ span, so a play rect that simply does not intersect the
+			// terrain is visible at a glance instead of being inferred from a zero
+			bool first = true;
+			for ( auto& pr : terrain->chunks )
+			{
+				const XMFLOAT3 cp0 = pr.second.position;
+				if ( first ) { gg_bake_chunk_minx = gg_bake_chunk_maxx = cp0.x;
+				               gg_bake_chunk_minz = gg_bake_chunk_maxz = cp0.z; first = false; }
+				gg_bake_chunk_minx = std::min( gg_bake_chunk_minx, cp0.x );
+				gg_bake_chunk_maxx = std::max( gg_bake_chunk_maxx, cp0.x );
+				gg_bake_chunk_minz = std::min( gg_bake_chunk_minz, cp0.z );
+				gg_bake_chunk_maxz = std::max( gg_bake_chunk_maxz, cp0.z );
+			}
+		}
+
+		// Promote the chunks with the most placed objects, then their neighbours, until the
+		// budget is spent. See the long note above for why this is a density measure and not a
+		// bounding box.
+		const uint32_t resFar  = (uint32_t)std::max( 32, std::min( 8192, gg_terrain_bake_res ) );
+		const uint32_t resNear = (uint32_t)std::max( 32, std::min( 8192, gg_terrain_bake_res_near ) );
+		std::vector< std::pair<float, wi::terrain::Chunk> > promote;   // -score, chunk
+		if ( havePlay && resNear > resFar )
+		{
+			// 1. how many placed objects sit on each chunk. 625 chunks x a few thousand entities
+			//    is a couple of million float compares, once, on a switch the user just ticked.
+			std::unordered_map<uint64_t, int> counts;
+			for ( auto& pair : terrain->chunks )
+				counts[ ( (uint64_t)(uint32_t)pair.first.x << 32 ) | (uint32_t)pair.first.z ] = 0;
+			for ( int e = 1; e <= g.entityelementlist; e++ )
+			{
+				if ( t.entityelement[e].bankindex <= 0 ) continue;
+				const float ex = t.entityelement[e].x;
+				const float ez = t.entityelement[e].z;
+				for ( auto& pair : terrain->chunks )
+				{
+					const XMFLOAT3 cp = pair.second.position;
+					if ( ex < cp.x || ex >= cp.x + chunkU ) continue;
+					if ( ez < cp.z || ez >= cp.z + chunkU ) continue;
+					counts[ ( (uint64_t)(uint32_t)pair.first.x << 32 ) | (uint32_t)pair.first.z ]++;
+					break;
+				}
+			}
+			// 2. spread the score one chunk outward so the near tier does not end in a hard
+			//    resolution seam right at the edge of a built-up area.
+			for ( auto& pair : terrain->chunks )
+			{
+				const wi::terrain::Chunk& ck = pair.first;
+				int score = 0;
+				for ( int dz = -1; dz <= 1; dz++ )
+				{
+					for ( int dx = -1; dx <= 1; dx++ )
+					{
+						auto f = counts.find( ( (uint64_t)(uint32_t)( ck.x + dx ) << 32 ) | (uint32_t)( ck.z + dz ) );
+						if ( f != counts.end() ) score += f->second;
+					}
+				}
+				if ( score > 0 )
+					promote.emplace_back( -(float)score, ck );   // negative: sort() puts densest first
+			}
+			std::sort( promote.begin(), promote.end(),
+				[]( const std::pair<float, wi::terrain::Chunk>& a,
+				    const std::pair<float, wi::terrain::Chunk>& b ) { return a.first < b.first; } );
+			const size_t perChunkKB = ( (size_t)resNear * resNear / 2 ) / 1024;   // BC1
+			const size_t budgetKB   = (size_t)std::max( 0, gg_terrain_bake_near_budget_mb ) * 1024;
+			size_t spentKB = 0;
+			size_t keep = 0;
+			while ( keep < promote.size() && spentKB + perChunkKB <= budgetKB )
+			{
+				spentKB += perChunkKB;
+				keep++;
+			}
+			promote.resize( keep );
+		}
+		std::unordered_set<uint64_t> nearSet;
+		for ( auto& pr : promote )
+			nearSet.insert( ( (uint64_t)(uint32_t)pr.second.x << 32 ) | (uint32_t)pr.second.z );
+		gg_terrain_bake_near_count = (int)nearSet.size();
+		gg_terrain_bake_near_kb = 0;
+
 		g_chunks.clear();
 		g_chunks.reserve( terrain->chunks.size() );
 
@@ -435,9 +577,13 @@ namespace
 				// _SRGB because the bake shader stores curve-encoded values; the hardware now
 				// decodes on sample, so the pixel shader no longer undoes it by hand (and gets
 				// correct filtering into the bargain).
+				const bool isNear = nearSet.count( ( (uint64_t)(uint32_t)chunk.x << 32 ) | (uint32_t)chunk.z ) != 0;
+				out.res = isNear ? resNear : resFar;
+				if ( isNear ) gg_terrain_bake_near_kb += (int)( (size_t)out.res * out.res / 2 / 1024 );
+
 				TextureDesc tdesc;
-				tdesc.width = res;
-				tdesc.height = res;
+				tdesc.width = out.res;
+				tdesc.height = out.res;
 				tdesc.mip_levels = 1;
 				tdesc.format = Format::BC1_UNORM_SRGB;
 				tdesc.bind_flags = BindFlag::SHADER_RESOURCE;
@@ -446,7 +592,7 @@ namespace
 				{
 					device->SetName( &out.tex, "GGTerrainBake::chunkTex" );
 					out.dispatch_pending = true;
-					vram += (size_t)res * res / 2;   // BC1: 8 bytes per 4x4 block
+					vram += (size_t)out.res * out.res / 2;   // BC1: 8 bytes per 4x4 block
 				}
 				else
 				{
@@ -572,16 +718,26 @@ void GGTerrainBake_RecordPendingBakes( CommandList cmd )
 	wi::terrain::Terrain* terrain = FindTerrain();
 	if ( terrain == nullptr ) { g_anyDispatchPending = false; return; }
 
-	const uint32_t res = (uint32_t)std::max( 32, std::min( 2048, gg_terrain_bake_res ) );
 	GetDevice()->EventBegin( "GGTerrainBake Bake", cmd );
-	for ( BakedChunk& c : g_chunks )
+	// ★ GROUPED BY RESOLUTION, LOW FIRST. The engine keeps ONE shared uncompressed scratch sized
+	// to the resolution it is handed; interleaving a 256 chunk and a 4096 chunk would destroy and
+	// recreate that scratch on every single chunk. Two passes means at most one recreation.
+	for ( int pass = 0; pass < 2; pass++ )
 	{
-		if ( !c.dispatch_pending ) continue;
-		c.dispatch_pending = false;
-		auto it = terrain->chunks.find( wi::terrain::Chunk{ c.cx, c.cz } );
-		if ( it == terrain->chunks.end() ) continue;
-		if ( terrain->gg_BakeChunkBasecolor( it->second, c.tex, res, cmd ) )
-			c.tex_ready = true;
+		const uint32_t passRes = ( pass == 0 )
+			? (uint32_t)std::max( 32, std::min( 8192, gg_terrain_bake_res ) )
+			: (uint32_t)std::max( 32, std::min( 8192, gg_terrain_bake_res_near ) );
+		for ( BakedChunk& c : g_chunks )
+		{
+			if ( !c.dispatch_pending ) continue;
+			if ( c.res != passRes ) continue;
+			c.dispatch_pending = false;
+			auto it = terrain->chunks.find( wi::terrain::Chunk{ c.cx, c.cz } );
+			if ( it == terrain->chunks.end() ) continue;
+			if ( terrain->gg_BakeChunkBasecolor( it->second, c.tex, c.res, cmd ) )
+				c.tex_ready = true;
+		}
+		if ( gg_terrain_bake_res_near == gg_terrain_bake_res ) break;   // one tier only
 	}
 	GetDevice()->EventEnd( cmd );
 	g_anyDispatchPending = false;
@@ -637,13 +793,15 @@ void GGTerrainBake_Draw( const Frustum* frustum, CommandList cmd )
 // ---------------------------------------------------------------------------------------------
 const char* GGTerrainBake_Report()
 {
-	const uint32_t res = (uint32_t)std::max( 32, std::min( 2048, gg_terrain_bake_res ) );
 	int withTex = 0;
 	for ( const BakedChunk& c : g_chunks ) if ( c.tex_ready ) withTex++;
 	_snprintf( g_report, sizeof( g_report ),
 		"TERRAIN BAKE\n"
 		"  switch            : %d   (shaders %s after %d attempts, ready %d)\n"
-		"  bake resolution   : %u x %u per chunk   (setup.ini terrainbakeres)\n"
+		"  bake resolution   : FAR %u, NEAR %u per chunk   (terrainbakeres / terrainbakeresnear)\n"
+		"  near tier         : %d chunks promoted, %d KB (%.1f MB) of a %d MB budget\n"
+		"  play area         : %d placed objects, densest chunks promoted (not a bounding box)\n"
+		"  terrain spans     : X %.0f..%.0f  Z %.0f..%.0f  (chunk origins)\n"
 		"  chunks baked      : %d   (meshes)\n"
 		"  waiting on        : %s, %d build attempts (terrain has %d chunks)\n"
 		"  chunks textured   : %d   %s\n"
@@ -651,7 +809,12 @@ const char* GGTerrainBake_Report()
 		"  last frame        : %d draw calls, %d frustum-culled\n"
 		"  wicked terrain    : %s\n",
 		gg_terrain_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts, g_ready ? 1 : 0,
-		res, res,
+		(uint32_t)std::max( 32, std::min( 8192, gg_terrain_bake_res ) ),
+		(uint32_t)std::max( 32, std::min( 8192, gg_terrain_bake_res_near ) ),
+		gg_terrain_bake_near_count, gg_terrain_bake_near_kb,
+		gg_terrain_bake_near_kb / 1024.0f, gg_terrain_bake_near_budget_mb,
+		gg_bake_play_entities,
+		gg_bake_chunk_minx, gg_bake_chunk_maxx, gg_bake_chunk_minz, gg_bake_chunk_maxz,
 		(int)g_chunks.size(),
 		( gg_terrain_bake_notready < 0 ) ? "terrain still GROWING (chunk count unsettled)"
 			: ( gg_terrain_bake_notready > 0 ? "chunks not bakeable yet" : "nothing" ),

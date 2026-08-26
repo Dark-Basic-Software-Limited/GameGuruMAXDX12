@@ -5818,6 +5818,32 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_BAKERESNEAR") == 0)
+	{
+		// NEAR-tier resolution: the chunks with the most placed objects on them.
+		extern int gg_terrain_bake_res_near;
+		const int v = atoi(arg);
+		if (v >= 32 && v <= 8192) gg_terrain_bake_res_near = v;
+		_snprintf(result, resultSize,
+			"OK: SET_BAKERESNEAR - near tier now %d per chunk (%d KB each, BC1). Applies to the "
+			"NEXT bake: SET_BAKETERRAIN 0 then 1 to rebuild.",
+			gg_terrain_bake_res_near, gg_terrain_bake_res_near * gg_terrain_bake_res_near / 2 / 1024);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_BAKENEARBUDGET") == 0)
+	{
+		// Hard cap on near-tier memory in MB. Chunks are promoted densest-first until it is
+		// spent, so this is the one number that bounds the whole feature.
+		extern int gg_terrain_bake_near_budget_mb;
+		const int v = atoi(arg);
+		if (v >= 0 && v <= 4096) gg_terrain_bake_near_budget_mb = v;
+		_snprintf(result, resultSize,
+			"OK: SET_BAKENEARBUDGET - near tier capped at %d MB. Applies to the NEXT bake.",
+			gg_terrain_bake_near_budget_mb);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_ANIMREDUCTION") == 0)
 	{
 		// Reduction Scale, 1..100. Echoes a LIVE re-read of what the engine now holds, not the
