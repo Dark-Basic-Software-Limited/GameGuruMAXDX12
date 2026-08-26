@@ -49,9 +49,10 @@ GBuffer main( PixelIn IN )
 {
 	GBuffer output;
 
+	// ★ No manual sRGB decode any more. The baked chunk is now a BC1_UNORM_SRGB texture, so the
+	// hardware decodes the curve the bake stored - and, unlike the old manual decode, it does so
+	// BEFORE filtering, which is the correct order.
 	float3 baked = texBakedChunk.Sample( samplerTrilinearClamp, IN.uv ).rgb;
-	// undo the curve the compute bake stored (see header)
-	baked = RemoveSRGBCurve_Fast( baked );
 
 	const float3 normal = normalize( IN.normal );
 	const float3 viewVec = g_xCamera_CamPos - IN.worldPos;

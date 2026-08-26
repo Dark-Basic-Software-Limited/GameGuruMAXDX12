@@ -7421,3 +7421,62 @@ The real test moves the CAMERA between toggles to keep chunks generating. Under 
 feature.** Ask what state the bug needs, and check the test actually reached it - here the giveaway
 was in the instrument's own output, `0 chunks not bakeable yet`, which said plainly that the run
 had never been near the condition.
+
+### §3.25h — the trees grew, the terrain did not shrink; and BC1 makes the resolution knob usable
+
+**Lee: with Terrain Bake on, MORE billboard trees draw, standing on nothing.** I first read that as
+the baked terrain being too small. It is the opposite.
+
+`GG_GetTerrainViewRadius()` (`GGTerrain_part0.cpp`) opens with
+`if (sc.terrains.GetCount() == 0) return 0.0f;` - and the tree billboard pass uses exactly that
+value for its "never draw billboards past the terrain" cull (2.98). Terrain Bake REMOVES the
+Terrain component, so the radius went to 0, the cull switched itself off, and trees scattered out
+beyond any ground. The baked terrain covers exactly what the real terrain covered. Fixed by
+capturing the real radius at bake time and reporting it while the bake is live, so the trees
+behave identically either way. ★ A switch that removes a component has to ask what ELSE reads
+that component's existence as a question about the world.
+
+⚠ Note the earlier "wait for the chunk count to settle" change went in under the wrong diagnosis
+(I thought chunks were missing). It is kept because it is independently right - baking mid-growth
+would freeze a half-built world - but it was not this bug.
+
+### Texture resolution: measured, then made affordable
+
+Lee asked for 4x the resolution to see the frame-rate cost. Measured at 256 / 512 / 1024:
+
+| per-chunk | FPS | bake VRAM (uncompressed) | total VRAM |
+|---|---|---|---|
+| 256 | 193.2 | 220 MB | 2491 MB |
+| 512 | 196.8 | 689 MB | 3684 MB |
+| 1024 | 189.5 | **2564 MB** | **5556 MB** |
+
+★★ **The frame rate does not care - the cost is entirely video memory.** 1024 uncompressed puts
+the process 1.5 GB over the 4 GB floor this mode exists to serve, so the answer to "what does it
+cost" is not FPS, it is that it does not fit.
+
+**So it was made to fit.** The BC1 route I rejected when writing the bake ("UAVs on BC formats are
+prohibited, and the alias needs sparse") was only half true: `wi::renderer::BlockCompress` already
+solves it for committed textures by compressing into a shared `R32G32_UINT` scratch and doing a
+uint2 -> BC1 `CopyTexture`, which is a legal cross-format block copy. The sparse aliasing in the
+terrain atlas exists to avoid that copy for a huge constantly-updated atlas - irrelevant for 625
+one-shot bakes. One shared uncompressed scratch now serves every chunk and each chunk keeps a
+committed `BC1_UNORM_SRGB`:
+
+| per-chunk | bake VRAM before | after (BC1) | total VRAM | FPS |
+|---|---|---|---|---|
+| 256 | 220 MB | **84 MB** | 3140 | 191.2 |
+| 512 | 689 MB | **142 MB** | 3140 | 176.3 |
+| 1024 | 2564 MB | **377 MB** | 3364 | 191.0 |
+
+(~67 MB of each figure is chunk vertex buffers, which do not scale with resolution.) 1024 is now
+affordable. `_SRGB` also moved the curve decode into the hardware, which does it BEFORE filtering
+- the manual `RemoveSRGBCurve_Fast` in the pixel shader is gone and filtering is now correct.
+⚠ BC1 carries 1-bit alpha and the compressor discards it, so the bake CS's coverage-in-alpha
+diagnostic is lost. Nothing read it.
+
+**Parity, same camera, TESTPRO2:** real 139.7 FPS / 3366 MB vs baked 198.3 FPS / 3219 MB
+(**+42%**), with the distant tree line ending at the same place in both.
+
+★ Method note: the resolution question looked like a rendering question and was a MEMORY
+question. Measuring all three points before touching anything is what showed that - a single
+measurement at 1024 would have read as "works fine" right up until a 4 GB card.

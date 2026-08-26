@@ -49,6 +49,9 @@ int  gg_terrain_bake_vram_kb = 0;
 // chunks that were not bakeable on the last readiness pass. Non-zero means the bake is WAITING
 // (terrain still generating), not broken - the distinction Lee's cascade made expensive.
 int  gg_terrain_bake_notready = 0;
+// The terrain's own view radius, captured at bake time and reported to the tree pass while the
+// real terrain is gone. 0 = no bake live. See the note where it is set.
+float gg_terrain_bake_radius = 0.0f;
 
 // the 2.94 Terrain Off teardown, which this switch reuses verbatim once the bake is ready
 extern bool gg_no_terrain;
@@ -99,6 +102,8 @@ namespace
 	bool g_buildRequested = false;
 	int  g_buildAttempts = 0;
 	int  g_retryCountdown = 0;
+	int  g_lastChunkCount = -1;   // terrain->chunks.size() on the previous readiness pass
+	int  g_stableCount = 0;       // consecutive passes with an unchanged chunk count
 	bool g_toreDownTerrain = false;   // WE called GGSetNoTerrainLevel(1) and owe a matching (0)
 	bool g_anyDispatchPending = false;
 	char g_report[2048] = "";
@@ -268,10 +273,13 @@ void GGTerrainBake_Clear()
 	g_buildRequested = false;
 	g_buildAttempts = 0;      // a re-tick gets a fresh budget, not the spent one
 	g_retryCountdown = 0;
+	g_lastChunkCount = -1;
+	g_stableCount = 0;
 	g_anyDispatchPending = false;
 	gg_terrain_bake_chunks = 0;
 	gg_terrain_bake_textures = 0;
 	gg_terrain_bake_vram_kb = 0;
+	gg_terrain_bake_radius = 0.0f;
 	gg_terrain_bake_drawcalls = 0;
 	gg_terrain_bake_culled = 0;
 }
@@ -320,7 +328,31 @@ namespace
 			}
 			gg_terrain_bake_notready = notReady;
 			if ( notReady > 0 )
+			{
+				g_stableCount = 0;
 				return false;   // nothing allocated, nothing to roll back
+			}
+
+			// ★ AND THE SET MUST HAVE STOPPED GROWING. An un-created chunk is not in the map, so
+			// "every chunk present is ready" is trivially true while the terrain is still
+			// generating outward - which is how the bake came to freeze a half-sized world with
+			// billboard trees standing on nothing beyond its edge. Require the count to hold
+			// steady across consecutive passes (about a second and a half at the retry rate)
+			// before committing, so what gets baked is the whole terrain and not a snapshot of
+			// it mid-growth.
+			const int chunkCount = (int)terrain->chunks.size();
+			if ( chunkCount != g_lastChunkCount )
+			{
+				g_lastChunkCount = chunkCount;
+				g_stableCount = 0;
+				gg_terrain_bake_notready = -1;   // "still growing", distinct from "not ready"
+				return false;
+			}
+			if ( ++g_stableCount < 3 )
+			{
+				gg_terrain_bake_notready = -1;
+				return false;
+			}
 		}
 
 		g_chunks.clear();
@@ -396,18 +428,25 @@ namespace
 			}
 			else
 			{
+				// ★ BC1, committed, SHADER_RESOURCE only. The bake writes an uncompressed shared
+				// scratch and BlockCompress copies it in here - so this is 0.5 bytes a texel
+				// instead of 4, and the resolution knob finally has affordable headroom:
+				//   256 = 27 MB, 512 = 86 MB, 1024 = 320 MB over 625 chunks (was 220/689/2564).
+				// _SRGB because the bake shader stores curve-encoded values; the hardware now
+				// decodes on sample, so the pixel shader no longer undoes it by hand (and gets
+				// correct filtering into the bargain).
 				TextureDesc tdesc;
 				tdesc.width = res;
 				tdesc.height = res;
 				tdesc.mip_levels = 1;
-				tdesc.format = Format::R8G8B8A8_UNORM;
-				tdesc.bind_flags = BindFlag::SHADER_RESOURCE | BindFlag::UNORDERED_ACCESS;
+				tdesc.format = Format::BC1_UNORM_SRGB;
+				tdesc.bind_flags = BindFlag::SHADER_RESOURCE;
 				tdesc.layout = ResourceState::SHADER_RESOURCE;
 				if ( device->CreateTexture( &tdesc, nullptr, &out.tex ) )
 				{
 					device->SetName( &out.tex, "GGTerrainBake::chunkTex" );
 					out.dispatch_pending = true;
-					vram += (size_t)res * res * 4;
+					vram += (size_t)res * res / 2;   // BC1: 8 bytes per 4x4 block
 				}
 				else
 				{
@@ -425,6 +464,18 @@ namespace
 			// Try again next frame with the whole set. Roll back rather than half-commit.
 			g_chunks.clear();
 			return false;
+		}
+
+		// ★ CAPTURE THE TERRAIN'S OWN VIEW RADIUS BEFORE IT IS TORN DOWN.
+		// GG_GetTerrainViewRadius() returns 0 the moment terrains.GetCount() hits 0, and the tree
+		// billboard pass uses exactly that value to cull "never draw billboards past the terrain"
+		// (GGTrees_part0.cpp). So tearing the terrain down silently DISABLED that cull and trees
+		// started drawing far beyond any ground - which is what Lee saw as "more trees, with no
+		// terrain polygons underneath them". The baked terrain is not short; the trees grew.
+		// Keeping the real radius here restores exact parity.
+		{
+			const float chunkU = (float)( wi::terrain::chunk_width - 1 ) * terrain->chunk_scale;
+			gg_terrain_bake_radius = (float)terrain->generation * chunkU;
 		}
 
 		g_anyDispatchPending = true;
@@ -594,14 +645,17 @@ const char* GGTerrainBake_Report()
 		"  switch            : %d   (shaders %s after %d attempts, ready %d)\n"
 		"  bake resolution   : %u x %u per chunk   (setup.ini terrainbakeres)\n"
 		"  chunks baked      : %d   (meshes)\n"
-		"  waiting on        : %d chunks not bakeable yet, %d build attempts\n"
+		"  waiting on        : %s, %d build attempts (terrain has %d chunks)\n"
 		"  chunks textured   : %d   %s\n"
 		"  video memory      : %d KB  (%.1f MB)\n"
 		"  last frame        : %d draw calls, %d frustum-culled\n"
 		"  wicked terrain    : %s\n",
 		gg_terrain_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts, g_ready ? 1 : 0,
 		res, res,
-		(int)g_chunks.size(), gg_terrain_bake_notready, g_buildAttempts,
+		(int)g_chunks.size(),
+		( gg_terrain_bake_notready < 0 ) ? "terrain still GROWING (chunk count unsettled)"
+			: ( gg_terrain_bake_notready > 0 ? "chunks not bakeable yet" : "nothing" ),
+		g_buildAttempts, g_lastChunkCount,
 		withTex, ( withTex == (int)g_chunks.size() ) ? "" : "<-- MISMATCH, some chunks have no texture",
 		gg_terrain_bake_vram_kb, gg_terrain_bake_vram_kb / 1024.0f,
 		gg_terrain_bake_drawcalls, gg_terrain_bake_culled,

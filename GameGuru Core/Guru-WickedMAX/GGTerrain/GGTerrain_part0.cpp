@@ -12020,7 +12020,16 @@ char gg_ftLoadReason[ 256 ] = { 0 };   // GGMAX 2.96c: why the last billboard sl
 float GG_GetTerrainViewRadius()
 {
 	wi::scene::Scene& sc = wi::scene::GetScene();
-	if ( sc.terrains.GetCount() == 0 ) return 0.0f;
+	if ( sc.terrains.GetCount() == 0 )
+	{
+		// ★ GGMAX 3.25h: Terrain Bake removes the Terrain component, but the ground is still
+		// there - it is being drawn by the baked chunks. Returning 0 here told the tree pass
+		// "no terrain", which switched OFF its "never draw billboards past the terrain" cull and
+		// scattered trees across empty sky beyond the ground's edge. Report the radius the real
+		// terrain had when it was baked, so the trees behave identically either way.
+		extern float gg_terrain_bake_radius;
+		return gg_terrain_bake_radius;
+	}
 	const wi::terrain::Terrain& tr = sc.terrains[ 0 ];
 	const float chunkU = (float)( wi::terrain::chunk_width - 1 ) * tr.chunk_scale;
 	return (float)tr.generation * chunkU;

@@ -37,6 +37,7 @@ extern int  gg_terrain_bake_drawcalls;   // draw calls issued last frame
 extern int  gg_terrain_bake_culled;      // chunks frustum-culled last frame
 extern int  gg_terrain_bake_vram_kb;     // total video memory held by the bake
 extern int  gg_terrain_bake_notready;    // chunks not bakeable yet (bake is waiting, not broken)
+extern float gg_terrain_bake_radius;     // terrain view radius captured at bake time, 0 = no bake
 
 void GGTerrainBake_Init();                                                   // main thread, once
 void GGTerrainBake_Update();                                                 // main thread, per frame: drives the state machine
