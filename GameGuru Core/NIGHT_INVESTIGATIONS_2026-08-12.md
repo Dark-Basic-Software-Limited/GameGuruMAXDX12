@@ -7082,3 +7082,160 @@ stay narrow — **reboot only when you intend to compare FPS across runs.**
 | FPS **across** sweeps | **only after a reboot on both** | the −18.2% of 0826b was entirely session state |
 | a code change's cost | **never from a sweep** | use a same-session interleaved A/B (§3.22) |
 
+
+---
+
+## §3.25 — Terrain Bake, Water Bake, Reduction Scale, per-level switches (2026-08-26, overnight)
+
+Lee ran 3.24 on a second machine with a **6-year-old AMD card** and came back with a list. That
+card is the point of all of this: everything below was implemented for hardware I cannot measure
+on, so the numbers in this section are from THIS machine and are corroboration, not the result.
+His instruction was explicit — *"do not place importance on your own performance testing, you are
+not looking to make gains on this PC"*.
+
+His measurements, which are the actual brief:
+- switching terrain off: **22 ms → 12 ms**, so the terrain path costs **10 ms** on that card
+- the far-tree billboard pass on the same card is close to **free**
+- water back on: `GPU Idle + unranged` **1.5 → 7 ms**, and it **stayed at 7 ms for ~70 seconds**
+  after switching it off again
+- `Skinning and Morph` **3 ms, sometimes 6 ms** on Canyon Offensive with only his own weapon
+  animating nearby — and **"Lower Animation & LUA Speed" did not move it at all**
+
+The inference he drew, and it is the right one: the terrain's cost is the MACHINERY, not the
+triangles. Keep the triangles, throw the machinery away.
+
+### 3.25a Terrain Bake (replaces "Terrain Off")
+
+`GGTerrainBake.cpp` + `terrainBakeChunkCS.hlsl` (engine) + `GGTerrainBake{VS,PS,PrepassPS}.hlsl`.
+
+**Texture.** The engine already contains exactly the blend needed:
+`terrainVirtualTextureUpdateCS` composites blendmap layer weights against the layer materials'
+basecolour maps to bake one SVT tile. The new shader is that shader's BASECOLORMAP path with one
+change — it writes a plain RGBA8 pixel instead of a BC1 block. The compression cannot come along:
+the stock CS emits into a `uint2` UAV that ALIASES a BC1 texture through DX12 **sparse tile
+mapping**, and UAVs on BC formats are prohibited for a committed texture. Uncompressed costs
+video memory, which the resolution knob controls, against removing a ~576 MB SVT atlas — a large
+net saving either way, and measured below at **−820 MB**.
+
+★ It reads `chunk_data.blendmap`, never `vt->blendmap`. They are the same texture
+(`UpdateVirtualTexturesCPU` does `vt.blendmap = chunk_data.blendmap`) but a chunk is perfectly
+bakeable while its virtual texture is null or evicted. Depending on the VT would have made the
+bake silently **camera-history-dependent**: chunks the player had walked near would bake and the
+rest would come out empty, on a switch whose whole job is to be predictable.
+
+**Mesh.** Per chunk, the MeshComponent's positions/normals/uvset_0 copied into one 24-byte-vertex
+buffer with the chunk world offset folded in, plus **one shared index buffer** — every chunk has
+identical grid topology, so 625 chunks need one. Deliberately NOT Wicked's per-LOD index sets:
+those exist to stitch neighbours at different LODs, which needs the LOD selection system this
+mode is removing, and a single full-detail grid cannot produce a seam between two chunks that
+disagree about their LOD.
+
+**Draw.** Modelled on the far-tree billboard pass as instructed: per-chunk frustum cull, one
+`DrawIndexed` each, zero ECS. ★ **ONE compiled VS drives both the prepass and the colour PSO** —
+separately compiled twins is the 3.04 black-flicker bug and this is the third time that rule has
+paid for itself.
+
+**Lifetime: runtime, nothing on disk** (Lee's choice). The bake always matches the terrain as it
+stands, so sculpting cannot leave a stale copy and there is no invalidation logic to get wrong.
+
+### 3.25b Water Bake (replaces "Water Off")
+
+Still removes the ocean, which is where the saving is — with `IsOceanEnabled()` false the planar
+reflection Z-prepass and colour pass are never recorded (4.37 ms of a 10.06 ms GPU frame on
+TESTPRO1). What is new is a flat semi-transparent plane at the water height in its place, so a
+lake goes **flat** instead of vanishing. Camera-centred and 250,000 units across, matching the
+ocean's unbounded behaviour so the switch does not move where water appears to end. Colour comes
+from the same `visuals.Water*` fields the ocean reads, and rides in the four vertices rather than
+a constant buffer — claiming a slot in the b3–b13 table for four vertices buys nothing.
+
+⚠ **On the 70-second decay: not reproduced and not fixed — by construction it cannot occur here.**
+This plane owns four vertices and one PSO, both created once, and the on/off edge changes one
+bool read at the top of the draw. There is no simulation to spin down and nothing that decays
+over a minute. If Lee still sees 7 ms holding after unticking, that belongs to **the ocean's own
+teardown**, not to this, and wants measuring on that card with `DUMP_BAKE` in hand. Saying the
+switch is "instant in both directions" is a claim about this code, not a claim to have explained
+his observation.
+
+### 3.25c Reduction Scale — and why the tick box never moved Skinning and Morph
+
+**Diagnosed from source, no card needed.** `RunAnimationUpdateSystem`'s `bCulled` path skips
+animation EVALUATION on the CPU. The skinning dispatch is somewhere else entirely:
+`wiRenderer.cpp` loops `vis.scene->meshes` and dispatches for **every skinned mesh in the SCENE** —
+not the visible set — every frame, with **no distance test, no visibility test, and no check for
+whether the pose changed**. So a level full of characters pays full skinning while the player
+looks at a wall, and the 30fps tick box is powerless over it. That is Lee's 3–6 ms exactly.
+
+New slider (a **sub-control** of the tick box, his choice) skips both halves together:
+> under 500 units: never skipped. Beyond: **skipped = (scale / 10) × (distance / 500)**.
+
+Scale 50 at 500 units skips 5, at 1000 skips 10; scale 80 at 500 skips 8, at 1000 skips 16;
+scale 100 at 500 skips 10. Exactly as specified, step at 500 included — it is in the spec and a
+distant character's animation phase is not something a player can track.
+
+★★ **The phase key for both halves is the OBJECT INDEX, and that is load-bearing.** The animation
+skip and the skinning skip are decided in two different files over two different collections. Key
+them off anything else — animation index here, mesh index there — and they agree on the RATE but
+disagree on WHICH frames, leaving every character permanently one update stale. That reads as
+judder, which is worse than an honestly lower rate. A mesh instanced by several objects is skinned
+if ANY of them wants it; a mesh no object references is left alone, because there is nothing to
+measure a distance from and a wrong guess there freezes something visible.
+
+### 3.25d Per-level switches, and two controls removed
+
+The Brutal off-switches were session globals specifically so they never touched a user's levels.
+Lee asked for the opposite once real levels started wanting different answers. All eleven controls
+now save into the visuals structure exactly like Post Processing and the shadow settings, applied
+**at parse time** like `LowVRAM` because several are read while the level is still building.
+Defaults all-neutral; a level saved before this has no fields and loads with those same defaults,
+so **nothing changes for an existing project until somebody ticks something**. "Reset Visuals"
+unticks them all — it calls `visuals_resetvalues`, which is where the reset lives, so that came
+free rather than needing a second code path to keep in step.
+
+Removed from the panel: **Post Effects Off** and **Simple Sky**, neither of which did anything
+visible on Lee's card. Their globals and `setup.ini` keys stay — removing a machine-wide key is a
+separate, user-facing decision. The **Logic Performance** box lost its developer header block;
+it is still in the buffer and `DUMP_LOGICCOST` still prints all of it, because that is the
+instrument 3.22–3.24 were measured with and deleting it would cost a rebuild to get back.
+
+### ★★★ Three defects, none of which presented as a failure
+
+Worth recording as a set, because all three produced *plausible, healthy-looking output*.
+
+1. **Shaders never loaded.** `SHADERPATH` is the relative `"shaders/"`, and by the time the panel
+   is reachable the process CWD has moved to `Max/Files`. A lazily-loaded shader looked for
+   `Files/shaders/GGWaterBakePS.cso`, did not find it, and both switches were **inert for the
+   whole session with every counter reading a legitimate zero**. Every other GG module loads at
+   `GGGrass_Init` time; these now do too.
+   ★ **New rule: a GG module's shaders must load during startup init, not on first use.**
+2. **Device removed on the first tick.** The bake's compute `Dispatch` was recorded from
+   `customDraw_Prepass` — which fires INSIDE the prepass's `BeginRenderPass`/`EndRenderPass`, and
+   **DX12 forbids a Dispatch inside a render pass**. `Close()` failed with E_FAIL and the device
+   went with `DXGI_ERROR_INVALID_CALL`. MAX stayed *alive* and simply stopped answering the
+   harness. Fixed with its own command list on the main thread.
+   ★ **New rule, sibling to "resource creation belongs on the main thread": COMPUTE belongs
+   outside the render pass. A `customDraw_*` hook may only record draws.**
+3. **Invisible terrain with perfect numbers.** `CullMode::BACK` + `front_counter_clockwise` threw
+   away every triangle while the report said **202 draw calls, 625 chunks textured**. Every
+   counter was correct and the screen was empty. `CullMode::NONE` removes the dependency on the
+   grid's winding order for a near-horizontal sheet that has almost no back faces to cull.
+
+The common thread: **`DUMP_BAKE` found all three, and nothing else would have.** A crash announces
+itself; "shaders FAILED after 601 attempts" and "202 draw calls, screen empty" do not. Building
+the report before building the feature was the highest-value thirty lines of the night.
+
+### Measured (Canyon Offensive, editor, this machine)
+
+⚠ This is a FAST card. The target is Lee's AMD, where terrain is worth 10 ms rather than 1.4.
+
+| | baseline | Terrain Bake on |
+|---|---|---|
+| FPS | 174.0 | **227.9** (+31%) |
+| CPU frame | 5.75 ms | **4.38 ms** (−24%) |
+| VRAM | 3.17 GB | **2.35 GB** (−820 MB) |
+| chunks | — | 625 baked, 625 textured, 202 drawn / 423 culled |
+| bake VRAM | — | 220.5 MB at the default 256/chunk |
+
+Untick restores the real terrain. Both bakes run together. No crash.
+
+**Harness**: `SET_BAKETERRAIN 0|1`, `SET_BAKEWATER 0|1`, `SET_BAKERES <32..2048>`,
+`SET_ANIMREDUCTION <1..100>`, `DUMP_BAKE`. Test script `tools/baketest.sh <TAG> <DEMO>`.
