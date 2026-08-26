@@ -7536,3 +7536,50 @@ uniform-1024 bake (377 MB) it replaces, with sixteen times the texel density whe
 Knobs: `terrainbakeres` (far, 256), `terrainbakeresnear` (near, 4096), `terrainbakenearbudget`
 (512 MB); harness `SET_BAKERES`, `SET_BAKERESNEAR`, `SET_BAKENEARBUDGET`. Engine cap raised to
 8192, which BC1 keeps at 32 MB a chunk if anyone wants to spend the budget on fewer, sharper ones.
+
+### §3.25k — mipmaps for the baked chunks, and the near tier at 8192
+
+Lee asked whether the baked meshes benefit from mipmaps or texture streaming. Checked, and the
+answer was **neither**:
+
+- `mip_levels = 1` on every baked chunk texture, while the draw pass samples with
+  `samplerTrilinearClamp` - so it asked for trilinear and silently got bilinear.
+- Streaming cannot reach them at all: these are runtime `CreateTexture` surfaces with no backing
+  container, and streaming here is gated on a per-load opt-in, editor-only, and plain `DDS `
+  magic. No mip feedback or residency either.
+
+★★ **The bake had quietly traded a mipped representation for an unmipped one.** The SVT it
+replaced carries a full mip pyramid fed by residency. The far tier is 256 texels across a
+~5120-unit chunk seen at grazing angles, which is precisely the minification case mips exist for:
+without them it crawls under camera motion, and every neighbouring screen pixel of a minified
+texture jumps across memory - costing the BANDWIDTH a weak GPU has least of. That is not a
+cosmetic gap on the hardware this mode targets.
+
+**Mips added**, and they are self-funding: the near-tier budget is denominated in MB, so the ~4/3
+chain costs COVERAGE rather than memory - fewer chunks get promoted and the cap is still the cap.
+`ChunkTextureBytes()` is now the single place that knows what a chunk costs, mips included, so
+the budget cannot drift from reality.
+
+⚠ Three details that would each have broken it:
+- the chain must stop at **4x4**, not 1x1 - BC1 works in 4x4 blocks and a 2x2 BC mip is not a
+  thing (the engine's own DDS import aligns to 4 for the same reason);
+- `BlockCompress` pairs SOURCE mip N with DESTINATION mip N, so the scratch and the BC1 target
+  must have the SAME mip count;
+- the scratch needs per-mip **SRV *and* UAV** subresources (the wiOcean gradientMap pattern), and
+  the bake dispatch must name UAV subresource 0 rather than the now-ambiguous default.
+
+★ **And the scratch is now released after each bake.** At 8192 with a chain it is about 340 MB of
+uncompressed working surface; leaving it resident would have handed back a large slice of exactly
+what BC1 just saved, for a one-shot conversion.
+
+### Near tier raised to 8192 (Lee's call)
+
+| near res | chunks promoted | near memory | total bake | FPS |
+|---|---|---|---|---|
+| 4096 | 33 | 264 MB of 512 | 347 MB | 223 |
+| **8192** | **12** | 512 MB (capped) | 602 MB | 221 |
+
+8192 is 0.6 world units per texel. ⚠ The honest trade: at 8192 the budget buys **12 chunks
+instead of 33**, so the sharp zone is materially smaller. Frame rate is unaffected either way -
+as at every point in this whole resolution investigation, the dial spends memory, not time.
+`terrainbakenearbudget` raises the coverage for anyone willing to spend the video memory.

@@ -54,7 +54,7 @@ bool gg_terrain_bake = false;
 //     4096 -> 1.25 units per texel    8192 -> 0.6 units/texel
 // which is why the near tier is worth four to five doublings over the far one.
 int  gg_terrain_bake_res = 256;          // FAR tier - distant scenery
-int  gg_terrain_bake_res_near = 4096;    // NEAR tier - inside the play area
+int  gg_terrain_bake_res_near = 8192;    // NEAR tier - inside the play area
 // ⚠ HARD MEMORY BUDGET for the near tier, in MB. Without it this feature is unbounded: a level
 // whose objects are spread over the whole map promotes every chunk, and 625 chunks at 4096 is
 // 5 GB. Chunks are promoted NEAREST-FIRST from the centre of the play area until the budget is
@@ -141,6 +141,23 @@ namespace
 		Scene& scene = wi::scene::GetScene();
 		if ( scene.terrains.GetCount() == 0 ) return nullptr;
 		return &scene.terrains[0];
+	}
+
+	// BC1 bytes for one chunk at a given resolution, INCLUDING the mip chain. The chain adds
+	// almost exactly a third (1 + 1/4 + 1/16 + ...), and charging it here is what keeps the
+	// near-tier budget honest - it is denominated in MB, so mips cost coverage rather than
+	// memory: fewer chunks get promoted and the cap is still the cap.
+	size_t ChunkTextureBytes( uint32_t res )
+	{
+		size_t total = 0;
+		uint32_t r = res;
+		for ( ;; )
+		{
+			total += (size_t)r * r / 2;   // BC1: 8 bytes per 4x4 block
+			if ( r <= 4 ) break;
+			r >>= 1;
+		}
+		return total;
 	}
 
 	uint32_t PackNormal( const XMFLOAT3& n )
@@ -480,7 +497,7 @@ namespace
 			std::sort( promote.begin(), promote.end(),
 				[]( const std::pair<float, wi::terrain::Chunk>& a,
 				    const std::pair<float, wi::terrain::Chunk>& b ) { return a.first < b.first; } );
-			const size_t perChunkKB = ( (size_t)resNear * resNear / 2 ) / 1024;   // BC1
+			const size_t perChunkKB = ChunkTextureBytes( resNear ) / 1024;   // BC1 + mips
 			const size_t budgetKB   = (size_t)std::max( 0, gg_terrain_bake_near_budget_mb ) * 1024;
 			size_t spentKB = 0;
 			size_t keep = 0;
@@ -579,12 +596,17 @@ namespace
 				// correct filtering into the bargain).
 				const bool isNear = nearSet.count( ( (uint64_t)(uint32_t)chunk.x << 32 ) | (uint32_t)chunk.z ) != 0;
 				out.res = isNear ? resNear : resFar;
-				if ( isNear ) gg_terrain_bake_near_kb += (int)( (size_t)out.res * out.res / 2 / 1024 );
+				if ( isNear ) gg_terrain_bake_near_kb += (int)( ChunkTextureBytes( out.res ) / 1024 );
 
 				TextureDesc tdesc;
 				tdesc.width = out.res;
 				tdesc.height = out.res;
-				tdesc.mip_levels = 1;
+				// ★ MIPPED. Without a chain the draw pass's trilinear sampler silently degrades to
+				// bilinear and distant chunks crawl under camera motion - and every neighbouring
+				// screen pixel of a minified texture jumps across memory, which costs exactly the
+				// bandwidth a weak GPU has least of. The count must match the scratch's, because
+				// BlockCompress pairs source mip N with destination mip N.
+				tdesc.mip_levels = wi::terrain::gg_BakeMipCount( out.res );
 				tdesc.format = Format::BC1_UNORM_SRGB;
 				tdesc.bind_flags = BindFlag::SHADER_RESOURCE;
 				tdesc.layout = ResourceState::SHADER_RESOURCE;
@@ -592,7 +614,7 @@ namespace
 				{
 					device->SetName( &out.tex, "GGTerrainBake::chunkTex" );
 					out.dispatch_pending = true;
-					vram += (size_t)out.res * out.res / 2;   // BC1: 8 bytes per 4x4 block
+					vram += ChunkTextureBytes( out.res );
 				}
 				else
 				{
@@ -739,6 +761,11 @@ void GGTerrainBake_RecordPendingBakes( CommandList cmd )
 		}
 		if ( gg_terrain_bake_res_near == gg_terrain_bake_res ) break;   // one tier only
 	}
+	// ★ Release the shared uncompressed scratch. At 8192 with a mip chain it is about 340 MB, and
+	// the bake is a one-shot conversion - leaving it resident would hand back a large slice of
+	// what BC1 just saved. It is recreated on demand if the switch is re-ticked.
+	wi::terrain::gg_ReleaseBakeScratch();
+
 	GetDevice()->EventEnd( cmd );
 	g_anyDispatchPending = false;
 }
