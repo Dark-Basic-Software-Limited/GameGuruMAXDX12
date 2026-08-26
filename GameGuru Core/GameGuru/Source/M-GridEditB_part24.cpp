@@ -73,7 +73,7 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				t.gamevisuals.iAnimReductionScale = t.visuals.iAnimReductionScale = reduction;
 				g.projectmodified = 1;
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How much animation work to skip on things that are far enough away for you not to notice. 1 is no reduction. At 50, something 500 units away has 5 frames skipped between animation updates, and one 1000 units away has 10 - the skip grows with distance. At 100 it is 10 frames at 500 units. Nothing closer than 500 units is ever skipped, so anything you are actually looking at animates at full rate. This also skips the graphics card work that poses the character, which the tick box above does not.");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How much animation work to skip on things that are far enough away for you not to notice. 1 is no reduction. At 50, something 500 units away has 5 frames skipped between animation updates, and one 1000 units away has 10 - the skip grows with distance. Nothing closer than 500 units is ever skipped, so anything you are actually looking at animates at full rate. This also skips the graphics card work that poses the character, which the tick box above does not.\n\nAround 20 to 25 is the sweet spot. Measured on a test level with 352 animating characters, 10 already holds 87 percent of them still on a given frame and 25 holds 93 percent - past that the saving barely moves while the stutter on mid-distance characters keeps getting worse. Going above 50 buys you almost nothing.");
 		}
 		else
 		{

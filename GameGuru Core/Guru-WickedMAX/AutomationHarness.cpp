@@ -5844,6 +5844,35 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "DUMP_ANIMREDUCTION") == 0)
+	{
+		// What Reduction Scale is actually doing right now. The count of armatures HELD is the
+		// hardware-independent measure - it says the mechanism is working even on a machine where
+		// skinning costs nothing. Pair it with DUMP_PROFILER's "Skinning and Morph" GPU row for
+		// the money figure. The sample table exists so the distance curve can be checked against
+		// the specification without arithmetic in your head.
+		extern bool bEnable30FpsAnimations;
+		wi::scene::Scene& asc = wi::scene::GetScene();
+		const uint32_t ascale = wi::scene::gg_anim_reduction_scale.load(std::memory_order_relaxed);
+		int w = _snprintf(result, resultSize,
+			"ANIM REDUCTION\n"
+			"  slider           : %d   (tick box %d - the slider only bites while that is ON)\n"
+			"  engine scale     : %u\n"
+			"  armatures        : %d in scene, %u HELD this frame\n"
+			"  decision unit    : ARMATURE (all meshes of one character share it)\n"
+			"  frames skipped between updates, by distance:\n",
+			t.visuals.iAnimReductionScale, bEnable30FpsAnimations ? 1 : 0,
+			ascale, (int)asc.armatures.GetCount(), wi::scene::gg_anim_armatures_skipped);
+		const float samples[6] = { 250.0f, 499.0f, 500.0f, 1000.0f, 2000.0f, 5000.0f };
+		for (int i = 0; i < 6 && w < (int)resultSize - 128; i++)
+		{
+			const uint32_t p = wi::scene::gg_anim_reduction_period(samples[i], ascale);
+			w += _snprintf(result + w, resultSize - w, "     %6.0f units : period %u  (%u skipped)\n",
+				samples[i], p, p > 0 ? p - 1 : 0);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_ANIMREDUCTION") == 0)
 	{
 		// Reduction Scale, 1..100. Echoes a LIVE re-read of what the engine now holds, not the

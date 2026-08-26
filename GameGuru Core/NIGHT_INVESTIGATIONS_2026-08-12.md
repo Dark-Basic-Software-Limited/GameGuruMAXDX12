@@ -7640,3 +7640,57 @@ cost more than any of the bugs did. **The report is the feature.**
 ★★ **And twice the test was the thing at fault, not the code**: a bake-cycle test with generous
 waits that never entered the failing state, and a sweep whose FPS columns were contaminated by
 machine drift. Ask what state the bug needs, then check the run actually reached it.
+
+### ★★★ §3.25n — "the character has TWO HEADS", and the unit of a skinned pose
+
+Lee, zoomed in with a scope: at Reduction Scale 10 the animation is smooth, at 50 the character
+flickers between animation frames, **the head animates at a different pace than the body**, and in
+game the character briefly has **two heads**.
+
+That last observation is the whole diagnosis. **A GameGuru character is SEVERAL OBJECTS sharing
+ONE ARMATURE** - head, body, legs and torso are separate meshes. 3.25 keyed both the skip phase
+AND the distance off the OBJECT index, so:
+
+- the head and the body landed on **different frames** of the skip cycle, and
+- each part measured its own AABB centre, so at scale 50 a couple of hundred units of separation
+  put them in **different periods entirely**.
+
+A head posed from an older armature state than the body it sits on is, precisely, a second head.
+
+★★★ 3.25 already recorded that "the phase key is load-bearing and must be shared" - and then
+picked the wrong shared thing. **The unit of a skinned pose is the ARMATURE, not the object.** Two
+meshes driven by one armature must advance on the same frame or they disagree about where the
+bones are. The rule generalises: when you throttle work, the throttle's unit must be the unit the
+DATA is shared over, not whatever collection you happen to be iterating.
+
+Fixed by deciding **once per armature per frame**, in a prologue to `RunAnimationUpdateSystem`,
+stored in `gg_anim_armature_update` and read by both the animation skip and the skinning dispatch.
+⚠ Deliberately not "computed identically in two places" - computed ONCE, so the two cannot drift.
+The per-armature distance is the nearest of any object driving it, so every part of a character is
+in the same period by construction.
+
+### ★★ The saving SATURATES around 25 - measured, and it changes the advice
+
+In game on Lee's test level, 352 animating armatures, counting how many are held on a frame:
+
+| scale | armatures held | share |
+|---|---|---|
+| 1 | 0 | off |
+| 10 | 307-313 | **87-89%** |
+| 25 | 328-329 | **93%** |
+| 50 | 331-332 | 94% |
+| 100 | 330 | 94% |
+
+★ **Past about 25 the saving stops moving while the stutter keeps getting worse.** Scale 10 already
+captures ~88% of everything available and 25 gets 93%; 50 and 100 add roughly one percent between
+them. The top half of the slider is nearly all cost and no benefit - which is worth knowing before
+anyone reaches for 100 expecting it to be twice as good as 50.
+
+Guidance is now in the tooltip rather than left for the user to discover.
+
+⚠ **The performance half of this is UNMEASURED**: `Skinning and Morph` reads **0.01 ms** on this
+machine, so the FPS column across the sweep (225-244) is pure noise and proves nothing. The
+held-armature count is the hardware-independent proxy, and it says the mechanism works. What the
+saving is worth belongs to the card where skinning costs 3-6 ms.
+
+**Two heads: confirmed gone** at scale 50 in game.
