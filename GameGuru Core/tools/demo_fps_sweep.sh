@@ -1,4 +1,28 @@
 #!/bin/bash
+# ============================================================================================
+#  REBOOT FIRST IF YOU INTEND TO COMPARE THE FPS COLUMNS TO ANOTHER SWEEP.
+# ============================================================================================
+#  Proved 2026-08-26 (NIGHT_INVESTIGATIONS 3.24b). The hub-wide -18.2% editor drop between the
+#  0825 and 0826b sweeps was ACCUMULATED MACHINE STATE - uptime, LM Studio, background tasks -
+#  and nothing to do with the build. A reboot brought the three worst demos back +34.9%, landing
+#  +2.8% ABOVE the 0825 "start of day" baseline, so even that baseline was contaminated.
+#
+#  What is and is not safe:
+#    SAFE   - everything WITHIN one run. Every demo here is measured in the same machine state,
+#             so POLYS, VRAM and demo-vs-demo FPS from a single sweep are all fair. The sweep
+#             does NOT cook the machine as it goes: correlation between a demo's position in the
+#             run and its drop measured -0.04 (first half -17.5%, second half -17.8%), i.e. the
+#             full loss was already present on demo 1.
+#    UNSAFE - FPS ACROSS runs, unless both were taken in comparable machine state. That is what
+#             the reboot buys, and it is the only thing that buys it.
+#
+#  C1-C4 in sweepgate.sh (LOAD / POLYS / VRAM / GAME) deliberately exclude FPS and are unaffected
+#  either way - so a gate run does NOT need a reboot. Only an FPS comparison does.
+#
+#  The preflight below records hours-since-boot into the log and the results file, so a future
+#  reader can tell what state a number was taken in instead of having to remember.
+# ============================================================================================
+#
 # FPS survey v4 (2026-08-06, build engine a229fffe / game 50ca7c28 — the 2.07g light/shadow build).
 # Same method as the 07-29/07-30/07-31/08-01 baselines so numbers stay comparable:
 #   fresh MAX launch -> first level -> 30s soak at start camera -> 3 editor FPS samples
@@ -22,6 +46,20 @@ START_AT="${2:-0}"
 OUT="/c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12--claude-worktrees-determined-chebyshev-bf0892/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/demo_fps"
 mkdir -p "$OUT/run$TAG" "$OUT/shots$TAG"
 RESULTS="$OUT/results_$TAG.txt"
+
+# GGMAX 3.24c: record the machine state this run was taken in. The -18.2% drift of 2026-08-26 was
+# invisible in the data - the results file looked exactly like a clean one - so it is stamped here
+# rather than left to memory. Purely informational: it never blocks a run, because a gate run
+# (C1-C4) does not care and should not be gated on a reboot.
+GG_UPHOURS=$(powershell.exe -NoProfile -Command "\$b=(Get-CimInstance Win32_OperatingSystem).LastBootUpTime; '{0:N1}' -f ((Get-Date)-\$b).TotalHours" 2>/dev/null | tr -d '\r')
+[ -z "$GG_UPHOURS" ] && GG_UPHOURS="unknown"
+echo "### machine: ${GG_UPHOURS}h since boot"
+if [ "$GG_UPHOURS" != "unknown" ] && awk "BEGIN{exit !($GG_UPHOURS > 6)}"; then
+  echo "### \u26a0 ${GG_UPHOURS}h uptime. FINE for the gate (C1-C4 exclude FPS), but do NOT compare"
+  echo "###   this run's FPS columns to another sweep - reboot first if that is the intent."
+  echo "###   See NIGHT_INVESTIGATIONS 3.24b."
+fi
+echo "# UPHOURS=$GG_UPHOURS  started=$(date '+%Y-%m-%d %H:%M:%S')" >> "$RESULTS"
 
 # ⚠ SINGLE-INSTANCE LOCK (added 2026-08-10; this script predates the rule).
 # On 2026-08-09 three copies of a sweep ran concurrently against one MAX — a nohup'd launch

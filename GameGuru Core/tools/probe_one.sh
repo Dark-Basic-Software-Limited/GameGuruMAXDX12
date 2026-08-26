@@ -46,7 +46,10 @@ wait_state() {
   return 1
 }
 
-echo "### probe $TAG : $DEMO — $(date +%H:%M:%S)"
+# GGMAX 3.24c: same machine-state stamp as the sweep - see the banner in demo_fps_sweep.sh.
+GG_UPHOURS=$(powershell.exe -NoProfile -Command "\$b=(Get-CimInstance Win32_OperatingSystem).LastBootUpTime; '{0:N1}' -f ((Get-Date)-\$b).TotalHours" 2>/dev/null | tr -d '\r')
+[ -z "$GG_UPHOURS" ] && GG_UPHOURS="unknown"
+echo "### probe $TAG : $DEMO — $(date +%H:%M:%S)  (${GG_UPHOURS}h since boot)"
 taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true
 sleep 4
 rm -f "$D/auto_command.txt"   # stale-command rule

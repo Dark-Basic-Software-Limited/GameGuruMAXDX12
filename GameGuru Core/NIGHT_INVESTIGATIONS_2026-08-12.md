@@ -7049,3 +7049,36 @@ the loss accumulates between SESSIONS, not during a run.
 - C1–C4 were never affected: the gate deliberately scores LOAD / POLYS / VRAM / GAME and excludes
   FPS, and that choice is now vindicated rather than merely cautious.
 
+### §3.24c — the reboot rule, written where it will actually be read
+
+§3.24b established it; a paragraph in a night-notes file is not where someone stands when they are
+about to run a sweep. So it now lives in three places, in descending order of how likely it is to
+be seen:
+
+1. **A banner at the top of `tools/demo_fps_sweep.sh`** — the file you open to run the thing.
+2. **A PREFLIGHT that stamps the machine state into the data.** The sweep now reads
+   hours-since-boot and writes `# UPHOURS=<n>  started=<timestamp>` into the results file, and
+   prints it to the log. Over 6 hours it also prints a warning. `probe_one.sh` carries the same
+   stamp in its header line.
+3. The header of `DEMO_FPS_SWEEP.md` and the memory rules.
+
+★★ **The stamp is the part that matters.** The 2026-08-26 drift was invisible in the data —
+`results_0826b.txt` looked exactly like a clean file, and the only reason it was caught at all is
+that the editor column moved on a workload the change could not touch. A results file that records
+what state it was taken in cannot lie about it later, and it removes the need for anyone to
+remember. Every future comparison can check the two `UPHOURS` values before believing a delta.
+
+⚠ **The preflight WARNS, it never blocks.** A gate run does not need a reboot: C1–C4 are
+LOAD / POLYS / VRAM / GAME and exclude FPS by design, so refusing to run on high uptime would be
+protecting the wrong thing and would just teach people to bypass it. The rule is narrow and should
+stay narrow — **reboot only when you intend to compare FPS across runs.**
+
+#### What is safe, in one place
+
+| comparison | safe? | why |
+|---|---|---|
+| POLYS / VRAM, anywhere | **yes** | deterministic; unaffected by machine state |
+| demo vs demo **within** one sweep | **yes** | same machine state throughout — position/drop correlation −0.04 |
+| FPS **across** sweeps | **only after a reboot on both** | the −18.2% of 0826b was entirely session state |
+| a code change's cost | **never from a sweep** | use a same-session interleaved A/B (§3.22) |
+
