@@ -91,6 +91,7 @@ namespace
 
 	bool g_initialised = false;
 	bool g_shadersReady = false;
+	int  g_shaderAttempts = 0;
 	bool g_ready = false;            // meshes AND textures done; terrain may be torn down
 	bool g_buildRequested = false;
 	bool g_anyDispatchPending = false;
@@ -155,15 +156,24 @@ namespace
 // ---------------------------------------------------------------------------------------------
 void GGTerrainBake_Init()
 {
-	if ( g_initialised ) return;
+	// ★ RETRY, do not latch on entry. The first version set g_initialised before loading and
+	// returned early ever after, so when GGTerrainBake_Update ran on a frame where the shader
+	// system was not up yet, the load failed once and the switch was inert for the rest of the
+	// session - silently, with no crash and every counter reading a legitimate-looking zero.
+	// Caught by DUMP_BAKE printing "shaders FAILED" rather than by anything visible on screen,
+	// which is the whole argument for the report existing.
+	if ( g_shadersReady ) return;
 	g_initialised = true;
+	if ( g_shaderAttempts > 600 ) return;   // ~10 seconds of frames; then stop asking
+	g_shaderAttempts++;
 
 	wi::renderer::LoadShader( ShaderStage::VS, g_vs,        "GGTerrainBakeVS.cso" );
 	wi::renderer::LoadShader( ShaderStage::PS, g_ps,        "GGTerrainBakePS.cso" );
 	wi::renderer::LoadShader( ShaderStage::PS, g_prepassPS, "GGTerrainBakePrepassPS.cso" );
 	if ( !g_vs.IsValid() || !g_ps.IsValid() || !g_prepassPS.IsValid() )
 	{
-		wi::backlog::post( "GGMAX 3.25: Terrain Bake shaders failed to load - the switch will do nothing.", wi::backlog::LogLevel::Error );
+		if ( g_shaderAttempts == 600 )
+			wi::backlog::post( "GGMAX 3.25: Terrain Bake shaders never loaded after 600 attempts - the switch will do nothing. Check GGTerrainBake*.cso in the shaders folder.", wi::backlog::LogLevel::Error );
 		return;
 	}
 
@@ -171,7 +181,12 @@ void GGTerrainBake_Init()
 
 	RasterizerState rs;
 	rs.fill_mode = FillMode::SOLID;
-	rs.cull_mode = CullMode::BACK;
+	// NONE, not BACK. The first version culled BACK with front_counter_clockwise, and the whole
+	// baked terrain was invisible while the report cheerfully said 202 draw calls - every
+	// triangle was being thrown away on winding. Terrain is a near-horizontal sheet seen from
+	// above, so almost nothing is genuinely back-facing and the culling was buying nothing; not
+	// depending on the grid's winding order removes the failure mode outright.
+	rs.cull_mode = CullMode::NONE;
 	rs.front_counter_clockwise = true;
 	rs.depth_clip_enable = true;
 
@@ -215,8 +230,13 @@ void GGTerrainBake_Init()
 	};
 	// prepass lays the depth down; colour tests EQUAL against it and writes no depth, exactly
 	// like the far-tree billboard pair.
+	// ⚠ The colour pass tests GREATER_EQUAL, not EQUAL. EQUAL is the theoretically exact pairing
+	// with a shared VS, but the far-tree pair (GGTrees_part0.cpp) uses GREATER_EQUAL with
+	// depth-write off and that is the combination proven to work against this engine's prepass;
+	// EQUAL additionally assumes nothing in the pipeline perturbs the depth between the passes,
+	// which is a bet with no upside here.
 	CreatePSO( &g_psoPrepass, &g_prepassPS, DepthWriteMask::ALL,  ComparisonFunc::GREATER_EQUAL );
-	CreatePSO( &g_psoOpaque,  &g_ps,        DepthWriteMask::ZERO, ComparisonFunc::EQUAL );
+	CreatePSO( &g_psoOpaque,  &g_ps,        DepthWriteMask::ZERO, ComparisonFunc::GREATER_EQUAL );
 
 	g_shadersReady = true;
 }
@@ -368,12 +388,20 @@ void GGTerrainBake_Update()
 	s_prevSwitch = gg_terrain_bake;
 
 	if ( !gg_terrain_bake ) return;
-	if ( !g_shadersReady ) return;
+	if ( !g_shadersReady ) { GGTerrainBake_Init(); return; }   // keep retrying while ticked
 
 	if ( g_buildRequested )
 	{
 		g_buildRequested = false;
-		if ( !BuildFromTerrain() )
+		if ( BuildFromTerrain() )
+		{
+			// ★ OWN COMMAND LIST, on the main thread, OUTSIDE any render pass. See the note at
+			// the head of this change: a compute Dispatch recorded inside customDraw_Prepass
+			// removed the device on the first tick.
+			CommandList cmd = GetDevice()->BeginCommandList();
+			GGTerrainBake_RecordPendingBakes( cmd );
+		}
+		else
 		{
 			// Nothing to bake (no terrain in the scene, or it has not generated yet). Leave the
 			// real terrain alone rather than tearing it down for an empty replacement.
@@ -473,14 +501,14 @@ const char* GGTerrainBake_Report()
 	for ( const BakedChunk& c : g_chunks ) if ( c.tex_ready ) withTex++;
 	_snprintf( g_report, sizeof( g_report ),
 		"TERRAIN BAKE\n"
-		"  switch            : %d   (shaders %s, ready %d)\n"
+		"  switch            : %d   (shaders %s after %d attempts, ready %d)\n"
 		"  bake resolution   : %u x %u per chunk   (setup.ini terrainbakeres)\n"
 		"  chunks baked      : %d   (meshes)\n"
 		"  chunks textured   : %d   %s\n"
 		"  video memory      : %d KB  (%.1f MB)\n"
 		"  last frame        : %d draw calls, %d frustum-culled\n"
 		"  wicked terrain    : %s\n",
-		gg_terrain_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_ready ? 1 : 0,
+		gg_terrain_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts, g_ready ? 1 : 0,
 		res, res,
 		(int)g_chunks.size(),
 		withTex, ( withTex == (int)g_chunks.size() ) ? "" : "<-- MISMATCH, some chunks have no texture",

@@ -1,4 +1,4 @@
-//
+﻿//
 // GameGuru Main Engine (for Wicked Engine)
 //
 
@@ -12,6 +12,8 @@
 #include "GGTerrain/GGTerrain.h"
 #include "GGTerrain/GGTerrainWicked.h"
 #include "GGTerrain/GGTrees.h"
+#include "GGTerrain/GGTerrainBake.h" // GGMAX 3.25
+#include "GGTerrain/GGWaterBake.h"   // GGMAX 3.25
 #include "GGTerrain/GGGrass.h"
 #include "tracers/TracerManager.h"
 #include "AutomationHarness.h"
@@ -173,6 +175,18 @@ bool GuruLoopLogic ( void )
 					GGTrees::GGTrees_Init();
 					timestampactivity(0, "GGGrass::GGGrass_Init();");
 					GGGrass::GGGrass_Init();
+					// GGMAX 3.25: Terrain Bake and Water Bake load their shaders HERE, beside the other
+					// GG modules, and not lazily on the first tick of their switch. SHADERPATH is the
+					// RELATIVE "shaders/", and by the time the panel is reachable the process CWD has
+					// moved to Max/Files - so a late LoadShader looks for Files/shaders/GGWaterBakePS.cso,
+					// does not find it, and the switch is silently inert for the whole session with every
+					// counter reading a legitimate-looking zero. Diagnosed from Files/log.txt saying
+					// "File not found: shaders/GGWaterBakePS.cso" while the file plainly existed in
+					// Max/shaders. Every other GG module already loads at this point; these two now match.
+					timestampactivity(0, "GGTerrainBake_Init();");
+					GGTerrainBake_Init();
+					timestampactivity(0, "GGWaterBake_Init();");
+					GGWaterBake_Init();
 				}
 				#endif
 

@@ -64,6 +64,7 @@ namespace
 
 	bool  g_initialised = false;
 	bool  g_shadersReady = false;
+	int   g_shaderAttempts = 0;
 	bool  g_vbValid = false;
 	float g_lastHeight = -99999.0f;
 	uint32_t g_lastColor = 0;
@@ -89,14 +90,18 @@ namespace
 
 void GGWaterBake_Init()
 {
-	if ( g_initialised ) return;
+	// ★ RETRY, do not latch on entry - same trap as GGTerrainBake_Init, see the note there.
+	if ( g_shadersReady ) return;
 	g_initialised = true;
+	if ( g_shaderAttempts > 600 ) return;
+	g_shaderAttempts++;
 
 	wi::renderer::LoadShader( ShaderStage::VS, g_vs, "GGWaterBakeVS.cso" );
 	wi::renderer::LoadShader( ShaderStage::PS, g_ps, "GGWaterBakePS.cso" );
 	if ( !g_vs.IsValid() || !g_ps.IsValid() )
 	{
-		wi::backlog::post( "GGMAX 3.25: Water Bake shaders failed to load - the switch will hide water without replacing it.", wi::backlog::LogLevel::Error );
+		if ( g_shaderAttempts == 600 )
+			wi::backlog::post( "GGMAX 3.25: Water Bake shaders never loaded after 600 attempts - the switch will hide water without replacing it.", wi::backlog::LogLevel::Error );
 		return;
 	}
 
@@ -164,7 +169,8 @@ void GGWaterBake_Update()
 		GGSetNoWaterLevel( gg_water_bake ? 1 : 0 );
 		s_prev = gg_water_bake;
 	}
-	if ( !gg_water_bake || !g_shadersReady ) return;
+	if ( !gg_water_bake ) return;
+	if ( !g_shadersReady ) { GGWaterBake_Init(); return; }     // keep retrying while ticked
 
 	// Rebuild the four vertices only when the water height or colour actually changed. A level
 	// with static water therefore does no per-frame work at all here.
@@ -217,11 +223,11 @@ const char* GGWaterBake_Report()
 {
 	_snprintf( g_report, sizeof( g_report ),
 		"WATER BAKE\n"
-		"  switch          : %d   (shaders %s)\n"
+		"  switch          : %d   (shaders %s after %d attempts)\n"
 		"  plane           : %s   height %.1f, alpha %.2f (setup.ini waterbakealpha)\n"
 		"  drawn last frame: %d\n"
 		"  ocean           : %s\n",
-		gg_water_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED",
+		gg_water_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts,
 		g_vbValid ? "built" : "not built", g_lastHeight, gg_water_bake_alpha,
 		gg_water_bake_drawn,
 		gg_no_water ? "OFF (planar reflection pass not recorded)" : "on" );

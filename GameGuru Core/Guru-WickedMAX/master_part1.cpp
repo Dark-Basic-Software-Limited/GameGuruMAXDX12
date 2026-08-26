@@ -546,11 +546,11 @@ void MasterRenderer::Load()
 	// Terrain only (trees/grass disabled — see GRASSISSUE.md for details)
 	// When ggterrain_use_wicked_terrain is active, all callbacks return early
 	customDraw_Prepass = [](const Frustum* frustum, CommandList cmd) {
-		// GGMAX 3.25: Terrain Bake. The compute dispatches that FILL the baked chunk textures are
-		// recorded here and nowhere else - this is the first custom hook in the frame, so a bake
-		// armed by the main thread lands before anything tries to draw with it. The textures
-		// themselves were created on the main thread; this only records into `cmd`.
-		GGTerrainBake_RecordPendingBakes(cmd);
+		// GGMAX 3.25: Terrain Bake depth prepass. ⚠ The compute dispatches that FILL the baked
+		// textures are deliberately NOT here. This callback fires inside the prepass's
+		// BeginRenderPass/EndRenderPass and DX12 forbids a Dispatch inside a render pass - doing
+		// it here removed the device with DXGI_ERROR_INVALID_CALL on the first tick of the
+		// switch. The bake takes its own command list on the main thread instead.
 		GGTerrainBake_DrawPrepass(frustum, cmd);
 		// GGMAX 2.96: the far-tree billboard PREPASS. Required, not optional - the main pass
 		// runs depth_write_mask = ZERO and relies on this to lay the depth down.
