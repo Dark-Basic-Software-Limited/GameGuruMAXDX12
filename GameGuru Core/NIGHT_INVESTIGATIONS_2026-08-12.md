@@ -6759,3 +6759,48 @@ to move would appear here and **nowhere else in the game would ever tell us**.
 is the one the body maintains per frame; `haskey`, `plrinzone` and the animation flag are all
 excluded by the predicate rather than verified. `SET_LOGICSKIP 0` reverts live.
 
+### §3.22a — the 19-demo gate: CLEAN, and the FPS columns need reading carefully
+
+This touches the main entity loop of every level, so the gate ran before calling it settled.
+
+```
+C1 LOAD      PASS  19/19 reached the editor
+C2 GEOMETRY  PASS  POLYS identical to the 0825 (3.19) reference on all 19 demos
+C3 VRAM      PASS  worst 3975.7 MB (Aztec Game Kit / game), limit 4096, headroom 120.3 MB
+C4 GAME      PASS  every demo produced in-game FPS past the loading overlays
+VERDICT: CLEAN
+```
+
+★ **POLYS bit-identical on all nineteen** is the meaningful line: the skip elides a per-entity
+update for 1962 entities per frame and not one triangle moved. Raw results archived as
+`tools/sweep_0826_3.22.txt`.
+
+⚠ **Two in-game readings look alarming and are not**: A Grand Canyon Adventure 64.2 and Escape
+from the Zombie Cellar 59.9. Both are UNCHANGED from 0825 (64.4 and 59.9) — and the Cellar reading
+sitting on 59.9 twice to one decimal is a 60 Hz cap, not a cost. Pre-existing, not this change.
+
+#### The cross-day FPS drop, and why it is not attributable
+
+**Editor FPS is down on 19 of 19 demos, −13.7%.** ★ The skip cannot touch the editor at all —
+entity logic does not run there, which the DUMP_LOGICCOST diagnostic established independently. A
+uniform drop in a workload the change cannot reach is an ambient rig shift, the same signature as
+the §2.90a scare that was re-opened once and should not have been.
+
+Against that background:
+
+| | mean |
+|---|---|
+| editor delta (change cannot affect it) | **−13.7%** |
+| game delta (change applies) | **−6.3%** |
+| game minus editor, per demo | **+7.3 points**, positive on **18 of 19** |
+
+★ That is the shape a game-only improvement makes against an ambient background: the unaffected
+workload takes the full hit, the improved one takes less. And +7.3 points sits close to the −8.7%
+CPU-frame the interleaved A/B measured.
+
+⚠⚠ **But this is a difference-in-differences on CROSS-DAY data and it is NOT the evidence.** The
+editor is a different workload, not a clean control, and `sweepgate.sh` says in its own footer that
+cross-day FPS is not evidence. The claim rests on the **same-session interleaved A/B in §3.22** —
+four rounds, arms alternating, no overlap between distributions. This sweep's job was C1–C4, and it
+passed all four; the FPS agreement is a corroboration to note and not to lean on.
+

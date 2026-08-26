@@ -1,3 +1,22 @@
+# Demo FPS sweep
+
+## 0826 — 3.22 inert-entity skip (game `74f0d295`) — GATE CLEAN 19/19
+
+C1 LOAD 19/19 · C2 GEOMETRY **POLYS identical to the 0825 reference on all 19** · C3 VRAM worst
+3975.7 MB (headroom 120.3) · C4 GAME 19/19. Raw: `tools/sweep_0826_3.22.txt`.
+
+★ The skip elides a per-entity update for 1962 entities per frame on TESTPRO2 and **not one
+triangle moved** anywhere in the hub — that is what C2 is for.
+
+⚠ FPS: editor down 13.7% on **19 of 19**, which the change cannot cause (entity logic does not run
+in the editor). Ambient. Game down only 6.3%, and game-minus-editor is positive on 18 of 19 (mean
++7.3 points), which is the shape a game-only win makes against a drifting rig — but it is
+cross-day and is NOT the evidence. That is the interleaved same-session A/B in NIGHT_INVESTIGATIONS
+§3.22: CPU Frame 7.21 → 6.58 ms, four rounds, no overlap.
+
+⚠ A Grand Canyon Adventure 64.2 and Escape from the Zombie Cellar 59.9 in game look alarming and
+are unchanged from 0825; the Cellar is sitting on a 60 Hz cap.
+
 # 2026-08-25 SWEEP (0825) - 2.98 THROUGH 3.19 - engine `ce9751b8` / game `43ac24a8`
 
 First full 19-demo pass covering everything since the far-tree work: 2.98/2.99 atlas + billboard
