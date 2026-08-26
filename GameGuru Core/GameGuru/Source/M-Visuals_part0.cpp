@@ -102,6 +102,36 @@ void visuals_calcsunanglefromtimeofday(int iTimeOfday, float* pfSunAngleX, float
 	*pfSunAngleZ = 0.0;
 }
 
+// GGMAX 3.25: one place that returns every Brutal off-switch to neutral, in the struct AND in
+// the live engine flags. Called from both reset paths and therefore from "Reset Visuals" too.
+void gg_visuals_reset_brutal_switches()
+{
+	extern bool gg_terrain_bake, gg_water_bake;
+	extern void GGSetNoTreesLevel(int);
+	extern void GGSetNoGrassLevel(int);
+	extern void GGSetNoAOLevel(int);
+	extern void GGSetNoShadowsLevel(int);
+	extern void GGSetNoOcclusionLevel(int);
+	extern void GGSetParticlePctLevel(int);
+	extern void GGSetObjectCullDistLevel(int);
+	extern void GGSetTextureDivideLive(int);
+
+	t.visuals.bTerrainBake      = false;  gg_terrain_bake = false;
+	t.visuals.bWaterBake        = false;  gg_water_bake   = false;
+	t.visuals.bNoTrees          = false;  GGSetNoTreesLevel(0);
+	t.visuals.bNoGrass          = false;  GGSetNoGrassLevel(0);
+	t.visuals.bNoAO             = false;  GGSetNoAOLevel(0);
+	t.visuals.bNoShadows        = false;  GGSetNoShadowsLevel(0);
+	t.visuals.bNoOcclusionCull  = false;  GGSetNoOcclusionLevel(0);
+	t.visuals.iParticlePct      = 100;    GGSetParticlePctLevel(100);
+	t.visuals.iObjectCullDist   = 0;      GGSetObjectCullDistLevel(0);
+	t.visuals.iTextureDivide    = 1;
+	t.visuals.iAnimReductionScale = 1;
+	// Texture Detail is deliberately NOT pushed live here. GGSetTextureDivideLive re-creates
+	// every texture in the level, which on a reset that was already at Full is a multi-second
+	// GPU stall for no change at all. It is pushed on LOAD (below) and by the panel.
+}
+
 void visuals_resetvalues (bool bNewLevel)
 {
 	// Visual Settings
@@ -209,6 +239,10 @@ void visuals_resetvalues (bool bNewLevel)
 	// the previous level's state (the FPM parse below only fires when the field exists).
 	t.visuals.bLowVRAM = false;
 	{ extern void GGSetLowVRAMLevel(int); GGSetLowVRAMLevel(0); }
+	// GGMAX 3.25: the Brutal off-switches, per-level. Reset to their NEUTRAL values, and push
+	// each one live - this function is what the "Reset Visuals" button calls, so writing the
+	// struct without driving the switches would leave the panel ticked and the engine off.
+	gg_visuals_reset_brutal_switches();
 
 	t.visuals.bEnableTerrainChunkCulling = false;
 	t.visuals.bEnablePointShadowCulling = false;
@@ -750,6 +784,30 @@ void visuals_save ( void )
 
 	t.strwork = ""; t.strwork = t.strwork + "visuals.LowVRAM=" + Str(t.visuals.bLowVRAM);
 	WriteString(1, t.strwork.Get());
+
+	// GGMAX 3.25: Brutal off-switches, per-level.
+	t.strwork = ""; t.strwork = t.strwork + "visuals.TerrainBake=" + Str(t.visuals.bTerrainBake);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.WaterBake=" + Str(t.visuals.bWaterBake);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.NoTrees=" + Str(t.visuals.bNoTrees);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.NoGrass=" + Str(t.visuals.bNoGrass);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.NoAO=" + Str(t.visuals.bNoAO);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.NoShadows=" + Str(t.visuals.bNoShadows);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.NoOcclusionCull=" + Str(t.visuals.bNoOcclusionCull);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.ParticlePct=" + Str(t.visuals.iParticlePct);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.ObjectCullDist=" + Str(t.visuals.iObjectCullDist);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.TextureDivide=" + Str(t.visuals.iTextureDivide);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.AnimReductionScale=" + Str(t.visuals.iAnimReductionScale);
+	WriteString(1, t.strwork.Get());
 	
 	t.strwork = ""; t.strwork = t.strwork + "visuals.EnableTerrainChunkCulling=" + Str(t.visuals.bEnableTerrainChunkCulling);
 	WriteString(1, t.strwork.Get());
@@ -1133,6 +1191,10 @@ void visuals_load ( void )
 	// the previous level's state (the FPM parse below only fires when the field exists).
 	t.visuals.bLowVRAM = false;
 	{ extern void GGSetLowVRAMLevel(int); GGSetLowVRAMLevel(0); }
+	// GGMAX 3.25: the Brutal off-switches, per-level. Reset to their NEUTRAL values, and push
+	// each one live - this function is what the "Reset Visuals" button calls, so writing the
+	// struct without driving the switches would leave the panel ticked and the engine off.
+	gg_visuals_reset_brutal_switches();
 	t.visuals.bEnableTerrainChunkCulling = false;
 	t.visuals.bEnablePointShadowCulling = false;
 	t.visuals.bEnableSpotShadowCulling = false;
@@ -1452,6 +1514,34 @@ void visuals_load ( void )
 			// GGMAX: apply the per-level Low VRAM flag AT PARSE TIME — grass systems build at
 			// chunk-spawn during level load, so waiting for the visuals-apply pass would miss them.
 			t.try_s = "visuals.LowVRAM"; if (t.tfield_s == t.try_s) { t.visuals.bLowVRAM = ValF(t.tvalue_s.Get()) != 0; extern void GGSetLowVRAMLevel(int); GGSetLowVRAMLevel(t.visuals.bLowVRAM ? 1 : 0); }
+
+			// GGMAX 3.25: Brutal off-switches, per-level. Applied AT PARSE TIME like LowVRAM -
+			// several of these are read while the level is still building (grass at chunk spawn,
+			// texture detail at texture load), so waiting for the visuals-apply pass would miss
+			// them for one whole level. A level that predates these fields matches nothing here
+			// and keeps the neutral values the pre-parse reset already wrote.
+			{
+				extern bool gg_terrain_bake, gg_water_bake;
+				extern void GGSetNoTreesLevel(int);
+				extern void GGSetNoGrassLevel(int);
+				extern void GGSetNoAOLevel(int);
+				extern void GGSetNoShadowsLevel(int);
+				extern void GGSetNoOcclusionLevel(int);
+				extern void GGSetParticlePctLevel(int);
+				extern void GGSetObjectCullDistLevel(int);
+				extern void GGSetTextureDivideLive(int);
+				t.try_s = "visuals.TerrainBake";     if (t.tfield_s == t.try_s) { t.visuals.bTerrainBake     = ValF(t.tvalue_s.Get()) != 0; gg_terrain_bake = t.visuals.bTerrainBake; }
+				t.try_s = "visuals.WaterBake";       if (t.tfield_s == t.try_s) { t.visuals.bWaterBake       = ValF(t.tvalue_s.Get()) != 0; gg_water_bake   = t.visuals.bWaterBake; }
+				t.try_s = "visuals.NoTrees";         if (t.tfield_s == t.try_s) { t.visuals.bNoTrees         = ValF(t.tvalue_s.Get()) != 0; GGSetNoTreesLevel(t.visuals.bNoTrees ? 1 : 0); }
+				t.try_s = "visuals.NoGrass";         if (t.tfield_s == t.try_s) { t.visuals.bNoGrass         = ValF(t.tvalue_s.Get()) != 0; GGSetNoGrassLevel(t.visuals.bNoGrass ? 1 : 0); }
+				t.try_s = "visuals.NoAO";            if (t.tfield_s == t.try_s) { t.visuals.bNoAO            = ValF(t.tvalue_s.Get()) != 0; GGSetNoAOLevel(t.visuals.bNoAO ? 1 : 0); }
+				t.try_s = "visuals.NoShadows";       if (t.tfield_s == t.try_s) { t.visuals.bNoShadows       = ValF(t.tvalue_s.Get()) != 0; GGSetNoShadowsLevel(t.visuals.bNoShadows ? 1 : 0); }
+				t.try_s = "visuals.NoOcclusionCull"; if (t.tfield_s == t.try_s) { t.visuals.bNoOcclusionCull = ValF(t.tvalue_s.Get()) != 0; GGSetNoOcclusionLevel(t.visuals.bNoOcclusionCull ? 1 : 0); }
+				t.try_s = "visuals.ParticlePct";     if (t.tfield_s == t.try_s) { t.visuals.iParticlePct     = (int)ValF(t.tvalue_s.Get()); GGSetParticlePctLevel(t.visuals.iParticlePct); }
+				t.try_s = "visuals.ObjectCullDist";  if (t.tfield_s == t.try_s) { t.visuals.iObjectCullDist  = (int)ValF(t.tvalue_s.Get()); GGSetObjectCullDistLevel(t.visuals.iObjectCullDist); }
+				t.try_s = "visuals.TextureDivide";   if (t.tfield_s == t.try_s) { t.visuals.iTextureDivide   = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTextureDivide != 1) GGSetTextureDivideLive(t.visuals.iTextureDivide); }
+				t.try_s = "visuals.AnimReductionScale"; if (t.tfield_s == t.try_s) { t.visuals.iAnimReductionScale = (int)ValF(t.tvalue_s.Get()); }
+			}
 
 			t.try_s = "visuals.EnableTerrainChunkCulling"; if (t.tfield_s == t.try_s)  t.visuals.bEnableTerrainChunkCulling = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.EnablePointShadowCulling"; if (t.tfield_s == t.try_s)  t.visuals.bEnablePointShadowCulling = ValF(t.tvalue_s.Get());

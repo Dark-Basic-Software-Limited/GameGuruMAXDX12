@@ -1,4 +1,4 @@
-//----------------------------------------------------
+﻿//----------------------------------------------------
 //--- GAMEGURU - M-LUA
 //----------------------------------------------------
 
@@ -952,6 +952,9 @@ static int  gg_logiccost_ran = 0;        // entities that passed the distance ga
 static int  gg_logiccost_alwaysactive = 0; // ... of those, ones that ONLY passed via phyalways
 static int  gg_logiccost_gated = 0;      // entities skipped by the distance gate
 char gg_logiccost_report[16384] = "";    // last completed report, read by DUMP_LOGICCOST
+// GGMAX 3.25: how many bytes of the report are the developer-only header block. The harness
+// prints from byte 0; the end-user MessageBox prints from here. See the note at the format site.
+int  gg_logiccost_headerlen = 0;
 static int  gg_logiccost_offenderE = 0;  // (3) latched so it cannot vanish from the list
 static LONGLONG gg_logiccost_offenderTicks = 0;
 
@@ -1623,6 +1626,12 @@ void lua_loop_allentities ( void )
 		char* p = gg_logiccost_report;
 		int cap = (int)sizeof(gg_logiccost_report);
 		int w = 0;
+		// GGMAX 3.25: this header block is DEVELOPER detail (gate counters, the UpdateEntityRT
+		// accounting, the SET_LUANAMECACHE / SET_LOGICSKIP knob readouts). Lee asked for it out of
+		// the end-user message box. It is NOT deleted - it stays in the buffer and the harness
+		// DUMP_LOGICCOST still prints all of it, because it is the instrument the 3.22-3.24 work
+		// was measured with and throwing it away would cost a rebuild every time it is wanted
+		// again. The MessageBox simply starts printing after it, at gg_logiccost_headerlen.
 		w += _snprintf(p + w, cap - w,
 			"LOGIC COST, ONE FRAME  (times are MICROSECONDS - the old box printed raw QPC ticks)\n"
 			"  entities considered : %d\n"
@@ -1643,6 +1652,9 @@ void lua_loop_allentities ( void )
 			gg_ticks_to_us(iGrandTotalRefresh), g_gg_refreshcount,
 			gg_ticks_to_us(iGrandTotalName), gg_luanamecache, gg_ticks_to_us(iGrandTotalSetFunc),
 			gg_logic_noscript, gg_logic_noscript_static, gg_logic_skipped_inert, gg_logic_skip_inert);
+
+		// everything above this point is developer-only; the user-facing box starts here.
+		gg_logiccost_headerlen = w;
 
 		// --- per SCRIPT, which is the question "where is my 1.1 ms going" actually asks --------
 		for (int i = 0; i < gg_logiccost_used; i++)
@@ -1691,7 +1703,7 @@ void lua_loop_allentities ( void )
 		gg_logiccost_arm = 0;
 		if (g_iViewPerformanceTimers == 1)
 		{
-			MessageBoxA(NULL, gg_logiccost_report, "Logic Performance (auto-triggered using 'producelogfiles=3')", MB_OK);
+			MessageBoxA(NULL, gg_logiccost_report + gg_logiccost_headerlen, "Logic Performance (auto-triggered using 'producelogfiles=3')", MB_OK);
 			g_iViewPerformanceTimers = 0;
 			gg_logiccost_offenderE = 0;
 			gg_logiccost_offenderTicks = 0;

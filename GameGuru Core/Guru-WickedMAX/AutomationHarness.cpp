@@ -1,4 +1,4 @@
-//
+﻿//
 // AutomationHarness.cpp - File-based command/response automation for Claude Code testing
 //
 
@@ -121,6 +121,12 @@ extern bool gg_no_terrain;
 extern bool gg_no_trees;
 extern bool gg_no_grass;
 extern bool gg_no_water;
+// GGMAX 3.25: the two panel bake switches are plain bools with no machine||level setter pair
+// (they are per-LEVEL only), so the switch table needs a function-pointer shaped wrapper.
+extern bool gg_terrain_bake;
+extern bool gg_water_bake;
+static void GGHarness_SetTerrainBake(int on) { gg_terrain_bake = (on != 0); }
+static void GGHarness_SetWaterBake  (int on) { gg_water_bake   = (on != 0); }
 
 namespace wi::profiler {
 	extern bool ENABLED;
@@ -5747,6 +5753,53 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	}
 
 	// ========================================================================================
+	// GGMAX 3.25: Terrain Bake / Water Bake / Reduction Scale. FLAT links, same C1061 rule as
+	// the block below - never add these to the main else-if ladder.
+	// ========================================================================================
+	if (_stricmp(cmd, "DUMP_BAKE") == 0)
+	{
+		const char* GGTerrainBake_Report();
+		const char* GGWaterBake_Report();
+		_snprintf(result, resultSize, "%s\n%s", GGTerrainBake_Report(), GGWaterBake_Report());
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_BAKERES") == 0)
+	{
+		// Per-chunk bake resolution. Takes effect on the NEXT bake, so the reply says so rather
+		// than letting a caller read the new number and assume the textures changed under it.
+		extern int gg_terrain_bake_res;
+		const int v = atoi(arg);
+		if (v >= 32 && v <= 2048) gg_terrain_bake_res = v;
+		_snprintf(result, resultSize,
+			"OK: SET_BAKERES - bake resolution now %d per chunk. Applies to the NEXT bake: "
+			"untick and re-tick Terrain Bake (or SET_BAKETERRAIN 0 then 1) to rebuild.",
+			gg_terrain_bake_res);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_ANIMREDUCTION") == 0)
+	{
+		// Reduction Scale, 1..100. Echoes a LIVE re-read of what the engine now holds, not the
+		// value passed in - and reports the tick box too, because the slider is a sub-control
+		// and reads as broken if you set it while the box is off.
+		int v = atoi(arg);
+		if (v < 1) v = 1;
+		if (v > 100) v = 100;
+		t.gamevisuals.iAnimReductionScale = t.visuals.iAnimReductionScale = v;
+		extern bool bEnable30FpsAnimations;
+		_snprintf(result, resultSize,
+			"OK: SET_ANIMREDUCTION %d - engine scale now %u. Lower Animation tick box is %d; "
+			"the slider only bites while that is ON. At scale %d: 500 units skips %d frames, "
+			"1000 units skips %d, under 500 never skips.",
+			v, wi::scene::gg_anim_reduction_scale.load(std::memory_order_relaxed),
+			bEnable30FpsAnimations ? 1 : 0, v,
+			(int)((v * 0.1f) * 1.0f), (int)((v * 0.1f) * 2.0f));
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	// ========================================================================================
 	// GGMAX 2.94: brutal off-switches + a keyed GPU-milliseconds readout.
 	// FLAT `if (...) return true;` links on purpose - zero nesting depth. Do NOT add these to
 	// the main else-if ladder in AutoHarness_CheckForCommand, which sits at the MSVC C1061
@@ -5766,8 +5819,15 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		extern void GGSetNoShadowsLevel(int);
 		extern void GGSetNoOcclusionLevel(int);
 		extern bool gg_no_postfx, gg_no_ao, gg_simple_sky, gg_no_shadows, gg_no_occlusion;
+		// GGMAX 3.25: Terrain Bake / Water Bake replaced Terrain Off / Water Off in the panel.
+		// The OLD names stay in the table: they drive the underlying removal and every existing
+		// harness script and sweep tool uses them. The new names drive the panel switches, which
+		// perform the removal AND put the cheap stand-in in its place.
+		extern bool gg_terrain_bake, gg_water_bake;
 		struct Sw { const char* name; void (*set)(int); bool* live; };
-		static const Sw sws[9] = {
+		static const Sw sws[11] = {
+			{ "SET_BAKETERRAIN", GGHarness_SetTerrainBake, &gg_terrain_bake },
+			{ "SET_BAKEWATER",   GGHarness_SetWaterBake,   &gg_water_bake   },
 			{ "SET_TERRAINOFF", GGSetNoTerrainLevel, &gg_no_terrain },
 			{ "SET_TREESOFF",   GGSetNoTreesLevel,   &gg_no_trees   },
 			{ "SET_GRASSOFF",   GGSetNoGrassLevel,   &gg_no_grass   },
@@ -5778,7 +5838,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			{ "SET_SHADOWSOFF", GGSetNoShadowsLevel, &gg_no_shadows },
 			{ "SET_OCCLUSIONOFF", GGSetNoOcclusionLevel, &gg_no_occlusion },
 		};
-		for (int i = 0; i < 9; i++)
+		for (int i = 0; i < 11; i++)
 		{
 			if (_stricmp(cmd, sws[i].name) != 0) continue;
 			const int on = (atoi(arg) != 0) ? 1 : 0;   // a missing arg reads 0 = ON (subsystem stays)

@@ -52,6 +52,34 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 
 		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Lower Animation Speed will lower the updating of animation & LUA to 30 FPS for increased speed when using many animations.");
+
+		// GGMAX 3.25: Reduction Scale. A SUB-CONTROL of the tick box above (Lee's call), so it
+		// greys out when that is off and one low-spec decision stays in one place.
+		//
+		// What it does that the tick box does not: the 30fps throttle only skips animation
+		// EVALUATION on the CPU. The skinning dispatch that turns bone matrices into vertices
+		// runs every frame for every skinned mesh in the scene regardless - wiRenderer.cpp loops
+		// over scene->meshes with no distance or visibility test at all - which is why the
+		// "Skinning and Morph" GPU cost did not move when Lee ticked the box on a level whose
+		// only nearby animation was the player's weapon. This slider skips BOTH, and skips the
+		// skinning dispatch with them, scaled by how far away the thing is.
+		if (bEnable30FpsAnimations)
+		{
+			int reduction = t.visuals.iAnimReductionScale;
+			if (reduction < 1) reduction = 1;
+			ImGui::Text("Reduction Scale");
+			if (ImGui::SliderInt("##gg_anim_reduction", &reduction, 1, 100, reduction <= 1 ? "Off" : "%d"))
+			{
+				t.gamevisuals.iAnimReductionScale = t.visuals.iAnimReductionScale = reduction;
+				g.projectmodified = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How much animation work to skip on things that are far enough away for you not to notice. 1 is no reduction. At 50, something 500 units away has 5 frames skipped between animation updates, and one 1000 units away has 10 - the skip grows with distance. At 100 it is 10 frames at 500 units. Nothing closer than 500 units is ever skipped, so anything you are actually looking at animates at full rate. This also skips the graphics card work that poses the character, which the tick box above does not.");
+		}
+		else
+		{
+			ImGui::TextDisabled("Reduction Scale");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Tick Lower Animation & LUA Speed above to use this. It sets how much animation work to skip on distant objects.");
+		}
 		ImGui::PopItemWidth();
 
 		extern bool bEnableDelayPointShadow;
@@ -460,6 +488,11 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		// ====================================================================================
 		{
 			extern bool gg_no_terrain, gg_no_trees, gg_no_grass, gg_no_water;
+			// GGMAX 3.25: Terrain Off and Water Off became Terrain Bake and Water Bake. Both
+			// still perform the same removal underneath - that is where the saving is - but
+			// each now leaves a cheap stand-in behind instead of a hole in the world.
+			extern bool gg_terrain_bake;
+			extern bool gg_water_bake;
 			extern void GGSetNoTerrainLevel(int);
 			extern void GGSetNoTreesLevel(int);
 			extern void GGSetNoGrassLevel(int);
@@ -472,17 +505,21 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			bool bOff;
 			ImGui::PushItemWidth(-10);
 
-			bOff = gg_no_terrain;
-			if (ImGui::Checkbox("Terrain Off##gg_no_terrain", &bOff))
+			bOff = gg_terrain_bake;
+			if (ImGui::Checkbox("Terrain Bake##gg_terrain_bake", &bOff))
 			{
-				GGSetNoTerrainLevel(bOff ? 1 : 0);
+				gg_terrain_bake = bOff;
+				t.gamevisuals.bTerrainBake = t.visuals.bTerrainBake = bOff;
+				g.projectmodified = 1;
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes the rendered terrain from the scene completely - the chunk entities, their meshes and the whole virtual-texture atlas, not just the draw. Ground height and physics still work, so objects stay where they are and you can still walk around. Biggest saving on open outdoor levels.");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Converts the terrain into ordinary meshes and ordinary textures, then removes the live terrain system entirely - the chunk entities, the virtual-texture atlas and the per-frame page streaming that goes with them. You keep a terrain you can see and walk on, drawn by a plain pass that costs a fraction of the real one. Surfaces get softer close up and terrain editing is paused while it is on. Untick to bring the real terrain straight back. This is the biggest single saving on an open outdoor level.");
 
 			bOff = gg_no_trees;
 			if (ImGui::Checkbox("Trees Off##gg_no_trees", &bOff))
 			{
 				GGSetNoTreesLevel(bOff ? 1 : 0);
+				t.gamevisuals.bNoTrees = t.visuals.bNoTrees = bOff;
+				g.projectmodified = 1;
 				// GGMAX 3.00: re-apply visuals so ggtrees_global_params.draw_enabled is
 				// recomputed now. Without this the legacy tree machinery only noticed the
 				// switch when some OTHER control happened to re-apply visuals.
@@ -494,16 +531,20 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			if (ImGui::Checkbox("Grass Off##gg_no_grass", &bOff))
 			{
 				GGSetNoGrassLevel(bOff ? 1 : 0);
+				t.gamevisuals.bNoGrass = t.visuals.bNoGrass = bOff;
+				g.projectmodified = 1;
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes every blade of grass from the scene, including the per-strand simulation that runs on the graphics card each frame. Your painted grass is kept and reappears when you untick this.");
 
-			bOff = gg_no_water;
-			if (ImGui::Checkbox("Water Off##gg_no_water", &bOff))
+			bOff = gg_water_bake;
+			if (ImGui::Checkbox("Water Bake##gg_water_bake", &bOff))
 			{
-				GGSetNoWaterLevel(bOff ? 1 : 0);
+				gg_water_bake = bOff;
+				t.gamevisuals.bWaterBake = t.visuals.bWaterBake = bOff;
+				g.projectmodified = 1;
 				GGApplyVisualsNow();   // ocean teardown happens on the next Scene::Update
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes the water surface and, with it, the reflection pass that redraws the whole scene a second time from the mirrored camera. Usually the single biggest saving of the four on any level that has water.");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Replaces the animated water with a flat coloured plane at the same height. This removes the reflection pass that redraws the whole scene a second time from a mirrored camera, and the wave simulation with it, while leaving something that still reads as water from the shore. Usually the single biggest saving here on any level that has water.");
 
 			// ------------------------------------------------------------------------------
 			// GGMAX 3.08: round 2. The four above remove CONTENT; these remove per-frame
@@ -511,26 +552,32 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			// or water left to strip - an indoor level being the obvious case.
 			// Same session scope and the same setup.ini OR panel arrangement.
 			// ------------------------------------------------------------------------------
-			extern bool gg_no_postfx, gg_no_ao, gg_simple_sky, gg_no_shadows;
-			extern void GGSetNoPostFXLevel(int);
+			// GGMAX 3.25: "Post Effects Off" and "Simple Sky" REMOVED from the panel on Lee's
+			// instruction after testing on a 6-year-old AMD card - neither did anything visible.
+			// The globals and their setup.ini keys (nopostfx / simplesky) are deliberately LEFT
+			// IN PLACE: they are read by GGApplyLowSpecSwitches and by the harness, and removing
+			// a machine-wide ini key is a separate, user-visible decision. What is gone is the
+			// panel control, because a control that does nothing is worse than no control.
+			extern bool gg_no_ao, gg_no_shadows;
 			extern void GGSetNoAOLevel(int);
-			extern void GGSetSimpleSkyLevel(int);
 			extern void GGSetNoShadowsLevel(int);
 
-			bOff = gg_no_postfx;
-			if (ImGui::Checkbox("Post Effects Off##gg_no_postfx", &bOff)) GGSetNoPostFXLevel(bOff ? 1 : 0);
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Switches off the screen effects applied after the scene is drawn: bloom, depth of field, motion blur, light shafts, lens flare, chromatic aberration, sharpening, automatic exposure, volumetric lighting and screen space reflections. Anti-aliasing and colour grading are kept, because they cost almost nothing and the level would look wrong without them. Everything comes back when you untick this.");
-
 			bOff = gg_no_ao;
-			if (ImGui::Checkbox("Ambient Occlusion Off##gg_no_ao", &bOff)) GGSetNoAOLevel(bOff ? 1 : 0);
+			if (ImGui::Checkbox("Ambient Occlusion Off##gg_no_ao", &bOff))
+			{
+				GGSetNoAOLevel(bOff ? 1 : 0);
+				t.gamevisuals.bNoAO = t.visuals.bNoAO = bOff;
+				g.projectmodified = 1;
+			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Switches off the pass that darkens creases and corners where surfaces meet. A full screen pass every frame, so it costs the same whether your level is a cupboard or a continent.");
 
-			bOff = gg_simple_sky;
-			if (ImGui::Checkbox("Simple Sky##gg_simple_sky", &bOff)) GGSetSimpleSkyLevel(bOff ? 1 : 0);
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Replaces the volumetric clouds and the physically modelled sky with a cheap painted one. The clouds in particular are ray marched every frame across the whole sky, so this is a large saving outdoors and does nothing at all indoors.");
-
 			bOff = gg_no_shadows;
-			if (ImGui::Checkbox("Shadows Off##gg_no_shadows", &bOff)) GGSetNoShadowsLevel(bOff ? 1 : 0);
+			if (ImGui::Checkbox("Shadows Off##gg_no_shadows", &bOff))
+			{
+				GGSetNoShadowsLevel(bOff ? 1 : 0);
+				t.gamevisuals.bNoShadows = t.visuals.bNoShadows = bOff;
+				g.projectmodified = 1;
+			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Switches off every shadow in the level. The scene has to be drawn again from each shadow casting light, so this is usually the biggest single saving here - and the most obvious one to look at. Try the Shadows section first if you only want to soften the cost.");
 
 			// GGMAX 3.09
@@ -539,12 +586,22 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			extern void GGSetParticlePctLevel(int);
 
 			bOff = gg_no_occlusion;
-			if (ImGui::Checkbox("Occlusion Culling Off##gg_no_occlusion", &bOff)) GGSetNoOcclusionLevel(bOff ? 1 : 0);
+			if (ImGui::Checkbox("Occlusion Culling Off##gg_no_occlusion", &bOff))
+			{
+				GGSetNoOcclusionLevel(bOff ? 1 : 0);
+				t.gamevisuals.bNoOcclusionCull = t.visuals.bNoOcclusionCull = bOff;
+				g.projectmodified = 1;
+			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stops asking the graphics card which objects are hidden behind other objects. This is an experiment rather than a saving and it can go either way: the asking is itself work, so on an open scene where little is hidden it costs more than it saves and turning it off is faster. Indoors, where whole rooms are hidden from you, leave it on. Worth trying both ways on your own level.");
 
 			int pct = gg_particle_pct;
 			ImGui::Text("Particle Density");
-			if (ImGui::SliderInt("##gg_particle_pct", &pct, 0, 100, "%d%%")) GGSetParticlePctLevel(pct);
+			if (ImGui::SliderInt("##gg_particle_pct", &pct, 0, 100, "%d%%"))
+			{
+				GGSetParticlePctLevel(pct);
+				t.gamevisuals.iParticlePct = t.visuals.iParticlePct = pct;
+				g.projectmodified = 1;
+			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How many particles to emit, as a percentage of what the level asked for. 50%% halves every smoke plume, spark shower and waterfall; 0%% stops them emitting altogether. Particles already in the air live out their lifetime, so the change eases in over a second rather than popping. Affects the modern particle system only.");
 
 			// GGMAX 3.11
@@ -552,7 +609,12 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			extern void GGSetObjectCullDistLevel(int);
 			int cull = (int)gg_object_cull_dist;
 			ImGui::Text("Object Detail Distance");
-			if (ImGui::SliderInt("##gg_object_cull_dist", &cull, 0, 40000, cull == 0 ? "Off" : "%d")) GGSetObjectCullDistLevel(cull);
+			if (ImGui::SliderInt("##gg_object_cull_dist", &cull, 0, 40000, cull == 0 ? "Off" : "%d"))
+			{
+				GGSetObjectCullDistLevel(cull);
+				t.gamevisuals.iObjectCullDist = t.visuals.iObjectCullDist = cull;
+				g.projectmodified = 1;
+			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("How far away objects are still drawn, in world units. Off draws everything however distant it is. 20000 is about 500 metres, 8000 about 200 metres and very aggressive. Objects do not pop out - each dissolves away over roughly its own size - and they come back when you raise it. This is the bluntest control here and on a large outdoor level the most effective, because it removes the draw calls, the triangles and the shadow casting together. Trees keep their own distance system and are not affected.");
 
 			// GGMAX 3.12: texture detail. LOAD-TIME, so it is a combo rather than a live slider.
@@ -565,7 +627,12 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				int cur = (wi::resourcemanager::gg_texture_divide >= 4) ? 2 : ((wi::resourcemanager::gg_texture_divide == 2) ? 1 : 0);
 				ImGui::Text("Texture Detail");
 				if (ImGui::Combo("##gg_texture_divide", &cur, texdiv_items, IM_ARRAYSIZE(texdiv_items)))
-					GGSetTextureDivideLive(cur == 2 ? 4 : (cur == 1 ? 2 : 1));
+				{
+					const int divide = (cur == 2 ? 4 : (cur == 1 ? 2 : 1));
+					GGSetTextureDivideLive(divide);
+					t.gamevisuals.iTextureDivide = t.visuals.iTextureDivide = divide;
+					g.projectmodified = 1;
+				}
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Loads every texture at a fraction of its authored size. Half turns a 1024x1024 into a 512x512, Quarter into a 256x256. This is the one to reach for on a card short of video memory or memory bandwidth: it cuts texture memory about four times at Half and sixteen times at Quarter, and makes every texture read cheaper as well. Surfaces get softer up close, which is the whole trade. The change applies to the level you are looking at, terrain included - expect a short pause while every texture is rebuilt.");
 			}
 

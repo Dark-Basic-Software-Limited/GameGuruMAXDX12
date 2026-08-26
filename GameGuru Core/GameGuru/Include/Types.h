@@ -3831,6 +3831,25 @@ struct visualstype
 	bool bLevelVSyncEnabled;
 	bool bOcclusionCulling;
 	bool bLowVRAM; // GGMAX: per-level 4GB preset (Graphics and Performance panel); OR'd with setup.ini lowvram
+	// GGMAX 3.25: the Brutal off-switches, now PER-LEVEL. They were session globals so that
+	// they never touched a user's levels; Lee asked for the opposite once real levels started
+	// wanting different answers - an indoor level and an open outdoor one do not need the same
+	// switches. Saved and loaded exactly like Post Processing and the shadow settings. Defaults
+	// are all-off, and a level saved before this existed simply has no fields, so it loads with
+	// the pre-parse reset values, which are the same all-off defaults. Nothing changes for an
+	// existing project until somebody ticks something.
+	bool bTerrainBake;      // Terrain Bake (was the session-only "Terrain Off")
+	bool bNoTrees;          // Trees Off
+	bool bNoGrass;          // Grass Off
+	bool bWaterBake;        // Water Bake (was the session-only "Water Off")
+	bool bNoAO;             // Ambient Occlusion Off
+	bool bNoShadows;        // Shadows Off
+	bool bNoOcclusionCull;  // Occlusion Culling Off
+	int  iParticlePct;      // Particle Density, 0..100, neutral = 100
+	int  iObjectCullDist;   // Object Detail Distance in world units, neutral = 0 (off)
+	int  iTextureDivide;    // Texture Detail: 1 = Full, 2 = Half, 4 = Quarter
+	int  iAnimReductionScale; // GGMAX 3.25 Reduction Scale under Lower Animation, 1..100, neutral = 1
+
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;
 	bool bEnableSpotShadowCulling;
@@ -4300,6 +4319,25 @@ struct visualsdatastoragetype
 	bool bLevelVSyncEnabled;
 	bool bOcclusionCulling;
 	bool bLowVRAM; // GGMAX: per-level 4GB preset mirror
+	// GGMAX 3.25 mirror: the Brutal off-switches, now PER-LEVEL. They were session globals so that
+	// they never touched a user's levels; Lee asked for the opposite once real levels started
+	// wanting different answers - an indoor level and an open outdoor one do not need the same
+	// switches. Saved and loaded exactly like Post Processing and the shadow settings. Defaults
+	// are all-off, and a level saved before this existed simply has no fields, so it loads with
+	// the pre-parse reset values, which are the same all-off defaults. Nothing changes for an
+	// existing project until somebody ticks something.
+	bool bTerrainBake;      // Terrain Bake (was the session-only "Terrain Off")
+	bool bNoTrees;          // Trees Off
+	bool bNoGrass;          // Grass Off
+	bool bWaterBake;        // Water Bake (was the session-only "Water Off")
+	bool bNoAO;             // Ambient Occlusion Off
+	bool bNoShadows;        // Shadows Off
+	bool bNoOcclusionCull;  // Occlusion Culling Off
+	int  iParticlePct;      // Particle Density, 0..100, neutral = 100
+	int  iObjectCullDist;   // Object Detail Distance in world units, neutral = 0 (off)
+	int  iTextureDivide;    // Texture Detail: 1 = Full, 2 = Half, 4 = Quarter
+	int  iAnimReductionScale; // GGMAX 3.25 Reduction Scale under Lower Animation, 1..100, neutral = 1
+
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;
 	bool bEnableSpotShadowCulling;

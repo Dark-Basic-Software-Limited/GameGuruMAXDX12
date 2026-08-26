@@ -4,6 +4,8 @@
 #include "GGAnimBridge.h"
 #include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
 #include "GGTerrain/GGTerrainWicked.h"
+#include "GGTerrain/GGTerrainBake.h" // GGMAX 3.25: Terrain Bake
+#include "GGTerrain/GGWaterBake.h"   // GGMAX 3.25: Water Bake
 #include "wiProfiler.h"
 #include "wiTerrain.h" // GGMAX 1.71: gg_svt_atlas_height (setup.ini svtatlasheight)
 #include "wiRenderer.h" // GGMAX 2.89: SetProbeView (setup.ini probeview / probeviewmip)
@@ -19,6 +21,8 @@ namespace wi { namespace scene {
 	// GGMAX delta 1.35: frustum-visibility animation pause (defined in WickedEngine/wiScene.cpp)
 	extern std::atomic<uint32_t> gg_anim_vis_pause_frames;
 	extern std::atomic<uint32_t> gg_anim_vis_pause_neardist2;
+	// GGMAX 3.25: Reduction Scale (defined in WickedEngine/wiScene.cpp)
+	extern std::atomic<uint32_t> gg_anim_reduction_scale;
 } }
 // GGMAX delta 1.30: engine-side apparent-size object cull threshold (defined in WickedEngine/wiRenderer.cpp).
 // MasterRenderer::Update drives it per-frame from the editor "Apparent Size" slider (see below).
@@ -542,6 +546,12 @@ void MasterRenderer::Load()
 	// Terrain only (trees/grass disabled — see GRASSISSUE.md for details)
 	// When ggterrain_use_wicked_terrain is active, all callbacks return early
 	customDraw_Prepass = [](const Frustum* frustum, CommandList cmd) {
+		// GGMAX 3.25: Terrain Bake. The compute dispatches that FILL the baked chunk textures are
+		// recorded here and nowhere else - this is the first custom hook in the frame, so a bake
+		// armed by the main thread lands before anything tries to draw with it. The textures
+		// themselves were created on the main thread; this only records into `cmd`.
+		GGTerrainBake_RecordPendingBakes(cmd);
+		GGTerrainBake_DrawPrepass(frustum, cmd);
 		// GGMAX 2.96: the far-tree billboard PREPASS. Required, not optional - the main pass
 		// runs depth_write_mask = ZERO and relies on this to lay the depth down.
 		GGTrees_Draw_Prepass(frustum, 0, cmd);
@@ -558,6 +568,9 @@ void MasterRenderer::Load()
 		// below. Zero scene entities, one DrawIndexedInstanced per visible tree chunk, static
 		// instance buffers the build already maintains. Self-gated on gg_far_tree_pass.
 		GGTrees_Draw(frustum, mode, cmd);
+		// GGMAX 3.25: the baked terrain, on the shipping Wicked-terrain path, so it must sit
+		// ABOVE the early-out for the same reason the billboards do.
+		GGTerrainBake_Draw(frustum, cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw(frustum, mode, cmd);
 	};
@@ -572,6 +585,9 @@ void MasterRenderer::Load()
 		// (no per-object interleave; deliberate, see gpup_draw_bydistance's comment).
 		// MUST run before the wicked-terrain early-out, same as the selection outline.
 		GPUParticles::gpup_draw(wiScene::GetCamera(), cmd);
+		// GGMAX 3.25: the flat stand-in water plane. Transparent pass, above the early-out for
+		// the same reason as the billboards and the baked terrain.
+		GGWaterBake_Draw(frustum, cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Transparent(frustum, cmd);
 	};
@@ -650,6 +666,10 @@ void MasterRenderer::Update(float dt)
 			// ggterrain_use_wicked_terrain, so an indoor or legacy-terrain level would never see it.
 			extern void GGApplyLowSpecSwitches();
 			GGApplyLowSpecSwitches();
+			// GGMAX 3.25: Terrain Bake state machine. MAIN THREAD only - it creates GPU
+			// resources, which must never happen inside a render callback.
+			GGTerrainBake_Update();
+			GGWaterBake_Update();
 
 			// must be outside a render pass and only called once, even if VR renders twice
 			CommandList cmd = wiGraphics::GetDevice()->BeginCommandList();
@@ -751,6 +771,21 @@ void MasterRenderer::Update(float dt)
 		if (fd < 0.0f) fd = 0.0f;
 		if (fd > 60000.0f) fd = 60000.0f;   // guard: dist^2 must fit uint32 (60000^2 = 3.6e9 < 4.29e9)
 		wiScene::gg_anim30fps_dist2.store((uint32_t)(fd * fd), std::memory_order_relaxed);
+
+		// GGMAX 3.25: Reduction Scale. A SUB-CONTROL of the tick box above, so it only bites
+		// while that is ticked - which is also what makes it safe to leave a level saved with a
+		// scale set: untick the box and everything returns to full rate without touching the
+		// slider. Drives BOTH the CPU animation skip and the skinning dispatch skip; see the
+		// note by gg_anim_reduction_scale in wiScene.cpp.
+		uint32_t redScale = 0;
+		if (bEnable30FpsAnimations)
+		{
+			int rs = t.visuals.iAnimReductionScale;
+			if (rs < 1) rs = 1;
+			if (rs > 100) rs = 100;
+			redScale = (uint32_t)rs;
+		}
+		wiScene::gg_anim_reduction_scale.store(redScale, std::memory_order_relaxed);
 	}
 
 	// GGMAX delta 1.35: frustum-visibility animation pause — drive the engine knobs per frame.
