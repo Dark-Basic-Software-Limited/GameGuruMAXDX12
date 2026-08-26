@@ -7583,3 +7583,60 @@ what BC1 just saved, for a one-shot conversion.
 instead of 33**, so the sharp zone is materially smaller. Frame rate is unaffected either way -
 as at every point in this whole resolution investigation, the dial spends memory, not time.
 `terrainbakenearbudget` raises the coverage for anyone willing to spend the video memory.
+
+### §3.25l — the near-detail slider, and the budget at 1024 MB
+
+Lee: raise the near budget, and give users a control for how sharp the ground is under their feet.
+
+Budget 512 -> **1024 MB**, which at 8192 doubles coverage from 12 to 24 chunks. New per-level
+slider **"Terrain Bake Detail (under your feet)"** directly beneath the Terrain Bake tick box,
+stepping 256/512/1024/2048/4096/8192 and showing the real resolution rather than a slider index.
+
+★ **It rebuilds immediately when moved while the bake is on.** A setting that only took effect on
+the next bake would be indistinguishable from a broken one - the exact complaint Texture Detail
+earned in 3.12 and that 3.19 had to go back and fix. `Clear()` restores the real terrain before
+dropping the baked set, so there is no hole in the world during the rebuild.
+
+**Measured** (TESTPRO2, near 8192 / far 256 / 1024 MB): 24 chunks promoted, 1113 MB bake,
+211 FPS against 220 for the real terrain — and **total VRAM still FELL, 4213 -> 3357 MB**, because
+the SVT atlas the mode removes is larger than the bake replacing it.
+
+⚠ 1113 MB is a large slice of a 4 GB card. The slider is the answer, and the whole resolution
+investigation says the same thing every time: **this dial spends memory, not frame time.**
+
+---
+
+## §3.25 CLOSING SUMMARY — the low-spec bake milestone
+
+Everything in 3.25 came from Lee testing on a **6-year-old AMD card**, hardware I cannot measure
+on. Every number below is from a fast card and is corroboration, not the result.
+
+| shipped | what it does |
+|---|---|
+| **Terrain Bake** | chunks -> plain meshes + BC1 textures, then the 2.94 teardown. Two-tier: far 256, near 8192 in the play area, 1024 MB cap, mipmapped |
+| **Water Bake** | ocean + planar reflection removed, flat plane at the authored RGBA in its place |
+| **Reduction Scale** | distance-scaled animation skip that also skips the SKINNING dispatch |
+| **Per-level switches** | all eleven Brutal off-switches saved in the level, Reset Visuals clears them |
+| removed | Post Effects Off, Simple Sky; the Logic box's developer header |
+
+**Nine defects found and fixed along the way, and the pattern in them is the point:**
+
+1. shaders silently never loaded (relative SHADERPATH vs a CWD that moves to `Files/`)
+2. device removed by a compute Dispatch inside a render pass
+3. invisible terrain reporting 202 draw calls (winding)
+4. Water Bake applied its visuals one frame before the flag it reads was written
+5. the water plane's camera CB was clobbered by `gpup_draw` in the same hook
+6. `WaterAlpha_f` had never been persisted, in any version of GG
+7. a 227 MB-per-frame allocate-and-discard cascade (mine, from 3.25c)
+8. the tree cull silently disabled because the bake removes the Terrain component
+9. the play area computed as a bounding box, which outliers made meaningless
+
+★★★ **Not one of these announced itself.** Every single one produced plausible, healthy-looking
+output - correct counters, no crash, no log entry. What found them, every time, was an instrument
+that reported a FACT rather than an intention, and the two occasions the instrument itself lied
+(`CurrentWaterColor()` evaluated at print time; a "solid-colour bisect" that still ran the fog)
+cost more than any of the bugs did. **The report is the feature.**
+
+★★ **And twice the test was the thing at fault, not the code**: a bake-cycle test with generous
+waits that never entered the failing state, and a sweep whose FPS columns were contaminated by
+machine drift. Ask what state the bug needs, then check the run actually reached it.
