@@ -37,6 +37,17 @@ float4 main( PixelIn IN ) : SV_TARGET
 	const float  dist    = length( viewVec );
 	const float3 V       = viewVec / max( dist, 0.0001 );
 
+	// ---- DEBUG BISECT ------------------------------------------------------------------------
+	// Exact magenta arriving in the vertex colour means SET_WATERBAKEDEBUG is on, and this returns
+	// it UNTOUCHED - no fog, no blend-relevant alpha, nothing.
+	// The first bisect only forced the VERTEX colour and still ran ApplyFogCustom below, so at
+	// several thousand units from the camera the fog could quietly absorb the whole test and the
+	// result read as "the draw produced nothing" when it may have produced a fogged nothing.
+	// A solid-colour bisect has to bypass the shader's own maths, or it is not solid.
+	if ( IN.color.r > 0.99 && IN.color.g < 0.01 && IN.color.b > 0.99 )
+		return float4( 1, 0, 1, 1 );
+	// -------------------------------------------------------------------------------------------
+
 	// the authored water colour, unmodified, at the authored opacity
 	float3 rgb = IN.color.rgb;
 	rgb = ApplyFogCustom( IN.worldPos, dist, rgb, V );

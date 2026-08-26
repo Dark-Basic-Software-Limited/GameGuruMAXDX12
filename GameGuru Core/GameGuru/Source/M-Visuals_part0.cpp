@@ -736,6 +736,11 @@ void visuals_save ( void )
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.Watergreen=" + Str(t.visuals.WaterGreen_f);
 	WriteString(1, t.strwork.Get());
+	// GGMAX 3.25e: the A of the Water Base Color picker. Saved for the first time here - it
+	// was write-only before, reset to 0 on every load, so an author could set the surface
+	// transparency and never see it again. Default stays 0 so the real ocean is unchanged.
+	t.strwork = ""; t.strwork = t.strwork + "visuals.Wateralpha=" + Str(t.visuals.WaterAlpha_f);
+	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.WaterWaveIntensity=" + Str(t.visuals.WaterWaveIntensity_f);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.WaterTransparancy=" + Str(t.visuals.WaterTransparancy_f);
@@ -1484,6 +1489,7 @@ void visuals_load ( void )
 			t.try_s = "visuals.Waterred"; if (t.tfield_s == t.try_s)  t.visuals.WaterRed_f = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.Waterblue"; if (t.tfield_s == t.try_s)  t.visuals.WaterBlue_f = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.Watergreen"; if (t.tfield_s == t.try_s)  t.visuals.WaterGreen_f = ValF(t.tvalue_s.Get());
+			t.try_s = "visuals.Wateralpha"; if (t.tfield_s == t.try_s)  t.visuals.WaterAlpha_f = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.WaterWaveIntensity"; if (t.tfield_s == t.try_s)  t.visuals.WaterWaveIntensity_f = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.WaterTransparancy"; if (t.tfield_s == t.try_s)  t.visuals.WaterTransparancy_f = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.WaterSparkleCol"; if (t.tfield_s == t.try_s)  t.visuals.WaterReflectionSparkleIntensity = ValF(t.tvalue_s.Get());

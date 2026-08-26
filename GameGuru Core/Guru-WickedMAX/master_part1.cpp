@@ -584,10 +584,27 @@ void MasterRenderer::Load()
 		// gpup renders back-to-front among its own effects OVER the scene's transparents
 		// (no per-object interleave; deliberate, see gpup_draw_bydistance's comment).
 		// MUST run before the wicked-terrain early-out, same as the selection outline.
-		GPUParticles::gpup_draw(wiScene::GetCamera(), cmd);
-		// GGMAX 3.25: the flat stand-in water plane. Transparent pass, above the early-out for
-		// the same reason as the billboards and the baked terrain.
+		// ★★★ GGMAX 3.25f: WATER BAKE MUST DRAW *BEFORE* gpup_draw. Two reasons, and the first
+		// one is not a preference:
+		//
+		// (1) gpup_draw REBINDS b0 (FrameCB) and b1 (CameraCB) with its own per-emitter constants
+		//     (GPUParticles_part0.cpp BindDynamicConstantBuffer slots 0 and 1) and never restores
+		//     them. GGWaterBakeVS reads g_xCamera_VP / g_xCamera_CamPos, which ARE b1 - so run
+		//     after gpup and the plane is transformed by particle constants and vanishes. It cost
+		//     a long hunt because it is LEVEL-DEPENDENT: gpup only clobbers when an emitter is
+		//     loaded and visible, so the plane rendered perfectly on a demo with no legacy
+		//     emitters and produced nothing on a level that had them. Every counter said "drawn".
+		//     The engine repairs the camera CB after the whole hook returns
+		//     (wiRenderPath3D.cpp, BindCameraCB + BindCommonResources) - but nothing repairs it
+		//     BETWEEN two draws inside the hook, which is where this sat.
+		// (2) Ordering it this way is also just correct: particles (spray, steam, splashes) belong
+		//     OVER the water surface, not under it.
+		//
+		// ⚠ Anything added here that consumes the engine camera CB must go ABOVE gpup_draw too, or
+		// restore b0/b1 itself. GGTerrain_Draw_Transparent below has the same latent exposure; it
+		// is editor-only debug geometry, which is the only reason it has never shown.
 		GGWaterBake_Draw(frustum, cmd);
+		GPUParticles::gpup_draw(wiScene::GetCamera(), cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Transparent(frustum, cmd);
 	};

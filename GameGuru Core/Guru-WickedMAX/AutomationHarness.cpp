@@ -5782,8 +5782,11 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	{
 		extern float gg_water_bake_alpha;
 		const int v = atoi(arg);
-		if (v >= 0 && v <= 100) gg_water_bake_alpha = (float)v * 0.01f;
-		_snprintf(result, resultSize, "OK: SET_WATERBAKEALPHA - plane alpha now %.2f", gg_water_bake_alpha);
+		// -1 (or any negative) hands control back to the Water Base Color picker's own A.
+		if (v < 0) gg_water_bake_alpha = -1.0f;
+		else if (v <= 100) gg_water_bake_alpha = (float)v * 0.01f;
+		_snprintf(result, resultSize, "OK: SET_WATERBAKEALPHA - plane alpha %s",
+			(gg_water_bake_alpha < 0.0f) ? "follows the Water Base Color picker" : "overridden");
 		result[resultSize - 1] = 0;
 		return true;
 	}
@@ -5805,9 +5808,13 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		// the draw is reaching the render target and the fault is colour or alpha; if it does not,
 		// the draw is being rejected and nothing about the pipeline is cleared.
 		extern int gg_water_bake_debug;
-		gg_water_bake_debug = (atoi(arg) != 0) ? 1 : 0;
+		gg_water_bake_debug = atoi(arg);
+		if (gg_water_bake_debug < 0 || gg_water_bake_debug > 2) gg_water_bake_debug = 0;
 		_snprintf(result, resultSize, "OK: SET_WATERBAKEDEBUG %d - plane is %s",
-			gg_water_bake_debug, gg_water_bake_debug ? "OPAQUE MAGENTA" : "the authored water colour");
+			gg_water_bake_debug,
+			(gg_water_bake_debug == 2) ? "OPAQUE MAGENTA with the depth test DISABLED"
+			: (gg_water_bake_debug == 1) ? "OPAQUE MAGENTA"
+			: "the authored water colour");
 		result[resultSize - 1] = 0;
 		return true;
 	}

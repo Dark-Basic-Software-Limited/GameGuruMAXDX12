@@ -7319,3 +7319,54 @@ far edge is a hard band of flat colour against a hazy sky. It is one lerp, not a
 
 **Verified**: ocean on -> OFF -> on across two full cycles, twice; plane visible as pale
 semi-transparent water with the lake bed showing through.
+
+### ★★★ §3.25f — the Water Bake plane was never invisible. Its CAMERA was.
+
+Lee, on a new TESTPRO2 scene: the plane shows nothing, and the picker's RGBA should drive it.
+Two separate faults, and the second one is the most instructive bug of this whole arc.
+
+**Fault 1 - `WaterAlpha_f` has never been persisted.** It appears in the visuals code exactly
+once, as `= 0.0f`. The "Water Base Color" picker writes all four channels and the A was thrown
+away on every level load. Nothing noticed because the ocean shader does not use it as a straight
+surface alpha; a flat plane does, and A=0 is a perfectly transparent plane. Now saved and loaded
+as `visuals.Wateralpha`. ⚠ The DEFAULT stays 0 - that field feeds `oceanParameters.waterColor.w`,
+so changing it would alter the real water on every existing level. The plane treats a literal 0
+as "never set" and falls back to 0.5, and **says so in its report** rather than substituting a
+number quietly.
+
+**Fault 2 - `gpup_draw` clobbers the camera constant buffer, and my draw ran after it.**
+`customDraw_Transparent` called `gpup_draw` and then `GGWaterBake_Draw`. gpup rebinds **b0
+(FrameCB)** and **b1 (CameraCB)** with its own per-emitter constants and never restores them.
+`GGWaterBakeVS` reads `g_xCamera_VP` and `g_xCamera_CamPos`, which ARE b1 - so the quad was
+transformed by particle constants and landed nowhere. The engine repairs the camera CB *after the
+whole hook returns* (`wiRenderPath3D.cpp`: `BindCameraCB` + `BindCommonResources`); nothing
+repairs it BETWEEN two draws inside the hook, which is exactly where this sat.
+
+★★ **It is LEVEL-DEPENDENT, which is what made it expensive.** gpup only clobbers when an emitter
+is loaded and visible. Canyon Offensive has no legacy gpup emitters, so the plane rendered
+perfectly there; Lee's scene has them, so it rendered nowhere - with every counter reading
+healthy. Fixed by drawing the water plane BEFORE `gpup_draw`, which is also the correct
+transparency order (spray and steam belong over water, not under it).
+
+### What that cost, and the two instrument lessons paid for on the way
+
+1. ★★ **My "solid-colour bisect" was not solid.** Forcing opaque magenta into the VERTEX colour
+   still ran `ApplyFogCustom` in the pixel shader, so at several thousand units the test could
+   have been absorbed by fog and read as "no fragments". A bisect that still runs the shader's
+   own maths is not a bisect - it now returns the colour before any of it.
+2. ★★★ **The report was stating an INTENTION, not a FACT.** `"packed 0x%08X"` called
+   `CurrentWaterColor()` live at print time, so it printed magenta whether or not one magenta
+   vertex had ever reached the buffer - the instrument agreed with itself no matter what. Same
+   family as counting CALLS instead of SUCCESSES (§3.x, the atlasSlices lesson). It now prints
+   `g_lastColor`, which IS the buffer's contents, plus `updates / rebuilds / draws` counters.
+   Those three numbers (`updates 2053, rebuilds 2, draws 2053`) were what finally made it
+   undeniable that the pipeline was fine and something outside it was wrong.
+
+The sequence that actually cracked it: magenta (no) → depth test ALWAYS (no) → fog bypassed (no)
+→ real VB contents + counters (all healthy) → therefore not mine → **compare against the two
+custom draws that work**, which named gpup in one pass. Then the predicted A/B: `GPUP_SHOW 0` and
+the whole viewport went magenta. ★ When every instrument you own says your code is correct,
+the next move is to widen the frame, not to add a fourth instrument.
+
+**Verified**: TESTPRO2 spotshadowtest draws the plane at 478.3 with the pool floor visible
+through it; Canyon Offensive still toggles ocean on → OFF → on across two cycles.

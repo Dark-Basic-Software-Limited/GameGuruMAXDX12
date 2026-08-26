@@ -35,14 +35,22 @@ using namespace wi::graphics;
 using namespace wi::primitive;
 
 bool  gg_water_bake = false;
-float gg_water_bake_alpha = 0.62f;   // setup.ini waterbakealpha, 0..1
+// setup.ini waterbakealpha / SET_WATERBAKEALPHA. NEGATIVE (the default) means "use the A from
+// the Water component's own Water Base Color picker", which is what Lee asked for; 0..1 overrides
+// it. There is no sensible non-negative default here - picking one would silently ignore the
+// alpha the level author set in the picker, which is exactly the bug this replaces.
+float gg_water_bake_alpha = -1.0f;
 int   gg_water_bake_drawn = 0;
 // GGMAX 3.25d: 1 = force the plane to opaque magenta. A solid-colour bisect, live-switchable
 // because it rides in the vertex colour rather than the shader. See the note above.
 int   gg_water_bake_debug = 0;
-// How far to mix the authored absorption tint toward the sky it would be reflecting, 0..1.
-// 0 = the raw authored colour (near-black on most levels), 1 = pure sky. setup.ini waterbaketint.
-float gg_water_bake_tint = 0.72f;
+// How far to mix the authored colour toward the sky it would be reflecting, 0..1.
+// ★ DEFAULT 0 = use the picked colour exactly. Lee's spec (2026-08-26): "the colour of the water
+// plane color to be determined by the RGB and the Alpha selectable from the Water component
+// menu". An automatic lift, however well-meant, means the picker no longer says what you get -
+// he sets a colour and sees a different one. The dial stays for anyone who wants the old
+// behaviour, but nothing applies it unasked. setup.ini waterbaketint / SET_WATERBAKETINT.
+float gg_water_bake_tint = 0.0f;
 
 extern bool gg_no_water;
 extern void GGSetNoWaterLevel( int );
@@ -63,6 +71,8 @@ namespace
 	GPUBuffer     g_vb, g_ib;
 	Shader        g_vs, g_ps;
 	PipelineState g_pso;
+	PipelineState g_psoDepthAlways;      // debug twin, ComparisonFunc::ALWAYS
+	DepthStencilState g_dssAlways;
 	RasterizerState   g_rs;
 	DepthStencilState g_dss;
 	BlendState        g_bs;
@@ -74,6 +84,9 @@ namespace
 	bool  g_vbValid = false;
 	float g_lastHeight = -99999.0f;
 	uint32_t g_lastColor = 0;
+	uint32_t g_updates = 0;    // GGWaterBake_Update calls that got past the switch test
+	uint32_t g_rebuilds = 0;   // vertex buffers actually created
+	uint32_t g_draws = 0;      // draw calls actually issued
 	char g_report[1024] = "";
 
 	uint32_t CurrentWaterColor()
@@ -119,9 +132,29 @@ namespace
 				b = b + ( sky.z * 255.0f - b ) * k;
 			}
 		}
-		float a = gg_water_bake_alpha;
-		if ( a < 0.05f ) a = 0.05f;
-		if ( a > 1.0f )  a = 1.0f;
+		// ★ ALPHA FROM THE PICKER. t.visuals.WaterAlpha_f is the A of the same "Water Base Color"
+		// swatch that supplies the RGB above (M-TerrainNew_part3.cpp writes all four), so the one
+		// control the author actually looks at decides both the colour and how far through it
+		// they can see. A negative gg_water_bake_alpha means "use it"; anything else overrides.
+		float a;
+		if ( gg_water_bake_alpha >= 0.0f )
+		{
+			a = gg_water_bake_alpha;                       // explicit override
+		}
+		else
+		{
+			a = t.visuals.WaterAlpha_f / 255.0f;
+			// ⚠ A == 0 is "never set", not "deliberately invisible". The field was write-only
+			// until 3.25e (never saved, reset to 0 every load), so every level made before this
+			// carries a zero, and an author who genuinely wanted no water would turn water OFF
+			// rather than set its surface to fully transparent. Honouring a literal 0 here would
+			// ship a switch that draws nothing on almost every existing level - which is exactly
+			// the report that led here. Fall back, and SAY SO in the report rather than quietly
+			// substituting a number.
+			if ( a <= 0.0f ) a = 0.5f;
+		}
+		if ( a < 0.0f ) a = 0.0f;
+		if ( a > 1.0f ) a = 1.0f;
 		if ( gg_water_bake_debug != 0 ) return 0xFFFF00FFu;   // opaque magenta (A,B,G,R packed)
 		const uint32_t ri = (uint32_t)std::max( 0.0f, std::min( 255.0f, r ) );
 		const uint32_t gi = (uint32_t)std::max( 0.0f, std::min( 255.0f, g ) );
@@ -198,6 +231,14 @@ void GGWaterBake_Init()
 	desc.bs = &g_bs;
 	device->CreatePipelineState( &desc, &g_pso );
 
+	// the debug twin - identical but with the depth test disabled. Its own DepthStencilState
+	// object because PipelineStateDesc stores POINTERS and both PSOs must keep the state they
+	// were created with.
+	g_dssAlways = g_dss;
+	g_dssAlways.depth_func = ComparisonFunc::ALWAYS;
+	desc.dss = &g_dssAlways;
+	device->CreatePipelineState( &desc, &g_psoDepthAlways );
+
 	g_shadersReady = true;
 }
 
@@ -221,6 +262,7 @@ void GGWaterBake_Update()
 	if ( !gg_water_bake ) return;
 	if ( !g_shadersReady ) { GGWaterBake_Init(); return; }     // keep retrying while ticked
 
+	g_updates++;
 	// Rebuild the four vertices only when the water height or colour actually changed. A level
 	// with static water therefore does no per-frame work at all here.
 	const float height = (float)g.gdefaultwaterheight;
@@ -244,6 +286,7 @@ void GGWaterBake_Update()
 	device->SetName( &fresh, "GGWaterBake::vb" );
 	g_vb = fresh;
 	g_vbValid = true;
+	g_rebuilds++;
 	g_lastHeight = height;
 	g_lastColor = color;
 }
@@ -263,7 +306,7 @@ void GGWaterBake_Draw( const Frustum* frustum, CommandList cmd )
 
 	GraphicsDevice* device = GetDevice();
 	device->EventBegin( "GGWaterBake Draw", cmd );
-	device->BindPipelineState( &g_pso, cmd );
+	device->BindPipelineState( ( gg_water_bake_debug == 2 ) ? &g_psoDepthAlways : &g_pso, cmd );
 	GGTerrain::GGCustomFrame_Bind( cmd );
 	const GPUBuffer* vbs[] = { &g_vb };
 	const uint32_t strides[] = { sizeof( WaterVertex ) };
@@ -272,6 +315,7 @@ void GGWaterBake_Draw( const Frustum* frustum, CommandList cmd )
 	device->DrawIndexed( 6, 0, 0, cmd );
 	device->EventEnd( cmd );
 	gg_water_bake_drawn = 1;
+	g_draws++;
 }
 
 const char* GGWaterBake_Report()
@@ -279,17 +323,23 @@ const char* GGWaterBake_Report()
 	_snprintf( g_report, sizeof( g_report ),
 		"WATER BAKE\n"
 		"  switch          : %d   (shaders %s after %d attempts)\n"
-		"  plane           : %s   height %.1f, alpha %.2f (setup.ini waterbakealpha, percent)%s\n"
-		"  colour source   : visuals Water RGB = %.1f, %.1f, %.1f (an ABSORPTION tint, usually\n"
-		"                    near-black) mixed %.0f%% toward sky -> packed 0x%08X\n"
-		"  drawn last frame: %d\n"
+		"  plane           : %s   height %.1f, alpha %.2f (%s)%s\n"
+		"  colour source   : Water Base Color RGBA = %.0f, %.0f, %.0f, %.0f (the picker in\n"
+		"                    Terrain Tools > Water), sky mix %.0f%% -> packed 0x%08X\n"
+		"  drawn last frame: %d   (updates %u, rebuilds %u, draws %u)\n"
+		"  VERTEX BUFFER   : 0x%08X   <- what the GPU is actually drawing\n"
 		"  ocean           : %s\n",
 		gg_water_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts,
-		g_vbValid ? "built" : "not built", g_lastHeight, gg_water_bake_alpha,
-		gg_water_bake_debug ? "  [DEBUG: forced opaque magenta]" : "",
-		t.visuals.WaterRed_f, t.visuals.WaterGreen_f, t.visuals.WaterBlue_f,
+		g_vbValid ? "built" : "not built", g_lastHeight,
+		( gg_water_bake_alpha < 0.0f ) ? ( t.visuals.WaterAlpha_f / 255.0f ) : gg_water_bake_alpha,
+		( gg_water_bake_alpha >= 0.0f ) ? "overridden by waterbakealpha"
+			: ( t.visuals.WaterAlpha_f > 0.0f ? "from the Water Base Color picker"
+			                                  : "FALLBACK 0.5 - the picker's A is 0 (never set on this level)" ),
+		( gg_water_bake_debug == 2 ) ? "  [DEBUG: magenta + depth test ALWAYS]"
+			: ( gg_water_bake_debug ? "  [DEBUG: forced opaque magenta]" : "" ),
+		t.visuals.WaterRed_f, t.visuals.WaterGreen_f, t.visuals.WaterBlue_f, t.visuals.WaterAlpha_f,
 		gg_water_bake_tint * 100.0f, CurrentWaterColor(),
-		gg_water_bake_drawn,
+		gg_water_bake_drawn, g_updates, g_rebuilds, g_draws, g_lastColor,
 		gg_no_water ? "OFF (planar reflection pass not recorded)" : "on" );
 	g_report[sizeof( g_report ) - 1] = 0;
 	return g_report;
