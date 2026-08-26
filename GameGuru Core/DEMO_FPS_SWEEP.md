@@ -1,5 +1,17 @@
 # Demo FPS sweep
 
+## 0826b — 3.24 (game `f3fc33a8`) — GATE CLEAN 19/19, POLYS identical again
+
+C1 19/19 · C2 **POLYS identical to the 0825 reference on all 19** · C3 worst 3974.8 MB
+(headroom 121.2) · C4 19/19. Raw: `tools/sweep_0826b_3.24.txt`.
+
+⚠⚠ **The rig is drifting down across days and it is not the code.** Editor FPS sum
+4013 (0825) → 3463 (0826) → 3282 (0826b) = **−18.2% cumulative**, on a workload 3.22–3.24 cannot
+touch (entity logic does not run in the editor). Game −11.0% over the same span, and
+game-minus-editor is positive on **19 of 19** (mean +8.9 pts). Treat cross-day FPS on this rig as
+unusable; the evidence for 3.22 is the same-session interleaved A/B in NIGHT_INVESTIGATIONS §3.22.
+
+
 ## 0826 — 3.22 inert-entity skip (game `74f0d295`) — GATE CLEAN 19/19
 
 C1 LOAD 19/19 · C2 GEOMETRY **POLYS identical to the 0825 reference on all 19** · C3 VRAM worst

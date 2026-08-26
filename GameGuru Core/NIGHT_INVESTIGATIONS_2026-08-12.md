@@ -6958,3 +6958,49 @@ obvious change was wrong: the caller-count guard in §3.17 that did nothing, `Up
 replaced. **Measure at the size you actually have**, and get the size from the running game rather
 than from an assumption — "the list is empty in a healthy project" was wrong by 39.
 
+### §3.24a — re-gate on 3.24: CLEAN, and the rig is drifting DOWN across days
+
+Re-ran the 19-demo gate because 3.23 and 3.24 both touch the lua call path every entity takes.
+Game `f3fc33a8` / engine `cd41b548`.
+
+```
+C1 LOAD      PASS  19/19        C3 VRAM  PASS  worst 3974.8 MB, headroom 121.2 MB
+C2 GEOMETRY  PASS  POLYS identical to the 0825 (3.19) reference on all 19
+C4 GAME      PASS  19/19        VERDICT: CLEAN
+```
+
+★ **POLYS identical on all nineteen for the second time.** That is the line that matters: 3.22
+elides a per-entity update for ~1962 entities a frame and 3.24 changed a branch every lua call in
+the product passes through, and not one triangle moved on any demo.
+
+#### ⚠⚠ The rig is getting slower, and it is not the code
+
+| sweep | editor FPS sum | game FPS sum |
+|---|---|---|
+| 0825 (3.19) | 4013 | 3078 |
+| 0826 (3.22) | 3463 −**13.7%** | 2835 −7.9% |
+| 0826b (3.24) | 3282 −**18.2%** vs 0825, −5.2% vs 0826 | 2740 −11.0% vs 0825 |
+
+**The editor cannot be affected by any of 3.22–3.24** — entity logic does not run there at all, which
+DUMP_LOGICCOST established independently. Yet it is down another 5.2% overnight and **18.2%
+cumulative from 0825**, on 16 of 19 demos. That is a standing, WORSENING shift in the machine, not
+a regression, and it is the third day it has moved (§2.90a and the 08-19 note record the same
+thing). ⚠ It matters because it degrades every future sweep: at this rate cross-day FPS on this rig
+will soon be worthless even as a smell test.
+
+Against that background, game-minus-editor per demo:
+
+| | mean | positive on |
+|---|---|---|
+| 0826 (3.22) | +7.3 pts | 18 / 19 |
+| 0826b (3.24) | **+8.9 pts** | **19 / 19** |
+
+⚠ The +1.6 point widening after adding 3.23 and 3.24 is the right sign and roughly the right size
+for changes measured at ~27 us and ~50 ns/call — but it is **well inside the noise of a cross-day
+difference-in-differences over two different workloads, and is not evidence.** Recorded because it
+is consistent, not because it proves anything. The claim for 3.22 remains the same-session
+interleaved A/B; 3.23 and 3.24 were priced by direct microbenchmark and neither ever claimed a
+frame-level win.
+
+Raw results archived as `tools/sweep_0826b_3.24.txt`.
+
