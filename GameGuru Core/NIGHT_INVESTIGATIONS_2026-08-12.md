@@ -7694,3 +7694,25 @@ held-armature count is the hardware-independent proxy, and it says the mechanism
 saving is worth belongs to the card where skinning costs 3-6 ms.
 
 **Two heads: confirmed gone** at scale 50 in game.
+
+### §3.25o — Reduction Scale default 1 -> 25
+
+Lee's call on the measured curve from §3.25n: 25 holds ~93% of a scene's armatures per frame
+against ~88% at 10, and 50/100 add roughly one percent between them while the stutter on
+mid-distance characters keeps getting worse. 25 is where the curve flattens.
+
+⚠ **This is a behaviour change for existing projects, not just a new default for new ones.** The
+slider only bites while "Lower Animation & LUA Speed" is ticked, so a level that never used that
+box is untouched - but a level that DID have it ticked previously got a scale of 1 (no reduction)
+and now gets real reduction. That is the intent, and it is worth saying out loud.
+
+**Verified both halves of the persistence contract in one pass**, which is the useful bit:
+- a DEMO level (predates the field, so no `visuals.AnimReductionScale` line) loads at **25** -
+  the default reaches old content;
+- `spotshadowtest` loads at **44**, the value Lee had been testing with and saved - a level's own
+  choice still overrides the default.
+
+That second reading is the one that could have been misread as a bug. The first check I ran was
+against Lee's own test level and returned 44; "the default did not take" and "persistence is
+working" produce the identical symptom, and only checking a level WITHOUT the field separates
+them.

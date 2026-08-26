@@ -132,7 +132,14 @@ void gg_visuals_reset_brutal_switches()
 	t.visuals.iParticlePct      = 100;    GGSetParticlePctLevel(100);
 	t.visuals.iObjectCullDist   = 0;      GGSetObjectCullDistLevel(0);
 	t.visuals.iTextureDivide    = 1;
-	t.visuals.iAnimReductionScale = 1;
+	// GGMAX 3.25o: DEFAULT 25, not 1 (Lee's call on the measured curve). At 25 the skip holds
+	// 93% of a scene's armatures per frame, against 88% at 10 - and 50 and 100 add about one
+	// percent between them while the stutter on mid-distance characters keeps getting worse.
+	// ⚠ This only bites while 'Lower Animation & LUA Speed' is ticked, so a level that never
+	// used that box is unaffected. A level that DID have it ticked now gets real reduction
+	// where it previously got none - that is the point of the change, but it is a behaviour
+	// change for existing projects, not just a new default for new ones.
+	t.visuals.iAnimReductionScale = 25;
 	{
 		extern int gg_terrain_bake_res_near;
 		t.visuals.iTerrainBakeResNear = 8192;
