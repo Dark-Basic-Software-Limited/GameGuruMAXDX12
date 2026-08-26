@@ -542,7 +542,11 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				gg_water_bake = bOff;
 				t.gamevisuals.bWaterBake = t.visuals.bWaterBake = bOff;
 				g.projectmodified = 1;
-				GGApplyVisualsNow();   // ocean teardown happens on the next Scene::Update
+				// ⚠ Deliberately NO GGApplyVisualsNow() here. gg_no_water - the flag the apply
+				// reads - is not written until GGWaterBake_Update runs, so applying from this
+				// handler always used the PREVIOUS state: ticking left the ocean on and unticking
+				// never brought it back. GGWaterBake_Update now writes the flag and applies, in
+				// that order.
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Replaces the animated water with a flat coloured plane at the same height. This removes the reflection pass that redraws the whole scene a second time from a mirrored camera, and the wave simulation with it, while leaving something that still reads as water from the shore. Usually the single biggest saving here on any level that has water.");
 

@@ -7,16 +7,21 @@
 
 // GGMAX 3.25 - WATER BAKE, pixel shader.
 //
-// Flat authored water colour, one Fresnel term, and the scene's own fog. No reflection, no
-// refraction, no normal map, no FFT simulation - the entire point of the switch is that the
-// planar reflection pass (which redraws the whole scene from a mirrored camera, measured at
-// 4.37 ms of a 10.06 ms GPU frame on TESTPRO1) stops being recorded. Putting any of that back
-// here would defeat it. What this buys over plain "Water Off" is that the water still READS as
-// water from the shore: a lake does not vanish, it goes flat.
+// FLAT AUTHORED COLOUR AND NOTHING ELSE. No reflection, no refraction, no normal map, no FFT
+// simulation, and - since Lee's 2026-08-26 feedback - no Fresnel either. The point of the switch
+// is that the planar reflection pass (which redraws the whole scene from a mirrored camera,
+// measured at 4.37 ms of a 10.06 ms GPU frame on TESTPRO1) stops being recorded; anything put
+// back here works against that.
 //
-// The Fresnel lift is the one flourish and it is three instructions: a plane of constant colour
-// looks like a hole in the world, whereas brightening at grazing angles is most of what makes a
-// flat surface read as a liquid one.
+// ⚠ The ripples and refraction Lee reported in Water Bake mode were NOT this shader - they were
+// the real ocean, still being drawn because the switch applied its visuals one frame before the
+// flag it reads was written (see GGWaterBake.cpp). This shader never had either. The Fresnel
+// lift it DID have is gone all the same: he asked for a plain colour with semi-transparency so
+// the ground below the water line shows through, and that is exactly what this now is.
+//
+// Fog is kept, and that is a deliberate exception to "nothing else": the plane spans 250,000
+// units, so without fog its far edge is a hard band of flat colour against a hazy sky. It is one
+// lerp, not an effect.
 
 struct PixelIn
 {
@@ -32,12 +37,8 @@ float4 main( PixelIn IN ) : SV_TARGET
 	const float  dist    = length( viewVec );
 	const float3 V       = viewVec / max( dist, 0.0001 );
 
-	// grazing angles go lighter and more opaque, as water does
-	const float fresnel = pow( saturate( 1.0 - abs( V.y ) ), 4.0 );
-
-	float3 rgb   = IN.color.rgb * ( 0.85 + 0.55 * fresnel );
-	float  alpha = saturate( IN.color.a + fresnel * ( 1.0 - IN.color.a ) * 0.85 );
-
+	// the authored water colour, unmodified, at the authored opacity
+	float3 rgb = IN.color.rgb;
 	rgb = ApplyFogCustom( IN.worldPos, dist, rgb, V );
-	return float4( max( 0, rgb ), alpha );
+	return float4( max( 0, rgb ), IN.color.a );
 }

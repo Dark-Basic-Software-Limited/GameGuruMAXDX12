@@ -9,6 +9,8 @@
 extern bool  gg_water_bake;         // panel "Water Bake", setup.ini waterbake
 extern float gg_water_bake_alpha;   // setup.ini waterbakealpha, 0..1
 extern int   gg_water_bake_drawn;   // diagnostic: 1 if the plane was drawn last frame
+extern int   gg_water_bake_debug;   // 1 = force opaque magenta (solid-colour bisect)
+extern float gg_water_bake_tint;    // 0..1 mix of the authored tint toward sky colour
 
 void GGWaterBake_Init();
 void GGWaterBake_Update();          // main thread

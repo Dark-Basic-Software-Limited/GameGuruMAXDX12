@@ -37,6 +37,12 @@ using namespace wi::primitive;
 bool  gg_water_bake = false;
 float gg_water_bake_alpha = 0.62f;   // setup.ini waterbakealpha, 0..1
 int   gg_water_bake_drawn = 0;
+// GGMAX 3.25d: 1 = force the plane to opaque magenta. A solid-colour bisect, live-switchable
+// because it rides in the vertex colour rather than the shader. See the note above.
+int   gg_water_bake_debug = 0;
+// How far to mix the authored absorption tint toward the sky it would be reflecting, 0..1.
+// 0 = the raw authored colour (near-black on most levels), 1 = pure sky. setup.ini waterbaketint.
+float gg_water_bake_tint = 0.72f;
 
 extern bool gg_no_water;
 extern void GGSetNoWaterLevel( int );
@@ -72,14 +78,51 @@ namespace
 
 	uint32_t CurrentWaterColor()
 	{
-		// Same source the real ocean reads (M-GridEditB_part3.cpp), so ticking the switch does
-		// not change the colour of the water, only how it is drawn.
-		const float r = t.visuals.WaterRed_f;
-		const float g = t.visuals.WaterGreen_f;
-		const float b = t.visuals.WaterBlue_f;
+		// ★★ THE AUTHORED WATER COLOUR IS AN ABSORPTION TINT, NOT A SURFACE COLOUR.
+		//
+		// The first version painted t.visuals.Water{Red,Green,Blue}_f straight onto the plane,
+		// reasoning that this is the same source the real ocean reads so the colour would match.
+		// It does not. MEASURED on Canyon Offensive those fields are **1.0, 12.0, 11.5 out of
+		// 255** - very nearly black. The ocean looks like light blue-grey water because Wicked's
+		// ocean shader uses that value to tint what it REFLECTS; the tint alone is what deep water
+		// absorbs, which is almost everything. Used raw it produced a plane so dark against the
+		// lake bed that it read as no plane at all, while every counter said it had been drawn.
+		// (Caught by the magenta bisect: forcing opaque magenta showed the plane perfectly, which
+		// cleared geometry, transform, camera CB, depth, blend and root signature in one frame and
+		// left only the colour.)
+		//
+		// So the surface colour is approximated the way the ocean effectively arrives at one: the
+		// authored tint mixed toward the sky it would be reflecting. Done HERE, on the CPU, once
+		// per change - the pixel shader stays a flat colour lookup with no per-pixel sky work,
+		// which is what Lee asked for. gg_water_bake_tint is the mix, so 0 gives the pure authored
+		// value for anyone who wants exactly that.
+		float r = t.visuals.WaterRed_f;
+		float g = t.visuals.WaterGreen_f;
+		float b = t.visuals.WaterBlue_f;
+		{
+			float k = gg_water_bake_tint;
+			if ( k < 0.0f ) k = 0.0f;
+			if ( k > 1.0f ) k = 1.0f;
+			if ( k > 0.0f )
+			{
+				// Horizon colour is what a flat plane mostly reflects; fall back to a neutral
+				// daylight blue if the scene has no weather yet (level still loading).
+				XMFLOAT3 sky = XMFLOAT3( 0.45f, 0.60f, 0.75f );
+				wi::scene::Scene& scene = wi::scene::GetScene();
+				if ( scene.weathers.GetCount() > 0 )
+				{
+					const wi::scene::WeatherComponent& w = scene.weathers[0];
+					sky = w.horizon;
+				}
+				r = r + ( sky.x * 255.0f - r ) * k;
+				g = g + ( sky.y * 255.0f - g ) * k;
+				b = b + ( sky.z * 255.0f - b ) * k;
+			}
+		}
 		float a = gg_water_bake_alpha;
 		if ( a < 0.05f ) a = 0.05f;
 		if ( a > 1.0f )  a = 1.0f;
+		if ( gg_water_bake_debug != 0 ) return 0xFFFF00FFu;   // opaque magenta (A,B,G,R packed)
 		const uint32_t ri = (uint32_t)std::max( 0.0f, std::min( 255.0f, r ) );
 		const uint32_t gi = (uint32_t)std::max( 0.0f, std::min( 255.0f, g ) );
 		const uint32_t bi = (uint32_t)std::max( 0.0f, std::min( 255.0f, b ) );
@@ -165,9 +208,15 @@ void GGWaterBake_Update()
 	static bool s_prev = false;
 	if ( gg_water_bake != s_prev )
 	{
-		// The switch still drives the real Water Off machinery - that is where the saving is.
-		GGSetNoWaterLevel( gg_water_bake ? 1 : 0 );
 		s_prev = gg_water_bake;
+		// ★ ORDER IS THE WHOLE FIX. Write the flag the visuals apply READS, and only then apply.
+		// The panel used to call GGApplyVisualsNow() itself, immediately, while gg_no_water still
+		// held last frame's value - so ticking left the ocean ON (its ripples showing through the
+		// flat plane) and unticking turned it OFF and never brought it back. Doing both here, in
+		// this order, also covers the harness and level-load paths, which the panel never did.
+		GGSetNoWaterLevel( gg_water_bake ? 1 : 0 );
+		extern void GGApplyVisualsNow();
+		GGApplyVisualsNow();
 	}
 	if ( !gg_water_bake ) return;
 	if ( !g_shadersReady ) { GGWaterBake_Init(); return; }     // keep retrying while ticked
@@ -203,8 +252,14 @@ void GGWaterBake_Draw( const Frustum* frustum, CommandList cmd )
 {
 	gg_water_bake_drawn = 0;
 	if ( !gg_water_bake || !g_shadersReady || !g_vbValid ) return;
-	// Nothing to stand in for if the level has no water in the first place.
-	if ( t.visuals.bWaterEnable == false && t.game.set.ismapeditormode != 1 ) return;
+	// Nothing to stand in for if the level has no water in the first place. ★ This MIRRORS the
+	// ocean's own test in M-GridEditB_part3.cpp rather than approximating it - the editor branch
+	// reads t.showeditorwater and the game branch reads visuals.bWaterEnable, and getting that
+	// split wrong would either paint a plane across a level that has no water or leave a hole in
+	// one that does. If that test ever changes, this changes with it.
+	const bool bLevelHasWater = ( t.game.set.ismapeditormode == 1 ) ? ( t.showeditorwater != 0 )
+	                                                               : ( t.visuals.bWaterEnable != 0 );
+	if ( !bLevelHasWater ) return;
 
 	GraphicsDevice* device = GetDevice();
 	device->EventBegin( "GGWaterBake Draw", cmd );
@@ -224,11 +279,16 @@ const char* GGWaterBake_Report()
 	_snprintf( g_report, sizeof( g_report ),
 		"WATER BAKE\n"
 		"  switch          : %d   (shaders %s after %d attempts)\n"
-		"  plane           : %s   height %.1f, alpha %.2f (setup.ini waterbakealpha, percent)\n"
+		"  plane           : %s   height %.1f, alpha %.2f (setup.ini waterbakealpha, percent)%s\n"
+		"  colour source   : visuals Water RGB = %.1f, %.1f, %.1f (an ABSORPTION tint, usually\n"
+		"                    near-black) mixed %.0f%% toward sky -> packed 0x%08X\n"
 		"  drawn last frame: %d\n"
 		"  ocean           : %s\n",
 		gg_water_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts,
 		g_vbValid ? "built" : "not built", g_lastHeight, gg_water_bake_alpha,
+		gg_water_bake_debug ? "  [DEBUG: forced opaque magenta]" : "",
+		t.visuals.WaterRed_f, t.visuals.WaterGreen_f, t.visuals.WaterBlue_f,
+		gg_water_bake_tint * 100.0f, CurrentWaterColor(),
 		gg_water_bake_drawn,
 		gg_no_water ? "OFF (planar reflection pass not recorded)" : "on" );
 	g_report[sizeof( g_report ) - 1] = 0;

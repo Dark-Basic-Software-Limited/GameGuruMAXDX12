@@ -7266,3 +7266,56 @@ The Water Bake plane meets the shore with a **hard, speckled edge** where the re
 soft foam transition (screenshot `sc_26-08-2026 05-06-21.png`). Left alone on purpose: it is
 cosmetic, it cannot be A/B'd meaningfully on a card where water costs almost nothing, and an
 unvalidated shader tweak at the end of a long session is how regressions ship. Lee sees it first.
+
+### §3.25d — Water Bake: two real bugs Lee found in five minutes (2026-08-26)
+
+Lee: *"when I untick, the real water does not reappear. Also the cheap water plane is still using
+a sort of ripple effect and refracting all that is below the water."*
+
+**Both symptoms were ONE bug, and neither was the plane.** The panel handler set `gg_water_bake`
+and called `GGApplyVisualsNow()` immediately - but `gg_no_water`, the flag that apply actually
+READS, was not written until `GGWaterBake_Update()` ran on the NEXT frame. Every apply therefore
+used the previous state:
+
+| action | apply sees | result |
+|---|---|---|
+| tick | `gg_no_water` still false | ocean stays **ON** - the ripples and refraction Lee saw were the REAL OCEAN, drawn under the plane |
+| untick | `gg_no_water` still true (set last frame) | ocean turns **OFF**, and the frame that finally clears the flag never re-applies |
+
+So the switch worked exactly one frame late, in the wrong direction, both ways. ★ Same family as
+the 2.94 `SET_TERRAINGEN` trap and the 3.25c level-load edge: **a flag and the code that reads it
+must be ordered, and an apply that runs before the write is an apply of the old value.** Fixed by
+making `GGWaterBake_Update` own the whole transition - write the flag, THEN apply - which also
+covers the harness and level-load paths the panel's call never did.
+
+### ★★★ And then the plane turned out never to have been visible
+
+With the ocean genuinely off, there was no water at all - while `DUMP_BAKE` said
+`drawn last frame: 1`. **The same shape as 3.25a's invisible terrain: every counter correct, the
+screen empty.** Note this also invalidates my own earlier reading of the 05:06 screenshot, where I
+described "the plane" and a "hard speckled shoreline" - that was the ocean the whole time.
+
+Settled with a **solid-colour bisect** (`SET_WATERBAKEDEBUG 1` forces opaque magenta, and because
+the colour rides in the vertex it needs no shader edit and flips live). Magenta appeared perfectly,
+correctly occluded by the rocks - clearing geometry, transform, camera CB, depth, blend and root
+signature in one frame and leaving only the colour. Then one print gave the answer:
+
+> `visuals Water RGB = 1.0, 12.0, 11.5`  — **out of 255.**
+
+★★ **The authored water colour is an ABSORPTION tint, not a surface colour.** I had painted it on
+directly, reasoning it was the same source the ocean reads so the colour must match. It is the same
+source, and it still does not match: Wicked's ocean shader uses that value to tint what it
+REFLECTS, and the tint alone is what deep water absorbs, which is very nearly everything. The plane
+was rendering perfectly in near-black over a dark lake bed.
+
+Fixed by mixing the tint toward the horizon colour it would be reflecting - **on the CPU, once per
+change**, so the pixel shader stays the flat colour lookup Lee asked for with no per-pixel sky work.
+`gg_water_bake_tint` (setup.ini `waterbaketint`, harness `SET_WATERBAKETINT`, default 72%) exposes
+the mix; 0 gives the raw authored value for anyone who wants exactly that.
+
+Also done as asked: the Fresnel lift is gone, so the plane is now a flat colour at a flat alpha.
+Fog is kept and is the one deliberate exception - the plane spans 250,000 units and without it the
+far edge is a hard band of flat colour against a hazy sky. It is one lerp, not an effect.
+
+**Verified**: ocean on -> OFF -> on across two full cycles, twice; plane visible as pale
+semi-transparent water with the lake bed showing through.

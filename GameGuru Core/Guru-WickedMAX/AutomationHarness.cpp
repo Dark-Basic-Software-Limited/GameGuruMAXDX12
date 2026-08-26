@@ -5778,6 +5778,39 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_WATERBAKEALPHA") == 0)
+	{
+		extern float gg_water_bake_alpha;
+		const int v = atoi(arg);
+		if (v >= 0 && v <= 100) gg_water_bake_alpha = (float)v * 0.01f;
+		_snprintf(result, resultSize, "OK: SET_WATERBAKEALPHA - plane alpha now %.2f", gg_water_bake_alpha);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_WATERBAKETINT") == 0)
+	{
+		// Percent of the way from the authored absorption tint toward the sky colour.
+		extern float gg_water_bake_tint;
+		const int v = atoi(arg);
+		if (v >= 0 && v <= 100) gg_water_bake_tint = (float)v * 0.01f;
+		_snprintf(result, resultSize, "OK: SET_WATERBAKETINT - now %.0f%% toward sky "
+			"(0 = the raw authored water colour, which is near-black on most levels)",
+			gg_water_bake_tint * 100.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_WATERBAKEDEBUG") == 0)
+	{
+		// Solid-colour bisect: 1 forces the stand-in plane to OPAQUE MAGENTA. If magenta appears,
+		// the draw is reaching the render target and the fault is colour or alpha; if it does not,
+		// the draw is being rejected and nothing about the pipeline is cleared.
+		extern int gg_water_bake_debug;
+		gg_water_bake_debug = (atoi(arg) != 0) ? 1 : 0;
+		_snprintf(result, resultSize, "OK: SET_WATERBAKEDEBUG %d - plane is %s",
+			gg_water_bake_debug, gg_water_bake_debug ? "OPAQUE MAGENTA" : "the authored water colour");
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_ANIMREDUCTION") == 0)
 	{
 		// Reduction Scale, 1..100. Echoes a LIVE re-read of what the engine now holds, not the
