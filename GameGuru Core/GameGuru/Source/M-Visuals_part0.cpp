@@ -116,6 +116,12 @@ void gg_visuals_reset_brutal_switches()
 	extern void GGSetObjectCullDistLevel(int);
 	extern void GGSetTextureDivideLive(int);
 
+	// ⚠ Void any existing baked terrain EXPLICITLY. This function is the pre-parse reset on a
+	// level load as well as the Reset Visuals button, and on load the parse can set the switch
+	// straight back on inside the same call - so no frame ever observes it off, no edge fires,
+	// and without this the PREVIOUS level's baked chunks would stay on screen.
+	extern void GGTerrainBake_Clear();
+	GGTerrainBake_Clear();
 	t.visuals.bTerrainBake      = false;  gg_terrain_bake = false;
 	t.visuals.bWaterBake        = false;  gg_water_bake   = false;
 	t.visuals.bNoTrees          = false;  GGSetNoTreesLevel(0);

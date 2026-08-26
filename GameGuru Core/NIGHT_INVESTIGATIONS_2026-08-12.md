@@ -7239,3 +7239,30 @@ Untick restores the real terrain. Both bakes run together. No crash.
 
 **Harness**: `SET_BAKETERRAIN 0|1`, `SET_BAKEWATER 0|1`, `SET_BAKERES <32..2048>`,
 `SET_ANIMREDUCTION <1..100>`, `DUMP_BAKE`. Test script `tools/baketest.sh <TAG> <DEMO>`.
+
+### Gate: sweep 0826c_325 — **CLEAN 19/19** (05:08–05:57, 2.3 h since boot)
+
+| criterion | result |
+|---|---|
+| C1 LOAD | PASS — 19/19 reached the editor |
+| C2 GEOMETRY | PASS — **POLYS identical to the 0825 (3.19) reference on all nineteen** |
+| C3 VRAM | PASS — worst 3963.2 MB (Aztec Game Kit, game), 132.8 MB headroom under 4096 |
+| C4 GAME | PASS — every demo produced in-game FPS past the loading overlays |
+
+★ POLYS identical on all 19 is the number that matters here: eleven controls moved from session
+globals into the level file and not one triangle changed, which is what "defaults are neutral and
+an old level has no fields" is supposed to mean.
+
+⚠ The sweep ran against the build at commit `506b9022`. Four later robustness fixes (setup.ini
+tuning knobs, the state-driven update, all-or-nothing baking, and `Clear()` restoring the terrain)
+touch only the bake path, which is default-off — except the new `GGTerrainBake_Clear()` on the
+level-load reset, which is a no-op when nothing is baked. That one path was verified separately:
+Trapped / RPG Template / A Grand Canyon Adventure all load with FPS matching the sweep within
+noise (387.9 vs 397.3, 238.1 vs 236.2, 190.8 vs 192.5).
+
+### Known cosmetic defect, deliberately not fixed
+
+The Water Bake plane meets the shore with a **hard, speckled edge** where the real ocean has a
+soft foam transition (screenshot `sc_26-08-2026 05-06-21.png`). Left alone on purpose: it is
+cosmetic, it cannot be A/B'd meaningfully on a card where water costs almost nothing, and an
+unvalidated shader tweak at the end of a long session is how regressions ship. Lee sees it first.

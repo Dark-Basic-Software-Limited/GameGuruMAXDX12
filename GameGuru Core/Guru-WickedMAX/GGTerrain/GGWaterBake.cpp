@@ -224,7 +224,7 @@ const char* GGWaterBake_Report()
 	_snprintf( g_report, sizeof( g_report ),
 		"WATER BAKE\n"
 		"  switch          : %d   (shaders %s after %d attempts)\n"
-		"  plane           : %s   height %.1f, alpha %.2f (setup.ini waterbakealpha)\n"
+		"  plane           : %s   height %.1f, alpha %.2f (setup.ini waterbakealpha, percent)\n"
 		"  drawn last frame: %d\n"
 		"  ocean           : %s\n",
 		gg_water_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts,

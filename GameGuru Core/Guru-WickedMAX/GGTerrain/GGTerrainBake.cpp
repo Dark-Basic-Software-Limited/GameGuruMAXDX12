@@ -94,6 +94,8 @@ namespace
 	int  g_shaderAttempts = 0;
 	bool g_ready = false;            // meshes AND textures done; terrain may be torn down
 	bool g_buildRequested = false;
+	int  g_buildAttempts = 0;
+	bool g_toreDownTerrain = false;   // WE called GGSetNoTerrainLevel(1) and owe a matching (0)
 	bool g_anyDispatchPending = false;
 	char g_report[2048] = "";
 
@@ -246,9 +248,21 @@ void GGTerrainBake_Init()
 // ---------------------------------------------------------------------------------------------
 void GGTerrainBake_Clear()
 {
+	// ★ Restore the real terrain FIRST if this bake is what removed it. Clear() is called from
+	// three places now - the switch going off, a level load, and the Reset Visuals button - and
+	// only the first of those has any idea that the terrain is currently torn down. Without this,
+	// pressing Reset Visuals on a baked level dropped the baked chunks and left gg_no_terrain
+	// set: a world with no ground at all, which is a far worse outcome than the bug it came from.
+	// Pairing the restore with the teardown here makes Clear() correct from any caller.
+	if ( g_toreDownTerrain )
+	{
+		g_toreDownTerrain = false;
+		GGSetNoTerrainLevel( 0 );
+	}
 	g_chunks.clear();
 	g_ready = false;
 	g_buildRequested = false;
+	g_buildAttempts = 0;      // a re-tick gets a fresh budget, not the spent one
 	g_anyDispatchPending = false;
 	gg_terrain_bake_chunks = 0;
 	gg_terrain_bake_textures = 0;
@@ -283,6 +297,12 @@ namespace
 		g_chunks.reserve( terrain->chunks.size() );
 
 		size_t vram = 0;
+		// ★ ALL OR NOTHING. Any chunk we decline to bake becomes a HOLE once the real terrain is
+		// torn down, and a hole in the ground is worse than the switch appearing not to work yet.
+		// A chunk is declined for reasons that are all TEMPORARY (mid-regeneration, mesh not
+		// merged, blendmap not built), so the right response is to abandon this attempt and try
+		// again next frame rather than to commit a terrain with gaps in it.
+		int skipped = 0;
 		std::vector<BakeVertex> verts;
 		verts.resize( (size_t)W * W );
 
@@ -290,19 +310,19 @@ namespace
 		{
 			const wi::terrain::Chunk& chunk = pair.first;
 			wi::terrain::ChunkData& chunk_data = pair.second;
-			if ( chunk_data.entity == wi::ecs::INVALID_ENTITY ) continue;
+			if ( chunk_data.entity == wi::ecs::INVALID_ENTITY ) { skipped++; continue; }
 			// A chunk mid-regeneration holds the STALE pre-regeneration mesh in the main scene;
 			// baking it would freeze the old shape into the replacement. Skip and let the next
 			// bake pick it up - the switch can always be re-ticked.
-			if ( chunk_data.merge_pending ) continue;
+			if ( chunk_data.merge_pending ) { skipped++; continue; }
 
 			ObjectComponent* object = scene.objects.GetComponent( chunk_data.entity );
-			if ( object == nullptr ) continue;
+			if ( object == nullptr ) { skipped++; continue; }
 			MeshComponent* mesh = scene.meshes.GetComponent( object->meshID );
-			if ( mesh == nullptr ) continue;
-			if ( mesh->vertex_positions.size() != (size_t)W * W ) continue;
-			if ( mesh->vertex_normals.size()   != (size_t)W * W ) continue;
-			if ( mesh->vertex_uvset_0.size()   != (size_t)W * W ) continue;
+			if ( mesh == nullptr ) { skipped++; continue; }
+			if ( mesh->vertex_positions.size() != (size_t)W * W ) { skipped++; continue; }
+			if ( mesh->vertex_normals.size()   != (size_t)W * W ) { skipped++; continue; }
+			if ( mesh->vertex_uvset_0.size()   != (size_t)W * W ) { skipped++; continue; }
 
 			// Chunk mesh vertices are chunk-LOCAL; fold the chunk world offset in here so the
 			// draw path needs no per-chunk constant buffer at all.
@@ -339,7 +359,12 @@ namespace
 
 			// Create the texture HERE, on the main thread. The dispatch that fills it is
 			// recorded later, on the render thread, into the frame's command list.
-			if ( chunk_data.blendmap.IsValid() )
+			if ( !chunk_data.blendmap.IsValid() )
+			{
+				// No blendmap yet: the chunk would draw untextured. Same temporary condition.
+				skipped++;
+			}
+			else
 			{
 				TextureDesc tdesc;
 				tdesc.width = res;
@@ -354,10 +379,23 @@ namespace
 					out.dispatch_pending = true;
 					vram += (size_t)res * res * 4;
 				}
+				else
+				{
+					// Out of video memory, most likely. Counts as skipped so the whole attempt
+					// rolls back - a chunk with a mesh and no texture draws as a black hole in
+					// the ground, which is the worst of the available outcomes.
+					skipped++;
+				}
 			}
 		}
 
 		if ( g_chunks.empty() ) return false;
+		if ( skipped > 0 )
+		{
+			// Try again next frame with the whole set. Roll back rather than half-commit.
+			g_chunks.clear();
+			return false;
+		}
 
 		g_anyDispatchPending = true;
 		gg_terrain_bake_chunks = (int)g_chunks.size();
@@ -370,42 +408,57 @@ void GGTerrainBake_Update()
 {
 	if ( !g_initialised ) GGTerrainBake_Init();
 
-	static bool s_prevSwitch = false;
-
-	if ( gg_terrain_bake && !s_prevSwitch )
+	// ★ STATE-DRIVEN, NOT EDGE-DRIVEN. The first version watched for a false->true transition in
+	// gg_terrain_bake, and that was wrong in two ways that both end with the user looking at the
+	// wrong terrain:
+	//
+	//  (a) LEVEL LOAD. The pre-parse reset clears the switch and the parse sets it straight back
+	//      on, both inside one level load - so a level saved WITH Terrain Bake on produces no
+	//      edge at all, and the previous level's baked chunks stay on screen. An edge-triggered
+	//      switch cannot be driven twice in one command; a frame has to observe the intermediate
+	//      state, and here none does. Exactly the SET_TERRAINGEN trap from 2.94.
+	//  (b) NOT READY YET. If the terrain has not generated when the switch goes on, the build
+	//      fails, and with the request already consumed nothing ever tried again - the box stayed
+	//      ticked over live terrain forever.
+	//
+	// Asking "what should be true right now" instead of "what just changed" removes both, and
+	// costs one bool compare a frame.
+	if ( !gg_terrain_bake )
 	{
-		// ON edge: build now, from the terrain exactly as it currently stands.
-		g_buildRequested = true;
+		if ( g_ready || !g_chunks.empty() || g_toreDownTerrain )
+		{
+			// Clear() puts the real terrain back before dropping the baked copy, so there is
+			// never a frame with neither - a one-frame hole in the world reads as a crash.
+			GGTerrainBake_Clear();
+		}
+		return;
 	}
-	if ( !gg_terrain_bake && s_prevSwitch )
-	{
-		// OFF edge: put the real terrain back FIRST, then drop the baked copy. Doing it in this
-		// order means there is never a frame with neither - the visible failure mode would be a
-		// one-frame hole in the world, which reads to a user as a crash.
-		GGSetNoTerrainLevel( 0 );
-		GGTerrainBake_Clear();
-	}
-	s_prevSwitch = gg_terrain_bake;
-
-	if ( !gg_terrain_bake ) return;
 	if ( !g_shadersReady ) { GGTerrainBake_Init(); return; }   // keep retrying while ticked
 
-	if ( g_buildRequested )
+	if ( !g_ready && g_chunks.empty() )
 	{
-		g_buildRequested = false;
-		if ( BuildFromTerrain() )
+		// Wanted but not built. Retry every frame - the terrain streams in over several seconds
+		// after a level load, so the first few attempts are expected to find nothing.
+		if ( g_buildAttempts < 3600 )   // ~60 s of frames, then stop asking
 		{
-			// ★ OWN COMMAND LIST, on the main thread, OUTSIDE any render pass. See the note at
-			// the head of this change: a compute Dispatch recorded inside customDraw_Prepass
-			// removed the device on the first tick.
-			CommandList cmd = GetDevice()->BeginCommandList();
-			GGTerrainBake_RecordPendingBakes( cmd );
+			g_buildAttempts++;
+			if ( BuildFromTerrain() )
+			{
+				// ★ OWN COMMAND LIST, on the main thread, OUTSIDE any render pass: a compute
+				// Dispatch recorded inside customDraw_Prepass removed the device on the first tick.
+				CommandList cmd = GetDevice()->BeginCommandList();
+				GGTerrainBake_RecordPendingBakes( cmd );
+			}
+			else
+			{
+				// No terrain in the scene, or it has not generated yet. Leave the real terrain
+				// alone rather than tearing it down for an empty replacement.
+				g_ready = false;
+				return;
+			}
 		}
 		else
 		{
-			// Nothing to bake (no terrain in the scene, or it has not generated yet). Leave the
-			// real terrain alone rather than tearing it down for an empty replacement.
-			g_ready = false;
 			return;
 		}
 	}
@@ -418,6 +471,7 @@ void GGTerrainBake_Update()
 		for ( const BakedChunk& c : g_chunks ) if ( c.tex_ready ) withTex++;
 		gg_terrain_bake_textures = withTex;
 		g_ready = true;
+		g_toreDownTerrain = true;
 		GGSetNoTerrainLevel( 1 );
 	}
 }
