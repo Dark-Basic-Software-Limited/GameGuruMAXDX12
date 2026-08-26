@@ -7004,3 +7004,48 @@ frame-level win.
 
 Raw results archived as `tools/sweep_0826b_3.24.txt`.
 
+### §3.24b — the drift was accumulated MACHINE STATE, and a reboot recovers all of it
+
+Lee rebooted and quit LM Studio and two background tasks, then asked for a clean read on the three
+demos that fell furthest across the day. Editor phase only — the editor is the workload **none of
+3.22–3.24 can touch**, so it is the clean gauge.
+
+| demo | 0825 start-of-day | 0826b end-of-day | post-reboot | vs 0826b | vs 0825 |
+|---|---|---|---|---|---|
+| Bounty | 230.0 | 167.8 | **226.7** | **+35.1%** | −1.4% |
+| Switch Escape | 322.9 | 248.7 | **357.6** | **+43.8%** | **+10.8%** |
+| River Raiders | 271.0 | 211.4 | **262.9** | **+24.4%** | −3.0% |
+| sum | 823.8 | 627.9 | **847.3** | **+34.9%** | **+2.8%** |
+
+★★★ **Every point of the −18.2% came back.** The drift was accumulated machine state — uptime,
+LM Studio, background tasks — not a permanent change and not the code. This retrospectively
+confirms what the editor column was telling us all along: it moved because the machine moved.
+
+⚠ **And the 0825 "start of day" baseline was itself contaminated.** Post-reboot Switch Escape reads
+**+10.8% above 0825**, and the three-demo sum is +2.8% above it. 0825 was measured mid-session with
+the same background load, so it was never a clean floor either. **Nothing in DEMO_FPS_SWEEP.md's
+FPS columns is a clean measurement**; they are all session-state samples.
+
+#### ★★ The sweep does NOT degrade as it runs — which makes it salvageable
+
+The obvious worry was that a 50-minute sweep cooks the machine, penalising whatever runs last and
+making even within-sweep demo comparisons unfair. Tested against the data already in hand — does a
+demo's POSITION in the 0826b run predict how far it fell versus 0825?
+
+```
+correlation(position, delta) = -0.04
+first half mean -17.5%   second half mean -17.8%   gap 0.3 points
+```
+
+**No relationship.** The full −18% was already present on demo 1 and did not deepen by demo 19. So
+the loss accumulates between SESSIONS, not during a run.
+
+★ That is the useful conclusion and it makes the instrument fine after all:
+
+- **Within a sweep, comparisons are FAIR** — every demo is measured in the same machine state, so
+  POLYS, VRAM and demo-vs-demo FPS in one run can all be trusted.
+- **Across sweeps, FPS is worthless unless the machine state matches** — which in practice means
+  **reboot before any sweep whose FPS column you intend to compare to another**.
+- C1–C4 were never affected: the gate deliberately scores LOAD / POLYS / VRAM / GAME and excludes
+  FPS, and that choice is now vindicated rather than merely cautious.
+

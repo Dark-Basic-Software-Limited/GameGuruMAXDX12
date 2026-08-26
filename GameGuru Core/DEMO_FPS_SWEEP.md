@@ -1,5 +1,21 @@
 # Demo FPS sweep
 
+## ⚠⚠ READ FIRST — the FPS columns below are SESSION-STATE samples, not clean measurements
+
+Proved 2026-08-26 (§3.24b). The hub-wide −18.2% editor drop across 0825→0826b was **accumulated
+machine state** — uptime, LM Studio, background tasks. After a reboot the three worst demos came
+back **+34.9%** and landed **+2.8% above the 0825 "start of day" baseline**, so even 0825 was
+contaminated.
+
+★ **The sweep does not degrade as it runs**: correlation between a demo's position in the run and
+its drop is **−0.04** (first half −17.5%, second half −17.8%). So *within* one sweep everything is
+measured in the same machine state and demo-vs-demo comparison is fair. It is only *across* sweeps
+that FPS is meaningless.
+
+**Protocol: reboot before any sweep whose FPS you intend to compare to another one.** C1–C4
+(LOAD / POLYS / VRAM / GAME) are unaffected — the gate excludes FPS on purpose.
+
+
 ## 0826b — 3.24 (game `f3fc33a8`) — GATE CLEAN 19/19, POLYS identical again
 
 C1 19/19 · C2 **POLYS identical to the 0825 reference on all 19** · C3 worst 3974.8 MB
