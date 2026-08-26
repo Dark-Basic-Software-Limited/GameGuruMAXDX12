@@ -7716,3 +7716,43 @@ That second reading is the one that could have been misread as a bug. The first 
 against Lee's own test level and returned 44; "the default did not take" and "persistence is
 working" produce the identical symptom, and only checking a level WITHOUT the field separates
 them.
+
+### ⚠ §3.25p — sweep 0826d C2 FAILED, and it is a MEASUREMENT failure, not a geometry one
+
+Sweep `0826d_325n` (14.3 h uptime): C1 PASS, C3 PASS (3962.8 MB, 133.2 MB headroom), C4 PASS,
+**C2 FAIL on three demos** — Bounty 332749 vs 469906, Horseshoe Bend 1535938 vs 1583122, Island
+Showdown 1641055 vs 1655768. All three UNDER the reference; none over.
+
+**Direct re-measurement, fresh session per demo, says the geometry is intact:**
+
+| demo | sweep | re-measured | agreement |
+|---|---|---|---|
+| Bounty | 332,749 | **469,906 = ref** | 4 of 4 readings |
+| Horseshoe Bend | 1,535,938 | **1,583,122 = ref** | 4 of 4 readings |
+| Island Showdown | 1,641,055 | **1,655,768 = ref** | 3 of 4 (first read 243,686) |
+
+★ The first hypothesis was that the new Reduction Scale default of 25 was culling geometry, since
+held armatures might leave object AABBs stale. **Refuted by an interleaved A/B in one session at
+one camera**: Bounty read 469906 at scale 25 AND at scale 1, twice each. Reduction Scale does not
+touch the triangle count.
+
+So the sweep's numbers are not reproducible, which makes them artifacts. **No geometry regression.**
+⚠ But the sweep is still NOT A CLEAN PASS and must be re-run — after a reboot — before anything
+here is trusted as gated.
+
+### What this says about C2, which is the uncomfortable part
+
+C2 has been the criterion I trusted most, precisely because POLYS is deterministic where FPS is
+not. It is deterministic **only once the scene has finished streaming**, and on a machine at 14 h
+uptime with dozens of MAX launches behind it, a 30-second soak is not always enough.
+
+⚠ **And the obvious hardening did not work.** POLYS now takes the MAXIMUM of the three editor
+samples rather than the last (under-settling can only ever under-count, so max is the settled
+figure). Re-deriving this sweep from its own saved samples changed **nothing** — all three samples
+were identically low. The scenes were stuck for the entire 40-second window, not drifting up
+through it. The change is kept because it costs nothing and closes the late-sample case, but it is
+**not** a fix for what happened here and must not be quoted as one.
+
+★★ This is 3.24b again in a place I had explicitly called immune: *"C1–C4 exclude FPS and are
+unaffected"* by machine state. That was true of the criteria's INTENT and false of C2's
+IMPLEMENTATION. **A criterion is only as deterministic as the state it samples.**

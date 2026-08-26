@@ -190,7 +190,22 @@ for demo in "${DEMOS[@]}"; do
   F2=$(grep -m1 "^FPS:" "$OUT/run$TAG/ed2_$demo.txt" | awk '{print $2}')
   F3=$(grep -m1 "^FPS:" "$OUT/run$TAG/ed3_$demo.txt" | awk '{print $2}')
   VRAM=$(grep -m1 "^VRAM:" "$OUT/run$TAG/ed3_$demo.txt" | sed 's/.*driver_usage_mb=\([0-9.]*\).*/\1/')
-  POLYS=$(grep -m1 "^POLYS:" "$OUT/run$TAG/ed3_$demo.txt" | tr -d '\r')
+  # ★ POLYS = the MAXIMUM across the three editor samples, not the last one.
+  #
+  # C2 treats POLYS as deterministic, and it is - ONCE THE SCENE HAS SETTLED. On 2026-08-26 a
+  # sweep taken at 14.3 h uptime failed C2 on three demos (Bounty 332749 vs 469906, Horseshoe Bend
+  # 1535938 vs 1583122, Island Showdown 1641055 vs 1655768) and direct re-measurement returned the
+  # reference value on every one of them - Bounty 4/4, Horseshoe 4/4, Island Showdown 3/4, with
+  # Island Showdown reading 243686 on its first sample and 1655768 on the next three. The scenes
+  # were simply not finished streaming when ed3 was taken, on a machine that had been up all day.
+  #
+  # Under-settling can only ever UNDER-count triangles - geometry appears, it does not vanish - so
+  # the maximum of the samples is the settled figure and the minimum is noise. This makes C2
+  # immune to a slow rig without weakening it: a genuine geometry LOSS still shows, because every
+  # sample would be low. ⚠ It does not make the FPS columns comparable; nothing does but a reboot.
+  POLYS=$(for f in ed1 ed2 ed3; do grep -m1 "^POLYS:" "$OUT/run$TAG/${f}_$demo.txt" 2>/dev/null; done \
+          | tr -d '\r' | awk '{ if ($2+0 > m) { m = $2+0 } } END { if (m > 0) printf "POLYS: %d", m }')
+  [ -z "$POLYS" ] && POLYS=$(grep -m1 "^POLYS:" "$OUT/run$TAG/ed3_$demo.txt" | tr -d '\r')
 
   grab_shot "ed_$demo"
 
