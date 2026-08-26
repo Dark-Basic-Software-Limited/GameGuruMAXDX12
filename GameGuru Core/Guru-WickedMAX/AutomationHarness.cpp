@@ -5951,6 +5951,16 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		return true;
 	}
 
+	if (_stricmp(cmd, "TEST_LUAERRSET") == 0)
+	{
+		// GGMAX 3.24: prove the FunctionsWithErrors index is in sync with the list, and price
+		// the lookup the old linear strcmp scan used to do on EVERY lua call in the game.
+		extern void gg_TestFunctionErrors(char*, int);
+		gg_TestFunctionErrors(result, resultSize);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
 	if (_stricmp(cmd, "SET_LUANAMECACHE") == 0)
 	{
 		// GGMAX 3.23: 1 (default) = cache the composed "<script>_main" name per entity.

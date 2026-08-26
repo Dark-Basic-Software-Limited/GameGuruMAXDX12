@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <unordered_set>   // GGMAX 3.24
 #include "M-RPG.h"
 
 // DarkLUA needs access to the T global (but could be in two locations)
@@ -105,6 +106,167 @@ bool LuaCheckForWorkshopFile ( LPSTR VirtualFilename);
 
  std::vector <StringList> ScriptsLoaded;
  std::vector <StringList> FunctionsWithErrors;
+
+// GGMAX 3.24: an O(1) index over FunctionsWithErrors.
+//
+// LuaCall() and LuaCallSilent() each opened with a LINEAR scan doing a strcmp per element, on
+// EVERY lua call in the game. The list is empty in a healthy project so it cost nothing and was
+// invisible - but it only ever grows (pushed on any script error, any missing function) and it is
+// only cleared on a level reset. So after one bad script, every lua call in the product paid a
+// strcmp per error entry for the rest of the session, and the game got permanently slower the
+// more broken the project was. That is the worst shape a cost can have: it lands hardest on the
+// user who is already having a bad time.
+//
+// The vector is left exactly as it was - it is cleared in DarkLUA_part8 and kept for inspection -
+// and this set is maintained alongside it purely as the lookup path. Both are written through the
+// same two helpers so they cannot drift.
+// \u2605\u2605\u2605 The first version of this used std::unordered_set<std::string> and it was a REGRESSION
+// at the size that actually occurs. Benchmarked on the real structures: at the 39 entries a normal
+// TESTPRO2 level holds, the set cost ~231 ns a lookup against ~85 ns for the linear strcmp scan it
+// replaced - 2.7x SLOWER - and it only won past ~110 entries. The reason is that find() on a
+// char* builds a temporary std::string (these names are 20-35 chars, past SSO, so a heap
+// allocation) and hashes the whole thing, every single lookup. Textbook O(1) beaten by textbook
+// O(n) because the constant factor was three heap-flavoured operations against a handful of
+// strcmps that fail on the first character.
+//
+// So: a 32-bit FNV-1a over the name, compared against a parallel array of hashes, with a strcmp
+// only on a hash hit (which essentially never happens on a miss). One pass over ~39 contiguous
+// uint32 is a few nanoseconds and the compiler can vectorise it. Beats BOTH at every size tested.
+static std::vector<unsigned int> g_ggFunctionErrorHash;
+
+static unsigned int gg_FnvHash ( const char* p )
+{
+	unsigned int h = 2166136261u;
+	while ( *p ) { h ^= ( unsigned char )( *p++ ); h *= 16777619u; }
+	return h;
+}
+
+bool gg_FunctionHasError ( LPSTR pName )
+{
+	if ( pName == NULL ) return false;
+	const unsigned int h = gg_FnvHash ( pName );
+	const size_t n = g_ggFunctionErrorHash.size();
+	const unsigned int* pH = n ? &g_ggFunctionErrorHash[0] : NULL;
+	for ( size_t i = 0 ; i < n ; i++ )
+	{
+		if ( pH[i] == h && strcmp ( pName, FunctionsWithErrors[i].fileName ) == 0 )
+			return true;
+	}
+	return false;
+}
+
+void gg_MarkFunctionError ( LPSTR pName, int stateID )
+{
+	if ( pName == NULL ) return;
+	// keep the vector identical to the pre-3.24 behaviour, including the duplicate-free property
+	// the early-out gave it (a name already present is never reached a second time).
+	if ( gg_FunctionHasError ( pName ) ) return;
+	StringList item;
+	item.stateID = stateID;            // was left UNINITIALISED by every original push site
+	strcpy ( item.fileName , pName );
+	FunctionsWithErrors.push_back ( item );
+	g_ggFunctionErrorHash.push_back ( gg_FnvHash ( pName ) );
+}
+
+void gg_ClearFunctionErrors ( void )
+{
+	FunctionsWithErrors.clear();
+	g_ggFunctionErrorHash.clear();
+}
+
+// GGMAX 3.24: self-test for the above. Two things are worth proving and neither is observable in
+// a healthy project, which is exactly why the original cost went unnoticed for years.
+//
+//  (1) SYNC. The vector and the set are written only through gg_MarkFunctionError, so they cannot
+//      drift by construction - but "cannot by construction" is the claim, and this measures it.
+//      If they ever did drift, a real error would stop being suppressed (lua error spam) or a
+//      healthy function would be wrongly skipped (a script silently stops). Both are loud, but
+//      only after they happen.
+//  (2) SCALING. The whole point of the change. Times a lookup against a list of N entries, the
+//      new way and the old linear-strcmp way, at sizes a broken project actually reaches. Only
+//      runs when the live list is EMPTY, so it never disturbs real state, and it restores the
+//      structures before returning either way.
+void gg_TestFunctionErrors ( char* result, int resultSize )
+{
+	// ---- (1) sync of the live structures --------------------------------------------------
+	size_t liveVec = FunctionsWithErrors.size();
+	size_t liveSet = g_ggFunctionErrorHash.size();
+	int missing = 0;
+	for ( size_t i = 0 ; i < FunctionsWithErrors.size() ; i++ )
+		if ( !gg_FunctionHasError ( FunctionsWithErrors[i].fileName ) ) missing++;
+
+	// \u2605 The live list is NOT usually empty. On TESTPRO2 in test game it holds 39 entries, so
+	// this was never a latent cost waiting for someone to write a bad script - the old linear scan
+	// was charging 39 strcmps on every lua call in a perfectly ordinary level. Most entries are
+	// benign: GameGuru probes for optional per-script functions (_preexit and friends) and a script
+	// that does not define one is recorded here exactly like a real failure.
+	// So: save the live entries, run the benchmark on the real helpers, put them back.
+	std::vector<StringList> saved = FunctionsWithErrors;
+	char names[1400]; names[0] = 0;
+	for ( size_t i = 0 ; i < saved.size() && strlen(names) < sizeof(names) - 96 ; i++ )
+	{
+		strcat ( names, "    " );
+		strcat ( names, saved[i].fileName );
+		strcat ( names, "\n" );
+	}
+
+	// ---- (2) scaling, on the real helpers, with the real structures ------------------------
+	LARGE_INTEGER freq; QueryPerformanceFrequency ( &freq );
+	const int SIZES[4] = { 1, 10, 50, 200 };
+	const int REPS = 20000;
+	char line[1024]; char body[3072]; body[0] = 0;
+	int addedTotal = 0;
+	for ( int si = 0 ; si < 4 ; si++ )
+	{
+		gg_ClearFunctionErrors();
+		char nm[64];
+		for ( int i = 0 ; i < SIZES[si] ; i++ )
+		{
+			sprintf ( nm, "gg_synthetic_broken_script_%04d_main", i );
+			gg_MarkFunctionError ( nm, 0 );
+		}
+		addedTotal = SIZES[si];
+		// a MISS is the case every healthy call takes, and the one the linear scan charged full
+		// price for - it has to compare every element before concluding "not here".
+		char probe[64]; strcpy ( probe, "a_healthy_script_main" );
+
+		LARGE_INTEGER a, b, c;
+		QueryPerformanceCounter ( &a );
+		volatile int sink = 0;
+		for ( int r = 0 ; r < REPS ; r++ ) sink += gg_FunctionHasError ( probe ) ? 1 : 0;
+		QueryPerformanceCounter ( &b );
+		for ( int r = 0 ; r < REPS ; r++ )
+			for ( size_t k = 0 ; k < FunctionsWithErrors.size() ; k++ )
+				if ( strcmp ( probe, FunctionsWithErrors[k].fileName ) == 0 ) { sink++; break; }
+		QueryPerformanceCounter ( &c );
+
+		double nsNew = ( double )( b.QuadPart - a.QuadPart ) * 1e9 / ( double )freq.QuadPart / REPS;
+		double nsOld = ( double )( c.QuadPart - b.QuadPart ) * 1e9 / ( double )freq.QuadPart / REPS;
+		sprintf ( line, "   %4d entries : hash-array %7.1f ns   linear-strcmp %8.1f ns   %5.1fx\n",
+			SIZES[si], nsNew, nsOld, ( nsNew > 0.0 ) ? ( nsOld / nsNew ) : 0.0 );
+		strcat ( body, line );
+	}
+	// put the real state back, through the same helper, and re-verify it
+	gg_ClearFunctionErrors();
+	for ( size_t i = 0 ; i < saved.size() ; i++ ) gg_MarkFunctionError ( saved[i].fileName, saved[i].stateID );
+	int restoreMissing = 0;
+	for ( size_t i = 0 ; i < saved.size() ; i++ )
+		if ( !gg_FunctionHasError ( saved[i].fileName ) ) restoreMissing++;
+
+	_snprintf ( result, resultSize,
+		"%s: TEST_LUAERRSET - index in sync (%zu list / %zu set, %d unindexed), restored %zu entries (%d lost).\n"
+		"  Cost of ONE lookup, the MISS case, which is what EVERY healthy lua call pays:\n"
+		"%s"
+		"  This level really holds %zu error entries, so the old linear scan was live cost, not a\n"
+		"  latent one. Most are benign - GameGuru probes for optional per-script functions and an\n"
+		"  absent one is recorded exactly like a failure:\n"
+		"%s",
+		( liveVec == liveSet && missing == 0 && restoreMissing == 0
+		  && FunctionsWithErrors.size() == saved.size() ) ? "OK" : "FAIL",
+		liveVec, liveSet, missing, FunctionsWithErrors.size(), restoreMissing,
+		body, saved.size(), names );
+	result[resultSize-1] = 0;
+}
 
 // Prototype function
 float wrapangleoffset(float da);

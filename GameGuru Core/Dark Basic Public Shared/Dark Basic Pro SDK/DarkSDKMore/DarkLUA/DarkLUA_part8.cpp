@@ -40,7 +40,8 @@
 	ScriptsLoaded.clear();
 
 	//Reset error list
-	FunctionsWithErrors.clear();
+	extern void gg_ClearFunctionErrors ( void );
+	gg_ClearFunctionErrors();   // GGMAX 3.24: clears the vector AND its lookup index
 
 	// 050416 - delete any sprites created inside LUA scripting
 	for ( int c = g.LUASpriteoffset ; c <= g.LUASpriteoffsetMax ; c++ )

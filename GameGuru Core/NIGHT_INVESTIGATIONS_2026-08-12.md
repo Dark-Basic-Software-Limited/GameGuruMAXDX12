@@ -6877,3 +6877,84 @@ the rest of the session**, and it never recovers. A hash set, or simply a flag o
 remove a cost that scales with how broken the project is. Not fixed here; recorded because it is
 invisible until it bites.
 
+---
+
+## §3.24 — the FunctionsWithErrors scan, and an O(1) fix that was a REGRESSION
+
+§3.23 flagged this as latent. It was not latent at all.
+
+`LuaCall()` and `LuaCallSilent()` each opened with a linear scan doing a `strcmp` per element over
+`FunctionsWithErrors`, on **every lua call in the game**. Entries are pushed on any script error
+*or missing function*, and the list is only cleared on a level reset.
+
+### ★★ It was never a latent cost — a normal level holds 39 entries
+
+`TEST_LUAERRSET` on TESTPRO2 in test game: **39 entries**, and reading their names says why:
+
+```
+no_behavior_selected_init_name   weapon_init_file        character_attack_init
+ammo_init_name                   FlickerLight_init_file  door_sliding_init_name
+constantlight_main               togglelight_properties  patrol_init  ... (39 total)
+```
+
+Almost all are **benign**. GameGuru probes each script for optional entry points — `_init_name`,
+`_init_file`, `_init`, `_properties` — and a script that simply does not define one is recorded
+here **exactly like a real failure**. So every ordinary project fills this list within seconds of
+loading and then pays the scan forever. The "after one bad script" framing in §3.23 was too
+generous to it.
+
+### ★★★ The obvious fix made it 2.7x SLOWER at the size that actually occurs
+
+First attempt: `std::unordered_set<std::string>`. Textbook O(1). Benchmarked on the real
+structures, cost of one MISS — the case every healthy call takes:
+
+| entries | unordered_set | linear strcmp |
+|---|---|---|
+| 1 | 231.1 ns | 3.4 ns |
+| 10 | 220.1 ns | 21.4 ns |
+| **39 (real)** | ~231 ns | **~85 ns** |
+| 50 | 242.9 ns | 107.4 ns |
+| 200 | 231.0 ns | 412.4 ns |
+
+**At the real size it was 2.7x slower than the thing it replaced**, and only won past ~110
+entries. `find()` on a `char*` builds a temporary `std::string` — these names are 20-35 characters,
+past SSO, so a **heap allocation** — and hashes the whole thing, every lookup. Textbook O(1) beaten
+by textbook O(n) on constant factors: three heap-flavoured operations against a handful of strcmps
+that fail on the first character.
+
+⚠ **I would have shipped that.** It compiled, it was in sync, the game ran, and every instinct
+said "linear scan replaced with a hash set" was an improvement. Only the benchmark disagreed.
+
+### What shipped
+
+A 32-bit FNV-1a of the name against a **parallel array of hashes**, with a `strcmp` only on a hash
+hit (which essentially never happens on a miss). One pass over ~39 contiguous `uint32` is a few
+nanoseconds and vectorises.
+
+| entries | hash array | linear strcmp | ratio |
+|---|---|---|---|
+| 1 | 12.7 ns | 3.3 ns | **0.3x — slower** |
+| 10 | 15.3 ns | 21.8 ns | 1.4x |
+| **39 (real)** | ~35 ns | ~85 ns | **~2.4x** |
+| 50 | 42.2 ns | 107.8 ns | 2.6x |
+| 200 | 141.9 ns | 409.6 ns | 2.9x |
+
+⚠ **Honest about the one case it loses**: below ~4 entries it costs ~9 ns more per call, because
+hashing 25 bytes is not free and a 1-element strcmp is nearly free. At 150 lua calls a frame that
+is ~1 us, and no real level sits there — TESTPRO2 reached 39 within seconds. A small-n fast path
+was considered and rejected: a branch on every lookup to recover 9 ns is worse engineering than
+the honest note.
+
+Correctness: list and index are written only through `gg_MarkFunctionError`, so they cannot drift
+by construction — and `TEST_LUAERRSET` measures it anyway (**39 list / 39 index, 0 unindexed**,
+and the benchmark saves the real entries, runs on the live helpers, and restores them with **0
+lost**). `stateID` is also now initialised; all eight original push sites left it uninitialised.
+
+### The lesson, which is the same one as §3.22 and §3.23 wearing a third costume
+
+★★★ **Big-O is a claim about the limit, not about your data.** Three times in two days the
+obvious change was wrong: the caller-count guard in §3.17 that did nothing, `UpdateEntityRT` in
+§3.22 that was 5.6 us of 531, and now an O(1) container that was 2.7x slower than the O(n) it
+replaced. **Measure at the size you actually have**, and get the size from the running game rather
+than from an assumption — "the list is empty in a healthy project" was wrong by 39.
+

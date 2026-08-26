@@ -1702,15 +1702,17 @@ DARKLUA_API int LuaValidateEntityTable ( int iEntityIndex )
 }
 
 
+// GGMAX 3.24: O(1) replacements for the linear FunctionsWithErrors scan (DarkLUA_part0.cpp)
+bool gg_FunctionHasError ( LPSTR pName );
+void gg_MarkFunctionError ( LPSTR pName, int stateID );
+void gg_ClearFunctionErrors ( void );
 DARKLUA_API void LuaCall()
 {
-	for ( int c = 0 ; c < FunctionsWithErrors.size() ; c++ )
+	// GGMAX 3.24: was a linear strcmp scan over every recorded error, on every lua call.
+	if ( gg_FunctionHasError ( functionName ) )
 	{
-		if ( strcmp ( functionName , FunctionsWithErrors[c].fileName ) == 0 )
-		{
-			lua_pop(lua2,functionParams+1);
-			return;
-		}
+		lua_pop(lua2,functionParams+1);
+		return;
 	}
 
 	int id = functionStateID;
@@ -1721,9 +1723,7 @@ DARKLUA_API void LuaCall()
 	{
 
 		//add to error list
-		StringList item;
-		strcpy ( item.fileName , functionName );
-		FunctionsWithErrors.push_back(item);
+		gg_MarkFunctionError ( functionName, id );   // GGMAX 3.24: also indexes it
 
 		lua_pop(lua2,functionParams+1);
 
@@ -1736,9 +1736,7 @@ DARKLUA_API void LuaCall()
 	{
 
 		//add to error list
-		StringList item;
-		strcpy ( item.fileName , functionName );
-		FunctionsWithErrors.push_back(item);
+		gg_MarkFunctionError ( functionName, id );   // GGMAX 3.24: also indexes it
 
 		lua_pop(lua2,functionParams+1);
 
@@ -1766,9 +1764,7 @@ DARKLUA_API void LuaCall()
       if (lua_pcall(lua2, functionParams, functionResults, 0) != 0)
 	  {
 		//add to error list
-		StringList item;
-		strcpy ( item.fileName , functionName );
-		FunctionsWithErrors.push_back(item);
+		gg_MarkFunctionError ( functionName, id );   // GGMAX 3.24: also indexes it
 
 		char s[256];
 		sprintf ( s , "error running function: %s", lua_tostring(lua2, -1));
@@ -1784,9 +1780,7 @@ DARKLUA_API void LuaCall()
 	{
 
 		//add to error list
-		StringList item;
-		strcpy ( item.fileName , functionName );
-		FunctionsWithErrors.push_back(item);
+		gg_MarkFunctionError ( functionName, id );   // GGMAX 3.24: also indexes it
 
 		// remove params from the stack
 		lua_pop(lua2,functionParams);
@@ -1804,13 +1798,11 @@ DARKLUA_API void LuaCall()
 
 DARKLUA_API void LuaCallSilent()
 {
-	for ( int c = 0 ; c < FunctionsWithErrors.size() ; c++ )
+	// GGMAX 3.24: was a linear strcmp scan over every recorded error, on every lua call.
+	if ( gg_FunctionHasError ( functionName ) )
 	{
-		if ( strcmp ( functionName , FunctionsWithErrors[c].fileName ) == 0 )
-		{
-			lua_pop(lua2,functionParams+1);
-			return;
-		}
+		lua_pop(lua2,functionParams+1);
+		return;
 	}
 
 	int id = functionStateID;
@@ -1821,9 +1813,7 @@ DARKLUA_API void LuaCallSilent()
 	{
 
 		//add to error list
-		StringList item;
-		strcpy ( item.fileName , functionName );
-		FunctionsWithErrors.push_back(item);
+		gg_MarkFunctionError ( functionName, id );   // GGMAX 3.24: also indexes it
 
 		lua_pop(lua2,functionParams+1);
 
@@ -1836,9 +1826,7 @@ DARKLUA_API void LuaCallSilent()
 	{
 
 		//add to error list
-		StringList item;
-		strcpy ( item.fileName , functionName );
-		FunctionsWithErrors.push_back(item);
+		gg_MarkFunctionError ( functionName, id );   // GGMAX 3.24: also indexes it
 
 		lua_pop(lua2,functionParams+1);
 
@@ -1863,9 +1851,7 @@ DARKLUA_API void LuaCallSilent()
       if (lua_pcall(lua2, functionParams, functionResults, 0) != 0)
 	  {
 		//add to error list
-		StringList item;
-		strcpy ( item.fileName , functionName );
-		FunctionsWithErrors.push_back(item);
+		gg_MarkFunctionError ( functionName, id );   // GGMAX 3.24: also indexes it
 
 		char s[256];
 		//sprintf ( s , "error running function: %s", lua_tostring(lua2, -1));
@@ -1877,9 +1863,7 @@ DARKLUA_API void LuaCallSilent()
 	{
 
 		//add to error list
-		StringList item;
-		strcpy ( item.fileName , functionName );
-		FunctionsWithErrors.push_back(item);
+		gg_MarkFunctionError ( functionName, id );   // GGMAX 3.24: also indexes it
 
 		// remove params from the stack
 		lua_pop(lua2,functionParams);
