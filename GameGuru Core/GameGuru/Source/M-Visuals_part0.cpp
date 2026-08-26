@@ -133,6 +133,11 @@ void gg_visuals_reset_brutal_switches()
 	t.visuals.iObjectCullDist   = 0;      GGSetObjectCullDistLevel(0);
 	t.visuals.iTextureDivide    = 1;
 	t.visuals.iAnimReductionScale = 1;
+	{
+		extern int gg_terrain_bake_res_near;
+		t.visuals.iTerrainBakeResNear = 8192;
+		gg_terrain_bake_res_near = 8192;
+	}
 	// Texture Detail is deliberately NOT pushed live here. GGSetTextureDivideLive re-creates
 	// every texture in the level, which on a reset that was already at Full is a multi-second
 	// GPU stall for no change at all. It is pushed on LOAD (below) and by the panel.
@@ -818,6 +823,8 @@ void visuals_save ( void )
 	t.strwork = ""; t.strwork = t.strwork + "visuals.TextureDivide=" + Str(t.visuals.iTextureDivide);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.AnimReductionScale=" + Str(t.visuals.iAnimReductionScale);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.TerrainBakeResNear=" + Str(t.visuals.iTerrainBakeResNear);
 	WriteString(1, t.strwork.Get());
 	
 	t.strwork = ""; t.strwork = t.strwork + "visuals.EnableTerrainChunkCulling=" + Str(t.visuals.bEnableTerrainChunkCulling);
@@ -1553,6 +1560,7 @@ void visuals_load ( void )
 				t.try_s = "visuals.ObjectCullDist";  if (t.tfield_s == t.try_s) { t.visuals.iObjectCullDist  = (int)ValF(t.tvalue_s.Get()); GGSetObjectCullDistLevel(t.visuals.iObjectCullDist); }
 				t.try_s = "visuals.TextureDivide";   if (t.tfield_s == t.try_s) { t.visuals.iTextureDivide   = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTextureDivide != 1) GGSetTextureDivideLive(t.visuals.iTextureDivide); }
 				t.try_s = "visuals.AnimReductionScale"; if (t.tfield_s == t.try_s) { t.visuals.iAnimReductionScale = (int)ValF(t.tvalue_s.Get()); }
+				t.try_s = "visuals.TerrainBakeResNear"; if (t.tfield_s == t.try_s) { extern int gg_terrain_bake_res_near; t.visuals.iTerrainBakeResNear = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTerrainBakeResNear >= 256 && t.visuals.iTerrainBakeResNear <= 8192) gg_terrain_bake_res_near = t.visuals.iTerrainBakeResNear; }
 			}
 
 			t.try_s = "visuals.EnableTerrainChunkCulling"; if (t.tfield_s == t.try_s)  t.visuals.bEnableTerrainChunkCulling = ValF(t.tvalue_s.Get());

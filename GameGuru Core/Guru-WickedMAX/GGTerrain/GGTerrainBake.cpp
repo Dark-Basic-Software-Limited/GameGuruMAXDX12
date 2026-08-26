@@ -59,7 +59,7 @@ int  gg_terrain_bake_res_near = 8192;    // NEAR tier - inside the play area
 // whose objects are spread over the whole map promotes every chunk, and 625 chunks at 4096 is
 // 5 GB. Chunks are promoted NEAREST-FIRST from the centre of the play area until the budget is
 // spent, so the detail lands where the player actually is and the cost cannot run away.
-int  gg_terrain_bake_near_budget_mb = 512;
+int  gg_terrain_bake_near_budget_mb = 1024;
 int  gg_terrain_bake_near_count = 0;     // chunks actually promoted
 int  gg_terrain_bake_near_kb = 0;        // memory the promoted chunks hold
 int   gg_bake_play_entities = 0;

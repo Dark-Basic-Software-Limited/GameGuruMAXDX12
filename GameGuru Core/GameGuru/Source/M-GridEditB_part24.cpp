@@ -514,6 +514,37 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Converts the terrain into ordinary meshes and ordinary textures, then removes the live terrain system entirely - the chunk entities, the virtual-texture atlas and the per-frame page streaming that goes with them. You keep a terrain you can see and walk on, drawn by a plain pass that costs a fraction of the real one. Surfaces get softer close up and terrain editing is paused while it is on. Untick to bring the real terrain straight back. This is the biggest single saving on an open outdoor level.");
 
+			// GGMAX 3.25l: near-tier detail, a sub-control of Terrain Bake. Distant chunks are
+			// always baked small (they are never seen close up), so this dial only sets how sharp
+			// the ground is where the level's objects are - which is where the player walks and
+			// the only place texel density is noticeable.
+			//
+			// ★ It REBUILDS IMMEDIATELY when changed while the bake is on. A setting that only
+			// took effect "next time" would be indistinguishable from a broken one - the exact
+			// complaint Texture Detail earned in 3.12, and why 3.19 had to make that one live too.
+			{
+				extern int gg_terrain_bake_res_near;
+				extern void GGTerrainBake_Clear();
+				static const int kRes[6] = { 256, 512, 1024, 2048, 4096, 8192 };
+				int idx = 5;
+				for (int i = 0; i < 6; i++) if (kRes[i] == t.visuals.iTerrainBakeResNear) { idx = i; break; }
+				char lbl[64];
+				sprintf_s(lbl, sizeof(lbl), "%d x %d", kRes[idx], kRes[idx]);
+				ImGui::Text("Terrain Bake Detail (under your feet)");
+				if (ImGui::SliderInt("##gg_terrain_bake_res_near", &idx, 0, 5, lbl))
+				{
+					if (idx < 0) idx = 0;
+					if (idx > 5) idx = 5;
+					t.gamevisuals.iTerrainBakeResNear = t.visuals.iTerrainBakeResNear = kRes[idx];
+					gg_terrain_bake_res_near = kRes[idx];
+					g.projectmodified = 1;
+					// Live: drop the baked set so the state machine rebuilds at the new detail.
+					// Clear() puts the real terrain back first, so there is no hole in between.
+					if (gg_terrain_bake) GGTerrainBake_Clear();
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("How sharp the baked ground is in the part of the level where your objects are - the area the player actually walks around in. Distant terrain is always baked small because you never see it close up, so this only costs memory for the ground near your content. 8192 is about half a world unit per pixel and looks like the real terrain underfoot; 1024 is softer but frees a lot of memory on a small card. Frame rate is barely affected either way - this setting spends video memory, not speed. Changing it rebuilds the baked terrain straight away, which takes a moment.");
+			}
+
 			bOff = gg_no_trees;
 			if (ImGui::Checkbox("Trees Off##gg_no_trees", &bOff))
 			{

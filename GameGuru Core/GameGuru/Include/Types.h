@@ -1,4 +1,4 @@
-//----------------------------------------------------
+﻿//----------------------------------------------------
 //--- GAMEGURU - Types
 //----------------------------------------------------
 
@@ -3849,6 +3849,7 @@ struct visualstype
 	int  iObjectCullDist;   // Object Detail Distance in world units, neutral = 0 (off)
 	int  iTextureDivide;    // Texture Detail: 1 = Full, 2 = Half, 4 = Quarter
 	int  iAnimReductionScale; // GGMAX 3.25 Reduction Scale under Lower Animation, 1..100, neutral = 1
+	int  iTerrainBakeResNear; // GGMAX 3.25l: Terrain Bake near-tier texture size, 256..8192
 
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;
@@ -4337,6 +4338,7 @@ struct visualsdatastoragetype
 	int  iObjectCullDist;   // Object Detail Distance in world units, neutral = 0 (off)
 	int  iTextureDivide;    // Texture Detail: 1 = Full, 2 = Half, 4 = Quarter
 	int  iAnimReductionScale; // GGMAX 3.25 Reduction Scale under Lower Animation, 1..100, neutral = 1
+	int  iTerrainBakeResNear; // GGMAX 3.25l: Terrain Bake near-tier texture size, 256..8192
 
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;
