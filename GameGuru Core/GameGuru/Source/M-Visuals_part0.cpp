@@ -156,7 +156,14 @@ void gg_visuals_reset_brutal_switches()
 	// used that box is unaffected. A level that DID have it ticked now gets real reduction
 	// where it previously got none - that is the point of the change, but it is a behaviour
 	// change for existing projects, not just a new default for new ones.
-	t.visuals.iAnimReductionScale = 1;
+	// ★ Clear the animation-reduction "posed at least once" set. This function is the
+	// pre-parse reset on every level load, so it is exactly the right place: an armature
+	// carried over from a previous level must not be eligible for holding before it has
+	// been posed in THIS one. Without that, culling and LOD read un-posed bounds while the
+	// scene streams in and the level settles into a state built on them - the 3.25s defect.
+	{ extern void gg_ResetAnimReductionBridge(); gg_ResetAnimReductionBridge(); }
+	// DEFAULT 25 (Lee's call). Safe to default on now that a first pose is guaranteed.
+	t.visuals.iAnimReductionScale = 25;
 	{
 		extern int gg_terrain_bake_res_near;
 		t.visuals.iTerrainBakeResNear = 8192;

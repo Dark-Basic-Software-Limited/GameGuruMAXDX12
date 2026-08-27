@@ -7846,3 +7846,29 @@ and sets a scale hits it. The fix is that a held armature must not leave stale b
 either never hold an armature that has not yet been posed at least once since the load, or hold
 the pose while still updating the object AABB. Until that lands, the slider should be treated as a
 tune-it-yourself control rather than something to default on.
+
+### ✅ §3.25t — the fix: never hold an armature that has not been posed since the level loaded
+
+The §3.25s bisect said the Reduction Scale default was the cause. The mechanism, precisely:
+
+An armature created during level load becomes eligible for holding **immediately**, and its phase
+- `(frame + index*7) % period` - may not come up for **up to period-1 frames**. Through that
+window it is never posed at all, so its objects carry whatever bounds an un-posed mesh has.
+Frustum culling, occlusion and LOD all read those bounds, the scene settles into a state built on
+them, and that state persists for the session.
+
+⚠ **Holding a POSED armature was never the problem.** Its pose is byte-identical to last frame's,
+so its bounds are correct for what is on screen - held, not stale. The defect is only the window
+before the first pose ever happens.
+
+**Fix**: an armature may be held only once it has been posed at least once since the level loaded
+(`gg_anim_posed_once`, cleared by `gg_ResetAnimReduction()` which the game calls from the
+pre-parse visuals reset - the one function that runs on every load). One guaranteed first update
+per armature; after that the skip behaves exactly as designed.
+
+**Verified, Horseshoe Bend, default back at 25:**
+- POLYS **1,583,122 four sessions out of four** - determinism restored
+- **664 of 678 armatures held (98%)** at scale 25 - the saving is fully intact
+
+★ The fix costs one forced update per armature per level load. That is the correct price: an
+armature with no pose has no bounds, and every culling decision downstream is reading them.

@@ -23,6 +23,7 @@ namespace wi { namespace scene {
 	extern std::atomic<uint32_t> gg_anim_vis_pause_neardist2;
 	// GGMAX 3.25: Reduction Scale (defined in WickedEngine/wiScene.cpp)
 	extern std::atomic<uint32_t> gg_anim_reduction_scale;
+	void gg_ResetAnimReduction();
 } }
 // GGMAX delta 1.30: engine-side apparent-size object cull threshold (defined in WickedEngine/wiRenderer.cpp).
 // MasterRenderer::Update drives it per-frame from the editor "Apparent Size" slider (see below).
@@ -637,6 +638,13 @@ void MasterRenderer::Load()
 	//	GGTerrain_VirtualTexReadBack(texReadBack, sampleCount, cmd);
 	//};
 
+}
+
+// GGMAX 3.25t: global-scope shim so M-Visuals can clear the animation-reduction
+// posed-once set on level load without pulling wiScene's namespace into that file.
+void gg_ResetAnimReductionBridge()
+{
+	wiScene::gg_ResetAnimReduction();
 }
 
 void MasterRenderer::PreUpdate()
