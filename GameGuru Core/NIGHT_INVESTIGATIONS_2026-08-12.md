@@ -7943,3 +7943,30 @@ solved properly by the deadline being set when the reset fires rather than by ce
 **Verified**: editor 3.1 s → 0.0 s then 662/678 held with POLYS at 1,583,122; test game re-arms to
 9.9 s → 0.0 s then 774/806 held (96%). `DUMP_ANIMREDUCTION` reports the remaining grace and the
 re-arm count, which is what showed the countdown was wrong rather than the trigger.
+
+### §3.25x — the near distance 500 → 1000, and why the strangeness is FOOTSKATE
+
+Lee: *"I still see strangeness as characters run towards me."*
+
+★ **The mechanism is worth naming, because it says where the artifact will always be worst.** The
+reduction holds the armature's POSE. It does not hold the object's TRANSFORM — the character keeps
+translating at full rate. So a held running character *skates*: legs frozen mid-stride while the
+body slides forward. That is a far louder artifact than the same character animating at a reduced
+rate on the spot, and it is loudest on something closing on you **head-on**, where angular size is
+growing fastest and the feet are in view. Lee found the exact worst case.
+
+`GG_ANIM_REDUCTION_NEAR_DIST` does **double duty** and that is deliberate: it is both the cutoff and
+the pro-rata reference, so the spec reads "scale/10 frames skipped AT this distance, growing
+pro-rata beyond". Moving it therefore does not merely push the cutoff out — it stretches the whole
+curve by the same factor. One honest knob rather than two that can disagree. ⚠ Had I moved only the
+cutoff, a character crossing 1000 units would have stepped straight from period 1 to period 6 at
+scale 25 — the same artifact, relocated to a new distance and made sharper.
+
+**Cost, measured on Horseshoe Bend (same protocol as 3.25w):** editor 662/678 → **656/678** held;
+in game 774/806 → **762/806**. About 1.5 points, because a level's armatures are overwhelmingly
+distant — the ones this protects are the handful near the player, which is the entire point.
+POLYS unchanged at 1,583,122.
+
+⚠ **The rule was written out in THREE places** (the constant, the harness reply, the panel tooltip)
+and two of them went stale the instant the constant moved. The harness reply now DERIVES all three
+distances from `GG_ANIM_REDUCTION_NEAR_DIST` instead of printing typed literals.

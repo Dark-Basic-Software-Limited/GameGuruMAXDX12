@@ -5887,11 +5887,17 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		extern bool bEnable30FpsAnimations;
 		_snprintf(result, resultSize,
 			"OK: SET_ANIMREDUCTION %d - engine scale now %u. Lower Animation tick box is %d; "
-			"the slider only bites while that is ON. At scale %d: 500 units skips %d frames, "
-			"1000 units skips %d, under 500 never skips.",
+			"the slider only bites while that is ON. At scale %d: %d units skips %d frames, "
+			"%d units skips %d, under %d never skips.",
 			v, wi::scene::gg_anim_reduction_scale.load(std::memory_order_relaxed),
 			bEnable30FpsAnimations ? 1 : 0, v,
-			(int)((v * 0.1f) * 1.0f), (int)((v * 0.1f) * 2.0f));
+			// ⚠ DERIVED, not typed. These three distances were hardcoded as 500/1000/500 and
+			// went stale the moment the constant moved. Read them off the constant instead.
+			(int)wi::scene::GG_ANIM_REDUCTION_NEAR_DIST,
+			(int)((v * 0.1f) * 1.0f),
+			(int)(wi::scene::GG_ANIM_REDUCTION_NEAR_DIST * 2.0f),
+			(int)((v * 0.1f) * 2.0f),
+			(int)wi::scene::GG_ANIM_REDUCTION_NEAR_DIST);
 		result[resultSize - 1] = 0;
 		return true;
 	}
