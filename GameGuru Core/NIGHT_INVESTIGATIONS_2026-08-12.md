@@ -7904,3 +7904,42 @@ and settled in one pass what two days of reasoning had not.
 ★★ **And the gate's own value is that it fails on things you were not looking for.** C2 was not
 designed to catch an animation-throttle defect. It caught one, because a geometry invariant is
 violated by anything that perturbs geometry, whatever the mechanism.
+
+### §3.25v/w — a 10-second grace after every level load and test-game entry (Lee's belt and braces)
+
+Lee: loading Horseshoe Bend flickered; unticking Lower Animation stopped it and re-ticking did not
+bring it back — the signature of damage done during LOAD only. 3.25t's guarantee of one pose per
+armature fixed the geometry non-determinism but is not enough for everything a character resolves
+while a level streams in (LOD, attachments, spring and IK chains that converge over frames, the
+first steps of a blend).
+
+So nothing is held at all for the first **10 seconds** of a level, in the editor and in the test
+game. The two mechanisms are deliberately independent: the grace covers "the scene is still
+settling", the posed-once set covers "this armature arrived later". Neither subsumes the other.
+
+⚠ Test-game entry is NOT a level load, so it needed its own trigger — it spawns characters and
+starts their scripts, which is exactly the window Lee saw. Re-armed on both edges of
+`bImGuiInTestGame`.
+
+### ★★ Three tries to count ten seconds, and every wrong one failed the SAME direction
+
+| attempt | measured | |
+|---|---|---|
+| subtract `Update()`'s `dt` | 10.0 → 3.1 over 16 real seconds | dt is not wall-clock on this path |
+| subtract a real delta, clamped to 0.25 s/step | 9.7 → 1.8 over 16 s | the clamp swallowed every longer gap |
+| **a deadline** | **9.9 → 0.0 over 16 s** | correct |
+
+★★★ **Both failures under-counted, which is the dangerous direction**: the grace silently lasted
+about 2.3x longer than advertised, which keeps the feature switched OFF while looking like it
+works. A grace that is too long produces no symptom at all — the level just runs at full animation
+rate and nobody notices the optimisation never engaged.
+
+★ **Accumulating deltas was the wrong shape from the start.** It depends on how often the code
+runs and on every clamp in the chain. "Ten seconds after the level loads" is a claim about the
+clock on the wall, so read the clock on the wall: re-arm sets a deadline, every frame reports the
+remainder. ⚠ The 0.25 s clamp was added to stop a load hitch burning the grace — a real concern,
+solved properly by the deadline being set when the reset fires rather than by censoring time.
+
+**Verified**: editor 3.1 s → 0.0 s then 662/678 held with POLYS at 1,583,122; test game re-arms to
+9.9 s → 0.0 s then 774/806 held (96%). `DUMP_ANIMREDUCTION` reports the remaining grace and the
+re-arm count, which is what showed the countdown was wrong rather than the trigger.

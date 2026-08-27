@@ -5859,10 +5859,12 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			"  slider           : %d   (tick box %d - the slider only bites while that is ON)\n"
 			"  engine scale     : %u\n"
 			"  armatures        : %d in scene, %u HELD this frame\n"
+			"  post-load grace  : %.1f s left, re-armed %u times (nothing held while above zero)\n"
 			"  decision unit    : ARMATURE (all meshes of one character share it)\n"
 			"  frames skipped between updates, by distance:\n",
 			t.visuals.iAnimReductionScale, bEnable30FpsAnimations ? 1 : 0,
-			ascale, (int)asc.armatures.GetCount(), wi::scene::gg_anim_armatures_skipped);
+			ascale, (int)asc.armatures.GetCount(), wi::scene::gg_anim_armatures_skipped,
+			wi::scene::gg_anim_reduction_grace, wi::scene::gg_anim_reduction_resets);
 		const float samples[6] = { 250.0f, 499.0f, 500.0f, 1000.0f, 2000.0f, 5000.0f };
 		for (int i = 0; i < 6 && w < (int)resultSize - 128; i++)
 		{

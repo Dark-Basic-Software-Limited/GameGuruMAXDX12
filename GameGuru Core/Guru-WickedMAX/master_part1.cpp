@@ -10,6 +10,7 @@
 #include "wiTerrain.h" // GGMAX 1.71: gg_svt_atlas_height (setup.ini svtatlasheight)
 #include "wiRenderer.h" // GGMAX 2.89: SetProbeView (setup.ini probeview / probeviewmip)
 #include <atomic>
+#include <chrono>
 
 // GGMAX delta 1.29: engine-side 30fps animation throttle flags (defined in WickedEngine/wiScene.cpp).
 // MasterRenderer::Update drives these per-frame from the editor "Lower Animation & LUA Speed" checkbox,
@@ -23,6 +24,9 @@ namespace wi { namespace scene {
 	extern std::atomic<uint32_t> gg_anim_vis_pause_neardist2;
 	// GGMAX 3.25: Reduction Scale (defined in WickedEngine/wiScene.cpp)
 	extern std::atomic<uint32_t> gg_anim_reduction_scale;
+	extern float gg_anim_reduction_grace;
+	extern float gg_anim_reduction_grace_seconds;
+	extern uint32_t gg_anim_reduction_resets;
 	void gg_ResetAnimReduction();
 } }
 // GGMAX delta 1.30: engine-side apparent-size object cull threshold (defined in WickedEngine/wiRenderer.cpp).
@@ -811,6 +815,48 @@ void MasterRenderer::Update(float dt)
 			redScale = (uint32_t)rs;
 		}
 		wiScene::gg_anim_reduction_scale.store(redScale, std::memory_order_relaxed);
+
+		// GGMAX 3.25v: count down the post-load grace, and re-arm it whenever we cross into or
+		// out of the test game. Level loads are covered by the visuals reset; entering test game
+		// is NOT a level load, and it spawns characters and starts their scripts - exactly the
+		// window Lee saw flicker in. Both edges, because leaving the game rebuilds the editor
+		// view from the same content.
+		// ★ A DEADLINE, NOT AN ACCUMULATED DELTA.
+		//
+		// Two wrong versions preceded this one and both under-counted, which is the dangerous
+		// direction - the grace silently lasted longer than advertised and kept the feature
+		// switched off. First I subtracted the Update() dt, which is not wall-clock on this path
+		// (measured 10.0 s decaying to 3.1 s over 16 real seconds). Then I subtracted a real
+		// steady_clock delta but clamped each step to 0.25 s so a load hitch could not burn the
+		// grace - and the clamp swallowed every gap longer than that, giving 9.7 s -> 1.8 s over
+		// 16 seconds. Accumulating deltas is simply the wrong shape: it depends on how often this
+		// code runs and on every clamp in the chain.
+		//
+		// A deadline depends on neither. Re-arm sets it once; every frame just reports the
+		// remainder. "Ten seconds after the level loads" is a statement about the clock on the
+		// wall, so read the clock on the wall.
+		{
+			static uint32_t s_ggSeenResets = 0xFFFFFFFFu;
+			static std::chrono::steady_clock::time_point s_ggGraceDeadline;
+			if (s_ggSeenResets != wiScene::gg_anim_reduction_resets)
+			{
+				s_ggSeenResets = wiScene::gg_anim_reduction_resets;
+				s_ggGraceDeadline = std::chrono::steady_clock::now()
+					+ std::chrono::milliseconds((int)(wiScene::gg_anim_reduction_grace_seconds * 1000.0f));
+			}
+			const float ggLeft = std::chrono::duration<float>(
+				s_ggGraceDeadline - std::chrono::steady_clock::now()).count();
+			wiScene::gg_anim_reduction_grace = (ggLeft > 0.0f) ? ggLeft : 0.0f;
+		}
+		{
+			extern bool bImGuiInTestGame;
+			static bool s_ggPrevInTestGame = false;
+			if (bImGuiInTestGame != s_ggPrevInTestGame)
+			{
+				s_ggPrevInTestGame = bImGuiInTestGame;
+				wiScene::gg_ResetAnimReduction();
+			}
+		}
 	}
 
 	// GGMAX delta 1.35: frustum-visibility animation pause — drive the engine knobs per frame.
