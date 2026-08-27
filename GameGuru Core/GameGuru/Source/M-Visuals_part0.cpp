@@ -156,7 +156,7 @@ void gg_visuals_reset_brutal_switches()
 	// used that box is unaffected. A level that DID have it ticked now gets real reduction
 	// where it previously got none - that is the point of the change, but it is a behaviour
 	// change for existing projects, not just a new default for new ones.
-	t.visuals.iAnimReductionScale = 25;
+	t.visuals.iAnimReductionScale = 1;
 	{
 		extern int gg_terrain_bake_res_near;
 		t.visuals.iTerrainBakeResNear = 8192;

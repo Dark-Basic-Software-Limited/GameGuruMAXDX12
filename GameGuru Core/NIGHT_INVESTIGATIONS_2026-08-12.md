@@ -7802,3 +7802,47 @@ ahead of `gpup_draw`, the `GG_GetTerrainViewRadius` change, and the per-frame `G
 ⚠ **Nothing from 3.25 should ship until this is found.** The affected demos draw a different
 number of triangles run to run, which means terrain or vegetation is being generated
 inconsistently — a visible content defect, not a reporting one.
+
+### ★★★ §3.25s — BISECTED: the Reduction Scale DEFAULT of 25 causes the POLYS variance
+
+Five builds, four fresh sessions each, Horseshoe Bend:
+
+| state | readings | verdict |
+|---|---|---|
+| pre-3.25 (`abfecc21` + `cd41b548`) | 1583122 x4 | stable |
+| 3.25a / 0826c (`506b9022` + `f7f5e642`) | 1583122 x4 | stable |
+| 3.25g (`02e72bf1`) | 1583122 x4 | stable |
+| 3.25h (`d3d9ce34` + `d124161a`) | 1583122 x4 | stable |
+| 3.25n (`49e36d63` + `40180d99`) | 1583122 x4 | stable |
+| **3.25o (`b9a97efd`, default 25)** | 1557887 · 1583122 · 1583122 · **3247821** | **UNSTABLE** |
+| HEAD with the default back at 1 | 1583122 x4 | stable |
+
+Every candidate I suspected was cleared by measurement: the tree-radius change (3.25h), the water
+draw-order swap and bake state machine (3.25c-g), the armature-keyed animation itself (3.25n, inert
+while the scale is 1). It is the **default**, and therefore the FEATURE BEING ACTIVE.
+
+### ★★ Why my first A/B missed it, which is the lesson
+
+I A/B'd Reduction Scale early on by toggling `SET_ANIMREDUCTION` at runtime and saw the same value
+at 25 and at 1 — and concluded it was not the variable. **That test could not have found this.**
+The damage is done DURING LEVEL LOAD: while the scene streams in, held armatures leave their
+objects' AABBs stale, culling and LOD read those stale bounds, the scene settles into a state
+built on them, and that state is then FROZEN for the session. Flipping the scale afterwards cannot
+unwind a decision already taken. It explains the signature exactly — rock-steady within a session,
+anywhere between 81,302 and 4,038,923 between them.
+
+★★★ **A runtime A/B only tests what the setting does to a settled scene. If a setting is also
+live during construction, it must be A/B'd across LOADS, not within one.** I had the right
+suspect early, ran a test that could not convict it, and moved on.
+
+### Action taken and what is still owed
+
+**Default reverted to 1** (opt-in) — HEAD is stable 4/4 again and the C2 gate is usable. That is a
+containment, not a fix.
+
+⚠ **The underlying defect is in the feature, not the default**: whenever Reduction Scale is on
+during a level load it can perturb the geometry that scene settles into. Anyone who ticks the box
+and sets a scale hits it. The fix is that a held armature must not leave stale bounds behind —
+either never hold an armature that has not yet been posed at least once since the load, or hold
+the pose while still updating the object AABB. Until that lands, the slider should be treated as a
+tune-it-yourself control rather than something to default on.
