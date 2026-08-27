@@ -7872,3 +7872,35 @@ per armature; after that the skip behaves exactly as designed.
 
 ★ The fix costs one forced update per armature per level load. That is the correct price: an
 armature with no pose has no bounds, and every culling decision downstream is reading them.
+
+### ✅ §3.25u — GATED. Sweep `0827b_fix` CLEAN 19/19 with the default at 25
+
+| criterion | result |
+|---|---|
+| C1 LOAD | PASS 19/19 |
+| C2 GEOMETRY | **PASS — POLYS identical to the 0825 reference on all nineteen** |
+| C3 VRAM | PASS, worst 3974.8 MB, 121.2 MB headroom |
+| C4 GAME | PASS |
+
+Every demo that failed before is back on its reference value: Horseshoe Bend 1,583,122 (was
+ranging 81,302–4,038,923), Foggy Forest 1,248,844, Island Showdown 1,655,768, Z Island 320,624.
+
+**So 3.25 is gated**, with Reduction Scale defaulting to 25 and holding ~98% of a scene's
+armatures per frame.
+
+### What the whole POLYS episode was actually worth
+
+It cost most of a day and produced the single most valuable finding of the milestone, which no
+screenshot and no frame-rate measurement would ever have surfaced: **a rendering feature was
+changing which geometry the scene settled into, permanently, per load.** Nobody would have
+reported it as a bug - the levels looked right, ran fast and never crashed. It showed up only
+because one deterministic number stopped being deterministic.
+
+★★★ **C2 earned its place.** I twice talked myself out of it - first "all-under means measurement
+artifact", then "the metric was never reliable" - and both times the honest move was to stop
+arguing and measure. The bisect (five builds, four fresh sessions each) took about ninety minutes
+and settled in one pass what two days of reasoning had not.
+
+★★ **And the gate's own value is that it fails on things you were not looking for.** C2 was not
+designed to catch an animation-throttle defect. It caught one, because a geometry invariant is
+violated by anything that perturbs geometry, whatever the mechanism.
