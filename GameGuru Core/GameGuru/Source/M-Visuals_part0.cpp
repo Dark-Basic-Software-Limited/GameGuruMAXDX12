@@ -122,15 +122,32 @@ void gg_visuals_reset_brutal_switches()
 	// and without this the PREVIOUS level's baked chunks would stay on screen.
 	extern void GGTerrainBake_Clear();
 	GGTerrainBake_Clear();
+	// ⚠ ONLY CALL A SETTER IF THE LIVE VALUE IS ACTUALLY CHANGING.
+	//
+	// This function runs on EVERY level load (it is the pre-parse reset as well as the Reset
+	// Visuals button), and the first version called every setter unconditionally - so each load
+	// poked the tree pool, the grass system, the particle emitters and the object-cull scan even
+	// when all of them were already neutral, which nothing did before 3.25. Trees and grass are
+	// exactly the subsystems that move a demo's triangle count by millions, and Horseshoe Bend's
+	// POLYS went from five consecutive sweeps at an identical 1,583,122 to landing anywhere
+	// between 81,302 and 4,038,923 in the two sweeps after this shipped.
+	//
+	// A reset should be a no-op when there is nothing to reset. Guarding each call restores that
+	// and costs one comparison. (Whether it is the whole story is being measured, not assumed -
+	// see the note in NIGHT_INVESTIGATIONS.)
+	extern bool gg_no_trees, gg_no_grass, gg_no_ao, gg_no_shadows, gg_no_occlusion;
+	extern int gg_particle_pct;
+	extern float gg_object_cull_dist;
+
 	t.visuals.bTerrainBake      = false;  gg_terrain_bake = false;
 	t.visuals.bWaterBake        = false;  gg_water_bake   = false;
-	t.visuals.bNoTrees          = false;  GGSetNoTreesLevel(0);
-	t.visuals.bNoGrass          = false;  GGSetNoGrassLevel(0);
-	t.visuals.bNoAO             = false;  GGSetNoAOLevel(0);
-	t.visuals.bNoShadows        = false;  GGSetNoShadowsLevel(0);
-	t.visuals.bNoOcclusionCull  = false;  GGSetNoOcclusionLevel(0);
-	t.visuals.iParticlePct      = 100;    GGSetParticlePctLevel(100);
-	t.visuals.iObjectCullDist   = 0;      GGSetObjectCullDistLevel(0);
+	t.visuals.bNoTrees          = false;  if (gg_no_trees)          GGSetNoTreesLevel(0);
+	t.visuals.bNoGrass          = false;  if (gg_no_grass)          GGSetNoGrassLevel(0);
+	t.visuals.bNoAO             = false;  if (gg_no_ao)             GGSetNoAOLevel(0);
+	t.visuals.bNoShadows        = false;  if (gg_no_shadows)        GGSetNoShadowsLevel(0);
+	t.visuals.bNoOcclusionCull  = false;  if (gg_no_occlusion)      GGSetNoOcclusionLevel(0);
+	t.visuals.iParticlePct      = 100;    if (gg_particle_pct != 100) GGSetParticlePctLevel(100);
+	t.visuals.iObjectCullDist   = 0;      if (gg_object_cull_dist != 0.0f) GGSetObjectCullDistLevel(0);
 	t.visuals.iTextureDivide    = 1;
 	// GGMAX 3.25o: DEFAULT 25, not 1 (Lee's call on the measured curve). At 25 the skip holds
 	// 93% of a scene's armatures per frame, against 88% at 10 - and 50 and 100 add about one
