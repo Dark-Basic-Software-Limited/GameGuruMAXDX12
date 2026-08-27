@@ -7756,3 +7756,49 @@ through it. The change is kept because it costs nothing and closes the late-samp
 ★★ This is 3.24b again in a place I had explicitly called immune: *"C1–C4 exclude FPS and are
 unaffected"* by machine state. That was true of the criteria's INTENT and false of C2's
 IMPLEMENTATION. **A criterion is only as deterministic as the state it samples.**
+
+### ★★★ §3.25r — the POLYS variance IS a 3.25 regression. I was wrong yesterday.
+
+Post-reboot sweep `0827a_325` failed C2 again, on a DIFFERENT set (Z Island, Horseshoe Bend,
+Foggy Forest, Island Showdown) and — importantly — **not all in the same direction**: Horseshoe
+Bend came in at **4,038,923 against a reference of 1,583,122, 2.55x OVER**. Yesterday I argued
+that all-under implied a measurement artifact. An over-count breaks that argument, so I stopped
+arguing and measured.
+
+**Same build, same demo, fresh session each time, Horseshoe Bend:**
+81,302 · 613,152 · 1,569,621 · 1,579,498 · 1,580,914 · 1,583,122 · 1,583,122 · 2,247,354 ·
+3,551,625 · 4,038,923 — rock-stable *within* a session, wildly different *between* them.
+
+**Pre-3.25 build (game `abfecc21` + engine `cd41b548`), same procedure:**
+**1,583,122 · 1,583,122 · 1,583,122 · 1,583,122.** Four out of four.
+
+★★★ **So 3.25 introduced it, and my "measurement artifact" call yesterday was wrong.** The saved
+sweep history says the same thing once read properly: the pre-0825 outliers are WHOLE-RUN events
+(every demo off together — a different measurement regime), whereas 0825→0826c are four
+consecutive per-demo-clean sweeps and only 0826d and 0827a show isolated demos drifting.
+
+### Ruled out so far (each tested, not reasoned about)
+
+- **Reduction Scale / the new default of 25** — interleaved A/B in one session at one camera, on
+  three demos. Bounty: 469906 at scale 25 AND scale 1, twice each. Island Showdown and Horseshoe
+  Bend both produced the reference AND an outlier *at the same scale*, so the scale is not the
+  variable.
+- **The per-level switch reset churn** — `gg_visuals_reset_brutal_switches()` called every setter
+  on every level load, poking trees/grass/particles when they were already neutral. Guarding each
+  call (3.25q) is correct on its own terms and **did not fix the variance**: 1579498 / 2247354 /
+  1569621 / 1583122 afterwards.
+- **The sweep's own max-of-three POLYS rule (3.25p)** — not implicated; `ed3` equals the max in
+  every failing case, so the original last-sample rule gives the identical numbers.
+
+### Where the bisect stands
+
+Search space is game `abfecc21`→`620a8d29` and engine `cd41b548`→`40180d99`. The obvious next
+probe is the **0826c state (game `506b9022` + engine `f7f5e642`)**, which passed C2 19/19 at the
+time — if that is stable over four sessions, the culprit is in 3.25b..3.25q and the field narrows
+to the things that touch every level with the bake switched OFF: the water-plane draw-order swap
+ahead of `gpup_draw`, the `GG_GetTerrainViewRadius` change, and the per-frame `GGTerrainBake_Update`
+/ `GGWaterBake_Update` calls.
+
+⚠ **Nothing from 3.25 should ship until this is found.** The affected demos draw a different
+number of triangles run to run, which means terrain or vegetation is being generated
+inconsistently — a visible content defect, not a reporting one.
