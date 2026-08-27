@@ -1,4 +1,4 @@
-//
+﻿//
 // Main Wicked MAX Software Entry Point
 //
 
@@ -506,7 +506,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 	case WM_SIZE:
 		{
-			if ( master.is_window_active ) master.SetWindow( hWnd );
+			// ★★★ GGMAX 3.26 - THE GUARD HERE WAS DEAD CODE, AND HAD BEEN SINCE THE PORT.
+			//
+			// It read `if ( master.is_window_active )`. That flag is initialised to true in
+			// wiApplication.h and has ZERO writers in either repo - upstream sets it from
+			// WM_SETFOCUS/WM_KILLFOCUS and GameGuru kept the flag while dropping the writers. So the
+			// condition was permanently true and this line handed EVERY WM_SIZE straight to a full
+			// swapchain teardown. Upstream also tests the new size is non-zero; that half was dropped
+			// too, which is a second latent bug: minimising drove CreateSwapChain with a 0x0 canvas on
+			// a perfectly healthy device.
+			//
+			// On 2026-08-27 a WM_SIZE arrived here through the nested message pump of a modal error
+			// dialog, on an already-removed device, and took the app down inside WaitForGPU.
+			//
+			// ⚠ is_window_active is deliberately NOT wired up: doing so would also pause MAX whenever
+			// it loses focus (wiApplication reads the same flag to skip updates), which is a product
+			// decision rather than a crash fix. Replace the dead guard with tests that actually test.
+			const int ggNewW = (int)LOWORD( lParam );
+			const int ggNewH = (int)HIWORD( lParam );
+			const bool ggMinimised = ( wParam == SIZE_MINIMIZED );
+			const bool ggDegenerate = ( ggNewW <= 0 || ggNewH <= 0 );
+			// A same-size WM_SIZE is common (activation and DWM notifications produce them) and there
+			// is nothing to rebuild for one.
+			const bool ggSameSize = ( master.swapChain.IsValid()
+				&& (int)master.swapChain.desc.width  == ggNewW
+				&& (int)master.swapChain.desc.height == ggNewH );
+			wi::graphics::GraphicsDevice* ggDev = wi::graphics::GetDevice();
+			const bool ggDeviceGone = ( ggDev != nullptr && ggDev->IsDeviceRemoved() );
+
+			if ( !ggMinimised && !ggDegenerate && !ggSameSize && !ggDeviceGone )
+			{
+				master.SetWindow( hWnd );
+			}
 		}
 		break;
 	case WM_KEYDOWN:

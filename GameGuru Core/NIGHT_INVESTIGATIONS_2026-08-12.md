@@ -7970,3 +7970,101 @@ POLYS unchanged at 1,583,122.
 ⚠ **The rule was written out in THREE places** (the constant, the harness reply, the panel tooltip)
 and two of them went stale the instant the constant moved. The harness reply now DERIVES all three
 distances from `GG_ANIM_REDUCTION_NEAR_DIST` instead of printing typed literals.
+
+## §3.26 — the 2026-08-27 22:29 crash: eight discarded failure codes in one chain
+
+Lee sent a crash log. The stack looked like a use-after-free in `WaitForGPU` reached from a window
+resize. It was not, and my first reading of it was wrong in two places worth recording.
+
+### The chain
+
+```
+:6082   six command lists fail Close() with E_INVALIDARG - HRESULT DISCARDED, submitted anyway
+:2087   ExecuteCommandLists -> device removed, DXGI_ERROR_INVALID_CALL, DRED breadcrumbs EMPTY
+        (empty = the runtime rejected it CPU-side; the GPU never executed anything)
+        two threads now race to raise modal boxes about the same event:
+:6537     the async removal handler, on a THREADPOOL thread -> MessageBox owner NULL
+:6194     the main thread's Present failure -> MessageBox, mid-frame, inside SubmitCommandLists
+        a modal box PUMPS THE MESSAGE QUEUE. An un-owned foreground window steals focus WITHOUT
+        disabling the game window; the activation arrives as a SENT message through
+        KiUserCallbackDispatcher into WndProc's default: arm -> themed DefWindowProc ->
+        SendMessage(WM_SIZE)
+main:509 the WM_SIZE guard is DEAD CODE -> SetWindow -> CreateSwapChain -> WaitForGPU
+:6546   CreateFence fails - HRESULT DISCARDED - fence NULL
+:6552   Signal(nullptr) -> D3D12Core `mov r8d,[r14+0E8h]`, r14 = 0 -> AV at 0xe8
+```
+
+### ★★★ Two corrections to my own first reading, both from the same habit
+
+**"Page state FREE means the memory was released."** It does not. `0xE8` is inside the permanent
+64 KB null guard region, and `VirtualQuery` always reports that as MEM_FREE. It was a plain NULL
+pointer. ★ The control was in the same crash file: a genuine freed-heap AV (2026-08-01,
+`0x28b1cca2000`) correctly reports `0x1000` COMMIT. **I had the disproof in hand and did not look
+for it** - I read the legend, not the comparison.
+
+**"SubmitCommandLists failed at 6194."** `:6194` is only the device-removed branch off the `Present`
+at `:6189`. The actual failure was 100 lines earlier. Reading a stack bottom-up gives you the
+SEQUENCE; it does not tell you which frame is the CAUSE.
+
+### ★★ The finding worth more than the fix: a guard that never guarded
+
+```c
+case WM_SIZE:
+    if ( master.is_window_active ) master.SetWindow( hWnd );
+```
+`is_window_active` is initialised to `true` in `wiApplication.h` and has **ZERO writers in either
+repo**. Upstream drives it from `WM_SETFOCUS`/`WM_KILLFOCUS` *and* tests the new size is non-zero;
+the port kept the flag and dropped both halves that made it work. So it has been permanently true
+since the port, and every WM_SIZE went straight to a full swapchain teardown. ⚠ Minimising has
+therefore been driving `CreateSwapChain` with a 0x0 canvas on a healthy device this whole time -
+an independent latent bug nobody had hit.
+
+★ **A guard whose condition can never be false is worse than no guard**: it reads as protection in
+every code review it survives. Same family as the 3.19 "correct-but-deferred control".
+
+### ★★★ The pattern behind all eight fixes: dx12_check asserts, and asserts compile out
+
+`#define dx12_check(call) [&]() { HRESULT hr = call; dx12_assert(...); return hr; }()` - it RETURNS
+the HRESULT, and almost nowhere is the return read. Under NDEBUG the assert vanishes, so every
+`dx12_check(x)` is `(void)x`. Eight sites in this one chain discarded a failure and dereferenced
+the null it left behind. **The fix is not "check this one" - it is to treat `dx12_check` as a
+logging wrapper, not a check.**
+
+### What shipped
+
+| | | |
+|---|---|---|
+| B1 | `:6082` capture `Close()`, do NOT submit a list that failed to close, and NAME it | stops the removal |
+| A1 | `:6546` check `CreateFence`, return | stops the AV at **nine** call sites, not one |
+| A2 | `deviceRemoved` -> `std::atomic<bool>`, exposed as `IsDeviceRemoved()`; `CreateSwapChain`/`WaitForGPU` refuse | stops teardown on a corpse |
+| A3 | both modal boxes -> `wilog_error`; main loop shows ONE dialog at a frame boundary | stops the nested pump |
+| A4 | `main.cpp:509` real tests replace the dead guard | stops WM_SIZE driving teardown |
+| A5 | re-entrancy + in-frame guard on `SetWindow`, deferring to next frame | stops it via ANY nested pump |
+| A6 | `Exit()` posts to the MAIN thread | app no longer renders on after a removal |
+| B4 | `GetBuffer`, `deviceRemovedFence`, `CreateSwapChain`'s discarded bool | three more of the same shape |
+
+★★ **A5 is the one that matters beyond this crash.** GameGuru runs nested message pumps during
+ORDINARY level loading - `EmptyMessages()` from 100+ call sites, and `StartForceRender()` which
+pumps and then re-enters a whole frame via `RunCustom()`. A WM_SIZE through either already tore the
+swapchain down under recorded work, with no error dialog involved anywhere.
+
+⚠ `is_window_active` deliberately NOT wired up: `wiApplication` reads the same flag to skip updates,
+so restoring the writers would also pause MAX whenever it loses focus. A product decision, not a
+crash fix.
+
+### B1 is also the experiment
+
+A post-removal `Close()` returns this same HRESULT on this driver, so the log alone could never say
+whether the six failures CAUSED the removal or merely followed it. If the device stops dying, they
+were the cause - and the new message names which list, so the recording-scope bug becomes findable
+instead of inferred.
+
+### ⚠ Method notes paid for during this session
+
+- **`| head -N` on a build pipeline SIGPIPEs the build** and leaves orphaned MSBuild workers that
+  wedge the next build with `C1083 Permission denied` on a file that DOES NOT EXIST. "Cannot create"
+  reads like "locked file"; it was a concurrent compile into the same intermediate path. Two
+  identical failures = wrong approach: kill `MSBuild.exe`, verify with `tasklist`, rebuild.
+- **`Max/Files/log.txt` is lost under `taskkill //F`** - it still carried the 22:29:29 crash
+  contents hours later. A harness smoke test therefore proves the app RUNS but proves nothing about
+  what it logged. ⚠ Do not read absence-of-errors from a stale file.
