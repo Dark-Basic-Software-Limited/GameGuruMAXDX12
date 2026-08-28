@@ -8578,3 +8578,80 @@ A 6-year-old AMD part may not. For (1), TESTPRO2's grass contributes nothing to 
 But they are NOT claimed as wins, and if Lee sees no change on the AMD card that is consistent with
 everything measured here. ⚠ Do not let a plausible mechanism become a reported saving without a
 number behind it.
+
+---
+
+# ▶ CLOSING SUMMARY — the DX11-parity performance round (3.28–3.33, 2026-08-28)
+
+**State: both repos clean, 0 unpushed. Engine `c093dc69`, game `3d3571bc`.
+Gate: sweep `0828d_final` CLEAN 19/19 (C3 3975.0 MB, 121.0 MB headroom).**
+Lee confirmed the old AMD card good through 3.30.
+
+## What shipped, and what each was worth
+
+| | fix | measured |
+|---|---|---|
+| 3.28 | Occlusion Cull Delay (32-frame window could never be met while turning) | rotating draws 602 → 95 at 2 frames; **Lee runs 2** |
+| 3.29 | Shadow Detail Steps (atlas rects sized continuously from camera distance) | moving shadowmap 4.21 → 1.84 ms; **Lee runs 4** |
+| 3.30 | Per-light shadow invalidation + refresh floor | one moving caster no longer re-renders every shadow |
+| 3.31 | Super Quick Objects (16 shadow taps → 1) | **−25-30% Opaque Scene** with 16 lights |
+| 3.32 | `SET_DELAYEDSHADOWS` + the measured tooltip | **sun 2.15 → 0.89 ms, GPU busy −25%** |
+| 3.33 | grass in invisible cube faces; 16 wasted transparent fetches | **no measurable change here** — kept, not claimed |
+
+## ★★★ THE ONE THING TO DO NEXT
+
+**Ask Lee to tick "Delayed Shadows" and look at it.** DX11 shipped it ON at both layers; DX12 ships
+it OFF at both. It is the largest single saving found (−59% sun shadow) and it is one click away.
+⚠ The default was deliberately NOT flipped: the DX12 port regrouped the stagger on purpose to kill a
+cascade-blend flicker, so only a human eye can approve it. If he accepts the distant-shadow lag,
+**flip both defaults to match DX11**.
+
+## Ranked next actions for the performance chase
+
+1. **Settle question A properly.** Is the frame CPU-recording-bound or GPU-bound on TESTPRO2? The
+   GGMAX submit-tail attribution (`gg_submit_ms_close/fences/present/sync/stall`) already reports
+   it. ⚠ Everything else for A is speculation until this is answered — the PSO-hash finding
+   (~0.3-1.0 ms of recording vs DX11's flat array index) only matters if recording is the critical
+   path.
+2. **⚠⚠ FIX THE IN-GAME INSTRUMENTS FIRST if any test-game measurement is planned.** In game state
+   `DUMP_PROFILER` serves a FROZEN snapshot and `GET_GPUMS` returns NOTHING (editor varies
+   1.93/0.81/0.85; game gave 0.82 six times running). `SHADOW_LOCAL_RENDERED` via `GET_PERF_DATA`
+   is the only in-game instrument that still works. Every in-game millisecond quoted so far is
+   worthless.
+3. **Reproduce question D on a light-dense scene.** The mechanism is proven by reading (one shared
+   atlas; the sun's cascade cache keys on the atlas layout, so points invalidate the sun and the
+   sun's full clear destroys every cached local; DX11 used three separate arrays and could not
+   couple them). ⚠ It did NOT fire here: 16 granted lights, `pack_scale` pinned at 1.0000, opaque
+   rose LINEARLY. Needs enough density to put the packer under pressure. ★ 3.30 should already have
+   reduced it a lot by making `localAtlasFullClear` rare — measure before assuming it is still open.
+4. **`PRESS_KEY` cannot drive gameplay** — it posts WM_KEYDOWN and GameGuru reads gameplay keys via
+   DirectInput. An in-game input path is needed for any test involving player actions.
+5. Per-cascade shadow content culling: DX11 dropped terrain LOD per cascade, stopped trees at
+   cascade 3 and never let grass cast at all. DX12 relies on `SHADOW_LOD_OVERRIDE` and
+   `shadowFarCascadeCull` instead — **equivalence NOT established**.
+
+## Clean negatives — do not re-chase
+
+- Sun cascade count and resolution are at **PARITY** (both 5 × 2048).
+- **Material permutations are irrelevant to GameGuru content** — COLLAPSIBLE 0 of 3307 on both
+  TESTPRO2 and Aztec. It is ~100% base PBR.
+- Grass in shadow maps: real difference from DX11, but `SET_GRASSOFF` moved the sun cost 2.14 → 2.10.
+- The 16 transparent-shadow fetches: real waste, no measurable cost on this card.
+- Occlusion changes do **not** move C2 POLYS (it counts the visibility set, not draws issued) — an
+  earlier warning of mine that turned out wrong.
+
+## ★★ Method rules earned this round
+
+- **Before A/B-ing a switch, measure whether the thing it switches is even PRESENT.**
+  `DUMP_MATERIALTYPES` turned a null result from "the switch is broken" into "there is nothing to
+  collapse" in one run.
+- **A saving that scales with N cannot be measured at N=3.** Super Quick read as noise at the
+  default viewpoint and −30% in the light cluster.
+- **Run the control condition FIRST AND LAST.** It caught position drift that had reversed a whole
+  ordering (`shadowab` had 8 steps looking best; pinned, 2 was best).
+- **Two optimisations can each be safe alone and unsafe stacked** — 3.29 and 3.30 together closed
+  both self-heal paths of a pre-existing hole. Only reviewing them as a pair found it.
+- **If a control condition stops reproducing, suspect the control.** A per-frame push silently
+  clobbered two harness knobs that had worked an hour earlier.
+- ⚠ An engine build **clears `Max/shaders/*.cso`** — never build the engine during a sweep. Prove a
+  shader edit landed by the `.cso` **size** (objectPS 92056 → 92256 → 92376), never the timestamp.
