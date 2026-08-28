@@ -80,6 +80,32 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			ImGui::TextDisabled("Reduction Scale");
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Tick Lower Animation & LUA Speed above to use this. It sets how much animation work to skip on distant objects.");
 		}
+
+		// ★ GGMAX 3.28: Occlusion Cull Delay.
+		//
+		// Lee reported Opaque Scene and Z-Prepass ballooning whenever the camera was rotated -
+		// 5->40 ms on a 6-year-old AMD card. The cause was that occlusion culling could not engage
+		// AT ALL while the camera turned: an object had to read occluded for 32 CONSECUTIVE frames
+		// before it would be skipped, and anything sweeping through the frustum never gets that
+		// long. Measured on TESTPRO2 at 180 deg/s: 602 draws a frame at 32, 222 at 8.
+		int occdelay = t.visuals.iOcclusionCullDelay;
+		if (occdelay < 1 || occdelay > 32) occdelay = 8;
+		ImGui::Text("Occlusion Cull Delay");
+		if (ImGui::SliderInt("##gg_occlusion_delay", &occdelay, 1, 32, "%d frames"))
+		{
+			t.gamevisuals.iOcclusionCullDelay = t.visuals.iOcclusionCullDelay = occdelay;
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("How many frames in a row something must be "
+			"completely hidden behind something else before the engine stops drawing it.\n\n"
+			"Lower is faster. The saving is biggest while you are turning the camera, because a "
+			"long delay means anything that has just swung into view gets drawn regardless of "
+			"whether a wall is in front of it. On a test level, turning at speed, 32 frames drew "
+			"602 objects per frame and 8 frames drew 222 - and standing still it was 51 against "
+			"10.\n\n"
+			"8 is the default and is a good balance. Raise it if you ever see something vanish "
+			"that should be visible; 32 restores the old behaviour, where this optimisation did "
+			"nothing whenever the camera moved.");
 		ImGui::PopItemWidth();
 
 		extern bool bEnableDelayPointShadow;

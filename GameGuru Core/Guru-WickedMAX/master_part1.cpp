@@ -816,6 +816,15 @@ void MasterRenderer::Update(float dt)
 		}
 		wiScene::gg_anim_reduction_scale.store(redScale, std::memory_order_relaxed);
 
+		// GGMAX 3.28: push the Occlusion Cull Delay to the engine as a bitmask. Per-level like the
+		// other performance settings, so a level author can dial it for their own content.
+		{
+			extern uint32_t gg_occlusion_history_mask;
+			int occd = t.visuals.iOcclusionCullDelay;
+			if (occd < 1 || occd > 32) occd = 8;   // a level saved before 3.28 parses as 0
+			wiScene::gg_occlusion_history_mask = (occd >= 32) ? 0xFFFFFFFFu : ((1u << occd) - 1u);
+		}
+
 		// ★★★ GGMAX 3.27: continuous camera spin, for measuring rotation-dependent cost.
 		//
 		// Diagnostic only - inert unless SPIN_CAMERA has been sent, which nothing in the product

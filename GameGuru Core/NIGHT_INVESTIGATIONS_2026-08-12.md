@@ -8137,3 +8137,75 @@ Not the draw path. `CopyAllocator` (`:2127-2205`, creates and closes lists from 
 aliasing-resource path (`:4017`, in use per the log), and ⚠ **`gg_single_queue` — default `true`**,
 a GGMAX change routing every COMPUTE and COPY list onto the graphics queue (`:5986`), which alters
 submission topology during exactly the load storms all six removals happened in.
+
+## §3.28 — occlusion culling could never engage while the camera turned
+
+Lee: *"Opaque Scene and Z-Prepass take more MS when the camera is being rotated quickly and
+non-stop"* — 5→40 ms and 1.2→10 ms on the 6-year-old AMD card, 3-4× here.
+
+### The measurement that settled it
+
+| | draws/frame | Opaque |
+|---|---|---|
+| parked, occlusion ON | **55** | 0.99 |
+| parked, occlusion OFF | 404 | 1.66 |
+| rotating, occlusion ON | **649** | 4.35 |
+| rotating, occlusion OFF | — | **4.20** |
+
+★★★ The last two lines are the whole proof: **while rotating, switching occlusion culling OFF costs
+nothing, because it was already contributing nothing.** Parked it removes 87% of every draw.
+
+⚠ And it is not pixel work — at 0.5 resolution scale, PARKED opaque falls 58% but ROTATING opaque
+falls only 12%. That is what told us Lee's Object Detail Distance workaround helped by shrinking the
+OBJECT SET, not by drawing fewer pixels as he'd assumed.
+
+### Root cause
+
+`IsOccluded()` was `occlusionHistory == 0` — **32 consecutive occluded frames**. A query slot is
+only allocated inside the frustum-visible branch (`wiRenderer.cpp:4599`), so an object *outside* the
+frustum takes the `query_id < 0` fail-open path every frame and refills its history with 1s. On
+re-entering the frustum it must collect 32 consecutive occluded frames from scratch — 0.7 s at
+45 fps. At 180 °/s a 60° FOV sweeps past in 0.33 s. **The requirement is unmeetable.**
+
+⚠ Do NOT "fix" this by allocating queries for out-of-frustum objects. The fail-open is correct — an
+object with no fresh result must be drawn. The bug is the *length of the window*.
+
+| window | draws/frame rotating | opaque | zprep |
+|---|---|---|---|
+| 32 (stock) | 602 | 4.15 | 1.62 |
+| 16 | 384 | 3.52 | 1.18 |
+| **8 (new default)** | **222** | **1.57** | **0.32** |
+| 4 | 140 | 1.88 | 0.36 |
+| 2 | 95 | 2.09 | 0.47 |
+
+Parked improves too: 51 → 10 draws/frame. The window was over-conservative *everywhere*, not only
+during rotation. Shipped as a per-level "Occlusion Cull Delay" slider (1-32, default 8).
+
+### ★★ Method: three wrong instruments before a right one
+
+1. **A SET_CAMERA jump sweep** — one command a second, three round-trips per sample, a 20-frame
+   average. Every reading was taken against a *stationary* camera. It produced a clean, stable,
+   entirely meaningless table. ★ **An instrument slower than the transient cannot see it.**
+2. **The camera parse failed silently** — `SET_CAMERA` took `" 0 0 45"` as *position* (0,0,45) with
+   the angles untouched, and again produced a full plausible table. I had echoed `GET_CAMERA`
+   *before* the moves. ⚠ Reading back state you did not change proves nothing; read back **after**.
+3. **Sampling the wrong phase** — I measured *during* rotation; Lee's second report described a
+   spike *after stopping* that decays. My "stopped" rows were 4 s late, past the decay.
+
+★ The fix was to put the motion INSIDE the app (`SPIN_CAMERA`), so every existing sampling command
+measures the moving cost unchanged and the profiler's own average becomes the steady-state number.
+
+### ⚠ Eliminated, so do not re-chase
+
+Trees, grass, far-tree billboards, Terrain Bake, Water Bake, texture streaming (`SET_STREAMING 0`
+changed nothing), and the camera-gated `Scene::Update` (forcing mode 2 while *still* cost nothing —
+7.8 vs 7.9 ms). ⚠ **VRAM oversubscription is NOT the cause here** — this PC sits at 3.8 GB of a
+15.4 GB budget and reproduces the effect at full strength. It may still be a second, additive effect
+on a 4 GB card, which would explain 8× there against 3-4× here.
+
+⚠ The CPU frame cost (8.5 → 21 ms while rotating) is a **separate** issue sharing the same trigger.
+`Opaque Scene` and `Z-Prepass` are `BeginRangeGPU` ranges, so no CPU story can explain them.
+UNRESOLVED.
+
+⚠⚠ **C2 WILL MOVE.** Better culling means fewer polys drawn, so POLYS changes on all 19 demos. Amend
+C2 in writing before the next sweep; every demo must move DOWNWARD — an increase anywhere is a bug.

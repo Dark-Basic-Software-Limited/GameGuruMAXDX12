@@ -149,6 +149,10 @@ void gg_visuals_reset_brutal_switches()
 	t.visuals.iParticlePct      = 100;    if (gg_particle_pct != 100) GGSetParticlePctLevel(100);
 	t.visuals.iObjectCullDist   = 0;      if (gg_object_cull_dist != 0.0f) GGSetObjectCullDistLevel(0);
 	t.visuals.iTextureDivide    = 1;
+	// GGMAX 3.28: 8 consecutive hidden frames before an object stops being drawn. Reset with
+	// the other performance settings so Reset Visuals restores the measured default rather
+	// than leaving whatever the previous level chose.
+	t.visuals.iOcclusionCullDelay   = 8;
 	// GGMAX 3.25o: DEFAULT 25, not 1 (Lee's call on the measured curve). At 25 the skip holds
 	// 93% of a scene's armatures per frame, against 88% at 10 - and 50 and 100 add about one
 	// percent between them while the stutter on mid-distance characters keeps getting worse.
@@ -164,6 +168,11 @@ void gg_visuals_reset_brutal_switches()
 	{ extern void gg_ResetAnimReductionBridge(); gg_ResetAnimReductionBridge(); }
 	// DEFAULT 25 (Lee's call). Safe to default on now that a first pose is guaranteed.
 	t.visuals.iAnimReductionScale = 25;
+	// GGMAX 3.28: 8 consecutive hidden frames before an object stops being drawn. Stock Wicked
+	// effectively used 32, which cannot be reached while the camera turns - so occlusion culling
+	// did nothing at all during camera motion. Measured on TESTPRO2: 602 draws/frame rotating at
+	// 32, 222 at 8, and 51 vs 10 parked.
+	t.visuals.iOcclusionCullDelay = 8;
 	{
 		extern int gg_terrain_bake_res_near;
 		t.visuals.iTerrainBakeResNear = 8192;
@@ -854,6 +863,8 @@ void visuals_save ( void )
 	t.strwork = ""; t.strwork = t.strwork + "visuals.TextureDivide=" + Str(t.visuals.iTextureDivide);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.AnimReductionScale=" + Str(t.visuals.iAnimReductionScale);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.OcclusionCullDelay=" + Str(t.visuals.iOcclusionCullDelay);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.TerrainBakeResNear=" + Str(t.visuals.iTerrainBakeResNear);
 	WriteString(1, t.strwork.Get());
@@ -1591,6 +1602,7 @@ void visuals_load ( void )
 				t.try_s = "visuals.ObjectCullDist";  if (t.tfield_s == t.try_s) { t.visuals.iObjectCullDist  = (int)ValF(t.tvalue_s.Get()); GGSetObjectCullDistLevel(t.visuals.iObjectCullDist); }
 				t.try_s = "visuals.TextureDivide";   if (t.tfield_s == t.try_s) { t.visuals.iTextureDivide   = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTextureDivide != 1) GGSetTextureDivideLive(t.visuals.iTextureDivide); }
 				t.try_s = "visuals.AnimReductionScale"; if (t.tfield_s == t.try_s) { t.visuals.iAnimReductionScale = (int)ValF(t.tvalue_s.Get()); }
+				t.try_s = "visuals.OcclusionCullDelay"; if (t.tfield_s == t.try_s) { t.visuals.iOcclusionCullDelay = (int)ValF(t.tvalue_s.Get()); }
 				t.try_s = "visuals.TerrainBakeResNear"; if (t.tfield_s == t.try_s) { extern int gg_terrain_bake_res_near; t.visuals.iTerrainBakeResNear = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTerrainBakeResNear >= 256 && t.visuals.iTerrainBakeResNear <= 8192) gg_terrain_bake_res_near = t.visuals.iTerrainBakeResNear; }
 			}
 
