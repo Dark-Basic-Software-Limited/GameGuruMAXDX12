@@ -3851,6 +3851,8 @@ struct visualstype
 	int  iAnimReductionScale; // GGMAX 3.25 Reduction Scale under Lower Animation, 1..100, DEFAULT 25 (1 = off)
 	int  iOcclusionCullDelay; // GGMAX 3.28 consecutive hidden frames before an object stops
 	                         // being drawn, 1..32, DEFAULT 8 (32 = stock, never culls while turning)
+	int  iShadowResSteps;    // GGMAX 3.29 discrete steps for distance-driven shadow resolution,
+	                         // 0..16, DEFAULT 4 (0 = stock continuous, re-renders every frame you move)
 	int  iTerrainBakeResNear; // GGMAX 3.25l: Terrain Bake near-tier texture size, 256..8192
 
 	bool bEnableTerrainChunkCulling;
@@ -4342,6 +4344,8 @@ struct visualsdatastoragetype
 	int  iAnimReductionScale; // GGMAX 3.25 Reduction Scale under Lower Animation, 1..100, DEFAULT 25 (1 = off)
 	int  iOcclusionCullDelay; // GGMAX 3.28 consecutive hidden frames before an object stops
 	                         // being drawn, 1..32, DEFAULT 8 (32 = stock, never culls while turning)
+	int  iShadowResSteps;    // GGMAX 3.29 discrete steps for distance-driven shadow resolution,
+	                         // 0..16, DEFAULT 4 (0 = stock continuous, re-renders every frame you move)
 	int  iTerrainBakeResNear; // GGMAX 3.25l: Terrain Bake near-tier texture size, 256..8192
 
 	bool bEnableTerrainChunkCulling;

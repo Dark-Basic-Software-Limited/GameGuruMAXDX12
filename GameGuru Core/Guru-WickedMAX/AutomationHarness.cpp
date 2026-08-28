@@ -6864,6 +6864,8 @@ static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* res
 		}
 		else
 		{
+			// ⚠ Same reason as SET_OCCLUSIONHISTORY: the per-frame push from t.visuals wins.
+			t.gamevisuals.iShadowResSteps = t.visuals.iShadowResSteps = n;
 			wi::renderer::gg_shadow_res_steps = n;
 			_snprintf(result, resultSize,
 				"OK: SET_SHADOWRESSTEPS %d - local shadow resolution snaps to %s. 0 reproduces stock, "
@@ -6886,6 +6888,10 @@ static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* res
 		}
 		else
 		{
+			// ⚠ Write the VISUALS field, not the engine global: master_part1.cpp pushes
+			// t.visuals.iOcclusionCullDelay into the engine every frame, so setting the global
+			// here would be overwritten before the next frame rendered.
+			t.gamevisuals.iOcclusionCullDelay = t.visuals.iOcclusionCullDelay = n;
 			wi::scene::gg_occlusion_history_mask = (n >= 32) ? 0xFFFFFFFFu : ((1u << n) - 1u);
 			_snprintf(result, resultSize,
 				"OK: SET_OCCLUSIONHISTORY %d frames (mask 0x%08X). 32 = stock Wicked, which cannot "

@@ -106,6 +106,36 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			"8 is the default and is a good balance. Raise it if you ever see something vanish "
 			"that should be visible; 32 restores the old behaviour, where this optimisation did "
 			"nothing whenever the camera moved.");
+
+		// ★ GGMAX 3.29: Shadow Detail Steps.
+		//
+		// Lee: Shadowmap rendering 6 -> 25 ms on a 6-year-old AMD card whenever he walked forward or
+		// back, dropping straight back the moment he stopped. Every local light's shadow rect is
+		// sized from its DISTANCE to the camera, and the shadow cache keys on that rect - so one
+		// texel of change re-renders every local shadow. Walking changes every distance every frame.
+		// Measured on TESTPRO2: moving cost 4.21 ms continuous, 1.84 ms at 4 steps.
+		int shsteps = t.visuals.iShadowResSteps;
+		if (shsteps < 0 || shsteps > 16) shsteps = 4;
+		ImGui::Text("Shadow Detail Steps");
+		if (ImGui::SliderInt("##gg_shadow_res_steps", &shsteps, 0, 16,
+			shsteps == 0 ? "Off (smooth)" : "%d steps"))
+		{
+			t.gamevisuals.iShadowResSteps = t.visuals.iShadowResSteps = shsteps;
+			g.projectmodified = 1;
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Shadows from lamps and torches get sharper as "
+			"you walk towards them. This sets how many steps they take to do it.\n\n"
+			"Off means perfectly smooth - and it is the slow option, because the shadow changes size "
+			"every single frame you move, and the engine has to redraw every nearby shadow every "
+			"frame as a result. Standing still it redraws none of them. That is why shadows can cost "
+			"several times more while you are walking than while you are stood still.\n\n"
+			"Fewer steps means shadows hold one size for longer, so the engine can reuse them and "
+			"only redraws when you cross from one step to the next. On a test level, walking, this "
+			"took the shadow cost from 4.2ms to 1.8ms.\n\n"
+			"4 is the default. Lower is faster still, but every shadow is then rounded up to a bigger "
+			"size than it needs, which can crowd the shadow atlas on levels with a lot of lights and "
+			"end up shrinking all of them. Shadows are never made blurrier than the Off setting would "
+			"have made them.");
 		ImGui::PopItemWidth();
 
 		extern bool bEnableDelayPointShadow;

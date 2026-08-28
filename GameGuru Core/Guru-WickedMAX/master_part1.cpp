@@ -825,6 +825,15 @@ void MasterRenderer::Update(float dt)
 			wiScene::gg_occlusion_history_mask = (occd >= 32) ? 0xFFFFFFFFu : ((1u << occd) - 1u);
 		}
 
+		// GGMAX 3.29: Shadow Detail Steps -> the shadow-atlas resolution quantiser. Per-level like
+		// the rest of the performance settings.
+		{
+			extern int gg_shadow_res_steps;
+			int shs = t.visuals.iShadowResSteps;
+			if (shs < 0 || shs > 16) shs = 4;   // a level saved before 3.29 parses as 0
+			wi::renderer::gg_shadow_res_steps = shs;
+		}
+
 		// ★★★ GGMAX 3.27: continuous camera spin, for measuring rotation-dependent cost.
 		//
 		// Diagnostic only - inert unless SPIN_CAMERA has been sent, which nothing in the product

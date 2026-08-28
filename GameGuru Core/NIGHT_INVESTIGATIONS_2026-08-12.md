@@ -8280,3 +8280,26 @@ most of the win at half the over-provisioning.
    sets the same `changed` flag by a completely different route. The quantiser does nothing for it.
    ⚠ Rotating on the spot in TEST GAME discriminates: the distance mechanism is rotation-invariant,
    the weapon one is not.
+
+### §3.29a — the slider, and a knob I killed with my own plumbing
+
+"Shadow Detail Steps" in Graphics & Performance, 0-16, default 4, per-level like the rest.
+
+★★★ **Adding the per-frame push KILLED both harness knobs, silently.** `SET_SHADOWRESSTEPS` and
+`SET_OCCLUSIONHISTORY` wrote the ENGINE global directly. That worked fine until the sliders landed —
+after which `master_part1.cpp` rewrote those same globals from `t.visuals` **every frame**, so the
+harness write was clobbered before a single frame rendered. The command still replied `OK`.
+
+Caught because forcing `steps=0` measured **1.92 ms** when stock is **4.25 ms** — the A/B refused to
+reproduce a number I had measured three times an hour earlier. ⚠ **If a control condition stops
+reproducing, suspect the control, not the world.** Fixed by writing the visuals field the push
+reads, exactly as `SET_ANIMREDUCTION` already did.
+
+This is the *clobbered value* half of the dead-knob pair already in these notes ("who writes it
+LAST, and what derives it?"). I wrote the note and then walked into it — the tell is that the
+plumbing and the knob were added in **different sessions**, so nothing prompted me to re-check the
+older one. ★ Adding a per-frame push means auditing every existing writer of that global.
+
+Verified after the fix: slider default 1.96 ms translating, forced `steps=0` 4.25 ms. TESTPRO2 was
+saved before the field existed, so this also proves the pre-parse reset default reaches the engine.
+⚠ `SET_OCCLUSIONHISTORY` is fixed by the identical edit but was NOT separately re-measured.
