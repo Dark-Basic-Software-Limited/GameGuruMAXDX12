@@ -6799,6 +6799,79 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	return true;
 }
 
+// GGMAX 3.27: camera spin rate in degrees per second, 0 = off. DIAGNOSTIC ONLY - nothing in
+// the product sets it, and it is inert until SPIN_CAMERA is sent. Read by the per-frame
+// update in master_part1.cpp, which advances editorfreeflight yaw by rate * wall-clock dt.
+float gg_spin_deg_per_sec = 0.0f;
+
+// GGMAX 3.27: hoisted into its own function rather than added to the dispatch ladder.
+// ⚠ Adding one more `else if` to that chain tips MSVC over C1061 ("blocks nested too
+// deeply") - it is already at the limit, and the error names a line ~2000 further down, so it
+// reads as a problem somewhere else entirely. Every new command goes in a helper from here on.
+static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "SET_OCCLUSIONHISTORY") == 0)
+	{
+		// SET_OCCLUSIONHISTORY <1..32> - consecutive occluded frames required before a cull.
+		// ★ Stock Wicked required all 32, which is why occlusion culling did nothing while the
+		// camera turned. Measured on TESTPRO2 at 180 deg/s: 649 draws/frame rotating vs 55
+		// parked, and occlusion ON vs OFF made no measurable difference while rotating.
+		int n = 0;
+		if (sscanf_s(arg, "%d", &n) < 1 || n < 1 || n > 32)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_OCCLUSIONHISTORY needs 1..32 frames");
+		}
+		else
+		{
+			wi::scene::gg_occlusion_history_mask = (n >= 32) ? 0xFFFFFFFFu : ((1u << n) - 1u);
+			_snprintf(result, resultSize,
+				"OK: SET_OCCLUSIONHISTORY %d frames (mask 0x%08X). 32 = stock Wicked, which cannot "
+				"engage during camera rotation.", n, wi::scene::gg_occlusion_history_mask);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SPIN_CAMERA") != 0) return false;
+	{
+		// SPIN_CAMERA <degrees_per_second>   (0 = stop)
+		//
+		// ★ Holds the camera IN MOTION so that ordinary sampling measures the moving cost.
+		// Lee's slowdown only exists while the camera turns, and a file-based harness round-trip is
+		// about a second - so DUMP_PROFILER/GET_GPUMS/GET_PERF_DATA always used to run against a
+		// stationary camera no matter how the sweep was written. With a spin running, the profiler's
+		// own 20-frame average becomes the steady-state rotating number.
+		//
+		// Editor only, because it drives editorfreeflight. 120 deg/s is a brisk look-around; 360 is
+		// a full turn a second, which is faster than anyone plays but is the stress case.
+		extern float gg_spin_deg_per_sec;
+		float rate = 0.0f;
+		const int got = sscanf_s(arg, "%f", &rate);
+		const char* state = AutoHarness_GetAppState();
+		if (got < 1)
+		{
+			_snprintf(result, resultSize, "ERROR: SPIN_CAMERA needs <degrees_per_second> (0 stops)");
+		}
+		else if (strcmp(state, "editor") != 0 && rate != 0.0f)
+		{
+			_snprintf(result, resultSize,
+				"ERROR: SPIN_CAMERA drives the editor free-flight camera, so it only works in the "
+				"level editor (state: %s). Sending 0 to stop is always allowed.", state);
+		}
+		else
+		{
+			gg_spin_deg_per_sec = rate;
+			_snprintf(result, resultSize,
+				"OK: SPIN_CAMERA %.1f deg/s (%s). Camera now pos=(%.2f,%.2f,%.2f) ang=(%.2f,%.2f). "
+				"Sample with DUMP_PROFILER / GET_GPUMS / GET_PERF_DATA while this is running.",
+				rate, (rate == 0.0f) ? "stopped" : "spinning",
+				t.editorfreeflight.c.x_f, t.editorfreeflight.c.y_f, t.editorfreeflight.c.z_f,
+				t.editorfreeflight.c.angx_f, t.editorfreeflight.c.angy_f);
+		}
+		result[resultSize - 1] = 0;
+	}
+	return true;
+}
+
 void AutoHarness_CheckForCommand(void)
 {
 	if (g_tvCycleActive)
@@ -7418,7 +7491,12 @@ void AutoHarness_CheckForCommand(void)
 		}
 		result[sizeof(result) - 1] = 0;
 	}
-	else if (AutoHarness_StandaloneCommands(cmd, arg, result, sizeof(result)))
+	// GGMAX 3.27: OR'd into an existing arm, deliberately. This ladder sits exactly at MSVC's
+	// C1061 nesting limit - adding one more `else if` tips it over, and the error it reports
+	// points ~2000 lines away, so it reads as an unrelated problem. Extra conditions are free;
+	// extra arms are not.
+	else if (AutoHarness_SpinCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_StandaloneCommands(cmd, arg, result, sizeof(result)))
 	{
 		// handled in the helper (see above the dispatch function)
 	}

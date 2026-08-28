@@ -816,6 +816,32 @@ void MasterRenderer::Update(float dt)
 		}
 		wiScene::gg_anim_reduction_scale.store(redScale, std::memory_order_relaxed);
 
+		// ★★★ GGMAX 3.27: continuous camera spin, for measuring rotation-dependent cost.
+		//
+		// Diagnostic only - inert unless SPIN_CAMERA has been sent, which nothing in the product
+		// does. It exists because the cost Lee is chasing only appears WHILE the camera is moving,
+		// and a file-based harness cannot hold a camera in motion across a sample.
+		{
+			extern float gg_spin_deg_per_sec;
+			// ⚠ Sample the clock EVERY frame, not only while spinning. If it were only read while
+			// active, the first frame after starting a spin would see the whole idle period as its
+			// delta and jump the camera. Same shape of bug as the 3.25w grace countdown.
+			static std::chrono::steady_clock::time_point s_ggSpinLast = std::chrono::steady_clock::now();
+			const std::chrono::steady_clock::time_point ggSpinNow = std::chrono::steady_clock::now();
+			float ggSpinDt = std::chrono::duration<float>(ggSpinNow - s_ggSpinLast).count();
+			s_ggSpinLast = ggSpinNow;
+			if (ggSpinDt < 0.0f)  ggSpinDt = 0.0f;
+			if (ggSpinDt > 0.25f) ggSpinDt = 0.25f;
+			if (gg_spin_deg_per_sec != 0.0f)
+			{
+				t.editorfreeflight.mode = 1;   // free-flight applies these fields every frame
+				float ggYaw = t.editorfreeflight.c.angy_f + gg_spin_deg_per_sec * ggSpinDt;
+				while (ggYaw >= 360.0f) ggYaw -= 360.0f;
+				while (ggYaw <    0.0f) ggYaw += 360.0f;
+				t.editorfreeflight.c.angy_f = ggYaw;
+			}
+		}
+
 		// GGMAX 3.25v: count down the post-load grace, and re-arm it whenever we cross into or
 		// out of the test game. Level loads are covered by the visuals reset; entering test game
 		// is NOT a level load, and it spawns characters and starts their scripts - exactly the
