@@ -9460,15 +9460,16 @@ void AutoHarness_CheckForCommand(void)
 			g_tvCycleActive = true;
 			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS CYCLE (3s per mode, 0->20, normal shading = loop marker; any SET_TANGENTVIS <n> stops)");
 		}
-		else if (sscanf_s(arg, "%d", &mode) >= 1 && mode >= 0 && mode <= 22)
+		else if (sscanf_s(arg, "%d", &mode) >= 1 && mode >= 0 && mode <= 24) // GGMAX 3.35e: +albedo, +F
 		{
 			g_tvCycleActive = false;
 			wi::renderer::gg_debugvis = mode;
-			static const char* tvNames[23] = { "off", "world tangent", "vertex normal", "bumped normal", "handedness", "normal-map sample",
+			static const char* tvNames[25] = { "off", "world tangent", "vertex normal", "bumped normal", "handedness", "normal-map sample",
 				"basecolor UV raw", "basecolor UV x64 grid", "basecolor tex sample", "final albedo input", "ORM sample",
 				"roughness", "specular F0", "occlusion", "vertex color", "emissive", "world-pos grid",
 				"direct diffuse", "direct specular", "indirect diffuse", "indirect specular",
-				"RAW normal-map texels", "RAW normal-map mip0" };
+				"RAW normal-map texels", "RAW normal-map mip0",
+				"albedo (post-create)", "F (diffuse scaled by 1-F)" };
 			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS %d (%s)", mode, tvNames[mode]);
 		}
 		else
