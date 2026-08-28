@@ -8527,3 +8527,54 @@ even present before believing a null.
   level. Real difference, no measurable cost in this scene.
 - **Material permutations**: GameGuru content is ~100% base PBR (COLLAPSIBLE 0 of 3307). No
   expensive permutations to drop. See §3.31.
+
+## §3.33 — two DX11-parity wins that measure as nothing on this rig
+
+Both are strictly-less-work and provably output-identical. Both are reported honestly as
+**unmeasurable here**, because on this hardware they are.
+
+### 1. Grass was rendered into cube faces the camera cannot see
+
+In the POINT branch of `DrawShadowmaps`, the mesh draws are bounded by `camera_count` — the cube
+faces whose frustum intersects the main camera — but the hair/grass loop two blocks below iterates
+`arraysize(cameras)`, **all six, unconditionally**. Twelve point lights x six faces x every visible
+grass chunk, into faces nothing will ever sample. DX11 drew grass into **no** shadow map at all.
+
+⚠⚠ **The obvious fix is wrong, and the code says so.** Bounding the hair loop by `camera_count`
+would render grass into the wrong physical faces:
+```
+// We no longer have a straight mapping from camera to viewport:
+//  - there will be always 6 viewports
+//  - there will be only as many cameras, as many cubemap face frustums are visible
+//  - output_index is mapping camera to viewport
+```
+`cb.cameras[0..count)` are COMPACTED visible faces with an `output_index` remap; the hair loop
+indexes the RAW SHCAM array and derives its viewport from `shcam` directly. It needed the same
+frustum **test**, not the same **bound**. ★ I had written the wrong patch before reading that
+comment — "make it match the loop above" was a plausible instruction that would have corrupted
+point-light shadows.
+
+### 2. Sixteen wasted transparent-shadow fetches per light per pixel, by default
+
+`sample_shadow` fetches the transparent shadow atlas INSIDE the 16-tap loop, gated only by the
+compile-time `DISABLE_TRANSPARENT_SHADOWMAP` which GGMAX never defines. But `gg_transparent_shadows`
+defaults **false**, and an invalid transparent atlas falls back to `wi::texturehelper::getWhite()` —
+so all 16 fetches sample white and multiply by 1. ★ Skipping them is **behaviour-identical**, not a
+quality trade: multiplying by white is the identity. With 12 point lights that is 192 VMEM
+instructions per pixel recovered for nothing. DX11 fetched ONCE, outside the loop, behind a runtime
+flag; the bit slot for that flag still exists upstream, commented out, and 3.33 restores it.
+
+### ⚠ Measured: no detectable change on this PC
+
+Light cluster, 16 granted lights, control first and last: opaque **1.45 / 1.07 / 1.33** with Super
+Quick — the same ~25% the tap reduction already gave. The DEFAULT path did not visibly improve.
+
+The most likely reason for (2) is that a 1x1 white texture lives permanently in L1, so the fetches
+were nearly free here — they cost issue rate, not bandwidth, and this card has issue rate to spare.
+A 6-year-old AMD part may not. For (1), TESTPRO2's grass contributes nothing to shadow cost anyway
+(measured 2.14 vs 2.10 with grass off entirely).
+
+★ **Both kept regardless**: they remove real work, cannot change output, and match what DX11 did.
+But they are NOT claimed as wins, and if Lee sees no change on the AMD card that is consistent with
+everything measured here. ⚠ Do not let a plausible mechanism become a reported saving without a
+number behind it.
