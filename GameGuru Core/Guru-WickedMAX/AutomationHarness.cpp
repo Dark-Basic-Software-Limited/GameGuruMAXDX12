@@ -6891,6 +6891,53 @@ static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* res
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "DUMP_DRAWS") == 0)
+	{
+		// ★★★ DUMP_DRAWS - draws per FRAME, per render pass.
+		//
+		// The one number needed to tell a per-DRAW cost from a per-TRIANGLE one, and there was no
+		// way to get it. 3.34 measured that Opaque Objects is 99% of Opaque Scene, that a pixel
+		// shader fetching nothing still costs 58% of it, and that dropping to 1/6 the pixels barely
+		// moves it - so the floor is geometry submission. Whether the fix is "merge the objects" or
+		// "cut the triangles" depends entirely on draws/frame, which is this.
+		//
+		// ★ The counters are free-running totals, so a single reading is meaningless. This latches
+		// the previous reading and the previous FRAME NUMBER and reports the rate between them:
+		// call it twice, and the SECOND reply is the answer over that interval. Dividing by frames
+		// rather than by seconds is deliberate - it stays correct while the frame rate moves.
+		extern std::atomic<uint64_t>* GG_GetTotalDrawCounters(void);
+		std::atomic<uint64_t>* counters = GG_GetTotalDrawCounters();
+		const uint64_t frame = wi::graphics::GetDevice() ? wi::graphics::GetDevice()->GetFrameCount() : 0;
+
+		static uint64_t s_prev[wi::enums::RENDERPASS_COUNT] = {};
+		static uint64_t s_prevFrame = 0;
+		static bool s_armed = false;
+
+		const uint64_t frames = (s_armed && frame > s_prevFrame) ? (frame - s_prevFrame) : 0;
+		static const char* passnames[] = { "MAIN", "PREPASS", "PREPASS_DEPTHONLY", "ENVMAPCAPTURE",
+			"SHADOW", "VOXELIZE", "RAINBLOCKER" };
+		int n = _snprintf(result, resultSize, "OK: DUMP_DRAWS over %llu frames%s",
+			(unsigned long long)frames, frames ? "" : " (first call - arming, call again)");
+		for (int rp = 0; rp < (int)wi::enums::RENDERPASS_COUNT && n > 0 && n < (int)resultSize - 64; ++rp)
+		{
+			const uint64_t now = counters[rp].load(std::memory_order_relaxed);
+			if (frames > 0)
+			{
+				const uint64_t d = (now >= s_prev[rp]) ? (now - s_prev[rp]) : 0;
+				if (d > 0)
+				{
+					n += _snprintf(result + n, resultSize - n, "  %s=%llu/frame",
+						(rp < (int)(sizeof(passnames) / sizeof(passnames[0]))) ? passnames[rp] : "?",
+						(unsigned long long)(d / frames));
+				}
+			}
+			s_prev[rp] = now;
+		}
+		s_prevFrame = frame;
+		s_armed = true;
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_DELAYEDSHADOWS") == 0)
 	{
 		// SET_DELAYEDSHADOWS <0|1> - stagger sun cascade refresh across frames.

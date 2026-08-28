@@ -8655,3 +8655,162 @@ cascade-blend flicker, so only a human eye can approve it. If he accepts the dis
   clobbered two harness knobs that had worked an hour earlier.
 - ⚠ An engine build **clears `Max/shaders/*.cso`** — never build the engine during a sweep. Prove a
   shader edit landed by the `.cso` **size** (objectPS 92056 → 92256 → 92376), never the timestamp.
+
+
+---
+
+# §3.34 — WHERE THE 16 ms IN "OPAQUE SCENE" ACTUALLY GOES (2026-08-28)
+
+Lee, on the old AMD card, standing outside looking at the four half-million-poly buildings:
+**Opaque Scene 16.36 ms, Z-Prepass 8.39 ms.** DX11 did the same view in about 4 ms and 2 ms.
+He also reported that the 3.31 **Super Quick Objects** tickbox did nothing at all, and asked for it
+to be made brutally aggressive — "just dump polygons in the shapes of those objects in the fastest
+possible way" — with a bake along the lines of the tree billboards if that was not enough.
+
+## He was right that the tickbox did nothing, and it was right not to
+
+3.31's Super Quick collapsed the *exotic* material permutations (parallax occlusion, planar
+reflection, anisotropic, clearcoat, cloth) onto base PBR. On a scene whose materials are already
+base PBR that is, precisely, a no-op. `DUMP_MATERIALTYPES` on 3.31 should have been the tell and
+was not read that way. Nothing was broken; the switch simply had nothing to collapse.
+
+## What it is now
+
+Three genuinely cut-down opaque MAIN pixel shaders, compiled from `objectPS.hlsl` with one define
+each and selected through a new `ObjectRenderingVariant::bits.ggsuperquick` field:
+
+| rung | what it does |
+|---|---|
+| `GG_SQ_FLAT` | **no texture fetch of any kind.** Material colour off the existing interpolant, one cube-mip ambient lookup, one N.L against the sun constant. |
+| `GG_SQ_AMBIENT` | + the albedo texture, + fog |
+| `GG_SQ_LIT` | + tiled lighting and shadows. Still no normal/ORM/emissive/specular/occlusion maps, no decals, no SSAO/SSR/SSGI, no lightmap, no rim, no saturation matrix. |
+
+The rungs exist because **the gap between two of them is the measurement**. Each removes a
+different named suspect.
+
+★ **Only the pixel shader changes.** RENDERPASS_MAIN runs `DSSTYPE_DEPTHREADEQUAL` —
+`ComparisonFunc::EQUAL` against the Z-prepass — so the two passes' vertex maths is a correctness
+contract, and a re-scheduled position leaves an unwritten gbuffer that reads BLACK. That is a
+failure this port has already paid for once.
+
+★ A useful thing fell out of reading that state: **the opaque main pass already has
+`DISABLE_ALPHATEST` defined** (objectHF.hlsli:10-12) because the prepass did the cutout and EQUAL
+depth means MAIN can only shade pixels the prepass kept. So there is no cutout to preserve, and a
+genuinely zero-texture rung is possible at all.
+
+## The instrument that made this answerable
+
+`Opaque Scene` and `Z-Prepass` were each ONE number covering unrelated workloads. Split into:
+
+```
+Opaque Scene -> Opaque Objects / Opaque Terrain-Trees-Grass / Opaque Sky
+Z-Prepass    -> Prepass Objects / Prepass Terrain-Trees-Grass
+```
+
+Nested GPU ranges are safe: the busy accounting unions overlapping intervals rather than summing.
+
+And `DUMP_DRAWS`, which reports draws **per frame** per render pass by latching the previous
+reading and the previous frame number — the free-running totals were unreadable on their own, and
+without draws/frame there is no way to tell a per-draw cost from a per-triangle one.
+
+## The measurement
+
+TESTPRO2, editor, camera parked at `12000 1500 9000 pitch 0 yaw 210` (the whole city in frame).
+This machine is an **RX 9060 XT**; Lee's card runs roughly 4x these numbers, which matches his
+"3-4 times larger on the old AMD".
+
+**1320 draws/frame in MAIN, 1309 in PREPASS, 160 in SHADOW.**
+
+| rung | Opaque Objects | Prepass Objects |
+|---|---|---|
+| off (stock) | **3.92** | 1.31 |
+| 3 LIT | 3.36 | 1.31 |
+| 2 AMBIENT | 2.42 | 1.35 |
+| 1 FLAT | **2.39** | 1.30 |
+| off (repeat) | 3.88 | 1.48 |
+
+Control repeats within 1%. Of the 3.96 ms `Opaque Scene`, **3.92 is `Opaque Objects`** —
+terrain/trees/grass 0.03, sky 0.01. So Lee's 16.36 ms IS the objects, and the answer was never
+going to be found in terrain or sky.
+
+Resolution scale (clamped at 0.4 linear = **6.25x fewer pixels**):
+
+| | 1.0 | 0.4 | change |
+|---|---|---|---|
+| stock | 3.93 | 2.96 | -25% |
+| FLAT | 2.29 | 1.99 | -13% |
+
+## ★★★ The decomposition, and the conclusion
+
+```
+Opaque Objects, stock                                  3.92 ms   1320 draws
+  pixel shading                                        1.53 ms   (39%)
+      all remaining maps + decals + screen-space       0.56
+      tiled lighting + shadows                         0.94
+      the albedo texture itself                        0.03   <-- free
+  the FLOOR: a pixel shader that fetches NOTHING       2.39 ms   (61%)
+      of which the fat COMMON vertex layout            ~1.09     (main FLAT minus prepass)
+      of which irreducible geometry submission         ~1.30     (what the prepass also pays)
+```
+
+**A pixel shader that fetches nothing still costs 61% of Opaque Objects, and 6.25x fewer pixels
+only removes 13% of that.** The opaque object cost is not fill-rate and it is not shading. It is
+geometry submission: 1320 draws at **1.81 us each** with an almost-empty pixel shader.
+
+So Super Quick, taken as far as a pixel shader can go, is worth **3.92 -> 2.39, about -39%**.
+Scaled to Lee's card that is roughly **16.4 -> 10 ms**. Real, worth shipping, and *not* enough on
+its own to reach DX11's 4 ms. His instinct to reach for a bake was correct, and this now says so
+with numbers rather than with a hunch.
+
+★ **The albedo texture is free (0.03 ms).** Worth remembering before anyone spends effort on
+texture compression or resolution for this particular symptom.
+
+★★ **The biggest single remaining item is the vertex layout, not the lights.** `LAYOUT_COMMON`
+costs ~1.09 ms more than `LAYOUT_PREPASS` over identical geometry — more than the lights (0.94) and
+more than all the remaining maps put together (0.56). Per vertex it adds tangent, atlas, vertex AO,
+wetmap and colour loads on top of position/normal/uvsets, and `VertexSurface::create` calls
+`GetInstance()` separately inside several of those paths. On `aztec_wall_152` that is
+**1,530,144 vertices for 510,048 triangles — exactly 3.0 verts/tri, i.e. completely unwelded**, so
+the vertex cache buys nothing and every one of those loads is paid in full.
+
+## Next, in order
+
+1. **A cut-down VERTEX permutation for the Super Quick rungs.** Same `LAYOUT_COMMON` (identical
+   output signature, so the PS still matches), same position chain (so EQUAL depth still holds),
+   same provoking index buffer (so primitive order still matches the prepass — upstream's own
+   comment says that is why it is there), but skipping the tangent/atlas/AO/wetmap loads the
+   Super Quick pixel shaders provably ignore. Bounded by the ~1.09 ms figure above.
+   ⚠ It must NOT be `objectVS_simple`: that drops the provoking index buffer, which changes
+   primitive order, which is exactly the depth mismatch the reorder was added to prevent.
+2. **Then the bake.** Below ~1.30 ms nothing but fewer draws and fewer triangles will help, and
+   that is a merge/impostor job, not a shader job.
+3. Weld the Aztec building meshes. 3.0 verts/tri is a content-side defect and it multiplies
+   everything in item 1.
+
+## Two bugs found on the way
+
+- ⚠ **The Terrain Bake tooltip was landing on the Super Quick checkbox.** 3.31 inserted the
+  Super Quick block *between* the Terrain Bake widget and its tooltip, so `IsItemHovered` resolved
+  to the wrong item: Terrain Bake silently lost its tooltip and Super Quick's own was overwritten
+  by it. **Lee's screenshot shows it** — the tooltip reading "Converts the terrain into ord..."
+  next to Super Quick Objects. Never separate a widget from its tooltip.
+- ⚠ **3.33 broke the GGTerrain shader build and no sweep noticed.** Un-commenting
+  `OPTION_BIT_TRANSPARENTSHADOWS_ENABLED` in the engine enum collided with the `static const uint`
+  of the same name in `GGTerrain/Shaders/PBR/ShaderInterop_Renderer.h`; every GGTerrain shader
+  including both headers failed to compile. The engine still built clean, and a sweep run on stale
+  GGTerrain `.cso` files passes anyway — which means **3.33's two "wins" were very probably never
+  running when its sweep was gated CLEAN**. Prove an engine shader-header edit with a GAME build.
+
+## Method earned
+
+- ★★ **A "total" row that bundles unrelated workloads cannot be optimised, only guessed at.**
+  Three weeks of "Opaque Scene is high" and nobody could say whether it was objects, terrain or
+  sky. The split took twenty minutes and answered it in one reading: 99% objects.
+- ★★ **Before optimising a shader, prove the cost is in the shader.** The resolution-scale test
+  costs one existing knob and two samples, and it would have said "not fill-bound" before any of
+  the pixel-shader work was written. Do it first next time.
+- ★ **A ladder is worth more than a switch.** One brutal on/off would have said "-39%" and
+  nothing else. The rungs said which 39%, and — more usefully — what the other 61% is.
+- ⚠ **`tail` in a pipeline withholds a background script's output until it exits, and killing
+  the `tail` DISCARDS the buffer.** A completed 10-minute run was lost this way after its work had
+  already finished. Redirect a background script to a file; never pipe it through `tail`.
