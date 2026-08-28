@@ -8919,3 +8919,20 @@ final check now captures every rung at both.
 2. `aztec_wall_152` is **1,530,144 verts for 510,048 tris — exactly 3.0 verts/tri, unwelded.**
    Content-side, and it multiplies everything above.
 3. Delayed Shadows is still off by default and still the largest single unclaimed saving (§3.33).
+
+## Gate
+
+Sweep `0828e` **CLEAN 19/19** on all four criteria (engine `544c6ccb`, game `73d6df22`):
+
+```
+C1 LOAD      PASS  19/19 reached the editor
+C2 GEOMETRY  PASS  POLYS identical to the 0825 reference on all 19 demos
+C3 VRAM      PASS  worst 3974.9 MB (Aztec Game Kit, in game), limit 4096, headroom 121.1 MB
+C4 GAME      PASS  every demo produced in-game FPS past the loading overlays
+```
+
+★ C2 is the one that matters here. Super Quick is off by default, so the sweep exercises the
+STOCK path - and POLYS bit-identical on all nineteen is the proof that the new variant bit, the
+extra pipeline permutations and the two new debug channels changed nothing about what gets drawn.
+The one edit that reaches the stock shader at all is the debugvis 23/24 switch, a uniform branch
+on a frame constant in the pixel shader beside twenty existing ones.
