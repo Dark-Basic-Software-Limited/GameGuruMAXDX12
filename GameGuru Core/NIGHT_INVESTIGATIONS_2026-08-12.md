@@ -8814,3 +8814,108 @@ the vertex cache buys nothing and every one of those loads is paid in full.
 - ⚠ **`tail` in a pipeline withholds a background script's output until it exits, and killing
   the `tail` DISCARDS the buffer.** A completed 10-minute run was lost this way after its work had
   already finished. Redirect a background script to a file; never pipe it through `tail`.
+
+
+---
+
+# §3.35 — THE VERTEX SIDE, AND THREE DEFECTS 3.34 SHIPPED (2026-08-28)
+
+§3.34 ended with a measurement rather than a fix: opaque object cost stopped at **2.39 ms of
+3.92** with a pixel shader that fetched nothing, and cutting the pixel count 6.25x moved that floor
+by 13%. The floor was vertex work and draw submission. Lee: *"do the vertex permutation"*.
+
+## Why a pixel shader could not reach it
+
+A PS input signature must be a **subset** of the VS output signature. So while the cut-down rungs
+kept `LAYOUT_COMMON`, the vertex shader still had to fetch, transform and **export** the tangent,
+the lightmap atlas UV, the vertex AO and the wetmap that none of them read. The pixel shader could
+stop reading them; the vertex shader could not stop producing them.
+
+`OBJECTSHADER_LAYOUT_GG_SUPERQUICK` is `LAYOUT_COMMON` minus `TANGENT` and minus `COMMON`, used by
+a **matched pair** — `objectVS_gg_superquick.hlsl` and the three rung permutations of
+`objectPS.hlsl`. That removes 8 interpolant components of ~25 and four per-vertex fetches.
+
+Three things are deliberately NOT touched, and each would have been a plausible "optimisation":
+
+- ★★★ **The provoking index buffer stays.** It is a dependent buffer load per vertex and it looks
+  like free money. It is not: upstream's own comment says the colour pass needs the same PRIMITIVE
+  ORDER as the prepass or the depth comparison fails. It is what makes `ComparisonFunc::EQUAL`
+  legal. Dropping it — which is what reusing `objectVS_simple` would have done — produces black
+  geometry, not a warning.
+- ★ **The position chain stays byte-identical**, and `SV_Position` is `precise`. That is what
+  already lets the stock prepass VS and the stock main VS — two different binaries — agree.
+- ★ **The prepass and shadow vertex shaders stay untouched.** The first version of this gated the
+  loads on `OBJECTSHADER_USE_COMMON` / `_USE_TANGENT`, which also changed them. Measured: **exactly
+  nothing** (Prepass Objects 1.23–1.48 ms either way), because DXC was already dead-code-
+  eliminating loads whose results those layouts never export. A change worth zero that alters one
+  half of the depth-EQUAL contract, on hardware I cannot test, is a bad trade — so it was rescoped
+  to the one layout where I would rather not depend on DCE surviving a future compiler.
+
+## The measurement
+
+TESTPRO2, city view, **1320 draws/frame**. This machine is an RX 9060 XT; Lee's card runs ~4x.
+
+| rung | 3.34 | 3.35 | |
+|---|---|---|---|
+| off (stock) | 3.92 | 4.03 / 3.86 | control, repeats |
+| 3 LIT | 3.36 | **2.66** | −21% |
+| 2 AMBIENT | 2.42 | 2.36 | |
+| 1 FLAT | 2.39 | **1.90** | −21% |
+
+Stock → FLAT is now **−52%**, stock → LIT **−33%**. The prepass floor (~1.30 ms) is unchanged and
+is now within 0.6 ms of FLAT — there is very little vertex work left to remove.
+
+## ★★★ Three defects, one mistake, all shipped in 3.34
+
+The rungs skip texture fetches. Each fetch feeds a **multiply**, and I left the multiply's identity
+behind in three places. For a modulation map the identity is the **top of the range** — the worst
+possible default, not a neutral one.
+
+| what | left at | consequence |
+|---|---|---|
+| emissive | material constant, map dropped | GameGuru pairs a white emissive constant with a mostly-black map → **every surface a full-brightness emitter**; bloom veiled the whole frame, sky and water included |
+| `surfaceMap` (ORM) | 1 | metalness and reflectance became their material constants, which this content leaves at 1 → `albedo = baseColor * (1 - max(refl, metal))` = **ZERO** → interiors, lit almost entirely by indirect diffuse, rendered **BLACK** |
+| roughness | 1 → material constant | Wicked's default 0.2 → glossy plastic on every surface |
+
+All three now handled in one place immediately before `surface.create`:
+`surfaceMap = half4(1,1,0,0)`, `specularMap = 1`, `emissiveColor = 0` — a plain matte dielectric
+with `f0 = 0`, so there is no specular lobe and no environment mip to sample. Cheapest possible,
+and it is exactly what the tooltip already promised.
+
+⚠ **3.34 is live in Lee's hands with all three.** Its slider defaults to rung 1 (FLAT), which
+returns before any of them, so the default is unaffected — but rungs 2 and 3 are not.
+
+## ★★★ How they were actually found — and how they were not
+
+The white-out looked like an exposure or NaN fault, because the veil covered the sky and the water
+too. It was neither. Three theories arrived at by **reading the code** — metalness, then roughness,
+then lightmaps — were all wrong. Each was plausible, each cost a build-and-relaunch cycle.
+
+What settled it every time was a **channel view**:
+
+- debugvis 15 (emissive) — the entire scene at 1.0. One screenshot.
+- debugvis 19 (indirect diffuse) — **identical** between stock and the rung, which killed the
+  lightmap theory outright and narrowed the black interior to albedo, F or occlusion.
+- and then nothing could see the first two, because the existing 22 modes cover the **inputs** to
+  `surface.create` and the **outputs** of the light loops but nothing in between. Added **debugvis
+  23 (`surface.albedo`)** and **24 (`surface.F`)** — the two derived terms `ApplyLighting`
+  multiplies everything by. 23 named the cause immediately.
+
+★★ **The lesson is not "the code was hard to read".** It is that a rendering defect has a
+*measurable location*, and the instrument that finds it is a view of the intermediate value, not a
+theory about which line is wrong. Three wrong theories cost more than building the missing view
+would have.
+
+★ **A single test viewpoint is not a test.** The exterior looked correct at every rung; the same
+build rendered the interior black. Interiors and exteriors exercise completely different lighting
+paths — outdoors is direct sun, indoors is almost entirely indirect diffuse, and only the second
+one has nothing but albedo to show. Any future visual gate on a shading change needs both, and the
+final check now captures every rung at both.
+
+## Still open
+
+1. **~1.30 ms of irreducible geometry submission** — what the prepass also pays, 1320 draws.
+   Nothing but fewer draws or fewer triangles reaches it. That is the bake.
+2. `aztec_wall_152` is **1,530,144 verts for 510,048 tris — exactly 3.0 verts/tri, unwelded.**
+   Content-side, and it multiplies everything above.
+3. Delayed Shadows is still off by default and still the largest single unclaimed saving (§3.33).
