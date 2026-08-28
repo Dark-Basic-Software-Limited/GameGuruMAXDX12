@@ -841,6 +841,31 @@ void MasterRenderer::Update(float dt)
 			s_ggSpinLast = ggSpinNow;
 			if (ggSpinDt < 0.0f)  ggSpinDt = 0.0f;
 			if (ggSpinDt > 0.25f) ggSpinDt = 0.25f;
+			// GGMAX 3.29: translation oscillation, for the shadow work. SPIN only changes the camera's
+			// ORIENTATION, and the shadow atlas sizes off DISTANCE - so a spin cannot reproduce this
+			// one at all. Runs back and forth along the facing direction like Lee running corner to
+			// corner in the starting room.
+			extern float gg_move_units_per_sec;
+			extern float gg_move_range;
+			extern float gg_move_anchor_x, gg_move_anchor_z;
+			static float s_ggMoveDist = 0.0f;
+			if (gg_move_units_per_sec != 0.0f)
+			{
+				s_ggMoveDist += gg_move_units_per_sec * ggSpinDt;
+				const float r = (gg_move_range > 1.0f) ? gg_move_range : 1.0f;
+				float p = fmodf(s_ggMoveDist, 2.0f * r);
+				if (p < 0.0f) p += 2.0f * r;
+				const float off = (p < r) ? p : (2.0f * r - p);   // triangle wave: 0 -> r -> 0
+				const float yaw = t.editorfreeflight.c.angy_f * 0.01745329252f;
+				t.editorfreeflight.mode = 1;
+				t.editorfreeflight.c.x_f = gg_move_anchor_x + sinf(yaw) * off;
+				t.editorfreeflight.c.z_f = gg_move_anchor_z + cosf(yaw) * off;
+			}
+			else
+			{
+				s_ggMoveDist = 0.0f;
+			}
+
 			if (gg_spin_deg_per_sec != 0.0f)
 			{
 				t.editorfreeflight.mode = 1;   // free-flight applies these fields every frame

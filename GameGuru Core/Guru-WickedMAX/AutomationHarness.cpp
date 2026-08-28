@@ -6803,6 +6803,13 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 // the product sets it, and it is inert until SPIN_CAMERA is sent. Read by the per-frame
 // update in master_part1.cpp, which advances editorfreeflight yaw by rate * wall-clock dt.
 float gg_spin_deg_per_sec = 0.0f;
+// GGMAX 3.29: translation oscillation for the shadow-cost work. DIAGNOSTIC ONLY - nothing in
+// the product sets these. SPIN_CAMERA cannot reproduce the shadow cost because the atlas sizes
+// each local shadow from its DISTANCE to the camera, and rotation does not change a distance.
+float gg_move_units_per_sec = 0.0f;
+float gg_move_range = 600.0f;
+float gg_move_anchor_x = 0.0f;
+float gg_move_anchor_z = 0.0f;
 
 // GGMAX 3.27: hoisted into its own function rather than added to the dispatch ladder.
 // ⚠ Adding one more `else if` to that chain tips MSVC over C1061 ("blocks nested too
@@ -6810,6 +6817,62 @@ float gg_spin_deg_per_sec = 0.0f;
 // reads as a problem somewhere else entirely. Every new command goes in a helper from here on.
 static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
+	if (_stricmp(cmd, "MOVE_CAMERA") == 0)
+	{
+		// MOVE_CAMERA <units_per_sec> [range]   (0 = stop)
+		// ★ SPIN_CAMERA cannot reproduce the shadow cost: the atlas sizes every local shadow from
+		// its DISTANCE to the camera, and rotation does not change a distance. This runs back and
+		// forth along the facing direction instead.
+		extern float gg_move_units_per_sec, gg_move_range, gg_move_anchor_x, gg_move_anchor_z;
+		float rate = 0.0f, rng = 600.0f;
+		const int got = sscanf_s(arg, "%f %f", &rate, &rng);
+		const char* state = AutoHarness_GetAppState();
+		if (got < 1)
+		{
+			_snprintf(result, resultSize, "ERROR: MOVE_CAMERA needs <units_per_sec> [range] (0 stops)");
+		}
+		else if (strcmp(state, "editor") != 0 && rate != 0.0f)
+		{
+			_snprintf(result, resultSize,
+				"ERROR: MOVE_CAMERA drives the editor free-flight camera (state: %s)", state);
+		}
+		else
+		{
+			if (rate != 0.0f)
+			{
+				// anchor HERE, so the oscillation is around wherever the camera currently is
+				gg_move_anchor_x = t.editorfreeflight.c.x_f;
+				gg_move_anchor_z = t.editorfreeflight.c.z_f;
+			}
+			gg_move_range = (rng > 1.0f) ? rng : 600.0f;
+			gg_move_units_per_sec = rate;
+			_snprintf(result, resultSize,
+				"OK: MOVE_CAMERA %.1f units/s over %.0f units (%s), anchored at (%.1f,%.1f)",
+				rate, gg_move_range, (rate == 0.0f) ? "stopped" : "moving",
+				gg_move_anchor_x, gg_move_anchor_z);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_SHADOWRESSTEPS") == 0)
+	{
+		// SET_SHADOWRESSTEPS <0..16>  (0 = stock continuous sizing)
+		int n = -1;
+		if (sscanf_s(arg, "%d", &n) < 1 || n < 0 || n > 16)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_SHADOWRESSTEPS needs 0..16 (0 = stock)");
+		}
+		else
+		{
+			wi::renderer::gg_shadow_res_steps = n;
+			_snprintf(result, resultSize,
+				"OK: SET_SHADOWRESSTEPS %d - local shadow resolution snaps to %s. 0 reproduces stock, "
+				"where every frame of camera translation re-renders every cached local shadow.",
+				n, (n == 0) ? "nothing (continuous)" : "discrete steps");
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_OCCLUSIONHISTORY") == 0)
 	{
 		// SET_OCCLUSIONHISTORY <1..32> - consecutive occluded frames required before a cull.

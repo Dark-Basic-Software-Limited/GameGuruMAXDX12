@@ -8209,3 +8209,74 @@ UNRESOLVED.
 
 ⚠⚠ **C2 WILL MOVE.** Better culling means fewer polys drawn, so POLYS changes on all 19 demos. Amend
 C2 in writing before the next sweep; every demo must move DOWNWARD — an increase anywhere is a bug.
+
+## §3.29 — shadow atlas resolution is a continuous function of camera distance
+
+Lee: *"in test game and moving forward/backward, GPU Shadowmap rendering jumps from 6ms to 25ms...
+running corner to corner in the starting room I jumped from 1.5ms to 3ms, and back to 1.5ms when I
+stopped moving."*
+
+### The chain, all of it already in the code
+
+```
+amount  = min(1, range/dist) * iterative_scaling        <- dist is CAMERA distance  (wiRenderer:4928)
+rect.w  = rect.h = int(max_shadow_resolution_* * amount)                            (:4960, :4972)
+LocalShadowSlot caches { ent, rx, ry, rw, rh, pos, range, dir, cone }                (:5112)
+localAtlasFullClear = changed                           <- ANY rect delta re-renders EVERYTHING
+```
+
+★★★ **Translation-specific BY CONSTRUCTION.** `dist` is a distance, so pure rotation cannot change
+it. That is why Lee sees this on forward/backward and not on turning, and it is what makes it a
+different bug from the 3.28 occlusion window rather than a leftover of it.
+
+### Proven, not inferred
+
+`SHADOW_LOCAL_RENDERED` is zeroed each frame and incremented only on a cache miss:
+
+| | shadowmap ms | RENDERED / GRANTED |
+|---|---|---|
+| parked | 0.84 | **0 of 6** |
+| translating (stock) | **4.30** | **6 of 6** |
+
+A perfect cache hit when still; a total miss on every light on every frame while moving. The
+cache's own comment promises a static torch bank "converges to 0 re-renders/frame" — and it does,
+right up until the player walks.
+
+### The fix, and the measured curve (controlled, fixed start position)
+
+Quantise `amount` into discrete steps so the layout is piecewise-constant.
+★ **CEIL, not round** — the quantised resolution is always >= what stock would pick, so no shadow
+comes out blurrier than today; the trade is slightly larger rects, paid once per tier crossing
+instead of once per frame.
+
+| steps | still | moving |
+|---|---|---|
+| 0 (stock) | 0.95 | **4.21** |
+| 8 | 0.90 | 2.40 |
+| 4 (default) | 0.89 | **1.84** |
+| 2 | 0.84 | **1.64** |
+| 0 (repeat) | 0.83 | **4.28** |
+
+⚠ **The ordering REVERSED once the start position was pinned** — two earlier uncontrolled runs had
+8 looking best, because `MOVE_CAMERA` re-anchors wherever the camera is and the conditions drifted
+2789 -> 3633 across the level. ★ Running the control condition FIRST AND LAST (4.21 vs 4.28) is what
+made the third run trustworthy; without it there is no way to tell a real ordering from drift.
+
+⚠ Default is **4, not the best-measured 2**: with only two tiers every light gets >= 50% resolution,
+which fills the atlas far faster, and a full atlas makes the packer's `iterative_scaling` shrink
+EVERYTHING — turning a no-quality-loss change into a quality loss on light-heavy levels. 4 keeps
+most of the win at half the over-provisioning.
+
+### ⚠ Two things this does NOT settle
+
+1. **The RENDERED counter did not fall** (still 6 of 6 quantised) while the milliseconds halved.
+   That is a flaw in MY instrument, not a contradiction: I took the MAX across four samples, so one
+   miss in four hides the improvement. The ms figure is a 20-frame average and is the reliable one.
+   ★ A max is the wrong statistic for a hit RATE.
+2. ★★ **Everything here was measured in the EDITOR, and Lee's 6->25 ms is in TEST GAME.** The
+   parallel audit raised a second candidate that only exists there: the first-person weapon is a
+   shadow caster repositioned every frame from gun-lag and wobble terms that are non-constant only
+   while moving, and it sits at the camera so its AABB intersects every nearby granted light — which
+   sets the same `changed` flag by a completely different route. The quantiser does nothing for it.
+   ⚠ Rotating on the spot in TEST GAME discriminates: the distance mechanism is rotation-invariant,
+   the weapon one is not.
