@@ -3839,6 +3839,7 @@ struct visualstype
 	// the pre-parse reset values, which are the same all-off defaults. Nothing changes for an
 	// existing project until somebody ticks something.
 	bool bTerrainBake;      // Terrain Bake (was the session-only "Terrain Off")
+	bool bSuperQuickObjects; // GGMAX 3.31 draw expensive material permutations as base PBR
 	bool bNoTrees;          // Trees Off
 	bool bNoGrass;          // Grass Off
 	bool bWaterBake;        // Water Bake (was the session-only "Water Off")
@@ -4332,6 +4333,7 @@ struct visualsdatastoragetype
 	// the pre-parse reset values, which are the same all-off defaults. Nothing changes for an
 	// existing project until somebody ticks something.
 	bool bTerrainBake;      // Terrain Bake (was the session-only "Terrain Off")
+	bool bSuperQuickObjects; // GGMAX 3.31 draw expensive material permutations as base PBR
 	bool bNoTrees;          // Trees Off
 	bool bNoGrass;          // Grass Off
 	bool bWaterBake;        // Water Bake (was the session-only "Water Off")

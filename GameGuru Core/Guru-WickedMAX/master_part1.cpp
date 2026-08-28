@@ -834,6 +834,9 @@ void MasterRenderer::Update(float dt)
 			wi::renderer::gg_shadow_res_steps = shs;
 		}
 
+		// GGMAX 3.31: Super Quick Objects -> the material-permutation collapse.
+		wi::renderer::gg_super_quick_objects = t.visuals.bSuperQuickObjects ? 1 : 0;
+
 		// ★★★ GGMAX 3.27: continuous camera spin, for measuring rotation-dependent cost.
 		//
 		// Diagnostic only - inert unless SPIN_CAMERA has been sent, which nothing in the product

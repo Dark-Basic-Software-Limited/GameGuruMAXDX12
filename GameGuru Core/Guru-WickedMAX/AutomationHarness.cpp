@@ -6854,6 +6854,64 @@ static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* res
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "DUMP_MATERIALTYPES") == 0)
+	{
+		// Which shader permutations does this level actually use?
+		// ★ Without this, a null result from SET_SUPERQUICK is ambiguous: it could mean the switch
+		// does not work, or that the level has nothing expensive to collapse. Those need completely
+		// different next steps, and guessing which costs a whole test cycle.
+		auto& sc = wi::scene::GetScene();
+		int counts[wi::scene::MaterialComponent::SHADERTYPE_COUNT] = {};
+		for (size_t i = 0; i < sc.materials.GetCount(); ++i)
+		{
+			const int st = (int)sc.materials[i].shaderType;
+			if (st >= 0 && st < wi::scene::MaterialComponent::SHADERTYPE_COUNT) counts[st]++;
+		}
+		static const char* ggMatNames[] = { "PBR", "PLANARREFLECTION", "PARALLAXOCCLUSION",
+			"ANISOTROPIC", "WATER", "CARTOON", "UNLIT", "CLOTH", "CLEARCOAT",
+			"CLOTH_CLEARCOAT", "TERRAINBLENDED", "INTERIORMAPPING" };
+		int off = _snprintf(result, resultSize, "OK: %d materials\n", (int)sc.materials.GetCount());
+		int collapsible = 0;
+		for (int i = 0; i < wi::scene::MaterialComponent::SHADERTYPE_COUNT && off > 0 && off < (int)resultSize - 90; ++i)
+		{
+			if (counts[i] == 0) continue;
+			const bool expensive = (i == wi::scene::MaterialComponent::SHADERTYPE_PBR_PLANARREFLECTION
+				|| i == wi::scene::MaterialComponent::SHADERTYPE_PBR_PARALLAXOCCLUSIONMAPPING
+				|| i == wi::scene::MaterialComponent::SHADERTYPE_PBR_ANISOTROPIC
+				|| i == wi::scene::MaterialComponent::SHADERTYPE_PBR_CLOTH
+				|| i == wi::scene::MaterialComponent::SHADERTYPE_PBR_CLEARCOAT
+				|| i == wi::scene::MaterialComponent::SHADERTYPE_PBR_CLOTH_CLEARCOAT
+				|| i == wi::scene::MaterialComponent::SHADERTYPE_INTERIORMAPPING);
+			if (expensive) collapsible += counts[i];
+			off += _snprintf(result + off, resultSize - off, "  %-18s %4d%s\n",
+				ggMatNames[i], counts[i], expensive ? "   <- Super Quick collapses this" : "");
+		}
+		_snprintf(result + off, resultSize - off, "  COLLAPSIBLE: %d of %d\n",
+			collapsible, (int)sc.materials.GetCount());
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_SUPERQUICK") == 0)
+	{
+		// SET_SUPERQUICK <0|1> - collapse expensive material permutations onto base PBR.
+		// ⚠ Writes the VISUALS field, because master_part1.cpp pushes it to the engine every
+		// frame and would otherwise clobber a direct engine write.
+		int n = -1;
+		if (sscanf_s(arg, "%d", &n) < 1 || n < 0 || n > 1)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_SUPERQUICK needs 0 or 1");
+		}
+		else
+		{
+			t.gamevisuals.bSuperQuickObjects = t.visuals.bSuperQuickObjects = (n != 0);
+			wi::renderer::gg_super_quick_objects = n;
+			_snprintf(result, resultSize,
+				"OK: SET_SUPERQUICK %d - expensive material permutations %s", n,
+				n ? "collapsed onto base PBR" : "restored");
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_SHADOWPERLIGHT") == 0)
 	{
 		// SET_SHADOWPERLIGHT <0|1>  - 1 = a moving shadow caster refreshes only the lights it is

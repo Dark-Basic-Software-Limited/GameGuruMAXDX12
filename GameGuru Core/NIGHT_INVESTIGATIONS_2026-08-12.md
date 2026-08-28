@@ -8371,3 +8371,69 @@ An earlier run of the wheel test *looked* like a clean reproduction — `RENDERE
 the keypress. It was level-load settling: `GRANTED` went 0→12 at the same moment because the scene
 had not finished initialising. ★ **A reproduction that appears on the first attempt, in a run whose
 baseline was taken too early, is a coincidence until the baseline is proven stable.**
+
+## §3.31 — "Super Quick Objects", and the diagnostic that redirected it
+
+Lee asked for a tickbox putting all objects into a cheap rendering mode, dropping expensive shader
+work that might explain DX12's Opaque Scene / Z-Prepass cost against DX11.
+
+### ★★★ The first design was worth nothing, and one diagnostic proved it in a single run
+
+The obvious lever is the material `shaderType`, which selects a PSO permutation: parallax occlusion
+mapping (a per-pixel heightfield raymarch), planar reflection, anisotropic, clearcoat, cloth,
+interior mapping. All are permutations of a base PBR shader that `LoadShaders` always precompiles,
+so collapsing onto it can never miss a PSO or stall on a lazy compile. Clean, safe, shipped.
+
+Then `DUMP_MATERIALTYPES` measured what GameGuru levels actually contain:
+
+```
+TESTPRO2   3307 materials:  3283 PBR, 24 UNLIT     COLLAPSIBLE: 0
+Aztec      3301 materials:  3277 PBR, 24 UNLIT     COLLAPSIBLE: 0
+```
+
+**Zero.** GameGuru content is essentially all base PBR. The collapse cannot help on a real level.
+
+★ **The diagnostic paid for itself twice over.** Without it the A/B reads `opaque 1.22 → 0.92 →
+0.99` — a null result inside the noise — and the obvious conclusion is "the switch is broken", which
+would have sent me debugging plumbing that worked perfectly. ⚠ **Before A/B-ing a switch, measure
+whether the thing it switches is even present.**
+
+### ★★★ The real lever: 16 shadow taps per light per pixel
+
+If the cost is not in the permutations it is inside base PBR, and the biggest item there is shadow
+filtering. `sample_shadow` (shadowHF.hlsli) runs a **16-point Vogel disk PER LIGHT PER PIXEL**.
+Twelve point lights is ~192 shadow samples on every pixel they touch — a direct explanation for
+Lee's report that adding 12 point lights costs far more than those lights ought to.
+
+A one-tap path already existed, but only as a COMPILE-TIME build (`DISABLE_SOFT_SHADOWMAP`) that we
+do not ship. 3.31a makes it runtime on a frame-wide flag, so the branch is perfectly coherent —
+every pixel of every draw takes the same side and the wave never diverges, which is the usual
+objection to branching in a pixel shader and does not apply here.
+
+⚠ Measured on TESTPRO2: opaque 0.80 → 0.61 with the control drifting to 0.73. **Marginal here, and
+honestly so** — that viewpoint grants only 3 local shadows, so 16→1 taps on three lights is small.
+The mechanism scales with light count; this PC's test scene cannot show its value. The AMD card with
+12 active point lights is where it should tell.
+
+★ Proof the shader edit landed: `objectPS.cso` 92056 → **92256 bytes**. Timestamps are unreliable
+here; the size is not.
+
+### Facts established for the DX11 comparison (so they need not be re-derived)
+
+- Sun cascades: DX12 `{380, 950, 7500, 30000, 500000}` at 2048 each. DX11 `SHADOWRES_2D = 2048`,
+  `SHADOWCOUNT_2D = 5`. **PARITY** — cascade count and resolution are NOT the regression. ~21
+  megatexels of depth per frame either way, which is a plausible 6 ms on a 6-year-old card.
+- ⚠ DX11 culled shadow CONTENT per cascade: `GGTerrain_Draw_ShadowMap` picked a coarser terrain LOD
+  per cascade (`case 4: lowestLevel = 7`), trees stopped at cascade 3 (`tree_shadow_range = 3`) and
+  grass cast none at all (`shadow_range = 0`). DX12 ships Wicked's NATIVE terrain, so
+  `GGTerrain_Draw_ShadowMap` returns immediately (`if (ggterrain_use_wicked_terrain) return;`) and
+  that whole ladder is dead. DX12 has `SHADOW_LOD_OVERRIDE = true` and `shadowFarCascadeCull = true`
+  instead - whether they are equivalent is NOT yet established.
+- **"Delayed Shadows" already exists as a tickbox and is default-OFF** in both visuals constructors
+  and forced off by the HIGHEST preset. It staggers cascade refresh across frames. An existing,
+  shipped, unused lever for question C.
+- Question D was NOT reproduced on TESTPRO2: `pack_scale` stays 1.0000 and the sun rect stays
+  2048x2048 from point cap 0 to 24, because only 3 lights are near enough to be granted and their
+  rects are 128x128. ★ A real mechanism exists though - the atlas is RECREATED when the packer needs
+  more room (wiRenderer.cpp:5081) and `localShadowCacheAtlasW/H` is in the cache key, so growing the
+  atlas invalidates the SUN too. It needs a light-dense viewpoint to fire.
