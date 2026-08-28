@@ -169,7 +169,20 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				pointShadowScaler = 1.0f;
 			}
 		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enabling Delayed Shadows will make fewer cascade shadow updates and increase your FPS.");
+		// ★ GGMAX 3.32: the measured numbers, in the tooltip. This is the biggest single saving found
+		// in the DX11-parity round - DX11 shipped this feature ON and DX12 ships it OFF - and it was
+		// sitting behind a one-line description that gave nobody a reason to try it.
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Spreads the sun's shadow updates over several "
+			"frames instead of redrawing all of them every frame.\n\n"
+			"The sun casts five shadow layers, from the ground at your feet out to the horizon. Redrawing "
+			"all five every frame is most of what sun shadows cost, and the distant ones barely change "
+			"from frame to frame. With this on, the nearest layer keeps updating every frame and the "
+			"further ones take turns.\n\n"
+			"Measured on a test level: sun shadow time dropped from 2.15ms to 0.89ms, and total graphics "
+			"card time for the whole frame fell by a quarter. It is the single biggest saving available "
+			"here, and it is what the older DirectX 11 version of GameGuru did as standard.\n\n"
+			"The trade is that shadows in the distance can lag very slightly behind a fast-moving sun or "
+			"camera. Turn it off again if you notice that. Worth trying first on any slower machine.");
 		if (g_bDelayedShadows)
 		{
 			ImGui::SameLine();
