@@ -179,6 +179,10 @@ namespace wi {
 namespace wi::graphics {
 	extern float gg_submit_ms_close, gg_submit_ms_fences, gg_submit_ms_present, gg_submit_ms_sync, gg_submit_ms_stall;
 	extern uint32_t gg_submit_lists, gg_submit_batches, gg_submit_deps;
+	// GGMAX 3.26a: command lists DROPPED because Close() failed, cumulative for the session.
+	// Surfaced because Max/Files/log.txt is LOST under taskkill //F - a harness run can prove the
+	// app survived and still tell you nothing about what it logged. This survives in the reply.
+	extern std::atomic<uint32_t> gg_close_failures;
 	extern bool gg_single_queue;
 	extern bool gg_lean_async;
 	// GGMAX 2.16: rolling stall window — the per-frame values above are last-frame snapshots
@@ -1615,6 +1619,13 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 		written += _snprintf(result + written, resultSize - written,
 			"POLYS: %llu\n", (unsigned long long)GGPerf_GetPolyCount());
 	}
+
+	// GGMAX 3.26a: dropped command lists. ALWAYS printed, including the zero, so that a sweep
+	// transcript records the healthy case too - "the line is missing" and "the line says 0" are
+	// not the same evidence, and only the second one is worth anything later.
+	written += _snprintf(result + written, resultSize - written,
+		"CLOSEFAIL: %u\n",
+		wi::graphics::gg_close_failures.load(std::memory_order_relaxed));
 
 	// GGMAX diag: cumulative ray-primitive counters for the FPS-plummet hunt.
 	// Values are running totals — diff two dumps (and their t= stamps) for rates.

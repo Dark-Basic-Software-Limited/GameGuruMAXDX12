@@ -8068,3 +8068,72 @@ instead of inferred.
 - **`Max/Files/log.txt` is lost under `taskkill //F`** - it still carried the 22:29:29 crash
   contents hours later. A harness smoke test therefore proves the app RUNS but proves nothing about
   what it logged. ⚠ Do not read absence-of-errors from a stale file.
+
+### §3.26a — the static audit found nothing, so stop reading and measure
+
+A 13-agent audit of every recording surface in both repos (custom draw hooks, event/query scope,
+RenderPassBegin/End balance, command-list threading) returned **zero surviving candidates**. More
+usefully, it broke the premise I had given it.
+
+★★★ **I was wrong to call the 08-26 render-pass defect an "exact precedent".** `dred_report.txt`:
+
+```
+2026-08-07 21:15:15   2026-08-24 01:42:35   2026-08-24 04:08:02
+2026-08-26 04:48:13  <- the Dispatch-inside-a-render-pass one, fixed
+2026-08-26 11:07:06  <- SAME DAY, AFTER the fix
+2026-08-27 22:29:29
+```
+
+Six `DXGI_ERROR_INVALID_CALL` removals over three weeks (plus two `DEVICE_HUNG` on 08-05, a
+different cause). The terrain-bake fix removed a real hazard and **changed nothing about this one**.
+⚠ A fix that lands in the same week as a symptom is not evidence it addressed that symptom.
+
+★★ **And `Close() == E_INVALIDARG` is not diagnostic.** Lee's own log, three lines after the
+removal is announced, has `CopyAllocator`'s `Close()` at `:2179` failing with the identical
+`0x80070057`. This driver returns it for every Close once the device is gone. So the reading "six
+lists failed to close, therefore six lists are malformed" has an equally good rival: "the device was
+already dead and everything failed". **The log physically cannot choose between them.**
+
+★ DRED is genuinely working — an older entry in the same report carries `BreadCrumbCount = [1394]`
+and a page fault naming `terraintextures/mat5/Color.dds`. So "empty breadcrumbs" is a real result
+(nothing in flight, CPU-side rejection), not a missing feature. And all six removals sit inside
+**level-load bursts**, not steady-state rendering — so the draw hooks were never the right place
+to look.
+
+### What was added instead
+
+- ★★★ **`GetDeviceRemovedReason()` immediately before the Close loop.** One line, and it settles
+  cause-vs-consequence outright on the next occurrence. `S_OK` → the device was alive and the
+  failing lists really are malformed. Anything else → the failures are consequences and the whole
+  recording-scope hypothesis is dead.
+- **The failing set as a SET, not six lines**: `N of M failed. Indices: 3(q0), 7(q0)...`. ⚠ `6 of 6`
+  and `6 of 14` mean completely different things and the old log could not distinguish them.
+- ★★ **A validation-layer drain that works in RELEASE.** Message retrieval was `#if defined(_DEBUG)`
+  — and we never build Debug (it exits 3) — so `-debugdevice` switched the layer on and then threw
+  away everything it said. Three weeks of removals could each have named themselves in one line.
+  ⚠ My own new log message had told the reader to "re-run with -debugdevice", advice that could not
+  possibly have worked. Fixed by making it true rather than by deleting it.
+- **`CLOSEFAIL: n` in `GET_PERF_DATA`**, always printed including the zero. `Max/Files/log.txt` is
+  lost under `taskkill //F`, so a harness run could prove the app survived and tell you nothing
+  about what it logged. ★ Printed even when zero on purpose: "the line is missing" and "the line
+  says 0" are not the same evidence, and only the second is worth anything later.
+  Verified: 0 at the hub, 0 through Aztec (the heaviest level), 0 in game.
+
+### ★★★ My own guard had the classic nested-RAII bug
+
+`StartForceRender` pumps the message queue and then calls `RunCustom()`, which **re-enters
+`Application::Run()`** — from five call sites. My `gg_in_frame` scope guard cleared the flag to
+`false` on destruction, so the inner frame's exit would have stripped the guard off the OUTER frame
+and left its second half unguarded — exactly the window the guard exists to close. Save and restore
+the previous value, never clear to a constant. ⚠ Found by grepping the callers of the function the
+audit flagged as hygiene, not by reviewing my own patch.
+
+**Gate: sweep `0828a_crashfix` CLEAN 19/19** (C3 3830.3 MB, 265.7 MB headroom) — that ran on the
+fixes; the instrumentation on top is verified separately by `closecheck.sh`.
+
+### Where to look next, if it recurs
+
+Not the draw path. `CopyAllocator` (`:2127-2205`, creates and closes lists from any thread), the
+aliasing-resource path (`:4017`, in use per the log), and ⚠ **`gg_single_queue` — default `true`**,
+a GGMAX change routing every COMPUTE and COPY list onto the graphics queue (`:5986`), which alters
+submission topology during exactly the load storms all six removals happened in.
