@@ -6854,6 +6854,27 @@ static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* res
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_SHADOWPERLIGHT") == 0)
+	{
+		// SET_SHADOWPERLIGHT <0|1>  - 1 = a moving shadow caster refreshes only the lights it is
+		// near; 0 = stock, where any moving caster re-renders EVERY cached local shadow.
+		// ★ Not routed through visuals: this is a safety switch, not a per-level setting, so it is
+		// deliberately NOT clobbered by the per-frame push the way the tuning sliders are.
+		int n = -1;
+		if (sscanf_s(arg, "%d", &n) < 1 || n < 0 || n > 1)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_SHADOWPERLIGHT needs 0 or 1");
+		}
+		else
+		{
+			wi::renderer::gg_shadow_perlight_invalidate = n;
+			_snprintf(result, resultSize,
+				"OK: SET_SHADOWPERLIGHT %d - a moving caster now refreshes %s.", n,
+				n ? "only the lights it is actually near" : "EVERY cached local shadow (stock)");
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_SHADOWRESSTEPS") == 0)
 	{
 		// SET_SHADOWRESSTEPS <0..16>  (0 = stock continuous sizing)

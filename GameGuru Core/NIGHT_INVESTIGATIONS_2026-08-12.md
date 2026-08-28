@@ -8303,3 +8303,71 @@ older one. ★ Adding a per-frame push means auditing every existing writer of t
 Verified after the fix: slider default 1.96 ms translating, forced `steps=0` 4.25 ms. TESTPRO2 was
 saved before the field existed, so this also proves the pre-parse reset default reaches the engine.
 ⚠ `SET_OCCLUSIONHISTORY` is fixed by the identical edit but was NOT separately re-measured.
+
+## §3.30 — one moving caster re-rendered every shadow in the level
+
+Lee: turning a wheel prop takes Shadowmap Rendering 5.4 → 16 ms on the old AMD card, for as long as
+the animation runs. 3.29 cannot help — that fixed the CAMERA DISTANCE trigger of the same
+all-or-nothing flag; this is the MOVED CASTER trigger.
+
+The loop already worked out which light the caster was near and threw it away:
+```c
+for (const LocalShadowSlot& s : cur)
+    if (sph.intersects(aabb)) { changed = true; break; }   // one global bool
+localAtlasFullClear = changed;                             // ALL lights re-render
+```
+Now it records *which* slots. Structural changes still force everything, because rects may have
+MOVED and stale texels would then be read from the wrong place.
+
+### ★★★ The review found my fix unsafe, and it was right
+
+**`dirty ⇒ cleared`, but `dirty` does NOT ⇒ `rendered`.** The clear pass runs up-front; the render
+loop then bails *after* it at `:8422` (spot res 0), `:8427` (`!cam_frustum.Intersects`), `:8546`
+(cube res 0) and at GPU predication. A rect cleared and not drawn back is zeroed to reverse-Z far,
+the comparison sampler is `GREATER_EQUAL`, so it reads **fully lit** — and on the next frame the
+slot is clean, `LoadOp::LOAD` preserves the zeros, and the blank is **permanent**.
+
+★ That is my own recorded rule: *a visibility test added to ONE pass and not its partner*. The
+`cam_frustum` test lives in the render loop and not in the clear pass.
+
+★★★ **The hole pre-existed; two optimisations stacked closed both of its self-heal paths.** Today
+any mover re-renders everything, so a light blanked while off-screen is repaired the next time
+anything moves — 3.30 removes that. And rect churn on camera movement used to repair it too — 3.29
+removed that. **Each change was safe alone and unsafe together.** Nothing in either review would
+have caught it; only reviewing them as a pair did.
+
+### The choice: bounded staleness over surgery I cannot see the result of
+
+The full remedy is to relocate the local clears into the spot and point render bodies, past every
+bail and past `PredicationBegin`, making clear-set == render-set by construction. Better end state,
+and surgery whose failure mode is silent visual corruption that **no counter I have can detect**.
+
+Instead: a round-robin **refresh floor** (`gg_shadow_refresh_floor`, default 4). Every cached slot is
+force-refreshed on a rotation regardless of dirty state, converting every residual hole — this one,
+the bone-only-animation miss the decision comment already admits to, and any future one — from
+PERMANENT into BOUNDED. ~0.8 s to repair at 12 lights; average cost a quarter of one light render
+per frame. ⚠ **This is defence in depth, not a proof of correctness.** The honest claim is bounded
+staleness.
+
+★ Also fixed, verified against its two siblings: `:8648` read `|| renderQueue_transparent.empty()`,
+missing a `!`. A point light whose only casters are transparent skipped its entire render block with
+all six faces already cleared — harmless while everything full-cleared every frame, a permanent
+blank once slots may stay clean.
+
+### ⚠ What is NOT verified, and why
+
+The refresh floor is confirmed working (idle `RENDERED` cycles 0→1→0→0 on a 3-light scene). The
+**per-light path itself has no positive measurement**, and I could not produce one:
+- `PRESS_KEY E` posts `WM_KEYDOWN`; the ack proves a message was posted, not that the wheel turned.
+  GameGuru reads gameplay keys through DirectInput. ★ A count of calls is not a count of successes.
+- `MOVE_ENTITY` needs a real entity name; `LIST_ENTITIES` returned a summary line, so my "name" was
+  `TOTAL_ENTITY_SLOTS: 3744` and nothing moved. The run looked plausible and measured nothing.
+- ⚠⚠ **In TEST GAME `DUMP_PROFILER` serves a FROZEN snapshot and `GET_GPUMS` returns nothing.**
+  Editor: 1.93/0.81/0.85/0.84. Game: 0.82 six times running. Every in-game millisecond I could
+  quote is worthless. `SHADOW_LOCAL_RENDERED` via `GET_PERF_DATA` is the one in-game instrument
+  that still works.
+
+An earlier run of the wheel test *looked* like a clean reproduction — `RENDERED` went 12/12 right on
+the keypress. It was level-load settling: `GRANTED` went 0→12 at the same moment because the scene
+had not finished initialising. ★ **A reproduction that appears on the first attempt, in a run whose
+baseline was taken too early, is a coincidence until the baseline is proven stable.**
