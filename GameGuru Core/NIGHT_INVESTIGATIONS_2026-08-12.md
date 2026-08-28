@@ -8437,3 +8437,93 @@ here; the size is not.
   rects are 128x128. ★ A real mechanism exists though - the atlas is RECREATED when the packer needs
   more room (wiRenderer.cpp:5081) and `localShadowCacheAtlasW/H` is in the cache key, so growing the
   atlas invalidates the SUN too. It needs a light-dense viewpoint to fire.
+
+## §3.32 — DX11 vs DX12: answering Lee's four questions
+
+A 19-agent A/B against the read-only DX11 reference (`D:/max/GameGuruMAX`, `D:/max/WickedRepo`),
+with every load-bearing claim re-verified by hand here.
+
+### ★★★ C. The sun costs 6 ms with no point lights — ANSWERED AND SOLVED
+
+**DX11 shipped delayed sun cascades ON. DX12 ships them OFF. Same feature, opposite default.**
+
+| | DX11 | DX12 |
+|---|---|---|
+| engine | `WickedRepo/wiRenderer.cpp:47` `g_bDelayedShadows = true` | `wiRenderer.cpp:1052` `delayedShadowCascadesEnabled = false` |
+| game | `GameGuruMAX Types.h:4121` `= true` | `Types.h:4158` `= false` |
+
+DX11's stagger: cascade 4 every 9th frame, 3 every 4th, 2 every 3rd, 1 every 2nd, 0 every frame —
+`1 + 1/2 + 1/3 + 1/4 + 1/9` = **2.19 cascades/frame**. DX12 renders all **5.0**. That is **2.28x the
+sun cascade work out of the box**, and the port never intended it: the feature is present, correct,
+and merely defaulted off.
+
+**MEASURED here, sun only (point cap 0), control run first AND last:**
+
+| | shadowmap | GPU busy |
+|---|---|---|
+| delayed OFF (DX12 stock) | 2.15 | 4.39 |
+| **delayed ON (DX11)** | **0.89** | **3.28** |
+| delayed OFF (repeat) | **2.14** | 4.34 |
+
+**Sun shadow −59%; whole-frame GPU busy −25%.** On Lee's card that is ~6 ms → ~2.5 ms.
+
+⚠ **I did NOT change the default.** DX12's port deliberately regrouped the stagger (refreshing
+cascades 1..N together rather than desynced) to kill a cascade-blend flicker, so turning it on is a
+visual-risk decision and the tickbox already exists in Graphics & Performance. Lee ticks it, looks,
+and decides. ★ Recommending beats imposing when the failure mode is something only a human can see.
+
+### B. Four half-million-poly buildings — ANSWERED, same root cause
+
+Both engines apply the same far-cascade caster cull (`cascade < 3`, face area >= 38000). But with
+DX11's stagger live, cascades 0/1/2 average `1 + 1/2 + 1/3 = 1.83` renders/frame, so DX11 draws a
+building **prepass + main + 1.83 = 3.83x per frame** and DX12 draws it **5.0x**. **+31% geometry
+work on a mesh where geometry is the entire cost.**
+
+### D. Sun + 12 point lights is superlinear — MECHANISM FOUND, NOT REPRODUCED HERE
+
+The candidate is real and structural: DX12 packs the sun AND every local light into **one atlas**,
+the atlas is RECREATED when the packer needs more room (`wiRenderer.cpp:5081`), and
+`localShadowCacheAtlasW/H` is part of the sun's cache key — so adding point lights can invalidate
+the sun. DX11 used **three separate texture arrays** with a monotonic slice counter and had no such
+coupling at all.
+
+⚠ **It did not fire on this hardware.** Standing inside TESTPRO2's light cluster with 16 granted
+shadows, `pack_scale` stayed 1.0000 and the sun rect stayed 2048x2048 from point cap 0 to 32; opaque
+rose 0.91 → 1.15 → 1.20 → 1.43, which is **linear** in light count. So on this PC the point-light
+cost is ordinary per-light shading, not an atlas interaction. It needs enough light density to put
+the packer under pressure — Aztec on a 4 GB card may well do it where this rig does not.
+
+### A. 3000 objects — PARTIALLY ANSWERED
+
+Two real DX12-only CPU costs, neither yet shown to dominate:
+- **PSO lookup is a hash in DX12, a flat array index in DX11** (`PSO_object` map + `find(variant)`
+  per subset vs `PSO_object[type][pass][blend][sided][tess][alphatest]`). Order 20-40k hash finds
+  per frame ≈ 0.3-1.0 ms of recording time DX11 never spent.
+- **Every opaque pixel issues a texture-streaming feedback atomic** (`objectHF.hlsli:552`
+  `write_mipmap_feedback`), all waves of a material hammering one dword. DX11 has no equivalent —
+  `grep mipmap_feedback` over WickedRepo returns nothing. Scales with OVERDRAW, not object count.
+
+⚠ Neither is confirmed to be the dominant term, and the measurement that would settle it is whether
+the frame is CPU-recording-bound or GPU-bound (the GGMAX submit-tail attribution already reports it).
+
+### ★★ 16 shadow taps per light per pixel — FOUND AND SHIPPED AS A SWITCH
+
+DX12's `sample_shadow` runs a 16-point Vogel disk **per light per pixel** (plus 16 transparent-atlas
+fetches); DX11 used 1-8 plus 1. That is the linear-but-large term behind the point-light cost.
+3.31a makes the existing one-tap path runtime-selectable — see §3.31.
+
+**MEASURED with 16 granted lights, control bracketed both sides:** opaque **1.34 → 0.93 → 1.29**.
+**About 30% off Opaque Scene.** ⚠ At the default TESTPRO2 viewpoint, which grants only 3 shadows, the
+same switch measured inside the noise — the saving scales with light count and a three-light test
+cannot see it. ★ Same lesson as the material census: measure whether the thing the switch acts on is
+even present before believing a null.
+
+### Clean negatives — do not re-chase
+
+- **Cascade count and resolution are at PARITY.** DX11 `SHADOWRES_2D = 2048`, `SHADOWCOUNT_2D = 5`;
+  DX12 `{380, 950, 7500, 30000, 500000}` at 2048. ~21 megatexels either way. Not the regression.
+- **Grass in shadow maps**: DX12 draws grass as a HairParticleSystem into shadows and DX11 never
+  did — but measured here, `SET_GRASSOFF` moved the sun cost 2.14 → 2.10, i.e. nothing on this
+  level. Real difference, no measurable cost in this scene.
+- **Material permutations**: GameGuru content is ~100% base PBR (COLLAPSIBLE 0 of 3307). No
+  expensive permutations to drop. See §3.31.

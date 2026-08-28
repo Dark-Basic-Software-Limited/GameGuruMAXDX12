@@ -6891,6 +6891,34 @@ static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* res
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_DELAYEDSHADOWS") == 0)
+	{
+		// SET_DELAYEDSHADOWS <0|1> - stagger sun cascade refresh across frames.
+		//
+		// ★ This is the single largest DX11-vs-DX12 default difference found so far. DX11 shipped
+		// it ON at BOTH layers (WickedRepo wiRenderer.cpp:47 g_bDelayedShadows = true, and
+		// GameGuruMAX Types.h:4121), staggering cascade 4 to every 9th frame, 3 to every 4th, 2 to
+		// every 3rd and 1 to every 2nd - an average of 2.19 cascades per frame. DX12 ships it OFF at
+		// both layers and renders all 5.0 every frame. That is 2.28x the sun cascade work out of the
+		// box, and the port never intended it - the feature is present and correct, just defaulted off.
+		int n = -1;
+		if (sscanf_s(arg, "%d", &n) < 1 || n < 0 || n > 1)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_DELAYEDSHADOWS needs 0 or 1");
+		}
+		else
+		{
+			extern bool g_bDelayedShadows;
+			g_bDelayedShadows = (n != 0);
+			t.gamevisuals.g_bDelayedShadows = t.visuals.g_bDelayedShadows = g_bDelayedShadows;
+			wi::renderer::SetDelayedShadowCascadesEnabled(g_bDelayedShadows);
+			_snprintf(result, resultSize,
+				"OK: SET_DELAYEDSHADOWS %d - sun cascades %s", n,
+				n ? "staggered across frames (DX11 behaviour)" : "all refreshed every frame (DX12 stock)");
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_SUPERQUICK") == 0)
 	{
 		// SET_SUPERQUICK <0|1> - collapse expensive material permutations onto base PBR.
