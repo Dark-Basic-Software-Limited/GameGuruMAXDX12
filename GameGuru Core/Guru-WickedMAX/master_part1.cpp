@@ -834,8 +834,21 @@ void MasterRenderer::Update(float dt)
 			wi::renderer::gg_shadow_res_steps = shs;
 		}
 
-		// GGMAX 3.31: Super Quick Objects -> the material-permutation collapse.
-		wi::renderer::gg_super_quick_objects = t.visuals.bSuperQuickObjects ? 1 : 0;
+		// ★★★ GGMAX 3.34: Super Quick Objects -> which rung of the cut-down opaque shader.
+		//
+		// 3.31 pushed a bare 0/1 and all it ever did was collapse exotic material permutations
+		// onto base PBR - a no-op on a scene whose materials are already PBR, which is why Lee
+		// measured no change at all on the AMD card. The value now carries the RUNG:
+		//   1 Flat     no texture fetch of any kind
+		//   2 Ambient  + albedo
+		//   3 Lit      + tiled lighting and shadows
+		// ⚠ A level saved before 3.34 has no SuperQuickLevel field and parses as 0, which would
+		// read as OFF and quietly disable a box the user had ticked. Clamp it to the default.
+		{
+			int sql = t.visuals.iSuperQuickLevel;
+			if (sql < 1 || sql > 3) sql = 1;
+			wi::renderer::gg_super_quick_objects = t.visuals.bSuperQuickObjects ? sql : 0;
+		}
 
 		// ★★★ GGMAX 3.27: continuous camera spin, for measuring rotation-dependent cost.
 		//

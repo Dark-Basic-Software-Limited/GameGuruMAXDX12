@@ -6921,21 +6921,26 @@ static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* res
 	}
 	if (_stricmp(cmd, "SET_SUPERQUICK") == 0)
 	{
-		// SET_SUPERQUICK <0|1> - collapse expensive material permutations onto base PBR.
-		// ⚠ Writes the VISUALS field, because master_part1.cpp pushes it to the engine every
+		// SET_SUPERQUICK <0|1|2|3> - which rung of the cut-down opaque object shader.
+		//   0 off   1 Flat (no texture fetch)   2 + albedo   3 + lighting and shadows
+		//
+		// ★ The gap between two rungs is the measurement, not the rung itself. Flat is the
+		// floor: whatever "  Opaque Objects" still costs there is not pixel shading at all.
+		// ⚠ Writes the VISUALS fields, because master_part1.cpp pushes them to the engine every
 		// frame and would otherwise clobber a direct engine write.
 		int n = -1;
-		if (sscanf_s(arg, "%d", &n) < 1 || n < 0 || n > 1)
+		if (sscanf_s(arg, "%d", &n) < 1 || n < 0 || n > 3)
 		{
-			_snprintf(result, resultSize, "ERROR: SET_SUPERQUICK needs 0 or 1");
+			_snprintf(result, resultSize, "ERROR: SET_SUPERQUICK needs 0..3");
 		}
 		else
 		{
 			t.gamevisuals.bSuperQuickObjects = t.visuals.bSuperQuickObjects = (n != 0);
+			if (n != 0) t.gamevisuals.iSuperQuickLevel = t.visuals.iSuperQuickLevel = n;
 			wi::renderer::gg_super_quick_objects = n;
-			_snprintf(result, resultSize,
-				"OK: SET_SUPERQUICK %d - expensive material permutations %s", n,
-				n ? "collapsed onto base PBR" : "restored");
+			static const char* gg_sq_names[4] = { "off (stock shader)", "FLAT - no texture fetch at all",
+				"AMBIENT - albedo only", "LIT - albedo + tiled lighting and shadows" };
+			_snprintf(result, resultSize, "OK: SET_SUPERQUICK %d - %s", n, gg_sq_names[n]);
 		}
 		result[resultSize - 1] = 0;
 		return true;

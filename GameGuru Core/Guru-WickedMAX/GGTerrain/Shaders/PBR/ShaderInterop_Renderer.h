@@ -20,8 +20,19 @@
 // OPTION_BIT_SIMPLE_SKY: bit 5 is unused in the new engine
 static const uint OPTION_BIT_SIMPLE_SKY = 1 << 5;
 
-// OPTION_BIT_TRANSPARENTSHADOWS_ENABLED: bit 1 is commented out in the new engine
-static const uint OPTION_BIT_TRANSPARENTSHADOWS_ENABLED = 1 << 1;
+// OPTION_BIT_TRANSPARENTSHADOWS_ENABLED: REMOVED in GGMAX 3.34.
+//
+// 3.33 un-commented this bit in the engine enum (WickedEngine/shaders/ShaderInterop_Renderer.h)
+// so the transparent-shadow fetch could be gated at runtime instead of only at compile time.
+// This shim redefined the same name as a static const uint, and any GGTerrain shader that pulls
+// in both headers then fails to compile: "redefinition of ... as different kind of symbol".
+//
+// The engine enum is now the single definition. Nothing here needs to declare it.
+//
+// ⚠ This did not show up when 3.33 landed, which is worth knowing: an engine-header change can
+// break the GGTerrain shader tree while every engine .cso still builds clean, and a sweep run on
+// stale GGTerrain .cso files will pass anyway. Prove an engine shader-header edit with a GAME
+// build before trusting a sweep that follows it.
 
 // OPTION_BIT_WATER_ENABLED REMOVED (was 1<<22): the old GG underwater fog it gated is retired —
 // Wicked's underwaterCS owns underwater now. Bit 22 aliases the engine's OPTION_BIT_DEBUG_NORMAL_VIS,

@@ -581,33 +581,67 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				t.gamevisuals.bTerrainBake = t.visuals.bTerrainBake = bOff;
 				g.projectmodified = 1;
 			}
+			// ⚠ GGMAX 3.34: this tooltip belongs to the Terrain Bake checkbox above and has to stay
+			// DIRECTLY under it. 3.31 inserted the Super Quick block between the two, so IsItemHovered
+			// resolved to the Super Quick checkbox instead - Terrain Bake lost its tooltip and Super
+			// Quick showed the terrain one, overwriting its own. Lee's AMD-card screenshot caught it.
+			// Any new control added here goes AFTER this line, never between a widget and its tooltip.
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Converts the terrain into ordinary meshes and ordinary textures, then removes the live terrain system entirely - the chunk entities, the virtual-texture atlas and the per-frame page streaming that goes with them. You keep a terrain you can see and walk on, drawn by a plain pass that costs a fraction of the real one. Surfaces get softer close up and terrain editing is paused while it is on. Untick to bring the real terrain straight back. This is the biggest single saving on an open outdoor level.");
+
 			{
-				// ★ GGMAX 3.31: Super Quick Objects.
-				// Collapses the expensive material permutations onto the base PBR shader. Parallax
-				// occlusion mapping raymarches the heightfield for every shaded pixel; planar
-				// reflection samples a whole reflection buffer; anisotropic, clearcoat and cloth each
-				// add BRDF lobes. It also collapses PSO permutations, so there are fewer pipeline
-				// switches across the draw list - a CPU saving on top of the GPU one.
+				// ★★★ GGMAX 3.34: Super Quick Objects - now a real cut-down opaque shader.
+				//
+				// 3.31 only collapsed exotic material permutations onto base PBR, which on a scene
+				// whose materials are already PBR does nothing whatsoever - and that is exactly what
+				// Lee measured on the AMD card. The box now selects one of three genuinely cut-down
+				// opaque pixel shaders (objectHF.hlsli, GG_SQ_FLAT / GG_SQ_AMBIENT / GG_SQ_LIT).
 				bool bSQ = t.visuals.bSuperQuickObjects;
 				if (ImGui::Checkbox("Super Quick Objects##gg_super_quick", &bSQ))
 				{
 					t.gamevisuals.bSuperQuickObjects = t.visuals.bSuperQuickObjects = bSQ;
 					g.projectmodified = 1;
 				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Draws every object with the plain "
-					"lighting shader, skipping the expensive surface effects some materials ask "
-					"for.\n\n"
-					"The one that costs the most is parallax occlusion mapping, which fakes depth in a "
-					"flat surface by tracing through a height map for every pixel it draws. Mirror-like "
-					"planar reflections, brushed-metal highlights, car-paint clearcoat and fabric "
-					"sheen are dropped too.\n\n"
-					"Objects stay fully lit, textured and shadowed - what you lose is the extra surface "
-					"trickery on top. Bumpy stonework and cobbles look flatter; most other things look "
-					"the same. Water, unlit and cartoon materials are left exactly as they are.\n\n"
-					"Worth trying on a slower graphics card if Opaque Scene or Z-Prepass is high in the "
-					"performance panel.");
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Strips the object shader back to almost "
+					"nothing, so the graphics card spends its time putting shapes on screen instead of "
+					"working out what every pixel of them should look like.\n\n"
+					"Normally each pixel of every object reads a colour texture, a bump texture, a "
+					"roughness texture, a glow texture and a shine texture, then adds decals, ambient "
+					"shadowing, reflections and every nearby light with its own shadow. This drops all of "
+					"it and lets you add it back one step at a time with the slider underneath.\n\n"
+					"Your level will look plain - that is the point. Use it to find out how much of your "
+					"frame time is really object detail, then climb back up until it costs too much "
+					"again.\n\n"
+					"Watch the Opaque Objects line in the performance panel as you change the slider. "
+					"Terrain, trees, grass and water are drawn separately and are not affected.");
+
+				// The rung. Only meaningful while the box is ticked, so only shown then - a slider that
+				// visibly does nothing is the 3.19 Texture Detail mistake, and it cost a bug report.
+				if (t.visuals.bSuperQuickObjects)
+				{
+					int sql = t.visuals.iSuperQuickLevel;
+					if (sql < 1 || sql > 3) sql = 1;   // a level saved before 3.34 parses as 0
+					const char* sqfmt =
+						(sql <= 1) ? "1: Shapes only (fastest)" :
+						(sql == 2) ? "2: Shapes and colour" :
+						             "3: Shapes, colour and light";
+					if (ImGui::SliderInt("##gg_super_quick_level", &sql, 1, 3, sqfmt))
+					{
+						t.gamevisuals.iSuperQuickLevel = t.visuals.iSuperQuickLevel = sql;
+						g.projectmodified = 1;
+					}
+					if (ImGui::IsItemHovered()) ImGui::SetTooltip("How much detail to put back.\n\n"
+						"1 - Shapes only. No textures at all. Every object is a flat block of its own "
+						"colour, lit only by the sky and the sun direction. This is as fast as the objects "
+						"in your level can possibly be drawn.\n\n"
+						"2 - Shapes and colour. Adds the colour texture back, plus distance fog. Things "
+						"become recognisable again but stay unlit and flat.\n\n"
+						"3 - Shapes, colour and light. Adds lamps, torches and their shadows. Still no bump "
+						"or shine detail, no decals, no ambient shadowing, no reflections.\n\n"
+						"The useful thing is the jump between two settings. If going from 1 to 2 costs you "
+						"a lot, your textures are the problem. If 2 to 3 costs you a lot, it is your "
+						"lights. If nothing changes much, the cost is not the objects at all.");
+				}
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Converts the terrain into ordinary meshes and ordinary textures, then removes the live terrain system entirely - the chunk entities, the virtual-texture atlas and the per-frame page streaming that goes with them. You keep a terrain you can see and walk on, drawn by a plain pass that costs a fraction of the real one. Surfaces get softer close up and terrain editing is paused while it is on. Untick to bring the real terrain straight back. This is the biggest single saving on an open outdoor level.");
 
 			// GGMAX 3.25l: near-tier detail, a sub-control of Terrain Bake. Distant chunks are
 			// always baked small (they are never seen close up), so this dial only sets how sharp

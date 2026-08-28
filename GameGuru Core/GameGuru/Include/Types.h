@@ -3854,6 +3854,10 @@ struct visualstype
 	                         // being drawn, 1..32, DEFAULT 8 (32 = stock, never culls while turning)
 	int  iShadowResSteps;    // GGMAX 3.29 discrete steps for distance-driven shadow resolution,
 	                         // 0..16, DEFAULT 4 (0 = stock continuous, re-renders every frame you move)
+	int  iSuperQuickLevel;   // GGMAX 3.34 which Super Quick rung, 1 = Flat (no textures at all),
+	                         // 2 = + albedo, 3 = + lights and shadows. DEFAULT 1. Only read when
+	                         // bSuperQuickObjects is set. A level saved before 3.34 parses as 0,
+	                         // which the push site clamps back to 1.
 	int  iTerrainBakeResNear; // GGMAX 3.25l: Terrain Bake near-tier texture size, 256..8192
 
 	bool bEnableTerrainChunkCulling;
@@ -4348,6 +4352,10 @@ struct visualsdatastoragetype
 	                         // being drawn, 1..32, DEFAULT 8 (32 = stock, never culls while turning)
 	int  iShadowResSteps;    // GGMAX 3.29 discrete steps for distance-driven shadow resolution,
 	                         // 0..16, DEFAULT 4 (0 = stock continuous, re-renders every frame you move)
+	int  iSuperQuickLevel;   // GGMAX 3.34 which Super Quick rung, 1 = Flat (no textures at all),
+	                         // 2 = + albedo, 3 = + lights and shadows. DEFAULT 1. Only read when
+	                         // bSuperQuickObjects is set. A level saved before 3.34 parses as 0,
+	                         // which the push site clamps back to 1.
 	int  iTerrainBakeResNear; // GGMAX 3.25l: Terrain Bake near-tier texture size, 256..8192
 
 	bool bEnableTerrainChunkCulling;

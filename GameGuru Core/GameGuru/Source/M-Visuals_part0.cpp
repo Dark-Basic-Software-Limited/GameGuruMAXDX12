@@ -155,6 +155,7 @@ void gg_visuals_reset_brutal_switches()
 	t.visuals.iOcclusionCullDelay   = 8;
 	t.visuals.iShadowResSteps       = 4;
 	t.visuals.bSuperQuickObjects    = false;
+	t.visuals.iSuperQuickLevel      = 1;   // GGMAX 3.34: Flat - the rung Lee asked for
 	// GGMAX 3.25o: DEFAULT 25, not 1 (Lee's call on the measured curve). At 25 the skip holds
 	// 93% of a scene's armatures per frame, against 88% at 10 - and 50 and 100 add about one
 	// percent between them while the stutter on mid-distance characters keeps getting worse.
@@ -180,6 +181,10 @@ void gg_visuals_reset_brutal_switches()
 	// Snapping to 4 steps cut the moving cost from 4.21 ms to 1.84 ms on TESTPRO2.
 	t.visuals.iShadowResSteps = 4;
 	t.visuals.bSuperQuickObjects = false;
+	// GGMAX 3.34: which Super Quick rung. 1 = Flat: no texture fetch of any kind in the
+	// opaque object shader. That is the aggressive default on purpose - the box exists to
+	// buy back frames on a weak card, and rungs 2 and 3 are there to climb back up from it.
+	t.visuals.iSuperQuickLevel = 1;
 	{
 		extern int gg_terrain_bake_res_near;
 		t.visuals.iTerrainBakeResNear = 8192;
@@ -876,6 +881,8 @@ void visuals_save ( void )
 	t.strwork = ""; t.strwork = t.strwork + "visuals.OcclusionCullDelay=" + Str(t.visuals.iOcclusionCullDelay);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.ShadowResSteps=" + Str(t.visuals.iShadowResSteps);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.SuperQuickLevel=" + Str(t.visuals.iSuperQuickLevel);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.TerrainBakeResNear=" + Str(t.visuals.iTerrainBakeResNear);
 	WriteString(1, t.strwork.Get());
@@ -1615,6 +1622,7 @@ void visuals_load ( void )
 				t.try_s = "visuals.AnimReductionScale"; if (t.tfield_s == t.try_s) { t.visuals.iAnimReductionScale = (int)ValF(t.tvalue_s.Get()); }
 				t.try_s = "visuals.OcclusionCullDelay"; if (t.tfield_s == t.try_s) { t.visuals.iOcclusionCullDelay = (int)ValF(t.tvalue_s.Get()); }
 				t.try_s = "visuals.ShadowResSteps"; if (t.tfield_s == t.try_s) { t.visuals.iShadowResSteps = (int)ValF(t.tvalue_s.Get()); }
+				t.try_s = "visuals.SuperQuickLevel"; if (t.tfield_s == t.try_s) { t.visuals.iSuperQuickLevel = (int)ValF(t.tvalue_s.Get()); }
 				t.try_s = "visuals.SuperQuickObjects"; if (t.tfield_s == t.try_s) { t.visuals.bSuperQuickObjects = ValF(t.tvalue_s.Get()) != 0; }
 				t.try_s = "visuals.TerrainBakeResNear"; if (t.tfield_s == t.try_s) { extern int gg_terrain_bake_res_near; t.visuals.iTerrainBakeResNear = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTerrainBakeResNear >= 256 && t.visuals.iTerrainBakeResNear <= 8192) gg_terrain_bake_res_near = t.visuals.iTerrainBakeResNear; }
 			}
