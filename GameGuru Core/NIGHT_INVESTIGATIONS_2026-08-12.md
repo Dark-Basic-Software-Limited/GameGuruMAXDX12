@@ -9291,3 +9291,46 @@ minutes of driving the app beat two greps that both said "clean".
 ★ Corollary for next time: when routing writers, enumerate by the DESTINATION (what files appear
 in the folder after exercising the app) as well as by the call pattern. The folder does not care
 how the write was spelled.
+
+
+---
+
+# §3.35 GATE — sweep `0829a` CLEAN 19/19 (2026-08-29)
+
+Gates everything from §3.35b to §3.35j: engine `a159b93e`, game `17da74c7`.
+
+```
+C1 LOAD      PASS  19/19 reached the editor
+C2 GEOMETRY  PASS  POLYS identical to the 0825 reference on all 19 demos
+C3 VRAM      PASS  worst 3975.1 MB (Aztec Game Kit, in game), limit 4096, headroom 120.9 MB
+C4 GAME      PASS  every demo produced in-game FPS past the loading overlays
+```
+
+This run had a much wider surface than 0828e, so it is worth saying what each criterion covered:
+
+| change | what would have caught a regression |
+|---|---|
+| tooltip wrap in `SetTooltipV` | every demo draws editor UI through it — C1/C4 |
+| texture streaming restored (3.35c) | **C3 VRAM** — the feedback buffer is live again for every shader |
+| water-bake vertex format (3.35f) | **C2 POLYS** on the water demos — a broken input layout would move drawn geometry |
+| streaming quiesce in `gg_ApplyTextureDivideLive` (3.35g) | C1/C4 — a deadlock or stall in the resource manager |
+| diagnostic path routing (3.35i/j) | touched `AutomationHarness.cpp` and `GPUParticles_part0.cpp`, both driven by the sweep |
+
+## ★ The VRAM question, answered rather than assumed
+
+Restoring the streaming feedback was the one change that could plausibly cost video memory, and
+C3 alone would not settle it — passing under 4096 is not the same as "did not move". Compared
+per-demo against 0828e:
+
+```
+worst editor delta  +-33.0 MB      mean  -2.4 MB
+worst game   delta  +-16.2 MB      mean  -1.7 MB
+POLYS mismatches vs 0828e: 0 of 19
+```
+
+The deltas run in BOTH directions in roughly 16 MB steps — allocator heap granularity, not a
+trend. Both means are slightly NEGATIVE. A real cost from re-enabling streaming feedback would show
+as a consistent one-directional increase; this is scatter around zero.
+
+★ **A pass/fail gate answers "is it allowed", not "did it change".** The second question needed
+the per-demo diff, and it is the one that actually retires the risk.
