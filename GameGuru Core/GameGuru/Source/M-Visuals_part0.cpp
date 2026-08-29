@@ -155,7 +155,7 @@ void gg_visuals_reset_brutal_switches()
 	t.visuals.iOcclusionCullDelay   = 8;
 	t.visuals.iShadowResSteps       = 4;
 	t.visuals.bSuperQuickObjects    = false;
-	t.visuals.iSuperQuickLevel      = 1;   // GGMAX 3.34: Flat - the rung Lee asked for
+	t.visuals.iSuperQuickLevel      = 3;   // GGMAX 3.35b: Lit - see the other reset path
 	// GGMAX 3.25o: DEFAULT 25, not 1 (Lee's call on the measured curve). At 25 the skip holds
 	// 93% of a scene's armatures per frame, against 88% at 10 - and 50 and 100 add about one
 	// percent between them while the stutter on mid-distance characters keeps getting worse.
@@ -181,10 +181,17 @@ void gg_visuals_reset_brutal_switches()
 	// Snapping to 4 steps cut the moving cost from 4.21 ms to 1.84 ms on TESTPRO2.
 	t.visuals.iShadowResSteps = 4;
 	t.visuals.bSuperQuickObjects = false;
-	// GGMAX 3.34: which Super Quick rung. 1 = Flat: no texture fetch of any kind in the
-	// opaque object shader. That is the aggressive default on purpose - the box exists to
-	// buy back frames on a weak card, and rungs 2 and 3 are there to climb back up from it.
-	t.visuals.iSuperQuickLevel = 1;
+	// ★ GGMAX 3.35b: which Super Quick rung. DEFAULT 3 (Lee's call), not 1.
+	//
+	// 3.34 defaulted to 1 (Flat, no texture fetch at all) reasoning that the box exists to buy
+	// back frames and the user could climb back up from there. That is the wrong way round:
+	// ticking a performance box and watching the level turn into untextured clay reads as
+	// something BROKEN, not as a setting that worked.
+	//
+	// Rung 3 still drops the normal / ORM / emissive / specular maps, the decals, the ambient
+	// occlusion and the reflections - measured at -33% on the opaque pass - and it still looks
+	// like the game. Rungs 1 and 2 are one drag away for anyone who needs the rest of it.
+	t.visuals.iSuperQuickLevel = 3;
 	{
 		extern int gg_terrain_bake_res_near;
 		t.visuals.iTerrainBakeResNear = 8192;

@@ -40,6 +40,30 @@ bool  gg_water_bake = false;
 // it. There is no sensible non-negative default here - picking one would silently ignore the
 // alpha the level author set in the picker, which is exactly the bug this replaces.
 float gg_water_bake_alpha = -1.0f;
+// ★★★ GGMAX 3.35f: the distance opacity ramp ("fresnel"), Lee 2026-08-29.
+//
+// The baked plane draws one flat colour at one authored alpha, so you can see straight through it
+// to the lake bed at ANY distance - including out to the horizon, which no real water does. Real
+// water goes opaque at grazing angles because it reflects rather than transmits, and on a flat
+// plane viewed from above, grazing angle and distance are the same thing.
+//
+// ★ So this is a true Schlick term on the plane normal, not a distance lerp - and that matters:
+// a raw distance ramp has to be retuned every time the camera changes height, whereas an angular
+// one is correct from a cliff top and from the shoreline with no tuning at all.
+//
+//     strength 0 = off, the plain semi-transparent plane 3.25 shipped
+//     strength 1 = fully opaque by the horizon
+//     power      = how early the ramp bites. Lower goes opaque nearer the camera; 5 is textbook
+//                  Schlick and only really closes in the last few degrees, which is too subtle
+//                  here, so the default is 3.
+//
+// ⚠ 2026-08-26 Lee asked for the Fresnel that was in this shader to be REMOVED - he wanted the
+// ground below the water line to show through. This is not that lift coming back: that one raised
+// alpha everywhere including underfoot, which is what hid the lake bed. This leaves the water by
+// your feet at exactly the authored alpha and only closes it up in the distance, which is what he
+// asked for on 08-29. Set waterbakefresnel=0 in setup.cfg for the 3.25 behaviour.
+float gg_water_bake_fresnel = 0.85f;
+float gg_water_bake_fresnel_power = 3.0f;
 int   gg_water_bake_drawn = 0;
 // GGMAX 3.25d: 1 = force the plane to opaque magenta. A solid-colour bisect, live-switchable
 // because it rides in the vertex colour rather than the shader. See the note above.
@@ -62,6 +86,10 @@ namespace
 	{
 		XMFLOAT3 pos;      // xz = local offset from the camera, y = absolute water height
 		uint32_t color;    // R8G8B8A8_UNORM
+		// ★ GGMAX 3.35f: (strength, power) for the distance opacity ramp. In the vertex for the
+		// same reason the colour is: there is no spare constant-buffer slot in this pass, and it is
+		// four vertices. Uniform across the quad; the shader wants them per-pixel.
+		XMFLOAT2 fres;
 	};
 
 	// Half-size of the plane. The GG world is 200,000 units across, so this reaches past any
@@ -84,6 +112,8 @@ namespace
 	bool  g_vbValid = false;
 	float g_lastHeight = -99999.0f;
 	uint32_t g_lastColor = 0;
+	float g_lastFresStr = -1.0f;   // GGMAX 3.35f: part of the rebuild test, see UpdateVB
+	float g_lastFresPow = -1.0f;
 	uint32_t g_updates = 0;    // GGWaterBake_Update calls that got past the switch test
 	uint32_t g_rebuilds = 0;   // vertex buffers actually created
 	uint32_t g_draws = 0;      // draw calls actually issued
@@ -217,6 +247,7 @@ void GGWaterBake_Init()
 	g_il.elements = {
 		{ "POSITION", 0, Format::R32G32B32_FLOAT, 0, 0,  InputClassification::PER_VERTEX_DATA },
 		{ "COLOR",    0, Format::R8G8B8A8_UNORM,  0, 12, InputClassification::PER_VERTEX_DATA },
+		{ "TEXCOORD", 0, Format::R32G32_FLOAT,    0, 16, InputClassification::PER_VERTEX_DATA }, // GGMAX 3.35f fresnel
 	};
 
 	// ★ PipelineStateDesc stores POINTERS and Wicked's DX12 backend compiles at BIND time, so
@@ -267,14 +298,21 @@ void GGWaterBake_Update()
 	// with static water therefore does no per-frame work at all here.
 	const float height = (float)g.gdefaultwaterheight;
 	const uint32_t color = CurrentWaterColor();
-	if ( g_vbValid && height == g_lastHeight && color == g_lastColor ) return;
+	// ⚠ GGMAX 3.35f: the fresnel knobs are part of the vertex data, so they MUST be part of the
+	// rebuild test. Leaving them out is the classic cached-value trap - the knob would reply OK,
+	// the report would show the new number, and nothing on screen would ever change because the
+	// vertex buffer still held the old one.
+	const float fstr = ( gg_water_bake_fresnel < 0.0f ) ? 0.0f : ( gg_water_bake_fresnel > 1.0f ? 1.0f : gg_water_bake_fresnel );
+	const float fpow = ( gg_water_bake_fresnel_power < 0.1f ) ? 0.1f : ( gg_water_bake_fresnel_power > 16.0f ? 16.0f : gg_water_bake_fresnel_power );
+	if ( g_vbValid && height == g_lastHeight && color == g_lastColor
+		&& fstr == g_lastFresStr && fpow == g_lastFresPow ) return;
 
 	WaterVertex v[4];
 	v[0].pos = XMFLOAT3( -WATER_HALF_SIZE, height, -WATER_HALF_SIZE );
 	v[1].pos = XMFLOAT3(  WATER_HALF_SIZE, height, -WATER_HALF_SIZE );
 	v[2].pos = XMFLOAT3( -WATER_HALF_SIZE, height,  WATER_HALF_SIZE );
 	v[3].pos = XMFLOAT3(  WATER_HALF_SIZE, height,  WATER_HALF_SIZE );
-	for ( int i = 0; i < 4; i++ ) v[i].color = color;
+	for ( int i = 0; i < 4; i++ ) { v[i].color = color; v[i].fres = XMFLOAT2( fstr, fpow ); }
 
 	GraphicsDevice* device = GetDevice();
 	GPUBufferDesc vbdesc;
@@ -288,6 +326,8 @@ void GGWaterBake_Update()
 	g_vbValid = true;
 	g_rebuilds++;
 	g_lastHeight = height;
+	g_lastFresStr = fstr;
+	g_lastFresPow = fpow;
 	g_lastColor = color;
 }
 

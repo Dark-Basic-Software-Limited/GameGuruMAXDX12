@@ -619,7 +619,7 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				if (t.visuals.bSuperQuickObjects)
 				{
 					int sql = t.visuals.iSuperQuickLevel;
-					if (sql < 1 || sql > 3) sql = 1;   // a level saved before 3.34 parses as 0
+					if (sql < 1 || sql > 3) sql = 3;   // a level saved before 3.34 parses as 0 (3.35b: default 3)
 					const char* sqfmt =
 						(sql <= 1) ? "1: Shapes only (fastest)" :
 						(sql == 2) ? "2: Shapes and colour" :

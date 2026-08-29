@@ -5801,6 +5801,39 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_WATERBAKEFRESNEL") == 0)
+	{
+		// SET_WATERBAKEFRESNEL <strength 0..100> [power x10, 10..160]
+		//
+		// ★ The baked water plane is one flat alpha everywhere, so the lake bed was as visible at
+		// the horizon as underfoot. This ramps alpha toward opaque at grazing angles - which on a
+		// horizontal plane is the same thing as "with distance", but stays correct when the camera
+		// changes height, because it is a real Schlick term on the plane normal rather than a lerp
+		// on distance.
+		//   strength 0   = off, the plain semi-transparent plane
+		//   strength 85  = default
+		//   power    30  = default (x10, so 30 means 3.0). Lower closes the water up NEARER.
+		extern float gg_water_bake_fresnel;
+		extern float gg_water_bake_fresnel_power;
+		int s = -1, p = -1;
+		const int n = sscanf_s(arg, "%d %d", &s, &p);
+		if (n < 1 || s < 0 || s > 100)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_WATERBAKEFRESNEL needs <strength 0..100> [power 10..160]");
+		}
+		else
+		{
+			gg_water_bake_fresnel = (float)s * 0.01f;
+			if (n >= 2 && p >= 10 && p <= 160) gg_water_bake_fresnel_power = (float)p * 0.1f;
+			_snprintf(result, resultSize,
+				"OK: SET_WATERBAKEFRESNEL strength %.2f power %.1f - %s",
+				gg_water_bake_fresnel, gg_water_bake_fresnel_power,
+				(s == 0) ? "off, plane is uniformly semi-transparent"
+				         : "water closes toward opaque as it recedes");
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_WATERBAKETINT") == 0)
 	{
 		// Percent of the way from the authored absorption tint toward the sky colour.

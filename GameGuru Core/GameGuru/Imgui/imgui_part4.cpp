@@ -339,6 +339,21 @@ void ImGui::BeginTooltipEx(ImGuiWindowFlags extra_flags, bool override_previous_
     Begin(window_name, NULL, flags | extra_flags);
 }
 
+// ★★★ GGMAX 3.35e: the width every text tooltip is wrapped to.
+//
+// min(42 em, 60% of the usable viewport). The first term scales with the FONT, which is the term
+// that matters: the in-game panel uses a noticeably larger font than the editor, which is why the
+// same tooltip fitted in the editor and ran off the screen in game. The second guarantees it fits
+// whatever the window size or font.
+float ImGui::GG_CalcTooltipWrapWidth()
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = GetCurrentWindow();
+    const ImRect r_outer = GetWindowAllowedExtentRect(window);
+    const float room = ImMax(r_outer.GetWidth() - g.Style.WindowPadding.x * 2.0f, g.FontSize * 8.0f);
+    return ImMin(g.FontSize * 42.0f, room * 0.60f);
+}
+
 void ImGui::EndTooltip()
 {
     IM_ASSERT(GetCurrentWindowRead()->Flags & ImGuiWindowFlags_Tooltip);   // Mismatched BeginTooltip()/EndTooltip() calls
@@ -352,7 +367,35 @@ void ImGui::SetTooltipV(const char* fmt, va_list args)
         BeginTooltip();
     else
         BeginTooltipEx(0, true);
+
+    // ★★★ GGMAX 3.35e: wrap the text, so a long tooltip cannot run off the edge of the screen.
+    //
+    // Tooltips are AlwaysAutoResize with no wrapping, so a long single-line tooltip becomes one
+    // enormously wide window. FindBestWindowPosForPopup already clamps tooltip POSITION - it tries
+    // right, down, left, up against GetWindowAllowedExtentRect - but when the window fits in NO
+    // direction it gives up and pins to the cursor, and its own comment says so:
+    //     "If there's not enough room, for tooltip we prefer avoiding the cursor at all cost
+    //      even if it means that part of the tooltip won't be visible."
+    // That is the reported bug: the right-hand half of the text simply off-screen. Position
+    // clamping cannot rescue a window wider than the screen; only wrapping can.
+    //
+    // ★ HERE and not in BeginTooltipEx, which was the first attempt. BeginTooltipEx is also the
+    // entry point for the ~26 HAND-COMPOSED tooltips - image previews, centred captions, SameLine
+    // status rows, ImGui's own ColorTooltip - and those are laid out, not written. Wrapping them
+    // breaks things in ways that are not obvious:
+    //   * GameGuru's own ImGui::TextCenter (imgui_gg_dx11_part2.cpp) measures with an UNWRAPPED
+    //     CalcTextSize and then renders through TextEx, which does obey the wrap position. Its
+    //     ten call sites are the captions under asset image previews - exactly the strings that
+    //     get long - and they would centre themselves on a width they no longer occupy.
+    //   * the terrain noise tooltips are already hand-broken into short lines inside a tooltip
+    //     that pins its own 500px content width, so a second, different wrap column would fight it.
+    // SetTooltipV is the single path all 765 SetTooltip() calls take, and prose is all it ever
+    // carries - so this gets the whole benefit and none of that.
+    const float gg_wrap_w = GG_CalcTooltipWrapWidth();
+    PushTextWrapPos(GetCursorPosX() + gg_wrap_w);
     TextV(fmt, args);
+    PopTextWrapPos();
+
     EndTooltip();
 }
 
@@ -779,7 +822,20 @@ ImVec2 ImGui::FindBestWindowPosForPopup(ImGuiWindow* window)
             r_avoid = ImRect(ref_pos.x - 16, ref_pos.y - 8, ref_pos.x + 24 * sc, ref_pos.y + 24 * sc); // FIXME: Hard-coded based on mouse cursor shape expectation. Exact dimension not very important.
         ImVec2 pos = FindBestWindowPosForPopupEx(ref_pos, window->Size, &window->AutoPosLastDirection, r_outer, r_avoid);
         if (window->AutoPosLastDirection == ImGuiDir_None)
-            pos = ref_pos + ImVec2(2, 2); // If there's not enough room, for tooltip we prefer avoiding the cursor at all cost even if it means that part of the tooltip won't be visible.
+        {
+            // If there's not enough room, for tooltip we prefer avoiding the cursor at all cost even if it means that part of the tooltip won't be visible.
+            pos = ref_pos + ImVec2(2, 2);
+
+            // ★ GGMAX 3.35d: ...but keep as much of it on screen as we can. Upstream simply pins to
+            // the cursor here, which is what put the right-hand half of a wide tooltip past the edge
+            // of Lee's screen. Wrapping the text (see BeginTooltipEx) means this branch should now be
+            // unreachable for ordinary prose, but a tooltip can still be un-fittable if it holds
+            // something non-textual and wide - an image, a colour preview - and giving up entirely is
+            // never the better answer. Clamping to r_outer shows the top-left of the tooltip instead
+            // of an arbitrary middle slice, and is a no-op whenever the window already fits.
+            pos.x = ImClamp(pos.x, r_outer.Min.x, ImMax(r_outer.Min.x, r_outer.Max.x - window->Size.x));
+            pos.y = ImClamp(pos.y, r_outer.Min.y, ImMax(r_outer.Min.y, r_outer.Max.y - window->Size.y));
+        }
         return pos;
     }
     IM_ASSERT(0);

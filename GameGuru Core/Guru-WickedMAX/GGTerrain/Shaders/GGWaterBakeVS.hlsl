@@ -17,6 +17,7 @@ struct VertexIn
 {
 	float3 position : POSITION;   // xz = local offset, y = absolute water height
 	float4 color    : COLOR;
+	float2 fres     : TEXCOORD0;  // GGMAX 3.35f: (strength, power) of the distance opacity ramp
 };
 
 struct VertexOut
@@ -24,6 +25,7 @@ struct VertexOut
 	float4 position : SV_POSITION;
 	float4 color    : COLOR;
 	float3 worldPos : TEXCOORD0;
+	float2 fres     : TEXCOORD1;  // GGMAX 3.35f
 };
 
 [RootSignature(GAMEGURU_ROOTSIGNATURE)]
@@ -36,5 +38,6 @@ VertexOut main( VertexIn IN )
 	OUT.position = mul( g_xCamera_VP, float4( world, 1.0 ) );
 	OUT.color    = IN.color;
 	OUT.worldPos = world;
+	OUT.fres     = IN.fres;   // GGMAX 3.35f
 	return OUT;
 }

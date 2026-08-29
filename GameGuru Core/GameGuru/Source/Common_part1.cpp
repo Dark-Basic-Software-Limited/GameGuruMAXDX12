@@ -710,6 +710,9 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "terrainbakeresnear"; if (t.field_s == t.tryfield_s) { extern int gg_terrain_bake_res_near; if (t.value1 >= 32 && t.value1 <= 8192) gg_terrain_bake_res_near = t.value1; }
 					t.tryfield_s = "terrainbakenearbudget"; if (t.field_s == t.tryfield_s) { extern int gg_terrain_bake_near_budget_mb; if (t.value1 >= 0 && t.value1 <= 4096) gg_terrain_bake_near_budget_mb = t.value1; }
 					t.tryfield_s = "waterbakealpha"; if (t.field_s == t.tryfield_s) { extern float gg_water_bake_alpha; if (t.value1 >= 0 && t.value1 <= 100) gg_water_bake_alpha = (float)t.value1 * 0.01f; }
+					// GGMAX 3.35f: the distance opacity ramp on the baked water plane. 0 disables it (3.25 behaviour).
+					t.tryfield_s = "waterbakefresnel"; if (t.field_s == t.tryfield_s) { extern float gg_water_bake_fresnel; if (t.value1 >= 0 && t.value1 <= 100) gg_water_bake_fresnel = (float)t.value1 * 0.01f; }
+					t.tryfield_s = "waterbakefresnelpower"; if (t.field_s == t.tryfield_s) { extern float gg_water_bake_fresnel_power; if (t.value1 >= 1 && t.value1 <= 160) gg_water_bake_fresnel_power = (float)t.value1 * 0.1f; }
 					t.tryfield_s = "noterrain"; if (t.field_s == t.tryfield_s) { extern void GGSetNoTerrain(int); GGSetNoTerrain(t.value1); }
 					t.tryfield_s = "notrees";   if (t.field_s == t.tryfield_s) { extern void GGSetNoTrees(int);   GGSetNoTrees(t.value1); }
 					t.tryfield_s = "nograss";   if (t.field_s == t.tryfield_s) { extern void GGSetNoGrass(int);   GGSetNoGrass(t.value1); }

@@ -843,10 +843,12 @@ void MasterRenderer::Update(float dt)
 		//   2 Ambient  + albedo
 		//   3 Lit      + tiled lighting and shadows
 		// ⚠ A level saved before 3.34 has no SuperQuickLevel field and parses as 0, which would
-		// read as OFF and quietly disable a box the user had ticked. Clamp it to the default.
+		// read as OFF and quietly disable a box the user had ticked. Clamp it to the default, which
+		// 3.35b moved from 1 (Flat) to 3 (Lit) - an untextured world is not what a user expects to
+		// get for ticking a performance box.
 		{
 			int sql = t.visuals.iSuperQuickLevel;
-			if (sql < 1 || sql > 3) sql = 1;
+			if (sql < 1 || sql > 3) sql = 3;   // GGMAX 3.35b: default is now Lit, not Flat
 			wi::renderer::gg_super_quick_objects = t.visuals.bSuperQuickObjects ? sql : 0;
 		}
 
