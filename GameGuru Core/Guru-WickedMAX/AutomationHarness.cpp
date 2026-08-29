@@ -8041,7 +8041,7 @@ void AutoHarness_CheckForCommand(void)
 		const unsigned int n = GG_GetSceneUpdateCallsBridge(rets, scenes, frames, dts, MAXREC);
 
 		FILE* f = nullptr;
-		fopen_s(&f, "sceneupdate_dump.txt", "w");
+		f = GGDiagFopen("sceneupdate_dump.txt", "w"); // GGMAX 3.35j
 		HANDLE proc = GetCurrentProcess();
 		SymSetOptions(SymGetOptions() | SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
 		SymInitialize(proc, NULL, TRUE); // harmless if already initialised
@@ -8181,7 +8181,10 @@ void AutoHarness_CheckForCommand(void)
 		if (!symReady) { SymSetOptions(SYMOPT_DEFERRED_LOADS | SYMOPT_UNDNAME); SymInitialize(hProc, NULL, TRUE); symReady = true; }
 
 		FILE* f = nullptr;
-		fopen_s(&f, "Files\\hairkill_dump.txt", "w");
+		// ⚠ GGMAX 3.35j: the "Files\\" prefix was the bug - the game CWD is ALREADY
+		// Max\Files, so this wrote Max\Files\Files\hairkill_dump.txt. That is exactly where the
+		// nested Files/Files tree came from. Beside the exe now, like everything else.
+		f = GGDiagFopen("hairkill_dump.txt", "w");
 		if (f) fprintf(f, "HAIRKILL: %u removals of live hair entities; Scene::Clear wiped %u hair components\n"
 			"reason 0 = direct Entity_Remove, 1 = recursive child of `parent`\n\n", n, clearCount);
 		unsigned int direct = 0, recursed = 0;

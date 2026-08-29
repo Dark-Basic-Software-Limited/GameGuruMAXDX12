@@ -1,4 +1,4 @@
-//
+﻿//
 // GPUParticles system from AGK
 //
 
@@ -75,6 +75,11 @@ static bool LoadGPUPShader(ShaderStage stage, Shader& shader, const std::string&
 
 	return false;
 }
+
+// ★ GGMAX 3.35j: diagnostic files go beside the EXE, not into the CWD. Declared HERE, BEFORE
+// `namespace GPUParticles` opens - inside it this would declare GPUParticles::GGDiagFopen and
+// fail to link. Defined in Guru-WickedMAX/master_part1.cpp.
+extern FILE* GGDiagFopen(const char* name, const char* mode);
 
 namespace GPUParticles
 {
@@ -961,7 +966,7 @@ static void GG_DrawLogLine( size_t e )
 		return;
 	}
 	if ( !gg_drawlog_file )
-		fopen_s( &gg_drawlog_file, "gpup_drawlog.csv", "w" );
+		gg_drawlog_file = GGDiagFopen("gpup_drawlog.csv", "w");
 	if ( !gg_drawlog_file ) return;
 	const t_gpup_emitter& em = gpup_emitter[e];
 	fprintf( gg_drawlog_file, "%.4f,%u,%d,%.3f,%.4f,%.5f,%.1f,%.1f,%.4f,%.4f,%.5f,%.5f,%.5f,%d,%.4f\n",
@@ -2051,7 +2056,7 @@ int gpup_init()
 	// any shader/PSO failure now disables the whole system cleanly instead of letting an
 	// empty PipelineState reach BindPipelineState (null internal_state -> AV in pso_validate).
 	FILE* gg_trace = nullptr;
-	if (gg_gpup_trace_file) fopen_s(&gg_trace, "gpup_trace.txt", "w");
+	if (gg_gpup_trace_file) gg_trace = GGDiagFopen("gpup_trace.txt", "w");
 	#define GPUP_TRACE(...) { if (gg_trace) { fprintf(gg_trace, __VA_ARGS__); fprintf(gg_trace, "\n"); fflush(gg_trace); } }
 	#define GPUP_FAIL(msg) { GPUP_TRACE("FAIL: %s", msg); if (gg_trace) fclose(gg_trace); \
 		wi::backlog::post(std::string("GPU Particles DISABLED: ") + msg, wi::backlog::LogLevel::Error); \
@@ -2943,7 +2948,7 @@ int gpup_debug_track( int enr )
 	if ( (int)pos.size() < dim * dim * 4 || (int)spd.size() < dim * dim * 4 ) return -3;
 
 	FILE* f = nullptr;
-	fopen_s( &f, "gpup_track.csv", "a" );   // game CWD is Max/Files already
+	f = GGDiagFopen("gpup_track.csv", "a");   // game CWD is Max/Files already
 	if ( !f ) return -4;
 	const float t = AGKTimer();
 	// one settings row per call: every clock/warp the event could correlate with
@@ -2988,7 +2993,7 @@ int gpup_debug_ages( int enr )
 	if ( !wi::helper::saveTextureToMemory( gpup_emitter[enr].texPos[curr], pos ) ) return -2;
 	if ( (int)pos.size() < dim * dim * 4 ) return -3;
 	FILE* f = nullptr;
-	fopen_s( &f, "gpup_ages.csv", "a" );
+	f = GGDiagFopen("gpup_ages.csv", "a");
 	if ( !f ) return -4;
 	fprintf( f, "A,%.3f,%d,%d", AGKTimer(), enr, gpup_emitter[enr].testpos );
 	for ( int j = 0; j < P; j++ )
@@ -3070,7 +3075,7 @@ void gpup_debug_canary( int mode )
 int gpup_debug_dump( char* summary, int summarySize )
 {
 	FILE* f = nullptr;
-	fopen_s( &f, "gpup_dump.txt", "w" );
+	f = GGDiagFopen("gpup_dump.txt", "w");
 	int loaded = 0;
 	if ( f )
 	{

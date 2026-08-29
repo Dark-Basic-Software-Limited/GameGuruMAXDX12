@@ -9222,3 +9222,72 @@ absent.
 
 `log.txt` and `mesh_census.txt` land in the Max root, screenshots in `Max/screenshots`, and nothing
 leaks back into `Files/` — `Files/screenshots` stayed empty and `Files/Files` was never recreated.
+
+
+---
+
+# §3.35j — SHIP THE PDB, AND THE WRITERS §3.35i MISSED (2026-08-29)
+
+Lee, cleaning the build folder for the alpha, asked for `GameGuruMAX.pdb` (148 MB) to be deleted.
+
+★★★ **It was worth checking first, and the check changed the answer.** `CrashLogger.cpp:148` calls
+`SymInitialize(process, NULL, TRUE)` and then `SymFromAddr` / `SymGetLineFromAddr64`. With a NULL
+search path dbghelp looks for the pdb **beside the exe** — so that pdb is the sole reason a crash
+report reads
+
+```
+[3] wi::Application::Run + 0x5f  (wiApplication.cpp:103)
+```
+
+instead of a bare address. It is what made §3.35g solvable at all.
+
+The part that is not obvious: **a rebuild produces a pdb that no longer matches a shipped exe.**
+Delete it and every crash address a tester reports on this alpha becomes permanently undecodable —
+at exactly the moment the alpha exists to collect them. Lee's call: **ship the pdb with the
+alpha**, so testers' own `Guru-Crash.log` arrives already symbolised.
+
+★ **Deleting it would have cost 148 MB of package and all of the crash diagnostics.** "Get it
+out of the build folder" and "destroy it" looked like the same request and are not.
+
+## The verification, and what it caught
+
+Rather than assume symbolisation worked, ran `DUMP_SCENEUPDATE` — which symbolises through the
+SAME dbghelp path the crash logger uses. It resolved fully:
+
+```
+wi::RenderPath3D::Update  (D:\max\WickedEngineDX12\WickedEngine\wiRenderPath3D.cpp:391)
+```
+
+**But the dump file landed in `Files/`.** §3.35i had supposedly routed every diagnostic writer to
+the exe directory. Its regex matched `fopen("name"` and these use **`fopen_s(&f, "name", ...)`**:
+
+| | |
+|---|---|
+| `AutomationHarness.cpp` | `sceneupdate_dump.txt`, `hairkill_dump.txt` |
+| `GPUParticles_part0.cpp` | `gpup_drawlog.csv`, `gpup_trace.txt`, `gpup_track.csv`, `gpup_ages.csv`, `gpup_dump.txt` |
+| `wiGraphicsDevice_DX12.cpp` | `gg_pso_fail.txt` |
+| `wiProfiler.cpp` | `gap_trace.txt` |
+
+★★ **And one of them explains the nested `Max/Files/Files/` tree deleted in §3.35h.**
+`hairkill_dump.txt` was opened as `"Files\hairkill_dump.txt"` — a `Files\` prefix applied while
+the CWD is ALREADY `Max\Files`. That is where the 1.28 GB nested directory came from. The
+`gpup_track.csv` site even carries the comment *"game CWD is Max/Files already"*, which is true
+today and was never guaranteed.
+
+⚠ `GG_fopen("files/treebank/FractalGenerator.dat", "wb+")` left alone — a PRODUCT data cache,
+correctly relative. Same judgement as `setup.ini` in §3.35i.
+
+## ★★★ Method
+
+**A mechanical sweep is only as wide as its pattern, and it cannot report the sites it never looked
+at.** §3.35i's script printed "ok" for all 20 sites it matched and had no way to say "there are
+nine more spelled differently". This is the same failure as the §3.35i verification grep — a check
+that can only produce a passing answer — arriving one layer up: the sweep reported on its own
+coverage, not on the problem.
+
+What found it was **running the feature and looking at where the file actually appeared.** Ten
+minutes of driving the app beat two greps that both said "clean".
+
+★ Corollary for next time: when routing writers, enumerate by the DESTINATION (what files appear
+in the folder after exercising the app) as well as by the call pattern. The folder does not care
+how the write was spelled.
