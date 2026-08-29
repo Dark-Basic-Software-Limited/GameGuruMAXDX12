@@ -1500,6 +1500,9 @@ float screen_editor_scalemod (float fGlobalScaleIn)
 	return fGlobalScaleIn * g.globalhudscale;
 }
 
+// GGMAX 3.35i: debug output goes beside the EXE, not into whatever the CWD is now
+// (a file dialog can move it). Defined in Guru-WickedMAX/master_part1.cpp.
+extern FILE* GGDiagFopen(const char* name, const char* mode);
 
 // ============================================================================================
 // GGMAX 2.36: harness hooks for the SCREEN (HUD) editor.
@@ -1574,7 +1577,7 @@ void GGHudDumpWidgets(char* result, int resultSize)
 		_snprintf(result, resultSize, "ERROR: not in the screen editor (call HUD_EDIT first)");
 		return;
 	}
-	FILE* f = fopen("hudwidgets.txt", "w");
+	FILE* f = GGDiagFopen("hudwidgets.txt", "w");
 	int used = 0, withPath = 0, loaded = 0;
 	if (f != NULL)
 		fprintf(f, "screen node %d \"%s\"\n%-4s %-6s %-8s %-9s %-6s %-7s %s\n",

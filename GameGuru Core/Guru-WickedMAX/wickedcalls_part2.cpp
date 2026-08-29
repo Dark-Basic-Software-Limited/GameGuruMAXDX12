@@ -2179,6 +2179,10 @@ bool WickedCall_GetPick2(float fMouseX, float fMouseY, float* pOutX, float* pOut
 // level load (~ms — irrelevant next to the load itself).
 #include "wiResourceManager.h" // GGMAX 1.44 reload guard
 
+// GGMAX 3.35i: diagnostic files go beside the EXE, not into whatever the CWD currently is
+// (a file dialog can move it). Defined in Guru-WickedMAX/master_part1.cpp.
+extern FILE* GGDiagFopen(const char* name, const char* mode);
+
 // GGMAX 2.71: false = quiesce runs identically but writes no reload_quiesce.txt (the
 // unconditional append grew forever across sessions and landed in players' standalone
 // folders; set via GGSetDiagTraceFiles from the producelogfiles setup.ini key)
@@ -2209,7 +2213,7 @@ extern "C" void WickedCall_ReloadQuiesceGPU(void)
 	// Diagnostic marker (corruption hunt): prove the hook ran and show how much it drained.
 	static int s_quiesceCount = 0;
 	s_quiesceCount++;
-	FILE* f = gg_reload_quiesce_file ? fopen("reload_quiesce.txt", "a") : nullptr;
+	FILE* f = gg_reload_quiesce_file ? GGDiagFopen("reload_quiesce.txt", "a") : nullptr;
 	if (f != nullptr)
 	{
 		fprintf(f, "quiesce #%d: released %llu deferred GPU items (streaming guarded)\n", s_quiesceCount, (unsigned long long)released);

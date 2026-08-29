@@ -9150,3 +9150,75 @@ time**. Both paths should resolve absolutely, exactly as the shader path already
 - ★ **The stack in a crash report is where the process died, not necessarily where it went
   wrong.** `0xe06d7363` out of the device-lost handler was the aftermath; the cause was a page
   fault named in a file the handler itself had written.
+
+
+---
+
+# §3.35i — EVERY DEBUG FILE NOW LANDS BESIDE THE EXE (2026-08-29)
+
+§3.35h found that screenshots and the engine log resolve against the **current directory**, which
+Windows file dialogs change. I suggested "make the paths absolute" and Lee pushed straight back:
+
+> "do you mean absolute to my PC and drive, not sure that is a good if this build then runs on
+> another PC or drive config..."
+
+★ **A fair challenge and the wording was mine.** "Absolute" reads as "hardcoded", which would
+break on every machine but this one. What was meant is RUNTIME-RESOLVED, and the distinction is
+worth writing down because the two look identical in a sentence and are opposites in a build.
+
+## The fix
+
+```cpp
+std::string GetDiagnosticPath(const std::string& filename)
+{
+    return GetDirectoryFromPath(GetExecutablePath()) + filename;
+}
+```
+
+`GetExecutablePath()` is `GetModuleFileName(NULL, ...)`. It resolves at runtime to wherever the
+build actually sits — any drive, a tester's PC as readily as this one — and nothing is baked in at
+compile time.
+
+★ **The engine had already solved this and the solution was sitting unused.** Five call sites
+(`dred_report.txt`, `leakall.txt`, `last_upload.txt`, `stream_load.txt`, `dred.txt`) already used
+exactly this idiom, which is precisely why `dred_report.txt` reliably landed in the Max root while
+`log.txt` wandered. The answer was in the codebase; nothing needed inventing.
+
+## What was routed through it
+
+- engine: the screenshot directory, `log.txt`, `anim_garbage.txt` ×2, `corrupt_geometry.txt`,
+  `applytransform_garbage.txt` ×2
+- game: 20 `DUMP_*` / trace writers, via a `GGDiagFopen(name, mode)` helper
+- the device-lost dialog no longer says "see Files/log.txt" — that was wrong about half the time
+
+⚠ **`setup.ini` was deliberately left alone.** It is a PRODUCT file being READ, not a diagnostic
+being written. The rule is "debug OUTPUT goes beside the exe", not "every relative path is a bug" —
+and a sweeping regex would have taken it. Same for `GG_fopen("files/treebank/...")`.
+
+Lee's reason for choosing the exe root over `Files/`: every AI-generated temp, script and debug
+file then sits in one obvious set in the root, and shipping means deleting that set.
+
+## ★★ Two mistakes made applying it
+
+**The insertion script assumed every file had an `#include`.** Three did not. `rfind("#include")`
+returned −1, Python's `find(NL, -1)` then searched from the last character, and the declaration was
+spliced in after the FIRST BYTE of the file — turning `void` into `v` + block + `oid`. Two files
+broke in a way the compiler reported as "'FILE' should be preceded by ';'" at line 4, which points
+at the symptom and not the cause.
+
+★ **A mechanical edit across N files must not assume a shape it has not checked in all N.** The
+cheap check — "how many of these files actually contain `#include`?" — would have cost one grep.
+
+**And my own verification grep was wrong.** `grep -oE 'fopen\("[^"]*"' | sed 's/.*"//'` strips
+through the LAST quote, so every match became an empty string and the check printed nothing, which
+read as "no relative fopen left". It was only caught because the compiler disagreed.
+
+★★★ **A verification that can only produce a passing answer is not a verification.** The sed made
+success and failure look identical. Sanity-check the checker against a case you KNOW should fail —
+here, `setup.ini`, which was supposed to still be there and which the broken grep also "proved"
+absent.
+
+## Verified
+
+`log.txt` and `mesh_census.txt` land in the Max root, screenshots in `Max/screenshots`, and nothing
+leaks back into `Files/` — `Files/screenshots` stayed empty and `Files/Files` was never recreated.

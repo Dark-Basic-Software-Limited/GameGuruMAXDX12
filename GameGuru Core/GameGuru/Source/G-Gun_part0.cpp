@@ -12,6 +12,10 @@
 #endif
 
 #include "tracers/TracerManager.h"
+
+// GGMAX 3.35i: diagnostic files go beside the EXE, not into whatever the CWD currently is
+// (a file dialog can move it). Defined in Guru-WickedMAX/master_part1.cpp.
+extern FILE* GGDiagFopen(const char* name, const char* mode);
 using namespace Tracers;
 
 // global store for weapon shader effect indexes
@@ -1294,7 +1298,7 @@ void GGFireTraceSample(int firingmode, int gunclick, int gunmode, int pressedtri
 // Writes Files/firetrace.txt and returns a one-line verdict naming the stage that stopped the shot.
 void GGFireTraceDump(char* result, int resultSize)
 {
-	FILE* f = fopen("firetrace.txt", "w");
+	FILE* f = GGDiagFopen("firetrace.txt", "w");
 	if (f != NULL)
 	{
 		fprintf(f, "GGMAX 2.42 FIRE trace — %d sampled frames, %d frames the gun update EARLY-OUT\n",

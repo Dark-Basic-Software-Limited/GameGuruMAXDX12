@@ -9,6 +9,7 @@
 #include "wiProfiler.h"
 #include "wiTerrain.h" // GGMAX 1.71: gg_svt_atlas_height (setup.ini svtatlasheight)
 #include "wiRenderer.h" // GGMAX 2.89: SetProbeView (setup.ini probeview / probeviewmip)
+#include "wiHelper.h"   // GGMAX 3.35i: GetDiagnosticPath, for GGDiagFopen below
 #include <atomic>
 #include <chrono>
 
@@ -197,6 +198,27 @@ void GGSetTextureDivideLive(int d)
 	if (wi::resourcemanager::gg_texture_divide == d) return;   // nothing to do, and no GPU drain
 	wi::resourcemanager::gg_texture_divide = d;
 	gg_texture_divide_pending = true;
+}
+
+// ★★★ GGMAX 3.35i: open a diagnostic/debug file BESIDE THE EXE, never in the current directory.
+//
+// Every DUMP_*/trace writer used a bare relative fopen, so the file landed wherever the process
+// CWD happened to point. GameGuru sets the CWD to Files at startup, but editor paths and Windows
+// FILE DIALOGS both move it - which is how a nested Max/Files/Files/ tree accumulated, and why
+// screenshots and log.txt turned up in two different folders in the same session.
+//
+// Lee's call (2026-08-29): put them all in the root, so every AI-generated temp, script and debug
+// file sits in one obvious set that can be deleted before shipping.
+//
+// ⚠ Deliberately NOT applied to setup.ini (Common_part3.cpp) - that is a PRODUCT file being
+// read, not a diagnostic being written. The rule here is "debug output goes beside the exe", not
+// "every relative path is a bug".
+//
+// Lives in this file rather than the harness because the harness is not in every build
+// configuration and four of the callers are core game code.
+FILE* GGDiagFopen(const char* name, const char* mode)
+{
+	return fopen(wi::helper::GetDiagnosticPath(name).c_str(), mode);
 }
 
 // GGMAX 3.05 DEBUG (not an off-switch): flat unlit grey billboard quads, see GGTreesConstants.hlsli.

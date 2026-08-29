@@ -573,7 +573,10 @@ static GGShotRow g_ggShotRows[16];
 static int g_ggShotCount = 0;
 void GGShotTraceDump(char* result, int resultSize)
 {
-	FILE* f = fopen("shottrace.txt", "w");
+	// GGMAX 3.35i: debug output goes beside the EXE, not into whatever the CWD is now
+	// (a file dialog can move it). Defined in Guru-WickedMAX/master_part1.cpp.
+	extern FILE* GGDiagFopen(const char* name, const char* mode);
+	FILE* f = GGDiagFopen("shottrace.txt", "w");
 	int swallowed = 0, hits = 0, terrain = 0, misses = 0;
 	DWORD lastBlocker = 0;
 	int n = g_ggShotCount < 16 ? g_ggShotCount : 16;

@@ -245,6 +245,10 @@ extern bool bTriggerEditDemoGame;
 // hub renders; see M-GridEditB_part16.cpp:627). One string per user project folder.
 #include <vector>
 #include <string>
+
+// GGMAX 3.35i: diagnostic files go beside the EXE, not into whatever the CWD currently is
+// (a file dialog can move it). Defined in Guru-WickedMAX/master_part1.cpp.
+extern FILE* GGDiagFopen(const char* name, const char* mode);
 extern std::vector<std::string> projectbank_list;
 
 // Storyboard data (StoryboardStruct defined in imgui_gg_dx11.h, included via M-GridEditB.h)
@@ -2979,7 +2983,7 @@ static void Sotan_Tick(void)
 	Sotan_ReadbackBuffer(mesh->generalBuffer, srcB);
 	g_sotanPhase = 0;
 	if (B.empty() || B.size() != g_sotanSnapA.size()) return;
-	FILE* f = fopen("sotan_dump.txt", "w");
+	FILE* f = GGDiagFopen("sotan_dump.txt", "w");
 	if (f == nullptr) return;
 	const uint64_t tanOfs = mesh->so_tan.offset;
 	const int nverts = (int)(mesh->so_tan.size / 8ull); // R16G16B16A16_FLOAT
@@ -3424,7 +3428,7 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		float epRadius = 3000.0f;
 		if (arg && arg[0]) sscanf_s(arg, "%f", &epRadius);
 		wi::scene::Scene& epScene = wi::scene::GetScene();
-		FILE* epF = fopen("envprobe_dump.txt", "w");
+		FILE* epF = GGDiagFopen("envprobe_dump.txt", "w");
 		if (epF == nullptr)
 		{
 			_snprintf(result, resultSize, "ERROR: DUMP_ENVPROBE could not open envprobe_dump.txt");
@@ -3526,7 +3530,7 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 			return true;
 		}
 		wi::terrain::Terrain& tsTerr = tsScene.terrains[0];
-		FILE* tsF = fopen("terrainsurf_dump.txt", "w");
+		FILE* tsF = GGDiagFopen("terrainsurf_dump.txt", "w");
 		int tsSaved = 0;
 		using MC = wi::scene::MaterialComponent;
 		const int tsMaps[2] = { MC::BASECOLORMAP, MC::SURFACEMAP };
@@ -3844,7 +3848,7 @@ static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, c
 			for (auto& c : n) c = (char)tolower((unsigned char)c);
 			return h.find(n) != std::string::npos;
 		};
-		FILE* trF = fopen("transparents_dump.txt", "w");
+		FILE* trF = GGDiagFopen("transparents_dump.txt", "w");
 		if (trF == nullptr)
 		{
 			_snprintf(result, resultSize, "ERROR: DUMP_TRANSPARENTS could not open transparents_dump.txt");
@@ -5430,7 +5434,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 
 		std::sort(bad.begin(), bad.end(), [](const BigRec& a, const BigRec& b) { return a.ratio > b.ratio; });
 
-		FILE* f = fopen("dumpbigaabb.txt", "w");
+		FILE* f = GGDiagFopen("dumpbigaabb.txt", "w");
 		if (f != nullptr)
 		{
 			fprintf(f, "DUMP_BIGAABB  inflation gate: actualRadius > %.2f x cleanRadius\n", ratioGate);
@@ -5467,7 +5471,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		}
 		_snprintf(result, resultSize,
 			"OK: DUMP_BIGAABB gate=%.1fx objects=%d skinned=%d INFLATED=%d meshes=%d armatures=%d "
-			"overFp16=%d TRANSPARENT=%d TRANSPARENT_OVERFP16=%d worstRatio=%.1fx worstRadius=%.0f -> Files/dumpbigaabb.txt",
+			"overFp16=%d TRANSPARENT=%d TRANSPARENT_OVERFP16=%d worstRatio=%.1fx worstRadius=%.0f -> dumpbigaabb.txt",
 			ratioGate, total, skinnedTotal, (int)bad.size(), (int)distinctMesh.size(),
 			(int)distinctArm.size(), overHalf, transparentInflated, transparentOverHalf, worstRatio, worstRadius);
 		result[resultSize - 1] = 0;
@@ -5522,7 +5526,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			return h.find(n) != std::string::npos;
 		};
 
-		FILE* f = fopen("whynotdrawn.txt", "w");
+		FILE* f = GGDiagFopen("whynotdrawn.txt", "w");
 		int matches = 0;
 		int armedMesh = -1;               // GGMAX 2.31: draw tracer armed on the first match
 		const int prevArmed = wi::renderer::gg_dbg_watch_mesh;
@@ -5749,7 +5753,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		// new mesh always reads zeros. Say so rather than letting a zero be read as "never drawn".
 		const bool tracerFresh = (armedMesh >= 0 && armedMesh != prevArmed);
 		_snprintf(result, resultSize,
-			"OK: WHYNOTDRAWN \"%s\" matches=%d visibleSet=%d/%d tangent=%.5f occlusionEnabled=%d -> Files/whynotdrawn.txt\n"
+			"OK: WHYNOTDRAWN \"%s\" matches=%d visibleSet=%d/%d tangent=%.5f occlusionEnabled=%d -> whynotdrawn.txt\n"
 			"FIRST VERDICT: %s\n"
 			"DRAW TRACER: %s",
 			arg, matches,
@@ -6737,10 +6741,10 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	std::sort(sigB.begin(), sigB.end(), byCount);
 	std::sort(namB.begin(), namB.end(), byCount);
 
-	FILE* f = fopen("mesh_census.txt", "w");
+	FILE* f = GGDiagFopen("mesh_census.txt", "w");
 	if (f == nullptr)
 	{
-		_snprintf(result, resultSize, "ERROR: DUMP_MESHES could not open Files/mesh_census.txt");
+		_snprintf(result, resultSize, "ERROR: DUMP_MESHES could not open mesh_census.txt");
 		result[resultSize - 1] = 0;
 		return true;
 	}
@@ -6826,7 +6830,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	fclose(f);
 
 	_snprintf(result, resultSize,
-		"OK: DUMP_MESHES -> Files/mesh_census.txt  meshes=%d orphans=%d sigBuckets=%d nameBuckets=%d",
+		"OK: DUMP_MESHES -> mesh_census.txt  meshes=%d orphans=%d sigBuckets=%d nameBuckets=%d",
 		(int)mc.meshes.GetCount(), totalOrphans, (int)sigB.size(), (int)namB.size());
 	result[resultSize - 1] = 0;
 	return true;
@@ -7348,7 +7352,7 @@ void AutoHarness_CheckForCommand(void)
 		// level reloads identifies WHICH materials leak (+3 per reload measured 2026-07-25,
 		// the census fingerprint of the reload-corruption teardown gap).
 		wi::scene::Scene& dmpScene = wi::scene::GetScene();
-		FILE* dmpF = fopen("materials_dump.txt", "w");
+		FILE* dmpF = GGDiagFopen("materials_dump.txt", "w");
 		if (dmpF != nullptr)
 		{
 			for (size_t dmi = 0; dmi < dmpScene.materials.GetCount(); ++dmi)
@@ -7386,7 +7390,7 @@ void AutoHarness_CheckForCommand(void)
 			for (auto& c : n) c = (char)tolower((unsigned char)c);
 			return h.find(n) != std::string::npos;
 		};
-		FILE* deF = fopen("entity_dump.txt", "w");
+		FILE* deF = GGDiagFopen("entity_dump.txt", "w");
 		int deMatches = 0;
 		if (deF != nullptr)
 		{
@@ -7451,7 +7455,7 @@ void AutoHarness_CheckForCommand(void)
 			for (auto& c : n) c = (char)tolower((unsigned char)c);
 			return h.find(n) != std::string::npos;
 		};
-		FILE* sgF = fopen("skingeo_dump.txt", "w");
+		FILE* sgF = GGDiagFopen("skingeo_dump.txt", "w");
 		int sgMatches = 0;
 		if (sgF != nullptr)
 		{
@@ -7550,7 +7554,7 @@ void AutoHarness_CheckForCommand(void)
 		// CURRENT resolution/mips + resource name. Written to stream_dump.txt (exe dir).
 		// The instrument for "which materials actually produce feedback and did their
 		// textures stream up" (2026-08-01 streaming-enable hunt).
-		FILE* sdf = fopen("stream_dump.txt", "w");
+		FILE* sdf = GGDiagFopen("stream_dump.txt", "w");
 		if (sdf)
 		{
 			wi::scene::Scene& sdScene = wi::scene::GetScene();
@@ -8072,7 +8076,7 @@ void AutoHarness_CheckForCommand(void)
 		}
 		if (perFrame) { if (perFrame < minPer) minPer = perFrame; if (perFrame > maxPer) maxPer = perFrame; }
 		if (f) { fprintf(f, "\nframes covered=%u  calls/frame min=%u max=%u\n", framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer); fclose(f); }
-		_snprintf(result, sizeof(result), "OK: DUMP_SCENEUPDATE %u records over %u frames, %u-%u calls/frame -> Files/sceneupdate_dump.txt",
+		_snprintf(result, sizeof(result), "OK: DUMP_SCENEUPDATE %u records over %u frames, %u-%u calls/frame -> sceneupdate_dump.txt",
 			n, framesSeen, minPer == 0xFFFFFFFF ? 0 : minPer, maxPer);
 		result[sizeof(result) - 1] = 0;
 	}
@@ -8196,7 +8200,7 @@ void AutoHarness_CheckForCommand(void)
 				okLine ? line.FileName : "?", okLine ? line.LineNumber : 0);
 		}
 		if (f) fclose(f);
-		_snprintf(result, sizeof(result), "OK: DUMP_HAIRKILL %u removals (%u direct, %u recursive-child), Scene::Clear wiped %u -> Files/hairkill_dump.txt",
+		_snprintf(result, sizeof(result), "OK: DUMP_HAIRKILL %u removals (%u direct, %u recursive-child), Scene::Clear wiped %u -> hairkill_dump.txt",
 			n, direct, recursed, clearCount);
 		result[sizeof(result) - 1] = 0;
 	}
@@ -8391,7 +8395,7 @@ void AutoHarness_CheckForCommand(void)
 				foHits.push_back({ d, foEnt, foScene.objects[foi].meshID, foNm ? foNm->name.c_str() : "?" });
 			}
 			std::sort(foHits.begin(), foHits.end(), [](const FoHit& a, const FoHit& b) { return a.dist < b.dist; });
-			FILE* foF = fopen("find_object.txt", "w");
+			FILE* foF = GGDiagFopen("find_object.txt", "w");
 			int foWritten = 0;
 			for (const FoHit& h : foHits)
 			{
@@ -8486,7 +8490,7 @@ void AutoHarness_CheckForCommand(void)
 			}
 			else
 			{
-				s_verifyFile = fopen("verify_mesh.txt", "w");
+				s_verifyFile = GGDiagFopen("verify_mesh.txt", "w");
 				if (s_verifyFile)
 				{
 					fprintf(s_verifyFile, "%s \"%s\" targets=%d (corrupt/skip detail only; clean meshes counted in summary)\n",
@@ -8522,7 +8526,7 @@ void AutoHarness_CheckForCommand(void)
 			for (auto& c : n) c = (char)tolower((unsigned char)c);
 			return h.find(n) != std::string::npos;
 		};
-		FILE* dgF = fopen("geometry_dump.txt", "w");
+		FILE* dgF = GGDiagFopen("geometry_dump.txt", "w");
 		int dgMatches = 0;
 		if (dgF != nullptr)
 		{
@@ -8592,7 +8596,7 @@ void AutoHarness_CheckForCommand(void)
 			for (auto& c : n) c = (char)tolower((unsigned char)c);
 			return h.find(n) != std::string::npos;
 		};
-		FILE* diF = fopen("instance_dump.txt", "w");
+		FILE* diF = GGDiagFopen("instance_dump.txt", "w");
 		int diMatches = 0;
 		if (diF != nullptr)
 		{
@@ -8656,7 +8660,7 @@ void AutoHarness_CheckForCommand(void)
 		// after level load). Built to identify the orphaned "blue palm" objects in the
 		// in-place-reload corruption hunt (2026-07-25).
 		wi::scene::Scene& brScene = wi::scene::GetScene();
-		FILE* brF = fopen("broken_dump.txt", "w");
+		FILE* brF = GGDiagFopen("broken_dump.txt", "w");
 		if (brF != nullptr)
 		{
 			int brMesh = 0, brMat = 0, brBuf = 0;
