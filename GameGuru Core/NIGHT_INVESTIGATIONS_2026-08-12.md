@@ -8936,3 +8936,217 @@ STOCK path - and POLYS bit-identical on all nineteen is the proof that the new v
 extra pipeline permutations and the two new debug channels changed nothing about what gets drawn.
 The one edit that reaches the stock shader at all is the debugvis 23/24 switch, a uniform branch
 on a frame constant in the pixel shader beside twenty existing ones.
+
+
+---
+
+# §3.35b–g — FIVE REPORTS FROM LEE, AND THE ONE THAT WAS A DEVICE HANG (2026-08-29)
+
+Lee tested the 3.35 build and sent five things back in quick succession. Four were small; the
+fifth was a GPU hang. They are grouped here because three of them share one root cause — **I kept
+making the same mistake in different places** — and that pattern is the useful part of this entry.
+
+## §3.35b — Super Quick defaults to rung 3, not 1
+
+3.34 defaulted the rung slider to 1 (Flat, no texture fetch at all) reasoning that the box exists
+to buy frames back and the user could climb up from there. Wrong way round. Ticking a performance
+box and watching the level turn into untextured clay reads as **something broken**, not as a
+setting that worked. Rung 3 is still worth −33% on the opaque pass and still looks like the game.
+
+Levels saved before 3.34 have no field, parse as 0, and now clamp to 3 rather than 1.
+
+★ The general form: **a performance switch's default should be the most conservative setting
+that still delivers a real win, not the most aggressive setting the mechanism allows.** The
+aggressive end is a slider position, not a default.
+
+## §3.35c — Super Quick was overruling the Texture Detail dropdown
+
+Lee: with Super Quick on, **"Full" texture detail looked WORSE than "Half"**. Exactly backwards.
+
+GameGuru streams **mip levels**, and `write_mipmap_feedback` is how the streamer learns which mips
+a material needs. Super Quick was killing that feedback in two places I put there:
+
+- 3.31b poked `shaderscene.texturestreamingbuffer` to −1 — **globally, for every shader**, not just
+  objects
+- 3.34 removed the feedback write from the rung shaders as a per-pixel saving
+
+So a full-resolution texture never got its high mips and sat blurred forever, while "Half" loaded
+a *smaller* texture that was fully resident and therefore looked sharper. Both reverted.
+
+Also found next to it: the Super Quick layout was setting `DISABLE_SVT`. That define is not
+cosmetic — `ShaderInterop_Renderer.h` uses it to choose between `SampleVirtual` (which resolves
+through the residency map) and a plain `tex.Sample`, and on a genuinely sparse material the plain
+sample reads the physical **tile atlas** with virtual UVs. That is the wrong texels, not blurrier
+ones. My own 3.35 comment had asserted it was "a saving rather than a hazard"; corrected in place.
+
+⚠ My first grep for `DISABLE_SVT` covered `*.hlsl`/`*.hlsli` only and concluded it was never
+tested — it is tested in a `.h`. **A "never used" conclusion is only as wide as the glob that
+produced it.**
+
+★★★ **THE RULE: a performance mode may make things cheaper. It may not silently overrule a
+setting the user chose.** Texture Detail is the user's control over texture resolution; Super
+Quick does not get a private opinion about it.
+
+## §3.35d/e — tooltips ran off the right of the screen
+
+ImGui already clamps tooltip POSITION — it tries right, down, left, up against
+`GetWindowAllowedExtentRect`. But when the tooltip fits in **no** direction it gives up, pins to
+the cursor, and its own comment says why:
+
+> "If there's not enough room, for tooltip we prefer avoiding the cursor at all cost even if it
+> means that part of the tooltip won't be visible."
+
+Position clamping cannot rescue a window WIDER than the screen. Only wrapping can. Tooltips are
+`AlwaysAutoResize` with no wrapping, so one long line becomes one enormously wide window. That is
+also why the same tooltip fitted in the editor and overflowed in game: the in-game panel uses a
+larger font, so the window is wider.
+
+Fixed once in `ImGui::SetTooltipV`, wrapping at `min(42 em, 60% of the usable viewport)` — the
+first term scales with the font, the second guarantees it fits.
+
+★★★ **The placement was moved because of an audit, and that audit paid for itself.** The first
+version put the wrap in `BeginTooltipEx`, which is also the entry point for the ~26 HAND-COMPOSED
+tooltips — image previews, centred captions, SameLine status rows, ImGui's own `ColorTooltip`.
+Two things would have broken invisibly:
+
+- GameGuru's own `ImGui::TextCenter` measures with an **unwrapped** `CalcTextSize` and then renders
+  through `TextEx`, which **does** obey the wrap position. Its ten call sites are the captions under
+  asset image previews — exactly the strings that get long — and they would have centred themselves
+  on a width they no longer occupied.
+- the terrain noise tooltips are already hand-broken into short lines inside a tooltip that pins
+  its own 500px content width, so a second wrap column would fight it.
+
+`SetTooltipV` is the single path all 765 `SetTooltip()` calls take, and prose is all it ever
+carries. ★ **765 call sites is a reason to fix it in ONE place, but "one place" has more than
+one candidate and they are not equivalent.** The cheap-looking spot was the wrong one.
+
+⚠ Not visually verified by me. Tooltips need a hover, the harness has no mouse control, and
+driving the OS cursor lost its coordinate mapping when the window took focus. Built, reasoned and
+audited — but the WIDTH is a taste call that only an eyeball settles.
+
+## §3.35f — the baked water plane gets a distance opacity ramp
+
+The flat plane drew one alpha everywhere, so the lake bed was as visible at the horizon as
+underfoot — a sheet of coloured glass, not water.
+
+Now a **Schlick term on the plane normal**, not a lerp on distance. That distinction matters: for a
+horizontal plane the normal is (0,1,0), so N·V is just V.y — which already encodes distance AND
+camera height together. A distance ramp tuned from the shoreline would be wrong the moment you
+climbed a cliff; an angular one is right from both with no retuning.
+
+Cost is one saturate, one pow and one lerp on a single quad. It does not touch the planar
+reflection pass, which is where Water Bake's 4.37 ms saving actually comes from.
+
+Tunable live — `SET_WATERBAKEFRESNEL <strength 0..100> [power x10]`, and `waterbakefresnel` /
+`waterbakefresnelpower` in setup.cfg. Measured A/B on the Aztec coast: `0` shows the whole seabed
+to the horizon, `85 30` (default) mutes the mid and far bed while near water still shows through,
+`100 15` removes the seabed almost entirely.
+
+⚠ Lee had Fresnel **removed** from this shader on 2026-08-26. That one lifted alpha everywhere
+INCLUDING underfoot, which is what hid the lake bed he wanted to see. This leaves near water at the
+authored alpha and only closes up the distance. Different thing, same word — say which one when
+writing it down.
+
+## §3.35g — ★★★ THE DEVICE HANG, and the crash handler that crashed
+
+Lee, 16:14:09: toggling Texture Detail back and forth, swung the camera, **silent close**.
+
+The stack he sent was a C++ exception (`0xe06d7363`) out of `__RTDynamicCast` in
+`Application::Run`. That is NOT where the trouble started — it is my own device-lost handler
+falling over on top of a failure that had already happened.
+
+### The real cause: a GPU page fault on a freed texture
+
+```
+[DRED] PageFault at VA GPUAddress 14775943168
+[DRED] Recent freed objects with VA ranges that match the faulting VA:
+    Name:  (Type: Heap)
+    Name: ...entitybank\Aztec Game Kit\...\alter pillar_surface.dds (Type: Resource)
+[Error] D3D12: device removed, cause: DXGI_ERROR_DEVICE_HUNG
+```
+
+`gg_ApplyTextureDivideLive` **races the streaming thread**. That thread queues
+`StreamingTextureReplace` entries which `UpdateStreamingResources` applies on the main thread with
+a bare `replace.resource->texture = replace.texture` — no retention, the old handle just drops to
+the deferred destroyer. Meanwhile the divide is swapping `resource->texture` for the SAME
+`ResourceInternal`. A replacement queued before the rebuild lands AFTER it, overwrites the freshly
+divided texture with one built from the pre-divide resource, and drops the new texture while
+descriptors still point at it. The next draw reads freed memory.
+
+★ **The guard already existed.** `GGReloadGuardBegin/End` was written in 1.44 for the in-place
+level reload to prevent exactly this: pause streaming, JOIN the in-flight streaming job, drop
+replacements computed against resources about to change, release the shared_ptrs the job held. The
+live divide needed the same protection and never asked for it. Now wrapped in an RAII scope so
+every early return restores it.
+
+⚠ **Corroborated, not proven.** 42 Texture Detail changes with the camera spinning survived and
+the crash log did not grow — but the fault was intermittent, it hit Lee once, and I never
+reproduced it on the OLD build. One clean run against an intermittent fault is consistent with a
+fix, not evidence of one. What I am confident about is the mechanism, which is visible in the
+source.
+
+### My defect: a crash path that used RTTI
+
+The 3.26 device-lost block reached `ClaimDeviceRemovedReport()` with a `dynamic_cast`, and
+`__RTDynamicCast` threw out of it. So the ONE block whose entire job is to report a device loss
+politely — name the cause, point at the log files — became an unhandled C++ exception and a silent
+close. Lee got nothing. Had it not thrown he would at least have seen "The graphics device was
+lost", which is a much better first symptom than a vanishing app.
+
+`ClaimDeviceRemovedReport` is virtual on `GraphicsDevice` now; no cast anywhere.
+
+★★★ **A CRASH PATH MUST NOT DEPEND ON RTTI.** By the time it runs, the thing it is reasoning about
+is already broken — which is precisely when reading a vtable to recover type information is least
+likely to work. The same argument applies to anything else a crash handler might reach for:
+allocation, locks, virtual dispatch through objects that may be mid-destruction.
+
+## §3.35h — build folder cleanup, and a real bug it exposed
+
+Lee is preparing a modestly sized alpha. Surveyed the MAX folder and removed **1,880 files,
+3.19 GB**, all of it my own diagnostic output:
+
+| group | files | freed |
+|---|---|---|
+| `Files/screenshots` (contents; directory kept) | 857 | 1865 MB |
+| `Files/Files` — a nested duplicate | 789 | 1283 MB |
+| loose diagnostic dumps in `Files/` | 227 | 120 MB |
+| rolling `Guru-*.log` activity logs in the root | 7 | 1.1 MB |
+
+Manifest of every removed file kept outside the build dir. ★ **Kept deliberately:** three
+`.dds` files predating all this work (not diagnostics, 2.4 KB, no upside to removing), and
+`Guru-Crash.log` — 59 append-only crash entries, which is what let me establish that the
+freed-texture fault had happened before and was not a fresh regression.
+
+### ★★ The finding: screenshots and the engine log land wherever the CWD happens to point
+
+`wi::helper::screenshot()` builds its path as `current_path() + "/screenshots"`, and the engine log
+does the same. GameGuru sets the CWD to `Files` at startup — but several places change it again
+(`M-GridEditB_part14.cpp` walks to `GameGuruApps\GameGuruMAX`, `part16` does `SetCurrentDirectoryA("..\\")`),
+and **Windows file dialogs change it too**. The engine already knows: `wiRenderer.cpp:91` uses an
+absolute shader path specifically "to avoid the case when something (eg. file dialog) overrides
+working directory".
+
+Evidence: `Max/screenshots` held **8 byte-identical blank white PNGs** spanning six months — same
+`sc_<datetime>.png` naming as the real ones, landed in the exe root instead, blank because nothing
+renderable was captured. And `log.txt` was observed at `Max/Files/log.txt` at 16:14 and at
+`Max/log.txt` at 16:30 in the same session.
+
+⚠ This makes the device-lost dialog's own advice — "see Files/log.txt" — **wrong about half the
+time**. Both paths should resolve absolutely, exactly as the shader path already does. NOT FIXED.
+
+## Method earned
+
+- ★★★ **When a fast path drops a texture, substitute a sane value for everything that texture
+  supplied.** Never leave the multiply's identity behind — for a modulation map the identity is the
+  TOP of the range, which is the worst possible default. Paid for **five times** now across 3.34
+  and 3.35: emissive, ORM/albedo, roughness, the streaming feedback, and SVT.
+- ★★★ **A crash path must not depend on RTTI**, or on anything else that assumes the process is
+  healthy.
+- ★★ **"Fix it in one place" still has more than one candidate place, and they are not
+  equivalent.** The audit that moved the tooltip wrap from `BeginTooltipEx` to `SetTooltipV` cost
+  one workflow and saved ten silently-miscentred image captions.
+- ★ **A "never used" conclusion is only as wide as the glob that produced it.** `DISABLE_SVT`
+  read as dead because the grep covered `.hlsl`/`.hlsli` and it is tested in a `.h`.
+- ★ **The stack in a crash report is where the process died, not necessarily where it went
+  wrong.** `0xe06d7363` out of the device-lost handler was the aftermath; the cause was a page
+  fault named in a file the handler itself had written.
