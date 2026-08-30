@@ -21,7 +21,7 @@ IF /I "%ACTION%"=="rebuild" (SET TARGET=Rebuild) ELSE (SET TARGET=Build)
 
 REM --- Initialize VS 2026 Developer Environment ---
 REM Using v143 (VS 2022) toolset as installed
-call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 >nul 2>&1
+call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64 >nul 2>&1
 
 REM Capture ATL/MFC paths from VS 2026 before MSBuild overrides VCToolsInstallDir
 SET GAMEGURU_ATLMFC_INCLUDE=%VCToolsInstallDir%ATLMFC\include
