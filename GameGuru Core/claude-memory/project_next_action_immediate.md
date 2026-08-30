@@ -76,9 +76,11 @@ created the 1.28 GB nested `Max/Files/Files/` tree. **Enumerate by DESTINATION, 
   Evidence: 8 byte-identical blank PNGs in the exe root over six months; `log.txt` in two folders
   in one session. Makes the device-lost dialog's own “see Files/log.txt” wrong ~half the time.
 - Tooltip wrap width (42 em) is built and audited but never visually confirmed — ask Lee.
-- The alpha build still carries ~3 GB of tutorial video + Guides, and ~350 MB of dev-only files in
-  the Max root (pdb/map/auto_log/alloc_tripwire) that should be EXCLUDED from the package, not
-  deleted.
+- ⚠ **Alpha packaging is DONE - do not re-tidy the build folder from memory of an older note.**
+  3.38 GB of debris was removed on 08-29. What remains that LOOKS like debris and must NOT be
+  deleted: `ffmpeg.exe` (two live editor features need it) and `GameGuruMAX.pdb` (**ships on
+  purpose**, so testers' crash logs arrive symbolised; a rebuild cannot reproduce a matching one).
+  Only remaining optional weight is ~3 GB of tutorialbank + Guides. See [[project-alpha-packaging]].
 
 ---
 
