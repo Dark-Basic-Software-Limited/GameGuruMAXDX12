@@ -72,9 +72,13 @@ landed. One of them (`"Files\\hairkill_dump.txt"` written while CWD is already `
 created the 1.28 GB nested `Max/Files/Files/` tree. **Enumerate by DESTINATION, not call pattern.**
 
 ### Open, written down, NOT fixed
-- ⚠ **Screenshots and the engine log resolve against the process CWD**, which file dialogs change.
-  Evidence: 8 byte-identical blank PNGs in the exe root over six months; `log.txt` in two folders
-  in one session. Makes the device-lost dialog's own “see Files/log.txt” wrong ~half the time.
+- ⚠ **CWD path anchoring: the known writers are FIXED (3.35i/j), the hazard is not.** Screenshots,
+  `log.txt` and ~29 `DUMP_*`/trace writers now anchor to the exe, and the device-lost dialog no
+  longer points at `Files/log.txt`. What remains open is the PATTERN - the CWD still moves (file
+  dialogs, two editor `SetCurrentDirectory` calls), so any NEW writer must use
+  `GetDiagnosticPath` / `GGDiagFopen`. ★★ And `g_pAbsPathToConverter` - which ffmpeg's path derives
+  from - is still `GetCurrentDirectoryA`-based and correct only by startup ORDERING.
+  See [[project-cwd-and-file-paths]].
 - Tooltip wrap width (42 em) is built and audited but never visually confirmed — ask Lee.
 - ⚠ **Alpha packaging is DONE - do not re-tidy the build folder from memory of an older note.**
   3.38 GB of debris was removed on 08-29. What remains that LOOKS like debris and must NOT be
