@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 509f3c47-3d86-4b9b-a337-23ada2c00769
-  modified: 2026-08-30T23:42:25.047Z
+  modified: 2026-08-30T23:51:47.633Z
 ---
 
 # Machine migration 2026-08-31 — what broke and where the pieces are
@@ -48,6 +48,13 @@ hunt binaries.
 - A stale intermediate tree copied from another machine C1047s against fresh code with the blame
   pointed at the WRONG side (named the lib, stale side was the .obj). One clean rebuild disproved it.
 
-## Still unverified on this machine
-- MAX has not been LAUNCHED here yet; harness, demos, sweepgate all untested.
-- FPS/VRAM baselines are OLD-MACHINE numbers; new GPU unknown — re-baseline before any A/B claim.
+## Verified 08-31: MAX RUNS here
+Launched via WETEST pattern, harness responds, hub 55 FPS, Aztec Game Kit loaded and rendered
+correctly in the editor (~19 FPS settling, VRAM 3.3 GB, CLOSEFAIL 0). Benign OpenXR "no runtime"
+errors at boot — no VR runtime registered, app continues.
+- **GPU is a GTX 1050** (laptop, driver budget 3406 MB) — genuinely low-spec, close to the
+  campaign's target hardware. ALL old FPS/VRAM numbers are from the RX 9060 XT and INVALID here;
+  re-baseline (reboot first) before any A/B or sweep-gate claim.
+- Sweepgate/demos beyond this one smoke load still untested here.
+- ⚠ Harness commands sent during hub transitions can time out yet still execute later — gate on
+  the LOAD (GET_STATE), not on each command's reply.

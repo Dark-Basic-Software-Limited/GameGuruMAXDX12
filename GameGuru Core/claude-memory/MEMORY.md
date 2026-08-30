@@ -1,7 +1,7 @@
 # GameGuruMAX Project Memory
 
 > **Resuming work? Read [Next action immediate](project_next_action_immediate.md) FIRST** — current state, next step, do-not list.
-> ⚠⚠ **NEW MACHINE since 08-31** — [Machine migration](project_machine_migration.md): VS is now `2022\Community`, build area is `D:\DEV\BUILDS` (junction `D:\DEV\BUILD` keeps old paths valid), untracked `.lib` donor is `D:\DEV\GAMEGURUMAXREPO`, old FPS/VRAM baselines INVALID here until re-measured. MAX not yet launched on this box.
+> ⚠⚠ **NEW MACHINE since 08-31** — [Machine migration](project_machine_migration.md): VS is now `2022\Community`, build area is `D:\DEV\BUILDS` (junction `D:\DEV\BUILD` keeps old paths valid), untracked `.lib` donor is `D:\DEV\GAMEGURUMAXREPO`, **GPU is a GTX 1050 (laptop)** — old FPS/VRAM baselines INVALID here until re-measured. MAX launches and renders correctly (verified 08-31, Aztec in editor).
 > ⚙ This folder is mirrored into the repo at `GameGuru Core/claude-memory/` — `tools/sync_claude_memory.sh to-repo` after a session; `to-live` on a new box. ⚠ The live path is keyed on the repo's ABSOLUTE path — a wrong key fails SILENTLY.
 
 ## Current campaign — performance / ultra-low-spec
