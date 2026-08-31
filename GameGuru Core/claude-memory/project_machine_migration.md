@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 509f3c47-3d86-4b9b-a337-23ada2c00769
-  modified: 2026-08-30T23:51:47.633Z
+  modified: 2026-08-31T00:13:44.240Z
 ---
 
 # Machine migration 2026-08-31 — what broke and where the pieces are
@@ -56,5 +56,21 @@ errors at boot — no VR runtime registered, app continues.
   campaign's target hardware. ALL old FPS/VRAM numbers are from the RX 9060 XT and INVALID here;
   re-baseline (reboot first) before any A/B or sweep-gate claim.
 - Sweepgate/demos beyond this one smoke load still untested here.
+
+## ★★ Two crashes on day one (08-31), one fixed, one OPEN
+1. **Startup AV in a LoadShaders job — FIXED (3.36, engine).** `CreatePipelineState` read
+   `to_internal(desc.ps)->shadercode` with no null check; a stage whose LoadShader lost the
+   startup race (or failed) has null `internal_state` → AV at null+0x20. The fast box always won
+   that race; this laptop lost it once in three launches. Now refused WITH THE STAGE NAMED in the
+   backlog. ⚠ Benign sibling: `shadowClearPS.cso` is the ONE .cso with no embedded RTS0, so
+   `wiGraphicsDevice_DX12.cpp:4666` logs one E_INVALIDARG per boot — harmless for a PS, don't chase.
+2. **`LoadAssImpObject` AV (DBOAssImp_part0.cpp:1142) — OPEN, NOT reproduced in 4 test-game
+   entries.** Lee hit it entering Aztec test game: physics loading a companion `.obj`/`_COL.obj`
+   collision mesh (BulletPhysics_part1 CreateMesh → LoadObject → assimp path, any non-DBO
+   extension), AV READ at 0xFFFFFFFFFFFFFFFF walking the sibling-frame list (~:1142). szName is
+   256 (MAX_STRING) so a simple name overflow is unlikely. Same content+code ran for months on
+   the old box — suspects: different v143 codegen exposing latent UB, or this box's memory
+   pressure (3.7 GB VRAM on a starved card). `Guru-Crash.log` names the exact line if it recurs;
+   dig THEN, with the .obj filename as the first instrument to add.
 - ⚠ Harness commands sent during hub transitions can time out yet still execute later — gate on
   the LOAD (GET_STATE), not on each command's reply.
