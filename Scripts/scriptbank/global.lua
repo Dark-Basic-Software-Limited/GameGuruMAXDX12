@@ -45,6 +45,7 @@ ai_cover_slot = {}
 weapon_name = {}
 
 -- Globals (passed-in)
+g_ShowObjectDebugVisuals = 0
 g_GameStateChange = 0
 g_PlayerPosX = 0
 g_PlayerPosY = 0
@@ -406,22 +407,31 @@ function GetPlrLookingAtExThreshold( e, uselineofsight, detectthreshold )
   local pObj = MotionControllerLaserGuidedEntityObj()
   if pObj == g_Entity[e]['obj'] then LookingAt = 1 end
  else
+  -- PE: Make sure the angle is correct calculated.
+  local FOV_THRESHOLD = 45.0
   local SourceAngle = g_PlayerAngY
-  while SourceAngle < 0.0 do
-	SourceAngle = SourceAngle + 360.0
-  end	
-  while SourceAngle > 340.0 do
-	SourceAngle = SourceAngle - 360.0
-  end	
+  SourceAngle = SourceAngle % 360.0
+  if SourceAngle < 0.0 then
+      SourceAngle = SourceAngle + 360.0
+  end
   local PlayerDX = (g_Entity[e]['x'] - g_PlayerPosX)
   local PlayerDZ = (g_Entity[e]['z'] - g_PlayerPosZ)
-  local DestAngle = math.atan2( PlayerDZ , PlayerDX )
+  local DestAngle = math.atan2(PlayerDZ, PlayerDX)
   DestAngle = (DestAngle * 57.2957795) - 90.0
-  local Result = math.abs(math.abs(SourceAngle)-math.abs(DestAngle))
-  if Result > 180 then
-	Result = 0
-  end	
-  if Result < 90.0 then
+  DestAngle = -DestAngle
+  DestAngle = DestAngle % 360.0
+  if DestAngle < 0.0 then
+      DestAngle = DestAngle + 360.0
+  end
+  local difference = DestAngle - SourceAngle
+  if difference > 180.0 then
+      difference = difference - 360.0
+  elseif difference < -180.0 then
+      difference = difference + 360.0
+  end
+  local Result = math.abs(difference)
+
+  if Result < FOV_THRESHOLD then
     -- additional line of sight test
 	if uselineofsight == 1 and g_PlayerCastDoneOneForThisCycle == 0 then
 	 if g_PlayerCastTime[e] == nil then g_PlayerCastTime[e] = Timer() end

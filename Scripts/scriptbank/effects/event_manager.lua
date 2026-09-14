@@ -1,9 +1,9 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Event Manager v3 - by Necrym59
+-- Event Manager v4 - by Necrym59
 -- DESCRIPTION: A global behavior that will activate timed interval delayed or random linked events plus an IfUsed link.
 -- DESCRIPTION: Attach this behavior to an object. Link from this object to other entities for activations.
 -- DESCRIPTION: IfUsed activation is once only after set delay.
--- DESCRIPTION: [@EVENT_MODE=1(1=Timed, 2=Random)]
+-- DESCRIPTION: [@EVENT_MODE=1(1=Timed Delayed, 2=Random Interval, 3=Random Once)]
 -- DESCRIPTION: [EVENT0_LINK=0] Link Number 0 to 9
 -- DESCRIPTION: [EVENT0_DELAY=0]
 -- DESCRIPTION: [EVENT1_LINK=1] Link Number 0 to 9
@@ -65,6 +65,9 @@ local delaytimer 		= {}
 local ifusedtime		= {}
 local eventcount		= {}
 local ifuseddone		= {}
+local elink				= {}
+local etype				= {}
+local erandom			= {}
 local status 			= {}
 local doonce 			= {}
 
@@ -126,13 +129,19 @@ function event_manager_init(e)
 	evm[e].random_modifier = 1
 	evm[e].ifused_event = 2
 	evm[e].ifused_delay = 0	
-	evm[e].activated = 1	
-	
+	evm[e].activated = 1
+
+	math.randomseed(os.time())
+	math.random(); math.random(); math.random()	
 	delaytimer[e] = math.huge
 	ifusedtime[e] = math.huge
 	eventcount[e] = 0
 	ifuseddone[e] = 0
+	elink[e] = nil
+	etype[e] = nil			
+	erandom[e] = nil
 	doonce[e] = 0
+	tempr[e] = nil
 	status[e] = "init"
 end
 
@@ -141,7 +150,7 @@ function event_manager_main(e)
 	if status[e] == "init" then
 		if evm[e].activated == 1 then SetActivated(e,1) end
 		if evm[e].activated == 0 then SetActivated(e,0) end		
-		eventcount[e] = 0		
+		eventcount[e] = 0
 		status[e] = "endinit"
 	end
 	
@@ -217,16 +226,25 @@ function event_manager_main(e)
 			end	
 		end
 		if evm[e].event_mode == 2 then -- Random event mode
-			local maxrand = 0
+			erandom[e] = 0
 			for i = 0, 9 do
-				local elink = GetEntityRelationshipID(e,i)
-				if elink > 0 then
-					maxrand = maxrand + evm[e].random_modifier
+				elink[e] = GetEntityRelationshipID(e,i)
+				if elink[e] > 0 then
+					erandom[e] = erandom[e] + evm[e].random_modifier
 				end	
 			end
-			PerformLogicConnectionNumber(e,math.random(0,maxrand))
+			PerformLogicConnectionNumber(e,math.random(0,erandom[e]))
 			StartTimer(e)			
-		end		
+		end	
+		if evm[e].event_mode == 3 then -- Random once mode
+			local i = math.random(0,9)
+			elink[e] = GetEntityRelationshipID(e,i)
+			etype[e] = GetEntityRelationshipType(e,i)
+			if elink[e] > 0 and g_Entity[elink[e]] ~= nil and etype[e] ~= 9 then
+				PerformLogicConnectionNumber(e,i)					
+				SetActivated(e,0)
+			end					
+		end
 		if evm[e].repeat_events > 1 and eventcount[e] == 10 then
 			if g_Time > delaytimer[e] then
 				eventcount[e] = 0

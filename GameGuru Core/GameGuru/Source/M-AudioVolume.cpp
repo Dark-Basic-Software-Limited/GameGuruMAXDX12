@@ -24,10 +24,15 @@ void audio_volume_update ( void )
 {
 	// convert to 0 - 1.0 to enable us to multiply volumes in game
 	t.audioVolume.musicFloat = t.audioVolume.music;
-	t.audioVolume.musicFloat = (( t.audioVolume.musicFloat * 0.70 ) + 30.0 ) * 0.01;
+	//LB: new sound system no longer uses logarythmic gubbins, just a nice linear scale.
+	//t.audioVolume.musicFloat = (( t.audioVolume.musicFloat * 0.70 ) + 30.0 ) * 0.01;
+	t.audioVolume.musicFloat = t.audioVolume.musicFloat * 0.01;
 	if (t.audioVolume.music == 0) t.audioVolume.musicFloat = 0;
+
 	t.audioVolume.soundFloat = t.audioVolume.sound;
-	t.audioVolume.soundFloat = (( t.audioVolume.soundFloat * 0.30 ) + 70.0 ) * 0.01;
+	//LB: new sound system no longer uses logarythmic gubbins, just a nice linear scale.
+	//t.audioVolume.soundFloat = (( t.audioVolume.soundFloat * 0.30 ) + 70.0 ) * 0.01;
+	t.audioVolume.soundFloat = t.audioVolume.soundFloat * 0.01;
 
 	//  change volume of all sounds and music
 	for ( t.tSound = 1 ; t.tSound<=  65535; t.tSound++ )

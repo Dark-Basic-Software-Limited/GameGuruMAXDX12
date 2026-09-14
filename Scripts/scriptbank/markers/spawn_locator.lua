@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Spawn Locator v8 by Necrym59
+-- Spawn Locator v9 by Necrym59
 -- DESCRIPTION: Will relocate the player to a designated spawn marker. Place under the Player Start Marker or use as a zone.
 -- DESCRIPTION: [@@SPAWN_MARKER_USER_GLOBAL$=""(0=globallist)] user global required for using spawn markers (eg: MySpawnMarkers)
 -- DESCRIPTION: [SPAWN_MARKER_NAME$=""] for optional specific spawning, leave blank if assigned via other behaviors.
@@ -42,6 +42,7 @@ function spawn_locator_properties(e, spawn_marker_user_global, spawn_marker_name
 	spawn_locator[e].marker_collision = marker_collision or 1
 	spawn_locator[e].activation = activation or 1
 	spawn_locator[e].zoneheight = zoneheight
+	spawn_locator[e].spawnatstart = spawnatstart
 end
 
 function spawn_locator_init(e)
@@ -55,15 +56,16 @@ function spawn_locator_init(e)
 	spawn_locator[e].marker_collision = 1
 	spawn_locator[e].activation = 1
 	spawn_locator[e].zoneheight = 100
+	spawn_locator[e].spawnatstart = 1	
 
-	if spawn_locator[e].spawnatstart == 1 then SetActivated(e,1) end
-	if spawn_locator[e].spawnatstart == 0 then SetActivated(e,0) end
 	spawn_locator[e].spawn_marker_number = 0
 	status[e] = "init"
 end
 
 function spawn_locator_main(e)
 	if status[e] == "init" then
+		if spawn_locator[e].spawnatstart == 1 then SetActivated(e,1) end
+		if spawn_locator[e].spawnatstart == 0 then SetActivated(e,0) end
 		spawn_locator[e].spawn_marker_number = 0
 		status[e] = "endinit"
 	end

@@ -1,11 +1,11 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Search Object v12 by Necrym59
+-- Search Object v14 by Necrym59
 -- DESCRIPTION: Searching this object will give the player the selected contents?
 -- DESCRIPTION: [USE_RANGE=90(0,100)]
 -- DESCRIPTION: [PROMPT_TEXT$="E to Search"]
--- DESCRIPTION: [@CONTENT=1(1=Ammo, 2=Health, 3=Named Item, 4=Nothing)]
--- DESCRIPTION: [NAMED_ITEM$=""] Unique entity name (will be auto hidden)
--- DESCRIPTION: [QUANTITY=1(1,50)]
+-- DESCRIPTION: [@CONTENT=1(1=Ammo, 2=Health, 3=Unique Named Item, 4=Cloned Named Item, 5=Nothing)]
+-- DESCRIPTION: [NAMED_ITEM$=""] Entity name (will be auto hidden)
+-- DESCRIPTION: [QUANTITY=1(1,50)] Health/Ammo only
 -- DESCRIPTION: [SEARCH_TIME=8(1,30)]
 -- DESCRIPTION: [SEARCH_TEXT$="Searching..."]
 -- DESCRIPTION: [RESULT_TEXT$="Found.."]
@@ -51,6 +51,14 @@ local playonce		= {}
 local keypressed	= {}
 local tEnt 			= {}
 local selectobj 	= {}
+local resulttimer	= {}
+local itemtoclone	= {}
+local newEntn		= {}
+local terrainheight = {}
+local surfaceheight = {}
+local newposx		= {}
+local newposy		= {}
+local newposz		= {}
 
 function search_object_properties(e, use_range, prompt_text, content, named_item, quantity, search_time, search_text, result_text, noise_range, search_trigger, searchbar_image, prompt_display, item_highlight, highlight_icon_imagefile)
 	searchobject[e].prompt_text = prompt_text
@@ -93,6 +101,10 @@ function search_object_init(e)
 	keypressed[e] = 0
 	g_tEnt = 0
 	selectobj[e] = 0
+	itemtoclone[e] = nil
+	newEntn[e] = nil
+	terrainheight[e] = 0
+	surfaceheight[e] = 0
 end
 
 function search_object_main(e)
@@ -114,7 +126,7 @@ function search_object_main(e)
 			SetSpritePosition(hl_icon[e],500,500)
 		end		
 	
-		if searchobject[e].content == 3 and searchobject[e].named_item ~= "" then
+		if searchobject[e].content == 3 or searchobject[e].content == 4 and searchobject[e].named_item ~= "" then
 			item_entity[e] = nil
 			for a = 1, g_EntityElementMax do
 				if a ~= nil and g_Entity[a] ~= nil then
@@ -122,6 +134,7 @@ function search_object_main(e)
 						item_entity[e] = a
 						CollisionOff(a)
 						Hide(a)
+						itemtoclone[e] = a
 						break
 					end
 				end
@@ -139,7 +152,7 @@ function search_object_main(e)
 		--end pinpoint select object--
 		if PlayerDist < searchobject[e].use_range and tEnt[e] == e and GetEntityVisibility(e) == 1 then
 			if status[e] == "sealed" then  --Sealed
-				if searchobject[e].prompt_display == 1 and keypressed[e] == 0 then PromptLocal(e,searchobject[e].prompt_text) end		
+				if searchobject[e].prompt_display == 1 and keypressed[e] == 0 then TextCenterOnX(50,55,1,searchobject[e].prompt_text) end				
 				if searchobject[e].prompt_display == 2 and keypressed[e] == 0 then Prompt(searchobject[e].prompt_text) end
 				if g_KeyPressE == 1 then
 					keypressed[e] = 1
@@ -148,10 +161,16 @@ function search_object_main(e)
 							PlaySound(e,0)
 							playonce[e] = 1
 						end
-						if searchobject[e].prompt_display == 1 then PromptLocal(e,searchobject[e].search_text) end
-						if searchobject[e].prompt_display == 2 then Prompt(searchobject[e].search_text) end
-						PasteSpritePosition(searchbar[e],50-(stime[e]/16),95)						
-						SetSpriteSize(searchbar[e],stime[e]/8,1)
+						if searchobject[e].prompt_display == 1 then
+							TextCenterOnX(50,55,1,searchobject[e].search_text)
+							PasteSpritePosition(searchbar[e],50-(stime[e]/16),56)						
+							SetSpriteSize(searchbar[e],stime[e]/8,1)							
+						end
+						if searchobject[e].prompt_display == 2 then
+							Prompt(searchobject[e].search_text)
+							PasteSpritePosition(searchbar[e],50-(stime[e]/16),95)						
+							SetSpriteSize(searchbar[e],stime[e]/8,1)
+						end						
 						if searchobject[e].noise_range > 0 then MakeAISound(g_PlayerPosX,g_PlayerPosY,g_PlayerPosZ,searchobject[e].noise_range,1,-1) end
 						stime[e] = stime[e]-0.1
 						if stime[e] < 0 then stime[e] = 0 end
@@ -160,6 +179,7 @@ function search_object_main(e)
 						SetAnimationName(e,"open")
 						PlayAnimation(e)
 						status[e] = "opened"
+						resulttimer[e] = g_Time + 2000
 					end
 				end
 				if g_KeyPressE == 0 then StopSound(e,0) end
@@ -168,7 +188,7 @@ function search_object_main(e)
 		----------------------------------------------------------------------------------------------------------------------------------------------------
 		if status[e] == "opened" then  --Opened
 			if searchobject[e].content == 1 then	--Ammo
-				if searchobject[e].prompt_display == 1 then PromptLocal(e,searchobject[e].result_text.. " " ..searchobject[e].quantity..  " Ammo") end
+				if searchobject[e].prompt_display == 1 then TextCenterOnX(50,55,1,searchobject[e].result_text.. " " ..searchobject[e].quantity..  " Ammo") end
 				if searchobject[e].prompt_display == 2 then PromptDuration(searchobject[e].result_text.. " " ..searchobject[e].quantity..  " Ammo",2000) end				
 				if doonce[e] == 0 then
 					for index = 1, 10, 1 do
@@ -185,7 +205,7 @@ function search_object_main(e)
 			end
 
 			if searchobject[e].content == 2 then	--Health
-				if searchobject[e].prompt_display == 1 then PromptLocal(e,searchobject[e].result_text.. " " ..searchobject[e].quantity..  " Health") end
+				if searchobject[e].prompt_display == 1 then	TextCenterOnX(50,55,1,searchobject[e].result_text.. " " ..searchobject[e].quantity..  " Health") end
 				if searchobject[e].prompt_display == 2 then PromptDuration(searchobject[e].result_text.. " " ..searchobject[e].quantity..  " Health",2000) end
 				if doonce[e] == 0 then
 					StopSound(e,0)
@@ -204,34 +224,62 @@ function search_object_main(e)
 				StopSound(e,0)
 			end
 
-			if searchobject[e].content == 3 then -- Named Item
+			if searchobject[e].content == 3 then -- Unique Named Item
 				if doonce[e] == 0 then
 					StopSound(e, 0)
 					PlaySound(e, 1)
 					if item_entity[e] ~= nil then
 						CollisionOn(item_entity[e])
 						Show(item_entity[e])
-						if searchobject[e].prompt_display == 1 then PromptLocal(e,searchobject[e].result_text.. " " ..searchobject[e].quantity.. " "..searchobject[e].named_item) end
+						if searchobject[e].prompt_display == 1 then PromptLocal(e,searchobject[e].result_text.. " " ..searchobject[e].quantity.. " "..searchobject[e].named_item) end							
 						if searchobject[e].prompt_display == 2 then PromptDuration(searchobject[e].result_text.. " " ..searchobject[e].quantity.. " "..searchobject[e].named_item,2000) end
 					end
 					doonce[e] = 1
 				end
 				status[e] = "searched"
 			end
+			
+			if searchobject[e].content == 4 then -- Cloned Named Item
+				if doonce[e] == 0 then
+					StopSound(e, 0)
+					PlaySound(e, 1)
+					if itemtoclone[e] ~= nil then
+						local ox,oy,oz = U.Rotate3D( 0, 0, 50, math.rad( g_PlayerAngX ), math.rad( g_PlayerAngY ), math.rad( g_PlayerAngZ ) )
+						newposx[e], newposy[e], newposz[e] = g_PlayerPosX + ox, g_PlayerPosY + oy, g_PlayerPosZ + oz
+						terrainheight[e] = GetTerrainHeight(newposx[e],newposz[e])
+						surfaceheight[e] = GetSurfaceHeight(newposx[e],newposy[e],newposz[e])
+						if surfaceheight[e] > terrainheight[e] then
+							newposy[e] = surfaceheight[e] + math.random(5,10)
+						else
+							newposy[e] = terrainheight[e] + math.random(5,10)
+						end
+						newEntn[e] = SpawnNewEntity(itemtoclone[e])
+						ResetPosition(newEntn[e],newposx[e],newposy[e],newposz[e])
+						Show(newEntn[e])
+						CollisionOn(newEntn[e])
+						GravityOn(newEntn[e])						
+						if searchobject[e].prompt_display == 1 then PromptLocal(e,searchobject[e].result_text.. " " ..searchobject[e].quantity.. " "..searchobject[e].named_item) end							
+						if searchobject[e].prompt_display == 2 then PromptDuration(searchobject[e].result_text.. " " ..searchobject[e].quantity.. " "..searchobject[e].named_item,2000) end
+					end
+					doonce[e] = 1
+				end
+				status[e] = "searched"
+			end		
 
-			if searchobject[e].content == 4 then	--Nothing
-				if searchobject[e].prompt_display == 1 then PromptLocal(e,"Nothing found") end
+			if searchobject[e].content == 5 then --Nothing
+				if searchobject[e].prompt_display == 1 then TextCenterOnX(50,55,1,"Nothing found") end
 				if searchobject[e].prompt_display == 2 then PromptDuration("Nothing found",2000) end
 				StopSound(e,0)
 				status[e] = "searched"
 			end
 		end
 
-		if status[e] == "searched" then  --Finished
+		if status[e] == "searched" then --Finished
 			if searchobject[e].search_trigger == 2 then
 				PerformLogicConnections(e)
-				ActivateIfUsed(e)				
-				status[e] = "finish"
+				ActivateIfUsed(e)
+				status[e] = "finish"				
+				SwitchScript(e,"no_behavior_selected.lua")
 			end
 		end
 	end

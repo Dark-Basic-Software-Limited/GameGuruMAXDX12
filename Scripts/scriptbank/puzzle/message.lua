@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Message v8: by Necrym59 with special thanks to Smallg and Amen Moses 
+-- Message v9 by Necrym59 with special thanks to Smallg and Amen Moses 
 
 -- DESCRIPTION: Will display a Message on screen when triggered from a zone or switch.
 -- DESCRIPTION: Attach to an object and link to a zone or switch.
@@ -8,12 +8,17 @@
 -- DESCRIPTION: [TEXT3$="Deploy and infiltrate Maersk Operations Complex"]
 -- DESCRIPTION: [TEXT4$="Seek and destroy valid targets and recover"]
 -- DESCRIPTION: [TEXT5$="classified documents from Dr. Gebchev"]
+-- DESCRIPTION: [TEXT6$=""]
+-- DESCRIPTION: [TEXT7$=""]
+-- DESCRIPTION: [TEXT8$=""]
+-- DESCRIPTION: [TEXT9$=""]
+-- DESCRIPTION: [TEXT10$=""]
 -- DESCRIPTION: [X=10]
 -- DESCRIPTION: [Y=10]
 -- DESCRIPTION: [@COLOUR = 1(1=White, 2=Green, 3=Blue, 4=Yellow, 5=Orange, 6=Red)]
--- DESCRIPTION: [SIZE=3(1,5)]
+-- DESCRIPTION: [SIZE=3(1,5)]1
 -- DESCRIPTION: [@STYLE=1(1=Left, 2=Center)]
--- DESCRIPTION: [LINES_SHOWN=5(1,5)]
+-- DESCRIPTION: [LINES_SHOWN=5(1,10)]
 -- DESCRIPTION: [LETTER_DELAY#=0.05]
 -- DESCRIPTION: [LINES_DELAY#=0.8]
 -- DESCRIPTION: [DISPLAY_TIME=5(1,10)]
@@ -23,7 +28,7 @@
 g_message = {}
 local sub = string.sub
 
-function message_properties( e, text1, text2, text3, text4, text5, x, y, colour, size, style, lines_shown, letter_delay, lines_delay, display_time, lock_player )
+function message_properties( e, text1, text2, text3, text4, text5, text6, text7, text8, text9, text10, x, y, colour, size, style, lines_shown, letter_delay, lines_delay, display_time, lock_player )
 	g_message[e] = 
 	     { message_x    = x,
 	       message_y    = y,
@@ -36,8 +41,8 @@ function message_properties( e, text1, text2, text3, text4, text5, x, y, colour,
 	       display_time = display_time,
 	       lock         = ( lock_player == 1 ),
 	       state        = "init",
-           msglines     = { text1, text2, text3, text4, text5 },
-		   msgtext = {"", "", "", "", ""}
+           msglines     = { text1, text2, text3, text4, text5, text6, text7, text8, text9, text10 },
+		   msgtext = {"", "", "", "", "", "", "", "", "", ""}
          }		   
 end
 
@@ -88,7 +93,7 @@ function message_main(e)
 				if im.linetimer < im.lines_delay then 
 					im.linetimer = im.linetimer + eltime
 				else
-					if im.currentline == 4 then im.lines_delay = im.lines_delay * im.display_time end
+					if im.currentline == 9 then im.lines_delay = im.lines_delay * im.display_time end
 					im.currentline = im.currentline + 1
 					if im.currentline > #im.msglines then
 						SetCameraOverride(0)
@@ -121,7 +126,11 @@ function message_main(e)
 					end
 
 				end
-				ty = ty + im.text_size - 0.5
+				if im.text_size == 1 then ty = ty + im.text_size + 0.5 end
+				if im.text_size == 2 then ty = ty + im.text_size - 1.1 end
+				if im.text_size == 3 then ty = ty + im.text_size - 1.5 end
+				if im.text_size == 4 then ty = ty + im.text_size - 1.5 end
+				if im.text_size == 5 then ty = ty + im.text_size - 1.5 end
 			end			
 		end		
 	end

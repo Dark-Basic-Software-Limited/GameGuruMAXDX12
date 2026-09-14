@@ -1,4 +1,4 @@
--- Navigation Bar v14 by Smallg and Necrym59
+-- Navigation Bar v15 by Smallg and Necrym59
 -- DESCRIPTION: A global behavior that adds a Navigation Bar to your game, use the Navbar Objective behavior to add markers.
 -- DESCRIPTION: [IMAGEFILE$="imagebank\\navbar\\navbar.png"]
 -- DESCRIPTION: [VIEWRANGE=6000] of objectives shown on the radar
@@ -22,6 +22,7 @@
 U = require "scriptbank\\utillib"
 
 g_navigation_bar = {}
+g_navbar_state = {}
 nbar = 0
 
 local iconimage			= {}
@@ -95,6 +96,7 @@ function navbar_init(e)
 	queststatus[e] = 0
 	questentity[e] = 0
 	SetEntityAlwaysActive(e,1)	
+	g_navbar_state = 1
 	status = "init"
 end 
 
@@ -115,14 +117,16 @@ function navbar_main(e)
 		angle = angle + (-90.0*0.0174533)
 		return angle
 	end
-	if hudsShowing == false then
+	if g_navbar_state == 1 then hudsShowing = true end
+	if g_navbar_state == 2 then hudsShowing = false end
+	if hudsShowing == false then --Off
 		PasteSpritePosition(20000,20000)
 		nbar.compass_mode = 0
 	end
-	if hudsShowing == true then
+	if hudsShowing == true then --On
 		PasteSpritePosition(navbarsprite,nbar.position_x,nbar.position_y)
 		nbar.compass_mode = 1
-	end	
+	end
 	
 	if nbar.compass_mode == 1 then show_Compass() end
 	
@@ -164,14 +168,15 @@ function navbar_main(e)
 					SetSpriteSize(iconsprite[b], iw,ih)
 					SetSpriteOffset(iconsprite[b], iw/2, ih/2)
 				end
-				if hudsShowing == false then
+				if hudsShowing == false then --Off
 					PasteSpritePosition(iconsprite[b],1000,1000)
 					nbar.objective_data = 0
 				end
-				if hudsShowing == true then
+				if hudsShowing == true then --On
 					PasteSpritePosition(iconsprite[b],iconx,icony+nbar.icon_position_y)
 					nbar.objective_data = 1
-				end					
+				end
+		
 				if nbar.objective_data == 1 then 
 					local infoposy = nbar.icon_position_y+2.5
 					TextCenterOnX(iconx,icony+infoposy,2,thisname[b])

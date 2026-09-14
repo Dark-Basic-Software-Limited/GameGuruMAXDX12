@@ -1,7 +1,11 @@
--- Global Transfer v8 by Necrym59
--- DESCRIPTION: A global behavior that will transfer a value from a User Global to player health or another User Global.
--- DESCRIPTION: [@ACTIVATION=1(1=Automatic, 2=Key Press)]
+-- LUA Script - precede every function and global member with lowercase name of script + '_main'
+-- Global Transfer v9 by Necrym59
+-- DESCRIPTION: Will transfer a value from a user global to player health or another user global.
+-- DESCRIPTION: Attach to an entity. Set to AlwaysActive
+-- DESCRIPTION: [@ACTIVATION=1(1=Automatic, 2=Global Key Press, 3=In Range Key Press)]
 -- DESCRIPTION: [ACTIVATION_KEY$="Z"] Bound key to activate
+-- DESCRIPTION: [ACTIVATION_RANGE=90(1,100)] In-Range activation
+-- DESCRIPTION: [RANGE_PROMPT$="Press Z to use"] In-Range Prompt
 -- DESCRIPTION: [@@TRANSFER_FROM$=""(0=globallist)] user global to transfer amount from eg:(MyStamina)
 -- DESCRIPTION: [TRANSFER_AMOUNT=10(0,100)] Amount to transfer
 -- DESCRIPTION: [@TRANSFER_TO=1(1=Player Health, 2=User Global)]
@@ -16,6 +20,8 @@ local lower = string.lower
 local global_transfer 			= {}
 local activation				= {}
 local activation_key			= {}
+local activation_range			= {}
+local range_prompt				= {}
 local transfer_from				= {}
 local transfer_amount			= {}
 local transfer_to				= {}
@@ -42,9 +48,11 @@ local processed			= {}
 local tmphealth			= {}
 local played			= {}
 
-function global_transfer_properties(e, activation, activation_key, transfer_from, transfer_amount, transfer_to, user_global, icon_imagefile, screen_position_x, screen_position_y, screen_scale)
+function global_transfer_properties(e, activation, activation_key, activation_range, range_prompt, transfer_from, transfer_amount, transfer_to, user_global, icon_imagefile, screen_position_x, screen_position_y, screen_scale)
 	global_transfer[e].activation = activation or 1
 	global_transfer[e].activation_key = activation_key
+	global_transfer[e].activation_range = activation_range
+	global_transfer[e].range_prompt = range_prompt
 	global_transfer[e].transfer_from = transfer_from
 	global_transfer[e].transfer_amount = transfer_amount
 	global_transfer[e].transfer_to = transfer_to or 2
@@ -59,6 +67,8 @@ function global_transfer_init(e)
 	global_transfer[e] = {}
 	global_transfer[e].activation = 1
 	global_transfer[e].activation_key = "Z"
+	global_transfer[e].activation_range = 90	
+	global_transfer[e].range_prompt = "Press Z to use"	
 	global_transfer[e].transfer_from = ""
 	global_transfer[e].transfer_amount = 0
 	global_transfer[e].transfer_to = 2
@@ -77,6 +87,7 @@ function global_transfer_init(e)
 	processed[e] = 0
 	tmphealth[e] = 0
 	played[e] = 0
+	SetEntityAlwaysActive(e,1)
 end
 
 function global_transfer_main(e)
@@ -147,7 +158,7 @@ function global_transfer_main(e)
 			end
 		end
 
-		if global_transfer[e].activation == 2 and keypressed[e] == 0 then -- Keypress
+		if global_transfer[e].activation == 2 and keypressed[e] == 0 then -- Keypress Global 
 			if g_InKey == string.lower(global_transfer[e].activation_key) or g_InKey == tostring(global_transfer[e].activation_key) and keypressed[e] == 0 then
 				keypause[e] = g_Time + 1000
 				keypressed[e] = 1
@@ -184,6 +195,45 @@ function global_transfer_main(e)
 				end
 			end
 		end
+		
+		if global_transfer[e].activation == 3 and GetPlayerDistance(e) < global_transfer[e].activation_range and keypressed[e] == 0 then -- Keypress In Range
+			Prompt(global_transfer[e].range_prompt)
+			if g_InKey == string.lower(global_transfer[e].activation_key) or g_InKey == tostring(global_transfer[e].activation_key) and keypressed[e] == 0 then
+				keypause[e] = g_Time + 1000
+				keypressed[e] = 1
+				if played[e] == 0 then
+					PlaySound(e,0)
+					played[e] = 1
+				end
+				if currentvalue[e] >= global_transfer[e].transfer_amount then
+					if doonce[e] == 0 then
+						if global_transfer[e].transfer_to == 1 then
+							if g_PlayerHealth+global_transfer[e].transfer_amount < g_PlayerStartStrength then
+								SetPlayerHealth(g_PlayerHealth+global_transfer[e].transfer_amount)
+								SetPlayerHealthCore(g_PlayerHealth)
+								_G["g_UserGlobal['".. global_transfer[e].transfer_from.."']"] = _G["g_UserGlobal['".. global_transfer[e].transfer_from.."']"] - global_transfer[e].transfer_amount
+								doonce[e] = 1
+							end
+							if g_PlayerHealth+global_transfer[e].transfer_amount >= g_PlayerStartStrength then
+								tmphealth[e] = (g_PlayerStartStrength - g_PlayerHealth)
+								SetPlayerHealth(g_PlayerStartStrength)
+								SetPlayerHealthCore(g_PlayerHealth)
+								_G["g_UserGlobal['".. global_transfer[e].transfer_from.."']"] = _G["g_UserGlobal['".. global_transfer[e].transfer_from.."']"] - tmphealth[e]
+								doonce[e] = 1
+							end
+						end
+						if global_transfer[e].transfer_to == 2 then
+							if global_transfer[e].user_global > "" then
+								if _G["g_UserGlobal['".. global_transfer[e].user_global.."']"] ~= nil then currentvalue[e] = _G["g_UserGlobal['".. global_transfer[e].user_global.."']"] end
+								_G["g_UserGlobal['".. global_transfer[e].user_global.."']"] = currentvalue[e] + global_transfer[e].transfer_amount
+							end
+							doonce[e] = 1
+							_G["g_UserGlobal['".. global_transfer[e].transfer_from.."']"] = _G["g_UserGlobal['".. global_transfer[e].transfer_from.."']"] - global_transfer[e].transfer_amount
+						end
+					end
+				end
+			end
+		end		
 
 		if g_Time > keypause[e] then
 			doonce[e] = 0

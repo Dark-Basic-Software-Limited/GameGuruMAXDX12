@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Campfire v14 by Necrym59
+-- Campfire v18 by Necrym59
 -- DESCRIPTION: This object will stow and deploy like a camp fire?
 -- DESCRIPTION: Apply to an object to be used as a campfire.
 -- DESCRIPTION: [USE_RANGE=120]
@@ -63,10 +63,15 @@ local selectobj 			= {}
 local campfire_deployed 	= {}
 local campfire_state 		= {}
 local campfire_onoff 		= {}
-local height_difference		= {}
 local hurttime				= {}
 local keypressed			= {}
 local tobeused				= {}
+local fire_x				= {}
+local fire_y				= {}
+local fire_z				= {}
+local terrainheight			= {}
+local surfaceheight			= {}
+local newposy				= {}
 local svol					= {}
 local hl_icon 				= {}
 local hl_imgwidth			= {}
@@ -119,7 +124,6 @@ function campfire_init(e)
 	campfire[e].particle_number = 0
 	campfire[e].light_number = 0
 
-	status[e] = "init"
 	svol[e] = 0
 	tEnt[e] = 0
 	g_tEnt = 0
@@ -130,11 +134,18 @@ function campfire_init(e)
 	campfire_state[e] = "out"
 	campfire_onoff[e] = "off"
 	burntime[e] = 0
-	height_difference[e] = 0
 	keypressed[e] = 0
 	tobeused[e] = 0
-	calchealth[e] = 0	
+	calchealth[e] = 0
+	fire_x[e] = 0
+	fire_y[e] = 0
+	fire_z[e] = 0
+	newposy[e] = 0
+	terrainheight[e] = 0
+	surfaceheight[e] = 0
+	SetEntityAlwaysActive(e,1)
 	math.randomseed(os.time())	
+	status[e] = "init"
 end
  
 function campfire_main(e)
@@ -150,42 +161,46 @@ function campfire_main(e)
 			SetSpritePosition(hl_icon[e],500,500)
 		end	
 		new_y = math.rad(g_PlayerAngY)
-		fire_x = g_PlayerPosX + (math.sin(new_y) * 70)
-		fire_z = g_PlayerPosZ + (math.cos(new_y) * 70)
-		height_difference[e] = g_PlayerPosY-g_Entity[e].y
-		if campfire[e].is_deployed == 0 then campfire_deployed[e] = 0 end
-		if campfire[e].is_deployed == 1 then campfire_deployed[e] = 1 end
-		if campfire[e].is_deployed == 1 then campfire_state[e] = "deployed" end
+		fire_x[e] = g_PlayerPosX + (math.sin(new_y) * 70)
+		fire_y[e] = g_Entity[e]['y']
+		fire_z[e] = g_PlayerPosZ + (math.cos(new_y) * 70)
+		if campfire[e].is_deployed == 0 then
+			campfire_deployed[e] = 0
+			if GetEntityCollectable(e) == 1 and GetEntityCollected(e) == 0 then SetEntityCollected(e,1,0) end
+		end
+		if campfire[e].is_deployed == 1 then
+			campfire_deployed[e] = 1
+			campfire_state[e] = "deployed"
+		end
 		hurttime[e] = g_Time + 500
-		SetEntityAlwaysActive(e,1)
-		status[e] = "start"
-	end
-	
-	--Find Named Particle --
-	if campfire[e].particle_name > "" and campfire[e].particle_number == 0 then
-		for p = 1, g_EntityElementMax do
-			if p ~= nil and g_Entity[p] ~= nil then
-				if string.lower(GetEntityName(p)) == campfire[e].particle_name then					
-					campfire[e].particle_number = p
-					Hide(p)
-					break
+		--Find Named Particle --
+		if campfire[e].particle_name > "" and campfire[e].particle_number == 0 then
+			for p = 1, g_EntityElementMax do
+				if p ~= nil and g_Entity[p] ~= nil then
+					if string.lower(GetEntityName(p)) == campfire[e].particle_name then					
+						campfire[e].particle_number = p
+						Hide(p)
+						break
+					end
 				end
 			end
 		end
-	end
-	--Find Named Light --
-	if campfire[e].light_name > "" and campfire[e].light_number == 0 then
-		for b = 1, g_EntityElementMax do
-			if b ~= nil and g_Entity[b] ~= nil then
-				if string.lower(GetEntityName(b)) == campfire[e].light_name then
-					campfire[e].light_number = GetEntityLightNumber(b)
-					SetActivated(b,0)
-					break
+		--Find Named Light --
+		if campfire[e].light_name > "" and campfire[e].light_number == 0 then
+			for b = 1, g_EntityElementMax do
+				if b ~= nil and g_Entity[b] ~= nil then
+					if string.lower(GetEntityName(b)) == campfire[e].light_name then
+						campfire[e].light_number = GetEntityLightNumber(b)
+						SetActivated(b,0)
+						break
+					end
 				end
-			end
+			end		
 		end		
-	end
-	--Find Resource Item --
+		status[e] = "endinit"
+	end		
+	
+	--Check Resource Items --
 	if campfire[e].resource_required > "" and tobeused[e] == 0 then			
 		for ee = 1, g_EntityElementMax do
 			if ee ~= nil and g_Entity[ee] ~= nil then
@@ -195,7 +210,7 @@ function campfire_main(e)
 				end
 			end			
 		end
-	end	
+	end
 	
 	local PlayerDist = GetPlayerDistance(e)
 		
@@ -224,12 +239,10 @@ function campfire_main(e)
 					if campfire[e].prompt_display == 1 and tobeused[e] > 0 then PromptLocal(e,campfire[e].use_text.. " or " ..campfire[e].pickup_text) end
 					if campfire[e].prompt_display == 2 and tobeused[e] > 0 then Prompt(campfire[e].use_text.. " or " ..campfire[e].pickup_text) end					
 				end
-				height_difference[e] = g_PlayerPosY - g_Entity[e].y
 				if g_Scancode == 201 and campfire_onoff[e] == "on" then --AttemptedPickup
 					if campfire[e].prompt_display == 1 then PromptLocal(e,"Put-out campfire before pickup") end
 					if campfire[e].prompt_display == 2 then Prompt("Put-out campfire before pickup") end
-				end	
-				
+				end					
 				if g_Scancode == 201 and campfire_onoff[e] == "off" then --Pickup
 					StopSound(e,2)
 					PlaySound(e,0)
@@ -238,7 +251,8 @@ function campfire_main(e)
 					PromptLocal(e,"")
 					if campfire[e].prompt_display == 1 then PromptDuration(campfire[e].deploy_text,2000) end
 					if campfire[e].prompt_display == 2 then PromptDuration(campfire[e].deploy_text,2000) end
-					Hide(campfire[e].particle_number)
+					if GetEntityCollectable(e) == 1 and GetEntityCollected(e) == 0 then SetEntityCollected(e,1,0) end
+					Hide(campfire[e].particle_number)					
 					SetLightRange(campfire[e].light_number,0)
 					keypressed[e] = 0
 				end
@@ -246,30 +260,40 @@ function campfire_main(e)
 		end
 	end
 	
-	if campfire_deployed[e] == 0 then
+	if campfire_deployed[e] == 0 then		
 		new_y = math.rad(g_PlayerAngY)
-		fire_x = g_PlayerPosX + (math.sin(new_y) * 70)
-		fire_z = g_PlayerPosZ + (math.cos(new_y) * 70)		
+		fire_x[e] = g_PlayerPosX + (math.sin(new_y) * 70)
+		fire_y[e] = g_Entity[e]['y']
+		fire_z[e] = g_PlayerPosZ + (math.cos(new_y) * 70)		
 		Hide(e)
 		CollisionOff(e)
 		SetEntityEmissiveStrength(e,0)
-		ResetPosition(e, fire_x, g_PlayerPosY-height_difference[e], fire_z)
+		ResetPosition(e,fire_x[e],fire_y[e],fire_z[e])
 		Hide(campfire[e].particle_number)		
 		SetLightRange(campfire[e].light_number,0)
+		terrainheight[e] = GetTerrainHeight(fire_x[e],fire_z[e])
+		surfaceheight[e] = GetSurfaceHeight(fire_x[e],fire_y[e],fire_z[e])
 		if g_Scancode == 209 then --Deploy
+			if surfaceheight[e] > terrainheight[e] then
+				newposy[e] = surfaceheight[e]
+			else
+				newposy[e] = terrainheight[e]
+			end
+			if GetEntityCollectable(e) == 1 and GetEntityCollected(e) == 1 then SetEntityCollected(e,0,0) end
+			ResetPosition(e,fire_x[e],newposy[e],fire_z[e])
 			PlaySound(e,1)
 			Show(e)
-			CollisionOn(e)
 			campfire_deployed[e] = 1
 			StartTimer(e)
-			campfire_state[e] = "deployed"
+			campfire_state[e] = "deployed"			
 		end
 	end
-	
-	if campfire_state[e] == "deployed" then
+
+	if campfire_state[e] == "deployed" and campfire_onoff[e] == "off" then
 		new_y = math.rad(g_PlayerAngY)
-		fire_x = g_PlayerPosX + (math.sin(new_y) * 70)
-		fire_z = g_PlayerPosZ + (math.cos(new_y) * 70)
+		fire_x[e] = g_PlayerPosX + (math.sin(new_y) * 70)
+		fire_y[e] = g_Entity[e]['y']
+		fire_z[e] = g_PlayerPosZ + (math.cos(new_y) * 70)
 		Show(e)
 		CollisionOn(e)
 		SetEntityEmissiveStrength(e,0)
@@ -291,16 +315,18 @@ function campfire_main(e)
 			end
 		end	
 	end	
-	if keypressed[e] == 1 then
+	
+	if campfire_onoff[e] == "on" then
 		svol[e] = (3000-GetPlayerDistance(e))/30
 		campfire_state[e] = "lit" 		
-		Show(campfire[e].particle_number)
+		Show(campfire[e].particle_number)		
 		calchealth[e] = g_PlayerHealth
 		local lvariance = math.random(50,100)
 		local lrange = GetLightRange(campfire[e].light_number)
 		if lrange < lvariance then lrange = lrange + 1 end
 		if lrange > lvariance then lrange = lrange - 1 end
-		SetLightRange(campfire[e].light_number,lrange)
+		SetLightPosition(campfire[e].light_number, g_Entity[e]['x'], g_Entity[e]['y']+15, g_Entity[e]['z'])
+		SetLightRange(campfire[e].light_number,lrange)		
 		LoopSound(e,2)
 		SetSoundVolume(svol[e])
 		if GetPlayerDistance(e) < campfire[e].heat_range and campfire_state[e] == "lit" then

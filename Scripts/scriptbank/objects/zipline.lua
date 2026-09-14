@@ -9,7 +9,7 @@
 -- DESCRIPTION: [@ZIP_RELEASE=2(1=Manual Release, 2=Auto Release)]
 -- DESCRIPTION: [ZIP_RELEASE_TEXT$="Q to release"]
 -- DESCRIPTION: [ZIPLINE_OBJECT$=""] eg: zipline
--- DESCRIPTION: [@ANCHOR_status=1(1=Visible, 2=Invisible)]
+-- DESCRIPTION: [@ANCHOR_STATUS=1(1=Visible, 2=Invisible)]
 -- DESCRIPTION: [#RELEASE_ADJUSTMENT=0.10(0.10,3.00)]
 -- DESCRIPTION: <Sound0> loop for zipline travel
 

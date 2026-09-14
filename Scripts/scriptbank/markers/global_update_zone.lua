@@ -1,46 +1,59 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Global Update Zone v3 by Necrym59
--- DESCRIPTION: Will update/replace a user global value when zone entered.
+-- Global Update Zone v4 by Necrym59
+-- DESCRIPTION: Will update/replace a user global value when zone entered by player or designated entity type.
+-- DESCRIPTION: [@ENTITY_TYPE=5(1=Active Object Only, 2=Active Character Only, 3=Active Non-Character Only, 4=Non-Static Objects, 5=Player Character Only)]
 -- DESCRIPTION: [PROMPT_TEXT$="Global Updated"]
 -- DESCRIPTION: [@@USER_GLOBAL$=""(0=globallist)] eg; MyLocation or MyValue
 -- DESCRIPTION: [@GLOBAL_TYPE=1(1=Text,2=Numeric)] user global variable type
 -- DESCRIPTION: [UPDATE_VALUE$=""] value to update user global.
 -- DESCRIPTION: [ZoneHeight=100(1,1000)]
 -- DESCRIPTION: [SpawnAtStart!=1] if unchecked use a switch or other trigger to spawn this zone
+-- DESCRIPTION: [ActivateLogic!=0] if checked will trigger linked or IfUSed entities
 -- DESCRIPTION: <Sound0> - When entering zone Sound
 
 local glupdatezone 		= {}
+local entity_type 		= {}
 local prompt_text		= {}
 local user_global		= {}
 local globa1_type		= {}
 local update_value		= {}
 local zoneheight		= {}
 local spawnatstart 		= {}
+local activatelogic 	= {}
 
 local status = {}
 local played = {}
 local doonce = {}
+local wait = {}
+local EntityID = {}
 
-function global_update_zone_properties(e, prompt_text, user_global, global_type, update_value, zoneheight, spawnatstart)
+function global_update_zone_properties(e, entity_type, prompt_text, user_global, global_type, update_value, zoneheight, spawnatstart, activatelogic)
+	glupdatezone[e].entity_type = entity_type
 	glupdatezone[e].prompt_text = prompt_text
 	glupdatezone[e].user_global = user_global
 	glupdatezone[e].global_type = global_type or 1	
 	glupdatezone[e].update_value = update_value
 	glupdatezone[e].zoneheight = zoneheight or 100
 	glupdatezone[e].spawnatstart = spawnatstart or 1
+	glupdatezone[e].activatelogic = activatelogic or 0	
 end 
 
 function global_update_zone_init(e)
 	glupdatezone[e] = {}
+	glupdatezone[e].entity_type = 5
 	glupdatezone[e].prompt_text = "Global Updated"
 	glupdatezone[e].user_global = ""
 	glupdatezone[e].global_type = 1
 	glupdatezone[e].update_value = ""
 	glupdatezone[e].zoneheight = 100
-	glupdatezone[e].spawnatstart = 1	
+	glupdatezone[e].spawnatstart = 1
+	glupdatezone[e].activatelogic = 0		
+	
 	status[e] = "init"
 	played[e] = 0
 	doonce[e] = 0
+	wait[e] = math.huge
+	EntityID[e] = 0
 end
 
 function global_update_zone_main(e)
@@ -50,23 +63,53 @@ function global_update_zone_main(e)
 		status[e] = "endinit"
 	end
 	
-	if g_Entity[e]['activated'] == 1 then		
-		if g_Entity[e]['plrinzone'] == 1 and g_PlayerPosY > g_Entity[e]['y'] and g_PlayerPosY < g_Entity[e]['y'] + glupdatezone[e].zoneheight then
-			if played[e] == 0 then
-				PlaySound(e,0)
-				played[e] = 1
+	if g_Entity[e]['activated'] == 1 then
+		if glupdatezone[e].entity_type < 5 then
+			GetEntityInZoneWithFilter(e,glupdatezone[e].entity_type)
+			EntityID[e] = g_Entity[e]['entityinzone']		
+			if g_Entity[e]['entityinzone'] > 0 and EntityID[e] > 0 and g_Entity[EntityID[e]] ~= nil and g_Entity[EntityID[e]]['y'] > g_Entity[e]['y']-1 and g_Entity[EntityID[e]]['y'] < g_Entity[e]['y']+ glupdatezone[e].zoneheight then
+				if played[e] == 0 then
+					PlaySound(e,0)
+					played[e] = 1
+				end
+				if doonce[e] == 0 then
+					Prompt(glupdatezone[e].prompt_text)
+					if glupdatezone[e].global_type == 1 then _G["g_UserGlobal['"..glupdatezone[e].user_global.."']"] = glupdatezone[e].update_value end
+					if glupdatezone[e].global_type == 2 then _G["g_UserGlobal['"..glupdatezone[e].user_global.."']"] = tonumber(glupdatezone[e].update_value) end
+					if glupdatezone[e].activatelogic == 1 then
+						ActivateIfUsed(e)
+						PerformLogicConnections(e)
+					end
+					doonce[e] = 1
+				end	
 			end
-			if doonce[e] == 0 then
-				Prompt(glupdatezone[e].prompt_text)
-				if glupdatezone[e].global_type == 1 then _G["g_UserGlobal['"..glupdatezone[e].user_global.."']"] = glupdatezone[e].update_value end
-				if glupdatezone[e].global_type == 2 then _G["g_UserGlobal['"..glupdatezone[e].user_global.."']"] = tonumber(glupdatezone[e].update_value) end
-				doonce[e] = 1
-			end	
-		end
-		if g_Entity[e]['plrinzone'] == 0 then
-			played[e] = 0
-			doonce[e] = 0
-		end
+			if g_Entity[e]['entityinzone'] == 0 then
+				played[e] = 0
+				doonce[e] = 0
+			end			
+		end	
+		if glupdatezone[e].entity_type == 5 then
+			if g_Entity[e]['plrinzone'] == 1 and g_PlayerPosY > g_Entity[e]['y'] and g_PlayerPosY < g_Entity[e]['y'] + glupdatezone[e].zoneheight then
+				if played[e] == 0 then
+					PlaySound(e,0)
+					played[e] = 1
+				end
+				if doonce[e] == 0 then
+					Prompt(glupdatezone[e].prompt_text)
+					if glupdatezone[e].global_type == 1 then _G["g_UserGlobal['"..glupdatezone[e].user_global.."']"] = glupdatezone[e].update_value end
+					if glupdatezone[e].global_type == 2 then _G["g_UserGlobal['"..glupdatezone[e].user_global.."']"] = tonumber(glupdatezone[e].update_value) end
+					if glupdatezone[e].activatelogic == 1 then
+						ActivateIfUsed(e)
+						PerformLogicConnections(e)
+					end	
+					doonce[e] = 1
+				end	
+			end
+			if g_Entity[e]['plrinzone'] == 0 then
+				played[e] = 0
+				doonce[e] = 0
+			end
+		end	
 	end
 end
 

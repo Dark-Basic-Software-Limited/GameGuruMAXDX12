@@ -1,4 +1,4 @@
--- Weapon v16 - Necrym and Lee
+-- Weapon v18 - Necrym and Lee
 -- DESCRIPTION: Assign to a weapon object to be collected, and play an optional pickup <Sound0>.
 -- DESCRIPTION: [PICKUP_RANGE=75(1,200)]
 -- DESCRIPTION: [@PICKUP_STYLE=2(1=Ranged, 2=Accurate)]
@@ -6,6 +6,7 @@
 -- DESCRIPTION: [!ACTIVATE_LOGIC=0]
 -- DESCRIPTION: [@ITEM_HIGHLIGHT=0(0=None,1=Shape,2=Outline,3=Icon)] Use emmisive color for shape option
 -- DESCRIPTION: [HIGHLIGHT_ICON_IMAGEFILE$="imagebank\\icons\\pickup.png"]
+-- DESCRIPTION: [@PROMPT_DISPLAY=1(1=Local,2=Screen)]
 
 local module_misclib = require "scriptbank\\module_misclib"
 local U = require "scriptbank\\utillib"
@@ -28,13 +29,14 @@ local hl_imgheight		= {}
 weapon_therecanbeonlyone = 0
 weapon_temprompttimer = 0
 
-function weapon_properties(e, pickup_range, pickup_style, play_pickup, activate_logic, item_highlight, highlight_icon_imagefile)
+function weapon_properties(e, pickup_range, pickup_style, play_pickup, activate_logic, item_highlight, highlight_icon_imagefile, prompt_display)
 	weapon[e].pickup_range = pickup_range or 75
 	weapon[e].pickup_style = pickup_style
 	weapon[e].play_pickup = play_pickup or 0
 	weapon[e].activate_logic = activate_logic or 0
 	weapon[e].item_highlight = item_highlight or 0
 	weapon[e].highlight_icon = highlight_icon_imagefile
+	weapon[e].prompt_display = prompt_display
 end
 
 function weapon_init_name(e,name)
@@ -45,9 +47,11 @@ function weapon_init_name(e,name)
 	weapon[e].activate_logic = 0
 	weapon[e].item_highlight = 0
 	weapon[e].highlight_icon = "imagebank\\icons\\pickup.png"
+	weapon[e].prompt_display = prompt_display	
 	weapon_name[e] = name
 	
 	status[e] = "init"
+	g_tEnt = 0
 	hl_icon[e] = 0
 	hl_imgwidth[e] = 0
 	hl_imgheight[e] = 0
@@ -77,6 +81,9 @@ function weapon_main(e)
 			--pinpoint select object--
 			module_misclib.pinpoint(e,weapon[e].pickup_range,weapon[e].item_highlight,hl_icon[e])
 			--end pinpoint select object--
+			if g_tEnt == 0 and weapon_therecanbeonlyone==e then
+				weapon_therecanbeonlyone = 0
+			end
 		end
 	end
 
@@ -102,7 +109,8 @@ function weapon_main(e)
 		if weapon_therecanbeonlyone==e and g_tEnt == e then
 			--with inventory you can collect as many weapons as you like
 			if weapon_temprompttimer > 0 then
-				PromptLocal("Cannot collect the " .. weapon_name[e] .. " into preferred slot")
+				if weapon[e].prompt_display == 1 then PromptLocal("Cannot collect the " .. weapon_name[e] .. " into preferred slot") end
+				if weapon[e].prompt_display == 2 then Prompt("Cannot collect the " .. weapon_name[e] .. " into preferred slot") end
 				if Timer() > weapon_temprompttimer + 3000 then weapon_temprompttimer = 0 end
 			else
 				if g_Entity[e]['haskey'] ~= 1 then
@@ -122,25 +130,31 @@ function weapon_main(e)
 						end
 						if g_PlayerController==0 then
 							if GetHeadTracker() == 1 then
-								PromptLocal(e,"Right trigger to " .. actiontext .. " the " .. weapon_name[e] )
+								if weapon[e].prompt_display == 1 then PromptLocal(e,"Right trigger to " .. actiontext .. " the " .. weapon_name[e] ) end
+								if weapon[e].prompt_display == 2 then Prompt("Right trigger to " .. actiontext .. " the " .. weapon_name[e] ) end
 							else
-								PromptLocal(e,"Press E to " .. actiontext .. " the " .. weapon_name[e] )
+								if weapon[e].prompt_display == 1 then PromptLocal(e,"Press E to " .. actiontext .. " the " .. weapon_name[e] ) end
+								if weapon[e].prompt_display == 2 then Prompt("Press E to " .. actiontext .. " the " .. weapon_name[e] ) end
 							end
 						else
 							if weapon[e].prompt_display == 1 then
-								PromptLocal(e,"Press Y Button to " .. actiontext .. " the " .. weapon_name[e] )
+								if weapon[e].prompt_display == 1 then PromptLocal(e,"Press Y Button to " .. actiontext .. " the " .. weapon_name[e] ) end
+								if weapon[e].prompt_display == 2 then Prompt("Press Y Button to " .. actiontext .. " the " .. weapon_name[e] ) end
 							end	
 						end
 					else
 						if g_PlayerController==0 then
 							if GetHeadTracker() == 1 then
-								PromptLocal(e,"Right trigger to pick up the " .. weapon_name[e] )
+								if weapon[e].prompt_display == 1 then PromptLocal(e,"Right trigger to pick up the " .. weapon_name[e] ) end
+								if weapon[e].prompt_display == 2 then Prompt("Right trigger to pick up the " .. weapon_name[e] ) end								
 							else
-								PromptLocal(e,"Press E or LMB to pick up the " .. weapon_name[e] )
+								if weapon[e].prompt_display == 1 then PromptLocal(e,"Press E or LMB to pick up the " .. weapon_name[e] ) end
+								if weapon[e].prompt_display == 2 then Prompt("Press E or LMB to pick up the " .. weapon_name[e] ) end								
 							end	
 						else
 							if weapon[e].prompt_display == 1 then
-								PromptLocal(e,"Press Y Button to pick up the " .. weapon_name[e] )
+								if weapon[e].prompt_display == 1 then PromptLocal(e,"Press Y Button to pick up the " .. weapon_name[e] ) end
+								if weapon[e].prompt_display == 2 then Prompt("Press Y Button to pick up the " .. weapon_name[e] ) end															
 							end	
 						end
 					end

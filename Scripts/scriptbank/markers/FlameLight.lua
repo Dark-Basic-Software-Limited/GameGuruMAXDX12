@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- FlameLight v5 by Lee and Necrym59
+-- FlameLight v7 by Lee and Necrym59
 -- DESCRIPTION: Light will vary as though emitted from a candle or camp fire, with control over variance [Intensity=50]
 -- DESCRIPTION: Use the [LightOn!=1] state to decide if the light is initially off or on.
 -- DESCRIPTION: Use the [LightMove!=1] state to set if the light moves.
@@ -17,7 +17,7 @@ local lRandom = {}
 local glowtime = {}
 
 function FlameLight_properties(e, intensity, lighton, lightmove, moveamount, glowinterval)
-	module_lightcontrol.init(e, lighton)
+	module_lightcontrol.init(e,lighton)
 	g_lightflame[e]['intensity'] = intensity or 50
 	g_lightflame[e]['lightmove'] = lightmove or 1
 	g_lightflame[e]['moveamount'] = moveamount or 1
@@ -50,7 +50,7 @@ end
 
 function FlameLight_main(e)
 	if module_lightcontrol.control(e) == 1 then
-		lightNum = GetEntityLightNumber( e )
+		lightNum = GetEntityLightNumber(e)
 		if lightNum ~= nil and g_Time > glowtime[e] then
 			local nRandom = math.random(0,2)
 			lRandom[e] = math.random(1,g_lightflame[e]['moveamount'])

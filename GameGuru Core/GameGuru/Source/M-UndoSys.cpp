@@ -286,6 +286,30 @@ void undosys_undoredoevent_core ( eUndoMasterList eList, eUndoMasterList eListFo
 	}
 }
 
+void undosys_clearall(void)
+{
+	// this is called when user makes a new manual action that invalidates all past 'future events'
+	int undostacksize = g_UndoSysMasterStack[eUndoSys_UndoList].size();
+	for (int n = 0; n < undostacksize; n++) g_UndoSysMasterStack[eUndoSys_UndoList].pop();
+
+	// also need to clear type specific stacks and remove event data allocations
+	undostacksize = g_UndoSysObjectStack[eUndoSys_UndoList].size();
+	for (int n = 0; n < undostacksize; n++)
+	{
+		sUndoStackItem eventitem = g_UndoSysObjectStack[eUndoSys_UndoList].top();
+		if (eventitem.pEventData) delete eventitem.pEventData;
+		g_UndoSysObjectStack[eUndoSys_UndoList].pop();
+	}
+	undostacksize = g_UndoSysTerrainStack[eUndoSys_UndoList].size();
+	for (int n = 0; n < undostacksize; n++)
+	{
+		sUndoStackItem eventitem = g_UndoSysTerrainStack[eUndoSys_UndoList].top();
+		if (eventitem.pEventData) delete eventitem.pEventData;
+		g_UndoSysTerrainStack[eUndoSys_UndoList].pop();
+	}
+	undosys_clearredostack();
+}
+
 void undosys_clearredostack (void)
 {
 	// this is called when user makes a new manual action that invalidates all past 'future events'

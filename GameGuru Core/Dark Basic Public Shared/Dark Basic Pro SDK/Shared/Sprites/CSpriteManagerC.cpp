@@ -419,13 +419,15 @@ void CSpriteManager::DeleteJustOne(tagSpriteData* ptr)
 #define TESTIMGUI
 #endif
 
+#define TESTMULTIPLYMONITORS
+
 bool bSpriteWinVisible = false;
 extern bool bImGuiFrameState;
 #ifdef TESTIMGUI
 int iKeepBackgroundForFrames = 0;
 void CSpriteManager::RenderDrawList(tagSpriteData** pList, int iListSize, int iFilterMode)
 {
-	ImGuiContext& g = *GImGui;
+	ImGuiContext& const g = *GImGui;
 	// externs used
 	extern bool bImGuiInTestGame;
 	extern bool bRenderTabTab;
@@ -462,8 +464,47 @@ void CSpriteManager::RenderDrawList(tagSpriteData** pList, int iListSize, int iF
 		ImGuiWindow* gotwindow = ImGui::FindWindowByName("GGClassicSprite");
 		if (!bSpriteWinVisible)	gotwindow = NULL;
 		ImGuiWindow* window = NULL;
+		
+		#ifdef TESTMULTIPLYMONITORS
+		ImGuiViewport* active_monitor = NULL;
+		#else
+		ImGuiViewport* active_monitor = ImGui::GetMainViewport();;
+		#endif
+
+		#ifdef TESTMULTIPLYMONITORS
+		ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+
+		if (platform_io.Viewports.Size > 0)
+		{
+			//PE: First viewport should be primary OS window of the application.
+			active_monitor = platform_io.Viewports[0];
+		}
+		else
+		{
+			//PE: fallback to default viewport.
+			active_monitor = ImGui::GetMainViewport();
+		}
+
+		//PE: Second way
+		//if (platform_io.Monitors.Size > 0)
+		//{
+		//	//PE: In the docking branch, monitor[0] is the primary.
+		//	active_monitor = ImGui::FindViewportByPlatformHandle(platform_io.Monitors[0].MainHandle);
+		//}
+		#endif
+
+
 		if (!gotwindow)
 		{
+
+			#ifdef TESTMULTIPLYMONITORS
+			ImGui::SetNextWindowPos(ImVec2(-100.0, 1) + active_monitor->Pos, ImGuiCond_Always);
+			ImGui::SetNextWindowSize(ImVec2(0.1, 0.1), ImGuiCond_Always);
+			ImGui::SetNextWindowBgAlpha(0.0f);
+			ImGui::SetNextWindowViewport(active_monitor->ID);
+			ImGui::Begin("GGClassicSprite", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav);
+			window = ImGui::GetCurrentWindow();
+			#else
 			ImGuiViewport* viewport = ImGui::GetMainViewport();
 			ImGui::SetNextWindowPos(ImVec2(-100.0, 1) + ImGui::GetMainViewport()->Pos, ImGuiCond_Always);
 			ImGui::SetNextWindowSize(ImVec2(0.1, 0.1), ImGuiCond_Always);
@@ -473,6 +514,7 @@ void CSpriteManager::RenderDrawList(tagSpriteData** pList, int iListSize, int iF
 			window = ImGui::GetCurrentWindow();
 			ImVec2 renderTargetSize = ImGui::GetContentRegionAvail();
 			ImVec2 renderTargetPos = ImGui::GetWindowPos();
+			#endif
 		}
 		else 
 		{
@@ -498,7 +540,13 @@ void CSpriteManager::RenderDrawList(tagSpriteData** pList, int iListSize, int iF
 				{
 					//Fill background so no 3D can be seen.
 					ImVec4 monitor_col = ImVec4(0.0, 0, 0, 1.0); //Black for now.
+					#ifdef TESTMULTIPLYMONITORS
+					ImVec2 const topLeft = active_monitor->Pos;
+					ImVec2 const bottomRight = active_monitor->Pos + active_monitor->Size;
+					window->DrawList->AddRectFilled(topLeft, bottomRight, ImGui::GetColorU32(monitor_col));
+					#else
 					window->DrawList->AddRectFilled(ImVec2(-1, -1), ImGui::GetMainViewport()->Size + ImVec2(1, 1), ImGui::GetColorU32(monitor_col));
+					#endif
 				}
 			}
 			if (iKeepBackgroundForFrames > 0) iKeepBackgroundForFrames--;
@@ -509,9 +557,11 @@ void CSpriteManager::RenderDrawList(tagSpriteData** pList, int iListSize, int iF
 		for (int iTemp = 0; iTemp < iListSize; iTemp++)
 		{
 			// this sprite
-			tagSpriteData* pCurrent = pList[iTemp];
-			ImVec4 drawCol_normal = ImColor(pCurrent->iRed, pCurrent->iGreen, pCurrent->iBlue, pCurrent->iAlpha);
-			bool bVisible = pCurrent->bVisible;
+			tagSpriteData* const pCurrent = pList[iTemp];
+			if (!pCurrent)
+				continue;
+			ImVec4 const drawCol_normal = ImColor(pCurrent->iRed, pCurrent->iGreen, pCurrent->iBlue, pCurrent->iAlpha);
+			bool const bVisible = pCurrent->bVisible;
 
 			//PE: Looks like we can always use the lpVertices to draw stuff @Lee ?
 			/* Agreed
@@ -543,14 +593,14 @@ void CSpriteManager::RenderDrawList(tagSpriteData** pList, int iListSize, int iF
 				}
 				//LB: Allow for rotated sprites
 				//window->DrawList->AddImage((ImTextureID)lpTexture, ImVec2(fX, fY), (ImVec2(fX, fY) + ImVec2(iWidth, iHeight)), UV_Min, UV_Max, ImGui::GetColorU32(drawCol_normal));
-				ImVec2 p0 = ImVec2(pCurrent->lpVertices[0].x, pCurrent->lpVertices[0].y);
-				ImVec2 p1 = ImVec2(pCurrent->lpVertices[1].x, pCurrent->lpVertices[1].y);
-				ImVec2 p2 = ImVec2(pCurrent->lpVertices[3].x, pCurrent->lpVertices[3].y);
-				ImVec2 p3 = ImVec2(pCurrent->lpVertices[2].x, pCurrent->lpVertices[2].y);
-				ImVec2 uv0 = ImVec2(pCurrent->lpVertices[0].tu, pCurrent->lpVertices[0].tv);
-				ImVec2 uv1 = ImVec2(pCurrent->lpVertices[1].tu, pCurrent->lpVertices[1].tv);
-				ImVec2 uv2 = ImVec2(pCurrent->lpVertices[3].tu, pCurrent->lpVertices[3].tv);
-				ImVec2 uv3 = ImVec2(pCurrent->lpVertices[2].tu, pCurrent->lpVertices[2].tv);
+				ImVec2 const p0 = ImVec2(pCurrent->lpVertices[0].x, pCurrent->lpVertices[0].y);
+				ImVec2 const p1 = ImVec2(pCurrent->lpVertices[1].x, pCurrent->lpVertices[1].y);
+				ImVec2 const p2 = ImVec2(pCurrent->lpVertices[3].x, pCurrent->lpVertices[3].y);
+				ImVec2 const p3 = ImVec2(pCurrent->lpVertices[2].x, pCurrent->lpVertices[2].y);
+				ImVec2 const uv0 = ImVec2(pCurrent->lpVertices[0].tu, pCurrent->lpVertices[0].tv);
+				ImVec2 const uv1 = ImVec2(pCurrent->lpVertices[1].tu, pCurrent->lpVertices[1].tv);
+				ImVec2 const uv2 = ImVec2(pCurrent->lpVertices[3].tu, pCurrent->lpVertices[3].tv);
+				ImVec2 const uv3 = ImVec2(pCurrent->lpVertices[2].tu, pCurrent->lpVertices[2].tv);
 
 				if (lpTexture)
 				{
@@ -564,7 +614,8 @@ void CSpriteManager::RenderDrawList(tagSpriteData** pList, int iListSize, int iF
 					}
 					else
 					{
-						window->DrawList->AddImageQuad((ImTextureID)lpTexture, p0, p1, p2, p3, uv0, uv1, uv2, uv3, ImGui::GetColorU32(drawCol_normal));
+						if(window)
+							window->DrawList->AddImageQuad((ImTextureID)lpTexture, p0, p1, p2, p3, uv0, uv1, uv2, uv3, ImGui::GetColorU32(drawCol_normal));
 					}
 				}
 			}

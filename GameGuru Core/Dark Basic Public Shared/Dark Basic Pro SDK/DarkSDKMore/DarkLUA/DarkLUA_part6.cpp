@@ -8,6 +8,27 @@
 	return 1;
 }
 
+// ★ GGMAX 3.38: ported from DX11 b80d0d53 ("PE: Added LUA GetSunColorBlue(), GetSunColorRed(),
+// GetSunColorGreen() (4 Necrym59)"). These were the ONLY Lua commands the DX11 tree had that this
+// one lacked, apart from ForceMouseXYClick - the two APIs are otherwise identical, so the behaviour
+// scripts shipped alongside them could not run here until these existed. Straight readers of the
+// same t.visuals fields SetSunLightingColor already writes; no renderer involvement.
+int GetSunColorRed(lua_State* L)
+{
+	lua_pushnumber(L, t.visuals.SunRed_f);
+	return 1;
+}
+int GetSunColorGreen(lua_State* L)
+{
+	lua_pushnumber(L, t.visuals.SunGreen_f);
+	return 1;
+}
+int GetSunColorBlue(lua_State* L)
+{
+	lua_pushnumber(L, t.visuals.SunBlue_f);
+	return 1;
+}
+
 int GetSunIntensity(lua_State* L)
 {
 	lua_pushnumber(L, t.visuals.SunIntensity_f);

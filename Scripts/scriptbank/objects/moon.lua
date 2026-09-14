@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Moon v3 by Necrym59
+-- Moon v6 by Necrym59
 -- DESCRIPTION: Allows a moon object to rotate and orbit another named object
 -- DESCRIPTION: Attach this behavior to the moon object.
 -- DESCRIPTION: [#MOON_ADJUST_X=0.0(-20000.0,20000.0)]
@@ -7,9 +7,10 @@
 -- DESCRIPTION: [#MOON_ADJUST_Z=0.0(-20000.0,20000.0)]
 -- DESCRIPTION: [MOON_ROTATION=1(0,100)]
 -- DESCRIPTION: [ORBIT_PLANET_NAME$=""]
--- DESCRIPTION: [ORBIT_DISTANCE=300(0,1000)]
+-- DESCRIPTION: [ORBIT_DISTANCE=0(-1000,1000)]
+-- DESCRIPTION: [ORBIT_MULTIPLIER=1(1,1000)]
 -- DESCRIPTION: [#ORBIT_SPEED=0.1(0.0,100.0)]
--- DESCRIPTION: [SENSE_RANGE=1000]
+-- DESCRIPTION: [#SENSE_RANGE=1000.00]
 -- DESCRIPTION: [SENSE_TEXT$="Detected in Range"]
 -- DESCRIPTION: [@SENSE_TRIGGER=1(1=Linked, 2=Video+ChangeLevel, 3=Video)]
 -- DESCRIPTION: [@VIDEO_SKIP=1(1=Yes, 2=No)]
@@ -26,6 +27,7 @@ local moon_adjust_z		= {}
 local moon_rotation		= {}
 local orbit_planet_name	= {}
 local orbit_distance	= {}
+local orbit_multiplier	= {}
 local orbit_speed		= {}
 local sense_range		= {}
 local sense_text		= {}
@@ -50,12 +52,13 @@ local planetangx	= {}
 local planetangy	= {}
 local planetangz	= {}
 local adjustrange	= {}
+local orbitadjust	= {}
 local orbit			= {}
 local status		= {}
 local doonce		= {}
 local endvid 		= {}
 
-function moon_properties(e, moon_adjust_x, moon_adjust_y, moon_adjust_z, moon_rotation, orbit_planet_name, orbit_distance, orbit_speed, sense_range, sense_text, sense_trigger, video_skip, resetstates)
+function moon_properties(e, moon_adjust_x, moon_adjust_y, moon_adjust_z, moon_rotation, orbit_planet_name, orbit_distance, orbit_multiplier, orbit_speed, sense_range, sense_text, sense_trigger, video_skip, resetstates)
 	moon[e] = g_Entity[e]
 	moon[e].moon_adjust_x = moon_adjust_x
 	moon[e].moon_adjust_y = moon_adjust_y
@@ -63,6 +66,7 @@ function moon_properties(e, moon_adjust_x, moon_adjust_y, moon_adjust_z, moon_ro
 	moon[e].moon_rotation = moon_rotation
 	moon[e].orbit_planet_name = lower(orbit_planet_name) or ""
 	moon[e].orbit_distance = orbit_distance
+	moon[e].orbit_multiplier = orbit_multiplier
 	moon[e].orbit_speed = orbit_speed	
 	moon[e].sense_range = sense_range
 	moon[e].sense_text = sense_text
@@ -80,6 +84,7 @@ function moon_init(e)
 	moon[e].moon_rotation = 0
 	moon[e].orbit_planet_name = ""	
 	moon[e].orbit_distance = 300
+	moon[e].orbit_multiplier = 1	
 	moon[e].orbit_speed = 0.01
 	moon[e].sense_range = 1000
 	moon[e].sense_text = "Detected in Range"
@@ -105,8 +110,10 @@ function moon_init(e)
 	planetangz[e] = 0
 	adjustrange[e] = 0
 	orbit[e] = 0
+	orbitadjust[e] = 0
 	doonce[e] = 0
 	endvid[e] = 0
+	SetEntityAlwaysActive(e,1)
 	status[e] = "moon_build"
 end
 
@@ -120,7 +127,7 @@ function moon_main(e)
 		moonposz[e] = moonposz[e] + moon[e].moon_adjust_z
 		ResetPosition(e,moonposx[e],moonposy[e],moonposz[e])
 		moonscalex[e],moonscaley[e],moonscalez[e] = GetEntityScales(e)
-		adjustrange[e] = moon[e].sense_range * GetEntityScales(e)
+		adjustrange[e] = moon[e].sense_range
 		if moon[e].orbit_planet_no == 0 and moon[e].orbit_planet_name > "" then
 			for p = 1, g_EntityElementMax do
 				if p ~= nil and g_Entity[p] ~= nil then
@@ -129,7 +136,7 @@ function moon_main(e)
 						planetposx[e],planetposy[e],planetposz[e],planetangx[e],planetangy[e],planetangz[e] = GetEntityPosAng(p)
 						moonposx[e] = planetposx[e]
 						moonposy[e] = planetposy[e]
-						moonposz[e] = planetposz[e]+moon[e].orbit_distance
+						moonposz[e] = planetposz[e]+(moon[e].orbit_distance*moon[e].orbit_multiplier)
 						ResetPosition(e,moonposx[e],moonposy[e],moonposz[e])
 						break
 					end
@@ -140,12 +147,17 @@ function moon_main(e)
 	end
 	if status[e] == "moon_process" then
 		RotateY(e,GetAnimationSpeed(e)*moon[e].moon_rotation/5)
-		if moon[e].orbit_planet_no ~= 0 then	
+		if moon[e].orbit_planet_no ~= 0 then
+			-- UPDATE PLANET POSITION
+			planetposx[e],planetposy[e],planetposz[e],planetangx[e],planetangy[e],planetangz[e] = GetEntityPosAng(moon[e].orbit_planet_no)
+			moonposx[e] = planetposx[e]
+			moonposy[e] = planetposy[e]+ moon[e].moon_adjust_y
+			moonposz[e] = planetposz[e]+(moon[e].orbit_distance*moon[e].orbit_multiplier)
 			-- ORBITAL ROTATION --
 			if orbit[e] < 100 then 				
-				local new_x = moonposx[e] + math.sin(orbit[e]) * moon[e].orbit_distance
-				local new_y = moonposy[e]
-				local new_z = planetposz[e] + math.cos(orbit[e]) * moon[e].orbit_distance
+				local new_x = moonposx[e] + math.sin(orbit[e]) * (moon[e].orbit_distance*moon[e].orbit_multiplier)
+				local new_y = moonposy[e] 
+				local new_z = planetposz[e] + math.cos(orbit[e]) * (moon[e].orbit_distance*moon[e].orbit_multiplier)
 				
 				orbit[e] = orbit[e] + moon[e].orbit_speed/10000
 				PositionObject(g_Entity[e]['obj'],new_x,new_y,new_z)

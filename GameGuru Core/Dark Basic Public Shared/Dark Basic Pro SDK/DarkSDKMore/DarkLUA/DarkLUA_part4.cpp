@@ -44,6 +44,21 @@ int DisplayScreen(lua_State* L)
 	lua_pushinteger(L, iSpecialLuaReturn);
 	return 1;
 }
+// ★ GGMAX 3.38: ported from DX11. Called by cursorcontrol.lua so that when a controller moves
+// the on-screen pointer, the change reaches the engine and can drive the real Lua mouse pointer and
+// its click. Pure input plumbing - no renderer involvement.
+int ForceMouseXYClick(lua_State* L)
+{
+	extern float LuaMousePosPercentX;
+	extern float LuaMousePosPercentY;
+	extern int LuaMouseClick;
+	LuaMousePosPercentX = lua_tonumber(L, 1);
+	LuaMousePosPercentY = lua_tonumber(L, 2);
+	LuaMouseClick = lua_tonumber(L, 3);
+	g.LUAMouseX = (GetDisplayWidth() / 100.0f) * LuaMousePosPercentX;
+	g.LUAMouseY = (GetDisplayHeight() / 100.0f) * LuaMousePosPercentY;
+	return 0;
+}
 int DisplayCurrentScreen(lua_State* L)
 {
 	int screen_editor(int nodeid, bool standalone = false, char* screen = NULL);

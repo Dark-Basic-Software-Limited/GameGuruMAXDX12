@@ -1,5 +1,7 @@
+-- V4 by Lee
 -- DESCRIPTION: This will control an enemy character using <Soldier Animations> to engage the player within view using cover Animations
 -- DESCRIPTION: Is capable of attacking their target using a <Shooting Weapon>
+-- DESCRIPTION: Sound effects are aware in <Sound0>, abandon cover in <Sound1>, reloading in <Sound2> and killed target in <Sound3>.
 -- DESCRIPTION: Can [BreakCoverDistance=300] and move to best cover zone
 -- DESCRIPTION: Initially [!AwareOfTarget=0] for quicker response
 master_interpreter_core = require "scriptbank\\masterinterpreter"

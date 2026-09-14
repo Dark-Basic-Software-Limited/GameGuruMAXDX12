@@ -779,6 +779,7 @@ struct Sglobals
 	int gdisplaydepth;
 	int gdisplaywidth;
 	int gexportassets;
+	int gdisablefulldecaleffects;
 	int ggodmodestate;
 	int glightmaxsize;
 	int glightquality;
@@ -1651,6 +1652,7 @@ struct Sglobals
 		 glightmaxsize = 0;
 		 ggodmodestate = 0;
 		 gexportassets = 0;
+		 gdisablefulldecaleffects = 0;
 		 gdisplaywidth = 0;
 		 gdisplaydepth = 0;
 		 gbloodonfloor = 0;
@@ -4776,7 +4778,7 @@ struct Stemps
 	DWORD bestdif;
 	DWORD bestpos;
 	int bkwidth;
-	cstr brass_s;
+	cstr brass_s = "01234567890123456789012345678901234567890123456789012345678901234567890123456789";
 	int chkfile;
 	cstr chunk_s;
 	cstr decal_s;

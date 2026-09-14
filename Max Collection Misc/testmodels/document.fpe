@@ -5,7 +5,7 @@ desc             = Document
 ;orientation
 model            = document.dbo
 scale            = 100.00
-collisionmode    = 11
+collisionmode    = 0
 defaultstatic    = 0
 materialindex    = 2
 matrixmode       = 

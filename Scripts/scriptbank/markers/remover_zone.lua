@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Remover Zone v5 by Necrym59
+-- Remover Zone v6 by Necrym59
 -- DESCRIPTION: When player enters the zone, displays a notification and will remove/destroy
 -- DESCRIPTION: named entity/entities, activates any logic links, then destroys this zone.
 -- DESCRIPTION: [NOTIFICATION$="Entity/Entities removed"]
@@ -84,6 +84,7 @@ function remover_zone_main(e)
 				if ents[e] > 0 then
 					for a,b in pairs (_G[tableName[e]]) do
 						if g_Entity[b] ~= nil then
+							SetActivated(b,0)
 							Hide(b)
 							CollisionOff(b)
 							EffectStop(b)
@@ -131,6 +132,7 @@ function remover_zone_main(e)
 								current_level[e] = 0
 								EffectStop(b)
 								Hide(b)
+								SetActivated(b,0)
 								wait[e] = g_Time + 100
 								dlonce[e] = 1
 							end
@@ -140,13 +142,15 @@ function remover_zone_main(e)
 			end
 		end
 	end
+
 	if g_Time > wait[e] then
 		if remover_zone[e].remove_style == 2 or remover_zone[e].remove_style == 3 then
 			if ents[e] > 0 then
 				for a,b in pairs (_G[tableName[e]]) do
 					if g_Entity[b] ~= nil then
 						Hide(b)
-						CollisionOff(b)						
+						CollisionOff(b)
+						SetActivated(b,0)						
 						Destroy(b)
 						_G[tableName[e]][a] = nil						
 						current_level[e] = 100

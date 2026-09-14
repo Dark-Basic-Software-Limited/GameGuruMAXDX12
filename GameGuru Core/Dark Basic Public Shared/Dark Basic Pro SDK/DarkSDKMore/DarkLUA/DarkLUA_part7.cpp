@@ -1238,6 +1238,11 @@ void addFunctions()
 	lua_register(lua2, "SetSunLightingColor", SetSunLightingColor);
 	lua_register(lua2, "SetSunIntensity", SetSunIntensity);
 	lua_register(lua2, "GetSunIntensity", GetSunIntensity);
+	// ★ GGMAX 3.38: the DX11 parity set (see DarkLUA_part6.cpp / _part4.cpp).
+	lua_register(lua2, "GetSunColorRed", GetSunColorRed);
+	lua_register(lua2, "GetSunColorGreen", GetSunColorGreen);
+	lua_register(lua2, "GetSunColorBlue", GetSunColorBlue);
+	lua_register(lua2, "ForceMouseXYClick", ForceMouseXYClick);
 
 	// Lighting
 	lua_register(lua2, "SetExposure", SetExposure);

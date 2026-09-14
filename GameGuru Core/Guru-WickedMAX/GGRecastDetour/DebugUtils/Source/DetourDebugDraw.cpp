@@ -266,12 +266,34 @@ void duDebugDrawNavMeshWithClosedList(struct duDebugDraw* dd, const dtNavMesh& m
 
 	const dtNavMeshQuery* q = (flags & DU_DRAWNAVMESH_CLOSEDLIST) ? &query : 0;
 	
-	dd->begin( DU_DRAW_TRIS );
-	for (int i = 0; i < mesh.getMaxTiles(); ++i)
+	dd->begin(DU_DRAW_TRIS);
+	bool bOnlyRenderLocalFocusedNavMeshView = true;
+	extern int g_iFocusNavMeshVisualAtX;
+	extern int g_iFocusNavMeshVisualAtZ;
+	if(bOnlyRenderLocalFocusedNavMeshView == true )
 	{
-		const dtMeshTile* tile = mesh.getTile(i);
-		if (!tile->header) continue;
-		drawMeshTile(dd, mesh, q, tile, flags);
+		for (int i = 0; i < mesh.getMaxTiles(); ++i)
+		{
+			const dtMeshTile* tile = mesh.getTile(i);
+			if (!tile->header) continue;
+			if(	g_iFocusNavMeshVisualAtX < tile->header->bmin[0] - 1000 || 
+				g_iFocusNavMeshVisualAtX > tile->header->bmax[0] + 1000 ||
+				g_iFocusNavMeshVisualAtZ < tile->header->bmin[2] - 1000 ||
+				g_iFocusNavMeshVisualAtZ > tile->header->bmax[2] + 1000)
+			{
+				continue;
+			}
+			drawMeshTile(dd, mesh, q, tile, flags);
+		}
+	}
+	else
+	{ 
+		for (int i = 0; i < mesh.getMaxTiles(); ++i)
+		{
+			const dtMeshTile* tile = mesh.getTile(i);
+			if (!tile->header) continue;
+			drawMeshTile(dd, mesh, q, tile, flags);
+		}
 	}
 	dd->end();
 }

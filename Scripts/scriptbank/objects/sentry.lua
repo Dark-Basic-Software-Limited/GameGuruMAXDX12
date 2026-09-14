@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Sentry v18
+-- Sentry v19
 -- DESCRIPTION: The applied object will create a rotatable security device? Static Mode = No, Physics = On, Explodable = Yes, IsImobile = Yes
 -- DESCRIPTION: Change the [PROMPT_TEXT$="Secuity alert was started"], the detection [SCAN_RANGE=1000], [SCAN_RADIUS=136(1,360)], [SCAN_SPEED=3(1,10)]. Detection [@ALARM=2(1=Off, 2=On)] and [ALARM_RANGE=500(1,3000)] [SENTRY_DAMAGE=60] inflicted on player, [MUZZLE_FLASH_NAME$="sentry muzzleflash"], [MUZZLE_Y=46(1,100)],[MUZZLE_Z=47(1,100)], Change its [@Allegiance=0(0=Enemy,1=Ally,2=Neutral)] also [@VISIBILITY=1(1=Visible, 2=Invisible)] <Sound0> - Sentry scan Loop  <Sound1> - Sentry Firing
 
@@ -36,7 +36,6 @@ local target_distance = {}
 local engaging_enemy = {}
 
 function sentry_properties(e, prompt_text, scan_range, scan_radius, scan_speed, alarm, alarm_range, sentry_damage, muzzle_flash_name, muzzle_y, muzzle_z, allegiance, visibility)
-	g_sentry[e] = g_Entity[e]
 	g_sentry[e]['prompt_text'] = prompt_text	
 	g_sentry[e]['scan_range'] = scan_range	
 	g_sentry[e]['scan_radius'] = scan_radius
@@ -53,7 +52,7 @@ function sentry_properties(e, prompt_text, scan_range, scan_radius, scan_speed, 
 end -- End properties
 
 function sentry_init(e)
-	g_sentry[e] = g_Entity[e]
+	g_sentry[e] = {}
 	g_sentry[e]['prompt_text'] = "Secuity alert was started"
 	g_sentry[e]['scan_range'] = 1000	
 	g_sentry[e]['scan_radius'] = 136
@@ -77,6 +76,7 @@ function sentry_init(e)
 	sentrystart = 0
 	sentrystop = 0
 	target_distance = 0
+	SetCharacterMode(e,0)
 	if g_Entity[e]['health'] <= 100 then SetEntityHealth(e,g_Entity[e]['health']+100) end
 end
 

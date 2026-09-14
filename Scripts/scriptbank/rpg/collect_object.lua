@@ -1,4 +1,4 @@
--- Collect Object v11
+-- Collect Object v13 by Necrym59 and Lee
 -- DESCRIPTION: Will allow collection of an object. Object must be set to 'Collectable'.
 -- DESCRIPTION: [PICKUP_TEXT$="E to collect"]
 -- DESCRIPTION: [PICKUP_RANGE=80(1,100)]
@@ -26,18 +26,19 @@ local highlight_icon 	= {}
 local tEnt = {}
 local selectobj = {}
 local status = {}
+local hl_image = {}
 local hl_icon = {}
 local hl_imgwidth = {}
 local hl_imgheight = {}
 
 function collect_object_properties(e, pickup_text, pickup_range, pickup_style, collected_text, prompt_display, item_highlight, highlight_icon_imagefile)
-	collect_object[e].pickup_text = pickup_text
-	collect_object[e].pickup_range = pickup_range
-	collect_object[e].pickup_style = pickup_style
-	collect_object[e].collected_text = collected_text
-	collect_object[e].prompt_display = prompt_display
-	collect_object[e].item_highlight = item_highlight
-	collect_object[e].highlight_icon = highlight_icon_imagefile
+	collect_object[e].pickup_text = pickup_text or "E to collect"
+	collect_object[e].pickup_range = pickup_range or 80
+	collect_object[e].pickup_style = pickup_style or 2
+	collect_object[e].collected_text = collected_text or "Item collected"
+	collect_object[e].prompt_display = prompt_display or 1
+	collect_object[e].item_highlight = item_highlight or 0
+	collect_object[e].highlight_icon = highlight_icon_imagefile or ""
 end
 
 function collect_object_init(e)
@@ -49,11 +50,11 @@ function collect_object_init(e)
 	collect_object[e].prompt_display = 1
 	collect_object[e].item_highlight = 0
 	collect_object[e].highlight_icon = "imagebank\\icons\\pickup.png"
-
 	g_tEnt = 0
 	tEnt[e] = 0
 	selectobj[e] = 0
 	status[e] = "init"
+	hl_image[e] = 0
 	hl_icon[e] = 0
 	hl_imgwidth[e] = 0
 	hl_imgheight[e] = 0
@@ -63,13 +64,16 @@ function collect_object_main(e)
 
 	if status[e] == "init" then
 		if collect_object[e].item_highlight == 3 and collect_object[e].highlight_icon ~= "" then
-			hl_icon[e] = CreateSprite(LoadImage(collect_object[e].highlight_icon))
-			hl_imgwidth[e] = GetImageWidth(LoadImage(collect_object[e].highlight_icon))
-			hl_imgheight[e] = GetImageHeight(LoadImage(collect_object[e].highlight_icon))
-			SetSpriteSize(hl_icon[e],-1,-1)
-			SetSpriteDepth(hl_icon[e],100)
-			SetSpriteOffset(hl_icon[e],hl_imgwidth[e]/2.0, hl_imgheight[e]/2.0)
-			SetSpritePosition(hl_icon[e],500,500)
+			hl_image[e] = LoadImage(collect_object[e].highlight_icon)
+			if hl_image[e] > 0 then
+				hl_icon[e] = CreateSprite(hl_image[e])
+				hl_imgwidth[e] = GetImageWidth(hl_image[e])
+				hl_imgheight[e] = GetImageHeight(hl_image[e])
+				SetSpriteSize(hl_icon[e],-1,-1)
+				SetSpriteDepth(hl_icon[e],100)
+				SetSpriteOffset(hl_icon[e],hl_imgwidth[e]/2.0, hl_imgheight[e]/2.0)
+				SetSpritePosition(hl_icon[e],500,500)
+			end
 		end
 		status[e] = "endinit"
 	end
@@ -79,8 +83,7 @@ function collect_object_main(e)
 	if collect_object[e].pickup_style == 1 and PlayerDist < collect_object[e].pickup_range then
 		if GetEntityCollectable(e) == 1 or GetEntityCollectable(e) == 2 then
 			if GetEntityCollected(e) == 0 then
-				if collect_object[e].prompt_display == 1 then PromptLocal(e,collect_object[e].collected_text) end
-				if collect_object[e].prompt_display == 2 then Prompt(collect_object[e].collected_text) end
+				PromptDuration(collect_object[e].collected_text,1000)
 				PlaySound(e,0)
 				PerformLogicConnections(e)
 				SetEntityCollected(e,1)
@@ -98,12 +101,17 @@ function collect_object_main(e)
 		if PlayerDist < collect_object[e].pickup_range and tEnt[e] == e and GetEntityVisibility(e) == 1 then
 			if GetEntityCollectable(tEnt[e]) == 1 or GetEntityCollectable(tEnt[e]) == 2 then
 				if GetEntityCollected(tEnt[e]) == 0 then
-					if collect_object[e].prompt_display == 1 then PromptLocal(e,collect_object[e].pickup_text) end
-					if collect_object[e].prompt_display == 2 then Prompt(collect_object[e].pickup_text) end
+					if collect_object[e].item_highlight < 3 then 
+						if collect_object[e].prompt_display == 1 then PromptLocal(e,collect_object[e].pickup_text) end
+						if collect_object[e].prompt_display == 2 then Prompt(collect_object[e].pickup_text) end
+					end	
+					if collect_object[e].item_highlight == 3 then
+						if collect_object[e].prompt_display == 1 then TextCenterOnX(50,54,1,collect_object[e].pickup_text) end
+						if collect_object[e].prompt_display == 2 then Prompt(collect_object[e].pickup_text) end
+					end	
 					if g_KeyPressE == 1 then
 						PlaySound(e,0)
-						if collect_object[e].prompt_display == 1 then PromptLocal(e,collect_object[e].collected_text) end
-						if collect_object[e].prompt_display == 2 then Prompt(collect_object[e].collected_text) end
+						PromptDuration(collect_object[e].collected_text,1000)
 						PerformLogicConnections(e)
 						SetEntityCollected(tEnt[e],1)
 						g_ResnodeCollected = e

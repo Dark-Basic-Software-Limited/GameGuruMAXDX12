@@ -1,10 +1,10 @@
--- Ring Counter v7 - by Necrym59
+-- Ring Counter v8 - by Necrym59
 -- DESCRIPTION: Allows for a target rings to move through.
--- DESCRIPTION: [RING_RANGE=80(0,500)]
+-- DESCRIPTION: [RING_COUNT_RANGE=80(0,500)]
 -- DESCRIPTION: [@RING_TYPE=1(1=Static Color, 2=Alternate Color)]
 -- DESCRIPTION: [ALTERNATING_TIME=5(1,30))]Seconds
 -- DESCRIPTION: [@TRIGGER_TYPE=1(1=None, 2=Lose Game, 3=Win Game, 4=Linked/IfUsed)]
--- DESCRIPTION: [USER_GLOBAL_AFFECTED$=""] eg:(MyPoints)
+-- DESCRIPTION: [@@USER_GLOBAL_AFFECTED$=""(0=globallist)]] eg:(MyPoints)
 -- DESCRIPTION: [AFFECT_AMOUNT=1(1,10)] Amount to add/Deduct
 -- DESCRIPTION: [@PULSE_EFFECT=2(1=On, 2=Off)]
 -- DESCRIPTION: [PULSE_STRENGTH=1000(1,2000)]
@@ -15,6 +15,7 @@
 -- DESCRIPTION: [SPIN_Y!=0]
 -- DESCRIPTION: [SPIN_Z!=1]
 -- DESCRIPTION: [@SPIN_DIRECTION=1(1=Clockwise, 2=Anti-Clockwise)]
+-- DESCRIPTION: [SPIN_RANGE=3000(0,10000)]
 -- DESCRIPTION: [@AUGMENTS=1(1=None, 2=Health, 3=Health+Repair)]
 -- DESCRIPTION: <Sound0> for ring success
 -- DESCRIPTION: <Sound1> for ring fail
@@ -22,7 +23,7 @@
 local U = require "scriptbank\\utillib"
 
 local ring 					= {}
-local ring_range 			= {}
+local ring_count_range		= {}
 local ring_type 			= {}
 local alternating_time		= {}
 local trigger_type			= {}
@@ -37,6 +38,7 @@ local spin_x				= {}
 local spin_y				= {}
 local spin_z				= {}
 local spin_direction		= {}
+local spin_range			= {}
 local augments				= {}
 
 local alttimer = {}
@@ -51,13 +53,14 @@ local emb = {}
 local emst = {}
 local rspinspeed = {}
 local closestent = {}
+local fadetimer = {}
 local played = {}
 local doonce = {}
 local repair = {}
 local status = {}
 
-function ring_counter_properties(e, ring_range, ring_type, alternating_time, trigger_type, user_global_affected, affect_amount, pulse_effect, pulse_strength, pulse_speed, spin_effect, spin_speed, spin_x, spin_y, spin_z, spin_direction, augments)
-	ring[e].ring_range = ring_range
+function ring_counter_properties(e, ring_count_range, ring_type, alternating_time, trigger_type, user_global_affected, affect_amount, pulse_effect, pulse_strength, pulse_speed, spin_effect, spin_speed, spin_x, spin_y, spin_z, spin_direction, spin_range, augments)
+	ring[e].ring_count_range = ring_count_range
 	ring[e].ring_type = ring_type
 	ring[e].alternating_time = alternating_time
 	ring[e].trigger_type = trigger_type
@@ -72,12 +75,13 @@ function ring_counter_properties(e, ring_range, ring_type, alternating_time, tri
 	ring[e].spin_y = spin_y
 	ring[e].spin_z = spin_z
 	ring[e].spin_direction = spin_direction
+	ring[e].spin_range = spin_range
 	ring[e].augments = augments
 end
 
 function ring_counter_init(e)
 	ring[e] = {}
-	ring[e].ring_range = 100
+	ring[e].ring_count_range = 100
 	ring[e].ring_type = 1
 	ring[e].alternating_time = 0
 	ring[e].trigger_type = 1
@@ -92,6 +96,7 @@ function ring_counter_init(e)
 	ring[e].spin_y = 0
 	ring[e].spin_z = 0
 	ring[e].spin_direction = 1	
+	ring[e].spin_range = 3000
 	ring[e].augments = 1
 
 	alttimer[e] = math.huge
@@ -100,6 +105,7 @@ function ring_counter_init(e)
 	currentvalue[e] = 0
 	doonce[e] = 0
 	repair[e] = 0
+	fadetimer[e] = math.huge
 	status[e] = "init"
 	state[e] = "safe"
 	emlevel[e] = ring[e].pulse_strength
@@ -116,15 +122,16 @@ function ring_counter_main(e)
 		alttimer[e] = g_Time + (ring[e].alternating_time*1000)
 		current_level[e] = GetEntityBaseAlpha(e)
 		SetEntityTransparency(e,1)
+		GravityOff(e)
 		status[e] = "endinit"
 	end
 
 	local PlayerDist = GetPlayerDistance(e)
-
+	
 	if ring[e].ring_type == 1 then --Static
 		SetEntityEmissiveColor(e,emr[e],emg[e],emb[e])
 		SetEntityEmissiveStrength(e,emst[e])
-		if PlayerDist < ring[e].ring_range then
+		if PlayerDist < ring[e].ring_count_range then
 			if played[e] == 0 then
 				PlaySound(e,0)
 				played[e] = 1
@@ -141,6 +148,8 @@ function ring_counter_main(e)
 				doonce[e] = 1
 			end
 			if ring[e].augments == 1 then
+			end
+			if ring[e].augments == 2 then
 				if repair[e] == 0 then
 					SetPlayerHealth(g_PlayerHealth + ring[e].affect_amount)
 					if g_PlayerHealth > g_PlayerStartStrength then g_PlayerHealth = g_PlayerStartStrength end
@@ -148,7 +157,7 @@ function ring_counter_main(e)
 					repair[e] = 1
 				end
 			end
-			if ring[e].augments == 2 then
+			if ring[e].augments == 3 then
 				if repair[e] == 0 then
 					closestent[e] = U.ClosestEntToPlayer(90)
 					SetEntityHealth(closestent[e],g_Entity[closestent[e]]['health'] + ring[e].affect_amount)
@@ -158,34 +167,12 @@ function ring_counter_main(e)
 					repair[e] = 1
 				end
 			end
-			if current_level[e] > 0 then
-				SetEntityBaseAlpha(e,current_level[e])
-				current_level[e] = current_level[e] - 1
-			end
-			if current_level[e] <= 0 then
-				CollisionOff(e)
-				Hide(e)
-				SetEntityEmissiveColor(e,emr[e],emg[e],emb[e])
-				SetEntityEmissiveStrength(e,emst[e])
-				Destroy(e)
-			end
-
+			status[e] = "destroy"
 		end
 	end
-
-	if ring[e].ring_type == 2 then --Alternating
-		if g_Time > alttimer[e] and state[e] == "safe" then
-			state[e] = "unsafe"
-			SetEntityEmissiveColor(e,255,0,0)
-			alttimer[e] = g_Time + (ring[e].alternating_time*1000)
-		end
-		if g_Time > alttimer[e] and state[e] == "unsafe" then
-			state[e] = "safe"
-			SetEntityEmissiveColor(e,emr[e],emg[e],emb[e])
-			alttimer[e] = g_Time + (ring[e].alternating_time*1000)
-		end
-
-		if PlayerDist < ring[e].ring_range and state[e] == "safe" then
+	
+	if ring[e].ring_type == 2 and PlayerDist < ring[e].ring_count_range then
+		if state[e] == "safe" then
 			if played[e] == 0 then
 				PlaySound(e,0)
 				played[e] = 1
@@ -202,6 +189,8 @@ function ring_counter_main(e)
 				doonce[e] = 1
 			end
 			if ring[e].augments == 1 then
+			end
+			if ring[e].augments == 2 then
 				if repair[e] == 0 then
 					SetPlayerHealth(g_PlayerHealth + ring[e].affect_amount)
 					if g_PlayerHealth > g_PlayerStartStrength then g_PlayerHealth = g_PlayerStartStrength end
@@ -209,7 +198,7 @@ function ring_counter_main(e)
 					repair[e] = 1
 				end
 			end
-			if ring[e].augments == 2 then
+			if ring[e].augments == 3 then
 				if repair[e] == 0 then
 					closestent[e] = U.ClosestEntToPlayer(90)
 					SetEntityHealth(closestent[e],g_Entity[closestent[e]]['health'] + ring[e].affect_amount)
@@ -219,20 +208,10 @@ function ring_counter_main(e)
 					repair[e] = 1
 				end
 			end
-			if current_level[e] > 0 then
-				SetEntityBaseAlpha(e,current_level[e])
-				current_level[e] = current_level[e] - 1
-			end
-			if current_level[e] <= 0 then
-				CollisionOff(e)
-				Hide(e)
-				SetEntityEmissiveColor(e,emr[e],emg[e],emb[e])
-				SetEntityEmissiveStrength(e,emst[e])
-				Destroy(e)
-			end
+			status[e] = "destroy"
 		end
 
-		if PlayerDist < ring[e].ring_range and state[e] == "unsafe" then
+		if state[e] == "unsafe" then
 			if played[e] == 0 then
 				PlaySound(e,1)
 				played[e] = 1
@@ -248,17 +227,20 @@ function ring_counter_main(e)
 				_G["g_UserGlobal['"..ring[e].user_global_affected.."']"] = currentvalue[e] - ring[e].affect_amount
 				doonce[e] = 1
 			end
-			if current_level[e] > 0 then
-				SetEntityBaseAlpha(e,current_level[e])
-				current_level[e] = current_level[e] - 1
-			end
-			if current_level[e] <= 0 then
-				CollisionOff(e)
-				Hide(e)
-				SetEntityEmissiveColor(e,emr[e],emg[e],emb[e])
-				SetEntityEmissiveStrength(e,emst[e])
-				Destroy(e)
-			end
+			status[e] = "destroy"
+		end
+	end
+	
+	if ring[e].ring_type == 2 then --Alternating
+		if g_Time > alttimer[e] and state[e] == "safe" then
+			state[e] = "unsafe"
+			SetEntityEmissiveColor(e,255,0,0)
+			alttimer[e] = g_Time + (ring[e].alternating_time*1000)
+		end
+		if g_Time > alttimer[e] and state[e] == "unsafe" then
+			state[e] = "safe"
+			SetEntityEmissiveColor(e,emr[e],emg[e],emb[e])
+			alttimer[e] = g_Time + (ring[e].alternating_time*1000)
 		end
 	end
 
@@ -274,27 +256,44 @@ function ring_counter_main(e)
 			if emlevel[e] >= ring[e].pulse_strength then empulse[e] = "down" end
 		end
 	end
-
-	if ring[e].spin_effect == 1 then
-		if ring[e].spin_direction == 1 then
-			rspinspeed[e] = ring[e].spin_speed
-		else
-			rspinspeed[e] = ring[e].spin_speed * -1
-		end
-		if ring[e].spin_x == 1 then
-			CollisionOff(e)
-			RotateX(e,GetAnimationSpeed(e)*rspinspeed[e])
-			CollisionOn(e)
-		end
-		if ring[e].spin_y == 1 then
-			CollisionOff(e)
-			RotateY(e,GetAnimationSpeed(e)*rspinspeed[e])
-			CollisionOn(e)
-		end
-		if ring[e].spin_z == 1 then
-			CollisionOff(e)
-			RotateZ(e,GetAnimationSpeed(e)*rspinspeed[e])
-			CollisionOn(e)
+	
+	if PlayerDist < ring[e].spin_range then
+		if ring[e].spin_effect == 1 then
+			if ring[e].spin_direction == 1 then
+				rspinspeed[e] = ring[e].spin_speed
+			else
+				rspinspeed[e] = ring[e].spin_speed * -1
+			end
+			if ring[e].spin_x == 1 then
+				CollisionOff(e)
+				RotateX(e,GetAnimationSpeed(e)*rspinspeed[e])
+				CollisionOn(e)
+			end
+			if ring[e].spin_y == 1 then
+				CollisionOff(e)
+				RotateY(e,GetAnimationSpeed(e)*rspinspeed[e])
+				CollisionOn(e)
+			end
+			if ring[e].spin_z == 1 then
+				CollisionOff(e)
+				RotateZ(e,GetAnimationSpeed(e)*rspinspeed[e])
+				CollisionOn(e)
+			end
 		end
 	end
+
+	if status[e] == "destroy" then
+		if current_level[e] > 0 then
+			SetEntityBaseAlpha(e,current_level[e])
+			current_level[e] = current_level[e] - 1
+		end
+		if current_level[e] <= 0 then
+			CollisionOff(e)
+			Hide(e)
+			SetEntityEmissiveColor(e,emr[e],emg[e],emb[e])
+			SetEntityEmissiveStrength(e,emst[e])
+			Destroy(e)
+			status[e] = "end"
+		end
+	end		
 end

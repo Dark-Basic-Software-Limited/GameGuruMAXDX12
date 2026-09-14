@@ -1,9 +1,10 @@
--- Generator v14
+-- Generator v16 by Necrym59
 -- DESCRIPTION: This object will be treated as a switch object for activating other objects or game elements. Set Always Active = On
 -- DESCRIPTION: [PROMPT_TEXT$="E to use"]
 -- DESCRIPTION: [USE_RANGE=80(1,100)]
--- DESCRIPTION: [@FUEL_STATE=1(1=Empty, 2=Full)]
--- DESCRIPTION: [FUEL_REQUIRED=20(1,100)]
+-- DESCRIPTION: [@FUEL_STATE=1(1=Empty, 2=Full)] current state of generator
+-- DESCRIPTION: [FUEL_REQUIRED=20(1,100)] fuel required to start or min full level
+-- DESCRIPTION: [#FUEL_USE_RATE=0.01(0.00,5.00)] speed of fuel use
 -- DESCRIPTION: [FAIL_TEXT$="More fuel needed"]
 -- DESCRIPTION: [RUNNING_TEXT$="Generator Running, Q to stop"]
 -- DESCRIPTION: [STOPPED_TEXT$="Generator Stopped"]
@@ -25,6 +26,7 @@ local prompt_text		= {}
 local use_range			= {}
 local fuel_state		= {}
 local fuel_required		= {}
+local fuel_use_rate		= {}
 local fail_text			= {}
 local running_text		= {}
 local stopped_text		= {}
@@ -44,11 +46,12 @@ local hl_icon		= {}
 local hl_imgwidth	= {}
 local hl_imgheight	= {}
 
-function generator_properties(e, prompt_text, use_range, fuel_state, fuel_required, fail_text, running_text, stopped_text, prompt_display, item_highlight, highlight_icon_imagefile)
+function generator_properties(e, prompt_text, use_range, fuel_state, fuel_required, fuel_use_rate, fail_text, running_text, stopped_text, prompt_display, item_highlight, highlight_icon_imagefile)
 	generator[e].prompt_text = prompt_text
 	generator[e].use_range = use_range
 	generator[e].fuel_state = fuel_state
 	generator[e].fuel_required = fuel_required
+	generator[e].fuel_use_rate = fuel_use_rate
 	generator[e].fail_text = fail_text
 	generator[e].running_text = running_text
 	generator[e].stopped_text = stopped_text	
@@ -63,6 +66,7 @@ function generator_init(e)
 	generator[e].use_range = 80
 	generator[e].fuel_state = 1
 	generator[e].fuel_required = 20
+	generator[e].fuel_use_rate = 0.01
 	generator[e].fail_text = "More fuel needed"
 	generator[e].running_text = "Generator Running"
 	generator[e].stopped_text = "Generator Stopped"
@@ -83,7 +87,8 @@ function generator_init(e)
 	status[e] = "init"
 	hl_icon[e] = 0
 	hl_imgwidth[e] = 0
-	hl_imgheight[e] = 0	
+	hl_imgheight[e] = 0
+	SetEntityAlwaysActive(e,1)
 end
 
 function generator_main(e)
@@ -98,6 +103,7 @@ function generator_main(e)
 			SetSpriteOffset(hl_icon[e],hl_imgwidth[e]/2.0, hl_imgheight[e]/2.0)
 			SetSpritePosition(hl_icon[e],500,500)
 		end
+		if generator[e].fuel_state == 2 then fuel_level[e] = generator[e].fuel_required end --Full
 		status[e] = "endinit"
 	end
 	
@@ -140,16 +146,17 @@ function generator_main(e)
 		
 		if generator[e].fuel_state == 2 then --Full
 			if running[e] == 0 then
-				if generator[e].prompt_display == 1 then PromptLocal(e,generator[e].prompt_text) end
-				if generator[e].prompt_display == 2 then Prompt(generator[e].prompt_text) end	
+				if generator[e].prompt_display == 1 then PromptLocal(e,generator[e].prompt_text.. " - [Fuel Amount: " ..math.floor(fuel_level[e]).. "]") end
+				if generator[e].prompt_display == 2 then Prompt(generator[e].prompt_text.. " - [Fuel Amount: " ..math.floor(fuel_level[e]).. "]") end	
 			end
 			if running[e] == 1 then
-				if generator[e].prompt_display == 1 then PromptLocal(e,generator[e].running_text) end
-				if generator[e].prompt_display == 2 then Prompt(generator[e].running_text) end	
+				if generator[e].prompt_display == 1 then PromptLocal(e,generator[e].running_text.. " - [Fuel Amount:  " ..math.floor(fuel_level[e]).. "]") end
+				if generator[e].prompt_display == 2 then Prompt(generator[e].running_text.. " - [Fuel Amount: " ..math.floor(fuel_level[e]).. "]") end	
 			end
 			if g_KeyPressE == 1 and running[e] == 0 then
 				SetActivatedWithMP(e,201)
 				running[e] = 1
+				PlaySound(e,0)
 				LoopSound(e,1)
 				SetAnimationName(e,"on")
 				PlayAnimation(e)
@@ -161,6 +168,7 @@ function generator_main(e)
 				if generator[e].prompt_display == 1 then PromptLocal(e,generator[e].stopped_text) end
 				if generator[e].prompt_display == 2 then Prompt(generator[e].stopped_text) end
 				StopSound(e,1)
+				PlaySound(e,0)
 				SetAnimationName(e,"off")
 				PlayAnimation(e)
 				PerformLogicConnections(e)
@@ -175,6 +183,20 @@ function generator_main(e)
 		
 		if use_item_now[e] == 1 then
 			Destroy(g_fuel) -- can only destroy resources that are qty zero
+		end
+		
+		if running[e] == 1 then -- on fuel depletion
+			fuel_level[e] = (fuel_level[e] - (generator[e].fuel_use_rate/10))
+			if fuel_level[e] <= 0 then
+				fuel_level[e] = 0
+				running[e] = 0
+				generator[e].fuel_state = 1
+				StopSound(e,1)
+				PlaySound(e,0)
+				SetAnimationName(e,"off")
+				PlayAnimation(e)
+				PerformLogicConnections(e)				
+			end	
 		end
 	end	
 end

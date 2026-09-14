@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Planet v6 by Necrym59
+-- Planet v8 by Necrym59
 -- DESCRIPTION: Allows a planet object made using 3 identical sized spherical objects, a planet sphere, cloud sphere, atmosphere sphere, plus an optional circular rings object.
 -- DESCRIPTION: and can trigger Logic Linked or IfUsed game elements or change lavel.
 -- DESCRIPTION: Attach this behavior to the planet sphere object.
@@ -15,10 +15,11 @@
 -- DESCRIPTION: [PLANET_ROTATION=1(0,100)]
 -- DESCRIPTION: [CLOUD_ROTATION=5(0,100)]
 -- DESCRIPTION: [RINGS_ROTATION=1(0,100)]
--- DESCRIPTION: [SENSE_RANGE=1000]
+-- DESCRIPTION: [#SENSE_RANGE=1000.0]
 -- DESCRIPTION: [SENSE_TEXT$="Detected in Range"]
 -- DESCRIPTION: [@SENSE_TRIGGER=1(1=Linked, 2=Video+ChangeLevel)]
 -- DESCRIPTION: [@VIDEO_SKIP=1(1=Yes, 2=No)]
+-- DESCRIPTION: [@@LOCATION_GLOBAL$=""(0=globallist)] (eg: MyLocation, to receive planet entity name)
 -- DESCRIPTION: [@GoToLevelMode=1(1=Use Storyboard Logic,2=Go to Specific Level)] controls whether to load the next level in the Storyboard, or a specific level.
 -- DESCRIPTION: [ResetStates!=0] when entering the new level
 -- DESCRIPTION: <Video Slot> for optional video
@@ -43,6 +44,7 @@ local sense_range		= {}
 local sense_text		= {}
 local sense_trigger		= {}
 local video_skip		= {}
+local location_global	= {}
 local resetstates		= {}
 
 local planetposx	= {}
@@ -60,7 +62,7 @@ local doonce		= {}
 local endvid 		= {}
 local pname			= {}
 
-function planet_properties(e, planet_adjust_x, planet_adjust_y, planet_adjust_z, cloud_sphere, atmos_sphere, rings_circle, cloud_scale, atmos_scale, rings_scale, planet_rotation, cloud_rotation, rings_rotation, sense_range, sense_text, sense_trigger, video_skip, resetstates)
+function planet_properties(e, planet_adjust_x, planet_adjust_y, planet_adjust_z, cloud_sphere, atmos_sphere, rings_circle, cloud_scale, atmos_scale, rings_scale, planet_rotation, cloud_rotation, rings_rotation, sense_range, sense_text, sense_trigger, video_skip, location_global, resetstates)
 	planet[e] = g_Entity[e]
 	planet[e].planet_adjust_x = planet_adjust_x
 	planet[e].planet_adjust_y = planet_adjust_y
@@ -80,11 +82,12 @@ function planet_properties(e, planet_adjust_x, planet_adjust_y, planet_adjust_z,
 	planet[e].sense_range = sense_range
 	planet[e].sense_text = sense_text
 	planet[e].sense_trigger = sense_trigger	
-	planet[e].video_skip = video_skip	
+	planet[e].video_skip = video_skip
+	planet[e].location_global = location_global	
 	planet[e].resetstates = resetstates
 end
 
-function planet_init(e)
+function planet_init_name(e, name)
 	planet[e] = {}
 	planet[e].planet_adjust_x = 0
 	planet[e].planet_adjust_y = 0
@@ -105,6 +108,7 @@ function planet_init(e)
 	planet[e].sense_text = "Detected in Range"
 	planet[e].sense_trigger = 1
 	planet[e].video_skip = 2
+	planet[e].location_global =	""	
 	planet[e].resetstates = 0
 	
 	planetposx[e] = 0
@@ -119,12 +123,14 @@ function planet_init(e)
 	adjustrange[e] = 0
 	doonce[e] = 0
 	endvid[e] = 0
+	pname[e] = name
+	SetEntityAlwaysActive(e,1)
 	status[e] = "planet_build"
 end
 
 function planet_main(e)
 	
-	if status[e] == "planet_build" then
+	if status[e] == "planet_build" then			
 		GravityOff(e)
 		planetposx[e],planetposy[e],planetposz[e],planetangx[e],planetangy[e],planetangz[e] = GetEntityPosAng(e)
 		planetposx[e] = planetposx[e] + planet[e].planet_adjust_x
@@ -132,7 +138,7 @@ function planet_main(e)
 		planetposz[e] = planetposz[e] + planet[e].planet_adjust_z
 		ResetPosition(e,planetposx[e],planetposy[e],planetposz[e])
 		planetscalex[e],planetscaley[e],planetscalez[e] = GetEntityScales(e)
-		adjustrange[e] = planet[e].sense_range * GetEntityScales(e)
+		adjustrange[e] = planet[e].sense_range	
 		if planet[e].cloud_number == 0 and planet[e].cloud_sphere > "" then
 			for n = 1, g_EntityElementMax do
 				if n ~= nil and g_Entity[n] ~= nil then
@@ -174,11 +180,15 @@ function planet_main(e)
 		end
 		status[e] = "planet_process"
 	end
-	if status[e] == "planet_process" then
+	if status[e] == "planet_process" then		
+		
 		RotateY(e,GetAnimationSpeed(e)*planet[e].planet_rotation/5)
 		if planet[e].cloud_number ~= 0 then RotateY(planet[e].cloud_number,GetAnimationSpeed(e)*planet[e].cloud_rotation/5) end
 		if planet[e].rings_number ~= 0 then RotateY(planet[e].rings_number,GetAnimationSpeed(e)*planet[e].rings_rotation/5) end
 
+		if GetPlayerDistance(e) < adjustrange[e]*2 then
+			if planet[e].location_global ~= "" then _G["g_UserGlobal['"..planet[e].location_global.."']"] = pname[e] end
+		end	
 		if GetPlayerDistance(e) < adjustrange[e] then
 			if doonce[e] == 0 then
 				if planet[e].sense_trigger == 1 then

@@ -1,5 +1,5 @@
 -- DESCRIPTION: The object will give the player a health boost if collected.
--- Oxygen v6 - by Necrym59
+-- Oxygen v7 - by Necrym59
 -- DESCRIPTION: The object will give the player a oxygen boost and health boost if collected.
 -- DESCRIPTION: [PROMPT_TEXT$="E to use"]
 -- DESCRIPTION: [HEALTH_QUANTITY=10(1,40)]
@@ -93,6 +93,8 @@ function oxygen_main(e)
 			PerformLogicConnections(e)
 			ActivateIfUsed(e)
 			SetPlayerHealth(g_PlayerHealth + oxygen[e].heath_quantity)
+			if g_PlayerHealth > g_PlayerStartStrength then g_PlayerHealth = g_PlayerStartStrength end
+			SetPlayerHealthCore(g_PlayerHealth)
 			local alreadyhaveair = GetGamePlayerControlDrownTimestamp()-Timer()
 			SetGamePlayerControlDrownTimestamp(Timer()+(oxygen[e].oxygen_quantity*100)+alreadyhaveair)
 			Destroy(e)
@@ -110,8 +112,10 @@ function oxygen_main(e)
 				PromptDuration(oxygen[e].collected_text,2000)
 				PlaySound(e,0)
 				PerformLogicConnections(e)
-				ActivateIfUsed(e)
+				ActivateIfUsed(e)				
 				SetPlayerHealth(g_PlayerHealth + oxygen[e].heath_quantity)
+				if g_PlayerHealth > g_PlayerStartStrength then g_PlayerHealth = g_PlayerStartStrength end
+				SetPlayerHealthCore(g_PlayerHealth)
 				local alreadyhaveair = GetGamePlayerControlDrownTimestamp()-Timer()
 				SetGamePlayerControlDrownTimestamp(Timer()+(oxygen[e].oxygen_quantity*100)+alreadyhaveair)
 				Destroy(e)

@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Gibs v16 - by Necrym,59
+-- Gibs v17 - by Necrym59
 -- DESCRIPTION: Will randomly gib a weakened character in range when their health is low. Attach to an object and set Always Active.
 -- DESCRIPTION: Ensure all named gib objects are on the map and set Physics=On, Gravity=ON, and Always Active=ON.
 -- DESCRIPTION: [RANGE=1000(100,10000)] 
@@ -9,6 +9,7 @@
 -- DESCRIPTION: [GIB4_NAME$="gib 4"] for gib object
 -- DESCRIPTION: [GIB5_NAME$="gib 5"] for gib object
 -- DESCRIPTION: [GIB6_NAME$="gib 6"] for gib object
+-- DESCRIPTION: [SCALESIZE=100(1,1000)] Scale Percentage
 -- DESCRIPTION: [SPLAT_NAME$="blood_splat"] for blood splat plain
 -- DESCRIPTION: [LIFESPAN=10(1,60)] Seconds
 -- DESCRIPTION: [@CLEANUP=1(1=Instant, 2=Discrete)]
@@ -27,6 +28,7 @@ local gib3_name 		= {}
 local gib4_name 		= {}
 local gib5_name 		= {}
 local gib6_name 		= {}
+local scalesize			= {}
 local splat_name 		= {}
 local lifespan			= {}
 local cleanup			= {}
@@ -55,14 +57,15 @@ local npclist		= {}
 local giblist		= {}
 local fade_level	= {}
 
-function gibs_properties(e, range, gib1_name, gib2_name, gib3_name, gib4_name, gib5_name, gib6_name, splat_name, lifespan, cleanup, global_enabled)
+function gibs_properties(e, range, gib1_name, gib2_name, gib3_name, gib4_name, gib5_name, gib6_name, scalesize, splat_name, lifespan, cleanup, global_enabled)
 	gibs[e].range = range
 	gibs[e].gib1_name = lower(gib1_name)
 	gibs[e].gib2_name = lower(gib2_name)
 	gibs[e].gib3_name = lower(gib3_name)
 	gibs[e].gib4_name = lower(gib4_name)
 	gibs[e].gib5_name = lower(gib5_name)
-	gibs[e].gib6_name = lower(gib6_name)	
+	gibs[e].gib6_name = lower(gib6_name)
+	gibs[e].scalesize = scalesize
 	gibs[e].splat_name = lower(splat_name)
 	gibs[e].lifespan = lifespan
 	gibs[e].cleanup = cleanup
@@ -104,6 +107,7 @@ function gibs_init(e)
 end
 
 function gibs_main(e)
+	local scalegib = gibs[e].scalesize
 	if status[e] == "init" then
 		if gibs[e].global_enabled == 1 then g_GibsEnabled = 1 end
 		if gibs[e].gib1_name > "" and gibs[e].gib1_no == 0 then
@@ -253,6 +257,7 @@ function gibs_main(e)
 			ResetRotation(newEntn,g_Entity[etoclone]['anglex']+math.random(0,359), g_Entity[etoclone]['angley']+math.random(0,359),g_Entity[etoclone]['anglez']+math.random(0,359))
 			SetEntityBaseAlpha(newEntn,100)
 			SetEntityTransparency(newEntn,1)
+			Scale(newEntn,scalegib)
 			Show(newEntn)
 			gibclones[e] = gibclones[e] + 1
 			table.insert(giblist,newEntn)
@@ -268,6 +273,7 @@ function gibs_main(e)
 			ResetRotation(newEntn,g_Entity[etoclone]['anglex']+math.random(0,359), g_Entity[etoclone]['angley']+math.random(0,359),g_Entity[etoclone]['anglez']+math.random(0,359))
 			SetEntityBaseAlpha(newEntn,100)
 			SetEntityTransparency(newEntn,1)
+			Scale(newEntn,scalegib)
 			Show(newEntn)			
 			gibclones[e] = gibclones[e] + 1
 			table.insert(giblist,newEntn)
@@ -283,6 +289,7 @@ function gibs_main(e)
 			ResetRotation(newEntn,g_Entity[etoclone]['anglex']+math.random(0,359), g_Entity[etoclone]['angley']+math.random(0,359),g_Entity[etoclone]['anglez']+math.random(0,359))
 			SetEntityBaseAlpha(newEntn,100)
 			SetEntityTransparency(newEntn,1)
+			Scale(newEntn,scalegib)
 			Show(newEntn)
 			gibclones[e] = gibclones[e] + 1
 			table.insert(giblist,newEntn)
@@ -296,6 +303,7 @@ function gibs_main(e)
 			local newposz = g_Entity[pEntno[e]]['z'] + math.random(-10,10)
 			ResetPosition(newEntn,newposx,newposy,newposz)
 			ResetRotation(newEntn,g_Entity[etoclone]['anglex']+math.random(0,359), g_Entity[etoclone]['angley']+math.random(0,359),g_Entity[etoclone]['anglez']+math.random(0,359))
+			Scale(newEntn,scalegib)
 			Show(newEntn)
 			gibclones[e] = gibclones[e] + 1
 			table.insert(giblist,newEntn)
@@ -309,6 +317,7 @@ function gibs_main(e)
 			local newposz = g_Entity[pEntno[e]]['z'] + math.random(-10,10)
 			ResetPosition(newEntn,newposx,newposy,newposz)
 			ResetRotation(newEntn,g_Entity[etoclone]['anglex']+math.random(0,359), g_Entity[etoclone]['angley']+math.random(0,359),g_Entity[etoclone]['anglez']+math.random(0,359))
+			Scale(newEntn,scalegib)
 			Show(newEntn)
 			gibclones[e] = gibclones[e] + 1
 			table.insert(giblist,newEntn)
@@ -322,6 +331,7 @@ function gibs_main(e)
 			local newposz = g_Entity[pEntno[e]]['z'] + math.random(-10,10)
 			ResetPosition(newEntn,newposx,newposy,newposz)
 			ResetRotation(newEntn,g_Entity[etoclone]['anglex']+math.random(0,359), g_Entity[etoclone]['angley']+math.random(0,359),g_Entity[etoclone]['anglez']+math.random(0,359))
+			Scale(newEntn,scalegib)
 			Show(newEntn)
 			gibclones[e] = gibclones[e] + 1
 			table.insert(giblist,newEntn)
@@ -338,7 +348,8 @@ function gibs_main(e)
 			GravityOff(newEntn)
 			ResetPosition(newEntn,newposx,newposy,newposz)
 			ResetRotation(newEntn,0, g_Entity[etoclone]['angley']+math.random(0,359),0)
-			SetEntityBaseAlpha(newEntn,100)			
+			SetEntityBaseAlpha(newEntn,100)
+			Scale(newEntn,scalegib)
 			Show(newEntn)
 			gibclones[e] = gibclones[e] + 1
 			table.insert(giblist,newEntn)

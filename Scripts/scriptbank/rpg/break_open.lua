@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Break Open v15 by Necrym59 and oosayeroo
+-- Break Open v16 by Necrym59 and oosayeroo
 -- DESCRIPTION: Breaking open this animated object will give the player the selected item or items.
 -- DESCRIPTION: [PROMPT_TEXT$="Break open"]
 -- DESCRIPTION: [PROMPT_RANGE=80(0,100)]
@@ -92,15 +92,14 @@ function break_open_init(e)
 	doonce[e] = 0
 	playonce[e] = 0	
 	wait[e] = math.huge
-	item_entity[e] = 0
+	item_entity[e] = nil
 end
 
 function break_open_main(e)
 	break_open[e] = g_Entity[e]
 	if status[e] == "init" then
 		if break_open[e].content == 3 and break_open[e].named_item ~= "" then
-			-- Iterate through entities to find the Named item and hides it for relocation later
-			item_entity[e] = nil		
+			-- Iterate through entities to find the Named item and hides it for relocation later					
 			for a = 1, g_EntityElementMax do
 				if a ~= nil and g_Entity[a] ~= nil then
 					if lower(GetEntityName(a)) == break_open[e].named_item then
@@ -180,7 +179,7 @@ function break_open_main(e)
 				StopSound(e, 0)
 				PlaySound(e, 1)
 				-- Iterate through entities to find the item
-				item_entity[e] = nil		
+				item_entity[e] = 0		
 				for a = 1, g_EntityElementMax do
 					if a ~= nil and g_Entity[a] ~= nil then
 						if lower(GetEntityName(a)) == break_open[e].named_item then
@@ -214,11 +213,11 @@ function break_open_main(e)
 			if doonce[e] == 0 then
 				StopSound(e, 0)
 				PlaySound(e, 1)
-				item_entity[e] = nil
+				item_entity[e] = 0
 				chosen = break_open[e].random_items[math.random(1, #break_open[e].random_items)]
 				randomAmount = math.random(break_open[e].random_min, break_open[e].random_max)
 				-- Iterate through entities to find the Random item			
-				if item_entity[e] == nil then
+				if item_entity[e] == 0 then
 					for a = 1, g_EntityElementMax do
 						if a ~= nil and g_Entity[a] ~= nil then
 							if lower(GetEntityName(a)) == chosen then
@@ -247,8 +246,10 @@ function break_open_main(e)
 					SetEntityCollected(item_entity[e],1)
 				end	
 			end
-			CollisionOff(item_entity[e])
-			Hide(item_entity[e])
+			if item_entity[e] ~= nil then
+				CollisionOff(item_entity[e])
+				Hide(item_entity[e])
+			end	
 			if GetEntityCollectable(item_entity[e]) == 1 then 
 				if break_open[e].prompt_display == 1 then PromptLocal(e,break_open[e].collect_text.. " x 1 " ..chosen) end
 				if break_open[e].prompt_display == 2 then PromptDuration(break_open[e].collect_text.. " x 1 " ..chosen,2000) end	

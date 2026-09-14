@@ -1,4 +1,4 @@
--- Eat v11 by Necrym59
+-- Eat v12 by Necrym59
 -- DESCRIPTION: The object will give the player a health boost or loss if consumed and can also effect a user global if required.
 -- DESCRIPTION: Set AlwaysActive = On.
 -- DESCRIPTION: [PROMPT_TEXT$="Press E to consume"]
@@ -170,12 +170,12 @@ function eat_main(e)
 	end
 	if status[e] == "poisoned" then
 		PlaySound(e,1)
-		if poisoned[e] > 0 then				
+		if poisoned[e] > 0 and GamePlayerControlAddShakeTrauma ~= nil then				
 			GamePlayerControlSetShakeTrauma(565.0)
 			GamePlayerControlSetShakePeriod(960.00)
 			poisoned[e] = poisoned[e]-1			
 		end
-		if poisoned[e] == 0 then			
+		if poisoned[e] == 0 and GamePlayerControlAddShakeTrauma ~= nil then			
 			GamePlayerControlSetShakeTrauma(0.0)
 			GamePlayerControlSetShakePeriod(0.00)
 			StopSound(e,0)

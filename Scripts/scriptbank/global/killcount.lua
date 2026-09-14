@@ -1,4 +1,4 @@
--- Kill Count v9 by Necrym59 and Lee
+-- Kill Count v10 by Necrym59 and Lee
 -- DESCRIPTION: A global behavior that creates counters for all designated NPC types killed in a level.
 -- DESCRIPTION: [@@LEVEL_COUNT_USER_GLOBAL$=""(0=globallist)] User global for level kill count (eg: "MyLevelCounter").
 -- DESCRIPTION: [@@TOTAL_COUNT_USER_GLOBAL$=""(0=globallist)] User global for total game kill count (eg: "MyGameCounter").
@@ -155,6 +155,8 @@ function killcount_main(e)
 		end
 	end
 	if status[e] == 'end' then		
+		ActivateIfUsed(e)
+		PerformLogicConnections(e)
 		status[e] = 'stop'
 		SwitchScript(e,"no_behavior_selected.lua")
 	end

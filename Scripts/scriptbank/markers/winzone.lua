@@ -1,17 +1,18 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Winzone v20 by Necrym59 and Lee
+-- Winzone v21 by Necrym59 and Lee
 -- DESCRIPTION: When the player enters this zone or is optionally activated remotely, <Sound0> will play and the level is complete.
 -- DESCRIPTION: [NOTES_TEXT$="This winzone takes the user to a new level"]
 -- DESCRIPTION: [ZONEHEIGHT=100(0,1000)]
 -- DESCRIPTION: [SpawnAtStart!=1] if unchecked use a switch or other trigger to spawn this zone
 -- DESCRIPTION: [ResetStates!=0] when entering the next level
--- DESCRIPTION: [@ENDING_MODE=1(1=None, 2=Image, 3=Video, 4=Video+Image)] Type of end level modes
+-- DESCRIPTION: [@ENDING_MODE=1(1=None, 2=Image, 3=Video, 4=Video+Image, 5=Display Hud)] Type of end level modes
 -- DESCRIPTION: [ENDING_IMAGEFILE$=""] for optional ending image
 -- DESCRIPTION: [@@SPAWN_MARKER_USER_GLOBAL$=""(0=globallist)] user global required for using spawn markers (eg: MySpawnMarkers)
 -- DESCRIPTION: [SPAWN_MARKER_NAME$=""] for optional spawning using spawn markers
 -- DESCRIPTION: [@GoToLevelMode=1(1=Use Storyboard Logic,2=Go to Specific Level)] controls whether to load the next level in the Storyboard, or a specific level.
 -- DESCRIPTION: [REMOTE_ACTIVATED!=0] is allowed
 -- DESCRIPTION: [@VIDEO_SKIP=1(1=Yes, 2=No)] for optional ending video skip
+-- DESCRIPTION: [@@ENDING_HUD_SCREEN$=""(0=hudscreenlist)] Eg: HUD Screen 9
 -- DESCRIPTION: <Video Slot> for optional ending video
 
 local winzone 					= {}
@@ -24,12 +25,14 @@ local spawn_marker_user_global	= {}
 local spawn_marker_name			= {}
 local resetstates				= {}
 local video_skip				= {}
+local ending_hud_screen			= {}
 
 local status			= {}
 local endimg			= {}
 local endvid			= {}
+local hudonce			= {}
 	
-function winzone_properties(e, notes_text, zoneheight, spawnatstart, resetstates, ending_mode, ending_imagefile, spawn_marker_user_global, spawn_marker_name, gotolevelmode, remote_activated, video_skip)
+function winzone_properties(e, notes_text, zoneheight, spawnatstart, resetstates, ending_mode, ending_imagefile, spawn_marker_user_global, spawn_marker_name, gotolevelmode, remote_activated, video_skip, ending_hud_screen)
 	winzone[e].notes_text = notes_text
 	winzone[e].zoneheight = zoneheight or 100
 	winzone[e].spawnatstart = spawnatstart
@@ -40,9 +43,9 @@ function winzone_properties(e, notes_text, zoneheight, spawnatstart, resetstates
 	winzone[e].ending_imagefile = ending_imagefile
 	winzone[e].spawn_marker_user_global = spawn_marker_user_global or ""
 	winzone[e].spawn_marker_name = spawn_marker_name or ""
-	--gotolevelmode missing from params and seemingly not used
 	winzone[e].remote_activated = remote_activated or 0
 	winzone[e].video_skip = video_skip or 1
+	winzone[e].ending_hud_screen = ending_hud_screen
 end
  
 function winzone_init(e)
@@ -57,8 +60,11 @@ function winzone_init(e)
 	winzone[e].spawn_marker_name = ""	
 	winzone[e].remote_activated = 0
 	winzone[e].video_skip = 1	
-	status[e] = "init"
+	winzone[e].ending_hud_screen = ""
+
 	endvid[e] = 0
+	hudonce[e] = 0	
+	status[e] = "init"	
 end
 
 function winzone_main(e)	
@@ -95,8 +101,8 @@ function winzone_main(e)
 			end
 			if winzone[e].ending_mode == 3 then
 				if endvid[e] == 0 then
-					if winzone[e].video_skip == 1 then PromptVideoNoSkip(e,1) end 
-					if winzone[e].video_skip == 2 then PromptVideo(e,1) end
+					if winzone[e].video_skip == 1 then PromptVideo(e,1) end 
+					if winzone[e].video_skip == 2 then PromptVideoNoSkip(e,1) end
 					endvid[e] = 1
 				end
 				if endvid[e] == 1 then
@@ -123,6 +129,15 @@ function winzone_main(e)
 					end
 				end			
 			end
+			if winzone[e].ending_mode == 5 then
+				if winzone[e].ending_hud_screen ~="" and hudonce[e] == 0 then					
+					ScreenToggle(winzone[e].ending_hud_screen)
+					hudonce[e] = 1
+				end
+				if GetCurrentScreenName() == "" and hudonce[e] == 1 then
+					JumpToLevelIfUsedEx(e,winzone[e].resetstates)
+				end	
+			end			
 		end
 	end
 end

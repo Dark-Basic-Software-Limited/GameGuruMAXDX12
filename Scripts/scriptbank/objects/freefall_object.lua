@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Freefall Object v3 - by Necrym59
+-- Freefall Object v4 - by Necrym59
 -- DESCRIPTION: A object that will damage a player or npc upon freefall contact. Always Active=ON Physics=ON, Gravity=ON
 -- DESCRIPTION: [HIT_DAMAGE=10(1,500)]
 -- DESCRIPTION: [HIT_RADIUS=50(1,500)]
@@ -56,6 +56,7 @@ function freefall_object_main(e)
 	if g_Entity[e]['activated'] == 1 then
 		if status[e] == "start_event" then
 			PushObject(g_Entity[e]['obj'],math.random(0,1),math.random(0,10),math.random(0,1),math.random(10,45),math.random(20,45),math.random(10,45))
+			checktimer[e] = g_Time + 10
 			eventtimer[e] = g_Time + 15000
 			event[e] = 1
 			status[e] = "freefall_event"
@@ -76,7 +77,7 @@ function freefall_object_main(e)
 							SetEntityHealth(v,g_Entity[v]['health']-freefall_object[e].hit_damage)
 							SetEntityHealth(e,g_Entity[e]['health']-freefall_object[e].hit_damage)
 						end
-						checktimer[e] = g_Time + 250
+						checktimer[e] = g_Time + 1
 					end
 				end
 			end

@@ -45,6 +45,15 @@ using namespace GGThread;
 #	define snprintf _snprintf
 #endif
 
+// ★ GGMAX 3.38: ported from DX11 e5952002. Globals for the focused nav-mesh visualisation -
+// the debug draw only emits tiles near the camera, so a large level's nav mesh can be inspected
+// without building one enormous debug object. Consumed by DetourDebugDraw.cpp.
+bool g_bRefreshNavMeshDebugObjectWhenFocusChanges = false;
+int g_iLastFocusNavMeshVisualAtX = 0;
+int g_iLastFocusNavMeshVisualAtZ = 0;
+int g_iFocusNavMeshVisualAtX = 0;
+int g_iFocusNavMeshVisualAtZ = 0;
+
 // logging place holders
 void tileLog( int type, const char* format, ... )
 {
@@ -446,8 +455,21 @@ void Sample_TileMesh::handleRender()
 	{
 		if (m_drawMode != DRAWMODE_NAVMESH_INVIS)
 		{
-			m_dd.setDebugObjectSlot(1);
+			// ★ GGMAX 3.38 (DX11 e5952002): visualise the nav mesh only around the camera, and
+			// rebuild the debug object only when the focus has actually moved a meaningful distance.
+			extern float CameraPositionX(int);
+			extern float CameraPositionZ(int);
+			g_iFocusNavMeshVisualAtX = CameraPositionX(0);
+			g_iFocusNavMeshVisualAtZ = CameraPositionZ(0);
+			if (abs(g_iFocusNavMeshVisualAtX - g_iLastFocusNavMeshVisualAtX) > 500 || abs(g_iFocusNavMeshVisualAtZ - g_iLastFocusNavMeshVisualAtZ) > 500)
+			{
+				g_bRefreshNavMeshDebugObjectWhenFocusChanges = true;
+				g_iLastFocusNavMeshVisualAtX = g_iFocusNavMeshVisualAtX;
+				g_iLastFocusNavMeshVisualAtZ = g_iFocusNavMeshVisualAtZ;
+			}
+			m_dd.setDebugObjectSlot(1, g_bRefreshNavMeshDebugObjectWhenFocusChanges);
 			duDebugDrawNavMeshWithClosedList(&m_dd, *m_navMesh, *m_navQuery, m_navMeshDrawFlags);
+			g_bRefreshNavMeshDebugObjectWhenFocusChanges = false;
 		}
 		if (m_drawMode == DRAWMODE_NAVMESH_BVTREE)
 		{

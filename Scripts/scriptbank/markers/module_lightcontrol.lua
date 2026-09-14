@@ -11,6 +11,7 @@ function module_lightcontrol.init(e,lighton)
 end
 
 function module_lightcontrol.control(e)
+
  if g_module_lightcontrol[e] ~= nil then
   -- handle initial state of light
   if g_module_lightcontrol[e]['initialstate'] == nil then g_module_lightcontrol[e]['initialstate'] = 1 end

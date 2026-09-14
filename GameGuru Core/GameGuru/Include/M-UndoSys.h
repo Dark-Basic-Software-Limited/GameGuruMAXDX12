@@ -65,6 +65,7 @@ void undosys_addevent (eUndoMasterItemType mastertype, eUndoEventType eventtype,
 void undosys_glue(int eList, int iGlueBatchCount);
 
 // Actions for user
+void undosys_clearall (void);
 void undosys_clearredostack (void);
 void undosys_undoevent (void);
 void undosys_redoevent (void);

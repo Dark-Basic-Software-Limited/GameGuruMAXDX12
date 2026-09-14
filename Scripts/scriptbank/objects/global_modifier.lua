@@ -1,16 +1,16 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Global Modifier v10 by Necrym59
+-- Global Modifier v11 by Necrym59
 -- DESCRIPTION: The attached object when activated will add/deduct a value to up to three user globals for use with other behaviors, such as countdowns or monitors.
 -- DESCRIPTION: [PROMPT_TEXT$="E to collect"]
 -- DESCRIPTION: [COLLECTED_TEXT$="Modifier collected"]
 -- DESCRIPTION: [PICKUP_RANGE=90(1,100)]
 -- DESCRIPTION: [@ACTIVATION_STYLE=1(1=Automatic Pickup, 2=Manual Pickup, 3=External Triggered)]
 -- DESCRIPTION: [@@USER_GLOBAL_AFFECTED1$=""(0=globallist)] eg: MyGlobal
--- DESCRIPTION: [AFFECTED_AMOUNT1=10(1,30)]
+-- DESCRIPTION: [AFFECTED_AMOUNT1=10(0,100)]
 -- DESCRIPTION: [@@USER_GLOBAL_AFFECTED2$=""(0=globallist)] eg: MyGlobal
--- DESCRIPTION: [AFFECTED_AMOUNT2=10(1,30)]
+-- DESCRIPTION: [AFFECTED_AMOUNT2=10(0,100)]
 -- DESCRIPTION: [@@USER_GLOBAL_AFFECTED3$=""(0=globallist)] eg: MyGlobal
--- DESCRIPTION: [AFFECTED_AMOUNT3=10(1,30)]
+-- DESCRIPTION: [AFFECTED_AMOUNT3=10(0,100)]
 -- DESCRIPTION: [@EFFECT=1(1=Add, 2=Deduct)]
 -- DESCRIPTION: [HEALTH_MODIFIER=0(0,100)]
 -- DESCRIPTION: [@WHEN_ACTIVATED=1(1=Do Nothing, 2=Hide, 3=Show, 4=Destroy)]
@@ -147,8 +147,9 @@ function global_modifier_main(e)
 			_G["g_UserGlobal['"..modifier[e].user_global_affected3.."']"] = currentvalue3[e] + modifier[e].affected_amount3						
 		end		
 		if modifier[e].user_global_affected1 > "" and modifier[e].effect == 2 then
-			if _G["g_UserGlobal['"..modifier[e].user_global_affected1.."']"] ~= nil then currentvalue1[e] = _G["g_UserGlobal['"..modifier[e].user_global_affected1.."']"] end
+			if _G["g_UserGlobal['"..modifier[e].user_global_affected1.."']"] ~= nil then currentvalue1[e] = _G["g_UserGlobal['"..modifier[e].user_global_affected1.."']"] end			
 			_G["g_UserGlobal['"..modifier[e].user_global_affected1.."']"] = currentvalue1[e] - modifier[e].affected_amount1
+			
 		end
 		if modifier[e].user_global_affected2 > "" and modifier[e].effect == 2 then
 			if _G["g_UserGlobal['"..modifier[e].user_global_affected2.."']"] ~= nil then currentvalue2[e] = _G["g_UserGlobal['"..modifier[e].user_global_affected2.."']"] end
@@ -156,13 +157,24 @@ function global_modifier_main(e)
 		end	
 		if modifier[e].user_global_affected3 > "" and modifier[e].effect == 2 then
 			if _G["g_UserGlobal['"..modifier[e].user_global_affected3.."']"] ~= nil then currentvalue3[e] = _G["g_UserGlobal['"..modifier[e].user_global_affected3.."']"] end
-			_G["g_UserGlobal['"..modifier[e].user_global_affected3.."']"] = currentvalue3[e] - modifier[e].affected_amount3					
-		end
+			_G["g_UserGlobal['"..modifier[e].user_global_affected3.."']"] = currentvalue3[e] - modifier[e].affected_amount3
+		end		
+		
 		if modifier[e].health_modifier ~= 0 and modifier[e].effect == 1 then SetPlayerHealth(g_PlayerHealth + modifier[e].health_modifier) end
 		if modifier[e].health_modifier ~= 0 and modifier[e].effect == 2 then SetPlayerHealth(g_PlayerHealth - modifier[e].health_modifier) end
-		Hide(e)
-		CollisionOff(e)
-		Destroy(e)
+		if modifier[e].when_activated == 1 then end	--do nothing
+		if modifier[e].when_activated == 2 then		--hide
+			CollisionOff(e)
+			Hide(e)
+		end
+		if modifier[e].when_activated == 3 then 	--show
+			Show(e)
+		end
+		if modifier[e].when_activated == 4 then 	--destroy	
+			CollisionOff(e)
+			Hide(e)				
+			Destroy(e)
+		end
 		pressed[e] = 1
 		tEnt[e] = 0
 	end
@@ -209,9 +221,19 @@ function global_modifier_main(e)
 				end
 				if modifier[e].health_modifier ~= 0 and modifier[e].effect == 1 then SetPlayerHealth(g_PlayerHealth + modifier[e].health_modifier) end
 				if modifier[e].health_modifier ~= 0 and modifier[e].effect == 2 then SetPlayerHealth(g_PlayerHealth - modifier[e].health_modifier) end
-				Hide(e)
-				CollisionOff(e)
-				Destroy(e)
+				if modifier[e].when_activated == 1 then end	--do nothing
+				if modifier[e].when_activated == 2 then		--hide
+					CollisionOff(e)
+					Hide(e)
+				end
+				if modifier[e].when_activated == 3 then 	--show
+					Show(e)
+				end
+				if modifier[e].when_activated == 4 then 	--destroy	
+					CollisionOff(e)
+					Hide(e)				
+					Destroy(e)
+				end				
 				pressed[e] = 1
 			end
 		end
@@ -267,8 +289,7 @@ function global_modifier_main(e)
 				Hide(e)				
 				Destroy(e)
 			end
-			pressed[e] = 1
-			tEnt[e] = 0
+			SetActivated(e,0)
 		end
 	end
 end

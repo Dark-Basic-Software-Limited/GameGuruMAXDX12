@@ -1,15 +1,19 @@
--- Hot_Key v6 by Necrym59
--- DESCRIPTION: A global behavior that will display an icon image on screen for a specified resource and allow use of an activation key
--- DESCRIPTION: [SCREEN_POSITION_X=2(0,100)]
--- DESCRIPTION: [SCREEN_POSITION_Y=10(0,100)]
--- DESCRIPTION: [SCREEN_SCALE=10(1,100)]
+-- LUA Script - precede every function and global member with lowercase name of script + '_main'
+-- Hot_Key v8 by Necrym59
+-- DESCRIPTION: Will display an icon image on screen for a specified resource and activation key
+-- DESCRIPTION: Attach to an entity. Set to AlwaysActive
+-- DESCRIPTION: [SCREEN_POSITION_X=2(0,100)] Icon x screen position
+-- DESCRIPTION: [SCREEN_POSITION_Y=10(0,100)] Icon y screen position
+-- DESCRIPTION: [SCREEN_SCALE=10(1,100)] Icon scale
 -- DESCRIPTION: [ICON1_IMAGEFILE$=""] Inactive icon image
+-- DESCRIPTION: [ICON1_ALPHA=1(0,255)] Inactive icon alpha value
 -- DESCRIPTION: [ICON2_IMAGEFILE$=""] Active icon image
--- DESCRIPTION: [RESOURCE_NAME$=""] eg: "Potion" has to collectable
+-- DESCRIPTION: [RESOURCE_NAME$=""] Entity name, has to be collectable item
 -- DESCRIPTION: [RESOURCE_AMOUNT=10(0,100)] Amount to add
 -- DESCRIPTION: [@APPLIED_TO=1(1=Health, 2=User Global)]
 -- DESCRIPTION: [@@USER_GLOBAL_AFFECTED$=""(0=globallist)] eg:(MyMana or MyStaminaMax)
 -- DESCRIPTION: [ACTIVATION_KEY$="Z"] Bound key to activate
+-- DESCRIPTION: [ACTIVATION_PROMPT$="Z to use"] Bound key to activate
 -- DESCRIPTION: <Sound0> - Activation Sound
 
 local lower = string.lower
@@ -18,12 +22,14 @@ local screen_position_x 		= {}
 local screen_position_y 		= {}
 local screen_scale 				= {}
 local icon1_imagefile 			= {}
+local icon1_alpha				= {}
 local icon2_imagefile 			= {}
 local resource_name				= {}
 local resource_amount			= {}
 local applied_to				= {}
 local user_global_affected		= {}
 local activation_key			= {}
+local activation_prompt			= {}
 
 local status			= {}
 local sp_hsicon1		= {}
@@ -41,17 +47,19 @@ local doonce			= {}
 local icontimer			= {}
 local keypressed		= {}
 
-function hot_key_properties(e, screen_position_x, screen_position_y, screen_scale, icon1_imagefile, icon2_imagefile, resource_name, resource_amount, applied_to, user_global_affected, activation_key)
+function hot_key_properties(e, screen_position_x, screen_position_y, screen_scale, icon1_imagefile, icon1_alpha, icon2_imagefile, resource_name, resource_amount, applied_to, user_global_affected, activation_key, activation_prompt)
 	hotkey[e].screen_position_x = screen_position_x
 	hotkey[e].screen_position_y = screen_position_y
 	hotkey[e].screen_scale = screen_scale
 	hotkey[e].icon1_imagefile = icon1_imagefile
+	hotkey[e].icon1_alpha = icon1_alpha
 	hotkey[e].icon2_imagefile = icon2_imagefile
 	hotkey[e].resource_name = string.lower(resource_name)
 	hotkey[e].resource_amount = resource_amount
 	hotkey[e].applied_to = applied_to
 	hotkey[e].user_global_affected = user_global_affected
 	hotkey[e].activation_key = activation_key
+	hotkey[e].activation_prompt = activation_prompt
 end
 
 function hot_key_init(e)
@@ -60,12 +68,14 @@ function hot_key_init(e)
 	hotkey[e].screen_position_y = screen_position_y
 	hotkey[e].screen_scale = screen_scale	
 	hotkey[e].icon1_imagefile = ""
+	hotkey[e].icon1_alpha = 25
 	hotkey[e].icon2_imagefile = ""
 	hotkey[e].resource_name = ""
 	hotkey[e].resource_amount = 0
 	hotkey[e].applied_to = 1
 	hotkey[e].user_global_affected = ""
 	hotkey[e].activation_key = "Z"
+	hotkey[e].activation_prompt = "Z to use"	
 	
 	status[e] = "init"
 	tobeused[e] = 0
@@ -84,7 +94,7 @@ function hot_key_main(e)
 			sp_imgwidth1[e] = GetImageWidth(LoadImage(hotkey[e].icon1_imagefile))
 			sp_imgheight1[e] = GetImageHeight(LoadImage(hotkey[e].icon1_imagefile))
 			sp_aspect1[e] = sp_imgheight1[e] / sp_imgwidth1[e]
-			SetSpriteSize(sp_hsicon1[e],hotkey[e].screen_scale/sp_aspect1[e],hotkey[e].screen_scale)			
+			SetSpriteSize(sp_hsicon1[e],hotkey[e].screen_scale/sp_aspect1[e],hotkey[e].screen_scale)
 			SetSpriteDepth(sp_hsicon1[e],100)
 			SetSpritePosition(sp_hsicon1[e],500,500)
 		end	
@@ -93,7 +103,7 @@ function hot_key_main(e)
 			sp_imgwidth2[e] = GetImageWidth(LoadImage(hotkey[e].icon2_imagefile))
 			sp_imgheight2[e] = GetImageHeight(LoadImage(hotkey[e].icon2_imagefile))
 			sp_aspect2[e] = sp_imgheight2[e] / sp_imgwidth2[e]
-			SetSpriteSize(sp_hsicon2[e],hotkey[e].screen_scale/sp_aspect1[e],hotkey[e].screen_scale)	
+			SetSpriteSize(sp_hsicon2[e],hotkey[e].screen_scale/sp_aspect2[e],hotkey[e].screen_scale)
 			SetSpriteDepth(sp_hsicon2[e],100)
 			SetSpritePosition(sp_hsicon2[e],500,500)
 		end	
@@ -112,10 +122,9 @@ function hot_key_main(e)
 				end			
 			end
 		end
-		
 		if hotkey[e].icon1_imagefile ~= "" then
 			if tobeused[e] == 0 then
-				SetSpriteColor(sp_hsicon1[e],255,255,255,80)
+				SetSpriteColor(sp_hsicon1[e],255,255,255,hotkey[e].icon1_alpha)
 				PasteSpritePosition(sp_hsicon1[e],hotkey[e].screen_position_x,hotkey[e].screen_position_y)
 			end			
 			if tobeused[e] > 0 then
@@ -125,10 +134,13 @@ function hot_key_main(e)
 		end
 		
 		if tobeused[e] > 0 then
+			local sptextx = (hotkey[e].screen_scale/sp_aspect1[e])/2
+			local sptexty = hotkey[e].screen_scale*1.2
+			TextCenterOnX(hotkey[e].screen_position_x+sptextx,hotkey[e].screen_position_y+sptexty,1, hotkey[e].activation_prompt)
 			if g_InKey == string.lower(hotkey[e].activation_key) or g_InKey == tostring(hotkey[e].activation_key) and keypressed[e] == 0 then
 				icontimer[e] = g_Time + 1000
 				keypressed[e] = 1
-				PlaySound(e,0)
+				PlayNon3DSound(e,0)
 				if tobeused[e] > 0 then
 					if doonce[e] == 0 then
 						if hotkey[e].applied_to == 1 then

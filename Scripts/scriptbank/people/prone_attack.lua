@@ -1,6 +1,7 @@
--- V2 by Lee
+-- V4 by Lee
 -- DESCRIPTION: This will control a character using <Soldier Animations> to engage their enemy within view using a prone Animations
 -- DESCRIPTION: Is capable of attacking their target using a <Shooting Weapon>
+-- DESCRIPTION: Sound effects are alerted in <Sound0>, can move closer in <Sound1>, repositioning in <Sound2> and reloading in <Sound3>.
 -- DESCRIPTION: Can [!CanReposition=1] when in danger
 -- DESCRIPTION: Can [AdvanceToDistance=600] when want to get closer
 -- DESCRIPTION: Can [ShootAtDistance=400] when want to take a shot

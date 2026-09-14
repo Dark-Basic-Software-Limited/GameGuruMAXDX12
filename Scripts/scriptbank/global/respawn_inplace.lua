@@ -1,4 +1,4 @@
--- Repawn In Place v7 by Necrym59
+-- Repawn In Place v8 by Necrym59
 -- DESCRIPTION: A global behavior that creates an in-place respawn marker when a player death occurs using a User Global
 -- DESCRIPTION: [@@SPAWN_MARKER_USER_GLOBAL$=""(0=globallist)] user global required for using spawn markers (eg: MySpawnMarkers)
 -- DESCRIPTION: [SPAWN_MARKER_NAME$=""] name of spawn marker to dynamically respawn to (eg: 'Player Respawn')
@@ -12,7 +12,7 @@ local status					= {}
 
 function respawn_inplace_properties(e, spawn_marker_user_global, spawn_marker_name)
 	respawn[e].spawn_marker_user_global = spawn_marker_user_global
-	respawn[e].spawn_marker_name = spawn_marker_name
+	respawn[e].spawn_marker_name = lower(spawn_marker_name)
 end
 
 function respawn_inplace_init(e)
@@ -20,6 +20,11 @@ function respawn_inplace_init(e)
 	respawn[e].spawn_marker_user_global = ""
 	respawn[e].spawn_marker_name = ""
 	respawn[e].spawn_marker_number = 0
+	
+	if _G["g_UserGlobal['"..respawn[e].spawn_marker_user_global.."']"] ~= "" then
+		_G["g_UserGlobal['"..respawn[e].spawn_marker_user_global.."']"] = ""
+		respawn[e].spawn_marker_number = 0
+	end	
 	status[e] = "init"
 end
 
@@ -39,7 +44,7 @@ function respawn_inplace_main(e)
 							GravityOff(ee)
 							CollisionOff(ee)
 							Hide(ee)
-							_G["g_UserGlobal['"..respawn[e].spawn_marker_user_global.."']"] = respawn[e].spawn_marker_name
+							_G["g_UserGlobal['"..respawn[e].spawn_marker_user_global.."']"] = lower(respawn[e].spawn_marker_name)
 							break
 						end
 					end

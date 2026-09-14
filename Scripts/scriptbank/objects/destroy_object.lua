@@ -1,4 +1,4 @@
--- Destroy Object v10 by Necrym59
+-- Destroy Object v12 by Necrym59
 -- DESCRIPTION: Attached object can monitor a Named Objects health or destroy instantly when triggered by a linked switch or zone.
 -- DESCRIPTION: [MESSAGE$="Destroyed"]
 -- DESCRIPTION: [OBJECT_NAME$=""]
@@ -8,6 +8,7 @@
 -- DESCRIPTION: [@@USER_GLOBAL_AFFECTED$=""(0=globallist)](eg: MyUserGlobal)
 -- DESCRIPTION: [@AFFECT_TYPE=1(1=Add, 2=Deduct)]
 -- DESCRIPTION: [AFFECT_VALUE=1(1,100)] Value to add/deduct to User Global when destroyed.
+-- DESCRIPTION: <Sound0> for destruction
 
 local U = require "scriptbank\\utillib"
 local lower = string.lower
@@ -117,12 +118,13 @@ function destroy_object_main(e)
 			if destroy_delay[e] > 0 then 
 				if GetTimer(e) > destroy_delay[e] then
 					if desobject[e].object_no > 0 then
-						if desobject[e].user_global_affected > "" then 
+						if desobject[e].user_global_affected ~= "" then 
 							if _G["g_UserGlobal['"..desobject[e].user_global_affected.."']"] ~= nil then currentvalue[e] = _G["g_UserGlobal['"..desobject[e].user_global_affected.."']"] end
 							if desobject[e].affect_type == 1 then _G["g_UserGlobal['"..desobject[e].user_global_affected.."']"] = currentvalue[e] + desobject[e].affect_value end
 							if desobject[e].affect_type == 2 then _G["g_UserGlobal['"..desobject[e].user_global_affected.."']"] = currentvalue[e] - desobject[e].affect_value end
 							if _G["g_UserGlobal['"..desobject[e].user_global_affected.."']"] <= 0 then _G["g_UserGlobal['"..desobject[e].user_global_affected.."']"] = 0 end
 						end
+						PlaySound(e,0)
 						PromptDuration(desobject[e].message,1500)		
 						SetEntityHealth(desobject[e].object_no,0)
 						Hide(desobject[e].object_no)

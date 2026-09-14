@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Forcewall script v10 
+-- Forcewall script v11 
 -- DESCRIPTION: Attach object to use as a forcefield wall. Set Static to Physics ON.
 -- DESCRIPTION: [PROMPT_TEXT$="You cannot pass"]
 -- DESCRIPTION: [@FORCE_MODE=1(1=Static, 2=Repel, 3=Hurt, 4=Kill)]
@@ -40,7 +40,7 @@ function forcewall_properties(e, prompt_text, force_mode, state, trigger, visibi
 end 
 
 function forcewall_init(e)
-	forcewall[e] = g_Entity[e]	
+	forcewall[e] = {}	
 	forcewall[e].prompt_text = "You cannot pass"
 	forcewall[e].force_mode = 1
 	forcewall[e].state = 1
@@ -66,6 +66,17 @@ function forcewall_main(e)
 		status = "endinit"
 	end
 
+	if GetPlayerDistance(e) < 300 and forcewall[e].state == 1 then
+		SetActivated(e,1)
+		if forcewall[e].visibility == 1 then SetEntityAlphaClipping(e,0) end
+		if forcewall[e].visibility == 2 then SetEntityAlphaClipping(100) end		
+	end
+	if GetPlayerDistance(e) > 300 and forcewall[e].state == 1 then
+		SetActivated(e,0)
+		if forcewall[e].visibility == 1 then SetEntityAlphaClipping(e,0) end
+		if forcewall[e].visibility == 2 then SetEntityAlphaClipping(100) end	
+	end
+
 	-- forcewall active ----------------------------------------------------------------
 	if g_Entity[e]['activated'] == 1 then
 		LoopSound(e,0)
@@ -78,8 +89,8 @@ function forcewall_main(e)
 			local sizex = w
 			local sizez = l
 			local angle = GetEntityAngleY(e)
-			local blockmode = 1					
-			RDBlockNavMeshWithShape(x,y,z,w,2,l,angle)
+			local blockmode = forcewall[e].navmesh_block				
+			RDBlockNavMeshWithShape(x,y,z,w,blockmode,l,angle)
 		end	
 		if GetPlayerDistance(e) < 300 then
 			CollisionOn(e)
@@ -87,8 +98,8 @@ function forcewall_main(e)
 			local rayX, rayY, rayZ = 0,0,45
 			local paX, paY, paZ = math.rad(g_PlayerAngX), math.rad(g_PlayerAngY), math.rad(g_PlayerAngZ)
 			rayX, rayY, rayZ = U.Rotate3D(rayX, rayY, rayZ, paX, paY, paZ)
-			colobj[e]=(IntersectAll(px,py,pz, px+rayX, py+rayY, pz+rayZ,e))		
-			if colobj[e] > 0 then
+			colobj[e]=(IntersectAll(px,py,pz, px+rayX, py+rayY, pz+rayZ,e))			
+			if colobj[e] == g_Entity[e]['obj'] then
 				if forcewall[e].prompt_display == 1 then
 					PromptLocal(e,forcewall[e].prompt_text)
 					PromptLocalOffset(0,forcewall[e].local_prompt_y,0)
@@ -124,13 +135,12 @@ function forcewall_main(e)
 					doonce[e] = 1
 				end	
 			end
-		end	
+		end
 	else
 		StopSound(e,0)
 		StopSound(e,1)
-		CollisionOff(e)
+		CollisionOff(e)			
 	end
-	
 end
 
 	

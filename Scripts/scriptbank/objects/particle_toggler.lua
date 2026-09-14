@@ -1,7 +1,6 @@
--- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- PARTICLE_TOGGLER v2 by Necrym59
--- DESCRIPTION: When this entity is triggered it will activate and toggle a named particle on or off
--- DESCRIPTION: Attach to an object and logic link from a switch or zone to activate.
+-- PARTICLE_TOGGLER v4 by Necrym59
+-- DESCRIPTION: When this entity is triggered it will toggle a named particle on or off.
+-- DESCRIPTION: Attach to an object and activate from a link, switch or zone or proximity.
 -- DESCRIPTION: [PARTICLE_NAME$=""] particle name
 -- DESCRIPTION: [@TRIGGER_TYPE=1(1=External, 2=Proximity)]
 -- DESCRIPTION: [PROXIMITY_RANGE=1000]
@@ -27,6 +26,7 @@ function particle_toggler_init(e)
 	particle_toggler[e].proximity_range = 1000
 	particle_toggler[e].particle_no = 0
 	
+	SetEntityAlwaysActive(e,1)
 	status[e] = "init"
 end
  
@@ -46,24 +46,34 @@ function particle_toggler_main(e)
 		status[e] = "Off"
 	end
 	
-	if particle_toggler[e].trigger_type == 2 then
-		if GetPlayerDistance(e) < particle_toggler[e].proximity_range and status[e] == "Off" then
-			SetActivated(e,1)
+	if particle_toggler[e].trigger_type == 1 then
+		if g_Entity[e]['activated'] == 1 and status[e] == "Off" then			
+			EffectStart(particle_toggler[e].particle_no)
+			Show(particle_toggler[e].particle_no)
+			status[e] = "On"
+			SetActivated(e,0)
 		end
-		if GetPlayerDistance(e) > particle_toggler[e].proximity_range and status[e] == "On" then
-			SetActivated(e,1)
+		if g_Entity[e]['activated'] == 1 and status[e] == "On"  then
+			EffectStop(particle_toggler[e].particle_no)
+			Hide(particle_toggler[e].particle_no)
+			status[e] = "Off"
+			SetActivated(e,0)
 		end
 	end	
 	
-	if g_Entity[e]['activated'] == 1 and status[e] == "Off" then	
-		SetActivated(particle_toggler[e].particle_no,1)
-		Show(particle_toggler[e].particle_no)
-		status[e] = "On"
-		SetActivated(e,0)
-	end
-	if g_Entity[e]['activated'] == 1 and status[e] == "On" then
-		Hide(particle_toggler[e].particle_no)
-		status[e] = "Off"
-		SetActivated(e,0)
-	end
+	if particle_toggler[e].trigger_type == 2 then
+		if GetPlayerDistance(e) < particle_toggler[e].proximity_range then
+			if status[e] == "Off" then
+				status[e] = "On"
+				EffectStart(particle_toggler[e].particle_no)
+				Show(particle_toggler[e].particle_no)
+			end
+		else
+			if status[e] == "On" then
+				status[e] = "Off"
+				EffectStop(particle_toggler[e].particle_no)
+				Hide(particle_toggler[e].particle_no)
+			end
+		end
+	end	
 end

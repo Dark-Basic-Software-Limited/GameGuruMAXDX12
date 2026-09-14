@@ -1,7 +1,7 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- WinSwitch v15: by Necrym59 and Lee
+-- WinSwitch v16: by Necrym59 and Lee
 -- DESCRIPTION: This object will be treated as a switch object to end the level.
--- DESCRIPTION: Edit the [PROMPT_TEXT$="to End Level"]
+-- DESCRIPTION: Edit the [PROMPT_TEXT$="E to End Level"]
 -- DESCRIPTION: Set the [USE_RANGE=90(1,200)]
 -- DESCRIPTION: [@PROMPT_DISPLAY=1(1=Local,2=Screen)]
 -- DESCRIPTION: [@ITEM_HIGHLIGHT=0(0=None,1=Shape,2=Outline,3=Icon)] Use emmisive color for shape option
@@ -87,15 +87,8 @@ function winswitch_main(e)
 	
 	if PlayerDist < winswitch[e].use_range and tEnt[e] == e then
 		if g_Entity[e].activated == 101 then
-			if GetGamePlayerStateXBOX() == 1 then
-				PromptLocalForVR(e,"Y Button " .. winswitch[e].prompt_text,3)
-			else
-				if GetHeadTracker() == 1 then
-					PromptLocalForVR(e,"Trigger " ..winswitch[e].prompt_text,3)
-				else
-					PromptLocalForVR(e,"E " .. winswitch[e].prompt_text,3)
-				end
-			end
+			if winswitch[e].prompt_display == 1 then PromptLocal(e,winswitch[e].prompt_text,3) end
+			if winswitch[e].prompt_display == 2 then Prompt(winswitch[e].prompt_text) end
 			if g_KeyPressE == 1 then
 				SetActivatedWithMP(e,201)
 				SetAnimationName(e,"on")

@@ -1,6 +1,6 @@
--- Remover v5 by Necrym59
--- DESCRIPTION: A global behavior that will remove all the same named entities in-game when activated by a switch or zone.
--- DESCRIPTION: Attach to an object and link to a switch or zone. Set AlwaysActive=ON.
+-- Remover v6 by Necrym59
+-- DESCRIPTION: A global behavior that will remove all the same named entities in-game when activated.
+-- DESCRIPTION: Attach to an object and activate via logic link, switch or zone. Set AlwaysActive=ON.
 -- DESCRIPTION: [ENTITY_NAME$=""] Name of entities.
 -- DESCRIPTION: <Sound0> Plays when triggered.
 
@@ -17,6 +17,8 @@ end
 function remover_init_name(e)
 	remover[e] = {}
 	remover[e].entity_name = ""
+	
+	SetEntityAlwaysActive(e,1)
 	status[e] = "init"
 end
 
@@ -31,6 +33,8 @@ function remover_main(e)
 			if n ~= nil and g_Entity[n] ~= nil then
 				if lower(GetEntityName(n)) == remover[e].entity_name then
 					EffectStop(n)
+                    Hide(n)
+                    CollisionOff(n)					
 					Destroy(n)
 				end
 			end

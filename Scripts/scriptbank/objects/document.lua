@@ -1,4 +1,4 @@
--- Document v19 - thanks to Necrym59 and Lee
+-- Document v20 - thanks to Necrym59 and Lee
 -- DESCRIPTION: Change the [PICKUP_TEXT$="E to look at document"].
 -- DESCRIPTION: View position [SCREEN_X=50(0,100)] and [SCREEN_Y=50(0,100)]
 -- DESCRIPTION: Set the [SCREEN_SIZE=15(1,100)] percentage.
@@ -146,7 +146,7 @@ function document_main(e)
 		if g_KeyPressE == 1 then
 			last_gun[e] = g_PlayerGunName
 			if g_PlayerGunID > 0 then
-				WeaponID = GetPlayerWeaponID()
+				last_gun[e] = g_PlayerGunName
 				SetPlayerWeapons(0)
 			end
 			if showing[e] == 0 and pressed[e] == 0 then
@@ -192,28 +192,27 @@ function document_main(e)
 		PromptLocal(e,"")
 		Prompt("")
 		TextCenterOnX(document[e].screen_x,(document[e].screen_y + imgHeight[e]/2+2) + adjusty[e],1,document[e].usage_text)		
+		if g_KeyPressQ == 1 or legacyhide == 1 then
+			pressed[e] = 0
+			document[e].screen_size = startwidth[e]
+			adjusty[e] = 0
+			if played[e] == 2 then
+				PlaySound(e,2)
+				played[e] = 0
+			end
+			if document[e].lock_screen == 1 then
+				SetCameraOverride(0)
+				UnFreezePlayer()
+			end
+			ChangePlayerWeapon(last_gun[e])
+			SetPlayerWeapons(1)
+			Show(e)
+			SetSpritePosition(sprite[e],500,500)
+			PasteSpritePosition(sprite[e],500,500)		
+			showing[e] = 0
+			tEnt[e] = 0
+		end		
 	end
-
 	local legacyhide = 0
 	if document[e].usage_text == "" and PlayerDist > document[e].pickup_range then legacyhide = 1 end
-	if g_KeyPressQ == 1 or legacyhide == 1 then
-		pressed[e] = 0
-		document[e].screen_size = startwidth[e]
-		adjusty[e] = 0
-		if played[e] == 2 then
-			PlaySound(e,2)
-			played[e] = 0
-		end
-		if document[e].lock_screen == 1 then
-			SetCameraOverride(0)
-			UnFreezePlayer()
-		end
-		SetPlayerWeapons(1)
-		ChangePlayerWeapon(last_gun[e])
-		Show(e)
-		SetSpritePosition(sprite[e],500,500)
-		PasteSpritePosition(sprite[e],500,500)		
-		showing[e] = 0
-		tEnt[e] = 0
-	end
 end

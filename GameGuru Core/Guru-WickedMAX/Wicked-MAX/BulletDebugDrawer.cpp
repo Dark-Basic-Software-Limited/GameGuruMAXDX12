@@ -9,7 +9,8 @@ BulletDebugDrawer::BulletDebugDrawer()
 	drawTransforms = false;
 }
 
-std::mutex lock;
+//std::mutex lock;
+std::recursive_mutex lock;
 void BulletDebugDrawer::drawLine(const btVector3& from, const btVector3& to, const btVector3& color)
 {
 	//PE: This is not threadsafe so.

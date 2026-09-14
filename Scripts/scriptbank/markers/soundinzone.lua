@@ -1,4 +1,4 @@
--- Sound In Zone v7
+-- Sound In Zone v8
 -- DESCRIPTION: Plays the audio from <Sound0> when the player enters this zone, and stop other zone audio from playing.
 -- DESCRIPTION: You can optionally instruct the sound to play [ONLYONCE!=1].
 -- DESCRIPTION: [ZONEHEIGHT=100] controls how far above the zone the player can be before the zone is not triggered.
@@ -22,7 +22,7 @@ function soundinzone_properties(e, onlyonce, zoneheight, SpawnAtStart, SoundVolu
 	soundinzone[e].SpawnAtStart = SpawnAtStart or 1
 	soundinzone[e].SoundVolume = SoundVolume or 100
 	soundinzone[e].OverlaySound = OverlaySound or 0	
- end
+end
 
 function soundinzone_init(e)
 	soundinzone[e] = {}
@@ -39,11 +39,12 @@ function soundinzone_main(e)
 
 	if status[e] == "init" then
 		if soundinzone[e].zoneheight == nil then soundinzone[e].zoneheight = 100 end
-		if soundinzone[e].SpawnAtStart == 1 then SetActivated(e,1) end
-		if soundinzone[e].SpawnAtStart == 0 then SetActivated(e,0) end
+		if g_Entity[e]['activated'] ~= 2 then
+			if soundinzone[e].SpawnAtStart == 1 then SetActivated(e,1) end
+			if soundinzone[e].SpawnAtStart == 0 then SetActivated(e,0) end
+		end
 		status[e] = "endinit"
 	end
-	
 	if g_Entity[e]['activated'] == 1 then
 		if g_Entity[e]['plrinzone']==1 then
 			if currentlyplayingactive[e] == 0 and g_PlayerPosY > g_Entity[e]['y'] and g_PlayerPosY < g_Entity[e]['y'] + soundinzone[e].zoneheight then
@@ -56,12 +57,16 @@ function soundinzone_main(e)
 					end	
 					g_currentlyplayinge = 0
 				end
+				local haveweplayedthis = 0
 				if soundinzone[e].onlyonce == 0 or soundinzone[e].onlyonce == 1 then
-					if soundinzone[e].onlyonce == 1 then soundinzone[e].onlyonce = 2 end
 					g_currentlyplayinge = e
 					PlaySoundIfSilent(e,0)
 					SetSound(e,0)
 					SetSoundVolume(soundinzone[e].SoundVolume)
+					if soundinzone[e].onlyonce == 1 then
+						g_Entity[e]['activated'] = 2
+						SetActivated(e,2)
+					end
 				end
 				PerformLogicConnections(e)
 				currentlyplayingactive[e] = 1

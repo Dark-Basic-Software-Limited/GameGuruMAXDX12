@@ -1,16 +1,17 @@
--- Add_Movement v4 by Necrym59
+-- Add_Movement v6 by Necrym59
 -- DESCRIPTION: Will add the selected movement effect to the named object.
 -- DESCRIPTION: Attach to an object. Set Always active ON
 -- DESCRIPTION: [OBJECT_NAME$=""]
 -- DESCRIPTION: [MOVE_X=0(0,1000)]
 -- DESCRIPTION: [MOVE_Y=0(0,1000)]
 -- DESCRIPTION: [MOVE_Z=0(0,1000)]
--- DESCRIPTION: [#MOVE_SPEED=0.50(0.0,2.0)]
--- DESCRIPTION: [RESET_DELAY=0(0,100)] seconds
+-- DESCRIPTION: [#MOVE_SPEED=0.50(0.0,5.0)]
+-- DESCRIPTION: [#RESET_DELAY=0.0(0.0,100)] in seconds (0=No Reset)
 -- DESCRIPTION: [RESET_ROTATION!=1] Rotates when end resets.
+-- DESCRIPTION: [RESET_START!=0] Resets to start position .
 -- DESCRIPTION: [ActiveAtStart!=1] if unchecked use a switch or zone trigger to activate.
--- DESCRIPTION: <Sound1> - Reset Sound
--- DESCRIPTION: <Sound2> - Moving Sound
+-- DESCRIPTION: <Sound0> - Reset Sound
+-- DESCRIPTION: <Sound1> - Moving Sound
 
 local U = require "scriptbank\\utillib"
 local rad = math.rad
@@ -24,11 +25,15 @@ local move_z			= {}
 local move_speed		= {}
 local reset_delay		= {}
 local reset_rotation	= {}
+local reset_start		= {}
 local ActivateAtStart	= {}
 
 local object_no			= {}
 local status			= {}
 local objEnt			= {}
+local objectstartxpos	= {}
+local objectstartypos	= {}
+local objectstartzpos	= {}
 local objectxpos		= {}
 local objectypos		= {}
 local objectzpos		= {}
@@ -44,8 +49,9 @@ local movestate			= {}
 local movedir			= {}
 local moved				= {}
 local rotated			= {}
+local played			= {}
 
-function add_movement_properties(e, object_name, move_x, move_y, move_z, move_speed, reset_delay, reset_rotation, ActivateAtStart)
+function add_movement_properties(e, object_name, move_x, move_y, move_z, move_speed, reset_delay, reset_rotation, reset_start, ActivateAtStart)
 	add_movement[e].object_name = lower(object_name)
 	add_movement[e].move_x = move_x
 	add_movement[e].move_y = move_y
@@ -53,6 +59,7 @@ function add_movement_properties(e, object_name, move_x, move_y, move_z, move_sp
 	add_movement[e].move_speed = move_speed
 	add_movement[e].reset_delay = reset_delay
 	add_movement[e].reset_rotation = reset_rotation or 0
+	add_movement[e].reset_start = reset_start or 0	
 	add_movement[e].ActivateAtStart = ActivateAtStart or 0
 	add_movement[e].object_no = 0
 end
@@ -65,7 +72,8 @@ function add_movement_init(e)
 	add_movement[e].move_z = 0
 	add_movement[e].move_speed = 0
 	add_movement[e].reset_delay = 0	
-	add_movement[e].reset_rotation = 0	
+	add_movement[e].reset_rotation = 0
+	add_movement[e].reset_start = 0	
 	add_movement[e].ActivateAtStart = 1
 	add_movement[e].object_no = 0
 	
@@ -76,6 +84,7 @@ function add_movement_init(e)
 	movedir[e] = 1	
 	moved[e] = 0
 	rotated[e] = 0
+	played[e] = 0
 end
 
 function add_movement_main(e)
@@ -85,6 +94,7 @@ function add_movement_main(e)
 				if n ~= nil and g_Entity[n] ~= nil then
 					if lower(GetEntityName(n)) == add_movement[e].object_name then
 						add_movement[e].object_no = n
+						SetEntityAlwaysActive(n,1)
 						break
 					end
 				end
@@ -92,6 +102,9 @@ function add_movement_main(e)
 		end
 		if add_movement[e].object_no ~= 0 then
 			local x,y,z,Ax,Ay,Az = GetEntityPosAng(add_movement[e].object_no)
+			objectstartxpos[e] = x
+			objectstartypos[e] = y
+			objectstartzpos[e] = z		
 			objectxpos[e] = x
 			objectypos[e] = y
 			objectzpos[e] = z
@@ -103,13 +116,15 @@ function add_movement_main(e)
 		if add_movement[e].object_no ~= 0 then
 			if add_movement[e].ActivateAtStart == 1 then SetActivated(e,1) end
 			if add_movement[e].ActivateAtStart == 0 then SetActivated(e,0) end
-		end		
+		end
+		reached[e] = 0
+		Show(add_movement[e].object_no)
 		reset[e] = g_Time + (add_movement[e].reset_delay*1000)
 		status[e] = "endinit"
 	end
 
-	if g_Entity[e].activated == 1 then
-		Show(add_movement[e].object_no)
+	if g_Entity[e].activated == 1 then	
+		
 		local x,y,z,Ax,Ay,Az = GetEntityPosAng(add_movement[e].object_no)
 		local ox,oy,oz = U.Rotate3D(add_movement[e].move_x, add_movement[e].move_y, add_movement[e].move_z, rad(startxang[e]),rad(startyang[e]),rad(startzang[e]))	
 		objectxpos[e] = x + ox * add_movement[e].move_speed/100 * movedir[e]
@@ -121,7 +136,7 @@ function add_movement_main(e)
 		if g_Time > reset[e] and reached[e] == 0 then
 			GravityOff(add_movement[e].object_no)
 			CollisionOff(add_movement[e].object_no)
-			SetPosition(add_movement[e].object_no,objectxpos[e],objectypos[e],objectzpos[e])		
+			SetPosition(add_movement[e].object_no,objectxpos[e],objectypos[e],objectzpos[e])
 			StopSound(e,0)
 			LoopSound(e,1)
 			moved[e] = moved[e] + 1
@@ -129,7 +144,7 @@ function add_movement_main(e)
 				if moved[e] == add_movement[e].move_x then
 					reached[e] = 1
 					StopSound(e,1)
-					PlaySound(e,0)				
+					PlaySound(e,0)
 					movedir[e] = movedir[e]* -1
 					reset[e] = g_Time + (add_movement[e].reset_delay*1000)
 				end
@@ -153,7 +168,8 @@ function add_movement_main(e)
 				end
 			end	
 		end
-		if g_Time > reset[e] and reached[e] == 1 then
+
+		if g_Time > reset[e] and add_movement[e].reset_delay > 0 and add_movement[e].reset_start == 0 and reached[e] == 1 then
 			GravityOff(add_movement[e].object_no)
 			CollisionOff(add_movement[e].object_no)
 			SetPosition(add_movement[e].object_no,objectxpos[e],objectypos[e],objectzpos[e])
@@ -166,7 +182,7 @@ function add_movement_main(e)
 				end
 				rotated[e] = 1
 			end
-			StopSound(e,0)			
+			StopSound(e,0)
 			LoopSound(e,1)
 			moved[e] = moved[e] - 1
 			if moved[e] == 0 then
@@ -174,12 +190,30 @@ function add_movement_main(e)
 				movedir[e] = 1
 				rotated[e] = 0
 				reset[e] = g_Time + (add_movement[e].reset_delay*1000)
+				StopSound(e,1)
+				PlaySound(e,0)
 			end
 			if reached[e] == 0 and moved[e] == 0 then
 				if g_Entity[add_movement[e].object_no]['angley'] == 180 then
 					ResetRotation(add_movement[e].object_no,0,0,0)
 				end
-			end			
+			end
+		end		
+
+		if g_Time > reset[e] and add_movement[e].reset_delay > 0 and add_movement[e].reset_start == 1 and reached[e] == 1 then
+			GravityOff(add_movement[e].object_no)
+			CollisionOff(add_movement[e].object_no)
+			SetPosition(add_movement[e].object_no,objectstartxpos[e],objectstartypos[e],objectstartzpos[e])
+			reached[e] = 0
+			--add_movement[e].object_no = 0
+			movestate[e] = 0
+			movedir[e] = 1	
+			moved[e] = 0
+			rotated[e] = 0
+			played[e] = 0			
+			status[e] = "init"
 		end
+		
+		if add_movement[e].reset_delay == 0 and reached[e] == 1 then SetActivated(e,0) end
 	end
 end

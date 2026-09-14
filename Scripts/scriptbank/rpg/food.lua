@@ -1,5 +1,5 @@
--- Food v17
--- DESCRIPTION: The object will give the player a food health boost or deduction if consumed and can activate logic linked or IfUsed entities.
+-- Food v18 by Necrym59
+-- DESCRIPTION: The object will give the player a boost/deduction to health and/or a User Global if consumed and can activate logic linked or IfUsed entities.
 -- DESCRIPTION: [PROMPT_TEXT$="E to consume"]
 -- DESCRIPTION: [PROMPT_IF_COLLECTABLE$="E to collect"]
 -- DESCRIPTION: [USEAGE_TEXT$="Food consumed"]
@@ -8,12 +8,14 @@
 -- DESCRIPTION: [@PICKUP_STYLE=2(1=Ranged, 2=Accurate)]
 -- DESCRIPTION: [@EFFECT=1(1=Add, 2=Deduct)]
 -- DESCRIPTION: [@@USER_GLOBAL_AFFECTED$=""(0=globallist)] eg: MyGlobal
+-- DESCRIPTION: [@APPLICATION=1(1=Health, 2=User Global, 3=Both)]
 -- DESCRIPTION: [@PROMPT_DISPLAY=1(1=Local,2=Screen)]
 -- DESCRIPTION: [@ITEM_HIGHLIGHT=0(0=None,1=Shape,2=Outline,3=Icon)]
 -- DESCRIPTION: [HIGHLIGHT_ICON_IMAGEFILE$="imagebank\\icons\\pickup.png"]
 -- DESCRIPTION: <Sound0> for useage sound.
 -- DESCRIPTION: <Sound1> for collection sound.
--- DESCRIPTION: <Sound2> for poisoning sound.
+-- DESCRIPTION: <Sound2> for health addition sound.
+-- DESCRIPTION: <Sound3> for health deduction sound.
 
 local module_misclib = require "scriptbank\\module_misclib"
 local U = require "scriptbank\\utillib"
@@ -28,6 +30,7 @@ local pickup_range			= {}
 local pickup_style			= {}
 local effect				= {}
 local user_global_affected	= {}
+local application			= {}
 local prompt_display 		= {}
 local item_highlight 		= {}
 local highlight_icon		= {}
@@ -40,7 +43,7 @@ local use_item_now	= {}
 local tEnt			= {}
 local selectobj		= {}
 
-function food_properties(e, prompt_text, prompt_if_collectable, useage_text, quantity, pickup_range, pickup_style, effect, user_global_affected, prompt_display, item_highlight, highlight_icon_imagefile)
+function food_properties(e, prompt_text, prompt_if_collectable, useage_text, quantity, pickup_range, pickup_style, effect, user_global_affected, application, prompt_display, item_highlight, highlight_icon_imagefile)
 	food[e].prompt_text = prompt_text
 	food[e].prompt_if_collectable = prompt_if_collectable
 	food[e].useage_text = useage_text
@@ -49,6 +52,7 @@ function food_properties(e, prompt_text, prompt_if_collectable, useage_text, qua
 	food[e].pickup_style = pickup_style
 	food[e].effect = effect
 	food[e].user_global_affected = user_global_affected
+	food[e].application = application
 	food[e].prompt_display = prompt_display
 	food[e].item_highlight = item_highlight
 	food[e].highlight_icon = highlight_icon_imagefile
@@ -64,6 +68,7 @@ function food_init(e)
 	food[e].pickup_style = 1
 	food[e].effect = 1
 	food[e].user_global_affected = ""
+	food[e].application = 1	
 	food[e].prompt_display = 1
 	food[e].item_highlight = 0
 	food[e].highlight_icon = "imagebank\\icons\\pickup.png"
@@ -148,24 +153,57 @@ function food_main(e)
 
 	local currentvalue = 0
 	if addquantity == 1 then
-		if food[e].user_global_affected > "" then
-			if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] ~= nil then currentvalue = _G["g_UserGlobal['"..food[e].user_global_affected.."']"] end
-			_G["g_UserGlobal['"..food[e].user_global_affected.."']"] = currentvalue + food[e].quantity
-			if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] >= 100 then _G["g_UserGlobal['"..food[e].user_global_affected.."']"] = 100 end
+		if food[e].application == 1 then
 			SetPlayerHealth(g_PlayerHealth + food[e].quantity)
 			if g_PlayerHealth > g_PlayerStartStrength then g_PlayerHealth = g_PlayerStartStrength end
 			SetPlayerHealthCore(g_PlayerHealth)
+			PlaySound(e,2)		
 		end
+		if food[e].application == 2 then
+			if food[e].user_global_affected > "" then
+				if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] ~= nil then currentvalue = _G["g_UserGlobal['"..food[e].user_global_affected.."']"] end
+				_G["g_UserGlobal['"..food[e].user_global_affected.."']"] = currentvalue + food[e].quantity
+				if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] >= 100 then _G["g_UserGlobal['"..food[e].user_global_affected.."']"] = 100 end
+			end
+			PlaySound(e,2)
+		end
+		if food[e].application == 3 then
+			if food[e].user_global_affected > "" then
+				if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] ~= nil then currentvalue = _G["g_UserGlobal['"..food[e].user_global_affected.."']"] end
+				_G["g_UserGlobal['"..food[e].user_global_affected.."']"] = currentvalue + food[e].quantity
+				if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] >= 100 then _G["g_UserGlobal['"..food[e].user_global_affected.."']"] = 100 end
+			end
+			SetPlayerHealth(g_PlayerHealth + food[e].quantity)
+			if g_PlayerHealth > g_PlayerStartStrength then g_PlayerHealth = g_PlayerStartStrength end
+			SetPlayerHealthCore(g_PlayerHealth)
+			PlaySound(e,2)
+		end		
 	end
 	if addquantity == 2 then
-		if food[e].user_global_affected > "" then
-			if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] ~= nil then currentvalue = _G["g_UserGlobal['"..food[e].user_global_affected.."']"] end
-			_G["g_UserGlobal['"..food[e].user_global_affected.."']"] = currentvalue - food[e].quantity
-			if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] <= 0 then _G["g_UserGlobal['"..food[e].user_global_affected.."']"] = 0 end
+		if food[e].application == 1 then
+			SetPlayerHealth(g_PlayerHealth - food[e].quantity)
+			SetPlayerHealthCore(g_PlayerHealth)
+			if g_PlayerHealth <= 0 then g_PlayerHealth = 0 end
+			PlaySound(e,3)		
 		end
-		SetPlayerHealth(g_PlayerHealth - food[e].quantity)
-		SetPlayerHealthCore(g_PlayerHealth)
-		if g_PlayerHealth <= 0 then g_PlayerHealth = 0 end
-		PlaySound(e,2)
-	end
+		if food[e].application == 2 then
+			if food[e].user_global_affected > "" then
+				if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] ~= nil then currentvalue = _G["g_UserGlobal['"..food[e].user_global_affected.."']"] end
+				_G["g_UserGlobal['"..food[e].user_global_affected.."']"] = currentvalue - food[e].quantity
+				if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] <= 0 then _G["g_UserGlobal['"..food[e].user_global_affected.."']"] = 0 end
+			end
+			PlaySound(e,3)
+		end	
+		if food[e].application == 3 then
+			if food[e].user_global_affected > "" then
+				if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] ~= nil then currentvalue = _G["g_UserGlobal['"..food[e].user_global_affected.."']"] end
+				_G["g_UserGlobal['"..food[e].user_global_affected.."']"] = currentvalue - food[e].quantity
+				if _G["g_UserGlobal['"..food[e].user_global_affected.."']"] <= 0 then _G["g_UserGlobal['"..food[e].user_global_affected.."']"] = 0 end				
+			end
+			SetPlayerHealth(g_PlayerHealth - food[e].quantity)
+			SetPlayerHealthCore(g_PlayerHealth)
+			if g_PlayerHealth <= 0 then g_PlayerHealth = 0 end
+			PlaySound(e,3)
+		end
+	end	
 end

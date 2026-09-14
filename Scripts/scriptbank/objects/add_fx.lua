@@ -1,4 +1,4 @@
--- Add_Fx v8 by Necrym59 and Lee
+-- Add_Fx v9 by Necrym59 and Lee
 -- DESCRIPTION: Will add the selected effects to the named object.
 -- DESCRIPTION: Attach to an object. Set Always active ON
 -- DESCRIPTION: [ObjectName$=""]
@@ -89,6 +89,7 @@ function add_fx_init(e)
 	status[e] = "init"
 	rampingEM[e] = 0
 	objEnt[e] = 0
+	SetEntityAlwaysActive(e,1)
 end
 
 function add_fx_main(e)

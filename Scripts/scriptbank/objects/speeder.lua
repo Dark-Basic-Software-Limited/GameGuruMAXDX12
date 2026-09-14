@@ -1,5 +1,5 @@
 -- LUA Script - precede every function and global member with lowercase name of script + '_main'
--- Speeder v18 by Necrym59 and smallg
+-- Speeder v24 by Necrym59 and smallg
 -- DESCRIPTION: Will create a speeder vehicle object. Set IsImmobile ON.
 -- DESCRIPTION: [PROMPT_TEXT$="E to mount speeder"]
 -- DESCRIPTION: [ENTER_RANGE=150]
@@ -23,14 +23,25 @@
 -- DESCRIPTION: [@@AUX_READOUT_GLOBAL$=""(0=globallist)] user global (eg: MyAuxReadout)
 -- DESCRIPTION: [LOCK_PLAYER!=0]
 -- DESCRIPTION: [REVERSED_CONTROL!=0] for reverse faced vehicles
--- DESCRIPTION: [VEHICLE_UNLOCKED!=1] If set off is locked and requires key 
+-- DESCRIPTION: [VEHICLE_UNLOCKED!=1] If set off is locked and requires key
+-- DESCRIPTION: [HEADLIGHT_NAME$=""] headlight emmitter name
+-- DESCRIPTION: [HEADLIGHT_Z_OFFSET=15(-500,500)] headlight Z offset
+-- DESCRIPTION: [HEADLIGHT_Y_OFFSET=7(1,100)] headlight Y offset
+-- DESCRIPTION: [HEADLIGHT_KEY$="H"] Bound key to activate headlights
+-- DESCRIPTION: [@@SPEEDER_FUEL_USER_GLOBAL$=""(0=globallist)] user global (eg: MyFuel)
+-- DESCRIPTION: [@@SPEEDER_WEIGHT_USER_GLOBAL$=""(0=globallist)] user global (eg: MyWeight)
+-- DESCRIPTION: [@@SPEEDER_HEALTH_USER_GLOBAL$=""(0=globallist)] user global (eg: MyVehicleHealth)
 -- DESCRIPTION: <Sound0> Moving
 -- DESCRIPTION: <Sound1> Idle Loop
 -- DESCRIPTION: <Sound2> Impact
 -- DESCRIPTION: <Sound3> Radio
+-- DESCRIPTION: <Sound4> Engine Stall
+-- DESCRIPTION: <Sound5> Reversing Beeper
 
 local U = require "scriptbank\\utillib"
 local P = require "scriptbank\\physlib"
+local lower = string.lower
+local upper = string.upper
 
 local speeder = {}
 local prompt_text = {}
@@ -55,7 +66,14 @@ local speed_readout_global = {}
 local aux_readout_global = {}
 local lock_player = {}
 local vehicle_unlocked = {}
+local headlight_name = {}
+local headlight_z_offset = {}
+local headlight_y_offset = {}
+local headlight_key = {}
 local reversed_control = {}
+local speeder_fuel_user_global = {}
+local speeder_weight_user_global = {}
+local speeder_health_user_global = {}
 
 local old_health = {}
 local pos_x = {}
@@ -75,8 +93,18 @@ local oldy = {}
 local tEnt = {}
 local underwater = {}
 local hudonce = {}
+local hlightx = {}
+local hlighty = {}
+local hlightz = {}
+local headlightmode = {}
+local headlightpause = {}
+local hlightrange = {}
+local headlight_number = {}
+local currentvalue = {}
+local played = {}
+local revplayed = {}
 
-function speeder_properties(e, prompt_text, enter_range, enter_angle, player_z_adjustment, player_y_adjustment, player_angle_adjustment, maximum_speed, minimum_speed, turn_speed, acceleration, decceleration, impact_range, impact_angle, speeder_health, maximum_slope, use_text, vehicle_hud, readouts, speed_readout_global, aux_readout_global, lock_player, reversed_control, vehicle_unlocked)
+function speeder_properties(e, prompt_text, enter_range, enter_angle, player_z_adjustment, player_y_adjustment, player_angle_adjustment, maximum_speed, minimum_speed, turn_speed, acceleration, decceleration, impact_range, impact_angle, speeder_health, maximum_slope, use_text, vehicle_hud, readouts, speed_readout_global, aux_readout_global, lock_player, reversed_control, vehicle_unlocked, headlight_name, headlight_z_offset, headlight_y_offset, headlight_key, speeder_fuel_user_global, speeder_weight_user_global, speeder_health_user_global)
 	speeder[e].prompt_text = prompt_text
 	speeder[e].enter_range = enter_range
 	speeder[e].enter_angle = enter_angle
@@ -100,6 +128,13 @@ function speeder_properties(e, prompt_text, enter_range, enter_angle, player_z_a
 	speeder[e].lock_player = lock_player or 0
 	speeder[e].reversed_control	= reversed_control or 0
 	speeder[e].vehicle_unlocked	= vehicle_unlocked or 1
+	speeder[e].headlight_name = lower(headlight_name)
+	speeder[e].headlight_z_offset = headlight_z_offset
+	speeder[e].headlight_y_offset = headlight_y_offset
+	speeder[e].headlight_key = lower(headlight_key)
+	speeder[e].speeder_fuel_user_global = speeder_fuel_user_global
+	speeder[e].speeder_weight_user_global = speeder_weight_user_global
+	speeder[e].speeder_health_user_global = speeder_health_user_global
 end
 
 function speeder_init(e)
@@ -127,7 +162,15 @@ function speeder_init(e)
 	speeder[e].lock_player = 0
 	speeder[e].reversed_control = 0
 	speeder[e].vehicle_unlocked	= 1
-
+	speeder[e].headlight_name = ""
+	speeder[e].headlight_z_offset = 15
+	speeder[e].headlight_y_offset = 7
+	speeder[e].headlight_key = "H"
+	speeder[e].speeder_fuel_user_global = ""
+	speeder[e].speeder_weight_user_global = ""
+	speeder[e].speeder_health_user_global = ""	
+	speeder[e].headlight_number = 0
+	
 	status[e] = "init"
 	speed[e] = 0
 	shealth[e] = 0
@@ -146,6 +189,15 @@ function speeder_init(e)
 	oldy[e] = 0 
 	tEnt[e] = 0
 	hudonce[e] = 0
+	hlightx[e] = 0
+	hlighty[e] = 0
+	hlightz[e] = 0
+	headlightmode[e] = 0
+	headlightpause[e] = math.huge
+	hlightrange[e] = 0
+	currentvalue[e] = 0	
+	played[e] = 0
+	revplayed[e] = 0	
 end 
 
 function speeder_main(e)
@@ -153,6 +205,30 @@ function speeder_main(e)
 		radioswitch[e] = "Off"
 		keypause[e] = g_Time + 1000
 		shealth[e] = speeder[e].speeder_health
+		hlightx[e] = g_Entity[e]['x']
+		hlighty[e] = g_Entity[e]['y']
+		hlightz[e] = g_Entity[e]['z']
+		if speeder[e].headlight_name ~= "" then
+			for b = 1, g_EntityElementMax do
+				if b ~= nil and g_Entity[b] ~= nil then
+					if string.lower(GetEntityName(b)) == speeder[e].headlight_name then
+						speeder[e].headlight_number = GetEntityLightNumber(b)
+						SetLightPosition(speeder[e].headlight_number,hlightx[e],hlighty[e]+speeder[e].headlight_y_offset,hlightz[e]+speeder[e].headlight_z_offset)
+						hlightrange[e] = GetLightRange(speeder[e].headlight_number)
+						headlightmode[e] = 0
+						headlightpause[e] = g_Time + 1000
+						SetLightRange(speeder[e].headlight_number,0)
+						break
+					end
+				end
+			end		
+		end
+		if speeder[e].speeder_weight_user_global > "" then
+			_G["g_UserGlobal['"..speeder[e].speeder_weight_user_global.."']"] = 0
+		end
+		if speeder[e].speeder_health_user_global ~= "" then
+			_G["g_UserGlobal['"..speeder[e].speeder_health_user_global.."']"] = shealth[e]
+		end
 		status[e] = "wait"
 	end
 	
@@ -169,11 +245,19 @@ function speeder_main(e)
 		CollisionOn(e)
 		GetInspeeder(e)
 	end
-	if status[e] == "drive" then		
+	if status[e] == "drive" then
+		if speeder[e].speeder_weight_user_global > "" then _G["g_UserGlobal['"..speeder[e].speeder_weight_user_global.."']"] = GetEntityWeight(e) end
 		GravityOff(e)
 		UpdatePosition(e,speeder[e].reversed_control)
 		UpdatePlayerPosition(e)
-		Controlspeeder(e)				
+		Controlspeeder(e)
+		if speeder[e].headlight_number ~= 0 then --Update Light Object
+			hlightx[e] = g_Entity[e]['x'] + math.sin(math.rad(g_PlayerAngY))*speeder[e].headlight_z_offset
+			hlighty[e] = g_Entity[e]['y']
+			hlightz[e] = g_Entity[e]['z'] + math.cos(math.rad(g_PlayerAngY))*speeder[e].headlight_z_offset
+			SetLightPosition(speeder[e].headlight_number,hlightx[e],hlighty[e]+speeder[e].headlight_y_offset,hlightz[e])
+			SetLightEuler(speeder[e].headlight_number,g_PlayerAngX,g_PlayerAngY,g_PlayerAngZ)
+		end			
 		if speed[e] > 0 - (speeder[e].maximum_speed/10) and speed[e] < 0 + (speeder[e].maximum_speed/10) then 
 			if speeder[e].readouts == 1 then TextCenterOnX(50,95,3,speeder[e].use_text) end
 			if speeder[e].readouts == 2 then _G["g_UserGlobal['"..speeder[e].aux_readout_global.."']"] = speeder[e].use_text end	
@@ -181,18 +265,48 @@ function speeder_main(e)
 			CheckForHittingNPC(e)
 			CollisionCheck(e)			
 		end
-		
-
 		GetOutspeeder(e)
 		if g_PlayerHealth < 1 then 
 			SetEntityHealth(e,0)
 		end
 		CollisionCheck(e)
+		if speeder[e].speeder_health_user_global ~= "" then
+			_G["g_UserGlobal['"..speeder[e].speeder_health_user_global.."']"] = shealth[e]
+		end
 	end
 	if g_KeyPressE == 0 then 
 		vpressed[e] = 0 
+	end
+	if g_InKey == lower(speeder[e].headlight_key) and headlightmode[e] == 0 and g_Time > headlightpause[e] then
+		headlightpause[e] = g_Time + 1000
+		SetLightRange(speeder[e].headlight_number,hlightrange[e])
+		headlightmode[e] = 1
+	end
+	if g_InKey == lower(speeder[e].headlight_key) and headlightmode[e] == 1 and g_Time > headlightpause[e] then
+		SetLightRange(speeder[e].headlight_number,0)
+		headlightpause[e] = g_Time + 1000
+		headlightmode[e] = 0
+	end
+	if speeder[e].speeder_fuel_user_global ~= "" then
+		if _G["g_UserGlobal['"..speeder[e].speeder_fuel_user_global.."']"] ~= nil then currentvalue[e] = _G["g_UserGlobal['"..speeder[e].speeder_fuel_user_global.."']"] end
+		if currentvalue[e] <= 0 then
+			if speed[e] > 0 then
+				speed[e] = speed[e] - speeder[e].acceleration
+				if played[e] == 0 then 
+					PlaySound(e,4)
+					played[e] = 1
+				end	
+			end	
+			if speed[e] <= 0 then
+				speed[e] = -1
+				StopSound(e,0)
+				StopSound(e,1)
+				StopSound(e,3)
+				played[e] = 0
+			end
+		end
 	end	
-end
+end	
 
 function speeder_exit(e)
 end 
@@ -252,7 +366,7 @@ function UpdatePosition(e,mode)
 		pos_y[e] = g_Entity[e]['y']
 		pos_y[e] = GetSurfaceHeight(pos_x[e], pos_y[e], pos_z[e])
 		PositionObject(g_Entity[e]['obj'],pos_x[e],pos_y[e],pos_z[e])
-	end	
+	end
 end
 
 function UpdatePlayerPosition(e)
@@ -275,33 +389,43 @@ function UpdatePlayerPosition(e)
 end 
 
 function Controlspeeder(e)
-	if shealth[e] > 0 then		
+	if shealth[e] > 0 then
+		if speed[e] > -1 then 
+			StopSound(e,5)
+			revplayed[e] = 0
+		end		
 		if g_KeyPressW == 0 and speed[e] > speeder[e].minimum_speed then
 			LoopSound(e,1) 
 			StopSound(e,0)
 		end
 		if g_KeyPressW == 1 then 
 			LoopSound(e,0) -- drive sound
-			StopSound(e,1) 
+			StopSound(e,1)
+			StopSound(e,5)
+			revplayed[e] = 0
 			if speed[e] < speeder[e].maximum_speed then 
-				speed[e] = speed[e] + speeder[e].acceleration
+				speed[e] = speed[e] + speeder[e].acceleration/5
 			else 
-				speed[e] = speeder[e].maximum_speed 
+				speed[e] = speeder[e].maximum_speed
 				LoopSound(e,0)
 				StopSound(e,1)
-			end 
+			end
 		elseif g_KeyPressS == 1 then 
 			if speed[e] > speeder[e].minimum_speed then 
-				speed[e] = speed[e] - speeder[e].acceleration 
-				LoopSound(e,1) 
+				speed[e] = speed[e] - speeder[e].acceleration/5 
+				LoopSound(e,1)
 				StopSound(e,0)
+				if speed[e] < -3 and revplayed[e] == 0 then 
+					LoopSound(e,5)
+					revplayed[e] = 1
+				end	
 			else 
-				speed[e] = speeder[e].minimum_speed 
+				speed[e] = speeder[e].minimum_speed 				
 			end 
 		else 
 			if speed[e] > 0 then 
-				speed[e] = speed[e] - speeder[e].decceleration 
-			elseif speed[e] < 0 then 
+				speed[e] = speed[e] - speeder[e].decceleration*2 
+			elseif speed[e] <= 0 then 
 				speed[e] = speed[e] + speeder[e].decceleration 
 				StopSound(e,0)
 				LoopSound(e,1)
@@ -337,13 +461,9 @@ function Controlspeeder(e)
 				keypause[e] = g_Time + 1000
 			end	
 		end
-
-		if speed[e] > 0 then
+		if speed[e] > 1 then
 			if speeder[e].readouts == 1 then TextCenterOnX(50,92,3,"Speed: " ..math.floor(speed[e])) end
 			if speeder[e].readouts == 2 then _G["g_UserGlobal['"..speeder[e].speed_readout_global.."']"] = math.floor(speed[e]) end
-		else
-			if speeder[e].readouts == 1 then TextCenterOnX(50,92,3,"Speed: 0" ) end
-			speed[e] = 0
 		end
 	end
 end
@@ -410,7 +530,8 @@ function GetOutspeeder(e)
 	end	
 	if g_KeyPressE == 1 and speed[e] > 0 - (speeder[e].maximum_speed/10) and speed[e] < 0 + (speeder[e].maximum_speed/10) and vpressed[e] == 0 then 
 		vpressed[e] = 1 
-		speed[e] = 0 
+		speed[e] = 0
+		if speeder[e].speeder_weight_user_global > "" then _G["g_UserGlobal['"..speeder[e].speeder_weight_user_global.."']"] = 0 end
 		new_y = math.rad(g_Entity[e]['y'])		
 		pos_x[e] = g_Entity[e]['x'] + (math.sin(new_y) * speeder[e].enter_range)
 		pos_z[e] = g_Entity[e]['z'] + (math.cos(new_y) * speeder[e].enter_range)

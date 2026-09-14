@@ -1,4 +1,4 @@
--- Affected v4 by Necrym59
+-- Affected v5 by Necrym59
 -- DESCRIPTION: When activated, player will be affected with the selected effect type
 -- DESCRIPTION: Apply to an object and set AlwaysActive
 -- DESCRIPTION: [PROMPT_TEXT$="You are affected"]
@@ -87,19 +87,19 @@ function affected_main(e)
 			end
 		end	
 		if g_Time < effectperiod[e] then				
-			if affected[e].effect_type == 1 then --(Drunk)
+			if affected[e].effect_type == 1 and GamePlayerControlAddShakeTrauma ~= nil then--(Drunk)
 				GamePlayerControlSetShakeTrauma(65.0)
 				GamePlayerControlSetShakePeriod(960.0)
 				currentval1[e] = 65.0
 				currentval2[e] = 960.0				
 			end
-			if affected[e].effect_type == 2 then --(Poisoned)
+			if affected[e].effect_type == 2 and GamePlayerControlAddShakeTrauma ~= nil then --(Poisoned)
 				GamePlayerControlSetShakeTrauma(565.0)
 				GamePlayerControlSetShakePeriod(960.00)
 				currentval1[e] = 565.0
 				currentval2[e] = 960.0				
 			end
-			if affected[e].effect_type == 3 then --(Shudder)
+			if affected[e].effect_type == 3 and GamePlayerControlAddShakeTrauma ~= nil then --(Shudder)
 				GamePlayerControlSetShakeTrauma(20.0)
 				GamePlayerControlSetShakePeriod(60.00)
 				currentval1[e] = 20.0

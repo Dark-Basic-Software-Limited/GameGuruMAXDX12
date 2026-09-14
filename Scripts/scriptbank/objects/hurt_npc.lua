@@ -1,10 +1,11 @@
--- Hurt NPC v2 by Necrym59
+-- Hurt NPC v3 by Necrym59
 -- DESCRIPTION: Will hurt any NPC when within proximity range of a named entity
 -- DESCRIPTION: [ENTITY_NAME$=""]
 -- DESCRIPTION: [HURT_RANGE=500(0,3000)]
 -- DESCRIPTION: [HURT_AMOUNT=10(0,100)]
 -- DESCRIPTION: [HURT_TIME=3(1,10)] seconds
--- DESCRIPTION: [HurtOnceOnly!=0].
+-- DESCRIPTION: [HurtOnceOnly!=0]
+-- DESCRIPTION: [IsActive!=0] if unchecked use a switch or other trigger to activate 
 
 local U = require "scriptbank\\utillib"
 local lower = string.lower
@@ -14,18 +15,21 @@ local entity_name 	= {}
 local hurt_range 	= {}
 local hurt_amount 	= {}
 local hurt_time 	= {}
+local hurtonceonly 	= {}
+local isactive 		= {}
 
 local htimer 		= {}
 local hEnt			= {}
 local hurtonce		= {}
 local status		= {}
 
-function hurt_npc_properties(e, entity_name, hurt_range, hurt_amount, hurt_time, HurtOnceOnly)
+function hurt_npc_properties(e, entity_name, hurt_range, hurt_amount, hurt_time, HurtOnceOnly, IsActive)
 	hurtnpc[e].entity_name = lower(entity_name)
 	hurtnpc[e].hurt_range = hurt_range
 	hurtnpc[e].hurt_amount = hurt_amount
 	hurtnpc[e].hurt_time = hurt_time
-	hurtnpc[e].HurtOnceOnly = HurtOnceOnly
+	hurtnpc[e].hurtonceonly = HurtOnceOnly or 0
+	hurtnpc[e].isactive = IsActive or 0
 end
 
 function hurt_npc_init(e)
@@ -35,7 +39,8 @@ function hurt_npc_init(e)
 	hurtnpc[e].hurt_amount = 10
 	hurtnpc[e].hurt_time = 3
 	hurtnpc[e].HurtOnceOnly = 0
-
+	hurtnpc[e].isactive = 0
+	
 	htimer[e] = 0
 	hEnt[e]	= 0
 	hurtonce[e] = 0
@@ -51,7 +56,8 @@ function hurt_npc_main(e)
 				end
 			end
 		end
-		SetActivated(e,0)
+		if hurtnpc[e].isactive == 1 then SetActivated(e,1) end
+		if hurtnpc[e].isactive == 0 then SetActivated(e,0) end
 		status[e] = "endinit"
 	end
 	

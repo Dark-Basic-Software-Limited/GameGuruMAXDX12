@@ -5,7 +5,6 @@ local cursorcontrol = {}
 function cursorcontrol.getinput(ptrX,ptrY,ptrClick)
  if ( GetGamePlayerStateXBOX() == 1 ) then 
   if ( GetGamePlayerStateXBOXControllerType() == 2 ) then 
-   -- Logitech F310
    controllerDeltaX = (JoystickX()/400.0) * g_TimeElapsed
    controllerDeltaY = (JoystickY()/400.0) * g_TimeElapsed
    if math.abs(controllerDeltaX) < 0.015 then controllerDeltaX = 0.0 end
@@ -27,6 +26,11 @@ function cursorcontrol.getinput(ptrX,ptrY,ptrClick)
 	end
    end
   end
+  -- Allows Controller to interface with storyboard screens
+  ForceMouseXYClick(ptrX,ptrY,ptrClick)
+  g_MouseX = ptrX
+  g_MouseY = ptrY
+  g_MouseClick = ptrClick
  else
   -- Regular Mouse
   ptrX = g_MouseX

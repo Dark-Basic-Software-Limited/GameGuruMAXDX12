@@ -1,5 +1,6 @@
--- DESCRIPTION: A global script that controls the in-game HUD. Do not assign to an object.
--- Hud0 - Version 3 
+--
+-- Hud0 - Version 4 by Lee
+--
 cursorControl = require "scriptbank\\huds\\cursorcontrol"
 local U = require "scriptbank\\utillib"
 
@@ -699,16 +700,20 @@ function hud0.main()
 										local scrx = tgridx+(xx*gridtilewidth)
 										local scry = tgridy+(yy*gridtileheight)
 										local scrimg = hud0_playercontainer_img[hud0_playercontainer_screenID][gridi][itemindex]
-										SetSpritePosition(hud0_gridSpriteID,scrx,scry)
-										SetSpriteImage(hud0_gridSpriteID,scrimg)
-										SetSpriteSize(hud0_gridSpriteID,gridtilewidth,gridtileheight)
-										if hud0_gridSelectedIndex == itemindex and hud0_gridSelected == gridi then
-											SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
-										else
-											SetSpriteColor(hud0_gridSpriteID,255,255,255,192)
+										if scrimg ~= nil then
+											if scrimg > 0 then
+												SetSpritePosition(hud0_gridSpriteID,scrx,scry)
+												SetSpriteImage(hud0_gridSpriteID,scrimg)
+												SetSpriteSize(hud0_gridSpriteID,gridtilewidth,gridtileheight)
+												if hud0_gridSelectedIndex == itemindex and hud0_gridSelected == gridi then
+													SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
+												else
+													SetSpriteColor(hud0_gridSpriteID,255,255,255,192)
+												end
+												SetSpritePriority(hud0_gridSpriteID,-1)
+												PasteSprite(hud0_gridSpriteID)
+											end
 										end
-										SetSpritePriority(hud0_gridSpriteID,-1)
-										PasteSprite(hud0_gridSpriteID)
 									end
 								end
 							end
@@ -723,12 +728,14 @@ function hud0.main()
 				local scry = g_sprCursorPtrY
 				local scrimg = hud0_playercontainer_img[hud0_playercontainer_screenID][hud0_gridSelected][hud0_gridSelectedIndex]
 				if scrimg ~= nil then
-					SetSpritePosition(hud0_gridSpriteID,scrx,scry)
-					SetSpriteImage(hud0_gridSpriteID,scrimg)
-					SetSpriteSize(hud0_gridSpriteID,hud0_pulledoutofslotfromW,hud0_pulledoutofslotfromH)---1)--gridtilewidth,-1)
-					SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
-					SetSpritePriority(hud0_gridSpriteID,-1)
-					PasteSprite(hud0_gridSpriteID)
+					if scrimg > 0 then
+						SetSpritePosition(hud0_gridSpriteID,scrx,scry)
+						SetSpriteImage(hud0_gridSpriteID,scrimg)
+						SetSpriteSize(hud0_gridSpriteID,hud0_pulledoutofslotfromW,hud0_pulledoutofslotfromH)---1)--gridtilewidth,-1)
+						SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
+						SetSpritePriority(hud0_gridSpriteID,-1)
+						PasteSprite(hud0_gridSpriteID)
+					end
 				end
 			end
 
@@ -754,12 +761,17 @@ function hud0.main()
 								if elementImageID > 0 then
 									telementx,telementy,telementwidth,telementheight = GetScreenElementArea(elementImageID)    
 									SetSpritePosition(hud0_gridSpriteID,telementx,telementy)
-									SetSpriteImage(hud0_gridSpriteID,hud0_playercontainer_img[hud0_playercontainer_screenID][hud0_gridSelected][hud0_gridSelectedIndex])
-									SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
-									SetSpriteSize(hud0_gridSpriteID,telementwidth,telementheight)---1)
-									SetSpritePriority(hud0_gridSpriteID,-1)
-									PasteSprite(hud0_gridSpriteID)
-									displayingselecteditem = 1
+									local scrimg = hud0_playercontainer_img[hud0_playercontainer_screenID][hud0_gridSelected][hud0_gridSelectedIndex]
+									if scrimg ~= nil then
+										if scrimg > 0 then
+											SetSpriteImage(hud0_gridSpriteID,scrimg)
+											SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
+											SetSpriteSize(hud0_gridSpriteID,telementwidth,telementheight)---1)
+											SetSpritePriority(hud0_gridSpriteID,-1)
+											PasteSprite(hud0_gridSpriteID)
+											displayingselecteditem = 1
+										end
+									end
 								end
 							else
 								local tcollectionattribqty = GetCollectionAttributeQuantity()
@@ -1556,14 +1568,16 @@ function hud0.main()
 					for itemindex = 0, 8, 1 do
 						local tcollectionindex = hud0_playercontainer_collectionindex[hud0_playercontainer_screenID][gridi][itemindex]
 						local scrimg = hud0_playercontainer_img[hud0_playercontainer_screenID][gridi][itemindex]
-						if tcollectionindex ~= nil and scrimg > 0 then
-							local scrx = tgridx+((itemindex)*gridtilewidth)
-							SetSpritePosition(hud0_gridSpriteID,scrx,tgridy)
-							SetSpriteImage(hud0_gridSpriteID,scrimg)
-							SetSpriteSize(hud0_gridSpriteID,gridtilewidth,gridtileheight)---1)
-							SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
-							SetSpritePriority(hud0_gridSpriteID,-1)
-							PasteSprite(hud0_gridSpriteID)
+						if scrimg ~= nil then
+							if tcollectionindex ~= nil and scrimg > 0 then
+								local scrx = tgridx+((itemindex)*gridtilewidth)
+								SetSpritePosition(hud0_gridSpriteID,scrx,tgridy)
+								SetSpriteImage(hud0_gridSpriteID,scrimg)
+								SetSpriteSize(hud0_gridSpriteID,gridtilewidth,gridtileheight)---1)
+								SetSpriteColor(hud0_gridSpriteID,255,255,255,255)
+								SetSpritePriority(hud0_gridSpriteID,-1)
+								PasteSprite(hud0_gridSpriteID)
+							end
 						end
 					end
 				end
@@ -1602,7 +1616,9 @@ function hud0.main()
 				if hud0_mapView_LevelImage > 0 then
 					if GetImageWidth(hud0_mapView_LevelImage) > 0 then scrimg = hud0_mapView_LevelImage end
 				end
-				tscrheight = tscrwidth * (GetImageHeight(scrimg)/GetImageWidth(scrimg))
+				if scrimg > 0 then
+					tscrheight = tscrwidth * (GetImageHeight(scrimg)/GetImageWidth(scrimg))
+				end
 				hud0_mapView_ImageOW = tscrwidth
 				hud0_mapView_ImageOH = tscrheight
 				tscrwidth=tscrwidth*hud0_mapView_Scale
@@ -1789,10 +1805,16 @@ function hud0.main()
 		hud0_pointerSpriteImageID = GetScreenElementImage(hud0_pointerID)
 	end
 	if hud0_pointerSpriteImageID == 0 then hud0_pointerSpriteImageID = LoadImage("imagebank\\HUD\\cursor-medium.png") end
-	if hud0_pointerSpriteID == nil then hud0_pointerSpriteID = CreateSprite ( hud0_pointerSpriteImageID ) end
-	SetSpritePosition ( hud0_pointerSpriteID, g_sprCursorPtrX, g_sprCursorPtrY )
-	SetSpritePriority(hud0_pointerSpriteID,-1)
-	PasteSprite(hud0_pointerSpriteID)
+	if hud0_pointerSpriteImageID > 0 then
+		if hud0_pointerSpriteID == nil then hud0_pointerSpriteID = CreateSprite ( hud0_pointerSpriteImageID ) end
+		if hud0_pointerSpriteID ~= nil then
+			if hud0_pointerSpriteID > 0 then
+				SetSpritePosition ( hud0_pointerSpriteID, g_sprCursorPtrX, g_sprCursorPtrY )
+				SetSpritePriority(hud0_pointerSpriteID,-1)
+				PasteSprite(hud0_pointerSpriteID)
+			end
+		end
+	end
   end
   
   -- handle slow absorbsion of magic

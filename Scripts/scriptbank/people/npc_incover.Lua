@@ -1,4 +1,4 @@
-﻿-- Npc In Cover v5 by Smallg and Necrym59
+﻿-- Npc In Cover v6 by smallg and Necrym59
 -- DESCRIPTION: Allows an NPC to pop in and out view from cover and fire at player when within range
 -- DESCRIPTION: [@COVER_STYLE=1(1=Up/Down, 2=Left, 3=Right)]
 -- DESCRIPTION: [ALERT_DISTANCE= 2000]
@@ -10,6 +10,7 @@
 -- DESCRIPTION: [@RIGHT_ANIMATION=-1(0=AnimSetList)]
 -- DESCRIPTION: [@SHOOT_ANIMATION=-1(0=AnimSetList)]
 -- DESCRIPTION: [DEATH_IFUSED$=""] Object name to trigger upon death
+-- DESCRIPTION: <Sound0> for entity alert 
 
 local lower = string.lower
 local npcincover 		= {}
@@ -33,6 +34,7 @@ local ammo 				= {}
 local standing			= {}
 local status			= {}
 local doonce			= {}
+local playonce			= {}
 local endonce			= {}
 
 function npc_incover_properties(e, cover_style, alert_distance, exposure_time, cover_time, stand_animation, duck_animation, left_animation, right_animation, shoot_animation, death_ifused)
@@ -66,15 +68,18 @@ function npc_incover_init(e)
 	npcincover[e].reloadquantity = GetWeaponReloadQuantity(npcincover[e].weaponid,0)
 	npcincover[e].ammo = npcincover[e].reloadquantity
 	npcincover[e].standing = e
-	npcincover[e].firerate = GetWeaponFireRate(npcincover[e].weaponid, 0)
-	if npcincover[e].firerate >= 12 then 					-- adjust firerate to millisecond delay equiv to player
-		npcincover[e].firerate = npcincover[e].firerate * 20  -- favor slower standard non-auto weapons
+	npcincover[e].firerate = GetWeaponFireRate(npcincover[e].weaponid,0)
+	if npcincover[e].firerate >= 12 then 						-- adjust firerate to millisecond delay equiv to player
+		npcincover[e].firerate = npcincover[e].firerate * 20	-- favor slower standard non-auto weapons
 	else
 		npcincover[e].firerate = npcincover[e].firerate * 10	-- favor faster standard automatic weapons
 	end
 	doonce[e] = 0
 	difusedno[e] = 0
 	endonce[e] = 0
+	playonce[e] = 0
+	math.randomseed(os.time())
+	math.random(); math.random(); math.random()	
 	status[e] = "init"		
 end
 
@@ -108,13 +113,16 @@ function npc_incover_main(e)
 		SetEntityHealthSilent(e,-99999)
 		status[e] = "endinit"
 	end
-
-	if (GetPlayerDistance(e)) < npcincover[e].alert_distance then
-		doonce[e] = 0
+	
+	if g_Entity[e]['plrvisible'] == 0 then playonce[e] = math.random(0,5) end
+	
+	if (GetPlayerDistance(e)) < npcincover[e].alert_distance then 
+		doonce[e] = 0				
 		if npcincover[e].standing == e then
 			if (GetTimer(e)) < npcincover[e].exposure_time and npcincover[e].ammo > 0 then
 				RotateToPlayer(e)
-				if GetEntityCanFire(e) == 1 then
+				if GetEntityCanFire(e) == 1 and g_Entity[e]['plrvisible'] == 1 then
+					if playonce[e] == 0 then PlaySound(e,0) end
 					if g_Time > npcincover[e].firedelay then						
 						FireWeaponInstant(e)
 						SetAnimationName(e,npcincover[e].shoot_animation)
@@ -122,7 +130,7 @@ function npc_incover_main(e)
 						npcincover[e].firedelay = g_Time + npcincover[e].firerate
 						npcincover[e].ammo = npcincover[e].ammo - 1
 					end
-				end
+				end				
 			else
 				StartTimer(e)				
 				npcincover[e].standing = 0
@@ -137,15 +145,15 @@ function npc_incover_main(e)
 				if npcincover[e].cover_style == 3 then
 					SetAnimationName(e,npcincover[e].right_animation)
 					PlayAnimation(e)
-				end
-			end
+				end							
+			end			
 		else
 			if (GetTimer(e)) < npcincover[e].cover_time then
 			else
 				StartTimer(e)
 				if npcincover[e].standing == 0 then
 					npcincover[e].standing = e
-					npcincover[e].ammo = npcincover[e].reloadquantity
+					npcincover[e].ammo = npcincover[e].reloadquantity					
 					if npcincover[e].cover_style == 1 then
 						SetAnimationName(e,npcincover[e].stand_animation)
 						PlayAnimation(e)
@@ -157,16 +165,15 @@ function npc_incover_main(e)
 					if npcincover[e].cover_style == 3 then
 						SetAnimationName(e,npcincover[e].stand_animation)
 						PlayAnimation(e)
-					end					
-					PlaySound(e,1)
+					end										
 				end
 			end
-		end
+		end		
 	else
 		StartTimer(e)
 		if npcincover[e].standing == e then 
-			npcincover[e].standing = 0
-		end
+			npcincover[e].standing = 0			
+		end		
 	end
 	if (GetPlayerDistance(e)) > npcincover[e].alert_distance then
 		if doonce[e] == 0 then
@@ -175,7 +182,6 @@ function npc_incover_main(e)
 				PlayAnimation(e)
 			end
 			if npcincover[e].cover_style == 2 then
-
 				SetAnimationName(e,npcincover[e].left_animation)
 				PlayAnimation(e)
 			end
@@ -185,7 +191,7 @@ function npc_incover_main(e)
 			end
 			doonce[e] = 1
 		end
-	end
+	end	
 	if g_Entity[e]['health'] <= 2 and endonce[e] == 0 then				
 		SetEntityHealthSilent(e,0) -- switches off 'Prevent Zero', then uses regular health zero kill order		
 		SetEntityHealth(e,1)

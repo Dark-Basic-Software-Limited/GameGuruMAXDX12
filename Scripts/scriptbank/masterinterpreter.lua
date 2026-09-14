@@ -2,6 +2,11 @@
 -- MASTER INTERPRETER - Contributors; Lee, Necrym59 
 --
 
+-- Accumilator debug info string and global flag
+local s_DebugInfObj = {}
+local s_DebugInfObjTmr = {}
+g_ShowObjectDebugVisuals = 0
+
 local master_interpreter_core = {}
 
 -- Slows down logic for closer debugging
@@ -1371,13 +1376,20 @@ function masterinterpreter_doaction ( e, output_e, actiontype, actionparam1, act
     tusethisanim = actionparam1
    end
   end
-  SetAnimationName(e,tusethisanim)
-  local tsubtlevariationforrealism = math.random(100)/10.0
-  SetAnimationSpeed(e,(GetEntityMoveSpeed(e)+tsubtlevariationforrealism)/100.0)
-  if actiontype == g_masterinterpreter_act_playrandom then
-   PlayAnimationFrom(e,math.random(5,50))
+  if GetEntityAnimationNameExist(e,tusethisanim) > 0 then
+   SetAnimationName(e,tusethisanim)
+   local tsubtlevariationforrealism = math.random(100)/10.0
+   SetAnimationSpeed(e,(GetEntityMoveSpeed(e)+tsubtlevariationforrealism)/100.0)
+   if actiontype == g_masterinterpreter_act_playrandom then
+    PlayAnimationFrom(e,math.random(5,50))
+   else
+    PlayAnimation(e)
+   end
   else
-   PlayAnimation(e)
+   if g_ShowObjectDebugVisuals == 1 then 
+    s_DebugInfObj[e] = s_DebugInfObj[e] .. " NoAnim("..tusethisanim..")" 
+	s_DebugInfObjTmr[e] = Timer()
+   end
   end
  end
  
@@ -2699,6 +2711,13 @@ end
 
 function master_interpreter_core.masterinterpreter ( passedin_behavior, listmax, e, output_e, entity_e )
 
+ -- Accumilator debug info string
+ if s_DebugInfObj[e] == nil then s_DebugInfObj[e] = "" end
+ if s_DebugInfObjTmr[e] == nil then s_DebugInfObjTmr[e] = 0 end
+ if Timer() > s_DebugInfObjTmr[e]+3000 then
+  s_DebugInfObj[e] = ""
+ end
+
  -- Slow down logic for debugging
  local tdoanotherlogiccycle = 1
  if g_masterinterpreter_slowtimeinterval > 0 then
@@ -2788,10 +2807,16 @@ function master_interpreter_core.masterinterpreter ( passedin_behavior, listmax,
   end
  end 
  
- -- Debug View
+ -- Show Acculimated Debug Info
  local tbehaviorindex = output_e["currentbehaviorindex"]
  if tbehaviorindex >= 0 then
-  --PromptLocal(e,"Health = " .. g_Entity[e]['health'] )
+  if g_ShowObjectDebugVisuals == 1 then
+   if GetPlayerDistance(e) < 500 then
+    local finalDebugStringToShow = "[#"..e.." H="..g_Entity[e]['health'].."]"
+	if s_DebugInfObj[e] ~= "" then finalDebugStringToShow = finalDebugStringToShow .. ":" .. s_DebugInfObj[e] end
+    PromptLocal(e, finalDebugStringToShow)
+   end
+  end
  end
  
  -- Ensure proper foot planting (anim based movement for character) 
