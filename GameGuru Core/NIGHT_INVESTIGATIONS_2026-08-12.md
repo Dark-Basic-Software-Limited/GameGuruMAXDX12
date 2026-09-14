@@ -9334,3 +9334,82 @@ as a consistent one-directional increase; this is scatter around zero.
 
 ★ **A pass/fail gate answers "is it allowed", not "did it change".** The second question needed
 the per-demo diff, and it is the one that actually retires the risk.
+
+
+# ★★★ §3.37 — THE WATER SPLASH THAT LASTED FIVE SECONDS (2026-09-14)
+
+Lee, from live play: *"when I shoot into the water, the splash particle repeats 5-6 times. It
+should only play once for one splash!"* — and, crucially, a follow-up observation that turned out
+to be the whole answer: *"It COULD be that this is one emitter but it lasts 6-8 seconds."*
+
+## The cause: a threshold whose unit is not what it reads as
+
+`M-Decal.cpp` stopped a WPE decal emitter at `framedelay >= 100`, which reads as 100 ms. It is not.
+Game-loop time is
+
+```cpp
+// M-Game_part2.cpp:1541
+t.ElapsedTime_f = fThisTimeCount - t.LastTimeStamp_f;   // seconds
+g.timeelapsed_f = t.ElapsedTime_f * 20.0;               // ★ ONE SECOND = 20 UNITS
+```
+
+so `100` is **5.0 seconds of continuous emission**, after which the particles still alive dissipate
+on top — the 6-8 s Lee saw. Because the accumulation scales with frame time the duration is
+**frame-rate independent**: a flat 5 s on a 30 fps laptop and a 300 fps desktop alike, which is
+exactly why it never presented as a timing or performance problem.
+
+### ★ Why only the WPE path was wrong
+
+The legacy branch a few lines below is the *same test on the same field*:
+
+| path | accumulates | `>= 100` means |
+|---|---|---|
+| **WPE** (`:980`) | `decaltimeelapsed_f` | **5.00 s** |
+| legacy (`:1012`) | `decaltimeelapsed_f * 2 * playspeed_f` | 0.83 s for `impact` (playspeed 3.0) |
+
+The threshold had only ever been tuned *through* that multiplier. When the WPE path was added it
+copied the constant but not the scaling, so **a magic number crossed into a context where its unit
+silently changed.** One literal, two call sites, two meanings. Now a named constant:
+`GG_WPE_EMIT_SECONDS = 0.20f` × `20.0f`, so the unit is stated instead of implied.
+
+Action 7 stops NEW particles and lets live ones finish, so the short window still DISSIPATES rather
+than snapping off — the §2.28 behaviour is preserved, it just stops five seconds earlier.
+
+## ★★★ Method — three theories from reading code, all wrong
+
+Every one was plausible, cited real code, and was disproved:
+
+1. **"the legacy branch spawns `splash_droplets` five times"** — true of the code (lines 1400-1404
+   spawn the same decal 5×), and it fits "5-6 repeats" perfectly. That branch never ran.
+2. **"`weapon_projectile_destroy` clears the wrong slot"** — it uses `t.tProj` while the caller
+   reads `t.tNewProj`. Disproved by `:303`, which assigns `t.tNewProj = t.tProj` in the same loop.
+3. **"the emitter is re-fired every frame"** — disproved: `bParticle_Fire` is cleared immediately
+   after the burst (`M-Entity_part5.cpp:277`).
+
+★★★ **What settled it in one run:** a counter at the single choke point both callers funnel
+through (`decal_triggerwatersplash`), logging call number, elapsed ms, branch taken and position.
+One shot produced exactly ONE line with `bWPE=1`. That killed theories 1 and 2 outright and left
+only "one emitter, running too long" — after which the fix was arithmetic, not inspection.
+
+⚠ **Instrument design note.** The trace grouped calls into bursts separated by 3 s of quiet. Lee
+reported "one shot" but had fired three; each logged as `call #1` at a *different* xyz, and it was
+the POSITION that proved they were three separate shots rather than one repeating event. A bare
+count would have been ambiguous. Log the discriminator, not just the tally.
+
+## ⚠ Separate, NOT fixed: the content
+
+`Files/gamecore/decals/splash_large/wpe.pe` contains **five** emitters — `pe-emitter-d`,
+`pe-emitter-d - Copy`, `pe-emitter-ripple 1` and two further Copies of that ripple — plus seven
+`wpe*_color.png` pages. `impact/wpe.pe` has ONE. They all burst together, so a single splash pays
+for five emitters. Not the cause of the duration, but worth re-authoring: it is a per-splash
+particle cost on exactly the low-spec hardware this campaign targets.
+(`strings` does not exist in this Git Bash — enumerate with a printable-run scan of the `.pe`.)
+
+## Verified
+
+- Game builds clean, 0 errors; diagnostic confirmed absent from the shipped binary.
+- **Lee confirmed the splash is fixed** in live play (2026-09-14).
+- ⚠ **The impact smoke flume is NOT yet eyeballed.** It shares this window and was also getting
+  5 s of emission; if it now looks thin, `GG_WPE_EMIT_SECONDS` is the one number to raise.
+- No engine change. No sweep re-run: this touches decal emitter timing only — no POLYS, VRAM or
+  load-path effect.

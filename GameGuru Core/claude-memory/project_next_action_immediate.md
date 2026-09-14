@@ -10,6 +10,25 @@ metadata:
 
 # ▶▶ RESUME HERE — state as of 2026-09-14
 
+## ★ Latest: 3.37 water splash FIXED, Lee-confirmed
+A WPE decal emitter ran for a flat **5.0 s** because `framedelay >= 100` was read as ms when the
+unit is 1/20 s. Now a named constant. See [[project-gg-time-units]] — that unit trap is general.
+⚠ **The impact smoke flume shares that window and has NOT been eyeballed** — if it looks thin,
+`GG_WPE_EMIT_SECONDS` (M-Decal.cpp) is the number to raise.
+⚠ Content, separate: `splash_large/wpe.pe` has FIVE emitters (3 are "- Copy" duplicates) vs ONE in
+`impact/wpe.pe`. Worth re-authoring; a per-splash cost on low-spec.
+
+## ★ Delayed Shadows — ASKED AND ANSWERED, do NOT re-open as a default flip
+Lee confirmed ON looks fine, and tooltips are fine (both 2026-09-14). But the recorded plan to
+"flip both defaults to match DX11" was based on an INCOMPLETE model and would be nearly inert:
+the quality-preset ladders are **identical** in DX11 and DX12 (HIGHEST→false, LOW→true), and the
+default preset is HIGHEST (`M-Visuals_part0.cpp:30`). The 4 divergent sites (2 Types.h ctors,
+2 M-Visuals resets: DX11 `true`, DX12 `false`) only survive for **CUSTOM** projects.
+★★ So DX11 users on HIGHEST also had it OFF — the claim "DX11 shipped this ON and DX12 ships it
+OFF", which is in a shipped tooltip at `M-GridEditB_part24.cpp:173`, is true ONLY for CUSTOM.
+The saving is real but it is a user checkbox choice (serialised, `M-Visuals_part0.cpp:930/1657`).
+Offered to Lee as a CUSTOM-parity tidy-up; he has not asked for it.
+
 **Everything committed and pushed. Both repos clean, 0 unpushed.**
 Engine `edce8393` (3.36) · game `39e1e5ef`. Notes: `NIGHT_INVESTIGATIONS_2026-08-12.md` §3.35b–j.
 

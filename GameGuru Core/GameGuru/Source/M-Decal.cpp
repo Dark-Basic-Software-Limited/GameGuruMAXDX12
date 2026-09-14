@@ -978,7 +978,34 @@ void decalelement_control ( void )
 				if (t.decal[decalid].newparticle.bWPE)
 				{
 					t.decalelement[t.f].framedelay = t.decalelement[t.f].framedelay + (t.decaltimeelapsed_f);
-					if (t.decalelement[t.f].framedelay >= 100)
+
+					// ★★★ GGMAX 3.37 WPE EMIT WINDOW (2026-09-14, Lee: one shot into water = a splash
+					// that repeats and runs 6-8 s).
+					//
+					// This threshold is a DURATION, and its unit is not what it looks like. Time here is
+					// g.timeelapsed_f = ElapsedTime_f * 20 (M-Game_part2.cpp:1541), i.e. ONE REAL SECOND
+					// IS 20 UNITS - so the old `>= 100` was 5.0 SECONDS of continuous emission, not the
+					// 100 ms it reads as. Frame-rate independent, so it was a flat 5 s on every machine.
+					//
+					// ★ Why only the WPE path was wrong: the legacy branch below (the `!bWPE` copy of this
+					// same test) accumulates `decaltimeelapsed_f * 2 * playspeed_f`, which happens to scale
+					// the same 100 down to ~0.8 s for the impact decal. This branch accumulates the RAW
+					// value, so it inherited a threshold that had only ever been tuned through that
+					// multiplier. Measured, not guessed: 100 / 20 = 5.0 s exactly.
+					//
+					// Action 7 stops NEW particles and leaves the live ones to finish, so a short window
+					// still DISSIPATES rather than snapping off - the 2.28 behaviour below is preserved,
+					// it just stops five seconds earlier. Recycling the element at the same moment is
+					// safe and returns the pool slot sooner: the emitter entity is cache-owned and is
+					// deliberately NOT deleted, so particles already in flight are unaffected.
+					//
+					// ⚠ Separate CONTENT issue, not fixed here: splash_large/wpe.pe contains FIVE emitters
+					// - 'pe-emitter-d', 'pe-emitter-d - Copy', 'pe-emitter-ripple 1' and TWO more Copies of
+					// that ripple - against one emitter in impact/wpe.pe. They all burst together, so one
+					// splash pays for five. Worth re-authoring, but it is not what made it last 6-8 s.
+					const float GG_WPE_EMIT_SECONDS = 0.20f;          // burst window for a decal effect
+					const float GG_WPE_EMIT_UNITS   = GG_WPE_EMIT_SECONDS * 20.0f;   // 1 s = 20 units
+					if (t.decalelement[t.f].framedelay >= GG_WPE_EMIT_UNITS)
 					{
 						// GGMAX 2.28 (2026-08-12): STOP EMITTING before abandoning the emitter.
 						//
