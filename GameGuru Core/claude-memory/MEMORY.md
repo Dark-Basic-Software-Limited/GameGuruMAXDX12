@@ -1,7 +1,7 @@
 # GameGuruMAX Project Memory
 
 > **Resuming work? Read [Next action immediate](project_next_action_immediate.md) FIRST** — current state, next step, do-not list.
-> ⚠⚠ **NEW MACHINE since 08-31** — [Machine migration](project_machine_migration.md): VS is now `2022\Community`, build area is `D:\DEV\BUILDS` (junction `D:\DEV\BUILD` keeps old paths valid), untracked `.lib` donor is `D:\DEV\GAMEGURUMAXREPO`, **GPU is a GTX 1050 (laptop)** — old FPS/VRAM baselines INVALID here until re-measured. MAX launches and renders correctly (verified 08-31, Aztec in editor).
+> ⚠⚠ **TWO MACHINES since 08-31** — run ``[ -d /d/DEV/BUILDS ] && echo LAPTOP || echo DESKTOP`` before trusting any path, GPU or perf number. **DESKTOP = RX 9060 XT, the primary box and the source of every recorded FPS/VRAM baseline**; LAPTOP = GTX 1050, set up 08-31 and unused since, where those baselines are INVALID. Full table: [Machine migration](project_machine_migration.md).
 > ⚙ This folder is mirrored into the repo at `GameGuru Core/claude-memory/` — `tools/sync_claude_memory.sh to-repo` after a session; `to-live` on a new box. ⚠ The live path is keyed on the repo's ABSOLUTE path — a wrong key fails SILENTLY.
 
 ## Current campaign — performance / ultra-low-spec
@@ -11,7 +11,7 @@
 - [Terrain + VT performance](project_terrain_vt_perf.md) — the four brutal off-switches, the 3.96 ms VT cost hiding as "GPU idle", what a baked terrain is worth (+35%; the cliff is TILE COUNT). §2.94–§3.02.
 - [Far-tree billboards](project_far_tree_billboards.md) — 2.95–3.07: distant trees restored, pool cap, per-level atlas slices, three shipped defects. §2.95–§3.07.
 - ★★ **3.19/3.20 panel + controls** — profiler rows stable (name order; a thread_local parent moved a row on 1 dump in 31 — the THIRD shifting mechanism); Object Detail Distance works UPWARDS; Texture Detail applies LIVE; "Hide idle rows" at 0.05 ms, 127→95 rows. ⚠ I gave Lee a WRONG number from a sparse sample — [Measuring rules](project_measuring_rules.md). Notes §3.19–§3.20b.
-- ★ **Sweep 0825 = the POLYS reference**, `tools/sweepgate.sh` REBASELINED to it (19/19, 120.4 MB headroom). ⚠ Tree pool / billboard handover / draw_distance changes move it — amend C2 in writing BEFORE the run. `DEMO_FPS_SWEEP.md` top. ⚠ Old-machine numbers — re-baseline on this box.
+- ★ **Sweep 0825 = the POLYS reference**, `tools/sweepgate.sh` REBASELINED to it (19/19, 120.4 MB headroom). ⚠ Tree pool / billboard handover / draw_distance changes move it — amend C2 in writing BEFORE the run. `DEMO_FPS_SWEEP.md` top. ⚠ Measured on the DESKTOP (RX 9060 XT) — re-baseline before quoting them on the laptop.
 - [Low-spec off-switches](project_lowspec_offswitches.md) — the 3.08–3.12 set. ★ Shadows Off +17%; Object Detail Distance is U-shaped; Occlusion Off is a LOSS. **Read before adding another switch.**
 
 ## Recently closed (detail in the linked file — do not re-derive here)
@@ -36,8 +36,8 @@
 
 ## CRITICAL BUILD RULES
 - **NEVER use Debug builds** (exit 3). ALWAYS Release. Release outputs directly to the EXE dir — no copy step.
-- **Build (bash)**: `cd "D:/max/GameGuruMAXDX12/GameGuru Core" && ./build.bat Release` — cwd MUST be GameGuru Core; no `cmd //c`. VS path inside is now **2022\Community** (08-31).
-- **Launch**: `cd "D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/" && "./GameGuruMAX.exe" &` (BUILD is a junction to BUILDS on this machine).
+- **Build (bash)**: `cd "D:/max/GameGuruMAXDX12/GameGuru Core" && ./build.bat Release` — cwd MUST be GameGuru Core; no `cmd //c`. VS path inside is **2022\Community** (08-31) — ★ re-verified on the DESKTOP 09-14, engine and game both build clean there too.
+- **Launch**: `cd "D:/DEV/BUILD/GameGuru Wicked MAX Build Area/Max/" && "./GameGuruMAX.exe" &` — on the DESKTOP `D:\DEV\BUILD` is a real directory; on the LAPTOP it is a junction to `D:\DEV\BUILDS`. The path works on both.
 - **Kill MAX before building**: `taskkill.exe //IM GameGuruMAX.exe //F 2>/dev/null; true; sleep 2` — then VERIFY with tasklist.
 - **Game build does NOT rebuild the engine lib** — `cd D:/max/WickedEngineDX12 && ./build_wicked.bat Release` first. ★ Engine builds in **~40 s** — never defer an engine change as "expensive". ⚠ Engine branch is **`master`**, not `main`.
 - **Shader compile has TWO paths** — engine .cso freshness unreliable; GGTerrain/game shaders need a GAME rebuild. ⚠ An engine build clears `Max/shaders/*.cso` — don't build the engine during a sweep. Prove a shader edit landed by the .cso SIZE, never the timestamp. [Shader build pipeline](project_shader_build_pipeline.md) ⚠ **Prove an engine shader-header edit with a GAME build** — 3.33 broke GGTerrain and a sweep on stale .cso passed.
@@ -45,7 +45,7 @@
 - **A killed harness run leaves a stale `auto_command.txt` the NEXT launch executes.** [feedback](feedback_stale_auto_command.md)
 - ⚠ **Leaked parallel runners corrupt sweeps**; `pkill` dead in Git Bash — `ps -W`+`kill -9`, lockfile every long script. [feedback](feedback_leaked_parallel_runner.md)
 - **Worktree builds**: junction + copied *.lib + cmd /c wrapper [feedback](feedback_worktree_build.md) · every path starts with the worktree prefix [feedback](feedback_edit_worktree_path.md) · mirror EVERY touched file [feedback](feedback_mirror_complete_file_set.md) · check main repo status first [feedback](feedback_check_main_repo_status.md)
-- **DX11 reference repos are READ ONLY** (not present on this machine — donor is `D:\DEV\GAMEGURUMAXREPO`). [feedback](feedback_dx11_reference_readonly.md)
+- **DX11 reference repos `D:\max\GameGuruMAX` / `D:\max\WickedRepo` are STRICTLY READ ONLY** — present on the DESKTOP, absent on the LAPTOP (whose untracked-binary donor is `D:\DEV\GAMEGURUMAXREPO`). [feedback](feedback_dx11_reference_readonly.md)
 - **"Commit and push" means** local `main` + origin; never disturb stashes. [feedback](feedback_commit_and_push_means_main.md) · **Notes + commit + push as each milestone lands.** [feedback](feedback_notes_commit_as_you_go.md)
 - **Be decisive; autonomous test loop wanted** — kill/rebuild/launch/screenshot without asking. [feedback](feedback_be_decisive_dont_over_confirm.md) · [feedback](feedback_autonomous_testing.md) · **user idle ~10 min = AWAY, kill MAX** [feedback](feedback_kill_max_after_10min.md)
 - **Two failed attempts = wrong approach.** [feedback](feedback_two_attempts_change_approach.md) · **Don't thrash on automation** [feedback](feedback_dont_thrash_on_automation.md) · **Build the instrument that NAMES the culprit** [feedback](feedback_instrument_before_theory.md)

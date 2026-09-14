@@ -8,10 +8,30 @@ metadata:
   modified: 2026-08-26T04:10:52.131Z
 ---
 
-# ▶▶ RESUME HERE — state as of 2026-08-29 (3.35b-h: Lee's five reports)
+# ▶▶ RESUME HERE — state as of 2026-09-14
 
 **Everything committed and pushed. Both repos clean, 0 unpushed.**
-Engine `a159b93e` · game `91b5c146`. Notes: `NIGHT_INVESTIGATIONS_2026-08-12.md` §3.35b–j.
+Engine `edce8393` (3.36) · game `39e1e5ef`. Notes: `NIGHT_INVESTIGATIONS_2026-08-12.md` §3.35b–j.
+
+## ⚠ FIRST: which machine are you on?
+
+`[ -d /d/DEV/BUILDS ] && echo LAPTOP || echo DESKTOP` — there are **two** since 08-31, and paths,
+GPU and every perf baseline differ. See [[project-machine-migration]]. The DESKTOP (RX 9060 XT) is
+the primary box and the one all recorded FPS/VRAM numbers came from.
+
+## What happened 08-31 → 09-14 (Lee away; no feature work)
+
+- A laptop was set up as a second box, and MAX verified running on it (GTX 1050).
+- ★ **Engine 3.36 `edce8393`**: `CreatePipelineState` now refuses a stage whose shader never
+  loaded, naming the stage, instead of AV-ing in a LoadShaders job. Delta row is in
+  `WICKED_ENGINE_CHANGES.md`.
+- `build.bat` / `build_wicked.bat` now point at **VS 2022** (the laptop had no VS 2026).
+  ★ Re-verified on the desktop 09-14: engine and game both build clean.
+- MEMORY.md was consolidated 19.7 KB → 13.2 KB; detail moved into `project_rules_*.md` topic files.
+- ⚠ **One OPEN crash, laptop-only:** `LoadAssImpObject` AV (`DBOAssImp_part0.cpp:1142`), seen once,
+  never reproduced. Do not assume it affects the desktop.
+- ⚠ The shipped alpha exe is dated **2026-08-29** and therefore PREDATES 3.36. Any rebuild from
+  here is a different binary — and its pdb no longer matches the one shipped to testers.
 **Gate: sweep `0829a` CLEAN 19/19** — POLYS identical to the 0825 reference, worst VRAM 3975.1 MB
 (120.9 MB headroom). ★ Also diffed per-demo vs 0828e: VRAM deltas bidirectional in ~16 MB steps,
 means −2.4 / −1.7 MB — restoring streaming feedback cost nothing. A gate answers “is it allowed”,
