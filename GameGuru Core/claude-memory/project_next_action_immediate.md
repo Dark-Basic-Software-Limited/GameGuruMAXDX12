@@ -194,12 +194,13 @@ build.** Fixed in 3.34.
 ★ Read the **CLOSING SUMMARY at the END of `NIGHT_INVESTIGATIONS_2026-08-12.md`** first — it has
 the ranked next actions, the clean negatives, and the instrument failures for the perf chase.
 
-## ★★★ DO THIS FIRST NEXT SESSION
-**Ask Lee whether he ticked "Delayed Shadows" and how it looked.** DX11 shipped it ON at both
-layers, DX12 ships OFF. Biggest single saving found (−59% sun shadow, −25% whole-frame GPU) and
-it is one click away in Graphics & Performance. ⚠ Default deliberately NOT flipped — the DX12
-port regrouped the stagger to kill a cascade-blend flicker, so only his eye can approve it.
-If he accepts the distant-shadow lag, **flip both defaults to match DX11**.
+## ✅ ASKED AND ANSWERED 2026-09-14 — Delayed Shadows (was "DO THIS FIRST NEXT SESSION")
+Lee ticked it, confirmed it looks fine, and confirmed the tooltips too. The saving is real
+(−59% sun shadow, −25% whole-frame GPU; 2.19 vs 5.0 cascades/frame) and remains a user choice.
+⚠ **Do NOT act on the old instruction to "flip both defaults to match DX11"** — that plan rested
+on an incomplete model. The preset ladders are IDENTICAL in both renderers and the default preset
+is HIGHEST, which forces it OFF in both, so the divergent constants only reach CUSTOM projects.
+The tooltip and the harness comment both claimed otherwise and were corrected in 3.37.
 
 ⚠⚠ **Before ANY test-game measurement: the in-game instruments are broken.** `DUMP_PROFILER`
 serves a FROZEN snapshot and `GET_GPUMS` returns NOTHING in game state (editor varies

@@ -8600,6 +8600,11 @@ Lee confirmed the old AMD card good through 3.30.
 
 ## ★★★ THE ONE THING TO DO NEXT
 
+> ⚠ **Superseded — see §3.37 (2026-09-14).** Lee confirmed it looks fine, but the "DX11 shipped
+> it ON" premise below is true only of the constructor defaults: the quality-preset ladders are
+> IDENTICAL in both renderers and the default preset (HIGHEST) forces it OFF in both. Left as
+> written because this file is a chronological record of what was believed at the time.
+
 **Ask Lee to tick "Delayed Shadows" and look at it.** DX11 shipped it ON at both layers; DX12 ships
 it OFF at both. It is the largest single saving found (−59% sun shadow) and it is one click away.
 ⚠ The default was deliberately NOT flipped: the DX12 port regrouped the stagger on purpose to kill a
@@ -9413,3 +9418,48 @@ particle cost on exactly the low-spec hardware this campaign targets.
   5 s of emission; if it now looks thin, `GG_WPE_EMIT_SECONDS` is the one number to raise.
 - No engine change. No sweep re-run: this touches decal emitter timing only — no POLYS, VRAM or
   load-path effect.
+
+
+# ★ §3.37b — CORRECTING THE DELAYED SHADOWS CLAIM (2026-09-14)
+
+Lee confirmed Delayed Shadows looks fine and asked for the tooltip wording to be fixed, because
+the user-facing text asserted something that turned out not to be true.
+
+## What was wrong
+
+The tooltip ended: *"It is the single biggest saving available here, and it is what the older
+DirectX 11 version of GameGuru did as standard."* The second half is false for almost every user.
+
+`g_bDelayedShadows` is **derived from the quality preset**, not a standing default:
+
+| | DX11 | DX12 |
+|---|---|---|
+| ladder HIGHEST | `false` (`M-Visuals.cpp:2451`) | `false` (`M-Visuals_part1.cpp:654`) |
+| ladder LOW | `true` (`:2480`) | `true` (`:678`) |
+| Types.h ctors ×2 | `true` | `false` |
+| M-Visuals resets ×2 | `true` | `false` |
+
+**The ladders are identical**, and the default preset is HIGHEST (`M-Visuals_part0.cpp:30`). So a
+default DX11 install had this OFF as well. The four divergent constants only survive for CUSTOM
+projects, where the ladder's "do not override" branch runs.
+
+## What changed
+
+- tooltip: the DX11 provenance sentence removed; the measured numbers stay (they were never in
+  doubt). Added a caveat that is genuinely useful and was missing: the graphics mode sets this for
+  you — **Highest turns it off, Low turns it on, Custom leaves your choice alone**.
+- `M-GridEditB_part24.cpp` comment and `AutomationHarness.cpp:6982` (`SET_DELAYEDSHADOWS`) both
+  carried the same claim; both corrected in place with the evidence.
+- the resume memory's "DO THIS FIRST NEXT SESSION" block is retired — it instructed a future
+  session to flip the defaults, which would now be acting on a disproved premise.
+
+## ★ Checked, so the caveat is accurate rather than plausible
+
+The ladder runs from `visuals_shaderlevels_setlevel` (the graphics-mode combo,
+`M-GridEditB_part24.cpp:36-38`) and once at editor startup from `mapeditorexecutable_init`. It does
+**not** run per level load, so a user's tick genuinely persists — it is serialised at
+`M-Visuals_part0.cpp:930/1657`. Had it run on load this would have been a dead knob, and the
+tooltip would have needed to say something quite different.
+
+⚠ Dropdown labels verified before writing the text: **Highest / Custom / Low** — an earlier draft
+said "Lowest", which does not exist in the UI.

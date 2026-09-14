@@ -6979,12 +6979,18 @@ static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* res
 	{
 		// SET_DELAYEDSHADOWS <0|1> - stagger sun cascade refresh across frames.
 		//
-		// ★ This is the single largest DX11-vs-DX12 default difference found so far. DX11 shipped
-		// it ON at BOTH layers (WickedRepo wiRenderer.cpp:47 g_bDelayedShadows = true, and
-		// GameGuruMAX Types.h:4121), staggering cascade 4 to every 9th frame, 3 to every 4th, 2 to
-		// every 3rd and 1 to every 2nd - an average of 2.19 cascades per frame. DX12 ships it OFF at
-		// both layers and renders all 5.0 every frame. That is 2.28x the sun cascade work out of the
-		// box, and the port never intended it - the feature is present and correct, just defaulted off.
+		// ★ The saving is large and measured: staggering runs cascade 4 every 9th frame, 3 every
+		// 4th, 2 every 3rd and 1 every 2nd - an average of 2.19 cascades per frame against 5.0 with it
+		// off, i.e. 2.28x the sun cascade work when disabled.
+		//
+		// ⚠ GGMAX 3.37 CORRECTION: this used to call it "the single largest DX11-vs-DX12 DEFAULT
+		// difference", on the grounds that DX11 shipped it ON at both layers (WickedRepo
+		// wiRenderer.cpp:47 and GameGuruMAX Types.h:4121) while DX12 ships OFF. Those constants do
+		// differ, but they are NOT what a user gets: the quality-preset ladder overrides them and the
+		// two ladders are IDENTICAL - HIGHEST forces false, LOW forces true, in BOTH renderers (DX12
+		// M-Visuals_part1.cpp:654/678, DX11 M-Visuals.cpp:2451/2480). The default preset is HIGHEST,
+		// so a default DX11 install had this OFF too; the constants only reach CUSTOM projects.
+		// Verified against the read-only DX11 tree 2026-09-14. See NIGHT_INVESTIGATIONS section 3.37.
 		int n = -1;
 		if (sscanf_s(arg, "%d", &n) < 1 || n < 0 || n > 1)
 		{

@@ -170,8 +170,21 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			}
 		}
 		// ★ GGMAX 3.32: the measured numbers, in the tooltip. This is the biggest single saving found
-		// in the DX11-parity round - DX11 shipped this feature ON and DX12 ships it OFF - and it was
-		// sitting behind a one-line description that gave nobody a reason to try it.
+		// in the DX11-parity round, and it was sitting behind a one-line description that gave nobody a
+		// reason to try it.
+		//
+		// ⚠ GGMAX 3.37: the DX11 claim above was WRONG and has been removed from the tooltip. It read
+		// "DX11 shipped this feature ON and DX12 ships it OFF", which is true only of the CONSTRUCTOR
+		// defaults (Types.h, and the two M-Visuals reset sites: DX11 true, DX12 false). It is NOT true
+		// of what a user actually gets, because the quality-preset ladder overrides those defaults and
+		// the two ladders are IDENTICAL: HIGHEST forces false and LOW forces true in BOTH renderers
+		// (DX12 M-Visuals_part1.cpp:654/678, DX11 M-Visuals.cpp:2451/2480). The default preset is
+		// HIGHEST (M-Visuals_part0.cpp:30), so DX11 users on the default had this OFF too - the four
+		// divergent sites only survive for CUSTOM projects, where the ladder's "do not override"
+		// branch runs. Verified against the read-only DX11 tree, 2026-09-14.
+		//
+		// ★ The saving itself is real and measured; only the DX11 provenance was overstated. Do not
+		// re-open this as a "flip the default to match DX11" task - see NIGHT_INVESTIGATIONS §3.37.
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Spreads the sun's shadow updates over several "
 			"frames instead of redrawing all of them every frame.\n\n"
 			"The sun casts five shadow layers, from the ground at your feet out to the horizon. Redrawing "
@@ -179,10 +192,12 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			"from frame to frame. With this on, the nearest layer keeps updating every frame and the "
 			"further ones take turns.\n\n"
 			"Measured on a test level: sun shadow time dropped from 2.15ms to 0.89ms, and total graphics "
-			"card time for the whole frame fell by a quarter. It is the single biggest saving available "
-			"here, and it is what the older DirectX 11 version of GameGuru did as standard.\n\n"
+			"card time for the whole frame fell by a quarter. It is the single biggest saving on this "
+			"panel.\n\n"
 			"The trade is that shadows in the distance can lag very slightly behind a fast-moving sun or "
-			"camera. Turn it off again if you notice that. Worth trying first on any slower machine.");
+			"camera. Turn it off again if you notice that. Worth trying first on any slower machine.\n\n"
+			"Note: the graphics mode above sets this for you - Highest turns it off, Low turns it on, "
+			"and Custom leaves it exactly as you set it here. Your choice is saved with the level.");
 		if (g_bDelayedShadows)
 		{
 			ImGui::SameLine();
