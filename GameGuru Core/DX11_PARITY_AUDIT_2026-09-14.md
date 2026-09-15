@@ -92,9 +92,51 @@ Several changes look like single files and are not:
 4. **Nav-mesh focus view** — `DetourDebugDraw.cpp` uses globals defined in `Sample_TileMesh.cpp`.
    *(Done — see §5.)*
 
-## 5. What was DONE tonight
+## 5. What was DONE
 
-*(this section is updated as each phase lands; every phase gated on a clean build)*
+Every phase gated on `grep -cE "error C[0-9]+|fatal error|: error LNK"` == 0, never on exit code.
+
+### Phase A — `d1a9d09e` (committed, pushed, builds clean)
+
+- **177 content files**: 96 Lua behaviours, 78 behaviour icons, the Behaviors guide, the MaxLua and
+  Groups `.tps`, `document.fpe`, two `.byc`. Also mirrors DX11's deletion of `border_maps.*`
+  (checked first — referenced by nothing but itself).
+- **The 4 missing Lua commands**, which were the gate on all of the above. Comparing the registered
+  C++ Lua API of both trees: DX11 has exactly four DX12 lacks — `GetSunColorRed/Green/Blue`,
+  `ForceMouseXYClick` — and DX12 has **none** DX11 lacks. Any shipped behaviour calling those would
+  simply have failed here. (Registered against `lua2` in this tree, not `lua`.)
+- **8 safe code files**: recursive_mutex deadlock fix (Bullet ×2), multi-monitor UI placement,
+  workshop skip-list, `undosys_clearall`, linear audio volume, `gdisablefulldecaleffects`,
+  ImGui constants.
+- **Nav-mesh focus view**, hand-ported. ⚠ I first took DX11's whole `Sample_TileMesh.cpp` and it
+  CLOBBERED DX12's navmesh cache (`loadNavMeshFromFile`, −30 lines). Reverted; moved only the five
+  globals and the `handleRender` hunk. **A file being in the "DX11 changed it" set does not make it
+  safe — it has to be in the DX11-only set, and that one was not.**
+- Content also deployed into the build folder (176 files, manifest kept outside it) so it is
+  testable; repo and build verified byte-identical afterwards.
+
+### Phase B — Particle System Upgrade (DX11 `3e21f674`, the newest DX11 commit)
+
+The editor-side particle work: a **Particle States** panel (looping, animation speed, opacity),
+WPE emitter preview in the library, and `.pe` effects using their own shipped `.jpg` thumbnail
+instead of a generated one.
+
+19 hunks against `M-GridEditB.cpp`, which does not exist here as a compiled file:
+
+| | |
+|---|---|
+| auto-placed, exact context | **15** — 7 into `_part9` (`process_entity_library_v2`), 8 into `_part12` (`DisplayFPEBehavior`) |
+| hand-placed | **3** — #3 and #10 (`.pe` JPG thumbs), #19 (preview-emitter guard, into `_part24`) |
+| skipped | **1** — #9 adds a blank line |
+
+★ All three hand-placed hunks failed to auto-apply for the *same* reason: DX11 wraps
+`GG_SetWritablesToRoot` in a `Storyboard.gamename`/`customprojectfolder` test that this tree does
+not have — a separate, still-unported DX11 change. Only the particle intent was taken; DX12's
+existing line was left alone.
+
+★ Hunk #19 wraps the whole of `RenderPreviewEmitter` in `if (bExternal_Entities_Window == false)`.
+Ported as an **early return** instead — verified there is no code after that block, so it is exactly
+equivalent, and re-indenting 30 lines is risk with no behavioural gain.
 
 ## 6. ★★★ What still needs YOUR decision
 

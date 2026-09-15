@@ -1363,9 +1363,31 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 							img = Left(img.Get(), Len(img.Get()) - 4);
 						}
 					}
-					img = img + cstr(".arx");
-
-					CreateBackBufferCacheName(img.Get(), 512, 288);
+					// ★ GGMAX 3.38 (DX11 3e21f674, Particle System Upgrade): a WPE particle is a '.pe' file and
+					// ships its own .jpg thumbnail beside it. Use that directly when present; only fall back to
+					// generating a back-buffer cache thumb for the legacy .arx effects.
+					// ⚠ Hand-placed: DX11 also wraps the GG_SetWritablesToRoot below in a Storyboard test this tree
+					// does not have (a separate unported DX11 change), which is why this would not auto-apply.
+					bool bHasAJPG = false;
+					LPSTR pParticleName = Predefined_Particle_Name[iPredefinedParticles].Get();
+					if (strnicmp(pParticleName + strlen(pParticleName) - 3, ".pe", 3) == NULL)
+					{
+						BackBufferCacheName = Left(pParticleName, strlen(pParticleName) - 3);
+						BackBufferCacheName = BackBufferCacheName + ".jpg";
+						if (FileExist(BackBufferCacheName.Get()))
+						{
+							bHasAJPG = true;
+						}
+					}
+					else
+					{
+						img = img + cstr(".arx");
+					}
+					if (bHasAJPG == false)
+					{
+						// revert to traditional thumb
+						CreateBackBufferCacheName(img.Get(), 512, 288);
+					}
 					GG_SetWritablesToRoot(true);
 					SetMipmapNum(1); //PE: mipmaps not needed.
 					image_setlegacyimageloading(true);
@@ -1463,7 +1485,8 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		{
 		}
 		#endif
-
+		
+		bool bPossibleWickedParticleSelectionChanged = false;
 		ImVec4 tool_selected_col = ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram];
 		bool bDrawsSelection = false;
 		ImRect image_draw_bb;
@@ -1486,17 +1509,20 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				current_particle_selected = i;
 				//Setup default parameters.
 				bUpdateParticle = true;
+				bPossibleWickedParticleSelectionChanged = true;
 
 				if (elementID > 0)
 				{
+					// clear any old particle
 					int iParticleEmitter = t.entityelement[elementID].eleprof.newparticle.emitterid;
 					if (iParticleEmitter != -1)
 					{
 						gpup_deleteEffect(iParticleEmitter);
 					}
+
+					// set the new settings
 					t.entityelement[elementID].eleprof.newparticle.emitterid = -1;
 					t.entityelement[elementID].eleprof.newparticle.emittername = Predefined_Particle_Name[current_particle_selected];
-
 					t.entityelement[elementID].eleprof.newparticle.bParticle_Preview = Predefined_bParticle_Preview[current_particle_selected];
 					t.entityelement[elementID].eleprof.newparticle.bParticle_Show_At_Start = Predefined_bParticle_Show_At_Start[current_particle_selected];
 					t.entityelement[elementID].eleprof.newparticle.bParticle_Looping_Animation = Predefined_bParticle_Looping_Animation[current_particle_selected];
@@ -1508,6 +1534,27 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 					t.entityelement[elementID].eleprof.newparticle.fParticle_Speed = Predefined_fParticle_Speed[current_particle_selected];
 					t.entityelement[elementID].eleprof.newparticle.fParticle_Opacity = Predefined_fParticle_Opacity[current_particle_selected];
 
+					// and decide on script to use
+					LPSTR pParticleName = Predefined_Particle_Name[current_particle_selected].Get();
+					if (strnicmp(pParticleName + strlen(pParticleName) - 3, ".pe", 3) == NULL)
+					{
+						t.entityelement[elementID].eleprof.aimain_s = "particles\\wpe_area.lua";
+						t.entityelement[elementID].eleprof.soundset4_s = "wpe_area_properties(2";
+						t.entityelement[elementID].eleprof.soundset4_s += "\"";
+						t.entityelement[elementID].eleprof.soundset4_s += t.entityelement[elementID].eleprof.newparticle.emittername;
+						t.entityelement[elementID].eleprof.soundset4_s += "\",3\"";
+						if (t.entityelement[elementID].eleprof.newparticle.bParticle_Show_At_Start == 1)
+							t.entityelement[elementID].eleprof.soundset4_s += "1";
+						else
+							t.entityelement[elementID].eleprof.soundset4_s += "0";
+						t.entityelement[elementID].eleprof.soundset4_s += "\",0\"0\",0\"0\",0\"0\")";
+					}
+					else
+					{
+						t.entityelement[elementID].eleprof.aimain_s = "markers\\particle.lua";
+					}
+
+					// and copy to cursor object
 					edit_grideleprof->newparticle = t.entityelement[elementID].eleprof.newparticle;
 				}
 			}
@@ -1576,6 +1623,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 		if (ImGui::StyleButton("Add New Particle##+", ImVec2((particle_w*0.5f) - 4.0f, 0)) || iSelectedLibraryStingReturnID == window->GetID("Add New Particle##+"))
 		{
+			bPossibleWickedParticleSelectionChanged = true;
 			if (iSelectedLibraryStingReturnID == window->GetID("Add New Particle##+"))
 			{
 				//This goes to the saved in pref. find free.
@@ -1636,6 +1684,26 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 					t.entityelement[elementID].eleprof.newparticle.fParticle_Speed = Predefined_fParticle_Speed[current_particle_selected];
 					t.entityelement[elementID].eleprof.newparticle.fParticle_Opacity = Predefined_fParticle_Opacity[current_particle_selected];
 
+					// and decide on script to use (code reuse, see above)
+					LPSTR pParticleName = Predefined_Particle_Name[current_particle_selected].Get();
+					if (strnicmp(pParticleName + strlen(pParticleName) - 3, ".pe", 3) == NULL)
+					{
+						t.entityelement[elementID].eleprof.aimain_s = "particles\\wpe_area.lua";
+						t.entityelement[elementID].eleprof.soundset4_s = "wpe_area_properties(2";
+						t.entityelement[elementID].eleprof.soundset4_s += "\"";
+						t.entityelement[elementID].eleprof.soundset4_s += t.entityelement[elementID].eleprof.newparticle.emittername;
+						t.entityelement[elementID].eleprof.soundset4_s += "\",3\"";
+						if(t.entityelement[elementID].eleprof.newparticle.bParticle_Show_At_Start==1)
+							t.entityelement[elementID].eleprof.soundset4_s += "1";
+						else
+							t.entityelement[elementID].eleprof.soundset4_s += "0";
+						t.entityelement[elementID].eleprof.soundset4_s += "\",0\"0\",0\"0\",0\"0\")";
+					}
+					else
+					{
+						t.entityelement[elementID].eleprof.aimain_s = "markers\\particle.lua";
+					}
+
 					edit_grideleprof->newparticle = t.entityelement[elementID].eleprof.newparticle;
 
 					bUpdateParticle = true; //Start new effect.
@@ -1658,6 +1726,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		if (current_particle_selected != -1 && current_particle_selected > iPredefinedParticleSetups-1) bDisableButton = false;
 		if (ImGui::StyleButtonEx("Delete Particle", ImVec2((particle_w*0.5f) - 4.0f, 0), bDisableButton))
 		{
+			bPossibleWickedParticleSelectionChanged = true;
 			if (current_particle_selected >= iPredefinedParticleSetups)
 			{
 				strcpy(pref.Saved_Particle_Name[current_particle_selected - iPredefinedParticleSetups], "");
@@ -1672,11 +1741,17 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				ImGui::SetTooltip("Delete selected custom particle");
 		}
 
-		ImGui::TextCenter("Particle Values");
+		ImGui::TextCenter("Particle States");
+
+		bool bLegacyParticle = true;
+		LPSTR pParticleName = edit_grideleprof->newparticle.emittername.Get();
+		if (strnicmp(pParticleName + strlen(pParticleName) - 3, ".pe", 3) == NULL)
+			bLegacyParticle = false;
 
 		bool btmp = edit_grideleprof->newparticle.bParticle_Preview;
 		if( ImGui::Checkbox("Preview Particle Effect", &btmp) )
 		{
+			bPossibleWickedParticleSelectionChanged = true;
 			bUpdateParticle = true;
 		}
 		edit_grideleprof->newparticle.bParticle_Preview = btmp;
@@ -1686,39 +1761,95 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		if (ImGui::Checkbox("Show at start of level", &btmp))
 		{
 			bUpdateParticle = true;
+			if (bLegacyParticle == false)
+			{
+				t.entityelement[elementID].eleprof.aimain_s = "particles\\wpe_area.lua";
+				t.entityelement[elementID].eleprof.soundset4_s = "wpe_area_properties(2";
+				t.entityelement[elementID].eleprof.soundset4_s += "\"";
+				t.entityelement[elementID].eleprof.soundset4_s += t.entityelement[elementID].eleprof.newparticle.emittername;
+				t.entityelement[elementID].eleprof.soundset4_s += "\",3\"";
+				if (btmp == 1)
+					t.entityelement[elementID].eleprof.soundset4_s += "1";
+				else
+					t.entityelement[elementID].eleprof.soundset4_s += "0";
+				t.entityelement[elementID].eleprof.soundset4_s += "\",0\"0\",0\"0\",0\"0\")";
+			}
 		}
 		edit_grideleprof->newparticle.bParticle_Show_At_Start = btmp;
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle whether the particle effect shows at the start of the level");
 
-		btmp = edit_grideleprof->newparticle.bParticle_Looping_Animation;
-		if (ImGui::Checkbox("Looping Animation", &btmp))
+		if (bLegacyParticle == true)
 		{
-			bUpdateParticle = true;
-		}
-		edit_grideleprof->newparticle.bParticle_Looping_Animation = btmp;
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Choose whether the particle repeats, or plays once only");
+			// Legacy Particles
+			ImGui::TextCenter("Legacy Particle Controls");
 
-		ImGui::TextCenter("Animation Speed");
-		ImGui::PushItemWidth(-10);
-		int tmpint = edit_grideleprof->newparticle.fParticle_Speed * 100.0f; // 1.0 = normal.
-		if (ImGui::MaxSliderInputInt("##Animation Speed", &tmpint, 0, 200, "Animation Speed"))
-		{
-			bUpdateParticle = true;
-		}
-		edit_grideleprof->newparticle.fParticle_Speed = (float) tmpint/100.0f;
-		ImGui::PopItemWidth();
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set the global speed of the particle effect");
+			btmp = edit_grideleprof->newparticle.bParticle_Looping_Animation;
+			if (ImGui::Checkbox("Looping Animation", &btmp))
+			{
+				bUpdateParticle = true;
+			}
+			edit_grideleprof->newparticle.bParticle_Looping_Animation = btmp;
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Choose whether the particle repeats, or plays once only");
 
-		ImGui::TextCenter("Opacity");
-		ImGui::PushItemWidth(-10);
-		tmpint = edit_grideleprof->newparticle.fParticle_Opacity * 100.0f; // 1.0 = normal.
-		if (ImGui::MaxSliderInputInt("##OpacityParticle", &tmpint, 0, 200, "Opacity"))
-		{
-			bUpdateParticle = true;
+			ImGui::TextCenter("Animation Speed");
+			ImGui::PushItemWidth(-10);
+			int tmpint = edit_grideleprof->newparticle.fParticle_Speed * 100.0f; // 1.0 = normal.
+			if (ImGui::MaxSliderInputInt("##Animation Speed", &tmpint, 0, 200, "Animation Speed"))
+			{
+				bUpdateParticle = true;
+			}
+			edit_grideleprof->newparticle.fParticle_Speed = (float)tmpint / 100.0f;
+			ImGui::PopItemWidth();
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set the global speed of the particle effect");
+
+			ImGui::TextCenter("Opacity");
+			ImGui::PushItemWidth(-10);
+			tmpint = edit_grideleprof->newparticle.fParticle_Opacity * 100.0f; // 1.0 = normal.
+			if (ImGui::MaxSliderInputInt("##OpacityParticle", &tmpint, 0, 200, "Opacity"))
+			{
+				bUpdateParticle = true;
+			}
+			edit_grideleprof->newparticle.fParticle_Opacity = (float)tmpint / 100.0f;
+			ImGui::PopItemWidth();
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set the global opacity of the particle effect");
 		}
-		edit_grideleprof->newparticle.fParticle_Opacity = (float)tmpint / 100.0f;
-		ImGui::PopItemWidth();
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set the global opacity of the particle effect");
+		else
+		{
+			// Wicked Particle Properties
+			ImGui::TextCenter("Wicked Particle Controls");
+
+			// wicked particle system
+			bool bPreviewWPENow = edit_grideleprof->newparticle.bParticle_Preview;
+			if (PreviewWPERoot == 0 && bPreviewWPENow)
+			{
+				PreviewWPERoot = WickedCall_LoadWPE(edit_grideleprof->newparticle.emittername.Get());
+				//iAction = 1 Burst all. 2 = Pause. - 3 = Resume. - 4 = Restart - 5 - visible - 6 = not visible. - 7 = pause emit - 8 = resume emit
+				void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
+				WickedCall_PerformEmitterAction(1, PreviewWPERoot);
+				WickedCall_PerformEmitterAction(4, PreviewWPERoot);
+				WickedCall_PerformEmitterAction(5, PreviewWPERoot);
+			}
+
+			// test burst mode
+			if (ImGui::Button("Trigger Particle Burst##Burst", ImVec2(particle_w, 0)))
+			{
+				WickedCall_PerformEmitterAction(1, PreviewWPERoot);
+			}
+		}
+
+		// wicked particle system cleanup
+		if (bExternal_Entities_Window == false)
+		{
+			// but only when not viewing wicked particles in particles library browser 
+			bool bPreviewWPENow = edit_grideleprof->newparticle.bParticle_Preview;
+			if ((PreviewWPERoot != 0 && !bPreviewWPENow) || (PreviewWPERoot != 0 && bPossibleWickedParticleSelectionChanged == true))
+			{
+				WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+				void DeleteEmitterEffects(uint32_t root);
+				DeleteEmitterEffects(PreviewWPERoot);
+				PreviewWPERoot = 0;
+			}
+		}
 
 		sObject* pObject = GetObjectData(t.entityelement[elementID].obj);
 		if (bUpdateParticle && elementID > 0 && pObject)

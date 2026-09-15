@@ -1386,6 +1386,15 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 
 void RenderPreviewEmitter(void)
 {
+	// ★ GGMAX 3.38 (DX11 3e21f674): do not drive the preview emitter while the particles library
+	// browser is showing wicked particles - both want the same PreviewWPERoot, and the browser's
+	// own preview was being torn down by this one.
+	// ⚠ DX11 wraps the whole function body in `if (bExternal_Entities_Window == false) { ... }`.
+	// An early return is exactly equivalent - verified there is no code after that block - and
+	// avoids re-indenting 30 lines, which is pure risk for no behavioural gain.
+	extern bool bExternal_Entities_Window;
+	if (bExternal_Entities_Window == true) return;
+
 	static bool bInit = true;
 	if (PreviewWPERoot > 0)
 	{
