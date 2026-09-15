@@ -333,6 +333,24 @@ int luaMessageCount = 0;
 int maxLuaMessages = 0;
 luaMessage** ppLuaMessages = NULL;
 
+// ★★★ GGMAX 3.38 (DX11 75d4eecf "Improved RUNTIME Error"): remember which Lua state is
+// executing, so that when a runtime error fires, CError.cpp can walk that state with
+// lua_getstack/lua_getinfo and append ". Found in 'script.lua' at line 42." to the message.
+// Before this, a runtime error raised from inside a behaviour named no script at all.
+//
+// ★ Every Lua command entry point records it, which is why LUA_GETTOP exists: it is a drop-in
+// for lua_gettop(L) and every command already calls that on its first line. 341 call sites in
+// this tree, which is EXACTLY the number DX11 converted - the two command sets match 1:1.
+//
+// ⚠ thread_local, not a plain global: Lua commands run from more than one thread here, and a
+// shared pointer would name the wrong script under load - worse than naming none.
+thread_local lua_State* g_CurrentLuaState = nullptr;
+static int LUA_GETTOP(lua_State* L)
+{
+	g_CurrentLuaState = L;
+	return lua_gettop(L);
+}
+
 //=============
 
  int LuaSendMessage(lua_State *L)
@@ -340,7 +358,7 @@ luaMessage** ppLuaMessages = NULL;
 	 lua2 = L;
 
 	/* get number of arguments */
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	int i;
 
 	/* loop through each argument */
@@ -403,7 +421,7 @@ luaMessage** ppLuaMessages = NULL;
 	 lua2 = L;
 
 	/* get number of arguments */
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	int i;
 
 	if ( n != 2 && n != 3 )
@@ -484,7 +502,7 @@ luaMessage** ppLuaMessages = NULL;
 	 lua2 = L;
 
 	/* get number of arguments */
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	int i;
 
 	if ( n != 2 && n != 3 )
@@ -562,7 +580,7 @@ luaMessage** ppLuaMessages = NULL;
 	 lua2 = L;
 
 	/* get number of arguments */
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	int i;
 
 	if ( n != 2 && n != 3 )
@@ -648,7 +666,7 @@ luaMessage** ppLuaMessages = NULL;
  int RestoreGameFromSlot(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	t.luaglobal.gamestatechange = lua_tonumber(L, 1);
 	if ( t.luaglobal.gamestatechange==0 )
@@ -675,7 +693,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetInternalSoundState(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	if (iIndex >= 0 && iIndex < 65535)
@@ -688,7 +706,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetInternalSoundState(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	if (iIndex >= 0 && iIndex < 65535)
@@ -712,7 +730,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetCheckpoint(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 4 ) return 0;
 	t.playercheckpoint.x=lua_tonumber(L, 1);
 	t.playercheckpoint.y=lua_tonumber(L, 2);
@@ -736,7 +754,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponSlotGot(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
 	lua_pushinteger ( L, t.weaponslot[iWeaponSlot].got );
@@ -745,7 +763,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponSlotNoSelect(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
 	lua_pushinteger ( L, t.weaponslot[iWeaponSlot].noselect );
@@ -754,7 +772,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetWeaponSlot(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
 	t.weaponslot[iWeaponSlot].got = lua_tonumber(L, 2);
@@ -764,7 +782,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponAmmo(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
 	if(iWeaponSlot>=0 && iWeaponSlot<t.weaponammo.size())
@@ -776,7 +794,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetWeaponAmmo(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iWeaponSlot = lua_tonumber(L, 1);
 	if (iWeaponSlot >= 0 && iWeaponSlot < t.weaponammo.size())
@@ -788,7 +806,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponClipAmmo(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iWeaponSlotClipIndex = lua_tonumber(L, 1);
 	if (iWeaponSlotClipIndex >= 0 && iWeaponSlotClipIndex < t.weaponclipammo.size())
@@ -800,7 +818,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetWeaponClipAmmo(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iWeaponSlotClipIndex = lua_tonumber(L, 1);
 	if (iWeaponSlotClipIndex >= 0 && iWeaponSlotClipIndex < t.weaponclipammo.size())
@@ -818,7 +836,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponPoolAmmoIndex(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iWeaponSlot = lua_tonumber(L, 1);
 	 if (iWeaponSlot >= 0 && iWeaponSlot < t.weaponslot.size())
@@ -836,7 +854,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponPoolAmmo(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iPoolIndex = lua_tonumber(L, 1);
 	if (iPoolIndex >= 0 && iPoolIndex < t.ammopool.size())
@@ -852,7 +870,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetWeaponPoolAmmo(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iPoolIndex = lua_tonumber(L, 1);
 	if (iPoolIndex >= 0 && iPoolIndex < t.ammopool.size())
@@ -864,7 +882,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponSlot(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 
 	// returns the gunID
@@ -881,7 +899,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponSlotPref(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iWeaponID = 0;
 	 int iWeaponSlot = lua_tonumber(L, 1);
@@ -894,7 +912,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetPlayerWeaponID(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n > 0 ) return 0;
 
 	// returns the playres current gun ID
@@ -905,7 +923,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponID(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 
 	// returns the gun
@@ -928,7 +946,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityWeaponID(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -946,7 +964,7 @@ luaMessage** ppLuaMessages = NULL;
  int RawSetWeaponData ( lua_State *L, int iDataMode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	int tgunid = lua_tonumber(L, 1);
 	int tfiremode = lua_tonumber(L, 2);
@@ -973,7 +991,7 @@ luaMessage** ppLuaMessages = NULL;
  int RawGetWeaponData( lua_State *L, int iDataMode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 
 	// specify weaponID and firemode index
@@ -1007,7 +1025,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetWeaponName(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int tgunid = lua_tonumber(L, 1);
 	 if(tgunid>0)
@@ -1045,7 +1063,7 @@ luaMessage** ppLuaMessages = NULL;
  int RawSetCameraData ( lua_State *L, int iDataMode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	int tcameraid=0, tvalue=0;
 	float fX=0, fY=0, fZ=0;
 	if ( iDataMode < 11 )
@@ -1084,7 +1102,7 @@ luaMessage** ppLuaMessages = NULL;
  int RawGetCameraData( lua_State *L, int iDataMode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	int tcameraid = 0;
 	if ( iDataMode < 500 )
 	{
@@ -1118,7 +1136,7 @@ luaMessage** ppLuaMessages = NULL;
  int WrapAngle(lua_State *L) 
  { 
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	float fAngle = wrapangleoffset(lua_tonumber(L, 1));
 	float fDestAngle = wrapangleoffset(lua_tonumber(L, 2));
@@ -1152,7 +1170,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetCameraFOV ( lua_State *L )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iCameraIndex = lua_tonumber(L, 1);
 	float fCameraFOV = lua_tonumber(L, 2);
@@ -1166,7 +1184,7 @@ luaMessage** ppLuaMessages = NULL;
  int RawSetPlayerData ( lua_State *L, int iDataMode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( iDataMode == 1 )
 	{
  		//  apply force to push player
@@ -1187,7 +1205,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityLUACore ( lua_State *L, int iCode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	switch ( iCode )
@@ -1220,7 +1238,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityLUACore ( lua_State *L, int iCode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	if ( iIndex > 0 )
@@ -1310,7 +1328,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityActive(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	int iSetThisValue = lua_tonumber(L, 2);
@@ -1320,7 +1338,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityActivated(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	t.entityelement[iIndex].activated = lua_tonumber(L, 2);
@@ -1329,7 +1347,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityHasKey(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iIndex = lua_tonumber(L, 1);
 	 t.entityelement[iIndex].lua.haskey = lua_tonumber(L, 2);
@@ -1338,7 +1356,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityObjective(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iIndex = lua_tonumber(L, 1);
 	 t.entityelement[iIndex].eleprof.isobjective = lua_tonumber(L, 2);
@@ -1347,7 +1365,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityCollectable(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iIndex = lua_tonumber(L, 1);
 	 t.entityelement[iIndex].eleprof.iscollectable = lua_tonumber(L, 2);
@@ -1357,7 +1375,7 @@ luaMessage** ppLuaMessages = NULL;
  {
 	// bForceMode when true will ignore state of entity, only interested in adding to inventory (used for saved game restoring)
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 || n > 6 ) return 0;
 	int iReturnSlot = -1;
 	bool bItemHandled = false;
@@ -1647,7 +1665,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityUsed(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 if (iEntityIndex > 0)
@@ -1671,7 +1689,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityExplodable(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 if (iEntityIndex > 0)
@@ -1684,7 +1702,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetExplosionDamage(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 if (iEntityIndex > 0)
@@ -1697,7 +1715,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetExplosionHeight(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 if (iEntityIndex > 0)
@@ -1711,7 +1729,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetCustomExplosion(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 if (iEntityIndex > 0)
@@ -1760,7 +1778,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityExplodable(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
@@ -1776,7 +1794,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityObjective(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
@@ -1793,7 +1811,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityProjectGlobal(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
@@ -1808,7 +1826,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityCollectable(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
@@ -1822,7 +1840,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityCollected(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
@@ -1836,7 +1854,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityUsed(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
@@ -1850,7 +1868,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntityQuantity(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 if (iEntityIndex > 0)
@@ -1863,7 +1881,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityQuantity(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iQty = 0;
@@ -1878,7 +1896,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityWhoActivated(lua_State *L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int e = lua_tonumber(L, 1);
 	 int iReturnValue = 0;
@@ -1892,7 +1910,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityActive(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	int iReturnValue = 0;
@@ -1909,7 +1927,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityVisibility(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -1929,7 +1947,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetEntitySpawnAtStart(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
 	if (iEntityIndex > 0)
@@ -1941,7 +1959,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntitySpawnAtStart(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -1955,7 +1973,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityFilePath(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	char pReturnValue[1024];
 	strcpy ( pReturnValue, "" );
@@ -1975,7 +1993,7 @@ luaMessage** ppLuaMessages = NULL;
  int GetEntityClonedSinceStartValue(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iReturnValue = 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1987,7 +2005,7 @@ luaMessage** ppLuaMessages = NULL;
  int SetPreExitValue(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
 	if (iEntityIndex > 0)
@@ -2000,7 +2018,7 @@ luaMessage** ppLuaMessages = NULL;
  int RawSetEntityData ( lua_State *L, int iDataMode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
 	if (iEntityIndex > 0 && iEntityIndex < t.entityelement.size())

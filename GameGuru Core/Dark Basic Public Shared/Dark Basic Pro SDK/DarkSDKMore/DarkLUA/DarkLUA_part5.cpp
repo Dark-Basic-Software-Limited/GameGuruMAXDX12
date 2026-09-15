@@ -481,7 +481,7 @@ int GetEntityAnimFinish ( lua_State *L ) { return GetGamePlayerControlData ( L, 
 int CombatControllerLaserGuidedHit(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iObjToHit = lua_tonumber(L, 1);
 	float fX=0, fY=0, fZ=0;
@@ -496,7 +496,7 @@ int CombatControllerLaserGuidedHit(lua_State* L)
 int SetRotationYSlowly ( lua_State *L ) 
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	int iEntityID = lua_tonumber( L, 1 );
 	float fDestAngle = lua_tonumber( L, 2 );
@@ -523,7 +523,7 @@ int ParticlesGetFreeEmitter ( lua_State *L )
 int ParticlesLoadImage(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 
 	int iID = 0;
@@ -543,7 +543,7 @@ int ParticlesLoadImage(lua_State *L)
 int ParticlesLoadEffect(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 
 	char pFileName[256];
@@ -556,7 +556,7 @@ int ParticlesLoadEffect(lua_State *L)
 int ParticlesSetFrames(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 
 	ravey_particles_set_frames(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
@@ -566,7 +566,7 @@ int ParticlesSetFrames(lua_State *L)
 int ParticlesSetSpeed(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 7) return 0;
 
 	ravey_particles_set_speed(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4),
@@ -577,7 +577,7 @@ int ParticlesSetSpeed(lua_State *L)
 int ParticlesSetGravity(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 
 	ravey_particles_set_gravity(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3));
@@ -587,7 +587,7 @@ int ParticlesSetGravity(lua_State *L)
 int ParticlesSetOffset(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 7) return 0;
 
 	ravey_particles_set_offset(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4),
@@ -598,7 +598,7 @@ int ParticlesSetOffset(lua_State *L)
 int ParticlesSetAngle(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 
 	ravey_particles_set_angle(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
@@ -608,7 +608,7 @@ int ParticlesSetAngle(lua_State *L)
 int ParticlesSetRotation(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 8) return 0;
 
 	ravey_particles_set_rotate(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4),
@@ -619,7 +619,7 @@ int ParticlesSetRotation(lua_State *L)
 int ParticlesSetScale(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 5) return 0;
 
 	ravey_particles_set_scale(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4),
@@ -630,7 +630,7 @@ int ParticlesSetScale(lua_State *L)
 int ParticlesSetAlpha(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 5) return 0;
 
 	ravey_particles_set_alpha(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4),
@@ -660,7 +660,7 @@ int ParticlesSetLife( lua_State *L )
 int ParticlesSetWindVector(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 
 	ravey_particles_set_wind_vector(lua_tonumber(L, 1), lua_tonumber(L, 2));
@@ -670,7 +670,7 @@ int ParticlesSetWindVector(lua_State *L)
 int ParticlesSetNoWind(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 
 	ravey_particles_set_no_wind(lua_tonumber(L, 1));
@@ -680,7 +680,7 @@ int ParticlesSetNoWind(lua_State *L)
 int ParticlesSpawnParticle(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 
 	if (n < 4)
@@ -697,7 +697,7 @@ int ParticlesSpawnParticle(lua_State *L)
 int ParticlesAddEmitterCore(lua_State *L, int iExtended)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (iExtended == 0)
 	{
 		if (n < 28) return 0;
@@ -834,7 +834,7 @@ int ParticlesAddEmitterEx( lua_State *L )
 int ParticlesDeleteEmitter( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	t.tRaveyParticlesEmitterID = lua_tonumber(L, 1);
 	ravey_particles_delete_emitter ( );
@@ -846,7 +846,7 @@ int ParticlesDeleteEmitter( lua_State *L )
 int EffectStart(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
 	t.entityelement[e].eleprof.newparticle.bParticle_Show_At_Start = 1;
@@ -855,7 +855,7 @@ int EffectStart(lua_State* L)
 int EffectStop(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
 	t.entityelement[e].eleprof.newparticle.bParticle_Show_At_Start = 0;
@@ -864,7 +864,7 @@ int EffectStop(lua_State* L)
 int EffectSetLocalPosition(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int e = lua_tonumber(L, 1);
 	float x = lua_tonumber(L, 2);
@@ -879,7 +879,7 @@ int EffectSetLocalPosition(lua_State* L)
 int EffectSetLocalRotation(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int e = lua_tonumber(L, 1);
 	float x = lua_tonumber(L, 2);
@@ -894,7 +894,7 @@ int EffectSetLocalRotation(lua_State* L)
 int EffectSetSpeed(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
 	float speed = lua_tonumber(L, 2) / 100.0f;
@@ -905,7 +905,7 @@ int EffectSetSpeed(lua_State* L)
 int EffectSetOpacity(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
 	float opacity = lua_tonumber(L, 2) / 100.0f;
@@ -916,7 +916,7 @@ int EffectSetOpacity(lua_State* L)
 int EffectSetParticleSize(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
 	float opacity = lua_tonumber(L, 2) / 100.0f;
@@ -927,7 +927,7 @@ int EffectSetParticleSize(lua_State* L)
 int EffectSetBurstMode(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
 	int automode = lua_tonumber(L, 2);
@@ -937,7 +937,7 @@ int EffectSetBurstMode(lua_State* L)
 int EffectFireBurst(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
 	t.entityelement[e].eleprof.newparticle.bParticle_Fire = true;
@@ -946,7 +946,7 @@ int EffectFireBurst(lua_State* L)
 int EffectSetFloorReflection(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	int e = lua_tonumber(L, 1);
 	int active = lua_tonumber(L, 2);
@@ -958,7 +958,7 @@ int EffectSetFloorReflection(lua_State* L)
 int EffectSetBounciness(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
 	float bounciness = lua_tonumber(L, 2) / 100.0f;
@@ -969,7 +969,7 @@ int EffectSetBounciness(lua_State* L)
 int EffectSetColor(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int e = lua_tonumber(L, 1);
 	float r = lua_tonumber(L, 2);
@@ -984,7 +984,7 @@ int EffectSetColor(lua_State* L)
 int EffectSetLifespan(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
 	float lifespan = lua_tonumber(L, 2) * 10.0f;
@@ -1055,7 +1055,7 @@ void CleanUpEmitterEffects(void)
 int WParticleEffectLoad(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 
 	// disable wicked particles (for testing/etc)
@@ -1110,7 +1110,7 @@ int WParticleEffectLoad(lua_State* L)
 int WParticleEffectPosition(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 
 	Entity root = lua_tonumber(L, 1);
@@ -1170,7 +1170,7 @@ int WParticleEffectPosition(lua_State* L)
 int WParticleEffectVisible(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 
 	Entity root = lua_tonumber(L, 1);
@@ -1205,7 +1205,7 @@ int WParticleEffectVisible(lua_State* L)
 int WParticleEffectAction(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	Entity root = lua_tonumber(L, 1);
 	int iAction = lua_tonumber(L, 2);
@@ -1225,7 +1225,7 @@ int WParticleEffectAction(lua_State* L)
 //PE: Missing command for position sound if different then entity position.
 int entity_lua_positionsound(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 5) return 0;
 	int e = lua_tonumber(L, 1);
 	int v = lua_tonumber(L, 2);
@@ -1245,7 +1245,7 @@ int entity_lua_positionsound(lua_State* L)
 int LoadTracerImage(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	char FileName[MAX_PATH];
 	strcpy(FileName, lua_tostring(L, 1));
@@ -1263,7 +1263,7 @@ int LoadTracerImage(lua_State* L)
 int AddTracer(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 16) return 0;
 
 	float fX = lua_tonumber(L, 1);
@@ -1385,7 +1385,7 @@ int SetFlashLight ( lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 1 )
@@ -1406,7 +1406,7 @@ int SetFlashLightPosition(lua_State* L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if (n < 3)
@@ -1440,7 +1440,7 @@ int SetPlayerRun ( lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 1 )
@@ -1458,7 +1458,7 @@ int SetFont ( lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 2 )
@@ -1515,7 +1515,7 @@ int SetOcclusion ( lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 1 )
@@ -1533,7 +1533,7 @@ int SetFlashLightKeyEnabled ( lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 1 )
@@ -1554,7 +1554,7 @@ int SetPlayerWeapons ( lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 1 )
@@ -1592,7 +1592,7 @@ int SetPlayerWeapons ( lua_State *L )
 int FirePlayerWeapon(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 
 	int firingmode = lua_tointeger(L, 1);
@@ -1615,7 +1615,7 @@ int SetAttachmentVisible ( lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 2 )
@@ -1648,7 +1648,7 @@ int Include(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 1 ) return 0;
 
@@ -1689,7 +1689,7 @@ int GetCharacterForwardZ(lua_State* L)
 int SetMaterialData(lua_State *L, int mode)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	int iEntityID = lua_tonumber(L, 1);
 	int iObjID = t.entityelement[iEntityID].obj;
 	if (!ConfirmObjectInstance (iObjID)) return 0;
@@ -1786,7 +1786,7 @@ int SetMaterialData(lua_State *L, int mode)
 int GetMaterialData(lua_State *L, int mode)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iEntityID = lua_tonumber(L, 1);
 	int iObjID = t.entityelement[iEntityID].obj;
@@ -1871,7 +1871,7 @@ int SetEntityTextureOffset (lua_State *L) { return SetMaterialData (L, 23); }
 int GetEntityInZoneWithFilter(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 
 	int storee = t.e;
@@ -1898,7 +1898,7 @@ int GetEntityInZoneWithFilter(lua_State* L)
 int IsPointWithinZone(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int iIsInZone = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -1933,7 +1933,7 @@ int IsPointWithinZone(lua_State* L)
 int SetWeaponArmsVisible(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 
 	extern bool bHideWeaponsMuzzle;
@@ -1977,7 +1977,7 @@ int IsPlayerInGame(lua_State* L)
 int SetLevelFadeoutEnabled(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int newFadeoutState = lua_tonumber(L, 1);
 	t.postprocessings.fadeinenabled = newFadeoutState;
@@ -1987,7 +1987,7 @@ int SetLevelFadeoutEnabled(lua_State* L)
 extern void WickedCall_SetSunColors(float fRed, float fGreen, float fBlue, float fEnergy, float fFov, float fShadowBias);
 int SetSunLightingColor(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	float r = lua_tonumber(L, 1);
 	float g = lua_tonumber(L, 2);

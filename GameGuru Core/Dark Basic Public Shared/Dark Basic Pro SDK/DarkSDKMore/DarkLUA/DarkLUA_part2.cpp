@@ -6,7 +6,7 @@
 int SetEntityAttachmentVisibility (lua_State *L, bool bVisible)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int e = lua_tonumber(L, 1);
 	if (e > 0 && e < t.entityelement.size())
@@ -50,7 +50,7 @@ int ShowEntityAttachment (lua_State *L) { return SetEntityAttachmentVisibility(L
 int SetDebuggingData (lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int e = lua_tonumber(L, 1);
 	int instructionindex = lua_tonumber(L, 2);
@@ -76,7 +76,7 @@ int SetDebuggingData (lua_State *L)
 int RDFindPath (lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 6) return 0;
 
 	// generate path
@@ -121,7 +121,7 @@ int RDGetPathPointCount(lua_State *L)
 int RDGetPathPointX(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iPointIndex = lua_tonumber(L, 1);
 	float thisPoint[3] = { 0, 0, 0 };
@@ -133,7 +133,7 @@ int RDGetPathPointX(lua_State *L)
 int RDGetPathPointY(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iPointIndex = lua_tonumber(L, 1);
 	float thisPoint[3] = { 0, 0, 0 };
@@ -145,7 +145,7 @@ int RDGetPathPointY(lua_State *L)
 int RDGetPathPointZ(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iPointIndex = lua_tonumber(L, 1);
 	float thisPoint[3] = { 0, 0, 0 };
@@ -157,7 +157,7 @@ int RDGetPathPointZ(lua_State *L)
 int StartMoveAndRotateToXYZ (lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3 || n > 5) return 0;
 	t.e = lua_tonumber(L, 1);
 	entity_lua_findcharanimstate();
@@ -197,7 +197,7 @@ int StartMoveAndRotateToXYZ (lua_State *L)
 int MoveAndRotateToXYZ (lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3 || n > 5) return 0;
 	t.e = lua_tonumber(L, 1);
 	entity_lua_findcharanimstate();
@@ -228,7 +228,7 @@ int MoveAndRotateToXYZ (lua_State *L)
 int SetEntityPathRotationMode (lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	t.e = lua_tonumber(L, 1);
 	entity_lua_findcharanimstate();
@@ -242,7 +242,7 @@ int SetEntityPathRotationMode (lua_State *L)
 int RDIsWithinMesh(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -259,7 +259,7 @@ int RDIsWithinMesh(lua_State *L)
 int RDIsWithinAndOverMesh(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -277,7 +277,7 @@ int RDIsWithinAndOverMesh(lua_State* L)
 int RDGetYFromMeshPosition(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -295,7 +295,7 @@ int RDBlockNavMeshCore(lua_State* L,int iWithShape)
 {
 	// block and unblock navmesh
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (iWithShape == 0 && n < 5) return 0;
 	if (iWithShape == 1 && n < 7) return 0;
 	float fX = lua_tonumber(L, 1);
@@ -425,7 +425,7 @@ int RDBlockNavMesh(lua_State *L)
 int DoTokenDrop(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 5) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -439,7 +439,7 @@ int DoTokenDrop(lua_State* L)
 int GetTokenDropCount(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n > 0) return 0;
 	int iTokenDropCount = g_RecastDetour.GetTokenDropCount();
 	lua_pushinteger (L, (lua_Integer)iTokenDropCount);
@@ -448,7 +448,7 @@ int GetTokenDropCount(lua_State* L)
 int GetTokenDropX(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	float fValue = g_RecastDetour.GetTokenDropX(iIndex);
@@ -458,7 +458,7 @@ int GetTokenDropX(lua_State* L)
 int GetTokenDropY(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	float fValue = g_RecastDetour.GetTokenDropY(iIndex);
@@ -468,7 +468,7 @@ int GetTokenDropY(lua_State* L)
 int GetTokenDropZ(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	float fValue = g_RecastDetour.GetTokenDropZ(iIndex);
@@ -478,7 +478,7 @@ int GetTokenDropZ(lua_State* L)
 int GetTokenDropType(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	float fValue = g_RecastDetour.GetTokenDropType(iIndex);
@@ -488,7 +488,7 @@ int GetTokenDropType(lua_State* L)
 int GetTokenDropTimeLeft(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iIndex = lua_tonumber(L, 1);
 	float fValue = g_RecastDetour.GetTokenDropTimeLeft(iIndex);
@@ -500,7 +500,7 @@ int GetTokenDropTimeLeft(lua_State* L)
 int AdjustPositionToGetLineOfSight (lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 8) return 0;
 	int iIgnoreObjNo = lua_tonumber(L, 1);
 	float fX = lua_tonumber(L, 2);
@@ -563,7 +563,7 @@ int AdjustPositionToGetLineOfSight (lua_State *L)
 int SetCharacterMode(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	float e = lua_tonumber(L, 1);
 	float mode = lua_tonumber(L, 2);
@@ -723,7 +723,7 @@ int GetHeadTrackerNormalZ(lua_State *L)
 
 int Prompt3D(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	char pTextToRender[1024];
 	strcpy ( pTextToRender, lua_tostring(L, 1));
@@ -734,7 +734,7 @@ int Prompt3D(lua_State *L)
 
 int PositionPrompt3D(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 4 ) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -747,7 +747,7 @@ int PositionPrompt3D(lua_State *L)
 
 int PromptLocalDuration(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	int storee = t.e;
 	cstr stores = t.s_s;
@@ -779,7 +779,7 @@ int LoadImage(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, send 0 result back
 	if ( n < 1 )
@@ -822,7 +822,7 @@ int GetImageWidth(lua_State *L)
 {
 	// get LUA param
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) { lua_pushinteger ( L , 0 ); return 1; }
 
 	// get image width
@@ -840,7 +840,7 @@ int GetImageHeight(lua_State *L)
 {
 	// get LUA param
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) { lua_pushinteger ( L , 0 ); return 1; }
 
 	// get image width
@@ -858,7 +858,7 @@ int DeleteSpriteImage(lua_State *L)
 {
 	// get LUA param
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) { lua_pushinteger ( L , 0 ); return 1; }
 
 	// get image width
@@ -881,7 +881,7 @@ int CreateSprite(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, send 0 result back
 	if ( n < 1 )
@@ -911,7 +911,7 @@ int CreateSprite(lua_State *L)
 int PasteSprite(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) { lua_pushinteger ( L , 0 ); return 1; }
 	int iID = lua_tointeger(L, 1);
 	if (iID > 0)
@@ -924,7 +924,7 @@ int PasteSprite(lua_State *L)
 int PasteSpritePosition(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) { lua_pushinteger ( L , 0 ); return 1; }
 	int iID = lua_tointeger(L, 1);
 	if (iID > 0)
@@ -943,7 +943,7 @@ int PasteSpritePosition(lua_State *L)
 int SetSpriteScissor(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -962,7 +962,7 @@ int SetSpriteImage(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 2 )
@@ -985,7 +985,7 @@ int SetSpritePosition(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 3 )
@@ -1014,7 +1014,7 @@ int SetSpritePosition(lua_State *L)
 int SetSpritePriorityForLUA(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int iID = lua_tointeger(L, 1);
 	int iPriority = lua_tointeger(L, 2);
@@ -1033,7 +1033,7 @@ int SetSpriteDepth(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 2 )
@@ -1057,7 +1057,7 @@ int SetSpriteColor(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 5 )
@@ -1084,7 +1084,7 @@ int SetSpriteAngle(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 2 )
@@ -1107,7 +1107,7 @@ int DeleteSprite(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 1 )
@@ -1129,7 +1129,7 @@ int SetSpriteOffset(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 3 )
@@ -1177,7 +1177,7 @@ int SetSpriteSize ( lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if ( n < 3 )
@@ -1269,7 +1269,7 @@ int BackdropOnForLUA ( lua_State *L )
 
 int LoadGlobalSound ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	const char* pFilename = lua_tostring(L, 1);
 	int iID = g.globalsoundoffset + lua_tointeger(L, 2);
@@ -1279,7 +1279,7 @@ int LoadGlobalSound ( lua_State *L )
 }
 int PlayGlobalSound ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	if ( SoundExist(iID)==1 )
@@ -1290,7 +1290,7 @@ int PlayGlobalSound ( lua_State *L )
 }
 int LoopGlobalSound ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	if ( SoundExist(iID)==1 )
@@ -1301,7 +1301,7 @@ int LoopGlobalSound ( lua_State *L )
 }
 int StopGlobalSound ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	if ( SoundExist(iID)==1 )
@@ -1312,7 +1312,7 @@ int StopGlobalSound ( lua_State *L )
 }
 int DeleteGlobalSound ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	if ( SoundExist(iID)==1 )
@@ -1323,7 +1323,7 @@ int DeleteGlobalSound ( lua_State *L )
 }
 int SetGlobalSoundSpeed ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	int iSpeed = lua_tointeger(L, 2);
@@ -1335,7 +1335,7 @@ int SetGlobalSoundSpeed ( lua_State *L )
 }
 int SetGlobalSoundVolume ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	int iVolume = lua_tointeger(L, 2);
@@ -1350,7 +1350,7 @@ int SetGlobalSoundVolume ( lua_State *L )
 int GetGlobalSoundExist(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	lua_pushinteger ( L , SoundExist ( iID ) );
@@ -1359,7 +1359,7 @@ int GetGlobalSoundExist(lua_State *L)
 int GetGlobalSoundPlaying(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	lua_pushinteger ( L , SoundPlaying ( iID ) );
@@ -1368,7 +1368,7 @@ int GetGlobalSoundPlaying(lua_State *L)
 int GetGlobalSoundLooping(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iID = g.globalsoundoffset + lua_tointeger(L, 1);
 	lua_pushinteger ( L , SoundLooping ( iID ) );
@@ -1378,7 +1378,7 @@ int GetGlobalSoundLooping(lua_State *L)
 int GetSoundPlaying(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int e = lua_tointeger(L, 1);
 	int v = lua_tointeger(L, 2);
@@ -1413,7 +1413,7 @@ int SetRawSoundData ( lua_State *L, int iDataMode )
 		case 3 : iParamNum = 1;	break;
 		case 4 : iParamNum = 2;	break;
 	}
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < iParamNum ) return 0;
 	int iSoundID = lua_tonumber(L, 1);
 	if (iSoundID > 0 && SoundExist(iSoundID) == 1)
@@ -1440,7 +1440,7 @@ int SetRawSoundData ( lua_State *L, int iDataMode )
 int GetRawSoundData ( lua_State *L, int iDataMode )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	switch ( iDataMode )
 	{
@@ -1461,7 +1461,7 @@ int RawSoundPlaying ( lua_State *L ) { return GetRawSoundData ( L, 2 ); }
 int GetEntityRawSound(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iE = lua_tonumber(L, 1);
 	int iSoundSlot = lua_tonumber(L, 2);
@@ -1511,7 +1511,7 @@ int StopAmbientMusicTrack(lua_State* L)
 int SetAmbientMusicTrackVolume(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	if (t.gamevisuals.bEndableAmbientMusicTrack)
 	{
@@ -1554,7 +1554,7 @@ int StopCombatMusicTrack(lua_State* L)
 int SetCombatMusicTrackVolume(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iFreeSoundID = g.temppreviewsoundoffset + 5;
 	if (SoundExist(iFreeSoundID) == 1)
@@ -1583,7 +1583,7 @@ int GetCombatMusicTrackPlaying(lua_State *L)
 int SetSoundMusicMode(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	extern bool g_bSoundIsMusic[65536];
 	int iSoundIndex = lua_tonumber(L, 1);
@@ -1594,7 +1594,7 @@ int SetSoundMusicMode(lua_State* L)
 int GetSoundMusicMode(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	extern bool g_bSoundIsMusic[65536];
 	int iSoundIndex = lua_tonumber(L, 1);
@@ -1610,7 +1610,7 @@ int GetSoundMusicMode(lua_State* L)
 int GetSpeech(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iRunning = 0;
 	int iE = lua_tonumber(L, 1);
@@ -1640,7 +1640,7 @@ int GetTimeElapsed ( lua_State *L )
 int GetKeyState ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iKeyValue = lua_tonumber(L, 1);
 	lua_pushinteger ( L, (lua_Integer)KeyState(g.keymap[iKeyValue]) );
@@ -1650,7 +1650,7 @@ int GetKeyState ( lua_State *L )
 int SetGlobalTimer (lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iRestoreToTime = lua_tonumber(L, 1);
 	extern DWORD g_dwAppLocalTimeStart;
@@ -1694,7 +1694,7 @@ int GetDesktopHeight ( lua_State *L )
 int CurveValue ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	float a = lua_tonumber(L, 1);
 	float b = lua_tonumber(L, 2);
@@ -1705,7 +1705,7 @@ int CurveValue ( lua_State *L )
 int CurveAngle ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	float a = lua_tonumber(L, 1);
 	float b = lua_tonumber(L, 2);
@@ -1716,7 +1716,7 @@ int CurveAngle ( lua_State *L )
 int PositionMouse ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	float fScreenX = lua_tonumber(L, 1);
 	float fScreenY = lua_tonumber(L, 2);
@@ -1742,7 +1742,7 @@ int GetCharacterControllerDucking ( lua_State *L )
 int WrapValue ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	float a = lua_tonumber(L, 1);
 	lua_pushnumber ( L, WrapValue(a) );
@@ -1793,7 +1793,7 @@ int GetPlrObjectAngleZ ( lua_State *L )
 int GetGroundHeight ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	float x = lua_tonumber(L, 1);
 	float z = lua_tonumber(L, 2);
@@ -1803,7 +1803,7 @@ int GetGroundHeight ( lua_State *L )
 int NewXValue ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	float a = lua_tonumber(L, 1);
 	float b = lua_tonumber(L, 2);
@@ -1814,7 +1814,7 @@ int NewXValue ( lua_State *L )
 int NewZValue ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	float a = lua_tonumber(L, 1);
 	float b = lua_tonumber(L, 2);
@@ -1825,7 +1825,7 @@ int NewZValue ( lua_State *L )
 
 int ControlDynamicCharacterController ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 8 ) return 0;
 	float fAngleY = lua_tonumber(L, 1);
 	float fAngleX = lua_tonumber(L, 2);
@@ -1972,7 +1972,7 @@ int ControlDynamicCharacterController ( lua_State *L )
 int SetCharacterDirectionOverride(lua_State* L)
 {
 	// Check for the correct parameter count.
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 7) 
 		return 0;
 

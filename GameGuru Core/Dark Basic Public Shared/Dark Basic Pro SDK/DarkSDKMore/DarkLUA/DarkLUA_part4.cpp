@@ -101,7 +101,7 @@ int CheckScreenToggles(lua_State* L)
 int ScreenToggle(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L); if (n < 1) return 0;
+	int n = LUA_GETTOP(L); if (n < 1) return 0;
 	char pScreenTitle[512];
 	strcpy(pScreenTitle, lua_tostring(L, 1));
 	t.game.activeStoryboardScreen = -1;
@@ -115,7 +115,7 @@ int ScreenToggle(lua_State* L)
 int ScreenToggleByKey(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L); if (n < 1) return 0;
+	int n = LUA_GETTOP(L); if (n < 1) return 0;
 	char pKeyToSearchFor[512];
 	strcpy(pKeyToSearchFor, lua_tostring(L, 1));
 	t.game.activeStoryboardScreen = -1;
@@ -824,7 +824,7 @@ int SetInventoryItemSlot(lua_State* L)
 int MoveInventoryItem (lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 5) return 0;
 	char pNameOfInventoryFrom[512];
 	strcpy(pNameOfInventoryFrom, lua_tostring(L, 1));
@@ -1010,7 +1010,7 @@ int DeleteAllInventoryContainers (lua_State* L)
 int AddInventoryItem (lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	char pNameOfInventoryTo[512];
 	strcpy(pNameOfInventoryTo, lua_tostring(L, 1));
@@ -1043,7 +1043,7 @@ int SetGamePlayerControlData ( lua_State *L, int iDataMode )
 	lua2 = L;
 	int iSrc = 0;
 	int iDest = 0;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( iDataMode < 500 )
 	{
 		if ( n < 1 ) return 0;
@@ -1379,7 +1379,7 @@ int GetGamePlayerControlData ( lua_State *L, int iDataMode )
 {
 	lua2 = L;
 	int iSrc = 0;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( iDataMode >= 500 )
 	{
 		if ( iDataMode >= 1001 )
@@ -1775,7 +1775,7 @@ int GetPlayerAttacking (lua_State* L)
 int PushPlayer (lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	// trigger short or long player arms animation (jerked back; typically when counter attacked)
 	t.gunmode = 1011;

@@ -1,6 +1,6 @@
 ﻿int SetSunIntensity(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	float intensity = lua_tonumber(L, 1);
 	t.visuals.SunIntensity_f = intensity;
@@ -37,7 +37,7 @@ int GetSunIntensity(lua_State* L)
 
 int SetExposure(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	float exposure = lua_tonumber(L, 1);
 	t.visuals.fExposure = exposure;
@@ -59,7 +59,7 @@ int iPromptYOffset = 0;
 int iPromptZOffset = 0;
 int PromptLocalOffset(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int storee = t.e;
 	cstr stores = t.s_s;
@@ -85,7 +85,7 @@ int PromptLocalOffset(lua_State* L)
 	
 int PromptGuruMeditation(lua_State * L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	t.luaglobal.gurumeditationprompttime = MAXTimer();
 	t.luaglobal.gurumeditationprompt_s = lua_tostring(L, 1);
@@ -95,7 +95,7 @@ int PromptGuruMeditation(lua_State * L)
 //gggrass_global_params.grass_scale
 int SetGrassScale(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	gggrass_global_params.grass_scale = lua_tonumber(L, 1);
 	return 0;
@@ -121,7 +121,7 @@ int lua_get_lut(lua_State* L)
 
 int lua_set_lut(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int storee = t.e;
 	cstr stores = t.s_s;
@@ -453,7 +453,7 @@ enum eInternalCommandNames
 //losegame lua_losegame(); }
 int int_core_sendmessagenone(lua_State* L, eInternalCommandNames eInternalCommandValue)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n > 0) return 0;
 	int storee = t.e;
 	int storev = t.v;
@@ -501,7 +501,7 @@ void addInternalFunctions_nones()
 // Internal Integer commands:
 int int_core_sendmessagei(lua_State* L, eInternalCommandNames eInternalCommandValue)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int storee = t.e;
 	int storev = t.v;
@@ -1040,7 +1040,7 @@ void addInternalFunctions_integer()
 //setpostdepthoffieldintensity t.v_f = LuaMessageFloat(); lua_setpostdepthoffieldintensity(); }
 int int_core_sendmessagef(lua_State* L, eInternalCommandNames eInternalCommandValue)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int storee = t.e;
 	float storev = t.v_f;
@@ -1410,7 +1410,7 @@ void addInternalFunctions_float()
 //setcharactersound t.e = LuaMessageIndex(); t.s_s = LuaMessageString(); character_sound_load(); }
 int int_core_sendmessages(lua_State* L, eInternalCommandNames eInternalCommandValue)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int storee = t.e;
 	cstr stores = t.s_s;

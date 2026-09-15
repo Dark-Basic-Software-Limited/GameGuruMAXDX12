@@ -1,7 +1,7 @@
 ﻿ int GetEntityData ( lua_State *L, int iDataMode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( iDataMode == 19 )
 	{
 		if ( n < 4 ) return 0;
@@ -203,7 +203,7 @@
  int SetEntityIfUsed(lua_State* L) 
  { 
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 const char* pString = lua_tostring(L, 2);
@@ -213,7 +213,7 @@
  int GetEntityIfUsed(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 lua_pushstring(L, t.entityelement[iEntityIndex].eleprof.ifused_s.Get());
@@ -237,7 +237,7 @@
  int SetEntityRelationshipData (lua_State *L, int iDataMode)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
 	int iNewValue = lua_tonumber(L, 2);
@@ -257,7 +257,7 @@
  int GetEntityRelationshipData (lua_State *L, int iDataMode)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1 || n > 2) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
 	int iSubscriptValue = lua_tonumber(L, 2);
@@ -342,7 +342,7 @@
  int GetEntitiesWithinCone(lua_State *L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 8) return 0;
 	 float fX = lua_tonumber(L, 1);
 	 float fY = lua_tonumber(L, 2);
@@ -381,7 +381,7 @@
  int GetEntityWithinCone(lua_State *L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iIndex = lua_tonumber(L, 1);
 	 int iEntityIndex = 0;
@@ -399,7 +399,7 @@
  extern std::vector<int> g_iDestroyedEntitiesList;
  int GetNearestEntityDestroyed(lua_State* L)
  {
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iMode = lua_tonumber(L, 1);
 	 int iBestE = 0;
@@ -438,7 +438,7 @@
  }
  int GetNearestSoundDistance(lua_State *L)
  {
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 4) return 0;
 	 float fX = lua_tonumber(L, 1);
 	 float fY = lua_tonumber(L, 2);
@@ -454,7 +454,7 @@
  int MakeAISound (lua_State *L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 6) return 0;
 	 t.tsx_f = lua_tonumber(L, 1);
 	 t.tsy_f = lua_tonumber(L, 2);
@@ -471,7 +471,7 @@
  #ifdef WICKEDENGINE
  int GetTerrainEditableArea(lua_State *L)
  {
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iDimension = lua_tonumber(L, 1);
 	 float fTerrainEditableAreaSize = 0.0f;
@@ -560,7 +560,7 @@
  int GetEntityString(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -582,7 +582,7 @@
  int GetLimbName(lua_State *L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iID = lua_tonumber(L, 1);
 	 LPSTR pString = "";
@@ -609,7 +609,7 @@
  int SetEntityAnimation(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 4 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
 	int iAnimationSetIndex = lua_tonumber(L, 2);
@@ -633,7 +633,7 @@
  int GetEntityAnimationStart(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -652,7 +652,7 @@
  int GetEntityAnimationFinish(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -671,7 +671,7 @@
  int GetEntityAnimationFound(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -691,7 +691,7 @@
  int GetObjectAnimationFinished(lua_State *L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1 || n > 2) return 0;
 	 int iReturnValue = 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -722,7 +722,7 @@
  int AdjustLookAimSettings (lua_State *L, int iMode )
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 t.e = lua_tonumber(L, 1);
 	 float fValue = lua_tonumber(L, 2);
@@ -755,7 +755,7 @@
  int GetEntityFootfallMax(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -773,7 +773,7 @@
  int GetEntityFootfallKeyframe(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	int iReturnValue = 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -797,7 +797,7 @@
  int GetEntityAnimationNameExistCore(lua_State *L, int iAnimQueryMode)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iReturnValue = 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -894,7 +894,7 @@
  int GetEntityAnimationTriggerFrame(lua_State *L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iReturnValue = -1;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -934,7 +934,7 @@
  int GetEntityAnimationStartFinish(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 int iReturnValue = 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -964,7 +964,7 @@
  int CreateEntityIfNotPresent(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iNewE = -1;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1068,7 +1068,7 @@
  int SpawnNewEntity(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iNewE = -1;
 	 int iEntityIndex = lua_tonumber(L, 1);
@@ -1136,7 +1136,7 @@
  int DeleteNewEntity(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 1) return 0;
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 if (iEntityIndex > 0)
@@ -1193,7 +1193,7 @@
  int GetAmmoClipMax(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	t.e = lua_tonumber(L, 1);
 	entity_lua_findcharanimstate();
@@ -1205,7 +1205,7 @@
  int GetAmmoClip(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	t.e = lua_tonumber(L, 1);
 	entity_lua_findcharanimstate();
@@ -1217,7 +1217,7 @@
  int SetAmmoClip(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	t.e = lua_tonumber(L, 1);
 	entity_lua_findcharanimstate();
@@ -1231,7 +1231,7 @@
  int FreezeEntityCore ( lua_State *L, int iCoreMode )
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( iCoreMode == 0 && n < 1 ) return 0;
 	if ( iCoreMode == 1 && n < 2 ) return 0;
 	int iEntityIndex = lua_tonumber(L, 1);
@@ -1269,7 +1269,7 @@
  int GetTerrainHeight(lua_State *L)
  {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	float fReturnHeight = 0.0f;
 	float fX = lua_tonumber(L, 1);
@@ -1281,7 +1281,7 @@
  int GetTerrainHeightFloat(lua_State* L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 2) return 0;
 	 float fReturnHeight = 0.0f;
 	 float fX = lua_tonumber(L, 1);
@@ -1428,7 +1428,7 @@
  int GetSurfaceHeight(lua_State *L)
  {
 	 lua2 = L;
-	 int n = lua_gettop(L);
+	 int n = LUA_GETTOP(L);
 	 if (n < 3) return 0;
 	 float fReturnHeight = 0.0f;
 	 float fX = lua_tonumber(L, 1);
@@ -1456,7 +1456,7 @@
 	 lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 2 ) return 0;
 
@@ -1477,7 +1477,7 @@
 	 lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 2 ) return 0;
 
@@ -1495,7 +1495,7 @@
 	 lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 1 ) return 0;
 
@@ -1513,7 +1513,7 @@ int AIEntityAddTarget(lua_State *L)
 	 lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 2 ) return 0;
 
@@ -1531,7 +1531,7 @@ int AIEntityRemoveTarget(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 2 ) return 0;
 
@@ -1549,7 +1549,7 @@ int AIEntityMoveToCover(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 3 ) return 0;
 
@@ -1568,7 +1568,7 @@ int AIGetEntityCanSee(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 5 ) return 0;
 
@@ -1587,7 +1587,7 @@ int AIGetEntityCanFire(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 1 ) return 0;
 
@@ -1604,7 +1604,7 @@ int AIGetEntityCanFire(lua_State *L)
 int AIGetEntityViewRange(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1617,7 +1617,7 @@ int AIGetEntityViewRange(lua_State *L)
 int AIGetEntitySpeed(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1631,7 +1631,7 @@ int AIGetEntitySpeed(lua_State *L)
 int AIGetTotalPaths(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n != 0 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1644,7 +1644,7 @@ int AIGetTotalPaths(lua_State *L)
 int AIGetPathCountPoints(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1657,7 +1657,7 @@ int AIGetPathCountPoints(lua_State *L)
 int AIPathGetPointX(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1670,7 +1670,7 @@ int AIPathGetPointX(lua_State *L)
 int AIPathGetPointY(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1683,7 +1683,7 @@ int AIPathGetPointY(lua_State *L)
 int AIPathGetPointZ(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1697,7 +1697,7 @@ int AIPathGetPointZ(lua_State *L)
 int AIGetTotalCover(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n != 0 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1710,7 +1710,7 @@ int AIGetTotalCover(lua_State *L)
 int AICoverGetPointX(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1723,7 +1723,7 @@ int AICoverGetPointX(lua_State *L)
 int AICoverGetPointY(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1736,7 +1736,7 @@ int AICoverGetPointY(lua_State *L)
 int AICoverGetPointZ(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1749,7 +1749,7 @@ int AICoverGetPointZ(lua_State *L)
 int AICoverGetAngle(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1762,7 +1762,7 @@ int AICoverGetAngle(lua_State *L)
 int AICoverGetIfUsed(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1778,7 +1778,7 @@ int MsgBox(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 1 ) return 0;
 
@@ -1790,7 +1790,7 @@ int MsgBox(lua_State *L)
 int AISetEntityMoveBoostPriority(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	int iObj = lua_tointeger(L, 1);
 #ifdef WICKEDENGINE
@@ -1807,7 +1807,7 @@ int AIEntityGoToPosition(lua_State *L)
 	// (3) obj,x,z 
 	// (4) obj,x,y,z
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	int iObj = lua_tointeger(L, 1);
 	float fGoToX = lua_tonumber(L, 2);
@@ -1854,7 +1854,7 @@ int AIEntityGoToPosition(lua_State *L)
 
 int AIGetEntityHeardSound(lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1874,7 +1874,7 @@ int AISetData ( lua_State *L, int iDataMode )
 		case 1 : iParamNum = 4;	break;
 		case 2 : iParamNum = 2;	break;
 	}
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < iParamNum ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1890,7 +1890,7 @@ int AISetData ( lua_State *L, int iDataMode )
 int AIGetData ( lua_State *L, int iDataMode )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 #ifdef WICKEDENGINE
 	// No subsystem for AI in MAX
@@ -1920,7 +1920,7 @@ int AIGetEntityIsMoving ( lua_State *L ) { return AIGetData ( L, 2 ); }
 int AIGetVisualSetting ( lua_State *L, int iMode )
 {
 	lua2 = L;
-	//int n = lua_gettop(L);
+	//int n = LUA_GETTOP(L);
 	//if ( n < 1 ) return 0;
 	switch ( iMode )
 	{
@@ -1975,7 +1975,7 @@ int AICouldSee(lua_State *L )
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	if ( n < 4 ) return 0;
 

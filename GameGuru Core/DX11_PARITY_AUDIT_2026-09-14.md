@@ -138,6 +138,35 @@ existing line was left alone.
 Ported as an **early return** instead — verified there is no code after that block, so it is exactly
 equivalent, and re-indenting 30 lines is risk with no behavioural gain.
 
+### Phase D ★★★ — Lua runtime errors now name the script and the line
+
+The single highest-value item in the gap, and the one that looked worst on paper: `DarkLUA.cpp`
+showed **351 hunks**. 338 of them were the identical one-liner.
+
+| piece | where |
+|---|---|
+| `thread_local lua_State* g_CurrentLuaState` + `LUA_GETTOP()` | `DarkLUA_part0.cpp` |
+| 341 call sites `lua_gettop(L)` -> `LUA_GETTOP(L)` | `DarkLUA_part0..6.cpp` |
+| the consumer: `lua_getstack`/`lua_getinfo` -> *". Found in 'x.lua' at line N."* | `CError.cpp` |
+| 312-line switch turning error codes into readable names | `CError.cpp` |
+| the error also lands in the crash breadcrumb buffer | `GG_CRASH_CONTEXT("RunTimeError", ...)` |
+
+★★★ **The substitution was safe because it was countable, not because it looked mechanical.**
+Before touching anything: DX11 has exactly **341** `int n = LUA_GETTOP(L);` and this tree has
+exactly **341** `int n = lua_gettop(L);`, with **zero** other `lua_gettop(L)` anywhere. A 1:1 match
+on both sides means the command sets are identical and nothing else can be caught by the replace.
+Afterwards: 341 converted, and the only `lua_gettop(L)` left is the one inside `LUA_GETTOP` itself.
+
+★ `CError.cpp` was untouched here since the fork, so DX11's version applies wholesale — with one
+change. DX11 includes its own `DarkLUA\lua\lstate.h`; **this tree has no local Lua at all**, it uses
+the copy bundled with WickedEngine. `lstate.h` is an internal header and was never needed: the file
+only touches `lua_Debug`, `lua_getstack` and `lua_getinfo`, all public API in `lua.h`. Repointed to
+`WickedEngineDX12/WickedEngine/LUA/lua.h`, which resolves because `CError.cpp` sits at the same
+directory depth as `DarkLUA_part0.cpp`.
+
+⚠ `thread_local`, not a plain global. Lua commands run on more than one thread here, and a shared
+pointer would confidently name the *wrong* script under load — worse than naming none.
+
 ## 6. ★★★ What still needs YOUR decision
 
 ### 6.1 ⚠ One behaviour-visible default changed — Delayed Shadows

@@ -1,6 +1,6 @@
 ﻿int LimitSwimmingVerticalMovement(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1)
 		return 0;
 
@@ -21,7 +21,7 @@ int GetCharacterFallDistance ( lua_State *L )
 }
 int RayTerrain ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 6 ) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -67,7 +67,7 @@ int IntersectCore (lua_State* L, int iMode)
 	OPTICK_EVENT();
 	#endif
 	// iMode : 0=dynamic, 1=staticonly, 2-performant, 3-dynamic and use terrain hit to adjust ray to detect objects only
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (iMode == 2)
 	{
 		if (n < 9) return 0;
@@ -152,7 +152,7 @@ int IntersectCore (lua_State* L, int iMode)
 
 int IntersectGetLastHitBone(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1)
 	{
 		lua_pushstring(L, "");
@@ -193,7 +193,7 @@ int IntersectGetLastHitBone(lua_State* L)
 
 int IntersectGetLastHitFrame(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1)
 	{
 		lua_pushstring(L, "");
@@ -281,7 +281,7 @@ int GetIntersectCollisionNZ ( lua_State *L )
 int PositionCamera ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 4 ) return 0;
 	PositionCamera ( lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
 	return 0;
@@ -289,7 +289,7 @@ int PositionCamera ( lua_State *L )
 int PointCamera ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 4 ) return 0;
 	PointCamera ( lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
 	return 0;
@@ -297,14 +297,14 @@ int PointCamera ( lua_State *L )
 int MoveCamera ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	MoveCamera ( lua_tonumber(L, 1), lua_tonumber(L, 2) );
 	return 0;
 }
 int GetObjectExist ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	lua_pushinteger ( L, (lua_Integer)ObjectExist(lua_tonumber(L, 1)) );
 	return 1;
@@ -333,7 +333,7 @@ void GunInitAnimationSettings(void)
 }
 int ForceGunUnderWater(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	bForceGunUnderWater = lua_tonumber(L, 1);
 	return 0;
@@ -341,14 +341,14 @@ int ForceGunUnderWater(lua_State* L)
 
 int GetGunEmissiveStrength(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	lua_pushnumber(L, t.gun[t.gunid].settings.fEmissiveStrength);
 	return 1;
 }
 int SetGunEmissiveStrength(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	float emi = lua_tonumber(L, 1);
 	sObject* pGunObject = GetObjectData(t.currentgunobj);
@@ -359,7 +359,7 @@ int SetGunEmissiveStrength(lua_State* L)
 
 int GetGunAnimationFramesFromName(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	char AnimName[512];
 	float fFoundStart = 0, fFoundFinish = 0;
@@ -413,7 +413,7 @@ int GetGunAnimationFramesFromName(lua_State* L)
 }
 int GunAnimationSetFrame(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	float start = lua_tonumber(L, 1);
 	gun_SetObjectFrame(t.currentgunobj, start);
@@ -421,7 +421,7 @@ int GunAnimationSetFrame(lua_State* L)
 }
 int GunAnimationPlaying(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	//if (n < 1) return 0;
 	float frame = GetFrame(t.currentgunobj);
 	if (iGunAnimMode == 0)
@@ -471,7 +471,7 @@ int GunAnimationPlaying(lua_State* L)
 }
 int SetGunAnimationSpeed(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	float speed = lua_tonumber(L, 1);
 	if(fOldGunSpeed == 0)
@@ -482,7 +482,7 @@ int SetGunAnimationSpeed(lua_State* L)
 int PlayGunAnimation(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	float start = lua_tonumber(L, 1);
 	float end = lua_tonumber(L, 2);
@@ -502,7 +502,7 @@ int PlayGunAnimation(lua_State* L)
 int StopGunAnimation(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	gun_StopObject(t.currentgunobj);
 	if (fOldGunSpeed > 1)
 		gun_SetObjectSpeed(t.currentgunobj, fOldGunSpeed);
@@ -515,7 +515,7 @@ int StopGunAnimation(lua_State* L)
 int LoopGunAnimation(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	float start = lua_tonumber(L, 1);
 	float end = lua_tonumber(L, 2);
@@ -538,14 +538,14 @@ int LoopGunAnimation(lua_State* L)
 int SetObjectFrame (lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	SetObjectFrame (lua_tonumber(L, 1), lua_tonumber(L, 2));
 	return 0;
 }
 int GetObjectFrame ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	lua_pushnumber ( L, GetFrame(lua_tonumber(L, 1)) );
 	return 1;
@@ -553,28 +553,28 @@ int GetObjectFrame ( lua_State *L )
 int SetObjectSpeed ( lua_State *L )
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 2 ) return 0;
 	SetObjectSpeed ( lua_tonumber(L, 1), lua_tonumber(L, 2) );
 	return 0;
 }
 int GetObjectSpeed ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	lua_pushnumber ( L, GetSpeed(lua_tonumber(L, 1)) );
 	return 1;
 }
 int PositionObject ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 4 ) return 0;
 	PositionObject ( lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
 	return 0;
 }
 int ScaleObjectXYZ(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	ScaleObject(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
 	return 0;
@@ -582,7 +582,7 @@ int ScaleObjectXYZ(lua_State *L)
 // Add Fast Quaternion functions
 int QuatMultiply(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 8) return 0;
 
 	GGQUATERNION q1( lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
@@ -610,7 +610,7 @@ int QuatMultiply(lua_State *L)
 }
 int QuatToEuler(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 
 	GGQUATERNION q( lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
@@ -643,7 +643,7 @@ int QuatToEuler(lua_State *L)
 }
 int EulerToQuat(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	float pitch = lua_tonumber( L, 1 );
 	float yaw   = lua_tonumber( L, 2 );
@@ -669,7 +669,7 @@ int EulerToQuat(lua_State *L)
 }
 int QuatSLERP(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 9) return 0;
 	const GGQUATERNION qa(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
 	const GGQUATERNION qb(lua_tonumber(L, 5), lua_tonumber(L, 6), lua_tonumber(L, 7), lua_tonumber(L, 8));
@@ -686,7 +686,7 @@ int QuatSLERP(lua_State *L)
 }
 int QuatLERP(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 9) return 0;
 
 	const GGQUATERNION qa(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
@@ -709,7 +709,7 @@ int QuatLERP(lua_State *L)
 
 int ScreenCoordsToPercent(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -723,7 +723,7 @@ int ScreenCoordsToPercent(lua_State* L)
 
 int LuaConvert2DTo3D(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 2) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -752,7 +752,7 @@ int LuaConvert2DTo3D(lua_State* L)
 
 int LuaConvert3DTo2D(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	float fX = lua_tonumber(L, 1);
 	float fY = lua_tonumber(L, 2);
@@ -767,28 +767,28 @@ int LuaConvert3DTo2D(lua_State* L)
 // end of Fast Quaternion functions
 int RotateObject ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 4 ) return 0;
 	RotateObject ( lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4) );
 	return 0;
 }
 int GetObjectAngleX ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	lua_pushnumber ( L, ObjectAngleX(lua_tonumber(L, 1)) );
 	return 1;
 }
 int GetObjectAngleY ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	lua_pushnumber ( L, ObjectAngleY(lua_tonumber(L, 1)) );
 	return 1;
 }
 int GetObjectAngleZ ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 1 ) return 0;
 	lua_pushnumber ( L, ObjectAngleZ(lua_tonumber(L, 1)) );
 	return 1;
@@ -824,7 +824,7 @@ int GetObjectPosAng( lua_State *L )
 }
 int GetObjectColBox( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iID = lua_tonumber( L, 1 );
 	if (!ConfirmObjectInstance( iID ) )
@@ -842,7 +842,7 @@ int GetObjectColBox( lua_State *L )
 }
 int GetObjectCentre( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iID = lua_tonumber(L, 1);
 	if (!ConfirmObjectInstance(iID))
@@ -857,7 +857,7 @@ int GetObjectCentre( lua_State *L )
 }
 int GetObjectColCentre(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iID = lua_tonumber(L, 1);
 	if (!ConfirmObjectInstance(iID)) return 0;
@@ -870,7 +870,7 @@ int GetObjectColCentre(lua_State *L)
 }
 int GetObjectScales( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iID = lua_tonumber(L, 1);
 	if (!ConfirmObjectInstance(iID))
@@ -885,7 +885,7 @@ int GetObjectScales( lua_State *L )
 }
 int PushObject( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int iID = lua_tonumber(L, 1);
 	if (!ConfirmObjectInstance(iID))
@@ -903,7 +903,7 @@ int PushObject( lua_State *L )
 }
 int ConstrainObjMotion( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int iID = lua_tonumber(L, 1);
 	if (!ConfirmObjectInstance(iID))
@@ -913,7 +913,7 @@ int ConstrainObjMotion( lua_State *L )
 }
 int ConstrainObjRotation( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 4 ) return 0;
 	int iID = lua_tonumber( L, 1 );
 	if ( !ConfirmObjectInstance(iID) )
@@ -923,7 +923,7 @@ int ConstrainObjRotation( lua_State *L )
 }
 int CreateSingleHinge( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 7 ) return 0;
 	int iID = lua_tonumber( L, 1 );
 	if ( !ConfirmObjectInstance(iID) )
@@ -994,7 +994,7 @@ int CreateSliderDouble( lua_State *L )
 }
 int SetSliderLimits(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 5) return 0;
 	int iC = lua_tonumber(L, 1);
 
@@ -1015,7 +1015,7 @@ int RemoveObjectConstraints( lua_State *L )
 }
 int RemoveConstraint( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iC = lua_tonumber( L, 1 );
 
@@ -1024,7 +1024,7 @@ int RemoveConstraint( lua_State *L )
 }
 int SetObjectDamping( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	int iID = lua_tonumber( L, 1 );
 	if ( !ConfirmObjectInstance( iID ) )
@@ -1036,7 +1036,7 @@ int SetObjectDamping( lua_State *L )
 }
 int SetHingeLimits(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	int iC = lua_tonumber(L, 1);
 
@@ -1066,7 +1066,7 @@ int SetHingeLimits(lua_State *L)
 }
 int SetHingeMotor( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int iC = lua_tonumber(L, 1);
 
@@ -1075,7 +1075,7 @@ int SetHingeMotor( lua_State *L )
 }
 int SetSliderMotor(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int iC = lua_tonumber(L, 1);
 
@@ -1084,7 +1084,7 @@ int SetSliderMotor(lua_State *L)
 }
 int GetHingeAngle(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iC = lua_tonumber(L, 1);
 
@@ -1093,7 +1093,7 @@ int GetHingeAngle(lua_State *L)
 }
 int GetSliderPosition(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iC = lua_tonumber(L, 1);
 
@@ -1102,7 +1102,7 @@ int GetSliderPosition(lua_State *L)
 }
 int SetBodyScaling(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int iC = lua_tonumber(L, 1);
 
@@ -1139,7 +1139,7 @@ int PhysicsRayCast( lua_State *L )
 }
 int GetObjectNumCollisions(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iID = lua_tonumber(L, 1);
 	if (!ConfirmObjectInstance(iID))
@@ -1208,7 +1208,7 @@ int AddObjectCollisionCheck( lua_State *L )
 }
 int RemoveObjectCollisionCheck(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int iID = lua_tonumber(L, 1);
 	if (!ConfirmObjectInstance(iID))
@@ -1266,7 +1266,7 @@ int RotateGlobalAngleY(lua_State *L)
 {
 	lua2 = L;
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	// Not enough params, return out
 	if (n < 4)
 		return 0;
@@ -1290,7 +1290,7 @@ int RotateGlobalAngleY(lua_State *L)
 int GetLightAngle(lua_State *L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1)
 		return 0;
 
@@ -1322,7 +1322,7 @@ int GetLightAngle(lua_State *L)
 int GetLightEuler(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	int i = lua_tointeger(L, 1);
 	if (i > 0 && i <= g.infinilightmax && t.infinilight[i].used == 1)
@@ -1410,7 +1410,7 @@ int SetLightAngle(lua_State *L)
 	lua2 = L;
 
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 
 	// Not enough params, return out
 	if (n < 4)
@@ -1438,7 +1438,7 @@ int SetLightAngle(lua_State *L)
 int SetLightEuler(lua_State* L)
 {
 	lua2 = L;
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	int i = lua_tonumber(L, 1);
 	if (i > 0 && i <= g.infinilightmax && t.infinilight[i].used == 1)
@@ -1474,7 +1474,7 @@ int SetLightRange( lua_State *L )
 {
 	lua2 = L;
 	// get number of arguments
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	// Not enough params, return out
 	if (n < 2)
 		return 0;
@@ -1506,7 +1506,7 @@ int RunCharLoop ( lua_State *L )
 }
 int TriggerWaterRipple ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 3 ) return 0;
 	g.decalx=lua_tonumber(L, 1);
 	g.decaly=lua_tonumber(L, 2);
@@ -1525,7 +1525,7 @@ int TriggerWaterRipple ( lua_State *L )
 
 int TriggerWaterRippleSize(lua_State *L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 3) return 0;
 	g.decalx = lua_tonumber(L, 1);
 	g.decaly = lua_tonumber(L, 2);
@@ -1545,7 +1545,7 @@ int TriggerWaterRippleSize(lua_State *L)
 }
 int TriggerWaterSplash(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4) return 0;
 	g.decalx = lua_tonumber(L, 1);
 	g.decaly = lua_tonumber(L, 2);
@@ -1563,7 +1563,7 @@ int TriggerWaterSplash(lua_State* L)
 }
 int PlayFootfallSound ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 5 || n > 7 ) return 0;
 	int footfalltype = lua_tonumber(L, 1);
 	float fX = lua_tonumber(L, 2);
@@ -1622,7 +1622,7 @@ int SetUnderwaterOff ( lua_State *L )
 }
 int SetWorldGravity(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 4)
 		return 0;
 
@@ -1638,7 +1638,7 @@ int SetWorldGravity(lua_State* L)
 
 int SetShaderVariable ( lua_State *L )
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if ( n < 6 ) return 0;
 	int iShaderIndex = lua_tonumber(L, 1);
 	char pConstantName[512];
@@ -1674,7 +1674,7 @@ int GetCloudDensity(lua_State* L)
 }
 int SetCloudDensity(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	t.gamevisuals.SkyCloudiness = lua_tonumber(L, 1);
 	Wicked_Update_Cloud((void*) &t.gamevisuals);
@@ -1687,7 +1687,7 @@ int GetCloudCoverage(lua_State* L)
 }
 int SetCloudCoverage(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	t.gamevisuals.SkyCloudCoverage = lua_tonumber(L, 1);
 	Wicked_Update_Cloud((void*)&t.gamevisuals);
@@ -1700,7 +1700,7 @@ int GetCloudHeight(lua_State* L)
 }
 int SetCloudHeight(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	t.gamevisuals.SkyCloudHeight = lua_tonumber(L, 1);
 	Wicked_Update_Cloud((void*)&t.gamevisuals);
@@ -1713,7 +1713,7 @@ int GetCloudThickness(lua_State* L)
 }
 int SetCloudThickness(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	t.gamevisuals.SkyCloudThickness = lua_tonumber(L, 1);
 	Wicked_Update_Cloud((void*)&t.gamevisuals);
@@ -1726,7 +1726,7 @@ int GetCloudSpeed(lua_State* L)
 }
 int SetCloudSpeed(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	t.gamevisuals.SkyCloudSpeed = lua_tonumber(L, 1);
 	Wicked_Update_Cloud((void*)&t.gamevisuals);
@@ -1736,7 +1736,7 @@ int SetCloudSpeed(lua_State* L)
 //PE: Other Shaders
 int SetTreeWind(lua_State* L)
 {
-	int n = lua_gettop(L);
+	int n = LUA_GETTOP(L);
 	if (n < 1) return 0;
 	t.gamevisuals.tree_wind = lua_tonumber(L, 1);
 	//void WickedCall_UpdateTreeWind(float wind)
