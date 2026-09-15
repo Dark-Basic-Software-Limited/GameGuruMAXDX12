@@ -167,6 +167,50 @@ directory depth as `DarkLUA_part0.cpp`.
 ⚠ `thread_local`, not a plain global. Lua commands run on more than one thread here, and a shared
 pointer would confidently name the *wrong* script under load — worse than naming none.
 
+### Phases E-G ★★★ — the bulk port
+
+| phase | what | commit |
+|---|---|---|
+| E | all 76 remaining `M-GridEditB` hunks + 4 dependencies they pulled in | `47d29b5d` |
+| F | 111 hunks across 16 files - everything else that places on exact context | `487cb93e` |
+| G | completes the `animsystem_weaponproperty` cluster; **fixes a silent bug F shipped** | `4730b97b` |
+
+Phase F brought: `M-GridEdit` 30, `M-Entity` 14, `G-Gun` 10, `imgui_gg_dx11` 8, `G-Entity` 8,
+`M-Game` 8, `Types.h` 8, `M-MapFile` 6, `Common` 5, `CrashLogger` 3, `M-Titles` 3,
+`M-LUA-Entity` 3, plus `main.cpp`, `CInputC`, `M-Physics`, `M-WelcomeSystem`.
+`CrashLogger` + `main.cpp` finally close the crash-log feature begun in phase C.
+
+#### ★★★ The bug phase F shipped, and the rule it bought
+
+`animsystem_weaponproperty` renames argument 2 `readonly` -> `bFromCharacterCreator`. **Same
+arity.** I excluded `M-Importer.cpp` from the batch for exactly that reason — and shipped the bug
+anyway, because its three CALLERS are in files the batch included. Every call site passed the new
+meaning while the definition used the old one, and the definition feeds argument 2 straight into
+the UI's readonly slot, so a read-only weapon dropdown became editable. **It compiled cleanly; no
+build gate can catch this.**
+
+★★★ **Excluding a file does not exclude the cluster. The half that lands is the half that
+compiles.** A deferral is only real once you grep the batch for the excluded file's symbols.
+Recorded in memory as `project_porting_clusters.md`.
+
+#### Other things caught before they shipped
+
+- **`terrainsafegpu`** placed cleanly in `Common.cpp` but its only consumer is in the unported
+  `GGTerrain.cpp`. Removed rather than ship a knob that saves, loads and does nothing (the 3.19
+  Texture Detail trap). A note sits at the site.
+- **`Types.h` hunk #2** would have added a duplicate `showobjectdebugvisuals` initialiser — the
+  field hunk correctly rejected as already-present, the initialiser hunk still matched.
+- **`M-LUA` applied 5 of 7 hunks and both failures were the ones that mattered** (the global and
+  the implementation), because they anchor on code our 3.21 rework replaced. ⚠ A partial patch is
+  more dangerous than a rejected one.
+
+#### ★ Static pre-scan, and its two blind spots
+
+Phase E cost four build cycles because each link error revealed only the next missing symbol. For F
+I scanned first — 11 externs and 136 struct members. It still missed two classes, both now known:
+it looked only for UNdefined symbols (never DOUBLY-defined, which my own earlier hand-fix caused),
+and it followed only explicit `extern` lines, so a bare use of an undeclared global was invisible.
+
 ## 6. ★★★ What still needs YOUR decision
 
 ### 6.1 ⚠ One behaviour-visible default changed — Delayed Shadows

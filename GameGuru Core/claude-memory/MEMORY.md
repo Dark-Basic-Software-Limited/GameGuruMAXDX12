@@ -55,6 +55,7 @@
 ## Topic index
 - **Lua logic cost**: [Per-entity logic gating](project_lua_logic_cost.md) — ★ engine already gates logic at 750 units (2000 characters); `SetEntityAlwaysActive` opts OUT and both door scripts do. ⚠ "Top Ten Expensive Logic" prints QPC ticks not µs.
 - ★★★ **[GameGuru time units](project_gg_time_units.md)** — `g.timeelapsed_f` is **1/20th of a second**, so a bare `>= 100` threshold is **5.0 seconds**, not 100 ms. Cost the 3.37 water-splash bug; frame-rate independent, so it never looks like a timing problem.
+- ★★★ **[Porting clusters DX11→DX12](project_porting_clusters.md)** — excluding a file does NOT exclude its cluster: the CALLERS land and the definition does not, and a same-arity rename then compiles while meaning the wrong thing. Always `patch -F0` (default fuzz drops code into the wrong function). A partial patch is worse than a rejected one.
 - **Method**: [Measuring rules](project_measuring_rules.md) — read before any perf claim.
 - **Machine/paths**: [Machine migration](project_machine_migration.md) · [CWD and file paths](project_cwd_and_file_paths.md) — every debug WRITE uses `GetDiagnosticPath`/`GGDiagFopen`; detect by DESTINATION not grep.
 - **Packaging**: [Alpha packaging](project_alpha_packaging.md) — 3.38 GB removed 08-29; `ffmpeg.exe` and `GameGuruMAX.pdb` look like debris and are NOT (pdb SHIPS so tester logs symbolise).
