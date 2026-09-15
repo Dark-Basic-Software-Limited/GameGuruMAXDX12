@@ -20,6 +20,13 @@ struct sBulletHole
 	GGVECTOR3 vecWorldPos;
 };
 std::vector<sBulletHole> g_bulletholes;
+
+// ★ GGMAX 3.38: sBulletHole is file-local, so the automation harness cannot extern the vector.
+// Expose the COUNT instead - that is all a test needs, and it keeps the type private.
+int bulletholes_getcount ( void )
+{
+	return (int)g_bulletholes.size();
+}
 bool g_bulletholeavailable[BULLETHOLESMAX];
 GGVECTOR3 g_vecBulletHoleQuad[4];
 GGVECTOR3 g_vecBulletHoleQuadUV[4];

@@ -6850,6 +6850,124 @@ float gg_move_anchor_z = 0.0f;
 
 // GGMAX 3.27: hoisted into its own function rather than added to the dispatch ladder.
 // ⚠ Adding one more `else if` to that chain tips MSVC over C1061 ("blocks nested too
+
+// ★★★ GGMAX 3.38: commands to TEST the ported DX11 features without a human at the keyboard.
+//
+// Why these exist: PRESS_KEY posts WM_KEYDOWN, and GameGuru reads gameplay input through
+// DirectInput, so the harness cannot fire a weapon. That left the 3.38 bullet-hole port verifiable
+// only by eye. These drive the REAL code paths instead of simulating a keypress.
+//
+// ⚠ In a helper, not the main ladder - that chain is at the MSVC C1061 nesting limit and the
+// error it produces names a line ~2000 away. See the note above AutoHarness_SpinCommands.
+static bool AutoHarness_BulletHoleCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	extern int bulletholes_getcount(void);
+
+	if (_stricmp(cmd, "COUNT_BULLETHOLES") == 0)
+	{
+		_snprintf(result, resultSize, "OK: BULLETHOLES=%d", bulletholes_getcount());
+	}
+	else if (_stricmp(cmd, "GET_BULLETHOLE_FLAGS") == 0)
+	{
+		// GET_BULLETHOLE_FLAGS <entityIndex>
+		// Reports the three inputs to the shipped decision and evaluates it EXACTLY as
+		// G-Entity_part2.cpp does, so an A/B over iAllowBuletHole proves the 3.38 clause works.
+		int idx = -1;
+		if (sscanf_s(arg, "%d", &idx) < 1 || idx < 0 || idx > g.entityelementlist)
+		{
+			_snprintf(result, resultSize, "ERROR: GET_BULLETHOLE_FLAGS needs a valid entity index (0..%d)", g.entityelementlist);
+		}
+		else
+		{
+			const int sf  = t.entityelement[idx].staticflag;
+			const int imm = t.entityelement[idx].eleprof.isimmobile;
+			const int abh = t.entityelement[idx].iAllowBuletHole;
+			// the shipped predicate, character for character
+			const bool allowed = ( idx == 0 || sf == 1 || abh == 1 || ( sf == 0 && imm == 1 ) );
+			_snprintf(result, resultSize,
+				"OK: idx=%d name='%s' staticflag=%d isimmobile=%d iAllowBuletHole=%d -> BULLETHOLE_%s",
+				idx, t.entityelement[idx].eleprof.name_s.Get(), sf, imm, abh, allowed ? "ALLOWED" : "DENIED");
+		}
+		result[resultSize - 1] = 0;
+	}
+	else if (_stricmp(cmd, "SET_BULLETHOLE_FLAG") == 0)
+	{
+		// SET_BULLETHOLE_FLAG <entityIndex> <0|1>
+		// ⚠ IN MEMORY ONLY - deliberately does not mark the project modified and does not save.
+		// The point is to A/B the runtime decision, not to edit anyone's level.
+		int idx = -1, val = -1;
+		if (sscanf_s(arg, "%d %d", &idx, &val) < 2 || idx < 0 || idx > g.entityelementlist || val < 0 || val > 1)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_BULLETHOLE_FLAG needs <entityIndex> <0|1>");
+		}
+		else
+		{
+			t.entityelement[idx].iAllowBuletHole = val;
+			_snprintf(result, resultSize, "OK: entity %d iAllowBuletHole=%d (memory only, not saved)", idx, val);
+		}
+		result[resultSize - 1] = 0;
+	}
+	else if (_stricmp(cmd, "FIRE_RAY_AT") == 0)
+	{
+		// FIRE_RAY_AT <entityIndex>
+		// ★ Drives the REAL path: sets the bullet ray from just outside the entity to its centre and
+		// calls entity_hasbulletrayhit(), which raycasts, resolves the material and runs the decal
+		// decision. Counting g_bulletholes either side is the end-to-end proof a hole was created.
+		// Needs game state and a non-melee weapon - the shipped test is gated on gun settings.
+		int idx = -1;
+		if (sscanf_s(arg, "%d", &idx) < 1 || idx < 0 || idx > g.entityelementlist)
+		{
+			_snprintf(result, resultSize, "ERROR: FIRE_RAY_AT needs a valid entity index");
+		}
+		else
+		{
+			extern void entity_hasbulletrayhit(void);
+			const int before = bulletholes_getcount();
+			const float ex = t.entityelement[idx].x;
+			const float ey = t.entityelement[idx].y + 30.0f;
+			const float ez = t.entityelement[idx].z;
+			// muzzle 200 units out on +X, aimed at the entity centre
+			t.x1_f = ex + 200.0f; t.y1_f = ey; t.z1_f = ez;
+			t.x2_f = ex;          t.y2_f = ey; t.z2_f = ez;
+			entity_hasbulletrayhit();
+			const int after = bulletholes_getcount();
+			_snprintf(result, resultSize,
+				"OK: fired at %d  holes %d->%d (delta %d)  rayhite=%d decalimpact=%d gunid=%d ismelee=%d",
+				idx, before, after, after - before,
+				t.bulletrayhite, t.tttriggerdecalimpact, t.gunid, t.gun[t.gunid].settings.ismelee);
+		}
+		result[resultSize - 1] = 0;
+	}
+	else if (_stricmp(cmd, "TRIGGER_LUA_ERROR") == 0)
+	{
+		// ★ GGMAX 3.38 phase D check: run a Lua chunk that faults, so the runtime error path fires
+		// and we can see whether it now names the script and line. Reports what the engine recorded.
+		extern lua_State* lua2;
+		if (!lua2)
+		{
+			_snprintf(result, resultSize, "ERROR: no lua state (needs game/test state)");
+		}
+		else
+		{
+			const char* chunk = "local t = nil; return t.deliberate_nil_index_from_harness";
+			const int rc = luaL_loadbuffer(lua2, chunk, strlen(chunk), "harness_luaerror_test");
+			int prc = -1;
+			const char* msg = "";
+			if (rc == 0)
+			{
+				prc = lua_pcall(lua2, 0, 0, 0);
+				if (prc != 0 && lua_isstring(lua2, -1)) { msg = lua_tostring(lua2, -1); lua_pop(lua2, 1); }
+			}
+			_snprintf(result, resultSize, "OK: load_rc=%d pcall_rc=%d msg='%s'", rc, prc, msg);
+		}
+		result[resultSize - 1] = 0;
+	}
+	else
+	{
+		return false;
+	}
+	return true;
+}
 // deeply") - it is already at the limit, and the error names a line ~2000 further down, so it
 // reads as a problem somewhere else entirely. Every new command goes in a helper from here on.
 static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
@@ -7771,7 +7889,8 @@ void AutoHarness_CheckForCommand(void)
 	{
 		// handled in the helper (see above the dispatch function)
 	}
-	else if (AutoHarness_OutlineCommands(cmd, arg, result, sizeof(result)))
+	else if (AutoHarness_OutlineCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_BulletHoleCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
 	{
 		// handled in the helper (see above the dispatch function)
 	}
