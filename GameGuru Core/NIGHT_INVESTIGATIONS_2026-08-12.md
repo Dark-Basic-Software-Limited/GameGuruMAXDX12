@@ -9463,3 +9463,81 @@ tooltip would have needed to say something quite different.
 
 ⚠ Dropdown labels verified before writing the text: **Highest / Custom / Low** — an earlier draft
 said "Lowest", which does not exist in the UI.
+
+
+# ★★★ §3.39 — TEST GAME FREEZES THE APP (2026-09-15) — NOT from 3.38
+
+Trying to verify the 3.38 bullet-hole port autonomously ran into a wall: entering Test Level stops
+the whole application. Chasing it produced one solid finding, one exoneration, and one method
+failure worth recording.
+
+## The measurement
+
+Process CPU time sampled externally every 10 s — externally, because the harness was the thing
+under suspicion. The editor is the control, since the harness demonstrably works there.
+
+| run | 10s | 20s | 30s | 40s | 50s | 60s |
+|---|---|---|---|---|---|---|
+| editor (control) | +22.2 | +22.5 | +21.8 | | | |
+| 3.38 exe, unfocused | +12.8 | +10.2 | **+0.0** | +0.0 | +0.0 | +0.0 |
+| **2026-08-29 alpha exe** | +13.1 | +9.5 | **+0.0** | +0.0 | +0.0 | +0.0 |
+| 3.38 exe, FOREGROUND-verified | **+0.0** | +0.0 | +0.0 | +0.0 | +0.0 | +0.1 |
+
+**Exactly zero CPU**, process alive, no crash log. `auto_log.txt` records `CLICK test_level -> OK`
+and then nothing, ever. Throttling would reduce CPU; starvation would still progress. Zero means a
+thread parked on a wait — a modal message pump or a lock.
+
+## ★★★ Exonerating 3.38
+
+The decisive control was the **archived alpha exe**, extracted from `Max - 300826.zip`: the binary
+Lee shipped on 08-29, before any of this work. Same content, same level, same harness protocol —
+only the binary differs, and it froze identically. The port is not the cause.
+
+★ Keeping a byte-exact archived build of a known-good state turned an unanswerable question
+("did I break this?") into a ten-minute A/B. That archive earned its disk space.
+
+## Ruled out, each with a reason rather than a hunch
+
+- **Focus** — froze FASTEST with the window verified foreground via `GetForegroundWindow`.
+- **The harness poll** — `AutoHarness_CheckForCommand()` is the first line of `GuruLoopLogic()`,
+  which runs every frame from `MasterRenderer::Update`.
+- **CWD** — `AutoHarness_InitPaths()` uses `GetModuleFileNameA`; absolute.
+- **The focus throttle** — the bypass is wired correctly: the harness sets `g_bAutomationActive` on
+  the first command consumed and never resets it, `main.cpp:318` turns that into
+  `bKeepActiveEvenInBackground`, and that branch calls `master.RunCustom()` identically.
+
+## ⚠⚠ The open question — needs a human, not more analysis
+
+Every run went through the harness. **Nobody has established whether Test Level freezes when a
+person clicks it.** Freezes for a human too = the shipped alpha locks up on first playthrough and
+is tester-blocking. Freezes only under automation = a harness limitation and interactive use is
+fine. A two-minute manual check settles it; everything else waits on that.
+
+If it IS universal: zero CPU means a wait, so read the main thread's stack under a debugger, or add
+a watchdog that dumps `CaptureStackBackTrace` for all threads when no frame completes for N seconds.
+
+## ★★★ The method failure — a vacuous test reported as evidence
+
+My first attempt at the modal theory enumerated top-level windows looking for class `#32770`. It
+returned **nothing — including in the editor**, where there is unambiguously a window. I reported
+"no dialog found" when the only honest reading was "my check does not work".
+
+★★★ **Verify the instrument on the control before trusting it on the subject.** A check that
+cannot produce a positive on a known-good case proves nothing about the case under test. Third
+instance of this family: the `bc` vacuous tests, the `fopen` sweep that passed while nine writers
+were broken, and now this. The fix was to switch to `Get-Process | MainWindowTitle`, confirm it
+printed `GameGuru MAX` on a live run, and only then measure.
+
+## Harness work that did land
+
+`819a650a` adds `GET_BULLETHOLE_FLAGS`, `SET_BULLETHOLE_FLAG` (memory-only, never saves),
+`FIRE_RAY_AT`, `COUNT_BULLETHOLES` and `TRIGGER_LUA_ERROR`, in a helper OR'd into an existing arm
+because the dispatch ladder is at the MSVC C1061 limit.
+
+They verified the ported clause: same entity, `staticflag` and `isimmobile` both constant at 0,
+flag 0 -> `BULLETHOLE_DENIED`, flag 1 -> `BULLETHOLE_ALLOWED`. ⚠ But surveying all 200 Aztec
+entities found 196 ALLOWED / 4 DENIED, and all four denied are markers or particle emitters — every
+solid object there is already `staticflag=1`, so bullet holes worked on it before the change.
+**Aztec cannot demonstrate the feature**; that needs a non-static, non-immobile prop.
+
+`FIRE_RAY_AT` and `TRIGGER_LUA_ERROR` remain unrun — both need game state.

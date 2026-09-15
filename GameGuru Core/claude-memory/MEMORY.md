@@ -4,6 +4,8 @@
 > ⚠⚠ **TWO MACHINES since 08-31** — run ``[ -d /d/DEV/BUILDS ] && echo LAPTOP || echo DESKTOP`` before trusting any path, GPU or perf number. **DESKTOP = RX 9060 XT, the primary box and the source of every recorded FPS/VRAM baseline**; LAPTOP = GTX 1050, set up 08-31 and unused since, where those baselines are INVALID. Full table: [Machine migration](project_machine_migration.md).
 > ⚙ This folder is mirrored into the repo at `GameGuru Core/claude-memory/` — `tools/sync_claude_memory.sh to-repo` after a session; `to-live` on a new box. ⚠ The live path is keyed on the repo's ABSOLUTE path — a wrong key fails SILENTLY.
 
+> ⚠⚠ **[TEST GAME FREEZES](project_testgame_freeze.md)** — entering Test Level parks the app at ZERO CPU. Measured on the **pre-port 08-29 alpha too**, so NOT from 3.38, and not focus-related. ⚠ Only ever seen under the harness — **ask Lee whether it freezes when a human clicks Test Level**; that answer decides whether the shipped alpha is tester-blocking.
+
 ## Current campaign — performance / ultra-low-spec
 - ★★★ **3.35b–h Lee's five reports, one a DEVICE HANG (08-29)** — live Texture Detail RACED the streaming thread → GPU page fault → DEVICE_HUNG; the guard (`GGReloadGuardBegin/End`) existed and the divide never asked for it. Fix corroborated NOT proven. Also: crash path must not use RTTI (3.26 `dynamic_cast` turned handled device loss into silent close); tooltips wrap; Super Quick defaults 3; baked water Schlick ramp. Notes §3.35b–h.
 - ★★★ **3.34–3.35 Super Quick made real + the Opaque breakdown (08-28)** — Opaque Scene is **99% objects**; a shader fetching NOTHING still costs 61% (fat vertex layout + submission), the floor is 1320 draws not fill. Three rungs on a reduced VS/PS layout: stock→FLAT **−52%**. Notes §3.34–§3.35.

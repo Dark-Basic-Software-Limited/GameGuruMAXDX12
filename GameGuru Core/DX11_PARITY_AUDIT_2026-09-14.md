@@ -211,6 +211,16 @@ I scanned first — 11 externs and 136 struct members. It still missed two class
 it looked only for UNdefined symbols (never DOUBLY-defined, which my own earlier hand-fix caused),
 and it followed only explicit `extern` lines, so a bare use of an undeclared global was invisible.
 
+### ⚠⚠ 6.0 Before anything else — does Test Level freeze for a human?
+
+Entering test game parks the app at **zero CPU** in every automated run. Measured on the archived
+**pre-port 08-29 alpha too**, so this is NOT from the port, and it froze fastest with the window
+verified foreground so it is not focus. Every run was harness-driven.
+
+**Two-minute manual check, and it outranks everything else in this section:** freezes for a human
+too and the shipped alpha is tester-blocking; freezes only under automation and it is a harness
+limitation. Detail in `NIGHT_INVESTIGATIONS` §3.39 and memory `project_testgame_freeze.md`.
+
 ## 6. ★★★ What still needs YOUR decision
 
 ### 6.1 ⚠ One behaviour-visible default changed — Delayed Shadows

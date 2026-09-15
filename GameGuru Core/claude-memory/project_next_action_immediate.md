@@ -8,7 +8,54 @@ metadata:
   modified: 2026-08-26T04:10:52.131Z
 ---
 
-# ▶▶ RESUME HERE — state as of 2026-09-14
+# ▶▶ RESUME HERE — state as of 2026-09-15
+
+**Both repos clean and pushed.** Game `819a650a`, engine `9832c8e0`. Build green; exe 31,857,152.
+
+## ⚠⚠ READ FIRST — two things need Lee, not more analysis
+
+1. **Does Test Level freeze for a HUMAN?** Entering test game parks the app at zero CPU in every
+   automated run — including on the archived PRE-PORT alpha, so it is NOT from 3.38, and it froze
+   fastest with the window verified foreground so it is not focus. Every run was harness-driven, so
+   nobody knows whether interactive use is affected. Two-minute check, and it decides whether the
+   shipped alpha is tester-blocking. See [[project-testgame-freeze]].
+2. **Bullet holes need a level that can show them.** The clause IS verified (same entity: flag 0 ->
+   DENIED, flag 1 -> ALLOWED). But Aztec is 196 ALLOWED / 4 DENIED and all four denied are markers
+   or particle emitters — every solid object there is already `staticflag=1`, so bullet holes
+   already worked on it. A visible difference needs a NON-STATIC, NON-IMMOBILE prop.
+
+## ★★★ 3.38 — the DX11 parity port is DONE (10 commits, 09-14/15)
+
+338 DX11 commits since the fork (`ca32a143`, 2025-11-21), triaged and ported. Full record with the
+portability matrix and every skip reason: `GameGuru Core/DX11_PARITY_AUDIT_2026-09-14.md`.
+
+| phase | what |
+|---|---|
+| A `d1a9d09e` | 177 content files, the 4 missing Lua commands, 8 safe code files, nav-mesh focus |
+| B `5b55eb47` | Particle System Upgrade (DX11's newest commit) |
+| C `d836fcab` | 21 exact-placement hunks + the crash-breadcrumb cluster |
+| D `9eda212c` | **Lua runtime errors now name the script and line** — 341 call sites |
+| E `47d29b5d` | the remaining 76 M-GridEditB hunks + 4 dependencies |
+| F `487cb93e` | 111 hunks across 16 files |
+| G `4730b97b` | completes the weapon-property cluster — **fixes a silent bug F shipped** |
+| `e5b28519`/`9832c8e0` | **toolchain: a CLEAN build had been broken since 08-31** |
+| `819a650a` | harness commands to test the port without a keyboard |
+
+★ Two rules bought the hard way, both in [[project-porting-clusters]]: **excluding a file does
+not exclude its cluster** (F shipped a silent bug because M-Importer's CALLERS were in files the
+batch included), and **always `patch -F0`** — default fuzz dropped hunks into a file that did not
+contain the target function at all.
+
+⚠ **NOT ported, deliberately:** GGTerrain (9/21 place), master.cpp (4/13), the GGTrees guards
+(every one provably unreachable — constants, and `&array[i]` is never null), and DX11's
+`terrainsafegpu` ini knob (its consumer lives in the unported GGTerrain, so the knob alone would be
+a dead switch). Reasons in audit §6.
+
+## Still unverified by anyone
+
+Fonts tab, View Playing Sounds, the Lua error message in situ, and the bullet-hole decal itself.
+`FIRE_RAY_AT` and `TRIGGER_LUA_ERROR` exist in the harness but cannot run until the test-game
+freeze is understood.
 
 ## ★ Latest: 3.37 water splash FIXED, Lee-confirmed
 A WPE decal emitter ran for a flat **5.0 s** because `framedelay >= 100` was read as ms when the
