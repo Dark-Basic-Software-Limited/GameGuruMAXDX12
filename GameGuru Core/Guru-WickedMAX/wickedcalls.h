@@ -6,8 +6,57 @@
 #include <memory>
 #include <vector>
 #include <string>
-
 #include "..\Dark Basic Public Shared\Dark Basic Pro SDK\Shared\Objects\CObjectDataC.h"
+
+// Helps with CRASH LOG collection
+extern thread_local char g_CrashContext[1024];
+#define GG_CRASH_CONTEXT(fn, fmt, ...)                          \
+    extern int g_iDisableCrashLogSystem;                         \
+    if(g_iDisableCrashLogSystem==0)                             \
+    {                                                          \
+        do {                                                        \
+            char _gg_tmp[256];                                     \
+            int _n = snprintf(_gg_tmp, sizeof(_gg_tmp),             \
+                               " %s: " fmt "\r\n",                    \
+                               fn, __VA_ARGS__);                   \
+            if (_n > 0)                                             \
+            {                                                       \
+                size_t cur = strlen(g_CrashContext);               \
+                if (cur + _n >= sizeof(g_CrashContext))            \
+                {                                                   \
+                    memmove(g_CrashContext,                         \
+                            g_CrashContext + (cur + _n - sizeof(g_CrashContext)), \
+                            sizeof(g_CrashContext));               \
+                    cur = strlen(g_CrashContext);                  \
+                }                                                   \
+                strncat(g_CrashContext, _gg_tmp,                    \
+                        sizeof(g_CrashContext) - cur - 1);         \
+            }                                                       \
+        } while (0);                                                \
+    }
+
+#define GG_CRASH_CONTEXT_NO_FLAG(fn, fmt, ...)                          \
+    {                                                          \
+        do {                                                        \
+            char _gg_tmp[256];                                     \
+            int _n = snprintf(_gg_tmp, sizeof(_gg_tmp),             \
+                               " %s: " fmt "\r\n",                    \
+                               fn, __VA_ARGS__);                   \
+            if (_n > 0)                                             \
+            {                                                       \
+                size_t cur = strlen(g_CrashContext);               \
+                if (cur + _n >= sizeof(g_CrashContext))            \
+                {                                                   \
+                    memmove(g_CrashContext,                         \
+                            g_CrashContext + (cur + _n - sizeof(g_CrashContext)), \
+                            sizeof(g_CrashContext));               \
+                    cur = strlen(g_CrashContext);                  \
+                }                                                   \
+                strncat(g_CrashContext, _gg_tmp,                    \
+                        sizeof(g_CrashContext) - cur - 1);         \
+            }                                                       \
+        } while (0);                                                \
+    }
 
 // Custom Layers
 #ifndef GGRENDERLAYERSENUM
@@ -94,6 +143,7 @@ void WickedCall_SetObjectFrame(sObject* pObject, float fFrame);
 void WickedCall_SetObjectFrameEx(sObject* pObject, float fFrame);
 float WickedCall_GetObjectFrame(sObject* pObject);
 float WickedCall_GetObjectRealFrame(sObject* pObject);
+bool WickedCall_GetObjectPlaying(sObject* pObject);
 void WickedCall_RemoveObject( sObject* pObject );
 void WickedCall_SetTexturePath ( LPSTR pPath );
 void WickedCall_TextureMesh ( sMesh* pMesh );

@@ -330,7 +330,7 @@ void visuals_resetvalues (bool bNewLevel)
 	t.visuals.bThreadedPhysics = false;
 	t.visuals.bReflectionsLowestLOD = false;
 
-	t.visuals.g_bDelayedShadows = false;
+	t.visuals.g_bDelayedShadows = true;
 	t.visuals.g_bDelayedShadowsLaptop = false;
 	t.visuals.fEnvProbeBrightness = 1.0f;
 
@@ -367,7 +367,7 @@ void visuals_resetvalues (bool bNewLevel)
 	t.visuals.iMSAO = 1;
 	t.visuals.fMSAOPower = 1.0;
 
-	t.visuals.iShadowSpotCascadeResolution = 2048;
+	t.visuals.iShadowSpotCascadeResolution = 1024;
 	t.visuals.iShadowSpotResolution = 512;
 	t.visuals.iShadowPointResolution = 512;
 	t.visuals.iShadowPointMax = 16;
@@ -1296,7 +1296,7 @@ void visuals_load ( void )
 	t.visuals.bThreadedPhysics = false;
 	t.visuals.bReflectionsLowestLOD = false;
 
-	t.visuals.g_bDelayedShadows = false;
+	t.visuals.g_bDelayedShadows = true;
 	t.visuals.g_bDelayedShadowsLaptop = false;
 
 	t.visuals.fEnvProbeBrightness = 1.0f;
@@ -1336,7 +1336,7 @@ void visuals_load ( void )
 	t.visuals.SkyCloudThickness = 98000.0f;
 	t.visuals.SkyCloudSpeed = 3.0f;
 
-	t.visuals.iShadowSpotCascadeResolution = 2048;
+	t.visuals.iShadowSpotCascadeResolution = 1024;
 	t.visuals.iShadowSpotResolution = 512;
 	t.visuals.iShadowPointResolution = 512;
 	t.visuals.iShadowPointMax = 16;

@@ -915,7 +915,8 @@ float BULLETCosineInterpolate ( float y1, float y2, float mu )
 }
 
 //#ifdef PUTPHYSICSBACKINMAINTHREADSEQUENCE
-std::mutex physicslock = {};
+//std::mutex physicslock = {};
+std::recursive_mutex physicslock = {};
 //#else
 //class physicslockclass
 //{

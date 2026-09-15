@@ -1539,6 +1539,7 @@ void procedural_new_level(void)
 					{
 						timestampactivity(0, "GGTerrain_RemoveAllFlatAreas:3");
 						GGTerrain_RemoveAllFlatAreas(); //PE: Remove all flat areas.
+						timestampactivity(0, "GGTerrain_RemoveAllFlatAreas:9");
 						iRandomThemeChoice = 7; //PE: new design always rainforest.
 						bProceduralLevelStartup = false;
 						bTriggerStableY = true;

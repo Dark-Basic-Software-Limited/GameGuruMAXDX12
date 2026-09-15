@@ -140,4 +140,64 @@ equivalent, and re-indenting 30 lines is risk with no behavioural gain.
 
 ## 6. ★★★ What still needs YOUR decision
 
-*(filled in at the end)*
+### 6.1 ⚠ One behaviour-visible default changed — Delayed Shadows
+
+DX11 changed `t.visuals.g_bDelayedShadows` from `false` to `true` at both reset sites **after the
+fork**, and that is in the ported `M-Visuals` set. So this is genuine latest-DX11 behaviour, not a
+decision I invented — but it is the same flip I recommended against on 09-14, so you should know it
+landed.
+
+It is narrower than it looks, for the reason established that day: the quality-preset ladders are
+identical in both trees and the default preset is HIGHEST, which forces it OFF regardless. **These
+reset-site defaults only reach CUSTOM projects.** DX11 also dropped
+`iShadowSpotCascadeResolution` 2048 -> 1024 in the same hunks.
+
+To undo just this: revert the two `g_bDelayedShadows = true;` lines in `M-Visuals_part0.cpp`.
+
+### 6.2 The two files that must NOT be taken wholesale
+
+| file | DX11 change | why it is parked |
+|---|---|---|
+| `GGTrees.cpp` | +310, one commit `3b63f9b2` — defensive GUARDs in `GGTrees_Update` (validate chunk counts, tree-type counts, chunk pointers, instance counts, runaway-loop guard) | **0 of 2 hunks place.** DX11 rewrote the function; DX12's is a different function after far-tree billboards, the pool cap and per-level atlas slices. The guards are *worth having* — they are crash-hardening — but they must be re-implemented against our version, not pasted. |
+| `GGTerrain.cpp` | +364 across 11 commits — GPU race fixes, TerrainReadBack resource handling, recursive_mutex, PIX tracing, nav mesh | **9 of 21 place.** Mixed bag, and DX12 has solved some of these differently already (we have our own PIX path). Needs a per-commit read. |
+
+★ These two scoring lowest is the analysis working. They are exactly where DX12 diverged hardest.
+
+### 6.3 The big mechanical one — Lua runtime errors that name the script and line
+
+`DarkLUA.cpp` shows 351 hunks, which looks unapproachable. It is not: **338 of them are the
+identical one-line change** `int n = lua_gettop(L);` -> `int n = LUA_GETTOP(L);`.
+
+`LUA_GETTOP` is a 4-line function that records `g_CurrentLuaState`, which `CError.cpp` then reads
+via `lua_getstack`/`lua_getinfo` to append *". Found in 'script.lua' at line 42."* to a runtime
+error. Given how often a GameGuru runtime error is a mystery, this is probably the single highest
+value item left.
+
+Cost: one global + one function + a mechanical substitution across `DarkLUA_part*.cpp`, plus the
+`CError.cpp`/`CrashLogger.cpp`/`main.cpp` cluster (§4.1). **Say the word and I will do it** — I did
+not start it unattended because the substitution touches 338 sites in one pass.
+
+### 6.4 Smaller calls
+
+- **`animsystem_weaponproperty`** — renames arg 2 `readonly` -> `bFromCharacterCreator`. ⚠ Same
+  arity, so the four DX12 call sites compile happily while meaning the wrong thing. Needs all five
+  files in one edit. Low risk, just fiddly.
+- **`CommonC.cpp` warning rename** — now unblocked (the new global arrived with `wickedcalls.cpp`),
+  but still purely cosmetic. Both globals currently exist; the new one is unused. Worth finishing
+  or worth reverting, not worth leaving half-done forever.
+- **`crash-triage.yml`** — a GitHub Action. Porting it starts CI running on this repo. Your call.
+- **`WinPixEventRuntime.dll`** — a binary swap with no stated reason. Left alone.
+- **The `Storyboard.gamename` guard** — an unported DX11 change that wraps `GG_SetWritablesToRoot`.
+  It is why three particle hunks needed hand-placement, and it will keep blocking hunks until it is
+  ported. Worth doing early in the next pass.
+
+### 6.5 What is left, by size
+
+Roughly 700 hunks were in scope; about 345 place on exact context and ~120 are now applied. The
+largest remaining blocks are `M-GridEditB` (74 hunks beyond the particle work, spread over 19 part
+files), `M-GridEdit` (30), `M-Entity` (16), `G-Gun` (10, the animchoicemode/delayed-shot work) and
+`G-Entity` (9).
+
+None of it is blocked on anything except review time. The method is established and repeatable:
+extract the DX11 diff, place with `patch -F0`, read every hunk that lands, hand-place the rest,
+gate on a clean build.

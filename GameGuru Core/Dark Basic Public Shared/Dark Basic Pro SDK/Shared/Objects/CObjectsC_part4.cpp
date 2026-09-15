@@ -131,6 +131,8 @@ DARKSDK_DLL void PerformCheckListForOnscreenObjects ( int iMode )
 
 DARKSDK_DLL void HideLimb ( int iID, int iLimbID )
 {
+	GG_CRASH_CONTEXT("HideLimb", "iID=%d iLimbID=%d", iID, iLimbID);
+
 	// check the object limb exists
 	if ( !ConfirmObjectAndLimbInstance ( iID, iLimbID ) )
 		return;
@@ -162,6 +164,8 @@ DARKSDK_DLL void HideLimb ( int iID, int iLimbID )
 
 DARKSDK_DLL void ShowLimb ( int iID, int iLimbID )
 {
+	GG_CRASH_CONTEXT("ShowLimb","iID=%d iLimbID=%d", iID, iLimbID);
+
 	// check the object limb exists
 	if ( !ConfirmObjectAndLimbInstance ( iID, iLimbID ) )
 		return;

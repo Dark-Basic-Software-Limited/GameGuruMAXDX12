@@ -354,7 +354,7 @@ void decal_load(void)
 	{
 		// this load creates a large delay each time test game is used, so allow user to skip this new effect for quicker testing
 		extern bool g_bTemporarilyDisableFullDecalEffectLoading;
-		if ( g_bTemporarilyDisableFullDecalEffectLoading == false )
+		if ( g_bTemporarilyDisableFullDecalEffectLoading == false && g.gdisablefulldecaleffects == 0 )
 		{
 			t.decal[t.decalid].newparticle.iParticle_Floor_Active = 1;
 			t.decal[t.decalid].newparticle.bParticle_Show_At_Start = false;
@@ -552,6 +552,9 @@ void decal_loadonlyactivedecals ( void )
 		if (  t.decal[t.decalid].active == 1 ) 
 		{
 			t.decal_s=t.decal[t.decalid].name_s;
+			char pProgressPrompt[256];
+			sprintf(pProgressPrompt, "Loading decal %d of %d : %s", t.decalid, g.decalmax, t.decal_s.Get());
+			if (t.game.gameisexe == 0)  printscreenprompt(pProgressPrompt); else loadingpageprogress(2);
 			decal_load ( );
 		}
 	}
@@ -1339,11 +1342,13 @@ void decal_activatedecalsfromentities ( void )
 		if (t.entityelement[t.e].eleprof.explodable_decalname.Len() > 0)
 		{
 			cstr explodename = t.entityelement[t.e].eleprof.explodable_decalname;
-			if (explodename.Len() > 0)
+			cstr lexplodename = explodename.Lower();
+			if (lexplodename.Len() > 0)
 			{
 				for (int i = 1; i <= g.decalmax; i++)
 				{
-					if (t.decal[i].name_s == explodename)
+					cstr ldecal = t.decal[i].name_s.Lower();
+					if (ldecal == lexplodename)
 					{
 						t.decal[i].active = 1;
 						t.decal[i].newparticle.iMaxCache = 2; //PE: For now only 2 cached custom explosions.
@@ -1371,6 +1376,16 @@ void decal_activatedecalsfromentities ( void )
 							t.decal[t.tdecalid].active = 1;
 							if (t.entityprofile[t.entid].bloodscorch == 0)
 								t.decal[t.tdecalid].newparticle.iMaxCache = 2; //PE: Only cache 2 custom decals.
+						}
+						else
+						{
+							//PE: Unless this is a impact from the fpe.
+							if ( t.entitydecal_s[t.entid][t.tq].Len() > 0)
+							{
+								t.decal[t.tdecalid].active = 1;
+								if (t.entityprofile[t.entid].bloodscorch == 0)
+									t.decal[t.tdecalid].newparticle.iMaxCache = 2; //PE: Only cache 2 custom decals.
+							}
 						}
 					}
 				}

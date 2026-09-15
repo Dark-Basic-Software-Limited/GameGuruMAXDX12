@@ -80,6 +80,11 @@ float g_fHoldGridEntityPosY = 0;
 float g_fHoldGridEntityPosZ = 0;
 float g_fLocalTurnRotationForSmartMode = 0.0f;
 int g_iStackToSurfaceMode = 0;
+// ★ GGMAX 3.38 (DX11 00bb4197 "Can now disable crash logging to improve performance"): the
+// master switch the GG_CRASH_CONTEXT macro tests (wickedcalls.h). 0 = breadcrumbs ON. DX11 also
+// exposes it as the setup.cfg knob 'disablecrashlogsystem'; that plumbing lives in Common.cpp and
+// is NOT ported yet, so today this is on unless something sets it.
+int g_iDisableCrashLogSystem = 0;
 int g_iOrientToSurfaceMode = 0;
 bool g_bParticleEditorPresent = false;
 bool g_bBuildingEditorPresent = false;

@@ -382,11 +382,13 @@
 	SetDir(olddir_s.Get());
 
 	// if have default selection, set the choices to those
+	static bool bRefreshedToCustomVariant = false;
 	int iBase = 0;
 	std::array<std::string, 10>* storage = nullptr;
 	if (stricmp(CCP_Type, "adult male") == NULL)
 	{
 		iBase = 1;
+		bRefreshedToCustomVariant = false;
 		if(g_maleStorage[0].length() > 0)
 			storage = &g_maleStorage;
 		g_fCCPZoom = 73.0f;
@@ -394,6 +396,7 @@
 	if (stricmp(CCP_Type, "adult female") == NULL) 
 	{
 		iBase = 2;
+		bRefreshedToCustomVariant = false;
 		if (g_femaleStorage[0].length() > 0)
 			storage = &g_femaleStorage;
 		g_fCCPZoom = 73.0f;
@@ -401,6 +404,7 @@
 	if (stricmp(CCP_Type, "zombie male") == NULL)
 	{
 		iBase = 3;
+		bRefreshedToCustomVariant = false;
 		if (g_zombieStorage[0].length() > 0)
 			storage = &g_zombieStorage;
 		g_fCCPZoom = 67.0f;
@@ -408,6 +412,7 @@
 	if (stricmp(CCP_Type, "zombie female") == NULL)
 	{
 		iBase = 4;
+		bRefreshedToCustomVariant = false;
 		if (g_zombieStorage[0].length() > 0)
 			storage = &g_zombieStorage;
 		g_fCCPZoom = 67.0f;
@@ -419,13 +424,20 @@
 		if (iBase > 0)
 		{
 			if (g_genericStorage[0].length() > 0)
-				storage = &g_genericStorage;
+			{
+				// but ONLY if previous refresh was a NON-custom (as there is only ONE genericStorage slot, i.e. Goblin variant can corrupt Low Poly choices)
+				if (bRefreshedToCustomVariant == false)
+				{
+					storage = &g_genericStorage;
+				}
+			}
 			g_fCCPZoom = 67.0f;
 		}
 		else
 		{
 			iBase = 1;
 		}
+		bRefreshedToCustomVariant = true;
 	}
 	if (!storage)
 	{

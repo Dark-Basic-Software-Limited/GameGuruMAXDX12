@@ -1024,10 +1024,15 @@
 					int iBaseValue = GetBaseValueFromCCPType(CCP_Type);
 					if (iBaseValue > 1) characterbasetype = iBaseValue-1;
 				}
-				if (characterbasetype >= 0 && characterbasetype <= 1)
-				{
-					animsystem_weaponproperty(characterbasetype, false, &g_grideleprof_holdchoices, true, true);
 
+				// allow all character types to choose weapons and start behaviours, keep things open!
+				if (true)//characterbasetype >= 0 && characterbasetype <= 1)
+				{
+					/* as this does not CHANGE the behaviour property, it was never used
+					// Choose weapon.
+					bool bFromCharacterCreator = true;
+					animsystem_weaponproperty(characterbasetype, bFromCharacterCreator, &g_grideleprof_holdchoices, true, true);
+					*/
 					// Choose behavior.
 					ImGui::TextCenter("Behavior");
 					static std::vector<std::string> characterBehaviors;
