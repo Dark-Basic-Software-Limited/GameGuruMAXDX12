@@ -45,7 +45,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 
 	int imageindexi = 0; // can have eight images indexed this way
 	bool bwpefile = false;
-	bool bwpeyoffet = false;
 
 	for (int i = 0; i < tmpeleprof->PropertiesVariable.iVariables; i++) 
 	{
@@ -309,7 +308,11 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 							bool CreateBackBufferCacheName(char *file, int width, int height);
 							extern cstr BackBufferCacheName;
 							CreateBackBufferCacheName( (char *) stmp.c_str(), 512, 288);
-							GG_SetWritablesToRoot(true);
+							extern StoryboardStruct Storyboard;
+							if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+							{
+								GG_SetWritablesToRoot(true);
+							}
 							SetMipmapNum(1); //PE: mipmaps not needed.
 							image_setlegacyimageloading(true);
 							if (FileExist(BackBufferCacheName.Get()))
@@ -864,9 +867,41 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 				if (stricmp (tmpeleprof->PropertiesVariable.Variable[i], "ChaseModes") == NULL) pTooltipForIntegerSlider = "The first three modes are slow walkers and the last two are fast walkers";
 				cstr id = cstr("##") + tmpeleprof->PropertiesVariable.VariableScript/*tmpeleprof->name_s*/ + cstr(tmpeleprof->PropertiesVariable.Variable[i]);
 
+				bool bwpeyoffet = false;
+				bool bwpexoffet = false;
+				bool bwpezoffet = false;
+
+				if (bwpefile)
+				{
+					if (pestrcasestr(tmpeleprof->PropertiesVariable.Variable[i], "offsety"))
+					{
+						bwpeyoffet = true;
+						fPreviewYOffset = 0;
+						fPreviewXOffset = 0;
+						fPreviewZOffset = 0;
+					}
+					if (pestrcasestr(tmpeleprof->PropertiesVariable.Variable[i], "offsetx"))
+					{
+						bwpexoffet = true;
+					}
+					if (pestrcasestr(tmpeleprof->PropertiesVariable.Variable[i], "offsetz"))
+					{
+						bwpezoffet = true;
+					}
+				}
+
 				// strange condition to enable correct integer slider - from can be zero just fine
 				//if (tmpeleprof->PropertiesVariable.VariableValueFrom[i] != 0 && tmpeleprof->PropertiesVariable.VariableValueTo[i] != 0 && tmpeleprof->PropertiesVariable.VariableValueTo[i] > tmpeleprof->PropertiesVariable.VariableValueFrom[i])
-				if (tmpeleprof->PropertiesVariable.VariableValueTo[i] != 0 && tmpeleprof->PropertiesVariable.VariableValueTo[i] > tmpeleprof->PropertiesVariable.VariableValueFrom[i])
+				if (bwpefile && (bwpeyoffet || bwpexoffet || bwpezoffet))
+				{
+					if (ImGui::MaxSliderInputInt(id.Get(), &tmpint, -100.0F, 100.0f, pTooltipForIntegerSlider))
+					{
+						sprintf(tmp, "%d", tmpint);
+						strcpy(tmpeleprof->PropertiesVariable.VariableValue[i], tmp);
+						bUpdateMainString = true;
+					}
+				}
+				else if (tmpeleprof->PropertiesVariable.VariableValueTo[i] != 0 && tmpeleprof->PropertiesVariable.VariableValueTo[i] > tmpeleprof->PropertiesVariable.VariableValueFrom[i])
 				{
 					if (ImGui::MaxSliderInputInt(id.Get(), &tmpint, (int)tmpeleprof->PropertiesVariable.VariableValueFrom[i], (int)tmpeleprof->PropertiesVariable.VariableValueTo[i], pTooltipForIntegerSlider))
 					{
@@ -884,12 +919,20 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 						bUpdateMainString = true;
 					}
 				}
+
 				if (bwpefile)
 				{
-					if (pestrcasestr(tmpeleprof->PropertiesVariable.Variable[i], "offsety"))
+					if (bwpeyoffet)
 					{
-						bwpeyoffet = true;
 						fPreviewYOffset = tmpint;
+					}
+					if (bwpexoffet)
+					{
+						fPreviewXOffset = tmpint;
+					}
+					if (bwpezoffet)
+					{
+						fPreviewZOffset = tmpint;
 					}
 				}
 
@@ -899,9 +942,6 @@ int DisplayLuaDescription(entityeleproftype *tmpeleprof)
 		}
 	}
 	
-	if(!bwpeyoffet)
-		fPreviewYOffset = 0;
-
 	//Update soundset4_s when we have changes.
 	if (bUpdateMainString) 
 	{

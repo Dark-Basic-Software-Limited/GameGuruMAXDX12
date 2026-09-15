@@ -197,7 +197,6 @@ void entity_prepareobj ( void )
 				if (pObject->ppMeshList[iMesh]) pObject->ppMeshList[iMesh]->iCullMode = 0;
 			}
 			WickedCall_SetObjectCullmode(pObject);
-
 		}
 
 		if (t.entityprofile[t.tentid].bIsDecal)
@@ -205,6 +204,7 @@ void entity_prepareobj ( void )
 			void SetupDecalObject(int obj, int elementID);
 			SetupDecalObject(t.tobj, t.tte);
 		}
+
 
 		if (t.entityprofile[t.tentid].ismarker == 0)
 		{

@@ -245,6 +245,7 @@ void newparticle_updateparticleemitter ( newparticletype* pParticle, float fScal
 	}
 	if (iParticleEmitter != -1)
 	{
+		/*
 		if (pParticle->bWPE)
 		{
 			Scene& scene = wiScene::GetScene();
@@ -274,6 +275,52 @@ void newparticle_updateparticleemitter ( newparticletype* pParticle, float fScal
 					WickedCall_PerformEmitterAction(4, iParticleEmitter); //PE: Restart
 					WickedCall_PerformEmitterAction(5, iParticleEmitter); //PE: Visible
 					WickedCall_PerformEmitterAction(1, iParticleEmitter); //PE: Burst All
+					pParticle->bParticle_Fire = false;
+				}
+			}
+		}
+		*/
+
+		//PE: Make emitter always face camera.
+		if (pParticle->bWPE)
+		{
+			Scene& scene = wiScene::GetScene();
+			TransformComponent* root_tranform = scene.transforms.GetComponent(iParticleEmitter);
+
+			if (bShowThisParticle)
+			{
+				if (pParticle->bParticle_Fire == true)
+				{
+					if (root_tranform)
+					{
+						root_tranform->ClearTransform();
+						XMVECTOR cameraPos = XMVectorSet(CameraPositionX(0), CameraPositionY(0), CameraPositionZ(0), 0.0f);
+						XMVECTOR emitterPos = XMVectorSet(fX, fY, fZ, 0.0f);
+
+						XMVECTOR lookDir = XMVectorSubtract(cameraPos, emitterPos);
+						//PE: Invert drection - XMVECTOR lookDir = XMVectorSubtract(emitterPos, cameraPos);
+						lookDir = XMVectorSetY(lookDir, 0.0f);
+
+						if (XMVectorGetX(XMVector3LengthSq(lookDir)) > 0.0001f)
+						{
+							lookDir = XMVector3Normalize(lookDir);
+							XMVECTOR worldUp = XMVectorSet(0, 1, 0, 0);
+							XMMATRIX lookAtMat = XMMatrixLookToLH(emitterPos, lookDir, worldUp);
+							XMMATRIX worldMat = XMMatrixInverse(nullptr, lookAtMat);
+							root_tranform->MatrixTransform(worldMat);
+						}
+						else
+						{
+							root_tranform->Translate(XMFLOAT3(fX, fY, fZ));
+						}
+
+						root_tranform->UpdateTransform();
+					}
+
+					WickedCall_PerformEmitterAction(3, iParticleEmitter); // Resume
+					WickedCall_PerformEmitterAction(4, iParticleEmitter); // Restart
+					WickedCall_PerformEmitterAction(5, iParticleEmitter); // Visible
+					WickedCall_PerformEmitterAction(1, iParticleEmitter); // Burst All
 					pParticle->bParticle_Fire = false;
 				}
 			}

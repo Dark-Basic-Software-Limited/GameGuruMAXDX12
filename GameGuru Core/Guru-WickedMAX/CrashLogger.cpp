@@ -15,6 +15,11 @@
 // global we can populate with the current running version to match EXE/PDB pairs
 char g_pCrashVersionINIValue[256] = "Very Early";
 
+// ★ GGMAX 3.38 (DX11): the Wicked MAX debug log that GetCrashHandlerDebugLogRef() returns a
+// pointer into, so a crash report can carry the GFX log with it. ⚠ static: the accessor hands out
+// the address, nothing outside this file may define its own.
+static char g_pDebugExtraInfo[10240] = { 0 };
+
 // Recorded when the handler is installed (from the main thread), so a crash report can say
 // whether the faulting thread was the frame loop or a background worker.
 DWORD g_dwCrashMainThreadId = 0;
@@ -258,7 +263,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
         CloseHandle(hFile);
     }
 
-    //PE: Also create dump that we can load in visual studio later to debug.
+    // Also create dump that we can load in visual studio later to debug.
     strcpy_s(logPath, exePath);
     strcat_s(logPath, "crashdump.dmp");
 
@@ -268,22 +273,24 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
-    exceptionInfo.ThreadId = GetCurrentThreadId();
-    exceptionInfo.ExceptionPointers = pExceptionInfo;
-    exceptionInfo.ClientPointers = TRUE;
+    if (pExceptionInfo)
+    {
+        MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+        exceptionInfo.ThreadId = GetCurrentThreadId();
+        exceptionInfo.ExceptionPointers = pExceptionInfo;
+        exceptionInfo.ClientPointers = TRUE;
+        BOOL success = MiniDumpWriteDump(
+            GetCurrentProcess(),
+            GetCurrentProcessId(),
+            hFile,
+            MiniDumpNormal, // MiniDumpWithFullMemory,
+            &exceptionInfo,
+            nullptr,
+            nullptr
+        );
+    }
 
-    BOOL success = MiniDumpWriteDump(
-        GetCurrentProcess(),
-        GetCurrentProcessId(),
-        hFile,
-        MiniDumpNormal, //MiniDumpWithFullMemory,
-        &exceptionInfo,
-        nullptr,
-        nullptr
-    );
     CloseHandle(hFile);
-
     Sleep(100);
     return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -294,3 +301,8 @@ void InitCrashHandler()
     SetUnhandledExceptionFilter(CrashHandler);
 }
 
+char* GetCrashHandlerDebugLogRef()
+{
+    if (strlen(g_pDebugExtraInfo) == 0) strcpy_s(g_pDebugExtraInfo, 10240, "GFX Debug Log:");
+    return g_pDebugExtraInfo;
+}

@@ -85,8 +85,39 @@ int entity_lua_getanimationnamefromobject (sObject* pObject, cstr FindThisName_s
 	cStr lowercase_s = FindThisName_s.Lower();
 	if (pObject)
 	{
-		for (int iSearchPatterns = 0; iSearchPatterns < 4 && iFoundBest == 0; iSearchPatterns++)
+		for (int iSearchPatterns = 0; iSearchPatterns < 5 && iFoundBest == 0; iSearchPatterns++)
 		{
+			cStr lowercase_meaning_s = "";
+			if (iSearchPatterns == 4)
+			{
+				// if all else fails, then check if animset name contains part of the general meaning of the name supplied by the script, case insensitive
+				// used in situations where an old model uses something like Attack_01 but newer scripts use improved names such as Attack_Floor, etc
+				// so we extract the general meaning of the new script animation name and match against a likely anim from the animset
+				int iWritePosition = 0;
+				char pLowercaseMeaning[MAX_PATH];
+				LPSTR pLowercase = lowercase_s.Get();
+				bool bStartGrabbingNow = false;
+				for (int n = 0; n < strlen(pLowercase); n++)
+				{
+					if (pLowercase[n] >= 'a' && pLowercase[n] <= 'z')
+					{
+						if (bStartGrabbingNow == false) bStartGrabbingNow = true;
+						pLowercaseMeaning[iWritePosition] = pLowercase[n];
+						iWritePosition++;
+					}
+					else
+					{
+						if (bStartGrabbingNow == true)
+						{
+							// after we started grabbingthing, and the letters ran out, stop constructing string
+							break;
+						}
+					}
+				}
+				pLowercaseMeaning[iWritePosition] = 0;
+				lowercase_meaning_s = pLowercaseMeaning;
+			}
+
 			int iAnimSetCount = 1;
 			sAnimationSet* pAnimSet = pObject->pAnimationSet;
 			while (pAnimSet)
@@ -136,7 +167,7 @@ int entity_lua_getanimationnamefromobject (sObject* pObject, cstr FindThisName_s
 				}
 				if (iSearchPatterns == 3)
 				{
-					// animset name contains the name, case insensitive
+					// animset name contains the name 'somewhere', case insensitive
 					char pAnimSetNameLower[MAX_PATH];
 					strcpy (pAnimSetNameLower, pAnimSet->szName);
 					strlwr(pAnimSetNameLower);
@@ -147,6 +178,25 @@ int entity_lua_getanimationnamefromobject (sObject* pObject, cstr FindThisName_s
 						if (pAnimSet == pObject->pAnimationSet) *fFoundFinish = pAnimSet->ulLength;
 						iFoundBest = iAnimSetCount;
 						break;
+					}
+				}
+				if (iSearchPatterns == 4)
+				{
+					// animset name contains part of the general meaning of the name supplied by the script, case insensitive
+					// and see if we can match again 'lowercase_meaning_s'
+					if (lowercase_meaning_s.Len() > 0)
+					{
+						char pAnimSetNameLower[MAX_PATH];
+						strcpy (pAnimSetNameLower, pAnimSet->szName);
+						strlwr(pAnimSetNameLower);
+						if (strstr(pAnimSetNameLower, lowercase_meaning_s.Get()) != NULL)
+						{
+							*fFoundStart = pAnimSet->fAnimSetStart;
+							*fFoundFinish = pAnimSet->fAnimSetFinish;
+							if (pAnimSet == pObject->pAnimationSet) *fFoundFinish = pAnimSet->ulLength;
+							iFoundBest = iAnimSetCount;
+							break;
+						}
 					}
 				}
 				pAnimSet = pAnimSet->pNext;

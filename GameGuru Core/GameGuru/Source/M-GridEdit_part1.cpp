@@ -153,6 +153,15 @@ void mapeditorexecutable_loop(void)
 				AddRemoteProjectFonts();
 				break;
 			}
+			case 698:
+			{
+				//PE: Reload all fonts.
+				iLaunchAfterSync = 0;
+				void AddRemoteProjectFonts(void);
+				ChangeGGFont("editors\\uiv3\\Roboto-Medium.ttf", 15);
+				AddRemoteProjectFonts();
+				break;
+			}
 			case 203: //PE: trigger a WM_SIZE so resolution,scissor,targetarea all match.
 			{
 				iLaunchAfterSync = 0;
@@ -2950,7 +2959,11 @@ void mapeditorexecutable_loop(void)
 							strcpy(cTmp, "entitybank\\");
 							strcat(cTmp, pref.last_import_files[i]);
 							CreateBackBufferCacheName(pref.last_import_files[i], 512, 288);
-							GG_SetWritablesToRoot(true);
+							extern StoryboardStruct Storyboard;
+							if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+							{
+								GG_SetWritablesToRoot(true);
+							}
 							if (FileExist(BackBufferCacheName.Get()) && FileExist(cTmp) )
 							{
 								SetMipmapNum(1);
@@ -3671,7 +3684,8 @@ void mapeditorexecutable_loop(void)
 		{
 			static char cStandalonePath[MAX_PATH] = "\0";
 			static int iStandaloneCycle = 0;
-			if (cStandalonePath[0] == 0) {
+			if (cStandalonePath[0] == 0) 
+			{
 				g.exedir_s = g.myownrootdir_s;
 				if(cstr(Right(g.myownrootdir_s.Get(), 1)) == "\\" )
 					g.exedir_s += "My Games\\";
@@ -3794,7 +3808,8 @@ void mapeditorexecutable_loop(void)
 
 						SetDir(tOldDir.Get());
 
-						if (cFileSelected && strlen(cFileSelected) > 0) {
+						if (cFileSelected && strlen(cFileSelected) > 0) 
+						{
 							strcpy(cStandalonePath, cFileSelected);
 							if (cStandalonePath[strlen(cStandalonePath) - 1] != '\\')
 								strcat(cStandalonePath, "\\");
@@ -3806,7 +3821,22 @@ void mapeditorexecutable_loop(void)
 				}
 
 				float fdone = (float)mapfile_savestandalone_getprogress() / 100.0f;
-				if (iStandaloneCycle == 1) fdone = 0.01f;
+				if (iStandaloneCycle == 1)
+				{
+					// check if destination export path exists
+					if (PathExist(cStandalonePath) == false)
+					{
+						iStandaloneCycle = 0;
+						strcpy(cTriggerMessage, "Save Standalone Aborted - Destination Path Not Exist");
+						bTriggerMessage = true;
+						bExport_Standalone_Window = false; //Close window.
+					}
+					else
+					{
+						// can proceed
+						fdone = 0.01f;
+					}
+				}
 
 				if (fdone > 0.0f) 
 				{
@@ -3844,7 +3874,7 @@ void mapeditorexecutable_loop(void)
 					iStandaloneCycle = 0;
 					strcpy(cTriggerMessage, "Save Standalone Done");
 					bTriggerMessage = true;
-					bExport_Standalone_Window = false; //Close window.
+					bExport_Standalone_Window = false; //Close window.				
 
 					void InjectIconToExe(char *icon, char *exe, int intresourcenumber);
 					char projectico[MAX_PATH];
@@ -6191,7 +6221,63 @@ void mapeditorexecutable_loop(void)
 									ImGui::Indent(10);
 
 									{
-										// display custom material settings
+										if(!t.entityelement[iEntityIndex].eleprof.bUseFPESettings)
+										{
+											if (t.entityelement[iEntityIndex].eleprof.iMaterialSoundIndex >= 5)
+												t.entityelement[iEntityIndex].eleprof.iMaterialSoundIndex = 0;
+
+											char material_sound_selection[256] = "\0";
+											if (t.entityelement[iEntityIndex].eleprof.iMaterialSoundIndex <= 0)
+											{
+												strcpy(material_sound_selection, "None");
+											}
+											if (t.entityelement[iEntityIndex].eleprof.iMaterialSoundIndex == 1)
+											{
+												strcpy(material_sound_selection, "Silent");
+											}
+											else if (t.entityelement[iEntityIndex].eleprof.iMaterialSoundIndex == 2)
+											{
+												strcpy(material_sound_selection, "Stone");
+											}
+											else if (t.entityelement[iEntityIndex].eleprof.iMaterialSoundIndex == 3)
+											{
+												strcpy(material_sound_selection, "Metal");
+											}
+											else if (t.entityelement[iEntityIndex].eleprof.iMaterialSoundIndex == 4)
+											{
+												strcpy(material_sound_selection, "Wood");
+											}
+											char* cMaterialTypes[4] = { "Silent", "Stone", "Metal", "Wood" };
+											ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 15));
+											ImGui::Text("Material Type");
+											ImGui::SameLine();
+											ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() - 3));
+											ImGui::PushItemWidth(-10);
+											if (ImGui::BeginCombo("##ImporterMaterialType", &material_sound_selection[0], ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_HeightLarge))
+											{
+												for (int i = 0; i < 4; i++)
+												{
+													bool is_selected = false;
+													if (strcmp(material_sound_selection, cMaterialTypes[i]) == NULL)
+													{
+														is_selected = true;
+													}
+													if (ImGui::Selectable(cMaterialTypes[i], is_selected))
+													{
+														strcpy(material_sound_selection, cMaterialTypes[i]);
+														t.entityelement[iEntityIndex].eleprof.iMaterialSoundIndex = i + 1;
+														//t.slidersmenuvalue[t.importer.properties1Index][10].value = i + 1;
+													}
+													if (is_selected) ImGui::SetItemDefaultFocus();
+												}
+												ImGui::EndCombo();
+											}
+											if (ImGui::IsItemHovered()) ImGui::SetTooltip("Select the material index for this object");
+											ImGui::PopItemWidth();
+											ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + 15));
+										}
+
+										//PE: display material settings
 										WickedSetEntityId(iMasterID);
 										WickedSetElementId(iEntityIndex);
 										Wicked_Change_Object_Material((void*)pObject, 0, &t.entityelement[iEntityIndex].eleprof,true, t.entityelement[iEntityIndex].eleprof.bUseFPESettings);
@@ -6496,8 +6582,8 @@ void mapeditorexecutable_loop(void)
 								}
 
 								// can never have a grid size below one
-								if (pref.fEditorGridSizeX <= 1) pref.fEditorGridSizeX = 1.0f;
-								if (pref.fEditorGridSizeZ <= 1) pref.fEditorGridSizeZ = 1.0f;
+								if (pref.fEditorGridSizeX <= 0.1f) pref.fEditorGridSizeX = 0.1f;
+								if (pref.fEditorGridSizeZ <= 0.1f) pref.fEditorGridSizeZ = 0.1f;
 							}
 						}
 
@@ -6609,7 +6695,7 @@ void mapeditorexecutable_loop(void)
 					// Default to tutorial panel if no object is selected.
 					// if (Entity_Tools_Window && !g_selected_editor_object && !Visuals_Tools_Window && iLastOpenHeader != 20)
 					//LB: can keep tutorial closed now even if no object selected 
-					if (Entity_Tools_Window && !g_selected_editor_object && !Visuals_Tools_Window && iLastOpenHeader != 15 && iLastOpenHeader != 20 && sGotoPreviewWithFile.Len() == 0) // 20 is keyboard shortcxuts, 15 is grid component
+					if (Entity_Tools_Window && !g_selected_editor_object && !Visuals_Tools_Window && iLastOpenHeader != 15 && iLastOpenHeader != 16 && iLastOpenHeader != 8 && iLastOpenHeader != 9 && iLastOpenHeader != 20 && sGotoPreviewWithFile.Len() == 0) // 20 is keyboard shortcxuts, 15 is grid component
 						iLastOpenHeader = 19;
 
 					if (pref.bAutoClosePropertySections && iLastOpenHeader != 19)
@@ -7767,6 +7853,7 @@ void mapeditorexecutable_loop(void)
 							bool bSound3Mentioned = false;
 							bool bSound4Mentioned = false;
 							bool bSound5Mentioned = false;
+							bool bSound6Mentioned = false;
 							bool bVideoSlotMentioned = false;
 							bool bIfUsedMentioned = false;
 							bool bUseKeyMentioned = false;
@@ -7792,6 +7879,7 @@ void mapeditorexecutable_loop(void)
 							if (strstr(pCaptureAnyScriptDesc, "<Sound3>") != 0) bSound3Mentioned = true;
 							if (strstr(pCaptureAnyScriptDesc, "<Sound4>") != 0) bSound4Mentioned = true;
 							if (strstr(pCaptureAnyScriptDesc, "<Sound5>") != 0) bSound5Mentioned = true;
+							if (strstr(pCaptureAnyScriptDesc, "<Sound6>") != 0) bSound6Mentioned = true;
 							if (strstr(pCaptureAnyScriptDesc, "<Video Slot>") != 0) bVideoSlotMentioned = true;
 							if (strstr(pCaptureAnyScriptDesc, "<If Used>") != 0) bIfUsedMentioned = true;
 							if (strstr(pCaptureAnyScriptDesc, "<Shooting Weapon>") != 0) bShootingWeaponMentioned = true;
@@ -7808,25 +7896,28 @@ void mapeditorexecutable_loop(void)
 							if (bSound1Mentioned == true) t.grideleprof.soundset1_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset1_s.Get(), "Sound1", t.strarr_s[254].Get(), "audiobank\\");
 							if (bSound2Mentioned == true) t.grideleprof.soundset2_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset2_s.Get(), "Sound2", t.strarr_s[254].Get(), "audiobank\\");
 							if (bSound3Mentioned == true) t.grideleprof.soundset3_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset3_s.Get(), "Sound3", t.strarr_s[254].Get(), "audiobank\\");
-							if (bSound4Mentioned == true) t.grideleprof.soundset5_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset5_s.Get(), "Sound4", t.strarr_s[254].Get(), "audiobank\\");
-							if (bSound5Mentioned == true) t.grideleprof.soundset6_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset6_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\");
+							// LB: corrected bad decision to assign sound4 to 4, 5 to 6, etc (now 4,5,6 align with the introduction of a new 4a string)
+							if (bSound4Mentioned == true) t.grideleprof.soundset4a_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset4a_s.Get(), "Sound4", t.strarr_s[254].Get(), "audiobank\\");
+							if (bSound5Mentioned == true) t.grideleprof.soundset5_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset5_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\");
+							if (bSound6Mentioned == true) t.grideleprof.soundset6_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset6_s.Get(), "Sound6", t.strarr_s[254].Get(), "audiobank\\");
 							if (bIfUsedMentioned == true) t.grideleprof.ifused_s = imgui_setpropertystring2(t.group, t.grideleprof.ifused_s.Get(), t.strarr_s[437].Get(), t.strarr_s[226].Get());
 							if (bUseKeyMentioned == true) t.grideleprof.usekey_s = imgui_setpropertystring2(t.group, t.grideleprof.usekey_s.Get(), t.strarr_s[436].Get(), t.strarr_s[225].Get());
 							bool readonly = false;
+							bool bFromCharacterCreator = false;
 							if (bShootingWeaponMentioned == true || bMeleeWeaponMentioned == true)
 							{
 								extern void animsystem_weaponproperty (int, bool, entityeleproftype*, bool, bool);
-								animsystem_weaponproperty(t.entityprofile[t.gridentity].characterbasetype, readonly, &t.grideleprof, bShootingWeaponMentioned, bMeleeWeaponMentioned);
+								animsystem_weaponproperty(t.entityprofile[t.gridentity].characterbasetype, bFromCharacterCreator, &t.grideleprof, bShootingWeaponMentioned, bMeleeWeaponMentioned);
 							}
 							else if (bUnarmedMentioned)
 							{
 								extern void animsystem_weaponproperty(int, bool, entityeleproftype*, bool, bool);
-								animsystem_weaponproperty(t.entityprofile[t.gridentity].characterbasetype, readonly, &t.grideleprof, false, false);
+								animsystem_weaponproperty(t.entityprofile[t.gridentity].characterbasetype, bFromCharacterCreator, &t.grideleprof, false, false);
 							}
 							if (iAnimationSetMentioned > 0)
 							{
 								extern void animsystem_animationsetproperty (int, bool, entityeleproftype*, int, int);
-								animsystem_animationsetproperty(t.entityprofile[t.gridentity].characterbasetype, readonly, &t.grideleprof, iAnimationSetMentioned, -1);
+								animsystem_animationsetproperty(t.entityprofile[t.gridentity].characterbasetype, bFromCharacterCreator, &t.grideleprof, iAnimationSetMentioned, -1);
 							}
 						}
 
@@ -8355,8 +8446,9 @@ void mapeditorexecutable_loop(void)
 												t.grideleprof.soundset1_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset1_s.Get(), t.strarr_s[468].Get(), t.strarr_s[254].Get(), "audiobank\\");
 												t.grideleprof.soundset2_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset2_s.Get(), t.strarr_s[480].Get(), t.strarr_s[254].Get(), "audiobank\\");
 												t.grideleprof.soundset3_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset3_s.Get(), t.strarr_s[481].Get(), t.strarr_s[254].Get(), "audiobank\\");
-												ImGui::TextCenter("Sound4");
-												ImGui::TextCenter("(repurposed)");
+												//ImGui::TextCenter("Sound4");
+												//ImGui::TextCenter("(repurposed)");
+												t.grideleprof.soundset4a_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset4a_s.Get(), "Sound4", t.strarr_s[254].Get(), "audiobank\\");
 												t.grideleprof.soundset5_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset5_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\");
 												t.grideleprof.soundset6_s = imgui_setpropertyfile2(t.group, t.grideleprof.soundset6_s.Get(), "Sound6", t.strarr_s[254].Get(), "audiobank\\");
 											}
@@ -9563,6 +9655,7 @@ void mapeditorexecutable_loop(void)
 											fHitOffsetX = 0;
 											fHitOffsetY = 0;
 											fHitOffsetZ = 0;
+											g_fSpecialDragInYAdjustment = 0.0f;
 											bDraggingActive = false;
 											g_bHoldGridEntityPosWhenManaged = true;
 											g_fHoldGridEntityPosX = t.gridentityposx_f;
@@ -9658,6 +9751,7 @@ void mapeditorexecutable_loop(void)
 												fHitOffsetX = 0;
 												fHitOffsetY = 0;
 												fHitOffsetZ = 0;
+												g_fSpecialDragInYAdjustment = 0.0f;
 												bDraggingActive = false;
 												g_bHoldGridEntityPosWhenManaged = true;
 												g_fHoldGridEntityPosX = t.gridentityposx_f;
@@ -9813,9 +9907,9 @@ void mapeditorexecutable_loop(void)
 			// number of game element buttson shown
 			entity_icons = 12;
 			if (pref.iObjectEnableAdvanced)
-				entity_icons = 15;
+				entity_icons = 16;
 
-			int entity_images[] = { ENTITY_START, ENTITY_CHECKPOINT, ENTITY_FLAG, ENTITY_TRIGGERZONE, ENTITY_WIN, ENTITY_LIGHT,ENTITY_VIDEO,ENTITY_MUSIC,ENTITY_SOUND,ENTITY_PARTICLE,ENTITY_IMAGE, ENTITY_TEXT, ENTITY_PROBE, ENTITY_COVER, ENTITY_BEHAVIOR };
+			int entity_images[] = { ENTITY_START, ENTITY_CHECKPOINT, ENTITY_FLAG, ENTITY_TRIGGERZONE, ENTITY_WIN, ENTITY_LIGHT,ENTITY_VIDEO,ENTITY_MUSIC,ENTITY_SOUND,ENTITY_PARTICLE,ENTITY_IMAGE, ENTITY_TEXT, ENTITY_PROBE, ENTITY_COVER, ENTITY_BEHAVIOR, ENTITY_NEW_PARTICLE };
 			static cstr entity_scripts[] = {
 				"_markers\\Player Start.fpe",
 				"_markers\\Player Checkpoint.fpe",
@@ -9831,7 +9925,8 @@ void mapeditorexecutable_loop(void)
 				"_markers\\Text Zone.fpe",
 				"_markers\\Probe.fpe",
 				"_markers\\Cover Zone.fpe",
-				"_markers\\Behavior.fpe" //global Behaviors
+				"_markers\\Behavior.fpe", //global Behaviors
+				"_markers\\NewParticles.fpe"
 			};
 			static cstr entity_tooltip[] = {
 				"Add Player Start Position",
@@ -9843,12 +9938,13 @@ void mapeditorexecutable_loop(void)
 				"Add Video Zone",
 				"Add Music Zone",
 				"Add Audio Zone",
-				"Add Particle",
+				"Add New Particle",
 				"Add Image Zone",
 				"Add Text Zone",
 				"Add Environment Probe",
 				"Add Cover Zone",
-				"Add Global Behavior"
+				"Add Global Behavior",
+				"Add WPE Zone"
 			};
 
 			int offset = 0;

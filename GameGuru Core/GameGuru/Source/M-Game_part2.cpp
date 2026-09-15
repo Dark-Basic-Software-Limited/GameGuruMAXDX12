@@ -235,6 +235,9 @@
 							timestampactivity(0, tmp);
 							if (script != "title")
 							{
+								//PE: Block for one frame so we do not see old screens.
+								extern bool bBlockImGuiUntilNewFrame;
+								bBlockImGuiUntilNewFrame = true;
 								sky_hide();
 								titleslua_init();
 								titleslua_main((char *)script.c_str());
@@ -259,6 +262,9 @@
 							sprintf(tmp, "Project t.game.jumplevel_s : %s", nextlevel.c_str());
 							timestampactivity(0, tmp);
 							t.game.jumplevel_s = nextlevel.c_str();
+
+							//PE: Door collision not working on second level, fixed in script.
+							//PE: https://github.com/Dark-Basic-Software-Limited/GameGuruRepo/issues/6246
 						}
 					}
 				}
@@ -478,8 +484,68 @@ bool game_masterroot_levelloop_initcode(int iUseVRTest)
 		}
 		else
 		{
-			// start title system loop
-			titleslua_main("title");
+			bool bValid = false;
+			int FindFirstSplashNode(void);
+			int nodeid = FindFirstSplashNode();
+			if (nodeid >= 0)
+			{
+				int index = 1;
+
+				int iLinkTo = Storyboard.Nodes[nodeid].output_linkto[0];
+				int iLinkScreen = -1;
+				for (int i = 0; i < STORYBOARD_MAXNODES; i++)
+				{
+					if (Storyboard.Nodes[i].used)
+					{
+						for (int l = 0; l < STORYBOARD_MAXOUTPUTS; l++)
+						{
+							if (iLinkTo > 0 && iLinkTo == Storyboard.Nodes[i].input_id[l])
+							{
+								iLinkScreen = i;
+								break;
+							}
+						}
+					}
+				}
+				if (iLinkScreen >= 0)
+				{
+					//PE: Check if we got a video outlink.
+					for (int ll = 0; ll < STORYBOARD_MAXWIDGETS; ll++)
+					{
+						if (Storyboard.Nodes[iLinkScreen].widget_used[ll])
+						{
+							if (Storyboard.Nodes[iLinkScreen].widget_type[ll] == STORYBOARD_WIDGET_VIDEO)
+							{
+								if (Storyboard.Nodes[iLinkScreen].widget_action[ll] == STORYBOARD_ACTIONS_GOTOSCREEN)
+								{
+									bValid = true;
+									break;
+								}
+							}
+						}
+					}
+					if (bValid)
+					{
+						// screens can have same name (old corruption issue), so new method to identify screen by node
+						std::string node_ident_name = ":node:";
+						node_ident_name += std::to_string(iLinkScreen);
+						t.s_s = node_ident_name.c_str();
+						lua_switchpage();
+						//bLuaPageClosing = true; //always stop music.
+						//iRet = STORYBOARD_ACTIONS_GOTOSCREEN;
+					}
+				}
+			}
+			if (bValid)
+			{
+				titleslua_main(t.s_s.Get());
+				strcpy(t.game.pSwitchToLastPage, "title");
+			}
+			else
+			{
+				// start title system loop
+				titleslua_main("title");
+			}
 			return true;
 		}
 	}
@@ -494,7 +560,7 @@ void game_masterroot_levelloop_initcode_aftertitleloop(void)
 	// if game executable and not ignoring title system
 	if (t.game.gameisexe == 1 && t.game.ignoretitle == 0)
 	{
-		titleslua_free ( );
+		titleslua_free();
 		sky_show();
 	}
 

@@ -1180,6 +1180,15 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 	int iStoredEntID = t.entid;
 	t.entid = entid;
 
+	//PE: Add any custom explosions.
+	if (pEleProf->explodable_decalname.Len() > 0)
+	{
+		char effectname[MAX_PATH];
+		strcpy(effectname, "gamecore\\decals\\");
+		strcat(effectname, pEleProf->explodable_decalname.Get());
+		addfoldertocollection(effectname);
+	}
+
 	if (pEleProf->newparticle.emittername.Len() > 0)
 	{
 		char effectname[MAX_PATH];
@@ -1216,8 +1225,22 @@ void mapfile_addallentityrelatedfiles ( int entid, entityeleproftype* pEleProf )
 			//PE: We can now have variabletype == 7 that contain media.
 			if (tempeleprof.PropertiesVariable.VariableType[i] == 2 || tempeleprof.PropertiesVariable.VariableType[i] == 7)
 			{
-				// Check if the string contains a file.
+				// CHeck if the string specifies a folder within the "imagebank\"
 				int variableLength = strlen(tempeleprof.PropertiesVariable.VariableValue[i]);
+				if (variableLength > 9 && (strnicmp(tempeleprof.PropertiesVariable.VariableValue[i], "imagebank", 9) == NULL) )
+				{
+					// and to avoid adding the whole imagebank, only add if a known 'grouped folder' used by specific behaviors such as imagepanel.lua
+					LPSTR pRelativePathOfImageBankFolder = tempeleprof.PropertiesVariable.VariableValue[i];
+					char pFinalFolder[MAX_PATH];
+					for (int n = 1; n < 10; n++)
+					{
+						sprintf(pFinalFolder, "%s\\set%d\\", pRelativePathOfImageBankFolder, n);
+						addfoldertocollection(pFinalFolder);
+					}
+					continue;
+				}
+				
+				// Check if the string contains a file.
 				if (variableLength > 4 && ( tempeleprof.PropertiesVariable.VariableValue[i][variableLength - 4] == '.' || tempeleprof.PropertiesVariable.VariableValue[i][variableLength - 3] == '.') )
 				{
 					// can specify a textfile, but needs to be specified as relative
@@ -1766,6 +1789,25 @@ void mapfile_savestandalone_stage3 ( void )
 			}
 		}
 		SetDir (  ".." );
+	}
+
+	//PE: Ensure old navmesh cache is deleted.
+	if (PathExist("navbank") == 1)
+	{
+		SetDir("navbank");
+		ChecklistForFiles();
+		for (t.c = 1; t.c <= ChecklistQuantity(); t.c++)
+		{
+			t.tfile_s = ChecklistString(t.c);
+			if (Len(t.tfile_s.Get()) > 2)
+			{
+				if (FileExist(t.tfile_s.Get()) == 1)
+				{
+					DeleteAFile(t.tfile_s.Get());
+				}
+			}
+		}
+		SetDir("..");
 	}
 
 	//  Ensure file path exists (by creating folders)

@@ -971,6 +971,14 @@ void entity_loop ( void )
 						t.entityelement[t.e].soundisnonthreedee=1;
 					}
 				}
+				if (t.entityelement[t.e].soundset4 > 0)
+				{
+					PositionSound(t.entityelement[t.e].soundset4, CameraPositionX(0), CameraPositionY(0), CameraPositionZ(0));
+					if (SoundPlaying(t.entityelement[t.e].soundset4) == 1)
+					{
+						t.entityelement[t.e].soundisnonthreedee = 1;
+					}
+				}
 				if (t.entityelement[t.e].soundset5 > 0)
 				{
 					PositionSound(t.entityelement[t.e].soundset5, CameraPositionX(0), CameraPositionY(0), CameraPositionZ(0));

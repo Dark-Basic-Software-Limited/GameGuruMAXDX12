@@ -69,6 +69,10 @@ int ImGuiStatusBar_Size = 0;
 bool bPreviewWPE = false;
 uint32_t PreviewWPERoot = 0;
 float fPreviewYOffset = 0;
+// ★ GGMAX 3.38 (DX11): X and Z joined Y in the same commit - the WPE preview can be nudged on
+// all three axes. imgui_gg_dx11_part5.cpp reads and writes them; without these it will not compile.
+float fPreviewXOffset = 0;
+float fPreviewZOffset = 0;
 
 preferences pref;
 bool g_bEnableAutoFlattenSystem = true;

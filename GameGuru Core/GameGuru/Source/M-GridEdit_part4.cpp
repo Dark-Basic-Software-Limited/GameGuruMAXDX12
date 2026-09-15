@@ -1080,6 +1080,7 @@ void editor_constructionselection ( void )
 				fHitOffsetX = 0;
 				fHitOffsetY = 0;
 				fHitOffsetZ = 0;
+				g_fSpecialDragInYAdjustment = 0.0f;
 				// LB: these can be uninitialised, but we need these filled so the plane can be under the cursor initially
 				t.gridentityposx_f = t.inputsys.localx_f;
 				t.gridentityposy_f = t.inputsys.localcurrentterrainheight_f;

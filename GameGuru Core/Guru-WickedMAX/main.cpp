@@ -96,8 +96,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Keep an eye for Unhandled Exceptions!
 	InitCrashHandler();
 
-	//causeCrash();
-
 	// Command line store
 	std::wstring your_wchar_in_ws(lpCmdLine);
 	std::string your_wchar_in_str(your_wchar_in_ws.begin(), your_wchar_in_ws.end());

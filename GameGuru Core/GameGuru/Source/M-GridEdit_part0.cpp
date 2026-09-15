@@ -105,14 +105,6 @@ int g_iSuperTriggerFullGrassReveal = 0;
 
 #include <algorithm>
 #include <string>
-#include <time.h>
-
-#include <wininet.h>
-#include <mmsystem.h>
-#include "ShlObj.h"
-#include "sha1.h"
-#include "sha2.h"
-
 #include "miniz.h"
 
 int iGenralWindowsFlags = ImGuiWindowFlags_None | ImGuiWindowFlags_NoMove;
@@ -147,6 +139,8 @@ using namespace GGGrass;
 extern sObject* g_selected_editor_object;
 extern int g_selected_editor_objectID;
 extern XMFLOAT4 g_selected_editor_color;
+extern float g_fSpecialDragInYAdjustment;
+
 int iEditorGridSizeX = 100;
 int iEditorGridSizeZ = 100;
 bool bRenderTabTab = false;
@@ -342,9 +336,10 @@ int active_tools_entity_index = 0;
 int g_iUseLODObjects = 1;
 bool bDisableLODLoad = false;
 int g_iDisableTerrainSystem = 0;
+int g_iDisableJustGrassSystem = 0;
 int g_iDisableWParticleSystem = 0;
+int g_iEnablePIXMarkers = 0;
 bool bSprayMoveWithMouse = false;
-
 
 bool bTrashcanIconActive = false, bTrashcanIconActive2 = false;
 int current_sort_order = 0;
@@ -1319,6 +1314,7 @@ void mapeditorexecutable_init ( void )
 	LoadImage("editors\\uiv3\\hub-commtut-0-placeholder.png", HUB_COMMTUT0);
 	LoadImage("editors\\uiv3\\hub-commtut-1-bmi.png", HUB_COMMTUT1);
 	LoadImage("editors\\uiv3\\hub-commtut-2-plemsoft.png", HUB_COMMTUT2);
+	LoadImage("editors\\uiv3\\hub-commtut-3-extreme.png", HUB_COMMTUT3);
 
 	LoadImage("editors\\uiv3\\image-icon.png", SCREENEDITOR_IMAGE);
 	LoadImage("editors\\uiv3\\text-icon.png", SCREENEDITOR_TEXT);
@@ -1359,6 +1355,7 @@ void mapeditorexecutable_init ( void )
 					g.projectfilename_s = t.returnstring_s;
 					gridedit_load_map();
 					g_EntityClipboard.clear(); //PE: Clear any old copy/paste.
+					undosys_clearall(); //PE: Clear undo redo system.
 					t.terrain.grassregionx1 = t.terrain.grassregionx2;
 					bUpdateVeg = true;
 
@@ -1645,6 +1642,16 @@ bool commonexecutable_loop_for_game(void)
 
 		iLaunchAfterSync = 202;
 		return true;
+	}
+	extern bool bSpecialStandalone;
+	if (bSpecialStandalone || t.game.gameisexe == 1)
+	{
+		if (iLaunchAfterSync == 799 || iLaunchAfterSync == 699)
+		{
+			iLaunchAfterSync = 202;
+			void AddRemoteProjectFonts(void);
+			AddRemoteProjectFonts();
+		}
 	}
 	if (iLaunchAfterSync == 202)
 	{

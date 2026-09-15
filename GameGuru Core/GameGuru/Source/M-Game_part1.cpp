@@ -30,7 +30,17 @@
 		extern bool g_bNoSwapchainPresent;
 		//PE: Why was we doing this, this will make a 10 sec blackscreen delay until loading screen is displayed ?????
 		//PE: Removed for now TODO check why it was added.
-		t.game.levelloadprogress=0  ; titles_loadingpageupdate ( );
+		
+		//PE: This was to prevent old loadingscreen is displayed.
+		//g_Storyboard_Current_Loading_Page
+		extern char g_Storyboard_Current_Loading_Page[256];
+		void FindLoadingScreen(void);
+		FindLoadingScreen();
+		//PE: If using cuatom loading screen delay rendering, TODO: find another way to speed up the 10 sec delay before the screen. (mapfile_loadproject_fpm)
+		if( stricmp(g_Storyboard_Current_Loading_Page , "loading.lua") != NULL)
+			g_bNoSwapchainPresent = true;
+		t.game.levelloadprogress=0  ;
+		titles_loadingpageupdate ( );
 		g_bNoSwapchainPresent = false;
 
 	}
@@ -100,10 +110,30 @@
 				SetDir ( tthisold_s.Get() );
 			}
 
+			//PE: Make sure if using storyboard we set the current level correctly.
+			//+t.game.jumplevel_s{ m_pString = 0x000001468321fe60 "level 3.fpm" m_size = 11 m_capacity = 26 }	cStr
+			//+ g.projectfilename_s{ m_pString = 0x00000146ae96d490 "mapbank\\level 3.fpm" m_size = 19 m_capacity = 27 }	cStr
+			if (strlen(Storyboard.gamename) > 0)
+			{
+				//PE: Find g_Storyboard_Current_Level from t.game.jumplevel_s.
+				for (int i = 0; i < STORYBOARD_MAXNODES; i++)
+				{
+					if (Storyboard.Nodes[i].used)
+					{
+						if (pestrcasestr(Storyboard.Nodes[i].level_name, t.game.jumplevel_s.Get()) != 0)
+						{
+							g_Storyboard_Current_Level = i;
+							strcpy(g_Storyboard_Current_fpm, Storyboard.Nodes[i].level_name);
+						}
+					}
+				}
+			}
+
 			// finally load the level in
 			mapfile_loadproject_fpm ( );
 			t.visuals=t.gamevisuals;
-			t.game.jumplevel_s="";
+			t.game.jumplevel_s = "";
+
 		}
 	}
 
@@ -418,7 +448,11 @@
 					sObject* pObject = g_ObjectList[tobj];
 					if (pObject)
 					{
-						WickedCall_SetDisableCollision(pObject, true);
+						// LB: Exception are objects that have is collectable set (need to detect these, even if no collision mode set)
+						if (t.entityelement[t.e].eleprof.iscollectable==0)
+						{
+							WickedCall_SetDisableCollision(pObject, true);
+						}
 					}
 				}
 			}
@@ -1236,6 +1270,18 @@
 
 	// resort texture list to ignore objects set to be ignored
 	DoTextureListSort ( );
+
+	//PE: Make sure we do not display hud used in last level.
+	t.game.activeStoryboardScreen = -1;
+	for (int i = 0; i < STORYBOARD_MAXNODES; i++)
+	{
+		if (Storyboard.Nodes[i].showAtStart)
+		{
+			t.game.activeStoryboardScreen = i;
+			break;
+		}
+	}
+
 
 	// if reloading standalone level, need to restore basic stats from LUA save file
 	// must now reload preserved state of level when enter it (g_LevelFilename)

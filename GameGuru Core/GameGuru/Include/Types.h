@@ -2346,6 +2346,7 @@ struct luaglobaltype
 	// Constructor
 	luaglobaltype ( )
 	{
+		 showobjectdebugvisuals = false;
 		 gurumeditationprompt_s = "";
 		 gurumeditationprompttime = 0;
 		 scriptprompt3dFaceCamera = false;
@@ -2359,7 +2360,6 @@ struct luaglobaltype
 		 setanimstart = 0;
 		 loopmode = 0;
 		 setanim = 0;
-		 showobjectdebugvisuals = false;
 		 gamestatechange = 0;
 	}
 	// End of Constructor
@@ -3342,7 +3342,7 @@ struct globalstype
 	// Constructor
 	globalstype ( )
 	{
-		DisableMessagePump = 0;
+		DisableMessagePump = 1; //PE: Default off
 		ConvertToDDS = 0;
 		ConvertToDDSMaxSize = 2048;
 
@@ -4164,7 +4164,7 @@ struct visualstype
 		 bThreadedPhysics = false;
 		 bReflectionsLowestLOD = false;
 
-		 g_bDelayedShadows = false;
+		 g_bDelayedShadows = true;
 		 g_bDelayedShadowsLaptop = false;
 
 		 fsetBloomThreshold = 2.0f;
@@ -4199,7 +4199,7 @@ struct visualstype
 		 SkyCloudSpeed = 3.0f;
 
 		 iShadowSpotResolution = 512;
-		 iShadowSpotCascadeResolution = 2048;
+		 iShadowSpotCascadeResolution = 1024;
 		 iShadowPointResolution = 512;
 		 iShadowPointMax = 16;
 		 iShadowSpotMax = 8;
@@ -4429,7 +4429,7 @@ struct visualsdatastoragetype
 		bThreadedPhysics = false;
 		bReflectionsLowestLOD = false;
 
-		g_bDelayedShadows = false;
+		g_bDelayedShadows = true;
 		g_bDelayedShadowsLaptop = false;
 
 		bBloomEnabled = false;
@@ -6454,6 +6454,7 @@ struct entityeleproftype
 	int systemwide_lua;
 	int isobjective_alwaysactive;
 	int isProjectGlobal;
+	int iMaterialSoundIndex;
 	// Constructor
 	entityeleproftype ( )
 	{
@@ -6607,6 +6608,7 @@ struct entityeleproftype
 		 systemwide_lua = 0;
 		 isobjective_alwaysactive = 0;
 		 isProjectGlobal = 0;
+		 iMaterialSoundIndex = 0;
 	}
 	// End of Constructor
 
@@ -7490,10 +7492,14 @@ struct gunsettingstype
 	cStr tracer_imagefile;
 	uint32_t tracer_WPEId;
 	bool fake_reload;
+	int delayedshot;
+	int animchoicemode;
 
 	// Constructor
 	gunsettingstype ( )
 	{
+		 animchoicemode = 0;
+		 delayedshot = 0;
 		 iVRWeaponLimbOfWeapon = 0;
 		 iVRWeaponStaticFrame = 0;
 		 iVRWeaponMode = 0;

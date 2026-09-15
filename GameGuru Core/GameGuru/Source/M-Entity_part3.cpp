@@ -909,6 +909,8 @@ void c_entity_loadelementsdata ( void )
 							t.entityelement[t.e].eleprof.bUseFPESettings = false;
 						else
 							t.entityelement[t.e].eleprof.bUseFPESettings = true;
+
+						t.entityelement[t.e].eleprof.iMaterialSoundIndex = 0;
 					}
 					//t.entityelement[t.e].entitydammult_f=1.0; not used any more, reused field for iCanGoUnderwater and renamed entitydammult_f to reserved2
 					//t.entityelement[t.e].entityacc=1.0;

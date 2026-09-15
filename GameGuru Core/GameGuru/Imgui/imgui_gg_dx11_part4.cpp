@@ -86,7 +86,7 @@
 					if (foldertype == 4 && pestrcasestr(file_s.Get(), ".lua"))
 						bValid = true;
 
-					if (foldertype == 5 && pestrcasestr(file_s.Get(), ".arx"))
+					if (foldertype == 5 && (pestrcasestr(file_s.Get(), ".arx") || pestrcasestr(file_s.Get(), ".pe")))
 						bValid = true;
 
 					// The animation library was not displaying any animations, sorted_files was not populated with the animation files

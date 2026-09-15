@@ -129,7 +129,7 @@
 				if (iValidCode <= 0)
 				{
 					// serial code expired
-///MessageBoxA(NULL, "Build has expired! Find out more at https://www.game-guru.com/max", "Activation Error", MB_OK);
+					///MessageBoxA(NULL, "Build has expired! Find out more at https://www.game-guru.com/max", "Activation Error", MB_OK);
 					if (iValidCode == -1)
 					{
 						// no internet connection so cannot check key, just quit!

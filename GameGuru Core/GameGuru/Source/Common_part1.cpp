@@ -985,6 +985,9 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					// DOCDOC: exportassets = Enables the ability for save standalone to include the FPE along with the entities other resources.
 					t.tryfield_s = "exportassets"; if (t.field_s == t.tryfield_s)  g.gexportassets = t.value1;
 
+					// DOCDOC: disablefulldecaleffects = Disables default ability to fully load decal particle system (performance hit on test game each time)
+					t.tryfield_s = "disablefulldecaleffects"; if (t.field_s == t.tryfield_s)  g.gdisablefulldecaleffects = t.value1;		
+
 					// DOCDOC: localserver = Not Used
 					t.tryfield_s = "localserver"; if (t.field_s == t.tryfield_s)  g.glocalserveroverride_s = t.value_s;
 
@@ -1190,8 +1193,18 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					extern int g_iDisableTerrainSystem;
 					t.tryfield_s = "disableterrainsystem"; if (t.field_s == t.tryfield_s) g_iDisableTerrainSystem = t.value1;
 
+					extern int g_iDisableJustGrassSystem;
+					t.tryfield_s = "disablejustgrasssystem"; if (t.field_s == t.tryfield_s) g_iDisableJustGrassSystem = t.value1;
+
 					extern int g_iDisableWParticleSystem;
 					t.tryfield_s = "disablewparticlesystem"; if (t.field_s == t.tryfield_s) g_iDisableWParticleSystem = t.value1;
+
+					extern int g_iDisableCrashLogSystem;
+					t.tryfield_s = "disablecrashlogsystem"; if (t.field_s == t.tryfield_s) g_iDisableCrashLogSystem = t.value1;
+
+					extern int g_iEnablePIXMarkers;
+					t.tryfield_s = "enablepixmarkers"; if (t.field_s == t.tryfield_s) g_iEnablePIXMarkers = t.value1;
+
 				}
 			}
 		}

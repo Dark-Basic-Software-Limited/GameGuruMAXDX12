@@ -51,12 +51,16 @@ void titleslua_main_stage3_inloop(void)
 	extern int iBlockRenderingForFrames;
 	extern bool g_bNoSwapchainPresent;
 	extern bool bBlockImGuiUntilNewFrame;
-	if (iBlockRenderingForFrames > 0 || g_bNoSwapchainPresent || bBlockImGuiUntilNewFrame)
+	//PE: Allow bBlockImGuiUntilNewFrame for now so we do not see old screen in first frame. (|| bBlockImGuiUntilNewFrame)
+	if (iBlockRenderingForFrames > 0 || g_bNoSwapchainPresent )
 	{
 		iBlockRenderingForFrames = 0;
-		g_bNoSwapchainPresent = false;
-		bBlockImGuiUntilNewFrame = false;
+		//bBlockImGuiUntilNewFrame = false;
 	}
+	if (bBlockImGuiUntilNewFrame)
+		g_bNoSwapchainPresent = true;
+	else
+		g_bNoSwapchainPresent = false;
 
 	// Machine independent speed update (makes g_TimeElapsed available)
 	game_timeelapsed();
@@ -66,6 +70,15 @@ void titleslua_main_stage3_inloop(void)
 
 	//int CustomScreenNode = GetStoryboardCustomScreenNode(g_pTitleCurrentPage);
 	int CustomScreenNode = 0;
+
+	if (strcmp(t.game.pSwitchToPage, "-1") == NULL)
+	{
+		if (strcmp(t.game.pSwitchToLastPage, "-1") != NULL)
+		{
+			strcpy(t.game.pSwitchToPage, t.game.pSwitchToLastPage);
+		}
+	}
+
 	if (strncmp(g_pTitleCurrentPage, ":node:", 6) == NULL)
 	{
 		int realnodeid = atoi(t.game.pSwitchToPage + 6);
@@ -169,6 +182,8 @@ void titleslua_main_stage5(void)
 	// need to ensure low FPS warning not triggered by game sync absense
 	t.conkit.cooldown = 100;
 }
+
+extern bool g_Storyboard_Starting_New_Level;
 bool titleslua_main_loopcode(void)
 {
 	if (g_iTitleMainState == 0)

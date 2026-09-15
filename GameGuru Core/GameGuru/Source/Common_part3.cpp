@@ -1030,7 +1030,8 @@ void GetSetupIniEarly( void )
 	//PE: Standalone option to make sure no mem is used by terrain system.
 	char appname[1024];
 	GetModuleFileNameA(g_pGlob->hInstance, appname, 1024);
-	if(!pestrcasestr(appname,"gamegurumax.exe"))
+	//LB: allow early disabling of terrain, justgrass, etc for testing purposes
+	if ( true ) //!pestrcasestr(appname,"gamegurumax.exe"))
 	{
 		//PE: Cant use any special commands at this point. so simple parsing only what we need at this point.
 		FILE* file = fopen("setup.ini", "r");
@@ -1048,6 +1049,14 @@ void GetSetupIniEarly( void )
 						g_iDisableTerrainSystem = 1;
 					}
 				}
+				if (pestrcasestr(t, "disablejustgrasssystem"))
+				{
+					if (pestrcasestr(t, "1"))
+					{
+						extern int g_iDisableJustGrassSystem;
+						g_iDisableJustGrassSystem = 1;
+					}
+				}
 				if (pestrcasestr(t, "disablewparticlesystem"))
 				{
 					if (pestrcasestr(t, "1"))
@@ -1056,6 +1065,22 @@ void GetSetupIniEarly( void )
 						g_iDisableWParticleSystem = 1;
 					}
 				}				
+				if (pestrcasestr(t, "disablecrashlogsystem"))
+				{
+					if (pestrcasestr(t, "1"))
+					{
+						extern int g_iDisableCrashLogSystem;
+						g_iDisableCrashLogSystem = 1;
+					}
+				}
+				if (pestrcasestr(t, "enablepixmarkers"))
+				{
+					if (pestrcasestr(t, "1"))
+					{
+						extern int g_iEnablePIXMarkers;
+						g_iEnablePIXMarkers = 1;
+					}
+				}
 			}
 			fclose(file);
 		}

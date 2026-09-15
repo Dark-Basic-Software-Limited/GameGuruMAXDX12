@@ -1254,13 +1254,20 @@ void entity_addentitytomap_core ( void )
 		}
 
 		// Create new or use free entity element
-		if ( t.tokay == 0 && g.entityelementlist > 0 ) 
+		if (t.tokay == 0 && g.entityelementlist > 0)
 		{
-			for ( t.e = 1 ; t.e<=  g.entityelementlist; t.e++ )
+			for (t.e = 1; t.e <= g.entityelementlist; t.e++)
 			{
-				if ( t.entityelement[t.e].maintype == 0 ) { t.tokay = t.e; break; }
+				if (t.entityelement[t.e].maintype == 0)
+				{
+					t.tokay = t.e;
+					//PE: If old object was part of group remove it, or if will get deleted on next load.
+					t.entityelement[t.e].creationOfGroupID = -1;
+					break;
+				}
 			}
 		}
+
 		if ( t.tokay == 0 ) 
 		{
 			++g.entityelementlist;
@@ -1292,6 +1299,35 @@ void entity_addentitytomap_core ( void )
 	{
 		// can force new entity into a specific slot (when undo entiy group delete)
 		t.e = t.gridentityoverwritemode;
+	}
+
+	//PE: Any newly added object should be unlocked.
+	if (t.gridentityoverwritemode == 0)
+	{
+		extern std::vector<sRubberBandType> vEntityLockedList;
+		t.entityelement[t.e].editorlock = 0;
+		for (int i = 0; i < vEntityLockedList.size(); i++)
+		{
+			if (vEntityLockedList[i].e == t.e)
+			{
+				vEntityLockedList.erase(vEntityLockedList.begin() + i);
+				sObject* pObject;
+				if (t.entityelement[t.e].obj > 0)
+				{
+					if (t.entityelement[t.e].obj < g_iObjectListCount)
+					{
+						pObject = g_ObjectList[t.entityelement[t.e].obj];
+						if (pObject)
+						{
+							WickedCall_SetObjectRenderLayer(pObject, GGRENDERLAYERS_NORMAL);
+							WickedCall_SetObjectHighlightRed(pObject, false);
+						}
+					}
+				}
+
+				break;
+			}
+		}
 	}
 
 	// noticed newly created can have old garbage in them, clear to be safe
@@ -1328,8 +1364,6 @@ void entity_addentitytomap_core ( void )
 	t.entityelement[t.e].soundset6 = 0;
 	t.entityelement[t.e].underground=0;
 	t.entityelement[t.e].beenmoved=1;
-	t.entityelement[t.e].soundset5 = 0;
-	t.entityelement[t.e].soundset6 = 0;
 
 	//PE: Always false by default.
 	t.entityelement[t.e].eleprof.systemwide_lua = false;
@@ -1546,7 +1580,8 @@ void entity_deleteentityfrommap ( void )
 	deleteinternalsound(t.entityelement[t.tupdatee].soundset) ; t.entityelement[t.tupdatee].soundset = 0;
 	deleteinternalsound(t.entityelement[t.tupdatee].soundset1) ; t.entityelement[t.tupdatee].soundset1 = 0;
 	deleteinternalsound(t.entityelement[t.tupdatee].soundset2) ; t.entityelement[t.tupdatee].soundset2 = 0;
-	deleteinternalsound(t.entityelement[t.tupdatee].soundset3) ; t.entityelement[t.tupdatee].soundset3 = 0;
+	deleteinternalsound(t.entityelement[t.tupdatee].soundset3); t.entityelement[t.tupdatee].soundset3 = 0;
+	deleteinternalsound(t.entityelement[t.tupdatee].soundset4); t.entityelement[t.tupdatee].soundset4 = 0;
 	deleteinternalsound(t.entityelement[t.tupdatee].soundset5); t.entityelement[t.tupdatee].soundset5 = 0;
 	deleteinternalsound(t.entityelement[t.tupdatee].soundset6); t.entityelement[t.tupdatee].soundset6 = 0;
 

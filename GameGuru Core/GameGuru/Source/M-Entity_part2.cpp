@@ -5,6 +5,7 @@
 	char pSoundSet1[MAX_PATH];
 	char pSoundSet2[MAX_PATH];
 	char pSoundSet3[MAX_PATH];
+	char pSoundSet4[MAX_PATH];
 	char pSoundSet5[MAX_PATH];
 	char pSoundSet6[MAX_PATH];
 
@@ -24,6 +25,7 @@
 				strcpy(pSoundSet1, t.entityelement[t.e].eleprof.soundset1_s.Get());
 				strcpy(pSoundSet2, t.entityelement[t.e].eleprof.soundset2_s.Get());
 				strcpy(pSoundSet3, t.entityelement[t.e].eleprof.soundset3_s.Get());
+				strcpy(pSoundSet4, t.entityelement[t.e].eleprof.soundset4a_s.Get());
 				strcpy(pSoundSet5, t.entityelement[t.e].eleprof.soundset5_s.Get());
 				strcpy(pSoundSet6, t.entityelement[t.e].eleprof.soundset6_s.Get());
 
@@ -39,6 +41,7 @@
 						if (allfour == 1) pThisStr = pSoundSet1;
 						if (allfour == 2) pThisStr = pSoundSet2;
 						if (allfour == 3) pThisStr = pSoundSet3;
+						if (allfour == 4) pThisStr = pSoundSet4;
 						if (allfour == 5) pThisStr = pSoundSet5;
 						if (allfour == 6) pThisStr = pSoundSet6;
 						if (bMightHaveVariant == false && pThisStr && strnicmp (pThisStr + strlen(pThisStr) - 5, "1.wav", 5) == NULL) bMightHaveVariant = true;
@@ -119,6 +122,11 @@
 				if (t.entityelement[t.e].soundset3 == 0)
 				{
 					t.entityelement[t.e].soundset3 = loadinternalsoundcore(pSoundSet3, 1);
+					if (t.game.runasmultiplayer == 1) mp_refresh ();
+				}
+				if (t.entityelement[t.e].soundset4 == 0)
+				{
+					t.entityelement[t.e].soundset4 = loadinternalsoundcore(pSoundSet4, 1);
 					if (t.game.runasmultiplayer == 1) mp_refresh ();
 				}
 				if (t.entityelement[t.e].soundset5 == 0)
@@ -380,6 +388,8 @@ void entity_fillgrideleproffromprofile ( void )
 	t.grideleprof.explodedamage=t.entityprofile[t.entid].explodedamage;
 	t.grideleprof.explodeheight =t.entityprofile[t.entid].explodeheight;
 	t.grideleprof.explodable_decalname = t.entityprofile[t.entid].explodable_decalname;
+	
+	//t.grideleprof.iMaterialSoundIndex
 	
 	// 301115 - data extracted from neighbors (LOD Modifiers are shared across all parent copies)
 	int iThisBankIndex = t.entid;

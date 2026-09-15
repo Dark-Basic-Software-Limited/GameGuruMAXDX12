@@ -99,6 +99,16 @@
 	t.dest_s = t.exepath_s + t.exename_s + "\\" + pCritDLLFilename;
 	if (FileExist(pCritDLLFilename) == 1) CopyAFile(pCritDLLFilename, t.dest_s.Get());
 
+	// if exist, copy the WinPixEventRuntime.dll so we can performance tune!
+	strcpy(pCritDLLFilename, "WinPixEventRuntime.dll");
+	t.dest_s = t.exepath_s + t.exename_s + "\\" + pCritDLLFilename;
+	if (FileExist(pCritDLLFilename) == 1) CopyAFile(pCritDLLFilename, t.dest_s.Get());
+
+	// copy the version.ini file over (helps with crash triage system)
+	strcpy(pCritDLLFilename, "version.ini");
+	t.dest_s = t.exepath_s + t.exename_s + "\\" + pCritDLLFilename;
+	if (FileExist(pCritDLLFilename) == 1) CopyAFile(pCritDLLFilename, t.dest_s.Get());
+
 	// for wicked, create fonts and shaders folder
 	cstr destExeRoot_s = t.exepath_s + t.exename_s;
 	//SetDir ( destExeRoot_s.Get() );
@@ -651,14 +661,17 @@ void scanscriptfileandaddtocollection ( char* tfile_s , char *pPath)
 					}
 					tscriptname_s = Left(tscriptname_s.Get(), tt);
 
-					if (addtocollection(cstr(cstr("scriptbank\\") + tscriptname_s).Get()) == true) {
+					if (addtocollection(cstr(cstr("scriptbank\\") + tscriptname_s).Get()) == true) 
+					{
 						//Newly added , also scan this entry.
 						if (pPath)
 						{
 							scanscriptfileandaddtocollection(cstr(cstr(pPath)+cstr("scriptbank\\") + tscriptname_s).Get(), pPath);
 						}
 						else
+						{
 							scanscriptfileandaddtocollection(cstr(cstr("scriptbank\\") + tscriptname_s).Get());
+						}
 					}
 				}
 			}
@@ -696,13 +709,14 @@ void scanscriptfileandaddtocollection ( char* tfile_s , char *pPath)
 					}
 					tscriptname_s = Left(tscriptname_s.Get(), tt);
 
-					if (addtocollection(cstr(cstr("scriptbank\\") + tscriptname_s).Get()) == true) {
+					if (addtocollection(cstr(cstr("scriptbank\\") + tscriptname_s).Get()) == true) 
+					{
 						//Newly added , also scan this entry.
 						if (pPath)
 						{
 							scanscriptfileandaddtocollection(cstr(cstr(pPath) + cstr("scriptbank\\") + tscriptname_s).Get(), pPath);
 						}
-							scanscriptfileandaddtocollection(cstr(cstr("scriptbank\\") + tscriptname_s).Get());
+						scanscriptfileandaddtocollection(cstr(cstr("scriptbank\\") + tscriptname_s).Get());
 					}
 				}
 			}

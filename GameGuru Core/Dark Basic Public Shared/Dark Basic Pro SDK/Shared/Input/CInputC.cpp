@@ -151,9 +151,8 @@ DARKSDK void InputConstructor ( bool bNeededToCreateExtraWindowForWMRWindow )
 	SetupMouse         ( );		// mouse
 
 	// speed up MAX for now (saves 125ms)
-	#ifndef WICKEDENGINE
+	// March 2026 - needed for standalone and running outside of Steam Input activation
 	SetupForceFeedback ( );		// force feedback
-	#endif
 }
 
 DARKSDK void ClearData ( void )
@@ -621,6 +620,9 @@ DARKSDK void UpdateMouse ( void )
 	// vars
 	HRESULT hr;
 	bool bInvalid=true;
+
+	if (m_lpDIMouse == NULL)
+		return;
 
 	// ensure coop level assigned to foreground window
 	HWND hCurrentHWND = GetForegroundWindow();

@@ -562,37 +562,75 @@ void ChangeGGFont(const char *cpcustomfont, int iIDEFontSize)
 	defaultfont = io.Fonts->AddFontDefault();
 
 	//Add all fonts from:
-
+	extern std::vector< std::pair<ImFont*, std::string>> DefaultStoryboardFonts;
 	extern std::vector< std::pair<ImFont*, std::string>> StoryboardFonts;
+
+	StoryboardFonts.clear();
+	DefaultStoryboardFonts.clear();
 
 	cstr pOldDir = GetDir();
 
-	char destination[MAX_PATH];
-	strcpy(destination, "editors\\templates\\fonts\\");
-	SetDir(destination);
-	ChecklistForFiles();
-	SetDir(pOldDir.Get());
-	DARKSDK LPSTR ChecklistString(int iIndex);
-	DARKSDK int ChecklistQuantity(void);
-	for (int c = 1; c <= ChecklistQuantity(); c++)
+	for (int a = 0; a < 2; a++)
 	{
-		char *file = ChecklistString(c);
-		if (file)
+		char destination[MAX_PATH];
+		strcpy(destination, "editors\\templates\\fonts\\");
+		if (a == 1)
 		{
-			if (strlen(file) > 4)
+			//PE: DocWrite folder.
+			extern char szWriteDir[MAX_PATH];
+			strcpy(destination, szWriteDir);
+			strcat(destination, "Files\\editors\\");
+			CreateDirectoryA(destination, NULL);
+			strcat(destination, "templates\\");
+			CreateDirectoryA(destination, NULL);
+			strcat(destination, "fonts\\");
+			CreateDirectoryA(destination, NULL);
+		}
+		if (PathExist(destination))
+		{
+			SetDir(destination);
+			ChecklistForFiles();
+			SetDir(pOldDir.Get());
+			DARKSDK LPSTR ChecklistString(int iIndex);
+			DARKSDK int ChecklistQuantity(void);
+			for (int c = 1; c <= ChecklistQuantity(); c++)
 			{
-				if (strnicmp(file + strlen(file) - 4, ".ttf", 4) == NULL || strnicmp(file + strlen(file) - 4, ".otf", 4) == NULL)
+				char* file = ChecklistString(c);
+				if (file)
 				{
-					//Add font.
-					char path[MAX_PATH];
-					strcpy(path, destination);
-					strcat(path, file);
-					const char *pestrcasestr(const char *arg1, const char *arg2);
-					if( pestrcasestr(file,"arial"))
-						tmpfont = io.Fonts->AddFontFromFileTTF(path, 60, NULL, &Generic_ranges_everything[0]); //Add font
-					else
-						tmpfont = io.Fonts->AddFontFromFileTTF(path, 60 , NULL, &Generic_ranges_all[0]); //Add font
-					StoryboardFonts.push_back(std::make_pair(tmpfont,file));
+					if (strlen(file) > 4)
+					{
+						if (strnicmp(file + strlen(file) - 4, ".ttf", 4) == NULL || strnicmp(file + strlen(file) - 4, ".otf", 4) == NULL)
+						{
+							const char* pestrcasestr(const char* arg1, const char* arg2);
+							bool bAlreadyThere = false;
+							for (int i = 0; i < StoryboardFonts.size(); i++)
+							{
+								if (pestrcasestr(file, StoryboardFonts[i].second.c_str()))
+								{
+									bAlreadyThere = true;
+									break;
+								}
+							}
+							//Add font.
+							if (!bAlreadyThere)
+							{
+								//Add font.
+								char path[MAX_PATH];
+								strcpy(path, destination);
+								strcat(path, file);
+								if (pestrcasestr(file, "arial"))
+									tmpfont = io.Fonts->AddFontFromFileTTF(path, 60, NULL, &Generic_ranges_everything[0]); //Add font
+								else
+									tmpfont = io.Fonts->AddFontFromFileTTF(path, 60, NULL, &Generic_ranges_all[0]); //Add font
+								StoryboardFonts.push_back(std::make_pair(tmpfont, file));
+								if (a == 0)
+								{
+									DefaultStoryboardFonts.push_back(std::make_pair(tmpfont, file));
+								}
+							}
+						}
+					}
 				}
 			}
 		}
@@ -1571,7 +1609,7 @@ void GetMainEntityList(char* folder_s, char* rel_s, void *pFolder, char* folder_
 					if (foldertype == 4 && pestrcasestr(file_s.Get(), ".lua"))
 						bValid = true;
 
-					if (foldertype == 5 && pestrcasestr(file_s.Get(), ".arx"))
+					if (foldertype == 5 && (pestrcasestr(file_s.Get(), ".arx") || pestrcasestr(file_s.Get(), ".pe")))
 						bValid = true;
 
 					if (foldertype == 6 && pestrcasestr(file_s.Get(), ".fpe"))
