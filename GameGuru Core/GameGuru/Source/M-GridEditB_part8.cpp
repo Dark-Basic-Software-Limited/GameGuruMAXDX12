@@ -790,7 +790,10 @@
 
 																CreateBackBufferCacheName(t.addentityfile_s.Get(), 512, 512);
 																BackBufferSaveCacheName = BackBufferCacheName;
-																GG_SetWritablesToRoot(true);
+																if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+																{
+																	GG_SetWritablesToRoot(true);
+																}
 																if (FileExist(BackBufferCacheName.Get()))
 																{
 																	SetMipmapNum(1); //PE: mipmaps not needed.

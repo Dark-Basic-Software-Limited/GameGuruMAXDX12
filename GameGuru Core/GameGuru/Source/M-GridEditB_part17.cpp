@@ -1082,6 +1082,7 @@ void SetIconSetCheck(bool bInstant)
 		if (pref.current_style == 25 || pref.current_style == 3)
 		{
 			LoadImage("editors\\uiv3\\entity_particle.png", ENTITY_PARTICLE);
+			LoadImage("editors\\uiv3\\entity_new_particle.png", ENTITY_NEW_PARTICLE);
 			LoadImage("editors\\uiv3\\entity_light.png", ENTITY_LIGHT);
 			LoadImage("editors\\uiv3\\entity_probe.png", ENTITY_PROBE);
 			LoadImage("editors\\uiv3\\entity_cover.png", ENTITY_COVER);
@@ -1148,6 +1149,7 @@ void SetIconSetCheck(bool bInstant)
 		else
 		{
 			LoadImage("editors\\uiv3\\entity_particle2.png", ENTITY_PARTICLE);
+			LoadImage("editors\\uiv3\\entity_new_particle2.png", ENTITY_NEW_PARTICLE);
 			LoadImage("editors\\uiv3\\entity_light2.png", ENTITY_LIGHT);
 			LoadImage("editors\\uiv3\\entity_probe2.png", ENTITY_PROBE);
 			LoadImage("editors\\uiv3\\entity_cover2.png", ENTITY_COVER);
@@ -1285,6 +1287,14 @@ int get_output_linkindex(int node, int index)
 			return outlinknum;
 		if (Storyboard.Nodes[i].widget_used[ll])
 		{
+			if (Storyboard.Nodes[node].widget_type[ll] == STORYBOARD_WIDGET_VIDEO)
+			{
+				if (Storyboard.Nodes[node].widget_action[ll] == STORYBOARD_ACTIONS_GOTOSCREEN)
+				{
+					outlinknum++;
+					outlinknum++;
+				}
+			}
 			if (Storyboard.Nodes[node].widget_type[ll] == STORYBOARD_WIDGET_BUTTON)
 			{
 				if (Storyboard.Nodes[node].widget_action[ll] == STORYBOARD_ACTIONS_STARTGAME || Storyboard.Nodes[node].widget_action[ll] == STORYBOARD_ACTIONS_GOTOLEVEL)
@@ -1332,6 +1342,29 @@ void setup_output_links(int node)
 	{
 		if (Storyboard.Nodes[node].widget_used[ll])
 		{
+			if (Storyboard.Nodes[node].widget_type[ll] == STORYBOARD_WIDGET_VIDEO)
+			{
+				if (Storyboard.Nodes[node].widget_action[ll] == STORYBOARD_ACTIONS_GOTOSCREEN)
+				{
+					//strcpy(chr, Storyboard.Nodes[node].widget_label[ll]);
+					strcpy(chr, "Video");
+					strcat(chr, " ->  Connect to Scene ");
+					strcpy(Storyboard.Nodes[node].output_title[outlinknum], chr);
+					strcpy(Storyboard.Nodes[node].output_action[outlinknum], "loadscene"); //Not defined this yet.
+					Storyboard.Nodes[node].output_can_link_to_type[outlinknum] = STORYBOARD_TYPE_SCREEN;
+					outlinknum++;
+
+					//strcpy(chr, Storyboard.Nodes[node].widget_label[ll]);
+					strcpy(chr, "Video");
+					strcat(chr, " -> Connect to Level");
+					strcpy(Storyboard.Nodes[node].output_title[outlinknum], chr);
+					strcpy(Storyboard.Nodes[node].output_action[outlinknum], "loadlevel"); //Not defined this yet.
+					Storyboard.Nodes[node].output_can_link_to_type[outlinknum] = STORYBOARD_TYPE_LEVEL;
+					outlinknum++;
+
+				}
+			}
+
 			if (Storyboard.Nodes[node].widget_type[ll] == STORYBOARD_WIDGET_BUTTON)
 			{
 				if (Storyboard.Nodes[node].widget_action[ll] == STORYBOARD_ACTIONS_STARTGAME || Storyboard.Nodes[node].widget_action[ll] == STORYBOARD_ACTIONS_GOTOLEVEL)

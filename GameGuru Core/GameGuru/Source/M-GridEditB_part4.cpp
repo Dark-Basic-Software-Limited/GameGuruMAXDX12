@@ -179,6 +179,7 @@ void Add_Grid_Snap_To_Position ( bool bFromWidgetMode )
 				fHitOffsetX = 0; 
 				fHitOffsetZ = 0;
 				fHitOffsetY = 0;
+				g_fSpecialDragInYAdjustment = 0.0f;
 				fGripX = t.gridentityposx_f + fHitOffsetX + (pref.fEditorGridSizeX / 2);
 				fGripY = t.gridentityposy_f + fHitOffsetY + (pref.fEditorGridSizeY / 2);
 				fGripZ = t.gridentityposz_f + fHitOffsetZ + (pref.fEditorGridSizeZ / 2);

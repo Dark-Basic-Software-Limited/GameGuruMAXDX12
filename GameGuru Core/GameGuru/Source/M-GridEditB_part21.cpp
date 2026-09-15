@@ -176,7 +176,10 @@
 		ReloadLensFlareImages();
 
 		//PE: Add custom fonts from remote project.
-		iLaunchAfterSync = 699;
+		if(iLaunchAfterSync == 202)
+			iLaunchAfterSync = 799;
+		else
+			iLaunchAfterSync = 699;
 	}
 	else
 	{
@@ -542,7 +545,7 @@ void GetProjectList(char *path, bool bGetThumbs)
 
 
 bool bWidgetMouseDraggin = false;
-void storyboard_control_widget(int nodeid, int index, ImVec2 pos, ImVec2 size, ImRect rMonitorArea, ImVec2 vMonitorStart, ImVec2 vScale)
+void storyboard_control_widget(int nodeid, int index, ImVec2 pos, ImVec2 size, ImRect rMonitorArea, ImVec2 vMonitorStart, ImVec2 vScale, ImVec2 vMonitorSize)
 {
 
 	ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -732,19 +735,51 @@ void storyboard_control_widget(int nodeid, int index, ImVec2 pos, ImVec2 size, I
 				}
 				else
 				{
-					vMovePos.x += ImGui::GetIO().MouseDelta.x * fMouseToPercent.x;
-					vMovePos.y += ImGui::GetIO().MouseDelta.y * fMouseToPercent.y;
 
 					if (Storyboard.Nodes[nodeid].screen_grid_size > 0)
 					{
-						int grid = Storyboard.Nodes[nodeid].screen_grid_size;
-						float adjustx = fmod(vMovePos.x, grid);
-						float adjusty = fmod(vMovePos.y, grid);
-						Storyboard.Nodes[nodeid].widget_pos[index].x = vMovePos.x - adjustx;
-						Storyboard.Nodes[nodeid].widget_pos[index].y = vMovePos.y - adjusty;
+						//PE: "Use Square Grid"
+						if (pref.square_storybord_grid)
+						{
+							vMovePos.x += ImGui::GetIO().MouseDelta.x * fMouseToPercent.x;
+							vMovePos.y += ImGui::GetIO().MouseDelta.y * fMouseToPercent.y;
+							
+							int grid = Storyboard.Nodes[nodeid].screen_grid_size;
+
+							float gridx = Storyboard.Nodes[nodeid].screen_grid_size * ( vMonitorSize.y / vMonitorSize.x );
+							
+							float finalx = std::floor(vMovePos.x / gridx) * gridx;
+
+							float finaly = ((int)vMovePos.y / grid) * grid;
+
+							ImVec2 fOnePercent = ImVec2(vMonitorSize.x / 100.0, vMonitorSize.y / 100.0);
+							//PE: Get nearest x cord in percent , based on y grid.
+							//PE: The percent system run from the center of the object, so cant always hit the right or left of the x grid, only center align to the grid perfectly.
+							float pixelToPercent = fOnePercent.y * fMouseToPercent.x;
+							finalx = std::floor(finalx / pixelToPercent) * pixelToPercent;
+
+							Storyboard.Nodes[nodeid].widget_pos[index].x = finalx;
+							Storyboard.Nodes[nodeid].widget_pos[index].y = finaly;
+						}
+						else
+						{
+							vMovePos.x += ImGui::GetIO().MouseDelta.x * fMouseToPercent.x;
+							vMovePos.y += ImGui::GetIO().MouseDelta.y * fMouseToPercent.y;
+
+							int grid = Storyboard.Nodes[nodeid].screen_grid_size;
+
+							float adjustx = fmod(vMovePos.x, grid);
+							float adjusty = fmod(vMovePos.y, grid);
+
+							Storyboard.Nodes[nodeid].widget_pos[index].x = vMovePos.x - adjustx;
+							Storyboard.Nodes[nodeid].widget_pos[index].y = vMovePos.y - adjusty;
+						}
 					}
 					else
 					{
+						vMovePos.x += ImGui::GetIO().MouseDelta.x * fMouseToPercent.x;
+						vMovePos.y += ImGui::GetIO().MouseDelta.y * fMouseToPercent.y;
+
 						Storyboard.Nodes[nodeid].widget_pos[index] = vMovePos;
 					}
 					bShowCenterLines = 1;
@@ -804,8 +839,6 @@ void storyboard_control_widget(int nodeid, int index, ImVec2 pos, ImVec2 size, I
 	ImGui::SetCursorPos(ocpos);
 }
 
-extern ImFont* customfont;
-extern ImFont* customfontlarge;
 float WidgetSelectUsedFont(int nodeid, int index)
 {
 	

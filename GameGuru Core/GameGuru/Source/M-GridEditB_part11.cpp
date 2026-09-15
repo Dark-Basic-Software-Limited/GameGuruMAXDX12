@@ -97,7 +97,7 @@
 void DisplayFPEMedia(bool readonly, int entid, entityeleproftype *edit_grideleprof)
 {
 	int tflagtext = 0, tflagimage = 0; //PE: These is not used in VRTECH ?
-	bool mediaactive[6] = { true,true,true,true,true,true };
+	bool mediaactive[7] = { true,true,true,true,true,true,true };
 	int iActiveMedia = 0;
 
 	if (!edit_grideleprof)
@@ -133,14 +133,19 @@ void DisplayFPEMedia(bool readonly, int entid, entityeleproftype *edit_gridelepr
 			mediaactive[3] = false;
 			iActiveMedia++;
 		}
-		if (edit_grideleprof->soundset5_s.Len() <= 0)
+		if (edit_grideleprof->soundset4a_s.Len() <= 0)
 		{
 			mediaactive[4] = false;
 			iActiveMedia++;
 		}
-		if (edit_grideleprof->soundset6_s.Len() <= 0)
+		if (edit_grideleprof->soundset5_s.Len() <= 0)
 		{
 			mediaactive[5] = false;
+			iActiveMedia++;
+		}
+		if (edit_grideleprof->soundset6_s.Len() <= 0)
+		{
+			mediaactive[6] = false;
 			iActiveMedia++;
 		}
 	}
@@ -244,7 +249,6 @@ void DisplayFPEMedia(bool readonly, int entid, entityeleproftype *edit_gridelepr
 					if (t.strarr_s[468] == "") t.strarr_s[468] = "Sound1";
 					if (t.strarr_s[480] == "") t.strarr_s[480] = "Sound2";
 					if (t.strarr_s[481] == "") t.strarr_s[481] = "Sound3";
-					if (t.strarr_s[482] == "") t.strarr_s[482] = "Sound4";
 					if (mediaactive[1])
 						edit_grideleprof->soundset1_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset1_s.Get(), t.strarr_s[468].Get(), t.strarr_s[254].Get(), "audiobank\\",readonly);
 					if (mediaactive[2])
@@ -252,8 +256,10 @@ void DisplayFPEMedia(bool readonly, int entid, entityeleproftype *edit_gridelepr
 					if (mediaactive[3])
 						edit_grideleprof->soundset3_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset3_s.Get(), t.strarr_s[481].Get(), t.strarr_s[254].Get(), "audiobank\\",readonly);
 					if (mediaactive[4])
-						edit_grideleprof->soundset6_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset5_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\", readonly);
+						edit_grideleprof->soundset4a_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset4a_s.Get(), "Sound4", t.strarr_s[254].Get(), "audiobank\\", readonly);
 					if (mediaactive[5])
+						edit_grideleprof->soundset5_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset5_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\", readonly);
+					if (mediaactive[6])
 						edit_grideleprof->soundset6_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset6_s.Get(), "Sound6", t.strarr_s[254].Get(), "audiobank\\", readonly);
 				}
 			}

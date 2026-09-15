@@ -575,15 +575,29 @@
 			// ensure we save to writables area only
 			if (ImageExist(iIconImageID))
 			{
-				char pRealICONFile[MAX_PATH];
-				strcpy(pRealICONFile, BackBufferSaveCacheName.Get());
-				pRealICONFile[strlen(pRealICONFile) - 4] = 0;
-				strcat(pRealICONFile, ".png");
-				GG_SetWritablesToRoot(true);
-				GG_GetRealPath(pRealICONFile, 1);
-				if (FileExist(pRealICONFile) == 1) DeleteAFile(pRealICONFile);
-				SaveImage(pRealICONFile, iIconImageID);
-				GG_SetWritablesToRoot(false);
+				if (strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0)
+				{
+					//PE: Use remote project folder.
+					char pRealICONFile[MAX_PATH];
+					strcpy(pRealICONFile, BackBufferSaveCacheName.Get());
+					pRealICONFile[strlen(pRealICONFile) - 4] = 0;
+					strcat(pRealICONFile, ".png");
+					GG_GetRealPath(pRealICONFile, 1);
+					if (FileExist(pRealICONFile) == 1) DeleteAFile(pRealICONFile);
+					SaveImage(pRealICONFile, iIconImageID);
+				}
+				else
+				{
+					char pRealICONFile[MAX_PATH];
+					strcpy(pRealICONFile, BackBufferSaveCacheName.Get());
+					pRealICONFile[strlen(pRealICONFile) - 4] = 0;
+					strcat(pRealICONFile, ".png");
+					GG_SetWritablesToRoot(true);
+					GG_GetRealPath(pRealICONFile, 1);
+					if (FileExist(pRealICONFile) == 1) DeleteAFile(pRealICONFile);
+					SaveImage(pRealICONFile, iIconImageID);
+					GG_SetWritablesToRoot(false);
+				}
 			}
 		}
 	}
@@ -695,14 +709,26 @@
 		{
 			if (ImageExist(BackBufferImageID))
 			{
-				// ensure we save to writables area only
-				char pRealThumbFile[MAX_PATH];
-				strcpy(pRealThumbFile, BackBufferSaveCacheName.Get());
-				GG_SetWritablesToRoot(true);
-				GG_GetRealPath(pRealThumbFile, 1);
-				if (FileExist(pRealThumbFile) == 1) DeleteAFile(pRealThumbFile);
-				SaveImage(pRealThumbFile, BackBufferImageID);
-				GG_SetWritablesToRoot(false);
+				if (strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0)
+				{
+					//PE: Use remote project folder.
+					char pRealThumbFile[MAX_PATH];
+					strcpy(pRealThumbFile, BackBufferSaveCacheName.Get());
+					GG_GetRealPath(pRealThumbFile, 1);
+					if (FileExist(pRealThumbFile) == 1) DeleteAFile(pRealThumbFile);
+					SaveImage(pRealThumbFile, BackBufferImageID);
+				}
+				else
+				{
+					// ensure we save to writables area only
+					char pRealThumbFile[MAX_PATH];
+					strcpy(pRealThumbFile, BackBufferSaveCacheName.Get());
+					GG_SetWritablesToRoot(true);
+					GG_GetRealPath(pRealThumbFile, 1);
+					if (FileExist(pRealThumbFile) == 1) DeleteAFile(pRealThumbFile);
+					SaveImage(pRealThumbFile, BackBufferImageID);
+					GG_SetWritablesToRoot(false);
+				}
 			}
 			BackBufferSaveCacheName = "";
 		}

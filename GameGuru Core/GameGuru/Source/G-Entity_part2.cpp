@@ -965,7 +965,11 @@ void entity_hasbulletrayhit(void)
 	{
 		if (t.tttriggerdecalimpact >= 10 && t.tttriggerdecalimpact != 16 && t.bulletrayhite >= 0 )
 		{
+			// ★ GGMAX 3.38 (DX11 f460d1be): iAllowBuletHole lets a specific entity opt IN to bullet
+			// decals even though it is neither static nor immobile - the checkbox in M-GridEditB_part13.cpp.
+			// Without this clause that setting would save, load, and do nothing at all.
 			if (t.bulletrayhite == 0 || t.entityelement[t.bulletrayhite].staticflag == 1 ||
+				t.entityelement[t.bulletrayhite].iAllowBuletHole == 1 ||
 				(t.entityelement[t.bulletrayhite].staticflag == 0 && t.entityelement[t.bulletrayhite].eleprof.isimmobile == 1) )
 			{
 				int iMaterialIndex = t.tttriggerdecalimpact - 10;

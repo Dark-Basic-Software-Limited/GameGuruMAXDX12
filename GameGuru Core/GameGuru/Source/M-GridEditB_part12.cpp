@@ -1292,9 +1292,13 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 
 				cstr img = Predefined_Particle_Name[i] + cstr(".arx");
 				CreateBackBufferCacheName(img.Get(), 512, 288);
+
 				SetMipmapNum(1); //PE: mipmaps not needed.
 				image_setlegacyimageloading(true);
-				GG_SetWritablesToRoot(true);
+				if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+				{
+					GG_SetWritablesToRoot(true);
+				}
 				if (FileExist(BackBufferCacheName.Get()))
 				{
 					LoadImage((char *)BackBufferCacheName.Get(), Predefined_Particle_Image[i]);
@@ -2146,6 +2150,12 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		ImGui::MaxSliderInputInt("##SwimSpeedSimpleInput", &edit_grideleprof->iSwimSpeed, 1, 100, "Modifies how much distance is travelled with each swimming stroke");
 		ImGui::PopItemWidth();
 	
+		//edit_grideleprof->lives = atol(imgui_setpropertystring2_v2(t.group, Str(edit_grideleprof->lives), t.strarr_s[452].Get(), "Specifies how many lives the player starts with. Enter zero for infinite lives.", readonly));
+		ImGui::TextCenter("Lives");
+		ImGui::PushItemWidth(-10);
+		ImGui::MaxSliderInputInt("##PlayerLivesSimpleInput", &edit_grideleprof->lives, 0, 10, "Specifies how many lives the player starts with. Enter zero for infinite lives");
+		ImGui::PopItemWidth();
+
 		ImGui::TextCenter("Health");
 		static int iPlayerNormalStrength = 500;
 		int iPlayerInvincible = 0;
@@ -2157,6 +2167,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Set Player Health");
 			ImGui::PopItemWidth();
 		}
+
 		int iLastPlayerInvincible = iPlayerInvincible;
 		iPlayerInvincible = imgui_setpropertylist2_v2(t.group, t.controlindex, Str(iPlayerInvincible), "Invulnerable", "Controls whether the player has infinite health", 0, readonly);
 		if (iLastPlayerInvincible != iPlayerInvincible)
@@ -2721,6 +2732,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		bool bSound3Mentioned = false;
 		bool bSound4Mentioned = false;
 		bool bSound5Mentioned = false;
+		bool bSound6Mentioned = false;
 		bool bVideoSlotMentioned = false;
 		bool bIfUsedMentioned = false;
 		bool bUseKeyMentioned = false;
@@ -2745,6 +2757,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		if (strstr(pCaptureAnyScriptDesc, "<Sound3>") != 0) bSound3Mentioned = true;
 		if (strstr(pCaptureAnyScriptDesc, "<Sound4>") != 0) bSound4Mentioned = true;
 		if (strstr(pCaptureAnyScriptDesc, "<Sound5>") != 0) bSound5Mentioned = true;
+		if (strstr(pCaptureAnyScriptDesc, "<Sound6>") != 0) bSound6Mentioned = true;
 		if (strstr(pCaptureAnyScriptDesc, "<Video Slot>") != 0) bVideoSlotMentioned = true;
 		if (strstr(pCaptureAnyScriptDesc, "<If Used>") != 0) bIfUsedMentioned = true;
 		if (strstr(pCaptureAnyScriptDesc, "<Use Key>") != 0) bUseKeyMentioned = true;
@@ -2779,7 +2792,10 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 						bool CreateBackBufferCacheName(char *file, int width, int height);
 						extern cstr BackBufferCacheName;
 						CreateBackBufferCacheName((char *)stmp.c_str(), 512, 288);
-						GG_SetWritablesToRoot(true);
+						if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+						{
+							GG_SetWritablesToRoot(true);
+						}
 						SetMipmapNum(1); //PE: mipmaps not needed.
 						image_setlegacyimageloading(true);
 						if (FileExist(BackBufferCacheName.Get()))
@@ -2817,8 +2833,9 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			if (bSound1Mentioned == true) edit_grideleprof->soundset1_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset1_s.Get(), "Sound1", t.strarr_s[254].Get(), "audiobank\\", readonly);
 			if (bSound2Mentioned == true) edit_grideleprof->soundset2_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset2_s.Get(), "Sound2", t.strarr_s[254].Get(), "audiobank\\", readonly);
 			if (bSound3Mentioned == true) edit_grideleprof->soundset3_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset3_s.Get(), "Sound3", t.strarr_s[254].Get(), "audiobank\\", readonly);
-			if (bSound4Mentioned == true) edit_grideleprof->soundset5_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset5_s.Get(), "Sound4", t.strarr_s[254].Get(), "audiobank\\", readonly);
-			if (bSound5Mentioned == true) edit_grideleprof->soundset6_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset6_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\", readonly);
+			if (bSound4Mentioned == true) edit_grideleprof->soundset4a_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset4a_s.Get(), "Sound4", t.strarr_s[254].Get(), "audiobank\\", readonly);
+			if (bSound5Mentioned == true) edit_grideleprof->soundset5_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset5_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\", readonly);
+			if (bSound6Mentioned == true) edit_grideleprof->soundset6_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset6_s.Get(), "Sound6", t.strarr_s[254].Get(), "audiobank\\", readonly);
 			if (bIfUsedMentioned == true)
 			{
 				if (t.entityprofile[entid].ischaracter != 1)
@@ -2829,6 +2846,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 			}
 			if (bUseKeyMentioned == true) edit_grideleprof->usekey_s = imgui_setpropertystring2_v2(t.group, edit_grideleprof->usekey_s.Get(), t.strarr_s[436].Get(), t.strarr_s[225].Get(), readonly);
 			bool readonly = false;
+			bool bFromCharacterCreator = false;
 			bool bMustUpdateAnimations = false;
 			extern bool g_bNowPopulateWithCorrectAnimSet;
 			if (bShootingWeaponMentioned == true || bMeleeWeaponMentioned == true)
@@ -2836,7 +2854,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				bool btmp = g_bNowPopulateWithCorrectAnimSet;
 				g_bNowPopulateWithCorrectAnimSet = false;
 				extern void animsystem_weaponproperty (int, bool, entityeleproftype*, bool, bool);
-				animsystem_weaponproperty(t.entityprofile[entid].characterbasetype, readonly, edit_grideleprof, bShootingWeaponMentioned, bMeleeWeaponMentioned);
+				animsystem_weaponproperty(t.entityprofile[entid].characterbasetype, bFromCharacterCreator, edit_grideleprof, bShootingWeaponMentioned, bMeleeWeaponMentioned);
 				//PE: We changed weapon so must update animations.
 				if (g_bNowPopulateWithCorrectAnimSet)
 				{

@@ -715,6 +715,15 @@
 				g_bChangedGameCollectionList = false;
 			}
 
+			if (elementID > 0 && elementID < t.entityelement.size() )
+			{
+				bool bAllowBulletHole = t.entityelement[elementID].iAllowBuletHole;
+				if (ImGui::Checkbox("Allow Bullet Holes ?", &bAllowBulletHole))
+				{
+					t.entityelement[elementID].iAllowBuletHole = bAllowBulletHole;
+				}
+			}
+
 			ImGui::Indent(-10);
 		}
 	}
@@ -945,27 +954,28 @@ void DisplayFPEAdvanced(bool readonly, int entid, entityeleproftype *edit_gridel
 			{
 				if (t.tflaglives == 1)
 				{
+					//LB: Decision here: https://github.com/Dark-Basic-Software-Limited/GameGuruRepo/issues/6007
 					// see if this level has any checkpoints to stave off lives logic
-					bool bUsingCheckpoint = false;
-					for ( int e = 1; e <= g.entityelementlist; e++)
-					{
-						int entid = t.entityelement[e].bankindex;
-						if (t.entityprofile[entid].ismarker == 6)
-						{
-							bUsingCheckpoint = true;
-							break;
-						}
-					}
-					if (bUsingCheckpoint==true)
-					{
-						ImGui::TextCenter("Lives");
-						ImGui::TextCenter("NOTE: Checkpoint detected, infinite retries");
-						edit_grideleprof->lives = 0;
-					}
-					else
-					{
-						edit_grideleprof->lives = atol(imgui_setpropertystring2_v2(t.group, Str(edit_grideleprof->lives), t.strarr_s[452].Get(), "Specifies how many lives the player starts with. Enter zero for infinite lives.", readonly));
-					}
+					//bool bUsingCheckpoint = false;
+					//for ( int e = 1; e <= g.entityelementlist; e++)
+					//{
+					//	int entid = t.entityelement[e].bankindex;
+					//	if (t.entityprofile[entid].ismarker == 6)
+					//	{
+					//		bUsingCheckpoint = true;
+					//		break;
+					//	}
+					//}
+					//if (bUsingCheckpoint==true)
+					//{
+					//	ImGui::TextCenter("Lives");
+					//	ImGui::TextCenter("NOTE: Checkpoint detected, infinite retries");
+					//	edit_grideleprof->lives = 0;
+					//}
+					//else
+					//{
+					edit_grideleprof->lives = atol(imgui_setpropertystring2_v2(t.group, Str(edit_grideleprof->lives), t.strarr_s[452].Get(), "Specifies how many lives the player starts with. Enter zero for infinite lives.", readonly));
+					//}
 				}
 				if (t.tflagvis == 1 || t.tflagstats == 1)
 				{
@@ -1274,8 +1284,9 @@ void DisplayFPEAdvanced(bool readonly, int entid, entityeleproftype *edit_gridel
 							edit_grideleprof->soundset1_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset1_s.Get(), t.strarr_s[468].Get(), t.strarr_s[254].Get(), "audiobank\\",readonly);
 							edit_grideleprof->soundset2_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset2_s.Get(), t.strarr_s[480].Get(), t.strarr_s[254].Get(), "audiobank\\",readonly);
 							edit_grideleprof->soundset3_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset3_s.Get(), t.strarr_s[481].Get(), t.strarr_s[254].Get(), "audiobank\\",readonly);
-							ImGui::TextCenter("Sound4");
-							ImGui::TextCenter("(repurposed)");
+							//ImGui::TextCenter("Sound4");
+							//ImGui::TextCenter("(repurposed)");
+							edit_grideleprof->soundset4a_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset4a_s.Get(), "Sound4", t.strarr_s[254].Get(), "audiobank\\", readonly);
 							edit_grideleprof->soundset5_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset5_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\", readonly);
 							edit_grideleprof->soundset6_s = imgui_setpropertyfile2_v2(t.group, edit_grideleprof->soundset6_s.Get(), "Sound6", t.strarr_s[254].Get(), "audiobank\\", readonly);
 						}

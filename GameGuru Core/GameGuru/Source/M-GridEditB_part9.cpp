@@ -935,7 +935,10 @@ void process_entity_library_v2(void)
 						bool bGetOut = false;
 
 						// delete old thumb image and give chance for new one to be saved (g_bThumbBankCopyMode)
-						GG_SetWritablesToRoot(true);
+						if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+						{
+							GG_SetWritablesToRoot(true);
+						}
 						if (FileExist(BackBufferCacheName.Get()))
 						{
 							DeleteAFile(BackBufferCacheName.Get());
@@ -1317,7 +1320,7 @@ void process_entity_library_v2(void)
 			if (ImGui::InputText("##cSearchAllEntities", &cSearchAllEntities[i][0], MAX_PATH, ImGuiInputTextFlags_EnterReturnsTrue))
 			{
 				bUpdateSearchSorting = true;
-				phonetic_find = soundexall(cSearchAllEntities[i]);
+				phonetic_find = "";// strange results from PHONETICA!! soundexall(cSearchAllEntities[i]);
 
 				if (strlen(cSearchAllEntities[i]) > 1)
 				{
@@ -1361,7 +1364,7 @@ void process_entity_library_v2(void)
 			if (sOldSearch != sNewSearch)
 			{
 				sOldSearch = sNewSearch;
-				phonetic_find = soundexall(cSearchAllEntities[i]);
+				phonetic_find = "";// strange results from PHONETICA!! soundexall(cSearchAllEntities[i]);
 				bUpdateSearchSorting = true;
 				bUpdateSearchScrollbar = true;
 			}
@@ -2425,11 +2428,17 @@ void process_entity_library_v2(void)
 									}
 								}
 
-								if (i == 0 && strlen(cSearchAllEntities[i]) > 0) {
+								if (i == 0 && strlen(cSearchAllEntities[i]) > 0) 
+								{
+									// when we DEFINATELY have a search term entered, we MUST assume NOT VISIBLE until proven otherwise
+									///comment out until we find a better FIX!
+									///bIsVisible = false;
+									///bDisplayEverythingHere = false; // this is NO question we do not want to make everything visible if we have a search term!
 
+									// now see if we are VISIBLE
 									if (iDisplayLibraryType == 4 && stricmp(cSearchAllEntities[i], "global") == 0 )
 									{
-										bDisplayEverythingHere = false;
+										//bDisplayEverythingHere = false; // see above
 										if (pestrcasestr(dir_name.c_str(), "global"))
 										{
 											bIsVisible = true;
@@ -2437,8 +2446,25 @@ void process_entity_library_v2(void)
 									}
 									else
 									{
+										///comment out until we find a better FIX!
+										/*
+										// might be better but users cannot see the hidden meta data so are confused with pattern matches! 
+										if (pestrcasestr(myfiles->m_sBetterSearch.Get(), cSearchAllEntities[i]))
+										{
+											// but only if it is in brackets denoting a category search
+											char pCatSearch[MAX_PATH];
+											sprintf(pCatSearch, "( %s )", cSearchAllEntities[i]);
+											if (pestrcasestr(myfiles->m_sBetterSearch.Get(), pCatSearch))
+											{
+												bIsVisible = true;
+											}
+										}
+										if (pestrcasestr(myfiles->m_sName.Get(), cSearchAllEntities[i]))
+											bIsVisible = true;
+										*/
 										if (pestrcasestr(myfiles->m_sBetterSearch.Get(), cSearchAllEntities[i]))
 											bIsVisible = true;
+
 										if (!bIsVisible) // else current_sortby == 4)
 										{
 											if (bAdvancedFPEFeatures && myfiles->m_sFPEKeywords.Len() > 0)
@@ -2453,11 +2479,11 @@ void process_entity_library_v2(void)
 										if (pestrcasestr(cSearchAllEntities[i], "Game Elements"))
 											bIsVisible = true;
 									}
-
 								}
 
 								if (bDisplayEverythingHere)
 									bIsVisible = true;
+
 								if (bHideEverythingHere)
 									bIsVisible = false;
 
@@ -4490,7 +4516,10 @@ void process_entity_library_v2(void)
 										{
 											//Start rotate instant.
 											CreateBackBufferCacheName(t.addentityfile_s.Get(), thumb_x, thumb_y);
-											GG_SetWritablesToRoot(true);
+											if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+											{
+												GG_SetWritablesToRoot(true);
+											}
 											if (FileExist(BackBufferCacheName.Get()) == 0)
 											{
 												// only save new thumb if not exist in root
@@ -4524,7 +4553,10 @@ void process_entity_library_v2(void)
 												sFpeName = sFpeName + "\\" + myfiles->m_sName.Get();
 												t.addentityfile_s = sFpeName.c_str();
 												CreateBackBufferCacheName(t.addentityfile_s.Get(), thumb_x, thumb_y);
-												GG_SetWritablesToRoot(true);
+												if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+												{
+													GG_SetWritablesToRoot(true);
+												}
 												if (FileExist(BackBufferCacheName.Get()) == 0)
 												{
 													// only save new thumb if not exist in root
@@ -4640,7 +4672,10 @@ void process_entity_library_v2(void)
 											sFpeName = sFpeName + "\\" + myfiles->m_sName.Get();
 											t.addentityfile_s = sFpeName.c_str();
 											CreateBackBufferCacheName(t.addentityfile_s.Get(), thumb_x, thumb_y);
-											GG_SetWritablesToRoot(true);
+											if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+											{
+												GG_SetWritablesToRoot(true);
+											}
 											if (!FileExist(BackBufferCacheName.Get()))
 											{
 												bLoadedInNewFormat = false; //Try it.
@@ -4674,7 +4709,10 @@ void process_entity_library_v2(void)
 									if (!bDoBackbufferUpdate && !bLoadedInNewFormat)
 									{
 										CreateBackBufferCacheName(t.addentityfile_s.Get(), thumb_x, thumb_y);
-										GG_SetWritablesToRoot(true);
+										if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+										{
+											GG_SetWritablesToRoot(true);
+										}
 										if (FileExist(BackBufferCacheName.Get()) == 0)
 										{
 											// only save new thumb if not exist in root
@@ -4760,7 +4798,10 @@ void process_entity_library_v2(void)
 													{
 														//PE: Drop rotate if we already got the original group thumb.
 														CreateBackBufferCacheName(t.addentityfile_s.Get(), thumb_x, thumb_y);
-														GG_SetWritablesToRoot(true);
+														if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+														{
+															GG_SetWritablesToRoot(true);
+														}
 														if (FileExist(BackBufferCacheName.Get()))
 														{
 															update = false;
@@ -4870,7 +4911,10 @@ void process_entity_library_v2(void)
 												{
 													//PE: Drop rotate if we already got the original group thumb.
 													CreateBackBufferCacheName(t.addentityfile_s.Get(), thumb_x, thumb_y);
-													GG_SetWritablesToRoot(true);
+													if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+													{
+														GG_SetWritablesToRoot(true);
+													}
 													if (FileExist(BackBufferCacheName.Get()))
 													{
 														update = false;

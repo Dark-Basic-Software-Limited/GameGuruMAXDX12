@@ -1557,6 +1557,10 @@ void storyboard_openproject(float preview_size_x, float fNodeWidth, float fNodeH
 									CloseFile(1);
 									//PE: Add to list for selection.
 									projectbank_list.push_back(projectname);
+
+									//PE: Make sure to update project thumbs, after adding a project!
+									GetProjectThumbnails();
+
 									BoxerInfo("Project has been imported.", "Information!");
 									current_project_selected = projectname;
 									bTriggerLoad = true;
@@ -1923,7 +1927,7 @@ bool PostProcess_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		{
 			tab_tab_Column_text("AO Power", fTabColumnWidth);
 			ImGui::PushItemWidth(-10);
-			if (ImGui::SliderFloat("##setAmbientOcclusionPower", &t.visuals.fMSAOPower, 0.01f, 8.0f, "%.2f", 2.0f))
+			if (ImGui::SliderFloat("##setAmbientOcclusionPower", &t.visuals.fMSAOPower, -5.0f, 5.0f, "%.2f", 2.0f))
 			{
 				t.gamevisuals.fMSAOPower = master.fAOPower = t.visuals.fMSAOPower;
 				master.masterrenderer.setAOPower(master.fAOPower);

@@ -836,6 +836,7 @@ bool AI_Management_Settings(float fTabColumnWidth, bool bVisualUpdated)
 	{
 		iLastOpenHeader = 12;
 		ImGui::Indent(10);
+
 		ImGui::PushItemWidth(-10);
 		extern bool g_bShowRecastDetourDebugVisuals;
 		if (ImGui::Checkbox("Show Navigation Debug Visuals", &g_bShowRecastDetourDebugVisuals))
@@ -875,6 +876,14 @@ bool AI_Management_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				g_iViewPerformanceTimers = 1;
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Run a live snapshot of the ten slowest behaviours currently running");
+
+			ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2((w * 0.5) - (but_gadget_size * 0.5), 0.0f));
+			if (ImGui::StyleButton("View Playing Sounds##TabTabEditBehaviors", ImVec2(but_gadget_size, 0)))
+			{
+				extern int g_iViewPlayingSounds;
+				g_iViewPlayingSounds = 1;
+			}
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Run a live snapshot of the ten currently playing sounds");
 		}
 
 		ImGui::Indent(-10);

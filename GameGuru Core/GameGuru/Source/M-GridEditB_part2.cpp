@@ -1667,14 +1667,31 @@ void gridedit_instruction_block_rec ( sStateNode* pState, ImVec2 vTopCenterPos, 
 		// play and loop shows animation list for this object
 		sprintf(pInstructionDisplay, "##BehaviorEditorActionParam1Combo%s%d", pStateName, pinstruction->iInstructionIndex);
 		ImGui::SetCursorPos(ImVec2(fAbsInstructionLeftX, ImGui::GetCursorPos().y));
-		int iAnimationListIndex = 0;
+		int iAnimationListIndex = -1;
 		for (int iFind = 0; iFind < combo_animations_count; iFind++)
 		{
 			if ( stricmp (combo_animations[iFind], pinstruction->pActionParam1)==NULL) iAnimationListIndex = iFind;
 		}
-		if (ImGui::Combo(pInstructionDisplay, &iAnimationListIndex, combo_animations, combo_animations_count))
+		if (iAnimationListIndex > -1 || strcmp(pinstruction->pActionParam1,"")==NULL)
 		{
-			strcpy ( pinstruction->pActionParam1, combo_animations[iAnimationListIndex]);
+			if (ImGui::Combo(pInstructionDisplay, &iAnimationListIndex, combo_animations, combo_animations_count))
+			{
+				strcpy (pinstruction->pActionParam1, combo_animations[iAnimationListIndex]);
+			}
+		}
+		else
+		{
+			// can be a scenario where a script expects a specific set of animations, and those anims are
+			// chosen from the dropdown, but older legacy levels/objects could be missing newer anims referenced in the script/bytecode
+			// so need to ensure these 'legacy' anim names are preserved and shown in newer script views
+			sprintf(pInstructionDisplay, "##BehaviorEditorActionParam1%s%d", pStateName, pinstruction->iInstructionIndex);
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1,0,0,1));
+			if (ImGui::InputText(pInstructionDisplay, &pinstruction->pActionParam1[0], 250, ImGuiInputTextFlags_None | ImGuiInputTextFlags_ReadOnly))
+			{
+				//instruction_freezewheneditingbehavior = true; cannot edit this to preserve integrity of newer script!
+			}
+			ImGui::PopStyleColor();
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Could not find specified animation inside the object associated with this behavior!");
 		}
 	}
 	else

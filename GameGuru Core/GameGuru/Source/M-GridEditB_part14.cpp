@@ -1659,7 +1659,10 @@ void GetFilesListForLibrary(char *path, bool bCreateThumbs, int win, int iThumbW
 				//PE: Skip cached thumbs for now.
 				CreateBackBufferCacheName(g_LibraryFileList[n].cFile.Get(), iThumbWidth, iThumbHeight);
 				g_LibraryFileList[n].iImage = 0;
-				GG_SetWritablesToRoot(true);
+				if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+				{
+					GG_SetWritablesToRoot(true);
+				}
 				if (1==2 && FileExist(BackBufferCacheName.Get()))
 				{
 					SetMipmapNum(1); //PE: mipmaps not needed.

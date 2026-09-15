@@ -2,7 +2,7 @@
 // VS2017 (32bit) having trouble with large GridEdit.cpp file, so split into two
 //
 
-// Includes 
+// Includes
 #include "stdafx.h"
 #include "gameguru.h"
 #include "M-WelcomeSystem.h"
@@ -14,20 +14,21 @@
 #include <string>
 #include <time.h>
 #include <wininet.h>
-#include <mmsystem.h>
 #include "ShlObj.h"
-#include "sha1.h"
-#include "sha2.h"
-#include "miniz.h"
 #include "Nlohmann JSON/json.hpp"
-
 #include "M-RPG.h"
 #include "M-Workshop.h"
+
+// for improved performance debug view
+#include <cctype>   // isspace, isdigit
+#include <cstdlib>  // strtof
+#include <cstring>  // memcpy
 
 //#define PETESTING
 #ifdef PETESTING
 #include "..\Imgui\imgui_demo.cpp"
 #endif
+//#define DISPLAYCLONES
 
 // Globals
 extern int iGenralWindowsFlags ;
@@ -511,6 +512,9 @@ extern int g_iAbortedAsEntityIsGroupCreate;
 extern bool bPreviewWPE;
 extern uint32_t PreviewWPERoot;
 
+extern ImFont* customfont;
+extern ImFont* customfontlarge;
+
 
 bool bDigAHoleToHWND = false;
 bool g_bSelectedMapImageTypeSpecialHelp = false;
@@ -541,11 +545,12 @@ char g_pRenameHUDScreenError[256] = "\0";
 bool g_bMappingKeyWindow = false;
 int g_iMappingKeyToChange = -1;
 
+// for special case where a "current objects drag in" would prefer to keep its Y adjustment relative to the original objects ground position (for when dragging in floor objects that where made walls by rotating and offsetting them)
+float g_fSpecialDragInYAdjustment = 0.0f;
+
 bool bIncludeDocumentFolderInRemoteProject = false;
 int CurrentMonitorResolutionX, CurrentMonitorResolutionY;
 void GetActiveMonitorResolution( void );
-
-
 
 void imgui_set_openproperty_flags(int iMasterID)
 {
@@ -1215,8 +1220,9 @@ void interface_openpropertywindow ( void )
 							setpropertyfile2(t.group,t.grideleprof.soundset1_s.Get(),t.strarr_s[468].Get(),t.strarr_s[254].Get(),"audiobank\\")  ; ++t.controlindex; 
 							setpropertyfile2(t.group,t.grideleprof.soundset2_s.Get(),t.strarr_s[480].Get(),t.strarr_s[254].Get(),"audiobank\\")  ; ++t.controlindex; 
 							setpropertyfile2(t.group,t.grideleprof.soundset3_s.Get(),t.strarr_s[481].Get(),t.strarr_s[254].Get(),"audiobank\\")  ; ++t.controlindex; 
-							setpropertyfile2(t.group, t.grideleprof.soundset5_s.Get(), t.strarr_s[482].Get(), t.strarr_s[254].Get(), "audiobank\\"); ++t.controlindex;
-							setpropertyfile2(t.group, t.grideleprof.soundset6_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\"); ++t.controlindex;
+							setpropertyfile2(t.group, t.grideleprof.soundset4a_s.Get(), "Sound4", t.strarr_s[254].Get(), "audiobank\\"); ++t.controlindex;
+							setpropertyfile2(t.group, t.grideleprof.soundset5_s.Get(), "Sound5", t.strarr_s[254].Get(), "audiobank\\"); ++t.controlindex;
+							setpropertyfile2(t.group, t.grideleprof.soundset6_s.Get(), "Sound6", t.strarr_s[254].Get(), "audiobank\\"); ++t.controlindex;
 						}
 					}
 				}
@@ -1485,7 +1491,8 @@ void interface_copydatatoentity ( void )
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[468].Get()) ) == 0 )  t.grideleprof.soundset1_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[480].Get()) ) == 0 )  t.grideleprof.soundset2_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[481].Get()) ) == 0 )  t.grideleprof.soundset3_s = t.tdataclipped_s;
-			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower("Sound5")) == 0)					t.grideleprof.soundset5_s = t.tdataclipped_s;
+			if (strcmp (Lower(t.tfield_s.Get()), Lower("Sound4")) == 0)					t.grideleprof.soundset4a_s = t.tdataclipped_s;
+			if (strcmp (Lower(t.tfield_s.Get()), Lower("Sound5")) == 0)					t.grideleprof.soundset5_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower("Sound6")) == 0)					t.grideleprof.soundset6_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[469].Get()) ) == 0 )  t.grideleprof.soundset_s = t.tdataclipped_s;
 			if (  strcmp ( Lower(t.tfield_s.Get()) , Lower(t.strarr_s[598].Get()) ) == 0 )  t.grideleprof.soundset_s = t.tdataclipped_s;

@@ -2319,6 +2319,9 @@ struct lightingtype
 //  LUA Global Vars
 struct luaglobaltype
 {
+	// ★ GGMAX 3.38 (DX11): drives the per-object debug visualisation the Lua layer can toggle.
+	// Declared first in DX11's struct too - kept in the same position so the two stay easy to diff.
+	bool showobjectdebugvisuals;
 	int gamestatechange;
 	int setanim;
 	int loopmode;
@@ -2356,6 +2359,7 @@ struct luaglobaltype
 		 setanimstart = 0;
 		 loopmode = 0;
 		 setanim = 0;
+		 showobjectdebugvisuals = false;
 		 gamestatechange = 0;
 	}
 	// End of Constructor
@@ -6804,11 +6808,16 @@ struct entitytype
 	int iWasSpawnedInGame;
 	int iThumbnail;
 	int old_bankindex;
+	// ★ GGMAX 3.38 (DX11 f460d1be "New Setting - Allow Bullet Holes"): per-entity opt-in so a
+	// non-static, non-immobile object can still take bullet decals. Spelling matches DX11's
+	// (one 'l' in 'Bulet') deliberately - it is the on-disk contract, see the serialisation note.
+	int iAllowBuletHole = 0;
 
 	// Constructor
 	entitytype ( )
 	{
 		 old_bankindex = 0;
+		 iAllowBuletHole = 0;
 		 iThumbnail = 0;
 		 iWasSpawnedInGame = 0;
 		 iPreScanVisibleCurrent = 0;

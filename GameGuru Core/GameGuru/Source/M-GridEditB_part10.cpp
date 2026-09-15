@@ -658,6 +658,7 @@ int DuplicateFromListToCursor(std::vector<sRubberBandType> vEntityDuplicateList,
 			fHitOffsetX = 0;
 			fHitOffsetY = 0;
 			fHitOffsetZ = 0;
+						g_fSpecialDragInYAdjustment = 0.0f;
 
 			g_bHoldGridEntityPosWhenManaged = true;
 			g_fHoldGridEntityPosX = t.gridentityposx_f;
@@ -1272,7 +1273,10 @@ bool SaveGroup(int iGroupID, LPSTR pObjectSavedFilename)
 			{
 				cstr fname = (find + 11);
 				CreateBackBufferCacheNameEx(fname.Get(), 512, 288, true);
-				GG_SetWritablesToRoot(true);
+				if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+				{
+					GG_SetWritablesToRoot(true);
+				}
 				SaveImage(BackBufferCacheName.Get(), iEntityGroupListImage[current_selected_group]);
 				GG_SetWritablesToRoot(false);
 			}
@@ -1852,6 +1856,7 @@ void AddEntityToCursor(int e, bool bDuplicate)
 			fHitOffsetX = 0;
 			fHitOffsetY = 0;
 			fHitOffsetZ = 0;
+			g_fSpecialDragInYAdjustment = 0.0f;
 			iStartMouseX = (int)ImGui::GetMousePos().x;
 			iStartMouseY = (int)ImGui::GetMousePos().y;
 			iLastHitObjectID = 0;
@@ -1886,7 +1891,19 @@ void AddEntityToCursor(int e, bool bDuplicate)
 			}
 			else
 			{
+				// for duplicates, reset hit offsets so duplicate appears directly under mouse
 				g.entityrubberbandlist.clear();
+
+				// additionally, to help with rapid use of current objects drag in, retain relative Y from ground (ideal when dragging in a floor that has been rotated and realigned to become a wall)
+				float fTerrainAtThisPoint = BT_GetGroundHeight (0, t.gridentityposx_f, t.gridentityposz_f); // only handles terrain surface
+				float pOutX, pOutY = 0, pOutZ, pNormX, pNormY, pNormZ;
+				float fDistanceOfRay = 200;
+				DWORD dwObjectNumberHit = 0;
+				if ( WickedCall_SentRay4(t.gridentityposx_f, t.gridentityposy_f, t.gridentityposz_f, 0, -1, 0, fDistanceOfRay, &pOutX, &pOutY, &pOutZ, &pNormX, &pNormY, &pNormZ, &dwObjectNumberHit, true) == false )
+				{
+					pOutY = fTerrainAtThisPoint;
+				}
+				g_fSpecialDragInYAdjustment = t.gridentityposy_f - pOutY;
 			}
 
 			// get size of object selected, to determine if to use drop system (only used for larger objects)

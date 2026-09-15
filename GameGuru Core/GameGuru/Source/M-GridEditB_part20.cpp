@@ -838,6 +838,24 @@ int FindNextLevel(int &iNextLevelNode, char *level_name, int action)
 	return(2); //Goto next lua script.
 }
 
+int FindFirstSplashNode(void)
+{
+	for (int i = 0; i < STORYBOARD_MAXNODES; i++)
+	{
+		if (Storyboard.Nodes[i].used)
+		{
+			if (Storyboard.Nodes[i].type == STORYBOARD_TYPE_SPLASH)
+			{
+				if (strlen(Storyboard.Nodes[i].thumb) > 0)
+				{
+					// replace stock splash with custom one specified by storybaord game project
+					return i;
+				}
+			}
+		}
+	}
+	return -1;
+}
 void FindFirstSplash(char *splash_name)
 {
 	for (int i = 0; i < STORYBOARD_MAXNODES; i++)

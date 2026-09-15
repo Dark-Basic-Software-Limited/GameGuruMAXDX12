@@ -1547,6 +1547,7 @@ void AddPayLoad(ImGuiPayload* payload, bool addtocursor)
 						fHitOffsetX = 0;
 						fHitOffsetY = 0;
 						fHitOffsetZ = 0;
+						g_fSpecialDragInYAdjustment = 0.0f;
 
 						g_bHoldGridEntityPosWhenManaged = true;
 						g_fHoldGridEntityPosX = t.gridentityposx_f;
@@ -1589,6 +1590,7 @@ void AddPayLoad(ImGuiPayload* payload, bool addtocursor)
 					fHitOffsetX = 0;
 					fHitOffsetY = 0;
 					fHitOffsetZ = 0;
+						g_fSpecialDragInYAdjustment = 0.0f;
 
 					g_bHoldGridEntityPosWhenManaged = true;
 					g_fHoldGridEntityPosX = t.gridentityposx_f;

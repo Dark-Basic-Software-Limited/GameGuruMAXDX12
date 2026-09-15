@@ -368,7 +368,8 @@ void lua_loop_begin ( void )
 	entity_lua_activateifusedfromqueue();
 
 	// Write LUA globals
-	LuaSetInt (  "g_GameStateChange", t.luaglobal.gamestatechange );
+	LuaSetInt ("g_ShowObjectDebugVisuals", (int)t.luaglobal.showobjectdebugvisuals);
+	LuaSetInt ("g_GameStateChange", t.luaglobal.gamestatechange);
 	if ( ObjectExist(t.aisystem.objectstartindex)==1 )
 	{
 		LuaSetFloat (  "g_PlayerPosX",ObjectPositionX(t.aisystem.objectstartindex) );
@@ -1054,6 +1055,11 @@ void GGInertSkip_SelfTest(char* result, int resultSize)
 	result[resultSize - 1] = 0;
 }
 
+// ★ GGMAX 3.38 (DX11 f74a6116 "Fixed the Sound Slot 4 issue once and for all"): set by the
+// 'View Playing Sounds' button in the AI/Management tab. Hand-placed - DX11's hunk anchors on
+// LuaFrameCount just above, where this tree instead has the 3.21 logic-cost rework.
+int g_iViewPlayingSounds = 0;
+
 void lua_loop_allentities ( void )
 {
 #ifdef OPTICK_ENABLE
@@ -1231,8 +1237,8 @@ void lua_loop_allentities ( void )
 					}
 				}
 
-				//  Detect if USE KEY field entity has been collected
-				if (  t.entityelement[t.e].lua.haskey == 0 ) 
+				// Detect if USE KEY field entity has been collected
+				if ( t.entityelement[t.e].lua.haskey == 0 )
 				{
 					//  check if demilited key
 					t.masterkeyname_s=Lower(t.entityelement[t.e].eleprof.usekey_s.Get());
@@ -1253,7 +1259,7 @@ void lua_loop_allentities ( void )
 							//  (SINGLE)
 							for ( t.te = 1 ; t.te<=  g.entityelementlist; t.te++ )
 							{
-								if (  t.entityelement[t.te].collected == 1 ) 
+								if (t.entityelement[t.te].collected == 1 || t.entityelement[t.te].collected == 2)
 								{
 									if (  cstr(Lower(t.entityelement[t.te].eleprof.name_s.Get())) == t.masterkeyname_s ) 
 									{
@@ -1280,7 +1286,7 @@ void lua_loop_allentities ( void )
 								t.ttokay=0;
 								for ( t.te = 1 ; t.te <= g.entityelementlist; t.te++ )
 								{
-									if (  t.entityelement[t.te].collected == 1 ) 
+									if (t.entityelement[t.te].collected == 1 || t.entityelement[t.te].collected == 2)
 									{
 										if (  cstr(Lower(t.entityelement[t.te].eleprof.name_s.Get())) == t.keyname_s ) 
 										{
@@ -1300,8 +1306,8 @@ void lua_loop_allentities ( void )
 					{
 						//  when door/gate entity does not specify USE KEY, set to -1 to script knows
 						//  no key/entity is required here (for additional script behaviours)
-						t.entityelement[t.e].lua.haskey=-1;
-						t.entityelement[t.e].lua.flagschanged=1;
+						t.entityelement[t.e].lua.haskey = -1;
+						t.entityelement[t.e].lua.flagschanged = 1;
 					}
 				}
 
@@ -1714,6 +1720,63 @@ void lua_loop_allentities ( void )
 		// Triggered part-way through this pass, so the aggregation is incomplete. Arm and report
 		// on the NEXT pass instead of showing a half-filled table.
 		gg_logiccost_arm = 1;
+	}
+
+	// ★ GGMAX 3.38 (DX11 f74a6116): hand-placed after the logic-cost chain, which this tree
+	// reworked in 3.21 so DX11's own anchor no longer exists. Independent of it either way.
+
+	// View currently playing sounds when some rogue sound loops and needs to be located
+	if (g_iViewPlayingSounds == 1)
+	{
+		char pShowList[10240];
+		strcpy(pShowList, "First Ten Sounds Playing This Cycle:\n\n");
+		int iSoundPlayingCount = 0;
+		for (int s = 1; s <= 99999; s++)
+		{
+			if (SoundExist(s) == 1 && SoundPlaying(s) == 1)
+			{
+				int founde = 0;
+				LPSTR foundsoundname = "";
+				for (int e = 1; e <= g.entityelementlist; e++)
+				{
+					if (t.entityelement[e].soundset == s ||
+						t.entityelement[e].soundset1 == s ||
+						t.entityelement[e].soundset2 == s ||
+						t.entityelement[e].soundset3 == s ||
+						t.entityelement[e].soundset4 == s ||
+						t.entityelement[e].soundset5 == s ||
+						t.entityelement[e].soundset6 == s)
+					{
+						founde = e;
+						if (t.entityelement[e].soundset == s) foundsoundname = t.entityelement[e].eleprof.soundset_s.Get();
+						if (t.entityelement[e].soundset1 == s) foundsoundname = t.entityelement[e].eleprof.soundset1_s.Get();
+						if (t.entityelement[e].soundset2 == s) foundsoundname = t.entityelement[e].eleprof.soundset2_s.Get();
+						if (t.entityelement[e].soundset3 == s) foundsoundname = t.entityelement[e].eleprof.soundset3_s.Get();
+						if (t.entityelement[e].soundset4 == s) foundsoundname = t.entityelement[e].eleprof.soundset4_s.Get();
+						if (t.entityelement[e].soundset5 == s) foundsoundname = t.entityelement[e].eleprof.soundset5_s.Get();
+						if (t.entityelement[e].soundset6 == s) foundsoundname = t.entityelement[e].eleprof.soundset6_s.Get();
+						break;
+					}
+				}
+				char pThisLine[1024];
+				if (founde > 0)
+				{
+					sprintf(pThisLine, "Sound %d : Instance %d (%s)\n", s, founde, foundsoundname);
+				}
+				else
+				{
+					LPSTR pSoundFilename = "";
+					sSoundData* pSoundData = GetSound(s);
+					if(pSoundData) pSoundFilename = pSoundData->wickedFilename;
+					sprintf(pThisLine, "Sound %d : Not Instance : %s\n", s, pSoundFilename);
+				}
+				strcat(pShowList, pThisLine);
+				iSoundPlayingCount++;
+			}
+			if (iSoundPlayingCount >= 10) break;
+		}
+		MessageBoxA(NULL, pShowList, "Sounds Playing", MB_OK);
+		g_iViewPlayingSounds = 0;
 	}
 }
 //#pragma optimize("", on)

@@ -567,8 +567,15 @@
 					//PE: Fillers.
 
 					writer.WriteFloat(t.entityelement[ent].eleprof.light.fProbeBrightness);
-					writer.WriteFloat(0.0f);
-					writer.WriteFloat(0.0f);
+					// ★★★ GGMAX 3.38: DX11 did NOT grow this record. It CONSUMED the first two of the four
+					// reserved float fillers here, swapping WriteFloat(0.0f) for WriteLong(...). Both are 4 bytes,
+					// so the record width and every later field's offset are unchanged - old and new levels stay
+					// readable either way. ⚠ That only holds if the slot POSITION matches exactly, so do not
+					// reorder these. Slot 1 is bullet holes. Slot 2 is DX11's iMaterialSoundIndex, NOT ported yet -
+					// it stays a float filler until that feature comes across, and must then take slot 2 and no
+					// other. The load side in M-Entity_part3.cpp mirrors this exactly; change them together.
+					writer.WriteLong(t.entityelement[ent].iAllowBuletHole);   // filler slot 1
+					writer.WriteFloat(0.0f);                                  // filler slot 2 - reserved (iMaterialSoundIndex)
 					writer.WriteFloat(0.0f);
 					writer.WriteFloat(0.0f);
 					writer.WriteLong(t.entityelement[ent].eleprof.systemwide_lua);

@@ -40,6 +40,9 @@ StoryboardStruct Storyboard;
 StoryboardStruct checkproject;
 StoryboardStruct202 updateproject202;
 std::vector< std::pair<ImFont*, std::string>> StoryboardFonts;
+// ★ GGMAX 3.38 (DX11 423432b1 "Allow installing/uninstalling of custom fonts"): the stock set,
+// held alongside the live list so the Fonts tab can tell a built-in font from an installed one.
+std::vector< std::pair<ImFont*, std::string>> DefaultStoryboardFonts;
 bool bScreen_Editor_Window = false;
 int iScreen_Editor_Node = -1;
 int g_iAutoExitScreenEditor = 0;

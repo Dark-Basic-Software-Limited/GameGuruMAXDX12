@@ -851,24 +851,52 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 			{
 				if (Storyboard.Nodes[nodeid].screen_grid_size > 0)
 				{
-					//ImVec2 vScale = vMonitorSize / ImVec2(1980.0, 1080);
-					ImVec2 vScale = vMonitorSize / vViewportSize;
-					ImVec4 tool_selected_col = ImVec4(0.75, 0.75, 0.75, 0.25); //ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram];
-					float grid_size = Storyboard.Nodes[nodeid].screen_grid_size;
-					ImVec2 fOnePercent = ImVec2(vMonitorSize.x / 100.0, vMonitorSize.y / 100.0); //PE: This can be changed in the future to support different screen ratio settings.
-					float grid_step = (grid_size * fOnePercent.x); // *vScale.x;
-					for (float fx = (image_bb.Min.x + padding.x); fx < (image_bb.Max.x - padding.x); fx += grid_step)
+					//PE: "Use Square Grid"
+					if (pref.square_storybord_grid)
 					{
-						ImVec2 linefrom = ImVec2(fx, image_bb.Min.y + padding.y);
-						ImVec2 lineto = ImVec2(fx, image_bb.Max.y - padding.y);
-						window->DrawList->AddLine(linefrom, lineto, ImGui::GetColorU32(tool_selected_col));
+						ImVec2 vScale = vMonitorSize / vViewportSize;
+						ImVec4 tool_selected_col = ImVec4(0.75, 0.75, 0.75, 0.25); //ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram];
+						float grid_size = Storyboard.Nodes[nodeid].screen_grid_size;
+						ImVec2 fOnePercent = ImVec2(vMonitorSize.x / 100.0, vMonitorSize.y / 100.0);
+						float grid_step = (grid_size * fOnePercent.y); // Square
+
+						for (float fx = (image_bb.Min.x + padding.x); fx < (image_bb.Max.x - padding.x); fx += grid_step)
+						{
+							ImVec2 linefrom = ImVec2(fx, image_bb.Min.y + padding.y);
+							ImVec2 lineto = ImVec2(fx, image_bb.Max.y - padding.y);
+							window->DrawList->AddLine(linefrom, lineto, ImGui::GetColorU32(tool_selected_col));
+						}
+						grid_step = (grid_size * fOnePercent.y); // *vScale.y;
+
+						for (float fy = (image_bb.Min.y + padding.y); fy < (image_bb.Max.y - padding.y); fy += grid_step)
+						{
+							ImVec2 linefrom = ImVec2(image_bb.Min.x + padding.x, fy);
+							ImVec2 lineto = ImVec2(image_bb.Max.x - padding.x, fy);
+							window->DrawList->AddLine(linefrom, lineto, ImGui::GetColorU32(tool_selected_col));
+						}
+
+
 					}
-					grid_step = (grid_size * fOnePercent.y); // *vScale.y;
-					for (float fy = (image_bb.Min.y + padding.y); fy < (image_bb.Max.y - padding.y); fy += grid_step)
+					else
 					{
-						ImVec2 linefrom = ImVec2(image_bb.Min.x + padding.x, fy);
-						ImVec2 lineto = ImVec2(image_bb.Max.x - padding.x, fy);
-						window->DrawList->AddLine(linefrom, lineto, ImGui::GetColorU32(tool_selected_col));
+						ImVec2 vScale = vMonitorSize / vViewportSize;
+						ImVec4 tool_selected_col = ImVec4(0.75, 0.75, 0.75, 0.25); //ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram];
+						float grid_size = Storyboard.Nodes[nodeid].screen_grid_size;
+						ImVec2 fOnePercent = ImVec2(vMonitorSize.x / 100.0, vMonitorSize.y / 100.0); //PE: This can be changed in the future to support different screen ratio settings.
+						float grid_step = (grid_size * fOnePercent.x); // *vScale.x;
+						for (float fx = (image_bb.Min.x + padding.x); fx < (image_bb.Max.x - padding.x); fx += grid_step)
+						{
+							ImVec2 linefrom = ImVec2(fx, image_bb.Min.y + padding.y);
+							ImVec2 lineto = ImVec2(fx, image_bb.Max.y - padding.y);
+							window->DrawList->AddLine(linefrom, lineto, ImGui::GetColorU32(tool_selected_col));
+						}
+						grid_step = (grid_size * fOnePercent.y); // *vScale.y;
+						for (float fy = (image_bb.Min.y + padding.y); fy < (image_bb.Max.y - padding.y); fy += grid_step)
+						{
+							ImVec2 linefrom = ImVec2(image_bb.Min.x + padding.x, fy);
+							ImVec2 lineto = ImVec2(image_bb.Max.x - padding.x, fy);
+							window->DrawList->AddLine(linefrom, lineto, ImGui::GetColorU32(tool_selected_col));
+						}
 					}
 				}
 			}
@@ -879,7 +907,9 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 
 		ImVec2 fGlobalScale = ImVec2(screen_editor_scalemod(vViewportSize.x / 1920.0f), screen_editor_scalemod(vViewportSize.x / 1920.0f));
 		ImVec2 vScale = vMonitorSize / vViewportSize;
-		float fFontScale = screen_editor_scalemod(1080.0f / monitor_size_y);
+		//float fFontScale = screen_editor_scalemod(1080.0f / monitor_size_y); // 0.75
+		//PE: fFontScale = 1.0 Gives the best overall result on all different resolutions.
+		float fFontScale = 1.0f;
 
 		ImVec2 vUniversalScale = ImVec2(vMonitorSize.x / monitor_size_x, vMonitorSize.x / monitor_size_x);
 		ImVec2 fUniversalGlobalScale = ImVec2(screen_editor_scalemod(monitor_size_y / 1080.0f), screen_editor_scalemod(monitor_size_y / 1080.0f)); //Fit by y resolution.
@@ -985,6 +1015,10 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 		// Draw all widgets (early and regular)
 		int iMinDraw = -1;
 		int iMaxDraw =  1;
+		bool bTriggerVideoNextScreen = false;
+		bool bOnlyOneButtonHighlight = false;
+		bool bOnlyOneButtonMouseRelease = false;
+
 		for(int early = iMinDraw; early <= iMaxDraw; early++ )
 		{
 			for (int i = 0; i < Storyboard_ActiveWidgets.size(); i++)
@@ -1084,7 +1118,11 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 					bool bHovered = false;
 					if (ImGui::IsItemHovered())
 					{
-						bHovered = true;
+						if (!bOnlyOneButtonHighlight)
+						{
+							bHovered = true;
+							bOnlyOneButtonHighlight = true;
+						}
 					}
 					//Button Image
 					ID3D11ShaderResourceView* lpTexture = GetImagePointerView(Storyboard.Nodes[nodeid].widget_normal_thumb_id[index]);
@@ -1592,6 +1630,40 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 											ImVec2 uv1 = ImVec2(animU, animV);
 											window->DrawList->AddImage((ImTextureID)lpVideoTexture, image_bb.Min, image_bb.Max, uv0, uv1, ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)));
 										}
+
+										if (Storyboard.Nodes[nodeid].widget_action[index] == STORYBOARD_ACTIONS_GOTOSCREEN)
+										{
+											int GetVideoPlaying();
+											if (!GetVideoPlaying())
+											{
+												bTriggerVideoNextScreen = true;
+											}
+											if (GetAnimDone(g_iStoryboardScreenVideoID))
+											{
+												bTriggerVideoNextScreen = true;
+											}
+
+											bool bControllerEscape = false;
+											if (g.gxbox > 0 && JoystickFireXL(9) == 1) bControllerEscape = true;
+											extern int g_iActivelyUsingVRNow;
+											if (g.vrglobals.GGVREnabled > 0 && g_iActivelyUsingVRNow == 1)
+											{
+												if (GGVR_RightController_Button1() == 1) bControllerEscape == true;
+											}
+											if (EscapeKey() == 1 || bControllerEscape == true)
+											{
+												bTriggerVideoNextScreen = true;
+											}
+										}
+									}
+									else if (AnimationExist(g_iStoryboardScreenVideoID) && !AnimationPlaying(g_iStoryboardScreenVideoID))
+									{
+										//PE: Video done.
+										if (Storyboard.Nodes[nodeid].widget_action[index] == STORYBOARD_ACTIONS_GOTOSCREEN)
+										{
+											//PE: Goto next screen.
+											bTriggerVideoNextScreen = true;
+										}
 									}
 								}
 								else
@@ -1663,7 +1735,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 				cstr cTriggerButtonClickSound = "";
 				if (standalone)
 				{
-					if (Storyboard.Nodes[nodeid].widget_type[index] == STORYBOARD_WIDGET_BUTTON)
+					if (bTriggerVideoNextScreen || Storyboard.Nodes[nodeid].widget_type[index] == STORYBOARD_WIDGET_BUTTON)
 					{
 						ImVec2 vLargerGrabArea = ImVec2(10.0, 10.0);
 						bool bIsPointerHoveringOver = false;
@@ -1739,6 +1811,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 									iRet = STORYBOARD_ACTIONS_RETURNVALUETOLUA;
 									if (stricmp(Storyboard.Nodes[nodeid].lua_name, "savegame.lua") == 0)
 									{
+										bOnlyOneButtonMouseRelease = true;
 										if (strlen(Storyboard.Nodes[nodeid].screen_music) > 0) //PE: Only stop music if we have our own.
 											bLuaPageClosing = true;
 									}
@@ -1746,6 +1819,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 									{
 										if (index >= 1 && index <= 8)
 										{
+											bOnlyOneButtonMouseRelease = true;
 											if (!pestrcasestr(LoadGameTitle[index], "EMPTY PROGRESS SLOT"))
 											{
 												if (strlen(Storyboard.Nodes[nodeid].screen_music) > 0) //PE: Only stop music if we have our own.
@@ -1843,25 +1917,113 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 								}
 								if (Storyboard.Nodes[nodeid].widget_action[index] == STORYBOARD_ACTIONS_STARTGAME)
 								{
-									t.s_s = "";
-									lua_switchpage();
-									bLuaPageClosing = true;
-									iRet = STORYBOARD_ACTIONS_STARTGAME;
+									//PE: Check if destination is a screen with a input video.
+									bool bValid = true;
+									int iNewNode = FindOutputScreenNode(nodeid, index);
+									if (iNewNode >= 0)
+									{
+										if (Storyboard.Nodes[iNewNode].type == STORYBOARD_TYPE_SCREEN)
+										{
+											//PE: Find Video
+											bool bIsVideoLevelOut = false;
+											int iVideoOuputID = -1;
 
-									//PE: Always use first level.
-									FindFirstLevel(g_Storyboard_First_Level_Node, g_Storyboard_First_fpm);
-									g_Storyboard_Current_Level = g_Storyboard_First_Level_Node;
-									strcpy(g_Storyboard_Current_fpm, g_Storyboard_First_fpm);
-									//Clean name.
-									std::string sLevelTitle = g_Storyboard_First_fpm;
-									replaceAll(sLevelTitle, ".fpm", "");
-									replaceAll(sLevelTitle, "mapbank\\", "");
-									t.game.jumplevel_s = sLevelTitle.c_str();
-									extern bool g_Storyboard_Starting_New_Level;
-									g_Storyboard_Starting_New_Level = true; //PE: Start a fresh game.
-									// reset 'specified' loading screen
-									extern cstr g_Storyboard_LoaderScreen_Name;
-									g_Storyboard_LoaderScreen_Name = "loading";
+											for (int a = 0; a < STORYBOARD_MAXOUTPUTS; a++)
+											{
+												if (Storyboard.Nodes[iNewNode].output_linkto[a] > 0)
+												{
+													if (pestrcasestr(Storyboard.Nodes[iNewNode].output_title[a], "Video -> Connect to Level"))
+													{
+														iVideoOuputID = a;
+														bIsVideoLevelOut = true;
+														break;
+													}
+												}
+											}
+											if (bIsVideoLevelOut)
+											{
+												int iLevelNode = FindOutputScreenNode(iNewNode, iVideoOuputID);
+												if (iLevelNode >= 0)
+												{
+													t.s_s = "";
+													lua_switchpage();
+													bLuaPageClosing = true;
+
+													// may have linked to loading screen
+													if (strlen(Storyboard.Nodes[iLevelNode].level_name) == 0)
+													{
+														// will use last 'specified' loading screen
+														extern cstr g_Storyboard_LoaderScreen_Name;
+														g_Storyboard_LoaderScreen_Name = Storyboard.Nodes[iLevelNode].lua_name;
+
+														// if so, find out which level it goes to
+														int input_id_of_level = Storyboard.Nodes[iLevelNode].output_linkto[0];
+														for (int findnode = 0; findnode < STORYBOARD_MAXNODES; findnode++)
+														{
+															if (Storyboard.Nodes[findnode].input_id[0] == input_id_of_level)
+															{
+																// change from loading node to level node
+																iLevelNode = findnode;
+																break;
+															}
+														}
+													}
+
+													// must ultimately link to a level node!
+													if (strlen(Storyboard.Nodes[iLevelNode].level_name) > 0)
+													{
+														iRet = STORYBOARD_ACTIONS_GOTOLEVEL;
+														g_Storyboard_Current_Level = iLevelNode;
+														strcpy(g_Storyboard_Current_fpm, Storyboard.Nodes[iLevelNode].level_name);
+
+														//Clean name.
+														std::string sLevelTitle = g_Storyboard_Current_fpm;
+														replaceAll(sLevelTitle, ".fpm", "");
+														replaceAll(sLevelTitle, "mapbank\\", "");
+														t.game.jumplevel_s = sLevelTitle.c_str();
+														extern bool g_Storyboard_Starting_New_Level;
+														g_Storyboard_Starting_New_Level = true; //PE: Always start fresh when linking directly to a level.
+														bValid = false;
+													}
+												}
+											}
+											else if (strlen(Storyboard.Nodes[iNewNode].lua_name) > 0)
+											{
+												// screens can have same name (old corruption issue), so new method to identify screen by node
+												std::string node_ident_name = ":node:";
+												node_ident_name += std::to_string(iNewNode);
+												t.s_s = node_ident_name.c_str();
+												lua_switchpage();
+												if (strlen(Storyboard.Nodes[iNewNode].screen_music) > 0) //PE: Only stop music if new swcreen have its own.
+													bLuaPageClosing = true;
+												iRet = STORYBOARD_ACTIONS_GOTOSCREEN;
+												bValid = false;
+											}
+										}
+									}
+
+									if (bValid)
+									{
+										t.s_s = "";
+										lua_switchpage();
+										bLuaPageClosing = true;
+										iRet = STORYBOARD_ACTIONS_STARTGAME;
+
+										//PE: Always use first level.
+										FindFirstLevel(g_Storyboard_First_Level_Node, g_Storyboard_First_fpm);
+										g_Storyboard_Current_Level = g_Storyboard_First_Level_Node;
+										strcpy(g_Storyboard_Current_fpm, g_Storyboard_First_fpm);
+										//Clean name.
+										std::string sLevelTitle = g_Storyboard_First_fpm;
+										replaceAll(sLevelTitle, ".fpm", "");
+										replaceAll(sLevelTitle, "mapbank\\", "");
+										t.game.jumplevel_s = sLevelTitle.c_str();
+										extern bool g_Storyboard_Starting_New_Level;
+										g_Storyboard_Starting_New_Level = true; //PE: Start a fresh game.
+										// reset 'specified' loading screen
+										extern cstr g_Storyboard_LoaderScreen_Name;
+										g_Storyboard_LoaderScreen_Name = "loading";
+									}
 								}
 								if (Storyboard.Nodes[nodeid].widget_action[index] == STORYBOARD_ACTIONS_LEAVEGAME)
 								{
@@ -1965,52 +2127,130 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 									}
 									else
 									{
+										//PE: If current is a video linkout to a level , start level.
 										int iNewNode = FindOutputScreenNode(nodeid, index);
-										if (iNewNode >= 0)
+										bool bIsVideoLevelOut = false;
+										if (iNewNode < 0)
 										{
-											//Connected.
+											iNewNode = nodeid;
+											//PE: Check if this is a video out link.
 											if (Storyboard.Nodes[iNewNode].type == STORYBOARD_TYPE_SCREEN)
 											{
-												if (strlen(Storyboard.Nodes[iNewNode].lua_name) > 0)
+												//PE: Find Video
+												int iVideoOuputID = -1;
+
+												for (int a = 0; a < STORYBOARD_MAXOUTPUTS; a++)
 												{
-													// screens can have same name (old corruption issue), so new method to identify screen by node
-													std::string node_ident_name = ":node:"; 
-													node_ident_name += std::to_string(iNewNode);
-													t.s_s = node_ident_name.c_str();
-													lua_switchpage();
-													if (strlen(Storyboard.Nodes[iNewNode].screen_music) > 0) //PE: Only stop music if new swcreen have its own.
-														bLuaPageClosing = true;
-													iRet = STORYBOARD_ACTIONS_GOTOSCREEN;
+													if (Storyboard.Nodes[iNewNode].output_linkto[a] > 0)
+													{
+														if (pestrcasestr(Storyboard.Nodes[iNewNode].output_title[a], "Video -> Connect to Level"))
+														{
+															iVideoOuputID = a;
+															bIsVideoLevelOut = true;
+															break;
+														}
+													}
 												}
+												if (bIsVideoLevelOut)
+												{
+													int iLevelNode = FindOutputScreenNode(iNewNode, iVideoOuputID);
+													if (iLevelNode >= 0)
+													{
+														t.s_s = "";
+														lua_switchpage();
+														bLuaPageClosing = true;
+
+														// may have linked to loading screen
+														if (strlen(Storyboard.Nodes[iLevelNode].level_name) == 0)
+														{
+															// will use last 'specified' loading screen
+															extern cstr g_Storyboard_LoaderScreen_Name;
+															g_Storyboard_LoaderScreen_Name = Storyboard.Nodes[iLevelNode].lua_name;
+
+															// if so, find out which level it goes to
+															int input_id_of_level = Storyboard.Nodes[iLevelNode].output_linkto[0];
+															for (int findnode = 0; findnode < STORYBOARD_MAXNODES; findnode++)
+															{
+																if (Storyboard.Nodes[findnode].input_id[0] == input_id_of_level)
+																{
+																	// change from loading node to level node
+																	iLevelNode = findnode;
+																	break;
+																}
+															}
+														}
+														// must ultimately link to a level node!
+														if (strlen(Storyboard.Nodes[iLevelNode].level_name) > 0)
+														{
+															iRet = STORYBOARD_ACTIONS_GOTOLEVEL;
+															g_Storyboard_Current_Level = iLevelNode;
+															strcpy(g_Storyboard_Current_fpm, Storyboard.Nodes[iLevelNode].level_name);
+
+															//Clean name.
+															std::string sLevelTitle = g_Storyboard_Current_fpm;
+															replaceAll(sLevelTitle, ".fpm", "");
+															replaceAll(sLevelTitle, "mapbank\\", "");
+															t.game.jumplevel_s = sLevelTitle.c_str();
+															extern bool g_Storyboard_Starting_New_Level;
+															g_Storyboard_Starting_New_Level = true; //PE: Always start fresh when linking directly to a level.
+														}
+														else
+															bIsVideoLevelOut = false;
+													}
+													else
+														bIsVideoLevelOut = false;
+												}
+												else
+													bIsVideoLevelOut = false;
 											}
 										}
-										else
+										if (!bIsVideoLevelOut)
 										{
-											//PE: Not linked, check if we have a direct link to screen without a pin connection.
-											if (index < STORYBOARD_MAXOUTPUTS)
+											if (iNewNode >= 0)
 											{
-												if (strlen(Storyboard.Nodes[nodeid].output_title[index]) <= 0) //Empty no output pin.
+												//Connected.
+												if (Storyboard.Nodes[iNewNode].type == STORYBOARD_TYPE_SCREEN)
 												{
-													if (Storyboard.Nodes[nodeid].output_can_link_to_type[index] == STORYBOARD_TYPE_SCREEN)
+													if (strlen(Storyboard.Nodes[iNewNode].lua_name) > 0)
 													{
-														if (strlen(Storyboard.Nodes[nodeid].output_action[index]) > 0)
+														// screens can have same name (old corruption issue), so new method to identify screen by node
+														std::string node_ident_name = ":node:";
+														node_ident_name += std::to_string(iNewNode);
+														t.s_s = node_ident_name.c_str();
+														lua_switchpage();
+														if (strlen(Storyboard.Nodes[iNewNode].screen_music) > 0) //PE: Only stop music if new swcreen have its own.
+															bLuaPageClosing = true;
+														iRet = STORYBOARD_ACTIONS_GOTOSCREEN;
+													}
+												}
+											}
+											else
+											{
+												//PE: Not linked, check if we have a direct link to screen without a pin connection.
+												if (index < STORYBOARD_MAXOUTPUTS)
+												{
+													if (strlen(Storyboard.Nodes[nodeid].output_title[index]) <= 0) //Empty no output pin.
+													{
+														if (Storyboard.Nodes[nodeid].output_can_link_to_type[index] == STORYBOARD_TYPE_SCREEN)
 														{
-															if (Storyboard.Nodes[nodeid].output_linkto[index] == 0)
+															if (strlen(Storyboard.Nodes[nodeid].output_action[index]) > 0)
 															{
-																// screens can have same name (old corruption issue), so new method to identify screen by node
-																std::string node_ident_name = ":node:";
-																node_ident_name += std::to_string(nodeid);
-																t.s_s = node_ident_name.c_str();
-																lua_switchpage();
+																if (Storyboard.Nodes[nodeid].output_linkto[index] == 0)
+																{
+																	// screens can have same name (old corruption issue), so new method to identify screen by node
+																	std::string node_ident_name = ":node:";
+																	node_ident_name += std::to_string(nodeid);
+																	t.s_s = node_ident_name.c_str();
+																	lua_switchpage();
 
-																bLuaPageClosing = true; //always stop music.
-																iRet = STORYBOARD_ACTIONS_GOTOSCREEN;
+																	bLuaPageClosing = true; //always stop music.
+																	iRet = STORYBOARD_ACTIONS_GOTOSCREEN;
+																}
 															}
 														}
 													}
 												}
 											}
-
 										}
 									}
 								}
@@ -2164,7 +2404,7 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 				{
 					if (!bReadOnly && iQuitWindowLoop <= 0 && !bPreviewScreen)
 					{
-						storyboard_control_widget(nodeid, index, widget_pos, widget_size, rMonitorArea, vMonitorStart, vScale);
+						storyboard_control_widget(nodeid, index, widget_pos, widget_size, rMonitorArea, vMonitorStart, vScale, vMonitorSize);
 					}
 				}
 
@@ -2568,6 +2808,10 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 				if (Storyboard.Nodes[nodeid].screen_grid_size > 0)
 				{
 					ImGui::Checkbox("Show Grid", &bDisplayGrid);
+					//PE: "Use Square Grid"
+					bool bTmp = pref.square_storybord_grid;
+					ImGui::Checkbox("Use Square Grid", &bTmp);
+					pref.square_storybord_grid = bTmp;
 				}
 				else
 				{
@@ -3100,6 +3344,20 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 						if (ImGui::Checkbox("Loop Video Animation", &g_bVideoLooping))
 						{
 							Storyboard.Nodes[nodeid].widget_font_size[iCurrentSelectedWidget] = (int)g_bVideoLooping;
+						}
+						if (!g_bVideoLooping)
+						{
+							//PE: Goto next screen
+							bool bVideoAction = false;
+							if (Storyboard.Nodes[nodeid].widget_action[iCurrentSelectedWidget] == STORYBOARD_ACTIONS_GOTOSCREEN)
+								bVideoAction = true;
+							if (ImGui::Checkbox("When Video Stop Goto Next Screen", &bVideoAction))
+							{
+								if (bVideoAction)
+									Storyboard.Nodes[nodeid].widget_action[iCurrentSelectedWidget] = STORYBOARD_ACTIONS_GOTOSCREEN;
+								else
+									Storyboard.Nodes[nodeid].widget_action[iCurrentSelectedWidget] = STORYBOARD_ACTIONS_NONE;
+							}
 						}
 					}
 

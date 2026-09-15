@@ -1390,16 +1390,18 @@
 					ImGui::Text("");
 					ImGui::Text("");
 
-					const char* items_commtut_header[] = { "Blood Moon Interactive", "Plemsoft" };
+					const char* items_commtut_header[] = { "Blood Moon Interactive", "Plemsoft", "Extreme Strategy"};
 					const char* items_commtut_desc[] = {
 						"Welcome to Blood Moon Interactive, the ultimate destination for GameGuru Max enthusiasts and aspiring game developers",
-						"Find out about all the amazing things Preben has created for the community"
+						"Find out about all the amazing things Preben has created for the community over the years",
+						"Someone you will almost certainly know if you follow the official GameGuru MAX DLC shorts!"
 					};
 					const char* items_commtut_link[] = {
 						"https://www.youtube.com/@bloodmooninteractive",
-						"https://www.youtube.com/@MakingGames"
+						"https://www.youtube.com/@MakingGames",
+						"https://www.youtube.com/@extremestrategydevelopment"
 					};
-					const int items_commtut_thumb[] = { HUB_COMMTUT1, HUB_COMMTUT2 };
+					const int items_commtut_thumb[] = { HUB_COMMTUT1, HUB_COMMTUT2, HUB_COMMTUT3 };
 
 					iCurrentOpenTab = 42;  // Life, The Universe and Everything
 
@@ -1943,7 +1945,7 @@
 			}
 			else if (iCurrentOpenTab == 5)
 			{
-				float image_size_sub_x = 310.0;
+				float image_size_sub_x = 450;// quick fit  310.0;
 				if (vPreviewSize.x - image_size_sub_x < 250.0) image_size_sub_x += vPreviewSize.x - image_size_sub_x- 250.0;
 				int iTextureID = HUB_DISCORD;// HUB_WEBSITE;
 				if (!ImageExist(iTextureID)) iTextureID = WELCOME_FILLERROUNDED;
@@ -1961,22 +1963,12 @@
 						// this link set to never expire!
 						ExecuteFile("https://discord.gg/3SnMj3WKDB", "", "", 0);
 					}
-					ImGui::SetWindowFontScale(1.4);
-					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(image_size_sub_x * 0.5, 0.0));
-					ImGui::SetWindowFontScale(1.0);
-					ImGui::Text("");
 				}
 
 				iTextureID = HUB_LIVEBROADCAST;
 				if (!ImageExist(iTextureID)) iTextureID = WELCOME_FILLERROUNDED;
 
-				ImGui::SetWindowFontScale(1.4);
-				cstr desc = "Visit our Discord Channel!";
-				{
-					ImGui::TextCenter(desc.Get());
-					ImGui::Text("");
-				}
-
+				ImGui::Text("");
 				ImGui::SetWindowFontScale(2.0);
 				ImGui::TextCenter("Official Broadcasts and Videos");
 				ImGui::SetWindowFontScale(1.0);
@@ -1985,16 +1977,8 @@
 					ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(image_size_sub_x*0.5, 0.0));
 					if (ImGui::ImgBtn(iTextureID, ImVec2(vPreviewSize.x - image_size_sub_x, (vPreviewSize.x - image_size_sub_x) * ratio), ImColor(0, 0, 0, 0), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 200), 0, 0, 0, 0, false, false, false))
 					{
-						ExecuteFile("https://bit.ly/MAXYouTubeChannel", "", "", 0);
+						ExecuteFile("https://www.youtube.com/channel/UC1q1e3Q9IKMk4nDlAGb_5Jg", "", "", 0);
 					}
-				}
-
-				ImGui::Text("");
-				ImGui::SetWindowFontScale(1.4);
-				cstr descforYT = "Visit our YouTube Channel!";
-				{
-					ImGui::TextCenter(descforYT.Get());
-					ImGui::Text("");
 				}
 				ImGui::SetWindowFontScale(1.2);
 			}
@@ -2836,9 +2820,9 @@
 			}
 			else if (iCurrentOpenTab == 42)
 			{
-				if (ImGui::StyleButton("Click here to view the latest GameGuru MAX News", ImVec2(vPreviewSize.x + 4.0, fFontSize * 2.6)))
+				if (ImGui::StyleButton("Click here to visit the GameGuru MAX Website", ImVec2(vPreviewSize.x + 4.0, fFontSize * 2.6)))
 				{
-					ExecuteFile("https://www.game-guru.com/latest-news", "", "", 0);
+					ExecuteFile("https://www.game-guru.com", "", "", 0);
 				}
 			}
 			#endif
