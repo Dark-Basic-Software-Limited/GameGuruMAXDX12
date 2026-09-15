@@ -188,6 +188,35 @@ To undo just this: revert the two `g_bDelayedShadows = true;` lines in `M-Visual
 | file | DX11 change | why it is parked |
 |---|---|---|
 | `GGTrees.cpp` | +310, one commit `3b63f9b2` — defensive GUARDs in `GGTrees_Update` (validate chunk counts, tree-type counts, chunk pointers, instance counts, runaway-loop guard) | **0 of 2 hunks place.** DX11 rewrote the function; DX12's is a different function after far-tree billboards, the pool cap and per-level atlas slices. The guards are *worth having* — they are crash-hardening — but they must be re-implemented against our version, not pasted. |
+
+#### ★★★ GGTrees guards — INVESTIGATED 2026-09-15, deliberately NOT ported
+
+Lee asked for these. I read them against our tree and stopped: **every guard in DX11 commit
+`3b63f9b2` is unreachable, in DX11 as well as here.** Evidence:
+
+| DX11 guard | why it cannot fire |
+|---|---|
+| `numTreeChunks > 100000` | `const uint32_t numTreeChunks = treeSplit*treeSplit` = **256**. Compile-time constant, folded away. |
+| `numTreeTypes > 256 \|\| == 0` | `static const numTreeTypes = 38` (`GGTreesConstants.hlsli:39`), and it is used as an **array dimension** (`treeInstancesHigh[numTreeTypes]`), which C++ requires to be a constant expression. |
+| `pChunk == nullptr` | `TreeChunk pTreeChunks[numTreeChunks];` is a static array and the code does `&pTreeChunks[i]` — **the address of an array element is never null**. |
+| instances-per-chunk > 50000 | guards a loop that in this tree sits **below the `ggterrain_use_wicked_terrain` early return** |
+| runaway loop > 500000 | same — dead in the shipping path |
+| `lightSun == NULL` | same — below the early return |
+
+★ The last three matter more here than in DX11, because **our** `GGTrees_Update` returns early at
+`GGTrees_part0.cpp:2626` when the Wicked terrain is active, and `ggterrain_use_wicked_terrain = 1`
+is the shipping default (`GGTerrain_part0.cpp:4222`). Everything they protect is the old DX11 draw
+path, reachable only via the `GGKEY_Y` debug toggle.
+
+★ And the one hazard that IS real in the live path — a tree instance reporting a type beyond the
+array — **is already handled here**: `GGTrees_part0.cpp:2497` clamps
+`if (treeType >= numTreeTypes) treeType = numTreeTypes - 1;` before indexing `g_GGTrees[]`,
+`numTreeInstancesHigh[]` and `treeInstancesHigh[]`. DX11's commit does not add that; we already had it.
+
+Porting would add ~300 lines of provably dead checks to the single most diverged and most
+performance-sensitive file in the tree. **Recommend leaving it.** If literal file-level parity is
+wanted later (so future audits stop flagging it), it is a 30-minute mechanical job — but it buys
+tidiness, not safety.
 | `GGTerrain.cpp` | +364 across 11 commits — GPU race fixes, TerrainReadBack resource handling, recursive_mutex, PIX tracing, nav mesh | **9 of 21 place.** Mixed bag, and DX12 has solved some of these differently already (we have our own PIX path). Needs a per-commit read. |
 
 ★ These two scoring lowest is the analysis working. They are exactly where DX12 diverged hardest.
