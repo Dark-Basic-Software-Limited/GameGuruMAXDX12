@@ -1,4 +1,48 @@
 ﻿// LUA command names
+
+// GGMAX 3.40: Lua 5.3/5.4 removed maths functions that the SHIPPED SCRIPTS still call. In
+// Scripts/scriptbank, 21 files call math.atan2 (17 of them in the deployed set), and each faults
+// the moment it executes:
+//     scriptbank/global.lua:419: attempt to call a nil value (field 'atan2')
+//
+// That error is a MODAL MessageBox, which parks the whole application at zero CPU - it is why
+// entering Test Level appeared to freeze. See NIGHT_INVESTIGATIONS 3.39 / 3.40.
+//
+// Lua ships a compatibility switch for exactly this, but it is NOT enabled: luaconf.h nests
+// LUA_COMPAT_MATHLIB inside an #if defined(LUA_COMPAT_5_3), and LUA_COMPAT_5_3 is defined
+// nowhere - not in luaconf.h, not in the vcxproj. Rather than edit WickedEngine's vendored Lua
+// (an engine pull reverts it) or rewrite 24 content files (the next DX11 script import undoes
+// it), alias the removed names once, here, before any script can run.
+//
+// The aliases are exact, not approximations:
+//     5.4 math.atan(y [, x]) computes atan(y/x) using the signs of both -> identical to atan2.
+//     math.mod was renamed math.fmod back in 5.1; same function.
+// Each is assigned only if absent, so a future Lua that restores them wins. math.atan2 is the only
+// removed name any current script uses; mod/pow/log10/unpack are aliased too because they are the
+// rest of what LUA_COMPAT_MATHLIB would have restored, and cost nothing to carry.
+static void GGLua_InstallCompatShim(lua_State* L)
+{
+	if (!L) return;
+	// one line: Lua separates statements with whitespace, so no newline escapes are needed
+	const char* shim =
+		"if math then "
+		"  if math.atan2 == nil and math.atan ~= nil then math.atan2 = math.atan end "
+		"  if math.mod   == nil and math.fmod ~= nil then math.mod   = math.fmod end "
+		"  if math.pow   == nil then math.pow = function(a,b) return a^b end end "
+		"  if math.log10 == nil and math.log  ~= nil then math.log10 = function(x) return math.log(x,10) end end "
+		"end "
+		"if unpack == nil and table and table.unpack then unpack = table.unpack end";
+	if (luaL_loadbuffer(L, shim, strlen(shim), "gg_lua54_compat") == 0)
+	{
+		if (lua_pcall(L, 0, 0, 0) != 0)
+		{
+			// never fatal - a broken shim must not take the game down with it
+			if (lua_isstring(L, -1)) timestampactivity(0, (char*)lua_tostring(L, -1));
+			lua_pop(L, 1);
+		}
+	}
+}
+
 void addFunctions()
 {
 	// add internal commands
@@ -1474,6 +1518,7 @@ char szLuaReturnString[1024];
 		}*/
 
 		luaL_openlibs(lua2);
+		GGLua_InstallCompatShim(lua2);   // GGMAX 3.40: before ANY script runs
 	}
 
     // run the Lua script
@@ -1568,6 +1613,7 @@ char szLuaReturnString[1024];
 		}*/
 
 		luaL_openlibs(lua2);
+		GGLua_InstallCompatShim(lua2);   // GGMAX 3.40: before ANY script runs
 
 	}
 

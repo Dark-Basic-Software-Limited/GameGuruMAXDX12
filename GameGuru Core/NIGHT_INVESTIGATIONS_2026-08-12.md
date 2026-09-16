@@ -9541,3 +9541,103 @@ solid object there is already `staticflag=1`, so bullet holes worked on it befor
 **Aztec cannot demonstrate the feature**; that needs a non-static, non-immobile prop.
 
 `FIRE_RAY_AT` and `TRIGGER_LUA_ERROR` remain unrun — both need game state.
+
+
+# ★★★ §3.40 — THE TEST-GAME FREEZE IS A LUA 5.4 INCOMPATIBILITY (2026-09-16)
+
+§3.39 established that entering Test Level parks the app at exactly zero CPU, that the pre-port
+08-29 alpha does it too, and that it is not focus. It could not say WHY. Lee then hit it manually
+and screenshotted the answer:
+
+```
+LUA ERROR: scriptbank\global.lua:419: attempt to call a nil value (field 'atan2')
+```
+
+His instinct was exactly right — *"the DX11 scripts used a slightly different LUA version"*.
+
+## ★★★ Root cause: the DX12 port silently moved the game from Lua 5.2 to Lua 5.4.8
+
+| tree | what it includes | Lua |
+|---|---|---|
+| DX11 game | `#include "lua.h"` → its own `DarkLUA/lua/` | **5.2** |
+| DX11 engine (`WickedRepo`) | vendored | 5.3 |
+| **DX12 game (ours)** | `#include "../../../../../../WickedEngineDX12/WickedEngine/LUA/lua.h"` | **5.4.8** |
+
+There is no local `DarkLUA/lua/` folder in the DX12 tree at all — the port dropped the bundled copy
+and picked up the engine's. `math.atan2` is a normal function in 5.2, deprecated in 5.3, and
+**removed in 5.4**. Every shipped script that calls it faults the instant it loads.
+
+Lua ships a switch that would restore it, and it is NOT on: `luaconf.h:347` nests
+`LUA_COMPAT_MATHLIB` (line 355) inside `#if defined(LUA_COMPAT_5_3)`, and `LUA_COMPAT_5_3` is
+defined nowhere — not in luaconf.h, not in any vcxproj or props file. `lmathlib.c:745` shows what
+it would have registered: `{"atan2", math_atan}`.
+
+## ⚠ Why this read as a freeze rather than an error
+
+`RunTimeError` raises a **modal MessageBox**. A modal owns the message pump, so the process sits
+alive at 0% CPU with no crash log — indistinguishable from a hang unless you are looking at the
+screen. Every automated run measured the modal, not a deadlock. ★★★ **A zero-CPU "hang" on a
+Windows app should make you look for a dialog before you look for a lock.**
+
+## Scope — measured, not assumed
+
+`math.atan2` is the **only** removed name any script uses. Scanning `Scripts/scriptbank` for the
+whole 5.2→5.4 removal surface — `cosh sinh tanh pow frexp ldexp log10 mod`, plus `string.gfind`,
+`table.foreach/getn/setn`, `loadstring`, `setfenv/getfenv`, `module`, bare `unpack` and `%d`
+formatting of floats — returns zero hits for every one of them.
+
+| | files |
+|---|---|
+| `Scripts/scriptbank` calling `math.atan2` | **21** |
+| of those, in the deployed set | 17 |
+| any other 5.4 incompatibility | **0** |
+
+All pre-existing. None introduced by the November-onward DX11 sync, which added no new callers.
+
+## The fix — a C++ shim, and why not the two obvious alternatives
+
+`GGLua_InstallCompatShim()` in `DarkLUA_part7.cpp`, called immediately after `luaL_openlibs` at
+**both** state-creation sites (lines 1499 and 1594 are the only `luaL_newstate` calls in the game
+tree, so there is no third state to miss). It aliases the removed names, each only if absent.
+
+★ The alias is not an approximation: 5.4's `math.atan(y [, x])` computes `atan(y/x)` using the
+signs of both arguments, which is exactly what `atan2` did — and exactly the mapping Lua's own
+compat table makes at `lmathlib.c:745`.
+
+★ **Timing matters.** Six scripts do `local atan = math.atan2` at file scope, capturing the
+value at load time. The shim runs before any script is loaded, so those captures see the alias.
+
+Rejected, with reasons:
+
+- **Edit `luaconf.h` to define `LUA_COMPAT_5_3`** — it lives in WickedEngine; the next engine pull
+  reverts it silently.
+- **Rewrite the 21 scripts to use `math.atan`** — the next DX11 script import undoes it, and the
+  DX11 side still runs 5.2 where `math.atan` takes one argument, so the two trees would diverge.
+
+## ★★★ Two process failures on the way in, both about backslashes
+
+The first patch script joined lines with CRLF and *then* ran `.replace("
+", CRLF)`, turning every
+`
+` into `
+`. That rewrote all 1974 line endings (`git diff` showed 2018 insertions /
+1974 deletions for a 40-line addition), and a later line-based edit then mis-detected the block end
+and moved 316 lines of `addFunctions()` to the top of the file.
+
+The second: a `cat > file << 'PYEOF'` heredoc **collapses `\\` to `\`**, so `\\n` inside a C string
+literal arrived as a real newline. Writing the script to a file instead of `python -c` does NOT
+avoid this — the collapse happens in the heredoc.
+
+★★★ **What actually saved it was an invariant, not care.** The script refuses to write if
+`count("\n") != count("\r\n")`, and that check caught the second bug before it touched the file.
+The final version also asserts the output line count equals input + expected additions, so the diff
+is provably a pure insertion — confirmed: **46 insertions, 0 deletions**.
+
+The durable rule: **when editing a CRLF source file programmatically, work in binary, never
+substitute newlines after joining, and assert the ending counts before writing.** And when a shim
+needs embedded newlines, prefer a form that needs none — Lua separates statements with whitespace,
+so the whole script is one line with no escapes at all.
+
+## Status
+
+Build clean, 0 errors. Runtime verification still in flight at time of writing - the first launch after a game rebuild recompiles shaders, so the Aztec load is slow. What CAN be said: the modal's signature is ABSENT. A parked modal reads +0.0 CPU; this process is at +36.7 CPU-sec per 15 s, above the editor control, with auto_command.txt consumed (so the harness poll is alive).

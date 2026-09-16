@@ -8,21 +8,34 @@ metadata:
   modified: 2026-08-26T04:10:52.131Z
 ---
 
-# ▶▶ RESUME HERE — state as of 2026-09-15
+# ▶▶ RESUME HERE — state as of 2026-09-16
 
-**Both repos clean and pushed.** Game `819a650a`, engine `9832c8e0`. Build green; exe 31,857,152.
+**Both repos pushed.** Engine `9832c8e0`. Build green; exe 31,858,176 (2026-09-16 12:17).
 
-## ⚠⚠ READ FIRST — two things need Lee, not more analysis
+## ★★★ 3.40 — the test-game "freeze" is SOLVED (Lua 5.4)
 
-1. **Does Test Level freeze for a HUMAN?** Entering test game parks the app at zero CPU in every
-   automated run — including on the archived PRE-PORT alpha, so it is NOT from 3.38, and it froze
-   fastest with the window verified foreground so it is not focus. Every run was harness-driven, so
-   nobody knows whether interactive use is affected. Two-minute check, and it decides whether the
-   shipped alpha is tester-blocking. See [[project-testgame-freeze]].
-2. **Bullet holes need a level that can show them.** The clause IS verified (same entity: flag 0 ->
+It was never a hang. `RunTimeError` is a **modal MessageBox**, which owns the message pump, so the
+process sat at exactly 0% CPU. The error itself: the DX12 port dropped the game's bundled Lua
+**5.2** and picked up the engine's **5.4.8**, which **deleted `math.atan2`** — 21 scripts in
+`Scripts/scriptbank` call it (17 deployed). Fixed with `GGLua_InstallCompatShim()` in
+`DarkLUA_part7.cpp`, after `luaL_openlibs` at both state sites. Full detail:
+[[project-testgame-freeze]].
+
+★★★ **A zero-CPU "hang" on a Windows app means look for a DIALOG before you look for a lock.**
+
+## ⚠⚠ READ FIRST — what still needs Lee
+
+1. **Bullet holes need a level that can show them.** The clause IS verified (same entity: flag 0 ->
    DENIED, flag 1 -> ALLOWED). But Aztec is 196 ALLOWED / 4 DENIED and all four denied are markers
    or particle emitters — every solid object there is already `staticflag=1`, so bullet holes
    already worked on it. A visible difference needs a NON-STATIC, NON-IMMOBILE prop.
+2. **Confirm Test Level now plays through.** The shim builds clean and the modal's signature is
+   gone, but a full playable run has not been eyeballed end to end.
+
+⚠ **Budget for shader recompilation.** The first launch after a GAME build recompiles shaders —
+Aztec then takes 20+ minutes to load at ~2.4 cores, and the harness cannot answer during it
+(`auto_command.txt` consumed, no result written). Do not read that as a freeze: the modal is +0.0
+CPU, this is +36 CPU-sec per 15 s.
 
 ## ★★★ 3.38 — the DX11 parity port is DONE (10 commits, 09-14/15)
 
@@ -53,9 +66,9 @@ a dead switch). Reasons in audit §6.
 
 ## Still unverified by anyone
 
-Fonts tab, View Playing Sounds, the Lua error message in situ, and the bullet-hole decal itself.
-`FIRE_RAY_AT` and `TRIGGER_LUA_ERROR` exist in the harness but cannot run until the test-game
-freeze is understood.
+Fonts tab, View Playing Sounds, and the bullet-hole decal itself. ★ The Lua error message in
+situ IS now verified — Lee screenshotted it, and it named the script and line exactly as phase D
+intended. `FIRE_RAY_AT` and `TRIGGER_LUA_ERROR` are now unblocked.
 
 ## ★ Latest: 3.37 water splash FIXED, Lee-confirmed
 A WPE decal emitter ran for a flat **5.0 s** because `framedelay >= 100` was read as ms when the
