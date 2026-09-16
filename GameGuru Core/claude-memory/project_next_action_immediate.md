@@ -23,21 +23,19 @@ process sat at exactly 0% CPU. The error itself: the DX12 port dropped the game'
 
 ★★★ **A zero-CPU "hang" on a Windows app means look for a DIALOG before you look for a lock.**
 
-## ⚠⚠ READ FIRST — what still needs Lee
+## ★★★ LEE-CONFIRMED 2026-09-16 — both open items closed
 
-1. **Bullet holes need a level that can show them.** The clause IS verified (same entity: flag 0 ->
-   DENIED, flag 1 -> ALLOWED). But Aztec is 196 ALLOWED / 4 DENIED and all four denied are markers
-   or particle emitters — every solid object there is already `staticflag=1`, so bullet holes
-   already worked on it. A visible difference needs a NON-STATIC, NON-IMMOBILE prop.
-2. ★ **Test Level is CONFIRMED working** (09-16): 60 s at 22-26 CPU/10 s vs +0.0 before, harness
-   reports `STATE: game`, screenshot shows the scene rendering. `FIRE_RAY_AT` and
-   `TRIGGER_LUA_ERROR` are unblocked — but see item 1: Aztec still cannot SHOW a bullet hole.
+Lee tested by hand: *"I can confirm bullet holes work and no more LUA error."*
+
+So the 3.38 bullet-hole port and the 3.40 Lua shim are both verified by the person who reported
+them. No further work needed on either. ★ Aztec could not demonstrate bullet holes under
+automation (196 ALLOWED / 4 DENIED, all denied are markers) — Lee evidently used a level that
+could. If bullet holes ever need re-testing, that is the requirement.
 
 ⚠ **Budget for shader recompilation.** The first launch after a GAME build recompiles shaders —
 Aztec then takes 20+ minutes to load at ~2.4 cores, and the harness cannot answer during it
-(`auto_command.txt` consumed, no result written). Do not read that as a freeze: the modal is +0.0
-CPU, this is +36 CPU-sec per 15 s.
-
+(`auto_command.txt` consumed, no result written). Do not read that as a freeze: the modal was +0.0
+CPU, this is +36 CPU-sec per 15 s. With shaders cached the same load takes ~31 seconds.
 ## ★★★ 3.38 — the DX11 parity port is DONE (10 commits, 09-14/15)
 
 338 DX11 commits since the fork (`ca32a143`, 2025-11-21), triaged and ported. Full record with the
@@ -67,7 +65,8 @@ a dead switch). Reasons in audit §6.
 
 ## Still unverified by anyone
 
-Fonts tab, View Playing Sounds, and the bullet-hole decal itself. ★ The Lua error message in
+Fonts tab and View Playing Sounds. (The bullet-hole decal and the Lua error message are
+now both Lee-confirmed.) ★ The Lua error message in
 situ IS now verified — Lee screenshotted it, and it named the script and line exactly as phase D
 intended. `FIRE_RAY_AT` and `TRIGGER_LUA_ERROR` are now unblocked.
 

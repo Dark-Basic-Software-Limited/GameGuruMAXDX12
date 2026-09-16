@@ -77,7 +77,7 @@ Rejected, with reasons:
 - **Rewrite the 21 scripts to `math.atan`** — the next DX11 script import undoes it, and DX11 still
   runs 5.2 where `math.atan` takes one argument, so the trees would diverge.
 
-## ★★★ CONFIRMED FIXED 2026-09-16
+## ★★★ CONFIRMED FIXED 2026-09-16 — and LEE-CONFIRMED by hand
 
 Same protocol as the broken runs, so directly comparable — only the shim differs:
 
@@ -89,6 +89,8 @@ Same protocol as the broken runs, so directly comparable — only the shim diffe
 
 Held 22-26 CPU-sec per 10 s for the full minute; screenshot shows Aztec rendering full-screen with
 no dialog. Unblocks `FIRE_RAY_AT` and `TRIGGER_LUA_ERROR`.
+
+★ Lee then verified it himself: *"I can confirm bullet holes work and no more LUA error."*
 
 ## ⚠ Still worth knowing
 
