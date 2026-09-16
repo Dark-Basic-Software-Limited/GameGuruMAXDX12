@@ -10159,3 +10159,61 @@ Clean, 0 errors. Exe 31,862,272. Test-game regression **19/19**, 107-136 s per d
 ⚠ Structurally verified, NOT behaviourally. Exercising these needs a gun with
 `animchoicemode 1`, an ultrawide Save/Load screen, a sub-1.0 grid, a WPE emitter with an X/Z
 offset, and an entity using Sound slot 4 from Lua. The sweep proves nothing broke.
+
+
+# ★★★ §3.47 — OVERNIGHT RUN: CLEAR THE REST OF THE PARITY BACKLOG (2026-09-17)
+
+*Written BEFORE the work, as the plan. The result section is appended at the end of the run.*
+
+Lee, going to bed: *"do the door.lua merge, and all other issues discovered that the current DX12
+lack when compared to DX11 repo functionality... run autonomously for 8 hours and produce all
+fixes, commit and push, update notes before and after, and deliver me a report."* He also marked
+the current state a good milestone — tagged **`dx11-parity-milestone-2026-09-17`** at `38826c8d`.
+
+## Starting point
+
+| | |
+|---|---|
+| DX11 commits audited | 338 of 338 (`ca32a143`..`3e21f674`) |
+| defects fixed so far | 17, across §3.44-3.46 |
+| hub demos, editor | 19/19 |
+| hub demos, test game | 19/19 |
+| entity record vs DX11 | save 350/350, load 346/346, zero divergences |
+
+## The backlog to clear
+
+| item | DX11 | size |
+|---|---|---|
+| `door.lua` v31 -> v33 | `5a36a87c` + `3eaf6bba` | **the only hand-merge** — DX12's copy carries local 3.21 logic gating, which is why Phase A skipped it |
+| nav mesh high-quality extraction | `15cbd06c` | MEDIUM |
+| standalone nav-mesh vertex cache | `fd09784f` | EASY — DX12 ships the hunk that DELETES the cache and neither function that fills it |
+| no terrain update during standalone export | `2224088a` | EASY |
+| Delayed Shot (bow/crossbow) | `634ed6a6` | MEDIUM — one orphan line makes the file look done |
+| additive blending survives Test Game | `29a22b33` | EASY |
+| remote-project thumbnails | `1ad98209` | EASY — 3 sites in `entity_load()` |
+| case-insensitive custom decals | `71954585` | EASY — 2 of 3 sites |
+| `cStr` +8-byte slack | `9ae89fac` | EASY |
+| 300 ms `Sleep(1)` held inside `terrainlock` | `633f216f` | MEDIUM |
+| `terrainsafegpu` main-thread escape hatch | `76731c3c` | EASY |
+| crash log survives a failed `SymInitialize` | `0471a9a3` | MEDIUM |
+| Lua breadcrumbs naming the script function | `1aacfb90` | EASY |
+| standalone suppression of object/limb warnings | `1aacfb90` | EASY |
+| `WickedCall_GetObjectPlaying` has no caller | `1ee57a00` | EASY |
+| loading-progress breadcrumb | `0251d4fe` | LOW |
+| `RemoveAllFlatAreas` interior timestamps | `f32ed7db` | LOW |
+| stale HUB URLs | `a013bd2f` | LOW |
+| profiler off when TABTAB hides | `c9cb9074` | LOW |
+
+⚠ **"Add New Particle" is blocked on Lee** — all the code is ported; three CONTENT files are
+absent from the build area. That needs an asset drop, not an edit.
+
+## Plan
+
+1. Research every item in parallel, each verified by a second agent told to refute the first.
+2. Apply serially through the dry-run applier (per-file line-ending detection, anchor uniqueness,
+   refuse-to-write on any failure). Build after each batch.
+3. Regression: 19 demos editor + 19 test game.
+4. ★ **A SECOND audit pass.** The first audit's critic found 6 gaps *after* all 12 slices
+   reported clean, so the per-commit method has a measured miss rate and 1-3 more are expected.
+   Hunting those is worth more than polishing the LOW items.
+5. Notes, commit, push, report.
