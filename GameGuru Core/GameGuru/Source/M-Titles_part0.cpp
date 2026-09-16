@@ -1858,6 +1858,11 @@ void loadingpageprogress ( int delta )
 	if (  t.game.levelloadprogress>100  )  t.game.levelloadprogress = 100;
 	titles_loadingpageupdate ( );
 	handletitlesmusic();
+
+	// log when percentage progresses (to determine if loading is stuck/delayed on something)
+	char pProgressReport[256];
+	sprintf (pProgressReport, "Loading progress: %d%%", (int)t.game.levelloadprogress);
+	timestampactivity(0, pProgressReport);
 }
 
 void handletitlesmusic ( void )

@@ -30,6 +30,10 @@ bool noDeleteCSTR = false;
 #define CONSTRUCTERSIZE 2
 #define MAXSIZEVALUE 64
 
+//PE: Some functions pass the cstr to a function, where they could add to the cstr and make heap errors, like .x -> .dbo conversion.
+//PE: Add a few bytes extra to new allocations, and also save some reallocate.
+#define BUFFERINCREASESIZE 8
+
 //PE: ZTEMP just use double mem, no need, use a ringbuffer instead. And we have very many of these in entityelements.
 #define DISABLEZTEMP
 
@@ -60,7 +64,7 @@ cStr::cStr(const cStr& cString)
 	//PE: Should be >= if size was exactly STRMINSIZE we would get a heap error.
 	if (m_size >= m_capacity)
 	{
-		m_capacity = m_size + 1;
+		m_capacity = m_size + BUFFERINCREASESIZE;
 		m_pString = new char[m_capacity];
 		memset(m_pString, 0, m_capacity);
 	}
@@ -73,7 +77,7 @@ cStr::cStr(char* szString)
 
 	if (m_size >= m_capacity)
 	{
-		m_capacity = m_size + 1;
+		m_capacity = m_size + BUFFERINCREASESIZE;
 		m_pString = new char[m_capacity];
 		memset(m_pString, 0, m_capacity);
 	}
@@ -177,7 +181,7 @@ cStr& cStr::operator += (const cStr& other)
 	if (new_size >= m_capacity)
 	{
 		// Need to reallocate! Let's grow the capacity.
-		int new_capacity = new_size + 2;// 1;
+		int new_capacity = new_size + BUFFERINCREASESIZE;
 		char* newstring = new char[new_capacity];
 		strcpy(newstring, m_pString);
 		delete[] m_pString;
@@ -199,7 +203,7 @@ cStr cStr::operator = (const cStr& other)
 	if (m_size >= m_capacity)
 	{
 		// New string is too big, reallocate.
-		int new_capacity = m_size + 1;
+		int new_capacity = m_size + BUFFERINCREASESIZE;
 		char* newstring = new char[new_capacity];
 		delete[] m_pString;
 		m_pString = newstring;
@@ -226,7 +230,7 @@ cStr& cStr::operator = (const char* other)
 	if (m_size >= m_capacity)
 	{
 		// New string is too big, reallocate.
-		int new_capacity = m_size + 1;
+		int new_capacity = m_size + BUFFERINCREASESIZE;
 		char* newstring = new char[new_capacity];
 		delete[] m_pString;
 		m_pString = newstring;

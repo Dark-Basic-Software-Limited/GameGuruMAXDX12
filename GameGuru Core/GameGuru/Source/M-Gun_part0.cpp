@@ -549,6 +549,12 @@ void gun_loaddata ( void )
 					cmpStrConst( t_field_s, "lockcamera" );
 					if( matched )  g.firemodes[t.gunid][0].settings.lockcamera = t.value1;
 
+					// LB: for weapons like bow and arrow, fire anim starts and then arrow released some time later (in ms)
+					cmpStrConst(t_field_s, "delayedshot");
+					if (matched)  g.firemodes[t.gunid][0].settings.delayedshot = t.value1;
+					cmpStrConst(t_field_s, "alt delayedshot");
+					if (matched)  g.firemodes[t.gunid][1].settings.delayedshot = t.value1;
+
 					// animchoicemode; 0 = default random as above, 1 = pure random allowing repeat anims to be chosen, 2 = sequential not random
 					cmpStrConst(t_field_s, "animchoicemode");
 					if (matched)  g.firemodes[t.gunid][0].settings.animchoicemode = t.value1;

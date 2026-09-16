@@ -260,8 +260,76 @@ void GetObjectNavMeshVertices( int iID, float* pVertices )
 	}
 }
 
+//PE: save raw vertices.
+bool saveVertices(const std::string& filename, float* pVertices, int numVertices)
+{
+
+	std::ofstream outFile(filename, std::ios::binary);
+
+	if (!outFile)
+	{
+		return false;
+	}
+
+	outFile.write(reinterpret_cast<const char*>(&numVertices), sizeof(int));
+
+	outFile.write(reinterpret_cast<const char*>(pVertices), sizeof(float) * numVertices * 3);
+
+	outFile.close();
+
+	return true;
+}
+
+//PE: Load raw vertices.
+float* loadVertices(const std::string& filename, int& outNumVertices)
+{
+	std::ifstream inFile(filename, std::ios::binary);
+
+	if (!inFile)
+	{
+		return nullptr;
+	}
+
+	inFile.read(reinterpret_cast<char*>(&outNumVertices), sizeof(int));
+
+	float* pVertices = new float[outNumVertices * 3];
+
+	inFile.read(reinterpret_cast<char*>(pVertices), sizeof(float) * outNumVertices * 3);
+
+	inFile.close();
+
+	return pVertices;
+}
+
 void game_createnavmeshfromlevel ( bool bForceGeneration )
 {
+	bool bStandalone = bForceGeneration;
+
+	if (bStandalone)
+	{
+		//PE: Check if we got the raw pVertices size numVertices,  under fpm name.
+		cstr importer_getfilenameonly(LPSTR pFileAndPossiblePath);
+		cstr filenameonly = importer_getfilenameonly(g.projectfilename_s.Get());
+		std::string newfilename = filenameonly.Get();
+		replaceAll(newfilename, ".fpm", ".raw");
+		DARKSDK LPSTR GetDir(void);
+		//PE: Save into standalone folder.
+		std::string fullname = (char *) GetDir();
+		fullname = fullname + "\\navbank\\";
+		CreateDirectoryA(fullname.c_str(), NULL);
+		fullname = fullname + newfilename;
+
+		int loadedCount = 0;
+		float* pLoadedVertices = loadVertices(fullname, loadedCount);
+
+		if (pLoadedVertices && loadedCount > 0)
+		{
+			timestampactivity(0, "Using cached vertices to build the nav mesh");
+			g_RecastDetour.buildall(pLoadedVertices, loadedCount);
+			if (pLoadedVertices) delete[] pLoadedVertices;
+			return;
+		}
+	}
 	// area around any entities on map
 	GGVECTOR3 vecMinArea = GGVECTOR3( 999999,  999999,  999999);
 	GGVECTOR3 vecMaxArea = GGVECTOR3(-999999, -999999, -999999);
@@ -411,7 +479,7 @@ void game_createnavmeshfromlevel ( bool bForceGeneration )
 		// generate polygons for required area
 		int iFirstLOD = 2;
 		GGVECTOR3* pvecVerts = NULL;
-		int iTerrainFloorVertexCount = GGTerrain_GetTriangleList(&pvecVerts, vecMinArea.x, vecMinArea.z, vecMaxArea.x, vecMaxArea.z, iFirstLOD);
+		int iTerrainFloorVertexCount = GGTerrain_GetTriangleListHighQuality(&pvecVerts, vecMinArea.x, vecMinArea.z, vecMaxArea.x, vecMaxArea.z, iFirstLOD);
 		if (iTerrainFloorVertexCount > 0 )
 		{
 			// divide up into 16-bit size meshes
@@ -768,6 +836,26 @@ void game_createnavmeshfromlevel ( bool bForceGeneration )
 
 	// generate nav mesh using recast on OBJ
 	timestampactivity(0, "Using recast to build the nav mesh");
+
+	if (bStandalone)
+	{
+		//PE: Save raw pVertices size numVertices for standalone, save under fpm name.
+		cstr importer_getfilenameonly(LPSTR pFileAndPossiblePath);
+		cstr filenameonly = importer_getfilenameonly(g.projectfilename_s.Get());
+		std::string newfilename = filenameonly.Get();
+		replaceAll(newfilename, ".fpm", ".raw");
+		DARKSDK LPSTR GetDir(void);
+		//PE: Save into standalone folder.
+		std::string fullname = (char*)GetDir();
+		fullname = fullname + "\\navbank\\";
+		CreateDirectoryA(fullname.c_str(), NULL);
+		fullname = fullname + newfilename;
+		if (saveVertices(fullname, pVertices, numVertices))
+		{
+			//PE: Success.
+		}
+	}
+
 	g_RecastDetour.buildall( pVertices, numVertices );
 
 	// remove vert soup

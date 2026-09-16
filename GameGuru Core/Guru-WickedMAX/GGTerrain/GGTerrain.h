@@ -363,6 +363,7 @@ void GGTerrain_Physics_ProcessVertices( void* callback, float worldToPhysScale, 
 void GGTerrain_Physics_RayCast( void* callback, float worldToPhysScale, float srcX, float srcY, float srcZ, float dstX, float dstY, float dstZ );
 
 int GGTerrain_GetTriangleList( KMaths::Vector3** vertices, float minX, float minZ, float maxX, float maxZ, int firstLOD=2 ); 
+int GGTerrain_GetTriangleListHighQuality(KMaths::Vector3** vertices, float minX, float minZ, float maxX, float maxZ, int firstLOD = 2);
 
 void GGTerrain_ReloadTextures(wiGraphics::CommandList cmd = {}, std::vector<std::string>* files = nullptr, std::vector<int>* failures = nullptr, char* rootDir = nullptr);
 void GGTerrain_LoadDefaultTextureIntoSlot(int i, char* rootDir, wiGraphics::CommandList cmd = {});

@@ -1371,7 +1371,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 					// ships its own .jpg thumbnail beside it. Use that directly when present; only fall back to
 					// generating a back-buffer cache thumb for the legacy .arx effects.
 					// ⚠ Hand-placed: DX11 also wraps the GG_SetWritablesToRoot below in a Storyboard test this tree
-					// does not have (a separate unported DX11 change), which is why this would not auto-apply.
+					// did not have; that guard is now ported too (DX11 1ad98209).
 					bool bHasAJPG = false;
 					LPSTR pParticleName = Predefined_Particle_Name[iPredefinedParticles].Get();
 					if (strnicmp(pParticleName + strlen(pParticleName) - 3, ".pe", 3) == NULL)
@@ -1392,7 +1392,10 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 						// revert to traditional thumb
 						CreateBackBufferCacheName(img.Get(), 512, 288);
 					}
-					GG_SetWritablesToRoot(true);
+					if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+					{
+						GG_SetWritablesToRoot(true);
+					}
 					SetMipmapNum(1); //PE: mipmaps not needed.
 					image_setlegacyimageloading(true);
 					if (FileExist(BackBufferCacheName.Get()))

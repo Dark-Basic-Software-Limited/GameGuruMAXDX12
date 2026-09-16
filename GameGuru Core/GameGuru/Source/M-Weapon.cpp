@@ -1765,11 +1765,13 @@ void weapon_projectileresult_make (int customdecal )
 				if (t.tSourceEntity > 0 && t.tSourceEntity < t.entityelement.size())
 				{
 					cstr explodename = t.entityelement[t.tSourceEntity].eleprof.explodable_decalname;
-					if (explodename.Len() > 0)
+					cstr lexplodename = explodename.Lower();
+					if (lexplodename.Len() > 0)
 					{
 						for (int i = 1; i <= g.decalmax; i++)
 						{
-							if (t.decal[i].name_s == explodename)
+							cstr ldecal = t.decal[i].name_s.Lower();
+							if (ldecal == lexplodename)
 							{
 								iCustomDecal = i;
 								break;

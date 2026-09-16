@@ -1802,6 +1802,7 @@ DARKLUA_API void LuaCall()
 	WriteToDebugLog ( "functionResults" , functionResults );
 	WriteToDebugLog ( "===========" , true );
 #endif
+	GG_CRASH_CONTEXT("LuaCall", "functionName=%s functionParams=%d", functionName, functionParams);
 
 	lua2 = ppLuaStates[id]->state;
 
@@ -1892,6 +1893,7 @@ DARKLUA_API void LuaCallSilent()
 	WriteToDebugLog ( "functionResults" , functionResults );
 	WriteToDebugLog ( "===========" , true );
 #endif
+	GG_CRASH_CONTEXT("LuaCall", "functionName=%s functionParams=%d", functionName, functionParams);
 
 	lua2 = ppLuaStates[id]->state;
 

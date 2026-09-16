@@ -1385,7 +1385,7 @@ bool welcome_get_change_log(void)
 			{
 				if (*pSrc != '\n' && *pSrc != '\r') { *pDst = *pSrc; pDst++; }
 			}
-			strcpy(pURLText, "https://www.game-guru.com/max");
+			strcpy(pURLText, "https://www.game-guru.com");
 			if (g_iSpecialIDEForViewingTestAnnouncements == 0)
 			{
 				// only public build users get set to 1 (internal testers already have this set to 2)

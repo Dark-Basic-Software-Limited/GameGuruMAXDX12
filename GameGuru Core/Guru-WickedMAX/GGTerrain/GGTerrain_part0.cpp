@@ -159,6 +159,8 @@ bool g_bOneTimeMessage = false;
 uint32_t iOccludedTerrainChunks = 0;
 int OCCLODSTART = 6;
 int ggterrain_update_enabled = 1;
+int ggterrain_safe_gpu_singlethread = 0; // 1 = build terrain GPU buffers on main thread only (fixes intermittent DEVICE LOST)
+
 extern bool bTriggerMessage;
 extern char cTriggerMessage[MAX_PATH];
 
@@ -2721,6 +2723,19 @@ public:
 
 	static void AddChunk( GGTerrainChunk* pChunk )
 	{
+		extern int ggterrain_safe_gpu_singlethread;
+		if (ggterrain_safe_gpu_singlethread)
+		{
+			// Safe mode: generate on the calling (main) thread. No worker thread
+			// ever calls a D3D device method, so the cross-thread race is gone.
+			pChunk->pNextChunk = 0;
+			pChunk->Generate();            // pure CPU
+			pChunk->GenerateGPUBuffers();  // D3D CreateBuffer, now on main thread (as its comment requires)
+			MemoryBarrier();
+			pChunk->SetGenerating(0);
+			return;
+		}
+
 		waitingLock.Acquire();
 
 #ifdef _DEBUG
@@ -6460,17 +6475,22 @@ void GGTerrain_RemoveAllFlatAreas()
 	ggterrain_flat_areas = new GGTerrainFlatArea[ ggterrain_flat_areas_array_size ];
 	memset(ggterrain_flat_areas, 0, ggterrain_flat_areas_array_size * sizeof(GGTerrainFlatArea));
 
+	timestampactivity(0, "GGTerrain_RemoveAllFlatAreas:4");
 	ggterrain_flat_areas_free.Clear();
 	ggterrain_flat_areas_free.Resize( ggterrain_flat_areas_array_size );
 	
+	timestampactivity(0, "GGTerrain_RemoveAllFlatAreas:5");
 	for( uint32_t i = ggterrain_flat_areas_array_size-1; i > 0; i-- ) // don't add index 0 as that will be the error id
 	{
 		ggterrain_flat_areas_free.PushItem( i );
 	}
 
+	timestampactivity(0, "GGTerrain_RemoveAllFlatAreas:6");
 	GGTrees_RestoreAllFlattened();
+	timestampactivity(0, "GGTerrain_RemoveAllFlatAreas:7");
 	GGGrass_RestoreAllFlattened();
 
+	timestampactivity(0, "GGTerrain_RemoveAllFlatAreas:8");
 	ggterrain_internal_params.update_flat_areas_minX = -1e20f;
 	ggterrain_internal_params.update_flat_areas_minZ = -1e20f;
 	ggterrain_internal_params.update_flat_areas_maxX = 1e20f;
@@ -11718,6 +11738,7 @@ void GGTerrain_Physics_RayCast( void* callback, float worldToPhysScale, float sr
 
 int GGTerrain_GetTriangleList( KMaths::Vector3** vertices, float minX, float minZ, float maxX, float maxZ, int firstLOD )
 {
+	// extracts the triangle list from the 'current' terrain polygons, including the lower resolutionm ones due to LOD
 	if ( !ggterrain_initialised ) return 0;
 
 	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
@@ -11739,6 +11760,75 @@ int GGTerrain_GetTriangleList( KMaths::Vector3** vertices, float minX, float min
 		(*vertices)[ i ] = vertexArray[ i ];
 	}
 
+	return numVertices;
+}
+
+// GGMAX 3.47 (DX11 15cbd06c): high-quality whole-map triangle extraction for the nav mesh.
+// GGTerrain_GetTriangleList above only sees the LOD set as it stands right now, i.e. detailed
+// around wherever the camera happens to be, so a nav mesh built from it changes between runs.
+// This walks the requested area in 4000-unit slices, re-centring the terrain chunks on each
+// slice and waiting for generation, so every part of the map contributes full-detail polygons.
+// MAIN THREAD ONLY - it drives ggterrain.CheckParams()/UpdateChunks() the same way GGTerrain_Work does.
+int GGTerrain_GetTriangleListHighQuality(KMaths::Vector3** vertices, float minXoverall, float minZoverall, float maxXoverall, float maxZoverall, int firstLOD)
+{
+	// extracts the triangle list at specific LOD quality throughout terrain, by shifting cameera position and updating chunks to get best polygons at that location
+	if (!ggterrain_initialised) return 0;
+
+	// collect all vertices for our high quality trianle list
+	UnorderedArray<KMaths::Vector3> vertexArray;
+
+	// subdivide terrain area
+	float fSliceSize = 4000.0f;
+	for (float minX = minXoverall; minX < maxXoverall; minX += fSliceSize)
+	{
+		for (float minZ = minZoverall; minZ < maxZoverall; minZ += fSliceSize)
+		{
+			float maxX = minX + fSliceSize;
+			float maxZ = minZ + fSliceSize;
+			float centerX = minX + (fSliceSize / 2);
+			float centerZ = minZ + (fSliceSize / 2);
+
+			// move camera and update chunks at that location
+			for ( int iChunkIsMarchingCubes = 0; iChunkIsMarchingCubes < 15; iChunkIsMarchingCubes++ )
+			{
+				terrainlock.lock();
+				if (ggterrain_update_enabled)
+				{
+					ggterrain.CheckParams();
+					ggterrain.UpdateChunks(centerX, centerZ);
+					GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
+					uint32_t timeout = 0;
+					while (pCurrLODs->IsGenerating() && !pCurrLODs->pLevels[pCurrLODs->GetNumLevels() - 1].IsReady() && timeout++ < 300) Sleep(1);
+					if (timeout >= 300)
+					{
+						// investigate why this stalled, maybe more than 300ms?
+					}
+				}
+				terrainlock.unlock();
+				Sleep(1);
+			}
+
+			// add relevant trianles to list
+			GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
+			if (!pCurrLODs->IsValid() || pCurrLODs->IsGenerating()) return 0;
+			int lastLevel = pCurrLODs->GetNumLevels() - 1; // may not need this as we have updated the chunk data at this location!
+			for (int level = firstLOD; level <= lastLevel; level++)
+			{
+				GGTerrainLODLevel* pLevel = &pCurrLODs->pLevels[level];
+				pLevel->GetTriangleList(&vertexArray, minX, minZ, maxX, maxZ, level == firstLOD);
+			}
+		}
+	}
+
+	// when all triangles collected in list, prepare some memory to store it and pass out
+	uint32_t numVertices = vertexArray.NumItems();
+	*vertices = new KMaths::Vector3[numVertices];
+	for (uint32_t i = 0; i < numVertices; i++)
+	{
+		(*vertices)[i] = vertexArray[i];
+	}
+
+	// success
 	return numVertices;
 }
 

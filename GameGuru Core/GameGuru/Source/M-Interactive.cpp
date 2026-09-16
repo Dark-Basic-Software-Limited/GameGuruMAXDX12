@@ -595,7 +595,7 @@ void interactive_summary ( void )
 			if (  t.interactive.itemhighlightindex == 2 ) 
 			{
 				//  jump to tutorial website
-				ExecuteFile ( "https://www.game-guru.com/tutorials","","",0 );
+				ExecuteFile ( "https://www.game-guru.com","","",0 );
 				t.interactive.clicked=1;
 			}
 			if (  t.interactive.itemhighlightindex == 3 ) 

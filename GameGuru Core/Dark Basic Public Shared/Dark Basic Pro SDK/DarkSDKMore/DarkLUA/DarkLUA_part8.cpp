@@ -72,6 +72,8 @@
     // run the Lua script string
 	int a = 0;
 
+	GG_CRASH_CONTEXT("LuaExecute", "pString=%s id=%d", pString, id);
+
 	a = luaL_loadbuffer(lua2, pString, strlen(pString), pString) ||	lua_pcall(lua2, 0, 0, 0);
 	if (a) 
 	{
@@ -110,6 +112,8 @@
 
     // run the Lua script string
 	int a = 0;
+
+	GG_CRASH_CONTEXT("LuaExecute", "pString=%s", pString);
 
 	a = luaL_loadbuffer(lua2, pString, strlen(pString), pString) ||	lua_pcall(lua2, 0, 0, 0);
 	if (a) 

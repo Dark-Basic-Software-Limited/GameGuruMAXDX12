@@ -403,12 +403,12 @@ DARKSDK_DLL bool ConfirmNewObject( int iID )
 bool ConfirmObjectAndLimbInstanceEx ( int iID, int iLimbID, bool bInstanceReturnFlag )
 {
 	#ifdef WICKEDENGINE
-	extern bool g_bDisplayWarnings;
+	extern bool g_bDisplayObjectAndLimbWarnings;
 	#endif
 	if ( iID < 1 || iID > MAXIMUMVALUE )
 	{ 
 		#ifdef WICKEDENGINE
-		if(g_bDisplayWarnings)
+		if(g_bDisplayObjectAndLimbWarnings)
 		#endif
 			RunTimeError ( RUNTIMEERROR_B3DMODELNUMBERILLEGAL );
 		return false;
@@ -433,7 +433,7 @@ bool ConfirmObjectAndLimbInstanceEx ( int iID, int iLimbID, bool bInstanceReturn
 				if ( !g_ObjectList [ iID ]->pFrame )
 				{
 					#ifdef WICKEDENGINE
-					if (g_bDisplayWarnings)
+					if (g_bDisplayObjectAndLimbWarnings)
 					#endif
 						RunTimeError ( RUNTIMEERROR_B3DMODELNOTEXISTS );
 					return false;
@@ -443,7 +443,7 @@ bool ConfirmObjectAndLimbInstanceEx ( int iID, int iLimbID, bool bInstanceReturn
 		else
 		{
 			#ifdef WICKEDENGINE
-			if (g_bDisplayWarnings)
+			if (g_bDisplayObjectAndLimbWarnings)
 			#endif
 				RunTimeError ( RUNTIMEERROR_B3DMODELNOTEXISTS );
 			return false;
@@ -452,7 +452,7 @@ bool ConfirmObjectAndLimbInstanceEx ( int iID, int iLimbID, bool bInstanceReturn
 	else
 	{
 		#ifdef WICKEDENGINE
-		if (g_bDisplayWarnings)
+		if (g_bDisplayObjectAndLimbWarnings)
 		#endif
 			RunTimeError ( RUNTIMEERROR_B3DMODELNOTEXISTS );
 		return false;
@@ -461,7 +461,7 @@ bool ConfirmObjectAndLimbInstanceEx ( int iID, int iLimbID, bool bInstanceReturn
 	if ( iLimbID < 0 || iLimbID > MAXIMUMVALUE )
 	{ 
 		#ifdef WICKEDENGINE
-		if (g_bDisplayWarnings)
+		if (g_bDisplayObjectAndLimbWarnings)
 		#endif
 			RunTimeError ( RUNTIMEERROR_LIMBNUMBERILLEGAL );
 		return false;
@@ -476,7 +476,7 @@ bool ConfirmObjectAndLimbInstanceEx ( int iID, int iLimbID, bool bInstanceReturn
 		if ( iLimbID >= g_ObjectList [ iID ]->iFrameCount )
 		{
 			#ifdef WICKEDENGINE
-			if (g_bDisplayWarnings)
+			if (g_bDisplayObjectAndLimbWarnings)
 			#endif
 				RunTimeError ( RUNTIMEERROR_LIMBNOTEXIST );
 			return false;
@@ -485,7 +485,7 @@ bool ConfirmObjectAndLimbInstanceEx ( int iID, int iLimbID, bool bInstanceReturn
 		if ( !g_ObjectList [ iID ]->ppFrameList [ iLimbID ] )
 		{
 			#ifdef WICKEDENGINE
-			if (g_bDisplayWarnings)
+			if (g_bDisplayObjectAndLimbWarnings)
 			#endif
 				RunTimeError ( RUNTIMEERROR_LIMBNOTEXIST );
 			return false;

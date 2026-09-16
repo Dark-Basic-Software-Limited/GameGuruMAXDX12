@@ -148,27 +148,58 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
 
     // Initialize symbol handler
     HANDLE process = GetCurrentProcess();
-    
-    //if (!SymInitialize(process, NULL, FALSE)) {
+
+    // GGMAX 3.47 (DX11 0471a9a3): a failed SymInitialize used to "return 1" right here and write
+    // NOTHING - no log, no minidump. That is the worst possible outcome, because the crash report
+    // is the single artefact we ask a tester to send us. Degrade instead of vanishing: retry
+    // without invading the process, and if even that fails carry on and emit an UNSYMBOLISED
+    // report. Raw addresses plus the shipped PDB still locate the crash site offline.
+    // (The "Failed to initialize symbols." MessageBoxA that sat in the old failure branch
+    //  was already commented out for DX12 migration debugging; that branch no longer aborts,
+    //  so the modal is gone for good rather than pending re-enable.)
+    bool bInvadeProcessMode = true;   // invade=TRUE worked, so runtime addresses resolve directly
+    bool bSymbolsAvailable = true;    // dbghelp is usable at all
+    DWORD dwSymInitInvadeError = 0;   // GetLastError() from the failed invade attempt
+
+    SymSetOptions(SymGetOptions() | SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+
     if (!SymInitialize(process, NULL, TRUE))
     {
-        // TODO: removed MessageBox during DX12 migration debugging
-        // MessageBoxA(NULL, "Failed to initialize symbols.", "GameGuru MAX Crash", MB_OK | MB_ICONERROR);
-        return 1;
+        dwSymInitInvadeError = GetLastError();
+        bInvadeProcessMode = false;
+        bSymbolsAvailable = false;
+
+        SymCleanup(process); // result ignored - this only resets state before the second attempt
+
+        // invade=TRUE enumerates and loads every module in the process; when that fails the
+        // cheaper invade=FALSE form usually still succeeds, and we load the EXE ourselves below.
+        if (SymInitialize(process, NULL, FALSE))
+        {
+            bSymbolsAvailable = true;
+        }
     }
 
-    // Load the module (EXE)
-    DWORD64 baseAddress;
-    baseAddress = SymLoadModuleEx(
-        process,
-        NULL,
-        exeFile,
-        NULL,
-        (DWORD64)GetModuleHandle(NULL),
-        0,
-        NULL,
-        0
-    );
+    // Load the module (EXE). Skipped when dbghelp never came up: SymLoadModuleEx would merely
+    // return 0, but baseAddress must still be defined for the report lines further down.
+    DWORD64 baseAddress = 0;
+    if (bSymbolsAvailable)
+    {
+        // NOTE (DX12): we deliberately keep passing the REAL runtime base here. DX11 0471a9a3
+        // changed this argument to 0 ("let DbgHelp decide") and then needed a TranslateAddrIfNeeded
+        // helper to convert every runtime address to the preferred base whenever invade had
+        // failed. Handing dbghelp the runtime base makes both modes agree, so no address
+        // translation is needed anywhere below and the working invade=TRUE path is unchanged.
+        baseAddress = SymLoadModuleEx(
+            process,
+            NULL,
+            exeFile,
+            NULL,
+            (DWORD64)GetModuleHandle(NULL),
+            0,
+            NULL,
+            0
+        );
+    }
 
     // the address we need is not the runtime address the exception provides!
     DWORD64 moduleBase = (DWORD64)GetModuleHandle(NULL);
@@ -188,7 +219,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
 
     //if (SymGetLineFromAddr64(process, lookupAddress, &displacement, &lineData))
     //PE: Use ExceptionAddress directly.
-    if (pExceptionInfo && SymGetLineFromAddr64(process, (DWORD64)pExceptionInfo->ExceptionRecord->ExceptionAddress, &displacement, &lineData))
+    if (pExceptionInfo && bSymbolsAvailable && SymGetLineFromAddr64(process, (DWORD64)pExceptionInfo->ExceptionRecord->ExceptionAddress, &displacement, &lineData))
     {
         std::ostringstream l;
         l << lineData.FileName << ":" << lineData.LineNumber;
@@ -201,6 +232,14 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     log << "\r\n==== GAMEGURU MAX CRASH DETECTED ====\r\n";
     log << "Time:            " << GetTimestamp() << "\r\n";
     log << "Build:           " << g_pCrashVersionINIValue << "\r\n";
+    // Say plainly how much of the rest of this report can be trusted. A silently unsymbolised
+    // log just looks like a log with a useless stack; one that says so is still actionable.
+    if (!bInvadeProcessMode)
+    {
+        log << "SymInitialize:   invade-process attempt FAILED (err " << std::dec << dwSymInitInvadeError << ")";
+        log << (bSymbolsAvailable ? " - retried with invade=FALSE, symbols OK\r\n"
+                                  : " - retry also FAILED, this report is UNSYMBOLISED\r\n");
+    }
     // Which thread died matters: a fault on a jobsystem worker points at background work
     // (texture streaming, terrain generation) rather than anything the frame loop did.
     log << "Thread id:       " << std::dec << GetCurrentThreadId()
@@ -254,10 +293,33 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
         // handler that crashes produces NO report at all, which is worse than no stack.
         static char stackText[48 * 512];
         stackText[0] = 0;
-        if (pExceptionInfo)
+        if (pExceptionInfo && bSymbolsAvailable)
         {
             WalkStackGuarded(process, pExceptionInfo->ContextRecord, stackText, sizeof(stackText));
             log << stackText;
+        }
+        else if (pExceptionInfo && pExceptionInfo->ContextRecord)
+        {
+            // Without a symbol handler StackWalk64 cannot unwind x64 at all (it needs dbghelp's
+            // function-table access for the unwind data), so the best we can do is the raw
+            // faulting PC plus its offset inside the module that owns it - and that offset is
+            // all anyone needs to resolve the site offline against the shipped PDB.
+            const DWORD64 rawPC = (DWORD64)pExceptionInfo->ContextRecord->Rip;
+            log << "  (no symbol handler - stack walk skipped, address is raw)\r\n";
+            log << "  [0] 0x" << std::hex << rawPC;
+            // Ask which module owns that PC rather than assuming the EXE: a fault inside a
+            // driver or runtime DLL would otherwise be reported as a nonsense EXE offset.
+            HMODULE hFaultMod = NULL;
+            if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                   (LPCSTR)rawPC, &hFaultMod) && hFaultMod != NULL)
+            {
+                char faultModPath[MAX_PATH] = {};
+                GetModuleFileNameA(hFaultMod, faultModPath, MAX_PATH);
+                const char* faultModName = strrchr(faultModPath, '\\');
+                faultModName = faultModName ? faultModName + 1 : faultModPath;
+                log << "  (" << faultModName << "+0x" << std::hex << (rawPC - (DWORD64)hFaultMod) << ")";
+            }
+            log << "\r\n";
         }
         else
         {
@@ -277,7 +339,8 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     }
     log << "=====================================\r\n";
 
-    SymCleanup(process);
+    if (bSymbolsAvailable)
+        SymCleanup(process);
 
     // Write to log
     HANDLE hFile = CreateFileA(logPath, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);

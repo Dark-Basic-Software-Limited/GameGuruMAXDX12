@@ -1749,11 +1749,14 @@ static int LUA_GETTOP(lua_State* L)
 		 if (t.entityelement[iEntityIndex].eleprof.explodable_decalname.Len() > 0)
 		 {
 			 cstr explodename = t.entityelement[iEntityIndex].eleprof.explodable_decalname;
-			 if (explodename.Len() > 0)
+			 cstr lexplodename = explodename.Lower();
+
+			 if (lexplodename.Len() > 0)
 			 {
 				 for (int i = 1; i <= g.decalmax; i++)
 				 {
-					 if (t.decal[i].name_s == explodename)
+					 cstr ldecal = t.decal[i].name_s.Lower();
+					 if (ldecal == lexplodename)
 					 {
 						 int alreadyactive = t.decal[i].active;
 						 t.decal[i].active = 1;

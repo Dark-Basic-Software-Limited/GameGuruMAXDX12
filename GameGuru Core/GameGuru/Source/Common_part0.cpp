@@ -270,6 +270,10 @@ void common_init ( void )
 			SetWriteSameAsRoot(false);
 		else
 			SetWriteSameAsRoot(true);
+
+		// when running a standalone game, never show object and limb warnings (rogue LUA script calls etc)
+		extern bool g_bDisplayObjectAndLimbWarnings;
+		g_bDisplayObjectAndLimbWarnings = false;
 	}
 
 	// new image loading system uses both legacy for IMGUI and wicked for rest

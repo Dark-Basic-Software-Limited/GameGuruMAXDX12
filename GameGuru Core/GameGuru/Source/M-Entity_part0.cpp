@@ -839,7 +839,11 @@ bool entity_load (bool bCalledFromLibrary)
 			bool CreateBackBufferCacheName(char *file, int width, int height);
 			extern cstr BackBufferCacheName;
 			CreateBackBufferCacheName(t.addentityfile_s.Get(), 512, 288);
-			GG_SetWritablesToRoot(true);
+			extern StoryboardStruct Storyboard;
+			if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+			{
+				GG_SetWritablesToRoot(true);
+			}
 			if (FileExist(BackBufferCacheName.Get()))
 			{
 				LoadImage((char *)BackBufferCacheName.Get(), ENTITY_CACHE_ICONS_LARGE + t.entid);
@@ -929,7 +933,11 @@ bool entity_load (bool bCalledFromLibrary)
 		{
 			//PE: Check if a got the original image for this smart object.
 			CreateBackBufferCacheName(LastGroupFilename_s.Get(), 512, 288);
-			GG_SetWritablesToRoot(true);
+			extern StoryboardStruct Storyboard;
+			if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+			{
+				GG_SetWritablesToRoot(true);
+			}
 			if (FileExist(BackBufferCacheName.Get()))
 			{
 				LoadImage((char *)BackBufferCacheName.Get(), ENTITY_CACHE_ICONS_LARGE + t.entid);
@@ -945,7 +953,11 @@ bool entity_load (bool bCalledFromLibrary)
 		if (!bWeGotaThumb)
 		{
 			CreateBackBufferCacheName(t.strwork.Get(), 512, 288);
-			GG_SetWritablesToRoot(true);
+			extern StoryboardStruct Storyboard;
+			if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+			{
+				GG_SetWritablesToRoot(true);
+			}
 			if (FileExist(BackBufferCacheName.Get()))
 			{
 				LoadImage((char *)BackBufferCacheName.Get(), ENTITY_CACHE_ICONS_LARGE + t.entid);

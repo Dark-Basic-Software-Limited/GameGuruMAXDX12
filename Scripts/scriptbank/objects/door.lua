@@ -1,4 +1,4 @@
--- Door v31 by Lee and Necrym59
+-- Door v33 by Lee and Necrym59
 -- DESCRIPTION: Open and closes an 'animating' door when the player is within [Range=70(50,500)],
 -- DESCRIPTION: and when triggered will open the door, play <Sound0> and turn collision off after a delay of [DELAY=1000].
 -- DESCRIPTION: When the door is closed, play <Sound1> is played. You can elect to keep the door [Unlocked!=1], and customize the [LockedText$="Door locked. Find key"].
@@ -6,6 +6,9 @@
 -- DESCRIPTION: Select if the door can [AutoClose!=0] after a [AutoCloseDelay=5000]
 -- DESCRIPTION: [!USE_SWITCH=0]
 -- DESCRIPTION: [SWITCH_TEXT$="Door is operated by a switch"]
+-- DESCRIPTION: [@SOUND_SYNC=1(1=Hinged Door,2=Sliding Door)] 
+-- DESCRIPTION: [@OPEN_ANIMATION$=-1(0=AnimSetList)]
+-- DESCRIPTION: [@CLOSE_ANIMATION$=-1(0=AnimSetList)]
 -- DESCRIPTION: [@PROMPT_DISPLAY=2(1=Local,2=Screen)]
 -- DESCRIPTION: [@ITEM_HIGHLIGHT=0(0=None,1=Shape,2=Outline,3=Icon)]
 -- DESCRIPTION: [HIGHLIGHT_ICON_IMAGEFILE$="imagebank\\icons\\hand.png"]
@@ -27,6 +30,9 @@ local autoclose 		= {}
 local autoclosedelay 	= {}
 local use_switch 		= {}
 local switch_text 		= {}
+local sound_sync		= {}
+local open_animation	= {}
+local close_animation	= {}
 local prompt_display	= {}
 local item_highlight 	= {}
 local highlight_icon	= {}
@@ -40,9 +46,7 @@ local hl_icon			= {}
 local hl_imgwidth		= {}
 local hl_imgheight		= {}
 
-local defaultPromptDisplay = 2
-
-function door_properties(e, range, delay, unlocked, lockedtext, cannotclose, toopentext, toclosetext, autoclose, autoclosedelay, use_switch, switch_text, prompt_display, item_highlight, highlight_icon_imagefile)
+function door_properties(e, range, delay, unlocked, lockedtext, cannotclose, toopentext, toclosetext, autoclose, autoclosedelay, use_switch, switch_text, sound_sync, open_animation, close_animation, prompt_display, item_highlight, highlight_icon_imagefile)
 	door[e]['range'] = range
 	door[e]['delay'] = delay
 	door[e]['unlocked'] = unlocked
@@ -54,7 +58,10 @@ function door_properties(e, range, delay, unlocked, lockedtext, cannotclose, too
 	door[e]['autoclosedelay'] = autoclosedelay or 0
 	door[e]['use_switch'] = use_switch or 0
 	door[e]['switch_text'] = switch_text
-	door[e]['prompt_display'] = prompt_display or defaultPromptDisplay	
+	door[e]['sound_sync'] = sound_sync or 1
+	door[e]['open_animation'] = "=" .. tostring(open_animation)
+	door[e]['close_animation'] = "=" .. tostring(close_animation)
+	door[e]['prompt_display'] = prompt_display or 2	
 	door[e]['item_highlight'] = item_highlight or 0
 	door[e]['highlight_icon'] = highlight_icon_imagefile
 	-- GGMAX 3.21: opt out of the 750-unit logic freeze ONLY when the door is switch-operated,
@@ -79,9 +86,13 @@ function door_init(e)
 	door[e]['autoclosedelay'] = 5000
 	door[e]['use_switch'] = 0
 	door[e]['switch_text'] = "Door is operated by a switch"
-	door[e]['prompt_display'] = 1	
+	door[e]['sound_sync'] = 1
+	door[e]['open_animation'] = "open"	
+	door[e]['close_animation'] = "close"	
+	door[e]['prompt_display'] = 2
 	door[e]['item_highlight'] = 0
 	door[e]['highlight_icon'] = "imagebank\\icons\\hand.png"
+
 	
 	door[e]['mode'] = 0
 	door[e]['blocking'] = 1
@@ -242,7 +253,7 @@ function door_main(e)
 	end	
 	if door[e]['mode'] == 201 then
 		-- open door trigger
-		SetAnimationName(e,"open")
+		SetAnimationName(e,door[e]['open_animation'])
 		PlayAnimation(e)
 		door[e]['mode'] = 2
 		PlaySound(e,0)
@@ -259,16 +270,17 @@ function door_main(e)
 	end
 	if door[e]['mode'] == 202 then
 		-- close door trigger
-		SetAnimationName(e,"close")
+		SetAnimationName(e,door[e]['close_animation'])
 		PlayAnimation(e)
+		if door[e]['sound_sync'] == 2 then PlaySound(e,1) end
 		door[e]['mode'] = 3
 		StartTimer(e)
 	end
 	if door[e]['mode'] == 3 then
-		-- door collision after X second
+		-- door collision after X second		
 		if GetTimer(e)>door[e]['delay'] then
 			CollisionOn(e)
-			PlaySound(e,1)
+			if door[e]['sound_sync'] == 1 then PlaySound(e,1) end
 			PerformLogicConnections(e)
 			door[e]['mode'] = 0
 			door[e]['blocking'] = 1	

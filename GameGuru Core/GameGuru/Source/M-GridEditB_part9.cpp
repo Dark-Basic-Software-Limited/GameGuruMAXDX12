@@ -3170,13 +3170,16 @@ void process_entity_library_v2(void)
 										// its own wpeN_color JPG thumbnail. When it does, the generated back-buffer cache thumb is
 										// neither wanted nor valid, so skip generating it and drop any previously cached image.
 										// ⚠ Hand-placed: DX11 also guards GG_SetWritablesToRoot with a Storyboard test that this tree
-										// does not have (a separate unported DX11 change), which is why this would not auto-apply.
+										// did not have; that guard is now ported too (DX11 1ad98209).
 										// Only the thumbnail intent is taken here.
 										if (bItWasAPEThumbJPG == false)
 										{
 											CreateBackBufferCacheName(t.addentityfile_s.Get(), thumb_x, thumb_y);
 										}
-										GG_SetWritablesToRoot(true);
+										if (!(strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0))
+										{
+											GG_SetWritablesToRoot(true);
+										}
 										image_setlegacyimageloading(true);
 										if (FileExist(BackBufferCacheName.Get()) || bItWasAPEThumbJPG == true)
 										{

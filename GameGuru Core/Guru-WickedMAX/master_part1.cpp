@@ -744,44 +744,50 @@ void MasterRenderer::Update(float dt)
 				ggterrain_draw_enabled = 0;
 				GGTerrainWicked_EnforceHidden();
 			}
-			if (t.visuals.bEnableEmptyLevelMode == false)
+			// GGMAX 3.47 (DX11 2224088a "No terrain update in standalone saver"): skip all
+			// terrain/tree/grass activity while the standalone saver window is running.
+			extern bool bExport_Standalone_Window;
+			if (bExport_Standalone_Window == false)
 			{
-				extern int g_iDisableTerrainSystem;
-				auto range3 = wiProfiler::BeginRangeCPU("Update - Terrain");
-				extern bool bImGuiRenderTargetFocus;
-				auto rangeT1 = wiProfiler::BeginRangeCPU("Terrain - GG Core");
-				GGTerrain_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
-				wiProfiler::EndRange(rangeT1);
-				GGPerf_TraceMark("ggcore"); // GGMAX 2.61
-				if (ggterrain_use_wicked_terrain)
+				if (t.visuals.bEnableEmptyLevelMode == false)
 				{
-					ggterrain_draw_enabled = 0;  // suppress all old draw callbacks
-					auto rangeT2 = wiProfiler::BeginRangeCPU("Terrain - Wicked Bridge");
-					GGTerrainWicked_Update(camera);
-					wiProfiler::EndRange(rangeT2);
-					GGPerf_TraceMark("ggbridge"); // GGMAX 2.61
+					extern int g_iDisableTerrainSystem;
+					auto range3 = wiProfiler::BeginRangeCPU("Update - Terrain");
+					extern bool bImGuiRenderTargetFocus;
+					auto rangeT1 = wiProfiler::BeginRangeCPU("Terrain - GG Core");
+					GGTerrain_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
+					wiProfiler::EndRange(rangeT1);
+					GGPerf_TraceMark("ggcore"); // GGMAX 2.61
+					if (ggterrain_use_wicked_terrain)
+					{
+						ggterrain_draw_enabled = 0;  // suppress all old draw callbacks
+						auto rangeT2 = wiProfiler::BeginRangeCPU("Terrain - Wicked Bridge");
+						GGTerrainWicked_Update(camera);
+						wiProfiler::EndRange(rangeT2);
+						GGPerf_TraceMark("ggbridge"); // GGMAX 2.61
+					}
+					else
+					{
+						ggterrain_draw_enabled = 1;
+					}
+					if (g_iDisableTerrainSystem == 0)
+					{
+						GGTrees_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
+						auto rangeT3 = wiProfiler::BeginRangeCPU("Trees - FrustumCull");
+						GGTrees_UpdateFrustumCulling(&camera);
+						wiProfiler::EndRange(rangeT3);
+						auto rangeT4 = wiProfiler::BeginRangeCPU("Grass - GG Update");
+						GGGrass_Update(&camera, cmd, bImGuiRenderTargetFocus);
+						wiProfiler::EndRange(rangeT4);
+					}
+					wiProfiler::EndRange(range3);
+					GGPerf_TraceMark("trees-grass"); // GGMAX 2.61
 				}
 				else
 				{
-					ggterrain_draw_enabled = 1;
+					// still need for terrain globals to update local params (for editable_size reading)
+					GGTerrain_Update_EmptyLevel(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd);
 				}
-				if (g_iDisableTerrainSystem == 0)
-				{
-					GGTrees_Update(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd, bImGuiRenderTargetFocus);
-					auto rangeT3 = wiProfiler::BeginRangeCPU("Trees - FrustumCull");
-					GGTrees_UpdateFrustumCulling(&camera);
-					wiProfiler::EndRange(rangeT3);
-					auto rangeT4 = wiProfiler::BeginRangeCPU("Grass - GG Update");
-					GGGrass_Update(&camera, cmd, bImGuiRenderTargetFocus);
-					wiProfiler::EndRange(rangeT4);
-				}
-				wiProfiler::EndRange(range3);
-				GGPerf_TraceMark("trees-grass"); // GGMAX 2.61
-			}
-			else
-			{
-				// still need for terrain globals to update local params (for editable_size reading)
-				GGTerrain_Update_EmptyLevel(camera.Eye.x, camera.Eye.y, camera.Eye.z, cmd);
 			}
 			
 #ifdef WICKEDPARTICLESYSTEM
