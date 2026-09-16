@@ -9860,3 +9860,61 @@ have been a two-minute fix.
 ⚠ Also worth keeping: a near-black capture compresses to well under 0.15 MB, so screenshot
 file size is a free blank-render detector. All 19 came in at 0.73-2.47 MB; the smallest (Zombie
 Cellar) was eyeballed to confirm it is a genuinely dark indoor scene and not a failed render.
+
+
+# ★★★ §3.43 — TEST GAME SWEEP: 19/19 PLAYABLE (2026-09-16)
+
+Every shipped hub demo taken all the way into **Test Game**, fresh process each, read only.
+
+**19 passed, 0 failed, 0 skipped** — 36 minutes, 106-136 s per demo end to end.
+
+## ★★★ The pass test needs TWO signals, and §3.40 is why
+
+A level parked on a `LUA ERROR` MessageBox is still a live process with a window and a title. So
+"it did not crash" proves nothing, and neither does a screenshot on its own. The verdict requires
+both:
+
+| | running | parked on a modal |
+|---|---|---|
+| `GET_STATE` | `STATE: game` | silent — the modal owns the message pump |
+| CPU | climbing | **exactly +0.0** |
+
+Measured: **+21.8 to +117.3 CPU-sec per 30 s**, harness answering 3/3 on eighteen demos and 2/3 on
+Aztec Game Kit (one missed poll on a busy frame; the threshold is 2). Not one demo came near the
+parked signature.
+
+| demo | s | cpu/30s | | demo | s | cpu/30s |
+|---|---|---|---|---|---|---|
+| A Grand Canyon Adventure | 114 | +52.7 | | Island Showdown | 117 | +117.3 |
+| Aztec Game Kit | 136 | +66.3 | | Jungle Fever | 110 | +67.2 |
+| Aztec Game Kit Teaser | 112 | +72.1 | | Operation Amazon | 114 | +68.8 |
+| Bounty | 107 | +56.2 | | RPG Template | 108 | +61.5 |
+| Canyon Offensive | 120 | +83.7 | | River Raiders | 112 | +75.7 |
+| Disruption | 111 | +66.8 | | Snowy Mountain Stroll | 113 | +68.0 |
+| Escape from the Zombie Cellar | 108 | +21.8 | | Switch Escape | 106 | +56.6 |
+| Foggy Forest | 111 | +95.7 | | The Mystery of Z Island | 113 | +73.1 |
+| Horseshoe Bend | 126 | +96.6 | | Trapped | 108 | +59.2 |
+| Indian Strike Force | 119 | +100.9 | | | | |
+
+## ★★★ What this actually settles
+
+This is the first **broad** confirmation of the 3.40 Lua 5.4 shim. Every one of these demos runs
+`global.lua`, and every one of them would have hit the `math.atan2` modal before the shim — 21
+scriptbank files call it. Before 3.40 this sweep would have been 19 parked processes at +0.0 CPU.
+
+★ Both extremes were eyeballed rather than trusted to a number: Indian Strike Force is
+first-person gameplay with the weapon and hands rendered over terrain and water; Zombie Cellar, the
+lowest CPU at +21.8, is a candle-lit brick interior — a small enclosed room simply has far less to
+draw than open terrain, so the low figure is expected rather than suspicious.
+
+⚠ Screenshot size remains a free blank-render detector: 1.53-3.03 MB here, against the
+<0.15 MB a black frame would compress to.
+
+## Coverage now
+
+| check | result |
+|---|---|
+| editor load, all 19 demos (§3.42) | 19/19, versions 331/334/336/338 |
+| **test game, all 19 demos** | **19/19 playable** |
+| entity-record round-trip through a real save + relaunch (§3.41b) | slot 1 and slot 2 both survive |
+| DX11 token-sequence parity | save 350/350, load 346/346, zero divergences |
