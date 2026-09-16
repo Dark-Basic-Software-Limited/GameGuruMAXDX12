@@ -9815,3 +9815,48 @@ is not to reason about whether a divergence is survivable; it is to have no dive
 ★ In all three, the cheap decisive measurement existed the whole time and I reached for
 analysis first. The instruments that eventually settled it — `tools/ele_version.py` and the
 mechanical token-sequence diff — each took minutes to build.
+
+
+# ★★★ §3.42 — HUB DEMO SWEEP: 19/19 CLEAN (2026-09-16)
+
+Regression check on the 3.41 DX11-parity entity record. Every shipped hub demo, fresh process
+each, read only.
+
+**19 passed, 0 failed, 0 skipped** — whole sweep in 23 minutes, 66-91 s per demo, every one
+`ERRORS: none` with the right level in the title bar and a real render captured.
+
+That covers four on-disk format versions — **331** (Operation Amazon), **334** (Easter Gift Kit),
+**336** (Snowy Mountain, Bounty, Foggy Forest, Z Island 1 and 2) and **338** (the other fourteen)
+— about 950 MB across 21 level files. None reach the `>= 340` block 3.41 touched, so this does not
+test that block; what it does prove is that adopting DX11's loader wholesale broke none of the
+older version paths.
+
+## ★★★ The sweep took four attempts, and every failure was the HARNESS
+
+Lee spotted the cause from a screenshot after I had burned two hours: **the hub opens on the
+MY GAMES tab whenever any user project exists**, and the demo list only populates while the
+**DEMO GAMES** tab is rendering. Creating TESTPRO2 silently flipped that default. `SELECT_DEMO`
+was matching against an empty list. `NAVIGATE hub.demo_games` already existed in the harness — my
+sweep simply never called it.
+
+My own three bugs on top of that:
+
+| # | bug | cost |
+|---|---|---|
+| v1 | piped `CLICK_ONLY_LEVEL`'s reply to `/dev/null`, so a refused click and a slow load looked identical | 16 min per demo, 7 false failures |
+| v2 | `local a=$1 b=$2 c=$((b))` — bash expands all arguments before assigning, so `secs` was unbound under `set -u` | died on first call |
+| v3a | `res=$(run_demo ...)` — command substitution waits for the pipe to close and the backgrounded app inherits it | hung forever |
+
+★★★ **The through-line: I kept building scaffolding that could not tell "broken" from "slow",
+then believed its verdict.** Not one of the seven v1 failures was real — Horseshoe Bend loaded in
+50 s the moment it was clicked by hand, after sitting 13 minutes under the sweep. This is the same
+defect as §3.39's vacuous window check and this morning's `| tail`, three times in one day:
+**a test that cannot distinguish its failure modes reports the wrong one with full confidence.**
+
+★ The cheapest guard is the one v3 uses: **check every reply, retry on a non-OK, and budget in
+measured seconds.** The moment v1 had printed what `CLICK_ONLY_LEVEL` actually returned, this would
+have been a two-minute fix.
+
+⚠ Also worth keeping: a near-black capture compresses to well under 0.15 MB, so screenshot
+file size is a free blank-render detector. All 19 came in at 0.73-2.47 MB; the smallest (Zombie
+Cellar) was eyeballed to confirm it is a genuinely dark indoor scene and not a failed render.
