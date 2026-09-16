@@ -567,15 +567,16 @@
 					//PE: Fillers.
 
 					writer.WriteFloat(t.entityelement[ent].eleprof.light.fProbeBrightness);
-					// ★★★ GGMAX 3.38: DX11 did NOT grow this record. It CONSUMED the first two of the four
-					// reserved float fillers here, swapping WriteFloat(0.0f) for WriteLong(...). Both are 4 bytes,
-					// so the record width and every later field's offset are unchanged - old and new levels stay
-					// readable either way. ⚠ That only holds if the slot POSITION matches exactly, so do not
-					// reorder these. Slot 1 is bullet holes. Slot 2 is DX11's iMaterialSoundIndex, NOT ported yet -
-					// it stays a float filler until that feature comes across, and must then take slot 2 and no
-					// other. The load side in M-Entity_part3.cpp mirrors this exactly; change them together.
-					writer.WriteLong(t.entityelement[ent].iAllowBuletHole);   // filler slot 1
-					writer.WriteFloat(0.0f);                                  // filler slot 2 - reserved (iMaterialSoundIndex)
+					// GGMAX 3.41: this record is DX11's, byte for byte, for every version up to 342. DX11 is the
+					// format every shipping user has, so it is the BASE and must not drift: slot 1 is
+					// iAllowBuletHole and slot 2 is iMaterialSoundIndex, both LONG, both taken from DX11.
+					// 3.38 wrongly left slot 2 a float filler, which silently dropped Material Type on every save
+					// even though the dropdown (M-GridEdit_part1.cpp) and the impact-sound runtime
+					// (G-Entity_part2.cpp) were both already present.
+					// Anything DX12 wants to store that DX11 does not goes in a NEW version block, never in these
+					// reserved slots. The load side in M-Entity_part3.cpp mirrors this exactly.
+					writer.WriteLong(t.entityelement[ent].iAllowBuletHole);             // DX11 slot 1
+					writer.WriteLong(t.entityelement[ent].eleprof.iMaterialSoundIndex); // DX11 slot 2
 					writer.WriteFloat(0.0f);
 					writer.WriteFloat(0.0f);
 					writer.WriteLong(t.entityelement[ent].eleprof.systemwide_lua);

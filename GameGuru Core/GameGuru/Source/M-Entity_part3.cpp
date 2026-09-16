@@ -740,13 +740,11 @@ void c_entity_loadelementsdata ( void )
 						
 						t.a = t.a_f = c_ReadFloat(1); t.entityelement[t.e].eleprof.light.fProbeBrightness = t.a_f;
 
-						// ★★★ GGMAX 3.38: mirrors the save side in M-Entity_part4.cpp. Reserved filler slot 1 now
-						// carries iAllowBuletHole as a LONG (same 4 bytes as the float it replaced, so the record width
-						// is unchanged). ⚠ Slot 2 stays a float filler, reserved for DX11's iMaterialSoundIndex which
-						// is not ported yet. These two sides must change together or every field after this point is
-						// read at the wrong offset.
-						t.a = c_ReadLong(1); t.entityelement[t.e].iAllowBuletHole = t.a;   // filler slot 1
-						t.a = t.a_f = c_ReadFloat(1); fFiller = t.a_f;                     // filler slot 2
+						// GGMAX 3.41: mirrors the save side in M-Entity_part4.cpp. DX11's record is the BASE for every
+						// version up to 342 - slot 1 iAllowBuletHole, slot 2 iMaterialSoundIndex, both LONG. These two
+						// sides must change together or every field after this point is read at the wrong offset.
+						t.a = c_ReadLong(1); t.entityelement[t.e].iAllowBuletHole = t.a;             // DX11 slot 1
+						t.a = c_ReadLong(1); t.entityelement[t.e].eleprof.iMaterialSoundIndex = t.a; // DX11 slot 2
 						t.a = t.a_f = c_ReadFloat(1); fFiller = t.a_f;
 						t.a = t.a_f = c_ReadFloat(1); fFiller = t.a_f;
 						t.a = c_ReadLong(1);

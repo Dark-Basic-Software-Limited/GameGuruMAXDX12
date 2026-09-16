@@ -9672,3 +9672,68 @@ The first verification run burned 36 minutes and returned nothing, from two comp
 Neither is exotic, and together they were indistinguishable from the bug under test. Budget for
 shader recompilation before measuring anything on a post-build run, and never put a buffering pipe
 between a long test and its log.
+
+
+# ★★★ §3.41 — DX11 IS THE BASE FOR THE ENTITY RECORD (2026-09-16)
+
+Lee loaded `spotshadowtest.fpm`, a level saved by an earlier DX12 build, and it came back
+corrupted. His instruction settles the design question for good:
+
+> *The latest DX11 repo carries the entity file version and code we want to ABSOLUTELY retain as
+> all the current users of this software are using it.*
+
+## ★★★ The measurement that matters
+
+I extracted the save and load token sequences from both trees mechanically and diffed them:
+
+| | DX12 before | DX11 | after this fix |
+|---|---|---|---|
+| save tokens | 350 | 350 | 350 |
+| load tokens | 346 | 346 | 346 |
+| divergences | **1** | — | **0** |
+
+The single divergence was reserved **slot 2** in the `>= 340` block: DX12 wrote `WriteFloat(0.0f)`
+and read `c_ReadFloat` into a discarded filler, where DX11 writes and reads a **LONG**,
+`eleprof.iMaterialSoundIndex`. Both are 4 bytes, so offsets never shifted — but every DX12 save
+silently threw the value away.
+
+★★★ **DX12 already had the whole feature except the serialiser.** The field exists
+(`Types.h:6457`), the Material Type dropdown exists (`M-GridEdit_part1.cpp:6226`), and the
+impact-sound runtime reads it (`G-Entity_part2.cpp:710`). My 3.38 comment calling it "NOT ported
+yet" was simply wrong, and it made the gap look intentional to anyone reading the code afterwards.
+
+Both sides now match DX11 **byte for byte for every version up to 342**.
+
+## ★★★ The reasoning error this exposed
+
+When the corruption was reported I said the level format was exonerated, and gave as evidence that
+the 2024-era Aztec demo had loaded correctly an hour earlier.
+
+⚠ **Every shipped demo is v338.** The `>= 340` block — the only part 3.38 touched — never
+executes for any of them. Aztec loading fine was compatible with the changed code being completely
+broken, so it was not evidence of anything. The only levels that reach that block are ones saved
+by a recent DX12 build at v340+, which is exactly the file Lee was reporting and exactly the file
+I did not have.
+
+★★★ **A passing control only counts if it executes the code under test.** Verified here by
+reading the version out of four shipped `.fpm` files: all v338. The `.fpm` is a password-protected
+zip (`mypassword`, `M-MapFile_part0.cpp:94`) with `map.ele` inside; `tools/ele_version.py` reads it.
+
+## Versioning from here
+
+DX11 is at 342 and increments by one. DX12 must never write a number DX11 might also define with a
+different meaning — that is the collision that makes a file unreadable rather than merely wrong.
+So: **everything up to 342 stays identical to DX11**, and anything DX12-only goes in a new block
+above, in a band DX11 will not reach.
+
+⚠ Today that block would be **empty**: after this fix there is no field in the DX12 entity
+record that DX11 does not also store. The number gets bumped when there is a first real field to
+put in it, not before — an incremented version with nothing behind it buys no compatibility and
+costs the collision risk.
+
+## ★ Tooling lesson
+
+`M-Entity_part3.cpp` and `M-Entity_part4.cpp` are **LF**; `DarkLUA_part7.cpp` is **CRLF**. The patch
+script assumed CRLF and its own invariant refused the write — the third time today that an
+assertion caught a defect that review had not. **Detect the ending, never assume it**, and keep the
+check that compares endings before and after. See [[project-rules-patch-scripts]].
