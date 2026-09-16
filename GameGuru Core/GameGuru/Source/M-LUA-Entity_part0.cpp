@@ -552,6 +552,18 @@ void entity_lua_spawn ( void )
 				}
 				t.entitiesToSpawnQueue.push_back ( t.e );
 			}
+			else
+			{
+				// GGMAX 3.45 (DX11 c9cb9074): reloading a saved game sets spawnatstart==2 on anything the
+				// player spawned during play. Without this the object came back INVISIBLE and walk-through.
+				if (t.entityelement[t.e].active == 1)
+				{
+					// 'active' too: objects really are active==1 on this path
+					t.entityelement[t.e].eleprof.phyalways = 0;
+					entity_lua_show ();
+					entity_lua_collisionon ();
+				}
+			}
 		}
 	}
 }
@@ -1181,6 +1193,11 @@ void entity_lua_refreshentity ( void )
 void entity_lua_collected ( void )
 {
 	t.entityelement[t.e].collected = t.v;
+	// GGMAX 3.45 (DX11 51197b43): a key looted from a CHEST changes collected here, and every
+	// door that names it must re-evaluate. Without this the key is in your inventory and the
+	// door stays locked.
+	extern void darklua_refreshhaskeystatefor(LPSTR);
+	darklua_refreshhaskeystatefor(t.entityelement[t.e].eleprof.name_s.Get());
 	t.entityelement[t.e].lua.flagschanged = 1;
 }
 

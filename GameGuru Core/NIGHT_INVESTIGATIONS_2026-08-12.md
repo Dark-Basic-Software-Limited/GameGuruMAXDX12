@@ -10040,3 +10040,61 @@ thermal state, background load, or where each level happened to spawn the camera
 
 ★ Recorded as an open question, not a win. If it is worth settling, it needs an interleaved
 same-session A/B of the two BUILDS on one level with a fixed camera.
+
+
+# ★★★ §3.45 — THREE MORE HALF-PORTS CLOSED (2026-09-16)
+
+The next three from the §3.44 audit. All three are the same shape as everything else this port has
+produced: **one side landed and the other did not.**
+
+## 1. Storyboard video never advances (DX11 `8315c88c`)
+
+A non-looping storyboard video whose action is GOTOSCREEN is supposed to advance by itself when it
+finishes. The port landed **all four writes** of `bTriggerVideoNextScreen` and **one of its five
+reads** — so the flag was set and then ignored. The splash video played to its last frame and sat
+there until the player happened to click it; Escape did not skip it either.
+
+⚠ Worse, the port ALSO landed the other half of that commit, the `M-Game` change that boots the
+game straight into that screen. So the port created the dead end and then routed users into it.
+
+The four missing reads wrap the pointer-detection block (`if (!bTriggerVideoNextScreen)`) and the
+hover/release tests (`|| bTriggerVideoNextScreen`), plus the click-sound guard. ★ The reason
+the hunk never auto-placed is now clear: DX12 had inserted its own automation `TITLE_CLICK` block
+into exactly that context, and simplified the non-VR branch. The port preserves both.
+
+Verified: 5 reads now, matching DX11's 5.
+
+## 2. Save-game reload loses spawned objects (DX11 `c9cb9074`)
+
+Reloading a saved game sets `spawnatstart==2` on anything the player spawned during play. DX12
+handled only the `health<=0` respawn queue and had no `else`, so those objects came back
+**invisible and walk-through**. One self-contained else-branch: `phyalways = 0`, `entity_lua_show`,
+`entity_lua_collisionon`.
+
+## 3. Keys looted from chests never unlock doors (DX11 `51197b43`)
+
+The clearest severed chain in the whole audit. DX12 had:
+
+| piece | state |
+|---|---|
+| the READER — `collected == 2` accepted in `M-LUA.cpp` | **present** |
+| the door scripts' relock (`door_rotate` v35, `door_sliding` v36) | **present** |
+| `darklua_refreshhaskeystatefor()` — 73 lines | **absent entirely** |
+| the three call sites that invoke it | **absent** |
+
+So the reader was waiting for a state nothing ever set. Loot a key from a chest, the key is in your
+inventory, the door stays locked. Dropping a key never re-locked the door either. Ported verbatim
+plus the three call sites (two in `DarkLUA_part0.cpp`, one in `entity_lua_collected`).
+
+★ Note the door scripts were already correct — Phase A's content sweep carried them. Only the
+C++ half was missing, which is why the feature looked done from the script side.
+
+## Build
+
+Clean, 0 errors. Exe 31,861,248. Test-game regression **19/19**, 106-137 s per demo against
+107-137 s before the change - unchanged within noise.
+
+⚠ **Structurally verified, not behaviourally.** Code present, call sites wired, builds clean,
+demos still load and play. But none of the three behaviours was exercised: that needs a level
+with a non-looping splash video linked to a screen, a save/reload with a player-spawned object,
+and a chest containing a door key. The sweep proves nothing broke; it does not prove these work.

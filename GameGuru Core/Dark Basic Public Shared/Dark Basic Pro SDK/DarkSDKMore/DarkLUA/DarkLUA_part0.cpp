@@ -1608,6 +1608,8 @@ static int LUA_GETTOP(lua_State* L)
 						if (t.entityelement[iEntityIndex].collected != 0)
 						{
 							t.entityelement[iEntityIndex].collected = 0;
+							extern void darklua_refreshhaskeystatefor(LPSTR);
+							darklua_refreshhaskeystatefor(t.entityelement[iEntityIndex].eleprof.name_s.Get());
 							t.entityelement[iEntityIndex].x += 999999;
 							t.entityelement[iEntityIndex].y += 999999;
 							t.entityelement[iEntityIndex].z += 999999;
@@ -1637,6 +1639,8 @@ static int LUA_GETTOP(lua_State* L)
 				entity_lua_collisionoff();
 				t.e = store;
 				t.entityelement[iEntityIndex].collected = (int)fabs(iCollectState);
+				extern void darklua_refreshhaskeystatefor(LPSTR);
+				darklua_refreshhaskeystatefor(t.entityelement[iEntityIndex].eleprof.name_s.Get());
 				t.entityelement[iEntityIndex].x -= 999999;
 				t.entityelement[iEntityIndex].y -= 999999;
 				t.entityelement[iEntityIndex].z -= 999999;

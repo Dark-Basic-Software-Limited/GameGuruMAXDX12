@@ -821,6 +821,85 @@ int SetInventoryItemSlot(lua_State* L)
 	}
 	return 0;
 }
+
+// GGMAX 3.45 (DX11 51197b43 'Keys correctly flagged inside Chests'): when a key's collected
+// state changes, every door that names it has to re-evaluate its haskey flag. DX12 had the
+// reader (collected==2 accepted in M-LUA.cpp) and NOTHING that sets it, and this whole function
+// was absent - so a key looted from a chest left the door locked, and dropping a key never
+// re-locked it. Ported verbatim from DX11.
+void darklua_refreshhaskeystatefor(LPSTR keyobjectname)
+{
+	// all checks case insensitive
+	cstr checkthisname = Lower(keyobjectname);
+
+	// called when a collected state changes (i.e. a key) but need to allow all doors (haskey users) to refresh without messing up other haskey states
+	for (int e = 1; e <= g.entityelementlist; e++)
+	{
+		//  check if demilited key
+		t.masterkeyname_s = Lower(t.entityelement[e].eleprof.usekey_s.Get());
+		if (Len(t.masterkeyname_s.Get()) > 0)
+		{
+			t.tmultikey = 0;
+			for (int n = 1; n <= Len(t.masterkeyname_s.Get()); n++)
+			{
+				if (cstr(Mid(t.masterkeyname_s.Get(), n)) == ";")
+				{
+					t.tmultikey = 1;
+				}
+			}
+			//  Is USEKEY Collected?
+			bool bNeedToRefreshDoor = false;
+			if (t.tmultikey == 0)
+			{
+				//  (SINGLE)
+				for (int te = 1; te <= g.entityelementlist; te++)
+				{
+					if (stricmp(checkthisname.Get(), Lower(t.entityelement[te].eleprof.name_s.Get())) == NULL)
+					{
+						if (cstr(Lower(t.entityelement[te].eleprof.name_s.Get())) == t.masterkeyname_s)
+						{
+							bNeedToRefreshDoor = true; break;
+						}
+					}
+				}
+			}
+			else
+			{
+				//  (MULTIPLE)
+				int n = 1;
+				while (n <= Len(t.masterkeyname_s.Get()))
+				{
+					t.keyname_s = "";
+					while (n <= Len(t.masterkeyname_s.Get()))
+					{
+						if (cstr(Mid(t.masterkeyname_s.Get(), n)) == ";")  break;
+						t.keyname_s = t.keyname_s + Mid(t.masterkeyname_s.Get(), n);
+						++n;
+					}
+					//  look for this key
+					int ttokay = 0;
+					for (int te = 1; te <= g.entityelementlist; te++)
+					{
+						if (stricmp(checkthisname.Get(), Lower(t.entityelement[te].eleprof.name_s.Get())) == NULL)
+						{
+							if (cstr(Lower(t.entityelement[te].eleprof.name_s.Get())) == t.keyname_s)
+							{
+								ttokay = 1; break;
+							}
+						}
+					}
+					//  any key not found means overall master key not valid
+					if (ttokay == 0)  bNeedToRefreshDoor = true;
+					++n;
+				}
+			}
+			if (bNeedToRefreshDoor == true)
+			{
+				t.entityelement[e].lua.haskey = 0;
+			}
+		}
+	}
+}
 int MoveInventoryItem (lua_State* L)
 {
 	lua2 = L;

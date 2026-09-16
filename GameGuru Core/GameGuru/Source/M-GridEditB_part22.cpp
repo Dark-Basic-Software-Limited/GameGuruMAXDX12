@@ -1743,33 +1743,41 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 
 						//if (g.vrglobals.GGVREnabled > 0 && g.vrglobals.GGVRUsingVRSystem == 1)
 						extern int g_iActivelyUsingVRNow;
-						if (g.vrglobals.GGVREnabled > 0 && g_iActivelyUsingVRNow == 1)
+						// GGMAX 3.45 (DX11 8315c88c): a non-looping storyboard video whose action is GOTOSCREEN must
+						// advance BY ITSELF when it finishes. The port landed all four writes of bTriggerVideoNextScreen
+						// and only one of its five reads, so the flag was set and then ignored - the video played to the
+						// last frame and sat there until the player clicked it. These are the four missing reads.
+						// Pointer detection is skipped entirely while the video is driving the transition.
+						if (!bTriggerVideoNextScreen)
 						{
-							// VR support
-							int iObjToHit = 5997;
-							float fX = 0, fY = 0, fZ = 0;
-							int iHitIt = GGVR_GetLaserGuidedHit (iObjToHit, &fX, &fY, &fZ);
-							float fptrrealX = ((fX + 19.0f) / 38.0f) * (rMonitorArea.Max.x - rMonitorArea.Min.x);
-							float fptrrealY = ((11.0f - fY) / 22.0f) * (rMonitorArea.Max.y - rMonitorArea.Min.y);
-							if (GGVR_RightController_Trigger() > 0.5f)
+							if (g.vrglobals.GGVREnabled > 0 && g_iActivelyUsingVRNow == 1)
 							{
-								bIsPointerReleased = true;
-								ImVec2 topLeft = rMonitorArea.Min + widget_pos - vLargerGrabArea;
-								ImVec2 bottomRight = rMonitorArea.Min + widget_pos + widget_size + vLargerGrabArea;
-								if (fptrrealX > topLeft.x && fptrrealX < bottomRight.x)
+								// VR support
+								int iObjToHit = 5997;
+								float fX = 0, fY = 0, fZ = 0;
+								int iHitIt = GGVR_GetLaserGuidedHit (iObjToHit, &fX, &fY, &fZ);
+								float fptrrealX = ((fX + 19.0f) / 38.0f) * (rMonitorArea.Max.x - rMonitorArea.Min.x);
+								float fptrrealY = ((11.0f - fY) / 22.0f) * (rMonitorArea.Max.y - rMonitorArea.Min.y);
+								if (GGVR_RightController_Trigger() > 0.5f)
 								{
-									if (fptrrealY > topLeft.y && fptrrealY < bottomRight.y)
+									bIsPointerReleased = true;
+									ImVec2 topLeft = rMonitorArea.Min + widget_pos - vLargerGrabArea;
+									ImVec2 bottomRight = rMonitorArea.Min + widget_pos + widget_size + vLargerGrabArea;
+									if (fptrrealX > topLeft.x && fptrrealX < bottomRight.x)
 									{
-										bIsPointerHoveringOver = true;
+										if (fptrrealY > topLeft.y && fptrrealY < bottomRight.y)
+										{
+											bIsPointerHoveringOver = true;
+										}
 									}
 								}
 							}
-						}
-						else
-						{
-							// non VR
-							if (ImGui::IsMouseHoveringRect(rMonitorArea.Min + widget_pos - vLargerGrabArea, rMonitorArea.Min + widget_pos + widget_size + vLargerGrabArea)) bIsPointerHoveringOver = true;
-							if (ImGui::IsMouseReleased(0)) bIsPointerReleased = true;
+							else
+							{
+								// non VR
+								if (ImGui::IsMouseHoveringRect(rMonitorArea.Min + widget_pos - vLargerGrabArea, rMonitorArea.Min + widget_pos + widget_size + vLargerGrabArea)) bIsPointerHoveringOver = true;
+								if (ImGui::IsMouseReleased(0)) bIsPointerReleased = true;
+							}
 						}
 						// 2026-08-05: automation TITLE_CLICK — fire this widget as if hovered+
 						// released when its action matches the queued auto trigger, so click
@@ -1781,14 +1789,17 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 							bIsPointerReleased = true;
 							g_iAutoTriggerScreenAction = 0;
 						}
-						if (bIsPointerHoveringOver)
+						if (bIsPointerHoveringOver || bTriggerVideoNextScreen)
 						{
 							//if mouse release.
-							if (bIsPointerReleased)
+							if (bIsPointerReleased || bTriggerVideoNextScreen)
 							{
-								if (strlen(Storyboard.Nodes[nodeid].widget_click_sound[index]) > 0)
+								if (!bTriggerVideoNextScreen)
 								{
-									cTriggerButtonClickSound = Storyboard.Nodes[nodeid].widget_click_sound[index];
+									if (strlen(Storyboard.Nodes[nodeid].widget_click_sound[index]) > 0)
+									{
+										cTriggerButtonClickSound = Storyboard.Nodes[nodeid].widget_click_sound[index];
+									}
 								}
 
 								if (Storyboard.Nodes[nodeid].widget_action[index] == STORYBOARD_ACTIONS_NONE)
