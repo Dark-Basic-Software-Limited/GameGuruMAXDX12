@@ -9918,3 +9918,34 @@ draw than open terrain, so the low figure is expected rather than suspicious.
 | **test game, all 19 demos** | **19/19 playable** |
 | entity-record round-trip through a real save + relaunch (§3.41b) | slot 1 and slot 2 both survive |
 | DX11 token-sequence parity | save 350/350, load 346/346, zero divergences |
+
+
+# ★★★ §3.43b — the v342 coverage gap is CLOSED (2026-09-16)
+
+§3.42/3.43 both carried an honest caveat: every shipped demo is v338 or older, so none of them
+reach the `>= 340` block 3.41 changed. The only thing exercising it was the TESTPRO2 round-trip,
+a single synthetic entity.
+
+Lee then saved TESTPRO2 with the parity build and it grew to real content — `map.ele` 9,337 to
+**61,379 bytes**, still **v342**. Loaded with the current build:
+
+```
+STATE: editor   ERRORS: none
+idx=1 [Player Start Position]  slot1=0 slot2=0
+idx=2 [Brick Pyramid]          slot1=0 slot2=0
+idx=3 [Brick Half Pyramid]     slot1=0 slot2=0
+idx=4 [Rock Cliff A]           slot1=0 slot2=0
+idx=5 [Rock Cliff B]           slot1=0 slot2=0
+idx=6 [Rock Cliff E]           slot1=0 slot2=0
+idx=7 [Aztec Temple]           slot1=0 slot2=0
+TEST GAME: STATE:game  cpu +61.9/30s  harness 3/3
+```
+
+★★★ **The entity NAMES are the evidence, not the slot values.** Three `WriteString` fields sit
+immediately after the two reserved slots in the v340 record. If the offsets had drifted by even
+four bytes, those strings would swallow binary garbage and desync every entity after the first.
+Seven intact, correct names is a stronger proof than the slot numbers themselves — which are all
+zero here and would look identical under several kinds of corruption.
+
+★ Coverage is now complete on both sides: **v331/334/336/338** through the 19 hub demos, and
+**v342 with real content** through TESTPRO2, in the editor and in Test Game.
