@@ -466,7 +466,7 @@ void Master::InitializeSecondaries()
 	if (pref.iAdvancedGridModeSettings == 0)
 	{
 		//PE: Set new fEditorGridSize settings. 
-		if (pref.fEditorGridSizeX <= 1) pref.fEditorGridSizeX = 1.0f;
+		if (pref.fEditorGridSizeX <= 0.1f) pref.fEditorGridSizeX = 0.1f;
 		pref.fEditorGridOffsetX = 0;
 		pref.fEditorGridOffsetY = 0;
 		pref.fEditorGridOffsetZ = 0;

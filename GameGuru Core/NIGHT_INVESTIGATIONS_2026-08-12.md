@@ -10098,3 +10098,64 @@ Clean, 0 errors. Exe 31,861,248. Test-game regression **19/19**, 106-137 s per d
 demos still load and play. But none of the three behaviours was exercised: that needs a level
 with a non-looping splash video linked to a screen, a save/reload with a player-spawned object,
 and a chest containing a door key. The sweep proves nothing broke; it does not prove these work.
+
+
+# ★★★ §3.46 — SOUND SLOT 4, AND SIX DEAD KNOBS (2026-09-16)
+
+18 edits across 12 files. Researched in parallel, each one then re-checked by a second agent whose
+only job was to refute the first — anchors re-tested for byte-exact uniqueness with python rather
+than grep, so tabs and spacing count.
+
+## Sound slot 4 (DX11 `f74a6116`) — 7 edits
+
+The editor and file-format half shipped in §3.41 (the v342 record carries `soundset4a_s`). The Lua
+and runtime half did not, so the field existed, saved, loaded — and every path that used it reached
+for **slot 5**:
+
+| site | was | now |
+|---|---|---|
+| `GetEntityString` | returned slot 5's filename | slot 4's |
+| `GetSoundPlaying` | queried slot 5's handle | slot 4's |
+| `GetEntityRawSound` | returned slot 5's handle | slot 4's |
+| `entity_lua_sound_convertVtoTSND` | mapped v=4 to slot 5 | slot 4 |
+| `SetEntityString` | **unconditional** `soundset4 = 0` on EVERY call | real slot-4 block, orphan gone |
+| `darkai_killai` | no `s == 3` case — loop ran 0,1,2,4,5 | slot 4 silenced on AI death |
+| `entity_free` | zeroed the handle without releasing it | deletes first, no leak per level change |
+
+★ The `SetEntityString` one is the nastiest: the zero sat OUTSIDE every slot conditional, so
+setting ANY sound slot orphaned slot 4's handle.
+
+## Six dead knobs — the UI existed and the setting did nothing
+
+| knob | DX11 | what was missing |
+|---|---|---|
+| GUNSPEC `animchoicemode` | `5514c107` | all four runtime consumers ported, the **parser never assigned it** — stuck at 0, modes 1 and 2 unreachable |
+| Ultrawide Save/Load (issue 6283) | `7bf6ff5b` | `bOnlyOneButtonMouseRelease` declared and written, **never read** — one click hit every overlapping slot, so the wrong save could be written |
+| Editor grid < 1.0 (issue 6278) | `38a6252f` | 3 of 7 floor sites ported; the toolbar widget and the boot-time prefs load both clamped 0.5 back to 1.0 |
+| Show Object Debug Visuals | `1ee57a00` | flag exists, exported to Lua, shipped scripts read it — **the checkbox that is its only writer was never ported** |
+| `disablejustgrasssystem` | `49b9719d` | parsed in TWO places, **read in none**. Now guards `GGGrass_Init()` |
+| WPE preview OffsetX/Z | `11b3678b` | sliders wrote them, runtime honoured them, **the editor preview read only Y** |
+
+## ★ The applier, and why it was worth building
+
+One script, dry-run first: un-escape, detect each file's line endings **individually**, convert the
+replacement's newlines to that file's convention, assert every anchor occurs exactly once, and
+refuse to write anything if any check fails.
+
+That mattered: the 12 files split **9 CRLF / 3 LF**, and three replacements are multi-line. Pasting
+LF into a CRLF file would have silently mixed them. The dry run printed all 18 anchor counts before
+a single byte was written.
+
+⚠ Two edits landed in regions DX12 has already diverged in — the ultrawide guard sits in the
+exact block §3.45 edited for the storyboard video, which also holds the automation `TITLE_CLICK`
+hook. The anchor was scoped to stop short of both. Blind-pasting DX11 there would have reverted
+them without a compile error.
+
+## Build and regression
+
+Clean, 0 errors. Exe 31,862,272. Test-game regression **19/19**, 107-136 s per demo against
+106-137 s before - unchanged.
+
+⚠ Structurally verified, NOT behaviourally. Exercising these needs a gun with
+`animchoicemode 1`, an ultrawide Save/Load screen, a sub-1.0 grid, a WPE emitter with an X/Z
+offset, and an entity using Sound slot 4 from Lua. The sweep proves nothing broke.

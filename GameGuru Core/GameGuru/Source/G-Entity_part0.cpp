@@ -556,6 +556,7 @@ void entity_free ( void )
 		t.entityelement[t.e].soundset2=0;
 		if ( t.entityelement[t.e].soundset3>0  )  deleteinternalsound(t.entityelement[t.e].soundset3);
 		t.entityelement[t.e].soundset3 = 0;
+		if (t.entityelement[t.e].soundset4 > 0)  deleteinternalsound(t.entityelement[t.e].soundset4);
 		t.entityelement[t.e].soundset4 = 0;
 		if (t.entityelement[t.e].soundset5 > 0)  deleteinternalsound(t.entityelement[t.e].soundset5);
 		t.entityelement[t.e].soundset5 = 0;

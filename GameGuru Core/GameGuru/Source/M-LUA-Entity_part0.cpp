@@ -1227,7 +1227,7 @@ int entity_lua_sound_convertVtoTSND (int te, int tv)
 	if (tv == 1) ttsnd = t.entityelement[te].soundset1;
 	if (tv == 2) ttsnd = t.entityelement[te].soundset2;
 	if (tv == 3) ttsnd = t.entityelement[te].soundset3;
-	if (tv == 4) ttsnd = t.entityelement[te].soundset5;
+	if (tv == 4) ttsnd = t.entityelement[te].soundset4;
 	if (tv == 5) ttsnd = t.entityelement[te].soundset5;
 	if (tv == 6) ttsnd = t.entityelement[te].soundset6;
 	return ttsnd;

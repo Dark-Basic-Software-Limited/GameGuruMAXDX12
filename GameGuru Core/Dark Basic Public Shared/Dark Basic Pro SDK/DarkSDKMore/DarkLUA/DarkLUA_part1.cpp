@@ -535,7 +535,17 @@
 				t.entityelement[ iEntityIndex ].soundset3 =	loadinternalsoundcore( t.entityelement[ iEntityIndex ].eleprof.soundset3_s.Get(), 1 );
 			}
 		}
-		t.entityelement[iEntityIndex].soundset4 = 0;
+		//t.entityelement[iEntityIndex].soundset4 = 0;
+		if (iSlotIndex == 4)
+		{
+			t.entityelement[iEntityIndex].eleprof.soundset4a_s = pString;
+			if (setSound)
+			{
+				if (t.entityelement[iEntityIndex].soundset4 > 0) deleteinternalsound(t.entityelement[iEntityIndex].soundset4);
+				t.entityelement[iEntityIndex].soundset4 = loadinternalsoundcore(t.entityelement[iEntityIndex].eleprof.soundset4a_s.Get(), 1);
+			}
+		}
+
 		if (iSlotIndex == 5)
 		{
 			t.entityelement[iEntityIndex].eleprof.soundset5_s = pString;
@@ -572,7 +582,7 @@
 		if ( iSlotIndex == 1 ) pString = t.entityelement[iEntityIndex].eleprof.soundset1_s.Get();
 		if ( iSlotIndex == 2 ) pString = t.entityelement[iEntityIndex].eleprof.soundset2_s.Get();
 		if ( iSlotIndex == 3 ) pString = t.entityelement[iEntityIndex].eleprof.soundset3_s.Get();
-		if ( iSlotIndex == 4 ) pString = t.entityelement[iEntityIndex].eleprof.soundset5_s.Get();
+		if ( iSlotIndex == 4 ) pString = t.entityelement[iEntityIndex].eleprof.soundset4a_s.Get();
 		if ( iSlotIndex == 5 ) pString = t.entityelement[iEntityIndex].eleprof.soundset5_s.Get();
 		if ( iSlotIndex == 6 ) pString = t.entityelement[iEntityIndex].eleprof.soundset6_s.Get();
 	}
@@ -709,6 +719,12 @@
 				pObject->fAnimFrame = WickedCall_GetObjectFrame(pObject);
 				#endif
 				if (pObject->fAnimFrame >= t.smoothanim[iObjID].fn - iChopFramesOffThEnd)
+				{
+					iReturnValue = 1;
+				}
+
+				// detects when animation stopped
+				if (WickedCall_GetObjectPlaying(pObject)==false)
 				{
 					iReturnValue = 1;
 				}

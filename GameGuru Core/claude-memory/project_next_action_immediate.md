@@ -8,7 +8,35 @@ metadata:
   modified: 2026-08-26T04:10:52.131Z
 ---
 
-# ▶▶ RESUME HERE — state as of 2026-09-16
+# ▶▶ RESUME HERE — state as of 2026-09-17
+
+## ★★★ DX11 parity: audited in full, 17 defects fixed (3.44-3.46)
+
+All **338** DX11 commits (`ca32a143`..`3e21f674`) audited — 232 present, 30 missing, 6 skipped
+by design, 70 N/A. Report: `GameGuru Core/DX11_PARITY_DEEP_AUDIT_2026-09-16.md`.
+
+★★★ **Almost every gap was a HALF-PORT, not an omission** — the knob saves and does nothing, the
+flag is written and never read, the breadcrumb is recorded and never printed. At least 12 were
+severed chains holding dead code that READS AS FINISHED. Expect more of this shape.
+
+Fixed: terrain recursive_mutex, pPage Release null-deref, 5 crash-handler guards, breadcrumb
+dump, bullet holes on doors, underwater start marker, undo on level load, storyboard video
+auto-advance, save-game spawned objects, chest keys (73-line fn + 3 call sites), Lua sound slot
+4 (7 edits), and six dead knobs (animchoicemode, ultrawide save/load, sub-1.0 grid, debug
+visuals checkbox, disablejustgrasssystem, WPE preview offsets).
+
+⚠ **All structural, none behavioural.** Regression is 19/19 editor and 19/19 test game, which
+proves nothing BROKE — not that these now work. Exercising them needs purpose-built content.
+
+⚠ **Biggest audit blind spot: ASSETS.** Neither repo tracks binaries and there is no DX11 build
+area here, so DX11 art/model/sound additions were invisible to it.
+
+⚠ The bullet-hole change alters behaviour Lee tested on 09-16: non-static + immobile entities no
+longer take decals unless the opt-in is ticked (DX11's deliberate issue-6236 fix).
+
+Still unported, by priority: door.lua v31->v33 (hand-merge, the only one), nav-mesh high-quality
+extraction, standalone nav cache, no-terrain-update-during-export, Delayed Shot, additive
+blending in Test Game, remote thumbnails, case-insensitive decals, cStr slack.
 
 ## ★★★ 3.41 — DX11 owns the entity file format (settled 09-16)
 

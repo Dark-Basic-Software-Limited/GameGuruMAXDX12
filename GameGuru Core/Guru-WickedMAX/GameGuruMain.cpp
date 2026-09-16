@@ -173,8 +173,13 @@ bool GuruLoopLogic ( void )
 					GGTerrain::GGTerrainWicked_Init();
 					timestampactivity(0, "GGTrees::GGTrees_Init();");
 					GGTrees::GGTrees_Init();
-					timestampactivity(0, "GGGrass::GGGrass_Init();");
-					GGGrass::GGGrass_Init();
+
+					extern int g_iDisableJustGrassSystem;
+					if (g_iDisableJustGrassSystem == 0)
+					{
+						timestampactivity(0, "GGGrass::GGGrass_Init();");
+						GGGrass::GGGrass_Init();
+					}
 					// GGMAX 3.25: Terrain Bake and Water Bake load their shaders HERE, beside the other
 					// GG modules, and not lazily on the first tick of their switch. SHADERPATH is the
 					// RELATIVE "shaders/", and by the time the panel is reachable the process CWD has

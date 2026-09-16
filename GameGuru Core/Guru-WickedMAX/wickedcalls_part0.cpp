@@ -2264,9 +2264,12 @@ bool WickedCall_GetObjectPlaying(sObject* pObject)
 			sAnimationSet* pAnimSet = pObject->pAnimationSet;
 			Entity animentity = pAnimSet->wickedanimentityindex;
 			AnimationComponent* animationcomponent = wiScene::GetScene().animations.GetComponent(animentity);
-			if (animationcomponent->IsPlaying())
+			if (animationcomponent)
 			{
-				return true;
+				if (animationcomponent->IsPlaying())
+				{
+					return true;
+				}
 			}
 		}
 	}

@@ -781,7 +781,7 @@ void ImGui_RenderLast(void)
 					if (ImGui::InputFloat("##XYZgridsizeXYZ", &pref.fEditorGridSizeX, 0.0f, 0.0f, precision.c_str()))
 					{
 						// can never have a grid size below one
-						if (pref.fEditorGridSizeX <= 1) pref.fEditorGridSizeX = 1.0f;
+						if (pref.fEditorGridSizeX <= 0.1f) pref.fEditorGridSizeX = 0.1f;
 						// and all grid dimensions the same!
 						pref.fEditorGridOffsetX = 0;
 						pref.fEditorGridOffsetY = 0;
@@ -921,7 +921,7 @@ void ImGui_RenderLast(void)
 							ImGui::PopItemWidth();
 
 							// can never have a grid size below one
-							if (pref.fEditorGridSizeX <= 1) pref.fEditorGridSizeX = 1.0f;
+							if (pref.fEditorGridSizeX <= 0.1f) pref.fEditorGridSizeX = 0.1f;
 
 							// and all grid dimensions the same!
 							pref.fEditorGridOffsetX = 0;
@@ -1040,9 +1040,9 @@ void ImGui_RenderLast(void)
 							}
 
 							// can never have a grid size below one
-							if (pref.fEditorGridSizeX <= 1) pref.fEditorGridSizeX = 1.0f;
-							if (pref.fEditorGridSizeY <= 1) pref.fEditorGridSizeY = 1.0f;
-							if (pref.fEditorGridSizeZ <= 1) pref.fEditorGridSizeZ = 1.0f;
+							if (pref.fEditorGridSizeX <= 0.1f) pref.fEditorGridSizeX = 0.1f;
+							if (pref.fEditorGridSizeY <= 0.1f) pref.fEditorGridSizeY = 0.1f;
+							if (pref.fEditorGridSizeZ <= 0.1f) pref.fEditorGridSizeZ = 0.1f;
 						}
 						ImGui::PopStyleVar();
 					}

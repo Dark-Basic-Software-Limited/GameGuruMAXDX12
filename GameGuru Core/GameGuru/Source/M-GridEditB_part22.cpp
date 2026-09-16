@@ -1776,7 +1776,18 @@ int screen_editor(int nodeid, bool standalone, char *screen)
 							{
 								// non VR
 								if (ImGui::IsMouseHoveringRect(rMonitorArea.Min + widget_pos - vLargerGrabArea, rMonitorArea.Min + widget_pos + widget_size + vLargerGrabArea)) bIsPointerHoveringOver = true;
-								if (ImGui::IsMouseReleased(0)) bIsPointerReleased = true;
+								// DX11 7bf6ff5b (issue 6283): on ultrawide Save/Load screens the slot widgets overlap, so a
+								// single mouse release registered on every widget under the cursor. bOnlyOneButtonMouseRelease
+								// was already declared and written by the savegame.lua / loadgame.lua RETURNVALUETOLUA handlers
+								// below, but never read - this is the missing read: once a slot has consumed the release, the
+								// later widgets in the same loop ignore it.
+								if (ImGui::IsMouseReleased(0))
+								{
+									if (!bOnlyOneButtonMouseRelease)
+									{
+										bIsPointerReleased = true;
+									}
+								}
 							}
 						}
 						// 2026-08-05: automation TITLE_CLICK — fire this widget as if hovered+

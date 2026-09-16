@@ -1871,6 +1871,7 @@ void darkai_killai (void)
 		if (s == 0) ttsnd = t.entityelement[e].soundset;
 		if (s == 1) ttsnd = t.entityelement[e].soundset2;
 		if (s == 2) ttsnd = t.entityelement[e].soundset3;
+		if (s == 3) ttsnd = t.entityelement[e].soundset4;
 		if (s == 4) ttsnd = t.entityelement[e].soundset5;
 		if (s == 5) ttsnd = t.entityelement[e].soundset6;
 		if (ttsnd > 0)

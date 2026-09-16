@@ -846,6 +846,13 @@ bool AI_Management_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::PopItemWidth();
 
 		ImGui::PushItemWidth(-10);
+		if (ImGui::Checkbox("Show Object Debug Visuals", &t.luaglobal.showobjectdebugvisuals))
+		{
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle whether the LUA system should show object debug visuals");
+		ImGui::PopItemWidth();
+
+		ImGui::PushItemWidth(-10);
 
 		extern bool g_bResetHasForLevelGeneration;
 		if (ImGui::Checkbox("Disable Navmesh Generation", &t.visuals.bEnableZeroNavMeshMode))
@@ -1429,8 +1436,10 @@ void RenderPreviewEmitter(void)
 		if (iEntityIndex > 0 && PreviewWPERoot > 0)
 		{
 			extern float fPreviewYOffset;
+			extern float fPreviewXOffset;
+			extern float fPreviewZOffset;
 			bool WickedCall_ParticleEffectPositionRotation(uint32_t root, float fX, float fY, float fZ, float fXa, float fYa, float fZa);
-			WickedCall_ParticleEffectPositionRotation(PreviewWPERoot, posx, posy + fPreviewYOffset, posz, 0, posya, 0);
+			WickedCall_ParticleEffectPositionRotation(PreviewWPERoot, posx + fPreviewXOffset, posy + fPreviewYOffset, posz + fPreviewZOffset, 0, posya, 0);
 		}
 	}
 }

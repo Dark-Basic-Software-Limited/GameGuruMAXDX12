@@ -549,6 +549,12 @@ void gun_loaddata ( void )
 					cmpStrConst( t_field_s, "lockcamera" );
 					if( matched )  g.firemodes[t.gunid][0].settings.lockcamera = t.value1;
 
+					// animchoicemode; 0 = default random as above, 1 = pure random allowing repeat anims to be chosen, 2 = sequential not random
+					cmpStrConst(t_field_s, "animchoicemode");
+					if (matched)  g.firemodes[t.gunid][0].settings.animchoicemode = t.value1;
+					cmpStrConst(t_field_s, "alt animchoicemode");
+					if (matched)  g.firemodes[t.gunid][1].settings.animchoicemode = t.value1;
+
 					//  Gun model animation keyframe setting
 					cmpStrConst( t_field_s, "keyframe ratio" );
 					if( matched ) 
