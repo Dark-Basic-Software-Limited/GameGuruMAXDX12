@@ -10012,3 +10012,31 @@ eyeball it.
 wrong on the first run: for a pure-LF file the stray-LF count *is* the line count, so adding lines
 legitimately changes it and the check false-failed. The correct form is convention-aware — an LF
 file must gain no CRs; a CRLF file must gain no bare LFs. See [[project-rules-patch-scripts]].
+
+
+# ★★★ §3.44b — 3.44 REGRESSION: 19/19 EDITOR, 19/19 TEST GAME
+
+Both sweeps re-run against the 3.44 build (terrain recursive_mutex, pPage guard, five crash-handler
+guards, breadcrumb dump, bullet-hole clause, underwater marker, undo clear).
+
+| sweep | before 3.44 | after 3.44 |
+|---|---|---|
+| editor load | 19/19, 66-91 s | **19/19, 67-89 s** |
+| test game | 19/19, 106-136 s | **19/19, 107-137 s** |
+
+Load and run times are unchanged within noise, which is the result that matters: the terrain lock
+type changed in a hot path and nothing slowed down or broke.
+
+## ⚠ An observation I am deliberately NOT drawing a conclusion from
+
+Test-game CPU is higher across almost every demo after the change — Indian Strike Force +146.1 vs
++100.9 per 30 s, Horseshoe Bend +131.4 vs +96.6, Foggy Forest +120.4 vs +95.7.
+
+The tempting story is that `recursive_mutex` removed contention stalls so more frames render per
+second. **That story is not supported by this data.** These are two sweeps run an hour apart, each
+a single 30-second sample, with an uncontrolled camera position and no interleaving — exactly the
+shape [[project-measuring-rules]] says cannot carry a single-cell delta. It could equally be
+thermal state, background load, or where each level happened to spawn the camera.
+
+★ Recorded as an open question, not a win. If it is worth settling, it needs an interleaved
+same-session A/B of the two BUILDS on one level with a fixed camera.
