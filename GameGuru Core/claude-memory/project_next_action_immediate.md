@@ -10,6 +10,24 @@ metadata:
 
 # ▶▶ RESUME HERE — state as of 2026-09-16
 
+## ★★★ 3.41 — DX11 owns the entity file format (settled 09-16)
+
+`spotshadowtest.fpm` loaded corrupted; Lee's call closed it: **adopt the latest DX11 load/save
+code and version, full stop.** Done and proven — save 350/350 tokens, load 346/346, **zero
+divergences** against DX11, version stays DX11's **342**.
+
+★★★ **The defect was two builds writing the same version number with different field meanings.**
+Both slot-2 encodings were 4 bytes so no offset could shift - I proved that repeatedly and it did
+not help. v342 simply no longer identified one layout. Do not reason about whether a divergence is
+survivable; have no divergence.
+
+★ Fixed a real data-loss bug on the way: **Material Type was discarded on every save** - the
+field, dropdown and impact-sound runtime all existed, only the serialiser wrote a throwaway float.
+Round-trip proven across a full process relaunch (slot1=1, slot2=3 both survived).
+
+⚠ Anything DX12-only goes in a NEW version block in a band DX11's counter will not reach.
+Empty today - there is no field we store that DX11 does not.
+
 **Both repos pushed.** Engine `9832c8e0`. Build green; exe 31,858,176 (2026-09-16 12:17).
 
 ## ★★★ 3.40 — the test-game "freeze" is SOLVED (Lua 5.4)

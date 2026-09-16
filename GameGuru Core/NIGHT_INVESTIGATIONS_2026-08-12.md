@@ -9784,3 +9784,34 @@ another arm. Pair `SET_ENTITY_SLOTS` with `SAVE_LEVEL`; on its own it only write
 `DarkLUA_part7.cpp` is **CRLF**, `AutomationHarness.cpp` is **CRLF with 6 stray LFs**. The right
 invariant is not "the file must be pure" — it is **"my edit must not change the stray count"**.
 The strict version refused two legitimate writes before I noticed the files were already mixed.
+
+
+# ★★★ §3.41c — spotshadowtest CLOSED (2026-09-16)
+
+Lee: *"You can lose the spotshadowtest case, we solved it by assuming the latest DX11 load code."*
+
+The corrupted level is gone along with the rest of the development-era saves, and the fix that
+closed it is the one in §3.41 — adopt DX11's load and save code wholesale rather than carrying a
+DX12 variant of the same version number. That is the durable lesson here, and it is worth stating
+plainly because I spent a long time on the wrong half of it:
+
+★★★ **Two builds writing the same version number with different field meanings is the defect.**
+It does not matter that both of our slot-2 encodings were 4 bytes wide and therefore could not
+shift an offset — I proved that repeatedly and it was true and it did not help. The real problem
+is that v342 no longer identified a single layout, so no reader could be correct for both. The fix
+is not to reason about whether a divergence is survivable; it is to have no divergence.
+
+## ⚠ What I got wrong on the way
+
+1. **I declared the format exonerated using a control that never ran the code.** Every shipped demo
+   is v338 and skips the `>= 340` block entirely, so "Aztec loads fine" was compatible with the
+   changed code being totally broken. A passing control only counts if it executes the code under
+   test.
+2. **I searched the wrong tree and blamed the user's setup.** User levels live in the writable
+   area, not the build area; I concluded Lee was running a different install. He was not.
+3. **Two confident theories before that** — the Delayed Shadows default flip and the entity-file
+   version bump — both disproved by a single check that cost far less than the reasoning did.
+
+★ In all three, the cheap decisive measurement existed the whole time and I reached for
+analysis first. The instruments that eventually settled it — `tools/ele_version.py` and the
+mechanical token-sequence diff — each took minutes to build.
