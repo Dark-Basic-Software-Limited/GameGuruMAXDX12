@@ -9737,3 +9737,50 @@ costs the collision risk.
 script assumed CRLF and its own invariant refused the write — the third time today that an
 assertion caught a defect that review had not. **Detect the ending, never assume it**, and keep the
 check that compares endings before and after. See [[project-rules-patch-scripts]].
+
+
+# ★★★ §3.41b — THE ROUND-TRIP, PROVEN (2026-09-16)
+
+Lee cleared the decks: the dev-era levels and the three old test projects are deleted, and a fresh
+**TESTPRO2 / testpro2level.fpm** exists to be tested against. DX11 governs the format version.
+
+## ⚠ First, where the levels actually live
+
+`C:/Users/leeba/Documents/GameGuruApps/GameGuruMAX/Files/` — **not** the build area, which holds
+only the 19 shipped demos. I searched the build area, found nothing, and told Lee he must be
+running a different install. He was not. `Files/levelbank/testmap/` contains a file named
+*"testmap files now go to the writable area.txt"*, inside the tree I was searching.
+
+## ★★★ The result
+
+Full save/reload round-trip on the two reserved slots of the v340 record, with a **complete process
+relaunch** between write and read so nothing could survive in memory and fake a pass:
+
+| step | slot 1 iAllowBuletHole | slot 2 iMaterialSoundIndex |
+|---|---|---|
+| before | 0 | 0 |
+| set in memory | 1 | 3 |
+| SAVE_LEVEL (real `gridedit_save_map`) | — | — |
+| **after full relaunch** | **1** | **3** |
+
+Both survived. Slot 2 surviving is the specific proof that **Material Type is no longer discarded
+on save** — before 3.41 that value was written as a throwaway float on every single save, even
+though the field, the dropdown and the impact-sound runtime were all present and correct.
+
+Level restored to its pre-test bytes afterwards (md5 verified against the backup taken first).
+
+## Harness additions
+
+`GET_ENTITY_SLOTS` / `SET_ENTITY_SLOTS`, in the existing bullet-hole helper rather than the
+dispatch ladder — ⚠ that ladder is at the MSVC **C1061** nesting limit and will not take
+another arm. Pair `SET_ENTITY_SLOTS` with `SAVE_LEVEL`; on its own it only writes memory.
+
+## ★★★ Repaired my own damage
+
+`AutomationHarness.cpp` carried **118 doubled `CR CR LF` line endings**, left by commit `819a650a`
+— the same CRLF bug that bit twice earlier today. Normalised to zero as part of this change.
+
+★ Three files, three different conventions: `M-Entity_part3/4.cpp` are **LF**,
+`DarkLUA_part7.cpp` is **CRLF**, `AutomationHarness.cpp` is **CRLF with 6 stray LFs**. The right
+invariant is not "the file must be pure" — it is **"my edit must not change the stray count"**.
+The strict version refused two legitimate writes before I noticed the files were already mixed.
