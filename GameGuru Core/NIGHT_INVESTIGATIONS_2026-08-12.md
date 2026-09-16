@@ -9638,6 +9638,37 @@ substitute newlines after joining, and assert the ending counts before writing.*
 needs embedded newlines, prefer a form that needs none — Lua separates statements with whitespace,
 so the whole script is one line with no escapes at all.
 
-## Status
+## ★★★ CONFIRMED — Test Level now runs
 
-Build clean, 0 errors. Runtime verification still in flight at time of writing - the first launch after a game rebuild recompiles shaders, so the Aztec load is slow. What CAN be said: the modal's signature is ABSENT. A parked modal reads +0.0 CPU; this process is at +36.7 CPU-sec per 15 s, above the editor control, with auto_command.txt consumed (so the harness poll is alive).
+Build clean, 0 errors. Measured on a fresh launch, same protocol as §3.39 so the two are directly
+comparable — the only difference is the shim:
+
+| t | §3.39 (before) | 3.40 (after) |
+|---|---|---|
+| 10 s | +12.8 | +11.8 |
+| 20 s | +10.2 | +10.4 |
+| 30 s | **+0.0** | **+22.9** |
+| 40 s | **+0.0** | **+24.7** |
+| 50 s | **+0.0** | **+24.0** |
+| 60 s | **+0.0** | **+26.2** |
+| harness | silent forever | `STATE: game` |
+
+Before, the process was parked on the modal by t=30 s and never came back. Now it holds 22-26
+CPU-sec per 10 s for the full minute and the harness answers `STATE: game`. A screenshot at t=90 s
+shows the Aztec scene rendering full-screen with no editor UI and no dialog.
+
+This also unblocks `FIRE_RAY_AT` and `TRIGGER_LUA_ERROR`, which could not run without game state.
+
+## ★★★ A measurement trap worth remembering
+
+The first verification run burned 36 minutes and returned nothing, from two compounding mistakes:
+
+1. The script was piped through `| tail -60`, so **the whole pipeline buffered** and no output
+   appeared until exit — including the per-step progress that would have shown where it stalled.
+2. **The first launch after a GAME build recompiles shaders.** Aztec then took 20+ minutes to load
+   at ~2.4 cores, which I initially read as progress and later as a possible hang. The relaunch,
+   with shaders cached, reached the storyboard in **31 seconds** — the same work, 40x faster.
+
+Neither is exotic, and together they were indistinguishable from the bug under test. Budget for
+shader recompilation before measuring anything on a post-build run, and never put a buffering pipe
+between a long test and its log.

@@ -77,6 +77,19 @@ Rejected, with reasons:
 - **Rewrite the 21 scripts to `math.atan`** — the next DX11 script import undoes it, and DX11 still
   runs 5.2 where `math.atan` takes one argument, so the trees would diverge.
 
+## ★★★ CONFIRMED FIXED 2026-09-16
+
+Same protocol as the broken runs, so directly comparable — only the shim differs:
+
+| t | before | after |
+|---|---|---|
+| 30 s | **+0.0** | **+22.9** |
+| 60 s | **+0.0** | **+26.2** |
+| harness | silent forever | `STATE: game` |
+
+Held 22-26 CPU-sec per 10 s for the full minute; screenshot shows Aztec rendering full-screen with
+no dialog. Unblocks `FIRE_RAY_AT` and `TRIGGER_LUA_ERROR`.
+
 ## ⚠ Still worth knowing
 
 The first launch after a GAME rebuild recompiles shaders — Aztec's load then takes 20+ minutes at

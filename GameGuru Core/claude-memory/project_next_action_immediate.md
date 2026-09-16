@@ -29,8 +29,9 @@ process sat at exactly 0% CPU. The error itself: the DX12 port dropped the game'
    DENIED, flag 1 -> ALLOWED). But Aztec is 196 ALLOWED / 4 DENIED and all four denied are markers
    or particle emitters — every solid object there is already `staticflag=1`, so bullet holes
    already worked on it. A visible difference needs a NON-STATIC, NON-IMMOBILE prop.
-2. **Confirm Test Level now plays through.** The shim builds clean and the modal's signature is
-   gone, but a full playable run has not been eyeballed end to end.
+2. ★ **Test Level is CONFIRMED working** (09-16): 60 s at 22-26 CPU/10 s vs +0.0 before, harness
+   reports `STATE: game`, screenshot shows the scene rendering. `FIRE_RAY_AT` and
+   `TRIGGER_LUA_ERROR` are unblocked — but see item 1: Aztec still cannot SHOW a bullet hole.
 
 ⚠ **Budget for shader recompilation.** The first launch after a GAME build recompiles shaders —
 Aztec then takes 20+ minutes to load at ~2.4 cores, and the harness cannot answer during it
