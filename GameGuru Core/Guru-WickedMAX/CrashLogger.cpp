@@ -172,7 +172,11 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
 
     // the address we need is not the runtime address the exception provides!
     DWORD64 moduleBase = (DWORD64)GetModuleHandle(NULL);
-    DWORD64 crashAddress = (DWORD64)pExceptionInfo->ExceptionRecord->ExceptionAddress;
+    // GGMAX 3.44: pExceptionInfo is NULL when CError.cpp calls CrashHandler(NULL) for a Lua
+    // runtime error - phase D wired that caller up without these guards. Dereferencing it here
+    // faulted INSIDE the crash handler, so the one error class this feature exists to report
+    // produced no log at all. Every use below is now guarded.
+    DWORD64 crashAddress = pExceptionInfo ? (DWORD64)pExceptionInfo->ExceptionRecord->ExceptionAddress : 0;
     DWORD64 offset = crashAddress - moduleBase;
     DWORD64 lookupAddress = baseAddress + offset;
 
@@ -184,7 +188,7 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
 
     //if (SymGetLineFromAddr64(process, lookupAddress, &displacement, &lineData))
     //PE: Use ExceptionAddress directly.
-    if (SymGetLineFromAddr64(process, (DWORD64)pExceptionInfo->ExceptionRecord->ExceptionAddress, &displacement, &lineData))
+    if (pExceptionInfo && SymGetLineFromAddr64(process, (DWORD64)pExceptionInfo->ExceptionRecord->ExceptionAddress, &displacement, &lineData))
     {
         std::ostringstream l;
         l << lineData.FileName << ":" << lineData.LineNumber;
@@ -201,7 +205,10 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     // (texture streaming, terrain generation) rather than anything the frame loop did.
     log << "Thread id:       " << std::dec << GetCurrentThreadId()
         << (GetCurrentThreadId() == g_dwCrashMainThreadId ? "  (MAIN THREAD)" : "  (worker thread)") << "\r\n";
-    log << "Exception code:  0x" << std::hex << pExceptionInfo->ExceptionRecord->ExceptionCode << "\r\n";
+    if (pExceptionInfo)
+        log << "Exception code:  0x" << std::hex << pExceptionInfo->ExceptionRecord->ExceptionCode << "\r\n";
+    else
+        log << "Exception code:  (none - reported by RunTimeError, not a hardware fault)\r\n";
     log << "Module address:  0x" << std::hex << moduleBase << "\r\n";
     log << "Crash address:   0x" << std::hex << crashAddress << "\r\n";
     log << "Base address:    0x" << std::hex << baseAddress << "\r\n";
@@ -215,7 +222,8 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
     // An access violation carries which operation failed and at what address. "Crash address"
     // above is the INSTRUCTION; this is the DATA pointer it tried to touch. For an out-of-bounds
     // read the two are unrelated, and only this one tells you how far off the end you went.
-    if (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION
+    if (pExceptionInfo
+     && pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION
      && pExceptionInfo->ExceptionRecord->NumberParameters >= 2)
     {
         const ULONG_PTR opType = pExceptionInfo->ExceptionRecord->ExceptionInformation[0];
@@ -246,8 +254,26 @@ LONG WINAPI CrashHandler(EXCEPTION_POINTERS* pExceptionInfo)
         // handler that crashes produces NO report at all, which is worse than no stack.
         static char stackText[48 * 512];
         stackText[0] = 0;
-        WalkStackGuarded(process, pExceptionInfo->ContextRecord, stackText, sizeof(stackText));
-        log << stackText;
+        if (pExceptionInfo)
+        {
+            WalkStackGuarded(process, pExceptionInfo->ContextRecord, stackText, sizeof(stackText));
+            log << stackText;
+        }
+        else
+        {
+            log << "  (no context record - software-reported error, not a hardware fault)\r\n";
+        }
+    }
+    // GGMAX 3.44 (DX11 1aacfb90): the breadcrumb ring buffer was being filled by HideLimb/
+    // ShowLimb and by RunTimeError and then THROWN AWAY - nothing ever read it. Every
+    // breadcrumb the port installed was wasted until this line.
+    {
+        extern thread_local char g_CrashContext[1024];
+        if (g_CrashContext[0])
+        {
+            log << "---- BREADCRUMBS (most recent last) ----\r\n";
+            log << g_CrashContext << "\r\n";
+        }
     }
     log << "=====================================\r\n";
 

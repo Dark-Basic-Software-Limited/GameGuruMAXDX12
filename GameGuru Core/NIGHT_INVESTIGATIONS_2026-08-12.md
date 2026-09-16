@@ -9949,3 +9949,66 @@ zero here and would look identical under several kinds of corruption.
 
 ★ Coverage is now complete on both sides: **v331/334/336/338** through the 19 hub demos, and
 **v342 with real content** through TESTPRO2, in the editor and in Test Game.
+
+
+# ★★★ §3.44 — DEEP PARITY AUDIT, AND THE FIRST SIX FIXES (2026-09-16)
+
+Lee: *"do a deep dive into ALL changes on the DX11 repo between NOV 2025 and NOW and make sure
+ALL those IMPROVEMENTS are now present."* All **338** commits (`ca32a143` .. `3e21f674`, DX11's
+current HEAD) audited by 12 agents, every MISSING claim re-verified by a second agent told to
+refute it, then a critic pass for whole-subsystem gaps. Full report:
+`GameGuru Core/DX11_PARITY_DEEP_AUDIT_2026-09-16.md`.
+
+| classification | n |
+|---|---|
+| PRESENT | 232 |
+| MISSING (before verification) | 30 |
+| deliberately skipped, documented | 6 |
+| not applicable (37 are CI config alone) | 70 |
+
+## ★★★ The finding that matters is the SHAPE, not the count
+
+**Almost every gap is a HALF-PORT, not an omission.** The knob saves and loads and does nothing.
+The flag is written in four places and read in none. The breadcrumb is recorded and never printed.
+The cache directory is swept and never populated.
+
+At least 12 of the 34 defects are **severed chains**: DX12 contains dead code that reads as
+finished. Two are lone orphan variable declarations that would fool any future audit — including
+a repeat of this one. ★ This is the same failure mode as §3.41's slot 2, where the field,
+the dropdown and the runtime all existed and only the serialiser was missing. **A file that looks
+done is the characteristic residue of this port.**
+
+## Fixed in this pass (build clean, 0 errors)
+
+| fix | DX11 | why it mattered |
+|---|---|---|
+| `terrainlock` → `std::recursive_mutex` | `8c478170` | the optimiser can inline a locking helper into a lock-holding caller; a plain mutex then self-deadlocks. DX11 calls it *"dead lock (freeze everything)"*. We took both Bullet locks and not this one. |
+| `pPage` null guard | `01d27f07` | `assert()` compiles to nothing in Release, so an exhausted SVT page list was a null deref in the SHIPPING build. The other three PopItem sites were already guarded. |
+| crash handler null guards ×5 | — | ⚠ **a bug the port shipped.** Phase D wired `CrashHandler(NULL)` up for Lua runtime errors without DX11's `if (pExceptionInfo)` guards, so that path faulted inside the crash handler and wrote **no log at all** — for exactly the error class the feature exists to report. |
+| breadcrumbs actually printed | `1aacfb90` | `g_CrashContext` was filled by HideLimb/ShowLimb and RunTimeError and **never read**. Every breadcrumb the port installed was being thrown away. |
+| bullet holes on doors | `c1269dd7` | DX11 removed the `isimmobile` clause; we kept it. A door is non-static but immobile, so it collected decals that hang in mid-air when it swings — and it made the 3.38 opt-in checkbox decorative. |
+| Start Marker may be underwater | `1d49f004` | the clamp teleported an underwater marker to waterline+20, making an underwater-opening level impossible. |
+| undo cleared on next-level load | `b807cfd7` | one of two `undosys_clearall()` sites landed, so Ctrl+Z after a storyboard load replayed edits from the PREVIOUS level. |
+
+⚠ **The bullet-hole change alters behaviour Lee tested today.** Non-static + immobile entities
+no longer take decals unless the opt-in is ticked. That is DX11's deliberate fix for issue 6236,
+and Lee's standing instruction is that DX11 is the base — but it is a visible change and he should
+eyeball it.
+
+## ★ Audit blind spots, stated by the audit itself
+
+1. **Static evidence only** — nothing was run. "The checkbox can never be set" is a code-reading
+   conclusion.
+2. **Assets are effectively unaudited** — neither repo tracks binaries and there is no DX11 build
+   area on this machine. If DX11 added art, models or sounds in these 338 commits, this audit
+   could not see them. **The single largest hole.**
+3. **Per-commit slicing misses cross-commit features** — the critic found 6 more gaps *after* all
+   12 slices reported clean, including the highest-impact one. That is a measured miss rate, so
+   1-3 more gaps of that shape probably remain.
+
+## ★ Tooling, again
+
+`CrashLogger.cpp` is **LF**; `GGTerrain_part0.cpp` is **CRLF**. And the write invariant itself was
+wrong on the first run: for a pure-LF file the stray-LF count *is* the line count, so adding lines
+legitimately changes it and the check false-failed. The correct form is convention-aware — an LF
+file must gain no CRs; a CRLF file must gain no bare LFs. See [[project-rules-patch-scripts]].

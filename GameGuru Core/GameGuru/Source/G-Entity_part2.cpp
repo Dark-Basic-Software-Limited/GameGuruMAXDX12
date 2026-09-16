@@ -986,9 +986,12 @@ void entity_hasbulletrayhit(void)
 			// ★ GGMAX 3.38 (DX11 f460d1be): iAllowBuletHole lets a specific entity opt IN to bullet
 			// decals even though it is neither static nor immobile - the checkbox in M-GridEditB_part13.cpp.
 			// Without this clause that setting would save, load, and do nothing at all.
+			// GGMAX 3.44 (DX11 c1269dd7, issue 6236): DX11 REMOVED the isimmobile clause. A door is
+			// non-static but immobile, so it used to collect bullet decals that then hang in mid-air
+			// the moment the door swings. Dropping it also makes the 3.38 opt-in checkbox meaningful
+			// instead of decorative. This is now DX11's clause verbatim.
 			if (t.bulletrayhite == 0 || t.entityelement[t.bulletrayhite].staticflag == 1 ||
-				t.entityelement[t.bulletrayhite].iAllowBuletHole == 1 ||
-				(t.entityelement[t.bulletrayhite].staticflag == 0 && t.entityelement[t.bulletrayhite].eleprof.isimmobile == 1) )
+				t.entityelement[t.bulletrayhite].iAllowBuletHole == 1 )
 			{
 				int iMaterialIndex = t.tttriggerdecalimpact - 10;
 				bulletholes_add(iMaterialIndex, t.brayx2_f, t.brayy2_f, t.brayz2_f, vecRayHitNormal.x, vecRayHitNormal.y, vecRayHitNormal.z);

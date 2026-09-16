@@ -195,6 +195,9 @@ void mapeditorexecutable_loop(void)
 				WickedCall_ReloadQuiesceEnd(); // reload hardening: resume texture streaming
 
 				g_EntityClipboard.clear(); //PE: Clear any old copy/paste.
+				// GGMAX 3.44 (DX11 b807cfd7): the OTHER load path cleared undo and this one did not, so
+				// Ctrl+Z after a storyboard/next-level load replayed edits from the PREVIOUS level.
+				undosys_clearall(); //PE: Clear undo redo system.
 
 
 				if(!bCloseStoryboardAfterLoad)

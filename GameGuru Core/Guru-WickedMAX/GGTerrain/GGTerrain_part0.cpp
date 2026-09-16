@@ -8196,11 +8196,16 @@ void GGTerrain_CheckPageShift()
 
 					PageEntry* pPage = pagesFree.PopItem();
 					assert( pPage );
-
-					uint32_t identifier = ((detailLevel + 1) << 16) | (y << 8) | x;
-					pPage->Setup( identifier );
-					int result = GGTerrain_GeneratePage( pPage );
-					assert( result );
+					// GGMAX 3.44 (DX11 01d27f07): assert() compiles to NOTHING in Release, so an exhausted
+					// free-page list dereferenced null in the shipping build. The other three PopItem sites
+					// in this file already guard; this was the one left bare.
+					if ( pPage )
+					{
+						uint32_t identifier = ((detailLevel + 1) << 16) | (y << 8) | x;
+						pPage->Setup( identifier );
+						int result = GGTerrain_GeneratePage( pPage );
+						assert( result );
+					}
 				}
 			}
 		}
@@ -9280,7 +9285,12 @@ void GGTerrain_AddEnvProbeList(float x, float y, float z, float range, float qua
 }
 
 #ifdef TERRAINTHREADSAFE
-std::mutex terrainlock = {};
+// GGMAX 3.44 (DX11 8c478170): RECURSIVE, not plain. The optimiser can inline a locking
+// helper into a caller that already holds this lock, and a plain mutex then self-deadlocks
+// - DX11's commit message calls it "dead lock (freeze everything)". GGGrass_UpdateInstances
+// takes it twice per instance, and the DX12 bake/readback/invalidate paths take it too.
+//std::mutex terrainlock = {};
+std::recursive_mutex terrainlock = {};
 #else
 class terrainlockclass
 {

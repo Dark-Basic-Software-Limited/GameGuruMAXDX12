@@ -1677,11 +1677,15 @@ void physics_player_init ( void )
 		timestampactivity(0, dbg);
 	}
 
+	// GGMAX 3.44 (DX11 1d49f004): DX11 commented this clamp out - a Start Marker placed
+	// underwater was being teleported to waterline+20, making an underwater-opening level
+	// impossible to build. DX11's own note: "new request wants to start underwater if the
+	// marker is underwater".
 	//  also ensure ABOVE water Line (  )
-	if (  t.tbestterrainplayery_f<t.terrain.waterliney_f+20+t.terrain.adjaboveground_f )
-	{
-		t.tbestterrainplayery_f=t.terrain.waterliney_f+20+t.terrain.adjaboveground_f;
-	}
+	//if (  t.tbestterrainplayery_f<t.terrain.waterliney_f+20+t.terrain.adjaboveground_f )
+	//{
+	//	t.tbestterrainplayery_f=t.terrain.waterliney_f+20+t.terrain.adjaboveground_f;
+	//}
 	if (  t.terrain.playery_f == 0 )
 	{
 		t.terrain.playery_f=t.tbestterrainplayery_f;
