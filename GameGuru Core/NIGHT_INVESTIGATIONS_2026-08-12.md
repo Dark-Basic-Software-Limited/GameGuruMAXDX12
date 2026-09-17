@@ -10502,3 +10502,45 @@ a stable build is worth more than a half-finished migration.
 **Zero shipped `.fpe` files use `customshaderid` or `customshaderparam`** (4248 scanned), so nobody's
 existing content is at risk today. The exposure is anyone authoring via the Importer's Custom
 Shaders dropdown, which is live and populated — their values would be destroyed on the next click.
+
+
+# ★★★ §3.50b — GREEN, AND A DELIBERATE STOP (2026-09-17)
+
+| sweep | result |
+|---|---|
+| hub demos, editor | **19/19**, 67-89 s |
+| hub demos, test game | **19/19**, 106-137 s |
+
+Both unchanged within noise against every run since 3.44. Horseshoe Bend is back at 125 s / +131.6
+CPU / harness 3-3, matching its pre-regression numbers exactly — the §3.47b revert holds at full
+sweep scale.
+
+## ★★★ Stopping feature work here, on purpose
+
+Lee is testing manually against the latest DX11 next. What remains from the second-pass audit is:
+
+- the **custom-shader `userdata` migration** — explicitly all-or-nothing across four parts, landing
+  in shader compilation where a mistake is a rendering regression across everything
+- **four visual features whose engine API no longer exists** — three need an engine-side port
+- **developer diagnostics** with zero player impact
+
+None of that is worth landing unverified immediately before a side-by-side comparison. §3.47b is
+the argument: a byte-faithful port that passed every static check and still had to be reverted
+after a sweep caught it. **A stable, well-documented build is worth more to him right now than a
+longer changelog.**
+
+## ★ What was produced instead
+
+`GameGuru Core/DX11_VS_DX12_KNOWN_DIFFERENCES.md` — the differences that are already known, so a
+side-by-side does not burn time rediscovering deliberate decisions. It names the one change that
+alters what he personally tested (bullet holes on immobile objects), lists every DX11 feature DX12
+lacks with its reason, records where DX12 is intentionally better, and points at the **ten fixes
+that build and do not regress but whose behaviour nobody has exercised** — which is where his
+testing time is most likely to pay.
+
+## Rollback points
+
+| tag | state |
+|---|---|
+| `dx11-parity-milestone-2026-09-17` | parity complete, 2 audits, both sweeps green |
+| `wpe-zone-and-packaging-2026-09-17` | WPE Zone confirmed + content deploy script |
