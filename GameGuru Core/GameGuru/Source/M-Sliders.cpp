@@ -95,6 +95,7 @@ void sliders_loop ( void )
 		if (bImGuiInTestGame) {
 			//wiProfiler::ResetPeek(); // Not available in current WickedEngine
 			wiProfiler::SetEnabled(false); // LB:Clear when hide TABTAB
+			wiProfiler::SetEnabled(false); // LB:Clear when hide TABTAB
 		}
 	}
 	return;

@@ -10217,3 +10217,52 @@ absent from the build area. That needs an asset drop, not an edit.
    reported clean, so the per-commit method has a measured miss rate and 1-3 more are expected.
    Hunting those is worth more than polishing the LOW items.
 5. Notes, commit, push, report.
+
+
+# ★★★ §3.47b — THE NAV-MESH PORT IS FAITHFUL AND STILL WRONG (2026-09-17)
+
+The 3.47 regression sweep came back **18/19**. Horseshoe Bend failed: harness 0/3, cpu +26.4/30 s,
+143 s where it had been ~125 s. It had passed 3/3 in the 3.44, 3.45 and 3.46 sweeps.
+
+## ★★★ The bisect, proven in both directions
+
+| build | Horseshoe Bend, 60 s sample |
+|---|---|
+| 3.46 baseline (`38826c8d`) rebuilt | **6/6, 6/6** — cpu +587.6, +311.3 |
+| 3.47, all 61 edits | **0/6, 0/6** — cpu +51.8, +51.8 |
+| 3.47 minus the four nav/terrain files | **6/6, 6/6** |
+| 3.46 **plus `navmesh_hq` alone** | **0/6** — cpu +51.5 |
+| 3.47 minus `navmesh_hq` only | **6/6, 6/6** |
+
+Removing it fixes the failure and adding it alone causes it. That is as tight as a bisect gets.
+
+## ★★★ Why this one matters more than the bug
+
+The port is **byte-identical to DX11** — I diffed both the 61-line
+`GGTerrain_GetTriangleListHighQuality` body and its call site in `game_createnavmeshfromlevel`.
+Empty diff on both. There is no porting mistake to find.
+
+The function walks the map in 4000-unit slices **regenerating fine terrain at each one**. Under
+DX11's terrain system that is affordable. Under DX12's — Wicked native SVT, a different beast
+entirely — it blocks the main thread for **over 60 seconds** on a large map. The harness stops
+being serviced while worker threads keep burning CPU, which is why the signature (alive, ~0.86
+cores, no poll response) looks nothing like the Lua modal's flat +0.0.
+
+★★★ **A byte-faithful port of a DX11 function can still be the wrong answer, because the code
+underneath it is not the same engine.** Every check I had — compiles, anchors unique, diff-clean
+against DX11, 18 of 19 demos pass — said this was correct. Only running the thing found it.
+
+⚠ This also means the audit's "portability" ratings are weaker than they look: they were
+assigned by reading code. `navmesh_hq` was rated MEDIUM and is in practice NOT PORTABLE as written.
+
+## Disposition
+
+**Reverted.** DX12 keeps the LOD-limited `GGTerrain_GetTriangleList`. The cost of that is the
+original defect — nav mesh is only high-detail near wherever the camera sat when it was built, so
+AI pathing on far hills varies between runs. That is a far smaller problem than a minute-long stall
+entering Test Game on a big level.
+
+Doing it properly in DX12 needs a different shape, not a different patch: run the slice walk on a
+worker thread, or only from an explicit Build Nav Mesh action rather than on every test-game nav
+build. ★ Worth noting `navcache` (`fd09784f`) is retained and is the cheaper half of the
+same idea — it stops standalone builds rebuilding the triangle soup on every level load.

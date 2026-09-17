@@ -479,7 +479,7 @@ void game_createnavmeshfromlevel ( bool bForceGeneration )
 		// generate polygons for required area
 		int iFirstLOD = 2;
 		GGVECTOR3* pvecVerts = NULL;
-		int iTerrainFloorVertexCount = GGTerrain_GetTriangleListHighQuality(&pvecVerts, vecMinArea.x, vecMinArea.z, vecMaxArea.x, vecMaxArea.z, iFirstLOD);
+		int iTerrainFloorVertexCount = GGTerrain_GetTriangleList(&pvecVerts, vecMinArea.x, vecMinArea.z, vecMaxArea.x, vecMaxArea.z, iFirstLOD);
 		if (iTerrainFloorVertexCount > 0 )
 		{
 			// divide up into 16-bit size meshes
