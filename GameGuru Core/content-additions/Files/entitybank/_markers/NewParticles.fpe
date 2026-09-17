@@ -1,0 +1,33 @@
+;Entity Spec
+
+;Header
+desc          = WPE Zone
+
+;AI
+aimain        = particles\wpe_zone.lua
+
+;AIUsed
+ifused        = 
+
+;Orientation
+model         = zone.x
+textured      = zone.dds
+defaultheight = 0
+scale         = 100
+fixnewy       = 0
+
+;Marker Extras
+ismarker      = 3
+markerindex   = 0
+isobjective   = 0
+
+;Trigger data
+stylecolor    = 5
+
+;thumbnail
+thumbnailbackdrop = Blue showroom.png
+thumbnailzoom = 1.000000
+thumbnailcamleft = 0.000000
+thumbnailcamup = 0.000000
+thumbnailrotatex = 0.000000
+thumbnailrotatey = 15.000000
