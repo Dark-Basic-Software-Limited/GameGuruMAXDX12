@@ -10343,3 +10343,73 @@ wrote the TODO comments and never the code.
 one step short."** Which argues for two specific habits: when porting a commit, count its hunks and
 check the count afterwards; and when writing a compatibility shim, enumerate the whole removed
 surface rather than the instances that happen to be failing today.
+
+
+# ★★★ §3.49 — ADD NEW PARTICLE: THE THREE CONTENT FILES (2026-09-17)
+
+The one audit item marked *blocked on Lee*. It turned out to be constructible after all, but the
+reason it was blocked is worth recording because it is a structural problem, not a missing file.
+
+## ★★★ Why it was really blocked
+
+**Neither repo tracks `Files/` at all.** Verified: 0 `_markers/*.fpe` and 0 `editors/uiv3/*.png`
+tracked in DX11 *or* DX12, and `.gitignore` does not mention `Files/` — the directory simply is not
+in the source repo. Content lives in the product install. That is the project's convention.
+
+So the files could not be copied from the reference, because the reference does not have them
+either. And anything created directly in the build area would exist on **one machine only**,
+invisible to git — which is exactly the `bit32` landmine §3.48 had just removed.
+
+## What the feature actually is
+
+Reading the arrays in `M-GridEdit_part1.cpp` settles what was ambiguous:
+
+| index | fpe | tooltip |
+|---|---|---|
+| 9 | `Particles.fpe` | "Add New Particle" — the EXISTING gpup marker |
+| **15** | **`NewParticles.fpe`** | **"Add WPE Zone"** — the missing one |
+
+★ So despite the button being called "Add New Particle" in the audit, index 15 is a **WPE
+Zone** — and `entity_icons` is 12 normally, 16 only when `pref.iObjectEnableAdvanced` is set, so it
+is an Advanced-mode control.
+
+## The .fpe
+
+Modelled on **`Trigger Zone.fpe`**, not `Particles.fpe`, because `scriptbank/particles/wpe_zone.lua`
+("Wicked Particle Emmitter Zone v4") is a volume behaviour: `model = zone.x`, `ismarker = 3`,
+`scale = 100`, `aimain = particles\wpe_zone.lua`.
+
+★ `stylecolor = 5` chosen deliberately, not arbitrarily. Values **1 and 2 carry special-case
+editor handling** (`M-GridEditB_part0/12/13.cpp` branch on them); 5 has none and is what Ambience
+Zone uses — the closest existing analogue to an atmospheric effect volume.
+
+## ⚠ The icons are DERIVED ART, and should be called that
+
+Composited with PIL from GameGuru's own UI set: the `entity_triggerzone` frame (the zone visual
+language — square with corner nodes) with the burst glyph lifted out of `entity_particle`. Both
+theme variants, 128x128 to match the set.
+
+Two failed attempts first, both worth noting: a luminance mask and then an inverted-luminance mask
+each left the source icon's rounded-square background ghosting through as a panel. The assumption
+behind both — that the glyph is uniformly brighter or darker than its background — is false for the
+light theme. What worked was **distance from the background colour**, sampled from the corner,
+which needs no assumption about direction.
+
+They read correctly and match the set, but they are a stand-in for real artwork.
+
+## Verified
+
+TESTPRO2 loads `ERRORS: none`, Advanced mode is on, and the Game Elements grid now draws **16 icons
+in three rows** with the 16th showing the new artwork instead of a blank.
+
+⚠ **Not verified: clicking it places a WPE Zone.** The button sits at the clipped bottom edge of
+the panel and the harness has no command to press it. The two failure modes the audit described —
+blank icon, and a click referencing a non-existent `.fpe` — are both closed, but the placement path
+itself is untested.
+
+## ★★★ Kept in `GameGuru Core/content-additions/`
+
+With a README giving the deploy paths. This is a deliberate exception to the content-lives-in-the-
+install convention: a new content file that exists only in one build area is unrecoverable, and
+this run has already produced one worked example of what that costs. **These must be folded into
+the product packaging** — the repo copy is insurance, not a delivery mechanism.
