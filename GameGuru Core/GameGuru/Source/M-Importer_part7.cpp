@@ -66,14 +66,19 @@
 					if (bValid)
 					{
 						edit_grideleprof->WEMaterial.customShaderID = pObjectMaterial->customShaderID;
-						// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
-						edit_grideleprof->WEMaterial.customShaderParam1 = 0.0f; //pObjectMaterial->customShaderParam1;
-						edit_grideleprof->WEMaterial.customShaderParam2 = 0.0f; //pObjectMaterial->customShaderParam2;
-						edit_grideleprof->WEMaterial.customShaderParam3 = 0.0f; //pObjectMaterial->customShaderParam3;
-						edit_grideleprof->WEMaterial.customShaderParam4 = 0.0f; //pObjectMaterial->customShaderParam4;
-						edit_grideleprof->WEMaterial.customShaderParam5 = 0.0f; //pObjectMaterial->customShaderParam5;
-						edit_grideleprof->WEMaterial.customShaderParam6 = 0.0f; //pObjectMaterial->customShaderParam6;
-						edit_grideleprof->WEMaterial.customShaderParam7 = 0.0f; //pObjectMaterial->customShaderParam7;
+						// GGMAX 3.50: DO NOT WRITE THESE. The engine removed customShaderParam1-7 from
+						// MaterialComponent (replaced by uint4 userdata), so there is nothing on the material to copy
+						// back - but the port left the assignment in place writing a literal 0.0f. This function has 13
+						// LIVE call sites including entity selection (M-GridEdit_part1.cpp:6308/6315/6373) and runtime
+						// refresh (G-Entity_part2.cpp:1705/1747), and the .ele serialiser for these fields is intact
+						// (M-Entity_part4.cpp:555-561). So merely SELECTING an entity zeroed its authored parameters in
+						// the profile and the next save persisted the zeros - authored data destroyed, not just ignored.
+						//
+						// Leaving the profile's values untouched preserves them. It does not make them take effect: the
+						// three apply sites in wickedcalls_part1.cpp are still severed pending the userdata migration.
+						// That migration is all-or-nothing (packing + shader include order + Importer sliders +
+						// WickedCall_SetShaderParameter's body) and is deliberately NOT attempted here. This change only
+						// stops the data loss.
 					}
 					sFrame* pFrame = pMesh->pFrameAttachedTo;
 					if (pFrame)

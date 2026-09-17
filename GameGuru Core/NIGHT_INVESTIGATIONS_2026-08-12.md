@@ -10452,3 +10452,53 @@ rebuild of the build area and on any new machine.
 re-ran the script, which reported `DEPLOYED` for exactly that file, `same` for the other two, and
 restored it byte-identical. A script that has never been watched restore something is not yet known
 to restore anything.
+
+
+# ★★★ §3.50 — STOP DESTROYING AUTHORED SHADER PARAMETERS (2026-09-17)
+
+From the second-pass audit's custom-shader cluster. Of seven findings there this is the only one
+that is **actively harmful** rather than merely inert, so it is the only one taken.
+
+## The bug
+
+`Wicked_Copy_Material_To_Grideleprof` (`M-Importer_part7.cpp`) copies material state back into the
+entity profile. DX11 copies `customShaderParam1-7` off the material. The engine has since **removed
+those fields from `MaterialComponent`** (replaced by `uint4 userdata`), so there is nothing to copy
+— but the port left the assignment in place, writing a literal `0.0f`:
+
+```
+edit_grideleprof->WEMaterial.customShaderParam1 = 0.0f; //pObjectMaterial->customShaderParam1;
+```
+
+Three facts together make that destructive rather than inert:
+
+| | |
+|---|---|
+| the function has **13 LIVE call sites** | entity selection (`M-GridEdit_part1.cpp:6308/6315/6373`), runtime refresh (`G-Entity_part2.cpp:1705/1747`), and more |
+| the `.ele` serialiser for these fields is **intact** | `M-Entity_part4.cpp:555-561` |
+| so merely SELECTING an entity | zeroed its authored parameters, and the next save persisted the zeros |
+
+★★★ **Authored data was being destroyed, not ignored.** The distinction matters: an ignored
+value comes back when the feature is finished; a zeroed-and-saved one is gone.
+
+## The fix, and its deliberate limit
+
+Write nothing. The profile keeps whatever it parsed or was authored with.
+
+⚠ This does **not** make the parameters take effect — the three apply sites in
+`wickedcalls_part1.cpp` remain severed. The full `userdata` migration is explicitly all-or-nothing:
+packing + shader include order + the Importer sliders + `WickedCall_SetShaderParameter`'s body.
+Fixing the packing without the include order buys nothing for water/glass/tree, whose shader bodies
+are not even in the build; fixing the include order without the packing gives shaders running with
+every knob at zero.
+
+★ **Not attempted, on purpose.** It is a feature project, it lands in shader compilation where
+a mistake is a rendering regression across everything, and §3.47b is a fresh worked example of an
+engine-adjacent change that looked right and was not. Lee is testing manually against DX11 shortly;
+a stable build is worth more than a half-finished migration.
+
+## Reachability, stated honestly
+
+**Zero shipped `.fpe` files use `customshaderid` or `customshaderparam`** (4248 scanned), so nobody's
+existing content is at risk today. The exposure is anyone authoring via the Importer's Custom
+Shaders dropdown, which is live and populated — their values would be destroyed on the next click.
