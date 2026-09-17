@@ -10,6 +10,53 @@ metadata:
 
 # ▶▶ RESUME HERE — state as of 2026-09-17
 
+## ★★★ DX11 PARITY IS DONE. Two audits, 30 defects fixed, all sweeps green.
+
+Milestone tag **`dx11-parity-milestone-2026-09-17`**. HEAD `ec4d04b1`, engine `9832c8e0` (master).
+19/19 hub demos load, 19/19 test game, both repos clean and pushed.
+
+| audit | method | result |
+|---|---|---|
+| 1st | all 338 DX11 commits, per commit | 232 present / 30 missing / 6 skipped / 70 N/A |
+| 2nd | 8 STRUCTURAL sweeps, no commits | 12 candidates → 6 root causes, only 2 player-facing |
+
+★★★ **THE PORT'S FAILURE MODE, and it changed.** It is no longer *"we did not know DX11 had
+this"*. It is **"we started it and stopped one step short"** — 3.45 landed 3 of 4 hunks of one
+commit; 3.40 covered 5 of 6 removed Lua names; the userdata migration wrote the TODOs and no code.
+**When porting a commit, count its hunks and check the count afterwards.**
+
+★★★ **A byte-faithful port can still be wrong.** The nav-mesh HQ extraction was diff-clean
+against DX11 — function body AND call site — and still blocked the main thread 60+ s on a large
+map, because DX12's terrain underneath is Wicked SVT. Bisected both ways, reverted. **Static checks
+cannot catch this class; only running it can.**
+
+⚠ **`bit32` was a live landmine.** DX11's Lua 5.2 has `lbitlib.c`; the engine's 5.4.8 does not.
+`gameplayercontrol.lua` (in EVERY level) uses it. It only worked because of an **untracked hand
+edit in the deploy tree** that no tracked build reproduced. Now in the C++ shim; deployed scripts
+restored to match the repo and proven 19/19.
+
+## ⚠ What is left (nothing player-facing)
+
+- custom-shader parameter pipeline (`customShaderParam1-7` → `userdata`) started and abandoned
+- 3 custom shaders compiled against the engine `objectHF.hlsli`, so their GG bodies are not built
+- 4 visual features whose engine API no longer exists (PP Snow, transparent shadows, bloom
+  strength, gamma fade) — 3 need an engine-side port
+- developer diagnostics: `enablepixmarkers`, GFX debug log, `_ConvertFormat`
+- **"Add New Particle" is BLOCKED ON LEE** — code is ported, 3 content files absent from the
+  build area. An asset drop, not an edit.
+
+⚠ **Biggest blind spot both audits share: ASSETS.** Neither repo tracks binaries and there is no
+DX11 build area on this machine, so any art/model/sound DX11 added is invisible to every pass run.
+
+## Deliberately NOT ported, with reasons
+
+- **`terrainsleep` (`633f216f`)** — DX11 WALKED IT BACK (`01d27f07` restored the original block
+  unconditionally). DX11 today compiles what DX12 already has.
+- **`navmesh_hq` (`15cbd06c`)** — see above; needs a different SHAPE (worker thread, or only on
+  explicit Build Nav Mesh), not a different patch.
+- **`objplaying` (`1ee57a00`)** — audit was wrong; already present, and DX12 has a null check DX11
+  lacks.
+
 ## ★★★ DX11 parity: audited in full, 17 defects fixed (3.44-3.46)
 
 All **338** DX11 commits (`ca32a143`..`3e21f674`) audited — 232 present, 30 missing, 6 skipped
