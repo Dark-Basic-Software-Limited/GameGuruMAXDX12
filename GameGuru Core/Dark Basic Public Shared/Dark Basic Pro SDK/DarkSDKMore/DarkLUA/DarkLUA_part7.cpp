@@ -18,7 +18,11 @@
 //     5.4 math.atan(y [, x]) computes atan(y/x) using the signs of both -> identical to atan2.
 //     math.mod was renamed math.fmod back in 5.1; same function.
 // Each is assigned only if absent, so a future Lua that restores them wins. math.atan2 is the only
-// removed name any current script uses; mod/pow/log10/unpack are aliased too because they are the
+// GGMAX 3.48: the 3.40 comment here claimed math.atan2 was the only removed name any script
+// uses. That was WRONG - it scanned math.* names and missed an entire LIBRARY. Lua 5.2 shipped
+// lbitlib.c and DX11 still does; 5.4 removed bit32, and scriptbank/perlin_noise.lua binds
+// bit32.band at FILE SCOPE while gameplayercontrol.lua requires it and is added to EVERY level.
+// Only an UNTRACKED hand edit in the deploy tree was masking it. mod/pow/log10/unpack are the
 // rest of what LUA_COMPAT_MATHLIB would have restored, and cost nothing to carry.
 static void GGLua_InstallCompatShim(lua_State* L)
 {
@@ -31,7 +35,20 @@ static void GGLua_InstallCompatShim(lua_State* L)
 		"  if math.pow   == nil then math.pow = function(a,b) return a^b end end "
 		"  if math.log10 == nil and math.log  ~= nil then math.log10 = function(x) return math.log(x,10) end end "
 		"end "
-		"if unpack == nil and table and table.unpack then unpack = table.unpack end";
+		"if unpack == nil and table and table.unpack then unpack = table.unpack end "
+		"if bit32 == nil then "
+		"  local M = 0xFFFFFFFF "
+		"  local function n32(x) return math.floor(x) & M end "
+		"  bit32 = {} "
+		"  bit32.band   = function(...) local r = M for _,v in ipairs({...}) do r = r & n32(v) end return r & M end "
+		"  bit32.bor    = function(...) local r = 0 for _,v in ipairs({...}) do r = r | n32(v) end return r & M end "
+		"  bit32.bxor   = function(...) local r = 0 for _,v in ipairs({...}) do r = r ~ n32(v) end return r & M end "
+		"  bit32.bnot   = function(a) return (~n32(a)) & M end "
+		"  bit32.lshift = function(a,b) if b < -31 or b > 31 then return 0 end if b >= 0 then return (n32(a) << b) & M else return (n32(a) >> -b) & M end end "
+		"  bit32.rshift = function(a,b) if b < -31 or b > 31 then return 0 end if b >= 0 then return (n32(a) >> b) & M else return (n32(a) << -b) & M end end "
+		"  bit32.arshift= function(a,b) local x = n32(a) if b <= 0 then return bit32.lshift(x,-b) end if (x & 0x80000000) ~= 0 then if b > 31 then return M end return ((x >> b) | (~(M >> b))) & M end return (x >> b) & M end "
+		"  bit32.btest  = function(...) return bit32.band(...) ~= 0 end "
+		"end ";
 	if (luaL_loadbuffer(L, shim, strlen(shim), "gg_lua54_compat") == 0)
 	{
 		if (lua_pcall(L, 0, 0, 0) != 0)

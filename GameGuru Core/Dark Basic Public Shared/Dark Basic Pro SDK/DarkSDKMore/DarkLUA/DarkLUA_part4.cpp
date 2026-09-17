@@ -1024,10 +1024,25 @@ int MoveInventoryItem (lua_State* L)
 						// ensure activate and deactivate entity as it passes from player/hotkeys to shop/chest/etc
 						if (item.e > 0)
 						{
+							// GGMAX 3.48 (DX11 51197b43, 4th hunk): 3.45 ported three of this commit's four DarkLUA
+							// hunks and missed THIS one, so moving an item between containers never set 'collected'.
+							// A key taken from a chest therefore sat in the inventory while every door still read it
+							// as uncollected: M-LUA.cpp accepts collected 1 or 2, and an item in a container carries 3.
+							// Ground pickup already worked, which is exactly why this hid - keys worked when picked up
+							// off the floor and not when taken from a container.
 							if (bothplayercontainersto == 0 || bothplayercontainersto == 1)
+							{
+								if (bothplayercontainersto == 0) t.entityelement[item.e].collected = 1;
+								if (bothplayercontainersto == 1) t.entityelement[item.e].collected = 2;
+								darklua_refreshhaskeystatefor(t.entityelement[item.e].eleprof.name_s.Get());
 								t.entityelement[item.e].active = 1;
+							}
 							else
+							{
 								t.entityelement[item.e].active = 0;
+								t.entityelement[item.e].collected = 0;
+								darklua_refreshhaskeystatefor(t.entityelement[item.e].eleprof.name_s.Get());
+							}
 						}
 						break;
 					}

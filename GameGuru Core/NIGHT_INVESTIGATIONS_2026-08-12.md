@@ -10266,3 +10266,80 @@ Doing it properly in DX12 needs a different shape, not a different patch: run th
 worker thread, or only from an explicit Build Nav Mesh action rather than on every test-game nav
 build. ★ Worth noting `navcache` (`fd09784f`) is retained and is the cheaper half of the
 same idea — it stops standalone builds rebuilding the triangle soup on every level load.
+
+
+# ★★★ §3.48 — SECOND-PASS AUDIT: TWO REAL ONES, BOTH MINE (2026-09-17)
+
+The second pass deliberately did NOT re-walk commits — the first audit's critic found 6 gaps after
+all 12 slices reported clean, so that method's miss rate is measured. Instead it ran **eight
+structural sweeps** for the port's characteristic defect shape, each calibrated against a defect
+this port actually shipped. Full report: `GameGuru Core/DX12_SECOND_PASS_AUDIT_2026-09-17.md`.
+
+Verdict: **the port is essentially complete.** 12 surviving candidates collapsing to six root
+causes, of which only **two can hurt a player**. Both were mine, and both are the same failure:
+**a fix this port had already decided to make, stopped one step short.**
+
+## ★★★ 1. `bit32` was missing from the 3.40 Lua compat shim
+
+DX11 ships its own Lua **5.2** including `lbitlib.c`. DX12 has no vendored Lua and links the
+engine's **5.4.8**, where `bit32` was removed. Verified: `lbitlib.c` exists in the DX11 tree and
+does not exist in `WickedEngineDX12/WickedEngine/LUA/`.
+
+⚠ My 3.40 comment asserted that math.atan2 was the only removed name any current script uses.
+**That was wrong.** I scanned `math.*` names and missed an entire LIBRARY.
+
+| | |
+|---|---|
+| `scriptbank/perlin_noise.lua:8` | binds `bit32.band` **at file scope**, so it fails at LOAD |
+| `scriptbank/gameplayercontrol.lua:2` | requires perlin_noise, plus 13 `bit32.band` calls |
+| reach | `gameplayercontrol.lua` is added to **every level's** collection |
+
+★★★ **Why nobody ever saw it: an UNTRACKED hand edit.** Both DEPLOYED copies carried a
+hand-written `if not bit32 then bit32 = {...} end` block. The repo copies did not, and `build.bat`
+has no script-copy step — so nothing in the tracked build reproduces that patch. A fresh deploy, a
+clean checkout, or the laptop would have lost it, and per 3.40 the failure mode is a **modal
+MessageBox that parks the app at zero CPU** on every level.
+
+Fixed in the shim itself (`DarkLUA_part7.cpp`): a full `bit32` table — band/bor/bxor/bnot/lshift/
+rshift/arshift/btest — with correct **32-bit unsigned** semantics, since Lua 5.4's native operators
+are 64-bit. Only `band` is used today; the rest are there so the next script cannot reopen this.
+
+★ **Proven, not assumed:** the deployed scripts were replaced with the tracked repo versions
+(no hand patch) and the sweep re-run. Levels load and play. If the shim were wrong, every level
+would park on the modal.
+
+## ★★★ 2. `MoveInventoryItem` never flagged items collected
+
+DX11 `51197b43` touches `DarkLUA.cpp` in **four hunks**. §3.45 landed **three**. The missing one is
+the one that does the actual work: it sets `collected = 1` on transfer to the player, `2` to
+hotkeys, `0` on transfer back out to a shop or chest, and calls `darklua_refreshhaskeystatefor` on
+both branches.
+
+So 3.45 ported the 73-line function AND its reader, and then left out the code that sets the state
+the reader waits for. A key taken from a chest sat in the inventory while every door still read it
+as uncollected — items in a container carry `collected = 3`, and `M-LUA.cpp` accepts only 1 or 2.
+
+★ **Ground pickup already worked**, which is exactly why this hid: keys worked when picked up
+off the floor and failed only when taken from a container.
+
+Census proof: `darklua_refreshhaskeystatefor` has **5 call sites in DX11** and had **3** here. The
+two absent were exactly the transfer pair. Now 5.
+
+## ★ What the sweeps found CLEAN
+
+A trustworthy negative is a result. Swept and clear: Lua command registration (DX11 vs DX12 lists),
+shipped script version drift beyond door.lua, FPE/GUNSPEC field parsing, and the ini-key
+parse-vs-consume audit. The remaining findings are authoring-surface or cosmetic — custom-shader
+parameters, three shaders compiled against the engine header, four visual features whose engine API
+no longer exists, and developer-only diagnostics.
+
+## ★★★ The pattern, stated plainly
+
+Three of the six root causes were **incomplete applications of fixes this port had already decided
+to make**: 3.45 landed 3 of 4 hunks; 3.40 covered 5 of 6 removed names; the `userdata` migration
+wrote the TODO comments and never the code.
+
+**The failure mode is no longer "we did not know DX11 had this." It is "we started it and stopped
+one step short."** Which argues for two specific habits: when porting a commit, count its hunks and
+check the count afterwards; and when writing a compatibility shim, enumerate the whole removed
+surface rather than the instances that happen to be failing today.
