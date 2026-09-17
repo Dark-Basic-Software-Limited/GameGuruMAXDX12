@@ -10544,3 +10544,52 @@ testing time is most likely to pay.
 |---|---|
 | `dx11-parity-milestone-2026-09-17` | parity complete, 2 audits, both sweeps green |
 | `wpe-zone-and-packaging-2026-09-17` | WPE Zone confirmed + content deploy script |
+
+
+# ★★★ §3.51 — THE HANDOFF NOTE HAD GONE STALE (2026-09-17)
+
+Nothing was uncommitted at the end of the session — both repos clean, local == origin, notes
+current through §3.50b, the memory mirror byte-identical to the repo. But one thing was wrong, and
+it was the single file most likely to be read first.
+
+## What was wrong
+
+`claude-memory/project_next_action_immediate.md` — the file whose whole job is *"read this FIRST
+when resuming"* — still claimed:
+
+| it said | actually |
+|---|---|
+| HEAD `ec4d04b1` | `d4cac1ef`, four commits later |
+| "30 defects fixed" | 32 |
+| one milestone tag | two (`wpe-zone-and-packaging-2026-09-17` had landed) |
+| **"Add New Particle is BLOCKED ON LEE"** | built, deployed, and Lee confirmed the placement |
+
+It also had no pointer to `DX11_VS_DX12_KNOWN_DIFFERENCES.md`, which is the one document a future
+session needs the instant Lee's side-by-side results come back.
+
+## ★★★ Why it matters more than it looks
+
+The file was accurate when written, at the parity milestone. Then §3.49, §3.49b, §3.50 and §3.50b
+were **appended to the notes** and the resume file was never re-topped. Appending is the safe
+habit; re-topping is the one that gets skipped, because nothing fails when you skip it.
+
+★★★ **A stale "current state" file is worse than no file** — it is read with more trust than
+anything else in the store, and it is confident. A future session would have opened it, believed
+Add New Particle was still blocked on an asset drop from Lee, and either re-asked him for files
+that already exist or re-done work that was finished and confirmed.
+
+★ This is the same shape as the `bit32` landmine from §3.48, one rung up: there, the deployed
+tree and the tracked tree had diverged; here, the record of the work and the work itself had.
+**Both are cases where everything looks green because the thing that would disagree was never
+asked.** The check that catches it is cheap and mechanical: before closing out, re-read the top of
+the resume file against `git log` since the timestamp it claims.
+
+## State at handoff
+
+Game `d4cac1ef` on `main`, engine `9832c8e0` on `master`, both clean and pushed. Tags
+`dx11-parity-milestone-2026-09-17` and `wpe-zone-and-packaging-2026-09-17` are the rollback points.
+Editor 19/19, Test Game 19/19. Exe 31,872,000 bytes at 19:42. MAX not running, no background task
+holding the build area or Lee's projects.
+
+⚠ **Feature work stays stopped until Lee reports back.** He is testing against the latest DX11
+build; a build that moves under him invalidates the comparison.

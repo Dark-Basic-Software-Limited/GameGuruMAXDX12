@@ -8,12 +8,27 @@ metadata:
   modified: 2026-08-26T04:10:52.131Z
 ---
 
-# ▶▶ RESUME HERE — state as of 2026-09-17
+# ▶▶ RESUME HERE — state as of 2026-09-17 (end of session)
 
-## ★★★ DX11 PARITY IS DONE. Two audits, 30 defects fixed, all sweeps green.
+## ★★★ HANDOFF: the work is DONE and Lee is testing it manually against the latest DX11.
 
-Milestone tag **`dx11-parity-milestone-2026-09-17`**. HEAD `ec4d04b1`, engine `9832c8e0` (master).
-19/19 hub demos load, 19/19 test game, both repos clean and pushed.
+Nothing is in flight. **Do not start feature work without asking him first** — he has a
+side-by-side running and a build that moves under him invalidates it.
+
+| | |
+|---|---|
+| game | `d4cac1ef` on `main`, clean, local == origin |
+| engine | `9832c8e0` on `master`, clean |
+| rollback tags | `dx11-parity-milestone-2026-09-17`, `wpe-zone-and-packaging-2026-09-17` |
+| sweeps | editor 19/19 (67–89 s), test game 19/19 (106–137 s) |
+| exe | 31,872,000 bytes, 2026-09-17 19:42 |
+
+★ **Read this the moment his results arrive:** `GameGuru Core/DX11_VS_DX12_KNOWN_DIFFERENCES.md`.
+It lists every difference that is already known and intended, so **anything he reports that is NOT
+on that list is a real finding**. Its §4 is the ten fixes nobody has ever exercised — the most
+likely place a genuine bug is still hiding.
+
+## ★★★ DX11 PARITY IS DONE. Two audits, 32 defects fixed, all sweeps green.
 
 | audit | method | result |
 |---|---|---|
@@ -35,18 +50,30 @@ cannot catch this class; only running it can.**
 edit in the deploy tree** that no tracked build reproduced. Now in the C++ shim; deployed scripts
 restored to match the repo and proven 19/19.
 
+★★★ **New content files now have a DEPLOY PATH, and they needed one.** Neither repo tracks
+`Files/` — no `_markers/*.fpe`, no `editors/uiv3/*.png` — and **there is no packaging script**: the
+alpha IS the build folder, curated. So a new content file lived on one machine and died with the
+build area. That is the same hole `bit32` fell through. The fix is a tracked master in
+`GameGuru Core/content-additions/Files/**` plus **`tools/deploy_content_additions.sh`**
+(`--check` gates a package; exits non-zero if anything is missing). Run it after any rebuild of the
+build area and on any new machine.
+
 ## ⚠ What is left (nothing player-facing)
 
-- custom-shader parameter pipeline (`customShaderParam1-7` → `userdata`) started and abandoned
-- 3 custom shaders compiled against the engine `objectHF.hlsli`, so their GG bodies are not built
+- **custom-shader parameter pipeline** (`customShaderParam1-7` → engine `uint4 userdata`) started
+  and abandoned. As of 3.50 authored values are no longer **destroyed** on entity selection — but
+  they still have **no effect**. All-or-nothing across four parts (packing, shader include order,
+  Importer sliders, `WickedCall_SetShaderParameter`), and it lands in shader compilation.
+  **Zero shipped `.fpe` files use it** (4248 scanned), so nobody's content is at risk today.
+- 3 custom shaders (water / glass / tree-animate) compile against the ENGINE `objectHF.hlsli`, so
+  their GG bodies are not in the build. Proven from the `.cso` files being byte-identical.
 - 4 visual features whose engine API no longer exists (PP Snow, transparent shadows, bloom
   strength, gamma fade) — 3 need an engine-side port
 - developer diagnostics: `enablepixmarkers`, GFX debug log, `_ConvertFormat`
-- **"Add New Particle" is BLOCKED ON LEE** — code is ported, 3 content files absent from the
-  build area. An asset drop, not an edit.
 
 ⚠ **Biggest blind spot both audits share: ASSETS.** Neither repo tracks binaries and there is no
 DX11 build area on this machine, so any art/model/sound DX11 added is invisible to every pass run.
+If Lee reports missing *content* rather than wrong *behaviour*, that is why.
 
 ## Deliberately NOT ported, with reasons
 
