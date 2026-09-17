@@ -10413,3 +10413,42 @@ With a README giving the deploy paths. This is a deliberate exception to the con
 install convention: a new content file that exists only in one build area is unrecoverable, and
 this run has already produced one worked example of what that costs. **These must be folded into
 the product packaging** — the repo copy is insurance, not a delivery mechanism.
+
+
+# ★★★ §3.49b — WPE ZONE CONFIRMED, AND CONTENT NOW HAS A DEPLOY PATH (2026-09-17)
+
+Lee: *"The WPE zone places fine."* That closes the one thing §3.49 left untested — the placement
+path. All three failure modes the audit named are now shut: blank icon, click referencing a
+non-existent `.fpe`, and placement itself.
+
+★ Worth noting the inferred parts held up. `aimain = particles\wpe_zone.lua` was the piece I was
+least sure of, because no other `.fpe` in the tree references that folder — but subfolder paths are
+routine (`animals\`, `boat\`, `crate\`, `effects\`, `hologram\`, `mines\`, `markers\`), so the
+mechanism was proven even though this exact folder was a first. `stylecolor = 5` and the
+`Trigger Zone.fpe` volume model both worked as reasoned.
+
+## ★★★ The packaging problem, and what actually fixes it
+
+There is **no packaging script**. The alpha *is* the build folder, curated — so "add it to the
+packaging" has no file to edit. Combined with the fact that **neither repo tracks `Files/`**, a new
+content file lives on one machine and dies with the build area.
+
+That is the same hole `bit32` fell through hours earlier, and archiving the files in
+`content-additions/` only made them *recoverable*, not *reproducible*. The difference matters: a
+README telling a future session to copy three files is exactly the kind of instruction that gets
+missed, which is how the untracked hand edit survived unnoticed in the first place.
+
+So: **`GameGuru Core/tools/deploy_content_additions.sh`**.
+
+```
+bash "GameGuru Core/tools/deploy_content_additions.sh"            # deploy
+bash "GameGuru Core/tools/deploy_content_additions.sh" --check    # report only, non-zero if missing
+```
+
+Idempotent, and `--check` is a gate that can be run before cutting a package. Run it after any
+rebuild of the build area and on any new machine.
+
+★ **Proven, not assumed** — the test deleted `NewParticles.fpe` from the live build area and
+re-ran the script, which reported `DEPLOYED` for exactly that file, `same` for the other two, and
+restored it byte-identical. A script that has never been watched restore something is not yet known
+to restore anything.

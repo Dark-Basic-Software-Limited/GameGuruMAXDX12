@@ -37,6 +37,27 @@ deleting it makes every tester crash address on this alpha permanently undecodab
 means testers' logs arrive already symbolised. Verified live via `DUMP_SCENEUPDATE`, which
 symbolises through the same dbghelp path.
 
+## ★★★ NEW CONTENT FILES: the repo has no home for them, so use the deploy script
+
+**Neither repo tracks `Files/` at all** — verified 2026-09-17: 0 `_markers/*.fpe`, 0
+`editors/uiv3/*.png` in DX11 or DX12, and `.gitignore` does not mention `Files/`. Content lives in
+the product install, and **the alpha IS the build folder, curated** — there is no packaging script
+to add a file to.
+
+⚠ So a NEW content file exists on ONE MACHINE ONLY, invisible to git, and dies with the build
+area. That is not hypothetical: `bit32` support for Lua 5.4 was found existing solely as an
+untracked hand edit to two deployed `.lua` files. Nothing tracked reproduced it, so a fresh install
+or the laptop would have parked every level on a modal.
+
+| | |
+|---|---|
+| tracked master | `GameGuru Core/content-additions/Files/**` |
+| deploy | `bash "GameGuru Core/tools/deploy_content_additions.sh"` |
+| verify only | same script with `--check` (exits non-zero if anything is missing) |
+
+★ Idempotent. **Run it after any rebuild of the build area, on a new machine, and before
+cutting a package.** Currently carries the three "Add WPE Zone" files (§3.49).
+
 ## Still optional, still there
 
 `Files/tutorialbank` (2.4 GB of tutorial .mp4) and `Guides` (578 MB) — ~3 GB of learning content
