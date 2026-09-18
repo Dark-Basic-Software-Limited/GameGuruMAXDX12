@@ -2129,6 +2129,12 @@ void GGGrass_Update( wiScene::CameraComponent* camera, CommandList cmd, bool bRe
 	if ( gggrass_global_params.simplePBR ) grassConstantData.grass_flags |= GGGRASS_FLAGS_SIMPLE_PBR;
 	
 	wiGraphics::GetDevice()->UpdateBuffer( &grassConstantBuffer, &grassConstantData, cmd, sizeof(GrassCB) );
+	// GGMAX 3.52: UpdateBuffer is a GPU COPY and inserts NO barrier - "appropriate synchronization is expected".
+	// wiRenderer barriers every one of its own; the GG path was ported with none, so a buffer could still be COPY_DEST when the same list bound it (D3D12 id 538).
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &grassConstantBuffer, ResourceState::COPY_DST, ResourceState::CONSTANT_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 
 	//wiProfiler::EndRange( range );
 }

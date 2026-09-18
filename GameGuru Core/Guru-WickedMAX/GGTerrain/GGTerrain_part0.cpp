@@ -810,6 +810,12 @@ void GGCustomFrame_Update( wiGraphics::CommandList cmd )
 
 	// Upload to GPU
 	wiGraphics::GetDevice()->UpdateBuffer(&ggCustomFrameBuffer, &ggCustomFrameStaging, cmd, sizeof(GGCustomFrameData));
+	// GGMAX 3.52: UpdateBuffer is a GPU COPY and inserts NO barrier - "appropriate synchronization is expected".
+	// wiRenderer barriers every one of its own; the GG path was ported with none, so a buffer could still be COPY_DEST when the same list bound it (D3D12 id 538).
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &ggCustomFrameBuffer, ResourceState::COPY_DST, ResourceState::CONSTANT_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 }
 
 void GGCustomFrame_Bind( wiGraphics::CommandList cmd )
@@ -4521,6 +4527,19 @@ bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint3
 	// CopyTexture records raw resource pointers without AddRef.
 	Texture stagingTex;
 	device->CreateTexture(&stagingDesc, initdata.data(), &stagingTex);
+
+	// GGMAX 3.52: TRANSITION THE DESTINATION BEFORE COPYING INTO IT.
+	// This ran with no barriers at all. It got away with it while the texture was newly created:
+	// a resource in COMMON is auto-promoted to COPY_DEST. But promotion is only FROM COMMON, so
+	// once a shader has read the texture its state is PIXEL_SHADER_RESOURCE and the copy becomes
+	// illegal - D3D12 id 538, "Missing State: COPY_DEST", 144 of them in one load. That is a copy
+	// landing in a texture the GPU is sampling, which is a corrupt picture and no crash.
+	// Uploading a slice into an ALREADY-LIVE atlas is exactly what a second level load does.
+	{
+		GPUBarrier gg_pre = GPUBarrier::Image( tex, tex->desc.layout, ResourceState::COPY_DST );
+		device->Barrier( &gg_pre, 1, cmd );
+	}
+
 	// Copy each mip from staging texture into the target array slice(s)
 	if (bFillAllSlots)
 	{
@@ -4538,6 +4557,12 @@ bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint3
 		{
 			device->CopyTexture(tex, 0, 0, 0, mip, arraySlice, &stagingTex, mip, 0, cmd);
 		}
+	}
+
+	// GGMAX 3.52: and put it back, or every later sample reads a texture still marked COPY_DEST.
+	{
+		GPUBarrier gg_post = GPUBarrier::Image( tex, ResourceState::COPY_DST, tex->desc.layout );
+		device->Barrier( &gg_post, 1, cmd );
 	}
 
 	delete[] filedata;
@@ -7749,6 +7774,11 @@ void GGTerrain_DrawPages( CommandList cmd )
 	// UpdateBuffer before both passes, and give the second Draw a vertex offset of 6*numPages.
 	// (BindDynamicConstantBuffer, the gpup fix, is not available: this is a vertex buffer.)
 	device->UpdateBuffer( &pageGenVertexBuffer, g_VerticesPageGen, cmd, numPages*sizeof(VertexPageGen)*6 );
+	// GGMAX 3.52: pair the copy with its barrier - see the note above.
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &pageGenVertexBuffer, ResourceState::COPY_DST, ResourceState::VERTEX_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 
 	device->RenderPassBegin( &renderPassPhysicalTex, cmd );
 
@@ -7907,6 +7937,11 @@ void GGTerrain_DrawPages( CommandList cmd )
 	// GGMAX 2026-08-08 ⚠ second half of the latent race documented at the mip-0 UpdateBuffer above:
 	// same destination buffer, different content, no barrier since the mip-0 Draw. Dead path today.
 	device->UpdateBuffer( &pageGenVertexBuffer, g_VerticesPageGen, cmd, numPages*sizeof(VertexPageGen)*6 );
+	// GGMAX 3.52: pair the copy with its barrier - see the note above.
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &pageGenVertexBuffer, ResourceState::COPY_DST, ResourceState::VERTEX_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 
 	device->RenderPassBegin( &renderPassPhysicalTexMip, cmd );
 
@@ -10374,6 +10409,11 @@ void GGTerrain_Update( float playerX, float playerY, float playerZ, wiGraphics::
 	}
 
 	wiGraphics::GetDevice()->UpdateBuffer( &terrainConstantBuffer, &terrainConstantData, cmd, sizeof(TerrainCB) );
+	// GGMAX 3.52: pair the copy with its barrier - see the note above.
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &terrainConstantBuffer, ResourceState::COPY_DST, ResourceState::CONSTANT_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 
 	// Update GGCustomFrameCB (b4) once per frame
 	GGCustomFrame_Update(cmd);
@@ -10559,6 +10599,11 @@ void GGTerrain_Update_EmptyLevel(float playerX, float playerY, float playerZ, wi
 	terrainConstantData.terrain_maskScale = ggterrain_local_render_params.maskScale / 50000.0f;
 	terrainConstantData.terrain_mapEditSize = ggterrain_global_render_params2.editable_size;
 	wiGraphics::GetDevice()->UpdateBuffer(&terrainConstantBuffer, &terrainConstantData, cmd, sizeof(TerrainCB));
+	// GGMAX 3.52: pair the copy with its barrier - see the note above.
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &terrainConstantBuffer, ResourceState::COPY_DST, ResourceState::CONSTANT_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 
 	// Update GGCustomFrameCB (b4) once per frame
 	GGCustomFrame_Update(cmd);
@@ -11258,6 +11303,11 @@ extern "C" void GGTerrain_Draw_EnvProbe( const SPHERE* culler, const Frustum* fr
 	uint32_t instanceData[ 6 ];
 	for( int i = 0; i < 6; i++ ) instanceData[ i ] = i;
 	device->UpdateBuffer( &instanceBuffer, &instanceData, cmd );
+	// GGMAX 3.52: pair the copy with its barrier - see the note above.
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &instanceBuffer, ResourceState::COPY_DST, ResourceState::VERTEX_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 	const GPUBuffer* vbs[] = { &instanceBuffer };
 	uint32_t stride = sizeof( uint32_t );
 	device->BindVertexBuffers( vbs, 1, 1, &stride, 0, cmd );

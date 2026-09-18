@@ -2782,6 +2782,12 @@ static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, Comma
 	treeConstantData.tree_shadeWrap    = gg_tree_shade_wrap;                  // GGMAX 3.07
 
 	wiGraphics::GetDevice()->UpdateBuffer( &treeConstantBuffer, &treeConstantData, cmd, sizeof(TreeCB) );
+	// GGMAX 3.52: UpdateBuffer is a GPU COPY and inserts NO barrier - "appropriate synchronization is expected".
+	// wiRenderer barriers every one of its own; the GG path was ported with none, so a buffer could still be COPY_DEST when the same list bound it (D3D12 id 538).
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &treeConstantBuffer, ResourceState::COPY_DST, ResourceState::CONSTANT_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 }
 
 void GGTrees_HideAll()
@@ -3301,6 +3307,11 @@ extern "C" void GGTrees_Draw_EnvProbe( const SPHERE* culler, const Frustum* frus
 
 	// update light buffer
 	device->UpdateBuffer(&wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], &cb, cmd);
+	// GGMAX 3.52: pair the copy with its barrier - see the note above.
+	{
+		GPUBarrier gg_bar = GPUBarrier::Buffer( &wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], ResourceState::COPY_DST, ResourceState::CONSTANT_BUFFER );
+		wiGraphics::GetDevice()->Barrier( &gg_bar, 1, cmd );
+	}
 	device->BindConstantBuffer(&wiRenderer::constantBuffers[CBTYPE_FORWARDENTITYMASK], CB_GETBINDSLOT(ForwardEntityMaskCB), cmd);
 	*/
 
