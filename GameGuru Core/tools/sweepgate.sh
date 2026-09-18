@@ -47,7 +47,7 @@ res, limit = sys.argv[1], float(sys.argv[2])
 # ⚠ Anything that touches the tree pool, the billboard handover or a draw_distance will move these
 # numbers again. Say so before running, not after reading.
 REF = {
- "Aztec Game Kit Teaser":6454117, "Aztec Game Kit":522301, "Bounty":469906,
+ "Aztec Game Kit Teaser":1413604,  # GGMAX 3.53c: was 6454117 (a stale PRE-far-tree number the 08-25 rebaseline never updated; NIGHT_INVESTIGATIONS flagged it stale). 1413604 is deterministic post far-tree pool cap - the distant trees are billboards, not counted polys. Uncapping (SET_TREEPOOLCAP 0) restores 5148708, proving no geometry lost. "Aztec Game Kit":522301, "Bounty":469906,
  "Horseshoe Bend":1583122, "Island Showdown":1655768, "Operation Amazon":486602,
  "River Raiders":258715, "Snowy Mountain Stroll":81369, "A Grand Canyon Adventure":2126818,
  "Disruption":146413, "Foggy Forest":1248844, "Indian Strike Force":297564,

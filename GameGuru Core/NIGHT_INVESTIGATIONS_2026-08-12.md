@@ -10705,3 +10705,44 @@ So the atlas one-shot is the defect and its per-level invalidation is the fix; t
 is hardening for a real window whose necessity this A/B did not test. Both ship.
 
 ★ The build area ends on the fixed exe (22:12), both repos clean and pushed.
+
+
+# ★★★ §3.53c — THE TEASER POLYS "DROP" IS THE POOL CAP, AND THE GATE REFERENCE WAS STALE (2026-09-18)
+
+Bisected the Aztec Game Kit Teaser C2 mismatch (1,413,604 vs the gate's 6,454,117). **No code
+commit caused it.** The exact 08-29 gate pair (91b5c146 + a159b93e), rebuilt tonight, measures
+1,413,604 — identical to HEAD, to the pre-fix build, to cfg.cfg-aside, visuals.ini-aside, and
+Delayed-Shadows on/off. 15 samples over 127 s: bit-identical. It is not a regression and not a
+state artefact of tonight.
+
+## What it actually is
+
+POLYS (`GGPerf_GetPolyCount`) counts only `RenderMeshes` instanced batches — NOT the far-tree
+billboards, which draw through the custom pass. The 2.97 tree-pool radius cap (08-23) holds the
+Teaser to **181 real meshes + 31,213 billboards**. Proven by partition on the current build:
+
+| arm (sent before load) | POLYS |
+|---|---|
+| control | 1,413,604 |
+| **`SET_TREEPOOLCAP 0` (uncap)** | **5,148,708** |
+| `SET_OCCLUSION 0` | 1,413,604 |
+| `SET_FARTREES 0` | 1,414,756 |
+
+Uncapping the pool restores ~3.7 M counted polys — the geometry was never lost, it moved from
+counted meshes to uncounted billboards. Exactly the six by-design culling changes the sweepgate
+provenance note lists for the 08-23 far-tree work.
+
+## ★★★ The gate reference was stale, and the notes already knew
+
+`sweepgate.sh` carried `"Aztec Game Kit Teaser":6454117` — a PRE-far-tree number. The 08-25
+rebaseline updated the other 18 demos but not the Teaser; this file's own earlier lines say so
+("its C2 reference is the stale" / "will keep flagging Aztec Teaser"). So the C2 FAIL on the 0918fix
+sweep was a known-stale reference, not the fix and not a regression.
+
+★ Updated the single entry to **1,413,604** with provenance in the diff. This is the one
+legitimate re-baseline — correcting a value the notes had already marked stale, backed by a
+determinism check and the uncap proof — NOT blessing a bug. The other 18 references are unchanged.
+
+★ Method note: I nearly bisected code for a number that no code changed. The tell was there at
+the first step — the assumed-GOOD 08-29 end measured BAD — and the driver stopped on it rather
+than hunting a commit that could not exist. Confirm the GOOD end by measurement before bisecting.
