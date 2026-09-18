@@ -10746,3 +10746,30 @@ determinism check and the uncap proof — NOT blessing a bug. The other 18 refer
 ★ Method note: I nearly bisected code for a number that no code changed. The tell was there at
 the first step — the assumed-GOOD 08-29 end measured BAD — and the driver stopped on it rather
 than hunting a commit that could not exist. Confirm the GOOD end by measurement before bisecting.
+
+
+# ★★★ MILESTONE — SECOND-LEVEL LOADING RESTORED (2026-09-18, Lee-confirmed)
+
+Lee: *"my small 2 level test works at the moment. Let's call this a milestone."* Tag on both repos:
+**`second-level-milestone-2026-09-18`** — game `8b3930e8`, engine `9c3ec737`.
+
+What this milestone contains, all landed and pushed this session:
+
+- ★★★ **The second-level corruption is fixed** (§3.53). A treeless-or-different first level left the
+  far-tree billboard atlas built once per process from that first level; every later level bound the
+  wrong atlas with the pass un-gated during load — blank/stale viewport, or a device hang by era.
+  Fix: per-level `GGTrees_InvalidateBillboardAtlases()` + a `texTree.IsValid()` gate + `numValid`
+  published after its buffer. A/B confirmed the atlas reset is the operative change (§3.53b).
+  Proven by Lee's litmus (River Raiders → hub → Island Showdown → editor → Test Game), 2/2 and
+  now by Lee's own two-level project.
+- **Sweep 0918fix**: 19/19 load, 19/19 Test Game, VRAM pass (§3.53b).
+- **Aztec Teaser C2 closed** (§3.53c): not a regression — the 2.97 pool cap draws distant trees as
+  uncounted billboards; the gate's 6,454,117 was a stale pre-far-tree number, corrected to 1,413,604.
+- On the way, each a real defect: GG render-path resource barriers (§3.52), the validation-layer
+  drain that could hang the app, and two command-list re-entrancy detectors.
+
+★ Method banked this session: a regression with a known-good era is found by BISECTION, not by
+mechanism-hunting; a kill-switch sent after the first level tests nothing about the first level;
+confirm the good end by measurement before bisecting; a screenshot is the criterion, `STATE: editor`
+is only a fallback; the 19/19 sweep relaunches MAX per demo so it can never see a second-load bug —
+`tools/secondload_litmus.sh` is the check that can.
