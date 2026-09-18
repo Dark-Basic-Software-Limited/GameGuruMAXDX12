@@ -1,6 +1,6 @@
 # ▶▶ RESUME HERE — MILESTONE second-level-milestone-2026-09-18 (Lee-confirmed)
 
-Game `8b3930e8` main, engine `9c3ec737` master, both clean and pushed; tag `second-level-milestone-2026-09-18` on both. Lee's two-level test works. The second-level billboard-atlas fix (notes 3.53/3.53b), sweep 0918fix 19/19, and the Teaser C2 resolution (3.53c) are all in. Next: await Lee. Open, unrelated: +15 mesh/+17 material leak across a swap; engine textureStreamingFeedbackBuffer id527 barrier on a larger second level.
+Game `8b3930e8` main, engine `9c3ec737` master, both clean and pushed; tag `second-level-milestone-2026-09-18` on both. Lee's two-level test works. The second-level billboard-atlas fix (notes 3.53/3.53b), sweep 0918fix 19/19, and the Teaser C2 resolution (3.53c) are all in. Next: await Lee. FIXED 3.54: the +15 mesh/+17 material level-swap leak was tree TYPE assets (EnsureTreeType creates them nameless; ReleaseTreeTypes' only caller was a 600-frame park heuristic). Now released on level load via GGTrees_ReleaseLevelAssets(). Meshes 15->0, materials 17->2, DUMP_BROKEN clean. Residual -1 obj/+2 mat/-1 transform is deterministic and still open. Still open, unrelated: engine textureStreamingFeedbackBuffer id527 barrier on a larger second level.
 
 ---
 

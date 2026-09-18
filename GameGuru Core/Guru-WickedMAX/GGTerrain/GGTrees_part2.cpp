@@ -903,6 +903,35 @@ static void ReleaseTreePool( wi::scene::Scene& scene )
 	wi::backlog::post( "GGTrees: tree pool + shadow proxies + type assets released (no trees)" );
 }
 
+// GGMAX 3.54: RELEASE THE LEVEL'S TREE ASSETS WHEN THE LEVEL CHANGES.
+//
+// EnsureTreeType builds, per tree type the level places, a trunk material, an optional branches
+// material and up to three meshes (base + LOD1 + LOD2) - all via wi::ecs::CreateEntity() with NO
+// NameComponent. The only thing that frees them is ReleaseTreeTypes, whose ONLY caller is
+// ReleaseTreePool, which ran only after the pool had been parked for 600 consecutive frames or
+// from GGTrees_WickedShutdown - and that shutdown's caller chain (GGTerrainWicked_Shutdown) has
+// ZERO callers. A level change reaches neither, so the outgoing level's type assets stayed
+// resident while the incoming level built its own.
+//
+// Measured River Raiders -> hub -> Island Showdown vs Island Showdown first: +15 meshes,
+// +17 materials, +1 object, +1 transform. The leak-namer reported the survivors as UNNAMED and
+// 14 of the meshes as ORPHAN, which is exactly this signature - GG names nearly every loaded
+// mesh, and these are created nameless.
+//
+// 2.23 already intended this ("release the tree pool on a sustained park - fixes 6000 entities
+// retained across level change") but implemented it as a park HEURISTIC; a level change does not
+// guarantee 600 idle frames, so the intent never fired. This is the explicit hook.
+//
+// Routed through ReleaseTreePool deliberately: the pool's ObjectComponents reference the type
+// MESHES, so the pool and the shadow proxies must go first. ReleaseTreePool already does that in
+// the right order. The pool regrows lazily on demand (2.19), which a level change does anyway.
+void GGTrees_ReleaseLevelAssets()
+{
+	if ( !ggtrees_initialised ) return;
+	if ( !g_wickedTreesSetup ) return;   // nothing built yet; nothing to free
+	ReleaseTreePool( wi::scene::GetScene() );
+}
+
 // Rebuild ONE chunk's merged billboard shadow mesh (materials kept and reused).
 static void GGTrees_BuildShadowProxyChunk( uint32_t c )
 {

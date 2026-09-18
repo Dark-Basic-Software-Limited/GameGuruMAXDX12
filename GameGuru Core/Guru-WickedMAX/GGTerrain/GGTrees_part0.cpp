@@ -912,6 +912,7 @@ bool GGTrees_LoadTextureDDSIntoSliceCmd( const char* filename, Texture* tex, uin
 void GGTrees_LoadTextureDDS( const char* filename, Texture* tex ); // fwd
 bool GGTrees_BillboardAtlasesReady(); // fwd
 void GGTrees_EnsureBillboardAtlases(); // fwd
+void GGTrees_ReleaseLevelAssets();     // fwd - GGMAX 3.54, defined in GGTrees_part2.cpp
 static bool g_ftAtlasesReady = false;
 char g_ftAtlasFailName[ MAX_PATH ] = { 0 };   // first path that failed to load
 uint32_t g_ftAtlasSlices = 0;   // diagnostics: slices actually uploaded
@@ -1919,6 +1920,10 @@ int GGTrees_SetData( float* data )
 	dataInt++;
 
 	GGTrees_InvalidateBillboardAtlases();   // GGMAX 3.53: THE level-load hook - see the note above
+	// GGMAX 3.54: and free the OUTGOING level's tree-type meshes/materials + pool + shadow proxies.
+	// Defined in GGTrees_part2.cpp, which is #included after this file into GGTrees.cpp, so it needs
+	// the forward declaration above. Without this the previous level's type assets stayed resident.
+	GGTrees_ReleaseLevelAssets();
 	for( uint32_t i = 0; i < numTreeChunks; i++ )
 	{
 		pTreeChunks[ i ].pInstances.Clear();

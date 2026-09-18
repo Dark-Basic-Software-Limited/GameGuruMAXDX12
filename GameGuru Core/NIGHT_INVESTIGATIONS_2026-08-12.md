@@ -10773,3 +10773,59 @@ mechanism-hunting; a kill-switch sent after the first level tests nothing about 
 confirm the good end by measurement before bisecting; a screenshot is the criterion, `STATE: editor`
 is only a fallback; the 19/19 sweep relaunches MAX per demo so it can never see a second-load bug —
 `tools/secondload_litmus.sh` is the check that can.
+
+
+# ★★★ §3.54 — THE LEVEL-SWAP MESH/MATERIAL LEAK: TREE TYPE ASSETS (2026-09-19)
+
+The leak left open by §3.53b. Named by measurement, not by reading: `leakname.sh` (a descendant of
+2.23b's `suleakname.sh`, extended to meshes) loads the SAME level two ways on ONE build and diffs
+`DUMP_MATERIALS` + `DUMP_MESHES` by name.
+
+| River Raiders → hub → Island Showdown, vs Island first | objects | meshes | materials | transforms |
+|---|---|---|---|---|
+| before | +1 | **+15** | **+17** | +1 |
+| after (run 1) | -1 | **0** | +2 | -1 |
+| after (run 2) | -1 | **0** | +2 | -1 |
+
+## What leaked
+
+`EnsureTreeType` builds, per tree type the level PLACES, a trunk material, an optional branches
+material and up to three meshes (base + LOD1 + LOD2) — every one via `wi::ecs::CreateEntity()`
+with **no NameComponent**. The namer reported the survivors as UNNAMED with 14 of the 15 meshes
+flagged ORPHAN, which is that signature exactly: GG names nearly every loaded mesh, and these are
+created nameless.
+
+★★★ **The teardown existed and nothing on the level-load path called it.** `ReleaseTreeTypes` has
+exactly ONE caller, `ReleaseTreePool`, which runs only after the pool has been parked for 600
+consecutive frames, or from `GGTrees_WickedShutdown` — whose caller chain
+`GGTerrainWicked_Shutdown` has ZERO callers. A level change reaches neither.
+
+⚠ 2.23 already claimed this ground: *"release the tree pool on a sustained park — fixes 6000
+entities retained across level change"*. It implemented the release as a park HEURISTIC, and a
+level change does not guarantee 600 idle frames, so the intent never fired on the path it was
+named for. **A teardown that exists is not a teardown that runs** — the same shape as §3.53's
+atlas one-shot and §2.99's, three times in two days.
+
+## The fix
+
+`GGTrees_ReleaseLevelAssets()` (GGTrees_part2.cpp), called from `GGTrees_SetData` beside the 3.53
+atlas invalidation. Routed through `ReleaseTreePool` deliberately: pool ObjectComponents reference
+the type MESHES, so pool and shadow proxies must go first, and that function already orders it
+correctly. The pool regrows lazily (2.19), which a level change does anyway.
+
+★ Hooked `GGTrees_SetData` ONLY, not `GGTrees_RepopulateInstances` — the latter also runs on
+terrain edits, where releasing every type mesh would force a rebuild hitch for no benefit. A level
+whose tree data is absent or old-format loads via Repopulate and is therefore NOT covered; left
+open deliberately rather than papered over.
+
+## Verified
+
+- meshes +15 → **0**, and the mesh census BY-OWNER rows are IDENTICAL fresh vs after
+- materials +17 → **+2** (stable across two runs; unnamed; NOT tree types — separate, still open)
+- `DUMP_BROKEN`: `broken_mesh=0 broken_material=0 broken_buffer=0` — the ordering held, no
+  dangling meshID was created (the "blue palm" class this fix could plausibly have caused)
+- second-load litmus still PASS (editor 166 FPS, Test Game 144 FPS)
+
+⚠ Residual, stated precisely because it is DETERMINISTIC (bit-identical on two runs), not noise:
+**-1 object, +2 materials, -1 transform**. Small, unnamed, and not the tree-type leak — that one is
+proven closed by the zero mesh delta and the identical owner rows. Open.
