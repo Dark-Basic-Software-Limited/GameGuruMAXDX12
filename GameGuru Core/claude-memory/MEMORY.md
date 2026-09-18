@@ -4,6 +4,8 @@
 > ⚠⚠ **TWO MACHINES since 08-31** — run ``[ -d /d/DEV/BUILDS ] && echo LAPTOP || echo DESKTOP`` before trusting any path, GPU or perf number. **DESKTOP = RX 9060 XT, the primary box and the source of every recorded FPS/VRAM baseline**; LAPTOP = GTX 1050, set up 08-31 and unused since, where those baselines are INVALID. Full table: [Machine migration](project_machine_migration.md).
 > ⚙ This folder is mirrored into the repo at `GameGuru Core/claude-memory/` — `tools/sync_claude_memory.sh to-repo` after a session; `to-live` on a new box. ⚠ The live path is keyed on the repo's ABSOLUTE path — a wrong key fails SILENTLY.
 
+> ★★★ **[SECOND LEVEL BLANK/HANG — SOLVED 09-18](project_second_level_atlas.md)** — a TREELESS first level marked the billboard atlas ready without creating it, once per process; every later level bound a texture that did not exist. Found by BISECTION after eight refuted theories. ★ **"It worked a few weeks ago" = bisect FIRST.** ★ A kill-switch sent after level 1 tests nothing about level 1.
+
 > ★★★ **[TEST GAME FREEZE — SOLVED 09-16](project_testgame_freeze.md)** — it was a Lua **MessageBox**, not a hang: the DX12 port dropped the game's bundled Lua **5.2** for the engine's **5.4.8**, which deleted `math.atan2` (21 scripts call it). A modal owns the message pump → **exactly 0% CPU**. Fixed by a C++ compat shim — **confirmed 09-16**: 0.0 -> 26 CPU/10s, harness reports `STATE: game`. ★ **A zero-CPU "hang" on Windows means look for a DIALOG before a lock.**
 
 ## Current campaign — performance / ultra-low-spec

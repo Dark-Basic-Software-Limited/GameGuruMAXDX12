@@ -8,7 +8,23 @@ metadata:
   modified: 2026-08-26T04:10:52.131Z
 ---
 
-# ▶▶ RESUME HERE — state as of 2026-09-17 (end of session)
+# ▶▶ RESUME HERE — state as of 2026-09-18 21:10
+
+## ★★★ 09-18: the SECOND-LEVEL corruption is FIXED and proven by Lee's litmus (2/2)
+
+River Raiders → hub → Island Showdown → editor renders → Test Game renders. Cause: 2.99 marked the
+billboard atlas ready for a TREELESS first level without creating it, once per process (`g_ftAtlasesReady`
+never reset). Fix in `GGTrees_part0.cpp`: per-level `GGTrees_InvalidateBillboardAtlases()` on load, `Ready()`
+requires `texTree.IsValid()`, `numValid` published after its buffer. Found by BISECTION (9 builds, two repos,
+date-matched) after a morning of instruments that each found a real defect and none the cause — the 3.52
+barriers and the validation drain are real fixes that shipped on the way. Full story: notes §3.53 and
+[[project-second-level-atlas]]. ⚠ The 19/19 sweeps can NEVER see a second-load bug (fresh MAX per demo)
+— a second-load case belongs in the gate. Still open, unrelated: +15 mesh/+17 material leak across a swap;
+the engine `textureStreamingFeedbackBuffer` barrier mismatch (id527) on a bigger second level.
+
+---
+
+# ▶▶ Previous state — state as of 2026-09-17 (end of session)
 
 ## ★★★ HANDOFF: the work is DONE and Lee is testing it manually against the latest DX11.
 

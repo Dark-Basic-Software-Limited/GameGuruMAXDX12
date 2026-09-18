@@ -10593,3 +10593,81 @@ holding the build area or Lee's projects.
 
 ⚠ **Feature work stays stopped until Lee reports back.** He is testing against the latest DX11
 build; a build that moves under him invalidates the comparison.
+
+
+# ★★★ §3.53 — THE SECOND LEVEL: A TREELESS FIRST LEVEL POISONS EVERY LEVEL AFTER IT (2026-09-18)
+
+Lee: *"load River Raiders, come back, load Island Showdown — storyboard flicker/freeze, cannot even
+Test Game. A few weeks ago it loaded level after level."* Reproduced deterministically by the harness:
+River Raiders → hub → Island Showdown gives a blank white or stale-storyboard viewport with the 3D area
+black, `STATE: editor`, the scene fully BUILT (2623 objects, 2067 meshes, same as a good load) and
+the frame 31 ms instead of 5. Island Showdown FIRST is perfect. The same level twice is fine.
+
+## ★★★ Found by bisection, not by theory
+
+Eight theories were built and refuted by measurement before the history was asked (each one a
+real defect in its own right, none the cause): the far-tree billboard DRAW (hang persists with the
+pass off — but that switch was sent AFTER level 1 and only gates the draw, so it never tested the
+blank at all); 477 missing D3D12 resource barriers in the GG path (fixed, 3.52, no change); the
+id547 closed-command-list / `Reset` E_INVALIDARG storm (blank present in runs with zero of them,
+absent at 08-28 while still blank); nested submit and concurrent Begin (detectors silent); the
+3.36 PSO guard (BAD with the pre-3.36 engine, psoRefused=0); the 3.38—3.52 parity port (BAD
+before it); the engine 3.14 hierarchy skip (BAD with the engine still at 3.02); the DDS conversion
+(predates the good build).
+
+| game | engine | second load |
+|---|---|---|
+| d83523a3 08-22 | 68db4c1b | GOOD |
+| f96aba36 2.96c billboard pass ON | 68db4c1b | GOOD |
+| ed742139 2.98 | 68db4c1b | GOOD (editor) |
+| **931ac752 2.99 per-level atlas slices** | 68db4c1b | **BAD — device removed** |
+| 26d7fd1e 3.07a | 6aabdf1a | BAD |
+| everything 08-25 → HEAD | matched | BAD (blank, hang, or INVALID_CALL by era) |
+
+Every pair date-matched; both trees verified clean against their HEADs before each build (an
+interrupted checkout had once left `wiScene.cpp` at 08-19 content under an 08-25 HEAD and produced
+a link failure I nearly blamed on pairing).
+
+## ★★★ The mechanism, in one line of 2.99
+
+```
+if ( sliceCount == 0 ) { g_ftAtlasesReady = true; return; }   // treeless level: no atlas at all
+```
+
+`GGTrees_EnsureBillboardAtlases` sizes the billboard atlases to the tree types the level PLACES and
+builds them ONCE PER PROCESS — `g_ftAtlasesReady` had two writes, both `= true`, and no reset anywhere
+(§3.40-era note: the port's characteristic one-shot). For a level with no trees it marks the atlas
+ready WITHOUT CREATING `texTree` / `texTreeNormal`. River Raiders is an interior level. Island Showdown
+then loads 29,000 billboards, the pass is "ready", and binds a texture that does not exist. The
+consequence depends on the era's renderer: device removed (INVALID_CALL / HUNG) at 2.99—08-25, a
+blank compose at 08-28→HEAD. That is also why the symptom kept changing shape under me.
+
+★ It explains the whole matrix: Island first = a real atlas; Island→River = nothing to draw; same
+level twice = same atlas; TESTPRO2→Foggy Forest = a stale MAPPING (wrong species, this morning's
+finding) rather than a missing texture, hence a hang rather than a blank.
+
+## The fix (GGTrees_part0.cpp)
+
+1. `GGTrees_InvalidateBillboardAtlases()` — called wherever the level's tree instances are replaced
+   (`GGTrees_SetData` on load, `GGTrees_RepopulateInstances`): clears the flag, releases both
+   textures (Wicked defers the destroy by framecount), zeroes the slice table. The next
+   `GGTrees_Update` rebuilds an atlas sized for THIS level — the first-level behaviour, every level.
+2. `GGTrees_BillboardAtlasesReady()` now also requires `texTree.IsValid()`, so a treeless level can
+   never arm the pass for a later one even if the flag is set.
+3. `TreeChunk::Update` publishes `numValid` only after the buffer that backs it exists (a real
+   window: the pass could issue N instances against the previous level's smaller buffer).
+
+## Method, earned today
+
+★★★ **A regression with a known-good era is found by bisection, not by mechanism-hunting.** I spent
+the morning building instruments that each named a real defect and none of them the cause; the
+history named it in nine builds. The order should have been reversed the moment Lee said "a few
+weeks ago it worked".
+
+★★★ **A kill-switch sent after the first level tests nothing about the first level.** State captured
+during level 1 is already captured. Send switches before level 1, or the exoneration is false.
+
+★ **Instruments that cannot see what they check** cost more than the bug: `ps -W` never shows a
+script name (a driver launched a second build onto a live one); `taskkill` success is not process
+death; `STATE: editor` is a FALLBACK, not a positive; a `$(...)` capture swallows anything the
+callee echoes. The fixes are a PID lock, `tasklist`, a screenshot, and `say()` to stderr.

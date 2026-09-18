@@ -651,7 +651,14 @@ struct TreeChunk
 
 		minHeight = 1e9f;
 		maxHeight = -1e9f;
+		// GGMAX 3.53: numValid is read by the BILLBOARD DRAW, which runs while a level is
+		// still loading (gridedit_load_map pumps frames mid-load - see the note in
+		// WickedCall_ReloadQuiesceGPU). It used to be incremented in this loop, so between the
+		// first ++ and CreateBuffer below, the draw could issue N instances against the PREVIOUS
+		// level's smaller buffer and the GPU would read off the end of the allocation.
+		// Publish it ONLY once the buffer that backs it exists; 0 here means "skip this chunk".
 		numValid = 0;
+		uint32_t count = 0;
 		for( uint32_t j = 0; j < pInstances.NumItems(); j++ )
 		{
 			InstanceTree* pInstance = pInstances[ j ];
@@ -663,15 +670,15 @@ struct TreeChunk
 
 			if ( pInstance->IsVisible() && !pInstance->IsFlattened() && !pInstance->IsInvalid() ) 
 			{
-				pData[ numValid ].x = pInstance->x;
-				pData[ numValid ].y = pInstance->y;
-				pData[ numValid ].z = pInstance->z;
-				pData[ numValid ].data = pInstance->data;
-				numValid++;
+				pData[ count ].x = pInstance->x;
+				pData[ count ].y = pInstance->y;
+				pData[ count ].z = pInstance->z;
+				pData[ count ].data = pInstance->data;
+				count++;
 			}
 		}
 
-		if (numValid == 0)
+		if (count == 0)
 		{
 			//PE: Leak - if numValid == 0 memory was not freed.
 			delete[] pData;
@@ -681,11 +688,12 @@ struct TreeChunk
 		GPUBufferDesc bufferDesc = {};
 		SubresourceData data = {};
 		data.data_ptr = pData;
-		bufferDesc.size = sizeof(InstanceTreeGPU) * numValid;
+		bufferDesc.size = sizeof(InstanceTreeGPU) * count;
 		bufferDesc.bind_flags = BindFlag::VERTEX_BUFFER;
 		//bufferDesc.CPUAccessFlags = 0; // removed in DX12 API
 		bufferDesc.misc_flags = ResourceMiscFlag::NONE;
 		wiGraphics::GetDevice()->CreateBuffer( &bufferDesc, data.data_ptr, &bufferInstances );
+		numValid = count;   // GGMAX 3.53: publish LAST - the buffer now exists and matches
 		
 		delete [] pData;
 	}
@@ -974,7 +982,34 @@ void GGTrees_EnsureBillboardAtlases()
 
 }
 
-bool GGTrees_BillboardAtlasesReady() { return g_ftAtlasesReady; }
+bool GGTrees_BillboardAtlasesReady() { return g_ftAtlasesReady && texTree.IsValid(); }
+
+// GGMAX 3.53: the 2.99 per-level atlas was built ONCE PER PROCESS, never once per level.
+// g_ftAtlasesReady was set true and never cleared by anything - not a level load, not a
+// project change, not GGTrees_WickedShutdown. Two consequences, and the second is the bad one:
+//
+//   1. Every level after the first kept the FIRST level's type->slice mapping and its
+//      uploaded images, so trees drew as the wrong species - or all as the same one.
+//      (Lee, 2026-09-18: "they all use the same tree image".)
+//   2. Worse: the readiness flag is also the GATE that keeps the billboard pass from drawing
+//      DURING a level load. On the first level it is false until the atlas is built, so the
+//      pass stays silent while the chunks are rebuilt. On every later level it was already
+//      true, so the pass drew straight through the load -> DXGI_ERROR_DEVICE_HUNG, 5/5.
+//
+// Called wherever the level's tree instances are replaced. Releasing the textures is safe:
+// Wicked defers the actual destroy by framecount (Texture_DX12::~Texture_DX12).
+void GGTrees_InvalidateBillboardAtlases()
+{
+	g_ftAtlasesReady = false;
+	g_ftAtlasSlices  = 0;
+	g_ftTypesUsed    = 0;
+	g_ftAtlasFailName[ 0 ] = 0;
+	// The atlas is sized to the OLD level's slice count, so it cannot be reused - drop it and
+	// let GGTrees_EnsureBillboardAtlases create one sized for the new level.
+	texTree       = Texture();
+	texTreeNormal = Texture();
+	for ( uint32_t i = 0; i < numTreeTypes; i++ ) treeConstantData.tree_type[ i ].slice = 0.0f;
+}
 
 void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex )
 {
@@ -1041,6 +1076,7 @@ TreeChunk* GGTrees_GetChunk( float x, float z )
 
 void GGTrees_RepopulateInstances()
 {
+	GGTrees_InvalidateBillboardAtlases();   // GGMAX 3.53: new instance set = new atlas
 	for( uint32_t i = 0; i < numTreeChunks; i++ )
 	{
 		pTreeChunks[ i ].pInstances.Clear();
@@ -1882,6 +1918,7 @@ int GGTrees_SetData( float* data )
 	data++;
 	dataInt++;
 
+	GGTrees_InvalidateBillboardAtlases();   // GGMAX 3.53: THE level-load hook - see the note above
 	for( uint32_t i = 0; i < numTreeChunks; i++ )
 	{
 		pTreeChunks[ i ].pInstances.Clear();
