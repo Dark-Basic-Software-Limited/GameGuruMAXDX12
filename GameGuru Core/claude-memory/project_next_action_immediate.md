@@ -19,7 +19,7 @@ requires `texTree.IsValid()`, `numValid` published after its buffer. Found by BI
 date-matched) after a morning of instruments that each found a real defect and none the cause — the 3.52
 barriers and the validation drain are real fixes that shipped on the way. Full story: notes §3.53 and
 [[project-second-level-atlas]]. ⚠ The 19/19 sweeps can NEVER see a second-load bug (fresh MAX per demo)
-— a second-load case belongs in the gate. ⚠ River Raiders is NOT treeless (8 types; Island then rebuilds to 16 - measured). OPEN: A/B which of the two code changes (per-level atlas vs numValid publish order) is operative; 19-demo sweep 0918fix running at 21:12. Still open, unrelated: +15 mesh/+17 material leak across a swap;
+— a second-load case belongs in the gate. ⚠ River Raiders is NOT treeless (8 types; Island then rebuilds to 16 - measured). A/B DONE: the per-level atlas reset is the operative fix (reverting it alone = bug back). Sweep 0918fix: 19/19 load, 19/19 game, VRAM pass. ⚠ OPEN, NOT today's: Aztec Game Kit Teaser POLYS 1.41 M vs 6.45 M on 08-29 - identical pre-fix and fixed, so it landed in the 08-29->09-18 window (parity port); no sweep in that window ran C2. Do not re-baseline; bisect when it matters. Still open, unrelated: +15 mesh/+17 material leak across a swap;
 the engine `textureStreamingFeedbackBuffer` barrier mismatch (id527) on a bigger second level.
 
 ---

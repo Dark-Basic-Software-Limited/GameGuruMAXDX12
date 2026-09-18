@@ -10,6 +10,8 @@ Full account: `GameGuru Core/NIGHT_INVESTIGATIONS_2026-08-12.md` §3.53. Related
 ## The bug (Lee's litmus: River Raiders -> hub -> Island Showdown -> editor -> Test Game)
 2.99's `GGTrees_EnsureBillboardAtlases` built the billboard atlas and its type->slice table ONCE PER PROCESS from the first level's tree set (`g_ftAtlasesReady` had no reset), so every later level rendered through the first level's atlas with the pass un-gated during its load. MEASURED: River Raiders places 8 types (1,143 billboards) - NOT treeless, as the first draft claimed; Island as level 2 now rebuilds to 16 slices. Symptom changed with the era's renderer: device removed at 2.99-08-25, blank/stale compose at 08-28->HEAD. Island-first, same-level-twice and Island->River all worked, which is why it looked like "level loading" and was not.
 
+## A/B (22:10): reverting ONLY the per-level atlas reset brings the bug back exactly; the atlas one-shot is the operative defect. numValid order = hardening. Sweep 0918fix: 19/19 load, 19/19 game, VRAM pass, C2 18/19 (Teaser 1.41 M vs 6.45 M ref - PREDATES the fix, identical pre/post; open, window 08-29->09-18).
+
 ## Fixed (GGTrees_part0.cpp): per-level atlas invalidation on `GGTrees_SetData`/`RepopulateInstances`; `Ready()` also requires `texTree.IsValid()`; `numValid` published after its buffer exists.
 
 ## Rules this cost a day to learn

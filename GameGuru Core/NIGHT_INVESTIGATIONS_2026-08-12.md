@@ -10675,3 +10675,33 @@ during level 1 is already captured. Send switches before level 1, or the exonera
 script name (a driver launched a second build onto a live one); `taskkill` success is not process
 death; `STATE: editor` is a FALLBACK, not a positive; a `$(...)` capture swallows anything the
 callee echoes. The fixes are a PID lock, `tasklist`, a screenshot, and `say()` to stderr.
+
+
+# ★★★ §3.53b — GATED, A/B'D, AND ONE THING FOUND THAT IS NOT TODAY'S (2026-09-18, 22:15)
+
+## The 19-demo sweep on the fixed build (`0918fix`)
+
+C1 LOAD 19/19 — C4 GAME 19/19 — C3 VRAM worst 3815.8 MB (Aztec Game Kit / game), 280 MB headroom.
+C2 GEOMETRY: **18 of 19 bit-identical** to the 08-25 reference. The one mismatch is Aztec Game Kit
+Teaser: **1,413,604 vs 6,454,117**.
+
+★★★ **That mismatch is NOT today's.** Built the pre-fix `GGTrees_part0.cpp` (75bfda39) on an otherwise
+identical tree and loaded the Teaser alone: POLYS 1,413,604, screenshot 2.6 MB. Fixed build, same demo:
+1,413,604, 2.6 MB. Identical to the poly. The Teaser drew 6.45 M on 08-29 (sweep 0829a, C2 PASS) and
+draws 1.41 M now, so the change landed between 08-29 and 09-18 — the parity port window — and
+no sweep in that window ran C2 (the 09-16/17 sweeps gated load + game only). **Left OPEN and NOT
+re-baselined**: a 78% drop on one demo is either a legitimate DX11-parity change to what draws, or
+missing geometry, and the reference must not be moved to hide the question. The screenshot shows a
+full scene; that is an impression, not a measurement. Bisect it the same way when it matters.
+
+## A/B — which of the two 3.53 changes is the operative one
+
+| arm | kept | reverted | litmus |
+|---|---|---|---|
+| 2 | `numValid` publish order | per-level atlas reset + `IsValid` gate | **FAIL** — 47 KB blank, 25.6 FPS, no Test Game |
+| 1 | per-level atlas | `numValid` order | (invalid: my patch anchor missed the retagged comment; the arm ran the full fix and passed) |
+
+So the atlas one-shot is the defect and its per-level invalidation is the fix; the `numValid` order
+is hardening for a real window whose necessity this A/B did not test. Both ship.
+
+★ The build area ends on the fixed exe (22:12), both repos clean and pushed.
