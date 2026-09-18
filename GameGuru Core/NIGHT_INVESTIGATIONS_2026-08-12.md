@@ -10595,7 +10595,7 @@ holding the build area or Lee's projects.
 build; a build that moves under him invalidates the comparison.
 
 
-# ★★★ §3.53 — THE SECOND LEVEL: A TREELESS FIRST LEVEL POISONS EVERY LEVEL AFTER IT (2026-09-18)
+# ★★★ §3.53 — THE SECOND LEVEL: THE FIRST LEVEL'S BILLBOARD ATLAS POISONS EVERY LEVEL AFTER IT (2026-09-18)
 
 Lee: *"load River Raiders, come back, load Island Showdown — storyboard flicker/freeze, cannot even
 Test Game. A few weeks ago it loaded level after level."* Reproduced deterministically by the harness:
@@ -10628,23 +10628,27 @@ Every pair date-matched; both trees verified clean against their HEADs before ea
 interrupted checkout had once left `wiScene.cpp` at 08-19 content under an 08-25 HEAD and produced
 a link failure I nearly blamed on pairing).
 
-## ★★★ The mechanism, in one line of 2.99
+## ★★★ The mechanism — and a correction made twenty minutes after the first draft
 
-```
-if ( sliceCount == 0 ) { g_ftAtlasesReady = true; return; }   // treeless level: no atlas at all
-```
+2.99 sized the billboard atlases to the tree types the level PLACES and built them ONCE PER PROCESS:
+`g_ftAtlasesReady` had two writes, both `= true`, and no reset anywhere (the port's one-shot habit,
+again). The type→slice table in the constant buffer was written in the same one-shot. So every level
+after the first rendered its billboards through the FIRST level's atlas and mapping, and — because
+the flag was already true — the pass ran un-gated through the whole second load while the chunk
+instance buffers were being rebuilt underneath it. What the renderer made of that changed with the
+era: device removed (INVALID_CALL / HUNG) at 2.99—08-25, a blank compose at 08-28→HEAD — which
+is why the symptom kept changing shape under me.
 
-`GGTrees_EnsureBillboardAtlases` sizes the billboard atlases to the tree types the level PLACES and
-builds them ONCE PER PROCESS — `g_ftAtlasesReady` had two writes, both `= true`, and no reset anywhere
-(§3.40-era note: the port's characteristic one-shot). For a level with no trees it marks the atlas
-ready WITHOUT CREATING `texTree` / `texTreeNormal`. River Raiders is an interior level. Island Showdown
-then loads 29,000 billboards, the pass is "ready", and binds a texture that does not exist. The
-consequence depends on the era's renderer: device removed (INVALID_CALL / HUNG) at 2.99—08-25, a
-blank compose at 08-28→HEAD. That is also why the symptom kept changing shape under me.
+⚠ **First draft of this section said River Raiders was treeless and the `sliceCount == 0` branch
+was the culprit. Measured on the fixed build: River Raiders places 1,143 billboards of 8 types
+(`atlasOK=8/typesUsed=8`), Island Showdown as the second level now gets a fresh 16-slice atlas
+(`atlasOK=16/typesUsed=16`). The treeless story was an inference stated as fact; the general one-shot is
+the defect.** Which of the two code changes below is the operative one (per-level atlas vs the
+`numValid` publish order) is NOT separated by this proof — both ship; the A/B is listed as open.
 
-★ It explains the whole matrix: Island first = a real atlas; Island→River = nothing to draw; same
-level twice = same atlas; TESTPRO2→Foggy Forest = a stale MAPPING (wrong species, this morning's
-finding) rather than a missing texture, hence a hang rather than a blank.
+★★★ It still explains the matrix: Island first = its own atlas; Island→River = River renders through
+Island's 16-slice atlas with a stale mapping (wrong species, not a fault); same level twice = same
+atlas; TESTPRO2→Foggy Forest = stale mapping + rebuild under a live pass = hang.
 
 ## The fix (GGTrees_part0.cpp)
 
