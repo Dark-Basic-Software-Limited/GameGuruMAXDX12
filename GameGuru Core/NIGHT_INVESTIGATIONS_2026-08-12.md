@@ -11507,3 +11507,84 @@ entity tree sway (3.58b) · weather on WPE (3.59) · .PE version tolerance (3.60
 
 Rollback points, newest last: `tree-sway-vegetation` → `tree-sway-complete` →
 `weather-wpe-milestone` → `weather-futureproof` → `wind-tuning`.
+
+## 3.64 - SINGLE-SESSION DEMO SOAK SWEEP (2026-09-19)
+
+Lee: "run a full demo sweep ... do not exit MAX after each level is tested as I want to see the
+cumulative effect of loading all demos under a single MAX launch session."
+
+**Result: 19/19 reached the editor, 19/19 reached Test Game, 0 blank frames, 0 restarts**, one MAX
+process for the whole 49-minute pass, still healthy at the hub afterwards. Last demo loaded in 42 s
+at 255 FPS editor / 262 in game - no degradation with session length. Raw:
+`tools/soak_0919_single_session.txt`, harness `tools/demo_soak_sweep.sh`.
+
+Why a new script rather than `tools/demo_fps_sweep.sh`: that one relaunches MAX per demo, so it is
+structurally incapable of seeing anything that ACCUMULATES. That blind spot is what let the
+blank-second-level bug live four weeks under a green 19/19 gate. This one walks
+hub -> editor -> Test Game -> ESC back to editor -> hub, nineteen times, in one process.
+
+### The two findings, and the two wrong readings I had first
+
+**A. POLYS "regression" was MY STALE REFERENCE, then MY SHORT WINDOW.** Two separate errors stacked
+on the same column.
+ 1. I built the reference from the raw `sweep_0826b` results, which still carry the pre-far-tree
+    **6454117** for Aztec Game Kit Teaser. The authority is the dict in `sweepgate.sh`, corrected
+    to **1413604** in 3.53c - exactly what the sweep measured. A raw results file is a RECORD of a
+    run, not a reference; the reference is the thing that was curated afterwards.
+ 2. With that fixed, 11 of 19 still read low - **every one vegetation-heavy, every sparse or indoor
+    level exact to the digit**. That correlation is the tell: under-settling is not random, it
+    lands on whatever streams last. Direct re-measurement on a longer ladder
+    (`tools/soak_settle_repeat.sh`) returned the reference EXACTLY - Operation Amazon 315943 ->
+    **486602**, RPG Template 351661 -> **540778** - on a cold load AND again on a warm second load.
+    Geometry is fine; 25 s plus three samples 4 s apart is not enough for the tree pool.
+    Script now settles 60 s with 15 s spread. ⚠ The 25 s / 30 s boundary is sharper than a gradual
+    fill would explain, so the real variable may be FRAME COUNT, not wall time. Not pinned.
+
+**B. VRAM accumulation across level loads is REAL, and the sweep alone could not prove it.**
+Editor VRAM ran 3108 MB on load 1 to 5121 MB on load 19, peak 5743 MB, slope +90 MB per load
+(r2 0.71), 16 of 19 loads above the 4096 MB C3 gate. ⚠ **That regression is confounded and is not
+the evidence** - every level was loaded exactly ONCE, so load order and level content cannot be
+separated, and the demo list happens to get heavier toward the end.
+The clean experiment is the same level loaded TWICE in one session, content held constant:
+
+| same level, same session | census | resources | driver usage |
+|---|---|---|---|
+| Operation Amazon 1st load | 2717.1 | 6008 | 3385.0 |
+| Operation Amazon 2nd load (2 loads later) | 2890.5 | 6100 | **3659.3** (+274.3) |
+| RPG Template 1st load | 2740.7 | 5894 | 3276.3 |
+| RPG Template 2nd load (2 loads later) | 2766.8 | 5899 | **3372.6** (+96.3) |
+
+Identical geometry (POLYS exact on all four), identical camera. **Something is retained across a
+level load.** Mean ~93 MB per intervening load, which brackets the sweep's +90 MB slope from the
+other direction. ⚠ But the two levels disagree 3x (+274 vs +96) and the resource COUNT moved a lot
+for one (+92) and barely for the other (+5), so the mechanism is not uniform and this is a
+direction to investigate, not a diagnosis.
+
+⚠ **Do NOT report this as "min-spec is broken".** C3's 4096 MB gate was defined and has only ever
+been measured on a FRESH LAUNCH PER DEMO, where all 19 still pass. This rig is a 16 GB card with a
+15416 MB driver budget, so the driver caches freely and `driver_usage_mb` is an upper bound on what
+a 4 GB card would actually hold. What is fair to say: **the figure C3 gates on rises ~90 MB per
+sequential level load, and C3 has never been measured across sequential loads** - which is what a
+shipped standalone game does when the player finishes level 1.
+
+### A real defect found in the GATE, not the build
+
+`sweepgate.sh`'s C2 reference dict held **17 demos, not 19**. The 3.53c explanatory comment was
+appended to the END of the Aztec Teaser line and swallowed the next two entries:
+`"Aztec Game Kit Teaser":1413604,  # GGMAX 3.53c: ... "Aztec Game Kit":522301, "Bounty":469906,`
+A missing reference took the `ref is None` branch, printed `polys?` and **did not set `c2 = False`**,
+while the summary still read "POLYS identical on all 19 demos" because it prints `len(rows)`.
+Aztec Game Kit and Bounty have been silently exempt from geometry checking since 3.53c.
+Fixed: comments go ABOVE the entries they describe, and a missing reference is now
+`POLYS_NO_REFERENCE` + hard fail.
+
+★ Third instance of the same shape this project keeps producing: **the scope of a check shrank and
+nothing announced it.** A gate that cannot say which demos it checked is a gate that will one day
+check none of them and still print PASS.
+
+### Method notes worth keeping
+- ⚠ **Blank-frame detection by BYTE SIZE is wrong** - it conflates "blank" with "dark". Escape from
+  the Zombie Cellar's editor frame is a fully rendered windowless cellar that compresses to 977 KB
+  and false-failed a 1 MB threshold; luminance std 36.7 over all 256 levels said otherwise and
+  eyes-on confirmed. `soak_analyse.py` now thresholds on variance.
+- A per-demo-relaunch sweep and a single-session soak answer different questions. Keep both.

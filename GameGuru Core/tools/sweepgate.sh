@@ -47,7 +47,17 @@ res, limit = sys.argv[1], float(sys.argv[2])
 # ⚠ Anything that touches the tree pool, the billboard handover or a draw_distance will move these
 # numbers again. Say so before running, not after reading.
 REF = {
- "Aztec Game Kit Teaser":1413604,  # GGMAX 3.53c: was 6454117 (a stale PRE-far-tree number the 08-25 rebaseline never updated; NIGHT_INVESTIGATIONS flagged it stale). 1413604 is deterministic post far-tree pool cap - the distant trees are billboards, not counted polys. Uncapping (SET_TREEPOOLCAP 0) restores 5148708, proving no geometry lost. "Aztec Game Kit":522301, "Bounty":469906,
+ # GGMAX 3.53c: Aztec Game Kit Teaser was 6454117 - a stale PRE-far-tree number the 08-25
+ # rebaseline never updated. 1413604 is deterministic post far-tree pool cap: the distant trees
+ # are billboards, not counted polys. Uncapping (SET_TREEPOOLCAP 0) restores 5148708, proving no
+ # geometry was lost.
+ # GGMAX 3.64: that comment used to sit at the END of the Aztec Teaser line, which swallowed the
+ # next two entries into it - so this dict held 17 demos, not 19, and C2 silently stopped
+ # checking Aztec Game Kit and Bounty. A missing reference took the "polys?" branch, which did
+ # NOT set c2 = False, while the summary still printed "identical on all 19 demos" because it
+ # prints len(rows). Found by the 09-19 single-session soak sweep. Comments now go ABOVE the
+ # entries they describe, and a missing reference is a HARD FAIL below.
+ "Aztec Game Kit Teaser":1413604, "Aztec Game Kit":522301, "Bounty":469906,
  "Horseshoe Bend":1583122, "Island Showdown":1655768, "Operation Amazon":486602,
  "River Raiders":258715, "Snowy Mountain Stroll":81369, "A Grand Canyon Adventure":2126818,
  "Disruption":146413, "Foggy Forest":1248844, "Indian Strike Force":297564,
@@ -86,7 +96,7 @@ c2 = c3 = c4 = True
 worst_vram = (0, "")
 for r in sorted(rows, key=lambda x: -x["vram"]):
     d = r["demo"]; ref = REF.get(d)
-    if ref is None:            g2 = "polys?"
+    if ref is None:            g2 = "POLYS_NO_REFERENCE"; c2 = False
     elif r["polys"] == ref:    g2 = "POLYS_OK"
     else:                      g2 = "POLYS_MISMATCH(ref %d)" % ref; c2 = False
     over = [n for n, v in (("editor", r["vram"]), ("game", r["gvram"])) if v >= limit]
