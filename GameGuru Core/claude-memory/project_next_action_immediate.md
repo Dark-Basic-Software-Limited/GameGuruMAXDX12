@@ -1,6 +1,29 @@
-# ▶▶ RESUME HERE — MILESTONE second-level-milestone-2026-09-18 (Lee-confirmed)
+# ▶▶ RESUME HERE — MILESTONE level-swap-clean-milestone-2026-09-19
 
-Game `8b3930e8` main, engine `9c3ec737` master, both clean and pushed; tag `second-level-milestone-2026-09-18` on both. Lee's two-level test works. The second-level billboard-atlas fix (notes 3.53/3.53b), sweep 0918fix 19/19, and the Teaser C2 resolution (3.53c) are all in. Next: await Lee. FIXED 3.54: the +15 mesh/+17 material level-swap leak was tree TYPE assets (EnsureTreeType creates them nameless; ReleaseTreeTypes' only caller was a 600-frame park heuristic). Now released on level load via GGTrees_ReleaseLevelAssets(). Meshes 15->0, materials 17->2, DUMP_BROKEN clean. Residual -1 obj/+2 mat/-1 transform is deterministic and still open. Still open, unrelated: engine textureStreamingFeedbackBuffer id527 barrier on a larger second level.
+## ★★★ Level swaps are CLEAN and Lee-confirmed. Next: TUNING (Lee's word, 09-19).
+
+Game `91b8937e` main, engine `9c3ec737` master, both clean == origin, tag on both. Build area exe 09-19 00:02.
+
+| | |
+|---|---|
+| second level renders + Test Game | litmus 2/2; Lee's own 2-level project works |
+| hub sweep | 19/19 editor, 19/19 game, VRAM pass |
+| swap leak | meshes +15->0, materials +17->+2, DUMP_BROKEN clean |
+| GPU driver resets since the fix | 0 (was 8 in the bug window) |
+
+Fixed today: §3.53 billboard atlas built once per process (bisected, 8 theories refuted first);
+§3.54 tree TYPE assets never released on level change; §3.52 GG render path had ZERO resource
+barriers; the validation-layer drain could hang the app. §3.53c Teaser C2 = stale reference, corrected.
+
+★★★ THE LESSON OF THE DAY: **a teardown that exists is not a teardown that runs** (three cases).
+★ "It worked a few weeks ago" = BISECT FIRST. ★ A kill-switch sent after level 1 tests nothing
+about level 1. ★ The 19/19 sweep relaunches MAX per demo so it can never see a second-load bug —
+use `tools/secondload_litmus.sh`; `tools/leakname.sh` names a swap leak.
+
+⚠ OPEN (small, deterministic, not blocking): swap residual -1 object / +2 materials / -1 transform
+(bit-identical on two runs, unnamed, NOT the tree-type leak). `GGTrees_RepopulateInstances` is NOT
+hooked for the type release (terrain-edit hitch risk) so old-format-tree-data levels are uncovered.
+Engine `textureStreamingFeedbackBuffer` id527 barrier mismatch on a larger second level.
 
 ---
 

@@ -10829,3 +10829,46 @@ open deliberately rather than papered over.
 ⚠ Residual, stated precisely because it is DETERMINISTIC (bit-identical on two runs), not noise:
 **-1 object, +2 materials, -1 transform**. Small, unnamed, and not the tree-type leak — that one is
 proven closed by the zero mesh delta and the identical owner rows. Open.
+
+
+# ★★★ MILESTONE — LEVEL SWAPS CLEAN (2026-09-19, Lee-confirmed)
+
+Lee: *"This is a good build."* Tag on both repos: **`level-swap-clean-milestone-2026-09-19`**
+— game `91b8937e`, engine `9c3ec737`. Supersedes `second-level-milestone-2026-09-18`, which
+stands as the earlier rollback point.
+
+Loading level after level in one process now works and leaves the scene clean:
+
+| | |
+|---|---|
+| second level renders | Lee's two-level project + River Raiders → Island Showdown, litmus 2/2 |
+| Test Game on the second level | reached and rendering (144-160 FPS) |
+| hub sweep | 19/19 editor, 19/19 Test Game, VRAM pass |
+| mesh leak across a swap | **+15 → 0**, census owner rows identical |
+| material leak across a swap | **+17 → +2** |
+| dangling references after the swap | `broken_mesh=0 broken_material=0 broken_buffer=0` |
+| GPU driver resets (Windows 4101) | 8 during the bug window, **0 since the fix** |
+
+## The three defects behind it, all the same shape
+
+1. **§3.53** — the billboard atlas and its type→slice table built ONCE PER PROCESS from the first
+   level; the pass then ran un-gated through every later load. Blank/stale viewport, or a device
+   hang by era. Found by BISECTION after eight refuted theories.
+2. **§3.54** — tree TYPE meshes/materials never released on a level change; `ReleaseTreeTypes`'
+   only caller was a 600-frame park heuristic that a level change never satisfies.
+3. **§3.53c** — (not a defect) the Aztec Teaser C2 mismatch was a stale gate reference, corrected.
+
+★★★ **A teardown that exists is not a teardown that runs.** Three times in two days: 2.99's atlas,
+2.23's pool release, and 3.53's gate. Each had working cleanup code that no level-load path called.
+When adding per-level state, the question is not "is there a release?" but "what calls it, and does
+a level load reach that caller?"
+
+## Method banked
+
+★ A regression with a known-good era is found by BISECTION, not mechanism-hunting — nine builds
+beat a morning of instruments that each named a real defect and none the cause.
+★ Confirm the GOOD end by measurement before bisecting (the Teaser had no bad commit to find).
+★ A kill-switch sent after level 1 tests nothing about level 1.
+★ `STATE: editor` is the harness FALLBACK, not a positive — the screenshot is the criterion.
+★ The 19/19 sweep relaunches MAX per demo, so it can NEVER see a second-load bug:
+  `tools/secondload_litmus.sh` is the check that can, and `tools/leakname.sh` names a swap leak.
