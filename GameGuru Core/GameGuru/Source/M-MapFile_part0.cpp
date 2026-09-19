@@ -8,6 +8,7 @@
 
 #include "GGTerrain\GGTerrainFile.h"
 #include "GGTerrain\GGTerrain.h"
+#include "GGTerrain\GGTerrainWicked.h"
 #include "GGTerrain\GGTrees.h"
 #include "GGTerrain\GGGrass.h"
 #include "tracers/TracerManager.h"
@@ -1093,6 +1094,20 @@ void mapfile_loadproject_fpm ( void )
 			data = new char[terrain_paint_size];
 			if (data)
 			{
+				// GGMAX 3.65 VRAM LEAK (root cause): pMaterialMap is a PERSISTENT 4096x4096 buffer
+				// that lives for the process, and the restore below only writes it when this level
+				// ships a .ptd. A level with no painted terrain therefore INHERITED the previous
+				// level's entire paint map - and SetupWickedTerrainMaterials scans that map to
+				// decide which materials to instantiate, so the new level created material entities,
+				// and loaded the Color/Normal/Surface DDS set, for every material the PREVIOUS level
+				// had painted. Measured with the VRAM census: Operation Amazon loads 11 terrain
+				// materials cold, but 20 after one visit to RPG Template - the extra nine are
+				// mat14-mat28, which it does not use, at +126 MB. Over a session it converges on the
+				// union of every level visited (32 materials, ~430 MB).
+				//
+				// This was never only a memory bug: the stale paint also feeds the blend/slot
+				// mapping, so an unpainted level was being set up against another level's paint.
+				bool bAppliedPaintData = false;
 				cstr paint_data_name = cstr((int)terrain_paint_size) + cstr(".ptd");
 				if (FileExist(paint_data_name.Get()) == 1)
 				{
@@ -1109,9 +1124,19 @@ void mapfile_loadproject_fpm ( void )
 							ReadFile(hreadfile, data, terrain_paint_size, &bytesread, NULL);
 							CloseHandle(hreadfile);
 							GGTerrain::GGTerrain_SetPaintData(terrain_paint_size, (uint8_t*)data);
+							bAppliedPaintData = true;
 							//PE: We already made a delay invalidate region so all fine...
 						}
 					}
+				}
+				if (!bAppliedPaintData)
+				{
+					// No paint data for this level: the map must be EMPTY, not whatever the last
+					// level left behind. ResetPaintData memsets + re-uploads + invalidates textures,
+					// the same tail SetPaintData runs; the notify is what SetPaintData additionally
+					// does and is what makes the Wicked terrain re-scan and drop the stale slots.
+					GGTerrain::GGTerrain_ResetPaintData();
+					GGTerrain::GGTerrainWicked_OnPaintDataChanged();
 				}
 				delete(data);
 			}

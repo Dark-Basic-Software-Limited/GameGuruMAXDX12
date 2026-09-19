@@ -695,9 +695,21 @@ void GPUP_CreateRenderTexture( int width, int height, Texture* tex )
 	device->SetName( tex, "renderTex" );
 }
 
-void GPUP_DeleteTexture( Texture* tex ) 
+// GGMAX 3.65 VRAM LEAK: this was an EMPTY STUB - it fetched the device and returned, so every
+// caller in gpup_deleteEffect() freed nothing. gpup_deleteAllEffects() runs on every level load
+// (gridedit_clear_map), so the whole teardown chain was wired up correctly and landed on a
+// no-op: an .arx emitter's textures and sim render targets stayed resident for the life of the
+// process. Measured with the VRAM census: after one visit to RPG Template, Operation Amazon held
+// 53 "imageTex"/"renderTex" records where a cold load has 3 (+27.9 MB, and it grows with every
+// distinct level visited).
+//
+// Assigning a default-constructed Texture drops this handle's reference to the internal state;
+// the resource is released once the device's deferred-destroy queue drains, which the level-load
+// path already forces immediately afterwards via WickedCall_ReloadQuiesceGPU().
+void GPUP_DeleteTexture( Texture* tex )
 {
-	GraphicsDevice* device = wiGraphics::GetDevice();
+	if ( tex == nullptr ) return;
+	*tex = Texture();
 }
 
 void GPUParticlesDrawQuad( RenderPass* renderPass, CommandList cmd )
@@ -2727,7 +2739,19 @@ int gpup_deleteEffect( int ID )
 	GPUP_DeleteTexture( &gpup_emitter[ID].image1 );
 	GPUP_DeleteTexture( &gpup_emitter[ID].imagex );
 	GPUP_DeleteTexture( &gpup_emitter[ID].gradient_1 );
-			
+
+	// GGMAX 3.65 VRAM LEAK (second half): clearing the Texture MEMBERS above is not enough.
+	// RenderPassAttachment stores a Texture BY VALUE (wiGraphics.h) and CreateRenderPass copies the
+	// whole desc, so each of these five render passes holds its OWN live reference to texPos /
+	// texSpeed / texNoise. Release the members and the passes still pin the memory - which is exactly
+	// what the census showed after the first half of this fix landed: "imageTex" went to zero retained
+	// (no render pass references those) while "renderTex" stayed at +7.5 MB.
+	gpup_emitter[ID].renderPassPos[0]   = RenderPass();
+	gpup_emitter[ID].renderPassPos[1]   = RenderPass();
+	gpup_emitter[ID].renderPassSpeed[0] = RenderPass();
+	gpup_emitter[ID].renderPassSpeed[1] = RenderPass();
+	gpup_emitter[ID].renderPassNoise    = RenderPass();
+
 	gpup_emitter[ID].effectLoaded = 0 ;
 			
 	return 1;

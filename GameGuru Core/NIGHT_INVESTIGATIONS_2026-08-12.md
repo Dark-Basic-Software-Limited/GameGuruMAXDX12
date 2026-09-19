@@ -11588,3 +11588,104 @@ check none of them and still print PASS.
   and false-failed a 1 MB threshold; luminance std 36.7 over all 256 levels said otherwise and
   eyes-on confirmed. `soak_analyse.py` now thresholds on variance.
 - A per-demo-relaunch sweep and a single-session soak answer different questions. Keep both.
+
+## 3.65 - VRAM RETAINED ACROSS LEVEL LOADS: FOUND, FIXED, MEASURED (2026-09-19)
+
+Lee, after the 3.64 soak sweep: "find where the VRAM is being retained across level loads. We need
+zero VRAM leaks!"
+
+**Result: the per-load accumulation is gone.** Same 19 demos, one session, editor loads:
+
+| | before | after |
+|---|---|---|
+| driver VRAM, load 1 -> load 19 | 3107.7 -> 5121.6 MB | 3075.4 -> **3051.8 MB** |
+| accumulation slope | **+90.1 MB/load (r2 0.71)** | **+5.2 MB/load (r2 0.01)** |
+| peak in session | 5743.3 MB | 4231.4 MB |
+| loads over the 4096 MB C3 gate | 16 of 19 | **1 of 19** (Z Island, the heaviest demo) |
+
+r2 0.01 means load order no longer predicts VRAM at all - the residual slope is noise, not a trend.
+
+### The instrument
+
+`DUMP_VRAM` (census, engine 1.70) records every D3D12MA allocation WITH ITS DEBUG NAME and erases
+the record in `~Resource_DX12`, so anything present after its level was torn down is genuinely
+alive. Load A -> B -> A and diff the two A dumps: content is constant, so whatever is extra is
+retained. That turned "there is 2 GB unaccounted for" into a named list in one run.
+Tools: `tools/vramleak_probe.sh` (A/B/A/B/A), `tools/vram_union_sweep.sh` (19 demos + a repeat of
+demo 1 at load 20), `tools/union_analyse.py`.
+
+### The three defects
+
+**1. STALE TERRAIN PAINT MAP - the big one, +142 MB.** `pMaterialMap` is a persistent 4096x4096
+buffer that lives for the process. `mapfile_loadproject_fpm` restores it only
+`if (FileExist("<size>.ptd"))` - **with no else** - so a level with no painted terrain inherited the
+previous level's entire paint map. `SetupWickedTerrainMaterials` scans that map to decide which
+materials to instantiate, so the new level created entities and loaded the Color/Normal/Surface set
+for every material the PREVIOUS level had painted. Operation Amazon wants 11 terrain materials cold
+and had 20 after one visit to RPG Template; the nine extras were mat14-mat28, which it never uses.
+⚠ This was never only a memory bug - the same stale map feeds the blend/slot mapping, so an
+unpainted level was being set up against another level's paint.
+
+**2. ORPHANED MATERIAL SLOT ENTITIES.** The four AUTO slots call `scene.Entity_Remove(old)` before
+overwriting; the layer-1 and painted slots (>= 4) did not, leaving the MaterialComponent - and its
+texture Resources - live in the scene forever. The 2026-08-05 tail truncation right below removes
+entities BEYOND the new size and has a comment describing this exact hazard: it covered the tail and
+missed the ones overwritten in place.
+
+**3. `GPUP_DeleteTexture` WAS AN EMPTY STUB**, +28 MB. Its entire body was
+`{ GraphicsDevice* device = wiGraphics::GetDevice(); }`. The whole teardown chain above it is
+correct and wired up - `gridedit_clear_map` on every level load -> `gpup_deleteAllEffects` ->
+`gpup_deleteEffect` -> nine calls per emitter - and all of it landed on a no-op.
+⚠ **Inherited from DX11, not a port regression**: the read-only reference has the same empty body.
+⚠ **Half a fix is not a fix**: clearing the Texture members freed `imageTex` completely but left
+`renderTex` at +7.5 MB, because `RenderPassAttachment` stores a Texture BY VALUE and
+`CreateRenderPass` copies the whole desc - the five render passes each held their own reference.
+The census said so plainly (one category to zero, its sibling unmoved) and I needed the audit to
+read it back to me.
+
+### Method lessons, each of which cost something today
+
+★★★ **A two-level A/B/A cannot separate two leaks that both predict "current union previous".**
+I reported "my terrain entity fix did nothing" because A2 was unchanged. Wrong: the fix was working,
+and the 4th load was 16.2 MB lighter. With only two alternating levels an orphaned-entity leak and a
+stale-paint-map leak are indistinguishable. The design needed was **A -> B -> C -> A**; the union
+sweep's "reload demo 1 at load 20" is that test generalised.
+★★ **The first launch after a build recompiles the shader cache** and blows every harness timeout.
+It failed identically to a code regression and I spent minutes suspecting my own change. Warm the
+cache with a throwaway launch before any measured run (`tools/warm_then_measure` idiom).
+★★ **`rm -rf` on an output directory deletes the LOCKFILE of a run still using it.** Two probes then
+drove the same `auto_command.txt` and interleaved into one log - the documented leaked-runner
+failure, caused by my own cleanup. Kill the runner first, then clear the directory.
+★ **Empty free-shaped functions are worth sweeping for as a class.** A scan for
+`*Delete*/*Free*/*Release*/*Destroy*` with an empty body found exactly one other -
+`WickedCall_DeleteReflectionProbe` - which is honestly labelled "no code was here" on a legacy API
+DX12 does not route through, and whose category is flat in the census. Left alone deliberately.
+
+### What is still resident, and why it is NOT the same bug
+
+Demo 1 reloaded at load 20 still holds **+308.6 MB** over its own first load. The character of it is
+completely different - these are one-time step-ups to a high-water mark, which is why the linear fit
+collapses to r2 0.01:
+
+| still retained | load 1 | load 20 |
+|---|---|---|
+| `shadowMapAtlas` | 20.3 | **260.0** (capped - never exceeds 260 in 20 loads) |
+| other content textures | 205.3 | 253.8 |
+| `engine: Scene` | 9.9 | 54.4 |
+| `frame_allocator` | 11.7 | 51.5 |
+| `depthBuffer_Main` / `_Copy` / `_Copy1` / `rtLinearDepth` | 13.8 / 14.6 / 14.6 / 14.6 | 36.6 / 29.2 / 29.2 / 29.2 |
+
+`shadowMapAtlas` alone is 78% of it: the atlas grows to fit the most light-heavy level visited and
+is never shrunk. Bounded and arguably by design, but it does mean a session permanently holds the
+worst level's atlas. The depth/linear-depth group has exactly DOUBLED, which looks like a second set
+allocated and the first kept. Neither is the accumulation Lee asked about - both are candidates for
+a follow-up, not open leaks in the per-load sense.
+⚠ The same level at load 20 is not in byte-identical state to load 1 (`HairParticleSystem` is
+104 MB LOWER), so treat small per-category deltas here as indicative, not exact.
+
+### Audit coverage
+
+An 8-way subsystem audit with adversarial verification (24 agents) confirmed 3 findings - the two
+above, the gpup one found independently by two agents - and REJECTED 13. Trees, textures,
+meshes/suballocator, lighting and the particle systems came back clean, which matches the census:
+those categories cycle correctly across loads.

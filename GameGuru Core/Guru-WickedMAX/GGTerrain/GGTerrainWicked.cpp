@@ -763,7 +763,18 @@ static void SetupWickedTerrainMaterials()
 		materialToSlot[layer1Mat] = newSlot;
 		while ((int)terrain->materialEntities.size() <= newSlot)
 			terrain->materialEntities.push_back(wi::ecs::INVALID_ENTITY);
+		// GGMAX 3.65 VRAM LEAK: this slot may already hold an entity from the PREVIOUS level.
+		// Overwriting the vector entry orphans it - the entity stays in the scene, its
+		// MaterialComponent stays alive, and its three terraintextures/matNN DDS resources stay
+		// resident for the rest of the process. Measured: Operation Amazon alone loads 11 terrain
+		// materials; after one visit to RPG Template it holds 20, including mat14-mat28 which it
+		// does not use (+142 MB). The 08-05 tail truncation below removes slots beyond the new
+		// SIZE but never the ones overwritten in place. Remove after creating the replacement,
+		// same idiom as the four auto slots above; the outgoing textures are already pinned in
+		// gg_prevMaterialSetRetention for one more swap, so nothing in flight can fault.
+		wi::ecs::Entity oldLayer1 = terrain->materialEntities[newSlot];
 		terrain->materialEntities[newSlot] = wi::ecs::CreateEntity();
+		if (oldLayer1 != wi::ecs::INVALID_ENTITY) scene.Entity_Remove(oldLayer1);
 		scene.Component_Attach(terrain->materialEntities[newSlot], wickedTerrainEntity);
 		SetupTerrainMaterial(scene, terrain->materialEntities[newSlot], layer1Mat);
 		maxPaintedSlot = newSlot;
@@ -801,7 +812,11 @@ static void SetupWickedTerrainMaterials()
 				while ((int)terrain->materialEntities.size() <= newSlot)
 					terrain->materialEntities.push_back(wi::ecs::INVALID_ENTITY);
 
+				// GGMAX 3.65 VRAM LEAK: see the note at the layer1 slot above - the painted slots
+				// leak the same way, and there are many more of them.
+				wi::ecs::Entity oldPainted = terrain->materialEntities[newSlot];
 				terrain->materialEntities[newSlot] = wi::ecs::CreateEntity();
+				if (oldPainted != wi::ecs::INVALID_ENTITY) scene.Entity_Remove(oldPainted);
 				scene.Component_Attach(terrain->materialEntities[newSlot], wickedTerrainEntity);
 				SetupTerrainMaterial(scene, terrain->materialEntities[newSlot], i);
 

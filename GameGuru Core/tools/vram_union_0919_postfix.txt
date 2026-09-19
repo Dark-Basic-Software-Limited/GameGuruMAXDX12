@@ -1,0 +1,42 @@
+21:31:48    d00_boot records=3979 census_bytes=1860669440 driver_usage=2124054528 
+21:31:48 === [1/19] Aztec Game Kit Teaser
+21:33:36    d01 records=6371 census_bytes=2642444288 driver_usage=3224776704 
+21:33:36 === [2/19] Aztec Game Kit
+21:35:44    d02 records=8614 census_bytes=3285454848 driver_usage=3998101504 
+21:35:44 === [3/19] Bounty
+21:37:37    d03 records=5769 census_bytes=2280448000 driver_usage=3010080768 
+21:37:37 === [4/19] Horseshoe Bend
+21:39:37    d04 records=7947 census_bytes=2759041024 driver_usage=3493212160 
+21:39:37 === [5/19] Island Showdown
+21:41:37    d05 records=6929 census_bytes=2741329920 driver_usage=3484889088 
+21:41:37 === [6/19] Operation Amazon
+21:43:31    d06 records=6061 census_bytes=3033001984 driver_usage=3814404096 
+21:43:32 === [7/19] River Raiders
+21:45:20    d07 records=6176 census_bytes=3183255552 driver_usage=3901173760 
+21:45:20 === [8/19] Snowy Mountain Stroll
+21:47:10    d08 records=5579 census_bytes=2365616128 driver_usage=3042455552 
+21:47:10 === [9/19] A Grand Canyon Adventure
+21:49:04    d09 records=7220 census_bytes=2745462784 driver_usage=3408932864 
+21:49:04 === [10/19] Disruption
+21:50:53    d10 records=5917 census_bytes=2512822272 driver_usage=3210031104 
+21:50:53 === [11/19] Foggy Forest
+21:52:43    d11 records=6515 census_bytes=2707456000 driver_usage=3317248000 
+21:52:43 === [12/19] Indian Strike Force
+21:54:41    d12 records=7258 census_bytes=2611871744 driver_usage=3482136576 
+21:54:41 === [13/19] Switch Escape
+21:56:28    d13 records=4837 census_bytes=2215907328 driver_usage=3014537216 
+21:56:28 === [14/19] Canyon Offensive
+21:58:22    d14 records=7224 census_bytes=3074715648 driver_usage=3737268224 
+21:58:22 === [15/19] Escape from the Zombie Cellar
+22:00:11    d15 records=4783 census_bytes=2450427904 driver_usage=3240259584 
+22:00:11 === [16/19] Jungle Fever
+22:01:59    d16 records=6053 census_bytes=2628124672 driver_usage=3385225216 
+22:01:59 === [17/19] RPG Template
+22:03:44    d17 records=5917 census_bytes=2841882624 driver_usage=3563220992 
+22:03:44 === [18/19] The Mystery of Z Island
+22:05:34    d18 records=6887 census_bytes=3554516992 driver_usage=4436946944 
+22:05:34 === [19/19] Trapped
+22:07:19    d19 records=4830 census_bytes=2340306944 driver_usage=3200020480 
+22:07:19 === [20/20] Aztec Game Kit Teaser AGAIN (same level as d01, 19 loads later)
+22:09:07    d20_repeat records=6423 census_bytes=2966040576 driver_usage=3792990208 
+22:09:11 UNION SWEEP DONE
