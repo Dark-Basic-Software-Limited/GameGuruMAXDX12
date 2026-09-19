@@ -3139,6 +3139,47 @@ namespace wi { namespace renderer {
 //   spawned_total=0   -> gameplay never called AddTracer (wrong gun, traceractive=0, not in game)
 //   drawpasses=0      -> customDraw_Transparent is not reaching tracer_draw (the 7-month bug)
 //   texslots_valid=0  -> the DDS loader found no tracer.dds for the equipped gun
+// GGMAX 3.57: tree sway. SET_TREEWIND <0-100> drives visuals.tree_wind as an INT PERCENT
+// (int passthrough - the underlying visual is a 0..1 float, the verb is not bool-ized), and
+// GET_TREEWIND reads back both the visual and the two engine scalars it produces, so a
+// "trees are not moving" result can name its own cause: wind=0 -> nobody set it; amp=0 ->
+// the conversion did not run; dirlen=0 -> weather windDirection is zero and sample_wind
+// returns nothing whatever the amplitude.
+static bool AutoHarness_TreeWindCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	extern wiECS::Entity g_weatherEntityID;
+	extern void GGTrees_SetSwayFromVisuals( float treeWind, wi::scene::WeatherComponent* weather );
+	if (_stricmp(cmd, "SET_TREEWIND") == 0)
+	{
+		int pct = atoi(arg);
+		// Diagnostics may exceed 100% deliberately: an absurd amplitude is the cheapest way to
+		// tell "the sway path is dead" from "the sway path works and is tuned too subtle".
+		if (pct < 0) pct = 0; if (pct > 10000) pct = 10000;
+		t.visuals.tree_wind = (float)pct / 100.0f;
+		t.gamevisuals.tree_wind = t.visuals.tree_wind;
+		wiScene::WeatherComponent* w = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
+		GGTrees_SetSwayFromVisuals(t.visuals.tree_wind, w);
+		_snprintf(result, resultSize, "OK: SET_TREEWIND %d%% (tree_wind=%.2f, weather=%s)",
+			pct, t.visuals.tree_wind, w ? "yes" : "NULL");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GET_TREEWIND") == 0)
+	{
+		wiScene::WeatherComponent* w = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
+		float dx = w ? w->windDirection.x : 0.0f, dy = w ? w->windDirection.y : 0.0f, dz = w ? w->windDirection.z : 0.0f;
+		_snprintf(result, resultSize,
+			"OK: GET_TREEWIND visuals=%.3f amp=%.3f spacercp=%.6f dir=(%.2f,%.2f,%.2f) dirlen=%.3f speed=%.2f",
+			t.visuals.tree_wind,
+			w ? w->gg_objectWindAmplitude : -1.0f,
+			w ? w->gg_objectWindSpaceRcp : -1.0f,
+			dx, dy, dz, sqrtf(dx*dx + dy*dy + dz*dz), w ? w->windSpeed : -1.0f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	return false;
+}
+
 static bool AutoHarness_TracerCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "DUMP_TRACERS") != 0) return false;
@@ -7950,7 +7991,8 @@ void AutoHarness_CheckForCommand(void)
 	}
 	else if (AutoHarness_OutlineCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_BulletHoleCommands(cmd, arg, result, sizeof(result))
-		|| AutoHarness_TracerCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
+		|| AutoHarness_TracerCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_TreeWindCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
 	{
 		// handled in the helper (see above the dispatch function)
 	}

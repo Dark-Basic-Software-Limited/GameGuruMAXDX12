@@ -1053,7 +1053,11 @@ void imgui_terrain_loop_v3(void)
 						wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 						if (weather)
 						{
-							//weather->tree_wind = t.visuals.tree_wind; // REMOVED
+							// GGMAX 3.57: live again. The DX11 line wrote a WeatherComponent field that no
+							// longer exists; commenting it out left the slider dead until some unrelated
+							// Wicked_Update_Visuals happened to run - which is why it read as "does nothing".
+							extern void GGTrees_SetSwayFromVisuals( float treeWind, wi::scene::WeatherComponent* weather );
+							GGTrees_SetSwayFromVisuals( t.visuals.tree_wind, weather );
 						}
 					}
 

@@ -1936,12 +1936,50 @@ void WickedCall_UpdateWaterColor(float red, float green, float blue)
 }
 
 
+// GGMAX 3.57: TREE SWAY. The one place visuals.tree_wind (0..1) becomes engine wind.
+//
+// DX11 pushed this into WeatherComponent::tree_wind and its tree shaders read it back as
+// g_xFrame_TreeWind. That field does not exist in this engine, AND the shaders that consumed
+// it - GGTrees' high-detail instanced pass - are not on the DX12 near-tree path at all: near
+// trees are engine ObjectComponents from the tree pool now, drawn by the stock object shader.
+// So the sway is driven through the ENGINE's own per-vertex wind instead, which reaches
+// ObjectComponents and gives prepass/colour/shadow/env-probe agreement for free.
+//
+// Two scalars, both object-path only (ShaderWind::gg_object_*, read only by
+// sample_wind_object). They exist because stock Wicked wind is authored for a 1-unit-per-
+// metre world and GameGuru is 39.37 units per metre: raw, the field gives ~2.5 cm of travel
+// with a ~5 cm spatial period, which reads as per-vertex shimmer rather than sway.
+//
+// WARNING: do NOT get amplitude by inflating windDirection. That vector is shared with grass,
+// rain and spring bones; scaling it ~40x to move trees would flatten the grass.
+// sample_wind_object normalizes the direction and takes its magnitude from the amplitude
+// scalar precisely so the two are independent.
+//
+// SPACE: the wind volume mirror-wraps every 1.0 of texcoord, so the gust wavelength is
+// 2 / space_rcp world units. 1/1000 gives ~2000 units (~50 m) - a gust rolling through a
+// forest rather than neighbouring trees moving in lockstep.
+// AMPLITUDE: calibrated against DX11, which displaces a 600-unit tree's canopy by 68 world
+// units at tree_wind 1.0. Weight is 1.0 at that canopy, so amplitude == the peak travel.
+#define GG_TREE_SWAY_SPACE      1000.0f
+#define GG_TREE_SWAY_AMPLITUDE    70.0f
+void GGTrees_SetSwayFromVisuals( float treeWind, wi::scene::WeatherComponent* weather )
+{
+	if ( weather == nullptr ) return;
+	if ( treeWind < 0.0f ) treeWind = 0.0f;
+	if ( treeWind > 100.0f ) treeWind = 100.0f;   // >1 is diagnostic only; the UI slider caps at 1
+	weather->gg_objectWindSpaceRcp  = 1.0f / GG_TREE_SWAY_SPACE;
+	weather->gg_objectWindAmplitude = treeWind * GG_TREE_SWAY_AMPLITUDE;
+}
+
 void WickedCall_UpdateTreeWind(float wind)
 {
 	wiScene::WeatherComponent* weather = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 	if (weather)
 	{
-		//weather->tree_wind = wind; // removed from WeatherComponent
+		// GGMAX 3.57: re-homed. This is the sink for Lua SetTreeWind(), which the shipped
+		// scriptbank/effects/weather_event.lua drives every frame during a wind event - with the
+		// body commented out, every one of those scripts was a silent no-op.
+		GGTrees_SetSwayFromVisuals( wind, weather );
 	}
 }
 

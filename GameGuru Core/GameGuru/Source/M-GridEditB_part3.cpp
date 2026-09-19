@@ -1686,7 +1686,10 @@ void Wicked_Update_Visuals(void *voidvisual)
 		weather->windWaveSize = visuals->pp_size;
 		//weather->pp_alpha = visuals->pp_alpha; // REMOVED
 		weather->windRandomness = visuals->wind_randomness;
-		//weather->tree_wind = visuals->tree_wind; // REMOVED
+		// GGMAX 3.57: tree sway - see the long note at GGTrees_SetSwayFromVisuals
+		// (wickedcalls_part3.cpp) for why this no longer writes a weather tree_wind field.
+	extern void GGTrees_SetSwayFromVisuals( float treeWind, wi::scene::WeatherComponent* weather );
+		GGTrees_SetSwayFromVisuals( visuals->tree_wind, weather );
 		//weather->tree_sss = visuals->tree_sss; // REMOVED
 
 		//weather->SetPPSnowEnabled(...); // removed in new WickedEngine API - no equivalent

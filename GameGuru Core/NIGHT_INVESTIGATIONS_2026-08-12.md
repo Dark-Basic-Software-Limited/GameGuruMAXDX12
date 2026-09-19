@@ -10962,3 +10962,62 @@ whose streak crosses your view from just off-screen. Raise toward 0.5–0.6 to t
 Verified on TESTPRO2: `spawned_total 46->227`, `culled_behind 0->2525`, `live` 1–3 throughout,
 so front shooters still draw while rear shooters are suppressed. ⚠ `culled_behind` counts
 per-frame cull EVENTS, not tracers — one rear tracer alive for 27 frames scores 27.
+
+---
+
+## 3.57 — TREE SWAY RESTORED, via the engine's own wind (2026-09-19)
+
+Lee: "the next missing DX11 feature is the swaying trees ... reproduce the effect with our DX12
+tree system using our new engine's techniques."
+
+### What DX11 does
+Three separate things. Near trees are drawn by **GGTrees' own high-detail instanced pass**
+(`GGTreesHigh*VS` / `GGTreeBranchesHigh*VS`) and that is where `TreeWaveX/Z` live: three summed
+sinusoids in X, two in Z, at different amplitudes (`wind*0.35` vs `wind*0.20`) so the motion
+traces an **ellipse not a line**; the instance's world position fed in as a **phase offset** so a
+forest ripples instead of pulsing; and `clamp((posy - 120) * 0.35, 0, posy)` as a **height mask**
+pinning everything below 120 local units so the trunk base stays planted. Far-tree billboards
+**never swayed, in either version**. Imported tree ENTITIES use a third path, the "Tree Animate"
+custom object shader.
+
+### Why DX12 didn't — and it was NOT the wind value
+★★★ **The port re-architected near trees out from under the sway.** DX11 has no tree pool; DX12
+replaced that instanced pass with Wicked `ObjectComponent`s drawn by the stock object shader,
+which contains no `TreeWave`. `GGTrees_Draw` now hits an unconditional `return` before the
+high-detail block and its instance counts are never filled. The entity path is dead too: the
+three tree stubs are `<None>` in the DX12 vcxproj and compiled **at runtime with the engine
+include dir first**, so `#include "objectHF.hlsli"` binds the ENGINE header and `TREEANIMNATE` is
+inert — `objectVS_common_tree.cso` is **bit-identical to stock `objectVS_common.cso`**.
+⚠ I first reported "nothing writes treeWind". **Wrong** — `M-GridEditB_part3.cpp:2142` does; my
+grep was scoped to `Guru-WickedMAX`. The b4 chain was largely fine. **No live DX12 draw path ran
+TreeWave at all**, which is the real reason, and reconnecting the value alone would have moved
+nothing.
+
+### The fix
+Engine per-vertex wind, the only mechanism that reaches ObjectComponents — applied in the single
+shared `VertexSurface::create`, so prepass/colour/shadow/env-probe agree **by construction**.
+1. **Per-vertex weights** in `AppendTreeVerts`, reproducing DX11's mask.
+   ⚠ **An empty `vertex_windweights` does NOT mean "no wind"** — the engine substitutes `0xFF`
+   (`wiScene_Components.cpp:870`), weight 1.0 everywhere, which translates the whole tree
+   rigidly. Filling it is what makes `SetUseWind` safe.
+2. `mat.SetUseWind(true)` on **both** trunk and branch materials — DX11 waved both, and the mask
+   is what plants the base. Leaves-only slides the canopy off a rigid trunk.
+3. Two object-path-only scalars (`ShaderWind`'s spare padding) + `sample_wind_object`, because
+   stock wind is authored for 1 unit/metre and GG is 39.37 — raw it gives ~2.5 cm of travel with
+   a ~5 cm period. ★★★ The direction vector is **normalized out**: `windDirection` is shared with
+   grass, rain and spring bones, so inflating it ~40× for trees would flatten the grass.
+4. Slider and Lua reconnected (`M-TerrainNew_part1.cpp`, `wickedcalls_part3.cpp`) — the latter
+   restores shipped `weather_event.lua`, a silent no-op until now.
+
+### Verified
+New `SET_TREEWIND <0-10000>` (int percent) / `GET_TREEWIND`. TESTPRO2, static editor camera,
+motion measured **in a crop containing only the tree and cacti** so the grass does not drown it:
+0% = 1.0× floor, 25% = 1.7×, 50% = 2.0×, **100% = 2.4×**, 200% = 2.8×, 400% = 3.1×. At a
+diagnostic 3000% the canopy is flung sideways with the trunk base planted.
+
+### ⚠ Two measurement traps this cost
+1. **The first run was invalid and looked like a clean negative** — River Raiders opens *inside a
+   bunker*, so the "no motion" result was a picture of a wall. **Look at the screenshot before
+   believing a null result.**
+2. **A within-series frame-to-frame diff cannot see a STATIC bend.** The A/B had to be
+   cross-series as well, or a working-but-frozen displacement reads as a failure.

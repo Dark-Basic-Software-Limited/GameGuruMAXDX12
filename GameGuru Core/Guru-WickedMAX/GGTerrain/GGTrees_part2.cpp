@@ -195,13 +195,20 @@ static wi::ecs::Entity  g_treePoolEntities[ GG_TREE_POOL_MAX ] = { wi::ecs::INVA
 // Append a TreeMeshHigh's verts to the given mesh, unpacking the packed
 // R8G8B8A8_UNORM normal to XMFLOAT3 in [-1,1]. Returns the vertex-index offset
 // to add to this part's indices when they get merged.
+// GGMAX 3.57: tree-sway height mask, in LOCAL model units, matching DX11.
+// PIN_HEIGHT is DX11's "posy - 120" pedestal; REF_HEIGHT is the rise over which the weight
+// reaches full, chosen so a 600-unit tree tops out at its canopy (600 - 120 = 480).
+#define GG_TREE_WIND_PIN_HEIGHT 120.0f
+#define GG_TREE_WIND_REF_HEIGHT 480.0f
+
 static uint32_t AppendTreeVerts( wi::scene::MeshComponent& mesh, const TreeMeshHigh* tm )
 {
 	uint32_t baseVertex = (uint32_t)mesh.vertex_positions.size();
 
-	mesh.vertex_positions.reserve( baseVertex + tm->numVertices );
-	mesh.vertex_normals  .reserve( baseVertex + tm->numVertices );
-	mesh.vertex_uvset_0  .reserve( baseVertex + tm->numVertices );
+	mesh.vertex_positions  .reserve( baseVertex + tm->numVertices );
+	mesh.vertex_normals    .reserve( baseVertex + tm->numVertices );
+	mesh.vertex_uvset_0    .reserve( baseVertex + tm->numVertices );
+	mesh.vertex_windweights.reserve( baseVertex + tm->numVertices );
 
 	for ( uint32_t v = 0; v < tm->numVertices; v++ )
 	{
@@ -217,6 +224,24 @@ static uint32_t AppendTreeVerts( wi::scene::MeshComponent& mesh, const TreeMeshH
 		mesh.vertex_normals.push_back( XMFLOAT3( nx, ny, nz ) );
 
 		mesh.vertex_uvset_0.push_back( XMFLOAT2( src.u, src.v ) );
+
+		// GGMAX 3.57: per-vertex WIND WEIGHT - what turns the engine's wind from a rigid
+		// translation into a bend. Reproduces DX11's height mask from GGTreesConstants.hlsli,
+		// clamp((posy - 120) * 0.35, 0, posy): nothing below 120 local units moves, so the trunk
+		// base stays planted, and displacement grows linearly with height above it.
+		// DX11's ramp is unbounded; the engine weight is a uint8 0..1, so it is normalized
+		// against a FIXED reference height rather than each tree's own. That preserves DX11's
+		// property that a taller tree travels further in absolute units (up to the clamp) instead
+		// of every tree saturating at its own tip, and it reproduces DX11's numbers: a 600-unit
+		// tree reaches weight 1.0 exactly at the canopy, and a 137.5-unit cactus reaches 0.036,
+		// about 2.5 units at full wind - which is what DX11 gives it.
+		// WARNING: an EMPTY vertex_windweights does NOT mean "no wind". The engine substitutes
+		// 0xFF (wiScene_Components.cpp:870), i.e. weight 1.0 on every vertex, which would
+		// translate the whole tree rigidly, base included. Filling this is what makes
+		// SetUseWind safe to enable below.
+		const float ggWindH = ( src.y - GG_TREE_WIND_PIN_HEIGHT ) / GG_TREE_WIND_REF_HEIGHT;
+		const float ggWindW = ggWindH < 0.0f ? 0.0f : ( ggWindH > 1.0f ? 1.0f : ggWindH );
+		mesh.vertex_windweights.push_back( (uint8_t)( ggWindW * 255.0f + 0.5f ) );
 	}
 
 	return baseVertex;
@@ -316,6 +341,14 @@ static wi::ecs::Entity BuildTreeMaterial( const char* textureName, bool isBranch
 		mat.SetAlphaRef   ( 0.85f );
 		mat.SetDoubleSided( true );
 	}
+
+	// GGMAX 3.57: opt this material into the engine's per-vertex wind. Applied to BOTH the
+	// trunk and the branches, deliberately: DX11 waved trunk and canopy with the same function,
+	// and the height mask above is what keeps the base planted. Enabling it on leaves only
+	// would slide the canopy off a rigid trunk. The displacement happens inside the engine's
+	// shared VertexSurface::create, so prepass, colour, shadow and env-probe move identically
+	// by construction - the one property this codebase has twice paid for losing.
+	mat.SetUseWind( true );
 
 	mat.SetTextureStreamingDisabled( true );
 	mat.CreateRenderData();
