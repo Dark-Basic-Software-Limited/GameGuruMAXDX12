@@ -10933,3 +10933,32 @@ August race fix was applied to `TracerManager::Draw` — dead code — and logge
 `UPDATEBUFFER_AUDIT.md` as fixed, so the record positively asserted the path was healthy.
 ⚠ The word "tracer" is poisoned for grep here: 18 of 19 markdown hits mean a *diagnostic*
 instrument, not a bullet.
+
+### 3.56 — ownerless tracers culled (2026-09-19, Lee-confirmed)
+
+Lee, reporting a defect **that exists in DX11 too**: "a tracer quad is LONG, so one fired from
+behind me renders over my shoulder, past the camera, and terminates a few hundred units into
+the scene — a tracer with no owner."
+
+Cull in `Draw()`, not `AddTracer()`: the decision stays correct while the camera turns during
+the tracer's life, and `Draw` already holds the render camera (the camera at spawn time is not
+necessarily the one that renders). The tracer still ages out normally; only its draw is skipped.
+
+```
+cos = dot( normalize(origin - camEye), camFwd )      // camera.At IS a normalized forward
+if (dist(origin,camEye) > GG_TRACER_OWNCAM_RADIUS && cos < GG_TRACER_MIN_ORIGIN_COS) skip
+```
+
+⚠ **The near-camera exemption is not optional.** The PLAYER's own muzzle *is* the camera,
+nudged ~30 units by `iTracerPosition` (`G-Gun_part2.cpp:1113-1120`), so its forward component
+can be zero or negative. Without `GG_TRACER_OWNCAM_RADIUS` (120) the cull deletes your own
+weapon's tracers — the obvious one-line version of this fix is wrong.
+
+`GG_TRACER_MIN_ORIGIN_COS = 0.0` (cull only what is strictly behind) rather than
+`cos(FOV/2)`: it kills the over-the-shoulder case without also killing the legitimate flanker
+whose streak crosses your view from just off-screen. Raise toward 0.5–0.6 to tighten it to
+"the shooter must be on screen".
+
+Verified on TESTPRO2: `spawned_total 46->227`, `culled_behind 0->2525`, `live` 1–3 throughout,
+so front shooters still draw while rear shooters are suppressed. ⚠ `culled_behind` counts
+per-frame cull EVENTS, not tracers — one rear tracer alive for 27 frames scores 27.

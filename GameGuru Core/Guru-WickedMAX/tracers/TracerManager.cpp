@@ -28,6 +28,20 @@ template<typename T> static inline T PELerp(T a, T b, float t) { return (T)(a + 
 #define MAXLUATRACERS 100
 // GGMAX 3.55: bounded-buffer backstop for AddTracer - see the comment there.
 #define GG_TRACER_HARDCAP 4096
+// GGMAX 3.56 (Lee, 2026-09-19): ownerless-tracer cull. A tracer quad is LONG, so one fired
+// from BEHIND the camera renders over your shoulder, past you, and terminates a few hundred
+// units into the scene - a streak with no visible owner. Present in DX11 too. Suppress a
+// tracer whose ORIGIN (the shooter) is outside this half-angle from the camera forward axis.
+//   1.0 = dead ahead only, 0.0 = cull only what is strictly behind (90 deg), -1.0 = never cull.
+// 0.0 is deliberate: it kills the over-the-shoulder case Lee described without also killing
+// the legitimate flanker whose streak crosses your view from just off-screen. Raise toward
+// cos(horizontal FOV/2) (~0.5-0.6) to tighten it to "shooter must be on screen".
+#define GG_TRACER_MIN_ORIGIN_COS 0.0f
+// ...but NEVER cull a tracer originating this close to the camera. The PLAYER's own muzzle is
+// the camera itself, nudged ~30 units by iTracerPosition (G-Gun_part2.cpp:1113-1120), so its
+// forward component can be zero or negative. Without this exemption the cull above would
+// delete your own weapon's tracers.
+#define GG_TRACER_OWNCAM_RADIUS 120.0f
 
 namespace Tracers
 {
@@ -58,6 +72,7 @@ namespace Tracers
     int  g_ggDrawnLastFrame = 0;
     int  g_ggSpawnedTotal   = 0;
     int  g_ggDrawCalls      = 0;
+    int  g_ggCulledBehind   = 0;
 
     struct Vertex { XMFLOAT3 pos; XMFLOAT2 uv; };
     Vertex vertices[] = {
@@ -199,9 +214,9 @@ namespace Tracers
         int valid = 0;
         for (int i = 0; i < MAXTRACERS + MAXLUATRACERS; i++) if (tracerTexture[i].IsValid()) valid++;
         _snprintf(out, osize,
-            "ready=%d live=%d spawned_total=%d drawn_lastframe=%d drawpasses=%d texslots_valid=%d gametime=%.2f",
+            "ready=%d live=%d spawned_total=%d drawn_lastframe=%d drawpasses=%d texslots_valid=%d gametime=%.2f culled_behind=%d",
             tracerSystemReady ? 1 : 0, (int)tracers.size(), g_ggSpawnedTotal,
-            g_ggDrawnLastFrame, g_ggDrawCalls, valid, gameTime);
+            g_ggDrawnLastFrame, g_ggDrawCalls, valid, gameTime, g_ggCulledBehind);
         out[osize - 1] = 0;
     }
 
@@ -258,10 +273,30 @@ namespace Tracers
         device->EventBegin("tracer Draw", cmd);
         device->BindPipelineState(&tracerPSO, cmd);
 
+        // GGMAX 3.56: camera basis for the ownerless-tracer cull, hoisted out of the loop.
+        // camera.At is a NORMALIZED forward direction in this engine, not a look-at point
+        // (wiScene_Components.cpp:2771 feeds it to XMMatrixLookToLH).
+        const XMVECTOR ggCamEye = XMLoadFloat3(&camera.Eye);
+        const XMVECTOR ggCamFwd = XMVector3Normalize(XMLoadFloat3(&camera.At));
+
         for (const auto& tracer : tracers)
         {
             XMVECTOR start = XMLoadFloat3(&tracer.startPos);
             XMVECTOR end = XMLoadFloat3(&tracer.endPos);
+
+            // GGMAX 3.56: skip a tracer whose SHOOTER is behind/beside the camera - see the
+            // GG_TRACER_MIN_ORIGIN_COS note. Drawn-time, not spawn-time, so the decision stays
+            // correct while the camera turns during the tracer's life. The tracer still ages
+            // out normally; only its draw is suppressed.
+            {
+                XMVECTOR ggToOrigin = XMVectorSubtract(start, ggCamEye);
+                float ggOriginDist = XMVectorGetX(XMVector3Length(ggToOrigin));
+                if (ggOriginDist > GG_TRACER_OWNCAM_RADIUS)
+                {
+                    float ggCos = XMVectorGetX(XMVector3Dot(XMVectorScale(ggToOrigin, 1.0f / ggOriginDist), ggCamFwd));
+                    if (ggCos < GG_TRACER_MIN_ORIGIN_COS) { g_ggCulledBehind++; continue; }
+                }
+            }
             XMVECTOR dir = XMVectorSubtract(end, start);
             float length = XMVectorGetX(XMVector3Length(dir)); //Hit weapon ? *0.97;
             dir = XMVector3Normalize(dir);
