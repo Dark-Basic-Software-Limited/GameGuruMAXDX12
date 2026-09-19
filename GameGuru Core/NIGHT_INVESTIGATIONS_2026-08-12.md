@@ -11352,3 +11352,47 @@ wind UI (3.58) · entity tree sway (3.58b) · weather on WPE (3.59) · **.PE ver
 
 Rollback points, newest last: `tree-sway-vegetation` → `tree-sway-complete` →
 `weather-wpe-milestone` → `weather-futureproof`.
+
+### 3.61 — tree sway wind-field cell size was 40x too small (2026-09-19, Lee-diagnosed)
+
+Lee: at Wind Randomness 0 the tree sways in a slow predictable loop; at 2 the branches "wibble
+and wobble as though going through a dense refraction field". His diagnosis — the gust blobs are
+too close together, probably the 1 unit = 1 m (Wicked) vs 1 unit = 1 inch (MAX) mismatch, and
+they want to be ~40x larger — was exactly right, and the arithmetic backs it.
+
+### The mechanism
+`windCS.hlsl` builds the 32³ volume from the **VOXEL INDEX**, not world space:
+```
+position = (float3)DTid;  position *= wind.wavesize;
+waveoffset = 6 octaves of noise_gradient_3D(position / 2^k);
+waveoffset *= wind.randomness;
+return sin(time * wind.speed + waveoffset);
+```
+So **`randomness` is a per-voxel PHASE offset.** At 0 every voxel shares one phase and the whole
+volume pulses together — Lee's "predictable loop", and it is not a bug. At 2 adjacent voxels sit
+at very different phases, and the volume is high-frequency **by construction**.
+
+★ One texel spans `SPACE/32` world units. At the 3.57 value of SPACE=1000 that is **31 units per
+texel**, and a tree canopy is ~600 units across — so the canopy sampled **nineteen independent
+noise texels**, each at its own phase. That is not a gust, it is per-branch shimmer.
+At SPACE=40000 a texel is 1250 units (~32 m) and the canopy spans **under half a texel**, so the
+crown shares one phase and bends as one, while trees a few thousand units apart still catch the
+gust at different times.
+★ The BEND comes from the per-vertex height ramp, not from spatial variation in the field, so
+coarsening the field costs nothing in shape. DX11 had no spatial field at all — one phase per
+tree — so this is closer to DX11, not further from it.
+
+### ⚠ Measurement honesty
+I could not verify this by capture. Screenshots land ~0.8 s apart while the sway oscillates at
+speed 0.64, so consecutive frames are near-independent samples and a block-motion correlation is
+meaningless (measured +0.105 vs +0.079 — noise). **Shimmer needs a frame rate the harness does
+not have.** Applied value confirmed instead: `GET_TREEWIND` reports `spacercp=0.000025 cell=1250`
+where it was `cell=31`. The visual call is Lee's, which is what he asked for.
+★ `SET_TREESWAYSPACE <world units>` tunes it LIVE, no rebuild, and reports the resulting cell
+size in both world units and metres. `GET_TREEWIND` now also reports `randomness` and `gustsize`.
+
+### ⚠ Finding: "Wind Gust Size" is inverted
+`position *= wind.wavesize` before the noise, so a LARGER value makes the noise vary FASTER —
+i.e. **smaller** gusts. The slider (renamed from "Wind Wave Size" in 3.58) reads backwards
+relative to what it does. Not changed here: `windWaveSize` is shared with grass and rain, so
+flipping it is a behaviour change across three systems and is Lee's call.

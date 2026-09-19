@@ -1955,19 +1955,38 @@ void WickedCall_UpdateWaterColor(float red, float green, float blue)
 // sample_wind_object normalizes the direction and takes its magnitude from the amplitude
 // scalar precisely so the two are independent.
 //
-// SPACE: the wind volume mirror-wraps every 1.0 of texcoord, so the gust wavelength is
-// 2 / space_rcp world units. 1/1000 gives ~2000 units (~50 m) - a gust rolling through a
-// forest rather than neighbouring trees moving in lockstep.
+// ★★★ SPACE (GGMAX 3.61, Lee): this is about TEXEL SIZE, not wavelength, and the first value
+// was 40x too small. The wind volume is 32x32x32 addressed over texcoord 0..1, so one texel
+// spans SPACE/32 world units. At the old SPACE=1000 that is 31 world units per texel - and a
+// tree canopy is ~600 units across, so the canopy sampled NINETEEN independent noise texels.
+//
+// That matters because of what the noise actually is. windCS.hlsl builds the volume from the
+// VOXEL INDEX, not world space:  waveoffset = 6 octaves of noise(voxel/2^k) * randomness,
+// and the result is sin(time*speed + waveoffset). So `randomness` is a PER-VOXEL PHASE offset:
+// at 0 every voxel shares one phase and the whole volume pulses together (Lee: "sways slowly
+// back and forth in a predictable loop"), and at 2 adjacent voxels are at very different
+// phases. Sampling nineteen of those across one canopy is not a gust - it is per-branch
+// shimmer, which is exactly what Lee reported: "wibble and wobble as though going through a
+// dense refraction field".
+//
+// At SPACE=40000 a texel is 1250 world units (~32 m): a 600-unit canopy spans under HALF a
+// texel, so the whole crown shares one gust phase and bends as one, while trees a few thousand
+// units apart still sit in different cells and catch the gust at different times. The BEND
+// comes from the per-vertex height ramp, not from spatial variation in the field, so making
+// the field coarse costs nothing in shape - DX11 had no spatial field at all, just one phase
+// per tree, and this is closer to that.
+//
+// ⚠ Tunable live with the SET_TREESWAYSPACE harness verb - no rebuild needed to A/B it.
 // AMPLITUDE: calibrated against DX11, which displaces a 600-unit tree's canopy by 68 world
 // units at tree_wind 1.0. Weight is 1.0 at that canopy, so amplitude == the peak travel.
-#define GG_TREE_SWAY_SPACE      1000.0f
+float g_ggTreeSwaySpace = 40000.0f;   // GGMAX 3.61: was 1000 - see the note above
 #define GG_TREE_SWAY_AMPLITUDE    70.0f
 void GGTrees_SetSwayFromVisuals( float treeWind, wi::scene::WeatherComponent* weather )
 {
 	if ( weather == nullptr ) return;
 	if ( treeWind < 0.0f ) treeWind = 0.0f;
 	if ( treeWind > 100.0f ) treeWind = 100.0f;   // >1 is diagnostic only; the UI slider caps at 1
-	weather->gg_objectWindSpaceRcp  = 1.0f / GG_TREE_SWAY_SPACE;
+	weather->gg_objectWindSpaceRcp  = 1.0f / g_ggTreeSwaySpace;
 	weather->gg_objectWindAmplitude = treeWind * GG_TREE_SWAY_AMPLITUDE;
 }
 

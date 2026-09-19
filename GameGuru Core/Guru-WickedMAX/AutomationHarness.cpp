@@ -3242,16 +3242,39 @@ static bool AutoHarness_TreeWindCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	// GGMAX 3.61: SET_TREESWAYSPACE <world units> - the size of one wind-noise cell for the tree
+	// path. One texel of the 32^3 volume spans SPACE/32 units, so this is really "how big is a
+	// gust". Too small and a canopy straddles many cells and shimmers per-branch instead of
+	// bending as one (that was the 1000 default). Live, no rebuild, so it can be judged by eye.
+	if (_stricmp(cmd, "SET_TREESWAYSPACE") == 0)
+	{
+		extern float g_ggTreeSwaySpace;
+		float v = (float)atof(arg);
+		if (v < 32.0f) v = 32.0f;               // below this a texel is under a world unit
+		if (v > 4000000.0f) v = 4000000.0f;
+		g_ggTreeSwaySpace = v;
+		// re-apply immediately so the change is visible without touching the slider
+		extern wiECS::Entity g_weatherEntityID;
+		wiScene::WeatherComponent* w = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
+		extern void GGTrees_SetSwayFromVisuals( float treeWind, wi::scene::WeatherComponent* weather );
+		GGTrees_SetSwayFromVisuals(t.visuals.tree_wind, w);
+		_snprintf(result, resultSize, "OK: SET_TREESWAYSPACE %.0f (one noise cell = %.0f world units, ~%.1f m)",
+			v, v / 32.0f, (v / 32.0f) / 39.37f);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "GET_TREEWIND") == 0)
 	{
 		wiScene::WeatherComponent* w = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);
 		float dx = w ? w->windDirection.x : 0.0f, dy = w ? w->windDirection.y : 0.0f, dz = w ? w->windDirection.z : 0.0f;
 		_snprintf(result, resultSize,
-			"OK: GET_TREEWIND visuals=%.3f amp=%.3f spacercp=%.6f dir=(%.2f,%.2f,%.2f) dirlen=%.3f speed=%.2f",
+			"OK: GET_TREEWIND visuals=%.3f amp=%.3f spacercp=%.6f cell=%.0f dir=(%.2f,%.2f,%.2f) dirlen=%.3f speed=%.2f randomness=%.2f gustsize=%.2f",
 			t.visuals.tree_wind,
 			w ? w->gg_objectWindAmplitude : -1.0f,
 			w ? w->gg_objectWindSpaceRcp : -1.0f,
-			dx, dy, dz, sqrtf(dx*dx + dy*dy + dz*dz), w ? w->windSpeed : -1.0f);
+			w ? (1.0f / (w->gg_objectWindSpaceRcp > 0 ? w->gg_objectWindSpaceRcp : 1.0f)) / 32.0f : -1.0f,
+			dx, dy, dz, sqrtf(dx*dx + dy*dy + dz*dz), w ? w->windSpeed : -1.0f,
+			w ? w->windRandomness : -1.0f, w ? w->windWaveSize : -1.0f);
 		result[resultSize - 1] = 0;
 		return true;
 	}
