@@ -11098,3 +11098,56 @@ imported geometry. ⚠ `param1 == 0` leaves wind OFF rather than on-at-zero: an 
 New `SET_ENTITYWIND <0-1000>` forces the entity path onto every non-vegetation material, because
 no stock media assigns the Tree Animate shader — without it a green build would have proved
 nothing. It skips wind-enabled materials, so the two paths stay separable on screen.
+
+---
+
+# ★★★ MILESTONE — TREES SWAY AGAIN (2026-09-19, Lee-confirmed)
+
+Both tree sway paths restored, plus the tracer system earlier the same day. Tag on both repos:
+**`tree-sway-complete-2026-09-19`** (game `659c0d95`, engine `b80d5490`).
+
+| feature | path | state |
+|---|---|---|
+| bullet tracers (3.55) | `customDraw_Transparent` | restored, Lee-confirmed |
+| ownerless tracer cull (3.56) | draw-time origin test | restored, Lee-confirmed; **fixes a DX11-era bug too** |
+| painted vegetation sway (3.57) | engine per-vertex wind on tree-pool ObjectComponents | **9.3× floor**, Lee-confirmed |
+| wind UI labels + defaults (3.58) | Tree Wind Modifier / Wind Controls / Wind Gust Size 0-5 | verified by exe string scan |
+| entity tree sway (3.58b) | per-material `userdata.x` + in-shader height ramp | **6.5× floor with the global slider at 0** |
+
+### What this milestone really closed
+Three features were missing for **the same structural reason**, and none of them was a bug in the
+code that implements them:
+- **tracers**: the implementation was intact and *orphaned* — DX11 called it from inside the
+  engine, and the DX12 port's hook inventory was built by grepping GGTerrain/GGTrees/GGGrass, so
+  every other hook in those `#ifdef GGREDUCED` blocks fell out of scope silently.
+- **vegetation sway**: the sway maths was never deleted — **the geometry moved out from under it**
+  when near trees were re-architected from GGTrees' instanced pass into engine ObjectComponents.
+- **entity sway**: the authored value was never lost — only the hand-off to the material, left as
+  a `// TODO` behind the engine's `customShaderParam1` removal.
+
+★★★ **The lesson, stated once:** in this port, "feature X is missing" has three times meant
+*something moved, and nothing told anyone*. The code that implements the feature reads fine, the
+data is still on disk, and the written record can even assert it is healthy (an August race fix
+was applied to `TracerManager::Draw` — dead code — and logged as fixed). **Look for the caller
+before you look for the bug.**
+
+### Measurement traps this milestone cost, worth not repeating
+1. **A null result from a screenshot you have not looked at is worthless.** The first sway test
+   came back a confident clean negative; it was a picture of a bunker wall (River Raiders opens
+   indoors).
+2. **A within-series frame-to-frame diff cannot see a STATIC bend** — the A/B had to be
+   cross-series too, or a working-but-frozen displacement reads as failure.
+3. **A default is not what the level loads.** `tree_wind` defaults to 0 and every saved level
+   stores the key, so "I rebuilt and nothing changed" was the *expected* result, not a failure.
+4. **A green build proves nothing when no content exercises the path** — no stock media assigns
+   the Tree Animate shader, hence `SET_ENTITYWIND`.
+
+### Still open (deliberately, not forgotten)
+- Imported trees **shorter than 120 units** cannot sway. That is DX11's hardcoded pedestal
+  reproduced faithfully, not a port defect — changing it is a design choice, not a fix.
+- Far-tree billboards do not sway, **in either renderer**. Never have.
+- The dead "Tree Animate" custom-shader path itself is still dead; 3.58b reproduces its behaviour
+  through the engine wind instead of reviving a Wicked-0.60-era shader.
+- `GGTrees_Draw_ShadowMap` / `_Draw_EnvProbe` hard-return. ⚠ **Do NOT report this as "trees cast no
+  shadows"** — Lee confirmed they do, via the pool ObjectComponents. Those returns only kill the
+  already-dead high-detail path.
