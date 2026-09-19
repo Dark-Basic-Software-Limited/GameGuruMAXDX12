@@ -11754,7 +11754,13 @@ nothing smaller to shrink to. **An INPUT to the shadow packer persists across a 
 stable over 7000+ frames), or `visuals.iShadowSpotCascadeResolution` (proven - `visuals_load`
 assigns the 1024 default at M-Visuals_part0.cpp:1339 BEFORE parsing the file at :1717, so an absent
 key cannot inherit).
-★ **Next lead, and it is a good one:** `DUMP_SHADOWRECTS` reports a **512x512** sun rect for Teaser
+⚠⚠ **SUPERSEDED BY 3.67 - the cause is FOUND.** `wi::rectpacker::State::clear()` does not reset
+`width`/`height` (its own comment says so) and `pack()` only ever doubles, so the packer bound on the
+process-lifetime `Visibility::shadow_packer` is a session high-water mark that the atlas faithfully
+allocates. The lead below was half right and half wrong: the harness/packer "disagreement" is a
+UNITS BUG in the accessor (it reports per-cascade width), not a discrepancy - and correcting the
+units is what proves 12288 is unreachable from the rects. Read 3.67 before touching this.
+★ Original lead, kept for the record: `DUMP_SHADOWRECTS` reports a **512x512** sun rect for Teaser
 in BOTH cases while the packer reports 5120x1024 vs 12288x4096. The harness dump and the packer
 disagree, so the per-rect slice multiplier (or the rect set the packer actually sees) is where to
 look - instrument the rects INSIDE the packer at the same moment as the width, not through the
@@ -11774,3 +11780,145 @@ the first instrumented run produced an empty log that looked exactly like code t
 append+flush for anything a force-kill must not lose.
 ⚠ **The first launch after an ENGINE build needs a much longer warm budget** (300 was not enough
 twice; now 900). A cold launch fails identically to a code regression.
+
+## 3.67 - VRAM HUNT: WHAT IT TAUGHT, AND THE PLAN FOR WHAT IS LEFT (2026-09-20)
+
+Lee: "update notes on what you learned while hunting for the VRAM leak and outline in the notes the
+plan for chasing down the remaining suspects."
+
+### FIRST - 3.66's "next lead" is SUPERSEDED. The shadow atlas root cause is FOUND.
+
+3.66 closed saying an unnamed input to the shadow packer survives a level load. It is named now,
+and the answer was sitting in data already collected:
+
+**`wi::rectpacker::State::clear()` does not reset `width`/`height`.** Its own comment says so -
+`wiRectPacker.h:22`: *"Clears the rectangles to empty, but doesn't reset the containing width/height
+result"*. `add_rect` only ever does `width = max(width, rect.w)`, and `pack()` starts from the
+CURRENT width/height and only ever DOUBLES - it never searches downward. `Visibility::shadow_packer`
+(`wiRenderer.h:227`) lives inside `RenderPath3D::visibility_main`, i.e. for the whole process, and
+`Visibility::Clear()` never touches it. So the packer's containing size is a **session high-water
+mark**, `CreateTexture` faithfully allocates it, and it saturates at `pack(16384)`'s own cap by the
+third demo: the census shows 5120x1024 at d01, then 10240x4096, then **16384x4096 = 260 MB flat for
+the remaining 17 loads**.
+
+- **THE CLINCHER WAS IN MY OWN TRACE AND I READ IT BACKWARDS.** All 27 `gg_atlas` lines show the
+packer size EXACTLY equalling the atlas size - across three different rect sets. I read that as
+"the packer wants 12288". It is the opposite: **a packer computing a minimal bound per frame would
+never land exactly on the atlas three times running.** Exact equality on every sample is the
+signature of a number being handed back unchanged. It also explains why 3.66's shrink arm can never
+fire - the packer is structurally incapable of reporting smaller than the atlas.
+
+- The "harness vs packer disagreement" I flagged as the lead is **a units bug in the accessor, not
+a discrepancy**: `GG_GetShadowRects` is filled at `wiRenderer.cpp:5250-5252` from
+`visibleLightShadowRects[]` AFTER the sun's width has been divided by `cascade_count`, so
+DUMP_SHADOWRECTS prints PER-CASCADE width. The arithmetic then kills the rival theories outright:
+`h` is not divided and reads 512 on both loads, pinning `max_shadow_resolution_2D *
+iterative_scaling` at 512, and `cascade_count` is bounded in [5,8] - so the widest possible sun rect
+is 512*8 = 4096. **12288 and 16384 are unreachable from the rects.** Only a retained bound produces
+them.
+
+### THE PLAN - ranked by value, with two suspects explicitly CLOSED
+
+| # | suspect | verdict | worth | action |
+|---|---|---|---|---|
+| 1 | shadow packer bound | **LEAK - cause found** | ~230-250 MB | fix + measure (below) |
+| 2 | grass material cache | **LEAK** | ~47 MB, bounded ~66 | confirm with an existing harness verb, no build |
+| 3 | MSAA outline RTs | **LEAK (small)** | ~12 MB | 3-line else, game build only |
+| 4 | `engine: Scene` | **BENIGN - CLOSED** | ~0 | do not chase |
+| 5 | `frame_allocator`, `meshletBuffer` | **BENIGN - CLOSED** | 0 | do not chase |
+
+**1. SHADOW PACKER BOUND (~230-250 MB).** Two parts, one build.
+- *Measure first, zero behaviour change*: in the existing `gg_reportNow` block (`wiRenderer.cpp`
+  ~:5280) also print the TRUE minimal bound - loop `vis.shadow_packer.rects` for `max(r.w)` /
+  `max(r.h)`. While there, fix the accessor's units at :5250-5252 to record the PRE-division rect
+  plus `cascade_count`, so DUMP_SHADOWRECTS stops lying about the sun.
+- *Fix*: at `wiRenderer.cpp:5114`, after `vis.shadow_packer.clear();` add
+  `vis.shadow_packer.width = 0; vis.shadow_packer.height = 0;`.
+- **Do NOT "fix" `State::clear()` in `wiRectPacker.h`.** `State` has exactly two users - the shadow
+  packer and `wiFont.cpp:456`'s glyph atlas - and the font atlas legitimately WANTS the ratchet.
+  Changing the shared class to fix one caller would quietly break the other.
+- *Confirms*: the trace prints a retained bound of 12288+ while `maxw x maxh` over the same rects is
+  <= ~4096x1024; then after the fix `d20_repeat`'s atlas drops 272629760 -> ~21299200 bytes and the
+  per-load atlas size becomes NON-MONOTONIC across d01..d19, which is the direct disproof of
+  grow-only. *Refutes*: a rect really is 12288 wide - then look at `light.forced_shadow_resolution`
+  (`wiRenderer.cpp:5150`), which bypasses the resolution knob and is serialized per-LightComponent,
+  so it could genuinely survive a load.
+- Watch for: more than ~2 `GGATLAS create` lines per level load would mean the atlas is oscillating
+  during the load and the shrink needs to fire later.
+
+**2. GRASS MATERIAL CACHE (~47 MB).** `Files/grassbank` textures are **strictly monotone and never
+once drop** across the whole 20-load session: 4 resident at boot, 40 by load 20, 5 -> 40 records,
+6.2 -> 52.9 MB. Nothing is ever evicted, so a level inherits every grass type any earlier level used.
+- *Next, and it needs NO BUILD*: the harness already has `DUMP_GRASSTYPES`
+  (`AutomationHarness.cpp:8456`), a pure read. Load Teaser and dump; load Island Showdown, Jungle
+  Fever and Canyon Offensive (the loads that added +7/+3/+5 grass DDS); load Teaser again and dump.
+  Expect ~5 slots first and ~25-30 second, including slots the Teaser does not use. That confirms
+  ownership before a line of code is written.
+
+**3. MSAA OUTLINE RENDER TARGETS (~12 MB).** Inside the `(unnamed)` group - whose total oscillates
+rather than climbs, so most of that category is innocent. The real part: `rt_MSAAOutline*` are
+created under an MSAA guard at `master_part1.cpp:1101` and never released when MSAA is off.
+- *Fix*: add `else { rt_MSAAOutline = {}; rt_MSAAOutline_Red = {}; rt_MSAAOutline_Blue = {}; }`.
+  Game build only, no engine rebuild, no shader impact.
+
+**4-5. CLOSED - do not spend time here.** `engine: Scene` is 18 records in EVERY dump with the same
+12 names, growing 10.9 -> 35.8 MB over the first three loads and then **byte-identical for the last
+17 consecutive loads**, including the heaviest demo in the set. `frame_allocator` is a fixed 35
+records that saturate at load 16 and are byte-identical multisets through d20. `meshletBuffer` is
+one record that steps once. All three are high-water reserves that reached their mark and stopped;
+the load-ordered dumps settle it, and no rebuild or re-measure is needed to close them.
+
+### WHAT THE HUNT TAUGHT (the durable part)
+
+- **Every defect found was the same shape: a per-level value living in a process-lifetime global,
+which the next level only overwrites if it happens to supply one.** Terrain paint map (no `else` on
+the `.ptd` restore), terrain material slot entities, the rect packer's containing size, the grass
+material cache. This is now the FIRST thing to check when state seems to bleed between levels - and
+it generalises past VRAM, because the same stale paint map also drives the terrain blend/slot
+mapping.
+
+- **A two-level A/B/A cannot separate two leaks that both predict "current union previous".** It
+made me report a working fix as doing nothing. Use **A -> B -> C -> A**, or the union sweep's
+"reload demo 1 at load 20", which holds content constant across the whole session.
+
+- **Instrument, then read what it says - not what you expected it to say.** Four plausible theories
+died to measurement in one night (the release never runs; the atlas will not shrink; the cascade
+resolution is sticky; it is a load transient). Reasoning produced all four. The fifth - the correct
+one - was legible in a trace already captured and misread.
+
+- **A one-shot diagnostic reports the wrong MOMENT.** The first "why did it not shrink" report fired
+on the frame after arming, showed packer == atlas, and looked like correct behaviour. The number
+that mattered existed 30 s later. Making it periodic inverted the picture.
+
+- **A deliberate, labelled, temporary diagnostic is a leak with a calendar on it.** Two of the four
+defects were exactly that - the 2.05 depth keep-alive ("Remove once the hunt closes") and the
+terrain-texture pin. Both hunts closed on OTHER root causes, which is precisely when nobody goes
+back. Both were gated on a flag file so no shipping user paid them - but `dred.txt` is present on
+every developer machine, **including the one every VRAM baseline in this repo was measured on**.
+Worth a periodic grep for "temporary", "DIAG" and "remove once" across the engine delta.
+
+- **Empty-bodied free functions are worth sweeping for as a class.** A scan for
+`*Delete*/*Free*/*Release*/*Destroy*` with an empty body found `GPUP_DeleteTexture` (a real leak,
+inherited from DX11) and exactly one other, `WickedCall_DeleteReflectionProbe`, which is honestly
+labelled and on a dead path - deliberately left alone.
+
+- **Half a fix measures as a partial fix and reads as a finished one.** Clearing the gpup Texture
+members took `imageTex` to zero retained and left `renderTex` untouched, because
+`RenderPassAttachment` holds a Texture BY VALUE. One category going to zero while its sibling does
+not move is a signal, not noise.
+
+### TOOLING LESSONS (each cost real time)
+- **`wi::backlog` writes log.txt only from its DESTRUCTOR** - a harness taskkill never reaches it,
+  so the first instrumented run produced an empty file that looked exactly like code that never ran.
+  Append+flush for anything a kill must not lose.
+- **The first launch after an ENGINE build needs a long warm budget** - 300 failed twice, now 900.
+  A cold launch fails identically to a code regression; I suspected my own change twice.
+- **`rm -rf` on an output directory deletes the LOCKFILE of a run still using it.** Two probes then
+  drove one `auto_command.txt` and interleaved into one log. Kill the runner, then clear.
+- **An unmatched `sed` silently passes text through.** A derived script kept the original's output
+  path and began overwriting the baseline it was being compared against. Assert the substitution
+  matched - the same rule already written down for the python patch scripts.
+- **A long heredoc truncates** - already a documented rule here, and it bit again while writing this
+  very section. Write the patch script to a file.
+- **Blank-frame detection by BYTE SIZE conflates "blank" with "dark"** and false-failed a fully
+  rendered windowless cellar. Threshold on luminance variance.
