@@ -3164,6 +3164,33 @@ static bool AutoHarness_TreeWindCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	// GGMAX 3.58b: SET_ENTITYWIND <0-1000> forces the per-material ENTITY tree-sway path onto every
+	// material that is not already wind-enabled, as an int percent of DX11's "Object Wind".
+	// Needed because NO stock media assigns the Tree Animate shader (0 of the shipped entitybank),
+	// so without this there is no content that exercises the new path and a green build would prove
+	// nothing. Materials already using wind are skipped, which is exactly the tree-pool vegetation,
+	// so this also leaves the 3.57 path alone and the two can be told apart on screen.
+	if (_stricmp(cmd, "SET_ENTITYWIND") == 0)
+	{
+		int pct = atoi(arg);
+		if (pct < 0) pct = 0; if (pct > 1000) pct = 1000;
+		const float v = (float)pct / 100.0f;
+		wi::scene::Scene& sc = wi::scene::GetScene();
+		int touched = 0, skipped = 0;
+		for (size_t i = 0; i < sc.materials.GetCount(); ++i)
+		{
+			wi::scene::MaterialComponent& m = sc.materials[i];
+			if (m.IsUsingWind() && m.userdata.x == 0) { skipped++; continue; }   // tree-pool vegetation
+			if (v <= 0.0f) { m.userdata.x = 0; m.SetUseWind(false); }
+			else { m.userdata.x = *reinterpret_cast<const uint32_t*>(&v); m.SetUseWind(true); }
+			m.SetDirty();
+			touched++;
+		}
+		_snprintf(result, resultSize, "OK: SET_ENTITYWIND %d%% (objwind=%.2f) touched=%d skipped_vegetation=%d",
+			pct, v, touched, skipped);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "GET_TREEWIND") == 0)
 	{
 		wiScene::WeatherComponent* w = wiScene::GetScene().weathers.GetComponent(g_weatherEntityID);

@@ -11049,3 +11049,52 @@ old level, not a failure.
 ★ Label changes verified by string-scanning the built exe: the three new labels present, the
 three old ones absent (including a `"Tree Wind\0"` check, so the bare label is really gone and
 not just shadowed by the longer one).
+
+### 3.58b — entity tree sway, the DX11 per-material path (2026-09-19)
+
+Lee asked how DX11 sways trees when every level stores `visuals.tree_wind=0`. Two answers, for
+two different kinds of tree:
+- **Painted GGTrees vegetation does NOT sway at 0 in DX11 either** — `GGTreesConstants.hlsli`
+  opens `if (g_xFrame_TreeWind <= 0) return (0);`, a hard gate with no fallback. Hub demos have
+  still vegetation in DX11 too. **No regression on that path.**
+- **Tree ENTITIES with the "Tree Animate Doublesided" material DO sway at 0**, from a deliberate
+  fallback baked in when the shader is assigned (`M-Importer.cpp:11450`):
+  `if (tree_wind > 0) param1 = 1.0f; else param1 = 0.20f;` — and the shader then computes
+  `wind = baseWind * param1`, i.e. `param1²` when the global is zero. **That** is the DX11 sway
+  people remember, and it is per-material, not per-level.
+
+⚠ **The parameter is NOT "only a modifier": it drives speed AND amplitude** (`swayspeed = wind*6`,
+`swayamount = wind*0.35`). The shader exposes exactly one parameter, labelled "Object Wind".
+⚠ **The height ramp is a hardcoded 120 in DX11 with NO per-object adjustment** — the only
+per-object term is `mpos.y *= WORLD[1][1]` (instance Y scale). Anything under 120 scaled units is
+completely pinned in DX11 too, so a short imported bush never moved there either. Reproduced
+faithfully rather than "fixed".
+
+### What was preserved, and what was not
+★ The authored value survived the port **intact**: FPE parse, level load and level save all still
+carry `customShaderID` / `customShaderParam1`. Only the hand-off to the engine material was lost —
+`wickedcalls_part1.cpp` applies the ID but the seven params sit commented out behind
+`// TODO: ... replaced with uint4 userdata`. So no user data was ever at risk and no migration is
+needed.
+⚠ **The default `customShaderParam1` is 1, NOT 0** (`M-Entity_part1.cpp:205`). What makes stock
+media inert is `customShaderID = -1` on the line above, plus 0 of the shipped entitybank FPEs
+setting `customshaderid`. **Never detect "the user wanted sway" by testing `param1 != 0`** — that
+fires on every entity in the game. The test is the shader ID.
+
+### The fix
+`userdata.x` (unused by engine AND game — verified) carries the authored value as float bits;
+`gg_tree_wind_amplitude()` reproduces DX11's combination exactly so the slider stays live; and
+`gg_tree_wind_weight()` computes the `(y-120)` ramp **in the shader** from `pos_wind.y`, which is
+still object-space at the call site — so no mesh rebuild and no wind-weight stream for arbitrary
+imported geometry. ⚠ `param1 == 0` leaves wind OFF rather than on-at-zero: an entity mesh has no
+`vertex_windweights`, and empty means weight **1.0**, which would translate the whole tree rigidly.
+
+### Verified (TESTPRO2, static editor camera, full viewport)
+| | |
+|---|---|
+| vegetation (3.57) after the shared-shader edit | **9.3× floor** — no regression |
+| entity path, global Tree Wind **0**, max amplitude | **6.5× floor** — the DX11 behaviour restored |
+
+New `SET_ENTITYWIND <0-1000>` forces the entity path onto every non-vegetation material, because
+no stock media assigns the Tree Animate shader — without it a green build would have proved
+nothing. It skips wind-enabled materials, so the two paths stay separable on screen.

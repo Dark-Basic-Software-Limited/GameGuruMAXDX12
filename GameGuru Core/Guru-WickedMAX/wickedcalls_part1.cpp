@@ -501,6 +501,32 @@
 								float iCustomShaderParam6 = WickedCustomShaderParam6();
 								float iCustomShaderParam7 = WickedCustomShaderParam7();
 								pObjectMaterial->customShaderID = iCustomShaderID;
+								// GGMAX 3.58b: ENTITY TREE SWAY. customShaderID 1 is "Tree Animate Doublesided" (the engine
+								// registers its own Hologram shader at 0, so GameGuru's first registration lands on 1).
+								// DX11 swayed these through that custom shader using the per-material "Object Wind" value,
+								// and crucially did so EVEN WITH visuals.tree_wind = 0 - which is why DX11 levels sway with
+								// the global slider at zero, and why they went still in DX12: that shader silently compiles
+								// against the ENGINE objectHF (no TreeWave in it), so objectVS_common_tree.cso is
+								// bit-identical to the stock shader. Rather than revive a Wicked-0.60-era shader that will
+								// not compile against 0.71, hand the authored value to the engine wind path that 3.57 built.
+								//
+								// The value itself survived the port untouched - it is parsed from the FPE, read from level
+								// data and written back on save. Only the hand-off to the material was lost (the commented
+								// customShaderParam1 lines just below). userdata.x is free: nothing else in the engine or
+								// the game reads or writes it.
+								//
+								// param1 == 0 deliberately leaves wind OFF rather than on-at-zero: an entity mesh has no
+								// vertex_windweights, so the engine would substitute 1.0 for every vertex and translate the
+								// whole tree rigidly, base and all.
+								if (iCustomShaderID == 1 && iCustomShaderParam1 > 0.0f)
+								{
+									pObjectMaterial->userdata.x = *reinterpret_cast<const uint32_t*>(&iCustomShaderParam1);
+									pObjectMaterial->SetUseWind(true);
+								}
+								else
+								{
+									pObjectMaterial->userdata.x = 0;
+								}
 								// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
 								//pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
 								//pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
@@ -589,6 +615,32 @@
 								float iCustomShaderParam6 = WickedCustomShaderParam6();
 								float iCustomShaderParam7 = WickedCustomShaderParam7();
 								pObjectMaterial->customShaderID = iCustomShaderID;
+								// GGMAX 3.58b: ENTITY TREE SWAY. customShaderID 1 is "Tree Animate Doublesided" (the engine
+								// registers its own Hologram shader at 0, so GameGuru's first registration lands on 1).
+								// DX11 swayed these through that custom shader using the per-material "Object Wind" value,
+								// and crucially did so EVEN WITH visuals.tree_wind = 0 - which is why DX11 levels sway with
+								// the global slider at zero, and why they went still in DX12: that shader silently compiles
+								// against the ENGINE objectHF (no TreeWave in it), so objectVS_common_tree.cso is
+								// bit-identical to the stock shader. Rather than revive a Wicked-0.60-era shader that will
+								// not compile against 0.71, hand the authored value to the engine wind path that 3.57 built.
+								//
+								// The value itself survived the port untouched - it is parsed from the FPE, read from level
+								// data and written back on save. Only the hand-off to the material was lost (the commented
+								// customShaderParam1 lines just below). userdata.x is free: nothing else in the engine or
+								// the game reads or writes it.
+								//
+								// param1 == 0 deliberately leaves wind OFF rather than on-at-zero: an entity mesh has no
+								// vertex_windweights, so the engine would substitute 1.0 for every vertex and translate the
+								// whole tree rigidly, base and all.
+								if (iCustomShaderID == 1 && iCustomShaderParam1 > 0.0f)
+								{
+									pObjectMaterial->userdata.x = *reinterpret_cast<const uint32_t*>(&iCustomShaderParam1);
+									pObjectMaterial->SetUseWind(true);
+								}
+								else
+								{
+									pObjectMaterial->userdata.x = 0;
+								}
 								// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
 								//pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
 								//pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
@@ -677,6 +729,32 @@
 							float iCustomShaderParam6 = WickedCustomShaderParam6();
 							float iCustomShaderParam7 = WickedCustomShaderParam7();
 							pObjectMaterial->customShaderID = iCustomShaderID;
+							// GGMAX 3.58b: ENTITY TREE SWAY. customShaderID 1 is "Tree Animate Doublesided" (the engine
+							// registers its own Hologram shader at 0, so GameGuru's first registration lands on 1).
+							// DX11 swayed these through that custom shader using the per-material "Object Wind" value,
+							// and crucially did so EVEN WITH visuals.tree_wind = 0 - which is why DX11 levels sway with
+							// the global slider at zero, and why they went still in DX12: that shader silently compiles
+							// against the ENGINE objectHF (no TreeWave in it), so objectVS_common_tree.cso is
+							// bit-identical to the stock shader. Rather than revive a Wicked-0.60-era shader that will
+							// not compile against 0.71, hand the authored value to the engine wind path that 3.57 built.
+							//
+							// The value itself survived the port untouched - it is parsed from the FPE, read from level
+							// data and written back on save. Only the hand-off to the material was lost (the commented
+							// customShaderParam1 lines just below). userdata.x is free: nothing else in the engine or
+							// the game reads or writes it.
+							//
+							// param1 == 0 deliberately leaves wind OFF rather than on-at-zero: an entity mesh has no
+							// vertex_windweights, so the engine would substitute 1.0 for every vertex and translate the
+							// whole tree rigidly, base and all.
+							if (iCustomShaderID == 1 && iCustomShaderParam1 > 0.0f)
+							{
+								pObjectMaterial->userdata.x = *reinterpret_cast<const uint32_t*>(&iCustomShaderParam1);
+								pObjectMaterial->SetUseWind(true);
+							}
+							else
+							{
+								pObjectMaterial->userdata.x = 0;
+							}
 							// TODO: customShaderParam1-7 removed from MaterialComponent, replaced with uint4 userdata
 							//pObjectMaterial->customShaderParam1 = iCustomShaderParam1;
 							//pObjectMaterial->customShaderParam2 = iCustomShaderParam2;
