@@ -10,6 +10,7 @@
 #include "GGTerrain\GGTerrain.h"
 #include "GGTerrain\GGTrees.h"
 #include "GGTerrain\GGGrass.h"
+#include "tracers/TracerManager.h"
 using namespace GGTerrain;
 using namespace GGTrees;
 using namespace GGGrass;
@@ -919,6 +920,11 @@ void mapfile_emptylightmapandttsfilesfolder_wicked( void )
 
 void mapfile_loadproject_fpm ( void )
 {
+	// GGMAX 3.55: drop any bullet tracers still in flight from the OUTGOING level. Tracers
+	// are aged out by Tracers::Update() which only runs from the draw hook, so without this
+	// a streak spawned moments before a level swap survives and draws into the new level.
+	Tracers::ClearLevel();
+
 	//PE: Deselect any objects, if we load a level with less entityties then t.widget.pickedEntityIndex it can crash.
 	t.widget.pickedEntityIndex = 0;
 	t.gridentity = 0;

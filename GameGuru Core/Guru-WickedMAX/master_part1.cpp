@@ -631,6 +631,16 @@ void MasterRenderer::Load()
 		// restore b0/b1 itself. GGTerrain_Draw_Transparent below has the same latent exposure; it
 		// is editor-only debug geometry, which is the only reason it has never shown.
 		GGWaterBake_Draw(frustum, cmd);
+		// GGMAX 3.55: bullet tracers (Tracers::tracer_draw). DX11 called this from inside the
+		// engine at WickedRepo RenderPath3D.cpp:2025 - after the DRAWSCENE_TRANSPARENT scene draw,
+		// before gpup_draw_bydistance. The DX12 clone has no GGREDUCED hook layer at all, and the
+		// port's work inventory (DX11_to_DX12_Shader_Porting_Plan.md 13.3) was built by grepping
+		// GGTerrain/GGTrees/GGGrass, so every other hook in those same #ifdef blocks fell out of
+		// scope silently - tracers sat fully implemented and orphaned for seven months.
+		// Position: it computes its own WVP on the CPU and binds its own CB at b2, so unlike
+		// GGWaterBake it does NOT read the engine camera CB and is immune to gpup's b0/b1 clobber.
+		// It still must stay ABOVE the wicked-terrain early-out below or it never runs.
+		Tracers::tracer_draw(wiScene::GetCamera(), cmd);
 		GPUParticles::gpup_draw(wiScene::GetCamera(), cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Transparent(frustum, cmd);

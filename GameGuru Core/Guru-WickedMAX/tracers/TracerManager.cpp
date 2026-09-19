@@ -10,7 +10,12 @@
 #include "wiTimer.h"
 #include "preprocessor-moreflags.h"
 #include "gameguru.h"
-//#include "Utility/dds.h" // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
+// GGMAX 3.55: DDS loading is delegated to the GGTerrain TU rather than parsing it here.
+// Utility/dds.h CANNOT be included from this file: gameguru.h drags in the DarkBASIC SDK's
+// ddraw.h, whose DDSD_* / DDPF_* / DDSCAPS_* PREPROCESSOR MACROS expand inside dds.h's own
+// enumerator lists and shred them (46 errors, "syntax error: constant" at dds.h:96).
+// GGTerrain_part0.cpp has no gameguru.h, which is why the same header parses cleanly there.
+namespace GGTerrain { void GGTerrain_LoadTextureDDS( const char* filename, wi::graphics::Texture* tex ); }
 #ifdef OPTICK_ENABLE
 #include "optick.h"
 #endif
@@ -21,6 +26,8 @@ template<typename T> static inline T PELerp(T a, T b, float t) { return (T)(a + 
 //PE: Tracers will now follow gunid (400) Added 100 for LUA only use.
 #define MAXTRACERS 400
 #define MAXLUATRACERS 100
+// GGMAX 3.55: bounded-buffer backstop for AddTracer - see the comment there.
+#define GG_TRACER_HARDCAP 4096
 
 namespace Tracers
 {
@@ -42,6 +49,15 @@ namespace Tracers
     Shader shaderTracerPS;
     RasterizerState rasterizerState;
     DepthStencilState depthStencilState;
+    // GGMAX 3.55: MUST be namespace scope, not a CreatePipelineState local. PipelineStateDesc
+    // stores a POINTER to it and DX12 defers the real pipeline compile to the first bind, by
+    // which time a stack local's SemanticName strings are freed. Same trap as GGTerrainBake 2.96.
+    InputLayout tracerInputLayout;
+    // GGMAX 3.55: instrumentation for DUMP_TRACERS - lets a "no tracers on screen" result name
+    // its own cause (not spawned / no texture / not drawn) instead of needing another hunt.
+    int  g_ggDrawnLastFrame = 0;
+    int  g_ggSpawnedTotal   = 0;
+    int  g_ggDrawCalls      = 0;
 
     struct Vertex { XMFLOAT3 pos; XMFLOAT2 uv; };
     Vertex vertices[] = {
@@ -52,141 +68,23 @@ namespace Tracers
     };
     uint16_t indices[] = { 0, 1, 2, 2, 1, 3 };
 
-    // TODO: DX12 - tinyddsloader removed, rewrite DDS loading
-#if 0
-    wiGraphics::FORMAT ConvertDDSFormat(tinyddsloader::DDSFile::DXGIFormat format)
-    {
-        switch (format)
-        {
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_Float: return FORMAT_R32G32B32A32_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_UInt: return FORMAT_R32G32B32A32_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32B32A32_SInt: return FORMAT_R32G32B32A32_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_Float: return FORMAT_R32G32B32_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_UInt: return FORMAT_R32G32B32_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32B32_SInt: return FORMAT_R32G32B32_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_Float: return FORMAT_R16G16B16A16_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UNorm: return FORMAT_R16G16B16A16_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_UInt: return FORMAT_R16G16B16A16_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SNorm: return FORMAT_R16G16B16A16_SNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16B16A16_SInt: return FORMAT_R16G16B16A16_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32_Float: return FORMAT_R32G32_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32_UInt: return FORMAT_R32G32_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32G32_SInt: return FORMAT_R32G32_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UNorm: return FORMAT_R10G10B10A2_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R10G10B10A2_UInt: return FORMAT_R10G10B10A2_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R11G11B10_Float: return FORMAT_R11G11B10_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::B8G8R8X8_UNorm: return FORMAT_B8G8R8A8_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm: return FORMAT_B8G8R8A8_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::B8G8R8A8_UNorm_SRGB: return FORMAT_B8G8R8A8_UNORM_SRGB;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm: return FORMAT_R8G8B8A8_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UNorm_SRGB: return FORMAT_R8G8B8A8_UNORM_SRGB;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_UInt: return FORMAT_R8G8B8A8_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SNorm: return FORMAT_R8G8B8A8_SNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8B8A8_SInt: return FORMAT_R8G8B8A8_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16_Float: return FORMAT_R16G16_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16_UNorm: return FORMAT_R16G16_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16_UInt: return FORMAT_R16G16_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16_SNorm: return FORMAT_R16G16_SNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R16G16_SInt: return FORMAT_R16G16_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::D32_Float: return FORMAT_D32_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32_Float: return FORMAT_R32_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32_UInt: return FORMAT_R32_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R32_SInt: return FORMAT_R32_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8_UNorm: return FORMAT_R8G8_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8_UInt: return FORMAT_R8G8_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8_SNorm: return FORMAT_R8G8_SNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R8G8_SInt: return FORMAT_R8G8_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R16_Float: return FORMAT_R16_FLOAT;
-        case tinyddsloader::DDSFile::DXGIFormat::D16_UNorm: return FORMAT_D16_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R16_UNorm: return FORMAT_R16_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R16_UInt: return FORMAT_R16_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R16_SNorm: return FORMAT_R16_SNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R16_SInt: return FORMAT_R16_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R8_UNorm: return FORMAT_R8_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R8_UInt: return FORMAT_R8_UINT;
-        case tinyddsloader::DDSFile::DXGIFormat::R8_SNorm: return FORMAT_R8_SNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::R8_SInt: return FORMAT_R8_SINT;
-        case tinyddsloader::DDSFile::DXGIFormat::A8_UNorm: return FORMAT_R8_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm: return FORMAT_BC1_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC1_UNorm_SRGB: return FORMAT_BC1_UNORM_SRGB;
-        case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm: return FORMAT_BC2_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC2_UNorm_SRGB: return FORMAT_BC2_UNORM_SRGB;
-        case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm: return FORMAT_BC3_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC3_UNorm_SRGB: return FORMAT_BC3_UNORM_SRGB;
-        case tinyddsloader::DDSFile::DXGIFormat::BC4_UNorm: return FORMAT_BC4_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC4_SNorm: return FORMAT_BC4_SNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC5_UNorm: return FORMAT_BC5_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC5_SNorm: return FORMAT_BC5_SNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm: return FORMAT_BC7_UNORM;
-        case tinyddsloader::DDSFile::DXGIFormat::BC7_UNorm_SRGB: return FORMAT_BC7_UNORM_SRGB;
-        default:
-            assert(0); // incoming format is not supported
-            return FORMAT_UNKNOWN;
-        }
-    }
-
+    // GGMAX 3.55: the Feb port (d3ae5996, "741 -> 0 errors") deleted tinyddsloader and left
+    // this an EMPTY STUB, so every tracerTexture[] slot has been invalid ever since - and with
+    // the draw hook also missing, nobody noticed for seven months. Now forwards to the shipping
+    // GGTerrain_LoadTextureDDS (GGTerrain_part0.cpp:4397), which already handles the exact
+    // format these assets use (32x512 BC3, 10 mips, legacy FourCC) and is the same loader the
+    // terrain has used all along. One DDS path, not two.
     void Tracer_LoadTextureDDS(const char* filename, Texture* tex)
     {
-        GraphicsDevice* device = wi::graphics::GetDevice();
-
-        char filePath[MAX_PATH];
-        strcpy_s(filePath, MAX_PATH, filename);
-        GG_GetRealPath(filePath, 0);
-
-        tinyddsloader::DDSFile dds;
-        auto result = dds.Load(filePath);
-
-        if (result != tinyddsloader::Result::Success) return;
-
-        TextureDesc desc;
-        desc.ArraySize = 1;
-        desc.BindFlags = BIND_SHADER_RESOURCE;
-        desc.CPUAccessFlags = 0;
-        desc.width = dds.GetWidth();
-        desc.height = dds.GetHeight();
-        desc.Depth = dds.GetDepth();
-        desc.MipLevels = dds.GetMipCount();
-        desc.ArraySize = dds.GetArraySize();
-        desc.MiscFlags = 0;
-        desc.Usage = USAGE_IMMUTABLE;
-        desc.layout = IMAGE_LAYOUT_SHADER_RESOURCE;
-        desc.Format = ConvertDDSFormat(dds.GetFormat());
-
-        std::vector<SubresourceData> InitData;
-        for (uint32_t arrayIndex = 0; arrayIndex < desc.ArraySize; ++arrayIndex)
-        {
-            for (uint32_t mip = 0; mip < desc.MipLevels; ++mip)
-            {
-                auto imageData = dds.GetImageData(mip, arrayIndex);
-                SubresourceData subresourceData;
-                subresourceData.pSysMem = imageData->m_mem;
-                subresourceData.SysMemPitch = imageData->m_memPitch;
-                subresourceData.SysMemSlicePitch = imageData->m_memSlicePitch;
-                InitData.push_back(subresourceData);
-            }
-        }
-
-        auto dim = dds.GetTextureDimension();
-        switch (dim)
-        {
-        case tinyddsloader::DDSFile::TextureDimension::Texture1D: desc.type = TextureDesc::TEXTURE_1D; break;
-        case tinyddsloader::DDSFile::TextureDimension::Texture2D: desc.type = TextureDesc::TEXTURE_2D; break;
-        case tinyddsloader::DDSFile::TextureDimension::Texture3D: desc.type = TextureDesc::TEXTURE_3D; break;
-        default: assert(0); break;
-        }
-
-        device->CreateTexture(&desc, InitData.data(), tex);
-    }
-#endif
-
-    // TODO: DX12 - tinyddsloader removed, stub function until DDS loading is rewritten
-    void Tracer_LoadTextureDDS(const char* filename, Texture* tex)
-    {
-        // stub - DDS loading disabled
+        GGTerrain::GGTerrain_LoadTextureDDS(filename, tex);
     }
 
     void LoadTracerImage(char * filename , uint32_t gunid)
     {
+        // GGMAX 3.55: gunid is bounded by g.maxgunsinengine (1000, or 400 under REDUCEMEMUSE),
+        // but tracerTexture[] is only MAXTRACERS+MAXLUATRACERS = 500. Harmless while the loader
+        // was a stub; an out-of-bounds WRITE the moment it does something. Pre-existing in DX11.
+        if (gunid >= MAXTRACERS + MAXLUATRACERS) return;
         Tracer_LoadTextureDDS(filename, &tracerTexture[gunid]);
     }
     
@@ -278,7 +176,33 @@ namespace Tracers
 #ifdef DISABLETEMP
         return;
 #endif
+        // GGMAX 3.55: Update() - which ages tracers out and advances gameTime - runs only from
+        // tracer_draw. While the draw hook was missing this was an UNCAPPED push_back: every NPC
+        // shot leaked an entry for the whole session. The hook is restored, so this cap should
+        // never be reached; it is here so a future unhooking degrades to a bounded buffer instead
+        // of unbounded growth. Live count at 0.15 s lifetime is single digits.
+        if (tracers.size() >= GG_TRACER_HARDCAP) return;
+        g_ggSpawnedTotal++;
         tracers.push_back({ start, end, gameTime, lifeTime, color, glow, scroll ,scaleV, width, max_length, tracerID });
+    }
+
+    // GGMAX 3.55: drop every live tracer at a level swap. Without this, streaks spawned in the
+    // outgoing level survive into the incoming one and draw for their remaining lifetime.
+    void ClearLevel()
+    {
+        tracers.clear();
+    }
+
+    // GGMAX 3.55: one-line status for the DUMP_TRACERS harness verb.
+    void DebugStatus(char* out, int osize)
+    {
+        int valid = 0;
+        for (int i = 0; i < MAXTRACERS + MAXLUATRACERS; i++) if (tracerTexture[i].IsValid()) valid++;
+        _snprintf(out, osize,
+            "ready=%d live=%d spawned_total=%d drawn_lastframe=%d drawpasses=%d texslots_valid=%d gametime=%.2f",
+            tracerSystemReady ? 1 : 0, (int)tracers.size(), g_ggSpawnedTotal,
+            g_ggDrawnLastFrame, g_ggDrawCalls, valid, gameTime);
+        out[osize - 1] = 0;
     }
 
 
@@ -329,6 +253,8 @@ namespace Tracers
         const XMMATRIX myViewProj = camera.GetViewProjection();
         
         GraphicsDevice* device = wi::graphics::GetDevice();
+        g_ggDrawnLastFrame = (int)tracers.size();
+        g_ggDrawCalls++;
         device->EventBegin("tracer Draw", cmd);
         device->BindPipelineState(&tracerPSO, cmd);
 
@@ -401,13 +327,15 @@ namespace Tracers
             // instead (see GPUParticles_part0.cpp noise-pass comment for the full mechanism).
             device->BindDynamicConstantBuffer(cb, bindSlot, cmd);
             uint32_t tID = tracer.tracerID;
-            if (tID > MAXTRACERS + MAXLUATRACERS) tID = 0;
+            if (tID >= MAXTRACERS + MAXLUATRACERS) tID = 0;   // GGMAX 3.55: was >, one past the end
+            // GGMAX 3.55: an unconditional re-bind used to sit here and CLOBBER the white
+            // fallback chosen just above. DX11 tolerated it (its texture was always valid);
+            // in DX12 an invalid GPUResource binds a NULL descriptor, the sample returns 0,
+            // and an additive blend of zero writes nothing - a silently invisible tracer.
             if (tracerTexture[tID].IsValid())
                 device->BindResource(&tracerTexture[tID], 0, cmd);
             else
                 device->BindResource(wiTextureHelper::getWhite() , 0, cmd);
-
-            device->BindResource(&tracerTexture[tID], 0, cmd);
             device->BindSampler(&samplerTrilinearWrap, 0, cmd);
 
             const GPUBuffer* vbs[] = { &quadVB };
@@ -457,12 +385,11 @@ namespace Tracers
         desc.rs = &rasterizerState;
         desc.dss = &depthStencilState;
 
-        InputLayout layout;
-        layout.elements = {
+        tracerInputLayout.elements = {
             { "POSITION", 0, Format::R32G32B32_FLOAT, 0, 0, InputClassification::PER_VERTEX_DATA },
             { "TEXCOORD", 0, Format::R32G32_FLOAT, 0, 12, InputClassification::PER_VERTEX_DATA }
         };
-        desc.il = &layout;
+        desc.il = &tracerInputLayout;
 
         if (wi::graphics::GetDevice()->CreatePipelineState(&desc, &tracerPSO))
         {

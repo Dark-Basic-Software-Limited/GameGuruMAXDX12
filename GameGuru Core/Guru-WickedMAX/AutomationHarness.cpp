@@ -7,6 +7,7 @@
 #include "GameGuruMain.h"
 #include "gameguru.h"
 #include "master.h"
+#include "tracers/TracerManager.h"   // GGMAX 3.55: DUMP_TRACERS
 #include "..\GameGuru\Imgui\imgui.h"
 #include "..\GameGuru\Imgui\imgui_internal.h"
 #include <stdio.h>
@@ -3131,6 +3132,23 @@ namespace wi { namespace renderer {
 // GGMAX 2026-08-06: shadow-budget commands hoisted out of the main dispatch chain —
 // adding SET_SHADOW_MAX_SPOT/_POINT as chain links re-hit MSVC C1061 (every else-if
 // link nests one block deeper). Returns true if cmd was handled.
+// GGMAX 3.55: bullet-tracer status, hoisted per the C1061 pattern (the main ladder is at the
+// MSVC nesting limit - see the note above the dispatch function). Answers in one line WHICH
+// link of the chain is broken when no streaks appear:
+//   ready=0           -> shaders/PSO never came up
+//   spawned_total=0   -> gameplay never called AddTracer (wrong gun, traceractive=0, not in game)
+//   drawpasses=0      -> customDraw_Transparent is not reaching tracer_draw (the 7-month bug)
+//   texslots_valid=0  -> the DDS loader found no tracer.dds for the equipped gun
+static bool AutoHarness_TracerCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "DUMP_TRACERS") != 0) return false;
+	char trstat[512]; trstat[0] = 0;
+	Tracers::DebugStatus(trstat, sizeof(trstat));
+	_snprintf(result, resultSize, "OK: DUMP_TRACERS %s", trstat);
+	result[resultSize - 1] = 0;
+	return true;
+}
+
 static bool AutoHarness_ShadowBudgetCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "SET_SHADOW_MAX") == 0)
@@ -7931,7 +7949,8 @@ void AutoHarness_CheckForCommand(void)
 		// handled in the helper (see above the dispatch function)
 	}
 	else if (AutoHarness_OutlineCommands(cmd, arg, result, sizeof(result))
-		|| AutoHarness_BulletHoleCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
+		|| AutoHarness_BulletHoleCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_TracerCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
 	{
 		// handled in the helper (see above the dispatch function)
 	}

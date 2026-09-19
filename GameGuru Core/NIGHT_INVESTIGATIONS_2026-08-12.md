@@ -10872,3 +10872,64 @@ beat a morning of instruments that each named a real defect and none the cause.
 ★ `STATE: editor` is the harness FALLBACK, not a positive — the screenshot is the criterion.
 ★ The 19/19 sweep relaunches MAX per demo, so it can NEVER see a second-load bug:
   `tools/secondload_litmus.sh` is the check that can, and `tools/leakname.sh` names a swap leak.
+
+---
+
+## 3.55 — BULLET TRACERS RESTORED (2026-09-19, Lee-confirmed)
+
+Lee: "missing features in test game that show in DX11 but not in DX12 ... the missing tracer
+bullet system". Tracers are textured quads shot from a weapon toward the player. The whole
+subsystem was intact, compiled and orphaned. **No engine edit was needed.**
+
+### How the system works (DX11 reference)
+One unit quad reused for every tracer; all the shape is in a per-tracer matrix built so the
+quad's **Y axis is the flight direction**, with `right = cross(dir, toCamera)` rolling it
+face-on to the viewer. `max_length` overrides the true distance and the translation lerps the
+streak from `start` toward `end - dir*max_length` over its life, so a short segment *travels*
+down a long shot line. VS scrolls V by `uv.y*g_ScaleV + g_Time*g_ScrollSpeed`; PS tints,
+multiplies RGB by `g_GlowIntensity`, premultiplies alpha. Additive, no cull, depth test on /
+write off. Spawned from `M-DAINew` (NPC: hit-entity / hit-player / miss-player, each gated on
+gunspec `tracer_active`) and `G-Gun` (player).
+
+### Why nothing rendered — FIVE defects, the first one sufficient
+1. **Nothing called it.** DX11 drove `Tracers::tracer_draw` from *inside* the engine
+   (`WickedRepo RenderPath3D.cpp:2025`). The DX12 engine has **no GGREDUCED layer at all** —
+   it uses `customDraw_*` function pointers the GAME assigns (`master_part1.cpp:575-646`).
+   `gpup_draw` was re-homed there on 08-07; the tracer call two lines below it in the DX11
+   source was not. Fixed: one call in `customDraw_Transparent`, above the terrain early-out.
+2. **No texture, ever.** `Tracer_LoadTextureDDS` was an empty stub — commit `d3ae5996`
+   (02-13, "741 -> 0 errors") lists "tinyddsloader code disabled". Fixed by delegating to the
+   shipping `GGTerrain_LoadTextureDDS`. ⚠ `Utility/dds.h` **cannot** be included from
+   TracerManager.cpp: `gameguru.h` drags in ddraw.h, whose `DDSD_*`/`DDPF_*`/`DDSCAPS_*`
+   **macros** expand inside dds.h's enumerator lists (46 errors). GGTerrain has no gameguru.h,
+   which is why the same header parses there. One DDS path, not two.
+3. **The white fallback was self-defeating** — an unconditional re-bind on the next line
+   clobbered it. In DX12 an invalid resource binds a NULL descriptor, the sample returns 0,
+   and an additive blend of zero writes nothing: a silently invisible tracer. Harmless in DX11
+   only because its loader worked.
+4. **Dangling PSO input layout** — `desc.il` pointed at a stack local; DX12 compiles the PSO
+   lazily at first bind, by which time the SemanticName strings are freed. Promoted to
+   namespace scope (same trap as GGTerrainBake 2.96).
+5. **Unbounded growth** — `Update()` (which ages tracers out and advances `gameTime`) runs
+   only from `tracer_draw`, so with no hook the clock was frozen at 0.0 and `AddTracer` was an
+   uncapped `push_back`. Added a bounded-buffer cap + `ClearLevel()` on level load.
+   Also fixed two latent out-of-bounds: `LoadTracerImage` wrote `tracerTexture[gunid]` with
+   gunid up to 1000 on a 500-entry array, and Draw's clamp was `>` not `>=`.
+
+### Verified
+`DUMP_TRACERS` (new, hoisted per the C1061 rule — the ladder is at MSVC's nesting limit, so
+**OR into an existing arm, never add one**) on TESTPRO2 Test Game:
+`ready=1 spawned_total=35->214 drawpasses=756->4176 texslots_valid=2 gametime=82->120`.
+Every link live; Lee confirmed the streaks visually.
+
+### ★★★ THE LESSON — an inventory built by grepping cannot list what you don't know
+The port's work catalog (`DX11_to_DX12_Shader_Porting_Plan.md` §13.3) is 16 rows, built by
+grepping **GGTerrain / GGTrees / GGGrass**. Every hook in the same `#ifdef GGREDUCED` blocks
+without one of those names fell out of scope with **no TODO and no delta row**. Same defect
+class four times now: selection outline (08-05), gpup particles (08-07), tracers (09-19), and
+`GGTrees_Draw_ShadowMap`/`_EnvProbe` — still unwired, so far-tree billboards cast no shadow and
+miss env-probe captures. Each was fixed one at a time; **the block was never swept**. Worse, an
+August race fix was applied to `TracerManager::Draw` — dead code — and logged in
+`UPDATEBUFFER_AUDIT.md` as fixed, so the record positively asserted the path was healthy.
+⚠ The word "tracer" is poisoned for grep here: 18 of 19 markdown hits mean a *diagnostic*
+instrument, not a bullet.

@@ -31,6 +31,8 @@ namespace Tracers
     void Initialize();
     void AddTracer(const XMFLOAT3& start, const XMFLOAT3& end, float lifeTime, XMFLOAT4 color, float glow, float scroll,float scaleV, float width = 0.5f, float max_length = 0, uint32_t tracerID = 0);
     void Update();
+    void ClearLevel();
+    void DebugStatus(char* out, int osize);
     void LoadTracerImage(char* filename, uint32_t gunid);
     void Draw(CommandList cmd, const XMMATRIX& viewProj);
     extern "C" void tracer_draw(const wiScene::CameraComponent& camera, wiGraphics::CommandList cmd);
