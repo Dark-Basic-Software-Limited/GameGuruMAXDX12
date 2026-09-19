@@ -11455,3 +11455,55 @@ reports `gustsize=0.98` = 1/(0.52+0.5). Exact.
    `CLICK_ONLY_LEVEL`), and the next harness run stalled at "no editor" because of it. The
    existing rule covers the stale-command case; the new detail is that a PENDING command with no
    result is the signature, and clearing both files fixes it.
+
+---
+
+# ★★★ MILESTONE — WIND TUNED AND HONEST (2026-09-19, Lee-directed)
+
+Tag on both repos: **`wind-tuning-2026-09-19`** (game `abcd85ce`, engine `b80d5490` — game-only,
+engine unchanged since the tree-sway milestone).
+
+| | |
+|---|---|
+| 3.61 | wind-field cell 31 → **1250 world units** — canopy sampled 19 noise texels, now under half of one |
+| 3.62 | **Wind Gust Size** inverted so the label is true — larger = broader gusts |
+| 3.63 | **+0.5 floor** on gust size — slider 0 was `wavesize 10`, a strobe; now bounded at 2 |
+
+### What this arc was really about
+Not bugs. All three came from **a scale mismatch nobody had written down**: Wicked's wind is
+authored for 1 unit = 1 metre and GameGuru is 1 unit ≈ 1 inch (39.37/m). Every wind quantity
+that crosses that boundary needed converting, and each one that did not had its own visible
+symptom — shimmer (3.61), a backwards slider (3.62), an unusable bottom end (3.63).
+★ The 3.57 fix converted *amplitude* and stopped there. **Converting one quantity across a unit
+boundary and not its siblings leaves defects that do not look related to each other** — they look
+like three separate feature bugs, and they were reported as three separate feature bugs.
+
+### ★★★ THE LESSON — Lee diagnosed 3.61 from the screen, correctly, before I had a theory
+"The blobs that represent the gusts are too close together ... I imagine it would work MUCH
+better if those influence blobs were 40 times larger." That was exactly right, and the
+arithmetic he could not see confirmed it to the factor: one texel was `SPACE/32` = 31 units, a
+canopy is ~600 units, so the crown straddled **19 independent noise cells each at its own phase**.
+★ When the person watching the screen gives a mechanism AND a magnitude, check the magnitude
+first — it is a free test of the whole theory. 40× was right.
+
+### ⚠ Where I could not verify, and said so
+3.61 is the one change today I could **not** confirm by capture. Screenshots land ~0.8 s apart
+while the sway oscillates at speed 0.64, so consecutive frames are near-independent samples and a
+block-motion correlation is noise (+0.105 vs +0.079). I reported the applied value instead
+(`cell=31 → 1250`) and left the visual call to Lee. ★ Better a stated gap than a confident number
+the method cannot support — this project has been burned by the opposite (§3.20a, a "never" claim
+from 25 sparse dumps).
+
+### ⚠ Recorded from the interrupted build
+A killed link leaves a **TRUNCATED exe**, not a missing one — 2,097,152 bytes against ~31.9 MB.
+It would launch and fail confusingly. **Check the exe SIZE after any interrupted build.** It also
+leaves a pending `auto_command.txt` with no `auto_result.txt`, which stalls the next harness run
+at "no editor" until both are cleared.
+
+### Today's full arc
+tracers (3.55) · ownerless tracer cull (3.56) · vegetation sway (3.57) · wind UI (3.58) ·
+entity tree sway (3.58b) · weather on WPE (3.59) · .PE version tolerance (3.60) ·
+**wind field scale (3.61) · gust direction (3.62) · gust floor (3.63)**
+
+Rollback points, newest last: `tree-sway-vegetation` → `tree-sway-complete` →
+`weather-wpe-milestone` → `weather-futureproof` → `wind-tuning`.
