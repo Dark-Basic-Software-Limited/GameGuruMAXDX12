@@ -1045,7 +1045,7 @@ void imgui_terrain_loop_v3(void)
 					// Tree shadow controls MOVED to the Visuals > Shadows panel (M-GridEditB_part24,
 					// 2026-07-28 user request) so they are live-tunable in test game.
 
-					ImGui::TextCenter("Tree Wind");
+					ImGui::TextCenter("Tree Wind Modifier");   // GGMAX 3.58 (Lee): it SCALES tree sway on top of the Wind Controls, it is not a second wind source
 					if (ImGui::SliderFloat("##TreeWind", &t.visuals.tree_wind, 0.0f, 1.0f, "%.2f", 1.0f))
 					{
 						t.gamevisuals.tree_wind = t.visuals.tree_wind;

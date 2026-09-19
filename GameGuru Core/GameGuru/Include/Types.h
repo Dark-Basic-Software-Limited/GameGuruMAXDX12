@@ -4248,7 +4248,7 @@ struct visualstype
 		 wind_direction_z = 1.0f;
 		 wind_speed =  1.0f;
 		 wind_randomness = 1.0f;
-		 tree_wind = 0.0f;
+		 tree_wind = 0.1f;   // GGMAX 3.58 (Lee): was 0.0 - a small default so trees breathe with the grass
 		 tree_sss = 0.0f;
 		 bpp_disable_indoor = true;
 

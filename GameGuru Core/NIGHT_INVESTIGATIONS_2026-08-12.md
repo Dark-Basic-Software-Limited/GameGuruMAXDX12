@@ -11021,3 +11021,31 @@ diagnostic 3000% the canopy is flung sideways with the trunk base planted.
    believing a null result.**
 2. **A within-series frame-to-frame diff cannot see a STATIC bend.** The A/B had to be
    cross-series as well, or a working-but-frozen displacement reads as a failure.
+
+### 3.58 — wind UI labels + defaults (2026-09-19, Lee's wording)
+
+| was | now | where |
+|---|---|---|
+| "Tree Wind" | **"Tree Wind Modifier"** | `M-TerrainNew_part1.cpp:1048` |
+| "Post Processing Weather" | **"Wind Controls"** | `M-TerrainNew_part4.cpp:250` |
+| "Wind Wave Size" | **"Wind Gust Size"**, range 0..1.1 → **0..5.0** | `M-TerrainNew_part4.cpp:332` |
+| `tree_wind` default 0.0 | **0.1** | `Types.h:4251`, `M-Visuals_part0.cpp:426` and `:1387` |
+
+"Modifier" is the accurate word: it SCALES tree sway on top of the Wind Controls, it is not a
+second wind source. The 1.1 ceiling on gust size was inherited from the legacy PP-weather value,
+not a limit of the engine's `windWaveSize`.
+
+⚠ **`wind_speed` and `wind_randomness` were ALREADY 1.0** at all three default sites — no edit was
+needed. Levels showing 5.0 / 2.0 have those values stored in their own `visuals.ini`; the defaults
+were never the source.
+
+⚠⚠ **A default change does not reach an existing level.** `M-Visuals_part0.cpp:1774` reads
+`visuals.tree_wind` from the level's `visuals.ini` whenever the key is present, and every level
+saved so far carries `visuals.tree_wind=0`. New levels get 0.1; existing ones keep 0 until the
+slider is moved and the level re-saved. That is correct — a deliberately-zeroed value must not be
+silently overridden — but it means "I rebuilt and nothing changed" is the EXPECTED result on an
+old level, not a failure.
+
+★ Label changes verified by string-scanning the built exe: the three new labels present, the
+three old ones absent (including a `"Tree Wind\0"` check, so the bare label is really gone and
+not just shadowed by the longer one).

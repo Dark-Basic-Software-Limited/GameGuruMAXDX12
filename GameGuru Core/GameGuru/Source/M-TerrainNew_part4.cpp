@@ -247,7 +247,7 @@
 		}
 
 		ImGui::Indent(-10);
-		if (ImGui::StyleCollapsingHeader("Post Processing Weather", ImGuiTreeNodeFlags_DefaultOpen))
+		if (ImGui::StyleCollapsingHeader("Wind Controls", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 
 			//PE: Weather wind speed.
@@ -329,15 +329,18 @@
 
 			// UI AUDIT 2026-07-28: relabeled from the cryptic legacy "PP Size" — the value
 			// actually drives weather->windWaveSize (see apply below), so name it that.
-			ImGui::Text("Wind Wave Size");
+			// GGMAX 3.58 (Lee): "Wind Wave Size" -> "Wind Gust Size", and the range opened from
+			// 1.1 to 5.0 so larger, slower gusts are reachable. The 1.1 ceiling was inherited from
+			// the legacy PP-weather value, not a limit of the engine's windWaveSize.
+			ImGui::Text("Wind Gust Size");
 			ImGui::SameLine(); ImGui::SetCursorPosX(fWickedStartX);
 			ImGui::PushItemWidth((float)iItemWidth);
-			if (ImGui::SliderFloat("##PPpp_size", &t.visuals.pp_size, 0.0f, 1.1f, "%.2f"))
+			if (ImGui::SliderFloat("##PPpp_size", &t.visuals.pp_size, 0.0f, 5.0f, "%.2f"))
 			{
 				t.gamevisuals.pp_size = t.visuals.pp_size;
 				bUpdatePPWeather = true;
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Size of the wind waves rolling through grass and foliage");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Size of the wind gusts rolling through grass and foliage - larger values give broader, slower gusts");
 			ImGui::PopItemWidth();
 
 

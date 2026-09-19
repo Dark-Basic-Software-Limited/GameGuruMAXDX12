@@ -423,7 +423,7 @@ void visuals_resetvalues (bool bNewLevel)
 	t.visuals.wind_speed = 1.0f;
 	t.visuals.wind_randomness = 1.0f;
 	t.visuals.bpp_disable_indoor = true;
-	t.visuals.tree_wind = 0.0f;
+	t.visuals.tree_wind = 0.1f;   // GGMAX 3.58 (Lee): was 0.0 - see Types.h
 	t.visuals.tree_sss = 0.0f;
 
 	t.visuals.fLevelDifficulty = 50.0;
@@ -1384,7 +1384,7 @@ void visuals_load ( void )
 	t.visuals.wind_speed = 1.0f;
 	t.visuals.wind_randomness = 1.0f;
 	t.visuals.bpp_disable_indoor = true;
-	t.visuals.tree_wind = 0.0f;
+	t.visuals.tree_wind = 0.1f;   // GGMAX 3.58 (Lee): was 0.0 - see Types.h
 	t.visuals.tree_sss = 0.0f;
 	
 
