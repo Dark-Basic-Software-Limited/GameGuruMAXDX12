@@ -1981,6 +1981,24 @@ void WickedCall_UpdateWaterColor(float red, float green, float blue)
 // units at tree_wind 1.0. Weight is 1.0 at that canopy, so amplitude == the peak travel.
 float g_ggTreeSwaySpace = 40000.0f;   // GGMAX 3.61: was 1000 - see the note above
 #define GG_TREE_SWAY_AMPLITUDE    70.0f
+// GGMAX 3.62 (Lee): make the "Wind Gust Size" slider mean what it says.
+//
+// The engine value is windWaveSize, and windCS.hlsl does `position *= wavesize` BEFORE the
+// noise - so a larger wavesize makes the field vary faster, i.e. SMALLER gusts. The slider was
+// therefore backwards relative to its own name (inherited from the legacy "Wind Wave Size",
+// renamed in 3.58). Size is the reciprocal of frequency, so invert rather than subtract.
+//
+// ★ 1.0 maps to 1.0, so the DEFAULT IS A NO-OP: every level that never touched the slider is
+// byte-identical, and only levels with a deliberately non-default value change - which is the
+// point, because those are the ones that were behaving backwards.
+// ⚠ windWaveSize is shared with grass and rain, so this flips all three together. That is
+// intended: the label promises gust size for the whole weather system, not just trees.
+float GGWind_GustSizeToWaveSize(float gustSize)
+{
+	if (gustSize < 0.1f) gustSize = 0.1f;   // the slider floor is 0.0; 0.1 = the finest gusts
+	return 1.0f / gustSize;
+}
+
 void GGTrees_SetSwayFromVisuals( float treeWind, wi::scene::WeatherComponent* weather )
 {
 	if ( weather == nullptr ) return;

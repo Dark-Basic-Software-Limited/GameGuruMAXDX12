@@ -11396,3 +11396,26 @@ size in both world units and metres. `GET_TREEWIND` now also reports `randomness
 i.e. **smaller** gusts. The slider (renamed from "Wind Wave Size" in 3.58) reads backwards
 relative to what it does. Not changed here: `windWaveSize` is shared with grass and rain, so
 flipping it is a behaviour change across three systems and is Lee's call.
+
+### 3.62 — "Wind Gust Size" now means what it says (2026-09-19, Lee's call)
+
+Flagged in 3.61, fixed here. `windCS.hlsl` does `position *= wavesize` **before** the noise, so a
+larger `windWaveSize` makes the field vary faster — **smaller** gusts. The slider (renamed from
+the legacy "Wind Wave Size" in 3.58) therefore read backwards against its own name.
+
+Inverted on the way to the engine via one shared helper, `GGWind_GustSizeToWaveSize`, used by
+**both** write sites (`M-GridEditB_part3.cpp:1686`, `M-TerrainNew_part4.cpp:368`) so they cannot
+drift apart. Size is the reciprocal of frequency, so it inverts rather than subtracts:
+
+```
+wavesize = 1.0 / max(gustSize, 0.1)      // the slider floor is 0.0; 0.1 = the finest gusts
+```
+
+★ **1.0 maps to 1.0, so the default is a NO-OP.** Every level that never touched the slider is
+byte-identical; only levels with a deliberately non-default value change — which is the point,
+since those are exactly the ones that were behaving backwards.
+⚠ `windWaveSize` is shared with grass and rain, so this flips all three together. Intended: the
+label promises gust size for the weather system, not just for trees. Lee's explicit call.
+
+**Verified end to end:** TESTPRO2 stores Gust Size 3.37; `GET_TREEWIND` now reports
+`gustsize=0.30` (= 1/3.37) where it read `3.37` before.

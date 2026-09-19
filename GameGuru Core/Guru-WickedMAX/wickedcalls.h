@@ -311,6 +311,7 @@ void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
 void WickedCall_UpdateEmitters(void);
 uint32_t WickedCall_LoadWPE(char* filename);
 // GGMAX 3.59: WPE-driven weather (rain/snow). See wickedcalls_part4.cpp.
+float    GGWind_GustSizeToWaveSize(float gustSize);   // GGMAX 3.62
 void     GGWeather_Set(int mode);
 void     GGWeather_Update(float intensityPercent, bool bIndoors);
 void     GGWeather_Clear(void);

@@ -332,6 +332,8 @@
 			// GGMAX 3.58 (Lee): "Wind Wave Size" -> "Wind Gust Size", and the range opened from
 			// 1.1 to 5.0 so larger, slower gusts are reachable. The 1.1 ceiling was inherited from
 			// the legacy PP-weather value, not a limit of the engine's windWaveSize.
+			// GGMAX 3.62: and the direction is now TRUE - the value is inverted on the way to
+			// windWaveSize, because the engine wants a frequency and the label promises a size.
 			ImGui::Text("Wind Gust Size");
 			ImGui::SameLine(); ImGui::SetCursorPosX(fWickedStartX);
 			ImGui::PushItemWidth((float)iItemWidth);
@@ -340,7 +342,7 @@
 				t.gamevisuals.pp_size = t.visuals.pp_size;
 				bUpdatePPWeather = true;
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Size of the wind gusts rolling through grass and foliage - larger values give broader, slower gusts");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Size of the wind gusts rolling through grass, foliage and trees. Larger = broader, slower gusts. 1.0 is the default.");
 			ImGui::PopItemWidth();
 
 
@@ -365,7 +367,9 @@
 					//weather->pp_voxel_steps = t.visuals.voxel_steps; // REMOVED
 					weather->windDirection = XMFLOAT3(t.visuals.wind_direction_x, 0.0f, t.visuals.wind_direction_z);
 					weather->windSpeed = t.visuals.wind_speed;
-					weather->windWaveSize = t.visuals.pp_size;
+					// GGMAX 3.62: see GGWind_GustSizeToWaveSize - bigger slider = bigger gusts.
+					extern float GGWind_GustSizeToWaveSize(float gustSize);
+					weather->windWaveSize = GGWind_GustSizeToWaveSize(t.visuals.pp_size);
 					//weather->pp_alpha = t.visuals.pp_alpha; // REMOVED
 					weather->windRandomness = t.visuals.wind_randomness;
 					//weather->SetPPSnowEnabled(...); // removed in new WickedEngine API - no equivalent

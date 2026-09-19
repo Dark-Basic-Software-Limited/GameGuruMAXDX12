@@ -1683,7 +1683,8 @@ void Wicked_Update_Visuals(void *voidvisual)
 		//weather->pp_voxel_steps = visuals->voxel_steps; // REMOVED
 		weather->windDirection = XMFLOAT3(visuals->wind_direction_x, 0.0f, visuals->wind_direction_z);
 		weather->windSpeed = visuals->wind_speed;
-		weather->windWaveSize = visuals->pp_size;
+		// GGMAX 3.62: the slider is "Wind Gust Size" and the engine wants a FREQUENCY - invert.
+		weather->windWaveSize = GGWind_GustSizeToWaveSize(visuals->pp_size);
 		//weather->pp_alpha = visuals->pp_alpha; // REMOVED
 		weather->windRandomness = visuals->wind_randomness;
 		// GGMAX 3.57: tree sway - see the long note at GGTrees_SetSwayFromVisuals
