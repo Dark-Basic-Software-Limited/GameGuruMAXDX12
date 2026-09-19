@@ -11419,3 +11419,39 @@ label promises gust size for the weather system, not just for trees. Lee's expli
 
 **Verified end to end:** TESTPRO2 stores Gust Size 3.37; `GET_TREEWIND` now reports
 `gustsize=0.30` (= 1/3.37) where it read `3.37` before.
+
+### 3.63 — +0.5 floor on Wind Gust Size (2026-09-19, Lee's call)
+
+Lee: "Wind Gust Size at zero is very jerky. Keep the gust range but add 0.5 to the final gust
+value being used after the slider, that way its still a little violent but back to a normal
+natural looking effect."
+
+With the bare reciprocal from 3.62, slider 0 gave `wavesize = 1/0.1 = 10` — the noise varying ten
+times faster than the engine default. The bottom of the range was a strobe, not a wind.
+
+```
+wavesize = 1.0 / (gustSize + 0.5)      // was 1.0 / max(gustSize, 0.1)
+```
+
+| slider | wavesize now | was |
+|---|---|---|
+| 0 | **2.00** | 10.00 |
+| 1 | 0.67 | 1.00 |
+| 5 | 0.18 | 0.20 |
+
+Full 0..5 range and its direction are unchanged; only the worst case is bounded.
+⚠ This gives up 3.62's property that 1.0 was a no-op. Deliberate — Lee is tuning by eye and the
+bottom of the range being unusable mattered more than bit-identity at the default.
+
+**Verified end to end:** the level now stores `pp_size=0.52` (Lee mid-tune) and `GET_TREEWIND`
+reports `gustsize=0.98` = 1/(0.52+0.5). Exact.
+
+### ⚠ Two things the interrupt taught
+1. **A killed build leaves a TRUNCATED exe, not a missing one.** The interrupted link left
+   `GameGuruMAX.exe` at **2,097,152 bytes** against a normal ~31.9 MB — it would have launched
+   and failed in some confusing way. ★ After any interrupted build, check the exe SIZE before
+   trusting anything you measure with it.
+2. **It also leaves a stale `auto_command.txt` with no `auto_result.txt`** (17 bytes =
+   `CLICK_ONLY_LEVEL`), and the next harness run stalled at "no editor" because of it. The
+   existing rule covers the stale-command case; the new detail is that a PENDING command with no
+   result is the signature, and clearing both files fixes it.

@@ -1988,15 +1988,25 @@ float g_ggTreeSwaySpace = 40000.0f;   // GGMAX 3.61: was 1000 - see the note abo
 // therefore backwards relative to its own name (inherited from the legacy "Wind Wave Size",
 // renamed in 3.58). Size is the reciprocal of frequency, so invert rather than subtract.
 //
-// ★ 1.0 maps to 1.0, so the DEFAULT IS A NO-OP: every level that never touched the slider is
-// byte-identical, and only levels with a deliberately non-default value change - which is the
-// point, because those are the ones that were behaving backwards.
 // ⚠ windWaveSize is shared with grass and rain, so this flips all three together. That is
 // intended: the label promises gust size for the whole weather system, not just trees.
+//
+// GGMAX 3.63 (Lee): +0.5 FLOOR ON THE GUST SIZE. With a bare reciprocal, slider 0 meant
+// wavesize 10 - the noise varying ten times faster than the engine default - and Lee reported
+// it as "very jerky". The bottom of the slider was effectively a strobe rather than a wind.
+// Adding 0.5 to the size before inverting keeps the full 0..5 range and its direction, but
+// bounds the worst case at wavesize 2.0 instead of 10: "still a little violent but back to a
+// normal natural looking effect".
+//   slider 0 -> 2.00   (was 10.00)
+//   slider 1 -> 0.67   (was  1.00)
+//   slider 5 -> 0.18   (was  0.20)
+// ⚠ This gives up the property that 1.0 was a no-op. Deliberate - Lee is tuning by eye and
+// the bottom of the range being unusable mattered more than bit-identity at the default.
+#define GG_WIND_GUST_FLOOR 0.5f
 float GGWind_GustSizeToWaveSize(float gustSize)
 {
-	if (gustSize < 0.1f) gustSize = 0.1f;   // the slider floor is 0.0; 0.1 = the finest gusts
-	return 1.0f / gustSize;
+	if (gustSize < 0.0f) gustSize = 0.0f;
+	return 1.0f / (gustSize + GG_WIND_GUST_FLOOR);
 }
 
 void GGTrees_SetSwayFromVisuals( float treeWind, wi::scene::WeatherComponent* weather )
