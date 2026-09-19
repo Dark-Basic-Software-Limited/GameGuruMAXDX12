@@ -3170,6 +3170,49 @@ static bool AutoHarness_TreeWindCommands(const char* cmd, const char* arg, char*
 	// so without this there is no content that exercises the new path and a green build would prove
 	// nothing. Materials already using wind are skipped, which is exactly the tree-pool vegetation,
 	// so this also leaves the 3.57 path alone and the two can be told apart on screen.
+	// GGMAX 3.59: SET_WEATHER <0-5> drives t.visuals.iEnvironmentWeather, the same int the three
+	// Weather buttons write. INT PASSTHROUGH - 0 none, 1/2 rain, 3/4 snow, 5 none (the old
+	// unlabelled test mode). The dispatcher is edge-triggered, so writing the value is all that is
+	// needed; update_env_particles picks it up on the next frame.
+	if (_stricmp(cmd, "SET_WEATHER") == 0)
+	{
+		int w = atoi(arg);
+		if (w < 0) w = 0; if (w > 5) w = 5;
+		t.visuals.iEnvironmentWeather = w;
+		t.gamevisuals.iEnvironmentWeather = w;
+		// The EDITOR only runs update_env_particles when "Display Weather in Editor" is ticked
+		// (bEnableWeather, default FALSE at M-TerrainNew_part0.cpp:196). Tick it here so the verb
+		// does what a user does; Test Game is ungated and needs no equivalent.
+		extern bool bEnableWeather;
+		if (w > 0) bEnableWeather = true;
+		uint32_t GGWeather_GetRoot(void);
+		_snprintf(result, resultSize, "OK: SET_WEATHER %d (intensity=%.0f, wpe_root_before=%u)",
+			w, t.visuals.fWeatherIntensity, GGWeather_GetRoot());
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GET_WEATHER") == 0)
+	{
+		uint32_t GGWeather_GetRoot(void);
+		extern bool bEnableWeather; extern int g_ggWeatherUpdateCalls; extern int environment_weather;
+		extern char g_ggWeatherLastPath[]; extern uint32_t g_ggWeatherLastResult; extern int g_ggWeatherSetCalls;
+		_snprintf(result, resultSize,
+			"OK: GET_WEATHER mode=%d latch=%d intensity=%.0f wpe_root=%u editorWeather=%d updateCalls=%d setCalls=%d lastResult=%u lastPath=\"%s\"",
+			t.visuals.iEnvironmentWeather, environment_weather, t.visuals.fWeatherIntensity,
+			GGWeather_GetRoot(), bEnableWeather ? 1 : 0, g_ggWeatherUpdateCalls,
+			g_ggWeatherSetCalls, g_ggWeatherLastResult, g_ggWeatherLastPath);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_WEATHERINTENSITY") == 0)
+	{
+		int p = atoi(arg); if (p < 0) p = 0; if (p > 100) p = 100;
+		t.visuals.fWeatherIntensity = (float)p;
+		t.gamevisuals.fWeatherIntensity = (float)p;
+		_snprintf(result, resultSize, "OK: SET_WEATHERINTENSITY %d", p);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_ENTITYWIND") == 0)
 	{
 		int pct = atoi(arg);

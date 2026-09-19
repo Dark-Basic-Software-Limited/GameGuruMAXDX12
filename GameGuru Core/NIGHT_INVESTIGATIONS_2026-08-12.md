@@ -11151,3 +11151,66 @@ before you look for the bug.**
 - `GGTrees_Draw_ShadowMap` / `_Draw_EnvProbe` hard-return. ⚠ **Do NOT report this as "trees cast no
   shadows"** — Lee confirmed they do, via the pool ObjectComponents. Those returns only kill the
   already-dead high-detail path.
+
+---
+
+## 3.59 — RAIN AND SNOW ARE NOW WPE EFFECTS (2026-09-19)
+
+Lee supplied `Light Rain.pe` / `Light Snow.pe` under `Files/particlesbank/wpe/Weather Effects/`
+and asked for the DX11-era effects to be **thrown away**, not matched.
+
+### What weather used to be
+The legacy **ravey** system: DBP quad objects (id 180001+) that are never deleted, only hidden,
+with a **full CPU vertex lock and a Wicked material re-texture per raindrop**. Six `env_add_*`
+functions, three emitters, an edge-triggered dispatcher on `t.visuals.iEnvironmentWeather`.
+
+### Why this was mostly wiring, not building
+★ The WPE delivery path was **already complete**. `WickedCall_LoadWPE` reads the legacy .PE
+archive; the eight emitter actions exist; and **camera-follow is a property stored inside the
+.pe** (`followCamera` → `ec.bFollowCamera`, `wickedcalls_part3.cpp:2744`), driven every frame by
+the `bFollowCamera` block in `WickedCall_UpdateEmitters`. Weather tracks the player for free.
+
+### The three defects this cost, in the order they bit
+1. ⚠⚠ **The assets were mis-authored.** The materials inside both files ask for
+   `Light Rain MAX0/1_color.png` / `Light Snow MAX0/1_color.png`; the shipped PNGs had no
+   `" MAX"`. The loader takes the path **verbatim** and prefixes only the .pe's own directory
+   (`wickedcalls_part3.cpp:2575`) — it does NOT derive `<name><N>_color.png`. Renamed the four
+   PNGs. ★ A missing basecolour is **exactly** Lee's grey squares:
+   `emittedparticlePS_soft.hlsl:33` does `half4 color = 1;` and only overwrites it if the
+   descriptor is valid, so you get a full-opacity untextured quad.
+2. ⚠ **The path must NOT carry a `Files\` prefix.** Emitter names are relative to `Files/`
+   (cf. `"particlesbank/default"`). `Files\particlesbank\...` silently resolved to nothing and
+   `LoadWPE` returned 0 — with no log, because `producelogfiles=0`.
+3. ⚠⚠ **The ravey self-repair destroyed the effect every frame.** `update_env_particles` has
+   `if (ObjectExist(raveyoffset+1) == 0) { ravey_particles_init(); reset_env_particles(); }` —
+   and `reset_env_particles` is exactly where the WPE teardown belongs. So the dispatcher created
+   the effect and that block deleted it four lines later, forever. Now gated on there actually
+   being a ravey weather emitter to repair.
+
+### Kept from the old behaviour
+- **The indoor cutout** (GameGuruRepo #5917) — upward raycast every 15 frames — but as
+  **emit-pause** (actions 7/8) rather than zeroing the count, so drops already in the air fall
+  and time out instead of vanishing the instant you step under cover.
+- **Weather Intensity** scales `ec->count`, the emit rate. ⚠ **Never** `SetMaxParticleCount` —
+  that blanks `counterBuffer` and forces a synchronous fence-and-recreate of eleven GPU buffers,
+  every time the slider moves. Base rates are captured at load so the slider scales from the
+  AUTHORED value instead of compounding its own previous result.
+- Modes 2 and 4 are unreachable from the panel but **appear in older saved levels**, so they map
+  to rain/snow rather than to nothing. Mode 5 was an unlabelled test mode and now means none.
+
+### Verified (TESTPRO2, editor)
+`SET_WEATHER 1` → root 4167, **2 emitters**; `SET_WEATHER 3` → root 4170, **2 emitters**;
+`SET_WEATHER 0` → root **0** (teardown). Screenshots show rain streaks and snowflakes, textured,
+**no grey squares**.
+⚠ The editor only runs weather when **"Display Weather in Editor"** is ticked (`bEnableWeather`,
+default false at `M-TerrainNew_part0.cpp:196`); Test Game is ungated. `SET_WEATHER` ticks it.
+
+★ New verbs: `SET_WEATHER <0-5>`, `GET_WEATHER`, `SET_WEATHERINTENSITY <0-100>`. `GET_WEATHER`
+reports `latch`, `updateCalls`, `setCalls`, `lastResult` and `lastPath` — those five fields are
+what turned "nothing happens" into three located defects in three runs, and are worth keeping.
+
+### ⚠ Still open
+- **`Light Rain.pe` is `heavy-rain3.pe` re-saved** — 9,494 particles/sec, 25,000 cap. It is as
+  dense as heavy rain and 35% denser than `downpour.pe`. "Light" is a filename, not a budget.
+- Both files are archive **version 5077**; everything else shipped is 5076, and 5077 is the
+  reader's inclusive ceiling. One more particle-editor version bump makes them unloadable.

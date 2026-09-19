@@ -1543,6 +1543,11 @@ void env_add_test_particles(float fSpeedAdjust)
 void reset_env_particles(void)
 {
 	delete_env_particles();
+	// GGMAX 3.59: destroy the WPE weather effect in the same breath as zeroing the mode latch.
+	// This one function is already called from every weather panel control, from game_preparelevel
+	// and from the end-of-game path, so hooking it here is what stops a weather root leaking from
+	// one level into the next - the failure this codebase has now shipped three separate times.
+	GGWeather_Clear();
 	environment_weather = 0;
 	if (environment_emitter_id > 0) {
 		t.tRaveyParticlesEmitterID = environment_emitter_id;
@@ -1564,8 +1569,10 @@ void reset_env_particles(void)
 int iDelayedRayCast = 0;
 bool disable_all_weather = false;
 
+int g_ggWeatherUpdateCalls = 0;   // GGMAX 3.59: diagnostic - is this loop reached at all?
 void update_env_particles(void)
 {
+	g_ggWeatherUpdateCalls++;
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
 #endif
@@ -1594,36 +1601,48 @@ void update_env_particles(void)
 			ravey_particles_delete_emitter();
 			environment_emitter_id3 = 0;
 		}
-		if (t.visuals.iEnvironmentWeather == 1) 
-		{
-			env_add_rain_particles();
-		}
-		if (t.visuals.iEnvironmentWeather == 2) 
-		{
-			env_add_rain_heavy_particles();
-		}
-		if (t.visuals.iEnvironmentWeather == 3) 
-		{
-			env_add_snow_particles(2);
-			env_add_test_particles(1);
-		}
-		if (t.visuals.iEnvironmentWeather == 4) 
-		{
-			env_add_snow_particles(-2);
-			//env_add_snow_second_particles(1); //for speed testing only
-		}
-		if (t.visuals.iEnvironmentWeather == 5) 
-		{
-			//env_add_snow_particles(-2);
-			//env_add_snow_second_particles(1); //Second snow emitter
-			env_add_test_particles(2);
-		}
+		// GGMAX 3.59: rain and snow now come from the WPE effects under
+		// Files/particlesbank/wpe/Weather Effects/, replacing the six env_add_* ravey emitters
+		// outright (Lee: throw the old effect away rather than match the DX11 look).
+		// Mode 5 was an unlabelled test mode with no UI and no shipped meaning - it now
+		// resolves to no weather rather than to a third snow variant.
+		// The ravey deletes above are kept: they cost nothing once the emitters are never
+		// created, and they still clean up a level saved by an older build.
+		GGWeather_Set(t.visuals.iEnvironmentWeather);
 		environment_weather = t.visuals.iEnvironmentWeather;
+	}
+
+	// GGMAX 3.59: the WPE weather effect. Position needs no work here - followCamera inside the
+	// .pe drives it from WickedCall_UpdateEmitters. What DOES belong here is the indoor cutout,
+	// because the raycast needs the game-side entity range, and the intensity slider.
+	// The ravey per-emitter blocks further down are now inert (environment_emitter_id* stay 0),
+	// left in place so a level saved by an older build still tidies itself up.
+	if (GGWeather_GetRoot() != 0)
+	{
+		static int iWeatherRayCast = 0;
+		static bool bWeatherIndoors = false;
+		if (iWeatherRayCast++ % 15 == 0)
+		{
+			// Preserved from the ravey path: cast straight up from the camera and stop emitting if
+			// anything is overhead, so it does not rain indoors. GameGuruRepo issue #5917 - and it
+			// must respect "no collision", which is what the final false argument does.
+			const float cx = CameraPositionX(), cy = CameraPositionY(), cz = CameraPositionZ();
+			int iHit = IntersectAllEx(g.entityviewstartobj, g.entityviewendobj, cx, cy, cz, cx, cy + 2000.0f, cz, 0, 0, 0, 0, 1, false);
+			bWeatherIndoors = (iHit > 0);
+		}
+		GGWeather_Update(t.visuals.fWeatherIntensity, bWeatherIndoors);
 	}
 
 	if (environment_weather == 0) return;
 
-	if (ObjectExist(g.raveyparticlesobjectoffset + 1) == 0) 
+	// GGMAX 3.59: this ravey self-repair must NOT run for WPE weather. It calls
+	// reset_env_particles(), which now also destroys the WPE weather root - so while the ravey
+	// quad objects are absent (which, in the editor, they are) it deleted the effect every
+	// frame immediately after the dispatcher created it, and the weather never appeared.
+	// Weather no longer uses ravey at all, so gate the block on there actually BEING a ravey
+	// weather emitter to repair.
+	if ((environment_emitter_id > 0 || environment_emitter_id2 > 0 || environment_emitter_id3 > 0)
+		&& ObjectExist(g.raveyparticlesobjectoffset + 1) == 0) 
 	{
 		//Init
 		ravey_particles_init();

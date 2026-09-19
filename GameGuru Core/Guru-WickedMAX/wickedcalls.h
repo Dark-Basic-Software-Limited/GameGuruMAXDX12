@@ -310,6 +310,11 @@ uint32_t WickedCall_LoadWiScene(char* filename, bool attached, char* changename,
 void WickedCall_PerformEmitterAction(int iAction, uint32_t emitter_root);
 void WickedCall_UpdateEmitters(void);
 uint32_t WickedCall_LoadWPE(char* filename);
+// GGMAX 3.59: WPE-driven weather (rain/snow). See wickedcalls_part4.cpp.
+void     GGWeather_Set(int mode);
+void     GGWeather_Update(float intensityPercent, bool bIndoors);
+void     GGWeather_Clear(void);
+uint32_t GGWeather_GetRoot(void);
 uint32_t WickedCall_CreateEmitter(std::string& name, float posX, float posY, float posZ, uint32_t proot);
 void WickedCall_SetShaderParameter(int obj, int parameter, float value);
 bool WickedCall_CaptureBackbufferRegionToJPG(int x, int y, int w, int h, const char* outputPath);

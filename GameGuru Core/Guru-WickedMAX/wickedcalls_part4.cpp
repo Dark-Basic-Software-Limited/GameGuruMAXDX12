@@ -415,3 +415,127 @@ void WickedCall_SetShaderParameter(int obj, int parameter , float value)
 }
 
 
+
+// ==========================================================================================
+// GGMAX 3.59: WEATHER via WPE. Rain and snow used to be the legacy "ravey" particle system -
+// DBP quad objects with a CPU vertex lock and a material re-texture PER RAINDROP. Lee asked for
+// them to be replaced outright by the new Wicked particle effects, NOT matched to the DX11 look.
+//
+// Almost nothing had to be built: the legacy .PE reader, the eight emitter actions and the
+// per-frame update above all already existed, and CAMERA-FOLLOW is a property stored inside the
+// .pe itself (followCamera -> ec.bFollowCamera at wickedcalls_part3.cpp:2744), handled by the
+// bFollowCamera block in WickedCall_UpdateEmitters. So weather tracks the player for free.
+//
+// Kept deliberately in THIS file rather than M-Particles.cpp so the Wicked types stay on this
+// side of the fence; the game side just calls the three entry points below.
+
+static uint32_t g_ggWeatherRoot = 0;
+// Authored emit rates, captured at load so the intensity slider scales from the ORIGINAL value
+// instead of compounding its own previous result frame after frame.
+static std::vector< std::pair<wiECS::Entity, float> > g_ggWeatherBaseCount;
+static bool  g_ggWeatherEmitPaused = false;
+static float g_ggWeatherLastScale  = -1.0f;
+// GGMAX 3.59 diagnostics: what we last asked for and what LoadWPE gave back.
+char     g_ggWeatherLastPath[MAX_PATH] = "";
+uint32_t g_ggWeatherLastResult = 0;
+int      g_ggWeatherSetCalls = 0;
+
+void GGWeather_Clear(void)
+{
+	if (g_ggWeatherRoot != 0)
+	{
+		void DeleteEmitterEffects(uint32_t root);   // DarkLUA_part5.cpp:998
+		DeleteEmitterEffects(g_ggWeatherRoot);
+		g_ggWeatherRoot = 0;
+	}
+	g_ggWeatherBaseCount.clear();
+	g_ggWeatherEmitPaused = false;
+	g_ggWeatherLastScale  = -1.0f;
+}
+
+uint32_t GGWeather_GetRoot(void) { return g_ggWeatherRoot; }
+
+// mode: 0 none, 1/2 rain, 3/4 snow, anything else none. 2 and 4 are not reachable from the live
+// panel but DO appear in older saved levels, so they must map to something.
+void GGWeather_Set(int mode)
+{
+	GGWeather_Clear();
+	g_ggWeatherSetCalls++;
+
+	const char* pe = nullptr;
+	if      (mode == 1 || mode == 2) pe = "particlesbank\\wpe\\Weather Effects\\Light Rain.pe";
+	else if (mode == 3 || mode == 4) pe = "particlesbank\\wpe\\Weather Effects\\Light Snow.pe";
+	if (pe == nullptr) return;
+
+	char path[MAX_PATH];
+	strcpy_s(path, MAX_PATH, pe);
+	uint32_t WickedCall_LoadWPE(char* filename);
+	const uint32_t root = WickedCall_LoadWPE(path);
+	strcpy_s(g_ggWeatherLastPath, MAX_PATH, path);
+	g_ggWeatherLastResult = root;
+	if (root == 0)
+	{
+		void timestampactivity(int i, char* desc_s);
+		char dbg[MAX_PATH];
+		sprintf(dbg, "GGWeather: LoadWPE FAILED for %s", pe);
+		timestampactivity(0, dbg);
+		return;
+	}
+	g_ggWeatherRoot = root;
+	{
+		void timestampactivity(int i, char* desc_s);
+		char dbg[MAX_PATH];
+		sprintf(dbg, "GGWeather: loaded %s root=%u", pe, (unsigned)root);
+		timestampactivity(0, dbg);
+	}
+
+	// Capture the authored emit rate of every emitter under the root.
+	Scene& scene = wiScene::GetScene();
+	for (int i = 0; i < scene.emitters.GetCount(); i++)
+	{
+		Entity e = scene.emitters.GetEntity(i);
+		HierarchyComponent* hier = scene.hierarchy.GetComponent(e);
+		if (hier == nullptr || hier->parentID != (Entity)root) continue;
+		wiEmittedParticle* ec = scene.emitters.GetComponent(e);
+		if (ec != nullptr) g_ggWeatherBaseCount.push_back(std::make_pair(e, ec->count));
+	}
+
+	// WickedCall_LoadWPE hides only the LAST emitter it loaded and restarts only that one; both
+	// weather effects define TWO. PerformEmitterAction walks every emitter under the root, so
+	// driving it from here covers them all.
+	WickedCall_PerformEmitterAction(4, root);   // Restart
+	WickedCall_PerformEmitterAction(8, root);   // resume emitting
+	WickedCall_PerformEmitterAction(5, root);   // visible
+}
+
+// Per frame. intensityPercent is t.visuals.fWeatherIntensity (0..100); bIndoors comes from the
+// game-side upward raycast.
+void GGWeather_Update(float intensityPercent, bool bIndoors)
+{
+	if (g_ggWeatherRoot == 0) return;
+
+	// Indoors: PAUSE EMISSION rather than zeroing the particle count. Emit-pause lets the drops
+	// already in the air fall and time out; zeroing the count would delete them mid-flight and
+	// the weather would vanish the instant you stepped under cover.
+	if (bIndoors != g_ggWeatherEmitPaused)
+	{
+		WickedCall_PerformEmitterAction(bIndoors ? 7 : 8, g_ggWeatherRoot);
+		g_ggWeatherEmitPaused = bIndoors;
+	}
+	if (bIndoors) return;
+
+	float scale = intensityPercent / 100.0f;
+	if (scale < 0.0f) scale = 0.0f;
+	if (scale > 1.0f) scale = 1.0f;
+	if (scale == g_ggWeatherLastScale) return;   // only touch the components when it actually moves
+	g_ggWeatherLastScale = scale;
+
+	// Scale the EMIT RATE (count), never SetMaxParticleCount - that blanks counterBuffer and
+	// forces a synchronous fence-and-recreate of eleven GPU buffers, every time the slider moves.
+	Scene& scene = wiScene::GetScene();
+	for (size_t i = 0; i < g_ggWeatherBaseCount.size(); i++)
+	{
+		wiEmittedParticle* ec = scene.emitters.GetComponent(g_ggWeatherBaseCount[i].first);
+		if (ec != nullptr) ec->count = g_ggWeatherBaseCount[i].second * scale;
+	}
+}
