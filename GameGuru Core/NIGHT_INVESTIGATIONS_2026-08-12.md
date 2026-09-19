@@ -11308,3 +11308,47 @@ The v5078 file was built by bumping the version word and inserting 16 bytes at t
 emitter record — a faithful simulation of the next bump. Deleted after the run.
 ★ `GET_WEATHER` now also reports `peVer / peStride / peKnown / emStart / afterRecs / afterIds /
 size / peErr`; those offsets are what turned a wrong assumption into a measured file layout.
+
+---
+
+# ★★★ MILESTONE — WEATHER COMPLETE AND FUTURE-PROOF (2026-09-19, Lee-confirmed)
+
+Tag on both repos: **`weather-futureproof-2026-09-19`** (game `e64b6e0f`, engine `b80d5490` —
+game-only, engine unchanged since the tree-sway milestone).
+
+| | |
+|---|---|
+| rain / snow | `Light Rain.pe` / `Light Snow.pe`, WPE, camera-following, textured (3.59) |
+| density | Lee-approved as shipped — `Light Rain` is `heavy-rain3` re-saved, 9,494/s |
+| future files | any newer archive version now loads; the reader **solves** for the record size (3.60) |
+| removed | six `env_add_*` ravey emitters, DBP quads with a CPU vertex lock per raindrop |
+
+### ★★★ THE LESSON — the diagnostic that prints TWO numbers
+3.59 and 3.60 were solved by the same thing, twice, and it is not "look harder".
+
+In 3.59, three defects produced *identical* symptoms — nothing on screen, root 0, no log — so
+each masked the next and guessing fixed one of three. What worked was making `GET_WEATHER` report
+`latch / updateCalls / setCalls / lastResult / lastPath`: five fields that separate "the loop
+never runs" from "the load fails" from "something deletes it". Three runs, three located defects.
+
+In 3.60 the same habit caught a defect I was about to **ship**. The record-size derivation looked
+right and the file loaded — but the diagnostic printed `stride=336` beside `known=312`, and those
+two disagreeing is the only reason I discovered the 48-byte trailer instead of silently
+misaligning emitter 1 in every .pe forever. **A single "did it load?" check would have passed.**
+
+★ So: when a check can only say pass/fail, it can only find the bug you already suspected. Print
+the two quantities that *should* agree and let them disagree. That is what "build the instrument
+that NAMES the culprit" actually means in practice.
+
+### ⚠ Also recorded from 3.60
+The naive fix — raise the version ceiling — would have been actively harmful: the reader branches
+on version, so 5077 rules on a 5078 file under-read every record and desync the id array. It
+would load, and produce garbage. The survey that made a real fix possible is that **all six**
+GameGuru-era bumps only ever appended to the emitter record.
+
+### Today's full arc
+tracers (3.55) · ownerless tracer cull (3.56, also a DX11-era bug) · vegetation sway (3.57) ·
+wind UI (3.58) · entity tree sway (3.58b) · weather on WPE (3.59) · **.PE version tolerance (3.60)**
+
+Rollback points, newest last: `tree-sway-vegetation` → `tree-sway-complete` →
+`weather-wpe-milestone` → `weather-futureproof`.
