@@ -3,6 +3,10 @@
 namespace GGTerrain { void GGTerrainWicked_BeginRevealHold(); }
 // Reload hardening (2026-07-26): definition in Guru-WickedMAX/wickedcalls_part2.cpp.
 extern "C" void WickedCall_ReloadQuiesceGPU(void);
+// GGMAX 3.66: same reason - no include path to wiRenderer.h from this unity-build part file.
+// Definition: WickedEngineDX12/WickedEngine/wiRenderer.cpp, declared in wiRenderer.h.
+namespace wi { namespace renderer { void GG_ArmShadowAtlasShrink(); } }
+
 
 void gridedit_updatezoomviewvalues ( void )
 {
@@ -294,6 +298,15 @@ void gridedit_clear_map ( void )
 {
 	//Stop delete any particle effects.
 	gpup_deleteAllEffects();
+
+	// GGMAX 3.66: let the shadow atlas shrink for the incoming level. wi::renderer only ever GREW
+	// it, so a single light-heavy level ratcheted it to 16384x4096 = 260 MB and every level after
+	// that carried the 260 MB however few lights it had.
+	// This only sets a flag - it does NOT release the atlas here, which was the first attempt and
+	// did not work: the rebuild lands in this same frame, before the incoming level's visuals have
+	// been applied, so it captures the OUTGOING level's cascade resolution and keeps it. The actual
+	// resize happens later, in the engine, once the new level's own shadow rects are packed.
+	wi::renderer::GG_ArmShadowAtlasShrink();
 
 	//  Delete any old entity objects
 	gridedit_deletelevelobjects ( );

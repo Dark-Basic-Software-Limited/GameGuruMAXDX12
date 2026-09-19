@@ -11689,3 +11689,88 @@ An 8-way subsystem audit with adversarial verification (24 agents) confirmed 3 f
 above, the gpup one found independently by two agents - and REJECTED 13. Trees, textures,
 meshes/suballocator, lighting and the particle systems came back clean, which matches the census:
 those categories cycle correctly across loads.
+
+## 3.66 - SHADOW ATLAS AND DOUBLED DEPTH TARGETS (2026-09-20)
+
+Lee, after 3.65 left +308.6 MB retained on a same-level reload: "go after the shadow atlas and
+doubled depth targets".
+
+**Depth targets: FIXED and verified. Shadow atlas: EXONERATED, real cause NAMED but NOT yet fixed.**
+
+Verified by re-running the 19+1 union sweep (`tools/vram_union_sweep.sh`) and comparing demo 1 at
+load 1 against demo 1 at load 20, which holds content constant across the session:
+
+| retained, same level 19 loads apart | before 3.66 | after 3.66 |
+|---|---|---|
+| total | +308.6 MB | **+222.0 MB** |
+| depthBuffer_Main / _Copy / _Copy1 / rtLinearDepth | +66.7 MB | **absent** |
+| engine: Scene | +44.4 | +24.9 |
+| shadowMapAtlas | +239.7 | +239.7 (unchanged - see below) |
+
+### DEPTH TARGETS - a temporary diagnostic that was never removed
+
+`RenderPath3D::DeleteGPUResources` pushed all four depth textures into a function-static
+`wi::vector<Texture>` on every call and never released them. It was the GGMAX 2.05 probe for the
+standalone-play DEVICE_HUNG, labelled *"Remove once the hunt closes"*. The hunt closed on a
+different root cause - a terrain material DDS freed at the level-load set swap - i.e. the
+diagnostic exonerated the depth chain exactly as designed, and was then left in.
+⚠ Gated on `gg_dred_armed`, so no shipping user ever paid it - but `dred.txt` is present on every
+developer machine, **including the one every VRAM baseline in this repo was measured on**.
+Census signature: 2 live copies of each depth texture becoming 4, stepping up at loads 15 and 16
+rather than per-load, which is what a resize-triggered leak looks like.
+
+### SHADOW ATLAS - not a leak. The atlas is innocent and the packer is the story.
+
+★★★ **THE FIRST FIX WAS WRONG AND THE MEASUREMENT SAID SO.** Released the atlas at
+`gridedit_clear_map` so the next frame would re-size it. Result: zero change, 260 MB still held.
+The instrument (`gg_atlas_trace`, opt-in via `gg_atlas_trace.txt` beside the EXE) showed why in one
+line pair: **release and create land on the SAME FRAME**, because the caller runs in the
+game-logic Update phase and the atlas is rebuilt before the incoming level's visuals are applied -
+so the new atlas captures the OUTGOING level's cascade resolution, and the grow-only allocation
+keeps it. Moving the call cannot fix this: "after the new level's visuals have been applied" is not
+a point the loader exposes.
+
+**Replaced with a one-shot ARM** (`wi::renderer::GG_ArmShadowAtlasShrink`). The allocation may now
+shrink once per level load, when the packer asks for at most HALF the current atlas - which happens
+naturally once the new level's own rects are packed, so it is order-independent. A shrink is the
+same `CreateTexture` on the same global at the same point in the frame as the grow the engine
+already performs whenever a level gets heavier, so it adds no operation the engine was not already
+doing. ★ It also **neutralises the cache defect the review found**: both shadow caches key on atlas
+DIMENSIONS, and grow requires atlas<packer while shrink requires atlas>=packer*2, so dimensions
+always change and the caches always notice - no hand invalidation needed.
+
+★★★ **WHAT IS ACTUALLY WRONG, measured and stable, NOT a transient:**
+
+| load | packer asks for | frames sampled |
+|---|---|---|
+| Teaser after boot | **5120x1024** | 3766 -> 12000, every sample |
+| Z Island | 12288x4096 | 15409 -> 25500, every sample |
+| Teaser after Z Island | **12288x4096** | 26026 -> 33000, every sample |
+
+Same level, same 5 rects, 2.4x the atlas depending on what was loaded before it. The atlas is
+faithfully allocating what it is asked for and the shrink correctly declines, because there is
+nothing smaller to shrink to. **An INPUT to the shadow packer persists across a level load.**
+⚠ It is NOT: the atlas (proven), the release timing (proven), a load-time transient (proven -
+stable over 7000+ frames), or `visuals.iShadowSpotCascadeResolution` (proven - `visuals_load`
+assigns the 1024 default at M-Visuals_part0.cpp:1339 BEFORE parsing the file at :1717, so an absent
+key cannot inherit).
+★ **Next lead, and it is a good one:** `DUMP_SHADOWRECTS` reports a **512x512** sun rect for Teaser
+in BOTH cases while the packer reports 5120x1024 vs 12288x4096. The harness dump and the packer
+disagree, so the per-rect slice multiplier (or the rect set the packer actually sees) is where to
+look - instrument the rects INSIDE the packer at the same moment as the width, not through the
+harness accessor.
+
+### Method notes
+★★ **Four theories killed by measurement tonight**, each plausible: "the release never runs" (it
+runs), "the atlas will not shrink" (it will, when asked), "the cascade resolution is sticky" (it is
+reset), "it is a load transient" (stable over thousands of frames). Reasoning produced all four;
+printing numbers killed all four.
+⚠ **A one-shot diagnostic reports the wrong moment.** The first "why did it not shrink" report
+fired on the first frame after arming and showed packer==atlas, which looks like correct behaviour;
+the number that mattered only exists tens of seconds later, after the level settles. Made it
+periodic and the picture inverted.
+⚠ **`wi::backlog` only writes log.txt from its DESTRUCTOR**, which a harness taskkill never reaches -
+the first instrumented run produced an empty log that looked exactly like code that never ran. Use
+append+flush for anything a force-kill must not lose.
+⚠ **The first launch after an ENGINE build needs a much longer warm budget** (300 was not enough
+twice; now 900). A cold launch fails identically to a code regression.
