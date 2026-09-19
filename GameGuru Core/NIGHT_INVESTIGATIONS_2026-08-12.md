@@ -11267,3 +11267,44 @@ wind UI (3.58) · entity tree sway (3.58b) · **weather on WPE (3.59)**
   particle-editor bump makes them silently unloadable.
 - If these effects are ever re-exported, **the material strings must match the PNG filenames** or
   the grey squares return.
+
+### 3.60 — .PE archive version is no longer a ceiling (2026-09-19)
+
+Lee: the two weather effects sat at archive version **5077** against a reader that rejected
+`ver > 5077`, so the day the particle editor bumps its save version, rain and snow stop loading.
+
+### Why a one-character fix would have been wrong
+The reader **branches on version** — `ReadEmitter` appends fields at 5072, 5073, 5074, 5075,
+5076 and 5077. Simply raising the ceiling would parse a 5078 file with 5077 rules, under-read
+each record, and desynchronise the trailing entity-id array: it would "load" and produce garbage.
+★ The useful survey: across all six GameGuru-era bumps, **100% of the format change was appending
+to the emitter record**. Material branches stop at v68, resources at v63. So the format has
+exactly one evolution point, and that point is skippable.
+
+### ⚠ The assumption I had to throw away, and how
+First design derived the record size from the file layout: `(bytes between the emitter array and
+the trailing id array) / emCount`, assuming the id array ended the file. **Measurement refuted
+it** — the shipped v5077 files report `stride=336` against a `known=312` record, because there is
+a **48-byte trailer after the id array**. Had I shipped that, emitter 1 would have read 24 bytes
+misaligned in every file. ★ I only caught it because the diagnostic printed BOTH numbers and they
+disagreed; a single "it loaded" check would have passed.
+
+### What it does now
+For `ver > GG_WPE_VER_NEWEST_KNOWN` the reader **solves** for the record size instead of assuming
+one. Every emitter carries a TransformComponent, so each entity id in the trailing array must be
+one already seen in `trEnt`; step the candidate size up in 4-byte units (every field is 4 or 8)
+and take the first that makes all the ids resolve. A wrong size yields garbage ids and is
+rejected. Known versions skip the solver entirely and are **bit-identical**.
+⚠ Fails CLOSED, not silently: a change OUTSIDE the emitter tail desynchronises earlier and trips
+the sixteen always-zero manager counts, and `gg_wpe_lastError` names which happened.
+
+### Verified
+| file | result |
+|---|---|
+| real v5077 rain | `peStride=312 peKnown=312` — solver not run, no-op |
+| synthetic v5078, +16 B/record | **loads**, root 4169, 2 emitters, `peStride=328`, no error |
+
+The v5078 file was built by bumping the version word and inserting 16 bytes at the end of each
+emitter record — a faithful simulation of the next bump. Deleted after the run.
+★ `GET_WEATHER` now also reports `peVer / peStride / peKnown / emStart / afterRecs / afterIds /
+size / peErr`; those offsets are what turned a wrong assumption into a measured file layout.

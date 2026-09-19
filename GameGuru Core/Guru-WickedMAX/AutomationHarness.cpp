@@ -3196,11 +3196,19 @@ static bool AutoHarness_TreeWindCommands(const char* cmd, const char* arg, char*
 		uint32_t GGWeather_GetRoot(void);
 		extern bool bEnableWeather; extern int g_ggWeatherUpdateCalls; extern int environment_weather;
 		extern char g_ggWeatherLastPath[]; extern uint32_t g_ggWeatherLastResult; extern int g_ggWeatherSetCalls;
+		extern uint64_t gg_wpe_lastVer, gg_wpe_lastStride, gg_wpe_lastKnown; extern const char* gg_wpe_lastError;
+		extern uint64_t gg_wpe_emStart, gg_wpe_afterRecs, gg_wpe_afterIds, gg_wpe_fileSize;
 		_snprintf(result, resultSize,
-			"OK: GET_WEATHER mode=%d latch=%d intensity=%.0f wpe_root=%u editorWeather=%d updateCalls=%d setCalls=%d lastResult=%u lastPath=\"%s\"",
+			"OK: GET_WEATHER mode=%d latch=%d intensity=%.0f wpe_root=%u editorWeather=%d updateCalls=%d setCalls=%d lastResult=%u"
+			" peVer=%llu peStride=%llu peKnown=%llu emStart=%llu afterRecs=%llu afterIds=%llu size=%llu peErr=\"%s\" lastPath=\"%s\"",
 			t.visuals.iEnvironmentWeather, environment_weather, t.visuals.fWeatherIntensity,
 			GGWeather_GetRoot(), bEnableWeather ? 1 : 0, g_ggWeatherUpdateCalls,
-			g_ggWeatherSetCalls, g_ggWeatherLastResult, g_ggWeatherLastPath);
+			g_ggWeatherSetCalls, g_ggWeatherLastResult,
+			(unsigned long long)gg_wpe_lastVer, (unsigned long long)gg_wpe_lastStride,
+			(unsigned long long)gg_wpe_lastKnown,
+			(unsigned long long)gg_wpe_emStart, (unsigned long long)gg_wpe_afterRecs,
+			(unsigned long long)gg_wpe_afterIds, (unsigned long long)gg_wpe_fileSize,
+			gg_wpe_lastError, g_ggWeatherLastPath);
 		result[resultSize - 1] = 0;
 		return true;
 	}

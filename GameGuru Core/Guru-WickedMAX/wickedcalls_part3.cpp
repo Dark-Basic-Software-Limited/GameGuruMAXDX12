@@ -2425,6 +2425,33 @@ namespace ggwpe
 }
 
 // Returns the root entity of the loaded effect, or 0 on failure.
+// GGMAX 3.60: FORWARD COMPATIBILITY for .PE archive versions.
+//
+// The format is strictly APPEND-ONLY and every GameGuru-era bump has landed in exactly one
+// place. Checked across all six: 5072, 5073, 5074, 5075, 5076 and 5077 each only appended
+// fields to the END of the emitter record (ReadEmitter). The material reader stops evolving at
+// v68 and the resource reader at v63 - nothing in the 507x era touched them. The emitter record
+// is fixed-size for a given version (no strings, no variable-length members), the emitter block
+// is followed only by emCount entity ids, and that array is the LAST thing in the file.
+//
+// So the stride of one emitter record is derivable from the file itself:
+//     stride = (bytes between the emitter array and the trailing id array) / emCount
+// Parse each record with the newest rules we know, then seek to the next stride boundary. Any
+// fields a future version appended are skipped instead of desynchronising the read, and known
+// versions are bit-identical because stride == what we consumed.
+//
+// What this does NOT cover, honestly: a future version that changes a section OTHER than the
+// emitter tail. That desynchronises earlier and the 16-zero-manager check below rejects the
+// file - it fails CLOSED (no effect) rather than loading garbage, and gg_wpe_lastError says so.
+#define GG_WPE_VER_NEWEST_KNOWN  5077
+#define GG_WPE_VER_SANITY        6000
+
+uint64_t    gg_wpe_lastVer    = 0;
+uint64_t    gg_wpe_lastStride = 0;
+uint64_t    gg_wpe_lastKnown  = 0;   // bytes ReadEmitter consumed with the rules we have
+uint64_t    gg_wpe_emStart = 0, gg_wpe_afterRecs = 0, gg_wpe_afterIds = 0, gg_wpe_fileSize = 0;
+const char* gg_wpe_lastError  = "";
+
 uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 {
 	using namespace ggwpe;
@@ -2443,7 +2470,12 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 	Reader r; r.d = data.data(); r.n = data.size(); r.p = 0;
 
 	const uint64_t ver = r.u64();
-	if (ver < 5000 || ver > 5077) return 0;   // not a legacy GameGuru .PE
+	// GGMAX 3.60: the upper bound used to be 5077 - the newest version that existed - so the day
+	// the particle editor bumped its save version, every .PE saved by it stopped loading and rain
+	// and snow silently vanished. It is now a SANITY bound rather than a format ceiling; unknown
+	// newer versions are read with the newest rules we know plus the tail-skip below.
+	if (ver < 5000 || ver > GG_WPE_VER_SANITY) { gg_wpe_lastError = "version out of range"; return 0; }
+	gg_wpe_lastVer = ver;
 	r.u64();                                  // reserved
 
 	// Source directory, used to key embedded resources exactly as the DX11 loader did.
@@ -2525,16 +2557,82 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 	// something we do not understand - bail rather than desynchronise.
 	for (int i = 0; i < 16; i++)
 	{
-		if (r.u64() != 0) return 0;
+		// GGMAX 3.60: this is the tripwire for a format change OUTSIDE the emitter tail. If a
+		// future version alters an earlier section, the read desynchronises and these sixteen
+		// always-empty manager counts stop being zero - so we refuse the file rather than build
+		// a scene out of misaligned bytes.
+		if (r.u64() != 0) { gg_wpe_lastError = "desync before emitters (format changed outside the emitter record)"; return 0; }
 	}
 	if (!r.ok) return 0;
 
 	uint64_t emCount = r.u64();                              // emitters
-	if (emCount == 0 || emCount > 64) return 0;
+	if (emCount == 0 || emCount > 64) { gg_wpe_lastError = "bad emitter count"; return 0; }
 	std::vector<EmitInfo> ems((size_t)emCount);
-	for (uint64_t i = 0; i < emCount && r.ok; i++) ReadEmitter(r, ver, ems[(size_t)i]);
+
+	// GGMAX 3.60: work out the on-disk size of ONE emitter record, so a newer archive version
+	// that appended fields still reads correctly instead of desynchronising.
+	//
+	// First measure what OUR rules consume, by parsing one record and rewinding. Then, only if
+	// the file is newer than anything we know, solve for the real size.
+	const size_t emStart = r.p;
+	size_t emRecKnown = 0;
+	{
+		EmitInfo probe;
+		ReadEmitter(r, ver, probe);
+		if (!r.ok) { gg_wpe_lastError = "truncated emitter record"; return 0; }
+		emRecKnown = r.p - emStart;
+		r.p = emStart;
+	}
+	size_t emRecSize = emRecKnown;
+	gg_wpe_lastKnown = (uint64_t)emRecKnown;
+
+	if (ver > GG_WPE_VER_NEWEST_KNOWN)
+	{
+		// SOLVE for the record size rather than assume one. The trailing entity-id array is NOT
+		// at EOF - measurement on the shipped v5077 files showed a 48-byte trailer after it - so
+		// the size cannot be derived from the file length. What CAN be relied on is that every
+		// emitter carries a TransformComponent, so each id in that array must be an entity we
+		// have already seen in trEnt. Step the candidate record size up in 4-byte units (every
+		// field in the record is 4 or 8 bytes) and take the first size that makes all the ids
+		// resolve. A wrong size produces garbage ids and is rejected.
+		bool found = false;
+		for (size_t R = emRecKnown; R <= emRecKnown + 512 && !found; R += 4)
+		{
+			const size_t idPos = emStart + (size_t)emCount * R;
+			if (idPos + (size_t)emCount * 8 > r.n) break;
+			bool allSeen = true;
+			for (uint64_t k = 0; k < emCount && allSeen; k++)
+			{
+				uint64_t id = 0;
+				memcpy(&id, r.d + idPos + (size_t)k * 8, 8);
+				bool seen = false;
+				for (size_t t2 = 0; t2 < trEnt.size() && !seen; t2++) if (trEnt[t2] == id) seen = true;
+				if (!seen) allSeen = false;
+			}
+			if (allSeen) { emRecSize = R; found = true; }
+		}
+		if (!found)
+		{
+			gg_wpe_lastError = "newer archive version and the emitter record size could not be located";
+			return 0;
+		}
+	}
+	gg_wpe_lastStride = (uint64_t)emRecSize;
+
+	for (uint64_t i = 0; i < emCount && r.ok; i++)
+	{
+		ReadEmitter(r, ver, ems[(size_t)i]);
+		// Skip any tail a newer version appended. For a KNOWN version emRecSize == what we just
+		// consumed, so this is exactly a no-op and the path is bit-identical to before.
+		const size_t next = emStart + (size_t)(i + 1) * emRecSize;
+		if (next >= r.p && next <= r.n) r.p = next;
+	}
+	gg_wpe_emStart = (uint64_t)emStart;
+	gg_wpe_afterRecs = (uint64_t)r.p;
 	std::vector<uint64_t> emEnt((size_t)emCount);
 	for (uint64_t i = 0; i < emCount; i++) emEnt[(size_t)i] = r.u64();
+	gg_wpe_afterIds = (uint64_t)r.p;
+	gg_wpe_fileSize = (uint64_t)r.n;
 	if (!r.ok) return 0;
 
 	// --- build the scene ---
