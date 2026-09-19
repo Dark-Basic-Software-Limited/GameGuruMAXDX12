@@ -11214,3 +11214,56 @@ what turned "nothing happens" into three located defects in three runs, and are 
   dense as heavy rain and 35% denser than `downpour.pe`. "Light" is a filename, not a budget.
 - Both files are archive **version 5077**; everything else shipped is 5076, and 5077 is the
   reader's inclusive ceiling. One more particle-editor version bump makes them unloadable.
+
+---
+
+# ★★★ MILESTONE — WEATHER ON THE NEW PARTICLE SYSTEM (2026-09-19, Lee-confirmed)
+
+Tag on both repos: **`weather-wpe-milestone-2026-09-19`** (game `06ca6404`, engine `b80d5490` —
+this one is game-only; the engine is unchanged since the tree-sway milestone).
+
+The first of these features that was a **deliberate upgrade** rather than a restoration. Lee:
+"unlike our previous attempt to retain DX11 visuals for consistency, for DX12 we have elected to
+throw away the old particle effect and entirely replace them."
+
+| | |
+|---|---|
+| rain | `Light Rain.pe`, WPE, 2 emitters, textured, camera-following |
+| snow | `Light Snow.pe`, WPE, 2 emitters, textured, camera-following |
+| off | root 0 — teardown clean |
+| gone | six `env_add_*` ravey emitters, DBP quads with a CPU vertex lock **per raindrop** |
+
+### The shape of this one was different from the sway work
+The sway milestone was "the code is fine, something moved out from under it". This was
+**"the mechanism was already there and already correct"** — `WickedCall_LoadWPE`, the eight
+emitter actions, and camera-follow as a property **inside the .pe** all pre-existed, restored in
+GGMAX 2.00 for exactly this class of effect. The job was ~150 lines of dispatcher, and then three
+silent failures stacked behind each other.
+
+### ★★★ THE LESSON — three silent failures in a row is a tooling signal, not a debugging problem
+Each defect produced *identical* observable behaviour (nothing on screen, root = 0, no log), so
+each one masked the next and no amount of staring distinguished them:
+1. mis-authored assets (a missing `" MAX"` in four filenames),
+2. a `Files\` prefix that must not be there — and `LoadWPE` returns 0 **with no diagnostic**,
+   while `producelogfiles=0` means there is no log to read either,
+3. the ravey self-repair calling `reset_env_particles()` — now the WPE teardown — and destroying
+   the effect four lines after the dispatcher created it, **every frame**.
+
+I guessed at (1)→(2) and got one wrong. What actually worked was adding five fields to
+`GET_WEATHER` — `latch`, `updateCalls`, `setCalls`, `lastResult`, `lastPath` — which separated
+"the loop never runs" from "the loop runs and the load fails" from "the load works and something
+deletes it". **Three runs, three located defects.** ★ When two consecutive fixes fail to change
+the symptom, stop fixing and make the failure *name itself* — the codebase's own rule
+("build the instrument that NAMES the culprit"), earned again.
+
+### Cumulative: today's features
+tracers (3.55) · ownerless tracer cull (3.56, also a DX11-era bug) · vegetation sway (3.57) ·
+wind UI (3.58) · entity tree sway (3.58b) · **weather on WPE (3.59)**
+
+### ⚠ Carried forward
+- `Light Rain.pe` is `heavy-rain3.pe` re-saved: **9,494/s, 25,000 cap** — denser than
+  `downpour.pe`. "Light" is a filename, not a budget; it wants tuning against the low-spec floor.
+- Both new files are archive **version 5077** against a reader ceiling of 5077. One more
+  particle-editor bump makes them silently unloadable.
+- If these effects are ever re-exported, **the material strings must match the PNG filenames** or
+  the grey squares return.
