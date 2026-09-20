@@ -43,8 +43,11 @@ D="/d/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
 SHOTS="$D/Files/screenshots"
 TAG="${1:-0806}"
 START_AT="${2:-0}"
-# 2026-09-20: was hardcoded to a worktree path that no longer exists. Takes an override now.
-OUT="${1:-/c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/demo_fps}"
+# 2026-09-20: was hardcoded to a worktree path that no longer exists. $1 is already the run
+# TAG (results_$TAG.txt, shots$TAG/), so the base directory is overridden by an ENV VAR -
+# a positional override collided with the tag and wrote the results file into a path that
+# did not exist, which the script did not notice until the first write failed.
+OUT="${GGMAX_SWEEP_OUT:-/c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/demo_fps}"
 mkdir -p "$OUT/run$TAG" "$OUT/shots$TAG"
 RESULTS="$OUT/results_$TAG.txt"
 
