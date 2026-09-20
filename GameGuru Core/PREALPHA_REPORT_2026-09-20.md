@@ -320,7 +320,18 @@ files, and `BulletPhysics.CPP`, which DX12 has split into `BulletPhysics_part0..
 
 **So no DX11 script, icon or behaviour file added since November 2025 is missing or stale in DX12.**
 
-### 5.3 ★ An independent content-level audit of the C++ side
+### 5.3 ★ The Lua API surface is identical
+
+Every shipped behaviour script talks to the engine through `lua_register`, so that set is the
+scripting contract. Extracted from both trees:
+
+- **DX11 HEAD registers 1374 distinct Lua functions. DX12 registers 1374. The two sets are
+  identical** — nothing in DX11, nothing extra in DX12.
+
+That closes the most user-visible class of parity risk outright: no shipped or user-written script
+can call a GameGuru function that this build does not have.
+
+### 5.4 ★ An independent content-level audit of the C++ side
 
 The two previous audits both worked commit by commit. Tonight I ran a different method that cannot
 be fooled by a commit someone judged done: take **every line the 338 commits added** to a C++/H
@@ -342,7 +353,7 @@ The small clusters — the ones most likely to be real gaps — all resolved to 
 rather than absences: `GetSunColorRed/Green/Blue` and `ForceMouseXYClick` are registered on `lua2`
 rather than `lua`, and Delayed Shot uses `MAXTimer()` rather than `Timer()`. All present.
 
-### 5.4 DX11 behaviour DX12 deliberately does not have — verified still true
+### 5.5 DX11 behaviour DX12 deliberately does not have — verified still true
 
 | feature | why |
 |---|---|
@@ -353,7 +364,7 @@ rather than `lua`, and Delayed Shot uses `MAXTimer()` rather than `Timer()`. All
 | custom shader parameters 1–7 | `uint4 userdata` migration unfinished. |
 | Water / Glass / Tree-Animate shader bodies | not in the build; proven by identical `.cso` hashes. |
 
-### 5.5 Behaviour that intentionally differs from the DX11 you last used
+### 5.6 Behaviour that intentionally differs from the DX11 you last used
 
 - **Bullet holes on immobile objects.** DX11 `c1269dd7` removed the `isimmobile` clause; DX12
   matched it in 3.44. A door no longer collects decals unless its "Allow Bullet Holes?" tickbox is
@@ -362,14 +373,14 @@ rather than `lua`, and Delayed Shot uses `MAXTimer()` rather than `Timer()`. All
   2048), matching DX11 `d836fcab`. Existing levels restore their own saved values.
 - **Start Marker underwater** now works — DX11 `1d49f004` removed the waterline+20 clamp.
 
-### 5.6 Where DX12 is deliberately ahead
+### 5.7 Where DX12 is deliberately ahead
 
 `GetObjectAnimationFinished` has a null check DX11 lacks; `door.lua` is DX11 v33 *plus* the 3.21
 logic gating; the Lua 5.4 compat shim; and the crash handler tolerates a NULL exception record, a
 failed `SymInitialize`, prints the breadcrumb ring buffer, and as of tonight survives a malformed
 DRED output — DX11 does none of the four.
 
-### 5.7 The one hole left
+### 5.8 The one hole left
 
 Content **neither repo tracks** — models, DDS, sounds. There is no DX11 build area on this machine
 to diff against, so if DX11 added art since November 2025 that is not in git, nothing I can run
