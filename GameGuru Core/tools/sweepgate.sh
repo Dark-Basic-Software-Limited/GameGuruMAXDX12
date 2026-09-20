@@ -66,17 +66,49 @@ REF = {
  "Trapped":12768,
 }
 
+def num(x):
+    try: return float(re.sub(r"[^0-9.]", "", x) or 0)
+    except: return 0.0
+
+# SOAK FORMAT. demo_soak_sweep.sh writes key=value fields and puts the TEST GAME outcome in
+# field 2 (GAME / GAME_RECHECK / DIED_IN_PREP / FAIL_*), where the fresh-launch sweep writes a
+# bare "OK". Scoring both here keeps ONE curated POLYS reference; the soak analyser used to
+# carry a second one, and it still holds the stale pre-far-tree Aztec Teaser figure that 3.53c
+# corrected in the dict below.
+# ⚠ A soak run's POLYS is NOT always comparable to a fresh-launch run's: the tree pool is
+# process-wide, so a vegetation-heavy demo loaded late in a session can legitimately be granted
+# fewer slots than the same demo loaded cold. C2 is reported for a soak run but treated as
+# advisory - the verdict line says which mode it ran in.
+def parse_soak(f):
+    kv = {}
+    for part in f[2:]:
+        if "=" in part:
+            k, v = part.split("=", 1)
+            kv[k.strip()] = v.strip()
+    gst = f[1]
+    if gst.startswith("FAIL") or gst.startswith("DIED") or gst.startswith("NO_"):
+        return None, gst
+    ed = num(kv.get("edFPS", "0"))
+    gm = num(kv.get("gmFPS", "0"))
+    return dict(demo=f[0], ed=ed, gstate=gst, gm=gm,
+                vram=num(kv.get("edVRAM", "0")), gvram=num(kv.get("gmVRAM", "0")),
+                polys=int(num(kv.get("polys", "0")))), gst
+
 rows, fails = [], []
+soak_mode = False
 for line in open(res, encoding="utf-8", errors="replace"):
     line = line.strip()
     if not line or "|" not in line: continue
     f = line.split("|")
     demo = f[0]
+    if len(f) > 2 and f[2].startswith("load="):
+        soak_mode = True
+        r, gst = parse_soak(f)
+        if r is None:
+            fails.append((demo, gst)); continue
+        rows.append(r); continue
     if len(f) < 3 or f[1] != "OK":
         fails.append((demo, f[1] if len(f) > 1 else "MALFORMED")); continue
-    def num(x):
-        try: return float(re.sub(r"[^0-9.]", "", x) or 0)
-        except: return 0.0
     ed = [num(f[2]), num(f[3]), num(f[4])]
     gstate = f[5]
     gm = [num(f[6]), num(f[7]), num(f[8])]
@@ -88,6 +120,19 @@ for line in open(res, encoding="utf-8", errors="replace"):
     gvram = num(f[12].split("=")[-1]) if len(f) > 12 and "gvram" in f[12] else 0.0
     rows.append(dict(demo=demo, ed=sum(ed)/3 if any(ed) else 0, gstate=gstate,
                      gm=sum(gm)/3 if any(gm) else 0, vram=vram, gvram=gvram, polys=polys))
+
+# A gate that parsed nothing must not report PASS on anything. C2 and C3 are computed over
+# `rows`, so with rows empty they printed "identical on all 0 demos" and "worst = 0.0 MB" -
+# both PASS - and only C1 caught it. Refuse outright instead, and name the likely cause: the
+# single-session soak sweep writes demo|GAME|load=.. where this gate expects demo|OK|..
+if not rows:
+    print("PARSED NO ROWS from %s" % res)
+    if fails and any(st in ("GAME", "GAME_RECHECK", "NOGAME") for _, st in fails):
+        print("  The rows look like demo_soak_sweep.sh output (field 2 is a GAME state, not OK).")
+        print("  Score that with tools/soak_analyse.py - this gate reads demo_fps_sweep.sh runs.")
+    else:
+        print("  %d lines were rejected as malformed." % len(fails))
+    sys.exit(2)
 
 print("=" * 100)
 print("%-32s %8s %8s %9s %9s %12s  %s" % ("demo","edFPS","gmFPS","edVRAM","gmVRAM","POLYS","gate"))
@@ -117,13 +162,23 @@ elif len(rows) != 19:
     print("C1 LOAD      FAIL -> only %d/19 rows present" % len(rows))
 else:
     print("C1 LOAD      PASS  19/19 reached the editor")
-print("C2 GEOMETRY  %s  POLYS identical to the 0825 (3.19) reference on all %d demos"
-      % ("PASS " if c2 else "FAIL ", len(rows)))
+print("C2 GEOMETRY  %s  POLYS vs the 0825 (3.19) reference across %d demos"
+      % ("ADVIS" if soak_mode else ("PASS " if c2 else "FAIL "), len(rows)))
 print("C3 VRAM      %s  worst of editor+game = %.1f MB (%s), limit %.0f, headroom %.1f MB"
       % ("PASS " if c3 else "FAIL ", worst_vram[0], worst_vram[1], limit, limit - worst_vram[0]))
+if soak_mode:
+    bad = [r["demo"] for r in rows if r["gstate"] not in ("GAME", "GAME_RECHECK")]
+    c4 = not bad
+    if bad: print("C4 GAME      FAIL -> " + ", ".join(bad))
 print("C4 GAME      %s  every demo produced in-game FPS past the loading overlays"
       % ("PASS " if c4 else "FAIL "))
 print()
+if soak_mode:
+    print()
+    print("MODE: single-session soak. C2 is ADVISORY here - the tree pool is process-wide, so a")
+    print("      vegetation-heavy demo loaded late can be granted fewer slots than the same demo")
+    print("      loaded cold. Compare a soak run against the previous SOAK run, not a fresh one.")
+    c2 = True
 print("VERDICT: %s" % ("CLEAN - passes the release gate" if (c1 and c2 and c3 and c4)
                        else "NOT CLEAN - see failing criteria above"))
 print()
