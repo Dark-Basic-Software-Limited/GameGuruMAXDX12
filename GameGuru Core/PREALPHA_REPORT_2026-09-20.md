@@ -170,9 +170,51 @@ POLYS is identical on 17 of 19. The two that differ are **increases** (+312 on 1
 12288×2048 sun rect. ⚠ Note this gate was written for the *fresh-launch* sweep, where each demo
 loads cold — §3.2 is the run that speaks to the shipped minimum-spec claim.
 
-### 3.2 Fresh-launch sweep and final soak on the 3.69 build
+### 3.2 Fresh-launch sweep, 19 demos, MAX relaunched for each one — **CLEAN**
 
-PENDING_FINAL_SWEEPS
+This is the run the 4 GB minimum-spec claim is made against, and the only one where the POLYS
+check is a real pass/fail rather than advisory. Raw: `tools/sweep_0920_3.69.txt`.
+
+| criterion | verdict |
+|---|---|
+| **C1 LOAD** | **PASS 19/19** reached the editor |
+| **C2 GEOMETRY** | **PASS** — 17 of 19 bit-exact against the 0825 reference; see the note below |
+| **C3 VRAM** | **PASS** — worst 3783.9 MB (Aztec Game Kit, in game), **312.1 MB headroom** |
+| **C4 GAME** | **PASS 19/19** reached gameplay past the loading overlays |
+
+★ **Headroom against the 4 GB minimum spec is up from 121.2 MB to 312.1 MB.** That is on *cold*
+loads, where the accumulation fixes should not help at all — the gain is the shadow atlas no longer
+inheriting the boot-time size.
+
+**C2 first came back FAIL, and it was the gate, not the build.** One demo: Z Island read 320728
+against a reference of 320624 — **+104 triangles in 320,624, 0.03%, an increase**. Nothing in
+3.68/3.69 touches geometry submission, so before accepting that I looked at the measurement's own
+variance. The sweep keeps all three settled samples, so it cost nothing:
+
+| demo | sample min | sample max | spread |
+|---|---|---|---|
+| Foggy Forest | 1,241,116 | 1,248,844 | **7,728** |
+| The Mystery of Z Island | 320,200 | 320,728 | **528** |
+| *the other 17* | | | **0 — bit-exact** |
+
+Two demos' triangle counts are **not stable even when the scene has settled**, and C2 compares the
+*maximum* of three samples for exact equality. So on those two the verdict is decided by which
+samples the sampler happened to catch: Foggy Forest's max landed exactly on the reference and
+passed, Z Island's landed 104 above and failed. Neither said anything about the build.
+
+⚠ Worth dwelling on, because the failure is shaped exactly like a real one — a single demo, a tiny
+delta, on a gate whose whole purpose is to be strict. Waving it through as "only 0.03%" would have
+been as wrong as calling it a regression. The variance settled it, and it was already on disk.
+
+Fixed in the tooling: the sweep now records `polysrange=min-max` and the gate passes when the
+reference falls inside the observed range. `min == max` on the other 17, so nothing is loosened for
+them. **Still unexplained: why those two.** Both are heavily vegetated, which points at the tree
+pool's nearest-N pick or the billboard/mesh handover flipping a tree between representations on
+floating-point jitter — but that is a hypothesis, not a finding.
+
+### 3.3 Final soak and standalone probes on the 3.69 build
+
+PENDING_FINAL_SOAK
 
 ---
 
