@@ -156,9 +156,11 @@ Per demo, editor VRAM, in load order:
 | The Mystery of Z Island | 5743.3 | 4350.4 | −1392.9 | +840 |
 | Trapped | 5121.6 | 3484.1 | **−1637.5** | same |
 
-★ **The savings grow monotonically with load order** — −47 MB at load 1, −604 by load 4, −1204 by
-load 14, −1637 by load 19. That shape is the proof. A fix that removed a fixed cost would save the
-same amount everywhere; one that removes *accumulation* saves more the longer the session runs.
+★ **The saving grows with load order** — −47 MB at load 1, −604 by load 4, −1204 by load 14,
+−1637 by load 19. Regressed against load position that is **−80.1 MB per position, r² 0.947**
+(four small dips, at positions 5, 7, 9 and 17, where a lighter demo followed a heavier one).
+**That shape is the proof.** A fix that removed a fixed cost would save the same amount everywhere;
+one that removes *accumulation* saves more the longer the session has been running.
 
 POLYS is identical on 17 of 19. The two that differ are **increases** (+312 on 1.41M, +840 on 240k)
 — tree-pool slots granted, not geometry lost.

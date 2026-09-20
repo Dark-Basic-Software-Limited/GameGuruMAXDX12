@@ -12113,8 +12113,10 @@ Against the same sweep on the pre-fix build:
 | loads over the 4096 MB gate | 16 of 19 | **3 of 19** |
 | worst single demo saving | - | **-1637.5 MB (Trapped)** |
 
-★ **The savings grow monotonically with load order** - -47 MB on load 1, -604 by load 4, -1204 by
-load 14, -1637 by load 19. That shape IS the proof: a fix that removed a fixed cost would save the
+★ **The saving grows with load order** - -47 MB on load 1, -604 by load 4, -1204 by load 14,
+-1637 by load 19; regressed against load position that is **-80.1 MB per position, r2 0.947**, with
+four small dips where a lighter demo followed a heavier one (it is a strong trend, not a monotone
+sequence - I wrote monotone first and it is not true). That shape IS the proof: a fix that removed a fixed cost would save the
 same amount everywhere; one that removes ACCUMULATION saves more the longer the session runs.
 
 POLYS is identical on 17 of 19. The two that differ (Aztec Teaser +312 on 1.41M, Z Island +840 on
