@@ -12162,3 +12162,49 @@ debris for exactly this decision.
 ⚠ Unverifiable by construction: I cannot reproduce a device removal on demand, so these guards are
 reasoned, not tested. They are null checks on a path whose current alternative is an AV, so the
 risk of adding them is as close to zero as a code change gets - but they are not proven.
+
+
+## 3.69b - WHERE THE REMAINING SHADOW MEMORY ACTUALLY GOES (2026-09-20)
+
+With 3.68/3.69 in, the atlas finally tracks the level: across the 19-demo soak it lands anywhere
+from **8 MB to 256 MB and moves both ways**, which is the direct disproof of grow-only that 3.67
+predicted. Per-load final sizes: 20, 16, 256, 256, 8, 16, 256, 16, 256, 16, 256, 256, 256, 24, 16,
+56, 160, 128, 192, 24 MB.
+
+**Eight of twenty loads end at exactly 16384x4096 = 256 MB, and that is not a leak - it is the
+per-character dedicated shadow feature doing what it was designed to do.** The comment that
+explains it has been sitting in `wickedcalls_part3.cpp` since 2026-07-30:
+
+> *"CAP: 5x2048 sun cascades + 3x2048 dedicated slots exactly fill the 16384 atlas cap (1.58b);
+> a 4th slot would make the packer silently shrink ALL slices."*
+
+`g_iCharShadowMax = 3`, so a level with characters visible and a 2048 cascade resolution asks for a
+sun rect of **8 slices x 2048 = 16384 wide**. Nothing is wrong with the width.
+
+### The waste is the HEIGHT, and it is a packer artefact
+
+The sun rect is 16384x**2048**. The locals are tiny - measured on Z Island,
+`1536x256`, `768x128`, `768x128`. But `pack()` only ever DOUBLES, so the moment a local rect cannot
+share the sun's row the height goes 2048 -> **4096** and the atlas doubles. Roughly **half of a
+256 MB atlas is empty space** bought to hold a few hundred rows of small rects.
+
+Worked example from a real dump (Z Island, `DUMP_SHADOWRECTS`):
+- sun `12288x2048`, locals `1536x256` + `768x128` + `768x128`
+- allocated: `12288x4096` = **192 MB**
+- minimal containing box: `12288x2304` = **108 MB**
+- **-84 MB on that level alone**, and more on the eight 16384-wide ones.
+
+★ **The fix is not a different layout, it is a trim.** After a successful `pack()`, the true extent
+is `max(rect.y + rect.h)` over the packed rects, and no rect can lie outside it by construction. Set
+`vis.shadow_packer.height` to that before `CreateTexture`. The rects are already placed and their
+coordinates do not move, so nothing in the shadow render or sample path needs to know.
+
+⚠ **NOT done tonight, deliberately.** It is a change to the shadow atlas the night before a tester
+build, it affects every level, and its failure mode is visibly corrupted shadows rather than a
+crash - so it wants a visual A/B that nobody was awake to give it. It is the single largest
+remaining VRAM item and it is cheap; it just is not a 3 a.m. change.
+
+★ **A second, zero-code mitigation for the same demos:** cascade resolution is a per-level saved
+value, and 3.44 changed the default for a NEW level from 2048 to 1024. The eight demos at 256 MB are
+carrying 2048 from old saves. Re-saving them at 1024 halves the sun rect and therefore the atlas -
+Lee's call, since it is a visual quality trade on shipped content.
