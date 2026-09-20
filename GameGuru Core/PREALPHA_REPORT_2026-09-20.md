@@ -339,11 +339,39 @@ Nothing here blocks a pre-alpha. In the order I would take them.
 |---|---|---|---|---|
 | 1 | **Level-load gamma fade-in is dead.** The ramp is fully intact and both consumer lines at `G-Lighting.cpp:341-346` are a bare `;` with a TODO. | MED — DX11 hid level-load construction artefacts behind an 84-frame fade; DX12 shows them | **not as cheap as the audit said** — see below | do it next, with eyes on it |
 | 2 | **Env-probe release fade** — `g_bEnvProbeTrackingUpdate[...] = false` fires unconditionally on both branches (`GGTerrain_part0.cpp:9561`, `:9606`), so the range decrements once and the probe is parked on the next statement | MED — probes pop leaving an indoor volume | small | after 1 |
-| 3 | **Sun cascade strip is one row.** Z Island's 6 cascades at 2048 make a 12288×2048 rect and the packer then needs 12288×4096. Two rows of three would be 4096×4096 for the same pixels | ~130 MB on the heaviest demos — the largest remaining shadow-memory item | **large**: engine rect layout *and* every shader that indexes it | not this alpha |
+| 3 | **Trim the shadow atlas to the packed extent.** See below — this is now the largest remaining VRAM item and it is *small*, not large. | **~84 MB measured on one level, more on eight others** | small, but needs a visual A/B | first thing after the alpha ships |
 | 4 | **PP Snow residue** — `bPPSnow` still gates an every-15th-frame indoor `IntersectAllEx` raycast whose result is discarded with `(void)iHitObj;` (`M-Game_part3.cpp:342`) | none visible, wasted work | tiny | free win when you are next in that file |
 | 5 | **Procedural-preview fog** — `M-TerrainNew_part5.cpp:888` is a bare `;`; replacement field `weather->gg_fog_opacity` exists | LOW | tiny | verify first — the sibling branch may be inert too |
 | 6 | **`enablepixmarkers` reads nowhere** — parsed in two places, `setup.ini` ships `=1` against a key nothing reads | none | tiny | restore the crash-log print, or delete the key |
 | 7 | **`_ConvertFormat` bypassed by a numerically wrong cast** (`wickedcalls_part3.cpp:1877`) — `wiGraphics::Format` and `DXGI_FORMAT` do **not** share values, so a BC1 atlas is reported ~4× too large | LOW — only via `memgeneratedump=1`, but the VRAM campaign reads that log | small | fix with the `MaterialGetSRV` stub or not at all |
+
+**On item 3 — where the remaining shadow memory actually goes.** Eight of the twenty soak loads
+end at exactly 16384×4096 = **256 MB**, and that is *not* a leak. It is the per-character dedicated
+shadow feature working as designed: `g_iCharShadowMax = 3`, and the comment that chose that number
+has been in `wickedcalls_part3.cpp` since 2026-07-30 — *"5x2048 sun cascades + 3x2048 dedicated
+slots exactly fill the 16384 atlas cap"*. The **width** is correct.
+
+**The waste is the height, and it is a packer artefact.** The sun rect is 16384×**2048**; the local
+rects are tiny (measured on Z Island: `1536x256`, `768x128`, `768x128`). But `pack()` only ever
+doubles, so the moment one local cannot share the sun's row the height goes 2048 → **4096** and the
+atlas doubles. Roughly half of a 256 MB atlas is empty space bought to hold a few hundred rows of
+small rects. Worked from a real dump — Z Island allocates `12288x4096` = **192 MB** where the
+minimal containing box is `12288x2304` = **108 MB**.
+
+★ The fix is a **trim**, not a new layout: after a successful `pack()` the true extent is
+`max(rect.y + rect.h)` over the packed rects, and no rect can lie outside it by construction. Set
+the height to that before `CreateTexture`; the rects are already placed and nothing in the shadow
+render or sample path needs to know. I did not do it tonight because its failure mode is *visibly
+corrupted shadows* rather than a crash, and nobody was awake to eyeball it.
+
+★★ **Two levers you can pull with no code at all**, if you want the heaviest demos under 4 GB
+sooner:
+- `SET_CHARSHADOW 0..3` is a live harness knob. Dropping from 3 slots to 0 takes the sun rect from
+  8×2048 to 5×2048 and should take those atlases from 16384 to 10240 wide. §3.3 has the measurement.
+- Cascade resolution is a **per-level saved value**, and 3.44 changed the default for a *new* level
+  from 2048 to 1024. The demos sitting at 256 MB are carrying 2048 from old saves; re-saving them at
+  1024 halves the sun rect. That is a visual-quality trade on shipped content, so it is your call,
+  not mine.
 
 **On item 1, a correction to the earlier audit.** It called this cheap and it is not quite. The
 replacement lever is `master_renderer->setBrightness`, and brightness is an **additive offset after
