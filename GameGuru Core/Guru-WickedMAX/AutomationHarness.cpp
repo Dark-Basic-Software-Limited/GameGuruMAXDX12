@@ -3127,7 +3127,7 @@ static void Sotan_Tick(void)
 // helper per the C1061 pattern. Returns true if cmd was handled.
 extern "C" int GGAuto_MapScreenActionName(const char* name); // M-GridEditB_part22.cpp
 namespace wi { namespace renderer {
-	uint32_t GG_GetShadowRects(uint32_t* entities, int* widths, int* heights, int* types, uint32_t maxn, float* scale); // engine 2.06
+	uint32_t GG_GetShadowRects(uint32_t* entities, int* widths, int* heights, int* types, uint32_t maxn, float* scale, int* slices); // engine 2.06, slices 3.68
 } }
 // GGMAX 2026-08-06: shadow-budget commands hoisted out of the main dispatch chain —
 // adding SET_SHADOW_MAX_SPOT/_POINT as chain links re-hit MSVC C1061 (every else-if
@@ -3514,12 +3514,17 @@ static bool AutoHarness_StandaloneCommands(const char* cmd, const char* arg, cha
 	{
 		// Spot-shadow flicker hunt: the packer's final scale + every packed light rect.
 		// A light's rect size changing with camera POSE = the flicker mechanism.
-		uint32_t ents[64]; int ws[64], hs[64], tys[64]; float scale = 0.0f;
-		uint32_t n = wi::renderer::GG_GetShadowRects(ents, ws, hs, tys, 64, &scale);
-		int off = _snprintf(result, resultSize, "OK: pack_scale=%.4f rects=%u\n", scale, n);
+		// GGMAX 3.68: ws/hs are now the PACKED rect (what the packer's containing size is computed
+		// from); sl is the slice multiplier, so the per-cascade/per-face size is w/slices.
+		uint32_t ents[64]; int ws[64], hs[64], tys[64], sl[64]; float scale = 0.0f;
+		uint32_t n = wi::renderer::GG_GetShadowRects(ents, ws, hs, tys, 64, &scale, sl);
+		int packw = 0, packh = 0;
+		for (uint32_t i = 0; i < n; ++i) { if (ws[i] > packw) packw = ws[i]; if (hs[i] > packh) packh = hs[i]; }
+		int off = _snprintf(result, resultSize, "OK: pack_scale=%.4f rects=%u maxrect=%dx%d\n", scale, n, packw, packh);
 		for (uint32_t i = 0; i < n && off > 0 && off < (int)resultSize - 64; ++i)
 		{
-			off += _snprintf(result + off, resultSize - off, "  ent=%u type=%d %dx%d\n", ents[i], tys[i], ws[i], hs[i]);
+			off += _snprintf(result + off, resultSize - off, "  ent=%u type=%d packed=%dx%d slices=%d per=%dx%d\n",
+				ents[i], tys[i], ws[i], hs[i], sl[i], sl[i] > 0 ? ws[i] / sl[i] : ws[i], hs[i]);
 		}
 		result[resultSize - 1] = 0;
 		return true;

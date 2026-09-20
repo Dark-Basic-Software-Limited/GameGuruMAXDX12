@@ -1089,6 +1089,12 @@ void mapfile_loadproject_fpm ( void )
 				LoadTerrainTextureFolder("custommaterials.dat");
 			}
 
+			// GGMAX 3.68: drop the grass material cache for the OUTGOING level before this one's
+			// paint data is applied. It is lazy and rebuilds on first sighting of each type, so the
+			// incoming level reloads exactly the DDS set it paints - instead of inheriting the union
+			// of every level visited this session (4 resident at boot, 40 by load 20, ~47 MB).
+			GGTerrain::GGTerrainWicked_ReleaseGrassMaterials();
+
 			//PE: Restore Paint Texture Data.
 			terrain_paint_size = GGTerrain::GGTerrain_GetPaintDataSize();
 			data = new char[terrain_paint_size];

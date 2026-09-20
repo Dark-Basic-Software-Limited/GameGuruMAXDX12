@@ -11981,3 +11981,118 @@ level-load leaks), 3.66 (depth keep-alive removed, shadow atlas exonerated and a
 3.67 (lessons + the ranked plan). Tooling added: `tools/demo_soak_sweep.sh`,
 `tools/vram_union_sweep.sh`, `tools/vramleak_probe.sh`, `tools/soak_settle_repeat.sh`,
 `tools/union_analyse.py`, `tools/compare_runs.py`, `tools/soak_analyse.py`.
+
+## 3.68 - THE LAST THREE VRAM SUSPECTS, AND A CORRECTION TO 3.67 (2026-09-20)
+
+Lee's brief: *"do fixes and a FULL demo sweep for 8 hours autonomously to make sure we are ready to
+send out a pre-alpha."* This is the fixes half; the sweep results are below it.
+
+All three remaining suspects from 3.67's ranked table are now fixed, and all three turned out to be
+**the same defect shape yet again** - a per-level value living in a process-lifetime global:
+
+| suspect | mechanism | measured |
+|---|---|---|
+| shadow packer containing size | `State::clear()` keeps width/height by design; `pack()` only doubles | Teaser after a heavy level **272,629,760 -> 17,039,360 bytes** |
+| grass material cache | `g_grassMaterials[]` lazy, never reset | same-level reload **5 -> 25 grassbank records, +26.1 MB** |
+| MSAA outline RTs | created under an MSAA guard, never released when MSAA goes off | ~12 MB |
+
+### ★★★ FIRST, A CORRECTION: 3.67's arithmetic was wrong, and it was wrong because of a bug I
+### was fixing in the same breath.
+
+3.67 argued that 12288 and 16384 were **unreachable from the rects** - that `h` reads 512, which
+pins `max_shadow_resolution_2D * iterative_scaling` at 512, so with `cascade_count` bounded [5,8]
+the widest possible sun rect is 4096. That reasoning rested on `DUMP_SHADOWRECTS`, and
+`DUMP_SHADOWRECTS` was **reporting the sun's width divided by `cascade_count` and its height not
+divided at all** - it read `visibleLightShadowRects[]`, which by that point has had the slice
+multiplier removed. I used a broken instrument to bound a quantity and did not notice that the
+instrument was the very thing the same section told me to go and fix.
+
+With the accessor fixed (it now reports the packed rect plus the slice count), one run settles it:
+
+```
+Aztec Teaser     : ent=2 type=0 packed=4096x512    slices=8  per=512x512
+Mystery of Z Isl : ent=2 type=0 packed=12288x2048  slices=6  per=2048x2048
+```
+
+**Z Island genuinely wants a 12288-wide sun rect** - 2048 cascade resolution x 6 cascades. The
+heavy level's big atlas was never the bug. The bug was only ever that the *light* level could not
+get its own size back afterwards. ★ **A bound derived from an instrument is only as sound as the
+instrument** - and an instrument you have already decided to fix should not be used to close an
+argument first.
+
+### The shadow packer fix, and why it is two changes not one
+
+`wi::rectpacker::State::clear()` clears the rect list and deliberately keeps `width`/`height` (its
+own comment says so). `add_rect()` only ever grows them. `pack()` starts from the current size and
+only ever DOUBLES - it never searches downward. And `vis.shadow_packer` lives inside
+`RenderPath3D::visibility_main`, i.e. for the whole process, with `Visibility::Clear()` never
+touching it. So the containing size was a session high-water mark.
+
+`wiRenderer.cpp:5113` now zeroes `width`/`height` immediately after `clear()`, inside the
+`iterative_scaling` loop so each retry recomputes from scratch. ⚠ **NOT in `State::clear()`** -
+`State` has exactly two users and the other, `wiFont.cpp`'s glyph atlas, legitimately wants the
+ratchet.
+
+That alone is not enough, and this is the part worth remembering: **the reset fixes what the packer
+ASKS FOR; 3.66's armed shrink is what lets the atlas ANSWER.** Either one without the other does
+nothing - which is exactly why 3.66 measured as a no-op and was written up as "the atlas is
+exonerated, an input survives a level load". It was right about the input and wrong to conclude the
+shrink was useless. The trace shows the two halves working together:
+
+```
+GGATLAS create: 1x1        -> 5120x1024   (discarded retained bound 0x0)          lights=1
+GGATLAS noshrink: atlas 5120x1024   packer 4096x1024  (need packer*2 <= atlas)
+GGATLAS create: 5120x1024  -> 12288x4096  (discarded retained bound 4096x1024)    lights=4
+GGATLAS create: 12288x4096 -> 4096x1024   (discarded retained bound 12288x4096)   lights=26
+```
+
+Line 3 is the whole fix in one line: the packer reports 4096x1024 for the Teaser even though it
+just came off a level that needed 12288x4096, the arm permits the shrink, and the atlas lands on
+the Teaser's own size. Before 3.68 that third create never happened at all.
+
+**Two savings, not one.** The obvious one is the light level after a heavy one: **272,629,760 ->
+17,039,360 bytes, -255.6 MB**. The second is easy to miss - the heavy level ITSELF dropped
+**272,629,760 -> 204,472,320 (-68.2 MB)**, because the retained ratchet had been rounding its
+genuine 12288x4096 request up to 16384x4096.
+
+⚠ Note line 2: a cold Teaser sits at 5120x1024 while wanting 4096x1024 and cannot shrink, because
+the shrink demands `packer*2 <= atlas` and 8192 > 5120. That is the anti-thrash gate working as
+designed, and 4 MB is the right price for it. Do not "fix" it by loosening the gate.
+
+### Grass material cache
+
+`g_grassMaterials[GGGRASS_TOTAL_REAL_TYPES]` + `g_grassMaterialReady[]` (`GGTerrainWicked.cpp`
+~:1483) are built lazily on first sighting of a type and **were never reset**, so the cache
+converged on the union of every grass type any level in the session painted.
+
+The confirmation came free from the packer probe rather than from a dedicated run: loading Teaser
+-> Z Island -> Teaser and diffing the two Teaser censuses gives **grassbank 5 records -> 25
+records, +26.1 MB, on a reload of the same level**. Same-level reload holds content constant, so
+those 20 extra DDS are Z Island's, retained.
+
+Fixed by `GGTerrainWicked_ReleaseGrassMaterials()`, called once per level load from the map loader
+next to 3.65's paint-map reset. Safe to drop wholesale because **nothing holds a pointer into the
+array** - the chunk CREATE branch does `scene.materials.Create(grassEntity) = *mat;`, a COPY, so a
+live hair entity keeps its own texture reference. The cache refills lazily; a level that paints
+three types pays three DDS loads, which is what it paid the first time.
+
+### MSAA outline render targets
+
+`rt_MSAAOutline`, `_Red` and `_Blue` are created under `if (getMSAASampleCount() > 1)` in
+`MasterRenderer::ResizeBuffers` and nothing released them when MSAA went off - the branch was
+simply skipped. MSAA is per-level (`visuals->iMSAASampleCount`), so a level with it on left ~12 MB
+of multisampled R8 targets resident for the rest of the process. Added the `else` that clears them.
+Safe at that point because the three outline RenderPasses are rebuilt unconditionally a few lines
+below and, with MSAA off, reference only the single-sample `rt_Outline*` - which matters because
+`RenderPassAttachment` holds its Texture BY VALUE and is exactly the trap that made the 3.65 gpup
+fix only half a fix.
+
+### Still open after this, deliberately
+
+- **The sun cascade strip is laid out as one row.** Z Island's 6 cascades at 2048 make a
+  12288x2048 rect, and the packer then needs 12288x4096 for it plus the locals. Two rows of three
+  would be 4096x4096 for the same pixels - ~130 MB back on the heaviest demos. That is an engine
+  change to the cascade rect layout AND to every shader that indexes into it; not a pre-alpha job,
+  but it is the single largest remaining shadow-memory item.
+- **A cold boot atlas of 5120x1024 for one light.** Created at frame 0 before any level exists.
+  Harmless (4 MB over) but it is why load 1 cannot reach 4096x1024.

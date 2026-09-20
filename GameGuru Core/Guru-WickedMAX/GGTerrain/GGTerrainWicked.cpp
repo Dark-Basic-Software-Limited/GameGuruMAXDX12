@@ -1482,6 +1482,34 @@ static bool FillChunkBlendmapGG(wi::terrain::ChunkData& cd, const wi::scene::Mes
 // in ProcessGrassChunks, so a level that uses 3 grass types pays for 3 DDS loads, not 46.
 static wi::scene::MaterialComponent g_grassMaterials[GGGRASS_TOTAL_REAL_TYPES];
 static bool                         g_grassMaterialReady[GGGRASS_TOTAL_REAL_TYPES] = {};
+unsigned int gg_dbg_grass_materials_released = 0; // 3.68 diag: cumulative cache entries dropped
+
+// GGMAX 3.68: drop every cached grass material. The cache above is lazy and was NEVER reset, so
+// it is a process-lifetime union of every grass type any level in the session painted - 4 resident
+// DDS at boot became 40 by the twentieth level load (~47 MB, strictly monotone, nothing evicted).
+// Same defect shape as 3.65's terrain paint map and 3.68's rect packer: a PER-LEVEL value living
+// in a process-global that the next level only overwrites if it happens to supply one.
+//
+// Safe to drop wholesale because nothing holds a pointer into g_grassMaterials[]: every consumer
+// either reads it immediately or COPIES it (`scene.materials.Create(grassEntity) = *mat;` in the
+// chunk CREATE branch), so a live hair entity keeps its own texture reference and is unaffected.
+// The cache simply refills lazily - a level that paints three grass types pays three DDS loads,
+// which is exactly what it paid the first time.
+namespace GGTerrain {   // the cache statics above sit at global scope in this TU; the public
+                        // entry point must be namespace-qualified to match the header.
+void GGTerrainWicked_ReleaseGrassMaterials()
+{
+	int released = 0;
+	for (uint32_t t = 0; t < (uint32_t)GGGRASS_TOTAL_REAL_TYPES; t++)
+	{
+		if (!g_grassMaterialReady[t]) continue;
+		g_grassMaterials[t] = wi::scene::MaterialComponent();
+		g_grassMaterialReady[t] = false;
+		released++;
+	}
+	gg_dbg_grass_materials_released += released;
+}
+} // namespace GGTerrain
 
 // Build one cached grass material from Files/grassbank/<filename>. Returns nullptr on bad index.
 // Kelp/seaweed sprites have authored _normal.dds siblings; we wire those in when present.

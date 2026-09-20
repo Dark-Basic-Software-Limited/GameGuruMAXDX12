@@ -9,6 +9,8 @@ namespace GGTerrain
 	void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera);
 	void GGTerrainWicked_EnforceHidden(); // GGMAX 2.68i: empty-mode sweep for when the main loop SKIPS GGTerrainWicked_Update
 	void GGTerrainWicked_Shutdown();
+	// GGMAX 3.68: drop the lazy per-grass-type material cache (call once per level load).
+	void GGTerrainWicked_ReleaseGrassMaterials();
 	void GGTerrainWicked_OnPaintDataChanged();
 
 	// Phase 6 sculpt/paint bridge: forward a GGTerrain_InvalidateRegion to the Wicked

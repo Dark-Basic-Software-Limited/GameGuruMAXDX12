@@ -1099,6 +1099,19 @@ void MasterRenderer::ResizeBuffers(void)
 			hr = device->CreateTexture(&desc, nullptr, &rt_MSAAOutline_Red);
 			hr = device->CreateTexture(&desc, nullptr, &rt_MSAAOutline_Blue);
 		}
+		else
+		{
+			// GGMAX 3.68: these three only exist while MSAA is on, and nothing released them when
+			// it went off - ResizeBuffers simply skipped the branch and left ~12 MB of multisampled
+			// R8 targets resident for the rest of the process. Safe to drop here because the three
+			// outline RenderPasses are rebuilt unconditionally a few lines below and, with MSAA off,
+			// reference only the single-sample rt_Outline* - RenderPassAttachment holds its Texture
+			// BY VALUE, so a pass still holding one of these would otherwise keep it alive (the trap
+			// that made the 3.65 gpup fix only half a fix).
+			rt_MSAAOutline = wiGraphics::Texture();
+			rt_MSAAOutline_Red = wiGraphics::Texture();
+			rt_MSAAOutline_Blue = wiGraphics::Texture();
+		}
 		assert(SUCCEEDED(hr));
 	}
 

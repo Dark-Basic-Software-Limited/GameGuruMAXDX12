@@ -18,7 +18,7 @@
 # ============================================================================================
 set -u
 D="/d/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
-OUT="/c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/soak0919"
+OUT="${1:-/c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/soak0919}"
 mkdir -p "$OUT/perf" "$OUT/shots"
 RES="$OUT/results.txt"
 LOG="$OUT/progress.log"
