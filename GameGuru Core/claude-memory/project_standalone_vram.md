@@ -30,6 +30,14 @@ would make it nothing. Test Game refutes it: same gameplay, player spawned, same
 textures stay reduced, census reads LOWER than the editor. **Six minutes of discriminator changed
 the conclusion completely.**
 
+★★★ **THE MECHANISM, from DUMP_STREAM.** For the **330 textures present in both** Test Game and
+standalone, at matched conditions: **279 are BIGGER in standalone, 51 the same, ZERO smaller.**
+Typical: `wall i_color.dds` 256x256 -> 4096x4096, `jungle grass_color.dds` 128x128 -> 4096x4096.
+**The streaming system reduces resident texture size in the editor and Test Game and does not in
+standalone.** ⚠ Test Game's tiny entries are streaming working AS DESIGNED on a stationary camera;
+a walking player would promote some. What is established is that standalone does NO reduction under
+identical conditions.
+
 ⚠ **"Streaming is off in standalone" is REFUTED** - `DUMP_STREAM` shows comparable enrollment in all
 three modes (streaming-enabled materials 1132 editor / 1346 Test Game / 1239 standalone). I ruled
 out the obvious cause and did not find the real one. Next, in order: does the standalone load path

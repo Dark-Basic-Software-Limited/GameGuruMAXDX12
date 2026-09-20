@@ -12349,6 +12349,23 @@ holds **293 FEWER resources** than Test Game and still uses **954 MB more**. Few
 memory, can only mean the things are bigger. Every demo tried lands between +950 and +1520 MB, so
 this is the standalone path's normal behaviour, not a quirk of one level.
 
+### The mechanism, from the streaming system's own dump
+
+`DUMP_STREAM` lists each material's resident slot dimensions. For the **330 textures present in
+both** Test Game and standalone, at matched conditions (stationary camera, 90 s settle, same level):
+**279 are BIGGER in standalone, 51 the same, and ZERO smaller.** Typical: `wall i_color.dds`
+256x256 -> 4096x4096, `jungle grass_color.dds` 128x128 -> 4096x4096.
+
+★★★ **So the streaming system reduces resident texture size in the editor and Test Game and does
+not in standalone.** It is not that streaming is absent - enrollment is comparable in all three
+modes and the standalone materials carry non-null feedback pointers. **It is enrolled and it is not
+reducing.**
+
+⚠ Fair to the measurement: Test Game's 128x128 entries are streaming working AS DESIGNED on a
+stationary camera; a player walking the level would promote some. The comparison establishes that
+standalone does NO reduction under identical conditions, not that Test Game's figure is the steady
+state of real play.
+
 ### What it is NOT
 
 - **Not a regression from tonight.** Nothing in 3.68/3.69 touches texture residency, and this path

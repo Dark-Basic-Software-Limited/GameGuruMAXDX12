@@ -336,20 +336,34 @@ refutes that: it spawns the player, runs the same gameplay, waits the same 90 se
 textures stay reduced. It reads *lower* than the editor. So this belongs to the **standalone path
 specifically**, which is the mode a finished game ships in.
 
-**I ruled out the obvious cause and did not find the real one.** The first hypothesis was that
-texture streaming simply is not running in standalone. `DUMP_STREAM` refutes it — the system is
-enrolled at comparable rates in all three modes:
+**The mechanism, from the streaming system's own dump.** `DUMP_STREAM` lists every material's
+resident slot dimensions. Comparing Test Game against standalone, for the **330 textures present in
+both**, at matched conditions (stationary camera, 90 s settle, same level):
 
-| mode | materials | non-null feedback ptr | streaming enabled / disabled |
-|---|---|---|---|
-| editor | 1264 | 169 | 1132 / 67 |
-| Test Game | 1548 | 106 | 1346 / 67 |
-| standalone | 1414 | 102 | 1239 / 63 |
+| | count |
+|---|---|
+| **bigger in standalone** | **279** |
+| same size | 51 |
+| **smaller in standalone** | **0** |
 
-So streaming is on and materials are enrolled; something else decides residency. The candidates I
-would test next, in order: whether the standalone load path requests the full-size resource before
-enrollment happens (so there is nothing to demote from), whether demotion is gated on something the
-standalone loop does not run, and whether `texturedetail` is applied on that path at all.
+Typical rows: `wall i_color.dds` **256×256 → 4096×4096**, `jungle grass_color.dds`
+**128×128 → 4096×4096**, `weapon_color.dds` **256×256 → 4096×4096**. Not one texture is smaller in
+standalone.
+
+So: **the streaming system keeps resident textures at reduced size in the editor and in Test Game,
+and holds them at full source resolution in standalone.** The first hypothesis — that streaming
+simply is not running in standalone — is refuted by the same dump: enrollment is comparable in all
+three modes (streaming-enabled materials 1132 editor / 1346 Test Game / 1239 standalone), and the
+standalone materials carry non-null feedback pointers. It is enrolled and it is not reducing.
+
+⚠ To be fair to the measurement: Test Game's 128×128 entries are streaming working *as designed*
+on a stationary camera — a player walking the level would promote some of them. What the comparison
+establishes is that standalone does **no** such reduction under identical conditions, not that
+Test Game's figure is the steady state of real play.
+
+**Where I would look next**, in order: does the standalone load path request the full-size resource
+*before* enrollment, leaving nothing to demote from; is demotion gated on something the standalone
+loop does not run; is `texturedetail` applied on that path at all.
 
 **Why it matters, stated carefully.** 4235 MB of driver usage on a 16 GB card does not mean a crash
 on a 4 GB card — the driver would demote and evict rather than fail. But it does mean the working
