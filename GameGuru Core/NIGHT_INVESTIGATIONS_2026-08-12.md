@@ -12096,3 +12096,69 @@ fix only half a fix.
   but it is the single largest remaining shadow-memory item.
 - **A cold boot atlas of 5120x1024 for one light.** Created at frame 0 before any level exists.
   Harmless (4 MB over) but it is why load 1 cannot reach 4096x1024.
+
+
+## 3.69 - THE SHRINK MUST WAIT FOR THE LEVEL TO SETTLE, AND THE CRASH REPORTER MUST NOT CRASH (2026-09-20)
+
+### The 19-demo soak sweep on the 3.68 build - the result first
+
+19/19 editor, 19/19 Test Game, 0 restarts, 0 blank frames, session ended back at the hub.
+Against the same sweep on the pre-fix build:
+
+| | 0919 pre-fix | 0920 with 3.68 |
+|---|---|---|
+| accumulation across load order | **+90.1 MB/load, r2 0.71** | **+9.9 MB/load, r2 0.03** |
+| first load -> last load | 3107.7 -> 5121.6 MB | 3060.6 -> **3484.1 MB** |
+| peak in session | 5743.3 MB | **4350.4 MB** |
+| loads over the 4096 MB gate | 16 of 19 | **3 of 19** |
+| worst single demo saving | - | **-1637.5 MB (Trapped)** |
+
+★ **The savings grow monotonically with load order** - -47 MB on load 1, -604 by load 4, -1204 by
+load 14, -1637 by load 19. That shape IS the proof: a fix that removed a fixed cost would save the
+same amount everywhere; one that removes ACCUMULATION saves more the longer the session runs.
+
+POLYS is identical on 17 of 19. The two that differ (Aztec Teaser +312 on 1.41M, Z Island +840 on
+240k) are both INCREASES, i.e. tree-pool slots granted rather than geometry lost.
+
+### But the trace showed 2.8 atlas creates per level load, and that is one too many
+
+3.68 made the atlas track the level, and the `gg_atlas` trace then showed the cost of doing it
+naively - 54 creates across 19 loads, in a repeating shape:
+
+```
+GGATLAS create: 16384x4096 -> 4096x512   packedrects=1/1 visiblelights=1   <- load transient
+GGATLAS create: 4096x512   -> 4096x1024  packedrects=4/4 visiblelights=4   <- settled level
+```
+
+The one-shot arm is consumed by the FIRST qualifying frame, and during a level load that frame has
+only the sun visible. So the atlas shrinks to the transient size, the arm is spent, and the grow
+path has to put it back as the level's real lights arrive - at one point
+`16384x4096 -> 16384x2048 -> 16384x4096` inside four frames, which is two 130-260 MB allocations
+with DX12 deferred destruction still holding the old ones. On the 4 GB minimum spec that transient
+is the last thing we want during a load, which is exactly when everything else is allocating too.
+
+Fixed by requiring the shrink condition to hold for **90 consecutive frames** before the arm is
+spent. This can only ever DELAY a shrink, never prevent a correct one: the arm persists until
+consumed, so a level that genuinely wants a smaller atlas still gets one - once, and at the right
+size. ★ The `noshrink` trace line now prints `streak=N/90`, so a shrink that never fires says why.
+
+### The crash reporter crashed
+
+`Guru-Crash.log` records an access violation on **2026-09-16 inside
+`GraphicsDevice_DX12::OnDeviceRemoved`**, reading a FREED page. That is the crash reporter faulting
+while reporting a device removal - the worst possible moment, because the report is the only
+artefact a tester can send back.
+
+Three pointers in the DRED breadcrumb walk were dereferenced with no null check, and all three can
+legitimately be null in a real DRED output: `pCommandHistory`, `pBreadcrumbContexts` (which can be
+null while `BreadcrumbContextsCount` is non-zero, when the driver kept breadcrumbs but no context
+strings), and each context's `pContextString`. All three are guarded now.
+
+★ **This is what makes it reasonable to SHIP `dred.txt` with a pre-alpha** rather than strip it.
+An armed DRED gives a tester's device-removal report real content; an unguarded walk turns that
+report into a second crash. See `tools/prealpha_clean.sh`, which lists arming files separately from
+debris for exactly this decision.
+
+⚠ Unverifiable by construction: I cannot reproduce a device removal on demand, so these guards are
+reasoned, not tested. They are null checks on a path whose current alternative is an AV, so the
+risk of adding them is as close to zero as a code change gets - but they are not proven.

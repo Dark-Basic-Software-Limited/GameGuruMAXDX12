@@ -43,7 +43,8 @@ D="/d/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
 SHOTS="$D/Files/screenshots"
 TAG="${1:-0806}"
 START_AT="${2:-0}"
-OUT="/c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12--claude-worktrees-determined-chebyshev-bf0892/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/demo_fps"
+# 2026-09-20: was hardcoded to a worktree path that no longer exists. Takes an override now.
+OUT="${1:-/c/Users/leeba/AppData/Local/Temp/claude/D--max-GameGuruMAXDX12/9a28c586-4c13-4447-916e-7fb51301bfa8/scratchpad/demo_fps}"
 mkdir -p "$OUT/run$TAG" "$OUT/shots$TAG"
 RESULTS="$OUT/results_$TAG.txt"
 

@@ -60,6 +60,21 @@ for f in "$D/Files/vram_census_"*.txt "$D/screenshots/"*.png; do
   [ $APPLY -eq 1 ] && rm -f "$f"
 done
 
+# Files/ debris. NAMED explicitly rather than pattern-matched: Files/ is mostly product and a
+# glob here would eventually eat something real.
+FILES_DEBRIS="applytransform_garbage.txt gap_trace.txt log.txt reload_quiesce.txt treepool_dump.txt videotrace.txt"
+for b in $FILES_DEBRIS; do
+  f="$D/Files/$b"; [ -e "$f" ] || continue
+  sz=$(wc -c < "$f" | tr -d " "); total=$((total+sz)); n=$((n+1))
+  printf "%10s  %-30s %s\n" "$sz" "Files/$b" "diagnostic output"
+  [ $APPLY -eq 1 ] && rm -f "$f"
+done
+for d in "Files/particlesbank_old" "Files/screenshots" "Files/testmap"; do
+  [ -d "$D/$d" ] || continue
+  sz=$(du -sk "$D/$d" 2>/dev/null | cut -f1); sz=$((sz*1024)); total=$((total+sz)); n=$((n+1))
+  printf "%10s  %-30s %s\n" "$sz" "$d/" "working directory, not product"
+  [ $APPLY -eq 1 ] && rm -rf "$D/$d"
+done
 echo
 printf "%d files, %.1f MB\n" "$n" "$(awk -v t=$total 'BEGIN{print t/1048576}')"
 if [ $APPLY -eq 1 ]; then
@@ -67,6 +82,12 @@ if [ $APPLY -eq 1 ]; then
 else
   echo "DRY RUN - nothing deleted. Re-run with --apply to remove."
 fi
+echo
+echo "LISTED BUT NOT TOUCHED - decide these yourself:"
+for b in bookcase_surface.dds books_surface.dds brass308_surface.dds; do
+  [ -e "$D/Files/$b" ] && printf "  %-32s loose surface map at Files/ root, no copy in entitybank - may be product\n" "Files/$b"
+done
+[ -d "$D/Files/savegames" ] && printf "  %-32s %s of save games from testing - a fresh install should probably not ship them\n" "Files/savegames/" "$(du -sh "$D/Files/savegames" 2>/dev/null | cut -f1)"
 echo
 echo "Also check before zipping:"
 echo "  setup.ini producelogfiles  -> should be 0 (currently: $(grep -i '^producelogfiles' "$D/setup.ini" 2>/dev/null | head -1))"
