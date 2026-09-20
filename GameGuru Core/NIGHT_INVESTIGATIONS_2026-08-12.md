@@ -12259,3 +12259,36 @@ moves, not what moves it. Worth a `DUMP_TREEPOOL` either side of a POLYS sample 
 ★ Headroom against the 4 GB minimum spec went from **121.2 MB** at the last clean gate (0826b) to
 **312.1 MB** - and that is on COLD loads, where the accumulation fixes should not help at all. The
 gain is the shadow atlas no longer inheriting the boot-time size.
+
+
+## 3.69d - THE SETTLE GATE ONLY HALF WORKED, AND I SAID OTHERWISE BEFORE MEASURING (2026-09-20)
+
+3.69 claimed the 90-frame settle gate would make the shrink "land on the settled level rather than
+on the one-light load transient". Measured on the soak sweep that followed it, atlas creates per
+level load went **2.8 -> 1.8** - a real improvement, and **not** the stated outcome. The transient
+shrink still happens:
+
+```
+GGATLAS create: 16384x4096 -> 10240x2048  packedrects=1/1 visiblelights=1   <- still the transient
+GGATLAS create: 10240x2048 -> 16384x4096  packedrects=8/8 visiblelights=8   <- the settled level
+```
+
+★ **Why 90 frames was never going to be enough: a level LOAD is not 1.5 seconds.** It is forty-odd
+seconds during which the scene legitimately has one visible light, so the shrink condition holds for
+thousands of consecutive frames and the streak sails past 90. I picked the threshold from "how long
+does a transient last" when the question was "how long does a LOAD last", and those differ by more
+than an order of magnitude.
+
+**The real fix is not a bigger number, it is a better moment.** `GG_ArmShadowAtlasShrink()` is
+called from `gridedit_clear_map()` (`M-GridEdit_part7.cpp:309`), which runs near the START of the
+load - before `entity_loadbank` / `entity_loadelementsdata` bring the level's lights in. Arming at
+the END of `gridedit_load_map()` instead would mean the first frame the gate ever sees already has
+the real light set, and one create per load would follow without any streak counting at all.
+
+⚠ **Not done tonight.** The build was frozen for the validation sweeps by then, and this is an
+efficiency nit rather than a defect: 57 level loads across three sweeps produced no failure, no
+device removal and no VRAM breach traceable to it. The cost is one extra `CreateTexture` per load.
+
+★ The honest scorecard for 3.69's settle gate: **it helped, it did not do what I said it would, and
+the number I chose came from answering the wrong question.** Keep it - 1.9 is better than 2.8 - but
+move the arm and then the gate becomes redundant.
