@@ -12533,3 +12533,91 @@ a claim.** The comment above the macro stated its claim plainly - "Reconstruct o
 same shape as the customDraw hook inventory, the tree-sway caller, and the billboard atlas: nothing
 was broken, something was *converted*, and the conversion was never checked against the thing that
 consumes it.
+
+
+## 3.73 - TERRAIN BAKE DELETED EVERY NEAR 3D TREE IN THE LEVEL (2026-09-20)
+
+Lee, with a new TESTPRO2 level `testpro2level` and two screenshots: "when I tick Terrain Bake all
+the 'real model' trees disappear, only the tree billboards remain (different system) ... They all
+return when I untick the terrain bake box."
+
+### Measured before touching anything
+
+`DUMP_TREEPOOL` + `GET_PERF_DATA` either side of `SET_BAKETERRAIN`:
+
+| | bake OFF | bake ON | bake ON, 15 s later | bake OFF again |
+|---|---|---|---|---|
+| POOL built / bound / renderable | 443 / 443 / 443 | **0 / 0 / 0** | 0 / 0 / 0 | 443 / 443 / 443 |
+| proxyChunks (far-tree shadows) | 256 | **0** | 0 | **0** |
+| SCENE_OBJECTS | 1410 | **104** | - | **1172** |
+| numTotalTrees / types | 400000 / 38 | 400000 / 38 | 400000 / 38 | 400000 / 38 |
+
+★ `numTotalTrees` never moves. The tree DATA is untouched throughout - only the ObjectComponent
+pool that renders the near ones is destroyed. That is why the far billboards keep drawing: they are
+a customDraw fed straight from the CPU instance arrays, which the terrain teardown deliberately
+keeps alive (the same arrays ~91 `BT_GetGroundHeight` call sites read).
+
+### The chain, all of it inside one function
+
+1. The bake finishes and calls `GGSetNoTerrainLevel(1)` (`GGTerrainBake.cpp:730`), reusing the 2.94
+   Terrain Off teardown to drop the Wicked terrain.
+2. `GGTerrainWicked_Update` sees `gg_no_terrain` and calls `GGTerrainWicked_Shutdown()`, whose last
+   line was `GGTrees::GGTrees_WickedShutdown();` - "Phase 5: tear down the tree pool alongside the
+   terrain." That is the 1410 -> 104.
+3. ★ **And then the same function returns early at `if (gg_no_terrain) return;` - forever.** The
+   tree pool's per-frame update, `GGTrees_WickedUpdate()`, was the LAST STATEMENT of
+   `GGTerrainWicked_Update`, so from that moment it is never called again. Nothing can rebuild the
+   pool. Column three of the table is that fact: fifteen seconds later, still zero.
+
+The comment sitting directly above the call said the pool was "Independent of terrain chunk
+lifecycle". It was independent - of the chunks. It was not independent of the *function*, and
+nobody had cause to notice the difference until a switch made that function return early.
+
+### Fix: give the tree pool back its own lifetime
+
+- `GGTrees_WickedUpdate()` **moves out to the caller** (`master_part1.cpp`, inside the same
+  `"Terrain - Wicked Bridge"` profiler range and in the same frame position, so neither the
+  profiler tree nor the update order changes).
+- `GGTerrainWicked_Shutdown()` takes the pool down only when the world really is going away:
+  `s_teardownTookTrees = !gg_terrain_bake;`. The bake leaves a baked copy of the ground standing,
+  so the trees have somewhere to stand.
+- ⚠ **Init and Shutdown had to be paired.** `GGTrees_WickedInit()` is a state RESET, not a removal -
+  it clears `g_treePoolEntities[]` *without* removing the entities. Calling it over a pool the bake
+  left alive would have orphaned 443 live objects. `s_teardownTookTrees` is that pairing, and it
+  starts `true` so the process's one-time startup init behaves exactly as before. `ORPHAN_TOTAL 0`
+  in every column after the fix is the check on that.
+
+### The second defect, found by the same table
+
+Look at the last column BEFORE the fix: the pool came back (443) but `proxyChunks` stayed **0**, and
+SCENE_OBJECTS settled at 1172, not 1410. **238 far-tree shadow proxies never returned** - so after
+one Terrain Bake on/off cycle, distant trees silently stopped casting shadows until the level was
+reloaded. Cause: the rebuild is gated behind
+
+    if ( s_proxyStamp != g_treeInstanceStamp ) { ...; if ( dirty.size() != numTreeChunks ) MarkAll(); }
+
+and `s_proxyStamp` is a **function static that survives `GGTrees_WickedShutdown`**. The instance
+data had not changed, so the stamp still matched, so the size check - which exists for exactly this
+case, its comment even says "post-shutdown" - was never reached. Hoisted out of the stamp branch.
+
+### After
+
+| | bake OFF | bake ON | bake OFF again |
+|---|---|---|---|
+| POOL built / proxyChunks | 443 / 256 | **443 / 256** | 443 / 256 |
+| SCENE_OBJECTS | 1410 | **785** | **1410** |
+| ORPHAN_TOTAL | 0 | 0 | 0 |
+
+785 under the bake is 1410 minus the 625 terrain chunk entities the bake exists to remove - the
+intended saving, and now nothing else rides along with it. The round trip returns to 1410 exactly.
+
+### ★ The lesson
+
+**A switch that removes a component must ask what else lived inside that component's UPDATE.**
+3.25 already paid for the sibling rule - *what else reads that component's EXISTENCE* - when
+`GG_GetTerrainViewRadius()` returning 0 silently disabled the billboard cull. This is the same
+mistake one level up: the tree pool did not read the terrain, it was merely *hosted* by the
+terrain's update function, and an early return is invisible to every kind of dependency analysis
+that looks at data. ⚠ `GGTerrainWicked_Update` still hosts grass chunk processing on the same
+terms; that one genuinely belongs to the terrain (hair particles attached to chunk entities), but
+it is worth knowing it is there.

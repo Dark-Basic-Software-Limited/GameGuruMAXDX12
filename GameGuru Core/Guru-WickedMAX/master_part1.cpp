@@ -355,6 +355,8 @@ void GGSetSingleQueue(int on)
 // unchanged SCENE_OBJECTS was the proof, not the refutation. See SWITCHESCAPE_PERF.md §2/§10.
 // On Switch Escape 6000 of the 7322 objects and 6000 of the 8437 transforms ARE these slots.
 namespace GGTrees { extern uint32_t g_treePoolSize; }
+// GGMAX 3.73: driven from the terrain bridge below - the pool outlives the Wicked terrain.
+namespace GGTrees { void GGTrees_WickedUpdate(); }
 void GGSetTreePool(int n)
 {
 	if (n > 0) GGTrees::g_treePoolSize = (uint32_t)n;
@@ -773,6 +775,18 @@ void MasterRenderer::Update(float dt)
 						ggterrain_draw_enabled = 0;  // suppress all old draw callbacks
 						auto rangeT2 = wiProfiler::BeginRangeCPU("Terrain - Wicked Bridge");
 						GGTerrainWicked_Update(camera);
+						// ★ GGMAX 3.73: the tree pool is NOT part of the terrain, and now it is not nested
+						// inside the terrain's update either. It lived at the bottom of
+						// GGTerrainWicked_Update, which returns early whenever gg_no_terrain is set - so
+						// ticking Terrain Bake both tore the pool down AND removed the one thing that could
+						// have rebuilt it. Near 3D trees vanished; only the far billboards were left.
+						// Kept inside rangeT2 and in the same frame position so the profiler tree and the
+						// update order are byte-for-byte what they were.
+						{
+							auto rangeTP = wiProfiler::BeginRangeCPU("TerrainW - Tree Pool");
+							GGTrees::GGTrees_WickedUpdate();
+							wiProfiler::EndRange(rangeTP);
+						}
 						wiProfiler::EndRange(rangeT2);
 						GGPerf_TraceMark("ggbridge"); // GGMAX 2.61
 					}

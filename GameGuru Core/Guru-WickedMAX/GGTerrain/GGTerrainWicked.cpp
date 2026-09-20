@@ -2745,6 +2745,7 @@ void GGTerrainWicked_SetGenCenterOverride(float fWorldX, float fWorldZ, bool bEn
 extern bool bProceduralLevel; // GGMAX 2.53: the Terrain Generator mode flag (game global)
 extern bool g_ggTerrainGenEntryPending; // GGMAX 2.59: entry recipes set it BEFORE the flat-level load
 extern bool GGGame_IsEmptyLevelMode(void); // GGMAX 2.68g: t.visuals.bEnableEmptyLevelMode (M-TerrainNew_part4)
+extern bool gg_terrain_bake;  // GGMAX 3.73: Terrain Bake switch (GGTerrainBake.cpp, global scope)
 
 namespace GGTerrain
 {
@@ -2883,6 +2884,12 @@ void GGTerrainWicked_SetBrushCursor(bool visible, float x, float y, float z, flo
 	mat->SetDirty();
 }
 
+// GGMAX 3.73: did the last terrain teardown take the tree pool with it? Terrain Bake's
+// teardown does not (the baked ground is still there, so the trees must be too), and Init
+// must not then reset tree state that still describes a live pool. True initially so the
+// process's first Init resets the state exactly as it always did.
+static bool s_teardownTookTrees = true;
+
 void GGTerrainWicked_Init()
 {
 	// Capture EXE directory for resolving texture paths (CWD-independent)
@@ -3000,7 +3007,15 @@ void GGTerrainWicked_Init()
 
 	// Phase 5: Reset the cylinder-tree pool state. Actual setup is lazy on the
 	// first WickedUpdate call so pAllTrees[] has been populated by the level load.
-	GGTrees::GGTrees_WickedInit();
+	// GGMAX 3.73: only if the matching teardown actually took the pool - see the note in
+	// GGTerrainWicked_Shutdown. This is a state RESET, not a removal, so calling it over a
+	// pool the bake left alive would orphan 400+ live tree objects. Starts true so the
+	// one-time startup init (GameGuruMain.cpp) behaves exactly as before.
+	if (s_teardownTookTrees)
+	{
+		GGTrees::GGTrees_WickedInit();
+		s_teardownTookTrees = false;
+	}
 }
 
 // GGMAX 2.54/2.55: full chunk wipe — Generation_Restart (frees chunk VTs, clears chunks,
@@ -3931,14 +3946,11 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 	}
 	wi::profiler::EndRange(rangeGM);
 
-	// Phase 5: Colored cylinder tree placeholders. Independent of terrain chunk
-	// lifecycle — one shared cylinder mesh + a fixed pool of ObjectComponents
-	// repositioned from pAllTrees[] each frame. Real LOD tree meshes come later.
-	{
-		auto rangeTP = wi::profiler::BeginRangeCPU("TerrainW - Tree Pool");
-		GGTrees::GGTrees_WickedUpdate();
-		wi::profiler::EndRange(rangeTP);
-	}
+	// GGMAX 3.73: the tree pool update MOVED OUT to the caller (master_part1.cpp, same
+	// position in the frame and same profiler range). It was nested in here behind a
+	// comment claiming it was "independent of terrain chunk lifecycle" - and it was
+	// independent, except that this function returns early the moment gg_no_terrain is
+	// set, so Terrain Bake stopped calling it and the near trees could never regrow.
 }
 
 void GGTerrainWicked_Shutdown()
@@ -3983,8 +3995,20 @@ void GGTerrainWicked_Shutdown()
 	grassChunkKeyToTier.clear();
 	grassChunkKeyToChunkEntity.clear();
 
-	// Phase 5: tear down the tree pool alongside the terrain.
-	GGTrees::GGTrees_WickedShutdown();
+	// ★ GGMAX 3.73: ONLY when the world really is going away.
+	//
+	// Terrain Bake reuses this teardown to drop the Wicked terrain, but it leaves a baked
+	// copy of the ground standing in its place - the world is still there to walk on and
+	// look at. Taking the tree pool down with it deleted every near 3D tree in the level
+	// (Lee, testpro2level: SCENE_OBJECTS 1410 -> 104, POOL built 443 -> 0) while the far
+	// billboards carried on drawing, because those run off the CPU instance arrays the
+	// teardown deliberately keeps alive.
+	//
+	// ⚠ Init and Shutdown MUST agree about this. GGTrees_WickedInit only FORGETS the pool
+	// entities (it clears g_treePoolEntities without removing them), so an unpaired re-init
+	// over a live pool orphans every one of them. s_teardownTookTrees is that pairing.
+	s_teardownTookTrees = !::gg_terrain_bake;
+	if (s_teardownTookTrees) GGTrees::GGTrees_WickedShutdown();
 }
 
 void GGTerrainWicked_InvalidateRegion(float minX, float minZ, float maxX, float maxZ, uint32_t flags)

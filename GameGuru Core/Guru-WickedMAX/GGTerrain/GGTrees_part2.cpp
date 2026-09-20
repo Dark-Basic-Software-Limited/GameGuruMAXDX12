@@ -1169,13 +1169,22 @@ void GGTrees_WickedUpdate()
 			GGTrees_MarkAllProxyChunksDirty();
 			s_proxyCountdown = 1;
 		}
+		// ★ GGMAX 3.73: the dirty-array check is OUTSIDE the stamp branch.
+		// It was inside it, and s_proxyStamp is a function static that survives
+		// GGTrees_WickedShutdown - so after a shutdown/re-setup inside one session the stamp
+		// still matched, the branch never ran, and the proxy array was never re-sized. Measured
+		// on a Terrain Bake on/off cycle: proxyChunks 256 -> 0 -> 0, SCENE_OBJECTS 1410 -> 1172,
+		// i.e. the far-tree shadow proxies never came back until the level was reloaded.
+		// Cheap to hoist: assign() only runs when the size genuinely disagrees.
+		if ( g_chunkProxyDirty.size() != (size_t)numTreeChunks )
+		{
+			GGTrees_MarkAllProxyChunksDirty();
+			if ( s_proxyCountdown < 0 ) s_proxyCountdown = 30;
+		}
 		if ( s_proxyStamp != g_treeInstanceStamp )
 		{
 			s_proxyStamp = g_treeInstanceStamp;
 			s_proxyCountdown = 30;
-			// data changed before the dirty array existed (fresh session /
-			// post-shutdown) -> everything needs building
-			if ( g_chunkProxyDirty.size() != (size_t)numTreeChunks ) GGTrees_MarkAllProxyChunksDirty();
 		}
 
 		// "Tree Shadow LOD Distance" slider (Terrain Tools debug panel): a

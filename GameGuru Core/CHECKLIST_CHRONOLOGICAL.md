@@ -275,6 +275,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 204 | **The crash reporter survives a malformed DRED output** | U |
 | 205 | **Standalone PLAY GAME loads a level and plays it** — ⚠ verify a **real mouse click** starts it; only a direct Lua call worked for me | U |
 | 214 | **Fog on billboard trees, grass and baked terrain matches the fog on the terrain under it** — set Horizon/Fog to a strong colour, Fog Opacity 100, then pull Fog Range in. Distant trees used to go solid fog colour over barely-tinted ground; they should now haze at the same rate. Added after the pre-alpha candidate — numbering continues past the absent set below | L |
+| 215 | **Terrain Bake keeps the near 3D trees** — on a vegetated level, tick Terrain Bake. The real tree models used to vanish and leave only the distant billboards; they should now stay, and untick/re-tick should return the level to exactly what it was (including far-tree shadows) | L |
 
 ---
 

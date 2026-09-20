@@ -48,6 +48,22 @@ Test scripts: `tools/baketest.sh`, `bakestress.sh`, `bakeres.sh`, `baketier.sh`,
 - **A switch that removes a component must ask what else reads that component's EXISTENCE.**
   `GG_GetTerrainViewRadius()` returns 0 when `terrains.GetCount()==0`, which silently disabled the
   tree billboards' "never draw past the terrain" cull.
+- ★★★ **… and what else lived inside that component's UPDATE.** (3.73, 2026-09-20) The near-tree
+  ObjectComponent pool was destroyed by the bake's teardown (`GGTerrainWicked_Shutdown` ended with
+  `GGTrees_WickedShutdown`) **and** could never rebuild, because its per-frame update was the last
+  statement of `GGTerrainWicked_Update`, which returns early forever once `gg_no_terrain` is set.
+  Measured: SCENE_OBJECTS 1410 -> 104, POOL 443 -> 0, `numTotalTrees` unchanged at 400000 (the DATA
+  was never touched - only the renderer pool). Far billboards survived because they are a customDraw
+  off the CPU instance arrays. Fixed by moving the pool update to `master_part1.cpp` and gating the
+  teardown on `!gg_terrain_bake`. ⚠ **Init and Shutdown had to be paired** (`s_teardownTookTrees`):
+  `GGTrees_WickedInit` is a state RESET that FORGETS `g_treePoolEntities[]` without removing them, so
+  an unpaired re-init over a live pool orphans every object. The pool has NO terrain dependency at
+  all - `GGTrees_part2.cpp` does not mention the terrain once; the coupling was pure code placement.
+- ⚠ **A function static survives the shutdown of the system it belongs to.** Same round: the far-tree
+  shadow proxies never came back from a bake on/off cycle (proxyChunks 256 -> 0 -> 0, SCENE_OBJECTS
+  1410 -> 1172) because `s_proxyStamp` inside `GGTrees_WickedUpdate` still matched
+  `g_treeInstanceStamp`, so the rebuild branch - which contains the "post-shutdown" size check meant
+  for exactly this - was never entered. Hoist recovery checks OUT of change-detection branches.
 - **`entityelement[].active` is RUNTIME game state and is 0 in the editor.** The editor's test for
   "this slot holds a placed object" is `bankindex > 0`. **Placed-ness ≠ aliveness.**
 - **A play area must be a DENSITY measure, not a bounding box** — a box is decided by its outliers
