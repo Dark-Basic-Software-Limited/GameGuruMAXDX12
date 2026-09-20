@@ -1,3 +1,104 @@
+# ▶▶ RESUME HERE — MILESTONE `vram-retention-milestone-2026-09-20`
+
+## ★★★ VRAM retention across level loads is FIXED and Lee-confirmed ("test very good", 09-20).
+
+Game `f527a507` main, engine `df7d78e3` master, both clean == origin, tag on both.
+Build area exe **31,887,360 bytes, built 09-20 00:28** — matches the committed source exactly.
+
+| | before | after |
+|---|---|---|
+| accumulation over 19 sequential demo loads | **+90.1 MB/load (r² 0.71)** | **+5.2 MB/load (r² 0.01)** |
+| load 1 → load 19 driver VRAM | 3107.7 → 5121.6 MB | 3075.4 → **3051.8 MB** |
+| peak in session | 5743 MB | 4231 MB |
+| loads over the 4096 MB C3 gate | 16 of 19 | **1 of 19** |
+| same level reloaded 19 loads later | +308.6 MB retained | +222.0 MB |
+
+Fixed: §3.65 stale terrain paint map (+142 MB), orphaned terrain material entities,
+`GPUP_DeleteTexture` empty stub + the RenderPass copies it missed (+28 MB); §3.66 the 2.05
+depth-chain keep-alive diagnostic (+67 MB). Also fixed a gate defect: `sweepgate.sh` C2 had been
+silently checking **17 of 19** demos since 3.53c.
+
+---
+
+## ▶ LEE'S BRIEF FOR THIS SESSION (given 09-20, ~8 hours autonomous)
+
+> "I leave you to do fixes and a FULL demo sweep for 8 hours autonomously to make sure we are ready
+> to send out a **pre-alpha**."
+
+Goal is **pre-alpha readiness**, not maximum cleverness. Prefer a shipped, verified, measured
+improvement over an ambitious half-finished one. **Commit and push as each piece lands** — do not
+bank up work.
+
+### THE PLAN, in order. Full detail in NIGHT_INVESTIGATIONS §3.67.
+
+**1. Shadow packer bound — ~230–250 MB, cause already FOUND, 2-line fix.**
+`wi::rectpacker::State::clear()` does not reset `width`/`height` (`wiRectPacker.h:22` says so in
+its own comment); `add_rect` only grows them; `pack()` starts from the current size and only
+DOUBLES. `Visibility::shadow_packer` (`wiRenderer.h:227`) lives in `RenderPath3D::visibility_main`
+for the whole process and `Visibility::Clear()` never touches it → the bound is a session
+high-water mark the atlas faithfully allocates, saturating at `pack(16384)`'s cap by demo 3.
+- FIX: at `wiRenderer.cpp:5114`, after `vis.shadow_packer.clear();` add
+  `vis.shadow_packer.width = 0; vis.shadow_packer.height = 0;`
+- ⚠⚠ **NOT in `State::clear()`** — `wiFont.cpp:456`'s glyph atlas is the other user and
+  legitimately wants the ratchet.
+- CONFIRM: `d20_repeat` atlas drops 272,629,760 → ~21,299,200 bytes, and per-load atlas size becomes
+  NON-MONOTONIC across d01..d19. REFUTE: a rect really is 12288 wide → look at
+  `light.forced_shadow_resolution` (`wiRenderer.cpp:5150`), which is serialized per-LightComponent.
+- While there: fix the accessor units at `wiRenderer.cpp:5250-5252` (records the sun rect AFTER
+  division by `cascade_count`, so `DUMP_SHADOWRECTS` under-reports the sun).
+
+**2. Grass material cache — ~47 MB.** `Files/grassbank` textures are strictly monotone and never
+drop: 4 resident at boot → 40 by load 20, nothing ever evicted.
+- FIRST, **no build needed**: `DUMP_GRASSTYPES` (`AutomationHarness.cpp:8456`) is a pure read.
+  Teaser → dump; Island Showdown, Jungle Fever, Canyon Offensive; Teaser → dump. Expect ~5 slots
+  then ~25–30, including slots the Teaser does not use. Confirm ownership before writing code.
+
+**3. MSAA outline render targets — ~12 MB.** `rt_MSAAOutline*` created under the MSAA guard at
+`master_part1.cpp:1101`, never released when MSAA is off. Add the `else { ... = {}; }`.
+Game build only.
+
+**CLOSED — do not re-chase** (evidence in §3.67): `engine: Scene` (18 records, byte-identical for
+17 consecutive loads incl. the heaviest demo), `frame_allocator` (35 records, saturates at load 16),
+`meshletBuffer` (one record, steps once). All high-water reserves that reached their mark.
+
+### THEN: the FULL demo sweep (Lee asked for this explicitly)
+- `tools/demo_soak_sweep.sh` — ONE MAX session, 19 demos, each hub → editor → **Test Game** → ESC →
+  hub. This is the sweep that can see accumulation; the per-demo-relaunch one cannot.
+- `tools/vram_union_sweep.sh` — 19 demos + a reload of demo 1 at load 20, census after each.
+  `tools/union_analyse.py` and `tools/compare_runs.py` read the results.
+- `tools/sweepgate.sh <results>` — C1 LOAD / C2 POLYS / C3 VRAM / C4 GAME.
+- Pre-alpha bar: **19/19 editor, 19/19 Test Game, no blank frames, no restarts**, and the
+  accumulation slope stays flat.
+
+### RULES THAT MATTER FOR RUNNING UNATTENDED
+- ⚠ **The first launch after an ENGINE build needs a long warm budget** (900, not 300). A cold
+  launch fails identically to a code regression — it cost a false alarm twice.
+- ⚠ **Settle 60 s before reading POLYS.** 25 s reads low on every vegetation-heavy demo.
+- ⚠ **`wi::backlog` writes log.txt only from its destructor** — a taskkill loses it. Append+flush.
+- ⚠ **Kill the runner before `rm -rf`ing its output dir** — that deletes the lockfile and two probes
+  then drive one `auto_command.txt`.
+- ⚠ **Assert every `sed`/patch substitution matched.** An unmatched `sed` silently passes text
+  through; one did, and began overwriting the baseline it was being compared against.
+- ⚠ **Long heredocs truncate** — write patch scripts to a file.
+- ⚠ Blank-frame detection: threshold on **luminance variance**, never byte size.
+- Build: engine `cd D:/max/WickedEngineDX12 && ./build_wicked.bat Release` (~40 s, branch
+  **master**), then game `cd "D:/max/GameGuruMAXDX12/GameGuru Core" && ./build.bat Release`.
+  Gate on real error count, never exit code. Kill MAX first and **verify with tasklist**.
+- Diagnostic flags currently armed in the build area: `dred.txt`, `alloc_tripwire.txt` (both cost a
+  little performance; `dred.txt` is worth keeping while resource lifetimes are changing).
+  `gg_atlas_trace.txt` is NOT present, so the atlas trace is off — create it to arm.
+
+### DO NOT
+- Do not SAVE or otherwise mutate Lee's projects (TESTPRO2 excepted).
+- `D:\max\GameGuruMAX` and `D:\max\WickedRepo` are **strictly read-only**.
+- Do not report "trees cast no shadows" — they do, via tree-pool ObjectComponents.
+- Do not touch `State::clear()` in `wiRectPacker.h` (see above).
+- Do not re-enable `gg_enable_deferred_flush` (`wickedcalls_part2.cpp`) — it caused DEVICE_HUNG.
+- Every engine edit needs a delta row in `WICKED_ENGINE_CHANGES.md`.
+
+
+---
+
 # ▶▶ RESUME HERE — MILESTONE level-swap-clean-milestone-2026-09-19
 
 ## ★★★ Level swaps are CLEAN and Lee-confirmed. Next: TUNING (Lee's word, 09-19).

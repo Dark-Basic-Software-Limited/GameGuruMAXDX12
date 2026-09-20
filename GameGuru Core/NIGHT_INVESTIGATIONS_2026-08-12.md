@@ -11922,3 +11922,62 @@ not move is a signal, not noise.
   very section. Write the patch script to a file.
 - **Blank-frame detection by BYTE SIZE conflates "blank" with "dark"** and false-failed a fully
   rendered windowless cellar. Threshold on luminance variance.
+
+================================================================================================
+# MILESTONE - VRAM RETENTION ACROSS LEVEL LOADS (2026-09-20)
+# tag `vram-retention-milestone-2026-09-20` - game `f527a507` main / engine `df7d78e3` master
+# Lee, after manual testing: "test very good"
+================================================================================================
+
+**Accumulation across sequential level loads went from +90.1 MB/load (r2 0.71) to +5.2 MB/load
+(r2 0.01).** Over the 19 hub demos in one session, driver VRAM now ENDS where it started
+(3075.4 -> 3051.8 MB, against 3107.7 -> 5121.6 MB before), peak 5743 -> 4231 MB, and loads above
+the 4096 MB C3 gate fell from 16 of 19 to 1 of 19. r2 0.01 is the number that matters: load order
+no longer predicts VRAM at all.
+
+**Four defects, and they were all the same defect.** A per-level value living in a
+process-lifetime global, which the next level only overwrites if it happens to supply one:
+- the terrain paint map (`pMaterialMap`) - restored only `if (FileExist("<size>.ptd"))` with **no
+  else**, so an unpainted level inherited the previous level's paint, and the terrain then loaded a
+  full DDS set for every material that level had painted. +142 MB. ⚠ Never only a memory bug: the
+  same stale map feeds the blend/slot mapping.
+- terrain material slot entities - auto slots called `Entity_Remove`, painted slots did not.
+- `GPUP_DeleteTexture` - an EMPTY STUB. A correct nine-call-per-emitter teardown chain, running on
+  every level load, into a function that fetched the device and returned. +28 MB. Inherited from
+  DX11, not a port regression.
+- the 2.05 depth-chain keep-alive - a labelled TEMPORARY diagnostic ("Remove once the hunt closes")
+  whose hunt closed on a different root cause. +67 MB. ⚠ Gated on `dred.txt`, so no shipping user
+  ever paid it - but it is present on every developer machine, **including the one every VRAM
+  baseline in this repo was measured on**.
+
+**A gate defect found on the way**: `sweepgate.sh`'s C2 reference dict held **17 demos, not 19**.
+A 3.53c comment appended to the end of a line swallowed the next two entries, and a missing
+reference printed `polys?` without setting `c2 = False` while the summary still claimed "all 19".
+Aztec Game Kit and Bounty had been exempt from geometry checking ever since. Third instance of
+*the scope of a check shrank and nothing announced it*.
+
+**What made it findable** was building the instrument before the theory. `DUMP_VRAM` records every
+D3D12MA allocation WITH ITS DEBUG NAME and erases it in `~Resource_DX12`, so loading A -> B -> A in
+one session and diffing the two A dumps holds content constant and names what survived. That turned
+"there is 2 GB unaccounted for" into a list of file paths in a single run.
+
+★★★ **The methodological lesson is the expensive one: a two-level A/B/A cannot separate two leaks
+that both predict "current union previous".** It made me report a working fix as doing nothing.
+The union sweep now ends by reloading demo 1 at load 20, which holds content constant across a
+whole session, and that is the test that actually discriminates.
+
+★★ **Four plausible theories died to measurement in one night** - the release never runs, the atlas
+will not shrink, the cascade resolution is sticky, it is a load transient. Reasoning produced all
+four. The correct fifth was legible in a trace already captured and misread: the packer size
+exactly equalled the atlas size on all 27 samples across three different rect sets, which is the
+signature of a number being handed back unchanged, not of a packer computing a bound.
+
+**Still open, ranked, with two suspects explicitly closed: see 3.67.** The largest remaining item
+(~230-250 MB) has its root cause found and a two-line fix identified - the rect packer's containing
+size is never reset - so it is ready to execute rather than to investigate.
+
+Shipped in this milestone: 3.64 (single-session soak sweep + the C2 gate fix), 3.65 (the three
+level-load leaks), 3.66 (depth keep-alive removed, shadow atlas exonerated and a shrink armed),
+3.67 (lessons + the ranked plan). Tooling added: `tools/demo_soak_sweep.sh`,
+`tools/vram_union_sweep.sh`, `tools/vramleak_probe.sh`, `tools/soak_settle_repeat.sh`,
+`tools/union_analyse.py`, `tools/compare_runs.py`, `tools/soak_analyse.py`.
