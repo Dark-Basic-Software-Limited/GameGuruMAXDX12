@@ -25,7 +25,9 @@ There is a real argument for keeping it in a PRE-ALPHA (far better device-remova
 is Lee's call, so the script lists arming files separately rather than lumping them in.
 
 Other hygiene, all verified 09-20:
-- ~107 MB / 71 files of non-product text in the build root, ~96 MB of it harness screenshots.
+- **200+ MB of non-product files** in the build root and in Files/, most of it harness
+  screenshots, plus `Files/particlesbank_old/` at 20 MB. The figure GROWS with every sweep, so
+  run the script rather than trusting a number written down here.
 - Five loose `.sh` test scripts from Feb-Mar 2026 next to the exe; not git-tracked, unused, flagged
   in the 08-18 alpha audit and still there.
 - `setup.ini`: `producelogfiles=0` ✓ (this is what gates the alloc-tripwire ledger via

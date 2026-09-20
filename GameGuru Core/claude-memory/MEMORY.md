@@ -6,7 +6,7 @@
 
 > ★★★ **[VRAM retained across level loads](project_vram_retention.md)** — CLOSED 09-20. 7 defects, ALL one shape: a per-level value in a process-global. Instrument = the NAMED DUMP_VRAM census + A→B→C→A. ★ A bound is only as sound as the instrument that gave it.
 
-> ★★ **[Pre-alpha readiness](project_prealpha_readiness.md)** — the build area holds ARMING FILES (dred.txt et al) that ship diagnostics switched ON, plus 107 MB of debris. `tools/prealpha_clean.sh` first. Export Game is untested since 08-16.
+> ★★ **[Pre-alpha readiness](project_prealpha_readiness.md)** — the build area holds ARMING FILES (dred.txt et al) that ship diagnostics switched ON, plus 200+ MB of debris (it grows with every sweep). `tools/prealpha_clean.sh` first. Export Game is untested since 08-16.
 
 > ★★★ **[Single-session soak sweep](project_single_session_soak.md)** — 19/19 load + Test Game in ONE MAX launch (09-19). ★ Keep BOTH sweeps: per-demo-relaunch is blind to accumulation. ⚠ VRAM rises ~93 MB per sequential level load (same-level repeat, not the confounded 19-demo slope); NOT a min-spec failure. ⚠ `sweepgate.sh` C2 was silently checking 17 of 19.
 
