@@ -12621,3 +12621,75 @@ terrain's update function, and an early return is invisible to every kind of dep
 that looks at data. ⚠ `GGTerrainWicked_Update` still hosts grass chunk processing on the same
 terms; that one genuinely belongs to the terrain (hair particles attached to chunk entities), but
 it is worth knowing it is there.
+
+
+## 3.74 - THE THREE SWEEPS ON 3.72+3.73, AND A THIRD NON-DETERMINISTIC DEMO (2026-09-20)
+
+Lee asked for the full three-sweep set on the build carrying the fog fix (3.72) and the Terrain
+Bake tree-pool fix (3.73). Game `d3bdb0ed`, engine `517c00f1` unchanged, exe 31,888,384 bytes.
+
+### C2 was pre-registered BEFORE the first run
+
+`tools/prereg_0920c_3.73.txt`, written before any data existed, because C2 is an IDENTITY gate and
+amending it after seeing the numbers is the one move that can quietly bless a bug. It said: C2 is
+NOT amended, 3.72 is pixel colour maths and 3.73 only changes behaviour when `gg_no_terrain` is set
+(no swept demo ticks Terrain Bake); prediction C1 19/19, C2 PASS, C3 under 4096, C4 19/19; and
+**"if C2 moves on any demo, that is a real finding and must be investigated, NOT rationalised."**
+
+### Results
+
+| | fresh gate | soak A | soak B |
+|---|---|---|---|
+| C1 LOAD | PASS 19/19 | PASS 19/19 | PASS 19/19 |
+| C2 GEOMETRY | **PASS bit-identical** | 18/19 identical | 18/19 identical |
+| C3 VRAM | PASS, worst 3783.7 MB, **312.3 MB headroom** | peak 4365.9 MB | peak 4386.0 MB |
+| C4 GAME | PASS 19/19 | PASS 19/19 | PASS 19/19 |
+| restarts | - | 0 | 0 |
+
+Against `soak_0920b_3.69` - the soak that validated the pre-alpha candidate - peak session VRAM went
+**4394.9 -> 4365.9 / 4386.0**, mean per-demo **-8.0 MB**, deltas spread -44.9 to +34.8 in BOTH
+directions. A leak pushes one way; this is noise around zero.
+
+### ★★★ Aztec Game Kit Teaser is NON-DETERMINISTIC. It is the third one.
+
+Both soaks read it at 1,413,916 where 0920b read 1,413,604 - **+312, reproduced twice, same demo,
+same position, same 90 s settle.** That is exactly the shape of a real regression, and the obvious
+suspect was mine: 3.73 moved `GGTrees_WickedUpdate()` to a caller where it also runs on frames the
+old host skipped.
+
+`tools/aztec_polys_probe.sh` settled the demo alone for 60 s and took three samples 15 s apart, the
+soak's own method:
+
+    sample 1 POLYS = 1413604
+    sample 2 POLYS = 1413916      <-- +312
+    sample 3 POLYS = 1413604
+
+**Both values, in one settled session, on one build.** The demo oscillates by exactly 312 triangles
+- one tree entering and leaving the nearest-N set; the pool census agrees (`built=181 bound=176`,
+five slots built but unbound, i.e. a churning set). The soak records the MAX of three samples, so
+whether a run prints the low or the high number is decided by whether any one of its three samples
+lands on the high phase. 0920b caught three lows. Both of today's caught a high.
+
+⚠ Today's FRESH sweep reported `polysrange=1413604-1413604` for this demo - three lows - so the
+range collapsed to a point and the demo LOOKED deterministic. **A range computed from three samples
+cannot prove determinism; it can only ever catch it in the act.**
+
+So the known non-deterministic set is now **Foggy Forest, The Mystery of Z Island, and Aztec Game
+Kit Teaser**, and the real C2 result is 19/19 unchanged.
+
+### ★ The rule that caught it is the one this project wrote three days ago
+
+**Measure the measurement before calling a difference a regression.** §3.69's C2 failure was the
+same shape - 104 triangles on a demo whose three settled samples spread 528. The difference this
+time is that the prediction was written down first, so "+312 on one demo" had to be either
+explained or disproved; there was no room to shrug at it. ★ Pre-registration is not ceremony. It
+is what converts a convenient explanation into a testable one.
+
+### Tooling note for Lee
+
+`sweepgate.sh` marks **C2** advisory in soak mode but not **C3**, and C3's 4096 MB is the
+FRESH-LAUNCH min-spec limit. A soak deliberately loads 19 levels in one process to expose
+accumulation, so it will always exceed it - the validated 0920b baseline did too, at 4394.9 MB.
+A soak therefore can never print anything but `NOT CLEAN`. Left alone deliberately: changing a
+criterion after seeing the data is the move the script itself warns against. Worth doing as its own
+change, with the reasoning written first.

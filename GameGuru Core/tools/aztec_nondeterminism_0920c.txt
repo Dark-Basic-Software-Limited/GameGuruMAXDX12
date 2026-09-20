@@ -1,0 +1,1 @@
+A_current_3.73|POLYS=1413916|POOL built=181 ceiling=6000 bound=176 renderable=176 missingObj=0 numTotalTrees=400000 types=38 proxyChunks=256

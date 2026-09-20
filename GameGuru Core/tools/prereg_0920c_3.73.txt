@@ -1,0 +1,28 @@
+PRE-REGISTERED BEFORE THE 2026-09-20 POST-3.73 SWEEPS (written before any run started)
+
+Build under test: game d3bdb0ed (3.72 fog + 3.73 tree pool), engine 517c00f1 (unchanged).
+Reference for C2: sweep 0825, as rebaselined in tools/sweepgate.sh.
+
+C2 (POLYS identity) is NOT amended, and here is why, stated before the numbers exist:
+
+  3.72 fog  - pixel shader colour maths only. ApplyFogCustom changes the fog AMOUNT applied to
+              already-rasterised fragments. No geometry, no culling, no draw submission changes.
+              POLYS cannot move.
+
+  3.73 trees - changes what happens ONLY when gg_no_terrain is set, i.e. when Terrain Bake (or
+              Terrain Off / setup.ini noterrain) is on. No demo in the sweep ticks Terrain Bake,
+              so on the swept path the tree pool lives and dies exactly as before. The one edit
+              on the always-taken path is that GGTrees_WickedUpdate() moved from the bottom of
+              GGTerrainWicked_Update to its caller, at the same position in the frame - same
+              call, same order, same arguments.
+
+              The proxy-dirty hoist (GGTrees_part2.cpp) CAN newly fire in one situation: the
+              first frame after a tree shutdown where g_treeInstanceStamp has not changed. On a
+              fresh-launch sweep there is no prior shutdown, so it cannot fire. On the SOAK
+              (one process, 19 loads) it also cannot fire, because GGTrees_WickedShutdown has no
+              caller on that path.
+
+PREDICTION: C1 19/19, C2 PASS (bit-identical POLYS on all 19), C3 all under 4096 MB, C4 19/19.
+If C2 moves on any demo, that is a real finding and must be investigated, NOT rationalised.
+
+FPS: not a criterion and not comparable across days (no reboot was performed). Recorded only.

@@ -141,3 +141,23 @@ Corollaries from the same day:
 - ★ **The gate's value is failing on what you were not looking for.** C2 (POLYS identical) was
   never designed to catch an animation-throttle defect. It caught one, because a geometry
   invariant is violated by anything that perturbs geometry.
+
+## ★★★ Three demos are NON-DETERMINISTIC in POLYS (2026-09-20)
+
+**Foggy Forest, The Mystery of Z Island, and Aztec Game Kit Teaser.** Aztec was added 09-20:
+three samples 15 s apart in ONE settled session read 1413604 / **1413916** / 1413604 - it
+oscillates by exactly 312 triangles, one tree entering and leaving the nearest-N pool set
+(`DUMP_TREEPOOL` shows built=181 bound=176, a churning set).
+
+⚠ The soak sweep records the **MAX of three samples**, so a run prints the high or the low
+number depending on whether any sample caught the high phase. Two soaks on one build read
+1413916 where the previous soak on the previous build read 1413604 - which looks exactly like a
++312 regression and is not one.
+
+★ **A polysrange computed from three samples cannot prove determinism.** The same fresh sweep
+reported `polysrange=1413604-1413604` for this demo - three lows - and it looked deterministic.
+A range can only ever catch non-determinism in the act; it can never establish its absence.
+
+★ **Pre-registering the C2 expectation is what forces the check.** With the prediction written
+down first (`tools/prereg_0920c_3.73.txt`), "+312 on one demo" had to be explained or disproved
+rather than shrugged at. See [[project-single-session-soak]] and notes 3.74.
