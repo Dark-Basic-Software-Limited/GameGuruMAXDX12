@@ -262,7 +262,7 @@ So they arrive as known limitations rather than surprise reports:
   wind path instead.)
 - **Custom shader parameters 1–7 have no effect.** The engine replaced seven floats with
   `uint4 userdata` and the migration was never finished. Authoring surface only; zero shipped `.fpe`
-  files use them (4248 scanned). Since 3.50 your authored values are at least no longer *destroyed*.
+  files use them — I counted 4249 in the build area tonight and grepped every one. Since 3.50 your authored values are at least no longer *destroyed*.
 - **No PP Snow/Dust, no transparent shadows, no bloom strength, no level-load gamma fade-in.** The
   first three need engine-side work. The fourth does not — see §6 item 1.
 - **AI path detail varies with where the camera sat when the nav mesh was built.** DX11's
@@ -271,7 +271,9 @@ So they arrive as known limitations rather than surprise reports:
 - **Env-probe release pops instead of fading** when the player leaves an indoor volume.
 - **GPU particles sort as one batch per frame**, so an effect can sort wrongly against glass.
   Restoring DX11's interleave needs an engine callback that was deliberately not taken.
-- **Three demos sit just over 4 GB late in a long session** (§3.1).
+- **Three demos sit just over 4 GB late in a long session** (§3.1: 4079, 4126 and 4350 MB, at
+  loads 2, 6 and 18 of 19). ★ On a COLD load — which is what a player does — every demo is under,
+  with 312 MB to spare (§3.2). This only appears after many level changes in one editor session.
 
 ---
 
