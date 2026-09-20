@@ -331,14 +331,14 @@ scripting contract. Extracted from both trees:
 That closes the most user-visible class of parity risk outright: no shipped or user-written script
 can call a GameGuru function that this build does not have.
 
-The other contract a user can hold is . Same method, counting the keys each tree
+The other contract a user can hold is `setup.ini`. Same method, counting the keys each tree
 actually parses:
 
 - **DX11 parses 249 keys. DX12 parses 277** — a strict superset, with the extras being DX12's own
-  diagnostic knobs. **No key a DX11 user has in their  is silently ignored here.**
+  diagnostic knobs. **No key a DX11 user has in their `setup.ini` is silently ignored here.**
 
 ⚠ One caveat on that second one, already in §6: a key being *parsed* is not the same as its value
-being *read*.  is parsed in two places and consumed nowhere — that is the dead-knob
+being *read*. `enablepixmarkers` is parsed in two places and consumed nowhere — that is the dead-knob
 class the earlier audits chased, and this count cannot see it.
 
 ### 5.4 ★ An independent content-level audit of the C++ side
