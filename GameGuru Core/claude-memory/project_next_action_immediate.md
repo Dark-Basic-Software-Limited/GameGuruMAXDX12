@@ -5,10 +5,91 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
-  modified: 2026-09-20T03:10:00.000Z
+  modified: 2026-09-20T13:45:00.000Z
 ---
 
 # ▶▶ RESUME HERE — 2026-09-20, after the 8-hour pre-alpha run
+
+## Read these first, in this order
+
+1. **`GameGuru Core/PREALPHA_REPORT_2026-09-20.md`** — the night's work, all test results, the
+   DX11↔DX12 comparison, and the ship recommendation. **§3.6 is the finding that matters most.**
+2. **`GameGuru Core/CHECKLIST_CHRONOLOGICAL.md`** — 213 numbered items since the fork, date order,
+   1-205 checkable, 206-213 deliberately absent. This is what Lee is working through.
+3. `GameGuru Core/CHANGES_SINCE_2025-11.md` — the same change set by app area, plus tester notes.
+4. Notes §3.68 → §3.71.
+
+## State
+
+Game `main`, engine `master`, both clean == origin. Tag **`prealpha-candidate-2026-09-20`** on both
+marks the code the sweeps validated; commits after it are documentation only. Build area exe
+**31,888,384 bytes, 02:58**, zero sources newer — it IS the swept build.
+
+**Validated by three 19-demo runs, 57 level loads, 0 restarts, 0 blank frames:**
+
+| | result |
+|---|---|
+| fresh-launch gate (the min-spec run) | **CLEAN** — C1 19/19, C2 PASS, C3 worst 3783.9 MB with **312 MB headroom** (was 121), C4 19/19 |
+| single-session soak ×2 | 19/19 editor + 19/19 Test Game both times |
+| accumulation per level load | **+90.1 → +9.9 MB**, r² 0.71 → 0.03 |
+| peak session VRAM | 5743 → **4350 MB** |
+
+## ★ Tell Lee before he zips
+
+`tools/prealpha_clean.sh --apply` — 426 MB of non-product files, and `dred.txt` /
+`gg_atlas_trace.txt` are **arming files** that ship diagnostics switched ON. I removed my own
+(`gg_atlas_trace.txt`); **`dred.txt` is deliberately left** — 3.69 guarded the DRED walk, so it is
+now safe to ship and worth shipping for tester crash reports.
+
+## Open, ranked — where refinement starts
+
+1. ⚠⚠ **Standalone texture residency** — [[project-standalone-vram]]. +950 to +1520 MB over Test
+   Game on three demos; 279 of 330 shared textures larger in standalone, **none smaller**. Cause
+   **NOT found**; "streaming is off there" is refuted. The only open item that changes a number
+   the project relies on.
+2. **Trim the shadow atlas to the packed extent** (§3.69b) — −130 MB measured. Failure mode is
+   visibly corrupted shadows, so it wants a visual A/B.
+3. **Move `GG_ArmShadowAtlasShrink()` to the end of the load** (§3.69d, `M-GridEdit_part7.cpp:309`)
+   — one line; atlas creates per load 1.8 → 1.0 and the 90-frame gate becomes redundant.
+4. **Level-load gamma fade-in** — ⚠ NOT the one-liner the earlier audit called it; see §3.69.
+5. Small: env-probe release fade, PP Snow residue raycast, procedural-preview fog,
+   `enablepixmarkers`, `_ConvertFormat`.
+
+## ⚠ Largest untested surface
+
+**"Export Game"** — no harness verb, unexercised since 2026-08-16. Hub **PLAY GAME** now IS
+drivable: `CLICK play_game` → wait `standalone_title` → **`RUN_LUA StartGame()`**. ⚠ No key or
+synthetic click moved that title screen; whether a real mouse click works is untested.
+
+## Rules this run added
+
+- ★★★ **A bound is only as sound as the instrument that produced it.** §3.67 bounded the shadow
+  rects with an accessor the same section had listed as needing repair, and was wrong.
+- ★★★ **Measure the measurement before calling a difference a regression.** C2 failed by 104
+  triangles on a demo whose three settled samples spread 528. Two of nineteen demos are not
+  deterministic; the variance was already on disk.
+- ⚠ Backticks inside a double-quoted `python -c` are **command substitution** — third time it has
+  eaten words out of a document. Patch scripts go in a FILE.
+- ⚠ A probe must `sleep` before its first `alive` check, or it declares failure before the process
+  exists.
+- ⚠ `demo_fps_sweep.sh` uses `$1` as the TAG; the output dir is `GGMAX_SWEEP_OUT`.
+- ⚠ `DUMP_STREAM` writes to a file and returns only an OK line — copy it per measurement.
+
+## DO NOT
+
+- Do not kill MAX while Lee is working — he is mid-session.
+- Do not SAVE or mutate Lee's projects (TESTPRO2 excepted).
+- `D:/max/GameGuruMAX` and `D:/max/WickedRepo` are **strictly read-only**.
+- Do not touch `State::clear()` in `wiRectPacker.h` — wiFont's glyph atlas wants the ratchet.
+- Do not loosen the atlas anti-thrash gate (`packer*2 <= atlas`).
+- Do not report "trees cast no shadows" — they do, via tree-pool ObjectComponents.
+- Every engine edit needs a delta row in `WICKED_ENGINE_CHANGES.md`.
+
+---
+
+## Earlier resume blocks, newest first (history)
+
+# ▶ (superseded) 2026-09-20 03:10 — mid-run state, written while the sweeps were still going
 
 ## State
 
@@ -82,8 +163,6 @@ silently checking **17 of 19** demos since 3.53c.
 
 
 ---
-
-## Earlier resume blocks, newest first (history)
 
 # ▶▶ RESUME HERE — MILESTONE `vram-retention-milestone-2026-09-20`
 

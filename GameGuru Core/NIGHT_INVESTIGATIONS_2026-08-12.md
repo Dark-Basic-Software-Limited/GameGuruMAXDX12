@@ -12387,3 +12387,61 @@ I ruled out the obvious cause and did not find the real one. In the order I woul
 
 ★ And the standing lesson: **every VRAM number this project has published was measured in the editor
 or in Test Game.** The min-spec claim in particular. Neither is the mode players run.
+
+
+## 3.71 - HANDOFF AFTER THE 8-HOUR RUN: WHAT EXISTS NOW AND WHERE IT LEAVES OFF (2026-09-20)
+
+Lee is picking this up to refine. This section is the map, so nothing has to be re-derived from
+847 commits.
+
+### Three documents came out of the night, and they do different jobs
+
+| document | for | what it is |
+|---|---|---|
+| `PREALPHA_REPORT_2026-09-20.md` | Lee, deciding whether to ship | the night's work, all test results, the DX11 comparison, and the recommendation. §3.6 is the finding that matters most. |
+| `CHANGES_SINCE_2025-11.md` | Lee testing + tester notes | the same change set organised BY WHERE YOU ARE IN THE APP, with a tester-facing rewrite and a known-limitations list |
+| `CHECKLIST_CHRONOLOGICAL.md` | Lee working through it | **213 numbered items in date order**, 1-205 checkable and 206-213 deliberately absent. Numbering verified continuous. |
+
+★ The two checklists are the same material cut two ways on purpose - by-area is how you test a
+subsystem, by-date is how you work through a backlog without losing your place. Neither supersedes
+the other; both are generated from the same 338 DX11 + 847 DX12 commits.
+
+★★ **The number worth carrying forward: of 213 items, 126 are Lee-confirmed, 10 are covered by the
+sweeps, and 64 have never been exercised by anyone.** The untested ones cluster at the two ENDS of
+the timeline - the old DX11 inheritance (items 1-56, which sat in DX11 for nine months before the
+September parity round brought them across) and last week's parity fixes (189-205). Everything
+between February and August is Lee-confirmed, because that is the stretch that was built with him
+watching. **The middle of the port is the best-verified part of it.**
+
+### State at handoff
+
+- game `main` and engine `master`, both clean and pushed. Tag **`prealpha-candidate-2026-09-20`** on
+  both, marking the exact code the three sweeps validated.
+- Build area exe **31,888,384 bytes, 02:58** - zero sources newer, so it IS the swept build. The
+  commits after the tag are documentation only.
+- `gg_atlas_trace.txt` removed (mine). `dred.txt` deliberately LEFT - see the recommendation in the
+  report, it is now safe to ship and worth shipping.
+
+### Where refinement would start, ranked
+
+1. ⚠⚠ **Standalone texture residency (§3.70).** +950 to +1520 MB over Test Game on three demos;
+   279 of 330 shared textures larger in standalone, none smaller. **The cause is NOT found** - the
+   obvious one is refuted. This is the only open item that changes a number Lee relies on.
+2. **Trim the shadow atlas to the packed extent (§3.69b).** −130 MB measured on one level. Small
+   change, but its failure mode is visibly corrupted shadows, so it wants a visual A/B.
+3. **Move `GG_ArmShadowAtlasShrink()` to the END of the load (§3.69d).** One line. Takes atlas
+   creates per level load from 1.8 to 1.0 and makes the 90-frame settle gate redundant.
+4. **Level-load gamma fade-in.** ⚠ Not as cheap as the earlier audit claimed - see §3.69's note on
+   composing it with the gamma slider.
+5. The small ones: env-probe release fade, PP Snow residue raycast, procedural-preview fog,
+   `enablepixmarkers`, `_ConvertFormat`.
+
+### Two rules this run added, both about measurement
+
+- ★★★ **A bound is only as sound as the instrument that produced it.** §3.67 argued 12288 was
+  unreachable from the shadow rects using an accessor the same section had already listed as needing
+  repair. **Never close an argument with an instrument you have queued for fixing.**
+- ★★★ **Before calling a difference a regression, measure the measurement.** C2 failed on one demo
+  by 104 triangles; three settled samples of that demo spread 528. Two of nineteen demos are not
+  deterministic and the gate compared the MAX of three for exact equality, so the verdict was decided
+  by luck. The variance was already on disk and cost nothing to look at.

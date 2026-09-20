@@ -8,6 +8,8 @@
 
 > ★★★ **[Standalone VRAM](project_standalone_vram.md)** — PLAY GAME holds the SAME textures at FULL resolution where the editor and Test Game hold them reduced: **+950 to +1520 MB** on 3 demos. Snowy Mountain Stroll: 293 FEWER resources, 954 MB MORE. Cause NOT found; "streaming is off" refuted. ★ Test Game was the discriminator.
 
+> ★★★ **THE THREE HANDOFF DOCUMENTS (09-20)** — `GameGuru Core/PREALPHA_REPORT_2026-09-20.md` (night's work, test results, DX11 comparison, ship recommendation; §3.6 is the big finding) · `CHECKLIST_CHRONOLOGICAL.md` (**213 numbered items** since the fork, date order, what Lee is working through) · `CHANGES_SINCE_2025-11.md` (same set by app area + tester notes). ★ Of 213: **126 Lee-confirmed, 10 swept, 64 NEVER exercised** — and the untested ones cluster at the two ENDS of the timeline, not the middle.
+
 > ★★ **[Pre-alpha readiness](project_prealpha_readiness.md)** — the build area holds ARMING FILES (dred.txt et al) that ship diagnostics switched ON, plus 200+ MB of debris (it grows with every sweep). `tools/prealpha_clean.sh` first. Export Game is untested since 08-16.
 
 > ★★★ **[Single-session soak sweep](project_single_session_soak.md)** — 19/19 load + Test Game in ONE MAX launch (09-19). ★ Keep BOTH sweeps: per-demo-relaunch is blind to accumulation. ⚠ VRAM rises ~93 MB per sequential level load (same-level repeat, not the confounded 19-demo slope); NOT a min-spec failure. ⚠ `sweepgate.sh` C2 was silently checking 17 of 19.
