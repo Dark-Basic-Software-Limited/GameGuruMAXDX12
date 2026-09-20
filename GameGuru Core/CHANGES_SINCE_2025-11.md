@@ -128,6 +128,7 @@ DX11 added a batch of new behaviour scripts; **all are present in this build** (
 | ☐ | **Entity tree sway** **[Lee]** | imported tree with "Object Wind" set, global wind at 0 | still sways — DX11 behaviour reproduced through the engine wind path (3.58b) |
 | ☐ | **Wind Gust Size** **[Lee]** | slide it end to end | ⚠ the mapping was inverted and re-floored — the bottom of the range is now usable (3.62/3.63) |
 | ☐ | **Far-tree billboards** **[Lee]** | look at a distant ridge | distant forest present, no pop at the handover (2.95–3.07) |
+| ☐ | **Fog reaches billboard trees at the right strength** **[Lee]** | strong Horizon/Fog colour, Fog Opacity 100, then pull Fog Range in | distant trees haze at the same rate as the terrain under them. ⚠ they used to go **solid fog colour** over barely-tinted ground — the custom draws were fogged 4× too hard (3.72). Grass and baked terrain/water shared the fault |
 | ☐ | **Second level loads** **[Lee]** | load one demo, then another, in one session | ⚠ **this was broken for four weeks** — a treeless first level poisoned the billboard atlas for everything after it (3.53) |
 | ☐ | **Terrain painting & sculpting** **[swept]** | paint, sculpt | applies. ⚠ an unpainted level used to inherit the previous level's paint map entirely (3.65) |
 | ☐ | **Grass** **[Lee]** | paint grass, change types | works; the type cache is now dropped per level load (3.68) |

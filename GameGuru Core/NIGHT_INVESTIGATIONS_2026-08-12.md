@@ -12445,3 +12445,91 @@ watching. **The middle of the port is the best-verified part of it.**
   by 104 triangles; three settled samples of that demo spread 528. Two of nineteen demos are not
   deterministic and the gate compared the MAX of three for exact equality, so the verdict was decided
   by luck. The variance was already on disk and cost nothing to look at.
+
+
+## 3.72 - BILLBOARD TREES FOGGED 4x HARDER THAN THE TERRAIN THEY STAND ON (2026-09-20)
+
+Lee, with two screenshots of TESTPRO2 / testpro2desertlevel2: "as I increase the [fog opacity]
+slider to full, the fog effect on the trees is out of sync with the terrain on which the trees sit
+... even here you can see the billboard trees is still solid red, it should at best be half opaque
+red, just like the terrain under it."
+
+### There are two fog implementations in one scene, and only one of them was right
+
+| what is drawn | by | fogged by |
+|---|---|---|
+| terrain, entities, near trees | the ENGINE object shader | `fogHF.hlsli` `GetFogAmount()` |
+| **billboard trees**, grass, baked terrain, baked water | GG **customDraw** shaders | `GGCommonFunctions.hlsli` `ApplyFogCustom()` |
+
+Two formulas over one view can never agree. They were not even close.
+
+### The defect is in the compat shim, not in either curve
+
+GG's C++ stores the user's Fog Range as an engine DENSITY
+(`M-GridEditB_part3.cpp` `Wicked_ApplyFogModel`):
+
+    fogDensity = 4.0f / (fogFar - fogNear);
+
+`GGFrameCompat.hlsli` then had to hand the DX11-era name `g_xFrame_Fog` back to the GG shaders,
+which want `(start, end, ...)`, so it inverted the density:
+
+    // Reconstruct old end = start + 1/density
+    #define g_xFrame_Fog float4(fog.start, fog.start + 1.0 / max(fog.density, 0.0001), ...)
+
+★ **But ApplyFogCustom's own curve is `exp(dist * 4.0 / (fogMin - fogMax))`** - the 4 is divided
+straight back out. The inverse of `density = 4/(far-near)` is therefore `end = start + 4/density`,
+not `start + 1/density`. The shim handed back a range **a quarter as long as the user asked for**,
+so every GG custom draw ran at **four times** the engine's optical depth.
+
+At Lee's settings - Fog Range 0-100, which is near 0 / far 50000 (`M-Sliders.cpp`: the second slider
+is x500) - density is 8e-5, and:
+
+| distance | engine (terrain) | GG (billboards) |
+|---|---|---|
+| 5 km | 33% | 80% |
+| 10 km | 55% | **96%** |
+
+which is exactly the picture: solid red trees on barely-tinted terrain. His second screenshot
+squeezed the range to 0-37 and the terrain went to 66% while the trees stayed at 99% - still solid.
+
+### Fixed by mirroring the engine curve, not by fixing the reconstruction
+
+Correcting `1/density` to `4/density` makes the two agree **only when fogStart is 0**. Above that
+the engine's `startDistanceFalloff` term (`saturate((d - start)/start)`, then optical depth over the
+FULL distance) and GG's `(d - start)` diverge by `density * start`, and the engine's height-fog
+branch has no GG counterpart at all. So `ApplyFogCustom` now calls a new `GGEngineFogAmount()` that
+reproduces `fogHF.hlsli GetFogAmount()` line for line, height-fog branch included.
+★ It must be kept in step with the engine file; that is written at the top of the function.
+
+The COLOUR path was already correct and is untouched: GG's realistic-sky branch reaches the same
+skyviewlut through `GetDynamicSkyColor(..., stationary)` that the engine's `GetFog()` samples
+inline, and the non-realistic branch's `lerp(C, lerp(C,F,o), a)` is algebraically the engine's
+`amount *= opacity`. Only the amount was wrong.
+
+`g_xFrame_Fog` is corrected to `start + 4/density` as well. Nothing live reads it any more
+(ApplyFogCustom no longer does, and `PBR/globals.hlsli`'s own `GetFogAmount` has no callers), but
+leaving a shim that silently quarters a user-facing range is leaving the trap armed.
+
+### Scope - this was never only about trees
+
+Every `ApplyFogCustom` consumer was 4x hot: **GGTreesPS** (billboards, the visible symptom),
+**GGGrassPS**, **GGTerrainBakePS**, **GGWaterBakePS**, GGTerrainSpherePS, GGTreesHighPS,
+GGTreeBranchesHighPS and the three env-probe variants. Grass hid it by being near the camera; the
+bakes hid it because a baked level fogs its terrain through the same wrong curve, so the two halves
+agreed with each other and disagreed with everything else.
+
+### Verified
+
+Game build clean; the four affected `.cso` all changed (GGTreesPS 38532 -> 38772, GGGrassPS
+40352 -> 40588, plus both bake shaders) - size, not timestamp, per the standing rule. Lee then loaded
+the level himself at Fog Range 0-30 / Opacity 100 and confirmed: the canopy now hazes into the
+mountain at the same rate as the rock it sits on.
+
+### ★ The lesson, which is the one this project keeps relearning
+
+**A port-time compat shim is a place where a value gets quietly re-derived, and a re-derivation is
+a claim.** The comment above the macro stated its claim plainly - "Reconstruct old end = start +
+1/density" - and it was wrong by the single constant that lived in the consumer, one file away. The
+same shape as the customDraw hook inventory, the tree-sway caller, and the billboard atlas: nothing
+was broken, something was *converted*, and the conversion was never checked against the thing that
+consumes it.

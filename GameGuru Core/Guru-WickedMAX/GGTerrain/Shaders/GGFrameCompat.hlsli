@@ -51,8 +51,13 @@
 // Fog (moved to ShaderWeather.fog in new engine)
 // Old layout: float4(start, end, height_start, height_end)
 // New layout: ShaderWeather.fog has .start, .density (not .end), .height_start, .height_end
-// Reconstruct old end = start + 1/density
-#define g_xFrame_Fog                      float4(GetWeather().fog.start, GetWeather().fog.start + 1.0 / max(GetWeather().fog.density, 0.0001), GetWeather().fog.height_start, GetWeather().fog.height_end)
+// ⚠ GGMAX 3.72: the reconstruction is start + 4/density, NOT start + 1/density.
+// GG's C++ derives the density it stores here as 4 / (far - near) (M-GridEditB_part3.cpp
+// Wicked_ApplyFogModel), so inverting it without the 4 hands back a range a QUARTER as long as the
+// user asked for. That shipped, and it fogged every GG custom draw 4x harder than the engine fogged
+// the terrain beside it - see GGCommonFunctions.hlsli. ApplyFogCustom no longer reads this macro at
+// all (it mirrors the engine curve directly); this is corrected so the trap is not re-laid.
+#define g_xFrame_Fog                      float4(GetWeather().fog.start, GetWeather().fog.start + 4.0 / max(GetWeather().fog.density, 0.0001), GetWeather().fog.height_start, GetWeather().fog.height_end)
 
 // Sun/Sky (moved to ShaderWeather in new engine, with half3 packing)
 // The new globals.hlsli provides GetSunDirection(), GetSunColor(), etc.
