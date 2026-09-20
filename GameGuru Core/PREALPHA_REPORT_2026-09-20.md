@@ -320,7 +320,7 @@ files, and `BulletPhysics.CPP`, which DX12 has split into `BulletPhysics_part0..
 
 **So no DX11 script, icon or behaviour file added since November 2025 is missing or stale in DX12.**
 
-### 5.3 ★ The Lua API surface is identical
+### 5.3 ★ The two contract surfaces are intact: Lua API and setup.ini
 
 Every shipped behaviour script talks to the engine through `lua_register`, so that set is the
 scripting contract. Extracted from both trees:
@@ -330,6 +330,16 @@ scripting contract. Extracted from both trees:
 
 That closes the most user-visible class of parity risk outright: no shipped or user-written script
 can call a GameGuru function that this build does not have.
+
+The other contract a user can hold is . Same method, counting the keys each tree
+actually parses:
+
+- **DX11 parses 249 keys. DX12 parses 277** — a strict superset, with the extras being DX12's own
+  diagnostic knobs. **No key a DX11 user has in their  is silently ignored here.**
+
+⚠ One caveat on that second one, already in §6: a key being *parsed* is not the same as its value
+being *read*.  is parsed in two places and consumed nowhere — that is the dead-knob
+class the earlier audits chased, and this count cannot see it.
 
 ### 5.4 ★ An independent content-level audit of the C++ side
 
