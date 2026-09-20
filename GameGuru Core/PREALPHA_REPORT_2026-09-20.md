@@ -27,7 +27,7 @@ changed since the fork, **none are stale in DX12**.
 area carries 426 MB of non-product files, and two of them are not debris but *switches* that turn
 diagnostics on for whoever receives the build. §4 has the detail.
 
-**One new finding you should read before deciding (§3.6):** standalone play holds **1523 MB more**
+**One new finding you should read before deciding (§3.6):** standalone play holds **950-1520 MB more** (three demos)
 than Test Game on the same level — the same textures, resident at full resolution instead of
 reduced. On the lightest demo that is 4235 MB of driver usage, in the mode a finished game ships
 in. It is not a regression from tonight and it does not stop a pre-alpha, but it means the
@@ -357,9 +357,18 @@ set of the *lightest* demo exceeds the minimum spec in the mode players run, and
 this project has ever published — including §3.2's 312 MB of headroom — was measured in the editor or
 in Test Game. **The min-spec figure does not transfer to standalone.**
 
-⚠ **Bounds on this: one level, one pair of runs.** It wants repeating on two or three more demos
-before anyone acts on the size of it. What is solid is the *direction* and the *mechanism class*:
-the same named textures, resident at 4× to 8× the linear resolution, only in standalone.
+**Repeated on two more demos — it holds, and one of them proves it outright:**
+
+| demo | Test Game census | standalone census | delta | records TG → SA |
+|---|---|---|---|---|
+| Aztec Game Kit Teaser | 2415 MB | 3938 MB | **+1523 MB** | 6694 → 6543 |
+| Bounty | 1992 MB | 3008 MB | **+1016 MB** | 6024 → 6028 |
+| Snowy Mountain Stroll | 2151 MB | 3105 MB | **+954 MB** | 6009 → **5716** |
+
+★★ **Snowy Mountain Stroll settles it without needing the per-texture table at all.** Standalone
+holds **293 fewer resources** than Test Game and still uses **954 MB more**. Fewer things, far more
+memory, can only mean the things are bigger. Every demo tried lands between +950 and +1520 MB, so
+this is the standalone path's normal behaviour, not a quirk of one level.
 
 ★ It is also **not a regression from tonight** — nothing in 3.68/3.69 touches texture residency, and
 the standalone path has not been exercised since 2026-08-16. It has most likely been true for weeks.

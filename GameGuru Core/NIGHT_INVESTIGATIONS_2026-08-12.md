@@ -12292,3 +12292,81 @@ device removal and no VRAM breach traceable to it. The cost is one extra `Create
 ★ The honest scorecard for 3.69's settle gate: **it helped, it did not do what I said it would, and
 the number I chose came from answering the wrong question.** Keep it - 1.9 is better than 2.8 - but
 move the arm and then the gate becomes redundant.
+
+
+## 3.70 - STANDALONE HOLDS TEXTURES AT FULL RESOLUTION, TEST GAME DOES NOT (2026-09-20)
+
+Found by going somewhere no sweep goes. The soak and fresh sweeps cover hub -> editor -> Test Game;
+the hub's **PLAY GAME** relaunches the exe as a standalone (`project=2`) and nothing had exercised
+it since 2026-08-16.
+
+### It plays - and that took finding out how to ask
+
+Three demos reach `standalone_title` on the relaunch. Getting past the title is the interesting
+part: **`PRESS_KEY ENTER`, `PRESS_KEY SPACE` and `ForceMouseXYClick` at eight screen positions all
+left it sitting there.** What works is `RUN_LUA StartGame()` - the same Lua the title button calls
+(`global.lua:1201` -> `SendMessage_startgame` -> `lua_startgame`, which sets `levelloop=1`,
+`titleloop=0`). Both demos then reach `standalone_playing` and hold 90 s.
+⚠ So the harness can now DRIVE the standalone, but it still cannot drive the title screen the way a
+player does, and whether a real mouse click works on it is untested.
+
+### The finding: +1523 MB, and Test Game is what makes it one
+
+Same level, same machine, back-to-back runs:
+
+| mode | records | census | driver usage |
+|---|---|---|---|
+| editor | 6367 | 2492 MB | 3077 MB |
+| Test Game | 6694 | **2415 MB** | 3151 MB |
+| standalone | 6543 | **3938 MB** | **4235 MB** |
+
+Records barely move, so it is not more textures - it is **the same textures at full resolution**:
+
+| texture | editor / Test Game | standalone |
+|---|---|---|
+| `Ruin J_color.dds` | 1024x1024, 0.7 MB | **4096x4096, 10.7 MB** |
+| `Aztec Witch1.dds` | 256x256, 0.4 MB | **2048x2048, 21.4 MB** |
+| `Temple Ruin E_color.dds` | 512x512, 0.2 MB | **4096x4096, 10.7 MB** |
+
+★★★ **The Test Game column is the whole finding.** My first reading was "gameplay demands detail, so
+a parked editor camera was always the wrong yardstick" - which would have made this a measurement
+artefact and nothing more. Test Game refutes it: it spawns the player, runs the same gameplay, waits
+the same 90 s, and its textures stay reduced. It even reads LOWER than the editor. So this belongs
+to the standalone path specifically, which is the mode a finished game ships in.
+★ **The discriminator cost six minutes and changed the conclusion completely.** Before running it I
+would have written this up as "expected, ignore".
+
+### Repeated on two more demos - it holds, and one of them proves it outright
+
+| demo | Test Game census | standalone census | delta | records TG -> SA |
+|---|---|---|---|---|
+| Aztec Game Kit Teaser | 2415 MB | 3938 MB | **+1523 MB** | 6694 -> 6543 |
+| Bounty | 1992 MB | 3008 MB | **+1016 MB** | 6024 -> 6028 |
+| Snowy Mountain Stroll | 2151 MB | 3105 MB | **+954 MB** | 6009 -> **5716** |
+
+★★ **Snowy Mountain Stroll settles it without needing the per-texture table at all.** Standalone
+holds **293 FEWER resources** than Test Game and still uses **954 MB more**. Fewer things, far more
+memory, can only mean the things are bigger. Every demo tried lands between +950 and +1520 MB, so
+this is the standalone path's normal behaviour, not a quirk of one level.
+
+### What it is NOT
+
+- **Not a regression from tonight.** Nothing in 3.68/3.69 touches texture residency, and this path
+  has not been exercised in a month. It has most likely been true for weeks.
+- **Not automatically a crash on 4 GB.** 4235 MB of driver usage on a 16 GB card means the working
+  set exceeds the minimum spec, not that a 4 GB card fails - it would demote and evict. It is a
+  performance cliff, and it is on the LIGHTEST demo in the set.
+- **Not "streaming is off in standalone".** That was the first hypothesis and `DUMP_STREAM` refutes
+  it: enrollment is comparable in all three modes (streaming-enabled materials 1132 editor / 1346
+  Test Game / 1239 standalone; non-null feedback pointers 169 / 106 / 102).
+
+### Next, for whoever picks this up
+
+I ruled out the obvious cause and did not find the real one. In the order I would test:
+1. Does the standalone load path request the full-size resource **before** enrollment, so there is
+   nothing to demote from?
+2. Is demotion gated on something the standalone loop does not run?
+3. Is `texturedetail` applied on that path at all?
+
+★ And the standing lesson: **every VRAM number this project has published was measured in the editor
+or in Test Game.** The min-spec claim in particular. Neither is the mode players run.
