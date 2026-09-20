@@ -27,8 +27,14 @@ changed since the fork, **none are stale in DX12**.
 area carries 426 MB of non-product files, and two of them are not debris but *switches* that turn
 diagnostics on for whoever receives the build. §4 has the detail.
 
+**One new finding you should read before deciding (§3.6):** standalone play holds **1523 MB more**
+than Test Game on the same level — the same textures, resident at full resolution instead of
+reduced. On the lightest demo that is 4235 MB of driver usage, in the mode a finished game ships
+in. It is not a regression from tonight and it does not stop a pre-alpha, but it means the
+minimum-spec headroom in §3.2 is an editor figure and does not transfer to standalone.
+
 **Everything else in this report is a recommendation, not a blocker.** Asked plainly: yes, I would
-send this out. The gate that speaks to the shipped minimum spec is clean with more headroom than
+send this out, with §3.6 written into the known-issues list. The gate that speaks to the shipped minimum spec is clean with more headroom than
 it has ever had, three separate 19-demo runs found nothing, and the two audits' worst outstanding
 items are cosmetic. What would have stopped me is a load failure, a blank frame, a restart, or a
 VRAM breach on a cold load — none of those happened in 57 level loads tonight.
@@ -248,7 +254,7 @@ a bigger number: `GG_ArmShadowAtlasShrink()` is called from `gridedit_clear_map(
 lights in. Arming at the end of `gridedit_load_map()` gives one create per load with no counting at
 all. Left for after the alpha; 57 level loads across three sweeps produced nothing traceable to it.
 
-### 3.4 Standalone PLAY GAME — boots on all three tried
+### 3.4 Standalone PLAY GAME — boots on all three tried, and plays
 
 The hub's **PLAY GAME** relaunches the exe as a standalone (`project=2`) and the editor process
 exits. It is a different path from Test Game, it has its own crash history, and no sweep covers it.
@@ -259,9 +265,22 @@ exits. It is a different path from Test Game, it has its own crash history, and 
 | Escape from the Zombie Cellar | reached `standalone_title`, held 30 s, **309.2 FPS** |
 | The Mystery of Z Island | reached `standalone_title`, held 30 s, **309.0 FPS** |
 
-⚠ **Read this narrowly.** It proves the relaunch works and the standalone title loop runs — three
-for three, no hang, no crash. It does **not** prove a level loads in standalone, because the probe
-never pressed start. That, and "Export Game", remain the untested surface in §7.
+**And then it does play.** A second pass drove past the title with `RUN_LUA StartGame()` — the
+same Lua the title button calls (`global.lua:1201` -> `SendMessage_startgame` -> `lua_startgame`):
+
+| demo | result |
+|---|---|
+| Aztec Game Kit Teaser | `standalone_playing`, held 90 s, 149.6 FPS |
+| Escape from the Zombie Cellar | `standalone_playing`, held 90 s, 59.9 FPS |
+
+So the standalone path loads a level and plays it. ⚠ **Two caveats.** Neither ENTER, SPACE nor
+`ForceMouseXYClick` at eight screen positions moved the title on — only the direct Lua call did, so
+**the harness still cannot drive the title screen the way a player does**, and whether a real mouse
+click works on it is untested. And "Export Game" (building a standalone FOLDER) is a different
+thing again, still has no harness verb, and remains unexercised since 2026-08-16.
+
+★ Driving past the title is also what turned up §3.6, which is the most important thing I found
+tonight.
 
 ### 3.5 What the 3 dedicated character shadow slots cost — measured
 
@@ -286,6 +305,65 @@ the 16384×2048 sun and one 768×128 local. The minimal containing box is theref
 142 MB**, against the **256 MB** actually allocated — the height doubled from 2048 to 4096 to hold a
 single 768×128 rect. **−130 MB on that one level**, for a change that trims the texture to the
 extent the packer already placed everything inside.
+
+### 3.6 ★★★ The one thing I found that changes a number you rely on
+
+Driving past the standalone title turned up something the sweeps cannot see, because no sweep goes
+there. **On the same level, on the same machine, in back-to-back runs:**
+
+| mode | records | census | driver usage |
+|---|---|---|---|
+| editor | 6367 | 2492 MB | 3077 MB |
+| **Test Game** | 6694 | **2415 MB** | 3151 MB |
+| **standalone play** | 6543 | **3938 MB** | **4235 MB** |
+
+**Standalone holds 1523 MB more than Test Game on the same level** — and that level is *Aztec Game
+Kit Teaser*, the lightest demo in the set.
+
+It is not more textures: records barely move. It is **the same textures at full resolution**.
+Named, from the census:
+
+| texture | editor / Test Game | standalone |
+|---|---|---|
+| `Ruin J_color.dds` | 1024×1024, 0.7 MB | **4096×4096, 10.7 MB** |
+| `Ruin J_normal.dds` | 1024×1024, 0.7 MB | **4096×4096, 10.7 MB** |
+| `Aztec Witch1.dds` | 256×256, 0.4 MB | **2048×2048, 21.4 MB** |
+| `Temple Ruin E_color.dds` | 512×512, 0.2 MB | **4096×4096, 10.7 MB** |
+
+★ **The Test Game column is what makes this a finding rather than a shrug.** My first thought was
+"gameplay demands detail, so the parked editor camera is simply the wrong yardstick". Test Game
+refutes that: it spawns the player, runs the same gameplay, waits the same 90 seconds — and its
+textures stay reduced. It reads *lower* than the editor. So this belongs to the **standalone path
+specifically**, which is the mode a finished game ships in.
+
+**I ruled out the obvious cause and did not find the real one.** The first hypothesis was that
+texture streaming simply is not running in standalone. `DUMP_STREAM` refutes it — the system is
+enrolled at comparable rates in all three modes:
+
+| mode | materials | non-null feedback ptr | streaming enabled / disabled |
+|---|---|---|---|
+| editor | 1264 | 169 | 1132 / 67 |
+| Test Game | 1548 | 106 | 1346 / 67 |
+| standalone | 1414 | 102 | 1239 / 63 |
+
+So streaming is on and materials are enrolled; something else decides residency. The candidates I
+would test next, in order: whether the standalone load path requests the full-size resource before
+enrollment happens (so there is nothing to demote from), whether demotion is gated on something the
+standalone loop does not run, and whether `texturedetail` is applied on that path at all.
+
+**Why it matters, stated carefully.** 4235 MB of driver usage on a 16 GB card does not mean a crash
+on a 4 GB card — the driver would demote and evict rather than fail. But it does mean the working
+set of the *lightest* demo exceeds the minimum spec in the mode players run, and every VRAM number
+this project has ever published — including §3.2's 312 MB of headroom — was measured in the editor or
+in Test Game. **The min-spec figure does not transfer to standalone.**
+
+⚠ **Bounds on this: one level, one pair of runs.** It wants repeating on two or three more demos
+before anyone acts on the size of it. What is solid is the *direction* and the *mechanism class*:
+the same named textures, resident at 4× to 8× the linear resolution, only in standalone.
+
+★ It is also **not a regression from tonight** — nothing in 3.68/3.69 touches texture residency, and
+the standalone path has not been exercised since 2026-08-16. It has most likely been true for weeks.
+Finding it required going somewhere no sweep goes, which is the argument for §7.
 
 ---
 
@@ -343,6 +421,8 @@ So they arrive as known limitations rather than surprise reports:
 - **Env-probe release pops instead of fading** when the player leaves an indoor volume.
 - **GPU particles sort as one batch per frame**, so an effect can sort wrongly against glass.
   Restoring DX11's interleave needs an engine callback that was deliberately not taken.
+- **Standalone play uses ~1.5 GB more VRAM than Test Game** (§3.6). Testers on 4 GB cards should
+  expect the *standalone* build to be the demanding case, not the editor.
 - **Three demos sit just over 4 GB late in a long session** (§3.1: 4079, 4126 and 4350 MB, at
   loads 2, 6 and 18 of 19). ★ On a COLD load — which is what a player does — every demo is under,
   with 312 MB to spare (§3.2). This only appears after many level changes in one editor session.
@@ -572,8 +652,8 @@ your manual time to pay, spend it here.
 | what | why it is worth a look |
 |---|---|
 | **a long play session across many levels** | every VRAM fix this week is about what survives a level change; the sweeps prove the editor and Test Game paths, not an hour of real play |
-| **"Export Game" (standalone build)** | ⚠ **no harness verb exists for it and it has not been exercised since 2026-08-16.** A tester will click it. This is the largest untested surface in the build. |
-| **hub PLAY GAME** (relaunches as a standalone, `project=2`) | a different path from Test Game, with its own crash history |
+| **"Export Game" (standalone build)** | ⚠ **no harness verb exists for it and it has not been exercised since 2026-08-16.** A tester will click it. This is now the largest untested surface in the build. |
+| **the standalone title screen, with a real mouse** | §3.4: the level plays once driven past the title by Lua, but no key or synthetic click I tried moved the title on. Worth thirty seconds of your time to confirm a real click works. |
 | MSAA on, then a level with it off | tonight's fix; no demo in the set flips it |
 | grass on a level reached late in a session | the cache is dropped and rebuilt per level load now — grass should look identical, just not inherit other levels' types |
 | shadows on a light level loaded after a heavy one | the atlas shrinks now; shadow quality should be unchanged |
