@@ -24,8 +24,14 @@ audited" blind spot both audits flagged, and it came back clean: of 182 tracked 
 changed since the fork, **none are stale in DX12**.
 
 **My one blocking recommendation before you zip: run `tools/prealpha_clean.sh --apply`.** The build
-area carries 200 MB of non-product files, and two of them are not debris but *switches* that turn
+area carries 426 MB of non-product files, and two of them are not debris but *switches* that turn
 diagnostics on for whoever receives the build. §4 has the detail.
+
+**Everything else in this report is a recommendation, not a blocker.** Asked plainly: yes, I would
+send this out. The gate that speaks to the shipped minimum spec is clean with more headroom than
+it has ever had, three separate 19-demo runs found nothing, and the two audits' worst outstanding
+items are cosmetic. What would have stopped me is a load failure, a blank frame, a restart, or a
+VRAM breach on a cold load — none of those happened in 57 level loads tonight.
 
 ---
 
@@ -212,9 +218,74 @@ them. **Still unexplained: why those two.** Both are heavily vegetated, which po
 pool's nearest-N pick or the billboard/mesh handover flipping a tree between representations on
 floating-point jitter — but that is a hypothesis, not a finding.
 
-### 3.3 Final soak and standalone probes on the 3.69 build
+### 3.3 Second soak on the final 3.69 build — **19/19 again**
 
-PENDING_FINAL_SOAK
+The 3.69 changes touch every level load, so the soak was re-run against them. Raw:
+`tools/soak_0920b_3.69.txt`.
+
+| | 3.68 build | 3.69 build (shipping) |
+|---|---|---|
+| reached the editor | 19/19 | **19/19** |
+| reached Test Game | 19/19 | **19/19** |
+| restarts / blank frames | 0 / 0 | **0 / 0** |
+| accumulation | +9.9 MB/load, r² 0.03 | **+10.8 MB/load, r² 0.03** |
+| first → last load | 3060.6 → 3484.1 MB | 3074.0 → **3480.2 MB** |
+| peak | 4350.4 MB | 4394.9 MB |
+| over the 4096 MB gate | 3 of 19 | 3 of 19 (the same three) |
+| shadow atlas creates per level load | 2.8 | **1.8** |
+
+Statistically the same run, which is what it should be — 3.69 changes *when* the atlas resizes, not
+how much it ends up holding. The one number that moved is the one it was aimed at.
+
+⚠ **And it only half worked, which I had already written down as if it had fully worked.** 3.69's
+note claimed the 90-frame settle gate would make the shrink land on the settled level instead of the
+one-light load transient. It did not: 2.8 → 1.8 creates per load is a real improvement, but the
+transient shrink still happens. **A level load is not 1.5 seconds** — it is forty-odd seconds with
+one visible light, so the streak sails past 90. I picked the threshold by asking how long a
+transient lasts when the question was how long a *load* lasts. The real fix is a better moment, not
+a bigger number: `GG_ArmShadowAtlasShrink()` is called from `gridedit_clear_map()`
+(`M-GridEdit_part7.cpp:309`), near the *start* of the load, before `entity_loadbank` brings the
+lights in. Arming at the end of `gridedit_load_map()` gives one create per load with no counting at
+all. Left for after the alpha; 57 level loads across three sweeps produced nothing traceable to it.
+
+### 3.4 Standalone PLAY GAME — boots on all three tried
+
+The hub's **PLAY GAME** relaunches the exe as a standalone (`project=2`) and the editor process
+exits. It is a different path from Test Game, it has its own crash history, and no sweep covers it.
+
+| demo | result |
+|---|---|
+| Aztec Game Kit Teaser | reached `standalone_title`, held 30 s, **316.1 FPS** |
+| Escape from the Zombie Cellar | reached `standalone_title`, held 30 s, **309.2 FPS** |
+| The Mystery of Z Island | reached `standalone_title`, held 30 s, **309.0 FPS** |
+
+⚠ **Read this narrowly.** It proves the relaunch works and the standalone title loop runs — three
+for three, no hang, no crash. It does **not** prove a level loads in standalone, because the probe
+never pressed start. That, and "Export Game", remain the untested surface in §7.
+
+### 3.5 What the 3 dedicated character shadow slots cost — measured
+
+`SET_CHARSHADOW` is a live harness knob, so this needed no build. On Indian Strike Force, one of the
+demos whose atlas lands at 256 MB:
+
+| | sun rect | packer wants | atlas |
+|---|---|---|---|
+| `SET_CHARSHADOW 3` (default) | `16384x2048`, **8 slices** × 2048 | 16384 wide | 272,629,760 (16384×4096) |
+| `SET_CHARSHADOW 0` | `10240x2048`, **5 slices** × 2048 | 10240 wide | 272,629,760 — *unchanged* |
+
+The feature costs **3 of the 8 sun slices, i.e. 6144 of the 16384 atlas width** — about 96 MB once a
+level load lets the atlas act on it.
+
+★ The atlas did **not** shrink when I turned the slots off mid-level, and that is correct behaviour,
+not a bug: the shrink is armed once per level load and that arm had already been spent. Worth
+knowing as a user-facing consequence — **a visuals change that should free VRAM does not free it
+until the next level load.**
+
+★★ **The same dump gives the trim idea a measured number.** That level packs exactly **two** rects:
+the 16384×2048 sun and one 768×128 local. The minimal containing box is therefore **16384×2176 =
+142 MB**, against the **256 MB** actually allocated — the height doubled from 2048 to 4096 to hold a
+single 768×128 rect. **−130 MB on that one level**, for a change that trims the texture to the
+extent the packer already placed everything inside.
 
 ---
 
@@ -222,7 +293,8 @@ PENDING_FINAL_SOAK
 
 ### ★★★ 4.1 Run `tools/prealpha_clean.sh --apply` (new tonight)
 
-The build area carries **202 MB across 110 files** that are not product. Most is noise, but two are
+The build area carries **426 MB across 208 files** that are not product — most of that is
+screenshots my own sweeps produced tonight, so run the script rather than trusting this number. Most is noise, but two are
 **arming files** — the engine checks for the file's existence at startup and turns a diagnostic *on*
 if it is there:
 
@@ -246,7 +318,7 @@ four things listed but untouched for you to judge: three loose `*_surface.dds` a
 no copy in entitybank, and `Files/savegames/` (276 KB of save games from testing — a fresh install
 probably should not ship them).
 
-Also in that 202 MB: five loose `.sh` test scripts from Feb–Mar 2026 next to the exe, not
+Also in there: five loose `.sh` test scripts from Feb–Mar 2026 next to the exe, not
 git-tracked, unused, flagged in the August alpha audit and still there; and `Files/particlesbank_old/`
 at 20 MB.
 
@@ -406,7 +478,7 @@ Nothing here blocks a pre-alpha. In the order I would take them.
 |---|---|---|---|---|
 | 1 | **Level-load gamma fade-in is dead.** The ramp is fully intact and both consumer lines at `G-Lighting.cpp:341-346` are a bare `;` with a TODO. | MED — DX11 hid level-load construction artefacts behind an 84-frame fade; DX12 shows them | **not as cheap as the audit said** — see below | do it next, with eyes on it |
 | 2 | **Env-probe release fade** — `g_bEnvProbeTrackingUpdate[...] = false` fires unconditionally on both branches (`GGTerrain_part0.cpp:9561`, `:9606`), so the range decrements once and the probe is parked on the next statement | MED — probes pop leaving an indoor volume | small | after 1 |
-| 3 | **Trim the shadow atlas to the packed extent.** See below — this is now the largest remaining VRAM item and it is *small*, not large. | **~84 MB measured on one level, more on eight others** | small, but needs a visual A/B | first thing after the alpha ships |
+| 3 | **Trim the shadow atlas to the packed extent.** See below — this is now the largest remaining VRAM item and it is *small*, not large. | **−130 MB measured on one level** (§3.5), more on the other seven at 256 MB | small, but needs a visual A/B | first thing after the alpha ships |
 | 4 | **PP Snow residue** — `bPPSnow` still gates an every-15th-frame indoor `IntersectAllEx` raycast whose result is discarded with `(void)iHitObj;` (`M-Game_part3.cpp:342`) | none visible, wasted work | tiny | free win when you are next in that file |
 | 5 | **Procedural-preview fog** — `M-TerrainNew_part5.cpp:888` is a bare `;`; replacement field `weather->gg_fog_opacity` exists | LOW | tiny | verify first — the sibling branch may be inert too |
 | 6 | **`enablepixmarkers` reads nowhere** — parsed in two places, `setup.ini` ships `=1` against a key nothing reads | none | tiny | restore the crash-log print, or delete the key |
@@ -457,6 +529,21 @@ mid-fade. It is an afternoon with the app open, not a one-liner.
 - **Did not loosen the atlas anti-thrash gate.** A cold Teaser sits at 5120×1024 wanting 4096×1024
   and cannot shrink because the gate needs `packer*2 <= atlas`. 4 MB is the right price.
 - **Did not delete anything from your build area.** `prealpha_clean.sh` defaults to a dry run.
+
+---
+
+## 6b. What tonight did not establish
+
+Being explicit, because a long green run is easy to over-read:
+
+- **No human looked at any of it.** Every verdict here is a harness reading or a screenshot
+  statistic. "19/19 reached Test Game" means the state machine said so and the frame had
+  luminance variance — not that the game played correctly.
+- **Nothing was played.** No weapon fired, no door opened, no save made, no level completed.
+- **The DRED guards are reasoned, not tested** (§2.2).
+- **Untracked content is still unaudited** (§5.8) — that one needs your DX11 install.
+- **FPS numbers here are within-run only.** This machine has drifted ±18% across days before;
+  cross-day FPS from this report is not evidence of anything.
 
 ---
 
