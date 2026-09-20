@@ -211,6 +211,13 @@ for demo in "${DEMOS[@]}"; do
           | tr -d '\r' | awk '{ if ($2+0 > m) { m = $2+0 } } END { if (m > 0) printf "POLYS: %d", m }')
   [ -z "$POLYS" ] && POLYS=$(grep -m1 "^POLYS:" "$OUT/run$TAG/ed3_$demo.txt" | tr -d '\r')
 
+  # 2026-09-20: C2 compares a single number for exact equality, but on Foggy Forest and
+  # Z Island the three SETTLED samples disagree (spread 7728 and 528 triangles). Record the
+  # observed range so the gate can ask whether the reference falls inside it instead of
+  # whether it equals whichever sample happened to be highest.
+  POLYSRANGE=$(for f in ed1 ed2 ed3; do grep -m1 "^POLYS:" "$OUT/run$TAG/${f}_$demo.txt" 2>/dev/null; done \
+          | tr -d '\r' | awk '{ v=$2+0; if (lo==0 || v<lo) lo=v; if (v>hi) hi=v } END { if (hi>0) printf "polysrange=%d-%d", lo, hi }')
+
   grab_shot "ed_$demo"
 
   # ---- test-game phase, gated on the PREPARING overlay clearing ----
@@ -269,7 +276,7 @@ for demo in "${DEMOS[@]}"; do
     fi
   fi
 
-  echo "$demo|OK|$F1|$F2|$F3|$GSTATE|$GF1|$GF2|$GF3|prep=${PREPS}s|$VRAM|$POLYS|gvram=$GVRAM|$LEVELINFO" >> "$RESULTS"
+  echo "$demo|OK|$F1|$F2|$F3|$GSTATE|$GF1|$GF2|$GF3|prep=${PREPS}s|$VRAM|$POLYS|gvram=$GVRAM|$POLYSRANGE|$LEVELINFO" >> "$RESULTS"
   echo "  OK: editor $F1/$F2/$F3  game($GSTATE) $GF1/$GF2/$GF3  prep=${PREPS}s  vram=$VRAM"
 done
 

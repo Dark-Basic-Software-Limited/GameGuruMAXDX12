@@ -118,8 +118,21 @@ for line in open(res, encoding="utf-8", errors="replace"):
     # editor 3811.4, game 3962.5), so a gate that only checks the editor column can pass a
     # build that actually breaches 4 GB in the mode players ship in. Check both.
     gvram = num(f[12].split("=")[-1]) if len(f) > 12 and "gvram" in f[12] else 0.0
+    # 2026-09-20: when the sweep recorded the observed range, use it. Three settled samples
+    # disagree on Foggy Forest (spread 7728) and Z Island (528), so comparing the MAX for
+    # exact equality decides those two by luck. min == max on the other 17, so this is not
+    # a loosening for them.
+    prange = None
+    for part in f:
+        if part.startswith("polysrange="):
+            try:
+                lo, hi = part.split("=")[1].split("-")
+                prange = (int(lo), int(hi))
+            except Exception:
+                prange = None
     rows.append(dict(demo=demo, ed=sum(ed)/3 if any(ed) else 0, gstate=gstate,
-                     gm=sum(gm)/3 if any(gm) else 0, vram=vram, gvram=gvram, polys=polys))
+                     gm=sum(gm)/3 if any(gm) else 0, vram=vram, gvram=gvram, polys=polys,
+                     prange=prange))
 
 # A gate that parsed nothing must not report PASS on anything. C2 and C3 are computed over
 # `rows`, so with rows empty they printed "identical on all 0 demos" and "worst = 0.0 MB" -
@@ -143,6 +156,8 @@ for r in sorted(rows, key=lambda x: -x["vram"]):
     d = r["demo"]; ref = REF.get(d)
     if ref is None:            g2 = "POLYS_NO_REFERENCE"; c2 = False
     elif r["polys"] == ref:    g2 = "POLYS_OK"
+    elif r.get("prange") and r["prange"][0] <= ref <= r["prange"][1]:
+        g2 = "POLYS_IN_RANGE(%d-%d)" % r["prange"]
     else:                      g2 = "POLYS_MISMATCH(ref %d)" % ref; c2 = False
     over = [n for n, v in (("editor", r["vram"]), ("game", r["gvram"])) if v >= limit]
     g3 = "VRAM_OVER(%s)" % ",".join(over) if over else ("VRAM_OK" if r["vram"] else "vram?")

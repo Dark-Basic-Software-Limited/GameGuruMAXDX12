@@ -12210,3 +12210,52 @@ remaining VRAM item and it is cheap; it just is not a 3 a.m. change.
 value, and 3.44 changed the default for a NEW level from 2048 to 1024. The eight demos at 256 MB are
 carrying 2048 from old saves. Re-saving them at 1024 halves the sun rect and therefore the atlas -
 Lee's call, since it is a visual quality trade on shipped content.
+
+
+## 3.69c - C2 IS A DETERMINISTIC GATE ON A QUANTITY THAT IS NOT ALWAYS DETERMINISTIC (2026-09-20)
+
+The fresh-launch sweep on the 3.69 build came back **C2 GEOMETRY FAIL**, on exactly one demo:
+The Mystery of Z Island read 320728 against a reference of 320624. **+104 triangles in 320,624 -
+0.03% - and an INCREASE.** Nothing in 3.68/3.69 touches geometry submission, so before accepting
+that as a regression I looked at the measurement's own variance. The sweep keeps all three settled
+samples, so this cost nothing but a script:
+
+| demo | sample min | sample max | spread |
+|---|---|---|---|
+| Foggy Forest | 1241116 | 1248844 | **7728** |
+| The Mystery of Z Island | 320200 | 320728 | **528** |
+| *the other 17* | | | **0 - bit-exact across all three** |
+
+★★★ **Two demos' triangle counts are not stable even when the scene has settled, and C2 compares
+the MAX of three samples for EXACT equality.** So on those two the verdict is decided by which
+samples the sampler happened to catch. Foggy Forest's max landed exactly on the reference and
+PASSED; Z Island's landed 104 above and FAILED. **Neither outcome said anything about the build.**
+Re-scored against the observed range, the run is **CLEAN on all four criteria**.
+
+⚠ Note how this failure presents: a single demo, a tiny delta, on a gate whose whole purpose is to
+be strict. That is indistinguishable at a glance from a real one-demo regression, and the tempting
+move - "it's only 0.03%, wave it through" - would be exactly as wrong as calling it a regression.
+**The variance of the measurement is the thing that settles it, and it was already on disk.**
+
+Fixed in the tooling rather than by argument: `demo_fps_sweep.sh` now records
+`polysrange=min-max`, and `sweepgate.sh` passes when the reference falls INSIDE the observed range.
+For the 17 deterministic demos min == max, so the check is exactly as strict as it was.
+
+**Still unexplained: why those two.** Both are heavily vegetated, which points at the tree pool's
+nearest-N pick or the billboard/mesh handover flipping a tree between representations on
+floating-point jitter at a parked camera - a mesh tree and its billboard have different triangle
+counts. That is a hypothesis, not a finding; the evidence here only establishes that the quantity
+moves, not what moves it. Worth a `DUMP_TREEPOOL` either side of a POLYS sample on Foggy Forest.
+
+### The fresh-launch result itself
+
+| criterion | verdict |
+|---|---|
+| C1 LOAD | **PASS 19/19** |
+| C2 GEOMETRY | **PASS** (range-scored; 17 of 19 bit-exact) |
+| C3 VRAM | **PASS** - worst 3783.9 MB (Aztec Game Kit, in game), **312.1 MB headroom** |
+| C4 GAME | **PASS 19/19** |
+
+★ Headroom against the 4 GB minimum spec went from **121.2 MB** at the last clean gate (0826b) to
+**312.1 MB** - and that is on COLD loads, where the accumulation fixes should not help at all. The
+gain is the shadow atlas no longer inheriting the boot-time size.
