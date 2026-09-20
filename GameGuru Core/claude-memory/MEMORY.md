@@ -4,7 +4,9 @@
 > ⚠⚠ **TWO MACHINES since 08-31** — run ``[ -d /d/DEV/BUILDS ] && echo LAPTOP || echo DESKTOP`` before trusting any path, GPU or perf number. **DESKTOP = RX 9060 XT, the primary box and the source of every recorded FPS/VRAM baseline**; LAPTOP = GTX 1050, set up 08-31 and unused since, where those baselines are INVALID. Full table: [Machine migration](project_machine_migration.md).
 > ⚙ This folder is mirrored into the repo at `GameGuru Core/claude-memory/` — `tools/sync_claude_memory.sh to-repo` after a session; `to-live` on a new box. ⚠ The live path is keyed on the repo's ABSOLUTE path — a wrong key fails SILENTLY.
 
-> ★★★ **[VRAM retained across level loads](project_vram_retention.md)** — accumulation +90 MB/load → +5 (r2 0.71→0.01). 4 fixes, all one shape: a per-level value in a process-global. ⚠ Shadow atlas is NOT the leak — a shadow-packer INPUT survives a level load; still open, next lead inside. ★ Instrument = the NAMED `DUMP_VRAM` census + an A→B→C→A probe.
+> ★★★ **[VRAM retained across level loads](project_vram_retention.md)** — CLOSED 09-20. 7 defects, ALL one shape: a per-level value in a process-global. Instrument = the NAMED DUMP_VRAM census + A→B→C→A. ★ A bound is only as sound as the instrument that gave it.
+
+> ★★ **[Pre-alpha readiness](project_prealpha_readiness.md)** — the build area holds ARMING FILES (dred.txt et al) that ship diagnostics switched ON, plus 107 MB of debris. `tools/prealpha_clean.sh` first. Export Game is untested since 08-16.
 
 > ★★★ **[Single-session soak sweep](project_single_session_soak.md)** — 19/19 load + Test Game in ONE MAX launch (09-19). ★ Keep BOTH sweeps: per-demo-relaunch is blind to accumulation. ⚠ VRAM rises ~93 MB per sequential level load (same-level repeat, not the confounded 19-demo slope); NOT a min-spec failure. ⚠ `sweepgate.sh` C2 was silently checking 17 of 19.
 

@@ -1,12 +1,74 @@
-# ▶▶ RESUME HERE — MILESTONE `vram-retention-milestone-2026-09-20`
+---
+name: project-next-action-immediate
+description: Current state and the exact next step on GameGuru MAX DX12 — read this FIRST when resuming
+metadata: 
+  node_type: memory
+  type: project
+  originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
+  modified: 2026-09-20T03:10:00.000Z
+---
 
-## ★★★ VRAM retention across level loads is FIXED and Lee-confirmed ("test very good", 09-20).
+# ▶▶ RESUME HERE — 2026-09-20, after the 8-hour pre-alpha run
 
-Game `f527a507` main, engine `df7d78e3` master, both clean == origin, tag on both.
-Build area exe **31,887,360 bytes, built 09-20 00:28** — matches the committed source exactly.
+## State
 
-| | before | after |
-|---|---|---|
+Game `main`, engine `master`, both clean and pushed. **`GameGuru Core/PREALPHA_REPORT_2026-09-20.md`
+is the document Lee asked for and the best single summary of where things stand** — read it before
+anything else in this file.
+
+## What landed overnight
+
+- **3.68** — the last three VRAM suspects: shadow packer containing size (a session high-water
+  mark), grass material cache (never reset), MSAA outline RTs (never released when MSAA is off).
+  Plus `DUMP_SHADOWRECTS` now reports the packed rect and a slice count.
+- **3.69** — the atlas shrink waits 90 frames for the level to settle (the one-shot arm was being
+  spent on the one-light load transient, costing 2.8 atlas creates per load); and null guards in the
+  DRED breadcrumb walk, which had AV'd on 2026-09-16 while reporting a device removal.
+- **Tooling** — `tools/prealpha_clean.sh` (new), `sweepgate.sh` scores soak runs and refuses a
+  zero-row file, `demo_fps_sweep.sh` takes `GGMAX_SWEEP_OUT`.
+
+**Measured, 19-demo single session:** accumulation +90.1 → **+9.9 MB/load**, r² 0.71 → **0.03**,
+peak 5743 → **4350 MB**, over the 4 GB gate 16/19 → **3/19**, worst demo **−1637 MB**. 19/19 editor,
+19/19 Test Game, 0 restarts, 0 blank frames.
+
+## ★ The one thing to tell Lee first
+
+**Run `tools/prealpha_clean.sh --apply` before zipping.** 202 MB of non-product files, and
+`dred.txt` / `gg_atlas_trace.txt` are ARMING FILES that switch diagnostics on for whoever receives
+the build. Recommendation in the report: **keep `dred.txt` for a pre-alpha now that 3.69 guarded the
+walk** — it turns a tester's device-removal into a real report.
+
+## Next, in order (report §6 has the full table)
+
+1. **Level-load gamma fade-in** — dead, both consumers at `G-Lighting.cpp:341-346` are a bare `;`.
+   ⚠ The earlier audit called this cheap; it is not quite. `setBrightness` is an ADDITIVE offset
+   after contrast, so the fade is −1.0 → 0.0, but `Wicked_Update_Visuals` writes brightness
+   unconditionally every visuals update (`M-GridEditB_part3.cpp:2055`) and assigns
+   `g_fGlobalGammaFadeIn = visuals->fGamma` in the game branch (`:2044`). The fade must COMPOSE with
+   the gamma slider and survive that assignment. Needs the app open, not a one-liner.
+2. **Env-probe release fade** — `g_bEnvProbeTrackingUpdate[...] = false` fires unconditionally on
+   both branches (`GGTerrain_part0.cpp:9561`, `:9606`).
+3. **Sun cascade strip is one row** — ~130 MB on the heaviest demos, but it needs the engine rect
+   layout AND every shader that indexes it. Not a quick job.
+4. Small ones: PP Snow residue raycast (`M-Game_part3.cpp:342`), procedural-preview fog
+   (`M-TerrainNew_part5.cpp:888`), `enablepixmarkers` reads nowhere, `_ConvertFormat` mis-cast.
+
+## ⚠ Largest untested surface
+
+**"Export Game" (standalone build) has no harness verb and has not been exercised since
+2026-08-16.** A tester will click it. Hub **PLAY GAME** (relaunches as a standalone, `project=2`) IS
+reachable via `CLICK play_game` — `scratchpad/playgame_probe.sh` drives it.
+
+## Rules that bit again tonight
+
+- A quoted heredoc still collapses backslashes here — write patch scripts to a FILE.
+- Assert every substitution matched; two anchors failed on indentation and one on an em dash the
+  source file actually contains.
+- A probe must `sleep` before its first `alive` check or it declares failure before the process
+  exists.
+- `demo_fps_sweep.sh` uses `$1` as the TAG — do not reuse it for a path.
+- Kill the runner before clearing its output directory.
+|---|
 | accumulation over 19 sequential demo loads | **+90.1 MB/load (r² 0.71)** | **+5.2 MB/load (r² 0.01)** |
 | load 1 → load 19 driver VRAM | 3107.7 → 5121.6 MB | 3075.4 → **3051.8 MB** |
 | peak in session | 5743 MB | 4231 MB |
@@ -18,6 +80,20 @@ Fixed: §3.65 stale terrain paint map (+142 MB), orphaned terrain material entit
 depth-chain keep-alive diagnostic (+67 MB). Also fixed a gate defect: `sweepgate.sh` C2 had been
 silently checking **17 of 19** demos since 3.53c.
 
+
+---
+
+## Earlier resume blocks, newest first (history)
+
+# ▶▶ RESUME HERE — MILESTONE `vram-retention-milestone-2026-09-20`
+
+## ★★★ VRAM retention across level loads is FIXED and Lee-confirmed ("test very good", 09-20).
+
+Game `f527a507` main, engine `df7d78e3` master, both clean == origin, tag on both.
+Build area exe **31,887,360 bytes, built 09-20 00:28** — matches the committed source exactly.
+
+| | before | after |
+|---|---
 ---
 
 ## ▶ LEE'S BRIEF FOR THIS SESSION (given 09-20, ~8 hours autonomous)
@@ -99,43 +175,7 @@ Game build only.
 
 ---
 
-# ▶▶ RESUME HERE — MILESTONE level-swap-clean-milestone-2026-09-19
 
-## ★★★ Level swaps are CLEAN and Lee-confirmed. Next: TUNING (Lee's word, 09-19).
-
-Game `91b8937e` main, engine `9c3ec737` master, both clean == origin, tag on both. Build area exe 09-19 00:02.
-
-| | |
-|---|---|
-| second level renders + Test Game | litmus 2/2; Lee's own 2-level project works |
-| hub sweep | 19/19 editor, 19/19 game, VRAM pass |
-| swap leak | meshes +15->0, materials +17->+2, DUMP_BROKEN clean |
-| GPU driver resets since the fix | 0 (was 8 in the bug window) |
-
-Fixed today: §3.53 billboard atlas built once per process (bisected, 8 theories refuted first);
-§3.54 tree TYPE assets never released on level change; §3.52 GG render path had ZERO resource
-barriers; the validation-layer drain could hang the app. §3.53c Teaser C2 = stale reference, corrected.
-
-★★★ THE LESSON OF THE DAY: **a teardown that exists is not a teardown that runs** (three cases).
-★ "It worked a few weeks ago" = BISECT FIRST. ★ A kill-switch sent after level 1 tests nothing
-about level 1. ★ The 19/19 sweep relaunches MAX per demo so it can never see a second-load bug —
-use `tools/secondload_litmus.sh`; `tools/leakname.sh` names a swap leak.
-
-⚠ OPEN (small, deterministic, not blocking): swap residual -1 object / +2 materials / -1 transform
-(bit-identical on two runs, unnamed, NOT the tree-type leak). `GGTrees_RepopulateInstances` is NOT
-hooked for the type release (terrain-edit hitch risk) so old-format-tree-data levels are uncovered.
-Engine `textureStreamingFeedbackBuffer` id527 barrier mismatch on a larger second level.
-
----
-
-name: project-next-action-immediate
-description: Current state and the exact next step on GameGuru MAX DX12 — read this FIRST when resuming
-metadata: 
-  node_type: memory
-  type: project
-  originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
-  modified: 2026-08-26T04:10:52.131Z
----
 
 # ▶▶ RESUME HERE — state as of 2026-09-18 21:10
 
