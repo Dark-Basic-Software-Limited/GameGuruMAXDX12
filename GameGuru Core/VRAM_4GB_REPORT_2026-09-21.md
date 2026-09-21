@@ -105,38 +105,84 @@ after three other levels (`tools/vram_residue_probe.sh`):
 |---|---|---|
 | +128 MB | 3 → 4 | `GPUSubAllocator` — one more 128 MB pool block (reusable, not content) |
 | +65 MB | 1 → 1 | `shadowMapAtlas` grew and did not shrink back |
-| **+65 MB** | **0 → 15** | **`terraintextures/mat6, mat7, mat29, mat30, mat31` Color/Normal/Surface** |
+| +65 MB | 0 → 15 | `terraintextures/mat6, mat7, mat29, mat30, mat31` Color/Normal/Surface — **NOT a leak, see §3a** |
 | +17 MB | 33 → 34 | `frame_allocator` |
 | ~+28 MB | — | `Scene::geometry/instance/material` buffers grew to the largest level |
 | +9 MB | +133 | small unnamed buffers |
 
-★★★ **The one that is a defect rather than growth: fifteen terrain material textures belonging to
-OTHER levels are still resident.** `mat6/7/29/30/31` are not Z Island's — Z Island loaded first did
-not have them. They come from Aztec Game Kit and Operation Amazon and survive the return.
-
-They are loaded through the engine **resource manager**, which caches by filename for the process
-(`GGTerrain_part0.cpp:6786` notes the shipping Wicked terrain loads `terraintextures/matN` that way
-for its own atlas). Nothing evicts them at level unload.
-
-★ **This is the eighth instance of the shape in [[project_vram_retention]]: per-level content held
-in a process-lifetime cache.** The other seven were closed in September; this one is the same
-family and was not on the list.
+Fifteen terrain material textures belonging to OTHER levels were resident after returning.
+`mat6/7/29/30/31` are not Z Island's. I first read that as an unbounded leak and an eighth instance
+of the [[project_vram_retention]] shape. **That was wrong — see §3a.**
 
 The `shadowMapAtlas` +65 MB is a *known* open item — notes §3.69d, `GG_ArmShadowAtlasShrink()` wants
 moving to the END of the level load. It is already written up and is not new.
 
 ---
 
+## 3a. ⚠ CORRECTION — the terrain textures are NOT a leak
+
+The claim above, as first published, was that those fifteen textures were an unbounded leak. **A
+scaling probe refuted it** (`tools/vram_residue_scale.sh`): return to the same demo after 3
+intervening levels, then after 6, and count what is resident.
+
+| return point | `terraintextures` entries | MB | census_bytes | driver_usage |
+|---|---|---|---|---|
+| Z Island loaded first | 33 | 147.8 | 2985 MB | 3604 MB |
+| after **3** intervening levels | 42 | 188.1 | 3275 MB | 3923 MB |
+| after **6** intervening levels | **39** | **174.7** | 3205 MB | 3907 MB |
+
+**It does not grow — after six levels it is LOWER than after three.** And the set *rolls* rather
+than accumulating:
+
+    first    mat1 mat3 mat5 mat8 mat10 mat16 mat18 mat20 mat21 mat24 mat26
+    after 3  mat1 mat5 mat6 mat7 mat8 mat10 mat16 mat20 mat21 mat24 mat26 mat29 mat30 mat31
+    after 6  mat1 mat8 mat10 mat16 mat20 mat21 mat22 mat24 mat25 mat26 mat27 mat29 mat30
+
+After six levels it has **lost** mat5, mat6, mat7 and mat31 and gained mat22, mat25, mat27.
+Materials are being released.
+
+★ **That is exactly `gg_prevMaterialSetRetention` doing its job** (`GGTerrainWicked.cpp:678`): a
+deliberate ONE-GENERATION pin that keeps the outgoing material set alive for one extra swap so
+in-flight GPU work and stale descriptors cannot fault — the 08-05 crash rule. It is bounded at
+roughly one material set, it self-limits, and **evicting it would re-open a crash this project has
+already paid for, to recover ~40 MB that comes back on its own.**
+
+⚠ Also checked before believing any of this: `wiResourceManager.cpp:1090` holds a 2.05 diagnostic
+(`gg_pins`) that pins *every* `terraintextures/*` resource for the process lifetime, armed by
+`leakterraintex.txt` beside the EXE, with a comment reading "Remove after the hunt." It is
+**absent**, so it is not the cause. In a build area that still ships `dred.txt`, that was worth
+confirming rather than assuming.
+
+### What this leaves
+
+The residue is a **PLATEAU, not a ramp** — a session high-water mark, not accumulation. The soak
+data says the same thing from the other direction: mean residue +609.6 MB but slope against load
+position only +24.3 MB with r² 0.253. Nothing here grows without bound.
+
+So of the +288 MB measured after three levels:
+
+| | verdict |
+|---|---|
+| `GPUSubAllocator` +128 MB | pool block. Reusable — but on a 4 GB card the driver has still *committed* it |
+| `shadowMapAtlas` +65 MB | **the one genuinely recoverable item** — known open item §3.69d |
+| terrain textures +65 MB | by design, bounded, rolls. Do not touch |
+| scene buffers, `frame_allocator`, small buffers ~+30 MB | grown to the largest level, pooled |
+
+---
+
 ## 4. What I would do, in order
 
-1. **Evict unreferenced `terraintextures/matN` at level load.** ~65 MB for three levels, and it
-   scales with how many distinct terrain material sets a session touches. ⚠ Needs care: the
-   resource manager is shared, so eviction must be by reference rather than by wiping the cache, or
-   levels that share a material set will reload and hitch.
-2. **Move `GG_ArmShadowAtlasShrink()` to the end of the load** (§3.69d, one line) — recovers the
-   +65 MB atlas ratchet on this path too.
-3. **Re-measure with the same probe.** If 1 and 2 land, Z Island after three levels should come back
-   toward its fresh 3682 MB, and the three over-limit demos should clear.
+1. **Move `GG_ArmShadowAtlasShrink()` to the end of the load** (§3.69d, one line). The +65 MB
+   atlas ratchet is the only item in the residue that is genuinely recoverable content.
+2. **Consider making D3D12MA release empty blocks.** The +128 MB `GPUSubAllocator` block is free
+   space the allocator will reuse, so it costs nothing on a 16 GB card — but on a **4 GB** card the
+   driver has committed it, and that is the card this limit exists for. ⚠ Measure before changing:
+   trimming pools trades memory for allocation stalls, which is the wrong trade mid-level.
+3. **❌ NOT: evict the terrain textures.** Refuted above — bounded, rolling, and load-bearing for
+   crash safety.
+4. **Re-measure with `tools/vram_residue_probe.sh`.** Item 1 alone should take Z Island after three
+   levels from 3957.6 MB to roughly 3890 MB. That still leaves it the closest demo to the limit, so
+   item 1 does not by itself clear the three over-limit demos in a long session.
 
 ⚠ **Do not read the +128 MB `GPUSubAllocator` block as a leak** — that is the allocator taking
 another pool, and it will be reused. It inflates `driver_usage` without costing capacity.

@@ -79,24 +79,30 @@ demos - but it needs the engine rect layout AND every shader that indexes into i
 Related: [[project-single-session-soak]], [[project-vram-floor]], [[project-measuring-rules]],
 [[project-rules-rendering-dx12]], [[project-playgame-crash]], [[project-prealpha-readiness]]
 
-## ★★★ An EIGHTH instance, found 2026-09-21: terrain material textures
+## ❌ RETRACTED: the "eighth instance" of 2026-09-21 was NOT one
 
-Same shape as the other seven - **per-level content in a process-lifetime cache**.
+On 09-21 I reported retained `terraintextures/matN` (15 textures, ~65 MB, belonging to other
+levels) as an eighth instance of this shape. **A scaling probe refuted it the same evening.**
 
-Censusing ONE demo twice in one process (loaded first, then again after three other levels)
-showed `census_bytes` +288 MB and **+146 live resources** - live data, not allocator pooling,
-which `driver_usage` alone could not have distinguished. The census diff named it:
+`tools/vram_residue_scale.sh` returns to one demo after 3 intervening levels, then after 6:
+entries go **33 -> 42 -> 39**. It does not grow, and the SET ROLLS - after six levels it has
+LOST mat5/6/7/31 and gained mat22/25/27. Materials are being released.
 
-**15 textures, `terraintextures/mat6|7|29|30|31` Color/Normal/Surface, ~65 MB**, belonging to
-OTHER levels and still resident after returning. Loaded via the engine **resource manager**,
-which caches by filename for the process; nothing evicts at level unload.
-(`GGTerrain_part0.cpp:6786` notes the shipping Wicked terrain loads `terraintextures/matN` that
-way for its own atlas.)
+★ That is `gg_prevMaterialSetRetention` (`GGTerrainWicked.cpp:678`) doing its job: a deliberate
+ONE-GENERATION pin keeping the outgoing material set alive for one extra swap so in-flight GPU
+work cannot fault - the 08-05 crash rule. **Evicting it would re-open a crash already paid for,
+to recover ~40 MB that comes back on its own.**
 
-⚠ Eviction must be BY REFERENCE, not a cache wipe - levels sharing a material set would reload
-and hitch.
+★★★ **The lesson: `census_bytes` rising proves data is LIVE, not that it is LEAKED.** A
+bounded rolling pin and an unbounded leak look identical in one before/after pair. Only
+**scaling the intervening work** separates them - and that probe costs 15 minutes.
 
-★★ **The consequence is the headline of `VRAM_4GB_REPORT_2026-09-21.md`:** no level exceeds
-4 GB alone (worst 3782.7 MB, 313 MB spare), but **three do once another level has been loaded**,
-and the residue is a **STEP not a drift** - the SECOND level loaded already carries +353 MB
-(slope vs load position only +24.3 MB, r² 0.253). That is what a shipped multi-level game does.
+⚠ Check first, every time: `wiResourceManager.cpp:1090` `gg_pins` pins EVERY
+`terraintextures/*` for the process when `leakterraintex.txt` sits beside the EXE (a 2.05
+diagnostic marked "remove after the hunt"). It was absent here, but a left-armed diagnostic
+would have produced the identical symptom.
+
+★ What the residue actually is: a **PLATEAU, not a ramp** - a session high-water mark. Of
++288 MB after three levels: +128 MB a reusable `GPUSubAllocator` pool block, +65 MB the
+`shadowMapAtlas` ratchet (open item §3.69d, the ONLY genuinely recoverable part), +65 MB this
+by-design pin, ~+30 MB pooled buffer growth. See `VRAM_4GB_REPORT_2026-09-21.md` §3a.
