@@ -70,3 +70,26 @@ an unrelated problem.
 
 Related: [[project-wicked-engine-changes]], [[project-porting-clusters]],
 [[project-gpup-particles]], [[project-rules-rendering-dx12]]
+
+## ★★★ The prepass RENDER TARGET changed meaning too (3.75, 2026-09-21)
+
+Not just the hooks - **the thing a hook writes INTO**. In DX11 the prepass's RT0 was VELOCITY.
+In DX12 it is the **visibility buffer**: `wiRenderer.h:48 format_idbuffer = R32_UINT`, holding a
+packed PrimitiveID. And `texture_depth` is **not the depth buffer** - it is `depthBuffer_Copy`
+(`wiRenderPath3D.cpp:800`), whose only writer is `visibility_resolveCS`, which RECONSTRUCTS depth
+from that ID buffer and treats **a zero ID as sky** (`depth = 0`). Nothing copies the real depth
+buffer into it; DX11 did.
+
+**Every GG prepass PS still declares `float4 velocity : SV_TARGET0` and writes zeros there.** So
+every GG custom draw is invisible to SSAO, SSR, sun shafts, aerial perspective, DOF, soft
+particles and volumetric clouds - and worse, with `ColorWrite::ENABLE_ALL` + `GREATER_EQUAL` it
+**erases the ID of whatever is behind it**. Found via clouds painting over far tree billboards.
+
+★ The shaders are byte-faithful to DX11. Nothing broke; a render target's MEANING moved. Same
+shape as [[project-tree-sway-and-paths]] and [[project-fog-two-paths]].
+
+3.75 mitigates it game-side (`ColorWrite::DISABLE` on the two live GG prepass PSOs - far-tree
+billboards and baked terrain - so at least the geometry behind survives). ⚠ **A GG draw still
+cannot occlude for itself.** The real fix is emitting a valid PrimitiveID, and that is NOT cheap:
+`PrimitiveID::unpack` calls `load_meshlet` BEFORE validating, so a synthetic ID reads out of
+bounds rather than failing clean.

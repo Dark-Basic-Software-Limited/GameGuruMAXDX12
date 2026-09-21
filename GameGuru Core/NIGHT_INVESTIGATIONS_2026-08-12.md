@@ -12693,3 +12693,127 @@ accumulation, so it will always exceed it - the validated 0920b baseline did too
 A soak therefore can never print anything but `NOT CLEAN`. Left alone deliberately: changing a
 criterion after seeing the data is the move the script itself warns against. Worth doing as its own
 change, with the reasoning written first.
+
+
+## 3.75 / 3.76 - CLOUDS COMPOSITED OVER FAR TREE BILLBOARDS (2026-09-21)
+
+Lee, with a shot of the Aztec Game Kit Teaser: "the terrain correctly clips the cloud when the depth
+test wins, but for billboard trees ... they are picking up a cloud behind the terrain hills and
+rendering that cloud in front of the tree billboard".
+
+He read it exactly right. The billboards were not merely failing to occlude - they were ERASING the
+hill behind them.
+
+### ★★★ `texture_depth` IS NOT THE DEPTH BUFFER
+
+That is the whole thing, and it is the fact that makes every other symptom obvious:
+
+- `globals.hlsli:697` binds `texture_depth` to `GetCamera().texture_depth_index`.
+- `wiRenderPath3D.cpp:800` sets that index to **`depthBuffer_Copy`**, not `depthBuffer_Main`.
+- `depthBuffer_Copy` has exactly ONE writer: `Visibility_Prepare` → `visibility_resolveCS`, which
+  **reconstructs** depth from the PrimitiveID buffer. **Nothing copies the real depth buffer into
+  it.** DX11 did (`WickedRepo/.../RenderPath3D.cpp:1115`); DX12 dropped it and the name is a fossil.
+- `visibility_resolveCS.hlsl:70-92`: `if (any(primitiveID)) { ...depth = saturate(tmp.z); }`
+  `else { // sky:  depth = 0; }` — **a zero ID is an affirmative "empty sky".**
+
+And the DX12 prepass's one colour target IS that ID buffer: `wiRenderer.h:48`
+`format_idbuffer = R32_UINT`. The engine's own prepass PS returns `uint main(...) : SV_Target`,
+a packed PrimitiveID.
+
+**Every GG prepass pixel shader still writes the DX11 layout:**
+
+    float4 velocity : SV_TARGET0;      // DX11: velocity.  DX12: the visibility buffer.
+    uint   readback : SV_TARGET1;
+    output.velocity = float4( 0, 0, 0, alpha );
+
+Zero into RT0. Zero means sky. And because the pass runs `ColorWrite::ENABLE_ALL` with
+`depth_func = GREATER_EQUAL`, it **overwrote the hill's valid ID with zero** at every billboard
+pixel - which is why the symptom is the whole silhouette rather than a fringe.
+
+★ **A port regression, not a GG regression.** The shader is byte-faithful to DX11, where RT0 really
+was velocity. The render target's MEANING moved and the shader did not. **Fifth instance** of this
+project's recurring shape, after the customDraw hook inventory, the tree-sway caller, the billboard
+atlas and the tree pool hosted in the terrain's update. There is no delta row for it because nobody
+made a change to record.
+
+### Why terrain and near trees were fine
+
+One rule: **does the draw emit a PrimitiveID?**
+
+| | path | ID? |
+|---|---|---|
+| terrain | Wicked-native SVT via `DrawScene` (GG's own terrain prepass sits behind `if (ggterrain_use_wicked_terrain) return;` and never runs) | yes |
+| near 3D trees | engine `ObjectComponent`s since the port | yes |
+| **far billboards** | a GG customDraw placed deliberately ABOVE that early-out | **no** |
+
+No cloud-maths hypothesis can produce that three-way split, because the cloud shader cannot tell a
+tree from a hill. That asymmetry is what identified the cause.
+
+### 3.75 (GAME): the prepass writes no colour
+
+`ColorWrite::DISABLE` on the two GG prepass PSOs that actually run on the shipping path - the
+far-tree billboards (`GGTrees_part0.cpp`) and **the baked terrain** (`GGTerrainBake.cpp`, which has
+the identical defect and would have shown it the moment Terrain Bake was ticked on a cloud level).
+
+Costs nothing and loses nothing: the silhouette comes from the shader's own `if (alpha < 0.3)
+discard;`, and no GG code reads the ID buffer (`customDraw_AfterPrepass` is commented out).
+`alpha_to_coverage` is deliberately LEFT ON - the write mask does not gate it, and it is what
+feathers the cutout into depth. ⚠ The shared `blendStateOpaque` is restored immediately after, or
+the HIGH-tree prepass PSOs built from the same local would inherit the mask silently.
+
+⚠ **This restores the hill BEHIND a billboard; it does not make the billboard an occluder.** Its
+pixels against open SKY still read as sky. The full fix is giving GG draws a real PrimitiveID, and
+that is NOT cheap: `PrimitiveID::unpack` calls `load_meshlet` BEFORE validating, so a synthetic ID
+reads out of bounds rather than failing clean.
+
+### 3.76 (ENGINE): the upsample must not paint cloud that is behind the surface
+
+`cloud_depth_current.g` is the distance to the geometry THAT TAP'S ray hit (`FLT_MAX` for sky) - not
+the cloud's own distance. So when the bilateral weighting rejects every tap, "rejected" has two
+causes wanting OPPOSITE answers. A tap NEARER than this pixel found cloud genuinely in front of us
+and GGMAX 1.66's anti-hole fallback is right. A tap FARTHER found cloud BEHIND our surface, and
+painting it is how a tree wears a sky cloud. New `nearestTapSurface`; the fallback emits 0 when
+every tap was past us, 1% margin so float equality on a same-surface tap cannot fall into it.
+
+★★★ **It FLICKERS, which is why Lee ranked it first** ("flicker is bad bad bad"). The raymarch is a
+**quarter**-res checkerboard - `texture_cloudRender` is `resolution/4` and
+`subPixelIndex = volumetricclouds_frame % 4` - so one occluder sample covers 4x4 full-res pixels and
+WHICH pixel it lands on rotates every frame. Along a thin silhouette the taps flip between hitting
+the tree and seeing sky past it, so the fallback fired on some frames and not others.
+
+★ The two are ONE fix in two halves: 3.75 stops the billboards erasing the hill, 3.76 stops the
+leftover edge taps repainting it. Either alone leaves a visible remnant.
+
+### Two of my own claims, corrected
+
+- I first proposed that the cloud raymarch's mip-1 depth tap plus
+  `downsampleDepthBuffer4xPS.hlsl`'s `min()`-over-16 erased thin occluders. **Wrong twice.**
+  `DownsampleDepthBuffer` has a definition and a declaration and **zero call sites** - dead code -
+  and mip 1 is not a reduction at all but point decimation
+  (`visibility_resolveCS.hlsl:131`, `output_depth_mip1[pixel / 2] = depth` under `GTid % 2 == 0`).
+- I then proposed a conservative (nearest) mip-1 reduction as the flicker fix. Also wrong: those
+  mips are written from the same resolved depth and feed SSAO/SSR too, so a reduction there dilates
+  every silhouette in the frame. The upsample is the right place.
+
+★ Both were refuted by going back to the source rather than by argument. **The instrument that
+settles a rendering question is the call-site grep, not the plausibility of the mechanism.**
+
+### Verified
+
+Engine and game builds clean, 0 errors each. ★ The `.cso` was proven by SIZE through the real
+pipeline, because `build.bat` DELETES stale engine `.cso` and MAX recompiles them at launch - so
+both its timestamp and its existence say nothing:
+
+| source | `volumetricCloud_upsamplePS.cso` |
+|---|---|
+| without 3.76 (stashed) | **13,888** bytes, md5 `65d8dc990e0b` |
+| with 3.76 | **14,068** bytes, md5 `fd90ee5cb505` |
+
+`tools/cso_size_probe.sh` does that measurement and is worth keeping - it is the only honest way to
+prove an ENGINE shader edit landed.
+
+⚠ **NOT yet confirmed visually.** The stock Aztec demo renders no volumetric clouds at any camera
+the harness can reach (Lee's shot was of a MODIFIED copy - note the `*` in his title bar and the
+Customize Sky panel open at Density 68 / Coverage 138 / Height 1524 m), and there is no harness verb
+for cloud density. `tools/cloudtree_repro.sh` captures paired clouds-on/off frames at a fixed camera
+and has a full "before" set; the A/B runs the moment Lee's test level exists.

@@ -288,7 +288,16 @@ void GGTerrainBake_Init()
 	// depth-write off and that is the combination proven to work against this engine's prepass;
 	// EQUAL additionally assumes nothing in the pipeline perturbs the depth between the passes,
 	// which is a bet with no upside here.
+	// ★ GGMAX 3.75: the prepass writes NO COLOUR - same defect as the far-tree billboards.
+	// GGTerrainBakePrepassPS.hlsl still declares the DX11 prepass layout (float4 velocity :
+	// SV_TARGET0) and writes float4(0,0,0,1). In DX12 that target is the R32_UINT PrimitiveID
+	// visibility buffer, and visibility_resolveCS.hlsl reads a zero ID as SKY - so a baked
+	// terrain stopped occluding anything that consumes texture_depth, volumetric clouds most
+	// visibly. Nothing here needs the colour output: the bake prepass has no alpha cutout.
+	g_bsStore[0] = bs;   // (CreatePSO copies bs per slot; set the mask on the prepass only)
+	bs.render_target[0].render_target_write_mask = ColorWrite::DISABLE;
 	CreatePSO( &g_psoPrepass, &g_prepassPS, DepthWriteMask::ALL,  ComparisonFunc::GREATER_EQUAL );
+	bs.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
 	CreatePSO( &g_psoOpaque,  &g_ps,        DepthWriteMask::ZERO, ComparisonFunc::GREATER_EQUAL );
 
 	g_shadersReady = true;

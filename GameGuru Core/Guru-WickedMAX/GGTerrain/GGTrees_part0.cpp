@@ -1605,6 +1605,31 @@ void GGTrees_Init()
 	desc.ps = &shaderTreesPrepassPS;
 	desc.il = &inputLayout;
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
+	// ★★★ GGMAX 3.75: NO COLOUR WRITES FROM THE PREPASS.
+	//
+	// In DX11 the prepass's render target 0 was VELOCITY, and GGTreesPrepassPS still declares
+	// that layout (float4 velocity : SV_TARGET0) and writes float4(0,0,0,alpha) into it.
+	// In DX12 that same target is the VISIBILITY BUFFER: wiRenderer.h format_idbuffer =
+	// R32_UINT, holding a packed PrimitiveID, and visibility_resolveCS.hlsl RECONSTRUCTS the
+	// depth that every texture_depth consumer reads from it - where a zero ID means SKY:
+	//     if (any(primitiveID)) { ...depth = saturate(tmp.z); } else { /* sky: */ depth = 0; }
+	// texture_depth is depthBuffer_Copy (wiRenderPath3D.cpp:800), and NOTHING copies the real
+	// depth buffer into it - DX11 did, DX12 does not. So the billboards were not merely absent
+	// from that depth: with ColorWrite::ENABLE_ALL and depth_func GREATER_EQUAL this prepass
+	// OVERWROTE the hill's valid ID with zero at every billboard pixel, and the volumetric
+	// cloud behind the hill was then composited over the tree (Lee, Aztec Game Kit Teaser).
+	//
+	// Disabling colour writes costs nothing and loses nothing: the silhouette comes from the
+	// shader's own `if ( alpha < 0.3 ) discard;`, not from the colour output, and no GG code
+	// reads the ID buffer (customDraw_AfterPrepass is commented out in master_part1.cpp).
+	// alpha_to_coverage is deliberately LEFT ON - the write mask does not gate it, and it is
+	// what feathers the cutout into the depth buffer.
+	//
+	// ⚠ This restores the hill BEHIND a billboard, it does not make the billboard itself an
+	// occluder - its pixels against open SKY still read as sky, because nothing writes an ID
+	// there. Giving GG draws a real PrimitiveID is the full fix and is NOT cheap: unpack()
+	// calls load_meshlet BEFORE validating, so a synthetic ID reads out of bounds.
+	blendStateOpaque.render_target[0].render_target_write_mask = ColorWrite::DISABLE;
 	GGTreeCreatePSO( &psoTreesPrepass );
 
 	// GGMAX 3.06: same PSO with depth writes OFF, for debug mode 4. Lee's test: draw every quad
@@ -1614,6 +1639,8 @@ void GGTrees_Init()
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
 	GGTreeCreatePSO( &psoTreesPrepassNoDepth );
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
+	// 3.75: hand the shared blend state back before the HIGH prepass PSOs are built from it.
+	blendStateOpaque.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
 
 	rastState.cull_mode = CullMode::BACK;
 	desc.vs = &shaderTreesHighPrepassVS;
