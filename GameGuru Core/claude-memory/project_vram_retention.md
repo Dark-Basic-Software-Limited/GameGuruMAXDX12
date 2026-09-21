@@ -78,3 +78,25 @@ demos - but it needs the engine rect layout AND every shader that indexes into i
 
 Related: [[project-single-session-soak]], [[project-vram-floor]], [[project-measuring-rules]],
 [[project-rules-rendering-dx12]], [[project-playgame-crash]], [[project-prealpha-readiness]]
+
+## ★★★ An EIGHTH instance, found 2026-09-21: terrain material textures
+
+Same shape as the other seven - **per-level content in a process-lifetime cache**.
+
+Censusing ONE demo twice in one process (loaded first, then again after three other levels)
+showed `census_bytes` +288 MB and **+146 live resources** - live data, not allocator pooling,
+which `driver_usage` alone could not have distinguished. The census diff named it:
+
+**15 textures, `terraintextures/mat6|7|29|30|31` Color/Normal/Surface, ~65 MB**, belonging to
+OTHER levels and still resident after returning. Loaded via the engine **resource manager**,
+which caches by filename for the process; nothing evicts at level unload.
+(`GGTerrain_part0.cpp:6786` notes the shipping Wicked terrain loads `terraintextures/matN` that
+way for its own atlas.)
+
+⚠ Eviction must be BY REFERENCE, not a cache wipe - levels sharing a material set would reload
+and hitch.
+
+★★ **The consequence is the headline of `VRAM_4GB_REPORT_2026-09-21.md`:** no level exceeds
+4 GB alone (worst 3782.7 MB, 313 MB spare), but **three do once another level has been loaded**,
+and the residue is a **STEP not a drift** - the SECOND level loaded already carries +353 MB
+(slope vs load position only +24.3 MB, r² 0.253). That is what a shipped multi-level game does.
